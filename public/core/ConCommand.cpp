@@ -17,7 +17,8 @@ ConCommand::ConCommand(const char* name, CON_COMMAND_CALLBACK callback, int flag
 	ASSERT_MSG(callback, "Command %s requires a callback", name);
 	m_fnCallback = callback;
 
-	Register(this);
+	if ((m_nFlags & CV_UNREGISTERED) == 0)
+		Register(this);
 }
 
 void ConCommand::DispatchFunc(Array<EqString>& args)

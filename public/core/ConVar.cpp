@@ -28,7 +28,8 @@ void ConVar::Init(const char* defaultValue)
 	if((m_nFlags & CV_INITVALUE) == 0)
 		InternalSetValue(GetDefaultValue());
 
-	Register(this);
+	if ((m_nFlags & CV_UNREGISTERED) == 0)
+		Register(this);
 }
 
 void ConVar::SetClamp(bool bClamp,float fMin,float fMax)

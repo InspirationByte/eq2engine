@@ -289,10 +289,7 @@ bool CFileSystem::Init(bool bEditorMode)
 		}
 	}
 
-	g_localizer->Init();
-
 	m_isInit = true;
-
     return true;
 }
 
@@ -325,8 +322,6 @@ void CFileSystem::Shutdown()
 		delete m_directories[i];
 
 	m_directories.clear(true);
-
-	g_localizer->Shutdown();
 }
 
 void CFileSystem::SetBasePath(const char* path) 

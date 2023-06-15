@@ -8,11 +8,14 @@
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
+#include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
+#include "core/ConVar.h"
 #include "utils/KeyValues.h"
 #include "Localize.h"
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
+DECLARE_CVAR(language, "", "The language of the application/game", CV_UNREGISTERED | CV_ARCHIVE);
 
 static void LocalizeConvertSymbols(char* str, bool doNewline)
 {
@@ -88,23 +91,27 @@ CLocalize::~CLocalize()
 
 void CLocalize::Init()
 {
-	KVSection* pRegional = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
+	ConCommandBase::Register(&language);
+	m_language = language.GetString();
 
-	if(!pRegional)
+	// try using EqConfig regional settings instead
+	if (m_language.Length() == 0)
 	{
-		Msg("Core config missing RegionalSettings section... force english!\n");
-		return;
+		const KVSection* pRegional = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
+		if (!pRegional)
+		{
+			Msg("Core config missing RegionalSettings section... force english!\n");
+			return;
+		}
+		const KVSection* defaultLanguage = pRegional ? pRegional->FindSection("DefaultLanguage") : nullptr;
+		m_language = KV_GetValueString(defaultLanguage, 0, "english");
 	}
-
-    m_language = KV_GetValueString(pRegional->FindSection("DefaultLanguage"), 0, "english" );
-    Msg("Language '%s' set\n", m_language.ToCString());
 
 	// add localized path
 	EqString localizedPath(g_fileSystem->GetCurrentGameDirectory() + _Es("_") + m_language);
 	g_fileSystem->AddSearchPath("$LOCALIZE$", localizedPath.ToCString());
 
-	int langArg = g_cmdLine->FindArgument("-language");
-
+	const int langArg = g_cmdLine->FindArgument("-language");
 	if(langArg != -1)
 	{
 		const char* args = g_cmdLine->GetArgumentsOf(langArg);
@@ -115,14 +122,17 @@ void CLocalize::Init()
 			MsgError("Error: -language must have argument\n");
 	}
 
+	m_language = m_language.LowerCase();
+	Msg("Language '%s' set\n", m_language.ToCString());
+
 	// add the copyright
 	AddToken("INSCOPYRIGHT", L"\xa9 Inspiration Byte 2009-2023");
-
 	AddTokensFile("core");
 }
 
 void CLocalize::Shutdown()
 {
+	ConCommandBase::Unregister(&language);
 	m_tokens.clear(true);
 }
 

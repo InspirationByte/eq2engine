@@ -39,9 +39,6 @@ void ConCommandBase::GetVariants(Array<EqString>& list, const char* query) const
 // static
 void ConCommandBase::Register( ConCommandBase* pBase )
 {
-	if (pBase->m_nFlags & CV_UNREGISTERED)
-		return;
-
     GetCConsoleCommands()->RegisterCommand( pBase );
 }
 

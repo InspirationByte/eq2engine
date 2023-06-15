@@ -274,8 +274,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
 	cpuCaps->Init();
 
-	g_consoleCommands->RegisterCommand(&developer);
-	g_consoleCommands->RegisterCommand(&echo);
+	ConCommandBase::Register(&developer);
+	ConCommandBase::Register(&echo);
 
 	((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->RegisterCommands();
 

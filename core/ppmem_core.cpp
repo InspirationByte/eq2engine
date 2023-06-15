@@ -20,7 +20,6 @@
 #include "core/ppmem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-#include "core/IConsoleCommands.h"
 
 #include "ds/sort.h"
 
@@ -128,12 +127,12 @@ int EqAllocHook( int allocType, void *userData, size_t size, int blockType, long
 void PPMemInit()
 {
 #ifndef PPMEM_DISABLED
-	g_consoleCommands->RegisterCommand(&ppmem_stats);
-	g_consoleCommands->RegisterCommand(&ppmem_break_on_alloc);
+	ConCommandBase::Register(&ppmem_stats);
+	ConCommandBase::Register(&ppmem_break_on_alloc);
 #endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
-	g_consoleCommands->RegisterCommand(&cmd_crtdebug_break_alloc);
+	ConCommandBase::Register(&cmd_crtdebug_break_alloc);
 
 	_CrtSetAllocHook(EqAllocHook);
 #endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
@@ -144,11 +143,11 @@ void PPMemInit()
 void PPMemShutdown()
 {
 #ifndef PPMEM_DISABLED
-    g_consoleCommands->UnregisterCommand(&ppmem_stats);
-    g_consoleCommands->UnregisterCommand(&ppmem_break_on_alloc);
+    ConCommandBase::Unregister(&ppmem_stats);
+    ConCommandBase::Unregister(&ppmem_break_on_alloc);
 #endif
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
-	g_consoleCommands->UnregisterCommand(&cmd_crtdebug_break_alloc);
+	ConCommandBase::Unregister(&cmd_crtdebug_break_alloc);
 #endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 }
 

@@ -82,6 +82,8 @@ int Sys_Main()
 
 	Sys_InitConfiguration();
 
+	g_localizer->Init();
+
 	// in case of game FS is packed
 	// create configuration directory
 	g_fileSystem->MakeDir("cfg", SP_MOD);
@@ -103,6 +105,7 @@ int Sys_Main()
 	Host_Terminate();
 
 	// shutdown
+	g_localizer->Shutdown();
 	g_fileSystem->Shutdown();
 	g_eqCore->Shutdown();
 

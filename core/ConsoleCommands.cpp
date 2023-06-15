@@ -335,14 +335,13 @@ CConsoleCommands::CConsoleCommands()
 
 void CConsoleCommands::RegisterCommands()
 {
-	RegisterCommand(&cvarlist);
-	RegisterCommand(&cmdlist);
-	RegisterCommand(&exec);
-
-	RegisterCommand(&togglevar);
-	RegisterCommand(&set);
-	RegisterCommand(&seti);
-	RegisterCommand(&revertvar);
+	ConCommandBase::Register(&cvarlist);
+	ConCommandBase::Register(&cmdlist);
+	ConCommandBase::Register(&exec);
+	ConCommandBase::Register(&togglevar);
+	ConCommandBase::Register(&set);
+	ConCommandBase::Register(&seti);
+	ConCommandBase::Register(&revertvar);
 }
 
 const ConVar* CConsoleCommands::FindCvar(const char* name)

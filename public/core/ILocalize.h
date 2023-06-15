@@ -13,7 +13,7 @@
 class ILocToken
 {
 public:
-				virtual	~ILocToken() {}
+	virtual	~ILocToken() {}
 
 	virtual const char*		GetToken() const = 0;
 	virtual const wchar_t*	GetText() const = 0;
@@ -25,7 +25,7 @@ public:
 class ILocalize : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E2_Localizer_002")
+	CORE_INTERFACE("E2_Localizer_003")
 
 	virtual void				Init() = 0;
 	virtual void				Shutdown() = 0;
