@@ -8,6 +8,7 @@
 #include "math_common.h"
 #include "Vector.h"
 
+#ifndef FLOAT16_BUILTIN
 half::half(const float x)
 {
 	union 
@@ -97,6 +98,8 @@ half::operator float () const
 
 	return result;
 }
+
+#endif // !FLOAT16_BUILTIN
 
 /* --------------------------------------------------------------------------------- */
 

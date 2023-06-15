@@ -7,6 +7,14 @@
 
 #pragma once
 
+#ifdef __is_identifier // Compatibility with non-clang compilers.
+#if !__is_identifier(_Float16)
+typedef _Float16 half;
+#define FLOAT16_BUILTIN
+#endif
+#endif
+
+#ifndef FLOAT16_BUILTIN
 struct half
 {
 	unsigned short sh;
@@ -15,6 +23,7 @@ struct half
     half(const float x);
 	operator float () const;
 };
+#endif // !FLOAT16_BUILTIN
 
 // Vector 2D
 template <class T>
