@@ -24,7 +24,11 @@ ConVar::ConVar(const char* name, const char* pszDefaultValue, int flags)
 void ConVar::Init(const char* defaultValue)
 {
 	m_szDefaultValueString = defaultValue;
-	InternalSetValue(GetDefaultValue());
+
+	if((m_nFlags & CV_INITVALUE) == 0)
+		InternalSetValue(GetDefaultValue());
+
+	Register(this);
 }
 
 void ConVar::SetClamp(bool bClamp,float fMin,float fMax)

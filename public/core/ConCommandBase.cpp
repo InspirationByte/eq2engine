@@ -13,16 +13,11 @@ ConCommandBase::ConCommandBase(char const *name, int flags)
 	: m_szName(name)
 	, m_nFlags(flags)
 {
-	if(m_nFlags & CV_UNREGISTERED)
-		return;
-
-    Register(this);
 }
 
 ConCommandBase::~ConCommandBase()
 {
-	if(m_bIsRegistered)
-		Unregister( this );
+	Unregister( this );
 }
 
 //-----------------------------------------------------------
@@ -44,11 +39,16 @@ void ConCommandBase::GetVariants(Array<EqString>& list, const char* query) const
 // static
 void ConCommandBase::Register( ConCommandBase* pBase )
 {
+	if (pBase->m_nFlags & CV_UNREGISTERED)
+		return;
+
     GetCConsoleCommands()->RegisterCommand( pBase );
 }
 
 // static
 void ConCommandBase::Unregister( ConCommandBase* pBase )
 {
+	if (!pBase->m_bIsRegistered)
+		return;
 	GetCConsoleCommands()->UnregisterCommand(pBase);
 }

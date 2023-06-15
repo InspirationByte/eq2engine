@@ -22,67 +22,64 @@ typedef void (CConsoleCommands::* FUNC)(const char* str, int len, void* extra);
 class CConsoleCommands : public IConsoleCommands
 {
 public:
-
-
 	CConsoleCommands();
 
-	void								RegisterCommands();
+	void					RegisterCommands();
 
 	// Unregister all
-	void								DeInit();
+	void					DeInit();
 
 	// Register new variable
-	void								RegisterCommand(ConCommandBase *pCmd);
+	void					RegisterCommand(ConCommandBase *pCmd);
 
 	// Unregister variable
-	void								UnregisterCommand(ConCommandBase *pCmd);
+	void					UnregisterCommand(ConCommandBase *pCmd);
 
-
-	const ConVar*						FindCvar(const char* name);
-	const ConCommand*					FindCommand(const char* name);
-	const ConCommandBase*				FindBase(const char* name);
+	const ConVar*			FindCvar(const char* name);
+	const ConCommand*		FindCommand(const char* name);
+	const ConCommandBase*	FindBase(const char* name);
 
 	// Returns all bases array
-	const Array<ConCommandBase*>*		GetAllCommands() const { return &m_registeredCommands; }
+	const ConCommandListRef	GetAllCommands() const { return m_registeredCommands; }
+
+	void					PushConVarInitialValue(const char* name, const char* value);
 
 	// Executes file
-	void								ParseFileToCommandBuffer(const char* pszFilename);
+	void					ParseFileToCommandBuffer(const char* pszFilename);
 
 	// Sets command buffer
-	void								SetCommandBuffer(const char* pszBuffer);
+	void					SetCommandBuffer(const char* pszBuffer);
 
 	// Appends to command buffer, also can find only the needed command
-	void								AppendToCommandBuffer(const char* pszBuffer);
+	void					AppendToCommandBuffer(const char* pszBuffer);
 
 	// Clears to command buffer
-	void								ClearCommandBuffer();
+	void					ClearCommandBuffer();
 
 	// Resets counter of same commands
-	void								ResetCounter();
+	void					ResetCounter();
 
 	// Executes command buffer
-	bool								ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false);
-
-	// returns failed commands
-	Array<EqString>&					GetFailedCommands();
+	bool					ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false, Array<EqString>* failedCmds = nullptr);
 
 	//-------------------------
-	bool								IsInitialized() const		{return true;}
+	bool					IsInitialized() const { return true; }
 
 private:
-	void								ForEachSeparated(const char* str, char separator, FUNC fn, void* extra);
-	void								ParseAndAppend(const char* str, int len, void* extra);
-	void								SplitOnArgsAndExec(const char* str, int len, void* extra);
+	void					ForEachSeparated(const char* str, char separator, FUNC fn, void* extra);
+	void					ParseAndAppend(const char* str, int len, void* extra);
+	void					SplitOnArgsAndExec(const char* str, int len, void* extra);
 
-	void								SortCommands();
+	void					SortCommands();
+
+	// a special store used for loading configs early
+	Map<int, EqString>		m_cvarValueStore{ PP_SL };
 
 	Array<ConCommandBase*>	m_registeredCommands{ PP_SL };
-
-	Array<EqString>			m_failedCommands{ PP_SL };
 
 	char					m_currentCommands[COMMANDBUFFER_SIZE];
 	char					m_lastExecutedCommands[COMMANDBUFFER_SIZE];
 
-	int						m_sameCommandsExecuted;
-	bool					m_commandListDirty;
+	int						m_sameCommandsExecuted{ false };
+	bool					m_commandListDirty{ false };
 };

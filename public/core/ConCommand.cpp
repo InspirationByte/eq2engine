@@ -16,20 +16,19 @@ ConCommand::ConCommand(const char* name, CON_COMMAND_CALLBACK callback, int flag
 {
 	ASSERT_MSG(callback, "Command %s requires a callback", name);
 	m_fnCallback = callback;
+
+	Register(this);
 }
 
 void ConCommand::DispatchFunc(Array<EqString>& args)
 {
-	if((GetFlags() & CV_CHEAT))
+	if(GetFlags() & CV_CHEAT)
 	{
-		ConVar *cheats = (ConVar*)g_consoleCommands->FindCvar("__cheats"); //find cheats cvar
-		if(cheats)
+		const ConVar *cheats = (ConVar*)g_consoleCommands->FindCvar("__cheats"); //find cheats cvar
+		if(cheats && !cheats->GetBool())
 		{
-			if(!cheats->GetBool())
-			{
-				Msg("Cannot access to %s console command during cheats is off\n",GetName());
-				return;
-			}
+			Msg("Cannot access to %s console command during cheats is off\n",GetName());
+			return;
 		}
 	}
 

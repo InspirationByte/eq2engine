@@ -29,13 +29,13 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 	if(bWriteKeyConfiguration)
 		g_inputCommandBinder->WriteBindings(cfgfile);
 
-	const Array<ConCommandBase*> *base = g_consoleCommands->GetAllCommands();
+	const ConCommandListRef cmdList = g_consoleCommands->GetAllCommands();
 
-	for(int i = 0; i < base->numElem();i++)
+	for(int i = 0; i < cmdList.numElem();i++)
 	{
-		if(base->ptr()[i]->IsConVar())
+		if(cmdList[i]->IsConVar())
 		{
-			ConVar *cv = (ConVar*)base->ptr()[i];
+			ConVar *cv = (ConVar*)cmdList[i];
 			if(cv->GetFlags() & CV_ARCHIVE)
 				cfgfile->Print("seti %s %s\n",cv->GetName(),cv->GetString());
 		}

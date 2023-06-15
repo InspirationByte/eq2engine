@@ -13,13 +13,15 @@ enum ECommandBaseFlags
 {
 	CV_UNREGISTERED		= (1 << 0),	// Do not register this console command\cvar to list. So it can't be changed in console.
 	CV_CHEAT			= (1 << 1), // Cheat. Must be checked from "__cheats" cvar
-	CV_INITONLY			= (1 << 2), // Init-only console command such as "__cheats"
+	CV_PROTECTED		= (1 << 2), // Init-only console command such as "__cheats"
 	CV_INVISIBLE		= (1 << 3), // Hidden console command. Does not shows in FastFind and others.
-	CV_ARCHIVE			= (1 << 4), //Save on disk. Only ConVar have this flag
+	CV_ARCHIVE			= (1 << 4), // Save on disk. Only ConVar have this flag
 	CV_CLIENTCONTROLS	= (1 << 5), // Indicates that this command is client-controlled, and will disable on pause or when console is enabled
 
 	CMDBASE_CONVAR		= (1 << 6), // Is ConVar
-	CMDBASE_CONCOMMAND	= (1 << 7) // Is ConCommand
+	CMDBASE_CONCOMMAND	= (1 << 7),  // Is ConCommand
+
+	CV_INITVALUE		= (1 << 31),
 };
 
 class ConCommandBase;

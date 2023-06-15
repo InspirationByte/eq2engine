@@ -11,6 +11,8 @@
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "core/IConsoleCommands.h"
+#include "core/ICommandLine.h"
 #include "utils/KeyValues.h"
 
 #include "sys_in_console.h"
@@ -19,6 +21,16 @@
 
 #include <SDL_messagebox.h>
 #include <SDL_system.h>
+
+#define DEFAULT_CONFIG_PATH "cfg/config_default.cfg"
+
+#ifdef _RETAIL
+#define CHEATS_DEFAULT_VALUE 0
+#else
+#define CHEATS_DEFAULT_VALUE 1
+#endif
+
+DECLARE_CVAR_G(__cheats, QUOTE(CHEATS_DEFAULT_VALUE), "Wireframe", CV_PROTECTED | CV_INVISIBLE);
 
 // To not use GTK or java messages, we just using SDL for it. Neat. Noice.
 static void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
@@ -40,14 +52,26 @@ static void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type
 	}
 }
 
-DECLARE_CVAR_G(__cheats, "1", "Wireframe", CV_INVISIBLE);
+static void Sys_InitConfiguration()
+{
+	const int userCfgIdx = g_cmdLine->FindArgument("-user_cfg");
+	if (userCfgIdx != -1)
+	{
+		extern ConVar user_cfg;
+		EqString cfgFileName(g_cmdLine->GetArgumentsOf(userCfgIdx));
+		user_cfg.SetValue(cfgFileName.TrimChar('\"').ToCString());
+	}
+
+	// execute configuration files and command line after all libraries are loaded.
+	g_consoleCommands->ClearCommandBuffer();
+	g_consoleCommands->ParseFileToCommandBuffer(DEFAULT_CONFIG_PATH);
+	g_consoleCommands->ExecuteCommandBuffer();
+}
 
 // engine entry point after Core init
 int Sys_Main()
 {
-#ifdef PLAT_LINUX
 	SetMessageBoxCallback(EQSDLMessageBoxCallback);
-#endif
 
 	// init file system
 	if (!g_fileSystem->Init(false))
@@ -56,9 +80,11 @@ int Sys_Main()
 		return -2;
 	}
 
+	Sys_InitConfiguration();
+
 	// in case of game FS is packed
 	// create configuration directory
-	g_fileSystem->MakeDir("cfg", SP_MOD);SetMessageBoxCallback(EQSDLMessageBoxCallback);
+	g_fileSystem->MakeDir("cfg", SP_MOD);
 	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %ls %ls", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
 	g_localizer->AddTokensFile("game");
 
@@ -255,6 +281,7 @@ void Sys_Android_MountFileSystem()
 
 #if defined(PLAT_WIN)
 
+#include <Windows.h>
 #ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
 #endif

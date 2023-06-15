@@ -120,9 +120,7 @@ void CInputCommandBinder::Init()
 
 	// resolve bindings
 	for(int i = 0; i < m_bindings.numElem(); i++)
-	{
-		ResolveCommandBinding( m_bindings[i] );
-	}
+		ResolveCommandBinding( m_bindings[i], true);
 
 	m_init = true;
 }
@@ -227,7 +225,7 @@ bool CInputCommandBinder::BindKey( const char* pszKeyStr, const char* pszCommand
 	if (!binding)
 		return false;
 
-	if(m_init && !ResolveCommandBinding(binding))
+	if(m_init && !ResolveCommandBinding(binding, false))
 	{
 		DeleteBinding( binding );
 		return false;
@@ -278,9 +276,9 @@ in_binding_t* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char
 	return newBind;
 }
 
-bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
+bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding, bool quiet)
 {
-	bool isJoyAxis = (s_keyMapList[binding->key_index].keynum >= JOYSTICK_START_AXES);
+	const bool isJoyAxis = (s_keyMapList[binding->key_index].keynum >= JOYSTICK_START_AXES);
 
 	// resolve axis first
 	if(isJoyAxis)
@@ -298,15 +296,9 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 			binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand( binding->commandString.ToCString() );
 	}
 
-	// if anly command found
-	if(	binding->cmd_act || binding->cmd_deact ||
-		binding->boundAction)
+	if(!quiet && !binding->cmd_act && !binding->cmd_deact && !binding->boundAction)
 	{
-
-	}
-	else
-	{
-		MsgError("Cannot bind command '%s' to key '%s'\n", binding->commandString.ToCString(), s_keyMapList[binding->key_index].name);
+		MsgError("Cannot bind command '%s' to '%s'\n", binding->commandString.ToCString(), s_keyMapList[binding->key_index].name);
 		return false;
 	}
 
@@ -689,7 +681,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 // executes binding with selected state
 void CInputCommandBinder::ExecuteBinding( in_binding_t* pBinding, bool bState )
 {
-	ResolveCommandBinding(pBinding);
+	ResolveCommandBinding(pBinding, false);
 	ExecuteBoundCommands(pBinding, bState);
 }
 

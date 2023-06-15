@@ -41,7 +41,7 @@ private:
 	static ConCommand *name = (ConCommand*)g_consoleCommands->FindCommand(#name);
 
 #define CONCOMMAND_FN(name) CC_##name##_f
-#define DECLARE_CONCOMMAND_FN( name ) void CONCOMMAND_FN(name)(CONCOMMAND_ARGUMENTS)
+#define DECLARE_CONCOMMAND_FN( name ) static void CONCOMMAND_FN(name)(CONCOMMAND_ARGUMENTS)
 
 #define DECLARE_CMD_FN_G(name, cmdfunc, desc, flags)	\
 	ConCommand name(#name, cmdfunc, flags, ConCommand::Desc(desc));

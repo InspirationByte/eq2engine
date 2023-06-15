@@ -37,7 +37,7 @@
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
-DECLARE_CVAR_G(user_cfg, DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_INITONLY);
+DECLARE_CVAR_G(user_cfg, DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_PROTECTED);
 
 DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_user' value)", 0)
 {
@@ -311,6 +311,8 @@ static void* Helper_GetWindowInfo(shaderAPIWindowInfo_t::Attribute attrib)
 		default:
 			ASSERT_FAIL("Not supported window type - %d", winfo.subsystem);
 	}
+
+	return nullptr;
 }
 
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow )

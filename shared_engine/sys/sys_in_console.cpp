@@ -1028,10 +1028,8 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	g_consoleCommands->ResetCounter();
 	g_consoleCommands->SetCommandBuffer(m_inputText.GetData());
 
-	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(nullptr, m_alternateHandler != nullptr);
-
-	Array<EqString>& failedCmds = g_consoleCommands->GetFailedCommands();
-
+	Array<EqString> failedCmds(PP_SL);
+	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(nullptr, m_alternateHandler != nullptr, &failedCmds);
 	bool hasFailed = failedCmds.numElem() > 0;
 
 	if( (execStatus == false || hasFailed) && m_alternateHandler != nullptr)
@@ -1046,9 +1044,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	if(hasFailed)
 	{
 		for(int i = 0; i < failedCmds.numElem(); i++)
-		{
 			MsgError( "Unknown command or variable: '%s'\n", failedCmds[i].ToCString() );
-		}
 	}
 
 	// Compare the last command with current and add history if needs
@@ -1066,11 +1062,11 @@ void CEqConsoleInput::UpdateCommandAutocompletionList(const EqString& queryStr)
 	m_foundCmdList.clear();
 	m_cmdSelection = -1;
 
-	const Array<ConCommandBase*>* baseList = g_consoleCommands->GetAllCommands();
+	const ConCommandListRef cmdList = g_consoleCommands->GetAllCommands();
 
-	for(int i = 0; i < baseList->numElem();i++)
+	for(int i = 0; i < cmdList.numElem();i++)
 	{
-		ConCommandBase* cmdBase = baseList->ptr()[i];
+		ConCommandBase* cmdBase = cmdList[i];
 
 		EqString conVarName(cmdBase->GetName());
 

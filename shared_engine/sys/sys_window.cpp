@@ -22,8 +22,6 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-#define DEFAULT_CONFIG_PATH		"cfg/config_default.cfg"
-
 // Renderer
 DECLARE_CVAR(r_bpp, "32", "Screen bits per pixel", CV_ARCHIVE);
 DECLARE_CVAR(sys_sleep, "0", "Sleep time for every frame", CV_ARCHIVE);
@@ -176,22 +174,6 @@ bool Host_Init()
 
 	if(!g_pHost->LoadModules())
 		return false;
-
-	int userCfgIdx = g_cmdLine->FindArgument("-user_cfg");
-
-	if(userCfgIdx != -1)
-	{
-		extern ConVar user_cfg;
-
-		EqString cfgFileName(g_cmdLine->GetArgumentsOf(userCfgIdx));
-
-		user_cfg.SetValue(cfgFileName.TrimChar('\"').ToCString());
-	}
-
-	// execute configuration files and command line after all libraries are loaded.
-	g_consoleCommands->ClearCommandBuffer();
-	g_consoleCommands->ParseFileToCommandBuffer( DEFAULT_CONFIG_PATH );
-	g_consoleCommands->ExecuteCommandBuffer();
 
 	EQWNDHANDLE mainWindow = Sys_CreateWindow();
 

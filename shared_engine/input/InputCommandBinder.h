@@ -133,7 +133,7 @@ protected:
 	// adds binding
 	in_binding_t*			AddBinding( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );
 
-	bool					ResolveCommandBinding(in_binding_t* binding);
+	bool					ResolveCommandBinding(in_binding_t* binding, bool quiet);
 
 	axisAction_t*			FindAxisAction(const char* name) const;
 

@@ -7,6 +7,7 @@
 
 #ifdef _WIN32
 #include <locale.h>
+#include <Windows.h>
 #ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
 #endif
@@ -89,8 +90,6 @@ ConCommand* c_log_flush;
 void PPMemInit();
 void PPMemShutdown();
 void InitMessageBoxPlatform();
-
-extern DECLARE_CONCOMMAND_FN(developer);
 
 CDkCore::CDkCore()
 {
@@ -232,8 +231,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 			for(int i = 0; i < devModesKv->values.numElem();i++)
 				devModeList.append(KV_GetValueString(devModesKv, i));
 
-			if(devModeList.numElem())
-				CONCOMMAND_FN(developer)( nullptr, devModeList );
+			if (devModeList.numElem())
+				developer.DispatchFunc(devModeList);
 		}
 
 		KVSection* pForceLogged = appDebug->FindSection("ForceLogApplications");

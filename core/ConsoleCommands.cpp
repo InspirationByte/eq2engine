@@ -19,26 +19,25 @@ EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 
 static bool IsAllowedToExecute(ConCommandBase* base)
 {
-	if (base->GetFlags() & CV_INITONLY)
+	if (base->GetFlags() & CV_PROTECTED)
 		return false;
 
 	static ConVar* cheats = (ConVar*)g_consoleCommands->FindCvar("__cheats");
 
-	bool cheatsEnabled = cheats ? cheats->GetBool() : false;
-
+	const bool cheatsEnabled = cheats ? cheats->GetBool() : false;
 	if (base->GetFlags() & CV_CHEAT)
 		return cheatsEnabled;
 
 	return true;
 }
 
-static void PrintConVar(ConVar *pConVar)
+static void PrintConVar(ConVar* pConVar)
 {
 	Msg("%s = \"%s\"\n\n", pConVar->GetName(), pConVar->GetString());
 	MsgError("   \"%s\"\n", pConVar->GetDesc());
 }
 
-static void PrintConCommand(ConCommandBase *pConCommand)
+static void PrintConCommand(ConCommandBase* pConCommand)
 {
 	Msg("%s\n", pConCommand->GetName());
 	MsgError("   \"%s\"\n", pConCommand->GetDesc());
@@ -58,20 +57,20 @@ DECLARE_CONCOMMAND_FN(cvarlist)
 {
 	MsgWarning("********Variable list starts*********\n");
 
-	const ConCommandBase	*pBase;			// Temporary Pointer to cvars
+	const ConCommandBase* pBase;			// Temporary Pointer to cvars
 
 	int iCVCount = 0;
 	// Loop through cvars...
 
-	const Array<ConCommandBase*> *pCommandBases = g_consoleCommands->GetAllCommands();
+	const ConCommandListRef cmdList = g_consoleCommands->GetAllCommands();
 
-	for (int i = 0; i < pCommandBases->numElem(); i++)
+	for (int i = 0; i < cmdList.numElem(); i++)
 	{
-		pBase = pCommandBases->ptr()[i];
+		pBase = cmdList[i];
 
 		if (pBase->IsConVar())
 		{
-			ConVar *cv = (ConVar*)pBase;
+			ConVar* cv = (ConVar*)pBase;
 
 			if (!(cv->GetFlags() & CV_INVISIBLE))
 				PrintConVar(cv);
@@ -87,15 +86,15 @@ DECLARE_CONCOMMAND_FN(cvarlist)
 DECLARE_CONCOMMAND_FN(cmdlist)
 {
 	MsgWarning("********Command list starts*********\n");
-	const ConCommandBase	*pBase;			// Temporary Pointer to cvars
+	const ConCommandBase* pBase;			// Temporary Pointer to cvars
 	int iCVCount = 0;
 
 	// Loop through cvars...
-	const Array<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
+	const ConCommandListRef cmdList = g_consoleCommands->GetAllCommands();
 
-	for (int i = 0; i < pCommandBases->numElem(); i++)
+	for (int i = 0; i < cmdList.numElem(); i++)
 	{
-		pBase = pCommandBases->ptr()[i];
+		pBase = cmdList[i];
 
 		if (pBase->IsConCommand())
 		{
@@ -113,11 +112,11 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 void cvar_list_collect(const ConCommandBase* cmd, Array<EqString>& list, const char* query)
 {
 	const ConCommandBase* pBase;
-	const Array<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
+	const ConCommandListRef cmdList = g_consoleCommands->GetAllCommands();
 
 	const int LIST_LIMIT = 50;
 
-	for (int i = 0; i < pCommandBases->numElem(); i++)
+	for (int i = 0; i < cmdList.numElem(); i++)
 	{
 		if (list.numElem() == LIST_LIMIT)
 		{
@@ -125,7 +124,7 @@ void cvar_list_collect(const ConCommandBase* cmd, Array<EqString>& list, const c
 			break;
 		}
 
-		pBase = pCommandBases->ptr()[i];
+		pBase = cmdList[i];
 
 		if (!pBase->IsConVar())
 			continue;
@@ -146,7 +145,7 @@ DECLARE_CONCOMMAND_FN(revertvar)
 		return;
 	}
 
-	ConVar* cv = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
+	ConVar* cv = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0));
 	if (cv)
 	{
 		cv->SetValue(cv->GetDefaultValue());
@@ -164,7 +163,7 @@ DECLARE_CONCOMMAND_FN(togglevar)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
+	ConVar* pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0));
 
 	if (!pConVar)
 	{
@@ -189,9 +188,10 @@ DECLARE_CONCOMMAND_FN(exec)
 		return;
 	}
 
-	g_consoleCommands->ParseFileToCommandBuffer(CMD_ARGV(0).ToCString());
+	g_consoleCommands->ParseFileToCommandBuffer(CMD_ARGV(0));
 }
 
+// sets ConVar value
 DECLARE_CONCOMMAND_FN(set)
 {
 	if (CMD_ARGC == 0)
@@ -200,7 +200,7 @@ DECLARE_CONCOMMAND_FN(set)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
+	ConVar* pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0));
 
 	if (!pConVar)
 	{
@@ -211,7 +211,7 @@ DECLARE_CONCOMMAND_FN(set)
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i).ToCString()));
 
 	if (IsAllowedToExecute(pConVar))
 	{
@@ -220,31 +220,28 @@ DECLARE_CONCOMMAND_FN(set)
 	}
 }
 
+// sets ConVar value before it gets initialized
 DECLARE_CONCOMMAND_FN(seti)
 {
 	if (CMD_ARGC == 0)
 	{
-		MsgError("Usage: seta <convar>\n");
-		return;
-	}
-
-	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
-
-	if (!pConVar)
-	{
-		MsgError("Unknown variable '%s'\n", CMD_ARGV(0).ToCString());
+		MsgError("Usage: seti <convar>\n");
 		return;
 	}
 
 	EqString joinArgs;
-
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i).ToCString()));
 
-	pConVar->SetValue(joinArgs.GetData());
+	ConVar* pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0));
+
+	if (pConVar)
+		pConVar->SetValue(joinArgs.GetData());
+	else
+		g_consoleCommands->PushConVarInitialValue(CMD_ARGV(0), joinArgs.GetData());
 }
 
-void fncfgfiles_variants(const ConCommandBase* cmd, Array<EqString>& list, const char* query)
+static void fncfgfiles_variants(const ConCommandBase* cmd, Array<EqString>& list, const char* query)
 {
 	CFileSystemFind fsFind("cfg/*.cfg", SP_MOD);
 	while (fsFind.Next())
@@ -261,20 +258,20 @@ DECLARE_CMD_F(cmdlist, "Prints out all aviable commands", CV_UNREGISTERED);
 DECLARE_CMD_VARIANTS_F(exec, "Execute configuration file", fncfgfiles_variants, CV_UNREGISTERED);
 DECLARE_CMD_VARIANTS_F(togglevar, "Toggles ConVar value", cvar_list_collect, CV_UNREGISTERED);
 DECLARE_CMD_VARIANTS_F(set, "Sets cvar value", cvar_list_collect, CV_UNREGISTERED);
-DECLARE_CMD_VARIANTS_F(seti, "Sets cvar value including restricted ones", cvar_list_collect, CV_UNREGISTERED | CV_INVISIBLE);
+DECLARE_CMD_VARIANTS_F(seti, "Sets cvar value before it gets initialized", cvar_list_collect, CV_UNREGISTERED | CV_INVISIBLE);
 DECLARE_CMD_VARIANTS_F(revertvar, "Reverts cvar to it's default value", cvar_list_collect, CV_UNREGISTERED);
 
 
 void SplitCommandForValidArguments(const char* command, Array<EqString>& commands)
 {
-	const char *pChar = command;
+	const char* pChar = command;
 	while (*pChar && isspace(static_cast<unsigned char>(*pChar)))
 	{
 		++pChar;
 	}
 
 	bool bInQuotes = false;
-	const char *pFirstLetter = nullptr;
+	const char* pFirstLetter = nullptr;
 	for (; *pChar; ++pChar)
 	{
 		if (bInQuotes)
@@ -350,20 +347,20 @@ void CConsoleCommands::RegisterCommands()
 
 const ConVar* CConsoleCommands::FindCvar(const char* name)
 {
-	ConCommandBase const *pBase = FindBase(name);
+	ConCommandBase const* pBase = FindBase(name);
 
-	if(pBase && pBase->IsConVar())
-		return ( ConVar* )pBase;
+	if (pBase && pBase->IsConVar())
+		return (ConVar*)pBase;
 
 	return nullptr;
 }
 
 const ConCommand* CConsoleCommands::FindCommand(const char* name)
 {
-	ConCommandBase const *pBase = FindBase(name);
+	ConCommandBase const* pBase = FindBase(name);
 
-	if(pBase && pBase->IsConCommand())
-		return ( ConCommand* )pBase;
+	if (pBase && pBase->IsConCommand())
+		return (ConCommand*)pBase;
 
 	return nullptr;
 }
@@ -372,16 +369,16 @@ const ConCommandBase* CConsoleCommands::FindBase(const char* name)
 {
 	SortCommands();
 
-	for (int i = 0; i < m_registeredCommands.numElem(); i++ )
+	for (int i = 0; i < m_registeredCommands.numElem(); i++)
 	{
-		if ( !stricmp( name, m_registeredCommands[i]->GetName() ) )
+		if (!stricmp(name, m_registeredCommands[i]->GetName()))
 			return m_registeredCommands[i];
 	}
 
 	return nullptr;
 }
 
-void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
+void CConsoleCommands::RegisterCommand(ConCommandBase* pCmd)
 {
 	ASSERT(pCmd != nullptr);
 	ASSERT_MSG(FindBase(pCmd->GetName()) == nullptr, "ConCmd/CVar %s already registered", pCmd->GetName());
@@ -389,20 +386,34 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 	ASSERT_MSG(isCvarChar(*pCmd->GetName()), "RegisterCommand - command name has invalid start character!");
 
 	// Already registered
-	if ( pCmd->IsRegistered() )
+	if (pCmd->IsRegistered())
 		return;
 
-	m_registeredCommands.append( pCmd );
+	// pull initial value of ConVar if any
+	if (pCmd->IsConVar())
+	{
+		const int nameHash = StringToHash(pCmd->GetName(), true);
+		auto it = m_cvarValueStore.find(nameHash);
+		if (!it.atEnd())
+		{
+			ConVar* cvar = static_cast<ConVar*>(pCmd);
+			cvar->SetValue(*it);
 
+			pCmd->m_nFlags |= CV_INITVALUE;
+			m_cvarValueStore.remove(it);
+		}
+	}
+
+	m_registeredCommands.append(pCmd);
 	pCmd->m_bIsRegistered = true;
 
-	// alphabetic sort
+	// for alphabetic sort
 	m_commandListDirty = true;
 }
 
-void CConsoleCommands::UnregisterCommand(ConCommandBase *pCmd)
+void CConsoleCommands::UnregisterCommand(ConCommandBase* pCmd)
 {
-	if ( !pCmd->IsRegistered() )
+	if (!pCmd->IsRegistered())
 		return;
 
 	m_registeredCommands.remove(pCmd);
@@ -410,7 +421,7 @@ void CConsoleCommands::UnregisterCommand(ConCommandBase *pCmd)
 
 void CConsoleCommands::DeInit()
 {
-	for(int i = 0; i < m_registeredCommands.numElem(); i++)
+	for (int i = 0; i < m_registeredCommands.numElem(); i++)
 		((ConCommandBase*)m_registeredCommands[i])->m_bIsRegistered = false;
 
 	m_registeredCommands.clear();
@@ -435,20 +446,20 @@ void CConsoleCommands::ForEachSeparated(const char* str, char separator, FUNC fn
 	const char* pFirst = str;
 	const char* pLast = nullptr;
 
-	while(c != 0)
+	while (c != 0)
 	{
 		c = *iterator;
 
-		if(c == separator || c == 0)
+		if (c == separator || c == 0)
 		{
 			pLast = iterator;
 
 			int char_count = pLast - pFirst;
 
-			if(char_count > 0)
+			if (char_count > 0)
 				(this->*fn)(pFirst, char_count, extra);
 
-			pFirst = iterator+1;
+			pFirst = iterator + 1;
 		}
 
 		iterator++;
@@ -460,17 +471,17 @@ void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 	EqString tmpStr(str, len);
 	int commentIdx = tmpStr.Find("//");
 
-	if(commentIdx != -1)
+	if (commentIdx != -1)
 		tmpStr = tmpStr.Left(commentIdx);
 
 	tmpStr = tmpStr.TrimSpaces();
 
-	if (tmpStr.Length() > 0) 
+	if (tmpStr.Length() > 0)
 	{
 		EqString cmdStr(tmpStr.TrimSpaces());
 
 		Array<EqString> cmdArgs(PP_SL);
-		SplitCommandForValidArguments(cmdStr.ToCString(), cmdArgs);
+		SplitCommandForValidArguments(cmdStr, cmdArgs);
 
 		// executing file must be put to the command buffer in proper order
 		if (cmdArgs.numElem() && !cmdArgs[0].CompareCaseIns("exec"))
@@ -480,9 +491,15 @@ void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 			return;
 		}
 
-		strcat(m_currentCommands, EqString::Format("%s;", cmdStr.ToCString()).ToCString());
+		strcat(m_currentCommands, EqString::Format("%s;", cmdStr.ToCString()));
 	}
-		
+
+}
+
+void CConsoleCommands::PushConVarInitialValue(const char* name, const char* value)
+{
+	const int nameHash = StringToHash(name, true);
+	m_cvarValueStore.insert(nameHash, value);
 }
 
 // Executes file
@@ -490,26 +507,26 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 {
 	EqString cfgFileName(pszFilename);
 
-	if( cfgFileName.Path_Extract_Ext() != "cfg" && !g_fileSystem->FileExist(cfgFileName.ToCString()) )
+	if (cfgFileName.Path_Extract_Ext() != "cfg" && !g_fileSystem->FileExist(cfgFileName))
 	{
-		if(!g_fileSystem->FileExist(("cfg/" + cfgFileName).ToCString()))
+		if (!g_fileSystem->FileExist("cfg/" + cfgFileName))
 			cfgFileName = cfgFileName.Path_Strip_Ext() + ".cfg";
 		else
 			cfgFileName = "cfg/" + cfgFileName;
 	}
 
-	if(!g_fileSystem->FileExist(cfgFileName.ToCString()))
+	if (!g_fileSystem->FileExist(cfgFileName))
 		cfgFileName = "cfg/" + cfgFileName;
 
-	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.ToCString(), nullptr, -1);
+	char* buf = g_fileSystem->GetFileBuffer(cfgFileName, nullptr, -1);
 
-	if(!buf)
+	if (!buf)
 	{
-		MsgError("Couldn't execute configuraton file '%s'\n",pszFilename);
+		MsgError("Couldn't execute configuraton file '%s'\n", pszFilename);
 		return;
 	}
 
-	if(strlen(buf) < 1)
+	if (strlen(buf) < 1)
 	{
 		PPFree(buf);
 		return; //Don't parse me about empty file
@@ -548,43 +565,45 @@ void CConsoleCommands::ClearCommandBuffer()
 
 void CConsoleCommands::ResetCounter()
 {
-	m_sameCommandsExecuted = 0; 
+	m_sameCommandsExecuted = 0;
 }
 
 struct execOptions_t
 {
 	cmdFilterFn_t filterFn;
+	Array<EqString>* failedCmds;
 	bool quiet;
 };
 
 void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 {
 	execOptions_t* options = (execOptions_t*)extra;
+	ASSERT(options);
 
-	EqString commandStr(str,len);
-
+	EqString commandStr(str, len);
 	Array<EqString> cmdArgs(PP_SL);
 
 	// split it
-	SplitCommandForValidArguments(commandStr.ToCString(), cmdArgs);
+	SplitCommandForValidArguments(commandStr, cmdArgs);
 
-	if(cmdArgs.numElem() == 0)
+	if (cmdArgs.numElem() == 0)
 		return;
 
-	ConCommandBase *pBase = (ConCommandBase*)FindBase( cmdArgs[0].GetData() );
+	ConCommandBase* pBase = (ConCommandBase*)FindBase(cmdArgs[0].GetData());
 
-	if(!pBase) //Failed?
+	if (!pBase) //Failed?
 	{
-		if(!options->quiet)
+		if (!options->quiet)
 			MsgError("Unknown command or variable '%s'\n", cmdArgs[0].GetData());
 
-		m_failedCommands.append(commandStr);
+		if (options->failedCmds)
+			options->failedCmds->append(commandStr);
 		return;
 	}
 
-	if(options->filterFn)
+	if (options->filterFn)
 	{
-		if(!(options->filterFn)(pBase, cmdArgs))
+		if (!(options->filterFn)(pBase, cmdArgs))
 			return;
 	}
 
@@ -593,18 +612,18 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 
 	if (!IsAllowedToExecute(pBase))
 	{
-		MsgWarning("Cannot access '%s' command/variable\n", pBase->GetName());
+		MsgWarning("ConCommand/ConVar '%s' is%s protected\n", pBase->GetName(), (pBase->GetFlags() & CV_CHEAT) ? " cheat" : "");
 		return;
 	}
 
-	if(pBase->IsConVar())
+	if (pBase->IsConVar())
 	{
 		ConVar* pConVar = (ConVar*)pBase;
 
 		// Primitive executor tries to find optional arguments
-		if(cmdArgs.numElem() == 0)
+		if (cmdArgs.numElem() == 0)
 		{
-			MsgInfo("%s is '%s' (default value is '%s')\n",pConVar->GetName(),pConVar->GetString(), pConVar->GetDefaultValue());
+			MsgInfo("%s is '%s' (default value is '%s')\n", pConVar->GetName(), pConVar->GetString(), pConVar->GetDefaultValue());
 			return;
 		}
 
@@ -619,38 +638,31 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 }
 
 // Executes command buffer
-bool CConsoleCommands::ExecuteCommandBuffer(cmdFilterFn_t filterFn /*= nullptr*/, bool quiet /*= false*/)
+bool CConsoleCommands::ExecuteCommandBuffer(cmdFilterFn_t filterFn, bool quiet, Array<EqString>* failedCmds)
 {
 	SortCommands();
 
-	m_failedCommands.clear();
-
-	if(!stricmp(m_lastExecutedCommands, m_currentCommands))
+	if (!stricmp(m_lastExecutedCommands, m_currentCommands))
 		m_sameCommandsExecuted++;
 
 	strcpy(m_lastExecutedCommands, m_currentCommands);
 
-	if(m_sameCommandsExecuted > MAX_SAME_COMMANDS-1)
+	if (m_sameCommandsExecuted > MAX_SAME_COMMANDS - 1)
 	{
 		MsgError("Stack buffer overflow prevented! Exiting from cycle!\n");
 		ClearCommandBuffer();
 		return false;
 	}
 
-	if(strlen(m_currentCommands) <= 0)
+	if (strlen(m_currentCommands) <= 0)
 		return false;
 
 	execOptions_t options;
 	options.filterFn = filterFn;
+	options.failedCmds = failedCmds;
 	options.quiet = quiet;
 
-	ForEachSeparated(m_currentCommands, CON_SEPARATOR, &CConsoleCommands::SplitOnArgsAndExec,  &options);
+	ForEachSeparated(m_currentCommands, CON_SEPARATOR, &CConsoleCommands::SplitOnArgsAndExec, &options);
 
 	return true;
-}
-
-// returns failed commands
-Array<EqString>& CConsoleCommands::GetFailedCommands()
-{
-	return m_failedCommands;
 }

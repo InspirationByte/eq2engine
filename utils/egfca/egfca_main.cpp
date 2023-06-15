@@ -17,7 +17,7 @@
 class IShaderAPI* g_pShaderAPI = nullptr;
 class IMaterialSystem* materials = nullptr;
 
-DECLARE_CVAR(__cheats,"1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
+DECLARE_CVAR(__cheats, "1", "Enable cheats", CV_PROTECTED | CV_INVISIBLE);
 DECLARE_CVAR_RENAME(c_filename, "filename", "none", "script file name", 0);
 
 bool CompileESCScript(const char* filename)
