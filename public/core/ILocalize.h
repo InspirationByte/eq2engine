@@ -30,7 +30,10 @@ public:
 	virtual void				Init() = 0;
 	virtual void				Shutdown() = 0;
 
-	virtual const char*			GetLanguageName() = 0;
+	virtual void				ReloadLanguageFiles() = 0;
+
+	virtual void				SetLanguageName(const char* name) = 0;
+	virtual const char*			GetLanguageName() const = 0;
 
 	virtual void				AddTokensFile(const char* pszFilePrefix) = 0;
 	virtual void				AddToken(const char* token, const wchar_t* pszTokenString) = 0;

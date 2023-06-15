@@ -276,6 +276,13 @@ public:
 		return it;
 	}
 
+	Iterator insert(const K& key, V&& value)
+	{
+		Iterator it = insert(key);
+		*it.item->value = std::move(value);
+		return it;
+	}
+
 	Iterator insert(const K& key)
 	{
 		return insert(&m_root, nullptr, key);

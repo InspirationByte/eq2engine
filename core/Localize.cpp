@@ -15,7 +15,22 @@
 #include "Localize.h"
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
-DECLARE_CVAR(language, "", "The language of the application/game", CV_UNREGISTERED | CV_ARCHIVE);
+
+static void languageChangeCb(ConVar* pVar, char const* pszOldValue)
+{
+	if (!stricmp(pVar->GetString(), pszOldValue))
+		return;
+
+	if (!g_localizer->IsInitialized())
+		return;
+
+	MsgWarning("Language will be changed upon game restart\n");
+#if 0
+	g_localizer->SetLanguageName(pVar->GetString());
+	g_localizer->ReloadLanguageFiles();
+#endif
+}
+DECLARE_CVAR_CHANGE(language, "", languageChangeCb, "The language of the game", CV_UNREGISTERED | CV_ARCHIVE);
 
 static void LocalizeConvertSymbols(char* str, bool doNewline)
 {
@@ -65,14 +80,14 @@ static void ReplaceStrFmt(EqWString& str)
 	} while (found != -1);
 }
 
-CLocToken::CLocToken(const char* tok, const wchar_t* text)
-	: m_token(tok), m_text(text)
+CLocToken::CLocToken(const char* tok, const wchar_t* text, bool customToken)
+	: m_token(tok), m_text(text), m_customToken(customToken)
 {
 	ReplaceStrFmt(m_text);
 }
 
-CLocToken::CLocToken(const char* tok, const char* text)
-	: m_token(tok), m_text(text)
+CLocToken::CLocToken(const char* tok, const char* text, bool customToken)
+	: m_token(tok), m_text(text), m_customToken(customToken)
 {
 	ReplaceStrFmt(m_text);
 }
@@ -92,7 +107,42 @@ CLocalize::~CLocalize()
 void CLocalize::Init()
 {
 	ConCommandBase::Register(&language);
-	m_language = language.GetString();
+	SetLanguageName(language.GetString());
+
+	m_language = m_language.LowerCase();
+
+	// add the copyright
+	AddToken("INSCOPYRIGHT", L"\xa9 Inspiration Byte 2009-2023");
+	AddTokensFile("core");
+}
+
+void CLocalize::Shutdown()
+{
+	ConCommandBase::Unregister(&language);
+	m_tokens.clear(true);
+}
+
+void CLocalize::ReloadLanguageFiles()
+{
+	// only delete tokens which has been added by the files
+	for (auto it = m_tokens.begin(); !it.atEnd(); ++it)
+	{
+		if (!it.value().m_customToken)
+			m_tokens.remove(it);
+	}
+
+	for (EqString& tokenFilePrefix : m_languageFilePrefixes)
+		ParseLanguageFile(tokenFilePrefix);
+
+	Msg("Language files reloaded: %d\n", m_languageFilePrefixes.numElem());
+}
+
+void CLocalize::SetLanguageName(const char* name)
+{
+	// first need to change localize path
+	g_fileSystem->RemoveSearchPath("$LOCALIZE$");
+
+	m_language = name;
 
 	// try using EqConfig regional settings instead
 	if (m_language.Length() == 0)
@@ -111,37 +161,23 @@ void CLocalize::Init()
 	EqString localizedPath(g_fileSystem->GetCurrentGameDirectory() + _Es("_") + m_language);
 	g_fileSystem->AddSearchPath("$LOCALIZE$", localizedPath.ToCString());
 
-	const int langArg = g_cmdLine->FindArgument("-language");
-	if(langArg != -1)
-	{
-		const char* args = g_cmdLine->GetArgumentsOf(langArg);
-
-		if(strlen(args) > 0)
-			m_language = args;
-		else
-			MsgError("Error: -language must have argument\n");
-	}
-
 	m_language = m_language.LowerCase();
+
 	Msg("Language '%s' set\n", m_language.ToCString());
-
-	// add the copyright
-	AddToken("INSCOPYRIGHT", L"\xa9 Inspiration Byte 2009-2023");
-	AddTokensFile("core");
 }
 
-void CLocalize::Shutdown()
-{
-	ConCommandBase::Unregister(&language);
-	m_tokens.clear(true);
-}
-
-const char* CLocalize::GetLanguageName()
+const char* CLocalize::GetLanguageName() const
 {
 	return m_language.GetData();
 }
 
 void CLocalize::AddTokensFile(const char* pszFilePrefix)
+{
+	m_languageFilePrefixes.append(pszFilePrefix);
+	ParseLanguageFile(pszFilePrefix);
+}
+
+void CLocalize::ParseLanguageFile(const char* pszFilePrefix)
 {
 	// TODO: check for already loaded token files!
 	EqString path = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
@@ -156,13 +192,11 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 	if(!kvSec.unicode)
 		MsgWarning("Localization warning (%s): file is not unicode\n", path.ToCString());
 
-	for(int i = 0; i < kvSec.keys.numElem(); i++)
+	for(const KVSection* key : kvSec.keys)
 	{
-		KVSection* key = kvSec.keys[i];
-
 		if(!stricmp(key->name, "#include" ))
 		{
-			AddTokensFile( KV_GetValueString(key) );
+			ParseLanguageFile( KV_GetValueString(key) );
 			continue;
 		}
 
@@ -173,7 +207,11 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 			continue;
 		}
 
-		AddToken(key->name, KV_GetValueString(key));
+		const char* pszUTF8TokenString = KV_GetValueString(key);
+		LocalizeConvertSymbols((char*)pszUTF8TokenString, true);
+
+		const int hash = StringToHash(key->name, true);
+		m_tokens.insert(hash, CLocToken(key->name, pszUTF8TokenString, false));
 	}
 }
 
@@ -185,18 +223,18 @@ void CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
 	LocalizeConvertSymbols( (char*)pszTokenString, true );
 
 	const int hash = StringToHash(token, true);
-	m_tokens.insert(hash, CLocToken(token, pszTokenString));
+	m_tokens.insert(hash, CLocToken(token, pszTokenString, true));
 }
 
-void CLocalize::AddToken(const char* token, const char* pszTokenString)
+void CLocalize::AddToken(const char* token, const char* pszUTF8TokenString)
 {
-	if(token == nullptr || pszTokenString == nullptr)
+	if(token == nullptr || pszUTF8TokenString == nullptr)
 		return;
 
-	LocalizeConvertSymbols( (char*)pszTokenString, true );
+	LocalizeConvertSymbols( (char*)pszUTF8TokenString, true );
 
 	const int hash = StringToHash(token, true);
-	new(&m_tokens[hash]) CLocToken(token, pszTokenString);
+	m_tokens.insert(hash, CLocToken(token, pszUTF8TokenString, true));
 }
 
 const wchar_t* CLocalize::GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken) const
