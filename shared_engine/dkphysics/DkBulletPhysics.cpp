@@ -1359,9 +1359,12 @@ IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObje
 	pPhysicsObject->m_pPhyObjectPointer->setUserPointer(pPhysicsObject);
 
 	// setup material
-	pPhysicsObject->SetFriction(pPhysMaterial->friction);
-	pPhysicsObject->SetDamping(pPhysMaterial->dampening, pPhysMaterial->dampening);
-	//pPhysicsObject->SetRestitution(pPhysMaterial->restitution);
+	if (pPhysMaterial)
+	{
+		pPhysicsObject->SetFriction(pPhysMaterial->friction);
+		pPhysicsObject->SetDamping(pPhysMaterial->dampening, pPhysMaterial->dampening);
+		//pPhysicsObject->SetRestitution(pPhysMaterial->restitution);
+	}
 
 	float fSize = 1.0f;
 	btVector3 vTemp(0,0,0);
