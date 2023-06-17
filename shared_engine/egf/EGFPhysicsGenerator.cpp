@@ -34,30 +34,6 @@ struct PhyNamedObject
 	physobject_t object;
 };
 
-using IdxTriangle = IVector3D;
-using IdxTriList = Array<IdxTriangle>;
-
-static void AddTriangleWithAllNeighbours(IdxTriList& group, const Triangle& triangle)
-{
-	const IdxTriangle first = { triangle.indices[0], triangle.indices[1], triangle.indices[2] };
-
-	for(int i = 0; i < group.numElem(); i++)
-	{
-		if( first[0] == group[i][0] &&
-			first[1] == group[i][1] &&
-			first[2] == group[i][2])
-		{
-			return;
-		}
-	}
-
-	group.append(first);
-
-	for(int i = 0; i < triangle.vertexCon.numElem(); i++)
-		AddTriangleWithAllNeighbours(group, *triangle.vertexCon[i]);
-}
-
-
 //---------------------------------------------------------------------------------------------------
 
 CEGFPhysicsGenerator::CEGFPhysicsGenerator() : m_srcModel(nullptr), m_physicsParams(nullptr), m_forceGroupSubdivision(false)
@@ -261,7 +237,7 @@ int CEGFPhysicsGenerator::MakeBoneValidParent(int boneId)
 
 // this procedure useful for ragdolls
 // it collects information about neighbour surfaces and joins triangles into subparts
-void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<IdxTriList*>& groups )
+void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups)
 {
 	for(int i = 0 ; i < m_srcModel->groups.numElem(); i++)
 	{
@@ -295,53 +271,12 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Ar
 
 	// build neighbours
 	triangleGraph.Build(indices.ptr(),indices.numElem());
+	triangleGraph.GetIslands(indexGroups);
 
-	Msg("Num. triangles parsed: %d\n", triangles.numElem());
-
-	IdxTriList* startGroup = PPNew IdxTriList(PP_SL);
-	groups.append(startGroup);
-
-	Msg("Building groups...\n");
-
-	// add tri with all of it's neighbour's herarchy
-	AddTriangleWithAllNeighbours(*startGroup, triangles[0]);
-
-	Msg("Processed group 1, %d tris\n", startGroup->numElem());
-
-	for(int i = 1; i < triangles.numElem(); i++)
-	{
-		const Triangle& tri = triangles[i];
-		IdxTriangle triangle = { tri.indices[0], tri.indices[1], tri.indices[2]};
-
-		bool found = false;
-
-		// find this triangle in all previous groups
-		for(int j = 0; j < groups.numElem(); j++)
-		{
-			if(groups[j]->findIndex(triangle) != -1)
-			{
-				found = true;
-				break;
-			}
-		}
-
-		// if not found, create new group and add triangle with all of it's neighbours
-		if(!found)
-		{
-			IdxTriList* newGrp = PPNew IdxTriList(PP_SL);
-			groups.append(newGrp);
-
-			// add tri with all of it's neighbour's herarchy
-			AddTriangleWithAllNeighbours(*newGrp, tri);
-
-			Msg("Processed group %d, %d tris\n", groups.numElem(), newGrp->numElem());
-		}
-	}
-
-	MsgInfo("Detected groups: %d\n", groups.numElem());
+	MsgInfo("Detected %d groups out of %d triangles\n", indexGroups.numElem(), triangles.numElem());
 }
 
-bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<IdxTriList*>& indexGroups )
+bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups )
 {
 	// setup pose bones
 	Array<RagdollJoint> ragJoints(PP_SL);
@@ -368,7 +303,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 
 	for(int i = 0; i < indexGroups.numElem(); i++)
 	{
-		const IdxTriList& list = *indexGroups[i];
+		const IdxIsland& list = indexGroups[i];
 		const int firsttri_indx0 = list[0][0];
 
 		int bone_index = -1;
@@ -407,35 +342,36 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 	{
 		Array<int> bone_geom_indices(PP_SL);
 
-		Vector3D bboxMins(F_INFINITY);
-		Vector3D bboxMaxs(-F_INFINITY);
+		BoundingBox localBox;
 
 		// add indices of attached groups and also build bounding box
 		for(int j = 0; j < indexGroups.numElem(); j++)
 		{
-			const IdxTriList& list = *indexGroups[j];
+			const IdxIsland& list = indexGroups[j];
 
-			if(bone_group_indices[j] == i)
+			if (bone_group_indices[j] != i)
+				continue;
+
+			for(int k = 0; k < list.numElem(); k++)
 			{
-				for(int k = 0; k < indexGroups[j]->numElem(); k++)
-				{
-					bone_geom_indices.append(list[k][0]);
-					bone_geom_indices.append(list[k][1]);
-					bone_geom_indices.append(list[k][2]);
+				bone_geom_indices.append(list[k][0]);
+				bone_geom_indices.append(list[k][1]);
+				bone_geom_indices.append(list[k][2]);
 
-					m_bbox.AddVertex(vertices[list[k][0]].position);
-					m_bbox.AddVertex(vertices[list[k][1]].position);
-					m_bbox.AddVertex(vertices[list[k][2]].position);
-				}
+				localBox.AddVertex(vertices[list[k][0]].position);
+				localBox.AddVertex(vertices[list[k][1]].position);
+				localBox.AddVertex(vertices[list[k][2]].position);				
 			}
 		}
+
+		m_bbox.Merge(localBox);
 
 		// we should have at least more than 3 triangles for convex shapes
 		if( bone_geom_indices.numElem() <= 9 )
 			continue;
 
 		// compute object center
-		Vector3D object_center = (bboxMins+bboxMaxs)*0.5f;
+		const Vector3D object_center = localBox.GetCenter();
 				
 		// transform objects to origin
 		Array<int> processed_index(PP_SL);
@@ -568,7 +504,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 	return true;
 }
 
-bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<IdxTriList*>& indexGroups, bool bCompound )
+bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups, bool bCompound )
 {
 	m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
 
@@ -598,13 +534,14 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 
 		for(int i = 0; i < indexGroups.numElem(); i++)
 		{
+			IdxIsland& list = indexGroups[i];
 			Array<int> tmpIndices(PP_SL);
 
-			for(int j = 0; j < indexGroups[i]->numElem(); j++)
+			for(int j = 0; j < list.numElem(); j++)
 			{
-				tmpIndices.append( indexGroups[i]->ptr()[j][0] );
-				tmpIndices.append( indexGroups[i]->ptr()[j][1] );
-				tmpIndices.append( indexGroups[i]->ptr()[j][2] );
+				tmpIndices.append( list[j][0] );
+				tmpIndices.append( list[j][1] );
+				tmpIndices.append( list[j][2] );
 			}
 
 			int shapeID = AddShape(vertices, tmpIndices);
@@ -657,13 +594,15 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 
 		for(int i = 0; i < indexGroups.numElem(); i++)
 		{
+			IdxIsland& list = indexGroups[i];
+
 			Array<int> tmpIndices(PP_SL);
 
-			for(int j = 0; j < indexGroups[i]->numElem(); j++)
+			for(int j = 0; j < list.numElem(); j++)
 			{
-				tmpIndices.append( indexGroups[i]->ptr()[j][0] );
-				tmpIndices.append( indexGroups[i]->ptr()[j][1] );
-				tmpIndices.append( indexGroups[i]->ptr()[j][2] );
+				tmpIndices.append( list[j][0] );
+				tmpIndices.append( list[j][1] );
+				tmpIndices.append( list[j][2] );
 			}
 
 			int shapeID = AddShape( vertices, tmpIndices, nShapeType );
@@ -773,7 +712,7 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, const KVSectio
 	if( m_forceGroupSubdivision || (m_srcModel->bones.numElem() > 1)  )
 	{
 		// generate index groups
-		Array<IdxTriList*> indexGroups(PP_SL);
+		Array<IdxIsland> indexGroups(PP_SL);
 		SubdivideModelParts(vertices, indices, indexGroups);
 
 		// generate ragdoll
@@ -785,11 +724,6 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, const KVSectio
 		{
 			CreateCompoundOrSeparateObjects( vertices, indices, indexGroups, bCompound);
 		}
-
-		for(int i = 0; i < indexGroups.numElem(); i++)
-			delete indexGroups[i];
-
-		indexGroups.clear();
 	}
 	else
 	{

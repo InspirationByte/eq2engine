@@ -12,8 +12,10 @@ struct KVSection;
 
 struct PhyNamedObject;
 struct RagdollJoint;
+
+// same as AdjacentTriangles::ITriangle & AdjacentTriangles::Island
 using IdxTriangle = IVector3D;
-using IdxTriList = Array<IdxTriangle>;
+using IdxIsland = Array<IdxTriangle>;
 
 namespace SharedModel
 {
@@ -41,10 +43,10 @@ protected:
 
 	int			AddShape(Array<SharedModel::dsmvertex_t> &vertices, Array<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
 
-	void		SubdivideModelParts( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxTriList*>& groups );
+	void		SubdivideModelParts( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups);
 
-	bool		CreateRagdollObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxTriList*>& indexGroups );
-	bool		CreateCompoundOrSeparateObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxTriList*>& indexGroups, bool bCompound );
+	bool		CreateRagdollObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups );
+	bool		CreateCompoundOrSeparateObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups, bool bCompound );
 	bool		CreateSingleObject( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices );
 
 	// data
