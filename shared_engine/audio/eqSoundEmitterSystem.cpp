@@ -205,6 +205,10 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 
 		return CHAN_INVALID;
 	}
+#ifndef _RETAIL
+	if(m_isolateSound && script != m_isolateSound)
+		return CHAN_INVALID;
+#endif
 
 	if(script->samples.numElem() == 0 && (ep->flags & EMITSOUND_FLAG_FORCE_CACHED))
 	{
@@ -241,16 +245,12 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 		ASSERT_FAIL("Invalid value for releaseOnStop set\n");
 	}
 	
-
 	const int channelType = (ep->channelType != CHAN_INVALID) ? ep->channelType : script->channelType;
 
 	SoundEmitterData tmpEmit;
 	SoundEmitterData* edata = &tmpEmit;
 	if(soundingObj)
 	{
-		// stop the sound if it has been already started
-		soundingObj->StopEmitter(objUniqueId, true);
-
 		const int usedSounds = soundingObj->GetChannelSoundCount(channelType);
 
 		// if entity reached the maximum sound count for self
@@ -264,7 +264,6 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 			m_soundingObjects.insert(soundingObj);
 		}
 	}
-
 
 	// fill in start params
 	edata->script = script;

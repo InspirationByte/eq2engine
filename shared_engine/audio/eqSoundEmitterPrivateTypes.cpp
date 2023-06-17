@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Sound emitter system
@@ -592,7 +592,7 @@ void SoundEmitterData::SetInputValue(int inputNameHash, int arrayIdx, float valu
 
 	SoundNodeInput& in = *dataIt;
 	in.values[arrayIdx] = value;
-	Atomic::Store(nodesNeedUpdate, 1);
+	Atomic::Exchange(nodesNeedUpdate, 1);
 }
 
 void SoundEmitterData::SetInputValue(uint8 inputId, float value)
@@ -606,7 +606,7 @@ void SoundEmitterData::SetInputValue(uint8 inputId, float value)
 
 	SoundNodeInput& in = *dataIt;
 	in.values[arrayIdx] = value;
-	Atomic::Store(nodesNeedUpdate, 1);
+	Atomic::Exchange(nodesNeedUpdate, 1);
 }
 
 float SoundEmitterData::GetInputValue(int nodeId, int arrayIdx)
@@ -804,7 +804,7 @@ void SoundEmitterData::UpdateNodes()
 
 	PROF_EVENT("Emitter Data Nodes Eval");
 
-	Atomic::Store(nodesNeedUpdate, 0);
+	Atomic::Exchange(nodesNeedUpdate, 0);
 
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 	const Array<SoundSplineDesc>& splineDescs = script->splineDescs;
