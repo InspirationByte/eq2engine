@@ -123,6 +123,9 @@ public:
 		QuickSwap(m_pListPtr, other);
 		m_nSize = otherNumElem;
 	}
+
+	const PPSourceLine	getSL() const { return m_sl; }
+
 protected:
 	const PPSourceLine	m_sl;
 	T* 					m_pListPtr{ nullptr };
@@ -183,6 +186,8 @@ public:
 		for (int i = 0; i < SIZE; ++i)
 			QuickSwap(getData()[i], getData()[i]);
 	}
+
+	const PPSourceLine	getSL() const { return PPSourceLine::Empty(); }
 protected:
 	ubyte			m_data[SIZE * sizeof(T)];
 };
@@ -575,7 +580,10 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newnum, bool shrinkResize)
 	// initialize new elements
 	T* listPtr = m_storage.getData();
 	for (int i = m_nNumElem; i < newnum; ++i)
-		new(&listPtr[i]) T();
+	{
+		PPSLValueCtor<T>* value = (PPSLValueCtor<T>*)(&listPtr[i]);
+		new(value) PPSLValueCtor<T>(m_storage.getSL());
+	}
 
 	m_nNumElem = newnum;
 }
@@ -737,7 +745,10 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 
 	T& newItem = listPtr[m_nNumElem];
 	m_nNumElem++;
-	new(&newItem) T();
+	
+	PPSLValueCtor<T>* value = (PPSLValueCtor<T>*)(&newItem);
+	new(value) PPSLValueCtor<T>(m_storage.getSL());
+
 	return newItem;
 }
 
@@ -884,9 +895,11 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 	}
 
 	m_nNumElem++;
-	new(&listPtr[index]) T();
 
-	return listPtr[index];
+	PPSLValueCtor<T>* value = (PPSLValueCtor<T>*)(&listPtr[i]);
+	new(value) PPSLValueCtor<T>(m_storage.getSL());
+
+	return listPtr[i];
 }
 
 // -----------------------------------------------------------------
