@@ -10,6 +10,9 @@
 namespace AdjacentTriangles
 {
 
+using ITriangle = IVector3D;
+using Island = Array<ITriangle>;
+
 // edge
 struct Edge
 {
@@ -32,7 +35,6 @@ struct Triangle
 	Triangle*			edgeCon[3]{ nullptr };
 	int					indices[3];
 
-
 	bool				GetValidEdge(const Edge& edge, int& edge_idx, bool ignoreOrder = true) const;
 	int					GetOppositeVertexIndex(int edge_idx) const;
 	bool				Compare(int v1, int v2, int v3) const;
@@ -47,11 +49,11 @@ struct Triangle
 class CAdjacentTriangleGraph
 {
 public:
-							CAdjacentTriangleGraph() {}
+	CAdjacentTriangleGraph() {}
 
-							CAdjacentTriangleGraph( const Array<int>& indices );
-							CAdjacentTriangleGraph( const int* indices, int num_indices );
-							CAdjacentTriangleGraph(	const ubyte* input_verts, int vert_stride, int vert_ofs, const int* indices, int num_indices);
+	CAdjacentTriangleGraph( const Array<int>& indices );
+	CAdjacentTriangleGraph( const int* indices, int num_indices );
+	CAdjacentTriangleGraph(	const ubyte* input_verts, int vert_stride, int vert_ofs, const int* indices, int num_indices);
 
 	void					Clear();
 
@@ -71,10 +73,12 @@ public:
 
 	int						FindTriangle(int v1, int v2, int v3, bool ignore_order) const;
 
-	void					GenOptimizedTriangleList( Array<int>& output );
-	void					GenOptimizedStrips( Array<int>& output, bool usePrimRestart = false );
+	void					GetIslands(Array<Island>& islands) const;
 
-	const Array<Triangle>&	GetTriangles() {return m_triangleList;}
+	void					GenOptimizedTriangleList( Array<int>& output ) const;
+	void					GenOptimizedStrips(Array<int>& output, bool usePrimRestart = false) const;
+
+	const Array<Triangle>&	GetTriangles() const { return m_triangleList; }
 
 protected:
 

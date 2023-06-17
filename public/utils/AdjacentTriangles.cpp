@@ -116,120 +116,66 @@ int CAdjacentTriangleGraph::FindTriangle(int v1, int v2, int v3, bool ignore_ord
 
 //----------------------------------------------------------------------------------------------
 
-struct ITriangle
-{
-	int idxs[3];
-};
-
-typedef Array<ITriangle> Island;
-
-// compares triangle indices
-static bool operator==(const ITriangle& tri1, const ITriangle& tri2)
-{
-	return	(tri1.idxs[0] == tri2.idxs[0]) &&
-			(tri1.idxs[1] == tri2.idxs[1]) && 
-			(tri1.idxs[2] == tri2.idxs[2]);
-}
-
-// searches trinanle, returns index
-static int FindTriInList(const Array<ITriangle>& tris, const ITriangle& tofind)
-{
-	for(int i = 0; i < tris.numElem(); i++)
-	{
-		if(tris[i] == tofind)
-			return i;
-	}
-
-	return -1;
-}
-
 // adds triangle to index island recursively
-static void AddTriangleWithAllNeighbours_r(Island& island, const Triangle& triangle)
+static void FloodFillIsland(Island& destIsland, const Triangle& startTriangle, Set<const Triangle*>& visited)
 {
-	ITriangle first = {triangle.indices[0], triangle.indices[1], triangle.indices[2]};
+	Array<const Triangle*> openSet(PP_SL);
+	openSet.append(&startTriangle);
 
-	bool discard = false;
-	for(int i = 0; i < island.numElem(); i++)
+	while (openSet.numElem())
 	{
-		if(first == island[i])
+		const Triangle* tri = openSet.popBack();
+		destIsland.append({ tri->indices[0], tri->indices[1], tri->indices[2] });
+
+		for (Triangle* con : tri->vertexCon)
 		{
-			discard = true;
-			break;
+			if (!visited.find(con).atEnd())
+				continue;
+			openSet.append(con);
+			visited.insert(con);
 		}
 	}
-
-	// don't add this triangle again
-	if(!discard)
-	{
-		island.append( first );
-
-		// recurse to it's neighbours
-		for(int i = 0; i < triangle.vertexCon.numElem(); i++)
-			AddTriangleWithAllNeighbours_r(island, *triangle.vertexCon[i]);
-	}
 }
 
-void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output )
+void CAdjacentTriangleGraph::GetIslands(Array<Island>& islands) const
 {
 	// sort triangles to new islands
-	Array<Island*> islands(PP_SL);
+	Set<const Triangle*> visited(PP_SL);
 
-	Island* startIsland = PPNew Island(PP_SL);
-	islands.append(startIsland);
-
-	// then using newly generated neighbour triangles divide on parts
-	// add tri with all of it's neighbour's herarchy
-	AddTriangleWithAllNeighbours_r(*startIsland, m_triangleList[0]);
-
-	for(int i = 1; i < m_triangleList.numElem(); i++)
+	for (int i = 0; i < m_triangleList.numElem(); i++)
 	{
 		const Triangle& tri = m_triangleList[i];
-		const ITriangle triangle{ tri.indices[0], tri.indices[1], tri.indices[2] };
 
-		bool found = false;
+		if (!visited.find(&tri).atEnd())
+			continue;
 
-		// find this triangle in all previous islands
-		// TODO: use hash
-		for(int j = 0; j < islands.numElem(); j++)
-		{
-			if(FindTriInList(*islands[j], triangle) != -1)
-			{
-				found = true;
-				break;
-			}
-		}
-
-		// if not found, create new island and add triangle with all of it's neighbours
-		if(!found)
-		{
-			Island* island = PPNew Island(PP_SL);
-			islands.append(island);
-
-			// add tri with all of it's neighbour's herarchy
-			AddTriangleWithAllNeighbours_r(*island, tri);
-		}
+		Island& island = islands.append();
+		FloodFillIsland(island, tri, visited);
 	}
+}
+
+void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output ) const
+{
+	// sort triangles to new islands
+	Array<Island> islands(PP_SL);
+	GetIslands(islands);
 
 	// next we need to join islands
 	for(int i = 0; i < islands.numElem(); i++)
 	{
-		output.resize(output.numElem() + islands[i]->numElem()*3);
+		const Island& island = islands[i];
+		output.resize(output.numElem() + island.numElem()*3);
 
-		for(int j = 0; j < islands[i]->numElem(); j++)
+		for(const ITriangle& tri : island)
 		{
-			const Island& island = *islands[i];
-			output.append(island[j].idxs[0]);
-			output.append(island[j].idxs[1]);
-			output.append(island[j].idxs[2]);
+			output.append(tri[0]);
+			output.append(tri[1]);
+			output.append(tri[2]);
 		}
-
-		delete islands[i];
 	}
-
-	// done
 }
 
-void CAdjacentTriangleGraph::GenOptimizedStrips( Array<int>& output, bool usePrimRestart )
+void CAdjacentTriangleGraph::GenOptimizedStrips( Array<int>& output, bool usePrimRestart ) const
 {
 	ASSERT_FAIL("CAdjacentTriangleGraph::GenOptimizedStrips not implemented");
 }
