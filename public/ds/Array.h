@@ -581,8 +581,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newnum, bool shrinkResize)
 	T* listPtr = m_storage.getData();
 	for (int i = m_nNumElem; i < newnum; ++i)
 	{
-		PPSLValueCtor<T>* value = (PPSLValueCtor<T>*)(&listPtr[i]);
-		new(value) PPSLValueCtor<T>(m_storage.getSL());
+		PPSLPlacementNew<T>(&listPtr[i], m_storage.getSL());
 	}
 
 	m_nNumElem = newnum;
@@ -746,8 +745,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 	T& newItem = listPtr[m_nNumElem];
 	m_nNumElem++;
 	
-	PPSLValueCtor<T>* value = (PPSLValueCtor<T>*)(&newItem);
-	new(value) PPSLValueCtor<T>(m_storage.getSL());
+	PPSLPlacementNew<T>(&newItem, m_storage.getSL());
 
 	return newItem;
 }
@@ -896,10 +894,9 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 
 	m_nNumElem++;
 
-	PPSLValueCtor<T>* value = (PPSLValueCtor<T>*)(&listPtr[i]);
-	new(value) PPSLValueCtor<T>(m_storage.getSL());
+	PPSLPlacementNew<T>(&listPtr[index], m_storage.getSL());
 
-	return listPtr[i];
+	return listPtr[index];
 }
 
 // -----------------------------------------------------------------

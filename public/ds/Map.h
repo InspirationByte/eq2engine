@@ -537,9 +537,7 @@ private:
 			Item* item = &iv->i;
 
 			new (item) Item(parent, key);
-
-			PPSLValueCtor<V>* value = (PPSLValueCtor<V>*)(item + 1);
-			new (value) PPSLValueCtor<V>(m_pool.getSL());
+			PPSLPlacementNew<V>(item + 1, m_pool.getSL());
 
 			*cell = item;
 			++m_size;

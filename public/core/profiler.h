@@ -27,6 +27,10 @@ struct PPSLValueCtor
 	PPSLValueCtor<T>(const PPSourceLine& sl) : x() {}
 };
 
+// Source-line placement new wrapper for default constructor
+template<typename T>
+void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueCtor<T>(sl); }
+
 #define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
 
 #ifdef PROFILE_ENABLE
