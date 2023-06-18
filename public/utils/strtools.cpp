@@ -123,36 +123,6 @@ void FixSlashes( char* str )
     }
 }
 
-void StripFileName(char* path)
-{
-	ASSERT(path);
-	int	length;
-
-	length = strlen(path) - 1;
-	while(length > 0 && path[length] != '/' && path[length] != '\\')
-		length--;
-
-	path[length] = 0;
-}
-
-void ExtractFileBase(const char* path, char* dest)
-{
-	ASSERT(path);
-	ASSERT(dest);
-	const char     *src;
-	src = path + strlen(path) - 1;
-
-	// search back for first slashes
-	while(src != path && *(src - 1) != '/' && *(src - 1) != '\\')
-		src--;
-
-	while(*src && *src != '.')
-	{
-		*dest++ = *src++;
-	}
-	*dest = 0;
-}
-
 //------------------------------------------
 // Converts string to 24-bit integer hash
 //------------------------------------------
@@ -171,53 +141,6 @@ int StringToHash( const char *str, bool caseIns )
 	}
 
 	return hash;
-}
-
-
-char* xstreatwhite(char* str)
-{
-	ASSERT(str);
-	char c = 0;
-
-// skip whitespace
-skipwhite:
-
-	while ( (c = *str) <= ' ')
-	{
-		if (c == 0)
-			return 0;                    // end of file;
-		str++;
-	}
-
-// skip // comments
-	if (c=='/' && str[1] == '/')
-	{
-		while (*str && *str != '\n')
-			str++;
-		goto skipwhite;
-	}
-
-// skip c-style comments
-	if (c=='/' && str[1] == '*' )
-	{
-		// Skip "/*"
-		str += 2;
-
-		while ( *str  )
-		{
-			if ( *str == '*' &&
-				 str[1] == '/' )
-			{
-				str += 2;
-				break;
-			}
-
-			str++;
-		}
-
-		goto skipwhite;
-	}
-	return str;
 }
 
 //------------------------------------------

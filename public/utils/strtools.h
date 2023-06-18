@@ -64,6 +64,30 @@ typedef va_list				__va_list;
 
 #endif // ANDROID
 
+//------------------------------------------------------
+// String hash
+//------------------------------------------------------
+
+template<int idx>
+constexpr int _StringToHashConst(const char* str, int hash)
+{
+	return _StringToHashConst<idx - 1>(str + 1, (((hash << 5) | (hash >> 19)) + int(*str)) & StringHashMask);
+}
+
+template<>
+constexpr int _StringToHashConst<-1>(const char* str, int hash) { return hash; }	// terminator
+
+template <auto V>
+static constexpr auto force_consteval = V;
+#define		StringToHashConst(x) force_consteval<(_StringToHashConst<sizeof(x) - 2>(x, sizeof(x) - 1))>
+
+// generates string hash
+int			StringToHash(const char* str, bool caseIns = false);
+
+//------------------------------------------------------
+// Path utils
+//------------------------------------------------------
+
 // combines paths
 void		CombinePathN(EqString& outPath, int num, ...);
 
@@ -76,31 +100,24 @@ void		CombinePath(EqString& outPath, const Args&... args)
 // fixes slashes in the directory name
 void		FixSlashes( char* str );
 
-// strips file name from path
-void		StripFileName(char* path);
-
-void		ExtractFileBase(const char* path, char* dest);
-
-// generates string hash
-int			StringToHash( const char *str, bool caseIns = false );
+//------------------------------------------------------
+// General string utilities
+//------------------------------------------------------
 
 // Split string by multiple separators
-void		xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, Array<EqString> &outStrings );
+void		xstrsplit2(const char* pString, const char** pSeparators, int nSeparators, Array<EqString>& outStrings);
 
 // Split string by one separator
-void		xstrsplit( const char* pString, const char* pSeparator, Array<EqString> &outStrings );
+void		xstrsplit(const char* pString, const char* pSeparator, Array<EqString>& outStrings);
 
-char const* xstristr( char const* pStr, char const* pSearch );
-char*		xstristr( char* pStr, char const* pSearch );
-
-// Strips string for tabs and spaces
-char*		xstreatwhite(char* str);
-
-// fast duplicate c string
-char*		xstrdup(const char*  s);
+char const* xstristr(char const* pStr, char const* pSearch);
+char*		xstristr(char* pStr, char const* pSearch);
 
 // is space?
 bool		xisspace(int c);
+
+// fast duplicate c string
+char*		xstrdup(const char*  s);
 
 // converts string to lower case
 char*		xstrupr(char* s1);
@@ -114,36 +131,19 @@ wchar_t*	xwcsupr(wchar_t* str);
 //------------------------------------------------------
 
 // Compares string
-int xwcscmp ( const wchar_t *s1, const wchar_t *s2);
+int			xwcscmp ( const wchar_t *s1, const wchar_t *s2);
 
 // compares two strings case-insensetive
-int xwcsicmp( const wchar_t* s1, const wchar_t* s2 );
+int			xwcsicmp( const wchar_t* s1, const wchar_t* s2 );
 
 // finds substring in string case insensetive
-wchar_t* xwcsistr( wchar_t* pStr, wchar_t const* pSearch );
+wchar_t*	xwcsistr( wchar_t* pStr, wchar_t const* pSearch );
 
 // finds substring in string case insensetive
 wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
 
-//
-// StringToHash constexpr version
-//
-template<int idx>
-constexpr int _StringToHashConst(const char* str, int hash)
-{
-	return _StringToHashConst<idx-1>(str+1, (((hash << 5) | (hash >> 19)) + int(*str)) & StringHashMask);
-}
-
-template<>
-constexpr int _StringToHashConst<-1>(const char* str, int hash) { return hash; }	// terminator
-
-template <auto V>
-static constexpr auto force_consteval = V;
-
-#define StringToHashConst(x) force_consteval<(_StringToHashConst<sizeof(x) - 2>(x, sizeof(x) - 1))>
-
 //------------------------------------------------------
-// string conversion
+// string encoding conversion
 //------------------------------------------------------
 
 namespace EqStringConv
