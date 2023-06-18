@@ -621,10 +621,14 @@ void CEqStudioGeom::LoadMaterials()
 			if (m_materials[i])
 				continue;
 
-			m_materials[i] = materials->GetMaterial(studio->pMaterial(i)->materialname);
+			m_materials[i] = g_studioModelCache->GetErrorMaterial();
 
-			if(m_materials[i]->IsError())
-				MsgError("Couldn't load model material '%s'\n", studio->pMaterial(i)->materialname, m_name.ToCString());
+			const char* materialName = studio->pMaterial(i)->materialname;
+			if (*materialName)
+				MsgError("Couldn't load model material '%s'\n", materialName, m_name.ToCString());
+			else
+				MsgError("Model %s has empty material name\n", m_name.ToCString());
+
 			bError = true;
 		}
 	}

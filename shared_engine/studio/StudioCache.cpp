@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "utils/KeyValues.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 
@@ -26,6 +27,28 @@ DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
 	{
 		CEqStudioGeom* geom = s_ModelCache.GetModel(i);
 		Msg("  %d: %s\n", i, geom->GetName());
+	}
+}
+
+IMaterialPtr CStudioCache::GetErrorMaterial()
+{
+	InitErrorMaterial();
+
+	return m_errorMaterial;
+}
+
+void CStudioCache::InitErrorMaterial()
+{
+	if (!m_errorMaterial)
+	{
+		KVSection overdrawParams;
+		overdrawParams.SetName("Skinned"); // set shader 'BaseUnlit'
+		overdrawParams.SetKey("BaseTexture", "error");
+
+		IMaterialPtr pMaterial = materials->CreateMaterial("_studioErrorMaterial", &overdrawParams);
+		pMaterial->LoadShaderAndTextures();
+
+		m_errorMaterial = pMaterial;
 	}
 }
 
@@ -149,6 +172,7 @@ void CStudioCache::ReleaseCache()
 
 	g_pShaderAPI->DestroyVertexFormat(m_egfFormat);
 	m_egfFormat = nullptr;
+	m_errorMaterial = nullptr;
 }
 
 IVertexFormat* CStudioCache::GetEGFVertexFormat() const

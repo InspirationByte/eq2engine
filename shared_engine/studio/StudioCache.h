@@ -37,14 +37,18 @@ public:
 	void					ReleaseCache();
 
 	IVertexFormat*			GetEGFVertexFormat() const;
+	IMaterialPtr			GetErrorMaterial();
 
 	void					PrintLoadedModels() const;
 
 private:
+	void					InitErrorMaterial();
+
 	Map<int, int>			m_cacheIndex{ PP_SL };
 	Array<CEqStudioGeom*>	m_cachedList{ PP_SL };
 
 	IVertexFormat*			m_egfFormat{ nullptr };
+	IMaterialPtr			m_errorMaterial;
 };
 
 // model cache manager
