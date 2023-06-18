@@ -19,7 +19,7 @@ enum ESearchPath
     SP_MOD	= (1 << 3),
 };
 
-using IFile = IVirtualStream; // pretty same
+using IFile = IVirtualStream; // TODO: wrap around RefCounted instead
 struct DKMODULE; // module structure
 struct DKFINDDATA;
 

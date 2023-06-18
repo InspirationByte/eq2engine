@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: EGF Model cache
@@ -9,6 +9,8 @@
 
 class CEqStudioGeom;
 class IVertexFormat;
+class IMaterial;
+using IMaterialPtr = CRefPtr<IMaterial>;
 
 static constexpr const int CACHE_INVALID_MODEL = -1;
 
