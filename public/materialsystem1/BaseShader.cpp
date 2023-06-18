@@ -116,6 +116,7 @@ void CBaseShader::InitParams()
 	SHADER_PARAM_FLAG(NoDraw,			m_flags, MATERIAL_FLAG_INVISIBLE, false)
 	SHADER_PARAM_FLAG(ReceiveShadows,	m_flags, MATERIAL_FLAG_RECEIVESHADOWS, true)
 	SHADER_PARAM_FLAG(CastShadows,		m_flags, MATERIAL_FLAG_CASTSHADOWS, true)
+	SHADER_PARAM_FLAG(Wireframe,		m_flags, MATERIAL_FLAG_WIREFRAME, false)
 
 	SHADER_PARAM_FLAG(Decal,			m_flags, MATERIAL_FLAG_DECAL, false)
 	SHADER_PARAM_FLAG(NoCull,			m_flags, MATERIAL_FLAG_NOCULL, false)
@@ -302,13 +303,13 @@ void CBaseShader::ParamSetup_RasterState()
 	if(config.wireframeMode && config.editormode)
 		cull_mode = CULL_NONE;
 
-	materials->SetRasterizerStates(cull_mode, (ER_FillMode)config.wireframeMode, m_msaaEnabled, false, m_polyOffset);
+	materials->SetRasterizerStates(cull_mode, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
 void CBaseShader::ParamSetup_RasterState_NoCull()
 {
 	const matsystem_render_config_t& config = materials->GetConfiguration();
-	materials->SetRasterizerStates(CULL_NONE, (ER_FillMode)config.wireframeMode, m_msaaEnabled, false, m_polyOffset);
+	materials->SetRasterizerStates(CULL_NONE, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
 void CBaseShader::ParamSetup_Transform()

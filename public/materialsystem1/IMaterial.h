@@ -82,18 +82,19 @@ enum EMaterialFlags
 	MATERIAL_FLAG_CASTSHADOWS		= (1 << 1),		// this material occludes light
 	MATERIAL_FLAG_INVISIBLE			= (1 << 2),		// invisible in standart scene mode. Shadows can be casted if MATERIAL_FLAG_CASTSHADOWS set
 	MATERIAL_FLAG_NOCULL			= (1 << 3),		// no culling (two sided)
+	MATERIAL_FLAG_WIREFRAME			= (1 << 4),
 
-	MATERIAL_FLAG_SKINNED			= (1 << 4),		// this material can be applied on skinned mesh, using vertex shaders
-	MATERIAL_FLAG_VERTEXBLEND		= (1 << 5),		// this material is uses vertex blending
+	MATERIAL_FLAG_SKINNED			= (1 << 5),		// this material can be applied on skinned mesh, using vertex shaders
+	MATERIAL_FLAG_VERTEXBLEND		= (1 << 6),		// this material is uses vertex blending
 
-	MATERIAL_FLAG_ALPHATESTED		= (1 << 6),		// has alphatesting
-	MATERIAL_FLAG_TRANSPARENT		= (1 << 7),		// has transparency
+	MATERIAL_FLAG_ALPHATESTED		= (1 << 7),		// has alphatesting
+	MATERIAL_FLAG_TRANSPARENT		= (1 << 8),		// has transparency
 
-	MATERIAL_FLAG_SKY				= (1 << 8),	// used for skybox
-	MATERIAL_FLAG_DECAL				= (1 << 9),	// is decal shader (also enables polygon offset feature)
-	MATERIAL_FLAG_WATER				= (1 << 10),	// this is water material
+	MATERIAL_FLAG_SKY				= (1 << 9),	// used for skybox
+	MATERIAL_FLAG_DECAL				= (1 << 10),	// is decal shader (also enables polygon offset feature)
+	MATERIAL_FLAG_WATER				= (1 << 11),	// this is water material
 
-	MATERIAL_FLAG_TEXTRANSITION		= (1 << 11),	// transits textures to create painting effect (vertex transition)
+	MATERIAL_FLAG_TEXTRANSITION		= (1 << 12),	// transits textures to create painting effect (vertex transition)
 };
 
 enum EMaterialLoadingState
