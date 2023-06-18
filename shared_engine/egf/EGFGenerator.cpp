@@ -280,25 +280,24 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 	if (!LoadFBX(models, shapeDatas, modelPath))
 		return;
 
-	//pKeyBase->FindSection(models[i]->name)
-
 	for (int i = 0; i < pKeyBase->keys.numElem(); ++i)
 	{
 		const KVSection* modelSec = pKeyBase->keys[i];
+
 		const char* modelName = modelSec->name;
-		const int foundIdx = models.findIndex([modelName](dsmmodel_t* model) {
-			return !stricmp(model->name, modelName);
+		const char* refName = KV_GetValueString(modelSec);
+
+		const int foundIdx = models.findIndex([refName](dsmmodel_t* model) {
+			return !stricmp(model->name, refName);
 		});
 
 		if (foundIdx == -1)
 			continue;
 
-		const char* refName = KV_GetValueString(modelSec);
-
 		GenModel_t mod;
 		mod.model = CRefPtr(models[foundIdx]);
 		mod.shapeData = CRefPtr(shapeDatas[foundIdx]);
-		mod.name = refName;
+		mod.name = modelName;
 
 		// DRVSYN: vertex order for damaged model
 		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeby"))
@@ -321,13 +320,13 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		// Start a new LOD. LOD has a name of reference
 		GenLODList_t& lodModel = m_modelLodLists.append();
 		lodModel.lodmodels.append(newModelIndex);
-		lodModel.name = refName;
+		lodModel.name = modelName;
 
 		const int nVerts = GetTotalVertsOfDSM(mod.model);
 
-		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n",
+		Msg("Adding reference %s as '%s' with %d triangles (in %d groups), %d bones\n",
 			mod.model->name,
-			refName,
+			modelName,
 			nVerts / 3,
 			mod.model->groups.numElem(),
 			mod.model->bones.numElem());
