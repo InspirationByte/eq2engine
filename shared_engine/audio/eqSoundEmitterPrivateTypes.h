@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Sound emitter system
@@ -277,8 +277,6 @@ struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 		UPDATE_SAMPLE_VOLUME = (1 << 31)
 	};
 
-	SoundEmitterData();
-
 	IEqAudioSource::Params		nodeParams;
 	IEqAudioSource::Params		virtualParams;
 	float						sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
@@ -286,6 +284,8 @@ struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 	float						params[SOUND_PARAM_COUNT];
 
 	Map<int, SoundNodeInput>	inputs{ PP_SL };
+
+	SoundEmitterData*			delNext{ nullptr };
 
 	CRefPtr<IEqAudioSource>		soundSource;				// NULL when virtual 
 	SoundScriptDesc*			script{ nullptr };			// sound script which used to start this sound
@@ -299,8 +299,9 @@ struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 	float						stopLoopTime{ 0.0f };
 	float						stopLoopRemainingTime{ 0.0f };
 	int							sampleId{ -1 };				// when randomSample and sampleId == -1, it's random
-
 	int							nodesNeedUpdate{ true };	// triggers recalc of entire node set
+
+	SoundEmitterData();
 
 	void	CreateNodeRuntime();
 

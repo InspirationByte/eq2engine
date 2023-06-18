@@ -18,7 +18,21 @@ CSoundingObject::~CSoundingObject()
 			g_audioSystem->DestroySource(emitter->soundSource);
 			delete emitter;
 		}
+		FlushOldEmitters();
 	}
+}
+
+void CSoundingObject::FlushOldEmitters()
+{
+	SoundEmitterData* del = m_deleteList;
+	while(del)
+	{
+		SoundEmitterData* tmp = del;
+		del = del->delNext;
+
+		delete tmp;
+	}
+	m_deleteList = nullptr;
 }
 
 int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
@@ -83,6 +97,8 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 		}
 	}
 
+	FlushOldEmitters();
+
 	return m_emitters.size() > 0;
 }
 
@@ -104,6 +120,12 @@ void CSoundingObject::StopFirstEmitterByChannel(int chan)
 			break;
 		}
 	}
+}
+
+bool CSoundingObject::HasEmitter(int uniqueId) const 
+{
+	SoundEmitterData* emitter = FindEmitter(uniqueId);
+	return emitter;
 }
 
 int	CSoundingObject::GetEmitterSampleId(int uniqueId) const
@@ -391,6 +413,10 @@ SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 void CSoundingObject::AddEmitter(int uniqueId, SoundEmitterData* emitter)
 {
 	CScopedMutex m(m_mutex);
+	auto itOld = m_emitters.find(uniqueId);
+	if(!itOld.atEnd())
+		StopEmitter(*itOld, true);
+
 	m_emitters.insert(uniqueId, emitter);
 }
 
@@ -430,7 +456,13 @@ void CSoundingObject::StopEmitter(SoundEmitterData* emitter, bool destroy)
 			--m_numChannelSounds[emitter->channelType];
 
 		g_audioSystem->DestroySource(emitter->soundSource);
-		delete emitter;
+
+		{
+			CScopedMutex m(m_mutex);
+
+			emitter->delNext = m_deleteList;
+			m_deleteList = emitter;
+		}
 		return;
 	}
 

@@ -38,6 +38,8 @@ public:
 	const IEqAudioSource::State GetEmitterState(int uniqueId) const;
 	void						SetEmitterState(int uniqueId, IEqAudioSource::State state, bool rewindOnPlay = false);
 
+	bool		HasEmitter(int uniqueId) const;
+
 	// returns sample id that was in EmitParams
 	int			GetEmitterSampleId(int uniqueId) const;
 
@@ -97,8 +99,11 @@ protected:
 	bool		UpdateEmitters(const Vector3D& listenerPos);
 	void		StopFirstEmitterByChannel(int chan);
 
+	void		FlushOldEmitters();
+
 	// sounds at channel counter
 	Map<int, SoundEmitterData*>	m_emitters{ PP_SL };
+	SoundEmitterData*	m_deleteList{ nullptr };
 
 	Threading::CEqMutex	m_mutex;
 	uint8				m_numChannelSounds[CHAN_MAX]{ 0 };
