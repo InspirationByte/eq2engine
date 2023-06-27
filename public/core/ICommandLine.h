@@ -15,7 +15,7 @@ typedef bool (*cmdLineFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
 class ICommandLine : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("CORE_CommandLine_002")
+	CORE_INTERFACE("CORE_CommandLine_003")
 
 	virtual void			Init(const char* pszCommandLine) = 0;
 	virtual void			DeInit() = 0;
@@ -27,6 +27,7 @@ public:
 	virtual const char*		GetArgumentString(int index) const = 0;
 
 	virtual const char*		GetArgumentsOf(int paramIndex) const = 0;
+	virtual int				GetArgumentsOf(int paramIndex, const char** values, int maxValues) const = 0;
 	virtual int				GetArgumentCount() const = 0;
 };
 

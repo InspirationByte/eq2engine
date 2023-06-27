@@ -170,3 +170,22 @@ const char* CCommandLine::GetArgumentsOf(int paramIndex) const
 
 	return _tmpArguments.ToCString();
 }
+
+
+int	CCommandLine::GetArgumentsOf(int paramIndex, const char** values, int maxValues) const
+{
+	if (paramIndex == -1)
+		return 0;
+
+	int numArgs = 0;
+	for (int i = paramIndex + 1; i < m_args.numElem() && maxValues > 0; ++i, --maxValues)
+	{
+		const char* argStr = m_args[i].ToCString();
+
+		if (*argStr == '+' || *argStr == '-')
+			break;
+
+		values[numArgs++] = argStr;
+	}
+	return numArgs;
+}

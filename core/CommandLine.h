@@ -23,6 +23,7 @@ public:
 	int					FindArgument(const char* arg, int startfrom = 0)  const;
 
 	const char*			GetArgumentsOf(int paramIndex) const;
+	int					GetArgumentsOf(int paramIndex, const char** values, int maxValues) const;
 	int					GetArgumentCount()  const;
 
 	//-------------------------
