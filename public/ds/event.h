@@ -14,6 +14,7 @@ struct EventSubscriptionObject : public WeakRefObject<EventSubscriptionObject<SI
 {
 	EqFunction<SIGNATURE>		func{ nullptr };
 	mutable bool				unsubscribe{ false };
+	bool						runOnce{ false };
 
 	EventSubscriptionObject* next{ nullptr };
 };
@@ -49,7 +50,7 @@ public:
 
 	void								Clear();
 
-	const SubscriptionPtr	Subscribe(const EqFunction<SIGNATURE>& func);
+	const SubscriptionPtr	Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce = false);
 	const SubscriptionPtr	operator+=(const EqFunction<SIGNATURE>& func) { return Subscribe(func); }
 
 	template<typename... Params>

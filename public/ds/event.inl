@@ -41,10 +41,11 @@ void Event<SIGNATURE>::Clear()
 }
 
 template<typename SIGNATURE>
-const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func)
+const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce /*= false*/)
 {
 	SubscriptionObject* sub = PPNew SubscriptionObject();
 	sub->func = func;
+	sub->runOnce = runOnce;
 
 	// sub->next = m_subs;
 	// m_subs = sub;
@@ -76,6 +77,9 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 			delete del;
 			continue;
 		}
+
+		if (sub->runOnce)
+			sub->unsubscribe = true;
 
 		// set the right handler and go
 		sub->func(std::forward<Params>(args)...);
