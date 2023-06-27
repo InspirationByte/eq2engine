@@ -164,43 +164,73 @@ bool CDPKFileWriter::AddFile( const char* fileName, const char* targetFilename)
 	return AddFile(fileName, StringToHash(writeableFileName, true));
 }
 
-int CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bool recursive)
+int CDPKFileWriter::AddDirectory(const char* pathAndWildcard, const char* targetDir, bool recursive)
 {
 	EqString targetDirTrimmed(targetDir);
 	targetDirTrimmed = targetDirTrimmed.TrimChar('/');
 	targetDirTrimmed = targetDirTrimmed.TrimChar('.');
 
-	EqString nonWildcardFolder(wildcard);
+	EqString wildcard;
+	EqString nonWildcardFolder(pathAndWildcard);
 	const int wildcardStart = nonWildcardFolder.Find("*");
+	bool isRecursiveWildcard = false;
+
+	if (wildcardStart != -1)
+	{
+		wildcard = (nonWildcardFolder.Mid(wildcardStart, nonWildcardFolder.Length() - wildcardStart));
+		isRecursiveWildcard = (wildcard[1] == '*');
+	}
+
 	if (wildcardStart != -1)
 		nonWildcardFolder = nonWildcardFolder.Left(wildcardStart).TrimChar('/');
 
 	int fileCount = 0;
 
-	OSFindData find;
-	if (find.Init(wildcard))
 	{
-		do
+		// first walk files
+		OSFindData fileFind;
+		if (fileFind.Init(nonWildcardFolder + "/" + (isRecursiveWildcard ? (wildcard.ToCString() + 1) : wildcard.ToCString())))
 		{
-			const char* name = find.GetCurrentPath();
-
-			EqString targetFilename = EqString::Format("%s/%s", targetDirTrimmed.ToCString(), name);
-
-			if (find.IsDirectory())
+			do
 			{
+				if (fileFind.IsDirectory())
+					continue;
+
+				const char* name = fileFind.GetCurrentPath();
+
+				EqString targetFilename = EqString::Format("%s/%s", targetDirTrimmed.ToCString(), name);
+				if (!fileFind.IsDirectory())
+				{
+					if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), name), targetFilename))
+						++fileCount;
+				}
+			} while (fileFind.GetNext());
+		}
+	}
+
+	// then walk directories
+	if (recursive && (wildcardStart == -1 || isRecursiveWildcard))
+	{
+		OSFindData folderFind;
+		if (folderFind.Init(nonWildcardFolder + "/*"))
+		{
+			do
+			{
+				if (!folderFind.IsDirectory())
+					continue;
+
+				const char* name = folderFind.GetCurrentPath();
 				if (!stricmp("..", name) || !stricmp(".", name))
 					continue;
 
-				if (recursive)
-					fileCount += AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), name), targetFilename, true);
-			}
-			else
-			{
-				if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), name), targetFilename))
-					++fileCount;
-			}
-		} while (find.GetNext());
+				EqString targetFilename = EqString::Format("%s/%s", targetDirTrimmed.ToCString(), name);
+
+				fileCount += AddDirectory(EqString::Format("%s/%s/%s", nonWildcardFolder.ToCString(), name, wildcard.ToCString()), targetFilename, true);
+
+			} while (folderFind.GetNext());
+		}
 	}
+
 
 	return fileCount;
 }
@@ -470,6 +500,9 @@ bool CDPKFileWriter::SavePackage()
 
 		FileInfo* fileInfo = m_files[i];
 		const float sizeReduction = ProcessFile(dpkTempDataFile, fileInfo);
+
+		if ((i % 500) == 0)
+			dpkTempDataFile.Flush();
 
 		compressionRatio += sizeReduction;
 	}

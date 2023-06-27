@@ -29,12 +29,12 @@
 
 static void Usage()
 {
-	MsgWarning("USAGE:\n	fcompress -target <target name>\n");
+	MsgWarning("USAGE:\n	fcompress -target <target name> -set <key> <value>\n");
 #if REPACK_SUPPORT
-	MsgWarning("USAGE:\n	fcompress -repack <EPK v6 filename>\n");
+	MsgWarning("			fcompress -repack <EPK v6 filename>\n");
 #endif
 #if REPACK_SUPPORT
-	MsgWarning("USAGE:\n	fcompress -devunpack <EPK v7 filename>\n");
+	MsgWarning("			fcompress -devunpack <EPK v7 filename>\n");
 #endif
 }
 
@@ -262,6 +262,19 @@ static bool DevUnpackPackage(const char* targetName)
 
 #endif // REPACK_SUPPORT
 
+static KVSection s_variables;
+
+static void ProcessVariableString(EqString& string)
+{
+	for (const KVSection* key : s_variables.keys)
+	{
+		int found = 0;
+		do {
+			found = string.ReplaceSubstr(EqString::Format("%%%s%%", key->name), KV_GetValueString(key), true, found);
+		} while (found != -1);
+	}
+}
+
 static void CookPackageTarget(const char* targetName)
 {
 	// load all properties
@@ -299,23 +312,27 @@ static void CookPackageTarget(const char* targetName)
 		}
 
 		const int targetCompression = KV_GetValueInt(currentTarget->FindSection("compression"), 0, 0);
-		const char* targetFilename = KV_GetValueString(currentTarget->FindSection("output"), 0, nullptr);
-		const char* mountPath = KV_GetValueString(currentTarget->FindSection("mountPath"), 0, nullptr);
-		const char* encryption = KV_GetValueString(currentTarget->FindSection("encryption"), 0, nullptr);
+		EqString targetFilename = KV_GetValueString(currentTarget->FindSection("output"), 0);
+		EqString mountPath = KV_GetValueString(currentTarget->FindSection("mountPath"), 0);
+		EqString encryption = KV_GetValueString(currentTarget->FindSection("encryption"), 0);
 
-		if (!mountPath)
+		ProcessVariableString(targetFilename);
+		ProcessVariableString(mountPath);
+		ProcessVariableString(encryption);
+
+		if (!mountPath.Length())
 		{
 			MsgError("Package '%s' missing 'mountPath' value\n", targetName);
 			return;
 		}
 
-		if(encryption)
+		if(encryption.Length())
 		{
 			MsgInfo("Output package is encrypted with key\n");
 			dpkWriter.SetEncryption(1, encryption);
 		}
 
-		if (targetFilename)
+		if (targetFilename.Length())
 			outputFileName = targetFilename;
 
 		dpkWriter.SetCompression(targetCompression);
@@ -328,6 +345,9 @@ static void CookPackageTarget(const char* targetName)
 			{
 				EqString wildcard = KV_GetValueString(kvSec);
 				EqString packageDir = KV_GetValueString(kvSec, 1, wildcard);
+
+				ProcessVariableString(wildcard);
+				ProcessVariableString(packageDir);
 
 				const int wildcardStart = wildcard.Find("*");
 				if (wildcardStart == -1 && wildcard.Path_Extract_Name().Length() > 0)
@@ -344,8 +364,10 @@ static void CookPackageTarget(const char* targetName)
 			}
 			else if (!stricmp(kvSec->GetName(), "ignoreCompressionExt"))
 			{
-				const char* extName = KV_GetValueString(kvSec);
-				MsgInfo("Ignoring compression for '%s' files\n", extName);
+				EqString extName = KV_GetValueString(kvSec);
+				ProcessVariableString(extName);
+
+				MsgInfo("Ignoring compression for '%s' files\n", extName.ToCString());
 				dpkWriter.AddIgnoreCompressionExtension(extName);
 			}
 		}
@@ -401,6 +423,16 @@ int main(int argc, char **argv)
 		if (!argStr.CompareCaseIns("-target"))
 		{
 			CookPackageTarget(g_cmdLine->GetArgumentsOf(i));
+		}
+		else if (!argStr.CompareCaseIns("-set") && g_cmdLine->GetArgumentCount())
+		{
+			const char* keyValue[2];
+			const int numValues = g_cmdLine->GetArgumentsOf(i, keyValue, elementsOf(keyValue));
+			if (numValues != 2) {
+				Msg("-set: key and value are required\n");
+				continue;
+			}
+			s_variables.SetKey(keyValue[0], keyValue[1]);
 		}
 #if REPACK_SUPPORT
 		else if (!argStr.CompareCaseIns("-repack"))
