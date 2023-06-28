@@ -153,6 +153,11 @@ void CInputCommandBinder::InitTouchZones()
 		return;
 
 	KVSection* zones = kvs.GetRootSection()->FindSection("zones");
+	if (!zones)
+	{
+		MsgError("touchzones file is invalid\n");
+		return;
+	}
 
 	for(int i = 0; i < zones->keys.numElem(); i++)
 	{
