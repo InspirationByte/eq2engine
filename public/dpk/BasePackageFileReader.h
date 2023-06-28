@@ -35,6 +35,5 @@ protected:
 	EqString		m_packageName;
 	EqString		m_mountPath;
 	EqString		m_key;
-
 	int				m_searchPath{ -1 };
 };

@@ -255,20 +255,13 @@ uint32 CDPKFileStream::GetCRC32()
 
 CDPKFileReader::CDPKFileReader()
 {
-    m_searchPath = 0;
-	m_dpkFiles = nullptr;
-
-	memset(&m_header, 0, sizeof(m_header));
 }
 
 CDPKFileReader::~CDPKFileReader()
 {
 	for(int i = 0; i < m_openFiles.numElem(); i++)
-	{
 		Close( m_openFiles[0] );
-	}
-
-	delete [] m_dpkFiles;
+	SAFE_DELETE_ARRAY(m_dpkFiles);
 }
 
 bool CDPKFileReader::FileExists(const char* filename) const
@@ -281,6 +274,8 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 	EqString fullFilename(filename);
 	fullFilename = fullFilename.LowerCase();
 	fullFilename.Path_FixSlashes();
+
+	// TODO: allow to find file directly by hash without picking up mount path
 
 	// check if mount path is not a root path
 	// or it does not exist
@@ -317,15 +312,16 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 		return false;
 	}
 
-	osFile.Read(&m_header, sizeof(dpkheader_t));
+	dpkheader_t header;
+	osFile.Read(&header, sizeof(dpkheader_t));
 
-    if (m_header.signature != DPK_SIGNATURE)
+    if (header.signature != DPK_SIGNATURE)
     {
 		MsgError("'%s' is not a package!!!\n", m_packageName.ToCString());
         return false;
     }
 
-    if (m_header.version != DPK_VERSION)
+    if (header.version != DPK_VERSION)
     {
 		MsgError("package '%s' has wrong version!!!\n", m_packageName.ToCString());
         return false;
@@ -346,23 +342,23 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packageName.ToCString());
 
     // skip file data
-    osFile.Seek(m_header.fileInfoOffset, COSFile::ESeekPos::SET);
+    osFile.Seek(header.fileInfoOffset, COSFile::ESeekPos::SET);
 
 	// read file table
-	m_dpkFiles = PPNew dpkfileinfo_t[m_header.numFiles];
-	osFile.Read( m_dpkFiles, sizeof(dpkfileinfo_t) * m_header.numFiles );
+	m_dpkFiles = PPNew dpkfileinfo_t[header.numFiles];
+	osFile.Read( m_dpkFiles, sizeof(dpkfileinfo_t) * header.numFiles );
 
-	for (int i = 0; i < m_header.numFiles; ++i)
+	for (int i = 0; i < header.numFiles; ++i)
 		m_fileIndices.insert(m_dpkFiles[i].filenameHash, i);
 
-	// ASSERT_MSG(m_header.numFiles == m_fileIndices.size(), "Programmer warning: hash collisions in %s, %d files out of %d", m_packageName.ToCString(), m_fileIndices.size(), m_header.numFiles);
+	// ASSERT_MSG(header.numFiles == m_fileIndices.size(), "Programmer warning: hash collisions in %s, %d files out of %d", m_packageName.ToCString(), m_fileIndices.size(), header.numFiles);
 
     return true;
 }
 
 IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
 {
-	if( m_header.numFiles == 0 )
+	if( !m_dpkFiles)
 	{
 		MsgError("Package is not open!\n");
 		return nullptr;

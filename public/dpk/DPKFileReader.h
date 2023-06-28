@@ -101,8 +101,7 @@ protected:
 
 	int						FindFileIndex(const char* filename) const;
 
-	dpkheader_t				m_header;
-	dpkfileinfo_t*			m_dpkFiles;
+	dpkfileinfo_t*			m_dpkFiles{ nullptr };
 	Map<int, int>			m_fileIndices{ PP_SL };
 
 	Array<CDPKFileStream*>	m_openFiles{ PP_SL };
