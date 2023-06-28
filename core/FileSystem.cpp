@@ -430,7 +430,7 @@ void CFileSystem::Close( IFile* fp )
 	}
 }
 
-char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
+ubyte* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
 {
 	IFile* pFile = Open(filename, "rb", searchFlags);
 
@@ -438,7 +438,7 @@ char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, in
         return nullptr;
 
     const long length = pFile->GetSize();
-    char *buffer = (char*)PPAlloc(length + 1);
+    ubyte *buffer = (ubyte*)PPAlloc(length + 1);
 
     if (!buffer)
     {

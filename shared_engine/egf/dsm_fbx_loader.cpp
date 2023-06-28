@@ -303,7 +303,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t*>& shapes, const char* filename)
 {
 	long fileSize = 0;
-	char* fileBuffer = g_fileSystem->GetFileBuffer(filename, &fileSize);
+	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if (!fileBuffer)
 	{
@@ -366,7 +366,7 @@ bool LoadFBXCompound( dsmmodel_t* model, const char* filename )
 	ASSERT(model);
 
 	long fileSize = 0;
-	char* fileBuffer = g_fileSystem->GetFileBuffer(filename, &fileSize);
+	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if (!fileBuffer)
 	{
@@ -411,7 +411,7 @@ bool LoadFBXShapes(dsmmodel_t* model, esmshapedata_t* shapeData, const char* fil
 	ASSERT(shapeData);
 
 	long fileSize = 0;
-	char* fileBuffer = g_fileSystem->GetFileBuffer(filename, &fileSize);
+	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if (!fileBuffer)
 	{
@@ -697,7 +697,7 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename)
 {
 	long fileSize = 0;
-	char* fileBuffer = g_fileSystem->GetFileBuffer(filename, &fileSize);
+	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if (!fileBuffer)
 	{

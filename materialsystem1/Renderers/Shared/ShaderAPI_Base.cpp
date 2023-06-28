@@ -764,7 +764,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	EqString boilerplateFile;
 	CombinePath(boilerplateFile, SHADERS_DEFAULT_PATH, EqString::Format("Boilerplate_%s.h", GetRendererName()).ToCString());
-	info.data.boilerplate = g_fileSystem->GetFileBuffer(boilerplateFile);
+	info.data.boilerplate = (char*)g_fileSystem->GetFileBuffer(boilerplateFile);
 
 	if (!info.data.boilerplate)
 	{

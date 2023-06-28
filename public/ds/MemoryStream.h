@@ -57,6 +57,9 @@ public:
 	// saves stream to file for stream (only for memory stream )
 	void				WriteToFileStream(IVirtualStream* pFile);
 
+	// resizes buffer to specified size (finalize buffer for reading)
+	void				ShrinkBuffer(long size);
+
 	// returns current pointer to the stream (only memory stream)
 	ubyte*				GetCurrentPointer();
 

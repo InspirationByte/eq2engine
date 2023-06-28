@@ -181,6 +181,13 @@ void CMemoryStream::ReAllocate(long nNewSize)
 	m_currentPtr = m_start + curPos;
 }
 
+// resizes buffer to specified size
+void CMemoryStream::ShrinkBuffer(long size)
+{
+	if(size < m_allocatedSize)
+		ReAllocate(size);
+}
+
 // saves stream to file for stream (only for memory stream )
 void CMemoryStream::WriteToFileStream(IVirtualStream* pFile)
 {
@@ -223,7 +230,7 @@ ubyte* CMemoryStream::GetBasePointer()
 
 uint32 CMemoryStream::GetCRC32()
 {
-	uint32 nCRC = CRC32_BlockChecksum( m_start, Tell() );
+	uint32 nCRC = CRC32_BlockChecksum( m_start, m_allocatedSize );
 
 	return nCRC;
 }

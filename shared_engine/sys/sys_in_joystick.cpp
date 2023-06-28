@@ -64,7 +64,7 @@ static CEqGameControllerSDL s_controllers[MAX_CONTROLLERS];
 void CEqGameControllerSDL::Init()
 {
 	long mappingsSize = 0;
-	const char* mappingsBuf = g_fileSystem->GetFileBuffer(CONTROLLER_DB_FILENAME, &mappingsSize);
+	const char* mappingsBuf = (const char*)g_fileSystem->GetFileBuffer(CONTROLLER_DB_FILENAME, &mappingsSize);
 	if (mappingsBuf)
 	{
 		SDL_RWops* mappingsIO = SDL_RWFromMem((void*)mappingsBuf, mappingsSize);

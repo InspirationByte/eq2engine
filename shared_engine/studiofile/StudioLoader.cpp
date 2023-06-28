@@ -78,7 +78,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	if (!boneCount)
 		return nullptr;
 
-	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer(pszPath);
+	ubyte* pData = g_fileSystem->GetFileBuffer(pszPath);
 	ubyte* pStart = pData;
 
 	if(!pData)
@@ -225,7 +225,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 {
-	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer( pszPath );
+	ubyte* pData = g_fileSystem->GetFileBuffer( pszPath );
 	ubyte* pStart = pData;
 
 	if(!pData)

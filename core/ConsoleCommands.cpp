@@ -517,7 +517,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 	if (!g_fileSystem->FileExist(cfgFileName))
 		cfgFileName = "cfg/" + cfgFileName;
 
-	char* buf = g_fileSystem->GetFileBuffer(cfgFileName, nullptr, -1);
+	char* buf = (char*)g_fileSystem->GetFileBuffer(cfgFileName, nullptr, -1);
 
 	if (!buf)
 	{

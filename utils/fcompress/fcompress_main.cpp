@@ -6,7 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-
+#include "core/platform/OSFindData.h"
+#include "core/cmd_pacifier.h"
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
 #include "core/ICommandLine.h"
@@ -275,6 +276,112 @@ static void ProcessVariableString(EqString& string)
 	}
 }
 
+// TODO: separate source file
+class CDPKFileListBuilder
+{
+public:
+	bool			AddFile(const char* fileName, const char* aliasName);
+	int				AddDirectory(const char* pathAndWildcard, const char* aliasPrefix);
+
+	struct FileInfo
+	{
+		EqString fileName;
+		EqString aliasName;
+	};
+
+	Array<FileInfo>	m_files{ PP_SL };
+};
+
+
+bool CDPKFileListBuilder::AddFile(const char* fileName, const char* aliasName)
+{
+	if (!g_fileSystem->FileExist(fileName, SP_ROOT))
+		return false;
+
+	m_files.append({ fileName , aliasName });
+	return true;
+}
+
+int CDPKFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* aliasPrefix)
+{
+	EqString aliasPrefixTrimmed(aliasPrefix);
+	aliasPrefixTrimmed = aliasPrefixTrimmed.TrimChar('/');
+	aliasPrefixTrimmed = aliasPrefixTrimmed.TrimChar('.');
+
+	EqString wildcard;
+	EqString nonWildcardFolder(pathAndWildcard);
+	const int wildcardStart = nonWildcardFolder.Find("*");
+	bool isRecursiveWildcard = false;
+
+	if (wildcardStart != -1)
+	{
+		wildcard = (nonWildcardFolder.Mid(wildcardStart, nonWildcardFolder.Length() - wildcardStart));
+		isRecursiveWildcard = (wildcard[1] == '*');
+	}
+
+	if (wildcardStart != -1)
+		nonWildcardFolder = nonWildcardFolder.Left(wildcardStart).TrimChar('/');
+
+	int fileCount = 0;
+
+	{
+		// first walk files
+		OSFindData fileFind;
+		if (fileFind.Init(nonWildcardFolder + "/" + (isRecursiveWildcard ? (wildcard.ToCString() + 1) : wildcard.ToCString())))
+		{
+			do
+			{
+				if (fileFind.IsDirectory())
+					continue;
+
+				const char* name = fileFind.GetCurrentPath();
+
+				EqString targetFilename = EqString::Format("%s/%s", aliasPrefixTrimmed.ToCString(), name);
+				if (!fileFind.IsDirectory())
+				{
+					if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), name), targetFilename))
+						++fileCount;
+				}
+			} while (fileFind.GetNext());
+		}
+	}
+
+	// then walk directories
+	if (wildcardStart == -1 || isRecursiveWildcard)
+	{
+		OSFindData folderFind;
+		if (folderFind.Init(nonWildcardFolder + "/*"))
+		{
+			do
+			{
+				if (!folderFind.IsDirectory())
+					continue;
+
+				const char* name = folderFind.GetCurrentPath();
+				if (!stricmp("..", name) || !stricmp(".", name))
+					continue;
+
+				EqString targetFilename = EqString::Format("%s/%s", aliasPrefixTrimmed.ToCString(), name);
+
+				fileCount += AddDirectory(EqString::Format("%s/%s/%s", nonWildcardFolder.ToCString(), name, wildcard.ToCString()), targetFilename);
+
+			} while (folderFind.GetNext());
+		}
+	}
+
+	return fileCount;
+}
+
+static bool CheckExtensionList(Array<EqString>& extList, const char* ext)
+{
+	for (EqString& fromListExt : extList)
+	{
+		if (!stricmp(fromListExt, ext))
+			return true;
+	}
+	return false;
+}
+
 static void CookPackageTarget(const char* targetName)
 {
 	// load all properties
@@ -289,87 +396,83 @@ static void CookPackageTarget(const char* targetName)
 	if (outputFileName.Path_Extract_Ext().Length() == 0)
 		outputFileName.Append(".epk");
 
-	CDPKFileWriter dpkWriter;
-	dpkWriter.AddKeyValueFileExtension("mat");
-	dpkWriter.AddKeyValueFileExtension("res");
-	dpkWriter.AddKeyValueFileExtension("txt");
-	dpkWriter.AddKeyValueFileExtension("def");
-
+	// load target info
+	KVSection* packages = kvs.FindSection("Packages");
+	if (!packages)
 	{
-		// load target info
-		KVSection* packages = kvs.FindSection("Packages");
-		if (!packages)
+		MsgError("Missing 'Packages' section in 'PackageCooker.CONFIG'\n");
+		return;
+	}
+
+	KVSection* currentTarget = packages->FindSection(targetName);
+	if (!currentTarget)
+	{
+		MsgError("Cannot find package section '%s'\n", targetName);
+		return;
+	}
+
+	const int targetCompression = KV_GetValueInt(currentTarget->FindSection("compression"), 0, 0);
+	EqString targetFilename = KV_GetValueString(currentTarget->FindSection("output"), 0);
+	EqString mountPath = KV_GetValueString(currentTarget->FindSection("mountPath"), 0);
+	EqString encryption = KV_GetValueString(currentTarget->FindSection("encryption"), 0);
+
+	ProcessVariableString(targetFilename);
+	ProcessVariableString(mountPath);
+	ProcessVariableString(encryption);
+
+	if (!mountPath.Length())
+	{
+		MsgError("Package '%s' missing 'mountPath' value\n", targetName);
+		return;
+	}
+
+	if(encryption.Length())
+		MsgInfo("Output package is encrypted with key\n");
+
+	if (targetFilename.Length())
+		outputFileName = targetFilename;
+
+	Array<EqString>	ignoreCompressionExt(PP_SL);
+	Array<EqString>	keyValueFileExt(PP_SL);
+	keyValueFileExt.append("mat");
+	keyValueFileExt.append("res");
+	keyValueFileExt.append("def");
+	keyValueFileExt.append("txt");
+
+	CDPKFileWriter dpkWriter(mountPath, targetCompression, encryption);
+	CDPKFileListBuilder fileListBuilder;
+
+	for (int i = 0; i < currentTarget->KeyCount(); ++i)
+	{
+		const KVSection* kvSec = currentTarget->KeyAt(i);
+		if (!stricmp(kvSec->GetName(), "add"))
 		{
-			MsgError("Missing 'Packages' section in 'PackageCooker.CONFIG'\n");
-			return;
-		}
+			EqString wildcard = KV_GetValueString(kvSec);
+			EqString targetNameOrDir = KV_GetValueString(kvSec, 1, wildcard);
 
-		KVSection* currentTarget = packages->FindSection(targetName);
-		if (!currentTarget)
-		{
-			MsgError("Cannot find package section '%s'\n", targetName);
-			return;
-		}
+			ProcessVariableString(wildcard);
+			ProcessVariableString(targetNameOrDir);
 
-		const int targetCompression = KV_GetValueInt(currentTarget->FindSection("compression"), 0, 0);
-		EqString targetFilename = KV_GetValueString(currentTarget->FindSection("output"), 0);
-		EqString mountPath = KV_GetValueString(currentTarget->FindSection("mountPath"), 0);
-		EqString encryption = KV_GetValueString(currentTarget->FindSection("encryption"), 0);
-
-		ProcessVariableString(targetFilename);
-		ProcessVariableString(mountPath);
-		ProcessVariableString(encryption);
-
-		if (!mountPath.Length())
-		{
-			MsgError("Package '%s' missing 'mountPath' value\n", targetName);
-			return;
-		}
-
-		if(encryption.Length())
-		{
-			MsgInfo("Output package is encrypted with key\n");
-			dpkWriter.SetEncryption(1, encryption);
-		}
-
-		if (targetFilename.Length())
-			outputFileName = targetFilename;
-
-		dpkWriter.SetCompression(targetCompression);
-		dpkWriter.SetMountPath(mountPath);
-
-		for (int i = 0; i < currentTarget->KeyCount(); ++i)
-		{
-			KVSection* kvSec = currentTarget->KeyAt(i);
-			if (!stricmp(kvSec->GetName(), "add"))
+			const int wildcardStart = wildcard.Find("*");
+			if (wildcardStart == -1 && wildcard.Path_Extract_Name().Length() > 0)
 			{
-				EqString wildcard = KV_GetValueString(kvSec);
-				EqString packageDir = KV_GetValueString(kvSec, 1, wildcard);
-
-				ProcessVariableString(wildcard);
-				ProcessVariableString(packageDir);
-
-				const int wildcardStart = wildcard.Find("*");
-				if (wildcardStart == -1 && wildcard.Path_Extract_Name().Length() > 0)
-				{
-					// try adding file directly
-					if(dpkWriter.AddFile(wildcard, packageDir))
-						Msg("Adding file '%s' as '%s' to package\n", wildcard.ToCString(), packageDir.ToCString());
-				}
-				else
-				{
-					const int fileCount = dpkWriter.AddDirectory(wildcard, packageDir, true);
-					Msg("Adding %d files in '%s' as '%s' to package\n", fileCount, wildcard.ToCString(), packageDir.ToCString());
-				}
+				// try adding file directly
+				if(fileListBuilder.AddFile(wildcard, targetNameOrDir))
+					Msg("Adding file '%s' as '%s' to package\n", wildcard.ToCString(), targetNameOrDir.ToCString());
 			}
-			else if (!stricmp(kvSec->GetName(), "ignoreCompressionExt"))
+			else
 			{
-				EqString extName = KV_GetValueString(kvSec);
-				ProcessVariableString(extName);
-
-				MsgInfo("Ignoring compression for '%s' files\n", extName.ToCString());
-				dpkWriter.AddIgnoreCompressionExtension(extName);
+				const int fileCount = fileListBuilder.AddDirectory(wildcard, targetNameOrDir);
+				Msg("Adding %d files in '%s' as '%s' to package\n", fileCount, wildcard.ToCString(), targetNameOrDir.ToCString());
 			}
+		}
+		else if (!stricmp(kvSec->GetName(), "ignoreCompressionExt"))
+		{
+			EqString extName = KV_GetValueString(kvSec);
+			ProcessVariableString(extName);
+
+			MsgInfo("Ignoring compression for '%s' files\n", extName.ToCString());
+			ignoreCompressionExt.append(extName);
 		}
 	}
 	
@@ -379,7 +482,65 @@ static void CookPackageTarget(const char* targetName)
 	if (packagePath.Length() > 0 && packagePath.Path_Extract_Ext().Length() == 0)
 		g_fileSystem->MakeDir(packagePath, SP_ROOT);
 
-	dpkWriter.BuildAndSave(outputFileName.ToCString());
+	if (!fileListBuilder.m_files.numElem())
+	{
+		MsgError("No files added to package '%s'!\n", outputFileName.ToCString());
+		return;
+	}
+
+	if (dpkWriter.Begin(outputFileName.ToCString()))
+	{
+		uint64 packedSizeTotal = 0;
+		uint64 originalSizeTotal = 0;
+
+		StartPacifier("Adding files, this may take a while: ");
+
+		for (CDPKFileListBuilder::FileInfo& fileInfo : fileListBuilder.m_files)
+		{
+			const EqString fileExt = _Es(fileInfo.fileName).Path_Extract_Ext();
+			const bool skipCompression = CheckExtensionList(ignoreCompressionExt, fileExt);
+
+			bool loadRawFile = true;
+			CMemoryStream fileMemoryStream;
+			if (CheckExtensionList(keyValueFileExt, fileExt))
+			{
+				// TODO: convert key-values file and store it (maybe uncompressed)
+				KVSection sectionFile;
+				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, &sectionFile))
+				{
+					fileMemoryStream.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 16 * 1024);
+
+					KV_WriteToStreamBinary(&fileMemoryStream, &sectionFile);
+					fileMemoryStream.ShrinkBuffer(fileMemoryStream.Tell());
+					fileMemoryStream.Seek(0, VS_SEEK_SET);
+
+					MsgInfo("Converted key-values file to binary: %s\n", fileInfo.fileName.ToCString());
+					loadRawFile = false;
+				}
+			}
+
+			IVirtualStream* stream = &fileMemoryStream;
+			if (loadRawFile)
+				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
+
+			const uint packedSize = dpkWriter.Add(stream, StringToHash(fileInfo.aliasName, true), skipCompression);
+
+			originalSizeTotal += stream->GetSize();
+			packedSizeTotal += packedSize;
+
+			g_fileSystem->Close(stream);
+
+			if ((dpkWriter.GetFileCount() % 500) == 0)
+				dpkWriter.Flush();
+		}
+
+		EndPacifier();
+
+		const float compressionRatio = 1.0f - (float)packedSizeTotal / (float)originalSizeTotal;
+		Msg("Compression is %.2f %%\n", compressionRatio * 100.0f);
+
+		dpkWriter.End();
+	}
 }
 
 int main(int argc, char **argv)

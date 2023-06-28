@@ -135,7 +135,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 	Tokenizer tok;
 
-	char* pBuffer = g_fileSystem->GetFileBuffer(filename);
+	char* pBuffer = (char*)g_fileSystem->GetFileBuffer(filename);
 
 	if (!pBuffer)
 	{

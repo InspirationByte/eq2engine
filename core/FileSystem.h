@@ -94,7 +94,7 @@ public:
 
 	// The next ones are deprecated and will be removed
 
-    char*						GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1);
+    ubyte*						GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1);
     long						GetFileSize(const char* filename, int searchFlags = -1);
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 

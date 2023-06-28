@@ -59,7 +59,7 @@ static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const cha
 		EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
 		textureAnimPathExt.Path_FixSlashes();
 
-		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt);
+		char* animScriptBuffer = (char*)g_fileSystem->GetFileBuffer(textureAnimPathExt);
 		if (animScriptBuffer)
 		{
 			Array<EqString> frameFilenames(PP_SL);
