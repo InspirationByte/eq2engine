@@ -523,7 +523,7 @@ static void CookPackageTarget(const char* targetName)
 			if (loadRawFile)
 				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
 
-			const uint packedSize = dpkWriter.Add(stream, StringToHash(fileInfo.aliasName, true), skipCompression);
+			const uint packedSize = dpkWriter.Add(stream, fileInfo.aliasName, skipCompression);
 
 			originalSizeTotal += stream->GetSize();
 			packedSizeTotal += packedSize;
@@ -541,6 +541,8 @@ static void CookPackageTarget(const char* targetName)
 
 		dpkWriter.End();
 	}
+	else
+		MsgError("Cannot create package file '%s'!\n", outputFileName.ToCString());
 }
 
 int main(int argc, char **argv)

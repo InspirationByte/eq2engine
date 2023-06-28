@@ -11,6 +11,7 @@
 #include "core/IFileSystem.h"
 #include "utils/KeyValues.h"
 #include "DPKFileWriter.h"
+#include "DPKUtils.h"
 
 //---------------------------------------------
 
@@ -50,17 +51,12 @@ bool CDPKFileWriter::Begin(const char* fileName)
 		return false;
 
 	if (!m_output.Open(g_fileSystem->GetAbsolutePath(SP_ROOT, fileName), COSFile::WRITE))
-	{
-		MsgError("Cannot create '%s'!\n", fileName);
 		return false;
-	}
 
 	memset(&m_header, 0, sizeof(m_header));
 	m_header.version = DPK_VERSION;
 	m_header.signature = DPK_SIGNATURE;
-	m_header.fileInfoOffset = 0;
 	m_header.compressionLevel = m_compressionLevel;
-	m_header.numFiles = m_files.numElem();
 
 	m_output.Write(&m_header, sizeof(m_header));
 	m_output.Write(m_mountPath, DPK_STRING_SIZE);
@@ -85,7 +81,7 @@ int CDPKFileWriter::End()
 	}
 
 	m_header.fileInfoOffset = m_output.Tell();
-	m_header.numFiles = m_files.numElem();
+	m_header.numFiles = m_files.size();
 
 	// overwrite as we have updated it
 	m_output.Seek(0, COSFile::ESeekPos::SET);
@@ -93,21 +89,34 @@ int CDPKFileWriter::End()
 	m_output.Seek(m_header.fileInfoOffset, COSFile::ESeekPos::SET);
 
 	// write file infos
-	m_output.Write(m_files.ptr(), m_files.numElem() * sizeof(dpkfileinfo_t));
+	for (dpkfileinfo_t& pakInfo : m_files)
+	{
+		m_output.Write(&pakInfo, sizeof(dpkfileinfo_t));
+	}
+
 	m_output.Close();
 
-	const int numFiles = m_files.numElem();
+	const int numFiles = m_files.size();
 	m_files.clear(true);
 
 	return numFiles;
 }
 
-uint CDPKFileWriter::Add(IVirtualStream* fileData, const int nameHash, bool skipCompression)
+uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool skipCompression)
 {
-	dpkfileinfo_t& pakInfo = m_files.append();
+	EqString fileNameString = fileName;
+	DPK_FixSlashes(fileNameString);
+	const int filenameHash = DPK_FilenameHash(fileNameString);
+
+	auto it = m_files.find(filenameHash);
+	if (!it.atEnd())	// already added?
+		return 0;
+
+	it = m_files.insert(filenameHash);
+	dpkfileinfo_t& pakInfo = *it;
 
 	// set the size and offset in the file bigfile
-	pakInfo.filenameHash = nameHash;
+	pakInfo.filenameHash = filenameHash;
 	pakInfo.offset = m_output.Tell();
 	pakInfo.size = fileData->GetSize();
 	pakInfo.crc = fileData->GetCRC32();

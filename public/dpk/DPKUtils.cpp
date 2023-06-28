@@ -47,3 +47,9 @@ void DPK_FixSlashes(EqString& str)
 
 	str.Assign(tempStr);
 }
+
+int DPK_FilenameHash(const char* filename)
+{
+	// TODO: hash function that could be used with root path concatenation
+	return StringToHash(filename, true);
+}

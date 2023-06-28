@@ -20,11 +20,11 @@ public:
 	~CDPKFileWriter();
 
 	bool		Begin(const char* fileName);
-	uint		Add(IVirtualStream* fileData, const int nameHash, bool skipCompression);
+	uint		Add(IVirtualStream* fileData, const char* fileName, bool skipCompression = false);
 	void		Flush();
 	int			End();
 
-	int			GetFileCount() const { return m_files.numElem(); }
+	int			GetFileCount() const { return m_files.size(); }
 
 protected:
 	char					m_mountPath[DPK_STRING_SIZE];
@@ -33,7 +33,7 @@ protected:
 	dpkheader_t				m_header;
 	COSFile					m_output;
 
-	Array<dpkfileinfo_t>	m_files{ PP_SL };
+	Map<int, dpkfileinfo_t>	m_files{ PP_SL };
 	int						m_compressionLevel{ 0 };
 	bool					m_encrypted{ false };
 };

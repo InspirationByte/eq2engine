@@ -11,6 +11,7 @@
 #include "core/platform/OSFile.h"
 #include "core/IFileSystem.h"
 #include "DPKFileReader.h"
+#include "DPKUtils.h"
 
 // HACK: current and previous versions of DPKFileWriter had serious bug that allowed buffer overflow.
 //		 This was fixed but extra 1024 bytes are kept for compatibility with those broken community-made EPK files 
@@ -293,7 +294,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
 	DPK_FixSlashes(pkgFileName);
 
-	const int nameHash = StringToHash(pkgFileName.ToCString(), true);
+	const int nameHash = DPK_FilenameHash(pkgFileName.ToCString());
 
 	auto it = m_fileIndices.find(nameHash);
 	if (!it.atEnd())
