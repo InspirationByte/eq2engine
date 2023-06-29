@@ -97,6 +97,7 @@ DECLARE_CMD(ppmem_stats, "Memory info", CV_UNREGISTERED)
 	PPMemInfo(fullStats);
 }
 DECLARE_CVAR(ppmem_break_on_alloc, "-1", "Helps to catch allocation id at stack trace", CV_UNREGISTERED);
+DECLARE_CVAR(ppmem_stats_rate, "0", "Shows allocation rate statistics for each source line", CV_UNREGISTERED);
 #endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
@@ -129,6 +130,7 @@ void PPMemInit()
 #ifndef PPMEM_DISABLED
 	ConCommandBase::Register(&ppmem_stats);
 	ConCommandBase::Register(&ppmem_break_on_alloc);
+	ConCommandBase::Register(&ppmem_stats_rate);
 #endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
@@ -145,6 +147,7 @@ void PPMemShutdown()
 #ifndef PPMEM_DISABLED
     ConCommandBase::Unregister(&ppmem_stats);
     ConCommandBase::Unregister(&ppmem_break_on_alloc);
+	ConCommandBase::Unregister(&ppmem_stats_rate);
 #endif
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 	ConCommandBase::Unregister(&cmd_crtdebug_break_alloc);
@@ -213,10 +216,10 @@ void PPMemInfo(bool fullStats)
 	}
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
-	MsgInfo("--- allocations groupped by file-line ---\n");
-
 	// currently allocated items groupped by file:line
 	{
+		MsgInfo("--- allocations groupped by file-line ---\n");
+
 		Array<uint64> sortedList{ PPSourceLine::Empty() };
 		sortedList.resize(allocCounter.size());
 		for (auto it = allocCounter.begin(); !it.atEnd(); ++it)
@@ -239,10 +242,11 @@ void PPMemInfo(bool fullStats)
 		}
 	}
 
-	MsgInfo("--- allocation rate statistics ---\n");
-
 	// (re)allocation rate stats
+	if(ppmem_stats_rate.GetBool())
 	{
+		MsgInfo("--- allocation rate statistics ---\n");
+
 		Array<uint64> sortedList{ PPSourceLine::Empty() };
 		sortedList.resize(st.sourceCounterMap.size());
 		for (auto it = st.sourceCounterMap.begin(); !it.atEnd(); ++it)
