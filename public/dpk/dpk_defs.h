@@ -13,7 +13,7 @@
 #define DPK_BLOCK_MAXSIZE			(8*1024)
 #define DPK_STRING_SIZE				255
 
-enum EFileFlags
+enum EDPKFileFlags
 {
 	DPKFILE_FLAG_COMPRESSED			= (1 << 0),
 	DPKFILE_FLAG_ENCRYPTED			= (1 << 1),

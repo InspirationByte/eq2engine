@@ -141,7 +141,6 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	char path[2048];
 
 	m_packageName = filename;
-
 	m_packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, filename);
 
 	// perform test
@@ -274,25 +273,9 @@ unzFile CZipFileReader::GetNewZipHandle() const
 
 unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 {
-	EqString fullFilename(filename);
-	fullFilename = fullFilename.LowerCase();
-	fullFilename.Path_FixSlashes();
+	const int nameHash = StringToHash(filename, true);
 
-	if (m_mountPath.Length())
-	{
-		int mountPathPos = fullFilename.Find(m_mountPath.ToCString());
-
-		if (mountPathPos != 0)
-			return nullptr;
-	}
-
-	// replace
-	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
-	DPK_FixSlashes(pkgFileName);
-
-	const int nameHash = StringToHash(pkgFileName.ToCString(), true);
-
-	//Msg("Request file '%s' %d\n", pkgFileName.ToCString(), strHash);
+	//Msg("Request file '%s' %d\n", filename, strHash);
 
 	auto it = m_files.find(nameHash);
 	if (!it.atEnd())

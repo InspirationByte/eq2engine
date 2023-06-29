@@ -386,8 +386,12 @@ IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags
 			if (!(spFlags & pPackageReader->GetSearchPath()))
 				continue;
 
+			EqString pkgFileName;
+			if (!pPackageReader->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+				continue;
+
 			// package readers do not support base path, get rid of it
-			fileHandle = pPackageReader->Open(filePath.ToCString() + basePath.Length(), modeFlags);
+			fileHandle = pPackageReader->Open(pkgFileName, modeFlags);
 			if (fileHandle)
 				return true;
 		}
@@ -551,8 +555,12 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 			if (!(spFlags & pPackageReader->GetSearchPath()))
 				continue;
 
+			EqString pkgFileName;
+			if (!pPackageReader->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+				continue;
+
 			// package readers do not support base path, get rid of it
-			if (pPackageReader->FileExists(filePath.ToCString() + basePath.Length()))
+			if (pPackageReader->FileExists(pkgFileName))
 				return true;
 		}
 

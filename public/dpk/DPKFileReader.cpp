@@ -271,25 +271,7 @@ bool CDPKFileReader::FileExists(const char* filename) const
 
 int	CDPKFileReader::FindFileIndex(const char* filename) const
 {
-	EqString fullFilename(filename);
-	fullFilename = fullFilename.LowerCase();
-	fullFilename.Path_FixSlashes();
-
-	// TODO: allow to find file directly by hash without picking up mount path
-
-	// check if mount path is not a root path
-	// or it does not exist
-	const int mountPathPos = fullFilename.Find(m_mountPath.ToCString());
-	if (mountPathPos > 0 || mountPathPos == -1)
-	{
-		return -1;
-	}
-
-	// convert to DPK filename
-	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
-	DPK_FixSlashes(pkgFileName);
-
-	const int nameHash = DPK_FilenameHash(pkgFileName.ToCString());
+	const int nameHash = DPK_FilenameHash(filename);
 
 	auto it = m_fileIndices.find(nameHash);
 	if (!it.atEnd())
@@ -403,12 +385,10 @@ void CDPKFileReader::Close(IVirtualStream* fp)
         return;
 
 	CDPKFileStream* fsp = (CDPKFileStream*)fp;
-
 	{
 		Threading::CScopedMutex m(s_dpkMutex);
 		if(!m_openFiles.fastRemove(fsp))
 			return;
 	}
-
 	delete fsp;
 }

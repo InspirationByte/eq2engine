@@ -29,6 +29,8 @@ public:
 
 	virtual void	SetKey(const char* key)		{ m_key = key; }
 
+	bool			GetInternalFileName(EqString& packageFilename, const char* fileName) const;
+
 protected:
 
 	EqString		m_packagePath;
