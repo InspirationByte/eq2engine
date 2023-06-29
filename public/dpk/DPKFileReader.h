@@ -103,6 +103,7 @@ protected:
 
 	dpkfileinfo_t*			m_dpkFiles{ nullptr };
 	Map<int, int>			m_fileIndices{ PP_SL };
+	int						m_version{ 0 };
 
 	Array<CDPKFileStream*>	m_openFiles{ PP_SL };
 };

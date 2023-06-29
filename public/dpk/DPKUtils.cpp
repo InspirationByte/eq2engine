@@ -7,6 +7,7 @@
 
 #include "core/core_common.h"
 #include "DPKUtils.h"
+#include "dpk_defs.h"
 
 // Fixes slashes in the directory name
 void DPK_RebuildFilePath(const char* str, char* newstr)
@@ -48,8 +49,28 @@ void DPK_FixSlashes(EqString& str)
 	str.Assign(tempStr);
 }
 
-int DPK_FilenameHash(const char* filename)
+static int HashDJB2(const char* str, int hash = 5381)
+{
+	// http://www.cse.yorku.ca/~oz/hash.html
+	while (int c = *str++)
+		hash = ((hash << 5) + hash) + tolower(c); /* hash * 33 + c */
+
+	return hash;
+}
+
+int DPK_FilenameHash(const char* filename, int version)
 {
 	// TODO: hash function that could be used with root path concatenation
-	return StringToHash(filename, true);
+
+	if (version == 7)
+		return StringToHash(filename, true);
+
+	return HashDJB2(filename);
+}
+
+int	DPK_FilenameHashAppend(const char* filename, int startHash)
+{
+	if(!startHash)
+		return HashDJB2(filename);
+	return HashDJB2(filename, startHash);
 }

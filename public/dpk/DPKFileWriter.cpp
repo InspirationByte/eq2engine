@@ -89,9 +89,9 @@ int CDPKFileWriter::End()
 	m_output.Seek(m_header.fileInfoOffset, COSFile::ESeekPos::SET);
 
 	// write file infos
-	for (dpkfileinfo_t& pakInfo : m_files)
+	for (FileInfo& info : m_files)
 	{
-		m_output.Write(&pakInfo, sizeof(dpkfileinfo_t));
+		m_output.Write(&info.pakInfo, sizeof(dpkfileinfo_t));
 	}
 
 	m_output.Close();
@@ -123,16 +123,32 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 
 	const bool doCompression = (m_compressionLevel > 0) && !skipCompression;
 
+	Array<ubyte*> readBuffer(PP_SL);
+	readBuffer.resize(DPK_BLOCK_MAXSIZE);
+
 	// compressed and encrypted files has to be put into blocks
 	// uncompressed files are bypassing blocks
 	if (skipCompression && !m_encrypted)
 	{
-		Array<ubyte*> tmpBuffer(PP_SL);
-		tmpBuffer.resize(pakInfo.size);
-		
-		fileData->Read(tmpBuffer.ptr(), 1, pakInfo.size);
+		int numBlocks = 0;
 
-		m_output.Write(tmpBuffer.ptr(), pakInfo.size);
+		// copy file block by block (assuming we have a large file)
+		while (true)
+		{
+			const int srcOffset = numBlocks * DPK_BLOCK_MAXSIZE;
+			const int srcSize = min(DPK_BLOCK_MAXSIZE, ((int)pakInfo.size - srcOffset));
+
+			if (srcSize <= 0)
+				break; // EOF
+
+			fileData->Read(readBuffer.ptr(), 1, srcSize);
+			m_output.Write(readBuffer.ptr(), srcSize);
+
+			++numBlocks;
+			if (srcSize < DPK_BLOCK_MAXSIZE)
+				break;
+		}
+
 		return pakInfo.size;
 	}
 
@@ -141,7 +157,6 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 
 	// temporary block for both compression and encryption 
 	// twice the size
-	ubyte readBlockData[DPK_BLOCK_MAXSIZE];
 	ubyte tmpBlockData[DPK_BLOCK_MAXSIZE];
 
 	// write blocks
@@ -158,7 +173,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 			break; // EOF
 
 		blockInfo.size = srcSize;
-		fileData->Read(readBlockData, 1, srcSize);
+		fileData->Read(readBuffer.ptr(), 1, srcSize);
 
 		int compressedSize = -1;
 
@@ -166,7 +181,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 		if (doCompression)
 		{
 			memset(tmpBlockData, 0, sizeof(tmpBlockData));
-			compressedSize = LZ4_compress_HC((const char*)readBlockData, (char*)tmpBlockData, srcSize, sizeof(tmpBlockData), m_compressionLevel);
+			compressedSize = LZ4_compress_HC((const char*)readBuffer.ptr(), (char*)tmpBlockData, srcSize, sizeof(tmpBlockData), m_compressionLevel);
 		}
 
 		// compressedSize could be -1 which means buffer overlow (or uneffective)
@@ -178,7 +193,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 		}
 		else
 		{
-			memcpy(tmpBlockData, readBlockData, srcSize);
+			memcpy(tmpBlockData, readBuffer.ptr(), srcSize);
 			packedSize += srcSize;
 		}
 
@@ -227,17 +242,25 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool sk
 {
 	EqString fileNameString = fileName;
 	DPK_FixSlashes(fileNameString);
-	const int filenameHash = DPK_FilenameHash(fileNameString);
+	const int filenameHash = DPK_FilenameHash(fileNameString, DPK_VERSION);
 
 	auto it = m_files.find(filenameHash);
 	if (!it.atEnd())	// already added?
+	{
+		if ((*it).fileName != fileNameString)
+		{
+			ASSERT_FAIL("DPK_FilenameHash has hash collisions, please change hashing function for good");
+		}
+		MsgWarning("CDPKFileWriter warn: file '%s' was already\n", fileName);
 		return 0;
+	}
 
 	it = m_files.insert(filenameHash);
-	dpkfileinfo_t& pakInfo = *it;
-	pakInfo.filenameHash = filenameHash;
+	FileInfo& info = *it;
+	info.fileName = fileNameString;
+	info.pakInfo.filenameHash = filenameHash;
 
-	return WriteDataToPackFile(fileData, pakInfo, skipCompression);
+	return WriteDataToPackFile(fileData, info.pakInfo, skipCompression);
 }
 
 #if 0
@@ -245,7 +268,7 @@ IVirtualStream* CDPKFileWriter::Create(const char* fileName, bool skipCompressio
 {
 	EqString fileNameString = fileName;
 	DPK_FixSlashes(fileNameString);
-	const int filenameHash = DPK_FilenameHash(fileNameString);
+	const int filenameHash = DPK_FilenameHash(fileNameString, DPK_VERSION);
 
 	auto it = m_files.find(filenameHash);
 	if (!it.atEnd())	// already added?

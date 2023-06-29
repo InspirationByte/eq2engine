@@ -271,7 +271,7 @@ bool CDPKFileReader::FileExists(const char* filename) const
 
 int	CDPKFileReader::FindFileIndex(const char* filename) const
 {
-	const int nameHash = DPK_FilenameHash(filename);
+	const int nameHash = DPK_FilenameHash(filename, m_version);
 
 	auto it = m_fileIndices.find(nameHash);
 	if (!it.atEnd())
@@ -296,18 +296,20 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 
 	dpkheader_t header;
 	osFile.Read(&header, sizeof(dpkheader_t));
-
+	
     if (header.signature != DPK_SIGNATURE)
     {
-		MsgError("'%s' is not a package!!!\n", m_packageName.ToCString());
+		MsgError("'%s' is not a Data Pack File\n", m_packageName.ToCString());
         return false;
     }
 
-    if (header.version != DPK_VERSION)
+    if (header.version != DPK_VERSION && header.version != DPK_PREV_VERSION)
     {
-		MsgError("package '%s' has wrong version!!!\n", m_packageName.ToCString());
+		MsgError("package '%s' has wrong version\n", m_packageName.ToCString());
         return false;
     }
+
+	m_version = header.version;
 
 	// read mount path
 	char dpkMountPath[DPK_STRING_SIZE];

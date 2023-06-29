@@ -42,6 +42,13 @@ public:
 protected:
 	uint					WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, bool skipCompression);
 
+	struct FileInfo
+	{
+		dpkfileinfo_t	pakInfo;
+		EqString		fileName;
+	};
+
+
 	char					m_mountPath[DPK_STRING_SIZE];
 	IceKey					m_ice;
 
@@ -49,7 +56,8 @@ protected:
 	COSFile					m_output;
 
 	Array<CMemoryStream*>	m_openStreams{ PP_SL };
-	Map<int, dpkfileinfo_t>	m_files{ PP_SL };
+	Map<int, FileInfo>		m_files{ PP_SL };
+
 	int						m_compressionLevel{ 0 };
 	bool					m_encrypted{ false };
 };
