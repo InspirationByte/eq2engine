@@ -75,6 +75,7 @@ private:
 
 	ubyte*				m_start{ nullptr };
 	ubyte*				m_currentPtr{ nullptr };
+	long				m_writeTop{ 0 };
 
 	long				m_allocatedSize{ 0 };
 	long				m_openFlags{ 0 };

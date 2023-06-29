@@ -67,13 +67,13 @@ size_t CMemoryStream::Write(const void *src, size_t count, size_t size)
 {
 	ASSERT(m_openFlags & VS_OPEN_WRITE);
 
-	long nAddBytes = size*count;
-	long nCurrPos = Tell();
+	const long nAddBytes = size*count;
+	const long nCurrPos = Tell();
 
 	if(nCurrPos+nAddBytes > m_allocatedSize)
 	{
-		long mem_diff = (nCurrPos+nAddBytes) - m_allocatedSize;
-		long newSize = m_allocatedSize + mem_diff + VSTREAM_GRANULARITY - 1;
+		const long memDiff = (nCurrPos + nAddBytes) - m_allocatedSize;
+		long newSize = m_allocatedSize + memDiff + VSTREAM_GRANULARITY - 1;
 		newSize -= newSize % VSTREAM_GRANULARITY;
 
 		ReAllocate( newSize );
@@ -83,6 +83,7 @@ size_t CMemoryStream::Write(const void *src, size_t count, size_t size)
 	memcpy(m_currentPtr, src, nAddBytes);
 
 	m_currentPtr += nAddBytes;
+	m_writeTop = max(m_writeTop, m_currentPtr - m_start);
 
 	return count;
 }
@@ -101,7 +102,7 @@ int CMemoryStream::Seek(long nOffset, EVirtStreamSeek seekType)
 			m_currentPtr = m_currentPtr + nOffset;
 			break;
 		case VS_SEEK_END:
-			m_currentPtr = m_start + m_allocatedSize + nOffset;
+			m_currentPtr = m_start + m_writeTop + nOffset;
 			break;
 	}
 
@@ -114,10 +115,9 @@ long CMemoryStream::Tell() const
 	return m_currentPtr - m_start;
 }
 
-// returns memory allocated for this stream
 long CMemoryStream::GetSize()
 {
-	return m_allocatedSize;
+	return m_writeTop;
 }
 
 // opens stream, if this is a file, data is filename
@@ -128,6 +128,7 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 
 	m_openFlags = nOpenFlags;
 	m_ownBuffer = (data == nullptr);
+	m_writeTop = ((nOpenFlags & VS_OPEN_READ) && data) ? nDataSize : 0;
 
 	if (m_ownBuffer)
 	{
@@ -135,8 +136,7 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 	}
 	else
 	{
-		m_start = data;
-		m_currentPtr = m_start;
+		m_start = m_currentPtr = data;
 		m_allocatedSize = nDataSize;
 	}
 
@@ -149,6 +149,7 @@ void CMemoryStream::Close()
 	if (m_ownBuffer)
 		PPFree(m_start);
 	m_allocatedSize = 0;
+	m_writeTop = 0;
 	m_start = nullptr;
 	m_currentPtr = m_start;
 	m_openFlags = 0;
@@ -177,6 +178,7 @@ void CMemoryStream::ReAllocate(long nNewSize)
 	const long curPos = Tell();
 	m_start = (ubyte*)PPReAlloc(m_start, nNewSize );
 	ASSERT_MSG(m_start, "CMemoryStream reallocate failed!");
+
 	m_allocatedSize = nNewSize;
 	m_currentPtr = m_start + curPos;
 }
@@ -185,15 +187,18 @@ void CMemoryStream::ReAllocate(long nNewSize)
 void CMemoryStream::ShrinkBuffer(long size)
 {
 	if(size < m_allocatedSize)
+	{
 		ReAllocate(size);
+
+		if (size < m_writeTop)
+			m_writeTop = size;
+	}
 }
 
 // saves stream to file for stream (only for memory stream )
 void CMemoryStream::WriteToFileStream(IVirtualStream* pFile)
 {
-	int stream_size = m_currentPtr-m_start;
-
-	pFile->Write(m_start, 1, stream_size);
+	pFile->Write(m_start, 1, m_writeTop);
 }
 
 // reads file to this stream
@@ -230,7 +235,7 @@ ubyte* CMemoryStream::GetBasePointer()
 
 uint32 CMemoryStream::GetCRC32()
 {
-	uint32 nCRC = CRC32_BlockChecksum( m_start, m_allocatedSize );
+	uint32 nCRC = CRC32_BlockChecksum( m_start, m_writeTop );
 
 	return nCRC;
 }

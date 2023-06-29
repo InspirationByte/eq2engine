@@ -277,23 +277,26 @@ static void ProcessVariableString(EqString& string)
 }
 
 // TODO: separate source file
-class CDPKFileListBuilder
+class CFileListBuilder
 {
 public:
-	bool			AddFile(const char* fileName, const char* aliasName);
-	int				AddDirectory(const char* pathAndWildcard, const char* aliasPrefix);
-
 	struct FileInfo
 	{
 		EqString fileName;
 		EqString aliasName;
 	};
 
+	bool				AddFile(const char* fileName, const char* aliasName);
+	int					AddDirectory(const char* pathAndWildcard, const char* aliasPrefix);
+
+	ArrayCRef<FileInfo>	GetFiles() const { return m_files; }
+private:
+
 	Array<FileInfo>	m_files{ PP_SL };
 };
 
 
-bool CDPKFileListBuilder::AddFile(const char* fileName, const char* aliasName)
+bool CFileListBuilder::AddFile(const char* fileName, const char* aliasName)
 {
 	if (!g_fileSystem->FileExist(fileName, SP_ROOT))
 		return false;
@@ -302,11 +305,11 @@ bool CDPKFileListBuilder::AddFile(const char* fileName, const char* aliasName)
 	return true;
 }
 
-int CDPKFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* aliasPrefix)
+int CFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* aliasPrefix)
 {
 	EqString aliasPrefixTrimmed(aliasPrefix);
-	aliasPrefixTrimmed = aliasPrefixTrimmed.TrimChar('/');
-	aliasPrefixTrimmed = aliasPrefixTrimmed.TrimChar('.');
+	aliasPrefixTrimmed = aliasPrefixTrimmed.TrimChar("\\/.");
+	aliasPrefixTrimmed = aliasPrefixTrimmed;
 
 	EqString wildcard;
 	EqString nonWildcardFolder(pathAndWildcard);
@@ -440,7 +443,7 @@ static void CookPackageTarget(const char* targetName)
 	keyValueFileExt.append("txt");
 
 	CDPKFileWriter dpkWriter(mountPath, targetCompression, encryption);
-	CDPKFileListBuilder fileListBuilder;
+	CFileListBuilder fileListBuilder;
 
 	for (int i = 0; i < currentTarget->KeyCount(); ++i)
 	{
@@ -482,7 +485,7 @@ static void CookPackageTarget(const char* targetName)
 	if (packagePath.Length() > 0 && packagePath.Path_Extract_Ext().Length() == 0)
 		g_fileSystem->MakeDir(packagePath, SP_ROOT);
 
-	if (!fileListBuilder.m_files.numElem())
+	if (!fileListBuilder.GetFiles().numElem())
 	{
 		MsgError("No files added to package '%s'!\n", outputFileName.ToCString());
 		return;
@@ -495,7 +498,7 @@ static void CookPackageTarget(const char* targetName)
 
 		StartPacifier("Adding files, this may take a while: ");
 
-		for (CDPKFileListBuilder::FileInfo& fileInfo : fileListBuilder.m_files)
+		for (const CFileListBuilder::FileInfo& fileInfo : fileListBuilder.GetFiles())
 		{
 			const EqString fileExt = _Es(fileInfo.fileName).Path_Extract_Ext();
 			const bool skipCompression = CheckExtensionList(ignoreCompressionExt, fileExt);
@@ -509,10 +512,7 @@ static void CookPackageTarget(const char* targetName)
 				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, &sectionFile))
 				{
 					fileMemoryStream.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 16 * 1024);
-
 					KV_WriteToStreamBinary(&fileMemoryStream, &sectionFile);
-					fileMemoryStream.ShrinkBuffer(fileMemoryStream.Tell());
-					fileMemoryStream.Seek(0, VS_SEEK_SET);
 
 					MsgInfo("Converted key-values file to binary: %s\n", fileInfo.fileName.ToCString());
 					loadRawFile = false;

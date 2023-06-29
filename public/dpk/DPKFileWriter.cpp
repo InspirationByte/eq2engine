@@ -2,7 +2,7 @@
 // Copyright � Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Data package file (dpk)
+// Description: Data Pack File writer
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <lz4hc.h>
@@ -44,13 +44,13 @@ CDPKFileWriter::~CDPKFileWriter()
 	ASSERT(m_output.IsOpen() == false);
 }
 
-bool CDPKFileWriter::Begin(const char* fileName)
+bool CDPKFileWriter::Begin(const char* fileName, ESearchPath searchPath)
 {
 	ASSERT(m_output.IsOpen() == false);
 	if (m_output.IsOpen())
 		return false;
 
-	if (!m_output.Open(g_fileSystem->GetAbsolutePath(SP_ROOT, fileName), COSFile::WRITE))
+	if (!m_output.Open(g_fileSystem->GetAbsolutePath(searchPath, fileName), COSFile::WRITE))
 		return false;
 
 	memset(&m_header, 0, sizeof(m_header));
@@ -102,21 +102,14 @@ int CDPKFileWriter::End()
 	return numFiles;
 }
 
-uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool skipCompression)
+uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, bool skipCompression)
 {
-	EqString fileNameString = fileName;
-	DPK_FixSlashes(fileNameString);
-	const int filenameHash = DPK_FilenameHash(fileNameString);
-
-	auto it = m_files.find(filenameHash);
-	if (!it.atEnd())	// already added?
-		return 0;
-
-	it = m_files.insert(filenameHash);
-	dpkfileinfo_t& pakInfo = *it;
+	// prepare stream to be read
+	// TODO: check stream to have VS_OPEN_READ flag
+	// TODO: for memory stream passed, 
+	fileData->Seek(0, VS_SEEK_SET);
 
 	// set the size and offset in the file bigfile
-	pakInfo.filenameHash = filenameHash;
 	pakInfo.offset = m_output.Tell();
 	pakInfo.size = fileData->GetSize();
 	pakInfo.crc = fileData->GetCRC32();
@@ -129,6 +122,7 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool sk
 	{
 		Array<ubyte*> tmpBuffer(PP_SL);
 		tmpBuffer.resize(pakInfo.size);
+		
 		fileData->Read(tmpBuffer.ptr(), 1, pakInfo.size);
 
 		m_output.Write(tmpBuffer.ptr(), pakInfo.size);
@@ -221,3 +215,45 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool sk
 
 	return packedSize;
 }
+
+uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool skipCompression)
+{
+	EqString fileNameString = fileName;
+	DPK_FixSlashes(fileNameString);
+	const int filenameHash = DPK_FilenameHash(fileNameString);
+
+	auto it = m_files.find(filenameHash);
+	if (!it.atEnd())	// already added?
+		return 0;
+
+	it = m_files.insert(filenameHash);
+	dpkfileinfo_t& pakInfo = *it;
+	pakInfo.filenameHash = filenameHash;
+
+	return WriteDataToPackFile(fileData, pakInfo, skipCompression);
+}
+
+#if 0
+IVirtualStream* CDPKFileWriter::Create(const char* fileName, bool skipCompression = false)
+{
+	EqString fileNameString = fileName;
+	DPK_FixSlashes(fileNameString);
+	const int filenameHash = DPK_FilenameHash(fileNameString);
+
+	auto it = m_files.find(filenameHash);
+	if (!it.atEnd())	// already added?
+		return 0;
+
+	CMemoryStream* writeStream = PPNew CMemoryStream();
+	m_openStreams.append(writeStream);
+}
+
+
+void CDPKFileWriter::Close(IVirtualStream* virtStream)
+{
+	if (virtStream->GetType() != VS_TYPE_MEMORY)
+		return;
+
+	WriteDataToPackFile(virtStream, );
+}
+#endif

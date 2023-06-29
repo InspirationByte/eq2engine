@@ -575,7 +575,7 @@ EqString EqString::TrimSpaces(bool left, bool right) const
 	const char* begin = m_pszString;
 
 	// trim whitespace from left
-	while(*begin && xisspace(*begin))begin++;
+	while(*begin && xisspace(*begin)) begin++;
 
 	if(*begin == '\0')
 		return EqString();
@@ -590,10 +590,21 @@ EqString EqString::TrimSpaces(bool left, bool right) const
 
 EqString EqString::TrimChar(char ch, bool left, bool right) const
 {
+	char cch[2] = { ch, 0 };
+	return TrimChar(cch, left, right);
+}
+
+EqString EqString::TrimChar(const char* ch, bool left, bool right) const
+{
 	const char* begin = m_pszString;
 
+	auto ischr = [](const char* ch, char c) -> bool {
+		while (*ch) { if (*ch++ == c) return true; }
+		return false;
+	};
+
 	// trim whitespace from left
-	while (*begin && *begin == ch)begin++;
+	while (*begin && ischr(ch, *begin)) ++begin;
 
 	if (*begin == '\0')
 		return EqString();
@@ -601,7 +612,7 @@ EqString EqString::TrimChar(char ch, bool left, bool right) const
 	const char* end = begin + strlen(begin) - 1;
 
 	// trim whitespace from right
-	while (end > begin && *end == ch)end--;
+	while (end > begin && ischr(ch, *end)) --end;
 
 	return Mid(begin - m_pszString, end - begin + 1);
 }

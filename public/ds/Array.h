@@ -1218,7 +1218,25 @@ using FixedArray = ArrayBase<T, FixedArrayStorage<T, SIZE>>;
 template< typename T >
 class ArrayRef
 {
+	using SelfType = ArrayRef<T>;
 public:
+	struct Iterator
+	{
+		SelfType& array;
+		int index = 0;
+
+		Iterator(SelfType& array, int from)
+			: array(array), index(from)
+		{}
+
+		bool	operator==(Iterator& it) const { return it.index == index; }
+		bool	operator!=(Iterator& it) const { return it.index != index; }
+
+		bool	atEnd() const { return index >= array.numElem(); }
+		T&		operator*() { return array[index]; }
+		void	operator++() { ++index; }
+	};
+
 	ArrayRef(std::nullptr_t) {}
 
 	ArrayRef(T* elemPtr, int numElem)
@@ -1261,11 +1279,14 @@ public:
 		return m_pListPtr[index];
 	}
 
+	Iterator		begin() const { return Iterator(*const_cast<SelfType*>(this), 0); }
+	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
+
 	// returns number of elements in list
 	int				numElem() const { return m_nNumElem; }
 
 	// returns a pointer to the list
-	T* ptr() { return m_pListPtr; }
+	T*				ptr() { return m_pListPtr; }
 
 	// returns true if index is in range
 	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
@@ -1291,7 +1312,25 @@ protected:
 template< typename T >
 class ArrayCRef
 {
+	using SelfType = ArrayCRef<T>;
 public:
+	struct Iterator
+	{
+		SelfType& array;
+		int index = 0;
+
+		Iterator(SelfType& array, int from)
+			: array(array), index(from)
+		{}
+
+		bool		operator==(Iterator& it) const { return it.index == index; }
+		bool		operator!=(Iterator& it) const { return it.index != index; }
+
+		bool		atEnd() const { return index >= array.numElem(); }
+		const T&	operator*() const { return array[index]; }
+		void		operator++() { ++index; }
+	};
+
 	ArrayCRef(std::nullptr_t) {}
 
 	ArrayCRef(const T* elemPtr, int numElem)
@@ -1340,6 +1379,9 @@ public:
 
 		return m_pListPtr[index];
 	}
+
+	Iterator		begin() const { return Iterator(*const_cast<SelfType*>(this), 0); }
+	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
 
 	// returns number of elements in list
 	int				numElem() const { return m_nNumElem; }
