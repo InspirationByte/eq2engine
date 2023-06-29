@@ -105,8 +105,15 @@ int CDPKFileWriter::End()
 uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, bool skipCompression)
 {
 	// prepare stream to be read
-	// TODO: check stream to have VS_OPEN_READ flag
-	// TODO: for memory stream passed, 
+	CMemoryStream readStream;
+	if (fileData->GetType() == VS_TYPE_MEMORY)
+	{
+		// make a reader from the memory stream to not cause assert
+		// when memory stream is open as VS_OPEN_WRITE only
+		CMemoryStream* readFromFileData = static_cast<CMemoryStream*>(fileData);
+		readStream.Open(readFromFileData->GetBasePointer(), VS_OPEN_READ, readFromFileData->GetSize());
+		fileData = &readStream;
+	}
 	fileData->Seek(0, VS_SEEK_SET);
 
 	// set the size and offset in the file bigfile
