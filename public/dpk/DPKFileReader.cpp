@@ -63,6 +63,11 @@ CDPKFileStream::~CDPKFileStream()
 	free(m_tmpDecompressData);
 }
 
+void CDPKFileStream::Ref_DeleteObject()
+{
+	delete this;
+}
+
 CBasePackageReader* CDPKFileStream::GetHostPackage() const
 { 
 	return (CBasePackageReader*)m_host;
@@ -259,9 +264,6 @@ CDPKFileReader::CDPKFileReader()
 
 CDPKFileReader::~CDPKFileReader()
 {
-	for(int i = 0; i < m_openFiles.numElem(); i++)
-		Close( m_openFiles[0] );
-	SAFE_DELETE_ARRAY(m_dpkFiles);
 }
 
 bool CDPKFileReader::FileExists(const char* filename) const
@@ -282,8 +284,6 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 
 bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*= nullptr*/)
 {
-	SAFE_DELETE_ARRAY(m_dpkFiles);
-
     m_packageName = filename;
 	m_packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, filename);
 
@@ -329,8 +329,8 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
     osFile.Seek(header.fileInfoOffset, COSFile::ESeekPos::SET);
 
 	// read file table
-	m_dpkFiles = PPNew dpkfileinfo_t[header.numFiles];
-	osFile.Read( m_dpkFiles, sizeof(dpkfileinfo_t) * header.numFiles );
+	m_dpkFiles.setNum(header.numFiles);
+	osFile.Read(m_dpkFiles.ptr(), sizeof(dpkfileinfo_t) * header.numFiles);
 
 	for (int i = 0; i < header.numFiles; ++i)
 		m_fileIndices.insert(m_dpkFiles[i].filenameHash, i);
@@ -340,14 +340,8 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
     return true;
 }
 
-IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
+IFilePtr CDPKFileReader::Open(const char* filename, int modeFlags)
 {
-	if( !m_dpkFiles)
-	{
-		MsgError("Package is not open!\n");
-		return nullptr;
-	}
-
 	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
 		ASSERT_FAIL("Archived files only can open for reading!\n");
@@ -369,28 +363,9 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	CDPKFileStream* newStream = PPNew CDPKFileStream(fileInfo, std::move(osFile));
+	CRefPtr<CDPKFileStream> newStream = CRefPtr_new(CDPKFileStream, fileInfo, std::move(osFile));
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 
-	{
-		Threading::CScopedMutex m(s_dpkMutex);
-		m_openFiles.append(newStream);
-	}
-
-	return newStream;
-}
-
-void CDPKFileReader::Close(IVirtualStream* fp)
-{
-    if (!fp)
-        return;
-
-	CDPKFileStream* fsp = (CDPKFileStream*)fp;
-	{
-		Threading::CScopedMutex m(s_dpkMutex);
-		if(!m_openFiles.fastRemove(fsp))
-			return;
-	}
-	delete fsp;
+	return IFilePtr(newStream);
 }

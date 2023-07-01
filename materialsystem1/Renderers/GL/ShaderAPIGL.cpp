@@ -1482,7 +1482,7 @@ void ShaderAPIGL::PreloadShadersFromCache()
 	{
 		const EqString filename = EqString::Format(SHADERCACHE_FOLDER "/%s", fsFind.GetPath());
 
-		IFile* pStream = g_fileSystem->Open(filename.ToCString(), "rb", SP_ROOT);
+		IFilePtr pStream = g_fileSystem->Open(filename.ToCString(), "rb", SP_ROOT);
 		if (!pStream)
 			continue;
 
@@ -1515,8 +1515,6 @@ void ShaderAPIGL::PreloadShadersFromCache()
 		}
 		else
 			delete pNewProgram;
-
-		g_fileSystem->Close(pStream);
 	}
 
 	Msg("Shader cache: %d shaders loaded\n", numShaders);
@@ -1535,7 +1533,6 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 
 	if (checksum != 0 && checksum != scHdr.checksum || scHdr.ident != SHADERCACHE_IDENT)
 	{
-		g_fileSystem->Close(pStream);
 		MsgWarning("Shader cache for '%s' outdated\n", pShaderOutput->GetName());
 		return false;
 	}
@@ -1775,13 +1772,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		bool needsCompile = true;
 		if (shaderCacheEnabled)
 		{
-			IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "rb", SP_ROOT);
+			IFilePtr pStream = g_fileSystem->Open(cacheFileName.ToCString(), "rb", SP_ROOT);
 			
 			if (pStream)
 			{
 				if (InitShaderFromCache(pShader, pStream, info.data.checksum))
 					needsCompile = false;
-				g_fileSystem->Close(pStream);
 			}
 		}
 
@@ -2159,7 +2155,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	// store the shader cache data
 	if (shaderCacheEnabled && info.data.text != nullptr)
 	{
-		IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "wb", SP_ROOT);
+		IFilePtr pStream = g_fileSystem->Open(cacheFileName.ToCString(), "wb", SP_ROOT);
 		if (pStream)
 		{
 			shaderCacheHdr_t scHdr;
@@ -2204,7 +2200,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			pStream->Write(samplers.ptr(), samplers.numElem(), sizeof(GLShaderSampler_t));
 			pStream->Write(uniforms.ptr(), uniforms.numElem(), sizeof(GLShaderConstant_t));
-			g_fileSystem->Close(pStream);
 		}
 		else
 			MsgError("ERROR: Cannot create shader cache file for %s\n", pShaderOutput->GetName());

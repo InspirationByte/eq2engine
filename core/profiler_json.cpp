@@ -24,7 +24,7 @@ bool EqCVTracerJSON::Start(const char* fileName)
 
 	CScopedMutex m(s_jsonTracerMutex);
 
-    IFile* file = g_fileSystem->Open(fileName, "wb", SP_ROOT);
+    IFilePtr file = g_fileSystem->Open(fileName, "wb", SP_ROOT);
 
 	if(!file)
 		return false;
@@ -58,7 +58,6 @@ void EqCVTracerJSON::Stop()
 
 	s_jsonTracerWriteCompleted.Wait();
 	m_outFile->Print("]}");
-	g_fileSystem->Close(m_outFile);
     m_outFile = nullptr;
 
     m_batchPrefix.Empty();

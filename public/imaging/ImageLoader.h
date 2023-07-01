@@ -17,28 +17,28 @@ class IVirtualStream;
 // Image loading flags
 enum EImageLoadingFlags
 {
-	DONT_LOAD_MIPMAPS =	0x1
+	DONT_LOAD_MIPMAPS = 0x1
 };
 
 #define ALL_MIPMAPS				127
 #define IMAGE_DEPTH_CUBEMAP		0
 
-const char*		GetFormatString(const ETextureFormat format);
-ETextureFormat	GetFormatFromString(const char *string);
+const char* GetFormatString(const ETextureFormat format);
+ETextureFormat	GetFormatFromString(const char* string);
 
 class CImage : public RefCountedObject<CImage>
 {
 public:
 	CImage();
-	CImage(const CImage &img);
+	CImage(const CImage& img);
 	~CImage();
 
 	ubyte*			Create(const ETextureFormat fmt, const int w, const int h, const int d, const int mipMapCount, const int arraysize = 1);
 	void			Free();
 	void			Clear();
 
-	void			SetName(const char* name) {m_szName = name;}
-	char*			GetName() const {return (char*)m_szName.GetData();}
+	void			SetName(const char* name) { m_szName = name; }
+	char*			GetName() const { return (char*)m_szName.GetData(); }
 
 	ubyte*			GetPixels() const { return m_pPixels; }
 	ubyte*			GetPixels(const int mipMapLevel) const;
@@ -49,19 +49,19 @@ public:
 	int				GetSliceSize(const int mipMapLevel = 0, ETextureFormat srcFormat = FORMAT_NONE) const;
 	int				GetPixelCount(const int firstMipMapLevel = 0, int nMipMapLevels = ALL_MIPMAPS) const;
 
-	int				GetWidth () const { return m_nWidth;  }
+	int				GetWidth() const { return m_nWidth; }
 	int				GetHeight() const { return m_nHeight; }
-	int				GetDepth () const { return m_nDepth;  }
-	int				GetWidth (const int mipMapLevel) const;
+	int				GetDepth() const { return m_nDepth; }
+	int				GetWidth(const int mipMapLevel) const;
 	int				GetHeight(const int mipMapLevel) const;
-	int				GetDepth (const int mipMapLevel) const;
+	int				GetDepth(const int mipMapLevel) const;
 	int				GetArraySize() const { return m_nArraySize; }
 
 	EImageType		GetImageType() const;
 
 	bool			Is1D()    const { return (m_nDepth == 1 && m_nHeight == 1); }
-	bool			Is2D()    const { return (m_nDepth == 1 && m_nHeight >  1); }
-	bool			Is3D()    const { return (m_nDepth >  1); }
+	bool			Is2D()    const { return (m_nDepth == 1 && m_nHeight > 1); }
+	bool			Is3D()    const { return (m_nDepth > 1); }
 	bool			IsCube()  const { return (m_nDepth == IMAGE_DEPTH_CUBEMAP); }
 	bool			IsArray() const { return (m_nArraySize > 1); }
 
@@ -71,44 +71,44 @@ public:
 	int				GetExtraDataBytes() const { return m_nExtraDataSize; }
 	ubyte*			GetExtraData() const { return m_pExtraData; }
 
-	void			SetExtraData(void *data, const int nBytes)
+	void			SetExtraData(void* data, const int nBytes)
 	{
 		m_nExtraDataSize = nBytes;
-		m_pExtraData = (unsigned char *) data;
+		m_pExtraData = (unsigned char*)data;
 	}
 
-	bool			LoadDDS(const char *fileName, uint flags = 0);
+	bool			LoadDDS(const char* fileName, uint flags = 0);
 #ifndef NO_JPEG
-	bool			LoadJPEG(const char *fileName);
+	bool			LoadJPEG(const char* fileName);
 #endif // NO_JPEG
 #ifndef NO_TGA
-	bool			LoadTGA(const char *fileName);
+	bool			LoadTGA(const char* fileName);
 #endif // NO_TGA
 
-	bool			LoadDDSfromHandle(IVirtualStream *fileHandle, uint flags = 0);
+	bool			LoadDDSfromHandle(IVirtualStreamPtr fileHandle, uint flags = 0);
 #ifndef NO_JPEG
-	bool			LoadJPEGfromHandle(IVirtualStream*fileHandle);
+	bool			LoadJPEGfromHandle(IVirtualStreamPtr fileHandle);
 #endif // NO_JPEG
 #ifndef NO_TGA
-	bool			LoadTGAfromHandle(IVirtualStream*fileHandle);
+	bool			LoadTGAfromHandle(IVirtualStreamPtr fileHandle);
 #endif // NO_TGA
 
-	bool			SaveDDS(const char *fileName);
+	bool			SaveDDS(const char* fileName);
 #ifndef NO_JPEG
-	bool			SaveJPEG(const char *fileName, const int quality);
+	bool			SaveJPEG(const char* fileName, const int quality);
 #endif // NO_JPEG
 #ifndef NO_TGA
-	bool			SaveTGA(const char *fileName);
+	bool			SaveTGA(const char* fileName);
 #endif // NO_TGA
 
-	bool			LoadImage(const char *fileName, uint flags = 0);
-	bool			LoadFromHandle(IVirtualStream*fileHandle,const char *fileName, uint flags = 0);
+	bool			LoadImage(const char* fileName, uint flags = 0);
+	bool			LoadFromHandle(IVirtualStreamPtr fileHandle, const char* fileName, uint flags = 0);
 
-	bool			SaveImage(const char *fileName);
+	bool			SaveImage(const char* fileName);
 
-	void			SetDepth(int nDepth)	{m_nDepth = nDepth;}
+	void			SetDepth(int nDepth) { m_nDepth = nDepth; }
 
-	void			LoadFromMemory(void *mem, const ETextureFormat frmt, const int wide, const int tall, const int nDepth, const int mipMapCount, bool ownsMemory);
+	void			LoadFromMemory(void* mem, const ETextureFormat frmt, const int wide, const int tall, const int nDepth, const int mipMapCount, bool ownsMemory);
 
 	bool			CreateMipMaps(const int mipMaps = ALL_MIPMAPS);
 	bool			RemoveMipMaps(const int firstMipMap, const int mipMapsToSave = ALL_MIPMAPS);
@@ -122,7 +122,7 @@ public:
 	bool			Convert(const ETextureFormat newFormat);
 
 protected:
-	ubyte*			m_pPixels;
+	ubyte* m_pPixels;
 	int				m_nWidth;
 	int				m_nHeight;
 	int				m_nDepth;
@@ -133,5 +133,5 @@ protected:
 	EqString		m_szName;
 
 	int				m_nExtraDataSize;
-	ubyte*			m_pExtraData;
+	ubyte* m_pExtraData;
 };

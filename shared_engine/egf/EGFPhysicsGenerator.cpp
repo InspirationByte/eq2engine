@@ -815,8 +815,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	Msg("  Object count: %d\n", m_objects.numElem());
 	Msg("  Joints count: %d\n", m_joints.numElem());
 	
-	IFile* outputFile = g_fileSystem->Open(filename, "wb");
-
+	IFilePtr outputFile = g_fileSystem->Open(filename, "wb");
 	if(!outputFile)
 	{
 		MsgError("Failed to create file '%s' for writing!\n", filename);
@@ -830,6 +829,4 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 
 	outputFile->Write(&header, 1, sizeof(header));
 	lumpsStream.WriteToFileStream(outputFile);
-
-	g_fileSystem->Close(outputFile);
 }

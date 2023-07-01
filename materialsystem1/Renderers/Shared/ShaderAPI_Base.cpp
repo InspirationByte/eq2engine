@@ -732,8 +732,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		shaderProgramCompileInfo_t& compileInfo = *static_cast<shaderProgramCompileInfo_t*>(userData);
 		compileInfo.data.includes.append(filename);
 
-		IFile* file = g_fileSystem->Open(filename, "rb");
-
+		IFilePtr file = g_fileSystem->Open(filename, "rb");
 		if (!file)
 			return nullptr;
 
@@ -743,10 +742,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		file->Read(buffer, 1, length);
 		buffer[length] = 0;
 
-		g_fileSystem->Close(file);
-
 		if (plen)
 			*plen = length;
+
 		return buffer;
 	};
 

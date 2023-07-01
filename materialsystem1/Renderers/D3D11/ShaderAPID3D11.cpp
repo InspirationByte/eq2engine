@@ -1228,7 +1228,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	EqString cache_file_name(varargs("ShaderCache_DX10/%s.scache", pShaderOutput->GetName()));
 
-	IFile* pStream = nullptr;
+	IFilePtr pStream = nullptr;
 
 	bool needsCompile = true;
 
@@ -1298,8 +1298,6 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			{
 				MsgWarning("Shader cache for '%s' broken and will be recompiled\n", pShaderOutput->GetName());
 			}
-
-			g_fileSystem->Close(pStream);
 			pStream = nullptr;
 		}
 
@@ -1312,7 +1310,6 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		if(!pStream)
 		{
 			MsgError("ERROR: Cannot create shader cache for %s\n",pShaderOutput->GetName());
-
 			pStream = nullptr;
 		}
 	}
@@ -1510,8 +1507,6 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		pStream->Seek(0,VS_SEEK_SET);
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-
-		g_fileSystem->Close(pStream);
 	}
 
 create_constant_buffers:

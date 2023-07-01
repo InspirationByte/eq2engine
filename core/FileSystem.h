@@ -21,6 +21,8 @@ class CFile : public IFile
 public:
 	CFile(COSFile&& file);
 
+	void				Ref_DeleteObject();
+
     int					Seek( long pos, EVirtStreamSeek seekType );
     long				Tell() const;
     size_t				Read( void *dest, size_t count, size_t size);
@@ -85,8 +87,7 @@ public:
 	// File operations
 	//------------------------------------------------------------
 
-    IFile*						Open(const char* filename, const char* mode, int searchFlags = -1 );
-    void						Close( IFile *fp );
+    IFilePtr					Open(const char* filename, const char* mode, int searchFlags = -1 );
 
 	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search);
 	bool						FileExist(const char* filename, int searchFlags = -1) const;
@@ -163,11 +164,8 @@ protected:
 	};
 
 	Array<SearchPathInfo*>		m_directories{ PP_SL };		// mod data, for fall back
-
     Array<CBasePackageReader*>	m_fsPackages{ PP_SL };		// package serving as FS layers
-
 	Array<IFilePackageReader*>	m_openPackages{ PP_SL };
-    Array<IFile*>				m_openFiles{ PP_SL };
 
 	Array<DKFINDDATA*>			m_findDatas{ PP_SL };
 	Array<DKMODULE*>			m_modules{ PP_SL };

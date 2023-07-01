@@ -47,16 +47,12 @@ DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 		return;
 	}
 	
-	IFile* dbFile = g_fileSystem->Open(CONTROLLER_DB_FILENAME, "wt+", SP_DATA);
-	ASSERT(dbFile);
-
+	IFilePtr dbFile = g_fileSystem->Open(CONTROLLER_DB_FILENAME, "wt+", SP_DATA);
 	if(!dbFile)
 		return;
 
 	dbFile->Print(CMD_ARGV(0).ToCString());
 	dbFile->Print("\n");
-
-	g_fileSystem->Close(dbFile);
 }
 
 static CEqGameControllerSDL s_controllers[MAX_CONTROLLERS];

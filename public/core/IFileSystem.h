@@ -19,7 +19,9 @@ enum ESearchPath
     SP_MOD	= (1 << 3),
 };
 
-using IFile = IVirtualStream; // TODO: wrap around RefCounted instead
+using IFile = IVirtualStream;
+using IFilePtr = IVirtualStreamPtr;
+
 struct DKMODULE; // module structure
 struct DKFINDDATA;
 
@@ -68,8 +70,7 @@ public:
 	// File operations
 	//------------------------------------------------------------
 
-    virtual IFile*			Open( const char* filename, const char* mode = "r", int searchFlags = -1) = 0;
-    virtual void			Close( IFile* pFile ) = 0;
+    virtual IFilePtr		Open( const char* filename, const char* mode = "r", int searchFlags = -1) = 0;
 
 	// other operations
 	virtual bool			FileExist(const char* filename, int searchFlags = -1) const = 0;

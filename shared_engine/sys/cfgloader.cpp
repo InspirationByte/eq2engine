@@ -15,7 +15,7 @@
 
 void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*/)
 {
-	IFile *cfgfile = g_fileSystem->Open(pszFilename,"w");
+	IFilePtr cfgfile = g_fileSystem->Open(pszFilename,"w");
 	if(!cfgfile)
 	{
 		MsgError("Failed to write configuraton file '%s'\n", pszFilename);
@@ -40,8 +40,6 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 				cfgfile->Print("seti %s %s\n",cv->GetName(),cv->GetString());
 		}
 	}
-
-	g_fileSystem->Close(cfgfile);
 }
 
 DECLARE_CMD(writecfg,"Saves the confirugation file", 0)

@@ -72,7 +72,7 @@ struct DDSHeader
 
 	struct
 	{
-        uint32 dwSize;
+		uint32 dwSize;
 		uint32 dwFlags;
 		uint32 dwFourCC;
 		uint32 dwRGBBitCount;
@@ -94,11 +94,11 @@ struct DDSHeader
 
 struct DDSHeaderDXT10
 {
-    uint32 dxgiFormat;
-    uint32 resourceDimension;
-    uint32 miscFlag;
-    uint32 arraySize;
-    uint32 reserved;
+	uint32 dxgiFormat;
+	uint32 resourceDimension;
+	uint32 miscFlag;
+	uint32 arraySize;
+	uint32 reserved;
 };
 
 struct TGAHeader
@@ -125,7 +125,7 @@ struct TGAHeader
 struct FormatString
 {
 	ETextureFormat format;
-	const char *string;
+	const char* string;
 };
 
 static const FormatString formatStrings[] = {
@@ -165,15 +165,15 @@ static const FormatString formatStrings[] = {
 
 const char* GetFormatString(const ETextureFormat format)
 {
-	for (unsigned int i = 0; i < elementsOf(formatStrings); i++){
+	for (unsigned int i = 0; i < elementsOf(formatStrings); i++) {
 		if (format == formatStrings[i].format) return formatStrings[i].string;
 	}
 	return nullptr;
 }
 
-ETextureFormat GetFormatFromString(const char *string)
+ETextureFormat GetFormatFromString(const char* string)
 {
-	for (unsigned int i = 0; i < elementsOf(formatStrings); i++){
+	for (unsigned int i = 0; i < elementsOf(formatStrings); i++) {
 		if (stricmp(string, formatStrings[i].string) == 0) return formatStrings[i].format;
 	}
 	return FORMAT_NONE;
@@ -181,14 +181,13 @@ ETextureFormat GetFormatFromString(const char *string)
 
 
 template <typename DATA_TYPE>
-inline void _SwapChannels(DATA_TYPE *pixels, int nPixels, const int channels, const int ch0, const int ch1)
+inline void _SwapChannels(DATA_TYPE* pixels, int nPixels, const int channels, const int ch0, const int ch1)
 {
 	do
 	{
 		QuickSwap<DATA_TYPE>(pixels[ch0], pixels[ch1]);
 		pixels += channels;
-	}
-	while (--nPixels);
+	} while (--nPixels);
 }
 
 
@@ -197,9 +196,9 @@ inline void _SwapChannels(DATA_TYPE *pixels, int nPixels, const int channels, co
 CImage::CImage()
 {
 	m_pPixels = nullptr;
-	m_nWidth  = 0;
+	m_nWidth = 0;
 	m_nHeight = 0;
-	m_nDepth  = 0;
+	m_nDepth = 0;
 	m_nMipMaps = 0;
 	m_nArraySize = 0;
 	m_nFormat = FORMAT_NONE;
@@ -208,11 +207,11 @@ CImage::CImage()
 	m_pExtraData = nullptr;
 }
 
-CImage::CImage(const CImage &img)
+CImage::CImage(const CImage& img)
 {
-	m_nWidth  = img.m_nWidth;
+	m_nWidth = img.m_nWidth;
 	m_nHeight = img.m_nHeight;
-	m_nDepth  = img.m_nDepth;
+	m_nDepth = img.m_nDepth;
 	m_nMipMaps = img.m_nMipMaps;
 	m_nArraySize = img.m_nArraySize;
 	m_nFormat = img.m_nFormat;
@@ -222,7 +221,7 @@ CImage::CImage(const CImage &img)
 	memcpy(m_pPixels, img.m_pPixels, size);
 
 	m_nExtraDataSize = img.m_nExtraDataSize;
-	if(m_nExtraDataSize)
+	if (m_nExtraDataSize)
 	{
 		m_pExtraData = PPNew ubyte[m_nExtraDataSize];
 		memcpy(m_pExtraData, img.m_pExtraData, m_nExtraDataSize);
@@ -238,10 +237,10 @@ CImage::~CImage()
 
 ubyte* CImage::Create(const ETextureFormat fmt, const int w, const int h, const int d, const int mipMapCount, const int arraysize)
 {
-    m_nFormat = fmt;
-    m_nWidth  = w;
+	m_nFormat = fmt;
+	m_nWidth = w;
 	m_nHeight = h;
-	m_nDepth  = d;
+	m_nDepth = d;
 	m_nMipMaps = mipMapCount;
 	m_nArraySize = arraysize;
 
@@ -260,9 +259,9 @@ void CImage::Clear()
 {
 	Free();
 
-	m_nWidth  = 0;
+	m_nWidth = 0;
 	m_nHeight = 0;
-	m_nDepth  = 0;
+	m_nDepth = 0;
 	m_nMipMaps = 0;
 	m_nArraySize = 0;
 	m_nFormat = FORMAT_NONE;
@@ -271,7 +270,7 @@ void CImage::Clear()
 
 ubyte* CImage::GetPixels(const int mipMapLevel) const
 {
-	return (mipMapLevel < m_nMipMaps)? m_pPixels + GetMipMappedSize(0, mipMapLevel) : nullptr;
+	return (mipMapLevel < m_nMipMaps) ? m_pPixels + GetMipMappedSize(0, mipMapLevel) : nullptr;
 }
 
 ubyte* CImage::GetPixels(const int mipMapLevel, const int arraySlice) const
@@ -299,9 +298,9 @@ int CImage::GetMipMapCountFromDimesions() const
 
 int CImage::GetMipMappedSize(const int firstMipMapLevel, int nMipMapLevels, ETextureFormat srcFormat) const
 {
-	int w = GetWidth (firstMipMapLevel);
+	int w = GetWidth(firstMipMapLevel);
 	int h = GetHeight(firstMipMapLevel);
-	int d = GetDepth (firstMipMapLevel);
+	int d = GetDepth(firstMipMapLevel);
 
 	if (srcFormat == FORMAT_NONE)
 		srcFormat = m_nFormat;
@@ -335,7 +334,7 @@ int CImage::GetMipMappedSize(const int firstMipMapLevel, int nMipMapLevels, ETex
 
 int CImage::GetSliceSize(const int mipMapLevel, ETextureFormat srcFormat) const
 {
-	int w = GetWidth (mipMapLevel);
+	int w = GetWidth(mipMapLevel);
 	int h = GetHeight(mipMapLevel);
 
 	if (srcFormat == FORMAT_NONE)
@@ -352,9 +351,9 @@ int CImage::GetSliceSize(const int mipMapLevel, ETextureFormat srcFormat) const
 
 int CImage::GetPixelCount(const int firstMipMapLevel, int nMipMapLevels) const
 {
-	int w = GetWidth (firstMipMapLevel);
+	int w = GetWidth(firstMipMapLevel);
 	int h = GetHeight(firstMipMapLevel);
-	int d = GetDepth (firstMipMapLevel);
+	int d = GetDepth(firstMipMapLevel);
 
 	int size = 0;
 
@@ -378,19 +377,19 @@ int CImage::GetPixelCount(const int firstMipMapLevel, int nMipMapLevels) const
 int CImage::GetWidth(const int mipMapLevel) const
 {
 	int a = m_nWidth >> mipMapLevel;
-	return (a == 0)? 1 : a;
+	return (a == 0) ? 1 : a;
 }
 
 int CImage::GetHeight(const int mipMapLevel) const
 {
 	int a = m_nHeight >> mipMapLevel;
-	return (a == 0)? 1 : a;
+	return (a == 0) ? 1 : a;
 }
 
 int CImage::GetDepth(const int mipMapLevel) const
 {
 	int a = m_nDepth >> mipMapLevel;
-	return (a == 0)? 1 : a;
+	return (a == 0) ? 1 : a;
 }
 
 EImageType CImage::GetImageType() const
@@ -410,21 +409,23 @@ EImageType CImage::GetImageType() const
 	return IMAGE_TYPE_INVALID;
 }
 
-bool CImage::LoadDDS(const char *fileName, uint flags)
+bool CImage::LoadDDS(const char* fileName, uint flags)
 {
-	IFile *file;
-	if ((file = g_fileSystem->Open(fileName, "rb")) == nullptr) return false;
+	IFilePtr file;
+	if (!(file = g_fileSystem->Open(fileName, "rb")))
+		return false;
 
 	SetName(fileName);
 
-	return LoadDDSfromHandle(file,flags);
+	return LoadDDSfromHandle(file, flags);
 }
 
 #ifndef NO_JPEG
-bool CImage::LoadJPEG(const char *fileName)
+bool CImage::LoadJPEG(const char* fileName)
 {
-	IFile *file;
-	if ((file = g_fileSystem->Open(fileName, "rb")) == nullptr) return false;
+	IFilePtr file;
+	if (!(file = g_fileSystem->Open(fileName, "rb")))
+		return false;
 
 	SetName(fileName);
 
@@ -433,10 +434,11 @@ bool CImage::LoadJPEG(const char *fileName)
 #endif // NO_JPEG
 
 #ifndef NO_TGA
-bool CImage::LoadTGA(const char *fileName)
+bool CImage::LoadTGA(const char* fileName)
 {
-	IFile *file;
-	if ((file = g_fileSystem->Open(fileName, "rb")) == nullptr) return false;
+	IFilePtr file;
+	if (!(file = g_fileSystem->Open(fileName, "rb")))
+		return false;
 
 	SetName(fileName);
 
@@ -444,114 +446,109 @@ bool CImage::LoadTGA(const char *fileName)
 }
 #endif
 
-bool CImage::LoadDDSfromHandle(IFile *fileHandle, uint flags)
+bool CImage::LoadDDSfromHandle(IFilePtr fileHandle, uint flags)
 {
 	DDSHeader header;
 
-	IFile *file = fileHandle;
-
-	if(!file)
+	if (!fileHandle)
 		return false;
 
-	file->Read(&header, sizeof(header), 1);
+	fileHandle->Read(&header, sizeof(header), 1);
 
-	if (header.dwMagic != MCHAR4('D','D','S',' '))
+	if (header.dwMagic != MCHAR4('D', 'D', 'S', ' '))
 	{
 		MsgError("This image is not Direct Draw Surface!\n");
-		g_fileSystem->Close(file);
 		return false;
 	}
 
-	m_nWidth  = header.dwWidth;
+	m_nWidth = header.dwWidth;
 	m_nHeight = header.dwHeight;
-	m_nDepth  = (header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP) ? IMAGE_DEPTH_CUBEMAP : (header.dwDepth == 0) ? 1 : header.dwDepth;
-	m_nMipMaps = ((flags & DONT_LOAD_MIPMAPS) || (header.dwMipMapCount == 0))? 1 : header.dwMipMapCount;
+	m_nDepth = (header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP) ? IMAGE_DEPTH_CUBEMAP : (header.dwDepth == 0) ? 1 : header.dwDepth;
+	m_nMipMaps = ((flags & DONT_LOAD_MIPMAPS) || (header.dwMipMapCount == 0)) ? 1 : header.dwMipMapCount;
 	m_nArraySize = 1;
 
-	if (header.ddpfPixelFormat.dwFourCC == MCHAR4('D','X','1','0'))
+	if (header.ddpfPixelFormat.dwFourCC == MCHAR4('D', 'X', '1', '0'))
 	{
 		DDSHeaderDXT10 dxt10Header;
-		file->Read(&dxt10Header, sizeof(dxt10Header), 1);
+		fileHandle->Read(&dxt10Header, sizeof(dxt10Header), 1);
 
 		switch (dxt10Header.dxgiFormat)
 		{
-			case 61: m_nFormat = FORMAT_R8; break;
-			case 49: m_nFormat = FORMAT_RG8; break;
-			case 28: m_nFormat = FORMAT_RGBA8; break;
+		case 61: m_nFormat = FORMAT_R8; break;
+		case 49: m_nFormat = FORMAT_RG8; break;
+		case 28: m_nFormat = FORMAT_RGBA8; break;
 
-			case 56: m_nFormat = FORMAT_R16; break;
-			case 35: m_nFormat = FORMAT_RG16; break;
-			case 11: m_nFormat = FORMAT_RGBA16; break;
+		case 56: m_nFormat = FORMAT_R16; break;
+		case 35: m_nFormat = FORMAT_RG16; break;
+		case 11: m_nFormat = FORMAT_RGBA16; break;
 
-			case 54: m_nFormat = FORMAT_R16F; break;
-			case 34: m_nFormat = FORMAT_RG16F; break;
-			case 10: m_nFormat = FORMAT_RGBA16F; break;
+		case 54: m_nFormat = FORMAT_R16F; break;
+		case 34: m_nFormat = FORMAT_RG16F; break;
+		case 10: m_nFormat = FORMAT_RGBA16F; break;
 
-			case 41: m_nFormat = FORMAT_R32F; break;
-			case 16: m_nFormat = FORMAT_RG32F; break;
-			case 6:  m_nFormat = FORMAT_RGB32F; break;
-			case 2:  m_nFormat = FORMAT_RGBA32F; break;
+		case 41: m_nFormat = FORMAT_R32F; break;
+		case 16: m_nFormat = FORMAT_RG32F; break;
+		case 6:  m_nFormat = FORMAT_RGB32F; break;
+		case 2:  m_nFormat = FORMAT_RGBA32F; break;
 
-			case 67: m_nFormat = FORMAT_RGB9E5; break;
-			case 26: m_nFormat = FORMAT_RG11B10F; break;
-			case 24: m_nFormat = FORMAT_RGB10A2; break;
+		case 67: m_nFormat = FORMAT_RGB9E5; break;
+		case 26: m_nFormat = FORMAT_RG11B10F; break;
+		case 24: m_nFormat = FORMAT_RGB10A2; break;
 
-			case 71: m_nFormat = FORMAT_DXT1; break;
-			case 74: m_nFormat = FORMAT_DXT3; break;
-			case 77: m_nFormat = FORMAT_DXT5; break;
-			case 80: m_nFormat = FORMAT_ATI1N; break;
-			case 83: m_nFormat = FORMAT_ATI2N; break;
-			case 0:
-                m_nFormat = FORMAT_ETC2;
-				MsgError("Invalid DDS file %s\n", GetName());
-				//g_fileSystem->Close(file);
-				//return false;
-				break;
-			default:
-				MsgError("Image %s has unknown or invalid DXGI format %d\n", GetName(), dxt10Header.dxgiFormat);
-				g_fileSystem->Close(file);
-				return false;
+		case 71: m_nFormat = FORMAT_DXT1; break;
+		case 74: m_nFormat = FORMAT_DXT3; break;
+		case 77: m_nFormat = FORMAT_DXT5; break;
+		case 80: m_nFormat = FORMAT_ATI1N; break;
+		case 83: m_nFormat = FORMAT_ATI2N; break;
+		case 0:
+			m_nFormat = FORMAT_ETC2;
+			MsgError("Invalid DDS file %s\n", GetName());
+			//g_fileSystem->Close(file);
+			//return false;
+			break;
+		default:
+			MsgError("Image %s has unknown or invalid DXGI format %d\n", GetName(), dxt10Header.dxgiFormat);
+			return false;
 		}
 	}
 	else
 	{
 
-		switch (header.ddpfPixelFormat.dwFourCC){
-			case 34:  m_nFormat = FORMAT_RG16; break;
-			case 36:  m_nFormat = FORMAT_RGBA16; break;
-			case 111: m_nFormat = FORMAT_R16F; break;
-			case 112: m_nFormat = FORMAT_RG16F; break;
-			case 113: m_nFormat = FORMAT_RGBA16F; break;
-			case 114: m_nFormat = FORMAT_R32F; break;
-			case 115: m_nFormat = FORMAT_RG32F; break;
-			case 116: m_nFormat = FORMAT_RGBA32F; break;
-			case MCHAR4('D','X','T','1'): m_nFormat = FORMAT_DXT1; break;
-			case MCHAR4('D','X','T','3'): m_nFormat = FORMAT_DXT3; break;
-			case MCHAR4('D','X','T','5'): m_nFormat = FORMAT_DXT5; break;
-			case MCHAR4('A','T','I','1'): m_nFormat = FORMAT_ATI1N; break;
-			case MCHAR4('A','T','I','2'): m_nFormat = FORMAT_ATI2N; break;
-			case MCHAR4('E','T','C','1'): m_nFormat = FORMAT_ETC1; break;
-			case MCHAR4('E','T','C','2'): m_nFormat = FORMAT_ETC2; break;
-			case MCHAR4('E','T','C','P'): m_nFormat = FORMAT_ETC2A1; break;
-			case MCHAR4('E','T','C','A'): m_nFormat = FORMAT_ETC2A8; break;
+		switch (header.ddpfPixelFormat.dwFourCC) {
+		case 34:  m_nFormat = FORMAT_RG16; break;
+		case 36:  m_nFormat = FORMAT_RGBA16; break;
+		case 111: m_nFormat = FORMAT_R16F; break;
+		case 112: m_nFormat = FORMAT_RG16F; break;
+		case 113: m_nFormat = FORMAT_RGBA16F; break;
+		case 114: m_nFormat = FORMAT_R32F; break;
+		case 115: m_nFormat = FORMAT_RG32F; break;
+		case 116: m_nFormat = FORMAT_RGBA32F; break;
+		case MCHAR4('D', 'X', 'T', '1'): m_nFormat = FORMAT_DXT1; break;
+		case MCHAR4('D', 'X', 'T', '3'): m_nFormat = FORMAT_DXT3; break;
+		case MCHAR4('D', 'X', 'T', '5'): m_nFormat = FORMAT_DXT5; break;
+		case MCHAR4('A', 'T', 'I', '1'): m_nFormat = FORMAT_ATI1N; break;
+		case MCHAR4('A', 'T', 'I', '2'): m_nFormat = FORMAT_ATI2N; break;
+		case MCHAR4('E', 'T', 'C', '1'): m_nFormat = FORMAT_ETC1; break;
+		case MCHAR4('E', 'T', 'C', '2'): m_nFormat = FORMAT_ETC2; break;
+		case MCHAR4('E', 'T', 'C', 'P'): m_nFormat = FORMAT_ETC2A1; break;
+		case MCHAR4('E', 'T', 'C', 'A'): m_nFormat = FORMAT_ETC2A8; break;
+		default:
+			switch (header.ddpfPixelFormat.dwRGBBitCount)
+			{
+			case 8: m_nFormat = FORMAT_I8; break;
+			case 16:
+				m_nFormat = (header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xF000) ? FORMAT_RGBA4 :
+					(header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xFF00) ? FORMAT_IA8 :
+					(header.ddpfPixelFormat.dwBBitMask == 0x1F) ? FORMAT_RGB565 : FORMAT_I16;
+				break;
+			case 24: m_nFormat = FORMAT_RGB8; break;
+			case 32:
+				m_nFormat = (header.ddpfPixelFormat.dwRBitMask == 0x3FF00000) ? FORMAT_RGB10A2 : FORMAT_RGBA8;
+				break;
 			default:
-				switch (header.ddpfPixelFormat.dwRGBBitCount)
-				{
-					case 8: m_nFormat = FORMAT_I8; break;
-					case 16:
-						m_nFormat = (header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xF000)? FORMAT_RGBA4 :
-								 (header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xFF00)? FORMAT_IA8 :
-								 (header.ddpfPixelFormat.dwBBitMask == 0x1F)? FORMAT_RGB565 : FORMAT_I16;
-						break;
-					case 24: m_nFormat = FORMAT_RGB8; break;
-					case 32:
-						m_nFormat = (header.ddpfPixelFormat.dwRBitMask == 0x3FF00000)? FORMAT_RGB10A2 : FORMAT_RGBA8;
-						break;
-					default:
-						MsgError("Image %s has unknown format.\n", GetName());
-						g_fileSystem->Close(file);
-						return false;
-				}
+				MsgError("Image %s has unknown format.\n", GetName());
+				return false;
+			}
 		}
 	}
 
@@ -564,31 +561,29 @@ bool CImage::LoadDDSfromHandle(IFile *fileHandle, uint flags)
 			for (int mipMapLevel = 0; mipMapLevel < m_nMipMaps; mipMapLevel++)
 			{
 				int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
-				ubyte *src = GetPixels(mipMapLevel) + face * faceSize;
+				ubyte* src = GetPixels(mipMapLevel) + face * faceSize;
 
-				file->Read(src, 1, faceSize);
+				fileHandle->Read(src, 1, faceSize);
 			}
 			if ((flags & DONT_LOAD_MIPMAPS) && header.dwMipMapCount > 1)
 			{
-				file->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, VS_SEEK_CUR);
+				fileHandle->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, VS_SEEK_CUR);
 			}
 		}
 	}
 	else
-		file->Read(m_pPixels, 1, size);
+		fileHandle->Read(m_pPixels, 1, size);
 
 	if ((m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8) && header.ddpfPixelFormat.dwBBitMask == 0xFF)
 	{
 		int nChannels = GetChannelCount(m_nFormat);
 		_SwapChannels(m_pPixels, size / nChannels, nChannels, 0, 2);
 	}
-
-	g_fileSystem->Close(file);
 	return true;
 }
 
 #ifndef NO_JPEG
-bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
+bool CImage::LoadJPEGfromHandle(IFilePtr fileHandle)
 {
 	jpeg_decompress_struct cinfo;
 	jpeg_error_mgr jerr;
@@ -596,10 +591,10 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_decompress(&cinfo);
 
-	long fileSize = fileHandle->GetSize();
+	const long fileSize = fileHandle->GetSize();
 	ubyte* jpegFileBuff = (ubyte*)PPAlloc(fileSize);
 	fileHandle->Read(jpegFileBuff, 1, fileSize);
-	g_fileSystem->Close(fileHandle);
+	fileHandle = nullptr;
 
 	jpeg_mem_src(&cinfo, (ubyte*)jpegFileBuff, fileSize);
 	jpeg_read_header(&cinfo, TRUE);
@@ -607,26 +602,26 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 
 	switch (cinfo.num_components)
 	{
-		case 1:
-			m_nFormat = FORMAT_I8;
-			break;
-		case 3:
-			m_nFormat = FORMAT_RGB8;
-			break;
-		case 4:
-			m_nFormat = FORMAT_RGBA8;
-			break;
+	case 1:
+		m_nFormat = FORMAT_I8;
+		break;
+	case 3:
+		m_nFormat = FORMAT_RGB8;
+		break;
+	case 4:
+		m_nFormat = FORMAT_RGBA8;
+		break;
 	}
 
-	m_nWidth  = cinfo.output_width;
+	m_nWidth = cinfo.output_width;
 	m_nHeight = cinfo.output_height;
-	m_nDepth  = 1;
+	m_nDepth = 1;
 	m_nMipMaps = 1;
 	m_nArraySize = 1;
 
 	m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * cinfo.num_components];
 
-	for( ubyte *curr_scanline = m_pPixels ; cinfo.output_scanline < cinfo.output_height; curr_scanline += m_nWidth * cinfo.num_components)
+	for (ubyte* curr_scanline = m_pPixels; cinfo.output_scanline < cinfo.output_height; curr_scanline += m_nWidth * cinfo.num_components)
 		jpeg_read_scanlines(&cinfo, &curr_scanline, 1);
 
 	/*
@@ -648,38 +643,36 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 #endif // NO_JPEG
 
 #ifndef NO_TGA
-bool CImage::LoadTGAfromHandle(IFile *fileHandle)
+bool CImage::LoadTGAfromHandle(IFilePtr fileHandle)
 {
 	TGAHeader header;
 
 	int size, x, y, pixelSize, palLength;
-	ubyte *tempBuffer, *fBuffer, *dest, *src;
+	ubyte* tempBuffer, * fBuffer, * dest, * src;
 	uint tempPixel;
 	ubyte palette[768];
-	IFile *file = fileHandle;
-
 
 	// Find file size
-	size = file->GetSize();
+	size = fileHandle->GetSize();
 
 	// Read the header
-	file->Read(&header, sizeof(header), 1);
+	fileHandle->Read(&header, sizeof(header), 1);
 
-	m_nWidth  = header.width;
+	m_nWidth = header.width;
 	m_nHeight = header.height;
-	m_nDepth  = 1;
+	m_nDepth = 1;
 	m_nMipMaps = 1;
 	m_nArraySize = 1;
 
 	pixelSize = header.bpp / 8;
 
 	if ((palLength = header.descriptionlen + header.cmapentries * header.cmapbits / 8) > 0)
-		file->Read(palette, sizeof(palette), 1);
+		fileHandle->Read(palette, sizeof(palette), 1);
 
 	// Read the file data
 	fBuffer = PPNew ubyte[size - sizeof(header) - palLength];
-	file->Read(fBuffer, size - sizeof(header) - palLength, 1);
-	g_fileSystem->Close(file);
+	fileHandle->Read(fBuffer, size - sizeof(header) - palLength, 1);
+	fileHandle = nullptr;
 
 	size = m_nWidth * m_nHeight * pixelSize;
 
@@ -689,7 +682,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 	// Decode if rle compressed. Bit 3 of .imagetype tells if the file is compressed
 	if (header.imagetype & 0x08)
 	{
-		uint c,count;
+		uint c, count;
 
 		dest = tempBuffer;
 		src = fBuffer;
@@ -707,10 +700,9 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 				// Rle packet
 				do
 				{
-					memcpy(dest,src,pixelSize);
+					memcpy(dest, src, pixelSize);
 					dest += pixelSize;
-				}
-				while (--count);
+				} while (--count);
 
 				src += pixelSize;
 			}
@@ -718,7 +710,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 			{
 				// Raw packet
 				count *= pixelSize;
-				memcpy(dest,src,count);
+				memcpy(dest, src, count);
 				src += count;
 				dest += count;
 			}
@@ -731,7 +723,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 
 	src += (header.bpp / 8) * m_nWidth * (m_nHeight - 1);
 
-	switch(header.bpp)
+	switch (header.bpp)
 	{
 	case 8:
 		if (palLength > 0)
@@ -769,11 +761,11 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		{
 			for (x = 0; x < m_nWidth; x++)
 			{
-				tempPixel = *((unsigned short *) src);
+				tempPixel = *((unsigned short*)src);
 
 				dest[0] = ((tempPixel >> 10) & 0x1F) << 3;
-				dest[1] = ((tempPixel >>  5) & 0x1F) << 3;
-				dest[2] = ((tempPixel      ) & 0x1F) << 3;
+				dest[1] = ((tempPixel >> 5) & 0x1F) << 3;
+				dest[2] = ((tempPixel) & 0x1F) << 3;
 				dest[3] = ((tempPixel >> 15) ? 0xFF : 0);
 				dest += 4;
 				src += 2;
@@ -815,16 +807,16 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		break;
 	}
 
-	delete [] tempBuffer;
-	delete [] fBuffer;
+	delete[] tempBuffer;
+	delete[] fBuffer;
 
 	return true;
 }
 #endif
 
-bool CImage::LoadImage(const char *fileName, uint flags)
+bool CImage::LoadImage(const char* fileName, uint flags)
 {
-	const char *extension = strrchr(fileName, '.');
+	const char* extension = strrchr(fileName, '.');
 
 	Clear();
 
@@ -853,9 +845,9 @@ bool CImage::LoadImage(const char *fileName, uint flags)
 	return true;
 }
 
-bool CImage::LoadFromHandle(IFile *fileHandle,const char *fileName, uint flags)
+bool CImage::LoadFromHandle(IFilePtr fileHandle, const char* fileName, uint flags)
 {
-	const char *extension = strrchr(fileName, '.');
+	const char* extension = strrchr(fileName, '.');
 
 	Clear();
 
@@ -883,7 +875,7 @@ bool CImage::LoadFromHandle(IFile *fileHandle,const char *fileName, uint flags)
 	return true;
 }
 
-bool CImage::SaveDDS(const char *fileName)
+bool CImage::SaveDDS(const char* fileName)
 {
 	// Set up the header
 	DDSHeader header;
@@ -893,26 +885,26 @@ bool CImage::SaveDDS(const char *fileName)
 
 	header.dwMagic = MCHAR4('D', 'D', 'S', ' ');
 	header.dwSize = 124;
-	header.dwFlags = DDSD_CAPS | DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT | (m_nMipMaps > 1? DDSD_MIPMAPCOUNT : 0) | (m_nDepth > 1? DDSD_DEPTH : 0);
+	header.dwFlags = DDSD_CAPS | DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT | (m_nMipMaps > 1 ? DDSD_MIPMAPCOUNT : 0) | (m_nDepth > 1 ? DDSD_DEPTH : 0);
 	header.dwHeight = m_nHeight;
-	header.dwWidth  = m_nWidth;
+	header.dwWidth = m_nWidth;
 	header.dwPitchOrLinearSize = 0;
 	header.dwDepth = (m_nDepth > 1) ? m_nDepth : 0;
-	header.dwMipMapCount = (m_nMipMaps > 1)? m_nMipMaps : 0;
+	header.dwMipMapCount = (m_nMipMaps > 1) ? m_nMipMaps : 0;
 
 	int nChannels = GetChannelCount(m_nFormat);
 
 	header.ddpfPixelFormat.dwSize = 32;
 	if (m_nFormat <= FORMAT_I16 || m_nFormat == FORMAT_RGB10A2)
 	{
-		header.ddpfPixelFormat.dwFlags = ((nChannels < 3)? 0x00020000 : DDPF_RGB) | ((nChannels & 1)? 0 : DDPF_ALPHAPIXELS);
+		header.ddpfPixelFormat.dwFlags = ((nChannels < 3) ? 0x00020000 : DDPF_RGB) | ((nChannels & 1) ? 0 : DDPF_ALPHAPIXELS);
 		if (m_nFormat <= FORMAT_RGBA8)
 		{
 			header.ddpfPixelFormat.dwRGBBitCount = 8 * nChannels;
-			header.ddpfPixelFormat.dwRBitMask = (nChannels > 2)? 0x00FF0000 : 0xFF;
-			header.ddpfPixelFormat.dwGBitMask = (nChannels > 1)? 0x0000FF00 : 0;
-			header.ddpfPixelFormat.dwBBitMask = (nChannels > 1)? 0x000000FF : 0;
-			header.ddpfPixelFormat.dwRGBAlphaBitMask = (nChannels == 4)? 0xFF000000 : (nChannels == 2)? 0xFF00 : 0;
+			header.ddpfPixelFormat.dwRBitMask = (nChannels > 2) ? 0x00FF0000 : 0xFF;
+			header.ddpfPixelFormat.dwGBitMask = (nChannels > 1) ? 0x0000FF00 : 0;
+			header.ddpfPixelFormat.dwBBitMask = (nChannels > 1) ? 0x000000FF : 0;
+			header.ddpfPixelFormat.dwRGBAlphaBitMask = (nChannels == 4) ? 0xFF000000 : (nChannels == 2) ? 0xFF00 : 0;
 		}
 		else if (m_nFormat == FORMAT_I16)
 		{
@@ -934,48 +926,48 @@ bool CImage::SaveDDS(const char *fileName)
 
 		switch (m_nFormat)
 		{
-			case FORMAT_RG16:    header.ddpfPixelFormat.dwFourCC = 34; break;
-			case FORMAT_RGBA16:  header.ddpfPixelFormat.dwFourCC = 36; break;
-			case FORMAT_R16F:    header.ddpfPixelFormat.dwFourCC = 111; break;
-			case FORMAT_RG16F:   header.ddpfPixelFormat.dwFourCC = 112; break;
-			case FORMAT_RGBA16F: header.ddpfPixelFormat.dwFourCC = 113; break;
-			case FORMAT_R32F:    header.ddpfPixelFormat.dwFourCC = 114; break;
-			case FORMAT_RG32F:   header.ddpfPixelFormat.dwFourCC = 115; break;
-			case FORMAT_RGBA32F: header.ddpfPixelFormat.dwFourCC = 116; break;
-			case FORMAT_DXT1:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D','X','T','1'); break;
-			case FORMAT_DXT3:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D','X','T','3'); break;
-			case FORMAT_DXT5:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D','X','T','5'); break;
-			case FORMAT_ATI1N:   header.ddpfPixelFormat.dwFourCC = MCHAR4('A','T','I','1'); break;
-			case FORMAT_ATI2N:   header.ddpfPixelFormat.dwFourCC = MCHAR4('A','T','I','2'); break;
+		case FORMAT_RG16:    header.ddpfPixelFormat.dwFourCC = 34; break;
+		case FORMAT_RGBA16:  header.ddpfPixelFormat.dwFourCC = 36; break;
+		case FORMAT_R16F:    header.ddpfPixelFormat.dwFourCC = 111; break;
+		case FORMAT_RG16F:   header.ddpfPixelFormat.dwFourCC = 112; break;
+		case FORMAT_RGBA16F: header.ddpfPixelFormat.dwFourCC = 113; break;
+		case FORMAT_R32F:    header.ddpfPixelFormat.dwFourCC = 114; break;
+		case FORMAT_RG32F:   header.ddpfPixelFormat.dwFourCC = 115; break;
+		case FORMAT_RGBA32F: header.ddpfPixelFormat.dwFourCC = 116; break;
+		case FORMAT_DXT1:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', 'T', '1'); break;
+		case FORMAT_DXT3:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', 'T', '3'); break;
+		case FORMAT_DXT5:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', 'T', '5'); break;
+		case FORMAT_ATI1N:   header.ddpfPixelFormat.dwFourCC = MCHAR4('A', 'T', 'I', '1'); break;
+		case FORMAT_ATI2N:   header.ddpfPixelFormat.dwFourCC = MCHAR4('A', 'T', 'I', '2'); break;
+		default:
+			header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', '1', '0');
+			headerDXT10.arraySize = 1;
+			headerDXT10.miscFlag = (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
+			headerDXT10.resourceDimension = Is1D() ? D3D10_RESOURCE_DIMENSION_TEXTURE1D : Is3D() ? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+			switch (m_nFormat)
+			{
+				//case FORMAT_RGBA8:    headerDXT10.dxgiFormat = 28; break;
+			case FORMAT_RGB32F:   headerDXT10.dxgiFormat = 6; break;
+			case FORMAT_RGB9E5:   headerDXT10.dxgiFormat = 67; break;
+			case FORMAT_RG11B10F: headerDXT10.dxgiFormat = 26; break;
 			default:
-				header.ddpfPixelFormat.dwFourCC = MCHAR4('D','X','1','0');
-				headerDXT10.arraySize = 1;
-				headerDXT10.miscFlag = (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
-				headerDXT10.resourceDimension = Is1D()? D3D10_RESOURCE_DIMENSION_TEXTURE1D : Is3D()? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
-				switch (m_nFormat)
-				{
-					//case FORMAT_RGBA8:    headerDXT10.dxgiFormat = 28; break;
-					case FORMAT_RGB32F:   headerDXT10.dxgiFormat = 6; break;
-					case FORMAT_RGB9E5:   headerDXT10.dxgiFormat = 67; break;
-					case FORMAT_RG11B10F: headerDXT10.dxgiFormat = 26; break;
-					default:
-						return false;
-				}
+				return false;
+			}
 		}
 	}
 
-	header.ddsCaps.dwCaps1 = DDSCAPS_TEXTURE | (m_nMipMaps > 1? DDSCAPS_MIPMAP | DDSCAPS_COMPLEX : 0) | (m_nDepth != 1? DDSCAPS_COMPLEX : 0);
-	header.ddsCaps.dwCaps2 = (m_nDepth > 1)? DDSCAPS2_VOLUME : (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES : 0;
+	header.ddsCaps.dwCaps1 = DDSCAPS_TEXTURE | (m_nMipMaps > 1 ? DDSCAPS_MIPMAP | DDSCAPS_COMPLEX : 0) | (m_nDepth != 1 ? DDSCAPS_COMPLEX : 0);
+	header.ddsCaps.dwCaps2 = (m_nDepth > 1) ? DDSCAPS2_VOLUME : (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES : 0;
 	header.ddsCaps.Reserved[0] = 0;
 	header.ddsCaps.Reserved[1] = 0;
 	header.dwReserved2 = 0;
 
-	IFile* file = g_fileSystem->Open(fileName, "wb");
+	IFilePtr file = g_fileSystem->Open(fileName, "wb");
 	if (!file)
 		return false;
 
 	file->Write(&header, sizeof(header), 1);
-	if (headerDXT10.dxgiFormat) 
+	if (headerDXT10.dxgiFormat)
 		file->Write(&headerDXT10, sizeof(headerDXT10), 1);
 
 	int size = GetMipMappedSize(0, m_nMipMaps);
@@ -986,19 +978,17 @@ bool CImage::SaveDDS(const char *fileName)
 
 	if (IsCube())
 	{
-		for (int face = 0; face < 6; face++){
+		for (int face = 0; face < 6; face++) {
 			for (int mipMapLevel = 0; mipMapLevel < m_nMipMaps; mipMapLevel++)
 			{
 				int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
-                ubyte *src = GetPixels(mipMapLevel) + face * faceSize;
+				ubyte* src = GetPixels(mipMapLevel) + face * faceSize;
 				file->Write(src, 1, faceSize);
 			}
 		}
 	}
 	else
 		file->Write(m_pPixels, size, 1);
-
-	g_fileSystem->Close(file);
 
 	// Restore to RGB
 	if (m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8)
@@ -1009,7 +999,7 @@ bool CImage::SaveDDS(const char *fileName)
 
 #ifndef NO_JPEG
 
-bool CImage::SaveJPEG(const char *fileName, const int quality)
+bool CImage::SaveJPEG(const char* fileName, const int quality)
 {
 	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8)
 		return false;
@@ -1022,7 +1012,7 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 
 	const int nChannels = GetChannelCount(m_nFormat);
 
-	cinfo.in_color_space = (nChannels == 1)? JCS_GRAYSCALE : JCS_RGB;
+	cinfo.in_color_space = (nChannels == 1) ? JCS_GRAYSCALE : JCS_RGB;
 	jpeg_set_defaults(&cinfo);
 
 	cinfo.input_components = nChannels;
@@ -1040,7 +1030,7 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 
 	jpeg_start_compress(&cinfo, TRUE);
 
-	ubyte *curr_scanline = m_pPixels;
+	ubyte* curr_scanline = m_pPixels;
 
 	for (int y = 0; y < m_nHeight; y++)
 	{
@@ -1051,12 +1041,9 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
 
-	IFile* file = g_fileSystem->Open(fileName, "wb");
+	IFilePtr file = g_fileSystem->Open(fileName, "wb");
 	if (file)
-	{
 		file->Write(mem, memSize, 1);
-		g_fileSystem->Close(file);
-	}
 
 	free(mem);
 
@@ -1065,12 +1052,12 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 #endif // NO_JPEG
 
 #ifndef NO_TGA
-bool CImage::SaveTGA(const char *fileName)
+bool CImage::SaveTGA(const char* fileName)
 {
 	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8 && m_nFormat != FORMAT_RGBA8)
 		return false;
 
-	IFile* file = g_fileSystem->Open(fileName, "wb");
+	IFilePtr file = g_fileSystem->Open(fileName, "wb");
 	if (!file)
 		return false;
 
@@ -1078,11 +1065,11 @@ bool CImage::SaveTGA(const char *fileName)
 
 	TGAHeader header = {
 		0x00,
-		(uint8)((m_nFormat == FORMAT_I8)? 1 : 0),
-		(uint8)((m_nFormat == FORMAT_I8)? 1 : 2),
+		(uint8)((m_nFormat == FORMAT_I8) ? 1 : 0),
+		(uint8)((m_nFormat == FORMAT_I8) ? 1 : 2),
 		0x0000,
-		(uint16)((m_nFormat == FORMAT_I8)? 256 : 0),
-		(uint8)((m_nFormat == FORMAT_I8)? 24  : 0),
+		(uint16)((m_nFormat == FORMAT_I8) ? 256 : 0),
+		(uint8)((m_nFormat == FORMAT_I8) ? 24 : 0),
 		0x0000,
 		0x0000,
 		(uint16)m_nWidth,
@@ -1093,7 +1080,7 @@ bool CImage::SaveTGA(const char *fileName)
 
 	file->Write(&header, sizeof(header), 1);
 
-	ubyte *dest, *src, *buffer;
+	ubyte* dest, * src, * buffer;
 
 	if (m_nFormat == FORMAT_I8)
 	{
@@ -1118,14 +1105,14 @@ bool CImage::SaveTGA(const char *fileName)
 	else
 	{
 		bool useAlpha = (nChannels == 4);
-		int lineLength = m_nWidth * (useAlpha? 4 : 3);
+		int lineLength = m_nWidth * (useAlpha ? 4 : 3);
 
 		buffer = PPNew ubyte[m_nHeight * lineLength];
 		int len;
 
-		for (int y = 0; y < m_nHeight; y++){
+		for (int y = 0; y < m_nHeight; y++) {
 			dest = buffer + (m_nHeight - y - 1) * lineLength;
-			src  = m_pPixels + y * m_nWidth * nChannels;
+			src = m_pPixels + y * m_nWidth * nChannels;
 			len = m_nWidth;
 
 			do
@@ -1135,36 +1122,33 @@ bool CImage::SaveTGA(const char *fileName)
 				*dest++ = src[0];
 				if (useAlpha) *dest++ = src[3];
 				src += nChannels;
-			}
-			while (--len);
+			} while (--len);
 		}
 
 		file->Write(buffer, m_nHeight * lineLength, 1);
-		delete [] buffer;
+		delete[] buffer;
 	}
-
-	g_fileSystem->Close(file);
 
 	return true;
 }
 #endif // NO_TGA
 
-bool CImage::SaveImage(const char *fileName)
+bool CImage::SaveImage(const char* fileName)
 {
-	const char *extension = strrchr(fileName, '.');
+	const char* extension = strrchr(fileName, '.');
 
-	if (extension != nullptr){
-		if (stricmp(extension, ".dds") == 0){
+	if (extension != nullptr) {
+		if (stricmp(extension, ".dds") == 0) {
 			return SaveDDS(fileName);
 		}
 #ifndef NO_JPEG
 		else if (stricmp(extension, ".jpg") == 0 ||
-                   stricmp(extension, ".jpeg") == 0){
+			stricmp(extension, ".jpeg") == 0) {
 			return SaveJPEG(fileName, 75);
 		}
 #endif // NO_JPEG
 #ifndef NO_TGA
-		else if (stricmp(extension, ".tga") == 0){
+		else if (stricmp(extension, ".tga") == 0) {
 			return SaveTGA(fileName);
 		}
 #endif // NO_TGA
@@ -1172,19 +1156,19 @@ bool CImage::SaveImage(const char *fileName)
 	return false;
 }
 
-void CImage::LoadFromMemory(void *mem, const ETextureFormat frmt, const int w, const int h, const int d, const int mipMapCount, bool ownsMemory)
+void CImage::LoadFromMemory(void* mem, const ETextureFormat frmt, const int w, const int h, const int d, const int mipMapCount, bool ownsMemory)
 {
 	Free();
 
-	m_nWidth  = w;
+	m_nWidth = w;
 	m_nHeight = h;
-	m_nDepth  = d;
-    m_nFormat = frmt;
+	m_nDepth = d;
+	m_nFormat = frmt;
 	m_nMipMaps = mipMapCount;
 	m_nArraySize = 1;
 
 	if (ownsMemory)
-		m_pPixels = (unsigned char *) mem;
+		m_pPixels = (unsigned char*)mem;
 	else
 	{
 		int size = GetMipMappedSize(0, m_nMipMaps);
@@ -1195,16 +1179,16 @@ void CImage::LoadFromMemory(void *mem, const ETextureFormat frmt, const int w, c
 
 
 template <typename DATA_TYPE>
-void BuildMipMap(DATA_TYPE *dst, const DATA_TYPE *src, const uint w, const uint h, const uint d, const uint c)
+void BuildMipMap(DATA_TYPE* dst, const DATA_TYPE* src, const uint w, const uint h, const uint d, const uint c)
 {
-	uint xOff = (w < 2)? 0 : c;
-	uint yOff = (h < 2)? 0 : c * w;
-	uint zOff = (d < 2)? 0 : c * w * h;
+	uint xOff = (w < 2) ? 0 : c;
+	uint yOff = (h < 2) ? 0 : c * w;
+	uint zOff = (d < 2) ? 0 : c * w * h;
 
-	for (uint z = 0; z < d; z += 2){
-		for (uint y = 0; y < h; y += 2){
-			for (uint x = 0; x < w; x += 2){
-				for (uint i = 0; i < c; i++){
+	for (uint z = 0; z < d; z += 2) {
+		for (uint y = 0; y < h; y += 2) {
+			for (uint x = 0; x < w; x += 2) {
+				for (uint i = 0; i < c; i++) {
 					*dst++ = (src[0] + src[xOff] + src[yOff] + src[yOff + xOff] + src[zOff] + src[zOff + xOff] + src[zOff + yOff] + src[zOff + yOff + xOff]) / 8;
 					src++;
 				}
@@ -1231,7 +1215,7 @@ bool CImage::CreateMipMaps(const int mipMaps)
 		int size = GetMipMappedSize(0, actualMipMaps);
 		if (m_nArraySize > 1)
 		{
-			ubyte *newPixels = PPNew ubyte[size * m_nArraySize];
+			ubyte* newPixels = PPNew ubyte[size * m_nArraySize];
 
 			// Copy top mipmap of all array slices to new location
 			int firstMipSize = GetMipMappedSize(0, 1);
@@ -1242,7 +1226,7 @@ bool CImage::CreateMipMaps(const int mipMaps)
 				memcpy(newPixels + i * size, m_pPixels + i * oldSize, firstMipSize);
 			}
 
-			delete [] m_pPixels;
+			delete[] m_pPixels;
 			m_pPixels = newPixels;
 		}
 		else
@@ -1253,7 +1237,7 @@ bool CImage::CreateMipMaps(const int mipMaps)
 			delete pixels;
 			*/
 
-			m_pPixels = (ubyte *)PPReAlloc(m_pPixels, size);
+			m_pPixels = (ubyte*)PPReAlloc(m_pPixels, size);
 		}
 
 		m_nMipMaps = actualMipMaps;
@@ -1262,21 +1246,21 @@ bool CImage::CreateMipMaps(const int mipMaps)
 	int nChannels = GetChannelCount(m_nFormat);
 
 
-	int n = IsCube()? 6 : 1;
+	int n = IsCube() ? 6 : 1;
 
 	for (int arraySlice = 0; arraySlice < m_nArraySize; arraySlice++)
 	{
-		ubyte *src = GetPixels(0, arraySlice);
-		ubyte *dst = GetPixels(1, arraySlice);
+		ubyte* src = GetPixels(0, arraySlice);
+		ubyte* dst = GetPixels(1, arraySlice);
 
 		for (int level = 1; level < m_nMipMaps; level++)
 		{
-			int w = GetWidth (level - 1);
+			int w = GetWidth(level - 1);
 			int h = GetHeight(level - 1);
-			int d = GetDepth (level - 1);
+			int d = GetDepth(level - 1);
 
 			int srcSize = GetMipMappedSize(level - 1, 1) / n;
-			int dstSize = GetMipMappedSize(level,     1) / n;
+			int dstSize = GetMipMappedSize(level, 1) / n;
 
 			for (int i = 0; i < n; i++)
 			{
@@ -1284,11 +1268,11 @@ bool CImage::CreateMipMaps(const int mipMaps)
 				{
 					if (IsFloatFormat(m_nFormat))
 					{
-						BuildMipMap((float *) dst, (float *) src, w, h, d, nChannels);
+						BuildMipMap((float*)dst, (float*)src, w, h, d, nChannels);
 					}
 					else if (m_nFormat >= FORMAT_I16)
 					{
-						BuildMipMap((ushort *) dst, (ushort *) src, w, h, d, nChannels);
+						BuildMipMap((ushort*)dst, (ushort*)src, w, h, d, nChannels);
 					}
 					else
 					{
@@ -1320,7 +1304,7 @@ bool CImage::RemoveMipMaps(const int firstMipMap, int mipMapsToSave)
 	int newHeight = GetHeight(firstMipMap);
 	int newDepth = m_nDepth ? GetDepth(firstMipMap) : IMAGE_DEPTH_CUBEMAP;
 
-	delete [] m_pPixels;
+	delete[] m_pPixels;
 	m_pPixels = newPixels;
 	m_nWidth = newWidth;
 	m_nHeight = newHeight;
@@ -1332,19 +1316,19 @@ bool CImage::RemoveMipMaps(const int firstMipMap, int mipMapsToSave)
 
 bool CImage::Convert(const ETextureFormat newFormat)
 {
-	ubyte *newPixels;
+	ubyte* newPixels;
 	uint nPixels = GetPixelCount(0, m_nMipMaps) * m_nArraySize;
 
 	if (m_nFormat == FORMAT_RGBE8 && (newFormat == FORMAT_RGB32F || newFormat == FORMAT_RGBA32F))
 	{
 		newPixels = PPNew ubyte[GetMipMappedSize(0, m_nMipMaps, newFormat) * m_nArraySize];
-		float *dest = (float *) newPixels;
+		float* dest = (float*)newPixels;
 
 		bool writeAlpha = (newFormat == FORMAT_RGBA32F);
-		ubyte *src = m_pPixels;
+		ubyte* src = m_pPixels;
 		do
 		{
-			*((Vector3D *) dest) = rgbeToRGB(src).rgb();
+			*((Vector3D*)dest) = rgbeToRGB(src).rgb();
 			if (writeAlpha)
 			{
 				dest[3] = 1.0f;
@@ -1355,8 +1339,7 @@ bool CImage::Convert(const ETextureFormat newFormat)
 				dest += 3;
 			}
 			src += 4;
-		}
-		while (--nPixels);
+		} while (--nPixels);
 
 	}
 	else
@@ -1367,8 +1350,8 @@ bool CImage::Convert(const ETextureFormat newFormat)
 		if (m_nFormat == newFormat)
 			return true;
 
-		ubyte *src = m_pPixels;
-		ubyte *dest = newPixels = PPNew ubyte[GetMipMappedSize(0, m_nMipMaps, newFormat) * m_nArraySize];
+		ubyte* src = m_pPixels;
+		ubyte* dest = newPixels = PPNew ubyte[GetMipMappedSize(0, m_nMipMaps, newFormat) * m_nArraySize];
 
 		if (m_nFormat == FORMAT_RGB8 && newFormat == FORMAT_RGBA8)
 		{
@@ -1381,8 +1364,7 @@ bool CImage::Convert(const ETextureFormat newFormat)
 				dest[3] = 255;
 				dest += 4;
 				src += 3;
-			}
-			while (--nPixels);
+			} while (--nPixels);
 
 		}
 		else
@@ -1402,18 +1384,18 @@ bool CImage::Convert(const ETextureFormat newFormat)
 					if (m_nFormat <= FORMAT_RGBA16F)
 					{
 						for (int i = 0; i < nSrcChannels; i++)
-							rgba[i] = ((half *) src)[i];
+							rgba[i] = ((half*)src)[i];
 					}
 					else
 					{
 						for (int i = 0; i < nSrcChannels; i++)
-							rgba[i] = ((float *) src)[i];
+							rgba[i] = ((float*)src)[i];
 					}
 				}
 				else if (m_nFormat >= FORMAT_I16 && m_nFormat <= FORMAT_RGBA16)
 				{
 					for (int i = 0; i < nSrcChannels; i++)
-						rgba[i] = ((ushort *) src)[i] * (1.0f / 65535.0f);
+						rgba[i] = ((ushort*)src)[i] * (1.0f / 65535.0f);
 				}
 				else
 				{
@@ -1421,7 +1403,7 @@ bool CImage::Convert(const ETextureFormat newFormat)
 						rgba[i] = src[i] * (1.0f / 255.0f);
 				}
 
-				if (nSrcChannels  < 4)
+				if (nSrcChannels < 4)
 					rgba[3] = 1.0f;
 
 				if (nSrcChannels == 1)
@@ -1436,52 +1418,51 @@ bool CImage::Convert(const ETextureFormat newFormat)
 						if (newFormat <= FORMAT_RGBA16F)
 						{
 							for (int i = 0; i < nDestChannels; i++)
-								((half *) dest)[i] = rgba[i];
+								((half*)dest)[i] = rgba[i];
 						}
 						else
 						{
 							for (int i = 0; i < nDestChannels; i++)
-								((float *) dest)[i] = rgba[i];
+								((float*)dest)[i] = rgba[i];
 						}
 					}
 					else
 					{
 						if (newFormat == FORMAT_RGBE8)
 						{
-							*(uint32 *) dest = rgbToRGBE8(MColor(rgba[0], rgba[1], rgba[2]));
+							*(uint32*)dest = rgbToRGBE8(MColor(rgba[0], rgba[1], rgba[2]));
 						}
 						else
 						{
-							*(uint32 *) dest = rgbToRGB9E5(MColor(rgba[0], rgba[1], rgba[2]));
+							*(uint32*)dest = rgbToRGB9E5(MColor(rgba[0], rgba[1], rgba[2]));
 						}
 					}
 				}
 				else if (newFormat >= FORMAT_I16 && newFormat <= FORMAT_RGBA16)
 				{
-					for (int i = 0; i < nDestChannels; i++)	((ushort *) dest)[i] = (ushort) (65535 * saturate(rgba[i]) + 0.5f);
+					for (int i = 0; i < nDestChannels; i++)	((ushort*)dest)[i] = (ushort)(65535 * saturate(rgba[i]) + 0.5f);
 				}
 				else if (/*isPackedFormat(newFormat)*/newFormat == FORMAT_RGB10A2)
 				{
-					*(uint *) dest =
+					*(uint*)dest =
 						(uint(1023.0f * saturate(rgba[0]) + 0.5f) << 22) |
 						(uint(1023.0f * saturate(rgba[1]) + 0.5f) << 12) |
-						(uint(1023.0f * saturate(rgba[2]) + 0.5f) <<  2) |
-						(uint(   3.0f * saturate(rgba[3]) + 0.5f));
+						(uint(1023.0f * saturate(rgba[2]) + 0.5f) << 2) |
+						(uint(3.0f * saturate(rgba[3]) + 0.5f));
 				}
 				else
 				{
 					for (int i = 0; i < nDestChannels; i++)
-						dest[i] = (unsigned char) (255 * saturate(rgba[i]) + 0.5f);
+						dest[i] = (unsigned char)(255 * saturate(rgba[i]) + 0.5f);
 				}
 
-				src  += srcSize;
+				src += srcSize;
 				dest += destSize;
-			}
-			while (--nPixels);
+			} while (--nPixels);
 		}
 	}
 
-	delete [] m_pPixels;
+	delete[] m_pPixels;
 	m_pPixels = newPixels;
 	m_nFormat = newFormat;
 
@@ -1497,11 +1478,11 @@ bool CImage::SwapChannels(const int ch0, const int ch1)
 	uint nChannels = GetChannelCount(m_nFormat);
 
 	if (m_nFormat <= FORMAT_RGBA8)
-		_SwapChannels((unsigned char *) m_pPixels, nPixels, nChannels, ch0, ch1);
+		_SwapChannels((unsigned char*)m_pPixels, nPixels, nChannels, ch0, ch1);
 	else if (m_nFormat <= FORMAT_RGBA16F)
-		_SwapChannels((unsigned short *) m_pPixels, nPixels, nChannels, ch0, ch1);
+		_SwapChannels((unsigned short*)m_pPixels, nPixels, nChannels, ch0, ch1);
 	else
-		_SwapChannels((float *) m_pPixels, nPixels, nChannels, ch0, ch1);
+		_SwapChannels((float*)m_pPixels, nPixels, nChannels, ch0, ch1);
 
 	return true;
 }

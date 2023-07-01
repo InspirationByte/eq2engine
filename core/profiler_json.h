@@ -48,7 +48,7 @@ private:
 	EqString			m_batchPrefix;
 	Array<CVTraceEvent>	m_tmpBuffer{ PP_SL };
 	Set<uintptr_t>		m_threadMaskData{ PP_SL };
-	IFile* 				m_outFile{ nullptr };
+	IFilePtr			m_outFile{ nullptr };
 	uint64				m_eventId{ 0 };
 	int					m_captureInProgress{ 0 };
 };

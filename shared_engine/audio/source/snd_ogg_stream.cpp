@@ -21,7 +21,6 @@ bool CSoundSource_OggStream::Load()
 
 	if(ovResult < 0)
 	{
-		g_fileSystem->Close(m_oggFile);
 		m_oggFile = nullptr;
 
 		MsgError("Failed to load sound '%s', because it is not a valid Ogg file (%d)\n", GetFilename(), ovResult);
@@ -41,7 +40,6 @@ void CSoundSource_OggStream::Unload()
 	if(m_oggFile)
 	{
 		ov_clear( &m_oggStream );
-		g_fileSystem->Close(m_oggFile);
 	}
 
 	m_oggFile = nullptr;

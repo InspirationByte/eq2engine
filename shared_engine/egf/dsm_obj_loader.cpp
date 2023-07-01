@@ -480,11 +480,10 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 bool SaveOBJ(dsmmodel_t* model, const char* filename)
 {
-	IFile* pFile = g_fileSystem->Open(filename, "wt", SP_ROOT);
+	IFilePtr pFile = g_fileSystem->Open(filename, "wt", SP_ROOT);
 	if(!pFile)
 	{
 		MsgError("Failed to open for write '%s'!\n", filename);
-
 		return false;
 	}
 
@@ -533,8 +532,6 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 															indices[2], indices[2], indices[2]);
 		}
 	}
-
-	g_fileSystem->Close(pFile);
 
 	return true;
 }

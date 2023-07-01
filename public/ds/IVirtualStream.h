@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "ds/refcounted.h"
 
 enum VirtStreamType_e
 {
@@ -37,6 +38,7 @@ enum EVirtStreamOpenFlags
 //--------------------------
 
 class IVirtualStream;
+using IVirtualStreamPtr = CRefPtr<IVirtualStream>;
 
 template<typename T>
 static size_t VSRead(IVirtualStream* stream, T& obj);
@@ -44,7 +46,7 @@ static size_t VSRead(IVirtualStream* stream, T& obj);
 template<typename T>
 static size_t VSWrite(IVirtualStream* stream, const T& obj);
 
-class IVirtualStream
+class IVirtualStream : public RefCountedObject<IVirtualStream, RefCountedKeepPolicy>
 {
 public:
 	virtual ~IVirtualStream() {}

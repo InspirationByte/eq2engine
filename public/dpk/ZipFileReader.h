@@ -17,8 +17,10 @@ class CZipFileStream : public CBasePackageFileStream
 	friend class CZipFileReader;
 	friend class CFileSystem;
 public:
-	CZipFileStream(unzFile zip);
+	CZipFileStream(unzFile zip, CZipFileReader* host);
 	~CZipFileStream();
+
+	void				Ref_DeleteObject();
 
 	// reads data from virtual stream
 	size_t				Read(void *dest, size_t count, size_t size);
@@ -67,8 +69,7 @@ public:
 
 	bool					InitPackage(const char* filename, const char* mountPath = nullptr);
 
-	IVirtualStream*			Open(const char* filename, int modeFlags);
-	void					Close(IVirtualStream* fp);
+	IFilePtr				Open(const char* filename, int modeFlags);
 	bool					FileExists(const char* filename) const;
 
 protected:
@@ -81,6 +82,5 @@ protected:
 		unz_file_pos pos;
 	};
 
-	Array<CZipFileStream*>	m_openFiles{ PP_SL };
 	Map<int, zfileinfo_t>	m_files{ PP_SL };
 };

@@ -11,16 +11,14 @@
 
 CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 {
-	m_file = g_fileSystem->Open(szFilename, "rb");
+	m_stream = g_fileSystem->Open(szFilename, "rb");
 
-	if (!m_file)
+	if (!m_stream)
 	{
 		m_curChunk.Id = 0;
 		m_curChunk.Size = 0;
 		return;
 	}
-
-	m_stream = m_file;
 
 	RIFFhdr_t header;
 	m_stream->Read(header);
@@ -57,7 +55,9 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 		return;
 	}
 
-	m_stream = &m_riffMem;
+	m_riffMem.Ref_Grab();
+	m_stream = IVirtualStreamPtr(&m_riffMem);
+
 	m_riffMem.Open(pChunkData, VS_OPEN_READ, nChunkSize);
 
 	RIFFhdr_t header;
@@ -85,12 +85,6 @@ void CRIFF_Parser::ChunkClose()
 {
 	m_stream = nullptr;
 	m_riffMem.Close();
-
-	if (m_file)
-	{
-		g_fileSystem->Close(m_file);
-		m_file = nullptr;
-	}
 }
 
 int CRIFF_Parser::ReadChunk(void* pOutput, int maxLen)

@@ -26,8 +26,8 @@ protected:
 
 	int				ReadData(void* out, int offset, int count) const;
 
-	IVirtualStream*	m_oggFile;
-	OggVorbis_File	m_oggStream;
+	IVirtualStreamPtr	m_oggFile;
+	OggVorbis_File		m_oggStream;
 
-	int				m_dataSize;     // in bytes
+	int					m_dataSize;     // in bytes
 };

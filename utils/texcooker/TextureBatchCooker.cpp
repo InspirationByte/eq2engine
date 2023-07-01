@@ -566,12 +566,11 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		}
 
 		// save CRC list file
-		IFile* pStream = g_fileSystem->Open(crcFileName.ToCString(), "wt", SP_ROOT);
+		IFilePtr pStream = g_fileSystem->Open(crcFileName.ToCString(), "wt", SP_ROOT);
 
 		if (pStream)
 		{
 			KV_WriteToStream(pStream, &g_batchConfig.newCRCSec, 0, true);
-			g_fileSystem->Close(pStream);
 		}
 	}
 }

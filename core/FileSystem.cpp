@@ -55,11 +55,6 @@ static CEqMutex	s_FSMutex;
 
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 
-static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
-{
-	return (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || isalpha(dirOrFileName[0]) && dirOrFileName[1] == ':');
-}
-
 //------------------------------------------------------------------------------
 // File stream
 //------------------------------------------------------------------------------
@@ -67,6 +62,11 @@ static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
 CFile::CFile(COSFile&& file)
 	: m_osFile(std::move(file))
 {
+}
+
+void CFile::Ref_DeleteObject()
+{
+	delete this;
 }
 
 int	CFile::Seek( long pos, EVirtStreamSeek seekType )
@@ -303,18 +303,9 @@ void CFileSystem::Shutdown()
 		i--;
 	}
 
-	ASSERT_MSG(m_openFiles.numElem() == 0, "FileSystem has open files!");
-
-	for(int i = 0; i < m_openFiles.numElem(); i++)
-	{
-		Close( m_openFiles[i] );
-		i--;
-	}
-
 	for(int i = 0; i < m_fsPackages.numElem(); i++)
 		delete m_fsPackages[i];
 
-	m_openFiles.clear(true);
 	m_fsPackages.clear(true);
 	m_findDatas.clear(true);
 
@@ -329,7 +320,7 @@ void CFileSystem::SetBasePath(const char* path)
 	m_basePath = path; 
 }
 
-IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags/* = -1*/ )
+IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFlags/* = -1*/ )
 {
 	ASSERT_MSG(filename, "Open - Must specify 'filename'");
 	ASSERT_MSG(mode, "Open - Must specify 'mode'");
@@ -362,7 +353,7 @@ IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags
 	if (basePath.Length() > 0) // FIXME: is that correct?
 		basePath.Append(CORRECT_PATH_SEPARATOR);
 
-	IFile* fileHandle = nullptr;
+	IFilePtr fileHandle;
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
 		if (isWrite && !writePath)
@@ -371,7 +362,7 @@ IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags
 		COSFile osFile;
 		if (osFile.Open(filePath, modeFlags))
 		{
-			fileHandle = PPNew CFile(std::move(osFile));
+			fileHandle = IFilePtr(CRefPtr_new(CFile, std::move(osFile)));
 			return true;
 		}
 
@@ -400,43 +391,12 @@ IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags
 	};
 
 	WalkOverSearchPaths(searchFlags, filename, walkFileFunc);
-
-	if (fileHandle)
-	{
-		CScopedMutex m(s_FSMutex);
-		m_openFiles.append(fileHandle);
-	}
-
 	return fileHandle;
-}
-
-void CFileSystem::Close( IFile* fp )
-{
-	if(!fp)
-		return;
-
-	{
-		CScopedMutex m(s_FSMutex);
-		if (!m_openFiles.fastRemove(fp))
-			return;
-	}
-
-	VirtStreamType_e vsType = fp->GetType();
-
-	if(vsType == VS_TYPE_FILE)
-	{
-		delete fp;
-	}
-	else if(vsType == VS_TYPE_FILE_PACKAGE) // DPK or ZIP
-	{
-		CBasePackageFileStream* pFile = (CBasePackageFileStream*)fp;
-		pFile->GetHostPackage()->Close(pFile);
-	}
 }
 
 ubyte* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
 {
-	IFile* pFile = Open(filename, "rb", searchFlags);
+	IFilePtr pFile = Open(filename, "rb", searchFlags);
 
     if (!pFile)
         return nullptr;
@@ -445,17 +405,12 @@ ubyte* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, i
     ubyte *buffer = (ubyte*)PPAlloc(length + 1);
 
     if (!buffer)
-    {
-        Close(pFile);
         return nullptr;
-    }
 
 	memset(buffer, 0, length+1);
 
 	pFile->Read(buffer, 1, length);
     buffer[length] = 0;
-
-    Close(pFile);
 
     if (filesize)
         *filesize = length;
@@ -465,29 +420,23 @@ ubyte* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, i
 
 long CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
 {
-    IFile* pFile = Open(filename,"rb",searchFlags);
+    IFilePtr file = Open(filename,"rb",searchFlags);
 
-    if (!pFile)
+    if (!file)
         return 0;
 
-	long rSize = pFile->GetSize();
-
-    Close(pFile);
-
+	long rSize = file->GetSize();
     return rSize;
 }
 
 uint32 CFileSystem::GetFileCRC32(const char* filename, int searchFlags)
 {
-    IFile* pFile = Open(filename,"rb",searchFlags);
+    IFilePtr file = Open(filename,"rb",searchFlags);
 
-    if (!pFile)
+    if (!file)
         return 0;
 
-	uint32 checkSum = pFile->GetCRC32();
-
-    Close(pFile);
-
+	uint32 checkSum = file->GetCRC32();
     return checkSum;
 }
 
@@ -498,15 +447,11 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 	if( FileExist(filename, search) && (overWrite || FileExist(dest_file, search) == false))
 	{
-		IFile* fp_write = Open(dest_file, "wb", search);
-		IFile* fp_read = Open(filename, "rb", search);
+		IFilePtr fp_write = Open(dest_file, "wb", search);
+		IFilePtr fp_read = Open(filename, "rb", search);
 
 		if (!fp_read || !fp_write)
-		{
-			Close(fp_read);
-			Close(fp_write);
 			return false;
-		}
 
 		int nread;
 		while (nread = fp_read->Read(buf, sizeof(buf), 1), nread > 0)
@@ -526,9 +471,6 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 		}
 
 		ASSERT(nread == 0);
-
-		Close(fp_read);
-		Close(fp_write);
 	}
 	else
 		return false;
@@ -598,6 +540,11 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 	}
 
 	return searchPath;
+}
+
+static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
+{
+	return (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || isalpha(dirOrFileName[0]) && dirOrFileName[1] == ':');
 }
 
 EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const
@@ -1019,7 +966,7 @@ void CFileSystem::FindClose(DKFINDDATA* findData)
 	if(!findData)
 		return;
 
-	if(m_findDatas.remove(findData))
+	if(m_findDatas.fastRemove(findData))
 		delete findData;
 }
 

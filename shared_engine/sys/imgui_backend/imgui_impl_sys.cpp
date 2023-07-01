@@ -122,14 +122,14 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
 
     static const char* fontFileName = "resources/imgui/Inter-Regular.ttf";
 
-    IFile* fontFile = g_fileSystem->Open(fontFileName, "rb", SP_DATA);
+    IFilePtr fontFile = g_fileSystem->Open(fontFileName, "rb", SP_DATA);
 
     if (fontFile)
     {
         const long length = fontFile->GetSize();
         char* buffer = (char*)IM_ALLOC(length);
         fontFile->Read(buffer, 1, length);
-        g_fileSystem->Close(fontFile);
+        fontFile = nullptr;
 
         ImFontConfig font_cfg;
         io.Fonts->AddFontFromMemoryTTF(buffer, length, 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());

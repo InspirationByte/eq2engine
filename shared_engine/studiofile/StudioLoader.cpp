@@ -27,7 +27,7 @@ static void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 // loads all supported EGF model formats
 studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
-	IFile* file = g_fileSystem->Open(pszPath, "rb");
+	IFilePtr file = g_fileSystem->Open(pszPath, "rb");
 
 	if(!file)
 	{
@@ -39,7 +39,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	char* _buffer = (char*)PPAlloc(len+32); // +32 bytes for conversion issues
 
 	file->Read(_buffer, 1, len);
-	g_fileSystem->Close(file);
+	file = nullptr;
 
 	basemodelheader_t* pBaseHdr = (basemodelheader_t*)_buffer;
 

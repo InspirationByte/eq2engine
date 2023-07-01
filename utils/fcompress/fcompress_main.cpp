@@ -109,7 +109,7 @@ static bool UpdatePackage(const char* targetName)
 
 			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not repackageable atm");
 
-			IFile* file = g_fileSystem->Open(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
+			IFilePtr file = g_fileSystem->Open(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
 			if (!file)
 				continue;
 
@@ -138,8 +138,6 @@ static bool UpdatePackage(const char* targetName)
 
 			file->Write(tmpFileData, finfo.size, 1);
 			PPFree(tmpFileData);
-
-			g_fileSystem->Close(file);
 		}
 
 		fclose(dpkFile);
@@ -230,7 +228,7 @@ static bool DevUnpackPackage(const char* targetName)
 
 			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not unpackable atm");
 
-			IFile* file = g_fileSystem->Open(EqString::Format("unpack/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
+			IFilePtr file = g_fileSystem->Open(EqString::Format("unpack/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
 			if (!file)
 				continue;
 
@@ -255,8 +253,6 @@ static bool DevUnpackPackage(const char* targetName)
 
 			file->Write(tmpFileData, finfo.size, 1);
 			PPFree(tmpFileData);
-
-			g_fileSystem->Close(file);
 		}
 	}
 }
@@ -505,6 +501,8 @@ static void CookPackageTarget(const char* targetName)
 
 			bool loadRawFile = true;
 			CMemoryStream fileMemoryStream;
+			fileMemoryStream.Ref_Grab();
+
 			if (CheckExtensionList(keyValueFileExt, fileExt))
 			{
 				// TODO: convert key-values file and store it (maybe uncompressed)
@@ -519,7 +517,7 @@ static void CookPackageTarget(const char* targetName)
 				}
 			}
 
-			IVirtualStream* stream = &fileMemoryStream;
+			IVirtualStreamPtr stream(&fileMemoryStream);
 			if (loadRawFile)
 				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
 
@@ -527,8 +525,6 @@ static void CookPackageTarget(const char* targetName)
 
 			originalSizeTotal += stream->GetSize();
 			packedSizeTotal += packedSize;
-
-			g_fileSystem->Close(stream);
 
 			if ((dpkWriter.GetFileCount() % 500) == 0)
 				dpkWriter.Flush();

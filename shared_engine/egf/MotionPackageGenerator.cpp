@@ -1312,7 +1312,7 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 	CopyLumpToFile(&lumpDataStream, ANIMFILE_POSECONTROLLERS, (ubyte*)m_posecontrollers.ptr(), m_posecontrollers.numElem() * sizeof(posecontroller_t));
 	header.numLumps += 3;
 
-	IFile* file = g_fileSystem->Open(packageOutputFilename, "wb", SP_MOD);
+	IFilePtr file = g_fileSystem->Open(packageOutputFilename, "wb", SP_MOD);
 	if(!file)
 	{
 		MsgError("Can't create file for writing!\n");
@@ -1323,5 +1323,4 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 	lumpDataStream.WriteToFileStream(file);
 
 	Msg("Total written bytes: %d\n", file->Tell());
-	g_fileSystem->Close(file);
 }

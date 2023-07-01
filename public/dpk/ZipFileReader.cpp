@@ -10,18 +10,25 @@
 #include "core/platform/OSFile.h"
 
 #include "ZipFileReader.h"
+#include "DPKUtils.h"
 
 static Threading::CEqMutex s_zipMutex;
 
-extern void DPK_FixSlashes(EqString& str);
-
-CZipFileStream::CZipFileStream(unzFile zip) : m_zipHandle(zip)
+CZipFileStream::CZipFileStream(unzFile zip, CZipFileReader* host)
+	: m_zipHandle(zip), m_host(host)
 {
 	unzGetCurrentFileInfo(m_zipHandle, &m_finfo, nullptr, 0, nullptr, 0, nullptr, 0);
 }
 
 CZipFileStream::~CZipFileStream()
 {
+	unzCloseCurrentFile(m_zipHandle);
+	unzClose(m_zipHandle);
+}
+
+void CZipFileStream::Ref_DeleteObject()
+{
+	delete this;
 }
 
 CBasePackageReader* CZipFileStream::GetHostPackage() const
@@ -130,10 +137,6 @@ CZipFileReader::CZipFileReader()
 
 CZipFileReader::~CZipFileReader()
 {
-	for (int i = 0; i < m_openFiles.numElem(); i++)
-	{
-		Close(m_openFiles[i]);
-	}
 }
 
 bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* = nullptr*/)
@@ -194,7 +197,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 		if (unzOpenCurrentFile(zip) == UNZ_OK)
 		{
 			// read contents
-			CZipFileStream mountFile(zip);
+			CZipFileStream mountFile(zip, this);
 
 			memset(path, 0, sizeof(path));
 			mountFile.Read(path, mountFile.GetSize(), 1);
@@ -209,7 +212,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	return true;
 }
 
-IVirtualStream* CZipFileReader::Open(const char* filename, int modeFlags)
+IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 {
 	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
@@ -228,33 +231,9 @@ IVirtualStream* CZipFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	CZipFileStream* newStream = PPNew CZipFileStream(zipFileHandle);
-	newStream->m_host = this;
+	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, zipFileHandle, this);
 
-	{
-		Threading::CScopedMutex m(s_zipMutex);
-		m_openFiles.append(newStream);
-	}
-
-	return newStream;
-}
-
-void CZipFileReader::Close(IVirtualStream* fp)
-{
-	if (!fp)
-		return;
-
-	CZipFileStream* fsp = (CZipFileStream*)fp;
-
-	{
-		Threading::CScopedMutex m(s_zipMutex);
-		if (!m_openFiles.fastRemove(fsp))
-			return;
-	}
-
-	unzCloseCurrentFile(fsp->m_zipHandle);
-	unzClose(fsp->m_zipHandle);
-	delete fsp;
+	return IFilePtr(newStream);
 }
 
 bool CZipFileReader::FileExists(const char* filename) const

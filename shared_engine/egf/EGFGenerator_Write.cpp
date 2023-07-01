@@ -834,17 +834,13 @@ bool CEGFGenerator::GenerateEGF()
 	g_fileSystem->MakeDir(m_outputFilename.Path_Extract_Path().ToCString(), SP_MOD);
 
 	// open output model file
-	IFile *file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb", -1);
+	IFilePtr file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb", -1);
 	if(file)
 	{
 		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.ToCString());
 
 		// write model
 		memStream.WriteToFileStream(file);
-
-		g_fileSystem->Close(file);
-
-		file = nullptr;
 	}
 	else
 	{

@@ -27,6 +27,8 @@ public:
 	CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile);
 	~CDPKFileStream();
 
+	void				Ref_DeleteObject();
+
 	// reads data from virtual stream
 	size_t				Read(void *dest, size_t count, size_t size);
 
@@ -93,17 +95,14 @@ public:
 
 	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);
 
-	IVirtualStream*			Open( const char* filename, int modeFlags);
-	void					Close(IVirtualStream* fp );
+	IFilePtr				Open( const char* filename, int modeFlags);
 	bool					FileExists(const char* filename) const;
 
 protected:
 
 	int						FindFileIndex(const char* filename) const;
 
-	dpkfileinfo_t*			m_dpkFiles{ nullptr };
+	Array<dpkfileinfo_t>	m_dpkFiles{ PP_SL };
 	Map<int, int>			m_fileIndices{ PP_SL };
 	int						m_version{ 0 };
-
-	Array<CDPKFileStream*>	m_openFiles{ PP_SL };
 };

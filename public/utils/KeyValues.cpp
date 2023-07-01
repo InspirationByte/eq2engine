@@ -350,12 +350,11 @@ bool KeyValues::LoadFromStream(ubyte* pData)
 
 bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 {
-	IFile* pStream = g_fileSystem->Open(pszFileName, "wt", nSearchFlags);
+	IFilePtr pStream = g_fileSystem->Open(pszFileName, "wt", nSearchFlags);
 
 	if(pStream)
 	{
 		KV_WriteToStream(pStream, &m_root, 0, true);
-		g_fileSystem->Close(pStream);
 	}
 	else
 	{

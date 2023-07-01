@@ -60,7 +60,7 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 	if (Atomic::Decrement(m_numRefs) == 0)
 	{
 		Ref_DeleteObject();
-		if (POLICY::SHOULD_DELETE) { delete this; }
+		if constexpr (POLICY::SHOULD_DELETE) { delete this; }
 		return true;
 	}
 
@@ -98,9 +98,9 @@ public:
 	TYPE&				Ref() const			{ return *m_ptrObj; }
 	PTR_TYPE			operator->() const	{ return m_ptrObj; }
 
-	void				operator=(std::nullptr_t);
-	void				operator=(CRefPtr<TYPE>&& refptr);
-	void				operator=( const CRefPtr<TYPE>& refptr );
+	bool				operator=(std::nullptr_t);
+	bool				operator=(CRefPtr<TYPE>&& refptr);
+	bool				operator=( const CRefPtr<TYPE>& refptr );
 
 	friend bool			operator==(const CRefPtr<TYPE>& a, const CRefPtr<TYPE>& b) { return a.Ptr() == b.Ptr(); }
 	friend bool			operator==(const CRefPtr<TYPE>& a, std::nullptr_t) { return a.Ptr() == nullptr; }
@@ -182,13 +182,14 @@ inline void CRefPtr<TYPE>::Assign(const TYPE* obj)
 }
 
 template< class TYPE >
-inline void CRefPtr<TYPE>::operator=(std::nullptr_t)
+inline bool CRefPtr<TYPE>::operator=(std::nullptr_t)
 {
 	Release();
+	return false;
 }
 
 template< class TYPE >
-inline void CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
+inline bool CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
 {
 	using REF_POLICY = typename TYPE::REF_POLICY;
 	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
@@ -197,10 +198,12 @@ inline void CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
 
 	if (oldObj)
 		oldObj->Ref_Drop();
+	return m_ptrObj;
 }
 
 template< class TYPE >
-inline void CRefPtr<TYPE>::operator=( const CRefPtr<TYPE>& refptr )
+inline bool CRefPtr<TYPE>::operator=( const CRefPtr<TYPE>& refptr )
 {
 	Assign( refptr.m_ptrObj );
+	return m_ptrObj;
 }
