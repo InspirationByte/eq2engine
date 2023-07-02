@@ -102,7 +102,7 @@ int CDPKFileWriter::End()
 	return numFiles;
 }
 
-uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, bool skipCompression)
+uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, int packageFlags)
 {
 	// prepare stream to be read
 	CMemoryStream readStream;
@@ -121,14 +121,20 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 	pakInfo.size = fileData->GetSize();
 	pakInfo.crc = fileData->GetCRC32();
 
-	const bool doCompression = (m_compressionLevel > 0) && !skipCompression;
+	int targetBlockFlags = packageFlags;
+
+	if (!m_compressionLevel)
+		targetBlockFlags &= ~DPKFILE_FLAG_COMPRESSED;
+
+	if (!m_encrypted)
+		targetBlockFlags &= ~DPKFILE_FLAG_ENCRYPTED;
 
 	Array<ubyte*> readBuffer(PP_SL);
 	readBuffer.resize(DPK_BLOCK_MAXSIZE);
 
 	// compressed and encrypted files has to be put into blocks
 	// uncompressed files are bypassing blocks
-	if (skipCompression && !m_encrypted)
+	if (!DPK_IsBlockFile(targetBlockFlags))
 	{
 		int numBlocks = 0;
 
@@ -178,7 +184,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 		int compressedSize = -1;
 
 		// try compressing
-		if (doCompression)
+		if (targetBlockFlags & DPKFILE_FLAG_COMPRESSED)
 		{
 			memset(tmpBlockData, 0, sizeof(tmpBlockData));
 			compressedSize = LZ4_compress_HC((const char*)readBuffer.ptr(), (char*)tmpBlockData, srcSize, sizeof(tmpBlockData), m_compressionLevel);
@@ -200,7 +206,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 		const int tmpBlockSize = (blockInfo.flags & DPKFILE_FLAG_COMPRESSED) ? blockInfo.compressedSize : srcSize;
 
 		// encrypt tmpBlock
-		if (m_encrypted)
+		if (targetBlockFlags & DPKFILE_FLAG_ENCRYPTED)
 		{
 			blockInfo.flags |= DPKFILE_FLAG_ENCRYPTED;
 
@@ -238,7 +244,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 	return packedSize;
 }
 
-uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool skipCompression)
+uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int packageFlags)
 {
 	EqString fileNameString = fileName;
 	DPK_FixSlashes(fileNameString);
@@ -260,7 +266,7 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, bool sk
 	info.fileName = fileNameString;
 	info.pakInfo.filenameHash = filenameHash;
 
-	return WriteDataToPackFile(fileData, info.pakInfo, skipCompression);
+	return WriteDataToPackFile(fileData, info.pakInfo, packageFlags);
 }
 
 #if 0

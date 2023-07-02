@@ -372,17 +372,17 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			CBasePackageReader* pPackageReader = m_fsPackages[j];
+			CBasePackageReader* fsPacakage = m_fsPackages[j];
 
-			if (!(spFlags & pPackageReader->GetSearchPath()))
+			if (!(spFlags & fsPacakage->GetSearchPath()))
 				continue;
 
 			EqString pkgFileName;
-			if (!pPackageReader->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
 				continue;
 
 			// package readers do not support base path, get rid of it
-			fileHandle = pPackageReader->Open(pkgFileName, modeFlags);
+			fileHandle = fsPacakage->Open(pkgFileName, modeFlags);
 			if (fileHandle)
 				return true;
 		}
@@ -492,17 +492,17 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			CBasePackageReader* pPackageReader = m_fsPackages[j];
+			CBasePackageReader* fsPacakage = m_fsPackages[j];
 
-			if (!(spFlags & pPackageReader->GetSearchPath()))
+			if (!(spFlags & fsPacakage->GetSearchPath()))
 				continue;
 
 			EqString pkgFileName;
-			if (!pPackageReader->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
 				continue;
 
 			// package readers do not support base path, get rid of it
-			if (pPackageReader->FileExists(pkgFileName))
+			if (fsPacakage->FileExists(pkgFileName))
 				return true;
 		}
 
@@ -679,9 +679,11 @@ static CBasePackageReader* GetPackageReader(const char* packageName)
 
 bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const char* mountPath /*= nullptr*/)
 {
-	for(int i = 0; i < m_fsPackages.numElem();i++)
+	const EqString packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, packageName);
+
+	for(CBasePackageReader* package : m_fsPackages)
 	{
-		if(!stricmp(m_fsPackages[i]->GetPackageFilename(), packageName))
+		if(!packagePath.CompareCaseIns(package->GetPackageFilename()))
 		{
 			ASSERT_FAIL("Package %s was already added to file system", packageName);
 			return false;
@@ -689,9 +691,9 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 	}
 
 	CBasePackageReader* reader = GetPackageReader(packageName);
-
-	if (!reader->InitPackage(packageName, mountPath))
+	if (!reader->InitPackage(packagePath, mountPath))
 	{
+		MsgError("Cannot open package '%s'\n", packagePath.ToCString());
 		delete reader;
 		return false;
 	}
@@ -710,11 +712,13 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 
 void CFileSystem::RemovePackage(const char* packageName)
 {
+	const EqString packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, packageName);
+
 	for (int i = 0; i < m_fsPackages.numElem(); i++)
 	{
 		CBasePackageReader* reader = m_fsPackages[i];
 
-		if (!stricmp(reader->GetPackageFilename(), packageName))
+		if (!packagePath.CompareCaseIns(reader->GetPackageFilename()))
 		{
 			m_fsPackages.fastRemoveIndex(i);
 			delete reader;
@@ -724,12 +728,42 @@ void CFileSystem::RemovePackage(const char* packageName)
 }
 
 // opens package for further reading. Does not add package as FS layer
-IFilePackageReader* CFileSystem::OpenPackage(const char* packageName)
+IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int searchFlags)
 {
+	EqString basePath = m_basePath;
+	if (basePath.Length() > 0) // FIXME: is that correct?
+		basePath.Append(CORRECT_PATH_SEPARATOR);
+
 	CBasePackageReader* reader = GetPackageReader(packageName);
 
-	if (!reader->InitPackage(packageName, nullptr))
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
+		if (reader->InitPackage(filePath, nullptr))
+			return true;
+
+		// If failed to load directly, load it from package, in backward order
+		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
+		{
+			CBasePackageReader* fsPacakage = m_fsPackages[j];
+
+			if (!(spFlags & fsPacakage->GetSearchPath()))
+				continue;
+
+			EqString pkgFileName;
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+				continue;
+
+			// trying to open package file inside package (embedded DPK)
+			if (fsPacakage->OpenEmbeddedPackage(reader, pkgFileName))
+				return true;
+		}
+
+		return false;
+	};
+
+	if (!WalkOverSearchPaths(searchFlags, packageName, walkFileFunc))
+	{
+		MsgError("Cannot open package '%s'\n", packageName);
 		delete reader;
 		return nullptr;
 	}

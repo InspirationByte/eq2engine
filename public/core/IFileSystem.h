@@ -91,11 +91,12 @@ public:
 	virtual bool			SetAccessKey(const char* accessKey) = 0;
 
 	// adds package to file system as another layer, acts just like AddSearchPath
+	// NOTE: packageName must be root-level package file
 	virtual bool			AddPackage(const char* packageName, ESearchPath type, const char* mountPath = nullptr) = 0;
 	virtual void			RemovePackage(const char* packageName) = 0;
 
-	// opens package for further reading. Does not add package as FS layer. NOTE: it's not supported to open package inside EPK or ZIP file.
-	virtual IFilePackageReader* OpenPackage(const char* packageName) = 0;
+	// opens package for further reading. Does not add package as FS layer.
+	virtual IFilePackageReader* OpenPackage(const char* packageName, int searchFlags = -1) = 0;
 	virtual void			ClosePackage(IFilePackageReader* package) = 0;
 
 	//------------------------------------------------------------

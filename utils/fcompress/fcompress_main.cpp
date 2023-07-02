@@ -381,6 +381,7 @@ static bool CheckExtensionList(Array<EqString>& extList, const char* ext)
 	return false;
 }
 
+#pragma optimize("", off)
 static void CookPackageTarget(const char* targetName)
 {
 	// load all properties
@@ -494,10 +495,14 @@ static void CookPackageTarget(const char* targetName)
 
 		StartPacifier("Adding files, this may take a while: ");
 
+		int numFilesProcessed = 0;
+		const int maxFiles = fileListBuilder.GetFiles().numElem();
 		for (const CFileListBuilder::FileInfo& fileInfo : fileListBuilder.GetFiles())
 		{
 			const EqString fileExt = _Es(fileInfo.fileName).Path_Extract_Ext();
 			const bool skipCompression = CheckExtensionList(ignoreCompressionExt, fileExt);
+
+			int targetFileFlags = (skipCompression ? 0 : DPKFILE_FLAG_COMPRESSED) | DPKFILE_FLAG_ENCRYPTED;
 
 			bool loadRawFile = true;
 			CMemoryStream fileMemoryStream;
@@ -519,15 +524,36 @@ static void CookPackageTarget(const char* targetName)
 
 			IVirtualStreamPtr stream(&fileMemoryStream);
 			if (loadRawFile)
+			{
 				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
 
-			const uint packedSize = dpkWriter.Add(stream, fileInfo.aliasName, skipCompression);
+				if (fileInfo.fileName.Path_Extract_Ext() == "epk")
+				{
+					// validate EPK file
+					dpkheader_t hdr;
+					stream->Read(hdr);
+					if (hdr.signature == DPK_SIGNATURE && hdr.version == DPK_VERSION)
+					{
+						MsgInfo("Embedded package file %s\n", fileInfo.fileName.ToCString());
+
+						// disable encryption and conversion for embedded packages
+						targetFileFlags &= ~(DPKFILE_FLAG_COMPRESSED | DPKFILE_FLAG_ENCRYPTED);
+						ASSERT(DPK_IsBlockFile(targetFileFlags) == false);
+					}
+					stream->Seek(0, VS_SEEK_SET);
+				}
+			}
+
+			const uint packedSize = dpkWriter.Add(stream, fileInfo.aliasName, targetFileFlags);
 
 			originalSizeTotal += stream->GetSize();
 			packedSizeTotal += packedSize;
 
 			if ((dpkWriter.GetFileCount() % 500) == 0)
 				dpkWriter.Flush();
+
+			UpdatePacifier((float)numFilesProcessed / (float)maxFiles);
+			++numFilesProcessed;
 		}
 
 		EndPacifier();

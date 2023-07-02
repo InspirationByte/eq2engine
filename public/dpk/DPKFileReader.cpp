@@ -284,30 +284,33 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 
 bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*= nullptr*/)
 {
-    m_packageName = filename;
-	m_packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, filename);
+	m_packagePath = filename;
 
 	COSFile osFile;
 	if(!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
-	{
-		MsgError("Cannot open package '%s'\n", m_packagePath.ToCString());
 		return false;
-	}
+
+	return InitPackage(osFile, mountPath);
+}
+
+bool CDPKFileReader::InitPackage(COSFile& osFile, const char* mountPath /*= nullptr*/)
+{
+	const size_t packageStart = osFile.Tell();
 
 	dpkheader_t header;
 	osFile.Read(&header, sizeof(dpkheader_t));
-	
-    if (header.signature != DPK_SIGNATURE)
-    {
-		MsgError("'%s' is not a Data Pack File\n", m_packageName.ToCString());
-        return false;
-    }
 
-    if (header.version != DPK_VERSION && header.version != DPK_PREV_VERSION)
-    {
-		MsgError("package '%s' has wrong version\n", m_packageName.ToCString());
-        return false;
-    }
+	if (header.signature != DPK_SIGNATURE)
+	{
+		MsgError("'%s' is not a Data Pack File\n", m_packagePath.ToCString());
+		return false;
+	}
+
+	if (header.version != DPK_VERSION && header.version != DPK_PREV_VERSION)
+	{
+		MsgError("package '%s' has wrong version\n", m_packagePath.ToCString());
+		return false;
+	}
 
 	m_version = header.version;
 
@@ -316,28 +319,69 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	osFile.Read(dpkMountPath, DPK_STRING_SIZE);
 
 	// if custom mount path provided, use it
-	if(mountPath)
+	if (mountPath)
 		m_mountPath = mountPath;
 	else
 		m_mountPath = dpkMountPath;
-	
+
 	m_mountPath.Path_FixSlashes();
 
-	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packageName.ToCString());
+	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packagePath.ToCString());
 
-    // skip file data
-    osFile.Seek(header.fileInfoOffset, COSFile::ESeekPos::SET);
+	// skip file data
+	osFile.Seek(packageStart + header.fileInfoOffset, COSFile::ESeekPos::SET);
 
 	// read file table
 	m_dpkFiles.setNum(header.numFiles);
 	osFile.Read(m_dpkFiles.ptr(), sizeof(dpkfileinfo_t) * header.numFiles);
 
 	for (int i = 0; i < header.numFiles; ++i)
+	{
 		m_fileIndices.insert(m_dpkFiles[i].filenameHash, i);
+
+		// relocate package in case of opening EPK inside EPK
+		m_dpkFiles[i].offset += packageStart;
+	}
 
 	// ASSERT_MSG(header.numFiles == m_fileIndices.size(), "Programmer warning: hash collisions in %s, %d files out of %d", m_packageName.ToCString(), m_fileIndices.size(), header.numFiles);
 
-    return true;
+	return true;
+}
+
+bool CDPKFileReader::OpenEmbeddedPackage(CBasePackageReader* target, const char* filename)
+{
+	// find file in DPK filename list
+	const int dpkFileIndex = FindFileIndex(filename);
+
+	if (dpkFileIndex == -1)
+		return false;
+
+	const dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
+
+	// file must be flat-written in order to be able to read as package
+	if (fileInfo.flags & (DPKFILE_FLAG_COMPRESSED | DPKFILE_FLAG_ENCRYPTED))
+		return false;
+
+	COSFile osFile;
+	if (!osFile.Open(m_packagePath.ToCString(), COSFile::OPEN_EXIST | COSFile::READ))
+	{
+		ASSERT_FAIL("CDPKFileReader::OpenEmbeddedPackage FATAL ERROR - failed to open package file");
+		return false;
+	}
+
+	// we don't support ZIP files yet
+	// though it should not be a problem to have them
+	if (target->GetType() == PACKAGE_READER_DPK)
+	{
+		CDPKFileReader* targetDPKReader = (CDPKFileReader*)target;
+		targetDPKReader->m_packagePath = m_packagePath;
+
+		osFile.Seek(fileInfo.offset, COSFile::ESeekPos::SET);
+		targetDPKReader->InitPackage(osFile, nullptr);
+		return true;
+	}
+
+	return false;
 }
 
 IFilePtr CDPKFileReader::Open(const char* filename, int modeFlags)

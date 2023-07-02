@@ -142,9 +142,7 @@ CZipFileReader::~CZipFileReader()
 bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* = nullptr*/)
 {
 	char path[2048];
-
-	m_packageName = filename;
-	m_packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, filename);
+	m_packagePath = filename;
 
 	// perform test
 	unzFile zip = GetNewZipHandle();

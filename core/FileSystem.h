@@ -106,11 +106,12 @@ public:
 	bool						SetAccessKey(const char* accessKey);
 
 	// adds package to file system as another layer, acts just like AddSearchPath
+	// NOTE: packageName must be root-level package file
 	bool						AddPackage(const char* packageName, ESearchPath type, const char* mountPath = nullptr);
 	void						RemovePackage(const char* packageName);
 
 	// opens package for further reading. Does not add package as FS layer
-	IFilePackageReader*			OpenPackage(const char* packageName);
+	IFilePackageReader*			OpenPackage(const char* packageName, int searchFlags = -1);
 	void						ClosePackage(IFilePackageReader* package);
 
 	//------------------------------------------------------------

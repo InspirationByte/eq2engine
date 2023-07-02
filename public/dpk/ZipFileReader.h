@@ -72,6 +72,8 @@ public:
 	IFilePtr				Open(const char* filename, int modeFlags);
 	bool					FileExists(const char* filename) const;
 
+	EPackageReaderType		GetType() const { return PACKAGE_READER_ZIP; }
+
 protected:
 	unzFile					GetNewZipHandle() const;
 	unzFile					GetZippedFile(const char* filename) const;

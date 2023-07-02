@@ -94,12 +94,16 @@ public:
 	~CDPKFileReader();
 
 	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);
+	bool					OpenEmbeddedPackage(CBasePackageReader* target, const char* filename);
+
+	EPackageReaderType		GetType() const { return PACKAGE_READER_DPK; }
 
 	IFilePtr				Open( const char* filename, int modeFlags);
 	bool					FileExists(const char* filename) const;
 
 protected:
 
+	bool					InitPackage(COSFile& osFile, const char* mountPath /*= nullptr*/);
 	int						FindFileIndex(const char* filename) const;
 
 	Array<dpkfileinfo_t>	m_dpkFiles{ PP_SL };

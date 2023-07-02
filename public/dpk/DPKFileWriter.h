@@ -27,7 +27,7 @@ public:
 	bool					Begin(const char* fileName, ESearchPath searchPath = SP_ROOT);
 
 	// adds data to the pack file
-	uint					Add(IVirtualStream* fileData, const char* fileName, bool skipCompression = false);
+	uint					Add(IVirtualStream* fileData, const char* fileName, int packageFlags = 0xff);
 
 #if 0
 	// creates new package file and returns stream for writing
@@ -40,7 +40,7 @@ public:
 	int						GetFileCount() const { return m_files.size(); }
 
 protected:
-	uint					WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, bool skipCompression);
+	uint					WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, int packageFlags = 0xff);
 
 	struct FileInfo
 	{

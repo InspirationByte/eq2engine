@@ -20,6 +20,11 @@ enum EDPKFileFlags
 	DPKFILE_FLAG_ENCRYPTED			= (1 << 1),
 };
 
+static bool DPK_IsBlockFile(int flags)
+{
+	return flags & (DPKFILE_FLAG_COMPRESSED | DPKFILE_FLAG_ENCRYPTED);
+}
+
 //---------------------------
 
 // data package header
@@ -59,6 +64,3 @@ struct dpkfileinfo_s
 	short	flags;
 };
 ALIGNED_TYPE(dpkfileinfo_s, 2) dpkfileinfo_t;
-
-// dpk path fix
-void DPK_FixSlashes(EqString& str);
