@@ -215,7 +215,7 @@ void PPMemInfo(bool fullStats)
 #endif // PPMEM_EXTRA_DEBUGINFO
 	}
 
-#ifdef PPMEM_EXTRA_DEBUGINFO
+#if !defined(PPMEM_DISABLED) && defined(PPMEM_EXTRA_DEBUGINFO)
 	// currently allocated items groupped by file:line
 	{
 		MsgInfo("--- allocations groupped by file-line ---\n");
