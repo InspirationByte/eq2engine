@@ -707,7 +707,9 @@ void ShaderAPIGL::Clear(bool bClearColor,
 		glDepthMask(GL_TRUE);
 		GLCheckError("clr depth msk");
 
-#ifndef USE_GLES2
+#ifdef USE_GLES2
+		glClearDepthf(fDepth);
+#else
 		glClearDepth(fDepth);
 		GLCheckError("clr depth");
 #endif // USE_GLES2
@@ -1044,6 +1046,9 @@ void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const 
 	CGLTexture* srcTexture = (CGLTexture*)srcTarget.Ptr();
 	CGLTexture* destTexture = (CGLTexture*)destTex.Ptr();
 
+	GLTextureRef_t srcTexRef = srcTexture->m_textures.front();
+	GLTextureRef_t destTexRef = destTexture->m_textures.front();
+
 	IRectangle _srcRect(0,0,srcTexture->GetWidth(), srcTexture->GetHeight());
 	IRectangle _destRect(0,0,destTexture->GetWidth(), destTexture->GetHeight());
 
@@ -1059,15 +1064,14 @@ void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const 
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
 
-	// setup read from texture
-	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexture->m_textures[0].glTexID, 0);
-
-	// setup write to texture
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, destTexture->m_textures[0].glTexID, 0);
+	// setup read and write texture
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, g_gl_texTargetType[srcTexRef.type], srcTexRef.glTexID, 0);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, g_gl_texTargetType[destTexRef.type], destTexRef.glTexID, 0);
 
 	// setup GL_COLOR_ATTACHMENT1 as destination
-	GLenum drawBufferSetting[2] = {GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT0};
-	glDrawBuffers(1, drawBufferSetting);
+	GLenum drawBufferSetting = GL_COLOR_ATTACHMENT1;
+	glDrawBuffers(1, &drawBufferSetting);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	GLCheckError("glDrawBuffers att1");
 
 	// copy
@@ -1077,11 +1081,13 @@ void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const 
 	GLCheckError("blit");
 
 	// reset
-	glDrawBuffers(1, drawBufferSetting+1);
+	drawBufferSetting = GL_COLOR_ATTACHMENT0;
+	glDrawBuffers(1, &drawBufferSetting);
+	glReadBuffer(GL_NONE);
 	GLCheckError("glDrawBuffer rst");
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, g_gl_texTargetType[srcTexRef.type], GL_NONE, 0);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, g_gl_texTargetType[destTexRef.type], GL_NONE, 0);
 
 	// change render targets back
 	if(currentNumRTs)
@@ -1143,7 +1149,8 @@ void ShaderAPIGL::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, Arra
 
 		if (renderTargets.numElem() == 0)
 		{
-			glDrawBuffers(0, nullptr);
+			GLenum drawBufferSetting = GL_COLOR_ATTACHMENT0;
+			glDrawBuffers(1, &drawBufferSetting);
 			glReadBuffer(GL_NONE);
 		}
 		else
@@ -1207,7 +1214,7 @@ void ShaderAPIGL::InternalChangeFrontFace(int nCullFaceMode)
 	if (nCullFaceMode != m_nCurrentFrontFace)
 		glFrontFace(m_nCurrentFrontFace = nCullFaceMode);
 }
-
+#pragma GCC optimize("O0")
 // Changes back to backbuffer
 void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 {
