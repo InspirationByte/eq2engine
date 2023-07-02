@@ -60,21 +60,20 @@
 #include "platform/assert.h"
 #include "platform/messagebox.h"
 #include "platform/stackalloc.h"
+#include "platform/eqatomic.h"
+#include "platform/eqtimer.h"
 
 #include "ds/IVirtualStream.h"
 
-#include "ds/mempool.h"
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 
-#include "platform/eqtimer.h"
 #include "platform/eqthread.h"
-#include "platform/eqatomic.h"
 
+#include "ds/mempool.h"
 #include "ds/refcounted.h"
 #include "ds/weakptr.h"
 #include "ds/singleton.h"
-
 #include "ds/range_for.h"
 #include "ds/Array.h"
 #include "ds/BitArray.h"
