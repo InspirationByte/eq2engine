@@ -391,6 +391,9 @@ void CMaterialSystem::Shutdown()
 	g_pShaderAPI->Shutdown();
 	m_renderLibrary->ExitAPI();
 
+	for(DKMODULE* shaderModule : m_shaderLibs)
+		g_fileSystem->CloseModule(shaderModule);
+
 	// shutdown render libraries, all shaders and other
 	g_fileSystem->CloseModule( m_rendermodule );
 }

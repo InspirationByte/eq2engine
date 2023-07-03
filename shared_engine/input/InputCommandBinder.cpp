@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: KeyBinding list
@@ -138,7 +138,7 @@ void CInputCommandBinder::Shutdown()
 	}
 #endif // PLAT_SDL
 
-	m_touchZones.clear();
+	m_touchZones.clear(true);
 	UnbindAll();
 
 	m_init = false;
@@ -146,7 +146,7 @@ void CInputCommandBinder::Shutdown()
 
 void CInputCommandBinder::InitTouchZones()
 {
-	m_touchZones.clear();
+	m_touchZones.clear(true);
 
 	KeyValues kvs;
 	if(!kvs.LoadFromFile("resources/in_touchzones.res"))
@@ -428,7 +428,9 @@ void CInputCommandBinder::UnbindAll()
 	for(int i = 0; i < m_bindings.numElem();i++)
 		delete m_bindings[i];
 
-	m_bindings.clear();
+	m_bindings.clear(true);
+	m_axisActs.clear(true);
+	m_currentButtons.clear(true);
 }
 
 void CInputCommandBinder::UnbindAll_Joystick()

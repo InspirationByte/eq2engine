@@ -423,7 +423,8 @@ void CConsoleCommands::DeInit()
 	for (int i = 0; i < m_registeredCommands.numElem(); i++)
 		((ConCommandBase*)m_registeredCommands[i])->m_bIsRegistered = false;
 
-	m_registeredCommands.clear();
+	m_registeredCommands.clear(true);
+	m_cvarValueStore.clear(true);
 }
 
 void CConsoleCommands::SortCommands()

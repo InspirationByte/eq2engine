@@ -29,7 +29,7 @@ void CCommandLine::Init(const char* pszCommandLine)
 
 void CCommandLine::DeInit()
 {
-	m_args.clear();
+	m_args.clear(true);
 }
 
 void CCommandLine::Parse(const char* pszCommandLine)

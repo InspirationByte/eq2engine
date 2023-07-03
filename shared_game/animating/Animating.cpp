@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Animating base
@@ -93,14 +93,18 @@ CAnimatingEGF::CAnimatingEGF()
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
 }
 
+CAnimatingEGF::~CAnimatingEGF()
+{
+	DestroyAnimating();
+}
+
 void CAnimatingEGF::DestroyAnimating()
 {
 	m_seqList.clear();
 	m_poseControllers.clear();
-
 	m_ikChains.clear();
-
 	m_joints = nullptr;
+	m_numBones = 0;
 
 	if (m_boneTransforms)
 		PPFree(m_boneTransforms);
@@ -111,14 +115,14 @@ void CAnimatingEGF::DestroyAnimating()
 	m_transitionFrames = nullptr;
 
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
-
-	m_numBones = 0;
 }
 
 void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 {
 	if (!model)
 		return;
+
+	DestroyAnimating();
 
 	const studiohdr_t& studio = model->GetStudioHdr();
 

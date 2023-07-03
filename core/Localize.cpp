@@ -120,6 +120,7 @@ void CLocalize::Shutdown()
 {
 	ConCommandBase::Unregister(&language);
 	m_tokens.clear(true);
+	m_languageFilePrefixes.clear(true);
 }
 
 void CLocalize::ReloadLanguageFiles()

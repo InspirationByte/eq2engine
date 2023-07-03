@@ -1656,8 +1656,8 @@ void KV_ReadBinaryValue(IVirtualStream* stream, KVSection* addTo)
 
 	if(binValue.type == KVPAIR_STRING)
 	{
-		 // int value as string length
-		char* strVal = (char*)PPAlloc(binValue.nValue+1);
+		// int value as string length
+		char* strVal = (char*)stackalloc(binValue.nValue+1);
 
 		stream->Read(strVal, 1, binValue.nValue);
 		strVal[binValue.nValue] = '\0';

@@ -129,7 +129,9 @@ void CEqParallelJobThreads::Shutdown()
 	for (int i = 0; i < m_jobThreads.numElem(); i++)
 		delete m_jobThreads[i];
 
-	m_jobThreads.clear();
+	m_jobThreads.clear(true);
+	m_workQueue.clear(true);
+	m_completedJobs.clear(true);
 }
 
 // adds the job

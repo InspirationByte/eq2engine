@@ -95,7 +95,6 @@ protected:
 	bool							AssignFreeJob( CEqJobThread* requestBy );
 	void							AddCompleted(eqParallelJob_t* job);
 
-
 	Array<CEqJobThread*>			m_jobThreads{ PP_SL };
 
 	Array<eqParallelJob_t*>			m_workQueue{ PP_SL };

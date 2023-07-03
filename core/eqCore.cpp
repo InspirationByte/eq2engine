@@ -331,6 +331,10 @@ void CDkCore::Shutdown()
 	SAFE_DELETE(m_coreConfiguration);
 	m_interfaces.clear(true);
 
+	SAFE_DELETE(c_log_enable);
+	SAFE_DELETE(c_log_disable);
+	SAFE_DELETE(c_log_flush);
+
     SetSpewFunction(nullptr);
 
     ((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->DeInit();
@@ -346,6 +350,7 @@ void CDkCore::Shutdown()
 	// shutdown memory
 	PPMemShutdown();
 	Log_Close();
+	m_exceptionCb.clear(true);
 }
 
 char* CDkCore::GetApplicationName() const

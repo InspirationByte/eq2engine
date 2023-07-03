@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Eq UI manager
@@ -84,10 +84,8 @@ void CUIManager::Init()
 void CUIManager::Shutdown()
 {
 	// all childs will be cleaned up
-	delete m_rootPanel;
-	m_rootPanel = nullptr;
-
-	m_panels.clear();
+	SAFE_DELETE(m_rootPanel);
+	m_panels.clear(true);
 }
 
 Panel* CUIManager::GetRootPanel() const
@@ -137,7 +135,8 @@ void CUIManager::DestroyPanel( Panel* panel )
 	if(!panel)
 		return;
 
-	m_rootPanel->RemoveChild(panel, false);
+	if(m_rootPanel)
+		m_rootPanel->RemoveChild(panel, false);
 	m_panels.fastRemove(panel);
 
 	delete panel;

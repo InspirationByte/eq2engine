@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Input command binder and host
@@ -138,9 +138,7 @@ protected:
 	axisAction_t*			FindAxisAction(const char* name) const;
 
 	Array<int>				m_currentButtons{ PP_SL };	// current keyboard buttons
-
 	Array<in_binding_t*>	m_bindings{ PP_SL };
-
 	Array<in_touchzone_t>	m_touchZones{ PP_SL };
 	Array<axisAction_t>		m_axisActs{ PP_SL };
 

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Animating base
@@ -21,7 +21,7 @@ class CAnimatingEGF
 {
 public:
 	CAnimatingEGF();
-	virtual ~CAnimatingEGF() {}
+	virtual ~CAnimatingEGF();
 
 	virtual void				InitAnimating(CEqStudioGeom* model);
 	void						DestroyAnimating();
@@ -94,11 +94,11 @@ protected:
 	// transition time from previous
 	float						m_transitionTime;
 	float						m_transitionRemTime;
-	qanimframe_t*				m_transitionFrames;
-	qanimframe_t*				m_velocityFrames;
+	qanimframe_t*				m_transitionFrames{ nullptr };
+	qanimframe_t*				m_velocityFrames{ nullptr };
 
 	// computed ready-to-use matrices
-	Matrix4x4*					m_boneTransforms;
+	Matrix4x4*					m_boneTransforms{ nullptr };
 
 	// local bones/base pose
 	const studioJoint_t*		m_joints{ nullptr };
