@@ -2200,6 +2200,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 #ifdef USE_GLES2
 			pStream->Write(cdata.programData, cdata.programSize, 1);
+			PPFree(cdata.programData);
 #else
 			pStream->Write(compressedData, compressedSize, 1);
 			PPFree(compressedData);
