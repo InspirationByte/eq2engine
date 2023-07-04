@@ -37,7 +37,7 @@ static CD3D9RenderLib   s_D3D9RenderLib;
 static CD3D11RenderLib  s_D3D11RenderLib;
 #endif
 
-CEqRenderManager g_renderManager;
+static CEqRenderManager g_renderManager;
 static IRenderLibrary* s_currentRenderLib = nullptr;
 
 CEqRenderManager::CEqRenderManager()

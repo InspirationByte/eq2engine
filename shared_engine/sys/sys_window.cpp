@@ -111,9 +111,6 @@ EQWNDHANDLE Sys_CreateWindow()
 bool s_bActive = true;
 bool s_bProcessInput = true;
 
-static CGameHost s_Host;
-CGameHost* g_pHost = &s_Host;
-
 void InputCommands_SDL(SDL_Event* event);
 
 void EQHandleSDLEvents(SDL_Event* event)

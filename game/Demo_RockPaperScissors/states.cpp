@@ -14,10 +14,6 @@
 
 #include "sys/sys_host.h"
 #include "sys/sys_in_console.h"
-
-#include "state_sample_game_demo.h"
-
-
 #include "audio/eqSoundEmitterSystem.h"
 
 #ifdef IMGUI_ENABLED
@@ -25,11 +21,12 @@
 #include "audio/SoundScriptEditorUI.h"
 #endif
 
+#include "state_sample_game_demo.h"
+
 #define GAME_WINDOW_TITLE	"Rock Paper Scissors"
 
 CBaseStateHandler* g_states[GAME_STATE_COUNT] = { nullptr };
 
-extern CEqConsoleInput* g_consoleInput;
 
 static eqJobThreadDesc_t s_jobTypes[] = {
 	{JOB_TYPE_ANY, 1},
@@ -51,7 +48,6 @@ namespace EqStateMgr
 bool InitRegisterStates()
 {
 	g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes);
-
 	g_audioSystem->Init();
 
 #ifdef ENABLE_MULTIPLAYER
@@ -86,7 +82,7 @@ bool InitRegisterStates()
 
 	g_pHost->SetWindowTitle(GAME_WINDOW_TITLE);
 
-	EqStateMgr::SetCurrentState(g_State_SampleGameDemo);
+	EqStateMgr::SetCurrentStateType(GAME_STATE_SAMPLE_GAME_DEMO);
 
 	return true;
 }
@@ -98,12 +94,16 @@ void PreUpdateState(float fDt)
 
 void ShutdownStates()
 {
-	g_sounds->Shutdown();
-	g_audioSystem->Shutdown();
+	for (int i = 0; i < GAME_STATE_COUNT; ++i)
+		g_states[i] = nullptr;
 
 #ifdef ENABLE_MULTIPLAYER
 	Networking::ShutdownNetworking();
 #endif
+
+	g_sounds->Shutdown();
+	g_audioSystem->Shutdown();
+	g_parallelJobs->Shutdown();
 }
 
 bool IsMultiplayerGameState()

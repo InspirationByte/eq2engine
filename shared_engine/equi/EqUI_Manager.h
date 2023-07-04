@@ -97,7 +97,7 @@ private:
 	Array<ctrlFactory_t>	m_controlFactory{ PP_SL };
 };
 
-extern CUIManager* Manager;
+extern CAutoPtr<CUIManager> Manager;
 };
 
 #define EQUI_FACTORY(name) \

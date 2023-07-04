@@ -332,8 +332,7 @@ bool CUIManager::ProcessKeyboardEvents(int nKeyButtons, int flags)
 	return m_keyboardFocus->ProcessKeyboardEvents(nKeyButtons, flags);
 }
 
-static CUIManager s_eqUIManager;
-CUIManager*	Manager = &s_eqUIManager;
+CAutoPtr<CUIManager> Manager;
 
 
 };

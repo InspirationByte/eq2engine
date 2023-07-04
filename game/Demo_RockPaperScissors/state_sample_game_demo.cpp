@@ -16,8 +16,6 @@
 
 DECLARE_CVAR(g_maxObjects, "200", nullptr, CV_ARCHIVE);
 
-#define PrecacheScriptSound(snd) g_sounds->PrecacheSound(snd)
-
 enum ESoundChannelType
 {
 	CHAN_STATIC = 0,
@@ -35,10 +33,7 @@ static ChannelDef s_soundChannels[] = {
 };
 static_assert(elementsOf(s_soundChannels) == CHAN_COUNT, "ESoundChannelType needs to be in sync with s_soundChannels");
 
-
-
-static CState_SampleGameDemo s_State_SampleGameDemo;
-CState_SampleGameDemo* g_State_SampleGameDemo = &s_State_SampleGameDemo;
+static CAutoPtr<CState_SampleGameDemo> g_State_SampleGameDemo;
 
 CState_SampleGameDemo::CState_SampleGameDemo()
 {
@@ -68,6 +63,7 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
 {
 	g_pPFXRenderer->Shutdown();
+	m_pfxGroup = nullptr;
 }
 
 void CState_SampleGameDemo::InitGame()

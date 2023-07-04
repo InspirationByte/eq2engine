@@ -12,5 +12,3 @@ public:
 
     IRenderLibrary* GetRenderer() const;
 };
-
-extern CEqRenderManager g_renderManager;

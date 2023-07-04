@@ -17,6 +17,8 @@
 using namespace Threading;
 static CEqMutex s_effectRenderMutex;
 
+CAutoPtr<CEffectRenderer> effectrenderer;
+
 static int _SortParticles(IEffect* const &effect0, IEffect* const &effect1)
 {
 	return effect1->GetDistanceToCamera() - effect0->GetDistanceToCamera();
@@ -137,5 +139,3 @@ Vector3D CEffectRenderer::GetViewSortPosition() const
 	return m_viewPos;
 }
 
-static CEffectRenderer g_effectRenderer;
-CEffectRenderer* effectrenderer = &g_effectRenderer;

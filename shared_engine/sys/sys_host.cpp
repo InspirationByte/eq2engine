@@ -34,7 +34,6 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
 DECLARE_CVAR_G(user_cfg, DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_PROTECTED);
@@ -90,6 +89,8 @@ DECLARE_CMD(sys_vmode_list, nullptr, 0)
 DECLARE_INTERNAL_SHADERS();
 
 static EQCURSOR s_defaultCursor[20];
+
+CAutoPtr<CGameHost> g_pHost;
 
 // TODO: Move this to GUI
 enum CursorCode

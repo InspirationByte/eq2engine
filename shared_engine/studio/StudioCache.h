@@ -54,6 +54,6 @@ private:
 };
 
 // model cache manager
-extern CStudioCache* g_studioModelCache;
+extern CAutoPtr<CStudioCache> g_studioModelCache;
 
 #define PrecacheStudioModel(mod) g_studioModelCache->PrecacheModel(mod)

@@ -114,8 +114,7 @@ const float LOG_SCROLL_DELAY_END	= 0.0f;
 const float LOG_SCROLL_DELAY_STEP	= 0.01f;
 const float LOG_SCROLL_POWER_INC	= 0.05f;
 
-static CEqConsoleInput s_SysConsole;
-CEqConsoleInput* g_consoleInput = &s_SysConsole;
+CAutoPtr<CEqConsoleInput> g_consoleInput;
 
 static ColorRGBA s_conBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
 static ColorRGBA s_conInputBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);

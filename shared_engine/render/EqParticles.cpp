@@ -24,8 +24,7 @@ static VertexFormatDesc_t g_PFXVertexFormatDesc[] = {
 using namespace Threading;
 static CEqMutex s_particleRenderMutex;
 
-static CParticleLowLevelRenderer s_pfxRenderer;
-CParticleLowLevelRenderer* g_pPFXRenderer = &s_pfxRenderer;
+CAutoPtr<CParticleLowLevelRenderer> g_pPFXRenderer;
 
 //----------------------------------------------------------------------------------------------------
 

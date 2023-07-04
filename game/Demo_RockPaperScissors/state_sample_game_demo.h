@@ -49,8 +49,7 @@ private:
 	void		InitGame();
 	int			CheckWhoDefeats(const RPSObject& a, const RPSObject& b) const;
 
-	CParticleBatch*		m_pfxGroup;
-
+	CParticleBatch*		m_pfxGroup{ nullptr };
 	Array<RPSObject>	m_objects{ PP_SL };
 
 	float				m_zoomLevel{ 1.0f };
@@ -58,4 +57,4 @@ private:
 	bool				m_mouseDown{ false };
 };
 
-extern CState_SampleGameDemo* g_State_SampleGameDemo;
+extern CAutoPtr<CState_SampleGameDemo> g_State_SampleGameDemo;

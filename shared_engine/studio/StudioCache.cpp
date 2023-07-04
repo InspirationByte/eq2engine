@@ -17,15 +17,14 @@
 
 DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
 
-static CStudioCache s_ModelCache;
-CStudioCache* g_studioModelCache = &s_ModelCache;
+CAutoPtr<CStudioCache> g_studioModelCache;
 
 DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
 {
-	MsgInfo("Models loaded: %d\n", s_ModelCache.GetCachedModelCount());
-	for (int i = 0; i < s_ModelCache.GetCachedModelCount(); ++i)
+	MsgInfo("Models loaded: %d\n", g_studioModelCache->GetCachedModelCount());
+	for (int i = 0; i < g_studioModelCache->GetCachedModelCount(); ++i)
 	{
-		CEqStudioGeom* geom = s_ModelCache.GetModel(i);
+		CEqStudioGeom* geom = g_studioModelCache->GetModel(i);
 		Msg("  %d: %s\n", i, geom->GetName());
 	}
 }
