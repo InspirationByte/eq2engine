@@ -402,11 +402,7 @@ void ThreadDestroy( uintptr_t threadHandle )
 
 void YieldCurrentThread()
 {
-#if defined(__ANDROID__) || defined(__APPLE__)
 	sched_yield();
-#else
-	pthread_yield();
-#endif
 }
 
 //----------------------------------------------------------

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: EGF Model cache
@@ -38,17 +38,15 @@ IMaterialPtr CStudioCache::GetErrorMaterial()
 
 void CStudioCache::InitErrorMaterial()
 {
-	if (!m_errorMaterial)
-	{
-		KVSection overdrawParams;
-		overdrawParams.SetName("Skinned"); // set shader 'BaseUnlit'
-		overdrawParams.SetKey("BaseTexture", "error");
+	if (m_errorMaterial)
+		return;
 
-		IMaterialPtr pMaterial = materials->CreateMaterial("_studioErrorMaterial", &overdrawParams);
-		pMaterial->LoadShaderAndTextures();
+	KVSection overdrawParams;
+	overdrawParams.SetName("Skinned"); // set shader 'BaseUnlit'
+	overdrawParams.SetKey("BaseTexture", "error");
 
-		m_errorMaterial = pMaterial;
-	}
+	m_errorMaterial = materials->CreateMaterial("_studioErrorMaterial", &overdrawParams);
+	m_errorMaterial->LoadShaderAndTextures();
 }
 
 // caches model and returns it's index

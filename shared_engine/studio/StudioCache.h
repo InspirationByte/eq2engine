@@ -6,11 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "materialsystem1/IMaterial.h"
 
 class CEqStudioGeom;
 class IVertexFormat;
-class IMaterial;
-using IMaterialPtr = CRefPtr<IMaterial>;
 
 static constexpr const int CACHE_INVALID_MODEL = -1;
 
