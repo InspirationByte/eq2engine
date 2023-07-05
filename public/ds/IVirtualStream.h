@@ -46,7 +46,7 @@ static size_t VSRead(IVirtualStream* stream, T& obj);
 template<typename T>
 static size_t VSWrite(IVirtualStream* stream, const T& obj);
 
-class IVirtualStream : public RefCountedObject<IVirtualStream, RefCountedKeepPolicy>
+class IVirtualStream : public RefCountedObject<IVirtualStream>
 {
 public:
 	virtual ~IVirtualStream() {}

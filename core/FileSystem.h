@@ -21,8 +21,6 @@ class CFile : public IFile
 public:
 	CFile(COSFile&& file);
 
-	void				Ref_DeleteObject();
-
     int					Seek( long pos, EVirtStreamSeek seekType );
     long				Tell() const;
     size_t				Read( void *dest, size_t count, size_t size);

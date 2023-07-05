@@ -40,7 +40,7 @@ CMaterial::~CMaterial()
 void CMaterial::Ref_DeleteObject()
 {
 	materials->FreeMaterial(this);
-	delete this;
+	RefCountedObject::Ref_DeleteObject();
 }
 
 //

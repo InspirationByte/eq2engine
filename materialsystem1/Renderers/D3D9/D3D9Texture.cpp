@@ -31,7 +31,7 @@ CD3D9Texture::~CD3D9Texture()
 void CD3D9Texture::Ref_DeleteObject()
 {
 	s_shaderApi.FreeTexture(this);
-	delete this;
+	RefCountedObject::Ref_DeleteObject();
 }
 
 void CD3D9Texture::Release()

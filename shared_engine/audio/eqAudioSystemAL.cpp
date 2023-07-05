@@ -821,11 +821,6 @@ CEqAudioSourceAL::~CEqAudioSourceAL()
 	Release();
 }
 
-void CEqAudioSourceAL::Ref_DeleteObject()
-{
-	delete this;
-}
-
 // Updates channel with user parameters
 void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlags)
 {

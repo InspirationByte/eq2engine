@@ -23,7 +23,7 @@ enum ETextureLockFlags
 
 typedef struct SamplerStateParam_s SamplerStateParam_t;
 
-class ITexture : public RefCountedObject<ITexture, RefCountedKeepPolicy>
+class ITexture : public RefCountedObject<ITexture>
 {
 public:
 	struct LockInOutData;

@@ -27,8 +27,6 @@ public:
 	CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile);
 	~CDPKFileStream();
 
-	void				Ref_DeleteObject();
-
 	// reads data from virtual stream
 	size_t				Read(void *dest, size_t count, size_t size);
 

@@ -18,7 +18,7 @@ using audioEffectId_t = uint;
 //-----------------------------------------------------------------
 // Audio source interface
 
-class IEqAudioSource : public RefCountedObject<IEqAudioSource, RefCountedKeepPolicy>
+class IEqAudioSource : public RefCountedObject<IEqAudioSource>
 {
 public:
 	enum ESoundSourceUpdate

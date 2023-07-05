@@ -64,11 +64,6 @@ CFile::CFile(COSFile&& file)
 {
 }
 
-void CFile::Ref_DeleteObject()
-{
-	delete this;
-}
-
 int	CFile::Seek( long pos, EVirtStreamSeek seekType )
 {
 	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType) );

@@ -26,23 +26,24 @@ public:
 	using PTR_T = CRefPtr<TYPE>;
 
 	RefCountedObject() = default;
-	virtual ~RefCountedObject() {}
+	virtual ~RefCountedObject() = default;
 
 	void	Ref_Grab();
 	bool	Ref_Drop();
 
 	int		Ref_Count() const { return m_numRefs; }
 
-private:
+protected:
 
 	// deletes object when no references
 	// example of usage: 
 	// void Ref_DeleteObject()
 	// {
 	//		assignedRemover->Free(this);
+	//		RefCountedObject::Ref_DeleteObject();
 	// }
 
-	virtual void Ref_DeleteObject() {}	// could be useful with RefCountedKeepPolicy and virtual objects
+	virtual void Ref_DeleteObject() { if constexpr (POLICY::SHOULD_DELETE) { delete this; } }	// can be overridden
 
 private:
 	mutable int	m_numRefs{ 0 };
@@ -60,7 +61,6 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 	if (Atomic::Decrement(m_numRefs) == 0)
 	{
 		Ref_DeleteObject();
-		if constexpr (POLICY::SHOULD_DELETE) { delete this; }
 		return true;
 	}
 
@@ -84,7 +84,7 @@ public:
 	explicit CRefPtr( PTR_TYPE pObject );
 	CRefPtr(std::nullptr_t);
 	CRefPtr(const CRefPtr<TYPE>& refptr);
-	CRefPtr(CRefPtr<TYPE>&& refptr);
+	CRefPtr(CRefPtr<TYPE>&& refptr) noexcept;
 	~CRefPtr();
 
 	void				Assign(const TYPE* obj);
@@ -141,7 +141,7 @@ inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr )
 }
 
 template< class TYPE >
-inline CRefPtr<TYPE>::CRefPtr(CRefPtr<TYPE>&& refptr)
+inline CRefPtr<TYPE>::CRefPtr(CRefPtr<TYPE>&& refptr) noexcept
 {
 	Atomic::Exchange(m_ptrObj, Atomic::Exchange(refptr.m_ptrObj, (PTR_TYPE)nullptr));
 }
@@ -155,10 +155,7 @@ inline CRefPtr<TYPE>::~CRefPtr()
 template< class TYPE >
 inline void CRefPtr<TYPE>::Release()
 {
-	using REF_POLICY = typename TYPE::REF_POLICY;
-	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
-
-	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, (PTR_TYPE)nullptr);
+	PTR_TYPE oldObj = Atomic::Exchange(m_ptrObj, (PTR_TYPE)nullptr);
 	if (oldObj != nullptr)
 		oldObj->Ref_Drop();
 }
@@ -166,16 +163,13 @@ inline void CRefPtr<TYPE>::Release()
 template< class TYPE >
 inline void CRefPtr<TYPE>::Assign(const TYPE* obj)
 {
-	using REF_POLICY = typename TYPE::REF_POLICY;
-	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
-
 	if(m_ptrObj == obj)
 		return;
 
 	// del old ref
-	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, (PTR_TYPE)obj);
+	PTR_TYPE oldObj = Atomic::Exchange(m_ptrObj, (PTR_TYPE)obj);
 	if(obj)
-		((REF_TYPE*)obj)->Ref_Grab();
+		const_cast<PTR_TYPE>(obj)->Ref_Grab();
 
 	if(oldObj != nullptr)
 		oldObj->Ref_Drop();
@@ -191,10 +185,7 @@ inline bool CRefPtr<TYPE>::operator=(std::nullptr_t)
 template< class TYPE >
 inline bool CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
 {
-	using REF_POLICY = typename TYPE::REF_POLICY;
-	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
-
-	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, Atomic::Exchange(refptr.m_ptrObj, (PTR_TYPE)nullptr));
+	PTR_TYPE oldObj = Atomic::Exchange(m_ptrObj, Atomic::Exchange(refptr.m_ptrObj, (PTR_TYPE)nullptr));
 
 	if (oldObj)
 		oldObj->Ref_Drop();

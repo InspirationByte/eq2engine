@@ -9,7 +9,7 @@
 
 constexpr const int SOUND_SOURCE_MAX_LOOP_REGIONS = 2;
 
-class ISoundSource : public RefCountedObject<ISoundSource, RefCountedKeepPolicy>
+class ISoundSource : public RefCountedObject<ISoundSource>
 {
 public:
 	enum EFormatType

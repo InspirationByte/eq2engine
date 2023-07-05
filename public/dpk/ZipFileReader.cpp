@@ -26,11 +26,6 @@ CZipFileStream::~CZipFileStream()
 	unzClose(m_zipHandle);
 }
 
-void CZipFileStream::Ref_DeleteObject()
-{
-	delete this;
-}
-
 CBasePackageReader* CZipFileStream::GetHostPackage() const
 {
 	return (CBasePackageReader*)m_host;

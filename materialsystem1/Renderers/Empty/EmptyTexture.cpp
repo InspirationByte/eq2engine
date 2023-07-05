@@ -42,5 +42,5 @@ void CEmptyTexture::Unlock()
 void CEmptyTexture::Ref_DeleteObject()
 {
 	s_shaderAPI.FreeTexture(this);
-	delete this;
+	RefCountedObject::Ref_DeleteObject();
 }

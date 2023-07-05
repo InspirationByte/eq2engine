@@ -63,11 +63,6 @@ CDPKFileStream::~CDPKFileStream()
 	free(m_tmpDecompressData);
 }
 
-void CDPKFileStream::Ref_DeleteObject()
-{
-	delete this;
-}
-
 CBasePackageReader* CDPKFileStream::GetHostPackage() const
 { 
 	return (CBasePackageReader*)m_host;

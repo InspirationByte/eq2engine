@@ -64,7 +64,7 @@ void ISoundSource::Ref_DeleteObject()
 	g_audioSystem->OnSampleDeleted(this);
 	Unload();
 
-	delete this;
+	RefCountedObject::Ref_DeleteObject();
 }
 
 const char* ISoundSource::GetFilename() const

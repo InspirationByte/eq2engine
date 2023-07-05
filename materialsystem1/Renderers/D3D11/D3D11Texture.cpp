@@ -21,7 +21,7 @@ CD3D10Texture::~CD3D10Texture()
 void CD3D10Texture::Ref_DeleteObject()
 {
 	s_shaderApi.FreeTexture(this);
-	delete this;
+	RefCountedObject::Ref_DeleteObject();
 }
 
 void CD3D10Texture::Release()
