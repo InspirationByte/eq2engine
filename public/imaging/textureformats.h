@@ -9,7 +9,7 @@
 
 // TODO: RENAME ENUMS TO TEXTURE_FORMAT_***
 
-enum EImageType
+enum EImageType : int
 {
 	IMAGE_TYPE_INVALID = -1,
 	IMAGE_TYPE_1D = 0,
@@ -18,7 +18,7 @@ enum EImageType
 	IMAGE_TYPE_CUBE
 };
 
-enum ETextureFormat
+enum ETextureFormat : int
 {
 	FORMAT_NONE     	= 0,
 

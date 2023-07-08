@@ -320,8 +320,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 {
 	m_pWindow = pWindow;
 
-	matsystem_init_config_t materials_config;
-	matsystem_render_config_t& render_config = materials_config.renderConfig;
+	materialsInitSettings_t materials_config;
+	materialsRenderSettings_t& render_config = materials_config.renderConfig;
 	render_config.lowShaderQuality = r_fastShaders.GetBool();
 
 	// set window info

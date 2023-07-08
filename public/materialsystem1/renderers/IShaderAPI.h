@@ -11,7 +11,6 @@
 
 #include "imaging/textureformats.h"
 
-#include "ShaderAPICaps.h"
 #include "ShaderAPI_defs.h"
 
 #include "IVertexBuffer.h"
@@ -23,6 +22,7 @@
 #include "IShaderProgram.h"
 
 struct KVSection;
+class CImage;
 
 enum ERHIWindowType : int
 {
@@ -55,39 +55,16 @@ struct shaderAPIWindowInfo_t
 // shader api initializer
 struct shaderAPIParams_t
 {
-	shaderAPIWindowInfo_t windowInfo;
+	shaderAPIWindowInfo_t	windowInfo;
+	ETextureFormat			screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
-	EqString		texturePath;			// texture path (.DDS only)
-	EqString		textureSRCPath;			// texture sources path (.TGA only)
+	int						screenRefreshRateHZ{ 60 };			// refresh rate in HZ
+	int						multiSamplingMode{ 0 };				// multisampling
+	int						depthBits{ 24 };					// bit depth for depth/stencil
 
-	ETextureFormat	screenFormat{ FORMAT_RGB8 };		// screen back buffer format
-
-	int				screenRefreshRateHZ{ 60 };			// refresh rate in HZ
-	int				multiSamplingMode{ 0 };				// multisampling
-
-	// extended parameters
-	int				depthBits{ 24 };					// bit depth for depth/stencil
-
-	bool			verticalSyncEnabled{ false };		// vertical syncronization
+	bool					verticalSyncEnabled{ false };		// vertical syncronization
 };
 
-static void SamplerStateParams_Make(SamplerStateParam_t& samplerParams, const ShaderAPICaps_t& caps, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
-{
-	// Setup filtering mode
-	samplerParams.minFilter = textureFilterType;
-	samplerParams.magFilter = (textureFilterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR;
-
-	// Setup clamping
-	samplerParams.wrapS = addressS;
-	samplerParams.wrapT = addressT;
-	samplerParams.wrapR = addressR;
-	samplerParams.compareFunc = COMPFUNC_LESS;
-
-	samplerParams.lod = 0.0f;
-	samplerParams.aniso = caps.maxTextureAnisotropicLevel;
-}
-
-class CImage;
 
 //
 // ShaderAPI interface

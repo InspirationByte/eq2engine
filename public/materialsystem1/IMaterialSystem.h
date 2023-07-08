@@ -139,35 +139,36 @@ typedef struct Vertex3D
 // material system configuration
 //-----------------------------------------------------
 
-struct matsystem_render_config_t
+struct materialsRenderSettings_t
 {
 	EMaterialLightingMode	lightingModel{ MATERIAL_LIGHT_UNLIT };
 
-	bool	ffpMode{ false };			// use FFP if possible (don't apply any shaders, DEBUG only)
-	bool	stubMode{ false };			// run matsystem in stub mode (don't render anything)
+	int					materialFlushThresh{ 1000 };	// flush (unload) threshold in frames
+	bool				ffpMode{ false };				// use FFP if possible (don't apply any shaders, DEBUG only)
+	bool				stubMode{ false };				// run matsystem in stub mode (don't render anything)
 
-	bool	lowShaderQuality{ false };
-	bool	editormode{ false };		// enable editor mode
-	bool	threadedloader{ true };
-	int		flushThresh{ 1000 };		// flush (unload) threshold in frames
+	bool				lowShaderQuality{ false };
+	bool				editormode{ false };			// enable editor mode
+	bool				threadedloader{ true };
 
-	bool	enableShadows{ true };		// enable shadows?
-	bool	enableSpecular{ true };		// enable specular lighting reflections?
-	bool	enableBumpmapping{ true };	// enable bump maps?
+	bool				enableShadows{ true };			// enable shadows?
+	bool				enableSpecular{ true };			// enable specular lighting reflections?
+	bool				enableBumpmapping{ true };		// enable bump maps?
 
-	bool	wireframeMode{ false };		// matsystem wireframe mode
-	bool	overdrawMode{ false };		// matsystem overdraw mode
+	bool				wireframeMode{ false };			// matsystem wireframe mode
+	bool				overdrawMode{ false };			// matsystem overdraw mode
 };
 
-struct matsystem_init_config_t
+struct materialsInitSettings_t
 {
-	shaderAPIParams_t			shaderApiParams;
+	materialsRenderSettings_t	renderConfig;
+	shaderAPIParams_t	shaderApiParams;
 
-	EqString					rendererName;		// shaderAPI library filename
-	EqString					materialsPath;		// regular (retail) materials file paths
-	EqString					materialsSRCPath;	// DEV materials file source paths
-
-	matsystem_render_config_t	renderConfig;
+	EqString			rendererName;		// shaderAPI library filename
+	EqString			materialsPath;		// regular (retail) materials file paths
+	EqString			materialsSRCPath;	// DEV materials file source paths
+	EqString			texturePath;		// texture path (.DDS only)
+	EqString			textureSRCPath;		// texture sources path (.TGA only)
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -181,7 +182,7 @@ public:
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
-	virtual bool							Init(const matsystem_init_config_t& config) = 0;
+	virtual bool							Init(const materialsInitSettings_t& config) = 0;
 
 	// shutdowns material system, unloading all.
 	virtual void							Shutdown() = 0;
@@ -193,7 +194,7 @@ public:
 	virtual bool							IsInStubMode() const = 0;
 
 	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
-	virtual matsystem_render_config_t&		GetConfiguration() = 0;
+	virtual materialsRenderSettings_t&		GetConfiguration() = 0;
 
 	// returns material path
 	virtual const char*						GetMaterialPath() const = 0;

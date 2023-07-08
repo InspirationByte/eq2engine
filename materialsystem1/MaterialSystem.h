@@ -41,7 +41,7 @@ public:
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
-	bool							Init(const matsystem_init_config_t& config);
+	bool							Init(const materialsInitSettings_t& config);
 
 	// shutdowns material system, unloading all.
 	void							Shutdown();
@@ -53,7 +53,7 @@ public:
 	bool							IsInStubMode() const;
 
 	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
-	matsystem_render_config_t&		GetConfiguration();
+	materialsRenderSettings_t&		GetConfiguration();
 
 	// returns material path
 	const char*						GetMaterialPath() const;
@@ -294,7 +294,7 @@ private:
 	void							CreateWhiteTexture();
 	void							InitDefaultMaterial();
 
-	matsystem_render_config_t		m_config;
+	materialsRenderSettings_t		m_config;
 
 	IRenderLibrary*					m_renderLibrary{ nullptr };	// render library.
 	DKMODULE*						m_rendermodule{ nullptr };	// render dll.

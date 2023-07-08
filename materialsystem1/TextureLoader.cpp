@@ -80,6 +80,15 @@ static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const cha
 	}
 }
 
+void CTextureLoader::Initialize(const char* texturePath, const char* textureSRCPath)
+{
+	m_texturePath = texturePath;
+	m_textureSRCPath = textureSRCPath;
+
+	m_texturePath.Path_FixSlashes();
+	m_textureSRCPath.Path_FixSlashes();
+}
+
 ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
 {
 	HOOK_TO_CVAR(r_allowSourceTextures);
@@ -105,8 +114,6 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 	PROF_EVENT("Load Texture from file");
 
-	const shaderAPIParams_t& shaderApiParams = g_pShaderAPI->GetParams();
-
 	Array<EqString> textureNames(PP_SL);
 	AnimGetImagesForTextureName(textureNames, pszFileName);
 
@@ -121,12 +128,12 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		CImage::PTR_T img = CRefPtr_new(CImage);
 
 		EqString texturePathExt;
-		CombinePath(texturePathExt, shaderApiParams.texturePath.ToCString(), textureNames[i].ToCString());
+		CombinePath(texturePathExt, m_texturePath.ToCString(), textureNames[i].ToCString());
 		bool isLoaded = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
 		if (!isLoaded && r_allowSourceTextures->GetBool())
 		{
-			CombinePath(texturePathExt, shaderApiParams.textureSRCPath.ToCString(), textureNames[i].ToCString());
+			CombinePath(texturePathExt, m_textureSRCPath.ToCString(), textureNames[i].ToCString());
 			isLoaded = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 

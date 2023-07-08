@@ -186,7 +186,7 @@ CMaterialSystem::~CMaterialSystem()
 }
 
 // Initializes material system
-bool CMaterialSystem::Init(const matsystem_init_config_t& config)
+bool CMaterialSystem::Init(const materialsInitSettings_t& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
 
@@ -218,6 +218,18 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 
 		if (m_materialsSRCPath.ToCString()[m_materialsSRCPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
 			m_materialsSRCPath.Append(CORRECT_PATH_SEPARATOR);
+
+		// copy default path
+		EqString texturePath = config.texturePath[0];
+		EqString textureSRCPath = config.textureSRCPath[0];
+
+		if (texturePath[0] == 0)
+			texturePath = m_materialsPath.GetData();
+
+		if (textureSRCPath[0] == 0)
+			textureSRCPath = m_materialsSRCPath.GetData();
+
+		s_textureLoader.Initialize(texturePath, textureSRCPath);
 	}
 
 	auto tryLoadRenderer = [this, &config](const char* rendererName)
@@ -278,16 +290,8 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 			return false;
 		}
 
-		// copy default path
-		shaderAPIParams_t sapiParams = config.shaderApiParams;
-		if (sapiParams.texturePath[0] == 0)
-			sapiParams.texturePath = m_materialsPath.GetData();
-
-		if (sapiParams.textureSRCPath[0] == 0)
-			sapiParams.textureSRCPath = m_materialsSRCPath.GetData();
-
 		// init new created shader api with this parameters
-		shaderAPI->Init(sapiParams);
+		shaderAPI->Init(config.shaderApiParams);
 
 		return true;
 	};
@@ -503,7 +507,7 @@ bool CMaterialSystem::IsInStubMode() const
 	return m_config.stubMode;
 }
 
-matsystem_render_config_t& CMaterialSystem::GetConfiguration()
+materialsRenderSettings_t& CMaterialSystem::GetConfiguration()
 {
 	return m_config;
 }
@@ -658,7 +662,7 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 		int framesDiff = (material->m_frameBound - m_frame);
 
 		// Flush materials
-		if(framesDiff >= m_config.flushThresh - 1)
+		if(framesDiff >= m_config.materialFlushThresh - 1)
 			material->Cleanup(false, true);
 	}
 }

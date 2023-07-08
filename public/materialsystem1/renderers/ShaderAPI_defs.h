@@ -7,6 +7,7 @@
 
 #pragma once
 #include "imaging/textureformats.h"
+#include "ShaderAPICaps.h"
 
 //---------------------------------------
 //        HIGH LEVEL CONSTANTS
@@ -223,6 +224,22 @@ typedef struct SamplerStateParam_s
 	float						lod{ 1.0f };
 	void*						userData{ nullptr };
 }SamplerStateParam_t;
+
+static void SamplerStateParams_Make(SamplerStateParam_t& samplerParams, const ShaderAPICaps_t& caps, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
+{
+	// Setup filtering mode
+	samplerParams.minFilter = textureFilterType;
+	samplerParams.magFilter = (textureFilterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR;
+
+	// Setup clamping
+	samplerParams.wrapS = addressS;
+	samplerParams.wrapT = addressT;
+	samplerParams.wrapR = addressR;
+	samplerParams.compareFunc = COMPFUNC_LESS;
+
+	samplerParams.lod = 0.0f;
+	samplerParams.aniso = caps.maxTextureAnisotropicLevel;
+}
 
 //---------------------------------------
 //        LOWER LEVEL CONSTANTS
