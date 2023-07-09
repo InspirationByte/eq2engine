@@ -35,7 +35,7 @@ public:
 
 	virtual ~IGraph() {}
 
-	NODE_ID				Djikstra(const NODE_ID* startNodes, int startNodeCount, const CheckNodeFunc& isStopNodeFunc);
+	NODE_ID				Djikstra(ArrayCRef<NODE_ID> startNodes, const CheckNodeFunc& isStopNodeFunc);
 
 protected:
 	virtual void		ResetNodeStates() = 0;
@@ -68,7 +68,7 @@ struct GraphNode
 };
 
 template<typename EDGE_ITER, typename NODE_ID>
-inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, int startNodeCount, const CheckNodeFunc& isStopNodeFunc)
+inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(ArrayCRef<NODE_ID> startNodes, const CheckNodeFunc& isStopNodeFunc)
 {
 	// this should reset parent nodes ids
 	ResetNodeStates();
@@ -76,14 +76,14 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 	// make initial front which consists of node id and total distance
 #if GRAPH_SLOW_OPENSET
 	Map<NODE_ID, float> openSet(PP_SL);
-	for (int i = 0; i < startNodeCount; ++i)
+	for (int i = 0; i < startNodes.numElem(); ++i)
 	{
 		Node_SetDistance(startNodes[i], 0.0f);
 		openSet.insert(startNodes[i], 0.0f);
 	}
 #else
 	SimpleBinaryHeap<GraphNode<NODE_ID>> openSet(PP_SL);
-	for (int i = 0; i < startNodeCount; ++i)
+	for (int i = 0; i < startNodes.numElem(); ++i)
 	{
 		Node_SetDistance(startNodes[i], 0.0f);
 		openSet.Add({ startNodes[i], 0.0f });
