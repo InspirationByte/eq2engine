@@ -1441,7 +1441,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 		const Vector2D rayStart = start.xz();
 		const Vector2D rayDir = Vector2D(end.xz() - start.xz());
 
-		const Rectangle_t cellRect(cellMin, cellMax);
+		const AARectangle cellRect(cellMin, cellMax);
 
 		float tnear, tfar;
 		if (cellRect.IntersectsRay(rayStart, rayDir, tnear, tfar) && tnear > closest)

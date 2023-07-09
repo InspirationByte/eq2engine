@@ -753,7 +753,7 @@ void CSoundScriptEditor::ShowSplineEditor()
 	{
 		// auto-detect range on initialization
 		ImVec2* splinePoints = (ImVec2*)spline.values;
-		Rectangle_t rct;
+		AARectangle rct;
 		for (int i = 0; i < spline.valueCount / 2; ++i)
 		{
 			rct.AddVertex(Vector2D(splinePoints[i].x, splinePoints[i].y));
@@ -1108,7 +1108,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 			{
 				SoundSplineDesc& spline = uiNode.spline;
 				ImVec2* splinePoints = (ImVec2*)spline.values;
-				Rectangle_t rct;
+				AARectangle rct;
 				for (int i = 0; i < spline.valueCount / 2; ++i)
 				{
 					rct.AddVertex(Vector2D(splinePoints[i].x, splinePoints[i].y + 0.25f));

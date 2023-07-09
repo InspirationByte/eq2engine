@@ -498,7 +498,7 @@ void CEqConsoleInput::consoleInsText(const char* text,int pos)
 	OnTextUpdate();
 }
 
-void DrawAlphaFilledRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2)
+void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -574,7 +574,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 	const float tooltipLineHeight = m_font->GetLineHeight(tooltipStyle);
 	const float itemLineHeight = m_font->GetLineHeight(itemStyle);
 
-	Rectangle_t rect((float)pos.x, (float)pos.y, (float)(pos.x+width), (float)pos.y + boxLines * tooltipLineHeight);
+	AARectangle rect((float)pos.x, (float)pos.y, (float)(pos.x+width), (float)pos.y + boxLines * tooltipLineHeight);
 	DrawAlphaFilledRectangle(rect, s_conBackColor, s_conBorderColor);
 
 	m_font->RenderText(tooltipText, rect.GetLeftTop() + Vector2D(5, 4), tooltipStyle);
@@ -663,7 +663,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 			}
 
 			// draw as autocompletion
-			Rectangle_t rect(x,y,w,y + numLines * m_font->GetLineHeight(helpTextParams) + 2);
+			AARectangle rect(x,y,w,y + numLines * m_font->GetLineHeight(helpTextParams) + 2);
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 			m_font->RenderText(string_to_draw.GetData(), rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
@@ -674,7 +674,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 		if(m_foundCmdList.numElem() >= CON_SUGGESTIONS_MAX)
 		{
-			Rectangle_t rect(x,y,w,y + m_font->GetLineHeight(helpTextParams) + 2 );
+			AARectangle rect(x,y,w,y + m_font->GetLineHeight(helpTextParams) + 2 );
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 			// Set color
@@ -693,7 +693,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 			int numElemsToDraw = m_foundCmdList.numElem();
 
-			Rectangle_t rect(x,y,x+max_string_length*CMDLIST_SYMBOL_SIZE,y+numElemsToDraw*m_font->GetLineHeight(helpTextParams)+2);
+			AARectangle rect(x,y,x+max_string_length*CMDLIST_SYMBOL_SIZE,y+numElemsToDraw*m_font->GetLineHeight(helpTextParams)+2);
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 			for(int i = 0; i < m_foundCmdList.numElem();i++)
@@ -1206,9 +1206,9 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	if(m_maxLines < -4)
 		return;
 
-	Rectangle_t inputTextEntryRect(64, 26, width-64,46);
+	AARectangle inputTextEntryRect(64, 26, width-64,46);
 
-	Rectangle_t con_outputRectangle(64.0f,inputTextEntryRect.vrightBottom.y+26, width - 64.0f, height-inputTextEntryRect.vleftTop.y);
+	AARectangle con_outputRectangle(64.0f,inputTextEntryRect.vrightBottom.y+26, width - 64.0f, height-inputTextEntryRect.vleftTop.y);
 
 	if(m_logVisible)
 	{

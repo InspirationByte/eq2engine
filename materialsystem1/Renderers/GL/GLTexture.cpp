@@ -604,7 +604,7 @@ bool CGLTexture::Lock(LockInOutData &data)
 		case GL_TEXTURE_CUBE_MAP:
 		case GL_TEXTURE_2D:
 		{
-			const IRectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IRectangle(0, 0, GetWidth(), GetHeight());
+			const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
 			const IVector2D size = lockRect.GetSize();
 			sizeToLock = size.x * size.y;
 			lockOffset = lockRect.vleftTop.x * lockRect.vleftTop.y;
@@ -692,7 +692,7 @@ void CGLTexture::Unlock()
 			case GL_TEXTURE_CUBE_MAP:
 			{
 				const GLenum cubeTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx;
-				const IRectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IRectangle(0, 0, GetWidth(), GetHeight());
+				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
 				const IVector2D size = lockRect.GetSize();
 
 				glTexSubImage2D(cubeTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
@@ -700,7 +700,7 @@ void CGLTexture::Unlock()
 			}
 			case GL_TEXTURE_2D:
 			{
-				const IRectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IRectangle(0, 0, GetWidth(), GetHeight());
+				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
 				const IVector2D size = lockRect.GetSize();
 
 				glTexSubImage2D(m_glTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);

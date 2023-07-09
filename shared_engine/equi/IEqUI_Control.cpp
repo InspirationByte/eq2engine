@@ -295,7 +295,7 @@ void IUIControl::SetPosition(const IVector2D &pos)
 	m_position = pos;
 }
 
-void IUIControl::SetRectangle(const IRectangle& rect)
+void IUIControl::SetRectangle(const IAARectangle& rect)
 {
 	SetPosition(rect.vleftTop);
 	SetSize(rect.vrightBottom - m_position);
@@ -335,9 +335,9 @@ const IVector2D& IUIControl::GetPosition() const
 	return m_position;
 }
 
-IRectangle IUIControl::GetRectangle() const
+IAARectangle IUIControl::GetRectangle() const
 {
-	return IRectangle(m_position, m_position + m_size);
+	return IAARectangle(m_position, m_position + m_size);
 }
 
 void IUIControl::ResetSizeDiffs()
@@ -421,14 +421,14 @@ Vector2D IUIControl::CalcScaling() const
 	return Vector2D(1.0f, 1.0f);
 }
 
-IRectangle IUIControl::GetClientRectangle() const
+IAARectangle IUIControl::GetClientRectangle() const
 {
 	const Vector2D scale = CalcScaling();
 
 	const IVector2D scaledSize(m_size * scale);
 	const IVector2D scaledPos(m_position * scale);
 
-	IRectangle thisRect(scaledPos, scaledPos + scaledSize);
+	IAARectangle thisRect(scaledPos, scaledPos + scaledSize);
 
 	if(m_parent)
 	{
@@ -449,7 +449,7 @@ IRectangle IUIControl::GetClientRectangle() const
 			thisRect.vrightBottom += anchorSizeRB;
 		}
 
-		const IRectangle parentRect = m_parent->GetClientRectangle();
+		const IAARectangle parentRect = m_parent->GetClientRectangle();
 
 		// compute alignment to the parent client rectangle
 		if(m_alignment & UI_ALIGN_LEFT)
@@ -521,7 +521,7 @@ void IUIControl::GetCalcFontStyle(eqFontStyleParam_t& style) const
 	style.textColor = m_font.textColor;
 }
 
-inline void DebugDrawRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2)
+inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -571,7 +571,7 @@ void IUIControl::Render(int depth)
 	rasterState.cullMode = CULL_NONE;
 	rasterState.scissor = true;
 
-	const IRectangle clientRectRender = GetClientRectangle();
+	const IAARectangle clientRectRender = GetClientRectangle();
 
 	materials->SetAmbientColor(color_white);	// max color mode
 	materials->SetFogInfo(FogInfo_t());			// disable fog
@@ -602,7 +602,7 @@ void IUIControl::Render(int depth)
 			rasterState.scissor = false;
 		}
 
-		IRectangle scissorRect = GetClientScissorRectangle();
+		IAARectangle scissorRect = GetClientScissorRectangle();
 		scissorRect.vleftTop += m_transform.translation * scale;
 		scissorRect.vrightBottom += m_transform.translation * scale;
 		g_pShaderAPI->SetScissorRectangle(scissorRect);
@@ -646,9 +646,9 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 
 	IUIControl* bestControl = this;
 
-	IRectangle clientRect = GetClientRectangle();
+	IAARectangle clientRect = GetClientRectangle();
 
-	if(!clientRect.Containts(point))
+	if(!clientRect.Contains(point))
 		return nullptr;
 
 	for (auto lln = m_childs.begin(); lln; lln = lln->nextNode())

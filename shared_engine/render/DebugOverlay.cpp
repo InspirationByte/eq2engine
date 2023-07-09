@@ -49,7 +49,7 @@ static void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 DECLARE_CVAR_CHANGE(r_debugShowTexture, "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
 DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 
-static void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color1)
+static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 {
 	ColorRGBA color2(0.2,0.2,0.2,0.8);
 
@@ -1213,7 +1213,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			Threading::CScopedMutex m(s_debugOverlayMutex);
 			if (m_TextArray.numElem())
 			{
-				GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), ColorRGBA(0.5f, 0.5f, 0.5f, 0.5f));
+				GUIDrawWindow(AARectangle(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), ColorRGBA(0.5f, 0.5f, 0.5f, 0.5f));
 
 				for (int i = 0; i < m_TextArray.numElem(); i++)
 				{

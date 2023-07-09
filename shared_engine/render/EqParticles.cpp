@@ -356,7 +356,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 
 	AngleVectors(angles, nullptr, &vRight, &vUp);
 
-	Rectangle_t texCoords(0,0,1,1);
+	AARectangle texCoords(0,0,1,1);
 
 	if(effect->tex)
 		texCoords = effect->tex->rect;
@@ -400,7 +400,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 	vRight = viewMatrix.rows[0].xyz();
 	vUp = viewMatrix.rows[1].xyz();
 
-	Rectangle_t texCoords(0,0,1,1);
+	AARectangle texCoords(0,0,1,1);
 
 	if(effect->tex)
 		texCoords = effect->tex->rect;

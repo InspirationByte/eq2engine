@@ -78,7 +78,7 @@ public:
 	bool						AssignCoords(float& width, float& height, COMPRECTFUNC compRectFunc = OriginalAreaComp);
 
 	// returns rectangle
-	void						GetRectangle(Rectangle_t& rect, void** userData, uint index) const;
+	void						GetRectangle(AARectangle& rect, void** userData, uint index) const;
 	void*						GetRectangleUserData(uint index) const				{ return m_pRectangles[index]->userdata; }
 	void						SetRectangleUserData(uint index, void* userData)	{ m_pRectangles[index]->userdata = userData; }
 

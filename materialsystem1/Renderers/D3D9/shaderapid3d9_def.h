@@ -31,7 +31,7 @@ extern const D3DTEXTUREFILTERTYPE	g_d3d9_texFilterType[];
 extern const D3DTEXTUREADDRESS		g_d3d9_texAddressMode[];
 extern const D3DTRANSFORMSTATETYPE	g_d3d9_matrixModes[];
 
-inline static RECT IRectangleToD3DRECT(const IRectangle& rect)
+inline static RECT IRectangleToD3DRECT(const IAARectangle& rect)
 {
 	RECT rekt;
 	rekt.top = rect.vleftTop.y;

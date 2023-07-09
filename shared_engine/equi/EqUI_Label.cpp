@@ -19,23 +19,23 @@ namespace equi
 {
 
 // drawn rectangle
-IRectangle Label::GetClientScissorRectangle() const
+IAARectangle Label::GetClientScissorRectangle() const
 {
 	eqFontStyleParam_t style;
 	GetCalcFontStyle(style);
 
 	float lineHeight = GetFont()->GetLineHeight(style);
 
-	IRectangle rect = BaseClass::GetClientRectangle();
+	IAARectangle rect = BaseClass::GetClientRectangle();
 	rect.vleftTop.y -= lineHeight * 0.5f;
 
 	return rect;
 }
 
-void Label::DrawSelf( const IRectangle& rect, bool scissorOn)
+void Label::DrawSelf( const IAARectangle& rect, bool scissorOn)
 {
 	CRectangleTextLayoutBuilder rectLayout;
-	rectLayout.SetRectangle(Rectangle_t(rect));
+	rectLayout.SetRectangle(AARectangle(rect));
 
 	IEqFont* font = GetFont();
 	eqFontStyleParam_t style;

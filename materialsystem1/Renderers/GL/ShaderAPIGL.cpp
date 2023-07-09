@@ -1011,7 +1011,7 @@ void ShaderAPIGL::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 }
 
 // Copy render target to texture
-void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
+void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect, IAARectangle* destRect)
 {
 	// BUG BUG:
 	// this process is very bugged as fuck
@@ -1049,8 +1049,8 @@ void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const 
 	GLTextureRef_t srcTexRef = srcTexture->m_textures.front();
 	GLTextureRef_t destTexRef = destTexture->m_textures.front();
 
-	IRectangle _srcRect(0,0,srcTexture->GetWidth(), srcTexture->GetHeight());
-	IRectangle _destRect(0,0,destTexture->GetWidth(), destTexture->GetHeight());
+	IAARectangle _srcRect(0,0,srcTexture->GetWidth(), srcTexture->GetHeight());
+	IAARectangle _destRect(0,0,destTexture->GetWidth(), destTexture->GetHeight());
 
 	if(srcRect)
 		_srcRect = *srcRect;
@@ -2719,7 +2719,7 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 {
 	// this is actually represents our viewport state
-	m_viewPort = IRectangle(x,y,x+w,y+h);
+	m_viewPort = IAARectangle(x,y,x+w,y+h);
 
 	glViewport(x, y, w, h);
 	GLCheckError("set viewport");
@@ -2747,11 +2747,11 @@ void ShaderAPIGL::GetViewportDimensions(int &wide, int &tall)
 }
 
 // sets scissor rectangle
-void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
+void ShaderAPIGL::SetScissorRectangle( const IAARectangle &rect )
 {
 	IVector2D viewportSize = m_viewPort.GetSize();
 
-    IRectangle scissor(rect);
+    IAARectangle scissor(rect);
 
     scissor.vleftTop.y = viewportSize.y - scissor.vleftTop.y;
     scissor.vrightBottom.y = viewportSize.y - scissor.vrightBottom.y;

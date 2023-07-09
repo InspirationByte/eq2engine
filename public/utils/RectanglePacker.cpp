@@ -139,7 +139,7 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 	return true;
 }
 
-void CRectanglePacker::GetRectangle(Rectangle_t& rect, void** userData, uint index) const
+void CRectanglePacker::GetRectangle(AARectangle& rect, void** userData, uint index) const
 {
 	PackerRectangle* pc = m_pRectangles[index];
 

@@ -7,12 +7,20 @@
 
 #pragma once
 
-template<class T>
-struct TAABBox
+template <class T>
+struct TAABBox3D
 {
 	static constexpr const int VertexCount = 9;
 
-	TAABBox(T minX, T minY, T minZ, T maxX, T maxY, T maxZ)
+	TVec3D<T>	minPoint;
+	TVec3D<T>	maxPoint;
+
+	TAABBox3D()
+	{
+		Reset();
+	}
+
+	TAABBox3D(T minX, T minY, T minZ, T maxX, T maxY, T maxZ)
 	{
 		if (minX < maxX)
 		{
@@ -48,7 +56,7 @@ struct TAABBox
 		}
 	}
 
-    TAABBox(const TVec3D<T>& v1, const TVec3D<T>& v2)
+    TAABBox3D(const TVec3D<T>& v1, const TVec3D<T>& v2)
     {
         if ( v1.x < v2.x )
         {
@@ -82,11 +90,6 @@ struct TAABBox
             minPoint.z = v2.z;
             maxPoint.z = v1.z;
         }
-    }
-
-    TAABBox()
-    {
-        Reset();
     }
 
     void AddVertex(const TVec3D<T>& v)
@@ -141,7 +144,7 @@ struct TAABBox
     }
 
 	// warning, this is a size-dependent!
-	bool FullyInside ( const TAABBox<T>& box, T tolerance = 0) const
+	bool FullyInside ( const TAABBox3D<T>& box, T tolerance = 0) const
 	{
 		if(	box.minPoint >= minPoint-tolerance && box.minPoint <= maxPoint+tolerance &&
 			box.maxPoint <= maxPoint+tolerance && box.maxPoint >= minPoint-tolerance)
@@ -150,7 +153,7 @@ struct TAABBox
 		return false;
 	}
 
-	bool Intersects(const TAABBox<T>& bbox, T tolerance = 0) const
+	bool Intersects(const TAABBox3D<T>& bbox, T tolerance = 0) const
 	{
 		bool overlap = true;
 		overlap = (minPoint.x - tolerance > bbox.maxPoint.x || maxPoint.x + tolerance < bbox.minPoint.x) ? false : overlap;
@@ -262,7 +265,7 @@ struct TAABBox
 	}
 
 	// adds other bbox to this box
-    void Merge( const TAABBox<T>& box )
+    void Merge( const TAABBox3D<T>& box )
     {
         if ( box.minPoint.x < minPoint.x )
            minPoint.x = box.minPoint.x;
@@ -306,10 +309,7 @@ struct TAABBox
 		maxPoint += value;
 		minPoint -= value;
 	}
-
-	TVec3D<T>	minPoint;
-	TVec3D<T>	maxPoint;
 };
 
-typedef TAABBox<float>	BoundingBox;
-typedef TAABBox<int>	IBoundingBox;
+typedef TAABBox3D<float>	BoundingBox;
+typedef TAABBox3D<int>		IBoundingBox;

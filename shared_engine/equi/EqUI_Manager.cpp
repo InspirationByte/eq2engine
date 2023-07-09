@@ -193,12 +193,12 @@ void CUIManager::DumpPanelsToConsole()
 	}
 }
 
-void CUIManager::SetViewFrame(const IRectangle& rect)
+void CUIManager::SetViewFrame(const IAARectangle& rect)
 {
 	m_viewFrameRect = rect;
 }
 
-const IRectangle& CUIManager::GetViewFrame() const
+const IAARectangle& CUIManager::GetViewFrame() const
 {
 	return m_viewFrameRect;
 }

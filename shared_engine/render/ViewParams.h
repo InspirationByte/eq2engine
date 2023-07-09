@@ -32,7 +32,7 @@ public:
 	float			GetLODScaledDistFrom(const Vector3D& position ) const;
 
 	void			GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic = false) const;
-	void			GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar) const;
+	void			GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, AARectangle rect, float zNear, float zFar) const;
 
 	static void		Interpolate(const CViewParams& from, const CViewParams& to, float factor, CViewParams& out);
 protected:

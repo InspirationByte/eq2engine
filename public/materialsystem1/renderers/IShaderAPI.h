@@ -255,7 +255,7 @@ public:
 	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
 
 	// Copy render target to texture
-	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) = 0;
+	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) = 0;
 
 	// changes the rendertarget
 	virtual void				ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0) = 0;
@@ -324,7 +324,7 @@ public:
 	virtual void				GetViewportDimensions( int &wide, int &tall ) = 0;
 
 	// sets scissor rectangle
-	virtual void				SetScissorRectangle( const IRectangle &rect ) = 0;
+	virtual void				SetScissorRectangle( const IAARectangle &rect ) = 0;
 
 	// sets render state
 	//virtual void				SetRenderState( IRenderState* pState ) = 0;

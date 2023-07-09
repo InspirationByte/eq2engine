@@ -1376,7 +1376,7 @@ void ShaderAPID3D9::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 }
 
 // Copy render target to texture with resizing
-void ShaderAPID3D9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
+void ShaderAPID3D9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect, IAARectangle* destRect)
 {
 	CD3D9Texture* src = (CD3D9Texture*)srcTarget.Ptr();
 	CD3D9Texture* dest = (CD3D9Texture*)destTex.Ptr();
@@ -1583,7 +1583,7 @@ void ShaderAPID3D9::SetDepthRange(float fZNear,float fZFar)
 }
 
 // sets scissor rectangle
-void ShaderAPID3D9::SetScissorRectangle( const IRectangle &rect )
+void ShaderAPID3D9::SetScissorRectangle( const IAARectangle &rect )
 {
 	const RECT scissorRect = IRectangleToD3DRECT(rect);
 	m_pD3DDevice->SetScissorRect(&scissorRect);

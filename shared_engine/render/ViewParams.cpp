@@ -87,7 +87,7 @@ void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, flo
 	view.translate(-m_vecOrigin);
 }
 
-void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar) const
+void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, AARectangle rect, float zNear, float zFar) const
 {
 	Vector3D vRadianRotation = DEG2RAD(m_vecAngles);
 

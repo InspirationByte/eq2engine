@@ -127,17 +127,17 @@ public:
 	int							GetScaling() const					{ return m_scaling; }
 
 	// real rectangle, size position
-	void						SetRectangle(const IRectangle& rect);
-	virtual IRectangle			GetRectangle() const;
+	void						SetRectangle(const IAARectangle& rect);
+	virtual IAARectangle			GetRectangle() const;
 
 	// sets new transformation. Set all zeros to reset
 	void						SetTransform(const Vector2D& translate, const Vector2D& scale, float rotate);
 
 	// drawn rectangle
-	virtual IRectangle			GetClientRectangle() const;
+	virtual IAARectangle			GetClientRectangle() const;
 
 	// for text only
-	virtual IRectangle			GetClientScissorRectangle() const { return GetClientRectangle(); }
+	virtual IAARectangle			GetClientScissorRectangle() const { return GetClientRectangle(); }
 
 	// returns the scaling of element
 	Vector2D					CalcScaling() const;
@@ -187,7 +187,7 @@ protected:
 	virtual void				Render(int depth);
 	
 	void						ResetSizeDiffs();
-	virtual void				DrawSelf(const IRectangle& rect, bool scissorOn) = 0;
+	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn) = 0;
 
 	static int					CommandCb(IUIControl* control, ui_event& event, void* userData);
 

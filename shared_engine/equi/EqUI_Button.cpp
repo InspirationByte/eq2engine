@@ -13,14 +13,14 @@
 namespace equi
 {
 
-void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2);
+void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2);
 
 Button::Button() : m_state(false)
 {
 
 }
 
-void Button::DrawSelf( const IRectangle& rect, bool scissorOn)
+void Button::DrawSelf( const IAARectangle& rect, bool scissorOn)
 {
 	ColorRGBA btnColor(0.8f);
 

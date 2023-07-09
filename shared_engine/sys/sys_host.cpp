@@ -709,7 +709,7 @@ bool CGameHost::Frame()
 	}
 
 	// always reset scissor rectangle before we start rendering
-	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
+	g_pShaderAPI->SetScissorRectangle( IAARectangle(0,0,m_winSize.x, m_winSize.y) );
 #ifdef PLAT_ANDROID
 	// always clear all on Android
 	g_pShaderAPI->Clear(true, true, true);
@@ -775,7 +775,7 @@ bool CGameHost::Frame()
 
 	materials->Setup2D(m_winSize.x, m_winSize.y);
 
-	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
+	equi::Manager->SetViewFrame(IAARectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
 
 	if (r_showFPS.GetBool())

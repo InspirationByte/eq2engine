@@ -66,7 +66,7 @@ void CTextureAtlas::InitAtlas( KVSection* kvs )
 		strcpy(m_entries[i].name, kvs->keys[i]->name);
 		m_entries[i].nameHash = StringToHash(m_entries[i].name, true);
 
-		Rectangle_t& rect = m_entries[i].rect;
+		AARectangle& rect = m_entries[i].rect;
 		rect.vleftTop.x		= KV_GetValueFloat(entrySec, 0);
 		rect.vleftTop.y		= KV_GetValueFloat(entrySec, 1);
 		rect.vrightBottom.x = KV_GetValueFloat(entrySec, 2);

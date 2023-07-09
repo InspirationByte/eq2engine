@@ -234,7 +234,7 @@ public:
 	void						CopyFramebufferToTexture(const ITexturePtr& pTargetTexture) {}
 
 	// Copy render target to texture
-	void						CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) {}
+	void						CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) {}
 
 	// Changes render target (MRT)
 	void						ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
@@ -252,7 +252,7 @@ public:
 	void						GetViewportDimensions(int &wide, int &tall){}
 
 	// sets scissor rectangle
-	void						SetScissorRectangle( const IRectangle &rect ) {}
+	void						SetScissorRectangle( const IAARectangle &rect ) {}
 
 //-------------------------------------------------------------
 // Matrix for rendering

@@ -85,12 +85,12 @@ const ColorRGBA& Image::GetColor() const
 	return m_color;
 }
 
-void Image::DrawSelf( const IRectangle& rect, bool scissorOn)
+void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 {
 	materials->SetAmbientColor(m_color);
 	materials->BindMaterial(m_material);
 
-	Rectangle_t atlasRect = m_atlasRegion;
+	AARectangle atlasRect = m_atlasRegion;
 	if (m_imageFlags & FLIP_X)
 		atlasRect.FlipX();
 

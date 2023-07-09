@@ -73,7 +73,7 @@ struct ITexture::LockInOutData
 	{
 	}
 
-	LockInOutData(int lockFlags, const IRectangle & rectangle, int level = 0, int cubeFaceIdx = 0)
+	LockInOutData(int lockFlags, const IAARectangle & rectangle, int level = 0, int cubeFaceIdx = 0)
 		: flags(lockFlags | TEXLOCK_REGION_RECT)
 	{
 		region.rectangle = rectangle;
@@ -91,7 +91,7 @@ struct ITexture::LockInOutData
 	}
 
 	union LockRegion {
-		IRectangle		rectangle;
+		IAARectangle		rectangle;
 		IBoundingBox	box;
 	} region{};
 

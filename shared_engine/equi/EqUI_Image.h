@@ -41,12 +41,12 @@ public:
 	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
 	bool				ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
 
-	void				DrawSelf( const IRectangle& rect, bool scissorOn);
+	void				DrawSelf( const IAARectangle& rect, bool scissorOn);
 
 public:
 
 	IMaterialPtr		m_material;
-	Rectangle_t			m_atlasRegion;
+	AARectangle			m_atlasRegion;
 
 	ColorRGBA			m_color;
 	int					m_imageFlags;

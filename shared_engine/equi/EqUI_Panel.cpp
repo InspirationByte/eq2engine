@@ -127,7 +127,7 @@ void Panel::GetSelectionColor(ColorRGBA &color) const
 
 void Panel::CenterOnScreen()
 {
-	const IRectangle& screenRect = Manager->GetViewFrame();
+	const IAARectangle& screenRect = Manager->GetViewFrame();
 
 	IVector2D panelSize = GetRectangle().GetSize();
 
@@ -136,7 +136,7 @@ void Panel::CenterOnScreen()
 	SetPosition(screenCenter - panelSize/2);
 }
 
-void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2)
+void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -183,7 +183,7 @@ void Panel::Render(int depth)
 	BaseClass::Render(depth);
 }
 
-void Panel::DrawSelf(const IRectangle& rect, bool scissorOn)
+void Panel::DrawSelf(const IAARectangle& rect, bool scissorOn)
 {
 	DrawWindowRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f) );
 }
@@ -218,7 +218,7 @@ public:
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)	{return true;}
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags)					{return true;}
 
-	void			DrawSelf( const IRectangle& rect, bool scissorOn) {}
+	void			DrawSelf( const IAARectangle& rect, bool scissorOn) {}
 };
 
 class Container : public IUIControl
@@ -233,7 +233,7 @@ public:
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
 
-	void			DrawSelf(const IRectangle& rect, bool scissorOn) {}
+	void			DrawSelf(const IAARectangle& rect, bool scissorOn) {}
 };
 
 };

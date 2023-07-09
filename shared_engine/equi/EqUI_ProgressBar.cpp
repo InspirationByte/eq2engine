@@ -32,7 +32,7 @@ void ProgressBar::InitFromKeyValues(KVSection* sec, bool noClear)
 	m_value = KV_GetValueFloat(sec->FindSection("value"), 0, m_value);
 }
 
-void ProgressBar::DrawSelf(const IRectangle& _rect, bool scissorOn)
+void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 {
 	// setup default material and translucent blending
 	BlendStateParam_t blending;
@@ -48,7 +48,7 @@ void ProgressBar::DrawSelf(const IRectangle& _rect, bool scissorOn)
 
 	//-------------------
 
-	Rectangle_t rect(_rect);
+	AARectangle rect(_rect);
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
@@ -60,7 +60,7 @@ void ProgressBar::DrawSelf(const IRectangle& _rect, bool scissorOn)
 
 	if (percentage > 0)
 	{
-		Rectangle_t fillRect(Vector2D(rect.vleftTop.x, rect.vleftTop.y), 
+		AARectangle fillRect(Vector2D(rect.vleftTop.x, rect.vleftTop.y), 
 							 Vector2D(lerp(rect.vleftTop.x, rect.vrightBottom.x, percentage), rect.vrightBottom.y));
 
 		// draw damage bar foreground

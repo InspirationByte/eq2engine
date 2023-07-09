@@ -7,7 +7,7 @@
 
 #pragma once
 
-enum ClassifyPlane_e
+enum EClassifyPlane
 {
 	CP_FRONT = 0,
 	CP_ONPLANE,
@@ -75,7 +75,7 @@ struct TPlane
 		return dot(normal, pos) + offset;
 	}
 
-	ClassifyPlane_e ClassifyPoint(const TVec3D<T> &pos, const T eps = F_EPS) const
+	EClassifyPlane ClassifyPoint(const TVec3D<T> &pos, const T eps = F_EPS) const
 	{
 		T fDist = Distance(pos);
 

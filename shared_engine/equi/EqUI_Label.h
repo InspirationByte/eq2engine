@@ -21,13 +21,13 @@ public:
 	~Label(){}
 
 	// drawn rectangle
-	IRectangle		GetClientScissorRectangle() const;
+	IAARectangle		GetClientScissorRectangle() const;
 
 	// events
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
 
-	void			DrawSelf( const IRectangle& rect, bool scissorOn);
+	void			DrawSelf( const IAARectangle& rect, bool scissorOn);
 };
 
 };

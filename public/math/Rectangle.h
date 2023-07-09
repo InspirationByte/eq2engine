@@ -2,23 +2,24 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Rectangle util
+// Description: Axis-aligned rectangle (2D bounding box)
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
 template <class T>
-struct TRectangle
+struct TAARectangle
 {
-	TVec2D<T> vleftTop, vrightBottom;
+	TVec2D<T> vleftTop;
+	TVec2D<T> vrightBottom;
 
-	TRectangle()
+	TAARectangle()
 	{
 		Reset();
 	}
 
 	template <class T2>
-	TRectangle( const TRectangle<T2>& rect)
+	TAARectangle( const TAARectangle<T2>& rect)
 	{
 		vleftTop.x = (T)rect.vleftTop.x;
 		vleftTop.y = (T)rect.vleftTop.y;
@@ -27,7 +28,7 @@ struct TRectangle
 	}
 
 	template <class T2>
-	TRectangle( T2 fX1, T2 fY1, T2 fX2, T2 fY2)
+	TAARectangle( T2 fX1, T2 fY1, T2 fX2, T2 fY2)
 	{
 		vleftTop.x = (T)fX1;
 		vleftTop.y = (T)fY1;
@@ -36,7 +37,7 @@ struct TRectangle
 	}
 
 	template <class T2>
-	TRectangle( const TVec2D<T2>& leftTop, const TVec2D<T2>& rightBottom )
+	TAARectangle( const TVec2D<T2>& leftTop, const TVec2D<T2>& rightBottom )
 	{
 		vleftTop.x = (T)leftTop.x;
 		vleftTop.y = (T)leftTop.y;
@@ -57,12 +58,19 @@ struct TRectangle
 			vrightBottom.y = p.y;
 	}
 
+	void AddVertices(const TVec2D<T>* v, int numVertices)
+	{
+		for (int i = 0; i < numVertices; i++)
+			AddVertex(v[i]);
+	}
+
 	void Reset()
 	{
 		vleftTop		= TVec2D<T>((T)F_INFINITY);
 		vrightBottom	= TVec2D<T>(-(T)F_INFINITY);
 	}
 
+	// FIXME: this needs to be somehow removed
 	void Fix()
 	{
 		TVec2D<T> lt(vleftTop);
@@ -91,6 +99,11 @@ struct TRectangle
 		return vleftTop;
 	}
 
+	const TVec2D<T>& GetRightBottom() const
+	{
+		return vrightBottom;
+	}
+
 	TVec2D<T> GetLeftBottom() const
 	{
 		return Vector2D(vleftTop.x, vrightBottom.y);
@@ -101,34 +114,40 @@ struct TRectangle
 		return Vector2D(vrightBottom.x, vleftTop.y);
 	}
 
-    const TVec2D<T>& GetRightBottom() const
-	{
-		return vrightBottom;
-	}
-
     TVec2D<T> GetCenter() const
 	{
 		return (vleftTop + vrightBottom) / static_cast<T>(2);
 	}
 
-	TRectangle<T> GetTopVertical(float sizePercent) const
+	TVec2D<T> GetVertex(int index) const
 	{
-		return TRectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(1.0f, sizePercent)));
+		return TVec2D<T>(index & 1 ? vrightBottom.x : vleftTop.x,
+			index & 2 ? vrightBottom.y : vleftTop.y);
 	}
 
-	TRectangle<T> GetBottomVertical(float sizePercent) const
+	TVec2D<T> GetSize() const
 	{
-		return TRectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(1.0f, sizePercent), vrightBottom));
+		return vrightBottom - vleftTop;
 	}
 
-	TRectangle<T> GetLeftHorizontal(float sizePercent) const
+	TAARectangle<T> GetTopVertical(float sizePercent) const
 	{
-		return TRectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(sizePercent, 1.0f)));
+		return TAARectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(1.0f, sizePercent)));
 	}
 
-	TRectangle<T> GetRightHorizontal(float sizePercent) const
+	TAARectangle<T> GetBottomVertical(float sizePercent) const
 	{
-		return TRectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
+		return TAARectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(1.0f, sizePercent), vrightBottom));
+	}
+
+	TAARectangle<T> GetLeftHorizontal(float sizePercent) const
+	{
+		return TAARectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(sizePercent, 1.0f)));
+	}
+
+	TAARectangle<T> GetRightHorizontal(float sizePercent) const
+	{
+		return TAARectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
 	}
 
 	TVec2D<T> ClampPointInRectangle(const Vector2D &point) const
@@ -136,24 +155,24 @@ struct TRectangle
 		return clamp(point, vleftTop, vrightBottom);
 	}
 
-	TRectangle<T> GetRectangleIntersectionDiff(const TRectangle<T> &anotherRect) const
+	TAARectangle<T> GetRectangleIntersectionDiff(const TAARectangle<T> &anotherRect) const
 	{
 		Vector2D tempLT = ClampPointInRectangle(Vector2D(anotherRect.vleftTop.x,anotherRect.vleftTop.y));
 		Vector2D tempRB = ClampPointInRectangle(Vector2D(anotherRect.vrightBottom.x,anotherRect.vrightBottom.y));
 
-		TRectangle pRect(vleftTop.x - tempLT.x,vleftTop.y - tempLT.y,vrightBottom.x - tempRB.x,vrightBottom.y - tempRB.y);
+		TAARectangle pRect(vleftTop.x - tempLT.x,vleftTop.y - tempLT.y,vrightBottom.x - tempRB.x,vrightBottom.y - tempRB.y);
 
 		return pRect;
 	}
 
-	bool Containts(const TVec2D<T>& point) const
+	bool Contains(const TVec2D<T>& point) const
 	{
 		return point.x >= vleftTop.x && point.x <= vrightBottom.x 
 			&& point.y >= vleftTop.y && point.y <= vrightBottom.y;
 	}
 
 	// warning, this is a size-dependent!
-	bool FullyInside(const TRectangle<T>& box, T tolerance = 0) const
+	bool FullyInside(const TAARectangle<T>& box, T tolerance = 0) const
 	{
 		if (box.vleftTop >= vleftTop - tolerance && box.vleftTop <= vrightBottom + tolerance &&
 			box.vrightBottom <= vrightBottom + tolerance && box.vrightBottom >= vleftTop - tolerance)
@@ -162,7 +181,7 @@ struct TRectangle
 		return false;
 	}
 
-	bool Intersects(const TRectangle<T> &anotherRect) const
+	bool Intersects(const TAARectangle<T> &anotherRect) const
 	{
 		if(( vrightBottom.x < anotherRect.vleftTop.x) || (vleftTop.x > anotherRect.vrightBottom.x ) )
 			return false;
@@ -236,28 +255,17 @@ struct TRectangle
 		return dmin <= M_SQR(radius);
 	}
 
-	TVec2D<T> GetVertex(int index) const
-	{
-		return TVec2D<T>(	index & 1 ? vrightBottom.x : vleftTop.x,
-							index & 2 ? vrightBottom.y : vleftTop.y);
-	}
-
-	TVec2D<T> GetSize() const
-	{
-		return vrightBottom - vleftTop;
-	}
-
 	// modifiers
     void FlipX()
 	{
-        QuickSwap(vleftTop.x,vrightBottom.x);
+        QuickSwap(vleftTop.x, vrightBottom.x);
 	}
 
 	void FlipY()
 	{
-        QuickSwap(vleftTop.y,vrightBottom.y);
+        QuickSwap(vleftTop.y, vrightBottom.y);
 	}
 };
 
-typedef TRectangle<float>	Rectangle_t;
-typedef TRectangle<int>		IRectangle;
+typedef TAARectangle<float>		AARectangle;
+typedef TAARectangle<int>		IAARectangle;

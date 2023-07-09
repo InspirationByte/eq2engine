@@ -112,7 +112,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 
 				// Apply Scissor/clipping rectangle, Bind texture, Draw
 				ITexture* texture = (ITexture*)pcmd->GetTexID();
-				IRectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
+				IAARectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
 				g_pShaderAPI->SetScissorRectangle(scissor);
 
 				MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(ITexturePtr(texture));

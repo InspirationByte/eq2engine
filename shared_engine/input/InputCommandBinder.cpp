@@ -582,7 +582,7 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 	{
 		in_touchzone_t* tz = &m_touchZones[i];
 
-		Rectangle_t rect(tz->position - tz->size*0.5f, tz->position + tz->size*0.5f);
+		AARectangle rect(tz->position - tz->size*0.5f, tz->position + tz->size*0.5f);
 
 		if(!down)
 		{
@@ -592,7 +592,7 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 				tz->finger = -1;
 			}
 		}
-		else if( rect.Containts(pos) )
+		else if( rect.Contains(pos) )
 		{
 			if (in_touchzones_debug.GetInt() == 2)
 				Msg("found zone %s\n", tz->name.ToCString());
@@ -650,7 +650,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	materials->SetDepthStates(false, false);
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	Array<Rectangle_t> rects(PP_SL);
+	Array<AARectangle> rects(PP_SL);
 	rects.resize(m_touchZones.numElem());
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
@@ -660,7 +660,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{
 		const in_touchzone_t* tz = &m_touchZones[i];
-		Rectangle_t rect((tz->position - tz->size * 0.5f) * screenSize, (tz->position + tz->size * 0.5f) * screenSize);
+		AARectangle rect((tz->position - tz->size * 0.5f) * screenSize, (tz->position + tz->size * 0.5f) * screenSize);
 
 		rects.append(rect);
 		const Vertex2D_t touchQuad[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0) };
@@ -678,7 +678,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{
 		const in_touchzone_t* tz = &m_touchZones[i];
-		const Rectangle_t& rect = rects[i];
+		const AARectangle& rect = rects[i];
 
 		defaultFont->RenderText(tz->name.ToCString(), rect.vleftTop, fontParams);
 	}

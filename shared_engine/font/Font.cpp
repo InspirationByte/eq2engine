@@ -364,8 +364,8 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 		if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
 			cPos.y = startPos.y - (cSize.y-baseLine) + chr.ofsY;
 
-		Rectangle_t charRect(cPos, cPos+cSize);
-		Rectangle_t charTexCoord(chr.x0*m_invTexSize.x, chr.y0*m_invTexSize.y,chr.x1*m_invTexSize.x, chr.y1*m_invTexSize.y);
+		AARectangle charRect(cPos, cPos+cSize);
+		AARectangle charTexCoord(chr.x0*m_invTexSize.x, chr.y0*m_invTexSize.y,chr.x1*m_invTexSize.x, chr.y1*m_invTexSize.y);
 
 		// set character color
 		builder.Color4fv(stateParams.textColor);

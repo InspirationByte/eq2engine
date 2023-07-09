@@ -165,7 +165,7 @@ public:
 	void						CopyFramebufferToTexture(const ITexturePtr& renderTarget);
 
 	// Copy render target to texture
-	void						CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr);
+	void						CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr);
 
 	// Changes render target (MRT)
 	void						ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
@@ -215,7 +215,7 @@ public:
 	void						SetDepthRange(float fZNear,float fZFar);
 
 	// sets scissor rectangle
-	void						SetScissorRectangle( const IRectangle &rect );
+	void						SetScissorRectangle( const IAARectangle &rect );
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)

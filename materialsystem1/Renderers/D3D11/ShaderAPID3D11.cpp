@@ -835,7 +835,7 @@ void ShaderAPID3DX10::CopyFramebufferToTexture(const ITexturePtr& renderTarget)
 }
 
 // Copy render target to texture
-void ShaderAPID3DX10::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
+void ShaderAPID3DX10::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect, IAARectangle* destRect)
 {
 	ASSERT_FAIL("Unimplemented");
 }
@@ -3267,7 +3267,7 @@ void ShaderAPID3DX10::GetViewport(int &x, int &y, int &w, int &h)
 }
 
 // sets scissor rectangle
-void ShaderAPID3DX10::SetScissorRectangle( const IRectangle &rect )
+void ShaderAPID3DX10::SetScissorRectangle( const IAARectangle &rect )
 {
 	D3D10_RECT scissorRect;
 	scissorRect.left	= rect.vleftTop.x;

@@ -56,8 +56,8 @@ public:
 	void				BringToTop( equi::Panel* panel );
 	equi::Panel*		GetTopPanel() const;
 
-	void				SetViewFrame(const IRectangle& rect);
-	const IRectangle&	GetViewFrame() const;
+	void				SetViewFrame(const IAARectangle& rect);
+	const IAARectangle&	GetViewFrame() const;
 
 	IVector2D			GetScreenSize() const;
 
@@ -89,7 +89,7 @@ private:
 
 	Array<equi::Panel*>		m_panels{ PP_SL };
 
-	IRectangle				m_viewFrameRect;
+	IAARectangle				m_viewFrameRect;
 	IMaterial*				m_material;
 
 	IEqFont*				m_defaultFont;

@@ -445,7 +445,7 @@ bool CreateAtlasImage(const Array<imageDesc_t>& images_list,
 	for(int i = 0; i < packer.GetRectangleCount(); i++)
 	{
 		void* userData;
-		Rectangle_t rect;
+		AARectangle rect;
 
 		packer.GetRectangle(rect, &userData, i);
 		const imageDesc_t* imgDesc = (imageDesc_t*)userData;
