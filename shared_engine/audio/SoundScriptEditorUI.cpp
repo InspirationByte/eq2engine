@@ -16,7 +16,6 @@
 #include <imnodes.h>
 
 #include "core/core_common.h"
-#include "ds/sort.h"
 #include "utils/KeyValues.h"
 #include "eqSoundEmitterSystem.h"
 #include "eqSoundEmitterObject.h"
@@ -671,7 +670,7 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 				}
 
 				// if input is present
-				const int foundIdx = nodesToAdd.findIndex(nodeId);
+				const int foundIdx = arrayFindIndex(nodesToAdd, nodeId);
 				if (foundIdx != -1)
 				{
 					addNodeToKeyValues(s_uiNodes[nodeId]);

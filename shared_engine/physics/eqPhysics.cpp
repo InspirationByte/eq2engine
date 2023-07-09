@@ -379,7 +379,7 @@ void CEqPhysics::DestroyGrid()
 
 void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
 {
-	const int foundIdx = m_physSurfaceParams.findIndex([name](const eqPhysSurfParam_t* other) { return !other->name.CompareCaseIns(name); });
+	const int foundIdx = arrayFindIndexF(m_physSurfaceParams, [name](const eqPhysSurfParam_t* other) { return !other->name.CompareCaseIns(name); });
 	if (foundIdx != -1)
 	{
 		ASSERT_FAIL("AddSurfaceParam - %s already added\n", name);
@@ -417,7 +417,7 @@ const eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id) const
 }
 
 #ifdef DEBUG
-#define CHECK_ALREADY_IN_LIST(list, obj) ASSERT_MSG(list.findIndex(obj) == -1, "Object already added")
+#define CHECK_ALREADY_IN_LIST(list, obj) ASSERT_MSG(arrayFindIndex(list, obj) == -1, "Object already added")
 #else
 #define CHECK_ALREADY_IN_LIST(list, obj)
 #endif
@@ -605,7 +605,7 @@ bool CEqPhysics::IsValidStaticObject( CEqCollisionObject* obj ) const
     if(obj->IsDynamic())
         return false;
 
-    return m_staticObjects.findIndex( obj ) != -1;
+    return arrayFindIndex(m_staticObjects, obj ) != -1;
 }
 
 bool CEqPhysics::IsValidBody( CEqCollisionObject* body ) const
@@ -613,7 +613,7 @@ bool CEqPhysics::IsValidBody( CEqCollisionObject* body ) const
     if(!body->IsDynamic())
         return false;
 
-    return m_dynObjects.findIndex( (CEqRigidBody*)body ) != -1;
+    return arrayFindIndex(m_dynObjects, (CEqRigidBody*)body ) != -1;
 }
 
 void CEqPhysics::AddConstraint( IEqPhysicsConstraint* constraint )

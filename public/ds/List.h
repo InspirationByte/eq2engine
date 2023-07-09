@@ -7,10 +7,10 @@
 
 #pragma once
 
-template <typename T, typename ALLOCATOR>
+template <typename T, typename STORAGE_TYPE>
 class ListBase;
 
-template <typename T, typename ALLOCATOR>
+template <typename T, typename STORAGE_TYPE>
 struct ListNode
 {
 public:
@@ -29,15 +29,15 @@ protected:
 	ListNode*	prev{ nullptr };
 	ListNode*	next{ nullptr };
 
-	friend class ListBase<T, ALLOCATOR>;
+	friend class ListBase<T, STORAGE_TYPE>;
 };
 
 //------------------------------------------------------
 
-template <typename T, typename ALLOCATOR>
+template <typename T, typename STORAGE_TYPE>
 struct ListAllocatorBase
 {
-	using Node = ListNode<T, ALLOCATOR>;
+	using Node = ListNode<T, STORAGE_TYPE>;
 
 	virtual			~ListAllocatorBase() {}
 
@@ -118,8 +118,8 @@ public:
 	ushort m_nextNode{ 0 };
 };
 
-template <typename T, typename ALLOCATOR>
-class ListBase
+template <typename T, typename STORAGE_TYPE>
+class ListBase : STORAGE_TYPE
 {
 public:
 	virtual ~ListBase()
@@ -129,15 +129,15 @@ public:
 
 	ListBase()
 	{
-		static_assert(!std::is_same_v<ALLOCATOR, DynamicListAllocator<T>>, "PP_SL constructor is required to use");
+		static_assert(!std::is_same_v<STORAGE_TYPE, DynamicListAllocator<T>>, "PP_SL constructor is required to use");
 	}
 
 	ListBase(const PPSourceLine& sl) 
-		: m_allocator(sl)
+		: STORAGE_TYPE(sl)
 	{
 	}
 
-	using Node = ListNode<T, ALLOCATOR>;
+	using Node = ListNode<T, STORAGE_TYPE>;
 
 	int getCount() const { return m_count; }
 
@@ -446,15 +446,13 @@ private:
 
 	Node* allocNode()
 	{
-		return m_allocator.alloc();
+		return STORAGE_TYPE::alloc();
 	}
 
 	void freeNode(Node* node)
 	{
-		return m_allocator.free(node);
+		return STORAGE_TYPE::free(node);
 	}
-
-	ALLOCATOR m_allocator;
 };
 
 template<typename T>

@@ -260,7 +260,7 @@ equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)
 {
 	IUIControl* firstCtrl = control;
 
-	while(firstCtrl && m_panels.findIndex((equi::Panel*)firstCtrl) == -1)
+	while(firstCtrl && arrayFindIndex(m_panels, (equi::Panel*)firstCtrl) == -1)
 	{
 		firstCtrl = firstCtrl->GetParent();
 	}

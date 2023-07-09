@@ -7,8 +7,7 @@
 
 #pragma once
 
-template< typename T >
-using PairCompareFunc = bool (*)(const T& a, const T& b);
+#include "ds/sort.h"
 
 template< typename T >
 class ArrayStorageBase
@@ -86,30 +85,12 @@ public:
 		}
 	}
 
-	int getSize() const
-	{
-		return m_nSize;
-	}
+	int			getSize() const						{ return m_nSize; }
+	int			getGranularity() const				{ return m_nGranularity;}
+	void		setGranularity(int newGranularity)	{ m_nGranularity = newGranularity; }
 
-	int getGranularity() const
-	{
-		return m_nGranularity;
-	}
-
-	void setGranularity(int newGranularity)
-	{
-		m_nGranularity = newGranularity;
-	}
-
-	T* getData()
-	{
-		return m_pListPtr;
-	}
-
-	const T* getData() const
-	{
-		return m_pListPtr;
-	}
+	T*			getData()							{ return m_pListPtr; }
+	const T*	getData() const						{ return m_pListPtr; }
 
 	void swap(DynamicArrayStorage& other)
 	{
@@ -151,27 +132,12 @@ public:
 		ASSERT_MSG(newSize <= SIZE, "FixedArrayStorage<%s> capacity is %d, required %d", typeid(T).name(), getSize(), newSize);
 	}
 
-	int getSize() const
-	{
-		return SIZE;
-	}
+	int			getSize() const						{ return SIZE; }
+	int			getGranularity() const				{ return 1; }
+	void		setGranularity(int newGranularity)	{}
 
-	int getGranularity() const
-	{
-		return 1;
-	}
-
-	void setGranularity(int newGranularity) {}
-
-	T* getData()
-	{
-		return (T*)(&m_data[0]);
-	}
-
-	const T* getData() const
-	{
-		return (T*)(&m_data[0]);
-	}
+	T*			getData()							{ return (T*)(&m_data[0]); }
+	const T*	getData() const						{ return (T*)(&m_data[0]); }
 
 	void swap(FixedArrayStorage& other)
 	{
@@ -203,18 +169,20 @@ void ArrayStorageBase<T>::destructElements(T* dest, int count)
 	}
 }
 
-template< typename T, typename STORAGE_TYPE >
-class ArrayBase;
+//----------------------------------------------
+
 
 template< typename T, typename STORAGE_TYPE >
-class ArrayBase
+class ArrayBase : STORAGE_TYPE
 {
 	using SelfType = ArrayBase<T, STORAGE_TYPE>;
 public:
+	using ITEM = T;
+
 	struct Iterator
 	{
-		SelfType& array;
-		int index = 0;
+		SelfType&	array;
+		int			index = 0;
 
 		Iterator(SelfType& array, int from)
 			: array(array), index(from)
@@ -237,8 +205,8 @@ public:
 	T&				operator[](int index);
 	SelfType&		operator=(const SelfType& other);
 
-	Iterator		begin() const { return Iterator(*const_cast<SelfType*>(this), 0); }
-	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
+	Iterator		begin() const	{ return Iterator(*const_cast<SelfType*>(this), 0); }
+	Iterator		end() const		{ return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
 
 	// cleans list
 	void			clear(bool deallocate = false);
@@ -336,17 +304,6 @@ public:
 	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
 	int				addUnique(const T& obj, PAIRCOMPAREFUNC comparator);
 
-	// finds the index for the given element
-	int				findIndex(const T& obj) const;
-
-	// finds the index for the given element
-	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
-	int				findIndex(const T& obj, PAIRCOMPAREFUNC comparator) const;
-
-	// returns first found element which satisfies to the condition
-	template< typename COMPAREFUNC >
-	int				findIndex(COMPAREFUNC comparator) const;
-
 	// returns iterator for the given element
 	Iterator		find(const T& obj) const;
 
@@ -374,7 +331,7 @@ public:
 	bool			fastRemove(const T& obj);
 
 	// swap the contents of the lists
-	void			swap(SelfType& other);
+	void			swap(ArrayBase<T, STORAGE_TYPE>& other);
 
 	// swap the contents of the lists - raw
 	void			swap(T*& other, int& otherNumElem);
@@ -390,10 +347,8 @@ public:
 	void			assureSizeEmplace(int newSize, Args&&... args);
 
 protected:
-
 	void			ensureCapacity(int newElement);
 
-	STORAGE_TYPE	m_storage;
 	int				m_nNumElem{ 0 };
 };
 
@@ -405,14 +360,14 @@ inline ArrayBase<T, STORAGE_TYPE>::ArrayBase()
 
 template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const PPSourceLine& sl, int granularity)
-	: m_storage(sl, granularity)
+	: STORAGE_TYPE(sl, granularity)
 {
 }
 
 template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 {
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	ArrayStorageBase<T>::destructElements(listPtr, m_nNumElem);
 }
 
@@ -422,12 +377,12 @@ inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::clear(bool deallocate)
 {
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	ArrayStorageBase<T>::destructElements(listPtr, m_nNumElem);
 
 	if (deallocate)
 	{
-		m_storage.free();
+		STORAGE_TYPE::free();
 	}
 
 	m_nNumElem = 0;
@@ -451,7 +406,7 @@ template< typename COMPAREFUNC >
 inline int ArrayBase<T, STORAGE_TYPE>::numElem(COMPAREFUNC comparator) const
 {
 	int theCount = 0;
-	const T* listPtr = m_storage.getData();
+	const T* listPtr = STORAGE_TYPE::getData();
 
 	for (int i = 0; i < m_nNumElem; i++)
 	{
@@ -468,7 +423,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::numElem(COMPAREFUNC comparator) const
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::numAllocated() const
 {
-	return m_storage.getSize();
+	return STORAGE_TYPE::getSize();
 }
 
 // -----------------------------------------------------------------
@@ -481,9 +436,9 @@ inline void ArrayBase<T, STORAGE_TYPE>::setGranularity(int newgranularity)
 
 	ASSERT(newgranularity > 0);
 
-	m_storage.setGranularity(newgranularity);
+	STORAGE_TYPE::setGranularity(newgranularity);
 
-	resize(m_storage.getSize());
+	resize(STORAGE_TYPE::getSize());
 }
 
 // -----------------------------------------------------------------
@@ -492,7 +447,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::setGranularity(int newgranularity)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 {
-	return m_storage.getGranularity();
+	return STORAGE_TYPE::getGranularity();
 }
 
 // -----------------------------------------------------------------
@@ -504,7 +459,7 @@ inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 {
 	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
-	return m_storage.getData()[index];
+	return STORAGE_TYPE::getData()[index];
 }
 
 // -----------------------------------------------------------------
@@ -516,25 +471,25 @@ inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 {
 	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
-	return m_storage.getData()[index];
+	return STORAGE_TYPE::getData()[index];
 }
 
 // -----------------------------------------------------------------
 // Copies the contents and size attributes of another list.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const SelfType& other)
+inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const ArrayBase<T, STORAGE_TYPE>& other)
 {
-	m_storage.setGranularity(other.m_storage.getGranularity());
+	STORAGE_TYPE::setGranularity(other.STORAGE_TYPE::getGranularity());
 
-	reserve(other.m_storage.getSize());
+	reserve(other.STORAGE_TYPE::getSize());
 
 	m_nNumElem = other.m_nNumElem;
 
-	T* listPtr = m_storage.getData();
-	const T* otherListPtr = other.m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
+	const T* otherListPtr = other.STORAGE_TYPE::getData();
 
-	if (m_storage.getSize())
+	if (STORAGE_TYPE::getSize())
 	{
 		for (int i = 0; i < m_nNumElem; i++)
 			new(&listPtr[i]) T(otherListPtr[i]);
@@ -552,7 +507,7 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const S
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::resize(int newSize)
 {
-	m_storage.resize(newSize, m_nNumElem);
+	STORAGE_TYPE::resize(newSize, m_nNumElem);
 }
 
 
@@ -562,8 +517,8 @@ inline void ArrayBase<T, STORAGE_TYPE>::resize(int newSize)
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::reserve(int requiredSize)
 {
-	if (requiredSize > m_storage.getSize())
-		m_storage.resize(requiredSize, m_nNumElem);
+	if (requiredSize > STORAGE_TYPE::getSize())
+		STORAGE_TYPE::resize(requiredSize, m_nNumElem);
 }
 
 // -----------------------------------------------------------------
@@ -574,14 +529,14 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newnum, bool shrinkResize)
 {
 	ASSERT(newnum >= 0);
 
-	if (shrinkResize || newnum > m_storage.getSize())
+	if (shrinkResize || newnum > STORAGE_TYPE::getSize())
 		resize(newnum);
 
 	// initialize new elements
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	for (int i = m_nNumElem; i < newnum; ++i)
 	{
-		PPSLPlacementNew<T>(&listPtr[i], m_storage.getSL());
+		PPSLPlacementNew<T>(&listPtr[i], STORAGE_TYPE::getSL());
 	}
 
 	m_nNumElem = newnum;
@@ -595,7 +550,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newnum, bool shrinkResize)
 template< typename T, typename STORAGE_TYPE >
 inline T* ArrayBase<T, STORAGE_TYPE>::ptr()
 {
-	return m_storage.getData();
+	return STORAGE_TYPE::getData();
 }
 
 // -----------------------------------------------------------------
@@ -605,7 +560,7 @@ inline T* ArrayBase<T, STORAGE_TYPE>::ptr()
 template< typename T, typename STORAGE_TYPE >
 inline const T* ArrayBase<T, STORAGE_TYPE>::ptr() const
 {
-	return m_storage.getData();
+	return STORAGE_TYPE::getData();
 }
 
 // -----------------------------------------------------------------
@@ -615,7 +570,7 @@ template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::front()
 {
 	ASSERT(m_nNumElem > 0);
-	return *m_storage.getData();
+	return *STORAGE_TYPE::getData();
 }
 
 // -----------------------------------------------------------------
@@ -625,7 +580,7 @@ template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::front() const
 {
 	ASSERT(m_nNumElem > 0);
-	return *m_storage.getData();
+	return *STORAGE_TYPE::getData();
 }
 
 // -----------------------------------------------------------------
@@ -635,7 +590,7 @@ template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::back()
 {
 	ASSERT(m_nNumElem > 0);
-	return m_storage.getData()[m_nNumElem - 1];
+	return STORAGE_TYPE::getData()[m_nNumElem - 1];
 }
 
 // -----------------------------------------------------------------
@@ -645,7 +600,7 @@ template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::back() const
 {
 	ASSERT(m_nNumElem > 0);
-	return m_storage.getData()[m_nNumElem - 1];
+	return STORAGE_TYPE::getData()[m_nNumElem - 1];
 }
 
 // -----------------------------------------------------------------
@@ -655,7 +610,7 @@ template< typename T, typename STORAGE_TYPE >
 inline T ArrayBase<T, STORAGE_TYPE>::popFront()
 {
 	ASSERT(m_nNumElem > 0);
-	T item = m_storage.getData()[0];
+	T item = STORAGE_TYPE::getData()[0];
 	removeIndex(0);
 	return item;
 }
@@ -667,7 +622,7 @@ template< typename T, typename STORAGE_TYPE >
 inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 {
 	ASSERT(m_nNumElem > 0);
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	T item = listPtr[m_nNumElem - 1];
 	ArrayStorageBase<T>::destructElements(listPtr + m_nNumElem - 1, 1);
 	m_nNumElem--;
@@ -689,7 +644,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const T& obj)
 {
 	ensureCapacity(1);
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 
 	new(&listPtr[m_nNumElem]) T(obj);
 	m_nNumElem++;
@@ -706,7 +661,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(T&& obj)
 {
 	ensureCapacity(1);
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 
 	new(&listPtr[m_nNumElem]) T(std::move(obj));
 	m_nNumElem++;
@@ -724,7 +679,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::appendEmplace(Args&&... args)
 {
 	ensureCapacity(1);
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 
 	new(&listPtr[m_nNumElem]) T(std::forward<Args>(args)...);
 	m_nNumElem++;
@@ -740,12 +695,12 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 {
 	ensureCapacity(1);
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 
 	T& newItem = listPtr[m_nNumElem];
 	m_nNumElem++;
 	
-	PPSLPlacementNew<T>(&newItem, m_storage.getSL());
+	PPSLPlacementNew<T>(&newItem, STORAGE_TYPE::getSL());
 
 	return newItem;
 }
@@ -831,7 +786,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 	else if (index > m_nNumElem)
 		index = m_nNumElem;
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 
 	for (int i = m_nNumElem; i > index; --i)
 	{
@@ -858,7 +813,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
 	else if (index > m_nNumElem)
 		index = m_nNumElem;
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 
 	for (int i = m_nNumElem; i > index; --i)
 	{
@@ -885,7 +840,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 	else if (index > m_nNumElem)
 		index = m_nNumElem;
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 
 	for (int i = m_nNumElem; i > index; --i)
 	{
@@ -894,7 +849,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 
 	m_nNumElem++;
 
-	PPSLPlacementNew<T>(&listPtr[index], m_storage.getSL());
+	PPSLPlacementNew<T>(&listPtr[index], STORAGE_TYPE::getSL());
 
 	return listPtr[index];
 }
@@ -908,7 +863,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj)
 {
 	int index;
 
-	index = findIndex(obj);
+	index = arrayFindIndex(*this, obj);
 
 	if (index < 0)
 		index = append(obj);
@@ -927,7 +882,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj, PAIRCOMPAREFUNC c
 {
 	int index;
 
-	index = findIndex(obj, comparator);
+	index = arrayFindIndexF(*this, obj, comparator);
 
 	if (index < 0)
 		index = append(obj);
@@ -936,63 +891,12 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj, PAIRCOMPAREFUNC c
 }
 
 // -----------------------------------------------------------------
-// Searches for the specified data in the m_pListPtr and returns it's index.
-// Returns -1 if the data is not found.
-// -----------------------------------------------------------------
-
-template< typename T, typename STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::findIndex(T const& obj) const
-{
-	const T* listPtr = m_storage.getData();
-	for (int i = 0; i < m_nNumElem; i++)
-	{
-		if (listPtr[i] == obj)
-			return i;
-	}
-	return -1;
-}
-
-// -----------------------------------------------------------------
-// Searches for the specified data in the m_pListPtr and returns it's index.
-// Returns -1 if the data is not found.
-// -----------------------------------------------------------------
-template< typename T, typename STORAGE_TYPE >
-template< typename PAIRCOMPAREFUNC >
-inline int ArrayBase<T, STORAGE_TYPE>::findIndex(T const& obj, PAIRCOMPAREFUNC comparator) const
-{
-	const T* listPtr = m_storage.getData();
-	for (int i = 0; i < m_nNumElem; i++)
-	{
-		if (comparator(listPtr[i], obj))
-			return i;
-	}
-	return -1;
-}
-
-// -----------------------------------------------------------------
-// returns first element which satisfies to the condition
-// Returns NULL if the data is not found.
-// -----------------------------------------------------------------
-template< typename T, typename STORAGE_TYPE >
-template< typename COMPAREFUNC >
-inline int ArrayBase<T, STORAGE_TYPE>::findIndex(COMPAREFUNC comparator) const
-{
-	const T* listPtr = m_storage.getData();
-	for (int i = 0; i < m_nNumElem; i++)
-	{
-		if (comparator(listPtr[i]))
-			return i;
-	}
-	return -1;
-}
-
-// -----------------------------------------------------------------
 // Searches for the specified data in the m_pListPtr and returns iterator.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj) const
 {
-	const int index = findIndex(obj);
+	const int index = arrayFindIndex(*this, obj);
 	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
 }
 
@@ -1003,7 +907,7 @@ template< typename T, typename STORAGE_TYPE >
 template< typename PAIRCOMPAREFUNC >
 inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj, PAIRCOMPAREFUNC comparator) const
 {
-	const int index = findIndex(obj, comparator);
+	const int index = arrayFindIndexF(*this, obj, comparator);
 	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
 }
 
@@ -1014,7 +918,7 @@ template< typename T, typename STORAGE_TYPE >
 template< typename COMPAREFUNC >
 inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(COMPAREFUNC comparator) const
 {
-	const int index = findIndex(comparator);
+	const int index = arrayFindIndexF(*this, comparator);
 	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
 }
 
@@ -1034,7 +938,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex(int index)
 
 	m_nNumElem--;
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	ArrayStorageBase<T>::destructElements(listPtr + index, 1);
 
 	for (int i = index; i < m_nNumElem; i++)
@@ -1060,7 +964,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 	if (!count)
 		return true;
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	ArrayStorageBase<T>::destructElements(listPtr + index, count);
 
 	m_nNumElem -= count;
@@ -1087,7 +991,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex(int index)
 
 	m_nNumElem--;
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	ArrayStorageBase<T>::destructElements(listPtr + index, 1);
 
 	if (m_nNumElem > 0)
@@ -1107,7 +1011,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::remove(T const& obj)
 {
 	int index;
 
-	index = findIndex(obj);
+	index = arrayFindIndex(*this, obj);
 
 	if (index >= 0)
 		return removeIndex(index);
@@ -1126,7 +1030,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemove(T const& obj)
 {
 	int index;
 
-	index = findIndex(obj);
+	index = arrayFindIndex(*this, obj);
 
 	if (index >= 0)
 		return fastRemoveIndex(index);
@@ -1150,7 +1054,7 @@ template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::swap(ArrayBase<T, STORAGE_TYPE>& other)
 {
 	QuickSwap(m_nNumElem, other.m_nNumElem);
-	m_storage.swap(other.m_storage);
+	STORAGE_TYPE::swap(other);
 }
 
 // -----------------------------------------------------------------
@@ -1160,7 +1064,7 @@ template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::swap(T*& other, int& otherNumElem)
 {
 	QuickSwap(m_nNumElem, otherNumElem);
-	m_storage.swap(other, otherNumElem);
+	STORAGE_TYPE::swap(other, otherNumElem);
 }
 
 // -----------------------------------------------------------------
@@ -1169,7 +1073,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::swap(T*& other, int& otherNumElem)
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::reverse()
 {
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	for (int i = 0, j = m_nNumElem - 1; i < j; i++, j--)
 	{
 		QuickSwap(listPtr[i], listPtr[j]);
@@ -1199,7 +1103,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSizeEmplace(int newSize, Args&&...
 
 	ensureCapacity(0);
 
-	T* listPtr = m_storage.getData();
+	T* listPtr = STORAGE_TYPE::getData();
 	for (int i = oldSize; i < newSize; i++)
 		new(&listPtr[i]) T(std::forward<Args>(args)...);
 }
@@ -1220,6 +1124,8 @@ class ArrayRef
 {
 	using SelfType = ArrayRef<T>;
 public:
+	using ITEM = T;
+
 	struct Iterator
 	{
 		SelfType& array;
@@ -1314,6 +1220,8 @@ class ArrayCRef
 {
 	using SelfType = ArrayCRef<T>;
 public:
+	using ITEM = T;
+
 	struct Iterator
 	{
 		SelfType& array;
@@ -1412,3 +1320,4 @@ struct PPSLValueCtor<Array<ITEM>>
 	Array<ITEM> x;
 	PPSLValueCtor<Array<ITEM>>(const PPSourceLine& sl) : x(sl) {}
 };
+

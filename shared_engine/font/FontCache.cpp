@@ -7,7 +7,6 @@
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
-#include "ds/sort.h"
 #include "utils/KeyValues.h"
 
 #include "FontCache.h"

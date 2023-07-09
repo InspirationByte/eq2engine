@@ -8,7 +8,6 @@
 #include "core/core_common.h"
 #include "RenderList.h"
 #include "BaseRenderableObject.h"
-#include "ds/sort.h"
 
 #define MIN_OBJECT_RENDERLIST_MEMSIZE 48
 

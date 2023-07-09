@@ -131,7 +131,7 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 		arrayIdx = atoi(numberStart);
 	}
 
-	const int valIdx = nodeDescs.findIndex([tmpName](const SoundNodeDesc& desc) {
+	const int valIdx = arrayFindIndexF(nodeDescs, [tmpName](const SoundNodeDesc& desc) {
 		return !strcmp(desc.name, tmpName);
 	});
 

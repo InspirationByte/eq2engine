@@ -547,7 +547,7 @@ void CPhysicsObject::RemoveIgnoredObject(IPhysicsObject* pObject)
 
 bool CPhysicsObject::ShouldCollideWith(IPhysicsObject* pObject)
 {
-	if(m_IgnoreCollisionList.findIndex( pObject ) != -1)
+	if(arrayFindIndex(m_IgnoreCollisionList, pObject ) != -1)
 		return false;
 
 	int nContentsObject1 = GetContents();

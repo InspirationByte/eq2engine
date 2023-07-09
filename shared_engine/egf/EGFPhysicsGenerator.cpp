@@ -176,7 +176,7 @@ int CEGFPhysicsGenerator::AddShape(Array<dsmvertex_t> &vertices, Array<int> &ind
 		{
 			Vector3D pos = vertices[indices[i]].position;
 
-			int found_idx = shapeVerts.findIndex(pos);
+			const int found_idx = arrayFindIndex(shapeVerts, pos);
 			if(found_idx == -1 && indices[i] != found_idx)
 			{
 				int nVerts = shapeVerts.append(pos);
@@ -256,7 +256,7 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Ar
 		const int index = indices[i];
 		dsmvertex_t& vertex = vertices[index];
 
-		const int found_index = vertices.findIndex([&vertex](const dsmvertex_t& other) {
+		const int found_index = arrayFindIndexF(vertices, [&vertex](const dsmvertex_t& other) {
 			return vertex.position == other.position;
 		});
 
@@ -377,7 +377,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		Array<int> processed_index(PP_SL);
 		for(int j = 0; j < bone_geom_indices.numElem(); j++)
 		{
-			if( processed_index.findIndex(bone_geom_indices[j]) == -1 )
+			if(arrayFindIndex(processed_index, bone_geom_indices[j]) == -1)
 			{
 				vertices[bone_geom_indices[j]].position -= object_center;
 				processed_index.append(bone_geom_indices[j]);

@@ -135,7 +135,7 @@ void CBulletStudioShapeCache::DestroyStudioCache( studioPhysData_t* studioData )
 {
 	for(int i = 0; i < studioData->numShapes; i++)
 	{
-		const int nShape = m_collisionShapes.findIndex((btCollisionShape*)studioData->shapes[i].cachedata);
+		const int nShape = arrayFindIndex(m_collisionShapes, (btCollisionShape*)studioData->shapes[i].cachedata);
 
 		if( m_collisionShapes[nShape]->getUserPointer() )
 		{

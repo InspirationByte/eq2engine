@@ -630,7 +630,7 @@ void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stre
 			if (!baseMat.used)
 				continue;
 
-			int usedMaterialIdx = m_usedMaterials.findIndex(&baseMat);
+			int usedMaterialIdx = arrayFindIndex(m_usedMaterials, &baseMat);
 			GenMaterialDesc_t& mat = grp->materials[usedMaterialIdx];
 
 			header->numMaterials++;

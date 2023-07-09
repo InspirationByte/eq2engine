@@ -21,8 +21,6 @@
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 
-#include "ds/sort.h"
-
 #ifdef _RETAIL
 #define PPMEM_DISABLED
 #endif

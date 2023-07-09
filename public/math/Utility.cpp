@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "ds/sort.h"
 #include "Utility.h"
 
 int HashVector2D(const Vector2D& v, float tolerance)

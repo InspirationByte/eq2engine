@@ -266,7 +266,7 @@ CParticleBatch*	CParticleLowLevelRenderer::CreateBatch(const char* materialName,
 
 	if (insertAfter)
 	{
-		const int idx = m_batchs.findIndex(insertAfter);
+		const int idx = arrayFindIndex(m_batchs, insertAfter);
 		m_batchs.insert(batch, idx + 1);
 	}
 	else

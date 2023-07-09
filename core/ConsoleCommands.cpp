@@ -11,7 +11,6 @@
 #include "core/IFileSystem.h"
 #include "core/IDkCore.h"
 #include "ConsoleCommands.h"
-#include "ds/sort.h"
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 

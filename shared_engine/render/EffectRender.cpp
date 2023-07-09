@@ -8,7 +8,6 @@
 #include "core/core_common.h"
 #include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
-#include "ds/sort.h"
 #include "utils/TextureAtlas.h"
 #include "EffectRender.h"
 

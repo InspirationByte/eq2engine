@@ -8,6 +8,9 @@
 #pragma once
 
 template< typename T >
+using PairCompareFunc = bool (*)(const T& a, const T& b);
+
+template< typename T >
 using PairSortCompareFunc = int (*)(const T& a, const T& b);
 
 template< typename T >
@@ -84,27 +87,63 @@ inline void shellSortIdx(T* list, C comparator, int i0, int i1)
 }
 
 // array wrapper
-template< typename T, typename STORAGE_TYPE, typename C = PairSortCompareFunc<T> >
-void shellSort(ArrayBase<T, STORAGE_TYPE>& arr, C comparator, int i0 = 0, int i1 = 0)
+template< typename ARRAY_TYPE, typename C = PairSortCompareFunc<typename ARRAY_TYPE::ITEM> >
+void shellSort(ARRAY_TYPE& arr, C comparator, int i0 = 0, int i1 = 0)
 {
 	shellSort(arr.ptr(), comparator, i0, i1 == 0 ? arr.numElem()-1 : i1);
 }
 
-template< typename T, typename STORAGE_TYPE, typename C = PairIndexedSortCompareFunc<T> >
-void shellSortIdx(ArrayBase<T, STORAGE_TYPE>& arr, C comparator, int i0 = 0, int i1 = 0)
+template< typename ARRAY_TYPE, typename C = PairIndexedSortCompareFunc<typename ARRAY_TYPE::ITEM> >
+void shellSortIdx(ARRAY_TYPE& arr, C comparator, int i0 = 0, int i1 = 0)
 {
 	shellSortIdx(arr.ptr(), comparator, i0, i1 == 0 ? arr.numElem()-1 : i1);
 }
 
 // array wrapper
-template< typename T, typename STORAGE_TYPE, typename C = PairSortCompareFunc<T> >
-void quickSort(ArrayBase<T, STORAGE_TYPE>& arr, C comparator, int p = 0, int r = 0)
+template< typename ARRAY_TYPE, typename C = PairSortCompareFunc<typename ARRAY_TYPE::ITEM> >
+void quickSort(ARRAY_TYPE& arr, C comparator, int p = 0, int r = 0)
 {
 	quickSort(arr.ptr(), comparator, p, r == 0 ? arr.numElem() - 1 : r);
 }
 
-template< typename T, typename STORAGE_TYPE, typename C = PairIndexedSortCompareFunc<T> >
-void quickSortIdx(ArrayBase<T, STORAGE_TYPE>& arr, C comparator, int p = 0, int r = 0)
+template< typename ARRAY_TYPE, typename C = PairIndexedSortCompareFunc<typename ARRAY_TYPE::ITEM> >
+void quickSortIdx(ARRAY_TYPE& arr, C comparator, int p = 0, int r = 0)
 {
 	quickSortIdx(arr.ptr(), comparator, p, r == 0 ? arr.numElem() - 1 : r);
+}
+
+// finds the index for the given element
+template< typename ARRAY_TYPE>
+int	arrayFindIndex(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj)
+{
+	for (int i = 0; i < arr.numElem(); ++i)
+	{
+		if (arr[i] == obj)
+			return i;
+	}
+	return -1;
+}
+
+// finds the index for the given element
+template< typename ARRAY_TYPE, typename PAIRCOMPAREFUNC = PairCompareFunc<typename ARRAY_TYPE::ITEM> >
+int	arrayFindIndexF(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj, PAIRCOMPAREFUNC comparator)
+{
+	for (int i = 0; i < arr.numElem(); ++i)
+	{
+		if (comparator(arr[i], obj))
+			return i;
+	}
+	return -1;
+}
+
+// returns first found element which satisfies to the condition
+template< typename ARRAY_TYPE, typename COMPAREFUNC >
+int arrayFindIndexF(const ARRAY_TYPE& arr, COMPAREFUNC comparator)
+{
+	for (int i = 0; i < arr.numElem(); ++i)
+	{
+		if (comparator(arr[i]))
+			return i;
+	}
+	return -1;
 }

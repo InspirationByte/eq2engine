@@ -287,7 +287,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		const char* modelName = modelSec->name;
 		const char* refName = KV_GetValueString(modelSec);
 
-		const int foundIdx = models.findIndex([refName](dsmmodel_t* model) {
+		const int foundIdx = arrayFindIndexF(models, [refName](dsmmodel_t* model) {
 			return !stricmp(model->name, refName);
 		});
 

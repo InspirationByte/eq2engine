@@ -2,7 +2,6 @@
 //		and https://github.com/delfrrr/delaunator-cpp
 
 #include "core/core_common.h"
-#include "ds/sort.h"
 
 #include "Delaunator.h"
 

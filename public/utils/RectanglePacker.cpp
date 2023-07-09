@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "ds/sort.h"
 #include "RectanglePacker.h"
 
 struct PackerNode 

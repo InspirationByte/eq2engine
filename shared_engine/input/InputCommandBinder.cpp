@@ -343,7 +343,7 @@ in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr) const
 
 in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/) const
 {
-	int startIdx = m_bindings.findIndex(startFrom) + 1;
+	const int startIdx = arrayFindIndex(m_bindings, startFrom) + 1;
 
 	for (int i = startIdx; i < m_bindings.numElem(); i++)
 	{
@@ -359,7 +359,7 @@ in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase,
 
 in_binding_t* CInputCommandBinder::FindBindingByCommandName(const char* name, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/) const
 {
-	int startIdx = m_bindings.findIndex(startFrom) + 1;
+	const int startIdx = arrayFindIndex(m_bindings, startFrom) + 1;
 
 	for (int i = startIdx; i < m_bindings.numElem(); i++)
 	{
