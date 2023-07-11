@@ -455,10 +455,11 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 		{
 			float loopRemainTimeFactor = emitter->loopCommandTimeFactor;
 			
-			emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, loopRemainTimeFactor);
-
 			loopRemainTimeFactor += g_sounds->m_deltaTime * emitter->loopCommandRatePerSecond * sign(diff);
-			emitter->loopCommandTimeFactor = clamp(loopRemainTimeFactor, 0.0f, 1.0f);
+			loopRemainTimeFactor = clamp(loopRemainTimeFactor, 0.0f, 1.0f);
+
+			emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, loopRemainTimeFactor);
+			emitter->loopCommandTimeFactor = loopRemainTimeFactor;
 		}
 		else
 		{
