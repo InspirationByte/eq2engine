@@ -336,9 +336,6 @@ public:
 	// swap the contents of the lists - raw
 	void			swap(T*& other, int& otherNumElem);
 
-	// reverses the order of array
-	void			reverse();
-
 	// assure list has given number of elements, but leave them uninitialized
 	void			assureSize(int newSize);
 
@@ -1065,19 +1062,6 @@ inline void ArrayBase<T, STORAGE_TYPE>::swap(T*& other, int& otherNumElem)
 {
 	QuickSwap(m_nNumElem, otherNumElem);
 	STORAGE_TYPE::swap(other, otherNumElem);
-}
-
-// -----------------------------------------------------------------
-// reverses the order of array
-// -----------------------------------------------------------------
-template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::reverse()
-{
-	T* listPtr = STORAGE_TYPE::getData();
-	for (int i = 0, j = m_nNumElem - 1; i < j; i++, j--)
-	{
-		QuickSwap(listPtr[i], listPtr[j]);
-	}
 }
 
 // -----------------------------------------------------------------

@@ -114,7 +114,7 @@ void quickSortIdx(ARRAY_TYPE& arr, C comparator, int p = 0, int r = 0)
 
 // finds the index for the given element
 template< typename ARRAY_TYPE>
-int	arrayFindIndex(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj)
+int arrayFindIndex(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj)
 {
 	for (int i = 0; i < arr.numElem(); ++i)
 	{
@@ -126,7 +126,7 @@ int	arrayFindIndex(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj)
 
 // finds the index for the given element
 template< typename ARRAY_TYPE, typename PAIRCOMPAREFUNC = PairCompareFunc<typename ARRAY_TYPE::ITEM> >
-int	arrayFindIndexF(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj, PAIRCOMPAREFUNC comparator)
+int arrayFindIndexF(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj, PAIRCOMPAREFUNC comparator)
 {
 	for (int i = 0; i < arr.numElem(); ++i)
 	{
@@ -146,4 +146,15 @@ int arrayFindIndexF(const ARRAY_TYPE& arr, COMPAREFUNC comparator)
 			return i;
 	}
 	return -1;
+}
+
+// reverses the order of array
+template< typename ARRAY_TYPE >
+void arrayReverse(ARRAY_TYPE& arr, int start = 0, int count = -1)
+{
+	if (start == 0 && count == -1)
+		count = arr.numElem();
+
+	for (int i = start, j = count - 1; i < j; i++, j--)
+		QuickSwap(arr[i], arr[j]);
 }
