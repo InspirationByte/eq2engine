@@ -446,24 +446,28 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
 
-	// TODO: sound volumes (boxes) to update effect slots!
-
-	float stopLoopRemainingTime = emitter->stopLoopRemainingTime;
-	if (stopLoopRemainingTime > 0.0f)
+	const ELoopCommand loopCommand = (ELoopCommand)emitter->loopCommand;
+	if (loopCommand != LOOPCMD_NONE)
 	{
-		stopLoopRemainingTime -= g_sounds->m_deltaTime;
-		const float timeFactor = stopLoopRemainingTime / emitter->stopLoopTime;
-
-		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, timeFactor);
-
-		if (stopLoopRemainingTime <= 0.0f)
+		const float remainTimeFactorTarget = (loopCommand == LOOPCMD_FADE_IN) ? 1.0f : 0.0f;
+		const float diff = (remainTimeFactorTarget - emitter->loopCommandTimeFactor);
+		if (fabs(diff) > F_EPS)
 		{
-			// command to stop sound
-			params.set_state(IEqAudioSource::STOPPED);
-			emitter->stopLoopRemainingTime = 0.0f;
+			float loopRemainTimeFactor = emitter->loopCommandTimeFactor;
+			
+			emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, loopRemainTimeFactor);
+
+			loopRemainTimeFactor += g_sounds->m_deltaTime * emitter->loopCommandRatePerSecond * sign(diff);
+			emitter->loopCommandTimeFactor = clamp(loopRemainTimeFactor, 0.0f, 1.0f);
 		}
 		else
-			emitter->stopLoopRemainingTime = stopLoopRemainingTime;
+		{
+			// target reached
+			if (loopCommand == LOOPCMD_FADE_OUT)
+				params.set_state(IEqAudioSource::STOPPED);
+
+			emitter->loopCommand = LOOPCMD_NONE;
+		}
 	}
 
 	emitter->UpdateNodes();
@@ -655,6 +659,7 @@ bool CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 	};
 
 	newSound->maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
+	newSound->startLoopTime = KV_GetValueFloat(sectionGetOrDefault("startLoopTime"), 0, 0.0f);
 	newSound->stopLoopTime = KV_GetValueFloat(sectionGetOrDefault("stopLoopTime"), 0, 0.0f);
 	newSound->loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
 	newSound->is2d = KV_GetValueBool(sectionGetOrDefault("is2d"), 0, false);

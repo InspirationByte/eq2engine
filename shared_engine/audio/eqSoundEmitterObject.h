@@ -81,6 +81,8 @@ protected:
 	void		StopEmitter(SoundEmitterData* emitter, bool destroy);
 	void		PauseEmitter(SoundEmitterData* emitter);
 	void		PlayEmitter(SoundEmitterData* emitter, bool rewind);
+
+	void		StartLoop(SoundEmitterData* emitter, float fadeInTime = 0.0f);
 	void		StopLoop(SoundEmitterData* emitter, float fadeOutTime = 0.0f);
 
 	void		SetPosition(SoundEmitterData* emitter, const Vector3D& position);
@@ -130,6 +132,8 @@ public:
 	void		StopEmitter();
 	void		PlayEmitter(bool rewind = false);
 	void		PauseEmitter();
+
+	void		StartLoop(float fadeInTime = 0.0f);
 	void		StopLoop(float fadeOutTime = 0.0f);
 
 	void		SetPosition(const Vector3D& position);

@@ -67,6 +67,13 @@ enum ESoundParamType : int
 	SOUND_PARAM_COUNT,
 };
 
+enum ELoopCommand : int
+{
+	LOOPCMD_NONE = 0,
+	LOOPCMD_FADE_IN,
+	LOOPCMD_FADE_OUT,
+};
+
 static const char* s_soundParamNames[] = {
 	"volume",
 	"pitch",
@@ -256,6 +263,7 @@ struct SoundScriptDesc
 	int			channelType{ CHAN_INVALID };
 	float		maxDistance{ 1.0f };
 	float		stopLoopTime{ 0.0f };
+	float		startLoopTime{ 0.0f };
 	
 	bool		loop : 1;
 	bool		is2d : 1;
@@ -296,8 +304,11 @@ struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 	float						epVolume{ 1.0f };
 	float						epPitch{ 1.0f };
 	float						epRadiusMultiplier{ 1.0f };
-	float						stopLoopTime{ 0.0f };
-	float						stopLoopRemainingTime{ 0.0f };
+
+	float						loopCommandTimeFactor{ 1.0f };		// 0..1
+	float						loopCommandRatePerSecond{ 0.0f };
+	int							loopCommand{ LOOPCMD_NONE };
+
 	int							sampleId{ -1 };				// when randomSample and sampleId == -1, it's random
 	int							nodesNeedUpdate{ true };	// triggers recalc of entire node set
 

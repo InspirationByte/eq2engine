@@ -425,8 +425,9 @@ void CSoundingObject::SetEmitterState(SoundEmitterData* emitter, IEqAudioSource:
 	if (!emitter)
 		return;
 
-	emitter->stopLoopRemainingTime = 0.0f;
-	emitter->stopLoopTime = 0.0f;
+	emitter->loopCommand = LOOPCMD_NONE;
+	emitter->loopCommandRatePerSecond = 0.0f;
+	emitter->loopCommandTimeFactor = 1.0f;
 	emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 
 	if (emitter->virtualParams.state == state)
@@ -484,8 +485,13 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 	if (!emitter)
 		return;
 
-	emitter->stopLoopRemainingTime = 0.0f;
-	emitter->stopLoopTime = 0.0f;
+	if (emitter->loopCommand != LOOPCMD_NONE)
+	{
+		emitter->loopCommand = LOOPCMD_NONE;
+		emitter->loopCommandRatePerSecond = 0.0f;
+		emitter->loopCommandTimeFactor = 1.0f;
+	}
+
 	emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 
 	// check if not playing already
@@ -506,6 +512,28 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 	}
 }
 
+void CSoundingObject::StartLoop(SoundEmitterData* emitter, float fadeInTime)
+{
+	if (!emitter)
+		return;
+
+	if (fadeInTime < F_EPS)
+		fadeInTime = emitter->script->startLoopTime;
+
+	const bool wasStopped = emitter->virtualParams.state == IEqAudioSource::STOPPED;
+
+	if(wasStopped)
+		PlayEmitter(emitter, false);
+
+	{
+		emitter->loopCommandRatePerSecond = 1.0f / fadeInTime;
+		emitter->loopCommand = LOOPCMD_FADE_IN;
+
+		if(wasStopped)
+			emitter->loopCommandTimeFactor = 0.0f;
+	}
+}
+
 void CSoundingObject::StopLoop(SoundEmitterData* emitter, float fadeOutTime)
 {
 	if (!emitter)
@@ -514,12 +542,9 @@ void CSoundingObject::StopLoop(SoundEmitterData* emitter, float fadeOutTime)
 	if (fadeOutTime < F_EPS)
 		fadeOutTime = emitter->script->stopLoopTime;
 
-	if (fadeOutTime > F_EPS && emitter->stopLoopTime <= 0.0f)
-	{
-		emitter->stopLoopTime = fadeOutTime;
-		emitter->stopLoopRemainingTime = fadeOutTime;
-	}
-	
+	emitter->loopCommandRatePerSecond = 1.0f / fadeOutTime;
+	emitter->loopCommand = LOOPCMD_FADE_OUT;
+
 	if(fadeOutTime <= 0.0f)
 	{
 		// set it directly
@@ -691,6 +716,11 @@ void CEmitterObjectSound::PlayEmitter(bool rewind)
 void CEmitterObjectSound::PauseEmitter()
 {
 	m_soundingObj.PauseEmitter(m_emitter.Ptr());
+}
+
+void CEmitterObjectSound::StartLoop(float fadeInTime)
+{
+	m_soundingObj.StartLoop(m_emitter.Ptr(), fadeInTime);
 }
 
 void CEmitterObjectSound::StopLoop(float fadeOutTime)
