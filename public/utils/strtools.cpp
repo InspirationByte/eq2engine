@@ -10,6 +10,15 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#else
+#include <locale.h>
+
+static locale_t xgetlocale()
+{
+	// HACK: Assume the user's system language is the same to the game's language
+	static locale_t loc = newlocale(LC_CTYPE_MASK, getenv("LANG"), LC_CTYPE);
+	return loc;
+}
 #endif
 
 char* xstrupr(char* str)
@@ -41,7 +50,7 @@ wchar_t* xwcslwr(wchar_t* str)
 #ifdef _WIN32
     while (*it != 0) { *it = *CharLowerW(&(*it)); ++it; }
 #else
-    while (*it != 0) { *it = towlower(*it); ++it; }
+    while (*it != 0) { *it = towlower_l(*it, xgetlocale()); ++it; }
 #endif // _WIN32
 
     return str;
@@ -56,32 +65,11 @@ wchar_t* xwcsupr(wchar_t* str)
 #ifdef _WIN32
     while (*it != 0) { *it = *CharUpperW(&(*it)); ++it; }
 #else
-    while (*it != 0) { *it = towupper(*it); ++it; }
+    while (*it != 0) { *it = towupper_l(*it, xgetlocale()); ++it; }
 #endif // _WIN32
 
     return str;
 }
-
-
-#if 0 //ifdef PLAT_DROID
-wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n)
-{
-	if (n != 0) {
-		wchar_t *d = dst;
-		const wchar_t *s = src;
-
-		do {
-			if ((*d++ = *s++) == L'\0') {
-				// NUL pad the remaining n-1 bytes 
-				while (--n != 0)
-					*d++ = L'\0';
-				break;
-			}
-		} while (--n != 0);
-	}
-	return (dst);
-}
-#endif // PLAT_DROID
 
 void CombinePathN(EqString& outPath, int num, ...)
 {
