@@ -7,7 +7,7 @@
 
 #pragma once
 
-int HashVector2D(const Vector3D& v, float tolerance);
+int HashVector2D(const Vector2D& v, float tolerance);
 int HashVector3D(const Vector3D& v, float tolerance);
 
 float SnapFloat(float grid_spacing, float val);
@@ -51,6 +51,7 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& out);
 float RectangleAlongAxisSeparation(const Vector2D& pos, const Vector2D& axis, float extent,
 	const Vector2D& otherDir, const Vector2D& otherPerpDir, const Vector2D& otherExtents);
 
+// Returns separation distance (negative = rectangles overlapping)
 float RectangleRectangleSeparation(
 	const Vector2D& position0, const Vector2D& direction0, const Vector2D& perp0, const Vector2D& extents0,
 	const Vector2D& position1, const Vector2D& direction1, const Vector2D& perp1, const Vector2D& extents1);
