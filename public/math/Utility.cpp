@@ -281,144 +281,69 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	hull.setNum(k - 1);
 }
 
-struct OrientBox2D
+float RectangleAlongAxisSeparation(const Vector2D& pos, const Vector2D& axis, float extent,
+	const Vector2D& otherDir, const Vector2D& otherPerpDir, const Vector2D& otherExtents)
 {
-	Vector2D x;
-	float length[2];
-	float theta;
-	
-	Vector2D axis[2];
-	float dist[2];
-	float limit[2];
-};
+	float result = fabs(dot(pos, axis)) - extent;
+	result -= fabs(dot(otherDir, axis) * otherExtents[0]);
+	result -= fabs(dot(otherPerpDir, axis) * otherExtents[1]);
+	return result;
+}
 
-bool OrientedBoxIntersection2D(OrientBox2D body[2], float* boxOverlap = nullptr)
+float RectangleRectangleSeparation(
+	const Vector2D& position0, const Vector2D& direction0, const Vector2D& perp0, const Vector2D& extents0,
+	const Vector2D& position1, const Vector2D& direction1, const Vector2D& perp1, const Vector2D& extents1)
 {
-	// calc axes of each box
-	for (int i = 0; i < 2; i++)
-	{
-		const float as = sinf(body[i].theta);
-		const float ac = cosf(body[i].theta);
+	const Vector2D localPosition = position0 - position1;
+	float result = RectangleAlongAxisSeparation(localPosition, direction0, extents0[0], direction1, perp1, extents1);
 
-		body[i].axis[0].x = as;
-		body[i].axis[0].y = ac;
+	float v = RectangleAlongAxisSeparation(localPosition, perp0, extents0[1], direction1, perp1, extents1);
+	result = (result <= v) ? v : result;
 
-		body[i].axis[1].y = -as;
-		body[i].axis[1].x = ac;
-	}
+	v = RectangleAlongAxisSeparation(localPosition, direction1, extents1[0], direction0, perp0, extents0);
+	result = (result <= v) ? v : result;
 
-	const float dtheta = body[1].theta - body[0].theta;
+	v = RectangleAlongAxisSeparation(localPosition, perp1, extents1[1], direction0, perp0, extents0);
+	result = (result <= v) ? v : result;
 
-	const float as = sinf(dtheta);
-	const float ac = sinf(dtheta + M_PI_HALF_F);
-
-	const Vector2D delta = body[0].x - body[1].x;
-
-	int k = 0;
-
-	// do SAT tests for each axis
-	for (int i = 1; i >= 0; --i)
-	{
-		for (int j = 1; j >= 0; --j)
-		{
-			body[i].dist[j] = dot(body[i].axis[j], delta);
-			body[i].limit[j] = body[i].length[j] + (body[k].length[j] * ac + body[k].length[1-j] * as);
-
-			if (body[i].dist[j] < -body[i].limit[j] || body[i].dist[j] > body[i].limit[j])
-				return false;
-		}
-
-		k++;
-	}
-
-	// calc overlap if needed
-	if (boxOverlap)
-	{
-		float xover, zover;
-		float tmp = fabs(dot(body[0].axis[0], body[1].axis[0]));
-
-		if (tmp > F_EPS)
-			xover = fabs(fabs(body[1].dist[0]) - fabs(body[1].limit[0])) / tmp;
-		else
-			xover = 0.0f;
-
-		tmp = fabs(dot(body[0].axis[0], body[1].axis[1]));
-
-		if (tmp > F_EPS)
-			zover = fabs(fabs(body[1].dist[1]) - fabs(body[1].limit[1])) / tmp;
-		else
-			zover = xover;
-
-		if (xover < -F_EPS)
-			*boxOverlap = zover;
-		else if (zover < xover)
-			*boxOverlap = zover;
-		else
-			*boxOverlap = xover;
-	}
-
-	return true;
+	return result;
 }
 
 // converts angles in [-180, 180] in Radians
 float ConstrainAnglePI(float x)
 {
-	x = fmodf(x + M_PI_F, M_PI_2_F);
-
-	if (x < 0)
-		x += M_PI_2_F;
-
-	return x - M_PI_F;
-}
-
-// converts angles to [0, 360] in Radians
-float ConstrainAngle2PI(float x)
-{
-	x = fmodf(x, M_PI_2_F);
-
-	if (x < 0)
-		x += M_PI_2_F;
-
-	return x;
+	return fmodf(x + M_PI_F, M_PI_2_F) - M_PI_F;
 }
 
 // normalizes angles in [-180, 180]
 float ConstrainAngle180(float x)
 {
-    x = fmodf(x + 180, 360);
-
-    if (x < 0)
-        x += 360;
-
-    return x - 180;
+	return fmodf(x + 180.0f, 360.0f) - 180.0f;
 }
 
-// normalizes angles in [0, 360]
-float ConstrainAngle360(float x)
+// normalizes angles vector in [-180, 180]
+Vector3D NormalizeAngles180(const Vector3D& angles)
 {
-    x = fmodf(x, 360);
+	Vector3D ang;
 
-    if (x < 0)
-        x += 360;
+	ang.x = ConstrainAngle180(angles.x);
+	ang.y = ConstrainAngle180(angles.y);
+	ang.z = ConstrainAngle180(angles.z);
 
-    return x;
+	return ang;
 }
+
 
 // computes angle difference (degrees)
 float AngleDiff(float a, float b)
 {
-	float dif = fmodf(b - a + 180.0f, 360.0f);
-
-    if (dif < 0.0f)
-        dif += 360.0f;
-
-	return dif - 180.0f;
+	return ConstrainAngle180(b - a);
 }
 
 // computes angle difference (Radians)
 float AngleDiffRad(float a, float b)
 {
-	return fmodf(b - a + M_PI_F, M_PI_2_F) - M_PI_F;
+	return ConstrainAnglePI(b - a);
 }
 
 float VecAngleDiff(const Vector2D& dirA, const Vector2D& dirB)
@@ -436,41 +361,4 @@ Vector3D AnglesDiff(const Vector3D& a, const Vector3D& b)
 	angDiff.z = AngleDiff(a.z, b.z);
 
 	return angDiff;
-}
-
-// normalizes angles in [-180, 180]
-Vector3D NormalizeAngles180(const Vector3D& angles)
-{
-	Vector3D ang;
-
-	ang.x = ConstrainAngle180(angles.x);
-	ang.y = ConstrainAngle180(angles.y);
-	ang.z = ConstrainAngle180(angles.z);
-
-	return ang;
-}
-
-float NormalizeAngle360(float angle)
-{
-    float newAngle = angle;
-
-    while (newAngle <= -360)
-		newAngle += 360.0f;
-
-    while (newAngle > 360)
-		newAngle -= 360.0f;
-
-    return newAngle;
-}
-
-// normalizes angles in [0, 360]
-Vector3D NormalizeAngles360(const Vector3D& angles)
-{
-	Vector3D ang;
-
-	ang.x = NormalizeAngle360(angles.x);
-	ang.y = NormalizeAngle360(angles.y);
-	ang.z = NormalizeAngle360(angles.z);
-
-	return ang;
 }
