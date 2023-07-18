@@ -159,7 +159,7 @@ inline float RemapValClamp(float val, float A, float B, float C, float D)
 }
 
 template<typename T>
-inline T sqr(const T x)
+inline constexpr T sqr(const T x)
 {
 	return x * x;
 }
