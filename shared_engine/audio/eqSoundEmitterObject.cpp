@@ -490,9 +490,8 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 		emitter->loopCommand = LOOPCMD_NONE;
 		emitter->loopCommandRatePerSecond = 0.0f;
 		emitter->loopCommandTimeFactor = 1.0f;
+		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 	}
-
-	emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 
 	// check if not playing already
 	IEqAudioSource::Params param;

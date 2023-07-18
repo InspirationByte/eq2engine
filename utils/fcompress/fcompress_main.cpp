@@ -381,7 +381,7 @@ static bool CheckExtensionList(Array<EqString>& extList, const char* ext)
 	return false;
 }
 
-#pragma optimize("", off)
+
 static void CookPackageTarget(const char* targetName)
 {
 	// load all properties
