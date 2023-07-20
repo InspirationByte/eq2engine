@@ -405,7 +405,7 @@ void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t& fn = m_draw2DFuncs.append();
-	fn.func = std::move(func);
+	fn.func = func;
 	fn.lifetime = fTime;
 
 	fn.frameindex = m_frameId;
@@ -422,7 +422,7 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t& fn = m_draw3DFuncs.append();
-	fn.func = std::move(func);
+	fn.func = func;
 	fn.lifetime = fTime;
 
 	fn.frameindex = m_frameId;
@@ -1084,7 +1084,12 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		for (int i = 0; i < m_draw3DFuncs.numElem(); i++)
 		{
-			m_draw3DFuncs[i].func();
+			if (!m_draw3DFuncs[i].func())
+			{
+				m_draw3DFuncs.fastRemoveIndex(i);
+				--i;
+				continue;
+			}
 			m_draw3DFuncs[i].lifetime -= m_frameTime;
 		}
 	}
@@ -1274,7 +1279,12 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
 		{
-			m_draw2DFuncs[i].func();
+			if (!m_draw2DFuncs[i].func())
+			{
+				m_draw2DFuncs.fastRemoveIndex(i);
+				--i;
+				continue;
+			}
 			m_draw2DFuncs[i].lifetime -= m_frameTime;
 		}
 	}

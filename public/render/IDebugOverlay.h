@@ -43,7 +43,7 @@ struct debugGraphBucket_t
 	uint									cursor{ 0 };
 };
 
-using OnDebugDrawFn = EqFunction<void()>;
+using OnDebugDrawFn = EqFunction<bool()>;
 
 class IDebugOverlay
 {
