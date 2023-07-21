@@ -241,7 +241,6 @@ After doing other work, the main thread can wait for the worker thread to finish
 finished already. When the worker thread is done, the main thread can safely use the results
 from the worker thread.
 
-Note that worker threads are useful on all platforms but they do not map to the SPUs on the PS3.
 ------------------------------------------------------------------------------------------
 */
 

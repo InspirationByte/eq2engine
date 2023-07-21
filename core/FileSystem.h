@@ -87,6 +87,7 @@ public:
 
     IFilePtr					Open(const char* filename, const char* mode, int searchFlags = -1 );
 
+	EqString					FindFilePath(const char* filename, int searchFlags = -1) const;
 	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search);
 	bool						FileExist(const char* filename, int searchFlags = -1) const;
 	void						FileRemove(const char* filename, ESearchPath search ) const;

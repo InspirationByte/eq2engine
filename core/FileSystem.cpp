@@ -315,6 +315,30 @@ void CFileSystem::SetBasePath(const char* path)
 	m_basePath = path; 
 }
 
+EqString CFileSystem::FindFilePath(const char* filename, int searchFlags /*= -1*/) const
+{
+	EqString basePath = m_basePath;
+	if (basePath.Length() > 0) // FIXME: is that correct?
+		basePath.Append(CORRECT_PATH_SEPARATOR);
+
+	EqString existingFilePath;
+
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	{
+		if (access(filePath, F_OK) != -1)
+		{
+			existingFilePath = filePath;
+			return true;
+		}
+
+		return false;
+	};
+
+	WalkOverSearchPaths(searchFlags, filename, walkFileFunc);
+
+	return existingFilePath;
+}
+
 IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFlags/* = -1*/ )
 {
 	ASSERT_MSG(filename, "Open - Must specify 'filename'");

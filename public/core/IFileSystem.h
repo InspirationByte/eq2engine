@@ -73,6 +73,7 @@ public:
     virtual IFilePtr		Open( const char* filename, const char* mode = "r", int searchFlags = -1) = 0;
 
 	// other operations
+	virtual EqString		FindFilePath(const char* filename, int searchFlags = -1) const = 0;
 	virtual bool			FileExist(const char* filename, int searchFlags = -1) const = 0;
 	virtual void			FileRemove(const char* filename, ESearchPath search ) const = 0;
 	virtual bool			FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search) = 0;
