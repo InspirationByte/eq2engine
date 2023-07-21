@@ -1152,7 +1152,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		{
 			do
 			{
-				DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->getValue();
+				DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->value;
 
 				if (current.lifetime < 0.0f)
 				{

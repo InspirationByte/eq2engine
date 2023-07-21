@@ -628,11 +628,11 @@ void IUIControl::Render(int depth)
 	}
 
 	// render from last
-	for (auto lln = m_childs.end(); lln; lln = lln->prevNode())
+	for (auto lln = m_childs.end(); lln; lln = lln->prev)
 	{
 		// load new absolulte transformation
 		materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-		lln->getValue()->Render(depth+1);
+		lln->value->Render(depth+1);
 	}
 
 	// always reset previous absolute transformation
@@ -651,9 +651,9 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 	if(!clientRect.Contains(point))
 		return nullptr;
 
-	for (auto lln = m_childs.begin(); lln; lln = lln->nextNode())
+	for (auto lln = m_childs.begin(); lln; lln = lln->next)
 	{
-		IUIControl* hit = lln->getValue()->HitTest(point);
+		IUIControl* hit = lln->value->HitTest(point);
 
 		if (hit)
 		{
@@ -668,10 +668,10 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 // returns child control
 IUIControl* IUIControl::FindChild(const char* pszName)
 {
-	for (auto it = m_childs.begin(); it; it = it->nextNode())
+	for (auto it = m_childs.begin(); it; it = it->next)
 	{
-		if (!strcmp(it->getValue()->GetName(), pszName))
-			return it->getValue();
+		if (!strcmp(it->value->GetName(), pszName))
+			return it->value;
 	}
 
 	return nullptr;
@@ -680,9 +680,9 @@ IUIControl* IUIControl::FindChild(const char* pszName)
 IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 {
 	// find nearest child
-	for (auto it = m_childs.begin(); it; it = it->nextNode())
+	for (auto it = m_childs.begin(); it; it = it->next)
 	{
-		IUIControl* child = it->getValue();
+		IUIControl* child = it->value;
 
 		if (!strcmp(child->GetName(), pszName))
 			return child;
@@ -697,14 +697,14 @@ IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 
 void IUIControl::ClearChilds(bool destroy)
 {
-	for (auto lln = m_childs.begin(); lln; lln = lln->nextNode())
+	for (auto lln = m_childs.begin(); lln; lln = lln->next)
 	{
-		lln->getValue()->m_parent = nullptr;
+		lln->value->m_parent = nullptr;
 
 		if (destroy)
-			delete lln->getValue();
+			delete lln->value;
 
-		lln->getValue() = nullptr;
+		lln->value = nullptr;
 	}
 
 	m_childs.clear();
@@ -722,10 +722,10 @@ void IUIControl::RemoveChild(IUIControl* pControl, bool destroy)
 	if (!found)
 		return;
 
-	found->getValue()->m_parent = nullptr;
+	found->value->m_parent = nullptr;
 
 	if (destroy)
-		delete found->getValue();
+		delete found->value;
 
 	m_childs.remove(found);
 }

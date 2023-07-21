@@ -87,8 +87,8 @@ static constexpr TR max(T x, T2 y) { return (TR)((x > y) ? x : y); }
 #define offsetOf(structure,member)		(uintptr_t)&(((structure *)0)->member)
 #define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
 
-#define SAFE_DELETE(p)			{ if (p) { delete p; p = nullptr; } }
-#define SAFE_DELETE_ARRAY(p)	{ if (p) { delete[] p; p = nullptr; } }
+#define SAFE_DELETE(p)			{ if (p) { delete (p); (p) = nullptr; } }
+#define SAFE_DELETE_ARRAY(p)	{ if (p) { delete[] (p); (p) = nullptr; } }
 
 //---------------------------------------------------------------------------------------------
 // FIXMEs / TODOs / NOTE macros

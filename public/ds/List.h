@@ -19,12 +19,6 @@ public:
 	const T*	operator->() const { return &value; }
 	T*			operator->() { return &value; }
 
-	ListNode*	nextNode() const { return next; }
-	ListNode*	prevNode() const { return prev; }
-	const T&	getValue() const { return value; }
-	T&			getValue() { return value; }
-
-protected:
 	T			value;
 	ListNode*	prev{ nullptr };
 	ListNode*	next{ nullptr };
@@ -80,11 +74,7 @@ class FixedListAllocator : public ListAllocatorBase<T, FixedListAllocator<T, SIZ
 public:
 	using Node = ListNode<T, FixedListAllocator<T, SIZE>>;
 
-	FixedListAllocator() 
-	{
-		for (int i = 0; i < SIZE; i++)
-			m_nodeAlloc[i] = i;
-	}
+	FixedListAllocator() = default;
 
 	Node* alloc()
 	{
@@ -102,20 +92,29 @@ public:
 		ASSERT_MSG(idx >= 0 && idx < SIZE, "FixedListAllocator tried to remove Node that doesn't belong it's list!");
 
 		node->~Node();
-		m_nodeAlloc[--m_nextNode] = idx;
+
+		*(int*)node = m_firstFreeNode;
+		m_firstFreeNode = idx;
 	}
 
 	Node* getNextNodeFromPool()
 	{
-		if (m_nextNode < SIZE)
-			return &m_nodePool[m_nodeAlloc[m_nextNode++]];
+		if (m_firstFreeNode != -1)
+		{
+			Node* node = &m_nodePool[m_firstFreeNode];
+			ASSERT_MSG(m_firstFreeNode >= -1 && m_firstFreeNode < SIZE, "getNextNodeFromPool m_firstFreeNode==%d, m_usedNodes==%d", m_firstFreeNode, m_usedNodes);
+			m_firstFreeNode = *(int*)node;
+			return node;
+		}
 
+		if(m_usedNodes + 1 <= SIZE)
+			return &m_nodePool[m_usedNodes++];
 		return nullptr;
 	}
 
-	Node m_nodePool[SIZE];
-	ushort m_nodeAlloc[SIZE];
-	ushort m_nextNode{ 0 };
+	int		m_firstFreeNode{ -1 };
+	int		m_usedNodes{ 0 };
+	Node	m_nodePool[SIZE];
 };
 
 template <typename T, typename STORAGE_TYPE>
@@ -150,10 +149,28 @@ public:
 		return true;
 	}
 
+	bool prepend(T&& value)
+	{
+		Node* node = allocNode();
+		node->value = std::move(value);
+		insertNodeFirst(node);
+		m_count++;
+		return true;
+	}
+
 	bool append(const T& value)
 	{
 		Node* node = allocNode();
 		node->value = value;
+		insertNodeLast(node);
+		m_count++;
+		return true;
+	}
+
+	bool append(T&& value)
+	{
+		Node* node = allocNode();
+		node->value = std::move(value);
 		insertNodeLast(node);
 		m_count++;
 		return true;
@@ -191,6 +208,22 @@ public:
 
 	const T& back() const { return m_last->value; }
 	T& back() { return m_last->value; }
+
+	const T popFront()
+	{
+		Node* beginNode = begin();
+		T value = beginNode->value;
+		remove(beginNode);
+		return value;
+	}
+
+	const T popBack()
+	{
+		Node* endNode = end();
+		T value = endNode->value;
+		remove(endNode);
+		return value;
+	}
 
 	Node* findFront(const T& value) const
 	{
@@ -240,11 +273,8 @@ public:
 			return;
 
 		releaseNode(incidentNode);
+		freeNode(incidentNode);
 
-		if (m_del)
-			freeNode(m_del);
-
-		m_del = incidentNode;
 		m_count--;
 	}
 
@@ -290,8 +320,8 @@ public:
 
 	Node* goToFirst() { return m_curr = m_first; } // DEPRECATED
 	Node* goToLast() { return m_curr = m_last; } // DEPRECATED
-	Node* goToPrev() { return m_curr = m_curr->prevNode(); } // DEPRECATED
-	Node* goToNext() { return m_curr = m_curr->nextNode(); } // DEPRECATED
+	Node* goToPrev() { return m_curr = m_curr->prev; } // DEPRECATED
+	Node* goToNext() { return m_curr = m_curr->next; } // DEPRECATED
 
 	bool goToValue(const T& value) // DEPRECATED
 	{
