@@ -1214,7 +1214,7 @@ void ShaderAPIGL::InternalChangeFrontFace(int nCullFaceMode)
 	if (nCullFaceMode != m_nCurrentFrontFace)
 		glFrontFace(m_nCurrentFrontFace = nCullFaceMode);
 }
-#pragma GCC optimize("O0")
+
 // Changes back to backbuffer
 void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 {

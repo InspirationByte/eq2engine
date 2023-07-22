@@ -90,6 +90,7 @@ static const char* GetEGLErrorString(EGLint errorId)
 		CASE(EGL_CONTEXT_LOST);
 	}
 #undef CASE
+	return nullptr;
 }
 
 
