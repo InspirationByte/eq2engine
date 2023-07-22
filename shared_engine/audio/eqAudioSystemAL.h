@@ -57,6 +57,7 @@ public:
 
 	// loads sample source data
 	CRefPtr<ISoundSource>		GetSample(const char* filename);
+	void						AddSample(ISoundSource* sample);
 	void						OnSampleDeleted(ISoundSource* sample);
 
 	// finds the effect. May return EFFECT_ID_NONE

@@ -604,9 +604,8 @@ void CEqAudioSystemAL::SetChannelPitch(int chanType, float value)
 // loads sample source data
 CRefPtr<ISoundSource> CEqAudioSystemAL::GetSample(const char* filename)
 {
-	const int nameHash = StringToHash(filename, true);
-
 	{
+		const int nameHash = StringToHash(filename, true);
 		CScopedMutex m(s_audioSysMutex);
 		auto it = m_samples.find(nameHash);
 		if (!it.atEnd())
@@ -636,14 +635,24 @@ CRefPtr<ISoundSource> CEqAudioSystemAL::GetSample(const char* filename)
 			sampleSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_OpenALCache, sampleSource));
 		}
 
-		{
-			CScopedMutex m(s_audioSysMutex);
-			m_samples.insert(nameHash, sampleSource);
-		}
-		
+		AddSample(sampleSource);
 	}
 
 	return sampleSource;
+}
+
+void CEqAudioSystemAL::AddSample(ISoundSource* sample)
+{
+	const int nameHash = sample->GetNameHash();
+
+	{
+		CScopedMutex m(s_audioSysMutex);
+		auto it = m_samples.find(nameHash);
+		ASSERT_MSG(it.atEnd(), "Audio sample '%s' is already registered\n", sample->GetFilename());
+	}
+
+	CScopedMutex m(s_audioSysMutex);
+	m_samples.insert(nameHash, sample);
 }
 
 void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)

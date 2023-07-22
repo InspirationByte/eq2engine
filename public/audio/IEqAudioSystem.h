@@ -186,6 +186,8 @@ public:
 
 	// loads sample source data
 	virtual CRefPtr<ISoundSource>	GetSample(const char* filename) = 0;
+
+	virtual void					AddSample(ISoundSource* sample) = 0;
 	virtual void					OnSampleDeleted(ISoundSource* sample) = 0;
 
 	// finds the effect. May return EFFECT_ID_NONE

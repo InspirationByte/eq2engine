@@ -144,7 +144,13 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 	for(int i = 0; i < script->soundFileNames.numElem(); i++)
 	{
-		CRefPtr<ISoundSource> sample = g_audioSystem->GetSample(SOUND_DEFAULT_PATH + script->soundFileNames[i]);
+		EqString soundName;
+		if (script->soundFileNames[i][0] != '$')
+			soundName = SOUND_DEFAULT_PATH + script->soundFileNames[i];
+		else
+			soundName = script->soundFileNames[i].ToCString() + 1;
+
+		CRefPtr<ISoundSource> sample = g_audioSystem->GetSample(soundName);
 
 		if (sample)
 		{
