@@ -29,7 +29,8 @@ src_dependency/SDL2/*
 !src_dependency/wxWidgets/premake5.lua
 !src_dependency/openal-soft/premake5.lua
 !src_dependency/SDL2/premake5.lua
-
+src_dependency/ffmpeg/*
+!src_dependency/ffmpeg/premake5.lua
 src_dependency_android/SDL2/*
 !src_dependency_android/SDL2/premake5.lua
 src_dependency_android/openal-soft/*

@@ -9,6 +9,7 @@ end
 
 include("minivorbis/premake5.lua")
 include("cv_sdk/premake5.lua")
+include("ffmpeg/premake5.lua")
 include("wxWidgets/premake5.lua")
 include("imgui/premake5.lua")
 include("imgui_lua/premake5.lua")

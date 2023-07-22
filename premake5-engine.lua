@@ -410,6 +410,21 @@ project "physicsLib"
 		Folders.shared_engine
 	}
 	
+project "videoLib"
+	kind "StaticLib"
+	unitybuild "on"
+	uses { 
+		"corelib", "frameworkLib", "ffmpeg"
+	}
+    files {
+		Folders.shared_engine.. "video/**.cpp",
+		Folders.shared_engine.. "video/**.h",
+	}
+    includedirs {
+		Folders.shared_engine
+	}
+	
+	
 group ""
 
 include "premake5-eq1.lua"
