@@ -558,7 +558,7 @@ EProgressiveStatus CGLTexture::StepProgressiveLod()
 }
 
 // locks texture for modifications, etc
-bool CGLTexture::Lock(LockInOutData &data)
+bool CGLTexture::Lock(LockInOutData& data)
 {
 	ASSERT_MSG(!m_lockData, "CGLTexture: already locked");
 
@@ -588,35 +588,35 @@ bool CGLTexture::Lock(LockInOutData &data)
 	int lockPitch = 0;
 	switch (m_glTarget)
 	{
-		case GL_TEXTURE_3D:
-		{
-			// COULD BE INVALID! I'VE NEVER TESTED THAT
+	case GL_TEXTURE_3D:
+	{
+		// COULD BE INVALID! I'VE NEVER TESTED THAT
 
-			IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
-			const IVector3D size = box.GetSize();
+		IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
+		const IVector3D size = box.GetSize();
 
-			sizeToLock = size.x * size.y * size.y;
-			lockOffset = box.minPoint.x * box.minPoint.y * box.minPoint.z;
-			lockPitch = size.x;
+		sizeToLock = size.x * size.y * size.y;
+		lockOffset = box.minPoint.x * box.minPoint.y * box.minPoint.z;
+		lockPitch = size.x;
 
-			break;
-		}
-		case GL_TEXTURE_CUBE_MAP:
-		case GL_TEXTURE_2D:
-		{
-			const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
-			const IVector2D size = lockRect.GetSize();
-			sizeToLock = size.x * size.y;
-			lockOffset = lockRect.vleftTop.x * lockRect.vleftTop.y;
-			lockPitch = lockRect.GetSize().x;
-			break;
-		}
+		break;
+	}
+	case GL_TEXTURE_CUBE_MAP:
+	case GL_TEXTURE_2D:
+	{
+		const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
+		const IVector2D size = lockRect.GetSize();
+		sizeToLock = size.x * size.y;
+		lockOffset = lockRect.vleftTop.x * lockRect.vleftTop.y;
+		lockPitch = lockRect.GetSize().x;
+		break;
+	}
 	}
 
 	const int lockByteCount = GetBytesPerPixel(m_iFormat) * sizeToLock;
 
 	// allocate memory for lock data
-	data.lockData = (ubyte *)PPAlloc(lockByteCount);
+	data.lockData = (ubyte*)PPAlloc(lockByteCount);
 	data.lockPitch = lockPitch * GetBytesPerPixel(m_iFormat);
 
 #ifdef USE_GLES2
@@ -624,33 +624,36 @@ bool CGLTexture::Lock(LockInOutData &data)
 #else
 	if (!(data.flags & TEXLOCK_DISCARD))
 	{
-		const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_iFormat)];
-		const GLenum srcType = g_gl_chanTypePerFormat[m_iFormat];
+		g_glWorker.WaitForExecute("LockTexGetData", [&]() {
+			const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_iFormat)];
+			const GLenum srcType = g_gl_chanTypePerFormat[m_iFormat];
 
-		glBindTexture(m_glTarget, m_textures[0].glTexID);
+			glBindTexture(m_glTarget, m_textures[0].glTexID);
 
-		switch (m_glTarget)
-		{
-			case GL_TEXTURE_3D:
+			switch (m_glTarget)
 			{
-				ASSERT_FAIL("CGLTexture - does not support locking 3D texture yet for reading");
-				break;
+				case GL_TEXTURE_3D:
+				{
+					ASSERT_FAIL("CGLTexture - does not support locking 3D texture yet for reading");
+					break;
+				}
+				case GL_TEXTURE_CUBE_MAP:
+				{
+					const GLenum cubeTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx;
+					glGetTexImage(cubeTarget, data.level, srcFormat, srcType, data.lockData);
+					GLCheckError("lock read tex image");
+					break;
+				}
+				case GL_TEXTURE_2D:
+				{
+					glGetTexImage(m_glTarget, data.level, srcFormat, srcType, data.lockData);
+					GLCheckError("lock read tex image");
+					break;
+				}
 			}
-			case GL_TEXTURE_CUBE_MAP:
-			{
-				const GLenum cubeTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx;
-				glGetTexImage(cubeTarget, data.level, srcFormat, srcType, data.lockData);
-				GLCheckError("lock read tex image");
-				break;
-			}
-			case GL_TEXTURE_2D:
-			{
-				glGetTexImage(m_glTarget, data.level, srcFormat, srcType, data.lockData);
-				GLCheckError("lock read tex image");
-				break;
-			}
-		}
-		glBindTexture(m_glTarget, 0);
+			glBindTexture(m_glTarget, 0);
+			return 0;
+		});
 	}
 #endif // USE_GLES2
 	m_lockData = &data;
@@ -676,40 +679,44 @@ void CGLTexture::Unlock()
 
 		const int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx : m_glTarget;
 
-		glBindTexture(m_glTarget, m_textures[0].glTexID);
-		GLCheckError("bind texture");
+		g_glWorker.WaitForExecute("UnlockTex", [&]() {
+			glBindTexture(m_glTarget, m_textures[0].glTexID);
+			GLCheckError("bind texture");
 
-		switch (m_glTarget)
-		{
-			case GL_TEXTURE_3D:
+			switch (m_glTarget)
 			{
-				IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
-				const IVector3D boxSize = box.GetSize();
-				glTexSubImage3D(m_glTarget, data.level, box.minPoint.x, box.minPoint.y, box.minPoint.z, boxSize.x, boxSize.y, boxSize.z, srcFormat, srcType, data.lockData);
-				GLCheckError("unlock upload tex image");
-				break;
-			}
-			case GL_TEXTURE_CUBE_MAP:
-			{
-				const GLenum cubeTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx;
-				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
-				const IVector2D size = lockRect.GetSize();
+				case GL_TEXTURE_3D:
+				{
+					IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
+					const IVector3D boxSize = box.GetSize();
+					glTexSubImage3D(m_glTarget, data.level, box.minPoint.x, box.minPoint.y, box.minPoint.z, boxSize.x, boxSize.y, boxSize.z, srcFormat, srcType, data.lockData);
+					GLCheckError("unlock upload tex image");
+					break;
+				}
+				case GL_TEXTURE_CUBE_MAP:
+				{
+					const GLenum cubeTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx;
+					const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
+					const IVector2D size = lockRect.GetSize();
 
-				glTexSubImage2D(cubeTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
-				GLCheckError("unlock upload tex image");
-			}
-			case GL_TEXTURE_2D:
-			{
-				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
-				const IVector2D size = lockRect.GetSize();
+					glTexSubImage2D(cubeTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
+					GLCheckError("unlock upload tex image");
+				}
+				case GL_TEXTURE_2D:
+				{
+					const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
+					const IVector2D size = lockRect.GetSize();
 
-				glTexSubImage2D(m_glTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
-				GLCheckError("unlock upload tex image");
-				break;
+					glTexSubImage2D(m_glTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
+					GLCheckError("unlock upload tex image");
+					break;
+				}
 			}
-		}
 
-		glBindTexture(m_glTarget, 0);
+			glBindTexture(m_glTarget, 0);
+			return 0;
+		});
+
 	}
 
 	PPFree(data.lockData);
