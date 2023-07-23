@@ -250,8 +250,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 		prevChar = charIdx;
 		charIdx = *str;
 
-		states.goToLast();
-		const eqFontStyleParam_t& stateParams = states.getCurrent();
+		const eqFontStyleParam_t& stateParams = states.back();
 
 		//
 		// Preprocessing part - text color and mode
@@ -287,9 +286,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 			{
 				if (tagType == TEXT_TAG_NONE)
 				{
-					states.goToLast();
-					states.removeCurrent();
-					states.goToLast();
+					states.popBack();
 				}
 				else
 				{

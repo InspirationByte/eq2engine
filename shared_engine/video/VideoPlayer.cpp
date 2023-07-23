@@ -687,11 +687,11 @@ void CVideoPlayer::Stop()
 	m_pendingQuit = true;
 	WaitForThread();
 
-	for (auto item = player->videoPacketQueue.begin(); item; item = item->next)
-		av_packet_free(&item->value);
+	for (AVPacket*& packet : player->videoPacketQueue)
+		av_packet_free(&packet);
 
-	for (auto item = player->audioPacketQueue.begin(); item; item = item->next)
-		av_packet_free(&item->value);
+	for (AVPacket*& packet : player->audioPacketQueue)
+		av_packet_free(&packet);
 
 	player->videoPacketQueue.clear();
 	player->audioPacketQueue.clear();

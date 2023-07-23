@@ -158,26 +158,16 @@ Panel* CUIManager::FindPanel( const char* pszPanelName ) const
 
 void CUIManager::BringToTop( equi::Panel* panel )
 {
-	if(m_rootPanel->m_childs.goToFirst())
-	{
-		do
-		{
-			if(m_rootPanel->m_childs.getCurrent() == panel)
-			{
-				m_rootPanel->m_childs.moveCurrentToTop();
-				return;
-			}
-		}
-		while(m_rootPanel->m_childs.goToNext());
-	}
+	auto it = m_rootPanel->m_childs.findFront(panel);
+	m_rootPanel->m_childs.moveToFront(it);
 }
 
 equi::Panel* CUIManager::GetTopPanel() const
 {
-	if(m_rootPanel->m_childs.goToFirst())
-		return (equi::Panel*)m_rootPanel->m_childs.getCurrent();
-
-	return nullptr;
+	auto it = m_rootPanel->m_childs.begin();
+	if (it.atEnd())
+		return nullptr;
+	return static_cast<equi::Panel*>(*it);
 }
 
 void CUIManager::DumpPanelsToConsole()

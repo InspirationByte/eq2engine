@@ -236,8 +236,8 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 	{
 		m_LeftTextFadeArray.append(std::move(textNode));
 
-		if(m_LeftTextFadeArray.getCount() > MAX_MINICON_MESSAGES && m_LeftTextFadeArray.goToFirst())
-			m_LeftTextFadeArray.removeCurrent();
+		if(m_LeftTextFadeArray.getCount() > MAX_MINICON_MESSAGES)
+			m_LeftTextFadeArray.popFront();
 	}
 	else
 		m_RightTextFadeArray.append(std::move(textNode));
@@ -1148,39 +1148,40 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
-		if (m_LeftTextFadeArray.goToFirst())
+		using TextIterator = List< DebugFadingTextNode_t>::Iterator;
+		Array<TextIterator> deletedNodes(PP_SL);
+		for(auto it = m_LeftTextFadeArray.begin(); !it.atEnd(); ++it)
 		{
-			do
+			DebugFadingTextNode_t& current = *it;
+			if (current.lifetime < 0.0f)
 			{
-				DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->value;
+				deletedNodes.append(it);
+				continue;
+			}
 
-				if (current.lifetime < 0.0f)
-				{
-					m_LeftTextFadeArray.removeCurrent();
-					continue;
-				}
-
-				MColor curColor(current.color);
+			MColor curColor(current.color);
 				
-				if (current.initialLifetime > 0.05f)
-					curColor.a = clamp(current.lifetime, 0.0f, 1.0f);
-				else
-					curColor.a = 1.0f;
+			if (current.initialLifetime > 0.05f)
+				curColor.a = clamp(current.lifetime, 0.0f, 1.0f);
+			else
+				curColor.a = 1.0f;
 
-				eqFontStyleParam_t textStl;
-				textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-				textStl.textColor = curColor;
+			eqFontStyleParam_t textStl;
+			textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+			textStl.textColor = curColor;
 
-				Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (idx * m_debugFont->GetLineHeight(textStl)));
+			Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (idx * m_debugFont->GetLineHeight(textStl)));
 
-				m_debugFont->RenderText(current.pszText.GetData(), textPos, textStl);
+			m_debugFont->RenderText(current.pszText.GetData(), textPos, textStl);
 
-				idx++;
+			idx++;
 
-				current.lifetime -= m_frameTime;
+			current.lifetime -= m_frameTime;
 
-			} while (m_LeftTextFadeArray.goToNext());
 		}
+
+		for (TextIterator it : deletedNodes)
+			m_LeftTextFadeArray.remove(it);
 	}
 
 	eqFontStyleParam_t textStl;

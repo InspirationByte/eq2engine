@@ -628,32 +628,32 @@ void IUIControl::Render(int depth)
 	}
 
 	// render from last
-	for (auto lln = m_childs.end(); lln; lln = lln->prev)
+	for (auto it = m_childs.last(); !it.atEnd(); --it)
 	{
 		// load new absolulte transformation
 		materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-		lln->value->Render(depth+1);
+		(*it)->Render(depth + 1);
 	}
 
 	// always reset previous absolute transformation
 	materials->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
 }
 
-IUIControl* IUIControl::HitTest(const IVector2D& point)
+IUIControl* IUIControl::HitTest(const IVector2D& point) const
 {
 	if(!m_visible)
 		return nullptr;
 
-	IUIControl* bestControl = this;
+	IUIControl* bestControl = const_cast<IUIControl*>(this);
 
 	IAARectangle clientRect = GetClientRectangle();
 
 	if(!clientRect.Contains(point))
 		return nullptr;
 
-	for (auto lln = m_childs.begin(); lln; lln = lln->next)
+	for (IUIControl* child : m_childs)
 	{
-		IUIControl* hit = lln->value->HitTest(point);
+		IUIControl* hit = child->HitTest(point);
 
 		if (hit)
 		{
@@ -668,10 +668,10 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 // returns child control
 IUIControl* IUIControl::FindChild(const char* pszName)
 {
-	for (auto it = m_childs.begin(); it; it = it->next)
+	for (IUIControl* child : m_childs)
 	{
-		if (!strcmp(it->value->GetName(), pszName))
-			return it->value;
+		if (!strcmp(child->GetName(), pszName))
+			return child;
 	}
 
 	return nullptr;
@@ -680,10 +680,8 @@ IUIControl* IUIControl::FindChild(const char* pszName)
 IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 {
 	// find nearest child
-	for (auto it = m_childs.begin(); it; it = it->next)
+	for (IUIControl* child : m_childs)
 	{
-		IUIControl* child = it->value;
-
 		if (!strcmp(child->GetName(), pszName))
 			return child;
 
@@ -697,14 +695,12 @@ IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 
 void IUIControl::ClearChilds(bool destroy)
 {
-	for (auto lln = m_childs.begin(); lln; lln = lln->next)
+	for (IUIControl* child : m_childs)
 	{
-		lln->value->m_parent = nullptr;
+		child->m_parent = nullptr;
 
 		if (destroy)
-			delete lln->value;
-
-		lln->value = nullptr;
+			delete child;
 	}
 
 	m_childs.clear();
@@ -718,16 +714,16 @@ void IUIControl::AddChild(IUIControl* pControl)
 
 void IUIControl::RemoveChild(IUIControl* pControl, bool destroy)
 {
-	auto found = m_childs.findBack(pControl);
-	if (!found)
+	auto it = m_childs.findBack(pControl);
+	if (it.atEnd())
 		return;
 
-	found->value->m_parent = nullptr;
+	(*it)->m_parent = nullptr;
 
 	if (destroy)
-		delete found->value;
+		delete (*it);
 
-	m_childs.remove(found);
+	m_childs.remove(it);
 }
 
 bool IUIControl::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)

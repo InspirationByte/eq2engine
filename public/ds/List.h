@@ -121,6 +121,26 @@ template <typename T, typename STORAGE_TYPE>
 class ListBase : STORAGE_TYPE
 {
 public:
+	using Node = ListNode<T, STORAGE_TYPE>;
+
+	struct Iterator
+	{
+		Node* current{ nullptr };
+		Iterator() = default;
+		Iterator(Node* node)
+			: current(node)
+		{}
+
+		bool		operator==(Iterator& it) const { return it.current == current; }
+		bool		operator!=(Iterator& it) const { return it.current != current; }
+
+		bool		atEnd() const		{ return current == nullptr; }
+		T&			operator*()			{ return current->value; }
+		const T&	operator*()	const	{ return current->value; }
+		void		operator++()		{ current = current->next; }
+		void		operator--()		{ current = current->prev; }
+	};
+
 	virtual ~ListBase()
 	{
 		clear();
@@ -136,8 +156,6 @@ public:
 	{
 	}
 
-	using Node = ListNode<T, STORAGE_TYPE>;
-
 	int getCount() const { return m_count; }
 
 	bool prepend(const T& value)
@@ -145,7 +163,6 @@ public:
 		Node* node = allocNode();
 		node->value = value;
 		insertNodeFirst(node);
-		m_count++;
 		return true;
 	}
 
@@ -154,7 +171,6 @@ public:
 		Node* node = allocNode();
 		node->value = std::move(value);
 		insertNodeFirst(node);
-		m_count++;
 		return true;
 	}
 
@@ -163,7 +179,6 @@ public:
 		Node* node = allocNode();
 		node->value = value;
 		insertNodeLast(node);
-		m_count++;
 		return true;
 	}
 
@@ -172,7 +187,6 @@ public:
 		Node* node = allocNode();
 		node->value = std::move(value);
 		insertNodeLast(node);
-		m_count++;
 		return true;
 	}
 
@@ -193,68 +207,65 @@ public:
 		else
 			insertNodeLast(node);
 
-		m_count++;
 		return true;
 	}
 
-	const Node* begin() const { return m_first; }
-	Node* begin() { return m_first; }
+	Iterator		first() const { return Iterator(m_first); }
+	Iterator		last() const { return Iterator(m_last); }
 
-	const Node* end() const { return m_last; }
-	Node* end() { return m_last; }
+	Iterator		begin() const { return Iterator(m_first); }
+	Iterator		end() const { return Iterator(); }
 
-	const T& front() const { return m_first->value; }
-	T& front() { return m_first->value; }
+	const T&		front() const { return m_first->value; }
+	T&				front() { return m_first->value; }
 
-	const T& back() const { return m_last->value; }
-	T& back() { return m_last->value; }
+	const T&		back() const { return m_last->value; }
+	T&				back() { return m_last->value; }
 
-	const T popFront()
+	T popFront()
 	{
-		Node* beginNode = begin();
-		T value = beginNode->value;
-		remove(beginNode);
+		Node* firstNode = m_first;
+		ASSERT(firstNode);
+		T value = firstNode->value;
+		remove(Iterator(firstNode));
 		return value;
 	}
 
-	const T popBack()
+	T popBack()
 	{
-		Node* endNode = end();
-		T value = endNode->value;
-		remove(endNode);
+		Node* lastNode = m_last;
+		ASSERT(lastNode);
+		T value = lastNode->value;
+		remove(Iterator(lastNode));
 		return value;
 	}
 
-	Node* findFront(const T& value) const
+	Iterator findFront(const T& value) const
 	{
 		Node* n = m_first;
 		while (n != nullptr)
 		{
 			if (value == n->value)
-				return n;
+				return Iterator(n);
 			n = n->next;
 		}
-		return nullptr;
+		return Iterator();
 	}
 
-	Node* findBack(const T& value) const
+	Iterator findBack(const T& value) const
 	{
 		Node* n = m_last;
 		while (n != nullptr)
 		{
 			if (value == n->value)
-				return n;
+				return Iterator(n);
 			n = n->prev;
 		}
-		return nullptr;
+		return Iterator();
 	}
 
 	void clear()
 	{
-		if (m_del)
-			freeNode(m_del);
-		m_del = nullptr;
-
 		Node* n = m_first;
 		while (n != nullptr)
 		{
@@ -263,134 +274,57 @@ public:
 			n = next;
 		}
 
-		m_first = m_last = m_curr = nullptr;
+		m_first = m_last = nullptr;
 		m_count = 0;
 	}
 
-	void remove(Node* incidentNode)
+	void remove(Iterator incidentNode)
 	{
-		if (!incidentNode)
+		if (incidentNode.atEnd())
 			return;
 
-		releaseNode(incidentNode);
-		freeNode(incidentNode);
-
-		m_count--;
+		releaseNode(incidentNode.current);
+		freeNode(incidentNode.current);
 	}
 
-	bool insertBefore(const T& value, Node* incidentNode) 
+	Iterator insertBefore(const T& value, Iterator incidentNode)
 	{
+		if (incidentNode.atEnd())
+			return Iterator();
+
 		Node* node = allocNode();
 		node->value = value;
-		insertNodeBefore(incidentNode, node);
-		m_count++;
-		return true;
+		insertNodeBefore(incidentNode.current, node);
+		return Iterator(node);
 	}
 
-	bool insertAfter(const T& value, Node* incidentNode)
+	Iterator insertAfter(const T& value, Iterator incidentNode)
 	{
+		if (incidentNode.atEnd())
+			return Iterator();
+
 		Node* node = allocNode();
 		node->value = value;
-		insertNodeAfter(incidentNode, node);
-		m_count++;
-		return true;
+		insertNodeAfter(incidentNode.current, node);
+		return Iterator(node);
 	}
 
-	//------------------------------------------------
-	// DEPRECATED API
-
-	void moveCurrentToTop() // DEPRECATED
+	void moveToFront(Iterator incidentNode)
 	{
-		if (m_curr != nullptr)
-		{
-			releaseNode(m_curr);
-			insertNodeFirst(m_curr);
-		}
+		if (incidentNode.atEnd())
+			return;
+
+		releaseNode(incidentNode.current);
+		insertNodeFirst(incidentNode.current);
 	}
 
-	const T& getPrevWrap() const  // DEPRECATED
+	void moveToBack(Iterator incidentNode)
 	{
-		return ((m_curr->prev != nullptr) ? m_curr->prev : m_last)->value;
-	}
+		if (incidentNode.atEnd())
+			return;
 
-	const T& getNextWrap() const  // DEPRECATED
-	{
-		return ((m_curr->next != nullptr) ? m_curr->next : m_first)->value;
-	}
-
-	Node* goToFirst() { return m_curr = m_first; } // DEPRECATED
-	Node* goToLast() { return m_curr = m_last; } // DEPRECATED
-	Node* goToPrev() { return m_curr = m_curr->prev; } // DEPRECATED
-	Node* goToNext() { return m_curr = m_curr->next; } // DEPRECATED
-
-	bool goToValue(const T& value) // DEPRECATED
-	{
-		m_curr = m_first;
-		while (m_curr != nullptr)
-		{
-			if (value == m_curr->value) return true;
-			m_curr = m_curr->next;
-		}
-		return false;
-	}
-
-	T& getCurrent() const // DEPRECATED
-	{
-		return m_curr->value;
-	}
-
-	Node* getCurrentNode() const // DEPRECATED
-	{
-		return m_curr;
-	}
-
-	void setCurrent(const T& value) // DEPRECATED
-	{
-		m_curr->value = value;
-	}
-
-	const T& getPrev() const // DEPRECATED
-	{
-		return m_curr->prev->value;
-	}
-
-	const T& getNext() const // DEPRECATED
-	{
-		return m_curr->next->value;
-	}
-
-	bool insertBeforeCurrent(const T& value) // DEPRECATED
-	{
-		Node* node = allocNode();
-		node->value = value;
-		insertNodeBefore(m_curr, node);
-		m_count++;
-		return true;
-	}
-
-	bool insertAfterCurrent(const T& value) // DEPRECATED
-	{
-		Node* node = allocNode();
-		node->value = value;
-		insertNodeAfter(m_curr, node);
-		m_count++;
-		return true;
-	}
-
-	bool removeCurrent() // DEPRECATED
-	{
-		if (m_curr != nullptr)
-		{
-			releaseNode(m_curr);
-
-			if (m_del)
-				freeNode(m_del);
-
-			m_del = m_curr;
-
-			m_count--;
-		}
-		return (m_curr != nullptr);
+		releaseNode(incidentNode.current);
+		insertNodeLast(incidentNode.current);
 	}
 
 private:
@@ -405,6 +339,7 @@ private:
 		node->prev = nullptr;
 
 		m_first = node;
+		m_count++;
 	}
 
 	void insertNodeLast(Node* node)
@@ -418,6 +353,7 @@ private:
 		node->next = nullptr;
 
 		m_last = node;
+		m_count++;
 	}
 
 	void insertNodeBefore(Node* at, Node* node)
@@ -431,6 +367,7 @@ private:
 
 		node->next = at;
 		node->prev = prev;
+		m_count++;
 	}
 
 	void insertNodeAfter(Node* at, Node* node)
@@ -444,6 +381,7 @@ private:
 
 		node->prev = at;
 		node->next = next;
+		m_count++;
 	}
 
 	void releaseNode(Node* node)
@@ -465,14 +403,12 @@ private:
 
 		node->next = nullptr;
 		node->prev = nullptr;
+		m_count--;
 	}
 
 	Node*	m_first{ nullptr };
 	Node*	m_last{ nullptr };
 	int		m_count{ 0 };
-
-	Node*	m_curr{ nullptr };	// DEPRECATED
-	Node*	m_del{ nullptr };	// DEPRECATED
 
 	Node* allocNode()
 	{

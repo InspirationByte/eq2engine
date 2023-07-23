@@ -191,7 +191,7 @@ protected:
 
 	static int					CommandCb(IUIControl* control, ui_event& event, void* userData);
 
-	virtual IUIControl*			HitTest(const IVector2D& point);
+	virtual IUIControl*			HitTest(const IVector2D& point) const;
 
 	// events
 	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
