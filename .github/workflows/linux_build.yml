@@ -49,11 +49,12 @@ jobs:
       with:
         version: "5.0.0-beta2"
         
-    - name: Install dependencies
-      run: sudo add-apt-repository universe && sudo apt-get update && \
-           sudo apt-get install -y build-essential libsdl2-dev libopenal-dev libxxf86vm-dev libwxgtk3.0-gtk3-dev libwxbase3.0-dev
-           sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
-        
+    - name: Install dependencies 1
+      run: sudo add-apt-repository universe && sudo apt-get update && sudo apt-get install -y build-essential libsdl2-dev libopenal-dev libxxf86vm-dev libwxgtk3.0-gtk3-dev libwxbase3.0-dev
+   
+    - name: Install dependencies 2
+      run: ./linux_dev_prepare.sh
+
     - name: Generate Makefile
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: premake5 gmake2
