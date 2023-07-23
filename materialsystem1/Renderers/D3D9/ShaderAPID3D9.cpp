@@ -1412,7 +1412,7 @@ void ShaderAPID3D9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, cons
 
 		if (FAILED(hr))
 		{
-			Msg("CopyRendertargetToTexture failed to GetSurfaceLevel\n");
+			Msg("CopyRendertargetToTexture failed to GetSurfaceLevel for %s\n", destTex->GetName());
 			return;
 		}
 

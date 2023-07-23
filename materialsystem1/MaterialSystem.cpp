@@ -1146,6 +1146,9 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 	{
 		for(int i = 0; i < m_lostDeviceCb.numElem(); i++)
 		{
+			if (!m_lostDeviceCb[i])
+				continue;
+
 			if(!m_lostDeviceCb[i]())
 				return false;
 		}
@@ -1160,6 +1163,9 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 	{
 		for(int i = 0; i < m_lostDeviceCb.numElem(); i++)
 		{
+			if (!m_restoreDeviceCb[i])
+				continue;
+
 			if(!m_restoreDeviceCb[i]())
 				return false;
 		}
