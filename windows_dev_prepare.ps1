@@ -46,7 +46,7 @@ Remove-Item SDL2.zip
 Remove-Item OPENAL.zip
 Remove-Item WX_HDRS.7z
 Remove-Item WX_LIBS.7z
-Remove-Item FFMPEG.7z
+Remove-Item FFMPEG.zip
 
 Set-Location -Path $project_folder
 
