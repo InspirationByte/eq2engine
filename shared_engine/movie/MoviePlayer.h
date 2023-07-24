@@ -3,7 +3,6 @@
 #include "audio/source/snd_source.h"
 #include "ds/event.h"
 
-class CMovieAudioSource;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
@@ -13,7 +12,6 @@ using MovieCompletedEvent = Event<void()>;
 class CMoviePlayer : Threading::CEqThread, public RefCountedObject<CMoviePlayer>
 {
 public:
-	CMoviePlayer();
 	~CMoviePlayer();
 
 	bool				Init(const char* pathToVideo);
@@ -37,8 +35,8 @@ public:
 protected:
 	int					Run() override;
 
-	CRefPtr<CMovieAudioSource>	m_audioSrc;
-	ITexturePtr					m_texture;
-	MoviePlayerData*			m_player{ nullptr };
-	int							m_playerCmd{ 0 };
+	ISoundSourcePtr		m_audioSrc;
+	MatTextureProxy		m_mvTexture;
+	MoviePlayerData*	m_player{ nullptr };
+	int					m_playerCmd{ 0 };
 };

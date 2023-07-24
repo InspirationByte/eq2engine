@@ -654,10 +654,6 @@ int	CMovieAudioSource::GetSampleCount() const
 
 //---------------------------------------------------
 
-CMoviePlayer::CMoviePlayer()
-{
-}
-
 CMoviePlayer::~CMoviePlayer()
 {
 	Destroy();
@@ -686,11 +682,11 @@ int	CMoviePlayer::Run()
 			m_playerCmd = PLAYER_CMD_NONE;
 		}
 
-		if(m_texture)
-			PlayerVideoDecodeStep(m_player, m_texture);
+		if(m_mvTexture.IsValid())
+			PlayerVideoDecodeStep(m_player, m_mvTexture.Get());
 
 		if(m_audioSrc)
-			PlayerAudioDecodeStep(m_player, m_audioSrc->m_frameQueue);
+			PlayerAudioDecodeStep(m_player, static_cast<CMovieAudioSource*>(m_audioSrc.Ptr())->m_frameQueue);
 	}
 
 	return 0;
@@ -705,12 +701,13 @@ bool CMoviePlayer::Init(const char* pathToVideo)
 
 		if (m_player->videoStream)
 		{
-			m_texture = g_pShaderAPI->CreateProceduralTexture(pathToVideo, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR);
+			m_mvTexture = materials->GetGlobalMaterialVarByName(pathToVideo);
+			m_mvTexture.Set(g_pShaderAPI->CreateProceduralTexture(pathToVideo, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR));
 		}
 
 		if (m_player->audioStream)
 		{
-			m_audioSrc = CRefPtr_new(CMovieAudioSource);
+			m_audioSrc = ISoundSourcePtr(CRefPtr_new(CMovieAudioSource));
 			m_audioSrc->SetFilename(pathToVideo);
 			g_audioSystem->AddSample(m_audioSrc);
 		}
@@ -724,7 +721,7 @@ void CMoviePlayer::Destroy()
 	Stop();
 	FreePlayerData(&m_player);
 	m_audioSrc = nullptr;
-	m_texture = nullptr;
+	m_mvTexture = nullptr;
 }
 
 void CMoviePlayer::Start()
@@ -781,5 +778,5 @@ void CMoviePlayer::SetTimeScale(float value)
 
 ITexturePtr CMoviePlayer::GetImage() const
 {
-	return m_texture;
+	return m_mvTexture.Get();
 }
