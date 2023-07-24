@@ -286,7 +286,7 @@ bool CEqAudioSystemAL::InitContext()
 		AL_LOAD_PROC(LPALBUFFERCALLBACKSOFT, alBufferCallbackSOFT);
 	}
 	else
-		MsgError("AL_SOFT_callback_buffer is not supported, OpenAL-soft needs to be updated\n");
+		ErrorMsg("AL_SOFT_callback_buffer is not supported, OpenAL-soft needs to be updated\n");
 #endif
 
 
@@ -602,17 +602,17 @@ void CEqAudioSystemAL::SetChannelPitch(int chanType, float value)
 }
 
 // loads sample source data
-CRefPtr<ISoundSource> CEqAudioSystemAL::GetSample(const char* filename)
+ISoundSourcePtr CEqAudioSystemAL::GetSample(const char* filename)
 {
 	{
 		const int nameHash = StringToHash(filename, true);
 		CScopedMutex m(s_audioSysMutex);
 		auto it = m_samples.find(nameHash);
 		if (!it.atEnd())
-			return CRefPtr(*it);
+			return ISoundSourcePtr(*it);
 	}
 
-	CRefPtr<ISoundSource> sampleSource = ISoundSource::CreateSound(filename);
+	ISoundSourcePtr sampleSource = ISoundSource::CreateSound(filename);
 
 	if (sampleSource)
 	{
@@ -632,7 +632,7 @@ CRefPtr<ISoundSource> CEqAudioSystemAL::GetSample(const char* filename)
 		if (!alBufferCallbackSOFT && !sampleSource->IsStreaming())
 		{
 			// Set memory to OpenAL and destroy original source (as it's not needed anymore)
-			sampleSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_OpenALCache, sampleSource));
+			sampleSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_OpenALCache, sampleSource));
 		}
 
 		AddSample(sampleSource);

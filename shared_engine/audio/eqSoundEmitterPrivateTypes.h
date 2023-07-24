@@ -249,9 +249,9 @@ struct SoundScriptDesc
 	SoundScriptDesc() = default;
 	SoundScriptDesc(const char* name);
 
-	EqString						name;
-	Array<CRefPtr<ISoundSource>>	samples{ PP_SL };
-	Array<EqString>					soundFileNames{ PP_SL };
+	EqString				name;
+	Array<ISoundSourcePtr>	samples{ PP_SL };
+	Array<EqString>			soundFileNames{ PP_SL };
 
 	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
 	Array<SoundSplineDesc>	splineDescs{ PP_SL };

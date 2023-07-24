@@ -56,7 +56,7 @@ public:
 	const Vector3D&				GetListenerPosition() const;
 
 	// loads sample source data
-	CRefPtr<ISoundSource>		GetSample(const char* filename);
+	ISoundSourcePtr				GetSample(const char* filename);
 	void						AddSample(ISoundSource* sample);
 	void						OnSampleDeleted(ISoundSource* sample);
 

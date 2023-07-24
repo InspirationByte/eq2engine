@@ -150,7 +150,7 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 		else
 			soundName = script->soundFileNames[i].ToCString() + 1;
 
-		CRefPtr<ISoundSource> sample = g_audioSystem->GetSample(soundName);
+		ISoundSourcePtr sample = g_audioSystem->GetSample(soundName);
 
 		if (sample)
 		{

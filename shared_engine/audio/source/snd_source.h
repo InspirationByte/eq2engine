@@ -28,7 +28,7 @@ public:
 
 	virtual ~ISoundSource() {}
 
-	static CRefPtr<ISoundSource>	CreateSound(const char *szFilename);
+	static ISoundSourcePtr	CreateSound(const char *szFilename);
 
 //----------------------------------------------------
 
@@ -54,3 +54,5 @@ private:
 	EqString				m_fileName;
 	int						m_nameHash{ 0 };
 };
+
+using ISoundSourcePtr = ISoundSourcePtr;

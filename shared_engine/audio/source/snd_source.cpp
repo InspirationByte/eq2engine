@@ -21,29 +21,29 @@
 
 //-----------------------------------------------------------------
 
-CRefPtr<ISoundSource> ISoundSource::CreateSound( const char* szFilename )
+ISoundSourcePtr ISoundSource::CreateSound( const char* szFilename )
 {
 	EqString fileExt = _Es(szFilename).Path_Extract_Ext();
 
-	CRefPtr<ISoundSource> pSource = nullptr;
+	ISoundSourcePtr pSource = nullptr;
 
 	if ( !fileExt.CompareCaseIns("wav"))
 	{
 		const int filelen = g_fileSystem->GetFileSize( szFilename );
 
 		if ( filelen > STREAM_THRESHOLD )
-			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_WaveStream));
+			pSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_WaveStream));
 		else
-			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_WaveCache));
+			pSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_WaveCache));
 	}
 	else if ( !fileExt.CompareCaseIns("ogg"))
 	{
 		int filelen = g_fileSystem->GetFileSize( szFilename );
 
 		if ( filelen > STREAM_THRESHOLD )
-			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new( CSoundSource_OggStream));
+			pSource = ISoundSourcePtr(CRefPtr_new( CSoundSource_OggStream));
 		else
-			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_OggCache));
+			pSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_OggCache));
 	}
 	else
 		MsgError( "Unknown audio format: %s\n", szFilename );

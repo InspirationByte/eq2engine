@@ -410,15 +410,15 @@ project "physicsLib"
 		Folders.shared_engine
 	}
 	
-project "videoLib"
+project "movieLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib", "ffmpeg"
 	}
     files {
-		Folders.shared_engine.. "video/**.cpp",
-		Folders.shared_engine.. "video/**.h",
+		Folders.shared_engine.. "movie/**.cpp",
+		Folders.shared_engine.. "movie/**.h",
 	}
     includedirs {
 		Folders.shared_engine

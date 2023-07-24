@@ -11,9 +11,18 @@ extern "C" {
 #include "audio/IEqAudioSystem.h"
 #include "materialsystem1/IMaterialSystem.h"
 
-#include "VideoPlayer.h"
+#include "MoviePlayer.h"
 
 using namespace Threading;
+
+static CEqMutex	s_audioSourceMutex;
+
+static constexpr const int AV_PACKET_AUDIO_CAPACITY = 20;
+static constexpr const int AV_PACKET_VIDEO_CAPACITY = 20;
+
+using APacketQueue = FixedList<AVPacket*, AV_PACKET_AUDIO_CAPACITY>;
+using VPacketQueue = FixedList<AVPacket*, AV_PACKET_VIDEO_CAPACITY>;
+using FrameQueue = FixedList<AVFrame*, AV_PACKET_AUDIO_CAPACITY>;
 
 enum DecodeState : int
 {
@@ -24,7 +33,7 @@ enum DecodeState : int
 	DEC_READY_FRAME,
 };
 
-struct VideoPlayerData
+struct MoviePlayerData
 {
 	AVPacket			packet;
 	AVFormatContext*	formatCtx{ nullptr };
@@ -109,9 +118,9 @@ static int CreateCodec(AVCodecContext** _cc, AVStream* stream, AVBufferRef* hwDe
 	return 0;
 }
 
-static VideoPlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const char* filename)
+static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const char* filename)
 {
-	VideoPlayerData* player = PPNew VideoPlayerData;
+	MoviePlayerData* player = PPNew MoviePlayerData;
 
 	bool failed = false;
 	defer{
@@ -231,12 +240,12 @@ static VideoPlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 	return player;
 }
 
-static void FreePlayerData(VideoPlayerData** player)
+static void FreePlayerData(MoviePlayerData** player)
 {
 	if (!player)
 		return;
 
-	VideoPlayerData* p = *player;
+	MoviePlayerData* p = *player;
 	if (!p)
 		return;
 
@@ -271,7 +280,7 @@ static void FreePlayerData(VideoPlayerData** player)
 	SAFE_DELETE(*player);
 }
 
-static bool PlayerDemuxStep(VideoPlayerData* player)
+static bool PlayerDemuxStep(MoviePlayerData* player)
 {
 	if (player->videoPacketQueue.getCount() >= AV_PACKET_VIDEO_CAPACITY)
 		return true;
@@ -279,8 +288,8 @@ static bool PlayerDemuxStep(VideoPlayerData* player)
 	if (player->audioPacketQueue.getCount() >= AV_PACKET_AUDIO_CAPACITY)
 		return true;
 
-	VideoPlayerData::VideoState& videoState = player->videoState;
-	VideoPlayerData::AudioState& audioState = player->audioState;
+	MoviePlayerData::VideoState& videoState = player->videoState;
+	MoviePlayerData::AudioState& audioState = player->audioState;
 
 	AVPacket& packet = player->packet;
 
@@ -346,12 +355,12 @@ static double pts_seconds(AVFrame* frame, AVStream* stream)
 	return frame->pts * av_q2d(stream->time_base);
 }
 
-static void PlayerVideoDecodeStep(VideoPlayerData* player, ITexturePtr texture)
+static void PlayerVideoDecodeStep(MoviePlayerData* player, ITexturePtr texture)
 {
 	if (!player->videoStream)
 		return;
 
-	VideoPlayerData::VideoState& videoState = player->videoState;
+	MoviePlayerData::VideoState& videoState = player->videoState;
 	DecodeState& state = player->videoState.state;
 
 	if (state == DEC_DEQUEUE_PACKET)
@@ -441,12 +450,12 @@ static void PlayerVideoDecodeStep(VideoPlayerData* player, ITexturePtr texture)
 	}
 }
 
-static void PlayerAudioDecodeStep(VideoPlayerData* player, FrameQueue& frameQueue)
+static void PlayerAudioDecodeStep(MoviePlayerData* player, FrameQueue& frameQueue)
 {
 	if (!player->audioStream)
 		return;
 
-	VideoPlayerData::AudioState& audioState = player->audioState;
+	MoviePlayerData::AudioState& audioState = player->audioState;
 	DecodeState& state = player->audioState.state;
 
 	if (state == DEC_DEQUEUE_PACKET)
@@ -500,15 +509,18 @@ static void PlayerAudioDecodeStep(VideoPlayerData* player, FrameQueue& frameQueu
 		convFrame->pts = static_cast<double>(audioState.frame->pts) / player->clockSpeed;
 		if (swr_convert_frame(player->audioSwr, convFrame, audioState.frame) == 0)
 		{
-			if(frameQueue.getCount() < AV_PACKET_AUDIO_CAPACITY)
-				frameQueue.append(convFrame);
+			CScopedMutex m(s_audioSourceMutex);
+			if (frameQueue.getCount() == AV_PACKET_AUDIO_CAPACITY)
+				frameQueue.remove(frameQueue.first());
+
+			frameQueue.append(convFrame);
 		}
 		else
 			av_frame_free(&convFrame);
 	}
 }
 
-static bool StartPlayback(VideoPlayerData* player)
+static bool StartPlayback(MoviePlayerData* player)
 {
 	if (!player)
 		return false;
@@ -518,7 +530,7 @@ static bool StartPlayback(VideoPlayerData* player)
 		av_init_packet(&player->packet);
 
 		{
-			VideoPlayerData::VideoState& videoState = player->videoState;
+			MoviePlayerData::VideoState& videoState = player->videoState;
 			videoState.frame = av_frame_alloc();
 			videoState.state = DEC_DEQUEUE_PACKET;
 			videoState.deqPacket = nullptr;
@@ -526,7 +538,7 @@ static bool StartPlayback(VideoPlayerData* player)
 		}
 
 		{
-			VideoPlayerData::AudioState& audioState = player->audioState;
+			MoviePlayerData::AudioState& audioState = player->audioState;
 			audioState.frame = av_frame_alloc();
 			audioState.state = DEC_DEQUEUE_PACKET;
 			audioState.deqPacket = nullptr;
@@ -538,7 +550,31 @@ static bool StartPlayback(VideoPlayerData* player)
 
 //---------------------------------------------------
 
-CVideoAudioSource::CVideoAudioSource()
+class CMovieAudioSource : public ISoundSource
+{
+	friend class CMoviePlayer;
+public:
+	CMovieAudioSource();
+
+	int					GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
+
+	const Format&		GetFormat() const { return m_format; }
+	int					GetSampleCount() const;
+
+	void*				GetDataPtr(int& dataSize) const { return nullptr; }
+	int					GetLoopRegions(int* samplePos) const { return 0; }
+	bool				IsStreaming() const;
+
+private:
+	bool				Load() { return true; }
+	void				Unload() { }
+
+	FrameQueue			m_frameQueue;
+	Format				m_format;
+	int					m_cursor{ 0 };
+};
+
+CMovieAudioSource::CMovieAudioSource()
 {
 	m_format.channels = 2;
 	m_format.frequency = 44100;
@@ -546,32 +582,35 @@ CVideoAudioSource::CVideoAudioSource()
 	m_format.dataFormat = 1;
 }
 
-AVFrame* popFrame(FrameQueue& queue)
+bool CMovieAudioSource::IsStreaming() const 
 {
-	return queue.popFront();
+	// NOTE: this is directly streamed because of alBufferCallbackSOFT
+	// TODO: audio system capabilities?
+	return false; 
 }
 
-int CVideoAudioSource::GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const
+int CMovieAudioSource::GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const
 {
-	const int sampleSize = m_format.channels * (m_format.bitwidth >> 3);
+	CScopedMutex m(s_audioSourceMutex);
 
-	if (m_frameQueue.getCount() < 1)
-	{
-		// we don't have frames yet, return 1 because we need a warmup from video system
-		return 1;
-	}
+	const int sampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
 	const int requestedSamples = samplesToRead;
 	int numSamplesRead = 0;
-	int numFramesProcessed = 0;
-	while (samplesToRead > 0)
-	{
-		if (m_frameQueue.getCount() == 0)
-			break;
 
-		AVFrame* frame = m_frameQueue.front();
+	auto it = m_frameQueue.first();
+	while (samplesToRead > 0 && !it.atEnd())
+	{
+		AVFrame* frame = *it;
 		const int frameSamples = frame->nb_samples - frame->height;
+		if (frameSamples <= 0)
+		{
+			++it;
+			continue;
+		}
 		const int paintSamples = min(samplesToRead, frameSamples);
+		if (paintSamples <= 0)
+			break;
 
 		memcpy((ubyte*)out + numSamplesRead * sampleSize,
 			frame->data[0] + frame->height * sampleSize,
@@ -579,45 +618,36 @@ int CVideoAudioSource::GetSamples(void* out, int samplesToRead, int startOffset,
 
 		numSamplesRead += paintSamples;
 		samplesToRead -= paintSamples;
-		++numFramesProcessed;
 
-		if (paintSamples == frameSamples)
-		{
-			popFrame(*const_cast<FrameQueue*>(&m_frameQueue));
-			av_frame_free(&frame);
-		}
-		else
-		{
-			// keep the frame but we keep read cursor
-			frame->height += paintSamples;
-		}
+		// keep the frame but we keep read cursor
+		frame->height += paintSamples;
+		++it;
 	}
 
-	if (numSamplesRead < samplesToRead)
-		DevMsg(DEVMSG_CORE, "CVideoAudioSource::GetSamples underpaint - %d of %d\n", numSamplesRead, samplesToRead);
+	if (numSamplesRead < requestedSamples)
+		DevMsg(DEVMSG_CORE, "CMovieAudioSource::GetSamples underpaint - %d of %d\n", numSamplesRead, requestedSamples);
 
+	// we don't have frames yet, return 1 because we need a warmup from video system
 	return numSamplesRead;
 }
 
-int	CVideoAudioSource::GetSampleCount() const
+int	CMovieAudioSource::GetSampleCount() const
 {
 	return INT_MAX;
 }
 
 //---------------------------------------------------
 
-CVideoPlayer::CVideoPlayer()
+CMoviePlayer::CMoviePlayer()
 {
-	// due to this thing is pushed to audio cache, it must not be deleted
-	m_audioSrc.Ref_Grab();
 }
 
-CVideoPlayer::~CVideoPlayer()
+CMoviePlayer::~CMoviePlayer()
 {
-	Shutdown();
+	Destroy();
 }
 
-int	CVideoPlayer::Run()
+int	CMoviePlayer::Run()
 {
 	if (!m_player)
 		return 0;
@@ -634,14 +664,17 @@ int	CVideoPlayer::Run()
 		if (!PlayerDemuxStep(m_player))
 			break;
 
-		PlayerVideoDecodeStep(m_player, m_texture);
-		PlayerAudioDecodeStep(m_player, m_audioSrc.m_frameQueue);
+		if(m_texture)
+			PlayerVideoDecodeStep(m_player, m_texture);
+
+		if(m_audioSrc)
+			PlayerAudioDecodeStep(m_player, m_audioSrc->m_frameQueue);
 	}
 
 	return 0;
 }
 
-bool CVideoPlayer::Init(const char* pathToVideo)
+bool CMoviePlayer::Init(const char* pathToVideo)
 {
 	m_player = CreatePlayerData(nullptr, pathToVideo);
 	if(m_player)
@@ -655,34 +688,35 @@ bool CVideoPlayer::Init(const char* pathToVideo)
 
 		if (m_player->audioStream)
 		{
-			m_audioSrc.SetFilename(pathToVideo);
-			g_audioSystem->AddSample(&m_audioSrc);
+			m_audioSrc = CRefPtr_new(CMovieAudioSource);
+			m_audioSrc->SetFilename(pathToVideo);
+			g_audioSystem->AddSample(m_audioSrc);
 		}
 	}
 
 	return m_player != nullptr;
 }
 
-void CVideoPlayer::Shutdown()
+void CMoviePlayer::Destroy()
 {
 	Stop();
 	FreePlayerData(&m_player);
-	g_audioSystem->OnSampleDeleted(&m_audioSrc);
+	m_audioSrc = nullptr;
 	m_texture = nullptr;
 }
 
-void CVideoPlayer::Start()
+void CMoviePlayer::Start()
 {
 	if (!StartPlayback(m_player))
 		return;
 	StartThread("vidPlayer");
 }
 
-void CVideoPlayer::Stop()
+void CMoviePlayer::Stop()
 {
 	if (!m_player)
 		return;
-	VideoPlayerData* player = m_player;
+	MoviePlayerData* player = m_player;
 
 	m_pendingQuit = true;
 	WaitForThread();
@@ -699,7 +733,7 @@ void CVideoPlayer::Stop()
 	m_pendingQuit = false;
 }
 
-void CVideoPlayer::Present()
+void CMoviePlayer::Present()
 {
 	if (!m_player)
 		return;
@@ -707,13 +741,13 @@ void CVideoPlayer::Present()
 	m_player->videoState.presentFlag = true;
 }
 
-void CVideoPlayer::SetTimeScale(float value)
+void CMoviePlayer::SetTimeScale(float value)
 {
 	if(m_player)
 		m_player->clockSpeed = value;
 }
 
-ITexturePtr CVideoPlayer::GetImage() const
+ITexturePtr CMoviePlayer::GetImage() const
 {
 	return m_texture;
 }
