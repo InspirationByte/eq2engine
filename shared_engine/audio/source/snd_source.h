@@ -9,6 +9,9 @@
 
 constexpr const int SOUND_SOURCE_MAX_LOOP_REGIONS = 2;
 
+class ISoundSource;
+using ISoundSourcePtr = CRefPtr<ISoundSource>;
+
 class ISoundSource : public RefCountedObject<ISoundSource>
 {
 public:
@@ -54,5 +57,3 @@ private:
 	EqString				m_fileName;
 	int						m_nameHash{ 0 };
 };
-
-using ISoundSourcePtr = ISoundSourcePtr;

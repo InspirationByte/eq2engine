@@ -33,6 +33,13 @@ enum DecodeState : int
 	DEC_READY_FRAME,
 };
 
+enum EPlayerCmd
+{
+	PLAYER_CMD_NONE = 0,
+	PLAYER_CMD_REWIND,
+	PLAYER_CMD_STOP,
+};
+
 struct MoviePlayerData
 {
 	AVPacket			packet;
@@ -280,7 +287,7 @@ static void FreePlayerData(MoviePlayerData** player)
 	SAFE_DELETE(*player);
 }
 
-static bool PlayerDemuxStep(MoviePlayerData* player)
+static bool PlayerDemuxStep(MoviePlayerData* player, MovieCompletedEvent& completedEvent)
 {
 	if (player->videoPacketQueue.getCount() >= AV_PACKET_VIDEO_CAPACITY)
 		return true;
@@ -319,19 +326,7 @@ static bool PlayerDemuxStep(MoviePlayerData* player)
 		break;
 	case AVERROR_EOF:
 	{
-		// restart
-		if (av_seek_frame(player->formatCtx, player->videoStream->index, player->videoStream->start_time, AVSEEK_FLAG_BACKWARD) < 0)
-		{
-			DevMsg(DEVMSG_CORE, "Failed av_seek_frame\n");
-			isError = true;
-		}
-
-		if (player->videoStream)
-			videoState.videoOffset = videoState.lastVideoPts;
-
-		if (player->audioStream)
-			audioState.audioOffset = audioState.lastAudioPts;
-
+		completedEvent();
 		break;
 	}
 	default:
@@ -343,6 +338,27 @@ static bool PlayerDemuxStep(MoviePlayerData* player)
 	av_packet_unref(&packet);
 
 	return !isError;
+}
+
+static bool PlayerRewind(MoviePlayerData* player)
+{
+	MoviePlayerData::VideoState& videoState = player->videoState;
+	MoviePlayerData::AudioState& audioState = player->audioState;
+
+	// restart
+	if (av_seek_frame(player->formatCtx, player->videoStream->index, player->videoStream->start_time, AVSEEK_FLAG_BACKWARD) < 0)
+	{
+		DevMsg(DEVMSG_CORE, "Failed av_seek_frame\n");
+		return false;
+	}
+
+	if (player->videoStream)
+		videoState.videoOffset = videoState.lastVideoPts;
+
+	if (player->audioStream)
+		audioState.audioOffset = audioState.lastAudioPts;
+
+	return true;
 }
 
 static double clock_seconds(int64_t start_time)
@@ -628,7 +644,7 @@ int CMovieAudioSource::GetSamples(void* out, int samplesToRead, int startOffset,
 		DevMsg(DEVMSG_CORE, "CMovieAudioSource::GetSamples underpaint - %d of %d\n", numSamplesRead, requestedSamples);
 
 	// we don't have frames yet, return 1 because we need a warmup from video system
-	return numSamplesRead;
+	return max(1, numSamplesRead);
 }
 
 int	CMovieAudioSource::GetSampleCount() const
@@ -658,11 +674,17 @@ int	CMoviePlayer::Run()
 	{
 		YieldCurrentThread();
 
-		if (m_pendingQuit)
+		if (m_playerCmd == PLAYER_CMD_STOP)
 			break;
 
-		if (!PlayerDemuxStep(m_player))
+		if (!PlayerDemuxStep(m_player, OnCompleted))
 			break;
+
+		if (m_playerCmd == PLAYER_CMD_REWIND)
+		{
+			PlayerRewind(m_player);
+			m_playerCmd = PLAYER_CMD_NONE;
+		}
 
 		if(m_texture)
 			PlayerVideoDecodeStep(m_player, m_texture);
@@ -718,7 +740,7 @@ void CMoviePlayer::Stop()
 		return;
 	MoviePlayerData* player = m_player;
 
-	m_pendingQuit = true;
+	m_playerCmd = PLAYER_CMD_STOP;
 	WaitForThread();
 
 	for (AVPacket*& packet : player->videoPacketQueue)
@@ -730,7 +752,17 @@ void CMoviePlayer::Stop()
 	player->videoPacketQueue.clear();
 	player->audioPacketQueue.clear();
 
-	m_pendingQuit = false;
+	m_playerCmd = PLAYER_CMD_NONE;
+}
+
+void CMoviePlayer::Rewind()
+{
+	m_playerCmd = PLAYER_CMD_REWIND;
+}
+
+bool CMoviePlayer::IsPlaying() const
+{
+	return IsRunning();
 }
 
 void CMoviePlayer::Present()

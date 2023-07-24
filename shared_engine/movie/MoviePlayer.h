@@ -1,12 +1,14 @@
 #pragma once
 
 #include "audio/source/snd_source.h"
+#include "ds/event.h"
 
 class CMovieAudioSource;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
 struct MoviePlayerData;
+using MovieCompletedEvent = Event<void()>;
 
 class CMoviePlayer : Threading::CEqThread, public RefCountedObject<CMoviePlayer>
 {
@@ -19,12 +21,18 @@ public:
 
 	void				Start();
 	void				Stop();
+	void				Rewind();
 
+	bool				IsPlaying() const;
+	
 	// if frame is decoded this will update texture image
 	void				Present();
 	ITexturePtr			GetImage() const;
 
 	void				SetTimeScale(float value);
+
+	// Used to signal user when movie is completed. Not thread-safe
+	MovieCompletedEvent	OnCompleted;
 
 protected:
 	int					Run() override;
@@ -32,5 +40,5 @@ protected:
 	CRefPtr<CMovieAudioSource>	m_audioSrc;
 	ITexturePtr					m_texture;
 	MoviePlayerData*			m_player{ nullptr };
-	bool						m_pendingQuit{ false };
+	int							m_playerCmd{ 0 };
 };
