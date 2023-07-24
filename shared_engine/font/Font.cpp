@@ -286,7 +286,8 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 			{
 				if (tagType == TEXT_TAG_NONE)
 				{
-					states.popBack();
+					if(states.getCount())
+						states.popBack();
 				}
 				else
 				{
