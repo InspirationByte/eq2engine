@@ -1,6 +1,7 @@
 #pragma once
 
 #include "audio/source/snd_source.h"
+#include "materialsystem1/IMaterial.h"
 #include "ds/event.h"
 
 class ITexture;

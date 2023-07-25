@@ -9,6 +9,7 @@ extern "C" {
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "audio/IEqAudioSystem.h"
+#include "audio/source/snd_source.h"
 #include "materialsystem1/IMaterialSystem.h"
 
 #include "MoviePlayer.h"

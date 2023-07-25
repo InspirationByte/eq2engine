@@ -22,48 +22,48 @@
 namespace EqStateMgr
 {
 
-CBaseStateHandler* g_currentState = nullptr;
-CBaseStateHandler* g_nextState = nullptr;
-bool g_stateChanging = false;
+static CBaseStateHandler* s_currentState = nullptr;
+static CBaseStateHandler* s_nextState = nullptr;
+static bool s_stateChanging = false;
 
 // forces the current state
 void SetCurrentState( CBaseStateHandler* state, bool force )
 {
-	if(!force && g_currentState == state)
+	if(!force && s_currentState == state)
 		return;
 
 	// to be changed while update
-	g_nextState = state;
-	g_stateChanging = true;
+	s_nextState = state;
+	s_stateChanging = true;
 }
 
 void ChangeState(CBaseStateHandler* state)
 {
 	// perform state transition
-	if( g_currentState )
-		g_currentState->OnLeave( state );
+	if( s_currentState )
+		s_currentState->OnLeave( state );
 
 	// call the set of callbacks provided by states
 	if( state )
-		state->OnEnter( g_currentState );
+		state->OnEnter( s_currentState );
 
-	g_currentState = state;
+	s_currentState = state;
 }
 
 // returns the current state
 CBaseStateHandler* GetCurrentState()
 {
-	return g_nextState ? g_nextState : g_currentState;
+	return s_nextState ? s_nextState : s_currentState;
 }
 
 // returns the current state type
 int	GetCurrentStateType()
 {
-	if(g_nextState)
-		return g_nextState->GetType();
+	if(s_nextState)
+		return s_nextState->GetType();
 
-	if(g_currentState)
-		return g_currentState->GetType();
+	if(s_currentState)
+		return s_currentState->GetType();
 
 	return GAME_STATE_NONE;
 }
@@ -97,30 +97,26 @@ bool UpdateStates( float fDt )
 	PROF_EVENT("Host Update States");
 
 	// perform state transition
-	if(g_nextState)
+	if (s_stateChanging)
 	{
-		ChangeState(g_nextState);
-		g_nextState = nullptr;
+		ChangeState(s_nextState);
+		s_nextState = nullptr;
+		s_stateChanging = false;
 	}
-	else if(g_stateChanging)
-		g_currentState = nullptr;
 
-	g_stateChanging = false;
-
-	if(!g_currentState)
+	if(!s_currentState)
 	{
 		Msg("--------------------------------------------\nNo current state set, exiting loop...\n--------------------------------------------\n");
-
 		return false;
 	}
 
 	PreUpdateState(fDt);
 
-	if( !g_currentState->Update(fDt) )
+	if( !s_currentState->Update(fDt) )
 	{
 		bool forced;
-		CBaseStateHandler* nextState = g_currentState->GetNextState( &forced );
-		g_currentState->SetNextState(nullptr);
+		CBaseStateHandler* nextState = s_currentState->GetNextState( &forced );
+		s_currentState->SetNextState(nullptr);
 
 		SetCurrentState( nextState, forced );
 	}
@@ -130,14 +126,14 @@ bool UpdateStates( float fDt )
 
 void GetStateMouseCursorProperties(bool& visible, bool& centered)
 {
-	if(!g_currentState)
+	if(!s_currentState)
 	{
 		visible = true;
 		centered = false;
 		return;
 	}
 
-	return g_currentState->GetMouseCursorProperties(visible, centered);
+	return s_currentState->GetMouseCursorProperties(visible, centered);
 }
 
 }

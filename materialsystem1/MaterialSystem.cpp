@@ -1161,7 +1161,7 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 
 	if(state && state != oldState)
 	{
-		for(int i = 0; i < m_lostDeviceCb.numElem(); i++)
+		for(int i = 0; i < m_restoreDeviceCb.numElem(); i++)
 		{
 			if (!m_restoreDeviceCb[i])
 				continue;
