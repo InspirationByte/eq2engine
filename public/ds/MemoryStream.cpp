@@ -195,27 +195,27 @@ void CMemoryStream::ShrinkBuffer(long size)
 	}
 }
 
-// saves stream to file for stream (only for memory stream )
-void CMemoryStream::WriteToFileStream(IVirtualStream* pFile)
+// writes constents of this stream into the other stream
+void CMemoryStream::WriteToStream(IVirtualStream* pStream, int maxSize)
 {
-	pFile->Write(m_start, 1, m_writeTop);
+	pStream->Write(m_start, 1, min(maxSize > 0 ? maxSize : INT_MAX, m_writeTop));
 }
 
-// reads file to this stream
-bool CMemoryStream::ReadFromFileStream(IVirtualStream* pFile )
+// reads other stream into this one
+bool CMemoryStream::AppendStream(IVirtualStream* pStream, int maxSize)
 {
 	ASSERT(m_openFlags & VS_OPEN_WRITE);
 
-	int rest_pos = pFile->Tell();
-	int filesize = pFile->GetSize();
-	pFile->Seek(0, VS_SEEK_SET);
+	const int resetPos = pStream->Tell();
+	const int readSize = min(maxSize > 0 ? maxSize : INT_MAX, pStream->GetSize() - resetPos);
 
-	ReAllocate( filesize + 32 );
+	ReAllocate(readSize + 16);
 
 	// read to me
-	pFile->Read(m_start, filesize, 1);
-
-	pFile->Seek(rest_pos, VS_SEEK_SET);
+	pStream->Read(m_currentPtr, readSize, 1);
+	pStream->Seek(resetPos, VS_SEEK_SET);
+	m_currentPtr += readSize;
+	m_writeTop += readSize;
 
 	// let user seek this stream after
 	return true;

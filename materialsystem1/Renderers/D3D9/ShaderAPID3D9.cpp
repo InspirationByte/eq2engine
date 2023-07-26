@@ -2260,8 +2260,8 @@ bool ShaderAPID3D9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			pStream->Write(pShader->m_szName.GetData(), scHdr.nameLen, 1);
 			pStream->Write(extra, scHdr.extraLen, 1);
 
-			vsMemStream.WriteToFileStream(pStream);
-			psMemStream.WriteToFileStream(pStream);
+			vsMemStream.WriteToStream(pStream);
+			psMemStream.WriteToStream(pStream);
 
 			pStream->Write(samplers.ptr(), samplers.numElem(), sizeof(DX9Sampler_t));
 			pStream->Write(constants.ptr(), constants.numElem(), sizeof(DX9ShaderConstant_t));

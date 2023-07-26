@@ -840,7 +840,7 @@ bool CEGFGenerator::GenerateEGF()
 		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.ToCString());
 
 		// write model
-		memStream.WriteToFileStream(file);
+		memStream.WriteToStream(file);
 	}
 	else
 	{

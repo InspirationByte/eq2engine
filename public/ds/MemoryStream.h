@@ -51,11 +51,11 @@ public:
 
 	VirtStreamType_e	GetType() const { return VS_TYPE_MEMORY; }
 
-	// reads file to this stream
-	bool				ReadFromFileStream(IVirtualStream* pFile);
+	// reads other stream into this one
+	bool				AppendStream(IVirtualStream* pStream, int maxSize = 0);
 
-	// saves stream to file for stream (only for memory stream )
-	void				WriteToFileStream(IVirtualStream* pFile);
+	// writes constents of this stream into the other stream
+	void				WriteToStream(IVirtualStream* pStream, int maxSize = 0);
 
 	// resizes buffer to specified size (finalize buffer for reading)
 	void				ShrinkBuffer(long size);

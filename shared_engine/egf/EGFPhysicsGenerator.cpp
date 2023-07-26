@@ -828,5 +828,5 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	header.numLumps = PHYSFILE_LUMPS;
 
 	outputFile->Write(&header, 1, sizeof(header));
-	lumpsStream.WriteToFileStream(outputFile);
+	lumpsStream.WriteToStream(outputFile);
 }

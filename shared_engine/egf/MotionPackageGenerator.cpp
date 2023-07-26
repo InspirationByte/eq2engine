@@ -1320,7 +1320,7 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 	}
 
 	file->Write(&header, 1, sizeof(header));
-	lumpDataStream.WriteToFileStream(file);
+	lumpDataStream.WriteToStream(file);
 
 	Msg("Total written bytes: %d\n", file->Tell());
 }
