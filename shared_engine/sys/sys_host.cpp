@@ -57,7 +57,7 @@ DECLARE_CVAR(sys_vmode, "1024x768", "Screen Resoulution. Resolution string forma
 DECLARE_CVAR(sys_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
 
 DECLARE_CVAR(in_mouse_to_touch, "0", "Convert mouse clicks to touch input", CV_ARCHIVE);
-DECLARE_CVAR(sys_maxfps, "0", "Frame rate limit", CV_CHEAT);
+DECLARE_CVAR_CLAMP(sys_maxfps, "0", 0.0f, 300.0f, "Frame rate limit", CV_ARCHIVE);
 DECLARE_CVAR(sys_timescale, "1.0f", "Time scale", CV_CHEAT);
 DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
