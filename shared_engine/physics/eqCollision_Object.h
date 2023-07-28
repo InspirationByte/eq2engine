@@ -53,6 +53,9 @@ class CEqCollisionObject
 	friend class CEqPhysics;
 
 public:
+	using GetSurfaceParamIdFunc = int(*)(const char*);
+	static GetSurfaceParamIdFunc GetSurfaceParamId;
+
 	CEqCollisionObject();
 	virtual ~CEqCollisionObject();
 

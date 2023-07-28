@@ -396,16 +396,23 @@ void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSect
 	surfParam->word = KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C")[0];
 }
 
-const eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name) const
+const int CEqPhysics::FindSurfaceParamID(const char* name) const
 {
-	int count = m_physSurfaceParams.numElem();
-	for (int i = 0; i < count; i++)
+	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
 	{
 		if (!m_physSurfaceParams[i]->name.CompareCaseIns(name))
-			return m_physSurfaceParams[i];
+			return i;
 	}
+	return -1;
+}
 
-	return nullptr;
+const eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name) const
+{
+	const int surfParamId = FindSurfaceParamID(name);
+	if (surfParamId == -1)
+		return nullptr;
+
+	return m_physSurfaceParams[surfParamId];
 }
 
 const eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id) const

@@ -24,6 +24,8 @@ DECLARE_CVAR(ph_margin, "0.0001", nullptr, CV_CHEAT | CV_UNREGISTERED);
 
 #define AABB_GROWVALUE	 (0.15f)
 
+CEqCollisionObject::GetSurfaceParamIdFunc CEqCollisionObject::GetSurfaceParamId = nullptr;
+
 CEqCollisionObject::CEqCollisionObject()
 {
 	m_collObject = nullptr;
@@ -102,7 +104,7 @@ void CEqCollisionObject::InitAABB()
 }
 
 // objects that will be created
-bool CEqCollisionObject::Initialize(const studioPhysData_t* data, int objectIdx )
+bool CEqCollisionObject::Initialize(const studioPhysData_t* data, int objectIdx)
 {
 	ASSERT(!m_shape);
 
@@ -114,6 +116,9 @@ bool CEqCollisionObject::Initialize(const studioPhysData_t* data, int objectIdx 
 	// as this an actual array of shapes, handle it as array of shapes xD
 	m_numShapes = physObject.object.numShapes;
 	m_shapeList = (btCollisionShape**)physObject.shapeCache;
+
+	ASSERT_MSG(GetSurfaceParamId != nullptr, "Must set up CEqCollisionObject::GetSurfaceParamId callback for your physics engine");
+	m_surfParam = GetSurfaceParamId(physObject.object.surfaceprops);
 
 	// setup default shape
 	if (m_numShapes > 1)
@@ -135,7 +140,7 @@ bool CEqCollisionObject::Initialize(const studioPhysData_t* data, int objectIdx 
 		m_shape = m_shapeList[0];
 		m_studioShape = true; // do not delete!
 	}
-
+	
 	ASSERT_MSG(m_shape, "No valid shape!");
 
 	m_shape->setMargin(ph_margin.GetFloat());

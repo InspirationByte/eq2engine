@@ -78,8 +78,9 @@ public:
 	void							DestroyGrid();										///< destroys broadphase grid
 
 	void							AddSurfaceParamFromKV(const char* name, const KVSection* kvSection);
-	const  eqPhysSurfParam_t*		FindSurfaceParam(const char* name) const;
-	const  eqPhysSurfParam_t*		GetSurfaceParamByID(int id) const;
+	const int						FindSurfaceParamID(const char* name) const;
+	const eqPhysSurfParam_t*		FindSurfaceParam(const char* name) const;
+	const eqPhysSurfParam_t*		GetSurfaceParamByID(int id) const;
 
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
 	void							RemoveFromMoveableList( CEqRigidBody* body );
