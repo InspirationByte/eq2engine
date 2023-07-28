@@ -13,6 +13,8 @@ using MovieCompletedEvent = Event<void()>;
 class CMoviePlayer : Threading::CEqThread, public RefCountedObject<CMoviePlayer>
 {
 public:
+	CMoviePlayer() = default;
+	CMoviePlayer(const char* aliasName);
 	~CMoviePlayer();
 
 	bool				Init(const char* pathToVideo);
@@ -35,6 +37,8 @@ public:
 
 protected:
 	int					Run() override;
+
+	EqString			m_aliasName;
 
 	ISoundSourcePtr		m_audioSrc;
 	MatTextureProxy		m_mvTexture;

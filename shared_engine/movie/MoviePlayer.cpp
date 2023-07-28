@@ -18,8 +18,8 @@ using namespace Threading;
 
 static CEqMutex	s_audioSourceMutex;
 
-static constexpr const int AV_PACKET_AUDIO_CAPACITY = 20;
-static constexpr const int AV_PACKET_VIDEO_CAPACITY = 20;
+static constexpr const int AV_PACKET_AUDIO_CAPACITY = 30;
+static constexpr const int AV_PACKET_VIDEO_CAPACITY = 10;
 
 using APacketQueue = FixedList<AVPacket*, AV_PACKET_AUDIO_CAPACITY>;
 using VPacketQueue = FixedList<AVPacket*, AV_PACKET_VIDEO_CAPACITY>;
@@ -301,7 +301,7 @@ static bool PlayerDemuxStep(MoviePlayerData* player, MovieCompletedEvent& comple
 
 	AVPacket& packet = player->packet;
 
-	bool isError = false;
+	bool isDone = false;
 
 	switch (av_read_frame(player->formatCtx, &packet))
 	{
@@ -332,13 +332,13 @@ static bool PlayerDemuxStep(MoviePlayerData* player, MovieCompletedEvent& comple
 	}
 	default:
 		DevMsg(DEVMSG_CORE, "Failed av_read_frame\n");
-		isError = true;
+		isDone = true;
 	}
 
 	// don't forget, otherwise memleak
 	av_packet_unref(&packet);
 
-	return !isError;
+	return !isDone;
 }
 
 static bool PlayerRewind(MoviePlayerData* player)
@@ -528,7 +528,11 @@ static void PlayerAudioDecodeStep(MoviePlayerData* player, FrameQueue& frameQueu
 		{
 			CScopedMutex m(s_audioSourceMutex);
 			if (frameQueue.getCount() == AV_PACKET_AUDIO_CAPACITY)
+			{
+				AVFrame* frame = frameQueue.front();
+				av_frame_free(&frame);
 				frameQueue.remove(frameQueue.first());
+			}
 
 			frameQueue.append(convFrame);
 		}
@@ -587,6 +591,7 @@ private:
 	void				Unload() { }
 
 	FrameQueue			m_frameQueue;
+	MoviePlayerData*	m_player{ nullptr };
 	Format				m_format;
 	int					m_cursor{ 0 };
 };
@@ -615,10 +620,23 @@ int CMovieAudioSource::GetSamples(void* out, int samplesToRead, int startOffset,
 	const int requestedSamples = samplesToRead;
 	int numSamplesRead = 0;
 
+	memset(out, 0, requestedSamples * sampleSize);
+
 	auto it = m_frameQueue.first();
 	while (samplesToRead > 0 && !it.atEnd())
 	{
 		AVFrame* frame = *it;
+
+		const double clock = clock_seconds(m_player->clockStartTime);
+		const double pts_secs = pts_seconds(frame, m_player->audioStream);
+		const double delta = (pts_secs - clock);
+
+		if (delta > F_EPS)
+		{
+			++it;
+			continue;
+		}
+
 		const int frameSamples = frame->nb_samples - frame->height;
 		if (frameSamples <= 0)
 		{
@@ -645,7 +663,7 @@ int CMovieAudioSource::GetSamples(void* out, int samplesToRead, int startOffset,
 		DevMsg(DEVMSG_CORE, "CMovieAudioSource::GetSamples underpaint - %d of %d\n", numSamplesRead, requestedSamples);
 
 	// we don't have frames yet, return 1 because we need a warmup from video system
-	return max(1, numSamplesRead);
+	return requestedSamples;
 }
 
 int	CMovieAudioSource::GetSampleCount() const
@@ -690,11 +708,19 @@ int	CMoviePlayer::Run()
 			PlayerAudioDecodeStep(m_player, static_cast<CMovieAudioSource*>(m_audioSrc.Ptr())->m_frameQueue);
 	}
 
+	m_playerCmd = PLAYER_CMD_NONE;
 	return 0;
+}
+
+CMoviePlayer::CMoviePlayer(const char* aliasName)
+{
+	m_aliasName = aliasName;
 }
 
 bool CMoviePlayer::Init(const char* pathToVideo)
 {
+	const char* nameOfPlayer = m_aliasName.Length() ? m_aliasName.ToCString() : pathToVideo;
+
 	m_player = CreatePlayerData(nullptr, pathToVideo);
 	if(m_player)
 	{
@@ -702,14 +728,15 @@ bool CMoviePlayer::Init(const char* pathToVideo)
 
 		if (m_player->videoStream)
 		{
-			m_mvTexture = materials->GetGlobalMaterialVarByName(pathToVideo);
-			m_mvTexture.Set(g_pShaderAPI->CreateProceduralTexture(pathToVideo, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR));
+			m_mvTexture = materials->GetGlobalMaterialVarByName(nameOfPlayer);
+			m_mvTexture.Set(g_pShaderAPI->CreateProceduralTexture(nameOfPlayer, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR));
 		}
 
 		if (m_player->audioStream)
 		{
 			m_audioSrc = ISoundSourcePtr(CRefPtr_new(CMovieAudioSource));
-			m_audioSrc->SetFilename(pathToVideo);
+			((CMovieAudioSource*)m_audioSrc.Ptr())->m_player = m_player;
+			m_audioSrc->SetFilename(nameOfPlayer);
 			g_audioSystem->AddSample(m_audioSrc);
 		}
 	}
@@ -736,11 +763,13 @@ void CMoviePlayer::Stop()
 {
 	if (!m_player)
 		return;
-	MoviePlayerData* player = m_player;
 
 	m_playerCmd = PLAYER_CMD_STOP;
-	WaitForThread();
 
+	if (GetThreadID() != GetCurrentThreadID())
+		WaitForThread();
+
+	MoviePlayerData* player = m_player;
 	for (AVPacket*& packet : player->videoPacketQueue)
 		av_packet_free(&packet);
 
@@ -749,8 +778,6 @@ void CMoviePlayer::Stop()
 
 	player->videoPacketQueue.clear();
 	player->audioPacketQueue.clear();
-
-	m_playerCmd = PLAYER_CMD_NONE;
 }
 
 void CMoviePlayer::Rewind()
