@@ -501,7 +501,11 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 	// Add dummy (used for LODs)
 	GenModel_t mod{ "_dummy", CRefPtr_new(dsmmodel_t), nullptr };
 	strcpy(mod.model->name, "_dummy");
-	m_modelrefs.append(mod);
+	const int index = m_modelrefs.append(mod);
+
+	GenLODList_t& dummyLodModel = m_modelLodLists.append();
+	dummyLodModel.lodmodels.append(index);
+	dummyLodModel.name = mod.name;
 
 	return true;
 }

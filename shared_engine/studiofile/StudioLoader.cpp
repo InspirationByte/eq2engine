@@ -65,7 +65,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 
 	if(len != pHdr->length)
 	{
-		MsgError("Model is not valid (%d versus %d in header)!\n",len,pBaseHdr->size);
+		MsgError("Model is not valid (read %d vs size %d in header)!\n",len, pBaseHdr->size);
 		PPFree(_buffer);
 		return nullptr;
 	}
