@@ -106,6 +106,8 @@ int CMemoryStream::Seek(long nOffset, EVirtStreamSeek seekType)
 			break;
 	}
 
+	m_writeTop = max(m_writeTop, m_currentPtr - m_start);
+
 	return Tell();
 }
 
