@@ -18,7 +18,7 @@ using namespace Threading;
 
 static CEqMutex	s_audioSourceMutex;
 
-static constexpr const int AV_PACKET_AUDIO_CAPACITY = 30;
+static constexpr const int AV_PACKET_AUDIO_CAPACITY = 25;
 static constexpr const int AV_PACKET_VIDEO_CAPACITY = 10;
 
 using APacketQueue = FixedList<AVPacket*, AV_PACKET_AUDIO_CAPACITY>;
@@ -37,6 +37,7 @@ enum DecodeState : int
 enum EPlayerCmd
 {
 	PLAYER_CMD_NONE = 0,
+	PLAYER_CMD_PLAYING,
 	PLAYER_CMD_REWIND,
 	PLAYER_CMD_STOP,
 };
@@ -82,7 +83,6 @@ struct MoviePlayerData
 	AVCodecContext* audioCodec{ nullptr };
 	SwrContext*		audioSwr{ nullptr };
 	APacketQueue	audioPacketQueue;
-	FrameQueue		audioFrameQueue;
 
 	float			clockSpeed{ 1.0f };
 	int64_t			clockStartTime{ AV_NOPTS_VALUE };
@@ -685,12 +685,9 @@ int	CMoviePlayer::Run()
 
 	m_player->clockStartTime = av_gettime();
 
-	while (true)
+	while (m_playerCmd == PLAYER_CMD_PLAYING)
 	{
 		YieldCurrentThread();
-
-		if (m_playerCmd == PLAYER_CMD_STOP)
-			break;
 
 		if (!PlayerDemuxStep(m_player, OnCompleted))
 			break;
@@ -698,7 +695,7 @@ int	CMoviePlayer::Run()
 		if (m_playerCmd == PLAYER_CMD_REWIND)
 		{
 			PlayerRewind(m_player);
-			m_playerCmd = PLAYER_CMD_NONE;
+			m_playerCmd = PLAYER_CMD_PLAYING;
 		}
 
 		if(m_mvTexture.IsValid())
@@ -706,6 +703,13 @@ int	CMoviePlayer::Run()
 
 		if(m_audioSrc)
 			PlayerAudioDecodeStep(m_player, static_cast<CMovieAudioSource*>(m_audioSrc.Ptr())->m_frameQueue);
+
+		if (m_player->videoPacketQueue.getCount() == 0 && m_player->audioPacketQueue.getCount() == 0)
+		{
+			// NOTE: could be unreliable
+			if (av_gettime() - m_player->clockStartTime > 10000)
+				break;			
+		}
 	}
 
 	m_playerCmd = PLAYER_CMD_NONE;
@@ -729,6 +733,7 @@ bool CMoviePlayer::Init(const char* pathToVideo)
 		if (m_player->videoStream)
 		{
 			m_mvTexture = materials->GetGlobalMaterialVarByName(nameOfPlayer);
+			ASSERT(g_pShaderAPI->FindTexture(nameOfPlayer) == nullptr);
 			m_mvTexture.Set(g_pShaderAPI->CreateProceduralTexture(nameOfPlayer, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR));
 		}
 
@@ -749,6 +754,7 @@ void CMoviePlayer::Destroy()
 	Stop();
 	FreePlayerData(&m_player);
 	m_audioSrc = nullptr;
+	m_mvTexture.Set(nullptr);
 	m_mvTexture = nullptr;
 }
 
@@ -756,6 +762,9 @@ void CMoviePlayer::Start()
 {
 	if (!StartPlayback(m_player))
 		return;
+
+	m_playerCmd = PLAYER_CMD_PLAYING;
+
 	StartThread("vidPlayer");
 }
 
@@ -776,8 +785,14 @@ void CMoviePlayer::Stop()
 	for (AVPacket*& packet : player->audioPacketQueue)
 		av_packet_free(&packet);
 
-	player->videoPacketQueue.clear();
-	player->audioPacketQueue.clear();
+	{
+		CScopedMutex m(s_audioSourceMutex);
+		if(m_audioSrc)
+			static_cast<CMovieAudioSource*>(m_audioSrc.Ptr())->m_frameQueue.clear();
+
+		player->videoPacketQueue.clear();
+		player->audioPacketQueue.clear();
+	}
 }
 
 void CMoviePlayer::Rewind()
