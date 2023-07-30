@@ -61,7 +61,7 @@ protected:
 	int						GetMaterialIndex(const char* pszName) const;
 
 	// loader functions
-	int						LoadModel(const char* pszFileName);
+	bool					LoadModel(const char* pszFileName, GenModel_t& mod);
 	void					FreeModel(GenModel_t& mod );
 	bool					PostProcessDSM(GenModel_t& mod );
 
