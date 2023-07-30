@@ -129,7 +129,7 @@ const char* GetMTLTexture(const char* pszMaterial, Array<obj_material_t> &materi
 	return pszMaterial;
 }
 
-bool LoadOBJ(dsmmodel_t* model, const char* filename)
+bool LoadOBJ(DSModel* model, const char* filename)
 {
 	Array<obj_material_t> material_list(PP_SL);
 
@@ -207,12 +207,12 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	texcoords.resize(nTexCoords);
 	normals.resize(nNormals);
 
-	dsmvertex_t verts[MAX_VERTS_PER_POLYGON];
+	DSVertex verts[MAX_VERTS_PER_POLYGON];
 	int vindices[MAX_VERTS_PER_POLYGON];
 	int tindices[MAX_VERTS_PER_POLYGON];
 	int nindices[MAX_VERTS_PER_POLYGON];
 
-	dsmgroup_t* curgroup = nullptr;
+	DSGroup* curgroup = nullptr;
 
 	bool gl_to_eq = true;
 	bool blend_to_eq = false;
@@ -293,7 +293,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 		{
 			if(!curgroup)
 			{
-				curgroup = PPNew dsmgroup_t;
+				curgroup = PPNew DSGroup;
 
 				model->groups.append(curgroup);
 
@@ -379,14 +379,14 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 			if (i <= 2)
 				continue;
 			
-			// Map<int, dsmvertex_t> verts;
+			// Map<int, DSVertex> verts;
 			// Array<int> indexList;
 			
 
 			// triangle fan
 			for(int v = 0; v < i; v++)
 			{
-				dsmvertex_t vert;
+				DSVertex vert;
 
 				if (!vertices.inRange(vindices[v]))
 				{
@@ -414,7 +414,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				}
 			}
 
-			dsmvertex_t v0,v1,v2;
+			DSVertex v0,v1,v2;
 			for(int v = 0; v < i-2; v++)
 			{
 				if(reverseNormals)
@@ -478,7 +478,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	return bLoaded;
 }
 
-bool SaveOBJ(dsmmodel_t* model, const char* filename)
+bool SaveOBJ(DSModel* model, const char* filename)
 {
 	IFilePtr pFile = g_fileSystem->Open(filename, "wt", SP_ROOT);
 	if(!pFile)
@@ -493,7 +493,7 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 
 	for(int i = 0; i < model->groups.numElem(); i++)
 	{
-		SharedModel::dsmgroup_t* group = model->groups[i];
+		SharedModel::DSGroup* group = model->groups[i];
 		
 		if (group->indices.numElem())
 			pFile->Print("o %s\n", group->texture);

@@ -445,12 +445,12 @@ void CMotionPackageGenerator::RemapAnimationLength(studioAnimation_t* pAnim, int
 // Setups ESA bones for conversion
 //************************************
 
-void CMotionPackageGenerator::SetupESABones(dsmmodel_t* pModel, animCaBoneFrames_t* bones)
+void CMotionPackageGenerator::SetupESABones(DSModel* pModel, animCaBoneFrames_t* bones)
 {/*
 	// setup each bone's transformation
 	for(int8 i = 0; i < pModel->bones.numElem(); i++)
 	{
-		dsmskelbone_t* bone = pModel->bones[i];
+		DSBone* bone = pModel->bones[i];
 
 		// setup transformation
 		Matrix4x4 localTrans = identity4;
@@ -530,7 +530,7 @@ static bool ReadFramesForBone(Tokenizer& tok, Array<animCaBoneFrames_t>& bones)
 	return false;
 }
 
-bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, dsmmodel_t* pModel, studioAnimation_t* pAnim)
+bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pModel, studioAnimation_t* pAnim)
 {
 	char *str;
 
@@ -630,7 +630,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 	studioAnimation_t& modelAnim = m_animations.append();
 	strcpy(modelAnim.name, filename); // set it externally from file name
 
-	dsmmodel_t tempDSM;
+	DSModel tempDSM;
 
 	char* str;
 	while ((str = tok.next()) != nullptr)

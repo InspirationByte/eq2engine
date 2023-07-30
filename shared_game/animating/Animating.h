@@ -64,6 +64,8 @@ public:
 
 	void						SetPlaybackSpeedScale(float scale, int slotindex = 0);		// sets playback speed scale
 
+	Matrix4x4					GetLocalStudioTransformMatrix(int transformIdx) const;
+
 // inverse kinematics
 
 	void						SetIKWorldTarget(int chain_id, const Vector3D &world_position, const Matrix4x4& worldTransform); // sets ik world point, use external transform if model transform differs from entity transform
@@ -71,7 +73,7 @@ public:
 
 	void						SetIKChainEnabled(int chain_id, bool enabled);				// enables or disables ik chain.
 	bool						IsIKChainEnabled(int chain_id);								// returns status if ik chain
-	int							FindIKChain(const char* pszName);									// searches for ik chain
+	int							FindIKChain(const char* pszName);							// searches for ik chain
 
 	// advances frame (and computes interpolation between all blended animations)
 	void						AdvanceFrame(float fDt);
@@ -101,8 +103,8 @@ protected:
 	Matrix4x4*					m_boneTransforms{ nullptr };
 
 	// local bones/base pose
-	const studioJoint_t*		m_joints{ nullptr };
-	int							m_numBones{ 0 };
+	ArrayCRef<studioJoint_t>		m_joints{ nullptr };
+	ArrayCRef<studiotransform_t>	m_transforms{ nullptr };
 
 	// different motion packages has different sequience list
 	Array<gsequence_t>			m_seqList{ PP_SL }; // loaded sequences

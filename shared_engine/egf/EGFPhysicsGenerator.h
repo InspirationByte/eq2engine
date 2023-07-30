@@ -19,8 +19,8 @@ using IdxIsland = Array<IdxTriangle>;
 
 namespace SharedModel
 {
-	struct dsmmodel_t;
-	struct dsmvertex_t;
+	struct DSModel;
+	struct DSVertex;
 }
 
 class CEGFPhysicsGenerator
@@ -31,7 +31,7 @@ public:
 
 	void		Cleanup();
 
-	bool		GenerateGeometry(SharedModel::dsmmodel_t* srcModel, const KVSection* physInfo, bool forceGroupSubdivision);
+	bool		GenerateGeometry(SharedModel::DSModel* srcModel, const KVSection* physInfo, bool forceGroupSubdivision);
 	void		SaveToFile(const char* filename);
 	bool		HasObjects() const {return m_objects.numElem() > 0;}
 
@@ -41,16 +41,16 @@ protected:
 	int			FindJointIdx(const char* name);
 	int			MakeBoneValidParent(int boneId);
 
-	int			AddShape(Array<SharedModel::dsmvertex_t> &vertices, Array<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
+	int			AddShape(Array<SharedModel::DSVertex> &vertices, Array<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
 
-	void		SubdivideModelParts( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups);
+	void		SubdivideModelParts( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups);
 
-	bool		CreateRagdollObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups );
-	bool		CreateCompoundOrSeparateObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups, bool bCompound );
-	bool		CreateSingleObject( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices );
+	bool		CreateRagdollObjects( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups );
+	bool		CreateCompoundOrSeparateObjects( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups, bool bCompound );
+	bool		CreateSingleObject( Array<SharedModel::DSVertex>& vertices, Array<int>& indices );
 
 	// data
-	SharedModel::dsmmodel_t*	m_srcModel;
+	SharedModel::DSModel*	m_srcModel;
 	const KVSection*			m_physicsParams;
 
 	Array<Vector3D>				m_vertices{ PP_SL };		// generated verts

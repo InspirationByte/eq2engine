@@ -95,7 +95,7 @@ struct VertexWeightData
 	Map<int, float> indexWeightMap{ PP_SL };
 };
 
-void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix, ofbx::UpVector upAxis, Array<dsmskelbone_t*>& bones, Array<VertexWeightData>& weightData)
+void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix, ofbx::UpVector upAxis, Array<DSBone*>& bones, Array<VertexWeightData>& weightData)
 {
 	const ofbx::Skin* skin = geom.getSkin();
 
@@ -121,7 +121,7 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix
 			continue;
 		boneSet.insert(fbxBoneLink);
 
-		dsmskelbone_t* pBone = PPNew dsmskelbone_t();
+		DSBone* pBone = PPNew DSBone();
 		strcpy(pBone->name, fbxCluster.name);
 		pBone->bone_id = i;
 
@@ -172,7 +172,7 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix
 	}
 }
 
-void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeData, Map<int, dsmgroup_t*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, const Matrix3x3& convertMatrix, bool invertFaces)
+void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSGroup*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, const Matrix3x3& convertMatrix, bool invertFaces)
 {
 	const ofbx::Geometry& geom = *mesh.getGeometry();
 
@@ -202,7 +202,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 				const ofbx::Shape* shape = blendShapeChan->getShape(k);
 				Msg("\t\t %s\n", shape->name);
 
-				esmshapekey_t* shapeKey = PPNew esmshapekey_t();
+				DSShapeKey* shapeKey = PPNew DSShapeKey();
 				shapeKey->name = shape->name;
 
 				shapeData->shapes.append(shapeKey);
@@ -217,7 +217,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 					{
 						const int tVertId = vertId + (invertFaces ? 2 - tVert : tVert);
 
-						esmshapevertex_t vert;
+						DSShapeVert vert;
 						vert.vertexId = tVertId;
 						vert.position = FromFBXVector(shapeVertices[tVertId], convertMatrix);
 						vert.normal = FromFBXVector(shapeNormals[tVertId], convertMatrix);
@@ -236,14 +236,14 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 	int triNum = 0;
 	for (int j = 0; j < vertex_count; j += 3, ++triNum)
 	{
-		dsmgroup_t* dsmGrp = nullptr;
+		DSGroup* dsmGrp = nullptr;
 
 		const int materialIdx = vertMaterials ? vertMaterials[triNum] : 0;
 		const int materialGroupIdx = meshId | (materialIdx << 16);
 		auto found = materialGroups.find(materialGroupIdx);
 		if (found.atEnd())
 		{
-			dsmGrp = PPNew dsmgroup_t();
+			dsmGrp = PPNew DSGroup();
 
 			const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(materialIdx) : nullptr;
 			if (material)
@@ -260,7 +260,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 		for (int k = 0; k < 3; ++k)
 		{
 			const int jj = j + (invertFaces ? 2 - k : k);
-			dsmvertex_t& vert = dsmGrp->verts.append();
+			DSVertex& vert = dsmGrp->verts.append();
 			vert.position = FromFBXVector(vertices[jj], convertMatrix);
 
 			if (normals)
@@ -292,7 +292,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 			// copy weights
 			for (int w = 0; w < numNewWeights; w++)
 			{
-				dsmweight_t& weight = vert.weights.append();
+				DSWeight& weight = vert.weights.append();
 				weight.bone = tempWeightBones[w];
 				weight.weight = tempWeights[w];
 			}
@@ -300,7 +300,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 	} // j
 }
 
-bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t*>& shapes, const char* filename)
+bool LoadFBX(Array<DSModel*>& models, Array<DSShapeData*>& shapes, const char* filename)
 {
 	long fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
@@ -330,10 +330,10 @@ bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t*>& shapes, const c
 		const int mesh_count = scene->getMeshCount();
 		for (int i = 0; i < mesh_count; ++i)
 		{
-			dsmmodel_t* model = PPNew dsmmodel_t();
-			esmshapedata_t* shapeData = PPNew esmshapedata_t();
+			DSModel* model = PPNew DSModel();
+			DSShapeData* shapeData = PPNew DSShapeData();
 
-			Map<int, dsmgroup_t*> materialGroups(PP_SL);
+			Map<int, DSGroup*> materialGroups(PP_SL);
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
 			ConvertFBXMeshToDSM(i, model, shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
 
@@ -361,7 +361,7 @@ bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t*>& shapes, const c
 }
 
 // Editor variant
-bool LoadFBXCompound( dsmmodel_t* model, const char* filename )
+bool LoadFBXCompound( DSModel* model, const char* filename )
 {
 	ASSERT(model);
 
@@ -390,7 +390,7 @@ bool LoadFBXCompound( dsmmodel_t* model, const char* filename )
 		bool invertFaces;
 		GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
-		Map<int, dsmgroup_t*> materialGroups(PP_SL);
+		Map<int, DSGroup*> materialGroups(PP_SL);
 
 		const int mesh_count = scene->getMeshCount();
 		for (int i = 0; i < mesh_count; ++i)
@@ -405,7 +405,7 @@ bool LoadFBXCompound( dsmmodel_t* model, const char* filename )
 }
 
 // EGF compiler variant
-bool LoadFBXShapes(dsmmodel_t* model, esmshapedata_t* shapeData, const char* filename)
+bool LoadFBXShapes(DSModel* model, DSShapeData* shapeData, const char* filename)
 {
 	ASSERT(model);
 	ASSERT(shapeData);
@@ -436,7 +436,7 @@ bool LoadFBXShapes(dsmmodel_t* model, esmshapedata_t* shapeData, const char* fil
 		bool invertFaces;
 		GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
-		Map<int, dsmgroup_t*> materialGroups(PP_SL);
+		Map<int, DSGroup*> materialGroups(PP_SL);
 
 		const int mesh_count = scene->getMeshCount();
 		for (int i = 0; i < mesh_count; ++i)
@@ -573,7 +573,7 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 	Quaternion boneConvertRotation(boneConvertMatrix);
 
 	// get bones from all meshes
-	Array<dsmskelbone_t*> bones(PP_SL);
+	Array<DSBone*> bones(PP_SL);
 	Array<VertexWeightData> weightData(PP_SL);
 
 	// TODO: separate skeletons from each mesh ref

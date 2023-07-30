@@ -16,9 +16,10 @@ class IPhysicsObject;
 
 enum ViewerRenderFlags
 {
-	RFLAG_PHYSICS	= (1 << 0),
-	RFLAG_BONES		= (1 << 1),
-	RFLAG_WIREFRAME	= (1 << 2),
+	RFLAG_PHYSICS		= (1 << 0),
+	RFLAG_BONES			= (1 << 1),
+	RFLAG_ATTACHMENTS	= (1 << 2),
+	RFLAG_WIREFRAME		= (1 << 2),
 };
 
 // basic animating class
@@ -32,10 +33,6 @@ public:
 	virtual void				Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt);
 	virtual void				RenderPhysModel();
 	virtual void				Update(float dt);
-
-	virtual int					FindAttachment(const char* name);			// finds attachment
-	virtual Vector3D			GetLocalAttachmentOrigin(int nAttach);		// gets local attachment position
-	virtual Vector3D			GetLocalAttachmentDirection(int nAttach);	// gets local attachment direction
 
 	// sets model for this entity
 	void						SetModel(CEqStudioGeom* pModel);
@@ -55,6 +52,7 @@ public:
 protected:
 
 	void						VisualizeBones();
+	void						VisualizeAttachments();
 
 	void						UpdateRagdollBones();
 

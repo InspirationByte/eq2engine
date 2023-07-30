@@ -9,14 +9,6 @@
 
 #pragma warning(disable: 4003)
 
-#if defined(__WXGTK__)
-	#define HIDE_CURSOR wxSetCursor(wxCURSOR_BLANK)
-	#define SHOW_CURSOR wxSetCursor(*wxSTANDARD_CURSOR)
-#elif defined(__WXMSW__)
-	#define HIDE_CURSOR ShowCursor(0)
-	#define SHOW_CURSOR ShowCursor(1)
-#endif
-
 // for all others, include the necessary headers
 #include "wx/app.h"
 #include "wx/log.h"

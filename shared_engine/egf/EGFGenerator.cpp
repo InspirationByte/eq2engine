@@ -33,12 +33,12 @@ CEGFGenerator::~CEGFGenerator()
 //************************************
 // Finds bone
 //************************************
-CEGFGenerator::GenBone_t* CEGFGenerator::FindBoneByName(const char* pszName) const
+CEGFGenerator::GenBone* CEGFGenerator::FindBoneByName(const char* pszName) const
 {
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
 		if(!stricmp(m_bones[i].refBone->name, pszName))
-			return (GenBone_t*)&m_bones[i];
+			return (GenBone*)&m_bones[i];
 	}
 	return nullptr;
 }
@@ -70,13 +70,13 @@ int CEGFGenerator::FindModelIndexByName(const char* pszName) const
 }
 
 
-CEGFGenerator::GenModel_t* CEGFGenerator::FindModelByName(const char* pszName) const
+CEGFGenerator::GenModel* CEGFGenerator::FindModelByName(const char* pszName) const
 {
 	const int foundIdx = FindModelIndexByName(pszName);
 	if (foundIdx == -1)
 		return nullptr;
 
-	return (GenModel_t*)&m_modelrefs[foundIdx];
+	return (GenModel*)&m_modelrefs[foundIdx];
 }
 
 //************************************
@@ -121,12 +121,12 @@ void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 //************************************
 // Loads a model
 //************************************
-bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel_t& mod)
+bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 {
 	if (!stricmp(pszFileName, "_dummy"))
 		return false;
 
-	mod.model = CRefPtr_new(dsmmodel_t);
+	mod.model = CRefPtr_new(DSModel);
 
 	EqString modelPath;
 	CombinePath(modelPath, m_refsPath.ToCString(), pszFileName);
@@ -135,7 +135,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel_t& mod)
 
 	if (!ext.CompareCaseIns("fbx"))
 	{
-		mod.shapeData = CRefPtr_new(esmshapedata_t);
+		mod.shapeData = CRefPtr_new(DSShapeData);
 
 		Msg("Loading FBX from '%s'\n", modelPath.ToCString());
 
@@ -150,7 +150,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel_t& mod)
 	}
 	else if( !ext.CompareCaseIns("esx") ) // Legacy now because I want to drop the Blender ESM/ESX plugin support
 	{
-		mod.shapeData = CRefPtr_new(esmshapedata_t);
+		mod.shapeData = CRefPtr_new(DSShapeData);
 
 		Msg("Loading shape file '%s'\n", modelPath.ToCString());
 
@@ -187,7 +187,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel_t& mod)
 	return true;
 }
 
-bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
+bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 {
 	const int nVerts = GetTotalVertsOfDSM(mod.model);
 
@@ -204,7 +204,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
 
 		for (int i = 0; i < mod.shapeData->shapes.numElem(); ++i)
 		{
-			esmshapekey_t* shapeKey = mod.shapeData->shapes[i];
+			DSShapeKey* shapeKey = mod.shapeData->shapes[i];
 			for (int j = 0; j < shapeKey->verts.numElem(); ++j)
 			{
 				shapeKey->verts[j].position *= m_modelScale;
@@ -216,7 +216,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
 	// scale bones
 	for (int i = 0; i < mod.model->bones.numElem(); i++)
 	{
-		dsmskelbone_t* bone = mod.model->bones[i];
+		DSBone* bone = mod.model->bones[i];
 
 		bone->position *= m_modelScale;
 
@@ -227,7 +227,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
 	// check material list and move/scale verts
 	for (int i = 0; i < mod.model->groups.numElem(); i++)
 	{
-		dsmgroup_t* group = mod.model->groups[i];
+		DSGroup* group = mod.model->groups[i];
 
 		// scale vertices
 		for (int j = 0; j < group->verts.numElem(); j++)
@@ -260,7 +260,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
 //************************************
 // Frees model ref
 //************************************
-void CEGFGenerator::FreeModel(GenModel_t& mod )
+void CEGFGenerator::FreeModel(GenModel& mod )
 {
 	mod.model = nullptr;
 	mod.shapeData = nullptr;
@@ -271,8 +271,8 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 	EqString modelPath;
 	CombinePath(modelPath, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
 
-	Array<dsmmodel_t*> models(PP_SL);
-	Array<esmshapedata_t*> shapeDatas(PP_SL);
+	Array<DSModel*> models(PP_SL);
+	Array<DSShapeData*> shapeDatas(PP_SL);
 
 	Msg("Using FBX Source '%s'\n", KV_GetValueString(pKeyBase));
 
@@ -286,14 +286,14 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		const char* modelName = modelSec->name;
 		const char* refName = KV_GetValueString(modelSec);
 
-		const int foundIdx = arrayFindIndexF(models, [refName](dsmmodel_t* model) {
+		const int foundIdx = arrayFindIndexF(models, [refName](DSModel* model) {
 			return !stricmp(model->name, refName);
 		});
 
 		if (foundIdx == -1)
 			continue;
 
-		GenModel_t mod;
+		GenModel mod;
 		mod.model = CRefPtr(models[foundIdx]);
 		mod.shapeData = CRefPtr(shapeDatas[foundIdx]);
 		mod.name = modelName;
@@ -341,8 +341,6 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 	}
 }
 
-#pragma optimize("", off)
-
 //************************************
 // Loads reference ESM files
 //************************************
@@ -383,13 +381,13 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	}
 
 	// load the models
-	Array<GenModel_t> models(PP_SL);
+	Array<GenModel> models(PP_SL);
 
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
 		Msg("Loading model '%s'\n", modelfilenames[i].ToCString());
 
-		GenModel_t model;
+		GenModel model;
 		if(!LoadModel(modelfilenames[i].ToCString(), model))
 			continue;
 
@@ -408,14 +406,14 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	// merge the models
 	if(models.numElem() > 1)
 	{
-		dsmmodel_t* merged = PPNew dsmmodel_t;
+		DSModel* merged = PPNew DSModel;
 
 		// set model to as part name
 		strcpy(merged->name, KV_GetValueString(pKeyBase, 0, "invalid_model_name"));
 
 		for(int i = 0; i < models.numElem(); i++)
 		{
-			dsmmodel_t* model = models[i].model;
+			DSModel* model = models[i].model;
 
 			if(i == 0)
 			{
@@ -429,7 +427,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 			FreeModel(models[i]);
 		}
 
-		GenModel_t mref;
+		GenModel mref;
 		mref.model = CRefPtr(merged);
 		mref.shapeData = nullptr;
 		mref.name = merged->name;
@@ -513,7 +511,7 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 	Msg("Added %d model references\n", m_modelrefs.numElem());
 
 	// Add dummy (used for LODs)
-	GenModel_t mod{ "_dummy", CRefPtr_new(dsmmodel_t), nullptr };
+	GenModel mod{ "_dummy", CRefPtr_new(DSModel), nullptr };
 	strcpy(mod.model->name, "_dummy");
 	const int index = m_modelrefs.append(mod);
 
@@ -559,7 +557,7 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 {
 	MsgWarning("\nLoading LODs\n");
 
-	// always add first lod
+	// always add first default lod
 	studiolodparams_t lod;
 	lod.distance = 0.0f;
 	lod.flags = 0;
@@ -587,6 +585,12 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 		studiolodparams_t& newlod = m_lodparams.append();
 		newlod.distance = lodDist;
 		newlod.flags = 0;
+
+		const char* lodFlagStr = KV_GetValueString(lodKey, 1, nullptr);
+		if (lodFlagStr && !stricmp(lodFlagStr, "manual"))
+		{
+			newlod.flags |= STUDIO_LOD_FLAG_MANUAL;
+		}
 
 		ParseLodData(lodKey, lodIdx);
 
@@ -707,7 +711,7 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 //************************************
 // Checks bone for availablity in list
 //************************************
-bool BoneListCheckForBone(const char* pszName, const Array<dsmskelbone_t*> &pBones)
+bool BoneListCheckForBone(const char* pszName, const Array<DSBone*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
@@ -721,7 +725,7 @@ bool BoneListCheckForBone(const char* pszName, const Array<dsmskelbone_t*> &pBon
 //************************************
 // returns bone index for availablity in list
 //************************************
-int BoneListGetBoneIndex(const char* pszName, const Array<dsmskelbone_t*> &pBones)
+int BoneListGetBoneIndex(const char* pszName, const Array<DSBone*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
@@ -736,7 +740,7 @@ int BoneListGetBoneIndex(const char* pszName, const Array<dsmskelbone_t*> &pBone
 //************************************
 // Remaps vertex bone indices new_bones
 //************************************
-void BoneRemapDSMGroup(dsmgroup_t* pGroup, const Array<dsmskelbone_t*> &old_bones, Array<dsmskelbone_t*> &new_bones)
+void BoneRemapDSMGroup(DSGroup* pGroup, const Array<DSBone*> &old_bones, Array<DSBone*> &new_bones)
 {
 	for(int i = 0; i < pGroup->verts.numElem(); i++)
 	{
@@ -756,7 +760,7 @@ void BoneRemapDSMGroup(dsmgroup_t* pGroup, const Array<dsmskelbone_t*> &old_bone
 //************************************
 // Remaps vertex bone indices and merges skeleton
 //************************************
-void BoneMergeRemapDSM(dsmmodel_t* pDSM, Array<dsmskelbone_t*> &new_bones)
+void BoneMergeRemapDSM(DSModel* pDSM, Array<DSBone*> &new_bones)
 {
 	// remap groups
 	for(int i = 0; i < pDSM->groups.numElem(); i++)
@@ -773,8 +777,8 @@ void BoneMergeRemapDSM(dsmmodel_t* pDSM, Array<dsmskelbone_t*> &new_bones)
 	for(int i = 0; i < new_bones.numElem(); i++)
 	{
 		// copy bone
-		dsmskelbone_t* pBone = PPNew dsmskelbone_t;
-		memcpy(pBone, new_bones[i], sizeof(dsmskelbone_t));
+		DSBone* pBone = PPNew DSBone;
+		memcpy(pBone, new_bones[i], sizeof(DSBone));
 
 		// add
 		pDSM->bones.append(pBone);
@@ -794,11 +798,11 @@ void CEGFGenerator::MergeBones()
 	// dissolve bones that has 0 vertex refs
 
 	// first, load all bones into the single list, as unique
-	Array<dsmskelbone_t*> allBones(PP_SL);
+	Array<DSBone*> allBones(PP_SL);
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		dsmmodel_t* model = m_modelrefs[i].model;
+		DSModel* model = m_modelrefs[i].model;
 
 		for(int j = 0; j < model->bones.numElem(); j++)
 		{
@@ -806,8 +810,8 @@ void CEGFGenerator::MergeBones()
 			if(!BoneListCheckForBone(model->bones[j]->name, allBones))
 			{
 				// copy bone
-				dsmskelbone_t* pBone = PPNew dsmskelbone_t;
-				memcpy(pBone, model->bones[j], sizeof(dsmskelbone_t));
+				DSBone* pBone = PPNew DSBone;
+				memcpy(pBone, model->bones[j], sizeof(DSBone));
 
 				// set new bone id
 				pBone->bone_id = allBones.numElem();
@@ -842,12 +846,12 @@ void CEGFGenerator::BuildBoneChains()
 	Msg("Bones:\n");
 
 	// using a first reference since it's already remapped
-	dsmmodel_t* model = m_modelrefs[0].model;
+	DSModel* model = m_modelrefs[0].model;
 
 	// make bone list first
 	for(int i = 0; i < model->bones.numElem(); i++)
 	{
-		GenBone_t& cbone = m_bones.append();
+		GenBone& cbone = m_bones.append();
 		cbone.refBone = model->bones[i];
 
 		Msg(" %s\n", cbone.refBone->name);
@@ -959,14 +963,14 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 		return;
 	}
 
-	GenIKChain_t ikCh;
+	GenIKChain ikCh;
 
 	char effector_name[44];
 	
 	strcpy(ikCh.name, KV_GetValueString(pSection, 0));
 	strcpy(effector_name, KV_GetValueString(pSection, 1));
 
-	GenBone_t* effector_chain = FindBoneByName(effector_name);
+	GenBone* effector_chain = FindBoneByName(effector_name);
 
 	if(!effector_chain)
 	{
@@ -975,10 +979,10 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 	}
 
 	// fill link list
-	GenBone_t* cparent = effector_chain;
+	GenBone* cparent = effector_chain;
 	do
 	{
-		GenIKLink_t& link = ikCh.link_list.append();
+		GenIKLink& link = ikCh.link_list.append();
 
 		link.damping = 1.0f;
 		link.bone = cparent;
@@ -1096,32 +1100,37 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 		if(attachSec->values.numElem() < 8)
 		{
 			MsgError("Invalid attachment definition\n");
-			MsgWarning("usage: attachment (name) (bone name) (position x y z) (rotation x y z)\n");
+			MsgWarning("usage: attachment (name) (boneName or \"none\") (position x y z) (rotation x y z)\n");
 			continue;
 		}
 
-		char attach_to_bone[44];
-		const char* attachmentName = KV_GetValueString(attachSec, 1);
-		strcpy(attach_to_bone, KV_GetValueString(attachSec, 1));
-		GenBone_t* pBone = FindBoneByName(attach_to_bone);
+		const char* attachmentName = KV_GetValueString(attachSec, 0);
+		const char* attachBoneName = KV_GetValueString(attachSec, 1);
 
-		if (!pBone)
+		GenBone* pBone = nullptr;
+		if (stricmp(attachBoneName, "none"))
 		{
-			MsgError("Can't find bone %s for attachment %s\n", attach_to_bone, attachmentName);
-			continue;
+			GenBone* pBone = FindBoneByName(attachBoneName);
+			if (!pBone)
+			{
+				MsgError("Can't find bone %s for attachment %s\n", attachBoneName, attachmentName);
+				continue;
+			}
 		}
 
-		studioattachment_t& attach = m_attachments.append();
+		studiotransform_t& attach = m_transforms.append();
 		strcpy(attach.name, attachmentName);
-		attach.position = KV_GetVector3D(attachSec, 2);
-		attach.angles = KV_GetVector3D(attachSec, 5);
-		attach.bone_id = pBone->refBone->bone_id;
 
-		MsgInfo("Adding attachment %s\n", attach.name);
+		attach.transform = identity4;
+		attach.transform.setRotation(DEG2RAD(KV_GetVector3D(attachSec, 2)));
+		attach.transform.setTranslation(KV_GetVector3D(attachSec, 5));
+		attach.attachBoneIdx = pBone ? pBone->refBone->bone_id : EGF_INVALID_IDX;
+
+		MsgInfo("Adding transform attachment %s\n", attach.name);
 	}
 
-	if(m_attachments.numElem())
-		Msg("Total attachments: %d\n", m_attachments.numElem());
+	if(m_transforms.numElem())
+		Msg("Total transform attachment: %d\n", m_transforms.numElem());
 }
 
 //************************************
@@ -1156,7 +1165,7 @@ void CEGFGenerator::Cleanup()
 	m_matpathes.clear(true);
 	m_ikchains.clear(true);
 	m_bones.clear(true);
-	m_attachments.clear(true);
+	m_transforms.clear(true);
 	m_bodygroups.clear(true);
 	m_materials.clear(true);
 	m_usedMaterials.clear(true);
@@ -1206,17 +1215,17 @@ void CEGFGenerator::ParsePhysModels(const KVSection* mainsection)
 			continue;
 		}
 
-		dsmmodel_t* physModel = nullptr;
+		DSModel* physModel = nullptr;
 
 		const KVSection* modelNamePair = physObjectSec->FindSection("model");
 		if(modelNamePair)
 		{
-			GenModel_t* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
+			GenModel* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
 
 			if(!foundRef)
 			{
 				// scaling already performed here
-				GenModel_t model;
+				GenModel model;
 				if(!LoadModel(KV_GetValueString(modelNamePair), model))
 				{
 					MsgError("*ERROR* Cannot find model reference '%s'\n", KV_GetValueString(modelNamePair));

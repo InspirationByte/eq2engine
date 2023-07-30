@@ -9,10 +9,10 @@
 
 namespace SharedModel
 {
-struct dsmmodel_t;
+struct DSModel;
 
 // Loads OBJ model, as DSM
-bool LoadOBJ(dsmmodel_t* model, const char* filename);
-bool SaveOBJ(dsmmodel_t* model, const char* filename);
+bool LoadOBJ(DSModel* model, const char* filename);
+bool SaveOBJ(DSModel* model, const char* filename);
 
 } // namespace

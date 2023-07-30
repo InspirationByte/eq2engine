@@ -739,11 +739,35 @@ int CEqStudioGeom::SelectLod(float distance) const
 
 	for (int i = r_egf_LodStart.GetInt(); i < numLods; i++)
 	{
-		if (distance > m_studio->pLodParams(i)->distance * r_egf_LodScale.GetFloat())
+		const studiolodparams_t* lodParam = m_studio->pLodParams(i);
+		if (lodParam->flags & STUDIO_LOD_FLAG_MANUAL)
+			continue;
+
+		if (distance > lodParam->distance * r_egf_LodScale.GetFloat())
 			idealLOD = i;
 	}
 
 	return idealLOD;
+}
+
+int CEqStudioGeom::FindManualLod(float value) const
+{
+	const int numLods = m_studio->numLodParams;
+
+	for (int i = 0; i < numLods; i++)
+	{
+		const studiolodparams_t* lodParam = m_studio->pLodParams(i);
+		if (!(lodParam->flags & STUDIO_LOD_FLAG_MANUAL))
+			continue;
+
+		if (fsimilar(lodParam->distance, value))
+		{
+			return i;
+			break;
+		}
+	}
+
+	return -1;
 }
 
 void CEqStudioGeom::SetupVBOStream(int nStream) const
@@ -893,6 +917,14 @@ void CEqStudioGeom::SetInstancer(CBaseEqGeomInstancer* instancer)
 CBaseEqGeomInstancer* CEqStudioGeom::GetInstancer() const
 {
 	return m_instancer;
+}
+
+Matrix4x4 CEqStudioGeom::GetLocalTransformMatrix(int attachmentIdx) const
+{
+	ASSERT(attachmentIdx >= 0 && attachmentIdx < m_studio->numTransforms);
+
+	const studiotransform_t* attach = m_studio->pTransform(attachmentIdx);
+	return attach->transform;
 }
 
 static void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const DecalMakeInfo& info)

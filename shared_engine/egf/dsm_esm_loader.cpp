@@ -36,13 +36,13 @@ bool isQuotes(const char ch)
 	return (ch != '\"');
 }
 
-bool ReadBones(Tokenizer& tok, dsmmodel_t* pModel)
+bool ReadBones(Tokenizer& tok, DSModel* pModel)
 {
 	char *str;
 
 	bool bCouldRead = false;
 
-	dsmskelbone_t* pBone = nullptr;
+	DSBone* pBone = nullptr;
 
 	while ((str = tok.next()) != nullptr)
 	{
@@ -57,7 +57,7 @@ bool ReadBones(Tokenizer& tok, dsmmodel_t* pModel)
 		else if(bCouldRead)
 		{
 			// read bone definition
-			pBone = PPNew dsmskelbone_t;
+			pBone = PPNew DSBone;
 
 			char* str2 = tok.next(isQuotes);
 
@@ -88,13 +88,13 @@ bool ReadBones(Tokenizer& tok, dsmmodel_t* pModel)
 }
 
 
-bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
+bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 {
 	char *str;
 
 	bool bCouldRead = false;
 
-	dsmgroup_t* pCurrentGroup = nullptr;
+	DSGroup* pCurrentGroup = nullptr;
 	char material_name[256];
 	material_name[0] = '\0';
 
@@ -128,7 +128,7 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 
 				if(!pCurrentGroup)
 				{
-					pCurrentGroup = PPNew dsmgroup_t;
+					pCurrentGroup = PPNew DSGroup;
 
 					strcpy(pCurrentGroup->texture, material_name);
 					pCurrentGroup->verts.resize(1024);
@@ -146,7 +146,7 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 					return false;
 				}
 
-				dsmvertex_t newvertex;
+				DSVertex newvertex;
 
 				newvertex.position.x = readFloat(tok);
 				newvertex.position.y = readFloat(tok);
@@ -187,7 +187,7 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 
 						for (int i = 0; i < numWeights; i++)
 						{
-							dsmweight_t& weight = newvertex.weights.append();
+							DSWeight& weight = newvertex.weights.append();
 							weight.bone = tempWeightBones[i];
 							weight.weight = tempWeights[i];
 						}
@@ -197,7 +197,7 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 						// copy weights
 						for (int i = 0; i < numWeights; i++)
 						{
-							dsmweight_t& weight = newvertex.weights.append();
+							DSWeight& weight = newvertex.weights.append();
 							weight.bone = tempWeightBones[i];
 							weight.weight = tempWeights[i];
 						}
@@ -218,13 +218,13 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 	return false;
 }
 
-bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
+bool ReadShapes(Tokenizer& tok, DSShapeData* data)
 {
 	char *str;
 
 	bool bCouldRead = false;
 
-	esmshapekey_t* curShapeKey = nullptr;
+	DSShapeKey* curShapeKey = nullptr;
 	char key_name[256];
 	key_name[0] = '\0';
 
@@ -242,7 +242,7 @@ bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
 		{
 			if(!stricmp(str, "key"))
 			{
-				curShapeKey = PPNew esmshapekey_t;
+				curShapeKey = PPNew DSShapeKey;
 
 				curShapeKey->time = readInt(tok);
 
@@ -261,8 +261,8 @@ bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
 				}
 
 				// parse shape vertex
-				esmshapevertex_t newvertex;
-				memset(&newvertex, 0, sizeof(esmshapevertex_t));
+				DSShapeVert newvertex;
+				memset(&newvertex, 0, sizeof(DSShapeVert));
 
 				newvertex.vertexId = readInt(tok);
 
@@ -284,7 +284,7 @@ bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
 	return false;
 }
 
-bool LoadESM(dsmmodel_t* model, const char* filename)
+bool LoadESM(DSModel* model, const char* filename)
 {
 	ASSERT(model);
 
@@ -318,7 +318,7 @@ bool LoadESM(dsmmodel_t* model, const char* filename)
 	return true;
 }
 
-bool LoadESXShapes( esmshapedata_t* data, const char* filename )
+bool LoadESXShapes( DSShapeData* data, const char* filename )
 {
 	ASSERT(data);
 
@@ -351,13 +351,13 @@ bool LoadESXShapes( esmshapedata_t* data, const char* filename )
 	return true;
 }
 
-esmshapedata_t::~esmshapedata_t()
+DSShapeData::~DSShapeData()
 {
 	for(int i = 0; i < shapes.numElem(); i++)
 		delete shapes[i];
 }
 
-int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )
+int FindShapeKeyIndex( DSShapeData* data, const char* shapeKeyName )
 {
 	if(!data)
 		return -1;
@@ -371,25 +371,25 @@ int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )
 	return -1;
 }
 
-void AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData)
+void AssignShapeKeyVertexIndexes(DSModel* mod, DSShapeData* shapeData)
 {
 	if (shapeData->shapes.numElem() <= 1)
 		return;
 
 	Msg("Assigning vertex indiexes to shape keys\n");
 
-	esmshapekey_t* basis = shapeData->shapes[0];
+	DSShapeKey* basis = shapeData->shapes[0];
 
 	for(int i = 0; i < mod->groups.numElem(); i++)
 	{
-		dsmgroup_t* grp = mod->groups[i];
+		DSGroup* grp = mod->groups[i];
 
 		for(int j = 0; j < grp->verts.numElem(); j++)
 		{
-			dsmvertex_t& grpVert = grp->verts[j];
+			DSVertex& grpVert = grp->verts[j];
 			for(int k = 0; k < basis->verts.numElem(); k++)
 			{
-				const esmshapevertex_t& basisVert = basis->verts[k];
+				const DSShapeVert& basisVert = basis->verts[k];
 
 				if(grpVert.position == basisVert.position &&
 					grpVert.normal == basisVert.normal)

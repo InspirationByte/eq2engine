@@ -121,6 +121,7 @@ enum
 	Event_View_ResetView,
 	Event_View_ShowPhysModel,
 	Event_View_ShowBones,
+	Event_View_ShowAttachments,
 	Event_View_ShowFloor,
 	Event_View_ShowGrid,
 	Event_View_Wireframe,
@@ -217,6 +218,7 @@ protected:
 	wxMenuBar*		m_pMenu;
 	wxMenuItem*		m_drawPhysModel;
 	wxMenuItem*		m_drawBones;
+	wxMenuItem*		m_drawAttachments;
 	wxMenuItem*		m_drawFloor;
 	wxMenuItem*		m_drawGrid;
 	wxMenuItem*		m_wireframe;
@@ -733,6 +735,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 
 	m_drawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", "Show physics objects\tP"), wxEmptyString, wxITEM_CHECK );
 	m_drawBones = menuView->Append( Event_View_ShowBones, DKLOC("TOKEN_SHOWBONES", "Show bones\tB"), wxEmptyString, wxITEM_CHECK );
+	m_drawAttachments = menuView->Append(Event_View_ShowAttachments, DKLOC("TOKEN_SHOWATTACHMENTS", "Show attachments\tB"), wxEmptyString, wxITEM_CHECK);
 	m_drawFloor = menuView->Append( Event_View_ShowFloor, DKLOC("TOKEN_SHOWFLOOR", "Show ground\tB"), wxEmptyString, wxITEM_CHECK);
 	m_drawGrid = menuView->Append(Event_View_ShowGrid, DKLOC("TOKEN_SHOWGRID", "Show grid\tB"), wxEmptyString, wxITEM_CHECK);
 	m_wireframe = menuView->Append( Event_View_Wireframe, DKLOC("TOKEN_WIREFRAME", "Wireframe\tW"), wxEmptyString, wxITEM_CHECK );
@@ -1084,14 +1087,12 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 	if(!bAnyMoveButton)
 	{
 		m_bIsMoving = false;
-		SHOW_CURSOR;
 	}
 
 	if(m_bIsMoving)
 	{
 		wxPoint pt = ScreenToClient(wxPoint(m_vLastClientCursorPos.x, m_vLastClientCursorPos.y));
 		WarpPointer(pt.x, pt.y);
-		HIDE_CURSOR;
 	}
 
 	cam_pos = clamp(cam_pos, Vector3D(-F_INFINITY), Vector3D(F_INFINITY));
@@ -1281,6 +1282,9 @@ void CEGFViewFrame::ReDraw()
 
 		if(m_drawBones->IsChecked())
 			renderFlags |= RFLAG_BONES;
+
+		if (m_drawAttachments->IsChecked())
+			renderFlags |= RFLAG_ATTACHMENTS;
 
 		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
 

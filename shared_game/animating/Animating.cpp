@@ -85,9 +85,6 @@ inline void ZeroFrameTransform(qanimframe_t& frame)
 CAnimatingEGF::CAnimatingEGF()
 {
 	m_boneTransforms = nullptr;
-	m_joints = nullptr;
-	m_numBones = 0;
-
 	m_transitionFrames = nullptr;
 
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
@@ -103,8 +100,8 @@ void CAnimatingEGF::DestroyAnimating()
 	m_seqList.clear();
 	m_poseControllers.clear();
 	m_ikChains.clear();
-	m_joints = nullptr;
-	m_numBones = 0;
+	m_joints = ArrayCRef<studioJoint_t>(nullptr);
+	m_transforms = ArrayCRef<studiotransform_t>(nullptr);;
 
 	if (m_boneTransforms)
 		PPFree(m_boneTransforms);
@@ -126,19 +123,19 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 
 	const studiohdr_t& studio = model->GetStudioHdr();
 
-	m_joints = &model->GetJoint(0);
-	m_numBones = studio.numBones;
+	m_joints = ArrayCRef(&model->GetJoint(0), studio.numBones);
+	m_transforms = ArrayCRef(model->GetStudioHdr().pTransform(0), model->GetStudioHdr().numTransforms);
 
 	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 		m_sequenceTimers[i].Reset();
 
-	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_numBones);
+	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_joints.numElem());
 
-	for (int i = 0; i < m_numBones; i++)
+	for (int i = 0; i < m_joints.numElem(); i++)
 		m_boneTransforms[i] = m_joints[i].absTrans;
 
-	m_transitionFrames = PPAllocStructArray(qanimframe_t, m_numBones);
-	memset(m_transitionFrames, 0, sizeof(qanimframe_t) * m_numBones);
+	m_transitionFrames = PPAllocStructArray(qanimframe_t, m_joints.numElem());
+	memset(m_transitionFrames, 0, sizeof(qanimframe_t) * m_joints.numElem());
 
 	//m_velocityFrames = PPAllocStructArray(qanimframe_t, m_numBones);
 	//memset(m_velocityFrames, 0, sizeof(qanimframe_t)*m_numBones);
@@ -370,7 +367,7 @@ Matrix4x4* CAnimatingEGF::GetBoneMatrices() const
 // finds bone
 int CAnimatingEGF::FindBone(const char* boneName) const
 {
-	for (int i = 0; i < m_numBones; i++)
+	for (int i = 0; i < m_joints.numElem(); i++)
 	{
 		if (!stricmp(m_joints[i].bone->name, boneName))
 			return i;
@@ -616,7 +613,7 @@ void CAnimatingEGF::RecalcBoneTransforms()
 	m_sequenceTimers[0].blendWeight = 1.0f;
 
 	// setup each bone's transformation
-	for (int boneId = 0; boneId < m_numBones; boneId++)
+	for (int boneId = 0; boneId < m_joints.numElem(); boneId++)
 	{
 		qanimframe_t finalBoneFrame;
 
@@ -734,12 +731,22 @@ void CAnimatingEGF::RecalcBoneTransforms()
 	}
 
 	// setup each bone's transformation
-	for (int i = 0; i < m_numBones; i++)
+	for (int i = 0; i < m_joints.numElem(); i++)
 	{
 		const int parentIdx = m_joints[i].parent;
 		if (parentIdx != -1)
 			m_boneTransforms[i] = m_boneTransforms[i] * m_boneTransforms[parentIdx];
 	}
+}
+
+Matrix4x4 CAnimatingEGF::GetLocalStudioTransformMatrix(int attachmentIdx) const
+{
+	const studiotransform_t* attach = &m_transforms[attachmentIdx];
+
+	if (attach->attachBoneIdx != EGF_INVALID_IDX)
+		return attach->transform * m_boneTransforms[attach->attachBoneIdx];
+
+	return attach->transform;
 }
 
 void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
@@ -748,7 +755,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 		return;
 
 	// setup each bone's transformation
-	for (int i = 0; i < m_numBones; i++)
+	for (int i = 0; i < m_joints.numElem(); i++)
 	{
 		if (r_debugShowBone.GetInt() == i)
 		{
@@ -904,7 +911,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 	memset(ik_enabled_bones, 0, sizeof(ik_enabled_bones));
 
 	// run through bones and find enabled bones by IK chain
-	for (int boneId = 0; boneId < m_numBones; boneId++)
+	for (int boneId = 0; boneId < m_joints.numElem(); boneId++)
 	{
 		const int chain_id = m_joints[boneId].ikChainId;
 		const int link_id = m_joints[boneId].ikLinkId;

@@ -111,7 +111,7 @@ static int FindVertexInList(const Array<studiovertexdesc_t>& verts, const studio
 	return -1;
 }
 
-static studiovertexdesc_t MakeStudioVertex(const dsmvertex_t& vert)
+static studiovertexdesc_t MakeStudioVertex(const DSVertex& vert)
 {
 	studiovertexdesc_t vertex;
 
@@ -147,7 +147,7 @@ static studiovertexdesc_t MakeStudioVertex(const dsmvertex_t& vert)
 	return vertex;
 }
 
-void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert, studiovertexdesc_t& studioVert, float weight )
+void ApplyShapeKeyOnVertex( DSShapeKey* modShapeKey, const DSVertex& vert, studiovertexdesc_t& studioVert, float weight )
 {
 	for(int i = 0; i < modShapeKey->verts.numElem(); i++)
 	{
@@ -182,7 +182,7 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 }
 
 // writes group
-void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup)
+void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, DSGroup* srcGroup, DSShapeKey* modShapeKey, modelgroupdesc_t* dstGroup)
 {
 	// DSM groups to be generated indices and optimized here
 	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
@@ -435,11 +435,11 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 		
 	*/
 
-	Array<GenModel_t*> writeModels{ PP_SL };
+	Array<GenModel*> writeModels{ PP_SL };
 
 	for (int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		GenModel_t& modelRef = m_modelrefs[i];
+		GenModel& modelRef = m_modelrefs[i];
 		if (!modelRef.used)
 			continue;
 		writeModels.append(&modelRef);
@@ -454,12 +454,18 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < writeModels.numElem(); i++)
 	{
-		const GenModel_t& modelRef = *writeModels[i];
+		const GenModel& modelRef = *writeModels[i];
 
 		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
 		pDesc->numGroups = modelRef.model->groups.numElem();
 		pDesc->groupsOffset = WRITE_RELATIVE_OFS( pDesc );
+		pDesc->transformIdx = EGF_INVALID_IDX;
+
+		// pDesc->transformIdx = m_transforms.numElem();
+		// studiotransform_t& modelTransform = m_transforms.append();
+		// modelTransform.attachBoneIdx = 0;
+
 		WRITE_RESERVE_NUM( modelgroupdesc_t, pDesc->numGroups );
 	}
 
@@ -469,7 +475,7 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 	// FIXME: Body groups will need a remapping once some models are unused
 	for(int i = 0; i < writeModels.numElem(); i++)
 	{
-		const GenModel_t& modelRef = *writeModels[i];
+		const GenModel& modelRef = *writeModels[i];
 
 		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
@@ -479,7 +485,7 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 			modelgroupdesc_t* groupDesc = pDesc->pGroup(j);
 
 			// shape key modifier (if available)
-			esmshapekey_t* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
+			DSShapeKey* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
 			WriteGroup(header, stream, modelRef.model->groups[j], key, groupDesc);
 
 			if(groupDesc->materialIndex != -1)
@@ -493,12 +499,12 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 //************************************
 void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 {
-	Array<GenModel_t*> writeModels{ PP_SL };
+	Array<GenModel*> writeModels{ PP_SL };
 	Array<GenLODList_t*> writeLods{ PP_SL };
 
 	for (int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		GenModel_t& modelRef = m_modelrefs[i];
+		GenModel& modelRef = m_modelrefs[i];
 		if (!modelRef.used)
 			continue;
 		writeLods.append(&m_modelLodLists[i]);
@@ -551,12 +557,12 @@ void CEGFGenerator::WriteBodyGroups(studiohdr_t* header, IVirtualStream* stream)
 //************************************
 void CEGFGenerator::WriteAttachments(studiohdr_t* header, IVirtualStream* stream)
 {
-	header->attachmentsOffset = WRITE_OFS;
-	header->numAttachments = m_attachments.numElem();
-	WRITE_RESERVE_NUM(studioattachment_t, m_attachments.numElem());
+	header->transformsOffset = WRITE_OFS;
+	header->numTransforms = m_transforms.numElem();
+	WRITE_RESERVE_NUM(studiotransform_t, m_transforms.numElem());
 
-	for(int i = 0; i < m_attachments.numElem(); i++)
-		*header->pAttachment(i) = m_attachments[i];
+	for(int i = 0; i < m_transforms.numElem(); i++)
+		*header->pTransform(i) = m_transforms[i];
 }
 
 //************************************
@@ -570,7 +576,7 @@ void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < m_ikchains.numElem(); i++)
 	{
-		const GenIKChain_t& srcChain = m_ikchains[i];
+		const GenIKChain& srcChain = m_ikchains[i];
 		studioikchain_t* chain = header->pIkChain(i);
 
 		chain->numLinks = srcChain.link_list.numElem();
@@ -585,7 +591,7 @@ void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
 		{
 			const int link_id = (chain->numLinks - 1) - j;
 
-			const GenIKLink_t& link = srcChain.link_list[link_id];
+			const GenIKLink& link = srcChain.link_list[link_id];
 
 			Msg("IK chain bone id: %d\n", link.bone->refBone->bone_id);
 
@@ -682,7 +688,7 @@ void CEGFGenerator::WriteBones(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
-		dsmskelbone_t* srcBone = m_bones[i].refBone;
+		DSBone* srcBone = m_bones[i].refBone;
 		bonedesc_t* destBone = header->pBone(i);
 
 		strcpy(destBone->name, srcBone->name);
@@ -695,11 +701,11 @@ void CEGFGenerator::WriteBones(studiohdr_t* header, IVirtualStream* stream)
 
 void CEGFGenerator::Validate(studiohdr_t* header, const char* stage)
 {
-	Array<GenModel_t*> writeModels{ PP_SL };
+	Array<GenModel*> writeModels{ PP_SL };
 
 	for (int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		GenModel_t& modelRef = m_modelrefs[i];
+		GenModel& modelRef = m_modelrefs[i];
 		if (!modelRef.used)
 			continue;
 		writeModels.append(&modelRef);
@@ -710,7 +716,7 @@ void CEGFGenerator::Validate(studiohdr_t* header, const char* stage)
 
 	for (int i = 0; i < header->numModels; ++i)
 	{
-		const GenModel_t& modelRef = *writeModels[i];
+		const GenModel& modelRef = *writeModels[i];
 
 		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 		ASSERT_MSG(pDesc->numGroups == modelRef.model->groups.numElem(), "NumGroups invalid after %s", stage);

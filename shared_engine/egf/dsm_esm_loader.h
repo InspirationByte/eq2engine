@@ -14,9 +14,9 @@ namespace SharedModel
 bool isNotWhiteSpace(const char ch);
 float readFloat(Tokenizer& tok);
 
-struct dsmmodel_t;
+struct DSModel;
 
-struct esmshapevertex_t
+struct DSShapeVert
 {
 	Vector3D	position;
 	Vector3D	normal;
@@ -24,27 +24,28 @@ struct esmshapevertex_t
 	int			vertexId{ -1 };
 };
 
-struct esmshapekey_t
+struct DSShapeKey
 {
-	Array<esmshapevertex_t>		verts{ PP_SL };
-	EqString					name;
-	int							time{ 0 };
+	Array<DSShapeVert>	verts{ PP_SL };
+	EqString			name;
+	int					time{ 0 };
 };
 
-struct esmshapedata_t : RefCountedObject<esmshapedata_t>
+struct DSShapeData : RefCountedObject<DSShapeData>
 {
-	~esmshapedata_t();
-	Array<esmshapekey_t*>	shapes{ PP_SL };
-	EqString				reference;
+	~DSShapeData();
+
+	Array<DSShapeKey*>	shapes{ PP_SL };
+	EqString			reference;
 };
 
 
-bool	ReadBones(Tokenizer& tok, dsmmodel_t* pModel);
+bool	ReadBones(Tokenizer& tok, DSModel* pModel);
 
-int		FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName );
-void	AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData);
+int		FindShapeKeyIndex( DSShapeData* data, const char* shapeKeyName );
+void	AssignShapeKeyVertexIndexes(DSModel* mod, DSShapeData* shapeData);
 
-bool	LoadESM(dsmmodel_t* model, const char* filename);
-bool	LoadESXShapes(esmshapedata_t* data, const char* filename);
+bool	LoadESM(DSModel* model, const char* filename);
+bool	LoadESXShapes(DSShapeData* data, const char* filename);
 
 } // namespace

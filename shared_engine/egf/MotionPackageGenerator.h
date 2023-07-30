@@ -13,7 +13,7 @@ struct KVSection;
 struct animCaBoneFrames_t;
 
 namespace SharedModel {
-	struct dsmmodel_t;
+	struct DSModel;
 }
 
 class CMotionPackageGenerator
@@ -24,7 +24,7 @@ public:
 	void WriteAnimationPackage(const char* packageOutputFilename);
 
 	// Setups ESA bones for conversion
-	void SetupESABones(SharedModel::dsmmodel_t* pModel, animCaBoneFrames_t* bones);
+	void SetupESABones(SharedModel::DSModel* pModel, animCaBoneFrames_t* bones);
 
 private:
 

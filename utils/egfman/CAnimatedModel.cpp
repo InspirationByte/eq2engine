@@ -172,56 +172,6 @@ void CAnimatedModel::Update(float dt)
 	UpdateIK(dt, identity4);
 }
 
-// finds attachment
-int CAnimatedModel::FindAttachment(const char* name)
-{
-	return Studio_FindAttachmentId(&m_pModel->GetStudioHdr(), name);
-}
-
-// gets local attachment position
-Vector3D CAnimatedModel::GetLocalAttachmentOrigin(int nAttach)
-{
-	if(nAttach == -1)
-		return vec3_zero;
-
-	const studiohdr_t& studio = m_pModel->GetStudioHdr();
-
-	if(nAttach >= studio.numAttachments)
-		return vec3_zero;
-
-	const studioattachment_t* attach = studio.pAttachment(nAttach);
-
-	Matrix4x4 matrix = identity4;
-	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
-	matrix.setTranslation(attach->position);
-
-	Matrix4x4 finalAttachmentTransform = matrix * m_boneTransforms[attach->bone_id];
-
-	// because all dynamic models are left-handed
-	return finalAttachmentTransform.rows[3].xyz();//*Vector3D(-1,1,1);
-}
-
-// gets local attachment direction
-Vector3D CAnimatedModel::GetLocalAttachmentDirection(int nAttach)
-{
-	if(nAttach == -1)
-		return vec3_zero;
-
-	const studiohdr_t& studio = m_pModel->GetStudioHdr();
-	if(nAttach >= studio.numAttachments)
-		return vec3_zero;
-
-	const studioattachment_t* attach = studio.pAttachment(nAttach);
-
-	Matrix4x4 matrix = identity4;
-	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
-	matrix.setTranslation(attach->position);
-
-	Matrix4x4 finalAttachmentTransform = matrix * m_boneTransforms[attach->bone_id];
-
-	return finalAttachmentTransform.rows[2].xyz();//*Vector3D(-1,1,1);
-}
-
 enum EIKAttachType
 {
 	IK_ATTACH_WORLD = 0,
@@ -450,6 +400,9 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	if( nViewRenderFlags & RFLAG_BONES )
 		VisualizeBones();
+
+	if (nViewRenderFlags & RFLAG_ATTACHMENTS)
+		VisualizeAttachments();
 }
 
 void CAnimatedModel::VisualizeBones()
@@ -465,7 +418,7 @@ void CAnimatedModel::VisualizeBones()
 	}
 
 	// setup each bone's transformation
-	for(int i = 0; i < m_numBones; i++)
+	for(int i = 0; i < m_joints.numElem(); i++)
 	{
 		const Vector3D pos = inverseTransformPoint(m_boneTransforms[i].rows[3].xyz(), posMatrix);
 
@@ -486,6 +439,38 @@ void CAnimatedModel::VisualizeBones()
 
 		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
 		debugoverlay->Text3D(pos, 100.0f, color_white, m_joints[i].bone->name);
+	}
+}
+
+void CAnimatedModel::VisualizeAttachments()
+{
+	Matrix4x4 posMatrix = identity4;
+
+	if (m_bPhysicsEnable)
+	{
+		if (m_pRagdoll)
+			posMatrix.translate(m_pRagdoll->GetPosition());
+		else if (m_physObj)
+			posMatrix = m_physObj->GetTransformMatrix();
+	}
+
+
+	for (int i = 0; i < m_transforms.numElem(); ++i)
+	{
+		const Matrix4x4 attachTransform = GetLocalStudioTransformMatrix(i);
+
+		const Vector3D pos = inverseTransformPoint(attachTransform.rows[3].xyz(), posMatrix);
+		const Vector3D dX = posMatrix.getRotationComponent() * attachTransform.rows[0].xyz();
+		const Vector3D dY = posMatrix.getRotationComponent() * attachTransform.rows[1].xyz();
+		const Vector3D dZ = posMatrix.getRotationComponent() * attachTransform.rows[2].xyz();
+
+		// draw axis
+		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
+		debugoverlay->Line3D(pos, pos + dY * 0.1f, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
+		debugoverlay->Line3D(pos, pos + dZ * 0.1f, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
+
+		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
+		debugoverlay->Text3D(pos, 100.0f, color_white, m_transforms[i].name);
 	}
 }
 

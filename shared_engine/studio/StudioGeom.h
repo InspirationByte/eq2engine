@@ -55,6 +55,7 @@ public:
 	const studioPhysData_t&		GetPhysData() const;
 	const studioMotionData_t&	GetMotionData(int index) const;
 	const studioJoint_t&		GetJoint(int index) const;
+	Matrix4x4					GetLocalTransformMatrix(int transformIdx) const;
 
 	const BoundingBox&			GetBoundingBox() const;
 
@@ -70,6 +71,7 @@ public:
 
 	// selects a lod. returns index
 	int							SelectLod(float distance) const;
+	int							FindManualLod(float value) const;
 
 	void						Draw(const DrawProps& drawProperties) const;
 	void						SetupVBOStream( int nStream ) const;

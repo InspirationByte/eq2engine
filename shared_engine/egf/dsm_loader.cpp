@@ -87,7 +87,7 @@ int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
 	return nCount;
 }
 
-bool LoadSharedModel(dsmmodel_t* model, const char* filename)
+bool LoadSharedModel(DSModel* model, const char* filename)
 {
 	EqString file(filename);
 	EqString ext(file.Path_Extract_Ext());
@@ -104,7 +104,7 @@ bool LoadSharedModel(dsmmodel_t* model, const char* filename)
 	return false;
 }
 
-bool SaveSharedModel(dsmmodel_t* model, const char* filename)
+bool SaveSharedModel(DSModel* model, const char* filename)
 {
 	EqString file(filename);
 	EqString ext(file.Path_Extract_Ext());
@@ -115,7 +115,7 @@ bool SaveSharedModel(dsmmodel_t* model, const char* filename)
 	return false;
 }
 
-dsmmodel_t::~dsmmodel_t()
+DSModel::~DSModel()
 {
 	for (int i = 0; i < bones.numElem(); i++)
 		delete bones[i];
@@ -127,7 +127,7 @@ dsmmodel_t::~dsmmodel_t()
 	groups.clear(true);
 }
 
-dsmgroup_t* dsmmodel_t::FindGroupByName(const char* pszGroupname)
+DSGroup* DSModel::FindGroupByName(const char* pszGroupname)
 {
 	for(int i = 0; i < groups.numElem(); i++)
 	{
@@ -138,7 +138,7 @@ dsmgroup_t* dsmmodel_t::FindGroupByName(const char* pszGroupname)
 	return nullptr;
 }
 
-dsmskelbone_t* dsmmodel_t::FindBone(const char* pszName)
+DSBone* DSModel::FindBone(const char* pszName)
 {
 	for(int i = 0; i < bones.numElem(); i++)
 	{
@@ -149,7 +149,7 @@ dsmskelbone_t* dsmmodel_t::FindBone(const char* pszName)
 	return nullptr;
 }
 
-int GetTotalVertsOfDSM(dsmmodel_t* model)
+int GetTotalVertsOfDSM(DSModel* model)
 {
 	int numVerts = 0;
 

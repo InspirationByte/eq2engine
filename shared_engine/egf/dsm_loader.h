@@ -10,31 +10,31 @@
 namespace SharedModel
 {
 
-struct dsmweight_t
+struct DSWeight
 {
 	int		bone{ 0 };
 	float	weight{ 0.0f };
 };
 
-struct dsmvertex_t
+struct DSVertex
 {
 	Vector3D					position{ 0.0f };
 	Vector3D					normal{ 0.5f };
 
 	Vector2D					texcoord{ 0.0f };
-	FixedArray<dsmweight_t, 48>	weights;
+	FixedArray<DSWeight, 48>	weights;
 
 	int							vertexId{ 0 };
 };
 
-struct dsmgroup_t
+struct DSGroup
 {
-	char					texture[256]{ 0 };
-	Array<dsmvertex_t>		verts{ PP_SL };
-	Array<int>				indices{ PP_SL };
+	char			texture[256]{ 0 };
+	Array<DSVertex>	verts{ PP_SL };
+	Array<int>		indices{ PP_SL };
 };
 
-struct dsmskelbone_t
+struct DSBone
 {
 	char			name[44]{ 0 };
 	char			parent_name[44]{ 0 };
@@ -46,25 +46,25 @@ struct dsmskelbone_t
 	Vector3D		angles{ 0 };
 };
 
-struct dsmmodel_t : public RefCountedObject<dsmmodel_t>
+struct DSModel : public RefCountedObject<DSModel>
 {
-	~dsmmodel_t();
-	char					name[64]{ 0 };
+	~DSModel();
+	char			name[64]{ 0 };
 
-	Array<dsmgroup_t*>		groups{ PP_SL };
-	Array<dsmskelbone_t*>	bones{ PP_SL };
+	Array<DSGroup*>	groups{ PP_SL };
+	Array<DSBone*>	bones{ PP_SL };
 
-	dsmskelbone_t*			FindBone(const char* pszName);
-	dsmgroup_t*				FindGroupByName(const char* pszGroupname);
+	DSBone*			FindBone(const char* pszName);
+	DSGroup*		FindGroupByName(const char* pszGroupname);
 };
 
 //------------------------------------------------------------------------------------
 
 int		SortAndBalanceBones(int nCount, int nMaxCount, int* bones, float* weights);
 
-bool	LoadSharedModel(dsmmodel_t* model, const char* filename);
-bool	SaveSharedModel(dsmmodel_t* model, const char* filename);
+bool	LoadSharedModel(DSModel* model, const char* filename);
+bool	SaveSharedModel(DSModel* model, const char* filename);
 
-int		GetTotalVertsOfDSM(dsmmodel_t* model);
+int		GetTotalVertsOfDSM(DSModel* model);
 
 } // namespace
