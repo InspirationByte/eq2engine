@@ -11,6 +11,8 @@
 namespace SharedModel
 {
 	struct DSModel;
+	using DSModelPtr = CRefPtr<DSModel>;
+
 	struct DSBone;
 	struct DSGroup;
 	struct DSVertex;
@@ -18,6 +20,7 @@ namespace SharedModel
 
 	struct DSShapeData;
 	struct DSShapeKey;
+	using DSShapeDataPtr = CRefPtr<DSShapeData>;
 };
 
 class IVirtualStream;
@@ -157,15 +160,12 @@ struct CEGFGenerator::GenIKChain
 
 struct CEGFGenerator::GenModel
 {
-	EqString							name;
-
-	CRefPtr<SharedModel::DSModel>		model{ nullptr };
-
-	// bake data
-	CRefPtr<SharedModel::DSShapeData>	shapeData{ nullptr };
-
-	int								shapeIndex{ -1 };
-	int								used{ 0 };
+	EqString					name;
+	SharedModel::DSModelPtr		model{ nullptr };
+	SharedModel::DSShapeDataPtr	shapeData{ nullptr };
+	Matrix4x4					transform{ identity4 };
+	int							shapeIndex{ -1 };
+	int							used{ 0 };
 };
 
 struct CEGFGenerator::GenLODList_t

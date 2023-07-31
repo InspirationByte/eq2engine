@@ -462,6 +462,8 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 		pDesc->groupsOffset = WRITE_RELATIVE_OFS( pDesc );
 		pDesc->transformIdx = EGF_INVALID_IDX;
 
+		// TODO: transforms from each GenModel
+		
 		// pDesc->transformIdx = m_transforms.numElem();
 		// studiotransform_t& modelTransform = m_transforms.append();
 		// modelTransform.attachBoneIdx = 0;

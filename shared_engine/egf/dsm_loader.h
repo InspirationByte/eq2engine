@@ -15,29 +15,30 @@ struct DSWeight
 	int		bone{ 0 };
 	float	weight{ 0.0f };
 };
+using DSWeightList = FixedArray<DSWeight, 48>;
 
 struct DSVertex
 {
-	Vector3D					position{ 0.0f };
-	Vector3D					normal{ 0.5f };
+	Vector3D		position{ 0.0f };
+	Vector3D		normal{ 0.5f };
 
-	Vector2D					texcoord{ 0.0f };
-	FixedArray<DSWeight, 48>	weights;
+	Vector2D		texcoord{ 0.0f };
+	int				vertexId{ 0 };
 
-	int							vertexId{ 0 };
+	DSWeightList	weights;
 };
 
 struct DSGroup
 {
-	char			texture[256]{ 0 };
+	EqString		texture;
 	Array<DSVertex>	verts{ PP_SL };
 	Array<int>		indices{ PP_SL };
 };
 
 struct DSBone
 {
-	char			name[44]{ 0 };
-	char			parent_name[44]{ 0 };
+	EqString		name;
+	EqString		parent_name;
 
 	int				bone_id{ -1 };
 	int				parent_id{ -1 };
@@ -49,7 +50,7 @@ struct DSBone
 struct DSModel : public RefCountedObject<DSModel>
 {
 	~DSModel();
-	char			name[64]{ 0 };
+	EqString		name;
 
 	Array<DSGroup*>	groups{ PP_SL };
 	Array<DSBone*>	bones{ PP_SL };
@@ -57,6 +58,7 @@ struct DSModel : public RefCountedObject<DSModel>
 	DSBone*			FindBone(const char* pszName);
 	DSGroup*		FindGroupByName(const char* pszGroupname);
 };
+using DSModelPtr = CRefPtr<DSModel>;
 
 //------------------------------------------------------------------------------------
 

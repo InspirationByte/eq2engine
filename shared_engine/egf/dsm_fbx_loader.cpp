@@ -122,7 +122,7 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix
 		boneSet.insert(fbxBoneLink);
 
 		DSBone* pBone = PPNew DSBone();
-		strcpy(pBone->name, fbxCluster.name);
+		pBone->name = fbxCluster.name;
 		pBone->bone_id = i;
 
 		// find parent bone link
@@ -133,7 +133,7 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix
 
 			if (fbxBoneLinkJ == fbxBoneLink->getParent())
 			{
-				strcpy(pBone->parent_name, fbxBoneLinkJ->name);
+				pBone->parent_name = fbxBoneLinkJ->name;
 				pBone->parent_id = j;
 				break;
 			}
@@ -247,7 +247,7 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 
 			const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(materialIdx) : nullptr;
 			if (material)
-				strncpy(dsmGrp->texture, material->name, sizeof(dsmGrp->texture));
+				dsmGrp->texture = material->name;
 
 			materialGroups.insert(materialGroupIdx, dsmGrp);
 			model->groups.append(dsmGrp);
@@ -300,7 +300,7 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 	} // j
 }
 
-bool LoadFBX(Array<DSModel*>& models, Array<DSShapeData*>& shapes, const char* filename)
+bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 {
 	long fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
@@ -330,29 +330,23 @@ bool LoadFBX(Array<DSModel*>& models, Array<DSShapeData*>& shapes, const char* f
 		const int mesh_count = scene->getMeshCount();
 		for (int i = 0; i < mesh_count; ++i)
 		{
-			DSModel* model = PPNew DSModel();
-			DSShapeData* shapeData = PPNew DSShapeData();
+			DSModelContainer& container = modelContainerList.append();
+			container.model = CRefPtr_new(DSModel);
+			container.shapeData = CRefPtr_new(DSShapeData);
 
 			Map<int, DSGroup*> materialGroups(PP_SL);
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
-			ConvertFBXMeshToDSM(i, model, shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
 
-			strncpy(model->name, mesh.name, sizeof(model->name)-1);
-			model->name[sizeof(model->name) - 1] = 0;
+			const Matrix4x4 transform = Matrix4x4(convertMatrix) * FromFBXMatrix(mesh.getGlobalTransform()) * FromFBXMatrix(mesh.getGeometricMatrix());
 
-			if (shapeData->shapes.numElem() > 0)
-			{
-				shapeData->reference = model->name;
-				shapes.append(shapeData);
-			}
-			else
-			{
-				delete shapeData;
-				shapes.append(nullptr);
-			}
+			ConvertFBXMeshToDSM(i, container.model, container.shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
 
-			models.append(model);
-			
+			container.model->name = mesh.name;
+			container.shapeData->reference = mesh.name;
+			container.transform = transform;
+
+			if (container.shapeData->shapes.numElem() == 0)
+				container.shapeData = nullptr;
 		}
 	}
 
@@ -396,6 +390,9 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 		for (int i = 0; i < mesh_count; ++i)
 		{
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
+
+			const Matrix4x4 transform = Matrix4x4(convertMatrix) * FromFBXMatrix(mesh.getGlobalTransform()) * FromFBXMatrix(mesh.getGeometricMatrix());
+
 			ConvertFBXMeshToDSM(i, model, nullptr, materialGroups, mesh, settings,convertMatrix, invertFaces);
 		}
 	}
@@ -405,11 +402,8 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 }
 
 // EGF compiler variant
-bool LoadFBXShapes(DSModel* model, DSShapeData* shapeData, const char* filename)
+bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 {
-	ASSERT(model);
-	ASSERT(shapeData);
-
 	long fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
@@ -428,7 +422,10 @@ bool LoadFBXShapes(DSModel* model, DSShapeData* shapeData, const char* filename)
 		return false;
 	}
 
-	shapeData->reference = filename;
+	modelContainer.model = CRefPtr_new(DSModel);
+	modelContainer.shapeData = CRefPtr_new(DSShapeData);
+
+	modelContainer.shapeData->reference = filename;
 	{
 		const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
 
@@ -442,7 +439,10 @@ bool LoadFBXShapes(DSModel* model, DSShapeData* shapeData, const char* filename)
 		for (int i = 0; i < mesh_count; ++i)
 		{
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
-			ConvertFBXMeshToDSM(i, model, shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
+
+			const Matrix4x4 transform = Matrix4x4(convertMatrix) * FromFBXMatrix(mesh.getGlobalTransform()) * FromFBXMatrix(mesh.getGeometricMatrix());
+			
+			ConvertFBXMeshToDSM(i, modelContainer.model, modelContainer.shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
 		}
 	}
 

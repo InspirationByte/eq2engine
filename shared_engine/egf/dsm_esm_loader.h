@@ -10,10 +10,6 @@ class Tokenizer;
 
 namespace SharedModel
 {
-
-bool isNotWhiteSpace(const char ch);
-float readFloat(Tokenizer& tok);
-
 struct DSModel;
 
 struct DSShapeVert
@@ -38,7 +34,7 @@ struct DSShapeData : RefCountedObject<DSShapeData>
 	Array<DSShapeKey*>	shapes{ PP_SL };
 	EqString			reference;
 };
-
+using DSShapeDataPtr = CRefPtr<DSShapeData>;
 
 bool	ReadBones(Tokenizer& tok, DSModel* pModel);
 

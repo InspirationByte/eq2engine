@@ -14,12 +14,21 @@ namespace SharedModel
 struct DSModel;
 struct DSShapeData;
 
-// Loads FBX as a single model. For editor use.
-bool LoadFBXCompound(DSModel* model, const char* filename);
-bool LoadFBXShapes(DSModel* model, DSShapeData* data, const char* filename);
+struct DSModelContainer
+{
+	DSModelPtr		model;
+	DSShapeDataPtr	shapeData;
+	Matrix4x4		transform{ identity4 };
+};
 
 // loads multiple FBX geometries
-bool LoadFBX(Array<DSModel*>& models, Array<DSShapeData*>& shapes, const char* filename);
+bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename);
 bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename);
+
+// Loads FBX as a single model. For editor use.
+bool LoadFBXCompound(DSModel* model, const char* filename);
+
+// DEPRECATED
+bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename);
 
 } // namespace

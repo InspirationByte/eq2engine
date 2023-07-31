@@ -21,6 +21,10 @@
 #include "egf/model.h"
 #include "studiofile/StudioLoader.h"
 
+namespace SharedModel {
+	extern float readFloat(Tokenizer& tok);
+}
+
 using namespace SharedModel;
 
 static void FreeAnimationData(studioAnimation_t* anim, int numBones)

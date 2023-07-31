@@ -59,16 +59,11 @@ bool ReadBones(Tokenizer& tok, DSModel* pModel)
 			// read bone definition
 			pBone = PPNew DSBone;
 
-			char* str2 = tok.next(isQuotes);
-
-			strcpy(pBone->name, str2);
+			pBone->name = tok.next(isQuotes);
 			tok.next(); // skip quote
 
 			pBone->bone_id = readInt(tok);
-
 			pBone->parent_id = readInt(tok);
-
-			pBone->parent_name[0] = '\0';
 
 			pBone->position.x = readFloat(tok);
 			pBone->position.y = readFloat(tok);
@@ -95,11 +90,6 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 	bool bCouldRead = false;
 
 	DSGroup* pCurrentGroup = nullptr;
-	char material_name[256];
-	material_name[0] = '\0';
-
-	//int nVertexIdAccum = 0;
-
 	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
@@ -120,17 +110,14 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 				if(*matName == '\"')
 					matName = tok.next(isQuotes); 
 
-				// read and copy material name
-				strcpy(material_name, matName);
-
 				// find or create group
-				pCurrentGroup = pModel->FindGroupByName(material_name);
+				pCurrentGroup = pModel->FindGroupByName(matName);
 
 				if(!pCurrentGroup)
 				{
 					pCurrentGroup = PPNew DSGroup;
 
-					strcpy(pCurrentGroup->texture, material_name);
+					pCurrentGroup->texture = matName;
 					pCurrentGroup->verts.resize(1024);
 
 					pModel->groups.append( pCurrentGroup );

@@ -139,7 +139,8 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 
 		Msg("Loading FBX from '%s'\n", modelPath.ToCString());
 
-		if (!LoadFBXShapes(mod.model, mod.shapeData, modelPath.ToCString()))
+		DSModelContainer sharedModel;
+		if (!LoadFBXShapes(sharedModel, modelPath))
 		{
 			SAFE_DELETE(mod.shapeData);
 
@@ -147,6 +148,10 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 			FreeModel(mod);
 			return -1;
 		}
+
+		mod.model = sharedModel.model;
+		mod.shapeData = sharedModel.shapeData;
+		mod.transform = sharedModel.transform;
 	}
 	else if( !ext.CompareCaseIns("esx") ) // Legacy now because I want to drop the Blender ESM/ESX plugin support
 	{
@@ -271,12 +276,10 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 	EqString modelPath;
 	CombinePath(modelPath, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
 
-	Array<DSModel*> models(PP_SL);
-	Array<DSShapeData*> shapeDatas(PP_SL);
-
 	Msg("Using FBX Source '%s'\n", KV_GetValueString(pKeyBase));
 
-	if (!LoadFBX(models, shapeDatas, modelPath))
+	Array<DSModelContainer> fbxModels(PP_SL);
+	if (!LoadFBX(fbxModels, modelPath))
 		return;
 
 	for (int i = 0; i < pKeyBase->keys.numElem(); ++i)
@@ -286,17 +289,20 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		const char* modelName = modelSec->name;
 		const char* refName = KV_GetValueString(modelSec);
 
-		const int foundIdx = arrayFindIndexF(models, [refName](DSModel* model) {
-			return !stricmp(model->name, refName);
+		const int foundIdx = arrayFindIndexF(fbxModels, [refName](const DSModelContainer& cont) {
+			return !stricmp(cont.model->name, refName);
 		});
 
 		if (foundIdx == -1)
 			continue;
 
+		const DSModelContainer& cont = fbxModels[foundIdx];
+
 		GenModel mod;
-		mod.model = CRefPtr(models[foundIdx]);
-		mod.shapeData = CRefPtr(shapeDatas[foundIdx]);
 		mod.name = modelName;
+		mod.model = cont.model;
+		mod.shapeData = cont.shapeData;
+		mod.transform = cont.transform;
 
 		// DRVSYN: vertex order for damaged model
 		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeby"))
@@ -329,15 +335,6 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 			nVerts / 3,
 			mod.model->groups.numElem(),
 			mod.model->bones.numElem());
-	}
-
-	for (int i = 0; i < models.numElem(); ++i)
-	{
-		if (models[i]->Ref_Count() == 0)
-		{
-			delete models[i];
-			delete shapeDatas[i];
-		}
 	}
 }
 
@@ -406,10 +403,10 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	// merge the models
 	if(models.numElem() > 1)
 	{
-		DSModel* merged = PPNew DSModel;
+		DSModelPtr merged = CRefPtr_new(DSModel);
 
 		// set model to as part name
-		strcpy(merged->name, KV_GetValueString(pKeyBase, 0, "invalid_model_name"));
+		merged->name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
 
 		for(int i = 0; i < models.numElem(); i++)
 		{
@@ -428,7 +425,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		}
 
 		GenModel mref;
-		mref.model = CRefPtr(merged);
+		mref.model = merged;
 		mref.shapeData = nullptr;
 		mref.name = merged->name;
 
@@ -512,7 +509,7 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 
 	// Add dummy (used for LODs)
 	GenModel mod{ "_dummy", CRefPtr_new(DSModel), nullptr };
-	strcpy(mod.model->name, "_dummy");
+	mod.model->name = "_dummy";
 	const int index = m_modelrefs.append(mod);
 
 	GenLODList_t& dummyLodModel = m_modelLodLists.append();
@@ -778,7 +775,7 @@ void BoneMergeRemapDSM(DSModel* pDSM, Array<DSBone*> &new_bones)
 	{
 		// copy bone
 		DSBone* pBone = PPNew DSBone;
-		memcpy(pBone, new_bones[i], sizeof(DSBone));
+		*pBone = *new_bones[i];
 
 		// add
 		pDSM->bones.append(pBone);
@@ -800,23 +797,21 @@ void CEGFGenerator::MergeBones()
 	// first, load all bones into the single list, as unique
 	Array<DSBone*> allBones(PP_SL);
 
-	for(int i = 0; i < m_modelrefs.numElem(); i++)
+	for(const GenModel& gm : m_modelrefs)
 	{
-		DSModel* model = m_modelrefs[i].model;
-
-		for(int j = 0; j < model->bones.numElem(); j++)
+		for(DSBone* bone : gm.model->bones)
 		{
 			// not found in new list? add
-			if(!BoneListCheckForBone(model->bones[j]->name, allBones))
+			if(!BoneListCheckForBone(bone->name, allBones))
 			{
 				// copy bone
-				DSBone* pBone = PPNew DSBone;
-				memcpy(pBone, model->bones[j], sizeof(DSBone));
+				DSBone* cloneBone = PPNew DSBone;
+				*cloneBone = *bone;
 
 				// set new bone id
-				pBone->bone_id = allBones.numElem();
+				cloneBone->bone_id = allBones.numElem();
 
-				allBones.append(pBone);
+				allBones.append(cloneBone);
 			}
 		}
 	}
@@ -1090,10 +1085,8 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 {
 	MsgWarning("\nLoading attachments\n");
 
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* attachSec : pSection->keys)
 	{
-		const KVSection* attachSec = pSection->keys[i];
-
 		if (stricmp(attachSec->name, "attachment"))
 			continue;
 
@@ -1118,19 +1111,31 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 			}
 		}
 
+		const int existingTransform = arrayFindIndexF(m_transforms, [&](const studiotransform_t& tr) 
+		{
+			return !stricmp(tr.name, attachmentName); 
+		});
+
+		if (existingTransform != -1)
+		{
+			MsgError("Updating transform %s with bone attachment\n", attachBoneName, attachmentName);
+			m_transforms[existingTransform].attachBoneIdx = pBone ? pBone->refBone->bone_id : EGF_INVALID_IDX;
+			continue;
+		}
+
 		studiotransform_t& attach = m_transforms.append();
 		strcpy(attach.name, attachmentName);
 
 		attach.transform = identity4;
 		attach.transform.setRotation(DEG2RAD(KV_GetVector3D(attachSec, 2)));
-		attach.transform.setTranslation(KV_GetVector3D(attachSec, 5));
+		attach.transform.setTranslation(m_modelScale * KV_GetVector3D(attachSec, 5) + m_modelOffset);
 		attach.attachBoneIdx = pBone ? pBone->refBone->bone_id : EGF_INVALID_IDX;
 
-		MsgInfo("Adding transform attachment %s\n", attach.name);
+		MsgInfo("Adding custom transform attachment %s\n", attach.name);
 	}
 
 	if(m_transforms.numElem())
-		Msg("Total transform attachment: %d\n", m_transforms.numElem());
+		Msg("Total transforms: %d\n", m_transforms.numElem());
 }
 
 //************************************

@@ -192,13 +192,10 @@ bool LoadOBJ(DSModel* model, const char* filename)
 	//if(LoadMTL((char*)mtl_file_name.GetData(), material_list))
 	///	bUseMTL = true;
 
-	strcpy(model->name, "temp");
+	model->name = "temp";
+	EqString materialName = "error";
 
 	bool bLoaded = false;
-
-	char material_name[1024];
-	strcpy(material_name, "error");
-
 	Array<Vector3D> vertices(PP_SL);
 	Array<Vector2D> texcoords(PP_SL);
 	Array<Vector3D> normals(PP_SL);
@@ -298,9 +295,9 @@ bool LoadOBJ(DSModel* model, const char* filename)
 				model->groups.append(curgroup);
 
 				if(bUseMTL)
-					strcpy(curgroup->texture, GetMTLTexture(material_name, material_list));
+					curgroup->texture = GetMTLTexture(materialName, material_list);
 				else
-					strcpy(curgroup->texture, material_name);
+					curgroup->texture = materialName;
 			}
 
 			int slashcount = 0;
@@ -458,7 +455,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 		else if(!stricmp(str, "usemtl"))
 		{
 			curgroup = nullptr;
-			strcpy(material_name, tok.next(isNotNewLine));
+			materialName = tok.next(isNotNewLine);
 		}
 
 		tok.goToNextLine();
