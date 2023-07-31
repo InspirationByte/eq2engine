@@ -2,6 +2,7 @@
 #include "states.h"
 
 class CParticleBatch;
+class CMoviePlayer;
 
 enum class RPSType
 {
@@ -49,8 +50,11 @@ private:
 	void		InitGame();
 	int			CheckWhoDefeats(const RPSObject& a, const RPSObject& b) const;
 
-	CParticleBatch*		m_pfxGroup{ nullptr };
+	
 	Array<RPSObject>	m_objects{ PP_SL };
+
+	CParticleBatch*		m_pfxGroup{ nullptr };
+	CRefPtr<CMoviePlayer>	m_moviePlayer;
 
 	float				m_zoomLevel{ 1.0f };
 	Vector2D			m_pan{ 0.0f };

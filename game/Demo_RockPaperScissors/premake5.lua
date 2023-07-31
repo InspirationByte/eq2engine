@@ -22,6 +22,7 @@ project "Demo_RockPaperScissors"
 		"sysLib",
 		"renderUtilLib",
 		"soundSystemLib",
+		"movieLib",
 		--"egfLib", "physicsLib", "animatingLib", 
 		--"networkLib",
 		"BaseShader",

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description:
@@ -12,6 +12,7 @@
 namespace SharedModel
 {
 struct DSModel;
+using DSModelPtr = CRefPtr<DSModel>;
 struct DSShapeData;
 
 struct DSModelContainer

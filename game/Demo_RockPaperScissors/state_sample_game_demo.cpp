@@ -1,6 +1,8 @@
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "math/Random.h"
+#include "math/Utility.h"
+#include "utils/KeyValues.h"
 #include "utils/TextureAtlas.h"
 #include "utils/SpiralIterator.h"
 
@@ -10,9 +12,14 @@
 
 #include "audio/eqSoundEmitterSystem.h"
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
 
 #include "render/EqParticles.h"
+#include "render/IDebugOverlay.h"
 #include "input/in_keys_ident.h"
+
+#include "movie/MoviePlayer.h"
+
 
 DECLARE_CVAR(g_maxObjects, "200", nullptr, CV_ARCHIVE);
 
@@ -51,6 +58,34 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 
 	g_pPFXRenderer->Init();
 
+	m_moviePlayer = CRefPtr_new(CMoviePlayer);
+
+	m_moviePlayer->OnCompleted += [&]() {
+		m_moviePlayer->Rewind();
+	};
+
+	static constexpr const char* VIDEO_FILE_NAME = "resources/video/testvideo.mp4";
+
+	const bool result = m_moviePlayer->Init(VIDEO_FILE_NAME);
+	ASSERT(result);
+	if (result)
+	{
+		m_moviePlayer->Start();
+		//m_videoPlayer->SetTimeScale(0.5f);
+
+		KVSection soundSec;
+		soundSec.SetName("test.video_stream");
+		soundSec.SetKey("wave", EqString('$') + VIDEO_FILE_NAME);
+		soundSec.SetKey("is2d", true);
+		soundSec.SetKey("loop", true);
+		soundSec.SetKey("channel", "CHAN_STREAM");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+
+		EmitParams ep(soundSec.GetName());
+		g_sounds->EmitSound(&ep);
+	}
+
 	{
 		static constexpr const int particlesGroupId = StringToHashConst("particles/translucent");
 
@@ -62,6 +97,8 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 // @to - used to transfer data
 void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
 {
+	m_moviePlayer = nullptr;
+
 	g_pPFXRenderer->Shutdown();
 	m_pfxGroup = nullptr;
 }
@@ -133,6 +170,8 @@ int	CState_SampleGameDemo::CheckWhoDefeats(const RPSObject& a, const RPSObject& 
 // when 'false' returned the next state goes on
 bool CState_SampleGameDemo::Update(float fDt)
 {
+	m_moviePlayer->Present();
+
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	g_pShaderAPI->Clear(true, true, false, ColorRGBA(0.5f));
@@ -140,6 +179,94 @@ bool CState_SampleGameDemo::Update(float fDt)
 	materials->SetMatrix(MATRIXMODE_VIEW, translate(-m_pan.x, -m_pan.y, 0.0f));
 
 	materials->SetAmbientColor(color_white);
+
+	// draw video
+	{
+		ITexturePtr videoTexture = m_moviePlayer->GetImage();
+
+		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(m_moviePlayer->GetImage());
+		materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
+		materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
+		materials->SetDepthStates(false, false);
+		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		AARectangle rect1(0, 0, 0, 0);
+		AARectangle rect1UV(0, 0, 1, 1);
+
+		if(videoTexture)
+			rect1.Expand(Vector2D(videoTexture->GetWidth(), videoTexture->GetHeight()));
+
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+		meshBuilder.Begin(PRIM_TRIANGLES);
+		{
+			meshBuilder.Color4(color_white);
+			meshBuilder.TexturedQuad2(
+				rect1.GetVertex(0),
+				rect1.GetVertex(1),
+				rect1.GetVertex(2),
+				rect1.GetVertex(3),
+				rect1UV.GetVertex(0),
+				rect1UV.GetVertex(1),
+				rect1UV.GetVertex(2),
+				rect1UV.GetVertex(3));
+		}
+
+		meshBuilder.End();
+	}
+
+	// Test code for math stuff
+	{
+		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+		materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
+		materials->SetDepthStates(false, false);
+		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		AARectangle rect1(0, 0, 0, 0);
+		AARectangle rect2(0, 0, 0, 0);
+
+		rect1.Expand(Vector2D(40.0f, 25.0f));
+		rect2.Expand(Vector2D(15.0f, 35.0f));
+
+		static float time = 0.0f;
+		time += fDt;
+		const Vector3D box1PosRot(-60.0f, 15.0f, time * 45.0f);
+		const Vector3D box2PosRot(15.0f, 0.0f, -time * 55.0f);
+
+		const Matrix2x2 box1Rot = rotate2(DEG2RAD(box1PosRot.z));
+		const Matrix2x2 box2Rot = rotate2(DEG2RAD(box2PosRot.z));
+
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+		meshBuilder.Begin(PRIM_TRIANGLES);
+
+		{
+			const float separationValue = RectangleRectangleSeparation(
+				box1PosRot.xy(), box1Rot.rows[0], box1Rot.rows[1], rect1.GetSize() * 0.5f,
+				box2PosRot.xy(), box2Rot.rows[0], box2Rot.rows[1], rect2.GetSize() * 0.5f);
+
+			if (separationValue > 0.0f)
+				meshBuilder.Color4f(0.25f, 1.0f, 0.25f, 0.7f);
+			else
+				meshBuilder.Color4f(1.0f, 0.25f, 0.25f, 0.7f);
+
+			debugoverlay->Text3D(Vector3D(box1PosRot.xy() * Vector2D(1, -1), 0.0f), 1000.0f, color_white, EqString::Format("Separation: %.2f", separationValue));
+			
+			meshBuilder.Quad2(
+				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(0),
+				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(1),
+				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(2),
+				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(3));
+
+			meshBuilder.Color4f(0.25f, 0.25f, 1.0f, 0.7f);
+			meshBuilder.Quad2(
+				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(0), 
+				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(1), 
+				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(2),
+				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(3));
+		}
+
+		meshBuilder.End();
+	}
 
 	const TexAtlasEntry_t* atlRock = m_pfxGroup->FindEntry("rock");
 	const TexAtlasEntry_t* atlPaper = m_pfxGroup->FindEntry("paper");
@@ -216,7 +343,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 
 		// draw
 		{
-			const Rectangle_t rect = atlEntries[static_cast<int>(curObj.type)]->rect;
+			const AARectangle rect = atlEntries[static_cast<int>(curObj.type)]->rect;
 
 			PFXVertex_t* verts;
 			if (m_pfxGroup->AllocateGeom(4, 4, &verts, nullptr, true) == -1)
