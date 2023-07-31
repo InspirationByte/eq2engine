@@ -849,7 +849,7 @@ void CEGFGenerator::BuildBoneChains()
 		GenBone& cbone = m_bones.append();
 		cbone.refBone = model->bones[i];
 
-		Msg(" %s\n", cbone.refBone->name);
+		Msg(" %s\n", cbone.refBone->name.ToCString());
 	}
 
 	Msg("  total bones: %d\n", m_bones.numElem());
@@ -1083,6 +1083,20 @@ void CEGFGenerator::ParseIKChains(const KVSection* pSection)
 //************************************
 void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 {
+#if 0
+	// before we do that we add each used model transform
+	for (const GenModel& gm : m_modelrefs)
+	{
+		if (!gm.used)
+			continue;
+
+		studiotransform_t& attach = m_transforms.append();
+		strcpy(attach.name, gm.name);
+
+		attach.transform = gm.transform;
+		attach.attachBoneIdx = EGF_INVALID_IDX;
+	}
+#endif
 	MsgWarning("\nLoading attachments\n");
 
 	for(const KVSection* attachSec : pSection->keys)

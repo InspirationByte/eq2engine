@@ -35,21 +35,28 @@ Vector3D FromFBXRotation(const Vector3D& vec, const Matrix3x3& orient)
 	return eulersXYZ(o * q);
 }
 
-Vector3D FromFBXVector(const ofbx::Vec3& vec, const Matrix3x3& orient)
+template<typename T>
+Vector3D FixOrient(const T& v, const ofbx::GlobalSettings& settings)
 {
-	Vector3D result(vec.x, vec.y, vec.z);
-
-	return orient * result;
+	switch (settings.UpAxis) {
+		case ofbx::UpVector_AxisY: return Vector3D(v.x, v.y, v.z);
+		case ofbx::UpVector_AxisZ: return Vector3D(v.x, v.z, -v.y);
+		case ofbx::UpVector_AxisX: return Vector3D(-v.y, v.x, v.z);
+	}
+	return Vector3D(v.x, v.y, v.z);
 }
 
-Vector3D FromFBXVector(const Vector3D& vec, const Matrix3x3& orient)
+Vector3D FromFBXVector(const ofbx::Vec3& v, const ofbx::GlobalSettings& settings)
 {
-	Vector3D result(vec.x, vec.y, vec.z);
-
-	return orient * result;
+	return FixOrient(v, settings);
 }
 
-Vector2D FromFBXVector(const ofbx::Vec2& vec)
+Vector3D FromFBXVector(const Vector3D& v, const ofbx::GlobalSettings& settings)
+{
+	return FixOrient(v, settings);
+}
+
+Vector2D FromFBXUvVector(const ofbx::Vec2& vec)
 {
 	return Vector2D(vec.x, 1.0f - vec.y);
 }
@@ -81,11 +88,41 @@ Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat)
 
 void GetFBXConvertMatrix(const ofbx::GlobalSettings& settings, Matrix3x3& convertMatrix, bool& invertFaces)
 {
-	const float scaleFactor = settings.UnitScaleFactor;
+	const float scaleFactor = settings.UnitScaleFactor * 0.01f;
+	Vector3D scale(scaleFactor);
+	if (settings.CoordAxis == ofbx::CoordSystem::CoordSystem_RightHanded)
+	{
+		scale.x *= -1.0f;
+		invertFaces = true;
+	}
+	else
+		invertFaces = false;
 
-	// this is Blender - only!
-	convertMatrix = scale3(scaleFactor, scaleFactor, -scaleFactor) * rotateX3(DEG2RAD(-90));
-	invertFaces = true;
+	convertMatrix = scale3(scale.x, scale.y, scale.z);
+}
+
+void TransformModelGeom(DSModel* model, const Matrix4x4& transform)
+{
+	for (DSGroup* group : model->groups)
+	{
+		for (DSVertex& vert : group->verts)
+		{
+			vert.position = transformPoint(vert.position, transform);
+			vert.normal = transformVector(vert.normal, transform);
+		}
+	}
+}
+
+void TransformShapeDataGeom(DSShapeData* shapeData, const Matrix4x4& transform)
+{
+	for (DSShapeKey* shapeKey : shapeData->shapes)
+	{
+		for (DSShapeVert& vert : shapeKey->verts)
+		{
+			vert.position = transformPoint(vert.position, transform);
+			vert.normal = transformVector(vert.normal, transform);
+		}
+	}
 }
 
 struct VertexWeightData
@@ -95,7 +132,7 @@ struct VertexWeightData
 	Map<int, float> indexWeightMap{ PP_SL };
 };
 
-void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix, ofbx::UpVector upAxis, Array<DSBone*>& bones, Array<VertexWeightData>& weightData)
+void GetFBXBonesAsDSM(const ofbx::Geometry& geom, Array<DSBone*>& bones, Array<VertexWeightData>& weightData, const Matrix4x4& transform)
 {
 	const ofbx::Skin* skin = geom.getSkin();
 
@@ -172,13 +209,12 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix
 	}
 }
 
-void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSGroup*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, const Matrix3x3& convertMatrix, bool invertFaces)
+void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSGroup*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform)
 {
 	const ofbx::Geometry& geom = *mesh.getGeometry();
 
-	// Msg("Mesh '%s'\n", mesh.name);
 	Array<VertexWeightData> weightData(PP_SL);
-	GetFBXBonesAsDSM(geom, convertMatrix, settings.UpAxis, model->bones, weightData);
+	GetFBXBonesAsDSM(geom, model->bones, weightData, transform);
 
 	const int vertex_count = geom.getVertexCount();
 
@@ -219,8 +255,8 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 
 						DSShapeVert vert;
 						vert.vertexId = tVertId;
-						vert.position = FromFBXVector(shapeVertices[tVertId], convertMatrix);
-						vert.normal = FromFBXVector(shapeNormals[tVertId], convertMatrix);
+						vert.position = FromFBXVector(shapeVertices[tVertId], settings);
+						vert.normal = FromFBXVector(shapeNormals[tVertId], settings);
 						shapeKey->verts.append(vert);
 					}
 				} // vertId
@@ -261,13 +297,13 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 		{
 			const int jj = j + (invertFaces ? 2 - k : k);
 			DSVertex& vert = dsmGrp->verts.append();
-			vert.position = FromFBXVector(vertices[jj], convertMatrix);
+			vert.position = FromFBXVector(vertices[jj], settings);
 
 			if (normals)
-				vert.normal = FromFBXVector(normals[jj], convertMatrix);
+				vert.normal = FromFBXVector(normals[jj], settings);
 
 			if (uvs)
-				vert.texcoord = FromFBXVector(uvs[jj]);
+				vert.texcoord = FromFBXUvVector(uvs[jj]);
 
 			vert.vertexId = jj;
 
@@ -298,7 +334,13 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 			}
 		} // k
 	} // j
+
+	TransformModelGeom(model, transform);
+
+	if(shapeData)
+		TransformShapeDataGeom(shapeData, transform);
 }
+
 
 bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 {
@@ -334,12 +376,15 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 			container.model = CRefPtr_new(DSModel);
 			container.shapeData = CRefPtr_new(DSShapeData);
 
-			Map<int, DSGroup*> materialGroups(PP_SL);
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
 
-			const Matrix4x4 transform = Matrix4x4(convertMatrix) * FromFBXMatrix(mesh.getGlobalTransform()) * FromFBXMatrix(mesh.getGeometricMatrix());
+			// this is used to transform mesh from FBX space
+			const Matrix4x4 globalTransform = FromFBXMatrix(mesh.getGlobalTransform());
+			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
+			const Matrix4x4 transform =  globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-			ConvertFBXMeshToDSM(i, container.model, container.shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
+			Map<int, DSGroup*> materialGroups(PP_SL);
+			ConvertFBXMeshToDSM(i, container.model, container.shapeData, materialGroups, mesh, settings, invertFaces, transform);
 
 			container.model->name = mesh.name;
 			container.shapeData->reference = mesh.name;
@@ -391,9 +436,12 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 		{
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
 
-			const Matrix4x4 transform = Matrix4x4(convertMatrix) * FromFBXMatrix(mesh.getGlobalTransform()) * FromFBXMatrix(mesh.getGeometricMatrix());
+			// this is used to transform mesh from FBX space
+			const Matrix4x4 globalTransform = FromFBXMatrix(mesh.getGlobalTransform());
+			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
+			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-			ConvertFBXMeshToDSM(i, model, nullptr, materialGroups, mesh, settings,convertMatrix, invertFaces);
+			ConvertFBXMeshToDSM(i, model, nullptr, materialGroups, mesh, settings, invertFaces, transform);
 		}
 	}
 
@@ -440,9 +488,12 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 		{
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
 
-			const Matrix4x4 transform = Matrix4x4(convertMatrix) * FromFBXMatrix(mesh.getGlobalTransform()) * FromFBXMatrix(mesh.getGeometricMatrix());
-			
-			ConvertFBXMeshToDSM(i, modelContainer.model, modelContainer.shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
+			// this is used to transform mesh from FBX space
+			const Matrix4x4 globalTransform = FromFBXMatrix(mesh.getGlobalTransform());
+			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
+			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
+
+			ConvertFBXMeshToDSM(i, modelContainer.model, modelContainer.shapeData, materialGroups, mesh, settings, invertFaces, transform);
 		}
 	}
 
@@ -583,7 +634,12 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
 		const ofbx::Geometry& geom = *mesh.getGeometry();
 
-		GetFBXBonesAsDSM(geom, convertMatrix, settings.UpAxis, bones, weightData);
+		// this is used to transform mesh from FBX space
+		const Matrix4x4 globalTransform = FromFBXMatrix(mesh.getGlobalTransform());
+		const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
+		const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
+
+		GetFBXBonesAsDSM(geom, bones, weightData, transform);
 	}
 
 	float frameRate = scene->getSceneFrameRate();

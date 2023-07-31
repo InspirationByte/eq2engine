@@ -1305,7 +1305,12 @@ void CEGFViewFrame::ReDraw()
 		materials->SetAmbientColor(ColorRGBA(1, 1, 1, 1));
 
 		if (m_drawGrid->IsChecked())
+		{
 			DrawGrid(1.0f, 8, vec3_zero, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), true);
+			debugoverlay->Line3D(vec3_zero, vec3_right, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
+			debugoverlay->Line3D(vec3_zero, vec3_up, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
+			debugoverlay->Line3D(vec3_zero, vec3_forward, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
+		}
 
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
