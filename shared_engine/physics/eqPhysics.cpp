@@ -4,6 +4,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium fixed point 3D physics engine
 //
+//	TODO:
+//				support collideMask from physics surfaces
 //	FEATURES:
 //				Fixed point object positions
 //				Best works with fixed timestep
@@ -389,6 +391,7 @@ void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSect
 	eqPhysSurfParam_t* surfParam = PPNew eqPhysSurfParam_t;
 	surfParam->id = m_physSurfaceParams.append(surfParam);
 	surfParam->name = name;
+	surfParam->collideMask = KV_GetValueInt(kvSection->FindSection("collideMask"), 0, UINT_MAX);
 	surfParam->friction = KV_GetValueFloat(kvSection->FindSection("friction"), 0, PHYSICS_DEFAULT_FRICTION);
 	surfParam->restitution = KV_GetValueFloat(kvSection->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
 	surfParam->tirefriction = KV_GetValueFloat(kvSection->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);

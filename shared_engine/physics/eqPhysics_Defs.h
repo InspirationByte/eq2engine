@@ -51,13 +51,14 @@ struct eqPhysSurfParam_t
 {
 	EqString	name;
 
-	int			id;
+	int			id{ -1 };
+	int			collideMask{ -1 };
 
-	float		restitution;
-	float		friction;
+	float		restitution{ 0.0f };
+	float		friction{ 0.0f };
 
-	float		tirefriction;
-	float		tirefriction_traction;
+	float		tirefriction{ 1.0f };
+	float		tirefriction_traction{ 1.0f };
 
-	char		word;
+	char		word{ 0 };
 };
