@@ -1163,8 +1163,7 @@ public:
 
 	T& operator[](int index)
 	{
-		ASSERT(index >= 0);
-		ASSERT(index < m_nNumElem);
+		ASSERT_MSG(index >= 0 && index < m_nNumElem, "ArrayRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 		return m_pListPtr[index];
 	}
@@ -1266,8 +1265,7 @@ public:
 
 	const T& operator[](int index) const
 	{
-		ASSERT(index >= 0);
-		ASSERT(index < m_nNumElem);
+		ASSERT_MSG(index >= 0 && index < m_nNumElem, "ArrayCRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 		return m_pListPtr[index];
 	}
