@@ -14,6 +14,13 @@ premake.api.register {
 	default_value = "off",
 }
 
+premake.api.register {
+	name = "maxfilesinunity",
+	scope = "config",
+	kind = "string",
+	default_value = "0",
+}
+
 local function enable_unitybuild(cfg) 
 	if cfg.unitybuild then
 		--print("Unity build enabled!")
@@ -25,6 +32,10 @@ local function include_in_unitybuild(cfg)
 	if cfg.unitybuild then
 		--print("Included in unity build!")
 		premake.w('<IncludeInUnityFile>true</IncludeInUnityFile>')
+		if cfg.maxfilesinunity ~= nil then
+		premake.w('<MaxFilesInUnityFile>'..cfg.maxfilesinunity..'</MaxFilesInUnityFile>')
+		
+		end
 	end
 end 
 
