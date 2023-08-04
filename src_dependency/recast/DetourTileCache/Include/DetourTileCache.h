@@ -99,7 +99,7 @@ struct dtTileCacheMeshProcess
 {
 	virtual ~dtTileCacheMeshProcess() { }
 
-	virtual void processLayer(struct dtTileCacheLayer* layer) = 0;
+	virtual void processLayer(const dtCompressedTileRef ref, struct dtTileCacheLayer* layer) = 0;
 
 	virtual void process(struct dtNavMeshCreateParams* params,
 						 unsigned char* polyAreas, unsigned short* polyFlags) = 0;

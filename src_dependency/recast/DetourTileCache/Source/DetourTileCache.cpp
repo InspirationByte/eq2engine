@@ -675,7 +675,7 @@ dtStatus dtTileCache::buildNavMeshTile(const dtCompressedTileRef ref, dtNavMesh*
 
 	if (m_tmproc)
 	{
-		m_tmproc->processLayer(bc.layer);
+		m_tmproc->processLayer(ref, bc.layer);
 	}
 	
 	// Rasterize obstacles.
