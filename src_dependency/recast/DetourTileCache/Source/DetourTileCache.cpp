@@ -672,6 +672,11 @@ dtStatus dtTileCache::buildNavMeshTile(const dtCompressedTileRef ref, dtNavMesh*
 	status = dtDecompressTileCacheLayer(m_talloc, m_tcomp, tile->data, tile->dataSize, &bc.layer);
 	if (dtStatusFailed(status))
 		return status;
+
+	if (m_tmproc)
+	{
+		m_tmproc->processLayer(bc.layer);
+	}
 	
 	// Rasterize obstacles.
 	for (int i = 0; i < m_params.maxObstacles; ++i)
