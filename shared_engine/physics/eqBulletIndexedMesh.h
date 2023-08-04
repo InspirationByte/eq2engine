@@ -32,7 +32,7 @@ public:
 
 	/// getNumSubParts returns the number of seperate subparts
 	/// each subpart has a continuous array of vertices and indices
-	int								getNumSubParts() const  {return (m_subparts.numElem() == 0) ? 1 : m_subparts.numElem();}
+	int								getNumSubParts() const;
 
 	int								getSubPartMaterialId( int subpart );
 
@@ -40,7 +40,7 @@ public:
 	void							preallocateIndices(int numindices) {};
 protected:
 
-	struct eqBulletMeshSubpart_t
+	struct MeshSubPart
 	{
 		int firstIndex;
 		int firstVertex;
@@ -50,16 +50,16 @@ protected:
 		int materialId;
 	};
 
-	ubyte*							m_vertexData;
-	int								m_vertexStride;
+	Array<MeshSubPart>	m_subparts{ PP_SL }; // or batches
 
-	ubyte*							m_indexData;
-	int								m_indexStride;
+	ubyte*				m_vertexData;
+	int					m_vertexStride;
 
-	int								m_numVerts;
-	int								m_numIndices;
+	ubyte*				m_indexData;
+	int					m_indexStride;
 
-	PHY_ScalarType					m_indexType;
+	int					m_numVerts;
+	int					m_numIndices;
 
-	Array<eqBulletMeshSubpart_t>	m_subparts{ PP_SL }; // or batches
+	PHY_ScalarType		m_indexType;
 };
