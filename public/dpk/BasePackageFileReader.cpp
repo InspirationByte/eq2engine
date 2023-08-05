@@ -5,7 +5,6 @@
 // Description: Zip package file (zip)
 //////////////////////////////////////////////////////////////////////////////////
 
-#pragma once
 #include "core/core_common.h"
 #include "BasePackageFileReader.h"
 #include "DPKUtils.h"

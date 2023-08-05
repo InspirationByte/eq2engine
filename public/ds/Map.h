@@ -698,7 +698,7 @@ private:
 	}
 };
 
-using _EMPTY_VALUE = struct {};
+struct _EMPTY_VALUE{}; // GCC doesn't like using = struct {}, produces linkage errors
 
 template<typename K>
 using Set = Map<K, _EMPTY_VALUE>;

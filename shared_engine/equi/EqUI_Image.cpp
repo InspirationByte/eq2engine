@@ -40,7 +40,7 @@ void Image::InitFromKeyValues( KVSection* sec, bool noClear )
 	m_imageFlags = (flipX ? FLIP_X : 0) | (flipY ? FLIP_Y : 0);
 
 	KVSection* pathBase = sec->FindSection("path");
-	if (pathBase != nullptr)
+	if (pathBase)
 	{
 		const char* materialPath = KV_GetValueString(pathBase, 0, "ui/default");
 		SetMaterial(materialPath);
@@ -50,22 +50,24 @@ void Image::InitFromKeyValues( KVSection* sec, bool noClear )
 	else
 	{
 		pathBase = sec->FindSection("atlas");
+	}
 
-		if (pathBase)
+	if (pathBase)
+	{
+		const char* atlasPath = KV_GetValueString(pathBase, 0, "");
+
+		SetMaterial(atlasPath);
+
+		if (m_material->GetAtlas())
 		{
-			const char* atlasPath = KV_GetValueString(pathBase, 0, "");
-
-			SetMaterial(atlasPath);
-
-			if (m_material->GetAtlas())
-			{
-				TexAtlasEntry_t* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
-				if (entry)
-					m_atlasRegion = entry->rect;
-			}
+			TexAtlasEntry_t* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
+			if (entry)
+				m_atlasRegion = entry->rect;
 		}
-		else
-			MsgError("EqUI error: image '%s' missing 'path' or 'atlas' property\n", m_name.ToCString());
+	}
+	else
+	{
+		MsgError("EqUI error: image '%s' missing 'path' or 'atlas' property\n", m_name.ToCString());
 	}
 }
 
