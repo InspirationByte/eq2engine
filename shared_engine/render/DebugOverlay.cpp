@@ -1135,13 +1135,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	// now rendering 2D stuff
 	materials->Setup2D(winWide, winTall);
 
-#ifdef EDITOR
-	const Vector2D drawFadedTextBoxPosition = Vector2D(5,5);
-	const Vector2D drawTextBoxPosition = Vector2D(5,5);
-#else
 	const Vector2D drawFadedTextBoxPosition = Vector2D(15,45);
 	const Vector2D drawTextBoxPosition = Vector2D(15,45);
-#endif // EDITOR
 
 	int idx = 0;
 

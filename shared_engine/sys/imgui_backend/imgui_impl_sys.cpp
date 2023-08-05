@@ -11,6 +11,7 @@
 #endif
 
 #include "imgui_impl_sys.h"
+#include "imgui_internal.h"
 #include "input/in_keys_ident.h"
 
 // since we're defining IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS at build level we must implement
@@ -91,6 +92,12 @@ void ImGui_ImplEq_InputMousePress(int Button, bool pressed)
     {
         bd->MousePressed[Button - MOU_B1] = pressed;
     }
+}
+
+bool ImGui_ImplEq_AnyItemShown()
+{
+    ImGuiContext& ctx = *ImGui::GetCurrentContext();
+    return ctx.WindowsActiveCount > 1 || ctx.BeginMenuCount > 0 || ctx.BeginPopupStack.size() || ctx.OpenPopupStack.size();
 }
 
 bool ImGui_ImplEq_AnyWindowInFocus()
@@ -237,7 +244,28 @@ void ImGui_ImplEq_Shutdown()
     IM_DELETE(bd);
 }
 
-static void ImGui_ImplEq_UpdateMousePosAndButtons()
+static void ImGui_ImplEq_UpdateMouseCursor()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange)
+        return;
+    ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
+
+    ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
+    if (io.MouseDrawCursor || imgui_cursor == ImGuiMouseCursor_None)
+    {
+        // Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
+        SDL_ShowCursor(SDL_FALSE);
+    }
+    else
+    {
+        // Show OS mouse cursor
+        SDL_SetCursor(bd->MouseCursors[imgui_cursor] ? bd->MouseCursors[imgui_cursor] : bd->MouseCursors[ImGuiMouseCursor_Arrow]);
+        SDL_ShowCursor(SDL_TRUE);
+    }
+}
+
+void ImGui_ImplEq_UpdateMousePosAndButtons()
 {
     ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
     ImGuiIO& io = ImGui::GetIO();
@@ -292,30 +320,11 @@ static void ImGui_ImplEq_UpdateMousePosAndButtons()
     {
         io.MousePos = ImVec2((float)mouse_x_local, (float)mouse_y_local);
     }
+
+    ImGui_ImplEq_UpdateMouseCursor();
 }
 
-static void ImGui_ImplEq_UpdateMouseCursor()
-{
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange)
-        return;
-    ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
-
-    ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
-    if (io.MouseDrawCursor || imgui_cursor == ImGuiMouseCursor_None)
-    {
-        // Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
-        SDL_ShowCursor(SDL_FALSE);
-    }
-    else
-    {
-        // Show OS mouse cursor
-        SDL_SetCursor(bd->MouseCursors[imgui_cursor] ? bd->MouseCursors[imgui_cursor] : bd->MouseCursors[ImGuiMouseCursor_Arrow]);
-        SDL_ShowCursor(SDL_TRUE);
-    }
-}
-
-static void ImGui_ImplEq_UpdateGamepads()
+void ImGui_ImplEq_UpdateGamepads()
 {
     ImGuiIO& io = ImGui::GetIO();
     memset(io.NavInputs, 0, sizeof(io.NavInputs));
@@ -356,7 +365,7 @@ static void ImGui_ImplEq_UpdateGamepads()
     #undef MAP_ANALOG
 }
 
-void ImGui_ImplEq_NewFrame(bool controlsEnabled)
+void ImGui_ImplEq_NewFrame()
 {
     ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
     IM_ASSERT(bd != nullptr && "Did you call ImGui_ImplEq_Init()?");
@@ -378,13 +387,4 @@ void ImGui_ImplEq_NewFrame(bool controlsEnabled)
     Uint64 current_time = SDL_GetPerformanceCounter();
     io.DeltaTime = bd->Time > 0 ? (float)((double)(current_time - bd->Time) / frequency) : (float)(1.0f / 60.0f);
     bd->Time = current_time;
-
-    if (controlsEnabled)
-    {
-        ImGui_ImplEq_UpdateMousePosAndButtons();
-        ImGui_ImplEq_UpdateMouseCursor();
-    }
-
-    // Update game controllers (if enabled and available)
-    ImGui_ImplEq_UpdateGamepads();
 }

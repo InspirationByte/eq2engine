@@ -316,7 +316,7 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 #ifdef IMGUI_ENABLED
 static bool IsImGuiItemsInFocus()
 {
-	return ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused() || ImGui_ImplEq_AnyWindowInFocus();
+	return ImGui::IsAnyItemHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused() || ImGui_ImplEq_AnyWindowInFocus();
 }
 #endif
 
@@ -338,10 +338,18 @@ void CEqConsoleInput::BeginFrame()
 
 	if (imGuiVisible)
 	{
+		const bool anyItemShown = ImGui_ImplEq_AnyItemShown();
+
 		// Start the Dear ImGui frame
 		ImGui_ImplMatSystem_NewFrame();
-		ImGui_ImplEq_NewFrame(m_visible);
+		ImGui_ImplEq_NewFrame();
 		ImGui::NewFrame();
+
+		if (anyItemShown)
+		{
+			ImGui_ImplEq_UpdateMousePosAndButtons();
+			ImGui_ImplEq_UpdateGamepads();
+		}
 
 		for (auto it = m_imguiHandles.begin(); !it.atEnd(); ++it)
 		{
@@ -386,7 +394,7 @@ void CEqConsoleInput::BeginFrame()
 		}
 		if (ImGui::BeginMenu("DEBUG OVERLAYS"))
 		{
-			IMGUI_MENUITEM_CONVAR_BOOL("FRAME STATS", r_frameStats);
+			IMGUI_MENUITEM_CONVAR_BOOL("FRAME STATS", r_debugDrawFrameStats);
 			IMGUI_MENUITEM_CONVAR_BOOL("GRAPHS", r_debugDrawGraphs);
 			IMGUI_MENUITEM_CONVAR_BOOL("SHAPES", r_debugDrawShapes);
 			IMGUI_MENUITEM_CONVAR_BOOL("LINES", r_debugDrawLines);
@@ -1303,14 +1311,14 @@ void CEqConsoleInput::MousePos(const Vector2D &pos)
 
 bool CEqConsoleInput::KeyChar(const char* utfChar)
 {
-	if(!m_visible)
-		return false;
-
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputText(utfChar);
 	if (IsImGuiItemsInFocus())
 		return true;
 #endif
+
+	if (!m_visible)
+		return false;
 
 	if (!m_showConsole)
 		return true;
@@ -1343,14 +1351,14 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 
 bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 {
-	if(!m_visible)
-		return false;
-
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMousePress(Button, pressed);
 	if (IsImGuiItemsInFocus())
 		return true;
 #endif
+
+	if (!m_visible)
+		return false;
 
 	if (!m_showConsole)
 		return true;
@@ -1368,14 +1376,14 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 
 bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
 {
-	if (!m_visible)
-		return false;
-
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
 	if (IsImGuiItemsInFocus())
 		return true;
 #endif
+
+	if (!m_visible)
+		return false;
 
 	return true;
 }
@@ -1423,14 +1431,14 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 		}
 	}
 
-	if(!m_visible)
-		return false;
-
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputKeyPress(key, pressed);
 	if (IsImGuiItemsInFocus())
 		return true;
 #endif
+
+	if (!m_visible)
+		return false;
 
 	if (!m_showConsole)
 		return true;
