@@ -72,6 +72,8 @@ enum ELoopCommand : int
 	LOOPCMD_NONE = 0,
 	LOOPCMD_FADE_IN,
 	LOOPCMD_FADE_OUT,
+
+	LOOPCMD_FLAG_CHANGED = (1 << 31)
 };
 
 static const char* s_soundParamNames[] = {

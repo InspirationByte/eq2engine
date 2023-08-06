@@ -425,13 +425,17 @@ void CSoundingObject::SetEmitterState(SoundEmitterData* emitter, IEqAudioSource:
 	if (!emitter)
 		return;
 
-	emitter->loopCommand = LOOPCMD_NONE;
-	emitter->loopCommandRatePerSecond = 0.0f;
-	emitter->loopCommandTimeFactor = 1.0f;
-	emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
-
 	if (emitter->virtualParams.state == state)
 		return;
+
+	if((emitter->loopCommand & 31) != LOOPCMD_NONE)
+	{
+		emitter->loopCommand = LOOPCMD_NONE | LOOPCMD_FLAG_CHANGED;
+		emitter->loopCommandRatePerSecond = 0.0f;
+		emitter->loopCommandTimeFactor = 1.0f;
+		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
+	}
+
 
 	IEqAudioSource::Params param;
 	param.set_state(state);
@@ -485,9 +489,9 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 	if (!emitter)
 		return;
 
-	if (emitter->loopCommand != LOOPCMD_NONE)
+	if ((emitter->loopCommand & 31) != LOOPCMD_NONE)
 	{
-		emitter->loopCommand = LOOPCMD_NONE;
+		emitter->loopCommand = LOOPCMD_NONE | LOOPCMD_FLAG_CHANGED;
 		emitter->loopCommandRatePerSecond = 0.0f;
 		emitter->loopCommandTimeFactor = 1.0f;
 		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
@@ -526,7 +530,7 @@ void CSoundingObject::StartLoop(SoundEmitterData* emitter, float fadeInTime)
 
 	{
 		emitter->loopCommandRatePerSecond = 1.0f / fadeInTime;
-		emitter->loopCommand = LOOPCMD_FADE_IN;
+		emitter->loopCommand = LOOPCMD_FADE_IN | LOOPCMD_FLAG_CHANGED;
 
 		if(wasStopped)
 			emitter->loopCommandTimeFactor = 0.0f;
@@ -542,7 +546,7 @@ void CSoundingObject::StopLoop(SoundEmitterData* emitter, float fadeOutTime)
 		fadeOutTime = emitter->script->stopLoopTime;
 
 	emitter->loopCommandRatePerSecond = 1.0f / fadeOutTime;
-	emitter->loopCommand = LOOPCMD_FADE_OUT;
+	emitter->loopCommand = LOOPCMD_FADE_OUT | LOOPCMD_FLAG_CHANGED;
 
 	if(fadeOutTime <= 0.0f)
 	{

@@ -452,7 +452,8 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
 
-	const ELoopCommand loopCommand = (ELoopCommand)emitter->loopCommand;
+	const bool loopCommandChanged = (emitter->loopCommand & LOOPCMD_FLAG_CHANGED);
+	const ELoopCommand loopCommand = (ELoopCommand)(emitter->loopCommand & 31);
 	if (loopCommand != LOOPCMD_NONE)
 	{
 		const float remainTimeFactorTarget = (loopCommand == LOOPCMD_FADE_IN) ? 1.0f : 0.0f;
@@ -476,6 +477,12 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 			emitter->loopCommand = LOOPCMD_NONE;
 		}
 	}
+	else if(loopCommandChanged & LOOPCMD_FLAG_CHANGED)
+	{
+		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
+	}
+
+	emitter->loopCommand &= ~LOOPCMD_FLAG_CHANGED;
 
 	emitter->UpdateNodes();
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
