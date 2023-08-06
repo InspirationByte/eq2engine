@@ -21,23 +21,27 @@ public:
 		, m_firstBuffer(other.m_firstBuffer)
 		, m_bufferedBlocks(other.m_bufferedBlocks)
 	{
-		m_firstFreeBlock = nullptr;
-		m_firstBuffer = nullptr;
-		m_bufferedBlocks = CHUNK_ITEMS;
 	}
 
-	~MemoryPool()
+	virtual ~MemoryPool()
 	{
-		clear();
+		Buffer* buffer = m_firstBuffer;
+		while (buffer)
+		{
+			Buffer* del = buffer;
+			buffer = buffer->next;
+			delete del;
+		}
 	}
 
 	void clear()
 	{
-		while (m_firstBuffer)
+		Buffer* buffer = m_firstBuffer;
+		while (buffer)
 		{
-			Buffer* buffer = m_firstBuffer;
-			m_firstBuffer = buffer->next;
-			delete buffer;
+			Buffer* del = buffer;
+			buffer = buffer->next;
+			delete del;
 		}
 		m_firstFreeBlock = nullptr;
 		m_firstBuffer = nullptr;
