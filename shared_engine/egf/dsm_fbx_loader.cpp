@@ -141,13 +141,24 @@ void TransformShapeDataGeom(DSShapeData* shapeData, const Matrix4x4& transform)
 struct VertexWeightData
 {
 	Map<int, float>			indexWeightMap{ PP_SL };
-	const ofbx::Mesh*		sourceMesh{ nullptr };
 	const ofbx::Object*		sourceBone{ nullptr };
 	const ofbx::Cluster*	sourceCluster{nullptr};
 	Matrix4x4				boneMatrix{ identity4 };
 	int						boneId{ -1 };
 };
-#pragma optimize("", off)
+
+struct ObjectData
+{
+	const ofbx::Mesh*		mesh{ nullptr };
+	const ofbx::Geometry*	geom{ nullptr };
+
+	const ofbx::Skin*		skin{ nullptr };
+	Array<DSBone*>			bones{PP_SL};
+	Array<VertexWeightData> weightData{PP_SL};
+
+	Matrix4x4				transform{ identity4 };
+};
+
 void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<VertexWeightData>& weightData, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
 	const ofbx::Geometry& geom = *mesh.getGeometry();
@@ -196,7 +207,6 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 		wd.boneId = i;
 		wd.sourceBone = fbxBoneLink;
 		wd.sourceCluster = &fbxCluster;
-		wd.sourceMesh = &mesh;
 
 		const int* indices = fbxCluster.getIndices();
 		for (int k = 0; k < fbxCluster.getIndicesCount(); ++k)
@@ -661,7 +671,7 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 }
 
 
-void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
+void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* scene, const char* meshFilter)
 {
 	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
 
@@ -669,10 +679,6 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 	bool invertFaces;
 	GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
-#if 0
-	Matrix3x3 boneConvertMatrix = rotateX3(DEG2RAD(-90)) * rotateZ3(DEG2RAD(180));
-	Quaternion boneConvertRotation(boneConvertMatrix);
-#else
 	const Matrix4x4 skinConvertMatrix = Matrix4x4(convertMatrix);
 	const Matrix3x3 normalizedConvertMatrix = Matrix3x3(
 		normalize(convertMatrix.rows[0]),
@@ -684,11 +690,9 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 		dot(convertMatrix.rows[0], normalizedConvertMatrix.rows[0]),
 		dot(convertMatrix.rows[1], normalizedConvertMatrix.rows[1]),
 		dot(convertMatrix.rows[2], normalizedConvertMatrix.rows[2]));
-#endif
 
 	// get bones from all meshes
-	Array<DSBone*> bones(PP_SL);
-	Array<VertexWeightData> weightData(PP_SL);
+	Array<ObjectData> objectDatas(PP_SL);
 
 	// TODO: separate skeletons from each mesh ref
 	const int meshCount = scene->getMeshCount();
@@ -696,25 +700,33 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 	{
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
 
+		if (stricmp(mesh.name, meshFilter) != 0)
+			continue;
+
 		// this is used to transform mesh from FBX space
 		const Matrix4x4 globalTransform = FromFBXMatrix(mesh.getGlobalTransform());
 		const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
 		const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-		GetFBXBonesAsDSM(mesh, bones, weightData, transform, convertMatrix);
+		ObjectData& objData = objectDatas.append();
+		objData.transform = transform;
+		objData.mesh = &mesh;
+		objData.geom = mesh.getGeometry();
+		objData.skin = objData.geom ? objData.geom->getSkin() : nullptr;
+		GetFBXBonesAsDSM(mesh, objData.bones, objData.weightData, transform, convertMatrix);
 	}
 
-	if (bones.numElem() == 0)
+	if (!objectDatas.numElem())
 	{
-		MsgError("Cannot get skinning information from FBX, unable to load animations\n");
+		MsgError("Cannot get meshes from FBX under name '%s', fix your meshFilter\n", meshFilter);
 		return;
 	}
-
-	Msg("Collected %d bones from %d meshes\n", bones.numElem(), meshCount);
 
 	float frameRate = scene->getSceneFrameRate();
 	if (frameRate <= 0)
 		frameRate = 30.0f;
+
+	Set<int> addedAnimations(PP_SL);
 
 	const int animCount = scene->getAnimationStackCount();
 	Msg("Animation count: %d\n", animCount);
@@ -735,114 +747,144 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 			continue;
 		}
 
+		MsgWarning("Stack %s\n", stack->name);
+
 		const int animationDuration = int(localDuration * frameRate + 0.5f);
-		const int boneCount = weightData.numElem();
-
-		studioAnimation_t animation;
-		strncpy(animation.name, stack->name, sizeof(animation.name));
-		animation.name[sizeof(animation.name) - 1] = 0;
-		animation.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
-
-		// TODO: bake mesh transform into root bone
-
 		const ofbx::AnimationLayer* layer = stack->getLayer(0);
-		for (int j = 0; j < boneCount; ++j)
+
+		for (ObjectData& objData : objectDatas)
 		{
-			const DSBone* bone = bones[j];
-			const VertexWeightData& boneWeightData = weightData[j];
-			studioBoneAnimation_t& boneAnimation = animation.bones[j];
-
-			const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Translation");
-			const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Rotation");
-			//const ofbx::AnimationCurveNode* scaleNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Scaling");
-
-			Array<Vector3D> rotations(PP_SL);
-			Array<Vector3D> translations(PP_SL);
-			//Array<Vector3D> scales(PP_SL);
-
-			// keyframes are going to be interpolated and resampled in order to restore original keyframing
-			if (translationNode)
-				GetFBXCurveAsInterpKeyFrames(translationNode, translations, animationDuration, localDuration, false);
-			if (rotationNode)
-				GetFBXCurveAsInterpKeyFrames(rotationNode, rotations, animationDuration, localDuration, true);
-			//if (scaleNode)
-			//	GetFBXCurveAsInterpKeyFrames(scaleNode, scales, animationDuration, localDuration, true);
-
-			ASSERT_MSG(translations.numElem() <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", translations.numElem(), MaxFramesPerAnimation);
-			ASSERT_MSG(translations.numElem() == rotations.numElem(), "Rotations %d translations %d", rotations.numElem(), translations.numElem());
-
-			if (!translations.numElem() && !rotations.numElem())
+			if (objData.bones.numElem() == 0)
 				continue;
 
-			// alloc frames
-			const int numFrames = translations.numElem();
-			
-			boneAnimation.numFrames = numFrames;
-			boneAnimation.keyFrames = PPAllocStructArray(animframe_t, numFrames);
+			MsgWarning("Object %s\n", objData.mesh->name);
 
-			Matrix4x4 invBoneMatrix = boneWeightData.boneMatrix;
-			if (bone->parent_id == -1)
-				invBoneMatrix = boneWeightData.boneMatrix * FromFBXMatrix(boneWeightData.sourceMesh->getGlobalTransform());
-
-			invBoneMatrix = !invBoneMatrix;
-			
-			// perform conversion of each frame to local space
-			for (int k = 0; k < numFrames; ++k)
+			// bake mesh transform into root bone
 			{
-				animframe_t& outFrame = boneAnimation.keyFrames[k];
+				const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*objData.skin, "Lcl Translation");
+				const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*objData.skin, "Lcl Rotation");
+			}
 
-				const Vector3D rotation = rotations[k];
-				const Vector3D translation = translations[k];
+			const int boneCount = objData.weightData.numElem();
 
-				const ofbx::Vec3 translationFrame{translation.x, translation.y, translation.z};
-				const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
+			studioAnimation_t animation;
+			strncpy(animation.name, stack->name, sizeof(animation.name));
+			animation.name[sizeof(animation.name) - 1] = 0;
+			animation.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
 
-				const Matrix4x4 animBoneMatrix = FromFBXMatrix(boneWeightData.sourceBone->evalLocal(translationFrame, rotationFrame)) * invBoneMatrix;
+			// convert bone animation
+			for (int j = 0; j < boneCount; ++j)
+			{
+				const DSBone* bone = objData.bones[j];
+				const VertexWeightData& boneWeightData = objData.weightData[j];
+				studioBoneAnimation_t& boneAnimation = animation.bones[j];
 
-				// in Eq each bone transform is strictly related to it's parent
+				const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Translation");
+				const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Rotation");
+				//const ofbx::AnimationCurveNode* scaleNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Scaling");
+
+				Array<Vector3D> rotations(PP_SL);
+				Array<Vector3D> translations(PP_SL);
+				//Array<Vector3D> scales(PP_SL);
+
+				// keyframes are going to be interpolated and resampled in order to restore original keyframing
+				if (translationNode)
+					GetFBXCurveAsInterpKeyFrames(translationNode, translations, animationDuration, localDuration, false);
+				if (rotationNode)
+					GetFBXCurveAsInterpKeyFrames(rotationNode, rotations, animationDuration, localDuration, true);
+				//if (scaleNode)
+				//	GetFBXCurveAsInterpKeyFrames(scaleNode, scales, animationDuration, localDuration, true);
+
+				ASSERT_MSG(translations.numElem() <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", translations.numElem(), MaxFramesPerAnimation);
+				ASSERT_MSG(translations.numElem() == rotations.numElem(), "Rotations %d translations %d", rotations.numElem(), translations.numElem());
+
+				if (!translations.numElem() && !rotations.numElem())
+					continue;
+
+				// alloc frames
+				const int numFrames = translations.numElem();
+			
+				boneAnimation.numFrames = numFrames;
+				boneAnimation.keyFrames = PPAllocStructArray(animframe_t, numFrames);
+
+				Matrix4x4 invBoneMatrix = boneWeightData.boneMatrix;
+				if (bone->parent_id == -1)
+					invBoneMatrix = boneWeightData.boneMatrix * FromFBXMatrix(objData.mesh->getGlobalTransform());
+
+				invBoneMatrix = !invBoneMatrix;
+			
+				// perform conversion of each frame to local space
+				for (int k = 0; k < numFrames; ++k)
 				{
-					outFrame.vecBonePosition = animBoneMatrix.getTranslationComponent();
-					outFrame.angBoneAngles = EulerMatrixXYZ(animBoneMatrix.getRotationComponent());
+					animframe_t& outFrame = boneAnimation.keyFrames[k];
 
-					if (matDet < 0)
+					const Vector3D rotation = rotations[k];
+					const Vector3D translation = translations[k];
+
+					const ofbx::Vec3 translationFrame{translation.x, translation.y, translation.z};
+					const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
+
+					const Matrix4x4 animBoneMatrix = FromFBXMatrix(boneWeightData.sourceBone->evalLocal(translationFrame, rotationFrame)) * invBoneMatrix;
+
+					// in Eq each bone transform is strictly related to it's parent
 					{
-						outFrame.angBoneAngles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
-						outFrame.vecBonePosition *= Vector3D(sign(matDet), 1.0f, 1.0f);
-					}
+						outFrame.vecBonePosition = animBoneMatrix.getTranslationComponent();
+						outFrame.angBoneAngles = EulerMatrixXYZ(animBoneMatrix.getRotationComponent());
 
-					if (bone->parent_id == -1)
-						outFrame.vecBonePosition = inverseTransformVector(outFrame.vecBonePosition, normalizedConvertMatrix) * convertMatrixScale;
+						if (matDet < 0)
+						{
+							outFrame.angBoneAngles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
+							outFrame.vecBonePosition *= Vector3D(sign(matDet), 1.0f, 1.0f);
+						}
+
+						if (bone->parent_id == -1)
+							outFrame.vecBonePosition = inverseTransformVector(outFrame.vecBonePosition, normalizedConvertMatrix) * convertMatrixScale;
+					}
 				}
 			}
-		}
 
-		if (animation.bones[0].numFrames)
-		{
-			ASSERT_MSG(animation.bones[0].numFrames <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", animation.bones[0].numFrames, MaxFramesPerAnimation);
+			if (animation.bones[0].numFrames)
+			{
+				ASSERT_MSG(animation.bones[0].numFrames <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", animation.bones[0].numFrames, MaxFramesPerAnimation);
 
-			Msg("  Anim: %s, duration: %d, frames: %d\n", stack->name, animationDuration, animation.bones[0].numFrames);
-			animations.append(animation);
-		}
-		else
-		{
-			for (int i = 0; i < boneCount; i++)
-				PPFree(animation.bones[i].keyFrames);
-			PPFree(animation.bones);
+				Msg("  Anim: %s, duration: %d, frames: %d\n", stack->name, animationDuration, animation.bones[0].numFrames);
+				animations.append(animation);
+
+				addedAnimations.insert(StringToHash(stack->name));
+			}
+			else
+			{
+				for (int i = 0; i < boneCount; i++)
+					PPFree(animation.bones[i].keyFrames);
+				PPFree(animation.bones);
+			}
 		}
 	}
 
-	for (int i = 0; i < bones.numElem(); ++i)
-		delete bones[i];
+	for (ObjectData& objData : objectDatas)
+	{
+		for (int i = 0; i < objData.bones.numElem(); ++i)
+			delete objData.bones[i];
+	}
 }
 
-bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename)
+bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename, const char* meshFilter)
 {
 	long fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
-
 	if (!fileBuffer)
 	{
 		MsgError("Couldn't open FBX file '%s'\n", filename);
+		return false;
+	}
+
+	defer{
+		PPFree(fileBuffer);
+	};
+
+	if(meshFilter == nullptr || *meshFilter == 0)
+	{
+		MsgWarning("FBXSource meshFilter must be specified\n");
 		return false;
 	}
 
@@ -852,13 +894,11 @@ bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filenam
 	if (!scene)
 	{
 		MsgError("FBX '%s' error: %s\n", filename, ofbx::getError());
-		PPFree(fileBuffer);
 		return false;
 	}
 
-	CollectFBXAnimations(animations, scene);
+	CollectFBXAnimations(animations, scene, meshFilter);
 
-	PPFree(fileBuffer);
 	return true;
 }
 

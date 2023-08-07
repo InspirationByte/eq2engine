@@ -596,17 +596,19 @@ bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pMo
 }
 
 
-void CMotionPackageGenerator::LoadFBXAnimations(const char* filename)
+void CMotionPackageGenerator::LoadFBXAnimations(const KVSection* section)
 {
-	EqString finalFileName = filename;
+	const char* fbxFileName = KV_GetValueString(section);
+
+	EqString finalFileName = fbxFileName;
 
 	// load from exporter-supported path
-	if (g_fileSystem->FileExist((m_animPath + "/anims/" + filename).GetData()))
-		finalFileName = m_animPath + "/anims/" + filename;
+	if (g_fileSystem->FileExist((m_animPath + "/anims/" + fbxFileName).GetData()))
+		finalFileName = m_animPath + "/anims/" + fbxFileName;
 	else
-		finalFileName = m_animPath + "/" + filename;
+		finalFileName = m_animPath + "/" + fbxFileName;
 
-	SharedModel::LoadFBXAnimations(m_animations, finalFileName);
+	SharedModel::LoadFBXAnimations(m_animations, finalFileName, KV_GetValueString(section->FindSection("meshFilter"), 0, nullptr));
 }
 
 //************************************
@@ -699,7 +701,7 @@ int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex)
 //************************************
 // Loads animation from key-values parameters and applies.
 //************************************
-void CMotionPackageGenerator::LoadAnimation(KVSection* section)
+void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 {
 	KVSection* pPathKey = section->FindSection("path");
 
@@ -838,7 +840,7 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 //************************************
 // Parses animation list from script
 //************************************
-bool CMotionPackageGenerator::ParseAnimations(KVSection* section)
+bool CMotionPackageGenerator::ParseAnimations(const KVSection* section)
 {
 	Msg("Processing animations\n");
 	for(int i = 0; i < section->keys.numElem(); i++)
@@ -855,7 +857,7 @@ bool CMotionPackageGenerator::ParseAnimations(KVSection* section)
 //************************************
 // Parses pose parameters from script
 //************************************
-void CMotionPackageGenerator::ParsePoseparameters(KVSection* section)
+void CMotionPackageGenerator::ParsePoseparameters(const KVSection* section)
 {
 	Msg("Processing pose parameters\n");
 	for(int i = 0; i < section->keys.numElem(); i++)
@@ -884,7 +886,7 @@ void CMotionPackageGenerator::ParsePoseparameters(KVSection* section)
 //************************************
 // Loads sequence parameters
 //************************************
-void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_name)
+void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char* seq_name)
 {
 	sequencedesc_t desc;
 	memset(&desc,0,sizeof(sequencedesc_t));
@@ -1111,7 +1113,7 @@ void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_n
 //************************************
 // Parses sequence list
 //************************************
-void CMotionPackageGenerator::ParseSequences(KVSection* section)
+void CMotionPackageGenerator::ParseSequences(const KVSection* section)
 {
 	Msg("Processing sequences\n");
 	for(int i = 0; i < section->keys.numElem(); i++)
@@ -1226,7 +1228,7 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 	KVSection* animSourceKey = sec->FindSection("FBXSource");
 	if (animSourceKey)
 	{
-		LoadFBXAnimations(KV_GetValueString(animSourceKey));
+		LoadFBXAnimations(animSourceKey);
 	}
 	
 	// begin script compilation
