@@ -627,7 +627,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 	Tokenizer tok;
 	if (!tok.setFile( finalFileName.GetData() ))
 	{
-		MsgError("Couldn't open ESA file '%s'", finalFileName.GetData());
+		MsgError("Couldn't open ESA file '%s'\n", finalFileName.GetData());
 		return -1;
 	}
 
@@ -868,7 +868,7 @@ void CMotionPackageGenerator::ParsePoseparameters(const KVSection* section)
 		{
 			if(poseParamKey->values.numElem() < 3)
 			{
-				MsgError("Invalid poseparameter definition. Valid format is: <poseparam name> <min range> <max range>");
+				MsgError("Incorrect usage. Example: poseparameter <poseparam name> <min range> <max range>");
 				continue;
 			}
 

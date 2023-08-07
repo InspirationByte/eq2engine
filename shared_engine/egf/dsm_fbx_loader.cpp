@@ -593,6 +593,13 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 	const ofbx::AnimationCurve* nodeY = curveNode->getCurve(1);
 	const ofbx::AnimationCurve* nodeZ = curveNode->getCurve(2);
 
+	if (!nodeX || !nodeY || !nodeZ)
+	{
+		MsgError("GetFBXCurveAsInterpKeyFrames error - not enough curves\n");
+		MsgError("If using Blender - try exporting only NLA Tracks (and uncheck All Tracks)\n");
+		return;
+	}
+
 	Map<ofbx::i64, float> valueX(PP_SL);
 	Map<ofbx::i64, float> valueY(PP_SL);
 	Map<ofbx::i64, float> valueZ(PP_SL);
@@ -751,8 +758,6 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 			continue;
 		}
 
-		MsgWarning("Stack %s\n", stack->name);
-
 		const int animationDuration = int(localDuration * frameRate + 0.5f);
 		const ofbx::AnimationLayer* layer = stack->getLayer(0);
 
@@ -760,8 +765,6 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 		{
 			if (objData.bones.numElem() == 0)
 				continue;
-
-			MsgWarning("Object %s\n", objData.mesh->name);
 
 			const ofbx::Object& skeletonObj = *objData.weightData[0].sourceBone->getParent();
 			const Matrix4x4 meshTransform = FromFBXMatrix(objData.mesh->getGlobalTransform());
