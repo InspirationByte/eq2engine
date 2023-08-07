@@ -980,26 +980,6 @@ inline TVec4D<T> balance(const TVec4D<T> &v)
 					fabs(v.z)*tmp.w);
 }
 
-template <typename T>
-inline TVec3D<T> remapRotate(TVec3D<T> &angles)
-{
-	if(angles.x < 0)
-		angles += 360;
-	if(angles.y < 0)
-		angles += 360;
-	if(angles.z < 0)
-		angles += 360;
-
-	if(angles.x > 379)
-		angles -= 360;
-	if(angles.y > 379)
-		angles -= 360;
-	if(angles.z > 379)
-		angles -= 360;
-
-	return TVec3D<T>(angles.y,-angles.z,angles.x);
-}
-
 
 // Vector multiply and add
 template <typename T>
