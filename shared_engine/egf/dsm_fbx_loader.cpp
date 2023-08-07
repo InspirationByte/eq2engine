@@ -587,7 +587,7 @@ void ZoomArray(const Array<T>& src, Array<T>& dest, int newLength)
 	}
 }
 
-void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Array<Vector3D>& keyFrames, int animationDuration, float localDuration, bool angles)
+void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Array<Vector3D>& keyFrames, int animationDuration, float localDuration)
 {
 	const ofbx::AnimationCurve* nodeX = curveNode->getCurve(0);
 	const ofbx::AnimationCurve* nodeY = curveNode->getCurve(1);
@@ -670,7 +670,6 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 	ZoomArray(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
 }
 
-
 void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* scene, const char* meshFilter)
 {
 	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
@@ -726,7 +725,12 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 	if (frameRate <= 0)
 		frameRate = 30.0f;
 
-	Set<int> addedAnimations(PP_SL);
+	struct AnimationTRS
+	{
+		Array<Vector3D> translations{PP_SL};
+		Array<Vector3D> rotations{PP_SL};
+		Array<Vector3D> scales{PP_SL};
+	};
 
 	const int animCount = scene->getAnimationStackCount();
 	Msg("Animation count: %d\n", animCount);
@@ -759,10 +763,22 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 
 			MsgWarning("Object %s\n", objData.mesh->name);
 
-			// bake mesh transform into root bone
+			const ofbx::Object& skeletonObj = *objData.weightData[0].sourceBone->getParent();
+			const Matrix4x4 meshTransform = FromFBXMatrix(objData.mesh->getGlobalTransform());
+
+			AnimationTRS rootAnimation;
 			{
-				const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*objData.skin, "Lcl Translation");
-				const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*objData.skin, "Lcl Rotation");
+				const ofbx::AnimationCurveNode* rootTranslationNode = layer->getCurveNode(skeletonObj, "Lcl Translation");
+				const ofbx::AnimationCurveNode* rootRotationNode = layer->getCurveNode(skeletonObj, "Lcl Rotation");
+				const ofbx::AnimationCurveNode* rootScalingNode = layer->getCurveNode(skeletonObj, "Lcl Scaling");
+
+				// keyframes are going to be interpolated and resampled in order to restore original keyframing
+				if (rootTranslationNode)
+					GetFBXCurveAsInterpKeyFrames(rootTranslationNode, rootAnimation.translations, animationDuration, localDuration);
+				if (rootRotationNode)
+					GetFBXCurveAsInterpKeyFrames(rootRotationNode, rootAnimation.rotations, animationDuration, localDuration);
+				if (rootScalingNode)
+					GetFBXCurveAsInterpKeyFrames(rootScalingNode, rootAnimation.scales, animationDuration, localDuration);
 			}
 
 			const int boneCount = objData.weightData.numElem();
@@ -776,55 +792,74 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 			for (int j = 0; j < boneCount; ++j)
 			{
 				const DSBone* bone = objData.bones[j];
-				const VertexWeightData& boneWeightData = objData.weightData[j];
-				studioBoneAnimation_t& boneAnimation = animation.bones[j];
+				const VertexWeightData& wd = objData.weightData[j];
 
-				const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Translation");
-				const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Rotation");
-				//const ofbx::AnimationCurveNode* scaleNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Scaling");
+				// root animation
+				// FBX does not apply armature transform animation to the root bone
+				// so we have to do it ourselves
+				Matrix4x4 invBoneMatrix = wd.boneMatrix;
+				if (bone->parent_id == -1)
+				{
+					// don't forget to calc correct rest bone matrix
+					invBoneMatrix = wd.boneMatrix * meshTransform;
+				}
+				invBoneMatrix = !invBoneMatrix;
 
-				Array<Vector3D> rotations(PP_SL);
-				Array<Vector3D> translations(PP_SL);
-				//Array<Vector3D> scales(PP_SL);
+				// bone animations
+				AnimationTRS boneAnimation;
+				{
+					const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*wd.sourceBone, "Lcl Translation");
+					const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*wd.sourceBone, "Lcl Rotation");
+					const ofbx::AnimationCurveNode* scalingNode = layer->getCurveNode(*wd.sourceBone, "Lcl Scaling");
 
-				// keyframes are going to be interpolated and resampled in order to restore original keyframing
-				if (translationNode)
-					GetFBXCurveAsInterpKeyFrames(translationNode, translations, animationDuration, localDuration, false);
-				if (rotationNode)
-					GetFBXCurveAsInterpKeyFrames(rotationNode, rotations, animationDuration, localDuration, true);
-				//if (scaleNode)
-				//	GetFBXCurveAsInterpKeyFrames(scaleNode, scales, animationDuration, localDuration, true);
+					// keyframes are going to be interpolated and resampled in order to restore original keyframing
+					if (translationNode)
+						GetFBXCurveAsInterpKeyFrames(translationNode, boneAnimation.translations, animationDuration, localDuration);
+					if (rotationNode)
+						GetFBXCurveAsInterpKeyFrames(rotationNode, boneAnimation.rotations, animationDuration, localDuration);
+					if (scalingNode)
+						GetFBXCurveAsInterpKeyFrames(scalingNode, boneAnimation.scales, animationDuration, localDuration);
+				}
 
-				ASSERT_MSG(translations.numElem() <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", translations.numElem(), MaxFramesPerAnimation);
-				ASSERT_MSG(translations.numElem() == rotations.numElem(), "Rotations %d translations %d", rotations.numElem(), translations.numElem());
+				ASSERT_MSG(boneAnimation.translations.numElem() <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", boneAnimation.translations.numElem(), MaxFramesPerAnimation);
+				ASSERT_MSG(boneAnimation.translations.numElem() == boneAnimation.rotations.numElem(), "Rotations %d translations %d", boneAnimation.rotations.numElem(), boneAnimation.translations.numElem());
+				ASSERT_MSG(rootAnimation.translations.numElem() == boneAnimation.translations.numElem(), "Root and bone animation frame mismatch");
 
-				if (!translations.numElem() && !rotations.numElem())
+				if (!boneAnimation.translations.numElem() && !boneAnimation.rotations.numElem())
 					continue;
 
 				// alloc frames
-				const int numFrames = translations.numElem();
+				const int numFrames = boneAnimation.translations.numElem();
 			
-				boneAnimation.numFrames = numFrames;
-				boneAnimation.keyFrames = PPAllocStructArray(animframe_t, numFrames);
-
-				Matrix4x4 invBoneMatrix = boneWeightData.boneMatrix;
-				if (bone->parent_id == -1)
-					invBoneMatrix = boneWeightData.boneMatrix * FromFBXMatrix(objData.mesh->getGlobalTransform());
-
-				invBoneMatrix = !invBoneMatrix;
+				studioBoneAnimation_t& outBoneAnim = animation.bones[j];
+				outBoneAnim.numFrames = numFrames;
+				outBoneAnim.keyFrames = PPAllocStructArray(animframe_t, numFrames);
 			
 				// perform conversion of each frame to local space
 				for (int k = 0; k < numFrames; ++k)
 				{
-					animframe_t& outFrame = boneAnimation.keyFrames[k];
+					animframe_t& outFrame = outBoneAnim.keyFrames[k];
 
-					const Vector3D rotation = rotations[k];
-					const Vector3D translation = translations[k];
+					const Vector3D rotation = boneAnimation.rotations[k];
+					const Vector3D translation = boneAnimation.translations[k];
 
 					const ofbx::Vec3 translationFrame{translation.x, translation.y, translation.z};
 					const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
 
-					const Matrix4x4 animBoneMatrix = FromFBXMatrix(boneWeightData.sourceBone->evalLocal(translationFrame, rotationFrame)) * invBoneMatrix;
+					Matrix4x4 meshAnimTransform = identity4;
+					if (bone->parent_id == -1)
+					{
+						const Vector3D rotation = rootAnimation.rotations[k];
+						const Vector3D translation = rootAnimation.translations[k];
+
+						const ofbx::Vec3 translationFrame{translation.x, translation.y, translation.z};
+						const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
+
+						// we need to apply this parent transform accordingly
+						meshAnimTransform = FromFBXMatrix(skeletonObj.evalLocal(translationFrame, rotationFrame)) * meshTransform;
+					}
+
+					const Matrix4x4 animBoneMatrix = FromFBXMatrix(wd.sourceBone->evalLocal(translationFrame, rotationFrame)) * meshAnimTransform * invBoneMatrix;
 
 					// in Eq each bone transform is strictly related to it's parent
 					{
@@ -837,8 +872,8 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 							outFrame.vecBonePosition *= Vector3D(sign(matDet), 1.0f, 1.0f);
 						}
 
-						if (bone->parent_id == -1)
-							outFrame.vecBonePosition = inverseTransformVector(outFrame.vecBonePosition, normalizedConvertMatrix) * convertMatrixScale;
+						//if (bone->parent_id == -1)
+						//	outFrame.vecBonePosition = transformVector(outFrame.vecBonePosition, normalizedConvertMatrix) * convertMatrixScale;
 					}
 				}
 			}
@@ -849,8 +884,6 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 
 				Msg("  Anim: %s, duration: %d, frames: %d\n", stack->name, animationDuration, animation.bones[0].numFrames);
 				animations.append(animation);
-
-				addedAnimations.insert(StringToHash(stack->name));
 			}
 			else
 			{
