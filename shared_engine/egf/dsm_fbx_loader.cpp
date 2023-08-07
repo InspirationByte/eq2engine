@@ -16,6 +16,8 @@
 #include "dsm_fbx_loader.h"
 #include "studiofile/StudioLoader.h"
 
+static constexpr const int MaxFramesPerAnimation = 10000;
+
 namespace SharedModel
 {
 
@@ -54,6 +56,17 @@ Vector3D FromFBXVector(const ofbx::Vec3& v, const ofbx::GlobalSettings& settings
 Vector3D FromFBXVector(const Vector3D& v, const ofbx::GlobalSettings& settings)
 {
 	return FixOrient(v, settings);
+}
+
+Quaternion FixOrient(const Quaternion& v, const ofbx::GlobalSettings& settings)
+{
+	switch (settings.UpAxis)
+	{
+		case ofbx::UpVector_AxisY: return Quaternion(v.x, v.y, v.z, v.w);
+		case ofbx::UpVector_AxisZ: return Quaternion(v.x, v.z, -v.y, v.w);
+		case ofbx::UpVector_AxisX: return Quaternion(-v.y, v.x, v.z, v.w);
+	}
+	return Quaternion(v.x, v.y, v.z, v.w);
 }
 
 Vector2D FromFBXUvVector(const ofbx::Vec2& vec)
@@ -127,29 +140,43 @@ void TransformShapeDataGeom(DSShapeData* shapeData, const Matrix4x4& transform)
 
 struct VertexWeightData
 {
-	int boneId;
-	const ofbx::Object* boneObject{ nullptr };
-	Map<int, float> indexWeightMap{ PP_SL };
+	Map<int, float>			indexWeightMap{ PP_SL };
+	const ofbx::Mesh*		sourceMesh{ nullptr };
+	const ofbx::Object*		sourceBone{ nullptr };
+	const ofbx::Cluster*	sourceCluster{nullptr};
+	Matrix4x4				boneMatrix{ identity4 };
+	int						boneId{ -1 };
 };
-
-void GetFBXBonesAsDSM(const ofbx::Geometry& geom, Array<DSBone*>& bones, Array<VertexWeightData>& weightData, const Matrix4x4& transform)
+#pragma optimize("", off)
+void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<VertexWeightData>& weightData, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
+	const ofbx::Geometry& geom = *mesh.getGeometry();
 	const ofbx::Skin* skin = geom.getSkin();
 
 	if (!skin)
 		return;
 
-	// since it's attached to geom, we need it's matrix
-	// to properly convert the BindPose
-	const Matrix4x4 geomTransformInv = !FromFBXMatrix(geom.getGlobalTransform());
+	const int weightDataStart = weightData.numElem();
 
-	const int numBones = skin->getClusterCount();
+	const Matrix4x4 skinConvertMatrix = Matrix4x4(convertMatrix);
 
-	const Matrix3x3 boneConvertMatrix = rotateX3(DEG2RAD(-90)) * rotateZ3(DEG2RAD(180));
+	const Matrix3x3 normalizedConvertMatrix = Matrix3x3(
+		normalize(convertMatrix.rows[0]), 
+		normalize(convertMatrix.rows[1]),
+		normalize(convertMatrix.rows[2]));
 
+	const float matDet = det(normalizedConvertMatrix);
+	const Vector3D convertMatrixScale = Vector3D(
+		dot(convertMatrix.rows[0], normalizedConvertMatrix.rows[0]),
+		dot(convertMatrix.rows[1], normalizedConvertMatrix.rows[1]),
+		dot(convertMatrix.rows[2], normalizedConvertMatrix.rows[2]));
+
+	// collect matrices and weights first
+	Array<Matrix4x4> boneMatries(PP_SL);
 	Set<const ofbx::Object*> boneSet(PP_SL);
 
-	for (int i = 0; i < numBones; ++i)
+	const int numClusters = skin->getClusterCount();
+	for (int i = 0; i < numClusters; ++i)
 	{
 		const ofbx::Cluster& fbxCluster = *skin->getCluster(i);
 		const ofbx::Object* fbxBoneLink = fbxCluster.getLink();
@@ -158,14 +185,45 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, Array<DSBone*>& bones, Array<V
 			continue;
 		boneSet.insert(fbxBoneLink);
 
+		// link matrix must be same as fbxBoneLink->getGlobalTransform()
+		const ofbx::Matrix fbxBoneMat = fbxCluster.getTransformLinkMatrix(); 
+
+		// apply mesh transform alongside with FBX conversion matrix
+		const Matrix4x4 boneTransform = FromFBXMatrix(fbxBoneMat);
+		boneMatries.append(boneTransform);
+
+		VertexWeightData& wd = weightData.append();
+		wd.boneId = i;
+		wd.sourceBone = fbxBoneLink;
+		wd.sourceCluster = &fbxCluster;
+		wd.sourceMesh = &mesh;
+
+		const int* indices = fbxCluster.getIndices();
+		for (int k = 0; k < fbxCluster.getIndicesCount(); ++k)
+		{
+			wd.indexWeightMap.insert(indices[k], fbxCluster.getWeights()[k]);
+		}
+	}
+
+	MsgInfo("	Mesh %s\n", mesh.name);
+
+	// add bones
+	ArrayRef<VertexWeightData> thisWeightData(weightData.ptr() + weightDataStart, weightData.numElem() - weightDataStart);
+	for (int i = 0; i < thisWeightData.numElem(); ++i)
+	{
+		VertexWeightData& wd = thisWeightData[i];
+
+		const ofbx::Cluster& fbxCluster = *wd.sourceCluster;
+		const ofbx::Object* fbxBoneLink = wd.sourceBone;
+
 		DSBone* pBone = PPNew DSBone();
 		pBone->name = fbxCluster.name;
 		pBone->bone_id = i;
 
 		// find parent bone link
-		for (int j = 0; j < numBones; ++j)
+		for (int j = 0; j < thisWeightData.numElem(); ++j)
 		{
-			const ofbx::Cluster& fbxCluserJ = *skin->getCluster(j);
+			const ofbx::Cluster& fbxCluserJ = *thisWeightData[j].sourceCluster;
 			const ofbx::Object* fbxBoneLinkJ = fbxCluserJ.getLink();
 
 			if (fbxBoneLinkJ == fbxBoneLink->getParent())
@@ -176,48 +234,37 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, Array<DSBone*>& bones, Array<V
 			}
 		}
 
-		// TransformLinkMatrix is Global, convert to Eq Local
-		{
-			const ofbx::Matrix fbxBoneMat = fbxCluster.getTransformLinkMatrix();
-			Matrix4x4 boneMatrixLocal = FromFBXMatrix(fbxBoneMat) * geomTransformInv;
-			if (pBone->parent_id != -1)
-			{
-				const ofbx::Cluster& fbxCluserParent = *skin->getCluster(pBone->parent_id);
-				boneMatrixLocal = boneMatrixLocal * !(FromFBXMatrix(fbxCluserParent.getTransformLinkMatrix()) * geomTransformInv);
-			}
-			const Matrix4x4 boneMatrix = (pBone->parent_id == -1) ? (boneMatrixLocal * Matrix4x4(boneConvertMatrix)) : boneMatrixLocal;
+		Matrix4x4 boneMatrix = boneMatries[i];
+		if (pBone->parent_id != -1)
+			boneMatrix = boneMatrix * !boneMatries[pBone->parent_id];
 
+		wd.boneMatrix = boneMatrix;
+
+		// in Eq each bone transform is strictly related to it's parent
+		{
 			pBone->position = boneMatrix.getTranslationComponent();
 			pBone->angles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
 
-			// Convert RH -> LH
-			pBone->position *= Vector3D(-1, 1, 1);
-			pBone->angles *= Vector3D(1, -1, -1);
+			if(matDet < 0)
+			{
+				pBone->angles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
+				pBone->position *= Vector3D(sign(matDet), 1.0f, 1.0f);
+			}
+
+			if(pBone->parent_id == -1)
+				pBone->position = inverseTransformVector(pBone->position, normalizedConvertMatrix) * convertMatrixScale;
 		}
 
 		bones.append(pBone);
-
-		VertexWeightData& wd = weightData.append();
-		wd.boneId = i;
-		wd.boneObject = fbxBoneLink;
-
-		const int* indices = fbxCluster.getIndices();
-		for (int k = 0; k < fbxCluster.getIndicesCount(); ++k)
-		{
-			wd.indexWeightMap[indices[k]] = fbxCluster.getWeights()[k];
-		}
 	}
 }
 
-void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSGroup*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform)
+void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSGroup*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
-	const ofbx::Geometry& geom = *mesh.getGeometry();
-
 	Array<VertexWeightData> weightData(PP_SL);
-	GetFBXBonesAsDSM(geom, model->bones, weightData, transform);
+	GetFBXBonesAsDSM(mesh, model->bones, weightData, transform, convertMatrix);
 
-	const int vertex_count = geom.getVertexCount();
-
+	const ofbx::Geometry& geom = *mesh.getGeometry();
 	const ofbx::Vec3* vertices = geom.getVertices();
 	const ofbx::Vec3* normals = geom.getNormals();
 	const ofbx::Vec2* uvs = geom.getUVs();
@@ -270,7 +317,8 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 	// NOTE: OpenFBX prefers triangulation without indexation
 	// and it's not possible to validly obtain the indices with messing up the geometry.
 	int triNum = 0;
-	for (int j = 0; j < vertex_count; j += 3, ++triNum)
+	const int vertexCount = geom.getVertexCount();
+	for (int j = 0; j < vertexCount; j += 3, ++triNum)
 	{
 		DSGroup* dsmGrp = nullptr;
 
@@ -365,12 +413,12 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 	{
 		const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
 
-		Matrix3x3 convertMatrix;
-		bool invertFaces;
+		Matrix3x3 convertMatrix = identity3;
+		bool invertFaces = false;
 		GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
-		const int mesh_count = scene->getMeshCount();
-		for (int i = 0; i < mesh_count; ++i)
+		const int meshCount = scene->getMeshCount();
+		for (int i = 0; i < meshCount; ++i)
 		{
 			DSModelContainer& container = modelContainerList.append();
 			container.model = CRefPtr_new(DSModel);
@@ -381,10 +429,10 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 			// this is used to transform mesh from FBX space
 			const Matrix4x4 globalTransform = FromFBXMatrix(mesh.getGlobalTransform());
 			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
-			const Matrix4x4 transform =  globalTransform * geomMatrix * Matrix4x4(convertMatrix);
+			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
 			Map<int, DSGroup*> materialGroups(PP_SL);
-			ConvertFBXMeshToDSM(i, container.model, container.shapeData, materialGroups, mesh, settings, invertFaces, transform);
+			ConvertFBXMeshToDSM(i, container.model, container.shapeData, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
 
 			container.model->name = mesh.name;
 			container.shapeData->reference = mesh.name;
@@ -431,8 +479,8 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 
 		Map<int, DSGroup*> materialGroups(PP_SL);
 
-		const int mesh_count = scene->getMeshCount();
-		for (int i = 0; i < mesh_count; ++i)
+		const int meshCount = scene->getMeshCount();
+		for (int i = 0; i < meshCount; ++i)
 		{
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
 
@@ -441,7 +489,7 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
 			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-			ConvertFBXMeshToDSM(i, model, nullptr, materialGroups, mesh, settings, invertFaces, transform);
+			ConvertFBXMeshToDSM(i, model, nullptr, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
 		}
 	}
 
@@ -483,8 +531,8 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 
 		Map<int, DSGroup*> materialGroups(PP_SL);
 
-		const int mesh_count = scene->getMeshCount();
-		for (int i = 0; i < mesh_count; ++i)
+		const int meshCount = scene->getMeshCount();
+		for (int i = 0; i < meshCount; ++i)
 		{
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
 
@@ -493,7 +541,7 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
 			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-			ConvertFBXMeshToDSM(i, modelContainer.model, modelContainer.shapeData, materialGroups, mesh, settings, invertFaces, transform);
+			ConvertFBXMeshToDSM(i, modelContainer.model, modelContainer.shapeData, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
 		}
 	}
 
@@ -612,7 +660,8 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 	ZoomArray(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
 }
 
-void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
+
+void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 {
 	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
 
@@ -620,41 +669,59 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 	bool invertFaces;
 	GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
+#if 0
 	Matrix3x3 boneConvertMatrix = rotateX3(DEG2RAD(-90)) * rotateZ3(DEG2RAD(180));
 	Quaternion boneConvertRotation(boneConvertMatrix);
+#else
+	const Matrix4x4 skinConvertMatrix = Matrix4x4(convertMatrix);
+	const Matrix3x3 normalizedConvertMatrix = Matrix3x3(
+		normalize(convertMatrix.rows[0]),
+		normalize(convertMatrix.rows[1]),
+		normalize(convertMatrix.rows[2]));
+
+	const float matDet = det(normalizedConvertMatrix);
+	const Vector3D convertMatrixScale = Vector3D(
+		dot(convertMatrix.rows[0], normalizedConvertMatrix.rows[0]),
+		dot(convertMatrix.rows[1], normalizedConvertMatrix.rows[1]),
+		dot(convertMatrix.rows[2], normalizedConvertMatrix.rows[2]));
+#endif
 
 	// get bones from all meshes
 	Array<DSBone*> bones(PP_SL);
 	Array<VertexWeightData> weightData(PP_SL);
 
 	// TODO: separate skeletons from each mesh ref
-	const int mesh_count = scene->getMeshCount();
-	for (int i = 0; i < mesh_count; ++i)
+	const int meshCount = scene->getMeshCount();
+	for (int i = 0; i < meshCount; ++i)
 	{
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
-		const ofbx::Geometry& geom = *mesh.getGeometry();
 
 		// this is used to transform mesh from FBX space
 		const Matrix4x4 globalTransform = FromFBXMatrix(mesh.getGlobalTransform());
 		const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
 		const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-		GetFBXBonesAsDSM(geom, bones, weightData, transform);
+		GetFBXBonesAsDSM(mesh, bones, weightData, transform, convertMatrix);
 	}
+
+	if (bones.numElem() == 0)
+	{
+		MsgError("Cannot get skinning information from FBX, unable to load animations\n");
+		return;
+	}
+
+	Msg("Collected %d bones from %d meshes\n", bones.numElem(), meshCount);
 
 	float frameRate = scene->getSceneFrameRate();
 	if (frameRate <= 0)
 		frameRate = 30.0f;
 
-	const int anim_count = scene->getAnimationStackCount();
-
-	Msg("Animation count: %d\n", anim_count);
-	for (int i = 0; i < anim_count; ++i)
+	const int animCount = scene->getAnimationStackCount();
+	Msg("Animation count: %d\n", animCount);
+	for (int i = 0; i < animCount; ++i)
 	{
 		const ofbx::AnimationStack* stack = scene->getAnimationStack(i);
-		const ofbx::AnimationLayer* layer = stack->getLayer(0);
 		const ofbx::TakeInfo* takeInfo = scene->getTakeInfo(stack->name);
-
 		if (takeInfo == nullptr)
 		{
 			Msg("No take info for %s\n", stack->name);
@@ -674,70 +741,85 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 		studioAnimation_t animation;
 		strncpy(animation.name, stack->name, sizeof(animation.name));
 		animation.name[sizeof(animation.name) - 1] = 0;
-
 		animation.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
 
+		// TODO: bake mesh transform into root bone
+
+		const ofbx::AnimationLayer* layer = stack->getLayer(0);
 		for (int j = 0; j < boneCount; ++j)
 		{
-			const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*weightData[j].boneObject, "Lcl Translation");
-			const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*weightData[j].boneObject, "Lcl Rotation");
+			const DSBone* bone = bones[j];
+			const VertexWeightData& boneWeightData = weightData[j];
+			studioBoneAnimation_t& boneAnimation = animation.bones[j];
+
+			const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Translation");
+			const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Rotation");
+			//const ofbx::AnimationCurveNode* scaleNode = layer->getCurveNode(*boneWeightData.sourceBone, "Lcl Scaling");
 
 			Array<Vector3D> rotations(PP_SL);
 			Array<Vector3D> translations(PP_SL);
+			//Array<Vector3D> scales(PP_SL);
 
 			// keyframes are going to be interpolated and resampled in order to restore original keyframing
 			if (translationNode)
 				GetFBXCurveAsInterpKeyFrames(translationNode, translations, animationDuration, localDuration, false);
 			if (rotationNode)
 				GetFBXCurveAsInterpKeyFrames(rotationNode, rotations, animationDuration, localDuration, true);
+			//if (scaleNode)
+			//	GetFBXCurveAsInterpKeyFrames(scaleNode, scales, animationDuration, localDuration, true);
 
+			ASSERT_MSG(translations.numElem() <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", translations.numElem(), MaxFramesPerAnimation);
 			ASSERT_MSG(translations.numElem() == rotations.numElem(), "Rotations %d translations %d", rotations.numElem(), translations.numElem());
 
 			if (!translations.numElem() && !rotations.numElem())
 				continue;
 
-			animation.bones[j].numFrames = translations.numElem();
-			animation.bones[j].keyFrames = PPAllocStructArray(animframe_t, translations.numElem());
+			// alloc frames
+			const int numFrames = translations.numElem();
+			
+			boneAnimation.numFrames = numFrames;
+			boneAnimation.keyFrames = PPAllocStructArray(animframe_t, numFrames);
 
-			const Vector3D boneRestRotation = bones[j]->angles;
-			const Vector3D boneRestPosition = bones[j]->position;
+			Matrix4x4 invBoneMatrix = boneWeightData.boneMatrix;
+			if (bone->parent_id == -1)
+				invBoneMatrix = boneWeightData.boneMatrix * FromFBXMatrix(boneWeightData.sourceMesh->getGlobalTransform());
 
-			const Quaternion boneRestRotationQuat = !Quaternion(boneRestRotation.x, boneRestRotation.y, boneRestRotation.z);
-
+			invBoneMatrix = !invBoneMatrix;
+			
 			// perform conversion of each frame to local space
-			for (int k = 0; k < translations.numElem(); ++k)
+			for (int k = 0; k < numFrames; ++k)
 			{
-				animframe_t& frame = animation.bones[j].keyFrames[k];
+				animframe_t& outFrame = boneAnimation.keyFrames[k];
 
-				// Convert RH -> LH
-				const Vector3D rotRad = DEG2RAD(rotations[k]) * Vector3D(1, -1, -1);
+				const Vector3D rotation = rotations[k];
+				const Vector3D translation = translations[k];
 
-				Quaternion rotation = Quaternion(ConstrainAnglePI(rotRad.x), ConstrainAnglePI(rotRad.y), ConstrainAnglePI(rotRad.z));
-				Vector3D translation = translations[k] * Vector3D(-1, 1, 1);
+				const ofbx::Vec3 translationFrame{translation.x, translation.y, translation.z};
+				const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
 
-				if (bones[j]->parent_id == -1)
+				const Matrix4x4 animBoneMatrix = FromFBXMatrix(boneWeightData.sourceBone->evalLocal(translationFrame, rotationFrame)) * invBoneMatrix;
+
+				// in Eq each bone transform is strictly related to it's parent
 				{
-					rotation = rotation * boneConvertRotation;
-					translation = rotateVector(translation, boneConvertRotation);
+					outFrame.vecBonePosition = animBoneMatrix.getTranslationComponent();
+					outFrame.angBoneAngles = EulerMatrixXYZ(animBoneMatrix.getRotationComponent());
+
+					if (matDet < 0)
+					{
+						outFrame.angBoneAngles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
+						outFrame.vecBonePosition *= Vector3D(sign(matDet), 1.0f, 1.0f);
+					}
+
+					if (bone->parent_id == -1)
+						outFrame.vecBonePosition = inverseTransformVector(outFrame.vecBonePosition, normalizedConvertMatrix) * convertMatrixScale;
 				}
-
-				// convert to local space and assign
-				frame.vecBonePosition = translation - boneRestPosition;
-				frame.angBoneAngles = eulersXYZ(rotation * boneRestRotationQuat);
-
-				//if (bones[j]->parent_id == -1)
-				//	Msg("anim %s frame %d root bone angles: %f %f %f\n", stack->name, k, frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
-
-				//if (bones[j]->parent_id == -1)
-				//	Msg("anim %s frame %d root bone pos: %f %f %f\n", stack->name, k, frame.vecBonePosition.x, frame.vecBonePosition.y, frame.vecBonePosition.z);
-
-				// Hmm, WTF?! This needs to be fixed!!!
-				frame.vecBonePosition *= Vector3D(1, 1, -1);
 			}
 		}
 
-		if (animation.bones[0].numFrames > 0)
+		if (animation.bones[0].numFrames)
 		{
+			ASSERT_MSG(animation.bones[0].numFrames <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", animation.bones[0].numFrames, MaxFramesPerAnimation);
+
 			Msg("  Anim: %s, duration: %d, frames: %d\n", stack->name, animationDuration, animation.bones[0].numFrames);
 			animations.append(animation);
 		}
@@ -748,6 +830,9 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 			PPFree(animation.bones);
 		}
 	}
+
+	for (int i = 0; i < bones.numElem(); ++i)
+		delete bones[i];
 }
 
 bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename)
@@ -761,7 +846,7 @@ bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filenam
 		return false;
 	}
 
-	ofbx::u64 loadFlags = (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+	ofbx::u64 loadFlags = 0;// (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
 	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, loadFlags);
 
 	if (!scene)
@@ -771,7 +856,7 @@ bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filenam
 		return false;
 	}
 
-	ConvertFBXToESA(animations, scene);
+	CollectFBXAnimations(animations, scene);
 
 	PPFree(fileBuffer);
 	return true;
