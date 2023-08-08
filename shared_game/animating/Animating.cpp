@@ -525,7 +525,7 @@ void CAnimatingEGF::SwapSequenceTimers(int index, int swapTo)
 
 
 
-int CAnimatingEGF::FindPoseController(const char* name)
+int CAnimatingEGF::FindPoseController(const char* name) const
 {
 	for (int i = 0; i < m_poseControllers.numElem(); i++)
 	{
@@ -550,6 +550,20 @@ void CAnimatingEGF::SetPoseControllerValue(int nPoseCtrl, float value)
 		return;
 
 	m_poseControllers[nPoseCtrl].value = value;
+}
+
+void CAnimatingEGF::GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rMax) const
+{
+	if (!m_poseControllers.inRange(nPoseCtrl))
+	{
+		rMin = 0.0f;
+		rMax = 1.0f;
+		return;
+	}
+
+	const gposecontroller_t& poseCtrl = m_poseControllers[nPoseCtrl];
+	rMin = poseCtrl.p->blendRange[0];
+	rMax = poseCtrl.p->blendRange[1];
 }
 
 void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, qanimframe_t& out)

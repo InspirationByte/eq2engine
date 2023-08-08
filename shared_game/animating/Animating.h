@@ -58,9 +58,10 @@ public:
 
 	float						GetAnimationDuration(int animIndex) const;		// returns duration time of the specific animation
 	
-	int							FindPoseController(const char *name);						// returns pose controller index
+	int							FindPoseController(const char *name) const;					// returns pose controller index
 	void						SetPoseControllerValue(int nPoseCtrl, float value);			// sets value of the pose controller
 	float						GetPoseControllerValue(int nPoseCtrl) const;
+	void						GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rMax) const;
 
 	void						SetPlaybackSpeedScale(float scale, int slotindex = 0);		// sets playback speed scale
 
