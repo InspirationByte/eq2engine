@@ -59,9 +59,9 @@ public:
 	float						GetAnimationDuration(int animIndex) const;		// returns duration time of the specific animation
 	
 	int							FindPoseController(const char *name) const;					// returns pose controller index
-	void						SetPoseControllerValue(int nPoseCtrl, float value);			// sets value of the pose controller
-	float						GetPoseControllerValue(int nPoseCtrl) const;
-	void						GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rMax) const;
+	void						SetPoseControllerValue(int poseCtrlId, float value);			// sets value of the pose controller
+	float						GetPoseControllerValue(int poseCtrlId) const;
+	void						GetPoseControllerRange(int poseCtrlId, float& rMin, float& rMax) const;
 
 	void						SetPlaybackSpeedScale(float scale, int slotindex = 0);		// sets playback speed scale
 
@@ -69,11 +69,11 @@ public:
 
 // inverse kinematics
 
-	void						SetIKWorldTarget(int chain_id, const Vector3D &world_position, const Matrix4x4& worldTransform); // sets ik world point, use external transform if model transform differs from entity transform
-	void						SetIKLocalTarget(int chain_id, const Vector3D &local_position);	// sets local, model-space ik point target
+	void						SetIKWorldTarget(int chainId, const Vector3D &world_position, const Matrix4x4& worldTransform); // sets ik world point, use external transform if model transform differs from entity transform
+	void						SetIKLocalTarget(int chainId, const Vector3D &local_position);	// sets local, model-space ik point target
 
-	void						SetIKChainEnabled(int chain_id, bool enabled);				// enables or disables ik chain.
-	bool						IsIKChainEnabled(int chain_id);								// returns status if ik chain
+	void						SetIKChainEnabled(int chainId, bool enabled);				// enables or disables ik chain.
+	bool						IsIKChainEnabled(int chainId);								// returns status if ik chain
 	int							FindIKChain(const char* pszName);							// searches for ik chain
 
 	// advances frame (and computes interpolation between all blended animations)
@@ -92,7 +92,7 @@ protected:
 	virtual Activity			TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
 	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
-	virtual void				AddMotions(const studioMotionData_t& motionData);
+	virtual void				AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData);
 
 	// transition time from previous
 	float						m_transitionTime;

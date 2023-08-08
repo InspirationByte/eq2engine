@@ -19,7 +19,7 @@ DECLARE_CVAR(r_debugSkeleton, "0", "Draw debug information about bones", CV_CHEA
 DECLARE_CVAR(r_debugShowBone, "-1", "Shows the bone", CV_CHEAT);
 DECLARE_CVAR(r_ikIterations, "100", "IK link iterations per update", CV_ARCHIVE);
 
-inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t& frame)
+static Matrix4x4 CalculateLocalBonematrix(const qanimframe_t& frame)
 {
 	Matrix4x4 bonetransform(frame.angBoneAngles);
 	bonetransform.setTranslation(frame.vecBonePosition);
@@ -28,7 +28,7 @@ inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t& frame)
 }
 
 // computes blending animation index and normalized weight
-inline void ComputeAnimationBlend(int numWeights, const float blendrange[2], float blendValue, float& blendWeight, int& blendMainAnimation1, int& blendMainAnimation2)
+static void ComputeAnimationBlend(int numWeights, const float blendrange[2], float blendValue, float& blendWeight, int& blendMainAnimation1, int& blendMainAnimation2)
 {
 	blendValue = clamp(blendValue, blendrange[0], blendrange[1]);
 
@@ -61,14 +61,14 @@ inline void ComputeAnimationBlend(int numWeights, const float blendrange[2], flo
 }
 
 // interpolates frame transform
-inline void InterpolateFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2, float value, qanimframe_t& out)
+static void InterpolateFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2, float value, qanimframe_t& out)
 {
 	out.angBoneAngles = slerp(frame1.angBoneAngles, frame2.angBoneAngles, value);
 	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
 }
 
 // adds transform
-inline void AddFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2, qanimframe_t& out)
+static void AddFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2, qanimframe_t& out)
 {
 	out.angBoneAngles = frame1.angBoneAngles * frame2.angBoneAngles;
 	out.angBoneAngles.fastNormalize();
@@ -76,7 +76,7 @@ inline void AddFrameTransform(const qanimframe_t& frame1, const qanimframe_t& fr
 }
 
 // zero frame
-inline void ZeroFrameTransform(qanimframe_t& frame)
+static void ZeroFrameTransform(qanimframe_t& frame)
 {
 	frame.angBoneAngles = identity();
 	frame.vecBonePosition = vec3_zero;
@@ -194,11 +194,13 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 	// build activity table for loaded model
 	const int numMotionPackages = model->GetMotionPackageCount();
 	for (int i = 0; i < numMotionPackages; i++)
-		AddMotions(model->GetMotionData(i));
+		AddMotions(model, model->GetMotionData(i));
 }
 
-void CAnimatingEGF::AddMotions(const studioMotionData_t& motionData)
+void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData)
 {
+	const int motionFirstPoseController = m_poseControllers.numElem();
+
 	// create pose controllers
 	// TODO: hash-merge
 	for (int i = 0; i < motionData.numPoseControllers; i++)
@@ -210,7 +212,18 @@ void CAnimatingEGF::AddMotions(const studioMotionData_t& motionData)
 		controller.value = lerp(controller.p->blendRange[0], controller.p->blendRange[1], 0.5f);
 		controller.interpolatedValue = controller.value;
 
-		m_poseControllers.append(controller);
+		const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [controller](const gposecontroller_t& ctrl) {
+			return stricmp(ctrl.p->name, controller.p->name) == 0;
+		});
+
+		if (existingPoseCtrlIdx == -1)
+		{
+			m_poseControllers.append(controller);
+		}
+		else if(controller.p->blendRange[0] == controller.p->blendRange[0] && controller.p->blendRange[1] == controller.p->blendRange[1])
+		{
+			MsgWarning("%s warning: pose controller %s was added from another package but blend ranges are mismatching, using first.", model->GetName(), controller.p->name);
+		}
 	}
 
 	m_seqList.resize(m_seqList.numElem() + motionData.numsequences);
@@ -226,7 +239,15 @@ void CAnimatingEGF::AddMotions(const studioMotionData_t& motionData)
 			MsgError("Motion Data: Activity '%s' not registered\n", seq.activity);
 
 		if (seq.posecontroller >= 0)
-			seqData.posecontroller = &m_poseControllers[seq.posecontroller];
+		{
+			const posecontroller_t& mopPoseCtrl = motionData.poseControllers[seq.posecontroller];
+
+			const int poseCtrlIdx = arrayFindIndexF(m_poseControllers, [&](const gposecontroller_t& ctrl) {
+				return stricmp(ctrl.p->name, mopPoseCtrl.name) == 0;
+			});
+			ASSERT(poseCtrlIdx != -1);
+			seqData.posecontroller = &m_poseControllers[poseCtrlIdx];
+		}
 
 		for (int j = 0; j < seq.numAnimations; j++)
 			seqData.animations[j] = &motionData.animations[seq.animations[j]];
@@ -459,11 +480,8 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 		const float div_frametime = (frameTime * 30);
 
 		// interpolate pose parameter values
-		for (int i = 0; i < m_poseControllers.numElem(); i++)
-		{
-			gposecontroller_t& ctrl = m_poseControllers[i];
+		for(gposecontroller_t& ctrl : m_poseControllers)
 			ctrl.interpolatedValue = approachValue(ctrl.interpolatedValue, ctrl.value, div_frametime * (ctrl.value - ctrl.interpolatedValue));
-		}
 
 		if (m_sequenceTimers[0].active)
 		{
@@ -527,13 +545,10 @@ void CAnimatingEGF::SwapSequenceTimers(int index, int swapTo)
 
 int CAnimatingEGF::FindPoseController(const char* name) const
 {
-	for (int i = 0; i < m_poseControllers.numElem(); i++)
-	{
-		if (!stricmp(m_poseControllers[i].p->name, name))
-			return i;
-	}
-
-	return -1;
+	const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [name](const gposecontroller_t& ctrl) {
+		return stricmp(ctrl.p->name, name) == 0;
+	});
+	return existingPoseCtrlIdx;
 }
 
 float CAnimatingEGF::GetPoseControllerValue(int nPoseCtrl) const
@@ -566,7 +581,7 @@ void CAnimatingEGF::GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rM
 	rMax = poseCtrl.p->blendRange[1];
 }
 
-void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, qanimframe_t& out)
+static void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, qanimframe_t& out)
 {
 	studioBoneAnimation_t& frame = pAnim->bones[nBone];
 	ASSERT(firstframe >= 0);
@@ -576,7 +591,7 @@ void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int fir
 	InterpolateFrameTransform(frame.keyFrames[firstframe], frame.keyFrames[lastframe], interp, out);
 }
 
-void GetInterpolatedBoneFrameBetweenTwoAnimations(
+static void GetInterpolatedBoneFrameBetweenTwoAnimations(
 	const studioAnimation_t* pAnim1,
 	const studioAnimation_t* pAnim2,
 	int nBone, int firstframe, int lastframe, float interp, float animTransition, qanimframe_t& out)
@@ -593,7 +608,7 @@ void GetInterpolatedBoneFrameBetweenTwoAnimations(
 	InterpolateFrameTransform(anim1transform, anim2transform, animTransition, out);
 }
 
-void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, qanimframe_t& out)
+static void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, qanimframe_t& out)
 {
 	float blendWeight = 0;
 	int blendAnimation1 = 0;
