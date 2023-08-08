@@ -344,18 +344,29 @@ Quaternion operator / (const Quaternion &v, const float d)
 }
 
 
-Quaternion slerp(const Quaternion &q0, const Quaternion &q1, const float t)
+Quaternion slerp(const Quaternion &x, const Quaternion &y, const float a)
 {
-	double cosTheta = q0.w * q1.w + q0.x * q1.x + q0.y * q1.y + q0.z * q1.z;
+	double cosTheta = dot(x.asVector4D(), y.asVector4D());
 
-	if (fabs(1 - cosTheta) < F_EPS)
+	Quaternion z = y;
+
+	// If cosTheta < 0, the interpolation will take the long way around the sphere. 
+	// To fix this, one quat must be negated.
+	if (cosTheta < 0)
 	{
-		return q0 * (1.0 - t) + q1 * t;
+		z = -y;
+		cosTheta = -cosTheta;
+	}
+
+	if (fabs(1.0f - cosTheta) < F_EPS)
+	{
+		// perform linear interpolation
+		return x * (1.0 - a) + y * a;
 	}
 	else
 	{
 		double theta = acos(cosTheta);
-		return (q0 * sin((1.0 - t) * theta) + q1 * sin(t * theta)) / sin(theta);
+		return (x * sin((1.0 - a) * theta) + z * sin(a * theta)) / sin(theta);
 	}
 }
 
