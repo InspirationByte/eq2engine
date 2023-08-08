@@ -571,32 +571,56 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 
 //-------------------------------------------------------------
 
-template<class T>
+enum EInterpType : int
+{
+	INTERP_POSITION = 0,
+	INTERP_ANGLES,
+};
+
+template<typename T, EInterpType TYPE>
+T InterpVec(const Array<T>& src, float x, int n);
+
+template<>
+Vector3D InterpVec<Vector3D, INTERP_POSITION>(const Array<Vector3D>& src, float x, int n)
+{
+	if (x <= 0)
+		return src[0];
+
+	if (x >= n - 1)
+		return src[n - 1];
+
+	const int j = int(x);
+	return lerp(src[j], src[j + 1], x - float(j));
+}
+
+template<>
+Vector3D InterpVec<Vector3D, INTERP_ANGLES>(const Array<Vector3D>& src, float x, int n)
+{
+	if (x <= 0)
+		return src[0];
+
+	if (x >= n - 1)
+		return src[n - 1];
+
+	const int j = int(x);
+	Quaternion a1(DEG2RAD(src[j].x), DEG2RAD(src[j].y), DEG2RAD(src[j].z));
+	Quaternion a2(DEG2RAD(src[j+1].x), DEG2RAD(src[j+1].y), DEG2RAD(src[j+1].z));
+	Quaternion r = slerp(a1, a2, x - float(j));
+	return eulersXYZ(r) * M_RAD2DEG;
+}
+
+template<class T, EInterpType TYPE>
 void ZoomArray(const Array<T>& src, Array<T>& dest, int newLength)
 {
-	auto interp1 = [&src](float x, int n)
-	{
-		if (x <= 0) 
-			return src[0];
-
-		if (x >= n - 1) 
-			return src[n - 1];
-
-		const int j = int(x);
-		return src[j] + (x - j) * (src[j + 1] - src[j]);
-	};
-
 	dest.setNum(newLength);
 	const int oldLength = src.numElem();
 	const float step = float(oldLength - 1) / (newLength - 1);
 
 	for (int j = 0; j < newLength; ++j)
-	{
-		dest[j] = interp1(j * step, oldLength);
-	}
+		dest[j] = InterpVec<T, TYPE>(src, float(j) * step, oldLength);
 }
 
-void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Array<Vector3D>& keyFrames, int animationDuration, float localDuration)
+void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Array<Vector3D>& keyFrames, int animationDuration, float localDuration, bool isAngles)
 {
 	const ofbx::AnimationCurve* nodeX = curveNode->getCurve(0);
 	const ofbx::AnimationCurve* nodeY = curveNode->getCurve(1);
@@ -683,7 +707,10 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 		}
 	}
 
-	ZoomArray(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
+	if(isAngles)
+		ZoomArray<Vector3D, INTERP_ANGLES>(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
+	else
+		ZoomArray<Vector3D, INTERP_POSITION>(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
 }
 
 void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* scene, const char* meshFilter)
@@ -786,11 +813,11 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 
 				// keyframes are going to be interpolated and resampled in order to restore original keyframing
 				if (rootTranslationNode)
-					GetFBXCurveAsInterpKeyFrames(rootTranslationNode, rootAnimation.translations, animationDuration, localDuration);
+					GetFBXCurveAsInterpKeyFrames(rootTranslationNode, rootAnimation.translations, animationDuration, localDuration, false);
 				if (rootRotationNode)
-					GetFBXCurveAsInterpKeyFrames(rootRotationNode, rootAnimation.rotations, animationDuration, localDuration);
+					GetFBXCurveAsInterpKeyFrames(rootRotationNode, rootAnimation.rotations, animationDuration, localDuration, true);
 				if (rootScalingNode)
-					GetFBXCurveAsInterpKeyFrames(rootScalingNode, rootAnimation.scales, animationDuration, localDuration);
+					GetFBXCurveAsInterpKeyFrames(rootScalingNode, rootAnimation.scales, animationDuration, localDuration, false);
 			}
 
 			const int boneCount = objData.weightData.numElem();
@@ -827,11 +854,11 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 
 					// keyframes are going to be interpolated and resampled in order to restore original keyframing
 					if (translationNode)
-						GetFBXCurveAsInterpKeyFrames(translationNode, boneAnimation.translations, animationDuration, localDuration);
+						GetFBXCurveAsInterpKeyFrames(translationNode, boneAnimation.translations, animationDuration, localDuration, false);
 					if (rotationNode)
-						GetFBXCurveAsInterpKeyFrames(rotationNode, boneAnimation.rotations, animationDuration, localDuration);
+						GetFBXCurveAsInterpKeyFrames(rotationNode, boneAnimation.rotations, animationDuration, localDuration, true);
 					if (scalingNode)
-						GetFBXCurveAsInterpKeyFrames(scalingNode, boneAnimation.scales, animationDuration, localDuration);
+						GetFBXCurveAsInterpKeyFrames(scalingNode, boneAnimation.scales, animationDuration, localDuration, false);
 				}
 
 				ASSERT_MSG(boneAnimation.translations.numElem() <= MaxFramesPerAnimation, "Too many frames in animation (%d, limit is %d)", boneAnimation.translations.numElem(), MaxFramesPerAnimation);
