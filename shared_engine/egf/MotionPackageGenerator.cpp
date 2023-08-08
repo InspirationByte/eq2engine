@@ -1144,13 +1144,11 @@ void CMotionPackageGenerator::ConvertAnimationsToWrite()
 		// convert bones.
 		for(int j = 0; j < m_model->numBones; j++)
 		{
-			studioBoneAnimation_t& boneFrame = m_animations[i].bones[j];
+			const studioBoneAnimation_t& boneFrame = m_animations[i].bones[j];
+			for(int k = 0; k < boneFrame.numFrames; ++k)
+				m_animframes.append(boneFrame.keyFrames[k]);
 
 			anim.numFrames += boneFrame.numFrames;
-			for(int k = 0; k < boneFrame.numFrames; k++)
-			{
-				m_animframes.append(boneFrame.keyFrames[k]);
-			}
 		}
 
 		m_animationdescs.append(anim);

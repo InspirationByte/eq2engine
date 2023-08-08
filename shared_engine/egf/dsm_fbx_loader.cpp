@@ -163,12 +163,14 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 {
 	const ofbx::Geometry& geom = *mesh.getGeometry();
 	const ofbx::Skin* skin = geom.getSkin();
+	const ofbx::Pose& pose = *mesh.getPose();
 
 	if (!skin)
 		return;
 
 	const int weightDataStart = weightData.numElem();
 
+	const Matrix4x4 poseMatrix = FromFBXMatrix(pose.getMatrix());
 	const Matrix4x4 skinConvertMatrix = Matrix4x4(convertMatrix);
 
 	const Matrix3x3 normalizedConvertMatrix = Matrix3x3(
@@ -244,11 +246,21 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 			}
 		}
 
-		Matrix4x4 boneMatrix = boneMatries[i];
-		if (pBone->parent_id != -1)
-			boneMatrix = boneMatrix * !boneMatries[pBone->parent_id];
+		// those bones stored as they are for later use
+		// to convert animation
+		{
+			Matrix4x4 boneMatrix = boneMatries[i];
+			if (pBone->parent_id != -1)
+				boneMatrix = boneMatrix * !boneMatries[pBone->parent_id];
+			wd.boneMatrix = boneMatrix;
+		}
 
-		wd.boneMatrix = boneMatrix;
+		// FIXME: WTF m8, this does seem to work
+		Matrix4x4 boneMatrix = boneMatries[i] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix;
+		if (pBone->parent_id != -1)
+			boneMatrix = boneMatrix * !(boneMatries[pBone->parent_id] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix);
+		else
+			boneMatrix = boneMatrix * transform;
 
 		// in Eq each bone transform is strictly related to it's parent
 		{
@@ -260,9 +272,6 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 				pBone->angles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
 				pBone->position *= Vector3D(sign(matDet), 1.0f, 1.0f);
 			}
-
-			if(pBone->parent_id == -1)
-				pBone->position = inverseTransformVector(pBone->position, normalizedConvertMatrix) * convertMatrixScale;
 		}
 
 		bones.append(pBone);
@@ -790,6 +799,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 			strncpy(animation.name, stack->name, sizeof(animation.name));
 			animation.name[sizeof(animation.name) - 1] = 0;
 			animation.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
+			memset(animation.bones, 0, sizeof(studioBoneAnimation_t)* boneCount);
 
 			// convert bone animation
 			for (int j = 0; j < boneCount; ++j)
@@ -874,9 +884,6 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 							outFrame.angBoneAngles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
 							outFrame.vecBonePosition *= Vector3D(sign(matDet), 1.0f, 1.0f);
 						}
-
-						//if (bone->parent_id == -1)
-						//	outFrame.vecBonePosition = transformVector(outFrame.vecBonePosition, normalizedConvertMatrix) * convertMatrixScale;
 					}
 				}
 			}
@@ -893,6 +900,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 				for (int i = 0; i < boneCount; i++)
 					PPFree(animation.bones[i].keyFrames);
 				PPFree(animation.bones);
+				animation.bones = nullptr;
 			}
 		}
 	}
@@ -924,8 +932,7 @@ bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filenam
 		return false;
 	}
 
-	ofbx::u64 loadFlags = 0;// (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
-	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, loadFlags);
+	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
 
 	if (!scene)
 	{

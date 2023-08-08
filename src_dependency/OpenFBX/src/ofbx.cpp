@@ -3529,15 +3529,15 @@ static bool parseObjects(const Element& root, Scene* scene, u16 flags, Allocator
 		{
 			obj = parse<AnimationCurveNodeImpl>(*scene, *iter.second.element, allocator);
 		}
-		else if (iter.second.element->id == "Deformer" && !ignore_blend_shapes)
+		else if (iter.second.element->id == "Deformer")
 		{
 			IElementProperty* class_prop = iter.second.element->getProperty(2);
 
 			if (class_prop)
 			{
-				if (class_prop->getValue() == "Cluster")
+				if (class_prop->getValue() == "Cluster" && !ignore_skin)
 					obj = parseCluster(*scene, *iter.second.element, allocator);
-				else if (class_prop->getValue() == "Skin")
+				else if (class_prop->getValue() == "Skin" && !ignore_skin)
 					obj = parse<SkinImpl>(*scene, *iter.second.element, allocator);
 				else if (class_prop->getValue() == "BlendShape" && !ignore_blend_shapes)
 					obj = parse<BlendShapeImpl>(*scene, *iter.second.element, allocator);
