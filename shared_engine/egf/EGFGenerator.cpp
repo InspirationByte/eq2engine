@@ -330,7 +330,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		const int nVerts = GetTotalVertsOfDSM(mod.model);
 
 		Msg("Adding reference %s as '%s' with %d triangles (in %d groups), %d bones\n",
-			mod.model->name,
+			mod.model->name.ToCString(),
 			modelName,
 			nVerts / 3,
 			mod.model->groups.numElem(),
@@ -437,7 +437,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 
 		const int nVerts = GetTotalVertsOfDSM(mref.model);
 		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n",
-			modelfilenames[0].GetData(),
+			modelfilenames[0].ToCString(),
 			mref.name.ToCString(),
 			nVerts / 3,
 			mref.model->groups.numElem(),
@@ -455,7 +455,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 
 		const int nVerts = GetTotalVertsOfDSM(models[0].model);
 		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n",
-			modelfilenames[0].GetData(),
+			modelfilenames[0].ToCString(),
 			models[0].name.ToCString(),
 			nVerts / 3,
 			models[0].model->groups.numElem(),

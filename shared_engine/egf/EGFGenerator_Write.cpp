@@ -285,7 +285,7 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, DSGr
 			goto skipOptimize;
 		}
 		else
-			MsgInfo("Optimizing group '%s'...\n", srcGroup->texture);
+			MsgInfo("Optimizing group '%s'...\n", srcGroup->texture.ToCString());
 
 		// configure it to make strips
 		actcParami(tc, ACTC_OUT_MIN_FAN_VERTS, INT_MAX);
