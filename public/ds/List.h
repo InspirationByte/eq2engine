@@ -50,6 +50,11 @@ public:
 	{
 	}
 
+	DynamicListAllocator(DynamicListAllocator&& other)
+		: m_pool(std::move(other.m_pool))
+	{
+	}
+
 	Node* alloc()
 	{
 		Node* node = m_pool.allocate();
@@ -154,6 +159,28 @@ public:
 	ListBase(const PPSourceLine& sl) 
 		: STORAGE_TYPE(sl)
 	{
+	}
+
+	ListBase(const ListBase& other)
+		: STORAGE_TYPE(other.sl)
+	{
+		m_first = other.m_first;
+		m_last = other.m_last;
+		m_count = other.m_count;
+		other.m_first = nullptr;
+		other.m_last = nullptr;
+		other.m_count = 0;
+	}
+
+	ListBase(ListBase&& other) noexcept
+		: STORAGE_TYPE(std::move(other))
+	{
+		m_first = other.m_first;
+		m_last = other.m_last;
+		m_count = other.m_count;
+		other.m_first = nullptr;
+		other.m_last = nullptr;
+		other.m_count = 0;
 	}
 
 	int getCount() const { return m_count; }
@@ -328,6 +355,10 @@ public:
 	}
 
 private:
+	Node*	m_first{ nullptr };
+	Node*	m_last{ nullptr };
+	int		m_count{ 0 };
+
 	void insertNodeFirst(Node* node)
 	{
 		if (m_first != nullptr)
@@ -405,10 +436,6 @@ private:
 		node->prev = nullptr;
 		m_count--;
 	}
-
-	Node*	m_first{ nullptr };
-	Node*	m_last{ nullptr };
-	int		m_count{ 0 };
 
 	Node* allocNode()
 	{
