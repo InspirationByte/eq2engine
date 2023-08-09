@@ -42,7 +42,7 @@ public:
 	int							FindSequenceByActivity(Activity act, int slot = 0) const;
 
 	void						SetActivity(Activity act, int slot = 0);	// sets activity
-	Activity					GetCurrentActivity(int slot = 0);			// returns current activity
+	Activity					GetCurrentActivity(int slot = 0) const;		// returns current activity
 
 	bool						IsSequencePlaying(int slot = 0) const;
 	void						SetSequence(int seqIdx, int slot = 0);			// sets new sequence

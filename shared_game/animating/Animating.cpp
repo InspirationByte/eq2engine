@@ -360,7 +360,7 @@ void CAnimatingEGF::SetSequenceByName(const char* name, int slot)
 }
 
 // returns current activity
-Activity CAnimatingEGF::GetCurrentActivity(int slot)
+Activity CAnimatingEGF::GetCurrentActivity(int slot) const
 {
 	if (m_sequenceTimers[slot].seq)
 		return m_sequenceTimers[slot].seq->activity;
