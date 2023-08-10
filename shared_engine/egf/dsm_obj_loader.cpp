@@ -493,7 +493,7 @@ bool SaveOBJ(DSModel* model, const char* filename)
 		SharedModel::DSGroup* group = model->groups[i];
 		
 		if (group->indices.numElem())
-			pFile->Print("o %s\n", group->texture);
+			pFile->Print("o %s\n", group->texture.ToCString());
 
 		for(int j = 0; j < group->verts.numElem(); j++)
 		{
@@ -515,7 +515,7 @@ bool SaveOBJ(DSModel* model, const char* filename)
 		}
 
 		if (group->indices.numElem())
-			pFile->Print("usemtl %s\n", group->texture);
+			pFile->Print("usemtl %s\n", group->texture.ToCString());
 
 		for(int j = 0; j < group->indices.numElem(); j+=3)
 		{
