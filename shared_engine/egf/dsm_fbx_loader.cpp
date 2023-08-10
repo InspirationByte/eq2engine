@@ -628,9 +628,7 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 
 	if (!nodeX || !nodeY || !nodeZ)
 	{
-		MsgError("GetFBXCurveAsInterpKeyFrames error - not enough curves\n");
-		MsgError("If using Blender - try exporting only NLA Tracks (and uncheck All Tracks)\n");
-		return;
+		MsgWarning("GetFBXCurveAsInterpKeyFrames error - not enough curves\n");
 	}
 
 	Map<ofbx::i64, float> valueX(PP_SL);
@@ -639,11 +637,21 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 
 	Set<ofbx::i64> allTimes(PP_SL);
 
-	auto insertFrames = [&allTimes](const ofbx::AnimationCurve* curve, Map<ofbx::i64, float>& destVal)
+	int maxFrameCount = 0;
+
+	auto insertFrames = [&](const ofbx::AnimationCurve* curve, Map<ofbx::i64, float>& destVal)
 	{
+		if (!curve)
+		{
+			destVal[0] = 0.0f;
+			allTimes.insert(0);
+			return 0;
+		}
 		const ofbx::i64* times = curve->getKeyTime();
 		const float* values = curve->getKeyValue();
 		const int keyCount = curve->getKeyCount();
+
+		maxFrameCount = max(maxFrameCount, keyCount);
 
 		for (int i = 0; i < keyCount; ++i)
 		{
@@ -659,8 +667,6 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 	// convert frames
 	int keyframeCounter = 0;
 	IVector3D lastKeyframes(0);
-
-	const int maxFrameCount = max(max(nodeX->getKeyCount(), nodeY->getKeyCount()), nodeZ->getKeyCount());
 
 	Array<Vector3D> intermediateKeyFrames(PP_SL);
 	intermediateKeyFrames.resize(maxFrameCount);
