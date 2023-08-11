@@ -232,9 +232,7 @@ protected:
 	btCollisionConfiguration*		m_collConfig{ nullptr };
 	btCollisionDispatcher*			m_collDispatcher{ nullptr };
 
-	int								m_numRayQueries;
-
-	float							m_fDt;
-
-	bool							m_debugRaycast;
+	int								m_numRayQueries{ 0 };
+	float							m_fDt{ 0.0f };
+	bool							m_debugRaycast{ false };
 };

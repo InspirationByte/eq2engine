@@ -169,7 +169,7 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 	if (internalEdges)
 	{
 		// WARNING: this is slow!
-		m_trimap = new btTriangleInfoMap();
+		m_trimap = PPNew btTriangleInfoMap();
 		btGenerateInternalEdgeInfo(meshShape, m_trimap);
 	}
 

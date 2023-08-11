@@ -65,6 +65,16 @@ CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj) 
 
 //------------------------------------------------------------------------------------------------------------
 
+static void* eqBtAlloc(size_t size)
+{
+	return PPDAlloc(size, PPSourceLine::Make("BulletPhysics", 0));
+}
+
+static void eqBtFree(void* ptr)
+{
+	PPFree(ptr);
+}
+
 static inline int btInternalGetHash(int partId, int triangleIndex)
 {
 	return (partId << (31 - MAX_NUM_PARTS_IN_BITS)) | triangleIndex;
@@ -72,7 +82,7 @@ static inline int btInternalGetHash(int partId, int triangleIndex)
 
 /// Adjusts collision for using single side, ignoring internal triangle edges
 /// If this info map is missing, or the triangle is not store in this map, nothing will be done
-void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0)
+static void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0)
 {
 	const btCollisionShape* shape = colObj0Wrap->getCollisionShape();
 
@@ -276,7 +286,6 @@ struct CEqManifoldResult : public btManifoldResult
 
 CEqPhysics::CEqPhysics()
 {
-	m_debugRaycast = false;
 }
 
 CEqPhysics::~CEqPhysics()
@@ -286,16 +295,18 @@ CEqPhysics::~CEqPhysics()
 
 void CEqPhysics::InitWorld()
 {
+	btAlignedAllocSetCustom(eqBtAlloc, eqBtFree);
+
 	// collision configuration contains default setup for memory, collision setup
-	m_collConfig = new btDefaultCollisionConfiguration();
+	m_collConfig = PPNew btDefaultCollisionConfiguration();
 
 	// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
-	m_collDispatcher = new btCollisionDispatcher( m_collConfig );
+	m_collDispatcher = PPNew btCollisionDispatcher( m_collConfig );
 
 	// still required for raycasts
-	m_collisionWorld = new btCollisionWorld(m_collDispatcher, nullptr, m_collConfig);
+	m_collisionWorld = PPNew btCollisionWorld(m_collDispatcher, nullptr, m_collConfig);
 
-	m_dispatchInfo = new btDispatcherInfo();
+	m_dispatchInfo = PPNew btDispatcherInfo();
 	m_dispatchInfo->m_enableSatConvex = true;
 	m_dispatchInfo->m_useContinuous = true;
 	m_dispatchInfo->m_stepCount = 1;
@@ -306,77 +317,56 @@ void CEqPhysics::InitWorld()
 
 void CEqPhysics::InitGrid()
 {
-	m_grid = new CEqCollisionBroadphaseGrid(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
+	m_grid = PPNew CEqCollisionBroadphaseGrid(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
 
 	// add all objects to the grid
 	for(int i = 0; i < m_dynObjects.numElem(); i++)
-	{
 		SetupBodyOnCell(m_dynObjects[i]);
-	}
 
 	for(int i = 0; i < m_staticObjects.numElem(); i++)
-	{
 		m_grid->AddStaticObjectToGrid(m_staticObjects[i]);
-	}
 
 	for(int i = 0; i < m_ghostObjects.numElem(); i++)
-	{
 		SetupBodyOnCell(m_ghostObjects[i]);
-	}
 }
 
 void CEqPhysics::DestroyWorld()
 {
 	for(int i = 0; i < m_dynObjects.numElem(); i++)
-	{
 		delete m_dynObjects[i];
-	}
+
 	m_dynObjects.clear();
 	m_moveable.clear();
 
 	for(int i = 0; i < m_staticObjects.numElem(); i++)
-	{
 		delete m_staticObjects[i];
-	}
 	m_staticObjects.clear();
 
 	for(int i = 0; i < m_ghostObjects.numElem(); i++)
-	{
 		delete m_ghostObjects[i];
-	}
+
 	m_ghostObjects.clear();
 
 	// update the controllers
 	for (int i = 0; i < m_controllers.numElem(); i++)
-	{
 		m_controllers[i]->SetEnabled(false);
-	}
+
 	m_controllers.clear();
 	m_constraints.clear();
 
 	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
-	{
 		delete m_physSurfaceParams[i];
-	}
+
 	m_physSurfaceParams.clear();
 
-	if (m_collisionWorld)
-		delete m_collisionWorld;
-	m_collisionWorld = nullptr;
-
-	if(m_collDispatcher)
-		delete m_collDispatcher;
-	m_collDispatcher = nullptr;
-
-	if(m_collConfig)
-		delete m_collConfig;
-	m_collConfig = nullptr;
+	SAFE_DELETE(m_collisionWorld);
+	SAFE_DELETE(m_collDispatcher);
+	SAFE_DELETE(m_collConfig);
 }
 
 void CEqPhysics::DestroyGrid()
 {
-	delete m_grid;
-	m_grid = nullptr;
+	SAFE_DELETE(m_grid);
 }
 
 void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
