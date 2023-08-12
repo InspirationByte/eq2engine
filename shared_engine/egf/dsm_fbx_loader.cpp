@@ -116,24 +116,34 @@ void GetFBXConvertMatrix(const ofbx::GlobalSettings& settings, Matrix3x3& conver
 
 void TransformModelGeom(DSModel* model, const Matrix4x4& transform)
 {
+	Matrix3x3 normalsRotateVec = transform.getRotationComponent();
+	normalsRotateVec.rows[0] = normalize(normalsRotateVec.rows[0]);
+	normalsRotateVec.rows[1] = normalize(normalsRotateVec.rows[1]);
+	normalsRotateVec.rows[2] = normalize(normalsRotateVec.rows[2]);
+
 	for (DSGroup* group : model->groups)
 	{
 		for (DSVertex& vert : group->verts)
 		{
 			vert.position = transformPoint(vert.position, transform);
-			vert.normal = transformVector(vert.normal, transform);
+			vert.normal = transformVector(vert.normal, normalsRotateVec);
 		}
 	}
 }
 
 void TransformShapeDataGeom(DSShapeData* shapeData, const Matrix4x4& transform)
 {
+	Matrix3x3 normalsRotateVec = transform.getRotationComponent();
+	normalsRotateVec.rows[0] = normalize(normalsRotateVec.rows[0]);
+	normalsRotateVec.rows[1] = normalize(normalsRotateVec.rows[1]);
+	normalsRotateVec.rows[2] = normalize(normalsRotateVec.rows[2]);
+
 	for (DSShapeKey* shapeKey : shapeData->shapes)
 	{
 		for (DSShapeVert& vert : shapeKey->verts)
 		{
 			vert.position = transformPoint(vert.position, transform);
-			vert.normal = transformVector(vert.normal, transform);
+			vert.normal = transformVector(vert.normal, normalsRotateVec);
 		}
 	}
 }
@@ -645,7 +655,7 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 		{
 			destVal[0] = 0.0f;
 			allTimes.insert(0);
-			return 0;
+			return;
 		}
 		const ofbx::i64* times = curve->getKeyTime();
 		const float* values = curve->getKeyValue();
