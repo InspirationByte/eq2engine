@@ -98,6 +98,12 @@ Vector3D AnglesDiff(const Vector3D& a, const Vector3D& b);
 // computes angles difference between two 2D direction vectors (degrees)
 float VecAngleDiff(const Vector2D& dirA, const Vector2D& dirB);
 
+float PackNormal(const Vector3D& normal);
+Vector3D UnpackNormal(float value);
+
+#define f3_f(c) (dot(round((c) * 255.0), Vector3D(65536.0, 256.0, 1.0)))
+#define f_f3(f) (fract((f) / Vector3D(16777216.0, 65536.0, 256.0)))
+
 // Fourier square wave function
 template <int N>
 inline float FT_SquareWave( float x )

@@ -364,3 +364,31 @@ Vector3D AnglesDiff(const Vector3D& a, const Vector3D& b)
 
 	return angDiff;
 }
+
+/* 
+The number of bits of precision per color channel are log_2(c_precision), 
+in this case 7 bits per color, or 21 bits total.
+
+A c_precision of 128 fits within 7 base-10 digits.
+
+NOTE: an IEEE 754 float can only express 7 digits exactly for all digits.
+*/
+const float c_precision = 128.0;
+const float c_precisionp1 = c_precision + 1.0;
+
+float PackNormal(const Vector3D& normal)
+{
+	const Vector3D n = clamp(normal, 0.0f, 1.0f);
+	return floor(n.x * c_precision + 0.5)
+		 + floor(n.y * c_precision + 0.5) * c_precisionp1
+		 + floor(n.z * c_precision + 0.5) * c_precisionp1 * c_precisionp1;
+}
+
+Vector3D UnpackNormal(float value)
+{
+	Vector3D normal;
+	normal.x = fmodf(value, c_precisionp1) / c_precision;
+	normal.y = fmodf(floor(value / c_precisionp1), c_precisionp1) / c_precision;
+	normal.z = floor(value / (c_precisionp1 * c_precisionp1)) / c_precision;
+	return normal;
+}
