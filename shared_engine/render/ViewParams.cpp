@@ -21,7 +21,7 @@ CViewParams::CViewParams()
 CViewParams::CViewParams(const Vector3D &origin,const Vector3D &angles,float fFov)
 {
 	m_vecOrigin = origin;
-	m_vecAngles = angles;
+	m_vecAngles = NormalizeAngles180(angles);
 	m_fFOV = fFov;
 }
 
@@ -32,7 +32,7 @@ void CViewParams::SetOrigin(const Vector3D &origin)
 
 void CViewParams::SetAngles(const Vector3D &angles)
 {
-	m_vecAngles = angles;
+	m_vecAngles = NormalizeAngles180(angles);
 }
 
 void CViewParams::SetFOV(float fFov)
@@ -112,8 +112,7 @@ void CViewParams::Interpolate(const CViewParams& from, const CViewParams& to, fl
 	Quaternion qR = slerp(qA, qB, factor);
 	qR.normalize();
 
-	Vector3D qRotationEulers;
-	quaternionToEulers(qR, QuatRot_yzx, qRotationEulers);
+	Vector3D qRotationEulers = quaternionToEulers(qR, QuatRot_yzx);
 	qRotationEulers = Vector3D(qRotationEulers.x, qRotationEulers.z, qRotationEulers.y);
 
 	out.SetOrigin(lerp(from.GetOrigin(), to.GetOrigin(), factor));

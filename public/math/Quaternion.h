@@ -84,7 +84,7 @@ float			length(const Quaternion &q);
 Vector3D		eulersXYZ(const Quaternion &q);
 
 // stores euler angles of quaternion to res
-void			quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float res[3]);
+Vector3D		quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq);
 
 // recalculates w comp
 void			renormalize(Quaternion& q);

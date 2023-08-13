@@ -312,13 +312,15 @@ float RectangleRectangleSeparation(
 // converts angles in [-180, 180] in Radians
 float ConstrainAnglePI(float x)
 {
-	return fmodf(x + M_PI_F, M_PI_2_F) - M_PI_F;
+	// NOTE: we add full circle to ensure that values close to -2PI work alright
+	return fmodf(x + M_PI_F + M_PI_2_F, M_PI_2_F) - M_PI_F;
 }
 
 // normalizes angles in [-180, 180]
 float ConstrainAngle180(float x)
 {
-	return fmodf(x + 180.0f, 360.0f) - 180.0f;
+	// NOTE: we add full circle to ensure that values close to -360 work alright
+	return fmodf(x + 180.0f + 360.0f, 360.0f) - 180.0f;
 }
 
 // normalizes angles vector in [-180, 180]

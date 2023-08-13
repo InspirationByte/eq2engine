@@ -391,16 +391,16 @@ float length(const Quaternion &q)
 	return sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
 }
 
-void threeAxisRot(float r11, float r12, float r21, float r31, float r32, float* res)
+static void threeAxisRot(float r11, float r12, float r21, float r31, float r32, float* res)
 {
 	res[0] = atan2f(r31, r32);
 	res[1] = asinf(r21);
 	res[2] = atan2f(r11, r12);
 }
 
-
-void quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float res[3])
+Vector3D quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq)
 {
+	Vector3D res;
 	switch(seq)
 	{
 		case QuatRot_zyx:
@@ -473,6 +473,8 @@ void quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float re
 			res[2] = 0.0f;
 		}
 	}
+
+	return res;
 }
 
 Vector3D eulersXYZ(const Quaternion &q)
