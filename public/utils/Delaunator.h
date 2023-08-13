@@ -2,16 +2,6 @@
 
 namespace delaunator {
 
-struct DelaunatorPoint {
-	int i;
-	double x;
-	double y;
-	int t;
-	int prev;
-	int next;
-	bool removed;
-};
-
 class Delaunator 
 {
 public:
