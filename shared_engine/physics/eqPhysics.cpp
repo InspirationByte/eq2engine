@@ -664,7 +664,7 @@ void CEqPhysics::DestroyController( IEqPhysicsController* controller )
 
 	//CScopedMutex m(s_eqPhysMutex);
 
-	if(m_controllers.fastRemove(controller))
+	if(!m_controllers.fastRemove(controller))
 		return;
 
 	controller->RemovedFromWorld( this );
