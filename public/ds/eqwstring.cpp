@@ -18,6 +18,7 @@
 #define EQSTRING_BASE_BUFFER	32
 
 const EqWString EqWString::EmptyStr;
+static const PPSourceLine EqWStringSL = PPSourceLine::Make("EqWString", 0);
 
 EqWString::EqWString()
 {
@@ -153,7 +154,7 @@ bool EqWString::Resize(int nSize, bool bCopy)
 	const int newSize = max(EQSTRING_BASE_BUFFER, nSize + 1);
 
 	// make new and copy
-	wchar_t* pszNewBuffer = new wchar_t[ newSize ];
+	wchar_t* pszNewBuffer = PPNewSL(EqWStringSL) wchar_t[ newSize ];
 
 	// allocation error!
 	if(!pszNewBuffer)

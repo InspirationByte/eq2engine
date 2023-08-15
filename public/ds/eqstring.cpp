@@ -24,6 +24,7 @@
 #define EQSTRING_BASE_BUFFER	32
 
 const EqString EqString::EmptyStr;
+static const PPSourceLine EqStringSL = PPSourceLine::Make("EqString", 0);
 
 EqString::EqString()
 {
@@ -166,7 +167,7 @@ bool EqString::Resize(int nSize, bool bCopy)
 	const int newSize = max(EQSTRING_BASE_BUFFER, nSize + 1);
 
 	// make new and copy
-	char* pszNewBuffer = new char[newSize];
+	char* pszNewBuffer = PPNewSL(EqStringSL) char[newSize];
 
 	// allocation error!
 	if (!pszNewBuffer)

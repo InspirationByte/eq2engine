@@ -485,8 +485,7 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 		cell->m_dynamicObjs.fastRemove(body);
 	}
 
-	bool result = m_dynObjects.fastRemove(body);
-
+	const bool result = m_dynObjects.fastRemove(body);
 	if (result)
 		RemoveFromMoveableList(body);
 

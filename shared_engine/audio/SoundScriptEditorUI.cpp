@@ -517,10 +517,9 @@ void CSoundScriptEditor::SerializeScriptParamsToKeyValues(const SoundScriptDesc&
 
 	KVSection* waveSec = out.CreateSection(soundScript.randomSample ? "rndwave" : "wave");
 
-	for (int i = 0; i < soundScript.soundFileNames.numElem(); ++i)
-	{
-		waveSec->AddKey("wave", soundScript.soundFileNames[i].ToCString());
-	}
+	for (const EqString& name: soundScript.soundFileNames)
+		waveSec->AddKey("wave", name);
+
 	ArrayCRef<ChannelDef> channelTypes(g_sounds->m_channelTypes);
 	out.SetKey("channel", channelTypes[soundScript.channelType].name);
 
