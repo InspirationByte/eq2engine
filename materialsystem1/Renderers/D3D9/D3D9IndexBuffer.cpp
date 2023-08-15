@@ -90,7 +90,7 @@ void CD3D9IndexBuffer::Restore()
 	}
 
 	PPFree(m_restore->data);
-	delete m_restore;
+	SAFE_DELETE(m_restore);
 }
 
 int CD3D9IndexBuffer::GetSizeInBytes() const
@@ -111,10 +111,14 @@ int CD3D9IndexBuffer::GetIndicesCount() const
 // updates buffer without map/unmap operations which are slower
 void CD3D9IndexBuffer::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
-	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
-
-	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
+	if (m_restore)
 		return;
+
+	{
+		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
+			return;
+	}
 
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC);
 
@@ -147,13 +151,13 @@ void CD3D9IndexBuffer::Update(void* data, int size, int offset, bool discard /*=
 // locks vertex buffer and gives to programmer buffer data
 bool CD3D9IndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
-	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
-
-	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
-	{
-		//m_bLockFail = true;
-		//m_bIsLocked = true;
+	if (m_restore)
 		return false;
+
+	{
+		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
+			return false;
 	}
 
 	if(m_bIsLocked)

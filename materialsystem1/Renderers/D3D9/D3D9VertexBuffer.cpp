@@ -90,8 +90,7 @@ void CD3D9VertexBuffer::Restore()
 	}
 
 	PPFree(m_restore->data);
-	delete m_restore;
-	m_restore = nullptr;
+	SAFE_DELETE(m_restore);
 }
 
 int CD3D9VertexBuffer::GetSizeInBytes() const
@@ -112,9 +111,11 @@ int CD3D9VertexBuffer::GetStrideSize() const
 // updates buffer without map/unmap operations which are slower
 void CD3D9VertexBuffer::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
+	if (m_restore)
+		return;
+
 	{
 		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
-
 		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 			return;
 	}
@@ -150,9 +151,11 @@ void CD3D9VertexBuffer::Update(void* data, int size, int offset, bool discard /*
 // locks vertex buffer and gives to programmer buffer data
 bool CD3D9VertexBuffer::Lock(int lockOfs, int vertexCount, void** outdata, bool readOnly)
 {
+	if (m_restore)
+		return false;
+
 	{
 		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
-
 		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 			return false;
 	}
