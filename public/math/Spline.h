@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright (C) Inspiration Byte
-// 2009-2022
+// 2009-2023
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Random number generator
+// Description: Spline functions
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-// http://iquilezles.org/www/articles/minispline/minispline.htm
+// Catmull-Rom spline, based on http://iquilezles.org/www/articles/minispline/minispline.htm
 // key format (for DIM == 1) is [t0,x0, t1,x1 ...]
 // key format (for DIM == 2) is [t0,x0,y0, t1,x1,y1 ...]
 // key format (for DIM == 3) is [t0,x0,y0,z0, t1,x1,y1,z1 ...]
@@ -57,3 +57,51 @@ void spline(const float* key, int num, float t, float* v)
 			v[j] += b * key[kn * size + j + 1];
 	}
 }
+
+
+class BezierSpline
+{
+public:
+	enum PointMode : ubyte
+	{
+		FREE,
+		ALIGNED,
+		MIRRORED
+	};
+
+	// Quadratic
+	static Vector3D		GetPoint(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, float t);
+
+	// Quadratic
+	static Vector3D		GetFirstDerivative(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, float t);
+
+	// Cubic
+	static Vector3D		GetPoint(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t);
+
+	// Cubic
+	static Vector3D		GetFirstDerivative(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t);
+
+	BezierSpline() = default;
+	virtual ~BezierSpline() = default;
+
+	void		Reset();
+
+	int			GetControlPointCount() const { return points.numElem(); }
+
+	Vector3D	GetControlPoint(int index) const;
+	void		SetControlPoint(int index, Vector3D point);
+
+	PointMode	GetControlPointMode(int index) const;
+	void		SetControlPointMode(int index, PointMode mode);
+
+	Vector3D	GetPoint(float t) const;
+	Vector3D	GetVelocity(float t) const;
+
+protected:
+	int			GetCurveCount() const;
+	void		TimeToCurveIndex(float& t, int& i) const;
+	void		EnforceMode(int index);
+
+	Array<Vector3D>		points{ PP_SL };
+	Array<PointMode>	pointModes{ PP_SL };
+};
