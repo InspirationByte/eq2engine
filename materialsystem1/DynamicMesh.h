@@ -27,7 +27,7 @@ public:
 	ER_PrimitiveType	GetPrimitiveType() const;
 
 	// returns a pointer to vertex format description
-	void			GetVertexFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs);
+	ArrayCRef<VertexFormatDesc_t>	GetVertexFormatDesc() const;
 
 	// allocates geometry chunk. Returns the start index. Will return -1 if failed
 	// addStripBreak is for PRIM_TRIANGLE_STRIP. Set it false to work with current strip

@@ -14,12 +14,16 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-static VertexFormatDesc_t g_PFXVertexFormatDesc[] = {
-	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
-	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texture coord
-	{ 0, 4, VERTEXATTRIB_COLOR, ATTRIBUTEFORMAT_UBYTE, "color" },			// color
-	//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
-};
+ArrayCRef<VertexFormatDesc_t> PFXVertex_t::GetVertexFormatDesc()
+{
+	static VertexFormatDesc_t s_PFXVertexFormatDesc[] = {
+		{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
+		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texture coord
+		{ 0, 4, VERTEXATTRIB_COLOR, ATTRIBUTEFORMAT_UBYTE, "color" },			// color
+		//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
+	};
+	return ArrayCRef(s_PFXVertexFormatDesc, elementsOf(s_PFXVertexFormatDesc));
+}
 
 using namespace Threading;
 static CEqMutex s_particleRenderMutex;
@@ -229,7 +233,10 @@ bool CParticleLowLevelRenderer::InitBuffers()
 	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads * 6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
 
 	if(!m_vertexFormat)
-		m_vertexFormat = g_pShaderAPI->CreateVertexFormat("PFXVertex", g_PFXVertexFormatDesc, elementsOf(g_PFXVertexFormatDesc));
+	{
+		ArrayCRef<VertexFormatDesc_t> fmtDesc = PFXVertex_t::GetVertexFormatDesc();
+		m_vertexFormat = g_pShaderAPI->CreateVertexFormat("PFXVertex", fmtDesc);
+	}
 
 	if(m_vertexBuffer && m_indexBuffer && m_vertexFormat)
 		m_initialized = true;

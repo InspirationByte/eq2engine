@@ -18,13 +18,12 @@ USAGE:
 ...
 
 CVertexFormatBuilder vfmt;
-vfmt.SetStream(0, g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat), "EGFVertex");
-vfmt.SetStream(2, g_MatrixInstanceFormat, elementsOf(g_MatrixInstanceFormat), "Instance");
+vfmt.SetStream(0, g_EGFHwVertexFormat, "EGFVertex");
+vfmt.SetStream(2, g_MatrixInstanceFormat, "Instance");
 
-VertexFormatDesc_t* genFmt = nullptr;
-int genFmtElems = vfmt.Build(&genFmt);
+ArrayCRef<VertexFormatDesc_t> genFmt = vfmt.Build();
 
-g_pShaderAPI->CreateVertexFormat(genFmt, genFmtElems);
+g_pShaderAPI->CreateVertexFormat("EGFVertex," genFmt);
 
 */
 
@@ -41,8 +40,8 @@ public:
 		memset(m_enabledComponents, 0xFFFFFFFF, sizeof(m_enabledComponents));
 	}
 
-	void SetStream(int streamIdx, const VertexFormatDesc_t* fmtDesc, int elems, const char* debugName = nullptr);
-	int Build(const VertexFormatDesc_t** outPointer);
+	void SetStream(int streamIdx, ArrayCRef<VertexFormatDesc_t> desc, const char* debugName = nullptr);
+	ArrayCRef<VertexFormatDesc_t> Build();
 
 	void EnableComponent(int streamIdx, const char* name) { SetComponentEnabled(streamIdx, name, true); }
 	void DisableComponent(int streamIdx, const char* name) { SetComponentEnabled(streamIdx, name, false); }
@@ -65,18 +64,16 @@ protected:
 
 // simple inline code
 
-inline void CVertexFormatBuilder::SetStream(int streamIdx, const VertexFormatDesc_t* fmtDesc, int elems, const char* debugName)
+inline void CVertexFormatBuilder::SetStream(int streamIdx, ArrayCRef<VertexFormatDesc_t> desc, const char* debugName)
 {
 	stream_t& stream = m_streams[streamIdx];
 	stream.debugName = debugName;
-	stream.srcFmt = fmtDesc;
-	stream.srcFmtElems = elems;
+	stream.srcFmt = desc.ptr();
+	stream.srcFmtElems = desc.numElem();
 }
 
-inline int CVertexFormatBuilder::Build(const VertexFormatDesc_t** outPointer)
+inline ArrayCRef<VertexFormatDesc_t> CVertexFormatBuilder::Build()
 {
-	ASSERT(outPointer);
-
 	int formatDescCount = 0;
 	for (int i = 0; i < MAX_VERTEXSTREAM; i++)
 	{
@@ -101,9 +98,7 @@ inline int CVertexFormatBuilder::Build(const VertexFormatDesc_t** outPointer)
 		}
 	}
 
-	*outPointer = m_resultFormat;
-
-	return formatDescCount;
+	return ArrayCRef(m_resultFormat, formatDescCount);
 }
 
 inline void CVertexFormatBuilder::SetComponentEnabled(int streamIdx, const char* name, bool enable)

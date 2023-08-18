@@ -37,11 +37,11 @@ void CBaseEqGeomInstancer::ValidateAssert()
 	ASSERT_MSG(m_vertFormat != nullptr, "Instancer is not valid - did you forgot to initialize it???");
 }
 
-void CBaseEqGeomInstancer::InitEx( const VertexFormatDesc_t* instVertexFormat, int numAttrib, int sizeOfInstance )
+void CBaseEqGeomInstancer::InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, int sizeOfInstance)
 {
 	Cleanup();
 	m_ownsVertexFormat = true;
-	m_vertFormat = g_pShaderAPI->CreateVertexFormat("instancerFmt", instVertexFormat, numAttrib);
+	m_vertFormat = g_pShaderAPI->CreateVertexFormat("instancerFmt", instVertexFormat);
 }
 
 void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, int sizeOfInstance)

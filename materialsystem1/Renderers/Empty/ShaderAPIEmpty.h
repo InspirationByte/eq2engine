@@ -345,9 +345,9 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs)
+	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
 	{
-		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc, nAttribs);
+		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc.ptr(), formatDesc.numElem());
 		m_VFList.append(pVF);
 		return pVF;
 	}

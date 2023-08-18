@@ -2255,9 +2255,9 @@ void ShaderAPIGL::SetShaderConstantRaw(int nameHash, const void *data, int nSize
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs)
+IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
 {
-	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc, nAttribs);
+	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc.ptr(), formatDesc.numElem());
 
 	{
 		CScopedMutex m(g_sapi_VBMutex);

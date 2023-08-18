@@ -2247,7 +2247,7 @@ void ShaderAPID3DX10::DestroyRenderState( IRenderState* pState, bool removeAllRe
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, const VertexFormatDesc_t* formatDesc, int nAttribs)
+IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
 {
 	static const DXGI_FORMAT vformats[][4] = {
 		DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -2260,7 +2260,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, const Verte
 
 	CVertexFormatD3DX10* pFormat = new CVertexFormatD3DX10();
 
-	D3D10_INPUT_ELEMENT_DESC *pDesc = new D3D10_INPUT_ELEMENT_DESC[nAttribs + 1];
+	D3D10_INPUT_ELEMENT_DESC *pDesc = new D3D10_INPUT_ELEMENT_DESC[formatDesc.numElem() + 1];
 
 	static const char *semantics[] = {
 		nullptr,
@@ -2288,7 +2288,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, const Verte
 	int numRealAttribs = 0;
 
 	// Fill the vertex element array
-	for (int i = 0; i < nAttribs; i++)
+	for (int i = 0; i < formatDesc.numElem(); i++)
 	{
 		int stream = formatDesc[i].streamId;
 		int size = formatDesc[i].elemCount;

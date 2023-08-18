@@ -91,8 +91,8 @@ public:
 
 protected:
 
-	IDynamicMesh*				m_mesh;
-	const VertexFormatDesc_t*	m_formatDesc;
+	IDynamicMesh*					m_mesh;
+	ArrayCRef<VertexFormatDesc_t>	m_formatDesc;
 
 	void*				m_curVertex;
 	int					m_stride;
@@ -135,11 +135,10 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	m_mesh = mesh;
 
 	// get the format offsets
-	int numAttribs;
-	m_mesh->GetVertexFormatDesc(&m_formatDesc, numAttribs);
+	m_formatDesc = m_mesh->GetVertexFormatDesc();
 
 	int vertexSize = 0;
-	for(int i = 0; i < numAttribs; i++)
+	for(int i = 0; i < m_formatDesc.numElem(); i++)
 	{
 		ER_AttributeFormat format = m_formatDesc[i].attribFormat;
 		ER_VertexAttribType type = m_formatDesc[i].attribType;

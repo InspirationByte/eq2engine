@@ -423,7 +423,7 @@ public:
 //-------------------------------------------------------------
 
 	// create new vertex declaration
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs ) = 0;
+	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc ) = 0;
 	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
 
 	// NOTENOTE: when you set nSize you must add the vertex structure size!

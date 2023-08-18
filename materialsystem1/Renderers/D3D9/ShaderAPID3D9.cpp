@@ -1594,25 +1594,25 @@ void ShaderAPID3D9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
 	CD3D9VertexFormat* pFormat = (CD3D9VertexFormat*)pVertexFormat;
 
-	if (pFormat != m_pCurrentVertexFormat)
-	{
-		if (pFormat != nullptr)
-		{
-			m_pD3DDevice->SetVertexDeclaration(pFormat->m_pVertexDecl);
+	if (pFormat == m_pCurrentVertexFormat)
+		return;
 
-			CD3D9VertexFormat* pCurrentFormat = (CD3D9VertexFormat*)m_pCurrentVertexFormat;
-			if (pCurrentFormat != nullptr)
+	if (pFormat != nullptr)
+	{
+		m_pD3DDevice->SetVertexDeclaration(pFormat->m_pVertexDecl);
+
+		CD3D9VertexFormat* pCurrentFormat = (CD3D9VertexFormat*)m_pCurrentVertexFormat;
+		if (pCurrentFormat != nullptr)
+		{
+			for (int i = 0; i < MAX_VERTEXSTREAM; i++)
 			{
-				for (int i = 0; i < MAX_VERTEXSTREAM; i++)
-				{
-					if (pFormat->m_streamStride[i] != pCurrentFormat->m_streamStride[i])
-						m_pCurrentVertexBuffers[i] = nullptr;
-				}
+				if (pFormat->m_streamStride[i] != pCurrentFormat->m_streamStride[i])
+					m_pCurrentVertexBuffers[i] = nullptr;
 			}
 		}
-
-		m_pCurrentVertexFormat = pFormat;
 	}
+
+	m_pCurrentVertexFormat = pFormat;
 }
 
 // Changes the vertex buffer
@@ -2367,11 +2367,11 @@ void ShaderAPID3D9::SetShaderConstantRaw(int nameHash, const void *data, int nSi
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, const VertexFormatDesc_t* formatDesc, int nAttribs)
+IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
 {
-	CD3D9VertexFormat* pFormat = PPNew CD3D9VertexFormat(name, formatDesc, nAttribs);
+	CD3D9VertexFormat* pFormat = PPNew CD3D9VertexFormat(name, formatDesc.ptr(), formatDesc.numElem());
 
-	D3DVERTEXELEMENT9* vertexElements = PPNew D3DVERTEXELEMENT9[nAttribs + 1];
+	D3DVERTEXELEMENT9* vertexElements = PPNew D3DVERTEXELEMENT9[formatDesc.numElem() + 1];
 	pFormat->GenVertexElement( vertexElements );
 
 	HRESULT hr = m_pD3DDevice->CreateVertexDeclaration(vertexElements, &pFormat->m_pVertexDecl);

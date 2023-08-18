@@ -10,8 +10,6 @@
 #include "physmodel.h"
 #include "motionpackage.h"
 
-typedef struct VertexFormatDesc_s VertexFormatDesc_t;
-
 // those are just runtime limits, they don't affect file data.
 static constexpr const int MAX_MOTIONPACKAGES = 8;		// maximum allowed motion packages to be used in model
 static constexpr const int MAX_STUDIOMATERIALS = 32;	// maximum allowed materials in model
@@ -148,49 +146,3 @@ struct studioJoint_t
 
 typedef studioMotionData_t::animation_t						studioAnimation_t;
 typedef studioMotionData_t::animation_t::boneKeyFrames_t	studioBoneAnimation_t;
-
-//------------------------------------------------------------------------------
-
-// egf model hardware vertex
-struct EGFHwVertex_t
-{
-	static int GetVertexFormatDesc(const VertexFormatDesc_t** desc);
-
-	EGFHwVertex_t() = default;
-	EGFHwVertex_t(const studioVertexDesc_t& initFrom)
-	{
-		ASSERT(initFrom.boneweights.numweights <= MAX_MODEL_VERTEX_WEIGHTS);
-
-		pos = Vector4D(initFrom.point, 1.0f);
-		texcoord = initFrom.texCoord;
-
-		tangent = initFrom.tangent;
-		binormal = initFrom.binormal;
-		normal = initFrom.normal;
-
-		memset(boneWeights, 0, sizeof(boneWeights));
-		for (int i = 0; i < MAX_MODEL_VERTEX_WEIGHTS; i++)
-			boneIndices[i] = -1;
-
-		for (int i = 0; i < min(initFrom.boneweights.numweights, MAX_MODEL_VERTEX_WEIGHTS); i++)
-		{
-			boneIndices[i] = initFrom.boneweights.bones[i];
-			boneWeights[i] = initFrom.boneweights.weight[i];
-		}
-	}
-
-	TVec4D<half>	pos;
-	TVec2D<half>	texcoord;
-
-	TVec3D<half>	tangent;
-	half			unused1;	// half float types are unsupported with v3d, turn them into v4d
-
-	TVec3D<half>	binormal;
-	half			unused2;
-
-	TVec3D<half>	normal;
-	half			unused3;
-
-	half			boneIndices[4];
-	half			boneWeights[4];
-};

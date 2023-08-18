@@ -46,7 +46,7 @@ public:
 	CBaseEqGeomInstancer();
 	~CBaseEqGeomInstancer();
 
-	void			InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib, int sizeOfInstance);
+	void			InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, int sizeOfInstance);
 	void			Init(IVertexFormat* instVertexFormat, int sizeOfInstance);
 	void			Cleanup();
 
@@ -83,7 +83,7 @@ class CEqGeomInstancer : public CBaseEqGeomInstancer
 {
 public:
 	void							Init(IVertexFormat* instVertexFormat);
-	void							InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib);
+	void							InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat);
 	IT&								NewInstance(int bodyGroup, int lod, int materialGroup = 0 );
 
 	static CEqGeomInstancer<IT>*	Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced);
@@ -95,12 +95,6 @@ template <class IT>
 inline void CEqGeomInstancer<IT>::Init(IVertexFormat* instVertexFormat)
 {
 	CBaseEqGeomInstancer::Init(instVertexFormat, sizeof(IT));
-}
-
-template <class IT>
-inline void CEqGeomInstancer<IT>::InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib)
-{
-	CBaseEqGeomInstancer::InitEx(instVertexFormat, numAttrib, sizeof(IT));
 }
 
 template <class IT>

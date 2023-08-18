@@ -18,6 +18,59 @@ using IMaterialPtr = CRefPtr<IMaterial>;
 
 struct DecalMakeInfo;
 struct DecalData;
+typedef struct VertexFormatDesc_s VertexFormatDesc_t;
+
+// egf model hardware vertex
+struct EGFHwVertex
+{
+	static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+
+	EGFHwVertex() = default;
+	EGFHwVertex(const studioVertexDesc_t& initFrom);
+
+	struct VertexUV
+	{
+		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+
+		TVec4D<half>	pos;
+		TVec2D<half>	texcoord;
+	};
+
+	struct TBN
+	{
+		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+
+		TVec3D<half>	tangent;
+		half			unused1;	// half float types are unsupported with v3d, turn them into v4d
+		TVec3D<half>	binormal;
+		half			unused2;
+		TVec3D<half>	normal;
+		half			unused3;
+	};
+
+	struct BoneWeights
+	{
+		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+
+		half			boneIndices[4];
+		half			boneWeights[4];
+	};
+
+	TVec4D<half>	pos;
+	TVec2D<half>	texcoord;
+
+	TVec3D<half>	tangent;
+	half			unused1;	// half float types are unsupported with v3d, turn them into v4d
+
+	TVec3D<half>	binormal;
+	half			unused2;
+
+	TVec3D<half>	normal;
+	half			unused3;
+
+	half			boneIndices[4];
+	half			boneWeights[4];
+};
 
 enum EModelLoadingState
 {
@@ -136,7 +189,7 @@ private:
 	mutable int				m_loading{ MODEL_LOAD_ERROR };
 	mutable int				m_readyState{ 0 };
 
-	EGFHwVertex_t*			m_softwareVerts{ nullptr };
+	EGFHwVertex*			m_softwareVerts{ nullptr };
 	bool					m_forceSoftwareSkinning{ false };
 	bool					m_skinningDirty{ false };
 };

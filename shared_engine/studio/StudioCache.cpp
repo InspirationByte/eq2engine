@@ -57,9 +57,8 @@ int CStudioCache::PrecacheModel(const char* modelName)
 
 	if (m_egfFormat == nullptr)
 	{
-		const VertexFormatDesc_t* vertFormat;
-		const int numElem = EGFHwVertex_t::GetVertexFormatDesc(&vertFormat);
-		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", vertFormat, numElem);
+		ArrayCRef<VertexFormatDesc_t> vertFormat = EGFHwVertex::GetVertexFormatDesc();
+		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", vertFormat);
 	}
 	
 	const int idx = GetModelIndex(modelName);

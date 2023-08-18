@@ -22,7 +22,29 @@
 
 using namespace Threading;
 
-int EGFHwVertex_t::GetVertexFormatDesc(const VertexFormatDesc_t** desc)
+EGFHwVertex::EGFHwVertex(const studioVertexDesc_t& initFrom)
+{
+	ASSERT(initFrom.boneweights.numweights <= MAX_MODEL_VERTEX_WEIGHTS);
+
+	pos = Vector4D(initFrom.point, 1.0f);
+	texcoord = initFrom.texCoord;
+
+	tangent = initFrom.tangent;
+	binormal = initFrom.binormal;
+	normal = initFrom.normal;
+
+	memset(boneWeights, 0, sizeof(boneWeights));
+	for (int i = 0; i < MAX_MODEL_VERTEX_WEIGHTS; i++)
+		boneIndices[i] = -1;
+
+	for (int i = 0; i < min(initFrom.boneweights.numweights, MAX_MODEL_VERTEX_WEIGHTS); i++)
+	{
+		boneIndices[i] = initFrom.boneweights.bones[i];
+		boneWeights[i] = initFrom.boneweights.weight[i];
+	}
+}
+
+ArrayCRef<VertexFormatDesc_t> EGFHwVertex::GetVertexFormatDesc()
 {
 	static const VertexFormatDesc_t g_EGFHwVertexFormat[] = {
 		{ 0, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },		// position
@@ -37,8 +59,35 @@ int EGFHwVertex_t::GetVertexFormatDesc(const VertexFormatDesc_t** desc)
 		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "bonew" }			// Bone weights (hw skinning), (TC5)
 	};
 
-	*desc = g_EGFHwVertexFormat;
-	return elementsOf(g_EGFHwVertexFormat);
+	return ArrayCRef(g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat));
+}
+
+ArrayCRef<VertexFormatDesc_t> EGFHwVertex::VertexUV::GetVertexFormatDesc()
+{
+	static const VertexFormatDesc_t g_EGFVertexUvFormat[] = {
+		{ 0, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },		// position
+		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texcoord 0
+	};
+	return ArrayCRef(g_EGFVertexUvFormat, elementsOf(g_EGFVertexUvFormat));
+}
+
+ArrayCRef<VertexFormatDesc_t> EGFHwVertex::TBN::GetVertexFormatDesc()
+{
+	static const VertexFormatDesc_t g_EGFTBNFormat[] = {
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "tangent" },		// Tangent (TC1)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "binormal" },		// Binormal (TC2)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// Normal (TC3)
+	};
+	return ArrayCRef(g_EGFTBNFormat, elementsOf(g_EGFTBNFormat));
+}
+
+ArrayCRef<VertexFormatDesc_t> EGFHwVertex::BoneWeights::GetVertexFormatDesc()
+{
+	static const VertexFormatDesc_t g_EGFBoneWeightsFormat[] = {
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "boneid" },		// Bone indices (hw skinning), (TC4)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "bonew" }			// Bone weights (hw skinning), (TC5)
+	};
+	return ArrayCRef(g_EGFBoneWeightsFormat, elementsOf(g_EGFBoneWeightsFormat));
 }
 
 DECLARE_CVAR_CLAMP(r_egf_LodTest, "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
@@ -92,7 +141,7 @@ Vector3D boneTransf(bonequaternion_t& bq, Vector3D& pos)
 }
 
 // Software vertex transformation, only for compatibility
-static bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
+static bool TransformEGFVertex(EGFHwVertex& vert, Matrix4x4* pMatrices)
 {
 	bool bAffected = false;
 
@@ -170,7 +219,7 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 
 		if (m_skinningDirty)
 		{
-			m_vertexBuffer->Update(m_softwareVerts, m_vertexBuffer->GetVertexCount() * sizeof(EGFHwVertex_t), 0);
+			m_vertexBuffer->Update(m_softwareVerts, m_vertexBuffer->GetVertexCount() * sizeof(EGFHwVertex), 0);
 			m_skinningDirty = false;
 		}
 
@@ -190,13 +239,13 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 			tempMatrixArray[i] = (!m_joints[i].absTrans * jointMatrices[i]);
 
 		const int verticesCount = m_vertexBuffer->GetVertexCount();
-		EGFHwVertex_t* bufferData = nullptr;
+		EGFHwVertex* bufferData = nullptr;
 		if (m_vertexBuffer->Lock(0, verticesCount, (void**)&bufferData, false))
 		{
 			// setup each bone's transformation
 			for (int i = 0; i < verticesCount; i++)
 			{
-				EGFHwVertex_t vert = m_softwareVerts[i];
+				EGFHwVertex vert = m_softwareVerts[i];
 				TransformEGFVertex(vert, tempMatrixArray);
 
 				bufferData[i] = vert;
@@ -275,13 +324,13 @@ void CEqStudioGeom::LoadPhysicsData()
 	}
 }
 
-static int CopyGroupVertexDataToHWList(EGFHwVertex_t* hwVtxList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)
+static int CopyGroupVertexDataToHWList(EGFHwVertex* hwVtxList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)
 {
 	for (int32 i = 0; i < pMesh->numVertices; i++)
 	{
 		const studioVertexDesc_t* pVertex = pMesh->pVertex(i);
 
-		hwVtxList[currentVertexCount++] = EGFHwVertex_t(*pVertex);
+		hwVtxList[currentVertexCount++] = EGFHwVertex(*pVertex);
 		aabb.AddVertex(pVertex->point);
 	}
 
@@ -466,7 +515,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	if (numVertices > int(USHRT_MAX))
 		indexSize = sizeof(int);
 
-	EGFHwVertex_t* allVerts = PPNew EGFHwVertex_t[numVertices];
+	EGFHwVertex* allVerts = PPNew EGFHwVertex[numVertices];
 	ubyte* allIndices = PPNew ubyte[indexSize * numIndices];
 
 	numVertices = 0;
@@ -498,14 +547,14 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	}
 
 	// create hardware buffers
-	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex_t), allVerts);
+	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex), allVerts);
 	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(numIndices, indexSize, BUFFER_STATIC, allIndices);
 
 	// if we using software skinning, we need to create temporary vertices
 	if (m_forceSoftwareSkinning)
 	{
-		m_softwareVerts = PPAllocStructArray(EGFHwVertex_t, numVertices);
-		memcpy(m_softwareVerts, allVerts, sizeof(EGFHwVertex_t) * numVertices);
+		m_softwareVerts = PPAllocStructArray(EGFHwVertex, numVertices);
+		memcpy(m_softwareVerts, allVerts, sizeof(EGFHwVertex) * numVertices);
 	}
 
 	// done.
@@ -927,7 +976,7 @@ Matrix4x4 CEqStudioGeom::GetLocalTransformMatrix(int attachmentIdx) const
 	return attach->transform;
 }
 
-static void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const DecalMakeInfo& info)
+static void MakeDecalTexCoord(Array<EGFHwVertex>& verts, Array<int>& indices, const DecalMakeInfo& info)
 {
 	const Vector3D decalSize = info.size * 2.0f;
 
@@ -1032,7 +1081,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 	Vector3D decal_origin = info.origin;
 	Vector3D decal_normal = info.normal;
 
-	Array<EGFHwVertex_t> verts(PP_SL);
+	Array<EGFHwVertex> verts(PP_SL);
 	Array<int> indices(PP_SL);
 
 	Matrix4x4 tempMatrixArray[128];
@@ -1072,7 +1121,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 
 		const studioMeshGroupDesc_t* modDesc = studio->pMeshGroupDesc(modelDescId);
 
-		Array<EGFHwVertex_t> g_verts(PP_SL);
+		Array<EGFHwVertex> g_verts(PP_SL);
 		Array<int> g_indices(PP_SL);
 		Array<int> g_orig_indices(PP_SL);
 
@@ -1115,9 +1164,9 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 					i2 = pIndices[k + 2];
 				}
 
-				EGFHwVertex_t v0(*pMesh->pVertex(i0));
-				EGFHwVertex_t v1(*pMesh->pVertex(i1));
-				EGFHwVertex_t v2(*pMesh->pVertex(i2));
+				EGFHwVertex v0(*pMesh->pVertex(i0));
+				EGFHwVertex v1(*pMesh->pVertex(i1));
+				EGFHwVertex v2(*pMesh->pVertex(i2));
 
 				// for skinning we transform vertices but we add raw verts to decal later
 				if (jointMatrices)
@@ -1135,7 +1184,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 				// make and check surface normal
 				const Vector3D normal = (v0.normal + v1.normal + v2.normal) / 3.0f;
 
-				auto egf_vertex_comp = [](const EGFHwVertex_t& a, const EGFHwVertex_t& b) -> bool
+				auto egf_vertex_comp = [](const EGFHwVertex& a, const EGFHwVertex& b) -> bool
 				{
 					return (a.pos == b.pos) && (a.texcoord == b.texcoord);
 				};
@@ -1180,11 +1229,11 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 		decal->flags = DECAL_FLAG_STUDIODECAL;
 		decal->numVerts = verts.numElem();
 		decal->numIndices = indices.numElem();
-		decal->verts = PPAllocStructArray(EGFHwVertex_t, decal->numVerts);
+		decal->verts = PPAllocStructArray(EGFHwVertex, decal->numVerts);
 		decal->indices = PPAllocStructArray(uint16, decal->numIndices);
 
 		// copy geometry
-		memcpy(decal->verts, verts.ptr(), sizeof(EGFHwVertex_t) * decal->numVerts);
+		memcpy(decal->verts, verts.ptr(), sizeof(EGFHwVertex) * decal->numVerts);
 
 		for (int i = 0; i < decal->numIndices; i++)
 			decal->indices[i] = indices[i];
