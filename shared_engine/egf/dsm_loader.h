@@ -21,6 +21,7 @@ struct DSVertex
 {
 	Vector3D		position{ 0.0f };
 	Vector3D		normal{ 0.5f };
+	MColor			color{ color_white };
 
 	Vector2D		texcoord{ 0.0f };
 	int				vertexId{ 0 };

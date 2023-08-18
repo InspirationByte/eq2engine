@@ -58,6 +58,11 @@ Vector3D FromFBXVector(const Vector3D& v, const ofbx::GlobalSettings& settings)
 	return FixOrient(v, settings);
 }
 
+MColor FromFBXColorVector(const ofbx::Vec4& v)
+{
+	return MColor((float)v.x, (float)v.y, (float)v.z, (float)v.w);
+}
+
 Quaternion FixOrient(const Quaternion& v, const ofbx::GlobalSettings& settings)
 {
 	switch (settings.UpAxis)
@@ -296,6 +301,8 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 	const ofbx::Geometry& geom = *mesh.getGeometry();
 	const ofbx::Vec3* vertices = geom.getVertices();
 	const ofbx::Vec3* normals = geom.getNormals();
+	const ofbx::Vec3* tangents = geom.getTangents(); // TODO: tangent space must be preserved from FBX
+	const ofbx::Vec4* colors = geom.getColors();
 	const ofbx::Vec2* uvs = geom.getUVs();
 
 	// get blend shapes
@@ -378,9 +385,10 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 
 			if (normals)
 				vert.normal = FromFBXVector(normals[jj], settings);
-
 			if (uvs)
 				vert.texcoord = FromFBXUvVector(uvs[jj]);
+			if (colors)
+				vert.color = FromFBXColorVector(colors[jj]);
 
 			vert.vertexId = jj;
 
