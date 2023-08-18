@@ -131,7 +131,7 @@ static bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 
 static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, bonequaternion_t* bquats, Matrix4x4* btransforms)
 {
-	const studiohdr_t& studio = model->GetStudioHdr();
+	const studioHdr_t& studio = model->GetStudioHdr();
 	const int numBones = studio.numBones;
 
 	for (int i = 0; i < numBones; i++)
@@ -251,8 +251,8 @@ void CEqStudioGeom::DestroyModel()
 		Studio_FreePhysModel(&m_physModel);
 		m_physModel = studioPhysData_t();
 
-		for (int i = 0; i < m_studio->numModels; i++)
-			delete[] m_hwGeomRefs[i].groups;
+		for (int i = 0; i < m_studio->numMeshGroups; i++)
+			delete[] m_hwGeomRefs[i].meshRefs;
 
 		SAFE_DELETE_ARRAY(m_hwGeomRefs);
 		SAFE_DELETE_ARRAY(m_joints);
@@ -275,35 +275,35 @@ void CEqStudioGeom::LoadPhysicsData()
 	}
 }
 
-static int CopyGroupVertexDataToHWList(EGFHwVertex_t* hwVtxList, int currentVertexCount, const modelgroupdesc_t* pGroup, BoundingBox& aabb)
+static int CopyGroupVertexDataToHWList(EGFHwVertex_t* hwVtxList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)
 {
-	for (int32 i = 0; i < pGroup->numVertices; i++)
+	for (int32 i = 0; i < pMesh->numVertices; i++)
 	{
-		const studiovertexdesc_t* pVertex = pGroup->pVertex(i);
+		const studioVertexDesc_t* pVertex = pMesh->pVertex(i);
 
 		hwVtxList[currentVertexCount++] = EGFHwVertex_t(*pVertex);
 		aabb.AddVertex(pVertex->point);
 	}
 
-	return pGroup->numVertices;
+	return pMesh->numVertices;
 }
 
-static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexCount, const modelgroupdesc_t* pGroup, int vertex_add_offset)
+static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexCount, const studioMeshDesc_t* pMesh, int vertex_add_offset)
 {
 	if (indexSize == sizeof(int))
 	{
-		for (uint32 i = 0; i < pGroup->numIndices; i++)
+		for (uint32 i = 0; i < pMesh->numIndices; i++)
 		{
-			const int index = (*pGroup->pVertexIdx(i)) + vertex_add_offset;
+			const int index = (*pMesh->pVertexIdx(i)) + vertex_add_offset;
 			uint32* indices = (uint32*)indexData;
 			indices[currentIndexCount++] = index;
 		}
 	}
 	else if (indexSize == sizeof(short))
 	{
-		for (uint32 i = 0; i < pGroup->numIndices; i++)
+		for (uint32 i = 0; i < pMesh->numIndices; i++)
 		{
-			const int index = (*pGroup->pVertexIdx(i)) + vertex_add_offset;
+			const int index = (*pMesh->pVertexIdx(i)) + vertex_add_offset;
 			uint16* indices = (uint16*)indexData;
 			indices[currentIndexCount++] = index;
 		}
@@ -313,7 +313,7 @@ static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int curren
 		ASSERT_FAIL("CopyGroupIndexDataToHWList - Bad index size");
 	}
 
-	return pGroup->numIndices;
+	return pMesh->numIndices;
 }
 
 void CEqStudioGeom::LoadModelJob(void* data, int i)
@@ -426,7 +426,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 
 bool CEqStudioGeom::LoadFromFile()
 {
-	studiohdr_t* pHdr = Studio_LoadModel(m_name.ToCString());
+	studioHdr_t* pHdr = Studio_LoadModel(m_name.ToCString());
 
 	if (!pHdr)
 		return false; // get out, nothing to load
@@ -441,23 +441,23 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	// detect and set the force software skinning flag
 	m_forceSoftwareSkinning = r_force_softwareskinning.GetBool();
 
-	const studiohdr_t* studio = m_studio;
+	const studioHdr_t* studio = m_studio;
 
 	// use index size
 	int numVertices = 0;
 	int numIndices = 0;
 
 	// find vert and index count
-	for (int i = 0; i < studio->numModels; i++)
+	for (int i = 0; i < studio->numMeshGroups; i++)
 	{
-		studiomodeldesc_t* pModelDesc = studio->pModelDesc(i);
+		studioMeshGroupDesc_t* pMeshGroupDesc = studio->pMeshGroupDesc(i);
 
-		for (int j = 0; j < pModelDesc->numGroups; j++)
+		for (int j = 0; j < pMeshGroupDesc->numMeshes; j++)
 		{
-			modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
+			studioMeshDesc_t* pMesh = pMeshGroupDesc->pMesh(j);
 
-			numVertices += pGroup->numVertices;
-			numIndices += pGroup->numIndices;
+			numVertices += pMesh->numVertices;
+			numIndices += pMesh->numIndices;
 		}
 	}
 
@@ -472,28 +472,28 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	numVertices = 0;
 	numIndices = 0;
 
-	m_hwGeomRefs = PPNew HWGeomRef[studio->numModels];
+	m_hwGeomRefs = PPNew HWGeomRef[studio->numMeshGroups];
 
-	for (int i = 0; i < studio->numModels; i++)
+	for (int i = 0; i < studio->numMeshGroups; i++)
 	{
-		const studiomodeldesc_t* pModelDesc = studio->pModelDesc(i);
+		const studioMeshGroupDesc_t* pMeshGroupDesc = studio->pMeshGroupDesc(i);
 
-		HWGeomRef::Group* groups = PPNew HWGeomRef::Group[pModelDesc->numGroups];
-		m_hwGeomRefs[i].groups = groups;
+		HWGeomRef::Mesh* meshRefs = PPNew HWGeomRef::Mesh[pMeshGroupDesc->numMeshes];
+		m_hwGeomRefs[i].meshRefs = meshRefs;
 
-		for (int j = 0; j < pModelDesc->numGroups; j++)
+		for (int j = 0; j < pMeshGroupDesc->numMeshes; j++)
 		{
 			// add vertices, add indices
-			const modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
+			const studioMeshDesc_t* pMesh = pMeshGroupDesc->pMesh(j);
 
-			groups[j].firstIndex = numIndices;
-			groups[j].indexCount = pGroup->numIndices;
-			groups[j].primType = pGroup->primitiveType;
+			meshRefs[j].firstIndex = numIndices;
+			meshRefs[j].indexCount = pMesh->numIndices;
+			meshRefs[j].primType = pMesh->primitiveType;
 
 			const int new_offset = numVertices;
 
-			numVertices += CopyGroupVertexDataToHWList(allVerts, numVertices, pGroup, m_boundingBox);
-			numIndices += CopyGroupIndexDataToHWList(allIndices, indexSize, numIndices, pGroup, new_offset);
+			numVertices += CopyGroupVertexDataToHWList(allVerts, numVertices, pMesh, m_boundingBox);
+			numIndices += CopyGroupIndexDataToHWList(allIndices, indexSize, numIndices, pMesh, new_offset);
 		}
 	}
 
@@ -535,7 +535,7 @@ void CEqStudioGeom::LoadMotionPackage(const char* filename)
 
 void CEqStudioGeom::LoadMotionPackages()
 {
-	const studiohdr_t* studio = m_studio;
+	const studioHdr_t* studio = m_studio;
 
 	// Try load default motion file
 	studioMotionData_t* motionData = Studio_LoadMotionData((m_name.Path_Strip_Ext() + ".mop").GetData(), studio->numBones);
@@ -570,7 +570,7 @@ void CEqStudioGeom::LoadMotionPackages()
 // loads materials for studio
 void CEqStudioGeom::LoadMaterials()
 {
-	studiohdr_t* studio = m_studio;
+	studioHdr_t* studio = m_studio;
 
 	bool bError = false;
 	{
@@ -635,17 +635,17 @@ void CEqStudioGeom::LoadMaterials()
 
 	int maxMaterialIdx = -1;
 
-	for (int i = 0; i < studio->numModels; i++)
+	for (int i = 0; i < studio->numMeshGroups; i++)
 	{
-		studiomodeldesc_t* pModelDesc = studio->pModelDesc(i);
+		studioMeshGroupDesc_t* pMeshGroupDesc = studio->pMeshGroupDesc(i);
 
-		for (int j = 0; j < pModelDesc->numGroups; j++)
+		for (int j = 0; j < pMeshGroupDesc->numMeshes; j++)
 		{
 			// add vertices, add indices
-			modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
+			studioMeshDesc_t* pMesh = pMeshGroupDesc->pMesh(j);
 
-			if (pGroup->materialIndex > maxMaterialIdx)
-				maxMaterialIdx = pGroup->materialIndex;
+			if (pMesh->materialIndex > maxMaterialIdx)
+				maxMaterialIdx = pMesh->materialIndex;
 		}
 	}
 	
@@ -674,7 +674,7 @@ const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int materialGrou
 
 void CEqStudioGeom::LoadSetupBones()
 {
-	studiohdr_t* studio = m_studio;
+	studioHdr_t* studio = m_studio;
 
 	// Initialize HW data joints
 	m_joints = PPNew studioJoint_t[studio->numBones];
@@ -683,7 +683,7 @@ void CEqStudioGeom::LoadSetupBones()
 	for (int i = 0; i < studio->numBones; ++i)
 	{
 		// copy all bone data
-		const bonedesc_t* bone = studio->pBone(i);
+		const studioBoneDesc_t* bone = studio->pBone(i);
 
 		studioJoint_t& joint = m_joints[i];
 		joint.bone = bone;
@@ -715,10 +715,10 @@ void CEqStudioGeom::LoadSetupBones()
 	// init ik chain links
 	for (int i = 0; i < studio->numIKChains; ++i)
 	{
-		const studioikchain_t* ikChain = studio->pIkChain(i);
+		const studioIkChain_t* ikChain = studio->pIkChain(i);
 		for (int j = 0; j < ikChain->numLinks; ++j)
 		{
-			studioiklink_t* ikLink = ikChain->pLink(j);
+			studioIkLink_t* ikLink = ikChain->pLink(j);
 			m_joints[ikLink->bone].ikChainId = i;
 			m_joints[ikLink->bone].ikLinkId = j;
 		}
@@ -739,7 +739,7 @@ int CEqStudioGeom::SelectLod(float distance) const
 
 	for (int i = r_egf_LodStart.GetInt(); i < numLods; i++)
 	{
-		const studiolodparams_t* lodParam = m_studio->pLodParams(i);
+		const studioLodParams_t* lodParam = m_studio->pLodParams(i);
 		if (lodParam->flags & STUDIO_LOD_FLAG_MANUAL)
 			continue;
 
@@ -756,7 +756,7 @@ int CEqStudioGeom::FindManualLod(float value) const
 
 	for (int i = 0; i < numLods; i++)
 	{
-		const studiolodparams_t* lodParam = m_studio->pLodParams(i);
+		const studioLodParams_t* lodParam = m_studio->pLodParams(i);
 		if (!(lodParam->flags & STUDIO_LOD_FLAG_MANUAL))
 			continue;
 
@@ -796,7 +796,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, drawProperties.mainVertexStream);
 	g_pShaderAPI->SetIndexBuffer(m_indexBuffer);
 
-	const studiohdr_t& studio = *m_studio;
+	const studioHdr_t& studio = *m_studio;
 	for (int i = 0; i < studio.numBodyGroups; ++i)
 	{
 		// check bodygroups for rendering
@@ -804,7 +804,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			continue;
 
 		const int bodyGroupLodIndex = studio.pBodyGroups(i)->lodModelIndex;
-		const studiolodmodel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
+		const studioLodModel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
 
 		// get the right LOD model number
 		int bodyGroupLOD = drawProperties.lod;
@@ -818,12 +818,12 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 		if (modelDescId == EGF_INVALID_IDX)
 			continue;
 
-		const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);
+		const studioMeshGroupDesc_t* modDesc = studio.pMeshGroupDesc(modelDescId);
 
 		// render model groups that in this body group
-		for (int j = 0; j < modDesc->numGroups; ++j)
+		for (int j = 0; j < modDesc->numMeshes; ++j)
 		{
-			const int materialIndex = modDesc->pGroup(j)->materialIndex;
+			const int materialIndex = modDesc->pMesh(j)->materialIndex;
 			IMaterial* material = GetMaterial(materialIndex, drawProperties.materialGroup);
 
 			const int materialFlags = material->GetFlags();
@@ -848,8 +848,8 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 
 			materials->Apply();
 
-			const HWGeomRef::Group& groupDesc = m_hwGeomRefs[modelDescId].groups[j];
-			g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)groupDesc.primType, groupDesc.firstIndex, groupDesc.indexCount, 0, m_vertexBuffer->GetVertexCount());
+			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
+			g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, m_vertexBuffer->GetVertexCount());
 		}
 	}
 
@@ -876,7 +876,7 @@ int	CEqStudioGeom::GetLoadingState() const
 	return m_readyState;
 }
 
-const studiohdr_t& CEqStudioGeom::GetStudioHdr() const
+const studioHdr_t& CEqStudioGeom::GetStudioHdr() const
 {
 	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
@@ -923,7 +923,7 @@ Matrix4x4 CEqStudioGeom::GetLocalTransformMatrix(int attachmentIdx) const
 {
 	ASSERT(attachmentIdx >= 0 && attachmentIdx < m_studio->numTransforms);
 
-	const studiotransform_t* attach = m_studio->pTransform(attachmentIdx);
+	const studioTransform_t* attach = m_studio->pTransform(attachmentIdx);
 	return attach->transform;
 }
 
@@ -1027,7 +1027,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 	if (r_egf_NoTempDecals.GetBool())
 		return nullptr;
 
-	const studiohdr_t* studio = m_studio;
+	const studioHdr_t* studio = m_studio;
 
 	Vector3D decal_origin = info.origin;
 	Vector3D decal_normal = info.normal;
@@ -1056,7 +1056,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 			continue;
 
 		const int bodyGroupLodIndex = studio->pBodyGroups(i)->lodModelIndex;
-		const studiolodmodel_t* lodModel = studio->pLodModel(bodyGroupLodIndex);
+		const studioLodModel_t* lodModel = studio->pLodModel(bodyGroupLodIndex);
 
 		// get the right LOD model number
 		int bodyGroupLOD = lod;
@@ -1070,28 +1070,28 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 		if (modelDescId == EGF_INVALID_IDX)
 			continue;
 
-		const studiomodeldesc_t* modDesc = studio->pModelDesc(modelDescId);
+		const studioMeshGroupDesc_t* modDesc = studio->pMeshGroupDesc(modelDescId);
 
 		Array<EGFHwVertex_t> g_verts(PP_SL);
 		Array<int> g_indices(PP_SL);
 		Array<int> g_orig_indices(PP_SL);
 
-		for (int j = 0; j < modDesc->numGroups; j++)
+		for (int j = 0; j < modDesc->numMeshes; j++)
 		{
-			const modelgroupdesc_t* pGroup = modDesc->pGroup(j);
+			const studioMeshDesc_t* pMesh = modDesc->pMesh(j);
 
-			const uint32* pIndices = pGroup->pVertexIdx(0);
+			const uint32* pIndices = pMesh->pVertexIdx(0);
 
 			g_verts.clear();
 			g_indices.clear();
 			g_orig_indices.clear();
 
-			g_verts.reserve(pGroup->numIndices);
-			g_indices.reserve(pGroup->numIndices);
-			g_orig_indices.reserve(pGroup->numIndices);
+			g_verts.reserve(pMesh->numIndices);
+			g_indices.reserve(pMesh->numIndices);
+			g_orig_indices.reserve(pMesh->numIndices);
 
-			const int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
-			const int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+			const int numIndices = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
+			const int indexStep = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
 
 			for (uint32 k = 0; k < numIndices; k += indexStep)
 			{
@@ -1102,7 +1102,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 				const int even = k % 2;	// handle flipped triangles on EGFPRIM_TRI_STRIP
 				
 				int i0, i1, i2;
-				if (even && pGroup->primitiveType == EGFPRIM_TRI_STRIP)
+				if (even && pMesh->primitiveType == EGFPRIM_TRI_STRIP)
 				{
 					i0 = pIndices[k + 2];
 					i1 = pIndices[k + 1];
@@ -1115,9 +1115,9 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 					i2 = pIndices[k + 2];
 				}
 
-				EGFHwVertex_t v0(*pGroup->pVertex(i0));
-				EGFHwVertex_t v1(*pGroup->pVertex(i1));
-				EGFHwVertex_t v2(*pGroup->pVertex(i2));
+				EGFHwVertex_t v0(*pMesh->pVertex(i0));
+				EGFHwVertex_t v1(*pMesh->pVertex(i1));
+				EGFHwVertex_t v2(*pMesh->pVertex(i2));
 
 				// for skinning we transform vertices but we add raw verts to decal later
 				if (jointMatrices)
@@ -1165,7 +1165,7 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 				indices.append(start + g_indices[k]);
 
 				// restore vertex position in case of skinning
-				g_verts[g_indices[k]].pos = Vector4D(pGroup->pVertex(g_orig_indices[k])->point, 1.0f);
+				g_verts[g_indices[k]].pos = Vector4D(pMesh->pVertex(g_orig_indices[k])->point, 1.0f);
 			}
 
 			verts.append(g_verts);
@@ -1204,7 +1204,7 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 
 	float best_dist = F_INFINITY;
 
-	const studiohdr_t& studio = *m_studio;
+	const studioHdr_t& studio = *m_studio;
 
 	for(int i = 0; i < studio.numBodyGroups; i++)
 	{
@@ -1212,7 +1212,7 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 			continue;
 
 		const int bodyGroupLodIndex = studio.pBodyGroups(i)->lodModelIndex;
-		const studiolodmodel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
+		const studioLodModel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
 
 		// get the right LOD model number
 		int bodyGroupLOD = lod;
@@ -1226,16 +1226,16 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 		if (modelDescId == EGF_INVALID_IDX)
 			continue;
 
-		const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);
+		const studioMeshGroupDesc_t* modDesc = studio.pMeshGroupDesc(modelDescId);
 
-		for(int j = 0; j < modDesc->numGroups; j++)
+		for(int j = 0; j < modDesc->numMeshes; j++)
 		{
-			const modelgroupdesc_t* pGroup = modDesc->pGroup(j);
+			const studioMeshDesc_t* pMesh = modDesc->pMesh(j);
 
-			const uint32* pIndices = pGroup->pVertexIdx(0);
+			const uint32* pIndices = pMesh->pVertexIdx(0);
 
-			const int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
-			const int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+			const int numIndices = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
+			const int indexStep = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
 
 			for (int k = 0; k < numIndices; k += indexStep)
 			{
@@ -1246,17 +1246,17 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 				const int even = k % 2; // handle flipped triangles on EGFPRIM_TRI_STRIP
 
 				Vector3D v0, v1, v2;
-				if (even && pGroup->primitiveType == EGFPRIM_TRI_STRIP)
+				if (even && pMesh->primitiveType == EGFPRIM_TRI_STRIP)
 				{
-					v0 = pGroup->pVertex(pIndices[k + 2])->point;
-					v1 = pGroup->pVertex(pIndices[k + 1])->point;
-					v2 = pGroup->pVertex(pIndices[k])->point;
+					v0 = pMesh->pVertex(pIndices[k + 2])->point;
+					v1 = pMesh->pVertex(pIndices[k + 1])->point;
+					v2 = pMesh->pVertex(pIndices[k])->point;
 				}
 				else
 				{
-					v0 = pGroup->pVertex(pIndices[k])->point;
-					v1 = pGroup->pVertex(pIndices[k + 1])->point;
-					v2 = pGroup->pVertex(pIndices[k + 2])->point;
+					v0 = pMesh->pVertex(pIndices[k])->point;
+					v1 = pMesh->pVertex(pIndices[k + 1])->point;
+					v2 = pMesh->pVertex(pIndices[k + 2])->point;
 				}
 
 				float dist = F_INFINITY;

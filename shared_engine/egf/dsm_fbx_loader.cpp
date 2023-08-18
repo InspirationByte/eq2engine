@@ -126,7 +126,7 @@ void TransformModelGeom(DSModel* model, const Matrix4x4& transform)
 	normalsRotateVec.rows[1] = normalize(normalsRotateVec.rows[1]);
 	normalsRotateVec.rows[2] = normalize(normalsRotateVec.rows[2]);
 
-	for (DSGroup* group : model->groups)
+	for (DSMesh* group : model->meshes)
 	{
 		for (DSVertex& vert : group->verts)
 		{
@@ -245,7 +245,7 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 
 		DSBone* pBone = PPNew DSBone();
 		pBone->name = fbxCluster.name;
-		pBone->bone_id = i;
+		pBone->boneIdx = i;
 
 		// find parent bone link
 		for (int j = 0; j < thisWeightData.numElem(); ++j)
@@ -255,8 +255,8 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 
 			if (fbxBoneLinkJ == fbxBoneLink->getParent())
 			{
-				pBone->parent_name = fbxBoneLinkJ->name;
-				pBone->parent_id = j;
+				pBone->parentName = fbxBoneLinkJ->name;
+				pBone->parentIdx = j;
 				break;
 			}
 		}
@@ -265,15 +265,15 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 		// to convert animation
 		{
 			Matrix4x4 boneMatrix = boneMatries[i];
-			if (pBone->parent_id != -1)
-				boneMatrix = boneMatrix * !boneMatries[pBone->parent_id];
+			if (pBone->parentIdx != -1)
+				boneMatrix = boneMatrix * !boneMatries[pBone->parentIdx];
 			wd.boneMatrix = boneMatrix;
 		}
 
 		// FIXME: WTF m8, this does seem to work
 		Matrix4x4 boneMatrix = boneMatries[i] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix;
-		if (pBone->parent_id != -1)
-			boneMatrix = boneMatrix * !(boneMatries[pBone->parent_id] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix);
+		if (pBone->parentIdx != -1)
+			boneMatrix = boneMatrix * !(boneMatries[pBone->parentIdx] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix);
 		else
 			boneMatrix = boneMatrix * transform;
 
@@ -293,7 +293,7 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 	}
 }
 
-void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSGroup*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
+void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSMesh*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
 	Array<VertexWeightData> weightData(PP_SL);
 	GetFBXBonesAsDSM(mesh, model->bones, weightData, transform, convertMatrix);
@@ -356,21 +356,21 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 	const int vertexCount = geom.getVertexCount();
 	for (int j = 0; j < vertexCount; j += 3, ++triNum)
 	{
-		DSGroup* dsmGrp = nullptr;
+		DSMesh* dsmGrp = nullptr;
 
 		const int materialIdx = vertMaterials ? vertMaterials[triNum] : 0;
 		const int materialGroupIdx = meshId | (materialIdx << 16);
 		auto found = materialGroups.find(materialGroupIdx);
 		if (found.atEnd())
 		{
-			dsmGrp = PPNew DSGroup();
+			dsmGrp = PPNew DSMesh();
 
 			const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(materialIdx) : nullptr;
 			if (material)
 				dsmGrp->texture = material->name;
 
 			materialGroups.insert(materialGroupIdx, dsmGrp);
-			model->groups.append(dsmGrp);
+			model->meshes.append(dsmGrp);
 		}
 		else
 		{
@@ -468,7 +468,7 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
 			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-			Map<int, DSGroup*> materialGroups(PP_SL);
+			Map<int, DSMesh*> materialGroups(PP_SL);
 			ConvertFBXMeshToDSM(i, container.model, container.shapeData, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
 
 			container.model->name = mesh.name;
@@ -514,7 +514,7 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 		bool invertFaces;
 		GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
-		Map<int, DSGroup*> materialGroups(PP_SL);
+		Map<int, DSMesh*> materialGroups(PP_SL);
 
 		const int meshCount = scene->getMeshCount();
 		for (int i = 0; i < meshCount; ++i)
@@ -566,7 +566,7 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 		bool invertFaces;
 		GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
-		Map<int, DSGroup*> materialGroups(PP_SL);
+		Map<int, DSMesh*> materialGroups(PP_SL);
 
 		const int meshCount = scene->getMeshCount();
 		for (int i = 0; i < meshCount; ++i)
@@ -862,7 +862,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 				// FBX does not apply armature transform animation to the root bone
 				// so we have to do it ourselves
 				Matrix4x4 invBoneMatrix = wd.boneMatrix;
-				if (bone->parent_id == -1)
+				if (bone->parentIdx == -1)
 				{
 					// don't forget to calc correct rest bone matrix
 					invBoneMatrix = wd.boneMatrix * meshTransform;
@@ -911,7 +911,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 					const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
 
 					Matrix4x4 meshAnimTransform = identity4;
-					if (bone->parent_id == -1)
+					if (bone->parentIdx == -1)
 					{
 						const Vector3D rotation = rootAnimation.rotations[k];
 						const Vector3D translation = rootAnimation.translations[k];

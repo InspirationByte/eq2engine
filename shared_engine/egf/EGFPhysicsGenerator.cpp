@@ -74,8 +74,8 @@ void CEGFPhysicsGenerator::SetupRagdollJoints(Array<RagdollJoint>& boneArray)
 		joint.localTrans.setRotation(bone->angles);
 		joint.localTrans.setTranslation(bone->position);
 
-		if(bone->parent_id != -1)
-			joint.absTrans = joint.localTrans * boneArray[bone->parent_id].absTrans;
+		if(bone->parentIdx != -1)
+			joint.absTrans = joint.localTrans * boneArray[bone->parentIdx].absTrans;
 		else
 			joint.absTrans = joint.localTrans;
 	}
@@ -218,7 +218,7 @@ int CEGFPhysicsGenerator::FindJointIdx(const char* name)
 
 int CEGFPhysicsGenerator::MakeBoneValidParent(int boneId)
 {
-	int parent = m_srcModel->bones[boneId]->parent_id;
+	int parent = m_srcModel->bones[boneId]->parentIdx;
 
 	int joint_index = -1;
 
@@ -239,9 +239,9 @@ int CEGFPhysicsGenerator::MakeBoneValidParent(int boneId)
 // it collects information about neighbour surfaces and joins triangles into subparts
 void CEGFPhysicsGenerator::SubdivideModelParts( Array<DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups)
 {
-	for(int i = 0 ; i < m_srcModel->groups.numElem(); i++)
+	for(int i = 0 ; i < m_srcModel->meshes.numElem(); i++)
 	{
-		DSGroup* group = m_srcModel->groups[i];
+		DSMesh* group = m_srcModel->meshes[i];
 		for(int j = 0; j < group->verts.numElem(); j++)
 		{
 			indices.append(vertices.numElem());
@@ -312,9 +312,9 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 			bone_index = vertices[firsttri_indx0].weights[0].bone;
 
 		if(bone_index != -1)
-			Msg("Group %d uses bone %s\n", i+1, m_srcModel->bones[bone_index]->name);
+			Msg("Mesh %d uses bone %s\n", i+1, m_srcModel->bones[bone_index]->name);
 		else
-			Msg("Group %d doesn't use bones, it will be static\n", i+1);
+			Msg("Mesh %d doesn't use bones, it will be static\n", i+1);
 
 		bone_group_indices.append(bone_index);
 
@@ -438,7 +438,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 
 		joint.objA = m_objects.numElem() - 1;
 
-		int parent = m_srcModel->bones[i]->parent_id;
+		int parent = m_srcModel->bones[i]->parentIdx;
 
 		if(parent == -1)
 		{
@@ -730,9 +730,9 @@ bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* 
 		m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
 
 		// move all vertices and indices from groups to shared buffer (no multiple shapes)
-		for(int i = 0 ; i < m_srcModel->groups.numElem(); i++)
+		for(int i = 0 ; i < m_srcModel->meshes.numElem(); i++)
 		{
-			DSGroup* group = m_srcModel->groups[i];
+			DSMesh* group = m_srcModel->meshes[i];
 
 			for(int j = 0; j < group->verts.numElem(); j++)
 			{

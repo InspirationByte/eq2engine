@@ -29,7 +29,7 @@ struct DSVertex
 	DSWeightList	weights;
 };
 
-struct DSGroup
+struct DSMesh
 {
 	EqString		texture;
 	Array<DSVertex>	verts{ PP_SL };
@@ -39,10 +39,10 @@ struct DSGroup
 struct DSBone
 {
 	EqString		name;
-	EqString		parent_name;
+	EqString		parentName;
 
-	int				bone_id{ -1 };
-	int				parent_id{ -1 };
+	int				boneIdx{ -1 };
+	int				parentIdx{ -1 };
 
 	Vector3D		position{ 0 };
 	Vector3D		angles{ 0 };
@@ -53,11 +53,11 @@ struct DSModel : public RefCountedObject<DSModel>
 	~DSModel();
 	EqString		name;
 
-	Array<DSGroup*>	groups{ PP_SL };
+	Array<DSMesh*>	meshes{ PP_SL };
 	Array<DSBone*>	bones{ PP_SL };
 
-	DSBone*			FindBone(const char* pszName);
-	DSGroup*		FindGroupByName(const char* pszGroupname);
+	DSBone*			FindBone(const char* name);
+	DSMesh*			FindMeshByName(const char* name);
 };
 using DSModelPtr = CRefPtr<DSModel>;
 

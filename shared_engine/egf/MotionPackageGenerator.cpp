@@ -459,7 +459,7 @@ void CMotionPackageGenerator::SetupESABones(DSModel* pModel, animCaBoneFrames_t*
 		// setup transformation
 		Matrix4x4 localTrans = identity4;
 
-		bones[i].nParentBone = bone->parent_id;
+		bones[i].nParentBone = bone->parentIdx;
 
 		localTrans.setRotation(bone->angles);
 		localTrans.setTranslation(bone->position);
@@ -474,7 +474,7 @@ void CMotionPackageGenerator::SetupESABones(DSModel* pModel, animCaBoneFrames_t*
 	// setup each bone's transformation
 	for(int8 i = 0; i < m_model->numBones; i++)
 	{
-		bonedesc_t* bone = m_model->pBone(i);
+		studioBoneDesc_t* bone = m_model->pBone(i);
 
 		// setup transformation
 		Matrix4x4 localTrans = identity4;

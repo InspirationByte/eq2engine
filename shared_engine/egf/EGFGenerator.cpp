@@ -225,14 +225,14 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 
 		bone->position *= m_modelScale;
 
-		if (bone->parent_id == -1)
+		if (bone->parentIdx == -1)
 			bone->position += m_modelOffset;
 	}
 
 	// check material list and move/scale verts
-	for (int i = 0; i < mod.model->groups.numElem(); i++)
+	for (int i = 0; i < mod.model->meshes.numElem(); i++)
 	{
-		DSGroup* group = mod.model->groups[i];
+		DSMesh* group = mod.model->meshes[i];
 
 		// scale vertices
 		for (int j = 0; j < group->verts.numElem(); j++)
@@ -242,7 +242,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 		}
 
 		// if material is not found, add new one
-		int found = GetMaterialIndex(mod.model->groups[i]->texture);
+		int found = GetMaterialIndex(mod.model->meshes[i]->texture);
 		if (found == -1)
 		{
 			if (m_materials.numElem() - 1 == MAX_STUDIOMATERIALS)
@@ -253,7 +253,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 
 			// create new material
 			GenMaterialDesc_t desc;
-			strcpy(desc.materialname, mod.model->groups[i]->texture);
+			strcpy(desc.materialname, mod.model->meshes[i]->texture);
 
 			m_materials.append(desc);
 		}
@@ -329,11 +329,11 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 
 		const int nVerts = GetTotalVertsOfDSM(mod.model);
 
-		Msg("Adding reference %s as '%s' with %d triangles (in %d groups), %d bones\n",
+		Msg("Adding reference %s as '%s' with %d triangles (in %d meshes), %d bones\n",
 			mod.model->name.ToCString(),
 			modelName,
 			nVerts / 3,
-			mod.model->groups.numElem(),
+			mod.model->meshes.numElem(),
 			mod.model->bones.numElem());
 	}
 }
@@ -418,8 +418,8 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 				model->bones.clear();
 			}
 
-			merged->groups.append(model->groups);
-			model->groups.clear();
+			merged->meshes.append(model->meshes);
+			model->meshes.clear();
 
 			FreeModel(models[i]);
 		}
@@ -436,11 +436,11 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		lod_model.name = mref.name;
 
 		const int nVerts = GetTotalVertsOfDSM(mref.model);
-		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n",
+		Msg("Adding reference %s '%s' with %d triangles (in %d meshes), %d bones\n",
 			modelfilenames[0].ToCString(),
 			mref.name.ToCString(),
 			nVerts / 3,
-			mref.model->groups.numElem(),
+			mref.model->meshes.numElem(),
 			mref.model->bones.numElem());
 
 		return modelIdx;
@@ -454,11 +454,11 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		lod_model.name = models[0].name;
 
 		const int nVerts = GetTotalVertsOfDSM(models[0].model);
-		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n",
+		Msg("Adding reference %s '%s' with %d triangles (in %d meshes), %d bones\n",
 			modelfilenames[0].ToCString(),
 			models[0].name.ToCString(),
 			nVerts / 3,
-			models[0].model->groups.numElem(),
+			models[0].model->meshes.numElem(),
 			models[0].model->bones.numElem());
 	}
 
@@ -555,7 +555,7 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 	MsgWarning("\nLoading LODs\n");
 
 	// always add first default lod
-	studiolodparams_t lod;
+	studioLodParams_t lod;
 	lod.distance = 0.0f;
 	lod.flags = 0;
 	m_lodparams.append(lod);
@@ -579,7 +579,7 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 		const float lodDist = KV_GetValueFloat(lodKey, 0, 1.0f);
 		const int lodIdx = m_lodparams.numElem();
 
-		studiolodparams_t& newlod = m_lodparams.append();
+		studioLodParams_t& newlod = m_lodparams.append();
 		newlod.distance = lodDist;
 		newlod.flags = 0;
 
@@ -628,7 +628,7 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 				return false;
 			}
 
-			studiobodygroup_t& bodygroup = m_bodygroups.append();
+			studioBodyGroup_t& bodygroup = m_bodygroups.append();
 			strcpy(bodygroup.name, bodyGroupName);
 			bodygroup.lodModelIndex = lodIndex;
 
@@ -737,19 +737,19 @@ int BoneListGetBoneIndex(const char* pszName, const Array<DSBone*> &pBones)
 //************************************
 // Remaps vertex bone indices new_bones
 //************************************
-void BoneRemapDSMGroup(DSGroup* pGroup, const Array<DSBone*> &old_bones, Array<DSBone*> &new_bones)
+void BoneRemapDSMGroup(DSMesh* pMesh, const Array<DSBone*> &old_bones, Array<DSBone*> &new_bones)
 {
-	for(int i = 0; i < pGroup->verts.numElem(); i++)
+	for(int i = 0; i < pMesh->verts.numElem(); i++)
 	{
-		for(int j = 0; j < pGroup->verts[i].weights.numElem(); j++)
+		for(int j = 0; j < pMesh->verts[i].weights.numElem(); j++)
 		{
-			int bone_id = pGroup->verts[i].weights[j].bone;
+			int boneIdx = pMesh->verts[i].weights[j].bone;
 
 			// find bone in new list by bone name in old list
-			int new_bone_id = BoneListGetBoneIndex(old_bones[bone_id]->name, new_bones);
+			int new_bone_id = BoneListGetBoneIndex(old_bones[boneIdx]->name, new_bones);
 
 			// point to bone in new list
-			pGroup->verts[i].weights[j].bone = new_bone_id;
+			pMesh->verts[i].weights[j].bone = new_bone_id;
 		}
 	}
 }
@@ -759,10 +759,10 @@ void BoneRemapDSMGroup(DSGroup* pGroup, const Array<DSBone*> &old_bones, Array<D
 //************************************
 void BoneMergeRemapDSM(DSModel* pDSM, Array<DSBone*> &new_bones)
 {
-	// remap groups
-	for(int i = 0; i < pDSM->groups.numElem(); i++)
+	// remap meshes
+	for(int i = 0; i < pDSM->meshes.numElem(); i++)
 	{
-		BoneRemapDSMGroup(pDSM->groups[i], pDSM->bones, new_bones);
+		BoneRemapDSMGroup(pDSM->meshes[i], pDSM->bones, new_bones);
 	}
 
 	// reset skeleton
@@ -809,7 +809,7 @@ void CEGFGenerator::MergeBones()
 				*cloneBone = *bone;
 
 				// set new bone id
-				cloneBone->bone_id = allBones.numElem();
+				cloneBone->boneIdx = allBones.numElem();
 
 				allBones.append(cloneBone);
 			}
@@ -819,7 +819,7 @@ void CEGFGenerator::MergeBones()
 	// relink parent bones
 	for(int i = 0; i < allBones.numElem(); i++)
 	{
-		allBones[i]->parent_id = BoneListGetBoneIndex(allBones[i]->parent_name, allBones);
+		allBones[i]->parentIdx = BoneListGetBoneIndex(allBones[i]->parentName, allBones);
 	}
 
 	// All DSM vertices must be remapped now...
@@ -857,12 +857,12 @@ void CEGFGenerator::BuildBoneChains()
 	// set parents
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
-		const int parent_id = model->bones[i]->parent_id;
+		const int parentIdx = model->bones[i]->parentIdx;
 
-		if(parent_id == -1)
+		if(parentIdx == -1)
 			m_bones[i].parent = nullptr;
 		else
-			m_bones[i].parent = &m_bones[parent_id];
+			m_bones[i].parent = &m_bones[parentIdx];
 	}
 
 	// build child lists
@@ -886,7 +886,7 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 
 		if(!stricmp(keyBase->name, "materialpath"))
 		{
-			materialpathdesc_t& desc = m_matpathes.append();
+			materialPathDesc_t& desc = m_matpathes.append();
 
 			const EqString path = KV_GetValueString(keyBase);
 			const int sp_len = path.Length()-1;
@@ -936,7 +936,7 @@ bool CEGFGenerator::ParseMotionPackagePaths(const KVSection* pSection)
 			return false;
 		}
 
-		motionpackagedesc_t& desc = m_motionpacks.append();
+		motionPackageDesc_t& desc = m_motionpacks.append();
 		strcpy(desc.packageName, KV_GetValueString(keyBase));
 	}
 
@@ -1125,7 +1125,7 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 			}
 		}
 
-		const int existingTransform = arrayFindIndexF(m_transforms, [&](const studiotransform_t& tr) 
+		const int existingTransform = arrayFindIndexF(m_transforms, [&](const studioTransform_t& tr) 
 		{
 			return !stricmp(tr.name, attachmentName); 
 		});
@@ -1133,17 +1133,17 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 		if (existingTransform != -1)
 		{
 			MsgError("Updating transform %s with bone attachment\n", attachBoneName, attachmentName);
-			m_transforms[existingTransform].attachBoneIdx = pBone ? pBone->refBone->bone_id : EGF_INVALID_IDX;
+			m_transforms[existingTransform].attachBoneIdx = pBone ? pBone->refBone->boneIdx : EGF_INVALID_IDX;
 			continue;
 		}
 
-		studiotransform_t& attach = m_transforms.append();
+		studioTransform_t& attach = m_transforms.append();
 		strcpy(attach.name, attachmentName);
 
 		attach.transform = identity4;
 		attach.transform.setRotation(DEG2RAD(KV_GetVector3D(attachSec, 2)));
 		attach.transform.setTranslation(m_modelScale * KV_GetVector3D(attachSec, 5) + m_modelOffset);
-		attach.attachBoneIdx = pBone ? pBone->refBone->bone_id : EGF_INVALID_IDX;
+		attach.attachBoneIdx = pBone ? pBone->refBone->boneIdx : EGF_INVALID_IDX;
 
 		MsgInfo("Adding custom transform attachment %s\n", attach.name);
 	}

@@ -101,7 +101,7 @@ void CAnimatingEGF::DestroyAnimating()
 	m_poseControllers.clear();
 	m_ikChains.clear();
 	m_joints = ArrayCRef<studioJoint_t>(nullptr);
-	m_transforms = ArrayCRef<studiotransform_t>(nullptr);;
+	m_transforms = ArrayCRef<studioTransform_t>(nullptr);;
 
 	if (m_boneTransforms)
 		PPFree(m_boneTransforms);
@@ -121,7 +121,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 
 	DestroyAnimating();
 
-	const studiohdr_t& studio = model->GetStudioHdr();
+	const studioHdr_t& studio = model->GetStudioHdr();
 
 	m_joints = ArrayCRef(&model->GetJoint(0), studio.numBones);
 	m_transforms = ArrayCRef(model->GetStudioHdr().pTransform(0), model->GetStudioHdr().numTransforms);
@@ -144,7 +144,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 	const int numIkChains = studio.numIKChains;
 	for (int i = 0; i < numIkChains; i++)
 	{
-		const studioikchain_t* pStudioChain = studio.pIkChain(i);
+		const studioIkChain_t* pStudioChain = studio.pIkChain(i);
 
 		gikchain_t& chain = m_ikChains.append();
 
@@ -770,7 +770,7 @@ void CAnimatingEGF::RecalcBoneTransforms()
 
 Matrix4x4 CAnimatingEGF::GetLocalStudioTransformMatrix(int attachmentIdx) const
 {
-	const studiotransform_t* attach = &m_transforms[attachmentIdx];
+	const studioTransform_t* attach = &m_transforms[attachmentIdx];
 
 	if (attach->attachBoneIdx != EGF_INVALID_IDX)
 		return attach->transform * m_boneTransforms[attach->attachBoneIdx];
@@ -984,10 +984,10 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 			{
 				giklink_t& link = chain.links[j];
 
-				const int bone_id = link.l->bone;
-				const studioJoint_t& joint = m_joints[bone_id];
+				const int boneIdx = link.l->bone;
+				const studioJoint_t& joint = m_joints[boneIdx];
 
-				link.quat = Quaternion(m_boneTransforms[bone_id].getRotationComponent());
+				link.quat = Quaternion(m_boneTransforms[boneIdx].getRotationComponent());
 				link.position = joint.bone->position;
 
 				link.localTrans = Matrix4x4(link.quat);
@@ -995,7 +995,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 
 				// fix local transform for animation
 				link.localTrans = joint.localTrans * link.localTrans;
-				link.absTrans = m_boneTransforms[bone_id];
+				link.absTrans = m_boneTransforms[boneIdx];
 			}
 		}
 	}
@@ -1012,8 +1012,8 @@ void CAnimatingEGF::UpdateIkChain(gikchain_t* pIkChain, float fDt)
 		link.localTrans = Matrix4x4(link.quat);
 		link.localTrans.setTranslation(link.position);
 
-		//int bone_id = link.bone_index;
-		//link.localTrans = m_joints[bone_id].localTrans * link.localTrans;
+		//int boneIdx = link.bone_index;
+		//link.localTrans = m_joints[boneIdx].localTrans * link.localTrans;
 	}
 
 	for (int i = 0; i < pIkChain->numLinks; i++)

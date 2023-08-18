@@ -72,18 +72,18 @@ void cc_egf_info_f(DkList<EqString> *args)
 		int trisNum = 0;
 		for(int i = 0; i < pHdr->nummodels;i++)
 		{
-			studiomodeldesc_t* pModel = pHdr->pModelDesc(i);
+			studioMeshGroupDesc_t* pModel = pHdr->pMeshGroupDesc(i);
 			Msg(" Model reference %i\n",i);
 
-			Msg("  Group count: %d\n", pModel->numgroups);
+			Msg("  Mesh count: %d\n", pModel->numgroups);
 
 			for(int j = 0; j < pModel->numgroups; j++)
 			{
-				Msg("    Group %d num. of vertices: %d\n", j, pModel->pGroup(j)->numvertices);
-				Msg("    Group %d num. of triangles: %d\n \n", j , pModel->pGroup(j)->numindices / 3);
+				Msg("    Mesh %d num. of vertices: %d\n", j, pModel->pMesh(j)->numvertices);
+				Msg("    Mesh %d num. of triangles: %d\n \n", j , pModel->pMesh(j)->numindices / 3);
 
-				vertexNum += pModel->pGroup(j)->numvertices;
-				trisNum += pModel->pGroup(j)->numindices / 3;
+				vertexNum += pModel->pMesh(j)->numvertices;
+				trisNum += pModel->pMesh(j)->numindices / 3;
 			}
 		}
 
@@ -93,7 +93,7 @@ void cc_egf_info_f(DkList<EqString> *args)
 		Msg(" \nBone info:\n");
 		for(int i = 0; i < pHdr->numbones;i++)
 		{
-			bonedesc_t* pBone = pHdr->pBone(i);
+			studioBoneDesc_t* pBone = pHdr->pBone(i);
 			Msg(" Bone '%s'\n",pBone->name);
 			Msg("    Parent bone index: %d\n \n",pBone->parent);
 		}
@@ -103,25 +103,25 @@ void cc_egf_info_f(DkList<EqString> *args)
 }
 ConCommand cc_egf_info("egf",cc_egf_info_f,"Print information about the model");
 
-void DumpModel( studiohdr_t* pHDR, studiomodeldesc_t* pModel, const char* pszFileName )
+void DumpModel( studioHdr_t* pHDR, studioMeshGroupDesc_t* pModel, const char* pszFileName )
 {
 	dsmmodel_t* pDSMModel = new dsmmodel_t;
 
 	for(int i = 0; i < pModel->numgroups; i++)
 	{
-		modelgroupdesc_t* pGroupDesc = pModel->pGroup(i);
+		studioMeshDesc_t* pGroupDesc = pModel->pMesh(i);
 
 		int mat_index = pGroupDesc->materialIndex;
 		EqString material( pHDR->pMaterial(mat_index)->materialname );
 
-		dsmgroup_t* pGroup = new dsmgroup_t;
-		pDSMModel->groups.append(pGroup);
+		dsmgroup_t* pMesh = new dsmgroup_t;
+		pDSMModel->meshes.append(pMesh);
 
-		pGroup->usetriangleindices = true;
+		pMesh->usetriangleindices = true;
 
-		strcpy(pGroup->texture, material.GetData());
+		strcpy(pMesh->texture, material.GetData());
 
-		pGroup->verts.resize( pGroupDesc->numvertices );
+		pMesh->verts.resize( pGroupDesc->numvertices );
 
 		for(int j = 0; j < pGroupDesc->numvertices; j++)
 		{
@@ -139,15 +139,15 @@ void DumpModel( studiohdr_t* pHDR, studiomodeldesc_t* pModel, const char* pszFil
 
 			vert.numWeights = pGroupDesc->pVertex(j)->boneweights.numweights;
 
-			pGroup->verts.append( vert );
+			pMesh->verts.append( vert );
 		}
 
-		pGroup->verts.resize( pGroupDesc->numindices );
+		pMesh->verts.resize( pGroupDesc->numindices );
 
 		for(int j = 0; j < pGroupDesc->numindices; j++)
-			pGroup->indices.append( (int)(*pGroupDesc->pVertexIdx(j)) );
+			pMesh->indices.append( (int)(*pGroupDesc->pVertexIdx(j)) );
 
-		MsgInfo("Group %d verts: %d tris: %d material: %s\n", i, pGroupDesc->numvertices, pGroupDesc->numindices / 3, material.GetData());
+		MsgInfo("Mesh %d verts: %d tris: %d material: %s\n", i, pGroupDesc->numvertices, pGroupDesc->numindices / 3, material.GetData());
 	}
 
 	MsgInfo("Writing DSM '%s'\n", pszFileName);
@@ -161,27 +161,27 @@ void DumpPhysModel( physmodeldata_t* pModel, const char* pszFileName )
 {
 	dsmmodel_t* pDSMModel = new dsmmodel_t;
 
-	dsmgroup_t* pGroup = new dsmgroup_t;
-	pDSMModel->groups.append(pGroup);
+	dsmgroup_t* pMesh = new dsmgroup_t;
+	pDSMModel->meshes.append(pMesh);
 
-	pGroup->usetriangleindices = true;
+	pMesh->usetriangleindices = true;
 
-	strcpy(pGroup->texture, "physics");
+	strcpy(pMesh->texture, "physics");
 
-	pGroup->verts.resize( pModel->numVertices );
-	pGroup->indices.resize( pModel->numIndices );
+	pMesh->verts.resize( pModel->numVertices );
+	pMesh->indices.resize( pModel->numIndices );
 
 	for(int i = 0; i < pModel->numVertices; i++)
 	{
 		dsmvertex_t vert;
 		vert.position = pModel->vertices[i];
 
-		pGroup->verts.append( vert );
+		pMesh->verts.append( vert );
 	}
 
 	for(int i = 0; i < pModel->numIndices; i++)
 	{
-		pGroup->indices.append(pModel->indices[i]);
+		pMesh->indices.append(pModel->indices[i]);
 	}
 
 	MsgInfo("Writing DSM '%s'\n", pszFileName);
@@ -261,7 +261,7 @@ void cc_decompile_f(DkList<EqString> *args)
 				EqString dsmmodel_file(dsmmodel_name + ".obj");
 				EqString dsmmodel_path(outPath + "/" + dsmmodel_file);
 
-				DumpModel( pHdr, pHdr->pModelDesc(refmodel_id), dsmmodel_path.GetData() );
+				DumpModel( pHdr, pHdr->pMeshGroupDesc(refmodel_id), dsmmodel_path.GetData() );
 
 				pKey = new kvkeyvaluepair_t;
 				pSection->pKeys.append(pKey);

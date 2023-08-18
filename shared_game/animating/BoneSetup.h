@@ -9,7 +9,7 @@
 #include "egf/model.h"
 #include "anim_activity.h"
 
-typedef struct modelheader_s studiohdr_t;
+typedef struct studioModelHeader_s studioHdr_t;
 typedef struct animframe_s animframe_t;
 typedef struct sequencedesc_s sequencedesc_t;
 typedef struct sequenceevent_s sequenceevent_t;;
@@ -26,11 +26,11 @@ struct qanimframe_t
 };
 
 struct gikchain_t;
-typedef struct studioiklink_s studioiklink_t;
+typedef struct studioIkLink_s studioIkLink_t;
 
 struct giklink_t
 {
-	studioiklink_t*	l;
+	studioIkLink_t*	l;
 
 	Quaternion		quat;
 	Vector3D		position;
@@ -51,7 +51,7 @@ struct gikchain_t
 	{
 		delete[] links;
 	}
-	const studioikchain_t*	c{ nullptr };
+	const studioIkChain_t*	c{ nullptr };
 	Vector3D				localTarget{ vec3_zero };
 	giklink_t*				links { nullptr };
 	int						numLinks{ 0 };

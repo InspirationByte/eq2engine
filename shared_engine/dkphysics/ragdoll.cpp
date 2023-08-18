@@ -46,7 +46,7 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 		return nullptr;
 
 	const studioPhysData_t& physModel = pModel->GetPhysData();
-	const studiohdr_t& studio = pModel->GetStudioHdr();
+	const studioHdr_t& studio = pModel->GetStudioHdr();
 
 	const int type = physModel.usageType;
 
@@ -190,7 +190,7 @@ void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones) const
 	Matrix4x4 offsetTranslate = identity4;
 	offsetTranslate.setTranslation(-GetPosition());
 
-	const studiohdr_t& studio = m_pReferenceModel->GetStudioHdr();
+	const studioHdr_t& studio = m_pReferenceModel->GetStudioHdr();
 
 	for(int i = 0; i < studio.numBones; i++)
 	{

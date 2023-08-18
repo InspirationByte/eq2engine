@@ -65,7 +65,7 @@ const char* GetACTCErrorString(int result)
 //---------------------------------------------------------------------------------------
 
 // from exporter - compares two verts
-static bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
+static bool CompareVertex(const studioVertexDesc_t &v0, const studioVertexDesc_t &v1)
 {
 	static constexpr const float VERT_MERGE_EPS = 0.001f;
 	static constexpr const float WEIGHT_MERGE_EPS = 0.001f;
@@ -98,7 +98,7 @@ static bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t
 }
 
 // finds vertex index
-static int FindVertexInList(const Array<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
+static int FindVertexInList(const Array<studioVertexDesc_t>& verts, const studioVertexDesc_t &vertex)
 {
 	for( int i = 0; i < verts.numElem(); i++ )
 	{
@@ -111,9 +111,9 @@ static int FindVertexInList(const Array<studiovertexdesc_t>& verts, const studio
 	return -1;
 }
 
-static studiovertexdesc_t MakeStudioVertex(const DSVertex& vert)
+static studioVertexDesc_t MakeStudioVertex(const DSVertex& vert)
 {
-	studiovertexdesc_t vertex;
+	studioVertexDesc_t vertex;
 
 	vertex.point = vert.position;
 	vertex.texCoord = vert.texcoord;
@@ -147,7 +147,7 @@ static studiovertexdesc_t MakeStudioVertex(const DSVertex& vert)
 	return vertex;
 }
 
-void ApplyShapeKeyOnVertex( DSShapeKey* modShapeKey, const DSVertex& vert, studiovertexdesc_t& studioVert, float weight )
+void ApplyShapeKeyOnVertex( DSShapeKey* modShapeKey, const DSVertex& vert, studioVertexDesc_t& studioVert, float weight )
 {
 	for(int i = 0; i < modShapeKey->verts.numElem(); i++)
 	{
@@ -182,7 +182,7 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 }
 
 // writes group
-void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, DSGroup* srcGroup, DSShapeKey* modShapeKey, modelgroupdesc_t* dstGroup)
+void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, studioMeshDesc_t* dstGroup)
 {
 	// DSM groups to be generated indices and optimized here
 	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
@@ -193,8 +193,8 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, DSGr
 	dstGroup->numIndices = 0;
 	dstGroup->numVertices = srcGroup->verts.numElem();
 
-	Array<studiovertexdesc_t> vertexList(PP_SL);
-	Array<studiovertexdesc_t> shapeVertsList(PP_SL);	// shape key verts
+	Array<studioVertexDesc_t> vertexList(PP_SL);
+	Array<studioVertexDesc_t> shapeVertsList(PP_SL);	// shape key verts
 	Array<int32> indexList(PP_SL);
 
 	vertexList.reserve(dstGroup->numVertices);
@@ -203,7 +203,7 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, DSGr
 
 	for(int i = 0; i < dstGroup->numVertices; i++)
 	{
-		const studiovertexdesc_t vertex = MakeStudioVertex( srcGroup->verts[i] );
+		const studioVertexDesc_t vertex = MakeStudioVertex( srcGroup->verts[i] );
 
 		// add vertex or point to existing vertex if found duplicate
 		const int foundVertex = FindVertexInList(vertexList, vertex );
@@ -216,7 +216,7 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, DSGr
 			// modify vertex by shape key
 			if( modShapeKey )
 			{
-				studiovertexdesc_t shapeVert = vertex;
+				studioVertexDesc_t shapeVert = vertex;
 				ApplyShapeKeyOnVertex(modShapeKey, srcGroup->verts[i], shapeVert, 1.0f);
 				shapeVertsList.append(shapeVert);
 			}
@@ -231,7 +231,7 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, DSGr
 		return;
 	}
 
-	auto usedVertList = ArrayRef<studiovertexdesc_t>(modShapeKey ? shapeVertsList : vertexList);
+	auto usedVertList = ArrayRef<studioVertexDesc_t>(modShapeKey ? shapeVertsList : vertexList);
 
 	// calculate rest of tangent space
 	for(int32 i = 0; i < indexList.numElem(); i+=3)
@@ -402,7 +402,7 @@ skipOptimize:
 
 	// set write offset for vertex buffer
 	dstGroup->vertexOffset = WRITE_RELATIVE_OFS(dstGroup);
-	WRITE_RESERVE_NUM(studiovertexdesc_t, dstGroup->numVertices);
+	WRITE_RESERVE_NUM(studioVertexDesc_t, dstGroup->numVertices);
 
 	// now fill studio verts
 	for(int32 i = 0; i < dstGroup->numVertices; i++)
@@ -422,15 +422,15 @@ skipOptimize:
 //************************************
 // Writes models
 //************************************
-void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 {
 	/*
 	Structure:
 
-		studiomodeldesc_t		models[numModels]
-		studiomodeldesc_t		groups[numGroups]
+		studioMeshGroupDesc_t		models[numModels]
+		studioMeshGroupDesc_t		groups[numMeshes]
 
-		studiovertexdesc_t		vertices[sumVertsOfGroups]
+		studioVertexDesc_t		vertices[sumVertsOfGroups]
 		uint32					indices[sumIndicesOfGroups]
 		
 	*/
@@ -446,9 +446,9 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 	}
 
 	// Write models
-	header->numModels = writeModels.numElem();
-	header->modelsOffset = WRITE_OFS;
-	WRITE_RESERVE_NUM( studiomodeldesc_t, writeModels.numElem() );
+	header->numMeshGroups = writeModels.numElem();
+	header->meshGroupsOffset = WRITE_OFS;
+	WRITE_RESERVE_NUM( studioMeshGroupDesc_t, writeModels.numElem() );
 
 	//WRT_TEXT("MODELS OFFSET");
 
@@ -456,10 +456,10 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 	{
 		const GenModel& modelRef = *writeModels[i];
 
-		studiomodeldesc_t* pDesc = header->pModelDesc(i);
+		studioMeshGroupDesc_t* pDesc = header->pMeshGroupDesc(i);
 
-		pDesc->numGroups = modelRef.model->groups.numElem();
-		pDesc->groupsOffset = WRITE_RELATIVE_OFS( pDesc );
+		pDesc->numMeshes = modelRef.model->meshes.numElem();
+		pDesc->meshesOffset = WRITE_RELATIVE_OFS( pDesc );
 		pDesc->transformIdx = EGF_INVALID_IDX;
 
 		// TODO: transforms from each GenModel
@@ -468,7 +468,7 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 		// studiotransform_t& modelTransform = m_transforms.append();
 		// modelTransform.attachBoneIdx = 0;
 
-		WRITE_RESERVE_NUM( modelgroupdesc_t, pDesc->numGroups );
+		WRITE_RESERVE_NUM( studioMeshDesc_t, pDesc->numMeshes );
 	}
 
 	//WRT_TEXT("MODEL GROUPS OFFSET");
@@ -479,16 +479,16 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 	{
 		const GenModel& modelRef = *writeModels[i];
 
-		studiomodeldesc_t* pDesc = header->pModelDesc(i);
+		studioMeshGroupDesc_t* pDesc = header->pMeshGroupDesc(i);
 
 		// write groups
-		for(int j = 0; j < pDesc->numGroups; j++)
+		for(int j = 0; j < pDesc->numMeshes; j++)
 		{
-			modelgroupdesc_t* groupDesc = pDesc->pGroup(j);
+			studioMeshDesc_t* groupDesc = pDesc->pMesh(j);
 
 			// shape key modifier (if available)
 			DSShapeKey* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
-			WriteGroup(header, stream, modelRef.model->groups[j], key, groupDesc);
+			WriteGroup(header, stream, modelRef.model->meshes[j], key, groupDesc);
 
 			if(groupDesc->materialIndex != -1)
 				Msg("Wrote group %s:%d material used: %s\n", modelRef.name.ToCString(), j, m_usedMaterials[groupDesc->materialIndex]->materialname);
@@ -499,7 +499,7 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes LODs
 //************************************
-void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteLods(studioHdr_t* header, IVirtualStream* stream)
 {
 	Array<GenModel*> writeModels{ PP_SL };
 	Array<GenLODList_t*> writeLods{ PP_SL };
@@ -515,14 +515,14 @@ void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 
 	header->lodsOffset = WRITE_OFS;
 	header->numLods = writeLods.numElem();
-	WRITE_RESERVE_NUM(studiolodmodel_t, writeLods.numElem());
+	WRITE_RESERVE_NUM(studioLodModel_t, writeLods.numElem());
 
-	ASSERT(header->numLods == header->numModels);
+	ASSERT(header->numLods == header->numMeshGroups);
 
 	for(int i = 0; i < writeLods.numElem(); i++)
 	{
 		const GenLODList_t& lodList = *writeLods[i];
-		studiolodmodel_t* pLod = header->pLodModel(i);
+		studioLodModel_t* pLod = header->pLodModel(i);
 		for(int j = 0; j < MAX_MODEL_LODS; j++)
 		{
 			const int modelIdx = (j < lodList.lodmodels.numElem()) ? max(-1, lodList.lodmodels[j]) : -1;
@@ -532,7 +532,7 @@ void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 
 	header->lodParamsOffset = WRITE_OFS;
 	header->numLodParams = m_lodparams.numElem();
-	WRITE_RESERVE_NUM(studiolodparams_t, m_lodparams.numElem());
+	WRITE_RESERVE_NUM(studioLodParams_t, m_lodparams.numElem());
 
 	for(int i = 0; i < m_lodparams.numElem(); i++)
 	{
@@ -544,11 +544,11 @@ void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes body groups
 //************************************
-void CEGFGenerator::WriteBodyGroups(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteBodyGroups(studioHdr_t* header, IVirtualStream* stream)
 {
 	header->bodyGroupsOffset = WRITE_OFS;
 	header->numBodyGroups = m_bodygroups.numElem();
-	WRITE_RESERVE_NUM(studiobodygroup_t, m_bodygroups.numElem());
+	WRITE_RESERVE_NUM(studioBodyGroup_t, m_bodygroups.numElem());
 
 	for(int i = 0; i <  m_bodygroups.numElem(); i++)
 		*header->pBodyGroups(i) = m_bodygroups[i];
@@ -557,11 +557,11 @@ void CEGFGenerator::WriteBodyGroups(studiohdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes attachments
 //************************************
-void CEGFGenerator::WriteAttachments(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteAttachments(studioHdr_t* header, IVirtualStream* stream)
 {
 	header->transformsOffset = WRITE_OFS;
 	header->numTransforms = m_transforms.numElem();
-	WRITE_RESERVE_NUM(studiotransform_t, m_transforms.numElem());
+	WRITE_RESERVE_NUM(studioTransform_t, m_transforms.numElem());
 
 	for(int i = 0; i < m_transforms.numElem(); i++)
 		*header->pTransform(i) = m_transforms[i];
@@ -570,23 +570,23 @@ void CEGFGenerator::WriteAttachments(studiohdr_t* header, IVirtualStream* stream
 //************************************
 // Writes IK chainns
 //************************************
-void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteIkChains(studioHdr_t* header, IVirtualStream* stream)
 {
 	header->ikChainsOffset = WRITE_OFS;
 	header->numIKChains = m_ikchains.numElem();
-	WRITE_RESERVE_NUM(studioikchain_t, m_ikchains.numElem());
+	WRITE_RESERVE_NUM(studioIkChain_t, m_ikchains.numElem());
 
 	for(int i = 0; i < m_ikchains.numElem(); i++)
 	{
 		const GenIKChain& srcChain = m_ikchains[i];
-		studioikchain_t* chain = header->pIkChain(i);
+		studioIkChain_t* chain = header->pIkChain(i);
 
 		chain->numLinks = srcChain.link_list.numElem();
 
 		strcpy(chain->name, srcChain.name);
 
 		chain->linksOffset = WRITE_RELATIVE_OFS(header->pIkChain(i));
-		WRITE_RESERVE_NUM(studioiklink_t, chain->numLinks);
+		WRITE_RESERVE_NUM(studioIkLink_t, chain->numLinks);
 
 		// write link list flipped
 		for(int j = 0; j < chain->numLinks; j++)
@@ -595,9 +595,9 @@ void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
 
 			const GenIKLink& link = srcChain.link_list[link_id];
 
-			Msg("IK chain bone id: %d\n", link.bone->refBone->bone_id);
+			Msg("IK chain bone id: %d\n", link.bone->refBone->boneIdx);
 
-			chain->pLink(j)->bone = link.bone->refBone->bone_id;
+			chain->pLink(j)->bone = link.bone->refBone->boneIdx;
 			chain->pLink(j)->mins = link.mins;
 			chain->pLink(j)->maxs = link.maxs;
 			chain->pLink(j)->damping = link.damping;
@@ -608,11 +608,11 @@ void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes material descs
 //************************************
-void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stream)
 {
 	header->materialsOffset = WRITE_OFS;
 	header->numMaterials = m_usedMaterials.numElem();
-	WRITE_RESERVE_NUM(studiomaterialdesc_t, m_usedMaterials.numElem());
+	WRITE_RESERVE_NUM(studioMaterialDesc_t, m_usedMaterials.numElem());
 
 	// get used materials
 	for(int i = 0; i < m_usedMaterials.numElem(); i++)
@@ -620,7 +620,7 @@ void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stre
 		GenMaterialDesc_t* mat = m_usedMaterials[i];
 		EqString mat_no_ext(mat->materialname);
 
-		studiomaterialdesc_t* matDesc = header->pMaterial(i);
+		studioMaterialDesc_t* matDesc = header->pMaterial(i);
 		strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext());
 	}
 	
@@ -645,10 +645,10 @@ void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stre
 
 			EqString mat_no_ext(mat.materialname);
 
-			studiomaterialdesc_t* matDesc = header->pMaterial(materialGroupStart + j);
+			studioMaterialDesc_t* matDesc = header->pMaterial(materialGroupStart + j);
 			strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext());
 
-			WRITE_RESERVE(studiomaterialdesc_t);
+			WRITE_RESERVE(studioMaterialDesc_t);
 		}
 	}
 }
@@ -656,11 +656,11 @@ void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stre
 //************************************
 // Writes material change-dirs
 //************************************
-void CEGFGenerator::WriteMaterialPaths(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteMaterialPaths(studioHdr_t* header, IVirtualStream* stream)
 {
 	header->materialSearchPathsOffset = WRITE_OFS;
 	header->numMaterialSearchPaths = m_matpathes.numElem();
-	WRITE_RESERVE_NUM(materialpathdesc_t, m_matpathes.numElem());
+	WRITE_RESERVE_NUM(materialPathDesc_t, m_matpathes.numElem());
 
 	for(int i = 0; i < m_matpathes.numElem(); i++)
 		*header->pMaterialSearchPath(i) = m_matpathes[i];
@@ -669,11 +669,11 @@ void CEGFGenerator::WriteMaterialPaths(studiohdr_t* header, IVirtualStream* stre
 //************************************
 // Writes Motion package paths
 //************************************
-void CEGFGenerator::WriteMotionPackageList(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteMotionPackageList(studioHdr_t* header, IVirtualStream* stream)
 {
 	header->packagesOffset = WRITE_OFS;
 	header->numMotionPackages = m_motionpacks.numElem();
-	WRITE_RESERVE_NUM(motionpackagedesc_t, m_motionpacks.numElem());
+	WRITE_RESERVE_NUM(motionPackageDesc_t, m_motionpacks.numElem());
 
 	for(int i = 0; i < m_motionpacks.numElem(); i++)
 		*header->pPackage(i) = m_motionpacks[i];
@@ -682,26 +682,26 @@ void CEGFGenerator::WriteMotionPackageList(studiohdr_t* header, IVirtualStream* 
 //************************************
 // Writes bones
 //************************************
-void CEGFGenerator::WriteBones(studiohdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteBones(studioHdr_t* header, IVirtualStream* stream)
 {
 	header->bonesOffset = WRITE_OFS;
 	header->numBones = m_bones.numElem();
-	WRITE_RESERVE_NUM(bonedesc_t, m_bones.numElem());
+	WRITE_RESERVE_NUM(studioBoneDesc_t, m_bones.numElem());
 
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
 		DSBone* srcBone = m_bones[i].refBone;
-		bonedesc_t* destBone = header->pBone(i);
+		studioBoneDesc_t* destBone = header->pBone(i);
 
 		strcpy(destBone->name, srcBone->name);
 
-		destBone->parent = srcBone->parent_id;
+		destBone->parent = srcBone->parentIdx;
 		destBone->position = srcBone->position;
 		destBone->rotation = srcBone->angles;
 	}
 }
 
-void CEGFGenerator::Validate(studiohdr_t* header, const char* stage)
+void CEGFGenerator::Validate(studioHdr_t* header, const char* stage)
 {
 	Array<GenModel*> writeModels{ PP_SL };
 
@@ -714,18 +714,18 @@ void CEGFGenerator::Validate(studiohdr_t* header, const char* stage)
 	}
 
 	// perform post-wriote basic validation
-	ASSERT(header->numModels == writeModels.numElem());
+	ASSERT(header->numMeshGroups == writeModels.numElem());
 
-	for (int i = 0; i < header->numModels; ++i)
+	for (int i = 0; i < header->numMeshGroups; ++i)
 	{
 		const GenModel& modelRef = *writeModels[i];
 
-		studiomodeldesc_t* pDesc = header->pModelDesc(i);
-		ASSERT_MSG(pDesc->numGroups == modelRef.model->groups.numElem(), "NumGroups invalid after %s", stage);
+		studioMeshGroupDesc_t* pDesc = header->pMeshGroupDesc(i);
+		ASSERT_MSG(pDesc->numMeshes == modelRef.model->meshes.numElem(), "numMeshes invalid after %s", stage);
 
-		for (int j = 0; j < pDesc->numGroups; j++)
+		for (int j = 0; j < pDesc->numMeshes; j++)
 		{
-			modelgroupdesc_t* groupDesc = header->pModelDesc(i)->pGroup(j);
+			studioMeshDesc_t* groupDesc = header->pMeshGroupDesc(i)->pMesh(j);
 
 			for (int32 k = 0; k < groupDesc->numVertices; k++)
 			{
@@ -743,21 +743,21 @@ bool CEGFGenerator::GenerateEGF()
 	CMemoryStream memStream(nullptr, VS_OPEN_WRITE, FILEBUFFER_EQGF);
 
 	// Make header
-	studiohdr_t* header = (studiohdr_t*)memStream.GetBasePointer();
-	memset(header, 0, sizeof(studiohdr_t));
+	studioHdr_t* header = (studioHdr_t*)memStream.GetBasePointer();
+	memset(header, 0, sizeof(studioHdr_t));
 
 	// Basic header data
 	header->ident = EQUILIBRIUM_MODEL_SIGNATURE;
 	header->version = EQUILIBRIUM_MODEL_VERSION;
 	header->flags = 0;
-	header->length = sizeof(studiohdr_t);
+	header->length = sizeof(studioHdr_t);
 
 	// set model name
 	strcpy( header->modelName, m_outputFilename.ToCString() );
 
 	FixSlashes( header->modelName );
 
-	memStream.Write(header, 1, sizeof(studiohdr_t));
+	memStream.Write(header, 1, sizeof(studioHdr_t));
 
 	// write models
 	WriteModels(header, &memStream);
@@ -801,28 +801,28 @@ bool CEGFGenerator::GenerateEGF()
 	header->length = memStream.Tell();
 
 	memStream.Seek(0, VS_SEEK_SET);
-	memStream.Write(header, 1, sizeof(studiohdr_t));
+	memStream.Write(header, 1, sizeof(studioHdr_t));
 
 	memStream.Seek(header->length, VS_SEEK_SET);
 
 	int totalTris = 0;
 	int totalVerts = 0;
-	for (int i = 0; i < header->numModels; i++)
+	for (int i = 0; i < header->numMeshGroups; i++)
 	{
-		studiomodeldesc_t* pModelDesc = header->pModelDesc(i);
+		studioMeshGroupDesc_t* pMeshGroupDesc = header->pMeshGroupDesc(i);
 
-		for (int j = 0; j < pModelDesc->numGroups; j++)
+		for (int j = 0; j < pMeshGroupDesc->numMeshes; j++)
 		{
-			modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
-			totalVerts += pGroup->numVertices;
-			switch (pGroup->primitiveType)
+			studioMeshDesc_t* pMesh = pMeshGroupDesc->pMesh(j);
+			totalVerts += pMesh->numVertices;
+			switch (pMesh->primitiveType)
 			{
 			case EGFPRIM_TRIANGLES:
-				totalTris += pGroup->numIndices / 3;
+				totalTris += pMesh->numIndices / 3;
 				break;
 			case EGFPRIM_TRIANGLE_FAN:
 			case EGFPRIM_TRI_STRIP:
-				totalTris += pGroup->numIndices - 2;
+				totalTris += pMesh->numIndices - 2;
 				break;
 			}
 		}
@@ -830,7 +830,7 @@ bool CEGFGenerator::GenerateEGF()
 
 	Msg(" total vertices: %d\n", totalVerts);
 	Msg(" total triangles: %d\n", totalTris);
-	Msg(" models: %d\n", header->numModels);
+	Msg(" models: %d\n", header->numMeshGroups);
 	Msg(" body groups: %d\n", header->numBodyGroups);
 	Msg(" bones: %d\n", header->numBones);
 	Msg(" lods: %d\n", header->numLods);

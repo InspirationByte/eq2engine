@@ -304,13 +304,13 @@ void CParticleLowLevelRenderer::ClearBuffers()
 		m_batchs[i]->ClearBuffers();
 }
 
-bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup)
+bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pMesh)
 {
 	if(!m_initialized)
 		return false;
 
-	const uint16 nVerts	= pGroup->m_numVertices;
-	const uint16 nIndices = pGroup->m_numIndices;
+	const uint16 nVerts	= pMesh->m_numVertices;
+	const uint16 nIndices = pMesh->m_numIndices;
 
 	if(nVerts == 0)
 		return false;
@@ -318,10 +318,10 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* p
 	if(nVerts > SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t))
 		return false;
 
-	m_vertexBuffer->Update((void*)pGroup->m_pVerts, nVerts, 0, true);
+	m_vertexBuffer->Update((void*)pMesh->m_pVerts, nVerts, 0, true);
 
 	if(nIndices)
-		m_indexBuffer->Update((void*)pGroup->m_pIndices, nIndices, 0, true);
+		m_indexBuffer->Update((void*)pMesh->m_pIndices, nIndices, 0, true);
 
 	return true;
 }

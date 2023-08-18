@@ -26,20 +26,20 @@ enum EStudioLODFlags
 // use EGF_VERSION_CHANGE tags for defining changes
 
 // Base model material search path descriptor
-struct materialpathdesc_s
+struct materialPathDesc_s
 {
 	char				searchPath[MAX_MODEL_PART_PATH_LENGTH];
 };
-ALIGNED_TYPE(materialpathdesc_s, 4) materialpathdesc_t;
+ALIGNED_TYPE(materialPathDesc_s, 4) materialPathDesc_t;
 
 // material descriptor
-struct motionpackagedesc_s
+struct motionPackageDesc_s
 {
 	char				packageName[MAX_MODEL_PART_PATH_LENGTH]; //only this?
 };
-ALIGNED_TYPE(motionpackagedesc_s, 4) motionpackagedesc_t;
+ALIGNED_TYPE(motionPackageDesc_s, 4) motionPackageDesc_t;
 
-struct studioiklink_s
+struct studioIkLink_s
 {
 	int bone;
 
@@ -49,67 +49,67 @@ struct studioiklink_s
 
 	float		damping;
 };
-ALIGNED_TYPE(studioiklink_s, 4) studioiklink_t;
+ALIGNED_TYPE(studioIkLink_s, 4) studioIkLink_t;
 
 // studiomodel ik chain
-struct studioikchain_s
+struct studioIkChain_s
 {
 	char name[MAX_MODEL_PART_NAME_LENGTH];
 
 	int numLinks;
 	int linksOffset;
 
-	inline studioiklink_t *pLink( int i ) const 
+	inline studioIkLink_t *pLink( int i ) const 
 	{
-		return (studioiklink_t *)(((ubyte *)this) + linksOffset) + i; 
+		return (studioIkLink_t *)(((ubyte *)this) + linksOffset) + i; 
 	};
 };
-ALIGNED_TYPE(studioikchain_s, 4) studioikchain_t;
+ALIGNED_TYPE(studioIkChain_s, 4) studioIkChain_t;
 
 // bone attachment
-struct studiotransform_s
+struct studioTransform_s
 {
 	char			name[MAX_MODEL_PART_NAME_LENGTH];
 	Matrix4x4		transform;
 	uint8			attachBoneIdx;
 };
-ALIGNED_TYPE(studiotransform_s, 4) studiotransform_t;
+ALIGNED_TYPE(studioTransform_s, 4) studioTransform_t;
 
 // lod parameters
-struct studiolodparams_s
+struct studioLodParams_s
 {
 	float			distance;
 	ubyte			flags;
 	ubyte			unused[3];
 };
-ALIGNED_TYPE(studiolodparams_s, 4) studiolodparams_t;
+ALIGNED_TYPE(studioLodParams_s, 4) studioLodParams_t;
 
 // lod models
-struct studiolodmodel_s
+struct studioLodModel_s
 {
-	uint8			modelsIndexes[MAX_MODEL_LODS]; // lod model indexes, points to studiomodeldesc_t
+	uint8			modelsIndexes[MAX_MODEL_LODS]; // lod model indexes, points to studioMeshGroupDesc_t
 };
-ALIGNED_TYPE(studiolodmodel_s, 4) studiolodmodel_t;
+ALIGNED_TYPE(studioLodModel_s, 4) studioLodModel_t;
 
 // body groups
-struct studiobodygroup_s
+struct studioBodyGroup_s
 {
 	char			name[MAX_MODEL_PART_NAME_LENGTH];		// bodygroup name
-	uint8			lodModelIndex;							// lod model index, points to studiolodmodel_t
+	uint8			lodModelIndex;							// lod model index, points to studioLodModel_t
 
 	ubyte			unused[7];								// unused
 };
-ALIGNED_TYPE(studiobodygroup_s, 4) studiobodygroup_t;
+ALIGNED_TYPE(studioBodyGroup_s, 4) studioBodyGroup_t;
 
 // material descriptor
-struct studiomaterialdesc_s
+struct studioMaterialDesc_s
 {
 	char			materialname[32]; //only this?
 };
-ALIGNED_TYPE(studiomaterialdesc_s, 4) studiomaterialdesc_t;
+ALIGNED_TYPE(studioMaterialDesc_s, 4) studioMaterialDesc_t;
 
 // bone weight data
-struct boneweight_s
+struct studioBoneWeight_s
 {
 	float			weight[MAX_MODEL_VERTEX_WEIGHTS];
 	int8			bones[MAX_MODEL_VERTEX_WEIGHTS];
@@ -117,10 +117,25 @@ struct boneweight_s
 
 	ubyte			unused; // unused
 };
-ALIGNED_TYPE(boneweight_s, 4) boneweight_t;
+ALIGNED_TYPE(studioBoneWeight_s, 4) studioBoneWeight_t;
 
-// Vertex descriptor
-struct studiovertexdesc_s
+struct studioVertexPosUv_s
+{
+	Vector3D		point;
+	Vector2D		texCoord;
+};
+ALIGNED_TYPE(studioVertexPosUv_s, 4) studioVertexPosUv_t;
+
+struct studioVertexTBN_s
+{
+	Vector3D		tangent;
+	Vector3D		binormal;
+	Vector3D		normal;
+};
+ALIGNED_TYPE(studioVertexTBN_s, 4) studioVertexTBN_t;
+
+// Vertex descriptor (EGF version <= 13)
+struct studioVertexDesc_s
 {
 	Vector3D		point;
 	Vector2D		texCoord;
@@ -130,12 +145,12 @@ struct studiovertexdesc_s
 	Vector3D		binormal;
 	Vector3D		normal;
 
-	boneweight_t	boneweights;
+	studioBoneWeight_t	boneweights;
 };
-ALIGNED_TYPE(studiovertexdesc_s, 4) studiovertexdesc_t;
+ALIGNED_TYPE(studioVertexDesc_s, 4) studioVertexDesc_t;
 
-// model group
-struct modelgroupdesc_s
+// mesh
+struct studioMeshDesc_s
 {
 	// Don't keep the group name, use material name only
 	int8				materialIndex;
@@ -144,9 +159,9 @@ struct modelgroupdesc_s
 	int32				numVertices;
 	int					vertexOffset;			// pointer to points data
 
-	inline studiovertexdesc_t *pVertex( int i ) const 
+	inline studioVertexDesc_t *pVertex( int i ) const 
 	{
-		return (studiovertexdesc_t *)(((ubyte *)this) + vertexOffset) + i; 
+		return (studioVertexDesc_t *)(((ubyte *)this) + vertexOffset) + i; 
 	};
 
 	uint32				numIndices;
@@ -160,24 +175,24 @@ struct modelgroupdesc_s
 	// primitive type for EGF. If model is optimized, you can use it.
 	int8				primitiveType;
 };
-ALIGNED_TYPE(modelgroupdesc_s, 4) modelgroupdesc_t;
+ALIGNED_TYPE(studioMeshDesc_s, 4) studioMeshDesc_t;
 
-// model descriptor
-struct studiomodeldesc_s
+// mesh group
+struct studioMeshGroupDesc_s
 {
-	uint8				numGroups;
-	int					groupsOffset;		// Groups data index
+	uint8				numMeshes;
+	int					meshesOffset;		// Groups data index
 	uint8				transformIdx;
 
-	inline modelgroupdesc_t *pGroup( int i ) const 
+	inline studioMeshDesc_t *pMesh( int i ) const 
 	{
-		return (modelgroupdesc_t *)(((ubyte *)this) + groupsOffset) + i; 
+		return (studioMeshDesc_t *)(((ubyte *)this) + meshesOffset) + i; 
 	};
 };
-ALIGNED_TYPE(studiomodeldesc_s, 4) studiomodeldesc_t;
+ALIGNED_TYPE(studioMeshGroupDesc_s, 4) studioMeshGroupDesc_t;
 
 // bone descriptor
-struct bonedesc_s
+struct studioBoneDesc_s
 {
 	char					name[MAX_MODEL_PART_NAME_LENGTH];	//Bone name
 
@@ -186,10 +201,10 @@ struct bonedesc_s
     Vector3D				rotation;	//Starting rotation
     Vector3D				position;	//Starting position
 };
-ALIGNED_TYPE(bonedesc_s, 4) bonedesc_t;
+ALIGNED_TYPE(studioBoneDesc_s, 4) studioBoneDesc_t;
 
 // Model
-struct modelheader_s
+struct studioModelHeader_s
 {
 	// basemodelheader_t part
 	int					ident;
@@ -203,12 +218,12 @@ struct modelheader_s
 // Model descriptors
 //---------------------------------------------------------------
 
-	uint8				numModels;				// model references count
-	int					modelsOffset;			// model reference data offset
+	uint8				numMeshGroups;				// model references count
+	int					meshGroupsOffset;			// model reference data offset
 
-	inline studiomodeldesc_t*	pModelDesc( int i ) const 
+	inline studioMeshGroupDesc_t*	pMeshGroupDesc( int i ) const 
 	{
-		return (studiomodeldesc_t *)(((ubyte *)this) + modelsOffset) + i; 
+		return (studioMeshGroupDesc_t *)(((ubyte *)this) + meshGroupsOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -218,9 +233,9 @@ struct modelheader_s
 	uint8				numBodyGroups;			// body groups count
 	int					bodyGroupsOffset;		// body groups offset
 
-	inline studiobodygroup_t*	pBodyGroups( int i ) const 
+	inline studioBodyGroup_t*	pBodyGroups( int i ) const 
 	{
-		return (studiobodygroup_t *)(((ubyte *)this) + bodyGroupsOffset) + i; 
+		return (studioBodyGroup_t *)(((ubyte *)this) + bodyGroupsOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -230,9 +245,9 @@ struct modelheader_s
 	uint8				numLods;				// LOD models count
 	int					lodsOffset;				// LOD models offset
 
-	inline studiolodmodel_t*	pLodModel( int i ) const 
+	inline studioLodModel_t*	pLodModel( int i ) const 
 	{
-		return (studiolodmodel_t *)(((ubyte *)this) + lodsOffset) + i; 
+		return (studioLodModel_t *)(((ubyte *)this) + lodsOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -242,9 +257,9 @@ struct modelheader_s
 	uint8				numLodParams;			// LOD params count
 	int					lodParamsOffset;		// LOD params offset
 
-	inline studiolodparams_t*	pLodParams( int i ) const 
+	inline studioLodParams_t*	pLodParams( int i ) const 
 	{
-		return (studiolodparams_t *)(((ubyte *)this) + lodParamsOffset) + i; 
+		return (studioLodParams_t *)(((ubyte *)this) + lodParamsOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -254,9 +269,9 @@ struct modelheader_s
 	uint8				numMaterials;			// Material count
 	int					materialsOffset;		// Materials offset
 
-	inline studiomaterialdesc_t*	pMaterial( int i ) const 
+	inline studioMaterialDesc_t*	pMaterial( int i ) const 
 	{
-		return (studiomaterialdesc_t *)(((ubyte *)this) + materialsOffset) + i; 
+		return (studioMaterialDesc_t *)(((ubyte *)this) + materialsOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -266,9 +281,9 @@ struct modelheader_s
 	uint8				numMotionPackages;			// motion package count
 	int					packagesOffset;				// motion package offset
 
-	inline motionpackagedesc_t*	pPackage( int i ) const 
+	inline motionPackageDesc_t*	pPackage( int i ) const 
 	{
-		return (motionpackagedesc_t *)(((ubyte *)this) + packagesOffset) + i; 
+		return (motionPackageDesc_t *)(((ubyte *)this) + packagesOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -278,9 +293,9 @@ struct modelheader_s
 	uint8				numMaterialSearchPaths;		// Material path count
 	int					materialSearchPathsOffset;	// Material pathes offset
 
-	inline materialpathdesc_t*	pMaterialSearchPath( int i ) const 
+	inline materialPathDesc_t*	pMaterialSearchPath( int i ) const 
 	{
-		return (materialpathdesc_t *)(((ubyte *)this) + materialSearchPathsOffset) + i; 
+		return (materialPathDesc_t *)(((ubyte *)this) + materialSearchPathsOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -290,9 +305,9 @@ struct modelheader_s
 	uint8				numBones;				// bones count
 	int					bonesOffset;			// bone data offset
 
-	inline bonedesc_t*	pBone( int i ) const 
+	inline studioBoneDesc_t*	pBone( int i ) const 
 	{
-		return (bonedesc_t *)(((ubyte *)this) + bonesOffset) + i; 
+		return (studioBoneDesc_t *)(((ubyte *)this) + bonesOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -302,9 +317,9 @@ struct modelheader_s
 	uint8				numTransforms;				// attachment count
 	int					transformsOffset;			// attachment data offset
 
-	inline studiotransform_t*	pTransform( int i ) const 
+	inline studioTransform_t*	pTransform( int i ) const 
 	{
-		return (studiotransform_t *)(((ubyte *)this) + transformsOffset) + i; 
+		return (studioTransform_t *)(((ubyte *)this) + transformsOffset) + i; 
 	};
 
 //---------------------------------------------------------------
@@ -314,13 +329,13 @@ struct modelheader_s
 	uint8				numIKChains;				// ik chain count
 	int					ikChainsOffset;				// ik chain data offset
 
-	inline studioikchain_t*	pIkChain( int i ) const 
+	inline studioIkChain_t*	pIkChain( int i ) const 
 	{
-		return (studioikchain_t *)(((ubyte *)this) + ikChainsOffset) + i; 
+		return (studioIkChain_t *)(((ubyte *)this) + ikChainsOffset) + i; 
 	};
 
 };
-ALIGNED_TYPE(modelheader_s, 4) studiohdr_t;
+ALIGNED_TYPE(studioModelHeader_s, 4) studioHdr_t;
 
 //---------------------------------------------------------------
 // 
@@ -331,7 +346,7 @@ ALIGNED_TYPE(modelheader_s, 4) studiohdr_t;
 //---------------------------------------------------------------
 // Searches for studio bone, returns ID
 //---------------------------------------------------------------
-inline int Studio_FindBoneId(const studiohdr_t* pStudioHdr, const char* pszName)
+inline int Studio_FindBoneId(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numBones; i++)
 	{
@@ -342,10 +357,9 @@ inline int Studio_FindBoneId(const studiohdr_t* pStudioHdr, const char* pszName)
 	return -1;
 }
 
+//-------------------studioModelHeader_seturns bone
 //---------------------------------------------------------------
-// Searches for studio bone, returns bone
-//---------------------------------------------------------------
-inline bonedesc_t* Studio_FindBone(const studiohdr_t* pStudioHdr, const char* pszName)
+inline studioBoneDesc_t* Studio_FindBone(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	int id = Studio_FindBoneId(pStudioHdr, pszName);
 
@@ -358,7 +372,7 @@ inline bonedesc_t* Studio_FindBone(const studiohdr_t* pStudioHdr, const char* ps
 //---------------------------------------------------------------
 // Searches for body group
 //---------------------------------------------------------------
-inline int Studio_FindBodyGroupId(const studiohdr_t* pStudioHdr, const char* pszName)
+inline int Studio_FindBodyGroupId(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numBodyGroups; i++)
 	{
@@ -372,7 +386,7 @@ inline int Studio_FindBodyGroupId(const studiohdr_t* pStudioHdr, const char* psz
 //---------------------------------------------------------------
 // Searches for body group
 //---------------------------------------------------------------
-inline studiobodygroup_t* Studio_FindBodyGroup(const studiohdr_t* pStudioHdr, const char* pszName)
+inline studioBodyGroup_t* Studio_FindBodyGroup(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	int id = Studio_FindBodyGroupId(pStudioHdr, pszName);
 
@@ -385,7 +399,7 @@ inline studiobodygroup_t* Studio_FindBodyGroup(const studiohdr_t* pStudioHdr, co
 //---------------------------------------------------------------
 // Searches for IK chain
 //---------------------------------------------------------------
-inline studioikchain_t* Studio_FindIkChain(const studiohdr_t* pStudioHdr, const char* pszName)
+inline studioIkChain_t* Studio_FindIkChain(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numIKChains; i++)
 	{
@@ -399,7 +413,7 @@ inline studioikchain_t* Studio_FindIkChain(const studiohdr_t* pStudioHdr, const 
 //---------------------------------------------------------------
 // Searches for transform, returns id
 //---------------------------------------------------------------
-inline int Studio_FindTransformId(const studiohdr_t* pStudioHdr, const char* pszName)
+inline int Studio_FindTransformId(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numTransforms; i++)
 	{
@@ -413,7 +427,7 @@ inline int Studio_FindTransformId(const studiohdr_t* pStudioHdr, const char* psz
 //---------------------------------------------------------------
 // Searches for attachment
 //---------------------------------------------------------------
-inline studiotransform_t* Studio_FindAttachment(const studiohdr_t* pStudioHdr, const char* pszName)
+inline studioTransform_t* Studio_FindAttachment(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	int id = Studio_FindTransformId(pStudioHdr, pszName);
 

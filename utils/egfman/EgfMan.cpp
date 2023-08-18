@@ -1331,7 +1331,7 @@ void CEGFViewFrame::RefreshGUI()
 	// populate all lists
 	if(g_model.m_pModel != nullptr)
 	{
-		const studiohdr_t& studio = g_model.m_pModel->GetStudioHdr();
+		const studioHdr_t& studio = g_model.m_pModel->GetStudioHdr();
 
 		for(int i = 0; i < studio.numBodyGroups; i++)
 		{

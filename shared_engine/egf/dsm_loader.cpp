@@ -120,19 +120,19 @@ DSModel::~DSModel()
 	for (int i = 0; i < bones.numElem(); i++)
 		delete bones[i];
 
-	for (int i = 0; i < groups.numElem(); i++)
-		delete groups[i];
+	for (int i = 0; i < meshes.numElem(); i++)
+		delete meshes[i];
 
 	bones.clear(true);
-	groups.clear(true);
+	meshes.clear(true);
 }
 
-DSGroup* DSModel::FindGroupByName(const char* pszGroupname)
+DSMesh* DSModel::FindMeshByName(const char* pszGroupname)
 {
-	for(int i = 0; i < groups.numElem(); i++)
+	for(int i = 0; i < meshes.numElem(); i++)
 	{
-		if(!stricmp(groups[i]->texture, pszGroupname))
-			return groups[i];
+		if(!stricmp(meshes[i]->texture, pszGroupname))
+			return meshes[i];
 	}
 
 	return nullptr;
@@ -153,8 +153,8 @@ int GetTotalVertsOfDSM(DSModel* model)
 {
 	int numVerts = 0;
 
-	for(int i = 0; i < model->groups.numElem(); i++)
-		numVerts +=  model->groups[i]->verts.numElem();
+	for(int i = 0; i < model->meshes.numElem(); i++)
+		numVerts +=  model->meshes[i]->verts.numElem();
 
 	return numVerts;
 }

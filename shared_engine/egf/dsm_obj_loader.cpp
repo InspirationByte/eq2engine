@@ -209,7 +209,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 	int tindices[MAX_VERTS_PER_POLYGON];
 	int nindices[MAX_VERTS_PER_POLYGON];
 
-	DSGroup* curgroup = nullptr;
+	DSMesh* curgroup = nullptr;
 
 	bool gl_to_eq = true;
 	bool blend_to_eq = false;
@@ -290,9 +290,9 @@ bool LoadOBJ(DSModel* model, const char* filename)
 		{
 			if(!curgroup)
 			{
-				curgroup = PPNew DSGroup;
+				curgroup = PPNew DSMesh;
 
-				model->groups.append(curgroup);
+				model->meshes.append(curgroup);
 
 				if(bUseMTL)
 					curgroup->texture = GetMTLTexture(materialName, material_list);
@@ -467,7 +467,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 		MsgWarning("WARNING: No normals found in %s. Did you forget to export it?\n", filename);
 	}
 
-	if(model->groups.numElem() > 0)
+	if(model->meshes.numElem() > 0)
 	{
 		bLoaded = true;
 	}
@@ -488,9 +488,9 @@ bool SaveOBJ(DSModel* model, const char* filename)
 
 	pFile->Print("# DSM_OBJ_LOADER.CPP OBJ FILE\n\n");
 
-	for(int i = 0; i < model->groups.numElem(); i++)
+	for(int i = 0; i < model->meshes.numElem(); i++)
 	{
-		SharedModel::DSGroup* group = model->groups[i];
+		SharedModel::DSMesh* group = model->meshes[i];
 		
 		if (group->indices.numElem())
 			pFile->Print("o %s\n", group->texture.ToCString());

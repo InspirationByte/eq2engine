@@ -103,7 +103,7 @@ private:
 	// Makes standard pose.
 	void MakeDefaultPoseAnimation();
 
-	studiohdr_t*				m_model{ nullptr };
+	studioHdr_t*				m_model{ nullptr };
 	Array<studioAnimation_t>	m_animations{ PP_SL };
 	Array<sequencedesc_t>		m_sequences{ PP_SL };
 	Array<sequenceevent_t>		m_events{ PP_SL };

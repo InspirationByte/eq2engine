@@ -51,7 +51,7 @@ public:
 	int							GetMaterialCount() const { return m_materialCount; }
 	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 
-	const studiohdr_t&			GetStudioHdr() const;
+	const studioHdr_t&			GetStudioHdr() const;
 	const studioPhysData_t&		GetPhysData() const;
 	const studioMotionData_t&	GetMotionData(int index) const;
 	const studioJoint_t&		GetJoint(int index) const;
@@ -83,12 +83,12 @@ private:
 	struct HWGeomRef
 	{
 		// offset in hw index buffer to this lod, for each geometry group
-		struct Group
+		struct Mesh
 		{
 			int		firstIndex;
 			int		indexCount;
 			ushort	primType;
-		} *groups{ nullptr };
+		} *meshRefs{ nullptr };
 	};
 
 	bool					LoadModel(const char* pszPath, bool useJob = true);
@@ -122,7 +122,7 @@ private:
 	HWGeomRef*				m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
 
 	CBaseEqGeomInstancer*	m_instancer{ nullptr };
-	studiohdr_t*			m_studio{ nullptr };
+	studioHdr_t*			m_studio{ nullptr };
 	studioPhysData_t		m_physModel;
 
 	IVertexBuffer*			m_vertexBuffer{ nullptr };

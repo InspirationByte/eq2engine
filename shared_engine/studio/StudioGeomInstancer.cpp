@@ -161,13 +161,13 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	g_pShaderAPI->SetVertexFormat(m_vertFormat);
 	g_pShaderAPI->SetIndexBuffer(model->m_indexBuffer);
 
-	const studiohdr_t& studio = model->GetStudioHdr();
+	const studioHdr_t& studio = model->GetStudioHdr();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
 	{
 		for(int bodyGrp = m_bodyGroupBounds[0]; bodyGrp <= m_bodyGroupBounds[1]; bodyGrp++)
 		{
 			const int bodyGroupLodIndex = studio.pBodyGroups(bodyGrp)->lodModelIndex;
-			const studiolodmodel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
+			const studioLodModel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
 
 			// get the right LOD model number
 			int bodyGroupLOD = lod;
@@ -181,7 +181,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			if (modelDescId == EGF_INVALID_IDX)
 				continue;
 	
-			const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);
+			const studioMeshGroupDesc_t* modDesc = studio.pMeshGroupDesc(modelDescId);
 
 			for (int mGrp = m_matGroupBounds[0]; mGrp <= m_matGroupBounds[1]; mGrp++)
 			{
@@ -199,9 +199,9 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				g_pShaderAPI->SetVertexBuffer(instBuffer, 2);
 
 				// render model groups that in this body group
-				for (int i = 0; i < modDesc->numGroups; i++)
+				for (int i = 0; i < modDesc->numMeshes; i++)
 				{
-					const int materialIndex = modDesc->pGroup(i)->materialIndex;
+					const int materialIndex = modDesc->pMesh(i)->materialIndex;
 					IMaterial* pMaterial = model->GetMaterial(materialIndex, mGrp);
 
 					// sadly, instancer won't draw any transparent objects due to sorting problems
@@ -213,8 +213,8 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 					materials->Apply();
 
-					const CEqStudioGeom::HWGeomRef::Group& groupDesc = model->m_hwGeomRefs[modelDescId].groups[i];
-					g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)groupDesc.primType, groupDesc.firstIndex, groupDesc.indexCount, 0, model->m_vertexBuffer->GetVertexCount());
+					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
+					g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, model->m_vertexBuffer->GetVertexCount());
 				}
 			} // mGrp
 		} // bodyGrp

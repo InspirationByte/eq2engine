@@ -62,8 +62,8 @@ bool ReadBones(Tokenizer& tok, DSModel* pModel)
 			pBone->name = tok.next(isQuotes);
 			tok.next(); // skip quote
 
-			pBone->bone_id = readInt(tok);
-			pBone->parent_id = readInt(tok);
+			pBone->boneIdx = readInt(tok);
+			pBone->parentIdx = readInt(tok);
 
 			pBone->position.x = readFloat(tok);
 			pBone->position.y = readFloat(tok);
@@ -89,7 +89,7 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 
 	bool bCouldRead = false;
 
-	DSGroup* pCurrentGroup = nullptr;
+	DSMesh* pCurrentGroup = nullptr;
 	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
@@ -111,16 +111,16 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 					matName = tok.next(isQuotes); 
 
 				// find or create group
-				pCurrentGroup = pModel->FindGroupByName(matName);
+				pCurrentGroup = pModel->FindMeshByName(matName);
 
 				if(!pCurrentGroup)
 				{
-					pCurrentGroup = PPNew DSGroup;
+					pCurrentGroup = PPNew DSMesh;
 
 					pCurrentGroup->texture = matName;
 					pCurrentGroup->verts.resize(1024);
 
-					pModel->groups.append( pCurrentGroup );
+					pModel->meshes.append( pCurrentGroup );
 				}
 			}
 			else if(!stricmp(str, "vtx"))
@@ -367,9 +367,9 @@ void AssignShapeKeyVertexIndexes(DSModel* mod, DSShapeData* shapeData)
 
 	DSShapeKey* basis = shapeData->shapes[0];
 
-	for(int i = 0; i < mod->groups.numElem(); i++)
+	for(int i = 0; i < mod->meshes.numElem(); i++)
 	{
-		DSGroup* grp = mod->groups[i];
+		DSMesh* grp = mod->meshes[i];
 
 		for(int j = 0; j < grp->verts.numElem(); j++)
 		{

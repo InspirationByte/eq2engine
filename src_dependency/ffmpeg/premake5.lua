@@ -11,3 +11,8 @@ usage "ffmpeg"
 	libdirs {
 		"./lib"
 	}
+
+	--filter { "not system:windows" }
+   	--	postbuildcommands { 
+	--		"cp %{cfg.libdirs[1]}/* %{cfg.targetdir}"
+	--	}

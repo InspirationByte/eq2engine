@@ -25,7 +25,7 @@ static void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 }
 
 // loads all supported EGF model formats
-studiohdr_t* Studio_LoadModel(const char* pszPath)
+studioHdr_t* Studio_LoadModel(const char* pszPath)
 {
 	IFilePtr file = g_fileSystem->Open(pszPath, "rb");
 
@@ -54,7 +54,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 
 	// TODO: Double data protection!!! (hash lookup)
 
-	studiohdr_t* pHdr = (studiohdr_t*)pBaseHdr;
+	studioHdr_t* pHdr = (studioHdr_t*)pBaseHdr;
 
 	if(pHdr->version != EQUILIBRIUM_MODEL_VERSION)
 	{
@@ -368,7 +368,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 	return true;
 }
 
-void Studio_FreeModel(studiohdr_t* pModel)
+void Studio_FreeModel(studioHdr_t* pModel)
 {
 	PPFree(pModel);
 }

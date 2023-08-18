@@ -366,7 +366,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	materials->SetMatrix(MATRIXMODE_WORLD, posMatrix);
 
-	const studiohdr_t& studio = m_pModel->GetStudioHdr();
+	const studioHdr_t& studio = m_pModel->GetStudioHdr();
 
 	/*
 	Vector3D view_vec = g_pViewEntity->GetEyeOrigin() - m_matWorldTransform.getTranslationComponent();

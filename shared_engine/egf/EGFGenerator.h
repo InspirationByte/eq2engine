@@ -14,7 +14,7 @@ namespace SharedModel
 	using DSModelPtr = CRefPtr<DSModel>;
 
 	struct DSBone;
-	struct DSGroup;
+	struct DSMesh;
 	struct DSVertex;
 	struct DSWeight;
 
@@ -92,31 +92,31 @@ protected:
 	int						UsedMaterialIndex(const char* pszName);
 
 	// writing to stream	
-	void					WriteGroup(studiohdr_t* header, IVirtualStream* stream, SharedModel::DSGroup* srcGroup, SharedModel::DSShapeKey* modShapeKey, modelgroupdesc_t* dstGroup);
+	void					WriteGroup(studioHdr_t* header, IVirtualStream* stream, SharedModel::DSMesh* srcGroup, SharedModel::DSShapeKey* modShapeKey, studioMeshDesc_t* dstGroup);
 
-	void					WriteModels(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteLods(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteBodyGroups(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteAttachments(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteIkChains(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteMaterialPaths(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteMotionPackageList(studiohdr_t* header, IVirtualStream* stream);
-	void					WriteBones(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteModels(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteLods(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteBodyGroups(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteAttachments(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteIkChains(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteMaterialPaths(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteMotionPackageList(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteBones(studioHdr_t* header, IVirtualStream* stream);
 
-	void					Validate(studiohdr_t* header, const char* stage);
+	void					Validate(studioHdr_t* header, const char* stage);
 
 	// data
 	Array<GenModel>				m_modelrefs{ PP_SL };		// all loaded model references
 
 	Array<GenLODList_t>				m_modelLodLists{ PP_SL };	// all LOD reference models including main LOD
-	Array<studiolodparams_t>		m_lodparams{ PP_SL };		// lod parameters
-	Array<motionpackagedesc_t>		m_motionpacks{ PP_SL };		// motion packages
-	Array<materialpathdesc_t>		m_matpathes{ PP_SL };		// material paths
+	Array<studioLodParams_t>		m_lodparams{ PP_SL };		// lod parameters
+	Array<motionPackageDesc_t>		m_motionpacks{ PP_SL };		// motion packages
+	Array<materialPathDesc_t>		m_matpathes{ PP_SL };		// material paths
 	Array<GenIKChain>				m_ikchains{ PP_SL };		// ik chain list
 	Array<GenBone>				m_bones{ PP_SL };			// bone list
-	Array<studiotransform_t>		m_transforms{ PP_SL };		// attachment list
-	Array<studiobodygroup_t>		m_bodygroups{ PP_SL };		// body group list
+	Array<studioTransform_t>		m_transforms{ PP_SL };		// attachment list
+	Array<studioBodyGroup_t>		m_bodygroups{ PP_SL };		// body group list
 	Array<GenMaterialDesc_t>		m_materials{ PP_SL };		// materials that referenced by models
 
 	// only participates in write

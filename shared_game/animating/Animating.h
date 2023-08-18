@@ -105,7 +105,7 @@ protected:
 
 	// local bones/base pose
 	ArrayCRef<studioJoint_t>		m_joints{ nullptr };
-	ArrayCRef<studiotransform_t>	m_transforms{ nullptr };
+	ArrayCRef<studioTransform_t>	m_transforms{ nullptr };
 
 	// different motion packages has different sequience list
 	Array<gsequence_t>			m_seqList{ PP_SL }; // loaded sequences

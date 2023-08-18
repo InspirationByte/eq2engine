@@ -137,7 +137,7 @@ struct studioJoint_t
 	Matrix4x4			localTrans;
 	FixedArray<int, 16>	childs;
 
-	const bonedesc_t* bone{ nullptr };
+	const studioBoneDesc_t* bone{ nullptr };
 
 	int					boneId{ -1 };
 	int					parent{ -1 };
@@ -157,7 +157,7 @@ struct EGFHwVertex_t
 	static int GetVertexFormatDesc(const VertexFormatDesc_t** desc);
 
 	EGFHwVertex_t() = default;
-	EGFHwVertex_t(const studiovertexdesc_t& initFrom)
+	EGFHwVertex_t(const studioVertexDesc_t& initFrom)
 	{
 		ASSERT(initFrom.boneweights.numweights <= MAX_MODEL_VERTEX_WEIGHTS);
 
