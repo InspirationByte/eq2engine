@@ -31,10 +31,9 @@ int CD3D9VertexFormat::GetVertexSize(int nStream) const
 	return m_streamStride[nStream];
 }
 
-void CD3D9VertexFormat::GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const
+ArrayCRef<VertexFormatDesc_t> CD3D9VertexFormat::GetFormatDesc() const
 {
-	*desc = m_vertexDesc.ptr();
-	numAttribs = m_vertexDesc.numElem();
+	return m_vertexDesc;
 }
 
 //----------------------

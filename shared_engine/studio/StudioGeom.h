@@ -23,14 +23,23 @@ typedef struct VertexFormatDesc_s VertexFormatDesc_t;
 // egf model hardware vertex
 struct EGFHwVertex
 {
-	static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+	enum VertexStream : int
+	{
+		VERT_UNSET = -1,
 
-	EGFHwVertex() = default;
-	EGFHwVertex(const studioVertexDesc_t& initFrom);
+		VERT_POS_UV = 0,
+		VERT_TBN,
+		VERT_BONEWEIGHT,
 
-	struct VertexUV
+		VERT_COUNT,
+	};
+
+	struct PositionUV
 	{
 		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+
+		PositionUV() = default;
+		PositionUV(const studioVertexDesc_t& initFrom);
 
 		TVec4D<half>	pos;
 		TVec2D<half>	texcoord;
@@ -39,6 +48,9 @@ struct EGFHwVertex
 	struct TBN
 	{
 		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+
+		TBN() = default;
+		TBN(const studioVertexDesc_t& initFrom);
 
 		TVec3D<half>	tangent;
 		half			unused1;	// half float types are unsupported with v3d, turn them into v4d
@@ -52,24 +64,12 @@ struct EGFHwVertex
 	{
 		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
 
-		half			boneIndices[4];
-		half			boneWeights[4];
+		BoneWeights() = default;
+		BoneWeights(const studioVertexDesc_t& initFrom);
+
+		half			boneIndices[MAX_MODEL_VERTEX_WEIGHTS];
+		half			boneWeights[MAX_MODEL_VERTEX_WEIGHTS];
 	};
-
-	TVec4D<half>	pos;
-	TVec2D<half>	texcoord;
-
-	TVec3D<half>	tangent;
-	half			unused1;	// half float types are unsupported with v3d, turn them into v4d
-
-	TVec3D<half>	binormal;
-	half			unused2;
-
-	TVec3D<half>	normal;
-	half			unused3;
-
-	half			boneIndices[4];
-	half			boneWeights[4];
 };
 
 enum EModelLoadingState
@@ -127,7 +127,7 @@ public:
 	int							FindManualLod(float value) const;
 
 	void						Draw(const DrawProps& drawProperties) const;
-	void						SetupVBOStream( int nStream ) const;
+	void						SetupVBOStream(EGFHwVertex::VertexStream vertStream, int rhiStreamId) const;
 
 	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
@@ -178,7 +178,7 @@ private:
 	studioHdr_t*			m_studio{ nullptr };
 	studioPhysData_t		m_physModel;
 
-	IVertexBuffer*			m_vertexBuffer{ nullptr };
+	IVertexBuffer*			m_vertexBuffers[EGFHwVertex::VERT_COUNT]{ nullptr };
 	IIndexBuffer*			m_indexBuffer{ nullptr };
 
 	int						m_materialCount{ 0 };
@@ -194,17 +194,19 @@ private:
 	bool					m_skinningDirty{ false };
 };
 
+extern ArrayCRef<EGFHwVertex::VertexStream> g_defaultVertexStreamMapping;
+
 struct CEqStudioGeom::DrawProps
 {
 	using DrawFunc = EqFunction<void(IMaterial* material, int bodyGroup)>;
 
-	Matrix4x4*		boneTransforms{ nullptr };
+	ArrayCRef<EGFHwVertex::VertexStream> vertexStreamMapping{ g_defaultVertexStreamMapping };
 	IVertexFormat*	vertexFormat{ nullptr };
+	Matrix4x4*		boneTransforms{ nullptr };
 
 	DrawFunc		preSetupFunc;
 	DrawFunc		preDrawFunc;
-
-	int				mainVertexStream{ 0 };
+	
 	int				bodyGroupFlags{ -1 };
 	int				materialGroup{ 0 };
 	int				lod{ 0 };

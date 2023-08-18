@@ -55,8 +55,7 @@ int CVertexFormatGL::GetVertexSize(int nStream) const
 	return m_streamStride[nStream];
 }
 
-void CVertexFormatGL::GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const
+ArrayCRef<VertexFormatDesc_t> CVertexFormatGL::GetFormatDesc() const
 {
-	*desc = m_vertexDesc.ptr();
-	numAttribs = m_vertexDesc.numElem();
+	return m_vertexDesc;
 }

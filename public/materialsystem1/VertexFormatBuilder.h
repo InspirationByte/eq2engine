@@ -105,7 +105,6 @@ inline void CVertexFormatBuilder::SetComponentEnabled(int streamIdx, const char*
 {
 	stream_t& stream = m_streams[streamIdx];
 	int descIdx = -1;
-
 	for (int i = 0; i < stream.srcFmtElems; i++)
 	{
 		if (!stream.srcFmt[i].name)
@@ -117,8 +116,8 @@ inline void CVertexFormatBuilder::SetComponentEnabled(int streamIdx, const char*
 		}
 	}
 
-	ASSERT_MSG(descIdx != -1, "EnableComponent: not found");
+	ASSERT_MSG(descIdx != -1, "CVertexFormatBuilder::EnableComponent: %s not found in %s", name, stream.debugName);
 
-	int compIdx = streamIdx * MAX_VERTEXSTREAM + descIdx;
+	const int compIdx = streamIdx * MAX_VERTEXSTREAM + descIdx;
 	m_enabledComponents[compIdx] = enable;
 }

@@ -111,10 +111,9 @@ public:
 		return 0;
 	}
 
-	void GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const
+	ArrayCRef<VertexFormatDesc_t> GetFormatDesc() const
 	{
-		*desc = m_vertexDesc.ptr();
-		numAttribs = m_vertexDesc.numElem();
+		return m_vertexDesc;
 	}
 
 protected:

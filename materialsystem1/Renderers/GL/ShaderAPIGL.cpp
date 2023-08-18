@@ -1398,7 +1398,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		m_nCurrentOffsets[nStream] = offset;
 	}
 
-	if(pVertexBuffer)
+	if(pVertexBuffer && instancingChanged)
 	{
 		if (!instanceBuffer && m_boundInstanceStream != -1)
 			m_boundInstanceStream = -1;

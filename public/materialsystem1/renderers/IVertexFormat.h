@@ -18,5 +18,5 @@ public:
 	virtual const char*		GetName() const = 0;
 
 	virtual int				GetVertexSize(int stream) const = 0;
-	virtual void			GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const = 0;
+	virtual ArrayCRef<VertexFormatDesc_t>	GetFormatDesc() const = 0;
 };

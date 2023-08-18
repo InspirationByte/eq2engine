@@ -137,13 +137,11 @@ void CDynamicMesh::Destroy()
 // returns a pointer to vertex format description
 ArrayCRef<VertexFormatDesc_t> CDynamicMesh::GetVertexFormatDesc() const
 {
-	const VertexFormatDesc_t* desc = nullptr;
-	int numAttribs = 0;
-
+	ArrayCRef<VertexFormatDesc_t> desc(nullptr);
 	if(m_vertexFormat)
-		m_vertexFormat->GetFormatDesc(&desc, numAttribs);
+		desc = m_vertexFormat->GetFormatDesc();
 
-	return ArrayCRef(desc, numAttribs);
+	return desc;
 }
 
 // sets the primitive type (chooses the way how to allocate geometry parts)

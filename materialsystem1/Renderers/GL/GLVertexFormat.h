@@ -17,7 +17,7 @@ public:
 	const char*			GetName() const { return m_name.ToCString(); }
 
 	int					GetVertexSize(int stream) const;
-	void				GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const;
+	ArrayCRef<VertexFormatDesc_t>	GetFormatDesc() const;
 
 protected:
 	// Vertex attribute descriptor

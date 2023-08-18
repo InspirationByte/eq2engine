@@ -11,9 +11,11 @@
 #include "utils/KeyValues.h"
 
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/VertexFormatBuilder.h"
 
 #include "StudioCache.h"
 #include "StudioGeom.h"
+
 
 DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
 
@@ -55,14 +57,25 @@ int CStudioCache::PrecacheModel(const char* modelName)
 	if (strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
 
-	if (m_egfFormat == nullptr)
+	if (m_egfFormat[0] == nullptr)
 	{
-		ArrayCRef<VertexFormatDesc_t> vertFormat = EGFHwVertex::GetVertexFormatDesc();
-		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", vertFormat);
+		CVertexFormatBuilder fmtBuilder;
+		fmtBuilder.SetStream(0, EGFHwVertex::PositionUV::GetVertexFormatDesc(), "PosUVs");
+		fmtBuilder.SetStream(1, EGFHwVertex::TBN::GetVertexFormatDesc(), "TBN");
+
+		{
+			ArrayCRef<VertexFormatDesc_t> genFmt = fmtBuilder.Build();
+			m_egfFormat[0] = g_pShaderAPI->CreateVertexFormat("EGFVertex", genFmt);
+		}
+
+		fmtBuilder.SetStream(2, EGFHwVertex::BoneWeights::GetVertexFormatDesc(), "BoneWeight");
+		{
+			ArrayCRef<VertexFormatDesc_t> genFmt = fmtBuilder.Build();
+			m_egfFormat[1] = g_pShaderAPI->CreateVertexFormat("EGFVertexSkinned", genFmt);
+		}
 	}
 	
 	const int idx = GetModelIndex(modelName);
-
 	if (idx == CACHE_INVALID_MODEL)
 	{
 		EqString str(modelName);
@@ -166,14 +179,17 @@ void CStudioCache::ReleaseCache()
 	m_cachedList.clear(true);
 	m_cacheIndex.clear(true);
 
-	g_pShaderAPI->DestroyVertexFormat(m_egfFormat);
-	m_egfFormat = nullptr;
+	for(int i = 0; i < 2; ++i)
+	{
+		g_pShaderAPI->DestroyVertexFormat(m_egfFormat[i]);
+		m_egfFormat[i] = nullptr;
+	}
 	m_errorMaterial = nullptr;
 }
 
-IVertexFormat* CStudioCache::GetEGFVertexFormat() const
+IVertexFormat* CStudioCache::GetEGFVertexFormat(bool skinned) const
 {
-	return m_egfFormat;
+	return m_egfFormat[skinned];
 }
 
 // prints loaded models to console

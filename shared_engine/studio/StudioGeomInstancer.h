@@ -46,8 +46,8 @@ public:
 	CBaseEqGeomInstancer();
 	~CBaseEqGeomInstancer();
 
-	void			InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, int sizeOfInstance);
-	void			Init(IVertexFormat* instVertexFormat, int sizeOfInstance);
+	void			InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance);
+	void			Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance);
 	void			Cleanup();
 
 	void			ValidateAssert();
@@ -66,6 +66,7 @@ public:
 
 protected:
 	Map<ushort, EGFInstBuffer>	m_data{ PP_SL };
+	ArrayCRef<EGFHwVertex::VertexStream> m_vertexStreamMapping{ nullptr };
 	IVertexFormat*				m_vertFormat{ nullptr };
 	int							m_instanceSize{ 0 };
 
@@ -82,19 +83,25 @@ template <class IT>
 class CEqGeomInstancer : public CBaseEqGeomInstancer
 {
 public:
-	void							Init(IVertexFormat* instVertexFormat);
-	void							InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat);
+	void							Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping);
+	void							InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping);
 	IT&								NewInstance(int bodyGroup, int lod, int materialGroup = 0 );
 
-	static CEqGeomInstancer<IT>*	Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced);
+	static CEqGeomInstancer<IT>*	Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping);
 };
 
 //-------------------------------------------------------
 
 template <class IT>
-inline void CEqGeomInstancer<IT>::Init(IVertexFormat* instVertexFormat)
+inline void CEqGeomInstancer<IT>::Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping)
 {
-	CBaseEqGeomInstancer::Init(instVertexFormat, sizeof(IT));
+	CBaseEqGeomInstancer::Init(instVertexFormat, instVertStreamMapping, sizeof(IT));
+}
+
+template <class IT>
+inline void CEqGeomInstancer<IT>::InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping)
+{
+	CBaseEqGeomInstancer::InitEx(instVertexFormat, instVertStreamMapping, sizeof(IT));
 }
 
 template <class IT>
@@ -115,14 +122,14 @@ inline IT& CEqGeomInstancer<IT>::NewInstance(int bodyGroup, int lod, int materia
 }
 
 template <class IT>
-CEqGeomInstancer<IT>* CEqGeomInstancer<IT>::Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced)
+CEqGeomInstancer<IT>* CEqGeomInstancer<IT>::Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping)
 {
 	CEqGeomInstancer<IT>* instancer = reinterpret_cast<CEqGeomInstancer<IT>*>(model->GetInstancer());
 
 	if (!instancer && g_pShaderAPI->GetCaps().isInstancingSupported)
 	{
 		instancer = PPNew CEqGeomInstancer<IT>();
-		instancer->Init(vertexFormatInstanced);
+		instancer->Init(vertexFormatInstanced, instVertStreamMapping);
 		model->SetInstancer(instancer);
 	}
 

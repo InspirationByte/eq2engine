@@ -18,7 +18,7 @@ public:
 	const char*			GetName() const;
 
 	int					GetVertexSize(int stream) const;;
-	void				GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const;
+	ArrayCRef<VertexFormatDesc_t>	GetFormatDesc() const;
 
 protected:
 	int							m_streamStride[MAX_VERTEXSTREAM]{ 0 };

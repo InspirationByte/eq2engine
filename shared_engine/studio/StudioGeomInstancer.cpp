@@ -37,18 +37,20 @@ void CBaseEqGeomInstancer::ValidateAssert()
 	ASSERT_MSG(m_vertFormat != nullptr, "Instancer is not valid - did you forgot to initialize it???");
 }
 
-void CBaseEqGeomInstancer::InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, int sizeOfInstance)
+void CBaseEqGeomInstancer::InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
 {
 	Cleanup();
 	m_ownsVertexFormat = true;
+	m_vertexStreamMapping = instVertStreamMapping;
 	m_vertFormat = g_pShaderAPI->CreateVertexFormat("instancerFmt", instVertexFormat);
 }
 
-void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, int sizeOfInstance)
+void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
 {
 	Cleanup();
 	m_instanceSize = sizeOfInstance;
 	m_vertFormat = instVertexFormat;
+	m_vertexStreamMapping = instVertStreamMapping;
 	m_ownsVertexFormat = false;
 
 	m_bodyGroupBounds[0] = 255;
@@ -157,8 +159,32 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	materials->SetInstancingEnabled(true);
 	materials->SetSkinningEnabled(false); // skinning not yet supported. But we can support it with textures holding data
 
-	g_pShaderAPI->SetVertexBuffer(model->m_vertexBuffer, 0);
 	g_pShaderAPI->SetVertexFormat(m_vertFormat);
+	const int maxVertexCount = model->m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
+	// setup vertex buffers
+	{
+		ArrayCRef<VertexFormatDesc_t> fmtDesc = m_vertFormat->GetFormatDesc();
+
+		int setVertStreams = 0;
+		int numBitsSet = 0;
+		for (int i = 0; i < fmtDesc.numElem(); ++i)
+		{
+			if (numBitsSet == EGFHwVertex::VERT_COUNT)
+				break;
+
+			const VertexFormatDesc_t& desc = fmtDesc[i];
+			const EGFHwVertex::VertexStream vertStreamId = m_vertexStreamMapping[desc.streamId];
+
+			if (setVertStreams & (1 << int(vertStreamId)))
+				continue;
+
+			g_pShaderAPI->SetVertexBuffer(model->m_vertexBuffers[vertStreamId], desc.streamId);
+
+			setVertStreams |= (1 << int(vertStreamId));
+			++numBitsSet;
+		}
+	}
+
 	g_pShaderAPI->SetIndexBuffer(model->m_indexBuffer);
 
 	const studioHdr_t& studio = model->GetStudioHdr();
@@ -214,7 +240,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 					materials->Apply();
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
-					g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, model->m_vertexBuffer->GetVertexCount());
+					g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
 				}
 			} // mGrp
 		} // bodyGrp
