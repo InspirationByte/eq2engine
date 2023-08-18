@@ -108,7 +108,17 @@ struct studioMaterialDesc_s
 };
 ALIGNED_TYPE(studioMaterialDesc_s, 4) studioMaterialDesc_t;
 
-// bone weight data
+//-------------------------------------------
+
+// base vertex stream
+struct studioVertexPosUv_s
+{
+	Vector3D		point;
+	Vector2D		texCoord;
+};
+ALIGNED_TYPE(studioVertexPosUv_s, 4) studioVertexPosUv_t;
+
+// Weight extra vertex stream
 struct studioBoneWeight_s
 {
 	float			weight[MAX_MODEL_VERTEX_WEIGHTS];
@@ -119,13 +129,7 @@ struct studioBoneWeight_s
 };
 ALIGNED_TYPE(studioBoneWeight_s, 4) studioBoneWeight_t;
 
-struct studioVertexPosUv_s
-{
-	Vector3D		point;
-	Vector2D		texCoord;
-};
-ALIGNED_TYPE(studioVertexPosUv_s, 4) studioVertexPosUv_t;
-
+// TBN extra vertex stream
 struct studioVertexTBN_s
 {
 	Vector3D		tangent;
@@ -133,6 +137,13 @@ struct studioVertexTBN_s
 	Vector3D		normal;
 };
 ALIGNED_TYPE(studioVertexTBN_s, 4) studioVertexTBN_t;
+
+// Color extra vertex stream
+struct studioVertexColor_s
+{
+	uint			color;	// dword packed color
+};
+ALIGNED_TYPE(studioVertexColor_s, 4) studioVertexColor_t;
 
 // Vertex descriptor (EGF version <= 13)
 struct studioVertexDesc_s
@@ -148,6 +159,8 @@ struct studioVertexDesc_s
 	studioBoneWeight_t	boneweights;
 };
 ALIGNED_TYPE(studioVertexDesc_s, 4) studioVertexDesc_t;
+
+//-------------------------------------------
 
 // mesh
 struct studioMeshDesc_s
