@@ -94,7 +94,7 @@ public:
 class CEmptyVertexFormat : public IVertexFormat
 {
 public:
-	CEmptyVertexFormat(const char* name, const VertexFormatDesc_t *desc, int nAttribs)
+	CEmptyVertexFormat(const char* name, const VertexFormatDesc *desc, int nAttribs)
 	{
 		m_name = name;
 		memset(m_streamStride, 0, sizeof(m_streamStride));
@@ -111,7 +111,7 @@ public:
 		return 0;
 	}
 
-	ArrayCRef<VertexFormatDesc_t> GetFormatDesc() const
+	ArrayCRef<VertexFormatDesc> GetFormatDesc() const
 	{
 		return m_vertexDesc;
 	}
@@ -119,7 +119,7 @@ public:
 protected:
 	int							m_streamStride[MAX_VERTEXSTREAM];
 	EqString					m_name;
-	Array<VertexFormatDesc_t>	m_vertexDesc{ PP_SL };
+	Array<VertexFormatDesc>	m_vertexDesc{ PP_SL };
 };
 
 class ShaderAPIEmpty : public ShaderAPI_Base
@@ -344,7 +344,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
+	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc)
 	{
 		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc.ptr(), formatDesc.numElem());
 		m_VFList.append(pVF);

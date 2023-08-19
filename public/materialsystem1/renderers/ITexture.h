@@ -21,7 +21,7 @@ enum ETextureLockFlags
 	TEXLOCK_REGION_BOX		= (1 << 3),
 };
 
-typedef struct SamplerStateParam_s SamplerStateParam_t;
+struct SamplerStateParams;
 
 class ITexture : public RefCountedObject<ITexture>
 {
@@ -29,14 +29,14 @@ public:
 	struct LockInOutData;
 
 	// initializes procedural (lockable) texture
-	virtual bool				InitProcedural(const SamplerStateParam_t& sampler,
+	virtual bool				InitProcedural(const SamplerStateParams& sampler,
 											ETextureFormat format,
 											int width, int height, int depth = 1, int arraySize = 1,
 											int flags = 0
 											) = 0;
 
 	// initializes texture from image array of images
-	virtual	bool				Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0) = 0;
+	virtual	bool				Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0) = 0;
 
 	// generates a new error texture
 	virtual bool				GenerateErrorTexture(int flags = 0) = 0;

@@ -415,7 +415,7 @@ void ShaderAPI_Base::FreeTexture(ITexture* pTexture)
 // Textures
 //-------------------------------------------------------------
 
-ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParams& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return nullptr;
@@ -487,7 +487,7 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 	FixedArray<CRefPtr<CImage>, 1> imgs;
 	imgs.append(CRefPtr(&genTex));
 
-	SamplerStateParam_t sampler;
+	SamplerStateParams sampler;
 	SamplerStateParams_Make(sampler, m_caps, texFilter, textureAddress, textureAddress, textureAddress);
 	return g_pShaderAPI->CreateTexture(imgs, sampler, nFlags);
 }

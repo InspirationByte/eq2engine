@@ -16,7 +16,7 @@ class IVertexFormat;
 class CViewParams;
 class Volume;
 struct TexAtlasEntry_t;
-typedef struct VertexFormatDesc_s VertexFormatDesc_t;
+struct VertexFormatDesc;
 
 using IMaterialPtr = CRefPtr<IMaterial>;
 
@@ -29,7 +29,7 @@ enum EPartRenderFlags
 // particle vertex with color
 struct PFXVertex_t
 {
-	static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+	static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
 
 	PFXVertex_t() = default;
 	PFXVertex_t(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)

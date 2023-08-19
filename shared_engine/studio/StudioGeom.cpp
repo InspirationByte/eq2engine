@@ -57,18 +57,18 @@ EGFHwVertex::BoneWeights::BoneWeights(const studioVertexDesc_t& initFrom)
 	}
 }
 
-ArrayCRef<VertexFormatDesc_t> EGFHwVertex::PositionUV::GetVertexFormatDesc()
+ArrayCRef<VertexFormatDesc> EGFHwVertex::PositionUV::GetVertexFormatDesc()
 {
-	static const VertexFormatDesc_t g_EGFVertexUvFormat[] = {
+	static const VertexFormatDesc g_EGFVertexUvFormat[] = {
 		{ VERT_POS_UV, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },// position
 		{ VERT_POS_UV, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },// texcoord 0
 	};
 	return ArrayCRef(g_EGFVertexUvFormat, elementsOf(g_EGFVertexUvFormat));
 }
 
-ArrayCRef<VertexFormatDesc_t> EGFHwVertex::TBN::GetVertexFormatDesc()
+ArrayCRef<VertexFormatDesc> EGFHwVertex::TBN::GetVertexFormatDesc()
 {
-	static const VertexFormatDesc_t g_EGFTBNFormat[] = {
+	static const VertexFormatDesc g_EGFTBNFormat[] = {
 		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "tangent" },	// Tangent (TC1)
 		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "binormal" },	// Binormal (TC2)
 		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// Normal (TC3)
@@ -76,9 +76,9 @@ ArrayCRef<VertexFormatDesc_t> EGFHwVertex::TBN::GetVertexFormatDesc()
 	return ArrayCRef(g_EGFTBNFormat, elementsOf(g_EGFTBNFormat));
 }
 
-ArrayCRef<VertexFormatDesc_t> EGFHwVertex::BoneWeights::GetVertexFormatDesc()
+ArrayCRef<VertexFormatDesc> EGFHwVertex::BoneWeights::GetVertexFormatDesc()
 {
-	static const VertexFormatDesc_t g_EGFBoneWeightsFormat[] = {
+	static const VertexFormatDesc g_EGFBoneWeightsFormat[] = {
 		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "boneid" },	// Bone indices (hw skinning), (TC4)
 		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "bonew" }	// Bone weights (hw skinning), (TC5)
 	};
@@ -855,7 +855,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 	g_pShaderAPI->SetVertexFormat(rhiVertFmt);
 	// setup vertex buffers
 	{
-		ArrayCRef<VertexFormatDesc_t> fmtDesc = rhiVertFmt->GetFormatDesc();
+		ArrayCRef<VertexFormatDesc> fmtDesc = rhiVertFmt->GetFormatDesc();
 
 		int setVertStreams = 0;
 		int numBitsSet = 0;
@@ -864,7 +864,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			if (numBitsSet == EGFHwVertex::VERT_COUNT)
 				break;
 
-			const VertexFormatDesc_t& desc = fmtDesc[i];
+			const VertexFormatDesc& desc = fmtDesc[i];
 			const EGFHwVertex::VertexStream vertStreamId = drawProperties.vertexStreamMapping[desc.streamId];
 
 			if (setVertStreams & (1 << int(vertStreamId)))

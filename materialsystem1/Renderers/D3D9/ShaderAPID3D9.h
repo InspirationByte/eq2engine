@@ -143,7 +143,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc);
+	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc);
 	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr);
 	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr);
 
@@ -286,19 +286,19 @@ private:
 	CD3D9Texture* m_fbDepthTexture{ nullptr };
 
 	// Sampler states is not binding same as OpenGL
-	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE]{ nullptr };
-	SamplerStateParam_t			m_pCurrentSamplerStates[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE]{ nullptr };
+	SamplerStateParams			m_pCurrentSamplerStates[MAX_SAMPLERSTATE];
 	int							m_nCurrentSamplerStateDirty{ -1 };
 
 	// Sampler states is not binding same as OpenGL
-	SamplerStateParam_t*		m_pSelectedVertexSamplerStates[MAX_SAMPLERSTATE]{ nullptr };
-	SamplerStateParam_t			m_pCurrentVertexSamplerStates[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pSelectedVertexSamplerStates[MAX_SAMPLERSTATE]{ nullptr };
+	SamplerStateParams			m_pCurrentVertexSamplerStates[MAX_SAMPLERSTATE];
 	int							m_nCurrentVertexSamplerStateDirty{ -1 };
 
 	UINT						m_nSelectedStreamParam[MAX_VERTEXSTREAM]{ 0 };
 
 	// Custom blend state
-	SamplerStateParam_t			m_defaultSamplerState;
+	SamplerStateParams			m_defaultSamplerState;
 
 	int							m_nCurrentSrcFactor{ BLENDFACTOR_ONE };
 	int							m_nCurrentDstFactor{ BLENDFACTOR_ZERO };

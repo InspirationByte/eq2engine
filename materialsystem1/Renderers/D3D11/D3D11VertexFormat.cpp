@@ -26,7 +26,7 @@ int	CVertexFormatD3DX10::GetVertexSize(int stream) const
 	return m_streamStride[stream];
 }
 
-ArrayCRef<VertexFormatDesc_t> CVertexFormatD3DX10::GetFormatDesc() const
+ArrayCRef<VertexFormatDesc> CVertexFormatD3DX10::GetFormatDesc() const
 {
 	return m_vertexDesc;
 }

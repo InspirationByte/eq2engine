@@ -8,7 +8,7 @@
 #pragma once
 #include "materialsystem1/IDynamicMesh.h"
 
-typedef struct VertexFormatDesc_s VertexFormatDesc_t;
+struct VertexFormatDesc;
 class IVertexFormat;
 class IVertexBuffer;
 class IIndexBuffer;
@@ -19,7 +19,7 @@ public:
 	CDynamicMesh();
 	~CDynamicMesh();
 
-	bool			Init(const VertexFormatDesc_t* desc, int numAttribs );
+	bool			Init(const VertexFormatDesc* desc, int numAttribs );
 	void			Destroy();
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
@@ -27,7 +27,7 @@ public:
 	ER_PrimitiveType	GetPrimitiveType() const;
 
 	// returns a pointer to vertex format description
-	ArrayCRef<VertexFormatDesc_t>	GetVertexFormatDesc() const;
+	ArrayCRef<VertexFormatDesc>	GetVertexFormatDesc() const;
 
 	// allocates geometry chunk. Returns the start index. Will return -1 if failed
 	// addStripBreak is for PRIM_TRIANGLE_STRIP. Set it false to work with current strip

@@ -612,7 +612,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 			m_spacing = 0.0f;
 			{
-				SamplerStateParam_t samplerParams;
+				SamplerStateParams samplerParams;
 				SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
 
 				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_NOQUALITYLOD);
@@ -694,7 +694,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				float interval = KV_GetValueFloat(pFontSizeSection->FindSection("interval"), 0, 0.75);
 
 				{
-					SamplerStateParam_t samplerParams;
+					SamplerStateParams samplerParams;
 					SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
 
 					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD);

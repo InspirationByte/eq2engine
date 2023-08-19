@@ -14,9 +14,9 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-ArrayCRef<VertexFormatDesc_t> PFXVertex_t::GetVertexFormatDesc()
+ArrayCRef<VertexFormatDesc> PFXVertex_t::GetVertexFormatDesc()
 {
-	static VertexFormatDesc_t s_PFXVertexFormatDesc[] = {
+	static VertexFormatDesc s_PFXVertexFormatDesc[] = {
 		{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
 		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texture coord
 		{ 0, 4, VERTEXATTRIB_COLOR, ATTRIBUTEFORMAT_UBYTE, "color" },			// color
@@ -234,7 +234,7 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	if(!m_vertexFormat)
 	{
-		ArrayCRef<VertexFormatDesc_t> fmtDesc = PFXVertex_t::GetVertexFormatDesc();
+		ArrayCRef<VertexFormatDesc> fmtDesc = PFXVertex_t::GetVertexFormatDesc();
 		m_vertexFormat = g_pShaderAPI->CreateVertexFormat("PFXVertex", fmtDesc);
 	}
 

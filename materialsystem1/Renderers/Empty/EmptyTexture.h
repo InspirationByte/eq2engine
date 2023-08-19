@@ -14,7 +14,7 @@ public:
 	friend class ShaderAPIEmpty;
 
 	// initializes texture from image array of images
-	bool Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
+	bool Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
 
 	// locks texture for modifications, etc
 	bool Lock(LockInOutData& data);

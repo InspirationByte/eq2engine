@@ -89,7 +89,7 @@ void CTextureLoader::Initialize(const char* texturePath, const char* textureSRCP
 	m_textureSRCPath.Path_FixSlashes();
 }
 
-ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
+ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags)
 {
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
@@ -185,7 +185,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	return texture;
 }
 
-Future<ITexturePtr> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
+Future<ITexturePtr> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags)
 {
 	PROF_EVENT("Load Texture from file");
 

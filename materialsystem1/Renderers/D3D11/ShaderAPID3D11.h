@@ -213,7 +213,7 @@ public:
 	IRenderState*				CreateRasterizerState( const RasterizerStateParams_t &rasterDesc );
 
 	// creates sampler state
-	IRenderState*				CreateSamplerState( const SamplerStateParam_t &samplerDesc );
+	IRenderState*				CreateSamplerState( const SamplerStateParams &samplerDesc );
 
 	// completely destroys shader
 	void						DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false );
@@ -222,7 +222,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc);
+	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc);
 	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr);
 	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr);
 
@@ -249,7 +249,7 @@ protected:
 	static void					InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice);
 	static void					InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice);
 
-	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
+	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParams& sSamplingParams,int nFlags = 0);
 	ID3D10Resource*				CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags = 0);
 	
 	// Creates empty texture resource.
@@ -258,7 +258,7 @@ protected:
 	static bool					FillShaderResourceView(ID3D10SamplerState** samplers, ID3D10ShaderResourceView** dest, int& min, int& max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures, const int selectedTextureSlices[], int currentTextureSlices[]);
 	static bool					InternalFillSamplerState(ID3D10SamplerState** dest, int& min, int& max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures);
 
-	//void						InternalSetupSampler(uint texTarget,SamplerStateParam_t *sSamplingParams);
+	//void						InternalSetupSampler(uint texTarget,SamplerStateParams *sSamplingParams);
 	//void						InternalChangeFrontFace(int nCullFaceMode);
 
 	//ID3D10RenderTargetView*		m_pBackBufferRTV{ nullptr };
@@ -285,18 +285,18 @@ protected:
 	int							m_pSelectedTextureSlicesPS[MAX_TEXTUREUNIT];
 
 	// Sampler states is not binding same as OpenGL
-	SamplerStateParam_t*		m_pSelectedSamplerStatesVS[MAX_SAMPLERSTATE];
-	SamplerStateParam_t*		m_pSelectedSamplerStatesGS[MAX_SAMPLERSTATE];
-	SamplerStateParam_t*		m_pSelectedSamplerStatesPS[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pSelectedSamplerStatesVS[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pSelectedSamplerStatesGS[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pSelectedSamplerStatesPS[MAX_SAMPLERSTATE];
 
-	SamplerStateParam_t*		m_pCurrentSamplerStatesVS[MAX_SAMPLERSTATE];
-	SamplerStateParam_t*		m_pCurrentSamplerStatesGS[MAX_SAMPLERSTATE];
-	SamplerStateParam_t*		m_pCurrentSamplerStatesPS[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pCurrentSamplerStatesVS[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pCurrentSamplerStatesGS[MAX_SAMPLERSTATE];
+	SamplerStateParams*		m_pCurrentSamplerStatesPS[MAX_SAMPLERSTATE];
 
 	int							m_nCurrentDepthSlice{ 0 };
 
 	// Custom blend state
-	SamplerStateParam_t*		m_pCustomSamplerState{ nullptr };
+	SamplerStateParams*		m_pCustomSamplerState{ nullptr };
 	int							m_nCurrentFrontFace;
 
 	ID3D10Device*				m_pD3DDevice{ nullptr };

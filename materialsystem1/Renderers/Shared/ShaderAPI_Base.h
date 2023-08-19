@@ -102,7 +102,7 @@ public:
 //-------------------------------------------------------------
 
 	// creates texture from image array, used in LoadTexture, common use only
-	ITexturePtr							CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
+	ITexturePtr							CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParams& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
 	ITexturePtr							CreateProceduralTexture(const char* pszName,

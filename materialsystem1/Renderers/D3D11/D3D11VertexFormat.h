@@ -18,11 +18,11 @@ public:
 	const char*			GetName() const;
 
 	int					GetVertexSize(int stream) const;;
-	ArrayCRef<VertexFormatDesc_t>	GetFormatDesc() const;
+	ArrayCRef<VertexFormatDesc>	GetFormatDesc() const;
 
 protected:
 	int							m_streamStride[MAX_VERTEXSTREAM]{ 0 };
-	Array<VertexFormatDesc_t>	m_vertexDesc{ PP_SL };
+	Array<VertexFormatDesc>	m_vertexDesc{ PP_SL };
 	EqString					m_name;
 	ID3D10InputLayout*			m_vertexDecl{ nullptr };
 };

@@ -83,7 +83,7 @@ void CGLTexture::ReleaseTextures()
 	m_glTarget = GL_NONE;
 }
 
-void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t &sampler, int mipMapCount)
+void SetupGLSamplerState(uint texTarget, const SamplerStateParams &sampler, int mipMapCount)
 {
 	// Set requested wrapping modes
 	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, g_gl_texAddrModes[sampler.wrapS]);
@@ -142,7 +142,7 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t &sampler, int
 #endif
 }
 
-GLTextureRef_t CGLTexture::CreateGLTexture(const CImage *img, const SamplerStateParam_t &sampler, int startMip, int mipCount) const
+GLTextureRef_t CGLTexture::CreateGLTexture(const CImage *img, const SamplerStateParams &sampler, int startMip, int mipCount) const
 {
 	// EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0
 
@@ -360,7 +360,7 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage *image, int 
 }
 
 // initializes texture from image array of images
-bool CGLTexture::Init(const SamplerStateParam_t &sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
+bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
 {
 	// FIXME: only release if pool, flags, format and size is different
 	Release();

@@ -77,7 +77,7 @@ CDynamicMesh::~CDynamicMesh()
 {
 }
 
-bool CDynamicMesh::Init(const VertexFormatDesc_t* desc, int numAttribs )
+bool CDynamicMesh::Init(const VertexFormatDesc* desc, int numAttribs )
 {
 	if(m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr)
 		return true;
@@ -135,9 +135,9 @@ void CDynamicMesh::Destroy()
 }
 
 // returns a pointer to vertex format description
-ArrayCRef<VertexFormatDesc_t> CDynamicMesh::GetVertexFormatDesc() const
+ArrayCRef<VertexFormatDesc> CDynamicMesh::GetVertexFormatDesc() const
 {
-	ArrayCRef<VertexFormatDesc_t> desc(nullptr);
+	ArrayCRef<VertexFormatDesc> desc(nullptr);
 	if(m_vertexFormat)
 		desc = m_vertexFormat->GetFormatDesc();
 

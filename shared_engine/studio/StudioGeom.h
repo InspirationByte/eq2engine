@@ -18,7 +18,7 @@ using IMaterialPtr = CRefPtr<IMaterial>;
 
 struct DecalMakeInfo;
 struct DecalData;
-typedef struct VertexFormatDesc_s VertexFormatDesc_t;
+struct VertexFormatDesc;
 
 // egf model hardware vertex
 struct EGFHwVertex
@@ -36,7 +36,7 @@ struct EGFHwVertex
 
 	struct PositionUV
 	{
-		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
 
 		PositionUV() = default;
 		PositionUV(const studioVertexDesc_t& initFrom);
@@ -47,7 +47,7 @@ struct EGFHwVertex
 
 	struct TBN
 	{
-		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
 
 		TBN() = default;
 		TBN(const studioVertexDesc_t& initFrom);
@@ -62,7 +62,7 @@ struct EGFHwVertex
 
 	struct BoneWeights
 	{
-		static ArrayCRef<VertexFormatDesc_t> GetVertexFormatDesc();
+		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
 
 		BoneWeights() = default;
 		BoneWeights(const studioVertexDesc_t& initFrom);

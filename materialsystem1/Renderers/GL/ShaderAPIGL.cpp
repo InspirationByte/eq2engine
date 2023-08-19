@@ -831,7 +831,7 @@ ITexturePtr ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	pTexture->m_glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
-	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
@@ -2255,7 +2255,7 @@ void ShaderAPIGL::SetShaderConstantRaw(int nameHash, const void *data, int nSize
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
+IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc)
 {
 	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc.ptr(), formatDesc.numElem());
 

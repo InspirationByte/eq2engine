@@ -24,7 +24,7 @@ class CTexture : public ITexture
 	friend class ShaderAPI_Base;
 
 public:
-	bool						InitProcedural(const SamplerStateParam_t& sampler, ETextureFormat format, int width, int height, int depth = 1, int arraySize = 1, int flags = 0);
+	bool						InitProcedural(const SamplerStateParams& sampler, ETextureFormat format, int width, int height, int depth = 1, int arraySize = 1, int flags = 0);
 	
 	// generates a new error texture
 	bool						GenerateErrorTexture(int flags = 0);
@@ -43,7 +43,7 @@ public:
 	void						SetFlags(int iFlags) { m_iFlags = iFlags; }
 	int							GetFlags() const { return m_iFlags; }
 
-	const SamplerStateParam_t&	GetSamplerState() const {return m_samplerState;}
+	const SamplerStateParams&	GetSamplerState() const {return m_samplerState;}
 
 	int							GetAnimationFrameCount() const { return m_numAnimatedTextureFrames; }
 	int							GetAnimationFrame() const { return m_nAnimatedTextureFrame; }
@@ -53,7 +53,7 @@ public:
 
 	void						SetMipCount(int count) { m_mipCount = count; }
 	void						SetFormat(ETextureFormat newformat) { m_iFormat = newformat; }
-	void						SetSamplerState(const SamplerStateParam_t& newSamplerState) { m_samplerState = newSamplerState; }
+	void						SetSamplerState(const SamplerStateParams& newSamplerState) { m_samplerState = newSamplerState; }
 
 protected:
 	EqString				m_szTexName;
@@ -83,5 +83,5 @@ protected:
 
 	ETextureFormat			m_iFormat{ FORMAT_NONE };
 
-	SamplerStateParam_t		m_samplerState;
+	SamplerStateParams		m_samplerState;
 };

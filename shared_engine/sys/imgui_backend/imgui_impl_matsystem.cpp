@@ -169,7 +169,7 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	FixedArray<CRefPtr<CImage>, 1> imgs;
 	imgs.append(CRefPtr(&image));
 	
-	SamplerStateParam_t params;
+	SamplerStateParams params;
 	SamplerStateParams_Make(params, g_pShaderAPI->GetCaps(), TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 	bd->FontTexture = g_pShaderAPI->CreateTexture(imgs, params);
 

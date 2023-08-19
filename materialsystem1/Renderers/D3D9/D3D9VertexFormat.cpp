@@ -10,7 +10,7 @@
 #include "shaderapid3d9_def.h"
 #include "D3D9VertexFormat.h"
 
-CD3D9VertexFormat::CD3D9VertexFormat(const char* name, const VertexFormatDesc_t* desc, int numAttribs)
+CD3D9VertexFormat::CD3D9VertexFormat(const char* name, const VertexFormatDesc* desc, int numAttribs)
 {
 	m_name = name;
 	memset(m_streamStride, 0, sizeof(m_streamStride));
@@ -31,7 +31,7 @@ int CD3D9VertexFormat::GetVertexSize(int nStream) const
 	return m_streamStride[nStream];
 }
 
-ArrayCRef<VertexFormatDesc_t> CD3D9VertexFormat::GetFormatDesc() const
+ArrayCRef<VertexFormatDesc> CD3D9VertexFormat::GetFormatDesc() const
 {
 	return m_vertexDesc;
 }
@@ -49,23 +49,25 @@ void CD3D9VertexFormat::GenVertexElement(D3DVERTEXELEMENT9* elems)
 	// Fill the vertex element array
 	for (int i = 0; i < m_vertexDesc.numElem(); i++)
 	{
-		const VertexFormatDesc_t& fmtdesc = m_vertexDesc[i];
+		const VertexFormatDesc& fmtdesc = m_vertexDesc[i];
 		D3DVERTEXELEMENT9& elem = elems[numRealAttribs];
 
-		int stream = fmtdesc.streamId;
-		int size = fmtdesc.elemCount;
+		const int stream = fmtdesc.streamId;
+		const int size = fmtdesc.elemCount;
 
 		// if not unused
 		if(fmtdesc.attribType != VERTEXATTRIB_UNUSED)
 		{
+			const ER_VertexAttribType attribType = static_cast<ER_VertexAttribType>(fmtdesc.attribType & VERTEXATTRIB_MASK);
+
 			ASSERT_MSG(size - 1 < elementsOf(g_d3d9_decltypes[fmtdesc.attribFormat]), "VertexFormat size - incorrectly set up");
 
 			elem.Stream = stream;
 			elem.Offset = m_streamStride[stream];
 			elem.Type = g_d3d9_decltypes[fmtdesc.attribFormat][size - 1];
 			elem.Method = D3DDECLMETHOD_DEFAULT;
-			elem.Usage = g_d3d9_vertexUsage[fmtdesc.attribType];
-			elem.UsageIndex = index[fmtdesc.attribType]++;
+			elem.Usage = g_d3d9_vertexUsage[attribType];
+			elem.UsageIndex = index[attribType]++;
 
 			numRealAttribs++;
 		}

@@ -64,13 +64,13 @@ int CStudioCache::PrecacheModel(const char* modelName)
 		fmtBuilder.SetStream(1, EGFHwVertex::TBN::GetVertexFormatDesc(), "TBN");
 
 		{
-			ArrayCRef<VertexFormatDesc_t> genFmt = fmtBuilder.Build();
+			ArrayCRef<VertexFormatDesc> genFmt = fmtBuilder.Build();
 			m_egfFormat[0] = g_pShaderAPI->CreateVertexFormat("EGFVertex", genFmt);
 		}
 
 		fmtBuilder.SetStream(2, EGFHwVertex::BoneWeights::GetVertexFormatDesc(), "BoneWeight");
 		{
-			ArrayCRef<VertexFormatDesc_t> genFmt = fmtBuilder.Build();
+			ArrayCRef<VertexFormatDesc> genFmt = fmtBuilder.Build();
 			m_egfFormat[1] = g_pShaderAPI->CreateVertexFormat("EGFVertexSkinned", genFmt);
 		}
 	}

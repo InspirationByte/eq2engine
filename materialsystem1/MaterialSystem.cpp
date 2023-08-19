@@ -41,7 +41,7 @@ static CMaterialSystem s_matsystem;
 IMaterialSystem* materials = &s_matsystem;
 
 // standard vertex format used by the material system's dynamic mesh instance
-static VertexFormatDesc_t g_dynMeshVertexFormatDesc[] = {
+static VertexFormatDesc g_dynMeshVertexFormatDesc[] = {
 	{0, 4, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_FLOAT, "position"},
 	{0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF, "texcoord"},
 	{0, 4, VERTEXATTRIB_NORMAL,		ATTRIBUTEFORMAT_HALF, "normal"},
@@ -425,7 +425,7 @@ void CMaterialSystem::CreateWhiteTexture()
 		}
 	}
 
-	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
 	FixedArray<CRefPtr<CImage>, 1> images;

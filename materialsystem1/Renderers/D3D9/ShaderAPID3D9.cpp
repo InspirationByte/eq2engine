@@ -537,7 +537,7 @@ void ShaderAPID3D9::ApplyTextures()
 #endif
 
 				m_pD3DDevice->SetTexture(i, pTexture->GetCurrentTexture());
-				m_pSelectedSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
+				m_pSelectedSamplerStates[i] = (SamplerStateParams*)&pTexture->GetSamplerState();
 
 				// changed texture means changed sampler state
 				m_nCurrentSamplerStateDirty |= (1 << i);
@@ -560,7 +560,7 @@ void ShaderAPID3D9::ApplyTextures()
 			else 
 			{
 				m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0+i, pTexture->GetCurrentTexture());
-				m_pSelectedVertexSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
+				m_pSelectedVertexSamplerStates[i] = (SamplerStateParams*)&pTexture->GetSamplerState();
 
 				// changed texture means changed sampler state
 				m_nCurrentVertexSamplerStateDirty |= (1 << i);
@@ -575,12 +575,12 @@ void ShaderAPID3D9::ApplySamplerState()
 {
 	for (int i = 0; i < m_caps.maxTextureUnits; i++)
 	{
-		SamplerStateParam_t* pSelectedSamplerState = m_pSelectedSamplerStates[i];
+		SamplerStateParams* pSelectedSamplerState = m_pSelectedSamplerStates[i];
 
 		if (m_nCurrentSamplerStateDirty & (1 << i))
 		{
-			SamplerStateParam_t &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
-			SamplerStateParam_t &css = m_pCurrentSamplerStates[i];
+			SamplerStateParams &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
+			SamplerStateParams &css = m_pCurrentSamplerStates[i];
 
 			if (ss.minFilter != css.minFilter)
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, g_d3d9_texFilterType[css.minFilter = ss.minFilter]);
@@ -605,12 +605,12 @@ void ShaderAPID3D9::ApplySamplerState()
 	// Vertex texture samplers
 	for (int i = 0; i < m_caps.maxVertexTextureUnits; i++)
 	{
-		SamplerStateParam_t* pSelectedSamplerState = m_pSelectedVertexSamplerStates[i];
+		SamplerStateParams* pSelectedSamplerState = m_pSelectedVertexSamplerStates[i];
 
 		if (m_nCurrentVertexSamplerStateDirty & (1 << i))
 		{
-			SamplerStateParam_t &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
-			SamplerStateParam_t &css = m_pCurrentVertexSamplerStates[i];
+			SamplerStateParams &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
+			SamplerStateParams &css = m_pCurrentVertexSamplerStates[i];
 
 			if (ss.minFilter != css.minFilter)
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, g_d3d9_texFilterType[css.minFilter = ss.minFilter]);
@@ -1276,7 +1276,7 @@ ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFor
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(EqString::Format("_sapi_rt_%d", m_TextureList.size()).ToCString());
 
-	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
@@ -1305,7 +1305,7 @@ ITexturePtr ShaderAPID3D9::CreateNamedRenderTarget(const char* pszName,int width
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 
-	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
@@ -2367,7 +2367,7 @@ void ShaderAPID3D9::SetShaderConstantRaw(int nameHash, const void *data, int nSi
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
+IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc)
 {
 	CD3D9VertexFormat* pFormat = PPNew CD3D9VertexFormat(name, formatDesc.ptr(), formatDesc.numElem());
 

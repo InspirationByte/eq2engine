@@ -241,7 +241,7 @@ MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorT
 
 	if(mv.IsValid()) 
 	{
-		SamplerStateParam_t samplerParams;
+		SamplerStateParams samplerParams;
 		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), (ER_TextureFilterMode)m_texFilter, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode);
 
 		if(mv.Get().Length())

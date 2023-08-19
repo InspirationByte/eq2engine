@@ -147,7 +147,7 @@ static int PrimCount_None( int )
 // Vertex type
 enum ER_VertexAttribType : int
 {
-	VERTEXATTRIB_UNUSED		= 0,	// or unused
+	VERTEXATTRIB_UNUSED		= 0,
 
 	VERTEXATTRIB_COLOR,
 	VERTEXATTRIB_POSITION,
@@ -157,6 +157,12 @@ enum ER_VertexAttribType : int
 	VERTEXATTRIB_BINORMAL,
 
 	VERTEXATTRIB_COUNT,
+	VERTEXATTRIB_MASK = 31
+};
+
+enum ER_VertexAttribFlag : int
+{
+	VERTEXATTRIB_FLAG_INSTANCE = (1 << 15)
 };
 
 // Attribute format
@@ -182,17 +188,16 @@ enum ER_BufferAccess : int
 	BUFFER_DYNAMIC,		// = 2
 };
 
-typedef struct VertexFormatDesc_s
+struct VertexFormatDesc
 {
 	int					streamId{ 0 };
 	int					elemCount{ 0 };
 
-	ER_VertexAttribType	attribType{ VERTEXATTRIB_UNUSED };
+	int					attribType{ 0 }; // also holds flags, use VERTEXATTRIB_MASK to retrieve attribute type.
 	ER_AttributeFormat	attribFormat{ ATTRIBUTEFORMAT_FLOAT };
 
 	const char*			name{ nullptr };
-
-}VertexFormatDesc_t;
+};
 
 // comparison functions
 enum ER_CompareFunc : int
@@ -209,7 +214,7 @@ enum ER_CompareFunc : int
 	COMPFUNC_ALWAYS,		// 7
 };
 
-typedef struct SamplerStateParam_s
+struct SamplerStateParams
 {
 	ER_TextureFilterMode		minFilter{ TEXFILTER_NEAREST };
 	ER_TextureFilterMode		magFilter{ TEXFILTER_NEAREST };
@@ -223,9 +228,9 @@ typedef struct SamplerStateParam_s
 	int							aniso{ 4 };
 	float						lod{ 1.0f };
 	void*						userData{ nullptr };
-}SamplerStateParam_t;
+};
 
-static void SamplerStateParams_Make(SamplerStateParam_t& samplerParams, const ShaderAPICaps_t& caps, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
+static void SamplerStateParams_Make(SamplerStateParams& samplerParams, const ShaderAPICaps_t& caps, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
 {
 	// Setup filtering mode
 	samplerParams.minFilter = textureFilterType;

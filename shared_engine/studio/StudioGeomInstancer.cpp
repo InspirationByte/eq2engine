@@ -37,7 +37,7 @@ void CBaseEqGeomInstancer::ValidateAssert()
 	ASSERT_MSG(m_vertFormat != nullptr, "Instancer is not valid - did you forgot to initialize it???");
 }
 
-void CBaseEqGeomInstancer::InitEx(ArrayCRef<VertexFormatDesc_t> instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
+void CBaseEqGeomInstancer::InitEx(ArrayCRef<VertexFormatDesc> instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
 {
 	Cleanup();
 	m_ownsVertexFormat = true;
@@ -161,18 +161,16 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 	g_pShaderAPI->SetVertexFormat(m_vertFormat);
 	const int maxVertexCount = model->m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
+	int instanceStreamId = -1;
+
 	// setup vertex buffers
 	{
-		ArrayCRef<VertexFormatDesc_t> fmtDesc = m_vertFormat->GetFormatDesc();
+		ArrayCRef<VertexFormatDesc> fmtDesc = m_vertFormat->GetFormatDesc();
 
 		int setVertStreams = 0;
-		int numBitsSet = 0;
 		for (int i = 0; i < fmtDesc.numElem(); ++i)
 		{
-			if (numBitsSet == EGFHwVertex::VERT_COUNT)
-				break;
-
-			const VertexFormatDesc_t& desc = fmtDesc[i];
+			const VertexFormatDesc& desc = fmtDesc[i];
 			const EGFHwVertex::VertexStream vertStreamId = m_vertexStreamMapping[desc.streamId];
 
 			if (setVertStreams & (1 << int(vertStreamId)))
@@ -181,7 +179,12 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			g_pShaderAPI->SetVertexBuffer(model->m_vertexBuffers[vertStreamId], desc.streamId);
 
 			setVertStreams |= (1 << int(vertStreamId));
-			++numBitsSet;
+
+			if (instanceStreamId != desc.streamId && (desc.attribType & VERTEXATTRIB_FLAG_INSTANCE))
+			{
+				ASSERT_MSG(instanceStreamId == -1, "Multiple instance streams not yet supported");
+				instanceStreamId = desc.streamId;
+			}
 		}
 	}
 
@@ -222,7 +225,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				if (buffer.numInstances == 0)
 					continue;
 
-				g_pShaderAPI->SetVertexBuffer(instBuffer, 2);
+				g_pShaderAPI->SetVertexBuffer(instBuffer, instanceStreamId);
 
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numMeshes; i++)

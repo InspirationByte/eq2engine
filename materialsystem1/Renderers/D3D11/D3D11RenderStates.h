@@ -51,6 +51,6 @@ public:
 	RenderStateType_e	GetType() const {return RENDERSTATE_SAMPLER;}
 	const void*			GetDescPtr() const { return &m_params; }
 
-	SamplerStateParam_t	m_params;
+	SamplerStateParams	m_params;
 	ID3D10SamplerState*	m_samplerState{ nullptr };
 };

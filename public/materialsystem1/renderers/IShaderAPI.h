@@ -212,7 +212,7 @@ public:
 	// BEGIN CUT HERE
 
 	// creates texture from image array
-	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
+	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParams& sampler, int nFlags = 0) = 0;
 
 	// creates procedural (lockable) texture
 	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
@@ -423,7 +423,7 @@ public:
 //-------------------------------------------------------------
 
 	// create new vertex declaration
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc ) = 0;
+	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexFormatDesc> formatDesc ) = 0;
 	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
 
 	// NOTENOTE: when you set nSize you must add the vertex structure size!

@@ -8,7 +8,7 @@
 
 #pragma once
 
-typedef struct VertexFormatDesc_s VertexFormatDesc_t;
+struct VertexFormatDesc;
 
 class IVertexFormat
 {
@@ -18,5 +18,5 @@ public:
 	virtual const char*		GetName() const = 0;
 
 	virtual int				GetVertexSize(int stream) const = 0;
-	virtual ArrayCRef<VertexFormatDesc_t>	GetFormatDesc() const = 0;
+	virtual ArrayCRef<VertexFormatDesc>	GetFormatDesc() const = 0;
 };

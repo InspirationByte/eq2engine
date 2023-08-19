@@ -12,12 +12,12 @@ class CVertexFormatGL : public IVertexFormat
 {
 	friend class		ShaderAPIGL;
 public:
-	CVertexFormatGL(const char* name, const VertexFormatDesc_t* desc, int numAttribs);
+	CVertexFormatGL(const char* name, const VertexFormatDesc* desc, int numAttribs);
 
 	const char*			GetName() const { return m_name.ToCString(); }
 
 	int					GetVertexSize(int stream) const;
-	ArrayCRef<VertexFormatDesc_t>	GetFormatDesc() const;
+	ArrayCRef<VertexFormatDesc>	GetFormatDesc() const;
 
 protected:
 	// Vertex attribute descriptor
@@ -32,7 +32,7 @@ protected:
 
 	int							m_streamStride[MAX_VERTEXSTREAM];
 	EqString					m_name;
-	Array<VertexFormatDesc_t>	m_vertexDesc{ PP_SL };
+	Array<VertexFormatDesc>	m_vertexDesc{ PP_SL };
 
 	eqGLVertAttrDesc_t			m_genericAttribs[MAX_GL_GENERIC_ATTRIB];
 

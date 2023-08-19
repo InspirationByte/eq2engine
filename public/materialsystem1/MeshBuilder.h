@@ -92,7 +92,7 @@ public:
 protected:
 
 	IDynamicMesh*					m_mesh;
-	ArrayCRef<VertexFormatDesc_t>	m_formatDesc;
+	ArrayCRef<VertexFormatDesc>	m_formatDesc;
 
 	void*				m_curVertex;
 	int					m_stride;
@@ -140,10 +140,10 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	int vertexSize = 0;
 	for(int i = 0; i < m_formatDesc.numElem(); i++)
 	{
-		ER_AttributeFormat format = m_formatDesc[i].attribFormat;
-		ER_VertexAttribType type = m_formatDesc[i].attribType;
-		int vecCount = m_formatDesc[i].elemCount;
-		int attribSize = vecCount * s_attributeSize[format];
+		const ER_AttributeFormat format = m_formatDesc[i].attribFormat;
+		const ER_VertexAttribType type = static_cast<ER_VertexAttribType>(m_formatDesc[i].attribType & VERTEXATTRIB_MASK);
+		const int vecCount = m_formatDesc[i].elemCount;
+		const int attribSize = vecCount * s_attributeSize[format];
 
 		if(type == VERTEXATTRIB_POSITION)
 		{

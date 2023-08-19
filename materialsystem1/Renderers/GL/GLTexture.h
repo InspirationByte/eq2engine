@@ -8,7 +8,7 @@
 #pragma once
 #include "../Shared/CTexture.h"
 
-typedef struct SamplerStateParam_s SamplerStateParam_t;
+struct SamplerStateParams;
 class CImage;
 
 struct GLTextureRef_t
@@ -26,7 +26,7 @@ public:
 	~CGLTexture();
 
 	// initializes texture from image array of images
-	bool					Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
+	bool					Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
 
 	void					Release();
 	void					ReleaseTextures();
@@ -51,8 +51,8 @@ protected:
 	int						m_texSize{ 0 };
 	void					Ref_DeleteObject();
 
-	GLTextureRef_t			CreateGLTexture(const CImage* img, const SamplerStateParam_t& sampler, int startMip, int mipCount) const;
+	GLTextureRef_t			CreateGLTexture(const CImage* img, const SamplerStateParams& sampler, int startMip, int mipCount) const;
 
 };
 
-void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount = 1);
+void SetupGLSamplerState(uint texTarget, const SamplerStateParams& sampler, int mipMapCount = 1);

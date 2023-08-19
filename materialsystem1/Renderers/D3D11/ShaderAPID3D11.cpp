@@ -67,7 +67,7 @@ ShaderAPID3DX10::ShaderAPID3DX10() : ShaderAPI_Base()
 	memset(m_pCurrentTextureSlicesGS,-1,sizeof(m_pCurrentTextureSlicesGS));
 	memset(m_pCurrentTextureSlicesPS,-1,sizeof(m_pCurrentTextureSlicesPS));
 
-	m_pCustomSamplerState = new SamplerStateParam_t;
+	m_pCustomSamplerState = new SamplerStateParams;
 }
 
 void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
@@ -748,7 +748,7 @@ ITexturePtr ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureF
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName("_rt_001");
 
-	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, m_caps, textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	texSamplerParams.compareFunc = comparison;
@@ -786,7 +786,7 @@ ITexturePtr ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int wid
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 	
-	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, m_caps, textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	texSamplerParams.compareFunc = comparison;
@@ -2142,7 +2142,7 @@ IRenderState* ShaderAPID3DX10::CreateRasterizerState( const RasterizerStateParam
 }
 
 // creates rasterizer state
-IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParam_t &samplerDesc )
+IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParams &samplerDesc )
 {
 	CD3D10SamplerState* pState = nullptr;
 
@@ -2247,16 +2247,13 @@ void ShaderAPID3DX10::DestroyRenderState( IRenderState* pState, bool removeAllRe
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc_t> formatDesc)
+IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc)
 {
 	static const DXGI_FORMAT vformats[][4] = {
 		DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT,
 		DXGI_FORMAT_R16_FLOAT, DXGI_FORMAT_R16G16_FLOAT, DXGI_FORMAT_UNKNOWN,         DXGI_FORMAT_R16G16B16A16_FLOAT,
 		DXGI_FORMAT_R8_UNORM,  DXGI_FORMAT_R8G8_UNORM,   DXGI_FORMAT_UNKNOWN,         DXGI_FORMAT_R8G8B8A8_UNORM,
 	};
-
-	int index[8];
-	memset(index, 0, sizeof(index));
 
 	CVertexFormatD3DX10* pFormat = new CVertexFormatD3DX10();
 
@@ -2278,55 +2275,56 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, ArrayCRef<V
 		"uint", // not supported in shaders, so use int (tricky)
 	};
 
-
 	EqString vertexShaderString;
 	vertexShaderString.Append("struct VsIn {\n");
 
-	int nSemanticIndices[7];
-	memset(nSemanticIndices,0,sizeof(nSemanticIndices));
-
+	int index[32]{ 0 };
+	int nSemanticIndices[32]{ 0 };
 	int numRealAttribs = 0;
 
 	// Fill the vertex element array
 	for (int i = 0; i < formatDesc.numElem(); i++)
 	{
-		int stream = formatDesc[i].streamId;
-		int size = formatDesc[i].elemCount;
+		const VertexFormatDesc& vertFmt = formatDesc[i];
+		const int stream = vertFmt.streamId;
+		const int size = vertFmt.elemCount;
 
-		if(formatDesc[i].attribType != VERTEXATTRIB_UNUSED)
+		if(vertFmt.attribType != VERTEXATTRIB_UNUSED)
 		{
+			const ER_VertexAttribType attribType = static_cast<ER_VertexAttribType>(vertFmt.attribType & VERTEXATTRIB_MASK);
+			const char* attribSemantics = semantics[attribType];
+
 			pDesc[numRealAttribs].InputSlot = stream;
 			pDesc[numRealAttribs].AlignedByteOffset = pFormat->m_streamStride[stream];
-			pDesc[numRealAttribs].SemanticName = semantics[formatDesc[i].attribType];
-			pDesc[numRealAttribs].SemanticIndex = index[formatDesc[i].attribType]++;
-			pDesc[numRealAttribs].Format = vformats[formatDesc[i].attribFormat][size - 1];
+			pDesc[numRealAttribs].SemanticName = attribSemantics;
+			pDesc[numRealAttribs].SemanticIndex = index[attribType]++;
+			pDesc[numRealAttribs].Format = vformats[vertFmt.attribFormat][size - 1];
 			pDesc[numRealAttribs].InputSlotClass = D3D10_INPUT_PER_VERTEX_DATA;
 			pDesc[numRealAttribs].InstanceDataStepRate = 0;
 
-			nSemanticIndices[formatDesc[i].attribType]++;
+			nSemanticIndices[attribType]++;
 			numRealAttribs++;
 
-			char str[512];
-		
+			char str[512]{0};
 			if(size > 1)
 			{
-				if(nSemanticIndices[formatDesc[i].attribType] <= 1)
-					sprintf(str, "%s%d %s_%d : %s;\n", formatNames[formatDesc[i].attribFormat], size, semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType]);
+				if(nSemanticIndices[attribType] <= 1)
+					sprintf(str, "%s%d %s_%d : %s;\n", formatNames[vertFmt.attribFormat], size, attribSemantics, i, attribSemantics);
 				else
-					sprintf(str, "%s%d %s_%d : %s%d;\n", formatNames[formatDesc[i].attribFormat], size, semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType], nSemanticIndices[formatDesc[i].attribType]-1);
+					sprintf(str, "%s%d %s_%d : %s%d;\n", formatNames[vertFmt.attribFormat], size, attribSemantics, i, attribSemantics, nSemanticIndices[attribType]-1);
 			}
 			else
 			{
-				if(nSemanticIndices[formatDesc[i].attribType] <= 1)
-					sprintf(str, "%s %s_%d : %s;\n", formatNames[formatDesc[i].attribFormat], semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType]);
+				if(nSemanticIndices[attribType] <= 1)
+					sprintf(str, "%s %s_%d : %s;\n", formatNames[vertFmt.attribFormat], attribSemantics, i, attribSemantics);
 				else
-					sprintf(str, "%s %s_%d : %s%d;\n", formatNames[formatDesc[i].attribFormat], semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType], nSemanticIndices[formatDesc[i].attribType]-1);
+					sprintf(str, "%s %s_%d : %s%d;\n", formatNames[vertFmt.attribFormat], semantics[attribType], i, attribSemantics, nSemanticIndices[attribType]-1);
 			}
 
 			vertexShaderString.Append(str);
 		}
 
-		pFormat->m_streamStride[stream] += size * s_attributeSize[formatDesc[i].attribFormat];
+		pFormat->m_streamStride[stream] += size * s_attributeSize[vertFmt.attribFormat];
 	}
 
 	vertexShaderString.Append("};\n\n");
@@ -2953,7 +2951,7 @@ ID3D10DepthStencilView* ShaderAPID3DX10::TexResource_CreateShaderDepthStencilVie
 }
 
 
-void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
+void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParams& sampler,int nFlags)
 {
 	if(!pImages.numElem())
 		return;

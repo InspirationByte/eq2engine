@@ -13,12 +13,12 @@ class CD3D9VertexFormat : public IVertexFormat
 {
 	friend class		ShaderAPID3D9;
 public:
-	CD3D9VertexFormat(const char* name, const VertexFormatDesc_t* desc, int numAttribs);
+	CD3D9VertexFormat(const char* name, const VertexFormatDesc* desc, int numAttribs);
 	~CD3D9VertexFormat();
 
 	const char*						GetName() const {return m_name.ToCString();}
 	int								GetVertexSize(int stream) const;
-	ArrayCRef<VertexFormatDesc_t>	GetFormatDesc() const;
+	ArrayCRef<VertexFormatDesc>	GetFormatDesc() const;
 
 	//----------------------
 
@@ -27,6 +27,6 @@ public:
 protected:
 	int								m_streamStride[MAX_VERTEXSTREAM];
 	EqString						m_name;
-	Array<VertexFormatDesc_t>		m_vertexDesc{ PP_SL };
+	Array<VertexFormatDesc>		m_vertexDesc{ PP_SL };
 	IDirect3DVertexDeclaration9*	m_pVertexDecl{ nullptr };
 };

@@ -28,7 +28,7 @@ void CTexture::SetAnimationFrame(int frame)
 }
 
 // initializes procedural (lockable) texture
-bool CTexture::InitProcedural(const SamplerStateParam_t& sampler, ETextureFormat format, int width, int height, int depth, int arraySize, int flags)
+bool CTexture::InitProcedural(const SamplerStateParams& sampler, ETextureFormat format, int width, int height, int depth, int arraySize, int flags)
 {
 	if (depth == 0)
 	{
@@ -83,7 +83,7 @@ static void MakeCheckerBoxImage(ubyte* dest, int width, int height, int checkerS
 bool CTexture::GenerateErrorTexture(int flags)
 {
 	ShaderAPICaps_t emptyCaps;
-	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, emptyCaps, TEXFILTER_LINEAR, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
 
 	MColor color1(0, 0, 0, 128);
