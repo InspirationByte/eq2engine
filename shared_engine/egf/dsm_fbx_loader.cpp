@@ -303,7 +303,7 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 	const ofbx::Vec3* normals = geom.getNormals();
 	const ofbx::Vec3* tangents = geom.getTangents(); // TODO: tangent space must be preserved from FBX
 	const ofbx::Vec4* colors = geom.getColors();
-	const ofbx::Vec2* uvs = geom.getUVs();
+	const ofbx::Vec2* uvs = geom.getUVs(0);			 // TODO: multiple UV channels support (under s_uvs_max)
 
 	// get blend shapes
 	const ofbx::BlendShape* blendShape = geom.getBlendShape();
@@ -336,11 +336,10 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 					{
 						const int tVertId = vertId + (invertFaces ? 2 - tVert : tVert);
 
-						DSShapeVert vert;
+						DSShapeVert vert = shapeKey->verts.append();
 						vert.vertexId = tVertId;
 						vert.position = FromFBXVector(shapeVertices[tVertId], settings);
 						vert.normal = FromFBXVector(shapeNormals[tVertId], settings);
-						shapeKey->verts.append(vert);
 					}
 				} // vertId
 			} // k

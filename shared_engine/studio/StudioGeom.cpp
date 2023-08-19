@@ -25,43 +25,51 @@ using namespace Threading;
 EGFHwVertex::VertexStream s_defaultVertexStreamMappingDesc[] = {
 	EGFHwVertex::VERT_POS_UV,
 	EGFHwVertex::VERT_TBN,
-	EGFHwVertex::VERT_BONEWEIGHT
+	EGFHwVertex::VERT_BONEWEIGHT,
+	EGFHwVertex::VERT_COLOR,
 };
 ArrayCRef<EGFHwVertex::VertexStream> g_defaultVertexStreamMapping = { s_defaultVertexStreamMappingDesc ,  elementsOf(s_defaultVertexStreamMappingDesc) };
 
-EGFHwVertex::PositionUV::PositionUV(const studioVertexDesc_t& initFrom)
+EGFHwVertex::PositionUV::PositionUV(const studioVertexPosUv_t& initFrom)
 {
 	pos = Vector4D(initFrom.point, 1.0f);
 	texcoord = initFrom.texCoord;
 }
 
-EGFHwVertex::TBN::TBN(const studioVertexDesc_t& initFrom)
+EGFHwVertex::TBN::TBN(const studioVertexTBN_t& initFrom)
 {
 	tangent = initFrom.tangent;
 	binormal = initFrom.binormal;
 	normal = initFrom.normal;
 }
 
-EGFHwVertex::BoneWeights::BoneWeights(const studioVertexDesc_t& initFrom)
+EGFHwVertex::BoneWeights::BoneWeights()
 {
-	ASSERT(initFrom.boneweights.numweights <= MAX_MODEL_VERTEX_WEIGHTS);
-
 	memset(boneWeights, 0, sizeof(boneWeights));
 	for (int i = 0; i < MAX_MODEL_VERTEX_WEIGHTS; i++)
 		boneIndices[i] = -1;
+}
 
-	for (int i = 0; i < min(initFrom.boneweights.numweights, MAX_MODEL_VERTEX_WEIGHTS); i++)
+EGFHwVertex::BoneWeights::BoneWeights(const studioBoneWeight_t& initFrom) : BoneWeights()
+{
+	ASSERT(initFrom.numweights <= MAX_MODEL_VERTEX_WEIGHTS);
+	for (int i = 0; i < min(initFrom.numweights, MAX_MODEL_VERTEX_WEIGHTS); i++)
 	{
-		boneIndices[i] = initFrom.boneweights.bones[i];
-		boneWeights[i] = initFrom.boneweights.weight[i];
+		boneIndices[i] = initFrom.bones[i];
+		boneWeights[i] = initFrom.weight[i];
 	}
+}
+
+EGFHwVertex::Color::Color(const studioVertexColor_t& initFrom)
+{
+	color = initFrom.color;
 }
 
 ArrayCRef<VertexFormatDesc> EGFHwVertex::PositionUV::GetVertexFormatDesc()
 {
 	static const VertexFormatDesc g_EGFVertexUvFormat[] = {
-		{ VERT_POS_UV, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },// position
-		{ VERT_POS_UV, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },// texcoord 0
+		{ VERT_POS_UV, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },
+		{ VERT_POS_UV, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },
 	};
 	return ArrayCRef(g_EGFVertexUvFormat, elementsOf(g_EGFVertexUvFormat));
 }
@@ -69,9 +77,9 @@ ArrayCRef<VertexFormatDesc> EGFHwVertex::PositionUV::GetVertexFormatDesc()
 ArrayCRef<VertexFormatDesc> EGFHwVertex::TBN::GetVertexFormatDesc()
 {
 	static const VertexFormatDesc g_EGFTBNFormat[] = {
-		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "tangent" },	// Tangent (TC1)
-		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "binormal" },	// Binormal (TC2)
-		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// Normal (TC3)
+		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "tangent" },
+		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "binormal" },
+		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },
 	};
 	return ArrayCRef(g_EGFTBNFormat, elementsOf(g_EGFTBNFormat));
 }
@@ -79,10 +87,18 @@ ArrayCRef<VertexFormatDesc> EGFHwVertex::TBN::GetVertexFormatDesc()
 ArrayCRef<VertexFormatDesc> EGFHwVertex::BoneWeights::GetVertexFormatDesc()
 {
 	static const VertexFormatDesc g_EGFBoneWeightsFormat[] = {
-		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "boneid" },	// Bone indices (hw skinning), (TC4)
-		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "bonew" }	// Bone weights (hw skinning), (TC5)
+		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "boneid" },
+		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "bonew" }
 	};
 	return ArrayCRef(g_EGFBoneWeightsFormat, elementsOf(g_EGFBoneWeightsFormat));
+}
+
+ArrayCRef<VertexFormatDesc> EGFHwVertex::Color::GetVertexFormatDesc()
+{
+	static const VertexFormatDesc g_EGFColorFormat[] = {
+		{ VERT_COLOR, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_UBYTE, "color" },
+	};
+	return ArrayCRef(g_EGFColorFormat, elementsOf(g_EGFColorFormat));
 }
 
 DECLARE_CVAR_CLAMP(r_egf_LodTest, "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
@@ -322,17 +338,38 @@ void CEqStudioGeom::LoadPhysicsData()
 	}
 }
 
-static int CopyGroupVertexDataToHWList(EGFHwVertex::PositionUV* hwVertPosList, EGFHwVertex::TBN* hwVertTbnList, EGFHwVertex::BoneWeights* hwVertWeightList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)
+static int CopyGroupVertexDataToHWList(EGFHwVertex::PositionUV* hwVertPosList, EGFHwVertex::TBN* hwVertTbnList, EGFHwVertex::BoneWeights* hwVertWeightList, EGFHwVertex::Color* hwVertColorList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)
 {
 	for (int32 i = 0; i < pMesh->numVertices; i++)
 	{
-		const studioVertexDesc_t* pVertex = pMesh->pVertex(i);
-
-		hwVertPosList[currentVertexCount] = EGFHwVertex::PositionUV(*pVertex);
-		hwVertTbnList[currentVertexCount] = EGFHwVertex::TBN(*pVertex);
-		hwVertWeightList[currentVertexCount] = EGFHwVertex::BoneWeights(*pVertex);
-
-		aabb.AddVertex(pVertex->point);
+		if(hwVertPosList)
+		{
+			if (pMesh->vertexType & STUDIO_VERTFLAG_POS_UV)
+			{
+				const studioVertexPosUv_t* vertPosUv = pMesh->pPosUvs(i);
+				hwVertPosList[currentVertexCount] = EGFHwVertex::PositionUV(*vertPosUv);
+				aabb.AddVertex(vertPosUv->point);
+			}
+		}
+		if(hwVertTbnList)
+		{
+			if (pMesh->vertexType & STUDIO_VERTFLAG_TBN)
+				hwVertTbnList[currentVertexCount] = EGFHwVertex::TBN(*pMesh->pTBNs(i));
+		}
+		if(hwVertWeightList)
+		{
+			if (pMesh->vertexType & STUDIO_VERTFLAG_BONEWEIGHT)
+				hwVertWeightList[currentVertexCount] = EGFHwVertex::BoneWeights(*pMesh->pBoneWeight(i));
+			else
+				hwVertWeightList[currentVertexCount].boneIndices[0] = -1;
+		}
+		if (hwVertColorList)
+		{
+			if (pMesh->vertexType & STUDIO_VERTFLAG_COLOR)
+				hwVertColorList[currentVertexCount] = EGFHwVertex::Color(*pMesh->pColor(i));
+			else
+				hwVertColorList[currentVertexCount].color = color_white.pack();
+		}
 		++currentVertexCount;
 	}
 
@@ -498,6 +535,8 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	int numVertices = 0;
 	int numIndices = 0;
 
+	int allVertexFeatureFlags = 0;
+
 	// find vert and index count
 	for (int i = 0; i < studio->numMeshGroups; i++)
 	{
@@ -507,14 +546,31 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 			const studioMeshDesc_t* pMesh = pMeshGroupDesc->pMesh(j);
 			numVertices += pMesh->numVertices;
 			numIndices += pMesh->numIndices;
+
+			allVertexFeatureFlags |= pMesh->vertexType;
 		}
 	}
 
 	const int indexSize = numVertices > int(USHRT_MAX) ? sizeof(int) : sizeof(short);
 
-	EGFHwVertex::PositionUV* allPositionUvsList = PPNew EGFHwVertex::PositionUV[numVertices];
-	EGFHwVertex::TBN* allTbnList = PPNew EGFHwVertex::TBN[numVertices];
-	EGFHwVertex::BoneWeights* allBoneWeightsList = PPNew EGFHwVertex::BoneWeights[numVertices];
+	// FIXME: separate per each mesh since each mesh has different features?
+	EGFHwVertex::PositionUV* allPositionUvsList = nullptr;
+	EGFHwVertex::TBN* allTbnList = nullptr;
+	EGFHwVertex::BoneWeights* allBoneWeightsList = nullptr;
+	EGFHwVertex::Color* allColorList = nullptr;
+
+	if(allVertexFeatureFlags & STUDIO_VERTFLAG_POS_UV)
+		allPositionUvsList = PPNew EGFHwVertex::PositionUV[numVertices];
+
+	if (allVertexFeatureFlags & STUDIO_VERTFLAG_TBN)
+		allTbnList = PPNew EGFHwVertex::TBN[numVertices];
+
+	if (allVertexFeatureFlags & STUDIO_VERTFLAG_BONEWEIGHT)
+		allBoneWeightsList = PPNew EGFHwVertex::BoneWeights[numVertices];
+
+	if (allVertexFeatureFlags & STUDIO_VERTFLAG_COLOR)
+		allColorList = PPNew EGFHwVertex::Color[numVertices];
+
 	ubyte* allIndices = PPNew ubyte[indexSize * numIndices];
 
 	numVertices = 0;
@@ -542,7 +598,8 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 			numVertices += CopyGroupVertexDataToHWList(
 				allPositionUvsList,
 				allTbnList, 
-				allBoneWeightsList, 
+				allBoneWeightsList,
+				allColorList,
 				numVertices, 
 				pMeshDesc, m_boundingBox);
 			numIndices += CopyGroupIndexDataToHWList(allIndices, indexSize, numIndices, pMeshDesc, newOffset);
@@ -550,9 +607,15 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	}
 
 	// create hardware buffers
-	m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::PositionUV), allPositionUvsList);
-	m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::TBN), allTbnList);
-	m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::BoneWeights), allBoneWeightsList);
+	if(allPositionUvsList)
+		m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::PositionUV), allPositionUvsList);
+	if(allTbnList)
+		m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::TBN), allTbnList);
+	if(allBoneWeightsList)
+		m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::BoneWeights), allBoneWeightsList);
+	if(allColorList)
+		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::Color), allColorList);
+
 	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(numIndices, indexSize, BUFFER_STATIC, allIndices);
 
 	// if we using software skinning, we need to create temporary vertices
@@ -568,6 +631,8 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	delete[] allPositionUvsList;
 	delete[] allTbnList;
 	delete[] allBoneWeightsList;
+	delete[] allColorList;
+
 	delete[] allIndices;
 
 	return true;
@@ -865,12 +930,15 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				break;
 
 			const VertexFormatDesc& desc = fmtDesc[i];
-			const EGFHwVertex::VertexStream vertStreamId = drawProperties.vertexStreamMapping[desc.streamId];
+			if (desc.streamId >= drawProperties.vertexStreamMapping.numElem())
+				continue;
 
+			const EGFHwVertex::VertexStream vertStreamId = drawProperties.vertexStreamMapping[desc.streamId];
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 
-			g_pShaderAPI->SetVertexBuffer(m_vertexBuffers[vertStreamId], desc.streamId);
+			if(m_vertexBuffers[vertStreamId])
+				g_pShaderAPI->SetVertexBuffer(m_vertexBuffers[vertStreamId], desc.streamId);
 
 			setVertStreams |= (1 << int(vertStreamId));
 			++numBitsSet;
@@ -1338,15 +1406,15 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 				Vector3D v0, v1, v2;
 				if (even && pMesh->primitiveType == EGFPRIM_TRI_STRIP)
 				{
-					v0 = pMesh->pVertex(pIndices[k + 2])->point;
-					v1 = pMesh->pVertex(pIndices[k + 1])->point;
-					v2 = pMesh->pVertex(pIndices[k])->point;
+					v0 = pMesh->pPosUvs(pIndices[k + 2])->point;
+					v1 = pMesh->pPosUvs(pIndices[k + 1])->point;
+					v2 = pMesh->pPosUvs(pIndices[k])->point;
 				}
 				else
 				{
-					v0 = pMesh->pVertex(pIndices[k])->point;
-					v1 = pMesh->pVertex(pIndices[k + 1])->point;
-					v2 = pMesh->pVertex(pIndices[k + 2])->point;
+					v0 = pMesh->pPosUvs(pIndices[k])->point;
+					v1 = pMesh->pPosUvs(pIndices[k + 1])->point;
+					v2 = pMesh->pPosUvs(pIndices[k + 2])->point;
 				}
 
 				float dist = F_INFINITY;

@@ -219,13 +219,11 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				if (dataIt.atEnd())
 					continue;
 
-				EGFInstBuffer& buffer = *dataIt;
-				IVertexBuffer* instBuffer = buffer.instanceVB;
-
+				const EGFInstBuffer& buffer = *dataIt;
 				if (buffer.numInstances == 0)
 					continue;
 
-				g_pShaderAPI->SetVertexBuffer(instBuffer, instanceStreamId);
+				g_pShaderAPI->SetVertexBuffer(buffer.instanceVB, instanceStreamId);
 
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numMeshes; i++)

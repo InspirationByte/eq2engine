@@ -64,15 +64,22 @@ const char* GetACTCErrorString(int result)
 
 //---------------------------------------------------------------------------------------
 
-// from exporter - compares two verts
-static bool CompareVertex(const studioVertexDesc_t &v0, const studioVertexDesc_t &v1)
+struct StudioVertexData
+{
+	studioVertexPosUv_t	posUvs;
+	studioVertexTBN_t	tbn;
+	studioVertexColor_t	color;
+	studioBoneWeight_t	boneWeights;
+};
+
+static bool CompareVertex(const StudioVertexData& v0, const StudioVertexData&v1)
 {
 	static constexpr const float VERT_MERGE_EPS = 0.001f;
 	static constexpr const float WEIGHT_MERGE_EPS = 0.001f;
 
-	if (compare_epsilon(v0.point, v1.point, VERT_MERGE_EPS) &&
-		compare_epsilon(v0.normal, v1.normal, VERT_MERGE_EPS) &&
-		compare_epsilon(v0.texCoord, v1.texCoord, VERT_MERGE_EPS))
+	if (compare_epsilon(v0.posUvs.point, v1.posUvs.point, VERT_MERGE_EPS) &&
+		compare_epsilon(v0.posUvs.texCoord, v1.posUvs.texCoord, VERT_MERGE_EPS) &&
+		compare_epsilon(v0.tbn.normal, v1.tbn.normal, VERT_MERGE_EPS)) // FIXME: dot product?
 	{
 		// check each bone weight
 		int numEqual = 0;
@@ -81,7 +88,7 @@ static bool CompareVertex(const studioVertexDesc_t &v0, const studioVertexDesc_t
 			bool match = false;
 			for (int j = 0; j < MAX_MODEL_VERTEX_WEIGHTS; ++j)
 			{
-				if (v0.boneweights.bones[i] == v1.boneweights.bones[j] && fsimilar(v0.boneweights.weight[i], v1.boneweights.weight[j], WEIGHT_MERGE_EPS))
+				if (v0.boneWeights.bones[i] == v1.boneWeights.bones[j] && fsimilar(v0.boneWeights.weight[i], v1.boneWeights.weight[j], WEIGHT_MERGE_EPS))
 				{
 					match = true;
 					break;
@@ -97,83 +104,60 @@ static bool CompareVertex(const studioVertexDesc_t &v0, const studioVertexDesc_t
 	return false;
 }
 
-// finds vertex index
-static int FindVertexInList(const Array<studioVertexDesc_t>& verts, const studioVertexDesc_t &vertex)
+static StudioVertexData MakeStudioVertex(const DSVertex& vert)
 {
-	for( int i = 0; i < verts.numElem(); i++ )
-	{
-		if ( CompareVertex(verts[i],vertex) )
-		{
-			return i;
-		}
-	}
+	StudioVertexData vertex;
 
-	return -1;
-}
+	vertex.posUvs.point = vert.position;
+	vertex.posUvs.texCoord = vert.texcoord;
 
-static studioVertexDesc_t MakeStudioVertex(const DSVertex& vert)
-{
-	studioVertexDesc_t vertex;
-
-	vertex.point = vert.position;
-	vertex.texCoord = vert.texcoord;
-	vertex.normal = vert.normal;
-
-	// zero the binormal and tangents because we will use a sum of it
-	vertex.binormal = vec3_zero;
-	vertex.tangent = vec3_zero;
+	vertex.tbn.normal = vert.normal;
+	vertex.tbn.binormal = vec3_zero;	// to be computed later
+	vertex.tbn.tangent = vec3_zero;		// to be computed later
 
 	// reset
-	for(int j = 0; j < MAX_MODEL_VERTEX_WEIGHTS; j++)
+	for(int i = 0; i < MAX_MODEL_VERTEX_WEIGHTS; ++i)
 	{
-		vertex.boneweights.bones[j] = -1;
-		vertex.boneweights.weight[j] = 0.0f;
+		vertex.boneWeights.bones[i] = -1;
+		vertex.boneWeights.weight[i] = 0.0f;
 	}
 
 	// assign bones and it's weights
 	int weightCnt = 0;
-	for(int j = 0; j < vert.weights.numElem(); j++)
+	for(int i = 0; i < vert.weights.numElem(); ++i)
 	{
-		if (vert.weights[j].bone == -1)
+		if (vert.weights[i].bone == -1)
 			continue;
 
-		vertex.boneweights.bones[weightCnt] = vert.weights[j].bone;
-		vertex.boneweights.weight[weightCnt] = vert.weights[j].weight;
+		vertex.boneWeights.bones[weightCnt] = vert.weights[i].bone;
+		vertex.boneWeights.weight[weightCnt] = vert.weights[i].weight;
 		weightCnt++;
 	}
-	vertex.boneweights.numweights = weightCnt;
-	ASSERT_MSG(weightCnt <= MAX_MODEL_VERTEX_WEIGHTS, "Too many weights on vertex (%d, max is %d)", vertex.boneweights.numweights, MAX_MODEL_VERTEX_WEIGHTS);
+	vertex.boneWeights.numweights = weightCnt;
+	vertex.color.color = vert.color.pack();
+
+	ASSERT_MSG(weightCnt <= MAX_MODEL_VERTEX_WEIGHTS, "Too many weights on vertex (%d, max is %d)", vertex.boneWeights.numweights, MAX_MODEL_VERTEX_WEIGHTS);
 
 	return vertex;
 }
 
-void ApplyShapeKeyOnVertex( DSShapeKey* modShapeKey, const DSVertex& vert, studioVertexDesc_t& studioVert, float weight )
+static void ApplyShapeKeyOnVertex( DSShapeKey* modShapeKey, const DSVertex& vert, StudioVertexData& destVert, float weight )
 {
-	for(int i = 0; i < modShapeKey->verts.numElem(); i++)
+	for(DSShapeVert& shapeVert : modShapeKey->verts)
 	{
-		if( modShapeKey->verts[i].vertexId == vert.vertexId )
+		if(shapeVert.vertexId == vert.vertexId )
 		{
-			studioVert.point = lerp(studioVert.point, modShapeKey->verts[i].position, weight);
-			studioVert.normal = lerp(studioVert.normal, modShapeKey->verts[i].normal, weight);
+			destVert.posUvs.point = lerp(destVert.posUvs.point, shapeVert.position, weight);
+			destVert.tbn.normal = lerp(destVert.tbn.normal, shapeVert.normal, weight);
 			return;
 		}
 	}
 }
 
-void ReverseStrip(int* indices, int len)
-{
-	int* original = PPNew int[len];
-	memcpy(original, indices, len*sizeof(int));
-
-	for (int i = 0; i != len; ++i)
-		indices[i] = original[len-1-i];
-
-	delete [] original;
-}
-
 int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 {
-	int matIdx = GetMaterialIndex(pszName);
+	const int matIdx = GetMaterialIndex(pszName);
+	ASSERT(matIdx != -1);
 
 	GenMaterialDesc_t* material = &m_materials[matIdx];
 	material->used++;
@@ -184,45 +168,53 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 // writes group
 void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, studioMeshDesc_t* dstGroup)
 {
+	int vertexStreamsAvailableBits = STUDIO_VERTFLAG_POS_UV | STUDIO_VERTFLAG_TBN;
+
 	// DSM groups to be generated indices and optimized here
 	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
 
 	// triangle list by default
 	dstGroup->primitiveType = EGFPRIM_TRIANGLES;
-
+	dstGroup->numVertices = 0;
 	dstGroup->numIndices = 0;
-	dstGroup->numVertices = srcGroup->verts.numElem();
 
-	Array<studioVertexDesc_t> vertexList(PP_SL);
-	Array<studioVertexDesc_t> shapeVertsList(PP_SL);	// shape key verts
+	Array<StudioVertexData> vertexList(PP_SL);
+	Array<StudioVertexData> shapeVertsList(PP_SL);	// shape key verts
 	Array<int32> indexList(PP_SL);
 
 	vertexList.reserve(dstGroup->numVertices);
 	shapeVertsList.reserve(dstGroup->numVertices);
 	indexList.reserve(dstGroup->numVertices);
 
-	for(int i = 0; i < dstGroup->numVertices; i++)
+	for(const DSVertex& srcVertex : srcGroup->verts)
 	{
-		const studioVertexDesc_t vertex = MakeStudioVertex( srcGroup->verts[i] );
+		const StudioVertexData newVertex = MakeStudioVertex(srcVertex);
 
 		// add vertex or point to existing vertex if found duplicate
-		const int foundVertex = FindVertexInList(vertexList, vertex );
+		const int foundVertex = arrayFindIndexF(vertexList, [&](const StudioVertexData& vert) {
+			return CompareVertex(vert, newVertex);
+		});
 
 		if(foundVertex == -1)
 		{
-			const int newIndex = vertexList.append(vertex);
+			const int newIndex = vertexList.append(newVertex);
 			indexList.append(newIndex);
 
 			// modify vertex by shape key
 			if( modShapeKey )
 			{
-				studioVertexDesc_t shapeVert = vertex;
-				ApplyShapeKeyOnVertex(modShapeKey, srcGroup->verts[i], shapeVert, 1.0f);
-				shapeVertsList.append(shapeVert);
+				StudioVertexData& shapeVert = shapeVertsList.append();
+				shapeVert = newVertex;
+				ApplyShapeKeyOnVertex(modShapeKey, srcVertex, shapeVert, 1.0f);
 			}
 		}
 		else
 			indexList.append(foundVertex);
+
+		if (srcVertex.weights.numElem())
+			vertexStreamsAvailableBits |= STUDIO_VERTFLAG_BONEWEIGHT;
+		else if (srcVertex.color.pack() != UINT_MAX)
+			vertexStreamsAvailableBits |= STUDIO_VERTFLAG_COLOR;
 	}
 
 	if((float)indexList.numElem() / (float)3.0f != (int)indexList.numElem() / (int)3)
@@ -231,7 +223,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 		return;
 	}
 
-	auto usedVertList = ArrayRef<studioVertexDesc_t>(modShapeKey ? shapeVertsList : vertexList);
+	auto usedVertList = ArrayRef<StudioVertexData>(modShapeKey ? shapeVertsList : vertexList);
 
 	// calculate rest of tangent space
 	for(int32 i = 0; i < indexList.numElem(); i+=3)
@@ -244,33 +236,33 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 		const int32 idx1 = indexList[i+1];
 		const int32 idx2 = indexList[i+2];
 
-		ComputeTriangleTBN(	usedVertList[idx0].point,usedVertList[idx1].point, usedVertList[idx2].point, 
-							usedVertList[idx0].texCoord,usedVertList[idx1].texCoord, usedVertList[idx2].texCoord,
+		ComputeTriangleTBN(	usedVertList[idx0].posUvs.point,usedVertList[idx1].posUvs.point, usedVertList[idx2].posUvs.point,
+							usedVertList[idx0].posUvs.texCoord,usedVertList[idx1].posUvs.texCoord, usedVertList[idx2].posUvs.texCoord,
 							unormal,
 							tangent,
 							binormal);
 
-		float fTriangleArea = 1.0f;// TriangleArea(usedVertList[idx0].point, usedVertList[idx1].point, usedVertList[idx2].point);
+		const float triArea = 1.0f;// TriangleArea(usedVertList[idx0].point, usedVertList[idx1].point, usedVertList[idx2].point);
 
-		//usedVertList[idx0].normal += unormal*fTriangleArea;
-		usedVertList[idx0].tangent += tangent*fTriangleArea;
-		usedVertList[idx0].binormal += binormal*fTriangleArea;
+		//usedVertList[idx0].tbn.normal += unormal * fTriangleArea;
+		usedVertList[idx0].tbn.tangent += tangent * triArea;
+		usedVertList[idx0].tbn.binormal += binormal * triArea;
 
-		//usedVertList[idx1].normal += unormal*fTriangleArea;
-		usedVertList[idx1].tangent += tangent*fTriangleArea;
-		usedVertList[idx1].binormal += binormal*fTriangleArea;
+		//usedVertList[idx1].tbn.normal += unormal * triArea;
+		usedVertList[idx1].tbn.tangent += tangent* triArea;
+		usedVertList[idx1].tbn.binormal += binormal * triArea;
 
-		//usedVertList[idx2].normal += unormal*fTriangleArea;
-		usedVertList[idx2].tangent += tangent*fTriangleArea;
-		usedVertList[idx2].binormal += binormal*fTriangleArea;
+		//usedVertList[idx2].tbn.normal += unormal * triArea;
+		usedVertList[idx2].tbn.tangent += tangent * triArea;
+		usedVertList[idx2].tbn.binormal += binormal * triArea;
 	}
 
 	// normalize resulting tangent space
 	for(int32 i = 0; i < usedVertList.numElem(); i++)
 	{
-		//usedVertList[i].normal = normalize(usedVertList[i].normal);
-		usedVertList[i].tangent = normalize(usedVertList[i].tangent);
-		usedVertList[i].binormal = normalize(usedVertList[i].binormal);
+		//usedVertList[i].tbn.normal = normalize(usedVertList[i].tbn.normal);
+		usedVertList[i].tbn.tangent = normalize(usedVertList[i].tbn.tangent);
+		usedVertList[i].tbn.binormal = normalize(usedVertList[i].tbn.binormal);
 	}
 
 #ifdef USE_ACTC
@@ -402,11 +394,57 @@ skipOptimize:
 
 	// set write offset for vertex buffer
 	dstGroup->vertexOffset = WRITE_RELATIVE_OFS(dstGroup);
+
+#if ENABLE_OLD_VERTEX_FORMAT == 0
+	dstGroup->vertexType = vertexStreamsAvailableBits;
+
+	ASSERT(vertexStreamsAvailableBits & (STUDIO_VERTFLAG_POS_UV | STUDIO_VERTFLAG_TBN));
+	WRITE_RESERVE_NUM(studioVertexPosUv_t, dstGroup->numVertices);
+	WRITE_RESERVE_NUM(studioVertexTBN_t, dstGroup->numVertices);
+
+	if (vertexStreamsAvailableBits & STUDIO_VERTFLAG_BONEWEIGHT)
+		WRITE_RESERVE_NUM(studioBoneWeight_t, dstGroup->numVertices);
+
+	if (vertexStreamsAvailableBits & STUDIO_VERTFLAG_COLOR)
+		WRITE_RESERVE_NUM(studioVertexColor_t, dstGroup->numVertices);
+
+	for (int32 i = 0; i < dstGroup->numVertices; i++)
+	{
+		const StudioVertexData& vertData = usedVertList[i];
+
+		studioVertexPosUv_t* vertPosUv = dstGroup->pPosUvs(i);
+		studioVertexTBN_t* vertTbn = dstGroup->pTBNs(i);
+		studioBoneWeight_t* vertBoneWeight = dstGroup->pBoneWeight(i);
+		studioVertexColor_t* vertColor = dstGroup->pColor(i);
+
+		*vertPosUv = vertData.posUvs;
+		*vertTbn = vertData.tbn;
+
+		if (vertexStreamsAvailableBits & STUDIO_VERTFLAG_BONEWEIGHT)
+			*vertBoneWeight = vertData.boneWeights;
+
+		if (vertexStreamsAvailableBits & STUDIO_VERTFLAG_COLOR)
+			*vertColor = vertData.color;
+	}
+#else
 	WRITE_RESERVE_NUM(studioVertexDesc_t, dstGroup->numVertices);
 
 	// now fill studio verts
 	for(int32 i = 0; i < dstGroup->numVertices; i++)
-		*dstGroup->pVertex(i) = usedVertList[i];
+	{
+		const StudioVertexData& vertData = usedVertList[i];
+		studioVertexDesc_t& destVertDesc = *dstGroup->pVertex(i);
+
+		destVertDesc.point = vertData.posUvs.point;
+		destVertDesc.texCoord = vertData.posUvs.texCoord;
+
+		destVertDesc.tangent = vertData.tbn.tangent;
+		destVertDesc.binormal = vertData.tbn.binormal;
+		destVertDesc.normal = vertData.tbn.normal;
+
+		destVertDesc.boneweights = vertData.boneWeights;
+	}
+#endif
 
 	// set write offset for index buffer
 	dstGroup->indicesOffset = WRITE_RELATIVE_OFS(dstGroup);
@@ -713,7 +751,7 @@ void CEGFGenerator::Validate(studioHdr_t* header, const char* stage)
 		writeModels.append(&modelRef);
 	}
 
-	// perform post-wriote basic validation
+	// perform post-write basic validation
 	ASSERT(header->numMeshGroups == writeModels.numElem());
 
 	for (int i = 0; i < header->numMeshGroups; ++i)
@@ -722,16 +760,6 @@ void CEGFGenerator::Validate(studioHdr_t* header, const char* stage)
 
 		studioMeshGroupDesc_t* pDesc = header->pMeshGroupDesc(i);
 		ASSERT_MSG(pDesc->numMeshes == modelRef.model->meshes.numElem(), "numMeshes invalid after %s", stage);
-
-		for (int j = 0; j < pDesc->numMeshes; j++)
-		{
-			studioMeshDesc_t* groupDesc = header->pMeshGroupDesc(i)->pMesh(j);
-
-			for (int32 k = 0; k < groupDesc->numVertices; k++)
-			{
-				ASSERT_MSG(groupDesc->pVertex(k)->boneweights.numweights <= MAX_MODEL_VERTEX_WEIGHTS, "bone weights invalid after %s", stage);
-			}
-		}
 	}
 }
 
@@ -740,16 +768,22 @@ void CEGFGenerator::Validate(studioHdr_t* header, const char* stage)
 //************************************
 bool CEGFGenerator::GenerateEGF()
 {
-	CMemoryStream memStream(nullptr, VS_OPEN_WRITE, FILEBUFFER_EQGF);
+	CMemoryStream egfStream(nullptr, VS_OPEN_WRITE, FILEBUFFER_EQGF);
 
 	// Make header
-	studioHdr_t* header = (studioHdr_t*)memStream.GetBasePointer();
+	studioHdr_t* header = (studioHdr_t*)egfStream.GetBasePointer();
 	memset(header, 0, sizeof(studioHdr_t));
 
 	// Basic header data
 	header->ident = EQUILIBRIUM_MODEL_SIGNATURE;
 	header->version = EQUILIBRIUM_MODEL_VERSION;
+
+#if ENABLE_OLD_VERTEX_FORMAT == 0
+	header->flags = STUDIO_FLAG_NEW_VERTEX_FMT;
+#else
 	header->flags = 0;
+#endif
+
 	header->length = sizeof(studioHdr_t);
 
 	// set model name
@@ -757,53 +791,51 @@ bool CEGFGenerator::GenerateEGF()
 
 	FixSlashes( header->modelName );
 
-	memStream.Write(header, 1, sizeof(studioHdr_t));
+	egfStream.Write(header, 1, sizeof(studioHdr_t));
 
 	// write models
-	WriteModels(header, &memStream);
+	WriteModels(header, &egfStream);
 	Validate(header, "Write models");
 	
 	// write lod info and data
-	WriteLods(header, &memStream);
+	WriteLods(header, &egfStream);
 	Validate(header, "Write lods");
 	
 	// write body groups
-	WriteBodyGroups(header, &memStream);
+	WriteBodyGroups(header, &egfStream);
 	Validate(header, "Write body groups");
 
 	// write attachments
-	WriteAttachments(header, &memStream);
+	WriteAttachments(header, &egfStream);
 	Validate(header, "Write attachments");
 
 	// write ik chains
-	WriteIkChains(header, &memStream);
+	WriteIkChains(header, &egfStream);
 	Validate(header, "Write Ik Chains");
 	
 	if(m_notextures == false)
 	{
 		// write material descs and paths
-		WriteMaterialDescs(header, &memStream);
+		WriteMaterialDescs(header, &egfStream);
 		Validate(header, "Write material descs");
 
-		WriteMaterialPaths(header, &memStream);
+		WriteMaterialPaths(header, &egfStream);
 		Validate(header, "Write material paths");
 	}
 
 	// write motion packages
-	WriteMotionPackageList(header, &memStream);
+	WriteMotionPackageList(header, &egfStream);
 	Validate(header, "Write motion pack list");
 
 	// write bones
-	WriteBones(header, &memStream);
+	WriteBones(header, &egfStream);
 	Validate(header, "Write bones");
 
 	// set the size of file (size with header), for validation purposes
-	header->length = memStream.Tell();
+	header->length = egfStream.GetSize();
 
-	memStream.Seek(0, VS_SEEK_SET);
-	memStream.Write(header, 1, sizeof(studioHdr_t));
-
-	memStream.Seek(header->length, VS_SEEK_SET);
+	egfStream.Seek(0, VS_SEEK_SET);
+	egfStream.Write(header, 1, sizeof(studioHdr_t));
 
 	int totalTris = 0;
 	int totalVerts = 0;
@@ -848,7 +880,7 @@ bool CEGFGenerator::GenerateEGF()
 		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.ToCString());
 
 		// write model
-		memStream.WriteToStream(file);
+		egfStream.WriteToStream(file);
 	}
 	else
 	{

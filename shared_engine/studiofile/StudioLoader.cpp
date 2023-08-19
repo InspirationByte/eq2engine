@@ -19,9 +19,21 @@ static bool IsValidModelIdentifier(int id)
 	return false;
 }
 
-static void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
+static void ConvertHeaderToLatestVersion(basemodelheader_t* pBaseHdr)
 {
+	studioHdr_t* pHdr = (studioHdr_t*)pBaseHdr;
+	const bool convertVertexFormat = !(pHdr->flags & STUDIO_FLAG_NEW_VERTEX_FMT);
+	if (convertVertexFormat)
+	{
+		for (int i = 0; i < pHdr->numMeshGroups; ++i)
+		{
+			studioMeshGroupDesc_t* meshGroupDesc = pHdr->pMeshGroupDesc(i);
 
+			// old vertex format has all features except color
+			for (int j = 0; j < meshGroupDesc->numMeshes; ++j)
+				meshGroupDesc->pMesh(j)->vertexType = STUDIO_VERTFLAG_POS_UV | STUDIO_VERTFLAG_TBN | STUDIO_VERTFLAG_BONEWEIGHT;
+		}
+	}
 }
 
 // loads all supported EGF model formats

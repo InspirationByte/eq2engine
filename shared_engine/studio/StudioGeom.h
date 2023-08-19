@@ -30,6 +30,9 @@ struct EGFHwVertex
 		VERT_POS_UV = 0,
 		VERT_TBN,
 		VERT_BONEWEIGHT,
+		VERT_COLOR,
+
+		// TODO: more UVs
 
 		VERT_COUNT,
 	};
@@ -39,7 +42,7 @@ struct EGFHwVertex
 		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
 
 		PositionUV() = default;
-		PositionUV(const studioVertexDesc_t& initFrom);
+		PositionUV(const studioVertexPosUv_t& initFrom);
 
 		TVec4D<half>	pos;
 		TVec2D<half>	texcoord;
@@ -50,7 +53,7 @@ struct EGFHwVertex
 		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
 
 		TBN() = default;
-		TBN(const studioVertexDesc_t& initFrom);
+		TBN(const studioVertexTBN_t& initFrom);
 
 		TVec3D<half>	tangent;
 		half			unused1;	// half float types are unsupported with v3d, turn them into v4d
@@ -64,11 +67,20 @@ struct EGFHwVertex
 	{
 		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
 
-		BoneWeights() = default;
-		BoneWeights(const studioVertexDesc_t& initFrom);
+		BoneWeights();
+		BoneWeights(const studioBoneWeight_t& initFrom);
 
 		half			boneIndices[MAX_MODEL_VERTEX_WEIGHTS];
 		half			boneWeights[MAX_MODEL_VERTEX_WEIGHTS];
+	};
+
+	struct Color
+	{
+		Color() = default;
+		Color(const studioVertexColor_t& initFrom);
+
+		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
+		uint			color{ color_white.pack() };
 	};
 };
 

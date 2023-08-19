@@ -10,6 +10,8 @@
 #define EQUILIBRIUM_MODEL_VERSION		13
 #define EQUILIBRIUM_MODEL_SIGNATURE		MCHAR4('E','Q','G','F')
 
+#define ENABLE_OLD_VERTEX_FORMAT		0
+
 static constexpr const int MAX_MODEL_LODS				= 8;
 static constexpr const int MAX_MODEL_PATH_LENGTH		= 256;
 static constexpr const int MAX_MODEL_PART_PATH_LENGTH	= 128;
@@ -18,9 +20,32 @@ static constexpr const int MAX_MODEL_VERTEX_WEIGHTS		= 4;
 
 static constexpr const uint8 EGF_INVALID_IDX = 0xff;
 
+enum EStudioFlags
+{
+	STUDIO_FLAG_NEW_VERTEX_FMT	= (1 << 0),
+};
+
 enum EStudioLODFlags
 {
-	STUDIO_LOD_FLAG_MANUAL = (1 << 0),
+	STUDIO_LOD_FLAG_MANUAL		= (1 << 0),
+};
+
+enum EStudioVertexStreamType : int
+{
+	STUDIO_VERTSTREAM_POS_UV		= 0,
+	STUDIO_VERTSTREAM_TBN			= 1,
+	STUDIO_VERTSTREAM_BONEWEIGHT	= 2,
+	STUDIO_VERTSTREAM_COLOR			= 3,
+
+	// TODO: more UVs
+};
+
+enum EStudioVertexStreamFlag : int
+{
+	STUDIO_VERTFLAG_POS_UV			= (1 << STUDIO_VERTSTREAM_POS_UV),
+	STUDIO_VERTFLAG_TBN				= (1 << STUDIO_VERTSTREAM_TBN),
+	STUDIO_VERTFLAG_BONEWEIGHT		= (1 << STUDIO_VERTSTREAM_BONEWEIGHT),
+	STUDIO_VERTFLAG_COLOR			= (1 << STUDIO_VERTSTREAM_COLOR),
 };
 
 // use EGF_VERSION_CHANGE tags for defining changes
@@ -165,16 +190,72 @@ ALIGNED_TYPE(studioVertexDesc_s, 4) studioVertexDesc_t;
 // mesh
 struct studioMeshDesc_s
 {
-	// Don't keep the group name, use material name only
 	int8				materialIndex;
+	int8				unused[3];
 
 	// Vertices stream
 	int32				numVertices;
 	int					vertexOffset;			// pointer to points data
 
-	inline studioVertexDesc_t *pVertex( int i ) const 
+	//inline studioVertexDesc_t *pVertex( int i ) const 
+	//{
+	//	return (studioVertexDesc_t *)(((ubyte *)this) + vertexOffset) + i; 
+	//};
+
+	inline studioVertexPosUv_t* pPosUvs(int i) const
 	{
-		return (studioVertexDesc_t *)(((ubyte *)this) + vertexOffset) + i; 
+		const int stride 
+			= ((vertexType & STUDIO_VERTFLAG_POS_UV) ? sizeof(studioVertexPosUv_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_TBN) ? sizeof(studioVertexTBN_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_BONEWEIGHT) ? sizeof(studioBoneWeight_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_COLOR) ? sizeof(studioVertexColor_t) : 0);
+
+		return (studioVertexPosUv_t*)(((ubyte*)this) + vertexOffset + stride * i);
+	};
+
+	inline studioVertexTBN_t* pTBNs(int i) const
+	{
+		const int ofse
+			= ((vertexType & STUDIO_VERTFLAG_POS_UV) ? sizeof(studioVertexPosUv_t) : 0);
+
+		const int stride
+			= ((vertexType & STUDIO_VERTFLAG_POS_UV) ? sizeof(studioVertexPosUv_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_TBN) ? sizeof(studioVertexTBN_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_BONEWEIGHT) ? sizeof(studioBoneWeight_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_COLOR) ? sizeof(studioVertexColor_t) : 0);
+
+		return (studioVertexTBN_t*)(((ubyte*)this) + vertexOffset + ofse + stride * i);
+	};
+
+	inline studioBoneWeight_t* pBoneWeight(int i) const
+	{
+		const int ofse
+			= ((vertexType & STUDIO_VERTFLAG_POS_UV) ? sizeof(studioVertexPosUv_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_TBN) ? sizeof(studioVertexTBN_t) : 0);
+
+		const int stride
+			= ((vertexType & STUDIO_VERTFLAG_POS_UV) ? sizeof(studioVertexPosUv_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_TBN) ? sizeof(studioVertexTBN_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_BONEWEIGHT) ? sizeof(studioBoneWeight_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_COLOR) ? sizeof(studioVertexColor_t) : 0);
+
+		return (studioBoneWeight_t*)(((ubyte*)this) + vertexOffset + ofse + stride * i);
+	};
+
+	inline studioVertexColor_t* pColor(int i) const
+	{
+		const int ofse
+			= ((vertexType & STUDIO_VERTFLAG_POS_UV) ? sizeof(studioVertexPosUv_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_TBN) ? sizeof(studioVertexTBN_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_BONEWEIGHT) ? sizeof(studioBoneWeight_t) : 0);
+
+		const int stride
+			= ((vertexType & STUDIO_VERTFLAG_POS_UV) ? sizeof(studioVertexPosUv_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_TBN) ? sizeof(studioVertexTBN_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_BONEWEIGHT) ? sizeof(studioBoneWeight_t) : 0)
+			+ ((vertexType & STUDIO_VERTFLAG_COLOR) ? sizeof(studioVertexColor_t) : 0);
+
+		return (studioVertexColor_t*)(((ubyte*)this) + vertexOffset + ofse + stride * i);
 	};
 
 	uint32				numIndices;
@@ -185,8 +266,10 @@ struct studioMeshDesc_s
 		return (uint32 *)(((ubyte *)this) + indicesOffset) + i; 
 	};
 
-	// primitive type for EGF. If model is optimized, you can use it.
-	int8				primitiveType;
+	int8				primitiveType;		// EEGFPrimType
+	int8				vertexType;			// EStudioVertexStreamFlag
+
+	int8				unused2[2];
 };
 ALIGNED_TYPE(studioMeshDesc_s, 4) studioMeshDesc_t;
 

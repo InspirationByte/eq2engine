@@ -62,6 +62,7 @@ int CStudioCache::PrecacheModel(const char* modelName)
 		CVertexFormatBuilder fmtBuilder;
 		fmtBuilder.SetStream(0, EGFHwVertex::PositionUV::GetVertexFormatDesc(), "PosUVs");
 		fmtBuilder.SetStream(1, EGFHwVertex::TBN::GetVertexFormatDesc(), "TBN");
+		fmtBuilder.SetStream(3, EGFHwVertex::Color::GetVertexFormatDesc(), "Color");
 
 		{
 			ArrayCRef<VertexFormatDesc> genFmt = fmtBuilder.Build();
