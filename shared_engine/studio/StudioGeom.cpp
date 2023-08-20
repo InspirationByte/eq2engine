@@ -408,13 +408,6 @@ void CEqStudioGeom::LoadModelJob(void* data, int i)
 {
 	CEqStudioGeom* model = (CEqStudioGeom*)data;
 
-	// multi-threaded version
-	if (!model->LoadFromFile())
-	{
-		model->DestroyModel();
-		return;
-	}
-
 	model->LoadMaterials();
 	model->LoadPhysicsData();
 
@@ -478,6 +471,13 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	// first we switch to loading
 	Atomic::Exchange(m_readyState, MODEL_LOAD_IN_PROGRESS);
 
+	// multi-threaded version
+	if (!LoadFromFile())
+	{
+		DestroyModel();
+		return false;
+	}
+
 	if (useJob)
 	{
 		m_loading = 3;
@@ -488,13 +488,6 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	}
 
 	// single-thread version
-
-	if (!LoadFromFile())
-	{
-		DestroyModel();
-		return false;
-	}
-
 	LoadMaterials();
 	
 	if (!LoadGenerateVertexBuffer())
@@ -913,8 +906,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 	if (isSkinned)
 		 numBoneRegisters = ComputeQuaternionsForSkinning(this, bquats, drawProperties.boneTransforms);
 
-	materials->SetSkinningEnabled(isSkinned);
-	materials->SetInstancingEnabled(drawProperties.instanced);
+	materials->SetInstancingEnabled(false);
 
 	IVertexFormat* rhiVertFmt = drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat(isSkinned);
 	g_pShaderAPI->SetVertexFormat(rhiVertFmt);
@@ -995,6 +987,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			if (drawProperties.preDrawFunc)
 				drawProperties.preDrawFunc(material, i);
 
+			materials->SetSkinningEnabled(numBoneRegisters);
 			if (numBoneRegisters)
 				g_pShaderAPI->SetShaderConstantArrayVector4D(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
 

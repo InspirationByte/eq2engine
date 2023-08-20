@@ -98,8 +98,7 @@ int CStudioCache::PrecacheModel(const char* modelName)
 		}
 		else
 		{
-			delete pModel;
-			pModel = nullptr;
+			SAFE_DELETE(pModel);
 		}
 
 		return pModel ? cacheIdx : 0;

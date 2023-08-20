@@ -225,6 +225,5 @@ struct CEqStudioGeom::DrawProps
 
 	int				materialFlags{ -1 };
 	bool			excludeMaterialFlags{ false };
-	bool			instanced{ false };
 	bool			skipMaterials{ false };
 };
