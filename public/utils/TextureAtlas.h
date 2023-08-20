@@ -8,11 +8,10 @@
 #pragma once
 
 // atlas element
-struct TexAtlasEntry_t
+struct AtlasEntry
 {
-	char		name[64];
-	int			nameHash;
-	AARectangle rect;
+	const AARectangle	rect;
+	const char*			name{ nullptr };
 };
 
 struct KVSection;
@@ -21,27 +20,24 @@ struct KVSection;
 class CTextureAtlas
 {
 public:
-	CTextureAtlas();
-	CTextureAtlas( KVSection* kvs );
+	CTextureAtlas() = default;
+	CTextureAtlas(const KVSection* kvs);
 	virtual ~CTextureAtlas();
 
-	void					InitAtlas( KVSection* kvs );
-	void					Cleanup();
+	bool				Load(const char* pszFileName);
 
-	bool					Load( const char* pszFileName );
+	void				InitAtlas(const KVSection* kvs);
+	void				Cleanup();
 
-	TexAtlasEntry_t*		GetEntry(int idx) const;
+	AtlasEntry*			GetEntry(int idx) const;
+	AtlasEntry*			FindEntry(const char* pszName) const;
+	int					FindEntryIndex(const char* pszName) const;
 
-	TexAtlasEntry_t*		FindEntry(const char* pszName) const;
-	int						FindEntryIndex(const char* pszName) const;
-
-	int						GetEntryCount() const		{ return m_num; }
-	const char*				GetMaterialName() const		{ return m_material.ToCString(); }
+	int					GetEntryCount() const		{ return m_entries.numElem(); }
+	const char*			GetMaterialName() const		{ return m_material.ToCString(); }
 protected:
-
-	//char					m_name[64];
-
-	EqString				m_material;
-	int						m_num;
-	TexAtlasEntry_t*		m_entries;
+	EqString			m_material;
+	char*				m_names{ nullptr };
+	Map<int, int>		m_entryMap{ PP_SL };
+	Array<AtlasEntry>	m_entries{ PP_SL };
 };

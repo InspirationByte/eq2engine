@@ -155,7 +155,7 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	}
 }
 
-TexAtlasEntry_t* CParticleBatch::GetEntry(int idx) const
+AtlasEntry* CParticleBatch::GetEntry(int idx) const
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -167,7 +167,7 @@ TexAtlasEntry_t* CParticleBatch::GetEntry(int idx) const
 	return atlas->GetEntry(idx);
 }
 
-TexAtlasEntry_t* CParticleBatch::FindEntry(const char* pszName) const
+AtlasEntry* CParticleBatch::FindEntry(const char* pszName) const
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -176,7 +176,7 @@ TexAtlasEntry_t* CParticleBatch::FindEntry(const char* pszName) const
 		return nullptr;
 	}
 
-	TexAtlasEntry_t* atlEntry = atlas->FindEntry(pszName);
+	AtlasEntry* atlEntry = atlas->FindEntry(pszName);
 	ASSERT_MSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_material->GetName());
 	return atlEntry;
 }

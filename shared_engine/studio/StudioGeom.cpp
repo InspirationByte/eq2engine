@@ -983,13 +983,13 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			materials->SetSkinningEnabled(numBoneRegisters && meshRef.supportsSkinning);
 
 			if (drawProperties.preSetupFunc)
-				drawProperties.preSetupFunc(material, i);
+				drawProperties.preSetupFunc(material, i, j);
 
 			if (!drawProperties.skipMaterials)
 				materials->BindMaterial(material, 0);
 
 			if (drawProperties.preDrawFunc)
-				drawProperties.preDrawFunc(material, i);
+				drawProperties.preDrawFunc(material, i, j);
 
 			if (numBoneRegisters && meshRef.supportsSkinning)
 				g_pShaderAPI->SetShaderConstantArrayVector4D(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);

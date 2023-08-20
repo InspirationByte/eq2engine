@@ -211,7 +211,7 @@ extern ArrayCRef<EGFHwVertex::VertexStream> g_defaultVertexStreamMapping;
 
 struct CEqStudioGeom::DrawProps
 {
-	using DrawFunc = EqFunction<void(IMaterial* material, int bodyGroup)>;
+	using DrawFunc = EqFunction<void(IMaterial* material, int bodyGroup, int meshIndex)>;
 
 	ArrayCRef<EGFHwVertex::VertexStream> vertexStreamMapping{ g_defaultVertexStreamMapping };
 	IVertexFormat*	vertexFormat{ nullptr };

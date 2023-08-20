@@ -15,7 +15,7 @@ class IIndexBuffer;
 class IVertexFormat;
 class CViewParams;
 class Volume;
-struct TexAtlasEntry_t;
+struct AtlasEntry;
 struct VertexFormatDesc;
 
 using IMaterialPtr = CRefPtr<IMaterial>;
@@ -66,9 +66,9 @@ public:
 	void				SetCullInverted(bool invert)	{ m_invertCull = invert; }
 	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
 
-	TexAtlasEntry_t*	GetEntry(int idx) const;
+	AtlasEntry*	GetEntry(int idx) const;
 
-	TexAtlasEntry_t*	FindEntry(const char* pszName) const;
+	AtlasEntry*	FindEntry(const char* pszName) const;
 	int					FindEntryIndex(const char* pszName) const;
 
 	int					GetEntryCount() const;
@@ -150,7 +150,7 @@ enum EffectFlags_e
 struct PFXBillboard_t
 {
 	CParticleBatch*	group { nullptr };		// atlas
-	TexAtlasEntry_t*		tex {nullptr};			// texture name in atlas
+	AtlasEntry*		tex {nullptr};			// texture name in atlas
 
 	MColor				vColor;
 	Vector3D			vOrigin;

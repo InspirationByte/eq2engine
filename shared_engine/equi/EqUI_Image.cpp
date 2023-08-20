@@ -60,7 +60,7 @@ void Image::InitFromKeyValues( KVSection* sec, bool noClear )
 
 		if (m_material->GetAtlas())
 		{
-			TexAtlasEntry_t* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
+			AtlasEntry* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
 			if (entry)
 				m_atlasRegion = entry->rect;
 		}

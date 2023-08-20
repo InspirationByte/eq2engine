@@ -10,13 +10,7 @@
 #include "core/IFileSystem.h"
 #include "TextureAtlas.h"
 
-CTextureAtlas::CTextureAtlas()
-{
-	m_entries = nullptr;
-	m_num = 0;
-}
-
-CTextureAtlas::CTextureAtlas( KVSection* kvs )
+CTextureAtlas::CTextureAtlas(const KVSection* kvs)
 {
 	InitAtlas(kvs);
 }
@@ -28,9 +22,10 @@ CTextureAtlas::~CTextureAtlas()
 
 void CTextureAtlas::Cleanup()
 {
-	delete m_entries;
-	m_entries = nullptr;
-	m_num = 0;
+	m_material.Empty();
+	m_entryMap.clear(true);
+	m_entries.clear(true);
+	SAFE_DELETE_ARRAY(m_names);
 }
 
 bool CTextureAtlas::Load( const char* pszFileName )
@@ -51,65 +46,58 @@ bool CTextureAtlas::Load( const char* pszFileName )
 	return true;
 }
 
-void CTextureAtlas::InitAtlas( KVSection* kvs )
+void CTextureAtlas::InitAtlas( const KVSection* kvs )
 {
 	m_material = KV_GetValueString(kvs, 0, "");
+	m_entries.reserve(kvs->keys.numElem());
 
-	m_num = kvs->keys.numElem();
+	int maxNamesLen = 1;
+	for (const KVSection* entrySec : kvs->keys)
+		maxNamesLen += strlen(entrySec->GetName()) + 1;
 
-	m_entries = PPNew TexAtlasEntry_t[m_num];
-
-	for(int i = 0; i < kvs->keys.numElem(); i++)
+	m_names = PPNew char[maxNamesLen];
+	m_names[0] = 0;
+	char* namesPtr = m_names;
+	for(const KVSection* entrySec : kvs->keys)
 	{
-		KVSection* entrySec = kvs->keys[i];
+		const int nameHash = StringToHash(entrySec->GetName(), true);
+		m_entryMap.insert(nameHash, m_entries.numElem());
 
-		strcpy(m_entries[i].name, kvs->keys[i]->name);
-		m_entries[i].nameHash = StringToHash(m_entries[i].name, true);
+		AARectangle rect {
+			KV_GetValueFloat(entrySec, 0),
+			KV_GetValueFloat(entrySec, 1),
+			KV_GetValueFloat(entrySec, 2),
+			KV_GetValueFloat(entrySec, 3) 
+		};
+		m_entries.append({ rect, namesPtr });
 
-		AARectangle& rect = m_entries[i].rect;
-		rect.vleftTop.x		= KV_GetValueFloat(entrySec, 0);
-		rect.vleftTop.y		= KV_GetValueFloat(entrySec, 1);
-		rect.vrightBottom.x = KV_GetValueFloat(entrySec, 2);
-		rect.vrightBottom.y = KV_GetValueFloat(entrySec, 3);
+		// copy the name
+		strcpy(namesPtr, entrySec->GetName());
+		const int nameLen = strlen(namesPtr);
+		namesPtr[nameLen] = 0;
+		namesPtr += nameLen + 1;
 	}
 }
 
-TexAtlasEntry_t* CTextureAtlas::GetEntry(int idx) const
+AtlasEntry* CTextureAtlas::GetEntry(int idx) const
 {
-	if(idx < 0 || idx >= m_num)
-		return nullptr;
-
-	return &m_entries[idx];
+	return (AtlasEntry*)&m_entries[idx];
 }
 
-TexAtlasEntry_t* CTextureAtlas::FindEntry(const char* pszName) const
+AtlasEntry* CTextureAtlas::FindEntry(const char* pszName) const
 {
-	if(!m_entries)
+	const int index = FindEntryIndex(pszName);
+	if (index == -1)
 		return nullptr;
-
-	int nameHash = StringToHash(pszName, true);
-
-	for(int i = 0; i < m_num; i++)
-	{
-		if(m_entries[i].nameHash == nameHash)
-			return &m_entries[i];
-	}
-
-	return nullptr;
+	return (AtlasEntry*)&m_entries[index];
 }
 
 int CTextureAtlas::FindEntryIndex(const char* pszName) const
 {
-	if(!m_entries)
+	const int nameHash = StringToHash(pszName, true);
+	auto it = m_entryMap.find(nameHash);
+	if (it.atEnd())
 		return -1;
 
-	int nameHash = StringToHash(pszName, true);
-
-	for(int i = 0; i < m_num; i++)
-	{
-		if(m_entries[i].nameHash == nameHash)
-			return i;
-	}
-
-	return -1;
+	return *it;
 }
