@@ -953,8 +953,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex(int index)
 
 // -----------------------------------------------------------------
 // Removes specified count of elements from specified index and moves all data following the element down to fill in the gap.
-// The number of elements in the m_pListPtr is reduced by count.  Returns false if the index + count is outside the bounds of the m_pListPtr.
-// Note that the elements are not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
+// The number of elements in the m_pListPtr is reduced by count. Returns false if no items has been removed
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
@@ -962,11 +961,9 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 	ASSERT(count >= 0);
 	ASSERT(index >= 0);
 
-	if ((index < 0) || (index + count >= m_nNumElem))
+	count = min(index + count, m_nNumElem) - index;
+	if (index >= m_nNumElem || count <= 0)
 		return false;
-
-	if (!count)
-		return true;
 
 	T* listPtr = STORAGE_TYPE::getData();
 	ArrayStorageBase<T>::destructElements(listPtr + index, count);
