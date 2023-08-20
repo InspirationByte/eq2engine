@@ -980,10 +980,10 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				continue;
 
 			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
+			materials->SetSkinningEnabled(numBoneRegisters && meshRef.supportsSkinning);
+
 			if (drawProperties.preSetupFunc)
 				drawProperties.preSetupFunc(material, i);
-
-			materials->SetSkinningEnabled(numBoneRegisters && meshRef.supportsSkinning);
 
 			if (!drawProperties.skipMaterials)
 				materials->BindMaterial(material, 0);
@@ -1000,7 +1000,6 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 	}
 
 	materials->SetSkinningEnabled(false);
-	materials->SetInstancingEnabled(false);
 }
 
 const BoundingBox& CEqStudioGeom::GetBoundingBox() const
