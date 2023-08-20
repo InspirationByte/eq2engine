@@ -90,7 +90,7 @@ DECLARE_INTERNAL_SHADERS();
 
 static EQCURSOR s_defaultCursor[20];
 
-CAutoPtr<CGameHost> g_pHost;
+CStaticAutoPtr<CGameHost> g_pHost;
 
 // TODO: Move this to GUI
 enum CursorCode

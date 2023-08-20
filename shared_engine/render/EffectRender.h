@@ -88,4 +88,4 @@ private:
 	Vector3D							m_viewPos;
 };
 
-extern CAutoPtr<CEffectRenderer> effectrenderer;
+extern CStaticAutoPtr<CEffectRenderer> effectrenderer;

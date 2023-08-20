@@ -134,4 +134,4 @@ protected:
 	double				m_accumTime;
 };
 
-extern CAutoPtr<CGameHost> g_pHost;
+extern CStaticAutoPtr<CGameHost> g_pHost;

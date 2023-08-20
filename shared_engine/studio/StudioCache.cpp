@@ -19,7 +19,7 @@
 
 DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
 
-CAutoPtr<CStudioCache> g_studioModelCache;
+CStaticAutoPtr<CStudioCache> g_studioModelCache;
 
 DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
 {

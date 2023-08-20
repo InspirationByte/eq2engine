@@ -8,10 +8,10 @@
 #pragma once
 
 template <class T>
-class CAutoPtr
+class CStaticAutoPtr
 {
 public:
-	~CAutoPtr();
+	~CStaticAutoPtr();
 	T*				GetInstancePtr();
 	T&				GetInstance();
 	T*				operator->()	{ return GetInstancePtr(); }
@@ -34,21 +34,21 @@ private:
 };
 
 template <class T>
-inline CAutoPtr<T>::~CAutoPtr()
+inline CStaticAutoPtr<T>::~CStaticAutoPtr()
 {
 	if(m_initialized) ((T*)&m_data)->~T();
 	m_initialized = false;
 }
 
 template <class T>
-inline T* CAutoPtr<T>::GetInstancePtr()
+inline T* CStaticAutoPtr<T>::GetInstancePtr()
 {
 	static Instantiator inst((T*)&m_data, m_initialized);
 	return (T*)&m_data;
 }
 
 template <class T>
-inline T& CAutoPtr<T>::GetInstance()
+inline T& CStaticAutoPtr<T>::GetInstance()
 {
 	return *GetInstancePtr();
 }
@@ -74,6 +74,6 @@ protected:
 	static T*		Instance;
 };
 
-template <typename T> ubyte CAutoPtr<T>::m_data[sizeof(T)] = {};
-template <typename T> bool CAutoPtr<T>::m_initialized = false;
+template <typename T> ubyte CStaticAutoPtr<T>::m_data[sizeof(T)] = {};
+template <typename T> bool CStaticAutoPtr<T>::m_initialized = false;
 template <typename T> T* CSingletonAbstract<T>::Instance = nullptr;

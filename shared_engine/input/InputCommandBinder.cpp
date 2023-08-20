@@ -18,7 +18,7 @@
 #include "materialsystem1/MeshBuilder.h"
 #include "font/IFontCache.h"
 
-CAutoPtr<CInputCommandBinder> g_inputCommandBinder;
+CStaticAutoPtr<CInputCommandBinder> g_inputCommandBinder;
 
 DECLARE_CVAR(in_keys_debug, "0", "Debug CInputCommandBinder", 0);
 DECLARE_CVAR(in_touchzones_debug, "0", "Debug touch zones on screen and messages", CV_CHEAT);

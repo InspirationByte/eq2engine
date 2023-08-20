@@ -170,5 +170,5 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 
 //------------------------------------------------------------------------------------
 
-extern CAutoPtr<CParticleLowLevelRenderer> g_pPFXRenderer;
+extern CStaticAutoPtr<CParticleLowLevelRenderer> g_pPFXRenderer;
 

@@ -16,7 +16,7 @@
 using namespace Threading;
 static CEqMutex s_effectRenderMutex;
 
-CAutoPtr<CEffectRenderer> effectrenderer;
+CStaticAutoPtr<CEffectRenderer> effectrenderer;
 
 static int _SortParticles(IEffect* const &effect0, IEffect* const &effect1)
 {

@@ -80,4 +80,4 @@ private:
 	bool								m_isInit{ false };
 };
 
-extern CAutoPtr<CSoundEmitterSystem> g_sounds;
+extern CStaticAutoPtr<CSoundEmitterSystem> g_sounds;

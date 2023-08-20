@@ -28,7 +28,7 @@ ArrayCRef<VertexFormatDesc> PFXVertex_t::GetVertexFormatDesc()
 using namespace Threading;
 static CEqMutex s_particleRenderMutex;
 
-CAutoPtr<CParticleLowLevelRenderer> g_pPFXRenderer;
+CStaticAutoPtr<CParticleLowLevelRenderer> g_pPFXRenderer;
 
 //----------------------------------------------------------------------------------------------------
 

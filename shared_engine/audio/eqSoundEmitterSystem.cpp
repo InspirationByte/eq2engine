@@ -27,7 +27,7 @@
 using namespace Threading;
 static Threading::CEqMutex s_soundEmitterSystemMutex;
 
-CAutoPtr<CSoundEmitterSystem> g_sounds;
+CStaticAutoPtr<CSoundEmitterSystem> g_sounds;
 
 static void cmd_vars_sounds_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {

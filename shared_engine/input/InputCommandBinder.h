@@ -148,4 +148,4 @@ protected:
 bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr);
 void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding, bool humanReadable = false);
 
-extern CAutoPtr<CInputCommandBinder> g_inputCommandBinder;
+extern CStaticAutoPtr<CInputCommandBinder> g_inputCommandBinder;

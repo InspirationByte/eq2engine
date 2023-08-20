@@ -187,4 +187,4 @@ private:
 	Array<ConAutoCompletion_t*>		m_customAutocompletion{ PP_SL };
 };
 
-extern CAutoPtr<CEqConsoleInput> g_consoleInput;
+extern CStaticAutoPtr<CEqConsoleInput> g_consoleInput;
