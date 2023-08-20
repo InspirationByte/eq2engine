@@ -42,6 +42,10 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		// alphatesting
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_flags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
 
+		bool bVertexColor = false;
+		SHADER_PARAM_BOOL(StudioVertexColor, bVertexColor, false);
+		SHADER_DECLARE_SIMPLE_DEFINITION(bVertexColor, "STUDIOVERTEXCOLOR");
+
 		// compile without fog
 		{
 			SHADER_FIND_OR_COMPILE(Unlit_noskin, "BaseUnlit");

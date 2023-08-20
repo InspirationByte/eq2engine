@@ -153,6 +153,7 @@ private:
 			int		firstIndex;
 			int		indexCount;
 			ushort	primType;
+			bool	supportsSkinning{ false };
 		} *meshRefs{ nullptr };
 	};
 

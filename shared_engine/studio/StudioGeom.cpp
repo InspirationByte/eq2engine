@@ -585,6 +585,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 			meshRef.firstIndex = numIndices;
 			meshRef.indexCount = pMeshDesc->numIndices;
 			meshRef.primType = pMeshDesc->primitiveType;
+			meshRef.supportsSkinning = (pMeshDesc->vertexType & STUDIO_VERTFLAG_BONEWEIGHT);
 
 			const int newOffset = numVertices;
 
@@ -978,8 +979,11 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			else if (materialFlags && !drawProperties.excludeMaterialFlags && !materialMask)
 				continue;
 
+			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
 			if (drawProperties.preSetupFunc)
 				drawProperties.preSetupFunc(material, i);
+
+			materials->SetSkinningEnabled(numBoneRegisters && meshRef.supportsSkinning);
 
 			if (!drawProperties.skipMaterials)
 				materials->BindMaterial(material, 0);
@@ -987,13 +991,10 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			if (drawProperties.preDrawFunc)
 				drawProperties.preDrawFunc(material, i);
 
-			materials->SetSkinningEnabled(numBoneRegisters);
-			if (numBoneRegisters)
+			if (numBoneRegisters && meshRef.supportsSkinning)
 				g_pShaderAPI->SetShaderConstantArrayVector4D(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
-
 			materials->Apply();
 
-			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
 			g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
 		}
 	}
