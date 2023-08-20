@@ -72,16 +72,23 @@ public:
 		if (m_nSize < numOfElements)
 			numOfElements = m_nSize;
 
-		// copy the old m_pListPtr into our new one
-		m_pListPtr = reinterpret_cast<T*>(PPNewSL(m_sl) ubyte[m_nSize * sizeof(T)]);
-
-		if (temp)
+		if constexpr (std::is_trivially_move_constructible<T>::value)
 		{
-			for (int i = 0; i < numOfElements; i++)
-				new(&m_pListPtr[i]) T(std::move(temp[i]));
+			m_pListPtr = reinterpret_cast<T*>(PPDReAlloc(m_pListPtr, m_nSize * sizeof(T), m_sl));
+		}
+		else
+		{
+			// copy the old m_pListPtr into our new one
+			m_pListPtr = reinterpret_cast<T*>(PPNewSL(m_sl) ubyte[m_nSize * sizeof(T)]);
 
-			// delete the old m_pListPtr if it exists
-			PPFree(temp);
+			if (temp)
+			{
+				for (int i = 0; i < numOfElements; i++)
+					new(&m_pListPtr[i]) T(std::move(temp[i]));
+
+				// delete the old m_pListPtr if it exists
+				PPFree(temp);
+			}
 		}
 	}
 

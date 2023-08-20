@@ -45,8 +45,6 @@ void CRenderList::Append(CRenderList* pAnotherList)
 
 	for(int i = 0; i < num; i++)
 		m_objectList.append(pAnotherList->GetRenderable(i));
-	
-	m_viewDistance.reserve(m_objectList.numElem());
 }
 
 void CRenderList::Render(int nViewRenderFlags, void* userdata)
