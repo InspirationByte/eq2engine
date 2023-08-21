@@ -38,7 +38,7 @@ void CGLTexture::Ref_DeleteObject()
 {
 	g_shaderApi.FreeTexture(this);
 
-	g_glWorker.Execute(__FUNCTION__, [this]() {
+	g_glWorker.Execute(__func__, [this]() {
 		delete this;
 		return 0;
 	});
@@ -423,7 +423,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 		GLTextureRef_t texture;
 
-		const int result = g_glWorker.WaitForExecute(__FUNCTION__, [&]()
+		const int result = g_glWorker.WaitForExecute(__func__, [&]()
 													 {
 			// Generate a texture
 			texture = CreateGLTexture(img, m_samplerState, mipStart, mipCount);

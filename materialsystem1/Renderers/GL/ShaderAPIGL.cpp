@@ -1472,7 +1472,7 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		m_ShaderList.remove(it);
 	}
 
-	g_glWorker.Execute(__FUNCTION__, [pShader]() {
+	g_glWorker.Execute(__func__, [pShader]() {
 		delete pShader;
 		return 0;
 	});
@@ -1589,7 +1589,7 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 	pStream->Read(samplers.ptr(), scHdr.numSamplers, sizeof(GLShaderSampler_t));
 	pStream->Read(uniforms.ptr(), scHdr.numConstants, sizeof(GLShaderConstant_t));
 
-	int result = g_glWorker.WaitForExecute(__FUNCTION__, [&]() {
+	int result = g_glWorker.WaitForExecute(__func__, [&]() {
 
 		GLint vsResult, fsResult, linkResult;
 
@@ -1845,7 +1845,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			info.data.text
 		};
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, sStr]() {
+		result = g_glWorker.WaitForExecute(__func__, [&cdata, sStr]() {
 
 			// create GL program
 			cdata.prog->m_program = glCreateProgram();
@@ -1921,7 +1921,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			info.data.text
 		};
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, sStr]() {
+		result = g_glWorker.WaitForExecute(__func__, [&cdata, sStr]() {
 
 			cdata.fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 			if (!GLCheckError("create fragment shader"))
@@ -1976,7 +1976,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EGraphicsVendor vendor = m_vendor;
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, &samplers, &uniforms, &vendor, shaderCacheEnabled]() {
+		result = g_glWorker.WaitForExecute(__func__, [&cdata, &samplers, &uniforms, &vendor, shaderCacheEnabled]() {
 			// link program and go
 			glLinkProgram(cdata.prog->m_program);
 			GLCheckError("link program");
@@ -2279,7 +2279,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 
-	int result = g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, pVB, nBufAccess, pData]() {
+	int result = g_glWorker.WaitForExecute(__func__, [numBuffers, pVB, nBufAccess, pData]() {
 
 		glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
 
@@ -2336,7 +2336,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 	const int sizeInBytes = pIB->m_nIndices * pIB->m_nIndexSize;
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
-	int result = g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, sizeInBytes, pIB, nBufAccess, pData]() {
+	int result = g_glWorker.WaitForExecute(__func__, [numBuffers, sizeInBytes, pIB, nBufAccess, pData]() {
 
 		glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
 		if (!GLCheckError("gen idx buffer"))
@@ -2420,7 +2420,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 		delete pVB;
 
-		g_glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.Execute(__func__, [numBuffers, tempArray]() {
 
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete vertex buffer");
@@ -2454,7 +2454,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 		delete pIndexBuffer;
 
-		g_glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.Execute(__func__, [numBuffers, tempArray]() {
 			
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete index buffer");

@@ -152,6 +152,8 @@ bool ShaderAPID3D9::ResetDevice(D3DPRESENT_PARAMETERS& d3dpp)
 
 	HRESULT hr;
 
+	m_pD3DDevice->EvictManagedResources();
+
 	// Reset the device before restoring everything
 	if (FAILED(hr = m_pD3DDevice->Reset(&d3dpp)))
 	{
