@@ -41,8 +41,7 @@ void IEffect::SetSortOrigin(const Vector3D &origin)
 
 CEffectRenderer::CEffectRenderer()
 {
-	m_numEffects = 0;
-	memset(m_pEffectList, 0, sizeof(m_pEffectList));
+	m_effectList.clear();
 }
 
 void CEffectRenderer::AddEffect(IEffect* pEffect)
@@ -51,7 +50,7 @@ void CEffectRenderer::AddEffect(IEffect* pEffect)
 
 	ASSERT_MSG(pEffect != nullptr, "RegisterEffectForRender - inserting NULL effect");
 
-	if(m_numEffects >= MAX_VISIBLE_EFFECTS)
+	if(m_effectList.numElem() >= m_effectList.numAllocated())
 	{
 		DevMsg(DEVMSG_CORE, "Effect list overflow!\n");
 
@@ -61,7 +60,7 @@ void CEffectRenderer::AddEffect(IEffect* pEffect)
 		return;
 	}
 
-	m_pEffectList[m_numEffects++] = pEffect;
+	m_effectList.append(pEffect);
 }
 
 void CEffectRenderer::DrawEffects(float dt)
@@ -71,22 +70,18 @@ void CEffectRenderer::DrawEffects(float dt)
 	CScopedMutex m(s_effectRenderMutex);
 
 	// sort particles
-	quickSort(m_pEffectList, _SortParticles, 0, m_numEffects-1);
+	quickSort(m_effectList, _SortParticles);
 
-	for(int i = 0; i < m_numEffects; i++)
+	for(int i = 0; i < m_effectList.numElem(); i++)
 	{
-        if(!m_pEffectList[i])
+        if(!m_effectList[i])
         {
-			RemoveEffect(i);
-			i--;
+			RemoveEffect(i--);
 			continue;
         }
 
-		if(!m_pEffectList[i]->DrawEffect(dt))
-		{
-			RemoveEffect(i);
-			i--;
-		}
+		if(!m_effectList[i]->DrawEffect(dt))
+			RemoveEffect(i--);
 	}
 }
 
@@ -94,34 +89,23 @@ void CEffectRenderer::RemoveAllEffects()
 {
 	CScopedMutex m(s_effectRenderMutex);
 
-	for(int i = 0; i < m_numEffects; i++)
+	for(int i = 0; i < m_effectList.numElem(); i++)
 	{
-		m_pEffectList[i]->DestroyEffect();
-		delete m_pEffectList[i];
+		m_effectList[i]->DestroyEffect();
+		delete m_effectList[i];
 	}
-
-	m_numEffects = 0;
-	memset(m_pEffectList, 0, sizeof(m_pEffectList));
+	m_effectList.clear();
 }
 
 void CEffectRenderer::RemoveEffect(int index)
 {
-	if ( index >= m_numEffects || index < 0 )
+	if ( index >= m_effectList.numElem() || index < 0)
 		return;
 
 	CScopedMutex m(s_effectRenderMutex);
 
-	IEffect* effect = m_pEffectList[index];
-
-	--m_numEffects;
-
-	if ( m_numEffects > 0 && index != m_numEffects )
-	{
-		m_pEffectList[index] = m_pEffectList[m_numEffects];
-		m_pEffectList[m_numEffects] = nullptr;
-	}
-
-	if(effect)
+	IEffect* effect = m_effectList[index];
+	if (m_effectList.fastRemoveIndex(index) && effect)
 	{
 		effect->DestroyEffect();
 		delete effect;
@@ -137,4 +121,3 @@ Vector3D CEffectRenderer::GetViewSortPosition() const
 {
 	return m_viewPos;
 }
-

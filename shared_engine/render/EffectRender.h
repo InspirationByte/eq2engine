@@ -7,6 +7,8 @@
 
 #pragma once
 
+static constexpr const int MAX_VISIBLE_EFFECTS = 4096;
+
 class CParticleBatch;
 struct AtlasEntry;
 
@@ -17,6 +19,7 @@ public:
 	virtual			~IEffect() {}
 
 	void			SetSortOrigin(const Vector3D &origin);
+	const Vector3D& GetOrigin() const { return m_vOrigin; }
 
 	virtual void	DestroyEffect() {};
 
@@ -25,11 +28,7 @@ public:
 
 	float			GetLifetime() const			{return m_fLifeTime;}
 	float			GetStartLifetime() const	{return m_fStartLifeTime;}
-
 	float			GetLifetimePercent() const	{return m_fLifeTime / m_fStartLifeTime;}
-
-	const Vector3D&	GetOrigin() const			{return m_vOrigin;}
-
 	float			GetDistanceToCamera() const	{return m_fDistanceToView;}
 
 protected:
@@ -47,13 +46,11 @@ protected:
 	}
 
 	Vector3D			m_vOrigin;
+	CParticleBatch*		m_atlGroup;
+	AtlasEntry*			m_atlEntry;
 
 	float				m_fStartLifeTime;
 	float				m_fLifeTime;
-
-	CParticleBatch*	m_atlGroup;
-	AtlasEntry*	m_atlEntry;
-
 	float				m_fDistanceToView;
 };
 
@@ -61,8 +58,6 @@ protected:
 // Effect Renderer class
 // Used to render variuos effects, programmer can define own rendering algorithm
 //-------------------------------------------------------------------------------------
-
-#define MAX_VISIBLE_EFFECTS		4096
 
 class CEffectRenderer
 {
@@ -82,10 +77,8 @@ protected:
 	void		RemoveEffect(int index);
 
 private:
-	IEffect*							m_pEffectList[MAX_VISIBLE_EFFECTS];
-	volatile int						m_numEffects;
-
-	Vector3D							m_viewPos;
+	FixedArray<IEffect*, MAX_VISIBLE_EFFECTS>	m_effectList;
+	Vector3D	m_viewPos;
 };
 
 extern CStaticAutoPtr<CEffectRenderer> effectrenderer;
