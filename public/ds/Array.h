@@ -38,6 +38,22 @@ public:
 	{
 	}
 
+	DynamicArrayStorage(const DynamicArrayStorage& other)
+		: m_sl(other.m_sl), m_nGranularity(other.m_nGranularity)
+	{
+		int numElem = 0;
+		resize(other.m_nSize, numElem);
+	}
+
+	DynamicArrayStorage(DynamicArrayStorage&& other)
+		: m_sl(other.m_sl), m_nGranularity(other.m_nGranularity)
+	{
+		m_pListPtr = other.m_pListPtr;
+		m_nSize = other.m_nSize;
+		other.m_pListPtr = nullptr;
+		other.m_nSize = 0;
+	}
+
 	~DynamicArrayStorage()
 	{
 		delete[] reinterpret_cast<ubyte*>(m_pListPtr);
@@ -126,8 +142,12 @@ template< typename T, int SIZE >
 class FixedArrayStorage
 {
 public:
-	FixedArrayStorage()
+	FixedArrayStorage() = default;
+	FixedArrayStorage(const FixedArrayStorage& other) = default;
+
+	FixedArrayStorage(FixedArrayStorage&& other)
 	{
+		memmove(m_data, other.m_data, SIZE * sizeof(T));
 	}
 
 	void free()
@@ -205,11 +225,14 @@ public:
 
 	ArrayBase();
 	ArrayBase(const PPSourceLine& sl, int granularity = 16);
+	ArrayBase(const ArrayBase& other);
+	ArrayBase(ArrayBase&& other);
 
 	~ArrayBase<T, STORAGE_TYPE>();
 
 	const T&		operator[](int index) const;
 	T&				operator[](int index);
+
 	SelfType&		operator=(const SelfType& other);
 
 	Iterator		begin() const	{ return Iterator(*const_cast<SelfType*>(this), 0); }
@@ -366,6 +389,30 @@ template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const PPSourceLine& sl, int granularity)
 	: STORAGE_TYPE(sl, granularity)
 {
+}
+
+template< typename T, typename STORAGE_TYPE >
+inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const ArrayBase& other)
+	: STORAGE_TYPE(other)
+{
+	m_nNumElem = other.m_nNumElem;
+
+	T* listPtr = STORAGE_TYPE::getData();
+	const T* otherListPtr = other.STORAGE_TYPE::getData();
+
+	if (STORAGE_TYPE::getSize())
+	{
+		for (int i = 0; i < m_nNumElem; i++)
+			new(&listPtr[i]) T(otherListPtr[i]);
+	}
+}
+
+template< typename T, typename STORAGE_TYPE >
+inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(ArrayBase&& other)
+	: STORAGE_TYPE(std::move(other))
+{
+	m_nNumElem = other.m_nNumElem;
+	other.m_nNumElem = 0;
 }
 
 template< typename T, typename STORAGE_TYPE >

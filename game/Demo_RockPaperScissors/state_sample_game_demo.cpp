@@ -137,6 +137,7 @@ struct ECSComponent
 
 	// FIXME: this could be slow, use different data structures to search instead?
 	inline static Map<int, int>	entityComponent{ PP_SL };
+private:
 	inline static Array<T>		pool{ PP_SL };
 	inline static Array<int>	freeSlots{ PP_SL };
 };
@@ -153,6 +154,24 @@ struct ECSMessage
 {
 	int fromEntity{ -1 };
 
+	static void Push(T&& message)
+	{
+		messages.append(std::move(message));
+	}
+
+	static void Push(const T& message)
+	{
+		messages.append(message);
+	}
+
+	static Array<T> PullAll()
+	{
+		Array<T> pulled(PP_SL);
+		messages.swap(pulled);
+		return pulled;
+	}
+
+private:
 	inline static Array<T>	messages{ PP_SL };
 };
 
@@ -267,8 +286,9 @@ void ECSSystem<Movement>::Process(Movement& sysState)
 			else
 				criticalMass += rsqrtf(distSqr);
 
+			// send message to the state update system
 			if (distSqr < s_radiusSqr)
-				StateUpdate::DefeatMessage::messages.append({ *it, *otherIt });
+				StateUpdate::DefeatMessage::Push({ *it, *otherIt });
 		}
 
 		curPos.pos += moveVector * s_moveSpeed * criticalMass * deltaTime;
@@ -277,9 +297,8 @@ void ECSSystem<Movement>::Process(Movement& sysState)
 
 void ECSSystem<StateUpdate>::Process(StateUpdate& sysState)
 {
-	// NOTE: concept
-	// use more generalized solution that does not rely on array cleanup
-	for (auto& message : StateUpdate::DefeatMessage::messages)
+	// NOTE: proof of concept
+	for (auto& message : Sys::DefeatMessage::PullAll())
 	{
 		State& state = *Sys::State::Get(message.fromEntity);
 		State& otherState = *Sys::State::Get(message.defeatedBy);
@@ -305,7 +324,6 @@ void ECSSystem<StateUpdate>::Process(StateUpdate& sysState)
 			g_sounds->EmitSound(&ep);
 		}
 	}
-	StateUpdate::DefeatMessage::messages.clear();
 
 	for (auto it = Sys::State::entityComponent.begin(); !it.atEnd(); ++it)
 	{
