@@ -48,8 +48,6 @@ public:
 private:
 
 	void		InitGame();
-	int			CheckWhoDefeats(const RPSObject& a, const RPSObject& b) const;
-
 	
 	Array<RPSObject>	m_objects{ PP_SL };
 
@@ -61,4 +59,4 @@ private:
 	bool				m_mouseDown{ false };
 };
 
-extern CAutoPtr<CState_SampleGameDemo> g_State_SampleGameDemo;
+extern CStaticAutoPtr<CState_SampleGameDemo> g_State_SampleGameDemo;

@@ -20,6 +20,324 @@
 
 #include "movie/MoviePlayer.h"
 
+static constexpr const float s_spriteSize = 50.0f;
+static constexpr const float s_radiusSqr = s_spriteSize * s_spriteSize;
+static constexpr const float s_moveSpeed = 80000.0f;
+
+static const char* s_soundNames[] = {
+	"effect.rock",
+	"effect.paper",
+	"effect.scissors",
+};
+
+static int CheckWhoDefeats(const RPSType& a, const RPSType& b)
+{
+	if (a == b)
+		return 0;
+
+	// GPT3 helped to optimize commented code below!
+	const int diff = (static_cast<int>(a) - static_cast<int>(b) + 3) % 3;
+	if (diff == 1)
+		return 1; // a wins
+	else
+		return 2; // b wins
+
+	/*
+	// rock break scissors
+	if (a.type == RPSType::ROCK && b.type == RPSType::SCISSORS)
+		return 1;
+	else if (b.type == RPSType::ROCK && a.type == RPSType::SCISSORS)
+		return 2;
+
+	// paper covers rock
+	if (a.type == RPSType::PAPER && b.type == RPSType::ROCK)
+		return 1;
+	else if (b.type == RPSType::PAPER && a.type == RPSType::ROCK)
+		return 2;
+
+	// scissors cut paper
+	if (a.type == RPSType::SCISSORS && b.type == RPSType::PAPER)
+		return 1;
+	else if (b.type == RPSType::SCISSORS && a.type == RPSType::PAPER)
+		return 2;
+
+	return 0; // WTF?
+	*/
+}
+
+template<typename T>
+struct ECSComponent
+{
+	static T* Get(int entity)
+	{
+		auto it = entityComponent.find(entity);
+		if (it.atEnd())
+			return nullptr;
+		return &pool[*it];
+	}
+
+	static T* GetOrCreate(int entity)
+	{
+		auto it = entityComponent.find(entity);
+		if (it.atEnd())
+		{
+			if (freeSlots.numElem())
+			{
+				const int poolIdx = freeSlots.popBack();
+				it = entityComponent.insert(entity, poolIdx);
+				pool[poolIdx] = T();
+			}
+			else
+			{
+				it = entityComponent.insert(entity, pool.numElem());
+				pool.append();
+			}
+		}
+		return &pool[*it];
+	}
+
+	template<typename ...Params>
+	static T* GetOrCreate(int entity, Params&&... args)
+	{
+		auto it = entityComponent.find(entity);
+		if (it.atEnd())
+		{
+			if (freeSlots.numElem())
+			{
+				const int poolIdx = freeSlots.popBack();
+				it = entityComponent.insert(entity, poolIdx);
+				pool[poolIdx] = T(std::forward<Params>(args)...);
+			}
+			else
+			{
+				it = entityComponent.insert(entity, pool.numElem());
+				pool.append(T(std::forward<Params>(args)...));
+			}
+		}
+		return &pool[*it];
+	}
+
+	void Remove(int entity)
+	{
+		auto it = entityComponent.find(entity);
+		if (it.atEnd())
+			return;
+		freeSlots.append(it.value());
+		entityComponent.remove(it);
+	}
+
+	// FIXME: this could be slow, use different data structures to search instead?
+	inline static Map<int, int>	entityComponent{ PP_SL };
+	inline static Array<T>		pool{ PP_SL };
+	inline static Array<int>	freeSlots{ PP_SL };
+};
+
+template<typename T>
+struct ECSSystem
+{
+	using Sys = T;
+	static void Process(T& system);
+};
+
+//---------------------------------------------
+/*
+struct EffectPosition
+{
+	Vector3D point{ vec3_zero };
+};
+
+struct EffectVelocity
+{
+	EffectVelocity() = default;
+	EffectVelocity(const Vector3D& initialVelocity) : velocity(initialVelocity) {}
+	Vector3D velocity{ vec3_zero };
+};
+
+struct ParticlesMovement
+{
+	// Components used by the system goes here
+	using Position = ECSComponent<EffectPosition>;
+	using Velocity = ECSComponent<EffectVelocity>;
+};
+
+void ECSSystem<ParticlesMovement>::Process(int entity)
+{
+	auto pos = Sys::Position::Get(entity);
+	auto vel = Sys::Velocity::GetOrCreate(entity, vec3_zero);
+	pos->point += vel->velocity;
+}
+*/
+
+struct Position
+{
+	Position() = default;
+	Position(Vector2D& initPos) : pos(initPos){}
+
+	Vector2D pos{ vec2_zero };
+};
+
+struct State
+{
+	State() = default;
+	State(RPSType initType) : type(initType) {}
+
+	RPSType type{ RPSType::ROCK };
+};
+
+struct ClosestEnemy
+{
+	int closestId{ -1 };
+	float distance{ F_INFINITY };
+};
+
+struct Movement
+{
+	// Components used by the system goes here
+	using Position = ECSComponent<Position>;
+	using State = ECSComponent<State>;
+	using ClosestEnemy = ECSComponent<ClosestEnemy>;
+
+	// system state parameters
+	float deltaTime{ 0.0f };
+};
+
+struct AttackLogic
+{
+	// Components used by the system goes here
+	using Position = ECSComponent<Position>;
+	using State = ECSComponent<State>;
+	using ClosestEnemy = ECSComponent<ClosestEnemy>;
+
+	// system state params
+	int counts[static_cast<int>(RPSType::COUNT)]{ 0 };
+};
+
+struct Draw
+{
+	using Position = ECSComponent<Position>;
+	using State = ECSComponent<State>;
+
+	// system state params
+	const AtlasEntry**	atlEntries{ nullptr };
+	CParticleBatch*		pfxGroup{ nullptr };
+};
+
+void ECSSystem<Movement>::Process(Movement& systemState)
+{
+	const float deltaTime = systemState.deltaTime;
+
+	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
+	{
+		Position& curPos = *Sys::Position::Get(*it);
+		State& state = *Sys::State::Get(*it);
+
+		ClosestEnemy& enemy = *Sys::ClosestEnemy::GetOrCreate(*it);
+
+		Vector2D moveVector(0.0f);
+		float criticalMass = 1.0f;
+
+		for (auto otherIt = Sys::Position::entityComponent.begin(); !otherIt.atEnd(); ++otherIt)
+		{
+			if (*it == *otherIt)
+				continue;
+
+			Position& otherPos = *Sys::Position::Get(*otherIt);
+			State& otherState = *Sys::State::Get(*otherIt);
+
+			const int whoDefeats = CheckWhoDefeats(state.type, otherState.type);
+			const float distSqr = distanceSqr(curPos.pos, otherPos.pos);
+
+			// store closest enemy who may defeat us
+			if (distSqr < enemy.distance && whoDefeats == 2)
+			{
+				enemy.distance = distSqr;
+				enemy.closestId = *otherIt;
+			}
+
+			if (whoDefeats == 1)
+				moveVector += normalize(otherPos.pos - curPos.pos) / distSqr;
+			else if (whoDefeats == 2)
+				moveVector -= normalize(otherPos.pos - curPos.pos) / distSqr * 0.25f;
+			else
+				criticalMass += rsqrtf(distSqr);
+		}
+
+		curPos.pos += moveVector * s_moveSpeed * criticalMass * deltaTime;
+	}
+}
+
+void ECSSystem<AttackLogic>::Process(AttackLogic& systemState)
+{
+	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
+	{
+		Position& curPos = *Sys::Position::Get(*it);
+		State& state = *Sys::State::Get(*it);
+		ClosestEnemy& enemy = *Sys::ClosestEnemy::GetOrCreate(*it);
+
+		++systemState.counts[static_cast<int>(state.type)];
+
+		if (enemy.distance > s_radiusSqr)
+			continue;
+
+		Position& otherPos = *Sys::Position::Get(enemy.closestId);
+		State& otherState = *Sys::State::Get(enemy.closestId);
+
+		const int whoDefeats = CheckWhoDefeats(state.type, otherState.type);
+
+		// turn loser into winner type and play winner sound
+		if (whoDefeats == 1) // a beaten b
+		{
+			otherState.type = state.type;
+
+			EmitParams ep(s_soundNames[static_cast<int>(state.type)]);
+			ep.origin.x = curPos.pos.x * 0.01f;
+			g_sounds->EmitSound(&ep);
+		}
+		else if (whoDefeats == 2) // b beaten a
+		{
+			state.type = otherState.type;
+
+			EmitParams ep(s_soundNames[static_cast<int>(otherState.type)]);
+			ep.origin.x = otherPos.pos.x * 0.01f;
+			g_sounds->EmitSound(&ep);
+		}
+	}
+}
+
+void ECSSystem<Draw>::Process(Draw& systemState)
+{
+	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
+	{
+		Position& curPos = *Sys::Position::Get(*it);
+		State& state = *Sys::State::Get(*it);
+
+		// draw
+		const AARectangle rect = systemState.atlEntries[static_cast<int>(state.type)]->rect;
+
+		PFXVertex_t* verts;
+		if (systemState.pfxGroup->AllocateGeom(4, 4, &verts, nullptr, true) == -1)
+			break;
+
+		verts[0].point = Vector3D(0, 0, 0);
+		verts[1].point = Vector3D(0, s_spriteSize, 0);
+		verts[2].point = Vector3D(s_spriteSize, 0, 0);
+		verts[3].point = Vector3D(s_spriteSize, s_spriteSize, 0);
+
+		verts[0].texcoord = rect.GetLeftTop();
+		verts[1].texcoord = rect.GetLeftBottom();
+		verts[2].texcoord = rect.GetRightTop();
+		verts[3].texcoord = rect.GetRightBottom();
+
+		const Vector3D transform = Vector3D(curPos.pos, 0.0f);
+
+		verts[0].point += transform;
+		verts[1].point += transform;
+		verts[2].point += transform;
+		verts[3].point += transform;
+	}
+}
+
+//---------------------------------------------
 
 DECLARE_CVAR(g_maxObjects, "200", nullptr, CV_ARCHIVE);
 
@@ -40,7 +358,7 @@ static ChannelDef s_soundChannels[] = {
 };
 static_assert(elementsOf(s_soundChannels) == CHAN_COUNT, "ESoundChannelType needs to be in sync with s_soundChannels");
 
-static CAutoPtr<CState_SampleGameDemo> g_State_SampleGameDemo;
+static CStaticAutoPtr<CState_SampleGameDemo> g_State_SampleGameDemo;
 
 CState_SampleGameDemo::CState_SampleGameDemo()
 {
@@ -105,8 +423,28 @@ void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
 
 void CState_SampleGameDemo::InitGame()
 {
+	int count = 0;
 	for (int i = 0; i < g_maxObjects.GetInt() / 3; ++i)
 	{
+		{
+			const int entIdx = count++;
+			ECSComponent<Position>::GetOrCreate(entIdx, Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f)));
+			ECSComponent<State>::GetOrCreate(entIdx, RPSType::ROCK);
+		}
+
+		{
+			const int entIdx = count++;
+			ECSComponent<Position>::GetOrCreate(entIdx, Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f)));
+			ECSComponent<State>::GetOrCreate(entIdx, RPSType::PAPER);
+		}
+
+		{
+			const int entIdx = count++;
+			ECSComponent<Position>::GetOrCreate(entIdx, Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f)));
+			ECSComponent<State>::GetOrCreate(entIdx, RPSType::SCISSORS);
+		}
+
+		/*
 		{
 			RPSObject& newObj = m_objects.append();
 			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
@@ -124,47 +462,10 @@ void CState_SampleGameDemo::InitGame()
 			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
 			newObj.type = RPSType::SCISSORS;
 		}
+		*/
+
+
 	}
-}
-
-static constexpr const float s_spriteSize = 50.0f;
-static constexpr const float s_radiusSqr = s_spriteSize * s_spriteSize;
-static constexpr const float s_moveSpeed = 80000.0f;
-
-int	CState_SampleGameDemo::CheckWhoDefeats(const RPSObject& a, const RPSObject& b) const
-{
-	if (a.type == b.type)
-		return 0;
-
-	// GPT3 helped to optimize commented code below!
-	const int diff = (static_cast<int>(a.type) - static_cast<int>(b.type) + 3) % 3;
-	if (diff == 1) {
-		return 1; // a wins
-	} else {
-		return 2; // b wins
-	}
-
-	/*
-	// rock break scissors
-	if (a.type == RPSType::ROCK && b.type == RPSType::SCISSORS)
-		return 1;
-	else if (b.type == RPSType::ROCK && a.type == RPSType::SCISSORS)
-		return 2;
-
-	// paper covers rock
-	if (a.type == RPSType::PAPER && b.type == RPSType::ROCK)
-		return 1;
-	else if (b.type == RPSType::PAPER && a.type == RPSType::ROCK)
-		return 2;
-
-	// scissors cut paper
-	if (a.type == RPSType::SCISSORS && b.type == RPSType::PAPER)
-		return 1;
-	else if (b.type == RPSType::SCISSORS && a.type == RPSType::PAPER)
-		return 2;
-
-	return 0; // WTF?
-	*/
 }
 
 // when 'false' returned the next state goes on
@@ -268,18 +569,12 @@ bool CState_SampleGameDemo::Update(float fDt)
 		meshBuilder.End();
 	}
 
-	const TexAtlasEntry_t* atlRock = m_pfxGroup->FindEntry("rock");
-	const TexAtlasEntry_t* atlPaper = m_pfxGroup->FindEntry("paper");
-	const TexAtlasEntry_t* atlScissors = m_pfxGroup->FindEntry("scissors");
+	const AtlasEntry* atlRock = m_pfxGroup->FindEntry("rock");
+	const AtlasEntry* atlPaper = m_pfxGroup->FindEntry("paper");
+	const AtlasEntry* atlScissors = m_pfxGroup->FindEntry("scissors");
 
-	const TexAtlasEntry_t* atlEntries[] = {
+	const AtlasEntry* atlEntries[] = {
 		atlRock, atlPaper, atlScissors
-	};
-
-	const char* soundNames[] = {
-		"effect.rock",
-		"effect.paper",
-		"effect.scissors",
 	};
 
 	if (m_objects.numElem() == 0)
@@ -287,8 +582,13 @@ bool CState_SampleGameDemo::Update(float fDt)
 		InitGame();
 	}
 
-	int counts[static_cast<int>(RPSType::COUNT)]{ 0 };
+	ECSSystem<Movement>::Process(Movement{ fDt });
+	AttackLogic attackState;
+	ECSSystem<AttackLogic>::Process(attackState);
+	ECSSystem<Draw>::Process(Draw{ atlEntries, m_pfxGroup });
 
+	/*
+	int counts[static_cast<int>(RPSType::COUNT)]{ 0 };
 	for (int i = 0; i < m_objects.numElem(); ++i)
 	{
 		RPSObject& curObj = m_objects[i];
@@ -306,7 +606,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 			if (&curObj == &otherObj)
 				continue;
 
-			const int whoDefeats = CheckWhoDefeats(curObj, otherObj);
+			const int whoDefeats = CheckWhoDefeats(curObj.type, otherObj.type);
 			const float distSqr = distanceSqr(curObj.pos, otherObj.pos);
 
 			if (whoDefeats == 1)
@@ -323,7 +623,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 			{
 				otherObj.type = curObj.type;
 
-				EmitParams ep(soundNames[static_cast<int>(curObj.type)]);
+				EmitParams ep(s_soundNames[static_cast<int>(curObj.type)]);
 				ep.origin.x = curObj.pos.x * 0.01f;
 				g_sounds->EmitSound(&ep);
 			}
@@ -331,7 +631,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 			{
 				curObj.type = otherObj.type;
 
-				EmitParams ep(soundNames[static_cast<int>(otherObj.type)]);
+				EmitParams ep(s_soundNames[static_cast<int>(otherObj.type)]);
 				ep.origin.x = otherObj.pos.x * 0.01f;
 				g_sounds->EmitSound(&ep);
 			}
@@ -366,13 +666,13 @@ bool CState_SampleGameDemo::Update(float fDt)
 			verts[2].point += transform;
 			verts[3].point += transform;
 		}
-	}
+	}*/
 
 	int numLost = 0;
 
 	for (int i = 0; i < static_cast<int>(RPSType::COUNT); ++i)
 	{
-		if (counts[i] == 0)
+		if (attackState.counts[i] == 0)
 			++numLost;
 	}
 
