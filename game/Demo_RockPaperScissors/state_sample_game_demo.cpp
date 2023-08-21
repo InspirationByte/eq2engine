@@ -68,6 +68,15 @@ static int CheckWhoDefeats(const RPSType& a, const RPSType& b)
 template<typename T>
 struct ECSComponent
 {
+	// TODO:	Thread safety
+	//			More efficient component lookup
+	//			Non-static storage
+
+	static T* Get(Map<int, int>::Iterator& iterator)
+	{
+		return &pool[*iterator];
+	}
+
 	static T* Get(int entity)
 	{
 		auto it = entityComponent.find(entity);
@@ -139,6 +148,14 @@ struct ECSSystem
 	static void Process(T& system);
 };
 
+template<typename T>
+struct ECSMessage
+{
+	int fromEntity{ -1 };
+
+	inline static Array<T>	messages{ PP_SL };
+};
+
 //---------------------------------------------
 /*
 struct EffectPosition
@@ -184,54 +201,50 @@ struct State
 	RPSType type{ RPSType::ROCK };
 };
 
-struct ClosestEnemy
-{
-	int closestId{ -1 };
-	float distance{ F_INFINITY };
-};
-
 struct Movement
 {
-	// Components used by the system goes here
+	// alias for components used by system
 	using Position = ECSComponent<Position>;
 	using State = ECSComponent<State>;
-	using ClosestEnemy = ECSComponent<ClosestEnemy>;
 
-	// system state parameters
+	// system arguments and feedback
 	float deltaTime{ 0.0f };
 };
 
-struct AttackLogic
+struct StateUpdate
 {
-	// Components used by the system goes here
+	struct DefeatMessage : public ECSMessage<DefeatMessage> 
+	{
+		int defeatedBy{ -1 };
+	};
+
+	// alias for components used by system
 	using Position = ECSComponent<Position>;
 	using State = ECSComponent<State>;
-	using ClosestEnemy = ECSComponent<ClosestEnemy>;
 
-	// system state params
+	// system arguments and feedback
 	int counts[static_cast<int>(RPSType::COUNT)]{ 0 };
 };
 
 struct Draw
 {
+	// alias for components used by system
 	using Position = ECSComponent<Position>;
 	using State = ECSComponent<State>;
 
-	// system state params
+	// system arguments and feedback
 	const AtlasEntry**	atlEntries{ nullptr };
 	CParticleBatch*		pfxGroup{ nullptr };
 };
 
-void ECSSystem<Movement>::Process(Movement& systemState)
+void ECSSystem<Movement>::Process(Movement& sysState)
 {
-	const float deltaTime = systemState.deltaTime;
+	const float deltaTime = sysState.deltaTime;
 
 	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
 	{
-		Position& curPos = *Sys::Position::Get(*it);
+		Position& curPos = *Sys::Position::Get(it);
 		State& state = *Sys::State::Get(*it);
-
-		ClosestEnemy& enemy = *Sys::ClosestEnemy::GetOrCreate(*it);
 
 		Vector2D moveVector(0.0f);
 		float criticalMass = 1.0f;
@@ -247,46 +260,35 @@ void ECSSystem<Movement>::Process(Movement& systemState)
 			const int whoDefeats = CheckWhoDefeats(state.type, otherState.type);
 			const float distSqr = distanceSqr(curPos.pos, otherPos.pos);
 
-			// store closest enemy who may defeat us
-			if (distSqr < enemy.distance && whoDefeats == 2)
-			{
-				enemy.distance = distSqr;
-				enemy.closestId = *otherIt;
-			}
-
 			if (whoDefeats == 1)
 				moveVector += normalize(otherPos.pos - curPos.pos) / distSqr;
 			else if (whoDefeats == 2)
 				moveVector -= normalize(otherPos.pos - curPos.pos) / distSqr * 0.25f;
 			else
 				criticalMass += rsqrtf(distSqr);
+
+			if (distSqr < s_radiusSqr)
+				StateUpdate::DefeatMessage::messages.append({ *it, *otherIt });
 		}
 
 		curPos.pos += moveVector * s_moveSpeed * criticalMass * deltaTime;
 	}
 }
 
-void ECSSystem<AttackLogic>::Process(AttackLogic& systemState)
+void ECSSystem<StateUpdate>::Process(StateUpdate& sysState)
 {
-	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
+	// NOTE: concept
+	// use more generalized solution that does not rely on array cleanup
+	for (auto& message : StateUpdate::DefeatMessage::messages)
 	{
-		Position& curPos = *Sys::Position::Get(*it);
-		State& state = *Sys::State::Get(*it);
-		ClosestEnemy& enemy = *Sys::ClosestEnemy::GetOrCreate(*it);
-
-		++systemState.counts[static_cast<int>(state.type)];
-
-		if (enemy.distance > s_radiusSqr)
-			continue;
-
-		Position& otherPos = *Sys::Position::Get(enemy.closestId);
-		State& otherState = *Sys::State::Get(enemy.closestId);
-
+		State& state = *Sys::State::Get(message.fromEntity);
+		State& otherState = *Sys::State::Get(message.defeatedBy);
 		const int whoDefeats = CheckWhoDefeats(state.type, otherState.type);
 
 		// turn loser into winner type and play winner sound
 		if (whoDefeats == 1) // a beaten b
 		{
+			Position& curPos = *Sys::Position::Get(message.fromEntity);
 			otherState.type = state.type;
 
 			EmitParams ep(s_soundNames[static_cast<int>(state.type)]);
@@ -295,6 +297,7 @@ void ECSSystem<AttackLogic>::Process(AttackLogic& systemState)
 		}
 		else if (whoDefeats == 2) // b beaten a
 		{
+			Position& otherPos = *Sys::Position::Get(message.defeatedBy);
 			state.type = otherState.type;
 
 			EmitParams ep(s_soundNames[static_cast<int>(otherState.type)]);
@@ -302,20 +305,27 @@ void ECSSystem<AttackLogic>::Process(AttackLogic& systemState)
 			g_sounds->EmitSound(&ep);
 		}
 	}
+	StateUpdate::DefeatMessage::messages.clear();
+
+	for (auto it = Sys::State::entityComponent.begin(); !it.atEnd(); ++it)
+	{
+		State& state = *Sys::State::Get(it);
+		++sysState.counts[static_cast<int>(state.type)];
+	}
 }
 
-void ECSSystem<Draw>::Process(Draw& systemState)
+void ECSSystem<Draw>::Process(Draw& sysState)
 {
 	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
 	{
-		Position& curPos = *Sys::Position::Get(*it);
+		Position& curPos = *Sys::Position::Get(it);
 		State& state = *Sys::State::Get(*it);
 
 		// draw
-		const AARectangle rect = systemState.atlEntries[static_cast<int>(state.type)]->rect;
+		const AARectangle rect = sysState.atlEntries[static_cast<int>(state.type)]->rect;
 
 		PFXVertex_t* verts;
-		if (systemState.pfxGroup->AllocateGeom(4, 4, &verts, nullptr, true) == -1)
+		if (sysState.pfxGroup->AllocateGeom(4, 4, &verts, nullptr, true) == -1)
 			break;
 
 		verts[0].point = Vector3D(0, 0, 0);
@@ -583,8 +593,8 @@ bool CState_SampleGameDemo::Update(float fDt)
 	}
 
 	ECSSystem<Movement>::Process(Movement{ fDt });
-	AttackLogic attackState;
-	ECSSystem<AttackLogic>::Process(attackState);
+	StateUpdate stateUpdate;
+	ECSSystem<StateUpdate>::Process(stateUpdate);
 	ECSSystem<Draw>::Process(Draw{ atlEntries, m_pfxGroup });
 
 	/*
@@ -672,7 +682,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 
 	for (int i = 0; i < static_cast<int>(RPSType::COUNT); ++i)
 	{
-		if (attackState.counts[i] == 0)
+		if (stateUpdate.counts[i] == 0)
 			++numLost;
 	}
 
