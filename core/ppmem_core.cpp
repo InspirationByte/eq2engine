@@ -392,6 +392,11 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		retPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
 		uint* checkMark = (uint*)((ubyte*)retPtr + size);
 
+		{
+			alloc->size = size;
+			*checkMark = PPMEM_CHECKMARK;
+		}
+
 		// insert to linked list tail
 		{
 			CScopedMutex m(st.allocMemMutex);
@@ -411,15 +416,6 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 			++cnt.count;
 			cnt.lastTime = st.timer.GetTimeMS();
 #endif
-		}
-
-		{
-			alloc->sl = sl;
-			alloc->size = size;
-			alloc->id = st.allocIdCounter++;
-
-			alloc->checkMark = PPMEM_CHECKMARK;
-			*checkMark = PPMEM_CHECKMARK;
 		}
 	}
 
