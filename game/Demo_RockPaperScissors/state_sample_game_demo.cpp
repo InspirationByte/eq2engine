@@ -126,13 +126,20 @@ struct ECSComponent
 		return &pool[*it];
 	}
 
-	void Remove(int entity)
+	static void Remove(int entity)
 	{
 		auto it = entityComponent.find(entity);
 		if (it.atEnd())
 			return;
 		freeSlots.append(it.value());
 		entityComponent.remove(it);
+	}
+
+	static void RemoveAll()
+	{
+		entityComponent.clear(true);
+		freeSlots.clear(true);
+		pool.clear(true);
 	}
 
 	// FIXME: this could be slow, use different data structures to search instead?
@@ -176,33 +183,6 @@ private:
 };
 
 //---------------------------------------------
-/*
-struct EffectPosition
-{
-	Vector3D point{ vec3_zero };
-};
-
-struct EffectVelocity
-{
-	EffectVelocity() = default;
-	EffectVelocity(const Vector3D& initialVelocity) : velocity(initialVelocity) {}
-	Vector3D velocity{ vec3_zero };
-};
-
-struct ParticlesMovement
-{
-	// Components used by the system goes here
-	using Position = ECSComponent<EffectPosition>;
-	using Velocity = ECSComponent<EffectVelocity>;
-};
-
-void ECSSystem<ParticlesMovement>::Process(int entity)
-{
-	auto pos = Sys::Position::Get(entity);
-	auto vel = Sys::Velocity::GetOrCreate(entity, vec3_zero);
-	pos->point += vel->velocity;
-}
-*/
 
 struct Position
 {
@@ -451,6 +431,9 @@ void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
 
 void CState_SampleGameDemo::InitGame()
 {
+	ECSComponent<Position>::RemoveAll();
+	ECSComponent<State>::RemoveAll();
+
 	int count = 0;
 	for (int i = 0; i < g_maxObjects.GetInt() / 3; ++i)
 	{
@@ -605,10 +588,10 @@ bool CState_SampleGameDemo::Update(float fDt)
 		atlRock, atlPaper, atlScissors
 	};
 
-	if (m_objects.numElem() == 0)
-	{
-		InitGame();
-	}
+	//if (m_objects.numElem() == 0)
+	//{
+	//	InitGame();
+	//}
 
 	ECSSystem<Movement>::Process(Movement{ fDt });
 	StateUpdate stateUpdate;
@@ -704,8 +687,8 @@ bool CState_SampleGameDemo::Update(float fDt)
 			++numLost;
 	}
 
-	if(numLost == 2)
-		m_objects.clear();
+	if(numLost >= 2)
+		InitGame();
 
 	g_pPFXRenderer->Render(0);
 
@@ -718,7 +701,7 @@ void CState_SampleGameDemo::HandleKeyPress(int key, bool down)
 	if (key == KEY_SPACE && !down)
 	{
 		// reset game
-		m_objects.clear();
+		InitGame();
 	}
 }
 
