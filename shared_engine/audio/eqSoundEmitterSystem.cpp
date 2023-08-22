@@ -477,7 +477,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 			emitter->loopCommand = LOOPCMD_NONE;
 		}
 	}
-	else if(loopCommandChanged & LOOPCMD_FLAG_CHANGED)
+	else if(loopCommandChanged)
 	{
 		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 	}

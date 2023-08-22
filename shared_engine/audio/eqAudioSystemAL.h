@@ -166,7 +166,7 @@ protected:
 	SourceStream&			GetSourceStream() { return m_streams.front(); }
 	bool					IsStreamed() const;
 
-	void					InitSource();
+	bool					InitSource();
 
 	void					EmptyBuffers();
 	bool					DoUpdate();

@@ -30,6 +30,54 @@ IEqAudioSystem* g_audioSystem = &s_audioSystemAL;
 // and also eliminates few reallocations to just copy to single AL buffer
 #define USE_ALSOFT_BUFFER_CALLBACK 1
 
+DECLARE_CVAR(al_report_errors, "0", nullptr, 0);
+DECLARE_CVAR(al_break_on_error, "0", nullptr, 0);
+DECLARE_CVAR(al_bypass_errors, "0", nullptr, 0);
+
+static bool ALCheckError(const char* op, ...)
+{
+	const int lastError = alGetError();
+	if (lastError != AL_NO_ERROR)
+	{
+		EqString errString = EqString::Format("code %x", lastError);
+		switch (lastError)
+		{
+		case AL_INVALID_NAME:
+			errString = "AL_INVALID_NAME";
+			break;
+		case AL_INVALID_ENUM:
+			errString = "AL_INVALID_ENUM";
+			break;
+		case AL_INVALID_VALUE:
+			errString = "AL_INVALID_VALUE";
+			break;
+		case AL_INVALID_OPERATION:
+			errString = "AL_INVALID_OPERATION";
+			break;
+		case AL_OUT_OF_MEMORY:
+			errString = "AL_OUT_OF_MEMORY";
+			break;
+		}
+
+		va_list argptr;
+		va_start(argptr, op);
+		EqString errorMsg = EqString::FormatVa(op, argptr);
+		va_end(argptr);
+
+		if (al_break_on_error.GetBool())
+		{
+			_DEBUG_BREAK;
+		}
+
+		if (al_report_errors.GetBool())
+			MsgError("*OpenAL* error occured while '%s' (%s)\n", errorMsg.ToCString(), errString.ToCString());
+
+		return al_bypass_errors.GetBool();
+	}
+
+	return true;
+}
+
 static int GetLoopRegionIdx(int offsetInSamples, int* points, int regionCount)
 {
 	for (int i = 0; i < regionCount; ++i)
@@ -455,6 +503,8 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 	if (!stricmp(pszName, "reverb"))
 	{
 		alGenEffects(1, &effect.nAlEffect);
+		if (!ALCheckError("gen buffers"))
+			return false;
 
 		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
 
@@ -474,6 +524,8 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 	else if (!stricmp(pszName, "echo"))
 	{
 		alGenEffects(1, &effect.nAlEffect);
+		if (!ALCheckError("gen buffers"))
+			return false;
 
 		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
 
@@ -915,6 +967,8 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 		if (!m_filter)
 		{
 			alGenFilters(1, &m_filter);
+			ALCheckError("gen buffers");
+
 			alFilteri(m_filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
 			alFilterf(m_filter, AL_BANDPASS_GAIN, 1.0f);
 		}
@@ -996,6 +1050,7 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 					if (!QueueStreamChannel(m_buffers[i]))
 						break; // too short
 				}
+				ALCheckError("queue buffers");
 			}
 
 			alSourcePlay(thisSource);
@@ -1003,6 +1058,8 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 
 		m_state = params.state;
 	}
+
+	ALCheckError("source update");
 }
 
 void CEqAudioSourceAL::SetSamplePlaybackPosition(int sourceIdx, float seconds)
@@ -1143,12 +1200,17 @@ bool CEqAudioSourceAL::IsStreamed() const
 	return m_streams.numElem() > 0 ? m_streams[0].sample->IsStreaming() : false;
 }
 
-void CEqAudioSourceAL::InitSource()
+bool CEqAudioSourceAL::InitSource()
 {
 	ALuint source;
 
 	// initialize source
 	alGenSources(1, &source);
+	if (!ALCheckError("gen source"))
+	{
+		m_source = source;
+		return false;
+	}
 
 	alSourcei(source, AL_LOOPING, AL_FALSE);
 	alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
@@ -1165,6 +1227,7 @@ void CEqAudioSourceAL::InitSource()
 
 	// initialize buffers
 	alGenBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
+	ALCheckError("gen stream buffer");
 }
 
 void CEqAudioSourceAL::Release()
@@ -1194,6 +1257,14 @@ void CEqAudioSourceAL::Release()
 // updates channel (in cycle)
 bool CEqAudioSourceAL::DoUpdate()
 {
+	if (!alIsSource(m_source))
+	{
+		// force destroy invalid source
+		Release();
+		m_releaseOnStop = true;
+		return false;
+	}
+
 	// process user callback
 	if (m_callback)
 	{
@@ -1229,7 +1300,7 @@ bool CEqAudioSourceAL::DoUpdate()
 	const bool isStreaming = IsStreamed();
 
 	// get source state again
-	int sourceState;
+	int sourceState = AL_STOPPED;
 	alGetSourcei(m_source, AL_SOURCE_STATE, &sourceState);
 
 	if (isStreaming)
