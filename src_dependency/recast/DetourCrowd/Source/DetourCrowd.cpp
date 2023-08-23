@@ -1114,7 +1114,7 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 		// and short cut to there.
 		if ((ag->params.updateFlags & DT_CROWD_OPTIMIZE_VIS) && ag->ncorners > 0)
 		{
-			const float* target = &ag->cornerVerts[dtMin(1,ag->ncorners-1)*3];
+			const float* target = &ag->cornerVerts[(ag->ncorners-1)*3];
 			ag->corridor.optimizePathVisibility(target, ag->params.pathOptimizationRange, m_navquery, &m_filters[ag->params.queryFilterType]);
 			
 			// Copy data for debug purposes.
