@@ -1232,16 +1232,16 @@ public:
 	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
 
 	// returns front item
-	T&				front() { ASSERT(m_nNumElem > 0); return *m_pListPtr; }
+	T&				front() { ASSERT(m_nNumElem > 0); return m_pListPtr[0]; }
 
 	// returns front item
-	const T&		front() const { ASSERT(m_nNumElem > 0); return *m_pListPtr; }
+	const T&		front() const { ASSERT(m_nNumElem > 0); return m_pListPtr[0]; }
 
 	// returns back item
-	T&				back() { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
+	T&				back() { ASSERT(m_nNumElem > 0); return m_pListPtr[m_nNumElem - 1]; }
 
 	// returns back item
-	const T&		back() const { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
+	const T&		back() const { ASSERT(m_nNumElem > 0); return m_pListPtr[m_nNumElem - 1]; }
 
 protected:
 	T*				m_pListPtr{ nullptr };
@@ -1334,10 +1334,10 @@ public:
 	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
 
 	// returns front item
-	const T&		front() const { ASSERT(m_nNumElem > 0); return *m_pListPtr; }
+	const T&		front() const { ASSERT(m_nNumElem > 0); return m_pListPtr[0]; }
 
 	// returns back item
-	const T&		back() const { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
+	const T&		back() const { ASSERT(m_nNumElem > 0); return m_pListPtr[m_nNumElem - 1]; }
 
 protected:
 	const T*		m_pListPtr{ nullptr };

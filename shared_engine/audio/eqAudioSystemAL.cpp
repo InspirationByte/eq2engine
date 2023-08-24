@@ -1228,6 +1228,8 @@ bool CEqAudioSourceAL::InitSource()
 	// initialize buffers
 	alGenBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
 	ALCheckError("gen stream buffer");
+
+	return true;
 }
 
 void CEqAudioSourceAL::Release()

@@ -410,10 +410,9 @@ void CD3D9RenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
 // changes fullscreen mode
 bool CD3D9RenderLib::SetWindowed(bool enabled)
 {
-	if (enabled == m_d3dpp.Windowed)
+	const bool old = m_d3dpp.Windowed;
+	if (enabled == old)
 		return true;
-
-	bool old = m_d3dpp.Windowed;
 
 	m_d3dpp.BackBufferWidth = m_width;
 	m_d3dpp.BackBufferHeight = m_height;
