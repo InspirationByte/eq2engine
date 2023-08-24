@@ -59,8 +59,8 @@ EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 // File stream
 //------------------------------------------------------------------------------
 
-CFile::CFile(COSFile&& file)
-	: m_osFile(std::move(file))
+CFile::CFile(const char* fileName, COSFile&& file)
+	: m_name(fileName), m_osFile(std::move(file))
 {
 }
 
@@ -381,7 +381,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 		COSFile osFile;
 		if (osFile.Open(filePath, modeFlags))
 		{
-			fileHandle = IFilePtr(CRefPtr_new(CFile, std::move(osFile)));
+			fileHandle = IFilePtr(CRefPtr_new(CFile, filename, std::move(osFile)));
 			return true;
 		}
 

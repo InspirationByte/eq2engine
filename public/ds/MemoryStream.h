@@ -15,14 +15,14 @@
 class CMemoryStream : public IVirtualStream
 {
 public:
-	// TODO: PP_SL constructor
-						CMemoryStream();
-						CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize);
+						CMemoryStream(PPSourceLine sl);
+						CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize, PPSourceLine sl);
 
 						~CMemoryStream();
 
 	// opens stream, if this is a file, data is filename
 	bool				Open(ubyte* data, int nOpenFlags, int nDataSize);
+
 	// closes stream
 	void				Close();
 
@@ -44,12 +44,12 @@ public:
 	// flushes stream, doesn't affects on memory stream
 	bool				Flush();
 
-	char*				Gets( char *dest, int destSize );
-
 	// returns CRC32 checksum
 	uint32				GetCRC32();
 
 	VirtStreamType_e	GetType() const { return VS_TYPE_MEMORY; }
+
+	const char*			GetName() const { return m_sl.GetFileName(); }
 
 	// reads other stream into this one
 	bool				AppendStream(IVirtualStream* pStream, int maxSize = 0);
@@ -72,7 +72,7 @@ protected:
 	void				ReAllocate(long nNewSize);
 
 private:
-
+	PPSourceLine		m_sl;
 	ubyte*				m_start{ nullptr };
 	ubyte*				m_currentPtr{ nullptr };
 	long				m_writeTop{ 0 };

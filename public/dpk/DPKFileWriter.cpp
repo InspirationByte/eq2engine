@@ -105,7 +105,7 @@ int CDPKFileWriter::End()
 uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, int packageFlags)
 {
 	// prepare stream to be read
-	CMemoryStream readStream;
+	CMemoryStream readStream(PP_SL);
 	if (fileData->GetType() == VS_TYPE_MEMORY)
 	{
 		// make a reader from the memory stream to not cause assert

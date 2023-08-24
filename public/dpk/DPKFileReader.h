@@ -24,7 +24,7 @@ class CDPKFileStream : public CBasePackageFileStream
 	friend class CDPKFileReader;
 	friend class CFileSystem;
 public:
-	CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile);
+	CDPKFileStream(const char* filename, const dpkfileinfo_t& info, COSFile&& osFile);
 	~CDPKFileStream();
 
 	// reads data from virtual stream
@@ -54,6 +54,8 @@ public:
 	// returns CRC32 checksum of stream
 	uint32				GetCRC32();
 
+	const char*			GetName() const { return m_name; }
+
 	CBasePackageReader* GetHostPackage() const;
 
 protected:
@@ -67,6 +69,8 @@ protected:
 		short flags;
 	};
 
+	EqString				m_name;
+
 	dpkfileinfo_t			m_info;
 	IceKey					m_ice;
 
@@ -79,8 +83,6 @@ protected:
 
 	COSFile					m_osFile;
 	int						m_curPos;
-
-
 };
 
 //------------------------------------------------------------------------------------------

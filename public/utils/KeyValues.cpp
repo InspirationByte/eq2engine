@@ -343,9 +343,9 @@ bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != nullptr;
 }
 
-bool KeyValues::LoadFromStream(ubyte* pData)
+bool KeyValues::LoadFromStream(IVirtualStream* stream)
 {
-	return KV_ParseSection( (const char*)pData, 0, nullptr, &m_root, 0 ) != nullptr;
+	return KV_LoadFromStream(stream, &m_root) != nullptr;
 }
 
 bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
@@ -1545,34 +1545,41 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 //
 // Loads file and parses it as KeyValues into the 'pParseTo'
 //
-KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection* pParseTo )
+KVSection* KV_LoadFromStream(IVirtualStream* stream, KVSection* pParseTo)
 {
-	long lSize = 0;
-	char* pBuffer = (char*)g_fileSystem->GetFileBuffer(pszFileName, &lSize, nSearchFlags);
-	char* _buffer = pBuffer;
-
-	if(!_buffer)
-	{
-		DevMsg(1, "Can't open key-values file '%s'\n", pszFileName);
+	if (!stream)
 		return nullptr;
+
+	CMemoryStream memBuffer(PPSourceLine::Make(stream->GetName(), 0));
+	if (stream->GetType() == VS_TYPE_MEMORY)
+	{
+		CMemoryStream* memOpenStream = static_cast<CMemoryStream*>(stream);
+		memBuffer.Open(memOpenStream->GetBasePointer(), VS_OPEN_READ, memOpenStream->GetSize());
+	}
+	else
+	{
+		memBuffer.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, stream->GetSize());
+		memBuffer.AppendStream(stream);
+		memBuffer.Seek(0, VS_SEEK_SET);
 	}
 
+	int fileSize = memBuffer.GetSize();
+	const char* _buffer = (const char*)memBuffer.GetBasePointer();
 	ushort byteordermark = *((ushort*)_buffer);
 
 	bool isUTF8 = false;
 	bool isBinary = false;
 
-	if(byteordermark == 0xbbef)
+	if (byteordermark == 0xbbef)
 	{
 		// skip this three byte bom
 		_buffer += 3;
-		lSize -= 3;
+		fileSize -= 3;
 		isUTF8 = true;
 	}
-	else if(byteordermark == 0xfeff)
+	else if (byteordermark == 0xfeff)
 	{
 		ASSERT(!"Only UTF-8 keyvalues supported!!!");
-		PPFree( pBuffer );
 		return nullptr;
 	}
 	else
@@ -1580,7 +1587,7 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 		uint ident = *((uint*)_buffer);
 
 		// it's assuming UTF8 when using binary format
-		if(ident == KV_IDENT_BINARY)
+		if (ident == KV_IDENT_BINARY)
 		{
 			isBinary = true;
 			isUTF8 = true;
@@ -1589,20 +1596,36 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 
 	// load as stream
 	KVSection* pBase = nullptr;
-	
-	if(isBinary)
-		pBase = KV_ParseBinary(_buffer, lSize, pParseTo);
+
+	if (isBinary)
+		pBase = KV_ParseBinary(_buffer, fileSize, pParseTo);
 	else
-		pBase = KV_ParseSection(_buffer, lSize, pszFileName, pParseTo, 0);
+		pBase = KV_ParseSection(_buffer, fileSize, stream->GetName(), pParseTo, 0);
 
 	if(pBase)
+		pBase->unicode = isUTF8;
+
+	return pBase;
+}
+
+KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection* pParseTo )
+{
+	CMemoryStream buffer(PPSourceLine::Make(pszFileName, 0));
 	{
-		pBase->SetName(_Es(pszFileName).Path_Strip_Path().ToCString());
-        pBase->unicode = isUTF8;
+		IFilePtr file = g_fileSystem->Open(pszFileName, "rb", nSearchFlags);
+		if (!file)
+		{
+			DevMsg(1, "Can't open key-values file '%s'\n", pszFileName);
+			return nullptr;
+		}
+		buffer.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, file->GetSize());
+		buffer.AppendStream(file);
+		buffer.Seek(0, VS_SEEK_SET);
 	}
 
-	// required to clean memory after reading
-	PPFree( pBuffer );
+	KVSection* pBase = KV_LoadFromStream(&buffer, pParseTo);
+	if (pBase)
+		pBase->SetName(_Es(pszFileName).Path_Strip_Path().ToCString());
 
 	return pBase;
 }
@@ -1645,7 +1668,7 @@ struct kvbinbase_s
 
 KVSection* KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo)
 {
-	CMemoryStream memstr((ubyte*)pszBuffer, VS_OPEN_READ, bufferSize);
+	CMemoryStream memstr((ubyte*)pszBuffer, VS_OPEN_READ, bufferSize, PP_SL);
 	return KV_ReadBinaryBase(&memstr, pParseTo);
 }
 
@@ -2143,7 +2166,7 @@ void KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int
 //
 void KV_PrintSection(const KVSection* base)
 {
-	CMemoryStream stream(nullptr, VS_OPEN_WRITE, 2048);
+	CMemoryStream stream(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
 	KV_WriteToStream(&stream, base, 0, true);
 
 	char nullChar = '\0';

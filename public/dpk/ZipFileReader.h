@@ -17,7 +17,7 @@ class CZipFileStream : public CBasePackageFileStream
 	friend class CZipFileReader;
 	friend class CFileSystem;
 public:
-	CZipFileStream(unzFile zip, CZipFileReader* host);
+	CZipFileStream(const char* fileName, unzFile zip, CZipFileReader* host);
 	~CZipFileStream();
 
 	// reads data from virtual stream
@@ -47,10 +47,13 @@ public:
 	// returns CRC32 checksum of stream
 	uint32				GetCRC32();
 
+	const char*			GetName() const { return m_name; }
+
 	CBasePackageReader* GetHostPackage() const;
 
 protected:
 
+	EqString			m_name;
 	unzFile				m_zipHandle;
 	unz_file_info		m_finfo;
 

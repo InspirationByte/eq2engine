@@ -1946,8 +1946,8 @@ bool ShaderAPID3D9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			return true;
 	}
 
-	CMemoryStream vsMemStream(nullptr, VS_OPEN_WRITE, 2048);
-	CMemoryStream psMemStream(nullptr, VS_OPEN_WRITE, 2048);
+	CMemoryStream vsMemStream(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
+	CMemoryStream psMemStream(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
 
 	if (info.data.text != nullptr)
 	{

@@ -89,6 +89,9 @@ public:
 
 	// returns CRC32 checksum of stream
 	virtual uint32				GetCRC32() = 0;
+
+	// returns name of stream or file
+	virtual const char*			GetName() const = 0;
 };
 
 // provide default implementation

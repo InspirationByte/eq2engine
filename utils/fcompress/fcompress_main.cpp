@@ -505,7 +505,7 @@ static void CookPackageTarget(const char* targetName)
 			int targetFileFlags = (skipCompression ? 0 : DPKFILE_FLAG_COMPRESSED) | DPKFILE_FLAG_ENCRYPTED;
 
 			bool loadRawFile = true;
-			CMemoryStream fileMemoryStream;
+			CMemoryStream fileMemoryStream(PP_SL);
 			fileMemoryStream.Ref_Grab();
 
 			if (CheckExtensionList(keyValueFileExt, fileExt))

@@ -141,7 +141,7 @@ cdp_queued_message_t* AllocMessage()
 
 	if(!pMessage->bytestream)
 	{
-		pMessage->bytestream = PPNew CMemoryStream(nullptr, VS_OPEN_WRITE, UDP_CDP_MIN_MESSAGESIZE);
+		pMessage->bytestream = PPNew CMemoryStream(nullptr, VS_OPEN_WRITE, UDP_CDP_MIN_MESSAGESIZE, PP_SL);
 	}
 
 	return pMessage;

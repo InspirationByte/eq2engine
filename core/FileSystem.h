@@ -19,7 +19,7 @@ class CFile : public IFile
 	friend class CFileSystem;
 
 public:
-	CFile(COSFile&& file);
+	CFile(const char* fileName, COSFile&& file);
 
     int					Seek( long pos, EVirtStreamSeek seekType );
     long				Tell() const;
@@ -34,7 +34,9 @@ public:
 
 	VirtStreamType_e	GetType() const { return VS_TYPE_FILE; }
 
+	const char*			GetName() const { return m_name; }
 protected:
+	EqString			m_name;
 	COSFile				m_osFile;
 };
 

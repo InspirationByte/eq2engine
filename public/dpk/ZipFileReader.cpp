@@ -14,8 +14,8 @@
 
 static Threading::CEqMutex s_zipMutex;
 
-CZipFileStream::CZipFileStream(unzFile zip, CZipFileReader* host)
-	: m_zipHandle(zip), m_host(host)
+CZipFileStream::CZipFileStream(const char* fileName, unzFile zip, CZipFileReader* host)
+	: m_name(fileName), m_zipHandle(zip), m_host(host)
 {
 	unzGetCurrentFileInfo(m_zipHandle, &m_finfo, nullptr, 0, nullptr, 0, nullptr, 0);
 }
@@ -190,7 +190,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 		if (unzOpenCurrentFile(zip) == UNZ_OK)
 		{
 			// read contents
-			CZipFileStream mountFile(zip, this);
+			CZipFileStream mountFile(filename, zip, this);
 
 			memset(path, 0, sizeof(path));
 			mountFile.Read(path, mountFile.GetSize(), 1);
@@ -224,7 +224,7 @@ IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, zipFileHandle, this);
+	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, filename, zipFileHandle, this);
 
 	return IFilePtr(newStream);
 }

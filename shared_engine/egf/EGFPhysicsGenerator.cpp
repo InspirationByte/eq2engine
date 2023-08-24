@@ -772,7 +772,7 @@ void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint 
 
 void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 {
-	CMemoryStream lumpsStream(nullptr, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE);
+	CMemoryStream lumpsStream(nullptr, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE, PP_SL);
 
 	WriteLumpToStream(&lumpsStream, PHYSFILE_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
 	WriteLumpToStream(&lumpsStream, PHYSFILE_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
@@ -780,7 +780,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	// write names lump before objects lump
 	// PHYSLUMP_OBJECTNAMES
 	{
-		CMemoryStream objNamesLump(nullptr, VS_OPEN_WRITE, 2048);
+		CMemoryStream objNamesLump(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
 
 		for(int i = 0; i < m_objects.numElem(); i++)
 			objNamesLump.Write(m_objects[i].name, 1, strlen(m_objects[i].name)+1);
@@ -794,7 +794,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 
 	// PHYSLUMP_OBJECTS
 	{
-		CMemoryStream objDataLump(nullptr, VS_OPEN_WRITE, 2048);
+		CMemoryStream objDataLump(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
 
 		for(int i = 0; i < m_objects.numElem(); i++)
 			objDataLump.Write(&m_objects[i].object, 1, sizeof(m_objects[i].object));

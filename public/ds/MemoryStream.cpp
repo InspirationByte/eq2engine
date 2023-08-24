@@ -32,11 +32,12 @@ void IVirtualStream::Print(const char* pFmt, ...)
 // CMemoryStream - File stream
 //--------------------------
 
-CMemoryStream::CMemoryStream()
+CMemoryStream::CMemoryStream(PPSourceLine sl) : m_sl(sl)
 {
 }
 
-CMemoryStream::CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize)
+CMemoryStream::CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize, PPSourceLine sl)
+	: m_sl(sl)
 {
 	Open(data, nOpenFlags, nDataSize);
 }
@@ -178,7 +179,7 @@ void CMemoryStream::ReAllocate(long nNewSize)
 	}
 	
 	const long curPos = Tell();
-	m_start = (ubyte*)PPReAlloc(m_start, nNewSize );
+	m_start = (ubyte*)PPDReAlloc(m_start, nNewSize, m_sl);
 	ASSERT_MSG(m_start, "CMemoryStream reallocate failed!");
 
 	m_allocatedSize = nNewSize;
@@ -210,14 +211,14 @@ bool CMemoryStream::AppendStream(IVirtualStream* pStream, int maxSize)
 
 	const int resetPos = pStream->Tell();
 	const int readSize = min(maxSize > 0 ? maxSize : INT_MAX, pStream->GetSize() - resetPos);
-
-	ReAllocate(readSize + 16);
+	
+	m_writeTop = max(Tell() + readSize, m_writeTop);
+	ReAllocate(m_writeTop + 16);
 
 	// read to me
 	pStream->Read(m_currentPtr, readSize, 1);
 	pStream->Seek(resetPos, VS_SEEK_SET);
 	m_currentPtr += readSize;
-	m_writeTop += readSize;
 
 	// let user seek this stream after
 	return true;

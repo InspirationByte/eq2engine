@@ -256,7 +256,7 @@ public:
 
 	// loads from file
 	bool			LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
-	bool			LoadFromStream(ubyte* pData);
+	bool			LoadFromStream(IVirtualStream* stream);
 
 	bool			SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
@@ -295,7 +295,7 @@ enum EKVTokenState
 using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
 
 bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc);
-
+KVSection*		KV_LoadFromStream(IVirtualStream* stream, KVSection* pParseTo = nullptr);
 KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 
 KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = nullptr, KVSection* pParseTo = nullptr, int nStartLine = 0);

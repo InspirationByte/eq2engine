@@ -48,7 +48,7 @@ public:
 private:
 	bool			ChunkSet();
 
-	CMemoryStream		m_riffMem;
+	CMemoryStream		m_riffMem{ PP_SL };
 	IVirtualStreamPtr	m_stream{ nullptr };
 
 	RIFFchunk_t			m_curChunk;

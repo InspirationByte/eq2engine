@@ -20,8 +20,8 @@
 
 static Threading::CEqMutex s_dpkMutex;
 
-CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile)
-	: m_ice(0), m_osFile(std::move(osFile))
+CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, COSFile&& osFile)
+	: m_name(filename), m_ice(0), m_osFile(std::move(osFile))
 {
 	m_info = info;
 	m_curPos = 0;
@@ -402,7 +402,7 @@ IFilePtr CDPKFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	CRefPtr<CDPKFileStream> newStream = CRefPtr_new(CDPKFileStream, fileInfo, std::move(osFile));
+	CRefPtr<CDPKFileStream> newStream = CRefPtr_new(CDPKFileStream, filename, fileInfo, std::move(osFile));
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 

@@ -73,7 +73,7 @@ public:
 
 protected:
 
-	CMemoryStream		m_intData;
+	CMemoryStream		m_intData{ PP_SL };
 	CMemoryStream&		m_data;
 	long				m_startOfs{ 0 };
 };
