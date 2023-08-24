@@ -325,21 +325,21 @@ Vector3D			KV_GetVector3D(const KVSection* pBase, int nIndex = 0, const Vector3D
 Vector4D			KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
 
 // new
-inline const char*	KV_GetValue( const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" )				{return KV_GetValueString(pBase, nIndex, pszDefault);}
-inline int			KV_GetValue( const KVSection* pBase, int nIndex = 0, int nDefault = 0 )							{return KV_GetValueInt(pBase, nIndex, nDefault);}
-inline float		KV_GetValue( const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f )					{return KV_GetValueFloat(pBase, nIndex, fDefault);}
-inline bool			KV_GetValue( const KVSection* pBase, int nIndex = 0, bool bDefault = false )					{return KV_GetValueBool(pBase, nIndex, bDefault);}
-inline Vector2D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero)		{return KV_GetVector2D(pBase, nIndex, vDefault);}
-inline IVector2D	KV_GetValue( const KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0)				{return KV_GetIVector2D(pBase, nIndex, vDefault);}
-inline Vector3D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero)		{return KV_GetVector3D(pBase, nIndex, vDefault);}
-inline Vector4D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero)		{return KV_GetVector4D(pBase, nIndex, vDefault);}
+inline const char*	KV_GetValue( const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" )			{return KV_GetValueString(pBase, nIndex, pszDefault);}
+inline int			KV_GetValue( const KVSection* pBase, int nIndex = 0, int nDefault = 0 )						{return KV_GetValueInt(pBase, nIndex, nDefault);}
+inline float		KV_GetValue( const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f )				{return KV_GetValueFloat(pBase, nIndex, fDefault);}
+inline bool			KV_GetValue( const KVSection* pBase, int nIndex = 0, bool bDefault = false )				{return KV_GetValueBool(pBase, nIndex, bDefault);}
+inline Vector2D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero)	{return KV_GetVector2D(pBase, nIndex, vDefault);}
+inline IVector2D	KV_GetValue( const KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0)			{return KV_GetIVector2D(pBase, nIndex, vDefault);}
+inline Vector3D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero)	{return KV_GetVector3D(pBase, nIndex, vDefault);}
+inline Vector4D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero)	{return KV_GetVector4D(pBase, nIndex, vDefault);}
 
-inline const char*	KVSection::GetValue( int nIndex, const char* pszDefault )					{return KV_GetValueString(this, nIndex, pszDefault);}
-inline int			KVSection::GetValue( int nIndex, int nDefault )							{return KV_GetValueInt(this, nIndex, nDefault);}
-inline float		KVSection::GetValue( int nIndex, float fDefault )							{return KV_GetValueFloat(this, nIndex, fDefault);}
-inline bool			KVSection::GetValue( int nIndex, bool bDefault )							{return KV_GetValueBool(this, nIndex, bDefault);}
-inline Vector2D		KVSection::GetValue( int nIndex, const Vector2D& vDefault)				{return KV_GetVector2D(this, nIndex, vDefault);}
-inline IVector2D	KVSection::GetValue( int nIndex, const IVector2D& vDefault)				{return KV_GetIVector2D(this, nIndex, vDefault);}
-inline Vector3D		KVSection::GetValue( int nIndex, const Vector3D& vDefault)				{return KV_GetVector3D(this, nIndex, vDefault);}
-inline Vector4D		KVSection::GetValue( int nIndex, const Vector4D& vDefault )				{return KV_GetVector4D(this, nIndex, vDefault);}
+inline const char*	KVSection::GetValue( int nIndex, const char* pszDefault )	{return KV_GetValueString(this, nIndex, pszDefault);}
+inline int			KVSection::GetValue( int nIndex, int nDefault )				{return KV_GetValueInt(this, nIndex, nDefault);}
+inline float		KVSection::GetValue( int nIndex, float fDefault )			{return KV_GetValueFloat(this, nIndex, fDefault);}
+inline bool			KVSection::GetValue( int nIndex, bool bDefault )			{return KV_GetValueBool(this, nIndex, bDefault);}
+inline Vector2D		KVSection::GetValue( int nIndex, const Vector2D& vDefault)	{return KV_GetVector2D(this, nIndex, vDefault);}
+inline IVector2D	KVSection::GetValue( int nIndex, const IVector2D& vDefault)	{return KV_GetIVector2D(this, nIndex, vDefault);}
+inline Vector3D		KVSection::GetValue( int nIndex, const Vector3D& vDefault)	{return KV_GetVector3D(this, nIndex, vDefault);}
+inline Vector4D		KVSection::GetValue( int nIndex, const Vector4D& vDefault )	{return KV_GetVector4D(this, nIndex, vDefault);}
 

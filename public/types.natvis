@@ -126,7 +126,7 @@
 						<HeadPointer>m_root</HeadPointer>
 						<LeftPointer>left</LeftPointer>
 						<RightPointer>right</RightPointer>
-						<ValueNode Name="[{key}]">value</ValueNode>
+						<ValueNode Name="[{key}]">*($T2*)&amp;value.data</ValueNode>
 					</TreeItems>
 				</Expand>
 			</Synthetic>

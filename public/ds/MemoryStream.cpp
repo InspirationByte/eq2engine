@@ -126,7 +126,7 @@ long CMemoryStream::GetSize()
 // opens stream, if this is a file, data is filename
 bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 {
-	ASSERT(nDataSize != 0);
+	ASSERT(nDataSize >= 0);
 	ASSERT_MSG(m_openFlags == 0, "Already open");
 
 	m_openFlags = nOpenFlags;

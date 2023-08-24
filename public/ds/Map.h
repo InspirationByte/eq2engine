@@ -7,6 +7,14 @@
 
 #pragma once
 
+template<typename T>
+struct RawItem
+{
+	ubyte	data[sizeof(T)];
+	T*		operator->() { return reinterpret_cast<T*>(&data); }
+	T&		operator*() { return *reinterpret_cast<T*>(&data); }
+};
+
 template<typename K, typename V>
 class Map
 {
@@ -21,12 +29,12 @@ public:
 		const K&		key() const { return item->key; }
 		const V&		value() const { return *item->value; }
 
-		bool			atEnd() const { return !item || !item->value; };
+		bool			atEnd() const { return !item || !item->next; };
 
 		const V&		operator*() const { return *item->value; }
 		V&				operator*() { return *item->value; }
-		const V*		operator->() const { return item->value; }
-		V*				operator->() { return item->value; }
+		const V*		operator->() const { return &(*item->value); }
+		V*				operator->() { return &(*item->value); }
 		bool			operator==(const Iterator& other) const { return item == other.item; }
 		bool			operator!=(const Iterator& other) const { return item != other.item; }
 
@@ -49,9 +57,6 @@ public:
 	Map(const PPSourceLine& sl)
 		: m_pool(sl), m_end(&m_endItem), m_begin(&m_endItem)
 	{
-		m_endItem.parent = nullptr;
-		m_endItem.prev = nullptr;
-		m_endItem.next = nullptr;
 	}
 
 	Map(const Map& other)
@@ -91,7 +96,10 @@ public:
 	~Map()
 	{
 		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+		{
+			(*i->value).~V();
 			i->~Item();
+		}
 	}
 
 	Map& operator=(const Map& other)
@@ -105,17 +113,17 @@ public:
 	const Iterator& begin() const { return m_begin; }
 	const Iterator& end() const { return m_end; }
 
-	const V& front() const { return *m_begin.item->value; }
-	const V& back() const { return *m_end.item->prev->value; }
+	const V&		front() const { return *m_begin.item->value; }
+	const V&		back() const { return *m_end.item->prev->value; }
 
-	V& front() { return *m_begin.item->value; }
-	V& back() { return *m_end.item->prev->value; }
+	V&				front() { return *m_begin.item->value; }
+	V&				back() { return *m_end.item->prev->value; }
 
-	Iterator removeFront() { return remove(m_begin); }
-	Iterator removeBack() { return remove(m_end.item->prev); }
+	Iterator		removeFront() { return remove(m_begin); }
+	Iterator		removeBack() { return remove(m_end.item->prev); }
 
-	int size() const { return m_size; }
-	bool isEmpty() const { return !m_root; }
+	int				size() const { return m_size; }
+	bool			isEmpty() const { return !m_root; }
 
 	void swap(Map& other)
 	{
@@ -160,9 +168,10 @@ public:
 	{
 		for (Item* i = m_begin.item, *end = &m_endItem; i != end;)
 		{
+			(*i->value).~V();
 			i->~Item();
 			Item* next = i->next;
-			m_pool.deallocate((ItemVal*)i);
+			m_pool.deallocate(i);
 			i = next;
 		}
 
@@ -231,7 +240,7 @@ public:
 		}
 		else
 		{
-			//if (MULTIMAP)
+			//if constexpr (MULTIMAP)
 			//{
 			//	if (key < insertPos->key)
 			//	{
@@ -470,9 +479,10 @@ public:
 			(item->prev->next = item->next)->prev = item->prev;
 		--m_size;
 
+		(*item->value).~V();
 		item->~Item();
 		Item* next = item->next;
-		m_pool.deallocate((ItemVal*)item);
+		m_pool.deallocate(item);
 
 		return next;
 	}
@@ -480,28 +490,23 @@ public:
 private:
 	struct Item
 	{
-		K		key;
-		V*		value{ nullptr };
-		Item*	parent{ nullptr };
-		Item*	left{ nullptr };
-		Item*	right{ nullptr };
-		Item*	next{ nullptr };
-		Item*	prev{ nullptr };
-		int		height{ 1 };
-		int		slope{ 0 };
+		K			key;
+		RawItem<V>	value;
+		Item*		parent{ nullptr };
+		Item*		left{ nullptr };
+		Item*		right{ nullptr };
+		Item*		next{ nullptr };
+		Item*		prev{ nullptr };
+		int			height{ 1 };
+		int			slope{ 0 };
 
 		Item()
 			: key()
 		{}
 
 		Item(Item* parent, const K& key) 
-			: parent(parent), key(key), value((V*)(this + 1))
+			: parent(parent), key(key)
 		{}
-
-		~Item()
-		{
-			if (value) { value->~V(); }
-		}
 
 		void updateHeightAndSlope()
 		{
@@ -514,11 +519,7 @@ private:
 	};
 
 private:
-	struct ItemVal {
-		Item i;
-		V v;
-	};
-	MemoryPool<ItemVal, 32>	m_pool;
+	MemoryPool<Item, 32>	m_pool;
 	Iterator 			m_end;
 	Iterator 			m_begin;
 	Item 				m_endItem;
@@ -533,11 +534,10 @@ private:
 		Item* position = *cell;
 		if (!position)
 		{
-			ItemVal* iv = m_pool.allocate();
-			Item* item = &iv->i;
+			Item* item = m_pool.allocate();
 
 			new (item) Item(parent, key);
-			PPSLPlacementNew<V>(item + 1, m_pool.getSL());
+			PPSLPlacementNew<V>(&(*item->value), m_pool.getSL());
 
 			*cell = item;
 			++m_size;

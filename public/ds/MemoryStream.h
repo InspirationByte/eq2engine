@@ -15,10 +15,10 @@
 class CMemoryStream : public IVirtualStream
 {
 public:
-						CMemoryStream(PPSourceLine sl);
-						CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize, PPSourceLine sl);
+	~CMemoryStream();
 
-						~CMemoryStream();
+	CMemoryStream(PPSourceLine sl);
+	CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize, PPSourceLine sl);
 
 	// opens stream, if this is a file, data is filename
 	bool				Open(ubyte* data, int nOpenFlags, int nDataSize);
