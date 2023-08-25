@@ -172,7 +172,7 @@
 	</Type>
 	<Type Name="EqString">
 		<DisplayString Condition="m_nLength == 0">String: [empty]</DisplayString>
-		<DisplayString>String: { m_pszString }</DisplayString>
+		<DisplayString>String: { m_pszString,sb }</DisplayString>
 		<Expand>
 			<Item Name = "Value">
 				m_pszString
@@ -187,7 +187,7 @@
 	</Type>
 	<Type Name="EqWString">
 		<DisplayString Condition="m_nLength == 0">WString: [empty]</DisplayString>
-		<DisplayString>WString: { m_pszString }</DisplayString>
+		<DisplayString>WString: { m_pszString,sb }</DisplayString>
 		<Expand>
 			<Item Name = "Value">
 				m_pszString
@@ -200,36 +200,33 @@
 			</Item>
 		</Expand>
 	</Type>
-	<Type Name="kvkeybase_t">
-		<DisplayString>Key: { name } Values: { values }</DisplayString>
+	<Type Name="KVSection">
+		<DisplayString Condition="keys.m_nNumElem == 0 &amp;&amp; values.m_nNumElem == 0">"{name,sb}"</DisplayString>
+		<DisplayString Condition="keys.m_nNumElem == 0">"{name,sb}" [Values: {values.m_nNumElem}]</DisplayString>
+		<DisplayString Condition="values.m_nNumElem == 0">"{name,sb}" {{ Keys: {keys.m_nNumElem} }}</DisplayString>
+		<DisplayString>"{name,sb}" [Values: {values.m_nNumElem}] {{ Keys: {keys.m_nNumElem} }}</DisplayString>
 		<Expand>
-			<Item Name = "Name">name</Item>
-			<Synthetic Name="Values">
+			<Synthetic Name="Values" Condition="values.m_nNumElem > 0">
 				<DisplayString>{ values }</DisplayString>
 				<Expand>
 					<ArrayItems>
 						<Size>values.m_nNumElem</Size>
-						<ValuePointer>values.m_pListPtr</ValuePointer>
+						<ValuePointer>values.m_pListPtr,na</ValuePointer>
 					</ArrayItems>
 				</Expand>
 			</Synthetic>
-			<Synthetic Name="Nested Keys">
-				<DisplayString>{ keys }</DisplayString>
-				<Expand>
-					<ArrayItems>
-						<Size>keys.m_nNumElem</Size>
-						<ValuePointer>keys.m_pListPtr</ValuePointer>
-					</ArrayItems>
-				</Expand>
-			</Synthetic>
+			<ArrayItems>
+				<Size>keys.m_nNumElem</Size>
+				<ValuePointer>keys.m_pListPtr,na</ValuePointer>
+			</ArrayItems>
 		</Expand>
 	</Type>
-	<Type Name="kvpairvalue_t">
-		<DisplayString Condition="type == KVPAIR_STRING">{ value }</DisplayString>
-		<DisplayString Condition="type == KVPAIR_INT">{ nValue }</DisplayString>
-		<DisplayString Condition="type == KVPAIR_FLOAT">{ fValue }</DisplayString>
-		<DisplayString Condition="type == KVPAIR_BOOL">{ bValue }</DisplayString>
-		<DisplayString Condition="type == KVPAIR_SECTION">{ section }</DisplayString>
+	<Type Name="KVPairValue">
+		<DisplayString Condition="type == KVPAIR_STRING">[string] { value,sb }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_INT">[int] { nValue }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_FLOAT">[float] { fValue }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_BOOL">[bool] { bValue }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_SECTION">[section] { section }</DisplayString>
 	</Type>
 	<Type Name="ITexture">
 		<DisplayString>RHI Texture { ((CTexture*)this)->m_szTexName }</DisplayString>
