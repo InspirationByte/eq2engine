@@ -35,13 +35,13 @@
 
 #else
 
-IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* statement, ...);
 
 #define	ASSERT_MSG(x, msgFmt, ...) \
 { \
 	static bool ignoreAssert = false; \
-	if (!(x) && !ignoreAssert) { \
-		const int result = _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__); \
+	if (!(x)) { \
+		const int result = _InternalAssertMsg(PP_SL, ignoreAssert, msgFmt, ##__VA_ARGS__); \
 		if (result == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
 		else if (result == _EQASSERT_IGNORE_ALWAYS) { ignoreAssert = true; }\
 	} \

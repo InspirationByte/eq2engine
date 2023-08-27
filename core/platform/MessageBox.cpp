@@ -222,7 +222,7 @@ static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
 
 #ifdef _WIN32
 
-IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char *fmt, ...)
 {
 	va_list argptr;
 
@@ -230,13 +230,15 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 	EqString formattedStr = EqString::FormatVa(fmt, argptr);
 	va_end(argptr);
 
-#ifndef _DKLAUNCHER_
 	const bool eqCoreInit = g_eqCore->IsInitialized();
 	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
-#endif //_DKLAUNCHER_
+
+	if(isSkipped)
+	{
+		return _EQASSERT_SKIP;
+	}
 
 	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
-
 	if (IsDebuggerPresent())
 	{
 		const int res = MessageBoxA(nullptr, messageStr + "Press 'Retry' to Break the execution", "Assertion failed", MB_ABORTRETRYIGNORE);
@@ -267,7 +269,7 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 
 #else
 
-IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* fmt, ...)
 {
 	va_list argptr;
 
@@ -275,10 +277,13 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
 	EqString formattedStr = EqString::FormatVa(fmt, argptr);
 	va_end(argptr);
 
-#ifndef _DKLAUNCHER_
 	const bool eqCoreInit = g_eqCore->IsInitialized();
 	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
-#endif //_DKLAUNCHER_
+
+	if (isSkipped)
+	{
+		return _EQASSERT_SKIP;
+	}
 
 #ifndef USE_GTK
 	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());

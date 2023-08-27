@@ -45,7 +45,6 @@ public:
 
 //--------------------------------------------------------------
 
-#ifndef _DKLAUNCHER_
 INTERFACE_SINGLETON( ILocalize, CLocalize, g_localizer )
 
 #define DKLOC_CONCAT(x) L ## x
@@ -71,4 +70,3 @@ inline const wchar_t* LocalizedString( const char* pszString )
 	}
 
 }
-#endif // _DKLAUNCHER_
