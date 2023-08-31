@@ -336,8 +336,6 @@ project "sysLib"
     includedirs {
 		Folders.shared_engine
 	}
-	
-	
 
 project "equiLib"
 	kind "StaticLib"
@@ -354,7 +352,22 @@ project "equiLib"
 		Folders.shared_engine
 	}
 	
-
+project "scriptLib"
+	kind "StaticLib"
+	unitybuild "on"
+	uses { 
+		"corelib", "frameworkLib",
+		"lua",
+	}
+    files {
+		Folders.shared_engine.. "scripting/**.cpp",
+		Folders.shared_engine.. "scripting/**.h",
+		Folders.shared_engine.. "scripting/**.hpp"
+	}
+    includedirs {
+		Folders.shared_engine
+	}
+	
 project "networkLib"
 	kind "StaticLib"
 	unitybuild "on"

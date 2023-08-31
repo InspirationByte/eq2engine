@@ -51,7 +51,7 @@ EqString::EqString(const EqString &str, int nStart, int len)
 	Assign( str, nStart, len );
 }
 
-EqString::EqString(EqString&& str)
+EqString::EqString(EqString&& str) noexcept
 {
 	m_nAllocated = str.m_nAllocated;
 	m_nLength = str.m_nLength;

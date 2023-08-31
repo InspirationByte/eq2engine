@@ -19,6 +19,7 @@
 #include <malloc.h>
 #include <new>
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 #if defined(_INC_MINMAX)

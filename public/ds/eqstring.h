@@ -69,7 +69,7 @@ public:
 	EqString(const char* pszString, int len = -1);
 	EqString(const EqString &str, int nStart = 0, int len = -1);
 
-	EqString(EqString&& str);
+	EqString(EqString&& str) noexcept;
 	
 	// conversion from wide char string
 	EqString(const wchar_t* pszString, int len = -1);
@@ -178,6 +178,17 @@ public:
 	EqString& operator = (const EqString& other)
 	{
 		this->Assign( other );
+		return *this;
+	}
+
+	EqString& operator = (EqString&& other)
+	{
+		m_nAllocated = other.m_nAllocated;
+		m_nLength = other.m_nLength;
+		m_pszString = other.m_pszString;
+		other.m_nAllocated = 0;
+		other.m_nLength = 0;
+		other.m_pszString = nullptr;
 		return *this;
 	}
 
