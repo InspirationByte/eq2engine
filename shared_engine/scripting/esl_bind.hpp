@@ -180,6 +180,10 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		lua_pushstring(L, value);
 	}
+	else if constexpr(std::is_same_v<std::decay<T>::type, lua_CFunction>)
+	{
+		lua_pushcfunction(L, value);
+	}
 	else if constexpr (
 		   std::is_same_v<T, LuaRawRef>
 		|| std::is_same_v<T, LuaFunctionRef>
@@ -191,9 +195,7 @@ static void PushValue(lua_State* L, const T& value)
 	else if constexpr (IsUserObj<T>::value)
 	{
 		if constexpr (std::is_pointer_v<T>)
-		{
 			PushGet<T>::PushObject(L, *value, false, std::is_const_v<T>);
-		}
 		else
 			PushGet<T>::PushObject(L, value, false, std::is_const_v<T>);
 	}
@@ -374,7 +376,14 @@ static ResultWithValue<T> GetGlobal(lua_State* L, const char* fieldName)
 	defer{
 		lua_pop(L, 1);
 	};
-	return esl::runtime::GetValue<T, true>(L, -1);
+	return runtime::GetValue<T, true>(L, -1);
+}
+
+template<typename T>
+static void SetGlobal(lua_State* L, const char* fieldName, const T& value)
+{
+	runtime::PushValue(L, value);
+	lua_setglobal(L, fieldName);
 }
 
 template<typename R, typename ... Args>
@@ -403,7 +412,7 @@ struct FunctionCall
 			if constexpr (std::is_void_v<R>)
 				return Result{ true };
 			else
-				return Result{ true, {}, *esl::runtime::GetValue<R, false>(L, -1)};
+				return Result{ true, {}, *runtime::GetValue<R, false>(L, -1)};
 		}
 
 		const char* errorMessage = nullptr;
@@ -423,7 +432,7 @@ private:
 	template<typename First, typename... Rest>
 	static void PushArguments(lua_State* L, First first, Rest... rest)
 	{
-		esl::runtime::PushValue(L, first);
+		runtime::PushValue(L, first);
 		PushArguments(L, rest...);
 	}	
 };
@@ -457,7 +466,7 @@ struct ConstructorBinder
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
 		// Extract arguments from Lua and forward them to the constructor
-		T* newObj = PPNew T(*esl::runtime::GetValue<Args, true>(L, IDX + 1)...);
+		T* newObj = PPNew T(*runtime::GetValue<Args, true>(L, IDX + 1)...);
 		runtime::PushGet<T>::PushObject(L, *newObj, true, false);
 	}
 
@@ -504,8 +513,6 @@ struct MemberFunctionBinder
 				else
 				{
 					R ret = Invoke(func, thisPtr, L, std::index_sequence_for<Args...>{});
-					using BaseType = std::remove_pointer_t<std::remove_reference_t<T>>;
-
 					runtime::PushValue(L, ret);
 					return 1;
 				}
@@ -517,9 +524,43 @@ struct MemberFunctionBinder
 };
 
 template<typename T, typename R, typename... Args>
-static auto BindFunction(R(T::* func)(Args...))
+static auto BindMemberFunction(R(T::* func)(Args...))
 {
 	return MemberFunctionBinder<T, R, Args...>::Get(func);
+}
+
+template<auto FuncPtr>
+struct FunctionBinder;
+
+template<typename R, typename ... Args, R FuncPtr(Args...)>
+struct FunctionBinder<FuncPtr>
+{
+	template<size_t... IDX>
+	static R Invoke(lua_State* L, std::index_sequence<IDX...>)
+	{
+		return (*FuncPtr)(*runtime::GetValue<Args, false>(L, IDX + 1)...);
+	}
+
+	static int Func(lua_State* L)
+	{
+		if constexpr (std::is_void<R>::value)
+		{
+			Invoke(L, std::index_sequence_for<Args...>{});
+			return 0;
+		}
+		else
+		{
+			R ret = Invoke(L, std::index_sequence_for<Args...>{});
+			runtime::PushValue(L, ret);
+			return 1;
+		}
+	}
+};
+
+template<auto FuncPtr>
+static lua_CFunction BindFunction()
+{
+	return &FunctionBinder<FuncPtr>::Func;
 }
 
 // Variable binder. Generates appropriate getters/setters
@@ -683,7 +724,7 @@ Member ClassBinder<T>::MakeFunction(R(T::* func)(Args...), const char* name)
 	m.name = name;
 	m.signature = GetFuncArgsSignature(func);
 	m.numArgs = GetFuncArgsCount(func);
-	m.func = binder::BindFunction(func);
+	m.func = binder::BindMemberFunction(func);
 	m.isConst = IsConst<decltype(func)>::value;
 	return m;
 }
