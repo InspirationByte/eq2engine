@@ -9,6 +9,9 @@ using StaticFunc = lua_CFunction;
 template<typename T>
 using BaseType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
 
+template<typename T>
+using BasePtrType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+
 template <typename T>
 struct LuaTypeByVal : std::false_type {};
 
@@ -102,6 +105,8 @@ namespace runtime {}
 // declared in esl_luaref.h
 class LuaRawRef;
 class LuaTable;
+
+void RegisterType(lua_State* L, esl::TypeInfo typeInfo);
 }
 
 namespace esl::runtime
@@ -126,6 +131,19 @@ template<typename R, typename ... Args>
 struct FunctionCall;
 }
 
+/// script engine class registrator
+template<typename T>
+struct EqScriptClass
+{
+	static esl::TypeInfo GetTypeInfo();
+
+	// NOTE: don't access these directly, use typeinfo
+	static esl::TypeInfo	baseClassTypeInfo;
+	static const char		className[];
+	static const char*		baseClassName;
+	static bool				isByVal;
+};
+
 class EqScriptState
 {
 public:
@@ -143,36 +161,21 @@ public:
 	bool RunChunk(const EqString& chunk) const;
 
 	template<typename T>
-	void SetGlobal(const char* name, const T& value) const
-	{
-		esl::runtime::SetGlobal(m_state, name, value);
-	}
+	void SetGlobal(const char* name, const T& value) const;
 
 	template<typename T>
-	decltype(auto) GetGlobal(const char* name) const
-	{
-		return esl::runtime::GetGlobal<T>(m_state, name);
-	}
+	decltype(auto) GetGlobal(const char* name) const;
 
 	esl::LuaTable CreateTable() const;
 
 	template<typename T>
-	void PushValue(const T& value) const
-	{
-		esl::runtime::PushValue(m_state, value);
-	}
+	void PushValue(const T& value) const;
 
 	template<typename T>
-	decltype(auto) GetValue(int index) const
-	{
-		return esl::runtime::GetValue<T>(m_state, value);
-	}
+	decltype(auto) GetValue(int index) const;
 
 	template<typename T>
-	void RegisterClass() const
-	{
-		esl::RegisterType(m_state, EqScriptClass<T>::GetTypeInfo());
-	}
+	void RegisterClass() const;
 
 protected:
 	lua_State*	m_state{ nullptr };

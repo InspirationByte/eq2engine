@@ -180,7 +180,7 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		lua_pushstring(L, value);
 	}
-	else if constexpr(std::is_same_v<std::decay<T>::type, lua_CFunction>)
+	else if constexpr(std::is_same_v<BasePtrType<T>, lua_CFunction>)
 	{
 		lua_pushcfunction(L, value);
 	}

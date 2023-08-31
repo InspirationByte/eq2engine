@@ -68,24 +68,6 @@ struct ClassBinder
 };
 }
 
-//---------------------------------------------------
-
-/// script engine class registrator
-template<typename T>
-struct EqScriptClass
-{
-	static esl::TypeInfo GetTypeInfo();
-
-	static void Register(lua_State* L);
-
-	// NOTE: don't access these directly, use typeinfo
-
-	static esl::TypeInfo	baseClassTypeInfo;
-	static const char		className[];
-	static const char*		baseClassName;
-	static bool				isByVal;
-};
-
 template<typename T>
 esl::TypeInfo EqScriptClass<T>::GetTypeInfo()
 {
@@ -98,10 +80,38 @@ esl::TypeInfo EqScriptClass<T>::GetTypeInfo()
 	};
 };
 
-namespace esl
+
+template<typename T>
+void EqScriptState::SetGlobal(const char* name, const T& value) const
 {
-void RegisterType(lua_State* L, esl::TypeInfo typeInfo);
+	esl::runtime::SetGlobal(m_state, name, value);
 }
+
+template<typename T>
+decltype(auto) EqScriptState::GetGlobal(const char* name) const
+{
+	return esl::runtime::GetGlobal<T>(m_state, name);
+}
+
+template<typename T>
+void EqScriptState::PushValue(const T& value) const
+{
+	esl::runtime::PushValue(m_state, value);
+}
+
+template<typename T>
+decltype(auto) EqScriptState::GetValue(int index) const
+{
+	return esl::runtime::GetValue<T>(m_state);
+}
+
+template<typename T>
+void EqScriptState::RegisterClass() const
+{
+	esl::RegisterType(m_state, EqScriptClass<T>::GetTypeInfo());
+}
+
+//---------------------------------------------------
 
 #include "esl_bind.hpp"
 

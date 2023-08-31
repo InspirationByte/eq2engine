@@ -178,12 +178,6 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 }
 }
 
-template<typename T>
-void EqScriptClass<T>::Register(lua_State* L)
-{
-	RegisterType(L, GetTypeInfo());
-}
-
 Map<int, EqString> esl::bindings::BaseClassStorage::baseClassNames = { PP_SL };
 const char* esl::bindings::BaseClassStorage::Get(const char* className)
 {
