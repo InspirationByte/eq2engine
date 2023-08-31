@@ -98,10 +98,18 @@ struct ResultWithValue<void>
 namespace binder {}
 namespace bindings {}
 namespace runtime {}
+
+// declared in esl_luaref.h
+class LuaRawRef;
+class LuaTable;
 }
 
 namespace esl::runtime
 {
+void		SetLuaErrorFromTopOfStack(lua_State* L);
+void		ResetErrorValue(lua_State* L);
+const char*	GetLastError(lua_State* L);
+
 template<typename T>
 static void PushValue(lua_State* L, const T& value);
 
@@ -109,7 +117,7 @@ template<typename T, bool SilentTypeCheck>
 static decltype(auto) GetValue(lua_State* L, int index);
 
 template<typename T>
-static ResultWithValue<T> GetGlobal(lua_State* L, const char* fieldName);
+static decltype(auto) GetGlobal(lua_State* L, const char* fieldName);
 
 template<typename T>
 static void SetGlobal(lua_State* L, const char* fieldName, const T& value);
@@ -117,4 +125,57 @@ static void SetGlobal(lua_State* L, const char* fieldName, const T& value);
 template<typename R, typename ... Args>
 struct FunctionCall;
 }
+
+class EqScriptState
+{
+public:
+	EqScriptState(lua_State* state)
+		: m_state(state)
+	{
+	}
+
+	operator lua_State* () const { return m_state; }
+	operator lua_State* () { return m_state; }
+
+	void ThrowError(const char* fmt, ...) const;
+
+	bool RunBuffer(IVirtualStream* virtStream, const char* name) const;
+	bool RunChunk(const EqString& chunk) const;
+
+	template<typename T>
+	void SetGlobal(const char* name, const T& value) const
+	{
+		esl::runtime::SetGlobal(m_state, name, value);
+	}
+
+	template<typename T>
+	decltype(auto) GetGlobal(const char* name) const
+	{
+		return esl::runtime::GetGlobal<T>(m_state, name);
+	}
+
+	esl::LuaTable CreateTable() const;
+
+	template<typename T>
+	void PushValue(const T& value) const
+	{
+		esl::runtime::PushValue(m_state, value);
+	}
+
+	template<typename T>
+	decltype(auto) GetValue(int index) const
+	{
+		return esl::runtime::GetValue<T>(m_state, value);
+	}
+
+	template<typename T>
+	void RegisterClass() const
+	{
+		esl::RegisterType(m_state, EqScriptClass<T>::GetTypeInfo());
+	}
+
+protected:
+	lua_State*	m_state{ nullptr };
+};
+
 

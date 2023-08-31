@@ -8,6 +8,43 @@
 
 namespace esl::runtime 
 {
+static void PushErrorIdStr(lua_State* vm)
+{
+	char const lastErrStr[] = { "esl_last_error" };
+	lua_pushlstring(vm, lastErrStr, (sizeof(lastErrStr) / sizeof(char)) - 1);
+}
+
+void SetLuaErrorFromTopOfStack(lua_State* L)
+{
+	const int errIdx = lua_gettop(L);
+	PushErrorIdStr(L);
+	lua_pushvalue(L, errIdx);
+	lua_settable(L, LUA_REGISTRYINDEX);
+	lua_pop(L, 1);
+}
+
+void ResetErrorValue(lua_State* L)
+{
+	PushErrorIdStr(L);
+	lua_pushnil(L);
+	lua_settable(L, LUA_REGISTRYINDEX);
+}
+
+const char* GetLastError(lua_State* L)
+{
+	PushErrorIdStr(L);
+	lua_gettable(L, LUA_REGISTRYINDEX);
+	static EqString errorStr;
+	if (lua_type(L, -1) == LUA_TSTRING)
+	{
+		size_t len = 0;
+		char const* str = lua_tolstring(L, -1, &len);
+		errorStr = EqString(str, len);
+	}
+	lua_pop(L, 1);
+	return errorStr;
+}
+
 StackGuard::StackGuard(lua_State* L)
 {
 	m_state = L;

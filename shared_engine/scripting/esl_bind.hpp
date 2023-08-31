@@ -370,7 +370,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 }
 
 template<typename T>
-static ResultWithValue<T> GetGlobal(lua_State* L, const char* fieldName)
+static decltype(auto) GetGlobal(lua_State* L, const char* fieldName)
 {
 	lua_getglobal(L, fieldName);
 	defer{
