@@ -44,13 +44,15 @@ struct ScriptBind
 {
 	void* thisPtr{ nullptr }; // used for function invocation
 
-	using BindFunc = int (ScriptBind::*)(lua_State*);	
+	using BindFunc = int (ScriptBind::*)(lua_State*);
+	using BindFuncConst = int (ScriptBind::*)(lua_State*) const;
 };
 
 // Member function registrator
 struct Member
 {
 	using BindFunc = int (ScriptBind::*)(lua_State*);
+	using BindFuncConst = int (ScriptBind::*)(lua_State*) const;
 
 	EMemberType		type{ MEMB_NULL };
 	int				nameHash{ 0 };
@@ -58,8 +60,9 @@ struct Member
 	const char*		signature{ nullptr };
 	struct {
 		union {
-			BindFunc	func;
-			StaticFunc	staticFunc;
+			BindFunc		func;
+			BindFuncConst	constFunc;
+			StaticFunc		staticFunc;
 		};
 		BindFunc	getFunc;
 	};
@@ -176,6 +179,9 @@ public:
 
 	template<typename T>
 	void RegisterClass() const;
+
+	template<typename T, typename K, typename V>
+	void RegisterClassStatic(const K& k, const V& v) const;
 
 protected:
 	lua_State*	m_state{ nullptr };

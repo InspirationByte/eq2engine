@@ -57,6 +57,9 @@ struct ClassBinder
 	template<typename R, typename... Args>
 	static Member MakeFunction(R(T::* func)(Args...), const char* name);
 
+	template<typename R, typename... Args>
+	static Member MakeFunction(R(T::* func)(Args...) const, const char* name);
+
 	template<auto V>
 	static Member MakeVariable(const char* name);
 
@@ -111,22 +114,34 @@ void EqScriptState::RegisterClass() const
 	esl::RegisterType(m_state, EqScriptClass<T>::GetTypeInfo());
 }
 
+template<typename T, typename K, typename V>
+void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
+{
+	lua_getglobal(m_state, EqScriptClass<T>::className);
+	const int top = lua_gettop(m_state);
+	esl::LuaTable metaTable(m_state, top);
+	metaTable.Set(k, v);
+	lua_pop(m_state, 1); // getglobal
+}
+
 //---------------------------------------------------
 
 #include "esl_bind.hpp"
 
-#define BY_REF(x)
-#define BY_VALUE(x) template<> struct esl::LuaTypeByVal<x> : std::true_type {};
+#define ESL_PUSH_INHERIT_PARENT(x)
+#define ESL_PUSH_BY_REF(x)			/* usage: BY_REF */
+#define ESL_PUSH_BY_VALUE(x)		/* usage: BY_VALUE */ \
+	template<> struct esl::LuaTypeByVal<x> : std::true_type {};
 
 // type name definition
-#define EQSCRIPT_ALIAS_TYPE(x, n) \
+#define ESL_ALIAS_TYPE(x, n) \
 	template<> const char* esl::LuaTypeAlias<x>::value = n;
 
 // Basic type binder
 #define EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
-	EQSCRIPT_ALIAS_TYPE(Class, name) \
+	ESL_ALIAS_TYPE(Class, name) \
 	template<> const char EqScriptClass<Class>::className[] = name; \
-	type(Class)
+	ESL_PUSH_##type(Class)
 
 // Binder for class without parent type that was bound
 #define EQSCRIPT_BIND_TYPE_NO_PARENT(Class, name, type) \
@@ -136,8 +151,8 @@ void EqScriptState::RegisterClass() const
 	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = {}; \
 
 // Binder for class that has bound parent class
-#define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name, type) \
-	EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
+#define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name) \
+	EQSCRIPT_BIND_TYPE_BASICS(Class, name, INHERIT_PARENT) \
 	template<> bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<ParentClass>::value; \
 	template<> const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
 	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo(); \

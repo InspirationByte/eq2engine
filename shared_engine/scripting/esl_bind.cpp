@@ -7,25 +7,25 @@
 #include "esl_runtime.h"
 
 // default types. Required.
-EQSCRIPT_ALIAS_TYPE(bool, "boolean")
-EQSCRIPT_ALIAS_TYPE(int8, "number")
-EQSCRIPT_ALIAS_TYPE(uint8, "number")
-EQSCRIPT_ALIAS_TYPE(int16, "number")
-EQSCRIPT_ALIAS_TYPE(uint16, "number")
-EQSCRIPT_ALIAS_TYPE(int, "number")
-EQSCRIPT_ALIAS_TYPE(uint, "number")
-EQSCRIPT_ALIAS_TYPE(int64, "number")
-EQSCRIPT_ALIAS_TYPE(uint64, "number")
-EQSCRIPT_ALIAS_TYPE(float, "number")
-EQSCRIPT_ALIAS_TYPE(double, "number")
-EQSCRIPT_ALIAS_TYPE(EqString, "string")
+ESL_ALIAS_TYPE(bool, "boolean")
+ESL_ALIAS_TYPE(int8, "number")
+ESL_ALIAS_TYPE(uint8, "number")
+ESL_ALIAS_TYPE(int16, "number")
+ESL_ALIAS_TYPE(uint16, "number")
+ESL_ALIAS_TYPE(int, "number")
+ESL_ALIAS_TYPE(uint, "number")
+ESL_ALIAS_TYPE(int64, "number")
+ESL_ALIAS_TYPE(uint64, "number")
+ESL_ALIAS_TYPE(float, "number")
+ESL_ALIAS_TYPE(double, "number")
+ESL_ALIAS_TYPE(EqString, "string")
 
-EQSCRIPT_ALIAS_TYPE(esl::LuaFunctionRef, "function")
-EQSCRIPT_ALIAS_TYPE(esl::LuaTableRef, "table")
-EQSCRIPT_ALIAS_TYPE(esl::LuaTable, "table")
-EQSCRIPT_ALIAS_TYPE(esl::LuaRawRef, "any")
+ESL_ALIAS_TYPE(esl::LuaFunctionRef, "function")
+ESL_ALIAS_TYPE(esl::LuaTableRef, "table")
+ESL_ALIAS_TYPE(esl::LuaTable, "table")
+ESL_ALIAS_TYPE(esl::LuaRawRef, "any")
 
-EQSCRIPT_ALIAS_TYPE(char, "string")	// basically ok
+ESL_ALIAS_TYPE(char, "string")	// basically ok
 
 namespace esl 
 {

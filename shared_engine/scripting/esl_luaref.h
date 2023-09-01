@@ -43,22 +43,25 @@ public:
 
 	LuaRef& operator=(const LuaRef& other)
 	{
-		*(static_cast<LuaRawRef*>(this)) = *(static_cast<LuaRawRef*>(&other));
+		*(static_cast<LuaRawRef*>(this)) = other;
+		return *this;
 	}
 
 	LuaRef& operator=(LuaRef&& other) noexcept
 	{
-		*(static_cast<LuaRawRef*>(this)) = std::move(*(static_cast<LuaRawRef*>(&other)));
+		*(static_cast<LuaRawRef*>(this)) = std::move(other);
+		return *thisl
 	}
 
 	LuaRef& operator=(std::nullptr_t)
 	{
 		*(static_cast<LuaRawRef*>(this)) = nullptr;
+		return *thisl
 	}
 
 	bool operator==(LuaRef const& rhs) const
 	{
-		return *(static_cast<LuaRawRef*>(this)) == *(static_cast<LuaRawRef*>(&rhs));
+		return *(static_cast<LuaRawRef*>(this)) == rhs;
 	}
 };
 
