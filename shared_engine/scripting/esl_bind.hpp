@@ -166,7 +166,8 @@ static void PushValue(lua_State* L, const T& value)
 		|| std::is_same_v<T, int32>
 		|| std::is_same_v<T, uint32>
 		|| std::is_same_v<T, int64>
-		|| std::is_same_v<T, uint64>)
+		|| std::is_same_v<T, uint64>
+		|| std::is_enum_v<T>)
 	{
 		lua_pushinteger(L, value);
 	}
@@ -259,7 +260,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		|| std::is_same_v<T, int32>
 		|| std::is_same_v<T, uint32>
 		|| std::is_same_v<T, int64>
-		|| std::is_same_v<T, uint64>)
+		|| std::is_same_v<T, uint64>
+		|| std::is_enum_v<T>)
 	{
 		if (!checkType(L, index, LUA_TNUMBER))
 			return Result{ false, {} };
@@ -594,7 +596,9 @@ struct FunctionBinder<FuncPtr>
 };
 
 template<auto FuncPtr>
-static lua_CFunction BindFunction() { return &FunctionBinder<FuncPtr>::Func; }
+static lua_CFunction BindCFunction() { return &FunctionBinder<FuncPtr>::Func; }
+
+//---------------------------------------------------------------
 
 // Variable binder. Generates appropriate getters/setters
 template<typename T, auto MemberVar>

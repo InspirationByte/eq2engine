@@ -12,7 +12,7 @@
 // Definitions
 //------------------------------------------------------------------------------
 
-enum ESearchPath
+enum ESearchPath : int
 {
     SP_DATA = (1 << 1),
     SP_ROOT = (1 << 2),
