@@ -54,7 +54,7 @@ struct ClassBinder
 
 	static Member MakeDestructor();
 
-	template<auto FuncPtr>
+	template<auto F, typename UR = void, typename ... UArgs>
 	static Member MakeFunction(const char* name);
 
 	template<auto V>
@@ -130,6 +130,12 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 #define ESL_PUSH_BY_VALUE(x)		/* usage: BY_VALUE */ \
 	template<> struct esl::LuaTypeByVal<x> : std::true_type {};
 
+#define ESL_CLASS_FUNC(Name) \
+	(&BindClass::Name)
+
+#define ESL_CLASS_OVERLOAD(R, ...) \
+	static_cast<R(BindClass::*)__VA_ARGS__>
+
 // type name definition
 #define ESL_ALIAS_TYPE(x, n) \
 	template<> const char* esl::LuaTypeAlias<x>::value = n;
@@ -157,23 +163,23 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
 	MakeConstructor<__VA_ARGS__>(),
 
-#define EQSCRIPT_BIND_FUNC(Name) \
-	MakeFunction<&BindClass::Name>(#Name),
+#define EQSCRIPT_BIND_FUNC(Name, ...) \
+	MakeFunction<ESL_CLASS_FUNC(Name)>(#Name),
 
-#define EQSCRIPT_BIND_FUNC_OVERLOAD(Name, R, ...) \
-	MakeFunction<static_cast<R(BindClass::*)(__VA_ARGS__)>(&BindClass::Name)>(#Name),
+#define EQSCRIPT_BIND_FUNC_OVERLOAD(Name, R, Signature, ...) \
+	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature)##ESL_CLASS_FUNC(Name), __VA_ARGS__>(#Name),
 
 #define EQSCRIPT_BIND_OP(Name) \
 	MakeOperator<binder::OP_##Name>("__" #Name),
 
 #define EQSCRIPT_BIND_FUNC_NAMED(FuncName, Name) \
-	MakeFunction<&BindClass::Name>(FuncName),
+	MakeFunction<ESL_CLASS_FUNC(Name)>(FuncName),
 
-#define EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD(FuncName, Name, R, ...) \
-	MakeFunction<static_cast<R(BindClass::*)(__VA_ARGS__)>(&BindClass::Name)>(FuncName),
+#define EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD(FuncName, Name, R, Signature, ...) \
+	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature)##ESL_CLASS_FUNC(Name), __VA_ARGS__>(FuncName),
 
 #define EQSCRIPT_BIND_VAR(Name) \
-	MakeVariable<&BindClass::Name>(#Name),
+	MakeVariable<ESL_CLASS_FUNC(Name)>(#Name),
 
 #define EQSCRIPT_CFUNC(Name) \
 	esl::binder::BindCFunction<Name>()
@@ -189,7 +195,7 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 			MakeDestructor(),
 
 // End member binding
-#define EQSCRIPT_END_BIND()	\
+#define EQSCRIPT_END_BIND	\
 			{} /* default/end element */ \
 		}; \
 		return ArrayCRef<Member>(members, elementsOf(members) - 1); \

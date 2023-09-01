@@ -27,6 +27,35 @@ struct LuaTypeAlias
 	static const char* value;
 };
 
+// parameter trait 
+template <typename T> struct ToCpp {};	// input value ownership is given to native/c++
+template <typename T> struct ToLua {};	// input value ownership is given to Lua
+
+template <typename T>
+struct UnderlyingType 
+{
+	using type = T;
+};
+
+template <typename T>
+struct UnderlyingType<ToCpp<T>>
+{
+	using type = T;
+};
+
+template <typename T>
+struct UnderlyingType<ToLua<T>>
+{
+	using type = T;
+};
+
+template <typename T>
+using UnderlyingTypeT = typename UnderlyingType<T>::type;
+
+template<typename T> struct HasParamTraits : std::false_type {};
+template<typename T> struct HasParamTraits<ToCpp<T>> : std::true_type {};
+template<typename T> struct HasParamTraits<ToLua<T>> : std::true_type {};
+
 template <typename T>
 struct LuaBaseTypeAlias : LuaTypeAlias<BaseType<T>> {};
 
