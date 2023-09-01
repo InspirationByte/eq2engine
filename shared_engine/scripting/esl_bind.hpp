@@ -488,81 +488,82 @@ static auto BindDestructor()
 	return &runtime::PushGet<T>::ObjectDestructor;
 }
 
-template <typename T>
-struct IsConstMemberFunc : std::false_type {};
+template<typename T, auto FuncPtr>
+struct MemberFunctionBinder;
 
-template <typename R, typename C, typename... Args>
-struct IsConstMemberFunc<R(C::*)(Args...) const> : std::true_type {};
-
-
-template<typename T, typename R, typename ... Args>
-struct MemberFunctionBinder
+// Non-const binder
+template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...)>
+struct MemberFunctionBinder<T, FuncPtr> : public esl::ScriptBind
 {
-	using BindFunc = esl::ScriptBind::BindFunc;
-	using BindFuncConst = esl::ScriptBind::BindFuncConst;
-
-	template <typename F, size_t... IDX>
-	static R Invoke(F f, T* thisPtr, lua_State* L, std::index_sequence<IDX...>)
+	template <size_t... IDX>
+	static R Invoke(T* thisPtr, lua_State* L, std::index_sequence<IDX...>)
 	{
 		// Member functions start with IDX = 2
-		return (thisPtr->*f)(*runtime::GetValue<Args, false>(L, IDX + 2)...);
+		return (thisPtr->*FuncPtr)(*runtime::GetValue<Args, false>(L, IDX + 2)...);
 	}
 
-	template<typename F>
-	static decltype(auto) Get(F f)
+	int Func(lua_State* L)
 	{
-		static F func{ f };
-		struct Impl : public esl::ScriptBind
+		T* thisPtr = static_cast<T*>(this->thisPtr); // NOTE: unsafe, CallMemberFunc must check types first
+		if constexpr (std::is_void<R>::value)
 		{
-			int ConstFunc(lua_State* L) const
-			{
-				// NOTE: unsafe, CallMemberFunc must check types first
-				T* thisPtr = static_cast<T*>(this->thisPtr);
-
-				if constexpr (std::is_void<R>::value)
-				{
-					Invoke(func, thisPtr, L, std::index_sequence_for<Args...>{});
-					return 0;
-				}
-				else
-				{
-					R ret = Invoke(func, thisPtr, L, std::index_sequence_for<Args...>{});
-					runtime::PushValue(L, ret);
-					return 1;
-				}
-			}
-
-			int Func(lua_State* L)
-			{
-				// NOTE: unsafe, CallMemberFunc must check types first
-				T* thisPtr = static_cast<T*>(this->thisPtr);
-
-				if constexpr (std::is_void<R>::value)
-				{
-					Invoke(func, thisPtr, L, std::index_sequence_for<Args...>{});
-					return 0;
-				}
-				else
-				{
-					R ret = Invoke(func, thisPtr, L, std::index_sequence_for<Args...>{});
-					runtime::PushValue(L, ret);
-					return 1;
-				}
-			}
-		};
-
-		if constexpr(IsConstMemberFunc<F>::value)
-			return static_cast<BindFuncConst>(&Impl::ConstFunc);
+			Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
+			return 0;
+		}
 		else
-			return static_cast<BindFunc>(&Impl::Func);
+		{
+			R ret = Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
+			runtime::PushValue(L, ret);
+			return 1;
+		}
 	}
+
+	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
+	static int GetFuncArgsCount() { return sizeof...(Args); }
 };
 
-template<typename T, typename R, typename... Args>
-static auto BindMemberFunction(R(T::* func)(Args...)) { return MemberFunctionBinder<T, R, Args...>::Get(func); }
+// Const binder, only has const below
+template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...) const>
+struct MemberFunctionBinder<T, FuncPtr> : public esl::ScriptBind
+{
+	template <size_t... IDX>
+	static R Invoke(T* thisPtr, lua_State* L, std::index_sequence<IDX...>)
+	{
+		// Member functions start with IDX = 2
+		return (thisPtr->*FuncPtr)(*runtime::GetValue<Args, false>(L, IDX + 2)...);
+	}
 
-template<typename T, typename R, typename... Args>
-static auto BindMemberFunction(R(T::* func)(Args...) const) { return MemberFunctionBinder<T, R, Args...>::Get(func); }
+	int Func(lua_State* L) const
+	{
+		T* thisPtr = static_cast<T*>(this->thisPtr); // NOTE: unsafe, CallMemberFunc must check types first
+		if constexpr (std::is_void<R>::value)
+		{
+			Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
+			return 0;
+		}
+		else
+		{
+			R ret = Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
+			runtime::PushValue(L, ret);
+			return 1;
+		}
+	}
+
+	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
+	static int GetFuncArgsCount() { return sizeof...(Args); }
+};
+
+template<typename T, auto FuncPtr>
+static auto BindMemberFunction() 
+{ 
+	using BindFuncConst = esl::ScriptBind::BindFuncConst;
+	using BindFunc = esl::ScriptBind::BindFunc;
+
+	if constexpr (IsConstMemberFunc<decltype(FuncPtr)>::value)
+		return static_cast<BindFuncConst>(&MemberFunctionBinder<T, FuncPtr>::Func);
+	else
+		return static_cast<BindFunc>(&MemberFunctionBinder<T, FuncPtr>::Func);
+}
 
 template<auto FuncPtr>
 struct FunctionBinder;
@@ -593,10 +594,7 @@ struct FunctionBinder<FuncPtr>
 };
 
 template<auto FuncPtr>
-static lua_CFunction BindFunction()
-{
-	return &FunctionBinder<FuncPtr>::Func;
-}
+static lua_CFunction BindFunction() { return &FunctionBinder<FuncPtr>::Func; }
 
 // Variable binder. Generates appropriate getters/setters
 template<typename T, auto MemberVar>
@@ -716,18 +714,6 @@ Member ClassBinder<T>::MakeDestructor()
 	return m;
 }
 
-template<typename T, typename R, typename... Args>
-static auto GetFuncArgsSignature(R(T::* func)(Args...)) { return runtime::ArgsSignature<Args...>::Get(); }
-
-template<typename T, typename R, typename... Args>
-static auto GetFuncArgsSignature(R(T::* func)(Args...) const) { return runtime::ArgsSignature<Args...>::Get(); }
-
-template<typename T, typename R, typename... Args>
-static int GetFuncArgsCount(R(T::* func)(Args...)) { return sizeof...(Args); }
-
-template<typename T, typename R, typename... Args>
-static int GetFuncArgsCount(R(T::* func)(Args...) const) { return sizeof...(Args); }
-
 template<typename T, auto MemberVar>
 struct MemberVarTypeName;
 
@@ -744,32 +730,20 @@ static const char* GetVariableTypeName()
 }
 
 template<typename T>
-template<typename R, typename... Args>
-Member ClassBinder<T>::MakeFunction(R(T::* func)(Args...), const char* name)
+template<auto F>
+Member ClassBinder<T>::MakeFunction(const char* name)
 {
 	Member m;
 	m.type = MEMB_FUNC;
 	m.nameHash = StringToHash(name);
 	m.name = name;
-	m.signature = GetFuncArgsSignature(func);
-	m.numArgs = GetFuncArgsCount(func);
-	m.func = binder::BindMemberFunction(func);
+	m.signature = binder::MemberFunctionBinder<T, F>::GetFuncArgsSignature();
+	m.numArgs = binder::MemberFunctionBinder<T, F>::GetFuncArgsCount();
+	if constexpr (IsConstMemberFunc<decltype(F)>::value)
+		m.constFunc = binder::BindMemberFunction<T, F>();
+	else
+		m.func = binder::BindMemberFunction<T, F>();
 	m.isConst = false;
-	return m;
-}
-
-template<typename T>
-template<typename R, typename... Args>
-Member ClassBinder<T>::MakeFunction(R(T::* func)(Args...) const, const char* name)
-{
-	Member m;
-	m.type = MEMB_FUNC;
-	m.nameHash = StringToHash(name);
-	m.name = name;
-	m.signature = GetFuncArgsSignature(func);
-	m.numArgs = GetFuncArgsCount(func);
-	m.constFunc = binder::BindMemberFunction(func);
-	m.isConst = true;
 	return m;
 }
 

@@ -6,6 +6,12 @@ namespace esl
 {
 using StaticFunc = lua_CFunction;
 
+template <typename T>
+struct IsConstMemberFunc : std::false_type {};
+
+template <typename R, typename C, typename... Args>
+struct IsConstMemberFunc<R(C::*)(Args...) const> : std::true_type {};
+
 template<typename T>
 using BaseType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
 

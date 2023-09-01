@@ -54,11 +54,8 @@ struct ClassBinder
 
 	static Member MakeDestructor();
 
-	template<typename R, typename... Args>
-	static Member MakeFunction(R(T::* func)(Args...), const char* name);
-
-	template<typename R, typename... Args>
-	static Member MakeFunction(R(T::* func)(Args...) const, const char* name);
+	template<auto FuncPtr>
+	static Member MakeFunction(const char* name);
 
 	template<auto V>
 	static Member MakeVariable(const char* name);
@@ -158,12 +155,12 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo(); \
 
 #define EQSCRIPT_BIND_CONSTRUCTOR(...)			MakeConstructor<__VA_ARGS__>(),
-#define EQSCRIPT_BIND_FUNC(Name)				MakeFunction(&BindClass::Name, #Name),
-#define EQSCRIPT_BIND_FUNC_OVERLOAD(Name, ...)	MakeFunction<__VA_ARGS__>(&BindClass::Name, #Name),
+#define EQSCRIPT_BIND_FUNC(Name)				MakeFunction<&BindClass::Name>(#Name),
+#define EQSCRIPT_BIND_FUNC_OVERLOAD(Name, R, ...)	MakeFunction<static_cast<R(BindClass::*)(__VA_ARGS__)>(&BindClass::Name)>(#Name),
 #define EQSCRIPT_BIND_OP(Name)					MakeOperator<binder::OP_##Name>("__" #Name),
 
-#define EQSCRIPT_BIND_FUNC_NAMED(FuncName, Name)				MakeFunction(&BindClass::Name, FuncName),
-#define EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD(FuncName, Name, ...)	MakeFunction<__VA_ARGS__>(&BindClass::Name, FuncName),
+#define EQSCRIPT_BIND_FUNC_NAMED(FuncName, Name)				MakeFunction<&BindClass::Name>(FuncName),
+#define EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD(FuncName, Name, R, ...)	MakeFunction<static_cast<R(BindClass::*)(__VA_ARGS__)>(&BindClass::Name)>(FuncName),
 
 #define EQSCRIPT_BIND_VAR(Name)			MakeVariable<&BindClass::Name>(#Name),
 
