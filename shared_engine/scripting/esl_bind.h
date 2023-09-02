@@ -35,7 +35,7 @@ namespace esl::bindings
 {
 struct BaseClassStorage
 {
-	static Map<int, EqString> baseClassNames;
+	static Map<int, EqString>& GetBaseClassNames();
 
 	template<typename T>
 	static void Add();

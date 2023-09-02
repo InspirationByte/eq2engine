@@ -869,14 +869,14 @@ void BaseClassStorage::Add()
 	const int nameHash = StringToHash(EqScriptClass<T>::className);
 	if (!EqScriptClass<T>::baseClassName)
 		return;
-	baseClassNames.insert(nameHash, EqScriptClass<T>::baseClassName);
+	GetBaseClassNames().insert(nameHash, EqScriptClass<T>::baseClassName);
 }
 
 template<typename T>
 const char* BaseClassStorage::Get()
 {
 	const int nameHash = StringToHash(EqScriptClass<T>::className);
-	auto it = baseClassNames.find(nameHash);
+	auto it = GetBaseClassNames().find(nameHash);
 	if (it.atEnd())
 		return nullptr;
 

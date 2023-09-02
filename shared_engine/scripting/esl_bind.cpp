@@ -179,11 +179,16 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 }
 }
 
-Map<int, EqString> esl::bindings::BaseClassStorage::baseClassNames = { PP_SL };
+Map<int, EqString>& esl::bindings::BaseClassStorage::GetBaseClassNames()
+{
+	static Map<int, EqString> baseClassNames{ PP_SL };
+	return baseClassNames;
+}
+
 const char* esl::bindings::BaseClassStorage::Get(const char* className)
 {
 	const int nameHash = StringToHash(className);
-	auto it = baseClassNames.find(nameHash);
+	auto it = GetBaseClassNames().find(nameHash);
 	if (it.atEnd())
 		return nullptr;
 
