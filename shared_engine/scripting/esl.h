@@ -32,32 +32,32 @@ template <typename T> struct ToCpp {};	// input value ownership is given to nati
 template <typename T> struct ToLua {};	// input value ownership is given to Lua
 
 template <typename T>
-struct UnderlyingType 
+struct StripTraits 
 {
 	using type = T;
 };
 
 template <typename T>
-struct UnderlyingType<ToCpp<T>>
+struct StripTraits<ToCpp<T>>
 {
 	using type = T;
 };
 
 template <typename T>
-struct UnderlyingType<ToLua<T>>
+struct StripTraits<ToLua<T>>
 {
 	using type = T;
 };
 
 template <typename T>
-using UnderlyingTypeT = typename UnderlyingType<T>::type;
+using StripTraitsT = typename StripTraits<T>::type;
 
 template<typename T> struct HasParamTraits : std::false_type {};
 template<typename T> struct HasParamTraits<ToCpp<T>> : std::true_type {};
 template<typename T> struct HasParamTraits<ToLua<T>> : std::true_type {};
 
 template <typename T>
-struct LuaBaseTypeAlias : LuaTypeAlias<BaseType<T>> {};
+struct LuaBaseTypeAlias : LuaTypeAlias<BaseType<StripTraitsT<T>>> {};
 
 enum EMemberType : int
 {

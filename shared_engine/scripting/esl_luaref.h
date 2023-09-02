@@ -50,13 +50,13 @@ public:
 	LuaRef& operator=(LuaRef&& other) noexcept
 	{
 		*(static_cast<LuaRawRef*>(this)) = std::move(other);
-		return *thisl
+		return *this;
 	}
 
 	LuaRef& operator=(std::nullptr_t)
 	{
 		*(static_cast<LuaRawRef*>(this)) = nullptr;
-		return *thisl
+		return *this;
 	}
 
 	bool operator==(LuaRef const& rhs) const

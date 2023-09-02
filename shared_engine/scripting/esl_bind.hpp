@@ -98,7 +98,7 @@ struct PushGet
 {
 	static void PushObject(lua_State* L, const BaseType<T>& obj, bool ownedByLua, bool isConst)
 	{
-		using UT = UnderlyingTypeT<T>;
+		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
 
 		ownedByLua = ownedByLua || HasParamTraits<ToLua<T>>::value;
@@ -120,7 +120,7 @@ struct PushGet
 
 	static decltype(auto) GetObject(lua_State* L, int index)
 	{
-		using UT = UnderlyingTypeT<T>;
+		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
@@ -234,7 +234,7 @@ static void PushValue(lua_State* L, const T& value)
 template<typename T, bool SilentTypeCheck>
 static decltype(auto) GetValue(lua_State* L, int index)
 {
-	using UT = UnderlyingTypeT<T>;
+	using UT = StripTraitsT<T>;
 	using Result = ResultWithValue<UT>;
 
 	const int top = lua_gettop(L);
@@ -472,14 +472,14 @@ struct TransformSignature;
 template <typename R, typename C, typename... Args>
 struct TransformSignature<R(C::*)(Args...)> 
 {
-    using type = R(C::*)(UnderlyingTypeT<Args>...);
+    using type = R(C::*)(StripTraitsT<Args>...);
 };
 
 // Add const qualifier variant if needed
 template <typename R, typename C, typename... Args>
 struct TransformSignature<R(C::*)(Args...) const> 
 {
-    using type = R(C::*)(UnderlyingTypeT<Args>...) const;
+    using type = R(C::*)(StripTraitsT<Args>...) const;
 };
 
 template <typename Func>

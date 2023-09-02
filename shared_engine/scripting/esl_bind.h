@@ -130,11 +130,9 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 #define ESL_PUSH_BY_VALUE(x)		/* usage: BY_VALUE */ \
 	template<> struct esl::LuaTypeByVal<x> : std::true_type {};
 
-#define ESL_CLASS_FUNC(Name) \
-	(&BindClass::Name)
-
-#define ESL_CLASS_OVERLOAD(R, ...) \
-	static_cast<R(BindClass::*)__VA_ARGS__>
+#define ESL_CLASS_FUNC(Name) 		(&BindClass::Name)
+#define ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
+#define ESL_APPLY_TRAITS(...)		, __VA_ARGS__
 
 // type name definition
 #define ESL_ALIAS_TYPE(x, n) \
@@ -160,23 +158,28 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 	template<> const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
 	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo(); \
 
+// Constructor([ ArgT1, ArgT2, ...ArgTN ])
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
 	MakeConstructor<__VA_ARGS__>(),
 
+// Func(Name, [ ESL_APPLY_TRAITS(rgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC(Name, ...) \
-	MakeFunction<ESL_CLASS_FUNC(Name)>(#Name),
+	MakeFunction<ESL_CLASS_FUNC(Name)__VA_ARGS__>(#Name),
 
+// Func(Name, Ret, (ArgT1, ArgT2, ...ArgTN), [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC_OVERLOAD(Name, R, Signature, ...) \
-	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature)##ESL_CLASS_FUNC(Name), __VA_ARGS__>(#Name),
+	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature) ESL_CLASS_FUNC(Name)__VA_ARGS__>(#Name),
+
+// Func("StrName", Name, [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
+#define EQSCRIPT_BIND_FUNC_NAMED(FuncName, Name, ...) \
+	MakeFunction<ESL_CLASS_FUNC(Name)__VA_ARGS__>(FuncName),
+
+// Func("StrName", Name, Ret, (ArgT1, ArgT2, ...ArgTN), [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
+#define EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD(FuncName, Name, R, Signature, ...) \
+	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature) ESL_CLASS_FUNC(Name)__VA_ARGS__>(FuncName),
 
 #define EQSCRIPT_BIND_OP(Name) \
 	MakeOperator<binder::OP_##Name>("__" #Name),
-
-#define EQSCRIPT_BIND_FUNC_NAMED(FuncName, Name) \
-	MakeFunction<ESL_CLASS_FUNC(Name)>(FuncName),
-
-#define EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD(FuncName, Name, R, Signature, ...) \
-	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature)##ESL_CLASS_FUNC(Name), __VA_ARGS__>(FuncName),
 
 #define EQSCRIPT_BIND_VAR(Name) \
 	MakeVariable<ESL_CLASS_FUNC(Name)>(#Name),
