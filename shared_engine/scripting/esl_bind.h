@@ -102,7 +102,7 @@ void EqScriptState::PushValue(const T& value) const
 template<typename T>
 decltype(auto) EqScriptState::GetValue(int index) const
 {
-	return esl::runtime::GetValue<T>(m_state);
+	return esl::runtime::GetValue<T, true>(m_state, index);
 }
 
 template<typename T>
@@ -119,6 +119,24 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 	esl::LuaTable metaTable(m_state, top);
 	metaTable.Set(k, v);
 	lua_pop(m_state, 1); // getglobal
+}
+
+template<typename T, typename V, typename K>
+decltype(auto) EqScriptState::GetClassStatic(const K& k) const
+{
+	lua_getglobal(m_state, EqScriptClass<T>::className);
+	const int top = GetStackTop();
+	esl::LuaTable metaTable(m_state, top);
+	return metaTable.Get<V>(k);
+}
+
+template<typename R, typename ... Args>
+decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
+{
+	using FuncSignature = esl::runtime::FunctionCall<R, Args...>;
+	lua_getglobal(m_state, name);
+	const int top = GetStackTop();
+	return FuncSignature::Invoke(m_state, top, std::forward<Args>(args)...);		
 }
 
 //---------------------------------------------------
@@ -186,6 +204,9 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 
 #define EQSCRIPT_CFUNC(Name) \
 	esl::binder::BindCFunction<Name>()
+
+#define EQSCRIPT_CFUNC_OVERLOAD(Name, R, ...) \
+	esl::binder::BindCFunction<static_cast<R(*)(__VA_ARGS__)>(Name)>()
 
 #define EQSCRIPT_FUNC(Name) \
 	esl::binder::BindFunction(Name)

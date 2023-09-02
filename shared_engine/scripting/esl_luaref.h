@@ -19,9 +19,13 @@ public:
 	LuaRawRef& operator=(std::nullptr_t);
 	bool operator==(LuaRawRef const& rhs) const;
 
+	void Release();
+
 	// Pushes the referenced Lua value onto the stack
 	void Push() const;
 	bool IsValid() const;
+
+	operator bool() const { return IsValid(); }
 
 	lua_State* GetState() const { return m_state; }
 
@@ -41,28 +45,10 @@ public:
 	LuaRef(const LuaRef& other) : LuaRawRef(other) {}
 	LuaRef(LuaRef&& other) noexcept : LuaRawRef(std::move(other)) {}
 
-	LuaRef& operator=(const LuaRef& other)
-	{
-		*(static_cast<LuaRawRef*>(this)) = other;
-		return *this;
-	}
-
-	LuaRef& operator=(LuaRef&& other) noexcept
-	{
-		*(static_cast<LuaRawRef*>(this)) = std::move(other);
-		return *this;
-	}
-
-	LuaRef& operator=(std::nullptr_t)
-	{
-		*(static_cast<LuaRawRef*>(this)) = nullptr;
-		return *this;
-	}
-
-	bool operator==(LuaRef const& rhs) const
-	{
-		return *(static_cast<LuaRawRef*>(this)) == rhs;
-	}
+	LuaRef& operator=(const LuaRef& other)		{ *(static_cast<LuaRawRef*>(this)) = rhs; return *this; }
+	LuaRef& operator=(LuaRef&& other) noexcept	{ *(static_cast<LuaRawRef*>(this)) = std::move(other); return *this; }
+	LuaRef& operator=(std::nullptr_t)			{ *(static_cast<LuaRawRef*>(this)) = nullptr; return *this;}
+	bool operator==(LuaRef const& rhs) const	{ return *(static_cast<const LuaRawRef*>(this)) == rhs; }
 };
 
 using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
@@ -78,6 +64,11 @@ public:
 	LuaTable(lua_State* L, int idx) : LuaTableRef(L, idx) {}
 	LuaTable(const LuaTable& other) : LuaTableRef(other) {}
 	LuaTable(LuaTable&& other) noexcept : LuaTableRef(std::move(other)) {}
+
+	LuaTable& operator=(const LuaTable& other)		{ *(static_cast<LuaRawRef*>(this)) = other; return *this; }
+	LuaTable& operator=(LuaTable&& other) noexcept	{ *(static_cast<LuaRawRef*>(this)) = std::move(other); return *this; }
+	LuaTable& operator=(std::nullptr_t)				{ *(static_cast<LuaRawRef*>(this)) = nullptr; return *this;}
+	bool operator==(LuaTable const& rhs) const		{ return *(static_cast<const LuaRawRef*>(this)) == *(static_cast<const LuaRawRef*>(&rhs)); }
 
 	template<typename T>
 	using Result = ResultWithValue<T>;

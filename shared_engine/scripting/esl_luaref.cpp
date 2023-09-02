@@ -94,6 +94,11 @@ bool LuaRawRef::operator==(LuaRawRef const& rhs) const
 	return false;
 }
 
+void LuaRawRef::Release()
+{
+	Unref();
+}
+
 // Pushes the referenced Lua value onto the stack
 void LuaRawRef::Push() const
 {

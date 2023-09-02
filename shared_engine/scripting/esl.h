@@ -59,6 +59,7 @@ template<typename T> struct HasParamTraits<ToLua<T>> : std::true_type {};
 template <typename T>
 struct LuaBaseTypeAlias : LuaTypeAlias<BaseType<StripTraitsT<T>>> {};
 
+
 enum EMemberType : int
 {
 	MEMB_NULL = 0,
@@ -198,6 +199,9 @@ public:
 	bool RunBuffer(IVirtualStream* virtStream, const char* name) const;
 	bool RunChunk(const EqString& chunk) const;
 
+	int GetStackTop() const;
+	int GetStackType(int index) const;
+
 	template<typename T>
 	void SetGlobal(const char* name, const T& value) const;
 
@@ -218,6 +222,11 @@ public:
 	template<typename T, typename K, typename V>
 	void RegisterClassStatic(const K& k, const V& v) const;
 
+	template<typename T, typename V, typename K>
+	decltype(auto) GetClassStatic(const K& k) const;
+
+	template<typename R, typename ... Args>
+	decltype(auto) CallFunction(const char* name, Args...);
 protected:
 	lua_State*	m_state{ nullptr };
 };

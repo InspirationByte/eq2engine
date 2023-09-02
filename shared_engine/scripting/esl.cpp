@@ -50,6 +50,16 @@ bool EqScriptState::RunChunk(const EqString& chunk) const
 	return true;
 }
 
+int EqScriptState::GetStackTop() const
+{
+	return lua_gettop(m_state);
+}
+
+int EqScriptState::GetStackType(int index) const
+{
+	return lua_type(m_state, index);
+}
+
 void EqScriptState::ThrowError(const char* fmt, ...) const
 {
 	va_list argp;

@@ -261,7 +261,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	if constexpr (std::is_same_v<T, bool>) 
 	{
 		if(!checkType(L, index, LUA_TBOOLEAN))
-			return Result{ false, {} };
+			return Result{ false, {}};
 
 		return Result{ true, {}, lua_toboolean(L, index) != 0 };
     } 
@@ -416,9 +416,7 @@ struct FunctionCall
 	static Result Invoke(const esl::LuaFunctionRef& func, Args... args)
 	{
 		if (!func.IsValid())
-		{
 			return Result{ false, "is not callable"};
-		}
 
 		lua_State* L = func.GetState();
 
@@ -428,24 +426,18 @@ struct FunctionCall
 		func.Push();
 		PushArguments(L, args...);
 
-		const int res = lua_pcall(L, sizeof...(Args), std::is_void_v<R> ? 0 : 1, 0);
-		if (res == 0)
-		{
-			if constexpr (std::is_void_v<R>)
-				return Result{ true };
-			else
-				return Result{ true, {}, *runtime::GetValue<R, false>(L, -1)};
-		}
+		return InvokeFunc(L, args...);
+	}
 
-		const char* errorMessage = nullptr;
-		if (res != LUA_ERRMEM)
-		{
-			const int errorIdx = lua_gettop(L);
-			errorMessage = lua_tostring(L, errorIdx);
-			lua_pop(L, 1);
-		}
+	static Result Invoke(lua_State* L, int funcIndex, Args... args)
+	{
+		if (lua_type(L, funcIndex) != LUA_TFUNCTION)
+			return Result{ false, "is not callable"};
 
-		return Result{ false, errorMessage };
+		lua_pushvalue(L, funcIndex);
+		PushArguments(L, args...);
+
+		return InvokeFunc(L, args...);
 	}
 
 private:
@@ -454,9 +446,30 @@ private:
 	template<typename First, typename... Rest>
 	static void PushArguments(lua_State* L, First first, Rest... rest)
 	{
-		runtime::PushValue(L, first);
+		PushValue(L, first);
 		PushArguments(L, rest...);
-	}	
+	}
+
+	static Result InvokeFunc(lua_State* L, Args... args)
+	{
+		const int res = lua_pcall(L, sizeof...(Args), std::is_void_v<R> ? LUA_MULTRET : 1, 0);
+		if (res == 0)
+		{
+			if constexpr (std::is_void_v<R>)
+				return Result{ true };
+			else
+				return Result{ true, {}, *runtime::GetValue<R, false>(L, -1) };
+		}
+
+		const char* errorMessage = nullptr;
+		if (res != LUA_ERRMEM)
+		{
+			SetLuaErrorFromTopOfStack(L);
+			errorMessage = GetLastError(L);
+		}
+
+		return Result{ false, errorMessage };
+	}
 };
 
 }
