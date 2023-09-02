@@ -252,7 +252,7 @@ public:
 	void			Reset();
 
 	// searches for keybase
-	KVSection*		FindSection(const char* pszName, int nFlags = 0);
+	KVSection*		FindSection(const char* pszName, int nFlags = 0) const;
 
 	// loads from file
 	bool			LoadFromFile(const char* pszFileName, int nSearchFlags = -1);

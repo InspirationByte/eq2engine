@@ -332,7 +332,7 @@ void KeyValues::Reset()
 }
 
 // searches for keybase
-KVSection* KeyValues::FindSection(const char* pszName, int nFlags)
+KVSection* KeyValues::FindSection(const char* pszName, int nFlags) const
 {
 	return m_root.FindSection(pszName, nFlags);
 }
