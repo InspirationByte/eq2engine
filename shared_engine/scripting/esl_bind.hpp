@@ -171,7 +171,8 @@ static void PushValue(lua_State* L, const T& value)
 		lua_pushboolean(L, value);
 	}
 	else if constexpr (
-		   std::is_same_v<T, int>
+		   std::is_same_v<T, long>
+		|| std::is_same_v<T, int>
 		|| std::is_same_v<T, uint>
 		|| std::is_same_v<T, int8>
 		|| std::is_same_v<T, uint8>
@@ -234,7 +235,7 @@ static void PushValue(lua_State* L, const T& value)
 template<typename T, bool SilentTypeCheck>
 static decltype(auto) GetValue(lua_State* L, int index)
 {
-	using UT = StripTraitsT<T>;
+	using UT = std::remove_const_t<StripTraitsT<T>>;
 	using Result = ResultWithValue<UT>;
 
 	const int top = lua_gettop(L);
@@ -264,9 +265,10 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			return Result{ false, {}};
 
 		return Result{ true, {}, lua_toboolean(L, index) != 0 };
-    } 
+    }
 	else if constexpr (
-		   std::is_same_v<T, int>
+		   std::is_same_v<T, long>
+		|| std::is_same_v<T, int>
 		|| std::is_same_v<T, uint>
 		|| std::is_same_v<T, int8>
 		|| std::is_same_v<T, uint8>
@@ -281,7 +283,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if (!checkType(L, index, LUA_TNUMBER))
 			return Result{ false, {} };
 
-		return Result{ true, {}, static_cast<T>(lua_tointeger(L, index)) };
+		return Result{ true, {}, static_cast<UT>(lua_tointeger(L, index)) };
 	}
 	else if constexpr (
 		   std::is_same_v<T, float>
@@ -290,7 +292,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if (!checkType(L, index, LUA_TNUMBER))
 			return Result{ false, {} };
 
-		return Result{ true, {}, static_cast<T>(lua_tonumber(L, index)) };
+		return Result{ true, {}, static_cast<UT>(lua_tonumber(L, index)) };
     } 
 	else if constexpr (std::is_same_v<T, LuaRawRef>)
 	{
@@ -424,9 +426,9 @@ struct FunctionCall
 		// const int errIdx = lua_gettop(L);
 
 		func.Push();
-		PushArguments(L, args...);
+		PushArguments(L, std::forward<Args>(args)...);
 
-		return InvokeFunc(L, args...);
+		return InvokeFunc(L, sizeof...(Args));
 	}
 
 	static Result Invoke(lua_State* L, int funcIndex, Args... args)
@@ -435,9 +437,9 @@ struct FunctionCall
 			return Result{ false, "is not callable"};
 
 		lua_pushvalue(L, funcIndex);
-		PushArguments(L, args...);
+		PushArguments(L, std::forward<Args>(args)...);
 
-		return InvokeFunc(L, args...);
+		return InvokeFunc(L, sizeof...(Args));
 	}
 
 private:
@@ -450,9 +452,9 @@ private:
 		PushArguments(L, rest...);
 	}
 
-	static Result InvokeFunc(lua_State* L, Args... args)
+	static Result InvokeFunc(lua_State* L, int numArgs)
 	{
-		const int res = lua_pcall(L, sizeof...(Args), std::is_void_v<R> ? LUA_MULTRET : 1, 0);
+		const int res = lua_pcall(L, numArgs, std::is_void_v<R> ? LUA_MULTRET : 1, 0);
 		if (res == 0)
 		{
 			if constexpr (std::is_void_v<R>)

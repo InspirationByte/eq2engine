@@ -45,7 +45,7 @@ public:
 	LuaRef(const LuaRef& other) : LuaRawRef(other) {}
 	LuaRef(LuaRef&& other) noexcept : LuaRawRef(std::move(other)) {}
 
-	LuaRef& operator=(const LuaRef& other)		{ *(static_cast<LuaRawRef*>(this)) = rhs; return *this; }
+	LuaRef& operator=(const LuaRef& other)		{ *(static_cast<LuaRawRef*>(this)) = other; return *this; }
 	LuaRef& operator=(LuaRef&& other) noexcept	{ *(static_cast<LuaRawRef*>(this)) = std::move(other); return *this; }
 	LuaRef& operator=(std::nullptr_t)			{ *(static_cast<LuaRawRef*>(this)) = nullptr; return *this;}
 	bool operator==(LuaRef const& rhs) const	{ return *(static_cast<const LuaRawRef*>(this)) == rhs; }
@@ -60,6 +60,19 @@ using LuaTableRef = LuaRef<LUA_TTABLE>;
 class LuaTable : public LuaTableRef
 {
 public:
+	struct IPairsIterator
+	{
+		lua_State* L{ nullptr };
+		int tableIndex{ INT_MAX };
+		int arrayIndex{ INT_MAX };
+		int valueIdx{ INT_MAX };
+
+		IPairsIterator(const esl::LuaTable& table);
+		bool			AtEnd() const { return L == nullptr || lua_type(L, -1) == LUA_TNIL; }
+		int				operator*() const { return valueIdx; }
+		IPairsIterator& operator++();
+	};
+
 	LuaTable() = default;
 	LuaTable(lua_State* L, int idx) : LuaTableRef(L, idx) {}
 	LuaTable(const LuaTable& other) : LuaTableRef(other) {}
@@ -74,17 +87,24 @@ public:
 	using Result = ResultWithValue<T>;
 
 	template<typename V, typename K>
-	Result<V> Get(const K& key);
+	Result<V> Get(const K& key) const;
+
+	template<typename K>
+	bool HasKey(const K& key) const;
 
 	template<typename V, typename K>
-	void Set(const K& key, const V& value);
+	void Set(const K & key, const V & value);
 
 	template<typename K>
 	void Remove(K const& key);
+
+	int Length() const;
+
+	IPairsIterator IPairs() const { return IPairsIterator(*this); }
 };
 
 template<typename V, typename K>
-LuaTable::Result<V> LuaTable::Get(const K& key)
+LuaTable::Result<V> LuaTable::Get(const K& key) const
 {
 	if (!IsValid())
 		return Result<V>{false, {}};
@@ -94,6 +114,19 @@ LuaTable::Result<V> LuaTable::Get(const K& key)
 	runtime::PushValue(m_state, key);
 	lua_gettable(m_state, -2);
 	return runtime::GetValue<V, true>(m_state, -1);
+}
+
+template<typename K>
+bool LuaTable::HasKey(const K& key) const
+{
+	if (!IsValid())
+		return false;
+	runtime::StackGuard g(m_state);
+	Push();
+
+	runtime::PushValue(m_state, key);
+	lua_gettable(m_state, -2);
+	return lua_type(m_state, -1) == LUA_TNIL;
 }
 
 template<typename V, typename K>

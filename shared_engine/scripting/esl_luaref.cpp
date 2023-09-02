@@ -122,4 +122,36 @@ void LuaRawRef::Unref()
 	m_ref = LUA_NOREF;
 }
 
+int LuaTable::Length() const
+{
+	if (!IsValid())
+		return 0;
+
+	esl::runtime::StackGuard g(m_state);
+	Push();
+	lua_len(m_state, -1);
+	const int top = lua_gettop(m_state);
+	return lua_tointeger(m_state, top);
+}
+
+LuaTable::IPairsIterator::IPairsIterator(const esl::LuaTable& table)
+{
+	if (!table.IsValid())
+		return;
+	table.Push();
+	L = table.GetState();
+	tableIndex = lua_gettop(L);
+
+	lua_rawgeti(L, tableIndex, arrayIndex);
+	valueIdx = lua_gettop(L);
+}
+
+LuaTable::IPairsIterator& LuaTable::IPairsIterator::operator++()
+{
+	lua_settop(L, tableIndex);
+	lua_rawgeti(L, tableIndex, ++arrayIndex);
+	valueIdx = lua_gettop(L);
+	return *this;
+}
+
 }
