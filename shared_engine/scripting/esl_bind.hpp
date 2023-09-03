@@ -314,15 +314,15 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	else if constexpr (std::is_same_v<BaseType<T>, LuaFunctionRef>)
 	{
 		if (!checkType(L, index, LUA_TFUNCTION))
-			return ResultWithValue<BaseType<UT>>{ false, {} };
-		return ResultWithValue<BaseType<UT>>{ true, {}, LuaFunctionRef(L, index) };
+			return ResultWithValue<BaseType<UT>>{ false, {}, BaseType<T>(L) };
+		return ResultWithValue<BaseType<UT>>{ true, {}, BaseType<T>(L, index) };
 	}
 	else if constexpr (
 		   std::is_same_v<BaseType<T>, LuaTableRef>
 		|| std::is_same_v<BaseType<T>, LuaTable>)
 	{
 		if (!checkType(L, index, LUA_TTABLE))
-			return ResultWithValue<BaseType<UT>>{ false, {} };
+			return ResultWithValue<BaseType<UT>>{ false, {}, BaseType<T>(L) };
 		return ResultWithValue<BaseType<UT>>{ true, {}, BaseType<T>(L, index) };
 	}
 	else if constexpr (IsString<T>::value)
@@ -886,6 +886,13 @@ Member ClassBinder<T>::MakeOperator(const char* name)
 }
 
 template<typename T>
+esl::bindings::ClassPropMap& esl::bindings::ClassPropetyStorage::Get()
+{
+	const int nameHash = StringToHash(EqScriptClass<T>::className);
+	return Get(nameHash);
+}
+
+template<typename T>
 void BaseClassStorage::Add()
 {
 	const int nameHash = StringToHash(EqScriptClass<T>::className);
@@ -897,12 +904,7 @@ void BaseClassStorage::Add()
 template<typename T>
 const char* BaseClassStorage::Get()
 {
-	const int nameHash = StringToHash(EqScriptClass<T>::className);
-	auto it = GetBaseClassNames().find(nameHash);
-	if (it.atEnd())
-		return nullptr;
-
-	return *it;
+	return Get(EqScriptClass<T>::className);
 }
 }
 

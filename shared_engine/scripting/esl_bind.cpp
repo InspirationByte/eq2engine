@@ -37,7 +37,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		defer{
 			lua_pop(L, 1);
 		};
-		if (lua_isnil(L, -1) == 0)
+		if (!lua_isnil(L, -1))
 		{
 			ASSERT_FAIL("Type %s already registered", typeInfo.className);
 			return;
@@ -56,14 +56,21 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 
 	// __index for property features
 	auto setIndexFunction = [&](const char* name, lua_CFunction func) {
-		// mt[__index] = function [thisGetter, methods, className, numTypeInfos, typeInfoMembers...] (...)
-		lua_pushstring(L, name);
-		int numTypeInfos = 0;
+		// upvalues:
+		// 1: methods
+		// 2: call className
+		// 3: thisGetter
+		// 4: numClasses
+		// 5: ...N classNameHash[numClasses]
 
-		void* funcPtr = reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::ThisGetterVal : &runtime::ThisGetterPtr);
-		lua_pushlightuserdata(L, funcPtr);
+		// mt[__index] = function (...)
+		lua_pushstring(L, name);
+
 		lua_pushvalue(L, methods);
 		lua_pushstring(L, typeInfo.className);
+		lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::ThisGetterVal : &runtime::ThisGetterPtr));
+		
+		int numTypeInfos = 0;
 		{
 			esl::TypeInfo typeInfoEnumerator = typeInfo;
 			while (typeInfoEnumerator.className)
@@ -78,7 +85,9 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 			esl::TypeInfo typeInfoEnumerator = typeInfo;
 			while (typeInfoEnumerator.className)
 			{
-				lua_pushlightuserdata(L, const_cast<esl::Member*>(typeInfoEnumerator.members.ptr()));
+				const int classNameHash = StringToHash(typeInfoEnumerator.className);
+				lua_pushinteger(L, classNameHash);
+
 				typeInfoEnumerator = *typeInfoEnumerator.base;
 			}
 		}
@@ -102,6 +111,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 			break;
 		}
 	}
+
 	if(hasConstructors)
 	{
 		// methods["new"] = function [className, typeInfoMembers] (...)
@@ -114,62 +124,50 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		lua_rawset(L, methods);
 	}
 
-	auto registerMembers = [&](const esl::TypeInfo& typeInfo, bool onlyMembers) {
-		for (const esl::Member& mem : typeInfo.members)
+	const int classNameHash = StringToHash(typeInfo.className);
+	for (const esl::Member& mem : typeInfo.members)
+	{
 		{
-			// follow function hiding rule of C++
+			defer{
+				lua_pop(L, 1);
+			};
+			lua_pushstring(L, mem.name);
+			lua_rawget(L, methods);
+			if (lua_type(L, -1) != LUA_TNIL)
 			{
-				// if methods[name] != nil
-				defer{
-					lua_pop(L, 1);
-				};
-				lua_pushstring(L, mem.name);
-				lua_rawget(L, methods);
-				const int top = lua_gettop(L);
-				if (lua_type(L, top) != LUA_TNIL)
-					continue;
-			}
-
-			if (mem.type == esl::MEMB_FUNC)
-			{
-				// methods[name] = function [thisGetter, className, typeInfoMember] ()
-				lua_pushstring(L, mem.name);
-				void* funcPtr = reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::ThisGetterVal : &runtime::ThisGetterPtr);
-				lua_pushlightuserdata(L, funcPtr);
-				lua_pushstring(L, typeInfo.className);
-				lua_pushlightuserdata(L, const_cast<esl::Member*>(&mem));
-				lua_pushcclosure(L, &esl::runtime::CallMemberFunc, 3);
-				lua_rawset(L, methods);
-			}
-			else if (mem.type == esl::MEMB_OPERATOR)
-			{
-				// methods[name] = function ()
-				lua_pushstring(L, mem.name);
-				lua_pushcclosure(L, mem.staticFunc, 0);
-				lua_rawset(L, mt);
-			}
-
-			if (onlyMembers)
+				ASSERT_FAIL("Class can't have same multiple functions with same name");
 				continue;
-
-			if (mem.type == esl::MEMB_DTOR)
-			{
-				lua_pushstring(L, mem.name);
-				lua_pushcclosure(L, mem.staticFunc, 0);
-				lua_rawset(L, mt);
 			}
 		}
-	};
-	registerMembers(typeInfo, false);
 
-	// register base class
-	{
-		esl::TypeInfo typeInfoEnumerator = typeInfo;
-		while (typeInfoEnumerator.className)
+		if (mem.type == esl::MEMB_FUNC)
 		{
-			// also ignore constructors and destructors of parent types
-			registerMembers(typeInfoEnumerator, true);
-			typeInfoEnumerator = *typeInfoEnumerator.base;
+			// methods[name] = function [thisGetter, className, typeInfoMember] ()
+			lua_pushstring(L, mem.name);
+			void* funcPtr = reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::ThisGetterVal : &runtime::ThisGetterPtr);
+			lua_pushlightuserdata(L, funcPtr);
+			lua_pushstring(L, typeInfo.className);
+			lua_pushlightuserdata(L, const_cast<esl::Member*>(&mem));
+			lua_pushcclosure(L, &esl::runtime::CallMemberFunc, 3);
+			lua_rawset(L, methods);
+		}
+		else if (mem.type == esl::MEMB_OPERATOR)
+		{
+			// methods[name] = function ()
+			lua_pushstring(L, mem.name);
+			lua_pushcclosure(L, mem.staticFunc, 0);
+			lua_rawset(L, mt);
+		}
+		else if (mem.type == esl::MEMB_DTOR)
+		{
+			lua_pushstring(L, mem.name);
+			lua_pushcclosure(L, mem.staticFunc, 0);
+			lua_rawset(L, mt);
+		}
+		else if (mem.type == esl::MEMB_VAR)
+		{
+			esl::bindings::ClassPropMap& classProps = bindings::ClassPropetyStorage::GetPropertyMap()[classNameHash];
+			classProps.insert(mem.nameHash, &mem);
 		}
 	}
 
@@ -177,6 +175,23 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	lua_setmetatable(L, methods); // set methods as it's own metatable
 	lua_pop(L, 2);
 }
+}
+
+Map<int, esl::bindings::ClassPropMap>& esl::bindings::ClassPropetyStorage::GetPropertyMap()
+{
+	static Map<int, esl::bindings::ClassPropMap> propertyStorage{ PP_SL };
+	return propertyStorage;
+}
+
+esl::bindings::ClassPropMap& esl::bindings::ClassPropetyStorage::Get(int nameHash)
+{
+	auto it = GetPropertyMap().find(nameHash);
+	if (it.atEnd())
+	{
+		ASSERT_FAIL("esl Error - no class propert map for class (unregistered?)");
+	}
+
+	return *it;
 }
 
 Map<int, EqString>& esl::bindings::BaseClassStorage::GetBaseClassNames()

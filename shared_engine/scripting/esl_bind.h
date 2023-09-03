@@ -33,6 +33,18 @@ enum EOpType : int
 // The binder itself.
 namespace esl::bindings
 {
+using ClassPropMap = Map<int, const esl::Member*>;
+
+struct ClassPropetyStorage
+{
+	static Map<int, ClassPropMap>& GetPropertyMap();
+
+	template<typename T>
+	static ClassPropMap& Get();
+
+	static ClassPropMap& Get(int nameHash);
+};
+
 struct BaseClassStorage
 {
 	static Map<int, EqString>& GetBaseClassNames();

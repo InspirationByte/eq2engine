@@ -12,6 +12,11 @@ LuaRawRef::~LuaRawRef()
 	Unref();
 }
 
+LuaRawRef::LuaRawRef(lua_State* L) 
+	: m_state(L)
+{
+}
+
 LuaRawRef::LuaRawRef(lua_State* L, int idx, int type)
 	: m_state(L)
 {
@@ -26,11 +31,11 @@ LuaRawRef::LuaRawRef(lua_State* L, int idx, int type)
 }
 
 LuaRawRef::LuaRawRef(const LuaRawRef& other)
+	: m_state(other.m_state)
 {
 	if (!other.IsValid())
 		return;
 	other.Push();
-	m_state = other.m_state;
 	m_ref = luaL_ref(m_state, LUA_REGISTRYINDEX);
 }
 
@@ -102,10 +107,8 @@ void LuaRawRef::Release()
 // Pushes the referenced Lua value onto the stack
 void LuaRawRef::Push() const
 {
-	if (IsValid())
-		lua_rawgeti(m_state, LUA_REGISTRYINDEX, m_ref);
-	else
-		lua_pushnil(m_state);	
+	ASSERT_MSG(IsValid(), "Lua ref is not valid, consider addinh IsValid check");
+	lua_rawgeti(m_state, LUA_REGISTRYINDEX, m_ref);
 }
 
 bool LuaRawRef::IsValid() const
@@ -118,7 +121,6 @@ void LuaRawRef::Unref()
 	if (!IsValid())
 		return;
 	luaL_unref(m_state, LUA_REGISTRYINDEX, m_ref);
-	m_state = nullptr;
 	m_ref = LUA_NOREF;
 }
 

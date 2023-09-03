@@ -10,6 +10,7 @@ class LuaRawRef
 public:
 	virtual ~LuaRawRef();
 	LuaRawRef() = default;
+	LuaRawRef(lua_State* L);
 	LuaRawRef(lua_State* L, int idx, int type);
 	LuaRawRef(const LuaRawRef& other);
 	LuaRawRef(LuaRawRef&& other) noexcept;
@@ -41,6 +42,7 @@ class LuaRef : public LuaRawRef
 {
 public:
 	LuaRef() = default;
+	LuaRef(lua_State* L) : LuaRawRef(L) {}
 	LuaRef(lua_State* L, int idx) : LuaRawRef(L, idx, TYPE) {}
 	LuaRef(const LuaRef& other) : LuaRawRef(other) {}
 	LuaRef(LuaRef&& other) noexcept : LuaRawRef(std::move(other)) {}
@@ -74,6 +76,7 @@ public:
 	};
 
 	LuaTable() = default;
+	LuaTable(lua_State* L) : LuaTableRef(L) {}
 	LuaTable(lua_State* L, int idx) : LuaTableRef(L, idx) {}
 	LuaTable(const LuaTable& other) : LuaTableRef(other) {}
 	LuaTable(LuaTable&& other) noexcept : LuaTableRef(std::move(other)) {}

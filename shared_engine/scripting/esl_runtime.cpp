@@ -280,60 +280,101 @@ int CallMemberFunc(lua_State* L)
 	return (bindObj.*(reg->func))(L);
 }
 
-int IndexImpl(lua_State* L)
+static int IndexImplBasic(lua_State* L, bool checkBaseClasses)
 {
-	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(3)), luaL_checkstring(L, 2));
-
-	// lookup in table first
+	// lookup in class metatable first
 	{
 		lua_pushvalue(L, 2);
-		lua_rawget(L, lua_upvalueindex(2)); // methods[key]
-		const int top = lua_gettop(L);
-		if (!lua_isnil(L, top))
-		{
-			lua_pushvalue(L, top);
+		lua_rawget(L, lua_upvalueindex(1)); // methods[key]
+		if (!lua_isnil(L, -1))
 			return 1;
-		}
 		lua_pop(L, 1);
 	}
 
-	// lookup a property for setter
+	if (!checkBaseClasses)
+		return 0;
+
+	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
+
+	// lookup in base classes
+	const char* classNameLookup = bindings::BaseClassStorage::Get(className);
+	while (classNameLookup)
+	{
+		lua_getglobal(L, classNameLookup); // _G[className]
+		if (lua_isnil(L, -1))
+		{
+			lua_pop(L, 1);
+			break;
+		}
+
+		lua_pushvalue(L, 2);
+		lua_rawget(L, -2); // parentMethods[key]
+		if (!lua_isnil(L, -1))
+		{
+			lua_replace(L, 3);
+			return 1;
+		}
+		lua_pop(L, 1);
+
+		classNameLookup = bindings::BaseClassStorage::Get(className);
+	}
+
+	return 0;
+}
+
+int IndexImpl(lua_State* L)
+{
+	// upvalues:
+	// 1: methods
+	// 2: call className
+	// 3: thisGetter
+	// 4: numClasses
+	// 5: ...N classNameHash[numClasses]
+
+	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
+
+	const int ret = IndexImplBasic(L, true);
+	if (ret > 0)
+		return ret;
+
+	// lookup a property for getter
 
 	// self, key
-	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(1)));
-	void* userData = thisGetter(L);
 	const char* key = luaL_checkstring(L, 2);
+	const int propNameHash = StringToHash(key);
 
-	// Access the members array from upvalues
+	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
+	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
+
+	void* userData = thisGetter(L);
+
+	// look up each class down to base
 	const int numClasses = luaL_checknumber(L, lua_upvalueindex(4));
-
-	// TODO: property map lookup
 	for (int i = 0; i < numClasses; ++i)
 	{
-		const esl::Member* members = static_cast<esl::Member*>(lua_touserdata(L, lua_upvalueindex(5 + i)));
+		const int classNameHash = luaL_checkinteger(L, lua_upvalueindex(5 + i));
 
-		for (const esl::Member* mem = members; mem && mem->type != esl::MEMB_NULL; ++mem)
+		esl::bindings::ClassPropMap& classProps = bindings::ClassPropetyStorage::Get(classNameHash);
+		auto propIt = classProps.find(propNameHash);
+		if (propIt.atEnd())
+			continue;
+
+		const esl::Member* mem = *propIt;
+		ASSERT(mem->type == esl::MEMB_VAR);
+
+		if (!userData)
 		{
-			if (mem->type != esl::MEMB_VAR)
-				continue;
-
-			if (strcmp(key, mem->name))
-				continue;
-
-			if (!userData)
-			{
-				// TODO: ThrowError
-				const char* className = luaL_checkstring(L, lua_upvalueindex(3));
-				luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
-				return 0;
-			}
-
-			lua_settop(L, 1);
-			esl::ScriptBind bindObj{ userData };
-			return (bindObj.*(mem->getFunc))(L);
+			// TODO: ThrowError
+			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
+			return 0;
 		}
+
+		lua_settop(L, 1);
+		esl::ScriptBind bindObj{ userData };
+		return (bindObj.*(mem->getFunc))(L);
 	}
-	if(userData)
+
+	if (userData)
 		luaL_error(L, "cannot index variable '%s'", key);
 
 	lua_pushnil(L);
@@ -342,60 +383,55 @@ int IndexImpl(lua_State* L)
 
 int NewIndexImpl(lua_State* L)
 {
-	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(3)), luaL_checkstring(L, 2));
+	// upvalues:
+	// 1: methods
+	// 2: call className
+	// 3: thisGetter
+	// 4: numClasses
+	// 5: ...N classNameHash[numClasses]
 
-	// lookup in table first
-	{
-		lua_pushvalue(L, 2);
-		lua_rawget(L, lua_upvalueindex(2)); // methods[key]
-		const int top = lua_gettop(L);
-		if (!lua_isnil(L, top))
-		{
-			lua_pushvalue(L, top);
-			return 1;
-		}
-		lua_pop(L, 1);
-	}
+	ESL_VERBOSE_LOG("__newindex %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
+
+	const int ret = IndexImplBasic(L, true);
+	if (ret > 0)
+		return ret;
 
 	// lookup a property for setter
 
 	// self, key, value
-	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(1)));
-	void* userData = thisGetter(L);
-	const char* key = luaL_checkstring(L, 2);
+	const int propNameHash = StringToHash(luaL_checkstring(L, 2));
 
-	// Access the members array from upvalues
+	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
+	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
+	
+	// look up each class down to base
 	const int numClasses = luaL_checknumber(L, lua_upvalueindex(4));
-
-	// TODO: map lookup
 	for (int i = 0; i < numClasses; ++i)
 	{
-		const esl::Member* members = static_cast<esl::Member*>(lua_touserdata(L, lua_upvalueindex(5 + i)));
+		const int classNameHash = luaL_checkinteger(L, lua_upvalueindex(5 + i));
 
-		for (const esl::Member* mem = members; mem && mem->type != esl::MEMB_NULL; ++mem)
+		esl::bindings::ClassPropMap& classProps = bindings::ClassPropetyStorage::Get(classNameHash);
+		auto propIt = classProps.find(propNameHash);
+		if (propIt.atEnd())
+			continue;
+
+		const esl::Member* mem = *propIt;
+		ASSERT(mem->type == esl::MEMB_VAR);
+
+		void* userData = thisGetter(L);
+		if (!userData)
 		{
-			if (mem->type != esl::MEMB_VAR)
-				continue;
-
-			if (strcmp(key, mem->name))
-				continue;
-
-			if (!userData)
-			{
-				// TODO: ThrowError
-				const char* className = luaL_checkstring(L, lua_upvalueindex(3));
-				luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
-				return 0;
-			}
-
-			// ensure that value is at index 1.
-			lua_replace(L, 1);
-			//lua_settop(L, 1);
-
-			esl::ScriptBind bindObj{ userData };
-			return (bindObj.*(mem->func))(L);
+			// TODO: ThrowError
+			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
+			return 0;
 		}
+
+		// ensure that value is at index 1.
+		lua_replace(L, 1);
+		esl::ScriptBind bindObj{ userData };
+		return (bindObj.*(mem->func))(L);
 	}
+
 	lua_pushnil(L);
 	return 1;
 }
