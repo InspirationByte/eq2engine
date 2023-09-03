@@ -235,9 +235,16 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else
 	{
-		ESL_VERBOSE_LOG("copy %s on PushValue", LuaBaseTypeAlias<T>::value);
-		// make a copy of object
-		PushGet<T>::PushObject(L, *(PPNew T(value)), UD_FLAG_OWNED);
+		using UT = StripTraitsT<T>;
+		using BaseUType = BaseType<UT>;
+
+		if constexpr (!LuaTypeByVal<BaseUType>::value)
+		{
+			ASSERT_FAIL("esl unhandled ref type %s", typeid(T).name());
+		}
+
+		BaseUType pushObj(value);
+		PushGet<T>::PushObject(L, pushObj, UD_FLAG_OWNED);
 	}
 }
 
@@ -541,8 +548,19 @@ struct ConstructorBinder
 		ESL_VERBOSE_LOG("create %s, byval %d", EqScriptClass<T>::className, EqScriptClass<T>::isByVal);
 
 		// Extract arguments from Lua and forward them to the constructor
-		T* newObj = PPNew T(*runtime::GetValue<Args, true>(L, IDX + 1)...);
-		runtime::PushGet<T>::PushObject(L, *newObj, UD_FLAG_OWNED);
+		using UT = StripTraitsT<T>;
+		using BaseUType = BaseType<UT>;
+
+		if constexpr (LuaTypeByVal<BaseUType>::value)
+		{
+			T newObjVal(*runtime::GetValue<Args, true>(L, IDX + 1)...);
+			runtime::PushGet<T>::PushObject(L, newObjVal, UD_FLAG_OWNED);
+		}
+		else
+		{
+			T* newObj = PPNew T(*runtime::GetValue<Args, true>(L, IDX + 1)...);
+			runtime::PushGet<T>::PushObject(L, *newObj, UD_FLAG_OWNED);
+		}
 	}
 
 	static int Func(lua_State* L) 

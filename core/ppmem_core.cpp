@@ -34,8 +34,8 @@
 using namespace Threading;
 
 #define PPMEM_EXTRA_DEBUGINFO
-#define PPMEM_CHECKMARK			(0x1df001ed)	// fooled
-#define PPMEM_CHECKMARK_FREED	(0x1dbeefed)	// beefed
+constexpr const uint PPMEM_CHECKMARK =			(0x1df001ed);	// fooled
+constexpr const uint PPMEM_CHECKMARK_FREED =	(0x1dbeefed);	// beefed
 
 struct ppallocinfo_t
 {
@@ -357,7 +357,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	ASSERT_MSG(mem, "No mem left");
 	return mem;
 #else
-	void* retPtr = nullptr;
+	void* actualPtr = nullptr;
 
 	{
 		ppmem_state_t& st = PPGetState();
@@ -389,8 +389,8 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		ASSERT_MSG(alloc, "realloc: no mem left!");
 
 		// actual pointer address
-		retPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-		uint* checkMark = (uint*)((ubyte*)retPtr + size);
+		actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+		uint* checkMark = (uint*)((ubyte*)actualPtr + size);
 
 		{
 			alloc->size = size;
@@ -419,8 +419,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		}
 	}
 
-
-	return retPtr;
+	return actualPtr;
 #endif // PPMEM_DISABLED
 }
 
