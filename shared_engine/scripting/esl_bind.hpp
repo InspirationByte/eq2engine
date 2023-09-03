@@ -215,7 +215,10 @@ static void PushValue(lua_State* L, const T& value)
 		|| std::is_same_v<T, LuaTableRef>
 		|| std::is_same_v<T, LuaTable>)
 	{
-		value.Push();
+		if (value)
+			value.Push();
+		else
+			lua_pushnil(L);
 	}
 	else if constexpr (IsUserObj<T>::value)
 	{
