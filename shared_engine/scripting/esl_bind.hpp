@@ -70,8 +70,6 @@ struct ArgsSignature<First, Rest...>
 template<typename T> struct IsUserObj : std::false_type {};
 template<typename T> struct IsUserObj<T*> : std::true_type {};
 template<typename T> struct IsUserObj<T&> : std::true_type {};
-template<typename T> struct IsUserObj<ToCpp<T*>> : std::true_type {};
-template<typename T> struct IsUserObj<ToCpp<T&>> : std::true_type {};
 
 template<> struct IsUserObj<EqString> : std::false_type {};
 template<> struct IsUserObj<EqString*> : std::false_type {};
@@ -99,20 +97,20 @@ template<> struct IsEqString<const EqString&> : std::true_type {};
 template<typename T>
 struct PushGet
 {
-	static void PushObject(lua_State* L, const BaseType<T>& obj, int flags)
+	static void PushObject(lua_State* L, const BaseType<StripTraitsT<T>>& obj, int flags)
 	{
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
 
-		flags |= HasToLuaReturnTrait<T>::value ? UD_FLAG_OWNED : 0;
-
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
+			ASSERT_MSG(HasToLuaReturnTrait<T>::value == false, "%s has ToLua trait on BY_VALUE, change to BY_REF", typeid(BaseUType).name());
 			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
 			new(ud) BaseUType(obj); // FIXME: use move?
 		}
 		else
 		{
+			flags |= HasToLuaReturnTrait<T>::value ? UD_FLAG_OWNED : 0;
 			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
 			ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
 			ud->type = UD_TYPE_PTR;
@@ -172,7 +170,7 @@ struct PushGet
 	}
 };
 
-template<typename T>
+template<typename T, typename WT>
 static void PushValue(lua_State* L, const T& value)
 {
 	if constexpr (std::is_same_v<T, bool>)
@@ -225,12 +223,12 @@ static void PushValue(lua_State* L, const T& value)
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
-				PushGet<T>::PushObject(L, *value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
+				PushGet<WT>::PushObject(L, *value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
 			else
 				lua_pushnil(L);
 		}
 		else
-			PushGet<T>::PushObject(L, value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
+			PushGet<WT>::PushObject(L, value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
 	}
 	else if constexpr(std::is_same_v<T, std::nullptr_t>)
 	{
@@ -305,7 +303,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if (!checkType(L, index, LUA_TNUMBER))
 			return Result{ false, {} };
 
-		return Result{ true, {}, static_cast<UT>(lua_tointeger(L, index)) };
+		return Result{ true, {}, static_cast<T>(lua_tointeger(L, index)) };
 	}
 	else if constexpr (
 		   std::is_same_v<T, float>
@@ -314,26 +312,26 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if (!checkType(L, index, LUA_TNUMBER))
 			return Result{ false, {} };
 
-		return Result{ true, {}, static_cast<UT>(lua_tonumber(L, index)) };
+		return Result{ true, {}, static_cast<T>(lua_tonumber(L, index)) };
     } 
 	else if constexpr (std::is_same_v<BaseType<T>, LuaRawRef>)
 	{
 		const int type = lua_type(L, index);
-		return ResultWithValue<BaseType<UT>>{ true, {}, LuaRawRef(L, index, type) };
+		return ResultWithValue<BaseType<T>>{ true, {}, LuaRawRef(L, index, type) };
 	}
 	else if constexpr (std::is_same_v<BaseType<T>, LuaFunctionRef>)
 	{
 		if (!checkType(L, index, LUA_TFUNCTION))
-			return ResultWithValue<BaseType<UT>>{ false, {}, BaseType<T>(L) };
-		return ResultWithValue<BaseType<UT>>{ true, {}, BaseType<T>(L, index) };
+			return ResultWithValue<BaseType<T>>{ false, {}, BaseType<T>(L) };
+		return ResultWithValue<BaseType<T>>{ true, {}, BaseType<T>(L, index) };
 	}
 	else if constexpr (
 		   std::is_same_v<BaseType<T>, LuaTableRef>
 		|| std::is_same_v<BaseType<T>, LuaTable>)
 	{
 		if (!checkType(L, index, LUA_TTABLE))
-			return ResultWithValue<BaseType<UT>>{ false, {}, BaseType<T>(L) };
-		return ResultWithValue<BaseType<UT>>{ true, {}, BaseType<T>(L, index) };
+			return ResultWithValue<BaseType<T>>{ false, {}, BaseType<T>(L) };
+		return ResultWithValue<BaseType<T>>{ true, {}, BaseType<T>(L, index) };
 	}
 	else if constexpr (IsString<T>::value)
 	{
@@ -355,7 +353,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		else
 			return Result{ true, {}, value };
 	}
-	else if constexpr (IsUserObj<T>::value)
+	else if constexpr (IsUserObj<UT>::value)
 	{
 		const int type = lua_type(L, index);
 		if (type != LUA_TUSERDATA)
@@ -606,7 +604,7 @@ struct MemberFunctionBinder<T, FuncPtr, UR, UArgs...> : public esl::ScriptBind
 		else
 		{
 			R ret = Invoke(thisPtr, L, std::index_sequence_for<UArgs...>{});
-			runtime::PushValue(L, ret);
+			runtime::PushValue<R, UR>(L, ret);
 			return 1;
 		}
 	}
@@ -639,7 +637,7 @@ struct MemberFunctionBinder<T, FuncPtr, UR, UArgs...> : public esl::ScriptBind
 		else
 		{
 			R ret = Invoke(thisPtr, L, std::index_sequence_for<UArgs...>{});
-			runtime::PushValue(L, ret);
+			runtime::PushValue<R, UR>(L, ret);
 			return 1;
 		}
 	}
@@ -683,36 +681,50 @@ static auto BindMemberFunction()
 	}
 }
 
-template<auto FuncPtr>
+template<auto FuncPtr, typename UR, typename ... UArgs>
 struct FunctionBinder;
 
-template<typename R, typename ... Args, R FuncPtr(Args...)>
-struct FunctionBinder<FuncPtr>
+template<typename R, typename ... Args, R FuncPtr(Args...), typename UR, typename ... UArgs>
+struct FunctionBinder<FuncPtr, UR, UArgs...>
 {
 	template<size_t... IDX>
 	static R Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
-		return (*FuncPtr)(*runtime::GetValue<Args, false>(L, IDX + 1)...);
+		return (*FuncPtr)(*runtime::GetValue<UArgs, false>(L, IDX + 1)...);
 	}
 
 	static int Func(lua_State* L)
 	{
 		if constexpr (std::is_void<R>::value)
 		{
-			Invoke(L, std::index_sequence_for<Args...>{});
+			Invoke(L, std::index_sequence_for<UArgs...>{});
 			return 0;
 		}
 		else
 		{
-			R ret = Invoke(L, std::index_sequence_for<Args...>{});
-			runtime::PushValue(L, ret);
+			R ret = Invoke(L, std::index_sequence_for<UArgs...>{});
+			runtime::PushValue<R, UR>(L, ret);
 			return 1;
 		}
 	}
 };
 
 template<auto FuncPtr>
-static lua_CFunction BindCFunction() { return &FunctionBinder<FuncPtr>::Func; }
+struct FunctionBinderNoTraits;
+
+template<typename R, typename ... Args, R FuncPtr(Args...)>
+struct FunctionBinderNoTraits<FuncPtr> : public FunctionBinder<FuncPtr, R, Args...>
+{
+};
+
+template<auto FuncPtr, typename UR = void, typename ... UArgs>
+static lua_CFunction BindCFunction()
+{
+	if constexpr (std::is_void_v<UR> && sizeof...(UArgs) == 0)
+		return &FunctionBinderNoTraits<FuncPtr>::Func;
+	else
+		return &FunctionBinder<FuncPtr, UR, UArgs...>::Func;
+}
 
 //---------------------------------------------------------------
 

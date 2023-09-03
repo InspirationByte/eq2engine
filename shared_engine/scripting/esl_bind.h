@@ -162,6 +162,7 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 #define ESL_CLASS_FUNC(Name) 		(&BindClass::Name)
 #define ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
+#define ESL_CFUNC_OVERLOAD(R, ...) 	static_cast<R(*)__VA_ARGS__>
 #define ESL_APPLY_TRAITS(...)		, __VA_ARGS__
 
 // type name definition
@@ -214,11 +215,11 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 #define EQSCRIPT_BIND_VAR(Name) \
 	MakeVariable<ESL_CLASS_FUNC(Name)>(#Name),
 
-#define EQSCRIPT_CFUNC(Name) \
-	esl::binder::BindCFunction<Name>()
+#define EQSCRIPT_CFUNC(Name, ...) \
+	esl::binder::BindCFunction<Name##__VA_ARGS__>()
 
-#define EQSCRIPT_CFUNC_OVERLOAD(Name, R, ...) \
-	esl::binder::BindCFunction<static_cast<R(*)(__VA_ARGS__)>(Name)>()
+#define EQSCRIPT_CFUNC_OVERLOAD(Name, R, Signature,...) \
+	esl::binder::BindCFunction<ESL_CFUNC_OVERLOAD(R, Signature)(Name)##__VA_ARGS__>()
 
 #define EQSCRIPT_FUNC(Name) \
 	esl::binder::BindFunction(Name)

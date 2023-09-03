@@ -168,7 +168,7 @@ void		ResetErrorValue(lua_State* L);
 const char*	GetLastError(lua_State* L);
 int			StackTrace(lua_State* L);
 
-template<typename T>
+template<typename T, typename WT = T>
 static void PushValue(lua_State* L, const T& value);
 
 template<typename T, bool SilentTypeCheck>
