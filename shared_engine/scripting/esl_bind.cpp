@@ -124,6 +124,15 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		lua_rawset(L, methods);
 	}
 
+	// push especial eq operator that compares userdata
+	if (!typeInfo.isByVal)
+	{
+		// methods[__eq] = function ()
+		lua_pushstring(L, "__eq");
+		lua_pushcclosure(L, &esl::runtime::CompareBoxedPointers, 0);
+		lua_rawset(L, mt);
+	}
+
 	const int classNameHash = StringToHash(typeInfo.className);
 	for (const esl::Member& mem : typeInfo.members)
 	{

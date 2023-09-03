@@ -280,6 +280,18 @@ int CallMemberFunc(lua_State* L)
 	return (bindObj.*(reg->func))(L);
 }
 
+int CompareBoxedPointers(lua_State* L)
+{
+	esl::BoxUD* lhs = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
+	esl::BoxUD* rhs = static_cast<esl::BoxUD*>(lua_touserdata(L, 2));
+
+	if (!lhs || !rhs)
+		return lhs == rhs; // both maybe nil
+
+	lua_pushboolean(L, lhs->objPtr == rhs->objPtr);
+	return 1;
+}
+
 static int IndexImplBasic(lua_State* L, bool checkBaseClasses)
 {
 	// lookup in class metatable first
