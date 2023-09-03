@@ -65,11 +65,11 @@ public:
 		lua_State* L{ nullptr };
 		int tableIndex{ INT_MAX };
 		int arrayIndex{ INT_MAX };
-		int valueIdx{ INT_MAX };
 
 		IPairsIterator(const esl::LuaTable& table);
-		bool			AtEnd() const { return L == nullptr || lua_type(L, -1) == LUA_TNIL; }
-		int				operator*() const { return valueIdx; }
+		~IPairsIterator();
+		bool			AtEnd() const;
+		int				operator*() const;
 		IPairsIterator& operator++();
 	};
 

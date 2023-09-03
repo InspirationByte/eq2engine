@@ -26,6 +26,9 @@ using BaseType = typename std::remove_cv<typename std::remove_pointer<typename s
 template<typename T>
 using BasePtrType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
+template<typename T>
+using BaseRefType = typename std::remove_cv<typename std::remove_pointer<T>::type>::type;
+
 template <typename T>
 struct LuaTypeByVal : std::false_type {};
 

@@ -138,20 +138,39 @@ LuaTable::IPairsIterator::IPairsIterator(const esl::LuaTable& table)
 {
 	if (!table.IsValid())
 		return;
-	table.Push();
+
 	L = table.GetState();
+	lua_checkstack(L, 2);
+	table.Push();
+
 	tableIndex = lua_gettop(L);
 	arrayIndex = 1;
 	lua_rawgeti(L, tableIndex, arrayIndex);
-	valueIdx = lua_gettop(L);
+}
+
+LuaTable::IPairsIterator::~IPairsIterator()
+{
+	if (L == nullptr)
+		return;
+
+	lua_settop(L, tableIndex - 1);
 }
 
 LuaTable::IPairsIterator& LuaTable::IPairsIterator::operator++()
 {
 	lua_settop(L, tableIndex);
 	lua_rawgeti(L, tableIndex, ++arrayIndex);
-	valueIdx = lua_gettop(L);
 	return *this;
+}
+
+bool LuaTable::IPairsIterator::AtEnd() const
+{
+	return L == nullptr || lua_type(L, -1) == LUA_TNIL; 
+}
+
+int	LuaTable::IPairsIterator::operator*() const
+{
+	return arrayIndex;
 }
 
 }

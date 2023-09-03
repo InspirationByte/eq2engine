@@ -24,6 +24,9 @@ struct BoxUD
 };
 }
 
+#pragma warning(push)
+#pragma warning(disable:4267)
+
 //-----------------------------------------------
 // TYPE BINDER
 namespace esl::runtime
@@ -262,7 +265,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				return false;
 		}
 		else
+		{
 			luaL_checktype(L, index, type);
+		}
 		return true;
 	};
 
@@ -301,40 +306,41 @@ static decltype(auto) GetValue(lua_State* L, int index)
 
 		return Result{ true, {}, static_cast<UT>(lua_tonumber(L, index)) };
     } 
-	else if constexpr (std::is_same_v<T, LuaRawRef>)
+	else if constexpr (std::is_same_v<BaseType<T>, LuaRawRef>)
 	{
 		const int type = lua_type(L, index);
-		return Result{ true, {}, LuaRawRef(L, index, type) };
+		return ResultWithValue<BaseType<UT>>{ true, {}, LuaRawRef(L, index, type) };
 	}
-	else if constexpr (std::is_same_v<T, LuaFunctionRef>)
+	else if constexpr (std::is_same_v<BaseType<T>, LuaFunctionRef>)
 	{
 		if (!checkType(L, index, LUA_TFUNCTION))
-			return Result{ false, {} };
-		return Result{ true, {}, LuaFunctionRef(L, index) };
+			return ResultWithValue<BaseType<UT>>{ false, {} };
+		return ResultWithValue<BaseType<UT>>{ true, {}, LuaFunctionRef(L, index) };
 	}
 	else if constexpr (
-		   std::is_same_v<T, LuaTableRef>
-		|| std::is_same_v<T, LuaTable>)
+		   std::is_same_v<BaseType<T>, LuaTableRef>
+		|| std::is_same_v<BaseType<T>, LuaTable>)
 	{
 		if (!checkType(L, index, LUA_TTABLE))
-			return Result{ false, {} };
-		return Result{ true, {}, T(L, index) };
+			return ResultWithValue<BaseType<UT>>{ false, {} };
+		return ResultWithValue<BaseType<UT>>{ true, {}, BaseType<T>(L, index) };
 	}
 	else if constexpr (IsString<T>::value)
 	{
 		if (!checkType(L, index, LUA_TSTRING))
 		{
 			if constexpr (IsEqString<T>::value)
-				return ResultWithValue<EqString>{ true, {}, EqString() };
+				return ResultWithValue<EqString>{ false, {}, EqString() };
 			else
-				return Result{ true, {}, nullptr };
+				return Result{ false, {}, nullptr };
 		}
 
-		const char* value = lua_tostring(L, index);
+		size_t len = 0;
+		const char* value = lua_tolstring(L, index, &len);
 		if constexpr (IsEqString<T>::value)
 		{
 			static_assert(!std::is_pointer_v<T>, "passing EqString by pointer is not supported yet");
-			return ResultWithValue<EqString>{ true, {}, EqString(value) };
+			return ResultWithValue<EqString>{ true, {}, EqString(value, len) };
 		}
 		else
 			return Result{ true, {}, value };
@@ -899,3 +905,5 @@ const char* BaseClassStorage::Get()
 	return *it;
 }
 }
+
+#pragma warning(pop)
