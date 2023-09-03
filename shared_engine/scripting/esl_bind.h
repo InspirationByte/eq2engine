@@ -180,14 +180,14 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
 	template<> bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<Class>::value; \
 	template<> const char* EqScriptClass<Class>::baseClassName = nullptr; \
-	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = {}; \
+	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = {};
 
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name) \
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, INHERIT_PARENT) \
 	template<> bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<ParentClass>::value; \
 	template<> const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
-	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo(); \
+	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo();
 
 // Constructor([ ArgT1, ArgT2, ...ArgTN ])
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
@@ -216,10 +216,10 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 	MakeVariable<ESL_CLASS_FUNC(Name)>(#Name),
 
 #define EQSCRIPT_CFUNC(Name, ...) \
-	esl::binder::BindCFunction<Name##__VA_ARGS__>()
+	esl::binder::BindCFunction<Name __VA_ARGS__>()
 
 #define EQSCRIPT_CFUNC_OVERLOAD(Name, R, Signature,...) \
-	esl::binder::BindCFunction<ESL_CFUNC_OVERLOAD(R, Signature)(Name)##__VA_ARGS__>()
+	esl::binder::BindCFunction<ESL_CFUNC_OVERLOAD(R, Signature)(Name)__VA_ARGS__>()
 
 #define EQSCRIPT_FUNC(Name) \
 	esl::binder::BindFunction(Name)
