@@ -220,8 +220,8 @@ bool CMaterialSystem::Init(const materialsInitSettings_t& config)
 			m_materialsSRCPath.Append(CORRECT_PATH_SEPARATOR);
 
 		// copy default path
-		EqString texturePath = config.texturePath[0];
-		EqString textureSRCPath = config.textureSRCPath[0];
+		EqString texturePath = config.texturePath;
+		EqString textureSRCPath = config.textureSRCPath;
 
 		if (texturePath[0] == 0)
 			texturePath = m_materialsPath.GetData();
