@@ -187,7 +187,7 @@
 	</Type>
 	<Type Name="EqWString">
 		<DisplayString Condition="m_nLength == 0">WString: [empty]</DisplayString>
-		<DisplayString>WString: { m_pszString,sb }</DisplayString>
+		<DisplayString>WString: { m_pszString,su }</DisplayString>
 		<Expand>
 			<Item Name = "Value">
 				m_pszString
