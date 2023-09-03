@@ -36,11 +36,6 @@ EqString::~EqString()
 	Clear();
 }
 
-EqString::EqString(const char c)
-{
-	Assign( &c, 1 );
-}
-
 EqString::EqString(const char* pszString, int len)
 {
 	Assign( pszString, len );

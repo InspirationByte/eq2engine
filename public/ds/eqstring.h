@@ -64,8 +64,6 @@ public:
 	EqString();
 	~EqString();
 
-	EqString(const char c);
-
 	EqString(const char* pszString, int len = -1);
 	EqString(const EqString &str, int nStart = 0, int len = -1);
 
@@ -181,7 +179,7 @@ public:
 		return *this;
 	}
 
-	EqString& operator = (EqString&& other)
+	EqString& operator = (EqString&& other) noexcept
 	{
 		m_nAllocated = other.m_nAllocated;
 		m_nLength = other.m_nLength;

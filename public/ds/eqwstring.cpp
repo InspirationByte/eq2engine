@@ -30,11 +30,6 @@ EqWString::~EqWString()
 	Clear();
 }
 
-EqWString::EqWString(const wchar_t c)
-{
-	Assign( &c, 1 );
-}
-
 // convert from UTF8 string
 EqWString::EqWString(const char* pszString, int len)
 {

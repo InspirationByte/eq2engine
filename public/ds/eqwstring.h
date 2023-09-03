@@ -21,8 +21,6 @@ public:
 	EqWString();
 	~EqWString();
 
-	EqWString(const wchar_t c);
-
 	// convert from UTF8 string
 	EqWString(const char* pszString, int len = -1);
 	EqWString(const EqString& str, int nStart = 0, int len = -1);
@@ -106,6 +104,17 @@ public:
 	int				ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
 	//------------------------------------------------------------------------------------------------
+
+	EqWString& operator = (EqWString&& other) noexcept
+	{
+		m_nAllocated = other.m_nAllocated;
+		m_nLength = other.m_nLength;
+		m_pszString = other.m_pszString;
+		other.m_nAllocated = 0;
+		other.m_nLength = 0;
+		other.m_pszString = nullptr;
+		return *this;
+	}
 
 	EqWString& operator = (const EqWString& other)
 	{
