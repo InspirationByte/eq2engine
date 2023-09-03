@@ -8,14 +8,33 @@
 
 bool EqScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
 {
-	CMemoryStream memStream(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 0, PP_SL);
+	if (!virtStream)
+	{
+		esl::runtime::ResetErrorValue(m_state);
+		lua_pushfstring(m_state, "Couldn't open '%s'", name);
+		esl::runtime::SetLuaErrorFromTopOfStack(m_state);
+		return false;
+	}
+
+	CMemoryStream memStream(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 0, PPSourceLine::Make(name, 0));
 	CMemoryStream* useStream = &memStream;
 	if (virtStream->GetType() == VS_TYPE_MEMORY)
 		useStream = reinterpret_cast<CMemoryStream*>(virtStream);
 	else
 		memStream.AppendStream(virtStream);
 
-	const int bufStatus = luaL_loadbuffer(m_state, (const char*)useStream->GetBasePointer(), useStream->GetSize(), useStream->GetName());
+	long fileSize = useStream->GetSize();
+	const char* luaSrc = (const char*)useStream->GetBasePointer();
+	{
+		ushort byteordermark = *((ushort*)luaSrc);
+		if (byteordermark == 0xbbef || byteordermark == 0xfeff)
+		{
+			luaSrc += 3;
+			fileSize -= 3;
+		}
+	}
+
+	const int bufStatus = luaL_loadbuffer(m_state, luaSrc, fileSize, useStream->GetName());
 	if (bufStatus != 0)
 	{
 		esl::runtime::SetLuaErrorFromTopOfStack(m_state);

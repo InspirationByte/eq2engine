@@ -141,7 +141,7 @@ LuaTable::IPairsIterator::IPairsIterator(const esl::LuaTable& table)
 	table.Push();
 	L = table.GetState();
 	tableIndex = lua_gettop(L);
-
+	arrayIndex = 1;
 	lua_rawgeti(L, tableIndex, arrayIndex);
 	valueIdx = lua_gettop(L);
 }

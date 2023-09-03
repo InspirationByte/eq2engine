@@ -2,6 +2,14 @@
 
 #include <lua.hpp>
 
+//#define ESL_TRACE
+
+#ifdef ESL_TRACE
+#define ESL_VERBOSE_LOG(fmt, ...)	MsgWarning("[ESL] " fmt "\n", __VA_ARGS__)
+#else
+#define ESL_VERBOSE_LOG(fmt, ...)
+#endif // ESL_TRACE
+
 namespace esl
 {
 using StaticFunc = lua_CFunction;
@@ -52,9 +60,11 @@ struct StripTraits<ToLua<T>>
 template <typename T>
 using StripTraitsT = typename StripTraits<T>::type;
 
-template<typename T> struct HasParamTraits : std::false_type {};
-template<typename T> struct HasParamTraits<ToCpp<T>> : std::true_type {};
-template<typename T> struct HasParamTraits<ToLua<T>> : std::true_type {};
+template<typename T> struct HasToCppParamTrait : std::false_type {};
+template<typename T> struct HasToCppParamTrait<ToCpp<T>> : std::true_type {};
+
+template<typename T> struct HasToLuaReturnTrait : std::false_type {};
+template<typename T> struct HasToLuaReturnTrait<ToLua<T>> : std::true_type {};
 
 template <typename T>
 struct LuaBaseTypeAlias : LuaTypeAlias<BaseType<StripTraitsT<T>>> {};
@@ -153,6 +163,7 @@ namespace esl::runtime
 void		SetLuaErrorFromTopOfStack(lua_State* L);
 void		ResetErrorValue(lua_State* L);
 const char*	GetLastError(lua_State* L);
+int			StackTrace(lua_State* L);
 
 template<typename T>
 static void PushValue(lua_State* L, const T& value);

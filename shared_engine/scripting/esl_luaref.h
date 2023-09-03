@@ -126,7 +126,7 @@ bool LuaTable::HasKey(const K& key) const
 
 	runtime::PushValue(m_state, key);
 	lua_gettable(m_state, -2);
-	return lua_type(m_state, -1) == LUA_TNIL;
+	return lua_type(m_state, -1) != LUA_TNIL;
 }
 
 template<typename V, typename K>

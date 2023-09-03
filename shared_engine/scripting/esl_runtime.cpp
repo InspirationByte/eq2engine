@@ -45,6 +45,80 @@ const char* GetLastError(lua_State* L)
 	return errorStr;
 }
 
+static lua_State* getthread(lua_State* vm, int* arg)
+{
+	if (lua_isthread(vm, 1))
+	{
+		*arg = 1;
+		return lua_tothread(vm, 1);
+	}
+	else
+	{
+		*arg = 0;
+		return vm;
+	}
+}
+
+int StackTrace(lua_State* vm)
+{
+	static constexpr const int LEVELS1 = 10;
+	static constexpr const int LEVELS2 = 20;
+
+	int level;
+	int firstpart = 1;  /* still before eventual `...' */
+	int arg;
+	lua_State *L1 = getthread(vm, &arg);
+	lua_Debug ar;
+	if (lua_isnumber(vm, arg+2)) {
+		level = (int)lua_tointeger(vm, arg+2);//NOLINT
+		lua_pop(vm, 1);
+	}
+	else
+		level = (vm == L1) ? 1 : 0;  /* level 0 may be this own function */
+	if (lua_gettop(vm) == arg)
+		lua_pushliteral(vm, "");
+	else if (!lua_isstring(vm, arg+1)) return 1;  /* message is not a string */
+	else lua_pushliteral(vm, "\n");
+	lua_pushliteral(vm, "stack traceback:");
+	while (lua_getstack(L1, level++, &ar))
+	{
+		if (level > LEVELS1 && firstpart)
+		{
+			/* no more than `LEVELS2' more levels? */
+			if (!lua_getstack(L1, level+LEVELS2, &ar))
+				level--;  /* keep going */
+			else
+			{
+				lua_pushliteral(vm, "\n\t...");  /* too many levels */
+				while (lua_getstack(L1, level+LEVELS2, &ar))  /* find last levels */
+					level++;
+			}
+			firstpart = 0;
+			continue;
+		}
+		lua_pushliteral(vm, "\n\t");
+		lua_getinfo(L1, "Snl", &ar);
+		lua_pushfstring(vm, "%s:", ar.short_src);
+		if(ar.currentline > 0)
+			lua_pushfstring(vm, "%d:", ar.currentline);
+		if(*ar.namewhat != '\0')  /* is there a name? */
+			lua_pushfstring(vm, " in function '%s'", ar.name);
+		else
+		{
+			if(*ar.what == 'm')  /* main? */
+				lua_pushfstring(vm, " in main chunk");
+			else if (*ar.what == 'C' || *ar.what == 't')
+				lua_pushliteral(vm, " ?");  /* C function or tail call */
+			else
+				lua_pushfstring(vm, " in function <%s:%d>",
+								ar.short_src, ar.linedefined);
+		}
+		lua_concat(vm, lua_gettop(vm) - arg);
+	}
+	lua_concat(vm, lua_gettop(vm) - arg);
+	return 1;
+}
+
 StackGuard::StackGuard(lua_State* L)
 {
 	m_state = L;
@@ -166,6 +240,7 @@ int CallConstructor(lua_State* L)
 		if (!CheckCallSignatureMatching(L, mem))
 			continue;
 
+		ESL_VERBOSE_LOG("construct %s with %s", className, mem->signature);
 		return mem->staticFunc(L);
 	}
 
@@ -207,6 +282,8 @@ int CallMemberFunc(lua_State* L)
 
 int IndexImpl(lua_State* L)
 {
+	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(3)), luaL_checkstring(L, 2));
+
 	// lookup in table first
 	{
 		lua_pushvalue(L, 2);
@@ -265,6 +342,8 @@ int IndexImpl(lua_State* L)
 
 int NewIndexImpl(lua_State* L)
 {
+	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(3)), luaL_checkstring(L, 2));
+
 	// lookup in table first
 	{
 		lua_pushvalue(L, 2);

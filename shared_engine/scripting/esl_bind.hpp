@@ -96,12 +96,12 @@ template<> struct IsEqString<const EqString&> : std::true_type {};
 template<typename T>
 struct PushGet
 {
-	static void PushObject(lua_State* L, const BaseType<T>& obj, bool ownedByLua, bool isConst)
+	static void PushObject(lua_State* L, const BaseType<T>& obj, int flags)
 	{
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
 
-		ownedByLua = ownedByLua || HasParamTraits<ToLua<T>>::value;
+		flags |= HasToLuaReturnTrait<T>::value ? UD_FLAG_OWNED : 0;
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
@@ -113,7 +113,7 @@ struct PushGet
 			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
 			ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
 			ud->type = UD_TYPE_PTR;
-			ud->flags = (ownedByLua ? UD_FLAG_OWNED : 0) | (isConst ? UD_FLAG_CONST : 0);
+			ud->flags = flags;
 		}
 		luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 	}
@@ -135,7 +135,7 @@ struct PushGet
 				return static_cast<BaseUType*>(nullptr);
 
 			// drop ownership flag when ToCpp is specified
-			if constexpr (HasParamTraits<ToCpp<T>>::value)
+			if constexpr (HasToCppParamTrait<T>::value)
 				userData->flags &= ~UD_FLAG_OWNED;
 
 			return static_cast<BaseUType*>(userData ? userData->objPtr : nullptr);
@@ -144,9 +144,13 @@ struct PushGet
 
 	static int ObjectDestructor(lua_State* L)
 	{
+		using UT = StripTraitsT<T>;
+		using BaseUType = BaseType<UT>;
+
 		// destructor is safe to use statically-compiled ByVal
 		if constexpr (LuaTypeByVal<T>::value)
 		{
+			ESL_VERBOSE_LOG("destruct val %s", LuaBaseTypeAlias<BaseUType>::value);
 			T* userData = static_cast<T*>(lua_touserdata(L, 1));
 			userData->~T();
 		}
@@ -155,8 +159,10 @@ struct PushGet
 			BoxUD* userData = static_cast<BoxUD*>(lua_touserdata(L, 1));
 			if (userData->flags & UD_FLAG_OWNED)
 			{
+				ESL_VERBOSE_LOG("destruct owned ref %s", LuaBaseTypeAlias<BaseUType>::value);
 				delete static_cast<T*>(userData->objPtr);
 				userData->flags &= ~UD_FLAG_OWNED;
+				userData->objPtr = nullptr;
 			}
 		}
 		return 0;
@@ -213,12 +219,12 @@ static void PushValue(lua_State* L, const T& value)
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
-				PushGet<T>::PushObject(L, *value, false, std::is_const_v<T>); 
+				PushGet<T>::PushObject(L, *value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
 			else
 				lua_pushnil(L);
 		}
 		else
-			PushGet<T>::PushObject(L, value, false, std::is_const_v<T>);
+			PushGet<T>::PushObject(L, value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
 	}
 	else if constexpr(std::is_same_v<T, std::nullptr_t>)
 	{
@@ -226,8 +232,9 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else
 	{
+		ESL_VERBOSE_LOG("copy %s on PushValue", LuaBaseTypeAlias<T>::value);
 		// make a copy of object
-		PushGet<T>::PushObject(L, *(PPNew T(value)), true, false);
+		PushGet<T>::PushObject(L, *(PPNew T(value)), UD_FLAG_OWNED);
 	}
 }
 
@@ -422,13 +429,13 @@ struct FunctionCall
 
 		lua_State* L = func.GetState();
 
-		// lua_pushcfunction(L, EqLua::LuaBinding_StackTrace);
-		// const int errIdx = lua_gettop(L);
+		lua_pushcfunction(L, StackTrace);
+		const int errIdx = lua_gettop(L);
 
 		func.Push();
 		PushArguments(L, std::forward<Args>(args)...);
 
-		return InvokeFunc(L, sizeof...(Args));
+		return InvokeFunc(L, sizeof...(Args), errIdx);
 	}
 
 	static Result Invoke(lua_State* L, int funcIndex, Args... args)
@@ -436,10 +443,13 @@ struct FunctionCall
 		if (lua_type(L, funcIndex) != LUA_TFUNCTION)
 			return Result{ false, "is not callable"};
 
+		lua_pushcfunction(L, StackTrace);
+		const int errIdx = lua_gettop(L);
+
 		lua_pushvalue(L, funcIndex);
 		PushArguments(L, std::forward<Args>(args)...);
 
-		return InvokeFunc(L, sizeof...(Args));
+		return InvokeFunc(L, sizeof...(Args), errIdx);
 	}
 
 private:
@@ -452,9 +462,9 @@ private:
 		PushArguments(L, rest...);
 	}
 
-	static Result InvokeFunc(lua_State* L, int numArgs)
+	static Result InvokeFunc(lua_State* L, int numArgs, int errIdx)
 	{
-		const int res = lua_pcall(L, numArgs, std::is_void_v<R> ? LUA_MULTRET : 1, 0);
+		const int res = lua_pcall(L, numArgs, std::is_void_v<R> ? LUA_MULTRET : 1, errIdx);
 		if (res == 0)
 		{
 			if constexpr (std::is_void_v<R>)
@@ -510,7 +520,7 @@ struct ConstructorBinder<T>
 	static int Func(lua_State* L)
 	{
 		T* newObj = PPNew T();
-		runtime::PushGet<T>::PushObject(L, *newObj, true, false);
+		runtime::PushGet<T>::PushObject(L, *newObj, UD_FLAG_OWNED);
 		return 1;
 	}
 };
@@ -522,9 +532,11 @@ struct ConstructorBinder
 	template<size_t... IDX>
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
+		ESL_VERBOSE_LOG("create %s, byval %d", EqScriptClass<T>::className, EqScriptClass<T>::isByVal);
+
 		// Extract arguments from Lua and forward them to the constructor
 		T* newObj = PPNew T(*runtime::GetValue<Args, true>(L, IDX + 1)...);
-		runtime::PushGet<T>::PushObject(L, *newObj, true, false);
+		runtime::PushGet<T>::PushObject(L, *newObj, UD_FLAG_OWNED);
 	}
 
 	static int Func(lua_State* L) 
@@ -556,6 +568,8 @@ struct MemberFunctionBinder<T, FuncPtr, UR, UArgs...> : public esl::ScriptBind
 
 	int Func(lua_State* L)
 	{
+		ESL_VERBOSE_LOG("call member %s:%x", EqScriptClass<T>::className, FuncPtr);
+
 		T* thisPtr = static_cast<T*>(this->thisPtr); // NOTE: unsafe, CallMemberFunc must check types first
 		if constexpr (std::is_void<R>::value)
 		{
@@ -587,6 +601,8 @@ struct MemberFunctionBinder<T, FuncPtr, UR, UArgs...> : public esl::ScriptBind
 
 	int Func(lua_State* L) const
 	{
+		ESL_VERBOSE_LOG("call member %s:%x const", EqScriptClass<T>::className, FuncPtr);
+
 		T* thisPtr = static_cast<T*>(this->thisPtr); // NOTE: unsafe, CallMemberFunc must check types first
 		if constexpr (std::is_void<R>::value)
 		{
@@ -763,9 +779,9 @@ struct StandardOperatorBinder
 		}
 
 		if constexpr (LuaTypeByVal<T>::value)
-			runtime::PushGet<T>::PushObject(L, result, true, false);
+			runtime::PushGet<T>::PushObject(L, result, UD_FLAG_OWNED);
 		else
-			runtime::PushGet<T>::PushObject(L, *(PPNew T(result)), true, false);
+			runtime::PushGet<T>::PushObject(L, *(PPNew T(result)), UD_FLAG_OWNED);
 		return 1;
 	}
 };
