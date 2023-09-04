@@ -200,7 +200,7 @@ esl::bindings::ClassPropMap& esl::bindings::ClassPropetyStorage::Get(int nameHas
 	auto it = GetPropertyMap().find(nameHash);
 	if (it.atEnd())
 	{
-		ASSERT_FAIL("esl Error - no class propert map for class (unregistered?)");
+		ASSERT_FAIL("EqScriptLib Error - no class property map for class (nameHash = %d)", nameHash);
 	}
 
 	return *it;

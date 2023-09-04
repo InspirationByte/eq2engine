@@ -366,7 +366,11 @@ int IndexImpl(lua_State* L)
 	{
 		const int classNameHash = luaL_checkinteger(L, lua_upvalueindex(5 + i));
 
-		esl::bindings::ClassPropMap& classProps = bindings::ClassPropetyStorage::Get(classNameHash);
+		auto classPropMapIt = bindings::ClassPropetyStorage::GetPropertyMap().find(classNameHash);
+		if (classPropMapIt.atEnd())
+			continue;
+
+		const esl::bindings::ClassPropMap& classProps = *classPropMapIt;
 		auto propIt = classProps.find(propNameHash);
 		if (propIt.atEnd())
 			continue;
@@ -422,7 +426,11 @@ int NewIndexImpl(lua_State* L)
 	{
 		const int classNameHash = luaL_checkinteger(L, lua_upvalueindex(5 + i));
 
-		esl::bindings::ClassPropMap& classProps = bindings::ClassPropetyStorage::Get(classNameHash);
+		auto classPropMapIt = bindings::ClassPropetyStorage::GetPropertyMap().find(classNameHash);
+		if (classPropMapIt.atEnd())
+			continue;
+
+		const esl::bindings::ClassPropMap& classProps = *classPropMapIt;
 		auto propIt = classProps.find(propNameHash);
 		if (propIt.atEnd())
 			continue;
