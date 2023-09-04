@@ -6,27 +6,30 @@
 #include "esl_luaref.h"
 #include "esl_runtime.h"
 
+#define ESL_BUILTIN_ALIAS_TYPE(x, n) \
+	template<> const char* esl::LuaTypeAlias<x>::value = n;
+
 // default types. Required.
-ESL_ALIAS_TYPE(bool, "boolean")
-ESL_ALIAS_TYPE(int8, "number")
-ESL_ALIAS_TYPE(uint8, "number")
-ESL_ALIAS_TYPE(int16, "number")
-ESL_ALIAS_TYPE(uint16, "number")
-ESL_ALIAS_TYPE(int, "number")
-ESL_ALIAS_TYPE(long, "number")
-ESL_ALIAS_TYPE(uint, "number")
-ESL_ALIAS_TYPE(int64, "number")
-ESL_ALIAS_TYPE(uint64, "number")
-ESL_ALIAS_TYPE(float, "number")
-ESL_ALIAS_TYPE(double, "number")
-ESL_ALIAS_TYPE(EqString, "string")
+ESL_BUILTIN_ALIAS_TYPE(bool, "boolean")
+ESL_BUILTIN_ALIAS_TYPE(int8, "number")
+ESL_BUILTIN_ALIAS_TYPE(uint8, "number")
+ESL_BUILTIN_ALIAS_TYPE(int16, "number")
+ESL_BUILTIN_ALIAS_TYPE(uint16, "number")
+ESL_BUILTIN_ALIAS_TYPE(int, "number")
+ESL_BUILTIN_ALIAS_TYPE(long, "number")
+ESL_BUILTIN_ALIAS_TYPE(uint, "number")
+ESL_BUILTIN_ALIAS_TYPE(int64, "number")
+ESL_BUILTIN_ALIAS_TYPE(uint64, "number")
+ESL_BUILTIN_ALIAS_TYPE(float, "number")
+ESL_BUILTIN_ALIAS_TYPE(double, "number")
+ESL_BUILTIN_ALIAS_TYPE(EqString, "string")
 
-ESL_ALIAS_TYPE(esl::LuaFunctionRef, "function")
-ESL_ALIAS_TYPE(esl::LuaTableRef, "table")
-ESL_ALIAS_TYPE(esl::LuaTable, "table")
-ESL_ALIAS_TYPE(esl::LuaRawRef, "any")
+ESL_BUILTIN_ALIAS_TYPE(esl::LuaFunctionRef, "function")
+ESL_BUILTIN_ALIAS_TYPE(esl::LuaTableRef, "table")
+ESL_BUILTIN_ALIAS_TYPE(esl::LuaTable, "table")
+ESL_BUILTIN_ALIAS_TYPE(esl::LuaRawRef, "any")
 
-ESL_ALIAS_TYPE(char, "string")	// basically ok
+ESL_BUILTIN_ALIAS_TYPE(char, "string")	// basically ok
 
 namespace esl 
 {

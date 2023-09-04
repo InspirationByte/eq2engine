@@ -95,12 +95,14 @@ template<> struct IsEqString<const EqString&> : std::true_type {};
 
 // Push pull is essential when you want to send or get values from Lua
 template<typename T>
-struct PushGet
+struct PushGetImpl
 {
-	static void PushObject(lua_State* L, const BaseType<StripTraitsT<T>>& obj, int flags)
+	static void PushObject(lua_State* L, const T& obj, int flags)
 	{
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
+		
+		ASSERT_MSG(LuaTypeByVal<BaseUType>::value == EqScriptClass<BaseUType>::isByVal, "Incorrect object push type on PUSH");
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
@@ -110,7 +112,6 @@ struct PushGet
 		}
 		else
 		{
-			flags |= HasToLuaReturnTrait<T>::value ? UD_FLAG_OWNED : 0;
 			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
 			ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
 			ud->type = UD_TYPE_PTR;
@@ -119,10 +120,14 @@ struct PushGet
 		luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 	}
 
-	static decltype(auto) GetObject(lua_State* L, int index)
+	static T* GetObject(lua_State* L, int index)
 	{
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
+
+		static_assert(std::is_trivial_v<BaseUType> == false, "GetObject for trivial type");
+
+		ASSERT_MSG(LuaTypeByVal<BaseUType>::value == EqScriptClass<BaseUType>::isByVal, "Incorrect object push type on GET");
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
@@ -220,15 +225,16 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else if constexpr (IsUserObj<T>::value)
 	{
+		const int retTraitFlag = HasToLuaReturnTrait<T>::value ? UD_FLAG_OWNED : 0;
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
-				PushGet<WT>::PushObject(L, *value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
+				PushGet<BaseType<T>>::Push(L, *value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
 			else
 				lua_pushnil(L);
 		}
 		else
-			PushGet<WT>::PushObject(L, value, std::is_const_v<T> ? UD_FLAG_CONST : 0);
+			PushGet<BaseType<T>>::Push(L, value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
 	}
 	else if constexpr(std::is_same_v<T, std::nullptr_t>)
 	{
@@ -239,13 +245,8 @@ static void PushValue(lua_State* L, const T& value)
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
 
-		if constexpr (!LuaTypeByVal<BaseUType>::value)
-		{
-			ASSERT_FAIL("esl unhandled ref type %s", typeid(T).name());
-		}
-
 		BaseUType pushObj(value);
-		PushGet<T>::PushObject(L, pushObj, UD_FLAG_OWNED);
+		PushGet<BaseUType>::Push(L, pushObj, UD_FLAG_OWNED);
 	}
 }
 
@@ -393,7 +394,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				return Result{ false, std::move(err), nullptr };
 		}
 
-		BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<T>>::GetObject(L, index));
+		BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index));
 
 		if constexpr (std::is_reference_v<UT>)
 			return Result{ true, {}, reinterpret_cast<UT>(*objPtr) };
@@ -534,7 +535,7 @@ struct ConstructorBinder<T>
 	static int Func(lua_State* L)
 	{
 		T* newObj = PPNew T();
-		runtime::PushGet<T>::PushObject(L, *newObj, UD_FLAG_OWNED);
+		runtime::PushGet<T>::Push(L, *newObj, UD_FLAG_OWNED);
 		return 1;
 	}
 };
@@ -555,12 +556,12 @@ struct ConstructorBinder
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
 			T newObjVal(*runtime::GetValue<Args, true>(L, IDX + 1)...);
-			runtime::PushGet<T>::PushObject(L, newObjVal, UD_FLAG_OWNED);
+			runtime::PushGet<T>::Push(L, newObjVal, UD_FLAG_OWNED);
 		}
 		else
 		{
 			T* newObj = PPNew T(*runtime::GetValue<Args, true>(L, IDX + 1)...);
-			runtime::PushGet<T>::PushObject(L, *newObj, UD_FLAG_OWNED);
+			runtime::PushGet<T>::Push(L, *newObj, UD_FLAG_OWNED);
 		}
 	}
 
@@ -574,7 +575,7 @@ struct ConstructorBinder
 template<typename T>
 static auto BindDestructor()
 {
-	return &runtime::PushGet<T>::ObjectDestructor;
+	return &runtime::PushGetImpl<T>::ObjectDestructor;
 }
 
 template<typename T, auto FuncPtr, typename UR, typename ... UArgs>
@@ -818,9 +819,9 @@ struct StandardOperatorBinder
 		}
 
 		if constexpr (LuaTypeByVal<T>::value)
-			runtime::PushGet<T>::PushObject(L, result, UD_FLAG_OWNED);
+			runtime::PushGet<T>::Push(L, result, UD_FLAG_OWNED);
 		else
-			runtime::PushGet<T>::PushObject(L, *(PPNew T(result)), UD_FLAG_OWNED);
+			runtime::PushGet<T>::Push(L, *(PPNew T(result)), UD_FLAG_OWNED);
 		return 1;
 	}
 };

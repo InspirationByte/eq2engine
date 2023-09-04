@@ -80,6 +80,20 @@ struct ClassBinder
 };
 }
 
+namespace esl::runtime
+{
+// Push pull is essential when you want to send or get values from Lua
+template<typename T>
+struct PushGet
+{
+	using PushFunc = void(*)(lua_State* L, const BaseType<T>& obj, int flags);
+	using GetFunc = BaseType<T>* (*)(lua_State* L, int index);
+
+	static PushFunc Push;
+	static GetFunc Get;
+};
+}
+
 template<typename T>
 esl::TypeInfo EqScriptClass<T>::GetTypeInfo()
 {
@@ -167,27 +181,27 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 // type name definition
 #define ESL_ALIAS_TYPE(x, n) \
-	template<> const char* esl::LuaTypeAlias<x>::value = n;
+	template<> inline const char* esl::LuaTypeAlias<x>::value = n;
 
 // Basic type binder
 #define EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
 	ESL_ALIAS_TYPE(Class, name) \
-	template<> const char EqScriptClass<Class>::className[] = name; \
+	template<> inline const char EqScriptClass<Class>::className[] = name; \
 	ESL_PUSH_##type(Class)
 
 // Binder for class without parent type that was bound
 #define EQSCRIPT_BIND_TYPE_NO_PARENT(Class, name, type) \
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
-	template<> bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<Class>::value; \
-	template<> const char* EqScriptClass<Class>::baseClassName = nullptr; \
-	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = {};
+	template<> inline bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<Class>::value; \
+	template<> inline const char* EqScriptClass<Class>::baseClassName = nullptr; \
+	template<> inline esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = {};
 
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name) \
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, INHERIT_PARENT) \
-	template<> bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<ParentClass>::value; \
-	template<> const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
-	template<> esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo();
+	template<> inline bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<ParentClass>::value; \
+	template<> inline const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
+	template<> inline esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo();
 
 // Constructor([ ArgT1, ArgT2, ...ArgTN ])
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
@@ -226,6 +240,10 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 // Begin binding of members
 #define EQSCRIPT_BEGIN_BIND(Class) \
+	namespace esl::runtime { \
+	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
+	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
+	} \
 	template<> ArrayCRef<esl::Member> esl::bindings::ClassBinder<Class>::GetMembers() { \
 		esl::bindings::BaseClassStorage::Add<BindClass>();\
 		static Member members[] = { \
