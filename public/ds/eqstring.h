@@ -181,6 +181,7 @@ public:
 
 	EqString& operator = (EqString&& other) noexcept
 	{
+		Clear();
 		m_nAllocated = other.m_nAllocated;
 		m_nLength = other.m_nLength;
 		m_pszString = other.m_pszString;
