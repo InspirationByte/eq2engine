@@ -106,7 +106,6 @@ struct PushGetImpl
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
-			ASSERT_MSG(HasToLuaReturnTrait<T>::value == false, "%s has ToLua trait on BY_VALUE, change to BY_REF", typeid(BaseUType).name());
 			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
 			new(ud) BaseUType(obj); // FIXME: use move?
 		}
@@ -225,7 +224,7 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else if constexpr (IsUserObj<T>::value)
 	{
-		const int retTraitFlag = HasToLuaReturnTrait<T>::value ? UD_FLAG_OWNED : 0;
+		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
@@ -244,6 +243,7 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
+		static_assert(HasToLuaReturnTrait<WT>::value == false, "ToLua trait makes no sense when type is pushed as BY_VALUE");
 
 		BaseUType pushObj(value);
 		PushGet<BaseUType>::Push(L, pushObj, UD_FLAG_OWNED);
