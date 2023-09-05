@@ -11,7 +11,7 @@ public:
 	~StackGuard();
 private:
 	lua_State*	m_state;
-	int			m_pos;
+	int			m_pos{ 0 };
 };
 
 void* ThisGetterVal(lua_State* L);

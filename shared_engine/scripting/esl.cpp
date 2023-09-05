@@ -94,5 +94,7 @@ esl::LuaTable EqScriptState::CreateTable() const
 {
 	lua_newtable(m_state);
 	const int tableIdx = lua_gettop(m_state);
-	return esl::LuaTable(m_state, tableIdx);
+	esl::LuaTable result = esl::LuaTable(m_state, tableIdx);
+	lua_pop(m_state, 1);
+	return result;
 }

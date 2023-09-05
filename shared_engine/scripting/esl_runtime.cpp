@@ -119,18 +119,23 @@ int StackTrace(lua_State* vm)
 	return 1;
 }
 
-StackGuard::StackGuard(lua_State* L)
+StackGuard::StackGuard(lua_State* L) : m_state(L)
 {
-	m_state = L;
+	if (!L)
+		return;
 	m_pos = lua_gettop(L);
+	//PPDCheck(L->stack.p);
 }
 StackGuard::~StackGuard()
 {
+	if (!m_state)
+		return;
+
+	//PPDCheck(m_state->stack.p);
 	const int currentTop = lua_gettop(m_state);
 	if (currentTop == m_pos)
 		return;
-	lua_pop(m_state, currentTop - m_pos);
-	m_pos = lua_gettop( m_state );
+	lua_settop(m_state, m_pos);
 }
 
 bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName)
