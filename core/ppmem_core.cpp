@@ -36,7 +36,7 @@ using namespace Threading;
 #define PPMEM_EXTRA_DEBUGINFO
 constexpr const uint PPMEM_CHECKMARK	   = MCHAR4('P','P','M','E');
 constexpr const uint PPMEM_CHECKMARK_FREED = MCHAR4('E','M','T','Y');
-constexpr const uint PPMEM_EXTRA_MARKS = 200;
+constexpr const uint PPMEM_EXTRA_MARKS = 4;
 
 struct ppallocinfo_t
 {

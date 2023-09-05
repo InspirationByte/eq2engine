@@ -1901,8 +1901,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 	const btTransform startTrans(shapeRotation, strt);
 	const btTransform endTrans(shapeRotation, endt);
 
-	const int shapeType = params.shape->getShapeType();
-	if(	shapeType > CONCAVE_SHAPES_START_HERE)
+	if(params.shape->getShapeType() > CONCAVE_SHAPES_START_HERE)
 	{
 		ASSERT_FAIL("Only convex shapes are supported as concave shapes!");
 		return false;
