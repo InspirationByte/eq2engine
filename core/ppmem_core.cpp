@@ -34,8 +34,9 @@
 using namespace Threading;
 
 #define PPMEM_EXTRA_DEBUGINFO
-constexpr const uint PPMEM_CHECKMARK =			(0x1df001ed);	// fooled
-constexpr const uint PPMEM_CHECKMARK_FREED =	(0x1dbeefed);	// beefed
+constexpr const uint PPMEM_CHECKMARK	   = MCHAR4('P','P','M','E');
+constexpr const uint PPMEM_CHECKMARK_FREED = MCHAR4('E','M','T','Y');
+constexpr const uint PPMEM_EXTRA_MARKS = 200;
 
 struct ppallocinfo_t
 {
@@ -301,20 +302,20 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 
 	ppmem_state_t& st = PPGetState();
 	// allocate more to store extra information of this
-	ppallocinfo_t* alloc = (ppallocinfo_t*)pp_internal_malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
+	ppallocinfo_t* alloc = (ppallocinfo_t*)pp_internal_malloc(sizeof(ppallocinfo_t) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
 	ASSERT_MSG(alloc, "alloc: no mem left");
 
 	// actual pointer address
-	void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-	uint* checkMark = (uint*)((ubyte*)actualPtr + size);
-
+	void* actualPtr = alloc + 1;
 	{
 		alloc->sl = sl;
 		alloc->size = size;
 		alloc->id = st.allocIdCounter++;
 
 		alloc->checkMark = PPMEM_CHECKMARK;
-		*checkMark = PPMEM_CHECKMARK;
+		uint* tailCheckMark = (uint*)((ubyte*)actualPtr + size);
+		for (int i = 0; i < PPMEM_EXTRA_MARKS; ++i)
+			*tailCheckMark++ = PPMEM_CHECKMARK;
 	}
 
 	// insert to linked list tail
@@ -349,6 +350,19 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 #endif // PPMEM_DISABLED
 }
 
+static int PPMemCmpTailCheckmarks(const ubyte* x)
+{
+	const uint checkmark = PPMEM_CHECKMARK;
+	const ubyte* y = (ubyte*)&checkmark;
+
+	int diff = 0;
+	for (size_t i = 0; i < PPMEM_EXTRA_MARKS * sizeof(uint); i++) 
+		diff += (x[i] != y[i & 3]);
+
+	return diff;
+}
+
+
 // reallocates memory block
 void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 {
@@ -357,70 +371,100 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	ASSERT_MSG(mem, "No mem left");
 	return mem;
 #else
-	void* actualPtr = nullptr;
+	ppmem_state_t& st = PPGetState();
+
+	ppallocinfo_t* r_alloc = (ppallocinfo_t*)ptr - 1;
+	if (ptr == nullptr || r_alloc->checkMark != PPMEM_CHECKMARK)
+	{
+		return PPDAlloc(size, sl);
+	}
 
 	{
-		ppmem_state_t& st = PPGetState();
-
-		ppallocinfo_t* r_alloc = (ppallocinfo_t*)ptr - 1;
-		if (ptr == nullptr || r_alloc->checkMark != PPMEM_CHECKMARK)
-		{
-			return PPDAlloc(size, sl);
-		}
-
-		// remove from linked list first
-		// as realloc might change the pointer
-		{
-			CScopedMutex m(st.allocMemMutex);
-			st.allocMemCounter -= r_alloc->size;
-
-			if (r_alloc->prev == nullptr)
-				st.first = r_alloc->next;
-			else
-				r_alloc->prev->next = r_alloc->next;
-
-			if (r_alloc->next == nullptr)
-				st.last = r_alloc->prev;
-			else
-				r_alloc->next->prev = r_alloc->prev;
-		}
-
-		ppallocinfo_t* alloc = (ppallocinfo_t*)realloc((void*)r_alloc, sizeof(ppallocinfo_t) + size + sizeof(uint));
-		ASSERT_MSG(alloc, "realloc: no mem left!");
-
 		// actual pointer address
-		actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-		uint* checkMark = (uint*)((ubyte*)actualPtr + size);
+		void* actualPtr = r_alloc + 1;
+		uint* tailCheckMark = (uint*)((ubyte*)actualPtr + r_alloc->size);
 
-		{
-			alloc->size = size;
-			*checkMark = PPMEM_CHECKMARK;
-		}
+		const int diff = PPMemCmpTailCheckmarks((ubyte*)tailCheckMark);
+		ASSERT_MSG(r_alloc->checkMark == PPMEM_CHECKMARK, "buffer underflow of %s:%d, investigate with ASAN", r_alloc->sl.GetFileName(), r_alloc->sl.GetLine());
+		ASSERT_MSG(diff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", diff, r_alloc->sl.GetFileName(), r_alloc->sl.GetLine());
+	}
 
-		// insert to linked list tail
-		{
-			CScopedMutex m(st.allocMemMutex);
-			st.allocMemCounter += alloc->size;
+	// remove from linked list first
+	// as realloc might change the pointer
+	{
+		CScopedMutex m(st.allocMemMutex);
+		st.allocMemCounter -= r_alloc->size;
 
-			if (st.last != nullptr)
-				st.last->next = alloc;
-			else
-				st.first = alloc;
+		if (r_alloc->prev == nullptr)
+			st.first = r_alloc->next;
+		else
+			r_alloc->prev->next = r_alloc->next;
 
-			alloc->prev = st.last;
-			alloc->next = nullptr;
-			st.last = alloc;
+		if (r_alloc->next == nullptr)
+			st.last = r_alloc->prev;
+		else
+			r_alloc->next->prev = r_alloc->prev;
+	}
+
+	ppallocinfo_t* alloc = (ppallocinfo_t*)realloc((void*)r_alloc, sizeof(ppallocinfo_t) + size + sizeof(uint) * PPMEM_EXTRA_MARKS);
+	ASSERT_MSG(alloc, "realloc: no mem left!");
+
+	// actual pointer address
+	void* actualPtr = alloc + 1;
+	{
+		alloc->size = size;
+		uint* tailCheckMark = (uint*)((ubyte*)actualPtr + size);
+		for(int i = 0; i < PPMEM_EXTRA_MARKS; ++i)
+			*tailCheckMark++ = PPMEM_CHECKMARK;
+	}
+
+	// insert to linked list tail
+	{
+		CScopedMutex m(st.allocMemMutex);
+		st.allocMemCounter += alloc->size;
+
+		if (st.last != nullptr)
+			st.last->next = alloc;
+		else
+			st.first = alloc;
+
+		alloc->prev = st.last;
+		alloc->next = nullptr;
+		st.last = alloc;
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
-			ppmem_src_counter_t& cnt = st.sourceCounterMap[sl.data];
-			++cnt.count;
-			cnt.lastTime = st.timer.GetTimeMS();
+		ppmem_src_counter_t& cnt = st.sourceCounterMap[sl.data];
+		++cnt.count;
+		cnt.lastTime = st.timer.GetTimeMS();
 #endif
-		}
 	}
 
 	return actualPtr;
 #endif // PPMEM_DISABLED
+}
+
+IEXPORTS void PPDCheck(void* ptr)
+{
+#ifndef PPMEM_DISABLED
+	ppmem_state_t& st = PPGetState();
+
+	ppallocinfo_t* alloc = (ppallocinfo_t*)ptr - 1;
+	if (ptr == nullptr || alloc->checkMark != PPMEM_CHECKMARK)
+		return;
+
+	// actual pointer address
+	void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+	uint* tailCheckMark = (uint*)((ubyte*)actualPtr + alloc->size);
+
+	const int diff = PPMemCmpTailCheckmarks((ubyte*)tailCheckMark);
+	ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "buffer underflow of %s:%d, investigate with ASAN", alloc->sl.GetFileName(), alloc->sl.GetLine());
+	ASSERT_MSG(diff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", diff, alloc->sl.GetFileName(), alloc->sl.GetLine());
+
+	// try restoring memory region so app will try to crash if somehow it uses it
+	//alloc->checkMark = PPMEM_CHECKMARK;
+	//for (int i = 0; i < PPMEM_EXTRA_MARKS; ++i)
+	//	*tailCheckMark++ = PPMEM_CHECKMARK;
+#endif
 }
 
 void PPFree(void* ptr)
@@ -432,45 +476,47 @@ void PPFree(void* ptr)
 	if(ptr == nullptr)
 		return;
 
+	ppmem_state_t& st = PPGetState();
+
+	ppallocinfo_t* alloc = (ppallocinfo_t*)ptr - 1;
+	if(alloc->checkMark != PPMEM_CHECKMARK)
 	{
-		ppmem_state_t& st = PPGetState();
+		free(ptr);
+		return;
+	}
 
-		ppallocinfo_t* alloc = (ppallocinfo_t*)ptr - 1;
-		if(alloc->checkMark != PPMEM_CHECKMARK)
-		{
-			free(ptr);
-			return;
-		}
-
+	{
 		// actual pointer address
 		void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-		uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
+		uint* tailCheckMark = (uint*)((ubyte*)actualPtr + alloc->size);
 
-		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "buffer underrun detected by PPMem");
-		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "buffer overrun detected by PPMem");
+		const int diff = PPMemCmpTailCheckmarks((ubyte*)tailCheckMark);
+		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "buffer underflow of %s:%d, investigate with ASAN", alloc->sl.GetFileName(), alloc->sl.GetLine());
+		ASSERT_MSG(diff == 0, "buffer overflow by %d bytes of %s:%d, investigate with ASAN", diff, alloc->sl.GetFileName(), alloc->sl.GetLine());
 
 		// set check marks to indicate freed mem regions
 		alloc->checkMark = PPMEM_CHECKMARK_FREED;
-		*checkMark = PPMEM_CHECKMARK_FREED;
-
-		// remove from linked list
-		{
-			CScopedMutex m(st.allocMemMutex);
-			--st.numAllocs;
-			st.allocMemCounter -= alloc->size;
-
-			if (alloc->prev == nullptr)
-				st.first = alloc->next;
-			else
-				alloc->prev->next = alloc->next;
-
-			if (alloc->next == nullptr)
-				st.last = alloc->prev;
-			else
-				alloc->next->prev = alloc->prev;
-		}
-
-		free((void*)alloc);
+		for (int i = 0; i < PPMEM_EXTRA_MARKS; ++i)
+			*tailCheckMark++ = PPMEM_CHECKMARK_FREED;
 	}
+
+	// remove from linked list
+	{
+		CScopedMutex m(st.allocMemMutex);
+		--st.numAllocs;
+		st.allocMemCounter -= alloc->size;
+
+		if (alloc->prev == nullptr)
+			st.first = alloc->next;
+		else
+			alloc->prev->next = alloc->next;
+
+		if (alloc->next == nullptr)
+			st.last = alloc->prev;
+		else
+			alloc->next->prev = alloc->prev;
+	}
+
+	free((void*)alloc);
 #endif // PPMEM_DISABLED
 }

@@ -14,6 +14,7 @@ IEXPORTS size_t	PPMemGetUsage();
 
 IEXPORTS void*	PPDAlloc( size_t size, const PPSourceLine& sl );
 IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl );
+IEXPORTS void	PPDCheck( void* ptr );
 
 IEXPORTS void	PPFree( void* ptr );
 

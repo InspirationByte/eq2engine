@@ -49,7 +49,7 @@ Folders = {
 workspace(WORKSPACE_NAME)
     language "C++"
 	cppdialect "C++17"	-- required for sol2
-    configurations { "Debug", "Release", "Profile", "Retail" }
+    configurations { "Debug", "Release", "ReleaseAsan", "Profile", "Retail" }
 	linkgroups 'On'
 	
 	--characterset "ASCII"
@@ -176,7 +176,14 @@ workspace(WORKSPACE_NAME)
         }
 		optimize "On"
 		symbols "On"
-		--sanitize "address"
+		
+	filter "configurations:ReleaseAsan"
+        defines {
+            "NDEBUG",
+        }
+		optimize "On"
+		symbols "On"
+		sanitize "address"
 
 	filter "configurations:Profile"
         defines {

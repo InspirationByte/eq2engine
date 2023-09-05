@@ -18,7 +18,7 @@
 #define EQSTRING_BASE_BUFFER	32
 
 const EqWString EqWString::EmptyStr;
-static const PPSourceLine EqWStringSL = PPSourceLine::Make("EqWString", 0);
+static const PPSourceLine EqWStringSL = PPSourceLine::Make(nullptr, 0);
 
 EqWString::EqWString()
 {

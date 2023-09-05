@@ -24,7 +24,7 @@
 #define EQSTRING_BASE_BUFFER	32
 
 const EqString EqString::EmptyStr;
-static const PPSourceLine EqStringSL = PPSourceLine::Make("EqString", 0);
+static const PPSourceLine EqStringSL = PPSourceLine::Make(nullptr, 0);
 
 EqString::EqString()
 {
