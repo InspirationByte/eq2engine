@@ -292,19 +292,25 @@ int CompareBoxedPointers(lua_State* L)
 	return 1;
 }
 
-static int IndexImplBasic(lua_State* L, bool checkBaseClasses)
+static int IndexImplBasic(lua_State* L, EqFunction<int(const Member*)> onVariableIndexed)
 {
 	// lookup in class metatable first
 	{
 		lua_pushvalue(L, 2);
 		lua_rawget(L, lua_upvalueindex(1)); // methods[key]
-		if (!lua_isnil(L, -1))
+		const int type = lua_type(L, -1);
+		if (type == LUA_TFUNCTION)
+		{
 			return 1;
+		}
+		else if (type == LUA_TLIGHTUSERDATA)
+		{
+			const Member* memberVar = static_cast<const Member*>(lua_touserdata(L, -1));
+			lua_pop(L, 1);
+			return onVariableIndexed(memberVar);
+		}
 		lua_pop(L, 1);
 	}
-
-	if (!checkBaseClasses)
-		return 0;
 
 	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 
@@ -321,12 +327,20 @@ static int IndexImplBasic(lua_State* L, bool checkBaseClasses)
 
 		lua_pushvalue(L, 2);
 		lua_rawget(L, -2); // parentMethods[key]
-		if (!lua_isnil(L, -1))
+
+		const int type = lua_type(L, -1);
+		if (type == LUA_TFUNCTION)
 		{
 			lua_replace(L, 3);
 			return 1;
 		}
-		lua_pop(L, 1);
+		else if (type == LUA_TLIGHTUSERDATA)
+		{
+			const Member* memberVar = static_cast<const Member*>(lua_touserdata(L, -1));
+			lua_pop(L, 2);
+			return onVariableIndexed(memberVar);
+		}
+		lua_pop(L, 2);
 
 		classNameLookup = bindings::BaseClassStorage::Get(className);
 	}
@@ -345,42 +359,15 @@ int IndexImpl(lua_State* L)
 
 	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
 
-	const int ret = IndexImplBasic(L, true);
-	if (ret > 0)
-		return ret;
-
-	// lookup a property for getter
-
-	// self, key
-	const char* key = luaL_checkstring(L, 2);
-	const int propNameHash = StringToHash(key);
-
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
-	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
-
 	void* userData = thisGetter(L);
 
-	// look up each class down to base
-	const int numClasses = luaL_checknumber(L, lua_upvalueindex(4));
-	for (int i = 0; i < numClasses; ++i)
-	{
-		const int classNameHash = luaL_checkinteger(L, lua_upvalueindex(5 + i));
-
-		auto classPropMapIt = bindings::ClassPropetyStorage::GetPropertyMap().find(classNameHash);
-		if (classPropMapIt.atEnd())
-			continue;
-
-		const esl::bindings::ClassPropMap& classProps = *classPropMapIt;
-		auto propIt = classProps.find(propNameHash);
-		if (propIt.atEnd())
-			continue;
-
-		const esl::Member* mem = *propIt;
+	auto onVariableIndexed = [&](const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
-
 		if (!userData)
 		{
 			// TODO: ThrowError
+			const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
 			return 0;
 		}
@@ -388,10 +375,17 @@ int IndexImpl(lua_State* L)
 		lua_settop(L, 1);
 		esl::ScriptBind bindObj{ userData };
 		return (bindObj.*(mem->getFunc))(L);
-	}
+	};
+
+	const int ret = IndexImplBasic(L, onVariableIndexed);
+	if (ret > 0)
+		return ret;
 
 	if (userData)
+	{
+		const char* key = luaL_checkstring(L, 2);
 		luaL_error(L, "cannot index variable '%s'", key);
+	}
 
 	lua_pushnil(L);
 	return 1;
@@ -408,40 +402,15 @@ int NewIndexImpl(lua_State* L)
 
 	ESL_VERBOSE_LOG("__newindex %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
 
-	const int ret = IndexImplBasic(L, true);
-	if (ret > 0)
-		return ret;
-
-	// lookup a property for setter
-
-	// self, key, value
-	const int propNameHash = StringToHash(luaL_checkstring(L, 2));
-
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
-	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
-	
-	// look up each class down to base
-	const int numClasses = luaL_checknumber(L, lua_upvalueindex(4));
-	for (int i = 0; i < numClasses; ++i)
-	{
-		const int classNameHash = luaL_checkinteger(L, lua_upvalueindex(5 + i));
+	void* userData = thisGetter(L);
 
-		auto classPropMapIt = bindings::ClassPropetyStorage::GetPropertyMap().find(classNameHash);
-		if (classPropMapIt.atEnd())
-			continue;
-
-		const esl::bindings::ClassPropMap& classProps = *classPropMapIt;
-		auto propIt = classProps.find(propNameHash);
-		if (propIt.atEnd())
-			continue;
-
-		const esl::Member* mem = *propIt;
+	auto onVariableIndexed = [&](const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
-
-		void* userData = thisGetter(L);
 		if (!userData)
 		{
 			// TODO: ThrowError
+			const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
 			return 0;
 		}
@@ -450,7 +419,11 @@ int NewIndexImpl(lua_State* L)
 		lua_replace(L, 1);
 		esl::ScriptBind bindObj{ userData };
 		return (bindObj.*(mem->func))(L);
-	}
+	};
+
+	const int ret = IndexImplBasic(L, onVariableIndexed);
+	if (ret > 0)
+		return ret;
 
 	lua_pushnil(L);
 	return 1;

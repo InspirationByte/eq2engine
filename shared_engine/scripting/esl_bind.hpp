@@ -920,13 +920,6 @@ Member ClassBinder<T>::MakeOperator(const char* name)
 }
 
 template<typename T>
-esl::bindings::ClassPropMap& esl::bindings::ClassPropetyStorage::Get()
-{
-	const int nameHash = StringToHash(EqScriptClass<T>::className);
-	return Get(nameHash);
-}
-
-template<typename T>
 void BaseClassStorage::Add()
 {
 	const int nameHash = StringToHash(EqScriptClass<T>::className);

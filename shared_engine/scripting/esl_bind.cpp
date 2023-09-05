@@ -178,8 +178,9 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		}
 		else if (mem.type == esl::MEMB_VAR)
 		{
-			esl::bindings::ClassPropMap& classProps = bindings::ClassPropetyStorage::GetPropertyMap()[classNameHash];
-			classProps.insert(mem.nameHash, &mem);
+			lua_pushstring(L, mem.name);
+			lua_pushlightuserdata(L, const_cast<Member*>(&mem));
+			lua_rawset(L, methods);
 		}
 	}
 
@@ -187,23 +188,6 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	lua_setmetatable(L, methods); // set methods as it's own metatable
 	lua_pop(L, 2);
 }
-}
-
-Map<int, esl::bindings::ClassPropMap>& esl::bindings::ClassPropetyStorage::GetPropertyMap()
-{
-	static Map<int, esl::bindings::ClassPropMap> propertyStorage{ PP_SL };
-	return propertyStorage;
-}
-
-esl::bindings::ClassPropMap& esl::bindings::ClassPropetyStorage::Get(int nameHash)
-{
-	auto it = GetPropertyMap().find(nameHash);
-	if (it.atEnd())
-	{
-		ASSERT_FAIL("EqScriptLib Error - no class property map for class (nameHash = %d)", nameHash);
-	}
-
-	return *it;
 }
 
 Map<int, EqString>& esl::bindings::BaseClassStorage::GetBaseClassNames()
