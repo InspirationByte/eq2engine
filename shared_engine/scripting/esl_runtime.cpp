@@ -347,7 +347,7 @@ static int IndexImplBasic(lua_State* L, EqFunction<int(const Member*)> onVariabl
 		}
 		lua_pop(L, 2);
 
-		classNameLookup = bindings::BaseClassStorage::Get(className);
+		classNameLookup = bindings::BaseClassStorage::Get(classNameLookup);
 	}
 
 	return 0;
