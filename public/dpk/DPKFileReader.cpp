@@ -179,7 +179,7 @@ size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
 }
 
 // seeks pointer to position
-int	CDPKFileStream::Seek(long nOffset, EVirtStreamSeek seekType)
+int	CDPKFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
 {
 	int newOfs = m_curPos;
 
@@ -226,13 +226,13 @@ void CDPKFileStream::Print(const char* fmt, ...)
 }
 
 // returns current pointer position
-long CDPKFileStream::Tell() const
+int CDPKFileStream::Tell() const
 {
 	return m_curPos;
 }
 
 // returns memory allocated for this stream
-long CDPKFileStream::GetSize()
+int CDPKFileStream::GetSize()
 {
 	return m_info.size;
 }

@@ -428,7 +428,7 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 
 bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 {
-	long fileSize = 0;
+	int fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if (!fileBuffer)
@@ -488,7 +488,7 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 {
 	ASSERT(model);
 
-	long fileSize = 0;
+	int fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if (!fileBuffer)
@@ -536,7 +536,7 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 // EGF compiler variant
 bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 {
-	long fileSize = 0;
+	int fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if (!fileBuffer)
@@ -964,7 +964,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 
 bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename, const char* meshFilter)
 {
-	long fileSize = 0;
+	int fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 	if (!fileBuffer)
 	{

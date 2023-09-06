@@ -591,7 +591,7 @@ bool CImage::LoadJPEGfromHandle(IFilePtr fileHandle)
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_decompress(&cinfo);
 
-	const long fileSize = fileHandle->GetSize();
+	const int fileSize = fileHandle->GetSize();
 	ubyte* jpegFileBuff = (ubyte*)PPAlloc(fileSize);
 	fileHandle->Read(jpegFileBuff, 1, fileSize);
 	fileHandle = nullptr;

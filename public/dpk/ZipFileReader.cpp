@@ -45,7 +45,7 @@ size_t CZipFileStream::Write(const void *src, size_t count, size_t size)
 }
 
 // seeks pointer to position
-int	CZipFileStream::Seek(long nOffset, EVirtStreamSeek seekType)
+int	CZipFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
 {
 	int newOfs = 0;
 	char dummy[32*1024];
@@ -98,13 +98,13 @@ void CZipFileStream::Print(const char* fmt, ...)
 }
 
 // returns current pointer position
-long CZipFileStream::Tell() const
+int CZipFileStream::Tell() const
 {
 	return unztell(m_zipHandle);
 }
 
 // returns memory allocated for this stream
-long CZipFileStream::GetSize()
+int CZipFileStream::GetSize()
 {
 	return m_finfo.uncompressed_size;
 }

@@ -64,12 +64,12 @@ CFile::CFile(const char* fileName, COSFile&& file)
 {
 }
 
-int	CFile::Seek( long pos, EVirtStreamSeek seekType )
+int	CFile::Seek(int pos, EVirtStreamSeek seekType )
 {
 	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType) );
 }
 
-long CFile::Tell() const
+int CFile::Tell() const
 {
 	return m_osFile.Tell();
 }
@@ -96,14 +96,12 @@ bool CFile::Flush()
 	return m_osFile.Flush();
 }
 
-long CFile::GetSize()
+int CFile::GetSize()
 {
-	long pos = Tell();
-
+	const int pos = Tell();
 	Seek(0, VS_SEEK_END);
 
-	long length = Tell();
-
+	const int length = Tell();
 	Seek(pos, VS_SEEK_SET);
 
 	return length;
@@ -111,8 +109,8 @@ long CFile::GetSize()
 
 uint32 CFile::GetCRC32()
 {
-	long pos = Tell();
-	long fSize = GetSize();
+	int pos = Tell();
+	int fSize = GetSize();
 
 	ubyte* pFileData = (ubyte*)PPAlloc(fSize+16);
 
@@ -413,14 +411,14 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 	return fileHandle;
 }
 
-ubyte* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
+ubyte* CFileSystem::GetFileBuffer(const char* filename, int* filesize/* = 0*/, int searchFlags/* = -1*/)
 {
 	IFilePtr pFile = Open(filename, "rb", searchFlags);
 
     if (!pFile)
         return nullptr;
 
-    const long length = pFile->GetSize();
+    const int length = pFile->GetSize();
     ubyte *buffer = (ubyte*)PPAlloc(length + 1);
 
     if (!buffer)
@@ -437,14 +435,14 @@ ubyte* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, i
     return buffer;
 }
 
-long CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
+int CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
 {
     IFilePtr file = Open(filename,"rb",searchFlags);
 
     if (!file)
         return 0;
 
-	long rSize = file->GetSize();
+	int rSize = file->GetSize();
     return rSize;
 }
 

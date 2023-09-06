@@ -18,7 +18,7 @@ Buffer::Buffer()
 	m_data.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 128);
 }
 
-Buffer::Buffer(CMemoryStream& stream, long startOfs /*= -1*/) 
+Buffer::Buffer(CMemoryStream& stream, int startOfs /*= -1*/)
 	: m_data(stream)
 {
 	m_startOfs = startOfs == -1 ? m_data.Tell() : startOfs;

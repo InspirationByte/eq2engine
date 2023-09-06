@@ -47,7 +47,7 @@ studioHdr_t* Studio_LoadModel(const char* pszPath)
 		return nullptr;
 	}
 
-	const long len = file->GetSize();
+	const int len = file->GetSize();
 	char* _buffer = (char*)PPAlloc(len+32); // +32 bytes for conversion issues
 
 	file->Read(_buffer, 1, len);

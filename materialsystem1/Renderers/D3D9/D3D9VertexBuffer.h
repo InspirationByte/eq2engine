@@ -42,8 +42,8 @@ protected:
 	int							m_flags;
 
 	LPDIRECT3DVERTEXBUFFER9		m_pVertexBuffer;
-	long						m_nSize;
-	long						m_nInitialSize;
+	int							m_nSize;
+	int							m_nInitialSize;
 
 	int							m_nNumVertices;
 	int							m_nStrideSize;

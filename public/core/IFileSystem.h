@@ -80,8 +80,8 @@ public:
 
 	// The next ones are deprecated and will be removed
 
-    virtual ubyte*			GetFileBuffer(const char* filename, long *filesize = 0, int searchFlags = -1) = 0;
-    virtual long			GetFileSize(const char* filename, int searchFlags = -1) = 0;
+    virtual ubyte*			GetFileBuffer(const char* filename, int* filesize = 0, int searchFlags = -1) = 0;
+    virtual int				GetFileSize(const char* filename, int searchFlags = -1) = 0;
 	virtual uint32			GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 
 	//------------------------------------------------------------

@@ -84,7 +84,7 @@ struct udp_cdp_hdr_s
 	ubyte			protocol_version;		// UDP_RCP_PROTOCOL_VERSION
 	ubyte			flags;					// message flags ( ECDPSendFlags )
 
-	//unsigned long	crc32;					// message CRC32
+	//uint			crc32;					// message CRC32
 	short			message_id;				// less than CDP_MAX_MESSAGE_ID
 };
 

@@ -21,8 +21,8 @@ class CFile : public IFile
 public:
 	CFile(const char* fileName, COSFile&& file);
 
-    int					Seek( long pos, EVirtStreamSeek seekType );
-    long				Tell() const;
+    int					Seek(int pos, EVirtStreamSeek seekType );
+    int					Tell() const;
     size_t				Read( void *dest, size_t count, size_t size);
     size_t				Write( const void *src, size_t count, size_t size);
 
@@ -30,7 +30,7 @@ public:
 
 	uint32				GetCRC32();
 
-	long				GetSize();
+	int					GetSize();
 
 	VirtStreamType_e	GetType() const { return VS_TYPE_FILE; }
 
@@ -96,8 +96,8 @@ public:
 
 	// The next ones are deprecated and will be removed
 
-    ubyte*						GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1);
-    long						GetFileSize(const char* filename, int searchFlags = -1);
+    ubyte*						GetFileBuffer(const char* filename, int* filesize = 0, int searchFlags = -1);
+	int							GetFileSize(const char* filename, int searchFlags = -1);
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 
 	//------------------------------------------------------------

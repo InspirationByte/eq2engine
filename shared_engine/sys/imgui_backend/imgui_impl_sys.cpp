@@ -133,7 +133,7 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
 
     if (fontFile)
     {
-        const long length = fontFile->GetSize();
+        const int length = fontFile->GetSize();
         char* buffer = (char*)IM_ALLOC(length);
         fontFile->Read(buffer, 1, length);
         fontFile = nullptr;

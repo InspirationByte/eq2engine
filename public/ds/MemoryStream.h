@@ -33,13 +33,13 @@ public:
 	size_t				Write(const void *src, size_t count, size_t size);
 
 	// seeks pointer to position
-	int					Seek(long nOffset, EVirtStreamSeek seekType);
+	int					Seek(int nOffset, EVirtStreamSeek seekType);
 
 	// returns current pointer position
-	long				Tell() const;
+	int					Tell() const;
 
 	// returns memory allocated for this stream
-	long				GetSize();
+	int					GetSize();
 
 	// flushes stream, doesn't affects on memory stream
 	bool				Flush();
@@ -58,7 +58,7 @@ public:
 	void				WriteToStream(IVirtualStream* pStream, int maxSize = 0);
 
 	// resizes buffer to specified size (finalize buffer for reading)
-	void				ShrinkBuffer(long size);
+	void				ShrinkBuffer(int size);
 
 	// returns current pointer to the stream (only memory stream)
 	ubyte*				GetCurrentPointer();
@@ -69,15 +69,15 @@ public:
 protected:
 
 	// reallocates memory
-	void				ReAllocate(long nNewSize);
+	void				ReAllocate(int nNewSize);
 
 private:
 	PPSourceLine		m_sl;
 	ubyte*				m_start{ nullptr };
 	ubyte*				m_currentPtr{ nullptr };
-	long				m_writeTop{ 0 };
+	int					m_writeTop{ 0 };
 
-	long				m_allocatedSize{ 0 };
-	long				m_openFlags{ 0 };
+	int					m_allocatedSize{ 0 };
+	int					m_openFlags{ 0 };
 	bool				m_ownBuffer{ false };
 };

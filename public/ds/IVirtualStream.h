@@ -70,16 +70,16 @@ public:
 	size_t						Write(const T* obj, size_t count = 1) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
 
 	// seeks pointer to position
-	virtual int					Seek( long nOffset, EVirtStreamSeek seekType) = 0;
+	virtual int					Seek(int offset, EVirtStreamSeek seekType) = 0;
 
 	// fprintf analog
 	virtual	void				Print(const char* fmt, ...);
 
 	// returns current pointer position
-	virtual long				Tell() const = 0;
+	virtual int					Tell() const = 0;
 
 	// returns memory allocated for this stream
-	virtual long				GetSize() = 0;
+	virtual int					GetSize() = 0;
 
 	// flushes stream from memory
 	virtual bool				Flush() = 0;

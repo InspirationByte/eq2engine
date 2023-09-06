@@ -52,7 +52,7 @@ CMemoryStream::~CMemoryStream()
 size_t CMemoryStream::Read(void *dest, size_t count, size_t size)
 {
 	ASSERT(m_openFlags & VS_OPEN_READ);
-	const long curPos = Tell();
+	const int curPos = Tell();
 	ASSERT_MSG(curPos + size * count <= m_allocatedSize, "Reading more than CMemoryStream has (expected capacity %d, has %d)", curPos + size * count, m_allocatedSize);
 
 	const size_t readBytes = min(static_cast<size_t>(curPos + size * count), static_cast<size_t>(m_allocatedSize)) - curPos;
@@ -68,13 +68,13 @@ size_t CMemoryStream::Write(const void *src, size_t count, size_t size)
 {
 	ASSERT(m_openFlags & VS_OPEN_WRITE);
 
-	const long nAddBytes = size*count;
-	const long nCurrPos = Tell();
+	const int nAddBytes = size * count;
+	const int nCurrPos = Tell();
 
 	if(nCurrPos+nAddBytes > m_allocatedSize)
 	{
-		const long memDiff = (nCurrPos + nAddBytes) - m_allocatedSize;
-		long newSize = m_allocatedSize + memDiff + VSTREAM_GRANULARITY - 1;
+		const int memDiff = (nCurrPos + nAddBytes) - m_allocatedSize;
+		int newSize = m_allocatedSize + memDiff + VSTREAM_GRANULARITY - 1;
 		newSize -= newSize % VSTREAM_GRANULARITY;
 
 		ReAllocate( newSize );
@@ -90,7 +90,7 @@ size_t CMemoryStream::Write(const void *src, size_t count, size_t size)
 }
 
 // seeks pointer to position
-int CMemoryStream::Seek(long nOffset, EVirtStreamSeek seekType)
+int CMemoryStream::Seek(int nOffset, EVirtStreamSeek seekType)
 {
 	ASSERT(m_openFlags != 0);
 
@@ -113,12 +113,12 @@ int CMemoryStream::Seek(long nOffset, EVirtStreamSeek seekType)
 }
 
 // returns current pointer position
-long CMemoryStream::Tell() const
+int CMemoryStream::Tell() const
 {
 	return m_currentPtr - m_start;
 }
 
-long CMemoryStream::GetSize()
+int CMemoryStream::GetSize()
 {
 	return m_writeTop;
 }
@@ -166,7 +166,7 @@ bool CMemoryStream::Flush()
 }
 
 // reallocates memory
-void CMemoryStream::ReAllocate(long nNewSize)
+void CMemoryStream::ReAllocate(int nNewSize)
 {
 	if(nNewSize == m_allocatedSize)
 		return;
@@ -178,7 +178,7 @@ void CMemoryStream::ReAllocate(long nNewSize)
 		return;
 	}
 	
-	const long curPos = Tell();
+	const int curPos = Tell();
 	m_start = (ubyte*)PPDReAlloc(m_start, nNewSize, m_sl);
 	ASSERT_MSG(m_start, "CMemoryStream reallocate failed!");
 
@@ -187,7 +187,7 @@ void CMemoryStream::ReAllocate(long nNewSize)
 }
 
 // resizes buffer to specified size
-void CMemoryStream::ShrinkBuffer(long size)
+void CMemoryStream::ShrinkBuffer(int size)
 {
 	if(size < m_allocatedSize)
 	{

@@ -736,7 +736,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		if (!file)
 			return nullptr;
 
-		const long length = file->GetSize();
+		const int length = file->GetSize();
 		char* buffer = (char*)malloc(length + 1);
 
 		file->Read(buffer, 1, length);
