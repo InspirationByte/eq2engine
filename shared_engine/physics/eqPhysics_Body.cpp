@@ -145,18 +145,19 @@ float CEqRigidBody::GetInvMass() const
 	return m_invMass;
 }
 
-void CEqRigidBody::TryWake( bool velocityCheck )
+bool CEqRigidBody::TryWake( bool velocityCheck )
 {
 	if(m_flags & BODY_FORCE_FREEZE)
-		return;
+		return false;
 
-	if( velocityCheck && 
+	if (velocityCheck &&
 		lengthSqr(m_linearVelocity) < BODY_MIN_VELOCITY_WAKE &&
 		lengthSqr(m_angularVelocity) < BODY_MIN_VELOCITY_WAKE_ANG)
-		return;
+		return false;
 
 	m_flags &= ~BODY_FROZEN;
 	m_freezeTime = BODY_FREEZE_TIME;
+	return true;
 }
 
 void CEqRigidBody::Wake()

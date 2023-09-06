@@ -150,7 +150,7 @@ public:
 
 	const Matrix3x3&		GetWorldInvInertiaTensor() const;											///< returns world transformed inverse inertia tensor
 
-	void					TryWake( bool velocityCheck = true );										///< tries to wake the body up
+	bool					TryWake( bool velocityCheck = true );										///< tries to wake the body up
 	void					Wake();																		///< unfreezes the body even if it was forced to freeze
 	void					Freeze();																	///< force freezes body and external powers will not wake it up
 	bool					IsFrozen() const;															///< indicates that body has been frozen (forced or timed out)
