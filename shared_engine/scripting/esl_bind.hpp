@@ -119,7 +119,7 @@ struct PushGetImpl
 		luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 	}
 
-	static T* GetObject(lua_State* L, int index)
+	static T* GetObject(lua_State* L, int index, bool toCpp)
 	{
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
@@ -140,7 +140,7 @@ struct PushGetImpl
 				return static_cast<BaseUType*>(nullptr);
 
 			// drop ownership flag when ToCpp is specified
-			if constexpr (HasToCppParamTrait<T>::value)
+			if(toCpp)
 				userData->flags &= ~UD_FLAG_OWNED;
 
 			return static_cast<BaseUType*>(userData ? userData->objPtr : nullptr);
@@ -356,6 +356,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (IsUserObj<UT>::value)
 	{
+		const bool toCpp = HasToCppParamTrait<T>::value;
+
 		const int type = lua_type(L, index);
 		if (type != LUA_TUSERDATA)
 		{
@@ -394,7 +396,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				return Result{ false, std::move(err), nullptr };
 		}
 
-		BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index));
+		BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp));
 
 		if constexpr (std::is_reference_v<UT>)
 			return Result{ true, {}, reinterpret_cast<UT>(*objPtr) };
@@ -525,6 +527,9 @@ struct TransformSignature<R(C::*)(Args...) const>
 template <typename Func>
 using TransformSignatureT = typename TransformSignature<Func>::type;
 
+//---------------------------------------------------------------
+// Constructor binder
+
 template<typename T, typename... Args>
 struct ConstructorBinder;
 
@@ -577,6 +582,9 @@ static auto BindDestructor()
 {
 	return &runtime::PushGetImpl<T>::ObjectDestructor;
 }
+
+//---------------------------------------------------------------
+// Member function binder
 
 template<typename T, auto FuncPtr, typename UR, typename ... UArgs>
 struct MemberFunctionBinder;
@@ -651,14 +659,10 @@ template<typename T, auto FuncPtr>
 struct MemberFunctionBinderNoTraits;
 
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...)>
-struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, R, Args...>
-{
-};
+struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, R, Args...> {};
 
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...) const>
-struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, R, Args...>
-{
-};
+struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, R, Args...> {};
 
 template<typename T, auto FuncPtr, typename UR, typename ... UArgs>
 static auto BindMemberFunction() 
@@ -681,6 +685,9 @@ static auto BindMemberFunction()
 			return static_cast<BindFunc>(&MemberFunctionBinder<T, FuncPtr, UR, UArgs...>::Func);
 	}
 }
+
+//---------------------------------------------------------------
+// C (non-member) Function binder
 
 template<auto FuncPtr, typename UR, typename ... UArgs>
 struct FunctionBinder;
@@ -714,9 +721,7 @@ template<auto FuncPtr>
 struct FunctionBinderNoTraits;
 
 template<typename R, typename ... Args, R FuncPtr(Args...)>
-struct FunctionBinderNoTraits<FuncPtr> : public FunctionBinder<FuncPtr, R, Args...>
-{
-};
+struct FunctionBinderNoTraits<FuncPtr> : public FunctionBinder<FuncPtr, R, Args...> {};
 
 template<auto FuncPtr, typename UR = void, typename ... UArgs>
 static lua_CFunction BindCFunction()
@@ -736,7 +741,7 @@ struct VariableBinder;
 template<typename T, typename V, V T::* MemberVar>
 struct VariableBinder<T, MemberVar> : public esl::ScriptBind
 {
-	int GetterFunc(lua_State* L)
+	int GetterFunc(lua_State* L) const
 	{
 		T* thisPtr = static_cast<T*>(this->thisPtr);	// NOTE: unsafe, CallMemberFunc must check types first
 		runtime::PushValue<V>(L, thisPtr->*MemberVar);
@@ -759,7 +764,7 @@ struct VariableBinder<T, MemberVar> : public esl::ScriptBind
 template<typename T, auto V>
 static auto BindVariableGetter()
 {
-	return static_cast<typename esl::ScriptBind::BindFunc>(&VariableBinder<T, V>::GetterFunc);
+	return static_cast<typename esl::ScriptBind::BindFuncConst>(&VariableBinder<T, V>::GetterFunc);
 }
 
 template<typename T, auto V>
@@ -767,6 +772,9 @@ static auto BindVariableSetter()
 {
 	return static_cast<typename esl::ScriptBind::BindFunc>(&VariableBinder<T, V>::SetterFunc);
 }
+
+//---------------------------------------------------------------
+// Default operator binder
 
 template<typename T, EOpType OpType>
 struct StandardOperatorBinder

@@ -75,7 +75,7 @@ template<typename T>
 struct PushGet
 {
 	using PushFunc = void(*)(lua_State* L, const BaseType<T>& obj, int flags);
-	using GetFunc = BaseType<T>* (*)(lua_State* L, int index);
+	using GetFunc = BaseType<T>* (*)(lua_State* L, int index, bool toCpp);
 
 	static PushFunc Push;
 	static GetFunc Get;
@@ -133,6 +133,16 @@ void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
 	esl::LuaTable metaTable(m_state, top);
 	metaTable.Set(k, v);
 	lua_pop(m_state, 1); // getglobal
+}
+
+template<typename T>
+esl::LuaTable EqScriptState::GetClassTable() const
+{
+	lua_getglobal(m_state, EqScriptClass<T>::className);
+	const int top = lua_gettop(m_state);
+	esl::LuaTable metaTable(m_state, top);
+	lua_pop(m_state, 1); // getglobal
+	return metaTable;
 }
 
 template<typename T, typename V, typename K>

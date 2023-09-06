@@ -113,7 +113,7 @@ struct Member
 			BindFuncConst	constFunc;
 			StaticFunc		staticFunc;
 		};
-		BindFunc	getFunc;
+		BindFuncConst	getFunc;
 	};
 	int				numArgs{ -1 };
 	bool			isConst{ false };
@@ -208,41 +208,42 @@ public:
 	operator lua_State* () const { return m_state; }
 	operator lua_State* () { return m_state; }
 
-	void ThrowError(const char* fmt, ...) const;
+	void			ThrowError(const char* fmt, ...) const;
 
-	bool RunBuffer(IVirtualStream* virtStream, const char* name) const;
-	bool RunChunk(const EqString& chunk) const;
+	bool			RunBuffer(IVirtualStream* virtStream, const char* name) const;
+	bool			RunChunk(const EqString& chunk) const;
 
-	int GetStackTop() const;
-	int GetStackType(int index) const;
-
-	template<typename T>
-	void SetGlobal(const char* name, const T& value) const;
+	int				GetStackTop() const;
+	int				GetStackType(int index) const;
 
 	template<typename T>
-	decltype(auto) GetGlobal(const char* name) const;
-
-	esl::LuaTable CreateTable() const;
+	void			SetGlobal(const char* name, const T& value) const;
 
 	template<typename T>
-	void PushValue(const T& value) const;
+	decltype(auto)	GetGlobal(const char* name) const;
+
+	esl::LuaTable	CreateTable() const;
 
 	template<typename T>
-	decltype(auto) GetValue(int index) const;
+	void			PushValue(const T& value) const;
 
 	template<typename T>
-	void RegisterClass() const;
+	decltype(auto)	GetValue(int index) const;
+
+	template<typename T>
+	void			RegisterClass() const;
 
 	template<typename T, typename K, typename V>
-	void RegisterClassStatic(const K& k, const V& v) const;
+	void			RegisterClassStatic(const K& k, const V& v) const;
+
+	template<typename T>
+	esl::LuaTable	GetClassTable() const;
 
 	template<typename T, typename V, typename K>
-	decltype(auto) GetClassStatic(const K& k) const;
+	decltype(auto)	GetClassStatic(const K& k) const;
 
 	template<typename R, typename ... Args>
-	decltype(auto) CallFunction(const char* name, Args...);
+	decltype(auto)	CallFunction(const char* name, Args...);
 protected:
 	lua_State*	m_state{ nullptr };
 };
-
-
