@@ -10,7 +10,7 @@ namespace esl::runtime
 {
 static void PushErrorIdStr(lua_State* vm)
 {
-	char const lastErrStr[] = { "esl_last_error" };
+	char const lastErrStr[] = { "EqScriptLib_LastError" };
 	lua_pushlstring(vm, lastErrStr, (sizeof(lastErrStr) / sizeof(char)) - 1);
 }
 
