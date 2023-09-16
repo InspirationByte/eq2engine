@@ -20,6 +20,7 @@ Build system used: [Premake](https://premake.github.io/)
 - Flexible Particle system
 - Scripted Audio System with use of nodes to enable control over playing sounds
 - Custom Data Structure containers such as Map, Array, List, Callable wrapper, Events, Promise and Future, Strong and Weak ref pointers and fixed arrays and lists
+- Own Lua script binding library
 - Custom memory tracking allocator for ease of finding memory leaks
 - Integration with Concurrency Visualizer to debug multithreading within the project
 - Simple multi-thread job system
