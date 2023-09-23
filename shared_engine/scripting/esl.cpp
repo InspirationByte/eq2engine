@@ -50,9 +50,9 @@ bool EqScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) cons
 	return true;
 }
 
-bool EqScriptState::RunChunk(const EqString& chunk) const
+bool EqScriptState::RunChunk(const EqString& chunk, const char* name) const
 {
-	const int res = luaL_loadbuffer(m_state, chunk.ToCString(), chunk.Length(), "userChunk");
+	const int res = luaL_loadbuffer(m_state, chunk.ToCString(), chunk.Length(), name);
 	if (res != 0)
 	{
 		esl::runtime::SetLuaErrorFromTopOfStack(m_state);
