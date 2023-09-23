@@ -34,10 +34,10 @@ extern const D3DTRANSFORMSTATETYPE	g_d3d9_matrixModes[];
 inline static RECT IRectangleToD3DRECT(const IAARectangle& rect)
 {
 	RECT rekt;
-	rekt.top = rect.vleftTop.y;
-	rekt.left = rect.vleftTop.x;
-	rekt.right = rect.vrightBottom.x;
-	rekt.bottom = rect.vrightBottom.y;
+	rekt.top = rect.leftTop.y;
+	rekt.left = rect.leftTop.x;
+	rekt.right = rect.rightBottom.x;
+	rekt.bottom = rect.rightBottom.y;
 	return rekt;
 }
 

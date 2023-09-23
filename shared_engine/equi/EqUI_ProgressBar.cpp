@@ -60,8 +60,8 @@ void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 
 	if (percentage > 0)
 	{
-		AARectangle fillRect(Vector2D(rect.vleftTop.x, rect.vleftTop.y), 
-							 Vector2D(lerp(rect.vleftTop.x, rect.vrightBottom.x, percentage), rect.vrightBottom.y));
+		AARectangle fillRect(Vector2D(rect.leftTop.x, rect.leftTop.y), 
+							 Vector2D(lerp(rect.leftTop.x, rect.rightBottom.x, percentage), rect.rightBottom.y));
 
 		// draw damage bar foreground
 		meshBuilder.Color4fv(m_color);

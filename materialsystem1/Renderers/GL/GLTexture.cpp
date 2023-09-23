@@ -607,7 +607,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 		const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
 		const IVector2D size = lockRect.GetSize();
 		sizeToLock = size.x * size.y;
-		lockOffset = lockRect.vleftTop.x * lockRect.vleftTop.y;
+		lockOffset = lockRect.leftTop.x * lockRect.leftTop.y;
 		lockPitch = lockRect.GetSize().x;
 		break;
 	}
@@ -699,7 +699,7 @@ void CGLTexture::Unlock()
 					const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
 					const IVector2D size = lockRect.GetSize();
 
-					glTexSubImage2D(cubeTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
+					glTexSubImage2D(cubeTarget, data.level, lockRect.leftTop.x, lockRect.leftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
 					GLCheckError("unlock upload tex image");
 				}
 				case GL_TEXTURE_2D:
@@ -707,7 +707,7 @@ void CGLTexture::Unlock()
 					const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
 					const IVector2D size = lockRect.GetSize();
 
-					glTexSubImage2D(m_glTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
+					glTexSubImage2D(m_glTarget, data.level, lockRect.leftTop.x, lockRect.leftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
 					GLCheckError("unlock upload tex image");
 					break;
 				}

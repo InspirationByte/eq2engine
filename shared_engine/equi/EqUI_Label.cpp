@@ -27,7 +27,7 @@ IAARectangle Label::GetClientScissorRectangle() const
 	float lineHeight = GetFont()->GetLineHeight(style);
 
 	IAARectangle rect = BaseClass::GetClientRectangle();
-	rect.vleftTop.y -= lineHeight * 0.5f;
+	rect.leftTop.y -= lineHeight * 0.5f;
 
 	return rect;
 }

@@ -10,262 +10,325 @@
 template <class T>
 struct TAARectangle
 {
-	TVec2D<T> vleftTop;
-	TVec2D<T> vrightBottom;
+	TVec2D<T> leftTop;
+	TVec2D<T> rightBottom;
 
-	TAARectangle()
-	{
-		Reset();
-	}
+	TAARectangle();
 
 	template <class T2>
-	TAARectangle( const TAARectangle<T2>& rect)
-	{
-		vleftTop.x = (T)rect.vleftTop.x;
-		vleftTop.y = (T)rect.vleftTop.y;
-		vrightBottom.x = (T)rect.vrightBottom.x;
-		vrightBottom.y = (T)rect.vrightBottom.y;
-	}
+	TAARectangle(const TAARectangle<T2>& rect);
 
 	template <class T2>
-	TAARectangle( T2 fX1, T2 fY1, T2 fX2, T2 fY2)
-	{
-		vleftTop.x = (T)fX1;
-		vleftTop.y = (T)fY1;
-		vrightBottom.x = (T)fX2;
-		vrightBottom.y = (T)fY2;
-	}
+	TAARectangle(T2 fX1, T2 fY1, T2 fX2, T2 fY2);
 
 	template <class T2>
-	TAARectangle( const TVec2D<T2>& leftTop, const TVec2D<T2>& rightBottom )
-	{
-		vleftTop.x = (T)leftTop.x;
-		vleftTop.y = (T)leftTop.y;
-		vrightBottom.x = (T)rightBottom.x;
-		vrightBottom.y = (T)rightBottom.y;
-	}
+	TAARectangle(const TVec2D<T2>& leftTop, const TVec2D<T2>& rightBottom);
 
-	void AddVertex(const TVec2D<T> &p)
-	{
-		if ( p.x < vleftTop.x )
-			vleftTop.x = p.x;
-		if ( p.x > vrightBottom.x )
-			vrightBottom.x = p.x;
+	void				AddVertex(const TVec2D<T>& p);
+	void				AddVertices(const TVec2D<T>* v, int numVertices);
 
-		if ( p.y < vleftTop.y )
-			vleftTop.y = p.y;
-		if ( p.y > vrightBottom.y )
-			vrightBottom.y = p.y;
-	}
+	void				Reset();
+	void				Fix();
+	void				Expand(T value);
+	void				Expand(const TVec2D<T>& value);
 
-	void AddVertices(const TVec2D<T>* v, int numVertices)
-	{
-		for (int i = 0; i < numVertices; i++)
-			AddVertex(v[i]);
-	}
+	const TVec2D<T>&	GetLeftTop() const;
+	const TVec2D<T>&	GetRightBottom() const;
+	TVec2D<T>			GetLeftBottom() const;
+	TVec2D<T>			GetRightTop() const;
 
-	void Reset()
-	{
-		vleftTop		= TVec2D<T>((T)F_INFINITY);
-		vrightBottom	= TVec2D<T>(-(T)F_INFINITY);
-	}
+    TVec2D<T>			GetCenter() const { return (leftTop + rightBottom) / static_cast<T>(2); }
+	TVec2D<T>			GetSize() const { return rightBottom - leftTop; }
 
-	// FIXME: this needs to be somehow removed
-	void Fix()
-	{
-		TVec2D<T> lt(vleftTop);
-		TVec2D<T> rb(vrightBottom);
+	TVec2D<T>			GetVertex(int index) const;
 
-		Reset();
+	TAARectangle<T>		GetTopVertical(float sizePercent) const;
+	TAARectangle<T>		GetBottomVertical(float sizePercent) const;
+	TAARectangle<T>		GetLeftHorizontal(float sizePercent) const;
+	TAARectangle<T>		GetRightHorizontal(float sizePercent) const;
 
-		AddVertex(lt);
-		AddVertex(rb);
-	}
+	TVec2D<T>			ClampPointInRectangle(const TVec2D<T>& point) const;
+	TAARectangle<T>		GetRectangleIntersectionDiff(const TAARectangle<T>& anotherRect) const;
 
-	void Expand(T value)
-	{
-		vrightBottom += value;
-		vleftTop -= value;
-	}
-
-	void Expand(const TVec2D<T>& value)
-	{
-		vrightBottom += value;
-		vleftTop -= value;
-	}
-
-    const TVec2D<T>& GetLeftTop() const
-	{
-		return vleftTop;
-	}
-
-	const TVec2D<T>& GetRightBottom() const
-	{
-		return vrightBottom;
-	}
-
-	TVec2D<T> GetLeftBottom() const
-	{
-		return Vector2D(vleftTop.x, vrightBottom.y);
-	}
-
-	TVec2D<T> GetRightTop() const
-	{
-		return Vector2D(vrightBottom.x, vleftTop.y);
-	}
-
-    TVec2D<T> GetCenter() const
-	{
-		return (vleftTop + vrightBottom) / static_cast<T>(2);
-	}
-
-	TVec2D<T> GetVertex(int index) const
-	{
-		return TVec2D<T>(index & 1 ? vrightBottom.x : vleftTop.x,
-			index & 2 ? vrightBottom.y : vleftTop.y);
-	}
-
-	TVec2D<T> GetSize() const
-	{
-		return vrightBottom - vleftTop;
-	}
-
-	TAARectangle<T> GetTopVertical(float sizePercent) const
-	{
-		return TAARectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(1.0f, sizePercent)));
-	}
-
-	TAARectangle<T> GetBottomVertical(float sizePercent) const
-	{
-		return TAARectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(1.0f, sizePercent), vrightBottom));
-	}
-
-	TAARectangle<T> GetLeftHorizontal(float sizePercent) const
-	{
-		return TAARectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(sizePercent, 1.0f)));
-	}
-
-	TAARectangle<T> GetRightHorizontal(float sizePercent) const
-	{
-		return TAARectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
-	}
-
-	TVec2D<T> ClampPointInRectangle(const Vector2D &point) const
-	{
-		return clamp(point, vleftTop, vrightBottom);
-	}
-
-	TAARectangle<T> GetRectangleIntersectionDiff(const TAARectangle<T> &anotherRect) const
-	{
-		Vector2D tempLT = ClampPointInRectangle(Vector2D(anotherRect.vleftTop.x,anotherRect.vleftTop.y));
-		Vector2D tempRB = ClampPointInRectangle(Vector2D(anotherRect.vrightBottom.x,anotherRect.vrightBottom.y));
-
-		TAARectangle pRect(vleftTop.x - tempLT.x,vleftTop.y - tempLT.y,vrightBottom.x - tempRB.x,vrightBottom.y - tempRB.y);
-
-		return pRect;
-	}
-
-	bool Contains(const TVec2D<T>& point) const
-	{
-		return point.x >= vleftTop.x && point.x <= vrightBottom.x 
-			&& point.y >= vleftTop.y && point.y <= vrightBottom.y;
-	}
+	bool				Contains(const TVec2D<T>& point) const;
 
 	// warning, this is a size-dependent!
-	bool FullyInside(const TAARectangle<T>& box, T tolerance = 0) const
-	{
-		if (box.vleftTop >= vleftTop - tolerance && box.vleftTop <= vrightBottom + tolerance &&
-			box.vrightBottom <= vrightBottom + tolerance && box.vrightBottom >= vleftTop - tolerance)
-			return true;
+	bool				FullyInside(const TAARectangle<T>& box, T tolerance = 0) const;
 
-		return false;
-	}
-
-	bool Intersects(const TAARectangle<T> &anotherRect) const
-	{
-		if(( vrightBottom.x < anotherRect.vleftTop.x) || (vleftTop.x > anotherRect.vrightBottom.x ) )
-			return false;
-
-		if(( vrightBottom.y < anotherRect.vleftTop.y) || (vleftTop.y > anotherRect.vrightBottom.y ) )
-			return false;
-
-		return true;
-	}
-
-	bool IntersectsRay(const TVec2D<T>& rayStart, const TVec2D<T>& rayDir, T& tnear, T& tfar) const
-	{
-		TVec2D<T> T_1, T_2; // vectors to hold the T-values for every direction
-		T t_near = -static_cast<T>(F_INFINITY);
-		T t_far = static_cast<T>(F_INFINITY);
-
-		for (int i = 0; i < 2; i++)
-		{
-			if (rayDir[i] == static_cast<T>(0))
-			{
-				// ray parallel to planes in this direction
-				if ((rayStart[i] < vleftTop[i]) || (rayStart[i] > vrightBottom[i]))
-					return false; // parallel AND outside box : no intersection possible
-			}
-			else
-			{
-				const float oneByRayDir = 1.0f / rayDir[i];
-
-				// ray not parallel to planes in this direction
-				T_1[i] = (vleftTop[i] - rayStart[i]) * oneByRayDir;
-				T_2[i] = (vrightBottom[i] - rayStart[i]) * oneByRayDir;
-
-				if (T_1[i] > T_2[i])
-					QuickSwap(T_1, T_2);
-
-				if (T_1[i] > t_near)
-					t_near = T_1[i];
-
-				if (T_2[i] < t_far)
-					t_far = T_2[i];
-
-				if ((t_near > t_far) || (t_far < static_cast<T>(0)))
-					return false;
-			}
-		}
-
-		tnear = t_near;
-		tfar = t_far;
-
-		return true;
-	}
-
-	bool IntersectsSphere(const TVec2D<T>& center, T radius) const
-	{
-		T dmin = static_cast<T>(0);
-
-		for (int i = 0; i < 2; ++i)
-		{
-			if (center[i] < vleftTop[i])
-			{
-				const T cmin = center[i] - vleftTop[i];
-				dmin += M_SQR(cmin);
-			}
-			else if (center[i] > vrightBottom[i])
-			{
-				const T cmax = center[i] - vrightBottom[i];
-				dmin += M_SQR(cmax);
-			}
-		}
-
-		return dmin <= M_SQR(radius);
-	}
+	bool				Intersects(const TAARectangle<T>& anotherRect) const;
+	bool				IntersectsRay(const TVec2D<T>& rayStart, const TVec2D<T>& rayDir, T& tnear, T& tfar) const;
+	bool				IntersectsSphere(const TVec2D<T>& center, T radius) const;
 
 	// modifiers
-    void FlipX()
+	void				FlipX();
+	void				FlipY();
+};
+
+template <class T>
+TAARectangle<T>::TAARectangle()
+{
+	Reset();
+}
+
+template <class T>
+template <class T2>
+TAARectangle<T>::TAARectangle(const TAARectangle<T2>& rect)
+{
+	leftTop.x = (T)rect.leftTop.x;
+	leftTop.y = (T)rect.leftTop.y;
+	rightBottom.x = (T)rect.rightBottom.x;
+	rightBottom.y = (T)rect.rightBottom.y;
+}
+
+template <class T>
+template <class T2>
+TAARectangle<T>::TAARectangle(T2 fX1, T2 fY1, T2 fX2, T2 fY2)
+{
+	leftTop.x = (T)fX1;
+	leftTop.y = (T)fY1;
+	rightBottom.x = (T)fX2;
+	rightBottom.y = (T)fY2;
+}
+
+template <class T>
+template <class T2>
+TAARectangle<T>::TAARectangle(const TVec2D<T2>& leftTop, const TVec2D<T2>& rightBottom)
+	: leftTop(TVec2D<T>((T)leftTop.x, (T)leftTop.y))
+	, rightBottom(TVec2D<T>((T)rightBottom.x, (T)rightBottom.y))
+{
+}
+
+template <class T>
+void TAARectangle<T>::AddVertex(const TVec2D<T>& p)
+{
+	if (p.x < leftTop.x)
+		leftTop.x = p.x;
+	if (p.x > rightBottom.x)
+		rightBottom.x = p.x;
+
+	if (p.y < leftTop.y)
+		leftTop.y = p.y;
+	if (p.y > rightBottom.y)
+		rightBottom.y = p.y;
+}
+
+template <class T>
+void TAARectangle<T>::AddVertices(const TVec2D<T>* v, int numVertices)
+{
+	for (int i = 0; i < numVertices; i++)
+		AddVertex(v[i]);
+}
+
+template <class T>
+void TAARectangle<T>::Reset()
+{
+	leftTop = TVec2D<T>((T)F_INFINITY);
+	rightBottom = TVec2D<T>(-(T)F_INFINITY);
+}
+
+template <class T>
+void TAARectangle<T>::Fix()
+{
+	TVec2D<T> lt(leftTop);
+	TVec2D<T> rb(rightBottom);
+
+	Reset();
+
+	AddVertex(lt);
+	AddVertex(rb);
+}
+
+template <class T>
+void TAARectangle<T>::Expand(T value)
+{
+	rightBottom += value;
+	leftTop -= value;
+}
+
+template <class T>
+void TAARectangle<T>::Expand(const TVec2D<T>& value)
+{
+	rightBottom += value;
+	leftTop -= value;
+}
+
+template <class T>
+const TVec2D<T>& TAARectangle<T>::GetLeftTop() const
+{
+	return leftTop;
+}
+
+template <class T>
+const TVec2D<T>& TAARectangle<T>::GetRightBottom() const
+{
+	return rightBottom;
+}
+
+template <class T>
+TVec2D<T> TAARectangle<T>::GetLeftBottom() const
+{
+	return TVec2D<T>(leftTop.x, rightBottom.y);
+}
+
+template <class T>
+TVec2D<T> TAARectangle<T>::GetRightTop() const
+{
+	return TVec2D<T>(rightBottom.x, leftTop.y);
+}
+
+template <class T>
+TVec2D<T> TAARectangle<T>::GetVertex(int index) const
+{
+	return TVec2D<T>(index & 1 ? rightBottom.x : leftTop.x,
+		index & 2 ? rightBottom.y : leftTop.y);
+}
+
+template <class T>
+TAARectangle<T> TAARectangle<T>::GetTopVertical(float sizePercent) const
+{
+	return TAARectangle<T>(leftTop, lerp(leftTop, rightBottom, TVec2D<T>(1.0f, sizePercent)));
+}
+
+template <class T>
+TAARectangle<T> TAARectangle<T>::GetBottomVertical(float sizePercent) const
+{
+	return GetTopVertical(1.0 - sizePercent);
+}
+
+template <class T>
+TAARectangle<T> TAARectangle<T>::GetLeftHorizontal(float sizePercent) const
+{
+	return TAARectangle<T>(leftTop, lerp(leftTop, rightBottom, TVec2D<T>(sizePercent, 1.0f)));
+}
+
+template <class T>
+TAARectangle<T> TAARectangle<T>::GetRightHorizontal(float sizePercent) const
+{
+	return GetLeftHorizontal(1.0 - sizePercent);
+}
+
+template <class T>
+TVec2D<T> TAARectangle<T>::ClampPointInRectangle(const TVec2D<T>& point) const
+{
+	return clamp(point, leftTop, rightBottom);
+}
+
+template <class T>
+TAARectangle<T> TAARectangle<T>::GetRectangleIntersectionDiff(const TAARectangle<T>& anotherRect) const
+{
+	TVec2D<T> tempLT = ClampPointInRectangle(TVec2D<T>(anotherRect.leftTop.x, anotherRect.leftTop.y));
+	TVec2D<T> tempRB = ClampPointInRectangle(TVec2D<T>(anotherRect.rightBottom.x, anotherRect.rightBottom.y));
+
+	TAARectangle pRect(leftTop.x - tempLT.x, leftTop.y - tempLT.y, rightBottom.x - tempRB.x, rightBottom.y - tempRB.y);
+
+	return pRect;
+}
+
+template <class T>
+bool TAARectangle<T>::Contains(const TVec2D<T>& point) const
+{
+	return point.x >= leftTop.x && point.x <= rightBottom.x
+		&& point.y >= leftTop.y && point.y <= rightBottom.y;
+}
+
+template <class T>
+bool TAARectangle<T>::FullyInside(const TAARectangle<T>& box, T tolerance) const
+{
+	if (box.leftTop >= leftTop - tolerance && box.leftTop <= rightBottom + tolerance &&
+		box.rightBottom <= rightBottom + tolerance && box.rightBottom >= leftTop - tolerance)
+		return true;
+
+	return false;
+}
+
+template <class T>
+bool TAARectangle<T>::Intersects(const TAARectangle<T>& anotherRect) const
+{
+	if ((rightBottom.x < anotherRect.leftTop.x) || (leftTop.x > anotherRect.rightBottom.x))
+		return false;
+
+	if ((rightBottom.y < anotherRect.leftTop.y) || (leftTop.y > anotherRect.rightBottom.y))
+		return false;
+
+	return true;
+}
+
+template <class T>
+bool TAARectangle<T>::IntersectsRay(const TVec2D<T>& rayStart, const TVec2D<T>& rayDir, T& tnear, T& tfar) const
+{
+	TVec2D<T> T_1, T_2; // vectors to hold the T-values for every direction
+	T t_near = -static_cast<T>(F_INFINITY);
+	T t_far = static_cast<T>(F_INFINITY);
+
+	for (int i = 0; i < 2; i++)
 	{
-        QuickSwap(vleftTop.x, vrightBottom.x);
+		if (rayDir[i] == static_cast<T>(0))
+		{
+			// ray parallel to planes in this direction
+			if ((rayStart[i] < leftTop[i]) || (rayStart[i] > rightBottom[i]))
+				return false; // parallel AND outside box : no intersection possible
+		}
+		else
+		{
+			const float oneByRayDir = 1.0f / rayDir[i];
+
+			// ray not parallel to planes in this direction
+			T_1[i] = (leftTop[i] - rayStart[i]) * oneByRayDir;
+			T_2[i] = (rightBottom[i] - rayStart[i]) * oneByRayDir;
+
+			if (T_1[i] > T_2[i])
+				QuickSwap(T_1, T_2);
+
+			if (T_1[i] > t_near)
+				t_near = T_1[i];
+
+			if (T_2[i] < t_far)
+				t_far = T_2[i];
+
+			if ((t_near > t_far) || (t_far < static_cast<T>(0)))
+				return false;
+		}
 	}
 
-	void FlipY()
+	tnear = t_near;
+	tfar = t_far;
+
+	return true;
+}
+
+template <class T>
+bool TAARectangle<T>::IntersectsSphere(const TVec2D<T>& center, T radius) const
+{
+	T dmin = static_cast<T>(0);
+
+	for (int i = 0; i < 2; ++i)
 	{
-        QuickSwap(vleftTop.y, vrightBottom.y);
+		if (center[i] < leftTop[i])
+		{
+			const T cmin = center[i] - leftTop[i];
+			dmin += M_SQR(cmin);
+		}
+		else if (center[i] > rightBottom[i])
+		{
+			const T cmax = center[i] - rightBottom[i];
+			dmin += M_SQR(cmax);
+		}
 	}
-};
+
+	return dmin <= M_SQR(radius);
+}
+
+template <class T>
+void TAARectangle<T>::FlipX()
+{
+	QuickSwap(leftTop.x, rightBottom.x);
+}
+
+template <class T>
+void TAARectangle<T>::FlipY()
+{
+	QuickSwap(leftTop.y, rightBottom.y);
+}
 
 typedef TAARectangle<float>		AARectangle;
 typedef TAARectangle<int>		IAARectangle;

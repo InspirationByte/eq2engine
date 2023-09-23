@@ -237,7 +237,7 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 	esl::binder::BindFunction(Name)
 
 // Begin binding of members
-#define EQSCRIPT_BEGIN_BIND(Class) \
+#define EQSCRIPT_TYPE_BEGIN(Class) \
 	namespace esl::runtime { \
 	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
 	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
@@ -248,7 +248,7 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 			MakeDestructor(),
 
 // End member binding
-#define EQSCRIPT_END_BIND	\
+#define EQSCRIPT_TYPE_END	\
 			{} /* default/end element */ \
 		}; \
 		return ArrayCRef<Member>(members, elementsOf(members) - 1); \

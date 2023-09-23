@@ -519,10 +519,10 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	Vector2D r0[] = { MAKEQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vleftTop.x, rect.vrightBottom.y, -1) };
-	Vector2D r1[] = { MAKEQUAD(rect.vrightBottom.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
-	Vector2D r2[] = { MAKEQUAD(rect.vleftTop.x, rect.vrightBottom.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
-	Vector2D r3[] = { MAKEQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vleftTop.y, -1) };
+	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
+	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
@@ -677,7 +677,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 			m_font->RenderText(string_to_draw.GetData(), rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
 
 			// draw autocompletion if available
-			DrawAutoCompletion(x, rect.vrightBottom.y, w);
+			DrawAutoCompletion(x, rect.rightBottom.y, w);
 		}
 
 		if(m_foundCmdList.numElem() >= CON_SUGGESTIONS_MAX)
@@ -727,7 +727,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 				float textYPos = (y + i * m_font->GetLineHeight(helpTextParams)) + 4;
 
-				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2, rect.vrightBottom.x-rect.vleftTop.x,12) || m_cmdSelection == i)
+				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2, rect.rightBottom.x-rect.leftTop.x,12) || m_cmdSelection == i)
 				{
 					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
@@ -1216,7 +1216,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 
 	AARectangle inputTextEntryRect(64, 26, width-64,46);
 
-	AARectangle con_outputRectangle(64.0f,inputTextEntryRect.vrightBottom.y+26, width - 64.0f, height-inputTextEntryRect.vleftTop.y);
+	AARectangle con_outputRectangle(64.0f,inputTextEntryRect.rightBottom.y+26, width - 64.0f, height-inputTextEntryRect.leftTop.y);
 
 	if(m_logVisible)
 	{
@@ -1235,8 +1235,8 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		hasLinesStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
 		hasLinesStyle.scale = m_fontScale;
 
-		con_outputRectangle.vleftTop.x += 5.0f;
-		con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle);
+		con_outputRectangle.leftTop.x += 5.0f;
+		con_outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle);
 
 		static CRectangleTextLayoutBuilder rectLayout;
 		rectLayout.SetRectangle( con_outputRectangle );
@@ -1247,20 +1247,20 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		{
 			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
 
-			m_font->RenderText(s_spewMessages[i]->text.ToCString(), con_outputRectangle.vleftTop, outputTextStyle);
+			m_font->RenderText(s_spewMessages[i]->text.ToCString(), con_outputRectangle.leftTop, outputTextStyle);
 
-			con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle)*rectLayout.GetProducedLines();//cnumLines;
+			con_outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle)*rectLayout.GetProducedLines();//cnumLines;
 
 			if(rectLayout.HasNotDrawnLines() || i-drawstart >= m_maxLines)
 			{
-				m_font->RenderText("^ ^ ^ ^ ^ ^", Vector2D(con_outputRectangle.vleftTop.x, con_outputRectangle.vrightBottom.y), hasLinesStyle);
+				m_font->RenderText("^ ^ ^ ^ ^ ^", Vector2D(con_outputRectangle.leftTop.x, con_outputRectangle.rightBottom.y), hasLinesStyle);
 
 				break;
 			}
 		}
 	}
 
-	DrawFastFind( 128, inputTextEntryRect.vleftTop.y+25, width-128 );
+	DrawFastFind( 128, inputTextEntryRect.leftTop.y+25, width-128 );
 
 	EqString conInputStr(CONSOLE_INPUT_STARTSTR);
 	conInputStr.Append(m_inputText);
@@ -1271,7 +1271,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	inputTextStyle.textColor = s_conInputTextColor;
 	inputTextStyle.scale = m_fontScale;
 
-	Vector2D inputTextPos(inputTextEntryRect.vleftTop.x+4, inputTextEntryRect.vrightBottom.y-6);
+	Vector2D inputTextPos(inputTextEntryRect.leftTop.x+4, inputTextEntryRect.rightBottom.y-6);
 
 	// render input text
 	m_font->RenderText(conInputStr.ToCString(), inputTextPos, inputTextStyle);

@@ -3268,10 +3268,10 @@ void ShaderAPID3DX10::GetViewport(int &x, int &y, int &w, int &h)
 void ShaderAPID3DX10::SetScissorRectangle( const IAARectangle &rect )
 {
 	D3D10_RECT scissorRect;
-	scissorRect.left	= rect.vleftTop.x;
-	scissorRect.top		= rect.vleftTop.y;
-	scissorRect.right	= rect.vrightBottom.x;
-	scissorRect.bottom	= rect.vrightBottom.y;
+	scissorRect.left	= rect.leftTop.x;
+	scissorRect.top		= rect.leftTop.y;
+	scissorRect.right	= rect.rightBottom.x;
+	scissorRect.bottom	= rect.rightBottom.y;
 
 	m_pD3DDevice->RSSetScissorRects(1, &scissorRect);
 }

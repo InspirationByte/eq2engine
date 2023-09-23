@@ -128,16 +128,16 @@ public:
 
 	// real rectangle, size position
 	void						SetRectangle(const IAARectangle& rect);
-	virtual IAARectangle			GetRectangle() const;
+	virtual IAARectangle		GetRectangle() const;
 
 	// sets new transformation. Set all zeros to reset
 	void						SetTransform(const Vector2D& translate, const Vector2D& scale, float rotate);
 
 	// drawn rectangle
-	virtual IAARectangle			GetClientRectangle() const;
+	virtual IAARectangle		GetClientRectangle() const;
 
 	// for text only
-	virtual IAARectangle			GetClientScissorRectangle() const { return GetClientRectangle(); }
+	virtual IAARectangle		GetClientScissorRectangle() const { return GetClientRectangle(); }
 
 	// returns the scaling of element
 	Vector2D					CalcScaling() const;

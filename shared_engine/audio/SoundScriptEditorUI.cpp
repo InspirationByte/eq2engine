@@ -760,14 +760,14 @@ void CSoundScriptEditor::ShowSplineEditor()
 		}
 
 		// correct too small boxes
-		const float yDiff = rct.vrightBottom.y - rct.vleftTop.y;
+		const float yDiff = rct.rightBottom.y - rct.leftTop.y;
 		if (yDiff < 1.0f)
 		{
 			rct.Expand(Vector2D(0.0f, 1.0f - yDiff));
 		}
 
-		splineRangeMin = ImVec2(rct.vleftTop.x, rct.vleftTop.y);
-		splineRangeMax = ImVec2(rct.vrightBottom.x, rct.vrightBottom.y);
+		splineRangeMin = ImVec2(rct.leftTop.x, rct.leftTop.y);
+		splineRangeMax = ImVec2(rct.rightBottom.x, rct.rightBottom.y);
 	}
 
 	bool open = true;
@@ -1115,14 +1115,14 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 				}
 
 				// correct too small boxes
-				const float yDiff = rct.vrightBottom.y - rct.vleftTop.y;
+				const float yDiff = rct.rightBottom.y - rct.leftTop.y;
 				if (yDiff < 1.0f)
 				{
 					rct.Expand(Vector2D(0.0f, 1.0f - yDiff));
 				}
 
-				ImVec2 splineRangeMin(rct.vleftTop.x, rct.vleftTop.y);
-				ImVec2 splineRangeMax(rct.vrightBottom.x, rct.vrightBottom.y);
+				ImVec2 splineRangeMin(rct.leftTop.x, rct.leftTop.y);
+				ImVec2 splineRangeMax(rct.rightBottom.x, rct.rightBottom.y);
 				if (ImGui::CurveFrame(uiNode.name, ImVec2(120, 50), 10, splinePoints, SoundSplineDesc::splineInterpLinear, splineRangeMin, splineRangeMax))
 				{
 					ImGui::SetNextWindowFocus();

@@ -297,8 +297,8 @@ void IUIControl::SetPosition(const IVector2D &pos)
 
 void IUIControl::SetRectangle(const IAARectangle& rect)
 {
-	SetPosition(rect.vleftTop);
-	SetSize(rect.vrightBottom - m_position);
+	SetPosition(rect.leftTop);
+	SetSize(rect.rightBottom - m_position);
 }
 
 // sets new transformation. Set all zeros to reset
@@ -445,8 +445,8 @@ IAARectangle IUIControl::GetClientRectangle() const
 
 			// apply offset of each bound based on anchors
 			// all anchors enabled will just stretch elements
-			thisRect.vleftTop += anchorSizeRB - anchorSizeLT;
-			thisRect.vrightBottom += anchorSizeRB;
+			thisRect.leftTop += anchorSizeRB - anchorSizeLT;
+			thisRect.rightBottom += anchorSizeRB;
 		}
 
 		const IAARectangle parentRect = m_parent->GetClientRectangle();
@@ -454,36 +454,36 @@ IAARectangle IUIControl::GetClientRectangle() const
 		// compute alignment to the parent client rectangle
 		if(m_alignment & UI_ALIGN_LEFT)
 		{
-			thisRect.vleftTop.x += parentRect.vleftTop.x;
-			thisRect.vrightBottom.x += parentRect.vleftTop.x;
+			thisRect.leftTop.x += parentRect.leftTop.x;
+			thisRect.rightBottom.x += parentRect.leftTop.x;
 		} 
 		else if(m_alignment & UI_ALIGN_RIGHT)
 		{
-			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x * 2;
-			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x * 2;
+			thisRect.leftTop.x += parentRect.rightBottom.x - scaledSize.x - scaledPos.x * 2;
+			thisRect.rightBottom.x += parentRect.rightBottom.x - scaledSize.x - scaledPos.x * 2;
 		}
 		else if (m_alignment & UI_ALIGN_HCENTER)
 		{
 			const IVector2D center = parentRect.GetCenter();
-			thisRect.vleftTop.x += center.x - scaledSize.x / 2;
-			thisRect.vrightBottom.x += center.x - scaledSize.x / 2;
+			thisRect.leftTop.x += center.x - scaledSize.x / 2;
+			thisRect.rightBottom.x += center.x - scaledSize.x / 2;
 		}
 
 		if (m_alignment & UI_ALIGN_TOP)
 		{
-			thisRect.vleftTop.y += parentRect.vleftTop.y;
-			thisRect.vrightBottom.y += parentRect.vleftTop.y;
+			thisRect.leftTop.y += parentRect.leftTop.y;
+			thisRect.rightBottom.y += parentRect.leftTop.y;
 		}
 		else if(m_alignment & UI_ALIGN_BOTTOM)
 		{
-			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y * 2;
-			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y * 2;
+			thisRect.leftTop.y += parentRect.rightBottom.y - scaledSize.y - scaledPos.y * 2;
+			thisRect.rightBottom.y += parentRect.rightBottom.y - scaledSize.y - scaledPos.y * 2;
 		}
 		else if (m_alignment & UI_ALIGN_VCENTER)
 		{
 			const IVector2D center = parentRect.GetCenter();
-			thisRect.vleftTop.y += center.y - scaledSize.y / 2;
-			thisRect.vrightBottom.y += center.y - scaledSize.y / 2;
+			thisRect.leftTop.y += center.y - scaledSize.y / 2;
+			thisRect.rightBottom.y += center.y - scaledSize.y / 2;
 		}
 	}
 
@@ -534,10 +534,10 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	Vector2D r0[] = { MAKEQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vleftTop.x, rect.vrightBottom.y, -0.5f) };
-	Vector2D r1[] = { MAKEQUAD(rect.vrightBottom.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, -0.5f) };
-	Vector2D r2[] = { MAKEQUAD(rect.vleftTop.x, rect.vrightBottom.y,rect.vrightBottom.x, rect.vrightBottom.y, -0.5f) };
-	Vector2D r3[] = { MAKEQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vleftTop.y, -0.5f) };
+	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
+	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
@@ -603,8 +603,8 @@ void IUIControl::Render(int depth)
 		}
 
 		IAARectangle scissorRect = GetClientScissorRectangle();
-		scissorRect.vleftTop += m_transform.translation * scale;
-		scissorRect.vrightBottom += m_transform.translation * scale;
+		scissorRect.leftTop += m_transform.translation * scale;
+		scissorRect.rightBottom += m_transform.translation * scale;
 		g_pShaderAPI->SetScissorRectangle(scissorRect);
 
 		// force rasterizer state

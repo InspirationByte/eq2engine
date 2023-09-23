@@ -14,7 +14,7 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 										const Vector2D& textStart,
 										Vector2D& curTextPos )
 {
-	float xPos = m_rectangle.vleftTop.x;
+	float xPos = m_rectangle.leftTop.x;
 
 	// calc start position for first time
 	if (params.align != TEXT_ALIGN_LEFT)
@@ -26,12 +26,12 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 		else
 			newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
-		if (xPos + newlineStringWidth < m_rectangle.vrightBottom.x)
+		if (xPos + newlineStringWidth < m_rectangle.rightBottom.x)
 		{
 			if (params.align & TEXT_ALIGN_HCENTER)
 				xPos = m_rectangle.GetCenter().x - newlineStringWidth * 0.5f;
 			else if (params.align & TEXT_ALIGN_RIGHT)
-				xPos = m_rectangle.vrightBottom.x - newlineStringWidth;
+				xPos = m_rectangle.rightBottom.x - newlineStringWidth;
 		}
 	}
 
@@ -75,16 +75,16 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		}
 
 		// if word can't be wrapped, we switch to character wrapping
-		if( m_wrappedWord && curTextPos.x+wordSize > m_rectangle.vrightBottom.x )
+		if( m_wrappedWord && curTextPos.x+wordSize > m_rectangle.rightBottom.x )
 		{
 			m_wordWrapMode = false;
 			wordSize = cSize.x; // per-char wrapping
 		}
 
 		// check character/word right bound is outside the rectangle right bound
-		if( curTextPos.x + wordSize > m_rectangle.vrightBottom.x && !m_newWord)
+		if( curTextPos.x + wordSize > m_rectangle.rightBottom.x && !m_newWord)
 		{
-			float xPos = m_rectangle.vleftTop.x;
+			float xPos = m_rectangle.leftTop.x;
 
 			// calc start position for first time
 			if( params.align != TEXT_ALIGN_LEFT )
@@ -96,12 +96,12 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 				else
 					newlineStringWidth = font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
-				if (xPos + newlineStringWidth <= m_rectangle.vrightBottom.x)
+				if (xPos + newlineStringWidth <= m_rectangle.rightBottom.x)
 				{
 					if (params.align & TEXT_ALIGN_HCENTER)
 						xPos = m_rectangle.GetCenter().x - newlineStringWidth * 0.5f;
 					else if (params.align & TEXT_ALIGN_RIGHT)
-						xPos = m_rectangle.vrightBottom.x - newlineStringWidth;
+						xPos = m_rectangle.rightBottom.x - newlineStringWidth;
 				}
 			}
 
@@ -119,7 +119,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		}
 
 		// check if character bottom bound is outside the rectangle bottom bound
-		if(m_linesProduced > 1 && cPos.y + cSize.y > m_rectangle.vrightBottom.y)
+		if(m_linesProduced > 1 && cPos.y + cSize.y > m_rectangle.rightBottom.y)
 		{
 			m_hasNotdrawnLines = true;
 			return false;

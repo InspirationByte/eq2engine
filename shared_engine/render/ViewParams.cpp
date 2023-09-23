@@ -91,7 +91,7 @@ void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, AARectangle
 {
 	Vector3D vRadianRotation = DEG2RAD(m_vecAngles);
 
-	proj = orthoMatrixR(rect.vleftTop.x, rect.vrightBottom.x, rect.vleftTop.y, rect.vrightBottom.y , zNear, zFar);
+	proj = orthoMatrixR(rect.leftTop.x, rect.rightBottom.x, rect.leftTop.y, rect.rightBottom.y , zNear, zFar);
 
 	view = rotateZXY4(-vRadianRotation.x,-vRadianRotation.y,-vRadianRotation.z);
 

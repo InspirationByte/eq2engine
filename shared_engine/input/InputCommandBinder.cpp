@@ -663,7 +663,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 		AARectangle rect((tz->position - tz->size * 0.5f) * screenSize, (tz->position + tz->size * 0.5f) * screenSize);
 
 		rects.append(rect);
-		const Vertex2D_t touchQuad[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0) };
+		const Vertex2D_t touchQuad[] = { MAKETEXQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, 0) };
 
 		const float touchColor = tz->finger >= 0 ? 0.25f : 0.85f;
 
@@ -680,7 +680,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 		const in_touchzone_t* tz = &m_touchZones[i];
 		const AARectangle& rect = rects[i];
 
-		defaultFont->RenderText(tz->name.ToCString(), rect.vleftTop, fontParams);
+		defaultFont->RenderText(tz->name.ToCString(), rect.leftTop, fontParams);
 	}
 }
 

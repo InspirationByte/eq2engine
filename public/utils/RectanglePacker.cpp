@@ -142,8 +142,8 @@ void CRectanglePacker::GetRectangle(AARectangle& rect, void** userData, uint ind
 {
 	PackerRectangle* pc = m_pRectangles[index];
 
-	rect.vleftTop = Vector2D(pc->x + m_padding, pc->y + m_padding);
-	rect.vrightBottom = rect.vleftTop + Vector2D(pc->width - m_padding*2.0f, pc->height - m_padding*2.0f);
+	rect.leftTop = Vector2D(pc->x + m_padding, pc->y + m_padding);
+	rect.rightBottom = rect.leftTop + Vector2D(pc->width - m_padding*2.0f, pc->height - m_padding*2.0f);
 	
 	if(userData != nullptr)
 		*userData = pc->userdata;

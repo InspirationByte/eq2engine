@@ -451,17 +451,17 @@ bool CreateAtlasImage(const Array<imageDesc_t>& images_list,
 		const imageDesc_t* imgDesc = (imageDesc_t*)userData;
 
 		// rgba8 is pretty simple
-		BlendAtlasTo(destData, imgDesc, (int)rect.vleftTop.x, (int)rect.vleftTop.y, (int)wide, padding, padMode);
+		BlendAtlasTo(destData, imgDesc, (int)rect.leftTop.x, (int)rect.leftTop.y, (int)wide, padding, padMode);
 
-		rect.vleftTop *= sizeTexels;
-		rect.vrightBottom *= sizeTexels;
+		rect.leftTop *= sizeTexels;
+		rect.rightBottom *= sizeTexels;
 
 		// add info to keyvalues
 		KVSection* rect_kv = pAtlasGroup->CreateSection(imgDesc->name.ToCString());
-		rect_kv->AddValue(rect.vleftTop.x);
-		rect_kv->AddValue(rect.vleftTop.y);
-		rect_kv->AddValue(rect.vrightBottom.x);
-		rect_kv->AddValue(rect.vrightBottom.y);
+		rect_kv->AddValue(rect.leftTop.x);
+		rect_kv->AddValue(rect.leftTop.y);
+		rect_kv->AddValue(rect.rightBottom.x);
+		rect_kv->AddValue(rect.rightBottom.y);
 	}
 
 	// save image as DDS, or TGA ???

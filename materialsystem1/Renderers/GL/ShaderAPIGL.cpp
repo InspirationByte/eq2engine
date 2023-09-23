@@ -1075,8 +1075,8 @@ void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const 
 	GLCheckError("glDrawBuffers att1");
 
 	// copy
-	glBlitFramebuffer(	_srcRect.vleftTop.x, _srcRect.vleftTop.y, _srcRect.vrightBottom.x, _srcRect.vrightBottom.y,
-						_destRect.vleftTop.x, _destRect.vleftTop.y, _destRect.vrightBottom.x, _destRect.vrightBottom.y, 
+	glBlitFramebuffer(	_srcRect.leftTop.x, _srcRect.leftTop.y, _srcRect.rightBottom.x, _srcRect.rightBottom.y,
+						_destRect.leftTop.x, _destRect.leftTop.y, _destRect.rightBottom.x, _destRect.rightBottom.y, 
 						GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	GLCheckError("blit");
 
@@ -2728,8 +2728,8 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 // returns viewport
 void ShaderAPIGL::GetViewport(int &x, int &y, int &w, int &h)
 {
-	x = m_viewPort.vleftTop.x;
-	y = m_viewPort.vleftTop.y;
+	x = m_viewPort.leftTop.x;
+	y = m_viewPort.leftTop.y;
 
 	IVector2D size = m_viewPort.GetSize();
 
@@ -2753,13 +2753,13 @@ void ShaderAPIGL::SetScissorRectangle( const IAARectangle &rect )
 
     IAARectangle scissor(rect);
 
-    scissor.vleftTop.y = viewportSize.y - scissor.vleftTop.y;
-    scissor.vrightBottom.y = viewportSize.y - scissor.vrightBottom.y;
+    scissor.leftTop.y = viewportSize.y - scissor.leftTop.y;
+    scissor.rightBottom.y = viewportSize.y - scissor.rightBottom.y;
 
-    QuickSwap(scissor.vleftTop.y, scissor.vrightBottom.y);
+    QuickSwap(scissor.leftTop.y, scissor.rightBottom.y);
 
     IVector2D size = scissor.GetSize();
-	glScissor( scissor.vleftTop.x, scissor.vleftTop.y, size.x, size.y);
+	glScissor( scissor.leftTop.x, scissor.leftTop.y, size.x, size.y);
 	GLCheckError("set scissor");
 }
 

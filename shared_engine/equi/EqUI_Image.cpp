@@ -44,8 +44,8 @@ void Image::InitFromKeyValues( KVSection* sec, bool noClear )
 	{
 		const char* materialPath = KV_GetValueString(pathBase, 0, "ui/default");
 		SetMaterial(materialPath);
-		m_atlasRegion.vleftTop = Vector2D(0.0f);
-		m_atlasRegion.vrightBottom = Vector2D(1.0f);
+		m_atlasRegion.leftTop = Vector2D(0.0f);
+		m_atlasRegion.rightBottom = Vector2D(1.0f);
 	}
 	else
 	{
