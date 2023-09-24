@@ -12,19 +12,16 @@
 class CAsyncWorkQueue
 {
 public:
-	using FUNC_TYPE = EqFunction<int()>;
+	using FUNC_TYPE = EqFunction<void()>;
 
 	CAsyncWorkQueue() = default;
 
-	int		Push(const FUNC_TYPE& f);
-	int		RunAll();
+	void	Push(const FUNC_TYPE& f);
+	void	RunAll();
 	void	RemoveAll();
 
 protected:
 
-	int WaitForResult(uint workId);
-
-	uint					m_workCounter{ 0 };
-	Array<struct work_t*>	m_pendingWork{ PP_SL };
-	Threading::CEqMutex		m_mutex;
+	Array<struct SchedWork*>	m_pendingWork{ PP_SL };
+	Threading::CEqMutex			m_mutex;
 };

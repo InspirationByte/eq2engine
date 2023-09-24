@@ -10,78 +10,55 @@
 #include "core/core_common.h"
 #include "AsyncWorkQueue.h"
 
-#define WORK_PENDING_MARKER 0xbeefea1e
+using namespace Threading;
 
-struct work_t
+struct SchedWork
 {
-	work_t(const CAsyncWorkQueue::FUNC_TYPE& fn, uint id) 
-		: func(fn), workId(id)
+	SchedWork(const CAsyncWorkQueue::FUNC_TYPE& fn) 
+		: func(fn)
 	{
 	}
 
 	const CAsyncWorkQueue::FUNC_TYPE func;
-	uint workId;
 };
 
 void CAsyncWorkQueue::RemoveAll()
 {
-	Threading::CScopedMutex m(m_mutex);
+	CScopedMutex m(m_mutex);
 
-	for (int i = 0; i < m_pendingWork.numElem(); i++)
-		delete m_pendingWork[i];
-
-	m_pendingWork.clear();
+	for (SchedWork* work : m_pendingWork)
+		delete work;
+	m_pendingWork.clear(true);
 }
 
-int CAsyncWorkQueue::Push(const FUNC_TYPE& f)
+void CAsyncWorkQueue::Push(const FUNC_TYPE& f)
 {
-	// set the new worker and signal to start...
-	Threading::CScopedMutex m(m_mutex);
-
-	work_t* work = PPNew work_t(f, m_workCounter++);
-	m_pendingWork.append(work);
-
-	return 0;
+	CScopedMutex m(m_mutex);
+	m_pendingWork.append(PPNew SchedWork(f));
 }
 
-int CAsyncWorkQueue::RunAll()
+void CAsyncWorkQueue::RunAll()
 {
-	work_t* currentWork = nullptr;
+	SchedWork* currentWork = nullptr;
 
 	// find some work
-	while (!currentWork)
+	do
 	{
 		// search for work
 		{
-			Threading::CScopedMutex m(m_mutex);
-
-			for (int i = 0; i < m_pendingWork.numElem(); i++)
+			CScopedMutex m(m_mutex);
+			if(m_pendingWork.numElem())
 			{
-				currentWork = m_pendingWork[i];
-				break;
+				currentWork = m_pendingWork[0];
+				m_pendingWork.fastRemoveIndex(0);
 			}
-
-			// no work and haven't picked one?
-			if (m_pendingWork.numElem() == 0 && !currentWork)
-				break;
 		}
 
-		if (currentWork)
-		{
-			work_t* cur = currentWork;
-			{
-				Threading::CScopedMutex m(m_mutex);
-				m_pendingWork.fastRemove(currentWork);
-			}
+		if (!currentWork)
+			break;
 
-			// get and quickly dispose
-			currentWork = nullptr;
-
-			// run work
-			cur->func();
-			delete cur;
-		}
-	}
-
-	return 0;
+		currentWork->func();
+		delete currentWork;
+		currentWork = nullptr;
+	}while (true);
 }
