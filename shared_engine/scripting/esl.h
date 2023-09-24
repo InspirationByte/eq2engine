@@ -105,7 +105,6 @@ struct Member
 	using BindFuncConst = int (ScriptBind::*)(lua_State*) const;
 
 	EMemberType		type{ MEMB_NULL };
-	int				nameHash{ 0 };
 	const char*		name{ nullptr };
 	const char*		signature{ nullptr };
 	void*			data{ nullptr };

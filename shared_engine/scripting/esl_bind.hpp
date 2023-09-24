@@ -913,7 +913,6 @@ Member ClassBinder<T>::MakeStaticFunction(F func, const char* name)
 
 	Member m;
 	m.type = MEMB_C_FUNC;
-	m.nameHash = StringToHash(name);
 	m.name = name;
 	m.data = &func;
 	m.signature = binder::FunctionBinder<F, Traits>::GetFuncArgsSignature();
@@ -932,7 +931,6 @@ Member ClassBinder<T>::MakeFunction(const char* name)
 
 	Member m;
 	m.type = MEMB_FUNC;
-	m.nameHash = StringToHash(name);
 	m.name = name;
 	m.signature = binder::MemberFunctionBinder<T, F, Traits>::GetFuncArgsSignature();
 	m.numArgs = binder::MemberFunctionBinder<T, F, Traits>::GetFuncArgsCount();
@@ -950,7 +948,6 @@ Member ClassBinder<T>::MakeVariable(const char* name)
 {
 	Member m;
 	m.type = MEMB_VAR;
-	m.nameHash = StringToHash(name);
 	m.name = name;
 	m.signature = GetVariableTypeName<T, V>();
 	m.func = binder::BindVariableSetter<T, V>();
@@ -977,7 +974,6 @@ Member ClassBinder<T>::MakeOperator(const char* name)
 {
 	Member m;
 	m.type = MEMB_OPERATOR;
-	m.nameHash = StringToHash(name);
 	m.name = name;
 	m.staticFunc = binder::BindOperator<T, OpType>();
 	return m;
