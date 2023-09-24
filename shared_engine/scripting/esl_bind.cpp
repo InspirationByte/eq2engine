@@ -147,12 +147,20 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 			lua_rawget(L, methods);
 			if (lua_type(L, -1) != LUA_TNIL)
 			{
-				ASSERT_FAIL("Class can't have same multiple functions with same name");
+				ASSERT_FAIL("Class can't have same multiple functions with same name (%s:%s)", typeInfo.className, mem.name);
 				continue;
 			}
 		}
 
-		if (mem.type == esl::MEMB_FUNC)
+		if (mem.type == esl::MEMB_C_FUNC)
+		{
+			// methods[name] = function [funcPtr] ()
+			lua_pushstring(L, mem.name);
+			lua_pushlightuserdata(L, mem.data);
+			lua_pushcclosure(L, mem.staticFunc, 1);
+			lua_rawset(L, methods);
+		}
+		else if (mem.type == esl::MEMB_FUNC)
 		{
 			// methods[name] = function [thisGetter, className, typeInfoMember] ()
 			lua_pushstring(L, mem.name);

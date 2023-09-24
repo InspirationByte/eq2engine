@@ -81,6 +81,7 @@ enum EMemberType : int
 	MEMB_DTOR,
 	MEMB_CTOR,
 	MEMB_FUNC,
+	MEMB_C_FUNC,
 	MEMB_VAR,
 	MEMB_OPERATOR,
 };
@@ -107,6 +108,7 @@ struct Member
 	int				nameHash{ 0 };
 	const char*		name{ nullptr };
 	const char*		signature{ nullptr };
+	void*			data{ nullptr };
 	struct {
 		union {
 			BindFunc		func;

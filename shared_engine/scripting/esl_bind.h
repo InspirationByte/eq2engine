@@ -33,38 +33,47 @@ enum EOpType : int
 // The binder itself.
 namespace esl::bindings
 {
+struct LuaCFunction
+{
+	void*			funcPtr;
+	lua_CFunction	luaFuncImpl;
+};
+
 struct BaseClassStorage
 {
 	static Map<int, EqString>& GetBaseClassNames();
 
 	template<typename T>
-	static void Add();
+	static void			Add();
 
 	template<typename T>
-	static const char* Get();
+	static const char*	Get();
 
-	static const char* Get(const char* className);
+	static const char*	Get(const char* className);
 };
 
 template <typename T>
 struct ClassBinder
 {
 	using BindClass = T;
-	static ArrayCRef<Member> GetMembers();
+	static ArrayCRef<Member>	GetMembers();
 
-	static Member MakeDestructor();
+	static Member	MakeDestructor();
+
+	template<typename UR = void, typename ... UArgs, typename F>
+	static Member	MakeStaticFunction(F func, const char* name);
 
 	template<auto F, typename UR = void, typename ... UArgs>
-	static Member MakeFunction(const char* name);
+	static Member	MakeFunction(const char* name);
 
 	template<auto V>
-	static Member MakeVariable(const char* name);
+	static Member	MakeVariable(const char* name);
 
 	template<typename ...Args>
-	static Member MakeConstructor();
+	static Member	MakeConstructor();
 
 	template<binder::EOpType OpType>
-	static Member MakeOperator(const char* name);
+	static Member	MakeOperator(const char* name);
 };
 }
 
@@ -205,6 +214,9 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
 	MakeConstructor<__VA_ARGS__>(),
 
+#define EQSCRIPT_BIND_STATIC_FUNC(FuncName, Func, ...) \
+	MakeStaticFunction<__VA_ARGS__>(Func, FuncName),
+
 // Func(Name, [ ESL_APPLY_TRAITS(rgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC(Name, ...) \
 	MakeFunction<ESL_CLASS_FUNC(Name)__VA_ARGS__>(#Name),
@@ -227,14 +239,13 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 #define EQSCRIPT_BIND_VAR(Name) \
 	MakeVariable<ESL_CLASS_FUNC(Name)>(#Name),
 
+// Func(Name, [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_CFUNC(Name, ...) \
-	esl::binder::BindCFunction<Name __VA_ARGS__>()
+	esl::binder::BindCFunction<__VA_ARGS__>(&Name)
 
+// Func(Name, Ret, (ArgT1, ArgT2, ...ArgTN), [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_CFUNC_OVERLOAD(Name, R, Signature,...) \
-	esl::binder::BindCFunction<ESL_CFUNC_OVERLOAD(R, Signature)(Name)__VA_ARGS__>()
-
-#define EQSCRIPT_FUNC(Name) \
-	esl::binder::BindFunction(Name)
+	esl::binder::BindCFunction<__VA_ARGS__>(ESL_CFUNC_OVERLOAD(R, Signature)(Name))
 
 // Begin binding of members
 #define EQSCRIPT_TYPE_BEGIN(Class) \

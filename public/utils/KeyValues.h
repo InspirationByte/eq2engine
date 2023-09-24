@@ -94,7 +94,7 @@ struct KVPairValue
 	void				SetString(const char* value);
 	void				SetInt(int nValue);
 	void				SetFloat(float fValue);
-	void				SetBool(bool bValue);	
+	void				SetBool(bool bValue);
 };
 
 //
