@@ -819,12 +819,10 @@ struct StandardOperatorBinder
 		if constexpr (OpType == OP_unm)
 		{
 			result = -lhs;
-			return 1;
 		}
 		else if constexpr (OpType == OP_not)
 		{
 			result = !lhs;
-			return 1;
 		}
 		else
 		{
@@ -976,6 +974,17 @@ Member ClassBinder<T>::MakeOperator(const char* name)
 	m.type = MEMB_OPERATOR;
 	m.name = name;
 	m.staticFunc = binder::BindOperator<T, OpType>();
+	return m;
+}
+
+template<typename T>
+template<typename F>
+Member ClassBinder<T>::MakeOperator(F f, const char* name)
+{
+	Member m;
+	m.type = MEMB_OPERATOR;
+	m.name = name;
+	m.staticFunc = f;
 	return m;
 }
 

@@ -74,6 +74,9 @@ struct ClassBinder
 
 	template<binder::EOpType OpType>
 	static Member	MakeOperator(const char* name);
+
+	template<typename F>
+	static Member	MakeOperator(F func, const char* name);
 };
 }
 
@@ -235,6 +238,9 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 #define EQSCRIPT_BIND_OP(Name) \
 	MakeOperator<binder::OP_##Name>("__" #Name),
+
+#define EQSCRIPT_BIND_OP_CUSTOM(Func, Name) \
+	MakeOperator(&Func<BindClass, binder::OP_##Name>, "__" #Name),
 
 #define EQSCRIPT_BIND_VAR(Name) \
 	MakeVariable<ESL_CLASS_FUNC(Name)>(#Name),
