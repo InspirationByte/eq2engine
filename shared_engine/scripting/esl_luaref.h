@@ -92,6 +92,9 @@ public:
 	template<typename V, typename K>
 	Result<V> Get(const K& key) const;
 
+	template<typename V, typename K>
+	V SafeGet(const K& key, const V& defaultValue) const;
+
 	template<typename K>
 	bool HasKey(const K& key) const;
 
@@ -117,6 +120,15 @@ LuaTable::Result<V> LuaTable::Get(const K& key) const
 	runtime::PushValue(m_state, key);
 	lua_gettable(m_state, -2);
 	return runtime::GetValue<V, true>(m_state, -1);
+}
+
+template<typename V, typename K>
+V LuaTable::SafeGet(const K& key, const V& defaultValue) const
+{
+	Result<V> res = Get<V>(key);
+	if (res)
+		return *res;
+	return defaultValue;
 }
 
 template<typename K>
