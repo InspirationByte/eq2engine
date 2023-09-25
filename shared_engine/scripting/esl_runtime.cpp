@@ -254,15 +254,17 @@ int CallConstructor(lua_State* L)
 	return 1;
 }
 
-void* ThisGetterVal(lua_State* L)
+void* ThisGetterVal(lua_State* L, bool& isConstRef)
 {
+	isConstRef = false;
 	void* userData = lua_touserdata(L, 1);
 	return userData;
 }
 
-void* ThisGetterPtr(lua_State* L)
+void* ThisGetterPtr(lua_State* L, bool& isConstRef)
 {
 	esl::BoxUD* userData = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
+	isConstRef = userData ? (userData->flags & UD_FLAG_CONST) : 0;
 	return userData ? userData->objPtr : nullptr;
 }
 
@@ -271,18 +273,25 @@ int CallMemberFunc(lua_State* L)
 {
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(1)));
 	const char* className = lua_tostring(L, lua_upvalueindex(2));
-	esl::Member* reg = static_cast<esl::Member*>(lua_touserdata(L, lua_upvalueindex(3)));
+	esl::Member* mem = static_cast<esl::Member*>(lua_touserdata(L, lua_upvalueindex(3)));
 
-	void* userData = thisGetter(L);
+	bool isConstRef = false;
+	void* userData = thisGetter(L, isConstRef);
 	if (!userData)
 	{
 		// TODO: ctx.ThrowError
-		luaL_error(L, "Error calling %s::%s - self is nil", className, reg->name);
+		luaL_error(L, "Error calling %s::%s - self is nil", className, mem->name);
+		return -1;
+	}
+
+	if (!mem->isConst && isConstRef)
+	{
+		luaL_error(L, "Error calling %s::%s - cannot call non-const method on const reference", className, mem->name);
 		return -1;
 	}
 
 	esl::ScriptBind bindObj{ userData };
-	return (bindObj.*(reg->func))(L);
+	return (bindObj.*(mem->func))(L);
 }
 
 int CompareBoxedPointers(lua_State* L)
@@ -365,7 +374,9 @@ int IndexImpl(lua_State* L)
 	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
 
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
-	void* userData = thisGetter(L);
+
+	bool isConstRef = false;
+	void* userData = thisGetter(L, isConstRef);
 
 	auto onVariableIndexed = [&](const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
@@ -408,7 +419,9 @@ int NewIndexImpl(lua_State* L)
 	ESL_VERBOSE_LOG("__newindex %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
 
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
-	void* userData = thisGetter(L);
+
+	bool isConstRef = false;
+	void* userData = thisGetter(L, isConstRef);
 
 	auto onVariableIndexed = [&](const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
@@ -417,6 +430,13 @@ int NewIndexImpl(lua_State* L)
 			// TODO: ThrowError
 			const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
+			return 0;
+		}
+
+		if (isConstRef)
+		{
+			const char* className = luaL_checkstring(L, lua_upvalueindex(2));
+			luaL_error(L, "trying to set %s.%s on constant reference", className, mem->name);
 			return 0;
 		}
 

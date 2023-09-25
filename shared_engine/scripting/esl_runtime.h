@@ -2,7 +2,7 @@
 
 namespace esl::runtime
 {
-using ThisGetterFunc = void* (*)(lua_State* L);
+using ThisGetterFunc = void* (*)(lua_State* L, bool& isConstRef);
 
 class StackGuard
 {
@@ -14,8 +14,8 @@ private:
 	int			m_pos{ 0 };
 };
 
-void* ThisGetterVal(lua_State* L);
-void* ThisGetterPtr(lua_State* L);
+void* ThisGetterVal(lua_State* L, bool& isConstRef);
+void* ThisGetterPtr(lua_State* L, bool& isConstRef);
 
 bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName);
 int CallConstructor(lua_State* L);
