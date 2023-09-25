@@ -193,6 +193,8 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 #define ESL_ALIAS_TYPE(x, n) \
 	template<> inline const char* esl::LuaTypeAlias<x>::value = n;
 
+#define ESL_ENUM(x) ESL_ALIAS_TYPE(x, "number")
+
 // Basic type binder
 #define EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
 	ESL_ALIAS_TYPE(Class, name) \
