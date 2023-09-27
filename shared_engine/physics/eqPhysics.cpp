@@ -371,14 +371,14 @@ void CEqPhysics::DestroyGrid()
 
 void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
 {
-	const int foundIdx = arrayFindIndexF(m_physSurfaceParams, [name](const eqPhysSurfParam_t* other) { return !other->name.CompareCaseIns(name); });
+	const int foundIdx = arrayFindIndexF(m_physSurfaceParams, [name](const eqPhysSurfParam* other) { return !other->name.CompareCaseIns(name); });
 	if (foundIdx != -1)
 	{
 		ASSERT_FAIL("AddSurfaceParam - %s already added\n", name);
 		return;
 	}
 
-	eqPhysSurfParam_t* surfParam = PPNew eqPhysSurfParam_t;
+	eqPhysSurfParam* surfParam = PPNew eqPhysSurfParam;
 	surfParam->id = m_physSurfaceParams.append(surfParam);
 	surfParam->name = name;
 	surfParam->collideMask = KV_GetValueInt(kvSection->FindSection("collideMask"), 0, UINT_MAX);
@@ -399,7 +399,7 @@ const int CEqPhysics::FindSurfaceParamID(const char* name) const
 	return -1;
 }
 
-const eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name) const
+const eqPhysSurfParam* CEqPhysics::FindSurfaceParam(const char* name) const
 {
 	const int surfParamId = FindSurfaceParamID(name);
 	if (surfParamId == -1)
@@ -408,7 +408,7 @@ const eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name) const
 	return m_physSurfaceParams[surfParamId];
 }
 
-const eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id) const
+const eqPhysSurfParam* CEqPhysics::GetSurfaceParamByID(int id) const
 {
 	if (id == -1)
 		return nullptr;
@@ -951,7 +951,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		newPair.bodyB = bodyB;
 		newPair.dt = iter_delta;
 
-		const eqPhysSurfParam_t* sparam = GetSurfaceParamByID(coll.materialIndex);
+		const eqPhysSurfParam* sparam = GetSurfaceParamByID(coll.materialIndex);
 
 		if(sparam)
 		{
@@ -1372,7 +1372,7 @@ void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const
 	const BoundingBox& rayBox,
 	CollisionData_t& coll,
 	int rayMask,
-	eqPhysCollisionFilter* filterParams,
+	const eqPhysCollisionFilter* filterParams,
 	F func,
 	void* args)
 {
@@ -1418,7 +1418,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	const BoundingBox& rayBox,
 	CollisionData_t& coll,
 	Set<CEqCollisionObject*>& skipObjects,
-	int rayMask, eqPhysCollisionFilter* filterParams,
+	int rayMask, const eqPhysCollisionFilter* filterParams,
 	F func,
 	void* args)
 {
@@ -1447,16 +1447,9 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 			return false;
 	}
 
-	int objectTypeTesting = 0x3;
+	int objectTypeTesting = EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 	if (filterParams)
-	{
-		const int flags = filterParams->flags;
-		if (flags & EQPHYS_FILTER_FLAG_DISALLOW_STATIC)
-			objectTypeTesting &= ~0x1;
-
-		if (flags & EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC)
-			objectTypeTesting &= ~0x2;
-	}
+		objectTypeTesting = filterParams->flags & (EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS);
 
 	// TODO: special flag that ignores bound check
 	const bool staticInBoundTest = true; // (rayBox.minPoint.y <= cell->cellBoundUsed); TEMPORARY ALLOWED because Chicago bridges. 
@@ -1473,7 +1466,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	bool hitClosest = false;
 	
 	// static objects are not checked if line is not in Y bound
-	if(staticInBoundTest && (objectTypeTesting & 0x1))
+	if(staticInBoundTest && (objectTypeTesting & EQPHYS_FILTER_FLAG_STATICOBJECTS))
 	{
 		CScopedMutex m(s_eqPhysMutex);
 
@@ -1499,7 +1492,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 		}
 	}
 
-	if(objectTypeTesting & 0x2)
+	if(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS)
 	{
 		CScopedMutex m(s_eqPhysMutex);
 
@@ -1541,7 +1534,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 //----------------------------------------------------------------------------------------------------
 bool CEqPhysics::TestLineCollision(	const FVector3D& start, const FVector3D& end,
 									CollisionData_t& coll,
-									int rayMask, eqPhysCollisionFilter* filterParams)
+									int rayMask, const eqPhysCollisionFilter* filterParams)
 {
 	if (!m_grid) {
 		return false;
@@ -1585,7 +1578,7 @@ bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
 											const FVector3D& start, const FVector3D& end,
 											CollisionData_t& coll,
 											int rayMask, 
-											eqPhysCollisionFilter* filterParams)
+											const eqPhysCollisionFilter* filterParams)
 {
 	if (!m_grid) {
 		return false;
@@ -1678,17 +1671,23 @@ public:
 	int m_surfMaterialId;
 };
 
-bool CEqPhysics::CheckAllowContactTest(eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object)
+bool CEqPhysics::CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object)
 {
 	if (!filterParams)
 		return true;
 
-	bool checkStatic = (filterParams->flags & EQPHYS_FILTER_FLAG_STATICOBJECTS) && !object->IsDynamic();
-	bool checkDynamic = (filterParams->flags & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS) && object->IsDynamic();
+	// skip objects with some contents
+	if (object->GetContents() & filterParams->ignoreContentsMask)
+		return false;
+
+	const bool objIsDynamic = object->IsDynamic();
+
+	const bool checkStatic = (filterParams->flags & EQPHYS_FILTER_FLAG_STATICOBJECTS) && !objIsDynamic;
+	const bool checkDynamic = (filterParams->flags & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS) && objIsDynamic;
 
 	if (checkStatic || checkDynamic)
 	{
-		bool checkUserData = (filterParams->flags & EQPHYS_FILTER_FLAG_CHECKUSERDATA) > 0;
+		const bool checkUserData = (filterParams->flags & EQPHYS_FILTER_FLAG_BY_USERDATA) > 0;
 
 		if(filterParams->type == EQPHYS_FILTER_TYPE_INCLUDE_ONLY)
 		{
@@ -1716,7 +1715,7 @@ bool CEqPhysics::TestLineSingleObject(
 	CollisionData_t& coll,
 	float closestHit,
 	int rayMask,
-	eqPhysCollisionFilter* filterParams,
+	const eqPhysCollisionFilter* filterParams,
 	void* args)
 {
 	if(!object)
@@ -1860,10 +1859,10 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 												CollisionData_t& coll,
 												float closestHit,
 												int rayMask,
-												eqPhysCollisionFilter* filterParams,
+												const eqPhysCollisionFilter* filterParams,
 												void* args)
 {
-	bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
+	const bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
 
 	if (!forceRaycast && (object->m_flags & COLLOBJ_NO_RAYCAST))
 		return false;

@@ -23,7 +23,7 @@ const int PHYSICS_COLLISION_LIST_MAX = 8;
 enum ECollisionObjectFlags
 {
 	// disables raycasting and convex sweep casting
-	// might be ignored by EQPHYS_FILTER_FLAG_FORCE_RAYCAST flag
+	// explicitly ignored by EQPHYS_FILTER_FLAG_FORCE_RAYCAST flag
 	COLLOBJ_NO_RAYCAST				= (1 << 0),
 
 	// enable collision list

@@ -79,8 +79,8 @@ public:
 
 	void							AddSurfaceParamFromKV(const char* name, const KVSection* kvSection);
 	const int						FindSurfaceParamID(const char* name) const;
-	const eqPhysSurfParam_t*		FindSurfaceParam(const char* name) const;
-	const eqPhysSurfParam_t*		GetSurfaceParamByID(int id) const;
+	const eqPhysSurfParam*		FindSurfaceParam(const char* name) const;
+	const eqPhysSurfParam*		GetSurfaceParamByID(int id) const;
 
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
 	void							RemoveFromMoveableList( CEqRigidBody* body );
@@ -113,7 +113,7 @@ public:
 														const FVector3D& end,
 														CollisionData_t& coll,
 														int rayMask = COLLISION_MASK_ALL, 
-														eqPhysCollisionFilter* filterParams = nullptr);
+														const eqPhysCollisionFilter* filterParams = nullptr);
 
 	///< Pushes convex in the world for closest collision
 	bool							TestConvexSweepCollision(const btCollisionShape* shape,
@@ -122,7 +122,7 @@ public:
 																const FVector3D& end,
 																CollisionData_t& coll,
 																int rayMask = COLLISION_MASK_ALL, 
-																eqPhysCollisionFilter* filterParams = nullptr);
+																const eqPhysCollisionFilter* filterParams = nullptr);
 	///< Performs a line test for a single object.
 	///< start, end are world coordinates
 	bool							TestLineSingleObject(CEqCollisionObject* object,
@@ -132,7 +132,7 @@ public:
 															CollisionData_t& coll,
 															float closestHit,
 															int rayMask,
-															eqPhysCollisionFilter* filterParams,
+															const eqPhysCollisionFilter* filterParams,
 															void* args = nullptr);
 
 	// Pushes a convex sweep for closest collision for a single object.
@@ -144,7 +144,7 @@ public:
 																CollisionData_t& coll,
 																float closestHit,
 																int rayMask,
-																eqPhysCollisionFilter* filterParams,
+																const eqPhysCollisionFilter* filterParams,
 																void* args = nullptr);
 
 	///< draws physics bounding boxes
@@ -167,7 +167,7 @@ public:
 	void							ProcessContactPair(ContactPair_t& pair);
 
 	// checks collision (made especially for rays, but could be used in other situations)
-	bool							CheckAllowContactTest(eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object);
+	bool							CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object);
 
 	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
 
@@ -185,7 +185,7 @@ protected:
 		CollisionData_t& coll,
 		float closestHit,
 		int rayMask,
-		eqPhysCollisionFilter* filterParams,
+		const eqPhysCollisionFilter* filterParams,
 		void* args);
 
 	///< tests line versus some objects
@@ -196,7 +196,7 @@ protected:
 															CollisionData_t& coll,
 															Set<CEqCollisionObject*>& skipObjects,
 															int rayMask,
-															eqPhysCollisionFilter* filterParams,
+															const eqPhysCollisionFilter* filterParams,
 															F func,
 															void* args = nullptr);
 
@@ -207,7 +207,7 @@ protected:
 																	const BoundingBox& rayBox,
 																	CollisionData_t& coll,
 																	int rayMask,
-																	eqPhysCollisionFilter* filterParams,
+																	const eqPhysCollisionFilter* filterParams,
 																	F func,
 																	void* args = nullptr);
 
@@ -215,7 +215,7 @@ protected:
 
 protected:
 
-	Array<eqPhysSurfParam_t*>		m_physSurfaceParams{ PP_SL };
+	Array<eqPhysSurfParam*>		m_physSurfaceParams{ PP_SL };
 
 	Array<CEqRigidBody*>			m_moveable{ PP_SL };
 

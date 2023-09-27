@@ -8,47 +8,25 @@
 #include "core/core_common.h"
 #include "eqPhysics_Defs.h"
 
-eqPhysCollisionFilter::eqPhysCollisionFilter()
-{
-	type = EQPHYS_FILTER_TYPE_EXCLUDE;
-	flags = 0;
-	numObjects = 0;
-}
-
 eqPhysCollisionFilter::eqPhysCollisionFilter(const CEqRigidBody* obj)
 {
-	objectPtrs[0] = obj;
-	numObjects = 1;
-
-	type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	objectPtrs.append(reinterpret_cast<const void*>(obj));
 	flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 }
 
-eqPhysCollisionFilter::eqPhysCollisionFilter(const CEqRigidBody** obj, int cnt)
+eqPhysCollisionFilter::eqPhysCollisionFilter(ArrayCRef<CEqRigidBody> objs)
 {
-	int cpcnt = sizeof(CEqRigidBody*) * cnt;
-	cpcnt = min(cpcnt, MAX_COLLISION_FILTER_OBJECTS);
-
-	memcpy(objectPtrs, obj, cpcnt);
-	numObjects = cpcnt;
-
-	type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	objectPtrs.append((const void**)objs.ptr(), objs.numElem());
 	flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 }
 
 void eqPhysCollisionFilter::AddObject(const void* ptr)
 {
-	if (ptr && numObjects < MAX_COLLISION_FILTER_OBJECTS)
-		objectPtrs[numObjects++] = ptr;
+	if (ptr && objectPtrs.numElem() < MAX_COLLISION_FILTER_OBJECTS)
+		objectPtrs.append(ptr);
 }
 
 bool eqPhysCollisionFilter::HasObject(const void* ptr) const
 {
-	for (int i = 0; i < numObjects; i++)
-	{
-		if (objectPtrs[i] == ptr)
-			return true;
-	}
-
-	return false;
+	return arrayFindIndex(objectPtrs, ptr) != -1;
 }
