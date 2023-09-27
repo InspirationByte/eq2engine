@@ -113,5 +113,5 @@ protected:
 	Array<gikchain_t>			m_ikChains{ PP_SL };
 
 	// sequence timers. first timer is main, and transitional is last
-	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];
+	FixedArray<sequencetimer_t, MAX_SEQUENCE_TIMERS>	m_sequenceTimers;
 };

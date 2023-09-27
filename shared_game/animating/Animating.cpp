@@ -126,9 +126,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 	m_joints = ArrayCRef(&model->GetJoint(0), studio.numBones);
 	m_transforms = ArrayCRef(model->GetStudioHdr().pTransform(0), model->GetStudioHdr().numTransforms);
 
-	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
-		m_sequenceTimers[i].Reset();
-
+	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
 	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_joints.numElem());
 
 	for (int i = 0; i < m_joints.numElem(); i++)
@@ -362,10 +360,10 @@ void CAnimatingEGF::SetSequenceByName(const char* name, int slot)
 // returns current activity
 Activity CAnimatingEGF::GetCurrentActivity(int slot) const
 {
-	if (m_sequenceTimers[slot].seq)
-		return m_sequenceTimers[slot].seq->activity;
+	if (!m_sequenceTimers[slot].seq)
+		return ACT_INVALID;
 
-	return ACT_INVALID;
+	return m_sequenceTimers[slot].seq->activity;
 }
 
 // resets animation time, and restarts animation
@@ -417,16 +415,21 @@ const Vector3D& CAnimatingEGF::GetLocalBoneDirection(int nBone) const
 // returns duration time of the current animation
 float CAnimatingEGF::GetCurrentAnimationDuration(int slot) const
 {
-	if (!m_sequenceTimers[0].seq)
+	const gsequence_t* seq = m_sequenceTimers[slot].seq;
+	if (!seq)
 		return 0.0f;
 
-	return m_sequenceTimers[slot].seq->animations[0]->bones[0].numFrames / m_sequenceTimers[slot].seq->s->framerate;
+	return seq->animations[0]->bones[0].numFrames / seq->s->framerate;
 }
 
 // returns elapsed time of the current animation
 float CAnimatingEGF::GetCurrentAnimationTime(int slot) const
 {
-	return m_sequenceTimers[slot].seq_time / m_sequenceTimers[slot].seq->s->framerate;
+	const gsequence_t* seq = m_sequenceTimers[slot].seq;
+	if (!seq)
+		return 0.0f;
+
+	return m_sequenceTimers[slot].seq_time / seq->s->framerate;
 }
 
 // returns duration time of the specific animation
@@ -441,7 +444,7 @@ float CAnimatingEGF::GetAnimationDuration(int animIndex) const
 // returns remaining duration time of the current animation
 float CAnimatingEGF::GetCurrentRemainingAnimationDuration(int slot) const
 {
-	return GetCurrentAnimationDuration(slot) - m_sequenceTimers[slot].seq_time / m_sequenceTimers[slot].seq->s->framerate;
+	return GetCurrentAnimationDuration(slot) - GetCurrentAnimationTime(slot);
 }
 
 bool CAnimatingEGF::IsSequencePlaying(int slot) const
@@ -491,10 +494,8 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 	}
 
 	// update timers and raise events
-	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
+	for (sequencetimer_t& timer : m_sequenceTimers)
 	{
-		sequencetimer_t& timer = m_sequenceTimers[i];
-
 		// for savegame purpose resolving sequences
 		if (timer.seq_idx >= 0 && !timer.seq)
 			timer.seq = &m_seqList[timer.seq_idx];
@@ -646,10 +647,8 @@ void CAnimatingEGF::RecalcBoneTransforms()
 	{
 		qanimframe_t finalBoneFrame;
 
-		for (int j = 0; j < MAX_SEQUENCE_TIMERS; j++)
+		for (sequencetimer_t& timer : m_sequenceTimers)
 		{
-			sequencetimer_t& timer = m_sequenceTimers[j];
-
 			// if no animation plays on this timer, continue
 			if (!timer.seq)
 				continue;
