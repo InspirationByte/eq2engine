@@ -362,6 +362,7 @@ void CEqPhysics::DestroyWorld()
 	SAFE_DELETE(m_collisionWorld);
 	SAFE_DELETE(m_collDispatcher);
 	SAFE_DELETE(m_collConfig);
+	SAFE_DELETE(m_dispatchInfo);
 }
 
 void CEqPhysics::DestroyGrid()
