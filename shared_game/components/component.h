@@ -11,15 +11,17 @@ template <typename HOST>
 class ComponentBase
 {
 public:
+	virtual ~ComponentBase() = default;
 	ComponentBase() = default;
 	ComponentBase(HOST* host) : m_host(host) {}
-	virtual ~ComponentBase() = default;
 
-	virtual const char* GetName() const = 0;
-	virtual int GetNameHash() const = 0;
+	virtual const char*	GetName() const = 0;
+	virtual int			GetNameHash() const = 0;
 
-	virtual void OnAdded() {}
-	virtual void OnRemoved() {}
+	virtual void		OnAdded() {}
+	virtual void		OnRemoved() {}
+
+	HOST*				GetHost() const { return m_host; }
 protected:
 	HOST*	m_host{ nullptr };
 };

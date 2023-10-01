@@ -13,7 +13,6 @@
 // File stream
 //------------------------------------------------------------------------------
 
-// TODO: add PPSourceLine to track location of where file was open
 class CFile : public IFile
 {
 	friend class CFileSystem;

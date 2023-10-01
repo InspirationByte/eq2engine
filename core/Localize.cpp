@@ -160,7 +160,7 @@ void CLocalize::SetLanguageName(const char* name)
 
 	// add localized path
 	EqString localizedPath(g_fileSystem->GetCurrentGameDirectory() + _Es("_") + m_language);
-	g_fileSystem->AddSearchPath("$LOCALIZE$", localizedPath.ToCString());
+	g_fileSystem->AddSearchPath("$LOCALIZE$", localizedPath);
 
 	m_language = m_language.LowerCase();
 
@@ -174,17 +174,22 @@ const char* CLocalize::GetLanguageName() const
 
 void CLocalize::AddTokensFile(const char* pszFilePrefix)
 {
+	if (arrayFindIndex(m_languageFilePrefixes, pszFilePrefix) != -1)
+	{
+		ASSERT_FAIL("CLocalize: %s is already loaded", pszFilePrefix);
+		return;
+	}
+
 	m_languageFilePrefixes.append(pszFilePrefix);
 	ParseLanguageFile(pszFilePrefix);
 }
 
 void CLocalize::ParseLanguageFile(const char* pszFilePrefix)
 {
-	// TODO: check for already loaded token files!
 	EqString path = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
 
 	KVSection kvSec;
-	if (!KV_LoadFromFile(path.ToCString(), -1, &kvSec))
+	if (!KV_LoadFromFile(path, -1, &kvSec))
 	{
 		MsgWarning("Cannot load language file '%s'\n", path.ToCString());
 		return;
