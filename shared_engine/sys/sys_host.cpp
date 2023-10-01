@@ -48,25 +48,26 @@ DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Closes current 
 DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quti, "quti", CGameHost::HostExitCmd, "This made for keyboard writing errors", 0);
 
-DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
-DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
+DECLARE_CVAR(r_clear, "0", "Clear the backbuffer",CV_ARCHIVE);
+DECLARE_CVAR(r_vSync, "0", "Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing, "0", "Multisample antialiasing", CV_ARCHIVE);
 DECLARE_CVAR(r_fastShaders, "0", "Low shader quality mode", CV_ARCHIVE);
+DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
+DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 
 DECLARE_CVAR(sys_vmode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
 DECLARE_CVAR(sys_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
-
-DECLARE_CVAR(in_mouse_to_touch, "0", "Convert mouse clicks to touch input", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(sys_maxfps, "0", 0.0f, 300.0f, "Frame rate limit", CV_ARCHIVE);
-DECLARE_CVAR(sys_timescale, "1.0f", "Time scale", CV_CHEAT);
-DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
-DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
+DECLARE_CVAR(sys_timescale, "1.0", "Frame time scale factor", CV_CHEAT);
+
+DECLARE_CVAR(m_clicks_to_touch, "0", "Convert mouse clicks to touch input", CV_ARCHIVE);
+DECLARE_CVAR(m_invert, 0, "Mouse inversion enabled?", CV_ARCHIVE);
+
 
 DECLARE_CMD(sys_set_fullscreen, nullptr, 0)
 {
 	g_pHost->SetFullscreenMode(true);
 }
-
 
 DECLARE_CMD(sys_set_windowed, nullptr, 0)
 {
@@ -112,12 +113,10 @@ enum CursorCode
 	dc_last,
 };
 
-DKMODULE*			g_matsysmodule = nullptr;
+static DKMODULE*	g_matsysmodule = nullptr;
 
 IMaterialSystem*	materials = nullptr;
 IShaderAPI*			g_pShaderAPI = nullptr;
-
-DECLARE_CVAR(m_invert,0,"Mouse inversion enabled?", CV_ARCHIVE);
 
 void CGameHost::HostQuitToDesktop()
 {
@@ -321,8 +320,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	m_pWindow = pWindow;
 
 	materialsInitSettings_t materials_config;
-	materialsRenderSettings_t& render_config = materials_config.renderConfig;
-	render_config.lowShaderQuality = r_fastShaders.GetBool();
 
 	// set window info
 	SDL_SysWMinfo winfo;
@@ -393,6 +390,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
 	materials_config.shaderApiParams.screenFormat = screenFormat;
 	materials_config.shaderApiParams.verticalSyncEnabled = r_vSync.GetBool();
+	materials_config.renderConfig.lowShaderQuality = r_fastShaders.GetBool();
 
 	if(!materials->Init(materials_config))
 		return false;
@@ -922,7 +920,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if( equi::Manager->ProcessMouseEvents( x, y, buttons, down ? equi::UIEVENT_DOWN : equi::UIEVENT_UP) )
 		return;
 
-	if(in_mouse_to_touch.GetBool())
+	if(m_clicks_to_touch.GetBool())
 		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
 
 	if(EqStateMgr::GetCurrentState())
