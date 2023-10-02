@@ -7,6 +7,8 @@
 
 #pragma once
 
+namespace Networking { class Buffer; }
+
 template <class TYPE, class CHANGER>
 class CNetworkVarBase
 {
@@ -125,11 +127,7 @@ protected:
 //--------------------------------------------------------------------------------------------------------
 
 // Use this macro when you want to embed a structure inside your entity and have CNetworkVars in it.
-template< class T >
-static inline void DispatchNetworkStateChanged(T* pObj)
-{
-	pObj->OnNetworkStateChanged();
-}
+
 template< class T >
 static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 {
@@ -152,7 +150,6 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 	NETWORK_VAR_DECL( type, name, CNetworkVarBase )
 
 #define DECLARE_EMBEDDED_NETWORKVAR() \
-	void OnNetworkStateChanged() {} \
 	void OnNetworkStateChanged( void* ptr ) {}
 
 #define CNetworkVarEmbedded( type, name ) \
@@ -162,9 +159,6 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 		template< class T > NetworkVar_##name& operator=( const T &val ) { *((type*)this) = val; return *this; } \
 	public: \
 		void CopyFrom( const type &src ) { *((type *)this) = src; OnNetworkStateChanged(this); } \
-		void OnNetworkStateChanged() { \
-			DispatchNetworkStateChanged(((NetworkVar_##name##Cntr*)(((char*)this) - offsetOf(NetworkVar_##name##Cntr,name)))); \
-		} \
 		void OnNetworkStateChanged( void* ptr ) { \
 			DispatchNetworkStateChanged(((NetworkVar_##name##Cntr*)(((char*)this) - offsetOf(NetworkVar_##name##Cntr,name))), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
 		} \
@@ -313,8 +307,22 @@ struct netvariablemap_t
 #define DEFINE_SENDPROP_EMBEDDED(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(classNameTypedef, name), 0, &memb(classNameTypedef, name).m_NetworkVariableMap}
 
 
-/*
-namespace Networking
+class CNetworkedObject
 {
+public:
+	DECLARE_NETWORK_TABLE_PUREVIRTUAL()
 
-};*/
+	CNetworkedObject() = default;
+	virtual ~CNetworkedObject() = default;
+
+	// NOTE: the class deriving it should implement this and
+	// and must include network changelist
+	//void			OnNetworkStateChanged(void* ptr);
+
+	virtual void	OnPackMessage(Networking::Buffer* buffer, Array<uint>& changeList);
+	virtual void	OnUnpackMessage(Networking::Buffer* buffer);
+protected:
+
+	void			PackNetworkVariables(const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
+	void			UnpackNetworkVariables(const netvariablemap_t* map, Networking::Buffer* buffer);
+};
