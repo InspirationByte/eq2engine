@@ -1,5 +1,6 @@
 #include "core/core_common.h"
 #include "NetObject.h"
+#include "Buffer.h"
 
 void CNetworkedObject::OnPackMessage(Networking::Buffer* buffer, Array<uint>& changeList)
 {

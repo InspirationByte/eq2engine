@@ -306,6 +306,8 @@ struct netvariablemap_t
 
 #define DEFINE_SENDPROP_EMBEDDED(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(classNameTypedef, name), 0, &memb(classNameTypedef, name).m_NetworkVariableMap}
 
+#define NETWORK_CHANGELIST(name)			m_changeList_##name
+#define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
 
 class CNetworkedObject
 {
