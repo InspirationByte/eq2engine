@@ -188,6 +188,10 @@ struct MeshProcess : public dtTileCacheMeshProcess
 	{
 		m_geom = geom;
 	}
+
+	virtual void processLayer(const dtCompressedTileRef ref, struct dtTileCacheLayer* layer)
+	{
+	}
 	
 	virtual void process(struct dtNavMeshCreateParams* params,
 						 unsigned char* polyAreas, unsigned short* polyFlags)
