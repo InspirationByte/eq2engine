@@ -71,6 +71,8 @@ public:
 	void				WriteData(const void* pData, int nBytes);
 	void				ReadData(void* pDst, int nBytes);
 
+	CMemoryStream&		GetData() { return m_data; }
+
 protected:
 
 	CMemoryStream		m_intData{ PP_SL };

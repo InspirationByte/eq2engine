@@ -2,37 +2,17 @@
 #include "NetObject.h"
 #include "Buffer.h"
 
-void CNetworkedObject::OnPackMessage(Networking::Buffer* buffer, Array<uint>& changeList)
+void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList)
 {
-	// packs all data
-	netvariablemap_t* map = GetNetworkTableMap();
-	while (map)
-	{
-		PackNetworkVariables(map, buffer, changeList);
-		map = map->m_baseMap;
-	}
-}
-
-void CNetworkedObject::OnUnpackMessage(Networking::Buffer* buffer)
-{
-	// unpacks all data
-	netvariablemap_t* map = GetNetworkTableMap();
-	while (map)
-	{
-		UnpackNetworkVariables(map, buffer);
-		map = map->m_baseMap;
-	}
-}
-
-inline void PackNetworkVariables(void* object, const netvariablemap_t* map, IVirtualStream* stream, Array<uint>& changeList)
-{
+#ifndef EDITOR
 	if (map->m_numProps == 1 && map->m_props[0].size == 0)
 		return;
 
 	int numWrittenProps = 0;
+	CMemoryStream& stream = buffer->GetData();
 
-	const int startPos = stream->Tell();
-	stream->Write(&numWrittenProps, 1, sizeof(numWrittenProps));
+	const int startPos = stream.Tell();
+	stream.Write(&numWrittenProps, 1, sizeof(numWrittenProps));
 
 	for (int i = 0; i < map->m_numProps; i++)
 	{
@@ -42,47 +22,40 @@ inline void PackNetworkVariables(void* object, const netvariablemap_t* map, IVir
 			continue;
 
 		// write offset
-		stream->Write(&prop.nameHash, 1, sizeof(int));
+		stream.Write(&prop.nameHash, 1, sizeof(int));
 
-		char* varData = ((char*)object) + prop.offset;
-
+		uintptr_t varData = ((uintptr_t)objectPtr) + prop.offset;
 		if (prop.type == NETPROP_NETPROP)
 		{
 			static Array<uint> _empty(PP_SL);
-			PackNetworkVariables(varData, prop.nestedMap, stream, _empty);
-
-			numWrittenProps++;
-
-			continue;
+			PackNetworkVariables((void*)varData, prop.nestedMap, buffer, _empty);
 		}
-
-		// write data
-		stream->Write(varData, 1, prop.size);
+		else
+		{
+			stream.Write((void*)varData, 1, prop.size);
+		}
 		numWrittenProps++;
 	}
 
-	const int lastPos = stream->Tell();
-	stream->Seek(startPos, VS_SEEK_SET);
-	stream->Write(&numWrittenProps, 1, sizeof(numWrittenProps));
+	const int lastPos = stream.Tell();
+	stream.Seek(startPos, VS_SEEK_SET);
+	stream.Write(&numWrittenProps, 1, sizeof(numWrittenProps));
 
-	stream->Seek(lastPos, VS_SEEK_SET);
+	stream.Seek(lastPos, VS_SEEK_SET);
+#endif
 }
 
-template <class T>
-static void UnpackNetworkVariables(T object, const netvariablemap_t* map, Networking::Buffer* buffer)
+void UnpackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer)
 {
 #ifndef EDITOR
 	if (map->m_numProps == 1 && map->m_props[0].size == 0)
 		return;
 
-	int numWrittenProps = buffer->ReadInt();
-
+	const int numWrittenProps = buffer->ReadInt();
 	for (int i = 0; i < numWrittenProps; i++)
 	{
-		netprop_t* found = nullptr;
-
-		int nameHash = buffer->ReadInt();
-
+		const netprop_t* found = nullptr;
+		const int nameHash = buffer->ReadInt();
 		for (int j = 0; j < map->m_numProps; j++)
 		{
 			if (map->m_props[j].nameHash == nameHash)
@@ -98,36 +71,37 @@ static void UnpackNetworkVariables(T object, const netvariablemap_t* map, Networ
 			continue;
 		}
 
-		uintptr_t varPtr = ((uintptr_t)object + found->offset);
-
+		uintptr_t varPtr = ((uintptr_t)objectPtr + found->offset);
 		if (found->type == NETPROP_NETPROP)
 		{
-			UnpackNetworkVariables(varPtr, found->nestedMap, buffer);
+			UnpackNetworkVariables((void*)varPtr, found->nestedMap, buffer);
 		}
 		else
 		{
 			void* stackBuf = stackalloc(found->size);
-
 			buffer->ReadData(stackBuf, found->size);
-
 			memcpy((void*)varPtr, stackBuf, found->size);
 		}
 	}
 #endif
 }
 
-void CNetworkedObject::PackNetworkVariables(const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList)
+void CNetworkedObject::OnPackMessage(netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList)
 {
-#ifndef EDITOR
-	CMemoryStream varsData(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 2048, PP_SL);
-	::PackNetworkVariables(this, map, &varsData, changeList);
-
-	// write to net buffer
-	buffer->WriteData(varsData.GetBasePointer(), varsData.Tell());
-#endif
+	// packs all data
+	while (map)
+	{
+		PackNetworkVariables(this, map, buffer, changeList);
+		map = map->m_baseMap;
+	}
 }
 
-void CNetworkedObject::UnpackNetworkVariables(const netvariablemap_t* map, Networking::Buffer* buffer)
+void CNetworkedObject::OnUnpackMessage(netvariablemap_t* map, Networking::Buffer* buffer)
 {
-	::UnpackNetworkVariables(this, map, buffer);
+	// unpacks all data
+	while (map)
+	{
+		UnpackNetworkVariables(this, map, buffer);
+		map = map->m_baseMap;
+	}
 }

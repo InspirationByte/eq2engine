@@ -13,8 +13,11 @@ template <class TYPE, class CHANGER>
 class CNetworkVarBase
 {
 public:
-	CNetworkVarBase() {}
-	CNetworkVarBase(const TYPE& val)			{m_value = val;}
+	CNetworkVarBase() = default;
+	CNetworkVarBase(const TYPE& val) 
+		: m_value(val)
+	{
+	}
 
 	const TYPE&	Set(const TYPE& val)
 	{
@@ -115,7 +118,7 @@ public:
 		return Set( m_value & ( const TYPE )val );
 	}
 
-	TYPE			m_value;
+	TYPE m_value;
 
 protected:
 	inline void OnNetworkStateChanged()
@@ -138,8 +141,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 #define NETWORK_VAR_DECL( type, name, base ) \
 	friend class NetworkVar_##name; \
 	typedef ThisClass NetworkVar_##name##Cntr; \
-	class NetworkVar_##name { \
-	public: \
+	struct NetworkVar_##name { \
 		static inline void OnNetworkStateChanged( void* ptr ) { \
 			DispatchNetworkStateChanged((NetworkVar_##name##Cntr*)(((uintptr_t)ptr) - offsetOf(NetworkVar_##name##Cntr,name)), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
 		} \
@@ -155,9 +157,8 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 #define CNetworkVarEmbedded( type, name ) \
 	friend class NetworkVar_##name; \
 	typedef ThisClass NetworkVar_##name##Cntr; \
-	class NetworkVar_##name : public type { \
+	struct NetworkVar_##name : public type { \
 		template< class T > NetworkVar_##name& operator=( const T &val ) { *((type*)this) = val; return *this; } \
-	public: \
 		void CopyFrom( const type &src ) { *((type *)this) = src; OnNetworkStateChanged(this); } \
 		void OnNetworkStateChanged( void* ptr ) { \
 			DispatchNetworkStateChanged(((NetworkVar_##name##Cntr*)(((char*)this) - offsetOf(NetworkVar_##name##Cntr,name))), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
@@ -193,19 +194,21 @@ enum ENetPropTypes
 	NETPROP_NETPROP,		// nesting
 };
 
+struct netvariablemap_t;
+
 // network property address holder
 struct netprop_t
 {
-	const char*					name;
-	int							nameHash;
+	const char*			name;
+	int					nameHash;
 
-	int							flags;		// ENetPropFlags
-	int							type;		// ENetPropTypes
+	int					flags;		// ENetPropFlags
+	int					type;		// ENetPropTypes
 
-	uint						offset;
-	uint						size;
+	uint				offset;
+	uint				size;
 
-	struct netvariablemap_t*	nestedMap;
+	netvariablemap_t*	nestedMap;
 };
 
 static inline void HashNetPropNames(netprop_t* props, int numProps)
@@ -214,42 +217,35 @@ static inline void HashNetPropNames(netprop_t* props, int numProps)
 		props[i].nameHash = props[i].name ? StringToHash(props[i].name) : 0;
 }
 
+void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
+void UnpackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer);
+
 // variable map basics
 struct netvariablemap_t
 {
-	const char*				m_mapName;
-	netvariablemap_t*		m_baseMap;
-
-	int16					m_numProps;
-
-	netprop_t*				m_props;
+	const char*			m_mapName;
+	netvariablemap_t*	m_baseMap;
+	int16				m_numProps;
+	netprop_t*			m_props;
 };
 
 #define BEGIN_NETWORK_TABLE_GUTS( className ) \
 	template <typename T> netvariablemap_t *NetTableInit(T *); \
 	template <> netvariablemap_t *NetTableInit<className>( className * ); \
-	namespace className##_NetTableInit \
-	{ \
-		netvariablemap_t *g_NetTableHolder = NetTableInit( (className *)NULL );  \
+	namespace className##_NetTableInit { \
+		netvariablemap_t* g_NetTableHolder = NetTableInit( (className *)NULL );  \
 	} \
-	\
-	template <> netvariablemap_t *NetTableInit<className>( className * ) \
-	{ \
+	template <> netvariablemap_t *NetTableInit<className>( className * ) { \
 		typedef className classNameTypedef; \
-		static netprop_t netTableDesc[] = \
-		{ \
-			{ nullptr, 0, 0, 0,  0, 0 },
+		static netprop_t netTableDesc[] = { \
+			{ nullptr, 0, 0, 0, 0, 0 },
 
 #define END_NETWORK_TABLE() \
 		}; \
-		\
-		if ( sizeof( netTableDesc ) > sizeof( netTableDesc[0] ) ) \
-		{ \
+		if ( sizeof( netTableDesc ) > sizeof( netTableDesc[0] ) ) { \
 			classNameTypedef::m_NetworkVariableMap.m_numProps = elementsOf( netTableDesc ) - 1; \
 			classNameTypedef::m_NetworkVariableMap.m_props = &netTableDesc[1]; \
-		} \
-		else \
-		{ \
+		} else { \
 			classNameTypedef::m_NetworkVariableMap.m_numProps = 1; \
 			classNameTypedef::m_NetworkVariableMap.m_props = netTableDesc; \
 		} \
@@ -262,7 +258,6 @@ struct netvariablemap_t
 	netvariablemap_t *className::GetNetworkTableMap( void ) { return &m_NetworkVariableMap; } \
 	BEGIN_NETWORK_TABLE_GUTS( className )
 
-//
 #define BEGIN_NETWORK_TABLE_NO_BASE( className ) \
 	netvariablemap_t className::m_NetworkVariableMap = { #className, NULL, 0, NULL }; \
 	netvariablemap_t* className::GetNetworkTableMap( void ) { return &m_NetworkVariableMap; } \
@@ -277,14 +272,6 @@ struct netvariablemap_t
 #define	DECLARE_NETWORK_TABLE() \
 	DECLARE_SIMPLE_NETWORK_TABLE() \
 	virtual netvariablemap_t* GetNetworkTableMap( void );
-
-#define	DECLARE_NETWORK_TABLE_PUREVIRTUAL() \
-	DECLARE_SIMPLE_NETWORK_TABLE() \
-	virtual netvariablemap_t* GetNetworkTableMap( void ) = 0;
-
-#define	DECLARE_NETWORK_TABLE_NOVIRTUAL() \
-	DECLARE_SIMPLE_NETWORK_TABLE() \
-	netvariablemap_t* GetNetworkTableMap( void );
 
 //------------------------------------------------------------------------------------
 
@@ -312,19 +299,10 @@ struct netvariablemap_t
 class CNetworkedObject
 {
 public:
-	DECLARE_NETWORK_TABLE_PUREVIRTUAL()
-
-	CNetworkedObject() = default;
-	virtual ~CNetworkedObject() = default;
-
 	// NOTE: the class deriving it should implement this and
 	// and must include network changelist
 	//void			OnNetworkStateChanged(void* ptr);
 
-	virtual void	OnPackMessage(Networking::Buffer* buffer, Array<uint>& changeList);
-	virtual void	OnUnpackMessage(Networking::Buffer* buffer);
-protected:
-
-	void			PackNetworkVariables(const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
-	void			UnpackNetworkVariables(const netvariablemap_t* map, Networking::Buffer* buffer);
+	void OnPackMessage(netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
+	void OnUnpackMessage(netvariablemap_t* map, Networking::Buffer* buffer);
 };
