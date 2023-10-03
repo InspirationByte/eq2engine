@@ -217,9 +217,6 @@ static inline void HashNetPropNames(netprop_t* props, int numProps)
 		props[i].nameHash = props[i].name ? StringToHash(props[i].name) : 0;
 }
 
-void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
-void UnpackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer);
-
 // variable map basics
 struct netvariablemap_t
 {
@@ -296,13 +293,5 @@ struct netvariablemap_t
 #define NETWORK_CHANGELIST(name)			m_changeList_##name
 #define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
 
-class CNetworkedObject
-{
-public:
-	// NOTE: the class deriving it should implement this and
-	// and must include network changelist
-	//void			OnNetworkStateChanged(void* ptr);
-
-	void OnPackMessage(netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
-	void OnUnpackMessage(netvariablemap_t* map, Networking::Buffer* buffer);
-};
+void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
+void UnpackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer);
