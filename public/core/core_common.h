@@ -64,6 +64,7 @@
 #include "platform/eqatomic.h"
 #include "platform/eqtimer.h"
 
+#include "ds/rawitem.h"
 #include "ds/IVirtualStream.h"
 
 #include "ds/eqstring.h"

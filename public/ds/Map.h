@@ -7,14 +7,6 @@
 
 #pragma once
 
-template<typename T>
-struct RawItem
-{
-	ubyte	data[sizeof(T)];
-	T*		operator->() { return reinterpret_cast<T*>(&data); }
-	T&		operator*() { return *reinterpret_cast<T*>(&data); }
-};
-
 template<typename K, typename V>
 class Map
 {
@@ -491,7 +483,8 @@ private:
 	struct Item
 	{
 		K			key;
-		RawItem<V>	value;
+		RawItem<V, alignof(V)>	value;
+		
 		Item*		parent{ nullptr };
 		Item*		left{ nullptr };
 		Item*		right{ nullptr };
