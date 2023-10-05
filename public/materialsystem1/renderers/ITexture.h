@@ -9,7 +9,7 @@
 #include "imaging/textureformats.h"
 
 class CImage;
-enum ETextureFormat;
+enum ETextureFormat : int;
 
 enum ETextureLockFlags
 {

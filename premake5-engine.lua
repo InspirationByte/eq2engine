@@ -443,7 +443,10 @@ project "movieLib"
     includedirs {
 		Folders.shared_engine
 	}
-	
+	filter "system:android"
+		defines {
+			"MOVIELIB_DISABLE"
+		}
 	
 group ""
 
@@ -451,5 +454,31 @@ include "premake5-eq1.lua"
 
 -- only build tools for big machines
 if ENABLE_TOOLS then
+
+	-- EGF generator
+	project "egfLib"
+		kind "StaticLib"
+		unitybuild "on"
+		uses {
+			"corelib", "frameworkLib", "e2Core",
+			"bullet2", "zlib", "openfbx", 
+			"studioFileLib"
+		}
+		files {
+			Folders.shared_engine.. "egf/**.cpp",
+			Folders.shared_engine.. "egf/**.c",
+			Folders.shared_engine.. "egf/**.h",
+			Folders.public.. "egf/**.h"
+		}
+		includedirs {
+			Folders.shared_engine
+		}
+		
+	usage "egfLib"
+		links "egfLib"
+		includedirs {
+			Folders.shared_engine
+		}
+
     include "utils/premake5.lua"
 end

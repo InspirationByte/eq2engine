@@ -65,31 +65,6 @@ usage "studioFileLib"
 	includedirs {
 		Folders.shared_engine
 	}
-
--- EGF generator
-project "egfLib"
-    kind "StaticLib"
-	unitybuild "on"
-	uses {
-		"corelib", "frameworkLib", "e2Core",
-		"bullet2", "zlib", "openfbx", 
-		"studioFileLib"
-	}
-    files {
-		Folders.shared_engine.. "egf/**.cpp",
-		Folders.shared_engine.. "egf/**.c",
-		Folders.shared_engine.. "egf/**.h",
-		Folders.public.. "egf/**.h"
-	}
-    includedirs {
-		Folders.shared_engine
-	}
-	
-usage "egfLib"
-	links "egfLib"
-	includedirs {
-		Folders.shared_engine
-	}
 	
 -- Studio model lib
 project "studioLib"
@@ -137,29 +112,32 @@ usage "animatingLib"
 	includedirs {
 		Folders.shared_game
 	}
+	
+if ENABLE_TOOLS then
 
--- Equilibrium 1 Darktech Physics
-project "dkPhysicsLib"
-    kind "StaticLib"
-	unitybuild "on"
-	uses {
-		"corelib", "frameworkLib", "e2Core",
-		"studioLib", "animatingLib", "bullet2"
-	}
-    files {
-		Folders.shared_engine.. "dkphysics/**.cpp",
-		Folders.shared_engine.. "dkphysics/**.h",
-		Folders.public.. "dkphysics/**.h"
-	}
-	includedirs {
-		Folders.shared_engine
-	}
+	-- Equilibrium 1 Darktech Physics
+	project "dkPhysicsLib"
+		kind "StaticLib"
+		unitybuild "on"
+		uses {
+			"corelib", "frameworkLib", "e2Core",
+			"studioLib", "animatingLib", "bullet2"
+		}
+		files {
+			Folders.shared_engine.. "dkphysics/**.cpp",
+			Folders.shared_engine.. "dkphysics/**.h",
+			Folders.public.. "dkphysics/**.h"
+		}
+		includedirs {
+			Folders.shared_engine
+		}
 
-usage "dkPhysicsLib"
-	links "dkPhysicsLib"
-	includedirs {
-		Folders.shared_engine
-	}
+	usage "dkPhysicsLib"
+		links "dkPhysicsLib"
+		includedirs {
+			Folders.shared_engine
+		}
+end -- ENABLE_TOOLS
 
 ----------------------------------------------
 -- Equilirium Material System 1

@@ -1,9 +1,4 @@
 usage "ffmpeg"
-	links {
-		"avcodec", "avformat", "avutil",
-		"swresample", "swscale",
-	}
-
 	includedirs {
 		"./include",
 	}
@@ -11,8 +6,10 @@ usage "ffmpeg"
 	libdirs {
 		"./lib"
 	}
-
-	--filter { "not system:windows" }
-   	--	postbuildcommands { 
-	--		"cp %{cfg.libdirs[1]}/* %{cfg.targetdir}"
-	--	}
+	
+	filter "system:windows or system:linux"
+		links {
+			"avcodec", "avformat", "avutil",
+			"swresample", "swscale",
+		}
+	-- TODO: android?
