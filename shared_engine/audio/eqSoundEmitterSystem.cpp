@@ -454,14 +454,14 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 
 	const bool loopCommandChanged = (emitter->loopCommand & LOOPCMD_FLAG_CHANGED);
 	const ELoopCommand loopCommand = (ELoopCommand)(emitter->loopCommand & 31);
+
 	if (loopCommand != LOOPCMD_NONE)
 	{
+		float loopRemainTimeFactor = emitter->loopCommandTimeFactor;
 		const float remainTimeFactorTarget = (loopCommand == LOOPCMD_FADE_IN) ? 1.0f : 0.0f;
-		const float diff = (remainTimeFactorTarget - emitter->loopCommandTimeFactor);
+		const float diff = remainTimeFactorTarget - loopRemainTimeFactor;
 		if (fabs(diff) > F_EPS)
 		{
-			float loopRemainTimeFactor = emitter->loopCommandTimeFactor;
-			
 			loopRemainTimeFactor += g_sounds->m_deltaTime * emitter->loopCommandRatePerSecond * sign(diff);
 			loopRemainTimeFactor = clamp(loopRemainTimeFactor, 0.0f, 1.0f);
 

@@ -489,17 +489,21 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 	if (!emitter)
 		return;
 
-	if ((emitter->loopCommand & 31) != LOOPCMD_NONE)
+	IEqAudioSource::Params param;
+
+	bool isNotPlaying = emitter->virtualParams.state != IEqAudioSource::PLAYING;
+	if (isNotPlaying || (emitter->loopCommand & 31) != LOOPCMD_NONE)
 	{
 		emitter->loopCommand = LOOPCMD_NONE | LOOPCMD_FLAG_CHANGED;
 		emitter->loopCommandRatePerSecond = 0.0f;
 		emitter->loopCommandTimeFactor = 1.0f;
 		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
+
+		param.set_looping(emitter->script->loop);
 	}
 
 	// check if not playing already
-	IEqAudioSource::Params param;
-	if (emitter->virtualParams.state != IEqAudioSource::PLAYING)
+	if (isNotPlaying)
 		param.set_state(IEqAudioSource::PLAYING);
 
 	// update virtual params
@@ -524,11 +528,17 @@ void CSoundingObject::StartLoop(SoundEmitterData* emitter, float fadeInTime)
 		fadeInTime = emitter->script->startLoopTime;
 
 	const bool wasStopped = emitter->virtualParams.state == IEqAudioSource::STOPPED;
+	const bool loopCmdChanged = (emitter->loopCommand & 31) != LOOPCMD_FADE_IN;
 
 	if(wasStopped)
 		PlayEmitter(emitter, false);
 
+	if(loopCmdChanged)
 	{
+		IEqAudioSource::Params param;
+		param.set_looping(emitter->script->loop);
+		emitter->soundSource->UpdateParams(param);
+
 		emitter->loopCommandRatePerSecond = 1.0f / fadeInTime;
 		emitter->loopCommand = LOOPCMD_FADE_IN | LOOPCMD_FLAG_CHANGED;
 
@@ -542,11 +552,14 @@ void CSoundingObject::StopLoop(SoundEmitterData* emitter, float fadeOutTime)
 	if (!emitter)
 		return;
 
-	if (fadeOutTime < F_EPS)
-		fadeOutTime = emitter->script->stopLoopTime;
+	if((emitter->loopCommand & 31) != LOOPCMD_FADE_OUT)
+	{
+		if (fadeOutTime < F_EPS)
+			fadeOutTime = emitter->script->stopLoopTime;
 
-	emitter->loopCommandRatePerSecond = 1.0f / fadeOutTime;
-	emitter->loopCommand = LOOPCMD_FADE_OUT | LOOPCMD_FLAG_CHANGED;
+		emitter->loopCommandRatePerSecond = 1.0f / fadeOutTime;
+		emitter->loopCommand = LOOPCMD_FADE_OUT | LOOPCMD_FLAG_CHANGED;
+	}
 
 	if(fadeOutTime <= 0.0f)
 	{

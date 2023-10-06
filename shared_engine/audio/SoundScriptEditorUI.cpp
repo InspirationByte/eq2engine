@@ -1555,10 +1555,18 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 								ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(1 / 7.0f, 0.7f, 0.5f));
 								ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(1 / 7.0f, 0.9f, 0.9f));
 								modified = ImGui::VSliderFloat("M##play_volume", ImVec2(18, 160), &playbackVolume, 0.0f, 1.0f, "") || modified;
-
+								ImGui::SameLine();
 								if (ImGui::IsItemActive() || ImGui::IsItemHovered())
 									ImGui::SetTooltip("Volume %.3f", playbackVolume);
 								ImGui::PopStyleColor(4);
+							}
+
+							{
+								float loopTimeFactor = emitter->loopCommandTimeFactor;
+								ImGui::VSliderFloat("L##loopTimeFactor", ImVec2(18, 160), &loopTimeFactor, 0.0f, 1.0f, "");
+
+								if (ImGui::IsItemActive() || ImGui::IsItemHovered())
+									ImGui::SetTooltip("loopTimeFactor %.3f", loopTimeFactor);
 							}
 
 							IEqAudioSource* src = emitter->soundSource;
