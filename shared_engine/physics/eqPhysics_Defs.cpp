@@ -11,13 +11,11 @@
 eqPhysCollisionFilter::eqPhysCollisionFilter(const CEqRigidBody* obj)
 {
 	objectPtrs.append(reinterpret_cast<const void*>(obj));
-	flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 }
 
 eqPhysCollisionFilter::eqPhysCollisionFilter(ArrayCRef<CEqRigidBody> objs)
 {
 	objectPtrs.append((const void**)objs.ptr(), objs.numElem());
-	flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 }
 
 void eqPhysCollisionFilter::AddObject(const void* ptr)
