@@ -535,9 +535,12 @@ void CSoundingObject::StartLoop(SoundEmitterData* emitter, float fadeInTime)
 
 	if(loopCmdChanged)
 	{
-		IEqAudioSource::Params param;
-		param.set_looping(emitter->script->loop);
-		emitter->soundSource->UpdateParams(param);
+		if(emitter->soundSource)
+		{
+			IEqAudioSource::Params param;
+			param.set_looping(emitter->script->loop);
+			emitter->soundSource->UpdateParams(param);
+		}
 
 		emitter->loopCommandRatePerSecond = 1.0f / fadeInTime;
 		emitter->loopCommand = LOOPCMD_FADE_IN | LOOPCMD_FLAG_CHANGED;
