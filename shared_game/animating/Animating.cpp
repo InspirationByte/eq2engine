@@ -86,8 +86,8 @@ CAnimatingEGF::CAnimatingEGF()
 {
 	m_boneTransforms = nullptr;
 	m_transitionFrames = nullptr;
-
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
+	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
 }
 
 CAnimatingEGF::~CAnimatingEGF()
@@ -112,6 +112,8 @@ void CAnimatingEGF::DestroyAnimating()
 	m_transitionFrames = nullptr;
 
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
+	m_sequenceTimers.clear();
+	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
 }
 
 void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
@@ -125,8 +127,6 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 
 	m_joints = ArrayCRef(&model->GetJoint(0), studio.numBones);
 	m_transforms = ArrayCRef(model->GetStudioHdr().pTransform(0), model->GetStudioHdr().numTransforms);
-
-	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
 	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_joints.numElem());
 
 	for (int i = 0; i < m_joints.numElem(); i++)
