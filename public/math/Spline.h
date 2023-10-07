@@ -58,50 +58,61 @@ void spline(const float* key, int num, float t, float* v)
 	}
 }
 
+enum ESplineTangent : int
+{
+	TANGENT_BEFORE,
+	TANGENT_AFTER,
+	TANGENT_COUNT,
+};
 
-class BezierSpline
+struct Spline3dPoint
+{
+	//Quaternion	rotation;
+	Vector3D	position;
+	Vector3D	tangents[TANGENT_COUNT];
+	float		time{ -1.0f };
+};
+
+class CSpline3d
 {
 public:
-	enum PointMode : ubyte
-	{
-		FREE,
-		ALIGNED,
-		MIRRORED
-	};
+	bool					IsLooped() const { return m_loop; }
+	float					GetDuration() const { return m_duration; }
 
-	// Quadratic
-	static Vector3D		GetPoint(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, float t);
+	float					GetLength() const { return m_distances.numElem() ? m_distances.back().y : 0.0f; }
 
-	// Quadratic
-	static Vector3D		GetFirstDerivative(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, float t);
+	// raw points
+	ArrayCRef<Spline3dPoint>	GetPoints() const { return m_points; }
 
-	// Cubic
-	static Vector3D		GetPoint(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t);
+	int						GetPointsCount() const { return m_points.numElem(); }
+	const Spline3dPoint&	GetPoint(int idx) const { return m_points[idx]; }
+	const float				GetPointTime(int idx) const { return m_points[idx].time; }
+	const float				GetPointDistance(int idx) const { return m_distances[idx * m_stepsPerSegment].y; }
+	const Vector3D&			GetTangent(int idx, ESplineTangent tangentId) const { return m_points[idx].tangents[tangentId]; }
 
-	// Cubic
-	static Vector3D		GetFirstDerivative(const Vector3D& p0, const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t);
+	// spline samplers
+	Vector3D				PositionAtTime(float time) const;
+	Vector3D				TangentAtTime(float time) const;
+	float					DistanceAtTime(float time) const;
+	float					TimeAtDistance(float time) const;
 
-	BezierSpline() = default;
-	virtual ~BezierSpline() = default;
+	// distance utils
+	void					UpdateDistances();
+	Vector3D				PositionAtDistance(float dist) const;
+	Vector3D				TangentAtDistance(float dist) const;
 
-	void		Reset();
-
-	int			GetControlPointCount() const { return points.numElem(); }
-
-	Vector3D	GetControlPoint(int index) const;
-	void		SetControlPoint(int index, Vector3D point);
-
-	PointMode	GetControlPointMode(int index) const;
-	void		SetControlPointMode(int index, PointMode mode);
-
-	Vector3D	GetPoint(float t) const;
-	Vector3D	GetVelocity(float t) const;
+	// segments
+	float					GetSegmentLength(int segIdx) const;
+	int						SegmentIndexByLocalTime(float time) const;
+	int						SegmentIndexByDistance(float dist) const;
 
 protected:
-	int			GetCurveCount() const;
-	void		TimeToCurveIndex(float& t, int& i) const;
-	void		EnforceMode(int index);
 
-	Array<Vector3D>		points{ PP_SL };
-	Array<PointMode>	pointModes{ PP_SL };
+	int						GetSegmentIndexAndLocalTime(float time, float& localTime) const;
+
+	Array<Spline3dPoint>	m_points{ PP_SL };
+	Array<Vector2D>			m_distances{ PP_SL };
+	float					m_duration{ 0.0f };
+	int						m_stepsPerSegment{ 5 };
+	bool					m_loop{ false };
 };
