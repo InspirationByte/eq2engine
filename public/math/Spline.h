@@ -76,9 +76,10 @@ struct Spline3dPoint
 class CSpline3d
 {
 public:
+	void					SetLooped(bool loop) { m_loop = loop; }
 	bool					IsLooped() const { return m_loop; }
-	float					GetDuration() const { return m_duration; }
 
+	float					GetDuration() const { return m_duration; }
 	float					GetLength() const { return m_distances.numElem() ? m_distances.back().y : 0.0f; }
 
 	// raw points
@@ -106,13 +107,17 @@ public:
 	int						SegmentIndexByLocalTime(float time) const;
 	int						SegmentIndexByDistance(float dist) const;
 
-protected:
-
-	int						GetSegmentIndexAndLocalTime(float time, float& localTime) const;
 
 	Array<Spline3dPoint>	m_points{ PP_SL };
+	bool					m_loop{ false };
+
+protected:
+	int						GetSegmentIndexAndLocalTime(float time, float& localTime) const;
+protected:
 	Array<Vector2D>			m_distances{ PP_SL };
 	float					m_duration{ 0.0f };
 	int						m_stepsPerSegment{ 5 };
-	bool					m_loop{ false };
 };
+
+Vector3D Spline3DPositionAtLocalTime(ArrayCRef<Spline3dPoint> points, int startPtIdx, float t);
+Vector3D Spline3DTangentAtLocalTime(ArrayCRef<Spline3dPoint> points, int startPtIdx, float t);
