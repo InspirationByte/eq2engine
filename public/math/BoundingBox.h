@@ -210,10 +210,11 @@ bool TAABBox3D<T>::IntersectsRay(const TVec3D<T>& rayStart, const TVec3D<T>& ray
 	TVec3D<T> T_1, T_2; // vectors to hold the T-values for every direction
 	T t_near = -static_cast<T>(F_INFINITY);
 	T t_far = static_cast<T>(F_INFINITY);
+	const T EPS = static_cast<T>(F_EPS);
 
 	for (int i = 0; i < 3; i++)
 	{
-		if (rayDir[i] == static_cast<T>(0))
+		if (abs(rayDir[i]) < EPS)
 		{
 			// ray parallel to planes in this direction
 			if ((rayStart[i] < minPoint[i]) || (rayStart[i] > maxPoint[i]))
@@ -228,7 +229,7 @@ bool TAABBox3D<T>::IntersectsRay(const TVec3D<T>& rayStart, const TVec3D<T>& ray
 			T_2[i] = (maxPoint[i] - rayStart[i]) * oneByRayDir;
 
 			if (T_1[i] > T_2[i])
-				QuickSwap(T_1, T_2);
+				QuickSwap(T_1[i], T_2[i]);
 
 			if (T_1[i] > t_near)
 				t_near = T_1[i];
