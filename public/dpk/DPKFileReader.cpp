@@ -41,7 +41,7 @@ CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, 
 		
 		dpkblock_info_t& block = m_blockInfo.append();
 		block.flags = hdr.flags;
-		block.offset = m_osFile.Tell();
+		block.offset = (uint32)m_osFile.Tell();
 		block.compressedSize = hdr.compressedSize;
 		block.size = hdr.size;
 
@@ -119,7 +119,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 {
 	const size_t fileRemainingBytes = m_info.size - m_curPos;
-	const int bytesToRead = min(count * size, fileRemainingBytes);
+	const size_t bytesToRead = min(count * size, fileRemainingBytes);
 
 	if (bytesToRead == 0)
 		return 0;
@@ -127,7 +127,7 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 	// read blocks if any
 	if (m_info.numBlocks)
 	{
-		int bytesToReadCnt = bytesToRead;
+		size_t bytesToReadCnt = bytesToRead;
 		ubyte* destBuf = (ubyte*)dest;
 
 		int curPos = m_curPos;
