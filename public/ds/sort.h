@@ -113,34 +113,46 @@ void quickSortIdx(ARRAY_TYPE& arr, C comparator, int p = 0, int r = 0)
 }
 
 // finds the index for the given element
-template< typename ARRAY_TYPE>
-int arrayFindIndex(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj)
+template< typename T, typename K>
+int arrayFindIndex(const T* arr, int length, const K& key)
 {
-	for (int i = 0; i < arr.numElem(); ++i)
+	for (int i = 0; i < length; ++i)
 	{
-		if (arr[i] == obj)
+		if (arr[i] == key)
 			return i;
 	}
 	return -1;
+}
+
+template< typename ARRAY_TYPE, typename K>
+int arrayFindIndex(const ARRAY_TYPE& arr, const K& key)
+{
+	return arrayFindIndex(arr.ptr(), arr.numElem(), key);
 }
 
 // finds the index for the given element
-template< typename ARRAY_TYPE, typename PAIRCOMPAREFUNC = PairCompareFunc<typename ARRAY_TYPE::ITEM> >
-int arrayFindIndexF(const ARRAY_TYPE& arr, const typename ARRAY_TYPE::ITEM& obj, PAIRCOMPAREFUNC comparator)
+template< typename T, typename K, typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
+int arrayFindIndexF(const T* arr, int length, const K& key, const PAIRCOMPAREFUNC& comparator)
 {
-	for (int i = 0; i < arr.numElem(); ++i)
+	for (int i = 0; i < length; ++i)
 	{
-		if (comparator(arr[i], obj))
+		if (comparator(arr[i], key))
 			return i;
 	}
 	return -1;
 }
 
-// returns first found element which satisfies to the condition
-template< typename ARRAY_TYPE, typename COMPAREFUNC >
-int arrayFindIndexF(const ARRAY_TYPE& arr, COMPAREFUNC comparator)
+template< typename ARRAY_TYPE, typename K, typename PAIRCOMPAREFUNC = PairCompareFunc<typename ARRAY_TYPE::ITEM> >
+int arrayFindIndexF(const ARRAY_TYPE& arr, const K& key, const PAIRCOMPAREFUNC& comparator)
 {
-	for (int i = 0; i < arr.numElem(); ++i)
+	return arrayFindIndexF(arr.ptr(), arr.numElem(), key, comparator);
+}
+
+// returns first found element which satisfies to the condition
+template< typename T, typename COMPAREFUNC >
+int arrayFindIndexF(const T& arr, int length, const COMPAREFUNC& comparator)
+{
+	for (int i = 0; i < length; ++i)
 	{
 		if (comparator(arr[i]))
 			return i;
@@ -148,13 +160,107 @@ int arrayFindIndexF(const ARRAY_TYPE& arr, COMPAREFUNC comparator)
 	return -1;
 }
 
+template< typename ARRAY_TYPE, typename COMPAREFUNC >
+int arrayFindIndexF(const ARRAY_TYPE& arr, const COMPAREFUNC& comparator)
+{
+	return arrayFindIndexF(arr.ptr(), arr.numElem(), comparator);
+}
+
 // reverses the order of array
+template< typename T >
+void arrayReverse(T* arr, int start = 0, int count = 0)
+{
+	for (int i = start, j = count - 1; i < j; i++, j--)
+		QuickSwap(arr[i], arr[j]);
+}
+
 template< typename ARRAY_TYPE >
 void arrayReverse(ARRAY_TYPE& arr, int start = 0, int count = -1)
 {
 	if (start == 0 && count == -1)
 		count = arr.numElem();
+	arrayReverse(arr.ptr(), start, count);
+}
 
-	for (int i = start, j = count - 1; i < j; i++, j--)
-		QuickSwap(arr[i], arr[j]);
+enum class SortedFind : int
+{
+	FIRST,
+	LAST,
+	FIRST_GREATER,
+	FIRST_GEQUAL,
+	LAST_LEQUAL,
+};
+
+template<SortedFind FIND, typename T, typename K, typename COMPAREFUNC>
+int arraySortedFindIndexExt(const T* arr, int length, const K& key, const COMPAREFUNC& comparator)
+{
+	if (length == 0)
+		return -1;
+
+	int lo = 0;
+	int hi = length - 1;
+	while (hi - lo > 1)
+	{
+		const int mid = (hi + lo) >> 1;
+		const int res = comparator(arr[mid], key);
+
+		if constexpr (FIND == SortedFind::FIRST || FIND == SortedFind::FIRST_GREATER)
+		{
+			if (res >= 0)
+				hi = mid;
+			else
+				lo = mid;
+		}
+		else // for LAST, FIRST_GEQUAL, and LAST_LEQUAL
+		{
+			if (res > 0)
+				hi = mid;
+			else
+				lo = mid;
+		}
+	}
+
+	if constexpr (FIND == SortedFind::FIRST)
+	{
+		if (comparator(arr[lo], key) == 0)
+			return lo;
+		if (comparator(arr[hi], key) == 0)
+			return hi;
+	}
+	else if constexpr (FIND == SortedFind::LAST)
+	{
+		if (comparator(arr[hi], key) == 0)
+			return hi;
+		if (comparator(arr[lo], key) == 0)
+			return lo;
+	}
+	else if constexpr (FIND == SortedFind::FIRST_GREATER)
+	{
+		if (comparator(arr[lo], key) > 0)
+			return lo;
+		if (comparator(arr[hi], key) > 0)
+			return hi;
+	}
+	else if constexpr (FIND == SortedFind::FIRST_GEQUAL)
+	{
+		if (comparator(arr[lo], key) >= 0)
+			return lo;
+		if (hi != lo && comparator(arr[hi], key) >= 0)
+			return hi;
+	}
+	else if constexpr (FIND == SortedFind::LAST_LEQUAL)
+	{
+		if (comparator(arr[hi], key) <= 0)
+			return hi;
+		if (lo != hi && comparator(arr[lo], key) <= 0)
+			return lo;
+	}
+
+	return -1;
+}
+
+template<SortedFind FIND, typename ARRAY_TYPE, typename K, typename COMPAREFUNC>
+int arraySortedFindIndexExt(const ARRAY_TYPE& arr, const K& key, const COMPAREFUNC& comparator)
+{
+	return arraySortedFindIndexExt<FIND>(arr.ptr(), arr.numElem(), key, comparator);
 }
