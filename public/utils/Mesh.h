@@ -12,32 +12,24 @@ template <typename VERTEX_TYPE, typename INDEX_TYPE>
 class CBatchedIndexedMesh
 {
 public:
-	CBatchedIndexedMesh()
-	{}
-
-	virtual ~CBatchedIndexedMesh()
-	{}
+	virtual ~CBatchedIndexedMesh() = default;
 
 	struct Batch
 	{
-		Batch() 
-			: startVertex(0), startIndex(0), numVertices(0), numIndices(0), materialIndex(-1), flags(0)
-		{}
+		INDEX_TYPE	startVertex{ 0 };
+		INDEX_TYPE	startIndex{ 0 };
+		INDEX_TYPE	numVertices{ 0 };
+		INDEX_TYPE	numIndices{ 0 };
 
-		INDEX_TYPE	startVertex;
-		INDEX_TYPE	startIndex;
-		INDEX_TYPE	numVertices;
-		INDEX_TYPE	numIndices;
-
-		short		materialIndex;
-		ushort		flags;
+		short		materialIndex{ -1 };
+		ushort		flags{ 0 };
 	};
 
 	struct FileHeader
 	{
-		int			numBatches;
-		INDEX_TYPE	numVertices;
-		INDEX_TYPE	numIndices;
+		int			numBatches{ 0 };
+		INDEX_TYPE	numVertices{ 0 };
+		INDEX_TYPE	numIndices{ 0 };
 	};
 
 	// creates new batch in this instance

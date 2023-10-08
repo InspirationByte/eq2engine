@@ -76,6 +76,8 @@ struct Spline3dPoint
 class CSpline3d
 {
 public:
+	void					Clear();
+
 	void					SetLooped(bool loop) { m_loop = loop; }
 	bool					IsLooped() const { return m_loop; }
 
@@ -106,7 +108,6 @@ public:
 	float					GetSegmentLength(int segIdx) const;
 	int						SegmentIndexByLocalTime(float time) const;
 	int						SegmentIndexByDistance(float dist) const;
-
 
 	Array<Spline3dPoint>	m_points{ PP_SL };
 	bool					m_loop{ false };

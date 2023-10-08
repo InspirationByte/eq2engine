@@ -62,6 +62,15 @@ Vector3D Spline3DTangentAtLocalTime(ArrayCRef<Spline3dPoint> points, int startPt
 	return BezierCubicTangent(d0, d1, d2, t);
 }
 
+void CSpline3d::Clear()
+{
+	m_points.clear();
+	m_distances.clear();
+	m_loop = false;
+	m_duration = 0.0f;
+	m_stepsPerSegment = 5;
+}
+
 int CSpline3d::GetSegmentIndexAndLocalTime(float time, float& localTime) const
 {
 	const int fromPt = SegmentIndexByLocalTime(time);
@@ -180,7 +189,6 @@ Vector3D CSpline3d::TangentAtDistance(float distance) const
 
 	return Spline3DTangentAtLocalTime(m_points, startPtIdx, localTime);
 }
-
 
 // segments
 float CSpline3d::GetSegmentLength(int segIdx) const
