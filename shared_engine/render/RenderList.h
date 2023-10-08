@@ -14,22 +14,24 @@ class CBaseRenderableObject;
 class CRenderList
 {
 public:
+	using Renderable = CBaseRenderableObject;
+
 	CRenderList();
 	virtual ~CRenderList();
 
-	void								AddRenderable(CBaseRenderableObject* pObject);		// adds a single object
+	void				AddRenderable(Renderable* pObject);		// adds a single object
 
-	void								Append(CRenderList* pAnotherList);					// copies objects from another render list. Call update if it's distance-sorted.
+	void				Append(CRenderList* pAnotherList);		// copies objects from another render list. Call update if it's distance-sorted.
 
-	int									GetRenderableCount();								// returns count of renderables in this list
-	CBaseRenderableObject*				GetRenderable(int id);								// returns renderable pointer
+	int					GetRenderableCount();					// returns count of renderables in this list
+	Renderable*			GetRenderable(int id);					// returns renderable pointer
 
-	void								Render(int nViewRenderFlags, void* userdata);		// draws render list
+	void				Render(int renderFlags, void* userdata);// draws render list
 
-	void								SortByDistanceFrom(const Vector3D& origin, bool reverse);
+	void				SortByDistanceFrom(const Vector3D& origin, bool reverse);
 
-	void								Clear();										// clear it
+	void				Clear();
 protected:
-	Array<CBaseRenderableObject*>		m_objectList;
-	Array<float>						m_viewDistance;
+	Array<Renderable*>	m_objectList;
+	Array<float>		m_viewDistance;
 };

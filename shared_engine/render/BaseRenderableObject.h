@@ -18,6 +18,13 @@ enum RenderableVisibilityState_e
 	VISIBILITY_INVISIBLE,
 };
 
+struct RenderInfo
+{
+	void*	userData{ nullptr };
+	float	distance{ 0.0f };		// dist from camera
+	int		renderFlags{ 0 };
+};
+
 // renderable object
 class CBaseRenderableObject
 {
@@ -28,7 +35,7 @@ public:
 //------------------------------------------------------------
 	virtual ~CBaseRenderableObject() {}
 
-	virtual void				Render(int nViewRenderFlags, void* userdata) = 0;
+	virtual void				Render(const RenderInfo& rinfo) = 0;
 
 	virtual const BoundingBox&	GetBoundingBox() const = 0;
 
@@ -36,6 +43,5 @@ public:
 	virtual int					GetRenderFlags() const;
 
 protected:
-	float						m_viewDistance{ 0.0f };
 	int							m_renderFlags{ 0 };
 };

@@ -9,7 +9,7 @@
 #include "RenderList.h"
 #include "BaseRenderableObject.h"
 
-#define MIN_OBJECT_RENDERLIST_MEMSIZE 48
+#define MIN_OBJECT_RENDERLIST_MEMSIZE 64
 
 CRenderList::CRenderList()
 	: m_objectList(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
@@ -23,7 +23,7 @@ CRenderList::~CRenderList()
 	
 }
 
-void CRenderList::AddRenderable(CBaseRenderableObject* pObject)
+void CRenderList::AddRenderable(Renderable* pObject)
 {
 	m_objectList.append(pObject);
 	m_viewDistance.append(0.0f);
@@ -34,23 +34,28 @@ int CRenderList::GetRenderableCount()
 	return m_objectList.numElem();
 }
 
-CBaseRenderableObject* CRenderList::GetRenderable(int id)
+CRenderList::Renderable* CRenderList::GetRenderable(int id)
 {
 	return m_objectList[id];
 }
 
 void CRenderList::Append(CRenderList* pAnotherList)
 {
-	int num = pAnotherList->GetRenderableCount();
-
+	const int num = pAnotherList->GetRenderableCount();
 	for(int i = 0; i < num; i++)
 		m_objectList.append(pAnotherList->GetRenderable(i));
 }
 
-void CRenderList::Render(int nViewRenderFlags, void* userdata)
+void CRenderList::Render(int renderFlags, void* userdata)
 {
-	for(int i = 0; i < m_objectList.numElem(); i++)
-		m_objectList[i]->Render(nViewRenderFlags, userdata);
+	RenderInfo rinfo;
+	rinfo.renderFlags = renderFlags;
+	rinfo.userData = userdata;
+	for (int i = 0; i < m_objectList.numElem(); ++i)
+	{
+		rinfo.distance = m_viewDistance[i];
+		m_objectList[i]->Render(rinfo);
+	}
 }
 
 void CRenderList::Clear()
@@ -66,7 +71,7 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 	// pre-compute object distances
 	for(int i = 0; i < m_objectList.numElem(); ++i)
 	{
-		CBaseRenderableObject* renderable = m_objectList[i];
+		Renderable* renderable = m_objectList[i];
 		const BoundingBox& bbox = renderable->GetBoundingBox();
 
 		// clamp point in bbox
