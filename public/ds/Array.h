@@ -815,7 +815,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<T2, OTHER_STORAGE_
 	{
 		T newObj;
 		if (transform(newObj, other[i]))
-			append(other[i]);
+			append(newObj);
 	}
 
 
