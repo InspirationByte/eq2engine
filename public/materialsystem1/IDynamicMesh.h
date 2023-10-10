@@ -7,6 +7,9 @@
 
 #pragma once
 
+struct VertexFormatDesc;
+enum ER_PrimitiveType : int;
+
 //
 // The dynamic mesh interface
 //

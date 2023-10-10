@@ -7,6 +7,7 @@
 
 #pragma once
 #include "IDynamicMesh.h"
+#include "renderers/ShaderAPI_defs.h"
 
 class CMeshBuilder
 {
