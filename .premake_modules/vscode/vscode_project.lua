@@ -143,6 +143,7 @@ function m.vscode_launch(prj, launchFile)
 			output = output .. '\t\t\t"cwd": "'..(prj.vscode_launch_cwd or string.format('${workspaceRoot}/%s', target))..'",\n'
 			if prj.vscode_launch_visualizerFile ~= nil then
 				output = output .. '\t\t\t"visualizerFile": "'..prj.vscode_launch_visualizerFile..'",\n'
+				output = output .. '\t\t\t"showDisplayString": true,\n'
 			end
 			if prj.vscode_launch_args ~= nil then
 				output = output .. '\t\t\t"args":[\n'
