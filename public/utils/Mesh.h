@@ -9,10 +9,10 @@
 
 // generic indexed mesh. File-friendly
 template <typename VERTEX_TYPE, typename INDEX_TYPE>
-class CBatchedIndexedMesh
+struct BatchedIndexedMesh
 {
 public:
-	virtual ~CBatchedIndexedMesh() = default;
+	virtual ~BatchedIndexedMesh() = default;
 
 	struct Batch
 	{
@@ -32,23 +32,27 @@ public:
 		INDEX_TYPE	numIndices{ 0 };
 	};
 
+	Array<Batch>		batches{ PP_SL };
+	Array<VERTEX_TYPE>	vertices{ PP_SL };
+	Array<INDEX_TYPE>	indices{ PP_SL };
+
 	// creates new batch in this instance
 	// also will fill start vertex and start index
 	Batch& New_Batch() 
 	{
-		Batch& newBatch = m_batches.append();
+		Batch& newBatch = batches.append();
 
-		newBatch.startVertex = m_vertices.numElem();
-		newBatch.startIndex = m_indices.numElem();
+		newBatch.startVertex = vertices.numElem();
+		newBatch.startIndex = indices.numElem();
 		return newBatch;
 	}
 
 	Batch& FindOrAdd_Batch(short materialIndex)
 	{
-		for (int i = 0; i < m_batches.numElem(); ++i)
+		for (int i = 0; i < batches.numElem(); ++i)
 		{
-			if (m_batches[i].materialIndex == materialIndex) 
-				return m_batches[i];
+			if (batches[i].materialIndex == materialIndex) 
+				return batches[i];
 		}
 
 		Batch& newBatch = New_Batch();
@@ -59,9 +63,9 @@ public:
 	// deletes all data
 	void Clear()
 	{
-		m_batches.clear();
-		m_vertices.clear();
-		m_indices.clear();
+		batches.clear();
+		vertices.clear();
+		indices.clear();
 	}
 
 	template <typename DEST_VERTEX, typename SOURCE_VERTEX>
@@ -80,24 +84,24 @@ public:
 	{
 		// write header
 		FileHeader hdr;
-		hdr.numBatches = m_batches.numElem();
-		hdr.numVertices = m_vertices.numElem();
-		hdr.numIndices = m_indices.numElem();
+		hdr.numBatches = batches.numElem();
+		hdr.numVertices = vertices.numElem();
+		hdr.numIndices = indices.numElem();
 
 		stream->Write(&hdr, 1, sizeof(hdr));
 
 		// write batches
-		stream->Write(m_batches.ptr(), m_batches.numElem(), sizeof(Batch));
+		stream->Write(batches.ptr(), batches.numElem(), sizeof(Batch));
 
 		// write vertices
-		for (int i = 0; i < m_vertices.numElem(); i++)
+		for (int i = 0; i < vertices.numElem(); i++)
 		{
-			STORE_VERTEX_TYPE vtx = convertVertexFunc(m_vertices[i]);
+			STORE_VERTEX_TYPE vtx = convertVertexFunc(vertices[i]);
 			stream->Write(&vtx, 1, sizeof(STORE_VERTEX_TYPE));
 		}
 
 		// write indices
-		stream->Write(m_indices.ptr(), m_indices.numElem(), sizeof(INDEX_TYPE));
+		stream->Write(indices.ptr(), indices.numElem(), sizeof(INDEX_TYPE));
 	}
 
 	// loads all data
@@ -110,12 +114,12 @@ public:
 		stream->Read(&hdr, 1, sizeof(hdr));
 
 		// resize arrays
-		m_batches.setNum(hdr.numBatches);
-		m_vertices.setNum(hdr.numVertices);
-		m_indices.setNum(hdr.numIndices);
+		batches.setNum(hdr.numBatches);
+		vertices.setNum(hdr.numVertices);
+		indices.setNum(hdr.numIndices);
 
 		// read batches
-		stream->Read(m_batches.ptr(), hdr.numBatches, sizeof(Batch));
+		stream->Read(batches.ptr(), hdr.numBatches, sizeof(Batch));
 
 		// read vertices
 		for (int i = 0; i < hdr.numVertices; i++)
@@ -123,14 +127,10 @@ public:
 			STORE_VERTEX_TYPE vert;
 			stream->Read(&vert, 1, sizeof(STORE_VERTEX_TYPE));
 
-			m_vertices[i] = convertVertexFunc(vert);
+			vertices[i] = convertVertexFunc(vert);
 		}
 
 		// read indices
-		stream->Read(m_indices.ptr(), hdr.numIndices, sizeof(INDEX_TYPE));
+		stream->Read(indices.ptr(), hdr.numIndices, sizeof(INDEX_TYPE));
 	}
-
-	Array<Batch>			m_batches{ PP_SL };
-	Array<VERTEX_TYPE>		m_vertices{ PP_SL };
-	Array<INDEX_TYPE>		m_indices{ PP_SL };
 };
