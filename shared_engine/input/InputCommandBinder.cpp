@@ -644,7 +644,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT);
 	materials->SetDepthStates(false, false);

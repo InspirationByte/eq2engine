@@ -25,7 +25,12 @@
 
 // Include some standard files
 #ifdef PLAT_WIN
-#   define WIN32_LEAN_AND_MEAN
+#	ifndef NOMINMAX
+#		define NOMINMAX
+#	endif
+#	ifndef WIN32_LEAN_AND_MEAN
+#	   define WIN32_LEAN_AND_MEAN
+#	endif
 #	undef _WIN32_WINNT
 #	undef _WIN32_WINDOWS
 #	define _WIN32_WINDOWS 0x0600 // _WIN32_WINNT_VISTA

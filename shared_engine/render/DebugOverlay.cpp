@@ -57,7 +57,7 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false,false);
@@ -439,7 +439,7 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 	if(!lines.numElem())
 		return;
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
@@ -478,7 +478,7 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 	if (!boxes.numElem())
 		return;
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
@@ -551,7 +551,7 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 	if(!boxes.numElem())
 		return;
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
@@ -669,7 +669,7 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinde
 
 static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float frametime)
 {
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
@@ -806,7 +806,7 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 	if(!polygons.numElem())
 		return;
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
@@ -1031,7 +1031,7 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 	if(!spheres.numElem())
 		return;
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);

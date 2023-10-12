@@ -409,7 +409,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 		materials->SetAmbientColor(color_white);
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 
-		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+		materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 		materials->BindMaterial(materials->GetDefaultMaterial());
 
 		// set character color
@@ -463,7 +463,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(raster);
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(m_fontTexture);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(m_fontTexture);
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 

@@ -142,7 +142,7 @@ void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false,false);

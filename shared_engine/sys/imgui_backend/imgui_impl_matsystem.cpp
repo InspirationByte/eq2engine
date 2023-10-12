@@ -63,7 +63,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
 
-		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+		materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 		materials->BindMaterial(materials->GetDefaultMaterial());
 
 		mb.Begin(PRIM_TRIANGLES);
@@ -115,7 +115,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 				IAARectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
 				g_pShaderAPI->SetScissorRectangle(scissor);
 
-				MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(ITexturePtr(texture));
+				materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(ITexturePtr(texture));
 
 				materials->BindMaterial(materials->GetDefaultMaterial());
 				pMatsysMesh->Render(pcmd->IdxOffset, pcmd->ElemCount);

@@ -1408,7 +1408,7 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 	else
 		SetDepthStates(*depthParams);
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(pTexture);
+	IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(pTexture);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
@@ -1450,7 +1450,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pV
 	else
 		SetDepthStates(*depthParams);
 
-	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(pTexture);
+	IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(pTexture);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);

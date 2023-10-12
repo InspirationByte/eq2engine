@@ -343,6 +343,12 @@ public:
 
 	virtual MatVarProxyUnk					FindGlobalMaterialVar(int nameHash) const = 0;
 
+	template<typename PROXY = MatVarProxyUnk>
+	PROXY									FindGlobalMaterialVar(int nameHash) const
+	{
+		return PROXY(FindGlobalMaterialVar(nameHash));
+	}
+
 	virtual bool							BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
 	virtual void							Apply() = 0;
 
