@@ -68,18 +68,27 @@ typedef va_list				__va_list;
 // String hash
 //------------------------------------------------------
 
-template<int idx>
-constexpr int _StringToHashConst(const char* str, int hash)
-{
-	return _StringToHashConst<idx - 1>(str + 1, (((hash << 5) | (hash >> 19)) + int(*str)) & StringHashMask);
-}
+template<int idx, std::size_t N>
+struct StringToHashHelper {
+	static constexpr int compute(const char(&str)[N], int hash) {
+		const int v1 = hash >> 19;
+		const int v0 = hash << 5;
+		const int chr = str[N - idx - 1];
+		hash = ((v0 | v1) + chr) & StringHashMask;
+		return StringToHashHelper<idx - 1, N>::compute(str, hash);
+	}
+};
 
-template<>
-constexpr int _StringToHashConst<-1>(const char* str, int hash) { return hash; }	// terminator
+template<std::size_t N>
+struct StringToHashHelper<0, N> {
+	static constexpr int compute(const char(&)[N], int hash) {
+		return hash;
+	}
+};
 
-template <auto V>
-static constexpr auto force_consteval = V;
-#define		StringToHashConst(x) force_consteval<(_StringToHashConst<sizeof(x) - 2>(x, sizeof(x) - 1))>
+template <auto V> static constexpr auto force_consteval = V;
+#define _StringToHashConst(x) StringToHashHelper<sizeof(x) - 1, sizeof(x)>::compute(x, sizeof(x) - 1)
+#define StringToHashConst(x) force_consteval<_StringToHashConst(x)>
 
 // generates string hash
 int			StringToHash(const char* str, bool caseIns = false);
