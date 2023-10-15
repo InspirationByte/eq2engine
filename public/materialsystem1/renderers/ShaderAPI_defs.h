@@ -495,6 +495,79 @@ enum EShaderAPIType : int
 	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0), colorRT),	\
 	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1), colorRB)
 
+struct TextureInfo
+{
+	const char*			name{ nullptr };
+	int					width{ -1 };
+	int					height{ -1 };
+	int					depth{ 1 };
+	int					arraySize{ 1 };
+	ETextureFormat		format{ FORMAT_RGBA8 };
+	SamplerStateParams	samplerParams; // NOTE: OpenGL have sampler and textures working together, while newer APIs don't
+	int					flags = 0;
 
-#define SHADERS_DEFAULT_PATH			"shaders/"
+	const ubyte*		data = nullptr;
+	int					dataSize = 0;
+};
 
+struct BufferInfo
+{
+	BufferInfo() = default;
+
+	BufferInfo(int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(capacity)
+		, elementSize(elementSize)
+		, flags(flags)
+	{
+	}
+
+	BufferInfo(const void* data, int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(capacity)
+		, elementSize(elementSize)
+		, flags(flags)
+		, data(data)
+		, dataSize(elementSize * capacity)
+	{
+	}
+
+	template<typename T>
+	BufferInfo(int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(capacity)
+		, elementSize(sizeof(T))
+		, flags(flags)
+	{
+	}
+
+	template<typename T>
+	BufferInfo(const T* array, int numElem, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(numElem)
+		, elementSize(sizeof(T))
+		, flags(flags)
+		, data(array)
+		, dataSize(sizeof(T) * numElem)
+	{
+	}
+
+	template<typename ARRAY_TYPE>
+	BufferInfo(const ARRAY_TYPE& array, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(array.numElem())
+		, elementSize(sizeof(typename ARRAY_TYPE::ITEM))
+		, flags(flags)
+		, data(array.ptr())
+		, dataSize(sizeof(typename ARRAY_TYPE::ITEM) * array.numElem())
+	{
+	}
+
+	EBufferAccessType	accessType{ BUFFER_STATIC };
+	int					elementCapacity{ 0 };
+	int					elementSize{ 0 };
+	int					flags{ 0 };
+
+	const void*			data{ nullptr };
+	int					dataSize{ 0 };
+};

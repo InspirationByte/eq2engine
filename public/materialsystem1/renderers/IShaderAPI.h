@@ -68,83 +68,6 @@ struct ShaderAPIParams
 	bool				verticalSyncEnabled{ false };		// vertical syncronization
 };
 
-struct TextureInfo
-{
-	const char*			name{ nullptr };
-	int					width{ -1 };
-	int					height{ -1 };
-	int					depth{ 1 };
-	int					arraySize{ 1 };
-	ETextureFormat		format{ FORMAT_RGBA8 };
-	SamplerStateParams	samplerParams; // NOTE: OpenGL have sampler and textures working together, while newer APIs don't
-	int					flags = 0;
-
-	const ubyte*		data = nullptr;
-	int					dataSize = 0;
-};
-
-struct BufferInfo
-{
-	BufferInfo() = default;
-
-	BufferInfo(int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(capacity)
-		, elementSize(elementSize)
-		, flags(flags)
-	{
-	}
-
-	BufferInfo(const void* data, int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(capacity)
-		, elementSize(elementSize)
-		, flags(flags)
-		, data(data)
-		, dataSize(elementSize * capacity)
-	{
-	}
-
-	template<typename T>
-	BufferInfo(int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(capacity)
-		, elementSize(sizeof(T))
-		, flags(flags)
-	{
-	}
-
-	template<typename T>
-	BufferInfo(const T* array, int numElem, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(numElem)
-		, elementSize(sizeof(typename T))
-		, flags(flags)
-		, data(array)
-		, dataSize(sizeof(typename T) * numElem)
-	{
-	}
-
-	template<typename ARRAY_TYPE>
-	BufferInfo(const ARRAY_TYPE& array, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(array.numElem())
-		, elementSize(sizeof(typename ARRAY_TYPE::ITEM))
-		, flags(flags)
-		, data(array.ptr())
-		, dataSize(sizeof(typename ARRAY_TYPE::ITEM) * array.numElem())
-	{
-	}
-
-	EBufferAccessType	accessType{ BUFFER_STATIC };
-	int					elementCapacity{ 0 };
-	int					elementSize{ 0 };
-	int					flags{ 0 };
-
-	const void*			data{ nullptr };
-	int					dataSize{ 0 };
-};
-
 //
 // ShaderAPI interface
 //
@@ -279,41 +202,12 @@ public:
 	virtual void				DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) = 0;
 
 //-------------------------------------------------------------
-// Render target state operations
-//-------------------------------------------------------------
-
-	// clear current rendertarget
-	virtual void				Clear(	bool color,
-										bool depth = true,
-										bool stencil = true,
-										const MColor& fillColor = color_black,
-										float depthValue = 1.0f,
-										int stencilValue = 0
-										) = 0;
-
-	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
-	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) = 0;
-	
-	virtual void				ChangeRenderTargetToBackBuffer() = 0;
-	virtual void				ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0) = 0;
-	virtual void				ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
-													ArrayCRef<int> rtSlice = nullptr,
-													const ITexturePtr& depthTarget = nullptr,
-													int depthSlice = 0) = 0;
-
-	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall ) = 0;
-
-//-------------------------------------------------------------
-// Rasterizer state properties
+// Rasterizer and render state properties
 //-------------------------------------------------------------
 
 	virtual void				SetDepthRange( float near, float far ) = 0;
 	virtual void				SetViewport( int x, int y, int w, int h ) = 0;
 	virtual void				SetScissorRectangle(const IAARectangle& rect) = 0;
-
-//-------------------------------------------------------------
-// Render states
-//-------------------------------------------------------------
 
 	virtual void				SetBlendingState( IRenderState* pBlending ) = 0;
 	virtual void				SetDepthStencilState( IRenderState *pDepthStencilState ) = 0;
@@ -346,6 +240,31 @@ public:
 
 	virtual void				SetTexture(int nameHash, const ITexturePtr& pTexture) = 0;
 	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
+
+//-------------------------------------------------------------
+// Render target state operations
+//-------------------------------------------------------------
+
+	// clear current rendertarget
+	virtual void				Clear(	bool color,
+										bool depth = true,
+										bool stencil = true,
+										const MColor& fillColor = color_black,
+										float depthValue = 1.0f,
+										int stencilValue = 0
+										) = 0;
+
+	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
+	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) = 0;
+	
+	virtual void				ChangeRenderTargetToBackBuffer() = 0;
+	virtual void				ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0) = 0;
+	virtual void				ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
+													ArrayCRef<int> rtSlice = nullptr,
+													const ITexturePtr& depthTarget = nullptr,
+													int depthSlice = 0) = 0;
+
+	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall ) = 0;
 
 //-------------------------------------------------------------
 // Sending states to API
