@@ -231,9 +231,6 @@ public:
 	// resizes render target
 	void						ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int newTall){}
 
-	// returns current size of backbuffer surface
-	void						GetViewportDimensions(int &wide, int &tall){}
-
 	// sets scissor rectangle
 	void						SetScissorRectangle( const IAARectangle &rect ) {}
 

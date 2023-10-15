@@ -2685,27 +2685,6 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 	GLCheckError("set viewport");
 }
 
-// returns viewport
-void ShaderAPIGL::GetViewport(int &x, int &y, int &w, int &h)
-{
-	x = m_viewPort.leftTop.x;
-	y = m_viewPort.leftTop.y;
-
-	IVector2D size = m_viewPort.GetSize();
-
-	w = size.x;
-	h = size.y;
-}
-
-// returns current size of viewport
-void ShaderAPIGL::GetViewportDimensions(int &wide, int &tall)
-{
-	IVector2D size = m_viewPort.GetSize();
-
-	wide = size.x;
-	tall = size.y;
-}
-
 // sets scissor rectangle
 void ShaderAPIGL::SetScissorRectangle( const IAARectangle &rect )
 {

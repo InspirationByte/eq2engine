@@ -226,13 +226,9 @@ public:
 // Rasterizer state properties
 //-------------------------------------------------------------
 
-	virtual void				SetDepthRange( float fZNear, float fZFar ) = 0;
+	virtual void				SetDepthRange( float near, float far ) = 0;
 	virtual void				SetViewport( int x, int y, int w, int h ) = 0;
-	virtual void				GetViewport( int &x, int &y, int &w, int &h ) = 0;
-
 	virtual void				SetScissorRectangle(const IAARectangle& rect) = 0;
-
-	virtual void				GetViewportDimensions( int &wide, int &tall ) = 0;
 
 //-------------------------------------------------------------
 // Render states
@@ -248,7 +244,6 @@ public:
 
 	virtual void				SetVertexFormat( IVertexFormat* pVertexFormat ) = 0;
 	virtual void				SetVertexBuffer( IVertexBuffer* pVertexBuffer, int nStream, const intptr offset = 0 ) = 0;
-	virtual void				SetVertexBuffer( int nStream, const void* base ) = 0;
 	virtual void				SetIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
 
 	virtual void				ChangeVertexFormat( IVertexFormat* pVertexFormat ) = 0;

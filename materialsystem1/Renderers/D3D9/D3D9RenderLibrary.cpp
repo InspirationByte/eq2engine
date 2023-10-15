@@ -346,18 +346,17 @@ void CD3D9RenderLib::EndFrame()
 	}
 	else
 	{
-		RECT destRect;
-		GetClientRect(pHWND, &destRect);
-
-		int x, y, w, h;
-		s_renderApi.GetViewport(x, y, w, h);
+		D3DVIEWPORT9 vp;
+		m_rhi->GetViewport(& vp);
 
 		RECT srcRect;
-		srcRect.left = x;
-		srcRect.right = x + w;
-		srcRect.top = y;
-		srcRect.bottom = y + h;
+		srcRect.left = vp.X;
+		srcRect.right = vp.X + vp.Width;
+		srcRect.top = vp.Y;
+		srcRect.bottom = vp.Y + vp.Height;
 
+		RECT destRect;
+		GetClientRect(pHWND, &destRect);
 		hr = m_rhi->Present(&srcRect, &destRect, pHWND, nullptr);
 	}
 

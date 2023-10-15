@@ -910,21 +910,6 @@ void ShaderAPID3DX10::ResizeRenderTarget(const ITexturePtr& pRT, int newWide, in
 	*/
 }
 
-// returns current size of backbuffer surface
-void ShaderAPID3DX10::GetViewportDimensions(int &wide, int &tall)
-{
-	wide = m_pBackBufferTexture->GetWidth();
-	tall = m_pBackBufferTexture->GetHeight();
-
-	/*
-	D3DVIEWPORT9 vp;
-	m_pD3DDevice->GetViewport(&vp);
-
-	wide = vp.Width;
-	tall = vp.Height;
-	*/
-}
-
 //-------------------------------------------------------------
 // Various setup functions for drawing
 //-------------------------------------------------------------
@@ -3181,20 +3166,6 @@ void ShaderAPID3DX10::SetViewport(int x, int y, int w, int h)
 	viewport.TopLeftY = y;
 
 	m_pD3DDevice->RSSetViewports(1, &viewport);
-}
-
-void ShaderAPID3DX10::GetViewport(int &x, int &y, int &w, int &h)
-{
-	// Setup the viewport
-	D3D10_VIEWPORT vp;
-	uint nVPs = 1;
-
-	m_pD3DDevice->RSGetViewports(&nVPs, &vp);
-
-	x = vp.TopLeftX;
-	y = vp.TopLeftY;
-	w = vp.Width;
-	h = vp.Height;
 }
 
 // sets scissor rectangle

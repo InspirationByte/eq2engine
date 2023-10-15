@@ -343,12 +343,6 @@ void ShaderAPI_Base::SetViewport(int x, int y, int w, int h)
 	m_nViewportHeight = h;
 }
 
-void ShaderAPI_Base::GetViewport(int &x, int &y, int &w, int &h)
-{
-	w = m_nViewportWidth;
-	h = m_nViewportHeight;
-}
-
 // Find texture
 ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 {
@@ -616,13 +610,6 @@ void ShaderAPI_Base::SetVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, c
 {
 	m_pSelectedVertexBuffers[nStream] = pVertexBuffer;
 	m_nSelectedOffsets[nStream] = offset;
-}
-
-// Sets the vertex buffer
-void ShaderAPI_Base::SetVertexBuffer(int nStream, const void* base)
-{
-	m_pSelectedVertexBuffers[nStream] = nullptr;
-	m_nSelectedOffsets[nStream] = (intptr) base;
 }
 
 // Changes the index buffer

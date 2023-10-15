@@ -178,12 +178,6 @@ public:
 	// sets viewport
 	void						SetViewport(int x, int y, int w, int h);
 
-	// returns viewport
-	void						GetViewport(int &x, int &y, int &w, int &h);
-
-	// returns current size of viewport
-	void						GetViewportDimensions(int &wide, int &tall);
-
 	// Set Depth range for next primitives
 	void						SetDepthRange(float fZNear,float fZFar);
 

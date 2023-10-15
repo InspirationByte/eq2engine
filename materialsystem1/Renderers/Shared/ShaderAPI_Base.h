@@ -47,7 +47,6 @@ public:
 	const shaderAPIParams_t&			GetParams() const { return m_params; }
 
 	virtual void						SetViewport(int x, int y, int w, int h);
-	virtual void						GetViewport(int &x, int &y, int &w, int &h);
 
 	// default error texture pointer
 	const ITexturePtr&					GetErrorTexture() const;
@@ -160,9 +159,6 @@ public:
 
 	// Sets the vertex buffer
 	void								SetVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset = 0);
-
-	// Sets the vertex buffer
-	void								SetVertexBuffer(int nStream, const void* base);
 
 	// Changes the index buffer
 	void								SetIndexBuffer(IIndexBuffer *pIndexBuffer);

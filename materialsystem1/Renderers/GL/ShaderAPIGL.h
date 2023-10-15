@@ -163,20 +163,12 @@ public:
 	// sets viewport
 	void				SetViewport(int x, int y, int w, int h);
 
-	// returns viewport
-	void				GetViewport(int &x, int &y, int &w, int &h);
-
-	// returns current size of viewport
-	void				GetViewportDimensions(int &wide, int &tall);
-
 	// sets scissor rectangle
 	void				SetScissorRectangle( const IAARectangle &rect );
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
 	void				SetTexture(int nameHash, const ITexturePtr& texture);
-
-	int					GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName);
 
 //-------------------------------------------------------------
 // Vertex buffer object handling

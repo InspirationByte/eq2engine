@@ -464,17 +464,6 @@ void ShaderAPID3D9::SetViewport(int x, int y, int w, int h)
 	m_pD3DDevice->SetViewport(&vp);
 }
 
-void ShaderAPID3D9::GetViewport(int &x, int &y, int &w, int &h)
-{
-	D3DVIEWPORT9 vp;
-	m_pD3DDevice->GetViewport(&vp);
-
-	x = vp.X;
-	y = vp.Y;
-	w = vp.Width;
-	h = vp.Height;
-}
-
 bool ShaderAPID3D9::IsDeviceActive() const
 {
 	return !m_deviceAtReset;
@@ -1488,16 +1477,6 @@ void ShaderAPID3D9::ResizeRenderTarget(const ITexturePtr& renderTarget, int newW
 	pRenderTarget->SetDimensions(newWide, newTall);
 
 	InternalCreateRenderTarget(m_pD3DDevice, pRenderTarget, pRenderTarget->GetFlags(), m_caps);
-}
-
-// returns current size of backbuffer surface
-void ShaderAPID3D9::GetViewportDimensions(int &wide, int &tall)
-{
-	D3DVIEWPORT9 vp;
-	m_pD3DDevice->GetViewport(&vp);
-
-	wide = vp.Width;
-	tall = vp.Height;
 }
 
 //-------------------------------------------------------------
