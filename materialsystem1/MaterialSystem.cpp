@@ -48,18 +48,13 @@ static VertexFormatDesc g_dynMeshVertexFormatDesc[] = {
 	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_UBYTE, "color"},
 };
 
-DECLARE_CVAR(r_showlightmaps, "0", "Disable diffuse textures to show lighting", CV_CHEAT);
 DECLARE_CVAR(r_screen, "0", "Screen count", CV_ARCHIVE);
-DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
-DECLARE_CVAR_CLAMP(r_anisotropic, "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE );
-
+DECLARE_CVAR(r_clear, "0", "Clear the backbuffer", CV_ARCHIVE);
 DECLARE_CVAR(r_lightscale, "1.0f", "Global light scale", CV_ARCHIVE);
 DECLARE_CVAR(r_shaderCompilerShowLogs, "0","Show warnings of shader compilation",CV_ARCHIVE);
 
-DECLARE_CVAR(r_overdraw, "0", "Renders all materials in overdraw shader", CV_CHEAT);
-DECLARE_CVAR(r_wireframe,"0","Enables wireframe rendering", CV_CHEAT);
-
-DECLARE_CVAR(r_noffp,"0","No FFP emulated primitives", CV_CHEAT);
+DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE);
+DECLARE_CVAR_CLAMP(r_anisotropic, "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE);
 
 DECLARE_CVAR(r_depthBias, "-0.000001", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_slopeDepthBias, "-1.5", nullptr, CV_CHEAT);
@@ -1154,8 +1149,19 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 		}
 	}
 
-	if(m_config.overdrawMode)
-		g_renderAPI->Clear(true, false, false, ColorRGBA(0, 0, 0, 0));
+	const bool clearBackBuffer = m_config.overdrawMode || r_clear.GetBool();
+	const MColor clearColor = m_config.overdrawMode ? color_black : MColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+	// reset viewport and scissor
+	g_renderAPI->SetViewport(0, 0, m_backbufferSize.x, m_backbufferSize.y);
+	g_renderAPI->SetScissorRectangle(IAARectangle(0, 0, m_backbufferSize.x, m_backbufferSize.y));
+
+#ifdef PLAT_ANDROID
+	// always clear all on Android
+	g_renderAPI->Clear(true, true, true, clearColor);
+#else
+	g_renderAPI->Clear(clearBackBuffer, true, false, clearColor);
+#endif
 
 	return true;
 }
@@ -1181,6 +1187,7 @@ bool CMaterialSystem::CaptureScreenshot(CImage &img)
 // resizes device back buffer. Must be called if window resized
 void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 {
+	m_backbufferSize = IVector2D(wide, tall);
 	if(m_renderLibrary)
 		m_renderLibrary->SetBackbufferSize(wide, tall);
 }
@@ -1209,8 +1216,7 @@ void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
 // fullscreen mode changing
 bool CMaterialSystem::SetWindowed(bool enable)
 {
-	bool changeMode = (m_renderLibrary->IsWindowed() != enable);
-
+	const bool changeMode = (m_renderLibrary->IsWindowed() != enable);
 	if(!changeMode)
 		return true;
 
@@ -1372,9 +1378,6 @@ void CMaterialSystem::DrawPrimitives2DFFP(	EPrimTopology type, Vertex2D_t *pVert
 											BlendStateParams* blendParams, DepthStencilStateParams* depthParams,
 											RasterizerStateParams* rasterParams)
 {
-	if(r_noffp.GetBool())
-		return;
-
 	if(!blendParams)
 		SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
 	else

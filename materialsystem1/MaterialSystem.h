@@ -307,7 +307,7 @@ private:
 	CDynamicMesh					m_dynamicMesh;
 
 	//-------------------------------------------------------------------------
-
+	IVector2D						m_backbufferSize{ 800, 600 };
 	Map<ushort, IRenderState*>		m_blendStates{ PP_SL };
 	Map<ushort, IRenderState*>		m_depthStates{ PP_SL };
 	Map<ushort, IRenderState*>		m_rasterStates{ PP_SL };

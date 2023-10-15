@@ -129,5 +129,5 @@ private:
 #define DECLARE_CVAR_VARIANTS(name, value, variantscb, desc, flags) \
 	DECLARE_CVAR_VARIANTS_G(name, value, variantscb, desc, flags)
 
-#define HOOK_TO_CVAR(name)		\
-	static ConVar *name = (ConVar*)g_consoleCommands->FindCvar(#name);
+#define HOOK_TO_CVAR(name) \
+	static ConVar *name = (ConVar*)g_consoleCommands->FindCvar(#name)

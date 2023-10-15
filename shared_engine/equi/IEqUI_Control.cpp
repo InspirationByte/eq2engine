@@ -617,7 +617,7 @@ void IUIControl::Render(int depth)
 		DrawSelf( clientRectRender, rasterState.scissor);
 	}
 
-	HOOK_TO_CVAR(equi_debug)
+	HOOK_TO_CVAR(equi_debug);
 	if (equi_debug->GetInt() > 0 && equi_debug->GetInt() <= depth)
 	{
 		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8));

@@ -44,25 +44,27 @@ DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_use
 	g_consoleCommands->ParseFileToCommandBuffer( user_cfg.GetString() );
 }
 
-DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
+DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Cl`oses current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quti, "quti", CGameHost::HostExitCmd, "This made for keyboard writing errors", 0);
 
-DECLARE_CVAR(r_clear, "0", "Clear the backbuffer",CV_ARCHIVE);
 DECLARE_CVAR(r_vSync, "0", "Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing, "0", "Multisample antialiasing", CV_ARCHIVE);
 DECLARE_CVAR(r_fastShaders, "0", "Low shader quality mode", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 
+DECLARE_CVAR(r_overdraw, "0", "Renders all materials in overdraw shader", CV_CHEAT);
+DECLARE_CVAR(r_wireframe, "0", "Enables wireframe rendering", CV_CHEAT);
+
 DECLARE_CVAR(sys_vmode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
 DECLARE_CVAR(sys_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(sys_maxfps, "0", 0.0f, 300.0f, "Frame rate limit", CV_ARCHIVE);
 DECLARE_CVAR(sys_timescale, "1.0", "Frame time scale factor", CV_CHEAT);
 
+DECLARE_CVAR(m_sensitivity, "1.0", "mouse sensitivity", CV_ARCHIVE);
 DECLARE_CVAR(m_clicks_to_touch, "0", "Convert mouse clicks to touch input", CV_ARCHIVE);
 DECLARE_CVAR(m_invert, 0, "Mouse inversion enabled?", CV_ARCHIVE);
-
 
 DECLARE_CMD(sys_set_fullscreen, nullptr, 0)
 {
@@ -455,13 +457,16 @@ void InputCommands_SDL(SDL_Event* event)
 			}
 			else if (nKey == SDL_SCANCODE_RETURN)
 			{
-				if (altState && event->key.type == SDL_KEYDOWN)
+				if (altState)
 				{
-					if (g_pHost->IsWindowed())
-						g_pHost->SetFullscreenMode(true);
-					else
-						g_pHost->SetWindowedMode();
-					break;
+					if (event->key.type == SDL_KEYDOWN)
+					{
+						if (g_pHost->IsWindowed())
+							g_pHost->SetFullscreenMode(true);
+						else
+							g_pHost->SetWindowedMode();
+					}
+					return;
 				}
 			}
 
@@ -699,21 +704,11 @@ bool CGameHost::Frame()
 	//--------------------------------------------
 
 	BeginScene();
+
 	g_consoleInput->BeginFrame();
 
 	if (r_showFPSGraph.GetBool())
-	{
 		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
-	}
-
-	// always reset scissor rectangle before we start rendering
-	g_renderAPI->SetScissorRectangle( IAARectangle(0,0,m_winSize.x, m_winSize.y) );
-#ifdef PLAT_ANDROID
-	// always clear all on Android
-	g_renderAPI->Clear(true, true, true);
-#else
-	g_renderAPI->Clear(r_clear.GetBool(), true, false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
-#endif
 
 	const double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
 
@@ -804,8 +799,6 @@ bool CGameHost::Frame()
 	// End frame from render lib
 	EndScene();
 
-	g_renderAPI->ResetCounters();
-
 	m_accumTime = 0.0f;
 
 	return true;
@@ -840,18 +833,11 @@ void CGameHost::OnFocusChanged(bool inFocus)
 
 void CGameHost::BeginScene()
 {
-	// reset viewport
-	g_renderAPI->SetViewport(0,0, m_winSize.x, m_winSize.y);
-
-	// Begin frame from render lib
 	g_matSystem->BeginFrame(nullptr);
-	g_renderAPI->Clear(false,true,false);
 
-	HOOK_TO_CVAR(r_wireframe)
-	g_matSystem->GetConfiguration().wireframeMode = r_wireframe->GetBool();
-
-	HOOK_TO_CVAR(r_overdraw)
-	g_matSystem->GetConfiguration().overdrawMode = r_overdraw->GetBool();
+	materialsRenderSettings_t& rendSettings = g_matSystem->GetConfiguration();
+	rendSettings.wireframeMode = r_wireframe.GetBool();
+	rendSettings.overdrawMode = r_overdraw.GetBool();
 }
 
 void CGameHost::EndScene()
@@ -859,8 +845,8 @@ void CGameHost::EndScene()
 	// issue the rendering of anything
 	g_renderAPI->Flush();
 
-	// End frame from render lib
 	g_matSystem->EndFrame();
+	g_renderAPI->ResetCounters();
 }
 
 void CGameHost::RequestTextInput()
@@ -939,16 +925,12 @@ void CGameHost::TrapMouseMove_Event(int x, int y, int dx, int dy)
 
 	g_consoleInput->MousePos( m_mousePos );
 
-	if( equi::Manager->ProcessMouseEvents( x, y, 0, equi::UIEVENT_MOUSE_MOVE) )
+	if( equi::Manager->ProcessMouseEvents(x, y, 0, equi::UIEVENT_MOUSE_MOVE) )
 		return;
 
-	Vector2D delta(dx, dy);
-
-	// we had it inverted, so...
-	delta *= -1;
-
+	Vector2D delta(-dx, -dy);
 	delta.y *= (m_invert.GetBool() ? 1.0f : -1.0f);
-	delta *= 0.05f;
+	delta *= 0.05f * m_sensitivity.GetFloat();
 
 	if(EqStateMgr::GetCurrentState())
 		EqStateMgr::GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
