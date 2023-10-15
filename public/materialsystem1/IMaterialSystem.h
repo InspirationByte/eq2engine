@@ -169,13 +169,13 @@ public:
 
 	template<typename VERT>
 	void									DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts,
-															const ITexturePtr& texture = nullptr, const ColorRGBA& color = color_white,
+															const ITexturePtr& texture = nullptr, const MColor& color = color_white,
 															BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
 															RasterizerStateParams* rasterParams = nullptr);
 
 	template<typename ARRAY_TYPE>
 	void									DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts,
-															const ITexturePtr& texture = nullptr, const ColorRGBA& color = color_white,
+															const ITexturePtr& texture = nullptr, const MColor& color = color_white,
 															BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
 															RasterizerStateParams* rasterParams = nullptr);
 
@@ -333,19 +333,20 @@ public:
 };
 
 template<typename VERT>
-void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts, const ITexturePtr& texture, const ColorRGBA& color,
+void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts, const ITexturePtr& texture, const MColor& color,
 		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
 {
 	const void* vertPtr = reinterpret_cast<void*>(&verts);
-	const int vertFVF = typename VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(type, vertFVF, vertPtr, N, texture, color, blendParams, depthParams, rasterParams);
+	const int vertFVF = VertexFVFResolver<VERT>::value;
+	DrawDefaultUP(type, vertFVF, vertPtr, numVerts, texture, color, blendParams, depthParams, rasterParams);
 }
 
 template<typename ARRAY_TYPE>
-void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts, const ITexturePtr& texture, const ColorRGBA& color,
+void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts, const ITexturePtr& texture, const MColor& color,
 		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
 {
-	const int vertFVF = typename VertexFVFResolver<typename ARRAY_TYPE::ITEM>::value;
+	using VERT = typename ARRAY_TYPE::ITEM;
+	const int vertFVF = VertexFVFResolver<VERT>::value;
 	DrawDefaultUP(type, vertFVF, verts.ptr(), verts.numElem(), texture, color, blendParams, depthParams, rasterParams);
 }
 
