@@ -122,23 +122,8 @@ public:
 // Textures
 //-------------------------------------------------------------
 
-	// Create procedural texture such as error texture, etc.
-	ITexturePtr			CreateProceduralTexture(const char* pszName,
-												int width, int height,
-												const unsigned char* data, int nDataSize,
-												ETextureFormat nFormat,
-												ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-												int nFlags = 0);
-
 	// It will add new rendertarget
-	ITexturePtr			CreateRenderTarget(	int width, int height,
-											ETextureFormat nRTFormat,
-											ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
-											ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-											ER_CompareFunc comparison = COMPFUNC_NEVER,
-											int nFlags = 0);
-	// It will add new rendertarget
-	ITexturePtr			CreateNamedRenderTarget(const char* pszName,
+	ITexturePtr			CreateRenderTarget(const char* pszName,
 												int width, int height,
 												ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 												ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
@@ -167,25 +152,6 @@ public:
 
 	// resizes render target
 	void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall);
-
-//-------------------------------------------------------------
-// Matrix for rendering
-//-------------------------------------------------------------
-
-	// Matrix mode
-	void				SetMatrixMode(ER_MatrixMode nMatrixMode);
-
-	// Will save matrix
-	void				PushMatrix();
-
-	// Will reset matrix
-	void				PopMatrix();
-
-	// Load identity matrix
-	void				LoadIdentityMatrix();
-
-	// Load custom matrix
-	void				LoadMatrix(const Matrix4x4 &matrix);
 
 //-------------------------------------------------------------
 // Various setup functions for drawing

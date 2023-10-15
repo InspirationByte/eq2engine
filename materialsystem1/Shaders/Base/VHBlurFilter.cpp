@@ -99,12 +99,12 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 
-		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("TEXSIZE"), m_texSize);
+		g_renderAPI->SetShaderConstant(StringToHashConst("TEXSIZE"), m_texSize);
 	}
 
 	void SetColorModulation()
 	{
-		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
+		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
 	}
 
 	void SetupBaseTexture0()

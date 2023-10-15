@@ -237,7 +237,7 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 
 		bonequaternion_t bquats[128];
 		const int numRegs = ComputeQuaternionsForSkinning(this, bquats, jointMatrices);
-		g_renderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numRegs);
+		g_renderAPI->SetShaderConstantArray("Bones", (Vector4D*)&bquats[0].quat, numRegs);
 
 		return true;
 	}
@@ -992,7 +992,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				drawProperties.preDrawFunc(material, i, j);
 
 			if (numBoneRegisters && meshRef.supportsSkinning)
-				g_renderAPI->SetShaderConstantArrayVector4D(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
+				g_renderAPI->SetShaderConstant(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
 			materials->Apply();
 
 			g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);

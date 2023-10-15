@@ -1057,12 +1057,6 @@ void CMaterialSystem::SetMatrix(ER_MatrixMode mode, const Matrix4x4 &matrix)
 {
 	m_matrices[(int)mode] = matrix;
 	m_matrixDirty |= (1 << mode);
-
-	g_renderAPI->SetMatrixMode(mode);
-
-	g_renderAPI->PopMatrix();
-	g_renderAPI->LoadMatrix(matrix);
-	g_renderAPI->PushMatrix();
 }
 
 // returns a typed matrix
@@ -1382,49 +1376,6 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 {
 	return (IDynamicMesh*)&m_dynamicMesh;
-}
-
-// draws 2D primitives
-void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-										const ITexturePtr& pTexture, const ColorRGBA &color,
-										BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
-										RasterizerStateParams_t* rasterParams)
-{
-	if(r_noffp.GetBool())
-		return;
-
-	if(!blendParams)
-		SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	else
-		SetBlendingStates(*blendParams);
-
-	if(!rasterParams)
-		SetRasterizerStates(CULL_NONE,FILL_SOLID);
-	else
-		SetRasterizerStates(*rasterParams);
-
-	if(!depthParams)
-		SetDepthStates(false,false);
-	else
-		SetDepthStates(*depthParams);
-
-	IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(pTexture);
-	BindMaterial(GetDefaultMaterial());
-
-	CMeshBuilder meshBuilder(&m_dynamicMesh);
-
-	meshBuilder.Begin(type);
-
-	for(int i = 0; i < nVerts; i++)
-	{
-		meshBuilder.Color4fv(pVerts[i].color * color);
-		meshBuilder.TexCoord2fv(pVerts[i].texCoord);
-		meshBuilder.Position3fv(pVerts[i].position);
-
-		meshBuilder.AdvanceVertex();
-	}
-
-	meshBuilder.End();
 }
 
 void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,

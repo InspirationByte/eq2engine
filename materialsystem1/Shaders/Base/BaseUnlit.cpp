@@ -107,7 +107,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	{
 		ColorRGBA setColor = m_colorVar.Get() * materials->GetAmbientColor();
 
-		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), setColor);
+		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
 	}
 
 	void SetupBaseTexture0()

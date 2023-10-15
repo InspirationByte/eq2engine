@@ -28,19 +28,36 @@ void DrawWorldCenter()
 	ListLine(Vector3D(0,0,-F_INFINITY),Vector3D(0,0, F_INFINITY), grid_vertices);
 
 	DepthStencilStateParams_t depth;
-
 	depth.depthTest = false;
 	depth.depthWrite = false;
 	depth.depthFunc = COMPFUNC_LEQUAL;
 
 	RasterizerStateParams_t raster;
-
 	raster.cullMode = CULL_BACK;
 	raster.fillMode = FILL_SOLID;
 	raster.multiSample = true;
 	raster.scissor = false;
 
-	materials->DrawPrimitivesFFP(PRIM_LINES, grid_vertices.ptr(), grid_vertices.numElem(), nullptr, ColorRGBA(0,0.45f,0.45f,1), nullptr, &depth, &raster);
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	materials->SetRasterizerStates(raster);
+	materials->SetDepthStates(depth);
+
+	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	meshBuilder.Begin(PRIM_LINES);
+	ColorRGBA color(0, 0.45f, 0.45f, 1);
+	for (const Vertex3D_t& vertex : grid_vertices)
+	{
+		meshBuilder.Color4fv(vertex.color * color);
+		meshBuilder.TexCoord2fv(vertex.texCoord);
+		meshBuilder.Position3fv(vertex.position);
+		meshBuilder.AdvanceVertex();
+	}
+
+	meshBuilder.End();
 }
 
 void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest)

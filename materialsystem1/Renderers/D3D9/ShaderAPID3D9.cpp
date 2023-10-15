@@ -1264,39 +1264,7 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 }
 
 // It will add new rendertarget
-ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
-{
-	// TODO: use CreateTextureResource
-
-	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
-
-	pTexture->SetDimensions(width,height);
-	pTexture->SetFormat(nRTFormat);
-
-	pTexture->m_usage = D3DUSAGE_RENDERTARGET;
-
-	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
-	pTexture->SetName(EqString::Format("_sapi_rt_%d", m_TextureList.size()).ToCString());
-
-	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
-
-	pTexture->SetSamplerState(texSamplerParams);
-
-	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
-	{
-		CScopedMutex scoped(g_sapi_TextureMutex);
-		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
-		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-
-		return ITexturePtr(pTexture);
-	} 
-
-	return nullptr;
-}
-
-// It will add new rendertarget
-ITexturePtr ShaderAPID3D9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3D9::CreateRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	// TODO: use CreateTextureResource
 
@@ -1530,44 +1498,6 @@ void ShaderAPID3D9::GetViewportDimensions(int &wide, int &tall)
 
 	wide = vp.Width;
 	tall = vp.Height;
-}
-
-//-------------------------------------------------------------
-// Matrix for rendering
-//-------------------------------------------------------------
-
-// Matrix mode
-void ShaderAPID3D9::SetMatrixMode(ER_MatrixMode nMatrixMode)
-{
-	m_nCurrentMatrixMode = g_d3d9_matrixModes[nMatrixMode];
-}
-
-// Will save matrix
-void ShaderAPID3D9::PushMatrix()
-{
-	// TODO: implement!
-}
-
-// Will reset matrix
-void ShaderAPID3D9::PopMatrix()
-{
-	// TODO: implement!
-}
-
-// Load identity matrix
-void ShaderAPID3D9::LoadIdentityMatrix()
-{
-	// It's may be invalid
-	D3DXMATRIX Identity;
-	D3DXMatrixIdentity(&Identity);
-
-	m_pD3DDevice->SetTransform(m_nCurrentMatrixMode,&Identity);
-}
-
-// Load custom matrix
-void ShaderAPID3D9::LoadMatrix(const Matrix4x4 &matrix)
-{
-	m_pD3DDevice->SetTransform(m_nCurrentMatrixMode,(D3DXMATRIX*)(const float *)transpose(matrix));
 }
 
 //-------------------------------------------------------------

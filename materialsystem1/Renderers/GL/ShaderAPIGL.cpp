@@ -804,18 +804,7 @@ void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 //-------------------------------------------------------------
 
 // It will add new rendertarget
-ITexturePtr ShaderAPIGL::CreateRenderTarget(	int width, int height,
-											ETextureFormat nRTFormat,
-											ER_TextureFilterMode textureFilterType,
-											ER_TextureAddressMode textureAddress,
-											ER_CompareFunc comparison,
-											int nFlags)
-{
-	return CreateNamedRenderTarget(EqString::Format("_sapi_rt_%d", m_TextureList.size()).ToCString(), width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
-}
-
-// It will add new rendertarget
-ITexturePtr ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
+ITexturePtr ShaderAPIGL::CreateRenderTarget(	const char* pszName,
 												int width, int height,
 												ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType,
 												ER_TextureAddressMode textureAddress,
@@ -1231,35 +1220,6 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 
 	m_pCurrentDepthRenderTarget = nullptr;
 	m_currentGLDepth = GL_NONE;
-}
-
-//-------------------------------------------------------------
-// Matrix for rendering
-//-------------------------------------------------------------
-
-// Matrix mode
-void ShaderAPIGL::SetMatrixMode(ER_MatrixMode nMatrixMode)
-{
-}
-
-// Will save matrix
-void ShaderAPIGL::PushMatrix()
-{
-}
-
-// Will reset matrix
-void ShaderAPIGL::PopMatrix()
-{
-}
-
-// Load identity matrix
-void ShaderAPIGL::LoadIdentityMatrix()
-{
-}
-
-// Load custom matrix
-void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
-{
 }
 
 //-------------------------------------------------------------

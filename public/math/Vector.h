@@ -836,6 +836,7 @@ uint		rgbToRGBE8(const MColor& rgb);
 uint		rgbToRGB9E5(const MColor& rgb);
 
 // pre-defined colors
+static const MColor color_black		= MColor(0x00000000, true);
 static const MColor color_white		= MColor(0xFFFFFFFF, true);
 static const MColor color_red		= MColor(0xFFFF0000, true);
 static const MColor color_orange	= MColor(0xFFFFA500, true);

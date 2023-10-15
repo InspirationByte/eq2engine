@@ -178,19 +178,6 @@ public:
 	bool								LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra = nullptr);
 	IShaderProgram*						FindShaderProgram(const char* pszName, const char* query);
 
-	// Shader constants setup
-	void								SetShaderConstantInt(int nameHash, const int constant);
-	void								SetShaderConstantFloat(int nameHash, const float constant);
-	void								SetShaderConstantVector2D(int nameHash, const Vector2D &constant);
-	void								SetShaderConstantVector3D(int nameHash, const Vector3D &constant);
-	void								SetShaderConstantVector4D(int nameHash, const Vector4D &constant);
-	void								SetShaderConstantMatrix4(int nameHash, const Matrix4x4 &constant);
-	void								SetShaderConstantArrayFloat(int nameHash, const float *constant, int count);
-	void								SetShaderConstantArrayVector2D(int nameHash, const Vector2D *constant, int count);
-	void								SetShaderConstantArrayVector3D(int nameHash, const Vector3D *constant, int count);
-	void								SetShaderConstantArrayVector4D(int nameHash, const Vector4D *constant, int count);
-	void								SetShaderConstantArrayMatrix4(int nameHash, const Matrix4x4 *constant, int count);
-
 protected:
 
 	virtual ITexturePtr					CreateTextureResource(const char* pszName) = 0;

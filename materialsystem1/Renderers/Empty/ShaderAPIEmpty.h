@@ -194,23 +194,7 @@ public:
 //-------------------------------------------------------------
 
 	// It will add new rendertarget
-	ITexturePtr					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0)
-	{
-		CRefPtr<CEmptyTexture> pTexture = CRefPtr_new(CEmptyTexture);
-		pTexture->SetName(EqString::Format("_rt_%d", m_TextureList.size()));
-
-		pTexture->SetDimensions(width, height);
-		pTexture->SetFormat(nRTFormat);
-
-		CScopedMutex scoped(g_sapi_TextureMutex);
-		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
-		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-
-		return ITexturePtr(pTexture);
-	}
-
-	// It will add new rendertarget
-	ITexturePtr					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0)
+	ITexturePtr					CreateRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0)
 	{
 		CRefPtr<CEmptyTexture> pTexture = CRefPtr_new(CEmptyTexture);
 		pTexture->SetName(pszName);
@@ -252,28 +236,6 @@ public:
 
 	// sets scissor rectangle
 	void						SetScissorRectangle( const IAARectangle &rect ) {}
-
-//-------------------------------------------------------------
-// Matrix for rendering
-//-------------------------------------------------------------
-
-	// Matrix mode
-	void						SetMatrixMode(ER_MatrixMode nMatrixMode){}
-
-	// Will save matrix
-	void						PushMatrix() {}
-
-	// Will reset matrix
-	void						PopMatrix() {}
-
-	// Load identity matrix
-	void						LoadIdentityMatrix() {}
-
-	// Load custom matrix
-	void						LoadMatrix(const Matrix4x4 &matrix) {}
-
-	// Setup 2D mode
-	void						SetupMatrixFor2DMode(float fLeft, float fRight, float fTop, float fBottom){}
 
 //-------------------------------------------------------------
 // Various setup functions for drawing

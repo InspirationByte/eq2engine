@@ -66,6 +66,7 @@ struct shaderAPIParams_t
 };
 
 
+
 //
 // ShaderAPI interface
 //
@@ -76,145 +77,97 @@ public:
 
 	// initializes shader api.
 	// Don't use this, this already called by materials->Init()
-	virtual void						Init( const shaderAPIParams_t &params ) = 0;
+	virtual void				Init( const shaderAPIParams_t &params ) = 0;
 
 	// shutdowns shader api. Don't use this, this already called by materials->Shutdown()
-	virtual void						Shutdown() = 0;
+	virtual void				Shutdown() = 0;
 
 	// returns the parameters
 	virtual const shaderAPIParams_t&	GetParams() const = 0;
 
-	// prints shader api information to console output
-	virtual void						PrintAPIInfo() const = 0;
-
-	// returns device activation state
-	virtual bool						IsDeviceActive() const = 0;
-
 //-------------------------------------------------------------
-// Rendering's applies
+// Renderer capabilities and information
 //-------------------------------------------------------------
 
-	// reset states. Use RESET_TYPE flags. By default all states reset
-	virtual void				Reset(int nResetTypeFlags = STATE_RESET_ALL) = 0;
-
-	// applies currently set up parameters
-	virtual void				Apply() = 0;
-
-	// applies only textures
-	virtual void				ApplyTextures() = 0;
-
-	// applies only sampler states
-	virtual void				ApplySamplerState() = 0;
-
-	// applies blending states
-	virtual void				ApplyBlendState() = 0;
-
-	// applies depth states
-	virtual void				ApplyDepthState() = 0;
-
-	// applies rasterizer states
-	virtual void				ApplyRasterizerState() = 0;
-
-	// applies vertex buffer objects
-	virtual void				ApplyBuffers() = 0;
-
-	// applies shader programs
-	virtual void				ApplyShaderProgram() = 0;
-
-	// applies shader constants TODO: remove due no usage
-	virtual void				ApplyConstants() = 0;
-
-//-------------------------------------------------------------
-// Misc
-//-------------------------------------------------------------
-
-	// clears backbuffer. Don't use bClearColor with bClearStencil
-	virtual void				Clear(	bool bClearColor,
-										bool bClearDepth = true,
-										bool bClearStencil = true,
-										const ColorRGBA &fillColor = ColorRGBA(0),
-										float fDepth = 1.0f,
-										int nStencil = 0
-										) = 0;
-
-//-------------------------------------------------------------
-// Renderer information
-//-------------------------------------------------------------
-
-	// shader API class type for shader developers.
 	virtual const ShaderAPICaps_t&	GetCaps() const = 0;
 
-	virtual ER_ShaderAPIType		GetShaderAPIClass() const = 0;
-
-	// Renderer string (ex: OpenGL, D3D9)
-	virtual const char*				GetRendererName() const = 0;
-
-	// Device vendor and version
-	virtual const char*				GetDeviceNameString() const = 0;
+	virtual ER_ShaderAPIType	GetShaderAPIClass() const = 0;
+	virtual const char*			GetRendererName() const = 0;
+	virtual const char*			GetDeviceNameString() const = 0;
+	virtual void				PrintAPIInfo() const = 0;
 
 //-------------------------------------------------------------
-// Render statistics
+// Device statistics
 //-------------------------------------------------------------
 
-	// Draw call counter
-	virtual int						GetDrawCallsCount() const = 0;
+	virtual bool				IsDeviceActive() const = 0;
 
-	// draw idexed calls
-	virtual int						GetDrawIndexedPrimitiveCallsCount() const = 0;
+	virtual int					GetDrawCallsCount() const = 0;
+	virtual int					GetDrawIndexedPrimitiveCallsCount() const = 0;
+	virtual int					GetTrianglesCount() const = 0;
 
-	// triangles per scene drawing
-	virtual int						GetTrianglesCount() const = 0;
-
-	// Resetting the counters
-	virtual void					ResetCounters() = 0;
+	virtual void				ResetCounters() = 0;
 
 //-------------------------------------------------------------
 // MT Synchronization
 //-------------------------------------------------------------
 
-	// flushes
-	virtual void					Flush() = 0;
-
-	// finishes
-	virtual void					Finish() = 0;
-
-	// texture LOD uploading frequency
-	virtual void					SetProgressiveTextureFrequency(int frames) = 0;
-	virtual int						GetProgressiveTextureFrequency() const = 0;
+	virtual void				Flush() = 0;
+	virtual void				Finish() = 0;
 
 //-------------------------------------------------------------
-// Occlusion query
+// Vertex buffer objects creation/destroying
 //-------------------------------------------------------------
 
-	// creates occlusion query object
+	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexFormatDesc> formatDesc ) = 0;
+	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
+
+	virtual IVertexBuffer*		CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr ) = 0;
+	virtual IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr) = 0;
+
+	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
+	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
+	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
+
+//-------------------------------------------------------------
+// Shader resource management
+//-------------------------------------------------------------
+
+	virtual IShaderProgram*		FindShaderProgram( const char* pszName, const char* query = nullptr) = 0;
+
+	virtual IShaderProgram*		CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
+	virtual void				DestroyShaderProgram(IShaderProgram* pShaderProgram) = 0;
+
+	virtual bool				LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
+	virtual bool				CompileShadersFromStream(IShaderProgram* pShaderOutput, const shaderProgramCompileInfo_t& info, const char* extra = nullptr) = 0;
+
+//-------------------------------------------------------------
+// Occlusion query management
+//-------------------------------------------------------------
+
 	virtual IOcclusionQuery*	CreateOcclusionQuery() = 0;
-
-	// removal of occlusion query object
 	virtual void				DestroyOcclusionQuery(IOcclusionQuery* pQuery) = 0;
 
-
 //-------------------------------------------------------------
-// Textures
+// Texture resource managenent
 //-------------------------------------------------------------
 
-	// default error texture pointer
+	// texture LOD uploading frequency
+	virtual void				SetProgressiveTextureFrequency(int frames) = 0;
+	virtual int					GetProgressiveTextureFrequency() const = 0;
+
+	// returns default checkerboard texture
 	virtual const ITexturePtr&	GetErrorTexture() const = 0;
 
-	// Searches for texture by name, can be used for shared RT's
-	virtual ITexturePtr			FindTexture( const char* pszName ) = 0;
+	virtual ITexturePtr			FindOrCreateTexture(const char* pszName, bool& justCreated) = 0;
+	virtual ITexturePtr			FindTexture(const char* pszName) = 0;
 
-	// Searches for existing texture or creates new one. Use this for resource loading
-	virtual ITexturePtr			FindOrCreateTexture( const char* pszName, bool& justCreated ) = 0;
-
-	// unloads the texture and frees the memory
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
 
-	// BEGIN CUT HERE
-
-	// creates texture from image array
+	// creates static texture from image (array for animated textures)
 	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParams& sampler, int nFlags = 0) = 0;
 
-	// creates procedural (lockable) texture
+	// creates lockable texture
 	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
 														ETextureFormat nFormat,
 														int width, int height,
@@ -226,8 +179,8 @@ public:
 														int nDataSize = 0, const unsigned char* pData = nullptr
 														) = 0;
 
-	// creates render target texture
-	virtual ITexturePtr			CreateRenderTarget(	int width, int height,
+	virtual ITexturePtr			CreateRenderTarget(const char* pszName,
+													int width, int height,
 													ETextureFormat nRTFormat,
 													ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 													ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
@@ -235,234 +188,133 @@ public:
 													int nFlags = 0
 													) = 0;
 
-	// creates named render target texture, useful for material system shader texture searching
-	virtual ITexturePtr			CreateNamedRenderTarget(	const char* pszName,
-															int width, int height,
-															ETextureFormat nRTFormat,
-															ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
-															ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-															ER_CompareFunc comparison = COMPFUNC_NEVER,
-															int nFlags = 0
-															) = 0;
-
-	// END CUT HERE
-
 //-------------------------------------------------------------
-// Destination texture (Render target) operations
+// Render states management
 //-------------------------------------------------------------
 
-	// blits the current framebuffer to texture TODO: need flags such as depth copy, etc
+	virtual IRenderState*		CreateBlendingState( const BlendStateParam_t &blendDesc ) = 0;
+	virtual IRenderState*		CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc ) = 0;
+	virtual IRenderState*		CreateRasterizerState( const RasterizerStateParams_t &rasterDesc ) = 0;
+	virtual void				DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) = 0;
+
+//-------------------------------------------------------------
+// Render target state operations
+//-------------------------------------------------------------
+
+	// clear current rendertarget
+	virtual void				Clear(	bool bClearColor,
+										bool bClearDepth = true,
+										bool bClearStencil = true,
+										const ColorRGBA &fillColor = ColorRGBA(0),
+										float fDepth = 1.0f,
+										int nStencil = 0
+										) = 0;
+
 	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
-
-	// Copy render target to texture
 	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) = 0;
-
-	// changes the rendertarget
+	
+	virtual void				ChangeRenderTargetToBackBuffer() = 0;
 	virtual void				ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0) = 0;
-
-	// changes render targets (also known as multiple-render-targetting)
 	virtual void				ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
 													ArrayCRef<int> rtSlice = nullptr,
 													const ITexturePtr& depthTarget = nullptr,
 													int depthSlice = 0) = 0;
 
-	// changes render target back to backbuffer
-	virtual void				ChangeRenderTargetToBackBuffer() = 0;
-
-	// resizes render target
 	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall ) = 0;
 
 //-------------------------------------------------------------
-// Matrix for rendering - for legacy FFP stuff
+// Rasterizer state properties
 //-------------------------------------------------------------
 
-	// sets matrix mode
-	virtual void				SetMatrixMode( ER_MatrixMode nMatrixMode ) = 0;
-
-	// loads identity matrix
-	virtual void				LoadIdentityMatrix() = 0;
-
-	// Load custom matrix
-	virtual void				LoadMatrix( const Matrix4x4 &matrix ) = 0;
-
-	// Will save matrix
-	virtual void				PushMatrix() = 0;
-
-	// Will reset matrix
-	virtual void				PopMatrix() = 0;
-
-//-------------------------------------------------------------
-// State manipulation
-//-------------------------------------------------------------
-
-	// creates blending state
-	virtual IRenderState*		CreateBlendingState( const BlendStateParam_t &blendDesc ) = 0;
-
-	// creates depth/stencil state
-	virtual IRenderState*		CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc ) = 0;
-
-	// creates rasterizer state
-	virtual IRenderState*		CreateRasterizerState( const RasterizerStateParams_t &rasterDesc ) = 0;
-
-	// completely destroys shader
-	virtual void				DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) = 0;
-
-//-------------------------------------------------------------
-// State setup functions for drawing
-//-------------------------------------------------------------
-
-	// sets the near/far depth range
-	virtual void				SetDepthRange( float fZNear,float fZFar ) = 0;
-
-	// sets rendering viewport
+	virtual void				SetDepthRange( float fZNear, float fZFar ) = 0;
 	virtual void				SetViewport( int x, int y, int w, int h ) = 0;
-
-	// retunrs current rendering viewport.
 	virtual void				GetViewport( int &x, int &y, int &w, int &h ) = 0;
 
-	// retunrs current rendering viewport size only
+	virtual void				SetScissorRectangle(const IAARectangle& rect) = 0;
+
 	virtual void				GetViewportDimensions( int &wide, int &tall ) = 0;
 
-	// sets scissor rectangle
-	virtual void				SetScissorRectangle( const IAARectangle &rect ) = 0;
+//-------------------------------------------------------------
+// Render states
+//-------------------------------------------------------------
 
-	// sets render state
-	//virtual void				SetRenderState( IRenderState* pState ) = 0;
-
-	// TODO: REMOVE HERE, INTERNAL, DON'T USE: Sets the reserved blending state (from pre-defined preset)
 	virtual void				SetBlendingState( IRenderState* pBlending ) = 0;
-
-	// TODO: REMOVE HERE, INTERNAL, DON'T USE: Set depth and stencil state
 	virtual void				SetDepthStencilState( IRenderState *pDepthStencilState ) = 0;
-
-	// TODO: REMOVE HERE, INTERNAL, DON'T USE: sets reserved rasterizer mode
 	virtual void				SetRasterizerState( IRenderState* pState ) = 0;
-
-	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
-	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	virtual void				SetTexture(int nameHash, const ITexturePtr& pTexture) = 0;
-
-	// returns the currently set textre at level
-	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
 
 //-------------------------------------------------------------
 // Vertex buffer object handling
 //-------------------------------------------------------------
 
-	// sets the vertex format
 	virtual void				SetVertexFormat( IVertexFormat* pVertexFormat ) = 0;
-
-	// sets the vertex buffer
 	virtual void				SetVertexBuffer( IVertexBuffer* pVertexBuffer, int nStream, const intptr offset = 0 ) = 0;
-
-	// sets the vertex buffer
 	virtual void				SetVertexBuffer( int nStream, const void* base ) = 0;
-
-	// changes the index buffer
 	virtual void				SetIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
 
-	// Change* procedures is direct, so they doesn't needs ApplyBuffers().
-
-	// changes the vertex format
 	virtual void				ChangeVertexFormat( IVertexFormat* pVertexFormat ) = 0;
-
-	// changes the vertex buffer
 	virtual void				ChangeVertexBuffer( IVertexBuffer* pVertexBuffer,int nStream, const intptr offset = 0 ) = 0;
-
-	// changes the index buffer
 	virtual void				ChangeIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
 
 //-------------------------------------------------------------
-// Shaders and it's operations
+// Shaders state operations
 //-------------------------------------------------------------
 
-	// search for existing shader program
-	virtual IShaderProgram*		FindShaderProgram( const char* pszName, const char* query = nullptr) = 0;
-
-	// creates empty shader program
-	virtual IShaderProgram*		CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
-
-	// completely destroy shader
-	virtual void				DestroyShaderProgram( IShaderProgram* pShaderProgram ) = 0;
-
-	// Loads and compiles shaders from files
-	virtual bool				LoadShadersFromFile(	IShaderProgram* pShaderOutput,
-														const char* pszFileNamePrefix,
-														const char* extra = nullptr
-														) = 0;
-
-	// Load any shader from stream
-	virtual bool				CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-															const shaderProgramCompileInfo_t& info,
-															const char* extra = nullptr
-															) = 0;
-
-	// Sets current shader for rendering
 	virtual void				SetShader(IShaderProgram* pShader) = 0;
 
-	// Shader constants setup
-	// NOTE: use StringToHashConst
-	virtual void				SetShaderConstantInt(int nameHash, const int constant) = 0;
-	virtual void				SetShaderConstantFloat(int nameHash, const float constant) = 0;
-	virtual void				SetShaderConstantVector2D(int nameHash, const Vector2D &constant) = 0;
-	virtual void				SetShaderConstantVector3D(int nameHash, const Vector3D &constant) = 0;
-	virtual void				SetShaderConstantVector4D(int nameHash, const Vector4D &constant) = 0;
-	virtual void				SetShaderConstantMatrix4(int nameHash, const Matrix4x4 &constant) = 0;
-	virtual void				SetShaderConstantArrayFloat(int nameHash, const float *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayVector2D(int nameHash, const Vector2D *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayVector3D(int nameHash, const Vector3D *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayVector4D(int nameHash, const Vector4D *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayMatrix4(int nameHash, const Matrix4x4 *constant, int count) = 0;
-
-	// Shader constants setup (RAW mode, use for different structures)
     virtual void				SetShaderConstantRaw(int nameHash, const void *data, int nSize) = 0;
 
+	template<typename ARRAY_TYPE>
+	void						SetShaderConstantArray(int nameHash, const ARRAY_TYPE& arr);
+	template<typename T> void	SetShaderConstant(int nameHash, const T* constant, int count = 1);
+	template<typename T> void	SetShaderConstant(int nameHash, const T& constant);
+
+	virtual void				SetTexture(int nameHash, const ITexturePtr& pTexture) = 0;
+	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
 
 //-------------------------------------------------------------
-// Vertex buffer objects creation/destroying
+// Sending states to API
 //-------------------------------------------------------------
 
-	// create new vertex declaration
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexFormatDesc> formatDesc ) = 0;
-	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
+	// reset states. Use RESET_TYPE flags. By default all states reset
+	virtual void				Reset(int resetFlags = STATE_RESET_ALL) = 0;
 
-	// NOTENOTE: when you set nSize you must add the vertex structure size!
-	virtual IVertexBuffer*		CreateVertexBuffer(	ER_BufferAccess nBufAccess,
-															int nNumVerts,
-															int strideSize,
-															void *pData = nullptr
-															) = 0;
+	// applies all states
+	virtual void				Apply() = 0;
 
-	// create new index buffer
-	virtual IIndexBuffer*		CreateIndexBuffer(	int nIndices,
-															int nIndexSize,
-															ER_BufferAccess nBufAccess,
-															void *pData = nullptr
-															) = 0;
-
-	// Destroy
-	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
-	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
-	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
+	virtual void				ApplyTextures() = 0;
+	virtual void				ApplySamplerState() = 0;
+	virtual void				ApplyBlendState() = 0;
+	virtual void				ApplyDepthState() = 0;
+	virtual void				ApplyRasterizerState() = 0;
+	virtual void				ApplyBuffers() = 0;
+	virtual void				ApplyShaderProgram() = 0;
+	virtual void				ApplyConstants() = 0;
 
 //-------------------------------------------------------------
 // Primitive drawing
 //-------------------------------------------------------------
 
-	// Indexed primitive drawer
-	virtual void				DrawIndexedPrimitives(	ER_PrimitiveType nType,
-														int nFirstIndex,
-														int nIndices,
-														int nFirstVertex,
-														int nVertices,
-														int nBaseVertex = 0
-														) = 0;
-
-	// Non-Indexed primitive drawer
-	virtual void				DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices) = 0;
-
+	virtual void				DrawIndexedPrimitives(ER_PrimitiveType nType, int firstIndex, int indices, int firstVertex, int vertices, int baseVertex = 0) = 0;
+	virtual void				DrawNonIndexedPrimitives(ER_PrimitiveType nType, int firstVertex, int vertices) = 0;
 };
 
+template<typename ARRAY_TYPE>
+inline void IShaderAPI::SetShaderConstantArray(int nameHash, const ARRAY_TYPE& arr)
+{
+	SetShaderConstantRaw(nameHash, arr.ptr(), sizeof(typename ARRAY_TYPE::ITEM) * arr.numElem());
+}
+
+template<typename T>
+inline void IShaderAPI::SetShaderConstant(int nameHash, const T* constant, int count)
+{
+	SetShaderConstantRaw(nameHash, constant, sizeof(T) * count);
+}
+
+template<typename T>
+inline void IShaderAPI::SetShaderConstant(int nameHash, const T& constant)
+{
+	SetShaderConstantRaw(nameHash, &constant, sizeof(T));
+}
 
 // it always external, declare new one in your app...
-extern IShaderAPI*				g_renderAPI;
+extern IShaderAPI* g_renderAPI;

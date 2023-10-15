@@ -55,7 +55,7 @@ BEGIN_SHADER_CLASS(Error)
 
 	void SetColorModulation()
 	{
-		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
+		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
 	}
 
 	void SetupBaseTexture0()

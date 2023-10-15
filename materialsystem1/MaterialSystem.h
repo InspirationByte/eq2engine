@@ -118,12 +118,6 @@ public:
 	// TODO: remove this
 	//-----------------------------
 
-	// draws primitives
-	void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-														const ITexturePtr& pTexture = nullptr, const ColorRGBA &color = color_white,
-														BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
-														RasterizerStateParams_t* rasterParams = nullptr);
-
 	// draws primitives for 2D
 	void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
 															const ITexturePtr& pTexture = nullptr, const ColorRGBA &color = color_white,

@@ -320,10 +320,10 @@ void CBaseShader::ParamSetup_Transform()
 	materials->GetMatrix(MATRIXMODE_VIEW, view);
 	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
 
-	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("WVP"), wvp_matrix);
-	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("World"), world);
-	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("View"), view);
-	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("Proj"), proj);
+	g_renderAPI->SetShaderConstant(StringToHashConst("WVP"), wvp_matrix);
+	g_renderAPI->SetShaderConstant(StringToHashConst("World"), world);
+	g_renderAPI->SetShaderConstant(StringToHashConst("View"), view);
+	g_renderAPI->SetShaderConstant(StringToHashConst("Proj"), proj);
 
 	// setup texture transform
 	SetupVertexShaderTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar, "BaseTextureTransform");
@@ -343,9 +343,9 @@ void CBaseShader::ParamSetup_Fog()
 	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
 	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
 
-	g_renderAPI->SetShaderConstantVector3D(StringToHashConst("ViewPos"), fog.viewPos);
-	g_renderAPI->SetShaderConstantVector4D(StringToHashConst("FogParams"), VectorFOGParams);
-	g_renderAPI->SetShaderConstantVector3D(StringToHashConst("FogColor"), fog.fogColor);
+	g_renderAPI->SetShaderConstant(StringToHashConst("ViewPos"), fog.viewPos);
+	g_renderAPI->SetShaderConstant(StringToHashConst("FogParams"), VectorFOGParams);
+	g_renderAPI->SetShaderConstant(StringToHashConst("FogColor"), fog.fogColor);
 }
 
 void CBaseShader::ParamSetup_Cubemap()
@@ -367,7 +367,7 @@ void CBaseShader::SetupVertexShaderTextureTransform(const MatVec2Proxy& transfor
 {
 	Vector4D trans = GetTextureTransform(transformVar, scaleVar);
 
-	g_renderAPI->SetShaderConstantVector4D(StringToHash(pszConstName), trans);
+	g_renderAPI->SetShaderConstant(StringToHash(pszConstName), trans);
 }
 
 IMaterial* CBaseShader::GetAssignedMaterial() const

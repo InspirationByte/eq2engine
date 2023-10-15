@@ -59,7 +59,7 @@ BEGIN_SHADER_CLASS(Default)
 	void SetColorModulation()
 	{
 		ColorRGBA setColor = materials->GetAmbientColor();
-		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), setColor);
+		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

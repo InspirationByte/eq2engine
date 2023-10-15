@@ -737,45 +737,7 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 }
 
 // It will add new rendertarget
-ITexturePtr ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
-{
-	// TODO: use CreateTextureResource
-
-	CRefPtr<CD3D10Texture> pTexture = CRefPtr_new(CD3D10Texture);
-
-	pTexture->SetDimensions(width,height);
-	pTexture->SetFormat(nRTFormat);
-	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
-	pTexture->SetName("_rt_001");
-
-	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, m_caps, textureFilterType, textureAddress, textureAddress, textureAddress);
-
-	texSamplerParams.compareFunc = comparison;
-	pTexture->SetSamplerState(texSamplerParams);
-	pTexture->m_samplerState = CreateSamplerState(texSamplerParams);
-
-	InternalCreateRenderTarget( pTexture, m_pD3DDevice );
-
-	if(!pTexture->m_textures[0])
-	{
-		DestroyRenderState( pTexture->m_samplerState );
-		delete pTexture;
-		return nullptr;
-	}
-
-	{
-		CScopedMutex scoped(g_sapi_TextureMutex);
-		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
-		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-		return ITexturePtr(pTexture);
-	}
-
-	return nullptr;
-}
-
-// It will add new rendertarget
-ITexturePtr ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3DX10::CreateRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	// TODO: use CreateTextureResource
 
@@ -961,35 +923,6 @@ void ShaderAPID3DX10::GetViewportDimensions(int &wide, int &tall)
 	wide = vp.Width;
 	tall = vp.Height;
 	*/
-}
-
-//-------------------------------------------------------------
-// Matrix for rendering
-//-------------------------------------------------------------
-
-// Matrix mode
-void ShaderAPID3DX10::SetMatrixMode(ER_MatrixMode nMatrixMode)
-{
-}
-
-// Will save matrix
-void ShaderAPID3DX10::PushMatrix()
-{
-}
-
-// Will reset matrix
-void ShaderAPID3DX10::PopMatrix()
-{
-}
-
-// Load identity matrix
-void ShaderAPID3DX10::LoadIdentityMatrix()
-{
-}
-
-// Load custom matrix
-void ShaderAPID3DX10::LoadMatrix(const Matrix4x4 &matrix)
-{
 }
 
 //-------------------------------------------------------------

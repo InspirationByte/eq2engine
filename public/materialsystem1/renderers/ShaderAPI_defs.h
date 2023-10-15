@@ -74,7 +74,6 @@ inline bool HasAniso(ER_TextureFilterMode filter)
 	return (filter >= TEXFILTER_BILINEAR_ANISO);
 }
 
-// for SetMatrixMode()
 enum ER_MatrixMode : int
 {
 	MATRIXMODE_VIEW	= 0,			// view tranformation matrix
