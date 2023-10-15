@@ -14,6 +14,7 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
+
 #include "render/IDebugOverlay.h"
 #include "font/IFontCache.h"
 #include "EqUI_Manager.h"
@@ -574,7 +575,7 @@ void IUIControl::Render(int depth)
 	const IAARectangle clientRectRender = GetClientRectangle();
 
 	g_matSystem->SetAmbientColor(color_white);	// max color mode
-	g_matSystem->SetFogInfo(FogInfo_t());			// disable fog
+	g_matSystem->SetFogInfo(FogInfo());			// disable fog
 
 	// calculate absolute transformation using previous matrix
 	Matrix4x4 prevTransform;

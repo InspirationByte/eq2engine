@@ -138,14 +138,11 @@ public:
 	bool							IsInstancingEnabled() const;
 
 
-	void							SetFogInfo(const FogInfo_t &info);
-	void							GetFogInfo(FogInfo_t &info) const;
+	void							SetFogInfo(const FogInfo &info);
+	void							GetFogInfo(FogInfo &info) const;
 
 	void							SetAmbientColor(const ColorRGBA &color);
 	ColorRGBA						GetAmbientColor() const;
-
-	void							SetLight(dlight_t* pLight);
-	dlight_t*						GetLight() const;
 
 	// lighting/shading model selection
 	void							SetCurrentLightingModel(EMaterialLightingMode lightingModel);
@@ -300,7 +297,7 @@ private:
 	MaterialVarBlock				m_globalMaterialVars;
 
 	Array<DKMODULE*>				m_shaderLibs{ PP_SL };				// loaded shader libraries
-	Array<shaderfactory_t>			m_shaderFactoryList{ PP_SL };		// registered shaders
+	Array<ShaderFactory>			m_shaderFactoryList{ PP_SL };		// registered shaders
 	Array<shaderoverride_t>			m_shaderOverrideList{ PP_SL };		// shader override functors
 	Array<proxyfactory_t>			m_proxyFactoryList{ PP_SL };
 
@@ -335,10 +332,8 @@ private:
 	Array<DEVLICELOSTRESTORE>		m_lostDeviceCb{ PP_SL };
 	Array<DEVLICELOSTRESTORE>		m_restoreDeviceCb{ PP_SL };
 
-	FogInfo_t						m_fogInfo;
+	FogInfo							m_fogInfo;
 	ColorRGBA						m_ambColor;
-
-	dlight_t*						m_currentLight{ nullptr };
 
 	CEqTimer						m_proxyTimer;
 

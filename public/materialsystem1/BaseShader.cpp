@@ -195,7 +195,7 @@ void CBaseShader::Unload()
 }
 
 
-void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
+void CBaseShader::SetupParameter(uint mask, EShaderParamSetup type)
 {
 	// call it from this
 	if(mask & (1 << (uint)type))
@@ -336,7 +336,7 @@ void CBaseShader::ParamSetup_DepthSetup()
 
 void CBaseShader::ParamSetup_Fog()
 {
-	FogInfo_t fog;
+	FogInfo fog;
 	g_matSystem->GetFogInfo(fog);
 
 	// setup shader fog

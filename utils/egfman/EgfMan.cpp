@@ -72,7 +72,6 @@ IMaterialSystem*	g_matSystem = nullptr;
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70);
 Matrix4x4			g_mProjMat, g_mViewMat;
 
-sceneinfo_t			scinfo;
 CAnimatedModel		g_model;
 
 Vector3D			g_camera_rotation(25,225,0);
@@ -424,7 +423,7 @@ static void InitMatSystem(void* window)
 		if (!g_matSystem->Init(materials_config))
 			exit(0);
 
-		FogInfo_t fog;
+		FogInfo fog;
 		fog.enableFog = true;
 		fog.fogColor = ColorRGB(0.25,0.25,0.25);
 		fog.fogdensity = 1.0f;
@@ -1219,7 +1218,7 @@ void CEGFViewFrame::ReDraw()
 
 		ShowFPS();
 
-		FogInfo_t fog;
+		FogInfo fog;
 		g_matSystem->GetFogInfo(fog);
 
 		fog.viewPos = g_pCameraParams.GetOrigin();

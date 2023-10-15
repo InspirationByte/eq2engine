@@ -787,7 +787,7 @@ void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_
 
 	DevMsg(DEVMSG_MATSYSTEM, "Registering shader '%s'\n", pszShaderName);
 
-	shaderfactory_t newShader;
+	ShaderFactory newShader;
 
 	newShader.dispatcher = dispatcher_creation;
 	newShader.shader_name = (char*)pszShaderName;
@@ -1097,17 +1097,6 @@ ColorRGBA CMaterialSystem::GetAmbientColor() const
 	return m_ambColor;
 }
 
-// sets current light for processing in shaders
-void CMaterialSystem::SetLight(dlight_t* pLight)
-{
-	m_currentLight = pLight;
-}
-
-dlight_t* CMaterialSystem::GetLight() const
-{
-	return m_currentLight;
-}
-
 const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
 {
 	return m_pDefaultMaterial;
@@ -1260,17 +1249,17 @@ IShaderAPI* CMaterialSystem::GetShaderAPI() const
 // Shader dynamic states
 
 // sets a fog info
-void CMaterialSystem::SetFogInfo(const FogInfo_t &info)
+void CMaterialSystem::SetFogInfo(const FogInfo &info)
 {
 	m_fogInfo = info;
 }
 
 // returns fog info
-void CMaterialSystem::GetFogInfo(FogInfo_t &info) const
+void CMaterialSystem::GetFogInfo(FogInfo &info) const
 {
 	if( m_config.overdrawMode)
 	{
-		static FogInfo_t nofog;
+		static FogInfo nofog;
 
 		info = nofog;
 

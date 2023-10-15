@@ -14,7 +14,7 @@ using ITexturePtr = CRefPtr<ITexture>;
 
 class IMaterial;
 
-enum ShaderDefaultParams_e
+enum EShaderParamSetup
 {
 	SHADERPARAM_INVALID = -1,	// invalid parameter.
 
@@ -46,50 +46,28 @@ enum ShaderDefaultParams_e
 class IMaterialSystemShader
 {
 public:
-	virtual ~IMaterialSystemShader() {}
+	virtual ~IMaterialSystemShader() = default;
 
-	// Initializes parameters
-	virtual void			Init(IMaterial* assignee) = 0;
+	virtual void				Init(IMaterial* assignee) = 0;
+	virtual void				Unload() = 0;
 
-	// loads textures
-	virtual void			InitTextures() = 0;
+	virtual void				InitTextures() = 0;
+	virtual void				InitShader() = 0;
 
-	// initializes shader(s)
-	virtual void			InitShader() = 0;
+	virtual void				SetupShader() = 0;
+	virtual void				SetupConstants(uint paramMask) = 0;
 
-	// sets up shader
-	virtual void			SetupShader() = 0;
+	virtual const char*			GetName() const = 0;
 
-	// sets up constants
-	virtual void			SetupConstants(uint paramMask) = 0;
+	virtual bool				IsError() const = 0;
+	virtual bool				IsInitialized() const = 0;
 
-	// unloads shader
-	virtual void			Unload() = 0;
+	virtual IMaterial*			GetAssignedMaterial() const = 0;
+	virtual int					GetFlags() const = 0;
 
-	// returns real shader name
-	virtual const char*		GetName() const = 0;
-
-	// is error?
-	virtual bool			IsError() const = 0;
-
-	// initialization status
-	virtual bool			IsInitialized() const = 0;
-
-	// returns material assigned to this shader
-	virtual IMaterial*		GetAssignedMaterial() const = 0;
-
-	// returns material flags
-	virtual int				GetFlags() const = 0;
-
-	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
-
-	// returns base stage count
 	virtual int					GetBaseTextureStageCount() const = 0;
 
-	// returns bump texture from shader
 	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
-
-	// returns bump stage count
 	virtual int					GetBumpStageCount() const = 0;
 };

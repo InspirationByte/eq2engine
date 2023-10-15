@@ -119,13 +119,13 @@ void CParticleBatch::Render(int nViewRenderFlags)
 
 	g_matSystem->BindMaterial(m_material);
 
-	const int primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
+	const EPrimTopology primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
 
 	// draw
 	if(m_numIndices)
-		g_renderAPI->DrawIndexedPrimitives((EPrimTopology)primMode, 0, m_numIndices, 0, m_numVertices);
+		g_renderAPI->DrawIndexedPrimitives(primMode, 0, m_numIndices, 0, m_numVertices);
 	else
-		g_renderAPI->DrawNonIndexedPrimitives((EPrimTopology)primMode, 0, m_numVertices);
+		g_renderAPI->DrawNonIndexedPrimitives(primMode, 0, m_numVertices);
 
 #if 0
 	HOOK_TO_CVAR(r_wireframe)

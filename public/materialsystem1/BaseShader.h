@@ -50,7 +50,7 @@ enum ShaderBlendMode : int
 
 #define SHADER_BIND_PASS_FOGSELECT(shader)					\
 	{														\
-	FogInfo_t fog;											\
+	FogInfo fog;											\
 	g_matSystem->GetFogInfo(fog);								\
 	if(fog.enableFog && m_fogenabled)										\
 		g_renderAPI->SetShader(m_pShader##shader##_fog);	\
@@ -207,7 +207,7 @@ protected:
 	void						AddManagedShader(IShaderProgram** pShader);
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
-	void						SetupParameter(uint mask, ShaderDefaultParams_e param);
+	void						SetupParameter(uint mask, EShaderParamSetup param);
 
 	void						EmptyFunctor() {}
 

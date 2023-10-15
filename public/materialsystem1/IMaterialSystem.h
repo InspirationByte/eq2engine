@@ -12,15 +12,12 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
 #include "renderers/IEqSwapChain.h"
-#include "scene_def.h"
 
 #include "IMaterial.h"
 #include "IMatSysShader.h"
 #include "IMaterialVar.h"
 #include "IMaterialProxy.h"
-
-struct FogInfo_t;
-struct dlight_t;
+#include "SceneDefs.h"
 
 class CImage;
 class CViewParams;
@@ -48,12 +45,12 @@ enum EMaterialBindFlags
 	MATERIAL_BIND_KEEPOVERRIDE = (1 << 1),
 };
 
-struct shaderfactory_t
+struct ShaderFactory
 {
 	DISPATCH_CREATE_SHADER dispatcher;
 	const char* shader_name;
 };
-typedef Array<shaderfactory_t> FactoryList;
+typedef Array<ShaderFactory> FactoryList;
 
 typedef struct Vertex2D
 {
@@ -162,7 +159,7 @@ struct materialsRenderSettings_t
 struct materialsInitSettings_t
 {
 	materialsRenderSettings_t	renderConfig;
-	ShaderAPIParams	shaderApiParams;
+	ShaderAPIParams		shaderApiParams;
 
 	EqString			rendererName;		// shaderAPI library filename
 	EqString			materialsPath;		// regular (retail) materials file paths
@@ -177,7 +174,7 @@ struct materialsInitSettings_t
 class IMaterialSystem : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E1_MaterialSystem_023")
+	CORE_INTERFACE("E1_MaterialSystem_024")
 
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
@@ -257,9 +254,9 @@ public:
 
 	// draws primitives for 2D
 	virtual void							DrawPrimitives2DFFP(EPrimTopology type, Vertex2D_t* pVerts, int nVerts,
-		const ITexturePtr& pTexture = nullptr, const ColorRGBA& color = color_white,
-		BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-		RasterizerStateParams* rasterParams = nullptr) = 0;
+																const ITexturePtr& pTexture = nullptr, const ColorRGBA& color = color_white,
+																BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+																RasterizerStateParams* rasterParams = nullptr) = 0;
 
 	//-----------------------------
 	// Shader dynamic states
@@ -275,14 +272,11 @@ public:
 	virtual bool							IsInstancingEnabled() const = 0;
 
 
-	virtual void							SetFogInfo(const FogInfo_t& info) = 0;
-	virtual void							GetFogInfo(FogInfo_t& info) const = 0;
+	virtual void							SetFogInfo(const FogInfo& info) = 0;
+	virtual void							GetFogInfo(FogInfo& info) const = 0;
 
 	virtual void							SetAmbientColor(const ColorRGBA& color) = 0;
 	virtual ColorRGBA						GetAmbientColor() const = 0;
-
-	virtual void							SetLight(dlight_t* pLight) = 0;
-	virtual dlight_t*						GetLight() const = 0;
 
 	// lighting/shading model selection
 	virtual void							SetCurrentLightingModel(EMaterialLightingMode lightingModel) = 0;
@@ -304,23 +298,21 @@ public:
 
 	// sets blending
 	virtual void							SetBlendingStates(EBlendFactor nSrcFactor,
-		EBlendFactor nDestFactor,
-		EBlendFunction nBlendingFunc = BLENDFUNC_ADD,
-		int colormask = COLORMASK_ALL
-	) = 0;
+																EBlendFactor nDestFactor,
+																EBlendFunction nBlendingFunc = BLENDFUNC_ADD,
+																int colormask = COLORMASK_ALL) = 0;
 
 	// sets depth stencil state
 	virtual void							SetDepthStates(bool bDoDepthTest,
-		bool bDoDepthWrite,
-		ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
+															bool bDoDepthWrite,
+															ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
 
 	// sets rasterizer extended mode
 	virtual void							SetRasterizerStates(ECullMode nCullMode,
-		EFillMode nFillMode = FILL_SOLID,
-		bool bMultiSample = true,
-		bool bScissor = false,
-		bool bPolyOffset = false
-	) = 0;
+																EFillMode nFillMode = FILL_SOLID,
+																bool bMultiSample = true,
+																bool bScissor = false,
+																bool bPolyOffset = false) = 0;
 
 	//------------------
 	// Materials or shader static states
@@ -329,7 +321,7 @@ public:
 
 	virtual IMaterialPtr					GetBoundMaterial() const = 0;
 
-	virtual void							SetShaderParameterOverriden(int /*ShaderDefaultParams_e*/ param, bool set = true) = 0;
+	virtual void							SetShaderParameterOverriden(int /*EShaderParamSetup*/ param, bool set = true) = 0;
 
 	// global variables
 	virtual MatVarProxyUnk					FindGlobalMaterialVarByName(const char* pszVarName) const = 0;
@@ -442,7 +434,7 @@ extern FactoryList& _InternalShaderList();
 	public:																			\
 		C_ShaderClassFactoryFoo( void )											\
 		{																			\
-			shaderfactory_t factory;												\
+			ShaderFactory factory;												\
 			factory.dispatcher = &C##className##Factory;							\
 			factory.shader_name = stringName;										\
 			_InternalShaderList().append(factory);						\

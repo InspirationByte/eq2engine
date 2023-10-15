@@ -57,8 +57,6 @@ CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70.0f);
 Matrix4x4			g_mProjMat, g_mViewMat;
 Volume				g_viewFrustum;
 
-sceneinfo_t			scinfo;
-
 Vector3D			g_camera_rotation(25,225,0);
 Vector3D			g_camera_target(-4,2.65,4);
 float				g_fCamSpeed = 10.0;
@@ -275,7 +273,7 @@ BEGIN_EVENT_TABLE(CMainWindow, wxFrame)
 	*/
 END_EVENT_TABLE()
 
-Array<shaderfactory_t> pShaderRegistrators(PP_SL);
+Array<ShaderFactory> pShaderRegistrators(PP_SL);
 
 void InitMatSystem(EQWNDHANDLE window)
 {
@@ -337,7 +335,7 @@ void InitMatSystem(EQWNDHANDLE window)
 		if (!g_matSystem->Init(materials_config))
 			exit(0);
 
-		FogInfo_t fog;
+		FogInfo fog;
 		fog.enableFog = true;
 		fog.fogColor = ColorRGB(0.25,0.25,0.25);
 		fog.fogdensity = 1.0f;
@@ -742,7 +740,7 @@ void CMainWindow::ReDraw()
 		ShowFPS();
 		debugoverlay->Text(color_white, "Camera position: %g %g %g\n", g_camera_target.x,g_camera_target.y,g_camera_target.z);
 
-		FogInfo_t fog;
+		FogInfo fog;
 		g_matSystem->GetFogInfo(fog);
 
 		fog.viewPos = g_pCameraParams.GetOrigin();
