@@ -907,7 +907,7 @@ Member ClassBinder<T>::MakeStaticFunction(F func, const char* name)
 {
 	using Traits = binder::FuncTraits<UR, UArgs...>;
 
-	LuaCFunction funcInfo = binder::BindCFunction(func);
+	LuaCFunction funcInfo = binder::BindCFunction<UR, UArgs...>(func);
 
 	Member m;
 	m.type = MEMB_C_FUNC;
