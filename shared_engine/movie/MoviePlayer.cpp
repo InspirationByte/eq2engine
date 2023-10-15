@@ -222,7 +222,7 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 		return nullptr;
 	}
 
-	const bool isD3D = g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 || g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D10;
+	const bool isD3D = g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 || g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D10;
 
 	player->videoSws = sws_getContext(
 		player->videoCodec->width, player->videoCodec->height,
@@ -769,8 +769,8 @@ bool CMoviePlayer::Init(const char* pathToVideo)
 		if (m_player->videoStream)
 		{
 			m_mvTexture = materials->GetGlobalMaterialVarByName(nameOfPlayer);
-			ASSERT(g_pShaderAPI->FindTexture(nameOfPlayer) == nullptr);
-			m_mvTexture.Set(g_pShaderAPI->CreateProceduralTexture(nameOfPlayer, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR));
+			ASSERT(g_renderAPI->FindTexture(nameOfPlayer) == nullptr);
+			m_mvTexture.Set(g_renderAPI->CreateProceduralTexture(nameOfPlayer, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR));
 		}
 
 		if (m_player->audioStream)

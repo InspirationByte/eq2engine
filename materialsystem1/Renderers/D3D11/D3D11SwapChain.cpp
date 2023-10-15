@@ -12,7 +12,7 @@
 
 #include "d3dx11_def.h"
 
-extern ShaderAPID3DX10 s_shaderApi;
+extern ShaderAPID3DX10 s_renderApi;
 
 CD3D10SwapChain::~CD3D10SwapChain()
 {
@@ -24,7 +24,7 @@ CD3D10SwapChain::~CD3D10SwapChain()
 	}
 
 	if(m_backbuffer)
-		g_pShaderAPI->FreeTexture(m_backbuffer);
+		g_renderAPI->FreeTexture(m_backbuffer);
 }
 
 bool CD3D10SwapChain::Initialize(	HWND window, int numMSAASamples, 
@@ -95,7 +95,7 @@ bool CD3D10SwapChain::CreateOrUpdateBackbuffer()
 
 	if(!m_backbuffer)
 	{
-		m_backbuffer.Assign((CD3D10Texture*)s_shaderApi.CreateTextureResource("_rt_backbuffer").Ptr());
+		m_backbuffer.Assign((CD3D10Texture*)s_renderApi.CreateTextureResource("_rt_backbuffer").Ptr());
 
 		m_backbuffer->SetDimensions(m_width, m_height);
 		m_backbuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_NOQUALITYLOD);
@@ -107,12 +107,12 @@ bool CD3D10SwapChain::CreateOrUpdateBackbuffer()
 	if (FAILED(m_swapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID *) &backbufferTex))) 
 		return false;
 
-	if (FAILED(s_shaderApi.m_pD3DDevice->CreateRenderTargetView(backbufferTex, nullptr, &backbufferRTV)))
+	if (FAILED(s_renderApi.m_pD3DDevice->CreateRenderTargetView(backbufferTex, nullptr, &backbufferRTV)))
 		return false;
 
 	m_backbuffer->m_textures.append( backbufferTex );
 	m_backbuffer->m_rtv.append( backbufferRTV );
-	m_backbuffer->m_srv.append( ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(backbufferTex) );
+	m_backbuffer->m_srv.append( ((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderResourceView(backbufferTex) );
 
 	return true;
 }
@@ -130,7 +130,7 @@ bool CD3D10SwapChain::SetBackbufferSize(int wide, int tall)
 	m_width = wide;
 	m_height = tall;
 
-	s_shaderApi.m_pD3DDevice->OMSetRenderTargets(0, nullptr, nullptr);
+	s_renderApi.m_pD3DDevice->OMSetRenderTargets(0, nullptr, nullptr);
 
 	if(m_backbuffer)
 		m_backbuffer->Release();

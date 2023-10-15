@@ -15,7 +15,7 @@
 
 #include "ShaderAPID3D9.h"
 
-extern ShaderAPID3D9 s_shaderApi;
+extern ShaderAPID3D9 s_renderApi;
 Threading::CEqMutex g_sapi_ProgressiveTextureMutex;
 
 
@@ -30,7 +30,7 @@ CD3D9Texture::~CD3D9Texture()
 
 void CD3D9Texture::Ref_DeleteObject()
 {
-	s_shaderApi.FreeTexture(this);
+	s_renderApi.FreeTexture(this);
 	RefCountedObject::Ref_DeleteObject();
 }
 
@@ -44,7 +44,7 @@ void CD3D9Texture::Release()
 
 IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0) const
 {
-	IDirect3DDevice9* d3dDevice = s_shaderApi.GetD3DDevice();
+	IDirect3DDevice9* d3dDevice = s_renderApi.GetD3DDevice();
 	IDirect3DBaseTexture9* d3dTexture = nullptr;
 
 	if (IsCompressedFormat(format))
@@ -182,7 +182,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
-	if(s_shaderApi.m_progressiveTextureFrequency > 0)
+	if(s_renderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());
 	m_textures.reserve(images.numElem());
 
@@ -215,7 +215,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 			continue;
 		}
 
-		if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && s_shaderApi.m_progressiveTextureFrequency > 0)
+		if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && s_renderApi.m_progressiveTextureFrequency > 0)
 		{
 			// start with uploading only first LOD
 			const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
@@ -277,10 +277,10 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 
 	if(m_progressiveState.numElem())
 	{
-		m_progressiveFrameDelay = min(s_shaderApi.m_progressiveTextureFrequency, 255);
+		m_progressiveFrameDelay = min(s_renderApi.m_progressiveTextureFrequency, 255);
 		
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-		s_shaderApi.m_progressiveTextures.insert(this);
+		s_renderApi.m_progressiveTextures.insert(this);
 	}
 
 	m_numAnimatedTextureFrames = m_textures.numElem();
@@ -292,7 +292,7 @@ void CD3D9Texture::ReleaseTextures()
 {
 	{
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-		s_shaderApi.m_progressiveTextures.remove(this);
+		s_renderApi.m_progressiveTextures.remove(this);
 		m_progressiveState.clear(true);
 	}
 
@@ -369,7 +369,7 @@ EProgressiveStatus CD3D9Texture::StepProgressiveLod()
 	if (!m_progressiveState.numElem())
 		return PROGRESSIVE_STATUS_COMPLETED;
 
-	m_progressiveFrameDelay = min(s_shaderApi.m_progressiveTextureFrequency, 255);
+	m_progressiveFrameDelay = min(s_renderApi.m_progressiveTextureFrequency, 255);
 
 	return PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
 }
@@ -429,7 +429,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 		}
 		else if(readOnly)
 		{
-			IDirect3DDevice9* d3dDevice = s_shaderApi.GetD3DDevice();
+			IDirect3DDevice9* d3dDevice = s_renderApi.GetD3DDevice();
 
 			if (d3dDevice->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, g_d3d9_imageFormats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_lockSurface, nullptr) == D3D_OK)
 			{

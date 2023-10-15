@@ -68,7 +68,7 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 		return;
 	}
 
-	CIndexBufferGL* currIB = (CIndexBufferGL*)g_shaderApi.m_pCurrentIndexBuffer;
+	CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
 
 	if(offset > 0)
 		IncrementBuffer();
@@ -128,7 +128,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	m_lockOffs = lockOfs;
 	m_lockReadOnly = readOnly;
 
-	CIndexBufferGL* currIB = (CIndexBufferGL*)g_shaderApi.m_pCurrentIndexBuffer;
+	CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
 
 #ifdef USE_GLES2
 	// map buffer
@@ -186,7 +186,7 @@ void CIndexBufferGL::Unlock()
 	{
 		if( !m_lockReadOnly )
 		{
-			CIndexBufferGL* currIB = (CIndexBufferGL*)g_shaderApi.m_pCurrentIndexBuffer;
+			CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
 
 			if(currIB != this)
 			{

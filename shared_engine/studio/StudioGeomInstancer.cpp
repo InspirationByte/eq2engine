@@ -12,12 +12,12 @@
 EGFInstBuffer::~EGFInstBuffer()
 {
 	PPFree(instances);
-	g_pShaderAPI->DestroyVertexBuffer(instanceVB);
+	g_renderAPI->DestroyVertexBuffer(instanceVB);
 }
 
 void EGFInstBuffer::Init(int sizeOfInstance)
 {
-	instanceVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, EGF_INST_POOL_MAX_INSTANCES, sizeOfInstance);
+	instanceVB = g_renderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, EGF_INST_POOL_MAX_INSTANCES, sizeOfInstance);
 	instanceVB->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
 
 	instances = PPAlloc(sizeOfInstance * EGF_INST_POOL_MAX_INSTANCES);
@@ -42,7 +42,7 @@ void CBaseEqGeomInstancer::InitEx(ArrayCRef<VertexFormatDesc> instVertexFormat, 
 	Cleanup();
 	m_ownsVertexFormat = true;
 	m_vertexStreamMapping = instVertStreamMapping;
-	m_vertFormat = g_pShaderAPI->CreateVertexFormat("instancerFmt", instVertexFormat);
+	m_vertFormat = g_renderAPI->CreateVertexFormat("instancerFmt", instVertexFormat);
 }
 
 void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
@@ -65,9 +65,9 @@ void CBaseEqGeomInstancer::Cleanup()
 {
 	if(m_vertFormat && m_ownsVertexFormat)
 	{
-		g_pShaderAPI->Reset(STATE_RESET_VBO);
-		g_pShaderAPI->ApplyBuffers();
-		g_pShaderAPI->DestroyVertexFormat(m_vertFormat);
+		g_renderAPI->Reset(STATE_RESET_VBO);
+		g_renderAPI->ApplyBuffers();
+		g_renderAPI->DestroyVertexFormat(m_vertFormat);
 	}
 	m_data.clear(true);
 	m_vertFormat = nullptr;
@@ -159,7 +159,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	materials->SetInstancingEnabled(true);
 	materials->SetSkinningEnabled(false); // skinning not yet supported. But we can support it with textures holding data
 
-	g_pShaderAPI->SetVertexFormat(m_vertFormat);
+	g_renderAPI->SetVertexFormat(m_vertFormat);
 	const int maxVertexCount = model->m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
 	int instanceStreamId = -1;
 
@@ -176,7 +176,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 
-			g_pShaderAPI->SetVertexBuffer(model->m_vertexBuffers[vertStreamId], desc.streamId);
+			g_renderAPI->SetVertexBuffer(model->m_vertexBuffers[vertStreamId], desc.streamId);
 
 			setVertStreams |= (1 << int(vertStreamId));
 
@@ -188,7 +188,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 		}
 	}
 
-	g_pShaderAPI->SetIndexBuffer(model->m_indexBuffer);
+	g_renderAPI->SetIndexBuffer(model->m_indexBuffer);
 
 	const studioHdr_t& studio = model->GetStudioHdr();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
@@ -223,7 +223,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				if (buffer.numInstances == 0)
 					continue;
 
-				g_pShaderAPI->SetVertexBuffer(buffer.instanceVB, instanceStreamId);
+				g_renderAPI->SetVertexBuffer(buffer.instanceVB, instanceStreamId);
 
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numMeshes; i++)
@@ -241,13 +241,13 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 					materials->Apply();
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
-					g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
+					g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
 				}
 			} // mGrp
 		} // bodyGrp
 	} // lod
 
-	g_pShaderAPI->SetVertexBuffer(nullptr, 2);
+	g_renderAPI->SetVertexBuffer(nullptr, 2);
 	materials->SetInstancingEnabled(false);
 
 	Invalidate();

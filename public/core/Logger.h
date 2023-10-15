@@ -18,14 +18,14 @@ typedef enum
 
 enum EDevMsg
 {
-	DEVMSG_CORE = (1 << 0),		// eqCore and engine
-	DEVMSG_FS = (1 << 2),		// filesystem-related
-	DEVMSG_LOCALE = (1 << 3),		// localization
-	DEVMSG_MATSYSTEM = (1 << 4),		// material system
-	DEVMSG_SHADERAPI = (1 << 5),		// render api
-	DEVMSG_SOUND = (1 << 6),		// sound
-	DEVMSG_NETWORK = (1 << 7),		// network
-	DEVMSG_GAME = (1 << 8),		// game debug
+	DEVMSG_CORE			= (1 << 0),
+	DEVMSG_FS			= (1 << 2),
+	DEVMSG_LOCALE		= (1 << 3),
+	DEVMSG_MATSYSTEM	= (1 << 4),
+	DEVMSG_RENDER		= (1 << 5),
+	DEVMSG_SOUND		= (1 << 6),
+	DEVMSG_NETWORK		= (1 << 7),
+	DEVMSG_GAME			= (1 << 8),
 
 	// all developer messages
 	DEVMSG_ALL = 0xFFFF

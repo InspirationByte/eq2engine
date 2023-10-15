@@ -40,10 +40,10 @@ ITexturePtr g_pDebugTexture = nullptr;
 
 static void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 {
-	if (!g_pShaderAPI)
+	if (!g_renderAPI)
 		return;
 
-	g_pDebugTexture = g_pShaderAPI->FindTexture( pVar->GetString() );
+	g_pDebugTexture = g_renderAPI->FindTexture( pVar->GetString() );
 }
 
 DECLARE_CVAR_CHANGE(r_debugShowTexture, "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
@@ -1070,7 +1070,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	m_frameTime = m_timer.GetTime(true) * timescale;
 
 #ifndef DISABLE_DEBUG_DRAWING
-	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
+	g_renderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
@@ -1095,7 +1095,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	}
 
 	// may need a reset again
-	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
+	g_renderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4);

@@ -578,7 +578,7 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 
 		for (UINT i = 0; i < desc.ArraySize; i++)
 		{
-			ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->m_textures[0], pTexture->m_dsvFormat, i);
+			ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->m_textures[0], pTexture->m_dsvFormat, i);
 
 			pTexture->m_dsv.append(pDSV);
 		}
@@ -586,7 +586,7 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 	else*/
 	{
 		// make single dsv
-		ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->m_textures[0], pTexture->m_dsvFormat);
+		ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->m_textures[0], pTexture->m_dsvFormat);
 
 		pTexture->m_dsv.append(pDSV);
 	}
@@ -598,13 +598,13 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 		{
 			for (UINT i = 0; i < desc.ArraySize; i++)
 			{
-				ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat, i);
+				ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat, i);
 				pTexture->m_srv.append(pSRV);
 			}
 		}
 		else
 		{
-			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat);
+			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat);
 			pTexture->m_srv.append(pSRV);
 		}
 	}*/
@@ -713,13 +713,13 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 	{
 		for (int i = 0; i < nSliceCount; i++)
 		{
-			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat, i);
+			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat, i);
 			pTexture->m_srv.append( pSRV );
 		}
 	}
 	else*/
 	{
-		pTexture->m_srv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat));
+		pTexture->m_srv.append(((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat));
 	}
 
 	// render texture array?
@@ -727,12 +727,12 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 	{
 		for (int i = 0; i < nSliceCount; i++)
 		{
-			ID3D10RenderTargetView* pRTV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->m_textures[0], pTexture->m_rtvFormat, i);
+			ID3D10RenderTargetView* pRTV = ((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->m_textures[0], pTexture->m_rtvFormat, i);
 			pTexture->m_rtv.append( pRTV );
 		}
 	}
 	else*/
-		pTexture->m_rtv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->m_textures[0], pTexture->m_rtvFormat));
+		pTexture->m_rtv.append(((ShaderAPID3DX10*)g_renderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->m_textures[0], pTexture->m_rtvFormat));
 
 }
 
@@ -1107,7 +1107,7 @@ void ShaderAPID3DX10::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	if (deleted)
 	{
-		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex format\n");
+		DevMsg(DEVMSG_RENDER, "Destroying vertex format\n");
 		delete pVF;
 	}
 }
@@ -1128,7 +1128,7 @@ void ShaderAPID3DX10::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	if (deleted)
 	{
 		// reset if in use
-		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex buffer\n");
+		DevMsg(DEVMSG_RENDER, "Destroying vertex buffer\n");
 		delete pVB;
 	}
 }
@@ -1151,7 +1151,7 @@ void ShaderAPID3DX10::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	if (deleted)
 	{
-		DevMsg(DEVMSG_SHADERAPI, "Destroying index buffer\n");
+		DevMsg(DEVMSG_RENDER, "Destroying index buffer\n");
 		delete pIB;
 	}
 }
@@ -2397,7 +2397,7 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(ER_BufferAccess nBufAccess, i
 	vbData.SysMemPitch = 0;
 	vbData.SysMemSlicePitch = 0;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pBuffer->m_size / 1024);
+	DevMsg(DEVMSG_RENDER, "Creating VBO with size %i KB\n", pBuffer->m_size / 1024);
 
 	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, pData ? (&vbData) : nullptr, &pBuffer->m_buffer)))
 	{
@@ -3350,7 +3350,7 @@ bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT dept
 	m_pDepthBuffer->AddRef();
 	m_pDepthBufferDSV->AddRef();
 
-	m_pBackBufferTexture = g_pShaderAPI->FindTexture("_rt_backbuffer");
+	m_pBackBufferTexture = g_renderAPI->FindTexture("_rt_backbuffer");
 
 	if(!m_pBackBufferTexture)
 		return false;

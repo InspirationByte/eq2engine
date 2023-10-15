@@ -237,7 +237,7 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 
 		bonequaternion_t bquats[128];
 		const int numRegs = ComputeQuaternionsForSkinning(this, bquats, jointMatrices);
-		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numRegs);
+		g_renderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numRegs);
 
 		return true;
 	}
@@ -280,13 +280,13 @@ void CEqStudioGeom::DestroyModel()
 
 	SAFE_DELETE(m_instancer);
 
-	g_pShaderAPI->Reset(STATE_RESET_VBO);
+	g_renderAPI->Reset(STATE_RESET_VBO);
 	for (int i = 0; i < EGFHwVertex::VERT_COUNT; ++i)
 	{
-		g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffers[i]);
+		g_renderAPI->DestroyVertexBuffer(m_vertexBuffers[i]);
 		m_vertexBuffers[i] = nullptr;
 	}
-	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
+	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
 	m_indexBuffer = nullptr;
 
 	m_materials.clear(true);
@@ -602,15 +602,15 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 
 	// create hardware buffers
 	if(allPositionUvsList)
-		m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::PositionUV), allPositionUvsList);
+		m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::PositionUV), allPositionUvsList);
 	if(allTbnList)
-		m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::TBN), allTbnList);
+		m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::TBN), allTbnList);
 	if(allBoneWeightsList)
-		m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::BoneWeights), allBoneWeightsList);
+		m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::BoneWeights), allBoneWeightsList);
 	if(allColorList)
-		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::Color), allColorList);
+		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::Color), allColorList);
 
-	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(numIndices, indexSize, BUFFER_STATIC, allIndices);
+	m_indexBuffer = g_renderAPI->CreateIndexBuffer(numIndices, indexSize, BUFFER_STATIC, allIndices);
 
 	// if we using software skinning, we need to create temporary vertices
 #if 0
@@ -892,7 +892,7 @@ void CEqStudioGeom::SetupVBOStream(EGFHwVertex::VertexStream vertStream, int rhi
 	if (!m_vertexBuffers[vertStream])
 		return;
 
-	g_pShaderAPI->SetVertexBuffer(m_vertexBuffers[vertStream], rhiStreamId);
+	g_renderAPI->SetVertexBuffer(m_vertexBuffers[vertStream], rhiStreamId);
 }
 
 void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
@@ -910,7 +910,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 	materials->SetInstancingEnabled(false);
 
 	IVertexFormat* rhiVertFmt = drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat(isSkinned);
-	g_pShaderAPI->SetVertexFormat(rhiVertFmt);
+	g_renderAPI->SetVertexFormat(rhiVertFmt);
 	// setup vertex buffers
 	{
 		ArrayCRef<VertexFormatDesc> fmtDesc = rhiVertFmt->GetFormatDesc();
@@ -931,14 +931,14 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				continue;
 
 			if(m_vertexBuffers[vertStreamId])
-				g_pShaderAPI->SetVertexBuffer(m_vertexBuffers[vertStreamId], desc.streamId);
+				g_renderAPI->SetVertexBuffer(m_vertexBuffers[vertStreamId], desc.streamId);
 
 			setVertStreams |= (1 << int(vertStreamId));
 			++numBitsSet;
 		}
 	}
 
-	g_pShaderAPI->SetIndexBuffer(m_indexBuffer);
+	g_renderAPI->SetIndexBuffer(m_indexBuffer);
 	const int maxVertexCount = m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
 
 	const studioHdr_t& studio = *m_studio;
@@ -992,10 +992,10 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				drawProperties.preDrawFunc(material, i, j);
 
 			if (numBoneRegisters && meshRef.supportsSkinning)
-				g_pShaderAPI->SetShaderConstantArrayVector4D(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
+				g_renderAPI->SetShaderConstantArrayVector4D(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
 			materials->Apply();
 
-			g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
+			g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
 		}
 	}
 

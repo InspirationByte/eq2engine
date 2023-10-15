@@ -22,8 +22,8 @@
 HOOK_TO_CVAR(r_screen);
 
 // make library
-ShaderAPID3D9 s_shaderApi;
-IShaderAPI* g_pShaderAPI = &s_shaderApi;
+ShaderAPID3D9 s_renderApi;
+IShaderAPI* g_renderAPI = &s_renderApi;
 CD3D9RenderLib g_library;
 
 CD3D9RenderLib::CD3D9RenderLib()
@@ -36,7 +36,7 @@ CD3D9RenderLib::~CD3D9RenderLib()
 
 IShaderAPI* CD3D9RenderLib::GetRenderer() const
 { 
-	return &s_shaderApi;
+	return &s_renderApi;
 }
 
 bool CD3D9RenderLib::InitCaps()
@@ -127,7 +127,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 	m_d3dpp.BackBufferHeight = m_height;
 	m_d3dpp.BackBufferCount  = 1;
 
-	DevMsg(DEVMSG_SHADERAPI, "Initial backbuffer size: %d %d\n", m_width, m_height);
+	DevMsg(DEVMSG_RENDER, "Initial backbuffer size: %d %d\n", m_width, m_height);
 
 	if(params.verticalSyncEnabled)
 		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
@@ -186,7 +186,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 		}
 	}
 
-	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] D3D9 device created successfully...\n");
+	DevMsg(DEVMSG_RENDER, "[DEBUG] D3D9 device created successfully...\n");
 
 	int multiSamplingMode = params.multiSamplingMode;
 	if(multiSamplingMode != multiSample)
@@ -194,14 +194,14 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 
 	multiSamplingMode = multiSample;
 
-	s_shaderApi.SetD3DDevice(m_rhi, m_d3dCaps);
-	s_shaderApi.m_vendor = vendor;
+	s_renderApi.SetD3DDevice(m_rhi, m_d3dCaps);
+	s_renderApi.m_vendor = vendor;
 
 	//-------------------------------------------
 	// init caps
 	//-------------------------------------------
-	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] D3D9 Device capabilities...\n");
-	ShaderAPICaps_t& caps = s_shaderApi.m_caps;
+	DevMsg(DEVMSG_RENDER, "[DEBUG] D3D9 Device capabilities...\n");
+	ShaderAPICaps_t& caps = s_renderApi.m_caps;
 
 	memset(&caps, 0, sizeof(caps));
 
@@ -243,7 +243,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 		caps.textureFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, 0, D3DRTYPE_TEXTURE, g_d3d9_imageFormats[i]) == D3D_OK);
 		caps.renderTargetFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, g_d3d9_imageFormats[i]) == D3D_OK);
 	
-		DevMsg(DEVMSG_SHADERAPI, "[DEBUG] texture format %d: %s %s\n", i, caps.textureFormatsSupported[i] ? "tex" : "", caps.renderTargetFormatsSupported[i] ? "rt" : "");
+		DevMsg(DEVMSG_RENDER, "[DEBUG] texture format %d: %s %s\n", i, caps.textureFormatsSupported[i] ? "tex" : "", caps.renderTargetFormatsSupported[i] ? "rt" : "");
 	}
 
 	// Determine if INTZ is supported
@@ -297,21 +297,21 @@ void CD3D9RenderLib::BeginFrame(IEqSwapChain* swapChain)
 	{
 		if (hr == D3DERR_DEVICELOST)
 		{
-			s_shaderApi.OnDeviceLost();
+			s_renderApi.OnDeviceLost();
 			hr = m_rhi->TestCooperativeLevel();
 		}
 
 		if (hr == D3DERR_DEVICENOTRESET)
 		{
-			s_shaderApi.OnDeviceLost();
-			s_shaderApi.ResetDevice(m_d3dpp);
+			s_renderApi.OnDeviceLost();
+			s_renderApi.ResetDevice(m_d3dpp);
 		}
 	}
 
-	if (!s_shaderApi.IsDeviceActive())
+	if (!s_renderApi.IsDeviceActive())
 	{
 		// attempt to restore it
-		s_shaderApi.RestoreDevice();
+		s_renderApi.RestoreDevice();
 	}
 
 	m_curSwapChain = swapChain;
@@ -322,7 +322,7 @@ void CD3D9RenderLib::BeginFrame(IEqSwapChain* swapChain)
 	{
 		s_textureJobRunning = true;
 		g_parallelJobs->AddJob(JOB_TYPE_RENDERER, [](void*, int i) {
-			s_shaderApi.StepProgressiveLodTextures();
+			s_renderApi.StepProgressiveLodTextures();
 			s_textureJobRunning = false;
 		});
 	}
@@ -350,7 +350,7 @@ void CD3D9RenderLib::EndFrame()
 		GetClientRect(pHWND, &destRect);
 
 		int x, y, w, h;
-		s_shaderApi.GetViewport(x, y, w, h);
+		s_renderApi.GetViewport(x, y, w, h);
 
 		RECT srcRect;
 		srcRect.left = x;
@@ -362,7 +362,7 @@ void CD3D9RenderLib::EndFrame()
 	}
 
 	if (hr == D3DERR_DEVICELOST)
-		s_shaderApi.OnDeviceLost();
+		s_renderApi.OnDeviceLost();
 	else if (FAILED(hr) && hr != D3DERR_INVALIDCALL)
 		MsgWarning("DIRECT3D9 present failed.\n");
 }
@@ -379,11 +379,11 @@ void CD3D9RenderLib::SetBackbufferSize(const int w, const int h)
 	m_d3dpp.BackBufferHeight = h;
 	m_d3dpp.EnableAutoDepthStencil = TRUE;
 
-	SetupSwapEffect(s_shaderApi.m_params);
+	SetupSwapEffect(s_renderApi.m_params);
 	
 	// intentionally reset the device
-	s_shaderApi.OnDeviceLost();
-	s_shaderApi.ResetDevice(m_d3dpp);
+	s_renderApi.OnDeviceLost();
+	s_renderApi.ResetDevice(m_d3dpp);
 }
 
 // reports focus state
@@ -420,10 +420,10 @@ bool CD3D9RenderLib::SetWindowed(bool enabled)
 
 	m_d3dpp.Windowed = enabled;
 
-	SetupSwapEffect(s_shaderApi.m_params);
+	SetupSwapEffect(s_renderApi.m_params);
 
-	s_shaderApi.OnDeviceLost();
-	if (!s_shaderApi.ResetDevice(m_d3dpp))
+	s_renderApi.OnDeviceLost();
+	if (!s_renderApi.ResetDevice(m_d3dpp))
 	{
 		MsgError("SetWindowed(%d) - failed to reset device!\n", enabled);
 		m_d3dpp.Windowed = old;
@@ -487,7 +487,7 @@ IEqSwapChain* CD3D9RenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D9SwapChain* pNewChain = PPNew CD3D9SwapChain();
 	
-	if(!pNewChain->Initialize((HWND)window, s_shaderApi.m_params.verticalSyncEnabled, windowed))
+	if(!pNewChain->Initialize((HWND)window, s_renderApi.m_params.verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create D3D9 swapchain!\n");
 		delete pNewChain;

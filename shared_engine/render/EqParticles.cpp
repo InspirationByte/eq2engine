@@ -28,7 +28,7 @@ ArrayCRef<VertexFormatDesc> PFXVertex_t::GetVertexFormatDesc()
 using namespace Threading;
 static CEqMutex s_particleRenderMutex;
 
-CStaticAutoPtr<CParticleLowLevelRenderer> g_pPFXRenderer;
+CStaticAutoPtr<CParticleLowLevelRenderer> g_pfxRender;
 
 //----------------------------------------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ void CParticleBatch::SetCustomProjectionMatrix(const Matrix4x4& mat)
 
 int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices )
 {
-	if(!g_pPFXRenderer->IsInitialized())
+	if(!g_pfxRender->IsInitialized())
 		return -1;
 
 	Threading::CScopedMutex m(s_particleRenderMutex);
@@ -77,7 +77,7 @@ int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** ver
 
 void CParticleBatch::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 {
-	if(!g_pPFXRenderer->IsInitialized())
+	if(!g_pfxRender->IsInitialized())
 		return;
 
 	Threading::CScopedMutex m(s_particleRenderMutex);
@@ -98,17 +98,17 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	g_pShaderAPI->Reset(STATE_RESET_VBO);
+	g_renderAPI->Reset(STATE_RESET_VBO);
 
 	// copy buffers
-	if(!g_pPFXRenderer->MakeVBOFrom(this))
+	if(!g_pfxRender->MakeVBOFrom(this))
 		return;
 
-	g_pShaderAPI->SetVertexFormat(g_pPFXRenderer->m_vertexFormat);
-	g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer, 0);
+	g_renderAPI->SetVertexFormat(g_pfxRender->m_vertexFormat);
+	g_renderAPI->SetVertexBuffer(g_pfxRender->m_vertexBuffer, 0);
 
 	if(m_numIndices)
-		g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
+		g_renderAPI->SetIndexBuffer(g_pfxRender->m_indexBuffer);
 
 	const bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
 	materials->SetCullMode(invertCull ? CULL_BACK : CULL_FRONT);
@@ -123,9 +123,9 @@ void CParticleBatch::Render(int nViewRenderFlags)
 
 	// draw
 	if(m_numIndices)
-		g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
+		g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
 	else
-		g_pShaderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
+		g_renderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
 
 #if 0
 	HOOK_TO_CVAR(r_wireframe)
@@ -135,16 +135,16 @@ void CParticleBatch::Render(int nViewRenderFlags)
 
 		materials->SetDepthStates(false,false);
 
-		static IShaderProgram* flat = g_pShaderAPI->FindShaderProgram("DefaultFlatColor");
+		static IShaderProgram* flat = g_renderAPI->FindShaderProgram("DefaultFlatColor");
 
-		g_pShaderAPI->Reset(STATE_RESET_SHADER);
-		g_pShaderAPI->SetShader(flat);
-		g_pShaderAPI->Apply();
+		g_renderAPI->Reset(STATE_RESET_SHADER);
+		g_renderAPI->SetShader(flat);
+		g_renderAPI->Apply();
 
 		if(m_numIndices)
-			g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
+			g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
 		else
-			g_pShaderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
+			g_renderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
 	}
 #endif
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
@@ -229,13 +229,13 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	m_vbMaxQuads = r_particleBufferSize.GetInt();
 
-	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads * 4, sizeof(PFXVertex_t), nullptr);
-	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads * 6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
+	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads * 4, sizeof(PFXVertex_t), nullptr);
+	m_indexBuffer = g_renderAPI->CreateIndexBuffer(m_vbMaxQuads * 6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
 
 	if(!m_vertexFormat)
 	{
 		ArrayCRef<VertexFormatDesc> fmtDesc = PFXVertex_t::GetVertexFormatDesc();
-		m_vertexFormat = g_pShaderAPI->CreateVertexFormat("PFXVertex", fmtDesc);
+		m_vertexFormat = g_renderAPI->CreateVertexFormat("PFXVertex", fmtDesc);
 	}
 
 	if(m_vertexBuffer && m_indexBuffer && m_vertexFormat)
@@ -251,9 +251,9 @@ bool CParticleLowLevelRenderer::ShutdownBuffers()
 
 	MsgWarning("Destroying particle buffers...\n");
 
-	g_pShaderAPI->DestroyVertexFormat(m_vertexFormat);
-	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
+	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
+	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
+	g_renderAPI->DestroyVertexBuffer(m_vertexBuffer);
 
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;

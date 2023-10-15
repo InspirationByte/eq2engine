@@ -34,7 +34,7 @@ CEqMutex s_matSystemMutex;
 
 DECLARE_INTERNAL_SHADERS()
 
-IShaderAPI* g_pShaderAPI = nullptr;
+IShaderAPI* g_renderAPI = nullptr;
 
 // register material system
 static CMaterialSystem s_matsystem;
@@ -128,7 +128,7 @@ public:
 
 	void AddMaterial(IMaterialPtr pMaterial)
 	{
-		if (g_parallelJobs->IsInitialized() && g_pShaderAPI->GetProgressiveTextureFrequency() == 0)
+		if (g_parallelJobs->IsInitialized() && g_renderAPI->GetProgressiveTextureFrequency() == 0)
 		{
 			// Wooohoo Blast Processing!
 			g_parallelJobs->AddJob(JOB_TYPE_ANY, [pMaterial](void*, int) {
@@ -192,7 +192,7 @@ bool CMaterialSystem::Init(const materialsInitSettings_t& config)
 
 	const KVSection* matSystemSettings = g_eqCore->GetConfig()->FindSection("MaterialSystem");
 
-	ASSERT(g_pShaderAPI == nullptr);
+	ASSERT(g_renderAPI == nullptr);
 
 	// store the configuration
 	m_config = config.renderConfig;
@@ -344,7 +344,7 @@ bool CMaterialSystem::Init(const materialsInitSettings_t& config)
 
 #endif // PLAT_ANDROID
 
-	g_pShaderAPI = m_shaderAPI;
+	g_renderAPI = m_shaderAPI;
 
 	if(!m_dynamicMesh.Init(g_dynMeshVertexFormatDesc, elementsOf(g_dynMeshVertexFormatDesc)))
 	{
@@ -364,7 +364,7 @@ bool CMaterialSystem::Init(const materialsInitSettings_t& config)
 
 void CMaterialSystem::Shutdown()
 {
-	if (!m_renderLibrary || !m_rendermodule || !g_pShaderAPI)
+	if (!m_renderLibrary || !m_rendermodule || !g_renderAPI)
 		return;
 
 	Msg("MatSystem shutdown...\n");
@@ -392,7 +392,7 @@ void CMaterialSystem::Shutdown()
 	m_proxyFactoryList.clear();
 
 	m_renderLibrary->ReleaseSwapChains();
-	g_pShaderAPI->Shutdown();
+	g_renderAPI->Shutdown();
 	m_renderLibrary->ExitAPI();
 
 	for(DKMODULE* shaderModule : m_shaderLibs)
@@ -426,12 +426,12 @@ void CMaterialSystem::CreateWhiteTexture()
 	}
 
 	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
+	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
 	FixedArray<CRefPtr<CImage>, 1> images;
 	images.append(CRefPtr(&img));
 
-	m_whiteTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
+	m_whiteTexture = g_renderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 
 	images.clear();
 
@@ -464,9 +464,9 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	images.append(img);
 
-	texSamplerParams = g_pShaderAPI->MakeSamplerState(TEXFILTER_NEAREST,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
+	texSamplerParams = g_renderAPI->MakeSamplerState(TEXFILTER_NEAREST,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
 
-	m_luxelTestTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
+	m_luxelTestTexture = g_renderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 
 	*/
 }
@@ -724,15 +724,15 @@ void CMaterialSystem::FreeMaterials()
 void CMaterialSystem::ClearRenderStates()
 {
 	for (auto i = m_blendStates.begin(); !i.atEnd(); ++i)
-		g_pShaderAPI->DestroyRenderState(*i);
+		g_renderAPI->DestroyRenderState(*i);
 	m_blendStates.clear();
 	
 	for (auto i = m_depthStates.begin(); !i.atEnd(); ++i)
-		g_pShaderAPI->DestroyRenderState(*i);
+		g_renderAPI->DestroyRenderState(*i);
 	m_depthStates.clear();
 	
 	for (auto i = m_rasterStates.begin(); !i.atEnd(); ++i)
-		g_pShaderAPI->DestroyRenderState(*i);
+		g_renderAPI->DestroyRenderState(*i);
 	m_rasterStates.clear();
 }
 
@@ -838,17 +838,17 @@ typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial, uint paramMask);
 
 static void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 {
-	g_pShaderAPI->SetShader(nullptr);
+	g_renderAPI->SetShader(nullptr);
 
-	g_pShaderAPI->SetBlendingState(nullptr);
-	g_pShaderAPI->SetRasterizerState(nullptr);
-	g_pShaderAPI->SetDepthStencilState(nullptr);
+	g_renderAPI->SetBlendingState(nullptr);
+	g_renderAPI->SetRasterizerState(nullptr);
+	g_renderAPI->SetDepthStencilState(nullptr);
 }
 
 static bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	BindFFPMaterial(pMaterial, paramMask);
-	g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), g_pShaderAPI->GetErrorTexture());
+	g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), g_renderAPI->GetErrorTexture());
 
 	return false;
 }
@@ -858,7 +858,7 @@ static bool Callback_BindFFPMaterial(IMaterial* pMaterial, uint paramMask)
 	BindFFPMaterial(pMaterial, paramMask);
 
 	// bind same, but with base texture
-	g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), pMaterial->GetBaseTexture());
+	g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), pMaterial->GetBaseTexture());
 
 	return false;
 }
@@ -1027,7 +1027,7 @@ void CMaterialSystem::Apply()
 
 	if(!setMaterial)
 	{
-		g_pShaderAPI->Apply();
+		g_renderAPI->Apply();
 		return;
 	}
 
@@ -1035,7 +1035,7 @@ void CMaterialSystem::Apply()
 	if(m_preApplyCallback)
 		m_preApplyCallback->OnPreApplyMaterial(setMaterial);
 
-	g_pShaderAPI->Apply();
+	g_renderAPI->Apply();
 }
 
 // returns bound material
@@ -1058,11 +1058,11 @@ void CMaterialSystem::SetMatrix(ER_MatrixMode mode, const Matrix4x4 &matrix)
 	m_matrices[(int)mode] = matrix;
 	m_matrixDirty |= (1 << mode);
 
-	g_pShaderAPI->SetMatrixMode(mode);
+	g_renderAPI->SetMatrixMode(mode);
 
-	g_pShaderAPI->PopMatrix();
-	g_pShaderAPI->LoadMatrix(matrix);
-	g_pShaderAPI->PushMatrix();
+	g_renderAPI->PopMatrix();
+	g_renderAPI->LoadMatrix(matrix);
+	g_renderAPI->PushMatrix();
 }
 
 // returns a typed matrix
@@ -1140,7 +1140,7 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 		return false;
 
 	bool state, oldState = m_deviceActiveState;
-	m_deviceActiveState = state = g_pShaderAPI->IsDeviceActive();
+	m_deviceActiveState = state = g_renderAPI->IsDeviceActive();
 
 	if(!state && state != oldState)
 	{
@@ -1172,7 +1172,7 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 	}
 
 	if(m_config.overdrawMode)
-		g_pShaderAPI->Clear(true, false, false, ColorRGBA(0, 0, 0, 0));
+		g_renderAPI->Clear(true, false, false, ColorRGBA(0, 0, 0, 0));
 
 	return true;
 }
@@ -1528,13 +1528,13 @@ void CMaterialSystem::SetBlendingStates(ER_BlendFactor nSrcFactor, ER_BlendFacto
 		desc.blendFunc = nBlendingFunc;
 		desc.mask = colormask;
 
-		state = g_pShaderAPI->CreateBlendingState(desc);
+		state = g_renderAPI->CreateBlendingState(desc);
 		m_blendStates.insert(stateIndex, state);
 	}
 	else
 		state = *blendState;
 
-	g_pShaderAPI->SetBlendingState( state );
+	g_renderAPI->SetBlendingState( state );
 }
 
 // pack depth states to ubyte
@@ -1571,13 +1571,13 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ER_C
 		desc.depthFunc = depthCompFunc;
 		desc.doStencilTest = false;
 
-		state = g_pShaderAPI->CreateDepthStencilState(desc);
+		state = g_renderAPI->CreateDepthStencilState(desc);
 		m_depthStates.insert(stateIndex, state);
 	}
 	else
 		state = *depthState;
 
-	g_pShaderAPI->SetDepthStencilState( state );
+	g_renderAPI->SetDepthStencilState( state );
 }
 
 // pack blending function to ushort
@@ -1623,13 +1623,13 @@ void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFi
 			desc.slopeDepthBias = r_slopeDepthBias.GetFloat();
 		}
 
-		state = g_pShaderAPI->CreateRasterizerState(desc);
+		state = g_renderAPI->CreateRasterizerState(desc);
 		m_rasterStates.insert(stateIndex, state);
 	}
 	else
 		state = *rasterState;
 
-	g_pShaderAPI->SetRasterizerState( state );
+	g_renderAPI->SetRasterizerState( state );
 }
 
 // use this if you have objects that must be destroyed when device is lost

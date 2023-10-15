@@ -12,7 +12,7 @@
 
 #include "ShaderAPID3D9.h"
 
-extern ShaderAPID3D9 s_shaderApi;
+extern ShaderAPID3D9 s_renderApi;
 
 CD3D9IndexBuffer::CD3D9IndexBuffer()
 {
@@ -72,7 +72,7 @@ void CD3D9IndexBuffer::Restore()
 
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	if (s_shaderApi.m_pD3DDevice->CreateIndexBuffer(
+	if (s_renderApi.m_pD3DDevice->CreateIndexBuffer(
 		m_nInitialSize, m_nUsage, 
 		m_nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, 
 		dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pIndexBuffer, nullptr) != D3D_OK)
@@ -115,7 +115,7 @@ void CD3D9IndexBuffer::Update(void* data, int size, int offset, bool discard /*=
 		return;
 
 	{
-		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+		const HRESULT hr = s_renderApi.m_pD3DDevice->TestCooperativeLevel();
 		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 			return;
 	}
@@ -155,7 +155,7 @@ bool CD3D9IndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, bool re
 		return false;
 
 	{
-		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+		const HRESULT hr = s_renderApi.m_pD3DDevice->TestCooperativeLevel();
 		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 			return false;
 	}

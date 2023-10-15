@@ -326,7 +326,7 @@ private:
 	bool				m_deviceLost{ false };
 };
 
-extern ShaderAPIGL g_shaderApi;
+extern ShaderAPIGL s_renderApi;
 
 bool GLCheckError(const char* op, ...);
 void PrintGLExtensions();

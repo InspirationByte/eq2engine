@@ -132,14 +132,14 @@ void ShaderAPID3D9::OnDeviceLost()
 				}
 				else
 				{
-					DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
+					DevMsg(DEVMSG_RENDER, "RESET: releasing %s\n", pTex->GetName());
 					pTex->ReleaseForRestoration();
 				}
 			}
 		}
 	}
 
-	DevMsg(DEVMSG_SHADERAPI, "Device objects releasing done\n");
+	DevMsg(DEVMSG_RENDER, "Device objects releasing done\n");
 }
 
 bool ShaderAPID3D9::ResetDevice(D3DPRESENT_PARAMETERS& d3dpp)
@@ -185,7 +185,7 @@ bool ShaderAPID3D9::RestoreDevice()
 	m_deviceAtReset = false; 
 	m_deviceIsLost = false;
 
-	DevMsg(DEVMSG_SHADERAPI, "Restoring device...\n");
+	DevMsg(DEVMSG_RENDER, "Restoring device...\n");
 
 	// reset all the stuff so we could re-apply
 	Reset();
@@ -241,28 +241,28 @@ bool ShaderAPID3D9::RestoreDevice()
 
 	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
 
-	DevMsg(DEVMSG_SHADERAPI, "Restoring VBs...\n");
+	DevMsg(DEVMSG_RENDER, "Restoring VBs...\n");
 	for (int i = 0; i < m_VBList.numElem(); i++)
 	{
 		CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)m_VBList[i];
 		pVB->Restore();
 	}
 
-	DevMsg(DEVMSG_SHADERAPI, "Restoring IBs...\n");
+	DevMsg(DEVMSG_RENDER, "Restoring IBs...\n");
 	for (int i = 0; i < m_IBList.numElem(); i++)
 	{
 		CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)m_IBList[i];
 		pIB->Restore();
 	}
 
-	DevMsg(DEVMSG_SHADERAPI, "Restoring query...\n");
+	DevMsg(DEVMSG_RENDER, "Restoring query...\n");
 	for (int i = 0; i < m_OcclusionQueryList.numElem(); i++)
 	{
 		CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
 		query->Init();
 	}
 
-	DevMsg(DEVMSG_SHADERAPI, "Restoring RTs...\n");
+	DevMsg(DEVMSG_RENDER, "Restoring RTs...\n");
 
 	// create texture surfaces
 	for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
@@ -280,18 +280,18 @@ bool ShaderAPID3D9::RestoreDevice()
 		{
 			if (pTex->GetFlags() & TEXFLAG_RENDERTARGET)
 			{
-				DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
+				DevMsg(DEVMSG_RENDER, "Restoring rentertarget %s\n", pTex->GetName());
 				InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags(), m_caps);
 			}
 			else
 			{
-				DevMsg(DEVMSG_SHADERAPI, "Restoring texture %s\n", pTex->GetName());
+				DevMsg(DEVMSG_RENDER, "Restoring texture %s\n", pTex->GetName());
 				pTex->Restore();
 			}
 		}
 	}
 
-	DevMsg(DEVMSG_SHADERAPI, "Restoring backbuffer...\n");
+	DevMsg(DEVMSG_RENDER, "Restoring backbuffer...\n");
 
 	CreateD3DFrameBufferSurfaces();
 	ChangeRenderTargetToBackBuffer();
@@ -1161,7 +1161,7 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 		tex->m_usage = D3DUSAGE_DEPTHSTENCIL;
 		tex->m_pool = D3DPOOL_DEFAULT;
 
-		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture for %s\n", tex->GetName());
+		DevMsg(DEVMSG_RENDER, "InternalCreateRenderTarget: creating INTZ render target single texture for %s\n", tex->GetName());
 		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, g_d3d9_imageFormats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
 		{
 			MsgError("!!! Couldn't create '%s' INTZ render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1179,7 +1179,7 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 	}
 	else if (IsDepthFormat(tex->GetFormat()))
 	{
-		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth/stencil surface for %s\n", tex->GetName());
+		DevMsg(DEVMSG_RENDER, "InternalCreateRenderTarget: creating depth/stencil surface for %s\n", tex->GetName());
 
 		LPDIRECT3DSURFACE9 pSurface = nullptr;
 
@@ -1199,7 +1199,7 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 	{
 		if(nFlags & TEXFLAG_RENDERDEPTH)
 		{
-			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth for %s\n", tex->GetName());
+			DevMsg(DEVMSG_RENDER, "InternalCreateRenderTarget: creating depth for %s\n", tex->GetName());
 			if (dev->CreateDepthStencilSurface(tex->GetWidth(), tex->GetHeight(), D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, TRUE, &tex->m_dummyDepth, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' depth surface for RT with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1215,7 +1215,7 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 
 			LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
-			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target for %s\n", tex->GetName());
+			DevMsg(DEVMSG_RENDER, "InternalCreateRenderTarget: creating cubemap target for %s\n", tex->GetName());
 			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->m_usage, g_d3d9_imageFormats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1242,7 +1242,7 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 			tex->m_usage = D3DUSAGE_RENDERTARGET;
 			tex->m_pool = D3DPOOL_DEFAULT;
 
-			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture for %s\n", tex->GetName());
+			DevMsg(DEVMSG_RENDER, "InternalCreateRenderTarget: creating render target single texture for %s\n", tex->GetName());
 			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, g_d3d9_imageFormats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1279,7 +1279,7 @@ ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFor
 	pTexture->SetName(EqString::Format("_sapi_rt_%d", m_TextureList.size()).ToCString());
 
 	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
+	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 
@@ -1308,7 +1308,7 @@ ITexturePtr ShaderAPID3D9::CreateNamedRenderTarget(const char* pszName,int width
 	pTexture->SetName(pszName);
 
 	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
+	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 
@@ -1688,7 +1688,7 @@ void ShaderAPID3D9::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	if(deleted)
 	{
-		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex format\n");
+		DevMsg(DEVMSG_RENDER, "Destroying vertex format\n");
 		delete pVF;
 	}
 }
@@ -1709,7 +1709,7 @@ void ShaderAPID3D9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	if(deleted)
 	{
 		// reset if in use
-		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex buffer\n");
+		DevMsg(DEVMSG_RENDER, "Destroying vertex buffer\n");
 		delete pVB;
 	}
 }
@@ -1730,7 +1730,7 @@ void ShaderAPID3D9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	if (deleted)
 	{
-		DevMsg(DEVMSG_SHADERAPI, "Destroying index buffer\n");
+		DevMsg(DEVMSG_RENDER, "Destroying index buffer\n");
 		delete pIB;
 	}
 }
@@ -1835,7 +1835,7 @@ void ShaderAPID3D9::PreloadShadersFromCache()
 
 		pStream->Seek(0, VS_SEEK_SET);
 
-		DevMsg(DEVMSG_SHADERAPI, "Restoring shader '%s'\n", nameStr);
+		DevMsg(DEVMSG_RENDER, "Restoring shader '%s'\n", nameStr);
 		
 		CD3D9ShaderProgram* pNewProgram = PPNew CD3D9ShaderProgram();
 		pNewProgram->SetName(nameStr);
@@ -2404,7 +2404,7 @@ IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int
 	pBuffer->m_nStrideSize = strideSize;
 	pBuffer->m_nInitialSize = nNumVerts*strideSize;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pBuffer->m_nSize / 1024);
+	DevMsg(DEVMSG_RENDER, "Creating VBO with size %i KB\n", pBuffer->m_nSize / 1024);
 
 	const bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
@@ -2445,7 +2445,7 @@ IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(int nIndices, int nIndexSize, ER_
 
 	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creating IBO with size %i KB\n",(nIndices*nIndexSize) / 1024);
+	DevMsg(DEVMSG_RENDER, "Creating IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
 
 	if (m_pD3DDevice->CreateIndexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pIndexBuffer, nullptr) != D3D_OK)
 	{

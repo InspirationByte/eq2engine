@@ -75,7 +75,7 @@ HOOK_TO_CVAR(r_screen);
 
 IShaderAPI* CGLRenderLib_GLX::GetRenderer() const
 {
-	return &g_shaderApi;
+	return &s_renderApi;
 }
 
 bool CGLRenderLib_GLX::InitCaps()
@@ -302,7 +302,7 @@ bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
 	if (/*GLAD_GL_ARB_multisample &&*/ multiSamplingMode > 0)
 		glEnable(GL_MULTISAMPLE);
 
-	InitGLHardwareCapabilities(g_shaderApi.m_caps);
+	InitGLHardwareCapabilities(s_renderApi.m_caps);
 	g_glWorker.Init(this);
 
 	return true;
@@ -327,8 +327,8 @@ void CGLRenderLib_GLX::ExitAPI()
 
 void CGLRenderLib_GLX::BeginFrame(IEqSwapChain* swapChain)
 {
-	g_shaderApi.m_deviceLost = false;
-	g_shaderApi.StepProgressiveLodTextures();
+	s_renderApi.m_deviceLost = false;
+	s_renderApi.StepProgressiveLodTextures();
 
 	int width = m_width;
 	int height = m_height;
@@ -356,15 +356,15 @@ void CGLRenderLib_GLX::BeginFrame(IEqSwapChain* swapChain)
 	m_curSwapChain = swapChain;
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
-	g_shaderApi.m_nViewportWidth = width;
-	g_shaderApi.m_nViewportHeight = height;
+	s_renderApi.m_nViewportWidth = width;
+	s_renderApi.m_nViewportHeight = height;
 }
 
 void CGLRenderLib_GLX::EndFrame()
 {
 	if (glX::exts::var_EXT_swap_control)
 	{
-		glX::SwapIntervalEXT(m_display, m_window, g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
+		glX::SwapIntervalEXT(m_display, m_window, s_renderApi.m_params.verticalSyncEnabled ? 1 : 0);
 	}
 
 	glXSwapBuffers(m_display, m_window);
@@ -402,7 +402,7 @@ void CGLRenderLib_GLX::SetBackbufferSize(const int w, const int h)
 
 	m_width = w;
 	m_height = h;
-	g_shaderApi.m_deviceLost = true; // needed for triggering matsystem callbacks
+	s_renderApi.m_deviceLost = true; // needed for triggering matsystem callbacks
 
 	SetWindowed(m_windowed);
 
@@ -448,7 +448,7 @@ IEqSwapChain* CGLRenderLib_GLX::CreateSwapChain(void* window, bool windowed)
 {
 	CGLSwapChain* pNewChain = PPNew CGLSwapChain();
 
-	if (!pNewChain->Initialize(window, g_shaderApi.m_params.verticalSyncEnabled, windowed))
+	if (!pNewChain->Initialize(window, s_renderApi.m_params.verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;

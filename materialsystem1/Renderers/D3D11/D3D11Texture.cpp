@@ -11,7 +11,7 @@
 #include "D3D11Texture.h"
 #include "ShaderAPID3D11.h"
 
-extern ShaderAPID3DX10 s_shaderApi;
+extern ShaderAPID3DX10 s_renderApi;
 
 CD3D10Texture::~CD3D10Texture()
 {
@@ -20,7 +20,7 @@ CD3D10Texture::~CD3D10Texture()
 
 void CD3D10Texture::Ref_DeleteObject()
 {
-	s_shaderApi.FreeTexture(this);
+	s_renderApi.FreeTexture(this);
 	RefCountedObject::Ref_DeleteObject();
 }
 

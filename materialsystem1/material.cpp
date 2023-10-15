@@ -280,7 +280,7 @@ void CMaterial::InitShader()
 void CMaterial::InitVars(KVSection* shader_root)
 {
 	// Get an API preferences
-	KVSection* apiPrefs = shader_root->FindSection(EqString::Format("API_%s", g_pShaderAPI->GetRendererName()).ToCString(), KV_FLAG_SECTION);
+	KVSection* apiPrefs = shader_root->FindSection(EqString::Format("API_%s", g_renderAPI->GetRendererName()).ToCString(), KV_FLAG_SECTION);
 
 	// init root material vars
 	InitMaterialVars( shader_root );
@@ -422,7 +422,7 @@ const ITexturePtr& CMaterial::GetBaseTexture(int stage)
 	else
 	{
 		// Return error texture
-		return g_pShaderAPI->GetErrorTexture();
+		return g_renderAPI->GetErrorTexture();
 	}
 }
 
@@ -488,7 +488,7 @@ void CMaterial::UpdateProxy(float fDt)
 void CMaterial::Setup(uint paramMask)
 {
 	// shaders and textures needs to be reset
-	g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
+	g_renderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
 
 	IMaterialSystemShader* shader = m_shader;
 

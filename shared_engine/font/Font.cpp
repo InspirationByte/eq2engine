@@ -613,7 +613,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			m_spacing = 0.0f;
 			{
 				SamplerStateParams samplerParams;
-				SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
+				SamplerStateParams_Make(samplerParams, g_renderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
 
 				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_NOQUALITYLOD);
 			}
@@ -655,7 +655,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				fontChar.ofsY = KV_GetValueFloat(k, 5)*m_scale.y;
 				fontChar.advX = KV_GetValueFloat(k, 6)*m_scale.x;
 				
-				if( g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 )
+				if( g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 )
 				{
 					// fix half texel on DX9
 					fontChar.x0 = fontChar.x0 - 0.5f;
@@ -695,7 +695,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 				{
 					SamplerStateParams samplerParams;
-					SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
+					SamplerStateParams_Make(samplerParams, g_renderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
 
 					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD);
 				}

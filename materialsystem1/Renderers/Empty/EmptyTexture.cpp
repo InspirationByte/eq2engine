@@ -9,7 +9,7 @@
 #include "EmptyTexture.h"
 #include "ShaderAPIEmpty.h"
 
-extern ShaderAPIEmpty s_shaderAPI;
+extern ShaderAPIEmpty s_renderApi;
 
 // initializes texture from image array of images
 bool CEmptyTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
@@ -41,6 +41,6 @@ void CEmptyTexture::Unlock()
 
 void CEmptyTexture::Ref_DeleteObject()
 {
-	s_shaderAPI.FreeTexture(this);
+	s_renderApi.FreeTexture(this);
 	RefCountedObject::Ref_DeleteObject();
 }

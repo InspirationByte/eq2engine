@@ -54,7 +54,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 
 	CMeshBuilder mb(pMatsysMesh);
 	float halfPixelOfs = 0.0f;
-	if (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
+	if (g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 		halfPixelOfs = 0.5f;
 
 	// Copy vertices to matsystem mesh
@@ -113,7 +113,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 				// Apply Scissor/clipping rectangle, Bind texture, Draw
 				ITexture* texture = (ITexture*)pcmd->GetTexID();
 				IAARectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
-				g_pShaderAPI->SetScissorRectangle(scissor);
+				g_renderAPI->SetScissorRectangle(scissor);
 
 				materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(ITexturePtr(texture));
 
@@ -170,8 +170,8 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	imgs.append(CRefPtr(&image));
 	
 	SamplerStateParams params;
-	SamplerStateParams_Make(params, g_pShaderAPI->GetCaps(), TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
-	bd->FontTexture = g_pShaderAPI->CreateTexture(imgs, params);
+	SamplerStateParams_Make(params, g_renderAPI->GetCaps(), TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
+	bd->FontTexture = g_renderAPI->CreateTexture(imgs, params);
 
 	ASSERT(bd->FontTexture);
 	if (!bd->FontTexture)

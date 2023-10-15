@@ -140,7 +140,7 @@ DECLARE_CONCOMMAND_FN(developer)
 		else if( !str.CompareCaseIns("matsys") )
 			newMode |= DEVMSG_MATSYSTEM;
 		else if( !str.CompareCaseIns("renderer") )
-			newMode |= DEVMSG_SHADERAPI;
+			newMode |= DEVMSG_RENDER;
 		else if( !str.CompareCaseIns("sound") )
 			newMode |= DEVMSG_SOUND;
 		else if( !str.CompareCaseIns("network") )
@@ -306,20 +306,24 @@ IEXPORTS void LogMsg(SpewType_t spewtype, char const* fmt, ...)
 // Developer messages
 IEXPORTS void DevMsgV(int level, char const* pMsgFormat, va_list args)
 {
+#ifndef _RETAIL
 	// Don't print messages that lower than developer level
 	if( !(level & g_developerMode) )
 		return;
 
 	LogMsgV(SPEW_WARNING, pMsgFormat, args);
+#endif // _RETAIL
 }
 
 IEXPORTS void DevMsg(int level, const char* fmt, ...)
 {
+#ifndef _RETAIL
 	va_list	argptr;
 
 	va_start(argptr, fmt);
 	DevMsgV(level, fmt, argptr);
 	va_end(argptr);
+#endif // _RETAIL
 }
 
 #else

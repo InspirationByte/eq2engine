@@ -12,7 +12,7 @@
 
 #include "ShaderAPID3D9.h"
 
-extern ShaderAPID3D9 s_shaderApi;
+extern ShaderAPID3D9 s_renderApi;
 
 CD3D9VertexBuffer::CD3D9VertexBuffer()
 {
@@ -74,7 +74,7 @@ void CD3D9VertexBuffer::Restore()
 
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	if (s_shaderApi.m_pD3DDevice->CreateVertexBuffer(
+	if (s_renderApi.m_pD3DDevice->CreateVertexBuffer(
 		m_nInitialSize, m_nUsage, 0, dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pVertexBuffer, nullptr) != D3D_OK)
 	{
 		ErrorMsg("Vertex buffer restoration failed on creation\n");
@@ -115,7 +115,7 @@ void CD3D9VertexBuffer::Update(void* data, int size, int offset, bool discard /*
 		return;
 
 	{
-		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+		const HRESULT hr = s_renderApi.m_pD3DDevice->TestCooperativeLevel();
 		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 			return;
 	}
@@ -155,7 +155,7 @@ bool CD3D9VertexBuffer::Lock(int lockOfs, int vertexCount, void** outdata, bool 
 		return false;
 
 	{
-		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+		const HRESULT hr = s_renderApi.m_pD3DDevice->TestCooperativeLevel();
 		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 			return false;
 	}

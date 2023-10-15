@@ -465,4 +465,4 @@ public:
 
 
 // it always external, declare new one in your app...
-extern IShaderAPI*				g_pShaderAPI;
+extern IShaderAPI*				g_renderAPI;

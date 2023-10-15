@@ -65,9 +65,18 @@ static int CheckWhoDefeats(const RPSType& a, const RPSType& b)
 	*/
 }
 
+static uint ECSGenComponentID(bool inc = true)
+{
+	static uint compIdGen = 0;
+	return inc ? compIdGen++ : compIdGen;
+}
+
+// A component registry
 template<typename T>
 struct ECSComponent
 {
+	inline static uint COMP_ID = ECSGenComponentID();
+
 	// TODO:	Thread safety
 	//			More efficient component lookup
 	//			Non-static storage
@@ -149,6 +158,7 @@ private:
 	inline static Array<int>	freeSlots{ PP_SL };
 };
 
+// System template
 template<typename T>
 struct ECSSystem
 {
@@ -156,6 +166,7 @@ struct ECSSystem
 	static void Process(T& system);
 };
 
+// System to System Messages
 template<typename T>
 struct ECSMessage
 {
@@ -278,7 +289,7 @@ void ECSSystem<Movement>::Process(Movement& sysState)
 void ECSSystem<StateUpdate>::Process(StateUpdate& sysState)
 {
 	// NOTE: proof of concept
-	for (auto& message : Sys::DefeatMessage::PullAll())
+	for (Sys::DefeatMessage& message : Sys::DefeatMessage::PullAll())
 	{
 		State& state = *Sys::State::Get(message.fromEntity);
 		State& otherState = *Sys::State::Get(message.defeatedBy);
@@ -382,7 +393,7 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 	g_sounds->PrecacheSound("effect.paper");
 	g_sounds->PrecacheSound("effect.scissors");
 
-	g_pPFXRenderer->Init();
+	g_pfxRender->Init();
 
 	m_moviePlayer = CRefPtr_new(CMoviePlayer);
 
@@ -401,7 +412,7 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 
 		KVSection soundSec;
 		soundSec.SetName("test.video_stream");
-		soundSec.SetKey("wave", EqString('$') + VIDEO_FILE_NAME);
+		soundSec.SetKey("wave", EqString("$") + VIDEO_FILE_NAME);
 		soundSec.SetKey("is2d", true);
 		soundSec.SetKey("loop", true);
 		soundSec.SetKey("channel", "CHAN_STREAM");
@@ -415,7 +426,7 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 	{
 		static constexpr const int particlesGroupId = StringToHashConst("particles/translucent");
 
-		m_pfxGroup = g_pPFXRenderer->CreateBatch("particles/translucent");
+		m_pfxGroup = g_pfxRender->CreateBatch("particles/translucent");
 	}
 }
 
@@ -425,7 +436,7 @@ void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
 {
 	m_moviePlayer = nullptr;
 
-	g_pPFXRenderer->Shutdown();
+	g_pfxRender->Shutdown();
 	m_pfxGroup = nullptr;
 }
 
@@ -486,7 +497,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
-	g_pShaderAPI->Clear(true, true, false, ColorRGBA(0.5f));
+	g_renderAPI->Clear(true, true, false, ColorRGBA(0.5f));
 	materials->SetupOrtho((-screenSize.x / 2) * m_zoomLevel, (screenSize.x / 2) * m_zoomLevel, (screenSize.y / 2) * m_zoomLevel, (-screenSize.y / 2) * m_zoomLevel, -1000, 1000);
 	materials->SetMatrix(MATRIXMODE_VIEW, translate(-m_pan.x, -m_pan.y, 0.0f));
 
@@ -690,7 +701,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 	if(numLost >= 2)
 		InitGame();
 
-	g_pPFXRenderer->Render(0);
+	g_pfxRender->Render(0);
 
 	g_sounds->Update();
 	return true;

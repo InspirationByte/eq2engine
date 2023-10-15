@@ -50,7 +50,7 @@ static eqJobThreadDesc_t s_jobTypes[] = {
 
 
 DKMODULE*			g_matsysmodule = nullptr;
-IShaderAPI*			g_pShaderAPI = nullptr;
+IShaderAPI*			g_renderAPI = nullptr;
 IMaterialSystem*	materials = nullptr;
 
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70.0f);
@@ -346,7 +346,7 @@ void InitMatSystem(EQWNDHANDLE window)
 
 		materials->SetFogInfo(fog);
 
-		g_pShaderAPI = materials->GetShaderAPI();
+		g_renderAPI = materials->GetShaderAPI();
 	}
 
 	materials->LoadShaderLibrary("eqBaseShaders.dll");
@@ -721,11 +721,11 @@ void CMainWindow::ReDraw()
 	g_musicObject->SetSampleVolume(s_musicNameId, 1, g_vLastMousePosition.x / 512.0f);
 	g_musicObject->SetSampleVolume(s_musicNameId, 2, g_vLastMousePosition.y / 512.0f);
  
-	g_pShaderAPI->SetViewport(0, 0, w,h);
+	g_renderAPI->SetViewport(0, 0, w,h);
 
 	if(materials->BeginFrame(nullptr))
 	{
-		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.2,0.2,0.2, 1));
+		g_renderAPI->Clear(true,true,false, ColorRGBA(0.2,0.2,0.2, 1));
 
 		Vector3D forward, right, up;
 		AngleVectors(g_camera_rotation, &forward, &right, &up);

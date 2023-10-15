@@ -40,7 +40,7 @@ CEqMutex g_sapi_Mutex;
 
 DECLARE_CMD(r_info, "Prints renderer info", 0)
 {
-	g_pShaderAPI->PrintAPIInfo();
+	g_renderAPI->PrintAPIInfo();
 }
 
 ShaderAPI_Base::ShaderAPI_Base()
@@ -96,7 +96,7 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 	// Do master reset for all things
 	Reset();
 	
-	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] Generate error texture...\n");
+	DevMsg(DEVMSG_RENDER, "[DEBUG] Generate error texture...\n");
 
 	m_pErrorTexture = CreateTextureResource("error");
 	m_pErrorTexture->GenerateErrorTexture();
@@ -306,10 +306,10 @@ void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqS
 {
 	const int LIST_LIMIT = 50;
 
-	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_pShaderAPI);
+	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_renderAPI);
 
 	CScopedMutex m(g_sapi_TextureMutex);
-	Map<int, ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
+	Map<int, ITexture*>& texList = ((ShaderAPI_Base*)g_renderAPI)->m_TextureList;
 
 	for (auto it = texList.begin(); !it.atEnd(); ++it)
 	{
@@ -404,7 +404,7 @@ void ShaderAPI_Base::FreeTexture(ITexture* pTexture)
 		return;
 
 	ASSERT_MSG(pTexture->Ref_Count() == 0, "Material %s refcount = %d", pTexture->GetName(), pTexture->Ref_Count());
-	DevMsg(DEVMSG_SHADERAPI, "Unloading texture %s\n", pTexture->GetName());
+	DevMsg(DEVMSG_RENDER, "Unloading texture %s\n", pTexture->GetName());
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
 		m_TextureList.remove(((CTexture*)pTexture)->GetNameHash());
@@ -489,7 +489,7 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 
 	SamplerStateParams sampler;
 	SamplerStateParams_Make(sampler, m_caps, texFilter, textureAddress, textureAddress, textureAddress);
-	return g_pShaderAPI->CreateTexture(imgs, sampler, nFlags);
+	return g_renderAPI->CreateTexture(imgs, sampler, nFlags);
 }
 
 //-------------------------------------------------------------

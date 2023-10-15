@@ -94,10 +94,10 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
 	bool isJustCreated = false;
-	ITexturePtr texture = g_pShaderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
+	ITexturePtr texture = g_renderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
 
 	if (!texture)
-		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_pShaderAPI->GetErrorTexture();
+		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_renderAPI->GetErrorTexture();
 
 	if (!isJustCreated)
 		return texture;
@@ -144,7 +144,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 		if (isLoaded)
 		{
-			const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
+			const ShaderAPICaps_t& caps = g_renderAPI->GetCaps();
 
 			if(!caps.textureFormatsSupported[img->GetFormat()])
 			{
@@ -152,7 +152,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 				continue;
 			}
 
-			if (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
+			if (g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 			{
 				if (img->GetFormat() == FORMAT_RGB8 || img->GetFormat() == FORMAT_RGBA8)
 					img->SwapChannels(0, 2); // convert to BGR

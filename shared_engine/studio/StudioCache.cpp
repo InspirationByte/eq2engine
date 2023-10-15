@@ -66,13 +66,13 @@ int CStudioCache::PrecacheModel(const char* modelName)
 
 		{
 			ArrayCRef<VertexFormatDesc> genFmt = fmtBuilder.Build();
-			m_egfFormat[0] = g_pShaderAPI->CreateVertexFormat("EGFVertex", genFmt);
+			m_egfFormat[0] = g_renderAPI->CreateVertexFormat("EGFVertex", genFmt);
 		}
 
 		fmtBuilder.SetStream(2, EGFHwVertex::BoneWeights::GetVertexFormatDesc(), "BoneWeight");
 		{
 			ArrayCRef<VertexFormatDesc> genFmt = fmtBuilder.Build();
-			m_egfFormat[1] = g_pShaderAPI->CreateVertexFormat("EGFVertexSkinned", genFmt);
+			m_egfFormat[1] = g_renderAPI->CreateVertexFormat("EGFVertexSkinned", genFmt);
 		}
 	}
 	
@@ -181,7 +181,7 @@ void CStudioCache::ReleaseCache()
 
 	for(int i = 0; i < 2; ++i)
 	{
-		g_pShaderAPI->DestroyVertexFormat(m_egfFormat[i]);
+		g_renderAPI->DestroyVertexFormat(m_egfFormat[i]);
 		m_egfFormat[i] = nullptr;
 	}
 	m_errorMaterial = nullptr;

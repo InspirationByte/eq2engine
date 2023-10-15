@@ -116,7 +116,7 @@ enum CursorCode
 static DKMODULE*	g_matsysmodule = nullptr;
 
 IMaterialSystem*	materials = nullptr;
-IShaderAPI*			g_pShaderAPI = nullptr;
+IShaderAPI*			g_renderAPI = nullptr;
 
 void CGameHost::HostQuitToDesktop()
 {
@@ -395,7 +395,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	if(!materials->Init(materials_config))
 		return false;
 
-	g_pShaderAPI = materials->GetShaderAPI();
+	g_renderAPI = materials->GetShaderAPI();
 
 	materials->LoadShaderLibrary("eqBaseShaders");
 
@@ -707,12 +707,12 @@ bool CGameHost::Frame()
 	}
 
 	// always reset scissor rectangle before we start rendering
-	g_pShaderAPI->SetScissorRectangle( IAARectangle(0,0,m_winSize.x, m_winSize.y) );
+	g_renderAPI->SetScissorRectangle( IAARectangle(0,0,m_winSize.x, m_winSize.y) );
 #ifdef PLAT_ANDROID
 	// always clear all on Android
-	g_pShaderAPI->Clear(true, true, true);
+	g_renderAPI->Clear(true, true, true);
 #else
-	g_pShaderAPI->Clear(r_clear.GetBool(), true, false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
+	g_renderAPI->Clear(r_clear.GetBool(), true, false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
 #endif
 
 	const double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
@@ -766,8 +766,8 @@ bool CGameHost::Frame()
 
 	debugoverlay->Text(Vector4D(1), "System framerate: %i", fps);
 	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
-	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_pShaderAPI->GetDrawCallsCount(), g_pShaderAPI->GetDrawIndexedPrimitiveCallsCount());
-	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
+	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
+	debugoverlay->Text(Vector4D(1), "primitives: %i", g_renderAPI->GetTrianglesCount());
 	
 	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
 
@@ -804,7 +804,7 @@ bool CGameHost::Frame()
 	// End frame from render lib
 	EndScene();
 
-	g_pShaderAPI->ResetCounters();
+	g_renderAPI->ResetCounters();
 
 	m_accumTime = 0.0f;
 
@@ -841,11 +841,11 @@ void CGameHost::OnFocusChanged(bool inFocus)
 void CGameHost::BeginScene()
 {
 	// reset viewport
-	g_pShaderAPI->SetViewport(0,0, m_winSize.x, m_winSize.y);
+	g_renderAPI->SetViewport(0,0, m_winSize.x, m_winSize.y);
 
 	// Begin frame from render lib
 	materials->BeginFrame(nullptr);
-	g_pShaderAPI->Clear(false,true,false);
+	g_renderAPI->Clear(false,true,false);
 
 	HOOK_TO_CVAR(r_wireframe)
 	materials->GetConfiguration().wireframeMode = r_wireframe->GetBool();
@@ -857,7 +857,7 @@ void CGameHost::BeginScene()
 void CGameHost::EndScene()
 {
 	// issue the rendering of anything
-	g_pShaderAPI->Flush();
+	g_renderAPI->Flush();
 
 	// End frame from render lib
 	materials->EndFrame();

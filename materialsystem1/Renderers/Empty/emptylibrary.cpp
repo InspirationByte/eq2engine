@@ -17,8 +17,8 @@ HOOK_TO_CVAR(r_screen);
 
 // make library
 CEmptyRenderLib g_library;
-ShaderAPIEmpty s_shaderAPI;
-IShaderAPI* g_pShaderAPI = &s_shaderAPI;
+ShaderAPIEmpty s_renderApi;
+IShaderAPI* g_renderAPI = &s_renderApi;
 
 CEmptyRenderLib::CEmptyRenderLib()
 {
@@ -36,12 +36,12 @@ bool CEmptyRenderLib::InitCaps()
 
 IShaderAPI* CEmptyRenderLib::GetRenderer() const
 {
-	return g_pShaderAPI;
+	return g_renderAPI;
 }
 
 bool CEmptyRenderLib::InitAPI( const shaderAPIParams_t &params)
 {
-	s_shaderAPI.Init(params);
+	s_renderApi.Init(params);
 	return true;
 }
 

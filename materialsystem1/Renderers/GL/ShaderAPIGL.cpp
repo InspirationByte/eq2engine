@@ -43,8 +43,8 @@ extern CEqMutex	g_sapi_Mutex;
 
 extern CEqMutex g_sapi_ProgressiveTextureMutex;
 
-ShaderAPIGL g_shaderApi;
-IShaderAPI* g_pShaderAPI = &g_shaderApi;
+ShaderAPIGL s_renderApi;
+IShaderAPI* g_renderAPI = &s_renderApi;
 
 void PrintGLExtensions()
 {
@@ -295,7 +295,7 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 	else
 		m_vendor = VENDOR_OTHER;
 
-	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
+	DevMsg(DEVMSG_RENDER, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
 
 	// Set some of my preferred defaults
 	glDisable(GL_DEPTH_TEST);
@@ -832,7 +832,7 @@ ITexturePtr ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	pTexture->m_glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
 	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
+	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 
@@ -1506,7 +1506,7 @@ void ShaderAPIGL::PreloadShadersFromCache()
 
 		pStream->Seek(0, VS_SEEK_SET);
 
-		DevMsg(DEVMSG_SHADERAPI, "Restoring shader '%s'\n", nameStr);
+		DevMsg(DEVMSG_RENDER, "Restoring shader '%s'\n", nameStr);
 
 		CGLShaderProgram* pNewProgram = PPNew CGLShaderProgram();
 		pNewProgram->SetName(nameStr);
@@ -2011,9 +2011,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (maxLength == 0 && (uniformCount > 0 || uniformCount > 256))
 			{
 				if (vendor == VENDOR_INTEL)
-					DevMsg(DEVMSG_SHADERAPI, "Guess who? It's Intel! uniformCount to be zeroed\n");
+					DevMsg(DEVMSG_RENDER, "Guess who? It's Intel! uniformCount to be zeroed\n");
 				else
-					DevMsg(DEVMSG_SHADERAPI, "I... didn't... expect... that! uniformCount to be zeroed\n");
+					DevMsg(DEVMSG_RENDER, "I... didn't... expect... that! uniformCount to be zeroed\n");
 
 				uniformCount = 0;
 			}
@@ -2023,7 +2023,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			char* tmpName = PPNew char[maxLength+1];
 
-			DevMsg(DEVMSG_SHADERAPI, "[DEBUG] getting UNIFORMS from '%s'\n", cdata.prog->GetName());
+			DevMsg(DEVMSG_RENDER, "[DEBUG] getting UNIFORMS from '%s'\n", cdata.prog->GetName());
 
 			for (int i = 0; i < uniformCount; i++)
 			{
@@ -2044,7 +2044,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 					const GLint location = glGetUniformLocation(cdata.prog->m_program, tmpName);
 					glUniform1i(location, samplerNum);
 
-					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, samplerNum, location);
+					DevMsg(DEVMSG_RENDER, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, samplerNum, location);
 
 					GLShaderSampler_t& sp = samplers.append();
 					sp.index = samplerNum;
@@ -2059,7 +2059,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 					const int uniformNum = uniforms.numElem();
 
-					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, uniformNum);
+					DevMsg(DEVMSG_RENDER, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, uniformNum);
 
 					// also cut off name at the bracket
 					char* bracket = strchr(tmpName, '[');
@@ -2275,7 +2275,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 	pVB->m_strideSize = strideSize;
 	pVB->m_access = nBufAccess;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pVB->GetSizeInBytes() / 1024);
+	DevMsg(DEVMSG_RENDER,"Creating VBO with size %i KB\n", pVB->GetSizeInBytes() / 1024);
 
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 
@@ -2331,7 +2331,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 	pIB->m_nIndexSize = nIndexSize;
 	pIB->m_access = nBufAccess;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creating IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
+	DevMsg(DEVMSG_RENDER,"Creating IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
 
 	const int sizeInBytes = pIB->m_nIndices * pIB->m_nIndexSize;
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
@@ -2394,7 +2394,7 @@ void ShaderAPIGL::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	if(deleted)
 	{
-		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex format\n");
+		DevMsg(DEVMSG_RENDER, "Destroying vertex format\n");
 		delete pVF;
 	}
 }

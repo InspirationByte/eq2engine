@@ -36,7 +36,7 @@ CGLTexture::~CGLTexture()
 
 void CGLTexture::Ref_DeleteObject()
 {
-	g_shaderApi.FreeTexture(this);
+	s_renderApi.FreeTexture(this);
 
 	g_glWorker.Execute(__func__, [this]() {
 		delete this;
@@ -54,7 +54,7 @@ void CGLTexture::ReleaseTextures()
 	{
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
 		m_progressiveState.clear();
-		g_shaderApi.m_progressiveTextures.remove(this);
+		s_renderApi.m_progressiveTextures.remove(this);
 	}
 
 	if (m_glTarget == GL_RENDERBUFFER)
@@ -379,7 +379,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 	m_glTarget = g_gl_texTargetType[images[0]->GetImageType()];
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
-	if (g_shaderApi.m_progressiveTextureFrequency > 0)
+	if (s_renderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());
 	m_textures.reserve(images.numElem());
 
@@ -431,7 +431,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 			if(texture.glTexID == GL_NONE)
 				return TEXLOAD_ERROR;
 
-			if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && g_shaderApi.m_progressiveTextureFrequency > 0)
+			if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && s_renderApi.m_progressiveTextureFrequency > 0)
 			{
 				int transferredSize = 0;
 				do
@@ -496,9 +496,9 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 	if (m_progressiveState.numElem())
 	{
-		m_progressiveFrameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
+		m_progressiveFrameDelay = min(s_renderApi.m_progressiveTextureFrequency, 255);
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-		g_shaderApi.m_progressiveTextures.insert(this);
+		s_renderApi.m_progressiveTextures.insert(this);
 	}
 
 	m_numAnimatedTextureFrames = m_textures.numElem();
@@ -553,7 +553,7 @@ EProgressiveStatus CGLTexture::StepProgressiveLod()
 	if (!m_progressiveState.numElem())
 		return PROGRESSIVE_STATUS_COMPLETED;
 
-	m_progressiveFrameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
+	m_progressiveFrameDelay = min(s_renderApi.m_progressiveTextureFrequency, 255);
 	return PROGRESSIVE_STATUS_DID_UPLOAD;
 }
 

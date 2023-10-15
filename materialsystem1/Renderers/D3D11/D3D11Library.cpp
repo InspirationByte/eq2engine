@@ -21,8 +21,8 @@
 HOOK_TO_CVAR(r_screen);
 
 // make library
-ShaderAPID3DX10 s_shaderApi;
-IShaderAPI* g_pShaderAPI = &s_shaderApi;
+ShaderAPID3DX10 s_renderApi;
+IShaderAPI* g_renderAPI = &s_renderApi;
 CD3D11RenderLib g_library;
 
 CD3D11RenderLib::CD3D11RenderLib()
@@ -162,7 +162,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& params)
 			m_msaaSamples -= 2;
 	}
 
-	s_shaderApi.SetD3DDevice(m_rhi);
+	s_renderApi.SetD3DDevice(m_rhi);
 
 	// create our swap chain
 	m_defaultSwapChain = CreateSwapChain(m_hwnd, true);
@@ -173,7 +173,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& params)
 	dxgiOutput->Release();
 	dxgiAdapter->Release();
 
-	if(!s_shaderApi.CreateBackbufferDepth(m_width, m_height, m_depthBufferFormat, m_msaaSamples))
+	if(!s_renderApi.CreateBackbufferDepth(m_width, m_height, m_depthBufferFormat, m_msaaSamples))
 	{
 		CrashMsg("Cannot create backbuffer surfaces!\n");
 		return false;
@@ -184,7 +184,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& params)
 	//-------------------------------------------
 	// init caps
 	//-------------------------------------------
-	ShaderAPICaps_t& caps = s_shaderApi.m_caps;
+	ShaderAPICaps_t& caps = s_renderApi.m_caps;
 
 	HOOK_TO_CVAR(r_anisotropic);
 
@@ -260,10 +260,10 @@ void CD3D11RenderLib::ReleaseSwapChains()
 void CD3D11RenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
 	// "restore"
-	if (!s_shaderApi.IsDeviceActive())
+	if (!s_renderApi.IsDeviceActive())
 	{
 		// to pause engine
-		s_shaderApi.m_deviceIsLost = false;
+		s_renderApi.m_deviceIsLost = false;
 	}
 }
 
@@ -277,7 +277,7 @@ void CD3D11RenderLib::EndFrame()
 
 IShaderAPI* CD3D11RenderLib::GetRenderer() const
 {
-	return &s_shaderApi;
+	return &s_renderApi;
 }
 
 // reports focus state
@@ -303,11 +303,11 @@ bool CD3D11RenderLib::IsWindowed() const
 void CD3D11RenderLib::SetBackbufferSize(int w, int h)
 {
 	// to pause engine
-	s_shaderApi.m_deviceIsLost = true;
+	s_renderApi.m_deviceIsLost = true;
 
 	if (m_rhi != nullptr && (m_width != w || m_height != h))
 	{
-		s_shaderApi.ReleaseBackbufferDepth();
+		s_renderApi.ReleaseBackbufferDepth();
 
 		// resize backbuffer
 		if(!m_defaultSwapChain->SetBackbufferSize(w, h))
@@ -318,8 +318,8 @@ void CD3D11RenderLib::SetBackbufferSize(int w, int h)
 		m_width = w;
 		m_height = h;
 
-		s_shaderApi.CreateBackbufferDepth(m_width, m_height, m_depthBufferFormat, m_msaaSamples);
-		s_shaderApi.ChangeRenderTargetToBackBuffer();
+		s_renderApi.CreateBackbufferDepth(m_width, m_height, m_depthBufferFormat, m_msaaSamples);
+		s_renderApi.ChangeRenderTargetToBackBuffer();
 	}
 }
 

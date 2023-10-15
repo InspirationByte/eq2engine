@@ -66,7 +66,7 @@ IPhysics* physics = &s_physics;
 CBulletStudioShapeCache	s_shapeCache;
 
 DKMODULE*			g_matsysmodule = nullptr;
-IShaderAPI*			g_pShaderAPI = nullptr;
+IShaderAPI*			g_renderAPI = nullptr;
 IMaterialSystem*	materials = nullptr;
 
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70);
@@ -433,7 +433,7 @@ static void InitMatSystem(void* window)
 
 		materials->SetFogInfo(fog);
 
-		g_pShaderAPI = materials->GetShaderAPI();
+		g_renderAPI = materials->GetShaderAPI();
 	}
 
 	materials->LoadShaderLibrary("eqBaseShaders");
@@ -1206,10 +1206,10 @@ void CEGFViewFrame::ReDraw()
 	int w, h;
 	m_pRenderPanel->GetSize(&w, &h);
 
-	g_pShaderAPI->SetViewport(0, 0, w,h);
+	g_renderAPI->SetViewport(0, 0, w,h);
 	if(materials->BeginFrame(nullptr))
 	{
-		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.5,0.5,0.5, 1));
+		g_renderAPI->Clear(true,true,false, ColorRGBA(0.5,0.5,0.5, 1));
 
 		Vector3D forward, right;
 		AngleVectors(g_camera_rotation, &forward, &right);
@@ -1288,12 +1288,12 @@ void CEGFViewFrame::ReDraw()
 
 		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
 
-		g_pShaderAPI->ResetCounters();
+		g_renderAPI->ResetCounters();
 
 		// Now we can draw our model
 		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);
 
-		debugoverlay->Text(color_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
+		debugoverlay->Text(color_white, "polygon count: %d\n", g_renderAPI->GetTrianglesCount());
 
 		// reset some values
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4);

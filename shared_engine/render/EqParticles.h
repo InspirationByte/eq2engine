@@ -113,10 +113,6 @@ public:
 	bool				MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup);
 
 protected:
-
-	static bool			MatSysFn_InitParticleBuffers();
-	static bool			MatSysFn_ShutdownParticleBuffers();
-
 	bool				InitBuffers();
 	bool				ShutdownBuffers();
 
@@ -152,16 +148,16 @@ struct PFXBillboard_t
 	CParticleBatch*	group { nullptr };		// atlas
 	AtlasEntry*		tex {nullptr};			// texture name in atlas
 
-	MColor				vColor;
-	Vector3D			vOrigin;
-	Vector3D			vLockDir;
+	MColor			vColor;
+	Vector3D		vOrigin;
+	Vector3D		vLockDir;
 
-	float				fWide { 1.0f };
-	float				fTall { 1.0f };
+	float			fWide { 1.0f };
+	float			fTall { 1.0f };
 
-	float				fZAngle { 1.0f };
+	float			fZAngle { 1.0f };
 
-	int					nFlags { 0 };
+	int				nFlags { 0 };
 };
 
 // draws particle
@@ -170,5 +166,5 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 
 //------------------------------------------------------------------------------------
 
-extern CStaticAutoPtr<CParticleLowLevelRenderer> g_pPFXRenderer;
+extern CStaticAutoPtr<CParticleLowLevelRenderer> g_pfxRender;
 

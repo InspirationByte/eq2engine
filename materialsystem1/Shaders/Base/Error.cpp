@@ -55,13 +55,13 @@ BEGIN_SHADER_CLASS(Error)
 
 	void SetColorModulation()
 	{
-		g_pShaderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
+		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
 	}
 
 	void SetupBaseTexture0()
 	{
 		const ITexturePtr& setupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
-		g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
+		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage)  const {return m_baseTexture.Get();}

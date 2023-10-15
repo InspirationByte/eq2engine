@@ -53,18 +53,18 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 
-		g_pShaderAPI->SetShaderConstantVector4D(StringToHashConst("FontParams"), m_fontParamsVar.Get());
+		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("FontParams"), m_fontParamsVar.Get());
 	}
 
 	void SetupBaseTexture()
 	{
-		g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());
+		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());
 	}
 
 	void SetColorModulation()
 	{
 		ColorRGBA setColor = materials->GetAmbientColor();
-		g_pShaderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), setColor);
+		g_renderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), setColor);
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

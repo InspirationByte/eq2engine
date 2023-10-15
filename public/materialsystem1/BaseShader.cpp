@@ -179,7 +179,7 @@ void CBaseShader::Unload()
 		IShaderProgram* program = *m_UsedPrograms[i];
 		*m_UsedPrograms[i] = nullptr;
 
-		g_pShaderAPI->DestroyShaderProgram(program);
+		g_renderAPI->DestroyShaderProgram(program);
 	}
 	m_UsedPrograms.clear(true);
 
@@ -227,10 +227,10 @@ MatTextureProxy CBaseShader::FindTextureByVar(const char* paramName, bool errorT
 	MatStringProxy mv = FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
-		AddManagedTexture(mv, g_pShaderAPI->FindTexture(mv.Get()));
+		AddManagedTexture(mv, g_renderAPI->FindTexture(mv.Get()));
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(mv, g_pShaderAPI->GetErrorTexture());
+		AddManagedTexture(mv, g_renderAPI->GetErrorTexture());
 
 	return mv;
 }
@@ -242,13 +242,13 @@ MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorT
 	if(mv.IsValid()) 
 	{
 		SamplerStateParams samplerParams;
-		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), (ER_TextureFilterMode)m_texFilter, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode);
+		SamplerStateParams_Make(samplerParams, g_renderAPI->GetCaps(), (ER_TextureFilterMode)m_texFilter, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode);
 
 		if(mv.Get().Length())
 			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(MatTextureProxy(mv), g_pShaderAPI->GetErrorTexture());
+		AddManagedTexture(MatTextureProxy(mv), g_renderAPI->GetErrorTexture());
 
 	return mv;
 }
@@ -320,10 +320,10 @@ void CBaseShader::ParamSetup_Transform()
 	materials->GetMatrix(MATRIXMODE_VIEW, view);
 	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
 
-	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("WVP"), wvp_matrix);
-	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("World"), world);
-	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("View"), view);
-	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("Proj"), proj);
+	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("WVP"), wvp_matrix);
+	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("World"), world);
+	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("View"), view);
+	g_renderAPI->SetShaderConstantMatrix4(StringToHashConst("Proj"), proj);
 
 	// setup texture transform
 	SetupVertexShaderTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar, "BaseTextureTransform");
@@ -343,14 +343,14 @@ void CBaseShader::ParamSetup_Fog()
 	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
 	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
 
-	g_pShaderAPI->SetShaderConstantVector3D(StringToHashConst("ViewPos"), fog.viewPos);
-	g_pShaderAPI->SetShaderConstantVector4D(StringToHashConst("FogParams"), VectorFOGParams);
-	g_pShaderAPI->SetShaderConstantVector3D(StringToHashConst("FogColor"), fog.fogColor);
+	g_renderAPI->SetShaderConstantVector3D(StringToHashConst("ViewPos"), fog.viewPos);
+	g_renderAPI->SetShaderConstantVector4D(StringToHashConst("FogParams"), VectorFOGParams);
+	g_renderAPI->SetShaderConstantVector3D(StringToHashConst("FogColor"), fog.fogColor);
 }
 
 void CBaseShader::ParamSetup_Cubemap()
 {
-	g_pShaderAPI->SetTexture(StringToHashConst("CubemapTexture"), m_cubemapTexture.Get());
+	g_renderAPI->SetTexture(StringToHashConst("CubemapTexture"), m_cubemapTexture.Get());
 }
 
 // get texture transformation from vars
@@ -367,7 +367,7 @@ void CBaseShader::SetupVertexShaderTextureTransform(const MatVec2Proxy& transfor
 {
 	Vector4D trans = GetTextureTransform(transformVar, scaleVar);
 
-	g_pShaderAPI->SetShaderConstantVector4D(StringToHash(pszConstName), trans);
+	g_renderAPI->SetShaderConstantVector4D(StringToHash(pszConstName), trans);
 }
 
 IMaterial* CBaseShader::GetAssignedMaterial() const

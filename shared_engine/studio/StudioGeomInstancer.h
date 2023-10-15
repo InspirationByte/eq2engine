@@ -126,7 +126,7 @@ CEqGeomInstancer<IT>* CEqGeomInstancer<IT>::Get(CEqStudioGeom* model, IVertexFor
 {
 	CEqGeomInstancer<IT>* instancer = reinterpret_cast<CEqGeomInstancer<IT>*>(model->GetInstancer());
 
-	if (!instancer && g_pShaderAPI->GetCaps().isInstancingSupported)
+	if (!instancer && g_renderAPI->GetCaps().isInstancingSupported)
 	{
 		instancer = PPNew CEqGeomInstancer<IT>();
 		instancer->Init(vertexFormatInstanced, instVertStreamMapping);

@@ -98,10 +98,10 @@ bool CDynamicMesh::Init(const VertexFormatDesc* desc, int numAttribs )
 
 	m_vertexStride = vertexSize;
 
-	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, nullptr);
-	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, nullptr);
+	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, nullptr);
+	m_indexBuffer = g_renderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, nullptr);
 
-	m_vertexFormat = g_pShaderAPI->CreateVertexFormat("DynMeshVertex", ArrayCRef(desc, numAttribs));
+	m_vertexFormat = g_renderAPI->CreateVertexFormat("DynMeshVertex", ArrayCRef(desc, numAttribs));
 
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
@@ -117,10 +117,10 @@ void CDynamicMesh::Destroy()
 	Reset();
 	Unlock();
 
-	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
+	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
+	g_renderAPI->DestroyVertexBuffer(m_vertexBuffer);
 
-	g_pShaderAPI->DestroyVertexFormat(m_vertexFormat);
+	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
 
 	PPFree(m_vertices);
 	PPFree(m_indices);
@@ -282,20 +282,20 @@ void CDynamicMesh::Render(int firstIndex, int numIndices)
 		m_vboDirty = -1;
 	}
 
-	g_pShaderAPI->SetVertexFormat(m_vertexFormat);
-	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, 0);
+	g_renderAPI->SetVertexFormat(m_vertexFormat);
+	g_renderAPI->SetVertexBuffer(m_vertexBuffer, 0);
 
 	if (drawIndexed)
-		g_pShaderAPI->SetIndexBuffer(m_indexBuffer);
+		g_renderAPI->SetIndexBuffer(m_indexBuffer);
 	else
-		g_pShaderAPI->SetIndexBuffer(nullptr);
+		g_renderAPI->SetIndexBuffer(nullptr);
 
-	g_pShaderAPI->ApplyBuffers();
+	g_renderAPI->ApplyBuffers();
 
 	if (drawIndexed)
-		g_pShaderAPI->DrawIndexedPrimitives(m_primType, firstIndex, numIndices, 0, m_numVertices);
+		g_renderAPI->DrawIndexedPrimitives(m_primType, firstIndex, numIndices, 0, m_numVertices);
 	else
-		g_pShaderAPI->DrawNonIndexedPrimitives(m_primType, 0, m_numVertices);
+		g_renderAPI->DrawNonIndexedPrimitives(m_primType, 0, m_numVertices);
 }
 
 // resets the dynamic mesh

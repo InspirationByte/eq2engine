@@ -23,7 +23,7 @@ vfmt.SetStream(2, g_MatrixInstanceFormat, "Instance");
 
 ArrayCRef<VertexFormatDesc> genFmt = vfmt.Build();
 
-g_pShaderAPI->CreateVertexFormat("EGFVertex," genFmt);
+g_renderAPI->CreateVertexFormat("EGFVertex," genFmt);
 
 */
 

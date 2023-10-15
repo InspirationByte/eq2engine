@@ -605,7 +605,7 @@ void IUIControl::Render(int depth)
 		IAARectangle scissorRect = GetClientScissorRectangle();
 		scissorRect.leftTop += m_transform.translation * scale;
 		scissorRect.rightBottom += m_transform.translation * scale;
-		g_pShaderAPI->SetScissorRectangle(scissorRect);
+		g_renderAPI->SetScissorRectangle(scissorRect);
 
 		// force rasterizer state
 		// other states are pretty useless

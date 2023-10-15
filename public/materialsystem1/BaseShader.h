@@ -53,20 +53,20 @@ enum ShaderBlendMode : int
 	FogInfo_t fog;											\
 	materials->GetFogInfo(fog);								\
 	if(fog.enableFog && m_fogenabled)										\
-		g_pShaderAPI->SetShader(m_pShader##shader##_fog);	\
+		g_renderAPI->SetShader(m_pShader##shader##_fog);	\
 	else													\
-		g_pShaderAPI->SetShader(m_pShader##shader);			\
+		g_renderAPI->SetShader(m_pShader##shader);			\
 	}
 
 #define SHADER_BIND_PASS_SIMPLE(shader)						\
-	g_pShaderAPI->SetShader(m_pShader##shader);
+	g_renderAPI->SetShader(m_pShader##shader);
 
 #define SHADER_PASS_UNLOAD(shader) \
-	g_pShaderAPI->DestroyShaderProgram(m_pShader##shader);\
+	g_renderAPI->DestroyShaderProgram(m_pShader##shader);\
 	m_pShader##shader## = nullptr;
 
 #define SHADER_FOGPASS_UNLOAD(shader) \
-	g_pShaderAPI->DestroyShaderProgram(m_pShader##shader##_fog);\
+	g_renderAPI->DestroyShaderProgram(m_pShader##shader##_fog);\
 	m_pShader##shader##_fog = nullptr;
 
 #define _SHADER_PARAM_OP_EMPTY
@@ -128,12 +128,12 @@ enum ShaderBlendMode : int
 
 #define SHADER_FIND_OR_COMPILE(shader, sname)													\
 	{																							\
-	m_pShader##shader = g_pShaderAPI->FindShaderProgram(sname, (findQuery).GetData());			\
+	m_pShader##shader = g_renderAPI->FindShaderProgram(sname, (findQuery).GetData());			\
 	if(!m_pShader##shader)																		\
 	{																							\
-		m_pShader##shader = g_pShaderAPI->CreateNewShaderProgram(sname, findQuery.GetData());	\
-		if(!g_pShaderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData())){	\
-			g_pShaderAPI->DestroyShaderProgram(m_pShader##shader);								\
+		m_pShader##shader = g_renderAPI->CreateNewShaderProgram(sname, findQuery.GetData());	\
+		if(!g_renderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData())){	\
+			g_renderAPI->DestroyShaderProgram(m_pShader##shader);								\
 			return false;																		\
 		}																						\
 	}																							\
