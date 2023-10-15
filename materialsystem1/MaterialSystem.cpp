@@ -1424,7 +1424,7 @@ void CMaterialSystem::DrawDefaultUP(EPrimTopology type, int vertFVF, const void*
 		}
 		if (vertFVF & VERTEX_FVF_COLOR)
 		{
-			meshBuilder.Color4fv(*reinterpret_cast<const uint*>(vertPtr));
+			meshBuilder.Color4(*reinterpret_cast<const uint*>(vertPtr));
 			vertPtr += sizeof(uint);
 		}
 		meshBuilder.AdvanceVertex();
