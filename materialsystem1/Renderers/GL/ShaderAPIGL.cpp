@@ -986,7 +986,7 @@ void ShaderAPIGL::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
 
-	glBlitFramebuffer(0, 0, m_nViewportWidth, m_nViewportHeight, 0, 0, pTargetTexture->GetWidth(), pTargetTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, m_backbufferSize.x, m_backbufferSize.y, 0, 0, pTargetTexture->GetWidth(), pTargetTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -1211,7 +1211,7 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 		return;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	SetViewport(0, 0, m_nViewportWidth, m_nViewportHeight);
+	glViewport(0, 0, m_backbufferSize.x, m_backbufferSize.y);
 
 	int numRTs = m_nCurrentRenderTargets;
 
@@ -2678,8 +2678,7 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 // sets viewport
 void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 {
-	// this is actually represents our viewport state
-	m_viewPort = IAARectangle(x,y,x+w,y+h);
+	ShaderAPI_Base::SetViewport(x, y, w, h);
 
 	glViewport(x, y, w, h);
 	GLCheckError("set viewport");
@@ -2688,17 +2687,14 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 // sets scissor rectangle
 void ShaderAPIGL::SetScissorRectangle( const IAARectangle &rect )
 {
-	IVector2D viewportSize = m_viewPort.GetSize();
-
     IAARectangle scissor(rect);
 
-    scissor.leftTop.y = viewportSize.y - scissor.leftTop.y;
-    scissor.rightBottom.y = viewportSize.y - scissor.rightBottom.y;
-
+    scissor.leftTop.y = m_backbufferSize.y - scissor.leftTop.y;
+    scissor.rightBottom.y = m_backbufferSize.y - scissor.rightBottom.y;
     QuickSwap(scissor.leftTop.y, scissor.rightBottom.y);
 
-    IVector2D size = scissor.GetSize();
-	glScissor( scissor.leftTop.x, scissor.leftTop.y, size.x, size.y);
+    const IVector2D scissorSize = scissor.GetSize();
+	glScissor( scissor.leftTop.x, scissor.leftTop.y, scissorSize.x, scissorSize.y);
 	GLCheckError("set scissor");
 }
 

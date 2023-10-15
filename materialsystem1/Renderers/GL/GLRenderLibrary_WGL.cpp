@@ -417,8 +417,7 @@ void CGLRenderLib_WGL::BeginFrame(IEqSwapChain* swapChain)
 	m_curSwapChain = swapChain;
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
-	s_renderApi.m_nViewportWidth = width;
-	s_renderApi.m_nViewportHeight = height;
+	s_renderApi.m_backbufferSize = IVector2D(width, height);
 }
 
 void CGLRenderLib_WGL::EndFrame()

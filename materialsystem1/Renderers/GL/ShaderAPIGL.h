@@ -279,7 +279,8 @@ private:
 	int					m_nCurrentMask{ COLORMASK_ALL };
 	bool				m_bCurrentBlendEnable{ false };
 
-	IAARectangle			m_viewPort;
+	IVector2D			m_backbufferSize{ 0 };
+
 	EGraphicsVendor		m_vendor{ VENDOR_OTHER };
 	bool				m_deviceLost{ false };
 };

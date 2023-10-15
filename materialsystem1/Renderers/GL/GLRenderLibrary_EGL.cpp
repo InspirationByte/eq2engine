@@ -292,9 +292,9 @@ void CGLRenderLib_EGL::BeginFrame(IEqSwapChain* swapChain)
 	s_renderApi.StepProgressiveLodTextures();
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
-	s_renderApi.m_nViewportWidth = m_width;
-	s_renderApi.m_nViewportHeight = m_height;
+	s_renderApi.m_backbufferSize = IVector2D(m_width, m_height);
 
+	// FIXME: is this needed?
 	s_renderApi.SetViewport(0, 0, m_width, m_height);
 }
 

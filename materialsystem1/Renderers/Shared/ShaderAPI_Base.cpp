@@ -45,47 +45,6 @@ DECLARE_CMD(r_info, "Prints renderer info", 0)
 
 ShaderAPI_Base::ShaderAPI_Base()
 {
-	m_nViewportWidth			= 800;
-	m_nViewportHeight			= 600;
-
-	m_pCurrentShader			= nullptr;
-	m_pSelectedShader			= nullptr;
-
-	m_pCurrentBlendstate		= nullptr;
-	m_pCurrentDepthState		= nullptr;
-	m_pCurrentRasterizerState	= nullptr;
-
-	m_pSelectedBlendstate		= nullptr;
-	m_pSelectedDepthState		= nullptr;
-	m_pSelectedRasterizerState	= nullptr;
-
-	m_pErrorTexture				= nullptr;
-
-	// VF selectoin
-	m_pSelectedVertexFormat		= nullptr;
-	m_pCurrentVertexFormat		= nullptr;
-
-	// Index buffer
-	m_pSelectedIndexBuffer		= nullptr;
-	m_pCurrentIndexBuffer		= nullptr;
-
-	// Vertex buffer
-	memset(m_pSelectedVertexBuffers, 0, sizeof(m_pSelectedVertexBuffers));
-	memset(m_pCurrentVertexBuffers, 0, sizeof(m_pCurrentVertexBuffers));
-
-	memset(m_pActiveVertexFormat, 0, sizeof(m_pActiveVertexFormat));
-
-	memset(m_nCurrentOffsets, 0, sizeof(m_nCurrentOffsets));
-	memset(m_nSelectedOffsets, 0, sizeof(m_nSelectedOffsets));
-
-	// Index buffer
-	m_pSelectedIndexBuffer		= nullptr;
-	m_pCurrentIndexBuffer		= nullptr;
-
-	m_pCurrentDepthRenderTarget = nullptr;
-
-	m_nDrawCalls				= 0;
-	m_nTrianglesCount			= 0;
 }
 
 // Init + Shurdown
@@ -98,8 +57,8 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 	
 	DevMsg(DEVMSG_RENDER, "[DEBUG] Generate error texture...\n");
 
-	m_pErrorTexture = CreateTextureResource("error");
-	m_pErrorTexture->GenerateErrorTexture();
+	m_errorTexture = CreateTextureResource("error");
+	m_errorTexture->GenerateErrorTexture();
 
 	ConVar* r_debugShowTexture = (ConVar*)g_consoleCommands->FindCvar("r_debugShowTexture");
 
@@ -119,7 +78,7 @@ void ShaderAPI_Base::Shutdown()
 	Reset();
 	Apply();
 
-	m_pErrorTexture = nullptr;
+	m_errorTexture = nullptr;
 
 	for(auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
@@ -299,7 +258,7 @@ void ShaderAPI_Base::ApplyBuffers()
 // default error texture pointer
 const ITexturePtr& ShaderAPI_Base::GetErrorTexture() const
 {
-	return m_pErrorTexture;
+	return m_errorTexture;
 }
 
 void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqString>& list, const char* query)
@@ -339,8 +298,7 @@ int	ShaderAPI_Base::GetProgressiveTextureFrequency() const
 
 void ShaderAPI_Base::SetViewport(int x, int y, int w, int h)
 {
-	m_nViewportWidth = w;
-	m_nViewportHeight = h;
+	m_viewPort = IAARectangle(x, y, x+w, y+h);
 }
 
 // Find texture
