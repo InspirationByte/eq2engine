@@ -321,14 +321,14 @@ void InitMatSystem(EQWNDHANDLE window)
 
 		static void* s_engineWindow = window;
 
-		shaderAPIWindowInfo_t& winInfo = materials_config.shaderApiParams.windowInfo;
+		RenderWindowInfo& winInfo = materials_config.shaderApiParams.windowInfo;
 		winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
-		winInfo.get = [](shaderAPIWindowInfo_t::Attribute attrib) -> void* {
+		winInfo.get = [](RenderWindowInfo::Attribute attrib) -> void* {
 			switch (attrib)
 			{
-				case shaderAPIWindowInfo_t::WINDOW:
+				case RenderWindowInfo::WINDOW:
 					return s_engineWindow;
-				case shaderAPIWindowInfo_t::DISPLAY:
+				case RenderWindowInfo::DISPLAY:
 					return GetDC((HWND)s_engineWindow);
 			}
 			return nullptr;

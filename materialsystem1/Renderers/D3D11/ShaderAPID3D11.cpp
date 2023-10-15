@@ -79,7 +79,7 @@ void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
 }
 
 // Init + Shurdown
-void ShaderAPID3DX10::Init(const shaderAPIParams_t &params)
+void ShaderAPID3DX10::Init(const ShaderAPIParams &params)
 {
 	Msg("Initializing Direct3D11 Shader API...\n");
 
@@ -737,7 +737,7 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 }
 
 // It will add new rendertarget
-ITexturePtr ShaderAPID3DX10::CreateRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3DX10::CreateRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ETexFilterMode textureFilterType, ETexAddressMode textureAddress, ECompareFunc comparison, int nFlags)
 {
 	// TODO: use CreateTextureResource
 
@@ -1127,7 +1127,7 @@ static int ConstantComp(const void *s0, const void *s1)
 
 // Load any shader from stream
 bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-												const shaderProgramCompileInfo_t& info,
+												const ShaderProgCompileInfo& info,
 												const char* extra)
 {
 	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)pShaderOutput;
@@ -1860,7 +1860,7 @@ void ShaderAPID3DX10::SetShaderConstantRaw(int nameHash, const void* data, int n
 //-------------------------------------------------------------
 
 // creates blending state
-IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParam_t &blendDesc )
+IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParams &blendDesc )
 {
 	CD3D10BlendingState* pState = nullptr;
 
@@ -1933,7 +1933,7 @@ IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParam_t &ble
 }
 	
 // creates depth/stencil state
-IRenderState* ShaderAPID3DX10::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
+IRenderState* ShaderAPID3DX10::CreateDepthStencilState( const DepthStencilStateParams &depthDesc )
 {
 	CD3D10DepthStencilState* pState = nullptr;
 	
@@ -2006,7 +2006,7 @@ IRenderState* ShaderAPID3DX10::CreateDepthStencilState( const DepthStencilStateP
 }
 
 // creates rasterizer state
-IRenderState* ShaderAPID3DX10::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
+IRenderState* ShaderAPID3DX10::CreateRasterizerState( const RasterizerStateParams &rasterDesc )
 {
 	CD3D10RasterizerState* pState = nullptr;
 
@@ -2209,7 +2209,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, ArrayCRef<V
 
 		if(vertFmt.attribType != VERTEXATTRIB_UNUSED)
 		{
-			const ER_VertexAttribType attribType = static_cast<ER_VertexAttribType>(vertFmt.attribType & VERTEXATTRIB_MASK);
+			const EVertAttribType attribType = static_cast<EVertAttribType>(vertFmt.attribType & VERTEXATTRIB_MASK);
 			const char* attribSemantics = semantics[attribType];
 
 			pDesc[numRealAttribs].InputSlot = stream;
@@ -2293,7 +2293,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, ArrayCRef<V
 	return pFormat;
 }
 
-IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData)
+IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData)
 {
 	ASSERT(m_pD3DDevice);
 
@@ -2334,7 +2334,7 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(ER_BufferAccess nBufAccess, i
 	return pBuffer;
 }
 
-IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData)
+IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData)
 {
 	ASSERT(nIndexSize >= 2);
 	ASSERT(nIndexSize <= 4);
@@ -2391,7 +2391,7 @@ PRIMCOUNTER g_pDX10PrimCounterCallbacks[] =
 
 
 // Indexed primitive drawer
-void ShaderAPID3DX10::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
+void ShaderAPID3DX10::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	int nTris = g_pDX10PrimCounterCallbacks[nType](nIndices);
 
@@ -2405,7 +2405,7 @@ void ShaderAPID3DX10::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIn
 }
 
 // Draw elements
-void ShaderAPID3DX10::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
+void ShaderAPID3DX10::DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices)
 {
 	ASSERT(nVertices > 0);
 

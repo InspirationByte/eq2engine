@@ -123,9 +123,9 @@ void CParticleBatch::Render(int nViewRenderFlags)
 
 	// draw
 	if(m_numIndices)
-		g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
+		g_renderAPI->DrawIndexedPrimitives((EPrimTopology)primMode, 0, m_numIndices, 0, m_numVertices);
 	else
-		g_renderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
+		g_renderAPI->DrawNonIndexedPrimitives((EPrimTopology)primMode, 0, m_numVertices);
 
 #if 0
 	HOOK_TO_CVAR(r_wireframe)
@@ -142,9 +142,9 @@ void CParticleBatch::Render(int nViewRenderFlags)
 		g_renderAPI->Apply();
 
 		if(m_numIndices)
-			g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
+			g_renderAPI->DrawIndexedPrimitives((EPrimTopology)primMode, 0, m_numIndices, 0, m_numVertices);
 		else
-			g_renderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
+			g_renderAPI->DrawNonIndexedPrimitives((EPrimTopology)primMode, 0, m_numVertices);
 	}
 #endif
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))

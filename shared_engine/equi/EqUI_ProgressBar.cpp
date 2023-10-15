@@ -35,7 +35,7 @@ void ProgressBar::InitFromKeyValues(KVSection* sec, bool noClear)
 void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 {
 	// setup default material and translucent blending
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 

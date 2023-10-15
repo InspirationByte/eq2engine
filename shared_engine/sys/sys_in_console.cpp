@@ -508,7 +508,7 @@ void CEqConsoleInput::consoleInsText(const char* text,int pos)
 
 void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -542,7 +542,7 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 
 void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection)
 {
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -618,7 +618,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 {
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -1200,7 +1200,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		}
 	}
 
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 

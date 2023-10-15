@@ -26,7 +26,7 @@ protected:
 		int					streamId;
 		int					sizeInBytes;
 
-		ER_AttributeFormat	attribFormat;
+		EVertAttribFormat	attribFormat;
 		int					offsetInBytes;
 	};
 

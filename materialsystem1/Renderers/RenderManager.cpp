@@ -50,7 +50,7 @@ CEqRenderManager::~CEqRenderManager()
 	g_eqCore->UnregisterInterface<CEqRenderManager>();
 }
 
-IRenderLibrary* CEqRenderManager::CreateRenderer(const shaderAPIParams_t &params) const
+IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams &params) const
 {
 #if RENDERER_TYPE == RHI_NULL
     s_currentRenderLib = &s_EmptyRenderLib;

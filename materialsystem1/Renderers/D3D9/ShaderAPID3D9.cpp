@@ -363,7 +363,7 @@ void ShaderAPID3D9::ReleaseD3DFrameBufferSurfaces()
 }
 
 // Init + Shurdown
-void ShaderAPID3D9::Init( const shaderAPIParams_t &params )
+void ShaderAPID3D9::Init( const ShaderAPIParams &params )
 {
 	HOOK_TO_CVAR(r_anisotropic);
 	const int desiredAnisotropicLevel = min(r_anisotropic->GetInt(), m_caps.maxTextureAnisotropicLevel);
@@ -640,7 +640,7 @@ void ShaderAPID3D9::ApplyBlendState()
 
 	if(pSelectedState != nullptr)
 	{
-		BlendStateParam_t& state = pSelectedState->m_params;
+		BlendStateParams& state = pSelectedState->m_params;
 
 		// handle blending params if blending is enabled
 		if (state.blendEnable)
@@ -713,7 +713,7 @@ void ShaderAPID3D9::ApplyDepthState()
 	} 
 	else 
 	{
-		DepthStencilStateParams_t& state = pSelectedState->m_params;
+		DepthStencilStateParams& state = pSelectedState->m_params;
 
 		if (state.depthTest)
 		{
@@ -807,7 +807,7 @@ void ShaderAPID3D9::ApplyRasterizerState()
 	}
 	else
 	{
-		RasterizerStateParams_t& state = pSelectedState->m_params;
+		RasterizerStateParams& state = pSelectedState->m_params;
 
 		if (state.cullMode != m_nCurrentCullMode)
 			m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, g_d3d9_cullConst[m_nCurrentCullMode = state.cullMode]);
@@ -991,7 +991,7 @@ void ShaderAPID3D9::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 //-------------------------------------------------------------
 
 // creates blending state
-IRenderState* ShaderAPID3D9::CreateBlendingState( const BlendStateParam_t &blendDesc )
+IRenderState* ShaderAPID3D9::CreateBlendingState( const BlendStateParams &blendDesc )
 {
 	CD3D9BlendingState* pState = nullptr;
 
@@ -1031,7 +1031,7 @@ IRenderState* ShaderAPID3D9::CreateBlendingState( const BlendStateParam_t &blend
 }
 	
 // creates depth/stencil state
-IRenderState* ShaderAPID3D9::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
+IRenderState* ShaderAPID3D9::CreateDepthStencilState( const DepthStencilStateParams &depthDesc )
 {
 	CD3D9DepthStencilState* pState = nullptr;
 	
@@ -1078,7 +1078,7 @@ IRenderState* ShaderAPID3D9::CreateDepthStencilState( const DepthStencilStatePar
 }
 
 // creates rasterizer state
-IRenderState* ShaderAPID3D9::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
+IRenderState* ShaderAPID3D9::CreateRasterizerState( const RasterizerStateParams &rasterDesc )
 {
 	CD3D9RasterizerState* pState = nullptr;
 
@@ -1141,7 +1141,7 @@ void ShaderAPID3D9::DestroyRenderState( IRenderState* pState, bool removeAllRefs
 // Textures
 //-------------------------------------------------------------
 
-bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags, const ShaderAPICaps_t& caps)
+bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags, const ShaderAPICaps& caps)
 {
 	if (caps.INTZSupported && caps.INTZFormat == tex->GetFormat())
 	{
@@ -1253,7 +1253,7 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 }
 
 // It will add new rendertarget
-ITexturePtr ShaderAPID3D9::CreateRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3D9::CreateRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ETexFilterMode textureFilterType, ETexAddressMode textureAddress, ECompareFunc comparison, int nFlags)
 {
 	// TODO: use CreateTextureResource
 
@@ -1828,7 +1828,7 @@ bool ShaderAPID3D9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualS
 
 // Load any shader from stream
 bool ShaderAPID3D9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-												const shaderProgramCompileInfo_t& info,
+												const ShaderProgCompileInfo& info,
 												const char* extra)
 {
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderOutput);
@@ -2304,7 +2304,7 @@ IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, ArrayCRef<Ver
 	return pFormat;
 }
 
-IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData)
+IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData)
 {
 	CD3D9VertexBuffer* pBuffer = PPNew CD3D9VertexBuffer();
 	pBuffer->m_nSize = nNumVerts*strideSize;
@@ -2341,7 +2341,7 @@ IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int
 	return pBuffer;
 
 }
-IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData)
+IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData)
 {
 	ASSERT(nIndexSize >= 2);
 	ASSERT(nIndexSize <= 4);
@@ -2385,7 +2385,7 @@ IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(int nIndices, int nIndexSize, ER_
 //-------------------------------------------------------------
 
 // Indexed primitive drawer
-void ShaderAPID3D9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
+void ShaderAPID3D9::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
 	const int numPrimitives = g_d3d9_primCountFunc[nType](nIndices);
@@ -2397,7 +2397,7 @@ void ShaderAPID3D9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstInde
 }
 
 // Draw elements
-void ShaderAPID3D9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
+void ShaderAPID3D9::DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices)
 {
 	const int numPrimitives = g_d3d9_primCountFunc[nType](nVertices);
 	m_pD3DDevice->DrawPrimitive(g_d3d9_primType[nType], nFirstVertex, numPrimitives);

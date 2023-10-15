@@ -27,7 +27,7 @@ public:
 
 	bool					InitCaps();
 
-	bool					InitAPI(const shaderAPIParams_t &params);
+	bool					InitAPI(const ShaderAPIParams &params);
 	void					ExitAPI();
 	void					ReleaseSwapChains();
 
@@ -83,7 +83,7 @@ protected:
 	EGLContext				m_glContext{ nullptr };
 	EGLContext				m_glSharedContext{ nullptr };
 
-	shaderAPIWindowInfo_t 	m_windowInfo;
+	RenderWindowInfo 	m_windowInfo;
 
 	EGLNativeWindowType		m_hwnd{ 0 };
     EGLDisplay				m_eglDisplay{ nullptr };

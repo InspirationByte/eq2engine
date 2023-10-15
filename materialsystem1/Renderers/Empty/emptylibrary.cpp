@@ -39,7 +39,7 @@ IShaderAPI* CEmptyRenderLib::GetRenderer() const
 	return g_renderAPI;
 }
 
-bool CEmptyRenderLib::InitAPI( const shaderAPIParams_t &params)
+bool CEmptyRenderLib::InitAPI( const ShaderAPIParams &params)
 {
 	s_renderApi.Init(params);
 	return true;

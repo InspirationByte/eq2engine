@@ -50,7 +50,7 @@ protected:
 	int				m_flags;
 	int				m_numVerts;
 	int				m_strideSize;
-	ER_BufferAccess	m_access;
+	EBufferAccessType	m_access;
 
 	ubyte*			m_lockPtr;
 	int				m_lockOffs;

@@ -162,7 +162,7 @@ struct materialsRenderSettings_t
 struct materialsInitSettings_t
 {
 	materialsRenderSettings_t	renderConfig;
-	shaderAPIParams_t	shaderApiParams;
+	ShaderAPIParams	shaderApiParams;
 
 	EqString			rendererName;		// shaderAPI library filename
 	EqString			materialsPath;		// regular (retail) materials file paths
@@ -256,17 +256,17 @@ public:
 	//-----------------------------
 
 	// draws primitives for 2D
-	virtual void							DrawPrimitives2DFFP(ER_PrimitiveType type, Vertex2D_t* pVerts, int nVerts,
+	virtual void							DrawPrimitives2DFFP(EPrimTopology type, Vertex2D_t* pVerts, int nVerts,
 		const ITexturePtr& pTexture = nullptr, const ColorRGBA& color = color_white,
-		BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
-		RasterizerStateParams_t* rasterParams = nullptr) = 0;
+		BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+		RasterizerStateParams* rasterParams = nullptr) = 0;
 
 	//-----------------------------
 	// Shader dynamic states
 	//-----------------------------
 
-	virtual ER_CullMode						GetCurrentCullMode() const = 0;
-	virtual void							SetCullMode(ER_CullMode cullMode) = 0;
+	virtual ECullMode						GetCurrentCullMode() const = 0;
+	virtual void							SetCullMode(ECullMode cullMode) = 0;
 
 	virtual void							SetSkinningEnabled(bool bEnable) = 0;
 	virtual bool							IsSkinningEnabled() const = 0;
@@ -293,30 +293,30 @@ public:
 	//-----------------------------
 
 	// sets blending
-	virtual void							SetBlendingStates(const BlendStateParam_t& blend) = 0;
+	virtual void							SetBlendingStates(const BlendStateParams& blend) = 0;
 
 	// sets depth stencil state
-	virtual void							SetDepthStates(const DepthStencilStateParams_t& depth) = 0;
+	virtual void							SetDepthStates(const DepthStencilStateParams& depth) = 0;
 
 	// sets rasterizer extended mode
-	virtual void							SetRasterizerStates(const RasterizerStateParams_t& raster) = 0;
+	virtual void							SetRasterizerStates(const RasterizerStateParams& raster) = 0;
 
 
 	// sets blending
-	virtual void							SetBlendingStates(ER_BlendFactor nSrcFactor,
-		ER_BlendFactor nDestFactor,
-		ER_BlendFunction nBlendingFunc = BLENDFUNC_ADD,
+	virtual void							SetBlendingStates(EBlendFactor nSrcFactor,
+		EBlendFactor nDestFactor,
+		EBlendFunction nBlendingFunc = BLENDFUNC_ADD,
 		int colormask = COLORMASK_ALL
 	) = 0;
 
 	// sets depth stencil state
 	virtual void							SetDepthStates(bool bDoDepthTest,
 		bool bDoDepthWrite,
-		ER_CompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
+		ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
 
 	// sets rasterizer extended mode
-	virtual void							SetRasterizerStates(ER_CullMode nCullMode,
-		ER_FillMode nFillMode = FILL_SOLID,
+	virtual void							SetRasterizerStates(ECullMode nCullMode,
+		EFillMode nFillMode = FILL_SOLID,
 		bool bMultiSample = true,
 		bool bScissor = false,
 		bool bPolyOffset = false
@@ -364,10 +364,10 @@ public:
 	virtual void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar) = 0;
 
 	// sets up a matrix, projection, view, and world
-	virtual void							SetMatrix(ER_MatrixMode mode, const Matrix4x4& matrix) = 0;
+	virtual void							SetMatrix(EMatrixMode mode, const Matrix4x4& matrix) = 0;
 
 	// returns a typed matrix
-	virtual void							GetMatrix(ER_MatrixMode mode, Matrix4x4& matrix) = 0;
+	virtual void							GetMatrix(EMatrixMode mode, Matrix4x4& matrix) = 0;
 
 	// retunrs multiplied matrix
 	virtual void							GetWorldViewProjection(Matrix4x4& matrix) = 0;

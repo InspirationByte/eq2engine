@@ -995,7 +995,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				g_renderAPI->SetShaderConstant(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
 			g_matSystem->Apply();
 
-			g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
+			g_renderAPI->DrawIndexedPrimitives((EPrimTopology)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
 		}
 	}
 

@@ -23,8 +23,8 @@ public:
 	void			Destroy();
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
-	void				SetPrimitiveType( ER_PrimitiveType primType );
-	ER_PrimitiveType	GetPrimitiveType() const;
+	void				SetPrimitiveType( EPrimTopology primType );
+	EPrimTopology	GetPrimitiveType() const;
 
 	// returns a pointer to vertex format description
 	ArrayCRef<VertexFormatDesc>	GetVertexFormatDesc() const;
@@ -47,7 +47,7 @@ protected:
 	bool			Lock();
 	void			Unlock();
 
-	ER_PrimitiveType	m_primType;
+	EPrimTopology	m_primType;
 
 	void*			m_vertices;
 	uint16*			m_indices;

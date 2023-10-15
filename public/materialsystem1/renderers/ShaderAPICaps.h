@@ -18,35 +18,35 @@ enum EShaderSupportFlags
 
 //-------------------------------------------------------------------------------------
 
-struct ShaderAPICaps_t
+struct ShaderAPICaps
 {
-	bool				textureFormatsSupported[FORMAT_COUNT]{ false };
-	bool				renderTargetFormatsSupported[FORMAT_COUNT]{ false };
+	bool			textureFormatsSupported[FORMAT_COUNT]{ false };
+	bool			renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 
-	bool				INTZSupported{ false };		// Direct3D9 INTZ (internal Z buffer) sampling as texture is supported
-	ETextureFormat		INTZFormat{ FORMAT_NONE };
+	bool			INTZSupported{ false };		// Direct3D9 INTZ (internal Z buffer) sampling as texture is supported
+	ETextureFormat	INTZFormat{ FORMAT_NONE };
 
-	bool				NULLSupported{ false };		// Direct3D9 NULL sampling as texture is supported
-	ETextureFormat		NULLFormat{ FORMAT_NONE };
+	bool			NULLSupported{ false };		// Direct3D9 NULL sampling as texture is supported
+	ETextureFormat	NULLFormat{ FORMAT_NONE };
 
-	bool				isInstancingSupported{ 0 };
-	bool				isHardwareOcclusionQuerySupported{ 0 };
+	bool			isInstancingSupported{ 0 };
+	bool			isHardwareOcclusionQuerySupported{ 0 };
 
-	int					maxTextureSize{ 0 };
-	int					maxRenderTargets{ 0 };
+	int				maxTextureSize{ 0 };
+	int				maxRenderTargets{ 0 };
 	
-	int					maxTextureUnits{ 0 };
-	int					maxVertexTextureUnits{ 0 };
+	int				maxTextureUnits{ 0 };
+	int				maxVertexTextureUnits{ 0 };
 
-	int					maxTextureAnisotropicLevel{ 0 };
+	int				maxTextureAnisotropicLevel{ 0 };
 
-	int					maxSamplerStates{ 0 };
+	int				maxSamplerStates{ 0 };
 
-	int					maxVertexStreams{ 0 };
-	int					maxVertexGenericAttributes{ 0 };
-	int					maxVertexTexcoordAttributes{ 0 };
+	int				maxVertexStreams{ 0 };
+	int				maxVertexGenericAttributes{ 0 };
+	int				maxVertexTexcoordAttributes{ 0 };
 
-	int					shadersSupportedFlags{ 0 };			// EShaderSupportFlags
+	int				shadersSupportedFlags{ 0 };			// EShaderSupportFlags
 
-	int					shaderVersions[4]{ 0 };
+	int				shaderVersions[4]{ 0 };
 };

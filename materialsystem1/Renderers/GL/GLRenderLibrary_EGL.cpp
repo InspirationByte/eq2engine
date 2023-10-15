@@ -140,12 +140,12 @@ void CGLRenderLib_EGL::InitSharedContexts()
 	m_glSharedContext = context;
 }
 
-bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
+bool CGLRenderLib_EGL::InitAPI(const ShaderAPIParams& params)
 {
 	ASSERT_MSG(params.windowInfo.get != nullptr, "you must specify window handle!");
 
 	m_windowInfo = params.windowInfo;
-	EGLNativeDisplayType displayType = (EGLNativeDisplayType)m_windowInfo.get(shaderAPIWindowInfo_t::DISPLAY);
+	EGLNativeDisplayType displayType = (EGLNativeDisplayType)m_windowInfo.get(RenderWindowInfo::DISPLAY);
 	m_eglDisplay = eglGetDisplay(displayType);
 
 	Msg("Initializing EGL context...\n");
@@ -318,8 +318,8 @@ bool CGLRenderLib_EGL::SetWindowed(bool enabled)
 #ifdef PLAT_LINUX
 	/*if (m_windowInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
 	{
-		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(shaderAPIWindowInfo_t::SURFACE);
-		xdg_top* wlSurface = (wl_surface*)m_windowInfo.get(shaderAPIWindowInfo_t::TOPLEVEL);
+		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(RenderWindowInfo::SURFACE);
+		xdg_top* wlSurface = (wl_surface*)m_windowInfo.get(RenderWindowInfo::TOPLEVEL);
 
 		if(enabled)
 			xdg_toplevel_unset_fullscreen(m_xdg_toplevel);
@@ -463,13 +463,13 @@ bool CGLRenderLib_EGL::CreateSurface()
 	if (m_windowInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
 	{
 		// SDL2 does not maintain the window for Vulkan mode, so we have to create one
-		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(shaderAPIWindowInfo_t::SURFACE);
+		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(RenderWindowInfo::SURFACE);
 		m_hwnd = (EGLNativeWindowType)wl_egl_window_create(wlSurface, 512, 512);
 	}
 	else
 #endif // PLAT_LINUX
 	{
-		m_hwnd = (EGLNativeWindowType)m_windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
+		m_hwnd = (EGLNativeWindowType)m_windowInfo.get(RenderWindowInfo::WINDOW);
 	}
 
 #ifdef PLAT_ANDROID

@@ -15,7 +15,7 @@ public:
 	RenderStateType_e	GetType() const { return RENDERSTATE_DEPTHSTENCIL; }
 	const void*			GetDescPtr() const { return &m_params; }
 
-	DepthStencilStateParams_t m_params;
+	DepthStencilStateParams m_params;
 };
 
 // it's just a simple holder, no more...
@@ -25,7 +25,7 @@ public:
 	RenderStateType_e	GetType() const { return RENDERSTATE_RASTERIZER; }
 	const void*			GetDescPtr() const { return &m_params; }
 
-	RasterizerStateParams_t	m_params;
+	RasterizerStateParams	m_params;
 };
 
 // it's just a simple holder, no more...
@@ -35,5 +35,5 @@ public:
 	RenderStateType_e	GetType() const { return RENDERSTATE_BLENDING; }
 	const void*			GetDescPtr() const { return &m_params; }
 
-	BlendStateParam_t	m_params;
+	BlendStateParams	m_params;
 };

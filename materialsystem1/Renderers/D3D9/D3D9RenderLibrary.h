@@ -25,7 +25,7 @@ public:
 	void					ExitAPI();
 	void					ReleaseSwapChains();
 
-	bool					InitAPI( const shaderAPIParams_t &params );
+	bool					InitAPI( const ShaderAPIParams &params );
 
 	// frame begin/end
 	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
@@ -60,7 +60,7 @@ public:
 
 protected:
 
-	void					SetupSwapEffect(const shaderAPIParams_t& params);
+	void					SetupSwapEffect(const ShaderAPIParams& params);
 
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
 	IEqSwapChain*			m_curSwapChain{ nullptr };

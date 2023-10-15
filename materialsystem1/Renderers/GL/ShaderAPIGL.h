@@ -44,7 +44,7 @@ public:
 	friend class		GLWorkerThread;
 
 	// Init + Shurdown
-	void				Init( const shaderAPIParams_t &params);
+	void				Init( const ShaderAPIParams &params);
 	void				Shutdown();
 
 	void				PrintAPIInfo() const;
@@ -82,7 +82,7 @@ public:
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*			GetRendererName() const;
 
-	ER_ShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_OPENGL;}
+	EShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_OPENGL;}
 
 //-------------------------------------------------------------
 // MT Synchronization
@@ -97,13 +97,13 @@ public:
 //-------------------------------------------------------------
 
 	// creates blending state
-	IRenderState*		CreateBlendingState( const BlendStateParam_t &blendDesc );
+	IRenderState*		CreateBlendingState( const BlendStateParams &blendDesc );
 
 	// creates depth/stencil state
-	IRenderState*		CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc );
+	IRenderState*		CreateDepthStencilState( const DepthStencilStateParams &depthDesc );
 
 	// creates rasterizer state
-	IRenderState*		CreateRasterizerState( const RasterizerStateParams_t &rasterDesc );
+	IRenderState*		CreateRasterizerState( const RasterizerStateParams &rasterDesc );
 
 	// completely destroys shader
 	void				DestroyRenderState( IRenderState* pState, bool removeAllRefs = false );
@@ -125,9 +125,9 @@ public:
 	// It will add new rendertarget
 	ITexturePtr			CreateRenderTarget(const char* pszName,
 												int width, int height,
-												ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
-												ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-												ER_CompareFunc comparison = COMPFUNC_NEVER,
+												ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR,
+												ETexAddressMode textureAddress = TEXADDRESS_WRAP,
+												ECompareFunc comparison = COMPFUNC_NEVER,
 												int nFlags = 0);
 
 //-------------------------------------------------------------
@@ -204,7 +204,7 @@ public:
 
 	// Load any shader from stream
 	bool				CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-													const shaderProgramCompileInfo_t& info,
+													const ShaderProgCompileInfo& info,
 													const char* extra = nullptr
 													);
 
@@ -219,18 +219,18 @@ public:
 //-------------------------------------------------------------
 
 	IVertexFormat*		CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc);
-	IVertexBuffer*		CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr);
-	IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr);
+	IVertexBuffer*		CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr);
+	IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData = nullptr);
 
 //-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)
 //-------------------------------------------------------------
 
 	// Indexed primitive drawer
-	void				DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
+	void				DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
 
 	// Draw elements
-	void				DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices);
+	void				DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices);
 
 protected:
 
@@ -289,4 +289,4 @@ extern ShaderAPIGL s_renderApi;
 
 bool GLCheckError(const char* op, ...);
 void PrintGLExtensions();
-void InitGLHardwareCapabilities(ShaderAPICaps_t& caps);
+void InitGLHardwareCapabilities(ShaderAPICaps& caps);

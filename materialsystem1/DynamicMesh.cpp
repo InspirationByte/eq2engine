@@ -145,12 +145,12 @@ ArrayCRef<VertexFormatDesc> CDynamicMesh::GetVertexFormatDesc() const
 }
 
 // sets the primitive type (chooses the way how to allocate geometry parts)
-void CDynamicMesh::SetPrimitiveType( ER_PrimitiveType primType )
+void CDynamicMesh::SetPrimitiveType( EPrimTopology primType )
 {
 	m_primType = primType;
 }
 
-ER_PrimitiveType	CDynamicMesh::GetPrimitiveType() const
+EPrimTopology	CDynamicMesh::GetPrimitiveType() const
 {
 	return m_primType;
 }

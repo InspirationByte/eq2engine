@@ -76,7 +76,7 @@ DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
 	return nDeviceCreationFlags;
 }
 
-bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
+bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 {
 	EGraphicsVendor vendor;
 	
@@ -100,7 +100,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 	ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
 
 	// set window
-	m_hwnd = (HWND)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
+	m_hwnd = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
 
 	// get window parameters
 	RECT windowRect;
@@ -201,7 +201,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 	// init caps
 	//-------------------------------------------
 	DevMsg(DEVMSG_RENDER, "[DEBUG] D3D9 Device capabilities...\n");
-	ShaderAPICaps_t& caps = s_renderApi.m_caps;
+	ShaderAPICaps& caps = s_renderApi.m_caps;
 
 	memset(&caps, 0, sizeof(caps));
 
@@ -391,7 +391,7 @@ void CD3D9RenderLib::SetFocused(bool inFocus)
 
 }
 
-void CD3D9RenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
+void CD3D9RenderLib::SetupSwapEffect(const ShaderAPIParams& params)
 {
 	if (m_d3dpp.Windowed)
 	{

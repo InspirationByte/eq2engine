@@ -185,15 +185,15 @@ void CGLRenderLib_WGL::InitSharedContexts()
 	m_glSharedContext = context;
 }
 
-bool CGLRenderLib_WGL::InitAPI(const shaderAPIParams_t& params)
+bool CGLRenderLib_WGL::InitAPI(const ShaderAPIParams& params)
 {
 	int multiSamplingMode = params.multiSamplingMode;
 
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
-	m_hwnd = (HWND)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
-	m_hdc = (HDC)params.windowInfo.get(shaderAPIWindowInfo_t::DISPLAY);
+	m_hwnd = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
+	m_hdc = (HDC)params.windowInfo.get(RenderWindowInfo::DISPLAY);
 
 	// Enumerate display devices
 	int monitorCounter = r_screen->GetInt();

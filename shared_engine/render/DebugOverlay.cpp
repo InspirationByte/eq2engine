@@ -53,7 +53,7 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 {
 	ColorRGBA color2(0.2,0.2,0.2,0.8);
 
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -733,7 +733,7 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 	pFont->RenderText("0", Vector2D(x_pos + 5, y_pos), textStl);
 	pFont->RenderText(EqString::Format("%.2f", graph->maxValue).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl);
 
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 

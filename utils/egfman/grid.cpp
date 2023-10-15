@@ -27,12 +27,12 @@ void DrawWorldCenter()
 	ListLine(Vector3D(0,-F_INFINITY,0),Vector3D(0, F_INFINITY,0), grid_vertices);
 	ListLine(Vector3D(0,0,-F_INFINITY),Vector3D(0,0, F_INFINITY), grid_vertices);
 
-	DepthStencilStateParams_t depth;
+	DepthStencilStateParams depth;
 	depth.depthTest = false;
 	depth.depthWrite = false;
 	depth.depthFunc = COMPFUNC_LEQUAL;
 
-	RasterizerStateParams_t raster;
+	RasterizerStateParams raster;
 	raster.cullMode = CULL_BACK;
 	raster.fillMode = FILL_SOLID;
 	raster.multiSample = true;

@@ -251,7 +251,7 @@ void CAnimatedModel::RenderPhysModel()
 	if(physData.numShapes == 0)
 		return;
 
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 

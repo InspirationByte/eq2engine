@@ -58,7 +58,7 @@ void CD3D9VertexFormat::GenVertexElement(D3DVERTEXELEMENT9* elems)
 		// if not unused
 		if(fmtdesc.attribType != VERTEXATTRIB_UNUSED)
 		{
-			const ER_VertexAttribType attribType = static_cast<ER_VertexAttribType>(fmtdesc.attribType & VERTEXATTRIB_MASK);
+			const EVertAttribType attribType = static_cast<EVertAttribType>(fmtdesc.attribType & VERTEXATTRIB_MASK);
 
 			ASSERT_MSG(size - 1 < elementsOf(g_d3d9_decltypes[fmtdesc.attribFormat]), "VertexFormat size - incorrectly set up");
 

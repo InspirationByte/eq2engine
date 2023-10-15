@@ -16,6 +16,10 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "TextureLoader.h"
 
+#define TEXTURE_DEFAULT_EXTENSION		".dds"
+#define TEXTURE_SECONDARY_EXTENSION		".tga"
+#define TEXTURE_ANIMATED_EXTENSION		".ati"			// ATI - Animated Texture Index file
+
 DECLARE_CVAR(r_reportTextureLoading, "0", "Echo textrue loading", 0);
 DECLARE_CVAR(r_skipTextureLoading, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_noMip, "0", nullptr, CV_CHEAT);
@@ -144,7 +148,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 		if (isLoaded)
 		{
-			const ShaderAPICaps_t& caps = g_renderAPI->GetCaps();
+			const ShaderAPICaps& caps = g_renderAPI->GetCaps();
 
 			if(!caps.textureFormatsSupported[img->GetFormat()])
 			{

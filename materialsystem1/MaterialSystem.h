@@ -119,17 +119,17 @@ public:
 	//-----------------------------
 
 	// draws primitives for 2D
-	void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
+	void							DrawPrimitives2DFFP(	EPrimTopology type, Vertex2D_t *pVerts, int nVerts,
 															const ITexturePtr& pTexture = nullptr, const ColorRGBA &color = color_white,
-															BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
-															RasterizerStateParams_t* rasterParams = nullptr);
+															BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+															RasterizerStateParams* rasterParams = nullptr);
 
 	//-----------------------------
 	// Shader dynamic states
 	//-----------------------------
 
-	ER_CullMode						GetCurrentCullMode() const;
-	void							SetCullMode(ER_CullMode cullMode);
+	ECullMode						GetCurrentCullMode() const;
+	void							SetCullMode(ECullMode cullMode);
 
 	void							SetSkinningEnabled( bool bEnable );
 	bool							IsSkinningEnabled() const;
@@ -161,30 +161,30 @@ public:
 	//-----------------------------
 
 	// sets blending
-	void							SetBlendingStates(const BlendStateParam_t& blend);
+	void							SetBlendingStates(const BlendStateParams& blend);
 
 	// sets depth stencil state
-	void							SetDepthStates(const DepthStencilStateParams_t& depth);
+	void							SetDepthStates(const DepthStencilStateParams& depth);
 
 	// sets rasterizer extended mode
-	void							SetRasterizerStates(const RasterizerStateParams_t& raster);
+	void							SetRasterizerStates(const RasterizerStateParams& raster);
 
 
 	// sets blending
-	void							SetBlendingStates(	ER_BlendFactor nSrcFactor,
-																ER_BlendFactor nDestFactor,
-																ER_BlendFunction nBlendingFunc = BLENDFUNC_ADD,
+	void							SetBlendingStates(	EBlendFactor nSrcFactor,
+																EBlendFactor nDestFactor,
+																EBlendFunction nBlendingFunc = BLENDFUNC_ADD,
 																int colormask = COLORMASK_ALL
 																);
 
 	// sets depth stencil state
 	void							SetDepthStates(	bool bDoDepthTest,
 															bool bDoDepthWrite,
-															ER_CompareFunc depthCompFunc = COMPFUNC_LEQUAL);
+															ECompareFunc depthCompFunc = COMPFUNC_LEQUAL);
 
 	// sets rasterizer extended mode
-	void							SetRasterizerStates(	ER_CullMode nCullMode,
-																	ER_FillMode nFillMode = FILL_SOLID,
+	void							SetRasterizerStates(	ECullMode nCullMode,
+																	EFillMode nFillMode = FILL_SOLID,
 																	bool bMultiSample = true,
 																	bool bScissor = false,
 																	bool bPolyOffset = false
@@ -225,10 +225,10 @@ public:
 	void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar);
 
 	// sets up a matrix, projection, view, and world
-	void							SetMatrix(ER_MatrixMode mode, const Matrix4x4 &matrix);
+	void							SetMatrix(EMatrixMode mode, const Matrix4x4 &matrix);
 
 	// returns a typed matrix
-	void							GetMatrix(ER_MatrixMode mode, Matrix4x4 &matrix);
+	void							GetMatrix(EMatrixMode mode, Matrix4x4 &matrix);
 
 	// retunrs multiplied matrix
 	void							GetWorldViewProjection(Matrix4x4 &matrix);
@@ -305,7 +305,7 @@ private:
 	Array<proxyfactory_t>			m_proxyFactoryList{ PP_SL };
 
 	Map<int, IMaterial*>			m_loadedMaterials{ PP_SL };			// loaded material list
-	ER_CullMode						m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
+	ECullMode						m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	CDynamicMesh					m_dynamicMesh;
 

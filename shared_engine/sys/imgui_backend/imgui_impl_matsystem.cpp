@@ -30,7 +30,7 @@ static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data)
 
 	//materials->Setup2D(draw_data->DisplaySize.x, draw_data->DisplaySize.y);
 
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 

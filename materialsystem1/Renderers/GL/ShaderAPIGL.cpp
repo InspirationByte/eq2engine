@@ -124,7 +124,7 @@ bool GLCheckError(const char* op, ...)
 	return true;
 }
 
-void InitGLHardwareCapabilities(ShaderAPICaps_t& caps)
+void InitGLHardwareCapabilities(ShaderAPICaps& caps)
 {
 	memset(&caps, 0, sizeof(caps));
 
@@ -280,7 +280,7 @@ void ShaderAPIGL::PrintAPIInfo() const
 }
 
 // Init + Shurdown
-void ShaderAPIGL::Init( const shaderAPIParams_t &params)
+void ShaderAPIGL::Init( const ShaderAPIParams &params)
 {
 	Msg("Initializing OpenGL Shader API...\n");
 
@@ -445,7 +445,7 @@ void ShaderAPIGL::ApplyBlendState()
 		}
 		else
 		{
-			BlendStateParam_t& state = pSelectedState->m_params;
+			BlendStateParams& state = pSelectedState->m_params;
 		
 			if (state.blendEnable)
 			{
@@ -507,8 +507,8 @@ void ShaderAPIGL::ApplyDepthState()
 
 	if (pSelectedState != m_pCurrentDepthState)
 	{
-		const DepthStencilStateParams_t& newState = pSelectedState->m_params;
-		const DepthStencilStateParams_t& prevState = pCurrentState->m_params;
+		const DepthStencilStateParams& newState = pSelectedState->m_params;
+		const DepthStencilStateParams& prevState = pCurrentState->m_params;
 		
 		if (newState.depthTest != prevState.depthTest)
 		{
@@ -576,7 +576,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 		}
 		else
 		{
-			RasterizerStateParams_t& state = pSelectedState->m_params;
+			RasterizerStateParams& state = pSelectedState->m_params;
 		
 			if (state.cullMode != m_nCurrentCullMode)
 			{
@@ -806,9 +806,9 @@ void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 // It will add new rendertarget
 ITexturePtr ShaderAPIGL::CreateRenderTarget(	const char* pszName,
 												int width, int height,
-												ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType,
-												ER_TextureAddressMode textureAddress,
-												ER_CompareFunc comparison,
+												ETextureFormat nRTFormat, ETexFilterMode textureFilterType,
+												ETexAddressMode textureAddress,
+												ECompareFunc comparison,
 												int nFlags)
 {
 	CRefPtr<CGLTexture> pTexture = CRefPtr_new(CGLTexture);
@@ -1720,7 +1720,7 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 }
 
 // Load any shader from stream
-bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderProgramCompileInfo_t& info, const char* extra)
+bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const ShaderProgCompileInfo& info, const char* extra)
 {
 	if(!pShaderOutput)
 		return false;
@@ -1932,7 +1932,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 	if(cdata.fsResult && cdata.vsResult)
 	{
-		const shaderProgramCompileInfo_t* pInfo = &info;
+		const ShaderProgCompileInfo* pInfo = &info;
 
 		EGraphicsVendor vendor = m_vendor;
 
@@ -2227,7 +2227,7 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, ArrayCRef<Verte
 	return pVertexFormat;
 }
 
-IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void* pData )
+IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void* pData )
 {
 	CVertexBufferGL* pVB = PPNew CVertexBufferGL();
 
@@ -2283,7 +2283,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 	return pVB;
 }
 
-IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData )
+IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData )
 {
 	CIndexBufferGL* pIB = PPNew CIndexBufferGL();
 
@@ -2446,7 +2446,7 @@ PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
 };
 
 // Indexed primitive drawer
-void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
+void ShaderAPIGL::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
 
@@ -2489,7 +2489,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 }
 
 // Draw elements
-void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
+void ShaderAPIGL::DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices)
 {
 	if(m_pCurrentVertexFormat == nullptr)
 		return;
@@ -2527,7 +2527,7 @@ bool ShaderAPIGL::IsDeviceActive() const
 //-------------------------------------------------------------
 
 // creates blending state
-IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDesc )
+IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParams &blendDesc )
 {
 	CGLBlendingState* pState = nullptr;
 
@@ -2567,7 +2567,7 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDe
 }
 
 // creates depth/stencil state
-IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
+IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParams &depthDesc )
 {
 	CGLDepthStencilState* pState = nullptr;
 
@@ -2614,7 +2614,7 @@ IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParam
 }
 
 // creates rasterizer state
-IRenderState* ShaderAPIGL::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
+IRenderState* ShaderAPIGL::CreateRasterizerState( const RasterizerStateParams &rasterDesc )
 {
 	CGLRasterizerState* pState = nullptr;
 

@@ -16,7 +16,7 @@ public:
 	~CMeshBuilder();
 
 	// begins the mesh
-	void		Begin(ER_PrimitiveType type);
+	void		Begin(EPrimTopology type);
 
 	// ends building and renders the mesh
 	void		End(bool render = true);
@@ -107,7 +107,7 @@ protected:
 
 		int8				offset;
 		int8				count;
-		ER_AttributeFormat	format;
+		EVertAttribFormat	format;
 		Vector4D			value;
 	};
 
@@ -141,8 +141,8 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	int vertexSize = 0;
 	for(int i = 0; i < m_formatDesc.numElem(); i++)
 	{
-		const ER_AttributeFormat format = m_formatDesc[i].attribFormat;
-		const ER_VertexAttribType type = static_cast<ER_VertexAttribType>(m_formatDesc[i].attribType & VERTEXATTRIB_MASK);
+		const EVertAttribFormat format = m_formatDesc[i].attribFormat;
+		const EVertAttribType type = static_cast<EVertAttribType>(m_formatDesc[i].attribType & VERTEXATTRIB_MASK);
 		const int vecCount = m_formatDesc[i].elemCount;
 		const int attribSize = vecCount * s_attributeSize[format];
 
@@ -184,7 +184,7 @@ inline CMeshBuilder::~CMeshBuilder()
 }
 
 // begins the mesh
-inline void CMeshBuilder::Begin(ER_PrimitiveType type)
+inline void CMeshBuilder::Begin(EPrimTopology type)
 {
 	m_mesh->Reset();
 	m_mesh->SetPrimitiveType(type);
@@ -488,7 +488,7 @@ inline void CMeshBuilder::Triangle3(const Vector3D& v1, const Vector3D& v2, cons
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br)
 {
-	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
+	EPrimTopology primType = m_mesh->GetPrimitiveType();
 	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
@@ -539,7 +539,7 @@ inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, cons
 inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br,
 										const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br)
 {
-	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
+	EPrimTopology primType = m_mesh->GetPrimitiveType();
 	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
@@ -593,7 +593,7 @@ inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Quad3(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3, const Vector3D& v4)
 {
-	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
+	EPrimTopology primType = m_mesh->GetPrimitiveType();
 	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
@@ -644,7 +644,7 @@ inline void CMeshBuilder::Quad3(const Vector3D& v1, const Vector3D& v2, const Ve
 inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3, const Vector3D& v4,
 										const Vector2D& t1, const Vector2D& t2, const Vector2D& t3,const Vector2D& t4)
 {
-	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
+	EPrimTopology primType = m_mesh->GetPrimitiveType();
 	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;

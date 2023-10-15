@@ -132,7 +132,7 @@ public:
 								~ShaderAPIEmpty() {}
 
 	// Init + Shurdown
-	void						Init(const shaderAPIParams_t &params) 
+	void						Init(const ShaderAPIParams &params) 
 	{
 		memset(&m_caps, 0, sizeof(m_caps));
 		ShaderAPI_Base::Init(params);
@@ -163,7 +163,7 @@ public:
 //-------------------------------------------------------------
 
 	// shader API class type for shader developers.
-	ER_ShaderAPIType			GetShaderAPIClass() {return SHADERAPI_EMPTY;}
+	EShaderAPIType			GetShaderAPIClass() {return SHADERAPI_EMPTY;}
 
 	// Device vendor and version
 	const char*					GetDeviceNameString() const {return "nullptr device";}
@@ -194,7 +194,7 @@ public:
 //-------------------------------------------------------------
 
 	// It will add new rendertarget
-	ITexturePtr					CreateRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0)
+	ITexturePtr					CreateRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR, ETexAddressMode textureAddress = TEXADDRESS_WRAP, ECompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0)
 	{
 		CRefPtr<CEmptyTexture> pTexture = CRefPtr_new(CEmptyTexture);
 		pTexture->SetName(pszName);
@@ -264,13 +264,13 @@ public:
 //-------------------------------------------------------------
 
 	// creates blending state
-	IRenderState*				CreateBlendingState( const BlendStateParam_t &blendDesc ) {return nullptr;}
+	IRenderState*				CreateBlendingState( const BlendStateParams &blendDesc ) {return nullptr;}
 
 	// creates depth/stencil state
-	IRenderState*				CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc ) {return nullptr;}
+	IRenderState*				CreateDepthStencilState( const DepthStencilStateParams &depthDesc ) {return nullptr;}
 
 	// creates rasterizer state
-	IRenderState*				CreateRasterizerState( const RasterizerStateParams_t &rasterDesc ) {return nullptr;}
+	IRenderState*				CreateRasterizerState( const RasterizerStateParams &rasterDesc ) {return nullptr;}
 
 	// completely destroys shader
 	void						DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) {}
@@ -287,7 +287,7 @@ public:
 
 	// Load any shader from stream
 	bool						CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-															const shaderProgramCompileInfo_t& info,
+															const ShaderProgCompileInfo& info,
 															const char* extra = nullptr){return true;}
 
 	// Set current shader for rendering
@@ -309,18 +309,18 @@ public:
 		m_VFList.append(pVF);
 		return pVF;
 	}
-	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr){return new CEmptyVertexBuffer(strideSize);}
-	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr){return new CEmptyIndexBuffer(nIndexSize);}
+	IVertexBuffer*				CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr){return new CEmptyVertexBuffer(strideSize);}
+	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData = nullptr){return new CEmptyIndexBuffer(nIndexSize);}
 
 //-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)
 //-------------------------------------------------------------
 
 	// Indexed primitive drawer
-	void						DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0){}
+	void						DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0){}
 
 	// Draw elements
-	void						DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices){}
+	void						DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices){}
 
 protected:
 

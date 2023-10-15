@@ -13,13 +13,13 @@
 struct FilterTypeString_s
 {
 	const char*				name;
-	ER_TextureFilterMode	type;
+	ETexFilterMode	type;
 };
 
 struct AddressingTypeString_s
 {
 	const char*				name;
-	ER_TextureAddressMode	mode;
+	ETexAddressMode	mode;
 };
 
 static const FilterTypeString_s s_textureFilterTypes[] = {
@@ -30,7 +30,7 @@ static const FilterTypeString_s s_textureFilterTypes[] = {
 	{ "aniso",		TEXFILTER_TRILINEAR_ANISO },
 };
 
-static ER_TextureFilterMode ResolveFilterType(const char* string)
+static ETexFilterMode ResolveFilterType(const char* string)
 {
 	for(int i = 0; i < elementsOf(s_textureFilterTypes); i++)
 	{
@@ -42,7 +42,7 @@ static ER_TextureFilterMode ResolveFilterType(const char* string)
 	return TEXFILTER_TRILINEAR_ANISO;
 }
 
-static ER_TextureAddressMode ResolveAddressType(const char* string)
+static ETexAddressMode ResolveAddressType(const char* string)
 {
 	if(!stricmp(string,"wrap"))
 		return TEXADDRESS_WRAP;
@@ -242,7 +242,7 @@ MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorT
 	if(mv.IsValid()) 
 	{
 		SamplerStateParams samplerParams;
-		SamplerStateParams_Make(samplerParams, g_renderAPI->GetCaps(), (ER_TextureFilterMode)m_texFilter, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode);
+		SamplerStateParams_Make(samplerParams, g_renderAPI->GetCaps(), (ETexFilterMode)m_texFilter, (ETexAddressMode)m_texAddressMode, (ETexAddressMode)m_texAddressMode, (ETexAddressMode)m_texAddressMode);
 
 		if(mv.Get().Length())
 			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
@@ -299,17 +299,17 @@ void CBaseShader::ParamSetup_RasterState()
 {
 	const materialsRenderSettings_t& config = g_matSystem->GetConfiguration();
 
-	ER_CullMode cull_mode = g_matSystem->GetCurrentCullMode();
+	ECullMode cull_mode = g_matSystem->GetCurrentCullMode();
 	if(config.wireframeMode && config.editormode)
 		cull_mode = CULL_NONE;
 
-	g_matSystem->SetRasterizerStates(cull_mode, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
+	g_matSystem->SetRasterizerStates(cull_mode, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
 void CBaseShader::ParamSetup_RasterState_NoCull()
 {
 	const materialsRenderSettings_t& config = g_matSystem->GetConfiguration();
-	g_matSystem->SetRasterizerStates(CULL_NONE, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
+	g_matSystem->SetRasterizerStates(CULL_NONE, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
 void CBaseShader::ParamSetup_Transform()

@@ -48,7 +48,7 @@ ShaderAPI_Base::ShaderAPI_Base()
 }
 
 // Init + Shurdown
-void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
+void ShaderAPI_Base::Init( const ShaderAPIParams &params )
 {
 	m_params = params;
 
@@ -404,8 +404,8 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 													int width, int height,
 													int depth,
 													int arraySize,
-													ER_TextureFilterMode texFilter,
-													ER_TextureAddressMode textureAddress,
+													ETexFilterMode texFilter,
+													ETexAddressMode textureAddress,
 													int nFlags,
 													int nDataSize, const unsigned char* pData)
 {
@@ -590,7 +590,7 @@ IVertexFormat* ShaderAPI_Base::FindVertexFormat(const char* name) const
 struct shaderCompileJob_t
 {
 	eqParallelJob_t base;
-	shaderProgramCompileInfo_t info;
+	ShaderProgCompileInfo info;
 	IShaderAPI* thisShaderAPI;
 	IShaderProgram* program;
 	EqString filePrefix;
@@ -605,7 +605,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	PROF_EVENT("ShaderAPI Load-Build Shaders");
 
-	shaderProgramCompileInfo_t info;
+	ShaderProgCompileInfo info;
 	EqString fileNameFX = EqString::Format("%s.fx", pszFilePrefix);
 
 	bool vsRequiried = true;	// vertex shader is always required
@@ -674,7 +674,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	auto loadShaderFile = [](char* filename, size_t *plen, void* userData) -> char*
 	{
-		shaderProgramCompileInfo_t& compileInfo = *static_cast<shaderProgramCompileInfo_t*>(userData);
+		ShaderProgCompileInfo& compileInfo = *static_cast<ShaderProgCompileInfo*>(userData);
 		compileInfo.data.includes.append(filename);
 
 		IFilePtr file = g_fileSystem->Open(filename, "rb");

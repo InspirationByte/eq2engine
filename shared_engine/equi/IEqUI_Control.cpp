@@ -523,7 +523,7 @@ void IUIControl::GetCalcFontStyle(eqFontStyleParam_t& style) const
 
 inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
@@ -566,7 +566,7 @@ void IUIControl::Render(int depth)
 	if(!m_visible)
 		return;
 
-	RasterizerStateParams_t rasterState;
+	RasterizerStateParams rasterState;
 	//rasterState.fillMode = FILL_SOLID;
 	rasterState.cullMode = CULL_NONE;
 	rasterState.scissor = true;

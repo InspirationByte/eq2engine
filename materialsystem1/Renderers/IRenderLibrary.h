@@ -8,7 +8,7 @@
 #pragma once
 #include "core/InterfaceManager.h"
 
-struct shaderAPIParams_t;
+struct ShaderAPIParams;
 class IEqSwapChain;
 class IShaderAPI;
 class CImage;
@@ -19,7 +19,7 @@ class IRenderManager : public IEqCoreModule
 public:
 	CORE_INTERFACE("E1RenderManager_001")
 
-	virtual IRenderLibrary* CreateRenderer(const shaderAPIParams_t &params) const = 0;
+	virtual IRenderLibrary* CreateRenderer(const ShaderAPIParams &params) const = 0;
 
 	bool					IsInitialized() const { return true; };
 };
@@ -30,7 +30,7 @@ class IRenderLibrary
 public:
 	virtual bool			InitCaps() = 0;
 
-	virtual bool			InitAPI(const shaderAPIParams_t &params ) = 0;
+	virtual bool			InitAPI(const ShaderAPIParams &params ) = 0;
 	virtual void			ExitAPI() = 0;
 	virtual void			ReleaseSwapChains() = 0;
 

@@ -241,7 +241,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 					g_matSystem->Apply();
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
-					g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
+					g_renderAPI->DrawIndexedPrimitives((EPrimTopology)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
 				}
 			} // mGrp
 		} // bodyGrp

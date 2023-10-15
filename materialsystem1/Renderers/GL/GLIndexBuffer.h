@@ -46,7 +46,7 @@ protected:
 	int				m_nIndices;
 	int				m_nIndexSize;
 
-	ER_BufferAccess	m_access;
+	EBufferAccessType	m_access;
 
 	ubyte*			m_lockPtr;
 	int				m_lockOffs;

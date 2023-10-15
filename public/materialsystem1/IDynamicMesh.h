@@ -8,7 +8,7 @@
 #pragma once
 
 struct VertexFormatDesc;
-enum ER_PrimitiveType : int;
+enum EPrimTopology : int;
 
 //
 // The dynamic mesh interface
@@ -19,8 +19,8 @@ public:
 	virtual ~IDynamicMesh() {}
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
-	virtual void				SetPrimitiveType( ER_PrimitiveType primType ) = 0;
-	virtual ER_PrimitiveType	GetPrimitiveType() const = 0;
+	virtual void			SetPrimitiveType( EPrimTopology primType ) = 0;
+	virtual EPrimTopology	GetPrimitiveType() const = 0;
 
 	// returns a pointer to vertex format description
 	virtual ArrayCRef<VertexFormatDesc>	GetVertexFormatDesc() const = 0;

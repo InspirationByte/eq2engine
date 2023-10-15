@@ -8,7 +8,7 @@ public:
     CEqRenderManager();
     ~CEqRenderManager();
 
-	IRenderLibrary* CreateRenderer(const shaderAPIParams_t &params) const;
+	IRenderLibrary* CreateRenderer(const ShaderAPIParams &params) const;
 
     IRenderLibrary* GetRenderer() const;
 };

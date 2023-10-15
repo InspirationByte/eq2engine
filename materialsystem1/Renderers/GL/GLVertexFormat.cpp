@@ -26,7 +26,7 @@ CVertexFormatGL::CVertexFormatGL(const char* name, const VertexFormatDesc* desc,
 		for (int i = 0; i < numAttribs; i++)
 		{
 			const VertexFormatDesc& fmtdesc = m_vertexDesc[i];
-			const ER_VertexAttribType attribType = static_cast<ER_VertexAttribType>(fmtdesc.attribType & VERTEXATTRIB_MASK);
+			const EVertAttribType attribType = static_cast<EVertAttribType>(fmtdesc.attribType & VERTEXATTRIB_MASK);
 			const int stream = fmtdesc.streamId;
 
 			switch (attribType)

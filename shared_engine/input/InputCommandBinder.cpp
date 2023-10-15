@@ -638,7 +638,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParams.textColor = color_white;
 
-	BlendStateParam_t blending;
+	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 

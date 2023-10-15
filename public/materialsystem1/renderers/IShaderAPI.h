@@ -37,7 +37,7 @@ enum ERHIWindowType : int
 
 
 // designed to be sent as windowHandle param
-struct shaderAPIWindowInfo_t
+struct RenderWindowInfo
 {
 	enum Attribute
 	{
@@ -53,19 +53,41 @@ struct shaderAPIWindowInfo_t
 };
 
 // shader api initializer
-struct shaderAPIParams_t
+struct ShaderAPIParams
 {
-	shaderAPIWindowInfo_t	windowInfo;
-	ETextureFormat			screenFormat{ FORMAT_RGB8 };		// screen back buffer format
+	RenderWindowInfo	windowInfo;
+	ETextureFormat		screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
-	int						screenRefreshRateHZ{ 60 };			// refresh rate in HZ
-	int						multiSamplingMode{ 0 };				// multisampling
-	int						depthBits{ 24 };					// bit depth for depth/stencil
+	int					screenRefreshRateHZ{ 60 };			// refresh rate in HZ
+	int					multiSamplingMode{ 0 };				// multisampling
+	int					depthBits{ 24 };					// bit depth for depth/stencil
 
-	bool					verticalSyncEnabled{ false };		// vertical syncronization
+	bool				verticalSyncEnabled{ false };		// vertical syncronization
 };
 
+struct TextureInfo
+{
+	const char*			name{ nullptr };
+	IVector2D			dimensions{ 0 };
+	ETextureFormat		format{ FORMAT_RGBA8 };
+	ETexFilterMode		textureFilterType{ TEXFILTER_LINEAR };
+	ETexAddressMode		textureAddress{ TEXADDRESS_WRAP };
+	ECompareFunc		comparison{ COMPFUNC_NEVER };
+	int					flags = 0;
 
+	const ubyte*		data = nullptr;
+	int					dataSize = 0;
+};
+
+struct BufferInfo
+{
+	EBufferAccessType	accessType{ BUFFER_STATIC };
+	int					elementCapacity{ 0 };
+	int					elementSize{ 0 };
+	int					flags{ 0 };
+	const void*			data{ nullptr };
+	int					dataSize{ 0 };
+};
 
 //
 // ShaderAPI interface
@@ -77,21 +99,21 @@ public:
 
 	// initializes shader api.
 	// Don't use this, this already called by materials->Init()
-	virtual void				Init( const shaderAPIParams_t &params ) = 0;
+	virtual void				Init( const ShaderAPIParams &params ) = 0;
 
 	// shutdowns shader api. Don't use this, this already called by materials->Shutdown()
 	virtual void				Shutdown() = 0;
 
 	// returns the parameters
-	virtual const shaderAPIParams_t&	GetParams() const = 0;
+	virtual const ShaderAPIParams&	GetParams() const = 0;
 
 //-------------------------------------------------------------
 // Renderer capabilities and information
 //-------------------------------------------------------------
 
-	virtual const ShaderAPICaps_t&	GetCaps() const = 0;
+	virtual const ShaderAPICaps&	GetCaps() const = 0;
 
-	virtual ER_ShaderAPIType	GetShaderAPIClass() const = 0;
+	virtual EShaderAPIType		GetShaderAPIClass() const = 0;
 	virtual const char*			GetRendererName() const = 0;
 	virtual const char*			GetDeviceNameString() const = 0;
 	virtual void				PrintAPIInfo() const = 0;
@@ -116,14 +138,18 @@ public:
 	virtual void				Finish() = 0;
 
 //-------------------------------------------------------------
-// Vertex buffer objects creation/destroying
+// Pipeline state layout
 //-------------------------------------------------------------
 
 	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexFormatDesc> formatDesc ) = 0;
 	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
 
-	virtual IVertexBuffer*		CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr ) = 0;
-	virtual IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr) = 0;
+//-------------------------------------------------------------
+// Buffer objects
+//-------------------------------------------------------------
+
+	virtual IVertexBuffer*		CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr ) = 0;
+	virtual IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData = nullptr) = 0;
 
 	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
 	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
@@ -139,7 +165,7 @@ public:
 	virtual void				DestroyShaderProgram(IShaderProgram* pShaderProgram) = 0;
 
 	virtual bool				LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
-	virtual bool				CompileShadersFromStream(IShaderProgram* pShaderOutput, const shaderProgramCompileInfo_t& info, const char* extra = nullptr) = 0;
+	virtual bool				CompileShadersFromStream(IShaderProgram* pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
 
 //-------------------------------------------------------------
 // Occlusion query management
@@ -173,8 +199,8 @@ public:
 														int width, int height,
 														int depth = 1,
 														int arraySize = 1,
-														ER_TextureFilterMode texFilter = TEXFILTER_NEAREST,
-														ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
+														ETexFilterMode texFilter = TEXFILTER_NEAREST,
+														ETexAddressMode textureAddress = TEXADDRESS_WRAP,
 														int nFlags = 0,
 														int nDataSize = 0, const unsigned char* pData = nullptr
 														) = 0;
@@ -182,9 +208,9 @@ public:
 	virtual ITexturePtr			CreateRenderTarget(const char* pszName,
 													int width, int height,
 													ETextureFormat nRTFormat,
-													ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
-													ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-													ER_CompareFunc comparison = COMPFUNC_NEVER,
+													ETexFilterMode textureFilterType = TEXFILTER_LINEAR,
+													ETexAddressMode textureAddress = TEXADDRESS_WRAP,
+													ECompareFunc comparison = COMPFUNC_NEVER,
 													int nFlags = 0
 													) = 0;
 
@@ -192,9 +218,9 @@ public:
 // Render states management
 //-------------------------------------------------------------
 
-	virtual IRenderState*		CreateBlendingState( const BlendStateParam_t &blendDesc ) = 0;
-	virtual IRenderState*		CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc ) = 0;
-	virtual IRenderState*		CreateRasterizerState( const RasterizerStateParams_t &rasterDesc ) = 0;
+	virtual IRenderState*		CreateBlendingState( const BlendStateParams &blendDesc ) = 0;
+	virtual IRenderState*		CreateDepthStencilState( const DepthStencilStateParams &depthDesc ) = 0;
+	virtual IRenderState*		CreateRasterizerState( const RasterizerStateParams &rasterDesc ) = 0;
 	virtual void				DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) = 0;
 
 //-------------------------------------------------------------
@@ -202,12 +228,12 @@ public:
 //-------------------------------------------------------------
 
 	// clear current rendertarget
-	virtual void				Clear(	bool bClearColor,
-										bool bClearDepth = true,
-										bool bClearStencil = true,
-										const ColorRGBA &fillColor = ColorRGBA(0),
-										float fDepth = 1.0f,
-										int nStencil = 0
+	virtual void				Clear(	bool color,
+										bool depth = true,
+										bool stencil = true,
+										const ColorRGBA& fillColor = ColorRGBA(0),
+										float depthValue = 1.0f,
+										int stencilValue = 0
 										) = 0;
 
 	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
@@ -289,8 +315,8 @@ public:
 // Primitive drawing
 //-------------------------------------------------------------
 
-	virtual void				DrawIndexedPrimitives(ER_PrimitiveType nType, int firstIndex, int indices, int firstVertex, int vertices, int baseVertex = 0) = 0;
-	virtual void				DrawNonIndexedPrimitives(ER_PrimitiveType nType, int firstVertex, int vertices) = 0;
+	virtual void				DrawIndexedPrimitives(EPrimTopology nType, int firstIndex, int indices, int firstVertex, int vertices, int baseVertex = 0) = 0;
+	virtual void				DrawNonIndexedPrimitives(EPrimTopology nType, int firstVertex, int vertices) = 0;
 };
 
 template<typename ARRAY_TYPE>

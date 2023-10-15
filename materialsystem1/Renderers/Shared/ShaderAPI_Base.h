@@ -41,10 +41,10 @@ public:
 	ShaderAPI_Base();
 
 	// Init + Shurdown
-	virtual void				Init( const shaderAPIParams_t &params );
+	virtual void				Init( const ShaderAPIParams &params );
 	virtual void				Shutdown();
 
-	const shaderAPIParams_t&	GetParams() const { return m_params; }
+	const ShaderAPIParams&	GetParams() const { return m_params; }
 
 	virtual void				SetViewport(int x, int y, int w, int h);
 
@@ -71,9 +71,9 @@ public:
 // Renderer information
 //-------------------------------------------------------------
 
-	const ShaderAPICaps_t&		GetCaps() const {return m_caps;}
+	const ShaderAPICaps&		GetCaps() const {return m_caps;}
 
-	virtual ER_ShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_EMPTY;}
+	virtual EShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_EMPTY;}
 
 	// Draw call counter
 	int							GetDrawCallsCount() const;
@@ -109,8 +109,8 @@ public:
 														int width, int height,
 														int depth = 1,
 														int arraySize = 1,
-														ER_TextureFilterMode texFilter = TEXFILTER_NEAREST,
-														ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
+														ETexFilterMode texFilter = TEXFILTER_NEAREST,
+														ETexAddressMode textureAddress = TEXADDRESS_WRAP,
 														int nFlags = 0,
 														int nDataSize = 0, const unsigned char* pData = nullptr
 														);
@@ -185,8 +185,8 @@ protected:
 // Useful data
 //-------------------------------------------------------------
 
-	shaderAPIParams_t			m_params;
-	ShaderAPICaps_t				m_caps;
+	ShaderAPIParams			m_params;
+	ShaderAPICaps				m_caps;
 
 	Map<int, IShaderProgram*>	m_ShaderList{ PP_SL };
 	Map<int, ITexture*>			m_TextureList{ PP_SL };

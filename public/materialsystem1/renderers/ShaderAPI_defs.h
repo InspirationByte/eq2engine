@@ -54,7 +54,7 @@ static int s_constantTypeSizes[CONSTANT_TYPE_COUNT] = {
 };
 
 // Texture filtering type for SetTextureFilteringMode()
-enum ER_TextureFilterMode : int
+enum ETexFilterMode : int
 {
 	TEXFILTER_NEAREST	= 0,
 	TEXFILTER_LINEAR,
@@ -64,17 +64,17 @@ enum ER_TextureFilterMode : int
 	TEXFILTER_TRILINEAR_ANISO,
 };
 
-inline bool HasMipmaps(ER_TextureFilterMode filter)
+inline bool HasMipmaps(ETexFilterMode filter)
 {
 	return (filter >= TEXFILTER_BILINEAR);
 }
 
-inline bool HasAniso(ER_TextureFilterMode filter)
+inline bool HasAniso(ETexFilterMode filter)
 {
 	return (filter >= TEXFILTER_BILINEAR_ANISO);
 }
 
-enum ER_MatrixMode : int
+enum EMatrixMode : int
 {
 	MATRIXMODE_VIEW	= 0,			// view tranformation matrix
 	MATRIXMODE_PROJECTION,			// projection mode matrix
@@ -86,7 +86,7 @@ enum ER_MatrixMode : int
 };
 
 // for SetTextureClamp()
-enum ER_TextureAddressMode : int
+enum ETexAddressMode : int
 {
 	TEXADDRESS_WRAP	= 0,
 	TEXADDRESS_CLAMP,
@@ -94,7 +94,7 @@ enum ER_TextureAddressMode : int
 };
 
 // for mesh builder and type of drawing the world model
-enum ER_PrimitiveType : int
+enum EPrimTopology : int
 {
 	PRIM_TRIANGLES      = 0,
 	PRIM_TRIANGLE_FAN,
@@ -144,7 +144,7 @@ static int PrimCount_None( int )
 }
 
 // Vertex type
-enum ER_VertexAttribType : int
+enum EVertAttribType : int
 {
 	VERTEXATTRIB_UNUSED		= 0,
 
@@ -159,13 +159,13 @@ enum ER_VertexAttribType : int
 	VERTEXATTRIB_MASK = 31
 };
 
-enum ER_VertexAttribFlag : int
+enum EVertAttribFlags : int
 {
 	VERTEXATTRIB_FLAG_INSTANCE = (1 << 15)
 };
 
 // Attribute format
-enum ER_AttributeFormat : int
+enum EVertAttribFormat : int
 {
 	ATTRIBUTEFORMAT_FLOAT = 0,
 	ATTRIBUTEFORMAT_HALF,
@@ -180,7 +180,7 @@ static int s_attributeSize[] =
 };
 
 // Buffer access type (for VBO)
-enum ER_BufferAccess : int
+enum EBufferAccessType : int
 {
 	BUFFER_STREAM		= 0,
 	BUFFER_STATIC,		// = 1,
@@ -193,13 +193,13 @@ struct VertexFormatDesc
 	int					elemCount{ 0 };
 
 	int					attribType{ 0 }; // also holds flags, use VERTEXATTRIB_MASK to retrieve attribute type.
-	ER_AttributeFormat	attribFormat{ ATTRIBUTEFORMAT_FLOAT };
+	EVertAttribFormat	attribFormat{ ATTRIBUTEFORMAT_FLOAT };
 
 	const char*			name{ nullptr };
 };
 
 // comparison functions
-enum ER_CompareFunc : int
+enum ECompareFunc : int
 {
 	COMPFUNC_NONE = -1,
 
@@ -215,21 +215,21 @@ enum ER_CompareFunc : int
 
 struct SamplerStateParams
 {
-	ER_TextureFilterMode		minFilter{ TEXFILTER_NEAREST };
-	ER_TextureFilterMode		magFilter{ TEXFILTER_NEAREST };
+	ETexFilterMode		minFilter{ TEXFILTER_NEAREST };
+	ETexFilterMode		magFilter{ TEXFILTER_NEAREST };
 
-	ER_CompareFunc				compareFunc{ COMPFUNC_NONE };
+	ECompareFunc				compareFunc{ COMPFUNC_NONE };
 
-	ER_TextureAddressMode		wrapS{ TEXADDRESS_WRAP };
-	ER_TextureAddressMode		wrapT{ TEXADDRESS_WRAP };
-	ER_TextureAddressMode		wrapR{ TEXADDRESS_WRAP };
+	ETexAddressMode		wrapS{ TEXADDRESS_WRAP };
+	ETexAddressMode		wrapT{ TEXADDRESS_WRAP };
+	ETexAddressMode		wrapR{ TEXADDRESS_WRAP };
 
 	int							aniso{ 4 };
 	float						lod{ 1.0f };
 	void*						userData{ nullptr };
 };
 
-static void SamplerStateParams_Make(SamplerStateParams& samplerParams, const ShaderAPICaps_t& caps, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
+static void SamplerStateParams_Make(SamplerStateParams& samplerParams, const ShaderAPICaps& caps, ETexFilterMode textureFilterType, ETexAddressMode addressS, ETexAddressMode addressT, ETexAddressMode addressR)
 {
 	// Setup filtering mode
 	samplerParams.minFilter = textureFilterType;
@@ -262,7 +262,7 @@ static void SamplerStateParams_Make(SamplerStateParams& samplerParams, const Sha
 // HOW BLENDING WORKS:
 // (TextureRGBA * SRCBlendingFactor) (Blending Function) (FrameBuffer * DSTBlendingFactor)
 
-enum ER_BlendFactor : int
+enum EBlendFactor : int
 {
 	BLENDFACTOR_ZERO					= 0,
 	BLENDFACTOR_ONE,					//	1
@@ -278,7 +278,7 @@ enum ER_BlendFactor : int
 };
 
 // Function of blending
-enum ER_BlendFunction : int
+enum EBlendFunction : int
 {
 	// Function of blending
 	BLENDFUNC_ADD				= 0,
@@ -292,7 +292,7 @@ enum ER_BlendFunction : int
 // Texture flags
 //-----------------------------------------------------------------------------
 
-enum ER_TextureFlags : int
+enum ETextureFlags : int
 {
 	// texture creation flags
 	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, might improve performance
@@ -317,7 +317,7 @@ enum ER_TextureFlags : int
 #define MAX_TEXCOORD_ATTRIB		8
 
 // Stencil-test function
-enum ER_StencilFunction : int
+enum EStencilFunction : int
 {
 	STENCILFUNC_KEEP		= 0,
 	STENCILFUNC_SET_ZERO,	// 1
@@ -331,7 +331,7 @@ enum ER_StencilFunction : int
 };
 
 // Fillmode constants
-enum ER_FillMode : int
+enum EFillMode : int
 {
 	FILL_SOLID		= 0,
 	FILL_WIREFRAME,	// 1
@@ -339,57 +339,57 @@ enum ER_FillMode : int
 };
 
 // Cull modes
-enum ER_CullMode : int
+enum ECullMode : int
 {
 	CULL_NONE		= 0,
 	CULL_BACK,		// 1
 	CULL_FRONT,		// 2
 };
 
-typedef struct BlendStateParam_s
+struct BlendStateParams
 {
-	ER_BlendFactor		srcFactor{ BLENDFACTOR_ONE };
-	ER_BlendFactor		dstFactor{ BLENDFACTOR_ZERO };
-	ER_BlendFunction	blendFunc{ BLENDFUNC_ADD };
+	EBlendFactor		srcFactor{ BLENDFACTOR_ONE };
+	EBlendFactor		dstFactor{ BLENDFACTOR_ZERO };
+	EBlendFunction	blendFunc{ BLENDFUNC_ADD };
 
 	int mask{ COLORMASK_ALL };
 
 	bool blendEnable { false };
-}BlendStateParam_t;
+};
 
-typedef struct DepthStencilStateParams_s
+struct DepthStencilStateParams
 {
 	bool					depthTest{ false };
 	bool					depthWrite{ false };
-	ER_CompareFunc			depthFunc{ COMPFUNC_LEQUAL };
+	ECompareFunc			depthFunc{ COMPFUNC_LEQUAL };
 
 	bool					doStencilTest{ false };
 	uint8					nStencilMask{ 0xFF };
 	uint8					nStencilWriteMask{ 0xFF };
 	uint8					nStencilRef{ 0xFF };
-	ER_CompareFunc			nStencilFunc{ COMPFUNC_ALWAYS };
-	ER_StencilFunction		nStencilFail{ STENCILFUNC_KEEP };
-	ER_StencilFunction		nDepthFail{ STENCILFUNC_KEEP };
-	ER_StencilFunction		nStencilPass{ STENCILFUNC_KEEP };
+	ECompareFunc			nStencilFunc{ COMPFUNC_ALWAYS };
+	EStencilFunction		nStencilFail{ STENCILFUNC_KEEP };
+	EStencilFunction		nDepthFail{ STENCILFUNC_KEEP };
+	EStencilFunction		nStencilPass{ STENCILFUNC_KEEP };
 
-}DepthStencilStateParams_t;
+};
 
-typedef struct RasterizerStateParams_s
+struct RasterizerStateParams
 {
-	ER_CullMode				cullMode{ CULL_NONE };
-	ER_FillMode				fillMode{ FILL_SOLID };
+	ECullMode				cullMode{ CULL_NONE };
+	EFillMode				fillMode{ FILL_SOLID };
 	bool					useDepthBias{ false };
 	float					depthBias{ 0.0f };
 	float					slopeDepthBias{ 0.0f };
 	bool					multiSample{ false };
 	bool					scissor{ false };
-}RasterizerStateParams_t;
+};
 
 
 //---------------------------------------
 
 // shader constant setup flags to set to shader :P
-enum ER_ShaderConstantSetup : int
+enum EShaderConstSetup : int
 {
 	SCONST_VERTEX		= (1 << 0),
 	SCONST_PIXEL		= (1 << 1),
@@ -399,7 +399,7 @@ enum ER_ShaderConstantSetup : int
 };
 
 // API reset type
-enum ER_StateResetFlags : int
+enum EStateResetFlags : int
 {
 	STATE_RESET_SHADER		= (1 << 0),
 	STATE_RESET_VF			= (1 << 1),
@@ -422,20 +422,20 @@ enum ER_StateResetFlags : int
 
 struct KVSection;
 
-struct shaderProgramText_t
+struct ShaderProgText
 {
-	char*				text{ nullptr };
-	char*				boilerplate{ nullptr };
-	uint32				checksum{ 0 };
-	Array<EqString>		includes{ PP_SL };
+	char*			text{ nullptr };
+	char*			boilerplate{ nullptr };
+	uint32			checksum{ 0 };
+	Array<EqString>	includes{ PP_SL };
 };
 
-struct shaderProgramCompileInfo_t
+struct ShaderProgCompileInfo
 {
-	shaderProgramText_t data;
+	ShaderProgText	data;
 
 	// disables caching, always recompiled
-	bool				disableCache{ false };
+	bool			disableCache{ false };
 
 	// apiprefs now contains all needed attributes
 	KVSection*		apiPrefs{ nullptr };
@@ -443,7 +443,7 @@ struct shaderProgramCompileInfo_t
 
 // shader API class for shader developers.
 // DON'T USE TYPES IN DYNAMIC SHADER CODE!
-enum ER_ShaderAPIType : int
+enum EShaderAPIType : int
 {
 	SHADERAPI_EMPTY = 0,
 	SHADERAPI_OPENGL,
@@ -455,50 +455,47 @@ enum ER_ShaderAPIType : int
 // shader setup type
 
 #define MAKEQUAD(x0, y0, x1, y1, o)	\
-	Vector2D(x0 + o, y0 + o),			\
-	Vector2D(x0 + o, y1 - o),			\
-	Vector2D(x1 - o, y0 + o),			\
+	Vector2D(x0 + o, y0 + o),	\
+	Vector2D(x0 + o, y1 - o),	\
+	Vector2D(x1 - o, y0 + o),	\
 	Vector2D(x1 - o, y1 - o)
 
-#define MAKERECT(x0, y0, x1, y1, lw)\
-	Vector2D(x0, y0),					\
-	Vector2D(x0 + lw, y0 + lw),			\
-	Vector2D(x1, y0),					\
-	Vector2D(x1 - lw, y0 + lw),			\
-	Vector2D(x1, y1),					\
-	Vector2D(x1 - lw, y1 - lw),			\
-	Vector2D(x0, y1),					\
-	Vector2D(x0 + lw, y1 - lw),			\
-	Vector2D(x0, y0),					\
+#define MAKERECT(x0, y0, x1, y1, lw) \
+	Vector2D(x0, y0),			\
+	Vector2D(x0 + lw, y0 + lw),	\
+	Vector2D(x1, y0),			\
+	Vector2D(x1 - lw, y0 + lw),	\
+	Vector2D(x1, y1),			\
+	Vector2D(x1 - lw, y1 - lw),	\
+	Vector2D(x0, y1),			\
+	Vector2D(x0 + lw, y1 - lw),	\
+	Vector2D(x0, y0),			\
 	Vector2D(x0 + lw, y0 + lw)
 
-#define MAKETEXRECT(x0, y0, x1, y1, lw)\
-	Vertex2D(Vector2D(x0, y0),vec2_zero),					\
-	Vertex2D(Vector2D(x0 + lw, y0 + lw),vec2_zero),			\
-	Vertex2D(Vector2D(x1, y0),vec2_zero),					\
-	Vertex2D(Vector2D(x1 - lw, y0 + lw),vec2_zero),			\
-	Vertex2D(Vector2D(x1, y1),vec2_zero),					\
-	Vertex2D(Vector2D(x1 - lw, y1 - lw),vec2_zero),			\
-	Vertex2D(Vector2D(x0, y1),vec2_zero),					\
-	Vertex2D(Vector2D(x0 + lw, y1 - lw),vec2_zero),			\
-	Vertex2D(Vector2D(x0, y0),vec2_zero),					\
+#define MAKETEXRECT(x0, y0, x1, y1, lw) \
+	Vertex2D(Vector2D(x0, y0),vec2_zero),			\
+	Vertex2D(Vector2D(x0 + lw, y0 + lw),vec2_zero),	\
+	Vertex2D(Vector2D(x1, y0),vec2_zero),			\
+	Vertex2D(Vector2D(x1 - lw, y0 + lw),vec2_zero),	\
+	Vertex2D(Vector2D(x1, y1),vec2_zero),			\
+	Vertex2D(Vector2D(x1 - lw, y1 - lw),vec2_zero),	\
+	Vertex2D(Vector2D(x0, y1),vec2_zero),			\
+	Vertex2D(Vector2D(x0 + lw, y1 - lw),vec2_zero),	\
+	Vertex2D(Vector2D(x0, y0),vec2_zero),			\
 	Vertex2D(Vector2D(x0 + lw, y0 + lw),vec2_zero)
 
-#define MAKETEXQUAD(x0, y0, x1, y1, o)			\
+#define MAKETEXQUAD(x0, y0, x1, y1, o) \
 	Vertex2D(Vector2D(x0 + o, y0 + o), Vector2D(0, 0)),	\
 	Vertex2D(Vector2D(x0 + o, y1 - o), Vector2D(0, 1)),	\
 	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0)),	\
 	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1))
 
-#define MAKEQUADCOLORED(x0, y0, x1, y1, o, colorLT, colorLB, colorRT, colorRB)	\
+#define MAKEQUADCOLORED(x0, y0, x1, y1, o, colorLT, colorLB, colorRT, colorRB) \
 	Vertex2D(Vector2D(x0 + o, y0 + o), Vector2D(0, 0), colorLT),	\
 	Vertex2D(Vector2D(x0 + o, y1 - o), Vector2D(0, 1), colorLB),	\
 	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0), colorRT),	\
 	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1), colorRB)
 
 
-#define TEXTURE_DEFAULT_PATH			"materials/"
 #define SHADERS_DEFAULT_PATH			"shaders/"
-#define TEXTURE_DEFAULT_EXTENSION		".dds"
-#define TEXTURE_SECONDARY_EXTENSION		".tga"
-#define TEXTURE_ANIMATED_EXTENSION		".ati"			// ATI - Animated Texture Index file
+

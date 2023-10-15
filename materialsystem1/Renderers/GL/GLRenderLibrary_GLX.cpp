@@ -114,7 +114,7 @@ void CGLRenderLib_GLX::InitSharedContexts()
 	m_glSharedContext = glX::CreateContextAttribsARB( m_display, m_bestFbc, m_glContext, True, iAttribs );;
 }
 
-bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
+bool CGLRenderLib_GLX::InitAPI(const ShaderAPIParams& params)
 {
 	int multiSamplingMode = params.multiSamplingMode;
 
@@ -132,7 +132,7 @@ bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
 			m_fullScreenMode = dmode;
 	}
 
-	m_window = (Window)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
+	m_window = (Window)params.windowInfo.get(RenderWindowInfo::WINDOW);
 
     XWindowAttributes winAttrib;
     XGetWindowAttributes(m_display, m_window, &winAttrib);

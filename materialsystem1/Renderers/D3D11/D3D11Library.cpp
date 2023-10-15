@@ -40,10 +40,10 @@ bool CD3D11RenderLib::InitCaps()
 	return true;
 }
 
-bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& params)
+bool CD3D11RenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	// set window
-	m_hwnd = (HWND)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
+	m_hwnd = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
 	m_verticalSyncEnabled = params.verticalSyncEnabled;
 
 	// get window parameters
@@ -184,7 +184,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& params)
 	//-------------------------------------------
 	// init caps
 	//-------------------------------------------
-	ShaderAPICaps_t& caps = s_renderApi.m_caps;
+	ShaderAPICaps& caps = s_renderApi.m_caps;
 
 	HOOK_TO_CVAR(r_anisotropic);
 

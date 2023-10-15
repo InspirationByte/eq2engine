@@ -252,7 +252,7 @@ void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 #endif
 }
 
-static void* Helper_GetWindowInfo(shaderAPIWindowInfo_t::Attribute attrib)
+static void* Helper_GetWindowInfo(RenderWindowInfo::Attribute attrib)
 {
 	// set window info
 	SDL_Window* window = g_pHost->GetWindowHandle();
@@ -270,21 +270,21 @@ static void* Helper_GetWindowInfo(shaderAPIWindowInfo_t::Attribute attrib)
 		case SDL_SYSWM_X11:
 			switch(attrib)
 			{
-				case shaderAPIWindowInfo_t::WINDOW:
+				case RenderWindowInfo::WINDOW:
 					return (void*)winfo.info.x11.window;
-				case shaderAPIWindowInfo_t::DISPLAY:
+				case RenderWindowInfo::DISPLAY:
 					return (void*)winfo.info.x11.display;
 			}
 		case SDL_SYSWM_WAYLAND:
 			switch(attrib)
 			{
-				case shaderAPIWindowInfo_t::WINDOW:
+				case RenderWindowInfo::WINDOW:
 					return (void*)winfo.info.wl.egl_window;
-				case shaderAPIWindowInfo_t::DISPLAY:
+				case RenderWindowInfo::DISPLAY:
 					return (void*)winfo.info.wl.display;
-				case shaderAPIWindowInfo_t::SURFACE:
+				case RenderWindowInfo::SURFACE:
 					return (void*)winfo.info.wl.surface;
-				case shaderAPIWindowInfo_t::TOPLEVEL:
+				case RenderWindowInfo::TOPLEVEL:
 					return (void*)winfo.info.wl.xdg_toplevel;
 			}
 #endif // PLAT_LINUX
@@ -292,9 +292,9 @@ static void* Helper_GetWindowInfo(shaderAPIWindowInfo_t::Attribute attrib)
 		case SDL_SYSWM_ANDROID:
 			switch(attrib)
 			{
-				case shaderAPIWindowInfo_t::WINDOW:
+				case RenderWindowInfo::WINDOW:
 					return (void*)winfo.info.android.window;
-				case shaderAPIWindowInfo_t::DISPLAY:
+				case RenderWindowInfo::DISPLAY:
 					return nullptr; // EGL_DEFAULT_DISPLAY
 			}
 #endif // PLAT_ANDROID
@@ -302,9 +302,9 @@ static void* Helper_GetWindowInfo(shaderAPIWindowInfo_t::Attribute attrib)
 		case SDL_SYSWM_WINDOWS:
 			switch(attrib)
 			{
-				case shaderAPIWindowInfo_t::WINDOW:
+				case RenderWindowInfo::WINDOW:
 					return (void*)winfo.info.win.window;
-				case shaderAPIWindowInfo_t::DISPLAY:
+				case RenderWindowInfo::DISPLAY:
 					return (void*)winfo.info.win.hdc;
 			}
 #endif // PLAT_WIN
@@ -352,7 +352,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	int renderBPP = 32;
 
 	{
-		shaderAPIWindowInfo_t &winInfo = materials_config.shaderApiParams.windowInfo;
+		RenderWindowInfo &winInfo = materials_config.shaderApiParams.windowInfo;
 
 		winInfo.get = Helper_GetWindowInfo;
 		

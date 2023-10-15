@@ -24,7 +24,7 @@ public:
 	void			ExitAPI();
 	void			ReleaseSwapChains();
 
-	bool			InitAPI(const shaderAPIParams_t &params);
+	bool			InitAPI(const ShaderAPIParams &params);
 
 	// frame begin/end
 	void			BeginFrame(IEqSwapChain* swapChain = nullptr);
@@ -83,5 +83,5 @@ protected:
 
 	bool					m_verticalSyncEnabled{ false };
 
-	//shaderAPIParams_t		m_savedParams;
+	//ShaderAPIParams		m_savedParams;
 };
