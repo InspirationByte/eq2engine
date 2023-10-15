@@ -8,7 +8,7 @@
 #pragma once
 
 #include "materialsystem1/ITextureLoader.h"
-struct materialsInitSettings_t;
+struct MaterialsInitSettings;
 
 class CTextureLoader : public ITextureLoader
 {

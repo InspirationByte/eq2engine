@@ -707,22 +707,22 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 
 	Vector2D last_point(-1);
 
-	Vertex2D_t lines[] =
+	Vertex2D lines[] =
 	{
-		Vertex2D_t(Vector2D(x_pos, y_pos), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT), vec2_zero),
+		Vertex2D(Vector2D(x_pos, y_pos), vec2_zero),
+		Vertex2D(Vector2D(x_pos, y_pos - GRAPH_HEIGHT), vec2_zero),
 
-		Vertex2D_t(Vector2D(x_pos, y_pos), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos+400, y_pos), vec2_zero),
+		Vertex2D(Vector2D(x_pos, y_pos), vec2_zero),
+		Vertex2D(Vector2D(x_pos+400, y_pos), vec2_zero),
 
-		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.75f), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.75f), vec2_zero),
+		Vertex2D(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.75f), vec2_zero),
+		Vertex2D(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.75f), vec2_zero),
 
-		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.50f), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.50f), vec2_zero),
+		Vertex2D(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.50f), vec2_zero),
+		Vertex2D(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.50f), vec2_zero),
 
-		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.25f), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.25f), vec2_zero),
+		Vertex2D(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.25f), vec2_zero),
+		Vertex2D(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.25f), vec2_zero),
 	};
 
 	eqFontStyleParam_t textStl;
@@ -737,7 +737,7 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	g_matSystem->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), nullptr, color_white, &blending);
+	g_matSystem->DrawDefaultUP(PRIM_LINES, ArrayCRef(lines), nullptr, color_white, &blending);
 
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
@@ -745,7 +745,7 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 
 	int value_id = 0;
 
-	Vertex2D_t graph_line_verts[GRAPH_MAX_VALUES*2];
+	Vertex2D graph_line_verts[GRAPH_MAX_VALUES*2];
 	int num_line_verts = 0;
 
 	float graph_max_value = 1.0f;
@@ -792,7 +792,7 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 	if(graph->dynamic)
 		graph->maxValue = graph_max_value;
 
-	g_matSystem->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, nullptr, color_white);
+	g_matSystem->DrawDefaultUP(PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts), nullptr, color_white);
 
 	graph->remainingTime -= frame_time;
 
@@ -1302,8 +1302,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			h *= fac;
 		}
 
-		Vertex2D_t light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
-		g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, light_depth, elementsOf(light_depth),g_pDebugTexture);
+		Vertex2D light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
+		g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), g_pDebugTexture);
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;

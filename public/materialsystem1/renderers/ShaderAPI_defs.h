@@ -451,49 +451,6 @@ enum EShaderAPIType : int
 	SHADERAPI_DIRECT3D11
 };
 
-// shader setup type
-
-#define MAKEQUAD(x0, y0, x1, y1, o)	\
-	Vector2D(x0 + o, y0 + o),	\
-	Vector2D(x0 + o, y1 - o),	\
-	Vector2D(x1 - o, y0 + o),	\
-	Vector2D(x1 - o, y1 - o)
-
-#define MAKERECT(x0, y0, x1, y1, lw) \
-	Vector2D(x0, y0),			\
-	Vector2D(x0 + lw, y0 + lw),	\
-	Vector2D(x1, y0),			\
-	Vector2D(x1 - lw, y0 + lw),	\
-	Vector2D(x1, y1),			\
-	Vector2D(x1 - lw, y1 - lw),	\
-	Vector2D(x0, y1),			\
-	Vector2D(x0 + lw, y1 - lw),	\
-	Vector2D(x0, y0),			\
-	Vector2D(x0 + lw, y0 + lw)
-
-#define MAKETEXRECT(x0, y0, x1, y1, lw) \
-	Vertex2D(Vector2D(x0, y0),vec2_zero),			\
-	Vertex2D(Vector2D(x0 + lw, y0 + lw),vec2_zero),	\
-	Vertex2D(Vector2D(x1, y0),vec2_zero),			\
-	Vertex2D(Vector2D(x1 - lw, y0 + lw),vec2_zero),	\
-	Vertex2D(Vector2D(x1, y1),vec2_zero),			\
-	Vertex2D(Vector2D(x1 - lw, y1 - lw),vec2_zero),	\
-	Vertex2D(Vector2D(x0, y1),vec2_zero),			\
-	Vertex2D(Vector2D(x0 + lw, y1 - lw),vec2_zero),	\
-	Vertex2D(Vector2D(x0, y0),vec2_zero),			\
-	Vertex2D(Vector2D(x0 + lw, y0 + lw),vec2_zero)
-
-#define MAKETEXQUAD(x0, y0, x1, y1, o) \
-	Vertex2D(Vector2D(x0 + o, y0 + o), Vector2D(0, 0)),	\
-	Vertex2D(Vector2D(x0 + o, y1 - o), Vector2D(0, 1)),	\
-	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0)),	\
-	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1))
-
-#define MAKEQUADCOLORED(x0, y0, x1, y1, o, colorLT, colorLB, colorRT, colorRB) \
-	Vertex2D(Vector2D(x0 + o, y0 + o), Vector2D(0, 0), colorLT),	\
-	Vertex2D(Vector2D(x0 + o, y1 - o), Vector2D(0, 1), colorLB),	\
-	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0), colorRT),	\
-	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1), colorRB)
 
 struct TextureInfo
 {

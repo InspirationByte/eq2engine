@@ -297,7 +297,7 @@ void CBaseShader::ParamSetup_AlphaModel_Modulate()
 
 void CBaseShader::ParamSetup_RasterState()
 {
-	const materialsRenderSettings_t& config = g_matSystem->GetConfiguration();
+	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
 
 	ECullMode cull_mode = g_matSystem->GetCurrentCullMode();
 	if(config.wireframeMode && config.editormode)
@@ -308,7 +308,7 @@ void CBaseShader::ParamSetup_RasterState()
 
 void CBaseShader::ParamSetup_RasterState_NoCull()
 {
-	const materialsRenderSettings_t& config = g_matSystem->GetConfiguration();
+	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
 	g_matSystem->SetRasterizerStates(CULL_NONE, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 

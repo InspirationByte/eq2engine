@@ -9,10 +9,10 @@
 class IMaterial;
 
 
-class IMaterialRenderParamCallbacks
+class IMatSysRenderCallbacks
 {
 public:
-	~IMaterialRenderParamCallbacks() {}
+	~IMatSysRenderCallbacks() {}
 
 	// called before material gets bound. Return pMaterial if you don't want to override it, return different material if you want to override.
 	virtual IMaterial*	OnPreBindMaterial(IMaterial* pMaterial) = 0;

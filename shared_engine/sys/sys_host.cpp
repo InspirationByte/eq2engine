@@ -321,7 +321,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 {
 	m_pWindow = pWindow;
 
-	materialsInitSettings_t materials_config;
+	MaterialsInitSettings materials_config;
 
 	// set window info
 	SDL_SysWMinfo winfo;
@@ -835,7 +835,7 @@ void CGameHost::BeginScene()
 {
 	g_matSystem->BeginFrame(nullptr);
 
-	materialsRenderSettings_t& rendSettings = g_matSystem->GetConfiguration();
+	MaterialsRenderSettings& rendSettings = g_matSystem->GetConfiguration();
 	rendSettings.wireframeMode = r_wireframe.GetBool();
 	rendSettings.overdrawMode = r_overdraw.GetBool();
 }

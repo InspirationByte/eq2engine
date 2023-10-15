@@ -13,13 +13,13 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "DynamicMesh.h"
 
-struct proxyfactory_t
+struct ShaderProxyFactory
 {
 	EqString name;
 	PROXY_DISPATCHER disp;
 };
 
-struct shaderoverride_t
+struct ShaderOverride
 {
 	EqString shadername;
 	DISPATCH_OVERRIDE_SHADER	function;
@@ -41,7 +41,7 @@ public:
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
-	bool							Init(const materialsInitSettings_t& config);
+	bool							Init(const MaterialsInitSettings& config);
 
 	// shutdowns material system, unloading all.
 	void							Shutdown();
@@ -53,7 +53,7 @@ public:
 	bool							IsInStubMode() const;
 
 	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
-	materialsRenderSettings_t&		GetConfiguration();
+	MaterialsRenderSettings&		GetConfiguration();
 
 	// returns material path
 	const char*						GetMaterialPath() const;
@@ -115,14 +115,12 @@ public:
 
 	//-----------------------------
 	// Helper rendering operations
-	// TODO: remove this
 	//-----------------------------
 
-	// draws primitives for 2D
-	void							DrawPrimitives2DFFP(	EPrimTopology type, Vertex2D_t *pVerts, int nVerts,
-															const ITexturePtr& pTexture = nullptr, const ColorRGBA &color = color_white,
-															BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-															RasterizerStateParams* rasterParams = nullptr);
+	void							DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
+													const ITexturePtr& pTexture = nullptr, const MColor &color = color_white,
+													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+													RasterizerStateParams* rasterParams = nullptr);
 
 	//-----------------------------
 	// Shader dynamic states
@@ -206,8 +204,8 @@ public:
 
 	// sets the custom rendering callbacks
 	// useful for proxy updates, setting up constants that shader objects can't access by themselves
-	void							SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback );
-	IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() const;
+	void							SetRenderCallbacks( IMatSysRenderCallbacks* callback );
+	IMatSysRenderCallbacks*			GetRenderCallbacks() const;
 
 	//-----------------------------
 	// Rendering projection helper operations
@@ -285,7 +283,7 @@ private:
 	void							CreateWhiteTexture();
 	void							InitDefaultMaterial();
 
-	materialsRenderSettings_t		m_config;
+	MaterialsRenderSettings			m_config;
 
 	IRenderLibrary*					m_renderLibrary{ nullptr };	// render library.
 	DKMODULE*						m_rendermodule{ nullptr };	// render dll.
@@ -298,8 +296,8 @@ private:
 
 	Array<DKMODULE*>				m_shaderLibs{ PP_SL };				// loaded shader libraries
 	Array<ShaderFactory>			m_shaderFactoryList{ PP_SL };		// registered shaders
-	Array<shaderoverride_t>			m_shaderOverrideList{ PP_SL };		// shader override functors
-	Array<proxyfactory_t>			m_proxyFactoryList{ PP_SL };
+	Array<ShaderOverride>			m_shaderOverrideList{ PP_SL };		// shader override functors
+	Array<ShaderProxyFactory>			m_proxyFactoryList{ PP_SL };
 
 	Map<int, IMaterial*>			m_loadedMaterials{ PP_SL };			// loaded material list
 	ECullMode						m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
@@ -312,7 +310,7 @@ private:
 	Map<ushort, IRenderState*>		m_depthStates{ PP_SL };
 	Map<ushort, IRenderState*>		m_rasterStates{ PP_SL };
 
-	IMaterialRenderParamCallbacks*	m_preApplyCallback{ nullptr };
+	IMatSysRenderCallbacks*			m_preApplyCallback{ nullptr };
 
 	EMaterialLightingMode			m_curentLightingModel{ MATERIAL_LIGHT_UNLIT };		// dynamic-changeable lighting model. Used as state
 

@@ -181,7 +181,7 @@ CMaterialSystem::~CMaterialSystem()
 }
 
 // Initializes material system
-bool CMaterialSystem::Init(const materialsInitSettings_t& config)
+bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
 
@@ -502,7 +502,7 @@ bool CMaterialSystem::IsInStubMode() const
 	return m_config.stubMode;
 }
 
-materialsRenderSettings_t& CMaterialSystem::GetConfiguration()
+MaterialsRenderSettings& CMaterialSystem::GetConfiguration()
 {
 	return m_config;
 }
@@ -749,7 +749,7 @@ void CMaterialSystem::FreeMaterial(IMaterial* pMaterial)
 
 void CMaterialSystem::RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName)
 {
-	proxyfactory_t factory;
+	ShaderProxyFactory factory;
 	factory.name = pszName;
 	factory.disp = dispfunc;
 
@@ -793,7 +793,7 @@ void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_
 // registers overrider for shaders
 void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function)
 {
-	shaderoverride_t new_override;
+	ShaderOverride new_override;
 	new_override.shadername = shaderName;
 	new_override.function = check_function;
 
@@ -998,7 +998,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	if( m_config.overdrawMode )
 	{
 		InitDefaultMaterial();
-		g_matSystem->SetAmbientColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+		m_ambColor = color_white;
 		success = (*materialstate_callbacks[subRoutineId])(m_overdrawMaterial, 0xFFFFFFFF);
 	}
 	else
@@ -1287,13 +1287,13 @@ EMaterialLightingMode CMaterialSystem::GetCurrentLightingModel() const
 }
 
 // sets pre-apply callback
-void CMaterialSystem::SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback )
+void CMaterialSystem::SetRenderCallbacks( IMatSysRenderCallbacks* callback )
 {
 	m_preApplyCallback = callback;
 }
 
 // returns current pre-apply callback
-IMaterialRenderParamCallbacks* CMaterialSystem::GetMaterialRenderParamCallback() const
+IMatSysRenderCallbacks* CMaterialSystem::GetRenderCallbacks() const
 {
 	return m_preApplyCallback;
 }
@@ -1373,11 +1373,13 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 	return (IDynamicMesh*)&m_dynamicMesh;
 }
 
-void CMaterialSystem::DrawPrimitives2DFFP(	EPrimTopology type, Vertex2D_t *pVerts, int nVerts,
-											const ITexturePtr& pTexture, const ColorRGBA &color,
-											BlendStateParams* blendParams, DepthStencilStateParams* depthParams,
-											RasterizerStateParams* rasterParams)
+void CMaterialSystem::DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
+	const ITexturePtr& texture, const MColor& color,
+	BlendStateParams* blendParams, DepthStencilStateParams* depthParams,
+	RasterizerStateParams* rasterParams)
 {
+	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
+
 	if(!blendParams)
 		SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
 	else
@@ -1393,25 +1395,44 @@ void CMaterialSystem::DrawPrimitives2DFFP(	EPrimTopology type, Vertex2D_t *pVert
 	else
 		SetDepthStates(*depthParams);
 
-	IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(pTexture);
+	ColorRGBA oldAmbColor = m_ambColor;
+	m_ambColor = color;
+
+	IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(texture);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
-
 	meshBuilder.Begin(type);
 
-	for(int i = 0; i < nVerts; i++)
+	const ubyte* vertPtr = reinterpret_cast<const ubyte*>(verts);
+	for(int i = 0; i < numVerts; ++i)
 	{
-		meshBuilder.Color4fv(MColor(pVerts[i].color).v * color);
-		meshBuilder.TexCoord2f(pVerts[i].texCoord.x,pVerts[i].texCoord.y);
-		meshBuilder.Position3f(pVerts[i].position.x, pVerts[i].position.y, 0);
-
+		if (vertFVF & VERTEX_FVF_XYZ)
+		{
+			meshBuilder.Position3fv(*reinterpret_cast<const Vector3D*>(vertPtr));
+			vertPtr += sizeof(Vector3D);
+		}
+		if (vertFVF & VERTEX_FVF_UVS)
+		{
+			meshBuilder.TexCoord2fv(*reinterpret_cast<const Vector2D*>(vertPtr));
+			vertPtr += sizeof(Vector2D);
+		}
+		if (vertFVF & VERTEX_FVF_NORMAL)
+		{
+			meshBuilder.Normal3fv(*reinterpret_cast<const Vector3D*>(vertPtr));
+			vertPtr += sizeof(Vector3D);
+		}
+		if (vertFVF & VERTEX_FVF_COLOR)
+		{
+			meshBuilder.Color4fv(*reinterpret_cast<const uint*>(vertPtr));
+			vertPtr += sizeof(uint);
+		}
 		meshBuilder.AdvanceVertex();
 	}
-
 	meshBuilder.End();
-}
 
+	m_ambColor = oldAmbColor;
+}
 
 //-----------------------------
 // RHI render states setup

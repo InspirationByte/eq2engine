@@ -13,15 +13,15 @@
 #include "render/IDebugOverlay.h"
 
 
-inline void ListLine(const Vector3D &from, const Vector3D &to, Array<Vertex3D_t> &verts)
+inline void ListLine(const Vector3D &from, const Vector3D &to, Array<Vertex3D> &verts)
 {
-	verts.append(Vertex3D_t(from, vec2_zero));
-	verts.append(Vertex3D_t(to, vec2_zero));
+	verts.append(Vertex3D(from, vec2_zero));
+	verts.append(Vertex3D(to, vec2_zero));
 }
 
 void DrawWorldCenter()
 {
-	Array<Vertex3D_t> grid_vertices(PP_SL);
+	Array<Vertex3D> grid_vertices(PP_SL);
 
 	ListLine(Vector3D(-F_INFINITY,0,0),Vector3D(F_INFINITY,0,0), grid_vertices);
 	ListLine(Vector3D(0,-F_INFINITY,0),Vector3D(0, F_INFINITY,0), grid_vertices);
@@ -38,26 +38,8 @@ void DrawWorldCenter()
 	raster.multiSample = true;
 	raster.scissor = false;
 
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	g_matSystem->SetRasterizerStates(raster);
-	g_matSystem->SetDepthStates(depth);
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
-
-	meshBuilder.Begin(PRIM_LINES);
-	ColorRGBA color(0, 0.45f, 0.45f, 1);
-	for (const Vertex3D_t& vertex : grid_vertices)
-	{
-		meshBuilder.Color4fv(vertex.color * color);
-		meshBuilder.TexCoord2fv(vertex.texCoord);
-		meshBuilder.Position3fv(vertex.position);
-		meshBuilder.AdvanceVertex();
-	}
-
-	meshBuilder.End();
+	const ColorRGBA color(0, 0.45f, 0.45f, 1);
+	g_matSystem->DrawDefaultUP(PRIM_LINES, grid_vertices, nullptr, color, nullptr, &depth, &raster);
 }
 
 void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest)

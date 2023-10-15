@@ -607,9 +607,9 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 		if (selection == itemIdx)
 		{
-			Vertex2D_t selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
+			Vertex2D selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
 
-			g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, selrect, elementsOf(selrect), nullptr, s_conListItemSelectedBackground, &blending);
+			g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), nullptr, s_conListItemSelectedBackground, &blending);
 		}
 
 		m_font->RenderText(item.ToCString(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
@@ -729,9 +729,9 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2, rect.rightBottom.x-rect.leftTop.x,12) || m_cmdSelection == i)
 				{
-					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
+					Vertex2D selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
-					g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
+					g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
 
 					m_cmdSelection = i;
 
@@ -776,9 +776,9 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 					float lookupStrStart = m_font->GetStringWidth(cmdBase->GetName(), variantsTextParams, ofs);
 					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(cmdBase->GetName()+ofs, variantsTextParams, len);
 
-					Vertex2D_t rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
+					Vertex2D rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
-					g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, rectVerts, elementsOf(rectVerts), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+					g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rectVerts), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 				}
 			}
 		}
@@ -1284,23 +1284,23 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	{
 		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.ToCString(), inputTextStyle, m_startCursorPos);
 
-		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition,
+		Vertex2D rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition,
 											inputTextPos.y - 10,
 											inputTextPos.x + cursorPosition,
 											inputTextPos.y + 4, 0) };
 
-		g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+		g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 	}
 
 	// render cursor
 	if(m_cursorVisible)
 	{
-		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + cursorPosition,
+		Vertex2D rect[] = { MAKETEXQUAD(	inputTextPos.x + cursorPosition,
 											inputTextPos.y - 10,
 											inputTextPos.x + cursorPosition + 1,
 											inputTextPos.y + 4, 0) };
 
-		g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f), &blending);
+		g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), nullptr, ColorRGBA(1.0f), &blending);
 	}
 }
 

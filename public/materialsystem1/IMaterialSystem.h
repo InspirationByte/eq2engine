@@ -18,17 +18,16 @@
 #include "IMaterialVar.h"
 #include "IMaterialProxy.h"
 #include "SceneDefs.h"
+#include "RenderDefs.h"
 
 class CImage;
-class CViewParams;
 class IDynamicMesh;
-class IMaterialRenderParamCallbacks;
+class IMatSysRenderCallbacks;
 
 typedef void					(*RESOURCELOADCALLBACK)(void);
-typedef IMaterialSystemShader* (*DISPATCH_CREATE_SHADER)(void);
-typedef const char* (*DISPATCH_OVERRIDE_SHADER)(void);
+typedef const char*				(*DISPATCH_OVERRIDE_SHADER)(void);
 typedef bool					(*DEVLICELOSTRESTORE)(void);
-typedef IMaterialProxy* (*PROXY_DISPATCHER)(void);
+typedef IMaterialProxy*			(*PROXY_DISPATCHER)(void);
 
 // Lighting model for material system
 enum EMaterialLightingMode
@@ -45,98 +44,11 @@ enum EMaterialBindFlags
 	MATERIAL_BIND_KEEPOVERRIDE = (1 << 1),
 };
 
-struct ShaderFactory
-{
-	DISPATCH_CREATE_SHADER dispatcher;
-	const char* shader_name;
-};
-typedef Array<ShaderFactory> FactoryList;
-
-typedef struct Vertex2D
-{
-	Vertex2D()
-	{
-		texCoord = vec2_zero;
-		color = color_white.pack();
-	}
-
-	Vertex2D(const Vector2D& p, const Vector2D& t)
-	{
-		position = p;
-		texCoord = t;
-		color = color_white.pack();
-	}
-
-	Vertex2D(const Vector2D& p, const Vector2D& t, const Vector4D& c)
-	{
-		position = p;
-		texCoord = t;
-		color = MColor(c).pack();
-	}
-
-	Vertex2D(const Vector2D& p, const Vector2D& t, const MColor& c)
-	{
-		position = p;
-		texCoord = t;
-		color = c.pack();
-	}
-
-	void Set(const Vector2D& p, const Vector2D& t, const Vector4D& c)
-	{
-		position = p;
-		texCoord = t;
-		color = MColor(c).pack();
-	}
-
-	void Set(const Vector2D& p, const Vector2D& t, const MColor& c)
-	{
-		position = p;
-		texCoord = t;
-		color = c.pack();
-	}
-
-	static Vertex2D Interpolate(const Vertex2D& a, const Vertex2D& b, float fac)
-	{
-		return Vertex2D(lerp(a.position, b.position, fac), lerp(a.texCoord, b.texCoord, fac), lerp(MColor(a.color).v, MColor(b.color).v, fac));
-	}
-
-	Vector2D		position;
-	Vector2D		texCoord;
-	uint			color;
-}Vertex2D_t;
-
-typedef struct Vertex3D
-{
-	Vertex3D()
-	{
-		position = vec3_zero;
-		texCoord = vec2_zero;
-		color = color_white;
-	}
-
-	Vertex3D(const Vector3D& p, const Vector2D& t)
-	{
-		position = p;
-		texCoord = t;
-		color = color_white;
-	}
-
-	Vertex3D(const Vector3D& p, const Vector2D& t, const Vector4D& c)
-	{
-		position = p;
-		texCoord = t;
-		color = c;
-	}
-	Vector3D		position;
-	Vector2D		texCoord;
-	ColorRGBA		color;
-}Vertex3D_t;
-
 //-----------------------------------------------------
 // material system configuration
 //-----------------------------------------------------
 
-struct materialsRenderSettings_t
+struct MaterialsRenderSettings
 {
 	EMaterialLightingMode	lightingModel{ MATERIAL_LIGHT_UNLIT };
 
@@ -156,9 +68,9 @@ struct materialsRenderSettings_t
 	bool				overdrawMode{ false };			// matsystem overdraw mode
 };
 
-struct materialsInitSettings_t
+struct MaterialsInitSettings
 {
-	materialsRenderSettings_t	renderConfig;
+	MaterialsRenderSettings	renderConfig;
 	ShaderAPIParams		shaderApiParams;
 
 	EqString			rendererName;		// shaderAPI library filename
@@ -179,7 +91,7 @@ public:
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
-	virtual bool							Init(const materialsInitSettings_t& config) = 0;
+	virtual bool							Init(const MaterialsInitSettings& config) = 0;
 
 	// shutdowns material system, unloading all.
 	virtual void							Shutdown() = 0;
@@ -191,7 +103,7 @@ public:
 	virtual bool							IsInStubMode() const = 0;
 
 	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
-	virtual materialsRenderSettings_t&		GetConfiguration() = 0;
+	virtual MaterialsRenderSettings&		GetConfiguration() = 0;
 
 	// returns material path
 	virtual const char*						GetMaterialPath() const = 0;
@@ -248,15 +160,24 @@ public:
 	virtual IDynamicMesh*					GetDynamicMesh() const = 0;
 
 	//-----------------------------
-	// Helper rendering operations
-	// TODO: remove this
-	//-----------------------------
+	
+	// draw primitives with default material
+	virtual void							DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
+															const ITexturePtr& texture = nullptr, const MColor &color = color_white,
+															BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+															RasterizerStateParams* rasterParams = nullptr) = 0;
 
-	// draws primitives for 2D
-	virtual void							DrawPrimitives2DFFP(EPrimTopology type, Vertex2D_t* pVerts, int nVerts,
-																const ITexturePtr& pTexture = nullptr, const ColorRGBA& color = color_white,
-																BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-																RasterizerStateParams* rasterParams = nullptr) = 0;
+	template<typename VERT>
+	void									DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts,
+															const ITexturePtr& texture = nullptr, const ColorRGBA& color = color_white,
+															BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+															RasterizerStateParams* rasterParams = nullptr);
+
+	template<typename ARRAY_TYPE>
+	void									DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts,
+															const ITexturePtr& texture = nullptr, const ColorRGBA& color = color_white,
+															BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+															RasterizerStateParams* rasterParams = nullptr);
 
 	//-----------------------------
 	// Shader dynamic states
@@ -340,8 +261,8 @@ public:
 
 	// sets the custom rendering callbacks
 	// useful for proxy updates, setting up constants that shader objects can't access by themselves
-	virtual void							SetMaterialRenderParamCallback(IMaterialRenderParamCallbacks* callback) = 0;
-	virtual IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() const = 0;
+	virtual void							SetRenderCallbacks(IMatSysRenderCallbacks* callback) = 0;
+	virtual IMatSysRenderCallbacks*			GetRenderCallbacks() const = 0;
 
 	//-----------------------------
 	// Rendering projection helper operations
@@ -411,33 +332,21 @@ public:
 	virtual void							PrintLoadedMaterials() = 0;
 };
 
+template<typename VERT>
+void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts, const ITexturePtr& texture, const ColorRGBA& color,
+		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
+{
+	const void* vertPtr = reinterpret_cast<void*>(&verts);
+	const int vertFVF = typename VertexFVFResolver<VERT>::value;
+	DrawDefaultUP(type, vertFVF, vertPtr, N, texture, color, blendParams, depthParams, rasterParams);
+}
+
+template<typename ARRAY_TYPE>
+void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts, const ITexturePtr& texture, const ColorRGBA& color,
+		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
+{
+	const int vertFVF = typename VertexFVFResolver<typename ARRAY_TYPE::ITEM>::value;
+	DrawDefaultUP(type, vertFVF, verts.ptr(), verts.numElem(), texture, color, blendParams, depthParams, rasterParams);
+}
+
 extern IMaterialSystem* g_matSystem;
-
-#define DECLARE_INTERNAL_SHADERS()       \
-	FactoryList* s_internalShaderReg = nullptr;                            \
-	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(PP_SL); return *s_internalShaderReg; }
-
-#define REGISTER_INTERNAL_SHADERS()								\
-	for(int i = 0; i < _InternalShaderList().numElem(); i++)	\
-		g_matSystem->RegisterShader( _InternalShaderList()[i].shader_name, _InternalShaderList()[i].dispatcher );
-
-extern FactoryList& _InternalShaderList();
-
-#define DEFINE_SHADER(stringName, className)								\
-	static IMaterialSystemShader* C##className##Factory( void )						\
-	{																				\
-		IMaterialSystemShader *pShader = static_cast< IMaterialSystemShader * >(new className()); 	\
-		return pShader;																\
-	}																				\
-	class C_ShaderClassFactoryFoo													\
-	{																				\
-	public:																			\
-		C_ShaderClassFactoryFoo( void )											\
-		{																			\
-			ShaderFactory factory;												\
-			factory.dispatcher = &C##className##Factory;							\
-			factory.shader_name = stringName;										\
-			_InternalShaderList().append(factory);						\
-		}																			\
-	};																				\
-	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;

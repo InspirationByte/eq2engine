@@ -393,8 +393,8 @@ static void InitMatSystem(void* window)
 			format = FORMAT_RGB565;
 		}
 
-		materialsInitSettings_t materials_config;
-		materialsRenderSettings_t& render_config = materials_config.renderConfig;
+		MaterialsInitSettings materials_config;
+		MaterialsRenderSettings& render_config = materials_config.renderConfig;
 
 		render_config.enableBumpmapping = false;
 		render_config.enableSpecular = true; // specular for cubemaps

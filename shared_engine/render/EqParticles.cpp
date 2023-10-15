@@ -128,7 +128,7 @@ void CParticleBatch::Render(int nViewRenderFlags)
 		g_renderAPI->DrawNonIndexedPrimitives(primMode, 0, m_numVertices);
 
 #if 0
-	materialsRenderSettings_t& rendSettings = g_matSystem->GetConfiguration();
+	MaterialsRenderSettings& rendSettings = g_matSystem->GetConfiguration();
 	if(rendSettings.wireframeMode)
 	{
 		g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_WIREFRAME);
