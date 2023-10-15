@@ -407,7 +407,7 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 													ETexFilterMode texFilter,
 													ETexAddressMode textureAddress,
 													int nFlags,
-													int nDataSize, const unsigned char* pData)
+													int nDataSize, const ubyte* pData)
 {
 	CImage genTex;
 	genTex.Ref_Grab();	// by grabbing ref we make sure it won't be deleted

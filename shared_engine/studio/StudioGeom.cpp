@@ -602,15 +602,15 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 
 	// create hardware buffers
 	if(allPositionUvsList)
-		m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::PositionUV), allPositionUvsList);
+		m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_renderAPI->CreateVertexBuffer({ allPositionUvsList, numVertices });
 	if(allTbnList)
-		m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::TBN), allTbnList);
+		m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_renderAPI->CreateVertexBuffer({ allTbnList, numVertices });
 	if(allBoneWeightsList)
-		m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::BoneWeights), allBoneWeightsList);
+		m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_renderAPI->CreateVertexBuffer({ allBoneWeightsList, numVertices });
 	if(allColorList)
-		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_renderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex::Color), allColorList);
+		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_renderAPI->CreateVertexBuffer({ allColorList, numVertices });
 
-	m_indexBuffer = g_renderAPI->CreateIndexBuffer(numIndices, indexSize, BUFFER_STATIC, allIndices);
+	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(allIndices, indexSize, numIndices) );
 
 	// if we using software skinning, we need to create temporary vertices
 #if 0

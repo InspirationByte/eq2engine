@@ -98,8 +98,8 @@ bool CDynamicMesh::Init(const VertexFormatDesc* desc, int numAttribs )
 
 	m_vertexStride = vertexSize;
 
-	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, nullptr);
-	m_indexBuffer = g_renderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, nullptr);
+	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BufferInfo(m_vertexStride, MAX_DYNAMIC_VERTICES, BUFFER_DYNAMIC));
+	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(sizeof(uint16), MAX_DYNAMIC_INDICES, BUFFER_DYNAMIC));
 
 	m_vertexFormat = g_renderAPI->CreateVertexFormat("DynMeshVertex", ArrayCRef(desc, numAttribs));
 

@@ -21,6 +21,9 @@
 #include "IRenderState.h"
 #include "IShaderProgram.h"
 
+#undef far
+#undef near
+
 struct KVSection;
 class CImage;
 
@@ -68,11 +71,12 @@ struct ShaderAPIParams
 struct TextureInfo
 {
 	const char*			name{ nullptr };
-	IVector2D			dimensions{ 0 };
+	int					width{ -1 };
+	int					height{ -1 };
+	int					depth{ 1 };
+	int					arraySize{ 1 };
 	ETextureFormat		format{ FORMAT_RGBA8 };
-	ETexFilterMode		textureFilterType{ TEXFILTER_LINEAR };
-	ETexAddressMode		textureAddress{ TEXADDRESS_WRAP };
-	ECompareFunc		comparison{ COMPFUNC_NEVER };
+	SamplerStateParams	samplerParams; // NOTE: OpenGL have sampler and textures working together, while newer APIs don't
 	int					flags = 0;
 
 	const ubyte*		data = nullptr;
@@ -81,10 +85,62 @@ struct TextureInfo
 
 struct BufferInfo
 {
+	BufferInfo() = default;
+
+	BufferInfo(int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(capacity)
+		, elementSize(elementSize)
+		, flags(flags)
+	{
+	}
+
+	BufferInfo(const void* data, int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(capacity)
+		, elementSize(elementSize)
+		, flags(flags)
+		, data(data)
+		, dataSize(elementSize * capacity)
+	{
+	}
+
+	template<typename T>
+	BufferInfo(int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(capacity)
+		, elementSize(sizeof(T))
+		, flags(flags)
+	{
+	}
+
+	template<typename T>
+	BufferInfo(const T* array, int numElem, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(numElem)
+		, elementSize(sizeof(typename T))
+		, flags(flags)
+		, data(array)
+		, dataSize(sizeof(typename T) * numElem)
+	{
+	}
+
+	template<typename ARRAY_TYPE>
+	BufferInfo(const ARRAY_TYPE& array, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
+		: accessType(accessType)
+		, elementCapacity(array.numElem())
+		, elementSize(sizeof(typename ARRAY_TYPE::ITEM))
+		, flags(flags)
+		, data(array.ptr())
+		, dataSize(sizeof(typename ARRAY_TYPE::ITEM) * array.numElem())
+	{
+	}
+
 	EBufferAccessType	accessType{ BUFFER_STATIC };
 	int					elementCapacity{ 0 };
 	int					elementSize{ 0 };
 	int					flags{ 0 };
+
 	const void*			data{ nullptr };
 	int					dataSize{ 0 };
 };
@@ -115,7 +171,6 @@ public:
 
 	virtual EShaderAPIType		GetShaderAPIClass() const = 0;
 	virtual const char*			GetRendererName() const = 0;
-	virtual const char*			GetDeviceNameString() const = 0;
 	virtual void				PrintAPIInfo() const = 0;
 
 //-------------------------------------------------------------
@@ -148,8 +203,8 @@ public:
 // Buffer objects
 //-------------------------------------------------------------
 
-	virtual IVertexBuffer*		CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr ) = 0;
-	virtual IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData = nullptr) = 0;
+	virtual IVertexBuffer*		CreateVertexBuffer(const BufferInfo& bufferInfo) = 0;
+	virtual IIndexBuffer*		CreateIndexBuffer(const BufferInfo& bufferInfo) = 0;
 
 	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
 	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
@@ -159,7 +214,7 @@ public:
 // Shader resource management
 //-------------------------------------------------------------
 
-	virtual IShaderProgram*		FindShaderProgram( const char* pszName, const char* query = nullptr) = 0;
+	virtual IShaderProgram*		FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
 
 	virtual IShaderProgram*		CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
 	virtual void				DestroyShaderProgram(IShaderProgram* pShaderProgram) = 0;
@@ -191,7 +246,7 @@ public:
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
 
 	// creates static texture from image (array for animated textures)
-	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParams& sampler, int nFlags = 0) = 0;
+	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& images, const SamplerStateParams& sampler, int flags = 0) = 0;
 
 	// creates lockable texture
 	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
@@ -201,8 +256,8 @@ public:
 														int arraySize = 1,
 														ETexFilterMode texFilter = TEXFILTER_NEAREST,
 														ETexAddressMode textureAddress = TEXADDRESS_WRAP,
-														int nFlags = 0,
-														int nDataSize = 0, const unsigned char* pData = nullptr
+														int flags = 0,
+														int dataSize = 0, const ubyte* data = nullptr
 														) = 0;
 
 	virtual ITexturePtr			CreateRenderTarget(const char* pszName,
@@ -231,7 +286,7 @@ public:
 	virtual void				Clear(	bool color,
 										bool depth = true,
 										bool stencil = true,
-										const ColorRGBA& fillColor = ColorRGBA(0),
+										const MColor& fillColor = color_black,
 										float depthValue = 1.0f,
 										int stencilValue = 0
 										) = 0;

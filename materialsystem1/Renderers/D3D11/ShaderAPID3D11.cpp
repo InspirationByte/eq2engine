@@ -386,7 +386,7 @@ void ShaderAPID3DX10::ApplyConstants()
 	}
 }
 
-void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const ColorRGBA &fillColor,float fDepth, int nStencil)
+void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor& fillColor,float fDepth, int nStencil)
 {
 	if (bClearColor)
 	{
@@ -394,7 +394,7 @@ void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStenc
 
 		if (m_pCurrentColorRenderTargets[0] == nullptr)
 		{
-			m_pD3DDevice->ClearRenderTargetView(pBackBuffer->m_rtv[0], fillColor);
+			m_pD3DDevice->ClearRenderTargetView(pBackBuffer->m_rtv[0], &fillColor.r);
 		}
 
 		for (int i = 0; i < MAX_MRTS; i++)
@@ -403,7 +403,7 @@ void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStenc
 			{
 				CD3D10Texture* pTargetTexture = (CD3D10Texture*)m_pCurrentColorRenderTargets[i].Ptr();
 
-				m_pD3DDevice->ClearRenderTargetView(pTargetTexture->m_rtv[m_nCurrentCRTSlice[i]], fillColor);
+				m_pD3DDevice->ClearRenderTargetView(pTargetTexture->m_rtv[m_nCurrentCRTSlice[i]], &fillColor.r);
 			}
 		}
 	}
@@ -444,12 +444,6 @@ void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStenc
 //-------------------------------------------------------------
 // Renderer information
 //-------------------------------------------------------------
-
-// Device vendor and version
-const char* ShaderAPID3DX10::GetDeviceNameString() const
-{
-	return "malfunction";
-}
 
 // Renderer string (ex: OpenGL, D3D9)
 const char* ShaderAPID3DX10::GetRendererName() const
@@ -2293,31 +2287,31 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, ArrayCRef<V
 	return pFormat;
 }
 
-IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData)
+IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(const BufferInfo& bufferInfo)
 {
 	ASSERT(m_pD3DDevice);
 
 	CVertexBufferD3DX10* pBuffer = new CVertexBufferD3DX10();
-	pBuffer->m_size = nNumVerts*strideSize;
-	pBuffer->m_usage = g_d3d9_bufferUsages[nBufAccess];
-	pBuffer->m_numVertices = nNumVerts;
-	pBuffer->m_strideSize = strideSize;
+	pBuffer->m_size = bufferInfo.elementCapacity * bufferInfo.elementSize;
+	pBuffer->m_usage = g_d3d9_bufferUsages[bufferInfo.accessType];
+	pBuffer->m_numVertices = bufferInfo.elementCapacity;
+	pBuffer->m_strideSize = bufferInfo.elementSize;
 
 	D3D10_BUFFER_DESC desc;
-	desc.Usage = g_d3d9_bufferUsages[nBufAccess];
+	desc.Usage = g_d3d9_bufferUsages[bufferInfo.accessType];
 	desc.ByteWidth = pBuffer->m_size;
 	desc.BindFlags = D3D10_BIND_VERTEX_BUFFER;
-	desc.CPUAccessFlags = (nBufAccess == BUFFER_DYNAMIC) ? D3D10_CPU_ACCESS_WRITE : 0;
+	desc.CPUAccessFlags = (bufferInfo.accessType == BUFFER_DYNAMIC) ? D3D10_CPU_ACCESS_WRITE : 0;
 	desc.MiscFlags = 0;
 
 	D3D10_SUBRESOURCE_DATA vbData;
-	vbData.pSysMem = pData;
+	vbData.pSysMem = bufferInfo.data;
 	vbData.SysMemPitch = 0;
 	vbData.SysMemSlicePitch = 0;
 
 	DevMsg(DEVMSG_RENDER, "Creating VBO with size %i KB\n", pBuffer->m_size / 1024);
 
-	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, pData ? (&vbData) : nullptr, &pBuffer->m_buffer)))
+	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, bufferInfo.data ? (&vbData) : nullptr, &pBuffer->m_buffer)))
 	{
 		MsgError("Couldn't create vertex buffer!\n");
         ErrorMsg("Couldn't create vertex buffer");
@@ -2334,30 +2328,30 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(EBufferAccessType nBufAccess,
 	return pBuffer;
 }
 
-IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData)
+IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(const BufferInfo& bufferInfo)
 {
-	ASSERT(nIndexSize >= 2);
-	ASSERT(nIndexSize <= 4);
+	ASSERT(bufferInfo.elementSize >= 2);
+	ASSERT(bufferInfo.elementSize <= 4);
 
 	CIndexBufferD3DX10* pBuffer = new CIndexBufferD3DX10();
 
-	pBuffer->m_numIndices = nIndices;
-	pBuffer->m_indexSize = nIndexSize;
-	pBuffer->m_usage = g_d3d9_bufferUsages[nBufAccess];
+	pBuffer->m_numIndices = bufferInfo.elementCapacity;
+	pBuffer->m_indexSize = bufferInfo.elementSize;
+	pBuffer->m_usage = g_d3d9_bufferUsages[bufferInfo.accessType];
 
 	D3D10_BUFFER_DESC desc;
-	desc.Usage = g_d3d9_bufferUsages[nBufAccess];
-	desc.ByteWidth = nIndices * nIndexSize;
+	desc.Usage = g_d3d9_bufferUsages[bufferInfo.accessType];
+	desc.ByteWidth = bufferInfo.elementCapacity * bufferInfo.elementSize;
 	desc.BindFlags = D3D10_BIND_INDEX_BUFFER;
-	desc.CPUAccessFlags = (nBufAccess == BUFFER_DYNAMIC)? D3D10_CPU_ACCESS_WRITE : 0;
+	desc.CPUAccessFlags = (bufferInfo.accessType == BUFFER_DYNAMIC) ? D3D10_CPU_ACCESS_WRITE : 0;
 	desc.MiscFlags = 0;
 
 	D3D10_SUBRESOURCE_DATA ibData;
-	ibData.pSysMem = pData;
+	ibData.pSysMem = bufferInfo.data;
 	ibData.SysMemPitch = 0;
 	ibData.SysMemSlicePitch = 0;
 
-	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, pData ? (&ibData) : nullptr, &pBuffer->m_buffer)))
+	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, bufferInfo.data ? (&ibData) : nullptr, &pBuffer->m_buffer)))
 	{
 		MsgError("Couldn't create index buffer!\n");
         ErrorMsg("Couldn't create index buffer");

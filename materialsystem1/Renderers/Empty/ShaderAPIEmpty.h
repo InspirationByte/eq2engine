@@ -156,7 +156,7 @@ public:
 	void						ApplyShaderProgram() {}
 	void						ApplyConstants() {}
 
-	void						Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const ColorRGBA &fillColor,float fDepth, int nStencil) {}
+	void						Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor &fillColor,float fDepth, int nStencil) {}
 
 //-------------------------------------------------------------
 // Renderer information
@@ -164,9 +164,6 @@ public:
 
 	// shader API class type for shader developers.
 	EShaderAPIType			GetShaderAPIClass() {return SHADERAPI_EMPTY;}
-
-	// Device vendor and version
-	const char*					GetDeviceNameString() const {return "nullptr device";}
 
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*					GetRendererName() const {return "Empty";}
@@ -309,8 +306,8 @@ public:
 		m_VFList.append(pVF);
 		return pVF;
 	}
-	IVertexBuffer*				CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr){return new CEmptyVertexBuffer(strideSize);}
-	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData = nullptr){return new CEmptyIndexBuffer(nIndexSize);}
+	IVertexBuffer*				CreateVertexBuffer(const BufferInfo& bufferInfo) { return new CEmptyVertexBuffer(bufferInfo.elementSize); }
+	IIndexBuffer*				CreateIndexBuffer(const BufferInfo& bufferInfo) { return new CEmptyIndexBuffer(bufferInfo.elementSize); }
 
 //-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)

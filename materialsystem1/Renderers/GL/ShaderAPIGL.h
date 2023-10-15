@@ -67,7 +67,7 @@ public:
 	void				Clear(	bool bClearColor,
 								bool bClearDepth = true,
 								bool bClearStencil = true,
-								const ColorRGBA &fillColor = ColorRGBA(0),
+								const MColor &fillColor = MColor(0),
 								float fDepth = 1.0f,
 								int nStencil = 0
 								);
@@ -76,13 +76,10 @@ public:
 // Renderer information
 //-------------------------------------------------------------
 
-	// Device vendor and version
-	const char*			GetDeviceNameString() const;
-
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*			GetRendererName() const;
 
-	EShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_OPENGL;}
+	EShaderAPIType		GetShaderAPIClass() const {return SHADERAPI_OPENGL;}
 
 //-------------------------------------------------------------
 // MT Synchronization
@@ -219,8 +216,8 @@ public:
 //-------------------------------------------------------------
 
 	IVertexFormat*		CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc);
-	IVertexBuffer*		CreateVertexBuffer(EBufferAccessType nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr);
-	IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, EBufferAccessType nBufAccess, void *pData = nullptr);
+	IVertexBuffer*		CreateVertexBuffer(const BufferInfo& bufferInfo);
+	IIndexBuffer*		CreateIndexBuffer(const BufferInfo& bufferInfo);
 
 //-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)

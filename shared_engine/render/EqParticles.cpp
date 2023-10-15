@@ -229,8 +229,8 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	m_vbMaxQuads = r_particleBufferSize.GetInt();
 
-	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads * 4, sizeof(PFXVertex_t), nullptr);
-	m_indexBuffer = g_renderAPI->CreateIndexBuffer(m_vbMaxQuads * 6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
+	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BufferInfo(sizeof(PFXVertex_t), m_vbMaxQuads * 4, BUFFER_DYNAMIC));
+	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(sizeof(int16), m_vbMaxQuads * 6, BUFFER_DYNAMIC));
 
 	if(!m_vertexFormat)
 	{

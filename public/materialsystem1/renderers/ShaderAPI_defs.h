@@ -215,18 +215,17 @@ enum ECompareFunc : int
 
 struct SamplerStateParams
 {
-	ETexFilterMode		minFilter{ TEXFILTER_NEAREST };
-	ETexFilterMode		magFilter{ TEXFILTER_NEAREST };
+	ETexFilterMode	minFilter{ TEXFILTER_NEAREST };
+	ETexFilterMode	magFilter{ TEXFILTER_NEAREST };
 
-	ECompareFunc				compareFunc{ COMPFUNC_NONE };
+	ECompareFunc	compareFunc{ COMPFUNC_NONE };
 
-	ETexAddressMode		wrapS{ TEXADDRESS_WRAP };
-	ETexAddressMode		wrapT{ TEXADDRESS_WRAP };
-	ETexAddressMode		wrapR{ TEXADDRESS_WRAP };
+	ETexAddressMode	wrapS{ TEXADDRESS_WRAP };
+	ETexAddressMode	wrapT{ TEXADDRESS_WRAP };
+	ETexAddressMode	wrapR{ TEXADDRESS_WRAP };
 
-	int							aniso{ 4 };
-	float						lod{ 1.0f };
-	void*						userData{ nullptr };
+	int				aniso{ 4 };
+	float			lod{ 1.0f };
 };
 
 static void SamplerStateParams_Make(SamplerStateParams& samplerParams, const ShaderAPICaps& caps, ETexFilterMode textureFilterType, ETexAddressMode addressS, ETexAddressMode addressT, ETexAddressMode addressR)
