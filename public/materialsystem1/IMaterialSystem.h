@@ -419,7 +419,7 @@ public:
 	virtual void							PrintLoadedMaterials() = 0;
 };
 
-extern IMaterialSystem* materials;
+extern IMaterialSystem* g_matSystem;
 
 #define DECLARE_INTERNAL_SHADERS()       \
 	FactoryList* s_internalShaderReg = nullptr;                            \
@@ -427,7 +427,7 @@ extern IMaterialSystem* materials;
 
 #define REGISTER_INTERNAL_SHADERS()								\
 	for(int i = 0; i < _InternalShaderList().numElem(); i++)	\
-		materials->RegisterShader( _InternalShaderList()[i].shader_name, _InternalShaderList()[i].dispatcher );
+		g_matSystem->RegisterShader( _InternalShaderList()[i].shader_name, _InternalShaderList()[i].dispatcher );
 
 extern FactoryList& _InternalShaderList();
 

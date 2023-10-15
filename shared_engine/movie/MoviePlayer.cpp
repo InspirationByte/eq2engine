@@ -768,7 +768,7 @@ bool CMoviePlayer::Init(const char* pathToVideo)
 
 		if (m_player->videoStream)
 		{
-			m_mvTexture = materials->GetGlobalMaterialVarByName(nameOfPlayer);
+			m_mvTexture = g_matSystem->GetGlobalMaterialVarByName(nameOfPlayer);
 			ASSERT(g_renderAPI->FindTexture(nameOfPlayer) == nullptr);
 			m_mvTexture.Set(g_renderAPI->CreateProceduralTexture(nameOfPlayer, FORMAT_RGBA8, codec->width, codec->height, 1, 1, TEXFILTER_LINEAR));
 		}

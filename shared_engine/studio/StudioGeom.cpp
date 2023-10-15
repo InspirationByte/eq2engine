@@ -719,11 +719,11 @@ void CEqStudioGeom::LoadMaterials()
 				EqString extend_path;
 				CombinePath(extend_path, spath.ToCString(), fpath.ToCString());
 
-				if (!materials->IsMaterialExist(extend_path))
+				if (!g_matSystem->IsMaterialExist(extend_path))
 					continue;
 
-				IMaterialPtr material = materials->GetMaterial(extend_path.GetData());
-				materials->PutMaterialToLoadingQueue(material);
+				IMaterialPtr material = g_matSystem->GetMaterial(extend_path.GetData());
+				g_matSystem->PutMaterialToLoadingQueue(material);
 
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
 					MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", material->GetName(), material->GetShaderName(), m_name.ToCString());
@@ -783,7 +783,7 @@ void CEqStudioGeom::LoadMaterials()
 const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int materialGroupIdx) const
 {
 	if (materialIdx == -1)
-		return materials->GetDefaultMaterial();
+		return g_matSystem->GetDefaultMaterial();
 
 	materialGroupIdx = clamp(materialGroupIdx, 0, m_materialGroupsCount - 1);
 	return m_materials[m_materialCount * materialGroupIdx + materialIdx];
@@ -907,7 +907,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 	if (isSkinned)
 		 numBoneRegisters = ComputeQuaternionsForSkinning(this, bquats, drawProperties.boneTransforms);
 
-	materials->SetInstancingEnabled(false);
+	g_matSystem->SetInstancingEnabled(false);
 
 	IVertexFormat* rhiVertFmt = drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat(isSkinned);
 	g_renderAPI->SetVertexFormat(rhiVertFmt);
@@ -980,26 +980,26 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				continue;
 
 			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
-			materials->SetSkinningEnabled(numBoneRegisters && meshRef.supportsSkinning);
+			g_matSystem->SetSkinningEnabled(numBoneRegisters && meshRef.supportsSkinning);
 
 			if (drawProperties.preSetupFunc)
 				drawProperties.preSetupFunc(material, i, j);
 
 			if (!drawProperties.skipMaterials)
-				materials->BindMaterial(material, 0);
+				g_matSystem->BindMaterial(material, 0);
 
 			if (drawProperties.preDrawFunc)
 				drawProperties.preDrawFunc(material, i, j);
 
 			if (numBoneRegisters && meshRef.supportsSkinning)
 				g_renderAPI->SetShaderConstant(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
-			materials->Apply();
+			g_matSystem->Apply();
 
 			g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
 		}
 	}
 
-	materials->SetSkinningEnabled(false);
+	g_matSystem->SetSkinningEnabled(false);
 }
 
 const BoundingBox& CEqStudioGeom::GetBoundingBox() const

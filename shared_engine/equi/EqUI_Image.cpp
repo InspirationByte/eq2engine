@@ -73,7 +73,7 @@ void Image::InitFromKeyValues( KVSection* sec, bool noClear )
 
 void Image::SetMaterial(const char* materialName)
 {
-	m_material = materials->GetMaterial(materialName);
+	m_material = g_matSystem->GetMaterial(materialName);
 	m_material->LoadShaderAndTextures();
 }
 
@@ -89,8 +89,8 @@ const ColorRGBA& Image::GetColor() const
 
 void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 {
-	materials->SetAmbientColor(m_color);
-	materials->BindMaterial(m_material);
+	g_matSystem->SetAmbientColor(m_color);
+	g_matSystem->BindMaterial(m_material);
 
 	AARectangle atlasRect = m_atlasRegion;
 	if (m_imageFlags & FLIP_X)
@@ -100,7 +100,7 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 		atlasRect.FlipY();
 
 	// draw all rectangles with just single draw call
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		//meshBuilder.Color4fv(m_color);
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 

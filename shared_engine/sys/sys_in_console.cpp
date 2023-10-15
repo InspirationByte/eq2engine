@@ -512,12 +512,12 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-	materials->SetDepthStates(false,false);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	g_matSystem->SetDepthStates(false,false);
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
 	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
@@ -525,7 +525,7 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
 
 	// draw all rectangles with just single draw call
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
 		meshBuilder.Color4fv(color1);
@@ -609,7 +609,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 		{
 			Vertex2D_t selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
 
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, selrect, elementsOf(selrect), nullptr, s_conListItemSelectedBackground, &blending);
+			g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, selrect, elementsOf(selrect), nullptr, s_conListItemSelectedBackground, &blending);
 		}
 
 		m_font->RenderText(item.ToCString(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
@@ -731,7 +731,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 				{
 					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
+					g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
 
 					m_cmdSelection = i;
 
@@ -778,7 +778,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 					Vertex2D_t rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, rectVerts, elementsOf(rectVerts), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+					g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, rectVerts, elementsOf(rectVerts), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 				}
 			}
 		}
@@ -1289,7 +1289,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.x + cursorPosition,
 											inputTextPos.y + 4, 0) };
 
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+		g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 	}
 
 	// render cursor
@@ -1300,7 +1300,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.x + cursorPosition + 1,
 											inputTextPos.y + 4, 0) };
 
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f), &blending);
+		g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f), &blending);
 	}
 }
 

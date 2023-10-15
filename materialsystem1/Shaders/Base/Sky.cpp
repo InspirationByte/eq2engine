@@ -51,12 +51,12 @@ BEGIN_SHADER_CLASS(Skybox)
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 
 		// do depth testing for my type of skybox (looks like quake 3/unreal tournament style skyboxes)
-		materials->SetDepthStates(true, false);
-		materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
-		materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+		g_matSystem->SetDepthStates(true, false);
+		g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
+		g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	
 		Matrix4x4 wvp;
-		materials->GetWorldViewProjection(wvp);
+		g_matSystem->GetWorldViewProjection(wvp);
 
 		wvp = !wvp;
 
@@ -65,7 +65,7 @@ BEGIN_SHADER_CLASS(Skybox)
 		// camera direction
 		g_renderAPI->SetShaderConstant(StringToHashConst("camPos"), camPos * 2.0f);
 
-		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
+		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
 
 		// setup base texture
 		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());

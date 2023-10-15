@@ -10,7 +10,7 @@
 #include "IMaterialSystem.h"
 
 IShaderAPI*			g_renderAPI	= nullptr;
-IMaterialSystem*	materials		= nullptr;
+IMaterialSystem*	g_matSystem		= nullptr;
 
 DECLARE_INTERNAL_SHADERS()
 
@@ -48,7 +48,7 @@ extern "C"
 FUNC_EXPORTS int InitShaderLibrary(IMaterialSystem* pMatSystem)
 {
 	g_renderAPI	= pMatSystem->GetShaderAPI();
-	materials		= pMatSystem;
+	g_matSystem		= pMatSystem;
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();

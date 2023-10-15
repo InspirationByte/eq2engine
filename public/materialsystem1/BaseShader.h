@@ -51,7 +51,7 @@ enum ShaderBlendMode : int
 #define SHADER_BIND_PASS_FOGSELECT(shader)					\
 	{														\
 	FogInfo_t fog;											\
-	materials->GetFogInfo(fog);								\
+	g_matSystem->GetFogInfo(fog);								\
 	if(fog.enableFog && m_fogenabled)										\
 		g_renderAPI->SetShader(m_pShader##shader##_fog);	\
 	else													\
@@ -97,8 +97,8 @@ enum ShaderBlendMode : int
 #define SHADER_PARAM_TEXTURE_FIND(param, variable)		{ variable = FindTextureByVar(#param, false); }
 
 #define SHADERDEFINES_DEFAULTS \
-	SHADER_DECLARE_SIMPLE_DEFINITION(materials->GetConfiguration().lowShaderQuality, "LOWQUALITY");\
-	SHADER_DECLARE_SIMPLE_DEFINITION(materials->GetConfiguration().editormode, "EDITOR");
+	SHADER_DECLARE_SIMPLE_DEFINITION(g_matSystem->GetConfiguration().lowShaderQuality, "LOWQUALITY");\
+	SHADER_DECLARE_SIMPLE_DEFINITION(g_matSystem->GetConfiguration().editormode, "EDITOR");
 
 #define SHADERDEFINES_BEGIN \
 	EqString defines, findQuery; \

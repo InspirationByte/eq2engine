@@ -80,7 +80,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	SHADER_SETUP_STAGE()
 	{
-		if (materials->IsSkinningEnabled())
+		if (g_matSystem->IsSkinningEnabled())
 		{
 			SHADER_BIND_PASS_FOGSELECT(Unlit)
 		}
@@ -105,14 +105,14 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	void SetColorModulation()
 	{
-		ColorRGBA setColor = m_colorVar.Get() * materials->GetAmbientColor();
+		ColorRGBA setColor = m_colorVar.Get() * g_matSystem->GetAmbientColor();
 
 		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
 	}
 
 	void SetupBaseTexture0()
 	{
-		ITexturePtr setupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
+		ITexturePtr setupTexture = g_matSystem->GetConfiguration().wireframeMode ? g_matSystem->GetWhiteTexture() : m_baseTexture.Get();
 
 		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
 	}

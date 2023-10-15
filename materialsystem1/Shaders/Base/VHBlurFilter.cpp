@@ -104,12 +104,12 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 	void SetColorModulation()
 	{
-		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
+		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
 	}
 
 	void SetupBaseTexture0()
 	{
-		const ITexturePtr& setupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
+		const ITexturePtr& setupTexture = g_matSystem->GetConfiguration().wireframeMode ? g_matSystem->GetWhiteTexture() : m_baseTexture.Get();
 		g_renderAPI->SetTexture(StringToHashConst("BaseTexture"), setupTexture);
 	}
 

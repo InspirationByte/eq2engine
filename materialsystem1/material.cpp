@@ -39,7 +39,7 @@ CMaterial::~CMaterial()
 
 void CMaterial::Ref_DeleteObject()
 {
-	materials->FreeMaterial(this);
+	g_matSystem->FreeMaterial(this);
 	RefCountedObject::Ref_DeleteObject();
 }
 
@@ -52,8 +52,8 @@ void CMaterial::Init()
 
 	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.ToCString());
 
-	const char* materialsPath = materials->GetMaterialPath();
-	const char* materialsSRCPath = materials->GetMaterialSRCPath();
+	const char* materialsPath = g_matSystem->GetMaterialPath();
+	const char* materialsSRCPath = g_matSystem->GetMaterialSRCPath();
 
 	const int materialSearchPath = (SP_DATA | SP_MOD);
 
@@ -159,7 +159,7 @@ void CMaterial::InitMaterialProxy(KVSection* proxySec)
 	// try any kind of proxy
 	for(int i = 0; i < proxySec->keys.numElem();i++)
 	{
-		IMaterialProxy* pProxy = materials->CreateProxyByName( proxySec->keys[i]->name );
+		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName( proxySec->keys[i]->name );
 
 		if(pProxy)
 		{
@@ -250,7 +250,7 @@ void CMaterial::InitShader()
 	{
 		PROF_EVENT("MatSystem Load Material InitShader");
 
-		IMaterialSystemShader* shader = materials->CreateShaderInstance(m_szShaderName.GetData());
+		IMaterialSystemShader* shader = g_matSystem->CreateShaderInstance(m_szShaderName.GetData());
 
 		// if not found - try make Error shader
 		if (!shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
@@ -258,7 +258,7 @@ void CMaterial::InitShader()
 			MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.GetData(), m_szMaterialName.GetData());
 
 			if (!shader)
-				shader = materials->CreateShaderInstance("Error");
+				shader = g_matSystem->CreateShaderInstance("Error");
 		}
 
 		if (shader)
@@ -303,7 +303,7 @@ void CMaterial::InitVars(KVSection* shader_root)
 	//
 	// if shader has an editor section we should override it here
 	//
-	if(materials->GetConfiguration().editormode)
+	if(g_matSystem->GetConfiguration().editormode)
 	{
 		KVSection* editorPrefs = shader_root->FindSection("editor", KV_FLAG_SECTION);
 

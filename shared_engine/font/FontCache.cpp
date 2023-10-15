@@ -171,7 +171,7 @@ bool CEqFontCache::Init()
 	sdfFontParams.SetName("SDFFont");
 	sdfFontParams.SetKey("basetexture", "$basetexture");
 
-	m_sdfMaterial = materials->CreateMaterial("_sdfRegular", &sdfFontParams);
+	m_sdfMaterial = g_matSystem->CreateMaterial("_sdfRegular", &sdfFontParams);
 	m_fontParams = m_sdfMaterial->GetMaterialVar("FontParams", "[0.94 0.06, 0, 1]");
 
 	m_sdfMaterial->LoadShaderAndTextures();

@@ -155,9 +155,9 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	Upload();
 
 	// proceed to render
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
-	materials->SetInstancingEnabled(true);
-	materials->SetSkinningEnabled(false); // skinning not yet supported. But we can support it with textures holding data
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
+	g_matSystem->SetInstancingEnabled(true);
+	g_matSystem->SetSkinningEnabled(false); // skinning not yet supported. But we can support it with textures holding data
 
 	g_renderAPI->SetVertexFormat(m_vertFormat);
 	const int maxVertexCount = model->m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
@@ -236,9 +236,9 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 						continue;
 
 					//materials->SetSkinningEnabled(true);
-					materials->BindMaterial(pMaterial, 0);
+					g_matSystem->BindMaterial(pMaterial, 0);
 
-					materials->Apply();
+					g_matSystem->Apply();
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
 					g_renderAPI->DrawIndexedPrimitives((ER_PrimitiveType)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
@@ -248,7 +248,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	} // lod
 
 	g_renderAPI->SetVertexBuffer(nullptr, 2);
-	materials->SetInstancingEnabled(false);
+	g_matSystem->SetInstancingEnabled(false);
 
 	Invalidate();
 }

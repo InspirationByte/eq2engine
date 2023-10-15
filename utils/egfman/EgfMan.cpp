@@ -67,7 +67,7 @@ CBulletStudioShapeCache	s_shapeCache;
 
 DKMODULE*			g_matsysmodule = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
-IMaterialSystem*	materials = nullptr;
+IMaterialSystem*	g_matSystem = nullptr;
 
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70);
 Matrix4x4			g_mProjMat, g_mViewMat;
@@ -367,9 +367,9 @@ static void InitMatSystem(void* window)
 {
 	ASSERT_MSG(window, "InitMatSystem - NULL window");
 
-	materials = g_eqCore->GetInterface<IMaterialSystem>();
+	g_matSystem = g_eqCore->GetInterface<IMaterialSystem>();
 
-	if(!materials)
+	if(!g_matSystem)
 	{
 		ErrorMsg("ERROR! Couldn't get interface of EqMatSystem!");
 		exit(0);
@@ -421,7 +421,7 @@ static void InitMatSystem(void* window)
 			return nullptr;
 		};
 
-		if (!materials->Init(materials_config))
+		if (!g_matSystem->Init(materials_config))
 			exit(0);
 
 		FogInfo_t fog;
@@ -431,12 +431,12 @@ static void InitMatSystem(void* window)
 		fog.fogfar = 14250;
 		fog.fognear = -2750;
 
-		materials->SetFogInfo(fog);
+		g_matSystem->SetFogInfo(fog);
 
-		g_renderAPI = materials->GetShaderAPI();
+		g_renderAPI = g_matSystem->GetShaderAPI();
 	}
 
-	materials->LoadShaderLibrary("eqBaseShaders");
+	g_matSystem->LoadShaderLibrary("eqBaseShaders");
 
 	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
 		return;
@@ -920,7 +920,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 						g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 
 						SetOptimalCameraDistance();
-						materials->PreloadNewMaterials();
+						g_matSystem->PreloadNewMaterials();
 					}
 				}
 			}
@@ -1105,12 +1105,12 @@ void CEGFViewFrame::OnSize(wxSizeEvent& event)
 {
 	wxFrame::OnSize( event );
 
-	if(!materials)
+	if(!g_matSystem)
 		return;
 
 	int w, h;
 	m_pRenderPanel->GetSize(&w,&h);
-	materials->SetDeviceBackbufferSize(w,h);
+	g_matSystem->SetDeviceBackbufferSize(w,h);
 
 	ReDraw();
 }
@@ -1159,17 +1159,17 @@ void RenderFloor()
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->SetAmbientColor(ColorRGBA(1, 1, 0, 0.15f));
+	g_matSystem->SetAmbientColor(ColorRGBA(1, 1, 0, 0.15f));
 
-	materials->SetDepthStates(true,true);
-	materials->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
-	materials->SetBlendingStates(blending);
+	g_matSystem->SetDepthStates(true,true);
+	g_matSystem->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
+	g_matSystem->SetBlendingStates(blending);
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
@@ -1185,7 +1185,7 @@ void RenderFloor()
 
 void CEGFViewFrame::ReDraw()
 {
-	if(!materials)
+	if(!g_matSystem)
 		return;
 
 	if(!m_bDoRefresh)
@@ -1207,7 +1207,7 @@ void CEGFViewFrame::ReDraw()
 	m_pRenderPanel->GetSize(&w, &h);
 
 	g_renderAPI->SetViewport(0, 0, w,h);
-	if(materials->BeginFrame(nullptr))
+	if(g_matSystem->BeginFrame(nullptr))
 	{
 		g_renderAPI->Clear(true,true,false, ColorRGBA(0.5,0.5,0.5, 1));
 
@@ -1220,11 +1220,11 @@ void CEGFViewFrame::ReDraw()
 		ShowFPS();
 
 		FogInfo_t fog;
-		materials->GetFogInfo(fog);
+		g_matSystem->GetFogInfo(fog);
 
 		fog.viewPos = g_pCameraParams.GetOrigin();
 
-		materials->SetFogInfo(fog);
+		g_matSystem->SetFogInfo(fog);
 
 		// setup perspective
 		g_mProjMat = perspectiveMatrixY(DEG2RAD(g_pCameraParams.GetFOV()), w, h, 0.25f, 2500.0f);
@@ -1232,10 +1232,10 @@ void CEGFViewFrame::ReDraw()
 		g_mViewMat = rotateZXY4(DEG2RAD(-g_pCameraParams.GetAngles().x),DEG2RAD(-g_pCameraParams.GetAngles().y),DEG2RAD(-g_pCameraParams.GetAngles().z));
 		g_mViewMat.translate(-g_pCameraParams.GetOrigin());
 
-		materials->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
-		materials->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
+		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
+		g_matSystem->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
 
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		// Update things
 
@@ -1286,7 +1286,7 @@ void CEGFViewFrame::ReDraw()
 		if (m_drawAttachments->IsChecked())
 			renderFlags |= RFLAG_ATTACHMENTS;
 
-		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
+		g_matSystem->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
 
 		g_renderAPI->ResetCounters();
 
@@ -1296,13 +1296,13 @@ void CEGFViewFrame::ReDraw()
 		debugoverlay->Text(color_white, "polygon count: %d\n", g_renderAPI->GetTrianglesCount());
 
 		// reset some values
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		// draw floor 1x1 meters
 		if(m_drawFloor->IsChecked())
 			RenderFloor();
 
-		materials->SetAmbientColor(ColorRGBA(1, 1, 1, 1));
+		g_matSystem->SetAmbientColor(ColorRGBA(1, 1, 1, 1));
 
 		if (m_drawGrid->IsChecked())
 		{
@@ -1314,7 +1314,7 @@ void CEGFViewFrame::ReDraw()
 
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
-		materials->EndFrame();
+		g_matSystem->EndFrame();
 		Platform_Sleep(1);
 	}
 
@@ -1514,7 +1514,7 @@ int CEGFViewApp::OnExit()
 	
 	// shutdown material system
 	g_fontCache->Shutdown();
-	materials->Shutdown();
+	g_matSystem->Shutdown();
 
 	g_fileSystem->CloseModule(g_matsysmodule);
 	

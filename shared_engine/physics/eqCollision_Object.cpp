@@ -418,7 +418,7 @@ void CEqCollisionObject::DebugDraw()
 		Matrix4x4 m;
 		ConstructRenderMatrix(m);
 
-		materials->SetMatrix(MATRIXMODE_WORLD,m);
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD,m);
 	}
 }
 

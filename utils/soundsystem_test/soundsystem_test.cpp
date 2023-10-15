@@ -51,7 +51,7 @@ static eqJobThreadDesc_t s_jobTypes[] = {
 
 DKMODULE*			g_matsysmodule = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
-IMaterialSystem*	materials = nullptr;
+IMaterialSystem*	g_matSystem = nullptr;
 
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70.0f);
 Matrix4x4			g_mProjMat, g_mViewMat;
@@ -279,9 +279,9 @@ Array<shaderfactory_t> pShaderRegistrators(PP_SL);
 
 void InitMatSystem(EQWNDHANDLE window)
 {
-	materials = g_eqCore->GetInterface<IMaterialSystem>();
+	g_matSystem = g_eqCore->GetInterface<IMaterialSystem>();
 
-	if(!materials)
+	if(!g_matSystem)
 	{
 		ErrorMsg("ERROR! Couldn't get interface of EqMatSystem!");
 		exit(0);
@@ -334,7 +334,7 @@ void InitMatSystem(EQWNDHANDLE window)
 			return nullptr;
 		};
 
-		if (!materials->Init(materials_config))
+		if (!g_matSystem->Init(materials_config))
 			exit(0);
 
 		FogInfo_t fog;
@@ -344,16 +344,16 @@ void InitMatSystem(EQWNDHANDLE window)
 		fog.fogfar = 14250;
 		fog.fognear = -2750;
 
-		materials->SetFogInfo(fog);
+		g_matSystem->SetFogInfo(fog);
 
-		g_renderAPI = materials->GetShaderAPI();
+		g_renderAPI = g_matSystem->GetShaderAPI();
 	}
 
-	materials->LoadShaderLibrary("eqBaseShaders.dll");
+	g_matSystem->LoadShaderLibrary("eqBaseShaders.dll");
 
 	// register all shaders
 	for(int i = 0; i < pShaderRegistrators.numElem(); i++)
-		materials->RegisterShader( pShaderRegistrators[i].shader_name, pShaderRegistrators[i].dispatcher );
+		g_matSystem->RegisterShader( pShaderRegistrators[i].shader_name, pShaderRegistrators[i].dispatcher );
 }
 
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style )
@@ -639,7 +639,7 @@ void CMainWindow::GetMouseScreenVectors(int x, int y, Vector3D& origin, Vector3D
 
 void CMainWindow::OnSashSize( wxSplitterEvent& event )
 {
-	if(materials)
+	if(g_matSystem)
 	{
 		m_bDoRefresh = true;
 	}
@@ -690,7 +690,7 @@ void ShowFPS()
 
 void CMainWindow::ReDraw()
 {
-	if(!materials)
+	if(!g_matSystem)
 		return;
 
 	if(!IsShown())
@@ -701,7 +701,7 @@ void CMainWindow::ReDraw()
 
 	if(m_bDoRefresh)
 	{
-		materials->SetDeviceBackbufferSize(w,h);
+		g_matSystem->SetDeviceBackbufferSize(w,h);
 		m_bDoRefresh = false;
 	}
 
@@ -723,7 +723,7 @@ void CMainWindow::ReDraw()
  
 	g_renderAPI->SetViewport(0, 0, w,h);
 
-	if(materials->BeginFrame(nullptr))
+	if(g_matSystem->BeginFrame(nullptr))
 	{
 		g_renderAPI->Clear(true,true,false, ColorRGBA(0.2,0.2,0.2, 1));
 
@@ -743,11 +743,11 @@ void CMainWindow::ReDraw()
 		debugoverlay->Text(color_white, "Camera position: %g %g %g\n", g_camera_target.x,g_camera_target.y,g_camera_target.z);
 
 		FogInfo_t fog;
-		materials->GetFogInfo(fog);
+		g_matSystem->GetFogInfo(fog);
 
 		fog.viewPos = g_pCameraParams.GetOrigin();
 
-		materials->SetFogInfo(fog);
+		g_matSystem->SetFogInfo(fog);
 
 		// setup perspective
 		g_mProjMat = perspectiveMatrixY(DEG2RAD(g_pCameraParams.GetFOV()), w, h, 1, 5000);
@@ -755,10 +755,10 @@ void CMainWindow::ReDraw()
 		g_mViewMat = rotateZXY4(DEG2RAD(-g_pCameraParams.GetAngles().x),DEG2RAD(-g_pCameraParams.GetAngles().y),DEG2RAD(-g_pCameraParams.GetAngles().z));
 		g_mViewMat.translate(-g_pCameraParams.GetOrigin());
 
-		materials->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
-		materials->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
+		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
+		g_matSystem->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
 
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		int nRenderFlags = 0;
 
@@ -770,7 +770,7 @@ void CMainWindow::ReDraw()
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
         // TODO: swap chain
-		materials->EndFrame();
+		g_matSystem->EndFrame();
 		Platform_Sleep(1);
 	}
 
@@ -797,9 +797,9 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	Destroy();
 
 	// shutdown material system
-	materials->Shutdown();
+	g_matSystem->Shutdown();
 
-	materials = nullptr;
+	g_matSystem = nullptr;
 
 	g_fileSystem->CloseModule(g_matsysmodule);
 

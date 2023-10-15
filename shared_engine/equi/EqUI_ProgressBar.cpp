@@ -39,18 +39,18 @@ void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
-	materials->SetDepthStates(false, false);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
+	g_matSystem->SetDepthStates(false, false);
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	//-------------------
 
 	AARectangle rect(_rect);
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
 	meshBuilder.Color4f(0.435, 0.435, 0.435, m_color.w * 0.25f);

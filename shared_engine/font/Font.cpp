@@ -391,7 +391,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 	if (vertCount == 0)
 		return;
 
-	IDynamicMesh* dynMesh = materials->GetDynamicMesh();
+	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
 	if (r_font_debug.GetBool())
@@ -402,15 +402,15 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 		blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 		blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-		materials->SetDepthStates(false, false);
-		materials->SetBlendingStates(blending);
-		materials->SetRasterizerStates(raster);
+		g_matSystem->SetDepthStates(false, false);
+		g_matSystem->SetBlendingStates(blending);
+		g_matSystem->SetRasterizerStates(raster);
 
-		materials->SetAmbientColor(color_white);
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
+		g_matSystem->SetAmbientColor(color_white);
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
-		materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-		materials->BindMaterial(materials->GetDefaultMaterial());
+		g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+		g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 		// set character color
 		meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
@@ -439,7 +439,7 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 	if (vertCount == 0)
 		return;
 
-	IDynamicMesh* dynMesh = materials->GetDynamicMesh();
+	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
 	// first we building vertex buffer
@@ -459,11 +459,11 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->SetDepthStates(false,false);
-	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(raster);
+	g_matSystem->SetDepthStates(false,false);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->SetRasterizerStates(raster);
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(m_fontTexture);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(m_fontTexture);
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 
@@ -475,8 +475,8 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	// TODO: shadow color should be separate from text vertices color!!!
 	if ((params.styleFlag & TEXT_STYLE_SHADOW) && params.shadowAlpha > 0.0f)
 	{
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
-		materials->SetAmbientColor(ColorRGBA(params.shadowColor,params.shadowAlpha));
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
+		g_matSystem->SetAmbientColor(ColorRGBA(params.shadowColor,params.shadowAlpha));
 
 		if (m_flags.sdf)
 		{
@@ -487,7 +487,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 		else
 			sdfRange.Set(Vector3D(0.0f, 1.0f, 0.0f));
 
-		materials->BindMaterial(fontMaterial);
+		g_matSystem->BindMaterial(fontMaterial);
 
 		mesh->Render();
 	}
@@ -500,10 +500,10 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	else
 		sdfRange.Set(Vector3D(0.0f, 1.0f, 1.0f));
 
-	materials->SetAmbientColor(color_white);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
+	g_matSystem->SetAmbientColor(color_white);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
-	materials->BindMaterial(fontMaterial);
+	g_matSystem->BindMaterial(fontMaterial);
 
 	mesh->Render();
 }

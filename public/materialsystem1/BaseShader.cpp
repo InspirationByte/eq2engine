@@ -208,7 +208,7 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlo
 
 	// editor parameters are separate prefixed ones
 	// this allows to have values of parameters that are represented in the game while alter rendering in editor.
-	if (materials->GetConfiguration().editormode)
+	if (g_matSystem->GetConfiguration().editormode)
 		mv = GetAssignedMaterial()->FindMaterialVar(EqString::Format("editor.%s", paramName));
 
 	if (!mv.IsValid())
@@ -217,7 +217,7 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlo
 	// check if we want to use material system global var under that name
 	// NOTE: they have to be valid always in order to link proxies
 	if (allowGlobals && mv.IsValid() && *mv.Get() == '$')
-		mv = materials->GetGlobalMaterialVarByName(((const char*)mv.Get())+1);
+		mv = g_matSystem->GetGlobalMaterialVarByName(((const char*)mv.Get())+1);
 
 	return mv;
 }
@@ -256,17 +256,17 @@ MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorT
 void CBaseShader::ParamSetup_AlphaModel_Solid()
 {
 	// setup default alphatesting from shaderapi
-	materials->SetBlendingStates( BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD );
+	g_matSystem->SetBlendingStates( BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD );
 }
 
 void CBaseShader::ParamSetup_AlphaModel_Translucent()
 {
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
 }
 
 void CBaseShader::ParamSetup_AlphaModel_Additive()
 {
-	materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
 
 	//m_fogenabled = false;
 	m_depthwrite = false;
@@ -274,7 +274,7 @@ void CBaseShader::ParamSetup_AlphaModel_Additive()
 
 void CBaseShader::ParamSetup_AlphaModel_AdditiveLight()
 {
-	materials->SetBlendingStates(BLENDFACTOR_DST_COLOR, BLENDFACTOR_SRC_COLOR, BLENDFUNC_ADD);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_DST_COLOR, BLENDFACTOR_SRC_COLOR, BLENDFUNC_ADD);
 
 	//m_fogenabled = false;
 	m_depthwrite = false;
@@ -283,7 +283,7 @@ void CBaseShader::ParamSetup_AlphaModel_AdditiveLight()
 // this mode is designed for control of fog
 void CBaseShader::ParamSetup_AlphaModel_Additive_Fog()
 {
-	materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
 
 	m_depthwrite = false;
 }
@@ -291,34 +291,34 @@ void CBaseShader::ParamSetup_AlphaModel_Additive_Fog()
 void CBaseShader::ParamSetup_AlphaModel_Modulate()
 {
 	// setup default alphatesting from shaderapi
-	materials->SetBlendingStates(BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR, BLENDFUNC_ADD);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR, BLENDFUNC_ADD);
 	m_depthwrite = false;
 }
 
 void CBaseShader::ParamSetup_RasterState()
 {
-	const materialsRenderSettings_t& config = materials->GetConfiguration();
+	const materialsRenderSettings_t& config = g_matSystem->GetConfiguration();
 
-	ER_CullMode cull_mode = materials->GetCurrentCullMode();
+	ER_CullMode cull_mode = g_matSystem->GetCurrentCullMode();
 	if(config.wireframeMode && config.editormode)
 		cull_mode = CULL_NONE;
 
-	materials->SetRasterizerStates(cull_mode, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
+	g_matSystem->SetRasterizerStates(cull_mode, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
 void CBaseShader::ParamSetup_RasterState_NoCull()
 {
-	const materialsRenderSettings_t& config = materials->GetConfiguration();
-	materials->SetRasterizerStates(CULL_NONE, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
+	const materialsRenderSettings_t& config = g_matSystem->GetConfiguration();
+	g_matSystem->SetRasterizerStates(CULL_NONE, (ER_FillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
 void CBaseShader::ParamSetup_Transform()
 {
 	Matrix4x4 wvp_matrix, world, view, proj;
-	materials->GetWorldViewProjection(wvp_matrix);
-	materials->GetMatrix(MATRIXMODE_WORLD, world);
-	materials->GetMatrix(MATRIXMODE_VIEW, view);
-	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
+	g_matSystem->GetWorldViewProjection(wvp_matrix);
+	g_matSystem->GetMatrix(MATRIXMODE_WORLD, world);
+	g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
+	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, proj);
 
 	g_renderAPI->SetShaderConstant(StringToHashConst("WVP"), wvp_matrix);
 	g_renderAPI->SetShaderConstant(StringToHashConst("World"), world);
@@ -331,13 +331,13 @@ void CBaseShader::ParamSetup_Transform()
 
 void CBaseShader::ParamSetup_DepthSetup()
 {
-	materials->SetDepthStates(m_depthtest, m_depthwrite);
+	g_matSystem->SetDepthStates(m_depthtest, m_depthwrite);
 }
 
 void CBaseShader::ParamSetup_Fog()
 {
 	FogInfo_t fog;
-	materials->GetFogInfo(fog);
+	g_matSystem->GetFogInfo(fog);
 
 	// setup shader fog
 	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);

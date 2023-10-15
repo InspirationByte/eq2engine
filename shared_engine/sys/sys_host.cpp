@@ -115,7 +115,7 @@ enum CursorCode
 
 static DKMODULE*	g_matsysmodule = nullptr;
 
-IMaterialSystem*	materials = nullptr;
+IMaterialSystem*	g_matSystem = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
 
 void CGameHost::HostQuitToDesktop()
@@ -140,8 +140,8 @@ bool CGameHost::LoadModules()
 		return false;
 	}
 
-	materials = g_eqCore->GetInterface<IMaterialSystem>();
-	if(!materials)
+	g_matSystem = g_eqCore->GetInterface<IMaterialSystem>();
+	if(!g_matSystem)
 	{
 		ErrorMsg("ERROR! Couldn't get interface of eqMatSystem!");
 		return false;
@@ -190,7 +190,7 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 
 		OnWindowResize(nAdjustedWide, nAdjustedTall);
 
-		if (materials->SetWindowed(false))
+		if (g_matSystem->SetWindowed(false))
 		{
 			Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
 
@@ -212,7 +212,7 @@ void CGameHost::SetWindowedMode()
 	int nAdjustedTall = atoi(args[1].GetData());
 
 	OnWindowResize(nAdjustedWide, nAdjustedTall);
-	if (materials->SetWindowed(true))
+	if (g_matSystem->SetWindowed(true))
 	{
 		Msg("Set %dx%d mode (windowed)\n", nAdjustedWide, nAdjustedTall);
 
@@ -392,12 +392,12 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	materials_config.shaderApiParams.verticalSyncEnabled = r_vSync.GetBool();
 	materials_config.renderConfig.lowShaderQuality = r_fastShaders.GetBool();
 
-	if(!materials->Init(materials_config))
+	if(!g_matSystem->Init(materials_config))
 		return false;
 
-	g_renderAPI = materials->GetShaderAPI();
+	g_renderAPI = g_matSystem->GetShaderAPI();
 
-	materials->LoadShaderLibrary("eqBaseShaders");
+	g_matSystem->LoadShaderLibrary("eqBaseShaders");
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
@@ -586,7 +586,7 @@ void CGameHost::ShutdownSystems()
 
 	g_consoleInput->Shutdown();
 
-	materials->Shutdown();
+	g_matSystem->Shutdown();
 	g_fileSystem->CloseModule( g_matsysmodule );
 
 	SDL_DestroyWindow(g_pHost->m_pWindow);
@@ -730,7 +730,7 @@ bool CGameHost::Frame()
 
 	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
 	// this also resets matsystem from overdraw
-	materials->GetConfiguration().overdrawMode = false;
+	g_matSystem->GetConfiguration().overdrawMode = false;
 
 	// Engine frames status
 	static float gameAccTime = 0.1f;
@@ -771,7 +771,7 @@ bool CGameHost::Frame()
 	
 	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
 
-	materials->Setup2D(m_winSize.x, m_winSize.y);
+	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
 
 	equi::Manager->SetViewFrame(IAARectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
@@ -829,13 +829,13 @@ void CGameHost::OnWindowResize(int width, int height)
 	m_winSize.x = width;
 	m_winSize.y = height;
 
-	if(materials)
-		materials->SetDeviceBackbufferSize( width, height );
+	if(g_matSystem)
+		g_matSystem->SetDeviceBackbufferSize( width, height );
 }
 
 void CGameHost::OnFocusChanged(bool inFocus)
 {
-	materials->SetDeviceFocused(inFocus);
+	g_matSystem->SetDeviceFocused(inFocus);
 }
 
 void CGameHost::BeginScene()
@@ -844,14 +844,14 @@ void CGameHost::BeginScene()
 	g_renderAPI->SetViewport(0,0, m_winSize.x, m_winSize.y);
 
 	// Begin frame from render lib
-	materials->BeginFrame(nullptr);
+	g_matSystem->BeginFrame(nullptr);
 	g_renderAPI->Clear(false,true,false);
 
 	HOOK_TO_CVAR(r_wireframe)
-	materials->GetConfiguration().wireframeMode = r_wireframe->GetBool();
+	g_matSystem->GetConfiguration().wireframeMode = r_wireframe->GetBool();
 
 	HOOK_TO_CVAR(r_overdraw)
-	materials->GetConfiguration().overdrawMode = r_overdraw->GetBool();
+	g_matSystem->GetConfiguration().overdrawMode = r_overdraw->GetBool();
 }
 
 void CGameHost::EndScene()
@@ -860,7 +860,7 @@ void CGameHost::EndScene()
 	g_renderAPI->Flush();
 
 	// End frame from render lib
-	materials->EndFrame();
+	g_matSystem->EndFrame();
 }
 
 void CGameHost::RequestTextInput()

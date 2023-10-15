@@ -527,12 +527,12 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-	materials->SetDepthStates(false, false);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	g_matSystem->SetDepthStates(false, false);
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
 	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
@@ -540,7 +540,7 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
 		meshBuilder.Color4fv(color1);
@@ -573,12 +573,12 @@ void IUIControl::Render(int depth)
 
 	const IAARectangle clientRectRender = GetClientRectangle();
 
-	materials->SetAmbientColor(color_white);	// max color mode
-	materials->SetFogInfo(FogInfo_t());			// disable fog
+	g_matSystem->SetAmbientColor(color_white);	// max color mode
+	g_matSystem->SetFogInfo(FogInfo_t());			// disable fog
 
 	// calculate absolute transformation using previous matrix
 	Matrix4x4 prevTransform;
-	materials->GetMatrix(MATRIXMODE_WORLD2, prevTransform);
+	g_matSystem->GetMatrix(MATRIXMODE_WORLD2, prevTransform);
 
 	// we apply scaling to our transform to match the units of the elements
 	const Vector2D scale = CalcScaling();
@@ -591,7 +591,7 @@ void IUIControl::Render(int depth)
 	const Matrix4x4 newTransform = (prevTransform * localTransform);
 
 	// load new absolulte transformation
-	materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
 
 	if( m_parent && m_selfVisible )
 	{
@@ -609,8 +609,8 @@ void IUIControl::Render(int depth)
 
 		// force rasterizer state
 		// other states are pretty useless
-		materials->SetRasterizerStates(rasterState);
-		materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
+		g_matSystem->SetRasterizerStates(rasterState);
+		g_matSystem->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
 
 		// paint control itself
 		DrawSelf( clientRectRender, rasterState.scissor);
@@ -631,12 +631,12 @@ void IUIControl::Render(int depth)
 	for (auto it = m_childs.last(); !it.atEnd(); --it)
 	{
 		// load new absolulte transformation
-		materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
 		(*it)->Render(depth + 1);
 	}
 
 	// always reset previous absolute transformation
-	materials->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point) const

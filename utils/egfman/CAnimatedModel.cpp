@@ -255,18 +255,18 @@ void CAnimatedModel::RenderPhysModel()
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->SetAmbientColor(ColorRGBA(1,0,1,1));
-	materials->SetDepthStates(true,false);
-	materials->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
-	materials->SetBlendingStates(blending);
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->SetAmbientColor(ColorRGBA(1,0,1,1));
+	g_matSystem->SetDepthStates(true,false);
+	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	Matrix4x4 worldPosMatrix;
-	materials->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
+	g_matSystem->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	for(int i = 0; i < physData.numObjects; i++)
 	{
@@ -286,8 +286,8 @@ void CAnimatedModel::RenderPhysModel()
 				int visualMatrixIdx = m_pRagdoll->m_pBoneToVisualIndices[i];
 				Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();
 
-				materials->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_boneTransforms[visualMatrixIdx]));
-				materials->BindMaterial(materials->GetDefaultMaterial());
+				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_boneTransforms[visualMatrixIdx]));
+				g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 			}
 
 			meshBuilder.Begin(PRIM_TRIANGLES);
@@ -364,7 +364,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 			posMatrix = m_physObj->GetTransformMatrix();
 	}
 
-	materials->SetMatrix(MATRIXMODE_WORLD, posMatrix);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD, posMatrix);
 
 	const studioHdr_t& studio = m_pModel->GetStudioHdr();
 
@@ -380,7 +380,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	*/
 
-	materials->SetAmbientColor( color_white );
+	g_matSystem->SetAmbientColor( color_white );
 
 	int startLOD = m_pModel->SelectLod( fDist );
 

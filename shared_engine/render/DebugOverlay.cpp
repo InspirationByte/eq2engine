@@ -57,12 +57,12 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-	materials->SetDepthStates(false,false);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	g_matSystem->SetDepthStates(false,false);
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
 	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
@@ -70,7 +70,7 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
 		meshBuilder.Color4fv(color1);
@@ -439,18 +439,18 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 	if(!lines.numElem())
 		return;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-	materials->SetDepthStates(true, false);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	g_matSystem->SetRasterizerStates(CULL_NONE,FILL_SOLID);
+	g_matSystem->SetDepthStates(true, false);
 
-	materials->Apply();
+	g_matSystem->Apply();
 
 	// bind the default material as we're emulating an FFP
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
 
 		for(int i = 0; i < lines.numElem(); i++)
@@ -478,18 +478,18 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 	if (!boxes.numElem())
 		return;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
-	materials->SetDepthStates(true, false);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
+	g_matSystem->SetDepthStates(true, false);
 
-	materials->Apply();
+	g_matSystem->Apply();
 
 	// bind the default material as we're emulating an FFP
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i < boxes.numElem(); i++)
@@ -551,18 +551,18 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 	if(!boxes.numElem())
 		return;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-	materials->SetDepthStates(true,false);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	g_matSystem->SetRasterizerStates(CULL_NONE,FILL_SOLID);
+	g_matSystem->SetDepthStates(true,false);
 
-	materials->Apply();
+	g_matSystem->Apply();
 
 	// bind the default material as we're emulating an FFP
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
 
 		for(int i = 0; i < boxes.numElem(); i++)
@@ -669,18 +669,18 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinde
 
 static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float frametime)
 {
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
-	materials->SetDepthStates(true, false);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
+	g_matSystem->SetDepthStates(true, false);
 
-	materials->Apply();
+	g_matSystem->Apply();
 
 	// bind the default material as we're emulating an FFP
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i < cylArray.numElem(); ++i)
@@ -737,7 +737,7 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), nullptr, color_white, &blending);
+	g_matSystem->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), nullptr, color_white, &blending);
 
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
@@ -792,7 +792,7 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 	if(graph->dynamic)
 		graph->maxValue = graph_max_value;
 
-	materials->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, nullptr, color_white);
+	g_matSystem->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, nullptr, color_white);
 
 	graph->remainingTime -= frame_time;
 
@@ -806,16 +806,16 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 	if(!polygons.numElem())
 		return;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
-	materials->SetDepthStates(true, true);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_SOLID);
+	g_matSystem->SetDepthStates(true, true);
 
 	// bind the default material as we're emulating an FFP
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLES);
 
 		for(int i = 0; i < polygons.numElem(); i++)
@@ -1031,16 +1031,16 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 	if(!spheres.numElem())
 		return;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
-	materials->SetDepthStates(true, true);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_SOLID);
+	g_matSystem->SetDepthStates(true, true);
 
 	// bind the default material as we're emulating an FFP
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	//meshBuilder.Begin(PRIM_TRIANGLES);
 
 	meshBuilder.Begin(PRIM_LINES);
@@ -1071,10 +1071,10 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 #ifndef DISABLE_DEBUG_DRAWING
 	g_renderAPI->SetViewport(0, 0, winWide, winTall);
-	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
-	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
-	materials->SetAmbientColor(1.0f);
+	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
+	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
+	g_matSystem->SetAmbientColor(1.0f);
 
 	CleanOverlays();
 
@@ -1096,10 +1096,10 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 	// may need a reset again
 	g_renderAPI->SetViewport(0, 0, winWide, winTall);
-	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
-	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
-	materials->SetAmbientColor(1.0f);
+	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
+	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
+	g_matSystem->SetAmbientColor(1.0f);
 
 	// draw all of 3d stuff
 	{
@@ -1133,7 +1133,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	}
 
 	// now rendering 2D stuff
-	materials->Setup2D(winWide, winTall);
+	g_matSystem->Setup2D(winWide, winTall);
 
 	const Vector2D drawFadedTextBoxPosition = Vector2D(15,45);
 	const Vector2D drawTextBoxPosition = Vector2D(15,45);
@@ -1288,7 +1288,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	// more universal thing
 	if( g_pDebugTexture )
 	{
-		materials->Setup2D( winWide, winTall );
+		g_matSystem->Setup2D( winWide, winTall );
 
 		float w, h;
 		w = (float)g_pDebugTexture->GetWidth()*r_debugShowTextureScale.GetFloat();
@@ -1303,7 +1303,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		}
 
 		Vertex2D_t light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, light_depth, elementsOf(light_depth),g_pDebugTexture);
+		g_matSystem->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, light_depth, elementsOf(light_depth),g_pDebugTexture);
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;

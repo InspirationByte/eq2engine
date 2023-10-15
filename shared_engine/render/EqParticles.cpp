@@ -47,7 +47,7 @@ void CParticleBatch::Init( const char* pszMaterialName, bool bCreateOwnVBO, int 
 	// init sprite stuff
 	CSpriteBuilder::Init(maxQuads);
 
-	m_material = materials->GetMaterial(pszMaterialName);
+	m_material = g_matSystem->GetMaterial(pszMaterialName);
 }
 
 void CParticleBatch::Shutdown()
@@ -111,13 +111,13 @@ void CParticleBatch::Render(int nViewRenderFlags)
 		g_renderAPI->SetIndexBuffer(g_pfxRender->m_indexBuffer);
 
 	const bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
-	materials->SetCullMode(invertCull ? CULL_BACK : CULL_FRONT);
+	g_matSystem->SetCullMode(invertCull ? CULL_BACK : CULL_FRONT);
 
 	if(m_useCustomProjMat)
-		materials->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
+		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
-	materials->BindMaterial(m_material);
+	g_matSystem->BindMaterial(m_material);
 
 	const int primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
 
@@ -131,9 +131,9 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	HOOK_TO_CVAR(r_wireframe)
 	if(r_wireframe->GetBool())
 	{
-		materials->SetRasterizerStates(CULL_FRONT, FILL_WIREFRAME);
+		g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_WIREFRAME);
 
-		materials->SetDepthStates(false,false);
+		g_matSystem->SetDepthStates(false,false);
 
 		static IShaderProgram* flat = g_renderAPI->FindShaderProgram("DefaultFlatColor");
 
@@ -295,7 +295,7 @@ CParticleBatch* CParticleLowLevelRenderer::FindBatch(const char* materialName) c
 void CParticleLowLevelRenderer::PreloadMaterials()
 {
 	for(int i = 0; i < m_batchs.numElem(); i++)
-		materials->PutMaterialToLoadingQueue(m_batchs[i]->m_material);
+		g_matSystem->PutMaterialToLoadingQueue(m_batchs[i]->m_material);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer

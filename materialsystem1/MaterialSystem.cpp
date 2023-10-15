@@ -38,7 +38,7 @@ IShaderAPI* g_renderAPI = nullptr;
 
 // register material system
 static CMaterialSystem s_matsystem;
-IMaterialSystem* materials = &s_matsystem;
+IMaterialSystem* g_matSystem = &s_matsystem;
 
 // standard vertex format used by the material system's dynamic mesh instance
 static VertexFormatDesc g_dynMeshVertexFormatDesc[] = {
@@ -1003,7 +1003,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	if( m_config.overdrawMode )
 	{
 		InitDefaultMaterial();
-		materials->SetAmbientColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+		g_matSystem->SetAmbientColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
 		success = (*materialstate_callbacks[subRoutineId])(m_overdrawMaterial, 0xFFFFFFFF);
 	}
 	else

@@ -38,14 +38,14 @@ void DrawWorldCenter()
 	raster.multiSample = true;
 	raster.scissor = false;
 
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	materials->SetRasterizerStates(raster);
-	materials->SetDepthStates(depth);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	g_matSystem->SetRasterizerStates(raster);
+	g_matSystem->SetDepthStates(depth);
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	meshBuilder.Begin(PRIM_LINES);
 	ColorRGBA color(0, 0.45f, 0.45f, 1);
@@ -64,16 +64,16 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 {
 	int grid_lines = count;
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	materials->SetDepthStates(depthTest, false);
-	materials->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false, true);
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->SetDepthStates(depthTest, false);
+	g_matSystem->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false, true);
+	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	int numOfLines = grid_lines / size;
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i <= numOfLines; i++)

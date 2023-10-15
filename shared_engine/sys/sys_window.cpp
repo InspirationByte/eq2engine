@@ -30,11 +30,11 @@ DECLARE_CVAR(screenshotJpegQuality, "100", "JPEG Quality", CV_ARCHIVE);
 
 DECLARE_CMD(screenshot, "Save screenshot", 0)
 {
-	if(materials == nullptr)
+	if(g_matSystem == nullptr)
 		return;
 
 	CImage img;
-	if( !materials->CaptureScreenshot(img) )
+	if( !g_matSystem->CaptureScreenshot(img) )
 		return;
 
 	// pick the best filename

@@ -214,4 +214,4 @@ inline void CBaseMaterialProxy::mvSetValueInt(proxyvar_t& var, int value)
 	}
 
 #define REGISTER_PROXY(localName, className)	\
-	materials->RegisterProxy( &C##className##Factory, #localName );
+	g_matSystem->RegisterProxy( &C##className##Factory, #localName );

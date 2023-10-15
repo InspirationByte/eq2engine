@@ -34,10 +34,10 @@ static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->SetAmbientColor(color_white);
-	materials->SetDepthStates(false, false);
-	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID, true, true);
+	g_matSystem->SetAmbientColor(color_white);
+	g_matSystem->SetDepthStates(false, false);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID, true, true);
 }
 
 // Render function.
@@ -50,7 +50,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 	// Setup desired DX state
 	ImGui_ImplMatSystem_SetupRenderState(draw_data);
 
-	IDynamicMesh* pMatsysMesh = materials->GetDynamicMesh();
+	IDynamicMesh* pMatsysMesh = g_matSystem->GetDynamicMesh();
 
 	CMeshBuilder mb(pMatsysMesh);
 	float halfPixelOfs = 0.0f;
@@ -63,8 +63,8 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
 
-		materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-		materials->BindMaterial(materials->GetDefaultMaterial());
+		g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+		g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 		mb.Begin(PRIM_TRIANGLES);
 
@@ -115,9 +115,9 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 				IAARectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
 				g_renderAPI->SetScissorRectangle(scissor);
 
-				materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(ITexturePtr(texture));
+				g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(ITexturePtr(texture));
 
-				materials->BindMaterial(materials->GetDefaultMaterial());
+				g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 				pMatsysMesh->Render(pcmd->IdxOffset, pcmd->ElemCount);
 			}
 		}

@@ -632,7 +632,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	if(!in_touchzones_debug.GetBool())
 		return;
 
-	materials->Setup2D(screenSize.x,screenSize.y);
+	g_matSystem->Setup2D(screenSize.x,screenSize.y);
 
 	eqFontStyleParam_t fontParams;
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
@@ -644,16 +644,16 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
 
-	materials->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(CULL_FRONT);
-	materials->SetDepthStates(false, false);
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
+	g_matSystem->SetBlendingStates(blending);
+	g_matSystem->SetRasterizerStates(CULL_FRONT);
+	g_matSystem->SetDepthStates(false, false);
+	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	Array<AARectangle> rects(PP_SL);
 	rects.resize(m_touchZones.numElem());
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 

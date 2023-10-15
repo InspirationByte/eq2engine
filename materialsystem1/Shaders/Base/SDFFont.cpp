@@ -63,7 +63,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 	void SetColorModulation()
 	{
-		ColorRGBA setColor = materials->GetAmbientColor();
+		ColorRGBA setColor = g_matSystem->GetAmbientColor();
 		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
 	}
 

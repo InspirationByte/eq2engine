@@ -47,7 +47,7 @@ void CStudioCache::InitErrorMaterial()
 	overdrawParams.SetName("Skinned"); // set shader 'BaseUnlit'
 	overdrawParams.SetKey("BaseTexture", "error");
 
-	m_errorMaterial = materials->CreateMaterial("_studioErrorMaterial", &overdrawParams);
+	m_errorMaterial = g_matSystem->CreateMaterial("_studioErrorMaterial", &overdrawParams);
 	m_errorMaterial->LoadShaderAndTextures();
 }
 
