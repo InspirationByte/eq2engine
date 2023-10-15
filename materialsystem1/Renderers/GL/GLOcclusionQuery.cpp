@@ -11,10 +11,6 @@
 
 CGLOcclusionQuery::CGLOcclusionQuery()
 {
-	m_ready = false;
-	m_pixelsVisible = 0;
-	m_query = GL_NONE;
-
 	glGenQueries(1, &m_query);
 }
 

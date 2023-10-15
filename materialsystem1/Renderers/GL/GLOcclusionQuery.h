@@ -28,7 +28,7 @@ public:
 
 protected:
 
-	uint				m_query;
-	uint				m_pixelsVisible;
-	bool				m_ready;
+	uint				m_query{ 0 };
+	uint				m_pixelsVisible{ 0 };
+	bool				m_ready{ true };
 };
