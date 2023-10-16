@@ -62,7 +62,7 @@ DECLARE_CVAR(r_slopeDepthBias, "-1.5", nullptr, CV_CHEAT);
 DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {
 	s_matsystem.ReloadAllMaterials();
-	s_matsystem.Wait();
+	s_matsystem.WaitAllMaterialsLoaded();
 }
 
 DECLARE_CMD(mat_print, "Print MatSystem info and loaded material list",0)
@@ -1014,7 +1014,7 @@ IMaterialPtr CMaterialSystem::GetBoundMaterial() const
 }
 
 // waits for material loader thread is finished
-void CMaterialSystem::Wait()
+void CMaterialSystem::WaitAllMaterialsLoaded()
 {
 	if (m_config.threadedloader && s_threadedMaterialLoader.IsRunning())
 		s_threadedMaterialLoader.WaitForThread();
@@ -1127,8 +1127,12 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 	const MColor clearColor = m_config.overdrawMode ? color_black : MColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 	// reset viewport and scissor
-	g_renderAPI->SetViewport(0, 0, m_backbufferSize.x, m_backbufferSize.y);
-	g_renderAPI->SetScissorRectangle(IAARectangle(0, 0, m_backbufferSize.x, m_backbufferSize.y));
+	IVector2D backbufferSize = m_backbufferSize;
+	if (swapChain)
+		swapChain->GetBackbufferSize(backbufferSize.x, backbufferSize.y);
+
+	g_renderAPI->SetViewport(0, 0, backbufferSize.x, backbufferSize.y);
+	g_renderAPI->SetScissorRectangle(IAARectangle(0, 0, backbufferSize.x, backbufferSize.y));
 
 #ifdef PLAT_ANDROID
 	// always clear all on Android

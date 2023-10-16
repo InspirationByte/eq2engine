@@ -85,14 +85,10 @@ public:
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
 	virtual bool					Init(const MaterialsInitSettings& config) = 0;
-
-	// shutdowns material system, unloading all.
 	virtual void					Shutdown() = 0;
 
-	// Loads and adds new shader library.
 	virtual bool					LoadShaderLibrary(const char* libname) = 0;
 
-	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
 	virtual MaterialsRenderSettings&	GetConfiguration() = 0;
 
 	// returns material path
@@ -100,102 +96,60 @@ public:
 	virtual const char*				GetMaterialSRCPath() const = 0;
 
 	//-----------------------------
+	// Internal operations
+
+	virtual IShaderAPI*				GetShaderAPI() const = 0;
+
+	virtual void					RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
+	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
+
+	virtual void					RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
+	virtual void					RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
+
+	virtual void					AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
+	virtual void					RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
+
+	//-----------------------------
+	// Swap chains
+
+	virtual bool					BeginFrame(IEqSwapChain* swapChain) = 0;
+	virtual bool					EndFrame() = 0;
+
+	virtual bool					CaptureScreenshot(CImage& img) = 0;
+
+	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
+	virtual void					SetDeviceFocused(bool inFocus) = 0;
+
+	virtual IEqSwapChain*			CreateSwapChain(void* windowHandle) = 0;
+	virtual void					DestroySwapChain(IEqSwapChain* chain) = 0;
+
+	virtual bool					SetWindowed(bool enable) = 0;
+	virtual bool					IsWindowed() const = 0;
+
+	//-----------------------------
 	// Resource operations
 	//-----------------------------
 
 	virtual const IMaterialPtr&		GetDefaultMaterial() const = 0;
-
 	virtual	const ITexturePtr&		GetWhiteTexture() const = 0;
 	virtual	const ITexturePtr&		GetLuxelTestTexture() const = 0;
 
-	// creates new material with defined parameters
 	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
-
-	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
 	virtual IMaterialPtr			GetMaterial(const char* szMaterialName) = 0;
-
-	// checks material for existence
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
-	// Creates material system shader
 	virtual IMaterialSystemShader*	CreateShaderInstance(const char* szShaderName) = 0;
 
-	// Loads textures, compiles shaders. Called after level loading
-	virtual void					PreloadNewMaterials() = 0;
-
-	// waits for material loader thread is finished
-	virtual void					Wait() = 0;
-
-	// loads material or sends it to loader thread
 	virtual void					PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial) = 0;
-
-	// returns material count which is currently loading or awaiting for load
+	virtual void					PreloadNewMaterials() = 0;
+	virtual void					WaitAllMaterialsLoaded() = 0;
 	virtual int						GetLoadingQueue() const = 0;
 
-	// Reloads material vars, shaders and textures without touching a material pointers.
 	virtual void					ReloadAllMaterials() = 0;
-
-	// releases non-used materials
 	virtual void					ReleaseUnusedMaterials() = 0;
-
-	// Frees materials
 	virtual void					FreeMaterial(IMaterial* pMaterial) = 0;
 
-	//-----------------------------
-
-	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
-
-	//-----------------------------
-	
-	// draw primitives with default material
-	virtual void					DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
-													const ITexturePtr& texture = nullptr, const MColor &color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr) = 0;
-
-	template<typename VERT>
-	void							DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts,
-													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr);
-
-	template<typename ARRAY_TYPE>
-	void							DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts,
-													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr);
-
-	//-----------------------------
-	// Shader dynamic states
-	//-----------------------------
-
-	virtual ECullMode				GetCurrentCullMode() const = 0;
-	virtual void					SetCullMode(ECullMode cullMode) = 0;
-
-	virtual void					SetSkinningEnabled(bool bEnable) = 0;
-	virtual bool					IsSkinningEnabled() const = 0;
-
-	virtual void					SetInstancingEnabled(bool bEnable) = 0;
-	virtual bool					IsInstancingEnabled() const = 0;
-
-	virtual void					SetFogInfo(const FogInfo& info) = 0;
-	virtual void					GetFogInfo(FogInfo& info) const = 0;
-
-	virtual void					SetAmbientColor(const ColorRGBA& color) = 0;
-	virtual ColorRGBA				GetAmbientColor() const = 0;
-
-	//-----------------------------
-	// RHI render states setup
-	//-----------------------------
-
-	virtual void					SetBlendingStates(const BlendStateParams& blend) = 0;
-	virtual void					SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL) = 0;
-
-	virtual void					SetDepthStates(const DepthStencilStateParams& depth) = 0;
-	virtual void					SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
-
-	virtual void					SetRasterizerStates(const RasterizerStateParams& raster) = 0;
-	virtual void					SetRasterizerStates(ECullMode nCullMode, EFillMode nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false, bool bPolyOffset = false) = 0;
+	virtual void					PrintLoadedMaterials() = 0;
 
 	//------------------
 	// Materials or shader static states
@@ -223,7 +177,6 @@ public:
 
 	//-----------------------------
 	// Rendering projection helper operations
-	// TODO: replace with CViewParams
 
 	virtual void					Setup2D(float wide, float tall) = 0;
 	virtual void					SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar) = 0;
@@ -235,39 +188,57 @@ public:
 	virtual void					GetWorldViewProjection(Matrix4x4& matrix) = 0;
 
 	//-----------------------------
-	// Swap chains
+	// Render states 
+	// TODO: remove them all, replace with something that would take render pas instead
+
+	virtual ECullMode				GetCurrentCullMode() const = 0;
+	virtual void					SetCullMode(ECullMode cullMode) = 0;
+
+	virtual void					SetSkinningEnabled(bool bEnable) = 0;
+	virtual bool					IsSkinningEnabled() const = 0;
+
+	virtual void					SetInstancingEnabled(bool bEnable) = 0;
+	virtual bool					IsInstancingEnabled() const = 0;
+
+	virtual void					SetFogInfo(const FogInfo& info) = 0;
+	virtual void					GetFogInfo(FogInfo& info) const = 0;
+
+	virtual void					SetAmbientColor(const ColorRGBA& color) = 0;
+	virtual ColorRGBA				GetAmbientColor() const = 0;
+
+	virtual void					SetBlendingStates(const BlendStateParams& blend) = 0;
+	virtual void					SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL) = 0;
+
+	virtual void					SetDepthStates(const DepthStencilStateParams& depth) = 0;
+	virtual void					SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
+
+	virtual void					SetRasterizerStates(const RasterizerStateParams& raster) = 0;
+	virtual void					SetRasterizerStates(ECullMode nCullMode, EFillMode nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false, bool bPolyOffset = false) = 0;
+
+
 	//-----------------------------
+	// Drawing
 
-	virtual bool					BeginFrame(IEqSwapChain* swapChain) = 0;
-	virtual bool					EndFrame() = 0;
+	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 
-	virtual bool					CaptureScreenshot(CImage& img) = 0;
+	// draw primitives with default material
+	virtual void					DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
+													const ITexturePtr& texture = nullptr, const MColor &color = color_white,
+													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+													RasterizerStateParams* rasterParams = nullptr) = 0;
 
-	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
-	virtual void					SetDeviceFocused(bool inFocus) = 0;
+	template<typename VERT>
+	void							DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts,
+													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
+													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+													RasterizerStateParams* rasterParams = nullptr);
 
-	virtual IEqSwapChain*			CreateSwapChain(void* windowHandle) = 0;
-	virtual void					DestroySwapChain(IEqSwapChain* chain) = 0;
+	template<typename ARRAY_TYPE>
+	void							DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts,
+													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
+													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+													RasterizerStateParams* rasterParams = nullptr);
 
-	virtual bool					SetWindowed(bool enable) = 0;
-	virtual bool					IsWindowed() const = 0;
-
-	//-----------------------------
-	// Internal operations
-	//-----------------------------
-
-	virtual IShaderAPI*				GetShaderAPI() const = 0;
-
-	virtual void					RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
-	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
-
-	virtual void					RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
-	virtual void					RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
-
-	virtual void					AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
-	virtual void					RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
-
-	virtual void					PrintLoadedMaterials() = 0;
 };
 
 template<typename VERT>

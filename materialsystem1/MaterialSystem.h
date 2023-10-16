@@ -85,7 +85,7 @@ public:
 	void							PreloadNewMaterials();
 
 	// waits for material loader thread is finished
-	void							Wait();
+	void							WaitAllMaterialsLoaded();
 
 	// loads material or sends it to loader thread
 	void							PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial);
