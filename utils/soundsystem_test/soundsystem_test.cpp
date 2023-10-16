@@ -306,14 +306,9 @@ void InitMatSystem(EQWNDHANDLE window)
 
 		MaterialsInitSettings materials_config;
 		MaterialsRenderSettings& render_config = materials_config.renderConfig;
-
-		render_config.enableBumpmapping = false;
-		render_config.enableSpecular = true; // specular for cubemaps
 		render_config.enableShadows = false;
 		render_config.wireframeMode = false;
 		render_config.editormode = false;
-
-		render_config.lightingModel = MATERIAL_LIGHT_FORWARD;
 		render_config.threadedloader = true;
 		materials_config.shaderApiParams.screenFormat = format;
 

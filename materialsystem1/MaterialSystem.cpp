@@ -374,7 +374,7 @@ void CMaterialSystem::Shutdown()
 	m_dynamicMesh.Destroy();
 
 	m_setMaterial = nullptr;
-	m_pDefaultMaterial = nullptr;
+	m_defaultMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
 	SetEnvironmentMapTexture(nullptr);
 
@@ -468,7 +468,7 @@ void CMaterialSystem::CreateWhiteTexture()
 
 void CMaterialSystem::InitDefaultMaterial()
 {
-	if(!m_pDefaultMaterial)
+	if(!m_defaultMaterial)
 	{
 		KVSection defaultParams;
 		defaultParams.SetName("Default"); // set shader 'Default'
@@ -477,7 +477,7 @@ void CMaterialSystem::InitDefaultMaterial()
 		IMaterialPtr pMaterial = CreateMaterial("_default", &defaultParams);
 		pMaterial->LoadShaderAndTextures();
 
-		m_pDefaultMaterial = pMaterial;
+		m_defaultMaterial = pMaterial;
 	}
 
 	if(!m_overdrawMaterial)
@@ -495,11 +495,6 @@ void CMaterialSystem::InitDefaultMaterial()
 
 		m_overdrawMaterial = pMaterial;
 	}
-}
-
-bool CMaterialSystem::IsInStubMode() const
-{
-	return m_config.stubMode;
 }
 
 MaterialsRenderSettings& CMaterialSystem::GetConfiguration()
@@ -549,7 +544,6 @@ bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 bool CMaterialSystem::IsMaterialExist(const char* szMaterialName) const
 {
 	EqString mat_path(m_materialsPath + szMaterialName + _Es(".mat"));
-
 	return g_fileSystem->FileExist(mat_path.GetData());
 }
 
@@ -628,16 +622,11 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 // If we have unliaded material, just load it
 void CMaterialSystem::PreloadNewMaterials()
 {
-	if(m_config.stubMode)
-		return;
-
-	{
-		CScopedMutex m(s_matSystemMutex);
+	CScopedMutex m(s_matSystemMutex);
 	
-		for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
-		{
-			PutMaterialToLoadingQueue(IMaterialPtr(it.value()));
-		}
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
+	{
+		PutMaterialToLoadingQueue(IMaterialPtr(it.value()));
 	}
 }
 
@@ -654,7 +643,7 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 		if(!stricmp(material->GetName(), "Default"))
 			continue;
 
-		int framesDiff = (material->m_frameBound - m_frame);
+		const int framesDiff = (material->m_frameBound - m_frame);
 
 		// Flush materials
 		if(framesDiff >= m_config.materialFlushThresh - 1)
@@ -848,16 +837,6 @@ static bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint para
 	return false;
 }
 
-static bool Callback_BindFFPMaterial(IMaterial* pMaterial, uint paramMask)
-{
-	BindFFPMaterial(pMaterial, paramMask);
-
-	// bind same, but with base texture
-	g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), pMaterial->GetBaseTexture());
-
-	return false;
-}
-
 static bool Callback_BindNormalMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	((CMaterial*)pMaterial)->Setup(paramMask);
@@ -868,14 +847,12 @@ static bool Callback_BindNormalMaterial(IMaterial* pMaterial, uint paramMask)
 PFNMATERIALBINDCALLBACK materialstate_callbacks[] =
 {
 	Callback_BindErrorTextureFFPMaterial,	// binds ffp shader with error texture, error shader only
-	Callback_BindFFPMaterial,				// binds ffp shader with material textures, only FFP mode
 	Callback_BindNormalMaterial				// binds normal material.
 };
 
 enum EMaterialRenderSubroutine
 {
 	MATERIAL_SUBROUTINE_ERROR = 0,
-	MATERIAL_SUBROUTINE_FFPMATERIAL,
 	MATERIAL_SUBROUTINE_NORMAL,
 };
 
@@ -956,7 +933,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	if(!pMaterial)
 	{
 		InitDefaultMaterial();
-		pMaterial = m_pDefaultMaterial;
+		pMaterial = m_defaultMaterial;
 	}
 
 	CMaterial* pSetupMaterial = (CMaterial*)pMaterial;
@@ -979,9 +956,6 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	
 	EMaterialRenderSubroutine subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 
-	if(m_config.ffpMode)
-		subRoutineId = MATERIAL_SUBROUTINE_FFPMATERIAL;
-
 	if( pMaterial->GetState() == MATERIAL_LOAD_ERROR || pMaterial->GetState() == MATERIAL_LOAD_NEED_LOAD )
 		subRoutineId = MATERIAL_SUBROUTINE_ERROR;
 
@@ -989,7 +963,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	if( pMaterial->GetState() == MATERIAL_LOAD_INQUEUE )
 	{
 		InitDefaultMaterial();
-		setMaterial = m_pDefaultMaterial;
+		setMaterial = m_defaultMaterial;
 		subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 	}
 
@@ -1094,7 +1068,7 @@ ColorRGBA CMaterialSystem::GetAmbientColor() const
 
 const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
 {
-	return m_pDefaultMaterial;
+	return m_defaultMaterial;
 }
 
 const ITexturePtr& CMaterialSystem::GetWhiteTexture() const
@@ -1114,7 +1088,7 @@ const ITexturePtr& CMaterialSystem::GetLuxelTestTexture() const
 // tells 3d device to begin frame
 bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 {
-	if(m_config.stubMode || !m_shaderAPI)
+	if(!m_shaderAPI)
 		return false;
 
 	bool state, oldState = m_deviceActiveState;
@@ -1266,24 +1240,11 @@ void CMaterialSystem::GetFogInfo(FogInfo &info) const
 	if( m_config.overdrawMode)
 	{
 		static FogInfo nofog;
-
 		info = nofog;
-
 		return;
 	}
 
 	info = m_fogInfo;
-}
-
-// sets current lighting model as state
-void CMaterialSystem::SetCurrentLightingModel(EMaterialLightingMode lightingModel)
-{
-	m_curentLightingModel = lightingModel;
-}
-
-EMaterialLightingMode CMaterialSystem::GetCurrentLightingModel() const
-{
-	return m_curentLightingModel;
 }
 
 // sets pre-apply callback

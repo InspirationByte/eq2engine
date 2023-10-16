@@ -49,9 +49,6 @@ public:
 	// Loads and adds new shader library.
 	bool							LoadShaderLibrary(const char* libname);
 
-	// is matsystem in stub mode? (no rendering)
-	bool							IsInStubMode() const;
-
 	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
 	MaterialsRenderSettings&		GetConfiguration();
 
@@ -135,19 +132,12 @@ public:
 	void							SetInstancingEnabled( bool bEnable );
 	bool							IsInstancingEnabled() const;
 
-
 	void							SetFogInfo(const FogInfo &info);
 	void							GetFogInfo(FogInfo &info) const;
 
 	void							SetAmbientColor(const ColorRGBA &color);
 	ColorRGBA						GetAmbientColor() const;
 
-	// lighting/shading model selection
-	void							SetCurrentLightingModel(EMaterialLightingMode lightingModel);
-	EMaterialLightingMode			GetCurrentLightingModel() const;
-
-	//---------------------------
-	// $env_cubemap texture for use in shaders
 	void							SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture);
 	const ITexturePtr&				GetEnvironmentMapTexture() const;
 
@@ -155,35 +145,14 @@ public:
 	// RHI render states setup
 	//-----------------------------
 
-	// sets blending
 	void							SetBlendingStates(const BlendStateParams& blend);
+	void							SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL);
 
-	// sets depth stencil state
 	void							SetDepthStates(const DepthStencilStateParams& depth);
+	void							SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL);
 
-	// sets rasterizer extended mode
 	void							SetRasterizerStates(const RasterizerStateParams& raster);
-
-
-	// sets blending
-	void							SetBlendingStates(	EBlendFactor nSrcFactor,
-																EBlendFactor nDestFactor,
-																EBlendFunction nBlendingFunc = BLENDFUNC_ADD,
-																int colormask = COLORMASK_ALL
-																);
-
-	// sets depth stencil state
-	void							SetDepthStates(	bool bDoDepthTest,
-															bool bDoDepthWrite,
-															ECompareFunc depthCompFunc = COMPFUNC_LEQUAL);
-
-	// sets rasterizer extended mode
-	void							SetRasterizerStates(	ECullMode nCullMode,
-																	EFillMode nFillMode = FILL_SOLID,
-																	bool bMultiSample = true,
-																	bool bScissor = false,
-																	bool bPolyOffset = false
-																	);
+	void							SetRasterizerStates(ECullMode nCullMode,EFillMode nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false, bool bPolyOffset = false);
 
 	//------------------
 	// Materials or shader static states
@@ -297,7 +266,7 @@ private:
 	Array<DKMODULE*>				m_shaderLibs{ PP_SL };				// loaded shader libraries
 	Array<ShaderFactory>			m_shaderFactoryList{ PP_SL };		// registered shaders
 	Array<ShaderOverride>			m_shaderOverrideList{ PP_SL };		// shader override functors
-	Array<ShaderProxyFactory>			m_proxyFactoryList{ PP_SL };
+	Array<ShaderProxyFactory>		m_proxyFactoryList{ PP_SL };
 
 	Map<int, IMaterial*>			m_loadedMaterials{ PP_SL };			// loaded material list
 	ECullMode						m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
@@ -312,13 +281,11 @@ private:
 
 	IMatSysRenderCallbacks*			m_preApplyCallback{ nullptr };
 
-	EMaterialLightingMode			m_curentLightingModel{ MATERIAL_LIGHT_UNLIT };		// dynamic-changeable lighting model. Used as state
-
 	Matrix4x4						m_viewProjMatrix{ identity4 };
 	Matrix4x4						m_wvpMatrix{ identity4 };
 	Matrix4x4						m_matrices[5]{ identity4 };
 
-	IMaterialPtr					m_pDefaultMaterial;
+	IMaterialPtr					m_defaultMaterial;
 	IMaterialPtr					m_overdrawMaterial;
 	IMaterialPtr					m_setMaterial;						// currently bound material
 	uint							m_paramOverrideMask{ UINT_MAX };	// parameter setup mask for overrides

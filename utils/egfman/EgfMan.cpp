@@ -396,13 +396,9 @@ static void InitMatSystem(void* window)
 		MaterialsInitSettings materials_config;
 		MaterialsRenderSettings& render_config = materials_config.renderConfig;
 
-		render_config.enableBumpmapping = false;
-		render_config.enableSpecular = true; // specular for cubemaps
 		render_config.enableShadows = false;
 		render_config.wireframeMode = false;
 		render_config.editormode = true;
-
-		render_config.lightingModel = MATERIAL_LIGHT_FORWARD;
 		materials_config.shaderApiParams.screenFormat = format;
 
 		static void* s_engineWindow = window;
