@@ -70,13 +70,13 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 			textureSizeProps.w = 1.0f / textureSizeProps.y;
 		}
 
-		g_renderAPI->SetShaderConstant(StringToHashConst("BlurProps"), m_blurProps.Get());
-		g_renderAPI->SetShaderConstant(StringToHashConst("TextureSize"), textureSizeProps);		
+		renderAPI->SetShaderConstant(StringToHashConst("BlurProps"), m_blurProps.Get());
+		renderAPI->SetShaderConstant(StringToHashConst("TextureSize"), textureSizeProps);		
 	}
 
-	void SetupBaseTextures()
+	void SetupBaseTextures(IShaderAPI* renderAPI)
 	{
-		g_renderAPI->SetTexture(StringToHashConst("BaseTexture"), m_blurSource.Get());
+		renderAPI->SetTexture(StringToHashConst("BaseTexture"), m_blurSource.Get());
 	}
 
 private:

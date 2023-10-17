@@ -40,6 +40,8 @@ public:
 	CD3D9ShaderProgram() = default;
 	~CD3D9ShaderProgram();
 
+	void							Ref_DeleteObject() override;
+
 protected:
 	IDirect3DVertexShader9*			m_pVertexShader{ nullptr };
 	IDirect3DPixelShader9*			m_pPixelShader{ nullptr };

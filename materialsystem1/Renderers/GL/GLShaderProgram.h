@@ -17,10 +17,9 @@ struct GLShaderConstant_t
 
 	ubyte*			data{ nullptr };
 	uint			size{ 0 };
-	
 	uint			uniformLoc{ 0 };
 
-	ER_ConstantType	type;
+	EConstantType	type;
 	int				nElements;
 
 	bool			dirty{ false };
@@ -42,6 +41,8 @@ public:
 
 							CGLShaderProgram();
 							~CGLShaderProgram();
+
+	void					Ref_DeleteObject() override;
 
 	int						GetConstantsNum() const;
 	int						GetSamplersNum() const;

@@ -53,15 +53,15 @@ BEGIN_SHADER_CLASS(Error)
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 	}
 
-	void SetColorModulation()
+	void SetColorModulation(IShaderAPI* renderAPI)
 	{
-		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
+		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
 	}
 
-	void SetupBaseTexture0()
+	void SetupBaseTexture0(IShaderAPI* renderAPI)
 	{
 		const ITexturePtr& setupTexture = g_matSystem->GetConfiguration().wireframeMode ? g_matSystem->GetWhiteTexture() : m_baseTexture.Get();
-		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
+		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage)  const {return m_baseTexture.Get();}

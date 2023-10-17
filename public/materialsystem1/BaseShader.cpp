@@ -84,13 +84,13 @@ CBaseShader::CBaseShader()
 // Init parameters
 //--------------------------------------
 
-void CBaseShader::Init(IMaterial* assignee)
+void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* assignee)
 {
 	m_material = assignee; 
-	InitParams();
+	InitParams(renderAPI);
 }
 
-void CBaseShader::InitParams()
+void CBaseShader::InitParams(IShaderAPI* renderAPI)
 {
 	MatStringProxy addressMode	= GetAssignedMaterial()->FindMaterialVar("Address");
 	MatStringProxy texFilter = GetAssignedMaterial()->FindMaterialVar("Filtering");
@@ -162,10 +162,10 @@ void CBaseShader::InitParams()
 		m_polyOffset = true;
 }
 
-void CBaseShader::InitShader()
+void CBaseShader::InitShader(IShaderAPI* renderAPI)
 {
 	// And then init shaders
-	if( _ShaderInitRHI() )
+	if( _ShaderInitRHI(renderAPI) )
 		m_bInitialized = true;
 	else
 		m_bIsError = true;
@@ -175,12 +175,7 @@ void CBaseShader::InitShader()
 void CBaseShader::Unload()
 {
 	for(int i = 0; i < m_UsedPrograms.numElem(); ++i)
-	{
-		IShaderProgram* program = *m_UsedPrograms[i];
 		*m_UsedPrograms[i] = nullptr;
-
-		g_renderAPI->DestroyShaderProgram(program);
-	}
 	m_UsedPrograms.clear(true);
 
 	for (int i = 0; i < m_UsedTextures.numElem(); ++i)
@@ -195,11 +190,11 @@ void CBaseShader::Unload()
 }
 
 
-void CBaseShader::SetupParameter(uint mask, EShaderParamSetup type)
+void CBaseShader::SetupParameter(IShaderAPI* renderAPI, uint mask, EShaderParamSetup type)
 {
 	// call it from this
 	if(mask & (1 << (uint)type))
-		(this->*m_param_functors[type]) ();
+		(this->*m_param_functors[type]) (renderAPI);
 }
 
 MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlobals) const
@@ -222,20 +217,20 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlo
 	return mv;
 }
 
-MatTextureProxy CBaseShader::FindTextureByVar(const char* paramName, bool errorTextureIfNoVar)
+MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
-		AddManagedTexture(mv, g_renderAPI->FindTexture(mv.Get()));
+		AddManagedTexture(mv, renderAPI->FindTexture(mv.Get()));
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(mv, g_renderAPI->GetErrorTexture());
+		AddManagedTexture(mv, renderAPI->GetErrorTexture());
 
 	return mv;
 }
 
-MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar)
+MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 
@@ -247,23 +242,23 @@ MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorT
 			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(MatTextureProxy(mv), g_renderAPI->GetErrorTexture());
+		AddManagedTexture(MatTextureProxy(mv), renderAPI->GetErrorTexture());
 
 	return mv;
 }
 
-void CBaseShader::ParamSetup_AlphaModel_Solid()
+void CBaseShader::ParamSetup_AlphaModel_Solid(IShaderAPI* renderAPI)
 {
 	// setup default alphatesting from shaderapi
 	g_matSystem->SetBlendingStates( BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD );
 }
 
-void CBaseShader::ParamSetup_AlphaModel_Translucent()
+void CBaseShader::ParamSetup_AlphaModel_Translucent(IShaderAPI* renderAPI)
 {
 	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
 }
 
-void CBaseShader::ParamSetup_AlphaModel_Additive()
+void CBaseShader::ParamSetup_AlphaModel_Additive(IShaderAPI* renderAPI)
 {
 	g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
 
@@ -271,7 +266,7 @@ void CBaseShader::ParamSetup_AlphaModel_Additive()
 	m_depthwrite = false;
 }
 
-void CBaseShader::ParamSetup_AlphaModel_AdditiveLight()
+void CBaseShader::ParamSetup_AlphaModel_AdditiveLight(IShaderAPI* renderAPI)
 {
 	g_matSystem->SetBlendingStates(BLENDFACTOR_DST_COLOR, BLENDFACTOR_SRC_COLOR, BLENDFUNC_ADD);
 
@@ -280,21 +275,21 @@ void CBaseShader::ParamSetup_AlphaModel_AdditiveLight()
 }
 
 // this mode is designed for control of fog
-void CBaseShader::ParamSetup_AlphaModel_Additive_Fog()
+void CBaseShader::ParamSetup_AlphaModel_Additive_Fog(IShaderAPI* renderAPI)
 {
 	g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
 
 	m_depthwrite = false;
 }
 
-void CBaseShader::ParamSetup_AlphaModel_Modulate()
+void CBaseShader::ParamSetup_AlphaModel_Modulate(IShaderAPI* renderAPI)
 {
 	// setup default alphatesting from shaderapi
 	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR, BLENDFUNC_ADD);
 	m_depthwrite = false;
 }
 
-void CBaseShader::ParamSetup_RasterState()
+void CBaseShader::ParamSetup_RasterState(IShaderAPI* renderAPI)
 {
 	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
 
@@ -305,13 +300,13 @@ void CBaseShader::ParamSetup_RasterState()
 	g_matSystem->SetRasterizerStates(cull_mode, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
-void CBaseShader::ParamSetup_RasterState_NoCull()
+void CBaseShader::ParamSetup_RasterState_NoCull(IShaderAPI* renderAPI)
 {
 	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
 	g_matSystem->SetRasterizerStates(CULL_NONE, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
 }
 
-void CBaseShader::ParamSetup_Transform()
+void CBaseShader::ParamSetup_Transform(IShaderAPI* renderAPI)
 {
 	Matrix4x4 wvp_matrix, world, view, proj;
 	g_matSystem->GetWorldViewProjection(wvp_matrix);
@@ -319,21 +314,22 @@ void CBaseShader::ParamSetup_Transform()
 	g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
 	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, proj);
 
-	g_renderAPI->SetShaderConstant(StringToHashConst("WVP"), wvp_matrix);
-	g_renderAPI->SetShaderConstant(StringToHashConst("World"), world);
-	g_renderAPI->SetShaderConstant(StringToHashConst("View"), view);
-	g_renderAPI->SetShaderConstant(StringToHashConst("Proj"), proj);
+	renderAPI->SetShaderConstant(StringToHashConst("WVP"), wvp_matrix);
+	renderAPI->SetShaderConstant(StringToHashConst("World"), world);
+	renderAPI->SetShaderConstant(StringToHashConst("View"), view);
+	renderAPI->SetShaderConstant(StringToHashConst("Proj"), proj);
 
 	// setup texture transform
-	SetupVertexShaderTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar, "BaseTextureTransform");
+	const Vector4D texTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
+	renderAPI->SetShaderConstant(StringToHashConst("BaseTextureTransform"), texTransform);
 }
 
-void CBaseShader::ParamSetup_DepthSetup()
+void CBaseShader::ParamSetup_DepthSetup(IShaderAPI* renderAPI)
 {
 	g_matSystem->SetDepthStates(m_depthtest, m_depthwrite);
 }
 
-void CBaseShader::ParamSetup_Fog()
+void CBaseShader::ParamSetup_Fog(IShaderAPI* renderAPI)
 {
 	FogInfo fog;
 	g_matSystem->GetFogInfo(fog);
@@ -342,14 +338,14 @@ void CBaseShader::ParamSetup_Fog()
 	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
 	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
 
-	g_renderAPI->SetShaderConstant(StringToHashConst("ViewPos"), fog.viewPos);
-	g_renderAPI->SetShaderConstant(StringToHashConst("FogParams"), VectorFOGParams);
-	g_renderAPI->SetShaderConstant(StringToHashConst("FogColor"), fog.fogColor);
+	renderAPI->SetShaderConstant(StringToHashConst("ViewPos"), fog.viewPos);
+	renderAPI->SetShaderConstant(StringToHashConst("FogParams"), VectorFOGParams);
+	renderAPI->SetShaderConstant(StringToHashConst("FogColor"), fog.fogColor);
 }
 
-void CBaseShader::ParamSetup_Cubemap()
+void CBaseShader::ParamSetup_Cubemap(IShaderAPI* renderAPI)
 {
-	g_renderAPI->SetTexture(StringToHashConst("CubemapTexture"), m_cubemapTexture.Get());
+	renderAPI->SetTexture(StringToHashConst("CubemapTexture"), m_cubemapTexture.Get());
 }
 
 // get texture transformation from vars
@@ -359,14 +355,6 @@ Vector4D CBaseShader::GetTextureTransform(const MatVec2Proxy& transformVar, cons
 		return Vector4D(scaleVar.Get(), transformVar.Get());
 
 	return Vector4D(1,1,0,0);
-}
-
-// sends texture transformation to shader
-void CBaseShader::SetupVertexShaderTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar, const char* pszConstName)
-{
-	Vector4D trans = GetTextureTransform(transformVar, scaleVar);
-
-	g_renderAPI->SetShaderConstant(StringToHash(pszConstName), trans);
 }
 
 IMaterial* CBaseShader::GetAssignedMaterial() const
@@ -390,12 +378,10 @@ int CBaseShader::GetFlags() const
 	return m_flags;
 }
 
-void CBaseShader::AddManagedShader(IShaderProgram** pShader)
+void CBaseShader::AddManagedShader(IShaderProgramPtr* pShader)
 {
 	if(!*pShader)
 		return;
-
-	(*pShader)->Ref_Grab();
 	m_UsedPrograms.append(pShader);
 }
 

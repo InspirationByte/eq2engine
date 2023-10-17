@@ -57,12 +57,12 @@ BEGIN_SHADER_CLASS(BloomRange)
 		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 
-		g_renderAPI->SetShaderConstant(StringToHashConst("RangeProps"), m_rangeProps.Get());
+		renderAPI->SetShaderConstant(StringToHashConst("RangeProps"), m_rangeProps.Get());
 	}
 
-	void SetupBaseTextures()
+	void SetupBaseTextures(IShaderAPI* renderAPI)
 	{
-		g_renderAPI->SetTexture(StringToHashConst("BaseTexture"), m_bloomSource.Get());
+		renderAPI->SetTexture(StringToHashConst("BaseTexture"), m_bloomSource.Get());
 	}
 
 private:

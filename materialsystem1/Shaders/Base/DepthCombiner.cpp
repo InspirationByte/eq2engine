@@ -62,10 +62,10 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 	}
 
 
-	void SetupBaseTexture0()
+	void SetupBaseTexture0(IShaderAPI* renderAPI)
 	{
-		g_renderAPI->SetTexture(StringToHashConst("Texture1"), m_textures[0].Get());
-		g_renderAPI->SetTexture(StringToHashConst("Texture2"), m_textures[1].Get());
+		renderAPI->SetTexture(StringToHashConst("Texture1"), m_textures[0].Get());
+		renderAPI->SetTexture(StringToHashConst("Texture2"), m_textures[1].Get());
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage)  const {return m_textures[stage & 1].Get();}

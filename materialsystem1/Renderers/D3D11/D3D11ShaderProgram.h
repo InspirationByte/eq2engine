@@ -38,6 +38,9 @@ class CD3D10ShaderProgram : public CShaderProgram
 public:
 	~CD3D10ShaderProgram();
 
+	void					Ref_DeleteObject() override;
+
+
 protected:
 	ID3D10VertexShader*		m_vertexShader{ nullptr };
 	ID3D10PixelShader*		m_pixelShader{ nullptr };

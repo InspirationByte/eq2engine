@@ -7,9 +7,11 @@
 
 #pragma once
 
-class IShaderProgram : public RefCountedObject<IShaderProgram, RefCountedKeepPolicy>
+class IShaderProgram : public RefCountedObject<IShaderProgram>
 {
 public:
 	// Get shader name
 	virtual const char*	GetName() const = 0;
 };
+
+using IShaderProgramPtr = CRefPtr<IShaderProgram>;

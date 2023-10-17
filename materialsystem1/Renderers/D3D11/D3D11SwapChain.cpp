@@ -23,8 +23,7 @@ CD3D10SwapChain::~CD3D10SwapChain()
 		m_swapChain->Release();
 	}
 
-	if(m_backbuffer)
-		g_renderAPI->FreeTexture(m_backbuffer);
+	m_backbuffer = nullptr;
 }
 
 bool CD3D10SwapChain::Initialize(	HWND window, int numMSAASamples, 

@@ -9,6 +9,9 @@
 
 class IMaterial;
 class IShaderProgram;
+class IShaderAPI;
+
+using IShaderProgramPtr = CRefPtr<IShaderProgram>;
 
 // valid if MATERIAL_FLAG_TRANSPARENT
 enum ShaderBlendMode : int
@@ -27,46 +30,44 @@ enum ShaderBlendMode : int
 		static const char* ThisClassNameStr = #name;			\
 		class C##name##Shader : public CBaseShader {			\
 		public:													\
-			const char* GetName() const		{ return ThisClassNameStr; }					\
-			void InitParams()				{ _ShaderInitParams();CBaseShader::InitParams(); }
+			const char* GetName() const				{ return ThisClassNameStr; }					\
+			void InitParams(IShaderAPI* renderAPI)	{ _ShaderInitParams(renderAPI); CBaseShader::InitParams(renderAPI); }
 
 
-#define SHADER_INIT_PARAMS()		void _ShaderInitParams()
-#define SHADER_INIT_RHI()			bool _ShaderInitRHI()
-#define SHADER_INIT_TEXTURES()		void InitTextures()
-#define SHADER_SETUP_STAGE()		void SetupShader()
-#define SHADER_SETUP_CONSTANTS()	void SetupConstants(uint paramMask)
+#define SHADER_INIT_PARAMS()		void _ShaderInitParams(IShaderAPI* renderAPI)
+#define SHADER_INIT_RHI()			bool _ShaderInitRHI(IShaderAPI* renderAPI)
+#define SHADER_INIT_TEXTURES()		void InitTextures(IShaderAPI* renderAPI)
+#define SHADER_SETUP_STAGE()		void SetupShader(IShaderAPI* renderAPI)
+#define SHADER_SETUP_CONSTANTS()	void SetupConstants(IShaderAPI* renderAPI, uint paramMask)
 
 #define END_SHADER_CLASS }; DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
 #define SHADER_DECLARE_PASS(shader) \
-	IShaderProgram*		m_pShader##shader{nullptr}
+	IShaderProgramPtr	m_pShader##shader
 
 #define SHADER_DECLARE_FOGPASS(shader) \
-	IShaderProgram*		m_pShader##shader##_fog{nullptr}
+	IShaderProgramPtr	m_pShader##shader##_fog
 
 #define SHADER_PASS(shader) m_pShader##shader
 #define SHADER_FOGPASS(shader) m_pShader##shader##_fog
 
-#define SHADER_BIND_PASS_FOGSELECT(shader)					\
-	{														\
-	FogInfo fog;											\
-	g_matSystem->GetFogInfo(fog);								\
-	if(fog.enableFog && m_fogenabled)										\
-		g_renderAPI->SetShader(m_pShader##shader##_fog);	\
-	else													\
-		g_renderAPI->SetShader(m_pShader##shader);			\
+#define SHADER_BIND_PASS_FOGSELECT(shader) \
+	{													\
+	FogInfo fog;										\
+	g_matSystem->GetFogInfo(fog);						\
+	if(fog.enableFog && m_fogenabled)					\
+		renderAPI->SetShader(m_pShader##shader##_fog);	\
+	else												\
+		renderAPI->SetShader(m_pShader##shader);		\
 	}
 
-#define SHADER_BIND_PASS_SIMPLE(shader)						\
-	g_renderAPI->SetShader(m_pShader##shader);
+#define SHADER_BIND_PASS_SIMPLE(shader)	\
+	renderAPI->SetShader(m_pShader##shader);
 
 #define SHADER_PASS_UNLOAD(shader) \
-	g_renderAPI->DestroyShaderProgram(m_pShader##shader);\
 	m_pShader##shader## = nullptr;
 
 #define SHADER_FOGPASS_UNLOAD(shader) \
-	g_renderAPI->DestroyShaderProgram(m_pShader##shader##_fog);\
 	m_pShader##shader##_fog = nullptr;
 
 #define _SHADER_PARAM_OP_EMPTY
@@ -92,9 +93,9 @@ enum ShaderBlendMode : int
 #define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec3, _SHADER_PARAM_OP_EMPTY)
 #define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec4, _SHADER_PARAM_OP_EMPTY)
 
-#define SHADER_PARAM_TEXTURE(param, variable)			{ variable = LoadTextureByVar(#param, true); }
-#define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ variable = LoadTextureByVar(#param, false); }
-#define SHADER_PARAM_TEXTURE_FIND(param, variable)		{ variable = FindTextureByVar(#param, false); }
+#define SHADER_PARAM_TEXTURE(param, variable)			{ variable = LoadTextureByVar(renderAPI, #param, true); }
+#define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ variable = LoadTextureByVar(renderAPI, #param, false); }
+#define SHADER_PARAM_TEXTURE_FIND(param, variable)		{ variable = FindTextureByVar(renderAPI, #param, false); }
 
 #define SHADERDEFINES_DEFAULTS \
 	SHADER_DECLARE_SIMPLE_DEFINITION(g_matSystem->GetConfiguration().lowShaderQuality, "LOWQUALITY");\
@@ -126,18 +127,17 @@ enum ShaderBlendMode : int
 #define SHADER_END_DEFINITION \
 	}
 
-#define SHADER_FIND_OR_COMPILE(shader, sname)													\
-	{																							\
-	m_pShader##shader = g_renderAPI->FindShaderProgram(sname, (findQuery).GetData());			\
-	if(!m_pShader##shader)																		\
-	{																							\
-		m_pShader##shader = g_renderAPI->CreateNewShaderProgram(sname, findQuery.GetData());	\
-		if(!g_renderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData())){	\
-			g_renderAPI->DestroyShaderProgram(m_pShader##shader);								\
-			return false;																		\
-		}																						\
-	}																							\
-	AddManagedShader(&m_pShader##shader);														\
+#define SHADER_FIND_OR_COMPILE(shader, sname) \
+	{																						\
+	m_pShader##shader = renderAPI->FindShaderProgram(sname, (findQuery).GetData());			\
+	if(!m_pShader##shader) {																\
+		m_pShader##shader = renderAPI->CreateNewShaderProgram(sname, findQuery.GetData());	\
+		if(!renderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData())) {	\
+			renderAPI->FreeShaderProgram(m_pShader##shader);								\
+			return false;																	\
+		}																					\
+	}																						\
+	AddManagedShader(&m_pShader##shader);													\
 	}
 
 #define SHADER_FIND_OR_COMPILE_FOG(shader, sname)	SHADER_FIND_OR_COMPILE(shader##_fog, sname)
@@ -145,7 +145,7 @@ enum ShaderBlendMode : int
 class CBaseShader;
 
 // this is a special callback for shader parameter binding
-typedef void (CBaseShader::*SHADERPARAMFUNC)(void);
+typedef void (CBaseShader::*SHADERPARAMFUNC)(IShaderAPI* renderAPI);
 
 // base shader class
 class CBaseShader : public IMaterialSystemShader
@@ -154,20 +154,18 @@ public:
 								CBaseShader();
 
 	// Sets parameters
-	void						Init(IMaterial* assignee);
+	void						Init(IShaderAPI* renderAPI, IMaterial* assignee);
 
-	virtual void				InitParams();
-	void						InitShader();
+	virtual void				InitParams(IShaderAPI* renderAPI);
+	void						InitShader(IShaderAPI* renderAPI);
 
 	// Unload shaders, textures
 	void						Unload();
 
 	bool						IsError() const;	// Is error shader?
-
 	bool						IsInitialized() const;	// Is initialized?
 
-	IMaterial*					GetAssignedMaterial() const;	// Get material assigned to this shader
-
+	IMaterial*					GetAssignedMaterial() const;	// Get material assigned to this shade
 	int							GetFlags() const;	// get flags
 
 	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;	// get texture transformation from vars
@@ -182,38 +180,38 @@ public:
 	int							GetBumpStageCount() const			{ return 0; }
 
 protected:
-	void						ParamSetup_AlphaModel_Solid();
-	void						ParamSetup_AlphaModel_Translucent();
-	void						ParamSetup_AlphaModel_Additive();
-	void						ParamSetup_AlphaModel_AdditiveLight();
-	void						ParamSetup_AlphaModel_Additive_Fog();
-	void						ParamSetup_AlphaModel_Modulate();
+	void						ParamSetup_AlphaModel_Solid(IShaderAPI* renderAPI);
+	void						ParamSetup_AlphaModel_Translucent(IShaderAPI* renderAPI);
+	void						ParamSetup_AlphaModel_Additive(IShaderAPI* renderAPI);
+	void						ParamSetup_AlphaModel_AdditiveLight(IShaderAPI* renderAPI);
+	void						ParamSetup_AlphaModel_Additive_Fog(IShaderAPI* renderAPI);
+	void						ParamSetup_AlphaModel_Modulate(IShaderAPI* renderAPI);
 
-	void						ParamSetup_DepthSetup();
-	void						ParamSetup_RasterState();
-	void						ParamSetup_RasterState_NoCull();
+	void						ParamSetup_DepthSetup(IShaderAPI* renderAPI);
+	void						ParamSetup_RasterState(IShaderAPI* renderAPI);
+	void						ParamSetup_RasterState_NoCull(IShaderAPI* renderAPI);
 
-	void						ParamSetup_Transform();
-	void						ParamSetup_Fog();
-	virtual void				ParamSetup_Cubemap();
+	void						ParamSetup_Transform(IShaderAPI* renderAPI);
+	void						ParamSetup_Fog(IShaderAPI* renderAPI);
+	virtual void				ParamSetup_Cubemap(IShaderAPI* renderAPI);
 
-	virtual bool				_ShaderInitRHI() = 0;
+	virtual bool				_ShaderInitRHI(IShaderAPI* renderAPI) = 0;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 
-	MatTextureProxy				FindTextureByVar(const char* paramName, bool errorTextureIfNoVar);
-	MatTextureProxy				LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar);
+	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar);
+	MatTextureProxy				LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar);
 
-	void						AddManagedShader(IShaderProgram** pShader);
+	void						AddManagedShader(IShaderProgramPtr* pShader);
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
-	void						SetupParameter(uint mask, EShaderParamSetup param);
+	void						SetupParameter(IShaderAPI* renderAPI, uint mask, EShaderParamSetup param);
 
-	void						EmptyFunctor() {}
+	void						EmptyFunctor(IShaderAPI* renderAPI) {}
 
 	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT]{ nullptr };
 	Array<MatTextureProxy>		m_UsedTextures{ PP_SL }; // TODO: remove it and capture MatVarProxy instead
-	Array<IShaderProgram**>		m_UsedPrograms{ PP_SL };
+	Array<IShaderProgramPtr*>	m_UsedPrograms{ PP_SL };
 
 	MatVec2Proxy				m_baseTextureTransformVar;
 	MatVec2Proxy				m_baseTextureScaleVar;
@@ -238,4 +236,4 @@ protected:
 };
 
 #define SetParameterFunctor( type, a) m_param_functors[type] = (static_cast <SHADERPARAMFUNC>(a))
-#define SetupDefaultParameter( type ) SetupParameter(paramMask, type)
+#define SetupDefaultParameter( type ) SetupParameter(renderAPI, paramMask, type)

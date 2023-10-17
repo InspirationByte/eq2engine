@@ -83,13 +83,14 @@ void ShaderAPI_Base::Shutdown()
 
 	for(auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
-		FreeTexture(*it);
+		it.value()->Ref_Drop();
 	}
 	m_TextureList.clear(true);
 
 	for (auto it = m_ShaderList.begin(); !it.atEnd(); ++it)
 	{
-		DestroyShaderProgram(*it);
+		// possibly cached shaders
+		it.value()->Ref_Drop();
 	}
 	m_ShaderList.clear(true);
 
@@ -442,7 +443,7 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 
 	SamplerStateParams sampler(texFilter, textureAddress);
 
-	return g_renderAPI->CreateTexture(imgs, sampler, nFlags);
+	return CreateTexture(imgs, sampler, nFlags);
 }
 
 //-------------------------------------------------------------
@@ -599,7 +600,7 @@ struct shaderCompileJob_t
 };
 
 // Loads and compiles shaders from files
-bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra)
+bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgramPtr pShaderOutput, const char* pszFilePrefix, const char *extra)
 {
 	if(pShaderOutput == nullptr)
 		return false;
@@ -726,7 +727,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 
 // search for existing shader program
-IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const char* query)
+IShaderProgramPtr ShaderAPI_Base::FindShaderProgram(const char* pszName, const char* query)
 {
 	EqString shaderName(pszName);
 	if (query)
@@ -739,7 +740,7 @@ IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const cha
 		auto it = m_ShaderList.find(nameHash);
 		if (!it.atEnd())
 		{
-			return *it;
+			return IShaderProgramPtr(*it);
 		}
 	}
 

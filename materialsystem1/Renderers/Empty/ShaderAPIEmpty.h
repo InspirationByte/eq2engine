@@ -277,18 +277,18 @@ public:
 //-------------------------------------------------------------
 
 	// Creates shader class for needed ShaderAPI
-	IShaderProgram*				CreateNewShaderProgram(const char* pszName, const char* query = nullptr){return nullptr;}
+	IShaderProgramPtr			CreateNewShaderProgram(const char* pszName, const char* query = nullptr){return nullptr;}
 
 	// Destroy all shader
-	void						DestroyShaderProgram(IShaderProgram* pShaderProgram){}
+	void						FreeShaderProgram(IShaderProgram* pShaderProgram) {}
 
 	// Load any shader from stream
-	bool						CompileShadersFromStream(	IShaderProgram* pShaderOutput,
+	bool						CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 															const ShaderProgCompileInfo& info,
 															const char* extra = nullptr){return true;}
 
 	// Set current shader for rendering
-	void						SetShader(IShaderProgram* pShader){}
+	void						SetShader(IShaderProgramPtr pShader) {}
 
 	// Set Texture for shader
 	void						SetTexture(int nameHash, const ITexturePtr& texture) {}

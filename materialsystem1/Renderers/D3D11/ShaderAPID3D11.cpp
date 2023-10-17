@@ -324,7 +324,7 @@ void ShaderAPID3DX10::ApplyShaderProgram()
 {
 	if (m_pSelectedShader != m_pCurrentShader)
 	{
-		CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)m_pSelectedShader;
+		CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)m_pSelectedShader.Ptr();
 
 		if (pShader == nullptr)
 		{
@@ -353,7 +353,7 @@ void ShaderAPID3DX10::ApplyShaderProgram()
 
 void ShaderAPID3DX10::ApplyConstants()
 {
-	CD3D10ShaderProgram* pProgram = (CD3D10ShaderProgram*)m_pCurrentShader;
+	CD3D10ShaderProgram* pProgram = (CD3D10ShaderProgram*)m_pCurrentShader.Ptr();
 
 	if(!pProgram)
 		return;
@@ -1072,7 +1072,7 @@ void ShaderAPID3DX10::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 //-------------------------------------------------------------
 
 // Creates shader class for needed ShaderAPI
-IShaderProgram* ShaderAPID3DX10::CreateNewShaderProgram(const char* pszName, const char* query)
+IShaderProgramPtr ShaderAPID3DX10::CreateNewShaderProgram(const char* pszName, const char* query)
 {
 	CD3D10ShaderProgram* pNewProgram = PPNew CD3D10ShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
@@ -1082,11 +1082,11 @@ IShaderProgram* ShaderAPID3DX10::CreateNewShaderProgram(const char* pszName, con
 	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
 	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
 
-	return pNewProgram;
+	return IShaderProgramPtr(pNewProgram);
 }
 
 // Destroy all shader
-void ShaderAPID3DX10::DestroyShaderProgram(IShaderProgram* pShaderProgram)
+void ShaderAPID3DX10::FreeShaderProgram(IShaderProgram* pShaderProgram)
 {
 	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)(pShaderProgram);
 
@@ -1098,14 +1098,8 @@ void ShaderAPID3DX10::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		auto it = m_ShaderList.find(pShader->m_nameHash);
 		if (it.atEnd())
 			return;
-
-		// remove it if reference is zero
-		if (!pShader->Ref_Drop())
-			return;
-
 		m_ShaderList.remove(it);
 	}
-	delete pShader;
 }
 
 static int SamplerComp(const void *s0, const void *s1)
@@ -1119,11 +1113,11 @@ static int ConstantComp(const void *s0, const void *s1)
 }
 
 // Load any shader from stream
-bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
+bool ShaderAPID3DX10::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 												const ShaderProgCompileInfo& info,
 												const char* extra)
 {
-	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)pShaderOutput;
+	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)pShaderOutput.Ptr();
 
 	if(!pShader)
 		return false;
@@ -1789,7 +1783,7 @@ create_constant_buffers:
 }
 
 // Set current shader for rendering
-void ShaderAPID3DX10::SetShader(IShaderProgram* pShader)
+void ShaderAPID3DX10::SetShader(IShaderProgramPtr pShader)
 {
 	m_pSelectedShader = pShader;
 }
@@ -1800,7 +1794,7 @@ void ShaderAPID3DX10::SetShaderConstantRaw(int nameHash, const void* data, int n
 	if(!data || !nSize)
 		return;
 
-	CD3D10ShaderProgram* pProgram = (CD3D10ShaderProgram*)m_pSelectedShader;
+	CD3D10ShaderProgram* pProgram = (CD3D10ShaderProgram*)m_pSelectedShader.Ptr();
 
 	if(!pProgram)
 		return;
@@ -3111,7 +3105,7 @@ static const DX10Sampler_t* GetSampler(const DX10Sampler_t *samplers, const int 
 // sets texture
 void ShaderAPID3DX10::SetTexture(int nameHash, const ITexturePtr& pTexture)
 {
-	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)m_pSelectedShader;
+	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)m_pSelectedShader.Ptr();
 
 	if(!pShader)
 		return;
@@ -3247,7 +3241,7 @@ bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT dept
 	m_pDepthBuffer->AddRef();
 	m_pDepthBufferDSV->AddRef();
 
-	m_pBackBufferTexture = g_renderAPI->FindTexture("_rt_backbuffer");
+	m_pBackBufferTexture = FindTexture("_rt_backbuffer");
 
 	if(!m_pBackBufferTexture)
 		return false;

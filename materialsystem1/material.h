@@ -9,6 +9,7 @@
 #include "materialsystem1/IMaterial.h"
 
 class IMaterialProxy;
+class IShaderAPI;
 struct KVSection;
 
 class CMaterial : public IMaterial
@@ -35,10 +36,10 @@ public:
 // init + shutdown
 
 	// initializes material from file
-	void					Init();
+	void					Init(IShaderAPI* renderAPI);
 	
 	// initializes material from keyvalues
-	void					Init(KVSection* shader_root);
+	void					Init(IShaderAPI* renderAPI, KVSection* shader_root);
 
 	void					Cleanup(bool dropVars = true, bool dropShader = true);
 
@@ -53,13 +54,13 @@ public:
 	void					UpdateProxy(float fDt);					
 	const ITexturePtr&		GetBaseTexture(int stage = 0);
 
-	void					Setup(uint paramMask);
+	void					Setup(IShaderAPI* renderAPI, uint paramMask);
 private:
 
-	void					InitVars(KVSection* kvs);
+	void					InitVars(KVSection* kvs, const char* renderAPIName);
 	MatVarData&				VarAt(int idx) const;
 
-	void					InitShader();
+	void					InitShader(IShaderAPI* renderAPI);
 	void					InitMaterialVars(KVSection* kvs, const char* prefix = nullptr);
 	void					InitMaterialProxy(KVSection* kvs);
 

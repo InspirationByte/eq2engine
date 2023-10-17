@@ -853,7 +853,7 @@ void ShaderAPID3D9::ApplyRasterizerState()
 
 void ShaderAPID3D9::ApplyShaderProgram()
 {
-	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)m_pSelectedShader;
+	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)m_pSelectedShader.Ptr();
 
 	if (pShader != m_pCurrentShader)
 	{
@@ -867,7 +867,7 @@ void ShaderAPID3D9::ApplyShaderProgram()
 			m_pD3DDevice->SetVertexShader(pShader->m_pVertexShader);
 			m_pD3DDevice->SetPixelShader(pShader->m_pPixelShader);
 		}
-		m_pCurrentShader = pShader;
+		m_pCurrentShader = m_pSelectedShader;
 	}
 }
 
@@ -1646,7 +1646,7 @@ void ShaderAPID3D9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 
 // Creates shader class for needed ShaderAPI
-IShaderProgram* ShaderAPID3D9::CreateNewShaderProgram(const char* pszName, const char* query)
+IShaderProgramPtr ShaderAPID3D9::CreateNewShaderProgram(const char* pszName, const char* query)
 {
 	CD3D9ShaderProgram* pNewProgram = PPNew CD3D9ShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
@@ -1656,11 +1656,11 @@ IShaderProgram* ShaderAPID3D9::CreateNewShaderProgram(const char* pszName, const
 	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
 	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
 
-	return pNewProgram;
+	return IShaderProgramPtr(pNewProgram);
 }
 
 // Destroy all shader
-void ShaderAPID3D9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
+void ShaderAPID3D9::FreeShaderProgram(IShaderProgram* pShaderProgram)
 {
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderProgram);
 
@@ -1672,14 +1672,8 @@ void ShaderAPID3D9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		auto it = m_ShaderList.find(pShader->m_nameHash);
 		if (it.atEnd())
 			return;
-
-		// remove it if reference is zero
-		if (!pShader->Ref_Drop())
-			return;
-
 		m_ShaderList.remove(it);
 	}
-	delete pShader;
 }
 
 void ShaderAPID3D9::StepProgressiveLodTextures()
@@ -1742,20 +1736,18 @@ void ShaderAPID3D9::PreloadShadersFromCache()
 
 		DevMsg(DEVMSG_RENDER, "Restoring shader '%s'\n", nameStr);
 		
-		CD3D9ShaderProgram* pNewProgram = PPNew CD3D9ShaderProgram();
-		pNewProgram->SetName(nameStr);
-		if (InitShaderFromCache(pNewProgram, pStream))
+		CRefPtr<CD3D9ShaderProgram> newProgram = CRefPtr_new(CD3D9ShaderProgram);
+		newProgram->SetName(nameStr);
+		if (InitShaderFromCache(newProgram, pStream))
 		{
 			CScopedMutex scoped(g_sapi_ShaderMutex);
 
-			ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
-			m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
+			ASSERT_MSG(m_ShaderList.find(newProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", newProgram->GetName());
+			m_ShaderList.insert(newProgram->m_nameHash, newProgram);
 			numShaders++;
 
-			pNewProgram->Ref_Grab();
+			newProgram->Ref_Grab();
 		}
-		else
-			delete pNewProgram;
 	}
 
 	Msg("Shader cache: %d shaders loaded\n", numShaders);
@@ -1823,11 +1815,11 @@ bool ShaderAPID3D9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualS
 }
 
 // Load any shader from stream
-bool ShaderAPID3D9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
+bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 												const ShaderProgCompileInfo& info,
 												const char* extra)
 {
-	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderOutput);
+	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderOutput.Ptr());
 
 	if(!pShader)
 		return false;
@@ -2181,18 +2173,9 @@ bool ShaderAPID3D9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 }
 
 // Set current shader for rendering
-void ShaderAPID3D9::SetShader(IShaderProgram* pShader)
+void ShaderAPID3D9::SetShader(IShaderProgramPtr pShader)
 {
 	m_pSelectedShader = pShader;
-	/*
-	memset(m_vsRegs,0,sizeof(m_vsRegs));
-	memset(m_psRegs,0,sizeof(m_psRegs));
-
-	m_nMinVSDirty = 256;
-	m_nMaxVSDirty = -1;
-	m_nMinPSDirty = 224;
-	m_nMaxPSDirty = -1;
-	*/
 }
 
 void ShaderAPID3D9::SetTexture(int nameHash, const ITexturePtr& pTexture)
@@ -2206,7 +2189,7 @@ void ShaderAPID3D9::SetTexture(int nameHash, const ITexturePtr& pTexture)
 	if (!m_pSelectedShader)
 		return;
 
-	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(m_pSelectedShader);
+	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(m_pSelectedShader.Ptr());
 	const Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
 
 	auto it = samplerMap.find(nameHash);
@@ -2229,7 +2212,7 @@ void ShaderAPID3D9::SetShaderConstantRaw(int nameHash, const void *data, int nSi
 	if (data == nullptr || nSize == 0)
 		return;
 
-	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(m_pSelectedShader);
+	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(m_pSelectedShader.Ptr());
 
 	if(!pShader)
 		return;

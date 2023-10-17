@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "shaderapigl_def.h"
 #include "GLShaderProgram.h"
+#include "ShaderAPIGL.h"
 
 bool GLCheckError(const char* op, ...);
 
@@ -20,12 +21,12 @@ CGLShaderProgram::~CGLShaderProgram()
 {
 	for (auto it = m_constants.begin(); !it.atEnd(); ++it)
 		delete [] it.value().data;
+}
 
-	if (m_program)
-	{
-		glDeleteProgram(m_program);
-		GLCheckError("delete shader program");
-	}
+void CGLShaderProgram::Ref_DeleteObject()
+{
+	s_renderApi.FreeShaderProgram(this);
+	RefCountedObject::Ref_DeleteObject();
 }
 
 int	CGLShaderProgram::GetConstantsNum() const

@@ -103,18 +103,18 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SetupDefaultParameter(SHADERPARAM_FOG);
 	}
 
-	void SetColorModulation()
+	void SetColorModulation(IShaderAPI* renderAPI)
 	{
 		ColorRGBA setColor = m_colorVar.Get() * g_matSystem->GetAmbientColor();
 
-		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
+		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
 	}
 
-	void SetupBaseTexture0()
+	void SetupBaseTexture0(IShaderAPI* renderAPI)
 	{
 		ITexturePtr setupTexture = g_matSystem->GetConfiguration().wireframeMode ? g_matSystem->GetWhiteTexture() : m_baseTexture.Get();
 
-		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
+		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}

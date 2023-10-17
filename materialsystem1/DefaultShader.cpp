@@ -51,15 +51,15 @@ BEGIN_SHADER_CLASS(Default)
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 	}
 
-	void SetupBaseTexture()
+	void SetupBaseTexture(IShaderAPI* renderAPI)
 	{
-		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture());
+		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture());
 	}
 
-	void SetColorModulation()
+	void SetColorModulation(IShaderAPI* renderAPI)
 	{
 		ColorRGBA setColor = g_matSystem->GetAmbientColor();
-		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
+		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

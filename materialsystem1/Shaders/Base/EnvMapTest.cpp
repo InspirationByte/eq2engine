@@ -52,7 +52,7 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 		SetupDefaultParameter(SHADERPARAM_FOG);
 
-		g_renderAPI->SetTexture(StringToHashConst("Base"), m_cubemapTexture.Get());
+		renderAPI->SetTexture(StringToHashConst("Base"), m_cubemapTexture.Get());
 	}
 
 	MatTextureProxy m_cubemapTexture;

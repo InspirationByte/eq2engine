@@ -8,6 +8,7 @@
 #include <d3d10.h>
 #include "core/core_common.h"
 #include "D3D11ShaderProgram.h"
+#include "ShaderAPID3D11.h"
 
 CD3D10ShaderProgram::~CD3D10ShaderProgram()
 {
@@ -54,4 +55,10 @@ CD3D10ShaderProgram::~CD3D10ShaderProgram()
 	SAFE_DELETE_ARRAY(m_psDirty);
 	SAFE_DELETE_ARRAY(m_vsDirty);
 	SAFE_DELETE_ARRAY(m_gsDirty);
+}
+
+void CD3D10ShaderProgram::Ref_DeleteObject()
+{
+	//s_renderApi.FreeShaderProgram(this);
+	RefCountedObject::Ref_DeleteObject();
 }

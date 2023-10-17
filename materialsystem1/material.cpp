@@ -46,7 +46,7 @@ void CMaterial::Ref_DeleteObject()
 //
 // Initializes the shader
 //
-void CMaterial::Init()
+void CMaterial::Init(IShaderAPI* renderAPI)
 {
 	ASSERT(m_loadFromDisk == true);
 
@@ -126,12 +126,12 @@ void CMaterial::Init()
 	m_szShaderName = shader_root->name;
 
 	// begin initialization
-	InitVars( shader_root );
-	InitShader();
+	InitVars( shader_root, renderAPI->GetRendererName() );
+	InitShader(g_matSystem->GetShaderAPI());
 }
 
 // initializes material from keyvalues
-void CMaterial::Init(KVSection* shader_root)
+void CMaterial::Init(IShaderAPI* renderAPI, KVSection* shader_root)
 {
 	if(shader_root)
 		ASSERT(m_loadFromDisk == false);
@@ -142,10 +142,10 @@ void CMaterial::Init(KVSection* shader_root)
 		m_szShaderName = shader_root->name;
 
 		// begin initialization
-		InitVars(shader_root);
+		InitVars(shader_root, renderAPI->GetRendererName());
 	}
 
-	InitShader();
+	InitShader(renderAPI);
 }
 
 //
@@ -235,7 +235,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs, const char* prefix)
 //
 // Initializes the shader
 //
-void CMaterial::InitShader()
+void CMaterial::InitShader(IShaderAPI* renderAPI)
 {
 	if( m_shader != nullptr)
 		return;
@@ -264,7 +264,7 @@ void CMaterial::InitShader()
 		if (shader)
 		{
 			// just init the parameters
-			shader->Init(this);
+			shader->Init(renderAPI, this);
 			Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 		}
 		else
@@ -277,10 +277,10 @@ void CMaterial::InitShader()
 //
 // Initializes material vars and shader name
 //
-void CMaterial::InitVars(KVSection* shader_root)
+void CMaterial::InitVars(KVSection* shader_root, const char* renderAPIName)
 {
 	// Get an API preferences
-	KVSection* apiPrefs = shader_root->FindSection(EqString::Format("API_%s", g_renderAPI->GetRendererName()).ToCString(), KV_FLAG_SECTION);
+	KVSection* apiPrefs = shader_root->FindSection(EqString::Format("API_%s", renderAPIName).ToCString(), KV_FLAG_SECTION);
 
 	// init root material vars
 	InitMaterialVars( shader_root );
@@ -342,7 +342,8 @@ bool CMaterial::LoadShaderAndTextures()
 
 bool CMaterial::DoLoadShaderAndTextures()
 {
-	InitShader();
+	IShaderAPI* renderAPI = g_matSystem->GetShaderAPI();
+	InitShader(renderAPI);
 
 	IMaterialSystemShader* shader = m_shader;
 	if(!shader)
@@ -354,8 +355,10 @@ bool CMaterial::DoLoadShaderAndTextures()
 	if(!shader->IsInitialized() && !shader->IsError())
 	{
 		PROF_EVENT("MatSystem Load Material Shader and Textures");
-		shader->InitTextures();
-		shader->InitShader();
+
+
+		shader->InitTextures(renderAPI);
+		shader->InitShader(renderAPI);
 	}
 
 	if(shader->IsInitialized() )
@@ -485,13 +488,12 @@ void CMaterial::UpdateProxy(float fDt)
 		m_proxies[i]->UpdateProxy( fDt );
 }
 
-void CMaterial::Setup(uint paramMask)
+void CMaterial::Setup(IShaderAPI* renderAPI, uint paramMask)
 {
-	// shaders and textures needs to be reset
-	g_renderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
-
 	IMaterialSystemShader* shader = m_shader;
 
-	shader->SetupShader();
-	shader->SetupConstants( paramMask );
+	// shaders and textures needs to be reset
+	renderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
+	shader->SetupShader(renderAPI);
+	shader->SetupConstants(renderAPI, paramMask );
 }

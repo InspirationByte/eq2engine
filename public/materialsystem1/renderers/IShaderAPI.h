@@ -137,13 +137,13 @@ public:
 // Shader resource management
 //-------------------------------------------------------------
 
-	virtual IShaderProgram*		FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
+	virtual IShaderProgramPtr	FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
 
-	virtual IShaderProgram*		CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
-	virtual void				DestroyShaderProgram(IShaderProgram* pShaderProgram) = 0;
+	virtual IShaderProgramPtr	CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
+	virtual void				FreeShaderProgram(IShaderProgram* pShaderProgram) = 0;
 
-	virtual bool				LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
-	virtual bool				CompileShadersFromStream(IShaderProgram* pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
+	virtual bool				LoadShadersFromFile(IShaderProgramPtr pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
+	virtual bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
 
 //-------------------------------------------------------------
 // Occlusion query management
@@ -229,7 +229,7 @@ public:
 // Shaders state operations
 //-------------------------------------------------------------
 
-	virtual void				SetShader(IShaderProgram* pShader) = 0;
+	virtual void				SetShader(IShaderProgramPtr pShader) = 0;
 
     virtual void				SetShaderConstantRaw(int nameHash, const void *data, int nSize) = 0;
 

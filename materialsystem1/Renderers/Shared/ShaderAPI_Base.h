@@ -171,8 +171,8 @@ public:
 //-------------------------------------------------------------
 
 	// Loads and compiles shaders from files
-	bool						LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra = nullptr);
-	IShaderProgram*				FindShaderProgram(const char* pszName, const char* query);
+	bool						LoadShadersFromFile(IShaderProgramPtr pShaderOutput, const char* pszFilePrefix, const char *extra = nullptr);
+	IShaderProgramPtr			FindShaderProgram(const char* pszName, const char* query);
 
 protected:
 
@@ -201,8 +201,8 @@ protected:
 	Array<IVertexBuffer*>		m_VBList{ PP_SL };
 	Array<IIndexBuffer*>		m_IBList{ PP_SL };
 
-	IShaderProgram*				m_pCurrentShader{ nullptr };
-	IShaderProgram*				m_pSelectedShader{ nullptr };
+	IShaderProgramPtr			m_pCurrentShader{ nullptr };
+	IShaderProgramPtr			m_pSelectedShader{ nullptr };
 	ITexturePtr					m_pSelectedTextures[MAX_TEXTUREUNIT];
 	ITexturePtr					m_pCurrentTextures[MAX_TEXTUREUNIT];
 	ITexturePtr					m_pSelectedVertexTextures[MAX_VERTEXTEXTURES];

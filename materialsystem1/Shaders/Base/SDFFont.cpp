@@ -53,18 +53,18 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 
-		g_renderAPI->SetShaderConstant(StringToHashConst("FontParams"), m_fontParamsVar.Get());
+		renderAPI->SetShaderConstant(StringToHashConst("FontParams"), m_fontParamsVar.Get());
 	}
 
-	void SetupBaseTexture()
+	void SetupBaseTexture(IShaderAPI* renderAPI)
 	{
-		g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());
+		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());
 	}
 
-	void SetColorModulation()
+	void SetColorModulation(IShaderAPI* renderAPI)
 	{
 		ColorRGBA setColor = g_matSystem->GetAmbientColor();
-		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
+		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

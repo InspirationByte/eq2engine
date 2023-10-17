@@ -187,7 +187,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 
 	const KVSection* matSystemSettings = g_eqCore->GetConfig()->FindSection("MaterialSystem");
 
-	ASSERT(g_renderAPI == nullptr);
+	ASSERT(m_shaderAPI == nullptr);
 
 	// store the configuration
 	m_config = config.renderConfig;
@@ -359,7 +359,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 
 void CMaterialSystem::Shutdown()
 {
-	if (!m_renderLibrary || !m_rendermodule || !g_renderAPI)
+	if (!m_renderLibrary || !m_rendermodule || !m_shaderAPI)
 		return;
 
 	Msg("MatSystem shutdown...\n");
@@ -387,7 +387,7 @@ void CMaterialSystem::Shutdown()
 	m_proxyFactoryList.clear();
 
 	m_renderLibrary->ReleaseSwapChains();
-	g_renderAPI->Shutdown();
+	m_shaderAPI->Shutdown();
 	m_renderLibrary->ExitAPI();
 
 	for(DKMODULE* shaderModule : m_shaderLibs)
@@ -425,44 +425,9 @@ void CMaterialSystem::CreateWhiteTexture()
 	FixedArray<CRefPtr<CImage>, 1> images;
 	images.append(CRefPtr(&img));
 
-	m_whiteTexture = g_renderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
+	m_whiteTexture = m_shaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 
 	images.clear();
-
-	//--------------------------------------------------------------------
-	/*
-	// don't worry, it will be removed
-	img = PPNew CImage();
-
-	img->SetName("_matsys_luxeltest");
-
-	nWidth = 1024;
-	nHeight = 1024;
-
-	pLightmapData = img->Create(FORMAT_RGBA8, nWidth,nHeight,1,1);
-
-	pixw.SetPixelMemory(FORMAT_RGBA8, pLightmapData, 0);
-
-	for (int y = 0; y < nHeight; ++y)
-	{
-		pixw.Seek( 0, y );
-
-		for (int x = 0; x < nWidth; ++x)
-		{
-			if ((x & (1 << 0)) ^ (y & (1 << 0)))
-				pixw.WritePixel( 0, 0, 255, 255 );
-			else
-				pixw.WritePixel( 255, 255, 255, 0 );
-		}
-	}
-
-	images.append(img);
-
-	texSamplerParams = g_renderAPI->MakeSamplerState(TEXFILTER_NEAREST,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
-
-	m_luxelTestTexture = g_renderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
-
-	*/
 }
 
 void CMaterialSystem::InitDefaultMaterial()
@@ -578,9 +543,9 @@ void CMaterialSystem::CreateMaterialInternal(CRefPtr<CMaterial> material, KVSect
 
 	// if no params, we can load it a usual way
 	if (params)
-		pMaterial->Init(params);
+		pMaterial->Init(m_shaderAPI, params);
 	else
-		pMaterial->Init();
+		pMaterial->Init(m_shaderAPI);
 }
 
 IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
@@ -671,9 +636,9 @@ void CMaterialSystem::ReloadAllMaterials()
 
 		// don't reload materials which are not from disk
 		if(!loadedFromDisk)
-			material->Init(nullptr);
+			material->Init(m_shaderAPI, nullptr);
 		else
-			material->Init();
+			material->Init(m_shaderAPI);
 
 		const int framesDiff = (material->m_frameBound - m_frame);
 
@@ -707,15 +672,15 @@ void CMaterialSystem::FreeMaterials()
 void CMaterialSystem::ClearRenderStates()
 {
 	for (auto i = m_blendStates.begin(); !i.atEnd(); ++i)
-		g_renderAPI->DestroyRenderState(*i);
+		m_shaderAPI->DestroyRenderState(*i);
 	m_blendStates.clear();
 	
 	for (auto i = m_depthStates.begin(); !i.atEnd(); ++i)
-		g_renderAPI->DestroyRenderState(*i);
+		m_shaderAPI->DestroyRenderState(*i);
 	m_depthStates.clear();
 	
 	for (auto i = m_rasterStates.begin(); !i.atEnd(); ++i)
-		g_renderAPI->DestroyRenderState(*i);
+		m_shaderAPI->DestroyRenderState(*i);
 	m_rasterStates.clear();
 }
 
@@ -817,28 +782,28 @@ IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShade
 
 //------------------------------------------------------------------------------------------------
 
-typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial, uint paramMask);
+typedef bool (*PFNMATERIALBINDCALLBACK)(IShaderAPI* renderAPI, IMaterial* pMaterial, uint paramMask);
 
-static void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
+static void BindFFPMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, int paramMask)
 {
-	g_renderAPI->SetShader(nullptr);
+	renderAPI->SetShader(nullptr);
 
-	g_renderAPI->SetBlendingState(nullptr);
-	g_renderAPI->SetRasterizerState(nullptr);
-	g_renderAPI->SetDepthStencilState(nullptr);
+	renderAPI->SetBlendingState(nullptr);
+	renderAPI->SetRasterizerState(nullptr);
+	renderAPI->SetDepthStencilState(nullptr);
 }
 
-static bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint paramMask)
+static bool Callback_BindErrorTextureFFPMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, uint paramMask)
 {
-	BindFFPMaterial(pMaterial, paramMask);
-	g_renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), g_renderAPI->GetErrorTexture());
+	BindFFPMaterial(renderAPI, pMaterial, paramMask);
+	renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), renderAPI->GetErrorTexture());
 
 	return false;
 }
 
-static bool Callback_BindNormalMaterial(IMaterial* pMaterial, uint paramMask)
+static bool Callback_BindNormalMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, uint paramMask)
 {
-	((CMaterial*)pMaterial)->Setup(paramMask);
+	((CMaterial*)pMaterial)->Setup(renderAPI, paramMask);
 
 	return true;
 }
@@ -972,10 +937,10 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	{
 		InitDefaultMaterial();
 		m_ambColor = color_white;
-		success = (*materialstate_callbacks[subRoutineId])(m_overdrawMaterial, 0xFFFFFFFF);
+		success = (*materialstate_callbacks[subRoutineId])(m_shaderAPI, m_overdrawMaterial, 0xFFFFFFFF);
 	}
 	else
-		success = (*materialstate_callbacks[subRoutineId])(setMaterial, m_paramOverrideMask);
+		success = (*materialstate_callbacks[subRoutineId])(m_shaderAPI, setMaterial, m_paramOverrideMask);
 
 	m_setMaterial = IMaterialPtr(setMaterial);
 
@@ -995,7 +960,7 @@ void CMaterialSystem::Apply()
 
 	if(!setMaterial)
 	{
-		g_renderAPI->Apply();
+		m_shaderAPI->Apply();
 		return;
 	}
 
@@ -1003,7 +968,7 @@ void CMaterialSystem::Apply()
 	if(m_preApplyCallback)
 		m_preApplyCallback->OnPreApplyMaterial(setMaterial);
 
-	g_renderAPI->Apply();
+	m_shaderAPI->Apply();
 }
 
 // returns bound material
@@ -1091,7 +1056,7 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 		return false;
 
 	bool state, oldState = m_deviceActiveState;
-	m_deviceActiveState = state = g_renderAPI->IsDeviceActive();
+	m_deviceActiveState = state = m_shaderAPI->IsDeviceActive();
 
 	if(!state && state != oldState)
 	{
@@ -1130,14 +1095,14 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 	if (swapChain)
 		swapChain->GetBackbufferSize(backbufferSize.x, backbufferSize.y);
 
-	g_renderAPI->SetViewport(0, 0, backbufferSize.x, backbufferSize.y);
-	g_renderAPI->SetScissorRectangle(IAARectangle(0, 0, backbufferSize.x, backbufferSize.y));
+	m_shaderAPI->SetViewport(0, 0, backbufferSize.x, backbufferSize.y);
+	m_shaderAPI->SetScissorRectangle(IAARectangle(0, 0, backbufferSize.x, backbufferSize.y));
 
 #ifdef PLAT_ANDROID
 	// always clear all on Android
-	g_renderAPI->Clear(true, true, true, clearColor);
+	m_shaderAPI->Clear(true, true, true, clearColor);
 #else
-	g_renderAPI->Clear(clearBackBuffer, true, false, clearColor);
+	m_shaderAPI->Clear(clearBackBuffer, true, false, clearColor);
 #endif
 
 	return true;
@@ -1146,12 +1111,12 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 // tells 3d device to end and present frame
 bool CMaterialSystem::EndFrame()
 {
-	if (!g_renderAPI)
+	if (!m_shaderAPI)
 		return false;
 
 	// issue the rendering of anything
-	g_renderAPI->Flush();
-	g_renderAPI->ResetCounters();
+	m_shaderAPI->Flush();
+	m_shaderAPI->ResetCounters();
 
 	m_renderLibrary->EndFrame();
 
@@ -1462,13 +1427,13 @@ void CMaterialSystem::SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nD
 		desc.blendFunc = nBlendingFunc;
 		desc.mask = colormask;
 
-		state = g_renderAPI->CreateBlendingState(desc);
+		state = m_shaderAPI->CreateBlendingState(desc);
 		m_blendStates.insert(stateIndex, state);
 	}
 	else
 		state = *blendState;
 
-	g_renderAPI->SetBlendingState( state );
+	m_shaderAPI->SetBlendingState( state );
 }
 
 // pack depth states to ubyte
@@ -1505,13 +1470,13 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECom
 		desc.depthFunc = depthCompFunc;
 		desc.doStencilTest = false;
 
-		state = g_renderAPI->CreateDepthStencilState(desc);
+		state = m_shaderAPI->CreateDepthStencilState(desc);
 		m_depthStates.insert(stateIndex, state);
 	}
 	else
 		state = *depthState;
 
-	g_renderAPI->SetDepthStencilState( state );
+	m_shaderAPI->SetDepthStencilState( state );
 }
 
 // pack blending function to ushort
@@ -1557,13 +1522,13 @@ void CMaterialSystem::SetRasterizerStates(ECullMode nCullMode, EFillMode nFillMo
 			desc.slopeDepthBias = r_slopeDepthBias.GetFloat();
 		}
 
-		state = g_renderAPI->CreateRasterizerState(desc);
+		state = m_shaderAPI->CreateRasterizerState(desc);
 		m_rasterStates.insert(stateIndex, state);
 	}
 	else
 		state = *rasterState;
 
-	g_renderAPI->SetRasterizerState( state );
+	m_shaderAPI->SetRasterizerState( state );
 }
 
 // use this if you have objects that must be destroyed when device is lost

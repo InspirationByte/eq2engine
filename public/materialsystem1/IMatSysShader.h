@@ -48,14 +48,14 @@ class IMaterialSystemShader
 public:
 	virtual ~IMaterialSystemShader() = default;
 
-	virtual void				Init(IMaterial* assignee) = 0;
+	virtual void				Init(IShaderAPI* renderAPI, IMaterial* assignee) = 0;
 	virtual void				Unload() = 0;
 
-	virtual void				InitTextures() = 0;
-	virtual void				InitShader() = 0;
+	virtual void				InitTextures(IShaderAPI* renderAPI) = 0;
+	virtual void				InitShader(IShaderAPI* renderAPI) = 0;
 
-	virtual void				SetupShader() = 0;
-	virtual void				SetupConstants(uint paramMask) = 0;
+	virtual void				SetupShader(IShaderAPI* renderAPI) = 0;
+	virtual void				SetupConstants(IShaderAPI* renderAPI, uint paramMask) = 0;
 
 	virtual const char*			GetName() const = 0;
 

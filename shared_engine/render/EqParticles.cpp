@@ -127,26 +127,6 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	else
 		g_renderAPI->DrawNonIndexedPrimitives(primMode, 0, m_numVertices);
 
-#if 0
-	MaterialsRenderSettings& rendSettings = g_matSystem->GetConfiguration();
-	if(rendSettings.wireframeMode)
-	{
-		g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_WIREFRAME);
-
-		g_matSystem->SetDepthStates(false,false);
-
-		static IShaderProgram* flat = g_renderAPI->FindShaderProgram("DefaultFlatColor");
-
-		g_renderAPI->Reset(STATE_RESET_SHADER);
-		g_renderAPI->SetShader(flat);
-		g_renderAPI->Apply();
-
-		if(m_numIndices)
-			g_renderAPI->DrawIndexedPrimitives((EPrimTopology)primMode, 0, m_numIndices, 0, m_numVertices);
-		else
-			g_renderAPI->DrawNonIndexedPrimitives((EPrimTopology)primMode, 0, m_numVertices);
-	}
-#endif
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
 	{
 		m_numVertices = 0;

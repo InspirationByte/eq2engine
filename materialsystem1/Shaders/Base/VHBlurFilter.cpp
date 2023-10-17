@@ -99,18 +99,18 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 
-		g_renderAPI->SetShaderConstant(StringToHashConst("TEXSIZE"), m_texSize);
+		renderAPI->SetShaderConstant(StringToHashConst("TEXSIZE"), m_texSize);
 	}
 
-	void SetColorModulation()
+	void SetColorModulation(IShaderAPI* renderAPI)
 	{
-		g_renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
+		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
 	}
 
-	void SetupBaseTexture0()
+	void SetupBaseTexture0(IShaderAPI* renderAPI)
 	{
 		const ITexturePtr& setupTexture = g_matSystem->GetConfiguration().wireframeMode ? g_matSystem->GetWhiteTexture() : m_baseTexture.Get();
-		g_renderAPI->SetTexture(StringToHashConst("BaseTexture"), setupTexture);
+		renderAPI->SetTexture(StringToHashConst("BaseTexture"), setupTexture);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}

@@ -14,7 +14,7 @@
 //---------------------------------------
 
 // Reserved, used for shaders only
-enum ER_ConstantType : int
+enum EConstantType : int
 {
     CONSTANT_FLOAT,
 	CONSTANT_VECTOR2D,

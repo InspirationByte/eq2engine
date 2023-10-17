@@ -194,19 +194,19 @@ public:
 //-------------------------------------------------------------
 
 	// Creates shader class for needed ShaderAPI
-	IShaderProgram*		CreateNewShaderProgram(const char* pszName, const char* query = nullptr);
+	IShaderProgramPtr	CreateNewShaderProgram(const char* pszName, const char* query = nullptr);
 
 	// Destroy all shader
-	void				DestroyShaderProgram(IShaderProgram* pShaderProgram);
+	void				FreeShaderProgram(IShaderProgram* pShaderProgram);
 
 	// Load any shader from stream
-	bool				CompileShadersFromStream(	IShaderProgram* pShaderOutput,
+	bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 													const ShaderProgCompileInfo& info,
 													const char* extra = nullptr
 													);
 
 	// Set current shader for rendering
-	void				SetShader(IShaderProgram* pShader);
+	void				SetShader(IShaderProgramPtr pShader);
 
 	// RAW Constant (Used for structure types, etc.)
 	void				SetShaderConstantRaw(int nameHash, const void *data, int nSize);

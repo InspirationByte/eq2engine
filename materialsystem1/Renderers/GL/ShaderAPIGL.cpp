@@ -229,7 +229,7 @@ void InitGLHardwareCapabilities(ShaderAPICaps& caps)
 typedef GLvoid (APIENTRY *UNIFORM_FUNC)(GLint location, GLsizei count, const void *value);
 typedef GLvoid (APIENTRY *UNIFORM_MAT_FUNC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
-ER_ConstantType GetConstantType(GLenum type)
+EConstantType GetConstantType(GLenum type)
 {
 	switch (type)
 	{
@@ -252,7 +252,7 @@ ER_ConstantType GetConstantType(GLenum type)
 
 	MsgError("Invalid constant type (%d)\n", type);
 
-	return (ER_ConstantType) -1;
+	return (EConstantType) -1;
 }
 
 void* s_uniformFuncs[CONSTANT_TYPE_COUNT] = {};
@@ -639,20 +639,20 @@ void ShaderAPIGL::ApplyRasterizerState()
 
 void ShaderAPIGL::ApplyShaderProgram()
 {
-	CGLShaderProgram* selectedShader = (CGLShaderProgram*)m_pSelectedShader;
+	CGLShaderProgram* selectedShader = (CGLShaderProgram*)m_pSelectedShader.Ptr();
 
 	if (selectedShader != m_pCurrentShader)
 	{
 		GLhandleARB program = selectedShader ? selectedShader->m_program : 0;
 
 		glUseProgram(program);
-		m_pCurrentShader = selectedShader;
+		m_pCurrentShader = m_pSelectedShader;
 	}
 }
 
 void ShaderAPIGL::ApplyConstants()
 {
-	CGLShaderProgram* currentShader = (CGLShaderProgram*)m_pCurrentShader;
+	CGLShaderProgram* currentShader = (CGLShaderProgram*)m_pCurrentShader.Ptr();
 
 	if (!currentShader)
 		return;
@@ -1392,7 +1392,7 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 //-------------------------------------------------------------
 
 // Creates shader class for needed ShaderAPI
-IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const char* query)
+IShaderProgramPtr ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const char* query)
 {
 	CGLShaderProgram* pNewProgram = PPNew CGLShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
@@ -1402,11 +1402,11 @@ IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const c
 	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
 	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
 
-	return pNewProgram;
+	return IShaderProgramPtr(pNewProgram);
 }
 
 // Destroy all shader
-void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
+void ShaderAPIGL::FreeShaderProgram(IShaderProgram* pShaderProgram)
 {
 	CGLShaderProgram* pShader = (CGLShaderProgram*)(pShaderProgram);
 
@@ -1418,17 +1418,18 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		auto it = m_ShaderList.find(pShader->m_nameHash);
 		if (it.atEnd())
 			return;
-
-		// remove it if reference is zero
-		if (!pShader->Ref_Drop())
-			return;
 		m_ShaderList.remove(it);
 	}
 
-	g_glWorker.Execute(__func__, [pShader]() {
-		delete pShader;
+	g_glWorker.Execute(__func__, [program = pShader->m_program]() {
+		if (program)
+		{
+			glDeleteProgram(program);
+			GLCheckError("delete gl program");
+		}
 		return 0;
 	});
+	pShader->m_program = GL_NONE;
 }
 
 void ShaderAPIGL::PreloadShadersFromCache()
@@ -1713,7 +1714,7 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 }
 
 // Load any shader from stream
-bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const ShaderProgCompileInfo& info, const char* extra)
+bool ShaderAPIGL::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,const ShaderProgCompileInfo& info, const char* extra)
 {
 	if(!pShaderOutput)
 		return false;
@@ -1724,7 +1725,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		return false;
 	}
 
-	CGLShaderProgram* pShader = (CGLShaderProgram*)pShaderOutput;
+	CGLShaderProgram* pShader = (CGLShaderProgram*)pShaderOutput.Ptr();
 
 	const bool shaderCacheEnabled = !info.disableCache && !r_skipShaderCache.GetBool();
 	const EqString cacheFileName = EqString::Format(SHADERCACHE_FOLDER "/%x.scache", pShader->m_nameHash);
@@ -2170,7 +2171,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 }
 
 // Set current shader for rendering
-void ShaderAPIGL::SetShader(IShaderProgram* pShader)
+void ShaderAPIGL::SetShader(IShaderProgramPtr pShader)
 {
 	m_pSelectedShader = pShader;
 }
@@ -2181,7 +2182,7 @@ void ShaderAPIGL::SetShaderConstantRaw(int nameHash, const void *data, int nSize
 	if (data == nullptr || nSize == 0)
 		return;
 
-	CGLShaderProgram* prog = (CGLShaderProgram*)m_pSelectedShader;
+	CGLShaderProgram* prog = (CGLShaderProgram*)m_pSelectedShader.Ptr();
 
 	if (!prog)
 		return;
@@ -2711,7 +2712,7 @@ void ShaderAPIGL::SetTexture(int nameHash, const ITexturePtr& pTexture )
 	if (!m_pSelectedShader)
 		return;
 
-	const Map<int, GLShaderSampler_t>& samplerMap = ((CGLShaderProgram*)m_pSelectedShader)->m_samplers;
+	const Map<int, GLShaderSampler_t>& samplerMap = ((CGLShaderProgram*)m_pSelectedShader.Ptr())->m_samplers;
 
 	auto it = samplerMap.find(nameHash);
 	if (it.atEnd())
