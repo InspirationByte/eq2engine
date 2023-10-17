@@ -169,6 +169,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 	Release();
 
 	m_samplerState = sampler;
+	m_samplerState.aniso = max(s_renderApi.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
 	m_iFlags = flags;
 	m_pool = D3DPOOL_MANAGED;
 

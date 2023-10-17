@@ -86,20 +86,20 @@ void CGLTexture::ReleaseTextures()
 void SetupGLSamplerState(uint texTarget, const SamplerStateParams &sampler, int mipMapCount)
 {
 	// Set requested wrapping modes
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, g_gl_texAddrModes[sampler.wrapS]);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, g_gl_texAddrModes[sampler.addressS]);
 	GLCheckError("smp w s");
 
 #ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
 #endif // USE_GLES2
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, g_gl_texAddrModes[sampler.wrapT]);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, g_gl_texAddrModes[sampler.addressT]);
 		GLCheckError("smp w t");
 	}
 
 	if (texTarget == GL_TEXTURE_3D)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, g_gl_texAddrModes[sampler.wrapR]);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, g_gl_texAddrModes[sampler.addressR]);
 		GLCheckError("smp w r");
 	}
 
@@ -366,6 +366,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 	Release();
 
 	m_samplerState = sampler;
+	m_samplerState.aniso = max(s_renderApi.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
 	m_iFlags = flags;
 
 	HOOK_TO_CVAR(r_loadmiplevel);

@@ -742,8 +742,7 @@ ITexturePtr ShaderAPID3DX10::CreateRenderTarget(const char* pszName,int width, i
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 	
-	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, m_caps, textureFilterType, textureAddress, textureAddress, textureAddress);
+	SamplerStateParams texSamplerParams(textureFilterType, textureAddress);
 
 	texSamplerParams.compareFunc = comparison;
 	pTexture->SetSamplerState(texSamplerParams);
@@ -2066,9 +2065,9 @@ IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParams &sam
 			if(samplerDesc.aniso == pState->m_params.aniso &&
 				samplerDesc.minFilter == pState->m_params.minFilter &&
 				samplerDesc.magFilter == pState->m_params.magFilter &&
-				samplerDesc.wrapS == pState->m_params.wrapS &&
-				samplerDesc.wrapT == pState->m_params.wrapT &&
-				samplerDesc.wrapR == pState->m_params.wrapR &&
+				samplerDesc.addressS == pState->m_params.addressS &&
+				samplerDesc.addressT == pState->m_params.addressT &&
+				samplerDesc.addressR == pState->m_params.addressR &&
 				samplerDesc.lod == pState->m_params.lod &&
 				samplerDesc.compareFunc == pState->m_params.compareFunc)
 			{
@@ -2088,9 +2087,9 @@ IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParams &sam
 		desc.Filter = (D3D10_FILTER) (desc.Filter | D3D10_COMPARISON_FILTERING_BIT);
 
 	desc.ComparisonFunc = comparisonConst[samplerDesc.compareFunc];
-	desc.AddressU = d3dAddressMode[samplerDesc.wrapS];
-	desc.AddressV = d3dAddressMode[samplerDesc.wrapT];
-	desc.AddressW = d3dAddressMode[samplerDesc.wrapR];
+	desc.AddressU = d3dAddressMode[samplerDesc.addressS];
+	desc.AddressV = d3dAddressMode[samplerDesc.addressT];
+	desc.AddressW = d3dAddressMode[samplerDesc.addressR];
 	desc.MipLODBias = samplerDesc.lod;
 	desc.MaxAnisotropy = HasAniso(samplerDesc.minFilter)? m_caps.maxTextureAnisotropicLevel : 1;
 	desc.BorderColor[0] = 0;

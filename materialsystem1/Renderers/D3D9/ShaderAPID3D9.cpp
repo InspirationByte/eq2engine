@@ -55,9 +55,9 @@ ShaderAPID3D9::ShaderAPID3D9() : ShaderAPI_Base()
 	m_defaultSamplerState.magFilter = TEXFILTER_NEAREST;
 	m_defaultSamplerState.minFilter = TEXFILTER_NEAREST;
 	//m_defaultSamplerState.mipFilter = TEXFILTER_NEAREST;
-	m_defaultSamplerState.wrapS = TEXADDRESS_WRAP;
-	m_defaultSamplerState.wrapT = TEXADDRESS_WRAP;
-	m_defaultSamplerState.wrapR = TEXADDRESS_WRAP;
+	m_defaultSamplerState.addressS = TEXADDRESS_WRAP;
+	m_defaultSamplerState.addressT = TEXADDRESS_WRAP;
+	m_defaultSamplerState.addressR = TEXADDRESS_WRAP;
 	m_defaultSamplerState.aniso = 1;
 
 	for (int i = 0; i < MAX_SAMPLERSTATE; i++)
@@ -582,9 +582,9 @@ void ShaderAPID3D9::ApplySamplerState()
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, g_d3d9_texFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.wrapS = ss.wrapS]);
-			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.wrapT = ss.wrapT]);
-			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.wrapR = ss.wrapR]);
+			if (ss.addressS != css.addressS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.addressS = ss.addressS]);
+			if (ss.addressT != css.addressT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.addressT = ss.addressT]);
+			if (ss.addressR != css.addressR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.addressR = ss.addressR]);
 
 			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
 
@@ -612,9 +612,9 @@ void ShaderAPID3D9::ApplySamplerState()
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, g_d3d9_texFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.wrapS = ss.wrapS]);
-			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.wrapT = ss.wrapT]);
-			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.wrapR = ss.wrapR]);
+			if (ss.addressS != css.addressS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.addressS = ss.addressS]);
+			if (ss.addressT != css.addressT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.addressT = ss.addressT]);
+			if (ss.addressR != css.addressR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.addressR = ss.addressR]);
 
 			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
 
@@ -1261,8 +1261,7 @@ ITexturePtr ShaderAPID3D9::CreateRenderTarget(const char* pszName,int width, int
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 
-	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
+	SamplerStateParams texSamplerParams(textureFilterType, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 

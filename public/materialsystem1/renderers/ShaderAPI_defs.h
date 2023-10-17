@@ -215,34 +215,32 @@ enum ECompareFunc : int
 
 struct SamplerStateParams
 {
+	SamplerStateParams() = default;
+	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_LESS, float lod = 0.0f, int aniso = 16)
+		: minFilter(filterType)
+		, magFilter((filterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR)
+		, addressS(address)
+		, addressT(address)
+		, addressR(address)
+		, compareFunc(compareFunc)
+		, lod(lod)
+		, aniso((filterType == TEXFILTER_BILINEAR_ANISO) ? 16 : 0)
+	{
+
+	}
+
 	ETexFilterMode	minFilter{ TEXFILTER_NEAREST };
 	ETexFilterMode	magFilter{ TEXFILTER_NEAREST };
 
 	ECompareFunc	compareFunc{ COMPFUNC_NONE };
 
-	ETexAddressMode	wrapS{ TEXADDRESS_WRAP };
-	ETexAddressMode	wrapT{ TEXADDRESS_WRAP };
-	ETexAddressMode	wrapR{ TEXADDRESS_WRAP };
+	ETexAddressMode	addressS{ TEXADDRESS_WRAP };
+	ETexAddressMode	addressT{ TEXADDRESS_WRAP };
+	ETexAddressMode	addressR{ TEXADDRESS_WRAP };
 
-	int				aniso{ 4 };
-	float			lod{ 1.0f };
+	int				aniso{ 16 };
+	float			lod{ 0.0f };
 };
-
-static void SamplerStateParams_Make(SamplerStateParams& samplerParams, const ShaderAPICaps& caps, ETexFilterMode textureFilterType, ETexAddressMode addressS, ETexAddressMode addressT, ETexAddressMode addressR)
-{
-	// Setup filtering mode
-	samplerParams.minFilter = textureFilterType;
-	samplerParams.magFilter = (textureFilterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR;
-
-	// Setup clamping
-	samplerParams.wrapS = addressS;
-	samplerParams.wrapT = addressT;
-	samplerParams.wrapR = addressR;
-	samplerParams.compareFunc = COMPFUNC_LESS;
-
-	samplerParams.lod = 0.0f;
-	samplerParams.aniso = caps.maxTextureAnisotropicLevel;
-}
 
 //---------------------------------------
 //        LOWER LEVEL CONSTANTS

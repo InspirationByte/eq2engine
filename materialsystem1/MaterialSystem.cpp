@@ -420,8 +420,7 @@ void CMaterialSystem::CreateWhiteTexture()
 		}
 	}
 
-	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
+	SamplerStateParams texSamplerParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
 
 	FixedArray<CRefPtr<CImage>, 1> images;
 	images.append(CRefPtr(&img));
@@ -1147,8 +1146,14 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 // tells 3d device to end and present frame
 bool CMaterialSystem::EndFrame()
 {
-	if(m_renderLibrary)
-		m_renderLibrary->EndFrame();
+	if (!g_renderAPI)
+		return false;
+
+	// issue the rendering of anything
+	g_renderAPI->Flush();
+	g_renderAPI->ResetCounters();
+
+	m_renderLibrary->EndFrame();
 
 	m_frame++;
 	m_proxyDeltaTime = m_proxyTimer.GetTime(true);

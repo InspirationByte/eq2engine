@@ -814,8 +814,7 @@ ITexturePtr ShaderAPIGL::CreateRenderTarget(	const char* pszName,
 
 	pTexture->m_glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
-	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, g_renderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
+	SamplerStateParams texSamplerParams(textureFilterType, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 

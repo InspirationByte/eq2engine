@@ -82,9 +82,7 @@ static void MakeCheckerBoxImage(ubyte* dest, int width, int height, int checkerS
 // generates a new error texture
 bool CTexture::GenerateErrorTexture(int flags)
 {
-	ShaderAPICaps emptyCaps;
-	SamplerStateParams texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, emptyCaps, TEXFILTER_LINEAR, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
+	SamplerStateParams texSamplerParams(TEXFILTER_LINEAR, TEXADDRESS_WRAP);
 
 	MColor color1(0, 0, 0, 128);
 	MColor color2(255, 64, 255, 255);

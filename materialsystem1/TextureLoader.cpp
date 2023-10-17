@@ -177,6 +177,9 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		}
 	}
 
+	const ShaderAPICaps& caps = g_renderAPI->GetCaps();
+	caps.maxTextureAnisotropicLevel;
+
 	// initialize texture
 	if (!imgList.numElem() || !texture->Init(samplerParams, imgList, nFlags | TEXFLAG_PROGRESSIVE_LODS))
 	{

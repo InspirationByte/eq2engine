@@ -714,10 +714,9 @@ void CMainWindow::ReDraw()
 	g_musicObject->SetSampleVolume(s_musicNameId, 1, g_vLastMousePosition.x / 512.0f);
 	g_musicObject->SetSampleVolume(s_musicNameId, 2, g_vLastMousePosition.y / 512.0f);
  
-	g_renderAPI->SetViewport(0, 0, w,h);
-
 	if(g_matSystem->BeginFrame(nullptr))
 	{
+		g_renderAPI->SetViewport(0, 0, w, h);
 		g_renderAPI->Clear(true,true,false, ColorRGBA(0.2,0.2,0.2, 1));
 
 		Vector3D forward, right, up;

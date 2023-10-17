@@ -842,11 +842,7 @@ void CGameHost::BeginScene()
 
 void CGameHost::EndScene()
 {
-	// issue the rendering of anything
-	g_renderAPI->Flush();
-
 	g_matSystem->EndFrame();
-	g_renderAPI->ResetCounters();
 }
 
 void CGameHost::RequestTextInput()

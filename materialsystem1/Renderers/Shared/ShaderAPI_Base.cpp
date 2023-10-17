@@ -440,8 +440,8 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 	FixedArray<CRefPtr<CImage>, 1> imgs;
 	imgs.append(CRefPtr(&genTex));
 
-	SamplerStateParams sampler;
-	SamplerStateParams_Make(sampler, m_caps, texFilter, textureAddress, textureAddress, textureAddress);
+	SamplerStateParams sampler(texFilter, textureAddress);
+
 	return g_renderAPI->CreateTexture(imgs, sampler, nFlags);
 }
 

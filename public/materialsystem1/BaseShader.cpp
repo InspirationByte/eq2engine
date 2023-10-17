@@ -241,8 +241,7 @@ MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorT
 
 	if(mv.IsValid()) 
 	{
-		SamplerStateParams samplerParams;
-		SamplerStateParams_Make(samplerParams, g_renderAPI->GetCaps(), (ETexFilterMode)m_texFilter, (ETexAddressMode)m_texAddressMode, (ETexAddressMode)m_texAddressMode, (ETexAddressMode)m_texAddressMode);
+		SamplerStateParams samplerParams((ETexFilterMode)m_texFilter, (ETexAddressMode)m_texAddressMode);
 
 		if(mv.Get().Length())
 			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
