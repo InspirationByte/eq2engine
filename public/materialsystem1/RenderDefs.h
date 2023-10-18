@@ -136,3 +136,50 @@ struct RenderBoneTransform
 
 // must be exactly two regs
 assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
+
+// render command to draw geometry
+struct RenderDrawCmd
+{
+	FixedArray<IVertexBuffer*, MAX_VERTEXSTREAM> vertexBuffers;
+	IVertexFormat*	vertexLayout{ nullptr };
+	IIndexBuffer*	indexBuffer{ nullptr };
+	IVertexBuffer*	instanceBuffer{ nullptr };
+
+	EPrimTopology	primitiveTopology{ PRIM_TRIANGLES };
+
+	IMaterial*		material{ nullptr };
+	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: buffer
+
+	// TODO: atm material vars are used but for newer GAPI we should
+	// use uniform buffers to setup extra material properties
+	// suitable for skinned mesh, world properties, car damage stuff
+	// and so on. We can do extra material textures there too.
+
+	int				firstVertex{ 0 };
+	int				firstIndex{ 0 };
+	int				numVertices{ 0 };
+	int				numIndices{ 0 };
+	int				baseVertex{ 0 };
+
+	RenderDrawCmd()
+	{
+		vertexBuffers.assureSizeEmplace(MAX_VERTEXSTREAM, nullptr);
+	}
+
+	void SetDrawIndexed(int idxCount, int firstIdx, int vertCount = -1, int firstVert = 0, int baseVert = 0)
+	{
+		firstVertex = firstVert;
+		numVertices = vertCount;
+		firstIndex = firstIdx;
+		numIndices = idxCount;
+		baseVertex = baseVert;
+	}
+
+	void SetDrawNonIndexed(int vertCount = -1, int firstVert = 0)
+	{
+		firstVertex = firstVert;
+		numVertices = vertCount;
+		firstIndex = -1;
+		numIndices = 0;
+	}
+};

@@ -56,72 +56,72 @@ public:
 	const char*						GetMaterialPath() const;
 	const char*						GetMaterialSRCPath() const;
 
+
+	// returns RHI device interface
+	IShaderAPI*						GetShaderAPI() const;
+
+	void							RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName);
+	IMaterialProxy*					CreateProxyByName(const char* pszName);
+
+	void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation);
+	void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
+
+	// device lost/restore callbacks
+	void							AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
+	void							RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
+
+	void							PrintLoadedMaterials();
+
+	bool							IsInitialized() const {return (m_renderLibrary != nullptr);}
+
+	//-----------------------------
+	// Swap chains
+
+	bool							BeginFrame(IEqSwapChain* swapChain);
+	bool							EndFrame();
+	void							SetDeviceBackbufferSize(int wide, int tall);
+	void							SetDeviceFocused(bool inFocus);
+
+	IEqSwapChain*					CreateSwapChain(void* windowHandle);
+	void							DestroySwapChain(IEqSwapChain* chain);
+
+	bool							SetWindowed(bool enable);
+	bool							IsWindowed() const;
+
+	bool							CaptureScreenshot( CImage &img );
+
+
 	//-----------------------------
 	// Resource operations
-	//-----------------------------
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
 	const IMaterialPtr&				GetDefaultMaterial() const;
-
-	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
 	const ITexturePtr&				GetWhiteTexture() const;
 
-	// returns luxel test texture (used for lightmap test)
 	const ITexturePtr&				GetLuxelTestTexture() const;
 
-	// creates new material with defined parameters
 	IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params);
-
-	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
 	IMaterialPtr					GetMaterial(const char* szMaterialName);
-
-	// checks material for existence
 	bool							IsMaterialExist(const char* szMaterialName) const;
 
-	// Creates material system shader
 	IMaterialSystemShader*			CreateShaderInstance(const char* szShaderName);
 
-	// Loads textures, compiles shaders. Called after level loading
 	void							PreloadNewMaterials();
-
-	// waits for material loader thread is finished
 	void							WaitAllMaterialsLoaded();
 
-	// loads material or sends it to loader thread
 	void							PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial);
-
-	// returns material count which is currently loading or awaiting for load
 	int								GetLoadingQueue() const;
 
-	// Reloads material vars, shaders and textures without touching a material pointers.
 	void							ReloadAllMaterials();
-
-	// releases non-used materials
 	void							ReleaseUnusedMaterials();
 
-	// Frees materials or decrements it's reference count
 	void							FreeMaterial(IMaterial *pMaterial);
 
 	void							FreeMaterials();
 	void							ClearRenderStates();
 
 	//-----------------------------
-
-	// returns the dynamic mesh
-	IDynamicMesh*					GetDynamicMesh() const;
-
-	//-----------------------------
-	// Helper rendering operations
-	//-----------------------------
-
-	void							DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
-													const ITexturePtr& pTexture = nullptr, const MColor &color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr);
-
-	//-----------------------------
 	// Shader dynamic states
-	//-----------------------------
 
 	ECullMode						GetCurrentCullMode() const;
 	void							SetCullMode(ECullMode cullMode);
@@ -145,9 +145,6 @@ public:
 	void							SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture);
 	const ITexturePtr&				GetEnvironmentMapTexture() const;
 
-	//-----------------------------
-	// RHI render states setup
-	//-----------------------------
 
 	void							SetBlendingStates(const BlendStateParams& blend);
 	void							SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL);
@@ -183,72 +180,25 @@ public:
 	//-----------------------------
 	// Rendering projection helper operations
 
-	// sets up a 2D mode (also sets up view and world matrix)
 	void							Setup2D(float wide, float tall);
-
-	// sets up 3D mode, projection
 	void							SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar);
-
-	// sets up 3D mode, orthogonal
 	void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar);
-
-	// sets up a matrix, projection, view, and world
 	void							SetMatrix(EMatrixMode mode, const Matrix4x4 &matrix);
-
-	// returns a typed matrix
 	void							GetMatrix(EMatrixMode mode, Matrix4x4 &matrix);
-
-	// retunrs multiplied matrix
 	void							GetWorldViewProjection(Matrix4x4 &matrix);
 
 	//-----------------------------
-	// Swap chains
-	//-----------------------------
+	// Helper rendering operations
 
-	// tells device to begin frame
-	bool							BeginFrame(IEqSwapChain* swapChain);
+	// returns the dynamic mesh
+	IDynamicMesh*					GetDynamicMesh() const;
 
-	// tells device to end and present frame. Also swapchain can be overriden.
-	bool							EndFrame();
+	void							Draw(const RenderDrawCmd& drawCmd);
 
-	// resizes device back buffer. Must be called if window resized, etc
-	void							SetDeviceBackbufferSize(int wide, int tall);
-
-	// reports device focus state to render lib
-	void							SetDeviceFocused(bool inFocus);
-
-	// creates additional swap chain
-	IEqSwapChain*					CreateSwapChain(void* windowHandle);
-
-	void							DestroySwapChain(IEqSwapChain* chain);
-
-	// window/fullscreen mode changing; returns false if fails
-	bool							SetWindowed(bool enable);
-	bool							IsWindowed() const;
-	
-	// captures screenshot to CImage data
-	bool							CaptureScreenshot( CImage &img );
-
-	//-----------------------------
-	// Internal operations
-	//-----------------------------
-
-	// returns RHI device interface
-	IShaderAPI*						GetShaderAPI() const;
-
-	void							RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName);
-	IMaterialProxy*					CreateProxyByName(const char* pszName);
-
-	void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation);
-	void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
-
-	// device lost/restore callbacks
-	void							AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
-	void							RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
-
-	void							PrintLoadedMaterials();
-
-	bool							IsInitialized() const {return (m_renderLibrary != nullptr);}
+	void							DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
+													const ITexturePtr& pTexture = nullptr, const MColor &color = color_white,
+													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
+													RasterizerStateParams* rasterParams = nullptr);
 
 private:
 

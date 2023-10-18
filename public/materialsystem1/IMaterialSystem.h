@@ -225,6 +225,8 @@ public:
 
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 
+	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
+
 	// draw primitives with default material
 	virtual void					DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
 													const ITexturePtr& texture = nullptr, const MColor &color = color_white,

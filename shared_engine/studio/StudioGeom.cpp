@@ -880,12 +880,9 @@ int CEqStudioGeom::FindManualLod(float value) const
 	return -1;
 }
 
-void CEqStudioGeom::SetupVBOStream(EGFHwVertex::VertexStream vertStream, int rhiStreamId) const
+IVertexBuffer* CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStream vertStream) const
 {
-	if (!m_vertexBuffers[vertStream])
-		return;
-
-	g_renderAPI->SetVertexBuffer(m_vertexBuffers[vertStream], rhiStreamId);
+	return m_vertexBuffers[vertStream];
 }
 
 void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
@@ -893,21 +890,23 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 	if (!drawProperties.bodyGroupFlags)
 		return;
 
+	RenderBoneTransform rendBoneTransforms[128];
+	ArrayCRef<RenderBoneTransform> rendBoneTransformsArray(nullptr);
 	const bool isSkinned = drawProperties.boneTransforms;
 
-	
-	int numBones = 0;
+
 	if (isSkinned)
 	{
-		RenderBoneTransform rendBoneTransforms[128];
-		numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
-		g_matSystem->SetSkinningBones(ArrayCRef(rendBoneTransforms, numBones));
+		const int numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
+		rendBoneTransformsArray = ArrayCRef(rendBoneTransforms, numBones);
 	}
 
-	g_matSystem->SetInstancingEnabled(false);
-
 	IVertexFormat* rhiVertFmt = drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat(isSkinned);
-	g_renderAPI->SetVertexFormat(rhiVertFmt);
+
+	RenderDrawCmd drawCmd;
+	drawCmd.vertexLayout = rhiVertFmt;
+	drawCmd.indexBuffer = m_indexBuffer;
+
 	// setup vertex buffers
 	{
 		ArrayCRef<VertexFormatDesc> fmtDesc = rhiVertFmt->GetFormatDesc();
@@ -927,16 +926,17 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 
-			if(m_vertexBuffers[vertStreamId])
-				g_renderAPI->SetVertexBuffer(m_vertexBuffers[vertStreamId], desc.streamId);
-
+			drawCmd.vertexBuffers[desc.streamId] = m_vertexBuffers[vertStreamId];
 			setVertStreams |= (1 << int(vertStreamId));
 			++numBitsSet;
 		}
 	}
 
-	g_renderAPI->SetIndexBuffer(m_indexBuffer);
+
 	const int maxVertexCount = m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
+
+	if (drawProperties.setupDrawCmd)
+		drawProperties.setupDrawCmd(drawCmd);
 
 	const studioHdr_t& studio = *m_studio;
 	for (int i = 0; i < studio.numBodyGroups; ++i)
@@ -966,35 +966,34 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 		for (int j = 0; j < modDesc->numMeshes; ++j)
 		{
 			const int materialIndex = modDesc->pMesh(j)->materialIndex;
-			IMaterial* material = GetMaterial(materialIndex, drawProperties.materialGroup);
 
+			IMaterial* material = GetMaterial(materialIndex, drawProperties.materialGroup);
 			const int materialFlags = material->GetFlags();
 
-			const int materialMask = materialFlags & drawProperties.materialFlags;
-			if (drawProperties.excludeMaterialFlags && materialMask > 0)
+			const int materialFlagsMask = materialFlags & drawProperties.materialFlags;
+			if (drawProperties.excludeMaterialFlags && materialFlagsMask > 0)
 				continue;
-			else if (materialFlags && !drawProperties.excludeMaterialFlags && !materialMask)
+			else if (materialFlags && !drawProperties.excludeMaterialFlags && !materialFlagsMask)
 				continue;
 
 			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
-			g_matSystem->SetSkinningEnabled(numBones && meshRef.supportsSkinning);
+			if (meshRef.supportsSkinning)
+				drawCmd.boneTransforms = rendBoneTransformsArray;
+			else
+				drawCmd.boneTransforms = ArrayCRef<RenderBoneTransform>(nullptr);
 
-			if (drawProperties.preSetupFunc)
-				drawProperties.preSetupFunc(material, i, j);
+			drawCmd.primitiveTopology = (EPrimTopology)meshRef.primType;
+			drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex, maxVertexCount);
+
+			if (drawProperties.setupBodyGroup)
+				drawProperties.setupBodyGroup(drawCmd, material, i, j);
 
 			if (!drawProperties.skipMaterials)
-				g_matSystem->BindMaterial(material, 0);
+				drawCmd.material = material;
 
-			if (drawProperties.preDrawFunc)
-				drawProperties.preDrawFunc(material, i, j);
-
-			g_matSystem->Apply();
-
-			g_renderAPI->DrawIndexedPrimitives((EPrimTopology)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
+			g_matSystem->Draw(drawCmd);
 		}
 	}
-
-	g_matSystem->SetSkinningEnabled(false);
 }
 
 const BoundingBox& CEqStudioGeom::GetBoundingBox() const

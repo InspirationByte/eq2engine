@@ -9,13 +9,13 @@
 #include "egf/model.h"
 
 class IMaterial;
+using IMaterialPtr = CRefPtr<IMaterial>;
+
 class IVertexFormat;
 class IVertexBuffer;
 class IIndexBuffer;
 class CBaseEqGeomInstancer;
-
-using IMaterialPtr = CRefPtr<IMaterial>;
-
+struct RenderDrawCmd;
 struct DecalMakeInfo;
 struct DecalData;
 struct VertexFormatDesc;
@@ -139,8 +139,8 @@ public:
 	int							FindManualLod(float value) const;
 
 	void						Draw(const DrawProps& drawProperties) const;
-	void						SetupVBOStream(EGFHwVertex::VertexStream vertStream, int rhiStreamId) const;
 
+	IVertexBuffer*				GetVertexBuffer(EGFHwVertex::VertexStream vertStream) const;
 	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
@@ -211,14 +211,15 @@ extern ArrayCRef<EGFHwVertex::VertexStream> g_defaultVertexStreamMapping;
 
 struct CEqStudioGeom::DrawProps
 {
-	using DrawFunc = EqFunction<void(IMaterial* material, int bodyGroup, int meshIndex)>;
+	using SetupDrawFunc = EqFunction<void(RenderDrawCmd& drawCmd)>;
+	using BodyGroupFunc = EqFunction<void(RenderDrawCmd& drawCmd, IMaterial* material, int bodyGroup, int meshIndex)>;
 
 	ArrayCRef<EGFHwVertex::VertexStream> vertexStreamMapping{ g_defaultVertexStreamMapping };
 	IVertexFormat*	vertexFormat{ nullptr };
 	Matrix4x4*		boneTransforms{ nullptr };
 
-	DrawFunc		preSetupFunc;
-	DrawFunc		preDrawFunc;
+	SetupDrawFunc	setupDrawCmd;		// called once before entire EGF is drawn
+	BodyGroupFunc	setupBodyGroup;	// called multiple times before body group is drawn
 	
 	int				bodyGroupFlags{ -1 };
 	int				materialGroup{ 0 };

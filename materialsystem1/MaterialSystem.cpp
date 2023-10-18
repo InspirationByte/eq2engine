@@ -1270,6 +1270,7 @@ bool CMaterialSystem::IsSkinningEnabled() const
 void CMaterialSystem::SetSkinningBones(ArrayCRef<RenderBoneTransform> bones)
 {
 	m_boneTransforms.clear();
+	m_skinningEnabled = bones.numElem() > 0;
 	m_boneTransforms.reserve(bones.numElem());
 	for (const RenderBoneTransform& bone : bones)
 		m_boneTransforms.append(bone);
@@ -1320,6 +1321,29 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 {
 	return (IDynamicMesh*)&m_dynamicMesh;
+}
+
+void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
+{
+	// TODO: get rid of states
+	SetInstancingEnabled(drawCmd.instanceBuffer ? true : false);
+
+	for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
+		m_shaderAPI->SetVertexBuffer(drawCmd.vertexBuffers[i], i); // TODO: support offsets
+
+	m_shaderAPI->SetVertexFormat(drawCmd.vertexLayout);
+	m_shaderAPI->SetIndexBuffer(drawCmd.indexBuffer);
+
+	SetSkinningBones(drawCmd.boneTransforms);
+	BindMaterial(drawCmd.material);
+
+	if(drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
+		m_shaderAPI->DrawNonIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstVertex, drawCmd.numVertices);
+	else
+		m_shaderAPI->DrawIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstIndex, drawCmd.numIndices, drawCmd.firstVertex, drawCmd.numVertices, drawCmd.baseVertex);
+
+	SetSkinningEnabled(false);
+	SetInstancingEnabled(false);
 }
 
 void CMaterialSystem::DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
