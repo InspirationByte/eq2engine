@@ -33,6 +33,7 @@ enum EShaderParamSetup
 	SHADERPARAM_FOG,			// fog parameters
 
 	SHADERPARAM_TRANSFORM,		// transformation from matsystem to vertex shader, also an texture transform setup
+	SHADERPARAM_BONETRANSFORMS,	// skinning bone transform matrices
 
 	// forward-shading specified lighting setup (next three enums must be equal to DynLightType_e)
 	SHADERPARAM_LIGHTING_POINT, // point light setup

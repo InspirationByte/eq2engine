@@ -129,6 +129,10 @@ public:
 	void							SetSkinningEnabled( bool bEnable );
 	bool							IsSkinningEnabled() const;
 
+	// TODO: per instance
+	void							SetSkinningBones(ArrayCRef<RenderBoneTransform> bones);
+	void							GetSkinningBones(ArrayCRef<RenderBoneTransform>& outBones) const;
+
 	void							SetInstancingEnabled( bool bEnable );
 	bool							IsInstancingEnabled() const;
 
@@ -284,6 +288,8 @@ private:
 	Matrix4x4						m_viewProjMatrix{ identity4 };
 	Matrix4x4						m_wvpMatrix{ identity4 };
 	Matrix4x4						m_matrices[5]{ identity4 };
+
+	Array<RenderBoneTransform>		m_boneTransforms{ PP_SL };
 
 	IMaterialPtr					m_defaultMaterial;
 	IMaterialPtr					m_overdrawMaterial;

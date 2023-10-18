@@ -1266,6 +1266,20 @@ bool CMaterialSystem::IsSkinningEnabled() const
 	return m_skinningEnabled;
 }
 
+// TODO: per instance
+void CMaterialSystem::SetSkinningBones(ArrayCRef<RenderBoneTransform> bones)
+{
+	m_boneTransforms.clear();
+	m_boneTransforms.reserve(bones.numElem());
+	for (const RenderBoneTransform& bone : bones)
+		m_boneTransforms.append(bone);
+}
+
+void CMaterialSystem::GetSkinningBones(ArrayCRef<RenderBoneTransform>& outBones) const
+{
+	outBones = m_boneTransforms;
+}
+
 // instancing mode
 void CMaterialSystem::SetInstancingEnabled( bool bEnable )
 {

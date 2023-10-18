@@ -120,13 +120,6 @@ namespace {
 
 // MUST BE SAME AS IN SHADER
 
-// quaternion with posit
-struct bonequaternion_t
-{
-	Vector4D	quat;
-	Vector4D	origin;
-};
-
 // multiplies bone
 Vector4D quatMul(Vector4D& q1, Vector4D& q2)
 {
@@ -138,14 +131,14 @@ Vector4D quatMul(Vector4D& q1, Vector4D& q2)
 }
 
 // vector rotation
-Vector4D quatRotate(Vector3D& p, Vector4D& q)
+Vector4D quatRotate(Vector3D& p, Quaternion& q)
 {
-	Quaternion temp = Quaternion(q) * Quaternion(0.0f, p.x, p.y, p.z);
+	Quaternion temp = q * Quaternion(0.0f, p.x, p.y, p.z);
 	return (temp * Quaternion(q.w, -q.x, -q.y, -q.z)).asVector4D();
 }
 
 // transforms bone
-Vector3D boneTransf(bonequaternion_t& bq, Vector3D& pos)
+Vector3D boneTransf(RenderBoneTransform& bq, Vector3D& pos)
 {
 	return bq.origin.xyz() + quatRotate(pos, bq.quat).xyz();
 }
@@ -189,7 +182,7 @@ static bool TransformEGFVertex(EGFHwVertex::PositionUV& vertPos, EGFHwVertex::TB
 	return bAffected;
 }
 
-static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, bonequaternion_t* bquats, Matrix4x4* btransforms)
+static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, const Matrix4x4* boneMatrices, RenderBoneTransform* bquats)
 {
 	const studioHdr_t& studio = model->GetStudioHdr();
 	const int numBones = studio.numBones;
@@ -197,7 +190,7 @@ static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, bonequatern
 	for (int i = 0; i < numBones; i++)
 	{
 		// FIXME: kind of slowness
-		const Matrix4x4 toAbsTransform = (!model->GetJoint(i).absTrans * btransforms[i]);
+		const Matrix4x4 toAbsTransform = (!model->GetJoint(i).absTrans * boneMatrices[i]);
 
 		// cast matrices to quaternions
 		// note that quaternions uses transposes matrix set.
@@ -205,7 +198,7 @@ static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, bonequatern
 		bquats[i].origin = Vector4D(toAbsTransform.rows[3].xyz(), 1);
 	}
 
-	return numBones * 2;
+	return numBones;
 }
 
 #if 0
@@ -235,9 +228,9 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 			m_skinningDirty = false;
 		}
 
-		bonequaternion_t bquats[128];
-		const int numRegs = ComputeQuaternionsForSkinning(this, bquats, jointMatrices);
-		g_renderAPI->SetShaderConstantArray("Bones", (Vector4D*)&bquats[0].quat, numRegs);
+		RenderBoneTransform rendBoneTransforms[128];
+		const int numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
+		g_matSystem->SetSkinningBones(ArrayCRef(rendBoneTransforms, numBones));
 
 		return true;
 	}
@@ -902,10 +895,14 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 
 	const bool isSkinned = drawProperties.boneTransforms;
 
-	bonequaternion_t bquats[128];
-	int numBoneRegisters = 0;
+	
+	int numBones = 0;
 	if (isSkinned)
-		 numBoneRegisters = ComputeQuaternionsForSkinning(this, bquats, drawProperties.boneTransforms);
+	{
+		RenderBoneTransform rendBoneTransforms[128];
+		numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
+		g_matSystem->SetSkinningBones(ArrayCRef(rendBoneTransforms, numBones));
+	}
 
 	g_matSystem->SetInstancingEnabled(false);
 
@@ -980,7 +977,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				continue;
 
 			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
-			g_matSystem->SetSkinningEnabled(numBoneRegisters && meshRef.supportsSkinning);
+			g_matSystem->SetSkinningEnabled(numBones && meshRef.supportsSkinning);
 
 			if (drawProperties.preSetupFunc)
 				drawProperties.preSetupFunc(material, i, j);
@@ -991,8 +988,6 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			if (drawProperties.preDrawFunc)
 				drawProperties.preDrawFunc(material, i, j);
 
-			if (numBoneRegisters && meshRef.supportsSkinning)
-				g_renderAPI->SetShaderConstant(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
 			g_matSystem->Apply();
 
 			g_renderAPI->DrawIndexedPrimitives((EPrimTopology)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);

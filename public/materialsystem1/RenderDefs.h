@@ -126,3 +126,13 @@ struct VertexFVFResolver<Vertex3D>
 	Vertex2D(Vector2D(x0 + o, y1 - o), Vector2D(0, 1), colorLB),	\
 	Vertex2D(Vector2D(x1 - o, y0 + o), Vector2D(1, 0), colorRT),	\
 	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1), colorRB)
+
+
+struct RenderBoneTransform
+{
+	Quaternion	quat;
+	Vector4D	origin;
+};
+
+// must be exactly two regs
+assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);

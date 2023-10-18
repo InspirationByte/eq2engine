@@ -170,8 +170,6 @@ public:
 
 	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;	// get texture transformation from vars
 
-	void						SetupVertexShaderTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar, const char* pszConstName);	// sends texture transformation to shader
-
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const { return ITexturePtr::Null(); };
 	virtual const ITexturePtr&	GetBumpTexture(int stage) const { return ITexturePtr::Null(); };
@@ -196,6 +194,8 @@ protected:
 	virtual void				ParamSetup_Cubemap(IShaderAPI* renderAPI);
 
 	virtual bool				_ShaderInitRHI(IShaderAPI* renderAPI) = 0;
+
+	void						ParamSetup_BoneTransforms(IShaderAPI* renderAPI);
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 

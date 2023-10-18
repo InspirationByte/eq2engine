@@ -197,6 +197,10 @@ public:
 	virtual void					SetSkinningEnabled(bool bEnable) = 0;
 	virtual bool					IsSkinningEnabled() const = 0;
 
+	// TODO: per instance
+	virtual void					SetSkinningBones(ArrayCRef<RenderBoneTransform> bones) = 0;
+	virtual void					GetSkinningBones(ArrayCRef<RenderBoneTransform>& outBones) const = 0;
+
 	virtual void					SetInstancingEnabled(bool bEnable) = 0;
 	virtual bool					IsInstancingEnabled() const = 0;
 

@@ -46,8 +46,8 @@ BEGIN_SHADER_CLASS(Default)
 	SHADER_SETUP_CONSTANTS()
 	{
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
+		SetupDefaultParameter(SHADERPARAM_BONETRANSFORMS);
 		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
-
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 	}
 

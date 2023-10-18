@@ -78,6 +78,7 @@ CBaseShader::CBaseShader()
 	SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
 	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
 	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
+	SetParameterFunctor(SHADERPARAM_BONETRANSFORMS, &CBaseShader::ParamSetup_BoneTransforms);
 }
 
 //--------------------------------------
@@ -314,6 +315,7 @@ void CBaseShader::ParamSetup_Transform(IShaderAPI* renderAPI)
 	g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
 	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, proj);
 
+	// TODO: constant buffer CameraTransform
 	renderAPI->SetShaderConstant(StringToHashConst("WVP"), wvp_matrix);
 	renderAPI->SetShaderConstant(StringToHashConst("World"), world);
 	renderAPI->SetShaderConstant(StringToHashConst("View"), view);
@@ -338,6 +340,7 @@ void CBaseShader::ParamSetup_Fog(IShaderAPI* renderAPI)
 	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
 	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
 
+	// TODO: constant buffer FogInfo
 	renderAPI->SetShaderConstant(StringToHashConst("ViewPos"), fog.viewPos);
 	renderAPI->SetShaderConstant(StringToHashConst("FogParams"), VectorFOGParams);
 	renderAPI->SetShaderConstant(StringToHashConst("FogColor"), fog.fogColor);
@@ -346,6 +349,15 @@ void CBaseShader::ParamSetup_Fog(IShaderAPI* renderAPI)
 void CBaseShader::ParamSetup_Cubemap(IShaderAPI* renderAPI)
 {
 	renderAPI->SetTexture(StringToHashConst("CubemapTexture"), m_cubemapTexture.Get());
+}
+
+void CBaseShader::ParamSetup_BoneTransforms(IShaderAPI* renderAPI)
+{
+	if (!g_matSystem->IsSkinningEnabled())
+		return;
+	ArrayCRef<RenderBoneTransform> rendBones(nullptr);
+	g_matSystem->GetSkinningBones(rendBones);
+	renderAPI->SetShaderConstantArray(StringToHashConst("Bones"), rendBones);
 }
 
 // get texture transformation from vars
