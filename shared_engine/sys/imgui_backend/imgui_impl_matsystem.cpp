@@ -63,9 +63,6 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
 
-		g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-		g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
 		mb.Begin(PRIM_TRIANGLES);
 
 		for (int i = 0; i < cmd_list->VtxBuffer.Size; i++)

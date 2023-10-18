@@ -156,12 +156,12 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 	// proceed to render
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-	g_matSystem->SetInstancingEnabled(true);
-	g_matSystem->SetSkinningEnabled(false); // skinning not yet supported. But we can support it with textures holding data
 
-	g_renderAPI->SetVertexFormat(m_vertFormat);
 	const int maxVertexCount = model->m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
 	int instanceStreamId = -1;
+
+	RenderDrawCmd drawCmd;
+	drawCmd.vertexLayout = m_vertFormat;
 
 	// setup vertex buffers
 	{
@@ -176,19 +176,20 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 
-			g_renderAPI->SetVertexBuffer(model->m_vertexBuffers[vertStreamId], desc.streamId);
-
 			setVertStreams |= (1 << int(vertStreamId));
-
 			if (instanceStreamId != desc.streamId && (desc.attribType & VERTEXATTRIB_FLAG_INSTANCE))
 			{
 				ASSERT_MSG(instanceStreamId == -1, "Multiple instance streams not yet supported");
 				instanceStreamId = desc.streamId;
 			}
+			else
+			{
+				drawCmd.vertexBuffers[desc.streamId] = model->m_vertexBuffers[vertStreamId];
+			}
 		}
 	}
 
-	g_renderAPI->SetIndexBuffer(model->m_indexBuffer);
+	drawCmd.indexBuffer = model->m_indexBuffer;
 
 	const studioHdr_t& studio = model->GetStudioHdr();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
@@ -223,32 +224,32 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				if (buffer.numInstances == 0)
 					continue;
 
-				g_renderAPI->SetVertexBuffer(buffer.instanceVB, instanceStreamId);
+				drawCmd.vertexBuffers[instanceStreamId] = buffer.instanceVB;
+				drawCmd.instanceBuffer = buffer.instanceVB;
 
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numMeshes; i++)
 				{
 					const int materialIndex = modDesc->pMesh(i)->materialIndex;
-					IMaterial* pMaterial = model->GetMaterial(materialIndex, mGrp);
+					IMaterial* material = model->GetMaterial(materialIndex, mGrp);
 
 					// sadly, instancer won't draw any transparent objects due to sorting problems
-					if (pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
+					if (material->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
 						continue;
 
 					//materials->SetSkinningEnabled(true);
-					g_matSystem->BindMaterial(pMaterial, 0);
-
-					g_matSystem->Apply();
+					drawCmd.material = material;
+					
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
-					g_renderAPI->DrawIndexedPrimitives((EPrimTopology)meshRef.primType, meshRef.firstIndex, meshRef.indexCount, 0, maxVertexCount);
+					drawCmd.primitiveTopology = (EPrimTopology)meshRef.primType;
+					drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex, maxVertexCount);
+
+					g_matSystem->Draw(drawCmd);
 				}
 			} // mGrp
 		} // bodyGrp
 	} // lod
-
-	g_renderAPI->SetVertexBuffer(nullptr, 2);
-	g_matSystem->SetInstancingEnabled(false);
 
 	Invalidate();
 }
