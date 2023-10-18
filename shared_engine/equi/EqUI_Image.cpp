@@ -89,8 +89,7 @@ const ColorRGBA& Image::GetColor() const
 
 void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 {
-	g_matSystem->SetAmbientColor(m_color);
-	g_matSystem->BindMaterial(m_material);
+	
 
 	AARectangle atlasRect = m_atlasRegion;
 	if (m_imageFlags & FLIP_X)
@@ -101,11 +100,17 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = m_material;
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		//meshBuilder.Color4fv(m_color);
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 
 			atlasRect.GetLeftBottom(), atlasRect.GetRightBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightTop());
-	meshBuilder.End();
+	if(meshBuilder.End(drawCmd))
+	{
+		g_matSystem->SetAmbientColor(m_color);
+		g_matSystem->Draw(drawCmd);
+	}
 }
 
 };

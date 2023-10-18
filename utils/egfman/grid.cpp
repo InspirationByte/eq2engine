@@ -51,11 +51,12 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 	g_matSystem->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false, true);
 	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
 
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
 	int numOfLines = grid_lines / size;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i <= numOfLines; i++)
@@ -79,5 +80,6 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 		meshBuilder.Line3fv(pos + Vector3D(grid_step, 0, 0), pos + Vector3D(grid_step, 0, -max_grid_size));
 	}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }

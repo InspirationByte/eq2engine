@@ -648,12 +648,14 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	g_matSystem->SetBlendingStates(blending);
 	g_matSystem->SetRasterizerStates(CULL_FRONT);
 	g_matSystem->SetDepthStates(false, false);
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	Array<AARectangle> rects(PP_SL);
 	rects.resize(m_touchZones.numElem());
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
@@ -673,7 +675,8 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 			touchQuad[0].texCoord, touchQuad[1].texCoord, touchQuad[2].texCoord, touchQuad[3].texCoord);
 	}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 
 	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{

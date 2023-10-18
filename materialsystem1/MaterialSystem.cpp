@@ -1325,6 +1325,9 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 
 void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 {
+	if (!drawCmd.vertexLayout)
+		return;
+
 	// TODO: get rid of states
 	SetInstancingEnabled(drawCmd.instanceBuffer ? true : false);
 
@@ -1353,27 +1356,6 @@ void CMaterialSystem::DrawDefaultUP(EPrimTopology type, int vertFVF, const void*
 {
 	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
 
-	if(!blendParams)
-		SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
-	else
-		SetBlendingStates(*blendParams);
-
-	if(!rasterParams)
-		SetRasterizerStates(CULL_NONE,FILL_SOLID);
-	else
-		SetRasterizerStates(*rasterParams);
-
-	if(!depthParams)
-		SetDepthStates(false,false);
-	else
-		SetDepthStates(*depthParams);
-
-	ColorRGBA oldAmbColor = m_ambColor;
-	m_ambColor = color;
-
-	IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(texture);
-	BindMaterial(GetDefaultMaterial());
-
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
 	meshBuilder.Begin(type);
 
@@ -1395,16 +1377,48 @@ void CMaterialSystem::DrawDefaultUP(EPrimTopology type, int vertFVF, const void*
 			meshBuilder.Normal3fv(*reinterpret_cast<const Vector3D*>(vertPtr));
 			vertPtr += sizeof(Vector3D);
 		}
-		if (vertFVF & VERTEX_FVF_COLOR)
+		if (vertFVF & VERTEX_FVF_COLOR_DW)
 		{
 			meshBuilder.Color4(*reinterpret_cast<const uint*>(vertPtr));
 			vertPtr += sizeof(uint);
 		}
+		if (vertFVF & VERTEX_FVF_COLOR_VEC)
+		{
+			meshBuilder.Color4(*reinterpret_cast<const Vector4D*>(vertPtr));
+			vertPtr += sizeof(Vector4D);
+		}
 		meshBuilder.AdvanceVertex();
 	}
-	meshBuilder.End();
 
-	m_ambColor = oldAmbColor;
+	RenderDrawCmd drawCmd;
+	if(meshBuilder.End(drawCmd))
+	{
+		if (!blendParams)
+			SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
+		else
+			SetBlendingStates(*blendParams);
+
+		if (!rasterParams)
+			SetRasterizerStates(CULL_NONE, FILL_SOLID);
+		else
+			SetRasterizerStates(*rasterParams);
+
+		if (!depthParams)
+			SetDepthStates(false, false);
+		else
+			SetDepthStates(*depthParams);
+
+		ColorRGBA oldAmbColor = m_ambColor;
+		m_ambColor = color;
+
+		IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(texture);
+
+		drawCmd.material = GetDefaultMaterial();
+
+		Draw(drawCmd);
+
+		m_ambColor = oldAmbColor;
+	}
 }
 
 //-----------------------------

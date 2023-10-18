@@ -7,6 +7,7 @@
 
 #pragma once
 
+struct RenderDrawCmd;
 struct VertexFormatDesc;
 enum EPrimTopology : int;
 
@@ -35,8 +36,10 @@ public:
 	virtual void			AddStripBreak() = 0;
 
 	// uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
-	virtual void			Render() = 0;
-	virtual void			Render( int firstIndex, int numIndices ) = 0;
+	//virtual void			Render() = 0;
+	//virtual void			Render(int firstIndex, int numIndices) = 0;
+
+	virtual bool			FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex = 0, int numIndices = -1) = 0;
 
 	// resets the dynamic mesh
 	virtual void			Reset() = 0;

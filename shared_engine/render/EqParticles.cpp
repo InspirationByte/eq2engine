@@ -98,34 +98,31 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	g_renderAPI->Reset(STATE_RESET_VBO);
-
 	// copy buffers
 	if(!g_pfxRender->MakeVBOFrom(this))
 		return;
 
-	g_renderAPI->SetVertexFormat(g_pfxRender->m_vertexFormat);
-	g_renderAPI->SetVertexBuffer(g_pfxRender->m_vertexBuffer, 0);
-
-	if(m_numIndices)
-		g_renderAPI->SetIndexBuffer(g_pfxRender->m_indexBuffer);
-
 	const bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
 	g_matSystem->SetCullMode(invertCull ? CULL_BACK : CULL_FRONT);
 
-	if(m_useCustomProjMat)
+	if (m_useCustomProjMat)
 		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
-	g_matSystem->BindMaterial(m_material);
-
-	const EPrimTopology primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
-
-	// draw
-	if(m_numIndices)
-		g_renderAPI->DrawIndexedPrimitives(primMode, 0, m_numIndices, 0, m_numVertices);
+	RenderDrawCmd drawCmd;
+	drawCmd.vertexLayout = g_pfxRender->m_vertexFormat;
+	drawCmd.vertexBuffers[0] = g_pfxRender->m_vertexBuffer;
+	drawCmd.material = m_material;
+	drawCmd.primitiveTopology = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
+	if (m_numIndices)
+	{
+		drawCmd.indexBuffer = g_pfxRender->m_indexBuffer;
+		drawCmd.SetDrawIndexed(m_numIndices, 0, m_numVertices);
+	}
 	else
-		g_renderAPI->DrawNonIndexedPrimitives(primMode, 0, m_numVertices);
+		drawCmd.SetDrawNonIndexed(m_numVertices);
+
+	g_matSystem->Draw(drawCmd);
 
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
 	{

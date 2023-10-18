@@ -1162,9 +1162,9 @@ void RenderFloor()
 
 	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
 
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
@@ -1175,7 +1175,8 @@ void RenderFloor()
 		Vector3D(64, 0, 64), 
 		vec2_zero, vec2_zero, vec2_zero, vec2_zero);
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 void CEGFViewFrame::ReDraw()

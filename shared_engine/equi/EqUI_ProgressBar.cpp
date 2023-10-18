@@ -44,13 +44,15 @@ void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 	g_matSystem->SetDepthStates(false, false);
 
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
 	//-------------------
 
 	AARectangle rect(_rect);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
 	meshBuilder.Color4f(0.435, 0.435, 0.435, m_color.w * 0.25f);
@@ -68,7 +70,8 @@ void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 		meshBuilder.Quad2(fillRect.GetRightTop(), fillRect.GetLeftTop(), fillRect.GetRightBottom(), fillRect.GetLeftBottom());
 	}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 }

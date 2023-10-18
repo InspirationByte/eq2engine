@@ -1,3 +1,11 @@
+#pragma once
+
+class IVertexFormat;
+class IIndexBuffer;
+class IVertexBuffer;
+class IMaterial;
+enum EPrimTopology : int;
+
 struct Vertex2D
 {
 	Vertex2D() = default;
@@ -42,23 +50,30 @@ struct Vertex3D
 		, texCoord(t)
 	{}
 
-	Vertex3D(const Vector3D& p, const Vector2D& t, const Vector4D& c)
+	Vertex3D(const Vector3D& p, const Vector2D& t, const ColorRGBA& c)
 		: position(p)
 		, texCoord(t)
-		, color(c)
+		, color(MColor(c).pack())
+	{}
+
+	Vertex3D(const Vector3D& p, const Vector2D& t, const MColor& c)
+		: position(p)
+		, texCoord(t)
+		, color(c.pack())
 	{}
 
 	Vector3D		position{ vec3_zero };
 	Vector2D		texCoord{ vec2_zero };
-	ColorRGBA		color{ color_white };
+	uint			color{ color_white.pack()};
 };
 
 enum EVertexFVF
 {
-	VERTEX_FVF_XYZ		= (1 << 0),
-	VERTEX_FVF_UVS		= (1 << 1),
-	VERTEX_FVF_NORMAL	= (1 << 2),
-	VERTEX_FVF_COLOR	= (1 << 3)
+	VERTEX_FVF_XYZ			= (1 << 0),
+	VERTEX_FVF_UVS			= (1 << 1),
+	VERTEX_FVF_NORMAL		= (1 << 2),
+	VERTEX_FVF_COLOR_DW		= (1 << 3),
+	VERTEX_FVF_COLOR_VEC	= (1 << 4)
 };
 
 static int VertexFVFSize(int fvf)
@@ -67,7 +82,8 @@ static int VertexFVFSize(int fvf)
 		((fvf & VERTEX_FVF_XYZ) ? sizeof(Vector3D) : 0)
 		+ ((fvf & VERTEX_FVF_UVS) ? sizeof(Vector2D) : 0)
 		+ ((fvf & VERTEX_FVF_NORMAL) ? sizeof(Vector3D) : 0)
-		+ ((fvf & VERTEX_FVF_COLOR) ? sizeof(uint) : 0);
+		+ ((fvf & VERTEX_FVF_COLOR_DW) ? sizeof(uint) : 0)
+		+ ((fvf & VERTEX_FVF_COLOR_VEC) ? sizeof(Vector4D) : 0);
 }
 
 template<typename T>
@@ -76,13 +92,13 @@ struct VertexFVFResolver;
 template<>
 struct VertexFVFResolver<Vertex2D>
 {
-	inline static int value = VERTEX_FVF_XYZ | VERTEX_FVF_UVS | VERTEX_FVF_COLOR;
+	inline static int value = VERTEX_FVF_XYZ | VERTEX_FVF_UVS | VERTEX_FVF_COLOR_DW;
 };
 
 template<>
 struct VertexFVFResolver<Vertex3D>
 {
-	inline static int value = VERTEX_FVF_XYZ | VERTEX_FVF_UVS | VERTEX_FVF_COLOR;
+	inline static int value = VERTEX_FVF_XYZ | VERTEX_FVF_UVS | VERTEX_FVF_COLOR_DW;
 };
 
 #define MAKEQUAD(x0, y0, x1, y1, o)	\
@@ -140,6 +156,8 @@ assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
 // render command to draw geometry
 struct RenderDrawCmd
 {
+	// TODO: render states
+
 	FixedArray<IVertexBuffer*, MAX_VERTEXSTREAM> vertexBuffers;
 	IVertexFormat*	vertexLayout{ nullptr };
 	IIndexBuffer*	indexBuffer{ nullptr };

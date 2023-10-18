@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "materialsystem1/RenderDefs.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "DynamicMesh.h"
 
@@ -270,15 +271,12 @@ void CDynamicMesh::Render(int firstIndex, int numIndices)
 
 	ASSERT(m_vboAqquired != 0);
 
-	bool drawIndexed = m_numIndices > 0;
-
+	const bool drawIndexed = m_numIndices > 0;
 	if (m_vboDirty == 0)
 	{
 		m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
-
 		if (drawIndexed)
 			m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
-
 		m_vboDirty = -1;
 	}
 
@@ -296,6 +294,39 @@ void CDynamicMesh::Render(int firstIndex, int numIndices)
 		g_renderAPI->DrawIndexedPrimitives(m_primType, firstIndex, numIndices, 0, m_numVertices);
 	else
 		g_renderAPI->DrawNonIndexedPrimitives(m_primType, 0, m_numVertices);
+}
+
+bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices)
+{
+	if (m_numVertices == 0)
+		return false;
+
+	ASSERT(m_vboAqquired != 0);
+
+	const bool drawIndexed = m_numIndices > 0;
+	if (m_vboDirty == 0)
+	{
+		// FIXME: CMeshBuilder::End should return new trainsient buffer really?
+		// would be cool probably
+		m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
+		if (drawIndexed)
+			m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
+		m_vboDirty = -1;
+	}
+
+	if (numIndices < 0)
+		numIndices = m_numIndices;
+
+	drawCmd.vertexLayout = m_vertexFormat;
+	drawCmd.vertexBuffers[0] = m_vertexBuffer;
+	drawCmd.indexBuffer = drawIndexed ? m_indexBuffer : nullptr;
+	drawCmd.primitiveTopology = m_primType;
+	if (drawIndexed)
+		drawCmd.SetDrawIndexed(numIndices, firstIndex, m_numVertices);
+	else
+		drawCmd.SetDrawNonIndexed(m_numVertices);
+
+	return true;
 }
 
 // resets the dynamic mesh

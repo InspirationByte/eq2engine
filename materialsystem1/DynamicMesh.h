@@ -23,7 +23,7 @@ public:
 	void			Destroy();
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
-	void				SetPrimitiveType( EPrimTopology primType );
+	void			SetPrimitiveType( EPrimTopology primType );
 	EPrimTopology	GetPrimitiveType() const;
 
 	// returns a pointer to vertex format description
@@ -36,6 +36,7 @@ public:
 	// uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
 	void			Render();
 	void			Render(int firstIndex, int numIndices);
+	bool			FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices);
 
 	// resets the dynamic mesh
 	void			Reset();

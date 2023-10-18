@@ -410,24 +410,25 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-		g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
+
+		RenderDrawCmd drawCmd;
+		drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 		// set character color
-		meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
-
 		meshBuilder.Begin(PRIM_LINES);
-
+		meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
 		meshBuilder.Line2fv(start, start + IVector2D(512, 0));
 
-		meshBuilder.End();
+		if (meshBuilder.End(drawCmd))
+			g_matSystem->Draw(drawCmd);
 	}
 
-	// first we building vertex buffer
+	RenderDrawCmd drawCmd;
+
 	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
 	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
-	meshBuilder.End(false);
-
-	DrawTextMeshBuffer(dynMesh, params);
+	if(meshBuilder.End(drawCmd))
+		DrawTextMeshBuffer(drawCmd, params);
 }
 
 //
@@ -442,15 +443,15 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
-	// first we building vertex buffer
+	RenderDrawCmd drawCmd;
+
 	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
 	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
-	meshBuilder.End(false);
-
-	DrawTextMeshBuffer(dynMesh, params);
+	if(meshBuilder.End(drawCmd))
+		DrawTextMeshBuffer(drawCmd, params);
 }
 
-void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& params)
+void CFont::DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params)
 {
 	RasterizerStateParams raster;
 	raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR);
@@ -467,8 +468,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 
-	IMaterial* fontMaterial = fontCache->m_sdfMaterial;//m_flags.sdf ? fontCache->m_sdfMaterial : materials->GetDefaultMaterial();
-
+	drawCmd.material = fontCache->m_sdfMaterial;
 	MatVec3Proxy sdfRange = fontCache->m_fontParams;
 
 	// draw shadow
@@ -487,9 +487,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 		else
 			sdfRange.Set(Vector3D(0.0f, 1.0f, 0.0f));
 
-		g_matSystem->BindMaterial(fontMaterial);
-
-		mesh->Render();
+		g_matSystem->Draw(drawCmd);
 	}
 
 	if (m_flags.sdf)
@@ -503,9 +501,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	g_matSystem->SetAmbientColor(color_white);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
-	g_matSystem->BindMaterial(fontMaterial);
-
-	mesh->Render();
+	g_matSystem->Draw(drawCmd);
 }
 
 //

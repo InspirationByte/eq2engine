@@ -263,10 +263,11 @@ void CAnimatedModel::RenderPhysModel()
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
 	Matrix4x4 worldPosMatrix;
 	g_matSystem->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
-
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 
 	for(int i = 0; i < physData.numObjects; i++)
 	{
@@ -287,7 +288,6 @@ void CAnimatedModel::RenderPhysModel()
 				Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();
 
 				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_boneTransforms[visualMatrixIdx]));
-				g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
 			}
 
 			meshBuilder.Begin(PRIM_TRIANGLES);
@@ -298,7 +298,8 @@ void CAnimatedModel::RenderPhysModel()
 
 				meshBuilder.AdvanceVertex();
 			}
-			meshBuilder.End();
+			if (meshBuilder.End(drawCmd))
+				g_matSystem->Draw(drawCmd);
 		}
 	}
 }

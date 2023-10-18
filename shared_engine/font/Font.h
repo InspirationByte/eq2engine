@@ -10,7 +10,7 @@
 #include "font/IFont.h"
 
 class CMeshBuilder;
-class IDynamicMesh;
+class RenderDrawCmd;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
@@ -45,7 +45,7 @@ public:
 
 protected:
 
-	void					DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& params);
+	void					DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params);
 
 	// returns the character data
 	const eqFontChar_t&		GetFontCharById( const int chrId ) const;

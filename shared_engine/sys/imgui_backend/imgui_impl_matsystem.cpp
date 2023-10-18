@@ -53,6 +53,9 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 	IDynamicMesh* pMatsysMesh = g_matSystem->GetDynamicMesh();
 
 	CMeshBuilder mb(pMatsysMesh);
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
 	float halfPixelOfs = 0.0f;
 	if (g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 		halfPixelOfs = 0.5f;
@@ -83,7 +86,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 			memcpy(idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
 		}
 
-		mb.End(false);
+		mb.End(drawCmd);
 
 		// render command buffers now
 		for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
@@ -114,8 +117,8 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 
 				g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(ITexturePtr(texture));
 
-				g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-				pMatsysMesh->Render(pcmd->IdxOffset, pcmd->ElemCount);
+				drawCmd.SetDrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, drawCmd.numVertices);
+				g_matSystem->Draw(drawCmd);
 			}
 		}
 	}

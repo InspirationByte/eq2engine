@@ -533,8 +533,6 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	g_matSystem->SetDepthStates(false, false);
 
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
 	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
 	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
 	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
@@ -542,7 +540,10 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
-		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
 		meshBuilder.Color4fv(color1);
 		meshBuilder.Quad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop());
@@ -553,7 +554,8 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 		meshBuilder.Quad2(r1[0], r1[1], r1[2], r1[3]);
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 void IUIControl::Render()

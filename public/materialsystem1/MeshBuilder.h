@@ -18,8 +18,11 @@ public:
 	// begins the mesh
 	void		Begin(EPrimTopology type);
 
-	// ends building and renders the mesh
-	void		End(bool render = true);
+	// ends building and fills draw command
+	bool		End(RenderDrawCmd& drawCmd);
+
+	// ends mesh building
+	void		End();
 
 	// position setup
 	void		Position3f(float x, float y, float z);
@@ -201,11 +204,15 @@ inline void CMeshBuilder::Begin(EPrimTopology type)
 }
 
 // ends building and renders the mesh
-inline void CMeshBuilder::End(bool render/* = true*/)
+inline bool CMeshBuilder::End(RenderDrawCmd& drawCmd)
 {
-	if(render)
-		m_mesh->Render();
+	const bool success = m_mesh->FillDrawCmd(drawCmd);
+	m_begun = false;
+	return success;
+}
 
+inline void CMeshBuilder::End()
+{
 	m_begun = false;
 }
 

@@ -62,8 +62,6 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	g_matSystem->SetDepthStates(false,false);
 
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
 	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
 	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
 	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
@@ -71,6 +69,9 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
 		meshBuilder.Color4fv(color1);
@@ -82,7 +83,8 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 		meshBuilder.Quad2(r1[0], r1[1], r1[2], r1[3]);
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
-	meshBuilder.End();
+	if(meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 #define BBOX_STRIP_VERTS(min, max) \
@@ -445,10 +447,8 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 	g_matSystem->SetRasterizerStates(CULL_NONE,FILL_SOLID);
 	g_matSystem->SetDepthStates(true, false);
 
-	g_matSystem->Apply();
-
-	// bind the default material as we're emulating an FFP
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -470,7 +470,8 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 			line.lifetime -= frametime;
 		}
 
-	meshBuilder.End();
+	if(meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime)
@@ -486,8 +487,8 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 
 	g_matSystem->Apply();
 
-	// bind the default material as we're emulating an FFP
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -538,12 +539,14 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 
 		if ((i % BOXES_DRAW_SUBDIV) == 0)
 		{
-			meshBuilder.End();
+			if (meshBuilder.End(drawCmd))
+				g_matSystem->Draw(drawCmd);
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
@@ -559,8 +562,8 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 
 	g_matSystem->Apply();
 
-	// bind the default material as we're emulating an FFP
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -611,12 +614,14 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 
 			if((i % BOXES_DRAW_SUBDIV) == 0)
 			{
-				meshBuilder.End();
+				if (meshBuilder.End(drawCmd))
+					g_matSystem->Draw(drawCmd);
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinder, float frametime)
@@ -675,12 +680,11 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 	g_matSystem->SetDepthStates(true, false);
 
-	g_matSystem->Apply();
-
-	// bind the default material as we're emulating an FFP
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
-
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i < cylArray.numElem(); ++i)
@@ -689,12 +693,14 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 
 		if ((i % BOXES_DRAW_SUBDIV) == 0)
 		{
-			meshBuilder.End();
+			if (meshBuilder.End(drawCmd))
+				g_matSystem->Draw(drawCmd);
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float frame_time)
@@ -812,8 +818,8 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_SOLID);
 	g_matSystem->SetDepthStates(true, true);
 
-	// bind the default material as we're emulating an FFP
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLES);
@@ -835,12 +841,14 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 
 			if((i % POLYS_DRAW_SUBDIV) == 0)
 			{
-				meshBuilder.End();
+				if (meshBuilder.End(drawCmd))
+					g_matSystem->Draw(drawCmd);
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
 		}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 
 	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < polygons.numElem(); i++)
@@ -867,11 +875,13 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 
 			if((i % LINES_DRAW_SUBDIV) == 0)
 			{
-				meshBuilder.End();
+				if (meshBuilder.End(drawCmd))
+					g_matSystem->Draw(drawCmd);
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 static Vector3D v3sphere(float theta, float phi)
@@ -1037,12 +1047,10 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_SOLID);
 	g_matSystem->SetDepthStates(true, true);
 
-	// bind the default material as we're emulating an FFP
-	g_matSystem->BindMaterial(g_matSystem->GetDefaultMaterial());
+	RenderDrawCmd drawCmd;
+	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
-	//meshBuilder.Begin(PRIM_TRIANGLES);
-
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i < spheres.numElem(); i++)
@@ -1051,7 +1059,8 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 		spheres[i].lifetime -= frameTime;
 	}
 
-	meshBuilder.End();
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->Draw(drawCmd);
 }
 
 #endif // DISABLE_DEBUG_DRAWING
