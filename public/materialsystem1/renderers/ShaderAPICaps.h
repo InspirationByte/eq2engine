@@ -6,6 +6,15 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "imaging/textureformats.h"
+
+static constexpr const int MAX_MRTS = 8;
+static constexpr const int MAX_VERTEXSTREAM = 8;
+static constexpr const int MAX_TEXTUREUNIT = 16;
+static constexpr const int MAX_VERTEXTEXTURES = 4;
+static constexpr const int MAX_SAMPLERSTATE = 16;
+static constexpr const int MAX_GENERIC_ATTRIB= 8;
+static constexpr const int MAX_TEXCOORD_ATTRIB = 8;
 
 enum EShaderSupportFlags
 {

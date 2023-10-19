@@ -1,5 +1,7 @@
 #pragma once
 
+#include "renderers/ShaderAPICaps.h"
+
 class IVertexFormat;
 class IIndexBuffer;
 class IVertexBuffer;
@@ -163,7 +165,7 @@ struct RenderDrawCmd
 	IIndexBuffer*	indexBuffer{ nullptr };
 	IVertexBuffer*	instanceBuffer{ nullptr };
 
-	EPrimTopology	primitiveTopology{ PRIM_TRIANGLES };
+	EPrimTopology	primitiveTopology{ (EPrimTopology)0 };
 
 	IMaterial*		material{ nullptr };
 	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: buffer

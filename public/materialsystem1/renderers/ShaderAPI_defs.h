@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "imaging/textureformats.h"
 #include "ShaderAPICaps.h"
 
 //---------------------------------------
@@ -247,12 +246,15 @@ struct SamplerStateParams
 //---------------------------------------
 
 // Mask constants
-#define COLORMASK_RED   0x1
-#define COLORMASK_GREEN 0x2
-#define COLORMASK_BLUE  0x4
-#define COLORMASK_ALPHA 0x8
+enum EColorMask
+{
+	COLORMASK_RED	= 0x1,
+	COLORMASK_GREEN = 0x2,
+	COLORMASK_BLUE	= 0x4,
+	COLORMASK_ALPHA = 0x8,
 
-#define COLORMASK_ALL (COLORMASK_RED | COLORMASK_GREEN | COLORMASK_BLUE | COLORMASK_ALPHA)
+	COLORMASK_ALL	= (COLORMASK_RED | COLORMASK_GREEN | COLORMASK_BLUE | COLORMASK_ALPHA)
+};
 
 // Blending factors
 
@@ -303,16 +305,6 @@ enum ETextureFlags : int
 	TEXFLAG_RENDERDEPTH				= (1 << 6),		// rendertarget with depth texture
 };
 
-// TODO: these limits are
-#define MAX_MRTS				8
-#define MAX_VERTEXSTREAM		8
-#define MAX_TEXTUREUNIT			16
-#define MAX_VERTEXTEXTURES		4
-#define MAX_SAMPLERSTATE		16
-
-#define MAX_GENERIC_ATTRIB		8
-#define MAX_TEXCOORD_ATTRIB		8
-
 // Stencil-test function
 enum EStencilFunction : int
 {
@@ -345,8 +337,8 @@ enum ECullMode : int
 
 struct BlendStateParams
 {
-	EBlendFactor		srcFactor{ BLENDFACTOR_ONE };
-	EBlendFactor		dstFactor{ BLENDFACTOR_ZERO };
+	EBlendFactor	srcFactor{ BLENDFACTOR_ONE };
+	EBlendFactor	dstFactor{ BLENDFACTOR_ZERO };
 	EBlendFunction	blendFunc{ BLENDFUNC_ADD };
 
 	int mask{ COLORMASK_ALL };
@@ -388,11 +380,11 @@ struct RasterizerStateParams
 // shader constant setup flags to set to shader :P
 enum EShaderConstSetup : int
 {
-	SCONST_VERTEX		= (1 << 0),
-	SCONST_PIXEL		= (1 << 1),
-	SCONST_GEOMETRY		= (1 << 2),
-	SCONST_DOMAIN		= (1 << 3),
-	SCONST_HULL			= (1 << 4),
+	SCONST_VERTEX	= (1 << 0),
+	SCONST_PIXEL	= (1 << 1),
+	SCONST_GEOMETRY	= (1 << 2),
+	SCONST_DOMAIN	= (1 << 3),
+	SCONST_HULL		= (1 << 4),
 };
 
 // API reset type
@@ -438,8 +430,6 @@ struct ShaderProgCompileInfo
 	KVSection*		apiPrefs{ nullptr };
 };
 
-// shader API class for shader developers.
-// DON'T USE TYPES IN DYNAMIC SHADER CODE!
 enum EShaderAPIType : int
 {
 	SHADERAPI_EMPTY = 0,
@@ -448,7 +438,6 @@ enum EShaderAPIType : int
 	SHADERAPI_DIRECT3D10,
 	SHADERAPI_DIRECT3D11
 };
-
 
 struct TextureInfo
 {
