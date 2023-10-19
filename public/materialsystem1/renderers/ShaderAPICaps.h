@@ -41,21 +41,15 @@ struct ShaderAPICaps
 	bool			isInstancingSupported{ 0 };
 	bool			isHardwareOcclusionQuerySupported{ 0 };
 
-	int				maxTextureSize{ 0 };
-	int				maxRenderTargets{ 0 };
-	
-	int				maxTextureUnits{ 0 };
-	int				maxVertexTextureUnits{ 0 };
-
-	int				maxTextureAnisotropicLevel{ 0 };
-
-	int				maxSamplerStates{ 0 };
-
 	int				maxVertexStreams{ 0 };
 	int				maxVertexGenericAttributes{ 0 };
 	int				maxVertexTexcoordAttributes{ 0 };
+	int				maxTextureSize{ 0 };
+	int				maxTextureUnits{ 0 };
+	int				maxVertexTextureUnits{ 0 };
+	int				maxTextureAnisotropicLevel{ 0 };
 
-	int				shadersSupportedFlags{ 0 };			// EShaderSupportFlags
+	int				maxRenderTargets{ 0 };
 
-	int				shaderVersions[4]{ 0 };
+	int				shadersSupportedFlags{ 0 };		// EShaderSupportFlags
 };

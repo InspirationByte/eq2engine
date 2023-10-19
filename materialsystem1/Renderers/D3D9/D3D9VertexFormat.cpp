@@ -13,6 +13,8 @@
 CD3D9VertexFormat::CD3D9VertexFormat(const char* name, const VertexFormatDesc* desc, int numAttribs)
 {
 	m_name = name;
+	m_nameHash = StringToHash(name);
+
 	memset(m_streamStride, 0, sizeof(m_streamStride));
 
 	m_vertexDesc.setNum(numAttribs);

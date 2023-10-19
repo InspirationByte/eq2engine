@@ -16,13 +16,15 @@ public:
 	~CVertexFormatD3DX10();
 
 	const char*			GetName() const;
+	virtual int			GetNameHash() const { return m_nameHash; }
 
 	int					GetVertexSize(int stream) const;;
 	ArrayCRef<VertexFormatDesc>	GetFormatDesc() const;
 
 protected:
-	int							m_streamStride[MAX_VERTEXSTREAM]{ 0 };
+	int						m_streamStride[MAX_VERTEXSTREAM]{ 0 };
 	Array<VertexFormatDesc>	m_vertexDesc{ PP_SL };
-	EqString					m_name;
-	ID3D10InputLayout*			m_vertexDecl{ nullptr };
+	EqString				m_name;
+	int						m_nameHash;
+	ID3D10InputLayout*		m_vertexDecl{ nullptr };
 };

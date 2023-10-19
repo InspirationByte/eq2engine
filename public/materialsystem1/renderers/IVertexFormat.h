@@ -16,6 +16,7 @@ public:
 	virtual	~IVertexFormat() = default;
 
 	virtual const char*		GetName() const = 0;
+	virtual int				GetNameHash() const = 0;
 
 	virtual int				GetVertexSize(int stream) const = 0;
 	virtual ArrayCRef<VertexFormatDesc>	GetFormatDesc() const = 0;

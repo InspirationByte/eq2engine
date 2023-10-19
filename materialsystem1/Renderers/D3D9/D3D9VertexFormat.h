@@ -16,17 +16,19 @@ public:
 	CD3D9VertexFormat(const char* name, const VertexFormatDesc* desc, int numAttribs);
 	~CD3D9VertexFormat();
 
-	const char*						GetName() const {return m_name.ToCString();}
-	int								GetVertexSize(int stream) const;
+	const char*					GetName() const {return m_name.ToCString();}
+	int							GetNameHash() const { return m_nameHash; }
+	int							GetVertexSize(int stream) const;
 	ArrayCRef<VertexFormatDesc>	GetFormatDesc() const;
 
 	//----------------------
 
-	void							GenVertexElement(D3DVERTEXELEMENT9* elems);
+	void						GenVertexElement(D3DVERTEXELEMENT9* elems);
 
 protected:
 	int								m_streamStride[MAX_VERTEXSTREAM];
 	EqString						m_name;
-	Array<VertexFormatDesc>		m_vertexDesc{ PP_SL };
+	int								m_nameHash;
+	Array<VertexFormatDesc>			m_vertexDesc{ PP_SL };
 	IDirect3DVertexDeclaration9*	m_pVertexDecl{ nullptr };
 };

@@ -97,6 +97,7 @@ public:
 	CEmptyVertexFormat(const char* name, const VertexFormatDesc *desc, int nAttribs)
 	{
 		m_name = name;
+		m_nameHash = StringToHash(name);
 		memset(m_streamStride, 0, sizeof(m_streamStride));
 
 		m_vertexDesc.setNum(nAttribs);
@@ -105,6 +106,7 @@ public:
 	}
 
 	const char* GetName() const {return m_name.ToCString();}
+	int			GetNameHash() const { return m_nameHash; }
 
 	int	GetVertexSize(int stream) const
 	{
@@ -117,8 +119,9 @@ public:
 	}
 
 protected:
-	int							m_streamStride[MAX_VERTEXSTREAM];
-	EqString					m_name;
+	int						m_streamStride[MAX_VERTEXSTREAM];
+	EqString				m_name;
+	int						m_nameHash;
 	Array<VertexFormatDesc>	m_vertexDesc{ PP_SL };
 };
 

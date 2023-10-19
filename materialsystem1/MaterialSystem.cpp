@@ -1325,17 +1325,24 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 
 void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 {
-	if (!drawCmd.vertexLayout)
+	// no material means no pipeline state
+	if (!drawCmd.material)
 		return;
 
-	// TODO: get rid of states
-	SetInstancingEnabled(drawCmd.instanceBuffer ? true : false);
+	// material must support correct vertex layout state
+	if (drawCmd.vertexLayout)
+	{
+		//drawCmd.vertexLayout->GetNameHash();
 
-	for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
-		m_shaderAPI->SetVertexBuffer(drawCmd.vertexBuffers[i], i); // TODO: support offsets
+		// TODO: get rid of states
+		SetInstancingEnabled(drawCmd.instanceBuffer ? true : false);
 
-	m_shaderAPI->SetVertexFormat(drawCmd.vertexLayout);
-	m_shaderAPI->SetIndexBuffer(drawCmd.indexBuffer);
+		m_shaderAPI->SetVertexFormat(drawCmd.vertexLayout);
+		m_shaderAPI->SetIndexBuffer(drawCmd.indexBuffer);
+
+		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
+			m_shaderAPI->SetVertexBuffer(drawCmd.vertexBuffers[i], i); // TODO: support offsets
+	}
 
 	SetSkinningBones(drawCmd.boneTransforms);
 	BindMaterial(drawCmd.material);

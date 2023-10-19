@@ -15,7 +15,7 @@ public:
 	CVertexFormatGL(const char* name, const VertexFormatDesc* desc, int numAttribs);
 
 	const char*			GetName() const { return m_name.ToCString(); }
-
+	int					GetNameHash() const { return m_nameHash; }
 	int					GetVertexSize(int stream) const;
 	ArrayCRef<VertexFormatDesc>	GetFormatDesc() const;
 
@@ -32,7 +32,8 @@ protected:
 
 	int							m_streamStride[MAX_VERTEXSTREAM];
 	EqString					m_name;
-	Array<VertexFormatDesc>	m_vertexDesc{ PP_SL };
+	int							m_nameHash;
+	Array<VertexFormatDesc>		m_vertexDesc{ PP_SL };
 
 	eqGLVertAttrDesc_t			m_genericAttribs[MAX_GL_GENERIC_ATTRIB];
 

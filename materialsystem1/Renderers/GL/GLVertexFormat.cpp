@@ -12,6 +12,8 @@
 CVertexFormatGL::CVertexFormatGL(const char* name, const VertexFormatDesc* desc, int numAttribs)
 {
 	m_name = name;
+	m_nameHash = StringToHash(name);
+
 	memset(m_genericAttribs,0,sizeof(m_genericAttribs));
 	memset(m_streamStride, 0, sizeof(m_streamStride));
 	
