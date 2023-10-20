@@ -397,7 +397,7 @@ void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStenc
 			m_pD3DDevice->ClearRenderTargetView(pBackBuffer->m_rtv[0], &fillColor.r);
 		}
 
-		for (int i = 0; i < MAX_MRTS; i++)
+		for (int i = 0; i < MAX_RENDERTARGETS; i++)
 		{
 			if (m_pCurrentColorRenderTargets[i] != nullptr)
 			{
@@ -830,7 +830,7 @@ void ShaderAPID3DX10::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, 
 		m_nCurrentCRTSlice[i] = rtSliceIdx;
 	}
 
-	for (int i = renderTargets.numElem(); i < MAX_MRTS; i++)
+	for (int i = renderTargets.numElem(); i < MAX_RENDERTARGETS; i++)
 	{
 		m_pCurrentColorRenderTargets[i] = nullptr;
 		m_nCurrentCRTSlice[i] = 0;
@@ -876,7 +876,7 @@ void ShaderAPID3DX10::ChangeRenderTargetToBackBuffer()
 	m_pD3DDevice->OMSetRenderTargets(1, &pBackBuffer->m_rtv[0], m_pDepthBufferDSV);
 	m_pCurrentColorRenderTargets[0] = m_pBackBufferTexture;
 
-	for (int i = 1; i < MAX_MRTS; i++)
+	for (int i = 1; i < MAX_RENDERTARGETS; i++)
 	{
 		m_pCurrentColorRenderTargets[i] = nullptr;
 		m_nCurrentCRTSlice[i] = 0;

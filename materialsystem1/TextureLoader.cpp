@@ -101,7 +101,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	ITexturePtr texture = g_renderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
 
 	if (!texture)
-		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_renderAPI->GetErrorTexture();
+		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_matSystem->GetErrorCheckerboardTexture();
 
 	if (!isJustCreated)
 		return texture;

@@ -160,9 +160,6 @@ public:
 	virtual void				SetProgressiveTextureFrequency(int frames) = 0;
 	virtual int					GetProgressiveTextureFrequency() const = 0;
 
-	// returns default checkerboard texture
-	virtual const ITexturePtr&	GetErrorTexture() const = 0;
-
 	virtual ITexturePtr			FindOrCreateTexture(const char* pszName, bool& justCreated) = 0;
 	virtual ITexturePtr			FindTexture(const char* pszName) = 0;
 

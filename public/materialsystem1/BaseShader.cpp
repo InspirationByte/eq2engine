@@ -226,7 +226,7 @@ MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char*
 		AddManagedTexture(mv, renderAPI->FindTexture(mv.Get()));
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(mv, renderAPI->GetErrorTexture());
+		AddManagedTexture(mv, g_matSystem->GetErrorCheckerboardTexture());
 
 	return mv;
 }
@@ -243,7 +243,7 @@ MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char*
 			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(MatTextureProxy(mv), renderAPI->GetErrorTexture());
+		AddManagedTexture(MatTextureProxy(mv), g_matSystem->GetErrorCheckerboardTexture());
 
 	return mv;
 }

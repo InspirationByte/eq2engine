@@ -248,7 +248,7 @@ private:
 	GLuint				m_frameBuffer{ 0 };
 	GLuint				m_depthBuffer{ 0 };
 
-	GLenum				m_drawBuffers[MAX_MRTS]{ 0 };
+	GLenum				m_drawBuffers[MAX_RENDERTARGETS]{ 0 };
 	GLuint				m_currentGLDepth{ GL_NONE };
 
 	uint				m_currentGLVB[MAX_VERTEXSTREAM];

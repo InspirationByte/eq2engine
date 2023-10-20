@@ -377,10 +377,9 @@ void CMaterialSystem::Shutdown()
 	m_setMaterial = nullptr;
 	m_defaultMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
-	SetEnvironmentMapTexture(nullptr);
-
+	m_currentEnvmapTexture = nullptr;
 	m_whiteTexture = nullptr;
-	m_luxelTestTexture = nullptr;
+	m_errorTexture = nullptr;
 
 	FreeMaterials();
 
@@ -460,6 +459,11 @@ void CMaterialSystem::InitDefaultMaterial()
 
 		m_overdrawMaterial = pMaterial;
 	}
+
+	bool justCreated = false;
+	m_errorTexture = m_shaderAPI->FindOrCreateTexture("error", justCreated);
+	if(justCreated)
+		m_errorTexture->GenerateErrorTexture();
 }
 
 MaterialsRenderSettings& CMaterialSystem::GetConfiguration()
@@ -797,7 +801,7 @@ static void BindFFPMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, int par
 static bool Callback_BindErrorTextureFFPMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, uint paramMask)
 {
 	BindFFPMaterial(renderAPI, pMaterial, paramMask);
-	renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), renderAPI->GetErrorTexture());
+	renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), g_matSystem->GetErrorCheckerboardTexture());
 
 	return false;
 }
@@ -1039,11 +1043,10 @@ const ITexturePtr& CMaterialSystem::GetWhiteTexture() const
 	return m_whiteTexture;
 }
 
-const ITexturePtr& CMaterialSystem::GetLuxelTestTexture() const
+const ITexturePtr& CMaterialSystem::GetErrorCheckerboardTexture() const
 {
-	return m_luxelTestTexture;
+	return m_errorTexture;
 }
-
 //-----------------------------
 // Frame operations
 //-----------------------------
@@ -1328,6 +1331,10 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 	if (!drawCmd.material)
 		return;
 
+	RenderPassDesc& rendPassDesc = m_renderPasses[rendPass];
+
+	IShaderAPI* renderAPI = m_shaderAPI;
+
 	// material must support correct vertex layout state
 	if (drawCmd.vertexLayout)
 	{
@@ -1336,20 +1343,20 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 		// TODO: get rid of states
 		SetInstancingEnabled(drawCmd.instanceBuffer ? true : false);
 
-		m_shaderAPI->SetVertexFormat(drawCmd.vertexLayout);
-		m_shaderAPI->SetIndexBuffer(drawCmd.indexBuffer);
+		renderAPI->SetVertexFormat(drawCmd.vertexLayout);
+		renderAPI->SetIndexBuffer(drawCmd.indexBuffer);
 
 		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
-			m_shaderAPI->SetVertexBuffer(drawCmd.vertexBuffers[i], i); // TODO: support offsets
+			renderAPI->SetVertexBuffer(drawCmd.vertexBuffers[i], i); // TODO: support offsets
 	}
 
 	SetSkinningBones(drawCmd.boneTransforms);
 	BindMaterial(drawCmd.material);
 
 	if(drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
-		m_shaderAPI->DrawNonIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstVertex, drawCmd.numVertices);
+		renderAPI->DrawNonIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstVertex, drawCmd.numVertices);
 	else
-		m_shaderAPI->DrawIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstIndex, drawCmd.numIndices, drawCmd.firstVertex, drawCmd.numVertices, drawCmd.baseVertex);
+		renderAPI->DrawIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstIndex, drawCmd.numIndices, drawCmd.firstVertex, drawCmd.numVertices, drawCmd.baseVertex);
 
 	SetSkinningEnabled(false);
 	SetInstancingEnabled(false);

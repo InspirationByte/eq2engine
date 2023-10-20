@@ -143,7 +143,7 @@ void InitGLHardwareCapabilities(ShaderAPICaps& caps)
 
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &caps.maxTextureSize);
 
-	caps.maxRenderTargets = MAX_MRTS;
+	caps.maxRenderTargets = MAX_RENDERTARGETS;
 
 	caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
 	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
@@ -154,7 +154,7 @@ void InitGLHardwareCapabilities(ShaderAPICaps& caps)
 
 	caps.maxRenderTargets = 1;
 	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &caps.maxRenderTargets);
-	caps.maxRenderTargets = min(MAX_MRTS, caps.maxRenderTargets);
+	caps.maxRenderTargets = min(MAX_RENDERTARGETS, caps.maxRenderTargets);
 
 	caps.maxVertexStreams = MAX_VERTEXSTREAM;
 	caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
@@ -948,13 +948,13 @@ ITexturePtr ShaderAPIGL::CreateTextureResource(const char* pszName)
 void ShaderAPIGL::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 {
 	// store the current rendertarget states
-	ITexturePtr currentRenderTarget[MAX_MRTS];
-	int	currentCRTSlice[MAX_MRTS];
+	ITexturePtr currentRenderTarget[MAX_RENDERTARGETS];
+	int	currentCRTSlice[MAX_RENDERTARGETS];
 	ITexturePtr currentDepthTarget = m_pCurrentDepthRenderTarget;
 	m_pCurrentDepthRenderTarget = nullptr;
 
 	int currentNumRTs = 0;
-	for(; currentNumRTs < MAX_MRTS;)
+	for(; currentNumRTs < MAX_RENDERTARGETS;)
 	{
 		ITexturePtr& rt = m_pCurrentColorRenderTargets[currentNumRTs];
 
@@ -1000,13 +1000,13 @@ void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const 
 	// TODO: double-check main framebuffer attachments from de-attaching
 
 	// store the current rendertarget states
-	ITexturePtr currentRenderTarget[MAX_MRTS];
-	int	currentCRTSlice[MAX_MRTS];
+	ITexturePtr currentRenderTarget[MAX_RENDERTARGETS];
+	int	currentCRTSlice[MAX_RENDERTARGETS];
 	ITexturePtr currentDepthTarget = m_pCurrentDepthRenderTarget;
 	m_pCurrentDepthRenderTarget = nullptr;
 
 	int currentNumRTs = 0;
-	for(; currentNumRTs < MAX_MRTS;)
+	for(; currentNumRTs < MAX_RENDERTARGETS;)
 	{
 		ITexturePtr& rt = m_pCurrentColorRenderTargets[currentNumRTs];
 

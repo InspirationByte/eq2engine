@@ -8,7 +8,7 @@
 #pragma once
 #include "imaging/textureformats.h"
 
-static constexpr const int MAX_MRTS = 8;
+static constexpr const int MAX_RENDERTARGETS = 8;
 static constexpr const int MAX_VERTEXSTREAM = 8;
 static constexpr const int MAX_TEXTUREUNIT = 16;
 static constexpr const int MAX_VERTEXTEXTURES = 4;

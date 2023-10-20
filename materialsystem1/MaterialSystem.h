@@ -90,15 +90,13 @@ public:
 
 	bool							CaptureScreenshot( CImage &img );
 
-
 	//-----------------------------
 	// Resource operations
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
 	const IMaterialPtr&				GetDefaultMaterial() const;
 	const ITexturePtr&				GetWhiteTexture() const;
-
-	const ITexturePtr&				GetLuxelTestTexture() const;
+	const ITexturePtr&				GetErrorCheckerboardTexture() const;
 
 	IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params);
 	IMaterialPtr					GetMaterial(const char* szMaterialName);
@@ -193,6 +191,7 @@ public:
 	// returns the dynamic mesh
 	IDynamicMesh*					GetDynamicMesh() const;
 
+	// TODO: QueueDraw
 	void							Draw(const RenderDrawCmd& drawCmd);
 
 	void							DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
@@ -248,7 +247,7 @@ private:
 
 	ITexturePtr						m_currentEnvmapTexture;
 	ITexturePtr						m_whiteTexture;
-	ITexturePtr						m_luxelTestTexture;
+	ITexturePtr						m_errorTexture;
 
 	Array<DEVLICELOSTRESTORE>		m_lostDeviceCb{ PP_SL };
 	Array<DEVLICELOSTRESTORE>		m_restoreDeviceCb{ PP_SL };

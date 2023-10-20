@@ -44,13 +44,9 @@ public:
 	virtual void				Init( const ShaderAPIParams &params );
 	virtual void				Shutdown();
 
-	const ShaderAPIParams&	GetParams() const { return m_params; }
+	const ShaderAPIParams&		GetParams() const { return m_params; }
 
 	virtual void				SetViewport(int x, int y, int w, int h);
-
-	// default error texture pointer
-	const ITexturePtr&			GetErrorTexture() const;
-
 	static void					GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
 
 	// texture uploading frequency
@@ -207,8 +203,8 @@ protected:
 	ITexturePtr					m_pCurrentTextures[MAX_TEXTUREUNIT];
 	ITexturePtr					m_pSelectedVertexTextures[MAX_VERTEXTEXTURES];
 	ITexturePtr					m_pCurrentVertexTextures[MAX_VERTEXTEXTURES];
-	ITexturePtr					m_pCurrentColorRenderTargets[MAX_MRTS];
-	int							m_nCurrentCRTSlice[MAX_MRTS]{ 0 };
+	ITexturePtr					m_pCurrentColorRenderTargets[MAX_RENDERTARGETS];
+	int							m_nCurrentCRTSlice[MAX_RENDERTARGETS]{ 0 };
 
 	ITexturePtr					m_pCurrentDepthRenderTarget;
 
@@ -236,8 +232,6 @@ protected:
 
 	intptr						m_nSelectedOffsets[MAX_VERTEXSTREAM]{ 0 };
 	intptr						m_nCurrentOffsets[MAX_VERTEXSTREAM]{ 0 };
-
-	ITexturePtr					m_errorTexture;
 	IAARectangle				m_viewPort{ 0, 0, 800, 600 };
 
 	int							m_progressiveTextureFrequency{ 0 };

@@ -193,7 +193,7 @@ bool CD3D11RenderLib::InitAPI(const ShaderAPIParams& params)
 
 	caps.maxTextureAnisotropicLevel = clamp(r_anisotropic->GetInt(), 1, 16);
 	caps.maxTextureSize = 65535;
-	caps.maxRenderTargets = MAX_MRTS;
+	caps.maxRenderTargets = MAX_RENDERTARGETS;
 
 	caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
 	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;

@@ -128,11 +128,10 @@ public:
 
 	//-----------------------------
 	// Resource operations
-	//-----------------------------
 
 	virtual const IMaterialPtr&		GetDefaultMaterial() const = 0;
+	virtual const ITexturePtr&		GetErrorCheckerboardTexture() const = 0;
 	virtual	const ITexturePtr&		GetWhiteTexture() const = 0;
-	virtual	const ITexturePtr&		GetLuxelTestTexture() const = 0;
 
 	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
 	virtual IMaterialPtr			GetMaterial(const char* szMaterialName) = 0;

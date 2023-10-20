@@ -155,12 +155,34 @@ struct RenderBoneTransform
 // must be exactly two regs
 assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
 
+struct RenderPassDesc
+{
+	// TODO will use TextureView instead of this
+	FixedArray<ITexturePtr, MAX_RENDERTARGETS>	renderTargets;
+	ITexturePtr		depthTarget;
+
+	IAARectangle	scissorRect;
+	IAARectangle	viewportRect;
+
+	MColor			colorValue{ color_black };
+	float			depthValue{ 1.0f };
+	bool			clearColor{ false };
+	bool			clearDepth{ false };
+
+	RenderPassDesc()
+	{
+		renderTargets.assureSizeEmplace(renderTargets.numAllocated());
+	}
+};
+
+using RenderPassId = uint;
+
 // render command to draw geometry
 struct RenderDrawCmd
 {
 	// TODO: render states
 
-	FixedArray<IVertexBuffer*, MAX_VERTEXSTREAM> vertexBuffers;
+	FixedArray<IVertexBuffer*, MAX_VERTEXSTREAM>	vertexBuffers;
 	IVertexFormat*	vertexLayout{ nullptr };
 	IIndexBuffer*	indexBuffer{ nullptr };
 	IVertexBuffer*	instanceBuffer{ nullptr };
@@ -168,10 +190,10 @@ struct RenderDrawCmd
 	EPrimTopology	primitiveTopology{ (EPrimTopology)0 };
 
 	IMaterial*		material{ nullptr };
-	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: buffer
 
+	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: buffer
 	// TODO: atm material vars are used but for newer GAPI we should
-	// use uniform buffers to setup extra material properties
+	// use bind groups to setup extra material properties
 	// suitable for skinned mesh, world properties, car damage stuff
 	// and so on. We can do extra material textures there too.
 
@@ -183,7 +205,7 @@ struct RenderDrawCmd
 
 	RenderDrawCmd()
 	{
-		vertexBuffers.assureSizeEmplace(MAX_VERTEXSTREAM, nullptr);
+		vertexBuffers.assureSizeEmplace(vertexBuffers.numAllocated(), nullptr);
 	}
 
 	void SetDrawIndexed(int idxCount, int firstIdx, int vertCount = -1, int firstVert = 0, int baseVert = 0)

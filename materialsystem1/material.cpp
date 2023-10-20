@@ -425,7 +425,7 @@ const ITexturePtr& CMaterial::GetBaseTexture(int stage)
 	else
 	{
 		// Return error texture
-		return g_renderAPI->GetErrorTexture();
+		return g_matSystem->GetErrorCheckerboardTexture();
 	}
 }
 

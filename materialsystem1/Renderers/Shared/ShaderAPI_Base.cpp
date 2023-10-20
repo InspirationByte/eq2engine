@@ -58,9 +58,6 @@ void ShaderAPI_Base::Init( const ShaderAPIParams &params )
 	
 	DevMsg(DEVMSG_RENDER, "[DEBUG] Generate error texture...\n");
 
-	m_errorTexture = CreateTextureResource("error");
-	m_errorTexture->GenerateErrorTexture();
-
 	ConVar* r_debugShowTexture = (ConVar*)g_consoleCommands->FindCvar("r_debugShowTexture");
 
 	if(r_debugShowTexture)
@@ -78,8 +75,6 @@ void ShaderAPI_Base::Shutdown()
 
 	Reset();
 	Apply();
-
-	m_errorTexture = nullptr;
 
 	for(auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
@@ -255,12 +250,6 @@ void ShaderAPI_Base::ApplyBuffers()
 		ChangeVertexBuffer(m_pSelectedVertexBuffers[i], i,m_nSelectedOffsets[i]);
 
 	ChangeIndexBuffer( m_pSelectedIndexBuffer );
-}
-
-// default error texture pointer
-const ITexturePtr& ShaderAPI_Base::GetErrorTexture() const
-{
-	return m_errorTexture;
 }
 
 void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqString>& list, const char* query)
