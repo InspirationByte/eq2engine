@@ -1203,7 +1203,7 @@ void CEGFViewFrame::ReDraw()
 	m_pRenderPanel->GetSize(&w, &h);
 	if(g_matSystem->BeginFrame(nullptr))
 	{
-		g_renderAPI->SetViewport(0, 0, w, h);
+		g_renderAPI->SetViewport(IAARectangle(0, 0, w, h));
 		g_renderAPI->Clear(true,true,false, ColorRGBA(0.5,0.5,0.5, 1));
 
 		Vector3D forward, right;

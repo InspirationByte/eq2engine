@@ -110,7 +110,7 @@ public:
 //-------------------------------------------------------------
 
 	// sets viewport
-	void						SetViewport(int x, int y, int w, int h);
+	void						SetViewport(const IAARectangle& rect);
 
 	// Set Depth range for next primitives
 	void						SetDepthRange(float fZNear,float fZFar);

@@ -46,7 +46,7 @@ public:
 
 	const ShaderAPIParams&		GetParams() const { return m_params; }
 
-	virtual void				SetViewport(int x, int y, int w, int h);
+	virtual void				SetViewport(const IAARectangle& rect);
 	static void					GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
 
 	// texture uploading frequency

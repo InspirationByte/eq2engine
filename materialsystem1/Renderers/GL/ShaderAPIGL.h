@@ -158,7 +158,7 @@ public:
 	void				SetDepthRange(float fZNear,float fZFar);
 
 	// sets viewport
-	void				SetViewport(int x, int y, int w, int h);
+	void				SetViewport(const IAARectangle& rect);
 
 	// sets scissor rectangle
 	void				SetScissorRectangle( const IAARectangle &rect );

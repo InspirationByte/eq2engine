@@ -1183,11 +1183,11 @@ void ShaderAPIGL::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, Arra
 	// like in D3D, set the viewport as texture size by default
 	if (m_nCurrentRenderTargets > 0 && m_pCurrentColorRenderTargets[0] != nullptr)
 	{
-		SetViewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
+		SetViewport(IAARectangle(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight()));
 	}
 	else if(m_pCurrentDepthRenderTarget != nullptr)
 	{
-		SetViewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
+		SetViewport(IAARectangle(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight()));
 	}
 }
 
@@ -2677,11 +2677,12 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 }
 
 // sets viewport
-void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
+void ShaderAPIGL::SetViewport(const IAARectangle& rect)
 {
-	ShaderAPI_Base::SetViewport(x, y, w, h);
+	ShaderAPI_Base::SetViewport(rect);
 
-	glViewport(x, y, w, h);
+	const IVector2D rectSize = rect.GetSize();
+	glViewport(rect.leftTop.x, rect.leftTop.y, rectSize.x, rectSize.y);
 	GLCheckError("set viewport");
 }
 

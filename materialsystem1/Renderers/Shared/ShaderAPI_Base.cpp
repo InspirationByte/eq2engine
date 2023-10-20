@@ -287,9 +287,9 @@ int	ShaderAPI_Base::GetProgressiveTextureFrequency() const
 	return m_progressiveTextureFrequency;
 }
 
-void ShaderAPI_Base::SetViewport(int x, int y, int w, int h)
+void ShaderAPI_Base::SetViewport(const IAARectangle& rect)
 {
-	m_viewPort = IAARectangle(x, y, x+w, y+h);
+	m_viewPort = rect;
 }
 
 // Find texture

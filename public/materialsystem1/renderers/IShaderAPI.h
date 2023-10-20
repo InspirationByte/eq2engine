@@ -203,7 +203,7 @@ public:
 //-------------------------------------------------------------
 
 	virtual void				SetDepthRange( float near, float far ) = 0;
-	virtual void				SetViewport( int x, int y, int w, int h ) = 0;
+	virtual void				SetViewport(const IAARectangle& rect) = 0;
 	virtual void				SetScissorRectangle(const IAARectangle& rect) = 0;
 
 	virtual void				SetBlendingState( IRenderState* pBlending ) = 0;

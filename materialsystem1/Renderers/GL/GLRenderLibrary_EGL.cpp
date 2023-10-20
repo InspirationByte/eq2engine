@@ -295,7 +295,7 @@ void CGLRenderLib_EGL::BeginFrame(IEqSwapChain* swapChain)
 	s_renderApi.m_backbufferSize = IVector2D(m_width, m_height);
 
 	// FIXME: is this needed?
-	s_renderApi.SetViewport(0, 0, m_width, m_height);
+	s_renderApi.SetViewport(IAARectangle(0, 0, m_width, m_height));
 }
 
 void CGLRenderLib_EGL::EndFrame()

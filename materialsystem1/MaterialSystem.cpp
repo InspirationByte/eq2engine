@@ -1097,7 +1097,7 @@ bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 	if (swapChain)
 		swapChain->GetBackbufferSize(backbufferSize.x, backbufferSize.y);
 
-	m_shaderAPI->SetViewport(0, 0, backbufferSize.x, backbufferSize.y);
+	m_shaderAPI->SetViewport(IAARectangle(0, 0, backbufferSize.x, backbufferSize.y));
 	m_shaderAPI->SetScissorRectangle(IAARectangle(0, 0, backbufferSize.x, backbufferSize.y));
 
 #ifdef PLAT_ANDROID
@@ -1331,10 +1331,7 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 	if (!drawCmd.material)
 		return;
 
-	RenderPassDesc& rendPassDesc = m_renderPasses[rendPass];
-
 	IShaderAPI* renderAPI = m_shaderAPI;
-
 	// material must support correct vertex layout state
 	if (drawCmd.vertexLayout)
 	{

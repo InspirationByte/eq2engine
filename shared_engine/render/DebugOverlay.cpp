@@ -1079,7 +1079,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	m_frameTime = m_timer.GetTime(true) * timescale;
 
 #ifndef DISABLE_DEBUG_DRAWING
-	g_renderAPI->SetViewport(0, 0, winWide, winTall);
+	g_renderAPI->SetViewport(IAARectangle(0, 0, winWide, winTall));
 	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
@@ -1104,7 +1104,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	}
 
 	// may need a reset again
-	g_renderAPI->SetViewport(0, 0, winWide, winTall);
+	g_renderAPI->SetViewport(IAARectangle(0, 0, winWide, winTall));
 	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);

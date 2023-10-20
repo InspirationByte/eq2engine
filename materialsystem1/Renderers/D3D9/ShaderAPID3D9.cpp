@@ -458,9 +458,10 @@ void ShaderAPID3D9::PrintAPIInfo() const
 	Msg("TOTAL USAGE: %g MB\n", ((float)(allTexturesSize+allBuffersSize) / 1024.0f));
 }
 
-void ShaderAPID3D9::SetViewport(int x, int y, int w, int h)
+void ShaderAPID3D9::SetViewport(const IAARectangle& rect)
 {
-	D3DVIEWPORT9 vp = { x, y, w, h, 0.0f, 1.0f };
+	IVector2D rectSize = rect.GetSize();
+	D3DVIEWPORT9 vp = { rect.leftTop.x, rect.leftTop.y, rectSize.x, rectSize.y, 0.0f, 1.0f };
 	m_pD3DDevice->SetViewport(&vp);
 }
 

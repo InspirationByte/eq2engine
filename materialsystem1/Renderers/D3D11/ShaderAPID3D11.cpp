@@ -3137,20 +3137,20 @@ void ShaderAPID3DX10::SetTexture(int nameHash, const ITexturePtr& pTexture)
 	*/
 }
 
-void ShaderAPID3DX10::SetViewport(int x, int y, int w, int h)
+void ShaderAPID3DX10::SetViewport(const IAARectangle& rect)
 {
 	// Setup the viewport
 	D3D10_VIEWPORT viewport;
 
 	//uint nVPs = 1;
 	//m_pD3DDevice->RSGetViewports(&nVPs, &viewport);
-
-	viewport.Width  = w;
-	viewport.Height = h;
+	IVector2D rectSize = rect.GetSize();
+	viewport.Width  = rectSize.x;
+	viewport.Height = rectSize.y;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
-	viewport.TopLeftX = x;
-	viewport.TopLeftY = y;
+	viewport.TopLeftX = rect.leftTop.x;
+	viewport.TopLeftY = rect.leftTop.y;
 
 	m_pD3DDevice->RSSetViewports(1, &viewport);
 }
@@ -3246,7 +3246,7 @@ bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT dept
 	if(!m_pBackBufferTexture)
 		return false;
 
-	SetViewport( 0, 0, wide, tall );
+	SetViewport( IAARectangle(0, 0, wide, tall) );
 
 	return true;
 }
