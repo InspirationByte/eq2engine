@@ -348,10 +348,11 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	}
 
 	// initialize some resources
-	CreateWhiteTexture();
-
-	InitStandardMaterialProxies();
 	REGISTER_INTERNAL_SHADERS();
+	CreateWhiteTexture();
+	InitDefaultMaterial();
+	InitStandardMaterialProxies();
+	
 
 	return true;
 }
@@ -926,7 +927,6 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	// if material is still loading, use the default material for a while
 	if( pMaterial->GetState() == MATERIAL_LOAD_INQUEUE )
 	{
-		InitDefaultMaterial();
 		setMaterial = m_defaultMaterial;
 		subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 	}
@@ -935,7 +935,6 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 
 	if( m_config.overdrawMode )
 	{
-		InitDefaultMaterial();
 		m_ambColor = color_white;
 		success = (*materialstate_callbacks[subRoutineId])(m_shaderAPI, m_overdrawMaterial, 0xFFFFFFFF);
 	}

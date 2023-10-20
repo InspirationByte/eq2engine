@@ -258,44 +258,6 @@ void CDynamicMesh::Unlock()
 	m_vboDirty = -1;
 }
 
-// uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
-void CDynamicMesh::Render()
-{
-	Render(0, m_numIndices);
-}
-
-void CDynamicMesh::Render(int firstIndex, int numIndices)
-{
-	if (m_numVertices == 0)
-		return;
-
-	ASSERT(m_vboAqquired != 0);
-
-	const bool drawIndexed = m_numIndices > 0;
-	if (m_vboDirty == 0)
-	{
-		m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
-		if (drawIndexed)
-			m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
-		m_vboDirty = -1;
-	}
-
-	g_renderAPI->SetVertexFormat(m_vertexFormat);
-	g_renderAPI->SetVertexBuffer(m_vertexBuffer, 0);
-
-	if (drawIndexed)
-		g_renderAPI->SetIndexBuffer(m_indexBuffer);
-	else
-		g_renderAPI->SetIndexBuffer(nullptr);
-
-	g_renderAPI->ApplyBuffers();
-
-	if (drawIndexed)
-		g_renderAPI->DrawIndexedPrimitives(m_primType, firstIndex, numIndices, 0, m_numVertices);
-	else
-		g_renderAPI->DrawNonIndexedPrimitives(m_primType, 0, m_numVertices);
-}
-
 bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices)
 {
 	if (m_numVertices == 0)

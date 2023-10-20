@@ -34,8 +34,6 @@ public:
 	int				AllocateGeom( int nVertices, int nIndices, void** verts, uint16** indices, bool addStripBreak = true );
 
 	// uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
-	void			Render();
-	void			Render(int firstIndex, int numIndices);
 	bool			FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices);
 
 	// resets the dynamic mesh
