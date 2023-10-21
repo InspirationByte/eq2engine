@@ -125,10 +125,10 @@ struct eqFontStyleParam_t
 
 	ITextLayoutBuilder* layoutBuilder{ nullptr };
 
-	ColorRGB			shadowColor{ 0.0f };
+	MColor				shadowColor{ 0 };
 	float				shadowAlpha{ 0.7f };
 
-	ColorRGBA			textColor{ 1.0f };
+	MColor				textColor{ color_white };
 
 	// SDF font size scaling
 	Vector2D			scale{ 1.0f };

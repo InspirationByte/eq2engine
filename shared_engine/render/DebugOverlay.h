@@ -10,8 +10,8 @@
 
 struct DebugTextNode_t
 {
-	EqString pszText;
-	uint color{ color_white.pack() };
+	EqString	pszText;
+	uint		color{ color_white.pack() };
 };
 
 struct DebugFadingTextNode_t
@@ -94,25 +94,25 @@ public:
 	void							Init(bool hidden = true);
 	void							Shutdown();
 
-	void							Text(const ColorRGBA &color, char const *fmt,...);
-	void							TextFadeOut(int position, const ColorRGBA &color,float fFadeTime, char const *fmt,...);
+	void							Text(const MColor& color, char const* fmt, ...);
+	void							TextFadeOut(int position, const MColor& color, float fFadeTime, char const* fmt, ...);
 
-	void							Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, const char* text, float fTime = 0.0f, int hashId = 0);
-	void							Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime = 0.0f, int hashId = 0);
-	void							Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color1, float fTime = 0.0f, int hashId = 0);
-	void							Cylinder3D(const Vector3D& position, float radius, float height, const ColorRGBA& color, float fTime = 0.0f, int hashId = 0);
-	void							OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA &color, float fTime = 0.0f, int hashId = 0);
-	void							Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f, int hashId = 0);
-	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f, int hashId = 0);
+	void							Text3D(const Vector3D& origin, float dist, const MColor& color, const char* text, float fTime = 0.0f, int hashId = 0);
+	void							Line3D(const Vector3D& start, const Vector3D& end, const MColor& color1, const MColor& color2, float fTime = 0.0f, int hashId = 0);
+	void							Box3D(const Vector3D& mins, const Vector3D& maxs, const MColor& color1, float fTime = 0.0f, int hashId = 0);
+	void							Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime = 0.0f, int hashId = 0);
+	void							OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0);
+	void							Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0);
+	void							Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0);
 
 	void							Draw2DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);
 	void							Draw3DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);
 
-	void							Graph_DrawBucket(debugGraphBucket_t* pBucket);
-	void							Graph_AddValue( debugGraphBucket_t* pBucket, float value);
+	void							Graph_DrawBucket(DbgGraphBucket* pBucket);
+	void							Graph_AddValue(DbgGraphBucket* pBucket, float value);
 
-	void							SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view );
-	void							Draw( int winWide, int winTall, float timescale = 1.0f );
+	void							SetMatrices(const Matrix4x4& proj, const Matrix4x4& view);
+	void							Draw(int winWide, int winTall, float timescale = 1.0f);
 private:
 	void							CleanOverlays();
 	bool							CheckNodeLifetime(DebugNodeBase& node);
@@ -129,7 +129,7 @@ private:
 	Array<DebugOriBoxNode_t>		m_OrientedBoxList{ PP_SL };
 	Array<DebugSphereNode_t>		m_SphereList{ PP_SL };
 
-	Array<debugGraphBucket_t*>		m_graphbuckets{ PP_SL };
+	Array<DbgGraphBucket*>			m_graphbuckets{ PP_SL };
 	Array<DebugPolyNode_t>			m_polygons{ PP_SL };
 
 	Array<DebugDrawFunc_t>			m_draw2DFuncs{ PP_SL };

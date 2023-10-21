@@ -555,8 +555,8 @@ void InputCommands_SDL(SDL_Event* event)
 	}
 }
 
-static debugGraphBucket_t s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
-static debugGraphBucket_t s_jobThreads("Active job threads", ColorRGB(1, 1, 0), 16.0f);
+static DbgGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
+static DbgGraphBucket s_jobThreads("Active job threads", ColorRGB(1, 1, 0), 16.0f);
 
 CGameHost::CGameHost() :
 	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(nullptr), m_nQuitState(QUIT_NOTQUITTING),
@@ -759,10 +759,10 @@ bool CGameHost::Frame()
 
 	debugoverlay->Graph_AddValue(&s_jobThreads, g_parallelJobs->GetActiveJobsCount());
 
-	debugoverlay->Text(Vector4D(1), "System framerate: %i", fps);
-	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
-	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
-	debugoverlay->Text(Vector4D(1), "primitives: %i", g_renderAPI->GetTrianglesCount());
+	debugoverlay->Text(color_white, "System framerate: %i", fps);
+	debugoverlay->Text(color_white, "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
+	debugoverlay->Text(color_white, "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
+	debugoverlay->Text(color_white, "primitives: %i", g_renderAPI->GetTrianglesCount());
 	
 	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
 

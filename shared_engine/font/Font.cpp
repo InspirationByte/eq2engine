@@ -277,7 +277,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 				tagType = TEXT_TAG_COLOR;
 
 				str++;
-				parsedParams.textColor = ColorRGBA(hexToColor3(str), stateParams.textColor.w);
+				parsedParams.textColor = ColorRGBA(hexToColor3(str), stateParams.textColor.a);
 				str += 6;
 
 				continue;

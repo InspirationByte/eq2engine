@@ -49,9 +49,9 @@ static void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 DECLARE_CVAR_CHANGE(r_debugShowTexture, "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
 DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 
-static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
+static void GUIDrawWindow(const AARectangle &rect, const MColor&color1)
 {
-	ColorRGBA color2(0.2,0.2,0.2,0.8);
+	MColor color2(0.2f,0.2f,0.2f,0.8f);
 
 	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -108,7 +108,7 @@ static void GUIDrawWindow(const AARectangle &rect, const ColorRGBA &color1)
 	Vector3D(min.x, max.y, min.z)
 
 // TODO: this must be replaced
-static void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const ColorRGBA& color, float fTime = 0.0f)
+static void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const MColor& color, float fTime = 0.0f)
 {
 	Vector3D verts[18] = { BBOX_STRIP_VERTS(mins, maxs) };
 
@@ -121,12 +121,12 @@ static void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, cons
 	u = rotateVector(vec3_up, quat);
 	f = rotateVector(vec3_forward, quat);
 
-	debugoverlay->Line3D(position + r * mins.x, position + r * maxs.x, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-	debugoverlay->Line3D(position + u * mins.y, position + u * maxs.y, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
-	debugoverlay->Line3D(position + f * mins.z, position + f * maxs.z, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
+	debugoverlay->Line3D(position + r * mins.x, position + r * maxs.x, MColor(1, 0, 0, 1), MColor(1, 0, 0, 1));
+	debugoverlay->Line3D(position + u * mins.y, position + u * maxs.y, MColor(0, 1, 0, 1), MColor(0, 1, 0, 1));
+	debugoverlay->Line3D(position + f * mins.z, position + f * maxs.z, MColor(0, 0, 1, 1), MColor(0, 0, 1, 1));
 
-	ColorRGBA polyColor(color);
-	polyColor.w *= 0.65f;
+	MColor polyColor(color);
+	polyColor.a *= 0.65f;
 
 	debugoverlay->Polygon3D(verts[0], verts[1], verts[2], polyColor);
 	debugoverlay->Polygon3D(verts[2], verts[1], verts[3], polyColor);
@@ -171,7 +171,7 @@ void CDebugOverlay::Shutdown()
 #endif
 }
 
-void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
+void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugDrawFrameStats.GetBool())
@@ -180,7 +180,7 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugTextNode_t& textNode = m_TextArray.append();
-	textNode.color = MColor(color).pack();
+	textNode.color = color.pack();
 
 	va_list		argptr;
 	va_start (argptr,fmt);
@@ -189,7 +189,7 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 #endif
 }
 
-void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, const char* text, float fTime, int hashId)
+void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& color, const char* text, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(hashId == 0 && !m_frustum.IsSphereInside(origin, 1.0f))
@@ -198,7 +198,7 @@ void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugText3DNode_t& textNode = m_Text3DArray.append();
-	textNode.color = MColor(color).pack();
+	textNode.color = color.pack();
 	textNode.origin = origin;
 	textNode.dist = dist;
 	textNode.lifetime = fTime;
@@ -214,7 +214,7 @@ void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &
 
 #define MAX_MINICON_MESSAGES 32
 
-void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFadeTime, char const *fmt, ...)
+void CDebugOverlay::TextFadeOut(int position, const MColor& color,float fFadeTime, char const *fmt, ...)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(position == 1)
@@ -226,7 +226,7 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugFadingTextNode_t textNode;
-	textNode.color = MColor(color).pack();
+	textNode.color = color.pack();
 	textNode.lifetime = fFadeTime;
 	textNode.initialLifetime = fFadeTime;
 
@@ -246,7 +246,7 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 #endif
 }
 
-void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime, int hashId)
+void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MColor& color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugDrawShapes.GetBool())
@@ -261,7 +261,7 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 
 	box.mins = mins;
 	box.maxs = maxs;
-	box.color = MColor(color).pack();
+	box.color = color.pack();
 	box.lifetime = fTime;
 
 	box.frameindex = m_frameId;
@@ -272,7 +272,7 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 #endif
 }
 
-void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const ColorRGBA& color, float fTime, int hashId)
+void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if (!r_debugDrawShapes.GetBool())
@@ -288,7 +288,7 @@ void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float hei
 	cyl.origin = position;
 	cyl.radius = radius;
 	cyl.height = height;
-	cyl.color = MColor(color).pack();
+	cyl.color = color.pack();
 	cyl.lifetime = fTime;
 
 	cyl.frameindex = m_frameId;
@@ -299,7 +299,7 @@ void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float hei
 #endif
 }
 
-void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime, int hashId)
+void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MColor& color1, const MColor& color2, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugDrawLines.GetBool())
@@ -313,8 +313,8 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 	DebugLineNode_t& line = m_LineList.append();
 	line.start = start;
 	line.end = end;
-	line.color1 = MColor(color1).pack();
-	line.color2 = MColor(color2).pack();
+	line.color1 = color1.pack();
+	line.color2 = color2.pack();
 	line.lifetime = fTime;
 
 	line.frameindex = m_frameId;
@@ -325,7 +325,7 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 #endif
 }
 
-void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA& color, float fTime, int hashId)
+void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugDrawShapes.GetBool())
@@ -341,7 +341,7 @@ void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, co
 	box.maxs = maxs;
 	box.position = position;
 	box.rotation = rotation;
-	box.color = MColor(color).pack();
+	box.color = color.pack();
 	box.lifetime = fTime;
 
 	box.frameindex = m_frameId;
@@ -352,7 +352,7 @@ void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, co
 #endif
 }
 
-void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime, int hashId)
+void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugDrawShapes.GetBool())
@@ -366,7 +366,7 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const Color
 	DebugSphereNode_t& sphere = m_SphereList.append();
 	sphere.origin = position;
 	sphere.radius = radius;
-	sphere.color = MColor(color).pack();
+	sphere.color = color.pack();
 	sphere.lifetime = fTime;
 
 	sphere.frameindex = m_frameId;
@@ -377,7 +377,7 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const Color
 #endif
 }
 
-void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime, int hashId)
+void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(hashId == 0 && !m_frustum.IsTriangleInside(v0,v1,v2))
@@ -390,7 +390,7 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 	poly.v1 = v1;
 	poly.v2 = v2;
 
-	poly.color = MColor(color).pack();
+	poly.color = color.pack();
 	poly.lifetime = fTime;
 
 	poly.frameindex = m_frameId;
@@ -703,7 +703,7 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 		g_matSystem->Draw(drawCmd);
 }
 
-static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float frame_time)
+static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float frame_time)
 {
 	const float GRAPH_HEIGHT = 100;
 	const float GRAPH_Y_OFFSET = 50;
@@ -763,7 +763,7 @@ static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, f
 		//	graph->fMaxValue = graph->points.getCurrent();
 
 		const int graphIdx = (graph->cursor + length) % graph->values.numElem();
-		debugGraphBucket_t::graphVal_t& graphVal = graph->values[graphIdx];
+		DbgGraphBucket::DbgGraphValue& graphVal = graph->values[graphIdx];
 
 		// get a value of it.
 		float value = clamp(graphVal.value, 0.0f, graph->maxValue);
@@ -1211,7 +1211,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 			if (!beh && visible)
 			{
-				textStl.textColor = MColor(current.color);
+				textStl.textColor = current.color;
 				m_debugFont2->RenderText(current.pszText.GetData(), screen.xy(), textStl);
 			}
 		}
@@ -1223,13 +1223,13 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			Threading::CScopedMutex m(s_debugOverlayMutex);
 			if (m_TextArray.numElem())
 			{
-				GUIDrawWindow(AARectangle(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), ColorRGBA(0.5f, 0.5f, 0.5f, 0.5f));
+				GUIDrawWindow(AARectangle(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), MColor(0.5f, 0.5f, 0.5f, 0.5f));
 
 				for (int i = 0; i < m_TextArray.numElem(); i++)
 				{
 					DebugTextNode_t& current = m_TextArray[i];
 
-					textStl.textColor = MColor(current.color);
+					textStl.textColor = current.color;
 
 					Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (i * m_debugFont->GetLineHeight(textStl)));
 
@@ -1444,7 +1444,7 @@ void CDebugOverlay::CleanOverlays()
 #endif
 }
 
-void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
+void CDebugOverlay::Graph_DrawBucket(DbgGraphBucket* pBucket)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if (!r_debugDrawGraphs.GetBool())
@@ -1456,7 +1456,7 @@ void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 #endif
 }
 
-void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
+void CDebugOverlay::Graph_AddValue(DbgGraphBucket* bucket, float value)
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugDrawGraphs.GetBool())
@@ -1469,12 +1469,12 @@ void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 		int index;
 		if (bucket->values.numElem() < GRAPH_MAX_VALUES)
 		{
-			index = bucket->values.append(debugGraphBucket_t::graphVal_t{ value, MColor(bucket->color).pack() });
+			index = bucket->values.append(DbgGraphBucket::DbgGraphValue{ value, MColor(bucket->color).pack() });
 		}
 		else
 		{
 			index = bucket->cursor;
-			bucket->values[index] = debugGraphBucket_t::graphVal_t{ value, MColor(bucket->color).pack() };
+			bucket->values[index] = DbgGraphBucket::DbgGraphValue{ value, MColor(bucket->color).pack() };
 		}
 		index++;
 		bucket->cursor = index % GRAPH_MAX_VALUES;
