@@ -35,6 +35,7 @@
 #include "imgui_backend/imgui_impl_sys.h"
 #endif // IMGUI_ENABLED
 
+
 using namespace Threading;
 static CEqMutex s_conInputMutex;
 
@@ -172,13 +173,14 @@ bool IsInRectangle(int posX, int posY,int rectX,int rectY,int rectW,int rectH)
 	return ((posX >= rectX) && (posX <= rectX + rectW) && (posY >= rectY) && (posY <= rectY + rectH));
 }
 
-struct conSpewText_t
+struct ConMessage
 {
 	SpewType_t	type;
 	EqString	text;
 };
-
-static Array<conSpewText_t*> s_spewMessages(PP_SL);
+static Array<ConMessage*> s_spewMessages(PP_SL);
+using ConMessagePool = MemoryPool<ConMessage>;
+static ConMessagePool s_spewMessagesPool(PP_SL);
 
 void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 {
@@ -193,7 +195,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 	char* pc = (char*)pMsg;
 	char* lineStart = pc;
 
-	conSpewText_t* currentSpewLine = nullptr;
+	ConMessage* currentSpewLine = nullptr;
 
 	for(;;pc++)
 	{
@@ -204,7 +206,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 
 		if(length > 0 || *pc == '\n')	// print non empty text and newlines
 		{
-			currentSpewLine = PPNew conSpewText_t;
+			currentSpewLine = new(s_spewMessagesPool.allocate()) ConMessage;
 			currentSpewLine->type = type;
 			currentSpewLine->text.Assign(lineStart, length);
 
@@ -230,8 +232,11 @@ void CEqConsoleInput::SpewClear()
 {
 	CScopedMutex m(s_conInputMutex);
 
-	for(int i = 0; i < s_spewMessages.numElem(); i++)
-		delete s_spewMessages[i];
+	for(ConMessage* message: s_spewMessages)
+	{
+		message->~ConMessage();
+		s_spewMessagesPool.deallocate(message);
+	}
 
 	s_spewMessages.clear();
 }
