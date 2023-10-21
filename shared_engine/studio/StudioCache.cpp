@@ -85,23 +85,29 @@ int CStudioCache::PrecacheModel(const char* modelName)
 		
 		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", str.ToCString());
 
-		const int cacheIdx = m_cachedList.numElem();
-
-		CEqStudioGeom* pModel = PPNew CEqStudioGeom();
-		if (pModel->LoadModel(str, job_modelLoader.GetBool()))
+		CEqStudioGeom* model = PPNew CEqStudioGeom();
+		if (model->LoadModel(str, job_modelLoader.GetBool()))
 		{
-			int newIdx = m_cachedList.append(pModel);
-			ASSERT(newIdx == cacheIdx);
+			if (m_freeCacheSlots.numElem())
+			{
+				const int newIdx = m_freeCacheSlots.popBack();
+				m_cachedList[newIdx] = model;
+				model->m_cacheIdx = newIdx;
+			}
+			else
+			{
+				const int newIdx = m_cachedList.append(model);
+				model->m_cacheIdx = newIdx;
+			}
 
-			pModel->m_cacheIdx = cacheIdx;
-			m_cacheIndex.insert(nameHash, cacheIdx);
+			m_cacheIndex.insert(nameHash, model->m_cacheIdx);
 		}
 		else
 		{
-			SAFE_DELETE(pModel);
+			SAFE_DELETE(model);
 		}
 
-		return pModel ? cacheIdx : 0;
+		return model ? model->m_cacheIdx : 0;
 	}
 
 	return idx;
@@ -127,9 +133,9 @@ CEqStudioGeom* CStudioCache::GetModel(int index) const
 	return m_cachedList[0];
 }
 
-const char* CStudioCache::GetModelFilename(CEqStudioGeom* pModel) const
+const char* CStudioCache::GetModelFilename(CEqStudioGeom* model) const
 {
-	return pModel->GetName();
+	return model->GetName();
 }
 
 int CStudioCache::GetModelIndex(const char* modelName) const
@@ -137,8 +143,8 @@ int CStudioCache::GetModelIndex(const char* modelName) const
 	EqString str(modelName);
 	str.Path_FixSlashes();
 
-	const int hash = StringToHash(str, true);
-	auto found = m_cacheIndex.find(hash);
+	const int nameHash = StringToHash(str, true);
+	auto found = m_cacheIndex.find(nameHash);
 	if (!found.atEnd())
 	{
 		return *found;
@@ -147,11 +153,11 @@ int CStudioCache::GetModelIndex(const char* modelName) const
 	return CACHE_INVALID_MODEL;
 }
 
-int CStudioCache::GetModelIndex(CEqStudioGeom* pModel) const
+int CStudioCache::GetModelIndex(CEqStudioGeom* model) const
 {
 	for (int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if (m_cachedList[i] == pModel)
+		if (m_cachedList[i] == model)
 			return i;
 	}
 
@@ -159,9 +165,21 @@ int CStudioCache::GetModelIndex(CEqStudioGeom* pModel) const
 }
 
 // decrements reference count and deletes if it's zero
-void CStudioCache::FreeCachedModel(CEqStudioGeom* pModel)
+void CStudioCache::FreeCachedModel(CEqStudioGeom* model)
 {
+	const int modelIndex = arrayFindIndex(m_cachedList, model);
+	if (modelIndex == -1)
+		return;
 
+	const int nameHash = StringToHash(model->GetName(), true);
+
+	m_cacheIndex.remove(nameHash);
+	m_freeCacheSlots.append(modelIndex);
+
+	// wait for loading completion
+	m_cachedList[modelIndex]->GetStudioHdr();
+	delete m_cachedList[modelIndex];
+	m_cachedList[modelIndex] = nullptr;
 }
 
 void CStudioCache::ReleaseCache()
@@ -178,6 +196,7 @@ void CStudioCache::ReleaseCache()
 
 	m_cachedList.clear(true);
 	m_cacheIndex.clear(true);
+	m_freeCacheSlots.clear(true);
 
 	for(int i = 0; i < 2; ++i)
 	{

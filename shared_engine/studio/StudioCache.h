@@ -47,6 +47,7 @@ private:
 
 	Map<int, int>			m_cacheIndex{ PP_SL };
 	Array<CEqStudioGeom*>	m_cachedList{ PP_SL };
+	Array<int>				m_freeCacheSlots{ PP_SL };
 
 	IVertexFormat*			m_egfFormat[2]{ nullptr };
 	IMaterialPtr			m_errorMaterial;
