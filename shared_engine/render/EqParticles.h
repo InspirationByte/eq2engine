@@ -23,7 +23,6 @@ using IMaterialPtr = CRefPtr<IMaterial>;
 enum EPartRenderFlags
 {
 	EPRFLAG_DONT_FLUSHBUFFERS	= (1 << 24),
-	EPRFLAG_INVERT_CULL			= (1 << 25),
 };
 
 // particle vertex with color
@@ -63,12 +62,11 @@ public:
 	int					AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices = false );
 	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
 
-	void				SetCullInverted(bool invert)	{ m_invertCull = invert; }
 	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
 
-	AtlasEntry*	GetEntry(int idx) const;
+	AtlasEntry*			GetEntry(int idx) const;
 
-	AtlasEntry*	FindEntry(const char* pszName) const;
+	AtlasEntry*			FindEntry(const char* pszName) const;
 	int					FindEntryIndex(const char* pszName) const;
 
 	int					GetEntryCount() const;
@@ -80,7 +78,6 @@ protected:
 
 	IMaterialPtr		m_material;
 	Matrix4x4			m_customProjMat;
-	bool				m_invertCull{ false };
 	bool				m_useCustomProjMat{ false };
 };
 

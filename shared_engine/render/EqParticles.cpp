@@ -102,8 +102,7 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	if(!g_pfxRender->MakeVBOFrom(this))
 		return;
 
-	const bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
-	g_matSystem->SetCullMode(invertCull ? CULL_BACK : CULL_FRONT);
+	g_matSystem->SetCullMode(CULL_FRONT);
 
 	if (m_useCustomProjMat)
 		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
