@@ -22,9 +22,9 @@ bool CEmptyTexture::Lock(LockInOutData& data)
 {
 	m_lockData = &data;
 
-	data.lockData = PPAlloc(1024 * 1024);
-	data.lockData = (ubyte*)m_lockData;
-	return data;
+	data.lockData = PPAlloc(16 * 1024 * 1024);
+	data.lockPitch = 16;
+	return true;
 }
 
 // unlocks texture for modifications, etc
