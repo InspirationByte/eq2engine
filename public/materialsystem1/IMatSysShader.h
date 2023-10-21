@@ -71,6 +71,8 @@ public:
 
 	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
 	virtual int					GetBumpStageCount() const = 0;
+
+	virtual bool				IsSupportVertexFormat(int nameHash) const = 0;
 };
 
 typedef IMaterialSystemShader* (*DISPATCH_CREATE_SHADER)(void);

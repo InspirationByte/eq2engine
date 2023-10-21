@@ -11,11 +11,14 @@
 
 BEGIN_SHADER_CLASS(BaseUnlit)
 
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		// must support any vertex
+		return true;
+	}
+
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = nullptr;
-		SHADER_FOGPASS(Unlit) = nullptr;
-
 		m_colorVar = GetAssignedMaterial()->GetMaterialVar("color", "[1 1 1 1]");
 	}
 

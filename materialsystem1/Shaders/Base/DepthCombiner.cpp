@@ -11,10 +11,13 @@
 
 BEGIN_SHADER_CLASS(DepthCombiner)
 
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return nameHash == StringToHashConst("DynMeshVertex");
+	}
+
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = nullptr;
-
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
 	}

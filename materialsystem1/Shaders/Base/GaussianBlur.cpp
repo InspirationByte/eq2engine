@@ -10,11 +10,13 @@
 #include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(GaussianBlur)
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return nameHash == StringToHashConst("DynMeshVertex");
+	}
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = nullptr;
-
 		m_blurProps = GetAssignedMaterial()->GetMaterialVar("BlurProps", "[0.6 40 100 100]");
 		m_blurSource = GetAssignedMaterial()->GetMaterialVar("BlurSource", "");
 

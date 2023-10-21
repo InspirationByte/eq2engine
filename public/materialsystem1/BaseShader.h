@@ -151,7 +151,7 @@ typedef void (CBaseShader::*SHADERPARAMFUNC)(IShaderAPI* renderAPI);
 class CBaseShader : public IMaterialSystemShader
 {
 public:
-								CBaseShader();
+	CBaseShader();
 
 	// Sets parameters
 	void						Init(IShaderAPI* renderAPI, IMaterial* assignee);

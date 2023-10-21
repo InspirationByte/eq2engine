@@ -10,10 +10,13 @@
 #include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(Error)
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return true;
+	}
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = nullptr;
 	}
 
 	SHADER_INIT_TEXTURES()

@@ -11,13 +11,16 @@
 
 BEGIN_SHADER_CLASS(VHBlurFilter)
 
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return nameHash == StringToHashConst("DynMeshVertex");
+	}
+
 	SHADER_INIT_PARAMS()
 	{
 		m_blurAxes = 0;
 		m_blurModes = 0;
 		m_texSize = vec4_zero;
-
-		SHADER_PASS(Unlit) = nullptr;
 
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);

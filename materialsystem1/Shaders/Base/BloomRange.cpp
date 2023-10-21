@@ -11,10 +11,13 @@
 
 BEGIN_SHADER_CLASS(BloomRange)
 
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return nameHash == StringToHashConst("DynMeshVertex");
+	}
+
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = nullptr;
-
 		m_rangeProps = GetAssignedMaterial()->GetMaterialVar("RangeProps", "[0.6 40 100 100]");
 		m_bloomSource = GetAssignedMaterial()->GetMaterialVar("BloomSource", "");
 

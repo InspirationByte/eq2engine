@@ -14,10 +14,13 @@
 //--------------------------------------
 
 BEGIN_SHADER_CLASS(EnvMapTest)
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return nameHash == StringToHashConst("EGFVertex");
+	}
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = nullptr;
 	}
 
 	// Initialize textures

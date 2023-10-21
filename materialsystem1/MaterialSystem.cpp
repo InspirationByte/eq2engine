@@ -1345,6 +1345,9 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 
 		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
 			renderAPI->SetVertexBuffer(drawCmd.vertexBuffers[i], i); // TODO: support offsets
+
+		CMaterial* material = static_cast<CMaterial*>(drawCmd.material);
+		ASSERT_MSG(material->m_shader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
 	}
 
 	SetSkinningBones(drawCmd.boneTransforms);

@@ -14,10 +14,13 @@
 //--------------------------------------
 
 BEGIN_SHADER_CLASS(Skybox)
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return true;
+	}
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = nullptr;
 		m_flags |= MATERIAL_FLAG_SKY;
 	}
 

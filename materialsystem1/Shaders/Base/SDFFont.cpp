@@ -10,13 +10,16 @@
 #include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(SDFFont)
+	bool IsSupportVertexFormat(int nameHash) const
+	{
+		return nameHash == StringToHashConst("DynMeshVertex");
+	}
+
 	SHADER_INIT_PARAMS()
 	{
 		m_fontParamsVar = GetAssignedMaterial()->GetMaterialVar("FontParams", "[0.94 0.95, 0, 1]");
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
-
-		SHADER_PASS(Unlit) = nullptr;
 	}
 
 	SHADER_INIT_TEXTURES()
