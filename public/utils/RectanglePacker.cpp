@@ -8,68 +8,46 @@
 #include "core/core_common.h"
 #include "RectanglePacker.h"
 
-struct PackerNode 
+struct PackerNode : PackerRectangle
 {
-	PackerNode(float x, float y, float w, float h, void* userdata)
+	PackerNode(float x, float y, float w, float h)
 	{
-		left = right = nullptr;
-
-		rect = PPNew PackerRectangle;
-		rect->x = x;
-		rect->y = y;
-		rect->width = w;
-		rect->height = h;
-		rect->userdata = userdata;
+		PackerRectangle::x = x;
+		PackerRectangle::y = y;
+		PackerRectangle::width = w;
+		PackerRectangle::height = h;
 	}
 
-	~PackerNode()
-	{
-		delete left;
-
-		delete right;
-
-		if(rect)
-			delete rect;
-	}
-
-	bool AssignRectangle_r(PackerRectangle *rect);
-
-	PackerNode*		left;
-	PackerNode*		right;
-
-	PackerRectangle*	rect;
+	PackerNode*	left{ nullptr };
+	PackerNode*	right{ nullptr };
 };
 
-bool PackerNode::AssignRectangle_r(PackerRectangle *newRect)
+using PackerNodePool = MemoryPool<PackerNode, 64>;
+
+static bool PackerNodeAssignRectangle_r(PackerNode* node, PackerNodePool& nodePool, PackerRectangle& targetRect)
 {
-	if (rect == nullptr)
+	if (node->left || node->right)
 	{
-		if (left->AssignRectangle_r(newRect))
+		if (PackerNodeAssignRectangle_r(node->left, nodePool, targetRect))
 			return true;
 
-		return right->AssignRectangle_r(newRect);
+		return PackerNodeAssignRectangle_r(node->right, nodePool, targetRect);
 	}
-	else 
+
+	if (targetRect.width <= node->width && targetRect.height <= node->height)
 	{
-		if (newRect->width <= rect->width && newRect->height <= rect->height)
-		{
-			float rx = rect->x;
-			float ry = rect->y;
+		const float rx = node->x;
+		const float ry = node->y;
 
-			newRect->x = rx;
-			newRect->y = ry;
+		targetRect.x = rx;
+		targetRect.y = ry;
 
-			left = PPNew PackerNode(rx, ry + newRect->height, newRect->width, rect->height - newRect->height, newRect->userdata);
-			right = PPNew PackerNode(rx + newRect->width, ry, rect->width - newRect->width, rect->height, newRect->userdata);
-
-			delete rect;
-			rect = nullptr;
-
-			return true;
-		}
-
-		return false;
+		node->left = new(nodePool.allocate()) PackerNode(rx, ry + targetRect.height, targetRect.width, node->height - targetRect.height);
+		node->right = new(nodePool.allocate()) PackerNode(rx + targetRect.width, ry, node->width - targetRect.width, node->height);
+		return true;
 	}
+
+	return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
@@ -81,78 +59,70 @@ CRectanglePacker::CRectanglePacker()
 
 CRectanglePacker::~CRectanglePacker()
 {
-	for (int i = 0; i < m_pRectangles.numElem(); i++)
-	{
-		delete m_pRectangles[i];
-	}
 }
 
 int CRectanglePacker::AddRectangle(float width, float height, void* pUserData)
 {
-	PackerRectangle* rect = PPNew PackerRectangle;
+	const int rectIdx = m_rectList.numElem();
 
-	rect->width  = width+m_padding*2.0f;
-	rect->height = height+m_padding*2.0f;
+	PackerRectangle& rect = m_rectList.append();
+	rect.width  = width + m_padding * 2.0f;
+	rect.height = height + m_padding * 2.0f;
+	m_rectUserData.append(pUserData);
 
-	rect->userdata = pUserData;
-
-	return m_pRectangles.append(rect);
+	return rectIdx;
 }
 
 bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC compRectFunc)
 {
 	// copy array and sort
-	Array<PackerRectangle*> sortedRects(PP_SL);
-	sortedRects.append(m_pRectangles);
+	Array<int> sortedRects(PP_SL);
+	sortedRects.reserve(m_rectList.numElem());
+	for (int i = 0; i < m_rectList.numElem(); ++i)
+		sortedRects.append(i);
 
-	quickSort(sortedRects, compRectFunc);
+	quickSort(sortedRects, [this, compRectFunc](const int ia, const int ib) {
+		return compRectFunc(m_rectList[ia], m_rectList[ib]);
+	});
 
-	PackerNode* top = PPNew PackerNode(0, 0, width, height, nullptr);
+	PackerNodePool nodePool(PP_SL);
+	PackerNode* top = new(nodePool.allocate()) PackerNode(0, 0, width, height);
 
 	width  = 0;
 	height = 0;
 
 	// do placement
-	for (int i = 0; i < sortedRects.numElem(); i++)
+	for (int rectIdx : sortedRects)
 	{
-		if (top->AssignRectangle_r( sortedRects[i] ))
+		PackerRectangle& rect = m_rectList[rectIdx];
+		if (PackerNodeAssignRectangle_r(top, nodePool, rect))
 		{
-			float x = sortedRects[i]->x + sortedRects[i]->width;
-			float y = sortedRects[i]->y + sortedRects[i]->height;
+			const float x = rect.x + rect.width;
+			const float y = rect.y + rect.height;
 
-			if (x > width)
-				width = x;
-
-			if (y > height)
-				height = y;
+			width = max(x, width);
+			height = max(y, height);
 		}
 		else
-		{
-			delete top;
 			return false;
-		}
 	}
-
-	delete top;
 
 	return true;
 }
 
-void CRectanglePacker::GetRectangle(AARectangle& rect, void** userData, uint index) const
+void CRectanglePacker::GetRectangle(AARectangle& rect, void** userData, int index) const
 {
-	PackerRectangle* pc = m_pRectangles[index];
+	const PackerRectangle& packRect = m_rectList[index];
 
-	rect.leftTop = Vector2D(pc->x + m_padding, pc->y + m_padding);
-	rect.rightBottom = rect.leftTop + Vector2D(pc->width - m_padding*2.0f, pc->height - m_padding*2.0f);
+	rect.leftTop = Vector2D(packRect.x + m_padding, packRect.y + m_padding);
+	rect.rightBottom = rect.leftTop + Vector2D(packRect.width - m_padding*2.0f, packRect.height - m_padding*2.0f);
 	
-	if(userData != nullptr)
-		*userData = pc->userdata;
+	if(userData)
+		*userData = m_rectUserData[index];
 }
 
 void CRectanglePacker::Cleanup()
 {
-	for(int i = 0; i < m_pRectangles.numElem(); i++)
-		delete m_pRectangles[i];
-
-	m_pRectangles.clear(false);
+	m_rectList.clear(false);
+	m_rectUserData.clear(false);
 }

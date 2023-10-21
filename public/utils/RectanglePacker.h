@@ -13,82 +13,83 @@
 
 struct PackerRectangle
 {
-	float x, y;
-	float width, height;
-
-	void* userdata;
+	float x = 0;
+	float y = 0;
+	float width = 0;
+	float height = 0;
 };
 
 //-------------------------------------------------------------------------------------------------
 
-inline int OriginalAreaComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+inline int OriginalAreaComp(const PackerRectangle& elem0, const PackerRectangle& elem1)
 {
-	return (int)(elem1->width * elem1->height - elem0->width * elem0->height);
+	return (int)(elem1.width * elem1.height - elem0.width * elem0.height);
 }
 
-inline int AreaComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+inline int AreaComp(const PackerRectangle& elem0, const PackerRectangle& elem1)
 {
-	int diff = elem1->width * elem1->height - elem0->width * elem0->height;
+	int diff = elem1.width * elem1.height - elem0.width * elem0.height;
 
 	if (diff)
 		return diff;
 
-	diff = elem1->width - elem0->width;
+	diff = elem1.width - elem0.width;
 
 	if (diff)
 		return diff;
 
-	return elem1->height - elem0->height;
+	return elem1.height - elem0.height;
 }
 
-inline int WidthComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+inline int WidthComp(const PackerRectangle& elem0, const PackerRectangle& elem1)
 {
-	int diff = elem1->width - elem0->width;
+	const int diff = elem1.width - elem0.width;
 
 	if (diff)
 		return diff;
 
-	return elem1->height - elem0->height;
+	return elem1.height - elem0.height;
 }
 
-inline int HeightComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+inline int HeightComp(const PackerRectangle& elem0, const PackerRectangle& elem1)
 {
-	int diff = elem1->height - elem0->height;
+	const int diff = elem1.height - elem0.height;
 
 	if (diff)
 		return diff;
 
-	return elem1->width - elem0->width;
+	return elem1.width - elem0.width;
 }
 
-typedef int (*COMPRECTFUNC)(PackerRectangle *const &elem0, PackerRectangle *const &elem1);
+typedef int (*COMPRECTFUNC)(const PackerRectangle& elem0, const PackerRectangle& elem1);
 
 //-------------------------------------------------------------------------------------------------
 
 class CRectanglePacker
 {
 public:
-								CRectanglePacker();
-						virtual ~CRectanglePacker();
+	CRectanglePacker();
+	virtual ~CRectanglePacker();
 
 	// adds new rectangle
-	int							AddRectangle(float width, float height, void* pUserData = NULL);
+	int						AddRectangle(float width, float height, void* pUserData = NULL);
 
 	// assigns coordinates
-	bool						AssignCoords(float& width, float& height, COMPRECTFUNC compRectFunc = OriginalAreaComp);
+	bool					AssignCoords(float& width, float& height, COMPRECTFUNC compRectFunc = OriginalAreaComp);
 
 	// returns rectangle
-	void						GetRectangle(AARectangle& rect, void** userData, uint index) const;
-	void*						GetRectangleUserData(uint index) const				{ return m_pRectangles[index]->userdata; }
-	void						SetRectangleUserData(uint index, void* userData)	{ m_pRectangles[index]->userdata = userData; }
+	void					GetRectangle(AARectangle& rect, void** userData, int index) const;
+	void*					GetRectangleUserData(int index) const			{ return m_rectUserData[index]; }
+	void					SetRectangleUserData(int index, void* userData)	{ m_rectUserData[index] = userData; }
 
-	int							GetRectangleCount() const {return m_pRectangles.numElem();}
+	int						GetRectangleCount() const { return m_rectList.numElem(); }
 
-	void						SetPackPadding(float padding) { m_padding = padding; }
+	void					SetPackPadding(float padding) { m_padding = padding; }
 
-	void						Cleanup();
+	void					Cleanup();
 
 protected:
-	Array<PackerRectangle *>	m_pRectangles{ PP_SL };
-	float						m_padding;
+	Array<PackerRectangle>	m_rectList{ PP_SL };
+	Array<void*>			m_rectUserData{ PP_SL };
+	float					m_padding{ 0.0f };
 };
