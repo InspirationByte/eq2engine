@@ -129,41 +129,41 @@ Matrix4x4 toGLProjection(const Matrix4x4 &m)
 	return mat;
 }
 
-Matrix4x4 cubeViewMatrix(const unsigned int side)
+Matrix4x4 cubeViewMatrix(ECubeSide side)
 {
 	switch(side)
 	{
-	case POSITIVE_X:
+	case ECubeSide::POSITIVE_X:
 		return Matrix4x4(
 			0, 0, -1, 0,
 			0, 1,  0, 0,
 			1, 0,  0, 0,
 			0, 0,  0, 1);
-	case NEGATIVE_X:
+	case ECubeSide::NEGATIVE_X:
 		return Matrix4x4(
 			 0, 0, 1, 0,
 			 0, 1, 0, 0,
 			-1, 0, 0, 0,
 			 0, 0, 0, 1);
-	case POSITIVE_Y:
+	case ECubeSide::POSITIVE_Y:
 		return Matrix4x4(
 			1, 0,  0, 0,
 			0, 0, -1, 0,
 			0, 1,  0, 0,
 			0, 0,  0, 1);
-	case NEGATIVE_Y:
+	case ECubeSide::NEGATIVE_Y:
 		return Matrix4x4(
 			1,  0, 0, 0,
 			0,  0, 1, 0,
 			0, -1, 0, 0,
 			0,  0, 0, 1);
-	case POSITIVE_Z:
+	case ECubeSide::POSITIVE_Z:
 		return Matrix4x4(
 			1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
 			0, 0, 0, 1);
-	//case NEGATIVE_Z:
+	//case ECubeSide::NEGATIVE_Z:
 	default:
 		return Matrix4x4(
 			-1, 0,  0, 0,

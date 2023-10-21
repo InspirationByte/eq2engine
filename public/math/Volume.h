@@ -46,7 +46,7 @@ public:
 
 	const Plane&	GetPlane(const int plane) const { return m_planes[plane]; }
 
-	void			SetupPlane(Plane &pl, int n);
+	void			SetupPlane(const Plane &pl, int n);
 
 	Vector3D		GetFarRightDown() const;
 	Vector3D		GetFarRightUp() const;

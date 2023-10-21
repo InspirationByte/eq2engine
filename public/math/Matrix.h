@@ -431,7 +431,7 @@ Matrix4x4 toD3DProjection(const Matrix4x4 &m);
 Matrix4x4 toGLProjection(const Matrix4x4 &m);
 
 // generates cubic modelview matrix
-Matrix4x4 cubeViewMatrix(const unsigned int side);
+Matrix4x4 cubeViewMatrix(ECubeSide side);
 
 // generates cubeprojection matrix for OpenGL
 Matrix4x4 cubeProjectionMatrixGL(const float zNear, const float zFar);

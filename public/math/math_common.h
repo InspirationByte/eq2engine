@@ -10,14 +10,17 @@
 #include <math.h>
 #include <float.h>
 
-enum CubeDir
+enum ECubeSide : int
 {
-	POSITIVE_X,
+	POSITIVE_X = 0,
 	NEGATIVE_X,
 	POSITIVE_Y,
 	NEGATIVE_Y,
 	POSITIVE_Z,
 	NEGATIVE_Z,
+
+	FIRST = 0,
+	LAST = 5
 };
 
 #ifndef IsNaN

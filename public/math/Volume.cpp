@@ -65,7 +65,7 @@ void Volume::GetBBOXBack(Vector3D &mins, Vector3D &maxs) const
 	maxs = Vector3D(m_planes[VOLUME_PLANE_RIGHT].offset, m_planes[VOLUME_PLANE_TOP].offset, m_planes[VOLUME_PLANE_FAR].offset);
 }
 
-void Volume::SetupPlane(Plane &pl, int n)
+void Volume::SetupPlane(const Plane &pl, int n)
 {
 	m_planes[n] = pl;
 }
