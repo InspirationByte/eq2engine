@@ -37,14 +37,6 @@ void CBaseEqGeomInstancer::ValidateAssert()
 	ASSERT_MSG(m_vertFormat != nullptr, "Instancer is not valid - did you forgot to initialize it???");
 }
 
-void CBaseEqGeomInstancer::InitEx(ArrayCRef<VertexFormatDesc> instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
-{
-	Cleanup();
-	m_ownsVertexFormat = true;
-	m_vertexStreamMapping = instVertStreamMapping;
-	m_vertFormat = g_renderAPI->CreateVertexFormat("instancerFmt", instVertexFormat);
-}
-
 void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
 {
 	Cleanup();

@@ -255,7 +255,7 @@ EConstantType GetConstantType(GLenum type)
 	return (EConstantType) -1;
 }
 
-void* s_uniformFuncs[CONSTANT_TYPE_COUNT] = {};
+void* s_uniformFuncs[CONSTANT_COUNT] = {};
 
 void ShaderAPIGL::PrintAPIInfo() const
 {
@@ -349,7 +349,7 @@ void ShaderAPIGL::Init( const ShaderAPIParams &params)
 	s_uniformFuncs[CONSTANT_MATRIX3x3]	= (void *) glUniformMatrix3fv;
 	s_uniformFuncs[CONSTANT_MATRIX4x4]	= (void *) glUniformMatrix4fv;
 
-	for(int i = 0; i < CONSTANT_TYPE_COUNT; i++)
+	for(int i = 0; i < CONSTANT_COUNT; i++)
 	{
 		if(s_uniformFuncs[i] == nullptr)
 			ASSERT_FAIL("Uniform function for '%d' is not ok, pls check extensions\n", i);

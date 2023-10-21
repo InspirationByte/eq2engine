@@ -31,10 +31,10 @@ enum EConstantType : int
     CONSTANT_MATRIX3x3,
     CONSTANT_MATRIX4x4,
 
-    CONSTANT_TYPE_COUNT
+    CONSTANT_COUNT
 };
 
-static int s_constantTypeSizes[CONSTANT_TYPE_COUNT] = {
+static int s_constantTypeSizes[CONSTANT_COUNT] = {
 	sizeof(float),
 	sizeof(Vector2D),
 	sizeof(Vector3D),
@@ -274,6 +274,8 @@ enum EBlendFactor : int
 	BLENDFACTOR_DST_ALPHA,				//	8
 	BLENDFACTOR_ONE_MINUS_DST_ALPHA,	//	9
 	BLENDFACTOR_SRC_ALPHA_SATURATE,		//	10
+
+	BLENDFACTOR_COUNT
 };
 
 // Function of blending
@@ -285,6 +287,8 @@ enum EBlendFunction : int
 	BLENDFUNC_REVERSE_SUBTRACT,	// 2
 	BLENDFUNC_MIN,				// 3
 	BLENDFUNC_MAX,				// 4
+
+	BLENDFUNC_COUNT
 };
 
 //-----------------------------------------------------------------------------
@@ -317,6 +321,8 @@ enum EStencilFunction : int
 	STENCILFUNC_INCR_SAT,	// 6
 	STENCILFUNC_DECR_SAT,	// 7
 	STENCILFUNC_ALWAYS,		// 8
+
+	STENCILFUNC_COUNT,
 };
 
 // Fillmode constants
@@ -325,6 +331,8 @@ enum EFillMode : int
 	FILL_SOLID		= 0,
 	FILL_WIREFRAME,	// 1
 	FILL_POINT,		// 2
+
+	FILL_COUNT,
 };
 
 // Cull modes
@@ -333,6 +341,8 @@ enum ECullMode : int
 	CULL_NONE		= 0,
 	CULL_BACK,		// 1
 	CULL_FRONT,		// 2
+
+	CULL_COUNT,
 };
 
 struct BlendStateParams
@@ -340,10 +350,8 @@ struct BlendStateParams
 	EBlendFactor	srcFactor{ BLENDFACTOR_ONE };
 	EBlendFactor	dstFactor{ BLENDFACTOR_ZERO };
 	EBlendFunction	blendFunc{ BLENDFUNC_ADD };
-
-	int mask{ COLORMASK_ALL };
-
-	bool blendEnable { false };
+	int				mask{ COLORMASK_ALL };
+	bool			blendEnable { false };
 };
 
 struct DepthStencilStateParams
@@ -385,6 +393,8 @@ enum EShaderConstSetup : int
 	SCONST_GEOMETRY	= (1 << 2),
 	SCONST_DOMAIN	= (1 << 3),
 	SCONST_HULL		= (1 << 4),
+
+	SCONST_COUNT,
 };
 
 // API reset type

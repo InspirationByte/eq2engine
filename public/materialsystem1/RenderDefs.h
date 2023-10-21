@@ -6,6 +6,10 @@ class IVertexFormat;
 class IIndexBuffer;
 class IVertexBuffer;
 class IMaterial;
+
+class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
 enum EPrimTopology : int;
 
 struct Vertex2D
