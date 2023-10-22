@@ -10,6 +10,7 @@
 #define RHI_OPENGL    1
 #define RHI_D3D9      2
 #define RHI_D3D11     3
+#define RHI_WGPU      4
 
 #if RENDERER_TYPE == RHI_NULL
 #include "Empty/emptyLibrary.h"
@@ -35,6 +36,9 @@ static CD3D9RenderLib   s_D3D9RenderLib;
 #elif RENDERER_TYPE == RHI_D3D11
 #include "D3D11/D3D11Library.h"
 static CD3D11RenderLib  s_D3D11RenderLib;
+#elif RENDERER_TYPE == RHI_WGPU
+#include "WGPU/WGPULibrary.h"
+static CWGPURenderLib  s_WGPURenderLib;
 #endif
 
 static CEqRenderManager g_renderManager;
@@ -54,6 +58,9 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams &params) 
 {
 #if RENDERER_TYPE == RHI_NULL
     s_currentRenderLib = &s_EmptyRenderLib;
+    return s_currentRenderLib;
+#elif RENDERER_TYPE == RHI_WGPU
+    s_currentRenderLib = &s_WGPURenderLib;
     return s_currentRenderLib;
 #endif
 

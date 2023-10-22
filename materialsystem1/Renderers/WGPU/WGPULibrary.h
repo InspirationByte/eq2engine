@@ -1,0 +1,58 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright (C) Inspiration Byte
+// 2009-2020
+//////////////////////////////////////////////////////////////////////////////////
+// Description: D3D Rendering library interface
+//////////////////////////////////////////////////////////////////////////////////
+
+#pragma once
+#include <webgpu/webgpu.h>
+#include "../IRenderLibrary.h"
+
+class CWGPUSwapChain;
+
+class CWGPURenderLib : public IRenderLibrary
+{
+	friend class CWGPUSwapChain;
+public:
+	CWGPURenderLib();
+	~CWGPURenderLib();
+
+	bool			InitCaps();
+
+	bool			InitAPI(const ShaderAPIParams &params);
+	void			ExitAPI();
+
+	void			BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void			EndFrame();
+
+	IShaderAPI*		GetRenderer() const;
+
+	void			SetBackbufferSize(int w, int h);
+	void			SetFocused(bool inFocus) {}
+
+	bool			SetWindowed(bool enabled);
+	bool			IsWindowed() const;
+
+	bool			CaptureScreenshot(CImage &img);
+
+	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true) {return nullptr;}
+	void			DestroySwapChain(IEqSwapChain* swapChain) {}
+
+protected:
+
+	WGPUDevice				m_rhiDevice{ nullptr };
+	WGPUBackendType			m_backendType{ WGPUBackendType_Null };
+
+	WGPUQueue				m_deviceQueue{ nullptr };
+	CWGPUSwapChain*			m_defaultSwapChain{ nullptr };
+
+	CWGPUSwapChain*			m_currentSwapChain{ nullptr };
+
+	void*					m_window{ nullptr };
+	bool					m_active{ false };
+
+	bool					m_resized{ false };
+	bool					m_windowed{ false };
+};
+

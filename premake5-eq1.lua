@@ -152,7 +152,8 @@ project "eqMatSystem"
 	}
     files {
         Folders.matsystem1.. "*.cpp",
-		Folders.matsystem1.."**.h",
+		Folders.matsystem1.. "*.h",
+		Folders.matsystem1.. "Renderers/*.h",
         Folders.public.."materialsystem1/**.cpp",
 		Folders.public.."materialsystem1/**.h"
 	}
@@ -330,6 +331,34 @@ project "eqGLRHI"
 			"EGL", "GL", "GLU", "wayland-egl", "X11", "Xxf86vm", "Xext"
 		}
 
+if os.getenv("VULKAN_SDK") ~= nil then
+	-- WebGPU renderer (atm Windows-only)
+	project "eqWGPURHI"
+		kind "SharedLib"
+		unitybuild "on"
+		uses {
+			"corelib", "frameworkLib", "e2Core",
+			"eqRHIBaseLib", "wgpu-dawn"
+		}
+		defines{
+			"EQRHI_WGPU",
+			"RENDERER_TYPE=4"
+		}
+		files {
+			Folders.matsystem1.. "renderers/WGPU/**.cpp",
+			Folders.matsystem1.."renderers/WGPU/**.h"
+		}
+		filter "system:Windows"
+			includedirs {
+				os.getenv("VULKAN_SDK").. "/Include"
+			}
+			libdirs {
+				os.getenv("VULKAN_SDK").. "/Lib"
+			}
+else
+	print("VULKAN_SDK is missing")
+end
+
 	if os.target() == "windows" then
 		-- Direct3D9 renderer
 		project "eqD3D9RHI"
@@ -355,32 +384,6 @@ project "eqGLRHI"
 			}
 			links {
 				"d3d9", "d3dx9"
-			}
-			
-		-- Direct3D11 renderer
-		project "eqD3D11RHI"
-			kind "SharedLib"
-			unitybuild "on"
-			uses {
-				"corelib", "frameworkLib", "e2Core",
-				"eqRHIBaseLib"
-			}
-			defines{
-				"EQRHI_D3D11",
-				"RENDERER_TYPE=3"
-			}
-			files {
-				Folders.matsystem1.. "renderers/D3D11/**.cpp",
-				Folders.matsystem1.."renderers/D3D11/**.h"
-			}
-			--includedirs {
-			--	Folders.dependency.."minidx9/include"
-			--}
-			--libdirs {
-			--	Folders.dependency.."minidx9/lib/%{cfg.platform}"
-			--}
-			links {
-				"d3d10", "dxgi"
 			}
 	end
 end

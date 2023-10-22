@@ -359,6 +359,4 @@ protected:
 		m_TextureList.insert(texture->m_nameHash, texture);
 		return ITexturePtr(texture);
 	}
-
-	int				GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName) {return 0;}
 };
