@@ -40,38 +40,22 @@ public:
 
 	bool					InitAPI(const ShaderAPIParams &params);
 	void					ExitAPI();
-	void					ReleaseSwapChains();
 
-	// frame begin/end
 	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
 	void					EndFrame();
 
-	// renderer interface
 	IShaderAPI*				GetRenderer() const;
 
-	// sets backbuffer size for default swap chain
 	void					SetBackbufferSize(int w, int h);
 
-	// reports focus state
 	void					SetFocused(bool inFocus);
-
-	// changes fullscreen mode
 	bool					SetWindowed(bool enabled);
-
-	// speaks for itself
 	bool					IsWindowed() const;
 
-	// captures screenshot, outputs image to 'img'
 	bool					CaptureScreenshot(CImage &img);
 
-	// creates swap chain
 	IEqSwapChain*			CreateSwapChain(void* window, bool windowed = true);
-
-	// destroys a swapchain
 	void					DestroySwapChain(IEqSwapChain* swapChain);
-
-	// returns default swap chain
-	IEqSwapChain*			GetDefaultSwapchain();
 
 	// start capturing GL commands from specific thread id
 	void					BeginAsyncOperation(uintptr_t threadId);

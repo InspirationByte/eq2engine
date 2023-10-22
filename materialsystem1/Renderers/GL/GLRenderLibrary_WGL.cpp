@@ -187,20 +187,19 @@ void CGLRenderLib_WGL::InitSharedContexts()
 
 bool CGLRenderLib_WGL::InitAPI(const ShaderAPIParams& params)
 {
-	int multiSamplingMode = params.multiSamplingMode;
-
-	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
-		r_screen->SetValue("0");
+	int displayNumber = r_screen->GetInt();
+	if (displayNumber >= GetSystemMetrics(SM_CMONITORS))
+		displayNumber = 0;
 
 	m_hwnd = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
 	m_hdc = (HDC)params.windowInfo.get(RenderWindowInfo::DISPLAY);
 
 	// Enumerate display devices
-	int monitorCounter = r_screen->GetInt();
-	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM) &monitorCounter);
+	int monitorCounter = displayNumber;
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&monitorCounter);
 
 	m_dispDevice.cb = sizeof(m_dispDevice);
-	EnumDisplayDevicesA(nullptr, r_screen->GetInt(), &m_dispDevice, 0);
+	EnumDisplayDevicesA(nullptr, displayNumber, &m_dispDevice, 0);
 	
 	// get window parameters
 
@@ -266,6 +265,7 @@ bool CGLRenderLib_WGL::InitAPI(const ShaderAPIParams& params)
 	int bestSamples = 0;
 	uint nPFormats;
 
+	int multiSamplingMode = params.multiSamplingMode;
 	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(m_hdc, iPFDAttribs, nullptr, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
 	{
 		int minDiff = 0x7FFFFFFF;
@@ -374,6 +374,10 @@ bool CGLRenderLib_WGL::InitAPI(const ShaderAPIParams& params)
 
 void CGLRenderLib_WGL::ExitAPI()
 {
+	for (int i = 0; i < m_swapChains.numElem(); i++)
+		delete m_swapChains[i];
+	m_swapChains.clear();
+
 	wglMakeCurrent(nullptr, nullptr);
 
 	DestroySharedContexts();
@@ -526,14 +530,6 @@ bool CGLRenderLib_WGL::CaptureScreenshot(CImage &img)
 	return true;
 }
 
-void CGLRenderLib_WGL::ReleaseSwapChains()
-{
-	for (int i = 0; i < m_swapChains.numElem(); i++)
-	{
-		delete m_swapChains[i];
-	}
-}
-
 // creates swap chain
 IEqSwapChain* CGLRenderLib_WGL::CreateSwapChain(void* window, bool windowed)
 {
@@ -557,12 +553,6 @@ void  CGLRenderLib_WGL::DestroySwapChain(IEqSwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;
-}
-
-// returns default swap chain
-IEqSwapChain*  CGLRenderLib_WGL::GetDefaultSwapchain()
-{
-	return nullptr;
 }
 
 //----------------------------------------------------------------------------------------

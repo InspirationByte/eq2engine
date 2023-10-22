@@ -274,6 +274,10 @@ bool CGLRenderLib_EGL::InitAPI(const ShaderAPIParams& params)
 
 void CGLRenderLib_EGL::ExitAPI()
 {	
+	for (int i = 0; i < m_swapChains.numElem(); i++)
+		delete m_swapChains[i];
+	m_swapChains.clear();
+
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(m_eglDisplay, m_glContext);
 	eglDestroySurface(m_eglDisplay, m_eglSurface);
@@ -521,14 +525,6 @@ bool CGLRenderLib_EGL::CaptureScreenshot(CImage &img)
 	return true;
 }
 
-void CGLRenderLib_EGL::ReleaseSwapChains()
-{
-	for (int i = 0; i < m_swapChains.numElem(); i++)
-	{
-		delete m_swapChains[i];
-	}
-}
-
 // creates swap chain
 IEqSwapChain* CGLRenderLib_EGL::CreateSwapChain(void* window, bool windowed)
 {
@@ -552,12 +548,6 @@ void  CGLRenderLib_EGL::DestroySwapChain(IEqSwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;
-}
-
-// returns default swap chain
-IEqSwapChain* CGLRenderLib_EGL::GetDefaultSwapchain()
-{
-	return nullptr;
 }
 
 //----------------------------------------------------------------------------------------

@@ -310,6 +310,10 @@ bool CGLRenderLib_GLX::InitAPI(const ShaderAPIParams& params)
 
 void CGLRenderLib_GLX::ExitAPI()
 {
+	for (int i = 0; i < m_swapChains.numElem(); i++)
+		delete m_swapChains[i];
+	m_swapChains.clear();
+
     glXMakeCurrent(m_display, None, nullptr);
     glXDestroyContext(m_display, m_glContext);
 
@@ -434,14 +438,6 @@ bool CGLRenderLib_GLX::CaptureScreenshot(CImage &img)
 	return true;
 }
 
-void CGLRenderLib_GLX::ReleaseSwapChains()
-{
-	for (int i = 0; i < m_swapChains.numElem(); i++)
-	{
-		delete m_swapChains[i];
-	}
-}
-
 // creates swap chain
 IEqSwapChain* CGLRenderLib_GLX::CreateSwapChain(void* window, bool windowed)
 {
@@ -463,12 +459,6 @@ void  CGLRenderLib_GLX::DestroySwapChain(IEqSwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;
-}
-
-// returns default swap chain
-IEqSwapChain*  CGLRenderLib_GLX::GetDefaultSwapchain()
-{
-	return nullptr;
 }
 
 //----------------------------------------------------------------------------------------

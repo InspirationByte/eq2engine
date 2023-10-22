@@ -386,7 +386,6 @@ void CMaterialSystem::Shutdown()
 	m_shaderOverrideList.clear();
 	m_proxyFactoryList.clear();
 
-	m_renderLibrary->ReleaseSwapChains();
 	m_shaderAPI->Shutdown();
 	m_renderLibrary->ExitAPI();
 

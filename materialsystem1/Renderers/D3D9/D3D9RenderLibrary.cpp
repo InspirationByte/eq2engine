@@ -21,7 +21,6 @@
 
 HOOK_TO_CVAR(r_screen);
 
-// make library
 ShaderAPID3D9 s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
 CD3D9RenderLib g_library;
@@ -96,9 +95,6 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 			vendor = VENDOR_OTHER;
 	}
 
-	// clear present parameters
-	ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
-
 	// set window
 	m_hwnd = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
 
@@ -106,33 +102,13 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 	RECT windowRect;
 	GetClientRect(m_hwnd, &windowRect);
 
-	m_width = windowRect.right;
-	m_height = windowRect.bottom;
-
-	// always initialize in windowed mode
-	m_d3dpp.Windowed = true;
-
 	// set backbuffer bits
 	int depthBits = params.depthBits;
 	int stencilBits = 1;
-
-	// setup backbuffer format
-	m_d3dpp.BackBufferFormat = g_d3d9_imageFormats[ params.screenFormat ];
-
-	// Find a suitable fullscreen format
-	//int fullScreenRefresh = 60;
-	//int targetHz = params.screenRefreshRateHZ;
-
-	m_d3dpp.BackBufferWidth = m_width;
-	m_d3dpp.BackBufferHeight = m_height;
-	m_d3dpp.BackBufferCount  = 1;
+	m_width = windowRect.right;
+	m_height = windowRect.bottom;
 
 	DevMsg(DEVMSG_RENDER, "Initial backbuffer size: %d %d\n", m_width, m_height);
-
-	if(params.verticalSyncEnabled)
-		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
-	else
-		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
 	// get
 	HRESULT hr = m_d3dFactory->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &m_d3dMode);
@@ -142,8 +118,21 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 		return false;
 	}
 
-	m_d3dpp.hDeviceWindow = m_hwnd;
+	// clear present parameters
+	ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
 
+	// setup backbuffer format
+	if (params.verticalSyncEnabled)
+		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+	else
+		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+
+	m_d3dpp.BackBufferFormat = g_d3d9_imageFormats[params.screenFormat];
+	m_d3dpp.Windowed = true;
+	m_d3dpp.BackBufferWidth = m_width;
+	m_d3dpp.BackBufferHeight = m_height;
+	m_d3dpp.BackBufferCount = 1;
+	m_d3dpp.hDeviceWindow = m_hwnd;
 	m_d3dpp.MultiSampleQuality = 0;
 	m_d3dpp.EnableAutoDepthStencil = TRUE;// (depthBits > 0);
 	m_d3dpp.AutoDepthStencilFormat = (depthBits > 16)? ((stencilBits > 0)? D3DFMT_D24S8 : D3DFMT_D24X8) : D3DFMT_D16;
@@ -163,14 +152,13 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 
 	// try to create device and check the multisample types
 	int multiSample = params.multiSamplingMode;
-
 	while (true)
 	{
 		m_d3dpp.MultiSampleType = (D3DMULTISAMPLE_TYPE) multiSample;
 
 		SetupSwapEffect(params);
 
-		HRESULT result = m_d3dFactory->CreateDevice(r_screen->GetInt(), devtype, m_hwnd, deviceFlags, &m_d3dpp, &m_rhi);
+		HRESULT result = m_d3dFactory->CreateDevice(0, devtype, m_hwnd, deviceFlags, &m_d3dpp, &m_rhi);
 		if (result == D3D_OK)
 			break;
 		
@@ -181,7 +169,6 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 		else
 		{
 			MessageBoxA(m_hwnd, "Couldn't create Direct3D9 device interface!\n\nCheck your system configuration and/or install latest video drivers!", "Error", MB_OK | MB_ICONWARNING);
-
 			return false;
 		}
 	}
@@ -266,6 +253,10 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 
 void CD3D9RenderLib::ExitAPI()
 {
+	for (int i = 0; i < m_swapChains.numElem(); i++)
+		delete m_swapChains[i];
+	m_swapChains.clear();
+
 	if (!IsWindowed())
 	{
 		// Reset display mode to default
@@ -497,23 +488,9 @@ IEqSwapChain* CD3D9RenderLib::CreateSwapChain(void* window, bool windowed)
 	return pNewChain;
 }
 
-// returns default swap chain
-IEqSwapChain* CD3D9RenderLib::GetDefaultSwapchain()
-{
-	return nullptr;
-}
-
 // destroys a swapchain
 void CD3D9RenderLib::DestroySwapChain(IEqSwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;
-}
-
-void CD3D9RenderLib::ReleaseSwapChains()
-{
-	for(int i = 0; i < m_swapChains.numElem(); i++)
-	{
-		delete m_swapChains[i];
-	}
 }
