@@ -23,7 +23,6 @@ HOOK_TO_CVAR(r_screen);
 // make library
 ShaderAPID3DX10 s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
-CD3D11RenderLib g_library;
 
 CD3D11RenderLib::CD3D11RenderLib()
 {

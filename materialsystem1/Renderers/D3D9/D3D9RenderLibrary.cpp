@@ -23,7 +23,6 @@ HOOK_TO_CVAR(r_screen);
 
 ShaderAPID3D9 s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
-CD3D9RenderLib g_library;
 
 CD3D9RenderLib::CD3D9RenderLib()
 {

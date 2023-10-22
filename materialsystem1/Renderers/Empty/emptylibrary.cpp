@@ -15,7 +15,6 @@
 
 HOOK_TO_CVAR(r_screen);
 
-CEmptyRenderLib g_library;
 ShaderAPIEmpty s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
 
