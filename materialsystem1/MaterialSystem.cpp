@@ -309,7 +309,10 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	if (rendererName.Length())
 	{
 		if(!tryLoadRenderer(rendererName))
+		{
+			ErrorMsg("Could not init renderer %s\n", rendererName.ToCString());
 			return false;
+		}
 	}
 	else
 	{
@@ -326,14 +329,20 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 			}
 
 			if(!m_shaderAPI)
+			{
+				ErrorMsg("Could not init any renderer - perhaps your hardware does not support any\n");
 				return false;
+			}
 		}
 		else
 		{
 			rendererName = "eqGLRHI";
 
 			if(!tryLoadRenderer(rendererName))
+			{
+				ErrorMsg("Could not init renderer %s\n", rendererName.ToCString());
 				return false;
+			}
 		}
 	}
 
@@ -353,7 +362,6 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	InitDefaultMaterial();
 	InitStandardMaterialProxies();
 	
-
 	return true;
 }
 
