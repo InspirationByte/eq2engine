@@ -68,7 +68,7 @@ namespace ComponentHostImpl
 	inline void ForEachComponent(COMPONENT_MAP<TComponentBase>& components, const EqFunction<void(TComponentBase* pComponent)>& componentWalkFn)
 	{
 		ASSERT(componentWalkFn);
-		for (auto it = components.begin(); it != components.end(); ++it)
+		for (auto it = components.begin(); !it.atEnd(); ++it)
 			componentWalkFn(*it);
 	}
 
@@ -93,69 +93,12 @@ namespace ComponentHostImpl
 	template<typename TComponentBase>
 	inline void RemoveAll(COMPONENT_MAP<TComponentBase>& components)
 	{
-		for (auto it = components.begin(); it != components.end(); ++it)
+		for (auto it = components.begin(); !it.atEnd(); ++it)
 		{
 			(*it)->OnRemoved();
 			delete* it;
 		}
 		components.clear();
-	}
-}
-
-template<typename T, int SIZE>
-class CComponentPool
-{
-public:
-	T* Create();
-	void Free(T* component);
-	void Reset();
-
-private:
-	T m_components[SIZE];
-	Array<int> m_freeSlots{ PP_SL };
-	int m_numAllocated{ 0 };
-};
-
-template<typename T, int SIZE>
-T* CComponentPool<T, SIZE>::Create()
-{
-	int nextSlot;
-	if (m_freeSlots.numElem())
-	{
-		nextSlot = m_freeSlots.back();
-		m_freeSlots.popBack();
-	}
-	else
-	{
-		nextSlot = m_numAllocated++;
-	}
-
-	return &m_components[nextSlot];
-}
-
-template<typename T, int SIZE>
-void CComponentPool<T, SIZE>::Free(T* component)
-{
-	if (!component)
-		return;
-
-	const int slot = component - m_components;
-	ASSERT(slot >= 0 && slot < SIZE);
-
-	component->~T();
-
-	m_freeSlots.append(slot);
-}
-
-template<typename T, int SIZE>
-void CComponentPool<T, SIZE>::Reset()
-{
-	m_freeSlots.clear();
-	m_numAllocated = 0;
-	for (int i = 0; i < SIZE; ++i)
-	{
-		m_components[i].~T();
-		new (m_components[i]) T();
 	}
 }
 
@@ -182,4 +125,3 @@ void CComponentPool<T, SIZE>::Reset()
 		void ForEachComponent(const EqFunction<void(componentBase* pComponent)>& componentWalkFn) {\
 			ComponentHostImpl::ForEachComponent(m_components, componentWalkFn);\
 		}
-
