@@ -34,7 +34,7 @@ public:
 		QUIT_RESTART
 	};
 
-						CGameHost();
+	CGameHost();
 
 	bool				LoadModules();
 	bool				InitSystems( EQWNDHANDLE pWindow );
@@ -48,7 +48,7 @@ public:
 	void				OnWindowResize(int width, int height);
 	void				OnFocusChanged(bool inFocus);
 
-	EQWNDHANDLE			GetWindowHandle() const { return m_pWindow; }
+	EQWNDHANDLE			GetWindowHandle() const { return m_window; }
 
 	bool				IsWindowed() const;
 	void				SetFullscreenMode(bool screenSize);
@@ -90,9 +90,9 @@ public:
 	double				GetFrameTime() const {return m_accumTime;}
 
 	const IVector2D&	GetWindowSize() const {return m_winSize;}
-	IEqFont*			GetDefaultFont() const {return m_pDefaultFont;}
+	IEqFont*			GetDefaultFont() const {return m_defaultFont;}
 
-	int					GetQuitState() const {return m_nQuitState;}
+	int					GetQuitState() const {return m_quitState;}
 
 // static
 
@@ -116,22 +116,20 @@ protected:
 
 	CEqTimer			m_timer;
 
-	EQWNDHANDLE			m_pWindow;
+	EQWNDHANDLE			m_window;
 
-	IEqFont*			m_pDefaultFont;
-
-	int					m_nQuitState;
-
-	bool				m_bTrapMode;
-	bool				m_bDoneTrapping;
-	bool				m_skipMouseMove;
-
-	int					m_nTrapKey;
-	int					m_nTrapButtons;
-
-	bool				m_cursorCentered;
+	IEqFont*			m_defaultFont;
 
 	double				m_accumTime;
+	int					m_quitState;
+
+	int					m_trapKey;
+	int					m_trapButtons;
+	bool				m_keyTrapMode;
+	bool				m_keyDoneTrapping;
+	bool				m_skipMouseMove;
+	bool				m_cursorCentered;
+
 };
 
 extern CStaticAutoPtr<CGameHost> g_pHost;

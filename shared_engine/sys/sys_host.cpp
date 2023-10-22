@@ -122,7 +122,7 @@ IShaderAPI*			g_renderAPI = nullptr;
 
 void CGameHost::HostQuitToDesktop()
 {
-	g_pHost->m_nQuitState = CGameHost::QUIT_TODESKTOP;
+	g_pHost->m_quitState = CGameHost::QUIT_TODESKTOP;
 }
 
 void CGameHost::HostExitCmd(CONCOMMAND_ARGUMENTS)
@@ -155,16 +155,16 @@ bool CGameHost::LoadModules()
 void CGameHost::SetWindowTitle(const char* windowTitle)
 {
 #ifdef _RETAIL
-	SDL_SetWindowTitle(m_pWindow, windowTitle);
+	SDL_SetWindowTitle(m_window, windowTitle);
 #else
 	EqString str = EqString::Format("%s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", windowTitle, BUILD_NUMBER_ENGINE);
-	SDL_SetWindowTitle(m_pWindow, str);
+	SDL_SetWindowTitle(m_window, str);
 #endif
 }
 
 bool CGameHost::IsWindowed() const
 {
-	return (SDL_GetWindowFlags(m_pWindow) & SDL_WINDOW_FULLSCREEN) == 0;
+	return (SDL_GetWindowFlags(m_window) & SDL_WINDOW_FULLSCREEN) == 0;
 }
 
 void CGameHost::SetFullscreenMode(bool screenSize)
@@ -174,8 +174,8 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 
 	if (screenSize)
 	{
-		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
-		SDL_GetWindowSize(m_pWindow, &nAdjustedWide, &nAdjustedTall);
+		SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+		SDL_GetWindowSize(m_window, &nAdjustedWide, &nAdjustedTall);
 
 		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
 
@@ -196,8 +196,8 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 		{
 			Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
 
-			SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
-			SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
+			SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN);
+			SDL_SetWindowSize(m_window, nAdjustedWide, nAdjustedTall);
 		}
 	}
 }
@@ -218,9 +218,9 @@ void CGameHost::SetWindowedMode()
 	{
 		Msg("Set %dx%d mode (windowed)\n", nAdjustedWide, nAdjustedTall);
 
-		SDL_SetWindowFullscreen(m_pWindow, 0);
-		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
-		SDL_SetWindowPosition(m_pWindow, nAdjustedPosX, nAdjustedPosY);
+		SDL_SetWindowFullscreen(m_window, 0);
+		SDL_SetWindowSize(m_window, nAdjustedWide, nAdjustedTall);
+		SDL_SetWindowPosition(m_window, nAdjustedPosX, nAdjustedPosY);
 	}
 }
 
@@ -319,7 +319,7 @@ static void* Helper_GetWindowInfo(RenderWindowInfo::Attribute attrib)
 
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 {
-	m_pWindow = pWindow;
+	m_window = pWindow;
 
 	MaterialsInitSettings materials_config;
 
@@ -327,9 +327,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	SDL_SysWMinfo winfo;
 	SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
 
-	if( !SDL_GetWindowWMInfo(m_pWindow, &winfo) )
+	if( !SDL_GetWindowWMInfo(m_window, &winfo) )
 	{
-		MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_pWindow);
+		MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_window);
 		ErrorMsg("Can't get SDL window WM info!\n");
 		return false;
 	}
@@ -414,7 +414,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	if( !g_fontCache->Init() )
 		return false;
 
-	m_pDefaultFont = g_fontCache->GetFont("default",0);
+	m_defaultFont = g_fontCache->GetFont("default",0);
 
 	debugoverlay->Init();
 	equi::Manager->Init();
@@ -559,9 +559,9 @@ static DbgGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
 static DbgGraphBucket s_jobThreads("Active job threads", ColorRGB(1, 1, 0), 16.0f);
 
 CGameHost::CGameHost() :
-	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(nullptr), m_nQuitState(QUIT_NOTQUITTING),
-	m_bTrapMode(false), m_skipMouseMove(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
-	m_pDefaultFont(nullptr),
+	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_window(nullptr), m_quitState(QUIT_NOTQUITTING),
+	m_keyTrapMode(false), m_skipMouseMove(false), m_keyDoneTrapping(false), m_trapKey(0), m_trapButtons(0), m_cursorCentered(false),
+	m_defaultFont(nullptr),
 	m_accumTime(0.0)
 {
 
@@ -594,7 +594,7 @@ void CGameHost::ShutdownSystems()
 	g_matSystem->Shutdown();
 	g_fileSystem->CloseModule( g_matsysmodule );
 
-	SDL_DestroyWindow(g_pHost->m_pWindow);
+	SDL_DestroyWindow(g_pHost->m_window);
 }
 
 #define GAME_MAX_FRAMERATE (sys_maxfps.GetFloat()) // 60 fps limit
@@ -644,7 +644,7 @@ void CGameHost::UpdateCursorState()
 	SDL_SetRelativeMouseMode(m_cursorCentered ? SDL_TRUE : SDL_FALSE);
 
 	if (previousCenterState = previousCenterState != m_cursorCentered)
-		SDL_WarpMouseInWindow(m_pWindow, m_winSize.x / 2, m_winSize.y / 2);
+		SDL_WarpMouseInWindow(m_window, m_winSize.x / 2, m_winSize.y / 2);
 
 	// update cursor visibility state
 	SetCursorShow( cursorVisible );
@@ -652,7 +652,7 @@ void CGameHost::UpdateCursorState()
 
 void CGameHost::SetCursorPosition(int x, int y)
 {
-	SDL_WarpMouseInWindow(m_pWindow, x, y);
+	SDL_WarpMouseInWindow(m_window, x, y);
 	m_mousePos = IVector2D(x,y);
 }
 
@@ -714,7 +714,7 @@ bool CGameHost::Frame()
 
 	if(!EqStateMgr::UpdateStates(gameFrameTime * timescale * sys_timescale.GetFloat()))
 	{
-		m_nQuitState = CGameHost::QUIT_TODESKTOP;
+		m_quitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
 
@@ -782,14 +782,14 @@ bool CGameHost::Frame()
 		else if (fps < 60)
 			params.textColor = ColorRGBA(1, 0.8f, 0, 1);
 
-		m_pDefaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
+		m_defaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
 
 		size_t totalMem = PPMemGetUsage();
 		if (totalMem)
 		{
 			eqFontStyleParam_t memParams;
 			memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-			m_pDefaultFont->RenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams);
+			m_defaultFont->RenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams);
 		}
 	}
 
@@ -863,13 +863,13 @@ bool CGameHost::IsTextInputShown() const
 void CGameHost::TrapKey_Event( int key, bool down )
 {
 	// Only key down events are trapped
-	if ( m_bTrapMode && down )
+	if ( m_keyTrapMode && down )
 	{
-		m_bTrapMode			= false;
-		m_bDoneTrapping		= true;
+		m_keyTrapMode			= false;
+		m_keyDoneTrapping		= true;
 
-		m_nTrapKey			= key;
-		m_nTrapButtons		= 0;
+		m_trapKey			= key;
+		m_trapButtons		= 0;
 		return;
 	}
 
@@ -886,13 +886,13 @@ void CGameHost::TrapKey_Event( int key, bool down )
 void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 {
 	// buttons == 0 for mouse move events
-	if ( m_bTrapMode && buttons && !down )
+	if ( m_keyTrapMode && buttons && !down )
 	{
-		m_bTrapMode			= false;
-		m_bDoneTrapping		= true;
+		m_keyTrapMode			= false;
+		m_keyDoneTrapping		= true;
 
-		m_nTrapKey			= 0;
-		m_nTrapButtons		= buttons;
+		m_trapKey			= 0;
+		m_trapButtons		= buttons;
 		return;
 	}
 
@@ -977,31 +977,31 @@ void CGameHost::ProcessKeyChar(const char* utfChar)
 
 void CGameHost::StartTrapMode()
 {
-	if ( m_bTrapMode )
+	if ( m_keyTrapMode )
 		return;
 
-	m_bDoneTrapping = false;
-	m_bTrapMode = true;
+	m_keyDoneTrapping = false;
+	m_keyTrapMode = true;
 }
 
 // Returns true on success, false on failure.
 bool CGameHost::IsTrapping()
 {
-	return m_bTrapMode;
+	return m_keyTrapMode;
 }
 
 bool CGameHost::CheckDoneTrapping( int& buttons, int& key )
 {
-	if ( m_bTrapMode )
+	if ( m_keyTrapMode )
 		return false;
 
-	if ( !m_bDoneTrapping )
+	if ( !m_keyDoneTrapping )
 		return false;
 
-	key			= m_nTrapKey;
-	buttons		= m_nTrapButtons;
+	key			= m_trapKey;
+	buttons		= m_trapButtons;
 
 	// Reset since we retrieved the results
-	m_bDoneTrapping = false;
+	m_keyDoneTrapping = false;
 	return true;
 }
