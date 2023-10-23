@@ -26,7 +26,7 @@ CWGPUSwapChain::~CWGPUSwapChain()
 
 void* CWGPUSwapChain::GetWindow() const
 {
-	return m_winInfo.get(RenderWindowInfo::WINDOW);
+	return m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
 }
 
 ITexturePtr CWGPUSwapChain::GetBackbuffer() const
@@ -54,19 +54,40 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 
 	if(!m_surface)
 	{
-		WGPUSurfaceDescriptor desc = {};
+		WGPUSurfaceDescriptor surfDesc = {};
 
 		WGPUSurfaceDescriptorFromWindowsHWND windowsSurfDesc = {};
-#ifdef _WIN32
-		windowsSurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromWindowsHWND;
-		windowsSurfDesc.hinstance = m_winInfo.get(RenderWindowInfo::TOPLEVEL);
-		windowsSurfDesc.hwnd = m_winInfo.get(RenderWindowInfo::WINDOW);
-		desc.nextInChain = &windowsSurfDesc.chain;
-#else
-		// TODO: other platforms
-#endif
+		WGPUSurfaceDescriptorFromXlibWindow x11SurfDesc = {};
+		WGPUSurfaceDescriptorFromWaylandSurface waylandSurfDesc = {};
+		WGPUSurfaceDescriptorFromAndroidNativeWindow androidWindowSurfDesc = {};
 
-		m_surface = wgpuInstanceCreateSurface(m_host->m_instance, &desc);
+		switch (m_winInfo.windowType)
+		{
+		case RHI_WINDOW_HANDLE_NATIVE_WINDOWS:
+			windowsSurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromWindowsHWND;
+			windowsSurfDesc.hinstance = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::TOPLEVEL);
+			windowsSurfDesc.hwnd = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+			surfDesc.nextInChain = &windowsSurfDesc.chain;
+			break;
+		case RHI_WINDOW_HANDLE_NATIVE_X11:
+			x11SurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
+			x11SurfDesc.window = (uint32_t)m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+			surfDesc.nextInChain = &x11SurfDesc.chain;
+			break;
+		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
+			waylandSurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
+			waylandSurfDesc.surface = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::SURFACE);
+			surfDesc.nextInChain = &waylandSurfDesc.chain;
+			break;
+		case RHI_WINDOW_HANDLE_NATIVE_ANDROID:
+			androidWindowSurfDesc.window = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+			surfDesc.nextInChain = &androidWindowSurfDesc.chain;
+			break;
+		default:
+			ASSERT_FAIL("Unsupported RHI_WINDOW_HANDLE value!");
+		}
+
+		m_surface = wgpuInstanceCreateSurface(m_host->m_instance, &surfDesc);
 	}
 
 	WGPUSwapChainDescriptor swapChainDesc = {};
@@ -85,11 +106,6 @@ bool CWGPUSwapChain::SwapBuffers()
 {
 	if (!m_swapChain)
 		return false;
-
-	//while (m_completedFrames < m_requestedFrame)
-	//	wgpuDeviceTick(m_host->m_rhiDevice);
-
 	wgpuSwapChainPresent(m_swapChain);
-	//wgpuQueueOnSubmittedWorkDone(queue, 0, OnWGPUSwapChainWorkSubmittedCallback, this);
 	return true;
 }

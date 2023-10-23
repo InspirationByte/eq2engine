@@ -82,7 +82,7 @@ public:
 	void							SetDeviceBackbufferSize(int wide, int tall);
 	void							SetDeviceFocused(bool inFocus);
 
-	IEqSwapChain*					CreateSwapChain(void* windowHandle);
+	IEqSwapChain*					CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void							DestroySwapChain(IEqSwapChain* chain);
 
 	bool							SetWindowed(bool enable);

@@ -8,11 +8,12 @@
 #pragma once
 #include "core/InterfaceManager.h"
 
-struct ShaderAPIParams;
 class IEqSwapChain;
 class IShaderAPI;
 class CImage;
 class IRenderLibrary;
+struct ShaderAPIParams;
+struct RenderWindowInfo;
 
 class IRenderManager : public IEqCoreModule
 {
@@ -46,6 +47,6 @@ public:
 
 	virtual	bool			CaptureScreenshot(CImage &img) = 0;
 
-	virtual IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true) = 0;
+	virtual IEqSwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
 	virtual void			DestroySwapChain(IEqSwapChain* swapChain) = 0;
 };

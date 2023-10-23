@@ -9,36 +9,17 @@
 #include "shaderapid3d9_def.h"
 #include "D3D9SwapChain.h"
 
-CD3D9SwapChain::~CD3D9SwapChain()
-{
-
-}
-
-CD3D9SwapChain::CD3D9SwapChain()
-{
-	//m_backbuffer = nullptr;
-}
-
-bool CD3D9SwapChain::Initialize( HWND window, bool vSync, bool windowed)
+bool CD3D9SwapChain::Initialize(const RenderWindowInfo& windowInfo)
 {
 	// init basic
-	m_window = window;
-	m_vSyncEnabled = vSync;
-
-	m_width = 0;
-	m_height = 0;
-
-	// init datas
-
-	// set window
-	HWND windowHandle = m_window;
+	m_window = (HWND)windowInfo.get(windowInfo.userData, RenderWindowInfo::WINDOW);
 
 	// get window parameters
 	RECT windowRect;
-	GetClientRect(windowHandle, &windowRect);
+	GetClientRect(m_window, &windowRect);
 
-	m_width = windowRect.right;
-	m_height = windowRect.bottom;
+	m_width = windowRect.right - windowRect.left;
+	m_height = windowRect.bottom - windowRect.top;
 
 	return true;
 }
@@ -56,11 +37,5 @@ bool CD3D9SwapChain::SetBackbufferSize(int wide, int tall)
 	m_width = wide;
 	m_height = tall;
 
-	return true;
-}
-
-// individual swapbuffers call
-bool CD3D9SwapChain::SwapBuffers()
-{
 	return true;
 }

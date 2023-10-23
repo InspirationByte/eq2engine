@@ -5,8 +5,14 @@
 // Description: OpenGL Renderer FAKE swapchain for using to draw in multiple windows
 //////////////////////////////////////////////////////////////////////////////////
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
 #include "core/core_common.h"
 #include "GLSwapChain.h"
+#include "renderers/ShaderAPI_defs.h"
 
 CGLSwapChain::~CGLSwapChain()
 {
@@ -16,27 +22,20 @@ CGLSwapChain::~CGLSwapChain()
 #endif
 }
 
-bool CGLSwapChain::Initialize(void* window, bool vSync, bool windowed)
+bool CGLSwapChain::Initialize(const RenderWindowInfo& windowInfo)
 {
 	// init basic
 #ifdef PLAT_WIN
-	m_window = (HWND)window;
-	m_vSyncEnabled = vSync;
-
+	m_window = (HWND)windowInfo.get(windowInfo.userData, RenderWindowInfo::WINDOW);
 	m_width = 0;
 	m_height = 0;
 
-	// init datas
-
-	// set window
-	HWND windowHandle = m_window;
-
 	// get window parameters
 	RECT windowRect;
-	GetClientRect(windowHandle, &windowRect);
+	GetClientRect(m_window, &windowRect);
 
-	m_width = windowRect.right;
-	m_height = windowRect.bottom;
+	m_width = windowRect.right - windowRect.left;
+	m_height = windowRect.bottom - windowRect.top;
 
 	m_windowDC = GetDC(m_window);
 #endif
@@ -65,11 +64,5 @@ bool CGLSwapChain::SetBackbufferSize(int wide, int tall)
 	m_width = wide;
 	m_height = tall;
 
-	return true;
-}
-
-// individual swapbuffers call
-bool CGLSwapChain::SwapBuffers()
-{
 	return true;
 }

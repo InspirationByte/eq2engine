@@ -95,7 +95,7 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 	}
 
 	// set window
-	m_hwnd = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
+	m_hwnd = (HWND)params.windowInfo.get(params.windowInfo.userData, RenderWindowInfo::WINDOW);
 
 	// get window parameters
 	RECT windowRect;
@@ -472,11 +472,10 @@ bool CD3D9RenderLib::CaptureScreenshot(CImage& img)
 }
 
 // creates swap chain
-IEqSwapChain* CD3D9RenderLib::CreateSwapChain(void* window, bool windowed)
+IEqSwapChain* CD3D9RenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	CD3D9SwapChain* pNewChain = PPNew CD3D9SwapChain();
-	
-	if(!pNewChain->Initialize((HWND)window, s_renderApi.m_params.verticalSyncEnabled, windowed))
+	if(!pNewChain->Initialize(windowInfo))
 	{
 		MsgError("ERROR: Can't create D3D9 swapchain!\n");
 		delete pNewChain;

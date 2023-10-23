@@ -439,11 +439,11 @@ bool CGLRenderLib_GLX::CaptureScreenshot(CImage &img)
 }
 
 // creates swap chain
-IEqSwapChain* CGLRenderLib_GLX::CreateSwapChain(void* window, bool windowed)
+IEqSwapChain* CGLRenderLib_GLX::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	CGLSwapChain* pNewChain = PPNew CGLSwapChain();
 
-	if (!pNewChain->Initialize(window, s_renderApi.m_params.verticalSyncEnabled, windowed))
+	if (!pNewChain->Initialize(windowInfo))
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;

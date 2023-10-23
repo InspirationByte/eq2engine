@@ -428,12 +428,6 @@ IEqSwapChain* CD3D11RenderLib::CreateSwapChain(void* window, bool windowed)
 	return pNewChain;
 }
 
-// returns default swap chain
-IEqSwapChain* CD3D11RenderLib::GetDefaultSwapchain()
-{
-	return m_defaultSwapChain;
-}
-
 // destroys a swapchain
 void CD3D11RenderLib::DestroySwapChain(IEqSwapChain* swapChain)
 {

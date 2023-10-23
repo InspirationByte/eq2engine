@@ -36,24 +36,19 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true);
+	IEqSwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void			DestroySwapChain(IEqSwapChain* swapChain);
 
 protected:
 
 	WGPUInstance			m_instance{ nullptr };
 
-	WGPUDevice				m_rhiDevice{ nullptr };
 	WGPUBackendType			m_backendType{ WGPUBackendType_Null };
-
+	WGPUDevice				m_rhiDevice{ nullptr };
 	WGPUQueue				m_deviceQueue{ nullptr };
-	CWGPUSwapChain*			m_defaultSwapChain{ nullptr };
 
+	Array<CWGPUSwapChain*>	m_swapChains{ PP_SL };
 	CWGPUSwapChain*			m_currentSwapChain{ nullptr };
-
-	bool					m_active{ false };
-
-	bool					m_resized{ false };
 	bool					m_windowed{ false };
 };
 

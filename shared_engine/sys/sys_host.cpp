@@ -254,10 +254,10 @@ void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 #endif
 }
 
-static void* Helper_GetWindowInfo(RenderWindowInfo::Attribute attrib)
+static void* Helper_GetWindowInfo(void* userData, RenderWindowInfo::Attribute attrib)
 {
 	// set window info
-	SDL_Window* window = g_pHost->GetWindowHandle();
+	SDL_Window* window = reinterpret_cast<SDL_Window*>(userData);
 	SDL_SysWMinfo winfo;
 	SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
 	if( !SDL_GetWindowWMInfo(window, &winfo) )
@@ -357,7 +357,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	{
 		RenderWindowInfo &winInfo = materials_config.shaderApiParams.windowInfo;
-
+		winInfo.userData = m_window;
 		winInfo.get = Helper_GetWindowInfo;
 		
 		// needed for initialization

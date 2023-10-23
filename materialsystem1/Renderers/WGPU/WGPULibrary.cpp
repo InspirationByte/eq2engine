@@ -24,8 +24,6 @@ HOOK_TO_CVAR(r_screen);
 WGPURenderAPI s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
 
-#pragma optimize("", off)
-
 DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "1", nullptr, 0);
 
@@ -119,20 +117,32 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
 
 	m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
-	m_defaultSwapChain = PPNew CWGPUSwapChain(this, params.windowInfo);
-	m_defaultSwapChain->SetBackbufferSize(800, 600);
+
+	// create default swap chain
+	CreateSwapChain(params.windowInfo);
 
 	return true;
 }
 
 void CWGPURenderLib::ExitAPI()
 {
-	SAFE_DELETE(m_defaultSwapChain);
+	for (CWGPUSwapChain* swapChain : m_swapChains)
+		delete swapChain;
+	m_swapChains.clear();
+	m_currentSwapChain = nullptr;
+
+	m_backendType = WGPUBackendType_Null;
+	wgpuDeviceRelease(m_rhiDevice);
+	wgpuQueueRelease(m_deviceQueue);
+	wgpuInstanceRelease(m_instance);
+	m_instance = nullptr;
+	m_rhiDevice = nullptr;
+	m_deviceQueue = nullptr;
 }
 
 void CWGPURenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
-	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_defaultSwapChain;
+	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 
 	// process all internal async events or error callbacks
 	// this is dawn specific functionality, because in browser's WebGPU everything works with JS event loop
@@ -173,27 +183,34 @@ void CWGPURenderLib::EndFrame()
 
 	wgpuTextureViewRelease(backBufView);
 
+	//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
+
 	currentSwapChain->SwapBuffers();
 }
 
-IEqSwapChain* CWGPURenderLib::CreateSwapChain(void* window, bool windowed)
+IEqSwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
-	return nullptr;
+	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo);
+	m_swapChains.append(swapChain);
+	return swapChain;
 }
 
 void CWGPURenderLib::DestroySwapChain(IEqSwapChain* swapChain)
 {
-
+	if (m_swapChains.fastRemove(static_cast<CWGPUSwapChain*>(swapChain)))
+		delete swapChain;
 }
 
 void CWGPURenderLib::SetBackbufferSize(const int w, const int h)
 {
-	m_defaultSwapChain->SetBackbufferSize(w, h);
+	m_swapChains[0]->SetBackbufferSize(w, h);
 }
 
 // changes fullscreen mode
 bool CWGPURenderLib::SetWindowed(bool enabled)
 {
+	// FIXME: currently switching to exclusive fullscreen will guarantee device lost
+	// need to handle it somehow...
 	m_windowed = enabled;
 	return true;
 }

@@ -145,7 +145,7 @@ bool CGLRenderLib_EGL::InitAPI(const ShaderAPIParams& params)
 	ASSERT_MSG(params.windowInfo.get != nullptr, "you must specify window handle!");
 
 	m_windowInfo = params.windowInfo;
-	EGLNativeDisplayType displayType = (EGLNativeDisplayType)m_windowInfo.get(RenderWindowInfo::DISPLAY);
+	EGLNativeDisplayType displayType = (EGLNativeDisplayType)m_windowInfo.get(m_windowInfo.userData, RenderWindowInfo::DISPLAY);
 	m_eglDisplay = eglGetDisplay(displayType);
 
 	Msg("Initializing EGL context...\n");
@@ -467,13 +467,13 @@ bool CGLRenderLib_EGL::CreateSurface()
 	if (m_windowInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
 	{
 		// SDL2 does not maintain the window for Vulkan mode, so we have to create one
-		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(RenderWindowInfo::SURFACE);
+		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(m_windowInfo.userData, RenderWindowInfo::SURFACE);
 		m_hwnd = (EGLNativeWindowType)wl_egl_window_create(wlSurface, 512, 512);
 	}
 	else
 #endif // PLAT_LINUX
 	{
-		m_hwnd = (EGLNativeWindowType)m_windowInfo.get(RenderWindowInfo::WINDOW);
+		m_hwnd = (EGLNativeWindowType)m_windowInfo.get(m_windowInfo.userData, RenderWindowInfo::WINDOW);
 	}
 
 #ifdef PLAT_ANDROID
@@ -526,12 +526,12 @@ bool CGLRenderLib_EGL::CaptureScreenshot(CImage &img)
 }
 
 // creates swap chain
-IEqSwapChain* CGLRenderLib_EGL::CreateSwapChain(void* window, bool windowed)
+IEqSwapChain* CGLRenderLib_EGL::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	CGLSwapChain* pNewChain = PPNew CGLSwapChain();
 
 #ifdef PLAT_WIN
-	if (!pNewChain->Initialize((HWND)window, s_renderApi.m_params.verticalSyncEnabled, windowed))
+	if (!pNewChain->Initialize(windowInfo))
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;

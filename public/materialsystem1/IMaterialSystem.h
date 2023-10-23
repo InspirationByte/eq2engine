@@ -120,7 +120,7 @@ public:
 	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
 	virtual void					SetDeviceFocused(bool inFocus) = 0;
 
-	virtual IEqSwapChain*			CreateSwapChain(void* windowHandle) = 0;
+	virtual IEqSwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
 	virtual void					DestroySwapChain(IEqSwapChain* chain) = 0;
 
 	virtual bool					SetWindowed(bool enable) = 0;

@@ -54,9 +54,6 @@ public:
 	// destroys a swapchain
 	void			DestroySwapChain(IEqSwapChain* swapChain);
 
-	// returns default swap chain
-	IEqSwapChain*	GetDefaultSwapchain();
-
 protected:
 
 	HWND					m_hwnd{ nullptr };

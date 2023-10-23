@@ -191,8 +191,8 @@ bool CGLRenderLib_WGL::InitAPI(const ShaderAPIParams& params)
 	if (displayNumber >= GetSystemMetrics(SM_CMONITORS))
 		displayNumber = 0;
 
-	m_hwnd = (HWND)params.windowInfo.get(RenderWindowInfo::WINDOW);
-	m_hdc = (HDC)params.windowInfo.get(RenderWindowInfo::DISPLAY);
+	m_hwnd = (HWND)params.windowInfo.get(params.windowInfo.userData, RenderWindowInfo::WINDOW);
+	m_hdc = (HDC)params.windowInfo.get(params.windowInfo.userData, RenderWindowInfo::DISPLAY);
 
 	// Enumerate display devices
 	int monitorCounter = displayNumber;
@@ -531,11 +531,11 @@ bool CGLRenderLib_WGL::CaptureScreenshot(CImage &img)
 }
 
 // creates swap chain
-IEqSwapChain* CGLRenderLib_WGL::CreateSwapChain(void* window, bool windowed)
+IEqSwapChain* CGLRenderLib_WGL::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	CGLSwapChain* pNewChain = PPNew CGLSwapChain();
 
-	if (!pNewChain->Initialize((HWND)window, s_renderApi.m_params.verticalSyncEnabled, windowed))
+	if (!pNewChain->Initialize(windowInfo))
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;

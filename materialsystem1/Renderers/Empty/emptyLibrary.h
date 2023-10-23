@@ -32,7 +32,7 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true) {return nullptr;}
+	IEqSwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) {return nullptr;}
 	void			DestroySwapChain(IEqSwapChain* swapChain) {}
 
 protected:

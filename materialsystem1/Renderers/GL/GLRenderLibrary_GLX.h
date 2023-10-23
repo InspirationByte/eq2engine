@@ -54,7 +54,7 @@ public:
 
 	bool					CaptureScreenshot(CImage &img);
 
-	IEqSwapChain*			CreateSwapChain(void* window, bool windowed = true);
+	IEqSwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void					DestroySwapChain(IEqSwapChain* swapChain);
 
 	// start capturing GL commands from specific thread id

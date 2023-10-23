@@ -1145,23 +1145,26 @@ bool CMaterialSystem::CaptureScreenshot(CImage &img)
 void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 {
 	m_backbufferSize = IVector2D(wide, tall);
-	if(m_renderLibrary)
-		m_renderLibrary->SetBackbufferSize(wide, tall);
+	if (!m_renderLibrary)
+		return;
+
+	m_renderLibrary->SetBackbufferSize(wide, tall);
 }
 
 // reports device focus mode
 void CMaterialSystem::SetDeviceFocused(bool inFocus)
 {
-	if (m_renderLibrary)
-		m_renderLibrary->SetFocused(inFocus);
+	if (!m_renderLibrary)
+		return;
+	m_renderLibrary->SetFocused(inFocus);
 }
 
-IEqSwapChain* CMaterialSystem::CreateSwapChain(void* windowHandle)
+IEqSwapChain* CMaterialSystem::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
-	if(m_renderLibrary)
-		return m_renderLibrary->CreateSwapChain(windowHandle);
+	if (!m_renderLibrary)
+		return nullptr;
 
-	return nullptr;
+	m_renderLibrary->CreateSwapChain(windowInfo);
 }
 
 void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)

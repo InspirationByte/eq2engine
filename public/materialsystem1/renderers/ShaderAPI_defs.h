@@ -29,10 +29,11 @@ struct RenderWindowInfo
 		SURFACE,
 		TOPLEVEL
 	};
-	using GetterFunc = void*(*)(Attribute attrib);
+	using GetterFunc = void*(*)(void* userData, Attribute attrib);
 
 	ERHIWindowType	windowType{ RHI_WINDOW_HANDLE_UNKNOWN };
-	GetterFunc 		get{nullptr};
+	GetterFunc 		get{ nullptr };
+	void*			userData{ nullptr };
 };
 
 //---------------------------------------

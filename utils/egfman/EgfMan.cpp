@@ -405,7 +405,7 @@ static void InitMatSystem(void* window)
 
 		RenderWindowInfo& winInfo = materials_config.shaderApiParams.windowInfo;
 		winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
-		winInfo.get = [](RenderWindowInfo::Attribute attrib) -> void* {
+		winInfo.get = [](void*, RenderWindowInfo::Attribute attrib) -> void* {
 			switch (attrib)
 			{
 			case RenderWindowInfo::WINDOW:
