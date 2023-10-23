@@ -4,8 +4,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
-#include <dawn/dawn_proc.h>
-#include <webgpu/webgpu_cpp.h>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif // _WIN32
+
+#include <webgpu/webgpu.h>
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
@@ -26,65 +31,35 @@ IShaderAPI* g_renderAPI = &s_renderApi;
 
 #pragma optimize("", off)
 
-DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
+DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "1", nullptr, 0);
 
-static void DawnErrorHandler(WGPUErrorType /*type*/, const char* message, void*)
+static void OnWGPUDeviceError(WGPUErrorType /*type*/, const char* message, void*)
 {
 	if (wgpu_break_on_error.GetBool())
 	{
-		_DEBUG_BREAK;
+		ASSERT_FAIL("WGPU device validation error:\n\n%s", message);
 	}
 
-	if(wgpu_report_errors.GetBool())
+	if (wgpu_report_errors.GetBool())
 		MsgError("[WGPU] %s\n", message);
+
 }
 
-static dawn::native::Adapter RequestWGPUAdapter(WGPUBackendType type1st, WGPUBackendType type2nd = WGPUBackendType_Null)
+static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata)
 {
-	static dawn::native::Instance instance;
-	instance.DiscoverDefaultAdapters();
-
-	wgpu::AdapterProperties properties;
-	std::vector<dawn::native::Adapter> adapters = instance.GetAdapters();
-	for (auto it = adapters.begin(); it != adapters.end(); ++it)
+	if (status != WGPURequestAdapterStatus_Success)
 	{
-		it->GetProperties(&properties);
-		if (static_cast<WGPUBackendType>(properties.backendType) == type1st)
-			return *it;
+		// cannot find adapter?
+		ErrorMsg("%s", message);
 	}
-	if (type2nd > WGPUBackendType_Null)
+	else
 	{
-		for (auto it = adapters.begin(); it != adapters.end(); ++it)
-		{
-			it->GetProperties(&properties);
-			if (static_cast<WGPUBackendType>(properties.backendType) == type2nd)
-				return *it;
-		}
+		// use first adapter provided
+		WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata);
+		if (*result == nullptr)
+			*result = adapter;
 	}
-	return dawn::native::Adapter();
-}
-
-static WGPUDevice CreateDevice(WGPUBackendType& backendType)
-{
-	if (backendType > WGPUBackendType_OpenGLES) {
-#ifdef DAWN_ENABLE_BACKEND_VULKAN
-		backendType = WGPUBackendType_Vulkan;
-#elif defined(DAWN_ENABLE_BACKEND_D3D12)
-		backendType = WGPUBackendType_D3D12;
-#else
-#endif
-	}
-	
-	dawn::native::Adapter adapter = RequestWGPUAdapter(backendType);
-	if (!adapter)
-		return nullptr;
-
-	wgpu::AdapterProperties properties;
-	adapter.GetProperties(&properties);
-
-	backendType = static_cast<WGPUBackendType>(properties.backendType);
-	return adapter.CreateDevice();
 }
 
 CWGPURenderLib::CWGPURenderLib()
@@ -98,17 +73,13 @@ CWGPURenderLib::~CWGPURenderLib()
 
 bool CWGPURenderLib::InitCaps()
 {
-	WGPUBackendType backendType = WGPUBackendType_Force32;
-	WGPUDevice rhiDevice = CreateDevice(backendType);
-	if (!rhiDevice)
+	//WGPUInstanceDescriptor instDesc;
+	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
+	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
+
+	m_instance = wgpuCreateInstance(nullptr);
+	if (!m_instance)
 		return false;
-	m_backendType = backendType;
-	m_rhiDevice = rhiDevice;
-
-	DawnProcTable procs(dawn::native::GetProcs());
-	procs.deviceSetUncapturedErrorCallback(m_rhiDevice, DawnErrorHandler, nullptr);
-
-	dawnProcSetProcs(&procs);
 
 	return true;
 }
@@ -118,13 +89,43 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 	return g_renderAPI;
 }
 
-bool CWGPURenderLib::InitAPI(const ShaderAPIParams &params)
+bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
-	m_window = params.windowInfo.get(RenderWindowInfo::WINDOW);
+	WGPUAdapter adapter = nullptr;
+	WGPURequestAdapterOptions options{};
+	//options.compatibleSurface = surface;
+	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &adapter);
+
+	if (!adapter)
+		return false;
+
+	{
+		WGPUAdapterProperties properties = { 0 };
+		wgpuAdapterGetProperties(adapter, &properties);
+
+		Msg("WGPU adapter: %s %s %s\n", properties.name, properties.driverDescription, properties.vendorName);
+	}
+
+	{
+		WGPUSupportedLimits supLimits = { 0 };
+		wgpuAdapterGetLimits(adapter, &supLimits);
+
+		// extra features: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Features.cpp
+		WGPUDeviceDescriptor desc{};
+		WGPURequiredLimits reqLimits;
+		reqLimits.limits = supLimits.limits;
+		desc.requiredLimits = &reqLimits;
+
+		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &desc);
+		if (!m_rhiDevice)
+			return false;
+	}
+
+	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
 
 	m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
-
-	m_defaultSwapChain = PPNew CWGPUSwapChain(this, m_window);
+	m_defaultSwapChain = PPNew CWGPUSwapChain(this, params.windowInfo);
+	m_defaultSwapChain->SetBackbufferSize(800, 600);
 
 	return true;
 }
@@ -137,6 +138,10 @@ void CWGPURenderLib::ExitAPI()
 void CWGPURenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_defaultSwapChain;
+
+	// process all internal async events or error callbacks
+	// this is dawn specific functionality, because in browser's WebGPU everything works with JS event loop
+	wgpuDeviceTick(m_rhiDevice);
 }
 
 void CWGPURenderLib::EndFrame()
@@ -148,9 +153,7 @@ void CWGPURenderLib::EndFrame()
 	colorDesc.view = backBufView;
 	colorDesc.loadOp = WGPULoadOp_Clear;
 	colorDesc.storeOp = WGPUStoreOp_Store;
-
-	// Dawn has both clearValue/clearColor but only Color works; Emscripten only has Value
-	colorDesc.clearColor = WGPUColor{ 0.9, 0.1, 0.2, 1.0 };
+	colorDesc.clearValue = WGPUColor{ 0.9, 0.1, 0.2, 1.0 };
 
 	// my first command buffer
 	{
@@ -176,6 +179,16 @@ void CWGPURenderLib::EndFrame()
 	wgpuTextureViewRelease(backBufView);
 
 	currentSwapChain->SwapBuffers();
+}
+
+IEqSwapChain* CWGPURenderLib::CreateSwapChain(void* window, bool windowed)
+{
+	return nullptr;
+}
+
+void CWGPURenderLib::DestroySwapChain(IEqSwapChain* swapChain)
+{
+
 }
 
 void CWGPURenderLib::SetBackbufferSize(const int w, const int h)

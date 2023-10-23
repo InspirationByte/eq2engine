@@ -20,7 +20,7 @@ public:
 
 	bool			InitCaps();
 
-	bool			InitAPI(const ShaderAPIParams &params);
+	bool			InitAPI(const ShaderAPIParams& params);
 	void			ExitAPI();
 
 	void			BeginFrame(IEqSwapChain* swapChain = nullptr);
@@ -36,10 +36,12 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true) {return nullptr;}
-	void			DestroySwapChain(IEqSwapChain* swapChain) {}
+	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true);
+	void			DestroySwapChain(IEqSwapChain* swapChain);
 
 protected:
+
+	WGPUInstance			m_instance{ nullptr };
 
 	WGPUDevice				m_rhiDevice{ nullptr };
 	WGPUBackendType			m_backendType{ WGPUBackendType_Null };
@@ -49,7 +51,6 @@ protected:
 
 	CWGPUSwapChain*			m_currentSwapChain{ nullptr };
 
-	void*					m_window{ nullptr };
 	bool					m_active{ false };
 
 	bool					m_resized{ false };

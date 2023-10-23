@@ -1,20 +1,16 @@
 -- WebGPU as a usage
 usage "wgpu-dawn"
-	links {
-		"dawn_native.dll.lib",
-		"dawn_proc.dll.lib",
+	includedirs {
+		"./include"
 	}
-	
-	filter "system:Linux"
-		includedirs {
-            "/usr/include/SDL2"
-        }
+	libdirs { 
+		"./lib/%{cfg.platform}/%{cfg.buildcfg}",
+	}
 
 	filter "system:Windows"
-		includedirs {
-			"./include"
+		links {
+			"webgpu.lib",
 		}
-		libdirs { 
-			"./lib/%{cfg.platform}/%{cfg.buildcfg}",
-		}
-
+		
+	filter "system:Linux"
+	

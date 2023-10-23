@@ -1,7 +1,7 @@
 #pragma once
 #include <webgpu/webgpu.h>
-#include <dawn/dawn_wsi.h>
 #include "renderers/IEqSwapChain.h"
+#include "renderers/ShaderAPI_defs.h"
 
 class CWGPURenderLib;
 
@@ -11,9 +11,9 @@ public:
 	friend class CWGPURenderLib;
 
 	~CWGPUSwapChain();
-	CWGPUSwapChain(CWGPURenderLib* host, void* window);
+	CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo);
 
-	void*			GetWindow() const { return m_window; }
+	void*			GetWindow() const;
 	int				GetMSAASamples() const { return m_msaaSamples; }
 
 	ITexturePtr		GetBackbuffer() const;
@@ -24,12 +24,13 @@ public:
 	bool			SwapBuffers();
 	
 protected:
-	CWGPURenderLib*				m_host{ nullptr };
+	CWGPURenderLib*		m_host{ nullptr };
 
-	void*						m_window{ nullptr };
-	DawnSwapChainImplementation m_swapImpl;
-	WGPUTextureFormat			m_swapFmt{ WGPUTextureFormat_Undefined };
-	WGPUSwapChain				m_swapChain{ nullptr };
-	IVector2D					m_backbufferSize{ 0 };
-	int							m_msaaSamples{ 1 };
+	RenderWindowInfo	m_winInfo;
+
+	WGPUTextureFormat	m_swapFmt{ WGPUTextureFormat_Undefined };
+	WGPUSurface			m_surface{ nullptr };
+	WGPUSwapChain		m_swapChain{ nullptr };
+	IVector2D			m_backbufferSize{ 0 };
+	int					m_msaaSamples{ 1 };
 };

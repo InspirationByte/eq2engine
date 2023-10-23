@@ -331,35 +331,25 @@ project "eqGLRHI"
 			"EGL", "GL", "GLU", "wayland-egl", "X11", "Xxf86vm", "Xext"
 		}
 
-if os.getenv("VULKAN_SDK") ~= nil then
-	-- WebGPU renderer (atm Windows-only)
-	project "eqWGPURHI"
-		kind "SharedLib"
-		unitybuild "on"
-		uses {
-			"corelib", "frameworkLib", "e2Core",
-			"eqRHIBaseLib", "wgpu-dawn"
-		}
-		defines{
-			"EQRHI_WGPU",
-			"RENDERER_TYPE=4"
-		}
-		files {
-			Folders.matsystem1.. "renderers/WGPU/**.cpp",
-			Folders.matsystem1.."renderers/WGPU/**.h"
-		}
-		filter "system:Windows"
-			includedirs {
-				os.getenv("VULKAN_SDK").. "/Include"
-			}
-			libdirs {
-				os.getenv("VULKAN_SDK").. "/Lib"
-			}
-else
-	print("VULKAN_SDK is missing")
-end
-
 	if os.target() == "windows" then
+	
+		-- WebGPU renderer (atm Windows-only)
+		project "eqWGPURHI"
+			kind "SharedLib"
+			unitybuild "on"
+			uses {
+				"corelib", "frameworkLib", "e2Core",
+				"eqRHIBaseLib", "wgpu-dawn"
+			}
+			defines{
+				"EQRHI_WGPU",
+				"RENDERER_TYPE=4"
+			}
+			files {
+				Folders.matsystem1.. "renderers/WGPU/**.cpp",
+				Folders.matsystem1.."renderers/WGPU/**.h"
+			}
+	
 		-- Direct3D9 renderer
 		project "eqD3D9RHI"
 			kind "SharedLib"

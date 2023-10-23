@@ -308,6 +308,8 @@ static void* Helper_GetWindowInfo(RenderWindowInfo::Attribute attrib)
 					return (void*)winfo.info.win.window;
 				case RenderWindowInfo::DISPLAY:
 					return (void*)winfo.info.win.hdc;
+				case RenderWindowInfo::TOPLEVEL:
+					return (void*)winfo.info.win.hinstance;
 			}
 #endif // PLAT_WIN
 		default:

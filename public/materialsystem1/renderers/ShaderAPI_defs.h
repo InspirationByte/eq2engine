@@ -8,6 +8,33 @@
 #pragma once
 #include "ShaderAPICaps.h"
 
+enum ERHIWindowType : int
+{
+	RHI_WINDOW_HANDLE_UNKNOWN = -1,
+
+	RHI_WINDOW_HANDLE_NATIVE_WINDOWS,
+	RHI_WINDOW_HANDLE_NATIVE_X11,
+	RHI_WINDOW_HANDLE_NATIVE_WAYLAND,
+	RHI_WINDOW_HANDLE_NATIVE_COCOA,
+	RHI_WINDOW_HANDLE_NATIVE_ANDROID,
+};
+
+// designed to be sent as windowHandle param
+struct RenderWindowInfo
+{
+	enum Attribute
+	{
+		DISPLAY,
+		WINDOW,
+		SURFACE,
+		TOPLEVEL
+	};
+	using GetterFunc = void*(*)(Attribute attrib);
+
+	ERHIWindowType	windowType{ RHI_WINDOW_HANDLE_UNKNOWN };
+	GetterFunc 		get{nullptr};
+};
+
 //---------------------------------------
 //        HIGH LEVEL CONSTANTS
 //---------------------------------------

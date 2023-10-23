@@ -7,6 +7,8 @@
 
 #pragma once
 
+struct RenderWindowInfo;
+
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
