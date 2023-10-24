@@ -132,7 +132,7 @@ bool CGLRenderLib_GLX::InitAPI(const ShaderAPIParams& params)
 			m_fullScreenMode = dmode;
 	}
 
-	m_window = (Window)params.windowInfo.get(RenderWindowInfo::WINDOW);
+	m_window = (Window)params.windowInfo.get(params.windowInfo.userData, RenderWindowInfo::WINDOW);
 
     XWindowAttributes winAttrib;
     XGetWindowAttributes(m_display, m_window, &winAttrib);

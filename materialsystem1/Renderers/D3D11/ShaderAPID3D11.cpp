@@ -2288,7 +2288,7 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(const BufferInfo& bufferInfo)
 	pBuffer->m_size = bufferInfo.elementCapacity * bufferInfo.elementSize;
 	pBuffer->m_usage = g_d3d9_bufferUsages[bufferInfo.accessType];
 	pBuffer->m_numVertices = bufferInfo.elementCapacity;
-	pBuffer->m_strideSize = bufferInfo.elementSize;
+	pBuffer->m_bufElemSize = bufferInfo.elementSize;
 
 	D3D10_BUFFER_DESC desc;
 	desc.Usage = g_d3d9_bufferUsages[bufferInfo.accessType];

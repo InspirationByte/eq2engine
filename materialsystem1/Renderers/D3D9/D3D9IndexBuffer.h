@@ -11,46 +11,36 @@
 
 class CD3D9IndexBuffer : public IIndexBuffer
 {
+	friend class ShaderAPID3D9;
 public:
-	
-	friend class			ShaderAPID3D9;
+	~CD3D9IndexBuffer();
 
-							CD3D9IndexBuffer();
-							~CD3D9IndexBuffer();
+	int						GetSizeInBytes() const { return m_bufElemCapacity * m_bufElemSize; }
+	int						GetIndicesCount() const { return m_bufElemCapacity; }
+	int						GetIndexSize() const { return m_bufElemSize; }
 
-	int						GetSizeInBytes() const;
-	int						GetIndexSize() const;
-	int						GetIndicesCount() const;
+	void					Update(void* data, int size, int offset = 0);
 
-	// updates buffer without map/unmap operations which are slower
-	void					Update(void* data, int size, int offset, bool discard /*= true*/);
-
-	// locks index buffer and gives to programmer buffer data
-	bool					Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly);
-
-	// unlocks buffer
+	bool					Lock(int lockOfs, int sizeToLock, void** outdata, int flags);
 	void					Unlock();
 
 	void					ReleaseForRestoration();
 	void					Restore();
 
 protected:
-	LPDIRECT3DINDEXBUFFER9	m_pIndexBuffer;
+	IDirect3DIndexBuffer9*	m_rhiBuffer{ 0 };
+	DWORD					m_bufUsage{ 0 };
 
-	int						m_nIndices;
-	int						m_nIndexSize;
+	int						m_bufElemCapacity{ 0 };
+	int						m_bufElemSize{ 0 };
 
-	int						m_nInitialSize;
+	int						m_lockFlags{ 0 };
 
-	DWORD					m_nUsage;
-
-	bool					m_bIsLocked;
-	bool					m_bLockFail;
-
-	struct IBRestoreData
+	struct RestoreData
 	{
+		~RestoreData();
 		void*	data;
 		int		size;
 	};
-	IBRestoreData*			m_restore{ nullptr };
+	RestoreData*			m_restore{ nullptr };
 };

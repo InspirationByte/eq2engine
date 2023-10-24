@@ -23,12 +23,14 @@ IVertexFormat* WGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<Ver
 	m_VFList.append(pVF);
 	return pVF;
 }
+
 IVertexBuffer* WGPURenderAPI::CreateVertexBuffer(const BufferInfo& bufferInfo)
 {
 	CWGPUVertexBuffer* buffer = new CWGPUVertexBuffer(bufferInfo.elementSize);
 	m_VBList.append(buffer);
 	return buffer;
 }
+
 IIndexBuffer* WGPURenderAPI::CreateIndexBuffer(const BufferInfo& bufferInfo)
 {
 	CWGPUIndexBuffer* buffer = new CWGPUIndexBuffer(bufferInfo.elementSize);

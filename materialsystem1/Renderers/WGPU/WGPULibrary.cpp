@@ -146,44 +146,48 @@ void CWGPURenderLib::BeginFrame(IEqSwapChain* swapChain)
 
 	// process all internal async events or error callbacks
 	// this is dawn specific functionality, because in browser's WebGPU everything works with JS event loop
+	// FIXME: do it in separate thread?
 	wgpuDeviceTick(m_rhiDevice);
 }
 
 void CWGPURenderLib::EndFrame()
 {
 	CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
-	WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
 
-	WGPURenderPassColorAttachment colorDesc = {};
-	colorDesc.view = backBufView;
-	colorDesc.loadOp = WGPULoadOp_Clear;
-	colorDesc.storeOp = WGPUStoreOp_Store;
-	colorDesc.clearValue = WGPUColor{ 0.9, 0.1, 0.2, 1.0 };
-
-	// my first command buffer
 	{
-		WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
-		{
-			WGPURenderPassDescriptor renderPass = {};
-			renderPass.colorAttachmentCount = 1;
-			renderPass.colorAttachments = &colorDesc;
+		WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
 
-			WGPURenderPassEncoder renderPassEnc = wgpuCommandEncoderBeginRenderPass(encoder, &renderPass);	
-			wgpuRenderPassEncoderEnd(renderPassEnc);
-			wgpuRenderPassEncoderRelease(renderPassEnc);
-		}
-		{
-			WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, nullptr);
-			wgpuCommandEncoderRelease(encoder);
+		WGPURenderPassColorAttachment colorDesc = {};
+		colorDesc.view = backBufView;
+		colorDesc.loadOp = WGPULoadOp_Clear;
+		colorDesc.storeOp = WGPUStoreOp_Store;
+		colorDesc.clearValue = WGPUColor{ 0.9, 0.1, 0.2, 1.0 };
 
-			wgpuQueueSubmit(m_deviceQueue, 1, &commands);
-			wgpuCommandBufferRelease(commands);	
+		// my first command buffer
+		{
+			WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
+			{
+				WGPURenderPassDescriptor renderPass = {};
+				renderPass.colorAttachmentCount = 1;
+				renderPass.colorAttachments = &colorDesc;
+
+				WGPURenderPassEncoder renderPassEnc = wgpuCommandEncoderBeginRenderPass(encoder, &renderPass);
+				wgpuRenderPassEncoderEnd(renderPassEnc);
+				wgpuRenderPassEncoderRelease(renderPassEnc);
+			}
+			{
+				WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, nullptr);
+				wgpuCommandEncoderRelease(encoder);
+
+				wgpuQueueSubmit(m_deviceQueue, 1, &commands);
+				wgpuCommandBufferRelease(commands);
+			}
 		}
+
+		wgpuTextureViewRelease(backBufView);
+
+		//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
 	}
-
-	wgpuTextureViewRelease(backBufView);
-
-	//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
 
 	currentSwapChain->SwapBuffers();
 }

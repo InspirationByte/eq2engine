@@ -33,12 +33,12 @@ public:
 	int			GetStrideSize() const { return m_stride; }
 
 	// updates buffer without map/unmap operations which are slower
-	void		Update(void* data, int size, int offset, bool discard = true)
+	void		Update(void* data, int size, int offset = 0)
 	{
 	}
 
 	// locks vertex buffer and gives to programmer buffer data
-	bool		Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
+	bool		Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
 	{
 		*outdata = PPAlloc(sizeToLock*m_stride);
 		return true;
@@ -69,12 +69,12 @@ public:
 	int			GetIndicesCount()  const {return 0;}
 
 	// updates buffer without map/unmap operations which are slower
-	void		Update(void* data, int size, int offset, bool discard = true)
+	void		Update(void* data, int size, int offset = 0)
 	{
 	}
 
 	// locks vertex buffer and gives to programmer buffer data
-	bool		Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
+	bool		Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
 	{
 		*outdata = malloc(sizeToLock*m_stride);
 		return true;

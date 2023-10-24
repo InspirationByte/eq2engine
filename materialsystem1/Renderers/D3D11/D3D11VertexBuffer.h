@@ -36,7 +36,7 @@ protected:
 	int				m_flags{ 0 };
 	int				m_size{ 0 };
 	int				m_numVertices{ 0 };
-	int				m_strideSize{ -1 };
+	int				m_bufElemSize{ -1 };
 	D3D10_USAGE		m_usage{ D3D10_USAGE_DEFAULT };
 
 	bool			m_isLocked{ false };

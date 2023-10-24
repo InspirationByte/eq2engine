@@ -14,102 +14,77 @@
 
 extern ShaderAPID3D9 s_renderApi;
 
-CD3D9IndexBuffer::CD3D9IndexBuffer()
+CD3D9IndexBuffer::RestoreData::~RestoreData()
 {
-	m_nIndices = 0;
-	m_nIndexSize = 0;
-
-	m_nInitialSize = 0;
-
-	m_nUsage = 0;
-	m_pIndexBuffer = 0;
-	m_bIsLocked = false;
-	m_bLockFail = false;
+	PPFree(data);
 }
 
 CD3D9IndexBuffer::~CD3D9IndexBuffer()
 {
-	if (m_pIndexBuffer)
-		m_pIndexBuffer->Release();
+	SAFE_DELETE(m_restore);
+	if (m_rhiBuffer)
+		m_rhiBuffer->Release();
 }
 
 void CD3D9IndexBuffer::ReleaseForRestoration()
 {
-	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
+	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	// dynamic VBO's uses a D3DPOOL_DEFAULT
-	if(dynamic)
+	if (!dynamic)
+		return;
+
+	SAFE_DELETE(m_restore);
+	m_restore = PPNew RestoreData;
+
+	const int lockSize = m_bufElemSize * m_bufElemCapacity;
+	m_restore->size = lockSize;
+	m_restore->data = PPAlloc(lockSize);
+
+	void* src = nullptr;
+
+	if (m_rhiBuffer->Lock(0, lockSize, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK) == D3D_OK)
 	{
-		m_restore = PPNew IBRestoreData;
+		memcpy(m_restore->data, src, m_restore->size);
 
-		int lock_size = m_nIndices*m_nIndexSize;
-		m_restore->size = lock_size;
-		m_restore->data = PPAlloc(lock_size);
+		m_rhiBuffer->Unlock();
+		m_rhiBuffer->Release();
 
-		void *src = nullptr;
-
-		if(m_pIndexBuffer->Lock(0, lock_size, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK ) == D3D_OK)
-		{
-			memcpy(m_restore->data, src, m_restore->size);
-			m_pIndexBuffer->Unlock();
-			m_pIndexBuffer->Release();
-
-			m_pIndexBuffer = nullptr;
-		}
-		else
-		{
-			ErrorMsg("Index buffer restoration failed.\n");
-			exit(0);
-		}
-
+		m_rhiBuffer = nullptr;
+	}
+	else
+	{
+		ASSERT_FAIL("Vertex buffer storage failed.");
 	}
 }
 
 void CD3D9IndexBuffer::Restore()
 {
-	if(!m_restore)
-		return; // nothing to restore
+	if (!m_restore)
+		return;
 
-	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
-
-	if (s_renderApi.m_pD3DDevice->CreateIndexBuffer(
-		m_nInitialSize, m_nUsage, 
-		m_nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, 
-		dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pIndexBuffer, nullptr) != D3D_OK)
+	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
+	const D3DPOOL pool = dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED;
+	const D3DFORMAT format = m_bufElemSize == 2 ? D3DFMT_INDEX16 : D3DFMT_INDEX32;
+	if (FAILED(s_renderApi.m_pD3DDevice->CreateIndexBuffer(m_restore->size, m_bufUsage, format, pool, &m_rhiBuffer, nullptr)))
 	{
-		ErrorMsg("Index buffer restoration failed on creation\n");
-		exit(0);
+		ASSERT_FAIL("Vertex buffer restoration failed.");
 	}
 
-	void *dest = nullptr;
-
-	if(m_pIndexBuffer->Lock(0, m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0 ) == D3D_OK)
+	void* dest = nullptr;
+	if (FAILED(m_rhiBuffer->Lock(0, m_restore->size, &dest, dynamic ? D3DLOCK_DISCARD : 0)))
 	{
-		memcpy(dest, m_restore->data, m_restore->size);
-		m_pIndexBuffer->Unlock();
+		SAFE_DELETE(m_restore);
+		return;
 	}
 
-	PPFree(m_restore->data);
+	memcpy(dest, m_restore->data, m_restore->size);
+	m_rhiBuffer->Unlock();
+
 	SAFE_DELETE(m_restore);
 }
 
-int CD3D9IndexBuffer::GetSizeInBytes() const
-{
-	return m_nIndexSize * m_nIndices;
-}
-
-int CD3D9IndexBuffer::GetIndexSize() const
-{
-	return m_nIndexSize;
-}
-
-int CD3D9IndexBuffer::GetIndicesCount() const
-{
-	return m_nIndices;
-}
-
-// updates buffer without map/unmap operations which are slower
-void CD3D9IndexBuffer::Update(void* data, int size, int offset, bool discard /*= true*/)
+void CD3D9IndexBuffer::Update(void* data, int size, int offset)
 {
 	if (m_restore)
 		return;
@@ -120,37 +95,42 @@ void CD3D9IndexBuffer::Update(void* data, int size, int offset, bool discard /*=
 			return;
 	}
 
-	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC);
+	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC);
 
-	if(m_bIsLocked)
+	if (m_lockFlags)
 	{
-		ASSERT(!"Vertex buffer can't be updated while locked!");
+		ASSERT(!"Buffer can't be updated while locked!");
 		return;
 	}
 
-	if(offset+size > m_nIndices && !dynamic)
+	if (!dynamic && offset + size > m_bufElemCapacity)
 	{
-		ASSERT(!"Update() with bigger size cannot be used on static vertex buffer!");
+		ASSERT(!"Update() with bigger size cannot be used on static buffer!");
 		return;
 	}
 
-	int nLockByteCount = size*m_nIndexSize;
+	const int lockByteCount = size * m_bufElemSize;
+	const int lockByteOffset = offset * m_bufElemSize;
+
+	const DWORD lockFlags = D3DLOCK_NOSYSLOCK
+		| (lockByteOffset ? 0 : D3DLOCK_DISCARD);
 
 	void* outData = nullptr;
+	if (FAILED(m_rhiBuffer->Lock(lockByteOffset, lockByteCount, &outData, lockFlags)))
+		return;
 
-	if(m_pIndexBuffer->Lock(offset*m_nIndexSize, nLockByteCount, &outData, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
-	{
-		memcpy(outData, data, nLockByteCount);
-		m_pIndexBuffer->Unlock();
+	memcpy(outData, data, lockByteCount);
+	m_rhiBuffer->Unlock();
 
-		if(dynamic && discard && offset == 0)
-			m_nIndices = size;
-	}
+	if (dynamic)
+		m_bufElemCapacity = offset + size;
 }
 
 // locks vertex buffer and gives to programmer buffer data
-bool CD3D9IndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
+bool CD3D9IndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
 {
+	ASSERT_MSG(flags != 0, "Lock flags are invalid - specify flags from BUFFER_FLAGS");
+
 	if (m_restore)
 		return false;
 
@@ -160,37 +140,39 @@ bool CD3D9IndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, bool re
 			return false;
 	}
 
-	if(m_bIsLocked)
+	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC);
+	const bool write = (flags & BUFFER_FLAG_WRITE);
+	const bool readBack = (flags & BUFFER_FLAG_READ);
+	const int lockByteCount = sizeToLock * m_bufElemSize;
+	const int lockByteOffset = lockOfs * m_bufElemSize;
+
+	if (m_lockFlags)
 	{
-		ASSERT(!"Index buffer already locked! (You must unlock it first!)");
+		ASSERT_FAIL("Index buffer already locked! (You must unlock it first!)");
 		return false;
 	}
 
-	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
-
-	if(sizeToLock > m_nIndices && !dynamic)
+	if (lockOfs < 0 || (!dynamic && write || readBack) && lockOfs + sizeToLock > m_bufElemCapacity)
 	{
-		MsgError("Static vertex buffer is not resizable, must be less or equal %d (%d)\n", m_nIndices, sizeToLock);
-		ASSERT(!"Static vertex buffer is not resizable. Debug it!\n");
+		ASSERT_FAIL("locking outside buffer size range");
 		return false;
 	}
 
-	//Msg("EQIB 'this' ptr: %p\n", this);
+	const int lockOffset = lockOfs * m_bufElemSize;
+	const int lockSize = sizeToLock * m_bufElemSize;
 
-	if(m_pIndexBuffer->Lock(lockOfs*m_nIndexSize, sizeToLock*m_nIndexSize, outdata, (dynamic ? D3DLOCK_DISCARD : 0) | (readOnly ? D3DLOCK_READONLY : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
+	const DWORD lockFlags = D3DLOCK_NOSYSLOCK
+		| (readBack ? 0 : D3DLOCK_DISCARD)
+		| (write ? 0 : D3DLOCK_READONLY);
+
+	if (FAILED(m_rhiBuffer->Lock(lockOffset, lockSize, outdata, lockFlags)))
 	{
-		m_bIsLocked = true;
-	}
-	else 
-	{
-		ASSERT(!"Couldn't lock index buffer!");
+		ASSERT_FAIL("Couldn't lock index buffer!");
 		return false;
 	}
 
-	if(dynamic)
-	{
-		m_nIndices = sizeToLock;
-	}
+	if (dynamic && write)
+		m_bufElemCapacity = lockOfs + sizeToLock;
 
 	return true;
 }
@@ -198,15 +180,12 @@ bool CD3D9IndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, bool re
 // unlocks buffer
 void CD3D9IndexBuffer::Unlock()
 {
-	if(m_bIsLocked)
+	if (!m_lockFlags)
 	{
-		if(!m_bLockFail)
-			m_pIndexBuffer->Unlock();
-
-		m_bLockFail = false;
+		ASSERT_FAIL("Index buffer is not locked!");
+		return;
 	}
-	else
-		ASSERT(!"Index buffer is not locked!");
 
-	m_bIsLocked = false;
+	m_rhiBuffer->Unlock();
+	m_lockFlags = 0;
 }

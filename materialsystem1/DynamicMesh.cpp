@@ -231,10 +231,10 @@ bool CDynamicMesh::Lock()
 {
 	if(m_vboAqquired == -1)
 	{
-		if(!m_vertexBuffer->Lock(0, m_numVertices, &m_lockVertices, false))
+		if(!m_vertexBuffer->Lock(0, m_numVertices, &m_lockVertices, BUFFER_FLAG_WRITE))
 			return false;
 
-		if (!m_indexBuffer->Lock(0, m_numIndices, (void**)&m_lockIndices, false))
+		if (!m_indexBuffer->Lock(0, m_numIndices, (void**)&m_lockIndices, BUFFER_FLAG_WRITE))
 		{
 			m_vertexBuffer->Unlock();
 			return false;
@@ -270,9 +270,9 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 	{
 		// FIXME: CMeshBuilder::End should return new trainsient buffer really?
 		// would be cool probably
-		m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
+		m_vertexBuffer->Update(m_vertices, m_numVertices);
 		if (drawIndexed)
-			m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
+			m_indexBuffer->Update(m_indices, m_numIndices);
 		m_vboDirty = -1;
 	}
 

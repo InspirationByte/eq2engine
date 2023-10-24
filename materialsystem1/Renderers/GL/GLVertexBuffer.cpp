@@ -8,40 +8,7 @@
 #include "core/core_common.h"
 #include "shaderapigl_def.h"
 #include "GLVertexBuffer.h"
-
-bool GLCheckError(const char* op, ...);
-
-CVertexBufferGL::CVertexBufferGL()
-{
-	m_numVerts = 0;
-	m_strideSize = 0;
-
-	m_bIsLocked = false;
-	m_lockDiscard = false;
-	m_lockPtr = nullptr;
-	m_flags = 0;
-
-	memset(m_nGL_VB_Index, 0, sizeof(m_nGL_VB_Index));
-	m_bufferIdx = 0;
-}
-
-// returns size in bytes
-int CVertexBufferGL::GetSizeInBytes() const
-{
-	return m_strideSize*m_numVerts;
-}
-
-// returns vertex count
-int CVertexBufferGL::GetVertexCount() const
-{
-	return m_numVerts;
-}
-
-// retuns stride size
-int CVertexBufferGL::GetStrideSize() const
-{
-	return m_strideSize;
-}
+#include "ShaderAPIGL.h"
 
 void CVertexBufferGL::IncrementBuffer()
 {
@@ -60,19 +27,19 @@ void CVertexBufferGL::IncrementBuffer()
 }
 
 // updates buffer without map/unmap operations which are slower
-void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= true*/)
+void CVertexBufferGL::Update(void* data, int size, int offset)
 {
-	bool dynamic = (m_access == BUFFER_DYNAMIC);
+	const bool dynamic = (m_access == BUFFER_DYNAMIC);
 
-	if(m_bIsLocked)
+	if (m_lockFlags)
 	{
-		ASSERT(!"Vertex buffer can't be updated while locked!");
+		ASSERT(!"Buffer can't be updated while locked!");
 		return;
 	}
 
-	if(offset+size > m_numVerts && !dynamic)
+	if (!dynamic && offset + size > m_bufElemCapacity)
 	{
-		ASSERT(!"Update() with bigger size cannot be used on static vertex buffer!");
+		ASSERT(!"Update() with bigger size cannot be used on static buffer!");
 		return;
 	}
 
@@ -80,130 +47,143 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 		IncrementBuffer();
 
 	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
-	GLCheckError("vertexbuffer update bind");
+	GLCheckError("buffer update bind");
 
-	if (offset > 0) // streaming
-		glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
+	const int lockByteCount = size * m_bufElemSize;
+	const int lockByteOffset = offset * m_bufElemSize;
+
+	if (lockByteOffset > 0) // streaming
+		glBufferSubData(GL_ARRAY_BUFFER, lockByteOffset, lockByteCount, data);
 	else // orphaning
-		glBufferData(GL_ARRAY_BUFFER, size*m_strideSize, data, g_gl_bufferUsages[m_access]);
+		glBufferData(GL_ARRAY_BUFFER, lockByteCount, data, g_gl_bufferUsages[m_access]);
 
-	GLCheckError("vertexbuffer update");
+	GLCheckError("buffer update");
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	if(dynamic && discard && offset == 0)
-		m_numVerts = size;
+	if (dynamic)
+		m_bufElemCapacity = offset + size;
 }
 
 // locks vertex buffer and gives to programmer buffer data
-bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
+bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
 {
-	bool dynamic = (m_access == BUFFER_DYNAMIC);
+	ASSERT_MSG(flags != 0, "Lock flags are invalid - specify flags from BUFFER_FLAGS");
 
-	if(m_bIsLocked)
+	const bool dynamic = (m_access == BUFFER_DYNAMIC);
+	const bool write = (flags & BUFFER_FLAG_WRITE);
+	const bool readBack = (flags & BUFFER_FLAG_READ);
+	const int lockByteCount = sizeToLock * m_bufElemSize;
+	const int lockByteOffset = lockOfs * m_bufElemSize;
+
+	if(m_lockFlags)
 	{
-		ASSERT(!"Vertex buffer already locked! (You must unlock it first!)");
+		ASSERT_FAIL("Buffer already locked! (You must unlock it first!)");
 		return false;
 	}
 
-	// discard if dynamic
-	bool discard = dynamic;
-
-	// don't lock at other offset
-	// TODO: in other APIs
-	if( discard )
-		lockOfs = 0;
-
-	if(lockOfs+sizeToLock > m_numVerts && !dynamic)
+	// validate lock
+	if (lockOfs < 0 || (!dynamic && write || readBack) && lockOfs + sizeToLock > m_bufElemCapacity)
 	{
-		ASSERT(!"Static vertex buffer is not resizable. Debug it!\n");
+		ASSERT_FAIL("locking outside buffer size range");
 		return false;
 	}
 
-	if(readOnly)
-		discard = false;
-
-	IncrementBuffer();
-
-	m_lockDiscard = discard;
-
-	// allocate memory for lock data
-	m_lockSize = sizeToLock;
-	m_lockOffs = lockOfs;
-	m_lockReadOnly = readOnly;
+	if (!readBack)
+		IncrementBuffer();
 
 #ifdef USE_GLES2
 	// map buffer
 	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
+	GLCheckError("buffer lock bind");
 
-	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;// | (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
-	GLCheckError("vertexbuffer map");
-	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_lockSize*m_strideSize, mapFlags );
-	(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
+	const GLbitfield mapFlags =
+		GL_MAP_UNSYNCHRONIZED_BIT
+		| (readBack ? GL_MAP_READ_BIT : 0)
+		| (write ? GL_MAP_WRITE_BIT : 0);
+	//	| (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
 
+	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, lockByteOffset, lockByteCount, mapFlags );
+	GLCheckError("buffer map");
+	(*outdata) = m_lockPtr;
+
+	// index buffer should be restored
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	if(m_lockPtr == nullptr)
-		ASSERT_FAIL("Failed to map vertex buffer!");
 #else
-
-	int nLockByteCount = m_strideSize*sizeToLock;
-
-	m_lockPtr = (ubyte*)PPAlloc(nLockByteCount);
+	m_lockPtr = (ubyte*)PPAlloc(lockByteCount);
 	(*outdata) = m_lockPtr;
 
 	// read data into the buffer if we're not discarding
-	if( !discard )
+	if(readBack)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
-		GLCheckError("vertexbuffer get data bind");
+        glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
+		GLCheckError("buffer lock bind");
 
 		// lock whole buffer
-		glGetBufferSubData(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, nLockByteCount, m_lockPtr);
-		GLCheckError("vertexbuffer get data");
-
-		// give user buffer with offset
-		(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
+		glGetBufferSubData(GL_ARRAY_BUFFER, lockByteOffset, lockByteCount, m_lockPtr);
+		GLCheckError("buffer get data");
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 #endif // USE_GLES2
 
-	m_bIsLocked = true;
+	if (m_lockPtr)
+	{
+		m_lockSize = sizeToLock;
+		m_lockOffs = lockOfs;
+		m_lockFlags = flags;
+	}
+	else
+	{
+		ASSERT_FAIL("Failed to map index buffer!");
+		m_lockFlags = 0;
+	}
 
-	if( dynamic && discard )
-		m_numVerts = sizeToLock;
+	if( dynamic && write )
+		m_bufElemCapacity = lockOfs + sizeToLock;
 
-	return true;
+	return m_lockFlags != 0;
 }
 
 // unlocks buffer
 void CVertexBufferGL::Unlock()
 {
-	if(m_bIsLocked)
+	if (!m_lockFlags)
 	{
-		if( !m_lockReadOnly )
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
-			GLCheckError("vertexbuffer unmap bind");
+		ASSERT_FAIL("Buffer is not locked!");
+		return;
+	}
 
 #ifdef USE_GLES2
-			glUnmapBuffer(GL_ARRAY_BUFFER);
+	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
+	GLCheckError("buffer unlock bind");
+
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	GLCheckError("buffer unlock unmap");
+
+	// index buffer should be restored
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 #else
-			glBufferSubData(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_lockSize*m_strideSize, m_lockPtr);
-#endif // USE_GLES2
-			GLCheckError("vertexbuffer unmap");
+	const bool lockWrite = m_lockFlags & BUFFER_FLAG_WRITE;
+	if (lockWrite)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
+		GLCheckError("buffer unlock bind");
 
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-		}
+		const int lockByteCount = m_lockSize * m_bufElemSize;
+		const int lockByteOffset = m_lockOffs * m_bufElemSize;
 
-#ifndef USE_GLES2 // don't do dis...
-		PPFree(m_lockPtr);
-#endif // USE_GLES2
-		m_lockPtr = nullptr;
+		glBufferSubData(GL_ARRAY_BUFFER, lockByteOffset, lockByteCount, m_lockPtr);
+		GLCheckError("buffer unlock sub data");
+
+		// index buffer should be restored
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
-	else
-		ASSERT(!"Vertex buffer is not locked!");
+	PPFree(m_lockPtr);
+#endif
 
-	m_bIsLocked = false;
+	m_lockSize = 0;
+	m_lockOffs = 0;
+	m_lockFlags = 0;
+	m_lockPtr = nullptr;
 }

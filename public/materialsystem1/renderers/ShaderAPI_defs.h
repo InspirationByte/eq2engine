@@ -206,12 +206,18 @@ static int s_attributeSize[] =
 	sizeof(ubyte)
 };
 
-// Buffer access type (for VBO)
+// old buffer access flags
 enum EBufferAccessType : int
 {
 	BUFFER_STREAM		= 0,
 	BUFFER_STATIC,		// = 1,
 	BUFFER_DYNAMIC,		// = 2
+};
+
+enum EBufferFlags : int
+{
+	BUFFER_FLAG_READ	= (1 << 0),	// allows reading from buffer to system memory
+	BUFFER_FLAG_WRITE	= (1 << 1),	// allows writing to buffer (effectively marking it as dynamic)
 };
 
 struct VertexFormatDesc

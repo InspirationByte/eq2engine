@@ -2225,20 +2225,20 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(const BufferInfo& bufferInfo)
 {
 	CVertexBufferGL* pVB = PPNew CVertexBufferGL();
 
-	pVB->m_numVerts = bufferInfo.elementCapacity;
-	pVB->m_strideSize = bufferInfo.elementSize;
+	pVB->m_bufElemCapacity = bufferInfo.elementCapacity;
+	pVB->m_bufElemSize = bufferInfo.elementSize;
 	pVB->m_access = bufferInfo.accessType;
 	pVB->m_flags = bufferInfo.flags;
 
 	DevMsg(DEVMSG_RENDER,"Creating VBO with size %i KB\n", pVB->GetSizeInBytes() / 1024);
 
 	const int numBuffers = (bufferInfo.accessType == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
-	const int sizeInBytes = pVB->m_numVerts * pVB->m_strideSize;
+	const int sizeInBytes = pVB->m_bufElemCapacity * pVB->m_bufElemSize;
 
 	int result = g_glWorker.WaitForExecute(__func__, 
 		[numBuffers, sizeInBytes, pVB, bufAccess = bufferInfo.accessType, data = bufferInfo.data, dataSize = bufferInfo.dataSize]() {
 
-		glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
+		glGenBuffers(numBuffers, pVB->m_rhiBuffer);
 
 		if (!GLCheckError("gen vert buffer"))
 			return -1;
@@ -2247,7 +2247,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(const BufferInfo& bufferInfo)
 		{
 			for (int i = 0; i < numBuffers; i++)
 			{
-				glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
+				glBindBuffer(GL_ARRAY_BUFFER, pVB->m_rhiBuffer[i]);
 				GLCheckError("bind buffer");
 
 				glBufferData(GL_ARRAY_BUFFER, min(dataSize, sizeInBytes), data, g_gl_bufferUsages[bufAccess]);
@@ -2262,7 +2262,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(const BufferInfo& bufferInfo)
 
 	for (int i = 0; i < numBuffers; i++)
 	{
-		ASSERT_MSG(pVB->m_nGL_VB_Index[i] != 0, "Vertex buffer %d is not generated, requested count: %d", i, numBuffers);
+		ASSERT_MSG(pVB->m_rhiBuffer[i] != 0, "Vertex buffer %d is not generated, requested count: %d", i, numBuffers);
 	}
 
 	if (result == -1)
@@ -2287,19 +2287,19 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(const BufferInfo& bufferInfo)
 
 	CIndexBufferGL* pIB = PPNew CIndexBufferGL();
 
-	pIB->m_nIndices = bufferInfo.elementCapacity;
-	pIB->m_nIndexSize = bufferInfo.elementSize;
+	pIB->m_bufElemCapacity = bufferInfo.elementCapacity;
+	pIB->m_bufElemSize = bufferInfo.elementSize;
 	pIB->m_access = bufferInfo.accessType;
 
 	DevMsg(DEVMSG_RENDER,"Creating IBO with size %i KB\n", (bufferInfo.elementSize * bufferInfo.elementCapacity) / 1024);
 
-	const int sizeInBytes = pIB->m_nIndices * pIB->m_nIndexSize;
+	const int sizeInBytes = pIB->m_bufElemCapacity * pIB->m_bufElemSize;
 	const int numBuffers = (bufferInfo.accessType == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
 	int result = g_glWorker.WaitForExecute(__func__,
 		[numBuffers, sizeInBytes, pIB, bufAccess = bufferInfo.accessType, data = bufferInfo.data, dataSize = bufferInfo.dataSize]() {
 
-		glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
+		glGenBuffers(numBuffers, pIB->m_rhiBuffer);
 		if (!GLCheckError("gen idx buffer"))
 			return -1;
 
@@ -2307,7 +2307,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(const BufferInfo& bufferInfo)
 		{
 			for (int i = 0; i < numBuffers; i++)
 			{
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_rhiBuffer[i]);
 				GLCheckError("bind buff");
 
 				glBufferData(GL_ELEMENT_ARRAY_BUFFER, min(dataSize, sizeInBytes), data, g_gl_bufferUsages[bufAccess]);
@@ -2322,7 +2322,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(const BufferInfo& bufferInfo)
 
 	for (int i = 0; i < numBuffers; i++)
 	{
-		ASSERT_MSG(pIB->m_nGL_IB_Index[i] != 0, "Index buffer %d is not generated, requested count: %d", i, numBuffers);
+		ASSERT_MSG(pIB->m_rhiBuffer[i] != 0, "Index buffer %d is not generated, requested count: %d", i, numBuffers);
 	}
 
 	if (result == -1)
@@ -2377,7 +2377,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	{
 		const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 		uint* tempArray = PPNew uint[numBuffers];
-		memcpy(tempArray, pVB->m_nGL_VB_Index, numBuffers * sizeof(uint));
+		memcpy(tempArray, pVB->m_rhiBuffer, numBuffers * sizeof(uint));
 
 		delete pVB;
 
@@ -2411,7 +2411,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	{
 		const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 		uint* tempArray = PPNew uint[numBuffers];
-		memcpy(tempArray, pIB->m_nGL_IB_Index, numBuffers * sizeof(uint));
+		memcpy(tempArray, pIB->m_rhiBuffer, numBuffers * sizeof(uint));
 
 		delete pIndexBuffer;
 

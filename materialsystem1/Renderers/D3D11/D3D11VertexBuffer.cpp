@@ -28,7 +28,7 @@ int CVertexBufferD3DX10::GetVertexCount() const
 
 int CVertexBufferD3DX10::GetStrideSize() const
 {
-	return m_strideSize;
+	return m_bufElemSize;
 }
 
 extern ID3D10Device* pXDevice;
@@ -57,7 +57,7 @@ bool CVertexBufferD3DX10::Lock(int lockOfs, int vertexCount, void** outdata, boo
 		return false;
 	}
 
-	const int lockByteCount = m_strideSize*vertexCount;
+	const int lockByteCount = m_bufElemSize*vertexCount;
 
 	D3D10_MAP mapType = D3D10_MAP_WRITE_DISCARD;
 
@@ -72,7 +72,7 @@ bool CVertexBufferD3DX10::Lock(int lockOfs, int vertexCount, void** outdata, boo
 	if(m_buffer->Map(mapType, 0, outdata) == S_OK)
 	{
 		// add the lock offset
-		*((ubyte**)outdata) += m_strideSize*lockOfs;
+		*((ubyte**)outdata) += m_bufElemSize*lockOfs;
 
 		m_isLocked = true;
 	}

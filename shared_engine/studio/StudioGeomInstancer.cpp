@@ -114,9 +114,8 @@ void CBaseEqGeomInstancer::Upload()
 		const int updateStart = buffer.upToDateInstanes;
 		const int updateCount = buffer.numInstances - buffer.upToDateInstanes;
 		void* dataStart = (ubyte*)buffer.instances + buffer.upToDateInstanes * m_instanceSize;
-		const bool discard = (updateStart == 0);
 
-		buffer.instanceVB->Update(dataStart, updateCount, updateStart, discard);
+		buffer.instanceVB->Update(dataStart, updateCount, updateStart);
 		buffer.upToDateInstanes = buffer.numInstances;
 	}
 }

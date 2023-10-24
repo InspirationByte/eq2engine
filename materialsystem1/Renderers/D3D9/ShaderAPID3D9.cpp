@@ -1556,7 +1556,7 @@ void ShaderAPID3D9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream,
 		if (pVB == nullptr)
 			m_pD3DDevice->SetStreamSource(nStream, nullptr, 0, 0 );
 		else 
-			m_pD3DDevice->SetStreamSource(nStream, pVB->m_pVertexBuffer, (UINT)offset*pVB->GetStrideSize(), pVB->GetStrideSize());
+			m_pD3DDevice->SetStreamSource(nStream, pVB->m_rhiBuffer, (UINT)offset*pVB->GetStrideSize(), pVB->GetStrideSize());
 
 		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
 		m_nCurrentOffsets[nStream] = offset;
@@ -1573,7 +1573,7 @@ void ShaderAPID3D9::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
 		if (pIB == nullptr)
 			m_pD3DDevice->SetIndices(nullptr);
 		else
-			m_pD3DDevice->SetIndices(pIB->m_pIndexBuffer);
+			m_pD3DDevice->SetIndices(pIB->m_rhiBuffer);
 
 		m_pCurrentIndexBuffer = pIndexBuffer;
 	}
@@ -2287,30 +2287,29 @@ IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, ArrayCRef<Ver
 IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(const BufferInfo& bufferInfo)
 {
 	CD3D9VertexBuffer* pBuffer = PPNew CD3D9VertexBuffer();
-	pBuffer->m_nUsage = g_d3d9_bufferUsages[bufferInfo.accessType];
-	pBuffer->m_nNumVertices = bufferInfo.elementCapacity;
-	pBuffer->m_nStrideSize = bufferInfo.elementSize;
-	pBuffer->m_nInitialSize = bufferInfo.elementCapacity * bufferInfo.elementSize;
-	pBuffer->m_nSize = bufferInfo.data ? bufferInfo.dataSize : 0;
+	pBuffer->m_bufUsage = g_d3d9_bufferUsages[bufferInfo.accessType];
+	pBuffer->m_bufElemCapacity = bufferInfo.elementCapacity;
+	pBuffer->m_bufElemSize = bufferInfo.elementSize;
 
-	DevMsg(DEVMSG_RENDER, "Creating VBO with size %i KB\n", pBuffer->m_nSize / 1024);
+	const int initialSizeBytes = bufferInfo.elementCapacity * bufferInfo.elementSize;
+	const bool dynamic = (pBuffer->m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	const bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
+	DevMsg(DEVMSG_RENDER, "Creating VBO with size %i KB\n", initialSizeBytes / 1024);
 
-	if (m_pD3DDevice->CreateVertexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, 0, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pVertexBuffer, nullptr) != D3D_OK)
+	if (m_pD3DDevice->CreateVertexBuffer(initialSizeBytes, pBuffer->m_bufUsage, 0, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_rhiBuffer, nullptr) != D3D_OK)
 	{
-		MsgError("Direct3D Error: Couldn't create vertex buffer with size %d\n", pBuffer->m_nSize);
+		MsgError("Direct3D Error: Couldn't create vertex buffer with size %d\n", initialSizeBytes);
         ASSERT(!"Direct3D Error: Couldn't create vertex buffer");
 		return nullptr;
 	}
 
 	// make first transfer operation
 	void *dest;
-	if (bufferInfo.data && pBuffer->m_pVertexBuffer->Lock(0, pBuffer->m_nSize, &dest, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK) == D3D_OK)
+	if (bufferInfo.data && pBuffer->m_rhiBuffer->Lock(0, min(bufferInfo.dataSize, initialSizeBytes), &dest, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK) == D3D_OK)
 	{
-		memcpy(dest, bufferInfo.data, min(pBuffer->m_nInitialSize, bufferInfo.dataSize));
-		pBuffer->m_pVertexBuffer->Unlock();
-		pBuffer->m_pVertexBuffer->PreLoad();
+		memcpy(dest, bufferInfo.data, min(bufferInfo.dataSize, initialSizeBytes));
+		pBuffer->m_rhiBuffer->Unlock();
+		pBuffer->m_rhiBuffer->PreLoad();
 	}
 
 	{
@@ -2327,33 +2326,32 @@ IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(const BufferInfo& bufferInfo)
 	ASSERT(bufferInfo.elementSize <= sizeof(int));
 
 	CD3D9IndexBuffer* pBuffer = PPNew CD3D9IndexBuffer();
-	pBuffer->m_nIndices = bufferInfo.elementCapacity;
-	pBuffer->m_nIndexSize = bufferInfo.elementSize;
-	pBuffer->m_nInitialSize = bufferInfo.elementCapacity * bufferInfo.elementSize;
-	pBuffer->m_nUsage = g_d3d9_bufferUsages[bufferInfo.accessType];
+	pBuffer->m_bufElemCapacity = bufferInfo.elementCapacity;
+	pBuffer->m_bufElemSize = bufferInfo.elementSize;
+	pBuffer->m_bufUsage = g_d3d9_bufferUsages[bufferInfo.accessType];
 
-	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
+	const int initialSizeBytes = bufferInfo.elementCapacity * bufferInfo.elementSize;
+	const bool dynamic = (pBuffer->m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	DevMsg(DEVMSG_RENDER, "Creating IBO with size %i KB\n", (bufferInfo.elementCapacity * bufferInfo.elementSize) / 1024);
+	DevMsg(DEVMSG_RENDER, "Creating IBO with size %i KB\n", initialSizeBytes / 1024);
 
-	if (m_pD3DDevice->CreateIndexBuffer(
-		pBuffer->m_nInitialSize, pBuffer->m_nUsage, 
+	if (m_pD3DDevice->CreateIndexBuffer(initialSizeBytes, pBuffer->m_bufUsage,
 		bufferInfo.elementSize == sizeof(short) ? D3DFMT_INDEX16 : D3DFMT_INDEX32, 
 		dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, 
-		&pBuffer->m_pIndexBuffer, nullptr) != D3D_OK)
+		&pBuffer->m_rhiBuffer, nullptr) != D3D_OK)
 	{
-		MsgError("Direct3D Error: Couldn't create index buffer with size %d\n", pBuffer->m_nInitialSize);
+		MsgError("Direct3D Error: Couldn't create index buffer with size %d\n", initialSizeBytes);
 		ASSERT(!"Direct3D Error: Couldn't create index buffer\n");
 		return nullptr;
 	}
 
 	// make first transfer operation
 	void *dest;
-	if (bufferInfo.data && pBuffer->m_pIndexBuffer->Lock(0, pBuffer->m_nInitialSize, &dest, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK) == D3D_OK)
+	if (bufferInfo.data && pBuffer->m_rhiBuffer->Lock(0, min(bufferInfo.dataSize, initialSizeBytes), &dest, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK) == D3D_OK)
 	{
-		memcpy(dest, bufferInfo.data, min(bufferInfo.dataSize, pBuffer->m_nInitialSize));
-		pBuffer->m_pIndexBuffer->Unlock();
-		pBuffer->m_pIndexBuffer->PreLoad();
+		memcpy(dest, bufferInfo.data, min(bufferInfo.dataSize, initialSizeBytes));
+		pBuffer->m_rhiBuffer->Unlock();
+		pBuffer->m_rhiBuffer->PreLoad();
 	} 
 
 	{

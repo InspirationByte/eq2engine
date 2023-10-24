@@ -12,51 +12,39 @@
 
 class CVertexBufferGL : public IVertexBuffer
 {
+	friend class ShaderAPIGL;
+
 public:
-	friend class	ShaderAPIGL;
+	int				GetSizeInBytes() const { return m_bufElemSize * m_bufElemCapacity; }
+	int				GetVertexCount() const { return m_bufElemCapacity; }
 
-					CVertexBufferGL();
+	int				GetStrideSize() const { return m_bufElemSize; }
 
-	// returns size in bytes
-	int				GetSizeInBytes() const;
+	void			Update(void* data, int size, int offset = 0);
 
-	// returns vertex count
-	int				GetVertexCount() const;
-
-	// retuns stride size
-	int				GetStrideSize() const;
-
-	// updates buffer without map/unmap operations which are slower
-	void			Update(void* data, int size, int offset, bool discard = true);
-
-	// locks vertex buffer and gives to programmer buffer data
-	bool			Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly);
-
-	// unlocks buffer
+	bool			Lock(int lockOfs, int sizeToLock, void** outdata, int flags);
 	void			Unlock();
 
-	// sets vertex buffer flags
-	void			SetFlags( int flags ) {m_flags = flags;}
-	int				GetFlags() const {return m_flags;}
+	void			SetFlags( int flags ) { m_flags = flags; }
+	int				GetFlags() const { return m_flags; }
 
-	uint			GetCurrentBuffer() const { return m_nGL_VB_Index[m_bufferIdx]; }
+	uint			GetCurrentBuffer() const { return m_rhiBuffer[m_bufferIdx]; }
 	 
 protected:
 	void			IncrementBuffer();
 
-	uint			m_nGL_VB_Index[MAX_VB_SWITCHING];
-	int				m_bufferIdx;
+	uint			m_rhiBuffer[MAX_VB_SWITCHING]{ 0 };
+	int				m_bufferIdx{ 0 };
 
-	int				m_flags;
-	int				m_numVerts;
-	int				m_strideSize;
 	EBufferAccessType	m_access;
 
-	ubyte*			m_lockPtr;
-	int				m_lockOffs;
-	int				m_lockSize;
+	int				m_bufElemCapacity{ 0 };
+	int				m_bufElemSize{ 0 };
 
-	bool			m_lockDiscard;
-	bool			m_lockReadOnly;
-	bool			m_bIsLocked;
+	ubyte*			m_lockPtr{ nullptr };
+	int				m_lockOffs{ 0 };
+	int				m_lockSize{ 0 };
+	int				m_lockFlags{ 0 };
+
+	int				m_flags{ 0 };
 };

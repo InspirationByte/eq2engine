@@ -11,50 +11,40 @@
 
 class CD3D9VertexBuffer : public IVertexBuffer
 {
+	friend class ShaderAPID3D9;
 public:
-	
-	friend class				ShaderAPID3D9;
+	~CD3D9VertexBuffer();
 
-								CD3D9VertexBuffer();
-								~CD3D9VertexBuffer();
+	int						GetSizeInBytes() const { return m_bufElemCapacity * m_bufElemSize; }
+	int						GetVertexCount() const { return m_bufElemCapacity; }
+	int						GetStrideSize() const { return m_bufElemSize; }
 
-	int							GetSizeInBytes() const;
-	int							GetVertexCount() const;
-	int							GetStrideSize() const;
+	void					Update(void* data, int size, int offset = 0);
 
-	// updates buffer without map/unmap operations which are slower
-	void						Update(void* data, int size, int offset, bool discard /*= true*/);
+	bool					Lock(int lockOfs, int sizeToLock, void** outdata, int flags);
+	void					Unlock();
 
-	// locks vertex buffer and gives to programmer buffer data
-	bool						Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly);
+	void					SetFlags( int flags ) { m_flags = flags; }
+	int						GetFlags() const { return m_flags; }
 
-	// unlocks buffer
-	void						Unlock();
-
-	void						ReleaseForRestoration();
-	void						Restore();
-
-	// sets vertex buffer flags
-	void						SetFlags( int flags ) { m_flags = flags; }
-	int							GetFlags() const { return m_flags; }
+	void					ReleaseForRestoration();
+	void					Restore();
 
 protected:
-	int							m_flags;
+	IDirect3DVertexBuffer9*	m_rhiBuffer{ nullptr };
+	DWORD					m_bufUsage{ 0 };
 
-	LPDIRECT3DVERTEXBUFFER9		m_pVertexBuffer;
-	int							m_nSize;
-	int							m_nInitialSize;
+	int						m_bufElemCapacity{ 0 };
+	int						m_bufElemSize{ 0 };
 
-	int							m_nNumVertices;
-	int							m_nStrideSize;
-	DWORD						m_nUsage;
+	bool					m_lockFlags{ 0 };
 
-	bool						m_bIsLocked;
-
-	struct VBRestoreData
+	int						m_flags{ 0 };
+	struct RestoreData
 	{
+		~RestoreData();
 		void*	data;
 		int		size;
 	};
-	VBRestoreData*				m_restore{ nullptr };
+	RestoreData*			m_restore{ nullptr };
 };

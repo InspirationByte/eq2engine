@@ -10,31 +10,6 @@
 #include "GLIndexBuffer.h"
 #include "ShaderAPIGL.h"
 
-CIndexBufferGL::CIndexBufferGL()
-{
-	m_nIndices = 0;
-	m_nIndexSize = 0;
-
-	m_bIsLocked = false;
-	memset(m_nGL_IB_Index, 0, sizeof(m_nGL_IB_Index));
-	m_bufferIdx = 0;
-}
-
-int CIndexBufferGL::GetSizeInBytes() const
-{
-	return m_nIndexSize * m_nIndices;
-}
-
-int CIndexBufferGL::GetIndexSize() const
-{
-	return m_nIndexSize;
-}
-
-int CIndexBufferGL::GetIndicesCount() const
-{
-	return m_nIndices;
-}
-
 void CIndexBufferGL::IncrementBuffer()
 {
 	if (m_access != BUFFER_DYNAMIC)
@@ -42,9 +17,7 @@ void CIndexBufferGL::IncrementBuffer()
 
 	const int numBuffers = MAX_IB_SWITCHING;
 
-	int bufferIdx = m_bufferIdx;
-
-	bufferIdx++;
+	int bufferIdx = m_bufferIdx + 1;
 	if (bufferIdx >= numBuffers)
 		bufferIdx = 0;
 
@@ -52,166 +25,170 @@ void CIndexBufferGL::IncrementBuffer()
 }
 
 // updates buffer without map/unmap operations which are slower
-void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= true*/)
+void CIndexBufferGL::Update(void* data, int size, int offset)
 {
-	bool dynamic = (m_access == BUFFER_DYNAMIC);
+	const bool dynamic = (m_access == BUFFER_DYNAMIC);
 
-	if(m_bIsLocked)
+	if(m_lockFlags)
 	{
-		ASSERT(!"Vertex buffer can't be updated while locked!");
+		ASSERT(!"Buffer can't be updated while locked!");
 		return;
 	}
 
-	if(offset+size > m_nIndices && !dynamic)
+	if(!dynamic && offset+size > m_bufElemCapacity)
 	{
-		ASSERT(!"Update() with bigger size cannot be used on static vertex buffer!");
+		ASSERT(!"Update() with bigger size cannot be used on static buffer!");
 		return;
 	}
-
-	CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
 
 	if(offset > 0)
 		IncrementBuffer();
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
-	GLCheckError("indexbuffer update bind");
+	GLCheckError("buffer update bind");
 
-	if (offset > 0) // streaming
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
+	const int lockByteCount = size * m_bufElemSize;
+	const int lockByteOffset = offset * m_bufElemSize;
+
+	if (lockByteOffset > 0) // streaming
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, lockByteOffset, lockByteCount, data);
 	else // orphaning
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size*m_nIndexSize, data, g_gl_bufferUsages[m_access]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, lockByteCount, data, g_gl_bufferUsages[m_access]);
 
-	GLCheckError("indexbuffer update");
+	GLCheckError("buffer update");
 
 	// index buffer should be restored
+	CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
 
-	if(dynamic && discard && offset == 0)
-		m_nIndices = size;
+	if(dynamic)
+		m_bufElemCapacity = offset + size;
 }
 
 // locks index buffer and gives to programmer buffer data
-bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
+bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
 {
-	bool dynamic = (m_access == BUFFER_DYNAMIC);
+	ASSERT_MSG(flags != 0, "Lock flags are invalid - specify flags from BUFFER_FLAGS");
 
-	if(m_bIsLocked)
+	const bool dynamic = (m_access == BUFFER_DYNAMIC);
+	const bool write = (flags & BUFFER_FLAG_WRITE);
+	const bool readBack = (flags & BUFFER_FLAG_READ);
+	const int lockByteCount = sizeToLock * m_bufElemSize;
+	const int lockByteOffset = lockOfs * m_bufElemSize;
+
+	if(m_lockFlags)
 	{
-		ASSERT(!"Index buffer already locked! (You must unlock it first!)");
+		ASSERT_FAIL("Buffer already locked! (You must unlock it first!)");
 		return false;
 	}
 
-	if(sizeToLock > m_nIndices && !dynamic)
+	// validate lock
+	if (lockOfs < 0 || (!dynamic && write || readBack) && lockOfs + sizeToLock > m_bufElemCapacity)
 	{
-		MsgError("Static index buffer is not resizable, must be less or equal %d (%d)\n", m_nIndices, sizeToLock);
-		ASSERT(!"Static index buffer is not resizable. Debug it!\n");
+		ASSERT_FAIL("locking outside buffer size range");
 		return false;
 	}
 
-	// discard if dynamic
-	bool discard = dynamic;
-
-	if(readOnly)
-		discard = false;
-
-	IncrementBuffer();
-
-	// don't lock at other offset
-	// TODO: in other APIs
-	if( discard )
-		lockOfs = 0;
-
-	m_lockDiscard = discard;
-
-	// allocate memory for lock data
-	m_lockSize = sizeToLock;
-	m_lockOffs = lockOfs;
-	m_lockReadOnly = readOnly;
+	if (!readBack)
+		IncrementBuffer();
 
 	CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
 
 #ifdef USE_GLES2
 	// map buffer
-	if(currIB != this)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
+	GLCheckError("buffer lock bind");
 
-	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;// | (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
-	GLCheckError("indexbuffer map");
-	m_lockPtr = (ubyte*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, mapFlags );
-	(*outdata) = m_lockPtr;// + m_lockOffs*m_nIndexSize;
+	const GLbitfield mapFlags =
+		GL_MAP_UNSYNCHRONIZED_BIT
+		| (readBack ? GL_MAP_READ_BIT : 0)
+		| (write ? GL_MAP_WRITE_BIT : 0);
+	//	| (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
+
+	m_lockPtr = (ubyte*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, lockByteOffset, lockByteCount, mapFlags );
+	GLCheckError("buffer map");
+	(*outdata) = m_lockPtr;
 
 	// index buffer should be restored
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
-
-	if(m_lockPtr == nullptr)
-		ASSERT_FAIL("Failed to map index buffer!");
 #else
-	int nLockByteCount = m_nIndexSize*sizeToLock;
-
-	m_lockPtr = (ubyte*)PPAlloc(nLockByteCount);
+	m_lockPtr = (ubyte*)PPAlloc(lockByteCount);
 	(*outdata) = m_lockPtr;
 
 	// read data into the buffer if we're not discarding
-	if( !discard )
+	if(readBack)
 	{
-		if(currIB != this)
-		{
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
-			GLCheckError("indexbuffer get data bind");
-		}
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
+		GLCheckError("buffer lock bind");
 
 		// lock whole buffer
-		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, m_lockPtr);
-		GLCheckError("indexbuffer get data");
-
-		// give user buffer with offset
-		(*outdata) = m_lockPtr;// + m_lockOffs*m_nIndexSize;
+		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, lockByteOffset, lockByteCount, m_lockPtr);
+		GLCheckError("buffer get data");
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
 	}
 #endif // USE_GLES2
 
-	m_bIsLocked = true;
+	if (m_lockPtr)
+	{
+		m_lockSize = sizeToLock;
+		m_lockOffs = lockOfs;
+		m_lockFlags = flags;
+	}
+	else
+	{
+		ASSERT_FAIL("Failed to map index buffer!");
+		m_lockFlags = 0;
+	}
 
-	if( dynamic && discard )
-		m_nIndices = sizeToLock;
+	if( dynamic && write )
+		m_bufElemCapacity = lockOfs + sizeToLock;
 
-	return true;
+	return m_lockFlags != 0;
 }
 
 // unlocks buffer
 void CIndexBufferGL::Unlock()
 {
-	if(m_bIsLocked)
+	if (!m_lockFlags)
 	{
-		if( !m_lockReadOnly )
-		{
-			CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
-
-			if(currIB != this)
-			{
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
-				GLCheckError("indexbuffer unmap bind");
-			}
-
-#ifdef USE_GLES2
-			glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-#else
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, m_lockPtr);
-#endif // USE_GLES2
-			GLCheckError("indexbuffer unmap");
-
-			// index buffer should be restored
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
-		}
-
-#ifndef USE_GLES2 // don't do dis...
-		PPFree(m_lockPtr);
-#endif // USE_GLES2
-		m_lockPtr = nullptr;
+		ASSERT_FAIL("Buffer is not locked!");
+		return;
 	}
-	else
-		ASSERT(!"Vertex buffer is not locked!");
 
-	m_bIsLocked = false;
+	CIndexBufferGL* currIB = (CIndexBufferGL*)s_renderApi.m_pCurrentIndexBuffer;
+#ifdef USE_GLES2
+	if (currIB != this)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
+		GLCheckError("buffer unlock bind");
+	}
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	GLCheckError("buffer unlock unmap");
+
+	// index buffer should be restored
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
+#else
+	const bool lockWrite = m_lockFlags & BUFFER_FLAG_WRITE;
+	if (lockWrite)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
+		GLCheckError("buffer unlock bind");
+
+		const int lockByteCount = m_lockSize * m_bufElemSize;
+		const int lockByteOffset = m_lockOffs * m_bufElemSize;
+
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, lockByteOffset, lockByteCount, m_lockPtr);
+		GLCheckError("buffer unlock sub data");
+
+		// index buffer should be restored
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
+	}
+	PPFree(m_lockPtr);
+#endif
+
+	m_lockSize = 0;
+	m_lockOffs = 0;
+	m_lockFlags = 0;
+	m_lockPtr = nullptr;
 }

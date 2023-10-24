@@ -19,25 +19,18 @@ class IVertexBuffer
 public:
 	virtual ~IVertexBuffer() = default;
 
-	// returns size in bytes
-	virtual int			GetSizeInBytes() const = 0;
-
-	// returns vertex count
-	virtual int			GetVertexCount() const = 0;
-
-	// retuns stride size
-	virtual int			GetStrideSize() const = 0;
+	virtual int		GetSizeInBytes() const = 0;
+	virtual int		GetVertexCount() const = 0;
+	virtual int		GetStrideSize() const = 0;
 
 	// updates buffer without map/unmap operations which are slower
-	virtual void		Update(void* data, int size, int offset, bool discard = true) = 0;
+	virtual void	Update(void* data, int size, int offset = 0) = 0;
 
 	// locks vertex buffer and gives to programmer buffer data
-	virtual bool		Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly) = 0;
+	virtual bool	Lock(int lockOfs, int sizeToLock, void** outdata, int flags) = 0;
+	virtual void	Unlock() = 0;
 
-	// unlocks buffer
-	virtual void		Unlock() = 0;
-
-	// sets vertex buffer flags
-	virtual void		SetFlags( int flags ) = 0;
-	virtual int			GetFlags() const = 0;
+	// extra flags for API
+	virtual void	SetFlags(int flags) = 0;
+	virtual int		GetFlags() const = 0;
 };

@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <webgpu/webgpu.h>
+
 #include "ShaderAPI_Base.h"
 #include "WGPUTexture.h"
 #include "WGPUBuffer.h"
@@ -21,8 +23,6 @@ extern CEqMutex	g_sapi_Mutex;
 
 class WGPURenderAPI : public ShaderAPI_Base
 {
-	friend class CWGPURenderLib;
-	friend class CWGPUTexture;
 public:
 
 	WGPURenderAPI() {}
@@ -137,4 +137,12 @@ public:
 
 	void			DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
 	void			DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices);
+
+	WGPUDevice		GetWGPUDevice() const { return m_rhiDevice; }
+	WGPUQueue		GetWGPUQueue() const { return m_rhiQueue; };
+
+protected:
+
+	WGPUDevice		m_rhiDevice{ nullptr };
+	WGPUQueue		m_rhiQueue{ nullptr };
 };

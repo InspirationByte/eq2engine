@@ -224,7 +224,7 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 
 		if (m_skinningDirty)
 		{
-			m_vertexBuffer->Update(m_softwareVerts, m_vertexBuffer->GetVertexCount() * sizeof(EGFHwVertex), 0);
+			m_vertexBuffer->Update(m_softwareVerts, m_vertexBuffer->GetVertexCount() * sizeof(EGFHwVertex));
 			m_skinningDirty = false;
 		}
 
@@ -245,7 +245,7 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 
 		const int verticesCount = m_vertexBuffer->GetVertexCount();
 		EGFHwVertex* bufferData = nullptr;
-		if (m_vertexBuffer->Lock(0, verticesCount, (void**)&bufferData, false))
+		if (m_vertexBuffer->Lock(0, verticesCount, (void**)&bufferData, BUFFER_FLAG_WRITE))
 		{
 			// setup each bone's transformation
 			for (int i = 0; i < verticesCount; i++)

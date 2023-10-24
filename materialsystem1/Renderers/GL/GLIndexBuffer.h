@@ -12,47 +12,32 @@
 
 class CIndexBufferGL : public IIndexBuffer
 {
-public:
-
 	friend class	ShaderAPIGL;
+public:
+	int				GetSizeInBytes() const { return m_bufElemSize * m_bufElemCapacity; }
+	int				GetIndexSize() const { return m_bufElemSize; }
+	int				GetIndicesCount() const { return m_bufElemCapacity; }
 
-					CIndexBufferGL();
+	void			Update(void* data, int size, int offset = 0);
 
-	int				GetSizeInBytes() const;
-
-	// returns index size
-	int				GetIndexSize() const;
-
-	// returns index count
-	int				GetIndicesCount() const;
-
-	// updates buffer without map/unmap operations which are slower
-	void			Update(void* data, int size, int offset, bool discard /*= true*/);
-
-	// locks index buffer and gives to programmer buffer data
-	bool			Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly);
-
-	// unlocks buffer
+	bool			Lock(int lockOfs, int sizeToLock, void** outdata, int flags);
 	void			Unlock();
 
-	uint			GetCurrentBuffer() const { return m_nGL_IB_Index[m_bufferIdx]; }
+	uint			GetCurrentBuffer() const { return m_rhiBuffer[m_bufferIdx]; }
 
 protected:
 	void			IncrementBuffer();
 
-	uint			m_nGL_IB_Index[MAX_IB_SWITCHING];
-	int				m_bufferIdx;
-
-	int				m_nIndices;
-	int				m_nIndexSize;
+	uint			m_rhiBuffer[MAX_IB_SWITCHING]{ 0 };
+	int				m_bufferIdx{ 0 };
 
 	EBufferAccessType	m_access;
 
-	ubyte*			m_lockPtr;
-	int				m_lockOffs;
-	int				m_lockSize;
+	int				m_bufElemCapacity{ 0 };
+	int				m_bufElemSize{ 0 };
 
-	bool			m_lockDiscard;
-	bool			m_lockReadOnly;
-	bool			m_bIsLocked;
+	ubyte*			m_lockPtr{ nullptr };
+	int				m_lockOffs{ 0 };
+	int				m_lockSize{ 0 };
+	int				m_lockFlags{ 0 };
 };

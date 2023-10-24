@@ -301,10 +301,10 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* p
 	if(nVerts > SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t))
 		return false;
 
-	m_vertexBuffer->Update((void*)pMesh->m_pVerts, nVerts, 0, true);
+	m_vertexBuffer->Update((void*)pMesh->m_pVerts, nVerts);
 
 	if(nIndices)
-		m_indexBuffer->Update((void*)pMesh->m_pIndices, nIndices, 0, true);
+		m_indexBuffer->Update((void*)pMesh->m_pIndices, nIndices);
 
 	return true;
 }
