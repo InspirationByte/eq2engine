@@ -23,6 +23,7 @@ extern CEqMutex	g_sapi_Mutex;
 
 class WGPURenderAPI : public ShaderAPI_Base
 {
+	friend class CWGPURenderLib;
 public:
 
 	WGPURenderAPI() {}

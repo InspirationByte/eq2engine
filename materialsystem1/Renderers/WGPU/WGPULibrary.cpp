@@ -103,6 +103,51 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUSupportedLimits supLimits = { 0 };
 		wgpuAdapterGetLimits(adapter, &supLimits);
 
+		// fill ShaderAPI capabilities
+		ShaderAPICaps& caps = s_renderApi.m_caps;
+		//caps.textureFormatsSupported[FORMAT_COUNT]{ false };
+		//caps.renderTargetFormatsSupported[FORMAT_COUNT]{ false };
+		caps.isInstancingSupported = true;
+		caps.isHardwareOcclusionQuerySupported = true;
+		caps.maxVertexStreams = supLimits.limits.maxVertexBuffers;
+		caps.maxVertexGenericAttributes = supLimits.limits.maxVertexAttributes;
+		caps.maxVertexTexcoordAttributes = supLimits.limits.maxVertexAttributes;
+		caps.maxTextureSize = supLimits.limits.maxTextureDimension2D;
+		caps.maxTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
+		caps.maxVertexTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
+		caps.maxTextureAnisotropicLevel = 16;
+		caps.maxRenderTargets = supLimits.limits.maxColorAttachments;
+		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
+									| SHADER_CAPS_PIXEL_SUPPORTED
+									| SHADER_CAPS_COMPUTE_SUPPORTED;
+
+		// FIXME: deprecated
+		caps.INTZSupported = true;
+		caps.INTZFormat = FORMAT_D16;
+
+		caps.NULLSupported = true;
+		caps.NULLFormat = FORMAT_NONE;
+
+		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+
+		for (int i = FORMAT_D16; i <= FORMAT_D24S8; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+
+		caps.textureFormatsSupported[FORMAT_D32F] =
+			caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
+
+		for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
+			caps.textureFormatsSupported[i] = true;
+
+		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
+
 		// extra features: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Features.cpp
 		WGPUDeviceDescriptor desc{};
 		WGPURequiredLimits reqLimits;
@@ -145,9 +190,8 @@ void CWGPURenderLib::BeginFrame(IEqSwapChain* swapChain)
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 
 	// process all internal async events or error callbacks
-	// this is dawn specific functionality, because in browser's WebGPU everything works with JS event loop
-	// FIXME: do it in separate thread?
-	wgpuDeviceTick(m_rhiDevice);
+	// TODO: thread?
+	wgpuInstanceProcessEvents(m_instance);
 }
 
 void CWGPURenderLib::EndFrame()

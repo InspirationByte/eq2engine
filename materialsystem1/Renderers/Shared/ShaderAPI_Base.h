@@ -181,7 +181,7 @@ protected:
 // Useful data
 //-------------------------------------------------------------
 
-	ShaderAPIParams			m_params;
+	ShaderAPIParams				m_params;
 	ShaderAPICaps				m_caps;
 
 	Map<int, IShaderProgram*>	m_ShaderList{ PP_SL };

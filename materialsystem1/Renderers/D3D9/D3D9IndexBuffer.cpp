@@ -99,13 +99,13 @@ void CD3D9IndexBuffer::Update(void* data, int size, int offset)
 
 	if (m_lockFlags)
 	{
-		ASSERT(!"Buffer can't be updated while locked!");
+		ASSERT_FAIL("Buffer can't be updated while locked!");
 		return;
 	}
 
-	if (!dynamic && offset + size > m_bufElemCapacity)
+	if (offset < 0 || !dynamic && offset + size > m_bufElemCapacity)
 	{
-		ASSERT(!"Update() with bigger size cannot be used on static buffer!");
+		ASSERT_FAIL("Update() with bigger size cannot be used on static buffer!");
 		return;
 	}
 

@@ -4,19 +4,29 @@
 #include "renderers/IVertexBuffer.h"
 #include "renderers/IIndexBuffer.h"
 
-class CEqWGPUBufferImpl
+#include "ds/future.h"
+
+struct BufferLockData
 {
-public:
-	void		Init(const BufferInfo& bufferInfo, int wgpuUsage);
-
-	void		Update(void* data, int size, int offset, bool discard = true);
-	bool		Lock(int lockOfs, int sizeToLock, void** outdata, bool readBack = false);
-	void		Unlock();
-
-	WGPUBuffer	m_buffer{ nullptr };
-	int			m_bufferSize{ 0 };
+	void*	data{ nullptr };
+	int		offset{ 0 };
+	int		size{ 0 };
+	int		flags{ 0 };
 };
 
+class CEqWGPUBuffer
+{
+public:
+	void					Init(const BufferInfo& bufferInfo, int wgpuUsage);
+
+	void					Update(void* data, int size, int offset);
+	Future<BufferLockData>	Lock(int lockOfs, int sizeToLock, void** outdata, int flags);
+	void					Unlock();
+
+private:
+	WGPUBuffer				m_rhiBuffer{ nullptr };
+	int						m_bufSize{ 0 };
+};
 
 
 class CWGPUVertexBuffer : public IVertexBuffer

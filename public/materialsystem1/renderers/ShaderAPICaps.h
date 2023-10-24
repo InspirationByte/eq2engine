@@ -21,8 +21,7 @@ enum EShaderSupportFlags
 	SHADER_CAPS_VERTEX_SUPPORTED	= (1 << 0),
 	SHADER_CAPS_PIXEL_SUPPORTED		= (1 << 1),
 	SHADER_CAPS_GEOMETRY_SUPPORTED	= (1 << 2),
-	SHADER_CAPS_DOMAIN_SUPPORTED	= (1 << 3),
-	SHADER_CAPS_HULL_SUPPORTED		= (1 << 4),
+	SHADER_CAPS_COMPUTE_SUPPORTED	= (1 << 3),
 };
 
 //-------------------------------------------------------------------------------------
@@ -32,6 +31,7 @@ struct ShaderAPICaps
 	bool			textureFormatsSupported[FORMAT_COUNT]{ false };
 	bool			renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 
+	// FIXME: deprecated after D3D9 removal
 	bool			INTZSupported{ false };		// Direct3D9 INTZ (internal Z buffer) sampling as texture is supported
 	ETextureFormat	INTZFormat{ FORMAT_NONE };
 
