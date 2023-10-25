@@ -78,13 +78,14 @@ bool CWGPURenderLib::InitCaps()
 
 IShaderAPI* CWGPURenderLib::GetRenderer() const
 {
-	return g_renderAPI;
+	return &WGPURenderAPI::Instance;
 }
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPUAdapter adapter = nullptr;
 	WGPURequestAdapterOptions options{};
+	options.powerPreference = WGPUPowerPreference_HighPerformance;
 	//options.compatibleSurface = surface;
 	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &adapter);
 
@@ -152,6 +153,15 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPURequiredLimits reqLimits;
 		reqLimits.limits = supLimits.limits;
 		desc.requiredLimits = &reqLimits;
+		WGPUFeatureName requiredFeatures[] = {
+			WGPUFeatureName_TextureCompressionBC,
+			WGPUFeatureName_BGRA8UnormStorage,
+			// TODO: android
+			//WGPUFeatureName_TextureCompressionETC2,
+			//WGPUFeatureName_TextureCompressionASTC,
+		};
+		desc.requiredFeatures = requiredFeatures;
+		desc.requiredFeatureCount = elementsOf(requiredFeatures);
 
 		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &desc);
 		if (!m_rhiDevice)
@@ -164,6 +174,9 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 	// create default swap chain
 	CreateSwapChain(params.windowInfo);
+
+	WGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
+	WGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
 
 	return true;
 }

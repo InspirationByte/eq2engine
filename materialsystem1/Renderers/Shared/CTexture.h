@@ -75,7 +75,8 @@ protected:
 	ushort				m_flags{ 0 };
 	ushort				m_width{ 0 };
 	ushort				m_height{ 0 };
-	ushort				m_depth{ 0 };		// TODO: rename to arraySize ???
+	ushort				m_depth{ 0 };
+	// TODO: arraySize
 	ushort				m_mipCount{ 1 };
 
 	ushort				m_animFrame{ 0 };

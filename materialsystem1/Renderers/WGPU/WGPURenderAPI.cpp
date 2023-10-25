@@ -5,7 +5,6 @@ WGPURenderAPI WGPURenderAPI::Instance;
 
 void WGPURenderAPI::Init(const ShaderAPIParams& params)
 {
-	memset(&m_caps, 0, sizeof(m_caps));
 	ShaderAPI_Base::Init(params);
 }
 //void WGPURenderAPI::Shutdown() {}

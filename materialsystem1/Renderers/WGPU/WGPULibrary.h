@@ -36,7 +36,7 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	ISwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo);
+	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void			DestroySwapChain(ISwapChain* swapChain);
 
 protected:
