@@ -329,7 +329,7 @@ void CGLRenderLib_GLX::ExitAPI()
 }
 
 
-void CGLRenderLib_GLX::BeginFrame(IEqSwapChain* swapChain)
+void CGLRenderLib_GLX::BeginFrame(ISwapChain* swapChain)
 {
 	s_renderApi.m_deviceLost = false;
 	s_renderApi.StepProgressiveLodTextures();
@@ -439,7 +439,7 @@ bool CGLRenderLib_GLX::CaptureScreenshot(CImage &img)
 }
 
 // creates swap chain
-IEqSwapChain* CGLRenderLib_GLX::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChain* CGLRenderLib_GLX::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	CGLSwapChain* pNewChain = PPNew CGLSwapChain();
 
@@ -455,7 +455,7 @@ IEqSwapChain* CGLRenderLib_GLX::CreateSwapChain(const RenderWindowInfo& windowIn
 }
 
 // destroys a swapchain
-void  CGLRenderLib_GLX::DestroySwapChain(IEqSwapChain* swapChain)
+void  CGLRenderLib_GLX::DestroySwapChain(ISwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;

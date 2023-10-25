@@ -279,7 +279,7 @@ void CD3D9RenderLib::ExitAPI()
 	}
 }
 
-void CD3D9RenderLib::BeginFrame(IEqSwapChain* swapChain)
+void CD3D9RenderLib::BeginFrame(ISwapChain* swapChain)
 {
 	// check if device has been lost
 	HRESULT hr;
@@ -472,7 +472,7 @@ bool CD3D9RenderLib::CaptureScreenshot(CImage& img)
 }
 
 // creates swap chain
-IEqSwapChain* CD3D9RenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChain* CD3D9RenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	CD3D9SwapChain* pNewChain = PPNew CD3D9SwapChain();
 	if(!pNewChain->Initialize(windowInfo))
@@ -487,7 +487,7 @@ IEqSwapChain* CD3D9RenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo
 }
 
 // destroys a swapchain
-void CD3D9RenderLib::DestroySwapChain(IEqSwapChain* swapChain)
+void CD3D9RenderLib::DestroySwapChain(ISwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;

@@ -27,7 +27,7 @@ public:
 	bool			InitAPI(const ShaderAPIParams &params);
 
 	// frame begin/end
-	void			BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void			BeginFrame(ISwapChain* swapChain = nullptr);
 	void			EndFrame();
 
 	// renderer interface
@@ -49,10 +49,10 @@ public:
 	bool			CaptureScreenshot(CImage &img);
 
 	// creates swap chain
-	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true);
+	ISwapChain*	CreateSwapChain(void* window, bool windowed = true);
 
 	// destroys a swapchain
-	void			DestroySwapChain(IEqSwapChain* swapChain);
+	void			DestroySwapChain(ISwapChain* swapChain);
 
 protected:
 
@@ -65,9 +65,9 @@ protected:
 	ID3D10Device*			m_rhi{ nullptr };
 #endif
 
-	IEqSwapChain*			m_defaultSwapChain{ nullptr };
-	IEqSwapChain*			m_currentSwapChain{ nullptr };
-	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
+	ISwapChain*			m_defaultSwapChain{ nullptr };
+	ISwapChain*			m_currentSwapChain{ nullptr };
+	Array<ISwapChain*>	m_swapChains{ PP_SL };
 
 	DXGI_RATIONAL			m_fullScreenRefresh;
 

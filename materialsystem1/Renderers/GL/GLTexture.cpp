@@ -367,19 +367,19 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 	m_samplerState = sampler;
 	m_samplerState.aniso = max(s_renderApi.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
-	m_iFlags = flags;
+	m_flags = flags;
 
 	HOOK_TO_CVAR(r_loadmiplevel);
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
 		if (images[i]->IsCube())
-			m_iFlags |= TEXFLAG_CUBEMAP;
+			m_flags |= TEXFLAG_CUBEMAP;
 	}
 
 	m_glTarget = g_gl_texTargetType[images[0]->GetImageType()];
 
-	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
+	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 	if (s_renderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());
 	m_textures.reserve(images.numElem());
@@ -388,9 +388,9 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 	{
 		const CRefPtr<CImage> &img = images[i];
 
-		if ((m_iFlags & TEXFLAG_CUBEMAP) && !img->IsCube())
+		if ((m_flags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{
-			CrashMsg("TEXFLAG_CUBEMAP set - every texture in set must be cubemap, %s is not a cubemap\n", m_szTexName.ToCString());
+			CrashMsg("TEXFLAG_CUBEMAP set - every texture in set must be cubemap, %s is not a cubemap\n", m_name.ToCString());
 		}
 
 		const EImageType imgType = img->GetImageType();
@@ -432,7 +432,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 			if(texture.glTexID == GL_NONE)
 				return TEXLOAD_ERROR;
 
-			if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && s_renderApi.m_progressiveTextureFrequency > 0)
+			if ((m_flags & TEXFLAG_PROGRESSIVE_LODS) && s_renderApi.m_progressiveTextureFrequency > 0)
 			{
 				int transferredSize = 0;
 				do
@@ -466,7 +466,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 		if (result == TEXLOAD_ERROR)
 		{
-			MsgError("Error - cannot upload texture %s data\n", m_szTexName.ToCString());
+			MsgError("Error - cannot upload texture %s data\n", m_name.ToCString());
 			continue;
 		}
 
@@ -484,16 +484,16 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 		// FIXME: check for differences?
 		m_mipCount = max(m_mipCount, mipCount);
-		m_iWidth = max(m_iWidth, texWidth);
-		m_iHeight = max(m_iHeight, texHeight);
-		m_iDepth = max(m_iDepth, texDepth);
-		m_iFormat = imgFmt;
+		m_width = max(m_width, texWidth);
+		m_height = max(m_height, texHeight);
+		m_depth = max(m_depth, texDepth);
+		m_format = imgFmt;
 
 		m_texSize += img->GetMipMappedSize(mipStart);
 	}
 
 	// hey you have concurrency errors if this assert hits!
-	ASSERT_MSG(images.numElem() == m_textures.numElem(), "%s - %d images at input while %d textures created", m_szTexName.ToCString(), images.numElem(), m_textures.numElem());
+	ASSERT_MSG(images.numElem() == m_textures.numElem(), "%s - %d images at input while %d textures created", m_name.ToCString(), images.numElem(), m_textures.numElem());
 
 	if (m_progressiveState.numElem())
 	{
@@ -502,7 +502,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 		s_renderApi.m_progressiveTextures.insert(this);
 	}
 
-	m_numAnimatedTextureFrames = m_textures.numElem();
+	m_animFrameCount = m_textures.numElem();
 
 	return true;
 }
@@ -511,10 +511,10 @@ GLTextureRef_t &CGLTexture::GetCurrentTexture()
 {
 	static GLTextureRef_t nulltex = {0, IMAGE_TYPE_INVALID};
 
-	if (!m_textures.inRange(m_nAnimatedTextureFrame))
+	if (!m_textures.inRange(m_animFrame))
 		return nulltex;
 
-	return m_textures[m_nAnimatedTextureFrame];
+	return m_textures[m_animFrame];
 }
 
 EProgressiveStatus CGLTexture::StepProgressiveLod()
@@ -572,7 +572,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 		return false;
 	}
 
-	if (IsCompressedFormat(m_iFormat))
+	if (IsCompressedFormat(m_format))
 	{
 		ASSERT_FAIL("Compressed textures aren't lockable!");
 		return false;
@@ -614,11 +614,11 @@ bool CGLTexture::Lock(LockInOutData& data)
 	}
 	}
 
-	const int lockByteCount = GetBytesPerPixel(m_iFormat) * sizeToLock;
+	const int lockByteCount = GetBytesPerPixel(m_format) * sizeToLock;
 
 	// allocate memory for lock data
 	data.lockData = (ubyte*)PPAlloc(lockByteCount);
-	data.lockPitch = lockPitch * GetBytesPerPixel(m_iFormat);
+	data.lockPitch = lockPitch * GetBytesPerPixel(m_format);
 
 #ifdef USE_GLES2
 	// Always need to discard data from GLES :(
@@ -626,8 +626,8 @@ bool CGLTexture::Lock(LockInOutData& data)
 	if (!(data.flags & TEXLOCK_DISCARD))
 	{
 		g_glWorker.WaitForExecute("LockTexGetData", [&]() {
-			const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_iFormat)];
-			const GLenum srcType = g_gl_chanTypePerFormat[m_iFormat];
+			const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_format)];
+			const GLenum srcType = g_gl_chanTypePerFormat[m_format];
 
 			glBindTexture(m_glTarget, m_textures[0].glTexID);
 
@@ -674,9 +674,9 @@ void CGLTexture::Unlock()
 
 	if (!(data.flags & TEXLOCK_READONLY))
 	{
-		GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_iFormat)];
-		GLenum srcType = g_gl_chanTypePerFormat[m_iFormat];
-		GLenum internalFormat = PickGLInternalFormat(m_iFormat);
+		GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_format)];
+		GLenum srcType = g_gl_chanTypePerFormat[m_format];
+		GLenum internalFormat = PickGLInternalFormat(m_format);
 
 		const int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx : m_glTarget;
 

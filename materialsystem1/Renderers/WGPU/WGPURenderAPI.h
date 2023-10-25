@@ -25,6 +25,7 @@ class WGPURenderAPI : public ShaderAPI_Base
 {
 	friend class CWGPURenderLib;
 public:
+	static WGPURenderAPI Instance;
 
 	WGPURenderAPI() {}
 	~WGPURenderAPI() {}

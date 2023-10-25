@@ -1,11 +1,11 @@
 #pragma once
 #include <webgpu/webgpu.h>
-#include "renderers/IEqSwapChain.h"
+#include "renderers/ISwapChain.h"
 #include "renderers/ShaderAPI_defs.h"
 
 class CWGPURenderLib;
 
-class CWGPUSwapChain : public IEqSwapChain
+class CWGPUSwapChain : public ISwapChain
 {
 public:
 	friend class CWGPURenderLib;

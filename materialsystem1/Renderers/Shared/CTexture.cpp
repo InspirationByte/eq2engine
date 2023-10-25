@@ -16,15 +16,15 @@
 void CTexture::SetName(const char* pszNewName)
 {
 	ASSERT_MSG(*pszNewName != 0, "Empty texture names are not allowed");
-	m_szTexName = pszNewName;
-	m_szTexName.Path_FixSlashes();
-	m_nameHash = StringToHash(m_szTexName.ToCString(), true);
+	m_name = pszNewName;
+	m_name.Path_FixSlashes();
+	m_nameHash = StringToHash(m_name.ToCString(), true);
 }
 
 // sets current animated texture frames
 void CTexture::SetAnimationFrame(int frame)
 {
-	m_nAnimatedTextureFrame = clamp(frame, 0, m_numAnimatedTextureFrames-1);
+	m_animFrame = clamp(frame, 0, m_animFrameCount-1);
 }
 
 // initializes procedural (lockable) texture

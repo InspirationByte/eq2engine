@@ -21,8 +21,7 @@
 
 HOOK_TO_CVAR(r_screen);
 
-WGPURenderAPI s_renderApi;
-IShaderAPI* g_renderAPI = &s_renderApi;
+IShaderAPI* g_renderAPI = &WGPURenderAPI::Instance;
 
 DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "1", nullptr, 0);
@@ -104,7 +103,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		wgpuAdapterGetLimits(adapter, &supLimits);
 
 		// fill ShaderAPI capabilities
-		ShaderAPICaps& caps = s_renderApi.m_caps;
+		ShaderAPICaps& caps = WGPURenderAPI::Instance.m_caps;
 		//caps.textureFormatsSupported[FORMAT_COUNT]{ false };
 		//caps.renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 		caps.isInstancingSupported = true;
@@ -185,7 +184,7 @@ void CWGPURenderLib::ExitAPI()
 	m_deviceQueue = nullptr;
 }
 
-void CWGPURenderLib::BeginFrame(IEqSwapChain* swapChain)
+void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 
@@ -236,14 +235,14 @@ void CWGPURenderLib::EndFrame()
 	currentSwapChain->SwapBuffers();
 }
 
-IEqSwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo);
 	m_swapChains.append(swapChain);
 	return swapChain;
 }
 
-void CWGPURenderLib::DestroySwapChain(IEqSwapChain* swapChain)
+void CWGPURenderLib::DestroySwapChain(ISwapChain* swapChain)
 {
 	if (m_swapChains.fastRemove(static_cast<CWGPUSwapChain*>(swapChain)))
 		delete swapChain;

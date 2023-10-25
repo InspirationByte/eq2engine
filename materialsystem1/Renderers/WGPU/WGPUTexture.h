@@ -13,14 +13,13 @@ class CWGPUTexture : public CTexture
 public:
 	friend class WGPURenderAPI;
 
-	// initializes texture from image array of images
-	bool Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
+	bool		Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
 
-	// locks texture for modifications, etc
-	bool Lock(LockInOutData& data);
-	
-	// unlocks texture for modifications, etc
-	void Unlock();
+	bool		Lock(LockInOutData& data);
+	void		Unlock();
 
-	void Ref_DeleteObject();
+protected:
+	void		Ref_DeleteObject();
+
+
 };

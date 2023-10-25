@@ -6,10 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "renderers/IEqSwapChain.h"
+#include "renderers/ISwapChain.h"
 #include "renderers/ITexture.h"
 
-class CGLSwapChain : public IEqSwapChain
+class CGLSwapChain : public ISwapChain
 {
 	friend class CGLRenderLib_WGL;
 	friend class CGLRenderLib_GLX;

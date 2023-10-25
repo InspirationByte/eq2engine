@@ -6,10 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "renderers/IEqSwapChain.h"
+#include "renderers/ISwapChain.h"
 #include "D3D11Texture.h"
 
-class CD3D10SwapChain : public IEqSwapChain
+class CD3D10SwapChain : public ISwapChain
 {
 	friend class		CD3D11RenderLib;
 public:

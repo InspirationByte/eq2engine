@@ -1059,7 +1059,7 @@ const ITexturePtr& CMaterialSystem::GetErrorCheckerboardTexture() const
 //-----------------------------
 
 // tells 3d device to begin frame
-bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
+bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 {
 	if(!m_shaderAPI)
 		return false;
@@ -1159,7 +1159,7 @@ void CMaterialSystem::SetDeviceFocused(bool inFocus)
 	m_renderLibrary->SetFocused(inFocus);
 }
 
-IEqSwapChain* CMaterialSystem::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChain* CMaterialSystem::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	if (!m_renderLibrary)
 		return nullptr;
@@ -1167,7 +1167,7 @@ IEqSwapChain* CMaterialSystem::CreateSwapChain(const RenderWindowInfo& windowInf
 	m_renderLibrary->CreateSwapChain(windowInfo);
 }
 
-void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
+void CMaterialSystem::DestroySwapChain(ISwapChain* swapChain)
 {
 	if(m_renderLibrary)
 		m_renderLibrary->DestroySwapChain(swapChain);

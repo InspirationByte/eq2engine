@@ -8,7 +8,7 @@
 #pragma once
 #include "core/InterfaceManager.h"
 
-class IEqSwapChain;
+class ISwapChain;
 class IShaderAPI;
 class CImage;
 class IRenderLibrary;
@@ -34,7 +34,7 @@ public:
 	virtual bool			InitAPI(const ShaderAPIParams &params ) = 0;
 	virtual void			ExitAPI() = 0;
 
-	virtual void			BeginFrame(IEqSwapChain* swapChain = nullptr) = 0;
+	virtual void			BeginFrame(ISwapChain* swapChain = nullptr) = 0;
 	virtual void			EndFrame() = 0;
 
 	virtual IShaderAPI*		GetRenderer() const = 0;
@@ -47,6 +47,6 @@ public:
 
 	virtual	bool			CaptureScreenshot(CImage &img) = 0;
 
-	virtual IEqSwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
-	virtual void			DestroySwapChain(IEqSwapChain* swapChain) = 0;
+	virtual ISwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
+	virtual void			DestroySwapChain(ISwapChain* swapChain) = 0;
 };

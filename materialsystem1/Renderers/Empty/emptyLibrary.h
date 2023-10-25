@@ -19,7 +19,7 @@ public:
 	bool			InitAPI(const ShaderAPIParams &params);
 	void			ExitAPI();
 
-	void			BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void			BeginFrame(ISwapChain* swapChain = nullptr);
 	void			EndFrame();
 
 	IShaderAPI*		GetRenderer() const;
@@ -32,8 +32,8 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	IEqSwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) {return nullptr;}
-	void			DestroySwapChain(IEqSwapChain* swapChain) {}
+	ISwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) {return nullptr;}
+	void			DestroySwapChain(ISwapChain* swapChain) {}
 
 protected:
 	EQWNDHANDLE				hwnd;

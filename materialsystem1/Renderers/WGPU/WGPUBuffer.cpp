@@ -4,9 +4,7 @@
 #include "WGPUBuffer.h"
 #include "WGPURenderAPI.h"
 
-extern WGPURenderAPI s_renderApi;
-
-void CEqWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage)
+void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage)
 {
 	m_bufSize = bufferInfo.elementSize * bufferInfo.elementCapacity;
 
@@ -17,19 +15,19 @@ void CEqWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage)
 	if (bufferInfo.flags & BUFFER_FLAG_READ)
 		desc.usage |= WGPUBufferUsage_MapRead;
 
-	m_rhiBuffer = wgpuDeviceCreateBuffer(s_renderApi.GetWGPUDevice(), &desc);
+	m_rhiBuffer = wgpuDeviceCreateBuffer(WGPURenderAPI::Instance.GetWGPUDevice(), &desc);
 
 	if (bufferInfo.data && bufferInfo.dataSize)
-		wgpuQueueWriteBuffer(s_renderApi.GetWGPUQueue(), m_rhiBuffer, 0, bufferInfo.data, min(bufferInfo.dataSize, m_bufSize));
+		wgpuQueueWriteBuffer(WGPURenderAPI::Instance.GetWGPUQueue(), m_rhiBuffer, 0, bufferInfo.data, min(bufferInfo.dataSize, m_bufSize));
 }
 
-void CEqWGPUBuffer::Update(void* data, int size, int offset)
+void CWGPUBuffer::Update(void* data, int size, int offset)
 {
 	// next commands in queue are not executed until data is uploded
-	wgpuQueueWriteBuffer(s_renderApi.GetWGPUQueue(), m_rhiBuffer, offset, data, min(size, m_bufSize));
+	wgpuQueueWriteBuffer(WGPURenderAPI::Instance.GetWGPUQueue(), m_rhiBuffer, offset, data, min(size, m_bufSize));
 }
 
-Future<BufferLockData> CEqWGPUBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
+Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
 {
 	struct LockContext
 	{
@@ -75,7 +73,7 @@ Future<BufferLockData> CEqWGPUBuffer::Lock(int lockOfs, int sizeToLock, void** o
 	return context->promise.CreateFuture();
 }
 
-void CEqWGPUBuffer::Unlock()
+void CWGPUBuffer::Unlock()
 {
 	wgpuBufferUnmap(m_rhiBuffer);
 }

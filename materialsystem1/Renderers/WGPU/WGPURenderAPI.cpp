@@ -1,6 +1,8 @@
 #include "core/core_common.h"
 #include "WGPURenderAPI.h"
 
+WGPURenderAPI WGPURenderAPI::Instance;
+
 void WGPURenderAPI::Init(const ShaderAPIParams& params)
 {
 	memset(&m_caps, 0, sizeof(m_caps));

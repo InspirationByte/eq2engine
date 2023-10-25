@@ -77,13 +77,13 @@ public:
 	//-----------------------------
 	// Swap chains
 
-	bool							BeginFrame(IEqSwapChain* swapChain);
+	bool							BeginFrame(ISwapChain* swapChain);
 	bool							EndFrame();
 	void							SetDeviceBackbufferSize(int wide, int tall);
 	void							SetDeviceFocused(bool inFocus);
 
-	IEqSwapChain*					CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void							DestroySwapChain(IEqSwapChain* chain);
+	ISwapChain*					CreateSwapChain(const RenderWindowInfo& windowInfo);
+	void							DestroySwapChain(ISwapChain* chain);
 
 	bool							SetWindowed(bool enable);
 	bool							IsWindowed() const;

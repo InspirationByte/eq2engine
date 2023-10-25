@@ -256,7 +256,7 @@ void CD3D11RenderLib::ReleaseSwapChains()
 	}
 }
 
-void CD3D11RenderLib::BeginFrame(IEqSwapChain* swapChain)
+void CD3D11RenderLib::BeginFrame(ISwapChain* swapChain)
 {
 	// "restore"
 	if (!s_renderApi.IsDeviceActive())
@@ -413,7 +413,7 @@ bool CD3D11RenderLib::CaptureScreenshot(CImage &img)
 
 
 // creates swap chain
-IEqSwapChain* CD3D11RenderLib::CreateSwapChain(void* window, bool windowed)
+ISwapChain* CD3D11RenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D10SwapChain* pNewChain = new CD3D10SwapChain();
 	
@@ -429,7 +429,7 @@ IEqSwapChain* CD3D11RenderLib::CreateSwapChain(void* window, bool windowed)
 }
 
 // destroys a swapchain
-void CD3D11RenderLib::DestroySwapChain(IEqSwapChain* swapChain)
+void CD3D11RenderLib::DestroySwapChain(ISwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;

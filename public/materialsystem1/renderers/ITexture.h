@@ -40,7 +40,7 @@ public:
 	// initializes texture from image array of images
 	virtual	bool			Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0) = 0;
 
-	// generates a new error texture
+	// generates a checkerboard texture
 	virtual bool			GenerateErrorTexture(int flags = 0) = 0;
 
 	// Name of texture

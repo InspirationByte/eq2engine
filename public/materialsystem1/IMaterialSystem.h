@@ -11,7 +11,7 @@
 
 #pragma once
 #include "renderers/IShaderAPI.h"
-#include "renderers/IEqSwapChain.h"
+#include "renderers/ISwapChain.h"
 
 #include "IMaterial.h"
 #include "IMatSysShader.h"
@@ -112,7 +112,7 @@ public:
 	//-----------------------------
 	// Swap chains
 
-	virtual bool					BeginFrame(IEqSwapChain* swapChain) = 0;
+	virtual bool					BeginFrame(ISwapChain* swapChain) = 0;
 	virtual bool					EndFrame() = 0;
 
 	virtual bool					CaptureScreenshot(CImage& img) = 0;
@@ -120,8 +120,8 @@ public:
 	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
 	virtual void					SetDeviceFocused(bool inFocus) = 0;
 
-	virtual IEqSwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
-	virtual void					DestroySwapChain(IEqSwapChain* chain) = 0;
+	virtual ISwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
+	virtual void					DestroySwapChain(ISwapChain* chain) = 0;
 
 	virtual bool					SetWindowed(bool enable) = 0;
 	virtual bool					IsWindowed() const = 0;

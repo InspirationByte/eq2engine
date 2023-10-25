@@ -47,7 +47,7 @@ void CEmptyRenderLib::ExitAPI()
 {
 }
 
-void CEmptyRenderLib::BeginFrame(IEqSwapChain* swapChain)
+void CEmptyRenderLib::BeginFrame(ISwapChain* swapChain)
 {
 
 }

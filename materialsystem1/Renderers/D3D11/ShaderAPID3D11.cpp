@@ -2895,7 +2895,7 @@ void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const Array<CImage*
 		return;
 	}
 
-	pTexture->m_numAnimatedTextureFrames = pTexture->m_textures.numElem();
+	pTexture->m_animFrameCount = pTexture->m_textures.numElem();
 	pTexture->m_samplerState = CreateSamplerState(sampler);
 
 	// Bind this sampler state to texture

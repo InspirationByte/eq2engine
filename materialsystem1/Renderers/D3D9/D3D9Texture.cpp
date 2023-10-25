@@ -170,7 +170,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 
 	m_samplerState = sampler;
 	m_samplerState.aniso = max(s_renderApi.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
-	m_iFlags = flags;
+	m_flags = flags;
 	m_pool = D3DPOOL_MANAGED;
 
 	HOOK_TO_CVAR(r_loadmiplevel);
@@ -178,10 +178,10 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 	for (int i = 0; i < images.numElem(); i++)
 	{
 		if (images[i]->IsCube())
-			m_iFlags |= TEXFLAG_CUBEMAP;
+			m_flags |= TEXFLAG_CUBEMAP;
 	}
 
-	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
+	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
 	if(s_renderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());
@@ -191,9 +191,9 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 	{
 		const CRefPtr<CImage>& img = images[i];
 
-		if ((m_iFlags & TEXFLAG_CUBEMAP) && !img->IsCube())
+		if ((m_flags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{
-			CrashMsg("TEXFLAG_CUBEMAP set - every texture in set must be cubemap, %s is not a cubemap\n", m_szTexName.ToCString());
+			CrashMsg("TEXFLAG_CUBEMAP set - every texture in set must be cubemap, %s is not a cubemap\n", m_name.ToCString());
 		}
 
 		const EImageType imgType = img->GetImageType();
@@ -216,7 +216,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 			continue;
 		}
 
-		if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && s_renderApi.m_progressiveTextureFrequency > 0)
+		if ((m_flags & TEXFLAG_PROGRESSIVE_LODS) && s_renderApi.m_progressiveTextureFrequency > 0)
 		{
 			// start with uploading only first LOD
 			const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
@@ -264,17 +264,17 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 
 		// FIXME: check for differences?
 		m_mipCount = max(m_mipCount, mipCount);
-		m_iWidth = max(m_iWidth, texWidth);
-		m_iHeight = max(m_iHeight, texHeight);
-		m_iDepth = max(m_iDepth, texDepth);
-		m_iFormat = imgFmt;
+		m_width = max(m_width, texWidth);
+		m_height = max(m_height, texHeight);
+		m_depth = max(m_depth, texDepth);
+		m_format = imgFmt;
 
 		m_texSize += img->GetMipMappedSize(mipStart);
 		m_textures.append(d3dTexture);
 	}
 
 	// hey you have concurrency errors if this assert hits!
-	ASSERT_MSG(images.numElem() == m_textures.numElem(), "%s - %d images at input while %d textures created", m_szTexName.ToCString(), images.numElem(), m_textures.numElem());
+	ASSERT_MSG(images.numElem() == m_textures.numElem(), "%s - %d images at input while %d textures created", m_name.ToCString(), images.numElem(), m_textures.numElem());
 
 	if(m_progressiveState.numElem())
 	{
@@ -284,7 +284,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 		s_renderApi.m_progressiveTextures.insert(this);
 	}
 
-	m_numAnimatedTextureFrames = m_textures.numElem();
+	m_animFrameCount = m_textures.numElem();
 
 	return true;
 }
@@ -328,10 +328,10 @@ void CD3D9Texture::Restore()
 
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 {
-	if (!m_textures.inRange(m_nAnimatedTextureFrame))
+	if (!m_textures.inRange(m_animFrame))
 		return nullptr;
 
-	return m_textures[m_nAnimatedTextureFrame];
+	return m_textures[m_animFrame];
 }
 
 EProgressiveStatus CD3D9Texture::StepProgressiveLod()
@@ -389,7 +389,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 		return false;
 	}
 
-	if (IsCompressedFormat(m_iFormat))
+	if (IsCompressedFormat(m_format))
 	{
 		ASSERT_FAIL("Compressed textures aren't lockable!");
 		return false;
@@ -432,7 +432,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 		{
 			IDirect3DDevice9* d3dDevice = s_renderApi.GetD3DDevice();
 
-			if (d3dDevice->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, g_d3d9_imageFormats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_lockSurface, nullptr) == D3D_OK)
+			if (d3dDevice->CreateOffscreenPlainSurface(m_width, m_height, g_d3d9_imageFormats[m_format], D3DPOOL_SYSTEMMEM, &m_lockSurface, nullptr) == D3D_OK)
 			{
 				HRESULT result = d3dDevice->GetRenderTargetData(m_surfaces[data.cubeFaceIdx], m_lockSurface);
 

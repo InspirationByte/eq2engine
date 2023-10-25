@@ -6,9 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "renderers/IEqSwapChain.h"
+#include "renderers/ISwapChain.h"
 
-class CD3D9SwapChain : public IEqSwapChain
+class CD3D9SwapChain : public ISwapChain
 {
 public:
 	bool		Initialize(const RenderWindowInfo& windowInfo);

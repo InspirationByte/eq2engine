@@ -34,7 +34,7 @@ public:
 	bool					CreateSurface();
 
 	// frame begin/end
-	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void					BeginFrame(ISwapChain* swapChain = nullptr);
 	void					EndFrame();
 
 	IShaderAPI*				GetRenderer() const;
@@ -47,8 +47,8 @@ public:
 
 	bool					CaptureScreenshot(CImage &img);
 
-	IEqSwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo);
-	void					DestroySwapChain(IEqSwapChain* swapChain);
+	ISwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo);
+	void					DestroySwapChain(ISwapChain* swapChain);
 
 	// start capturing GL commands from specific thread id
 	void					BeginAsyncOperation(uintptr_t threadId);
@@ -59,8 +59,8 @@ protected:
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
 
-	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
-	IEqSwapChain*			m_curSwapChain{ nullptr };
+	Array<ISwapChain*>	m_swapChains{ PP_SL };
+	ISwapChain*			m_curSwapChain{ nullptr };
 
 	uintptr_t				m_mainThreadId{ 0 };
 	bool					m_asyncOperationActive{ false };

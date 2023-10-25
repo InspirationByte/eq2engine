@@ -9,8 +9,6 @@
 #include "WGPUTexture.h"
 #include "WGPURenderAPI.h"
 
-extern WGPURenderAPI s_renderApi;
-
 // initializes texture from image array of images
 bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
 {
@@ -41,6 +39,6 @@ void CWGPUTexture::Unlock()
 
 void CWGPUTexture::Ref_DeleteObject()
 {
-	s_renderApi.FreeTexture(this);
+	WGPURenderAPI::Instance.FreeTexture(this);
 	RefCountedObject::Ref_DeleteObject();
 }

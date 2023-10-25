@@ -12,10 +12,10 @@ struct RenderWindowInfo;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
-class IEqSwapChain
+class ISwapChain
 {
 public:
-	virtual ~IEqSwapChain() = default;
+	virtual ~ISwapChain() = default;
 
 	virtual void*			GetWindow()  const = 0;
 	virtual ITexturePtr		GetBackbuffer() const = 0;
