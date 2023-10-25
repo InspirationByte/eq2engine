@@ -31,6 +31,8 @@ protected:
 	IDirect3DIndexBuffer9*	m_rhiBuffer{ 0 };
 	DWORD					m_bufUsage{ 0 };
 
+	int						m_bufInitialSize{ 0 };
+
 	int						m_bufElemCapacity{ 0 };
 	int						m_bufElemSize{ 0 };
 

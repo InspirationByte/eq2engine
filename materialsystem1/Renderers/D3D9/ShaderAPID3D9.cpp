@@ -2292,6 +2292,8 @@ IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(const BufferInfo& bufferInfo)
 	pBuffer->m_bufElemSize = bufferInfo.elementSize;
 
 	const int initialSizeBytes = bufferInfo.elementCapacity * bufferInfo.elementSize;
+	pBuffer->m_bufInitialSize = initialSizeBytes;
+
 	const bool dynamic = (pBuffer->m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	DevMsg(DEVMSG_RENDER, "Creating VBO with size %i KB\n", initialSizeBytes / 1024);
@@ -2331,6 +2333,8 @@ IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(const BufferInfo& bufferInfo)
 	pBuffer->m_bufUsage = g_d3d9_bufferUsages[bufferInfo.accessType];
 
 	const int initialSizeBytes = bufferInfo.elementCapacity * bufferInfo.elementSize;
+	pBuffer->m_bufInitialSize = initialSizeBytes;
+
 	const bool dynamic = (pBuffer->m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	DevMsg(DEVMSG_RENDER, "Creating IBO with size %i KB\n", initialSizeBytes / 1024);

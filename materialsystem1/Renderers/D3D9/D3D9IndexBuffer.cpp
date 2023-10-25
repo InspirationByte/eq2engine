@@ -26,8 +26,13 @@ CD3D9IndexBuffer::~CD3D9IndexBuffer()
 		m_rhiBuffer->Release();
 }
 
+#pragma optimize("", off)
+
 void CD3D9IndexBuffer::ReleaseForRestoration()
 {
+	if (m_restore)
+		return;
+
 	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	// dynamic VBO's uses a D3DPOOL_DEFAULT
@@ -42,20 +47,21 @@ void CD3D9IndexBuffer::ReleaseForRestoration()
 	m_restore->data = PPAlloc(lockSize);
 
 	void* src = nullptr;
-
-	if (m_rhiBuffer->Lock(0, lockSize, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK) == D3D_OK)
+	if (FAILED(m_rhiBuffer->Lock(0, lockSize, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK)))
 	{
-		memcpy(m_restore->data, src, m_restore->size);
-
-		m_rhiBuffer->Unlock();
+		SAFE_DELETE(m_restore);
 		m_rhiBuffer->Release();
-
 		m_rhiBuffer = nullptr;
-	}
-	else
-	{
+
 		ASSERT_FAIL("Vertex buffer storage failed.");
+		return;
 	}
+
+	memcpy(m_restore->data, src, m_restore->size);
+	m_rhiBuffer->Unlock();
+
+	m_rhiBuffer->Release();
+	m_rhiBuffer = nullptr;
 }
 
 void CD3D9IndexBuffer::Restore()
@@ -66,14 +72,16 @@ void CD3D9IndexBuffer::Restore()
 	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 	const D3DPOOL pool = dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED;
 	const D3DFORMAT format = m_bufElemSize == 2 ? D3DFMT_INDEX16 : D3DFMT_INDEX32;
-	if (FAILED(s_renderApi.m_pD3DDevice->CreateIndexBuffer(m_restore->size, m_bufUsage, format, pool, &m_rhiBuffer, nullptr)))
+	if (FAILED(s_renderApi.m_pD3DDevice->CreateIndexBuffer(m_bufInitialSize, m_bufUsage, format, pool, &m_rhiBuffer, nullptr)))
 	{
 		ASSERT_FAIL("Vertex buffer restoration failed.");
 	}
 
 	void* dest = nullptr;
-	if (FAILED(m_rhiBuffer->Lock(0, m_restore->size, &dest, dynamic ? D3DLOCK_DISCARD : 0)))
+	if (FAILED(m_rhiBuffer->Lock(0, m_restore->size, &dest, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK)))
 	{
+		m_rhiBuffer->Release();
+		m_rhiBuffer = nullptr;
 		SAFE_DELETE(m_restore);
 		return;
 	}
@@ -122,7 +130,7 @@ void CD3D9IndexBuffer::Update(void* data, int size, int offset)
 	memcpy(outData, data, lockByteCount);
 	m_rhiBuffer->Unlock();
 
-	if (dynamic)
+	if (dynamic && offset == 0)
 		m_bufElemCapacity = offset + size;
 }
 

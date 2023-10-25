@@ -34,6 +34,8 @@ protected:
 	IDirect3DVertexBuffer9*	m_rhiBuffer{ nullptr };
 	DWORD					m_bufUsage{ 0 };
 
+	int						m_bufInitialSize{ 0 };
+
 	int						m_bufElemCapacity{ 0 };
 	int						m_bufElemSize{ 0 };
 

@@ -26,8 +26,13 @@ CD3D9VertexBuffer::~CD3D9VertexBuffer()
 		m_rhiBuffer->Release();
 }
 
+#pragma optimize("", off)
+
 void CD3D9VertexBuffer::ReleaseForRestoration()
 {
+	if (m_restore)
+		return;
+
 	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	// dynamic VBO's uses a D3DPOOL_DEFAULT
@@ -37,42 +42,45 @@ void CD3D9VertexBuffer::ReleaseForRestoration()
 	SAFE_DELETE(m_restore);
 	m_restore = PPNew RestoreData;
 
-	const int lockSize = m_bufElemSize*m_bufElemCapacity;
+	const int lockSize = m_bufElemSize * m_bufElemCapacity;
 	m_restore->size = lockSize;
 	m_restore->data = PPAlloc(lockSize);
 
-	void *src = nullptr;
-
-	if(m_rhiBuffer->Lock(0, lockSize, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK) == D3D_OK)
+	void* src = nullptr;
+	if (FAILED(m_rhiBuffer->Lock(0, lockSize, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK)))
 	{
-		memcpy(m_restore->data, src, m_restore->size);
-
-		m_rhiBuffer->Unlock();
+		SAFE_DELETE(m_restore);
 		m_rhiBuffer->Release();
-
 		m_rhiBuffer = nullptr;
-	}
-	else
-	{
+
 		ASSERT_FAIL("Vertex buffer storage failed.");
+		return;
 	}
+
+	memcpy(m_restore->data, src, m_restore->size);
+	m_rhiBuffer->Unlock();
+
+	m_rhiBuffer->Release();
+	m_rhiBuffer = nullptr;
 }
 
 void CD3D9VertexBuffer::Restore()
 {
-	if(!m_restore)
+	if (!m_restore)
 		return;
 
 	const bool dynamic = (m_bufUsage & D3DUSAGE_DYNAMIC) != 0;
 	const D3DPOOL pool = dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED;
-	if (FAILED(s_renderApi.m_pD3DDevice->CreateVertexBuffer(m_restore->size, m_bufUsage, 0, pool, &m_rhiBuffer, nullptr)))
+	if (FAILED(s_renderApi.m_pD3DDevice->CreateVertexBuffer(m_bufInitialSize, m_bufUsage, 0, pool, &m_rhiBuffer, nullptr)))
 	{
 		ASSERT_FAIL("Vertex buffer restoration failed.");
 	}
 
 	void* dest = nullptr;
-	if (FAILED(m_rhiBuffer->Lock(0, m_restore->size, &dest, dynamic ? D3DLOCK_DISCARD : 0)))
+	if (FAILED(m_rhiBuffer->Lock(0, m_restore->size, &dest, D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK)))
 	{
+		m_rhiBuffer->Release();
+		m_rhiBuffer = nullptr;
 		SAFE_DELETE(m_restore);
 		return;
 	}
@@ -121,7 +129,7 @@ void CD3D9VertexBuffer::Update(void* data, int size, int offset)
 	memcpy(outData, data, lockByteCount);
 	m_rhiBuffer->Unlock();
 
-	if(dynamic)
+	if (dynamic && offset == 0)
 		m_bufElemCapacity = offset + size;
 }
 
