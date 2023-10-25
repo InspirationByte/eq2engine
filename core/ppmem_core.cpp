@@ -224,7 +224,7 @@ void PPMemInfo(bool fullStats)
 		for (auto it = allocCounter.begin(); !it.atEnd(); ++it)
 			sortedList.append(it.key());
 
-		shellSort(sortedList, [&allocCounter](uint64 a, uint64 b) {
+		arraySort(sortedList, [&allocCounter](uint64 a, uint64 b) {
 			return (int64)allocCounter[b].numAlloc - (int64)allocCounter[a].numAlloc;
 		});
 
@@ -251,7 +251,7 @@ void PPMemInfo(bool fullStats)
 		for (auto it = st.sourceCounterMap.begin(); !it.atEnd(); ++it)
 			sortedList.append(it.key());
 
-		shellSort(sortedList, [&st](uint64 a, uint64 b) {
+		arraySort(sortedList, [&st](uint64 a, uint64 b) {
 			return (int64)st.sourceCounterMap[b].lastTime - (int64)st.sourceCounterMap[a].lastTime;
 		});
 
@@ -299,6 +299,10 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		ASSERT_MSG(mem, "No mem left");
 		return mem;
 	}
+
+	// alignof(ppallocinfo_t);
+	// sizeof(ppallocinfo_t);
+	// sizeof(RawItem<ppallocinfo_t, alignof(ppallocinfo_t)>);
 
 	ppmem_state_t& st = PPGetState();
 	// allocate more to store extra information of this

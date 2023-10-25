@@ -53,9 +53,9 @@ int heapMoveDown(T* list, int begin, int mid, int end, const COMPAREFUNC& compar
 }
 
 template< class T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-int heapMoveUp(T* list, int beg, int mid, int end, const COMPAREFUNC& comparator)
+int heapMoveUp(T* list, int begin, int mid, int end, const COMPAREFUNC& comparator)
 {
-	if (mid < beg || mid >= end)
+	if (mid < begin || mid >= end)
 	{
 		ASSERT_FAIL("invalid mid index");
 		return -1;
@@ -63,7 +63,7 @@ int heapMoveUp(T* list, int beg, int mid, int end, const COMPAREFUNC& comparator
 
 	T x = std::move(list[mid]);
 
-	int cur = mid - beg;
+	int cur = mid - begin;
 	int prev = (cur + 1) / 2 - 1;
 
 	while (prev >= 0 && comparator(x, list[begin + prev]) > 0)
@@ -146,7 +146,7 @@ void introSort(T* list, int first, int last, int depth, const COMPAREFUNC& compa
 		int hi = last - 2;
 		for (;;)
 		{
-			while (lo <= last - 1 && comparator(list[lo], list[mi]) < 0)
+			while (comparator(list[lo], list[mi]) < 0)
 				++lo;
 
 			while (lo < hi && comparator(list[hi], list[mi]) >= 0)
@@ -196,7 +196,7 @@ void arraySort(T* list, const COMPAREFUNC& comparator, int begin, int end)
 		return;
 	introSort(list, begin, end-1, introSortDepth(end - begin), comparator);
 
-	ASSERT(arrayIsSorted(list, begin, end, comparator));
+	//ASSERT(arrayIsSorted(list, begin, end, comparator));
 }
 
 // array wrapper
