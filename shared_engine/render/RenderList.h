@@ -32,6 +32,11 @@ public:
 
 	void				Clear();
 protected:
+	struct RendPair
+	{
+		float	distance;
+		int		objIdx;
+	};
 	Array<Renderable*>	m_objectList;
-	Array<float>		m_viewDistance;
+	Array<RendPair>		m_viewDistance;
 };

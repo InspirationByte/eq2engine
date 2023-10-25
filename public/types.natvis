@@ -42,7 +42,7 @@
 				<Expand>
 					<ArrayItems>
 						<Size>m_nNumElem</Size>
-						<ValuePointer>($T1*)m_data</ValuePointer>
+						<ValuePointer>m_data</ValuePointer>
 					</ArrayItems>
 				</Expand>
 			</Synthetic>
@@ -143,6 +143,9 @@
 				</Expand>
 			</Synthetic>
 		</Expand>
+	</Type>
+	<Type Name="RawItem&lt;*&gt;">
+		<DisplayString>{ *($T1*)&amp;data }</DisplayString>
 	</Type>
 	<Type Name="CWeakPtr&lt;*&gt;">
 		<SmartPointer Usage="Minimal">($T1*)m_weakRefPtr->ptr</SmartPointer>

@@ -182,7 +182,8 @@ public:
 
 	const PPSourceLine	getSL() const { return PPSourceLine::Empty(); }
 protected:
-	ubyte			m_data[SIZE * sizeof(T)];
+	RawItem<T, alignof(T)>		m_data[SIZE];
+	static_assert(sizeof(T) * SIZE == sizeof(m_data));
 };
 
 template< typename T>

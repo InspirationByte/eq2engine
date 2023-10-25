@@ -18,11 +18,6 @@ static CEqMutex s_effectRenderMutex;
 
 CStaticAutoPtr<CEffectRenderer> effectrenderer;
 
-static int _SortParticles(IEffect* const &effect0, IEffect* const &effect1)
-{
-	return effect1->GetDistanceToCamera() - effect0->GetDistanceToCamera();
-}
-
 IEffect::IEffect() :	m_vOrigin(0.0f),
 						m_fStartLifeTime(0),
 						m_fLifeTime(0),
@@ -70,7 +65,10 @@ void CEffectRenderer::DrawEffects(float dt)
 	CScopedMutex m(s_effectRenderMutex);
 
 	// sort particles
-	quickSort(m_effectList, _SortParticles);
+	arraySort(m_effectList, [](IEffect* effect0, IEffect* effect1)
+	{
+		return sortCompare(effect1->GetDistanceToCamera(), effect0->GetDistanceToCamera());
+	});
 
 	for(int i = 0; i < m_effectList.numElem(); i++)
 	{

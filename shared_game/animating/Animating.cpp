@@ -259,10 +259,10 @@ void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& m
 		// sort events
 		auto compareEvents = [](const sequenceevent_t* a, const sequenceevent_t* b) -> int
 		{
-			return a->frame - b->frame;
+			return sortCompare(a->frame, b->frame);
 		};
 
-		quickSort(seqData.events, compareEvents, 0, seq.numEvents - 1);
+		arraySort(seqData.events, compareEvents, 0, seq.numEvents - 1);
 	}
 }
 

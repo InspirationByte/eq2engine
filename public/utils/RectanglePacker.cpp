@@ -81,7 +81,7 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 	for (int i = 0; i < m_rectList.numElem(); ++i)
 		sortedRects.append(i);
 
-	quickSort(sortedRects, [this, compRectFunc](const int ia, const int ib) {
+	arraySort(sortedRects, [this, compRectFunc](const int ia, const int ib) {
 		return compRectFunc(m_rectList[ia], m_rectList[ib]);
 	});
 

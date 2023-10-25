@@ -1225,7 +1225,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 			}
 		}
 
-		shellSort(allSounds, [](SoundScriptDesc* a, SoundScriptDesc* b) {
+		arraySort(allSounds, [](SoundScriptDesc* a, SoundScriptDesc* b) {
 			return a->name.Compare(b->name);
 		});
 

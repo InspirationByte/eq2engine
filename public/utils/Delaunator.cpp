@@ -98,7 +98,7 @@ struct compare
 	ArrayCRef<Vector2D> coords;
 	TVec2D<double> center;
 
-	int operator()(int i, int j)
+	int operator()(int i, int j) const
 	{
 		const double d1 = dist(coords[i].x, coords[i].y, center.x, center.y);
 		const double d2 = dist(coords[j].x, coords[j].y, center.x, center.y);
@@ -107,17 +107,13 @@ struct compare
 		const double diff3 = coords[i].y - coords[j].y;
 
 		if (diff1 > 0.0 || diff1 < 0.0)
-		{
 			return diff1;
-		}
-		else if (diff2 > 0.0 || diff2 < 0.0)
-		{
+		
+		if (diff2 > 0.0 || diff2 < 0.0)
 			return diff2;
-		}
-		else
-		{
-			return diff3;
-		}
+
+		return diff3;
+
 	}
 };
 
@@ -258,7 +254,7 @@ Delaunator::Delaunator(ArrayCRef<Vector2D> in_coords)
 	m_center = circumCenter(i0x, i0y, i1x, i1y, i2x, i2y);
 
 	// sort the points by distance from the seed triangle circumcenter
-	quickSort(ids, compare{ m_coords, m_center });
+	arraySort(ids, compare{ m_coords, m_center });
 
 	// initialize a hash table for storing edges of the advancing convex hull
 	m_hash_size = static_cast<int>(llround(ceil(sqrt(n))));

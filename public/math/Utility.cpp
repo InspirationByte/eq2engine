@@ -242,11 +242,6 @@ static float orient2D(const Vector2D& O, const Vector2D& A, const Vector2D& B)
 	return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
 }
 
-static int cmpFloat(float a, float b)
-{
-	return (a > b) - (a < b);
-}
-
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 {
 	const int n = points.numElem();
@@ -256,9 +251,9 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	hull.assureSize(2 * n);
 
 	// sort points lexicographically
-	quickSort(points, [](const Vector2D& a, const Vector2D& b) {
-		int cmp = cmpFloat(a.x, b.x);
-		return cmp == 0 ? cmpFloat(a.y, b.y) : cmp;
+	arraySort(points, [](const Vector2D& a, const Vector2D& b) {
+		int cmp = sortCompare(a.x, b.x);
+		return cmp == 0 ? sortCompare(a.y, b.y) : cmp;
 	});
 
 	// lower hull

@@ -25,8 +25,8 @@ CRenderList::~CRenderList()
 
 void CRenderList::AddRenderable(Renderable* pObject)
 {
-	m_objectList.append(pObject);
-	m_viewDistance.append(0.0f);
+	const int idx = m_objectList.append(pObject);
+	m_viewDistance.append({ 0.0f, idx });
 }
 
 int CRenderList::GetRenderableCount()
@@ -51,10 +51,10 @@ void CRenderList::Render(int renderFlags, void* userdata)
 	RenderInfo rinfo;
 	rinfo.renderFlags = renderFlags;
 	rinfo.userData = userdata;
-	for (int i = 0; i < m_objectList.numElem(); ++i)
+	for (const RendPair& renderable : m_viewDistance)
 	{
-		rinfo.distance = m_viewDistance[i];
-		m_objectList[i]->Render(rinfo);
+		rinfo.distance = renderable.distance;
+		m_objectList[renderable.objIdx]->Render(rinfo);
 	}
 }
 
@@ -76,23 +76,23 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 
 		// clamp point in bbox
 		if(!bbox.Contains(origin))
-			m_viewDistance[i] = lengthSqr(origin - bbox.ClampPoint(origin));
+			m_viewDistance[i].distance = lengthSqr(origin - bbox.ClampPoint(origin));
 		else
-			m_viewDistance[i] = lengthSqr(origin - bbox.GetCenter());
+			m_viewDistance[i].distance = lengthSqr(origin - bbox.GetCenter());
 	}
 
 	if (reverse)
 	{
 		// furthest to closest (for transparency)
-		quickSortIdx(m_objectList, [this](int a, int b) {
-			return m_viewDistance[b] - m_viewDistance[a];
+		arraySort(m_viewDistance, [this](RendPair& a, RendPair& b) {
+			return sortCompare(b.distance, a.distance);
 		});
 	}
 	else
 	{
 		// closest to furthest
-		quickSortIdx(m_objectList, [this](int a, int b) {
-			return m_viewDistance[a] - m_viewDistance[b];
+		arraySort(m_viewDistance, [this](RendPair& a, RendPair& b) {
+			return sortCompare(a.distance, b.distance);
 		});
 	}
 }

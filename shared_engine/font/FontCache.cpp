@@ -148,7 +148,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		else
 		{
 			// sort the fonts by size
-			quickSort(familyEntry.sizeTable, compareFontSizes );
+			arraySort(familyEntry.sizeTable, compareFontSizes );
 		}
 
 		// any font description file may redefine default font

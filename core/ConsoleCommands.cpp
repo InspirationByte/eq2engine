@@ -431,7 +431,7 @@ void CConsoleCommands::SortCommands()
 	if (!m_commandListDirty)
 		return;
 
-	quickSort(m_registeredCommands, alpha_cmd_comp);
+	arraySort(m_registeredCommands, alpha_cmd_comp);
 
 	m_commandListDirty = false;
 }
