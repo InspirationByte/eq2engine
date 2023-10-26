@@ -26,16 +26,35 @@ IShaderAPI* g_renderAPI = &WGPURenderAPI::Instance;
 DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "1", nullptr, 0);
 
-static void OnWGPUDeviceError(WGPUErrorType /*type*/, const char* message, void*)
+static const char* s_wgpuErrorTypesStr[] = {
+	"NoError",
+	"Validation",
+	"OutOfMemory",
+	"Internal",
+	"Unknown",
+	"DeviceLost",
+};
+
+static const char* s_wgpuDeviceLostReasonStr[] = {
+	"Undefined",
+	"Destroyed",
+};
+
+static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
 {
 	if (wgpu_break_on_error.GetBool())
 	{
-		ASSERT_FAIL("WGPU device validation error:\n\n%s", message);
+		ASSERT_FAIL("WGPU device validation error %s:\n\n%s", s_wgpuErrorTypesStr[type], message);
 	}
 
 	if (wgpu_report_errors.GetBool())
-		MsgError("[WGPU] %s\n", message);
+		MsgError("[WGPU] %s - %s\n", s_wgpuErrorTypesStr[type], message);
+}
 
+static void OnWGPUDeviceLost(WGPUDeviceLostReason reason, char const* message, void* userdata)
+{
+	ASSERT_FAIL("WGPU device lost reason %s\n\n%s", s_wgpuDeviceLostReasonStr[reason], message);
+	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message);
 }
 
 static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata)
@@ -150,9 +169,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		// extra features: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Features.cpp
 		WGPUDeviceDescriptor desc{};
-		WGPURequiredLimits reqLimits;
-		reqLimits.limits = supLimits.limits;
-		desc.requiredLimits = &reqLimits;
+		
 		WGPUFeatureName requiredFeatures[] = {
 			WGPUFeatureName_TextureCompressionBC,
 			WGPUFeatureName_BGRA8UnormStorage,
@@ -162,7 +179,10 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		};
 		desc.requiredFeatures = requiredFeatures;
 		desc.requiredFeatureCount = elementsOf(requiredFeatures);
-
+		WGPURequiredLimits reqLimits;
+		reqLimits.limits = supLimits.limits;
+		desc.requiredLimits = &reqLimits;
+		desc.deviceLostCallback = OnWGPUDeviceLost;
 		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &desc);
 		if (!m_rhiDevice)
 			return false;
