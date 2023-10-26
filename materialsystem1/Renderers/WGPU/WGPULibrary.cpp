@@ -238,12 +238,6 @@ void CWGPURenderLib::ExitAPI()
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
-
-	// process all internal async events or error callbacks
-	g_renderWorker.Execute("WGPUEvents", [this]() {
-		wgpuInstanceProcessEvents(m_instance);
-		return 0;
-	});
 }
 
 void CWGPURenderLib::EndFrame()
@@ -279,6 +273,12 @@ void CWGPURenderLib::EndFrame()
 			}
 		}
 		//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
+		return 0;
+	});
+
+	// process all internal async events or error callbacks
+	g_renderWorker.WaitForExecute("WGPUEvents", [this]() {
+		wgpuInstanceProcessEvents(m_instance);
 		return 0;
 	});
 

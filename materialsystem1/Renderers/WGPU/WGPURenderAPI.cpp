@@ -6,7 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "imaging/ImageLoader.h"
 #include "WGPURenderAPI.h"
+
+#define ASSERT_DEPRECATED() // ASSERT_FAIL("Deprecated API %s", __func__)
 
 WGPURenderAPI WGPURenderAPI::Instance;
 
@@ -34,14 +37,14 @@ IVertexFormat* WGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<Ver
 
 IVertexBuffer* WGPURenderAPI::CreateVertexBuffer(const BufferInfo& bufferInfo)
 {
-	CWGPUVertexBuffer* buffer = new CWGPUVertexBuffer(bufferInfo.elementSize);
+	CWGPUVertexBuffer* buffer = new CWGPUVertexBuffer(bufferInfo);
 	m_VBList.append(buffer);
 	return buffer;
 }
 
 IIndexBuffer* WGPURenderAPI::CreateIndexBuffer(const BufferInfo& bufferInfo)
 {
-	CWGPUIndexBuffer* buffer = new CWGPUIndexBuffer(bufferInfo.elementSize);
+	CWGPUIndexBuffer* buffer = new CWGPUIndexBuffer(bufferInfo);
 	m_IBList.append(buffer);
 	return buffer;
 }
@@ -151,28 +154,34 @@ void WGPURenderAPI::DestroyRenderState( IRenderState* pShaderProgram, bool remov
 //-------------------------------------------------------------
 // Render target operations
 
-void  WGPURenderAPI::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor& fillColor, float fDepth, int nStencil)
+void WGPURenderAPI::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor& fillColor, float fDepth, int nStencil)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect, IAARectangle* destRect)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::ChangeRenderTargetToBackBuffer()
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int newTall)
 {
+	ASSERT_DEPRECATED();
 }
 
 //-------------------------------------------------------------
@@ -180,14 +189,17 @@ void WGPURenderAPI::ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int 
 
 void WGPURenderAPI::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
 {
+	ASSERT_DEPRECATED();
 }
 
 //-------------------------------------------------------------
@@ -195,10 +207,12 @@ void WGPURenderAPI::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 void  WGPURenderAPI::SetScissorRectangle(const IAARectangle& rect)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::SetDepthRange(float fZNear, float fZFar)
 {
+	ASSERT_DEPRECATED();
 }
 
 //-------------------------------------------------------------
@@ -206,14 +220,17 @@ void WGPURenderAPI::SetDepthRange(float fZNear, float fZFar)
 
 void WGPURenderAPI::SetShader(IShaderProgramPtr pShader)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::SetTexture(int nameHash, const ITexturePtr& texture)
 {
+	ASSERT_DEPRECATED();
 }
 
 void WGPURenderAPI::SetShaderConstantRaw(int nameHash, const void* data, int nSize)
 {
+	ASSERT_DEPRECATED();
 }
 
 //-------------------------------------------------------------
