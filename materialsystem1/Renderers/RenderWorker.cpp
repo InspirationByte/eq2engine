@@ -12,15 +12,16 @@ using namespace Threading;
 
 CRenderWorkThread g_renderWorker;
 
-void CRenderWorkThread::Init(RenderWorkerHandler* workHandler)
+void CRenderWorkThread::Init(RenderWorkerHandler* workHandler, int workPoolSize)
 {
 	m_workHandler = workHandler;
 	StartWorkerThread(m_workHandler->GetAsyncThreadName());
 
-	m_workRingPool.setNum(m_workRingPool.numAllocated());
+	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
+	m_workRingPool.setNum(poolSize);
 
 	// by default every work in pool is free (see .Wait call after getting one from ring pool)
-	for (int i = 0; i < m_completionSignal.numAllocated(); ++i)
+	for (int i = 0; i < workPoolSize; ++i)
 	{
 		m_completionSignal.appendEmplace(true);
 		m_completionSignal[i].Raise();

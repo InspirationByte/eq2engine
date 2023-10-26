@@ -26,7 +26,7 @@ class CRenderWorkThread : public Threading::CEqThread
 public:
 	using FUNC_TYPE = EqFunction<int()>;
 
-	void		Init(RenderWorkerHandler* workHandler);
+	void		Init(RenderWorkerHandler* workHandler, int workPoolSize = 32);
 	void		Shutdown();
 
 	// syncronous execution
@@ -45,8 +45,8 @@ protected:
 		bool		sync{ false };
 	};
 
-	FixedArray<Work, 32>					m_workRingPool;
-	FixedArray<Threading::CEqSignal, 32>	m_completionSignal;
+	FixedArray<Work, 96>					m_workRingPool;
+	FixedArray<Threading::CEqSignal, 96>	m_completionSignal;
 	RenderWorkerHandler*					m_workHandler{ nullptr };
 };
 

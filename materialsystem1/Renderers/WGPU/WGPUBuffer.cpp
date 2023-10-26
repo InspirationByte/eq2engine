@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-
 #include "renderers/ShaderAPI_defs.h"
+#include "../RenderWorker.h"
 #include "WGPUBuffer.h"
 #include "WGPURenderAPI.h"
 
@@ -25,7 +25,12 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage)
 	m_rhiBuffer = wgpuDeviceCreateBuffer(WGPURenderAPI::Instance.GetWGPUDevice(), &desc);
 
 	if (bufferInfo.data && bufferInfo.dataSize)
-		wgpuQueueWriteBuffer(WGPURenderAPI::Instance.GetWGPUQueue(), m_rhiBuffer, 0, bufferInfo.data, min(bufferInfo.dataSize, m_bufSize));
+	{
+		g_renderWorker.WaitForExecute("UploadTexture", [=]() {
+			wgpuQueueWriteBuffer(WGPURenderAPI::Instance.GetWGPUQueue(), m_rhiBuffer, 0, bufferInfo.data, min(bufferInfo.dataSize, m_bufSize));
+			return 0;
+		});
+	}
 }
 
 void CWGPUBuffer::Update(void* data, int size, int offset)

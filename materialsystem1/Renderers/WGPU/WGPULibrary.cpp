@@ -104,7 +104,7 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
-	g_renderWorker.Init(this);
+	g_renderWorker.Init(this, 96);
 
 	WGPUAdapter adapter = nullptr;
 	WGPURequestAdapterOptions options{};
@@ -330,5 +330,5 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 
 bool CWGPURenderLib::IsMainThread(uintptr_t threadId) const
 {
-	return false; // always run in separate thread
+	return g_renderWorker.GetThreadID() == threadId; // always run in separate thread
 }
