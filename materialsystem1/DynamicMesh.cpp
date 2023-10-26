@@ -10,73 +10,8 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "DynamicMesh.h"
 
-// pack vertex format description to uint16
-struct vertexFormatId_t
-{
-	// position is default
-	ushort types			: 5;		// HAS_TEXCOORD, HAS_COLOR, HAS_NORMAL, HAS_TANGENT, HAS_BINORMAL
-
-	ushort cnt_vertex		: 1;		// 0 - 2D, 1 - 3D
-	ushort cnt_color		: 1;		// 0 - RGB, 1 - RGBA
-	ushort cnt_tbn			: 1;		// 0 - 2D, 1 - 3D
-
-	ushort fmt_vertex		: 1;		// 0 - float, 1 - half
-	ushort fmt_texcoord		: 1;		// 0 - float, 1 - half
-	ushort fmt_color		: 1;		// 0 - half, 1 - ubyte
-	ushort fmt_tbn			: 1;		// 0 - half, 1 - ubyte
-};
-
-assert_sizeof(vertexFormatId_t, 2);
-
-/*
-Vertex data order:
-	VERTEXATTRIB_POSITION		// default, 2D or 3D (+ 1 comp padding)
-	VERTEXATTRIB_TEXCOORD		// 2D only
-	VERTEXATTRIB_COLOR		// 3D (alpha used or padding)
-
-	VERTEXATTRIB_TANGENT		// 2D or 3D (+ 1 comp padding)
-	VERTEXATTRIB_BINORMAL		// 2D or 3D (+ 1 comp padding)
-	VERTEXATTRIB_NORMAL		// 2D or 3D (+ 1 comp padding)
-
-Sort:
-	Bigger to smaller
-	Combine two small to 1 big if their size is equal
-
-Sizes:
-	All halfs (3D): 
-		vertex		- 8 bytes
-		texcoord	- 4 bytes
-		color		- 8 bytes
-		tangent		- 8 bytes
-		binormal	- 8 bytes
-		normal		- 8 bytes
-*/
-
-// FIXME: subdivide on streams???
-
 #define MAX_DYNAMIC_VERTICES	32767
 #define MAX_DYNAMIC_INDICES		32767
-
-CDynamicMesh::CDynamicMesh() :
-	m_primType( PRIM_TRIANGLES ),
-	m_vertexFormat(nullptr),
-	m_vertexBuffer(nullptr),
-	m_indexBuffer(nullptr),
-	m_numVertices(0),
-	m_numIndices(0),
-	m_vertices(nullptr),
-	m_indices(nullptr),
-	m_lockVertices(nullptr),
-	m_lockIndices(nullptr),
-	m_vboDirty(-1),
-	m_vboAqquired(-1)
-{
-
-}
-
-CDynamicMesh::~CDynamicMesh()
-{
-}
 
 bool CDynamicMesh::Init(const VertexFormatDesc* desc, int numAttribs )
 {
@@ -116,7 +51,6 @@ void CDynamicMesh::Destroy()
 		return;
 
 	Reset();
-	Unlock();
 
 	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
 	g_renderAPI->DestroyVertexBuffer(m_vertexBuffer);
@@ -151,7 +85,7 @@ void CDynamicMesh::SetPrimitiveType( EPrimTopology primType )
 	m_primType = primType;
 }
 
-EPrimTopology	CDynamicMesh::GetPrimitiveType() const
+EPrimTopology CDynamicMesh::GetPrimitiveType() const
 {
 	return m_primType;
 }
@@ -198,8 +132,7 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 	const int startVertex = m_numVertices;
 	const int startIndex = m_numIndices;
 
-	if (startVertex + nVertices > MAX_DYNAMIC_VERTICES ||
-		startIndex + nIndices > MAX_DYNAMIC_INDICES)
+	if (startVertex + nVertices > MAX_DYNAMIC_VERTICES || startIndex + nIndices > MAX_DYNAMIC_INDICES)
 		return -1;
 
 	// apply offsets first
@@ -227,43 +160,10 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 	return startVertex;
 }
 
-bool CDynamicMesh::Lock()
-{
-	if(m_vboAqquired == -1)
-	{
-		if(!m_vertexBuffer->Lock(0, m_numVertices, &m_lockVertices, BUFFER_FLAG_WRITE))
-			return false;
-
-		if (!m_indexBuffer->Lock(0, m_numIndices, (void**)&m_lockIndices, BUFFER_FLAG_WRITE))
-		{
-			m_vertexBuffer->Unlock();
-			return false;
-		}
-
-		m_vboAqquired = 0;
-	}
-
-	return true;
-}
-
-void CDynamicMesh::Unlock()
-{
-	if (m_vboAqquired == -1)
-		return;
-
-	m_vertexBuffer->Unlock();
-	m_indexBuffer->Unlock();
-
-	m_vboAqquired = -1;
-	m_vboDirty = -1;
-}
-
 bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices)
 {
 	if (m_numVertices == 0)
 		return false;
-
-	ASSERT(m_vboAqquired != 0);
 
 	const bool drawIndexed = m_numIndices > 0;
 	if (m_vboDirty == 0)
@@ -298,6 +198,4 @@ void CDynamicMesh::Reset()
 	m_numIndices = 0;
 
 	m_vboDirty = -1;
-
-	Unlock();
 }

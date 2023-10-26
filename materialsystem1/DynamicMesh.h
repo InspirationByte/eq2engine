@@ -16,9 +16,6 @@ class IIndexBuffer;
 class CDynamicMesh : public IDynamicMesh
 {
 public:
-	CDynamicMesh();
-	~CDynamicMesh();
-
 	bool			Init(const VertexFormatDesc* desc, int numAttribs );
 	void			Destroy();
 
@@ -42,27 +39,17 @@ public:
 	void			AddStripBreak();
 
 protected:
+	void*			m_vertices{ nullptr };
+	uint16*			m_indices{ nullptr };
 
-	bool			Lock();
-	void			Unlock();
+	IVertexFormat*	m_vertexFormat{ nullptr };
+	IVertexBuffer*	m_vertexBuffer{ nullptr };
+	IIndexBuffer*	m_indexBuffer{ nullptr };
 
-	EPrimTopology	m_primType;
+	EPrimTopology	m_primType{ PRIM_TRIANGLES };
+	int				m_vertexStride{ 0 };
+	int				m_vboDirty{ -1 };
 
-	void*			m_vertices;
-	uint16*			m_indices;
-
-	uint16			m_numVertices;
-	uint16			m_numIndices;
-
-	void*			m_lockVertices;
-	uint16*			m_lockIndices;
-
-	IVertexFormat*	m_vertexFormat;
-	IVertexBuffer*	m_vertexBuffer;
-	IIndexBuffer*	m_indexBuffer;
-
-	int				m_vertexStride;
-
-	int				m_vboAqquired;
-	int				m_vboDirty;
+	uint16			m_numVertices{ 0 };
+	uint16			m_numIndices{ 0 };
 };
