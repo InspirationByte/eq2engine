@@ -104,6 +104,8 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
+	g_renderWorker.Init(this);
+
 	WGPUAdapter adapter = nullptr;
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
@@ -185,19 +187,19 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		reqLimits.limits = supLimits.limits;
 		desc.requiredLimits = &reqLimits;
 		desc.deviceLostCallback = OnWGPUDeviceLost;
+
 		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &desc);
+
 		if (!m_rhiDevice)
 			return false;
+
+		m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
 	}
 
 	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
 
-	m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
-
 	// create default swap chain
 	CreateSwapChain(params.windowInfo);
-
-	g_renderWorker.Init(this);
 
 	WGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
 	WGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
@@ -215,10 +217,19 @@ void CWGPURenderLib::ExitAPI()
 	m_currentSwapChain = nullptr;
 
 	m_backendType = WGPUBackendType_Null;
-	wgpuDeviceSetDeviceLostCallback(m_rhiDevice, nullptr, nullptr);
-	wgpuDeviceRelease(m_rhiDevice);
-	wgpuQueueRelease(m_deviceQueue);
-	wgpuInstanceRelease(m_instance);
+
+	if (m_deviceQueue)
+		wgpuQueueRelease(m_deviceQueue);
+
+	if(m_rhiDevice)
+	{
+		wgpuDeviceSetDeviceLostCallback(m_rhiDevice, nullptr, nullptr);
+		wgpuDeviceRelease(m_rhiDevice);
+	}
+
+	if(m_instance)
+		wgpuInstanceRelease(m_instance);
+
 	m_instance = nullptr;
 	m_rhiDevice = nullptr;
 	m_deviceQueue = nullptr;
@@ -229,14 +240,15 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 
 	// process all internal async events or error callbacks
-	// TODO: thread?
-	wgpuInstanceProcessEvents(m_instance);
+	g_renderWorker.Execute("WGPUEvents", [this]() {
+		wgpuInstanceProcessEvents(m_instance);
+		return 0;
+	});
 }
 
 void CWGPURenderLib::EndFrame()
 {
 	CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
-
 	WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
 
 	g_renderWorker.Execute(__func__, [&]() {
@@ -271,8 +283,7 @@ void CWGPURenderLib::EndFrame()
 	});
 
 	// wait for queues to be submitted from other job threads
-	g_renderWorker.WaitForThread();
-	
+	g_renderWorker.WaitForThread();	
 	currentSwapChain->SwapBuffers();
 
 	wgpuTextureViewRelease(backBufView);

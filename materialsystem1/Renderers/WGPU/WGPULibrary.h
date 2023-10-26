@@ -42,6 +42,7 @@ public:
 
 protected:
 
+	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }
 	void			BeginAsyncOperation(uintptr_t threadId) {}
 	void			EndAsyncOperation() {}
 	bool			IsMainThread(uintptr_t threadId) const;

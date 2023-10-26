@@ -121,22 +121,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 		int mipMapLevel = img->GetMipMapCount() - 1;
 		while (mipMapLevel >= mipStart)
 		{
-			// TODO: make a buffer and make a command to copy it to texture
-			//{
-			//	WGPUCommandEncoder asyncCmdsEncoder = wgpuDeviceCreateCommandEncoder(WGPURenderAPI::Instance.GetWGPUDevice(), nullptr);
-			//
-			//	//wgpuCommandEncoderCopyBufferToTexture(asyncCmdsEncoder, );
-			//
-			//	WGPUCommandBuffer asyncCmdBuffer = wgpuCommandEncoderFinish(asyncCmdsEncoder, nullptr);
-			//	wgpuCommandEncoderRelease(asyncCmdsEncoder);
-			//
-			//
-			//	// TODO: put asyncCmdBuffer into queue in our main thread
-			//	//wgpuQueueSubmit(m_deviceQueue, 1, &asyncCmdBuffer);
-			//	//wgpuCommandBufferRelease(asyncCmdBuffer);
-			//}
-
-			g_renderWorker.Execute(__func__, [this, img = img, mipMapLevel, mipStart, imgFmt, rhiTexture]() {
+			g_renderWorker.Execute("UploadTexture", [=]() {
 				int mipWidth = img->GetWidth(mipMapLevel);
 				int mipHeight = img->GetHeight(mipMapLevel);
 				const int mipDepth = img->GetDepth(mipMapLevel);
@@ -172,26 +157,40 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 				const ubyte* src = img->GetPixels(mipMapLevel);
 				const int size = img->GetMipMappedSize(mipMapLevel, 1);
 
+				// TODO: make a temp buffer and make a command to copy it to texture
+				//{
+				//	WGPUCommandEncoder asyncCmdsEncoder = wgpuDeviceCreateCommandEncoder(WGPURenderAPI::Instance.GetWGPUDevice(), nullptr);
+				//
+				//	//wgpuCommandEncoderCopyBufferToTexture(asyncCmdsEncoder, );
+				//
+				//	WGPUCommandBuffer asyncCmdBuffer = wgpuCommandEncoderFinish(asyncCmdsEncoder, nullptr);
+				//	wgpuCommandEncoderRelease(asyncCmdsEncoder);
+				//
+				//
+				//	// TODO: put asyncCmdBuffer into queue in our main thread
+				//	//wgpuQueueSubmit(m_deviceQueue, 1, &asyncCmdBuffer);
+				//	//wgpuCommandBufferRelease(asyncCmdBuffer);
+				//}
+
 				wgpuQueueWriteTexture(WGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
 				return 0;
 			});
-
 			--mipMapLevel;
 		}
 
-		//{
-		//	WGPUTextureViewDescriptor texViewDesc = {};
-		//	texViewDesc.format = textureDesc.format;
-		//	texViewDesc.aspect = WGPUTextureAspect_All;
-		//	texViewDesc.arrayLayerCount = 1;
-		//	texViewDesc.baseArrayLayer = 0;
-		//	texViewDesc.baseMipLevel = 0;
-		//	texViewDesc.mipLevelCount = textureDesc.mipLevelCount;
-		//	texViewDesc.dimension = texViewDimension;
-		//
-		//	WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &texViewDesc);
-		//	m_rhiViews.append(rhiView);
-		//}
+		{
+			WGPUTextureViewDescriptor texViewDesc = {};
+			texViewDesc.format = textureDesc.format;
+			texViewDesc.aspect = WGPUTextureAspect_All;
+			texViewDesc.arrayLayerCount = 1;
+			texViewDesc.baseArrayLayer = 0;
+			texViewDesc.baseMipLevel = 0;
+			texViewDesc.mipLevelCount = textureDesc.mipLevelCount;
+			texViewDesc.dimension = texViewDimension;
+		
+			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &texViewDesc);
+			m_rhiViews.append(rhiView);
+		}
 
 		// FIXME: check for differences?
 		m_mipCount = max(m_mipCount, mipCount);
