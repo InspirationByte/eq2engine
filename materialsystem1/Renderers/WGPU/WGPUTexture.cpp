@@ -14,9 +14,34 @@
 #include "WGPURenderDefs.h"
 #include "imaging/ImageLoader.h"
 
-// initializes texture from image array of images
+CWGPUTexture::~CWGPUTexture()
+{
+	Release();
+}
+
+void CWGPUTexture::Release()
+{
+	for (WGPUTextureView view : m_rhiViews)
+		wgpuTextureViewRelease(view);
+
+	for (WGPUTexture texture : m_rhiTextures)
+		wgpuTextureRelease(texture);
+
+	m_rhiViews.clear();
+	m_rhiTextures.clear();
+}
+
+void CWGPUTexture::Ref_DeleteObject()
+{
+	WGPURenderAPI::Instance.FreeTexture(this);
+	RefCountedObject::Ref_DeleteObject();
+}
+
 bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
 {
+	// FIXME: only release if pool, flags, format and size is different
+	Release();
+
 	HOOK_TO_CVAR(r_loadmiplevel);
 	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
@@ -145,7 +170,21 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &texViewDesc);
 			m_rhiViews.append(rhiView);
 		}
+
+		// FIXME: check for differences?
+		m_mipCount = max(m_mipCount, mipCount);
+		m_width = max(m_width, texWidth);
+		m_height = max(m_height, texHeight);
+		m_depth = max(m_depth, texDepth);
+		m_format = imgFmt;
+
+		m_texSize += img->GetMipMappedSize(mipStart);
 	}
+
+	// hey you have concurrency errors if this assert hits!
+	ASSERT_MSG(images.numElem() == m_rhiTextures.numElem(), "%s - %d images at input while %d textures created", m_name.ToCString(), images.numElem(), m_rhiTextures.numElem());
+
+	m_animFrameCount = m_rhiTextures.numElem();
 	
 	return true;
 }
@@ -170,10 +209,4 @@ void CWGPUTexture::Unlock()
 	m_lockData->lockData = nullptr;
 
 	m_lockData = nullptr;
-}
-
-void CWGPUTexture::Ref_DeleteObject()
-{
-	WGPURenderAPI::Instance.FreeTexture(this);
-	RefCountedObject::Ref_DeleteObject();
 }
