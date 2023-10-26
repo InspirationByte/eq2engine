@@ -302,7 +302,7 @@ bool CGLRenderLib_GLX::InitAPI(const ShaderAPIParams& params)
 		glEnable(GL_MULTISAMPLE);
 
 	InitGLHardwareCapabilities(s_renderApi.m_caps);
-	g_glWorker.Init(this);
+	g_renderWorker.Init(this);
 
 	return true;
 }
