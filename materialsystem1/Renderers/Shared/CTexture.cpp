@@ -41,10 +41,9 @@ bool CTexture::InitProcedural(const SamplerStateParams& sampler, ETextureFormat 
 	}
 
 	// make texture
-	CImage genTex;
-	genTex.Ref_Grab(); // by grabbing ref we make sure it won't be deleted
-
-	ubyte* newData = genTex.Create(format, width, height, depth, 1, arraySize);
+	CImagePtr genTex = CRefPtr_new(CImage);
+	
+	ubyte* newData = genTex->Create(format, width, height, depth, 1, arraySize);
 
 	if(newData)
 	{
@@ -57,8 +56,8 @@ bool CTexture::InitProcedural(const SamplerStateParams& sampler, ETextureFormat 
 		return false;	// don't generate error
 	}
 
-	FixedArray<CRefPtr<CImage>, 1> imgs;
-	imgs.append(CRefPtr(&genTex));
+	FixedArray<CImagePtr, 1> imgs;
+	imgs.append(genTex);
 
 	return Init(sampler, imgs, flags);
 }
@@ -91,30 +90,28 @@ bool CTexture::GenerateErrorTexture(int flags)
 
 	const int CHECKER_SIZE = 4;
 
-	CImage image;
-	image.Ref_Grab();	// by grabbing ref we make sure it won't be deleted
+	CImagePtr image = CRefPtr_new(CImage);
+	ubyte* destPixels = image->Create(FORMAT_RGBA8, 64, 64, depth, 1);
 
-	ubyte* destPixels = image.Create(FORMAT_RGBA8, 64, 64, depth, 1);
-
-	const int size = image.GetMipMappedSize(0, 1);
+	const int size = image->GetMipMappedSize(0, 1);
 	if (flags & TEXFLAG_CUBEMAP)
 	{
 		const int cubeFaceSize = size / 6;
 		for (int i = 0; i < 6; ++i)
 		{
-			MakeCheckerBoxImage(destPixels, image.GetWidth(), image.GetHeight(), CHECKER_SIZE, color1, color2);
+			MakeCheckerBoxImage(destPixels, image->GetWidth(), image->GetHeight(), CHECKER_SIZE, color1, color2);
 			destPixels += cubeFaceSize;
 		}
 	}
 	else
 	{
-		MakeCheckerBoxImage(destPixels, image.GetWidth(), image.GetHeight(), CHECKER_SIZE, color1, color2);
+		MakeCheckerBoxImage(destPixels, image->GetWidth(), image->GetHeight(), CHECKER_SIZE, color1, color2);
 	}
 
-	image.CreateMipMaps();
+	image->CreateMipMaps();
 
-	FixedArray<CRefPtr<CImage>, 1> images;
-	images.append(CRefPtr(&image));
+	FixedArray<CImagePtr, 1> images;
+	images.append(image);
 
 	return Init(texSamplerParams, images, flags);
 }

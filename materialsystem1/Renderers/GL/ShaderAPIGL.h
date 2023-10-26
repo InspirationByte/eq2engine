@@ -25,7 +25,7 @@ class CIndexBufferGL;
 class CGLTexture;
 class CGLShaderProgram;
 class CGLOcclusionQuery;
-class GLWorkerThread;
+class CRenderWorkThread;
 
 class ShaderAPIGL : public ShaderAPI_Base
 {
@@ -41,7 +41,7 @@ public:
 	friend class		CGLTexture;
 	friend class		CGLShaderProgram;
 	friend class		CGLOcclusionQuery;
-	friend class		GLWorkerThread;
+	friend class		CRenderWorkThread;
 
 	// Init + Shurdown
 	void				Init( const ShaderAPIParams &params);

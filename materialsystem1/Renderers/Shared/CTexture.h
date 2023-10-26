@@ -62,10 +62,10 @@ protected:
 
 	struct LodState
 	{
-		CRefPtr<CImage> image;
-		int8			idx{ 0 };
-		int8			lockBoxLevel{ 0 };
-		int8			mipMapLevel{ 0 };
+		CImagePtr	image;
+		int8		idx{ 0 };
+		int8		lockBoxLevel{ 0 };
+		int8		mipMapLevel{ 0 };
 	};
 	Array<LodState>		m_progressiveState{ PP_SL };
 

@@ -24,7 +24,6 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #include "GLRenderLibrary_GLX.h"
 
 #include "GLSwapChain.h"
-#include "GLWorker.h"
 #include "ShaderAPIGL.h"
 
 #include "gl_loader.h"

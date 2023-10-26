@@ -44,7 +44,7 @@ static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
 {
 	if (wgpu_break_on_error.GetBool())
 	{
-		ASSERT_FAIL("WGPU device validation error %s:\n\n%s", s_wgpuErrorTypesStr[type], message);
+		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message);
 	}
 
 	if (wgpu_report_errors.GetBool())
@@ -84,6 +84,8 @@ CWGPURenderLib::~CWGPURenderLib()
 
 bool CWGPURenderLib::InitCaps()
 {
+	m_mainThreadId = Threading::GetCurrentThreadID();
+
 	//WGPUInstanceDescriptor instDesc;
 	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
 	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
@@ -195,6 +197,8 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	// create default swap chain
 	CreateSwapChain(params.windowInfo);
 
+	g_renderWorker.Init(this);
+
 	WGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
 	WGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
 
@@ -203,12 +207,15 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 void CWGPURenderLib::ExitAPI()
 {
+	g_renderWorker.Shutdown();
+
 	for (CWGPUSwapChain* swapChain : m_swapChains)
 		delete swapChain;
 	m_swapChains.clear();
 	m_currentSwapChain = nullptr;
 
 	m_backendType = WGPUBackendType_Null;
+	wgpuDeviceSetDeviceLostCallback(m_rhiDevice, nullptr, nullptr);
 	wgpuDeviceRelease(m_rhiDevice);
 	wgpuQueueRelease(m_deviceQueue);
 	wgpuInstanceRelease(m_instance);
@@ -230,9 +237,9 @@ void CWGPURenderLib::EndFrame()
 {
 	CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
 
-	{
-		WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
+	WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
 
+	g_renderWorker.Execute(__func__, [&]() {
 		WGPURenderPassColorAttachment colorDesc = {};
 		colorDesc.view = backBufView;
 		colorDesc.loadOp = WGPULoadOp_Clear;
@@ -259,13 +266,16 @@ void CWGPURenderLib::EndFrame()
 				wgpuCommandBufferRelease(commands);
 			}
 		}
-
-		wgpuTextureViewRelease(backBufView);
-
 		//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
-	}
+		return 0;
+	});
 
+	// wait for queues to be submitted from other job threads
+	g_renderWorker.WaitForThread();
+	
 	currentSwapChain->SwapBuffers();
+
+	wgpuTextureViewRelease(backBufView);
 }
 
 ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
@@ -303,5 +313,11 @@ bool CWGPURenderLib::IsWindowed() const
 
 bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 {
+	// TODO: screenshots
 	return false;
+}
+
+bool CWGPURenderLib::IsMainThread(uintptr_t threadId) const
+{
+	return false; // always run in separate thread
 }

@@ -7,7 +7,7 @@
 
 #pragma once
 #include "../IRenderLibrary.h"
-#include "GLWorker.h"
+#include "../RenderWorker.h"
 
 class ShaderAPIGL;
 
@@ -27,7 +27,7 @@ typedef struct __GLXFBConfigRec* GLXFBConfig;
 
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib_GLX : public IRenderLibrary, public GLLibraryWorkerHandler
+class CGLRenderLib_GLX : public IRenderLibrary, public RenderWorkerHandler
 {
 	friend class			ShaderAPIGL;
 

@@ -26,7 +26,7 @@ public:
 	~CGLTexture();
 
 	// initializes texture from image array of images
-	bool					Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
+	bool					Init(const SamplerStateParams& sampler, const ArrayCRef<CImagePtr> images, int flags = 0);
 
 	void					Release();
 	void					ReleaseTextures();

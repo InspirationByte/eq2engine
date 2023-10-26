@@ -1,22 +1,21 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright (C) Inspiration Byte
-// 2009-2022
+// 2009-2023
 //////////////////////////////////////////////////////////////////////////////////
-// Description: OpenGL Worker
+// Description: Render worker thread
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "shaderapigl_def.h"
-#include "GLWorker.h"
+#include "RenderWorker.h"
 
 using namespace Threading;
 
-GLWorkerThread g_glWorker;
+CRenderWorkThread g_renderWorker;
 
-void GLWorkerThread::Init(GLLibraryWorkerHandler* workHandler)
+void CRenderWorkThread::Init(RenderWorkerHandler* workHandler)
 {
 	m_workHandler = workHandler;
-	StartWorkerThread("GLWorker");
+	StartWorkerThread(m_workHandler->GetAsyncThreadName());
 
 	m_workRingPool.setNum(m_workRingPool.numAllocated());
 
@@ -26,10 +25,9 @@ void GLWorkerThread::Init(GLLibraryWorkerHandler* workHandler)
 		m_completionSignal.appendEmplace(true);
 		m_completionSignal[i].Raise();
 	}
-
 }
 
-void GLWorkerThread::Shutdown()
+void CRenderWorkThread::Shutdown()
 {
 	SignalWork();
 	StopThread();
@@ -37,7 +35,7 @@ void GLWorkerThread::Shutdown()
 	m_workRingPool.clear(true);
 }
 
-int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
+int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
@@ -71,14 +69,14 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 	const bool isSignalled = completionSignal->Wait();
 	const int workResult = Atomic::Exchange(work->result, WORK_NOT_STARTED);
 
-	ASSERT_MSG(isSignalled && workResult != WORK_PENDING, "Failed to wait for GL worker task - WORK_PENDING");
-	ASSERT_MSG(isSignalled && workResult != WORK_EXECUTING, "Failed to wait for GL worker task - WORK_EXECUTING");
-	ASSERT_MSG(isSignalled && workResult != WORK_NOT_STARTED, "Empty slot was working on GL task - WORK_NOT_STARTED");
+	ASSERT_MSG(isSignalled && workResult != WORK_PENDING, "Failed to wait for render worker task - WORK_PENDING");
+	ASSERT_MSG(isSignalled && workResult != WORK_EXECUTING, "Failed to wait for render worker task - WORK_EXECUTING");
+	ASSERT_MSG(isSignalled && workResult != WORK_NOT_STARTED, "Empty slot was working on render task - WORK_NOT_STARTED");
 
 	return workResult;
 }
 
-void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
+void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
@@ -112,7 +110,7 @@ void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
 	SignalWork();
 }
 
-int GLWorkerThread::Run()
+int CRenderWorkThread::Run()
 {
 	bool begun = false;
 

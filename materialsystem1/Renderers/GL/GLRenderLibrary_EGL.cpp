@@ -32,7 +32,6 @@
 #include "GLRenderLibrary_EGL.h"
 
 #include "GLSwapChain.h"
-#include "GLWorker.h"
 #include "ShaderAPIGL.h"
 #include "gl_loader.h"
 
@@ -267,7 +266,7 @@ bool CGLRenderLib_EGL::InitAPI(const ShaderAPIParams& params)
 #endif // USE_GLES2
 
 	InitGLHardwareCapabilities(s_renderApi.m_caps);
-	g_glWorker.Init(this);
+	g_renderWorker.Init(this);
 
 	return true;
 }

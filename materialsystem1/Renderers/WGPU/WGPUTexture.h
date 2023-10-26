@@ -15,7 +15,7 @@ class CWGPUTexture : public CTexture
 public:
 	~CWGPUTexture();
 
-	bool			Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
+	bool			Init(const SamplerStateParams& sampler, const ArrayCRef<CImagePtr> images, int flags = 0);
 	void			Release();
 
 	bool			Lock(LockInOutData& data);

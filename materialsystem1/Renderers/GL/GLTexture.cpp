@@ -10,8 +10,8 @@
 #include "core/IConsoleCommands.h"
 
 #include "shaderapigl_def.h"
+#include "../RenderWorker.h"
 #include "GLTexture.h"
-#include "GLWorker.h"
 #include "ShaderAPIGL.h"
 #include "imaging/ImageLoader.h"
 
@@ -38,7 +38,7 @@ void CGLTexture::Ref_DeleteObject()
 {
 	s_renderApi.FreeTexture(this);
 
-	g_glWorker.Execute(__func__, [this]() {
+	g_renderWorker.Execute(__func__, [this]() {
 		delete this;
 		return 0;
 	});
@@ -360,7 +360,7 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage *image, int 
 }
 
 // initializes texture from image array of images
-bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
+bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CImagePtr> images, int flags)
 {
 	// FIXME: only release if pool, flags, format and size is different
 	Release();
@@ -386,7 +386,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
-		const CRefPtr<CImage> &img = images[i];
+		const CImagePtr& img = images[i];
 
 		if ((m_flags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{
@@ -424,8 +424,8 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 		GLTextureRef_t texture;
 
-		const int result = g_glWorker.WaitForExecute(__func__, [&]()
-													 {
+		const int result = g_renderWorker.WaitForExecute(__func__, [&]()
+		{
 			// Generate a texture
 			texture = CreateGLTexture(img, m_samplerState, mipStart, mipCount);
 
@@ -462,7 +462,8 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CRefPtr
 
 				return TEXLOAD_ERROR;
 			}
-			return TEXLOAD_DONE; });
+			return TEXLOAD_DONE; 
+		});
 
 		if (result == TEXLOAD_ERROR)
 		{
@@ -535,7 +536,7 @@ EProgressiveStatus CGLTexture::StepProgressiveLod()
 			LodState &state = m_progressiveState[i];
 			GLTextureRef_t &texture = m_textures[state.idx];
 
-			g_glWorker.WaitForExecute("StepProgressiveTextures", [&]() {
+			g_renderWorker.WaitForExecute("StepProgressiveTextures", [&]() {
 				UpdateGLTextureFromImageMipmap(texture, state.image, state.mipMapLevel, state.lockBoxLevel);
 
 				--state.lockBoxLevel;
@@ -625,7 +626,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 #else
 	if (!(data.flags & TEXLOCK_DISCARD))
 	{
-		g_glWorker.WaitForExecute("LockTexGetData", [&]() {
+		g_renderWorker.WaitForExecute("LockTexGetData", [&]() {
 			const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_format)];
 			const GLenum srcType = g_gl_chanTypePerFormat[m_format];
 
@@ -680,7 +681,7 @@ void CGLTexture::Unlock()
 
 		const int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx : m_glTarget;
 
-		g_glWorker.WaitForExecute("UnlockTex", [&]() {
+		g_renderWorker.WaitForExecute("UnlockTex", [&]() {
 			glBindTexture(m_glTarget, m_textures[0].glTexID);
 			GLCheckError("bind texture");
 

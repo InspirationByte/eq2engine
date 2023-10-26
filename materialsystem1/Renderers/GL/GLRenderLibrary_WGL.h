@@ -7,13 +7,13 @@
 
 #pragma once
 #include "../IRenderLibrary.h"
-#include "GLWorker.h"
+#include "../RenderWorker.h"
 
 class ShaderAPIGL;
 
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib_WGL : public IRenderLibrary, public GLLibraryWorkerHandler
+class CGLRenderLib_WGL : public IRenderLibrary, public RenderWorkerHandler
 {
 	friend class ShaderAPIGL;
 
@@ -39,7 +39,7 @@ public:
 
 	bool					CaptureScreenshot(CImage &img);
 
-	ISwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo);
+	ISwapChain*				CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void					DestroySwapChain(ISwapChain* swapChain);
 
 	// start capturing GL commands from specific thread id

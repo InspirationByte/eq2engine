@@ -9,10 +9,13 @@
 #include "core/ConVar.h"
 #include "core/IConsoleCommands.h"
 
+#include "../RenderWorker.h"
+
 #include "WGPUTexture.h"
 #include "WGPURenderAPI.h"
 #include "WGPURenderDefs.h"
 #include "imaging/ImageLoader.h"
+
 
 CWGPUTexture::~CWGPUTexture()
 {
@@ -37,7 +40,7 @@ void CWGPUTexture::Ref_DeleteObject()
 	RefCountedObject::Ref_DeleteObject();
 }
 
-bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
+bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImagePtr> images, int flags)
 {
 	// FIXME: only release if pool, flags, format and size is different
 	Release();
@@ -58,7 +61,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 	m_rhiTextures.reserve(images.numElem());
 	m_rhiViews.reserve(images.numElem());
 
-	for (CRefPtr<CImage> img : images)
+	for (CImagePtr img : images)
 	{
 		const EImageType imgType = img->GetImageType();
 		const ETextureFormat imgFmt = img->GetFormat();
@@ -72,7 +75,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 		const int texHeight = img->GetHeight(mipStart);
 		const int texDepth = img->GetDepth(mipStart);
 
-		WGPUTextureDescriptor textureDesc = {};
+		WGPUTextureDescriptor textureDesc{};
 		textureDesc.label = img->GetName();
 		textureDesc.mipLevelCount = img->GetMipMapCount(); // TODO: compute as we used to
 		textureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
@@ -112,64 +115,83 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 			continue;
 		}
 
+		m_rhiTextures.append(rhiTexture);
+
 		// TODO: progressive mip levels loading
 		int mipMapLevel = img->GetMipMapCount() - 1;
 		while (mipMapLevel >= mipStart)
 		{
-			int mipWidth = img->GetWidth(mipMapLevel);
-			int mipHeight = img->GetHeight(mipMapLevel);
-			const int mipDepth = img->GetDepth(mipMapLevel);
-			const int lockBoxLevel = mipMapLevel - mipStart;
+			// TODO: make a buffer and make a command to copy it to texture
+			//{
+			//	WGPUCommandEncoder asyncCmdsEncoder = wgpuDeviceCreateCommandEncoder(WGPURenderAPI::Instance.GetWGPUDevice(), nullptr);
+			//
+			//	//wgpuCommandEncoderCopyBufferToTexture(asyncCmdsEncoder, );
+			//
+			//	WGPUCommandBuffer asyncCmdBuffer = wgpuCommandEncoderFinish(asyncCmdsEncoder, nullptr);
+			//	wgpuCommandEncoderRelease(asyncCmdsEncoder);
+			//
+			//
+			//	// TODO: put asyncCmdBuffer into queue in our main thread
+			//	//wgpuQueueSubmit(m_deviceQueue, 1, &asyncCmdBuffer);
+			//	//wgpuCommandBufferRelease(asyncCmdBuffer);
+			//}
 
-			if (IsCompressedFormat(imgFmt))
-			{
-				mipWidth = max(4, mipWidth & ~3);
-				mipHeight = max(4, mipHeight & ~3);
-			}
+			g_renderWorker.Execute(__func__, [this, img = img, mipMapLevel, mipStart, imgFmt, rhiTexture]() {
+				int mipWidth = img->GetWidth(mipMapLevel);
+				int mipHeight = img->GetHeight(mipMapLevel);
+				const int mipDepth = img->GetDepth(mipMapLevel);
+				const int lockBoxLevel = mipMapLevel - mipStart;
 
-			const WGPUExtent3D texSize{ (uint)mipWidth, (uint)mipHeight, (uint)mipDepth };
+				if (IsCompressedFormat(imgFmt))
+				{
+					mipWidth = max(4, mipWidth & ~3);
+					mipHeight = max(4, mipHeight & ~3);
+				}
 
-			WGPUImageCopyTexture texImage;
-			texImage.texture = rhiTexture;
-			texImage.aspect = WGPUTextureAspect_All;
-			texImage.mipLevel = lockBoxLevel;
-			texImage.origin = WGPUOrigin3D{ 0, 0, 0 };
+				const WGPUExtent3D texSize{ (uint)mipWidth, (uint)mipHeight, (uint)mipDepth };
 
-			WGPUTextureDataLayout texLayout;
-			texLayout.offset = 0;
-			if (IsCompressedFormat(imgFmt))
-			{
-				texLayout.bytesPerRow = ((mipWidth + 3) >> 2) * GetBytesPerBlock(imgFmt);
-				texLayout.rowsPerImage = ((mipHeight + 3) >> 2);
-			}
-			else
-			{
-				texLayout.bytesPerRow = mipWidth * GetBytesPerPixel(imgFmt);
-				texLayout.rowsPerImage = mipHeight;
-			}
+				WGPUImageCopyTexture texImage{};
+				texImage.texture = rhiTexture;
+				texImage.aspect = WGPUTextureAspect_All;
+				texImage.mipLevel = lockBoxLevel;
+				texImage.origin = WGPUOrigin3D{ 0, 0, 0 };
 
-			const ubyte* src = img->GetPixels(mipMapLevel);
-			const int size = img->GetMipMappedSize(mipMapLevel, 1);
+				WGPUTextureDataLayout texLayout{};
+				texLayout.offset = 0;
+				if (IsCompressedFormat(imgFmt))
+				{
+					texLayout.bytesPerRow = ((mipWidth + 3) >> 2) * GetBytesPerBlock(imgFmt);
+					texLayout.rowsPerImage = ((mipHeight + 3) >> 2);
+				}
+				else
+				{
+					texLayout.bytesPerRow = mipWidth * GetBytesPerPixel(imgFmt);
+					texLayout.rowsPerImage = mipHeight;
+				}
 
-			wgpuQueueWriteTexture(WGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+				const ubyte* src = img->GetPixels(mipMapLevel);
+				const int size = img->GetMipMappedSize(mipMapLevel, 1);
+
+				wgpuQueueWriteTexture(WGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+				return 0;
+			});
 
 			--mipMapLevel;
 		}
 
-		{
-			m_rhiTextures.append(rhiTexture);
-			WGPUTextureViewDescriptor texViewDesc = {};
-			texViewDesc.format = textureDesc.format;
-			texViewDesc.aspect = WGPUTextureAspect_All;
-			texViewDesc.arrayLayerCount = 1;
-			texViewDesc.baseArrayLayer = 0;
-			texViewDesc.baseMipLevel = 0;
-			texViewDesc.mipLevelCount = textureDesc.mipLevelCount;
-			texViewDesc.dimension = texViewDimension;
-		
-			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &texViewDesc);
-			m_rhiViews.append(rhiView);
-		}
+		//{
+		//	WGPUTextureViewDescriptor texViewDesc = {};
+		//	texViewDesc.format = textureDesc.format;
+		//	texViewDesc.aspect = WGPUTextureAspect_All;
+		//	texViewDesc.arrayLayerCount = 1;
+		//	texViewDesc.baseArrayLayer = 0;
+		//	texViewDesc.baseMipLevel = 0;
+		//	texViewDesc.mipLevelCount = textureDesc.mipLevelCount;
+		//	texViewDesc.dimension = texViewDimension;
+		//
+		//	WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &texViewDesc);
+		//	m_rhiViews.append(rhiView);
+		//}
 
 		// FIXME: check for differences?
 		m_mipCount = max(m_mipCount, mipCount);

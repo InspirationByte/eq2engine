@@ -9,6 +9,8 @@
 #include "imaging/textureformats.h"
 
 class CImage;
+using CImagePtr = CRefPtr<CImage>;
+
 struct SamplerStateParams;
 enum ETextureFormat : int;
 

@@ -26,7 +26,6 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #include "GLRenderLibrary_WGL.h"
 
 #include "GLSwapChain.h"
-#include "GLWorker.h"
 #include "ShaderAPIGL.h"
 
 #include "gl_loader.h"
@@ -367,7 +366,7 @@ bool CGLRenderLib_WGL::InitAPI(const ShaderAPIParams& params)
 		glEnable(GL_MULTISAMPLE);
 
 	InitGLHardwareCapabilities(s_renderApi.m_caps);
-	g_glWorker.Init(this);
+	g_renderWorker.Init(this);
 
 	return true;
 }

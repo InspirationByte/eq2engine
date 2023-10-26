@@ -135,3 +135,5 @@ protected:
 	int				m_nExtraDataSize;
 	ubyte* m_pExtraData;
 };
+
+using CImagePtr = CRefPtr<CImage>;

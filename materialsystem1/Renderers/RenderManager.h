@@ -9,6 +9,5 @@ public:
     ~CEqRenderManager();
 
 	IRenderLibrary* CreateRenderer(const ShaderAPIParams &params) const;
-
     IRenderLibrary* GetRenderer() const;
 };

@@ -8,7 +8,6 @@
 #pragma once
 #include "CTexture.h"
 
-class CImage;
 struct IDirect3DBaseTexture9;
 struct IDirect3DSurface9;
 
@@ -21,7 +20,7 @@ public:
 	~CD3D9Texture();
 
 	// initializes texture from image array of images
-	bool					Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
+	bool					Init(const SamplerStateParams& sampler, const ArrayCRef<CImagePtr> images, int flags = 0);
 
 	void					Release();
 	void					ReleaseTextures();

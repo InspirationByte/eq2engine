@@ -189,7 +189,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
-		const CRefPtr<CImage>& img = images[i];
+		const CImagePtr& img = images[i];
 
 		if ((m_flags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{

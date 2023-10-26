@@ -9,14 +9,14 @@
 #include <EGL/egl.h>
 
 #include "../IRenderLibrary.h"
+#include "../RenderWorker.h"
 #include "renderers/IShaderAPI.h"
-#include "GLWorker.h"
 
 class ShaderAPIGL;
 
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib_EGL : public IRenderLibrary, public GLLibraryWorkerHandler
+class CGLRenderLib_EGL : public IRenderLibrary, public RenderWorkerHandler
 {
 	friend class			ShaderAPIGL;
 

@@ -406,15 +406,13 @@ void CMaterialSystem::Shutdown()
 
 void CMaterialSystem::CreateWhiteTexture()
 {
-	CImage img;
-	img.Ref_Grab();	// by grabbing ref we make sure it won't be deleted
-
-	img.SetName("_matsys_white");
+	CImagePtr img = CRefPtr_new(CImage);
+	img->SetName("_matsys_white");
 
 	const int nWidth = 4;
 	const int nHeight = 4;
 
-	ubyte* pLightmapData = img.Create(FORMAT_RGBA8, nWidth,nHeight,1,1);
+	ubyte* pLightmapData = img->Create(FORMAT_RGBA8, nWidth,nHeight,1,1);
 
 	PixelWriter pixw(FORMAT_RGBA8, pLightmapData, 0);
 
@@ -429,8 +427,8 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	SamplerStateParams texSamplerParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
 
-	FixedArray<CRefPtr<CImage>, 1> images;
-	images.append(CRefPtr(&img));
+	FixedArray<CImagePtr, 1> images;
+	images.append(img);
 
 	m_whiteTexture = m_shaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 

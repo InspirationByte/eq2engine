@@ -8,10 +8,11 @@
 #pragma once
 #include <webgpu/webgpu.h>
 #include "../IRenderLibrary.h"
+#include "../RenderWorker.h"
 
 class CWGPUSwapChain;
 
-class CWGPURenderLib : public IRenderLibrary
+class CWGPURenderLib : public IRenderLibrary, public RenderWorkerHandler
 {
 	friend class CWGPUSwapChain;
 public:
@@ -41,6 +42,11 @@ public:
 
 protected:
 
+	void			BeginAsyncOperation(uintptr_t threadId) {}
+	void			EndAsyncOperation() {}
+	bool			IsMainThread(uintptr_t threadId) const;
+
+	uintptr_t				m_mainThreadId{ 0 };
 	WGPUInstance			m_instance{ nullptr };
 
 	WGPUBackendType			m_backendType{ WGPUBackendType_Null };
