@@ -146,6 +146,11 @@
 	</Type>
 	<Type Name="RawItem&lt;*&gt;">
 		<DisplayString>{ *($T1*)&amp;data }</DisplayString>
+		<Expand>
+			<Item Name = "Value">
+				*($T1*)&amp;data
+			</Item>
+		</Expand>
 	</Type>
 	<Type Name="CWeakPtr&lt;*&gt;">
 		<SmartPointer Usage="Minimal">($T1*)m_weakRefPtr->ptr</SmartPointer>
