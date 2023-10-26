@@ -11,7 +11,8 @@
 #include "WGPUBuffer.h"
 #include "WGPURenderAPI.h"
 
-void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage)
+
+void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* label)
 {
 	const int sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
 	const int writeDataSize = (bufferInfo.dataSize + 3) & ~3;
@@ -20,7 +21,8 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage)
 	WGPUBufferDescriptor desc = {};
 	desc.usage = WGPUBufferUsage_CopyDst | wgpuUsage;
 	desc.size = m_bufSize;
-	desc.mappedAtCreation = false;
+	desc.mappedAtCreation = bufferInfo.data && bufferInfo.dataSize;
+	desc.label = label;
 	if (bufferInfo.flags & BUFFER_FLAG_READ)
 		desc.usage |= WGPUBufferUsage_MapRead;
 
@@ -30,9 +32,12 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage)
 
 	if (m_rhiBuffer && bufferInfo.data && bufferInfo.dataSize)
 	{
-		const void* data = bufferInfo.data;
-		g_renderWorker.WaitForExecute("InitBuffer", [&]() {
-			wgpuQueueWriteBuffer(WGPURenderAPI::Instance.GetWGPUQueue(), m_rhiBuffer, 0, data, writeDataSize);
+		// sadly...
+		g_renderWorker.WaitForExecute("UpdateBuffer", [&]() {
+			void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
+			ASSERT_MSG(outData, "Buffer mapped range is NULL");
+			memcpy(outData, bufferInfo.data, writeDataSize);
+			wgpuBufferUnmap(m_rhiBuffer);
 			return 0;
 		});
 	}
@@ -108,7 +113,7 @@ void CWGPUBuffer::Unlock()
 CWGPUVertexBuffer::CWGPUVertexBuffer(const BufferInfo& bufferInfo)
 	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
 {
-	m_buffer.Init(bufferInfo, WGPUBufferUsage_Vertex);
+	m_buffer.Init(bufferInfo, WGPUBufferUsage_Vertex, "EqVertexBuffer");
 }
 
 void CWGPUVertexBuffer::Update(void* data, int size, int offset)
@@ -146,7 +151,7 @@ void CWGPUVertexBuffer::Unlock()
 CWGPUIndexBuffer::CWGPUIndexBuffer(const BufferInfo& bufferInfo)
 	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
 {
-	m_buffer.Init(bufferInfo, WGPUBufferUsage_Index);
+	m_buffer.Init(bufferInfo, WGPUBufferUsage_Index, "EqIndexBuffer");
 }
 
 void CWGPUIndexBuffer::Update(void* data, int size, int offset)

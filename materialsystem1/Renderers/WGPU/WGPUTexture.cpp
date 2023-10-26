@@ -121,7 +121,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 		int mipMapLevel = img->GetMipMapCount() - 1;
 		while (mipMapLevel >= mipStart)
 		{
-			g_renderWorker.WaitForExecute("UploadTexture", [=]() {
+			g_renderWorker.Execute("UploadTexture", [=]() {
 				int mipWidth = img->GetWidth(mipMapLevel);
 				int mipHeight = img->GetHeight(mipMapLevel);
 				const int mipDepth = img->GetDepth(mipMapLevel);
