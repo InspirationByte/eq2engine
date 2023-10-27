@@ -4,7 +4,7 @@ usage "wgpu-dawn"
 		"./include"
 	}
 	libdirs { 
-		"./lib/%{cfg.platform}/%{cfg.buildcfg}",
+		"./lib/%{cfg.platform}",
 	}
 
 	filter "system:Windows"

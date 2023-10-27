@@ -16,6 +16,7 @@ class CWGPUBuffer : public IGPUBuffer
 {
 public:
 	void		Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* label = nullptr);
+	void		Terminate();
 
 	int			GetSize() const { return m_bufSize; }
 
@@ -36,6 +37,7 @@ class CWGPUVertexBuffer : public IVertexBuffer
 {
 public:
 	CWGPUVertexBuffer(const BufferInfo& bufferInfo);
+	~CWGPUVertexBuffer();
 
 	int				GetSizeInBytes() const { return m_bufElemCapacity * m_bufElemSize; }
 	int				GetVertexCount() const { return m_bufElemCapacity; }
@@ -66,6 +68,7 @@ class CWGPUIndexBuffer : public IIndexBuffer
 {
 public:
 	CWGPUIndexBuffer(const BufferInfo& bufferInfo);
+	~CWGPUIndexBuffer();
 
 	int				GetSizeInBytes() const { return m_bufElemCapacity * m_bufElemSize; }
 	int				GetIndicesCount() const { return m_bufElemCapacity; }

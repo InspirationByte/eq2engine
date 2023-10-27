@@ -43,6 +43,12 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 	}
 }
 
+void CWGPUBuffer::Terminate()
+{
+	wgpuBufferRelease(m_rhiBuffer);
+	m_rhiBuffer = nullptr;
+}
+
 void CWGPUBuffer::Update(void* data, int size, int offset)
 {
 	if (!m_rhiBuffer)
@@ -116,6 +122,11 @@ CWGPUVertexBuffer::CWGPUVertexBuffer(const BufferInfo& bufferInfo)
 	m_buffer.Init(bufferInfo, WGPUBufferUsage_Vertex, "EqVertexBuffer");
 }
 
+CWGPUVertexBuffer::~CWGPUVertexBuffer()
+{
+	m_buffer.Terminate();
+}
+
 void CWGPUVertexBuffer::Update(void* data, int size, int offset)
 {
 	const int ofsBytes = offset * m_bufElemSize;
@@ -152,6 +163,11 @@ CWGPUIndexBuffer::CWGPUIndexBuffer(const BufferInfo& bufferInfo)
 	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
 {
 	m_buffer.Init(bufferInfo, WGPUBufferUsage_Index, "EqIndexBuffer");
+}
+
+CWGPUIndexBuffer::~CWGPUIndexBuffer()
+{
+	m_buffer.Terminate();
 }
 
 void CWGPUIndexBuffer::Update(void* data, int size, int offset)

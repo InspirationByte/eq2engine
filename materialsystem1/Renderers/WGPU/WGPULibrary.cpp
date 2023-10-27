@@ -104,8 +104,6 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
-	g_renderWorker.Init(this, 96);
-
 	WGPUAdapter adapter = nullptr;
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
@@ -113,7 +111,10 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &adapter);
 
 	if (!adapter)
+	{
+		MsgError("No WGPU supported adapter found\n");
 		return false;
+	}
 
 	{
 		WGPUAdapterProperties properties = { 0 };
@@ -171,7 +172,6 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 
-		// extra features: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Features.cpp
 		WGPUDeviceDescriptor desc{};
 		
 		WGPUFeatureName requiredFeatures[] = {
@@ -183,18 +183,30 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		};
 		desc.requiredFeatures = requiredFeatures;
 		desc.requiredFeatureCount = elementsOf(requiredFeatures);
-		WGPURequiredLimits reqLimits;
+
+		WGPURequiredLimits reqLimits{};
 		reqLimits.limits = supLimits.limits;
+
 		desc.requiredLimits = &reqLimits;
 		desc.deviceLostCallback = OnWGPUDeviceLost;
 
 		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &desc);
 
 		if (!m_rhiDevice)
+		{
+			MsgError("Failed to create WebGPU device\n");
+			g_renderWorker.Shutdown();
 			return false;
+		}
 
 		m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
 	}
+
+	g_renderWorker.InitLoop(this, [this]() {
+		// process all internal async events or error callbacks
+		wgpuInstanceProcessEvents(m_instance);
+		return 0;
+	}, 96);
 
 	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
 
@@ -242,10 +254,10 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 
 void CWGPURenderLib::EndFrame()
 {
-	CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
-	WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
-
 	g_renderWorker.Execute(__func__, [&]() {
+		CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
+		WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
+
 		WGPURenderPassColorAttachment colorDesc = {};
 		colorDesc.view = backBufView;
 		colorDesc.loadOp = WGPULoadOp_Clear;
@@ -273,20 +285,13 @@ void CWGPURenderLib::EndFrame()
 			}
 		}
 		//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
+
+		// wait for queues to be submitted from other job threads
+		currentSwapChain->SwapBuffers();
+		wgpuTextureViewRelease(backBufView);
+
 		return 0;
 	});
-
-	// process all internal async events or error callbacks
-	g_renderWorker.WaitForExecute("WGPUEvents", [this]() {
-		wgpuInstanceProcessEvents(m_instance);
-		return 0;
-	});
-
-	// wait for queues to be submitted from other job threads
-	g_renderWorker.WaitForThread();	
-	currentSwapChain->SwapBuffers();
-
-	wgpuTextureViewRelease(backBufView);
 }
 
 ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)

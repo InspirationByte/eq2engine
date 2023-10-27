@@ -21,7 +21,24 @@ void CRenderWorkThread::Init(RenderWorkerHandler* workHandler, int workPoolSize)
 	m_workRingPool.setNum(poolSize);
 
 	// by default every work in pool is free (see .Wait call after getting one from ring pool)
-	for (int i = 0; i < workPoolSize; ++i)
+	for (int i = 0; i < m_workRingPool.numElem(); ++i)
+	{
+		m_completionSignal.appendEmplace(true);
+		m_completionSignal[i].Raise();
+	}
+}
+
+void CRenderWorkThread::InitLoop(RenderWorkerHandler* workHandler, FUNC_TYPE loopFunc, int workPoolSize)
+{
+	m_loopFunc = loopFunc;
+	m_workHandler = workHandler;
+	StartThread(m_workHandler->GetAsyncThreadName());
+
+	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
+	m_workRingPool.setNum(poolSize);
+
+	// by default every work in pool is free (see .Wait call after getting one from ring pool)
+	for (int i = 0; i < m_workRingPool.numElem(); ++i)
 	{
 		m_completionSignal.appendEmplace(true);
 		m_completionSignal[i].Raise();
@@ -30,6 +47,7 @@ void CRenderWorkThread::Init(RenderWorkerHandler* workHandler, int workPoolSize)
 
 void CRenderWorkThread::Shutdown()
 {
+	m_loopStop = true;
 	SignalWork();
 	StopThread();
 
@@ -66,7 +84,9 @@ int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
 	work->sync = true;
 	Atomic::Exchange(work->result, WORK_PENDING);
 	
-	SignalWork();
+	if(IsWorker())
+		SignalWork();
+
 	const bool isSignalled = completionSignal->Wait();
 	const int workResult = Atomic::Exchange(work->result, WORK_NOT_STARTED);
 
@@ -111,8 +131,11 @@ void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
 	SignalWork();
 }
 
-int CRenderWorkThread::Run()
+void CRenderWorkThread::Execute()
 {
+	if (m_loopFunc)
+		m_loopFunc();
+
 	bool begun = false;
 
 	for (int i = 0; i < m_workRingPool.numElem(); ++i)
@@ -120,7 +143,7 @@ int CRenderWorkThread::Run()
 		Work& work = m_workRingPool[i];
 		if (Atomic::CompareExchange(work.result, WORK_PENDING, WORK_EXECUTING) == WORK_PENDING)
 		{
-			if(!begun)
+			if (!begun)
 				m_workHandler->BeginAsyncOperation(GetThreadID());
 			begun = true;
 
@@ -128,11 +151,25 @@ int CRenderWorkThread::Run()
 			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
 
 			m_completionSignal[i].Raise();
-		}		
+		}
 	}
 
-	if(begun)
+	if (begun)
 		m_workHandler->EndAsyncOperation();
+
+	YieldCurrentThread();
+}
+
+int CRenderWorkThread::Run()
+{
+	if (!IsWorker())
+	{
+		do {
+			Execute();
+		} while (!m_loopStop);
+	}
+	else
+		Execute();
 
 	return 0;
 }

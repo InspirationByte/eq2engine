@@ -27,6 +27,7 @@ public:
 	using FUNC_TYPE = EqFunction<int()>;
 
 	void		Init(RenderWorkerHandler* workHandler, int workPoolSize = 32);
+	void		InitLoop(RenderWorkerHandler* workHandler, FUNC_TYPE loopFunc, int workPoolSize = 32);
 	void		Shutdown();
 
 	// syncronous execution
@@ -38,6 +39,8 @@ public:
 protected:
 	int			Run() override;
 
+	void		Execute();
+
 	struct Work
 	{
 		FUNC_TYPE	func;
@@ -45,9 +48,11 @@ protected:
 		bool		sync{ false };
 	};
 
+	FUNC_TYPE								m_loopFunc;
 	FixedArray<Work, 96>					m_workRingPool;
 	FixedArray<Threading::CEqSignal, 96>	m_completionSignal;
 	RenderWorkerHandler*					m_workHandler{ nullptr };
+	volatile bool							m_loopStop{ false };
 };
 
 extern CRenderWorkThread g_renderWorker;
