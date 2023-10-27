@@ -180,6 +180,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 			// TODO: android
 			//WGPUFeatureName_TextureCompressionETC2,
 			//WGPUFeatureName_TextureCompressionASTC,
+			//WGPUFeatureName_ShaderF16,
 		};
 		desc.requiredFeatures = requiredFeatures;
 		desc.requiredFeatureCount = elementsOf(requiredFeatures);
@@ -254,7 +255,7 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 
 void CWGPURenderLib::EndFrame()
 {
-	g_renderWorker.Execute(__func__, [&]() {
+	g_renderWorker.WaitForExecute(__func__, [&]() {
 		CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
 		WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
 
