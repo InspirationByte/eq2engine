@@ -11,7 +11,7 @@
 
 class CWGPUTexture : public CTexture
 {
-	friend class WGPURenderAPI;
+	friend class CWGPURenderAPI;
 public:
 	~CWGPUTexture();
 

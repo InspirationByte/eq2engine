@@ -21,14 +21,14 @@ extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
 
-class WGPURenderAPI : public ShaderAPI_Base
+class CWGPURenderAPI : public ShaderAPI_Base
 {
 	friend class CWGPURenderLib;
 public:
-	static WGPURenderAPI Instance;
+	static CWGPURenderAPI Instance;
 
-	WGPURenderAPI() {}
-	~WGPURenderAPI() {}
+	CWGPURenderAPI() {}
+	~CWGPURenderAPI() {}
 
 	// Init + Shurdown
 	void			Init(const ShaderAPIParams& params);
@@ -85,7 +85,12 @@ public:
 	ITexturePtr		CreateRenderTarget(const char* pszName, int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR, ETexAddressMode textureAddress = TEXADDRESS_WRAP, ECompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
 
 //-------------------------------------------------------------
-// Render states management
+// Pipeline management
+
+	void*			CreateRenderPipeline();
+
+//-------------------------------------------------------------
+// DEPRECATED Render states management
 
 	IRenderState*	CreateBlendingState(const BlendStateParams& blendDesc);
 	IRenderState*	CreateDepthStencilState(const DepthStencilStateParams& depthDesc);
@@ -93,7 +98,7 @@ public:
 	void			DestroyRenderState(IRenderState* pShaderProgram, bool removeAllRefs = false);
 
 //-------------------------------------------------------------
-// Render target operations
+// DEPRECATED Render target operations
 
 	void			Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor& fillColor, float fDepth, int nStencil);
 
@@ -112,13 +117,13 @@ public:
 	void			ChangeIndexBuffer(IIndexBuffer* pIndexBuffer);
 
 //-------------------------------------------------------------
-// State management
+// DEPRECATED State management
 
 	void			SetScissorRectangle(const IAARectangle& rect);
 	void			SetDepthRange(float fZNear, float fZFar);
 
 //-------------------------------------------------------------
-// Renderer state managemet
+// DEPRECATED Renderer state managemet
 
 	void			SetShader(IShaderProgramPtr pShader);
 	void			SetTexture(int nameHash, const ITexturePtr& texture);
@@ -139,6 +144,9 @@ public:
 
 	void			DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
 	void			DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices);
+
+//-------------------------------------------------------------
+// Private access
 
 	WGPUDevice		GetWGPUDevice() const { return m_rhiDevice; }
 	WGPUQueue		GetWGPUQueue() const { return m_rhiQueue; };

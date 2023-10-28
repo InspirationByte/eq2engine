@@ -26,7 +26,7 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 	if (bufferInfo.flags & BUFFER_FLAG_READ)
 		desc.usage |= WGPUBufferUsage_MapRead;
 
-	m_rhiBuffer = wgpuDeviceCreateBuffer(WGPURenderAPI::Instance.GetWGPUDevice(), &desc);
+	m_rhiBuffer = wgpuDeviceCreateBuffer(CWGPURenderAPI::Instance.GetWGPUDevice(), &desc);
 
 	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer");
 
@@ -58,7 +58,7 @@ void CWGPUBuffer::Update(void* data, int size, int offset)
 
 	// next commands in queue are not executed until data is uploded
 	g_renderWorker.WaitForExecute("UpdateBuffer", [&]() {
-		wgpuQueueWriteBuffer(WGPURenderAPI::Instance.GetWGPUQueue(), m_rhiBuffer, offset, data, writeDataSize);
+		wgpuQueueWriteBuffer(CWGPURenderAPI::Instance.GetWGPUQueue(), m_rhiBuffer, offset, data, writeDataSize);
 		return 0;
 	});
 }

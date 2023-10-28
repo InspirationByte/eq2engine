@@ -21,7 +21,7 @@
 
 HOOK_TO_CVAR(r_screen);
 
-IShaderAPI* g_renderAPI = &WGPURenderAPI::Instance;
+IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
 
 DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "1", nullptr, 0);
@@ -99,7 +99,7 @@ bool CWGPURenderLib::InitCaps()
 
 IShaderAPI* CWGPURenderLib::GetRenderer() const
 {
-	return &WGPURenderAPI::Instance;
+	return &CWGPURenderAPI::Instance;
 }
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
@@ -117,18 +117,20 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	}
 
 	{
-		WGPUAdapterProperties properties = { 0 };
+		WGPUAdapterProperties properties = {};
 		wgpuAdapterGetProperties(adapter, &properties);
 
 		Msg("WGPU adapter: %s %s %s\n", properties.name, properties.driverDescription, properties.vendorName);
 	}
 
 	{
-		WGPUSupportedLimits supLimits = { 0 };
+		WGPUSupportedLimits supLimits = {};
 		wgpuAdapterGetLimits(adapter, &supLimits);
 
+		WGPULimits requiredLimits = supLimits.limits;
+
 		// fill ShaderAPI capabilities
-		ShaderAPICaps& caps = WGPURenderAPI::Instance.m_caps;
+		ShaderAPICaps& caps = CWGPURenderAPI::Instance.m_caps;
 		//caps.textureFormatsSupported[FORMAT_COUNT]{ false };
 		//caps.renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 		caps.isInstancingSupported = true;
@@ -185,8 +187,9 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		desc.requiredFeatures = requiredFeatures;
 		desc.requiredFeatureCount = elementsOf(requiredFeatures);
 
+		// setup required limits
 		WGPURequiredLimits reqLimits{};
-		reqLimits.limits = supLimits.limits;
+		reqLimits.limits = requiredLimits;
 
 		desc.requiredLimits = &reqLimits;
 		desc.deviceLostCallback = OnWGPUDeviceLost;
@@ -214,8 +217,8 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	// create default swap chain
 	CreateSwapChain(params.windowInfo);
 
-	WGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
-	WGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
+	CWGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
+	CWGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
 
 	return true;
 }

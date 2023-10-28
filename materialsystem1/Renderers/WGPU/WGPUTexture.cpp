@@ -36,7 +36,7 @@ void CWGPUTexture::Release()
 
 void CWGPUTexture::Ref_DeleteObject()
 {
-	WGPURenderAPI::Instance.FreeTexture(this);
+	CWGPURenderAPI::Instance.FreeTexture(this);
 	RefCountedObject::Ref_DeleteObject();
 }
 
@@ -49,7 +49,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
 	m_samplerState = sampler;
-	m_samplerState.aniso = max(WGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
+	m_samplerState.aniso = max(CWGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
 	m_flags = flags;
 
 	for (CImage* image : images)
@@ -108,7 +108,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 			ASSERT_FAIL("Invalid image type of %s", img->GetName());
 		}
 
-		WGPUTexture rhiTexture = wgpuDeviceCreateTexture(WGPURenderAPI::Instance.GetWGPUDevice(), &textureDesc);
+		WGPUTexture rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &textureDesc);
 		if (!rhiTexture)
 		{
 			MsgError("ERROR: failed to create texture for image %s\n", img->GetName());
@@ -159,7 +159,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 
 				// TODO: make a temp buffer and make a command to copy it to texture
 				//{
-				//	WGPUCommandEncoder asyncCmdsEncoder = wgpuDeviceCreateCommandEncoder(WGPURenderAPI::Instance.GetWGPUDevice(), nullptr);
+				//	WGPUCommandEncoder asyncCmdsEncoder = wgpuDeviceCreateCommandEncoder(CWGPURenderAPI::Instance.GetWGPUDevice(), nullptr);
 				//
 				//	//wgpuCommandEncoderCopyBufferToTexture(asyncCmdsEncoder, );
 				//
@@ -172,7 +172,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 				//	//wgpuCommandBufferRelease(asyncCmdBuffer);
 				//}
 
-				wgpuQueueWriteTexture(WGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
 				return 0;
 			});
 			--mipMapLevel;
