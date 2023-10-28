@@ -102,7 +102,7 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 	swapChainDesc.height = m_backbufferSize.y;
 	swapChainDesc.format = m_swapFmt;
 	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment;
-	swapChainDesc.presentMode = WGPUPresentMode_Fifo; // TODO: other modes
+	swapChainDesc.presentMode = WGPUPresentMode_Immediate;// WGPUPresentMode_Fifo; // TODO: other modes
 
 	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &swapChainDesc);
 

@@ -33,7 +33,7 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 	if (m_rhiBuffer && bufferInfo.data && bufferInfo.dataSize)
 	{
 		// sadly...
-		g_renderWorker.WaitForExecute("UpdateBuffer", [&]() {
+		g_renderWorker.WaitForExecute("UploadCreatedBuffer", [&]() {
 			void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
 			ASSERT_MSG(outData, "Buffer mapped range is NULL");
 			memcpy(outData, bufferInfo.data, writeDataSize);
@@ -119,7 +119,9 @@ void CWGPUBuffer::Unlock()
 CWGPUVertexBuffer::CWGPUVertexBuffer(const BufferInfo& bufferInfo)
 	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
 {
-	m_buffer.Init(bufferInfo, WGPUBufferUsage_Vertex, "EqVertexBuffer");
+	// TODO: extra buffer flags for lock read
+	const int bufferUsage = WGPUBufferUsage_Vertex | WGPUBufferUsage_MapRead;
+	m_buffer.Init(bufferInfo, bufferUsage, "EqVertexBuffer");
 }
 
 CWGPUVertexBuffer::~CWGPUVertexBuffer()
@@ -153,7 +155,12 @@ bool CWGPUVertexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, int fl
 
 void CWGPUVertexBuffer::Unlock()
 {
-	ASSERT_MSG(m_lockData.data, "Buffer is not locked");
+	if (m_lockData.data) 
+	{
+		ASSERT_FAIL("Buffer is not locked");
+		return;
+	}
+	m_lockData = BufferLockData{};
 	m_buffer.Unlock();
 }
 
@@ -162,7 +169,9 @@ void CWGPUVertexBuffer::Unlock()
 CWGPUIndexBuffer::CWGPUIndexBuffer(const BufferInfo& bufferInfo)
 	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
 {
-	m_buffer.Init(bufferInfo, WGPUBufferUsage_Index, "EqIndexBuffer");
+	// TODO: extra buffer flags for lock read
+	const int bufferUsage = WGPUBufferUsage_Index | WGPUBufferUsage_MapRead;
+	m_buffer.Init(bufferInfo, bufferUsage, "EqIndexBuffer");
 }
 
 CWGPUIndexBuffer::~CWGPUIndexBuffer()
@@ -196,6 +205,11 @@ bool CWGPUIndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, int fla
 
 void CWGPUIndexBuffer::Unlock()
 {
-	ASSERT_MSG(m_lockData.data, "Buffer is not locked");
+	if (m_lockData.data)
+	{
+		ASSERT_FAIL("Buffer is not locked");
+		return;
+	}
+	m_lockData = BufferLockData{};
 	m_buffer.Unlock();
 }
