@@ -47,8 +47,8 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 	int grid_lines = count;
 
 	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetDepthStates(depthTest, false);
-	g_matSystem->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false, true);
+	g_matSystem->SetDepthStates(depthTest, false, true);
+	g_matSystem->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false);
 	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
 
 	int numOfLines = grid_lines / size;

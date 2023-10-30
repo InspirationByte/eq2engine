@@ -316,7 +316,7 @@ enum EBlendFactor : int
 };
 
 // Function of blending
-enum EBlendFunction : int
+enum EBlendFunc : int
 {
 	// Function of blending
 	BLENDFUNC_ADD				= 0,
@@ -347,7 +347,7 @@ enum ETextureFlags : int
 };
 
 // Stencil-test function
-enum EStencilFunction : int
+enum EStencilFunc : int
 {
 	STENCILFUNC_KEEP		= 0,
 	STENCILFUNC_SET_ZERO,	// 1
@@ -386,37 +386,45 @@ struct BlendStateParams
 {
 	EBlendFactor	srcFactor{ BLENDFACTOR_ONE };
 	EBlendFactor	dstFactor{ BLENDFACTOR_ZERO };
-	EBlendFunction	blendFunc{ BLENDFUNC_ADD };
+	EBlendFunc		blendFunc{ BLENDFUNC_ADD };
 	int				mask{ COLORMASK_ALL };
 	bool			enable { false };
 };
 
+struct StencilFaceStateParams
+{
+	ECompareFunc	compareFunc{ COMPFUNC_ALWAYS };
+	EStencilFunc	failOp{ STENCILFUNC_KEEP };
+	EStencilFunc	depthFailOp{ STENCILFUNC_KEEP };
+	EStencilFunc	passOp{ STENCILFUNC_KEEP };
+};
+
 struct DepthStencilStateParams
 {
-	bool					depthTest{ false };
-	bool					depthWrite{ false };
-	ECompareFunc			depthFunc{ COMPFUNC_LEQUAL };
+	bool			depthTest{ false };
+	bool			depthWrite{ false };
+	ECompareFunc	depthFunc{ COMPFUNC_LEQUAL };
 
-	bool					doStencilTest{ false };
-	uint8					nStencilMask{ 0xFF };
-	uint8					nStencilWriteMask{ 0xFF };
-	uint8					nStencilRef{ 0xFF };
-	ECompareFunc			nStencilFunc{ COMPFUNC_ALWAYS };
-	EStencilFunction		nStencilFail{ STENCILFUNC_KEEP };
-	EStencilFunction		nDepthFail{ STENCILFUNC_KEEP };
-	EStencilFunction		nStencilPass{ STENCILFUNC_KEEP };
+	bool			useDepthBias{ false };
+	float			depthBias{ 0.0f };
+	float			depthBiasSlopeScale{ 0.0f };
 
+	bool			stencilTest{ false };
+
+	StencilFaceStateParams stencilFront;
+	StencilFaceStateParams stencilBack;
+	uint32			stencilMask{ 0xFFFFFFFF };
+	uint32			stencilWriteMask{ 0xFFFFFFFF };
+
+	uint8			stencilRef{ 0xFF }; // TODO: remove
 };
 
 struct RasterizerStateParams
 {
-	ECullMode				cullMode{ CULL_NONE };
-	EFillMode				fillMode{ FILL_SOLID };
-	bool					useDepthBias{ false };
-	float					depthBias{ 0.0f };
-	float					slopeDepthBias{ 0.0f };
-	bool					multiSample{ false };
-	bool					scissor{ false };
+	ECullMode	cullMode{ CULL_NONE };
+	EFillMode	fillMode{ FILL_SOLID };
+	bool		multiSample{ false };
+	bool		scissor{ false };
 };
 
 

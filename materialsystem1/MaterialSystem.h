@@ -145,13 +145,13 @@ public:
 
 
 	void							SetBlendingStates(const BlendStateParams& blend);
-	void							SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL);
+	void							SetBlendingStates(EBlendFactor srcFactor, EBlendFactor destFactor, EBlendFunc blendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL);
 
 	void							SetDepthStates(const DepthStencilStateParams& depth);
-	void							SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL);
+	void							SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset = false, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL);
 
 	void							SetRasterizerStates(const RasterizerStateParams& raster);
-	void							SetRasterizerStates(ECullMode nCullMode,EFillMode nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false, bool bPolyOffset = false);
+	void							SetRasterizerStates(ECullMode cullMode, EFillMode fillMode = FILL_SOLID, bool multiSample = true, bool scissor = false);
 
 	//------------------
 	// Materials or shader static states

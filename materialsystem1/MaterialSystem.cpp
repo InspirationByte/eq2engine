@@ -1455,19 +1455,19 @@ void CMaterialSystem::SetBlendingStates(const BlendStateParams& blend)
 // sets depth stencil state
 void CMaterialSystem::SetDepthStates(const DepthStencilStateParams& depth)
 {
-	SetDepthStates(depth.depthTest, depth.depthWrite, depth.depthFunc);
+	SetDepthStates(depth.depthTest, depth.depthWrite, depth.useDepthBias, depth.depthFunc);
 }
 
 // sets rasterizer extended mode
 void CMaterialSystem::SetRasterizerStates(const RasterizerStateParams& raster)
 {
-	SetRasterizerStates(raster.cullMode, raster.fillMode, raster.multiSample, raster.scissor, raster.useDepthBias);
+	SetRasterizerStates(raster.cullMode, raster.fillMode, raster.multiSample, raster.scissor);
 }
 
 // pack blending function to ushort
 struct blendStateIndex_t
 {
-	blendStateIndex_t( EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc, int colormask )
+	blendStateIndex_t( EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunc nBlendingFunc, int colormask )
 		: srcFactor(nSrcFactor), destFactor(nDestFactor), colMask(colormask), blendFunc(nBlendingFunc)
 	{
 	}
@@ -1481,7 +1481,7 @@ struct blendStateIndex_t
 assert_sizeof(blendStateIndex_t,2);
 
 // sets blending
-void CMaterialSystem::SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc, int colormask)
+void CMaterialSystem::SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunc nBlendingFunc, int colormask)
 {
 	blendStateIndex_t idx(nSrcFactor, nDestFactor, nBlendingFunc, colormask);
 	ushort stateIndex = *(ushort*)&idx;
@@ -1526,9 +1526,9 @@ struct depthStateIndex_t
 assert_sizeof(depthStateIndex_t,2);
 
 // sets depth stencil state
-void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECompareFunc depthCompFunc)
+void CMaterialSystem::SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset, ECompareFunc depthCompFunc)
 {
-	depthStateIndex_t idx(bDoDepthTest, bDoDepthWrite, depthCompFunc);
+	depthStateIndex_t idx(depthTest, depthWrite, depthCompFunc);
 	ushort stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
@@ -1538,10 +1538,16 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECom
 	if(depthState.atEnd())
 	{
 		DepthStencilStateParams desc;
-		desc.depthWrite = bDoDepthWrite;
-		desc.depthTest = bDoDepthTest;
+		desc.depthWrite = depthWrite;
+		desc.depthTest = depthTest;
 		desc.depthFunc = depthCompFunc;
-		desc.doStencilTest = false;
+		desc.stencilTest = false;
+		desc.useDepthBias = polyOffset;
+		if (desc.useDepthBias)
+		{
+			desc.depthBias = r_depthBias.GetFloat();
+			desc.depthBiasSlopeScale = r_slopeDepthBias.GetFloat();
+		}
 
 		state = m_shaderAPI->CreateDepthStencilState(desc);
 		m_depthStates.insert(stateIndex, state);
@@ -1555,8 +1561,8 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECom
 // pack blending function to ushort
 struct rasterStateIndex_t
 {
-	rasterStateIndex_t( ECullMode nCullMode, EFillMode nFillMode, bool bMultiSample,bool bScissor, bool bPolyOffset )
-		: cullMode(nCullMode), fillMode(nFillMode), multisample(bMultiSample), scissor(bScissor), polyoffset(bPolyOffset)
+	rasterStateIndex_t(ECullMode nCullMode, EFillMode nFillMode, bool bMultiSample,bool bScissor )
+		: cullMode(nCullMode), fillMode(nFillMode), multisample(bMultiSample), scissor(bScissor)
 	{
 	}
 
@@ -1564,16 +1570,15 @@ struct rasterStateIndex_t
 	ubyte fillMode : 2;
 	ubyte multisample : 1;
 	ubyte scissor : 1;
-	ubyte polyoffset: 1;
-	ubyte pad{ 0 };
+	ubyte pad[1]{ 0 };
 };
 
 assert_sizeof(rasterStateIndex_t,2);
 
 // sets rasterizer extended mode
-void CMaterialSystem::SetRasterizerStates(ECullMode nCullMode, EFillMode nFillMode,bool bMultiSample,bool bScissor,bool bPolyOffset)
+void CMaterialSystem::SetRasterizerStates(ECullMode cullMode, EFillMode fillMode, bool multiSample, bool scissor)
 {
-	rasterStateIndex_t idx(nCullMode, nFillMode, bMultiSample, bScissor, bPolyOffset);
+	rasterStateIndex_t idx(cullMode, fillMode, multiSample, scissor);
 	ushort stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
@@ -1583,17 +1588,10 @@ void CMaterialSystem::SetRasterizerStates(ECullMode nCullMode, EFillMode nFillMo
 	if(rasterState.atEnd())
 	{
 		RasterizerStateParams desc;
-		desc.cullMode = nCullMode;
-		desc.fillMode = nFillMode;
-		desc.multiSample = bMultiSample;
-		desc.scissor = bScissor;
-		desc.useDepthBias = bPolyOffset;
-
-		if(desc.useDepthBias)
-		{
-			desc.depthBias = r_depthBias.GetFloat();
-			desc.slopeDepthBias = r_slopeDepthBias.GetFloat();
-		}
+		desc.cullMode = cullMode;
+		desc.fillMode = fillMode;
+		desc.multiSample = multiSample;
+		desc.scissor = scissor;
 
 		state = m_shaderAPI->CreateRasterizerState(desc);
 		m_rasterStates.insert(stateIndex, state);

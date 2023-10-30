@@ -711,6 +711,18 @@ void ShaderAPID3D9::ApplyDepthState()
 
 		if (m_bDoStencilTest != false)
 			m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, m_bDoStencilTest = false);
+
+		if (m_fCurrentDepthBias != 0.0f)
+		{
+			m_pD3DDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
+			m_fCurrentDepthBias = 0.0f;
+		}
+
+		if (m_fCurrentSlopeDepthBias != 0.0f)
+		{
+			m_pD3DDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, 0);
+			m_fCurrentSlopeDepthBias = 0.0f;
+		}
 	} 
 	else 
 	{
@@ -729,7 +741,6 @@ void ShaderAPID3D9::ApplyDepthState()
 
 			if (state.depthFunc != m_nCurrentDepthFunc)
 				m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, g_d3d9_depthConst[m_nCurrentDepthFunc = state.depthFunc]);
-		
 		} 
 		else 
 		{
@@ -739,35 +750,55 @@ void ShaderAPID3D9::ApplyDepthState()
 			}
 		}
 
-		if(state.doStencilTest != m_bDoStencilTest)
+		if (state.useDepthBias != false)
 		{
-			m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, m_bDoStencilTest = state.doStencilTest);
+			if (m_fCurrentDepthBias != state.depthBias)
+				m_pD3DDevice->SetRenderState(D3DRS_DEPTHBIAS, *((DWORD*)(&(m_fCurrentDepthBias = state.depthBias))));
 
-			if(state.doStencilTest)
+			if (m_fCurrentSlopeDepthBias != state.depthBiasSlopeScale)
+				m_pD3DDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, *((DWORD*)(&(m_fCurrentSlopeDepthBias = state.depthBiasSlopeScale))));
+		}
+		else
+		{
+			if (m_fCurrentDepthBias != 0.0f)
 			{
-				if(m_nStencilMask != state.nStencilMask)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, m_nStencilMask = state.nStencilMask);
+				m_pD3DDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
+				m_fCurrentDepthBias = 0.0f;
+			}
 
-				if(m_nStencilWriteMask != state.nStencilWriteMask)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilWriteMask = state.nStencilWriteMask);
+			if (m_fCurrentSlopeDepthBias != 0.0f)
+			{
+				m_pD3DDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, 0);
+				m_fCurrentSlopeDepthBias = 0.0f;
+			}
+		}
 
-				if(m_nStencilRef != state.nStencilRef)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilRef = state.nStencilRef);
+		if(state.stencilTest != m_bDoStencilTest)
+		{
+			m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, m_bDoStencilTest = state.stencilTest);
 
-				if(m_nStencilFunc != state.nStencilFunc)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, g_d3d9_stencilConst[m_nStencilFunc = state.nStencilFunc]);
+			if(state.stencilTest)
+			{
+				if(m_nStencilMask != state.stencilMask)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, m_nStencilMask = state.stencilMask);
 
-				if(m_nStencilFail != state.nStencilFail)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, g_d3d9_stencilConst[m_nStencilFail = state.nStencilFail]);
+				if(m_nStencilWriteMask != state.stencilWriteMask)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILWRITEMASK, m_nStencilWriteMask = state.stencilWriteMask);
 
-				if(m_nStencilFunc != state.nStencilFunc)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, g_d3d9_depthConst[m_nStencilFunc = state.nStencilFunc]);
+				if(m_nStencilRef != state.stencilRef)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilRef = state.stencilRef);
 
-				if(m_nStencilPass != state.nStencilPass)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, g_d3d9_stencilConst[m_nStencilPass = state.nStencilPass]);
+				if(m_nStencilFunc != state.stencilFront.compareFunc)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, g_d3d9_depthConst[m_nStencilFunc = state.stencilFront.compareFunc]);
 
-				if(m_nDepthFail != state.nDepthFail)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, g_d3d9_stencilConst[m_nDepthFail = state.nDepthFail]);
+				if(m_nStencilFail != state.stencilFront.failOp)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, g_d3d9_depthConst[m_nStencilFail = state.stencilFront.failOp]);
+
+				if(m_nStencilPass != state.stencilFront.passOp)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, g_d3d9_stencilConst[m_nStencilPass = state.stencilFront.passOp]);
+
+				if(m_nDepthFail != state.stencilFront.depthFailOp)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, g_d3d9_stencilConst[m_nDepthFail = state.stencilFront.depthFailOp]);
 			}
 		}
 	}
@@ -789,22 +820,9 @@ void ShaderAPID3D9::ApplyRasterizerState()
 
 		if (m_bCurrentMultiSampleEnable != true)
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable = true);
-		
 
 		if (m_bCurrentScissorEnable != false)
 			m_pD3DDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, m_bCurrentScissorEnable = false);
-
-		if(m_fCurrentDepthBias != 0.0f)
-		{
-			m_pD3DDevice->SetRenderState( D3DRS_DEPTHBIAS, 0 ); 
-			m_fCurrentDepthBias = 0.0f;
-		}
-
-		if(m_fCurrentSlopeDepthBias != 0.0f)
-		{
-			m_pD3DDevice->SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, 0 );
-			m_fCurrentSlopeDepthBias = 0.0f;
-		}
 	}
 	else
 	{
@@ -823,29 +841,6 @@ void ShaderAPID3D9::ApplyRasterizerState()
 		{
 			m_bCurrentScissorEnable = state.scissor;
 			m_pD3DDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, m_bCurrentScissorEnable );
-		}
-
-		if (state.useDepthBias != false)
-		{
-			if(m_fCurrentDepthBias != state.depthBias)
-				m_pD3DDevice->SetRenderState( D3DRS_DEPTHBIAS, *((DWORD*) (&(m_fCurrentDepthBias = state.depthBias)) ));
-
-			if(m_fCurrentSlopeDepthBias != state.slopeDepthBias)
-				m_pD3DDevice->SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, *((DWORD*) (&(m_fCurrentSlopeDepthBias = state.slopeDepthBias)))); 
-		}
-		else
-		{
-			if(m_fCurrentDepthBias != 0.0f)
-			{
-				m_pD3DDevice->SetRenderState( D3DRS_DEPTHBIAS, 0 ); 
-				m_fCurrentDepthBias = 0.0f;
-			}
-
-			if(m_fCurrentSlopeDepthBias != 0.0f)
-			{
-				m_pD3DDevice->SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, 0 );
-				m_fCurrentSlopeDepthBias = 0.0f;
-			}
 		}
 	}
 
@@ -1040,18 +1035,19 @@ IRenderState* ShaderAPID3D9::CreateDepthStencilState( const DepthStencilStatePar
 		if(depthDesc.depthWrite == pState->m_params.depthWrite &&
 			depthDesc.depthTest == pState->m_params.depthTest &&
 			depthDesc.depthFunc == pState->m_params.depthFunc &&
-			depthDesc.doStencilTest == pState->m_params.doStencilTest )
+			depthDesc.stencilTest == pState->m_params.stencilTest &&
+			depthDesc.useDepthBias == pState->m_params.useDepthBias)
 		{
 			// if we searching for stencil test
-			if(depthDesc.doStencilTest)
+			if(depthDesc.stencilTest)
 			{
-				if(	depthDesc.nDepthFail == pState->m_params.nDepthFail && 
-					depthDesc.nStencilFail == pState->m_params.nStencilFail && 
-					depthDesc.nStencilFunc == pState->m_params.nStencilFunc && 
-					depthDesc.nStencilMask == pState->m_params.nStencilMask && 
-					depthDesc.nStencilMask == pState->m_params.nStencilWriteMask && 
-					depthDesc.nStencilMask == pState->m_params.nStencilRef && 
-					depthDesc.nStencilPass == pState->m_params.nStencilPass)
+				if(	depthDesc.stencilFront.depthFailOp == pState->m_params.stencilFront.depthFailOp &&
+					depthDesc.stencilFront.failOp == pState->m_params.stencilFront.failOp &&
+					depthDesc.stencilFront.passOp == pState->m_params.stencilFront.passOp &&
+					depthDesc.stencilFront.compareFunc == pState->m_params.stencilFront.compareFunc &&
+					depthDesc.stencilMask == pState->m_params.stencilMask && 
+					depthDesc.stencilWriteMask == pState->m_params.stencilWriteMask &&
+					depthDesc.stencilRef == pState->m_params.stencilRef)
 				{
 					pState->Ref_Grab();
 					return pState;
@@ -1087,8 +1083,7 @@ IRenderState* ShaderAPID3D9::CreateRasterizerState( const RasterizerStateParams 
 		if(rasterDesc.cullMode == pState->m_params.cullMode &&
 			rasterDesc.fillMode == pState->m_params.fillMode &&
 			rasterDesc.multiSample == pState->m_params.multiSample &&
-			rasterDesc.scissor == pState->m_params.scissor &&
-			rasterDesc.useDepthBias == pState->m_params.useDepthBias)
+			rasterDesc.scissor == pState->m_params.scissor)
 		{
 			pState->Ref_Grab();
 			return pState;

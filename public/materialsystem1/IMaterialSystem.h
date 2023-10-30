@@ -210,13 +210,13 @@ public:
 	virtual ColorRGBA				GetAmbientColor() const = 0;
 
 	virtual void					SetBlendingStates(const BlendStateParams& blend) = 0;
-	virtual void					SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunction nBlendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL) = 0;
+	virtual void					SetBlendingStates(EBlendFactor src, EBlendFactor dest, EBlendFunc func = BLENDFUNC_ADD, int colormask = COLORMASK_ALL) = 0;
 
 	virtual void					SetDepthStates(const DepthStencilStateParams& depth) = 0;
-	virtual void					SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
+	virtual void					SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset = false, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
 
 	virtual void					SetRasterizerStates(const RasterizerStateParams& raster) = 0;
-	virtual void					SetRasterizerStates(ECullMode nCullMode, EFillMode nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false, bool bPolyOffset = false) = 0;
+	virtual void					SetRasterizerStates(ECullMode cullMode, EFillMode fillMode = FILL_SOLID, bool multiSample = true, bool scissor = false) = 0;
 
 
 	//-----------------------------

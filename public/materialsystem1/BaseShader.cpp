@@ -298,13 +298,13 @@ void CBaseShader::ParamSetup_RasterState(IShaderAPI* renderAPI)
 	if(config.wireframeMode && config.editormode)
 		cull_mode = CULL_NONE;
 
-	g_matSystem->SetRasterizerStates(cull_mode, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
+	g_matSystem->SetRasterizerStates(cull_mode, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false);
 }
 
 void CBaseShader::ParamSetup_RasterState_NoCull(IShaderAPI* renderAPI)
 {
 	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
-	g_matSystem->SetRasterizerStates(CULL_NONE, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false, m_polyOffset);
+	g_matSystem->SetRasterizerStates(CULL_NONE, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)), m_msaaEnabled, false);
 }
 
 void CBaseShader::ParamSetup_Transform(IShaderAPI* renderAPI)
@@ -328,7 +328,7 @@ void CBaseShader::ParamSetup_Transform(IShaderAPI* renderAPI)
 
 void CBaseShader::ParamSetup_DepthSetup(IShaderAPI* renderAPI)
 {
-	g_matSystem->SetDepthStates(m_depthtest, m_depthwrite);
+	g_matSystem->SetDepthStates(m_depthtest, m_depthwrite, m_polyOffset);
 }
 
 void CBaseShader::ParamSetup_Fog(IShaderAPI* renderAPI)
