@@ -1,7 +1,5 @@
 #ifdef _WIN32
-#ifndef _M_AMD64
 #define WIN32_LEAN_AND_MEAN
-#endif
 #include <Windows.h>
 #else
 #include <sys/types.h>

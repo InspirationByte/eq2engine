@@ -11,8 +11,9 @@
 #include "core/core_common.h"
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#ifdef CloseModule	// Windows.h
+#ifdef CloseModule
 #undef CloseModule
 #endif
 #include <direct.h>	// mkdir()

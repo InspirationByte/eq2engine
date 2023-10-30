@@ -283,7 +283,7 @@ void Sys_Android_MountFileSystem()
 #endif // PLAT_ANDROID
 
 #if defined(PLAT_WIN)
-
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
