@@ -14,6 +14,20 @@ using CImagePtr = CRefPtr<CImage>;
 struct SamplerStateParams;
 enum ETextureFormat : int;
 
+enum ETextureFlags : int
+{
+	// texture creation flags
+	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, might improve performance
+	TEXFLAG_NULL_ON_ERROR			= (1 << 1),
+	TEXFLAG_CUBEMAP					= (1 << 2),		// should create cubemap
+	TEXFLAG_NOQUALITYLOD			= (1 << 3),		// not affected by texture quality Cvar, always load all mip levels
+	TEXFLAG_SRGB					= (1 << 4),		// texture should be sampled as in sRGB color space
+
+	// texture identification flags
+	TEXFLAG_RENDERTARGET			= (1 << 5),		// this is a rendertarget texture
+	TEXFLAG_RENDERDEPTH				= (1 << 6),		// rendertarget with depth texture
+};
+
 enum ETextureLockFlags
 {
 	TEXLOCK_READONLY	= (1 << 0),
@@ -23,7 +37,6 @@ enum ETextureLockFlags
 	TEXLOCK_REGION_RECT	= (1 << 2),
 	TEXLOCK_REGION_BOX	= (1 << 3),
 };
-
 
 using TextureView = uintptr_t;
 

@@ -52,10 +52,6 @@ enum EBodyFlags
 inline Quaternion AngularVelocityToSpin( const Quaternion& orientation, const Vector3D& angularVelocity )
 {
 	Quaternion vel( 0, angularVelocity.x*0.5f, angularVelocity.y*0.5f, angularVelocity.z*0.5f );
-	//Quaternion vel( 0, angularVelocity.x, angularVelocity.y, angularVelocity.z);
-
-	//vel.normalize();
-
     return vel * orientation;
 }
 

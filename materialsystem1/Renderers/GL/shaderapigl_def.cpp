@@ -285,10 +285,8 @@ const GLenum g_gl_stencilConst[] = {
 	GL_INVERT,
 	GL_INCR_WRAP,
 	GL_DECR_WRAP,
-	GL_MAX,
 	GL_INCR,
 	GL_DECR,
-	GL_ALWAYS,
 };
 
 const GLenum g_gl_cullConst[] = {

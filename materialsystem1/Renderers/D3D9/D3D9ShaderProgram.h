@@ -17,7 +17,6 @@ struct DX9ShaderConstant_t
 	int		nameHash{ 0 };
 	int		vsReg{ -1 };
 	int		psReg{ -1 };
-	int		constFlags{ 0 };
 };
 
 struct DX9Sampler_t

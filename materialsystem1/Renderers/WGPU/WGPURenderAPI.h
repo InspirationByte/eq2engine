@@ -87,7 +87,7 @@ public:
 //-------------------------------------------------------------
 // Pipeline management
 
-	void*			CreateRenderPipeline();
+	void*			CreateRenderPipeline(const RenderPipelineLayoutDesc& layoutDesc, const RenderPipelineDesc& pipelineDesc);
 
 //-------------------------------------------------------------
 // DEPRECATED Render states management

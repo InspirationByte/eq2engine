@@ -2050,7 +2050,6 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 			constant.vsReg = cDesc.RegisterIndex;
 			//constant.nElements = cDesc.RegisterCount;
 			constant.psReg = -1;
-			constant.constFlags = SCONST_VERTEX;
 		}
 	}
 
@@ -2109,12 +2108,10 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 				constant.vsReg = -1;
 				constant.psReg = cDesc.RegisterIndex;
 				//constant.nElements = cDesc.RegisterCount;
-				constant.constFlags = SCONST_PIXEL;
 			} 
 			else 
 			{
 				constants[merge].psReg = cDesc.RegisterIndex;
-				constants[merge].constFlags |= SCONST_PIXEL; // add flags
 			}
 		}
 	}

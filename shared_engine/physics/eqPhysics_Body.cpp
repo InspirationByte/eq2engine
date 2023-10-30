@@ -410,23 +410,6 @@ const FVector3D& CEqRigidBody::GetCenterOfMass() const
 // applies local impulse
 void CEqRigidBody::ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse)
 {
-	/*
-	Vector3D linearVelocity = impulse * m_invMass;
-	Vector3D angularVelocity = m_invInertiaTensor*cross(Vector3D(rel_pos + m_centerOfMassTrans), impulse);
-	Quaternion orientation = m_orientation;
-
-	// move by computed linear velocity
-	m_position += linearVelocity * m_linearFactor;
-
-	// convert angular velocity to spinning
-	// and accumulate
-	Quaternion angVelSpinning = AngularVelocityToSpin(m_orientation, angularVelocity*m_angularFactor);
-
-	// encountered
-	ASSERT(angVelSpinning.isNan() == false);
-
-	m_orientation += angVelSpinning;
-	*/
 	m_linearVelocity += impulse * m_invMass;
 	m_angularVelocity += m_invInertiaTensor*cross(Vector3D(rel_pos + m_centerOfMassTrans), impulse);
 }

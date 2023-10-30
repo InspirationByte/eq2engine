@@ -96,7 +96,7 @@ ArrayCRef<VertexFormatDesc> EGFHwVertex::BoneWeights::GetVertexFormatDesc()
 ArrayCRef<VertexFormatDesc> EGFHwVertex::Color::GetVertexFormatDesc()
 {
 	static const VertexFormatDesc g_EGFColorFormat[] = {
-		{ VERT_COLOR, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_UBYTE, "color" },
+		{ VERT_COLOR, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_UINT8, "color" },
 	};
 	return ArrayCRef(g_EGFColorFormat, elementsOf(g_EGFColorFormat));
 }

@@ -37,202 +37,6 @@ struct RenderWindowInfo
 };
 
 //---------------------------------------
-//        HIGH LEVEL CONSTANTS
-//---------------------------------------
-
-// Reserved, used for shaders only
-enum EConstantType : int
-{
-    CONSTANT_FLOAT,
-	CONSTANT_VECTOR2D,
-    CONSTANT_VECTOR3D,
-    CONSTANT_VECTOR4D,
-    CONSTANT_INT,
-    CONSTANT_IVECTOR2D,
-    CONSTANT_IVECTOR3D,
-    CONSTANT_IVECTOR4D,
-    CONSTANT_BOOL,
-    CONSTANT_BVECTOR2D,
-    CONSTANT_BVECTOR3D,
-    CONSTANT_BVECTOR4D,
-    CONSTANT_MATRIX2x2,
-    CONSTANT_MATRIX3x3,
-    CONSTANT_MATRIX4x4,
-
-    CONSTANT_COUNT
-};
-
-static int s_constantTypeSizes[CONSTANT_COUNT] = {
-	sizeof(float),
-	sizeof(Vector2D),
-	sizeof(Vector3D),
-	sizeof(Vector4D),
-	sizeof(int),
-	sizeof(int) * 2,
-	sizeof(int) * 3,
-	sizeof(int) * 4,
-	sizeof(int),
-	sizeof(int) * 2,
-	sizeof(int) * 3,
-	sizeof(int) * 4,
-	sizeof(Matrix2x2),
-	sizeof(Matrix3x3),
-	sizeof(Matrix4x4),
-};
-
-// Texture filtering type for SetTextureFilteringMode()
-enum ETexFilterMode : int
-{
-	TEXFILTER_NEAREST	= 0,
-	TEXFILTER_LINEAR,
-	TEXFILTER_BILINEAR,
-	TEXFILTER_TRILINEAR,
-	TEXFILTER_BILINEAR_ANISO,
-	TEXFILTER_TRILINEAR_ANISO,
-};
-
-inline bool HasMipmaps(ETexFilterMode filter)
-{
-	return (filter >= TEXFILTER_BILINEAR);
-}
-
-inline bool HasAniso(ETexFilterMode filter)
-{
-	return (filter >= TEXFILTER_BILINEAR_ANISO);
-}
-
-enum EMatrixMode : int
-{
-	MATRIXMODE_VIEW	= 0,			// view tranformation matrix
-	MATRIXMODE_PROJECTION,			// projection mode matrix
-
-	MATRIXMODE_WORLD,				// world transformation matrix
-	MATRIXMODE_WORLD2,				// world transformation - used as offset for MATRIXMODE_WORLD
-
-	MATRIXMODE_TEXTURE,
-};
-
-// for SetTextureClamp()
-enum ETexAddressMode : int
-{
-	TEXADDRESS_WRAP	= 0,
-	TEXADDRESS_CLAMP,
-	TEXADDRESS_MIRROR
-};
-
-// for mesh builder and type of drawing the world model
-enum EPrimTopology : int
-{
-	PRIM_POINTS = 0,
-	PRIM_LINES,
-	PRIM_LINE_STRIP,
-	PRIM_TRIANGLES,
-	PRIM_TRIANGLE_STRIP
-};
-
-enum EStripIndexFormat : int
-{
-	STRIP_INDEX_NONE = 0,
-	STRIP_INDEX_UINT16,
-	STRIP_INDEX_UINT32,
-};
-
-typedef int (*PRIMCOUNTER)(int numPrimitives);
-
-static int PrimCount_TriangleList( int numPrimitives )
-{
-	return numPrimitives / 3;
-}
-
-static int PrimCount_TriangleFanStrip( int numPrimitives )
-{
-	return numPrimitives - 2;
-}
-
-static int PrimCount_LineList( int numPrimitives )
-{
-	return numPrimitives / 2;
-}
-
-static int PrimCount_LineStrip( int numPrimitives )
-{
-	return numPrimitives - 1;
-}
-
-static int PrimCount_Points( int numPrimitives )
-{
-	return numPrimitives;
-}
-
-static PRIMCOUNTER s_primCount[] =
-{
-	PrimCount_Points,
-	PrimCount_LineList,
-	PrimCount_LineStrip,
-	PrimCount_TriangleList,
-	PrimCount_TriangleFanStrip,
-};
-
-// Vertex type
-enum EVertAttribType : int
-{
-	VERTEXATTRIB_UNUSED		= 0,
-
-	VERTEXATTRIB_COLOR,
-	VERTEXATTRIB_POSITION,
-	VERTEXATTRIB_TEXCOORD,
-	VERTEXATTRIB_NORMAL,
-	VERTEXATTRIB_TANGENT,
-	VERTEXATTRIB_BINORMAL,
-
-	VERTEXATTRIB_COUNT,
-	VERTEXATTRIB_MASK = 31
-};
-
-enum EVertAttribFlags : int
-{
-	VERTEXATTRIB_FLAG_INSTANCE = (1 << 15)
-};
-
-// Attribute format
-enum EVertAttribFormat : int
-{
-	ATTRIBUTEFORMAT_FLOAT = 0,
-	ATTRIBUTEFORMAT_HALF,
-	ATTRIBUTEFORMAT_UBYTE,
-};
-
-static int s_attributeSize[] =
-{
-	sizeof(float),
-	sizeof(half),
-	sizeof(ubyte)
-};
-
-// old buffer access flags
-enum EBufferAccessType : int
-{
-	BUFFER_STREAM		= 0,
-	BUFFER_STATIC,		// = 1,
-	BUFFER_DYNAMIC,		// = 2
-};
-
-enum EBufferFlags : int
-{
-	BUFFER_FLAG_READ	= (1 << 0),	// allows reading from buffer to system memory
-	BUFFER_FLAG_WRITE	= (1 << 1),	// allows writing to buffer (effectively marking it as dynamic)
-};
-
-struct VertexFormatDesc
-{
-	int					streamId{ 0 };
-	int					elemCount{ 0 };
-
-	int					attribType{ 0 }; // also holds flags, use VERTEXATTRIB_MASK to retrieve attribute type.
-	EVertAttribFormat	attribFormat{ ATTRIBUTEFORMAT_FLOAT };
-
-	const char*			name{ nullptr };
-};
 
 // comparison functions
 enum ECompareFunc : int
@@ -249,6 +53,26 @@ enum ECompareFunc : int
 	COMPFUNC_ALWAYS,		// 7
 };
 
+//-----------------------------------------------------------------------------
+// Sampler state and texture flags
+
+enum ETexFilterMode : int
+{
+	TEXFILTER_NEAREST = 0,
+	TEXFILTER_LINEAR,
+	TEXFILTER_BILINEAR,
+	TEXFILTER_TRILINEAR,
+	TEXFILTER_BILINEAR_ANISO,
+	TEXFILTER_TRILINEAR_ANISO,
+};
+
+enum ETexAddressMode : int
+{
+	TEXADDRESS_WRAP = 0,
+	TEXADDRESS_CLAMP,
+	TEXADDRESS_MIRROR
+};
+
 struct SamplerStateParams
 {
 	SamplerStateParams() = default;
@@ -262,7 +86,6 @@ struct SamplerStateParams
 		, lod(lod)
 		, aniso((filterType == TEXFILTER_BILINEAR_ANISO) ? 16 : 0)
 	{
-
 	}
 
 	ETexFilterMode	minFilter{ TEXFILTER_NEAREST };
@@ -279,10 +102,8 @@ struct SamplerStateParams
 };
 
 //---------------------------------------
-//        LOWER LEVEL CONSTANTS
-//---------------------------------------
+// Blending factors
 
-// Mask constants
 enum EColorMask
 {
 	COLORMASK_RED	= 0x1,
@@ -292,11 +113,6 @@ enum EColorMask
 
 	COLORMASK_ALL	= (COLORMASK_RED | COLORMASK_GREEN | COLORMASK_BLUE | COLORMASK_ALPHA)
 };
-
-// Blending factors
-
-// HOW BLENDING WORKS:
-// (TextureRGBA * SRCBlendingFactor) (Blending Function) (FrameBuffer * DSTBlendingFactor)
 
 enum EBlendFactor : int
 {
@@ -328,67 +144,48 @@ enum EBlendFunc : int
 	BLENDFUNC_COUNT
 };
 
-//-----------------------------------------------------------------------------
-// Texture flags
-//-----------------------------------------------------------------------------
-
-enum ETextureFlags : int
+struct BlendStateParams
 {
-	// texture creation flags
-	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, might improve performance
-	TEXFLAG_NULL_ON_ERROR			= (1 << 1),
-	TEXFLAG_CUBEMAP					= (1 << 2),		// should create cubemap
-	TEXFLAG_NOQUALITYLOD			= (1 << 3),		// not affected by texture quality Cvar, always load all mip levels
-	TEXFLAG_SRGB					= (1 << 4),		// texture should be sampled as in sRGB color space
-
-	// texture identification flags
-	TEXFLAG_RENDERTARGET			= (1 << 5),		// this is a rendertarget texture
-	TEXFLAG_RENDERDEPTH				= (1 << 6),		// rendertarget with depth texture
+	EBlendFactor	srcFactor{ BLENDFACTOR_ONE };
+	EBlendFactor	dstFactor{ BLENDFACTOR_ZERO };
+	EBlendFunc		blendFunc{ BLENDFUNC_ADD };
+	int				mask{ COLORMASK_ALL };			// TODO: remove
+	bool			enable { false };
 };
 
-// Stencil-test function
+static const BlendStateParams BlendAdditive = {
+	BLENDFACTOR_ONE, BLENDFACTOR_ONE, 
+	BLENDFUNC_ADD, COLORMASK_ALL, true
+};
+
+static const BlendStateParams BlendAlpha = {
+	BLENDFACTOR_ONE, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+	BLENDFUNC_ADD, COLORMASK_ALL, true
+};
+
+static const BlendStateParams BlendModulate = {
+	BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR,
+	BLENDFUNC_ADD, COLORMASK_ALL, true
+};
+
+// HOW BLENDING WORKS:
+// (TextureRGBA * SRCBlendingFactor) (Blending Function) (FrameBuffer * DSTBlendingFactor)
+
+//-------------------------------------------
+// Depth-Stencil builder
+
 enum EStencilFunc : int
 {
 	STENCILFUNC_KEEP		= 0,
 	STENCILFUNC_SET_ZERO,	// 1
 	STENCILFUNC_REPLACE,	// 2
 	STENCILFUNC_INVERT,		// 3
-	STENCILFUNC_INCR,		// 4
-	STENCILFUNC_DECR,		// 5
-	STENCILFUNC_INCR_SAT,	// 6
-	STENCILFUNC_DECR_SAT,	// 7
-	STENCILFUNC_ALWAYS,		// 8
+	STENCILFUNC_INCR_WRAP,	// 4
+	STENCILFUNC_DECR_WRAP,	// 5
+	STENCILFUNC_INCR_CLAMP,	// 6
+	STENCILFUNC_DECR_CLAMP,	// 7
 
 	STENCILFUNC_COUNT,
-};
-
-// Fillmode constants
-enum EFillMode : int
-{
-	FILL_SOLID		= 0,
-	FILL_WIREFRAME,	// 1
-	FILL_POINT,		// 2
-
-	FILL_COUNT,
-};
-
-// Cull modes
-enum ECullMode : int
-{
-	CULL_NONE		= 0,
-	CULL_BACK,		// 1
-	CULL_FRONT,		// 2
-
-	CULL_COUNT,
-};
-
-struct BlendStateParams
-{
-	EBlendFactor	srcFactor{ BLENDFACTOR_ONE };
-	EBlendFactor	dstFactor{ BLENDFACTOR_ZERO };
-	EBlendFunc		blendFunc{ BLENDFUNC_ADD };
-	int				mask{ COLORMASK_ALL };
-	bool			enable { false };
 };
 
 struct StencilFaceStateParams
@@ -405,11 +202,10 @@ struct DepthStencilStateParams
 	bool			depthWrite{ false };
 	ECompareFunc	depthFunc{ COMPFUNC_LEQUAL };
 
-	bool			useDepthBias{ false };
-	float			depthBias{ 0.0f };
-	float			depthBiasSlopeScale{ 0.0f };
+	ETextureFormat	format{ FORMAT_NONE };
 
-	bool			stencilTest{ false };
+	float			depthBias{ 0.0f }; // TODO: int
+	float			depthBiasSlopeScale{ 0.0f };
 
 	StencilFaceStateParams stencilFront;
 	StencilFaceStateParams stencilBack;
@@ -417,52 +213,364 @@ struct DepthStencilStateParams
 	uint32			stencilWriteMask{ 0xFFFFFFFF };
 
 	uint8			stencilRef{ 0xFF }; // TODO: remove
+	bool			stencilTest{ false }; // TODO: remove
+	bool			useDepthBias{ false }; // TODO: remove
+
 };
 
-struct RasterizerStateParams
+FLUENT_BEGIN_TYPE(DepthStencilStateParams);
+	FLUENT_SET(depthTest, DepthTestOn, true);
+	FLUENT_SET(depthWrite, DepthWriteOn, true);
+	FLUENT_SET_VALUE(format, DepthFormat);
+	FLUENT_SET(stencilTest, StencilTestOn, true);
+	FLUENT_SET_VALUE(depthBias, DepthBias);
+	FLUENT_SET_VALUE(depthBiasSlopeScale, DepthBiasSlopeScale);
+	FLUENT_SET_VALUE(stencilMask, StencilMask);
+	FLUENT_SET_VALUE(stencilWriteMask, StencilWriteMask);
+FLUENT_END_TYPE
+
+//------------------------------------------------------------
+// Pipeline builders
+
+// Attribute format
+enum EVertAttribFormat : int
 {
-	ECullMode	cullMode{ CULL_NONE };
-	EFillMode	fillMode{ FILL_SOLID };
-	bool		multiSample{ false };
-	bool		scissor{ false };
+	ATTRIBUTEFORMAT_NONE = 0,
+	ATTRIBUTEFORMAT_UINT8,
+	ATTRIBUTEFORMAT_HALF,
+	ATTRIBUTEFORMAT_FLOAT,
 };
 
-
-//---------------------------------------
-
-// shader constant setup flags to set to shader :P
-enum EShaderConstSetup : int
+static int s_attributeSize[] =
 {
-	SCONST_VERTEX	= (1 << 0),
-	SCONST_PIXEL	= (1 << 1),
-	SCONST_GEOMETRY	= (1 << 2),
-	SCONST_DOMAIN	= (1 << 3),
-	SCONST_HULL		= (1 << 4),
-
-	SCONST_COUNT,
+	0,
+	sizeof(ubyte),
+	sizeof(half),
+	sizeof(float)
 };
 
-// API reset type
-enum EStateResetFlags : int
+enum EVertexStepMode : int
 {
-	STATE_RESET_SHADER		= (1 << 0),
-	STATE_RESET_VF			= (1 << 1),
-	STATE_RESET_VB			= (1 << 2),
-	STATE_RESET_IB			= (1 << 3),
-	STATE_RESET_DS			= (1 << 4),
-	STATE_RESET_BS			= (1 << 5),
-	STATE_RESET_RS			= (1 << 6),
-	STATE_RESET_SS			= (1 << 7),
-	STATE_RESET_TEX			= (1 << 8),
-	STATE_RESET_SHADERCONST	= (1 << 9),
-
-	STATE_RESET_ALL			= 0xFFFF,
-	STATE_RESET_VBO			= (STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
+	VERTEX_STEPMODE_VERTEX = 0,
+	VERTEX_STEPMODE_INSTANCE,
 };
 
-#ifndef BUFFER_OFFSET
-#define BUFFER_OFFSET(i) ((char *) nullptr + (i))
-#endif
+struct VertexLayoutDesc
+{
+	struct AttribDesc
+	{
+		int					location{ 0 };
+		int					offset{ 0 };	// in bytes
+		EVertAttribFormat	format{ ATTRIBUTEFORMAT_FLOAT };
+		int					count{ 0 };
+		const char*			name{ nullptr };
+	};
+
+	using VertexAttribList = Array<AttribDesc>;
+	VertexAttribList		attributes{ PP_SL };
+	int						stride{ 0 };
+	EVertexStepMode			stepMode{ VERTEX_STEPMODE_VERTEX };
+};
+
+FLUENT_BEGIN_TYPE(VertexLayoutDesc)
+	FLUENT_SET_VALUE(stride, Stride)
+	FLUENT_SET_VALUE(stepMode, StepMode)
+	ThisType& Attribute(AttribDesc&& x) { attributes.append(std::move(x)); return *this; }
+	ThisType& Attribute(int location, int offset, EVertAttribFormat format, int count, const char* name = nullptr) { attributes.append({location, offset, format, count, name}); return *this; }
+FLUENT_END_TYPE
+
+struct VertexPipelineDesc
+{
+	using VertexLayoutDescList = Array<VertexLayoutDesc>;
+	VertexLayoutDescList	vertexLayout{ PP_SL };
+	EqString				shaderEntryPoint{ "main" };
+};
+
+FLUENT_BEGIN_TYPE(VertexPipelineDesc)
+	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
+	ThisType& VertexLayout(VertexLayoutDesc&& x) { vertexLayout.append(std::move(x)); return *this; }
+FLUENT_END_TYPE
+
+
+
+// Cull modes
+enum ECullMode : int
+{
+	CULL_NONE	= 0,
+	CULL_BACK,
+	CULL_FRONT,
+};
+
+// for mesh builder and type of drawing the world model
+enum EPrimTopology : int
+{
+	PRIM_POINTS = 0,
+	PRIM_LINES,
+	PRIM_LINE_STRIP,
+	PRIM_TRIANGLES,
+	PRIM_TRIANGLE_STRIP
+};
+
+enum EStripIndexFormat : int
+{
+	STRIP_INDEX_NONE = 0,
+	STRIP_INDEX_UINT16,
+	STRIP_INDEX_UINT32,
+};
+
+typedef int (*PRIMCOUNTER)(int numPrimitives);
+
+static int PrimCount_TriangleList(int numPrimitives) { return numPrimitives / 3; }
+static int PrimCount_TriangleFanStrip(int numPrimitives) { return numPrimitives - 2; }
+static int PrimCount_LineList(int numPrimitives) { return numPrimitives / 2; }
+static int PrimCount_LineStrip(int numPrimitives) { return numPrimitives - 1; }
+static int PrimCount_Points(int numPrimitives) { return numPrimitives; }
+
+static PRIMCOUNTER s_primCount[] =
+{
+	PrimCount_Points,
+	PrimCount_LineList,
+	PrimCount_LineStrip,
+	PrimCount_TriangleList,
+	PrimCount_TriangleFanStrip,
+};
+
+struct PrimitiveDesc
+{
+	ECullMode				cullMode{ CULL_NONE };
+	EPrimTopology			topology{ PRIM_TRIANGLES };
+	EStripIndexFormat		stripIndex{ STRIP_INDEX_NONE };
+};
+
+FLUENT_BEGIN_TYPE(PrimitiveDesc)
+	FLUENT_SET_VALUE(cullMode, Cull)
+	FLUENT_SET_VALUE(topology, Topology)
+	FLUENT_SET_VALUE(stripIndex, StripIndex)
+FLUENT_END_TYPE
+
+//-------------------------------------------
+
+struct FragmentPipelineDesc
+{
+	struct ColorTargetDesc
+	{
+		ETextureFormat		format{ FORMAT_NONE };
+		BlendStateParams	colorBlend;
+		BlendStateParams	alphaBlend;
+		int					writeMask{ COLORMASK_ALL };
+	};
+	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
+
+	ColorTargetList			targets;
+	EqString				shaderEntryPoint{ "main" };
+};
+
+FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
+	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
+	ThisType& ColorTarget(ColorTargetDesc&& x)
+	{
+		targets.append(std::move(x)); return *this;
+	}
+	ThisType& ColorTarget(ETextureFormat format, const BlendStateParams& colorBlend = BlendStateParams{}, const BlendStateParams& alphaBlend = BlendStateParams{}) 
+	{
+		targets.append({ format, colorBlend, alphaBlend }); return *this;
+	}
+FLUENT_END_TYPE
+
+//-------------------------------------------
+
+struct MultiSampleState
+{
+	int		count{ 1 };
+	uint32	mask{ 0xFFFFFFFF };
+	bool	alphaToCoverage{ false };
+};
+
+struct RenderPipelineDesc
+{
+	VertexPipelineDesc		vertex;
+	DepthStencilStateParams	depthStencil;
+	FragmentPipelineDesc	fragment;
+	MultiSampleState		multiSample;
+	PrimitiveDesc			primitive;
+};
+
+//-------------------------------------------
+
+FLUENT_BEGIN_TYPE(RenderPipelineDesc);
+	FLUENT_SET_VALUE(vertex, VertexState);
+	FLUENT_SET_VALUE(depthStencil, DepthState);
+	FLUENT_SET_VALUE(fragment, FragmentState);
+	FLUENT_SET_VALUE(primitive, PrimitiveState);
+FLUENT_END_TYPE
+
+enum EBufferBindType : int
+{
+	BUFFERBIND_UNIFORM = 0,
+	BUFFERBIND_STORAGE,
+	BUFFERBIND_STORAGE_READONLY,
+};
+
+struct BindBuffer
+{
+	EBufferBindType		bindType{ BUFFERBIND_UNIFORM };
+	bool				hasDynamicOffset{ false };
+	// TODO: there are other fields
+};
+
+//-------------------------------------------
+
+enum ESamplerBindType : int
+{
+	SAMPLERBIND_FILTERING = 0,
+	SAMPLERBIND_NONFILTERING,
+	SAMPLERBIND_COMPARISON,
+};
+
+struct BindSampler
+{
+	ESamplerBindType	bindType{ SAMPLERBIND_FILTERING };
+};
+
+//-------------------------------------------
+
+enum ETextureSampleType
+{
+	TEXSAMPLE_FLOAT = 0,
+	TEXSAMPLE_UNFILTERABLEFLOAT,
+	TEXSAMPLE_DEPTH,
+	TEXSAMPLE_SINT,
+	TEXSAMPLE_UINT,
+};
+
+enum ETextureDimension
+{
+	TEXDIMENSION_1D = 0,
+	TEXDIMENSION_2D,
+	TEXDIMENSION_2DARRAY,
+	TEXDIMENSION_CUBE,
+	TEXDIMENSION_CUBEARRAY,
+	TEXDIMENSION_3D,
+};
+
+struct BindTexture
+{
+	ETextureSampleType	sampleType{ TEXSAMPLE_FLOAT };
+	ETextureDimension	dimension{ TEXDIMENSION_1D };
+	bool				multisampled{ false };
+};
+
+//-------------------------------------------
+
+enum EStorageTextureAccess
+{
+	STORAGETEX_WRITEONLY = 0,
+	STORAGETEX_READONLY,
+	STORAGETEX_READWRITE,
+};
+
+struct BindStorageTexture
+{
+	EStorageTextureAccess	access{ STORAGETEX_WRITEONLY };
+	ETextureFormat			format{ FORMAT_NONE };
+	ETextureDimension		dimension{ TEXDIMENSION_1D };
+};
+
+//-------------------------------------------
+
+enum EShaderVisibility : int
+{
+	SHADER_VISIBLE_VERTEX	= (1 << 0),
+	SHADER_VISIBLE_FRAGMENT	= (1 << 1),
+	SHADER_VISIBLE_COMPUTE	= (1 << 2),
+};
+
+struct BindGroupDesc
+{
+	enum EEntryType
+	{
+		ENTRY_BUFFER = 0,
+		ENTRY_SAMPLER,
+		ENTRY_TEXTURE,
+		ENTRY_STORAGETEXTURE
+	};
+
+	struct Entry
+	{
+		union {
+			uint				_dummy{ 0 };
+			BindBuffer			buffer;
+			BindSampler			sampler;
+			BindTexture			texture;
+			BindStorageTexture	storageTexture;
+		};
+		EEntryType		type{ ENTRY_BUFFER };
+		int				binding{ 0 };
+		int				visibility{ 0 };	// EShaderVisibility
+	};
+
+	using EntryList = Array<Entry>;
+	EntryList			entries{ PP_SL };
+};
+
+FLUENT_BEGIN_TYPE(BindGroupDesc)
+	ThisType& Buffer(int binding, int visibilityFlags, EBufferBindType bindType)
+	{
+		Entry& entry = entries.append();
+		entry.visibility = visibilityFlags;
+		entry.binding = binding;
+		entry.type = ENTRY_BUFFER;
+		entry.buffer.bindType = bindType;
+		return *this; 
+	}
+	ThisType& Sampler(int binding, int visibilityFlags, ESamplerBindType bindType)
+	{
+		Entry& entry = entries.append();
+		entry.visibility = visibilityFlags;
+		entry.binding = binding;
+		entry.type = ENTRY_SAMPLER;
+		entry.sampler.bindType = bindType;
+		return *this;
+	}
+	ThisType& Texture(int binding, int visibilityFlags, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
+	{
+		Entry& entry = entries.append();
+		entry.visibility = visibilityFlags;
+		entry.binding = binding;
+		entry.type = ENTRY_TEXTURE;
+		entry.texture.sampleType = sampleType;
+		entry.texture.dimension = dimension;
+		entry.texture.multisampled = multisample;
+		return *this;
+	}
+	ThisType& StorageTexture(int binding, int visibilityFlags, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
+	{
+		Entry& entry = entries.append();
+		entry.visibility = visibilityFlags;
+		entry.binding = binding;
+		entry.type = ENTRY_STORAGETEXTURE;
+		entry.storageTexture.format = format;
+		entry.storageTexture.access = access;
+		entry.storageTexture.dimension = dimension;
+		return *this;
+	}
+FLUENT_END_TYPE
+
+struct RenderPipelineLayoutDesc
+{
+	using BindGroupDescList = Array<BindGroupDesc>;
+	BindGroupDescList	bindGroups{ PP_SL };
+};
+
+FLUENT_BEGIN_TYPE(RenderPipelineLayoutDesc)
+	ThisType& Group(BindGroupDesc&& x)
+	{
+		bindGroups.append(std::move(x));
+		return *this; 
+	}
+FLUENT_END_TYPE
+
+//-------------------------------------------
 
 struct KVSection;
 
@@ -485,16 +593,10 @@ struct ShaderProgCompileInfo
 	KVSection*		apiPrefs{ nullptr };
 };
 
-enum EShaderAPIType : int
-{
-	SHADERAPI_EMPTY = 0,
-	SHADERAPI_OPENGL,
-	SHADERAPI_DIRECT3D9,
-	SHADERAPI_DIRECT3D10,
-	SHADERAPI_WEBGPU
-};
+//------------------------------------------------------------
+// Texture builder
 
-struct TextureInfo
+struct TextureInfo // TODO: use
 {
 	const char*			name{ nullptr };
 	int					width{ -1 };
@@ -507,6 +609,23 @@ struct TextureInfo
 
 	const ubyte*		data = nullptr;
 	int					dataSize = 0;
+};
+
+//------------------------------------------------------------
+// Buffer builder
+
+// old buffer access flags
+enum EBufferAccessType : int
+{
+	BUFFER_STREAM = 0,
+	BUFFER_STATIC,		// = 1,
+	BUFFER_DYNAMIC,		// = 2
+};
+
+enum EBufferFlags : int
+{
+	BUFFER_FLAG_READ = (1 << 0),	// allows reading from buffer to system memory
+	BUFFER_FLAG_WRITE = (1 << 1),	// allows writing to buffer (effectively marking it as dynamic)
 };
 
 struct BufferInfo
@@ -569,4 +688,55 @@ struct BufferInfo
 
 	const void*			data{ nullptr };
 	int					dataSize{ 0 };
+};
+
+// ------------------------------
+// DEPRECATED STRUCTURES
+
+// Fillmode constants
+enum EFillMode : int
+{
+	FILL_SOLID		= 0,
+	FILL_WIREFRAME,
+	FILL_POINT,
+};
+
+enum EVertAttribFlags : int
+{
+	VERTEXATTRIB_FLAG_INSTANCE = (1 << 15)
+};
+
+// Vertex type
+enum EVertAttribType : int  // DEPRECATED
+{
+	VERTEXATTRIB_UNUSED = 0,
+
+	VERTEXATTRIB_COLOR,
+	VERTEXATTRIB_POSITION,
+	VERTEXATTRIB_TEXCOORD,
+	VERTEXATTRIB_NORMAL,
+	VERTEXATTRIB_TANGENT,
+	VERTEXATTRIB_BINORMAL,
+
+	VERTEXATTRIB_COUNT,
+	VERTEXATTRIB_MASK = 31
+};
+
+struct VertexFormatDesc // DEPRECATED
+{
+	int					streamId{ 0 };
+	int					elemCount{ 0 };
+
+	int					attribType{ 0 }; // EVertAttribType | flags; Use VERTEXATTRIB_MASK to retrieve attribute type.
+	EVertAttribFormat	attribFormat{ ATTRIBUTEFORMAT_FLOAT };
+
+	const char* name{ nullptr };
+};
+
+struct RasterizerStateParams // DEPRECATED
+{
+	ECullMode	cullMode{ CULL_NONE };
+	EFillMode	fillMode{ FILL_SOLID };
+	bool		multiSample{ false };
+	bool		scissor{ false };
 };

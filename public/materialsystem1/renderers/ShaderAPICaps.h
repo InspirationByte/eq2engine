@@ -16,6 +16,15 @@ static constexpr const int MAX_SAMPLERSTATE = 16;
 static constexpr const int MAX_GENERIC_ATTRIB= 8;
 static constexpr const int MAX_TEXCOORD_ATTRIB = 8;
 
+enum EShaderAPIType : int
+{
+	SHADERAPI_EMPTY = 0,
+	SHADERAPI_OPENGL,
+	SHADERAPI_DIRECT3D9,
+	SHADERAPI_DIRECT3D10,
+	SHADERAPI_WEBGPU
+};
+
 enum EShaderSupportFlags
 {
 	SHADER_CAPS_VERTEX_SUPPORTED	= (1 << 0),

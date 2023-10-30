@@ -45,7 +45,7 @@ static VertexFormatDesc g_dynMeshVertexFormatDesc[] = {
 	{0, 4, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_FLOAT, "position"},
 	{0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF, "texcoord"},
 	{0, 4, VERTEXATTRIB_NORMAL,		ATTRIBUTEFORMAT_HALF, "normal"},
-	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_UBYTE, "color"},
+	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_UINT8, "color"},
 };
 
 DECLARE_CVAR(r_screen, "0", "Screen count", CV_ARCHIVE);
@@ -1512,13 +1512,14 @@ void CMaterialSystem::SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nD
 // pack depth states to ubyte
 struct depthStateIndex_t
 {
-	depthStateIndex_t( bool bDoDepthTest, bool bDoDepthWrite, ECompareFunc depthCompFunc )
-		: doDepthTest(bDoDepthTest), doDepthWrite(bDoDepthWrite), compFunc(depthCompFunc)
+	depthStateIndex_t( bool bDoDepthTest, bool bDoDepthWrite, bool depthBias, ECompareFunc depthCompFunc )
+		: doDepthTest(bDoDepthTest), doDepthWrite(bDoDepthWrite), depthBias(depthBias), compFunc(depthCompFunc)
 	{
 	}
 
 	ubyte doDepthTest : 1;
 	ubyte doDepthWrite : 1;
+	ubyte depthBias : 1;
 	ubyte compFunc : 3;
 	ubyte pad{ 0 };
 };
@@ -1528,7 +1529,7 @@ assert_sizeof(depthStateIndex_t,2);
 // sets depth stencil state
 void CMaterialSystem::SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset, ECompareFunc depthCompFunc)
 {
-	depthStateIndex_t idx(depthTest, depthWrite, depthCompFunc);
+	depthStateIndex_t idx(depthTest, depthWrite, polyOffset, depthCompFunc);
 	ushort stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;

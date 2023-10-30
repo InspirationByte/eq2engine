@@ -8,6 +8,7 @@
 #pragma once
 #include <webgpu/webgpu.h>
 
+// ETextureFormat
 static WGPUTextureFormat g_wgpuTexFormats[] = {
 	WGPUTextureFormat_Undefined,
 
@@ -91,6 +92,138 @@ static WGPUTextureFormat g_wgpuTexFormats[] = {
 	WGPUTextureFormat_Undefined,
 };
 
+// EBufferBindType
+static WGPUBufferBindingType g_wgpuBufferBindingType[] = {
+	WGPUBufferBindingType_Uniform,
+	WGPUBufferBindingType_Storage,
+	WGPUBufferBindingType_ReadOnlyStorage,
+};
+
+// ESamplerBindType
+static WGPUSamplerBindingType g_wgpuSamplerBindingType[] = {
+	WGPUSamplerBindingType_Filtering,
+	WGPUSamplerBindingType_NonFiltering,
+	WGPUSamplerBindingType_Comparison,
+};
+
+// ETextureSampleType
+static WGPUTextureSampleType g_wgpuTexSampleType[] = {
+	WGPUTextureSampleType_Float,
+	WGPUTextureSampleType_UnfilterableFloat,
+	WGPUTextureSampleType_Depth,
+	WGPUTextureSampleType_Sint,
+	WGPUTextureSampleType_Uint,
+};
+
+// ETextureDimension
+static WGPUTextureViewDimension g_wgpuTexViewDimensions[] = {
+	WGPUTextureViewDimension_1D,
+	WGPUTextureViewDimension_2D,
+	WGPUTextureViewDimension_2DArray,
+	WGPUTextureViewDimension_Cube,
+	WGPUTextureViewDimension_CubeArray,
+	WGPUTextureViewDimension_3D,
+};
+
+// EShaderVisibility
+static WGPUStorageTextureAccess g_wgpuStorageTexAccess[] = {
+	WGPUStorageTextureAccess_WriteOnly,
+	WGPUStorageTextureAccess_ReadOnly,
+	WGPUStorageTextureAccess_ReadWrite,
+};
+
+// EVertAttribFormat
+static WGPUVertexFormat g_wgpuVertexFormats[][4] = {
+	{
+		WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined
+	},
+	{
+		WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint8x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint8x4
+	},
+	{
+		WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x4
+	},
+	{
+		WGPUVertexFormat_Float32, WGPUVertexFormat_Float32x2, WGPUVertexFormat_Float32x3, WGPUVertexFormat_Float32x4
+	},
+};
+
+// EVertexStepMode
+static WGPUVertexStepMode g_wgpuVertexStepMode[] = {
+	WGPUVertexStepMode_Vertex,
+	WGPUVertexStepMode_Instance,
+};
+
+// ECompareFunc
+static WGPUCompareFunction g_wgpuCompareFunc[] = {
+	WGPUCompareFunction_Never,
+	WGPUCompareFunction_Less,	
+	WGPUCompareFunction_Equal,	
+	WGPUCompareFunction_LessEqual,	
+	WGPUCompareFunction_Greater,
+	WGPUCompareFunction_NotEqual,
+	WGPUCompareFunction_GreaterEqual,	
+	WGPUCompareFunction_Always,	
+};
+
+// EStencilFunc
+static WGPUStencilOperation g_wgpuStencilOp[] = {
+	WGPUStencilOperation_Keep,
+	WGPUStencilOperation_Zero,
+	WGPUStencilOperation_Replace,
+	WGPUStencilOperation_Invert,
+	WGPUStencilOperation_IncrementWrap,
+	WGPUStencilOperation_DecrementWrap,
+	WGPUStencilOperation_IncrementClamp,
+	WGPUStencilOperation_DecrementClamp
+};
+
+// EBlendFunc
+static WGPUBlendOperation g_wgpuBlendOp[] = {
+	WGPUBlendOperation_Add,
+	WGPUBlendOperation_Subtract,		
+	WGPUBlendOperation_ReverseSubtract,
+	WGPUBlendOperation_Min,			
+	WGPUBlendOperation_Max,			
+};
+
+// EBlendFactor
+static WGPUBlendFactor g_wgpuBlendFactor[] = {
+	WGPUBlendFactor_Zero,
+	WGPUBlendFactor_One,
+	WGPUBlendFactor_Src,
+	WGPUBlendFactor_OneMinusSrc,
+	WGPUBlendFactor_Dst,
+	WGPUBlendFactor_OneMinusDst,
+	WGPUBlendFactor_SrcAlpha,
+	WGPUBlendFactor_OneMinusSrcAlpha,
+	WGPUBlendFactor_DstAlpha,
+	WGPUBlendFactor_OneMinusDstAlpha,
+	WGPUBlendFactor_SrcAlphaSaturated,	
+};
+
+// ECullMode
+static WGPUCullMode g_wgpuCullMode[] = {
+	WGPUCullMode_None,
+	WGPUCullMode_Back,
+	WGPUCullMode_Front,
+};
+
+// EPrimTopology
+static WGPUPrimitiveTopology g_wgpuPrimTopology[] = {
+	WGPUPrimitiveTopology_PointList,
+	WGPUPrimitiveTopology_LineList,
+	WGPUPrimitiveTopology_LineStrip,
+	WGPUPrimitiveTopology_TriangleList,
+	WGPUPrimitiveTopology_TriangleStrip
+};
+
+// EStripIndexFormat
+static WGPUIndexFormat g_wgpuStripIndexFormat[] = {
+	WGPUIndexFormat_Undefined,
+	WGPUIndexFormat_Uint16,
+	WGPUIndexFormat_Uint32,
+};
 
 /*
 static const D3D10_BLEND blendingConsts[] = {

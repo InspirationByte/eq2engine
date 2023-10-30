@@ -19,7 +19,7 @@ ArrayCRef<VertexFormatDesc> PFXVertex_t::GetVertexFormatDesc()
 	static VertexFormatDesc s_PFXVertexFormatDesc[] = {
 		{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
 		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texture coord
-		{ 0, 4, VERTEXATTRIB_COLOR, ATTRIBUTEFORMAT_UBYTE, "color" },			// color
+		{ 0, 4, VERTEXATTRIB_COLOR, ATTRIBUTEFORMAT_UINT8, "color" },			// color
 		//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
 	};
 	return ArrayCRef(s_PFXVertexFormatDesc, elementsOf(s_PFXVertexFormatDesc));

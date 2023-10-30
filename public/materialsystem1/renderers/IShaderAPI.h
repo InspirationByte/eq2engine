@@ -24,6 +24,24 @@
 #undef far
 #undef near
 
+// API reset type
+enum EStateResetFlags : int
+{
+	STATE_RESET_SHADER = (1 << 0),
+	STATE_RESET_VF = (1 << 1),
+	STATE_RESET_VB = (1 << 2),
+	STATE_RESET_IB = (1 << 3),
+	STATE_RESET_DS = (1 << 4),
+	STATE_RESET_BS = (1 << 5),
+	STATE_RESET_RS = (1 << 6),
+	STATE_RESET_SS = (1 << 7),
+	STATE_RESET_TEX = (1 << 8),
+	STATE_RESET_SHADERCONST = (1 << 9),
+
+	STATE_RESET_ALL = 0xFFFF,
+	STATE_RESET_VBO = (STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
+};
+
 struct KVSection;
 class CImage;
 

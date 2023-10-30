@@ -1278,16 +1278,16 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	GLuint vbo = pVB ? pVB->GetCurrentBuffer() : 0;
 	CVertexFormatGL* currentFormat = (CVertexFormatGL*)m_pCurrentVertexFormat;
 
-	const GLsizei glTypes[] = {
-		GL_FLOAT,
-		GL_HALF_FLOAT,
+	static const GLsizei glTypes[] = {
 		GL_UNSIGNED_BYTE,
+		GL_HALF_FLOAT,
+		GL_FLOAT,
 	};
 
-	const GLboolean glNormTypes[] = {
-		GL_FALSE,
-		GL_FALSE,
+	static const GLboolean glNormTypes[] = {
 		GL_TRUE,
+		GL_FALSE,
+		GL_FALSE,
 	};
 
 	const bool instanceBuffer = (nStream > 0) && pVB != nullptr && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
@@ -2422,7 +2422,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 // Primitive drawing
 //-------------------------------------------------------------
 
-IVertexFormat* pPlainFormat = nullptr;
+#define BUFFER_OFFSET(i) ((char *) nullptr + (i))
 
 // Indexed primitive drawer
 void ShaderAPIGL::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
