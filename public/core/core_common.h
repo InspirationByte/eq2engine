@@ -72,6 +72,7 @@
 
 #include "platform/eqthread.h"
 
+#include "ds/fluent.h"
 #include "ds/mempool.h"
 #include "ds/refcounted.h"
 #include "ds/weakptr.h"
