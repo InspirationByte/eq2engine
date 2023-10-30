@@ -630,7 +630,7 @@ void ShaderAPID3D9::ApplyBlendState()
 	CD3D9BlendingState* pSelectedState = (CD3D9BlendingState*)m_pSelectedBlendstate;
 
 	int mask = COLORMASK_ALL;
-	bool blendingEnabled = pSelectedState != nullptr && pSelectedState->m_params.blendEnable;
+	bool blendingEnabled = pSelectedState != nullptr && pSelectedState->m_params.enable;
 
 	// switch the blending on/off
 	if (m_bCurrentBlendEnable != blendingEnabled)
@@ -644,7 +644,7 @@ void ShaderAPID3D9::ApplyBlendState()
 		BlendStateParams& state = pSelectedState->m_params;
 
 		// handle blending params if blending is enabled
-		if (state.blendEnable)
+		if (state.enable)
 		{
 			if (state.srcFactor != m_nCurrentSrcFactor)
 			{
@@ -997,9 +997,9 @@ IRenderState* ShaderAPID3D9::CreateBlendingState( const BlendStateParams &blendD
 	{
 		pState = (CD3D9BlendingState*)m_BlendStates[i];
 
-		if(blendDesc.blendEnable == pState->m_params.blendEnable)
+		if(blendDesc.enable == pState->m_params.enable)
 		{
-			if(blendDesc.blendEnable == true)
+			if(blendDesc.enable == true)
 			{
 				if(blendDesc.srcFactor == pState->m_params.srcFactor &&
 					blendDesc.dstFactor == pState->m_params.dstFactor &&
@@ -2374,7 +2374,7 @@ IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(const BufferInfo& bufferInfo)
 void ShaderAPID3D9::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
-	const int numPrimitives = g_d3d9_primCountFunc[nType](nIndices);
+	const int numPrimitives = s_primCount[nType](nIndices);
 	m_pD3DDevice->DrawIndexedPrimitive( g_d3d9_primType[nType], nBaseVertex, nFirstVertex, nVertices, nFirstIndex, numPrimitives);
 	
 	m_nDrawIndexedPrimitiveCalls++;
@@ -2385,7 +2385,7 @@ void ShaderAPID3D9::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, 
 // Draw elements
 void ShaderAPID3D9::DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices)
 {
-	const int numPrimitives = g_d3d9_primCountFunc[nType](nVertices);
+	const int numPrimitives = s_primCount[nType](nVertices);
 	m_pD3DDevice->DrawPrimitive(g_d3d9_primType[nType], nFirstVertex, numPrimitives);
 
 	m_nDrawCalls++;

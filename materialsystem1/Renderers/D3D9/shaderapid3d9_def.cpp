@@ -184,27 +184,11 @@ const DWORD g_d3d9_bufferUsages[] = {
 };
 
 const D3DPRIMITIVETYPE g_d3d9_primType[] = {
-	D3DPT_TRIANGLELIST,
-	D3DPT_TRIANGLEFAN,
-	D3DPT_TRIANGLESTRIP,
-	(D3DPRIMITIVETYPE) 0, // Quads not supported
+	D3DPT_POINTLIST,
 	D3DPT_LINELIST,
 	D3DPT_LINESTRIP,
-	(D3DPRIMITIVETYPE) 0, // Line loops not supported
-	D3DPT_POINTLIST,
-};
-
-const PRIMCOUNTER g_d3d9_primCountFunc[] =
-{
-	PrimCount_TriangleList,
-	PrimCount_TriangleFanStrip,
-	PrimCount_TriangleFanStrip,
-	PrimCount_None,
-	PrimCount_ListList,
-	PrimCount_ListStrip,
-	PrimCount_None,
-	PrimCount_Points,
-	PrimCount_None,
+	D3DPT_TRIANGLELIST,
+	D3DPT_TRIANGLESTRIP
 };
 
 const D3DTEXTUREFILTERTYPE g_d3d9_texFilterType[] = {

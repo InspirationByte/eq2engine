@@ -16,9 +16,7 @@ static constexpr const int MAX_STUDIOMATERIALS = 32;	// maximum allowed material
 
 enum EEGFPrimType
 {
-	EGFPRIM_INVALID			= -1,
 	EGFPRIM_TRIANGLES		= 0,
-	EGFPRIM_TRIANGLE_FAN	= 1,
 	EGFPRIM_TRI_STRIP		= 2,
 };
 

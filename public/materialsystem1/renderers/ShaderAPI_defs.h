@@ -123,14 +123,18 @@ enum ETexAddressMode : int
 // for mesh builder and type of drawing the world model
 enum EPrimTopology : int
 {
-	PRIM_TRIANGLES      = 0,
-	PRIM_TRIANGLE_FAN,
-	PRIM_TRIANGLE_STRIP,
-	PRIM_QUADS,
+	PRIM_POINTS = 0,
 	PRIM_LINES,
 	PRIM_LINE_STRIP,
-	PRIM_LINE_LOOP,
-	PRIM_POINTS,
+	PRIM_TRIANGLES,
+	PRIM_TRIANGLE_STRIP
+};
+
+enum EStripIndexFormat : int
+{
+	STRIP_INDEX_NONE = 0,
+	STRIP_INDEX_UINT16,
+	STRIP_INDEX_UINT32,
 };
 
 typedef int (*PRIMCOUNTER)(int numPrimitives);
@@ -140,22 +144,17 @@ static int PrimCount_TriangleList( int numPrimitives )
 	return numPrimitives / 3;
 }
 
-static int PrimCount_QuadList( int numPrimitives )
-{
-	return numPrimitives / 4;
-}
-
 static int PrimCount_TriangleFanStrip( int numPrimitives )
 {
 	return numPrimitives - 2;
 }
 
-static int PrimCount_ListList( int numPrimitives )
+static int PrimCount_LineList( int numPrimitives )
 {
 	return numPrimitives / 2;
 }
 
-static int PrimCount_ListStrip( int numPrimitives )
+static int PrimCount_LineStrip( int numPrimitives )
 {
 	return numPrimitives - 1;
 }
@@ -165,10 +164,14 @@ static int PrimCount_Points( int numPrimitives )
 	return numPrimitives;
 }
 
-static int PrimCount_None( int )
+static PRIMCOUNTER s_primCount[] =
 {
-	return 0;
-}
+	PrimCount_Points,
+	PrimCount_LineList,
+	PrimCount_LineStrip,
+	PrimCount_TriangleList,
+	PrimCount_TriangleFanStrip,
+};
 
 // Vertex type
 enum EVertAttribType : int
@@ -385,7 +388,7 @@ struct BlendStateParams
 	EBlendFactor	dstFactor{ BLENDFACTOR_ZERO };
 	EBlendFunction	blendFunc{ BLENDFUNC_ADD };
 	int				mask{ COLORMASK_ALL };
-	bool			blendEnable { false };
+	bool			enable { false };
 };
 
 struct DepthStencilStateParams

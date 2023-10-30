@@ -562,6 +562,12 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	numVertices = 0;
 	numIndices = 0;
 
+	static const EPrimTopology s_egfPrimTypeMap[] = {
+		PRIM_TRIANGLES, 
+		PRIM_TRIANGLE_STRIP, // was fan, now placeholder
+		PRIM_TRIANGLE_STRIP,
+	};
+
 	m_hwGeomRefs = PPNew HWGeomRef[studio->numMeshGroups];
 	for (int i = 0; i < studio->numMeshGroups; i++)
 	{
@@ -577,7 +583,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 
 			meshRef.firstIndex = numIndices;
 			meshRef.indexCount = pMeshDesc->numIndices;
-			meshRef.primType = pMeshDesc->primitiveType;
+			meshRef.primType = s_egfPrimTypeMap[pMeshDesc->primitiveType];
 			meshRef.supportsSkinning = (pMeshDesc->vertexType & STUDIO_VERTFLAG_BONEWEIGHT);
 
 			const int newOffset = numVertices;

@@ -852,7 +852,6 @@ bool CEGFGenerator::GenerateEGF()
 			case EGFPRIM_TRIANGLES:
 				totalTris += pMesh->numIndices / 3;
 				break;
-			case EGFPRIM_TRIANGLE_FAN:
 			case EGFPRIM_TRI_STRIP:
 				totalTris += pMesh->numIndices - 2;
 				break;

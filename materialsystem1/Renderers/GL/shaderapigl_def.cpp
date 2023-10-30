@@ -315,14 +315,11 @@ const GLenum g_gl_texMinFilters[] = {
 };
 
 const GLenum g_gl_primitiveType[] = {
-	GL_TRIANGLES,
-	GL_TRIANGLE_FAN,
-	GL_TRIANGLE_STRIP,
-	0, // GL_QUADS,
+	GL_POINTS,
 	GL_LINES,
 	GL_LINE_STRIP,
-	GL_LINE_LOOP,
-	GL_POINTS,
+	GL_TRIANGLES,
+	GL_TRIANGLE_STRIP
 };
 
 const GLenum g_gl_bufferUsages[] = {

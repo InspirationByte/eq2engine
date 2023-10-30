@@ -120,7 +120,7 @@ CWGPUVertexBuffer::CWGPUVertexBuffer(const BufferInfo& bufferInfo)
 	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
 {
 	// TODO: extra buffer flags for lock read
-	const int bufferUsage = WGPUBufferUsage_Vertex | WGPUBufferUsage_MapRead;
+	const int bufferUsage = WGPUBufferUsage_Vertex;
 	m_buffer.Init(bufferInfo, bufferUsage, "EqVertexBuffer");
 }
 
@@ -170,7 +170,7 @@ CWGPUIndexBuffer::CWGPUIndexBuffer(const BufferInfo& bufferInfo)
 	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
 {
 	// TODO: extra buffer flags for lock read
-	const int bufferUsage = WGPUBufferUsage_Index | WGPUBufferUsage_MapRead;
+	const int bufferUsage = WGPUBufferUsage_Index;
 	m_buffer.Init(bufferInfo, bufferUsage, "EqIndexBuffer");
 }
 

@@ -1494,7 +1494,7 @@ void CMaterialSystem::SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nD
 	{
 		BlendStateParams desc;
 		// no sense to enable blending when no visual effects...
-		desc.blendEnable = !(nSrcFactor == BLENDFACTOR_ONE && nDestFactor == BLENDFACTOR_ZERO && nBlendingFunc == BLENDFUNC_ADD);
+		desc.enable = !(nSrcFactor == BLENDFACTOR_ONE && nDestFactor == BLENDFACTOR_ZERO && nBlendingFunc == BLENDFUNC_ADD);
 		desc.srcFactor = nSrcFactor;
 		desc.dstFactor = nDestFactor;
 		desc.blendFunc = nBlendingFunc;

@@ -26,7 +26,6 @@ extern const D3DDECLTYPE			g_d3d9_decltypes[][4];
 extern const D3DDECLUSAGE			g_d3d9_vertexUsage[];
 extern const DWORD					g_d3d9_bufferUsages[];
 extern const D3DPRIMITIVETYPE		g_d3d9_primType[];
-extern const PRIMCOUNTER			g_d3d9_primCountFunc[];
 extern const D3DTEXTUREFILTERTYPE	g_d3d9_texFilterType[];
 extern const D3DTEXTUREADDRESS		g_d3d9_texAddressMode[];
 extern const D3DTRANSFORMSTATETYPE	g_d3d9_matrixModes[];

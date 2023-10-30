@@ -37,14 +37,14 @@ IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<Ve
 
 IVertexBuffer* CWGPURenderAPI::CreateVertexBuffer(const BufferInfo& bufferInfo)
 {
-	CWGPUVertexBuffer* buffer = new CWGPUVertexBuffer(bufferInfo);
+	CWGPUVertexBuffer* buffer = PPNew CWGPUVertexBuffer(bufferInfo);
 	m_VBList.append(buffer);
 	return buffer;
 }
 
 IIndexBuffer* CWGPURenderAPI::CreateIndexBuffer(const BufferInfo& bufferInfo)
 {
-	CWGPUIndexBuffer* buffer = new CWGPUIndexBuffer(bufferInfo);
+	CWGPUIndexBuffer* buffer = PPNew CWGPUIndexBuffer(bufferInfo);
 	m_IBList.append(buffer);
 	return buffer;
 }
@@ -132,6 +132,42 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName,int width, in
 //-------------------------------------------------------------
 // Pipeline management
 
+struct FragmentPipelineDesc
+{
+	struct ColorTargetDesc
+	{
+		BlendStateParams	blendParams;
+		ETextureFormat		format;
+	};
+	using ColorTargetDescList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
+
+	ColorTargetDescList		targetDesc;
+	EqString				shaderEntryPoint;
+	bool					enabled{ false };
+};
+
+struct VertexPipelineDesc
+{
+	using VertexFormatDescList = Array<VertexFormatDesc>;
+	VertexFormatDescList	vertexFormat{ PP_SL };
+	EqString				shaderEntryPoint;
+};
+
+struct PrimitiveDesc
+{
+	ECullMode				cullMode{ CULL_NONE };
+	EPrimTopology			topology{ PRIM_TRIANGLES };
+	EStripIndexFormat		stripIndex{ STRIP_INDEX_NONE };
+};
+
+struct RenderPipelineDesc
+{
+	VertexPipelineDesc		vertex;
+	DepthStencilStateParams	depthStencil;
+	FragmentPipelineDesc	fragment;
+	PrimitiveDesc			primitive;
+};
+
 void* CWGPURenderAPI::CreateRenderPipeline()
 {
 	// Pipeline layout and bind group layout
@@ -212,6 +248,11 @@ void* CWGPURenderAPI::CreateRenderPipeline()
 		bindGroupList.append(bindGroup);
 	}
 
+	// After bindGroupList successfully created, they can be bound to the pipeline
+	//WGPURenderPassEncoder renderPassEnc = nullptr;
+	//for (int bindGroup = 0; bindGroup < bindGroupList.numElem(); ++bindGroup)
+	//	wgpuRenderPassEncoderSetBindGroup(renderPassEnc, bindGroup, bindGroupList[bindGroup], 0, nullptr);
+
 	// 1. The pipeline almost fully constructed by the MatSystemShader
 	//    except the primitive state, which is:
 	//    - topology
@@ -233,38 +274,7 @@ void* CWGPURenderAPI::CreateRenderPipeline()
 	//    - primitiveTopology
 	//
 	WGPURenderPipelineDescriptor renderPipelineDesc = {};
-
-	FixedArray<WGPUColorTargetState, 16> colorTargets;
-	{
-		WGPUBlendState blend = {};
-		blend.color.operation = WGPUBlendOperation_Add;
-		blend.color.srcFactor = WGPUBlendFactor_One;
-		blend.color.dstFactor = WGPUBlendFactor_One;
-		blend.alpha.operation = WGPUBlendOperation_Add;
-		blend.alpha.srcFactor = WGPUBlendFactor_One;
-		blend.alpha.dstFactor = WGPUBlendFactor_One;
-
-		WGPUColorTargetState colorTarget = {};
-		colorTarget.format = WGPUTextureFormat_Undefined; //webgpu::getSwapChainFormat(device);
-		colorTarget.blend = &blend;
-		colorTarget.writeMask = WGPUColorWriteMask_All;
-	}
-
-	WGPUShaderModule vertMod = nullptr;//createShader(triangle_vert_wgsl);
-	WGPUShaderModule fragMod = nullptr;//createShader(triangle_frag_wgsl);
-
-	WGPUFragmentState fragmentState = {};
-	fragmentState.module = fragMod;
-	fragmentState.entryPoint = "main";
-	fragmentState.targetCount = colorTargets.numElem();
-	fragmentState.targets = colorTargets.ptr();
-	renderPipelineDesc.fragment = &fragmentState;
-
-	// Other state
 	renderPipelineDesc.layout = pipelineLayout;
-
-	WGPUDepthStencilState depthStencil;
-	renderPipelineDesc.depthStencil = &depthStencil;
 
 	FixedArray<WGPUVertexAttribute, 128> vertexAttribList;
 	FixedArray<WGPUVertexBufferLayout, 16> vertexBufferLayoutList;
@@ -296,15 +306,84 @@ void* CWGPURenderAPI::CreateRenderPipeline()
 		vertexBufferLayoutList.append(vertexBufferLayout);
 	}
 
+	WGPUShaderModule vertMod = nullptr;//createShader(triangle_vert_wgsl);
+	WGPUShaderModule fragMod = nullptr;//createShader(triangle_frag_wgsl);
+
+	// Setup vertex pipeline
+	// Required
 	renderPipelineDesc.vertex.module = vertMod;
 	renderPipelineDesc.vertex.entryPoint = "main";
 	renderPipelineDesc.vertex.bufferCount = vertexBufferLayoutList.numElem();
 	renderPipelineDesc.vertex.buffers = vertexBufferLayoutList.ptr();
 
+	Array<WGPUConstantEntry> vertexPipelineConstants(PP_SL);
+	renderPipelineDesc.vertex.constants = vertexPipelineConstants.ptr();
+	renderPipelineDesc.vertex.constantCount = vertexPipelineConstants.numElem();
+
+	// Setup fragment pipeline
+	FixedArray<WGPUColorTargetState, 16> colorTargets;
+	FixedArray<WGPUBlendState, 16> colorTargetBlends;
+	{
+		{
+			WGPUBlendState blend = {};
+			blend.color.operation = WGPUBlendOperation_Add;
+			blend.color.srcFactor = WGPUBlendFactor_One;
+			blend.color.dstFactor = WGPUBlendFactor_One;
+
+			blend.alpha.operation = WGPUBlendOperation_Add;
+			blend.alpha.srcFactor = WGPUBlendFactor_One;
+			blend.alpha.dstFactor = WGPUBlendFactor_One;
+			colorTargetBlends.append(blend);
+		}
+
+		WGPUColorTargetState colorTarget = {};
+		colorTarget.format = WGPUTextureFormat_Undefined; //webgpu::getSwapChainFormat(device);
+		colorTarget.blend = &colorTargetBlends.back();
+		colorTarget.writeMask = WGPUColorWriteMask_All;
+		colorTargets.append(colorTarget);
+	}
+	
+	// Depth state
+	// Optional when depth read = false
+	WGPUDepthStencilState depthStencil = {};
+	depthStencil.format = WGPUTextureFormat_Depth24Plus; // backbuffer depth format for example
+	depthStencil.depthWriteEnabled = false;
+	depthStencil.depthCompare = WGPUCompareFunction_LessEqual;
+	depthStencil.stencilReadMask = 0xFFFFFFFF;
+	depthStencil.stencilWriteMask = 0xFFFFFFFF;
+	depthStencil.depthBias = 0;
+	depthStencil.depthBiasSlopeScale = 0;
+	depthStencil.depthBiasClamp = 0;
+	depthStencil.stencilBack.compare = WGPUCompareFunction_Always;
+	depthStencil.stencilBack.failOp = WGPUStencilOperation_Keep;
+	depthStencil.stencilBack.depthFailOp = WGPUStencilOperation_Keep;
+	depthStencil.stencilBack.passOp = WGPUStencilOperation_Keep;
+	depthStencil.stencilFront.compare = WGPUCompareFunction_Always;
+	depthStencil.stencilFront.failOp = WGPUStencilOperation_Keep;
+	depthStencil.stencilFront.depthFailOp = WGPUStencilOperation_Keep;
+	depthStencil.stencilFront.passOp = WGPUStencilOperation_Keep;
+	renderPipelineDesc.depthStencil = &depthStencil;
+
+	// Fragment state
+	// When opted out, requires depthStencil state
+	WGPUFragmentState fragmentState = {};
+	fragmentState.module = fragMod;
+	fragmentState.entryPoint = "main";
+	fragmentState.targetCount = colorTargets.numElem();
+	fragmentState.targets = colorTargets.ptr();
+
+	Array<WGPUConstantEntry> fragmentPipelineConstants(PP_SL);
+	fragmentState.constants = fragmentPipelineConstants.ptr();
+	fragmentState.constantCount = fragmentPipelineConstants.numElem();
+
+	renderPipelineDesc.fragment = &fragmentState;
+
+	// Multisampling
 	renderPipelineDesc.multisample.count = 1;
 	renderPipelineDesc.multisample.mask = 0xFFFFFFFF;
 	renderPipelineDesc.multisample.alphaToCoverageEnabled = false;
 
+	// Primitive toplogy
 	renderPipelineDesc.primitive.frontFace = WGPUFrontFace_CCW;
 	renderPipelineDesc.primitive.cullMode = WGPUCullMode_Back;
 	renderPipelineDesc.primitive.topology = WGPUPrimitiveTopology_TriangleList;

@@ -447,7 +447,7 @@ void ShaderAPIGL::ApplyBlendState()
 		{
 			BlendStateParams& state = pSelectedState->m_params;
 		
-			if (state.blendEnable)
+			if (state.enable)
 			{
 				if (!m_bCurrentBlendEnable)
 				{
@@ -2433,19 +2433,6 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 IVertexFormat* pPlainFormat = nullptr;
 
-PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
-{
-	PrimCount_TriangleList,
-	PrimCount_TriangleFanStrip,
-	PrimCount_TriangleFanStrip,
-	PrimCount_QuadList,
-	PrimCount_ListList,
-	PrimCount_ListStrip,
-	PrimCount_None,
-	PrimCount_Points,
-	PrimCount_None,
-};
-
 // Indexed primitive drawer
 void ShaderAPIGL::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
@@ -2486,7 +2473,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, in
 
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
-	m_nTrianglesCount += g_pGLPrimCounterCallbacks[nType](nIndices);
+	m_nTrianglesCount += s_primCount[nType](nIndices);
 }
 
 // Draw elements
@@ -2515,7 +2502,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex
 
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
-	m_nTrianglesCount += g_pGLPrimCounterCallbacks[nType](nVertices);
+	m_nTrianglesCount += s_primCount[nType](nVertices);
 }
 
 bool ShaderAPIGL::IsDeviceActive() const
@@ -2536,9 +2523,9 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParams &blendDes
 	{
 		pState = (CGLBlendingState*)m_BlendStates[i];
 
-		if(blendDesc.blendEnable == pState->m_params.blendEnable)
+		if(blendDesc.enable == pState->m_params.enable)
 		{
-			if(blendDesc.blendEnable == true)
+			if(blendDesc.enable == true)
 			{
 				if(blendDesc.srcFactor == pState->m_params.srcFactor &&
 					blendDesc.dstFactor == pState->m_params.dstFactor &&
