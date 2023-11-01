@@ -44,8 +44,6 @@ public:
 protected:
 	IDirect3DVertexShader9*			m_pVertexShader{ nullptr };
 	IDirect3DPixelShader9*			m_pPixelShader{ nullptr };
-	ID3DXConstantTable*				m_pVSConstants{ nullptr };
-	ID3DXConstantTable*				m_pPSConstants{ nullptr };
 
 	Map<int, DX9ShaderConstant_t>	m_constants{ PP_SL };
 	Map<int, DX9Sampler_t>			m_samplers{ PP_SL };

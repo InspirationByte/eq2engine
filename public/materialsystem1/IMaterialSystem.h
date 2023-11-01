@@ -50,15 +50,15 @@ enum EMaterialBindFlags
 
 struct MaterialsRenderSettings
 {
-	int					materialFlushThresh{ 1000 };	// flush (unload) threshold in frames
+	int			materialFlushThresh{ 1000 };	// flush (unload) threshold in frames
 
-	bool				lowShaderQuality{ false };
-	bool				editormode{ false };			// enable editor mode
-	bool				threadedloader{ true };
+	bool		lowShaderQuality{ false };
+	bool		editormode{ false };			// enable editor mode
+	bool		threadedloader{ true };
 
-	bool				enableShadows{ true };			// enable shadows?
-	bool				wireframeMode{ false };			// matsystem wireframe mode
-	bool				overdrawMode{ false };			// matsystem overdraw mode
+	bool		enableShadows{ true };			// enable shadows?
+	bool		wireframeMode{ false };			// matsystem wireframe mode
+	bool		overdrawMode{ false };			// matsystem overdraw mode
 };
 
 struct MaterialsInitSettings
@@ -66,11 +66,11 @@ struct MaterialsInitSettings
 	MaterialsRenderSettings	renderConfig;
 	ShaderAPIParams		shaderApiParams;
 
-	EqString			rendererName;		// shaderAPI library filename
-	EqString			materialsPath;		// regular (retail) materials file paths
-	EqString			materialsSRCPath;	// DEV materials file source paths
-	EqString			texturePath;		// texture path (.DDS only)
-	EqString			textureSRCPath;		// texture sources path (.TGA only)
+	EqString	rendererName;		// shaderAPI library filename
+	EqString	materialsPath;		// regular (retail) materials file paths
+	EqString	materialsSRCPath;	// DEV materials file source paths
+	EqString	texturePath;		// texture path (.DDS only)
+	EqString	textureSRCPath;		// texture sources path (.TGA only)
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ public:
 	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
 	virtual void					SetDeviceFocused(bool inFocus) = 0;
 
-	virtual ISwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
+	virtual ISwapChain*				CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
 	virtual void					DestroySwapChain(ISwapChain* chain) = 0;
 
 	virtual bool					SetWindowed(bool enable) = 0;
@@ -137,7 +137,7 @@ public:
 	virtual IMaterialPtr			GetMaterial(const char* szMaterialName) = 0;
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
-	virtual IMaterialSystemShader*	CreateShaderInstance(const char* szShaderName) = 0;
+	virtual IMatSystemShader*	CreateShaderInstance(const char* szShaderName) = 0;
 
 	virtual void					PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial) = 0;
 	virtual void					PreloadNewMaterials() = 0;
@@ -148,13 +148,14 @@ public:
 	virtual void					ReleaseUnusedMaterials() = 0;
 	virtual void					FreeMaterial(IMaterial* pMaterial) = 0;
 
-	virtual void					PrintLoadedMaterials() = 0;
+	virtual void					PrintLoadedMaterials() const = 0;
+
+	virtual void					GetPolyOffsetSettings(float& depthBias, float& depthBiasSlopeScale) const = 0;
 
 	//------------------
 	// Materials or shader static states
 
 	virtual void					SetProxyDeltaTime(float deltaTime) = 0;
-	virtual void					SetShaderParameterOverriden(int /*EShaderParamSetup*/ param, bool set = true) = 0;
 
 	// global variables
 	virtual MatVarProxyUnk			FindGlobalMaterialVarByName(const char* pszVarName) const = 0;
@@ -165,17 +166,9 @@ public:
 	template<typename PROXY = MatVarProxyUnk>
 	PROXY							FindGlobalMaterialVar(int nameHash) const { return PROXY(FindGlobalMaterialVar(nameHash)); }
 
-	virtual IMaterialPtr			GetBoundMaterial() const = 0;
-	virtual bool					BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
-	virtual void					Apply() = 0;
-
-	// sets the custom rendering callbacks
-	// useful for proxy updates, setting up constants that shader objects can't access by themselves
-	virtual void					SetRenderCallbacks(IMatSysRenderCallbacks* callback) = 0;
-	virtual IMatSysRenderCallbacks*	GetRenderCallbacks() const = 0;
-
 	//-----------------------------
-	// Rendering projection helper operations
+	// Render states 
+	// TODO: remove them all, replace with something that would take render pas instead
 
 	virtual void					Setup2D(float wide, float tall) = 0;
 	virtual void					SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar) = 0;
@@ -186,9 +179,17 @@ public:
 
 	virtual void					GetWorldViewProjection(Matrix4x4& matrix) = 0;
 
-	//-----------------------------
-	// Render states 
-	// TODO: remove them all, replace with something that would take render pas instead
+	//---
+	virtual void					SetShaderParameterOverriden(int /*EShaderParamSetup*/ param, bool set = true) = 0;
+
+	virtual IMaterialPtr			GetBoundMaterial() const = 0;
+	virtual bool					BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
+	virtual void					Apply() = 0;
+
+	// sets the custom rendering callbacks
+	// useful for proxy updates, setting up constants that shader objects can't access by themselves
+	virtual void					SetRenderCallbacks(IMatSysRenderCallbacks* callback) = 0;
+	virtual IMatSysRenderCallbacks* GetRenderCallbacks() const = 0;
 
 	virtual ECullMode				GetCurrentCullMode() const = 0;
 	virtual void					SetCullMode(ECullMode cullMode) = 0;

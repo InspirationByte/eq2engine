@@ -18,8 +18,8 @@ struct Builder;
 		private: RetType& ref; \
 	};
 
-#define FLUENT_SET(VarName, SetterName, Value) \
-	ThisType& SetterName() { ref.VarName = Value; return *this; }
+#define FLUENT_SET(VarName, SetterName, DefaultValue) \
+	ThisType& SetterName(const decltype(RetType::VarName) value = DefaultValue) { ref.VarName = value; return *this; }
 
 #define FLUENT_SET_VALUE(VarName, SetterName) \
 	ThisType& SetterName(decltype(RetType::VarName)&& x) { ref.VarName = std::move(x); return *this; } \

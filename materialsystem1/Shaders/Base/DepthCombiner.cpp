@@ -18,7 +18,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 
 	SHADER_INIT_PARAMS()
 	{
-		// set texture setup
+		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
 	}
 
@@ -29,7 +29,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 		SHADER_PARAM_TEXTURE_FIND(Texture2, m_textures[1]);
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
@@ -42,10 +42,6 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Unlit, "DepthCombiner");
-
-		m_depthtest = false;
-		m_depthwrite = false;
-
 		return true;
 	}
 
@@ -63,7 +59,6 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 	}
-
 
 	void SetupBaseTexture0(IShaderAPI* renderAPI)
 	{

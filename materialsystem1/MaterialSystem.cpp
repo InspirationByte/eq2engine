@@ -764,7 +764,7 @@ void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, DIS
 	m_shaderOverrideList.insert(new_override, 0);
 }
 
-IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName)
+IMatSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName)
 {
 	EqString shaderName( szShaderName );
 
@@ -1189,7 +1189,7 @@ bool CMaterialSystem::SetWindowed(bool enable)
 	if (m_renderLibrary)
 		result = m_renderLibrary->SetWindowed(enable);
 
-	for (int i = 0; i < m_lostDeviceCb.numElem(); i++)
+	for (int i = 0; i < m_restoreDeviceCb.numElem(); i++)
 	{
 		if (!m_restoreDeviceCb[i]())
 			return false;
@@ -1207,6 +1207,12 @@ bool CMaterialSystem::IsWindowed() const
 IShaderAPI* CMaterialSystem::GetShaderAPI() const
 {
 	return m_shaderAPI;
+}
+
+void CMaterialSystem::GetPolyOffsetSettings(float& depthBias, float& depthBiasSlopeScale) const
+{
+	depthBias = r_depthBias.GetFloat();
+	depthBiasSlopeScale = r_slopeDepthBias.GetFloat();
 }
 
 //--------------------------------------------------------------------------------------
@@ -1611,7 +1617,7 @@ void CMaterialSystem::AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLIC
 }
 
 // prints loaded materials to console
-void CMaterialSystem::PrintLoadedMaterials()
+void CMaterialSystem::PrintLoadedMaterials() const
 {
 	CScopedMutex m(s_matSystemMutex);
 

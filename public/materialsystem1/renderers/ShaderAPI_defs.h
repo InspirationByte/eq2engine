@@ -76,29 +76,31 @@ enum ETexAddressMode : int
 struct SamplerStateParams
 {
 	SamplerStateParams() = default;
-	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_LESS, float lod = 0.0f, int aniso = 16)
+	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_LESS, float lod = 0.0f, int maxAnisotropy = 16)
 		: minFilter(filterType)
 		, magFilter((filterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR)
-		, addressS(address)
-		, addressT(address)
-		, addressR(address)
+		, addressU(address)
+		, addressV(address)
+		, addressW(address)
 		, compareFunc(compareFunc)
+		, maxAnisotropy((filterType == TEXFILTER_BILINEAR_ANISO) ? 16 : 0)
 		, lod(lod)
-		, aniso((filterType == TEXFILTER_BILINEAR_ANISO) ? 16 : 0)
 	{
 	}
 
 	ETexFilterMode	minFilter{ TEXFILTER_NEAREST };
 	ETexFilterMode	magFilter{ TEXFILTER_NEAREST };
+	ETexFilterMode	mipmapFilter{ TEXFILTER_NEAREST }; // NOTE: TEXFILTER_NEAREST or TEXFILTER_LINEAR are accepted
 
 	ECompareFunc	compareFunc{ COMPFUNC_NONE };
 
-	ETexAddressMode	addressS{ TEXADDRESS_WRAP };
-	ETexAddressMode	addressT{ TEXADDRESS_WRAP };
-	ETexAddressMode	addressR{ TEXADDRESS_WRAP };
+	ETexAddressMode	addressU{ TEXADDRESS_WRAP };
+	ETexAddressMode	addressV{ TEXADDRESS_WRAP };
+	ETexAddressMode	addressW{ TEXADDRESS_WRAP };
 
-	int				aniso{ 16 };
-	float			lod{ 0.0f };
+	int				maxAnisotropy{ 16 };
+
+	float			lod{ 0.0f }; // TODO: remove and replace with minLodClamp/maxLodClamp
 };
 
 //---------------------------------------
@@ -153,17 +155,17 @@ struct BlendStateParams
 	bool			enable { false };
 };
 
-static const BlendStateParams BlendAdditive = {
+static const BlendStateParams BlendStateAdditive = {
 	BLENDFACTOR_ONE, BLENDFACTOR_ONE, 
 	BLENDFUNC_ADD, COLORMASK_ALL, true
 };
 
-static const BlendStateParams BlendAlpha = {
+static const BlendStateParams BlendStateAlpha = {
 	BLENDFACTOR_ONE, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
 	BLENDFUNC_ADD, COLORMASK_ALL, true
 };
 
-static const BlendStateParams BlendModulate = {
+static const BlendStateParams BlendStateModulate = {
 	BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR,
 	BLENDFUNC_ADD, COLORMASK_ALL, true
 };
@@ -359,6 +361,7 @@ struct FragmentPipelineDesc
 {
 	struct ColorTargetDesc
 	{
+		EqString			name;
 		ETextureFormat		format{ FORMAT_NONE };
 		BlendStateParams	colorBlend;
 		BlendStateParams	alphaBlend;
@@ -367,7 +370,7 @@ struct FragmentPipelineDesc
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 
 	ColorTargetList			targets;
-	EqString				shaderEntryPoint{ "main" };
+	EqString				shaderEntryPoint;
 };
 
 FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
@@ -376,9 +379,9 @@ FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
 	{
 		targets.append(std::move(x)); return *this;
 	}
-	ThisType& ColorTarget(ETextureFormat format, const BlendStateParams& colorBlend = BlendStateParams{}, const BlendStateParams& alphaBlend = BlendStateParams{}) 
+	ThisType& ColorTarget(const char* name, ETextureFormat format, const BlendStateParams& colorBlend = BlendStateParams{}, const BlendStateParams& alphaBlend = BlendStateParams{}) 
 	{
-		targets.append({ format, colorBlend, alphaBlend }); return *this;
+		targets.append({ name, format, colorBlend, alphaBlend }); return *this;
 	}
 FLUENT_END_TYPE
 
@@ -502,8 +505,8 @@ struct BindGroupDesc
 
 	struct Entry
 	{
+		Entry() {}
 		union {
-			uint				_dummy{ 0 };
 			BindBuffer			buffer;
 			BindSampler			sampler;
 			BindTexture			texture;

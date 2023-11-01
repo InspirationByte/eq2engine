@@ -18,11 +18,9 @@ BEGIN_SHADER_CLASS(BloomRange)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_rangeProps = GetAssignedMaterial()->GetMaterialVar("RangeProps", "[0.6 40 100 100]");
-		m_bloomSource = GetAssignedMaterial()->GetMaterialVar("BloomSource", "");
-
-		m_depthtest = false;
-		m_depthwrite = false;
+		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
+		m_rangeProps = m_material->GetMaterialVar("RangeProps", "[0.6 40 100 100]");
+		m_bloomSource = m_material->GetMaterialVar("BloomSource", "");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -31,7 +29,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTextures);
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;

@@ -17,7 +17,8 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_fontParamsVar = GetAssignedMaterial()->GetMaterialVar("FontParams", "[0.94 0.95, 0, 1]");
+		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
+		m_fontParamsVar = m_material->GetMaterialVar("FontParams", "[0.94 0.95, 0, 1]");
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 	}
@@ -27,7 +28,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
@@ -37,9 +38,6 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Unlit, "SDFFont");
-
-		m_depthtest = false;
-		m_depthwrite = false;
 
 		return true;
 	}

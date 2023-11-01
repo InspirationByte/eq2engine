@@ -47,7 +47,7 @@ public:
 private:
 	EqString						m_szApplicationName;
 	EqString						m_szCurrentSessionUserName;
-	bool							m_bInitialized;
+	bool							m_isInit;
 
 	KeyValues*						m_coreConfiguration;
 

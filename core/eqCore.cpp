@@ -293,7 +293,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	else
 		MsgError("\nCore: Logging console output to file is disabled.\n");
 
-	m_bInitialized = true;
+	m_isInit = true;
 	return true;
 }
 
@@ -322,10 +322,10 @@ KeyValues* CDkCore::GetConfig() const
 
 void CDkCore::Shutdown()
 {
-    if (!m_bInitialized)
+    if (!m_isInit)
         return;
 
-	m_bInitialized = false;
+	m_isInit = false;
 
 	g_fileSystem->Shutdown();
 
@@ -411,5 +411,5 @@ void CDkCore::UnregisterInterface(const char* pszName)
 
 bool CDkCore::IsInitialized() const
 {
-	return m_bInitialized;
+	return m_isInit;
 }

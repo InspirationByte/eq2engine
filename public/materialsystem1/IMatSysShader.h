@@ -44,10 +44,10 @@ enum EShaderParamSetup
 };
 
 
-class IMaterialSystemShader
+class IMatSystemShader
 {
 public:
-	virtual ~IMaterialSystemShader() = default;
+	virtual ~IMatSystemShader() = default;
 
 	virtual void				Init(IShaderAPI* renderAPI, IMaterial* assignee) = 0;
 	virtual void				Unload() = 0;
@@ -62,20 +62,15 @@ public:
 
 	virtual bool				IsError() const = 0;
 	virtual bool				IsInitialized() const = 0;
-
-	virtual IMaterial*			GetAssignedMaterial() const = 0;
 	virtual int					GetFlags() const = 0;
 
 	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
-	virtual int					GetBaseTextureStageCount() const = 0;
-
 	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
-	virtual int					GetBumpStageCount() const = 0;
 
 	virtual bool				IsSupportVertexFormat(int nameHash) const = 0;
 };
 
-typedef IMaterialSystemShader* (*DISPATCH_CREATE_SHADER)(void);
+typedef IMatSystemShader* (*DISPATCH_CREATE_SHADER)(void);
 struct ShaderFactory
 {
 	DISPATCH_CREATE_SHADER dispatcher;
@@ -83,31 +78,28 @@ struct ShaderFactory
 };
 using FactoryList = Array<ShaderFactory>;
 
-#define DECLARE_INTERNAL_SHADERS()       \
-	FactoryList* s_internalShaderReg = nullptr;                            \
-	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(PP_SL); return *s_internalShaderReg; }
-
-#define REGISTER_INTERNAL_SHADERS()								\
-	for(int i = 0; i < _InternalShaderList().numElem(); i++)	\
-		g_matSystem->RegisterShader( _InternalShaderList()[i].shader_name, _InternalShaderList()[i].dispatcher );
-
 extern FactoryList& _InternalShaderList();
 
-#define DEFINE_SHADER(stringName, className)								\
-	static IMaterialSystemShader* C##className##Factory( void )						\
-	{																				\
-		IMaterialSystemShader *pShader = static_cast< IMaterialSystemShader * >(new className()); 	\
-		return pShader;																\
-	}																				\
-	class C_ShaderClassFactoryFoo													\
-	{																				\
-	public:																			\
-		C_ShaderClassFactoryFoo( void )											\
-		{																			\
-			ShaderFactory factory;												\
-			factory.dispatcher = &C##className##Factory;							\
-			factory.shader_name = stringName;										\
-			_InternalShaderList().append(factory);						\
-		}																			\
-	};																				\
+#define DECLARE_INTERNAL_SHADERS()  \
+	FactoryList* s_internalShaderReg = nullptr; \
+	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(PP_SL); return *s_internalShaderReg; }
+
+#define REGISTER_INTERNAL_SHADERS()	\
+	for(const ShaderFactory& factory : _InternalShaderList())	\
+		g_matSystem->RegisterShader( factory.shader_name, factory.dispatcher );
+
+#define DEFINE_SHADER(stringName, className) \
+	static IMatSystemShader* C##className##Factory() { \
+		IMatSystemShader *pShader = static_cast< IMatSystemShader * >(new className()); \
+		return pShader;	\
+	} \
+	class C_ShaderClassFactoryFoo {	\
+	public: \
+		C_ShaderClassFactoryFoo() { \
+			ShaderFactory factory; \
+			factory.dispatcher = &C##className##Factory; \
+			factory.shader_name = stringName; \
+			_InternalShaderList().append(factory); \
+		} \
+	}; \
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;

@@ -55,10 +55,10 @@ ShaderAPID3D9::ShaderAPID3D9() : ShaderAPI_Base()
 	m_defaultSamplerState.magFilter = TEXFILTER_NEAREST;
 	m_defaultSamplerState.minFilter = TEXFILTER_NEAREST;
 	//m_defaultSamplerState.mipFilter = TEXFILTER_NEAREST;
-	m_defaultSamplerState.addressS = TEXADDRESS_WRAP;
-	m_defaultSamplerState.addressT = TEXADDRESS_WRAP;
-	m_defaultSamplerState.addressR = TEXADDRESS_WRAP;
-	m_defaultSamplerState.aniso = 1;
+	m_defaultSamplerState.addressU = TEXADDRESS_WRAP;
+	m_defaultSamplerState.addressV = TEXADDRESS_WRAP;
+	m_defaultSamplerState.addressW = TEXADDRESS_WRAP;
+	m_defaultSamplerState.maxAnisotropy = 1;
 
 	for (int i = 0; i < MAX_SAMPLERSTATE; i++)
 		m_pCurrentSamplerStates[i] = m_defaultSamplerState;
@@ -583,11 +583,11 @@ void ShaderAPID3D9::ApplySamplerState()
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, g_d3d9_texFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.addressS != css.addressS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.addressS = ss.addressS]);
-			if (ss.addressT != css.addressT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.addressT = ss.addressT]);
-			if (ss.addressR != css.addressR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.addressR = ss.addressR]);
+			if (ss.addressU != css.addressU) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.addressU = ss.addressU]);
+			if (ss.addressV != css.addressV) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.addressV = ss.addressV]);
+			if (ss.addressW != css.addressW) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.addressW = ss.addressW]);
 
-			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
+			if (ss.maxAnisotropy != css.maxAnisotropy) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.maxAnisotropy = ss.maxAnisotropy);
 
 			if (ss.lod != css.lod) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPMAPLODBIAS, *(DWORD *) &(css.lod = ss.lod));
 		}
@@ -613,11 +613,11 @@ void ShaderAPID3D9::ApplySamplerState()
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, g_d3d9_texFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.addressS != css.addressS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.addressS = ss.addressS]);
-			if (ss.addressT != css.addressT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.addressT = ss.addressT]);
-			if (ss.addressR != css.addressR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.addressR = ss.addressR]);
+			if (ss.addressU != css.addressU) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.addressU = ss.addressU]);
+			if (ss.addressV != css.addressV) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.addressV = ss.addressV]);
+			if (ss.addressW != css.addressW) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.addressW = ss.addressW]);
 
-			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
+			if (ss.maxAnisotropy != css.maxAnisotropy) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.maxAnisotropy = ss.maxAnisotropy);
 
 			if (ss.lod != css.lod) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&(css.lod = ss.lod));
 		}
@@ -1842,6 +1842,9 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 	CMemoryStream vsMemStream(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
 	CMemoryStream psMemStream(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
 
+	ID3DXConstantTable* vsConstants = nullptr;
+	ID3DXConstantTable* psConstants = nullptr;
+
 	if (info.data.text != nullptr)
 	{
 		LPD3DXBUFFER shaderBuf = nullptr;
@@ -1885,7 +1888,7 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 			nullptr, nullptr,
 			entry.ToCString(), profile.ToCString(),
 			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_PARTIALPRECISION,
-			&shaderBuf, &errorsBuf, &pShader->m_pVSConstants);
+			&shaderBuf, &errorsBuf, &vsConstants);
 
 		if (compileResult == D3D_OK)
 		{
@@ -1968,7 +1971,7 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 			nullptr, nullptr, entry.ToCString(), profile.ToCString(),
 			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR,
 			&shaderBuf, &errorsBuf,
-			&pShader->m_pPSConstants);
+			&psConstants);
 
 		if (compileResult == D3D_OK)
 		{
@@ -2007,18 +2010,23 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 		}
 	}
 
-	ID3DXConstantTable* d3dVSConstants = pShader->m_pVSConstants;
-	ID3DXConstantTable* d3dPSConstants = pShader->m_pPSConstants;
-
 	if (pShader->m_pPixelShader == nullptr || pShader->m_pVertexShader == nullptr ||
-		d3dVSConstants == nullptr || d3dPSConstants == nullptr)
+		vsConstants == nullptr || psConstants == nullptr)
 	{
+		if (vsConstants)
+			vsConstants->Release();
+		vsConstants = nullptr;
+
+		if (psConstants)
+			psConstants->Release();
+		psConstants = nullptr;
+
 		return false;
 	}
 
 	D3DXCONSTANTTABLE_DESC vsDesc, psDesc;
-	d3dVSConstants->GetDesc(&vsDesc);
-	d3dPSConstants->GetDesc(&psDesc);
+	vsConstants->GetDesc(&vsDesc);
+	psConstants->GetDesc(&psDesc);
 
 	const uint count = vsDesc.Constants + psDesc.Constants;
 
@@ -2032,7 +2040,7 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 	for (uint i = 0; i < vsDesc.Constants; i++)
 	{
 		UINT cnt = 1;
-		d3dVSConstants->GetConstantDesc(d3dVSConstants->GetConstant(nullptr, i), &cDesc, &cnt);
+		vsConstants->GetConstantDesc(vsConstants->GetConstant(nullptr, i), &cDesc, &cnt);
 
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
@@ -2059,7 +2067,7 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 	for (uint i = 0; i < psDesc.Constants; i++)
 	{
 		UINT cnt = 1;
-		d3dPSConstants->GetConstantDesc(d3dPSConstants->GetConstant(NULL, i), &cDesc, &cnt);
+		psConstants->GetConstantDesc(psConstants->GetConstant(NULL, i), &cDesc, &cnt);
 
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
@@ -2115,6 +2123,14 @@ bool ShaderAPID3D9::CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
 			}
 		}
 	}
+
+	if(vsConstants)
+		vsConstants->Release();
+	vsConstants = nullptr;
+
+	if(psConstants)
+		psConstants->Release();
+	psConstants = nullptr;
 
 	Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
 	Map<int, DX9ShaderConstant_t>& constantMap = pShader->m_constants;

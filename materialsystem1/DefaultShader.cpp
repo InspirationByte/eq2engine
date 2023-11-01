@@ -28,7 +28,7 @@ BEGIN_SHADER_CLASS(Default)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;

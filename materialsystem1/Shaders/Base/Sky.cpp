@@ -30,7 +30,7 @@ BEGIN_SHADER_CLASS(Skybox)
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;

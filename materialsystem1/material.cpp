@@ -250,7 +250,7 @@ void CMaterial::InitShader(IShaderAPI* renderAPI)
 	{
 		PROF_EVENT("MatSystem Load Material InitShader");
 
-		IMaterialSystemShader* shader = g_matSystem->CreateShaderInstance(m_szShaderName.GetData());
+		IMatSystemShader* shader = g_matSystem->CreateShaderInstance(m_szShaderName.GetData());
 
 		// if not found - try make Error shader
 		if (!shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
@@ -345,7 +345,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 	IShaderAPI* renderAPI = g_matSystem->GetShaderAPI();
 	InitShader(renderAPI);
 
-	IMaterialSystemShader* shader = m_shader;
+	IMatSystemShader* shader = m_shader;
 	if(!shader)
 		return true;
 
@@ -355,8 +355,6 @@ bool CMaterial::DoLoadShaderAndTextures()
 	if(!shader->IsInitialized() && !shader->IsError())
 	{
 		PROF_EVENT("MatSystem Load Material Shader and Textures");
-
-
 		shader->InitTextures(renderAPI);
 		shader->InitShader(renderAPI);
 	}
@@ -490,7 +488,7 @@ void CMaterial::UpdateProxy(float fDt)
 
 void CMaterial::Setup(IShaderAPI* renderAPI, uint paramMask)
 {
-	IMaterialSystemShader* shader = m_shader;
+	IMatSystemShader* shader = m_shader;
 
 	// shaders and textures needs to be reset
 	renderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );

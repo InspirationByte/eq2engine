@@ -86,20 +86,20 @@ void CGLTexture::ReleaseTextures()
 void SetupGLSamplerState(uint texTarget, const SamplerStateParams &sampler, int mipMapCount)
 {
 	// Set requested wrapping modes
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, g_gl_texAddrModes[sampler.addressS]);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, g_gl_texAddrModes[sampler.addressU]);
 	GLCheckError("smp w s");
 
 #ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
 #endif // USE_GLES2
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, g_gl_texAddrModes[sampler.addressT]);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, g_gl_texAddrModes[sampler.addressV]);
 		GLCheckError("smp w t");
 	}
 
 	if (texTarget == GL_TEXTURE_3D)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, g_gl_texAddrModes[sampler.addressR]);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, g_gl_texAddrModes[sampler.addressW]);
 		GLCheckError("smp w r");
 	}
 
@@ -128,15 +128,15 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParams &sampler, int 
 	}
 
 #if GL_ARB_texture_filter_anisotropic
-	if (sampler.aniso > 1 && GLAD_GL_ARB_texture_filter_anisotropic)
+	if (sampler.maxAnisotropy > 1 && GLAD_GL_ARB_texture_filter_anisotropic)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY, sampler.aniso);
+		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY, sampler.maxAnisotropy);
 		GLCheckError("smp aniso");
 	}
 #elif GL_EXT_texture_filter_anisotropic
-	if (sampler.aniso > 1 && GLAD_GL_EXT_texture_filter_anisotropic)
+	if (sampler.maxAnisotropy > 1 && GLAD_GL_EXT_texture_filter_anisotropic)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
+		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.maxAnisotropy);
 		GLCheckError("smp aniso");
 	}
 #endif
@@ -366,7 +366,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CImageP
 	Release();
 
 	m_samplerState = sampler;
-	m_samplerState.aniso = max(s_renderApi.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
+	m_samplerState.maxAnisotropy = max(s_renderApi.GetCaps().maxTextureAnisotropicLevel, sampler.maxAnisotropy);
 	m_flags = flags;
 
 	HOOK_TO_CVAR(r_loadmiplevel);

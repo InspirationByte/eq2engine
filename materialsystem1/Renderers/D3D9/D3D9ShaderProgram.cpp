@@ -19,12 +19,6 @@ CD3D9ShaderProgram::~CD3D9ShaderProgram()
 
 	if(m_pPixelShader)
 		m_pPixelShader->Release();
-
-	if(m_pPSConstants)
-		m_pPSConstants->Release();
-
-	if(m_pVSConstants)
-		m_pVSConstants->Release();
 }
 
 void CD3D9ShaderProgram::Ref_DeleteObject()

@@ -49,7 +49,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
 	m_samplerState = sampler;
-	m_samplerState.aniso = max(CWGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.aniso);
+	m_samplerState.maxAnisotropy = max(CWGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.maxAnisotropy);
 	m_flags = flags;
 
 	for (CImage* image : images)

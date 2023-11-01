@@ -19,7 +19,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_colorVar = GetAssignedMaterial()->GetMaterialVar("color", "[1 1 1 1]");
+		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -34,10 +34,13 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
+
+		bool fogEnable = true;
+		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false)
 
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;
@@ -66,7 +69,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		}
 
 		// define fog parameter.
-		SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
+		SHADER_DECLARE_SIMPLE_DEFINITION(fogEnable, "DOFOG");
 
 		// compile with fog
 		{

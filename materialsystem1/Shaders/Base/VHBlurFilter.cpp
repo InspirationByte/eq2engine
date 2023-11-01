@@ -18,6 +18,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 	SHADER_INIT_PARAMS()
 	{
+		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
 		m_blurAxes = 0;
 		m_blurModes = 0;
 		m_texSize = vec4_zero;
@@ -61,7 +62,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		m_blurModes |= blurYHigh ? 0x8 : 0;
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
@@ -79,9 +80,6 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Unlit, "VHBlurFilter");
-
-		m_depthtest = false;
-		m_depthwrite = false;
 
 		return true;
 	}

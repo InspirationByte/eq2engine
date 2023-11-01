@@ -28,7 +28,7 @@ BEGIN_SHADER_CLASS(Error)
 		SetParameterFunctor(SHADERPARAM_COLOR, &CErrorShader::SetColorModulation);
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;

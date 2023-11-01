@@ -17,11 +17,9 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_blurProps = GetAssignedMaterial()->GetMaterialVar("BlurProps", "[0.6 40 100 100]");
-		m_blurSource = GetAssignedMaterial()->GetMaterialVar("BlurSource", "");
-
-		m_depthtest = false;
-		m_depthwrite = false;
+		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
+		m_blurProps = m_material->GetMaterialVar("BlurProps", "[0.6 40 100 100]");
+		m_blurSource = m_material->GetMaterialVar("BlurSource", "");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -30,7 +28,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTextures);
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;

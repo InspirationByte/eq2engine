@@ -177,7 +177,7 @@ static void PipelineDescBuilder()
 		)
 		.FragmentState(
 			Builder<FragmentPipelineDesc>()
-			.ColorTarget(FORMAT_RGBA8)
+			.ColorTarget("Color", FORMAT_RGBA8)
 			.End()
 		)
 		.PrimitiveState(

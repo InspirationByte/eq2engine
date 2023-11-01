@@ -29,7 +29,7 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture);
 	}
 
-	SHADER_INIT_RHI()
+	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;
