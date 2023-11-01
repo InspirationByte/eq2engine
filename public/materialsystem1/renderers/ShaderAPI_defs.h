@@ -259,11 +259,11 @@ struct VertexLayoutDesc
 {
 	struct AttribDesc
 	{
+		EqString			name;
 		int					location{ 0 };
 		int					offset{ 0 };	// in bytes
 		EVertAttribFormat	format{ ATTRIBUTEFORMAT_FLOAT };
 		int					count{ 0 };
-		const char*			name{ nullptr };
 	};
 
 	using VertexAttribList = Array<AttribDesc>;
@@ -276,7 +276,12 @@ FLUENT_BEGIN_TYPE(VertexLayoutDesc)
 	FLUENT_SET_VALUE(stride, Stride)
 	FLUENT_SET_VALUE(stepMode, StepMode)
 	ThisType& Attribute(AttribDesc&& x) { attributes.append(std::move(x)); return *this; }
-	ThisType& Attribute(int location, int offset, EVertAttribFormat format, int count, const char* name = nullptr) { attributes.append({location, offset, format, count, name}); return *this; }
+	ThisType& Attribute(const char* name, int location, int offset, EVertAttribFormat format, int count)
+	{
+		ASSERT_MSG(count > 0 && count <= 4, "Vertex attribute count incorrect");
+		attributes.append({ name, location, offset, format, count});
+		return *this; 
+	}
 FLUENT_END_TYPE
 
 struct VertexPipelineDesc
@@ -291,7 +296,7 @@ FLUENT_BEGIN_TYPE(VertexPipelineDesc)
 	ThisType& VertexLayout(VertexLayoutDesc&& x) { vertexLayout.append(std::move(x)); return *this; }
 FLUENT_END_TYPE
 
-
+//-------------------------------------------
 
 // Cull modes
 enum ECullMode : int
@@ -504,6 +509,7 @@ struct BindGroupDesc
 			BindTexture			texture;
 			BindStorageTexture	storageTexture;
 		};
+		EqString		name;
 		EEntryType		type{ ENTRY_BUFFER };
 		int				binding{ 0 };
 		int				visibility{ 0 };	// EShaderVisibility
@@ -514,27 +520,30 @@ struct BindGroupDesc
 };
 
 FLUENT_BEGIN_TYPE(BindGroupDesc)
-	ThisType& Buffer(int binding, int visibilityFlags, EBufferBindType bindType)
+	ThisType& Buffer(const char* name, int binding, int visibilityFlags, EBufferBindType bindType)
 	{
 		Entry& entry = entries.append();
+		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = ENTRY_BUFFER;
 		entry.buffer.bindType = bindType;
 		return *this; 
 	}
-	ThisType& Sampler(int binding, int visibilityFlags, ESamplerBindType bindType)
+	ThisType& Sampler(const char* name, int binding, int visibilityFlags, ESamplerBindType bindType)
 	{
 		Entry& entry = entries.append();
+		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = ENTRY_SAMPLER;
 		entry.sampler.bindType = bindType;
 		return *this;
 	}
-	ThisType& Texture(int binding, int visibilityFlags, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
+	ThisType& Texture(const char* name, int binding, int visibilityFlags, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
 		Entry& entry = entries.append();
+		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = ENTRY_TEXTURE;
@@ -543,9 +552,10 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 		entry.texture.multisampled = multisample;
 		return *this;
 	}
-	ThisType& StorageTexture(int binding, int visibilityFlags, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
+	ThisType& StorageTexture(const char* name, int binding, int visibilityFlags, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
 		Entry& entry = entries.append();
+		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = ENTRY_STORAGETEXTURE;

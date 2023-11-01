@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/ConCommand.h"
 #include "imaging/ImageLoader.h"
 #include "WGPURenderAPI.h"
 #include "WGPURenderDefs.h"
@@ -133,17 +134,23 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName,int width, in
 //-------------------------------------------------------------
 // Pipeline management
 
+#pragma optimize("", off)
+
 static void PipelineLayoutDescBuilder()
 {
 	// FIXME: names?
 	RenderPipelineLayoutDesc pipelineLayoutDesc = Builder<RenderPipelineLayoutDesc>()
 		.Group(
 			Builder<BindGroupDesc>()
-			.Texture(0, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.Buffer(1, SHADER_VISIBLE_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Texture("baseTexture", 0, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.Buffer("materialProps", 1, SHADER_VISIBLE_FRAGMENT, BUFFERBIND_UNIFORM)
 			.End()
 		)
 		.End();
+
+	sizeof(RenderPipelineLayoutDesc);
+
+	Msg("PipelineLayoutDescBuilder dun\n");
 }
 
 static void PipelineDescBuilder()
@@ -161,8 +168,8 @@ static void PipelineDescBuilder()
 			.ShaderEntry("main")
 			.VertexLayout(
 				Builder<VertexLayoutDesc>()
-				.Attribute(0, 0, ATTRIBUTEFORMAT_FLOAT, 3, "position")
-				.Attribute(0, sizeof(Vector3D), ATTRIBUTEFORMAT_HALF, 2, "texCoord")
+				.Attribute("position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
+				.Attribute("texCoord", 1, sizeof(Vector3D), ATTRIBUTEFORMAT_HALF, 2)
 				.Stride(sizeof(Vector3D))
 				.End()
 			)
@@ -180,6 +187,16 @@ static void PipelineDescBuilder()
 			.End()
 		)
 		.End();
+
+	sizeof(RenderPipelineDesc);
+
+	Msg("PipelineDescBuilder dun\n");
+}
+
+DECLARE_CMD(test_wgpu, nullptr, 0)
+{
+	PipelineLayoutDescBuilder();
+	PipelineDescBuilder();
 }
 
 void* CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineLayoutDesc& layoutDesc, const RenderPipelineDesc& pipelineDesc)
@@ -291,12 +308,16 @@ void* CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineLayoutDesc& layou
 	//    - vertexFormat
 	//    - primitiveTopology
 	//
+
+	// pipeline-overridable constants
+	Array<WGPUConstantEntry> vertexPipelineConstants(PP_SL);
+	Array<WGPUConstantEntry> fragmentPipelineConstants(PP_SL);
+
 	WGPURenderPipelineDescriptor renderPipelineDesc = {};
 	renderPipelineDesc.layout = pipelineLayout;
 
 	// Setup vertex pipeline
 	// Required
-	Array<WGPUConstantEntry> vertexPipelineConstants(PP_SL);
 	Array<WGPUVertexAttribute> vertexAttribList(PP_SL);
 	Array<WGPUVertexBufferLayout> vertexBufferLayoutList(PP_SL);
 	{
@@ -365,9 +386,8 @@ void* CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineLayoutDesc& layou
 	// Fragment state
 	// When opted out, requires depthStencil state
 	WGPUFragmentState fragmentState = {};
-	FixedArray<WGPUColorTargetState, 16> colorTargets;
-	FixedArray<WGPUBlendState, 16> colorTargetBlends;
-	Array<WGPUConstantEntry> fragmentPipelineConstants(PP_SL);
+	FixedArray<WGPUColorTargetState, MAX_RENDERTARGETS> colorTargets;
+	FixedArray<WGPUBlendState, MAX_RENDERTARGETS> colorTargetBlends;
 	if(pipelineDesc.fragment.targets.numElem())
 	{
 		ASSERT_MSG(pipelineDesc.vertex.shaderEntryPoint.Length(), "No fragment shader entrypoint set");
