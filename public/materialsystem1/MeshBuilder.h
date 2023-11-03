@@ -94,12 +94,10 @@ public:
 	IDynamicMesh* GetMesh() const { return m_mesh; }
 
 protected:
-
-	IDynamicMesh*					m_mesh;
-	ArrayCRef<VertexFormatDesc>	m_formatDesc;
-
-	void*				m_curVertex;
-	int					m_stride;
+	ArrayCRef<VertexLayoutDesc>	m_formatDesc{ nullptr };
+	IDynamicMesh*		m_mesh{ nullptr };
+	void*				m_curVertex{ nullptr };
+	int					m_stride{ 0 };
 
 	struct vertdata_t
 	{
@@ -122,63 +120,62 @@ protected:
 	vertdata_t			m_texcoord;
 	vertdata_t			m_color;
 
-	bool				m_pushedVert;
-
-	bool				m_begun;
+	bool				m_pushedVert{ false };
+	bool				m_begun{ false };
 };
 
 //----------------------------------------------------------
 
-inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
-	m_mesh(nullptr),
-	m_curVertex(nullptr),
-	m_formatDesc(nullptr),
-	m_stride(0),
-	m_begun(false)
+inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh)
 {
 	m_mesh = mesh;
 
 	// get the format offsets
-	m_formatDesc = m_mesh->GetVertexFormatDesc();
+	m_formatDesc = m_mesh->GetVertexLayoutDesc();
 
-	int vertexSize = 0;
-	for(int i = 0; i < m_formatDesc.numElem(); i++)
+	ASSERT_MSG(m_formatDesc.numElem(), "CMeshBuilder - no vertex layout descs");
+	ASSERT_MSG(m_formatDesc.numElem() == 1, "CMeshBuilder - only one vertex buffer layout supported\n");
+
+	const VertexLayoutDesc& vertexDesc = m_formatDesc[0];
+	ASSERT_MSG(vertexDesc.attributes.numElem() > 0, "CMeshBuilder - attributes count is ZERO\n");
+	ASSERT_MSG(vertexDesc.stride > 0, "CMeshBuilder - vertex layout stride hasn't set\n");
+
+	for(const VertexLayoutDesc::AttribDesc& attrib : vertexDesc.attributes)
 	{
-		const EVertAttribFormat format = m_formatDesc[i].attribFormat;
-		const EVertAttribType type = static_cast<EVertAttribType>(m_formatDesc[i].attribType & VERTEXATTRIB_MASK);
-		const int vecCount = m_formatDesc[i].elemCount;
+		const EVertAttribFormat format = attrib.format;
+		const EVertAttribType type = attrib.type;
+		const int vecCount = attrib.count;
 		const int attribSize = vecCount * s_attributeSize[format];
 
 		if(type == VERTEXATTRIB_POSITION)
 		{
-			m_position.offset = vertexSize;
+			m_position.offset = attrib.offset;
 			m_position.count = vecCount;
 			m_position.format = format;
 		}
 		else if(type == VERTEXATTRIB_NORMAL)
 		{
-			m_normal.offset = vertexSize;
+			m_normal.offset = attrib.offset;
 			m_normal.count = vecCount;
 			m_normal.format = format;
 		}
 		else if(type == VERTEXATTRIB_TEXCOORD)
 		{
-			m_texcoord.offset = vertexSize;
+			m_texcoord.offset = attrib.offset;
 			m_texcoord.count = vecCount;
 			m_texcoord.format = format;
 		}
 		else if(type == VERTEXATTRIB_COLOR)
 		{
-			m_color.offset = vertexSize;
+			m_color.offset = attrib.offset;
 			m_color.count = vecCount;
 			m_color.format = format;
 		}
 
 		// TODO: add Tangent and Binormal
-		vertexSize += attribSize;
 	}
 
-	m_stride = vertexSize;
+	m_stride = vertexDesc.stride;
 }
 
 inline CMeshBuilder::~CMeshBuilder()

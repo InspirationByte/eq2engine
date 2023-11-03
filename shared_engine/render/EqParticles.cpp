@@ -14,15 +14,15 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-ArrayCRef<VertexFormatDesc> PFXVertex_t::GetVertexFormatDesc()
+const VertexLayoutDesc& PFXVertex_t::GetVertexLayoutDesc()
 {
-	static VertexFormatDesc s_PFXVertexFormatDesc[] = {
-		{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
-		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texture coord
-		{ 0, 4, VERTEXATTRIB_COLOR, ATTRIBUTEFORMAT_UINT8, "color" },			// color
-		//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
-	};
-	return ArrayCRef(s_PFXVertexFormatDesc, elementsOf(s_PFXVertexFormatDesc));
+	static VertexLayoutDesc s_PFXVertexLayoutDesc = Builder<VertexLayoutDesc>()
+		.Stride(sizeof(PFXVertex_t))
+		.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(PFXVertex_t, texcoord), ATTRIBUTEFORMAT_HALF, 2)
+		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(PFXVertex_t, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.End();
+	return s_PFXVertexLayoutDesc;
 }
 
 using namespace Threading;
@@ -210,8 +210,8 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	if(!m_vertexFormat)
 	{
-		ArrayCRef<VertexFormatDesc> fmtDesc = PFXVertex_t::GetVertexFormatDesc();
-		m_vertexFormat = g_renderAPI->CreateVertexFormat("PFXVertex", fmtDesc);
+		const VertexLayoutDesc& fmtDesc = PFXVertex_t::GetVertexLayoutDesc();
+		m_vertexFormat = g_renderAPI->CreateVertexFormat("PFXVertex", ArrayCRef(&fmtDesc, 1));
 	}
 
 	if(m_vertexBuffer && m_indexBuffer && m_vertexFormat)

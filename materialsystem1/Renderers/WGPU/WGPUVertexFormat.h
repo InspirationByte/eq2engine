@@ -4,14 +4,14 @@
 class CWGPUVertexFormat : public IVertexFormat
 {
 public:
-	CWGPUVertexFormat(const char* name, const VertexFormatDesc* desc, int nAttribs)
+	CWGPUVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> desc)
 	{
 		m_name = name;
 		m_nameHash = StringToHash(name);
 		memset(m_streamStride, 0, sizeof(m_streamStride));
 
-		m_vertexDesc.setNum(nAttribs);
-		for (int i = 0; i < nAttribs; i++)
+		m_vertexDesc.setNum(desc.numElem());
+		for (int i = 0; i < desc.numElem(); i++)
 			m_vertexDesc[i] = desc[i];
 	}
 
@@ -20,10 +20,10 @@ public:
 
 	int	GetVertexSize(int stream) const
 	{
-		return 0;
+		return m_vertexDesc[stream].stride;
 	}
 
-	ArrayCRef<VertexFormatDesc> GetFormatDesc() const
+	ArrayCRef<VertexLayoutDesc> GetFormatDesc() const
 	{
 		return m_vertexDesc;
 	}
@@ -32,5 +32,5 @@ protected:
 	int						m_streamStride[MAX_VERTEXSTREAM];
 	EqString				m_name;
 	int						m_nameHash;
-	Array<VertexFormatDesc>	m_vertexDesc{ PP_SL };
+	Array<VertexLayoutDesc>	m_vertexDesc{ PP_SL };
 };

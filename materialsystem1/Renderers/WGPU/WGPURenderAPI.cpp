@@ -30,9 +30,9 @@ bool CWGPURenderAPI::IsDeviceActive() const
 	return true;
 }
 
-IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc)
+IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
 {
-	IVertexFormat* pVF = PPNew CWGPUVertexFormat(name, formatDesc.ptr(), formatDesc.numElem());
+	IVertexFormat* pVF = PPNew CWGPUVertexFormat(name, formatDesc);
 	m_VFList.append(pVF);
 	return pVF;
 }
@@ -168,8 +168,8 @@ static void PipelineDescBuilder()
 			.ShaderEntry("main")
 			.VertexLayout(
 				Builder<VertexLayoutDesc>()
-				.Attribute("position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
-				.Attribute("texCoord", 1, sizeof(Vector3D), ATTRIBUTEFORMAT_HALF, 2)
+				.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
+				.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, sizeof(Vector3D), ATTRIBUTEFORMAT_HALF, 2)
 				.Stride(sizeof(Vector3D))
 				.End()
 			)

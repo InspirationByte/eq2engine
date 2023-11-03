@@ -1504,15 +1504,15 @@ void ShaderAPID3D9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 	{
 		m_pD3DDevice->SetVertexDeclaration(pFormat->m_pVertexDecl);
 
-		CD3D9VertexFormat* pCurrentFormat = (CD3D9VertexFormat*)m_pCurrentVertexFormat;
-		if (pCurrentFormat != nullptr)
-		{
-			for (int i = 0; i < MAX_VERTEXSTREAM; i++)
-			{
-				if (pFormat->m_streamStride[i] != pCurrentFormat->m_streamStride[i])
-					m_pCurrentVertexBuffers[i] = nullptr;
-			}
-		}
+		//CD3D9VertexFormat* pCurrentFormat = (CD3D9VertexFormat*)m_pCurrentVertexFormat;
+		//if (pCurrentFormat != nullptr)
+		//{
+		//	for (int i = 0; i < MAX_VERTEXSTREAM; i++)
+		//	{
+		//		if (pFormat->GetVertexSize(i) != pCurrentFormat->GetVertexSize(i))
+		//			m_pCurrentVertexBuffers[i] = nullptr;
+		//	}
+		//}
 	}
 
 	m_pCurrentVertexFormat = pFormat;
@@ -2266,16 +2266,15 @@ void ShaderAPID3D9::SetShaderConstantRaw(int nameHash, const void *data, int nSi
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc)
+IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
 {
-	CD3D9VertexFormat* pFormat = PPNew CD3D9VertexFormat(name, formatDesc.ptr(), formatDesc.numElem());
+	CD3D9VertexFormat* pFormat = PPNew CD3D9VertexFormat(name, formatDesc);
 
-	D3DVERTEXELEMENT9* vertexElements = PPNew D3DVERTEXELEMENT9[formatDesc.numElem() + 1];
-	pFormat->GenVertexElement( vertexElements );
+	FixedArray<D3DVERTEXELEMENT9, 64> vertexElements;
+	vertexElements.setNum(vertexElements.numAllocated());
+	pFormat->GenVertexElement( vertexElements.ptr() );
 
-	HRESULT hr = m_pD3DDevice->CreateVertexDeclaration(vertexElements, &pFormat->m_pVertexDecl);
-	delete [] vertexElements;
-
+	HRESULT hr = m_pD3DDevice->CreateVertexDeclaration(vertexElements.ptr(), &pFormat->m_pVertexDecl);
 	if (hr != D3D_OK)
 	{
 		delete pFormat;

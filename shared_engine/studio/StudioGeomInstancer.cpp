@@ -156,29 +156,23 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 	// setup vertex buffers
 	{
-		ArrayCRef<VertexFormatDesc> fmtDesc = m_vertFormat->GetFormatDesc();
-
 		int setVertStreams = 0;
-		for (int i = 0; i < fmtDesc.numElem(); ++i)
+		ArrayCRef<VertexLayoutDesc> layoutDescList = m_vertFormat->GetFormatDesc();
+		for (int stream = 0; stream < layoutDescList.numElem(); ++stream)
 		{
-			const VertexFormatDesc& desc = fmtDesc[i];
-			const EGFHwVertex::VertexStream vertStreamId = m_vertexStreamMapping[desc.streamId];
-
-			if (setVertStreams & (1 << int(vertStreamId)))
+			const EGFHwVertex::VertexStream egfVertStreamId = (EGFHwVertex::VertexStream)layoutDescList[stream].userId;
+			if (setVertStreams & (1 << int(egfVertStreamId)))
 				continue;
 
-			setVertStreams |= (1 << int(vertStreamId));
-			if (instanceStreamId != desc.streamId && (desc.attribType & VERTEXATTRIB_FLAG_INSTANCE))
-			{
-				ASSERT_MSG(instanceStreamId == -1, "Multiple instance streams not yet supported");
-				instanceStreamId = desc.streamId;
-			}
-			else
-			{
-				drawCmd.vertexBuffers[desc.streamId] = model->m_vertexBuffers[vertStreamId];
-			}
+			if (layoutDescList[stream].stepMode == VERTEX_STEPMODE_INSTANCE)
+				instanceStreamId = stream;
+
+			drawCmd.vertexBuffers[stream] = model->m_vertexBuffers[egfVertStreamId];
+			setVertStreams |= (1 << int(egfVertStreamId));
 		}
 	}
+
+	ASSERT_MSG(instanceStreamId != -1, "No instance stream has been configured in vertex format!");
 
 	drawCmd.indexBuffer = model->m_indexBuffer;
 

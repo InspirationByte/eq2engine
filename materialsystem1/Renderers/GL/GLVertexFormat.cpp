@@ -9,57 +9,41 @@
 #include "shaderapigl_def.h"
 #include "GLVertexFormat.h"
 
-CVertexFormatGL::CVertexFormatGL(const char* name, const VertexFormatDesc* desc, int numAttribs)
+CVertexFormatGL::CVertexFormatGL(const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout)
 {
 	m_name = name;
 	m_nameHash = StringToHash(name);
 
 	memset(m_genericAttribs,0,sizeof(m_genericAttribs));
-	memset(m_streamStride, 0, sizeof(m_streamStride));
 	
-	if(numAttribs)
-	{
-		m_vertexDesc.setNum(numAttribs);
+	m_vertexDesc.setNum(vertexLayout.numElem());
 
-		for(int i = 0; i < numAttribs; i++)
-			m_vertexDesc[i] = desc[i];
+	for(int i = 0; i < vertexLayout.numElem(); i++)
+		m_vertexDesc[i] = vertexLayout[i];
 		
-		int nGeneric = 0;
-		for (int i = 0; i < numAttribs; i++)
+	int numGenericAttrib = 0;
+	for (int stream = 0; stream < vertexLayout.numElem(); ++stream)
+	{
+		const VertexLayoutDesc& layoutDesc = m_vertexDesc[stream];
+		for (const VertexLayoutDesc::AttribDesc& attrib : layoutDesc.attributes) 
 		{
-			const VertexFormatDesc& fmtdesc = m_vertexDesc[i];
-			const EVertAttribType attribType = static_cast<EVertAttribType>(fmtdesc.attribType & VERTEXATTRIB_MASK);
-			const int stream = fmtdesc.streamId;
-
-			switch (attribType)
-			{
-				case VERTEXATTRIB_TANGENT:
-				case VERTEXATTRIB_BINORMAL:
-				case VERTEXATTRIB_POSITION:
-				case VERTEXATTRIB_NORMAL:
-				case VERTEXATTRIB_TEXCOORD:
-				case VERTEXATTRIB_COLOR:
-					m_genericAttribs[nGeneric].streamId	= stream;
-					m_genericAttribs[nGeneric].sizeInBytes = fmtdesc.elemCount;
-					m_genericAttribs[nGeneric].offsetInBytes = m_streamStride[stream];
-					m_genericAttribs[nGeneric].attribFormat = fmtdesc.attribFormat;
-					nGeneric++;
-					break;
-				case VERTEXATTRIB_UNUSED:
-					break;
-			}
-
-			m_streamStride[stream] += fmtdesc.elemCount * s_attributeSize[fmtdesc.attribFormat];
+			if (attrib.type == VERTEXATTRIB_UNKNOWN || attrib.format == ATTRIBUTEFORMAT_NONE)
+				continue;
+			m_genericAttribs[numGenericAttrib].streamId = stream;
+			m_genericAttribs[numGenericAttrib].count = attrib.count;
+			m_genericAttribs[numGenericAttrib].offsetInBytes = attrib.offset;
+			m_genericAttribs[numGenericAttrib].attribFormat = attrib.format;
+			++numGenericAttrib;
 		}
 	}
 }
 
 int CVertexFormatGL::GetVertexSize(int nStream) const
 {
-	return m_streamStride[nStream];
+	return m_vertexDesc[nStream].stride;
 }
 
-ArrayCRef<VertexFormatDesc> CVertexFormatGL::GetFormatDesc() const
+ArrayCRef<VertexLayoutDesc> CVertexFormatGL::GetFormatDesc() const
 {
 	return m_vertexDesc;
 }

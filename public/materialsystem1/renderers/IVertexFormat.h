@@ -8,7 +8,7 @@
 
 #pragma once
 
-struct VertexFormatDesc;
+struct VertexLayoutDesc;
 
 class IVertexFormat
 {
@@ -19,5 +19,5 @@ public:
 	virtual int				GetNameHash() const = 0;
 
 	virtual int				GetVertexSize(int stream) const = 0;
-	virtual ArrayCRef<VertexFormatDesc>	GetFormatDesc() const = 0;
+	virtual ArrayCRef<VertexLayoutDesc>	GetFormatDesc() const = 0;
 };

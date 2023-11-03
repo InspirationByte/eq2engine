@@ -11,7 +11,6 @@
 #include "utils/KeyValues.h"
 
 #include "materialsystem1/IMaterialSystem.h"
-#include "materialsystem1/VertexFormatBuilder.h"
 
 #include "StudioCache.h"
 #include "StudioGeom.h"
@@ -59,20 +58,21 @@ int CStudioCache::PrecacheModel(const char* modelName)
 
 	if (m_egfFormat[0] == nullptr)
 	{
-		CVertexFormatBuilder fmtBuilder;
-		fmtBuilder.SetStream(0, EGFHwVertex::PositionUV::GetVertexFormatDesc(), "PosUVs");
-		fmtBuilder.SetStream(1, EGFHwVertex::TBN::GetVertexFormatDesc(), "TBN");
-		fmtBuilder.SetStream(3, EGFHwVertex::Color::GetVertexFormatDesc(), "Color");
-
 		{
-			ArrayCRef<VertexFormatDesc> genFmt = fmtBuilder.Build();
-			m_egfFormat[0] = g_renderAPI->CreateVertexFormat("EGFVertex", genFmt);
+			FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
+			egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
+			egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
+			egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
+			m_egfFormat[0] = g_renderAPI->CreateVertexFormat("EGFVertex", egfVertexLayout);
 		}
 
-		fmtBuilder.SetStream(2, EGFHwVertex::BoneWeights::GetVertexFormatDesc(), "BoneWeight");
 		{
-			ArrayCRef<VertexFormatDesc> genFmt = fmtBuilder.Build();
-			m_egfFormat[1] = g_renderAPI->CreateVertexFormat("EGFVertexSkinned", genFmt);
+			FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
+			egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
+			egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
+			egfVertexLayout.append(EGFHwVertex::BoneWeights::GetVertexLayoutDesc());
+			egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
+			m_egfFormat[1] = g_renderAPI->CreateVertexFormat("EGFVertexSkinned", egfVertexLayout);
 		}
 	}
 	

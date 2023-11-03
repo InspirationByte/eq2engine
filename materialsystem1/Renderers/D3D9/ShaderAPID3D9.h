@@ -132,7 +132,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc);
+	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
 	IVertexBuffer*				CreateVertexBuffer(const BufferInfo& bufferInfo);
 	IIndexBuffer*				CreateIndexBuffer(const BufferInfo& bufferInfo);
 

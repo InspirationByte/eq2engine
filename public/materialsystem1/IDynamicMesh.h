@@ -8,7 +8,7 @@
 #pragma once
 
 struct RenderDrawCmd;
-struct VertexFormatDesc;
+struct VertexLayoutDesc;
 enum EPrimTopology : int;
 
 //
@@ -24,7 +24,7 @@ public:
 	virtual EPrimTopology	GetPrimitiveType() const = 0;
 
 	// returns a pointer to vertex format description
-	virtual ArrayCRef<VertexFormatDesc>	GetVertexFormatDesc() const = 0;
+	virtual ArrayCRef<VertexLayoutDesc>	GetVertexLayoutDesc() const = 0;
 
 	// allocates geometry chunk. Returns the start index. Will return -1 if failed
 	// addStripBreak is for PRIM_TRIANGLE_STRIP. Set it false to work with current strip

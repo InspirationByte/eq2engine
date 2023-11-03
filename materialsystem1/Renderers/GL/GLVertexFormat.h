@@ -12,36 +12,34 @@ class CVertexFormatGL : public IVertexFormat
 {
 	friend class		ShaderAPIGL;
 public:
-	CVertexFormatGL(const char* name, const VertexFormatDesc* desc, int numAttribs);
+	CVertexFormatGL(const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout);
 
 	const char*			GetName() const { return m_name.ToCString(); }
 	int					GetNameHash() const { return m_nameHash; }
 	int					GetVertexSize(int stream) const;
-	ArrayCRef<VertexFormatDesc>	GetFormatDesc() const;
+	ArrayCRef<VertexLayoutDesc>	GetFormatDesc() const;
 
 protected:
 	// Vertex attribute descriptor
 	struct eqGLVertAttrDesc_t
 	{
 		int					streamId;
-		int					sizeInBytes;
+		int					count;
 
 		EVertAttribFormat	attribFormat;
 		int					offsetInBytes;
 	};
 
-	int							m_streamStride[MAX_VERTEXSTREAM];
-	EqString					m_name;
-	int							m_nameHash;
-	Array<VertexFormatDesc>		m_vertexDesc{ PP_SL };
+	EqString				m_name;
+	int						m_nameHash;
+	Array<VertexLayoutDesc>	m_vertexDesc{ PP_SL };
 
-	eqGLVertAttrDesc_t			m_genericAttribs[MAX_GL_GENERIC_ATTRIB];
+	eqGLVertAttrDesc_t		m_genericAttribs[MAX_GL_GENERIC_ATTRIB];
 
 #ifndef GL_NO_DEPRECATED_ATTRIBUTES
-	eqGLVertAttrDesc_t			m_hTexCoord[MAX_TEXCOORD_ATTRIB];
-	eqGLVertAttrDesc_t			m_hVertex;
-	eqGLVertAttrDesc_t			m_hNormal;
-	eqGLVertAttrDesc_t			m_hColor;
+	eqGLVertAttrDesc_t		m_hTexCoord[MAX_TEXCOORD_ATTRIB];
+	eqGLVertAttrDesc_t		m_hVertex;
+	eqGLVertAttrDesc_t		m_hNormal;
+	eqGLVertAttrDesc_t		m_hColor;
 #endif // GL_NO_DEPRECATED_ATTRIBUTES
-
 };

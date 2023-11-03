@@ -1242,7 +1242,7 @@ void ShaderAPIGL::ApplyBuffers()
 // Changes the vertex format
 void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
-	static CVertexFormatGL zero("", nullptr, 0);
+	static CVertexFormatGL zero("", nullptr);
 
 	CVertexFormatGL* pSelectedFormat = pVertexFormat ? (CVertexFormatGL*)pVertexFormat : &zero;
 	CVertexFormatGL* pCurrentFormat = m_pCurrentVertexFormat ? (CVertexFormatGL*)m_pCurrentVertexFormat : &zero;
@@ -1254,8 +1254,8 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 			const CVertexFormatGL::eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
 			const CVertexFormatGL::eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
 
-			const bool shouldDisable = !selDesc.sizeInBytes && curDesc.sizeInBytes;
-			const bool shouldEnable = selDesc.sizeInBytes && !curDesc.sizeInBytes;
+			const bool shouldDisable = !selDesc.count && curDesc.count;
+			const bool shouldEnable = selDesc.count && !curDesc.count;
 
 			if (shouldDisable)
 			{
@@ -1279,12 +1279,14 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	CVertexFormatGL* currentFormat = (CVertexFormatGL*)m_pCurrentVertexFormat;
 
 	static const GLsizei glTypes[] = {
+		GL_NONE,
 		GL_UNSIGNED_BYTE,
 		GL_HALF_FLOAT,
 		GL_FLOAT,
 	};
 
 	static const GLboolean glNormTypes[] = {
+		GL_FALSE,
 		GL_TRUE,
 		GL_FALSE,
 		GL_FALSE,
@@ -1306,14 +1308,14 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
 				const CVertexFormatGL::eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
-				if (attrib.streamId == nStream && attrib.sizeInBytes)
+				if (attrib.streamId == nStream && attrib.count)
 					anyEnabled = true;
 			}
 		}
 
 		if (anyEnabled)
 		{
-			const int vertexSize = currentFormat->m_streamStride[nStream];
+			const int vertexSize = currentFormat->GetVertexSize(nStream);
 			const char* base = (char*)(offset * vertexSize);
 
 			glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
@@ -1323,12 +1325,12 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			{
 				const CVertexFormatGL::eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 
-				if (attrib.streamId == nStream && attrib.sizeInBytes)
+				if (attrib.streamId == nStream && attrib.count)
 				{
 					glEnableVertexAttribArray(i);
 					GLCheckError("enable vtx attrib");
 
-					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], glNormTypes[attrib.attribFormat], vertexSize, base + attrib.offsetInBytes);
+					glVertexAttribPointer(i, attrib.count, glTypes[attrib.attribFormat], glNormTypes[attrib.attribFormat], vertexSize, base + attrib.offsetInBytes);
 					GLCheckError("attribpointer");
 
 					glVertexAttribDivisor(i, instanceBuffer ? 1 : 0);
@@ -2200,9 +2202,9 @@ void ShaderAPIGL::SetShaderConstantRaw(int nameHash, const void *data, int nSize
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, ArrayCRef<VertexFormatDesc> formatDesc)
+IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
 {
-	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc.ptr(), formatDesc.numElem());
+	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc);
 
 	{
 		CScopedMutex m(g_sapi_VBMutex);

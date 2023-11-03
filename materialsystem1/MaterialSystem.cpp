@@ -41,12 +41,18 @@ static CMaterialSystem s_matsystem;
 IMaterialSystem* g_matSystem = &s_matsystem;
 
 // standard vertex format used by the material system's dynamic mesh instance
-static VertexFormatDesc g_dynMeshVertexFormatDesc[] = {
-	{0, 4, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_FLOAT, "position"},
-	{0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF, "texcoord"},
-	{0, 4, VERTEXATTRIB_NORMAL,		ATTRIBUTEFORMAT_HALF, "normal"},
-	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_UINT8, "color"},
-};
+static VertexLayoutDesc& GetDynamicMeshLayout()
+{
+	const int stride = sizeof(Vector4D) + sizeof(TVec4D<half>) * 2 + sizeof(uint);
+	static VertexLayoutDesc s_levModelDrawVertLayout = Builder<VertexLayoutDesc>()
+		.Stride(stride)
+		.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, sizeof(Vector4D), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_NORMAL, "normal", 2, sizeof(Vector4D) + sizeof(TVec4D<half>), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_COLOR, "color", 3, sizeof(Vector4D) + sizeof(TVec4D<half>) * 2, ATTRIBUTEFORMAT_UINT8, 4)
+		.End();
+	return s_levModelDrawVertLayout;
+}
 
 DECLARE_CVAR(r_screen, "0", "Screen count", CV_ARCHIVE);
 DECLARE_CVAR(r_clear, "0", "Clear the backbuffer", CV_ARCHIVE);
@@ -350,7 +356,8 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 
 	g_renderAPI = m_shaderAPI;
 
-	if(!m_dynamicMesh.Init(g_dynMeshVertexFormatDesc, elementsOf(g_dynMeshVertexFormatDesc)))
+	const VertexLayoutDesc& dynMeshLayout = GetDynamicMeshLayout();
+	if(!m_dynamicMesh.Init(ArrayCRef(&dynMeshLayout, 1)))
 	{
 		ErrorMsg("Couldn't init DynamicMesh!\n");
 		return false;

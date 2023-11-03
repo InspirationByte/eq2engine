@@ -234,6 +234,20 @@ FLUENT_END_TYPE
 //------------------------------------------------------------
 // Pipeline builders
 
+enum EVertAttribType : int // used for hinting
+{
+	VERTEXATTRIB_UNKNOWN = 0,
+
+	VERTEXATTRIB_POSITION ,
+	VERTEXATTRIB_TEXCOORD,
+	VERTEXATTRIB_NORMAL,
+	VERTEXATTRIB_TANGENT,
+	VERTEXATTRIB_BINORMAL,
+	VERTEXATTRIB_COLOR,
+
+	VERTEXATTRIB_COUNT,
+};
+
 // Attribute format
 enum EVertAttribFormat : int
 {
@@ -266,22 +280,25 @@ struct VertexLayoutDesc
 		int					offset{ 0 };	// in bytes
 		EVertAttribFormat	format{ ATTRIBUTEFORMAT_FLOAT };
 		int					count{ 0 };
+		EVertAttribType		type{ VERTEXATTRIB_UNKNOWN };	// hint that used for MeshBuilder and older renderers
 	};
 
 	using VertexAttribList = Array<AttribDesc>;
 	VertexAttribList		attributes{ PP_SL };
 	int						stride{ 0 };
 	EVertexStepMode			stepMode{ VERTEX_STEPMODE_VERTEX };
+	int						userId{ 0 };
 };
 
 FLUENT_BEGIN_TYPE(VertexLayoutDesc)
+	FLUENT_SET_VALUE(userId, UserId)
 	FLUENT_SET_VALUE(stride, Stride)
 	FLUENT_SET_VALUE(stepMode, StepMode)
 	ThisType& Attribute(AttribDesc&& x) { attributes.append(std::move(x)); return *this; }
-	ThisType& Attribute(const char* name, int location, int offset, EVertAttribFormat format, int count)
+	ThisType& Attribute(EVertAttribType type, const char* name, int location, int offset, EVertAttribFormat format, int count)
 	{
-		ASSERT_MSG(count > 0 && count <= 4, "Vertex attribute count incorrect");
-		attributes.append({ name, location, offset, format, count});
+		ASSERT_MSG(count > 0 && count <= 4, "Vertex attribute count incorrect (%d, while must be <= 4)", count);
+		attributes.append({ name, location, offset, format, count, type });
 		return *this; 
 	}
 FLUENT_END_TYPE
@@ -712,38 +729,6 @@ enum EFillMode : int
 	FILL_SOLID		= 0,
 	FILL_WIREFRAME,
 	FILL_POINT,
-};
-
-enum EVertAttribFlags : int
-{
-	VERTEXATTRIB_FLAG_INSTANCE = (1 << 15)
-};
-
-// Vertex type
-enum EVertAttribType : int  // DEPRECATED
-{
-	VERTEXATTRIB_UNUSED = 0,
-
-	VERTEXATTRIB_COLOR,
-	VERTEXATTRIB_POSITION,
-	VERTEXATTRIB_TEXCOORD,
-	VERTEXATTRIB_NORMAL,
-	VERTEXATTRIB_TANGENT,
-	VERTEXATTRIB_BINORMAL,
-
-	VERTEXATTRIB_COUNT,
-	VERTEXATTRIB_MASK = 31
-};
-
-struct VertexFormatDesc // DEPRECATED
-{
-	int					streamId{ 0 };
-	int					elemCount{ 0 };
-
-	int					attribType{ 0 }; // EVertAttribType | flags; Use VERTEXATTRIB_MASK to retrieve attribute type.
-	EVertAttribFormat	attribFormat{ ATTRIBUTEFORMAT_FLOAT };
-
-	const char* name{ nullptr };
 };
 
 struct RasterizerStateParams // DEPRECATED

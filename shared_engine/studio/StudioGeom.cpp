@@ -65,40 +65,48 @@ EGFHwVertex::Color::Color(const studioVertexColor_t& initFrom)
 	color = initFrom.color;
 }
 
-ArrayCRef<VertexFormatDesc> EGFHwVertex::PositionUV::GetVertexFormatDesc()
+const VertexLayoutDesc& EGFHwVertex::PositionUV::GetVertexLayoutDesc()
 {
-	static const VertexFormatDesc g_EGFVertexUvFormat[] = {
-		{ VERT_POS_UV, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },
-		{ VERT_POS_UV, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },
-	};
-	return ArrayCRef(g_EGFVertexUvFormat, elementsOf(g_EGFVertexUvFormat));
+	static const VertexLayoutDesc g_EGFVertexUvFormat = Builder<VertexLayoutDesc>()
+		.UserId(EGFHwVertex::VERT_POS_UV)
+		.Stride(sizeof(EGFHwVertex::PositionUV))
+		.Attribute(VERTEXATTRIB_POSITION, "position", 0, offsetOf(EGFHwVertex::PositionUV, pos), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(EGFHwVertex::PositionUV, texcoord), ATTRIBUTEFORMAT_HALF, 2)
+		.End();
+	return g_EGFVertexUvFormat;
 }
 
-ArrayCRef<VertexFormatDesc> EGFHwVertex::TBN::GetVertexFormatDesc()
+const VertexLayoutDesc& EGFHwVertex::TBN::GetVertexLayoutDesc()
 {
-	static const VertexFormatDesc g_EGFTBNFormat[] = {
-		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "tangent" },
-		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "binormal" },
-		{ VERT_TBN, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },
-	};
-	return ArrayCRef(g_EGFTBNFormat, elementsOf(g_EGFTBNFormat));
+	static const VertexLayoutDesc g_EGFTBNFormat = Builder<VertexLayoutDesc>()
+		.UserId(EGFHwVertex::VERT_TBN)
+		.Stride(sizeof(EGFHwVertex::TBN))
+		.Attribute(VERTEXATTRIB_TEXCOORD, "tangent", 2, offsetOf(EGFHwVertex::TBN, tangent), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "binormal", 3, offsetOf(EGFHwVertex::TBN, binormal), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "normal", 4, offsetOf(EGFHwVertex::TBN, normal), ATTRIBUTEFORMAT_HALF, 4)
+		.End();
+	return g_EGFTBNFormat;
 }
 
-ArrayCRef<VertexFormatDesc> EGFHwVertex::BoneWeights::GetVertexFormatDesc()
+const VertexLayoutDesc& EGFHwVertex::BoneWeights::GetVertexLayoutDesc()
 {
-	static const VertexFormatDesc g_EGFBoneWeightsFormat[] = {
-		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "boneid" },
-		{ VERT_BONEWEIGHT, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "bonew" }
-	};
-	return ArrayCRef(g_EGFBoneWeightsFormat, elementsOf(g_EGFBoneWeightsFormat));
+	static const VertexLayoutDesc g_EGFBoneWeightsFormat = Builder<VertexLayoutDesc>()
+		.UserId(EGFHwVertex::VERT_BONEWEIGHT)
+		.Stride(sizeof(EGFHwVertex::BoneWeights))
+		.Attribute(VERTEXATTRIB_TEXCOORD, "boneId", 5, offsetOf(EGFHwVertex::BoneWeights, boneIndices), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "boneWt", 6, offsetOf(EGFHwVertex::BoneWeights, boneWeights), ATTRIBUTEFORMAT_HALF, 4)
+		.End();
+	return g_EGFBoneWeightsFormat;
 }
 
-ArrayCRef<VertexFormatDesc> EGFHwVertex::Color::GetVertexFormatDesc()
+const VertexLayoutDesc& EGFHwVertex::Color::GetVertexLayoutDesc()
 {
-	static const VertexFormatDesc g_EGFColorFormat[] = {
-		{ VERT_COLOR, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_UINT8, "color" },
-	};
-	return ArrayCRef(g_EGFColorFormat, elementsOf(g_EGFColorFormat));
+	static const VertexLayoutDesc g_EGFColorFormat = Builder<VertexLayoutDesc>()
+		.UserId(EGFHwVertex::VERT_COLOR)
+		.Stride(sizeof(EGFHwVertex::Color))
+		.Attribute(VERTEXATTRIB_TEXCOORD, "color", 7, offsetOf(EGFHwVertex::Color, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.End();
+	return g_EGFColorFormat;
 }
 
 DECLARE_CVAR_CLAMP(r_egf_LodTest, "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
@@ -915,29 +923,24 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 
 	// setup vertex buffers
 	{
-		ArrayCRef<VertexFormatDesc> fmtDesc = rhiVertFmt->GetFormatDesc();
-
 		int setVertStreams = 0;
 		int numBitsSet = 0;
-		for (int i = 0; i < fmtDesc.numElem(); ++i)
+		
+		ArrayCRef<VertexLayoutDesc> layoutDescList = rhiVertFmt->GetFormatDesc();
+		for (int i = 0; i < layoutDescList.numElem(); ++i)
 		{
 			if (numBitsSet == EGFHwVertex::VERT_COUNT)
 				break;
 
-			const VertexFormatDesc& desc = fmtDesc[i];
-			if (desc.streamId >= drawProperties.vertexStreamMapping.numElem())
-				continue;
-
-			const EGFHwVertex::VertexStream vertStreamId = drawProperties.vertexStreamMapping[desc.streamId];
+			const EGFHwVertex::VertexStream vertStreamId = (EGFHwVertex::VertexStream)layoutDescList[i].userId;
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 
-			drawCmd.vertexBuffers[desc.streamId] = m_vertexBuffers[vertStreamId];
+			drawCmd.vertexBuffers[i] = m_vertexBuffers[vertStreamId];
 			setVertStreams |= (1 << int(vertStreamId));
 			++numBitsSet;
 		}
 	}
-
 
 	const int maxVertexCount = m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
 

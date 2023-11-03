@@ -16,7 +16,7 @@ class IVertexFormat;
 class CViewParams;
 class Volume;
 struct AtlasEntry;
-struct VertexFormatDesc;
+struct VertexLayoutDesc;
 
 using IMaterialPtr = CRefPtr<IMaterial>;
 
@@ -28,7 +28,7 @@ enum EPartRenderFlags
 // particle vertex with color
 struct PFXVertex_t
 {
-	static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
+	static const VertexLayoutDesc& GetVertexLayoutDesc();
 
 	PFXVertex_t() = default;
 	PFXVertex_t(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)

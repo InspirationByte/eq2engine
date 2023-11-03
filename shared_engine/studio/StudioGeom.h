@@ -18,7 +18,7 @@ class CBaseEqGeomInstancer;
 struct RenderDrawCmd;
 struct DecalMakeInfo;
 struct DecalData;
-struct VertexFormatDesc;
+struct VertexLayoutDesc;
 
 // egf model hardware vertex
 struct EGFHwVertex
@@ -39,7 +39,7 @@ struct EGFHwVertex
 
 	struct PositionUV
 	{
-		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
+		static const VertexLayoutDesc& GetVertexLayoutDesc();
 
 		PositionUV() = default;
 		PositionUV(const studioVertexPosUv_t& initFrom);
@@ -50,7 +50,7 @@ struct EGFHwVertex
 
 	struct TBN
 	{
-		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
+		static const VertexLayoutDesc& GetVertexLayoutDesc();
 
 		TBN() = default;
 		TBN(const studioVertexTBN_t& initFrom);
@@ -65,7 +65,7 @@ struct EGFHwVertex
 
 	struct BoneWeights
 	{
-		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
+		static const VertexLayoutDesc& GetVertexLayoutDesc();
 
 		BoneWeights();
 		BoneWeights(const studioBoneWeight_t& initFrom);
@@ -79,7 +79,7 @@ struct EGFHwVertex
 		Color() = default;
 		Color(const studioVertexColor_t& initFrom);
 
-		static ArrayCRef<VertexFormatDesc> GetVertexFormatDesc();
+		static const VertexLayoutDesc& GetVertexLayoutDesc();
 		uint			color{ color_white.pack() };
 	};
 };

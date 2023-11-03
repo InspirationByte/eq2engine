@@ -13,31 +13,23 @@
 #define MAX_DYNAMIC_VERTICES	32767
 #define MAX_DYNAMIC_INDICES		32767
 
-bool CDynamicMesh::Init(const VertexFormatDesc* desc, int numAttribs )
+bool CDynamicMesh::Init(ArrayCRef<VertexLayoutDesc> vertexLayout)
 {
 	if(m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr)
 		return true;
 
-	ASSERT_MSG(numAttribs > 0, "CDynamicMesh::Init - numAttribs is ZERO!\n");
+	ASSERT_MSG(vertexLayout.numElem(), "CDynamicMesh::Init - no vertex layout descs");
+	ASSERT_MSG(vertexLayout.numElem() == 1, "CDynamicMesh::Init - only one vertex buffer layout supported\n");
 
-	int vertexSize = 0;
+	const VertexLayoutDesc& vertexDesc = vertexLayout[0];
+	ASSERT_MSG(vertexDesc.attributes.numElem() > 0, "CDynamicMesh::Init - attributes count is ZERO\n");
+	ASSERT_MSG(vertexDesc.stride > 0, "CDynamicMesh::Init - vertex layout stride hasn't set\n");
 
-	for(int i = 0; i < numAttribs; i++)
-	{
-		int stream = desc[i].streamId;
-		int vecCount = desc[i].elemCount;
-
-		ASSERT_MSG(stream == 0, "Error - you should pass STREAM 0 only to CDynamicMesh::Init!\n");
-
-		vertexSize += vecCount * s_attributeSize[desc[i].attribFormat];
-	}
-
-	m_vertexStride = vertexSize;
+	m_vertexStride = vertexDesc.stride;
 
 	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BufferInfo(m_vertexStride, MAX_DYNAMIC_VERTICES, BUFFER_DYNAMIC));
 	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(sizeof(uint16), MAX_DYNAMIC_INDICES, BUFFER_DYNAMIC));
-
-	m_vertexFormat = g_renderAPI->CreateVertexFormat("DynMeshVertex", ArrayCRef(desc, numAttribs));
+	m_vertexFormat = g_renderAPI->CreateVertexFormat("DynMeshVertex", vertexLayout);
 
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
@@ -70,9 +62,9 @@ void CDynamicMesh::Destroy()
 }
 
 // returns a pointer to vertex format description
-ArrayCRef<VertexFormatDesc> CDynamicMesh::GetVertexFormatDesc() const
+ArrayCRef<VertexLayoutDesc> CDynamicMesh::GetVertexLayoutDesc() const
 {
-	ArrayCRef<VertexFormatDesc> desc(nullptr);
+	ArrayCRef<VertexLayoutDesc> desc(nullptr);
 	if(m_vertexFormat)
 		desc = m_vertexFormat->GetFormatDesc();
 

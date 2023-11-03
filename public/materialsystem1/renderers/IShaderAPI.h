@@ -109,7 +109,8 @@ public:
 // Pipeline state layout
 //-------------------------------------------------------------
 
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexFormatDesc> formatDesc ) = 0;
+	// DEPRECATED
+	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout ) = 0;
 	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
 
 //-------------------------------------------------------------

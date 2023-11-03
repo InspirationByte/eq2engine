@@ -147,9 +147,9 @@
 	<Type Name="RawItem&lt;*&gt;">
 		<DisplayString>{ *($T1*)&amp;data }</DisplayString>
 		<Expand>
-			<Item Name = "Value">
+			<ExpandedItem>
 				*($T1*)&amp;data
-			</Item>
+			</ExpandedItem>
 		</Expand>
 	</Type>
 	<Type Name="CWeakPtr&lt;*&gt;">
