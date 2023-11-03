@@ -1139,6 +1139,16 @@ bool CMaterialSystem::CaptureScreenshot(CImage &img)
 	return m_renderLibrary->CaptureScreenshot( img );
 }
 
+ETextureFormat CMaterialSystem::GetBackBufferColorFormat() const
+{
+	return FORMAT_RGBA8; // TODO: m_renderLibrary->GetBackBufferColorFormat()
+}
+
+ETextureFormat CMaterialSystem::GetBackBufferDepthFormat() const
+{
+	return FORMAT_D24S8;
+}
+
 // resizes device back buffer. Must be called if window resized
 void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 {

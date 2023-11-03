@@ -117,6 +117,9 @@ public:
 
 	virtual bool					CaptureScreenshot(CImage& img) = 0;
 
+	virtual ETextureFormat			GetBackBufferColorFormat() const = 0;
+	virtual ETextureFormat			GetBackBufferDepthFormat() const = 0;
+
 	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
 	virtual void					SetDeviceFocused(bool inFocus) = 0;
 

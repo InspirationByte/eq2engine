@@ -69,6 +69,10 @@ public:
 
 	bool						BeginFrame(ISwapChain* swapChain);
 	bool						EndFrame();
+
+	ETextureFormat				GetBackBufferColorFormat() const;
+	ETextureFormat				GetBackBufferDepthFormat() const;
+
 	void						SetDeviceBackbufferSize(int wide, int tall);
 	void						SetDeviceFocused(bool inFocus);
 
