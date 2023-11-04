@@ -165,10 +165,14 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				continue;
 
 			if (layoutDescList[stream].stepMode == VERTEX_STEPMODE_INSTANCE)
+			{
 				instanceStreamId = stream;
-
-			drawCmd.vertexBuffers[stream] = model->m_vertexBuffers[egfVertStreamId];
-			setVertStreams |= (1 << int(egfVertStreamId));
+			}
+			else
+			{
+				drawCmd.vertexBuffers[stream] = model->m_vertexBuffers[egfVertStreamId];
+				setVertStreams |= (1 << int(egfVertStreamId));
+			}
 		}
 	}
 
