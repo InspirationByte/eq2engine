@@ -116,7 +116,7 @@ void CBaseShader::FillPipelineLayoutDesc(RenderPipelineLayoutDesc& renderPipelin
 	// add default bind groups
 	Builder<RenderPipelineLayoutDesc>(renderPipelineLayoutDesc)
 		.Group(
-			Builder<BindGroupDesc>()
+			Builder<BindGroupLayoutDesc>()
 			.Buffer("matSystemTransform", 0, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
 			.Buffer("materialParams", 1, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
 			.End()

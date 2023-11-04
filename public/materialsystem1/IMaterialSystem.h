@@ -140,9 +140,9 @@ public:
 	virtual IMaterialPtr			GetMaterial(const char* szMaterialName) = 0;
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
-	virtual IMatSystemShader*	CreateShaderInstance(const char* szShaderName) = 0;
+	virtual IMatSystemShader*		CreateShaderInstance(const char* szShaderName) = 0;
 
-	virtual void					PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial) = 0;
+	virtual void					QueueLoading(const IMaterialPtr& pMaterial) = 0;
 	virtual void					PreloadNewMaterials() = 0;
 	virtual void					WaitAllMaterialsLoaded() = 0;
 	virtual int						GetLoadingQueue() const = 0;

@@ -23,16 +23,14 @@ struct VertexLayoutDesc;
 // egf model hardware vertex
 struct EGFHwVertex
 {
-	enum VertexStream : int
+	enum VertexStreamId : int
 	{
-		VERT_UNSET = -1,
-
-		VERT_POS_UV = 0,
+		VERT_POS_UV,
 		VERT_TBN,
 		VERT_BONEWEIGHT,
 		VERT_COLOR,
 
-		// TODO: more UVs
+		// TODO: more UVs ?
 
 		VERT_COUNT,
 	};
@@ -140,7 +138,7 @@ public:
 
 	void						Draw(const DrawProps& drawProperties) const;
 
-	IVertexBuffer*				GetVertexBuffer(EGFHwVertex::VertexStream vertStream) const;
+	IVertexBuffer*				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
 	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
@@ -150,9 +148,9 @@ private:
 		// offset in hw index buffer to this lod, for each geometry group
 		struct Mesh
 		{
-			int		firstIndex;
-			int		indexCount;
-			ushort	primType;
+			int		firstIndex{ 0 };
+			int		indexCount{ 0 };
+			ushort	primType{ 0 };
 			bool	supportsSkinning{ false };
 		} *meshRefs{ nullptr };
 	};
@@ -201,20 +199,16 @@ private:
 
 	mutable int				m_loading{ MODEL_LOAD_ERROR };
 	mutable int				m_readyState{ 0 };
-
-	EGFHwVertex*			m_softwareVerts{ nullptr };
-	bool					m_forceSoftwareSkinning{ false };
-	bool					m_skinningDirty{ false };
 };
 
-extern ArrayCRef<EGFHwVertex::VertexStream> g_defaultVertexStreamMapping;
+extern ArrayCRef<EGFHwVertex::VertexStreamId> g_defaultVertexStreamMapping;
 
 struct CEqStudioGeom::DrawProps
 {
 	using SetupDrawFunc = EqFunction<void(RenderDrawCmd& drawCmd)>;
 	using BodyGroupFunc = EqFunction<void(RenderDrawCmd& drawCmd, IMaterial* material, int bodyGroup, int meshIndex)>;
 
-	ArrayCRef<EGFHwVertex::VertexStream> vertexStreamMapping{ g_defaultVertexStreamMapping };
+	ArrayCRef<EGFHwVertex::VertexStreamId> vertexStreamMapping{ g_defaultVertexStreamMapping };
 	IVertexFormat*	vertexFormat{ nullptr };
 	Matrix4x4*		boneTransforms{ nullptr };
 

@@ -607,7 +607,7 @@ void CMaterialSystem::PreloadNewMaterials()
 	
 	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
-		PutMaterialToLoadingQueue(IMaterialPtr(it.value()));
+		QueueLoading(IMaterialPtr(it.value()));
 	}
 }
 
@@ -667,7 +667,7 @@ void CMaterialSystem::ReloadAllMaterials()
 	// issue loading after all materials were freed
 	// - this is a guarantee to shader recompilation
 	for(int i = 0; i < loadingList.numElem(); i++)
-		PutMaterialToLoadingQueue( loadingList[i] );
+		QueueLoading( loadingList[i] );
 }
 
 // frees all materials
@@ -838,7 +838,7 @@ enum EMaterialRenderSubroutine
 };
 
 // loads material or sends it to loader thread
-void CMaterialSystem::PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial)
+void CMaterialSystem::QueueLoading(const IMaterialPtr& pMaterial)
 {
 	CMaterial* material = (CMaterial*)pMaterial.Ptr();
 	if(Atomic::CompareExchange(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)

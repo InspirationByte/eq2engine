@@ -144,20 +144,6 @@ end -- ENABLE_TOOLS
 
 group "MatSystem"
 
-project "eqMatSystem"
-    kind "SharedLib"
-	unitybuild "on"
-	uses {
-		"corelib", "frameworkLib", "e2Core"
-	}
-    files {
-        Folders.matsystem1.. "*.cpp",
-		Folders.matsystem1.. "*.h",
-		Folders.matsystem1.. "Renderers/*.h",
-        Folders.public.."materialsystem1/**.cpp",
-		Folders.public.."materialsystem1/**.h"
-	}
-
 project "BaseShader"
     kind "StaticLib"
 	uses {
@@ -165,6 +151,20 @@ project "BaseShader"
 	}
     files {
 		Folders.public.."materialsystem1/*.cpp"
+	}
+
+project "eqMatSystem"
+    kind "SharedLib"
+	unitybuild "on"
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"BaseShader"
+	}
+    files {
+        Folders.matsystem1.. "*.cpp",
+		Folders.matsystem1.. "*.h",
+		Folders.matsystem1.. "Renderers/*.h",
+		Folders.public.."materialsystem1/**.h"
 	}
 
 usage "BaseShader"
@@ -182,7 +182,6 @@ project "eqBaseShaders"
         Folders.matsystem1.."Shaders/*.cpp",
 		Folders.matsystem1.."Shaders/**.h",
         Folders.matsystem1.."Shaders/Base/**.cpp",
-        Folders.public.."materialsystem1/**.cpp",
 	}
     includedirs {
 		Folders.public.."materialsystem1"

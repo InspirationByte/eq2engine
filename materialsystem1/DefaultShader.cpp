@@ -10,6 +10,52 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/BaseShader.h"
 
+struct ShaderRenderPassDesc
+{
+	struct ColorTargetDesc
+	{
+		EqString		name;
+		ETextureFormat	format{ FORMAT_NONE };
+	};
+	using VertexLayoutDescList = Array<VertexLayoutDesc>;
+	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
+
+	EqString				name;
+	ColorTargetList			targets;
+	ETextureFormat			depthFormat{ FORMAT_NONE };
+	VertexLayoutDescList	vertexLayout{ PP_SL };
+};
+
+FLUENT_BEGIN_TYPE(ShaderRenderPassDesc);
+	FLUENT_SET_VALUE(name, Name);
+	FLUENT_SET_VALUE(depthFormat, DepthFormat);
+	ThisType& VertexLayout(VertexLayoutDesc&& x) { vertexLayout.append(std::move(x)); return *this; }
+	ThisType& ColorTarget(ColorTargetDesc&& x)
+	{
+		targets.append(std::move(x)); return *this;
+	}
+	ThisType& ColorTarget(const char* name, ETextureFormat format)
+	{
+		targets.append({ name, format }); return *this;
+	}
+FLUENT_END_TYPE
+
+#include "DynamicMesh.h"
+
+static void ShaderRenderPassDescBuild()
+{
+	// g_matSystem->GetDynamicMesh()->GetVertexLayout()
+	ShaderRenderPassDesc renderPassDesc = Builder<ShaderRenderPassDesc>()
+		.Name("Default")
+		.ColorTarget("BackBuffer", g_matSystem->GetBackBufferColorFormat())
+		.DepthFormat(g_matSystem->GetBackBufferDepthFormat())
+		.VertexLayout(
+			Builder<VertexLayoutDesc>()
+			.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
+			.End())
+		.End();
+}
+
 BEGIN_SHADER_CLASS(Default)
 
 	bool IsSupportVertexFormat(int nameHash) const

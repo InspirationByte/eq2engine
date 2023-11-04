@@ -46,7 +46,7 @@ public:
 	CBaseEqGeomInstancer();
 	~CBaseEqGeomInstancer();
 
-	void			Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance);
+	void			Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStreamId> instVertStreamMapping, int sizeOfInstance);
 	void			Cleanup();
 
 	void			ValidateAssert();
@@ -65,7 +65,7 @@ public:
 
 protected:
 	Map<ushort, EGFInstBuffer>	m_data{ PP_SL };
-	ArrayCRef<EGFHwVertex::VertexStream> m_vertexStreamMapping{ nullptr };
+	ArrayCRef<EGFHwVertex::VertexStreamId> m_vertexStreamMapping{ nullptr };
 	IVertexFormat*				m_vertFormat{ nullptr };
 	int							m_instanceSize{ 0 };
 
@@ -82,16 +82,16 @@ template <class IT>
 class CEqGeomInstancer : public CBaseEqGeomInstancer
 {
 public:
-	void							Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping);
+	void							Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStreamId> instVertStreamMapping);
 	IT&								NewInstance(int bodyGroup, int lod, int materialGroup = 0 );
 
-	static CEqGeomInstancer<IT>*	Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping);
+	static CEqGeomInstancer<IT>*	Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced, ArrayCRef<EGFHwVertex::VertexStreamId> instVertStreamMapping);
 };
 
 //-------------------------------------------------------
 
 template <class IT>
-inline void CEqGeomInstancer<IT>::Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping)
+inline void CEqGeomInstancer<IT>::Init(IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStreamId> instVertStreamMapping)
 {
 	CBaseEqGeomInstancer::Init(instVertexFormat, instVertStreamMapping, sizeof(IT));
 }
@@ -114,7 +114,7 @@ inline IT& CEqGeomInstancer<IT>::NewInstance(int bodyGroup, int lod, int materia
 }
 
 template <class IT>
-CEqGeomInstancer<IT>* CEqGeomInstancer<IT>::Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping)
+CEqGeomInstancer<IT>* CEqGeomInstancer<IT>::Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced, ArrayCRef<EGFHwVertex::VertexStreamId> instVertStreamMapping)
 {
 	CEqGeomInstancer<IT>* instancer = reinterpret_cast<CEqGeomInstancer<IT>*>(model->GetInstancer());
 

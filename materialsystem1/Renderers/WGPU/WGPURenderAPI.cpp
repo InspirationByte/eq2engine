@@ -141,7 +141,7 @@ static void PipelineLayoutDescBuilder()
 	// FIXME: names?
 	RenderPipelineLayoutDesc pipelineLayoutDesc = Builder<RenderPipelineLayoutDesc>()
 		.Group(
-			Builder<BindGroupDesc>()
+			Builder<BindGroupLayoutDesc>()
 			.Texture("baseTexture", 0, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
 			.Buffer("materialProps", 1, SHADER_VISIBLE_FRAGMENT, BUFFERBIND_UNIFORM)
 			.End()
@@ -209,30 +209,30 @@ void* CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineLayoutDesc& layou
 	//		- Scene Properties (camera, transform, fog, clip planes)
 	WGPUPipelineLayout pipelineLayout = nullptr;
 	FixedArray<WGPUBindGroupLayout, 4> bindGroupLayoutList;
-	for(const BindGroupDesc& bindGroupDesc : layoutDesc.bindGroups)
+	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
 	{
 		Array<WGPUBindGroupLayoutEntry> layoutEntry(PP_SL);
 
-		for(const BindGroupDesc::Entry& entry : bindGroupDesc.entries)
+		for(const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
 		{
 			WGPUBindGroupLayoutEntry bglEntry = {};
 			bglEntry.binding = entry.binding;
 			bglEntry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
 			switch (entry.type)
 			{
-			case BindGroupDesc::ENTRY_BUFFER:
+			case BindGroupLayoutDesc::ENTRY_BUFFER:
 				bglEntry.buffer.hasDynamicOffset = entry.buffer.hasDynamicOffset;
 				bglEntry.buffer.type = g_wgpuBufferBindingType[entry.buffer.bindType];
 				break;
-			case BindGroupDesc::ENTRY_SAMPLER:
+			case BindGroupLayoutDesc::ENTRY_SAMPLER:
 				bglEntry.sampler.type = g_wgpuSamplerBindingType[entry.sampler.bindType];
 				break;
-			case BindGroupDesc::ENTRY_TEXTURE:
+			case BindGroupLayoutDesc::ENTRY_TEXTURE:
 				bglEntry.texture.sampleType = g_wgpuTexSampleType[entry.texture.sampleType];
 				bglEntry.texture.viewDimension = g_wgpuTexViewDimensions[entry.texture.dimension];
 				bglEntry.texture.multisampled = entry.texture.multisampled;
 				break;
-			case BindGroupDesc::ENTRY_STORAGETEXTURE:
+			case BindGroupLayoutDesc::ENTRY_STORAGETEXTURE:
 				bglEntry.storageTexture.access = g_wgpuStorageTexAccess[entry.storageTexture.access];
 				bglEntry.storageTexture.viewDimension = g_wgpuTexViewDimensions[entry.storageTexture.dimension];
 				bglEntry.storageTexture.format = g_wgpuTexFormats[entry.storageTexture.format];

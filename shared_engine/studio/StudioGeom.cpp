@@ -22,13 +22,13 @@
 
 using namespace Threading;
 
-EGFHwVertex::VertexStream s_defaultVertexStreamMappingDesc[] = {
+static EGFHwVertex::VertexStreamId s_defaultVertexStreamMappingDesc[] = {
 	EGFHwVertex::VERT_POS_UV,
 	EGFHwVertex::VERT_TBN,
 	EGFHwVertex::VERT_BONEWEIGHT,
 	EGFHwVertex::VERT_COLOR,
 };
-ArrayCRef<EGFHwVertex::VertexStream> g_defaultVertexStreamMapping = { s_defaultVertexStreamMappingDesc ,  elementsOf(s_defaultVertexStreamMappingDesc) };
+ArrayCRef<EGFHwVertex::VertexStreamId> g_defaultVertexStreamMapping = { s_defaultVertexStreamMappingDesc ,  elementsOf(s_defaultVertexStreamMappingDesc) };
 
 EGFHwVertex::PositionUV::PositionUV(const studioVertexPosUv_t& initFrom)
 {
@@ -291,14 +291,6 @@ void CEqStudioGeom::DestroyModel()
 	m_indexBuffer = nullptr;
 
 	m_materials.clear(true);
-
-	if (m_softwareVerts)
-	{
-		PPFree(m_softwareVerts);
-		m_softwareVerts = nullptr;
-	}
-	m_skinningDirty = false;
-	m_forceSoftwareSkinning = false;
 	m_materialCount = 0;
 	m_materialGroupsCount = 0;
 
@@ -520,9 +512,6 @@ bool CEqStudioGeom::LoadFromFile()
 
 bool CEqStudioGeom::LoadGenerateVertexBuffer()
 {
-	// detect and set the force software skinning flag
-	m_forceSoftwareSkinning = r_force_softwareskinning.GetBool();
-
 	const studioHdr_t* studio = m_studio;
 
 	// use index size
@@ -730,7 +719,7 @@ void CEqStudioGeom::LoadMaterials()
 					continue;
 
 				IMaterialPtr material = g_matSystem->GetMaterial(extend_path.GetData());
-				g_matSystem->PutMaterialToLoadingQueue(material);
+				g_matSystem->QueueLoading(material);
 
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
 					MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", material->GetName(), material->GetShaderName(), m_name.ToCString());
@@ -894,7 +883,7 @@ int CEqStudioGeom::FindManualLod(float value) const
 	return -1;
 }
 
-IVertexBuffer* CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStream vertStream) const
+IVertexBuffer* CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const
 {
 	return m_vertexBuffers[vertStream];
 }
@@ -932,7 +921,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			if (numBitsSet == EGFHwVertex::VERT_COUNT)
 				break;
 
-			const EGFHwVertex::VertexStream vertStreamId = (EGFHwVertex::VertexStream)layoutDescList[i].userId;
+			const EGFHwVertex::VertexStreamId vertStreamId = (EGFHwVertex::VertexStreamId)layoutDescList[i].userId;
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 

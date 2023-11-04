@@ -101,7 +101,7 @@ public:
 	void						PreloadNewMaterials();
 	void						WaitAllMaterialsLoaded();
 								
-	void						PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial);
+	void						QueueLoading(const IMaterialPtr& pMaterial);
 	int							GetLoadingQueue() const;
 								
 	void						ReloadAllMaterials();

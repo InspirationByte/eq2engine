@@ -271,7 +271,7 @@ CParticleBatch* CParticleLowLevelRenderer::FindBatch(const char* materialName) c
 void CParticleLowLevelRenderer::PreloadMaterials()
 {
 	for(int i = 0; i < m_batchs.numElem(); i++)
-		g_matSystem->PutMaterialToLoadingQueue(m_batchs[i]->m_material);
+		g_matSystem->QueueLoading(m_batchs[i]->m_material);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer

@@ -37,7 +37,7 @@ void CBaseEqGeomInstancer::ValidateAssert()
 	ASSERT_MSG(m_vertFormat != nullptr, "Instancer is not valid - did you forgot to initialize it???");
 }
 
-void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStream> instVertStreamMapping, int sizeOfInstance)
+void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFHwVertex::VertexStreamId> instVertStreamMapping, int sizeOfInstance)
 {
 	Cleanup();
 	m_instanceSize = sizeOfInstance;
@@ -160,7 +160,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 		ArrayCRef<VertexLayoutDesc> layoutDescList = m_vertFormat->GetFormatDesc();
 		for (int stream = 0; stream < layoutDescList.numElem(); ++stream)
 		{
-			const EGFHwVertex::VertexStream egfVertStreamId = (EGFHwVertex::VertexStream)layoutDescList[stream].userId;
+			const EGFHwVertex::VertexStreamId egfVertStreamId = (EGFHwVertex::VertexStreamId)layoutDescList[stream].userId;
 			if (setVertStreams & (1 << int(egfVertStreamId)))
 				continue;
 

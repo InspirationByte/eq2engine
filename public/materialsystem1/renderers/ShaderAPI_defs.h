@@ -510,7 +510,7 @@ enum EShaderVisibility : int
 	SHADER_VISIBLE_COMPUTE	= (1 << 2),
 };
 
-struct BindGroupDesc
+struct BindGroupLayoutDesc
 {
 	enum EEntryType
 	{
@@ -539,7 +539,7 @@ struct BindGroupDesc
 	EntryList			entries{ PP_SL };
 };
 
-FLUENT_BEGIN_TYPE(BindGroupDesc)
+FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	ThisType& Buffer(const char* name, int binding, int visibilityFlags, EBufferBindType bindType)
 	{
 		Entry& entry = entries.append();
@@ -588,12 +588,12 @@ FLUENT_END_TYPE
 
 struct RenderPipelineLayoutDesc
 {
-	using BindGroupDescList = Array<BindGroupDesc>;
+	using BindGroupDescList = Array<BindGroupLayoutDesc>;
 	BindGroupDescList	bindGroups{ PP_SL };
 };
 
 FLUENT_BEGIN_TYPE(RenderPipelineLayoutDesc)
-	ThisType& Group(BindGroupDesc&& x)
+	ThisType& Group(BindGroupLayoutDesc&& x)
 	{
 		bindGroups.append(std::move(x));
 		return *this; 
