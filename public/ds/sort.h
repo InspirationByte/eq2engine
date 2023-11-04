@@ -248,7 +248,7 @@ int arrayFindIndexF(const ARRAY_TYPE& arr, const K& key, const PAIRCOMPAREFUNC& 
 
 // returns first found element which satisfies to the condition
 template< typename T, typename COMPAREFUNC >
-int arrayFindIndexF(const T& arr, int length, const COMPAREFUNC& comparator)
+int arrayFindIndexF(const T* arr, int length, const COMPAREFUNC& comparator)
 {
 	for (int i = 0; i < length; ++i)
 	{
