@@ -268,6 +268,8 @@ const GLenum g_gl_blendingModes[] = {
 };
 
 const GLenum g_gl_depthConst[] = {
+	GL_NONE,
+
 	GL_NEVER,
 	GL_LESS,
 	GL_EQUAL,

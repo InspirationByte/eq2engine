@@ -69,7 +69,7 @@ public:
 
 	const ShaderAPICaps&		GetCaps() const {return m_caps;}
 
-	virtual EShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_EMPTY;}
+	virtual EShaderAPIType		GetShaderAPIClass() const {return SHADERAPI_EMPTY;}
 
 	// Draw call counter
 	int							GetDrawCallsCount() const;

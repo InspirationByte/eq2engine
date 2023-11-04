@@ -87,7 +87,14 @@ public:
 //-------------------------------------------------------------
 // Pipeline management
 
-	void*			CreateRenderPipeline(const RenderPipelineLayoutDesc& layoutDesc, const RenderPipelineDesc& pipelineDesc);
+	IGPURenderPipelinePtr	CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc);
+	IGPUPipelineLayoutPtr	CreatePipelineLayout(const RenderPipelineLayoutDesc& layoutDesc);
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc);
+
+//-------------------------------------------------------------
+// Buffer management
+
+	IGPUBufferPtr			CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr);
 
 //-------------------------------------------------------------
 // DEPRECATED Render states management
@@ -110,7 +117,7 @@ public:
 	void			ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int newTall);
 
 //-------------------------------------------------------------
-// Various setup functions for drawing
+// DEPRECATED Various setup functions for drawing
 
 	void			ChangeVertexFormat(IVertexFormat* pVertexFormat);
 	void			ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, const intptr offset = 0);
@@ -140,7 +147,7 @@ public:
 	void			ApplyConstants() {}
 
 //-------------------------------------------------------------
-// Primitive drawing
+// DEPRECATED Primitive drawing
 
 	void			DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
 	void			DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices);

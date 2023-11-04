@@ -10,7 +10,7 @@ struct BufferLockData
 	int		flags{ 0 };
 };
 
-class IGPUBuffer
+class IGPUBuffer : public RefCountedObject<IGPUBuffer>
 {
 public:
 	using LockFuture = Future<BufferLockData>;
@@ -19,3 +19,4 @@ public:
 	virtual LockFuture	Lock(int lockOfs, int sizeToLock, int flags) = 0;
 	virtual void		Unlock() = 0;
 };
+using IGPUBufferPtr = CRefPtr<IGPUBuffer>;

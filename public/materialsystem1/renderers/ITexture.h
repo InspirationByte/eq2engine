@@ -65,6 +65,8 @@ public:
 	// The dimensions of texture
 	virtual ETextureFormat	GetFormat() const = 0;
 
+	virtual const SamplerStateParams& GetSamplerState() const = 0;
+
 	virtual int				GetWidth() const = 0;
 	virtual int				GetHeight() const = 0;
 	virtual int				GetDepth() const = 0;

@@ -157,9 +157,9 @@
 		<DisplayString Condition="m_weakRefPtr == nullptr">[nullptr]</DisplayString>
 		<DisplayString>{ ($T1*)m_weakRefPtr->ptr }</DisplayString>
 		<Expand>
-			<Item Name = "Value">
+			<ExpandedItem>
 				($T1*)m_weakRefPtr->ptr
-			</Item>
+			</ExpandedItem>
 			<Item Name = "Ref Count">
 				m_weakRefPtr->numRefs
 			</Item>
@@ -170,9 +170,9 @@
 		<DisplayString Condition="m_ptrObj == nullptr">[nullptr]</DisplayString>
 		<DisplayString>{ m_ptrObj }</DisplayString>
 		<Expand>
-			<Item Name = "Value">
+			<ExpandedItem>
 				m_ptrObj
-			</Item>
+			</ExpandedItem>
 			<Item Name = "Ref Count">
 				m_ptrObj->m_numRefs
 			</Item>

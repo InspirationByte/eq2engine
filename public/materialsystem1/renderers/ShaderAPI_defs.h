@@ -8,6 +8,11 @@
 #pragma once
 #include "ShaderAPICaps.h"
 
+class IGPUBuffer;
+using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
+class ITexture;
+
 enum ERHIWindowType : int
 {
 	RHI_WINDOW_HANDLE_UNKNOWN = -1,
@@ -41,9 +46,9 @@ struct RenderWindowInfo
 // comparison functions
 enum ECompareFunc : int
 {
-	COMPFUNC_NONE = -1,
+	COMPFUNC_NONE = 0,
 
-	COMPFUNC_NEVER = 0,
+	COMPFUNC_NEVER,
 	COMPFUNC_LESS,			// 1
 	COMPFUNC_EQUAL,			// 2
 	COMPFUNC_LEQUAL,		// 3
@@ -76,9 +81,10 @@ enum ETexAddressMode : int
 struct SamplerStateParams
 {
 	SamplerStateParams() = default;
-	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_LESS, float lod = 0.0f, int maxAnisotropy = 16)
+	SamplerStateParams(ETexFilterMode filterType, ETexAddressMode address, ECompareFunc compareFunc = COMPFUNC_NONE, float lod = 0.0f, int maxAnisotropy = 16)
 		: minFilter(filterType)
 		, magFilter((filterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR)
+		, mipmapFilter((filterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR)
 		, addressU(address)
 		, addressV(address)
 		, addressW(address)
@@ -294,11 +300,11 @@ FLUENT_BEGIN_TYPE(VertexLayoutDesc)
 	FLUENT_SET_VALUE(userId, UserId)
 	FLUENT_SET_VALUE(stride, Stride)
 	FLUENT_SET_VALUE(stepMode, StepMode)
-	ThisType& Attribute(AttribDesc&& x) { attributes.append(std::move(x)); return *this; }
+	ThisType& Attribute(AttribDesc&& x) { ref.attributes.append(std::move(x)); return *this; }
 	ThisType& Attribute(EVertAttribType type, const char* name, int location, int offset, EVertAttribFormat format, int count)
 	{
 		ASSERT_MSG(count > 0 && count <= 4, "Vertex attribute count incorrect (%d, while must be <= 4)", count);
-		attributes.append({ name, location, offset, format, count, type });
+		ref.attributes.append({ name, location, offset, format, count, type });
 		return *this; 
 	}
 FLUENT_END_TYPE
@@ -312,7 +318,7 @@ struct VertexPipelineDesc
 
 FLUENT_BEGIN_TYPE(VertexPipelineDesc)
 	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
-	ThisType& VertexLayout(VertexLayoutDesc&& x) { vertexLayout.append(std::move(x)); return *this; }
+	ThisType& VertexLayout(VertexLayoutDesc&& x) { ref.vertexLayout.append(std::move(x)); return *this; }
 FLUENT_END_TYPE
 
 //-------------------------------------------
@@ -394,11 +400,11 @@ FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
 	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
 	ThisType& ColorTarget(ColorTargetDesc&& x)
 	{
-		targets.append(std::move(x)); return *this;
+		ref.targets.append(std::move(x)); return *this;
 	}
 	ThisType& ColorTarget(const char* name, ETextureFormat format, const BlendStateParams& colorBlend = BlendStateParams{}, const BlendStateParams& alphaBlend = BlendStateParams{}) 
 	{
-		targets.append({ name, format, colorBlend, alphaBlend }); return *this;
+		ref.targets.append({ name, format, colorBlend, alphaBlend }); return *this;
 	}
 FLUENT_END_TYPE
 
@@ -418,6 +424,7 @@ struct RenderPipelineDesc
 	FragmentPipelineDesc	fragment;
 	MultiSampleState		multiSample;
 	PrimitiveDesc			primitive;
+	EqString				name;
 };
 
 //-------------------------------------------
@@ -426,7 +433,9 @@ FLUENT_BEGIN_TYPE(RenderPipelineDesc);
 	FLUENT_SET_VALUE(vertex, VertexState);
 	FLUENT_SET_VALUE(depthStencil, DepthState);
 	FLUENT_SET_VALUE(fragment, FragmentState);
+	FLUENT_SET_VALUE(multiSample, MultiSampleState);
 	FLUENT_SET_VALUE(primitive, PrimitiveState);
+	FLUENT_SET_VALUE(name, Name);
 FLUENT_END_TYPE
 
 enum EBufferBindType : int
@@ -447,7 +456,8 @@ struct BindBuffer
 
 enum ESamplerBindType : int
 {
-	SAMPLERBIND_FILTERING = 0,
+	SAMPLERBIND_NONE = 0,
+	SAMPLERBIND_FILTERING,
 	SAMPLERBIND_NONFILTERING,
 	SAMPLERBIND_COMPARISON,
 };
@@ -510,16 +520,16 @@ enum EShaderVisibility : int
 	SHADER_VISIBLE_COMPUTE	= (1 << 2),
 };
 
+enum EBindEntryType
+{
+	BINDENTRY_BUFFER = 0,
+	BINDENTRY_SAMPLER,
+	BINDENTRY_TEXTURE,
+	BINDENTRY_STORAGETEXTURE
+};
+
 struct BindGroupLayoutDesc
 {
-	enum EEntryType
-	{
-		ENTRY_BUFFER = 0,
-		ENTRY_SAMPLER,
-		ENTRY_TEXTURE,
-		ENTRY_STORAGETEXTURE
-	};
-
 	struct Entry
 	{
 		Entry() {}
@@ -530,43 +540,48 @@ struct BindGroupLayoutDesc
 			BindStorageTexture	storageTexture;
 		};
 		EqString		name;
-		EEntryType		type{ ENTRY_BUFFER };
+		EBindEntryType	type{ BINDENTRY_BUFFER };
 		int				binding{ 0 };
 		int				visibility{ 0 };	// EShaderVisibility
 	};
 
 	using EntryList = Array<Entry>;
 	EntryList			entries{ PP_SL };
+	EqString			name;
 };
 
 FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
+	FLUENT_SET_VALUE(name, Name)
 	ThisType& Buffer(const char* name, int binding, int visibilityFlags, EBufferBindType bindType)
 	{
-		Entry& entry = entries.append();
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
+		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
-		entry.type = ENTRY_BUFFER;
+		entry.type = BINDENTRY_BUFFER;
 		entry.buffer.bindType = bindType;
 		return *this; 
 	}
 	ThisType& Sampler(const char* name, int binding, int visibilityFlags, ESamplerBindType bindType)
 	{
-		Entry& entry = entries.append();
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
-		entry.type = ENTRY_SAMPLER;
+		entry.type = BINDENTRY_SAMPLER;
 		entry.sampler.bindType = bindType;
 		return *this;
 	}
 	ThisType& Texture(const char* name, int binding, int visibilityFlags, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
-		Entry& entry = entries.append();
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
-		entry.type = ENTRY_TEXTURE;
+		entry.type = BINDENTRY_TEXTURE;
 		entry.texture.sampleType = sampleType;
 		entry.texture.dimension = dimension;
 		entry.texture.multisampled = multisample;
@@ -574,11 +589,12 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& StorageTexture(const char* name, int binding, int visibilityFlags, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
-		Entry& entry = entries.append();
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
-		entry.type = ENTRY_STORAGETEXTURE;
+		entry.type = BINDENTRY_STORAGETEXTURE;
 		entry.storageTexture.format = format;
 		entry.storageTexture.access = access;
 		entry.storageTexture.dimension = dimension;
@@ -590,13 +606,83 @@ struct RenderPipelineLayoutDesc
 {
 	using BindGroupDescList = Array<BindGroupLayoutDesc>;
 	BindGroupDescList	bindGroups{ PP_SL };
+	EqString			name;
 };
 
 FLUENT_BEGIN_TYPE(RenderPipelineLayoutDesc)
+	FLUENT_SET_VALUE(name, Name)
 	ThisType& Group(BindGroupLayoutDesc&& x)
 	{
-		bindGroups.append(std::move(x));
+		ref.bindGroups.append(std::move(x));
 		return *this; 
+	}
+FLUENT_END_TYPE
+
+//------------------------------------------------------------
+// BindGroup builder
+
+// FIXME: rename to ResourceBindGroupDesc ???
+struct BindGroupDesc
+{
+	struct Entry 
+	{
+		Entry() {}
+		union
+		{
+			IGPUBuffer*			buffer; // uniform buffer
+			SamplerStateParams	sampler;
+			ITexture*			texture;
+		};
+		EBindEntryType	type{ BINDENTRY_BUFFER };
+		int				binding{ 0 };
+		int				bufferOffset{ 0 };
+		int				bufferSize{ 0 };
+	};
+
+	using EntryList = Array<Entry>;
+	EntryList			entries{ PP_SL };
+	EqString			name;
+};
+
+FLUENT_BEGIN_TYPE(BindGroupDesc)
+	FLUENT_SET_VALUE(name, Name)
+	ThisType& Buffer(int binding, IGPUBuffer* buffer, int offset, int size)
+	{
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
+		Entry& entry = ref.entries.append();
+		entry.binding = binding;
+		entry.type = BINDENTRY_BUFFER;
+		entry.buffer = buffer;
+		entry.bufferOffset = offset;
+		entry.bufferSize = size;
+		return *this; 
+	}
+	ThisType& Sampler(int binding, const SamplerStateParams& samplerParams)
+	{
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		Entry& entry = ref.entries.append();
+		entry.binding = binding;
+		entry.type = BINDENTRY_SAMPLER;
+		entry.sampler = samplerParams;
+		return *this;
+	}
+	ThisType& Texture(int binding, ITexture* texture)
+	{
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		Entry& entry = ref.entries.append();
+		entry.binding = binding;
+		entry.type = BINDENTRY_TEXTURE;
+		entry.texture = texture;
+		return *this;
+	}
+	ThisType& StorageTexture(int binding, ITexture* texture)
+	{
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		Entry& entry = ref.entries.append();
+		entry.binding = binding;
+		entry.type = BINDENTRY_STORAGETEXTURE;
+		entry.texture = texture;
+		return *this;
 	}
 FLUENT_END_TYPE
 
@@ -644,7 +730,16 @@ struct TextureInfo // TODO: use
 //------------------------------------------------------------
 // Buffer builder
 
-// old buffer access flags
+enum EBufferUsage
+{
+	BUFFERUSAGE_UNIFORM		= (1 << 0),
+	BUFFERUSAGE_VERTEX		= (1 << 1),
+	BUFFERUSAGE_INDEX		= (1 << 2),
+	BUFFERUSAGE_INDIRECT	= (1 << 3),
+	BUFFERUSAGE_STORAGE		= (1 << 4),
+};
+
+// DEPRECATED buffer access flags
 enum EBufferAccessType : int
 {
 	BUFFER_STREAM = 0,

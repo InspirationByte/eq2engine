@@ -41,6 +41,7 @@ public:
 	void						SetFlags(int iFlags) { m_flags = iFlags; }
 	int							GetFlags() const { return m_flags; }
 
+	// FIXME: remove?
 	const SamplerStateParams&	GetSamplerState() const {return m_samplerState;}
 
 	int							GetAnimationFrameCount() const { return m_animFrameCount; }

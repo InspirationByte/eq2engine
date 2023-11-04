@@ -33,6 +33,8 @@ const D3DBLENDOP g_d3d9_blendingModes[] = {
 
 const D3DCMPFUNC g_d3d9_depthConst[] = {
 	D3DCMP_NEVER,
+
+	D3DCMP_NEVER,
 	D3DCMP_LESS,
 	D3DCMP_EQUAL,
 	D3DCMP_LESSEQUAL,

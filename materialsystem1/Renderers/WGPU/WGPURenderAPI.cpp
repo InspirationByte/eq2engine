@@ -150,7 +150,7 @@ static void PipelineLayoutDescBuilder()
 
 	sizeof(RenderPipelineLayoutDesc);
 
-	Msg("PipelineLayoutDescBuilder dun\n");
+	Msg("%s dun\n", __func__);
 }
 
 static void PipelineDescBuilder()
@@ -190,97 +190,247 @@ static void PipelineDescBuilder()
 
 	sizeof(RenderPipelineDesc);
 
-	Msg("PipelineDescBuilder dun\n");
+	Msg("%s dun\n", __func__);
+}
+
+static void BindGroupBuilder()
+{
+	BindGroupDesc bindGroup = Builder<BindGroupDesc>()
+		.Buffer(1, nullptr, 0, 16)
+		.Texture(2, nullptr)
+		.End();
+
+	Msg("%s dun\n", __func__);
 }
 
 DECLARE_CMD(test_wgpu, nullptr, 0)
 {
 	PipelineLayoutDescBuilder();
 	PipelineDescBuilder();
+	BindGroupBuilder();
 }
 
-void* CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineLayoutDesc& layoutDesc, const RenderPipelineDesc& pipelineDesc)
+class CWGPUPipelineLayout : public IGPUPipelineLayout
+{
+public:
+	~CWGPUPipelineLayout()
+	{
+		wgpuPipelineLayoutRelease(m_rhiPipelineLayout);
+		for(WGPUBindGroupLayout layout: m_rhiBindGroupLayout)
+			wgpuBindGroupLayoutRelease(layout);
+	}
+
+	// TODO: name
+	Array<WGPUBindGroupLayout>	m_rhiBindGroupLayout{ PP_SL };
+	WGPUPipelineLayout			m_rhiPipelineLayout{ nullptr };
+
+};
+
+class CWGPURenderPipeline : public IGPURenderPipeline
+{
+public:
+	~CWGPURenderPipeline()
+	{
+		wgpuRenderPipelineRelease(m_rhiRenderPipeline);
+	}
+	// TODO: name
+	WGPURenderPipeline	m_rhiRenderPipeline{ nullptr };
+
+};
+
+class CWGPUBindGroup : public IGPUBindGroup
+{
+public:
+	~CWGPUBindGroup()
+	{
+		wgpuBindGroupRelease(m_rhiBindGroup);
+	}
+
+	// TODO: name
+	WGPUBindGroup	m_rhiBindGroup{ nullptr };
+
+};
+
+IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name)
+{
+	CRefPtr<CWGPUBuffer> buffer = CRefPtr_new(CWGPUBuffer);
+	int wgpuUsageFlags = 0;
+	
+	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM) wgpuUsageFlags |= WGPUBufferUsage_Uniform;
+	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	wgpuUsageFlags |= WGPUBufferUsage_Vertex;
+	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	wgpuUsageFlags |= WGPUBufferUsage_Index;
+	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)wgpuUsageFlags |= WGPUBufferUsage_Indirect;
+	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	wgpuUsageFlags |= WGPUBufferUsage_Storage;
+
+	buffer->Init(bufferInfo, wgpuUsageFlags , name);
+	return IGPUBufferPtr(buffer);
+}
+
+IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const RenderPipelineLayoutDesc& layoutDesc)
 {
 	// Pipeline layout and bind group layout
-	// are objects of CWGPUPipeline
+	// are also objects of IGPURenderPipeline
 	// There are 3 distinctive bind groups or buffers as our MatSystem design defines:
 	//		- Material Constant Properties (static buffer)
 	//		- Material Proxy Properties (buffers of these group updated every frame)
 	//		- Scene Properties (camera, transform, fog, clip planes)
-	WGPUPipelineLayout pipelineLayout = nullptr;
-	FixedArray<WGPUBindGroupLayout, 4> bindGroupLayoutList;
+	Array<WGPUBindGroupLayout> rhiBindGroupLayout(PP_SL);
+	Array<WGPUBindGroupLayoutEntry> rhiBindGroupLayoutEntry(PP_SL);
 	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
 	{
-		Array<WGPUBindGroupLayoutEntry> layoutEntry(PP_SL);
+		rhiBindGroupLayoutEntry.clear();
 
 		for(const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
 		{
 			WGPUBindGroupLayoutEntry bglEntry = {};
 			bglEntry.binding = entry.binding;
-			bglEntry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+
+			if (entry.visibility & SHADER_VISIBLE_VERTEX)	bglEntry.visibility |= WGPUShaderStage_Vertex;
+			if (entry.visibility & SHADER_VISIBLE_FRAGMENT) bglEntry.visibility |= WGPUShaderStage_Fragment;
+			if (entry.visibility & SHADER_VISIBLE_COMPUTE)	bglEntry.visibility |= WGPUShaderStage_Compute;
+
 			switch (entry.type)
 			{
-			case BindGroupLayoutDesc::ENTRY_BUFFER:
-				bglEntry.buffer.hasDynamicOffset = entry.buffer.hasDynamicOffset;
-				bglEntry.buffer.type = g_wgpuBufferBindingType[entry.buffer.bindType];
-				break;
-			case BindGroupLayoutDesc::ENTRY_SAMPLER:
-				bglEntry.sampler.type = g_wgpuSamplerBindingType[entry.sampler.bindType];
-				break;
-			case BindGroupLayoutDesc::ENTRY_TEXTURE:
-				bglEntry.texture.sampleType = g_wgpuTexSampleType[entry.texture.sampleType];
-				bglEntry.texture.viewDimension = g_wgpuTexViewDimensions[entry.texture.dimension];
-				bglEntry.texture.multisampled = entry.texture.multisampled;
-				break;
-			case BindGroupLayoutDesc::ENTRY_STORAGETEXTURE:
-				bglEntry.storageTexture.access = g_wgpuStorageTexAccess[entry.storageTexture.access];
-				bglEntry.storageTexture.viewDimension = g_wgpuTexViewDimensions[entry.storageTexture.dimension];
-				bglEntry.storageTexture.format = g_wgpuTexFormats[entry.storageTexture.format];
-				break;
+				case BINDENTRY_BUFFER:
+					bglEntry.buffer.hasDynamicOffset = entry.buffer.hasDynamicOffset;
+					bglEntry.buffer.type = g_wgpuBufferBindingType[entry.buffer.bindType];
+					break;
+				case BINDENTRY_SAMPLER:
+					bglEntry.sampler.type = g_wgpuSamplerBindingType[entry.sampler.bindType];
+					break;
+				case BINDENTRY_TEXTURE:
+					bglEntry.texture.sampleType = g_wgpuTexSampleType[entry.texture.sampleType];
+					bglEntry.texture.viewDimension = g_wgpuTexViewDimensions[entry.texture.dimension];
+					bglEntry.texture.multisampled = entry.texture.multisampled;
+					break;
+				case BINDENTRY_STORAGETEXTURE:
+					bglEntry.storageTexture.access = g_wgpuStorageTexAccess[entry.storageTexture.access];
+					bglEntry.storageTexture.viewDimension = g_wgpuTexViewDimensions[entry.storageTexture.dimension];
+					bglEntry.storageTexture.format = g_wgpuTexFormats[entry.storageTexture.format];
+					break;
 			}
-			layoutEntry.append(bglEntry);
+			rhiBindGroupLayoutEntry.append(bglEntry);
 		}
 
 		WGPUBindGroupLayoutDescriptor bindGroupLayoutDesc = {};
-		bindGroupLayoutDesc.entryCount = layoutEntry.numElem();
-		bindGroupLayoutDesc.entries = layoutEntry.ptr();
+		bindGroupLayoutDesc.entryCount = rhiBindGroupLayoutEntry.numElem();
+		bindGroupLayoutDesc.entries = rhiBindGroupLayoutEntry.ptr();
 
 		WGPUBindGroupLayout bindGroupLayout = wgpuDeviceCreateBindGroupLayout(m_rhiDevice, &bindGroupLayoutDesc);
-		bindGroupLayoutList.append(bindGroupLayout);
+		if (!bindGroupLayout)
+			return nullptr;
+
+		rhiBindGroupLayout.append(bindGroupLayout);
 	}
 
+	WGPUPipelineLayoutDescriptor rhiPipelineLayoutDesc = {};
+	rhiPipelineLayoutDesc.label = layoutDesc.name.Length() ? layoutDesc.name.ToCString() : nullptr;
+	rhiPipelineLayoutDesc.bindGroupLayoutCount = rhiBindGroupLayout.numElem();
+	rhiPipelineLayoutDesc.bindGroupLayouts = rhiBindGroupLayout.ptr();
+
+	WGPUPipelineLayout rhiPipelineLayout = wgpuDeviceCreatePipelineLayout(m_rhiDevice, &rhiPipelineLayoutDesc);
+	if (!rhiPipelineLayout)
+		return nullptr;
+
+	CRefPtr<CWGPUPipelineLayout> pipelineLayout = CRefPtr_new(CWGPUPipelineLayout);
+	pipelineLayout->m_rhiBindGroupLayout = std::move(rhiBindGroupLayout);
+	pipelineLayout->m_rhiPipelineLayout = rhiPipelineLayout;
+	return IGPUPipelineLayoutPtr(pipelineLayout);
+}
+
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc)
+{
+	if (!layoutDesc)
 	{
-		WGPUPipelineLayoutDescriptor pipelineLayoutDesc = {};
-		pipelineLayoutDesc.bindGroupLayoutCount = bindGroupLayoutList.numElem();
-		pipelineLayoutDesc.bindGroupLayouts = bindGroupLayoutList.ptr();
-		pipelineLayout = wgpuDeviceCreatePipelineLayout(m_rhiDevice, &pipelineLayoutDesc);
+		ASSERT_FAIL("layoutDesc is null");
+		return nullptr;
 	}
-	
-	// Those are runtime bind groups that have resources bound to them
-	// Each instance of MatSystemShader has own bind groups
-	FixedArray<WGPUBindGroup, 16> bindGroupList;
-	for(WGPUBindGroupLayout layout : bindGroupLayoutList)
-	{
-		// when creating pipeline itself
-		FixedArray<WGPUBindGroupEntry, 16> bindGroupEntryDescList;
+
+	// Bind group is a collection of GPU resources (buffers, samplers, textures)
+	// layed out for the pipelines so you can set resources in one shot.
+	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+
+	// release samplers after bind groups has been made
+	// other things like textures and buffer are released by user
+	// and still can be used by this bind groups
+	defer{
+		for (WGPUBindGroupEntry& entry : rhiBindGroupEntryList)
 		{
-			WGPUBindGroupEntry bindGroupEntryDesc = {};
-			bindGroupEntryDesc.binding = 0;
-			//bindGroupEntryDesc.buffer;
-			//bindGroupEntryDesc.sampler;
-			//bindGroupEntryDesc.textureView;
-			bindGroupEntryDesc.size = 16384;
-			bindGroupEntryDesc.offset = 0;
-			bindGroupEntryDescList.append(bindGroupEntryDesc);
+			if (entry.sampler)
+				wgpuSamplerRelease(entry.sampler);
+		}
+	};
+
+	for(const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
+	{
+		WGPUBindGroupEntry rhiBindGroupEntryDesc = {};
+		rhiBindGroupEntryDesc.binding = bindGroupEntry.binding;
+		switch (bindGroupEntry.type)
+		{
+			case BINDENTRY_BUFFER:
+			{
+				CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer);
+				if (buffer)
+					rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
+				else
+					ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
+
+				rhiBindGroupEntryDesc.size = bindGroupEntry.bufferSize;
+				rhiBindGroupEntryDesc.offset = bindGroupEntry.bufferOffset;
+				break;
+			}
+			case BINDENTRY_SAMPLER:
+			{
+				const SamplerStateParams& samplerParams = bindGroupEntry.sampler;
+				WGPUSamplerDescriptor rhiSamplerDesc = {};
+				rhiSamplerDesc.addressModeU = g_wgpuAddressMode[samplerParams.addressU];
+				rhiSamplerDesc.addressModeV = g_wgpuAddressMode[samplerParams.addressV];
+				rhiSamplerDesc.addressModeW = g_wgpuAddressMode[samplerParams.addressW];
+				rhiSamplerDesc.compare = g_wgpuCompareFunc[samplerParams.compareFunc];
+				rhiSamplerDesc.minFilter = g_wgpuFilterMode[samplerParams.minFilter];
+				rhiSamplerDesc.magFilter = g_wgpuFilterMode[samplerParams.magFilter];
+				rhiSamplerDesc.mipmapFilter = g_wgpuMipmapFilterMode[samplerParams.mipmapFilter];
+				rhiSamplerDesc.maxAnisotropy = samplerParams.maxAnisotropy;
+				rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(m_rhiDevice, &rhiSamplerDesc);
+				break;
+			}
+			case BINDENTRY_STORAGETEXTURE:
+			case BINDENTRY_TEXTURE:
+				CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture);
+				if(texture)
+					rhiBindGroupEntryDesc.textureView = texture->m_rhiViews[texture->GetAnimationFrame()];
+				else
+					ASSERT_FAIL("NULL texture for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
+				break;
 		}
 
-		WGPUBindGroupDescriptor bindGroupDesc = {};
-		bindGroupDesc.layout = layout;
-		bindGroupDesc.entryCount = bindGroupEntryDescList.numElem();
-		bindGroupDesc.entries = bindGroupEntryDescList.ptr();
+		rhiBindGroupEntryList.append(rhiBindGroupEntryDesc);
+	}
 
-		WGPUBindGroup bindGroup = wgpuDeviceCreateBindGroup(m_rhiDevice, &bindGroupDesc);
-		bindGroupList.append(bindGroup);
+	const CWGPUPipelineLayout* pipelineLayoutDesc = static_cast<CWGPUPipelineLayout*>(layoutDesc.Ptr());
+
+	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
+	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.layout = pipelineLayoutDesc->m_rhiBindGroupLayout[layoutBindGroupIdx];
+	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
+	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
+
+	WGPUBindGroup rhiBindGroup = wgpuDeviceCreateBindGroup(m_rhiDevice, &rhiBindGroupDesc);
+	if (!rhiBindGroup)
+		return nullptr;
+	
+	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
+	bindGroup->m_rhiBindGroup = rhiBindGroup;
+
+	return IGPUBindGroupPtr(bindGroup);
+}
+
+IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc)
+{
+	if (!layoutDesc)
+	{
+		ASSERT_FAIL("layoutDesc is null");
+		return nullptr;
 	}
 
 	// After bindGroupList successfully created, they can be bound to the pipeline
@@ -310,89 +460,88 @@ void* CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineLayoutDesc& layou
 	//
 
 	// pipeline-overridable constants
-	Array<WGPUConstantEntry> vertexPipelineConstants(PP_SL);
-	Array<WGPUConstantEntry> fragmentPipelineConstants(PP_SL);
+	Array<WGPUConstantEntry> rhiVertexPipelineConstants(PP_SL);
+	Array<WGPUConstantEntry> rhiFragmentPipelineConstants(PP_SL);
 
-	WGPURenderPipelineDescriptor renderPipelineDesc = {};
-	renderPipelineDesc.layout = pipelineLayout;
+	WGPURenderPipelineDescriptor rhiRenderPipelineDesc = {};
+	rhiRenderPipelineDesc.layout = static_cast<CWGPUPipelineLayout*>(layoutDesc.Ptr())->m_rhiPipelineLayout;
 
 	// Setup vertex pipeline
 	// Required
-	Array<WGPUVertexAttribute> vertexAttribList(PP_SL);
-	Array<WGPUVertexBufferLayout> vertexBufferLayoutList(PP_SL);
+	Array<WGPUVertexAttribute> rhiVertexAttribList(PP_SL);
+	Array<WGPUVertexBufferLayout> rhiVertexBufferLayoutList(PP_SL);
 	{
 		ASSERT_MSG(pipelineDesc.vertex.shaderEntryPoint.Length(), "No vertex shader entrypoint set");
 
 		for(const VertexLayoutDesc& vertexLayout : pipelineDesc.vertex.vertexLayout)
 		{
-			const int firstVertexAttrib = vertexAttribList.numElem();
+			const int firstVertexAttrib = rhiVertexAttribList.numElem();
 			for(const VertexLayoutDesc::AttribDesc& attrib : vertexLayout.attributes)
 			{
 				WGPUVertexAttribute vertAttr = {};
 				vertAttr.format = g_wgpuVertexFormats[attrib.format][attrib.count];
 				vertAttr.offset = attrib.offset;
 				vertAttr.shaderLocation = attrib.location;
-				vertexAttribList.append(vertAttr);
+				rhiVertexAttribList.append(vertAttr);
 			}
 
-			WGPUVertexBufferLayout vertexBufferLayout = {};
-			vertexBufferLayout.arrayStride = vertexLayout.stride;
-			vertexBufferLayout.attributeCount = vertexAttribList.numElem() - firstVertexAttrib;
-			vertexBufferLayout.attributes = &vertexAttribList[firstVertexAttrib];
-			vertexBufferLayout.stepMode = g_wgpuVertexStepMode[vertexLayout.stepMode];
-			vertexBufferLayoutList.append(vertexBufferLayout);
+			WGPUVertexBufferLayout rhiVertexBufferLayout = {};
+			rhiVertexBufferLayout.arrayStride = vertexLayout.stride;
+			rhiVertexBufferLayout.attributeCount = rhiVertexAttribList.numElem() - firstVertexAttrib;
+			rhiVertexBufferLayout.attributes = &rhiVertexAttribList[firstVertexAttrib];
+			rhiVertexBufferLayout.stepMode = g_wgpuVertexStepMode[vertexLayout.stepMode];
+			rhiVertexBufferLayoutList.append(rhiVertexBufferLayout);
 		}
 
 		WGPUShaderModule vertMod = nullptr; // TODO: retrieve from cache
-		renderPipelineDesc.vertex.module = vertMod;
-		renderPipelineDesc.vertex.entryPoint = pipelineDesc.vertex.shaderEntryPoint;
-		renderPipelineDesc.vertex.bufferCount = vertexBufferLayoutList.numElem();
-		renderPipelineDesc.vertex.buffers = vertexBufferLayoutList.ptr();
-		renderPipelineDesc.vertex.constants = vertexPipelineConstants.ptr();
-		renderPipelineDesc.vertex.constantCount = vertexPipelineConstants.numElem();
+		rhiRenderPipelineDesc.vertex.module = vertMod;
+		rhiRenderPipelineDesc.vertex.entryPoint = pipelineDesc.vertex.shaderEntryPoint;
+		rhiRenderPipelineDesc.vertex.bufferCount = rhiVertexBufferLayoutList.numElem();
+		rhiRenderPipelineDesc.vertex.buffers = rhiVertexBufferLayoutList.ptr();
+		rhiRenderPipelineDesc.vertex.constants = rhiVertexPipelineConstants.ptr();
+		rhiRenderPipelineDesc.vertex.constantCount = rhiVertexPipelineConstants.numElem();
 	}
 	
 	// Depth state
 	// Optional when depth read = false
-	WGPUDepthStencilState depthStencil = {};
+	WGPUDepthStencilState rhiDepthStencil = {};
 	if (pipelineDesc.depthStencil.depthTest)
 	{
 		ASSERT_MSG(pipelineDesc.depthStencil.format != FORMAT_NONE, "Must set valid depthStencil texture format");
 		
-		depthStencil.format = g_wgpuTexFormats[pipelineDesc.depthStencil.format];
-		depthStencil.depthWriteEnabled = pipelineDesc.depthStencil.depthWrite;
-		depthStencil.depthCompare = g_wgpuCompareFunc[pipelineDesc.depthStencil.depthFunc];
-		depthStencil.stencilReadMask = pipelineDesc.depthStencil.stencilMask;
-		depthStencil.stencilWriteMask = pipelineDesc.depthStencil.stencilWriteMask;
-		depthStencil.depthBias = pipelineDesc.depthStencil.depthBias;
-		depthStencil.depthBiasSlopeScale = pipelineDesc.depthStencil.depthBiasSlopeScale;
-		depthStencil.depthBiasClamp = 0; // TODO
+		rhiDepthStencil.format = g_wgpuTexFormats[pipelineDesc.depthStencil.format];
+		rhiDepthStencil.depthWriteEnabled = pipelineDesc.depthStencil.depthWrite;
+		rhiDepthStencil.depthCompare = g_wgpuCompareFunc[pipelineDesc.depthStencil.depthFunc];
+		rhiDepthStencil.stencilReadMask = pipelineDesc.depthStencil.stencilMask;
+		rhiDepthStencil.stencilWriteMask = pipelineDesc.depthStencil.stencilWriteMask;
+		rhiDepthStencil.depthBias = pipelineDesc.depthStencil.depthBias;
+		rhiDepthStencil.depthBiasSlopeScale = pipelineDesc.depthStencil.depthBiasSlopeScale;
+		rhiDepthStencil.depthBiasClamp = 0; // TODO
 
 		// back
-		depthStencil.stencilBack.compare = g_wgpuCompareFunc[pipelineDesc.depthStencil.stencilBack.compareFunc];
-		depthStencil.stencilBack.failOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.failOp];
-		depthStencil.stencilBack.depthFailOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.depthFailOp];
-		depthStencil.stencilBack.passOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.passOp];
+		rhiDepthStencil.stencilBack.compare = g_wgpuCompareFunc[pipelineDesc.depthStencil.stencilBack.compareFunc];
+		rhiDepthStencil.stencilBack.failOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.failOp];
+		rhiDepthStencil.stencilBack.depthFailOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.depthFailOp];
+		rhiDepthStencil.stencilBack.passOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.passOp];
 
 		// front
-		depthStencil.stencilFront.compare = g_wgpuCompareFunc[pipelineDesc.depthStencil.stencilFront.compareFunc];
-		depthStencil.stencilFront.failOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.failOp];
-		depthStencil.stencilFront.depthFailOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.depthFailOp];
-		depthStencil.stencilFront.passOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.passOp];
-		renderPipelineDesc.depthStencil = &depthStencil;
+		rhiDepthStencil.stencilFront.compare = g_wgpuCompareFunc[pipelineDesc.depthStencil.stencilFront.compareFunc];
+		rhiDepthStencil.stencilFront.failOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.failOp];
+		rhiDepthStencil.stencilFront.depthFailOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.depthFailOp];
+		rhiDepthStencil.stencilFront.passOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.passOp];
+		rhiRenderPipelineDesc.depthStencil = &rhiDepthStencil;
 	}
 
 	// Setup fragment pipeline
 	// Fragment state
-	// When opted out, requires depthStencil state
-	WGPUFragmentState fragmentState = {};
-	FixedArray<WGPUColorTargetState, MAX_RENDERTARGETS> colorTargets;
-	FixedArray<WGPUBlendState, MAX_RENDERTARGETS> colorTargetBlends;
+	// When opted out, requires rhiDepthStencil state
+	WGPUFragmentState rhiFragmentState = {};
+	FixedArray<WGPUColorTargetState, MAX_RENDERTARGETS> rhiColorTargets;
+	FixedArray<WGPUBlendState, MAX_RENDERTARGETS> rhiColorTargetBlends;
 	if(pipelineDesc.fragment.targets.numElem())
 	{
 		ASSERT_MSG(pipelineDesc.vertex.shaderEntryPoint.Length(), "No fragment shader entrypoint set");
 
-		// TODO: convert this
 		for(const FragmentPipelineDesc::ColorTargetDesc& target : pipelineDesc.fragment.targets)
 		{
 			{
@@ -404,40 +553,48 @@ void* CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineLayoutDesc& layou
 				blend.alpha.operation = g_wgpuBlendOp[target.alphaBlend.blendFunc];
 				blend.alpha.srcFactor = g_wgpuBlendFactor[target.alphaBlend.srcFactor];
 				blend.alpha.dstFactor = g_wgpuBlendFactor[target.alphaBlend.dstFactor];
-				colorTargetBlends.append(blend);
+				rhiColorTargetBlends.append(blend);
 			}
 
-			WGPUColorTargetState colorTarget = {};
-			colorTarget.format = g_wgpuTexFormats[target.format];
-			colorTarget.blend = &colorTargetBlends.back();
-			colorTarget.writeMask = target.writeMask;
-			colorTargets.append(colorTarget);
+			WGPUColorTargetState rhiColorTarget = {};
+			rhiColorTarget.format = g_wgpuTexFormats[target.format];
+			rhiColorTarget.blend = &rhiColorTargetBlends.back();
+			rhiColorTarget.writeMask = target.writeMask;
+			rhiColorTargets.append(rhiColorTarget);
 		}
 
 		WGPUShaderModule fragMod = nullptr;
-		fragmentState.module = fragMod; // TODO: fetch from cache of fragment modules?
-		fragmentState.entryPoint = pipelineDesc.fragment.shaderEntryPoint;
-		fragmentState.targetCount = colorTargets.numElem();
-		fragmentState.targets = colorTargets.ptr();
-		fragmentState.constants = fragmentPipelineConstants.ptr();
-		fragmentState.constantCount = fragmentPipelineConstants.numElem();
+		rhiFragmentState.module = fragMod; // TODO: fetch from cache of fragment modules?
+		rhiFragmentState.entryPoint = pipelineDesc.fragment.shaderEntryPoint;
+		rhiFragmentState.targetCount = rhiColorTargets.numElem();
+		rhiFragmentState.targets = rhiColorTargets.ptr();
+		rhiFragmentState.constants = rhiFragmentPipelineConstants.ptr();
+		rhiFragmentState.constantCount = rhiFragmentPipelineConstants.numElem();
 
-		renderPipelineDesc.fragment = &fragmentState;
+		rhiRenderPipelineDesc.fragment = &rhiFragmentState;
 	}
 
 	// Multisampling
-	renderPipelineDesc.multisample.count = pipelineDesc.multiSample.count;
-	renderPipelineDesc.multisample.mask = pipelineDesc.multiSample.mask;
-	renderPipelineDesc.multisample.alphaToCoverageEnabled = pipelineDesc.multiSample.alphaToCoverage;
+	rhiRenderPipelineDesc.multisample.count = pipelineDesc.multiSample.count;
+	rhiRenderPipelineDesc.multisample.mask = pipelineDesc.multiSample.mask;
+	rhiRenderPipelineDesc.multisample.alphaToCoverageEnabled = pipelineDesc.multiSample.alphaToCoverage;
 
 	// Primitive toplogy
-	renderPipelineDesc.primitive.frontFace = WGPUFrontFace_CCW; // for now always, TODO
-	renderPipelineDesc.primitive.cullMode = g_wgpuCullMode[pipelineDesc.primitive.cullMode];
-	renderPipelineDesc.primitive.topology = g_wgpuPrimTopology[pipelineDesc.primitive.topology];
-	renderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
-	WGPURenderPipeline pipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &renderPipelineDesc);
+	rhiRenderPipelineDesc.primitive.frontFace = WGPUFrontFace_CCW; // for now always, TODO
+	rhiRenderPipelineDesc.primitive.cullMode = g_wgpuCullMode[pipelineDesc.primitive.cullMode];
+	rhiRenderPipelineDesc.primitive.topology = g_wgpuPrimTopology[pipelineDesc.primitive.topology];
+	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
+	rhiRenderPipelineDesc.label = pipelineDesc.name.Length() ? pipelineDesc.name.ToCString() : nullptr;
 
-	return nullptr;
+	WGPURenderPipeline rhiRenderPipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &rhiRenderPipelineDesc);
+
+	if (!rhiRenderPipeline)
+		return nullptr;
+
+	CRefPtr<CWGPURenderPipeline> renderPipeline = CRefPtr_new(CWGPURenderPipeline);
+	renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
+
+	return IGPURenderPipelinePtr(renderPipeline);
 }
 
 
