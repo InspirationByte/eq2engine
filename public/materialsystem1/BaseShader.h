@@ -33,12 +33,13 @@ enum EShaderBlendMode : int
 		public:													\
 			const char* GetName() const	{ return ThisClassNameStr; } \
 			void Init(IShaderAPI* renderAPI, IMaterial* material) override \
-			{ CBaseShader::Init(renderAPI, material); _ShaderInitParams(renderAPI); }
+			{ CBaseShader::Init(renderAPI, material); ShaderInitParams(renderAPI); }
 
 
-#define SHADER_INIT_PARAMS()				void _ShaderInitParams(IShaderAPI* renderAPI)
-#define SHADER_INIT_RENDERPASS_PIPELINE()	bool InitRenderPassPipeline(IShaderAPI* renderAPI)
+#define SHADER_INIT_PARAMS()				void ShaderInitParams(IShaderAPI* renderAPI)
 #define SHADER_INIT_TEXTURES()				void InitTextures(IShaderAPI* renderAPI)
+#define SHADER_INIT_RENDERPASS_PIPELINE()	bool InitRenderPassPipeline(IShaderAPI* renderAPI)
+
 #define SHADER_SETUP_STAGE()				void SetupShader(IShaderAPI* renderAPI)
 #define SHADER_SETUP_CONSTANTS()			void SetupConstants(IShaderAPI* renderAPI, uint paramMask)
 
@@ -173,8 +174,9 @@ public:
 	bool						IsInitialized() const { return m_isInit; }
 	int							GetFlags() const { return m_flags; }
 
-	virtual void				FillPipelineLayoutDesc(RenderPipelineLayoutDesc& renderPipelineLayoutDesc) const;
-	virtual void				FillPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const;
+	virtual void				FillShaderBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const {}
+	virtual void				FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
+	virtual void				FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const;
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };

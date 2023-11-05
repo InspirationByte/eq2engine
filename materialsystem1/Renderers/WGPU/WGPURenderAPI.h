@@ -53,7 +53,37 @@ public:
 	void			Finish() {}
 
 //-------------------------------------------------------------
-// Vertex buffer objects
+// Textures
+
+	ITexturePtr					CreateTextureResource(const char* pszName);
+	ITexturePtr					CreateRenderTarget(const char* pszName, int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR, ETexAddressMode textureAddress = TEXADDRESS_WRAP, ECompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
+
+//-------------------------------------------------------------
+// Pipeline management
+
+	//IGPUShaderModulePtr			FindOrCreateShaderModule(const char* name, bool& justCreated) const;
+
+	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const;
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
+	IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const;
+
+//-------------------------------------------------------------
+// Buffer management
+
+	IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const;
+
+//-------------------------------------------------------------
+// Render pass management
+
+	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc) const;
+
+//-------------------------------------------------------------
+// Command buffer management
+
+	void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const;
+
+//-------------------------------------------------------------
+//DEPRECATED Vertex buffer objects
 
 	IVertexFormat*	CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
 	IVertexBuffer*	CreateVertexBuffer(const BufferInfo& bufferInfo);
@@ -63,38 +93,20 @@ public:
 	void			DestroyIndexBuffer(IIndexBuffer* pIndexBuffer);
 
 //-------------------------------------------------------------
-// Shaders and it's operations
+// DEPRECATED Shaders and it's operations
 
 	IShaderProgramPtr	CreateNewShaderProgram(const char* pszName, const char* query = nullptr);
-	void			FreeShaderProgram(IShaderProgram* pShaderProgram);
-	bool			CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr);
+	void				FreeShaderProgram(IShaderProgram* pShaderProgram);
+	bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr);
 
 //-------------------------------------------------------------
-// Occlusion query
+// DEPRECATED Occlusion query
 
 	// creates occlusion query object
 	IOcclusionQuery*	CreateOcclusionQuery();
 
 	// removal of occlusion query object
-	void			DestroyOcclusionQuery(IOcclusionQuery* pQuery);
-
-//-------------------------------------------------------------
-// Textures
-
-	ITexturePtr		CreateTextureResource(const char* pszName);
-	ITexturePtr		CreateRenderTarget(const char* pszName, int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR, ETexAddressMode textureAddress = TEXADDRESS_WRAP, ECompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
-
-//-------------------------------------------------------------
-// Pipeline management
-
-	IGPURenderPipelinePtr	CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc);
-	IGPUPipelineLayoutPtr	CreatePipelineLayout(const RenderPipelineLayoutDesc& layoutDesc);
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc);
-
-//-------------------------------------------------------------
-// Buffer management
-
-	IGPUBufferPtr			CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr);
+	void				DestroyOcclusionQuery(IOcclusionQuery* pQuery);
 
 //-------------------------------------------------------------
 // DEPRECATED Render states management
@@ -155,11 +167,14 @@ public:
 //-------------------------------------------------------------
 // Private access
 
-	WGPUDevice		GetWGPUDevice() const { return m_rhiDevice; }
-	WGPUQueue		GetWGPUQueue() const { return m_rhiQueue; };
+	WGPUDevice			GetWGPUDevice() const { return m_rhiDevice; }
+	WGPUQueue			GetWGPUQueue() const { return m_rhiQueue; };
 
 protected:
 
-	WGPUDevice		m_rhiDevice{ nullptr };
-	WGPUQueue		m_rhiQueue{ nullptr };
+	WGPUShaderModule	CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr);
+
+
+	WGPUDevice			m_rhiDevice{ nullptr };
+	WGPUQueue			m_rhiQueue{ nullptr };
 };

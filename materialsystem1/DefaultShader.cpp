@@ -32,11 +32,11 @@ FLUENT_BEGIN_TYPE(ShaderRenderPassDesc);
 	ThisType& VertexLayout(VertexLayoutDesc&& x) { vertexLayout.append(std::move(x)); return *this; }
 	ThisType& ColorTarget(ColorTargetDesc&& x)
 	{
-		targets.append(std::move(x)); return *this;
+		ref.targets.append(std::move(x)); return *this;
 	}
 	ThisType& ColorTarget(const char* name, ETextureFormat format)
 	{
-		targets.append({ name, format }); return *this;
+		ref.targets.append({ name, format }); return *this;
 	}
 FLUENT_END_TYPE
 
@@ -63,6 +63,15 @@ BEGIN_SHADER_CLASS(Default)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
+	void FillShaderBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
+	{
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("MaterialParams", 0, SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
+			.Texture("BaseTexture", 1, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.Sampler("BaseTextureSampler", 2, SHADER_VISIBLE_FRAGMENT, SAMPLERBIND_FILTERING)
+			.End();
+	}
+
 	SHADER_INIT_PARAMS()
 	{
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
@@ -76,6 +85,29 @@ BEGIN_SHADER_CLASS(Default)
 
 	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
+		// maybe somewhere in BaseShader before SHADER_INIT_RENDERPASS_PIPELINE
+		{
+			PipelineLayoutDesc pipelineLayoutDesc;
+			FillPipelineLayoutDesc(pipelineLayoutDesc);
+			IGPUPipelineLayoutPtr pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+
+			RenderPipelineDesc renderPipelineDesc;
+			FillRenderPipelineDesc(renderPipelineDesc);
+			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(pipelineLayout, renderPipelineDesc);
+
+			ITexturePtr baseTexture = m_baseTexture.Get();
+			if (!baseTexture)
+				baseTexture = g_matSystem->GetWhiteTexture();
+
+			IGPUBufferPtr paramsBuffer = renderAPI->CreateBuffer(BufferInfo(sizeof(Vector4D), 1), BUFFERUSAGE_UNIFORM, "paramsBuffer");
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, paramsBuffer, 0, 16)
+				.Texture(1, baseTexture)
+				.Sampler(2, baseTexture->GetSamplerState())
+				.End();
+			IGPUBindGroupPtr bindGroup = renderAPI->CreateBindGroup(pipelineLayout, 1, shaderBindGroupDesc);
+		}
+
 		if(SHADER_PASS(Unlit))
 			return true;
 
@@ -87,6 +119,9 @@ BEGIN_SHADER_CLASS(Default)
 
 		return true;
 	}
+
+	//------------------------------------------------------------------
+	// DEPRECATED all below
 
 	SHADER_SETUP_STAGE()
 	{
@@ -114,6 +149,7 @@ BEGIN_SHADER_CLASS(Default)
 
 	SHADER_DECLARE_PASS(Unlit);
 
-	MatTextureProxy m_baseTexture;
+	MatTextureProxy		m_baseTexture;
+	//IGPUBuffer*			m_paramsBuffer{ nullptr };
 
 END_SHADER_CLASS

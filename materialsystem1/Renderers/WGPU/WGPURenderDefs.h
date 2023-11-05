@@ -253,3 +253,40 @@ static WGPUMipmapFilterMode g_wgpuMipmapFilterMode[] = {
 	WGPUMipmapFilterMode_Linear,
 	WGPUMipmapFilterMode_Linear,
 };
+
+// ELoadFunc
+static WGPULoadOp g_wgpuLoadOp[] = {
+	WGPULoadOp_Load,
+	WGPULoadOp_Clear
+};
+
+// EStoreFunc
+static WGPUStoreOp g_wgpuStoreOp[] = {
+	WGPUStoreOp_Store,
+	WGPUStoreOp_Discard,
+};
+
+// EIndexFormat
+static WGPUIndexFormat g_wgpuIndexFormat[] = {
+	WGPUIndexFormat_Uint16,
+	WGPUIndexFormat_Uint32,
+};
+
+inline static void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerParams, WGPUSamplerDescriptor& rhiSamplerDesc)
+{
+	rhiSamplerDesc.addressModeU = g_wgpuAddressMode[samplerParams.addressU];
+	rhiSamplerDesc.addressModeV = g_wgpuAddressMode[samplerParams.addressV];
+	rhiSamplerDesc.addressModeW = g_wgpuAddressMode[samplerParams.addressW];
+	rhiSamplerDesc.compare = g_wgpuCompareFunc[samplerParams.compareFunc];
+	rhiSamplerDesc.minFilter = g_wgpuFilterMode[samplerParams.minFilter];
+	rhiSamplerDesc.magFilter = g_wgpuFilterMode[samplerParams.magFilter];
+	rhiSamplerDesc.mipmapFilter = g_wgpuMipmapFilterMode[samplerParams.mipmapFilter];
+	rhiSamplerDesc.maxAnisotropy = samplerParams.maxAnisotropy;
+}
+
+inline static void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendComponent& rhiBlendComponent)
+{
+	rhiBlendComponent.operation = g_wgpuBlendOp[blendParams.blendFunc];
+	rhiBlendComponent.srcFactor = g_wgpuBlendFactor[blendParams.srcFactor];
+	rhiBlendComponent.dstFactor = g_wgpuBlendFactor[blendParams.dstFactor];
+}

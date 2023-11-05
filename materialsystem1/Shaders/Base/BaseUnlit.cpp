@@ -20,18 +20,16 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	SHADER_INIT_PARAMS()
 	{
 		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
+
+		Builder<BindGroupLayoutDesc>()
+			.Texture("BaseTexture", 0, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
 	}
 
 	SHADER_INIT_TEXTURES()
 	{
 		// parse material variables
 		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture, m_baseTexture);
-
-		// set texture setup
-		if(m_baseTexture.IsValid())
-			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
-
-		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
 	SHADER_INIT_RENDERPASS_PIPELINE()
@@ -80,6 +78,12 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			SHADER_DECLARE_SIMPLE_DEFINITION(true, "SKIN");
 			SHADER_FIND_OR_COMPILE(Unlit_fog, "BaseUnlit");
 		}
+
+		// set texture setup
+		if (m_baseTexture.IsValid())
+			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
+
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 
 		return true;
 	}

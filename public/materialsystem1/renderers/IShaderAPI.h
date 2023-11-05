@@ -13,6 +13,7 @@
 
 #include "ShaderAPI_defs.h"
 
+#include "IGPUBuffer.h"
 #include "IVertexBuffer.h"
 #include "IVertexFormat.h"
 #include "IIndexBuffer.h"
@@ -24,7 +25,10 @@
 #undef far
 #undef near
 
-// API reset type
+struct KVSection;
+class CImage;
+
+// DEPRECATED API reset type
 enum EStateResetFlags : int
 {
 	STATE_RESET_SHADER = (1 << 0),
@@ -42,9 +46,6 @@ enum EStateResetFlags : int
 	STATE_RESET_VBO = (STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
 };
 
-struct KVSection;
-class CImage;
-
 // shader api initializer
 struct ShaderAPIParams
 {
@@ -57,6 +58,55 @@ struct ShaderAPIParams
 
 	bool				verticalSyncEnabled{ false };		// vertical syncronization
 };
+
+//---------------------------------------------------------------
+
+// TODO: more appropriate name, like ShaderAPI* ???
+
+//---------------------------------
+// Pipeline layout. Used for creating bind groups and pipelines
+class IGPUPipelineLayout : public RefCountedObject<IGPUPipelineLayout> {};
+using IGPUPipelineLayoutPtr = CRefPtr<IGPUPipelineLayout>;
+
+//---------------------------------
+// Render pipeline. Used for rendering things
+class IGPURenderPipeline : public RefCountedObject<IGPURenderPipeline> {};
+using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
+
+//---------------------------------
+// Bind group. References used resources needed to render (textures, uniform buffers etc)
+// not used for Vertex and Index buffers.
+class IGPUBindGroup : public RefCountedObject<IGPUBindGroup> {};
+using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
+
+//---------------------------------
+// The command buffer ready to be passed into queue for execution
+class IGPUCommandBuffer : public RefCountedObject<IGPUCommandBuffer> {};
+using IGPUCommandBufferPtr = CRefPtr<IGPUCommandBuffer>;
+
+//---------------------------------
+// Render pass. Used to record a command buffer
+class IGPURenderPassRecorder : public RefCountedObject<IGPURenderPassRecorder>
+{
+public:
+	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
+	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
+
+	// TODO: use IGPUBuffer instead of IVertexBuffer and IIndexBuffer
+	virtual void					SetVertexBuffer(int slot, IVertexBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
+	virtual void					SetIndexBuffer(IIndexBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
+
+	virtual void					SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth) = 0;
+	virtual void					SetScissorRectangle(const IAARectangle& rectangle, float minDepth, float maxDepth) = 0;
+
+	virtual void					Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance = 0) = 0;
+	virtual void					DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex = 0, int firstInstance = 0) = 0;
+	virtual void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
+	virtual void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
+
+	virtual IGPUCommandBufferPtr	End() = 0;
+};
+using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
 
 //
 // ShaderAPI interface
@@ -106,15 +156,37 @@ public:
 	virtual void				Finish() = 0;
 
 //-------------------------------------------------------------
-// Pipeline state layout
+// Pipeline management
+
+	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
+	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const = 0;
+
+//-------------------------------------------------------------
+// Buffer management
+
+	virtual IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const = 0;
+
+//-------------------------------------------------------------
+// Pass management
+
+	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc) const = 0;
+	// TODO: virtual IGPUComputePassRecorderPtr BeginComputePass();
+
+//-------------------------------------------------------------
+// Command buffer management
+	
+	virtual void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const = 0;
+
+//-------------------------------------------------------------
+// DEPRECATED Pipeline state layout
 //-------------------------------------------------------------
 
-	// DEPRECATED
 	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout ) = 0;
 	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
 
 //-------------------------------------------------------------
-// Buffer objects
+// DEPRECATED Buffer objects
 //-------------------------------------------------------------
 
 	virtual IVertexBuffer*		CreateVertexBuffer(const BufferInfo& bufferInfo) = 0;
@@ -125,7 +197,7 @@ public:
 	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
 
 //-------------------------------------------------------------
-// Shader resource management
+// DEPRECATED Shader resource management
 //-------------------------------------------------------------
 
 	virtual IShaderProgramPtr	FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
@@ -137,7 +209,7 @@ public:
 	virtual bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
 
 //-------------------------------------------------------------
-// Occlusion query management
+// DEPRECATED Occlusion query management
 //-------------------------------------------------------------
 
 	virtual IOcclusionQuery*	CreateOcclusionQuery() = 0;
@@ -181,7 +253,7 @@ public:
 													) = 0;
 
 //-------------------------------------------------------------
-// Render states management
+// DEPRECATED Render states management
 //-------------------------------------------------------------
 
 	virtual IRenderState*		CreateBlendingState( const BlendStateParams &blendDesc ) = 0;
@@ -190,7 +262,7 @@ public:
 	virtual void				DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) = 0;
 
 //-------------------------------------------------------------
-// Rasterizer and render state properties
+// DEPRECATED Rasterizer and render state properties
 //-------------------------------------------------------------
 
 	virtual void				SetDepthRange( float near, float far ) = 0;
@@ -202,7 +274,7 @@ public:
 	virtual void				SetRasterizerState( IRenderState* pState ) = 0;
 
 //-------------------------------------------------------------
-// Vertex buffer object handling
+// DEPRECATED Vertex buffer object handling
 //-------------------------------------------------------------
 
 	virtual void				SetVertexFormat( IVertexFormat* pVertexFormat ) = 0;
@@ -214,7 +286,7 @@ public:
 	virtual void				ChangeIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
 
 //-------------------------------------------------------------
-// Shaders state operations
+// DEPRECATED Shaders state operations
 //-------------------------------------------------------------
 
 	virtual void				SetShader(IShaderProgramPtr pShader) = 0;
@@ -230,7 +302,7 @@ public:
 	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
 
 //-------------------------------------------------------------
-// Render target state operations
+// DEPRECATED Render target state operations
 //-------------------------------------------------------------
 
 	// clear current rendertarget
@@ -255,7 +327,7 @@ public:
 	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall ) = 0;
 
 //-------------------------------------------------------------
-// Sending states to API
+// DEPRECATED Sending states to API
 //-------------------------------------------------------------
 
 	// reset states. Use RESET_TYPE flags. By default all states reset
@@ -274,7 +346,7 @@ public:
 	virtual void				ApplyConstants() = 0;
 
 //-------------------------------------------------------------
-// Primitive drawing
+// DEPRECATED Primitive drawing
 //-------------------------------------------------------------
 
 	virtual void				DrawIndexedPrimitives(EPrimTopology nType, int firstIndex, int indices, int firstVertex, int vertices, int baseVertex = 0) = 0;

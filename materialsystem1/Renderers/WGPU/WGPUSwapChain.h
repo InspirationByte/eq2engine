@@ -9,6 +9,7 @@
 #include <webgpu/webgpu.h>
 #include "renderers/ISwapChain.h"
 #include "renderers/ShaderAPI_defs.h"
+#include "WGPUTexture.h"
 
 class CWGPURenderLib;
 
@@ -18,7 +19,7 @@ public:
 	friend class CWGPURenderLib;
 
 	~CWGPUSwapChain();
-	CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo);
+	CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
 
 	void*			GetWindow() const;
 	int				GetMSAASamples() const { return m_msaaSamples; }
@@ -31,8 +32,9 @@ public:
 	bool			SwapBuffers();
 	
 protected:
-	CWGPURenderLib*		m_host{ nullptr };
+	CRefPtr<CWGPUTexture>	m_textureRef;
 
+	CWGPURenderLib*		m_host{ nullptr };
 	RenderWindowInfo	m_winInfo;
 
 	WGPUTextureFormat	m_swapFmt{ WGPUTextureFormat_Undefined };

@@ -55,6 +55,7 @@ protected:
 	WGPUQueue				m_deviceQueue{ nullptr };
 
 	Array<CWGPUSwapChain*>	m_swapChains{ PP_SL };
+	int						m_swapChainCounter{ 0 };
 	CWGPUSwapChain*			m_currentSwapChain{ nullptr };
 	bool					m_windowed{ false };
 };

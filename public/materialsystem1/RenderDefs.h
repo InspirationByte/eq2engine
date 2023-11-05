@@ -159,28 +159,6 @@ struct RenderBoneTransform
 // must be exactly two regs
 assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
 
-struct RenderPassDesc
-{
-	// TODO will use TextureView instead of this
-	FixedArray<ITexturePtr, MAX_RENDERTARGETS>	renderTargets;
-	ITexturePtr		depthTarget;
-
-	IAARectangle	scissorRect;
-	IAARectangle	viewportRect;
-
-	MColor			colorValue{ color_black };
-	float			depthValue{ 1.0f };
-	bool			clearColor{ false };
-	bool			clearDepth{ false };
-
-	RenderPassDesc()
-	{
-		renderTargets.assureSizeEmplace(renderTargets.numAllocated());
-	}
-};
-
-using RenderPassId = uint;
-
 // render command to draw geometry
 struct RenderDrawCmd
 {

@@ -341,11 +341,17 @@ enum EPrimTopology : int
 	PRIM_TRIANGLE_STRIP
 };
 
+enum EIndexFormat : int
+{
+	INDEXFMT_UINT16 = 0,
+	INDEXFMT_UINT32,
+};
+
 enum EStripIndexFormat : int
 {
-	STRIP_INDEX_NONE = 0,
-	STRIP_INDEX_UINT16,
-	STRIP_INDEX_UINT32,
+	STRIPINDEX_NONE = 0,
+	STRIPINDEX_UINT16,
+	STRIPINDEX_UINT32,
 };
 
 typedef int (*PRIMCOUNTER)(int numPrimitives);
@@ -369,7 +375,7 @@ struct PrimitiveDesc
 {
 	ECullMode				cullMode{ CULL_NONE };
 	EPrimTopology			topology{ PRIM_TRIANGLES };
-	EStripIndexFormat		stripIndex{ STRIP_INDEX_NONE };
+	EStripIndexFormat		stripIndex{ STRIPINDEX_NONE };
 };
 
 FLUENT_BEGIN_TYPE(PrimitiveDesc)
@@ -602,14 +608,14 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 FLUENT_END_TYPE
 
-struct RenderPipelineLayoutDesc
+struct PipelineLayoutDesc
 {
 	using BindGroupDescList = Array<BindGroupLayoutDesc>;
 	BindGroupDescList	bindGroups{ PP_SL };
 	EqString			name;
 };
 
-FLUENT_BEGIN_TYPE(RenderPipelineLayoutDesc)
+FLUENT_BEGIN_TYPE(PipelineLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
 	ThisType& Group(BindGroupLayoutDesc&& x)
 	{
@@ -814,6 +820,75 @@ struct BufferInfo
 	const void*			data{ nullptr };
 	int					dataSize{ 0 };
 };
+
+//-------------------------------
+// Render pass builders
+
+enum ELoadFunc
+{
+	LOADFUNC_LOAD = 0,
+	LOADFUNC_CLEAR,
+};
+
+enum EStoreFunc
+{
+	STOREFUNC_STORE = 0,
+	STOREFUNC_DISCARD,
+};
+
+struct RenderPassDesc
+{
+	struct ColorTargetDesc
+	{
+		ITexture*	target{ nullptr };
+		// TODO: resolveTarget
+		ELoadFunc	loadOp{ LOADFUNC_LOAD };
+		EStoreFunc	storeOp{ STOREFUNC_STORE };
+		MColor		clearColor{ color_black };
+		int			depthSlice{ 0 };
+	};
+	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
+	ColorTargetList	colorTargets;
+
+	ITexture*		depthStencil{ nullptr };
+	float			depthClearValue{ 1.0f };
+	ELoadFunc		depthLoadOp{ LOADFUNC_LOAD };
+	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };
+
+	int				stencilClearValue{ 0 };
+	ELoadFunc		stencilLoadOp{ LOADFUNC_LOAD };
+	EStoreFunc		stencilStoreOp{ STOREFUNC_STORE };
+
+	EqString		name;
+};
+
+FLUENT_BEGIN_TYPE(RenderPassDesc)
+	FLUENT_SET_VALUE(name, Name)
+	ThisType& ColorTarget(ITexture* colorTarget, bool clear = false, const MColor& clearColor = color_black)
+	{
+		ColorTargetDesc& entry = ref.colorTargets.append();
+		entry.target = colorTarget;
+		entry.loadOp = clear ? LOADFUNC_CLEAR : LOADFUNC_LOAD;
+		entry.storeOp = STOREFUNC_STORE;
+		entry.clearColor = clearColor;
+		return *this;
+	}
+	FLUENT_SET_VALUE(depthStencil, DepthStencilTarget)
+	FLUENT_SET_VALUE(depthStoreOp, DepthStoreOp)
+	ThisType& DepthClear(float clearValue = 1.0f)
+	{
+		ref.depthClearValue = clearValue;
+		ref.depthLoadOp = LOADFUNC_CLEAR;
+		return *this; 
+	}
+	FLUENT_SET_VALUE(stencilStoreOp, StencilStoreOp)
+	ThisType& StencilClear(int clearValue = 0)
+	{
+		ref.stencilClearValue = clearValue;
+		ref.stencilLoadOp = LOADFUNC_CLEAR;
+		return *this; 
+	}
+FLUENT_END_TYPE
 
 // ------------------------------
 // DEPRECATED STRUCTURES

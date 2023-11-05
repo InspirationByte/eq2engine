@@ -111,19 +111,20 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	SetParameterFunctor(SHADERPARAM_BONETRANSFORMS, &CBaseShader::ParamSetup_BoneTransforms);
 }
 
-void CBaseShader::FillPipelineLayoutDesc(RenderPipelineLayoutDesc& renderPipelineLayoutDesc) const
+void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const
 {
-	// add default bind groups
-	Builder<RenderPipelineLayoutDesc>(renderPipelineLayoutDesc)
-		.Group(
-			Builder<BindGroupLayoutDesc>()
-			.Buffer("matSystemTransform", 0, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
-			.Buffer("materialParams", 1, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
-			.End()
-		);
+	Builder<PipelineLayoutDesc> builder(renderPipelineLayoutDesc);
+
+	// matsystem bindgroup is always first
+	builder.Group(
+		Builder<BindGroupLayoutDesc>()
+		.Buffer("matSystemTransform", 0, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
+		.End()
+	);
+	FillShaderBindGroupLayout(renderPipelineLayoutDesc.bindGroups.append());
 }
 
-void CBaseShader::FillPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
+void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
 {
 	// setup render & shadowing parameters
 	if (!(m_flags & MATERIAL_FLAG_NO_Z_TEST))
@@ -134,7 +135,7 @@ void CBaseShader::FillPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
 		Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
 			.DepthTestOn()
 			.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-			.DepthFormat(FORMAT_D24S8);		// TODO: specific depth texture format of render pass
+			.DepthFormat(g_matSystem->GetBackBufferDepthFormat());
 	}
 
 	if (!(m_flags & MATERIAL_FLAG_ONLY_Z))
@@ -159,8 +160,8 @@ void CBaseShader::FillPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
 
 		// TODO: number of rendertargets and their formats
 		// and their types should come from render pass defined by shader!!!
-		Builder<FragmentPipelineDesc>(renderPipelineDesc.fragment)
-			.ColorTarget("Albedo", FORMAT_RGBA8, colorBlend, alphaBlend);
+		// Builder<FragmentPipelineDesc>(renderPipelineDesc.fragment)
+		//	.ColorTarget("Albedo", FORMAT_RGBA8, colorBlend, alphaBlend);
 	}
 }
 

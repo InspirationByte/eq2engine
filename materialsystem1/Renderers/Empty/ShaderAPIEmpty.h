@@ -340,6 +340,28 @@ public:
 	}
 
 //-------------------------------------------------------------
+// Pipeline management
+
+	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const { return nullptr; }
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
+	IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const { return nullptr; }
+
+//-------------------------------------------------------------
+// Buffer management
+
+	IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const { return nullptr; }
+
+//-------------------------------------------------------------
+// Render pass management
+
+	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc) const { return nullptr; }
+
+//-------------------------------------------------------------
+// Command buffer management
+
+	void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const {}
+
+//-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)
 //-------------------------------------------------------------
 

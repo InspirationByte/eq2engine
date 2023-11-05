@@ -258,49 +258,35 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 
 void CWGPURenderLib::EndFrame()
 {
+	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
+		.ColorTarget(m_currentSwapChain->GetBackbuffer(), true, MColor(0.25f, 0.15f, 0.15f, 1.0f))
+		.Name("clearScreen")
+		.End();
+	
+	IGPURenderPassRecorderPtr rendPassRecorder = GetRenderer()->BeginRenderPass(renderPassDesc);
+	IGPUCommandBufferPtr clearScreenCmd = rendPassRecorder->End();
+
+	GetRenderer()->SubmitCommandBuffer(clearScreenCmd);
+
 	g_renderWorker.WaitForExecute(__func__, [&]() {
-		CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
-		WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
-
-		WGPURenderPassColorAttachment colorDesc = {};
-		colorDesc.view = backBufView;
-		colorDesc.loadOp = WGPULoadOp_Clear;
-		colorDesc.storeOp = WGPUStoreOp_Store;
-		colorDesc.clearValue = WGPUColor{ 0.9, 0.1, 0.2, 1.0 };
-
-		// my first command buffer
-		{
-			WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
-			{
-				WGPURenderPassDescriptor renderPass = {};
-				renderPass.colorAttachmentCount = 1;
-				renderPass.colorAttachments = &colorDesc;
-
-				WGPURenderPassEncoder renderPassEnc = wgpuCommandEncoderBeginRenderPass(encoder, &renderPass);
-				wgpuRenderPassEncoderEnd(renderPassEnc);
-				wgpuRenderPassEncoderRelease(renderPassEnc);
-			}
-			{
-				WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, nullptr);
-				wgpuCommandEncoderRelease(encoder);
-
-				wgpuQueueSubmit(m_deviceQueue, 1, &commands);
-				wgpuCommandBufferRelease(commands);
-			}
-		}
-		//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
-
-		// wait for queues to be submitted from other job threads
-		currentSwapChain->SwapBuffers();
-		wgpuTextureViewRelease(backBufView);
-
+		m_currentSwapChain->SwapBuffers();
 		return 0;
 	});
 }
 
 ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
-	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo);
+	bool justCreated = false;
+
+	EqString texName(EqString::Format("swapChain%d", m_swapChainCounter));
+	ITexturePtr swapChainTexture = g_renderAPI->FindOrCreateTexture(texName, justCreated);
+	++m_swapChainCounter;
+
+	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
+
+	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo, swapChainTexture);
+
+
 	m_swapChains.append(swapChain);
 	return swapChain;
 }

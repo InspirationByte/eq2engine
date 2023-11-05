@@ -8,8 +8,13 @@
 #include "core/core_common.h"
 #include "core/ConCommand.h"
 #include "imaging/ImageLoader.h"
+
 #include "WGPURenderAPI.h"
 #include "WGPURenderDefs.h"
+#include "WGPUStates.h"
+#include "WGPURenderPassRecorder.h"
+
+#include "../RenderWorker.h"
 
 #define ASSERT_DEPRECATED() // ASSERT_FAIL("Deprecated API %s", __func__)
 
@@ -19,10 +24,24 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 {
 	ShaderAPI_Base::Init(params);
 }
-//void CWGPURenderAPI::Shutdown() {}
 
 void CWGPURenderAPI::PrintAPIInfo() const
 {
+	Msg("ShaderAPI: WGPURenderAPI\n");
+
+	Msg("  Maximum texture anisotropy: %d\n", m_caps.maxTextureAnisotropicLevel);
+	Msg("  Maximum drawable textures: %d\n", m_caps.maxTextureUnits);
+	Msg("  Maximum vertex textures: %d\n", m_caps.maxVertexTextureUnits);
+	Msg("  Maximum texture size: %d x %d\n", m_caps.maxTextureSize, m_caps.maxTextureSize);
+
+	MsgInfo("------ Loaded textures ------\n");
+
+	CScopedMutex scoped(g_sapi_TextureMutex);
+	for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
+	{
+		CWGPUTexture* pTexture = static_cast<CWGPUTexture*>(*it);
+		MsgInfo("     %s (%d) - %dx%d\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(), pTexture->GetHeight());
+	}
 }
 
 bool CWGPURenderAPI::IsDeviceActive() const
@@ -73,37 +92,6 @@ void CWGPURenderAPI::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 }
 
 //-------------------------------------------------------------
-// Shaders and it's operations
-
-IShaderProgramPtr CWGPURenderAPI::CreateNewShaderProgram(const char* pszName, const char* query)
-{
-	return nullptr;
-}
-
-void CWGPURenderAPI::FreeShaderProgram(IShaderProgram* pShaderProgram)
-{
-}
-
-bool CWGPURenderAPI::CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra)
-{
-	return true; 
-}
-
-//-------------------------------------------------------------
-// Occlusion query
-
-// creates occlusion query object
-IOcclusionQuery* CWGPURenderAPI::CreateOcclusionQuery()
-{
-	return nullptr;
-}
-
-// removal of occlusion query object
-void CWGPURenderAPI::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
-{
-}
-
-//-------------------------------------------------------------
 // Textures
 
 ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
@@ -134,124 +122,7 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName,int width, in
 //-------------------------------------------------------------
 // Pipeline management
 
-#pragma optimize("", off)
-
-static void PipelineLayoutDescBuilder()
-{
-	// FIXME: names?
-	RenderPipelineLayoutDesc pipelineLayoutDesc = Builder<RenderPipelineLayoutDesc>()
-		.Group(
-			Builder<BindGroupLayoutDesc>()
-			.Texture("baseTexture", 0, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.Buffer("materialProps", 1, SHADER_VISIBLE_FRAGMENT, BUFFERBIND_UNIFORM)
-			.End()
-		)
-		.End();
-
-	sizeof(RenderPipelineLayoutDesc);
-
-	Msg("%s dun\n", __func__);
-}
-
-static void PipelineDescBuilder()
-{
-	RenderPipelineDesc pipelineDesc = Builder<RenderPipelineDesc>()
-		.DepthState(
-			Builder<DepthStencilStateParams>()
-			.DepthFormat(FORMAT_R16F)
-			.DepthTestOn()
-			.DepthWriteOn()
-			.End()
-		)
-		.VertexState(
-			Builder<VertexPipelineDesc>()
-			.ShaderEntry("main")
-			.VertexLayout(
-				Builder<VertexLayoutDesc>()
-				.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
-				.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, sizeof(Vector3D), ATTRIBUTEFORMAT_HALF, 2)
-				.Stride(sizeof(Vector3D))
-				.End()
-			)
-			.End()
-		)
-		.FragmentState(
-			Builder<FragmentPipelineDesc>()
-			.ColorTarget("Color", FORMAT_RGBA8)
-			.End()
-		)
-		.PrimitiveState(
-			Builder<PrimitiveDesc>()
-			.Cull(CULL_BACK)
-			.Topology(PRIM_TRIANGLES)
-			.End()
-		)
-		.End();
-
-	sizeof(RenderPipelineDesc);
-
-	Msg("%s dun\n", __func__);
-}
-
-static void BindGroupBuilder()
-{
-	BindGroupDesc bindGroup = Builder<BindGroupDesc>()
-		.Buffer(1, nullptr, 0, 16)
-		.Texture(2, nullptr)
-		.End();
-
-	Msg("%s dun\n", __func__);
-}
-
-DECLARE_CMD(test_wgpu, nullptr, 0)
-{
-	PipelineLayoutDescBuilder();
-	PipelineDescBuilder();
-	BindGroupBuilder();
-}
-
-class CWGPUPipelineLayout : public IGPUPipelineLayout
-{
-public:
-	~CWGPUPipelineLayout()
-	{
-		wgpuPipelineLayoutRelease(m_rhiPipelineLayout);
-		for(WGPUBindGroupLayout layout: m_rhiBindGroupLayout)
-			wgpuBindGroupLayoutRelease(layout);
-	}
-
-	// TODO: name
-	Array<WGPUBindGroupLayout>	m_rhiBindGroupLayout{ PP_SL };
-	WGPUPipelineLayout			m_rhiPipelineLayout{ nullptr };
-
-};
-
-class CWGPURenderPipeline : public IGPURenderPipeline
-{
-public:
-	~CWGPURenderPipeline()
-	{
-		wgpuRenderPipelineRelease(m_rhiRenderPipeline);
-	}
-	// TODO: name
-	WGPURenderPipeline	m_rhiRenderPipeline{ nullptr };
-
-};
-
-class CWGPUBindGroup : public IGPUBindGroup
-{
-public:
-	~CWGPUBindGroup()
-	{
-		wgpuBindGroupRelease(m_rhiBindGroup);
-	}
-
-	// TODO: name
-	WGPUBindGroup	m_rhiBindGroup{ nullptr };
-
-};
-
-IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name)
+IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name) const
 {
 	CRefPtr<CWGPUBuffer> buffer = CRefPtr_new(CWGPUBuffer);
 	int wgpuUsageFlags = 0;
@@ -266,7 +137,7 @@ IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int buf
 	return IGPUBufferPtr(buffer);
 }
 
-IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const RenderPipelineLayoutDesc& layoutDesc)
+IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
 {
 	// Pipeline layout and bind group layout
 	// are also objects of IGPURenderPipeline
@@ -338,7 +209,7 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const RenderPipelineL
 	return IGPUPipelineLayoutPtr(pipelineLayout);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc)
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!layoutDesc)
 	{
@@ -381,24 +252,19 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 			}
 			case BINDENTRY_SAMPLER:
 			{
-				const SamplerStateParams& samplerParams = bindGroupEntry.sampler;
 				WGPUSamplerDescriptor rhiSamplerDesc = {};
-				rhiSamplerDesc.addressModeU = g_wgpuAddressMode[samplerParams.addressU];
-				rhiSamplerDesc.addressModeV = g_wgpuAddressMode[samplerParams.addressV];
-				rhiSamplerDesc.addressModeW = g_wgpuAddressMode[samplerParams.addressW];
-				rhiSamplerDesc.compare = g_wgpuCompareFunc[samplerParams.compareFunc];
-				rhiSamplerDesc.minFilter = g_wgpuFilterMode[samplerParams.minFilter];
-				rhiSamplerDesc.magFilter = g_wgpuFilterMode[samplerParams.magFilter];
-				rhiSamplerDesc.mipmapFilter = g_wgpuMipmapFilterMode[samplerParams.mipmapFilter];
-				rhiSamplerDesc.maxAnisotropy = samplerParams.maxAnisotropy;
+				FillWGPUSamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
+
 				rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(m_rhiDevice, &rhiSamplerDesc);
 				break;
 			}
 			case BINDENTRY_STORAGETEXTURE:
 			case BINDENTRY_TEXTURE:
 				CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture);
+
+				// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
 				if(texture)
-					rhiBindGroupEntryDesc.textureView = texture->m_rhiViews[texture->GetAnimationFrame()];
+					rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView();
 				else
 					ASSERT_FAIL("NULL texture for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
 				break;
@@ -425,7 +291,21 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc)
+WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 size, const char* name)
+{
+	WGPUShaderModuleSPIRVDescriptor rhiSpirvDesc = {};
+	rhiSpirvDesc.chain.sType = WGPUSType_ShaderModuleSPIRVDescriptor;
+	rhiSpirvDesc.codeSize = size / sizeof(uint32_t);
+	rhiSpirvDesc.code = code;
+
+	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
+	rhiShaderModuleDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&rhiShaderModuleDesc);
+	rhiShaderModuleDesc.label = name;
+
+	return wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
+}
+
+IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc) const
 {
 	if (!layoutDesc)
 	{
@@ -493,13 +373,21 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			rhiVertexBufferLayoutList.append(rhiVertexBufferLayout);
 		}
 
-		WGPUShaderModule vertMod = nullptr; // TODO: retrieve from cache
-		rhiRenderPipelineDesc.vertex.module = vertMod;
-		rhiRenderPipelineDesc.vertex.entryPoint = pipelineDesc.vertex.shaderEntryPoint;
-		rhiRenderPipelineDesc.vertex.bufferCount = rhiVertexBufferLayoutList.numElem();
-		rhiRenderPipelineDesc.vertex.buffers = rhiVertexBufferLayoutList.ptr();
-		rhiRenderPipelineDesc.vertex.constants = rhiVertexPipelineConstants.ptr();
-		rhiRenderPipelineDesc.vertex.constantCount = rhiVertexPipelineConstants.numElem();
+		WGPUShaderModule rhiVertexShaderModule = nullptr; // TODO: retrieve from cache
+
+		WGPUVertexState& rhiVertexState = rhiRenderPipelineDesc.vertex;
+		rhiVertexState.module = rhiVertexShaderModule;
+		rhiVertexState.entryPoint = pipelineDesc.vertex.shaderEntryPoint;
+		rhiVertexState.bufferCount = rhiVertexBufferLayoutList.numElem();
+		rhiVertexState.buffers = rhiVertexBufferLayoutList.ptr();
+		rhiVertexState.constants = rhiVertexPipelineConstants.ptr();
+		rhiVertexState.constantCount = rhiVertexPipelineConstants.numElem();
+
+		if (!rhiVertexState.module)
+		{
+			ASSERT_FAIL("Render pipeline vertex state has no shader module specified");
+			return nullptr;
+		}
 	}
 	
 	// Depth state
@@ -545,15 +433,10 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 		for(const FragmentPipelineDesc::ColorTargetDesc& target : pipelineDesc.fragment.targets)
 		{
 			{
-				WGPUBlendState blend = {};
-				blend.color.operation = g_wgpuBlendOp[target.colorBlend.blendFunc];
-				blend.color.srcFactor = g_wgpuBlendFactor[target.colorBlend.srcFactor];
-				blend.color.dstFactor = g_wgpuBlendFactor[target.colorBlend.dstFactor];
-
-				blend.alpha.operation = g_wgpuBlendOp[target.alphaBlend.blendFunc];
-				blend.alpha.srcFactor = g_wgpuBlendFactor[target.alphaBlend.srcFactor];
-				blend.alpha.dstFactor = g_wgpuBlendFactor[target.alphaBlend.dstFactor];
-				rhiColorTargetBlends.append(blend);
+				WGPUBlendState rhiBlend = {};
+				FillWGPUBlendComponent(target.colorBlend, rhiBlend.color);
+				FillWGPUBlendComponent(target.alphaBlend, rhiBlend.alpha);
+				rhiColorTargetBlends.append(rhiBlend);
 			}
 
 			WGPUColorTargetState rhiColorTarget = {};
@@ -563,15 +446,28 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			rhiColorTargets.append(rhiColorTarget);
 		}
 
-		WGPUShaderModule fragMod = nullptr;
-		rhiFragmentState.module = fragMod; // TODO: fetch from cache of fragment modules?
+		WGPUShaderModule rhiFragmentShaderModule = nullptr; // TODO: fetch from cache of fragment modules?
+
+		rhiFragmentState.module = rhiFragmentShaderModule;
 		rhiFragmentState.entryPoint = pipelineDesc.fragment.shaderEntryPoint;
 		rhiFragmentState.targetCount = rhiColorTargets.numElem();
 		rhiFragmentState.targets = rhiColorTargets.ptr();
 		rhiFragmentState.constants = rhiFragmentPipelineConstants.ptr();
 		rhiFragmentState.constantCount = rhiFragmentPipelineConstants.numElem();
 
+		if(!rhiFragmentState.module)
+		{
+			ASSERT_FAIL("Render pipeline defines fragment state but no shader module specified");
+			return nullptr;
+		}
+
 		rhiRenderPipelineDesc.fragment = &rhiFragmentState;
+	}
+
+	if (!rhiRenderPipelineDesc.depthStencil && !rhiRenderPipelineDesc.fragment)
+	{
+		ASSERT_FAIL("Render pipeline requires either depthStencil or fragment states (or both)");
+		return nullptr;
 	}
 
 	// Multisampling
@@ -597,6 +493,122 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	return IGPURenderPipelinePtr(renderPipeline);
 }
 
+IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc) const
+{
+	WGPURenderPassDescriptor rhiRenderPassDesc = {};
+	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
+
+	FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS> rhiColorAttachmentList;
+
+	for(RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
+	{
+		// TODO: backbuffer alteration?
+		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target);
+		ASSERT_MSG(targetTexture, "NULL texture for color target");
+
+		WGPURenderPassColorAttachment rhiColorAttachment = {};
+		rhiColorAttachment.loadOp = g_wgpuLoadOp[colorTarget.loadOp];
+		rhiColorAttachment.storeOp = g_wgpuStoreOp[colorTarget.storeOp];
+		rhiColorAttachment.depthSlice = colorTarget.depthSlice;
+		rhiColorAttachment.view = targetTexture->GetWGPUTextureView();
+		rhiColorAttachment.resolveTarget = nullptr; // TODO
+		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
+		rhiColorAttachmentList.append(rhiColorAttachment);
+	}
+	rhiRenderPassDesc.colorAttachmentCount = rhiColorAttachmentList.numElem();
+	rhiRenderPassDesc.colorAttachments = rhiColorAttachmentList.ptr();
+
+	WGPURenderPassDepthStencilAttachment rhiDepthStencilAttachment = {};
+
+	if(renderPassDesc.depthStencil)
+	{
+		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil);
+
+		rhiDepthStencilAttachment.depthClearValue = renderPassDesc.depthClearValue;
+		rhiDepthStencilAttachment.depthReadOnly = false; // TODO
+		rhiDepthStencilAttachment.depthLoadOp = g_wgpuLoadOp[renderPassDesc.depthLoadOp];
+		rhiDepthStencilAttachment.depthStoreOp = g_wgpuStoreOp[renderPassDesc.depthStoreOp];
+
+		rhiDepthStencilAttachment.stencilClearValue = renderPassDesc.stencilClearValue;
+		rhiDepthStencilAttachment.stencilReadOnly = false;  // TODO
+		rhiDepthStencilAttachment.stencilLoadOp = g_wgpuLoadOp[renderPassDesc.stencilLoadOp];
+		rhiDepthStencilAttachment.stencilStoreOp = g_wgpuStoreOp[renderPassDesc.stencilStoreOp];
+
+		rhiDepthStencilAttachment.view = depthTexture->GetWGPUTextureView();
+		rhiRenderPassDesc.depthStencilAttachment = &rhiDepthStencilAttachment;
+	}
+	
+	// TODO:
+	// rhiRenderPassDesc.occlusionQuerySet
+
+	WGPUCommandEncoder rhiCommandEncoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
+	if (!rhiCommandEncoder)
+		return nullptr;
+
+	WGPURenderPassEncoder rhiRenderPassEncoder = wgpuCommandEncoderBeginRenderPass(rhiCommandEncoder, &rhiRenderPassDesc);
+	if (!rhiRenderPassEncoder)
+		return nullptr;
+
+	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
+	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
+	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
+
+	return IGPURenderPassRecorderPtr(renderPass);
+}
+
+void CWGPURenderAPI::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const
+{
+	if (!cmdBuffer)
+		return;
+
+	g_renderWorker.Execute(__func__, [this, buffer = IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer))]() {
+		const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(buffer.Ptr());
+		wgpuQueueSubmit(m_rhiQueue, 1, &bufferImpl->m_rhiCommandBuffer);
+		return 0;
+	});
+}
+
+static void CreateQuerySet()
+{
+	WGPUQuerySetDescriptor rhiQuerySetDesc = {};
+	rhiQuerySetDesc.label = "name";
+	rhiQuerySetDesc.type = WGPUQueryType_Occlusion;
+	rhiQuerySetDesc.count = 32;
+	WGPUQuerySet rhiQuerySet = wgpuDeviceCreateQuerySet(nullptr, &rhiQuerySetDesc);
+}
+
+//-------------------------------------------------------------
+// Shaders and it's operations
+
+IShaderProgramPtr CWGPURenderAPI::CreateNewShaderProgram(const char* pszName, const char* query)
+{
+	return nullptr;
+}
+
+void CWGPURenderAPI::FreeShaderProgram(IShaderProgram* pShaderProgram)
+{
+}
+
+bool CWGPURenderAPI::CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra)
+{
+	return true; 
+}
+
+//-------------------------------------------------------------
+// Occlusion query
+
+// creates occlusion query object
+IOcclusionQuery* CWGPURenderAPI::CreateOcclusionQuery()
+{
+	ASSERT_DEPRECATED();
+	return nullptr;
+}
+
+// removal of occlusion query object
+void CWGPURenderAPI::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
+{
+	ASSERT_DEPRECATED();
+}
 
 //-------------------------------------------------------------
 // Render states management
@@ -711,8 +723,10 @@ void CWGPURenderAPI::SetShaderConstantRaw(int nameHash, const void* data, int nS
 
 void CWGPURenderAPI::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
+	ASSERT_DEPRECATED();
 }
 
 void CWGPURenderAPI::DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices)
 {
+	ASSERT_DEPRECATED();
 }

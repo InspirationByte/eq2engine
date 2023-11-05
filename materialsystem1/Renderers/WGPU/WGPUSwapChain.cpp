@@ -9,15 +9,16 @@
 #include "WGPUBackend.h"
 #include "WGPUSwapChain.h"
 #include "WGPULibrary.h"
-#include "renderers/ITexture.h"
 
 // TODO: determine properly?
 const WGPUTextureFormat kSwapChainFormat = WGPUTextureFormat_BGRA8Unorm;
 
-CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo)
+CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
 	: m_host(host)
 	, m_winInfo(windowInfo)
 {
+	m_textureRef = CRefPtr<CWGPUTexture>(static_cast<CWGPUTexture*>(swapChainTexture.Ptr()));
+	m_textureRef->SetFormat(FORMAT_RGBA8);
 
 	m_swapFmt = kSwapChainFormat;
 }
@@ -38,7 +39,14 @@ void* CWGPUSwapChain::GetWindow() const
 
 ITexturePtr CWGPUSwapChain::GetBackbuffer() const
 {
-	return nullptr;
+	// must obtain valid texture view upon Present
+	if (m_swapChain)
+	{
+		m_textureRef->m_rhiViews.setNum(1);
+		m_textureRef->m_rhiViews[0] = wgpuSwapChainGetCurrentTextureView(m_swapChain);
+	}
+
+	return ITexturePtr(m_textureRef);
 }
 
 void CWGPUSwapChain::GetBackbufferSize(int& wide, int& tall) const
@@ -55,6 +63,9 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 		return false;
 
 	m_backbufferSize = newSize;
+
+	m_textureRef->SetDimensions(newSize.x, newSize.y);
+	m_textureRef->Release();
 
 	if (m_swapChain)
 		wgpuSwapChainRelease(m_swapChain);
@@ -113,6 +124,7 @@ bool CWGPUSwapChain::SwapBuffers()
 {
 	if (!m_swapChain)
 		return false;
+
 	wgpuSwapChainPresent(m_swapChain);
 	return true;
 }
