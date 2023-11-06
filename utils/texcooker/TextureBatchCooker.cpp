@@ -24,23 +24,24 @@ BatchConfig
 	// %ARGS% - additional arguments applied by usage aliases
 	// %INPUT_FILENAME% - input file name
 	// %OUTPUT_FILEPATH% - output file path
-	arguments "-f -threads 4 %ARGS% -dds %INPUT_FILENAME% %OUTPUT_FILEPATH%";
-
-	source_materials 	"./0_materials_src/";	// soruce folder
-	source_image_ext		"tga";
+	arguments "%ARGS%";
 
 	compression "<CompressionName>"
 	{
 		application "otherConverter.exe";
-		arguments "-etcpack";	//-pvrtex;
+		arguments "-etcpack %INPUT_FILENAME% %OUTPUT_FILEPATH%";
 
 		usage default
 		{
+			sourcepath 	"./0_materials_src/";	// soruce folder
+			sourceext	"tga";
 			arguments "-etc1";
 		}
 
 		usage <UsageName>		// in material: basetexture "texturepath" "usage:<UsageName>"
 		{
+			sourcepath 	"./0_materials_src/";	// soruce folder
+			sourceext	"tga";
 			arguments "-etc1";
 		}
 	}
@@ -66,49 +67,6 @@ static const EqString s_outputFilePathTag("%OUTPUT_FILEPATH%");
 
 static const char* s_textureValueIdentifier = "usage:";
 
-struct UsageProperties_t
-{
-	EqString usageName;
-
-	EqString applicationName;
-	EqString applicationArguments;
-};
-
-struct BatchConfig_t
-{
-	EqString sourceMaterialPath;
-	EqString sourceImageExt;
-
-	EqString applicationName; // can be overridden by UsageProperties_t::applicationName
-	EqString applicationArgumentsTemplate;
-
-	EqString compressionApplicationArguments;
-
-	UsageProperties_t defaultUsage{ "default" };
-	Array<UsageProperties_t> usageList{ PP_SL };
-
-	KVSection crcSec;			// crc list loaded from disk
-	KVSection newCRCSec;		// crc list that will be saved
-} g_batchConfig;
-
-UsageProperties_t* FindUsage(const char* usageName)
-{
-	for (int i = 0; i < g_batchConfig.usageList.numElem(); i++)
-	{
-		UsageProperties_t& usage = g_batchConfig.usageList[i];
-		if (!usage.usageName.CompareCaseIns(usageName))
-			return &usage;
-	}
-
-	return &g_batchConfig.defaultUsage;
-}
-
-struct TargetProperties_t
-{
-	EqString targetCompression;
-	EqString targetFolder;
-} g_targetProps;
-
 enum ETexConvStatus
 {
 	INIT_STATE = 0,
@@ -117,73 +75,101 @@ enum ETexConvStatus
 	SKIPPED
 };
 
-// CRC pairs
-struct TexInfo_t
+struct UsageProperties
 {
-	TexInfo_t() = default;
+	EqString usageName;
 
-	TexInfo_t(const char* filename, const char* usageName)
-	{
-		sourcePath = filename;
-		usage = FindUsage(usageName);
+	EqString applicationName;
+	EqString applicationArguments;
+};
 
-		if (usage == &g_batchConfig.defaultUsage)
-		{
-			MsgWarning("%s: invalid usage '%s'\n", filename, usageName);
-		}
-	}
+struct BatchConfig
+{
+	EqString		applicationName; // can be overridden by UsageProperties::applicationName
+	EqString		applicationArgumentsTemplate;
 
+	EqString		compressionApplicationArguments;
+
+	UsageProperties defaultUsage{ "default" };
+	Array<UsageProperties> usageList{ PP_SL };
+
+	KVSection		crcSec;			// crc list loaded from disk
+	KVSection		newCRCSec;		// crc list that will be saved
+};
+
+struct TargetProperties
+{
+	EqString	sourceMaterialPath;
+	EqString	sourceImageExt;
+	EqString	targetCompression;
+	EqString	targetFolder;
+};
+
+// CRC pairs
+struct TexInfo
+{
 	EqString			sourcePath;
-	UsageProperties_t* usage{ nullptr };
+	UsageProperties*	usage{ nullptr };
 	uint32				crc32{ 0 };
 	ETexConvStatus		status{ INIT_STATE };
 };
 
-Array<TexInfo_t*> g_textureList(PP_SL);
-Array<EqString> g_materialList(PP_SL);
+class CTextureCooker
+{
+public:
+	bool				Init(const char* confFileName, const char* targetName);
+	void				Execute();
+
+private:
+	void				LoadBatchConfig(const KVSection* batchSec);
+	bool				AddTexture(const EqString& texturePath, const EqString& imageUsage);
+	void				LoadMaterialImages(const char* materialFileName);
+	void				SearchFolderForMaterialsAndGetTextures(const char* wildcard);
+	bool				HasMatchingCRC(uint32 crc);
+	void				ProcessMaterial(const EqString& materialFileName);
+	void				ProcessTexture(TexInfo& textureInfo);
+	UsageProperties*	FindUsage(const char* usageName);
+
+	BatchConfig			m_batchConfig;
+	TargetProperties	m_targetProps;
+
+	Array<TexInfo>		m_textureList{ PP_SL };
+	Array<EqString>		m_materialList{ PP_SL };
+};
 
 //-----------------------------------------------------------------------
 
-void LoadBatchConfig(KVSection* batchSec)
+UsageProperties* CTextureCooker::FindUsage(const char* usageName)
+{
+	for (int i = 0; i < m_batchConfig.usageList.numElem(); i++)
+	{
+		UsageProperties& usage = m_batchConfig.usageList[i];
+		if (!usage.usageName.CompareCaseIns(usageName))
+			return &usage;
+	}
+
+	return &m_batchConfig.defaultUsage;
+}
+
+
+void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 {
 	// retrieve application name and arguments
 	{
 		const char* appName = KV_GetValueString(batchSec->FindSection("application"), 0, nullptr);
 		const char* appArguments = KV_GetValueString(batchSec->FindSection("arguments"), 0, nullptr);
 
-		g_batchConfig.applicationName = appName;
-		g_batchConfig.applicationArgumentsTemplate = appArguments;
+		m_batchConfig.applicationName = appName;
+		m_batchConfig.applicationArgumentsTemplate = appArguments;
 	}
 
-	// source materials settings
-	{
-		const char* materialsSrc = KV_GetValueString(batchSec->FindSection("source_materials"), 0, nullptr);
-
-		if (!materialsSrc)
-		{
-			MsgError("BatchConfig 'source_materials' folder is not specified!\n");
-			return;
-		}
-
-		const char* sourceImageExt = KV_GetValueString(batchSec->FindSection("source_image_ext"), 0, nullptr);
-
-		if (!sourceImageExt)
-		{
-			MsgWarning("BatchConfig 'source_image_ext' is not specified, default to 'tga'\n");
-			sourceImageExt = "tga";
-		}
-
-		g_batchConfig.sourceMaterialPath = materialsSrc;
-		g_batchConfig.sourceImageExt = _Es(sourceImageExt).TrimChar('.');
-	}
-
-	KVSection* compressionSec = nullptr;
+	const KVSection* compressionSec = nullptr;
 
 	for (int i = 0; i < batchSec->keys.numElem(); i++)
 	{
-		KVSection* sec = batchSec->keys[i];
+		const KVSection* sec = batchSec->keys[i];
 
-		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), g_targetProps.targetCompression.ToCString()))
+		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), m_targetProps.targetCompression.ToCString()))
 		{
 			compressionSec = sec;
 			break;
@@ -192,17 +178,17 @@ void LoadBatchConfig(KVSection* batchSec)
 
 	if (!compressionSec)
 	{
-		MsgError("Unknown compression preset '%s', check your BatchConfig section\n", g_targetProps.targetCompression.ToCString());
+		MsgError("Unknown compression preset '%s', check your BatchConfig section\n", m_targetProps.targetCompression.ToCString());
 		return;
 	}
 
-	g_batchConfig.applicationName = KV_GetValueString(compressionSec->FindSection("application"), 0, g_batchConfig.applicationName.ToCString());
-	g_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindSection("arguments"), 0, "");
+	m_batchConfig.applicationName = KV_GetValueString(compressionSec->FindSection("application"), 0, m_batchConfig.applicationName.ToCString());
+	m_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindSection("arguments"), 0, "");
 
 	// load usages
 	for (int i = 0; i < compressionSec->keys.numElem(); i++)
 	{
-		KVSection* usageKey = compressionSec->keys[i];
+		const KVSection* usageKey = compressionSec->keys[i];
 
 		if (stricmp(usageKey->name, "usage"))
 			continue;
@@ -215,22 +201,22 @@ void LoadBatchConfig(KVSection* batchSec)
 			continue;
 		}
 
-		UsageProperties_t usage;
+		UsageProperties usage;
 		usage.usageName = usageName;
-		usage.applicationName = KV_GetValueString(usageKey->FindSection("application"), 0, g_batchConfig.applicationName.ToCString());
+		usage.applicationName = KV_GetValueString(usageKey->FindSection("application"), 0, m_batchConfig.applicationName.ToCString());
 		usage.applicationArguments = KV_GetValueString(usageKey->FindSection("arguments"), 0, "");
 
 		if (!stricmp(usageName, "default"))
-			g_batchConfig.defaultUsage = usage;
+			m_batchConfig.defaultUsage = usage;
 		else
-			g_batchConfig.usageList.append(usage);
+			m_batchConfig.usageList.append(usage);
 	}
 }
 
-bool AddTexture(const EqString& texturePath, const EqString& imageUsage)
+bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& imageUsage)
 {
 	EqString filename;
-	CombinePath(filename, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", texturePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
+	CombinePath(filename, m_targetProps.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", texturePath.ToCString(), m_targetProps.sourceImageExt.ToCString()).ToCString());
 
 	if (!g_fileSystem->FileExist(filename.ToCString()))
 	{
@@ -238,17 +224,26 @@ bool AddTexture(const EqString& texturePath, const EqString& imageUsage)
 		return false;
 	}
 
-	g_textureList.append(new TexInfo_t(texturePath.ToCString(), imageUsage.ToCString()));
+	TexInfo& newInfo = m_textureList.append();
+	
+	newInfo.sourcePath = texturePath;
+	newInfo.usage = FindUsage(imageUsage);
+
+	if (newInfo.usage == &m_batchConfig.defaultUsage)
+	{
+		MsgWarning("%s: invalid usage '%s'\n", filename, imageUsage);
+	}
+
 	return true;
 }
 
-void LoadMaterialImages(const char* materialFileName)
+void CTextureCooker::LoadMaterialImages(const char* materialFileName)
 {
 	KeyValues kvs;
 	if (!kvs.LoadFromFile(materialFileName, SP_ROOT))
 		return;
 
-	EqString localMaterialFileName = materialFileName + g_batchConfig.sourceMaterialPath.Length();
+	EqString localMaterialFileName = materialFileName + m_targetProps.sourceMaterialPath.Length();
 	localMaterialFileName = localMaterialFileName.TrimChar(CORRECT_PATH_SEPARATOR).TrimChar(INCORRECT_PATH_SEPARATOR);
 
 	if (kvs.GetRootSection()->KeyCount() == 0)
@@ -257,7 +252,7 @@ void LoadMaterialImages(const char* materialFileName)
 		return;
 	}
 
-	KVSection* kvMaterial = kvs.GetRootSection()->keys[0];
+	const KVSection* kvMaterial = kvs.GetRootSection()->keys[0];
 	if (!kvMaterial->IsSection())
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
@@ -265,14 +260,14 @@ void LoadMaterialImages(const char* materialFileName)
 	}
 
 	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString());
-	g_materialList.append(localMaterialFileName);
+	m_materialList.append(localMaterialFileName);
 
 	int textures = 0;
 
 	for (int i = 0; i < kvMaterial->keys.numElem(); i++)
 	{
 		bool keyHasUsage = false;
-		KVSection* key = kvMaterial->keys[i];
+		const KVSection* key = kvMaterial->keys[i];
 		for (int j = 1; j < key->ValueCount(); j++)
 		{
 			EqString imageUsage(KV_GetValueString(key, j, ""));
@@ -330,7 +325,7 @@ void LoadMaterialImages(const char* materialFileName)
 
 }
 
-void SearchFolderForMaterialsAndGetTextures(const char* wildcard)
+void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 {
 	EqString searchFolder(wildcard);
 	searchFolder.ReplaceSubstr("*", "");
@@ -355,11 +350,11 @@ void SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 	}
 }
 
-bool hasMatchingCRC(uint32 crc)
+bool CTextureCooker::HasMatchingCRC(uint32 crc)
 {
-	for (int i = 0; i < g_batchConfig.crcSec.keys.numElem(); i++)
+	for (int i = 0; i < m_batchConfig.crcSec.keys.numElem(); i++)
 	{
-		uint32 checkCRC = strtoul(g_batchConfig.crcSec.keys[i]->name, nullptr, 10);
+		uint32 checkCRC = strtoul(m_batchConfig.crcSec.keys[i]->name, nullptr, 10);
 
 		if (checkCRC == crc)
 			return true;
@@ -368,21 +363,21 @@ bool hasMatchingCRC(uint32 crc)
 	return false;
 }
 
-void ProcessMaterial(const EqString& materialFileName)
+void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 {
 	const EqString atlasFileName = _Es(materialFileName).Path_Strip_Ext() + ".atlas";
 
 	EqString sourceMaterialFileName;
-	CombinePath(sourceMaterialFileName, g_batchConfig.sourceMaterialPath.ToCString(), materialFileName.ToCString());
+	CombinePath(sourceMaterialFileName, m_targetProps.sourceMaterialPath.ToCString(), materialFileName.ToCString());
 
 	EqString sourceAtlasFileName;
-	CombinePath(sourceAtlasFileName, g_batchConfig.sourceMaterialPath.ToCString(), atlasFileName.ToCString());
+	CombinePath(sourceAtlasFileName, m_targetProps.sourceMaterialPath.ToCString(), atlasFileName.ToCString());
 
 	EqString targetMaterialFileName;
-	CombinePath(targetMaterialFileName, g_targetProps.targetFolder.ToCString(), materialFileName.ToCString());
+	CombinePath(targetMaterialFileName, m_targetProps.targetFolder.ToCString(), materialFileName.ToCString());
 
 	EqString targetAtlasFileName;
-	CombinePath(targetAtlasFileName, g_targetProps.targetFolder.ToCString(), atlasFileName.ToCString());
+	CombinePath(targetAtlasFileName, m_targetProps.targetFolder.ToCString(), atlasFileName.ToCString());
 
 	// make target material file path
 	g_fileSystem->MakeDir(targetMaterialFileName.Path_Strip_Name(), SP_ROOT);
@@ -408,22 +403,22 @@ void ProcessMaterial(const EqString& materialFileName)
 	}
 }
 
-void ProcessTexture(TexInfo_t* textureInfo)
+void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 {
 	// before this, create folders...
 	EqString sourceFilename;
-	CombinePath(sourceFilename, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
+	CombinePath(sourceFilename, m_targetProps.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo.sourcePath.ToCString(), m_targetProps.sourceImageExt.ToCString()).ToCString());
 	
 	EqString targetFilename;
-	CombinePath(targetFilename, g_targetProps.targetFolder.ToCString(), (textureInfo->sourcePath.Path_Strip_Ext() + ".dds").ToCString());
+	CombinePath(targetFilename, m_targetProps.targetFolder.ToCString(), (textureInfo.sourcePath.Path_Strip_Ext() + ".dds").ToCString());
 	
 	const EqString targetFilePath = targetFilename.Path_Strip_Name().TrimChar(CORRECT_PATH_SEPARATOR);
 
 	// make image folder
 	g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);
 
-	EqString arguments(g_batchConfig.applicationArgumentsTemplate);
-	arguments.ReplaceSubstr(s_argumentsTag.ToCString(), (g_batchConfig.compressionApplicationArguments + " " + textureInfo->usage->applicationArguments).ToCString());
+	EqString arguments(m_batchConfig.applicationArgumentsTemplate);
+	arguments.ReplaceSubstr(s_argumentsTag.ToCString(), (m_batchConfig.compressionApplicationArguments + " " + textureInfo.usage->applicationArguments).ToCString());
 	arguments.ReplaceSubstr(s_inputFileNameTag.ToCString(), sourceFilename.ToCString());
 	arguments.ReplaceSubstr(s_outputFilePathTag.ToCString(), targetFilePath.ToCString());
 
@@ -432,15 +427,15 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	CRC32_UpdateChecksum(srcCRC, arguments.ToCString(), arguments.Length());
 
 	// store new CRC
-	g_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC).ToCString(), sourceFilename.ToCString());
+	m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC).ToCString(), sourceFilename.ToCString());
 
 	// now check CRC from loaded file
-	if (hasMatchingCRC(srcCRC))
+	if (HasMatchingCRC(srcCRC))
 	{
 		if (g_fileSystem->FileExist(targetFilename.ToCString(), SP_ROOT))
 		{
-			MsgInfo("Skipping %s: %s...\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
-			textureInfo->status = SKIPPED;
+			MsgInfo("Skipping %s: %s...\n", textureInfo.usage->usageName.ToCString(), textureInfo.sourcePath.ToCString());
+			textureInfo.status = SKIPPED;
 			return;
 		}
 		else
@@ -449,11 +444,11 @@ void ProcessTexture(TexInfo_t* textureInfo)
 		}
 	}
 
-	textureInfo->status = CONVERTED;
+	textureInfo.status = CONVERTED;
 
-	MsgInfo("Processing %s: %s\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
+	MsgInfo("Processing %s: %s\n", textureInfo.usage->usageName.ToCString(), textureInfo.sourcePath.ToCString());
 
-	EqString cmdLine(EqString::Format("%s %s", g_batchConfig.applicationName.ToCString(), arguments.ToCString()));
+	EqString cmdLine(EqString::Format("%s %s", m_batchConfig.applicationName.ToCString(), arguments.ToCString()));
 
 	cmdLine.Path_FixSlashes();
 
@@ -465,52 +460,76 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	}
 }
 
-void CookMaterialsToTarget(const char* pszTargetName)
+bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 {
 	// load all properties
 	KeyValues kvs;
 
-	if (!kvs.LoadFromFile("TextureCooker.CONFIG", SP_ROOT))
+	if (!kvs.LoadFromFile(confFileName, SP_ROOT))
 	{
-		MsgError("Failed to load 'TextureCooker.CONFIG' file!\n");
-		return;
+		MsgError("Failed to load '%s' file!\n", confFileName);
+		return false;
 	}
 
 	// get the target properties
 	{
 		// load target info
-		KVSection* targets = kvs.FindSection("Targets");
+		const KVSection* targets = kvs.FindSection("Targets");
 		if (!targets)
 		{
-			MsgError("Missing 'Targets' section in 'TextureCooker.CONFIG'\n");
-			return;
+			MsgError("Missing 'Targets' section in '%s'\n", confFileName);
+			return false;
 		}
 
-		KVSection* currentTarget = targets->FindSection(pszTargetName);
-
+		const KVSection* currentTarget = targets->FindSection(targetName);
 		if (!currentTarget)
 		{
-			MsgError("Cannot find target section '%s'\n", pszTargetName);
-			return;
+			MsgError("Cannot find target section '%s'\n", targetName);
+			return false;
 		}
 
-		const char* targetCompression = KV_GetValueString(currentTarget->FindSection("compression"), 0, nullptr);
-		const char* targetFolder = KV_GetValueString(currentTarget->FindSection("output"), 0, nullptr);
-
-		if (!targetCompression)
+		// source materials settings
 		{
-			MsgError("Target '%s' missing 'compression' value\n", pszTargetName);
-			return;
+			const char* materialsSrc = KV_GetValueString(currentTarget->FindSection("SourcePath"), 0, nullptr);
+
+			if (!materialsSrc)
+			{
+				MsgError("Target '%s' field 'SourcePath' folder is not specified!\n", targetName);
+				return false;
+			}
+
+			const char* sourceImageExt = KV_GetValueString(currentTarget->FindSection("SourceExt"), 0, nullptr);
+
+			if (!sourceImageExt)
+			{
+				MsgWarning("Target '%s' field 'SourceExt' is not specified, default to 'tga'\n", targetName);
+				sourceImageExt = "tga";
+			}
+
+			m_targetProps.sourceMaterialPath = materialsSrc;
+			m_targetProps.sourceImageExt = _Es(sourceImageExt).TrimChar('.');
 		}
 
-		if (!targetFolder)
+		// target settings
 		{
-			MsgError("Target '%s' missing 'output' value\n", pszTargetName);
-			return;
-		}
+			const char* targetCompression = KV_GetValueString(currentTarget->FindSection("compression"), 0, nullptr);
+			const char* targetFolder = KV_GetValueString(currentTarget->FindSection("output"), 0, nullptr);
 
-		g_targetProps.targetCompression = targetCompression;
-		g_targetProps.targetFolder = targetFolder;
+			if (!targetCompression)
+			{
+				MsgError("Target '%s' missing 'compression' value\n", targetName);
+				return false;
+			}
+
+			if (!targetFolder)
+			{
+				MsgError("Target '%s' missing 'output' value\n", targetName);
+				return false;
+			}
+
+			m_targetProps.targetCompression = targetCompression;
+			m_targetProps.targetFolder = targetFolder;
+		}
 	}
 
 	// load batch configuration
@@ -518,59 +537,67 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		KVSection* batchConfig = kvs.FindSection("BatchConfig");
 		if (!batchConfig)
 		{
-			MsgError("Missing 'BatchConfig' section in 'TextureCooker.CONFIG'\n");
-			return;
+			MsgError("Missing 'BatchConfig' section in '%s'\n", confFileName);
+			return false;
 		}
 
 		LoadBatchConfig(batchConfig);
 
-		if (!g_batchConfig.applicationName.Length()) 
+		if (!m_batchConfig.applicationName.Length())
 		{
 			MsgError("No application specified in either batch config or compression setting!\n");
-			return;
+			return false;
 		}
 	}
+	return true;
+}
 
+void CTextureCooker::Execute()
+{
 	// perform batch conversion
+	Msg("Material source path: '%s'\n", m_targetProps.sourceMaterialPath.ToCString());
+
+	EqString searchTemplate;
+	CombinePath(searchTemplate, m_targetProps.sourceMaterialPath.ToCString(), "*");
+
+	// walk up material files
+	SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
+
+	Msg("Got %d textures\n", m_textureList.numElem());
+
+	EqString crcFileName(EqString::Format("%s/cook_%s_crc.txt", m_targetProps.sourceMaterialPath.ToCString(), m_targetProps.targetCompression.ToCString()));
+
+	// load CRC list, check for existing DDS files, and skip if necessary
+	KV_LoadFromFile(crcFileName.ToCString(), SP_ROOT, &m_batchConfig.crcSec);
+
+	// process material files
+	// this makes target folders and copies materials
+	for (int i = 0; i < m_materialList.numElem(); i++)
 	{
-		Msg("Material source path: '%s'\n", g_batchConfig.sourceMaterialPath.ToCString());
-
-		EqString searchTemplate;
-		CombinePath(searchTemplate, g_batchConfig.sourceMaterialPath.ToCString(), "*");
-
-		// walk up material files
-		SearchFolderForMaterialsAndGetTextures( searchTemplate.ToCString() );
-
-		Msg("Got %d textures\n", g_textureList.numElem());
-
-		EqString crcFileName(EqString::Format("%s/cook_%s_crc.txt", g_batchConfig.sourceMaterialPath.ToCString(), g_targetProps.targetCompression.ToCString()));
-
-		// load CRC list, check for existing DDS files, and skip if necessary
-		KV_LoadFromFile(crcFileName.ToCString(), SP_ROOT, &g_batchConfig.crcSec);
-
-		// process material files
-		// this makes target folders and copies materials
-		for(int i = 0; i < g_materialList.numElem(); i++)
-		{
-			ProcessMaterial(g_materialList[i]);
-		}
-
-		// do conversion
-		for (int i = 0; i < g_textureList.numElem(); i++)
-		{
-			TexInfo_t* tex = g_textureList[i];
-			Msg("%d / %d...\n", i+1, g_textureList.numElem());
-			ProcessTexture(tex);
-
-			delete tex;
-		}
-
-		// save CRC list file
-		IFilePtr pStream = g_fileSystem->Open(crcFileName.ToCString(), "wt", SP_ROOT);
-
-		if (pStream)
-		{
-			KV_WriteToStream(pStream, &g_batchConfig.newCRCSec, 0, true);
-		}
+		ProcessMaterial(m_materialList[i]);
 	}
+
+	// do conversion
+	for (int i = 0; i < m_textureList.numElem(); i++)
+	{
+		TexInfo& tex = m_textureList[i];
+		Msg("%d / %d...\n", i + 1, m_textureList.numElem());
+		ProcessTexture(tex);
+	}
+
+	// save CRC list file
+	IFilePtr pStream = g_fileSystem->Open(crcFileName.ToCString(), "wt", SP_ROOT);
+
+	if (pStream)
+	{
+		KV_WriteToStream(pStream, &m_batchConfig.newCRCSec, 0, true);
+	}
+}
+
+void CookTarget(const char* pszTargetName)
+{
+	CTextureCooker cooker;
+	if (!cooker.Init("TextureCooker.CONFIG", pszTargetName))
+		return;
+	cooker.Execute();
 }
