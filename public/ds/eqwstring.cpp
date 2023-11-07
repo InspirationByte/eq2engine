@@ -22,7 +22,6 @@ static const PPSourceLine EqWStringSL = PPSourceLine::Make(nullptr, 0);
 
 EqWString::EqWString()
 {
-	Empty();
 }
 
 EqWString::~EqWString()
@@ -127,6 +126,8 @@ void EqWString::Clear()
 // empty the string, but do not deallocate
 void EqWString::Empty()
 {
+	if (!m_pszString)
+		return;
 	*m_pszString = 0;
 	m_nLength = 0;
 }
