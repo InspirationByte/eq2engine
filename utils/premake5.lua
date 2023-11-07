@@ -72,11 +72,27 @@ project "texcooker"
 	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
-		"e2Core" 
+		"e2Core"
 	}
     files {
 		"texcooker/*.cpp",
 		"texcooker/*.h"
+	}
+	
+----------------------------------------------
+-- Shader cooker
+
+project "shadercooker"
+    kind "ConsoleApp"
+	unitybuild "on"
+    uses {
+		"corelib", "frameworkLib",
+		"e2Core",
+		"shaderc"
+	}
+    files {
+		"shadercooker/*.cpp",
+		"shadercooker/*.h"
 	}
 
 if ENABLE_GUI_TOOLS then
