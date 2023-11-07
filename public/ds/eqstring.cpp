@@ -138,7 +138,6 @@ void EqString::Clear()
 // empty the string, but do not deallocate
 void EqString::Empty()
 {
-	Resize(EQSTRING_BASE_BUFFER, false);
 	*m_pszString = 0;
 	m_nLength = 0;
 }
