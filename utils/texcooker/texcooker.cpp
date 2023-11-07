@@ -15,7 +15,7 @@ void Usage()
 	MsgWarning("USAGE:\n	texcooker -target <target name>\n");
 }
 
-extern void CookMaterialsToTarget(const char* pszTargetName);
+extern void CookTarget(const char* pszTargetName);
 
 int main(int argc, char* argv[])
 {
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 
 		if (!argStr.CompareCaseIns("-target"))
 		{
-			CookMaterialsToTarget(g_cmdLine->GetArgumentsOf(i));
+			CookTarget(g_cmdLine->GetArgumentsOf(i));
 		}
 	}
 

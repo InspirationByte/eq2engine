@@ -127,7 +127,8 @@ void EqWString::Clear()
 // empty the string, but do not deallocate
 void EqWString::Empty()
 {
-	Resize(EQSTRING_BASE_BUFFER, false);
+	*m_pszString = 0;
+	m_nLength = 0;
 }
 
 // an internal operation of allocation/extend

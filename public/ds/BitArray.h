@@ -51,6 +51,9 @@ public:
 	// set the bit value
 	void					set(int index, bool value);
 
+	// set bit range
+	void					setRange(int startIndex, int count, bool value);
+
 	void					setTrue(int index);
 	void					setFalse(int index);
 
@@ -163,6 +166,14 @@ inline void BitArray::set(int index, bool value)
 		setTrue(index);
 	else 
 		setFalse(index);
+}
+
+// set bit range
+inline void BitArray::setRange(int startIndex, int count, bool value)
+{
+	const int endIndex = min(m_nSize, startIndex + count);
+	for (int index = startIndex; index < endIndex; ++index)
+		set(index, value);
 }
 
 inline BitArray::STORAGE_TYPE& BitArray::getV(int index)
