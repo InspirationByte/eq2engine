@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Dynamic bit array
+// Description: Dynamic Bit array
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -27,7 +27,8 @@ class BitArray
 {
 	using STORAGE_TYPE = int;
 public:
-	BitArray(const PPSourceLine& sl, int initialSize = 64);
+	BitArray(PPSourceLine sl, int bitCount = 64);
+	BitArray(STORAGE_TYPE* storage, int bitCount);
 	~BitArray();
 
 	const bool				operator[](int index) const;
@@ -37,7 +38,7 @@ public:
 	void					clear();
 
 	// resizes the list
-	void					resize(int newSize);
+	void					resize(int newBitCount);
 
 	// returns total number of bits
 	int						numBits() const;
@@ -67,17 +68,25 @@ private:
 	STORAGE_TYPE*			m_pListPtr{ nullptr };
 	int						m_nSize{ 0 };
 	const PPSourceLine		m_sl;
+	bool					m_ownData{ false };
 };
 
-inline BitArray::BitArray(const PPSourceLine& sl, int initialSize)
+inline BitArray::BitArray(PPSourceLine sl, int bitCount)
 	: m_sl(sl)
 {
-	resize(initialSize);
+	m_ownData = true;
+	resize(bitCount);
+}
+
+inline BitArray::BitArray(STORAGE_TYPE* storage, int bitCount)
+	: m_pListPtr(storage), m_nSize(bitCount)
+{
 }
 
 inline BitArray::~BitArray()
 {
-	delete[] m_pListPtr;
+	if(m_ownData)
+		delete[] m_pListPtr;
 }
 
 inline BitArray& BitArray::operator=(const BitArray& other)
@@ -101,20 +110,25 @@ inline void BitArray::clear()
 }
 
 // resizes the list
-inline void BitArray::resize(int newSize)
+inline void BitArray::resize(int newBitCount)
 {
 	// not changing the elemCount, so just exit
-	if (newSize == m_nSize)
+	if (newBitCount == m_nSize)
 		return;
 
+	if(!m_ownData)
+	{
+		ASSERT_FAIL("BitArray is not resizable");
+	}
+
 	const int oldTypeSize = m_nSize / sizeof(STORAGE_TYPE);
-	const int newTypeSize = newSize / sizeof(STORAGE_TYPE);
+	const int newTypeSize = newBitCount / sizeof(STORAGE_TYPE);
 
 	STORAGE_TYPE* temp = m_pListPtr;
 
 	// copy the old m_pListPtr into our new one
 	m_pListPtr = PPNewSL(m_sl) STORAGE_TYPE[newTypeSize];
-	m_nSize = newSize;
+	m_nSize = newBitCount;
 
 	if (temp)
 	{
