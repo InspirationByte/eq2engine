@@ -471,43 +471,37 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			Msg("      - compiling variation %s\n", queryStr.ToCString());
 
 			auto compileShaderKind = [&](const char* define, shaderc_shader_kind shaderCKind)
+			{
+				std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>();
+				includer->SetShaderInfo(shaderInfo);
+				includer->SetVertexLayout(vertexLayout);
+
+				shaderc::CompileOptions options;
+				options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
+				options.SetOptimizationLevel(shaderc_optimization_level_performance);
+				options.SetIncluder(std::move(includer));
+				options.AddMacroDefinition(define);
+				fillMacros(options);
+
+				shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv((const char*)shaderSourceString.GetBasePointer(), shaderSourceString.GetSize(), shaderCKind, shaderSourceName, options);
+				const shaderc_compilation_status compileStatus = compilationResult.GetCompilationStatus();
+
+				if (compileStatus != shaderc_compilation_status_success)
 				{
-					std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>();
-					includer->SetShaderInfo(shaderInfo);
-					includer->SetVertexLayout(vertexLayout);
-
-					shaderc::CompileOptions options;
-					options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
-					options.SetOptimizationLevel(shaderc_optimization_level_performance);
-					options.SetIncluder(std::move(includer));
-					options.AddMacroDefinition(define);
-					fillMacros(options);
-
-					shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv((const char*)shaderSourceString.GetBasePointer(), shaderSourceString.GetSize(), shaderCKind, shaderSourceName, options);
-					const shaderc_compilation_status compileStatus = compilationResult.GetCompilationStatus();
-
-					if (compileStatus != shaderc_compilation_status_success)
-					{
-						MsgError("%s\n", compilationResult.GetErrorMessage().c_str());
-						if (compileStatus == shaderc_compilation_status_compilation_error)
-							stopCompilation = true;
-					}
-				};
+					MsgError("%s\n", compilationResult.GetErrorMessage().c_str());
+					if (compileStatus == shaderc_compilation_status_compilation_error)
+						stopCompilation = true;
+				}
+			};
 
 			if (!stopCompilation && (shaderInfo.kind & SHADERKIND_VERTEX))
-			{
 				compileShaderKind("VERTEX", shaderc_vertex_shader);
-			}
 
 			if (!stopCompilation && (shaderInfo.kind & SHADERKIND_VERTEX))
-			{
 				compileShaderKind("FRAGMENT", shaderc_fragment_shader);
-			}
 
 			if (!stopCompilation && (shaderInfo.kind & SHADERKIND_COMPUTE))
-			{
 				compileShaderKind("COMPUTE", shaderc_compute_shader);
-			}
 
 			if (stopCompilation)
 				break;
