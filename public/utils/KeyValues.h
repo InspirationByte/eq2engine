@@ -46,7 +46,7 @@ enum EKVPairType
 // tune this (depends on size of used memory)
 #define KV_MAX_NAME_LENGTH		128
 
-enum KVSearchFlags_e
+enum EKVSearchFlags
 {
 	KV_FLAG_SECTION = (1 << 0),
 	KV_FLAG_NOVALUE = (1 << 1),
@@ -156,90 +156,115 @@ struct KVSection
 	// The self-key functions
 	//----------------------------------------------
 
-	void					SetValueFrom( KVSection* pOther );
+	void				SetValueFrom( KVSection* pOther );
 
-	KVPairValue*			CreateValue();
-	KVSection*				CreateSectionValue();
+	KVPairValue*		CreateValue();
+	KVSection*			CreateSectionValue();
 
-	KVSection*				Clone() const;
-	void					CopyTo(KVSection* dest) const;
-	void					CopyValuesTo(KVSection* dest) const;
+	KVSection*			Clone() const;
+	void				CopyTo(KVSection* dest) const;
+	void				CopyValuesTo(KVSection* dest) const;
 
 	// adds value to key
-	void					AddValue(const char* value);
-	void					AddValue(int nValue);
-	void					AddValue(float fValue);
-	void					AddValue(bool bValue);
-	void					AddValue(const Vector2D& vecValue);
-	void					AddValue(const Vector3D& vecValue);
-	void					AddValue(const Vector4D& vecValue);
-	void					AddValue(KVSection* keybase);
-	void					AddValue(KVPairValue* value);
+	void				AddValue(const char* value);
+	void				AddValue(int nValue);
+	void				AddValue(float fValue);
+	void				AddValue(bool bValue);
+	void				AddValue(const Vector2D& vecValue);
+	void				AddValue(const Vector3D& vecValue);
+	void				AddValue(const Vector4D& vecValue);
+	void				AddValue(KVSection* keybase);
+	void				AddValue(KVPairValue* value);
 
 	// adds unique value to key
-	void					AddUniqueValue(const char* value);
-	void					AddUniqueValue(int nValue);
-	void					AddUniqueValue(float fValue);
-	void					AddUniqueValue(bool bValue);
+	void				AddUniqueValue(const char* value);
+	void				AddUniqueValue(int nValue);
+	void				AddUniqueValue(float fValue);
+	void				AddUniqueValue(bool bValue);
 
 	// sets value
-	void					SetValue(const char* value, int idxAt = 0);
-	void					SetValue(int nValue, int idxAt = 0);
-	void					SetValue(float fValue, int idxAt = 0);
-	void					SetValue(bool bValue, int idxAt = 0);
-	void					SetValue(const Vector2D& value, int idxAt = 0);
-	void					SetValue(const Vector3D& value, int idxAt = 0);
-	void					SetValue(const Vector4D& value, int idxAt = 0);
-	void					SetValue(KVPairValue* value, int idxAt = 0);
+	void				SetValue(const char* value, int idxAt = 0);
+	void				SetValue(int nValue, int idxAt = 0);
+	void				SetValue(float fValue, int idxAt = 0);
+	void				SetValue(bool bValue, int idxAt = 0);
+	void				SetValue(const Vector2D& value, int idxAt = 0);
+	void				SetValue(const Vector3D& value, int idxAt = 0);
+	void				SetValue(const Vector4D& value, int idxAt = 0);
+	void				SetValue(KVPairValue* value, int idxAt = 0);
 
-	const char*				GetValue( int nIndex = 0, const char* pszDefault = "" );
-	int						GetValue( int nIndex = 0, int nDefault = 0 );
-	float					GetValue( int nIndex = 0, float fDefault = 0.0f );
-	bool					GetValue( int nIndex = 0, bool bDefault = false );
-	Vector2D				GetValue( int nIndex = 0, const Vector2D& vDefault = vec2_zero);
-	IVector2D				GetValue( int nIndex = 0, const IVector2D& vDefault = 0);
-	Vector3D				GetValue( int nIndex = 0, const Vector3D& vDefault = vec3_zero);
-	Vector4D				GetValue( int nIndex = 0, const Vector4D& vDefault = vec4_zero);
+	const char*			GetValue( int nIndex = 0, const char* pszDefault = "" );
+	int					GetValue( int nIndex = 0, int nDefault = 0 );
+	float				GetValue( int nIndex = 0, float fDefault = 0.0f );
+	bool				GetValue( int nIndex = 0, bool bDefault = false );
+	Vector2D			GetValue( int nIndex = 0, const Vector2D& vDefault = vec2_zero);
+	IVector2D			GetValue( int nIndex = 0, const IVector2D& vDefault = 0);
+	Vector3D			GetValue( int nIndex = 0, const Vector3D& vDefault = vec3_zero);
+	Vector4D			GetValue( int nIndex = 0, const Vector4D& vDefault = vec4_zero);
 
-	KVSection*				operator[](const char* pszName);
-	KVPairValue*			operator[](int index);
+	KVSection*			operator[](const char* pszName);
+	KVPairValue*		operator[](int index);
 
-	const KVSection*		operator[](const char* pszName) const;
-	const KVPairValue*		operator[](int index) const;
+	const KVSection*	operator[](const char* pszName) const;
+	const KVPairValue*	operator[](int index) const;
 
 
 	//----------------------------------------------
 
 	// copy all values recursively
-	void					MergeFrom(const KVSection* base, bool recursive);
+	void				MergeFrom(const KVSection* base, bool recursive);
 
 	// checkers
-	bool					IsSection() const;
-	bool					IsArray() const;
-	bool					IsDefinition() const;
+	bool				IsSection() const;
+	bool				IsArray() const;
+	bool				IsDefinition() const;
 
-	int						KeyCount() const;
-	KVSection*				KeyAt(int idx) const;
+	int					KeyCount() const;
+	KVSection*			KeyAt(int idx) const;
 
-	int						ValueCount() const;
-	KVPairValue*			ValueAt(int idx) const;
+	int					ValueCount() const;
+	KVPairValue*		ValueAt(int idx) const;
 
-	void					SetType(int newType);
-	int						GetType() const;
+	void				SetType(int newType);
+	int					GetType() const;
 
 	// the line that the key is on
-	int						line;
+	int					line;
 
-	char					name[KV_MAX_NAME_LENGTH];
-	int						nameHash;
+	char				name[KV_MAX_NAME_LENGTH];
+	int					nameHash;
 
-	Array<KVPairValue*>		values{ PP_SL };
-	EKVPairType				type;		// default type of values
+	Array<KVPairValue*>	values{ PP_SL };
+	EKVPairType			type;		// default type of values
 
 	// the nested keys
-	Array<KVSection*>		keys{ PP_SL };
-	bool					unicode;
+	Array<KVSection*>	keys{ PP_SL };
+	bool				unicode;
 };
+
+// easy key iteration
+struct KVKeyIterator
+{
+	KVKeyIterator(const KVSection* section, const char* nameFilter = nullptr, int searchFlags = 0);
+
+	operator	int() const;
+	operator	const char* () const;
+
+	KVSection*	operator*() const;
+	void		operator++();
+
+	bool		atEnd() const;
+
+	void		Rewind();
+
+private:
+	bool		IsValidItem();
+
+	const KVSection*	section{ nullptr };
+	EqString			nameFilter;
+	int					index{ 0 };
+	int					searchFlags{ 0 };
+};
+
 
 // special wrapper class
 // for better compatiblity of new class

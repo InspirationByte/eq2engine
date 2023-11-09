@@ -1012,6 +1012,67 @@ int	KVSection::GetType() const
 }
 
 //---------------------------------------------------------------------------------------------------------
+// Iterators
+
+KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags)
+	: section(section), nameFilter(nameFilter)
+{
+	Rewind();
+}
+
+KVKeyIterator::operator int() const
+{
+	return index;
+}
+
+KVKeyIterator::operator	const char* () const
+{
+	return section ? section->keys[index]->GetName() : nullptr;
+}
+
+KVSection* KVKeyIterator::operator*() const
+{
+	return section ? section->keys[index] : nullptr;
+}
+void KVKeyIterator::operator++()
+{
+	do
+	{
+		++index;
+	} while (!atEnd() && !IsValidItem());
+}
+
+bool KVKeyIterator::atEnd() const
+{
+	return section ? index >= section->keys.numElem() : true;
+}
+
+void KVKeyIterator::Rewind()
+{
+	index = 0;
+	while (!atEnd() && !IsValidItem())
+		++index;
+}
+
+bool KVKeyIterator::IsValidItem()
+{
+	const KVSection* current = section->keys[index];
+	if ((searchFlags & KV_FLAG_SECTION) && current->keys.numElem() == 0)
+		return false;
+
+	if ((searchFlags & KV_FLAG_NOVALUE) && current->values.numElem() > 0)
+		return false;
+
+	if ((searchFlags & KV_FLAG_ARRAY) && current->values.numElem() <= 1)
+		return false;
+
+	if (nameFilter.Length() && nameFilter.CompareCaseIns(current->GetName()) != 0)
+		return false;
+
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------
 // KEYVALUES API Functions
 //---------------------------------------------------------------------------------------------------------
 
