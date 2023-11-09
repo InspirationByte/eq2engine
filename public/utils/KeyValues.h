@@ -260,7 +260,7 @@ private:
 	bool		IsValidItem();
 
 	const KVSection*	section{ nullptr };
-	EqString			nameFilter;
+	int					nameHashFilter;
 	int					index{ 0 };
 	int					searchFlags{ 0 };
 };

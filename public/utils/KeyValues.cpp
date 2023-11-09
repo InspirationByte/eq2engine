@@ -1015,7 +1015,7 @@ int	KVSection::GetType() const
 // Iterators
 
 KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags)
-	: section(section), nameFilter(nameFilter)
+	: section(section), nameHashFilter(StringToHash(nameFilter))
 {
 	Rewind();
 }
@@ -1066,7 +1066,7 @@ bool KVKeyIterator::IsValidItem()
 	if ((searchFlags & KV_FLAG_ARRAY) && current->values.numElem() <= 1)
 		return false;
 
-	if (nameFilter.Length() && nameFilter.CompareCaseIns(current->GetName()) != 0)
+	if (nameHashFilter != 0 && nameHashFilter != current->nameHash)
 		return false;
 
 	return true;
