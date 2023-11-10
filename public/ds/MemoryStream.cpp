@@ -45,7 +45,7 @@ CMemoryStream::CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize, PPSourc
 // destroys stream data
 CMemoryStream::~CMemoryStream()
 {
-	Close();
+	Close(true);
 }
 
 // reads data from virtual stream
@@ -129,8 +129,11 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 	ASSERT(nDataSize >= 0);
 	ASSERT_MSG(m_openFlags == 0, "Already open");
 
-	m_openFlags = nOpenFlags;
+	if (m_ownBuffer && data != nullptr)
+		Close(true);
+
 	m_ownBuffer = (data == nullptr);
+	m_openFlags = nOpenFlags;
 	m_writeTop = ((nOpenFlags & VS_OPEN_READ) && data) ? nDataSize : 0;
 
 	if (m_ownBuffer)
@@ -147,16 +150,19 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 }
 
 // closes stream
-void CMemoryStream::Close()
+void CMemoryStream::Close(bool deallocate)
 {
-	if (m_ownBuffer)
-		PPFree(m_start);
-	m_allocatedSize = 0;
-	m_writeTop = 0;
-	m_start = nullptr;
+	if(deallocate)
+	{
+		if (m_ownBuffer)
+			PPFree(m_start);
+		m_start = nullptr;
+		m_allocatedSize = 0;
+		m_ownBuffer = false;
+	}
 	m_currentPtr = m_start;
+	m_writeTop = 0;
 	m_openFlags = 0;
-	m_ownBuffer = false;
 }
 
 // flushes stream, doesn't affects on memory stream

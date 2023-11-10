@@ -24,7 +24,7 @@ public:
 	bool				Open(ubyte* data, int nOpenFlags, int nDataSize);
 
 	// closes stream
-	void				Close();
+	void				Close(bool deallocate = false);
 
 	// reads data from virtual stream
 	size_t				Read(void *dest, size_t count, size_t size);
