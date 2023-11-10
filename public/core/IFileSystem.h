@@ -119,7 +119,7 @@ protected:
 	//------------------------------------------------------------
 
 	// opens directory for search props
-	virtual const char* FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath) = 0;
+	virtual const char* FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPaths = -1) = 0;
 	virtual const char* FindNext(DKFINDDATA* findData) const = 0;
 	virtual void		FindClose(DKFINDDATA* findData) = 0;
 	virtual bool		FindIsDirectory(DKFINDDATA* findData) const = 0;
@@ -134,39 +134,35 @@ INTERFACE_SINGLETON( IFileSystem, CFileSystem, g_fileSystem )
 class CFileSystemFind
 {
 public:
-	CFileSystemFind();
-	CFileSystemFind(const char* wildcard, int searchPath = -1);
+	CFileSystemFind() = default;
+	CFileSystemFind(const char* wildcard, int searchPaths = -1);
 	~CFileSystemFind();
 
-	void			Init(const char* wildcard, int searchPath = -1);
-	bool			IsDirectory() const;
-	const char*		GetPath() const;
+	void		Init(const char* wildcard, int searchPaths = -1);
+	bool		IsDirectory() const;
+	const char*	GetPath() const;
 
-	bool			Next();
+	bool		Next();
 
 protected:
-	int				m_searchPath;
-	char*			m_wildcard;
-
-	char*			m_curPath;
-	DKFINDDATA*		m_fd;
+	int			m_searchPaths{ SP_ROOT };
+	char*		m_wildcard{ nullptr };
+	char*		m_curPath{ nullptr };
+	DKFINDDATA*	m_fd{ nullptr };
 };
 
 //-----------------------------------------------------------------------------------------
 
-inline CFileSystemFind::CFileSystemFind() : m_fd(nullptr), m_curPath(nullptr)
-{
-}
 
 inline CFileSystemFind::CFileSystemFind(const char* wildcard, int searchPath) : CFileSystemFind()
 {
 	Init(wildcard, searchPath);
 }
 
-inline void CFileSystemFind::Init(const char* wildcard, int searchPath)
+inline void CFileSystemFind::Init(const char* wildcard, int searchPaths)
 {
 	m_wildcard = (char*)wildcard;
-	m_searchPath = searchPath;
+	m_searchPaths = searchPaths;
 }
 
 inline CFileSystemFind::~CFileSystemFind()
@@ -187,7 +183,7 @@ inline const char* CFileSystemFind::GetPath() const
 inline bool CFileSystemFind::Next()
 {
 	if (!m_fd)
-		m_curPath = (char*)g_fileSystem->FindFirst(m_wildcard, &m_fd, m_searchPath);
+		m_curPath = (char*)g_fileSystem->FindFirst(m_wildcard, &m_fd, m_searchPaths);
 	else
 		m_curPath = (char*)g_fileSystem->FindNext(m_fd);
 
