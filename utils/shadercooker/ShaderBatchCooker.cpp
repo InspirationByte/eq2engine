@@ -150,6 +150,7 @@ public:
 			IFilePtr file = g_fileSystem->Open(shaderSourceName, "r", SP_ROOT);
 			if (!file)
 			{
+				result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
 				result->includeContent.Print("Could not open %s", shaderSourceName.ToCString());
 				result->resultData.content = (const char*)result->includeContent.GetBasePointer();
 				result->resultData.content_length = result->includeContent.GetSize();
