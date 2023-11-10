@@ -118,7 +118,7 @@ void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayou
 	// matsystem bindgroup is always first
 	builder.Group(
 		Builder<BindGroupLayoutDesc>()
-		.Buffer("matSystemTransform", 0, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
+		.Buffer("matSystemTransform", 0, SHADERKIND_FRAGMENT | SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
 		.End()
 	);
 	FillShaderBindGroupLayout(renderPipelineLayoutDesc.bindGroups.append());

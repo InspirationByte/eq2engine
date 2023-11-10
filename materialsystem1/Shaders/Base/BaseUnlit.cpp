@@ -22,7 +22,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
 
 		Builder<BindGroupLayoutDesc>()
-			.Texture("BaseTexture", 0, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.Texture("BaseTexture", 0, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
 			.End();
 	}
 

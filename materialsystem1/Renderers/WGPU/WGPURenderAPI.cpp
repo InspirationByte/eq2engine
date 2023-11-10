@@ -10,6 +10,7 @@
 #include "core/IFileSystem.h"
 #include "core/IFilePackageReader.h"
 #include "imaging/ImageLoader.h"
+#include "utils/KeyValues.h"
 
 #include "WGPURenderAPI.h"
 #include "WGPURenderDefs.h"
@@ -26,15 +27,111 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 {
 	ShaderAPI_Base::Init(params);
 
+	EqString shaderPackPath;
 	CFileSystemFind fsFind("shaders/*.shd");
 	while (fsFind.Next())
 	{
 		if (fsFind.IsDirectory())
 			continue;
 
-		IFilePackageReader* shaderPackRead = g_fileSystem->OpenPackage(fsFind.GetPath());
+		CombinePath(shaderPackPath, "shaders", fsFind.GetPath());
+		IFilePackageReader* shaderPackRead = g_fileSystem->OpenPackage(shaderPackPath, SP_MOD | SP_DATA);
 		if (!shaderPackRead)
 			continue;
+
+		KVSection shaderInfoKvs;
+		{
+			IFilePtr file = shaderPackRead->Open("ShaderInfo", VS_OPEN_READ);
+			if (!KV_LoadFromStream(file, &shaderInfoKvs))
+			{
+				Msg("No ShaderInfo in file %s\n", shaderPackPath.ToCString());
+				continue;
+			}
+		}
+
+		Array<EqString> switchDefines(PP_SL);
+		int shaderKinds = 0;
+
+		for (KVValueIterator<EqString> it(shaderInfoKvs.FindSection("Defines")); !it.atEnd(); ++it)
+		{
+			switchDefines.append(it);
+			Msg("define %s\n", EqString(it).ToCString());
+		}
+
+		for (KVValueIterator<EqString> it(shaderInfoKvs.FindSection("ShaderKinds")); !it.atEnd(); ++it)
+		{
+			const EqString kindName(it);
+			if (kindName == "Vertex")
+				shaderKinds |= SHADERKIND_VERTEX;
+			else if (kindName == "Fragment")
+				shaderKinds |= SHADERKIND_FRAGMENT;
+			else if (kindName == "Compute")
+				shaderKinds |= SHADERKIND_COMPUTE;
+
+			Msg("kind %s\n", EqString(it).ToCString());
+		}
+
+		for (KVKeyIterator it(shaderInfoKvs.FindSection("VertexLayouts")); !it.atEnd(); ++it)
+		{
+			Msg("vertex layout %s %s\n", EqString(it).ToCString(), KV_GetValueString(*it, 0));
+		}
+
+		int filesFound = 0;
+		const int totalVariantCount = 1 << switchDefines.numElem();
+		for (int i = 0; i < totalVariantCount; ++i)
+		{
+			EqString queryStr;
+			for (int j = 0; j < switchDefines.numElem(); ++j)
+			{
+				if (i & (1 << j))
+				{
+					if (queryStr.Length())
+						queryStr.Append("|");
+					queryStr.Append(switchDefines[j]);
+				}
+			}
+
+			auto tryLoadShaderKind = [&](EShaderKind shaderKind)
+			{
+				EqString shaderFileName = queryStr;
+				if (shaderKind == SHADERKIND_VERTEX)
+					shaderFileName.Append(".vert");
+				else if (shaderKind == SHADERKIND_FRAGMENT)
+					shaderFileName.Append(".frag");
+				else if (shaderKind == SHADERKIND_COMPUTE)
+					shaderFileName.Append(".comp");
+
+				IFilePtr referenceFile = shaderPackRead->Open(shaderFileName + ".ref", VS_OPEN_READ);
+				if (referenceFile)
+				{
+					EqString refName;
+					referenceFile->Read(refName);
+
+					Msg("got reference %s\n", refName.ToCString());
+				}
+				else
+				{
+					Msg("got shader file\n");
+				}
+
+				++filesFound;
+			};
+
+			if (shaderKinds & SHADERKIND_VERTEX)
+			{
+				tryLoadShaderKind(SHADERKIND_VERTEX);
+			}
+			if (shaderKinds & SHADERKIND_FRAGMENT)
+			{
+				tryLoadShaderKind(SHADERKIND_FRAGMENT);
+			}
+			if (shaderKinds & SHADERKIND_COMPUTE)
+			{
+				tryLoadShaderKind(SHADERKIND_COMPUTE);
+			}
+		}
+
+		Msg("Files found: %d\n", filesFound);
 
 		g_fileSystem->ClosePackage(shaderPackRead);
 	}
@@ -171,9 +268,9 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 			WGPUBindGroupLayoutEntry bglEntry = {};
 			bglEntry.binding = entry.binding;
 
-			if (entry.visibility & SHADER_VISIBLE_VERTEX)	bglEntry.visibility |= WGPUShaderStage_Vertex;
-			if (entry.visibility & SHADER_VISIBLE_FRAGMENT) bglEntry.visibility |= WGPUShaderStage_Fragment;
-			if (entry.visibility & SHADER_VISIBLE_COMPUTE)	bglEntry.visibility |= WGPUShaderStage_Compute;
+			if (entry.visibility & SHADERKIND_VERTEX)	bglEntry.visibility |= WGPUShaderStage_Vertex;
+			if (entry.visibility & SHADERKIND_FRAGMENT) bglEntry.visibility |= WGPUShaderStage_Fragment;
+			if (entry.visibility & SHADERKIND_COMPUTE)	bglEntry.visibility |= WGPUShaderStage_Compute;
 
 			switch (entry.type)
 			{

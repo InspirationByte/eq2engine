@@ -66,9 +66,9 @@ BEGIN_SHADER_CLASS(Default)
 	void FillShaderBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("MaterialParams", 0, SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
-			.Texture("BaseTexture", 1, SHADER_VISIBLE_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.Sampler("BaseTextureSampler", 2, SHADER_VISIBLE_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Buffer("MaterialParams", 0, SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
+			.Texture("BaseTexture", 1, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.Sampler("BaseTextureSampler", 2, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
 			.End();
 	}
 

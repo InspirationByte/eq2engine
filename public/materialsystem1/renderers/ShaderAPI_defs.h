@@ -519,11 +519,11 @@ struct BindStorageTexture
 
 //-------------------------------------------
 
-enum EShaderVisibility : int
+enum EShaderKind : int
 {
-	SHADER_VISIBLE_VERTEX	= (1 << 0),
-	SHADER_VISIBLE_FRAGMENT	= (1 << 1),
-	SHADER_VISIBLE_COMPUTE	= (1 << 2),
+	SHADERKIND_VERTEX	= (1 << 0),
+	SHADERKIND_FRAGMENT	= (1 << 1),
+	SHADERKIND_COMPUTE	= (1 << 2),
 };
 
 enum EBindEntryType
@@ -548,7 +548,7 @@ struct BindGroupLayoutDesc
 		EqString		name;
 		EBindEntryType	type{ BINDENTRY_BUFFER };
 		int				binding{ 0 };
-		int				visibility{ 0 };	// EShaderVisibility
+		int				visibility{ 0 };	// EShaderKind
 	};
 
 	using EntryList = Array<Entry>;

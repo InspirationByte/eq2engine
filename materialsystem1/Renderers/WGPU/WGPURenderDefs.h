@@ -126,7 +126,7 @@ static WGPUTextureViewDimension g_wgpuTexViewDimensions[] = {
 	WGPUTextureViewDimension_3D,
 };
 
-// EShaderVisibility
+// EShaderKind
 static WGPUStorageTextureAccess g_wgpuStorageTexAccess[] = {
 	WGPUStorageTextureAccess_WriteOnly,
 	WGPUStorageTextureAccess_ReadOnly,

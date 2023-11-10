@@ -732,7 +732,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 				// Reference shader bytecode file
 				CMemoryStream refFile(nullptr, VS_OPEN_WRITE, 8192, PP_SL);
 				VSWrite(&refFile, refShaderFileName);
-				shaderPackFile.Add(&refFile, EqString::Format("%s.ref", shaderFileName.ToCString()));
+				shaderPackFile.Add(&refFile, shaderFileName + ".ref");
 				continue;
 			}
 
