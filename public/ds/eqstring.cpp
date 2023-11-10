@@ -101,10 +101,13 @@ EqString EqString::FormatVa(const char* pszFormat, va_list argptr)
 // data for printing
 const char* EqString::GetData() const
 {
-	if(!m_pszString)
-		return "";
+	return StrPtr();
+}
 
-	return m_pszString;
+const char* EqString::StrPtr() const
+{
+	static const char s_zeroString[] = "";
+	return m_pszString ? m_pszString : s_zeroString;
 }
 
 // length of it
@@ -116,7 +119,7 @@ uint16 EqString::Length() const
 bool EqString::IsValid() const
 {
 	// check the data is non overflowing
-	return strlen(m_pszString) <= m_nLength;
+	return strlen(StrPtr()) <= m_nLength;
 }
 
 // string allocated size in bytes
@@ -232,7 +235,6 @@ void EqString::Assign(const EqString &str, int nStart, int len)
 	ASSERT(nStart >= 0);
 
 	int nLen = str.Length();
-
 	ASSERT(len <= nLen);
 
 	if(len != -1)
@@ -259,8 +261,7 @@ void EqString::Assign(const EqWString &str, int nStart, int len)
 
 void EqString::Append(const char c)
 {
-	int nNewLen = m_nLength + 1;
-
+	const int nNewLen = m_nLength + 1;
 	if( ExtendAlloc( nNewLen ) )
 	{
 		m_pszString[nNewLen-1] = c;
@@ -282,8 +283,7 @@ void EqString::Append(const char* pszStr, int nCount)
 	if(nCount != -1)
 		nLen = nCount;
 
-	int nNewLen = m_nLength + nLen;
-
+	const int nNewLen = m_nLength + nLen;
 	if( ExtendAlloc( nNewLen+1 ) )
 	{
 		strncpy( (m_pszString + m_nLength), pszStr, nLen);
@@ -310,10 +310,8 @@ void EqString::Insert(const char* pszStr, int nInsertPos)
 	if(pszStr == nullptr)
 		return;
 
-	int nInsertCount = strlen( pszStr );
-
-	int nNewLen = m_nLength + nInsertCount;
-
+	const int nInsertCount = strlen( pszStr );
+	const int nNewLen = m_nLength + nInsertCount;
 	if( ExtendAlloc( nNewLen+1 ) )
 	{
 		char* tmp = (char*)stackalloc(m_nLength - nInsertPos + 1);
@@ -332,8 +330,7 @@ void EqString::Insert(const char* pszStr, int nInsertPos)
 
 void EqString::Insert(const EqString &str, int nInsertPos)
 {
-	int nNewLen = m_nLength + str.Length();
-
+	const int nNewLen = m_nLength + str.Length();
 	if( ExtendAlloc( nNewLen+1 ) )
 	{
 		char* tmp = (char*)stackalloc(m_nLength - nInsertPos + 1);
@@ -356,18 +353,15 @@ void EqString::Remove(int nStart, int nCount)
 	char* temp = (char*)stackalloc( m_nAllocated );
 	strcpy(temp, m_pszString);
 
-	char* pStr = m_pszString;
-
-	uint realEnd = nStart+nCount;
-
+	char* str = m_pszString;
+	const uint realEnd = nStart+nCount;
 	for(uint i = 0; i < m_nLength; i++)
 	{
 		if(i >= nStart && i < realEnd)
 			continue;
-
-		*pStr++ = temp[i];
+		*str++ = temp[i];
 	}
-	*pStr = 0;
+	*str = 0;
 
 	int newLen = m_nLength-nCount+1;
 
@@ -377,17 +371,19 @@ void EqString::Remove(int nStart, int nCount)
 // replaces characters
 void EqString::Replace( char whichChar, char to )
 {
-	char* pStr = m_pszString;
+	if (!m_pszString)
+		return;
 
+	char* str = m_pszString;
 	for(uint i = 0; i < m_nLength; i++)
 	{
-		if(*pStr == 0)
+		if(*str == 0)
 			break;
 
-		if(*pStr == whichChar)
-			*pStr = to;
+		if(*str == whichChar)
+			*str = to;
 
-		pStr++;
+		str++;
 	}
 }
 
@@ -407,6 +403,9 @@ EqString EqString::Right(int nCount) const
 
 EqString EqString::Mid(int nStart, int nCount) const
 {
+	if (!m_pszString)
+		return EqString();
+
 	uint n;
 	EqString result;
 
@@ -441,7 +440,7 @@ EqString EqString::UpperCase() const
 }
 
 // search, returns char index
-int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
+int	EqString::Find(const char* pszSub, bool caseSensivite, int nStart) const
 {
 	if (!m_pszString)
 		return -1;
@@ -450,9 +449,9 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 
 	char* strStart = m_pszString + min((uint16)nStart, m_nLength);
 
-	char *st = nullptr;
+	char* st = nullptr;
 
-	if(bCaseSensetive)
+	if(caseSensivite)
 		st = strstr(strStart, pszSub);
 	else
 		st = xstristr(strStart, pszSub);
@@ -464,10 +463,10 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 }
 
 // searches for substring and replaces it
-int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool bCaseSensetive /*= false*/, int nStart /*= 0*/)
+int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool caseSensivite /*= false*/, int nStart /*= 0*/)
 {
 	// replace substring
-	int foundStrIdx = Find(find, bCaseSensetive, nStart);
+	const int foundStrIdx = Find(find, caseSensivite, nStart);
 	if (foundStrIdx != -1)
 		Assign(Left(foundStrIdx) + replaceTo + Mid(foundStrIdx + strlen(find), Length()));
 
@@ -555,8 +554,7 @@ EqString EqString::EatWhiteSpaces() const
 {
 	EqString out;
 
-	char* cc = m_pszString;
-
+	const char* cc = StrPtr();
 	while(cc)
 	{
 		if( !isspace(*cc) )
@@ -568,6 +566,9 @@ EqString EqString::EatWhiteSpaces() const
 
 EqString EqString::TrimSpaces(bool left, bool right) const
 {
+	if(!m_pszString)
+		return EqString();
+
 	const char* begin = m_pszString;
 
 	// trim whitespace from left
@@ -592,6 +593,9 @@ EqString EqString::TrimChar(char ch, bool left, bool right) const
 
 EqString EqString::TrimChar(const char* ch, bool left, bool right) const
 {
+	if (!m_pszString)
+		return EqString();
+
 	const char* begin = m_pszString;
 
 	auto ischr = [](const char* ch, char c) -> bool {
@@ -623,31 +627,30 @@ void EqString::Path_FixSlashes() const
 // comparators
 int	EqString::Compare(const char* pszStr) const
 {
-	return strcmp(m_pszString, pszStr);
+	return strcmp(StrPtr(), pszStr);
 }
 
 int	EqString::Compare(const EqString &str) const
 {
-	return strcmp(m_pszString, str.GetData());
+	return strcmp(StrPtr(), str.GetData());
 }
 
 int	EqString::CompareCaseIns(const char* pszStr) const
 {
-	return xstricmp(m_pszString, pszStr);
+	return xstricmp(StrPtr(), pszStr);
 }
 
 int	EqString::CompareCaseIns(const EqString &str) const
 {
-	return xstricmp(m_pszString, str.GetData());
+	return xstricmp(StrPtr(), str.GetData());
 }
 
 int	EqString::GetMathingChars(const char* pszStr) const
 {
-	char* s1 = m_pszString;
-	char* s2 = (char*)pszStr;
+	const char* s1 = StrPtr();
+	const char* s2 = pszStr;
 
 	int matching = 0;
-
 	while(*s1++ == *s2++) {matching++;}
 
 	return matching;
@@ -655,11 +658,10 @@ int	EqString::GetMathingChars(const char* pszStr) const
 
 int	EqString::GetMathingChars(const EqString &str) const
 {
-	char* s1 = m_pszString;
-	char* s2 = (char*)str.m_pszString;
+	const char* s1 = StrPtr();
+	const char* s2 = (char*)str.StrPtr();
 
 	int matching = 0;
-
 	while(*s1++ == *s2++) {matching++;}
 
 	return matching;

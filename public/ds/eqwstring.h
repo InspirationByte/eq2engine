@@ -28,7 +28,7 @@ public:
 	EqWString(const wchar_t* pszString, int len = -1);
 	EqWString(const EqWString &str, int nStart = 0, int len = -1);
 
-	EqWString(EqWString&& str);
+	EqWString(EqWString&& str) noexcept;
 
 	static EqWString Format(const wchar_t* pszFormat, ...);
 	static EqWString FormatVa(const wchar_t* pszFormat, va_list args);
@@ -146,10 +146,12 @@ public:
 	}
 
 protected:
-	wchar_t*	m_pszString{ nullptr };
+	const wchar_t*	StrPtr() const;
 
-	uint16		m_nLength{ 0 };			// length of string
-	uint16		m_nAllocated{ 0 };		// allocation size
+	wchar_t*		m_pszString{ nullptr };
+
+	uint16			m_nLength{ 0 };			// length of string
+	uint16			m_nAllocated{ 0 };		// allocation size
 };
 
 STRING_OPERATORS(static inline, EqWString)

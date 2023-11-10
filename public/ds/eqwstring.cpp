@@ -50,7 +50,7 @@ EqWString::EqWString(const EqWString &str, int nStart, int len)
 	Assign( str, nStart, len );
 }
 
-EqWString::EqWString(EqWString&& str)
+EqWString::EqWString(EqWString&& str) noexcept
 {
 	m_nAllocated = str.m_nAllocated;
 	m_nLength = str.m_nLength;
@@ -96,10 +96,13 @@ EqWString EqWString::FormatVa(const wchar_t* pszFormat, va_list argptr)
 // data for printing
 const wchar_t* EqWString::GetData() const
 {
-	if(!m_pszString)
-		return L"";
+	return StrPtr();
+}
 
-	return m_pszString;
+const wchar_t* EqWString::StrPtr() const
+{
+	static const wchar_t s_zeroString[] = L"";
+	return m_pszString ? m_pszString : s_zeroString;
 }
 
 // length of it
@@ -283,8 +286,7 @@ void EqWString::Append(const wchar_t* pszStr, int nCount)
 
 void EqWString::Append(const EqWString &str)
 {
-	int nNewLen = m_nLength + str.Length();
-
+	const int nNewLen = m_nLength + str.Length();
 	if( ExtendAlloc( nNewLen ) )
 	{
 		wcscpy( (m_pszString + m_nLength), str.GetData() );
@@ -299,10 +301,8 @@ void EqWString::Insert(const wchar_t* pszStr, int nInsertPos)
 	if(pszStr == nullptr)
 		return;
 
-	int nInsertCount = wcslen( pszStr );
-
-	int nNewLen = m_nLength + nInsertCount;
-
+	const int nInsertCount = wcslen( pszStr );
+	const int nNewLen = m_nLength + nInsertCount;
 	if( ExtendAlloc( nNewLen ) )
 	{
 		wchar_t* tmp = (wchar_t*)stackalloc(m_nLength - nInsertPos);
@@ -321,8 +321,7 @@ void EqWString::Insert(const wchar_t* pszStr, int nInsertPos)
 
 void EqWString::Insert(const EqWString &str, int nInsertPos)
 {
-	int nNewLen = m_nLength + str.Length();
-
+	const int nNewLen = m_nLength + str.Length();
 	if( ExtendAlloc( nNewLen ) )
 	{
 		wchar_t* tmp = (wchar_t*)stackalloc(m_nLength - nInsertPos);
@@ -345,7 +344,7 @@ void EqWString::Remove(int nStart, int nCount)
 	wchar_t* temp = (wchar_t*)stackalloc( m_nAllocated*sizeof(wchar_t) );
 	wcscpy(temp, m_pszString);
 
-	wchar_t* pStr = m_pszString;
+	wchar_t* str = m_pszString;
 
 	uint realEnd = nStart+nCount;
 
@@ -354,9 +353,9 @@ void EqWString::Remove(int nStart, int nCount)
 		if(i >= (uint)nStart && i < realEnd)
 			continue;
 
-		*pStr++ = temp[i];
+		*str++ = temp[i];
 	}
-	*pStr = 0;
+	*str = 0;
 
 	int newLen = m_nLength-nCount;
 
@@ -366,8 +365,10 @@ void EqWString::Remove(int nStart, int nCount)
 // replaces characters
 void EqWString::Replace( wchar_t whichChar, wchar_t to )
 {
-	wchar_t* pStr = m_pszString;
+	if (!m_pszString)
+		return;
 
+	wchar_t* pStr = m_pszString;
 	for(uint i = 0; i < m_nLength; i++)
 	{
 		if(*pStr == 0)
@@ -396,6 +397,9 @@ EqWString EqWString::Right(int nCount) const
 
 EqWString EqWString::Mid(int nStart, int nCount) const
 {
+	if (!m_pszString)
+		return EqWString();
+
 	int n;
 	EqWString result;
 
@@ -414,6 +418,9 @@ EqWString EqWString::Mid(int nStart, int nCount) const
 // convert to lower case
 EqWString EqWString::LowerCase() const
 {
+	if (!m_pszString)
+		return EqWString();
+
 	EqWString str(*this);
 	xwcslwr(str.m_pszString);
 
@@ -423,6 +430,9 @@ EqWString EqWString::LowerCase() const
 // convert to upper case
 EqWString EqWString::UpperCase() const
 {
+	if (!m_pszString)
+		return EqWString();
+
 	EqWString str(*this);
 	xwcsupr(str.m_pszString);
 
@@ -438,7 +448,6 @@ int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart) cons
 	int nFound = -1;
 
 	wchar_t* strStart = m_pszString + min((uint16)nStart, m_nLength);
-
 	wchar_t* st = nullptr;
 
 	if(bCaseSensetive)
@@ -463,68 +472,25 @@ int EqWString::ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool
 	return foundStrIdx;
 }
 
-/*
-EqWString EqWString::StripFileExtension()
-{
-	for ( int i = m_nLength-1; i >= 0; i-- )
-	{
-		if ( m_pszString[i] == '.' )
-		{
-			EqWString str;
-			str.Append( m_pszString, i );
-
-			return str;
-		}
-	}
-
-	return (*this);
-}
-
-EqWString EqWString::StripFileName()
-{
-	ASSERT(!"EqWString::StripFileName() not impletented");
-	EqWString result(*this);
-	//stripFileName(result.m_pszString);
-	//result.m_nLength = strlen(result.m_pszString);
-
-	return result;
-}
-
-EqWString EqWString::ExtractFileExtension()
-{
-	for ( int i = m_nLength-1; i >= 0; i-- )
-	{
-		if ( m_pszString[i] == '.' )
-		{
-			EqWString str;
-			str.Append( &m_pszString[i+1] );
-
-			return str;
-		}
-	}
-
-	return EqWString();
-}*/
-
 // comparators
 int	EqWString::Compare(const wchar_t* pszStr) const
 {
-	return xwcscmp(m_pszString, pszStr);
+	return xwcscmp(StrPtr(), pszStr);
 }
 
 int	EqWString::Compare(const EqWString &str) const
 {
-	return xwcscmp(m_pszString, str.GetData());
+	return xwcscmp(StrPtr(), str.GetData());
 }
 
 int	EqWString::CompareCaseIns(const wchar_t* pszStr) const
 {
-	return xwcsicmp(m_pszString, pszStr);
+	return xwcsicmp(StrPtr(), pszStr);
 }
 
 int	EqWString::CompareCaseIns(const EqWString &str) const
 {
-	return xwcsicmp(m_pszString, str.GetData());
+	return xwcsicmp(StrPtr(), str.GetData());
 }
 
 size_t EqWString::ReadString(IVirtualStream* stream, EqWString& output)
