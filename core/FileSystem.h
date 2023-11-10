@@ -119,7 +119,7 @@ public:
 	//------------------------------------------------------------
 
 	// opens directory for search props
-	const char*					FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath);
+	const char*					FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPaths);
 	const char*					FindNext(DKFINDDATA* findData) const;
 	void						FindClose(DKFINDDATA* findData);
 	bool						FindIsDirectory(DKFINDDATA* findData) const;
@@ -141,6 +141,8 @@ public:
 	bool						IsInitialized() const		{return m_isInit;}
 
 protected:
+
+	bool						InitNextPath(DKFINDDATA* findData) const;
 
 	EqString					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
 	EqString					GetSearchPath(ESearchPath search, int directoryId = -1) const;

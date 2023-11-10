@@ -144,8 +144,8 @@ struct DKFINDDATA
 {
 	OSFindData	osFind;
 	EqString	wildcard;
-	ESearchPath searchPath{ SP_ROOT };
-	int			searchPathId{ -1 };
+	int			searchPaths{ -1 };
+	int			dirIndex{ 0 };
 };
 
 //--------------------------------------------------
@@ -620,17 +620,15 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	// First we checking mod directory
 	if (flags & SP_MOD)
 	{
-		for (int i = 0; i < m_directories.numElem(); i++)
+		for (const SearchPathInfo* spInfo : m_directories)
 		{
-			const SearchPathInfo& spInfo = *m_directories[i];
-
 			EqString filePath;
-			CombinePath(filePath, basePath.ToCString(), spInfo.path.ToCString(), fileName);
+			CombinePath(filePath, basePath.ToCString(), spInfo->path.ToCString(), fileName);
 			filePath.Path_FixSlashes();
 
 #ifdef PLAT_LINUX
 			const int nameHash = FSStringId(filePath.ToCString());
-			const auto it = spInfo.pathToFileMapping.find(nameHash);
+			const auto it = spInfo->pathToFileMapping.find(nameHash);
 			if (!it.atEnd())
 			{
 				// apply correct filepath
@@ -638,7 +636,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			}
 #endif
 
-			if (func(filePath, SP_MOD, flags, spInfo.mainWritePath))
+			if (func(filePath, SP_MOD, flags, spInfo->mainWritePath))
 				return true;
 		}
 	}
@@ -812,9 +810,9 @@ void CFileSystem::ClosePackage(IFilePackageReader* package)
 // sets fallback directory for mod
 void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
-	for(int i = 0; i < m_directories.numElem(); i++)
+	for (const SearchPathInfo* spInfo : m_directories)
 	{
-		if(m_directories[i]->id == pathId)
+		if(spInfo->id == pathId)
 		{
 			ErrorMsg("AddSearchPath Error: pathId %s already added", pathId);
 			return;
@@ -909,10 +907,10 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 const char* CFileSystem::GetCurrentGameDirectory() const
 {
 	// return first directory with 'mainWritePath' attribute set
-	for (int i = 0; i < m_directories.numElem(); i++)
+	for (const SearchPathInfo* spInfo : m_directories)
 	{
-		if (m_directories[i]->mainWritePath)
-			return m_directories[i]->path;
+		if (spInfo->mainWritePath)
+			return spInfo->path;
 	}
 
     return m_dataDir.GetData();
@@ -924,6 +922,47 @@ const char* CFileSystem::GetCurrentDataDirectory() const
     return m_dataDir.GetData();
 }
 
+bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
+{
+	EqString fsBaseDir;
+	EqString searchWildcard;
+
+	// Try Game paths
+	if (findData->searchPaths & SP_MOD)
+	{
+		while (findData->dirIndex < m_directories.numElem())
+		{
+			fsBaseDir = GetSearchPath(SP_MOD, findData->dirIndex++);
+			CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+			if (findData->osFind.Init(searchWildcard))
+				return true;
+		}
+		findData->searchPaths &= ~SP_MOD;
+	}
+	
+	// Try Data
+	if (findData->searchPaths & SP_DATA)
+	{
+		findData->searchPaths &= ~SP_DATA;
+		fsBaseDir = GetSearchPath(SP_DATA, -1);
+		CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+		if (findData->osFind.Init(searchWildcard))
+			return true;
+	}
+
+	// Try Root
+	if (findData->searchPaths & SP_ROOT)
+	{
+		findData->searchPaths &= ~SP_ROOT;
+		fsBaseDir = GetSearchPath(SP_ROOT, -1);
+		CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+		if (findData->osFind.Init(searchWildcard))
+			return true;
+	}
+
+	return false;
+}
+
 // opens directory for search props
 const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath)
 {
@@ -932,53 +971,21 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	if(findData == nullptr)
 		return nullptr;
 
-	DKFINDDATA* newFind = PPNew DKFINDDATA;
+	ASSERT_MSG(searchPath, "searchPath flags must be specified");
 
-	newFind->searchPath = (ESearchPath)searchPath;
+	DKFINDDATA* newFind = PPNew DKFINDDATA;
+	newFind->searchPaths = searchPath;
 	newFind->wildcard = wildcard;
 	newFind->wildcard.Path_FixSlashes();
+	newFind->dirIndex = 0;
 
-	if (newFind->searchPath != SP_MOD)
-	{
-		EqString fsBaseDir = GetSearchPath((ESearchPath)searchPath, -1);
-
-		EqString searchWildcard;
-		CombinePath(searchWildcard, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
-
-		if (newFind->osFind.Init(searchWildcard))
-		{
-			m_findDatas.append(newFind);
-			*findData = newFind;
-			return newFind->osFind.GetCurrentPath();
-		}
-
-		delete newFind;
+	if (!InitNextPath(newFind))
 		return nullptr;
-	}
 
-	// try initialize in different addon directories
+	m_findDatas.append(newFind);
+	*findData = newFind;
 
-	newFind->searchPathId = (searchPath == SP_MOD) ? 0 : -1;
-
-	EqString fsBaseDir;
-	EqString searchWildcard;
-	while (newFind->searchPathId < m_directories.numElem())
-	{
-		fsBaseDir = GetSearchPath((ESearchPath)searchPath, newFind->searchPathId);
-		CombinePath(searchWildcard, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
-
-		if (newFind->osFind.Init(searchWildcard))
-		{
-			m_findDatas.append(newFind);
-			*findData = newFind;
-			return newFind->osFind.GetCurrentPath();
-		}
-
-		newFind->searchPathId++;
-	}
-
-	delete newFind;
-	return nullptr;
+	return newFind->osFind.GetCurrentPath();
 }
 
 const char* CFileSystem::FindNext(DKFINDDATA* findData) const
@@ -989,28 +996,11 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 	if (findData->osFind.GetNext())
 		return findData->osFind.GetCurrentPath();
 
-	if(findData->searchPath != SP_MOD)
+	// if GetNext failed, reinit in new search path
+	if (!InitNextPath(findData))
 		return nullptr;
 
-	// try reinitialize
-	findData->searchPathId++;
-	while(findData->searchPathId < m_directories.numElem())
-	{
-		EqString fsBaseDir;
-		EqString searchWildcard;
-			
-		fsBaseDir = GetSearchPath(findData->searchPath, findData->searchPathId);
-		CombinePath(searchWildcard, fsBaseDir.ToCString(), findData->wildcard.ToCString());
-
-		if (findData->osFind.Init(searchWildcard.ToCString()))
-		{
-			return findData->osFind.GetCurrentPath();
-		}
-
-		findData->searchPathId++;
-	}
-
-	return nullptr;
+	return findData->osFind.GetCurrentPath();
 }
 
 void CFileSystem::FindClose(DKFINDDATA* findData)
