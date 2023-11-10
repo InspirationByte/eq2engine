@@ -214,6 +214,7 @@ public:
 	}
 
 protected:
+	const char* StrPtr() const;
 	char*		m_pszString{ nullptr };
 
 	uint16		m_nLength{ 0 };			// length of string
