@@ -1,16 +1,14 @@
 -- Google ShaderC as a usage
+local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK") or ""
+
 usage "shaderc"
 	includedirs {
-		"./include"
+		VULKAN_SDK_LOCATION.."/Include"
 	}
 	libdirs { 
-		"./lib",
+		VULKAN_SDK_LOCATION.."./Lib",
 	}
-
-	filter "system:Windows"
-		links {
-			"shaderc_shared.lib",
-		}
-		
-	filter "system:Linux"
-	
+	links {
+		"shaderc",
+		"shaderc_combined",
+	}
