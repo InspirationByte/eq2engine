@@ -478,19 +478,23 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	// store new CRC
 	m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), shaderInfo.sourceFilename);
 
+	EqString targetFileName;
+	CombinePath(targetFileName, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
+
 	// now check CRC from loaded file
 	if (HasMatchingCRC(srcCRC))
 	{
-		// check if SPIR-V output exists
-		// if (g_fileSystem->FileExist())
-		// {
-		//		return;
-		// }
+		// check if  output exists
+		if (g_fileSystem->FileExist(targetFileName, SP_ROOT))
+		{
+			MsgInfo("Skipping shader '%s' (no changes made)\n", shaderInfo.name.ToCString());
+			return;
+		}
 	}
 
 	if (shaderInfo.vertexLayouts.numElem() == 0)
 	{
-		MsgError("Shader %s has no vertex layouts defined, skipping...\n", shaderInfo.name.ToCString());
+		MsgError("Shader '%s' has no vertex layouts defined, skipping...\n", shaderInfo.name.ToCString());
 		return;
 	}
 
@@ -608,12 +612,11 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 	if (shaderInfo.results.numElem())
 	{
-		EqString destPath;
-		CombinePath(destPath, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
+
 		CDPKFileWriter shaderPackFile("shaders", 4);
-		if (!shaderPackFile.Begin(destPath))
+		if (!shaderPackFile.Begin(targetFileName))
 		{
-			MsgError("Unable to create pack file %s\n", destPath.ToCString());
+			MsgError("Unable to create pack file %s\n", targetFileName.ToCString());
 			return;
 		}
 
@@ -780,7 +783,7 @@ void CShaderCooker::Execute()
 
 	Msg("Got %d shaders %d variations total\n", m_shaderList.numElem(), totalVariationCount);
 
-	EqString crcFileName(EqString::Format("%s/shaders_crc.txt", m_targetProps.sourceShaderPath.ToCString()));
+	EqString crcFileName(EqString::Format("%s/shaders_crc.txt", m_targetProps.targetFolder.ToCString()));
 
 	// load CRC list, check for existing shader files, and skip if necessary
 	KV_LoadFromFile(crcFileName, SP_ROOT, &m_batchConfig.crcSec);
