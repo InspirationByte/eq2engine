@@ -88,6 +88,7 @@ project "shadercooker"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core",
+		"dpkLib",
 		"shaderc"
 	}
     files {
