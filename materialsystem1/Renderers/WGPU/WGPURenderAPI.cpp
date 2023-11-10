@@ -7,6 +7,8 @@
 
 #include "core/core_common.h"
 #include "core/ConCommand.h"
+#include "core/IFileSystem.h"
+#include "core/IFilePackageReader.h"
 #include "imaging/ImageLoader.h"
 
 #include "WGPURenderAPI.h"
@@ -23,6 +25,19 @@ CWGPURenderAPI CWGPURenderAPI::Instance;
 void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 {
 	ShaderAPI_Base::Init(params);
+
+	CFileSystemFind fsFind("shaders/*.shd");
+	while (fsFind.Next())
+	{
+		if (fsFind.IsDirectory())
+			continue;
+
+		IFilePackageReader* shaderPackRead = g_fileSystem->OpenPackage(fsFind.GetPath());
+		if (!shaderPackRead)
+			continue;
+
+		g_fileSystem->ClosePackage(shaderPackRead);
+	}
 }
 
 void CWGPURenderAPI::PrintAPIInfo() const
