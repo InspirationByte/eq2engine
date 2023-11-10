@@ -82,8 +82,10 @@ struct ShaderInfo
 	{
 		shaderc::SpvCompilationResult data;
 		EqString		queryStr;
+		int				refResult{ -1 };
 		int				vertLayoutIdx{ -1 };
 		int				kindFlag{ -1 };
+		uint32			crc32{ 0 };
 	};
 	Array<Result>		results{ PP_SL };
 	Array<VertLayout>	vertexLayouts{ PP_SL };
@@ -571,13 +573,34 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 					if (compileStatus == shaderc_compilation_status_success)
 					{
+						uint32 resultCRC = 0;
+						CRC32_InitChecksum(resultCRC);
+						CRC32_UpdateChecksum(resultCRC, compilationResult.begin(), (compilationResult.end() - compilationResult.begin()) * sizeof(compilationResult.begin()[0]));
+
 						CScopedMutex m(resultsMutex);
+
+						// Reference shaders if they have same output
+						// TODO: make it so defines are detected for Vertex or Fragment.
+						const int refIdx = arrayFindIndexF(shaderInfo.results, [resultCRC](const ShaderInfo::Result& result) {
+							return resultCRC == result.crc32;
+						});
+
 						// store result
 						ShaderInfo::Result& result = shaderInfo.results.append();
-						result.data = std::move(compilationResult);
+						if (refIdx == -1)
+						{
+							result.data = std::move(compilationResult);
+						}
+						else
+						{
+							ASSERT_MSG(kindFlag == shaderInfo.results[refIdx].kindFlag, "Referenced shader kind is invalid");
+							result.refResult = refIdx;
+						}
+
 						result.queryStr = queryStr;
 						result.vertLayoutIdx = vertLayoutIdx;
 						result.kindFlag = kindFlag;
+						result.crc32 = resultCRC;
 					}
 					else
 					{
@@ -610,9 +633,9 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	}
 	g_parallelJobs->Wait();
 
+	// Wtore files
 	if (shaderInfo.results.numElem())
 	{
-
 		CDPKFileWriter shaderPackFile("shaders", 4);
 		if (!shaderPackFile.Begin(targetFileName))
 		{
@@ -679,7 +702,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		}
 
 		// Store shader SPIR-V output in separate files
-		for (ShaderInfo::Result& result : shaderInfo.results)
+		for (const ShaderInfo::Result& result : shaderInfo.results)
 		{
 			const uint32* shaderData = result.data.begin();
 			const uint32 size = result.data.end() - shaderData;
@@ -692,8 +715,29 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			else if (result.kindFlag == SHADERKIND_COMPUTE)
 				shaderFileName.Append(".comp");
 
+			if (size == 0)
+			{
+				ASSERT_MSG(result.refResult != -1, "Something went wrong, got empty shader and no reference id");
+
+				const ShaderInfo::Result& refResult = shaderInfo.results[result.refResult];
+				EqString refShaderFileName = refResult.queryStr;
+				if (refResult.kindFlag == SHADERKIND_VERTEX)
+					refShaderFileName.Append(".vert");
+				else if (refResult.kindFlag == SHADERKIND_FRAGMENT)
+					refShaderFileName.Append(".frag");
+				else if (refResult.kindFlag == SHADERKIND_COMPUTE)
+					refShaderFileName.Append(".comp");
+
+				// Reference shader bytecode file
+				CMemoryStream refFile(nullptr, VS_OPEN_WRITE, 8192, PP_SL);
+				VSWrite(&refFile, refShaderFileName);
+				shaderPackFile.Add(&refFile, EqString::Format("%s.ref", shaderFileName.ToCString()));
+				continue;
+			}
+
+			// Write shader bytecode file
 			CMemoryStream readOnlyStream((ubyte*)shaderData, VS_OPEN_READ, size * sizeof(uint32), PP_SL);
-			shaderPackFile.Add(&readOnlyStream, EqString::Format("%s.spv", shaderFileName.ToCString()));
+			shaderPackFile.Add(&readOnlyStream, shaderFileName);
 		}
 		shaderPackFile.End();
 	}
