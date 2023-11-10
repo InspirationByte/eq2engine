@@ -674,6 +674,7 @@ size_t EqString::ReadString(IVirtualStream* stream, EqString& output)
 	output.Resize(length, false);
 
 	stream->Read(output.m_pszString, sizeof(char), length);
+	output.m_pszString[length] = 0;
 	output.m_nLength = length;
 	return 1;
 }

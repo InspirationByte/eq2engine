@@ -192,15 +192,6 @@ struct KVSection
 	void				SetValue(const Vector4D& value, int idxAt = 0);
 	void				SetValue(KVPairValue* value, int idxAt = 0);
 
-	const char*			GetValue( int nIndex = 0, const char* pszDefault = "" );
-	int					GetValue( int nIndex = 0, int nDefault = 0 );
-	float				GetValue( int nIndex = 0, float fDefault = 0.0f );
-	bool				GetValue( int nIndex = 0, bool bDefault = false );
-	Vector2D			GetValue( int nIndex = 0, const Vector2D& vDefault = vec2_zero);
-	IVector2D			GetValue( int nIndex = 0, const IVector2D& vDefault = 0);
-	Vector3D			GetValue( int nIndex = 0, const Vector3D& vDefault = vec3_zero);
-	Vector4D			GetValue( int nIndex = 0, const Vector4D& vDefault = vec4_zero);
-
 	KVSection*			operator[](const char* pszName);
 	KVPairValue*		operator[](int index);
 
@@ -265,6 +256,30 @@ private:
 	int					searchFlags{ 0 };
 };
 
+template<typename T>
+struct KVPairValuesGetter;
+
+template<typename T = const char*>
+struct KVValueIterator
+{
+	KVValueIterator(const KVSection* section)
+		: section(section)
+	{
+	}
+
+	operator		int() const { return index; }
+	operator		T() const { return KVPairValuesGetter<T>::Get(section, index);  }
+
+	KVPairValue*	operator*() const { return section ? section->values[index] : nullptr; }
+	void			operator++() { index += KVPairValuesGetter<T>::vcount; }
+
+	bool			atEnd() const { return section ? index >= section->values.numElem() : true; }
+
+	void			Rewind() { index = 0; }
+private:
+	const KVSection*	section{ nullptr };
+	int					index{ 0 };
+};
 
 // special wrapper class
 // for better compatiblity of new class
@@ -349,22 +364,59 @@ IVector2D			KV_GetIVector2D(const KVSection* pBase, int nIndex = 0, const IVecto
 Vector3D			KV_GetVector3D(const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
 Vector4D			KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
 
-// new
-inline const char*	KV_GetValue( const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" )			{return KV_GetValueString(pBase, nIndex, pszDefault);}
-inline int			KV_GetValue( const KVSection* pBase, int nIndex = 0, int nDefault = 0 )						{return KV_GetValueInt(pBase, nIndex, nDefault);}
-inline float		KV_GetValue( const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f )				{return KV_GetValueFloat(pBase, nIndex, fDefault);}
-inline bool			KV_GetValue( const KVSection* pBase, int nIndex = 0, bool bDefault = false )				{return KV_GetValueBool(pBase, nIndex, bDefault);}
-inline Vector2D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero)	{return KV_GetVector2D(pBase, nIndex, vDefault);}
-inline IVector2D	KV_GetValue( const KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0)			{return KV_GetIVector2D(pBase, nIndex, vDefault);}
-inline Vector3D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero)	{return KV_GetVector3D(pBase, nIndex, vDefault);}
-inline Vector4D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero)	{return KV_GetVector4D(pBase, nIndex, vDefault);}
+// For KV Value iterator
 
-inline const char*	KVSection::GetValue( int nIndex, const char* pszDefault )	{return KV_GetValueString(this, nIndex, pszDefault);}
-inline int			KVSection::GetValue( int nIndex, int nDefault )				{return KV_GetValueInt(this, nIndex, nDefault);}
-inline float		KVSection::GetValue( int nIndex, float fDefault )			{return KV_GetValueFloat(this, nIndex, fDefault);}
-inline bool			KVSection::GetValue( int nIndex, bool bDefault )			{return KV_GetValueBool(this, nIndex, bDefault);}
-inline Vector2D		KVSection::GetValue( int nIndex, const Vector2D& vDefault)	{return KV_GetVector2D(this, nIndex, vDefault);}
-inline IVector2D	KVSection::GetValue( int nIndex, const IVector2D& vDefault)	{return KV_GetIVector2D(this, nIndex, vDefault);}
-inline Vector3D		KVSection::GetValue( int nIndex, const Vector3D& vDefault)	{return KV_GetVector3D(this, nIndex, vDefault);}
-inline Vector4D		KVSection::GetValue( int nIndex, const Vector4D& vDefault )	{return KV_GetVector4D(this, nIndex, vDefault);}
+template<> struct KVPairValuesGetter<const char*>
+{
+	static const char* Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
+	static const int vcount = 1;
+};
+
+template<> struct KVPairValuesGetter<EqString>
+{
+	static const char* Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
+	static const int vcount = 1;
+};
+
+template<> struct KVPairValuesGetter<float>
+{
+	static float Get(const KVSection* section, int index) { return KV_GetValueFloat(section, index); }
+	static const int vcount = 1;
+};
+
+template<> struct KVPairValuesGetter<int>
+{
+	static int Get(const KVSection* section, int index) { return KV_GetValueInt(section, index); }
+	static const int vcount = 1;
+};
+
+template<> struct KVPairValuesGetter<bool>
+{
+	static bool Get(const KVSection* section, int index) { return KV_GetValueBool(section, index); }
+	static const int vcount = 1;
+};
+
+template<> struct KVPairValuesGetter<Vector2D>
+{
+	static Vector2D Get(const KVSection* section, int index) { return KV_GetVector2D(section, index); }
+	static const int vcount = 2;
+};
+
+template<> struct KVPairValuesGetter<IVector2D>
+{
+	static IVector2D Get(const KVSection* section, int index) { return KV_GetIVector2D(section, index); }
+	static const int vcount = 2;
+};
+
+template<> struct KVPairValuesGetter<Vector3D>
+{
+	static Vector3D Get(const KVSection* section, int index) { return KV_GetVector3D(section, index); }
+	static const int vcount = 3;
+};
+
+template<> struct KVPairValuesGetter<Vector4D>
+{
+	static Vector4D Get(const KVSection* section, int index) { return KV_GetVector4D(section, index); }
+	static const int vcount = 4;
+};
 
