@@ -26,8 +26,6 @@ CD3D9IndexBuffer::~CD3D9IndexBuffer()
 		m_rhiBuffer->Release();
 }
 
-#pragma optimize("", off)
-
 void CD3D9IndexBuffer::ReleaseForRestoration()
 {
 	if (m_restore)
