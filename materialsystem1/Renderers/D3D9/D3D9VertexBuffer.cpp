@@ -26,8 +26,6 @@ CD3D9VertexBuffer::~CD3D9VertexBuffer()
 		m_rhiBuffer->Release();
 }
 
-#pragma optimize("", off)
-
 void CD3D9VertexBuffer::ReleaseForRestoration()
 {
 	if (m_restore)
