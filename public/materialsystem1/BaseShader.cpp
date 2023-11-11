@@ -158,10 +158,12 @@ void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc)
 			break;
 		}
 
-		// TODO: number of rendertargets and their formats
-		// and their types should come from render pass defined by shader!!!
-		// Builder<FragmentPipelineDesc>(renderPipelineDesc.fragment)
-		//	.ColorTarget("Albedo", FORMAT_RGBA8, colorBlend, alphaBlend);
+		// FIXME: apply differently?
+		for (FragmentPipelineDesc::ColorTargetDesc& colorTarget : renderPipelineDesc.fragment.targets)
+		{
+			colorTarget.alphaBlend = alphaBlend;
+			colorTarget.colorBlend = colorBlend;
+		}
 	}
 }
 

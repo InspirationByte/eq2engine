@@ -56,6 +56,8 @@ static void ShaderRenderPassDescBuild()
 		.End();
 }
 
+//------------------------------------------------------------
+
 BEGIN_SHADER_CLASS(Default)
 
 	bool IsSupportVertexFormat(int nameHash) const
@@ -89,37 +91,32 @@ BEGIN_SHADER_CLASS(Default)
 		{
 			PipelineLayoutDesc pipelineLayoutDesc;
 			FillPipelineLayoutDesc(pipelineLayoutDesc);
+			m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
 
-			IGPUPipelineLayoutPtr pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-
+			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
-				.ShaderName("Default")
-				.ShaderVertexLayoutName("DynamicMeshVertex")
+				.ShaderName(GetName())
+				.ShaderVertexLayoutName("DynMeshVertex")
+				.VertexState(
+					Builder<VertexPipelineDesc>()
+					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
+					.End()
+				)
+				.FragmentState(
+					Builder<FragmentPipelineDesc>()
+					.ColorTarget("Default", g_matSystem->GetBackBufferColorFormat())
+					.End()
+				)
 				.End();
 
 			FillRenderPipelineDesc(renderPipelineDesc);
+			m_materialRenderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
 
-			Builder<VertexPipelineDesc>(renderPipelineDesc.vertex)
-				.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
-				.End();
-
-			Builder<FragmentPipelineDesc>(renderPipelineDesc.fragment)
-				.ColorTarget("Default", FORMAT_RGBA8)
-				.End();
-
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(pipelineLayout, renderPipelineDesc);
-
-			ITexturePtr baseTexture = m_baseTexture.Get();
-			if (!baseTexture)
-				baseTexture = g_matSystem->GetWhiteTexture();
-
-			IGPUBufferPtr paramsBuffer = renderAPI->CreateBuffer(BufferInfo(sizeof(Vector4D), 1), BUFFERUSAGE_UNIFORM, "paramsBuffer");
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, paramsBuffer, 0, 16)
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
-				.End();
-			IGPUBindGroupPtr bindGroup = renderAPI->CreateBindGroup(pipelineLayout, 1, shaderBindGroupDesc);
+			// When drawing with this material:
+			{
+				IGPUBindGroupPtr currentBindGroup = GetBindGroup(renderAPI);
+				
+			}
 		}
 
 		if(SHADER_PASS(Unlit))
@@ -133,6 +130,38 @@ BEGIN_SHADER_CLASS(Default)
 
 		return true;
 	}
+
+	// this function returns material group.
+	// Default material has transient all transient resources 
+	// as it's used for immediate drawing
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI)
+	{
+		IGPUBindGroupPtr materialBindGroup;
+		IGPUBufferPtr materialParamsBuffer;
+		{
+			ITexturePtr baseTexture = m_baseTexture.Get();
+			if (!baseTexture)
+				baseTexture = g_matSystem->GetWhiteTexture();
+
+			// can use either fixed array or CMemoryStream with on-stack storage
+			FixedArray<Vector4D, 4> bufferData;
+			bufferData.append(g_matSystem->GetAmbientColor());
+			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
+
+			materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, materialParamsBuffer, 0, 16)
+				.Sampler(1, baseTexture->GetSamplerState())
+				.Texture(2, baseTexture)
+				.End();
+			materialBindGroup = renderAPI->CreateBindGroup(m_pipelineLayout, 1, shaderBindGroupDesc);
+		}
+		return materialBindGroup;
+	}
+
+	// those are persistent resources
+	IGPURenderPipelinePtr m_materialRenderPipeline;
+	IGPUPipelineLayoutPtr m_pipelineLayout;
 
 	//------------------------------------------------------------------
 	// DEPRECATED all below
