@@ -12,6 +12,7 @@
 #include "WGPUTexture.h"
 #include "WGPUBuffer.h"
 #include "WGPUVertexFormat.h"
+#include "WGPUShader.h"
 
 using namespace Threading;
 
@@ -173,8 +174,10 @@ public:
 protected:
 
 	WGPUShaderModule	CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr);
-
+	bool				LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output);
 
 	WGPUDevice			m_rhiDevice{ nullptr };
 	WGPUQueue			m_rhiQueue{ nullptr };
+
+	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
 };

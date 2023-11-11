@@ -23,6 +23,19 @@
 
 CWGPURenderAPI CWGPURenderAPI::Instance;
 
+static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind)
+{
+	return queryStrHash | (static_cast<uint>(vertexLayoutIdx) << StringHashBits) | (static_cast<uint>(kind) << (StringHashBits + 8));
+}
+
+void ShaderInfoWGPUImpl::Release()
+{
+	for (WGPUShaderModule module : rhiModules)
+		wgpuShaderModuleRelease(module);
+}
+
+//------------------------------------------
+
 void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 {
 	ShaderAPI_Base::Init(params);
@@ -34,107 +47,119 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 		if (fsFind.IsDirectory())
 			continue;
 
-		CombinePath(shaderPackPath, "shaders", fsFind.GetPath());
-		IFilePackageReader* shaderPackRead = g_fileSystem->OpenPackage(shaderPackPath, SP_MOD | SP_DATA);
-		if (!shaderPackRead)
-			continue;
+		EqString path = fsFind.GetPath();
+		CombinePath(shaderPackPath, "shaders", path);
 
-		KVSection shaderInfoKvs;
-		{
-			IFilePtr file = shaderPackRead->Open("ShaderInfo", VS_OPEN_READ);
-			if (!KV_LoadFromStream(file, &shaderInfoKvs))
-			{
-				Msg("No ShaderInfo in file %s\n", shaderPackPath.ToCString());
-				continue;
-			}
-		}
-
-		Array<EqString> switchDefines(PP_SL);
-		int shaderKinds = 0;
-
-		for (KVValueIterator<EqString> it(shaderInfoKvs.FindSection("Defines")); !it.atEnd(); ++it)
-		{
-			switchDefines.append(it);
-			Msg("define %s\n", EqString(it).ToCString());
-		}
-
-		for (KVValueIterator<EqString> it(shaderInfoKvs.FindSection("ShaderKinds")); !it.atEnd(); ++it)
-		{
-			const EqString kindName(it);
-			if (kindName == "Vertex")
-				shaderKinds |= SHADERKIND_VERTEX;
-			else if (kindName == "Fragment")
-				shaderKinds |= SHADERKIND_FRAGMENT;
-			else if (kindName == "Compute")
-				shaderKinds |= SHADERKIND_COMPUTE;
-
-			Msg("kind %s\n", EqString(it).ToCString());
-		}
-
-		for (KVKeyIterator it(shaderInfoKvs.FindSection("VertexLayouts")); !it.atEnd(); ++it)
-		{
-			Msg("vertex layout %s %s\n", EqString(it).ToCString(), KV_GetValueString(*it, 0));
-		}
-
-		int filesFound = 0;
-		const int totalVariantCount = 1 << switchDefines.numElem();
-		for (int i = 0; i < totalVariantCount; ++i)
-		{
-			EqString queryStr;
-			for (int j = 0; j < switchDefines.numElem(); ++j)
-			{
-				if (i & (1 << j))
-				{
-					if (queryStr.Length())
-						queryStr.Append("|");
-					queryStr.Append(switchDefines[j]);
-				}
-			}
-
-			auto tryLoadShaderKind = [&](EShaderKind shaderKind)
-			{
-				EqString shaderFileName = queryStr;
-				if (shaderKind == SHADERKIND_VERTEX)
-					shaderFileName.Append(".vert");
-				else if (shaderKind == SHADERKIND_FRAGMENT)
-					shaderFileName.Append(".frag");
-				else if (shaderKind == SHADERKIND_COMPUTE)
-					shaderFileName.Append(".comp");
-
-				IFilePtr referenceFile = shaderPackRead->Open(shaderFileName + ".ref", VS_OPEN_READ);
-				if (referenceFile)
-				{
-					EqString refName;
-					referenceFile->Read(refName);
-
-					Msg("got reference %s\n", refName.ToCString());
-				}
-				else
-				{
-					Msg("got shader file\n");
-				}
-
-				++filesFound;
-			};
-
-			if (shaderKinds & SHADERKIND_VERTEX)
-			{
-				tryLoadShaderKind(SHADERKIND_VERTEX);
-			}
-			if (shaderKinds & SHADERKIND_FRAGMENT)
-			{
-				tryLoadShaderKind(SHADERKIND_FRAGMENT);
-			}
-			if (shaderKinds & SHADERKIND_COMPUTE)
-			{
-				tryLoadShaderKind(SHADERKIND_COMPUTE);
-			}
-		}
-
-		Msg("Files found: %d\n", filesFound);
-
-		g_fileSystem->ClosePackage(shaderPackRead);
+		auto shaderInfo = m_shaderCache.insert(StringToHash(path.Path_Extract_Name()));
+		LoadShaderPackage(shaderPackPath, *shaderInfo);
 	}
+}
+
+bool CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output)
+{
+	IFilePackageReader* shaderPackRead = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
+	if (!shaderPackRead)
+		return false;
+
+	KVSection shaderInfoKvs;
+	{
+		IFilePtr file = shaderPackRead->Open("ShaderInfo", VS_OPEN_READ);
+		if (!KV_LoadFromStream(file, &shaderInfoKvs))
+		{
+			Msg("No ShaderInfo in file %s\n", filename);
+			return false;
+		}
+	}
+
+	const KVSection* defines = shaderInfoKvs.FindSection("Defines");
+	if (defines)
+	{
+		output.defines.reserve(defines->KeyCount());
+		for (KVValueIterator<EqString> it(defines); !it.atEnd(); ++it)
+			output.defines.append(it);
+	}
+
+	int shaderKinds = 0;
+	for (KVValueIterator<EqString> it(shaderInfoKvs.FindSection("ShaderKinds")); !it.atEnd(); ++it)
+	{
+		const EqString kindName(it);
+		if (kindName == "Vertex")
+			shaderKinds |= SHADERKIND_VERTEX;
+		else if (kindName == "Fragment")
+			shaderKinds |= SHADERKIND_FRAGMENT;
+		else if (kindName == "Compute")
+			shaderKinds |= SHADERKIND_COMPUTE;
+	}
+	output.shaderKinds = shaderKinds;
+
+	for (KVKeyIterator it(shaderInfoKvs.FindSection("VertexLayouts")); !it.atEnd(); ++it)
+	{
+		ShaderInfoWGPUImpl::VertLayout& layout = output.vertexLayouts.append();
+		layout.name = EqString(it);
+		if (!stricmp(KV_GetValueString(*it, 0), "aliasOf"))
+		{
+			layout.aliasOf = arrayFindIndexF(output.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
+				return layout.name == KV_GetValueString(*it, 1);
+			});
+		}
+	}
+
+	int filesFound = 0;
+	for (KVKeyIterator it(shaderInfoKvs.FindSection("FileList")); !it.atEnd(); ++it)
+	{
+		const KVSection* itemSec = *it;
+
+		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
+		int kind = 0;
+		{
+			const char* kindStr = KV_GetValueString(itemSec, 1);
+			if (!stricmp(kindStr, "Vertex"))
+				kind = SHADERKIND_VERTEX;
+			else if (!stricmp(kindStr, "Fragment"))
+				kind = SHADERKIND_FRAGMENT;
+			else if (!stricmp(kindStr, "Compute"))
+				kind = SHADERKIND_COMPUTE;
+		}
+		ASSERT_MSG(kind != 0, "Shader kind is not valid");
+		const char* queryStr = KV_GetValueString(itemSec, 2);
+		const int queryStrHash = StringToHash(queryStr);
+
+		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, kind);
+
+		if (!stricmp(itemSec->GetName(), "spv"))
+		{
+			const char* shaderFileName = KV_GetValueString(itemSec, 3);
+			IFilePtr shaderFile = shaderPackRead->Open(shaderFileName, VS_OPEN_READ);
+			if (!shaderFile)
+			{
+				MsgError("Can't open shader %s in shader package!\n", shaderFileName);
+				return false;
+			}
+
+			CMemoryStream shaderData(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, shaderFile->GetSize(), PP_SL);
+			shaderData.AppendStream(shaderFile);
+
+			WGPUShaderModule rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), shaderFileName);
+			if (!rhiShaderModule)
+			{
+				MsgError("Can't create shader module %s!\n", shaderFileName);
+				return false;
+			}
+
+			const int moduleIndex = output.rhiModules.append(rhiShaderModule);
+			output.modulesMap.insert(shaderModuleId, moduleIndex);
+			++filesFound;
+		}
+		else if (!stricmp(itemSec->GetName(), "ref"))
+		{
+			const int refIndex = KV_GetValueInt(itemSec, 3);
+			output.modulesMap.insert(shaderModuleId, refIndex);
+		}
+	}
+
+	g_fileSystem->ClosePackage(shaderPackRead);
+
+	return true;
 }
 
 void CWGPURenderAPI::PrintAPIInfo() const
@@ -411,7 +436,7 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 	rhiSpirvDesc.code = code;
 
 	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
-	rhiShaderModuleDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&rhiShaderModuleDesc);
+	rhiShaderModuleDesc.nextInChain = &rhiSpirvDesc.chain;
 	rhiShaderModuleDesc.label = name;
 
 	return wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
