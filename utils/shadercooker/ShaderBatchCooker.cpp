@@ -268,7 +268,7 @@ private:
 };
 
 //-----------------------------------------------------------------------
-#pragma optimize("", off)
+
 void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 {
 	EqString searchFolder(wildcard);

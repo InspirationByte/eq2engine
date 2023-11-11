@@ -471,7 +471,7 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 
 	return wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
 }
-#pragma optimize("", off)
+
 IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc) const
 {
 	if (!layoutDesc)
@@ -479,6 +479,34 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 		ASSERT_FAIL("layoutDesc is null");
 		return nullptr;
 	}
+
+	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
+	auto shaderIt = m_shaderCache.find(shaderNameHash);
+	if (shaderIt.atEnd())
+	{
+		ASSERT_FAIL("Render pipeline has unknown shader '%s' specified", pipelineDesc.shaderName.ToCString());
+		return nullptr;
+	}
+
+	const ShaderInfoWGPUImpl& shaderInfo = *shaderIt;
+	int queryStrHash = 0;
+	if (!shaderInfo.GetShaderQueryHash(pipelineDesc.shaderQuery, queryStrHash))
+	{
+		ASSERT_FAIL("Render pipeline has unknown defines in query for shader '%s'", pipelineDesc.shaderName.ToCString());
+		return nullptr;
+	}
+
+	int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
+		return layout.name == pipelineDesc.shaderVertexLayoutName;
+	});
+
+	if (vertexLayoutIdx == -1)
+	{
+		ASSERT_FAIL("Render pipeline has unknown vertex layout for vertex shader '%s'", pipelineDesc.shaderVertexLayoutName.ToCString());
+		return nullptr;
+	}
+	if (shaderInfo.vertexLayouts[vertexLayoutIdx].aliasOf != -1)
+		vertexLayoutIdx = shaderInfo.vertexLayouts[vertexLayoutIdx].aliasOf;
 
 	// 1. The pipeline almost fully constructed by the MatSystemShader
 	//    except the primitive state, which is:
@@ -537,32 +565,6 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 
 		WGPUShaderModule rhiVertexShaderModule = nullptr;
 		{
-			const int shaderNameHash = StringToHash(pipelineDesc.vertex.shaderName);
-			auto shaderIt = m_shaderCache.find(shaderNameHash);
-			if (shaderIt.atEnd())
-			{
-				ASSERT_FAIL("Render pipeline has unknown vertex shader '%s' specified", pipelineDesc.vertex.shaderName.ToCString());
-				return nullptr;
-			}
-			ShaderInfoWGPUImpl& shaderInfo = *shaderIt;
-			int queryStrHash = 0;
-			if (!shaderInfo.GetShaderQueryHash(pipelineDesc.vertex.shaderQuery, queryStrHash))
-			{
-				ASSERT_FAIL("Render pipeline has unknown defines in query for vertex shader '%s'", pipelineDesc.vertex.shaderName.ToCString());
-				return nullptr;
-			}
-			int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
-				return layout.name == pipelineDesc.vertex.shaderVertexLayoutName;
-				});
-			if (vertexLayoutIdx == -1)
-			{
-				ASSERT_FAIL("Render pipeline has unknown vertex layout for vertex shader '%s'", pipelineDesc.vertex.shaderVertexLayoutName.ToCString());
-				return nullptr;
-			}
-
-			if (shaderInfo.vertexLayouts[vertexLayoutIdx].aliasOf != -1)
-				vertexLayoutIdx = shaderInfo.vertexLayouts[vertexLayoutIdx].aliasOf;
-
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
@@ -643,32 +645,6 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 
 		WGPUShaderModule rhiFragmentShaderModule = nullptr; // TODO: fetch from cache of fragment modules?
 		{
-			const int shaderNameHash = StringToHash(pipelineDesc.vertex.shaderName);
-			auto shaderIt = m_shaderCache.find(shaderNameHash);
-			if (shaderIt.atEnd())
-			{
-				ASSERT_FAIL("Render pipeline has unknown vertex shader '%s' specified", pipelineDesc.vertex.shaderName.ToCString());
-				return nullptr;
-			}
-			ShaderInfoWGPUImpl& shaderInfo = *shaderIt;
-			int queryStrHash = 0;
-			if (!shaderInfo.GetShaderQueryHash(pipelineDesc.vertex.shaderQuery, queryStrHash))
-			{
-				ASSERT_FAIL("Render pipeline has unknown defines in query for vertex shader '%s'", pipelineDesc.vertex.shaderName.ToCString());
-				return nullptr;
-			}
-			int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
-				return layout.name == pipelineDesc.vertex.shaderVertexLayoutName;
-				});
-			if (vertexLayoutIdx == -1)
-			{
-				ASSERT_FAIL("Render pipeline has unknown vertex layout for vertex shader '%s'", pipelineDesc.vertex.shaderVertexLayoutName.ToCString());
-				return nullptr;
-			}
-
-			if (shaderInfo.vertexLayouts[vertexLayoutIdx].aliasOf != -1)
-				vertexLayoutIdx = shaderInfo.vertexLayouts[vertexLayoutIdx].aliasOf;
-
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
@@ -713,7 +689,10 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	WGPURenderPipeline rhiRenderPipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &rhiRenderPipelineDesc);
 
 	if (!rhiRenderPipeline)
+	{
+		ASSERT_FAIL("Render pipeline creation failed");
 		return nullptr;
+	}
 
 	CRefPtr<CWGPURenderPipeline> renderPipeline = CRefPtr_new(CWGPURenderPipeline);
 	renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;

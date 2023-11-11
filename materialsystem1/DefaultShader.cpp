@@ -66,7 +66,7 @@ BEGIN_SHADER_CLASS(Default)
 	void FillShaderBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
 			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
 			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
 			.End();
@@ -90,16 +90,21 @@ BEGIN_SHADER_CLASS(Default)
 			PipelineLayoutDesc pipelineLayoutDesc;
 			FillPipelineLayoutDesc(pipelineLayoutDesc);
 
-			
 			IGPUPipelineLayoutPtr pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
 
-			RenderPipelineDesc renderPipelineDesc;
+			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
+				.ShaderName("Default")
+				.ShaderVertexLayoutName("DynamicMeshVertex")
+				.End();
+
 			FillRenderPipelineDesc(renderPipelineDesc);
 
 			Builder<VertexPipelineDesc>(renderPipelineDesc.vertex)
-				.ShaderName("Default")
-				.ShaderVertexLayoutName("DynamicMeshVertex")
 				.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
+				.End();
+
+			Builder<FragmentPipelineDesc>(renderPipelineDesc.fragment)
+				.ColorTarget("Default", FORMAT_RGBA8)
 				.End();
 
 			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(pipelineLayout, renderPipelineDesc);

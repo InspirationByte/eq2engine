@@ -314,16 +314,10 @@ struct VertexPipelineDesc
 	using VertexLayoutDescList = Array<VertexLayoutDesc>;
 	VertexLayoutDescList	vertexLayout{ PP_SL };
 	EqString				shaderEntryPoint{ "main" };
-	EqString				shaderName;
-	EqString				shaderVertexLayoutName;
-	Array<EqString>			shaderQuery{ PP_SL };
 };
 
 FLUENT_BEGIN_TYPE(VertexPipelineDesc)
 	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
-	FLUENT_SET_VALUE(shaderName, ShaderName)
-	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
-	FLUENT_SET_VALUE(shaderVertexLayoutName, ShaderVertexLayoutName)
 	ThisType& VertexLayout(VertexLayoutDesc&& x) { ref.vertexLayout.append(std::move(x)); return *this; }
 	ThisType& VertexLayout(const VertexLayoutDesc& x) { ref.vertexLayout.append(x); return *this; }
 FLUENT_END_TYPE
@@ -407,16 +401,10 @@ struct FragmentPipelineDesc
 
 	ColorTargetList			targets;
 	EqString				shaderEntryPoint{ "main" };
-	EqString				shaderName;
-	EqString				shaderVertexLayoutName;
-	Array<EqString>			shaderQuery{ PP_SL };
 };
 
 FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
 	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
-	FLUENT_SET_VALUE(shaderName, ShaderName)
-	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
-	FLUENT_SET_VALUE(shaderVertexLayoutName, ShaderVertexLayoutName)
 	ThisType& ColorTarget(ColorTargetDesc&& x)
 	{
 		ref.targets.append(std::move(x)); return *this;
@@ -444,6 +432,10 @@ struct RenderPipelineDesc
 	MultiSampleState		multiSample;
 	PrimitiveDesc			primitive;
 	EqString				name;
+
+	EqString				shaderName;
+	EqString				shaderVertexLayoutName;
+	Array<EqString>			shaderQuery{ PP_SL };
 };
 
 //-------------------------------------------
@@ -455,6 +447,9 @@ FLUENT_BEGIN_TYPE(RenderPipelineDesc);
 	FLUENT_SET_VALUE(multiSample, MultiSampleState);
 	FLUENT_SET_VALUE(primitive, PrimitiveState);
 	FLUENT_SET_VALUE(name, Name);
+	FLUENT_SET_VALUE(shaderName, ShaderName)
+	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
+	FLUENT_SET_VALUE(shaderVertexLayoutName, ShaderVertexLayoutName)
 FLUENT_END_TYPE
 
 enum EBufferBindType : int
