@@ -127,6 +127,9 @@ bool operator > (const TVec2D<T> &u, const TVec2D<T2> &v);
 template <typename T, typename T2>
 bool operator == (const TVec2D<T> &u, const TVec2D<T2> &v);
 
+template <typename T, typename T2>
+bool operator != (const TVec2D<T>& u, const TVec2D<T2>& v);
+
 /* --------------------------------------------------------------------------------- */
 
 template <class T>
@@ -236,6 +239,9 @@ T operator & ( const TVec3D<T>& u, const TVec3D<T2>& v );
 
 template <typename T, typename T2>
 bool operator == (const TVec3D<T> &u, const TVec3D<T2> &v);
+
+template <typename T, typename T2>
+bool operator != (const TVec3D<T>& u, const TVec3D<T2>& v);
 
 template <typename T, typename T2>
 bool operator <= (const TVec3D<T> &u, const TVec3D<T2> &v);
@@ -379,6 +385,9 @@ TVec4D<T> operator / (const T s, const TVec4D<T2> &v);
 
 template <typename T, typename T2>
 bool operator == (const TVec4D<T> &u, const TVec4D<T2> &v);
+
+template <typename T, typename T2>
+bool operator != (const TVec4D<T>& u, const TVec4D<T2>& v);
 
 // define common vector types
 using Vector2D  = TVec2D<float>;
@@ -729,7 +738,7 @@ struct MColor
 		r = float(u & 255) / 255.0f;
 		g = float(u >> 8 & 255) / 255.0f;
 		b = float(u >> 16 & 255) / 255.0f;
-		a = float(u >> 16 & 255) / 255.0f;
+		a = float(u >> 24 & 255) / 255.0f;
 		return *this;
 	}
 
