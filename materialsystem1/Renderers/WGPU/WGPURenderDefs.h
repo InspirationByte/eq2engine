@@ -182,7 +182,7 @@ static WGPUVertexFormat g_wgpuVertexFormats[][4] = {
 		WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined
 	},
 	{
-		WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint8x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint8x4
+		WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint8x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint32
 	},
 	{
 		WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x4
@@ -324,7 +324,11 @@ inline static void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerPa
 	rhiSamplerDesc.minFilter = g_wgpuFilterMode[samplerParams.minFilter];
 	rhiSamplerDesc.magFilter = g_wgpuFilterMode[samplerParams.magFilter];
 	rhiSamplerDesc.mipmapFilter = g_wgpuMipmapFilterMode[samplerParams.mipmapFilter];
-	rhiSamplerDesc.maxAnisotropy = samplerParams.maxAnisotropy;
+
+	if(rhiSamplerDesc.minFilter == WGPUFilterMode_Nearest)
+		rhiSamplerDesc.maxAnisotropy = 1;
+	else
+		rhiSamplerDesc.maxAnisotropy = samplerParams.maxAnisotropy;
 }
 
 inline static void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendComponent& rhiBlendComponent)

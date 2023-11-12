@@ -166,7 +166,12 @@ static const BlendStateParams BlendStateAdditive = {
 	BLENDFUNC_ADD, COLORMASK_ALL, true
 };
 
-static const BlendStateParams BlendStateAlpha = {
+static const BlendStateParams BlendStateTranslucent = {
+	BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+	BLENDFUNC_ADD, COLORMASK_ALL, true
+};
+
+static const BlendStateParams BlendStateTranslucentAlpha = {
 	BLENDFACTOR_ONE, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
 	BLENDFUNC_ADD, COLORMASK_ALL, true
 };

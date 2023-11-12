@@ -258,16 +258,6 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 
 void CWGPURenderLib::EndFrame()
 {
-	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
-		.ColorTarget(GetCurrentBackbuffer(), true, MColor(0.25f, 0.15f, 0.15f, 1.0f))
-		.Name("clearScreen")
-		.End();
-	
-	IGPURenderPassRecorderPtr rendPassRecorder = GetRenderer()->BeginRenderPass(renderPassDesc);
-	IGPUCommandBufferPtr clearScreenCmd = rendPassRecorder->End();
-
-	GetRenderer()->SubmitCommandBuffer(clearScreenCmd);
-
 	g_renderWorker.WaitForExecute(__func__, [&]() {
 		m_currentSwapChain->SwapBuffers();
 		return 0;

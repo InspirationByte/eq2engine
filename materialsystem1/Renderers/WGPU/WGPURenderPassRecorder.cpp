@@ -22,7 +22,10 @@ void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 void CWGPURenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) // TODO: dynamic offsets
 {
 	CWGPUBindGroup* bindGroupImpl = static_cast<CWGPUBindGroup*>(bindGroup);
-	wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, dynamicOffsets.numElem(), dynamicOffsets.ptr());
+	if(bindGroupImpl)
+		wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, dynamicOffsets.numElem(), dynamicOffsets.ptr());
+	else
+		wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, nullptr, 0, nullptr);
 }
 
 void CWGPURenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset, int64 size)
@@ -47,8 +50,8 @@ void CWGPURenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat 
 		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Index, "buffer doesn't have Index buffer usage bit");
 		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], 0, size);
 	}
-	else
-		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, nullptr, WGPUIndexFormat_Undefined, 0, 0);
+	//else
+	//	wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, nullptr, WGPUIndexFormat_Undefined, 0, 0);
 }
 
 void CWGPURenderPassRecorder::SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth)
