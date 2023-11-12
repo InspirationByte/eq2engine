@@ -181,7 +181,9 @@ public:
 	// returns the dynamic mesh
 	IDynamicMesh*				GetDynamicMesh() const;
 
-	void						SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, EPrimTopology primTopology, int vertexLayoutId, const void* userData);
+	void						SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, int vertexLayoutId, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
+	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder);
+	bool						SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
 
 	void						Draw(const RenderDrawCmd& drawCmd);
 	void						DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts);

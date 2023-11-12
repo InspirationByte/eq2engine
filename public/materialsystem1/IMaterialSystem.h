@@ -224,7 +224,9 @@ public:
 
 	//-----------------------------
 	// Drawing
-	virtual void					SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, EPrimTopology primTopology, int vertexLayoutId, const void* userData) = 0;
+	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, int vertexLayoutId, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual bool					SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
@@ -237,6 +239,12 @@ public:
 
 	template<typename ARRAY_TYPE>
 	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts);
+
+	template<typename VERT>
+	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
+
+	template<typename ARRAY_TYPE>
+	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts, IGPURenderPassRecorder* rendPassRecorder);
 
 };
 
@@ -254,6 +262,22 @@ void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 	using VERT = typename ARRAY_TYPE::ITEM;
 	const int vertFVF = VertexFVFResolver<VERT>::value;
 	DrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts.ptr(), verts.numElem());
+}
+
+template<typename VERT>
+void IMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
+{
+	const void* vertPtr = reinterpret_cast<void*>(&verts);
+	const int vertFVF = VertexFVFResolver<VERT>::value;
+	SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, vertPtr, numVerts, rendPassRecorder);
+}
+
+template<typename ARRAY_TYPE>
+void IMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts, IGPURenderPassRecorder* rendPassRecorder)
+{
+	using VERT = typename ARRAY_TYPE::ITEM;
+	const int vertFVF = VertexFVFResolver<VERT>::value;
+	SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts.ptr(), verts.numElem(), rendPassRecorder);
 }
 
 extern IMaterialSystem* g_matSystem;

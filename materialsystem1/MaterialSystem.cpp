@@ -1381,7 +1381,18 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 
 	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
 
-	SetupMaterialPipeline(drawCmd.material, rendPassRecorder, drawCmd.primitiveTopology, StringToHashConst("DynMeshVertex"), drawCmd.userData);
+	SetupDrawCommand(drawCmd, rendPassRecorder);
+
+	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
+	renderAPI->SubmitCommandBuffer(commandBuffer);
+}
+
+void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder)
+{
+	if (!drawCmd.material)
+		return;
+
+	SetupMaterialPipeline(drawCmd.material, drawCmd.primitiveTopology, StringToHashConst("DynMeshVertex"), drawCmd.userData, rendPassRecorder);
 
 	if (drawCmd.vertexLayout)
 	{
@@ -1399,12 +1410,9 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 		rendPassRecorder->Draw(drawCmd.numVertices, drawCmd.firstVertex, 1);
 	else
 		rendPassRecorder->DrawIndexed(drawCmd.numIndices, drawCmd.firstIndex, 1, drawCmd.baseVertex);
-
-	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
-	renderAPI->SubmitCommandBuffer(commandBuffer);
 }
 
-void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, EPrimTopology primTopology, int vertexLayoutId, const void* userData)
+void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, int vertexLayoutId, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
 
@@ -1418,7 +1426,7 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, IGPURenderPassR
 	rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, userData), nullptr);
 }
 
-void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts)
+bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
 {
 	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
 
@@ -1426,7 +1434,7 @@ void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 	meshBuilder.Begin(primTopology);
 
 	const ubyte* vertPtr = reinterpret_cast<const ubyte*>(verts);
-	for(int i = 0; i < numVerts; ++i)
+	for (int i = 0; i < numVerts; ++i)
 	{
 		if (vertFVF & VERTEX_FVF_XYZ)
 		{
@@ -1458,17 +1466,9 @@ void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 
 	RenderDrawCmd drawCmd;
 	if (!meshBuilder.End(drawCmd))
-		return;
+		return false;
 
 	IShaderAPI* renderAPI = m_shaderAPI;
-
-	// Draw to default view
-	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
-		.ColorTarget(m_renderLibrary->GetCurrentBackbuffer())
-		//.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
-		.End();
-
-	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
 
 	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
 	const IMatSystemShader* matShader = material->m_shader;
@@ -1490,13 +1490,30 @@ void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 	}
 
 
-	if(rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1,-1))
+	if (rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1, -1))
 		rendPassRecorder->SetScissorRectangle(rendPassInfo.scissorRectangle);
 
 	if (drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
 		rendPassRecorder->Draw(drawCmd.numVertices, drawCmd.firstVertex, 1);
 	else
 		rendPassRecorder->DrawIndexed(drawCmd.numIndices, drawCmd.firstIndex, 1, drawCmd.baseVertex);
+
+	return true;
+}
+
+void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts)
+{
+	// Draw to default view
+	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
+		.ColorTarget(m_renderLibrary->GetCurrentBackbuffer())
+		//.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+		.End();
+
+	IShaderAPI* renderAPI = m_shaderAPI;
+	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
+
+	if (!SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts, numVerts, rendPassRecorder))
+		return;
 
 	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
 	renderAPI->SubmitCommandBuffer(commandBuffer);

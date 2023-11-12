@@ -21,10 +21,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	SHADER_INIT_PARAMS()
 	{
 		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
-
-		Builder<BindGroupLayoutDesc>()
-			.Texture("BaseTexture", 0, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -51,6 +47,23 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			PipelineLayoutDesc pipelineLayoutDesc;
 			FillPipelineLayoutDesc(pipelineLayoutDesc);
 			m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+		}
+
+		{
+			FixedArray<Vector4D, 4> bufferData;
+			bufferData.append(m_colorVar.Get() /* * g_matSystem->GetAmbientColor()*/);
+			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
+			m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+		}
+
+		{
+			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture();
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+				.Sampler(1, baseTexture->GetSamplerState())
+				.Texture(2, baseTexture)
+				.End();
+			m_materialBindGroup = renderAPI->CreateBindGroup(m_pipelineLayout, 1, shaderBindGroupDesc);
 		}
 
 		{
@@ -157,34 +170,13 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
 	{
-		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
-		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
-
-		IGPUBindGroupPtr materialBindGroup;
-		IGPUBufferPtr materialParamsBuffer;
-		{
-			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture();
-
-			ColorRGBA setColor = m_colorVar.Get() * g_matSystem->GetAmbientColor();
-
-			// can use either fixed array or CMemoryStream with on-stack storage
-			FixedArray<Vector4D, 4> bufferData;
-			bufferData.append(setColor);
-			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
-
-			materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, materialParamsBuffer, 0, bufferData.numElem() * sizeof(bufferData[0]))
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
-				.End();
-			materialBindGroup = renderAPI->CreateBindGroup(m_pipelineLayout, 1, shaderBindGroupDesc);
-		}
-		return materialBindGroup;
+		return m_materialBindGroup;
 	}
 
 	IGPURenderPipelinePtr	m_renderPipelines[2];
 	IGPUPipelineLayoutPtr	m_pipelineLayout;
+	IGPUBufferPtr			m_materialParamsBuffer;
+	IGPUBindGroupPtr		m_materialBindGroup;
 
 	SHADER_SETUP_STAGE()
 	{

@@ -104,6 +104,7 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.drawColor = m_color;
 	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
@@ -111,10 +112,7 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 
 			atlasRect.GetLeftBottom(), atlasRect.GetRightBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightTop());
 	if(meshBuilder.End(drawCmd))
-	{
-		g_matSystem->SetAmbientColor(m_color);
 		g_matSystem->Draw(drawCmd);
-	}
 }
 
 };
