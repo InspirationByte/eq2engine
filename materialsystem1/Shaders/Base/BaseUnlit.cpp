@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "IMaterialSystem.h"
 #include "BaseShader.h"
+#include "IDynamicMesh.h"
 
 BEGIN_SHADER_CLASS(BaseUnlit)
 
@@ -32,10 +33,66 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture, m_baseTexture);
 	}
 
+	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
+	{
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
+	}
+
 	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
+
+		{
+			PipelineLayoutDesc pipelineLayoutDesc;
+			FillPipelineLayoutDesc(pipelineLayoutDesc);
+			m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+		}
+
+		{
+			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
+				.ShaderName(GetName())
+				.ShaderVertexLayoutName("DynMeshVertex")
+				.VertexState(
+					Builder<VertexPipelineDesc>()
+					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
+					.End()
+				)
+				.FragmentState(
+					Builder<FragmentPipelineDesc>()
+					.ColorTarget("Default", g_matSystem->GetCurrentBackbuffer()->GetFormat())
+					.End()
+				)
+				.End();
+
+			FillRenderPipelineDesc(renderPipelineDesc);
+
+			Array<EqString>& shaderQuery = renderPipelineDesc.shaderQuery;
+
+			bool vertexColor = false;
+			SHADER_PARAM_BOOL(StudioVertexColor, vertexColor, false);
+			if (vertexColor)
+				shaderQuery.append("STUDIOVERTEXCOLOR");
+
+			if (m_flags & MATERIAL_FLAG_ALPHATESTED)
+				shaderQuery.append("ALPHATEST");
+
+			EPrimTopology primitiveTopology = PRIM_TRIANGLE_STRIP;
+
+			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
+				.Topology(primitiveTopology)
+				.Cull((m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : CULL_BACK) // TODO: variant
+				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
+				.End();
+
+			m_renderPipelines[0] = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
+		}
+
+		// m_renderPipelines = ;
 
 		bool fogEnable = true;
 		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false)
@@ -87,6 +144,47 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 		return true;
 	}
+
+	IGPUPipelineLayoutPtr GetPipelineLayout() const
+	{
+		return m_pipelineLayout;
+	}
+
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primitiveTopology, const void* userData) const
+	{
+		return m_renderPipelines[0];
+	}
+
+	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
+	{
+		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
+		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
+
+		IGPUBindGroupPtr materialBindGroup;
+		IGPUBufferPtr materialParamsBuffer;
+		{
+			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture();
+
+			ColorRGBA setColor = m_colorVar.Get() * g_matSystem->GetAmbientColor();
+
+			// can use either fixed array or CMemoryStream with on-stack storage
+			FixedArray<Vector4D, 4> bufferData;
+			bufferData.append(setColor);
+			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
+
+			materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, materialParamsBuffer, 0, bufferData.numElem() * sizeof(bufferData[0]))
+				.Sampler(1, baseTexture->GetSamplerState())
+				.Texture(2, baseTexture)
+				.End();
+			materialBindGroup = renderAPI->CreateBindGroup(m_pipelineLayout, 1, shaderBindGroupDesc);
+		}
+		return materialBindGroup;
+	}
+
+	IGPURenderPipelinePtr	m_renderPipelines[2];
+	IGPUPipelineLayoutPtr	m_pipelineLayout;
 
 	SHADER_SETUP_STAGE()
 	{
