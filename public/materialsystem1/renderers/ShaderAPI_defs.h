@@ -574,6 +574,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = BINDENTRY_BUFFER;
+		entry.buffer = BindBuffer();
 		entry.buffer.bindType = bindType;
 		return *this; 
 	}
@@ -585,6 +586,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = BINDENTRY_SAMPLER;
+		entry.sampler = BindSampler();
 		entry.sampler.bindType = bindType;
 		return *this;
 	}
@@ -596,6 +598,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = BINDENTRY_TEXTURE;
+		entry.texture = BindTexture();
 		entry.texture.sampleType = sampleType;
 		entry.texture.dimension = dimension;
 		entry.texture.multisampled = multisample;
@@ -609,6 +612,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		entry.visibility = visibilityFlags;
 		entry.binding = binding;
 		entry.type = BINDENTRY_STORAGETEXTURE;
+		entry.storageTexture = BindStorageTexture();
 		entry.storageTexture.format = format;
 		entry.storageTexture.access = access;
 		entry.storageTexture.dimension = dimension;
