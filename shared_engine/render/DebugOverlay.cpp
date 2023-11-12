@@ -49,7 +49,7 @@ static void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 DECLARE_CVAR_CHANGE(r_debugShowTexture, "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
 DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 
-static void GUIDrawWindow(const AARectangle &rect, const MColor&color1)
+static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURenderPassRecorder* rendPassRecorder)
 {
 	MColor color2(0.2f,0.2f,0.2f,0.8f);
 
@@ -81,7 +81,7 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor&color1)
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 #define BBOX_STRIP_VERTS(min, max) \
@@ -433,7 +433,7 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 }
 
 #ifndef DISABLE_DEBUG_DRAWING
-static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
+static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!lines.numElem())
 		return;
@@ -469,10 +469,10 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 		}
 
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
-static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime)
+static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if (!boxes.numElem())
 		return;
@@ -537,16 +537,16 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 		if ((i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
-				g_matSystem->Draw(drawCmd);
+				g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
-static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
+static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!boxes.numElem())
 		return;
@@ -611,13 +611,13 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 			if((i % BOXES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->Draw(drawCmd);
+					g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinder, float frametime)
@@ -668,7 +668,7 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinde
 	cylinder.lifetime -= frametime;
 }
 
-static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float frametime)
+static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
@@ -691,16 +691,16 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 		if ((i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
-				g_matSystem->Draw(drawCmd);
+				g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
-static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float frame_time)
+static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float frame_time, IGPURenderPassRecorder* rendPassRecorder)
 {
 	const float GRAPH_HEIGHT = 100;
 	const float GRAPH_Y_OFFSET = 50;
@@ -731,10 +731,9 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 	eqFontStyleParam_t textStl;
 	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-	pFont->RenderText(graph->name, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl);
-
-	pFont->RenderText("0", Vector2D(x_pos + 5, y_pos), textStl);
-	pFont->RenderText(EqString::Format("%.2f", graph->maxValue).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl);
+	pFont->SetupRenderText(graph->name, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl, rendPassRecorder);
+	pFont->SetupRenderText("0", Vector2D(x_pos + 5, y_pos), textStl, rendPassRecorder);
+	pFont->SetupRenderText(EqString::Format("%.2f", graph->maxValue).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl, rendPassRecorder);
 
 	BlendStateParams blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -742,11 +741,11 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 
 	MatSysDefaultRenderPass defaultRender;
 	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
-	g_matSystem->DrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(lines));
+	g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(lines), rendPassRecorder);
 
-	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
-	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
-	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.25f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.25f), textStl);
+	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl, rendPassRecorder);
+	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl, rendPassRecorder);
+	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.25f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.25f), textStl, rendPassRecorder);
 
 	int value_id = 0;
 
@@ -798,7 +797,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 		graph->maxValue = graph_max_value;
 
 	defaultRender.blendMode = SHADER_BLEND_NONE;
-	g_matSystem->DrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts));
+	g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts), rendPassRecorder);
 
 	graph->remainingTime -= frame_time;
 
@@ -807,7 +806,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 
 }
 
-static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
+static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!polygons.numElem())
 		return;
@@ -843,13 +842,13 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 			if((i % POLYS_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->Draw(drawCmd);
+					g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
 		}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 
 	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < polygons.numElem(); i++)
@@ -877,12 +876,12 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 			if((i % LINES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->Draw(drawCmd);
+					g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 static Vector3D v3sphere(float theta, float phi)
@@ -955,7 +954,7 @@ static void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sp
 }
 
 // use PRIM_TRIANGLES
-static void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
+static void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if (sphere.radius <= 0)
 		return;
@@ -1037,7 +1036,7 @@ static void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& spher
 	}
 }
 
-static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
+static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!spheres.numElem())
 		return;
@@ -1062,7 +1061,7 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 #endif // DISABLE_DEBUG_DRAWING
@@ -1081,7 +1080,12 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	m_frameTime = m_timer.GetTime(true) * timescale;
 
 #ifndef DISABLE_DEBUG_DRAWING
-	g_renderAPI->SetViewport(IAARectangle(0, 0, winWide, winTall));
+	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+		Builder<RenderPassDesc>()
+		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.End()
+	);
+
 	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
@@ -1106,7 +1110,6 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	}
 
 	// may need a reset again
-	g_renderAPI->SetViewport(IAARectangle(0, 0, winWide, winTall));
 	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
@@ -1115,32 +1118,32 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	// draw all of 3d stuff
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawBoxArray(m_BoxList, m_frameTime);
+		DrawBoxArray(m_BoxList, m_frameTime, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawCylinderArray(m_CylinderList, m_frameTime);
+		DrawCylinderArray(m_CylinderList, m_frameTime, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime);
+		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawSphereArray(m_SphereList, m_frameTime);
+		DrawSphereArray(m_SphereList, m_frameTime, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawLineArray(m_LineList, m_frameTime);
+		DrawLineArray(m_LineList, m_frameTime, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawPolygons(m_polygons, m_frameTime);
+		DrawPolygons(m_polygons, m_frameTime, rendPassRecorder);
 	}
 
 	// now rendering 2D stuff
@@ -1178,7 +1181,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 			Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (idx * m_debugFont->GetLineHeight(textStl)));
 
-			m_debugFont->RenderText(current.pszText.GetData(), textPos, textStl);
+			m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, textStl, rendPassRecorder);
 
 			idx++;
 
@@ -1214,7 +1217,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			if (!beh && visible)
 			{
 				textStl.textColor = current.color;
-				m_debugFont2->RenderText(current.pszText.GetData(), screen.xy(), textStl);
+				m_debugFont2->SetupRenderText(current.pszText.GetData(), screen.xy(), textStl, rendPassRecorder);
 			}
 		}
 	}
@@ -1225,7 +1228,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			Threading::CScopedMutex m(s_debugOverlayMutex);
 			if (m_TextArray.numElem())
 			{
-				GUIDrawWindow(AARectangle(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), MColor(0.5f, 0.5f, 0.5f, 0.5f));
+				GUIDrawWindow(AARectangle(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), MColor(0.5f, 0.5f, 0.5f, 0.5f), rendPassRecorder);
 
 				for (int i = 0; i < m_TextArray.numElem(); i++)
 				{
@@ -1235,7 +1238,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 					Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (i * m_debugFont->GetLineHeight(textStl)));
 
-					m_debugFont->RenderText(current.pszText.GetData(), textPos, textStl);
+					m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, textStl, rendPassRecorder);
 				}
 			}
 			m_TextArray.clear();
@@ -1263,7 +1266,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 				float textLen = m_debugFont->GetStringWidth(current.pszText.ToCString(), textStl);
 				Vector2D textPos(winWide - (textLen * m_debugFont->GetLineHeight(textStl)), 45 + (i * m_debugFont->GetLineHeight(textStl)));
 
-				m_debugFont->RenderText(current.pszText.GetData(), textPos, rTextFadeStyle);
+				m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, rTextFadeStyle, rendPassRecorder);
 
 				current.lifetime -= m_frameTime;
 			}
@@ -1275,7 +1278,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
 		for(int i = 0; i < m_graphbuckets.numElem(); i++)
-			DrawGraph( m_graphbuckets[i], i, m_debugFont, m_frameTime);
+			DrawGraph( m_graphbuckets[i], i, m_debugFont, m_frameTime, rendPassRecorder);
 
 		m_graphbuckets.clear(false);
 	}
@@ -1317,15 +1320,18 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		MatSysDefaultRenderPass defaultRender;
 		defaultRender.texture = g_pDebugTexture;
-		g_matSystem->DrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth));
+		g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), rendPassRecorder);
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-		m_debugFont2->RenderText(EqString::Format("%dx%d (frame %d)\n%s\nrefcnt %d", g_pDebugTexture->GetWidth(), g_pDebugTexture->GetHeight(), g_pDebugTexture->GetAnimationFrame(), g_pDebugTexture->GetName(), g_pDebugTexture->Ref_Count()), Vector2D(10, 10), textStl);
+		EqString str = EqString::Format("%dx%d (frame %d)\n%s\nrefcnt %d", g_pDebugTexture->GetWidth(), g_pDebugTexture->GetHeight(), g_pDebugTexture->GetAnimationFrame(), g_pDebugTexture->GetName(), g_pDebugTexture->Ref_Count());
+		m_debugFont2->SetupRenderText(str, Vector2D(10, 10), textStl, rendPassRecorder);
 	}
 
 	++m_frameId;
+
+	g_renderAPI->SubmitCommandBuffer(rendPassRecorder->End());
 #endif
 }
 

@@ -8,6 +8,8 @@
 #pragma once
 #include "render/IDebugOverlay.h"
 
+class IGPURenderPassRecorder;
+
 struct DebugTextNode_t
 {
 	EqString	pszText;

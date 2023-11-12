@@ -13,6 +13,7 @@
 
 class IEqFont;
 class ConCommandBase;
+class IGPURenderPassRecorder;
 
 struct ConAutoCompletion_t
 {
@@ -96,11 +97,11 @@ public:
 
 protected:
 
-	void			DrawSelf(int width, int height, float frameTime);
-	void			DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection);
+	void			DrawSelf(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder);
+	void			DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder);
 
-	void			DrawFastFind(float x, float y, float w);
-	void			DrawAutoCompletion(float x, float y, float w);
+	void			DrawFastFind(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
+	void			DrawAutoCompletion(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
 
 	void			consoleInsText(const char* text,int pos);
 	void			consoleRemTextInRange(int start,int len);

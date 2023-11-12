@@ -63,6 +63,7 @@ struct eqFontChar_t
 	float advX;
 };
 
+class IGPURenderPassRecorder;
 class IEqFont;
 struct eqFontStyleParam_t;
 
@@ -161,13 +162,26 @@ public:
 	// returns the scaled character
 	virtual void				GetScaledCharacter( eqFontChar_t& chr, const int chrId, const Vector2D& scale = 1.0f ) const = 0;
 
-	// renders text
-	virtual void				RenderText(	const wchar_t* pszText,
-											const Vector2D& start,
-											const eqFontStyleParam_t& params) = 0;
 
 	// renders text
-	virtual void				RenderText(	const char* pszText,
+	virtual void				SetupRenderText(const wchar_t* pszText,
 											const Vector2D& start,
-											const eqFontStyleParam_t& params) = 0;
+											const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
+
+	// renders text
+	virtual void				SetupRenderText(const char* pszText,
+											const Vector2D& start,
+											const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
+
+	// DEPRECATED
+	// renders text
+	virtual void				RenderText(const wchar_t* pszText,
+		const Vector2D& start,
+		const eqFontStyleParam_t& params) = 0;
+
+	// renders text
+	virtual void				RenderText(const char* pszText,
+		const Vector2D& start,
+		const eqFontStyleParam_t& params) = 0;
+
 };

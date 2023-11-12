@@ -23,17 +23,11 @@ static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
 }
 
 // Render function.
-void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
+void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder)
 {
 	// Avoid rendering when minimized
 	if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
 		return;
-
-	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
-		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-		.End()
-	);
 
 	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder mb(dynMesh);
@@ -108,8 +102,6 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 			}
 		}
 	}
-
-	g_renderAPI->SubmitCommandBuffer(rendPassRecorder->End());
 }
 
 bool ImGui_ImplMatSystem_Init()

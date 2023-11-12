@@ -35,6 +35,16 @@ public:
 	float					GetBaselineOffs( const eqFontStyleParam_t& params ) const;
 
 	// renders text (wide char)
+	void					SetupRenderText(const wchar_t* pszText,
+								const Vector2D& start,
+								const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
+	// renders text (ASCII)
+	void					SetupRenderText(const char* pszText,
+								const Vector2D& start,
+								const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
+
+	// DEPRECATED
+	// renders text (wide char)
 	void					RenderText(	const wchar_t* pszText,
 								const Vector2D& start,
 								const eqFontStyleParam_t& params);
@@ -43,9 +53,11 @@ public:
 								const Vector2D& start,
 								const eqFontStyleParam_t& params);
 
+
 protected:
 
 	void					DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params);
+	void					SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
 
 	// returns the character data
 	const eqFontChar_t&		GetFontCharById( const int chrId ) const;
