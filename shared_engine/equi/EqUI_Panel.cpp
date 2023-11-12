@@ -138,10 +138,10 @@ void Panel::CenterOnScreen()
 
 void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
-	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
-	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
+	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
+	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
@@ -149,8 +149,6 @@ void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.primitiveTopology = PRIM_TRIANGLE_STRIP;
-	defaultRenderPass.cullMode = CULL_FRONT;
 	drawCmd.userData = &defaultRenderPass;
 
 	drawCmd.material = g_matSystem->GetDefaultMaterial();

@@ -251,20 +251,17 @@ void CAnimatedModel::RenderPhysModel()
 	if(physData.numShapes == 0)
 		return;
 
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->SetAmbientColor(ColorRGBA(1,0,1,1));
-	g_matSystem->SetDepthStates(true,false);
-	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.drawColor = MColor(1.0f, 0.0f, 1.0f, 1.0f);
+	defaultRenderPass.depthTest = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	Matrix4x4 worldPosMatrix;
 	g_matSystem->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);

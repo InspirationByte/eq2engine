@@ -446,7 +446,6 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 	RenderDrawCmd drawCmd;
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.primitiveTopology = PRIM_TRIANGLE_STRIP;
 	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
@@ -459,7 +458,6 @@ void CFont::DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t&
 {
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.primitiveTopology = PRIM_TRIANGLE_STRIP;
 	defaultRenderPass.texture = m_fontTexture;
 	drawCmd.userData = &defaultRenderPass;
 

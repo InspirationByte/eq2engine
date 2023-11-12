@@ -28,27 +28,26 @@ void DrawWorldCenter()
 	ListLine(Vector3D(0,0,-F_INFINITY),Vector3D(0,0, F_INFINITY), grid_vertices);
 
 	MatSysDefaultRenderPass defaultRender;
-	defaultRender.primitiveTopology = PRIM_LINES;
 	defaultRender.cullMode = CULL_BACK;
 	defaultRender.drawColor = MColor(0.0f, 0.45f, 0.45f, 1.0f);
 
-	g_matSystem->DrawDefaultUP(defaultRender, grid_vertices);
+	g_matSystem->DrawDefaultUP(defaultRender, PRIM_LINES, grid_vertices);
 }
 
 void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest)
 {
-	int grid_lines = count;
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetDepthStates(depthTest, false, true);
-	g_matSystem->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false);
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
-
-	int numOfLines = grid_lines / size;
+	const int grid_lines = count;
+	const int numOfLines = grid_lines / size;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.depthTest = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_LINES);
 

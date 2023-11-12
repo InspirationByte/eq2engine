@@ -16,6 +16,8 @@ void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
 	ASSERT(pipeline);
 	CWGPURenderPipeline* pipelineImpl = static_cast<CWGPURenderPipeline*>(pipeline);
+	if (!pipelineImpl)
+		return;
 	wgpuRenderPassEncoderSetPipeline(m_rhiRenderPassEncoder, pipelineImpl->m_rhiRenderPipeline);
 }
 

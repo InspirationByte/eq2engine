@@ -1150,30 +1150,24 @@ void ShowFPS()
 
 void RenderFloor()
 {
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->SetAmbientColor(ColorRGBA(1, 1, 0, 0.15f));
-
-	g_matSystem->SetDepthStates(true,true);
-	g_matSystem->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
-	g_matSystem->SetBlendingStates(blending);
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
 
-	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_FRONT;
+	defaultRenderPass.drawColor = MColor(1.0f, 1.0f, 0.0f, 0.15f);
+	
+	drawCmd.userData = &defaultRenderPass;
 
-	meshBuilder.TexturedQuad3(
-		Vector3D(-64, 0, -64), 
-		Vector3D(64, 0, -64), 
-		Vector3D(-64, 0, 64), 
-		Vector3D(64, 0, 64), 
-		vec2_zero, vec2_zero, vec2_zero, vec2_zero);
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		meshBuilder.TexturedQuad3(
+			Vector3D(-64, 0, -64), 
+			Vector3D(64, 0, -64), 
+			Vector3D(-64, 0, 64), 
+			Vector3D(64, 0, 64), 
+			vec2_zero, vec2_zero, vec2_zero, vec2_zero);
 
 	if (meshBuilder.End(drawCmd))
 		g_matSystem->Draw(drawCmd);

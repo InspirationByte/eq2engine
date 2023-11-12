@@ -96,7 +96,7 @@ public:
 	IMaterialPtr				GetMaterial(const char* szMaterialName);
 	bool						IsMaterialExist(const char* szMaterialName) const;
 								
-	IMatSystemShader*		CreateShaderInstance(const char* szShaderName);
+	IMatSystemShader*			CreateShaderInstance(const char* szShaderName);
 								
 	void						PreloadNewMaterials();
 	void						WaitAllMaterialsLoaded();
@@ -181,10 +181,10 @@ public:
 	// returns the dynamic mesh
 	IDynamicMesh*				GetDynamicMesh() const;
 
-	void						SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, int vertexLayoutId, const void* userData);
+	void						SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, EPrimTopology primTopology, int vertexLayoutId, const void* userData);
 
 	void						Draw(const RenderDrawCmd& drawCmd);
-	void						DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, int vertFVF, const void* verts, int numVerts);
+	void						DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts);
 
 private:
 

@@ -638,17 +638,6 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParams.textColor = color_white;
 
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_FRONT);
-	g_matSystem->SetDepthStates(false, false);
-
 	Array<AARectangle> rects(PP_SL);
 	rects.resize(m_touchZones.numElem());
 
@@ -656,6 +645,10 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
@@ -678,6 +671,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	if (meshBuilder.End(drawCmd))
 		g_matSystem->Draw(drawCmd);
 
+	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
 	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{
 		const in_touchzone_t* tz = &m_touchZones[i];

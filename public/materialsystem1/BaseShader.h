@@ -170,7 +170,7 @@ public:
 	virtual void				FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const;
 
 	// Temporary
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primTopology, const void* userData) const { return nullptr; }
 	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
 	virtual IGPUBindGroupPtr		GetMatSystemBindGroup(IShaderAPI* renderAPI) const;
 	virtual IGPUPipelineLayoutPtr	GetPipelineLayout() const { return nullptr; }

@@ -70,7 +70,7 @@ public:
 	virtual const ITexturePtr&		GetBumpTexture(int stage = 0) const = 0;
 
 	virtual bool					IsSupportVertexFormat(int nameHash) const = 0;
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const void* userData) const = 0;
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primitiveTopology, const void* userData) const = 0;
 	virtual IGPUBindGroupPtr		GetMatSystemBindGroup(IShaderAPI* renderAPI) const = 0;
 	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const = 0;
 

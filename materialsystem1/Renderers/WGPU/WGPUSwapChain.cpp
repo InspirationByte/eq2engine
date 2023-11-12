@@ -63,10 +63,11 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 	m_backbufferSize = newSize;
 
 	m_textureRef->SetDimensions(newSize.x, newSize.y);
-	m_textureRef->Release();
-
 	if (m_swapChain)
+	{
+		m_textureRef->Release();
 		wgpuSwapChainRelease(m_swapChain);
+	}
 
 	if(!m_surface)
 	{

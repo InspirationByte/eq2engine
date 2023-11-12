@@ -118,10 +118,9 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 
 				MatSysDefaultRenderPass defaultRenderPass;
 				defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-				defaultRenderPass.primitiveTopology = drawCmd.primitiveTopology;
 				defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
 
-				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), rendPassRecorder, StringToHashConst("DynMeshVertex"), &defaultRenderPass);
+				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), rendPassRecorder, drawCmd.primitiveTopology, StringToHashConst("DynMeshVertex"), &defaultRenderPass);
 
 				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
 				rendPassRecorder->SetVertexBuffer(0, drawCmd.vertexBuffers[0]);

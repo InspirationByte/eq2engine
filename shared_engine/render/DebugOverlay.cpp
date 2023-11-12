@@ -53,24 +53,21 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor&color1)
 {
 	MColor color2(0.2f,0.2f,0.2f,0.8f);
 
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-	g_matSystem->SetDepthStates(false,false);
-
-	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
-	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
+	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.depthTest = false;
+	defaultRenderPass.depthWrite = false;
+	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
@@ -441,14 +438,15 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 	if(!lines.numElem())
 		return;
 
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	g_matSystem->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-	g_matSystem->SetDepthStates(true, false);
-
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.depthTest = true;
+	defaultRenderPass.depthWrite = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -479,16 +477,15 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 	if (!boxes.numElem())
 		return;
 
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
-	g_matSystem->SetDepthStates(true, false);
-
-	g_matSystem->Apply();
-
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.depthTest = true;
+	defaultRenderPass.depthWrite = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -554,16 +551,15 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 	if(!boxes.numElem())
 		return;
 
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	g_matSystem->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-	g_matSystem->SetDepthStates(true,false);
-
-	g_matSystem->Apply();
-
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.depthTest = true;
+	defaultRenderPass.depthWrite = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -674,16 +670,17 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinde
 
 static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float frametime)
 {
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
-	g_matSystem->SetDepthStates(true, false);
-
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.depthTest = true;
+	defaultRenderPass.depthWrite = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_LINES);
 
@@ -744,9 +741,8 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
 	MatSysDefaultRenderPass defaultRender;
-	defaultRender.primitiveTopology = PRIM_LINES;
 	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
-	g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(lines));
+	g_matSystem->DrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(lines));
 
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
@@ -802,7 +798,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 		graph->maxValue = graph_max_value;
 
 	defaultRender.blendMode = SHADER_BLEND_NONE;
-	g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(graph_line_verts, num_line_verts));
+	g_matSystem->DrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts));
 
 	graph->remainingTime -= frame_time;
 
@@ -816,14 +812,15 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 	if(!polygons.numElem())
 		return;
 
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_SOLID);
-	g_matSystem->SetDepthStates(true, true);
-
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.depthTest = true;
+	defaultRenderPass.depthWrite = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLES);
@@ -1050,7 +1047,6 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.primitiveTopology = PRIM_TRIANGLES;
 	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
@@ -1320,9 +1316,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		Vertex2D light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
 
 		MatSysDefaultRenderPass defaultRender;
-		defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
 		defaultRender.texture = g_pDebugTexture;
-		g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(light_depth));
+		g_matSystem->DrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth));
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;

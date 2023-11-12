@@ -224,36 +224,36 @@ public:
 
 	//-----------------------------
 	// Drawing
-	virtual void					SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, int vertexLayoutId, const void* userData) = 0;
+	virtual void					SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, EPrimTopology primTopology, int vertexLayoutId, const void* userData) = 0;
 
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
 
 	// draw primitives with default material
-	virtual void					DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, int vertFVF, const void* verts, int numVerts) = 0;
+	virtual void					DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts) = 0;
 
 	template<typename VERT>
-	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const VERT* verts, int numVerts);
+	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts);
 
 	template<typename ARRAY_TYPE>
-	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const ARRAY_TYPE& verts);
+	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts);
 
 };
 
 template<typename VERT>
-void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const VERT* verts, int numVerts)
+void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts)
 {
 	const void* vertPtr = reinterpret_cast<void*>(&verts);
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(rendPassInfo, vertFVF, vertPtr, numVerts);
+	DrawDefaultUP(rendPassInfo, primTopology, vertFVF, vertPtr, numVerts);
 }
 
 template<typename ARRAY_TYPE>
-void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const ARRAY_TYPE& verts)
+void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts)
 {
 	using VERT = typename ARRAY_TYPE::ITEM;
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(rendPassInfo, vertFVF, verts.ptr(), verts.numElem());
+	DrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts.ptr(), verts.numElem());
 }
 
 extern IMaterialSystem* g_matSystem;

@@ -1381,7 +1381,7 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 
 	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
 
-	SetupMaterialPipeline(drawCmd.material, rendPassRecorder, StringToHashConst("DynMeshVertex"), drawCmd.userData);
+	SetupMaterialPipeline(drawCmd.material, rendPassRecorder, drawCmd.primitiveTopology, StringToHashConst("DynMeshVertex"), drawCmd.userData);
 
 	if (drawCmd.vertexLayout)
 	{
@@ -1404,24 +1404,26 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 	renderAPI->SubmitCommandBuffer(commandBuffer);
 }
 
-void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, int vertexLayoutId, const void* userData)
+void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, EPrimTopology primTopology, int vertexLayoutId, const void* userData)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
 
 	const IMatSystemShader* matShader = static_cast<CMaterial*>(material)->m_shader;
 
 	// TODO: GetRenderPipeline with vertexLayoutId or NULL vertex layout
-	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, userData));
+	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, primTopology, userData));
+
+	// TODO: MatSystemBindGroup must be preserved unless camera state or fog state changes
 	rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
 	rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, userData), nullptr);
 }
 
-void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, int vertFVF, const void* verts, int numVerts)
+void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts)
 {
 	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
-	meshBuilder.Begin(rendPassInfo.primitiveTopology);
+	meshBuilder.Begin(primTopology);
 
 	const ubyte* vertPtr = reinterpret_cast<const ubyte*>(verts);
 	for(int i = 0; i < numVerts; ++i)
@@ -1478,7 +1480,7 @@ void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 
 		// TODO: GetRenderPipeline(drawCmd.primitiveTopology)
 
-		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, &rendPassInfo));
+		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, drawCmd.primitiveTopology, &rendPassInfo));
 		rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
 		rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, &rendPassInfo), nullptr);
 

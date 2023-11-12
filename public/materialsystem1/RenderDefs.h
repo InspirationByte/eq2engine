@@ -226,7 +226,6 @@ struct MatSysDefaultRenderPass
 	IAARectangle		scissorRectangle{ -1, -1, -1, -1 };
 	ITexturePtr			texture{ nullptr };
 	ECullMode			cullMode{ CULL_NONE };
-	EPrimTopology		primitiveTopology{ PRIM_TRIANGLES };
 	EShaderBlendMode	blendMode{ SHADER_BLEND_NONE };
 	ECompareFunc		depthFunc{ COMPFUNC_LEQUAL };
 	bool				depthTest{ false };

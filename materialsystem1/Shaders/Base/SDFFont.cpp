@@ -10,11 +10,11 @@
 #include "IDynamicMesh.h"
 #include "BaseShader.h"
 
-static uint GenDefaultPipelineId(const MatSysDefaultRenderPass& renderPass)
+static uint GenDefaultPipelineId(EPrimTopology primitiveTopology, const MatSysDefaultRenderPass& renderPass)
 {
 	uint id = 0;
 	id |= renderPass.cullMode; // 2 bits
-	id |= renderPass.primitiveTopology << 2;	// 3 bits
+	id |= primitiveTopology << 2;	// 3 bits
 	id |= renderPass.blendMode << (2 + 3); // 2 bits
 	id |= renderPass.depthFunc << (2 + 3 + 2); // 1 bit
 	id |= renderPass.depthTest << (2 + 3 + 2 + 1); // 1 bit
@@ -68,11 +68,11 @@ BEGIN_SHADER_CLASS(SDFFont)
 		return true;
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const void* userData) const
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primitiveTopology, const void* userData) const
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
-		const uint pipelineId = GenDefaultPipelineId(*rendPassInfo);
+		const uint pipelineId = GenDefaultPipelineId(primitiveTopology , *rendPassInfo);
 		auto it = m_renderPipelines.find(pipelineId);
 
 		if (it.atEnd())
@@ -132,9 +132,9 @@ BEGIN_SHADER_CLASS(SDFFont)
 			}
 
 			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
-				.Topology(rendPassInfo->primitiveTopology)
+				.Topology(primitiveTopology)
 				.Cull(rendPassInfo->cullMode)
-				.StripIndex(rendPassInfo->primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
+				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 			
 			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);

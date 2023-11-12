@@ -34,24 +34,16 @@ void ProgressBar::InitFromKeyValues(KVSection* sec, bool noClear)
 
 void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 {
-	// setup default material and translucent blending
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID);
-	g_matSystem->SetDepthStates(false, false);
-
-	//-------------------
-
 	AARectangle rect(_rect);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 

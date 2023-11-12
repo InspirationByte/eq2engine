@@ -523,7 +523,6 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.primitiveTopology = PRIM_TRIANGLE_STRIP;
 	defaultRenderPass.cullMode = CULL_BACK;
 
 	RenderDrawCmd drawCmd;
@@ -611,9 +610,8 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 			Vertex2D selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
 
 			MatSysDefaultRenderPass defaultRender;
-			defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
 			defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
-			g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(selrect));
+			g_matSystem->DrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(selrect));
 		}
 
 		m_font->RenderText(item.ToCString(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
@@ -732,10 +730,9 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 					Vertex2D selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
 					MatSysDefaultRenderPass defaultRender;
-					defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
 					defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 					defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.8f);
-					g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(selrect));
+					g_matSystem->DrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(selrect));
 
 					m_cmdSelection = i;
 
@@ -783,10 +780,9 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 					Vertex2D rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
 					MatSysDefaultRenderPass defaultRender;
-					defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
 					defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 					defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
-					g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(rectVerts));
+					g_matSystem->DrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(rectVerts));
 				}
 			}
 		}
@@ -1284,7 +1280,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.ToCString(), inputTextStyle, m_cursorPos);
 
 	MatSysDefaultRenderPass defaultRender;
-	defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
 	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 
 	// render selection
@@ -1298,7 +1293,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.y + 4, 0) };
 
 		defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
-		g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(rect));
+		g_matSystem->DrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(rect));
 	}
 
 	// render cursor
@@ -1310,7 +1305,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.y + 4, 0) };
 
 		defaultRender.drawColor = color_white;
-		g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(rect));
+		g_matSystem->DrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(rect));
 	}
 }
 
