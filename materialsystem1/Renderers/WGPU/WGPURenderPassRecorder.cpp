@@ -24,18 +24,19 @@ void CWGPURenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGr
 	wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, dynamicOffsets.numElem(), dynamicOffsets.ptr());
 }
 
-void CWGPURenderPassRecorder::SetVertexBuffer(int slot, IVertexBuffer* vertexBuffer, int64 offset, int64 size)
+void CWGPURenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset, int64 size)
 {
 	if (size < 0) size = WGPU_WHOLE_SIZE;
-	CWGPUVertexBuffer* vertexBufferImpl = static_cast<CWGPUVertexBuffer*>(vertexBuffer);
+	CWGPUBuffer* vertexBufferImpl = static_cast<CWGPUBuffer*>(vertexBuffer);
+	ASSERT_MSG(vertexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Vertex, "buffer doesn't have Vertex buffer usage bit");
 	wgpuRenderPassEncoderSetVertexBuffer(m_rhiRenderPassEncoder, slot, vertexBufferImpl->GetWGPUBuffer(), offset, size);
 }
 
-void CWGPURenderPassRecorder::SetIndexBuffer(IIndexBuffer* indexBuf, EIndexFormat indexFormat, int64 offset, int64 size)
+void CWGPURenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset, int64 size)
 {
 	if (size < 0) size = WGPU_WHOLE_SIZE;
-	CWGPUIndexBuffer* indexBufferImpl = static_cast<CWGPUIndexBuffer*>(indexBuf);
-
+	CWGPUBuffer* indexBufferImpl = static_cast<CWGPUBuffer*>(indexBuf);
+	ASSERT_MSG(indexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Index, "buffer doesn't have Index buffer usage bit");
 	wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], 0, size);
 }
 

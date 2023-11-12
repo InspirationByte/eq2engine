@@ -125,6 +125,10 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #	define ddy    	dFdy
 #endif
 
+// See BaseShader and shaders layouts
+#define MATERIAL_BINDING( N )	layout(set = 1, binding = N) 
+#define MATSYS_BINDING( N )		layout(set = 0, binding = N) 
+
 )";
 
 class EqShaderIncluder: public shaderc::CompileOptions::IncluderInterface

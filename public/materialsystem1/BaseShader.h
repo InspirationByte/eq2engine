@@ -174,9 +174,13 @@ public:
 	bool						IsInitialized() const { return m_isInit; }
 	int							GetFlags() const { return m_flags; }
 
-	virtual void				FillShaderBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const {}
+	virtual void				FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
 	virtual void				FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const;
+
+	// Temporary
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI) const { return nullptr; }
+	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI) const { return nullptr; }
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };

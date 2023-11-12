@@ -15,6 +15,8 @@
 class CWGPUBuffer : public IGPUBuffer
 {
 public:
+	~CWGPUBuffer();
+
 	void		Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* label = nullptr);
 	void		Terminate();
 
@@ -25,10 +27,12 @@ public:
 	void		Unlock();
 
 	WGPUBuffer	GetWGPUBuffer() const { return m_rhiBuffer; }
+	int			GetUsageFlags() const { return m_usageFlags; }
 
 private:
-	WGPUBuffer		m_rhiBuffer{ nullptr };
-	int				m_bufSize{ 0 };
+	WGPUBuffer	m_rhiBuffer{ nullptr };
+	int			m_bufSize{ 0 };
+	int			m_usageFlags{ 0 };
 };
 
 // OLD deprecated buffers - stubs for API compatibility

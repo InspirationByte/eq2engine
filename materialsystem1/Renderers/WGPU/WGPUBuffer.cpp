@@ -12,6 +12,11 @@
 #include "WGPURenderAPI.h"
 
 
+CWGPUBuffer::~CWGPUBuffer()
+{
+	Terminate();
+}
+
 void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* label)
 {
 	const int sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
@@ -26,6 +31,7 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 	if (bufferInfo.flags & BUFFER_FLAG_READ)
 		desc.usage |= WGPUBufferUsage_MapRead;
 
+	m_usageFlags = desc.usage;
 	m_rhiBuffer = wgpuDeviceCreateBuffer(CWGPURenderAPI::Instance.GetWGPUDevice(), &desc);
 
 	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer");

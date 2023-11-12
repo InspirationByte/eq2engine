@@ -93,8 +93,8 @@ public:
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
 
 	// TODO: use IGPUBuffer instead of IVertexBuffer and IIndexBuffer
-	virtual void					SetVertexBuffer(int slot, IVertexBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
-	virtual void					SetIndexBuffer(IIndexBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
+	virtual void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
+	virtual void					SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
 
 	virtual void					SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth) = 0;
 	virtual void					SetScissorRectangle(const IAARectangle& rectangle, float minDepth, float maxDepth) = 0;

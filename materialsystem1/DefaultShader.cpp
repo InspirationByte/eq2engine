@@ -65,15 +65,6 @@ BEGIN_SHADER_CLASS(Default)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	void FillShaderBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
-	}
-
 	SHADER_INIT_PARAMS()
 	{
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
@@ -110,13 +101,13 @@ BEGIN_SHADER_CLASS(Default)
 				.End();
 
 			FillRenderPipelineDesc(renderPipelineDesc);
-			m_materialRenderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
+			m_renderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
 
 			// When drawing with this material:
-			{
-				IGPUBindGroupPtr currentBindGroup = GetBindGroup(renderAPI);
-				
-			}
+			//{
+			//	IGPUBindGroupPtr currentBindGroup = GetMaterialBindGroup(renderAPI);
+			//	
+			//}
 		}
 
 		if(SHADER_PASS(Unlit))
@@ -131,17 +122,31 @@ BEGIN_SHADER_CLASS(Default)
 		return true;
 	}
 
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI) const
+	{
+		// TODO: for other materials there would
+		// be render pass and vertex layout selector
+		return m_renderPipeline;
+	}
+
+	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
+	{
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
+	}
+
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI)
+	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI) const
 	{
 		IGPUBindGroupPtr materialBindGroup;
 		IGPUBufferPtr materialParamsBuffer;
 		{
-			ITexturePtr baseTexture = m_baseTexture.Get();
-			if (!baseTexture)
-				baseTexture = g_matSystem->GetWhiteTexture();
+			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture();
 
 			// can use either fixed array or CMemoryStream with on-stack storage
 			FixedArray<Vector4D, 4> bufferData;
@@ -160,8 +165,9 @@ BEGIN_SHADER_CLASS(Default)
 	}
 
 	// those are persistent resources
-	IGPURenderPipelinePtr m_materialRenderPipeline;
-	IGPUPipelineLayoutPtr m_pipelineLayout;
+	IGPURenderPipelinePtr	m_renderPipeline;
+	IGPUPipelineLayoutPtr	m_pipelineLayout;
+	MatTextureProxy			m_baseTexture;
 
 	//------------------------------------------------------------------
 	// DEPRECATED all below
@@ -192,7 +198,5 @@ BEGIN_SHADER_CLASS(Default)
 
 	SHADER_DECLARE_PASS(Unlit);
 
-	MatTextureProxy		m_baseTexture;
-	//IGPUBuffer*			m_paramsBuffer{ nullptr };
-
+	
 END_SHADER_CLASS

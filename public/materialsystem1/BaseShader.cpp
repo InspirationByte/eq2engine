@@ -113,15 +113,16 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 
 void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const
 {
-	Builder<PipelineLayoutDesc> builder(renderPipelineLayoutDesc);
-
 	// matsystem bindgroup is always first
-	builder.Group(
-		Builder<BindGroupLayoutDesc>()
-		.Buffer("camera", 0, SHADERKIND_FRAGMENT | SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
-		.End()
-	);
-	FillShaderBindGroupLayout(renderPipelineLayoutDesc.bindGroups.append());
+	Builder<PipelineLayoutDesc>(renderPipelineLayoutDesc)
+		.Group(
+			Builder<BindGroupLayoutDesc>()
+			.Buffer("camera", 0, SHADERKIND_FRAGMENT | SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
+			.Buffer("fog", 1, SHADERKIND_FRAGMENT | SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
+			.End()
+		);
+
+	FillMaterialBindGroupLayout(renderPipelineLayoutDesc.bindGroups.append());
 }
 
 void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const

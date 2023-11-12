@@ -12,6 +12,12 @@ class IShaderProgram;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
+class IGPURenderPipeline;
+using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
+
+class IGPUBindGroup;
+using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
+
 class IMaterial;
 
 enum EShaderParamSetup
@@ -49,25 +55,28 @@ class IMatSystemShader
 public:
 	virtual ~IMatSystemShader() = default;
 
-	virtual void				Init(IShaderAPI* renderAPI, IMaterial* assignee) = 0;
-	virtual void				Unload() = 0;
+	virtual void					Init(IShaderAPI* renderAPI, IMaterial* assignee) = 0;
+	virtual void					Unload() = 0;
 
-	virtual void				InitTextures(IShaderAPI* renderAPI) = 0;
-	virtual void				InitShader(IShaderAPI* renderAPI) = 0;
+	virtual void					InitTextures(IShaderAPI* renderAPI) = 0;
+	virtual void					InitShader(IShaderAPI* renderAPI) = 0;
 
-	virtual void				SetupShader(IShaderAPI* renderAPI) = 0;
-	virtual void				SetupConstants(IShaderAPI* renderAPI, uint paramMask) = 0;
+	virtual const char*				GetName() const = 0;
 
-	virtual const char*			GetName() const = 0;
+	virtual bool					IsError() const = 0;
+	virtual bool					IsInitialized() const = 0;
+	virtual int						GetFlags() const = 0;
 
-	virtual bool				IsError() const = 0;
-	virtual bool				IsInitialized() const = 0;
-	virtual int					GetFlags() const = 0;
+	virtual const ITexturePtr&		GetBaseTexture(int stage = 0) const = 0;
+	virtual const ITexturePtr&		GetBumpTexture(int stage = 0) const = 0;
 
-	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
-	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
+	virtual bool					IsSupportVertexFormat(int nameHash) const = 0;
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI) const = 0;
+	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI) const = 0;
 
-	virtual bool				IsSupportVertexFormat(int nameHash) const = 0;
+	// DEPRECATED
+	virtual void					SetupShader(IShaderAPI* renderAPI) = 0;
+	virtual void					SetupConstants(IShaderAPI* renderAPI, uint paramMask) = 0;
 };
 
 typedef IMatSystemShader* (*DISPATCH_CREATE_SHADER)(void);
