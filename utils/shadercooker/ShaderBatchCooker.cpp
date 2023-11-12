@@ -571,6 +571,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					options.SetOptimizationLevel(shaderc_optimization_level_performance);
 					options.SetIncluder(std::move(includer));
 					options.AddMacroDefinition(kindStr);
+					options.SetForcedVersionProfile(450, shaderc_profile_none);
 					options.SetTargetEnvironment(shaderc_target_env_webgpu, shaderc_env_version_webgpu);
 					fillMacros(options);
 
