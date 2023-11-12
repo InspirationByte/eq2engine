@@ -13,21 +13,21 @@
 namespace equi
 {
 
-void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2);
+void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2, IGPURenderPassRecorder* rendPassRecorder);
 
 Button::Button() : m_state(false)
 {
 
 }
 
-void Button::DrawSelf( const IAARectangle& rect, bool scissorOn)
+void Button::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
 {
 	ColorRGBA btnColor(0.8f);
 
 	if(m_state && equi::Manager->GetMouseOver() == this)
 		btnColor = ColorRGBA(0.6f,0.6f,0.6f,0.8f);
 
-	DrawWindowRectangle(rect, btnColor, ColorRGBA(0.5f));
+	DrawWindowRectangle(rect, btnColor, ColorRGBA(0.5f), rendPassRecorder);
 
 	eqFontStyleParam_t style;
 	GetCalcFontStyle(style);
@@ -35,7 +35,7 @@ void Button::DrawSelf( const IAARectangle& rect, bool scissorOn)
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);
 
 	// draw label
-	GetFont()->RenderText(m_label.ToCString(), pos, style);
+	GetFont()->SetupRenderText(m_label.ToCString(), pos, style, rendPassRecorder);
 }
 
 // events

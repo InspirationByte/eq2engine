@@ -87,7 +87,7 @@ const ColorRGBA& Image::GetColor() const
 	return m_color;
 }
 
-void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
+void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
 {
 	AARectangle atlasRect = m_atlasRegion;
 	if (m_imageFlags & FLIP_X)
@@ -112,7 +112,7 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 
 			atlasRect.GetLeftBottom(), atlasRect.GetRightBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightTop());
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 };

@@ -41,7 +41,7 @@ public:
 	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
 	bool				ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
 
-	void				DrawSelf( const IAARectangle& rect, bool scissorOn);
+	void				DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
 
 public:
 

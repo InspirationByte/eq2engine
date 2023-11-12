@@ -32,7 +32,7 @@ void ProgressBar::InitFromKeyValues(KVSection* sec, bool noClear)
 	m_value = KV_GetValueFloat(sec->FindSection("value"), 0, m_value);
 }
 
-void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
+void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
 {
 	AARectangle rect(_rect);
 
@@ -63,7 +63,7 @@ void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn)
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 }

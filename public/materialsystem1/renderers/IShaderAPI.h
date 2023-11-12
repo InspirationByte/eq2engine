@@ -89,6 +89,8 @@ using IGPUCommandBufferPtr = CRefPtr<IGPUCommandBuffer>;
 class IGPURenderPassRecorder : public RefCountedObject<IGPURenderPassRecorder>
 {
 public:
+	virtual IVector2D				GetRenderTargetDimensions() const = 0;
+
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
 

@@ -24,7 +24,7 @@ public:
 	bool			ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags);
 
-	void			DrawSelf( const IAARectangle& rect, bool scissorOn);
+	void			DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
 
 protected:
 	bool			m_state;

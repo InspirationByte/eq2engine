@@ -707,6 +707,8 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 
 	FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS> rhiColorAttachmentList;
 
+	IVector2D renderTargetDims = 0;
+
 	for(RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
 	{
 		// TODO: backbuffer alteration?
@@ -721,6 +723,8 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 		rhiColorAttachment.resolveTarget = nullptr; // TODO
 		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
 		rhiColorAttachmentList.append(rhiColorAttachment);
+
+		renderTargetDims = IVector2D(targetTexture->GetWidth(), targetTexture->GetHeight());
 	}
 	rhiRenderPassDesc.colorAttachmentCount = rhiColorAttachmentList.numElem();
 	rhiRenderPassDesc.colorAttachments = rhiColorAttachmentList.ptr();
@@ -759,6 +763,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
 	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
 	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
+	renderPass->m_renderTargetDims = renderTargetDims;
 
 	return IGPURenderPassRecorderPtr(renderPass);
 }

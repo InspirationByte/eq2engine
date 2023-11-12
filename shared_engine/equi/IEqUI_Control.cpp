@@ -555,11 +555,22 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 
 void IUIControl::Render()
 {
-	Render(1);
+	// Standalone drawing of element.
+	// for GameHUD
+	// TODO: use render pass from arguments!
+	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+		Builder<RenderPassDesc>()
+		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.End()
+	);
+
+	Render(1, rendPassRecorder);
+
+	g_renderAPI->SubmitCommandBuffer(rendPassRecorder->End());
 }
 
 // rendering function
-void IUIControl::Render(int depth)
+void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!m_visible)
 		return;
@@ -600,10 +611,21 @@ void IUIControl::Render(int depth)
 			rasterState.scissor = false;
 		}
 
-		IAARectangle scissorRect = GetClientScissorRectangle();
-		scissorRect.leftTop += m_transform.translation * scale;
-		scissorRect.rightBottom += m_transform.translation * scale;
-		g_renderAPI->SetScissorRectangle(scissorRect);
+		if (newTransform.rows[0].x != 1.0f)
+		{
+			IAARectangle scissorRect(IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+			rendPassRecorder->SetScissorRectangle(scissorRect);
+		}
+		else
+		{
+			IAARectangle scissorRect = GetClientScissorRectangle();
+			scissorRect.leftTop += m_transform.translation * scale;
+			scissorRect.rightBottom += m_transform.translation * scale;
+			scissorRect.leftTop = clamp(scissorRect.leftTop, IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+			scissorRect.rightBottom = clamp(scissorRect.rightBottom, IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+
+			rendPassRecorder->SetScissorRectangle(scissorRect);
+		}
 
 		// force rasterizer state
 		// other states are pretty useless
@@ -611,7 +633,7 @@ void IUIControl::Render(int depth)
 		g_matSystem->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
 
 		// paint control itself
-		DrawSelf( clientRectRender, rasterState.scissor);
+		DrawSelf( clientRectRender, rasterState.scissor, rendPassRecorder);
 	}
 
 	HOOK_TO_CVAR(equi_debug);
@@ -630,7 +652,7 @@ void IUIControl::Render(int depth)
 	{
 		// load new absolulte transformation
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-		(*it)->Render(depth + 1);
+		(*it)->Render(depth + 1, rendPassRecorder);
 	}
 
 	// always reset previous absolute transformation

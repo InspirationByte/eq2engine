@@ -6,6 +6,8 @@ class CWGPURenderPassRecorder : public IGPURenderPassRecorder
 public:
 	~CWGPURenderPassRecorder();
 
+	IVector2D GetRenderTargetDimensions() const { return m_renderTargetDims; }
+
 	void SetPipeline(IGPURenderPipeline* pipeline);
 
 	void SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets);
@@ -39,4 +41,5 @@ public:
 
 	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
 	WGPURenderPassEncoder	m_rhiRenderPassEncoder{ nullptr };
+	IVector2D				m_renderTargetDims{ 0 };
 };
