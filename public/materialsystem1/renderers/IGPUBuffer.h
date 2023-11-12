@@ -18,5 +18,7 @@ public:
 	virtual void		Update(void* data, int size, int offset) = 0;
 	virtual LockFuture	Lock(int lockOfs, int sizeToLock, int flags) = 0;
 	virtual void		Unlock() = 0;
+
+	virtual int			GetSize() const = 0;
 };
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
