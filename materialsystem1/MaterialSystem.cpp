@@ -366,6 +366,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	// initialize some resources
 	REGISTER_INTERNAL_SHADERS();
 	CreateWhiteTexture();
+	CreateDefaultDepthTexture();
 	InitDefaultMaterial();
 	InitStandardMaterialProxies();
 	
@@ -440,6 +441,13 @@ void CMaterialSystem::CreateWhiteTexture()
 	m_whiteTexture = m_shaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 
 	images.clear();
+}
+
+void CMaterialSystem::CreateDefaultDepthTexture()
+{
+	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget("_matSys_depthBuffer", 800, 600, FORMAT_D24S8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
+
+	ASSERT_MSG(m_defaultDepthTexture, "Unable to create default depth texture");
 }
 
 void CMaterialSystem::InitDefaultMaterial()
@@ -1140,20 +1148,20 @@ bool CMaterialSystem::EndFrame()
 	return true;
 }
 
+ITexturePtr CMaterialSystem::GetCurrentBackbuffer() const
+{
+	return m_renderLibrary->GetCurrentBackbuffer();
+}
+
+ITexturePtr CMaterialSystem::GetDefaultDepthBuffer() const
+{
+	return m_defaultDepthTexture;
+}
+
 // captures screenshot to CImage data
 bool CMaterialSystem::CaptureScreenshot(CImage &img)
 {
 	return m_renderLibrary->CaptureScreenshot( img );
-}
-
-ETextureFormat CMaterialSystem::GetBackBufferColorFormat() const
-{
-	return FORMAT_RGBA8; // TODO: m_renderLibrary->GetBackBufferColorFormat()
-}
-
-ETextureFormat CMaterialSystem::GetBackBufferDepthFormat() const
-{
-	return FORMAT_D24S8;
 }
 
 // resizes device back buffer. Must be called if window resized
@@ -1164,6 +1172,7 @@ void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 		return;
 
 	m_renderLibrary->SetBackbufferSize(wide, tall);
+	m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, wide, tall);
 }
 
 // reports device focus mode
@@ -1179,7 +1188,7 @@ ISwapChain* CMaterialSystem::CreateSwapChain(const RenderWindowInfo& windowInfo)
 	if (!m_renderLibrary)
 		return nullptr;
 
-	m_renderLibrary->CreateSwapChain(windowInfo);
+	return m_renderLibrary->CreateSwapChain(windowInfo);
 }
 
 void CMaterialSystem::DestroySwapChain(ISwapChain* swapChain)
@@ -1363,45 +1372,56 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 		return;
 
 	IShaderAPI* renderAPI = m_shaderAPI;
-	// material must support correct vertex layout state
+
+	// TODO: render pass description should come as argument
+	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
+		.ColorTarget(m_renderLibrary->GetCurrentBackbuffer())
+		//.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+		.End();
+
+	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
+
+	SetupMaterialPipeline(drawCmd.material, rendPassRecorder, StringToHashConst("DynMeshVertex"), drawCmd.userData);
+
 	if (drawCmd.vertexLayout)
 	{
-		//drawCmd.vertexLayout->GetNameHash();
+		CMaterial* material = static_cast<CMaterial*>(drawCmd.material);
+		IMatSystemShader* matShader = material->m_shader;
 
-		// TODO: get rid of states
-		SetInstancingEnabled(drawCmd.instanceBuffer ? true : false);
-
-		renderAPI->SetVertexFormat(drawCmd.vertexLayout);
-		renderAPI->SetIndexBuffer(drawCmd.indexBuffer);
+		ASSERT_MSG(matShader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
 
 		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
-			renderAPI->SetVertexBuffer(drawCmd.vertexBuffers[i], i); // TODO: support offsets
-
-		CMaterial* material = static_cast<CMaterial*>(drawCmd.material);
-		ASSERT_MSG(material->m_shader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
+			rendPassRecorder->SetVertexBuffer(i, drawCmd.vertexBuffers[i]);
+		rendPassRecorder->SetIndexBuffer(drawCmd.indexBuffer, INDEXFMT_UINT16);	// TODO: figure out where to take index format
 	}
 
-	SetSkinningBones(drawCmd.boneTransforms);
-	BindMaterial(drawCmd.material);
-
-	if(drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
-		renderAPI->DrawNonIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstVertex, drawCmd.numVertices);
+	if (drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
+		rendPassRecorder->Draw(drawCmd.numVertices, drawCmd.firstVertex, 1);
 	else
-		renderAPI->DrawIndexedPrimitives((EPrimTopology)drawCmd.primitiveTopology, drawCmd.firstIndex, drawCmd.numIndices, drawCmd.firstVertex, drawCmd.numVertices, drawCmd.baseVertex);
+		rendPassRecorder->DrawIndexed(drawCmd.numIndices, drawCmd.firstIndex, 1, drawCmd.baseVertex);
 
-	SetSkinningEnabled(false);
-	SetInstancingEnabled(false);
+	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
+	renderAPI->SubmitCommandBuffer(commandBuffer);
 }
 
-void CMaterialSystem::DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
-	const ITexturePtr& texture, const MColor& color,
-	BlendStateParams* blendParams, DepthStencilStateParams* depthParams,
-	RasterizerStateParams* rasterParams)
+void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, int vertexLayoutId, const void* userData)
+{
+	IShaderAPI* renderAPI = m_shaderAPI;
+
+	const IMatSystemShader* matShader = static_cast<CMaterial*>(material)->m_shader;
+
+	// TODO: GetRenderPipeline with vertexLayoutId or NULL vertex layout
+	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, userData));
+	rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
+	rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, userData), nullptr);
+}
+
+void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, int vertFVF, const void* verts, int numVerts)
 {
 	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
-	meshBuilder.Begin(type);
+	meshBuilder.Begin(rendPassInfo.primitiveTopology);
 
 	const ubyte* vertPtr = reinterpret_cast<const ubyte*>(verts);
 	for(int i = 0; i < numVerts; ++i)
@@ -1435,34 +1455,49 @@ void CMaterialSystem::DrawDefaultUP(EPrimTopology type, int vertFVF, const void*
 	}
 
 	RenderDrawCmd drawCmd;
-	if(meshBuilder.End(drawCmd))
+	if (!meshBuilder.End(drawCmd))
+		return;
+
+	IShaderAPI* renderAPI = m_shaderAPI;
+
+	// Draw to default view
+	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
+		.ColorTarget(m_renderLibrary->GetCurrentBackbuffer())
+		//.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+		.End();
+
+	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
+
+	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
+	const IMatSystemShader* matShader = material->m_shader;
+
+	// material must support correct vertex layout state
+	if (drawCmd.vertexLayout)
 	{
-		if (!blendParams)
-			SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
-		else
-			SetBlendingStates(*blendParams);
+		ASSERT_MSG(matShader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
 
-		if (!rasterParams)
-			SetRasterizerStates(CULL_NONE, FILL_SOLID);
-		else
-			SetRasterizerStates(*rasterParams);
+		// TODO: GetRenderPipeline(drawCmd.primitiveTopology)
 
-		if (!depthParams)
-			SetDepthStates(false, false);
-		else
-			SetDepthStates(*depthParams);
+		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, &rendPassInfo));
+		rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
+		rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, &rendPassInfo), nullptr);
 
-		ColorRGBA oldAmbColor = m_ambColor;
-		m_ambColor = color;
-
-		IMaterialSystem::FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(texture);
-
-		drawCmd.material = GetDefaultMaterial();
-
-		Draw(drawCmd);
-
-		m_ambColor = oldAmbColor;
+		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
+			rendPassRecorder->SetVertexBuffer(i, drawCmd.vertexBuffers[i]);
+		rendPassRecorder->SetIndexBuffer(drawCmd.indexBuffer, INDEXFMT_UINT16);	// TODO: figure out where to take index format
 	}
+
+
+	if(rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1,-1))
+		rendPassRecorder->SetScissorRectangle(rendPassInfo.scissorRectangle);
+
+	if (drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
+		rendPassRecorder->Draw(drawCmd.numVertices, drawCmd.firstVertex, 1);
+	else
+		rendPassRecorder->DrawIndexed(drawCmd.numIndices, drawCmd.firstIndex, 1, drawCmd.baseVertex);
+
+	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
+	renderAPI->SubmitCommandBuffer(commandBuffer);
 }
 
 //-----------------------------

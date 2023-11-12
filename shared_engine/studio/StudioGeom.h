@@ -11,6 +11,9 @@
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
 
+class IGPUBuffer;
+using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
 class IVertexFormat;
 class IVertexBuffer;
 class IIndexBuffer;
@@ -138,7 +141,7 @@ public:
 
 	void						Draw(const DrawProps& drawProperties) const;
 
-	IVertexBuffer*				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
+	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
 	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
@@ -189,8 +192,8 @@ private:
 	studioHdr_t*			m_studio{ nullptr };
 	studioPhysData_t		m_physModel;
 
-	IVertexBuffer*			m_vertexBuffers[EGFHwVertex::VERT_COUNT]{ nullptr };
-	IIndexBuffer*			m_indexBuffer{ nullptr };
+	IGPUBufferPtr			m_vertexBuffers[EGFHwVertex::VERT_COUNT];
+	IGPUBufferPtr			m_indexBuffer;
 
 	int						m_materialCount{ 0 };
 	int						m_materialGroupsCount{ 0 };

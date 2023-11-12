@@ -27,19 +27,12 @@ void DrawWorldCenter()
 	ListLine(Vector3D(0,-F_INFINITY,0),Vector3D(0, F_INFINITY,0), grid_vertices);
 	ListLine(Vector3D(0,0,-F_INFINITY),Vector3D(0,0, F_INFINITY), grid_vertices);
 
-	DepthStencilStateParams depth;
-	depth.depthTest = false;
-	depth.depthWrite = false;
-	depth.depthFunc = COMPFUNC_LEQUAL;
+	MatSysDefaultRenderPass defaultRender;
+	defaultRender.primitiveTopology = PRIM_LINES;
+	defaultRender.cullMode = CULL_BACK;
+	defaultRender.drawColor = MColor(0.0f, 0.45f, 0.45f, 1.0f);
 
-	RasterizerStateParams raster;
-	raster.cullMode = CULL_BACK;
-	raster.fillMode = FILL_SOLID;
-	raster.multiSample = true;
-	raster.scissor = false;
-
-	const ColorRGBA color(0, 0.45f, 0.45f, 1);
-	g_matSystem->DrawDefaultUP(PRIM_LINES, grid_vertices, nullptr, color, nullptr, &depth, &raster);
+	g_matSystem->DrawDefaultUP(defaultRender, grid_vertices);
 }
 
 void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest)

@@ -70,8 +70,8 @@ public:
 	bool						BeginFrame(ISwapChain* swapChain);
 	bool						EndFrame();
 
-	ETextureFormat				GetBackBufferColorFormat() const;
-	ETextureFormat				GetBackBufferDepthFormat() const;
+	ITexturePtr					GetCurrentBackbuffer() const;
+	ITexturePtr					GetDefaultDepthBuffer() const;
 
 	void						SetDeviceBackbufferSize(int wide, int tall);
 	void						SetDeviceFocused(bool inFocus);
@@ -181,18 +181,16 @@ public:
 	// returns the dynamic mesh
 	IDynamicMesh*				GetDynamicMesh() const;
 
-	// TODO: QueueDraw
-	void						Draw(const RenderDrawCmd& drawCmd);
+	void						SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, int vertexLayoutId, const void* userData);
 
-	void						DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
-												const ITexturePtr& pTexture = nullptr, const MColor &color = color_white,
-												BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-												RasterizerStateParams* rasterParams = nullptr);
+	void						Draw(const RenderDrawCmd& drawCmd);
+	void						DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, int vertFVF, const void* verts, int numVerts);
 
 private:
 
 	void						CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params);
 	void						CreateWhiteTexture();
+	void						CreateDefaultDepthTexture();
 	void						InitDefaultMaterial();
 
 	MaterialsRenderSettings		m_config;
@@ -238,6 +236,7 @@ private:
 	ITexturePtr					m_currentEnvmapTexture;
 	ITexturePtr					m_whiteTexture;
 	ITexturePtr					m_errorTexture;
+	ITexturePtr					m_defaultDepthTexture;
 
 	Array<DEVLICELOSTRESTORE>	m_lostDeviceCb{ PP_SL };
 	Array<DEVLICELOSTRESTORE>	m_restoreDeviceCb{ PP_SL };

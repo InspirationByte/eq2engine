@@ -743,7 +743,10 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	g_matSystem->DrawDefaultUP(PRIM_LINES, ArrayCRef(lines), nullptr, color_white, &blending);
+	MatSysDefaultRenderPass defaultRender;
+	defaultRender.primitiveTopology = PRIM_LINES;
+	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
+	g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(lines));
 
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
@@ -798,7 +801,8 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 	if(graph->dynamic)
 		graph->maxValue = graph_max_value;
 
-	g_matSystem->DrawDefaultUP(PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts), nullptr, color_white);
+	defaultRender.blendMode = SHADER_BLEND_NONE;
+	g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(graph_line_verts, num_line_verts));
 
 	graph->remainingTime -= frame_time;
 
@@ -1041,14 +1045,16 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 	if(!spheres.numElem())
 		return;
 
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_SOLID);
-	g_matSystem->SetDepthStates(true, true);
-
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.primitiveTopology = PRIM_TRIANGLES;
+	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.depthTest = true;
+	defaultRenderPass.depthWrite = true;
+	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -1312,7 +1318,11 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		}
 
 		Vertex2D light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
-		g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), g_pDebugTexture);
+
+		MatSysDefaultRenderPass defaultRender;
+		defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
+		defaultRender.texture = g_pDebugTexture;
+		g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(light_depth));
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;

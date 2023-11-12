@@ -98,10 +98,6 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	// copy buffers
-	if(!g_pfxRender->MakeVBOFrom(this))
-		return;
-
 	g_matSystem->SetCullMode(CULL_FRONT);
 
 	if (m_useCustomProjMat)
@@ -109,13 +105,12 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 	RenderDrawCmd drawCmd;
-	drawCmd.vertexLayout = g_pfxRender->m_vertexFormat;
-	drawCmd.vertexBuffers[0] = g_pfxRender->m_vertexBuffer;
+	drawCmd.vertexBuffers[0] = g_renderAPI->CreateBuffer(BufferInfo(m_pVerts, m_numVertices), BUFFERUSAGE_VERTEX, "PFXVertexBuffer");
 	drawCmd.material = m_material;
 	drawCmd.primitiveTopology = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
 	if (m_numIndices)
 	{
-		drawCmd.indexBuffer = g_pfxRender->m_indexBuffer;
+		drawCmd.indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(m_pIndices, m_numVertices), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
 		drawCmd.SetDrawIndexed(m_numIndices, 0, m_numVertices);
 	}
 	else

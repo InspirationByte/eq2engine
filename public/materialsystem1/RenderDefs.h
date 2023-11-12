@@ -163,15 +163,18 @@ assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
 struct RenderDrawCmd
 {
 	// TODO: render states
+	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>	vertexBuffers;
+	IGPUBufferPtr	indexBuffer{ nullptr };
 
-	FixedArray<IVertexBuffer*, MAX_VERTEXSTREAM>	vertexBuffers;
-	IVertexFormat*	vertexLayout{ nullptr };
-	IIndexBuffer*	indexBuffer{ nullptr };
-	IVertexBuffer*	instanceBuffer{ nullptr };
+	// DEPRECATED
+	IVertexFormat* vertexLayout{ nullptr };		// MUST BE VERTEX LAYOUT NAME HASH???
+	IGPUBufferPtr	instanceBuffer{ nullptr };
+	// END DEPRECATED
 
 	EPrimTopology	primitiveTopology{ (EPrimTopology)0 };
 
 	IMaterial*		material{ nullptr };
+	const void*		userData{ nullptr };
 
 	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: buffer
 	// TODO: atm material vars are used but for newer GAPI we should
@@ -206,4 +209,26 @@ struct RenderDrawCmd
 		firstIndex = -1;
 		numIndices = 0;
 	}
+};
+
+enum EShaderBlendMode : int
+{
+	SHADER_BLEND_NONE = 0,
+	SHADER_BLEND_TRANSLUCENT,		// is transparent
+	SHADER_BLEND_ADDITIVE,			// additive transparency
+	SHADER_BLEND_MODULATE,			// modulate
+};
+
+// used for debug geometry and UIs
+struct MatSysDefaultRenderPass
+{
+	MColor				drawColor{ color_white };
+	IAARectangle		scissorRectangle{ -1, -1, -1, -1 };
+	ITexturePtr			texture{ nullptr };
+	ECullMode			cullMode{ CULL_NONE };
+	EPrimTopology		primitiveTopology{ PRIM_TRIANGLES };
+	EShaderBlendMode	blendMode{ SHADER_BLEND_NONE };
+	ECompareFunc		depthFunc{ COMPFUNC_LEQUAL };
+	bool				depthTest{ false };
+	bool				depthWrite{ false };
 };

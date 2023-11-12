@@ -444,6 +444,10 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 	CMeshBuilder meshBuilder(dynMesh);
 
 	RenderDrawCmd drawCmd;
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.primitiveTopology = PRIM_TRIANGLE_STRIP;
+	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
 	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
@@ -453,18 +457,13 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 
 void CFont::DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params)
 {
-	RasterizerStateParams raster;
-	raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR);
-	BlendStateParams blending;
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.primitiveTopology = PRIM_TRIANGLE_STRIP;
+	defaultRenderPass.texture = m_fontTexture;
+	drawCmd.userData = &defaultRenderPass;
 
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->SetDepthStates(false,false);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(raster);
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(m_fontTexture);
+	// TODO: defaultRenderPass.scissor (params.styleFlag & TEXT_STYLE_SCISSOR)
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 

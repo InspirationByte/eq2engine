@@ -30,7 +30,7 @@ class IVertexBuffer;
 
 struct EGFInstBuffer
 {
-	IVertexBuffer*	instanceVB{ nullptr };
+	IGPUBufferPtr	instanceVB{ nullptr };
 	void*			instances{ nullptr };
 	ushort			numInstances{ 0 };
 	ushort			upToDateInstanes{ 0 };

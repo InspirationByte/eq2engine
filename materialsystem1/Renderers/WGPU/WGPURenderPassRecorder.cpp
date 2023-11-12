@@ -61,7 +61,7 @@ void CWGPURenderPassRecorder::SetViewport(const AARectangle& rectangle, float mi
 	wgpuRenderPassEncoderSetViewport(m_rhiRenderPassEncoder, rectPos.x, rectPos.y, rectSize.x, rectSize.y, minDepth, maxDepth);
 }
 
-void CWGPURenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle, float minDepth, float maxDepth)
+void CWGPURenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle)
 {
 	const IVector2D rectPos = rectangle.GetLeftTop();
 	const IVector2D rectSize = rectangle.GetSize();

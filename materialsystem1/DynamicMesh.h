@@ -43,12 +43,9 @@ protected:
 	uint16*			m_indices{ nullptr };
 
 	IVertexFormat*	m_vertexFormat{ nullptr };
-	IVertexBuffer*	m_vertexBuffer{ nullptr };
-	IIndexBuffer*	m_indexBuffer{ nullptr };
 
 	EPrimTopology	m_primType{ PRIM_TRIANGLES };
 	int				m_vertexStride{ 0 };
-	int				m_vboDirty{ -1 };
 
 	uint16			m_numVertices{ 0 };
 	uint16			m_numIndices{ 0 };

@@ -283,11 +283,7 @@ void CEqStudioGeom::DestroyModel()
 
 	g_renderAPI->Reset(STATE_RESET_VBO);
 	for (int i = 0; i < EGFHwVertex::VERT_COUNT; ++i)
-	{
-		g_renderAPI->DestroyVertexBuffer(m_vertexBuffers[i]);
 		m_vertexBuffers[i] = nullptr;
-	}
-	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
 	m_indexBuffer = nullptr;
 
 	m_materials.clear(true);
@@ -598,15 +594,15 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 
 	// create hardware buffers
 	if(allPositionUvsList)
-		m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_renderAPI->CreateVertexBuffer({ allPositionUvsList, numVertices });
+		m_vertexBuffers[EGFHwVertex::VERT_POS_UV] = g_renderAPI->CreateBuffer({ allPositionUvsList, numVertices }, BUFFERUSAGE_VERTEX, "EGFPosUVBuf");
 	if(allTbnList)
-		m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_renderAPI->CreateVertexBuffer({ allTbnList, numVertices });
+		m_vertexBuffers[EGFHwVertex::VERT_TBN] = g_renderAPI->CreateBuffer({ allTbnList, numVertices }, BUFFERUSAGE_VERTEX, "EGFTBNBuf");
 	if(allBoneWeightsList)
-		m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_renderAPI->CreateVertexBuffer({ allBoneWeightsList, numVertices });
+		m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT] = g_renderAPI->CreateBuffer({ allBoneWeightsList, numVertices }, BUFFERUSAGE_VERTEX, "EGFBoneWBuf");
 	if(allColorList)
-		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_renderAPI->CreateVertexBuffer({ allColorList, numVertices });
+		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_renderAPI->CreateBuffer({ allColorList, numVertices }, BUFFERUSAGE_VERTEX, "EGFColBuf");
 
-	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(allIndices, indexSize, numIndices) );
+	m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(allIndices, indexSize, numIndices), BUFFERUSAGE_INDEX, "EGFIdxBuffer");
 
 	// if we using software skinning, we need to create temporary vertices
 #if 0
@@ -883,7 +879,7 @@ int CEqStudioGeom::FindManualLod(float value) const
 	return -1;
 }
 
-IVertexBuffer* CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const
+IGPUBufferPtr CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const
 {
 	return m_vertexBuffers[vertStream];
 }
@@ -930,8 +926,6 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			++numBitsSet;
 		}
 	}
-
-	const int maxVertexCount = m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
 
 	if (drawProperties.setupDrawCmd)
 		drawProperties.setupDrawCmd(drawCmd);
@@ -981,7 +975,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				drawCmd.boneTransforms = ArrayCRef<RenderBoneTransform>(nullptr);
 
 			drawCmd.primitiveTopology = (EPrimTopology)meshRef.primType;
-			drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex, maxVertexCount);
+			drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex);
 
 			if (drawProperties.setupBodyGroup)
 				drawProperties.setupBodyGroup(drawCmd, material, i, j);

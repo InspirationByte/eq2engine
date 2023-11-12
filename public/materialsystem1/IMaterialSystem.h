@@ -114,11 +114,10 @@ public:
 
 	virtual bool					BeginFrame(ISwapChain* swapChain) = 0;
 	virtual bool					EndFrame() = 0;
+	virtual ITexturePtr				GetCurrentBackbuffer() const = 0;
+	virtual ITexturePtr				GetDefaultDepthBuffer() const = 0;
 
 	virtual bool					CaptureScreenshot(CImage& img) = 0;
-
-	virtual ETextureFormat			GetBackBufferColorFormat() const = 0;
-	virtual ETextureFormat			GetBackBufferDepthFormat() const = 0;
 
 	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
 	virtual void					SetDeviceFocused(bool inFocus) = 0;
@@ -225,47 +224,36 @@ public:
 
 	//-----------------------------
 	// Drawing
+	virtual void					SetupMaterialPipeline(IMaterial* material, IGPURenderPassRecorder* rendPassRecorder, int vertexLayoutId, const void* userData) = 0;
 
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
-
 	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
 
 	// draw primitives with default material
-	virtual void					DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
-													const ITexturePtr& texture = nullptr, const MColor &color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr) = 0;
+	virtual void					DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, int vertFVF, const void* verts, int numVerts) = 0;
 
 	template<typename VERT>
-	void							DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts,
-													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr);
+	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const VERT* verts, int numVerts);
 
 	template<typename ARRAY_TYPE>
-	void							DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts,
-													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr);
+	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const ARRAY_TYPE& verts);
 
 };
 
 template<typename VERT>
-void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts, const ITexturePtr& texture, const MColor& color,
-		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
+void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const VERT* verts, int numVerts)
 {
 	const void* vertPtr = reinterpret_cast<void*>(&verts);
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(type, vertFVF, vertPtr, numVerts, texture, color, blendParams, depthParams, rasterParams);
+	DrawDefaultUP(rendPassInfo, vertFVF, vertPtr, numVerts);
 }
 
 template<typename ARRAY_TYPE>
-void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts, const ITexturePtr& texture, const MColor& color,
-		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
+void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, const ARRAY_TYPE& verts)
 {
 	using VERT = typename ARRAY_TYPE::ITEM;
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(type, vertFVF, verts.ptr(), verts.numElem(), texture, color, blendParams, depthParams, rasterParams);
+	DrawDefaultUP(rendPassInfo, vertFVF, verts.ptr(), verts.numElem());
 }
 
 extern IMaterialSystem* g_matSystem;

@@ -118,11 +118,49 @@ void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayou
 		.Group(
 			Builder<BindGroupLayoutDesc>()
 			.Buffer("camera", 0, SHADERKIND_FRAGMENT | SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
-			.Buffer("fog", 1, SHADERKIND_FRAGMENT | SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
 			.End()
 		);
 
 	FillMaterialBindGroupLayout(renderPipelineLayoutDesc.bindGroups.append());
+}
+
+IGPUBindGroupPtr CBaseShader::GetMatSystemBindGroup(IShaderAPI* renderAPI) const
+{
+	Matrix4x4 wvp_matrix, world, view, proj;
+	g_matSystem->GetWorldViewProjection(wvp_matrix);
+	g_matSystem->GetMatrix(MATRIXMODE_WORLD, world);
+	g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
+	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, proj);
+
+	FogInfo fog;
+	g_matSystem->GetFogInfo(fog);
+
+	// setup shader fog
+	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
+	const Vector3D fogParams(fog.fognear, fog.fogfar, fogScale);
+
+	IGPUBindGroupPtr matSysBindGroup;
+	IGPUBufferPtr matSysCameraBuffer;
+	{
+		// can use either fixed array or CMemoryStream with on-stack storage
+		Vector4D bufferMem[32];
+		CMemoryStream bufferData(reinterpret_cast<ubyte*>(bufferMem), VS_OPEN_WRITE, sizeof(bufferMem), PP_SL);
+		VSWrite(&bufferData, wvp_matrix);
+		VSWrite(&bufferData, view);
+		VSWrite(&bufferData, proj);
+		VSWrite(&bufferData, fog.fogColor);
+		VSWrite(&bufferData, fogParams);
+		VSWrite(&bufferData, fog.viewPos);
+		float padding[3]{ 0 };
+		VSWrite(&bufferData, padding);
+
+		matSysCameraBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.GetBasePointer(), bufferData.GetSize()), BUFFERUSAGE_UNIFORM, "matSysCamera");
+		BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+			.Buffer(0, matSysCameraBuffer, 0, bufferData.GetSize())
+			.End();
+		matSysBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 0, shaderBindGroupDesc);
+	}
+	return matSysBindGroup;
 }
 
 void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
@@ -133,10 +171,11 @@ void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc)
 		if (m_flags & MATERIAL_FLAG_DECAL)
 			g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
-		Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-			.DepthTestOn()
-			.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-			.DepthFormat(g_matSystem->GetBackBufferDepthFormat());
+		// TODO: must be selective whenever Z test is on
+		//Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
+		//	.DepthTestOn()
+		//	.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
+		//	.DepthFormat(g_matSystem->GetDefaultDepthBuffer()->GetFormat());
 	}
 
 	if (!(m_flags & MATERIAL_FLAG_ONLY_Z))
@@ -146,8 +185,8 @@ void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc)
 		switch (m_blendMode)
 		{
 		case SHADER_BLEND_TRANSLUCENT:
-			colorBlend = BlendStateAlpha;
-			alphaBlend = BlendStateAlpha;
+			colorBlend = BlendStateTranslucent;
+			alphaBlend = BlendStateTranslucentAlpha;
 			break;
 		case SHADER_BLEND_ADDITIVE:
 			colorBlend = BlendStateAdditive;
@@ -155,7 +194,7 @@ void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc)
 			break;
 		case SHADER_BLEND_MODULATE:
 			colorBlend = BlendStateModulate;
-			alphaBlend = BlendStateModulate;
+			alphaBlend = BlendStateModulate; // TODO: figure out
 			break;
 		}
 

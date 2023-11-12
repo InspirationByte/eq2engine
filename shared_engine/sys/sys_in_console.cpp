@@ -513,24 +513,22 @@ void CEqConsoleInput::consoleInsText(const char* text,int pos)
 
 void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-	g_matSystem->SetDepthStates(false,false);
-
-	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
-	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
+	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
+	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.primitiveTopology = PRIM_TRIANGLE_STRIP;
+	defaultRenderPass.cullMode = CULL_BACK;
+
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
@@ -549,10 +547,6 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 
 void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection)
 {
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
 	eqFontStyleParam_t tooltipStyle;
 	tooltipStyle.textColor = s_conHelpTextColor;
 	tooltipStyle.styleFlag = TEXT_STYLE_FROM_CAP;
@@ -616,7 +610,10 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 		{
 			Vertex2D selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
 
-			g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), nullptr, s_conListItemSelectedBackground, &blending);
+			MatSysDefaultRenderPass defaultRender;
+			defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
+			defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
+			g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(selrect));
 		}
 
 		m_font->RenderText(item.ToCString(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
@@ -625,10 +622,6 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 {
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
 	eqFontStyleParam_t helpTextParams;
 	helpTextParams.textColor = s_conHelpTextColor;
 	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
@@ -738,7 +731,11 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 				{
 					Vertex2D selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
-					g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
+					MatSysDefaultRenderPass defaultRender;
+					defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
+					defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
+					defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.8f);
+					g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(selrect));
 
 					m_cmdSelection = i;
 
@@ -785,7 +782,11 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 					Vertex2D rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
-					g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rectVerts), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+					MatSysDefaultRenderPass defaultRender;
+					defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
+					defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
+					defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
+					g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(rectVerts));
 				}
 			}
 		}
@@ -1207,10 +1208,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		}
 	}
 
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
 	eqFontStyleParam_t fontStyle;
 	fontStyle.scale = m_fontScale;
 
@@ -1286,6 +1283,10 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	float inputGfxOfs = m_font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle);
 	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.ToCString(), inputTextStyle, m_cursorPos);
 
+	MatSysDefaultRenderPass defaultRender;
+	defaultRender.primitiveTopology = PRIM_TRIANGLE_STRIP;
+	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
+
 	// render selection
 	if(m_startCursorPos != m_cursorPos)
 	{
@@ -1296,7 +1297,8 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.x + cursorPosition,
 											inputTextPos.y + 4, 0) };
 
-		g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+		defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
+		g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(rect));
 	}
 
 	// render cursor
@@ -1307,7 +1309,8 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.x + cursorPosition + 1,
 											inputTextPos.y + 4, 0) };
 
-		g_matSystem->DrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), nullptr, ColorRGBA(1.0f), &blending);
+		defaultRender.drawColor = color_white;
+		g_matSystem->DrawDefaultUP(defaultRender, ArrayCRef(rect));
 	}
 }
 

@@ -50,12 +50,15 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 	// Setup desired DX state
 	ImGui_ImplMatSystem_SetupRenderState(draw_data);
 
-	IDynamicMesh* pMatsysMesh = g_matSystem->GetDynamicMesh();
+	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+		Builder<RenderPassDesc>()
+		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.End()
+	);
 
-	CMeshBuilder mb(pMatsysMesh);
-	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
-
+	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
+	CMeshBuilder mb(dynMesh);
+	
 	float halfPixelOfs = 0.0f;
 	if (g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 		halfPixelOfs = 0.5f;
@@ -81,11 +84,12 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 
 		ImDrawIdx* idx_dst;
 		void* vtx_dst;
-		if (pMatsysMesh->AllocateGeom(0, cmd_list->IdxBuffer.Size, &vtx_dst, &idx_dst, false) != -1)
+		if (dynMesh->AllocateGeom(0, cmd_list->IdxBuffer.Size, &vtx_dst, &idx_dst, false) != -1)
 		{
 			memcpy(idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
 		}
 
+		RenderDrawCmd drawCmd;
 		mb.End(drawCmd);
 
 		// render command buffers now
@@ -111,17 +115,23 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 					continue;
 
 				// Apply Scissor/clipping rectangle, Bind texture, Draw
-				ITexture* texture = (ITexture*)pcmd->GetTexID();
-				IAARectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
-				g_renderAPI->SetScissorRectangle(scissor);
 
-				g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(ITexturePtr(texture));
+				MatSysDefaultRenderPass defaultRenderPass;
+				defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+				defaultRenderPass.primitiveTopology = drawCmd.primitiveTopology;
+				defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
 
-				drawCmd.SetDrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, drawCmd.numVertices);
-				g_matSystem->Draw(drawCmd);
+				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), rendPassRecorder, StringToHashConst("DynMeshVertex"), &defaultRenderPass);
+
+				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
+				rendPassRecorder->SetVertexBuffer(0, drawCmd.vertexBuffers[0]);
+				rendPassRecorder->SetIndexBuffer(drawCmd.indexBuffer, INDEXFMT_UINT16);
+				rendPassRecorder->DrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, 1);
 			}
 		}
 	}
+
+	g_renderAPI->SubmitCommandBuffer(rendPassRecorder->End());
 }
 
 bool ImGui_ImplMatSystem_Init()

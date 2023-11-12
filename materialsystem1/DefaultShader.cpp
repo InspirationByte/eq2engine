@@ -10,6 +10,18 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/BaseShader.h"
 
+static uint GenDefaultPipelineId(const MatSysDefaultRenderPass& renderPass)
+{
+	uint id = 0;
+	id |= renderPass.cullMode; // 2 bits
+	id |= renderPass.primitiveTopology << 2;	// 3 bits
+	id |= renderPass.blendMode << (2+3); // 2 bits
+	id |= renderPass.depthFunc << (2+3+2); // 1 bit
+	id |= renderPass.depthTest << (2+3+2+1); // 1 bit
+	id |= renderPass.depthWrite << (2+3+2+1+1); // 4 bits
+	return id;
+}
+
 struct ShaderRenderPassDesc
 {
 	struct ColorTargetDesc
@@ -47,8 +59,8 @@ static void ShaderRenderPassDescBuild()
 	// g_matSystem->GetDynamicMesh()->GetVertexLayout()
 	ShaderRenderPassDesc renderPassDesc = Builder<ShaderRenderPassDesc>()
 		.Name("Default")
-		.ColorTarget("BackBuffer", g_matSystem->GetBackBufferColorFormat())
-		.DepthFormat(g_matSystem->GetBackBufferDepthFormat())
+		.ColorTarget("BackBuffer", g_matSystem->GetCurrentBackbuffer()->GetFormat())
+		.DepthFormat(g_matSystem->GetDefaultDepthBuffer()->GetFormat())
 		.VertexLayout(
 			Builder<VertexLayoutDesc>()
 			.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
@@ -78,12 +90,31 @@ BEGIN_SHADER_CLASS(Default)
 
 	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
-		// maybe somewhere in BaseShader before SHADER_INIT_RENDERPASS_PIPELINE
-		{
-			PipelineLayoutDesc pipelineLayoutDesc;
-			FillPipelineLayoutDesc(pipelineLayoutDesc);
-			m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+		if(SHADER_PASS(Unlit))
+			return true;
 
+		PipelineLayoutDesc pipelineLayoutDesc;
+		FillPipelineLayoutDesc(pipelineLayoutDesc);
+		m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+
+		// begin shader definitions
+		SHADERDEFINES_BEGIN;
+
+		// compile without fog
+		SHADER_FIND_OR_COMPILE(Unlit, "Default");
+
+		return true;
+	}
+
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const void* userData) const
+	{
+		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
+		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
+		const uint pipelineId = GenDefaultPipelineId(*rendPassInfo);
+		auto it = m_renderPipelines.find(pipelineId);
+
+		if (it.atEnd())
+		{
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
@@ -95,38 +126,59 @@ BEGIN_SHADER_CLASS(Default)
 				)
 				.FragmentState(
 					Builder<FragmentPipelineDesc>()
-					.ColorTarget("Default", g_matSystem->GetBackBufferColorFormat())
+					.ColorTarget("Default", g_matSystem->GetCurrentBackbuffer()->GetFormat())
 					.End()
 				)
 				.End();
 
-			FillRenderPipelineDesc(renderPipelineDesc);
-			m_renderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
+			// TODO: depth state!
+			{
+				if (m_flags & MATERIAL_FLAG_DECAL)
+					g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
-			// When drawing with this material:
-			//{
-			//	IGPUBindGroupPtr currentBindGroup = GetMaterialBindGroup(renderAPI);
-			//	
-			//}
+				// TODO: must be selective whenever Z test is on
+				//Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
+				//	.DepthTestOn()
+				//	.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
+				//	.DepthFormat(g_matSystem->GetDefaultDepthBuffer()->GetFormat());
+			}
+			{
+				BlendStateParams colorBlend;
+				BlendStateParams alphaBlend;
+				switch (rendPassInfo->blendMode)
+				{
+				case SHADER_BLEND_TRANSLUCENT:
+					colorBlend = BlendStateTranslucent;
+					alphaBlend = BlendStateTranslucentAlpha;
+					break;
+				case SHADER_BLEND_ADDITIVE:
+					colorBlend = BlendStateAdditive;
+					alphaBlend = BlendStateAdditive;
+					break;
+				case SHADER_BLEND_MODULATE:
+					colorBlend = BlendStateModulate;
+					alphaBlend = BlendStateModulate; // TODO: figure out
+					break;
+				}
+
+				// FIXME: apply differently?
+				for (FragmentPipelineDesc::ColorTargetDesc& colorTarget : renderPipelineDesc.fragment.targets)
+				{
+					colorTarget.alphaBlend = alphaBlend;
+					colorTarget.colorBlend = colorBlend;
+				}
+			}
+
+			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
+				.Topology(rendPassInfo->primitiveTopology)
+				.Cull(rendPassInfo->cullMode)
+				.StripIndex(rendPassInfo->primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
+				.End();
+			
+			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
+			it = m_renderPipelines.insert(pipelineId, renderPipeline);
 		}
-
-		if(SHADER_PASS(Unlit))
-			return true;
-
-		// begin shader definitions
-		SHADERDEFINES_BEGIN;
-
-		// compile without fog
-		SHADER_FIND_OR_COMPILE(Unlit, "Default");
-
-		return true;
-	}
-
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI) const
-	{
-		// TODO: for other materials there would
-		// be render pass and vertex layout selector
-		return m_renderPipeline;
+		return *it;
 	}
 
 	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
@@ -141,21 +193,24 @@ BEGIN_SHADER_CLASS(Default)
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI) const
+	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
 	{
+		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
+		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
+
 		IGPUBindGroupPtr materialBindGroup;
 		IGPUBufferPtr materialParamsBuffer;
 		{
-			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture();
+			ITexturePtr baseTexture = rendPassInfo->texture ? rendPassInfo->texture : g_matSystem->GetWhiteTexture();
 
 			// can use either fixed array or CMemoryStream with on-stack storage
 			FixedArray<Vector4D, 4> bufferData;
-			bufferData.append(g_matSystem->GetAmbientColor());
+			bufferData.append(rendPassInfo->drawColor);
 			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
 
 			materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, materialParamsBuffer, 0, 16)
+				.Buffer(0, materialParamsBuffer, 0, bufferData.numElem() * sizeof(bufferData[0]))
 				.Sampler(1, baseTexture->GetSamplerState())
 				.Texture(2, baseTexture)
 				.End();
@@ -164,10 +219,14 @@ BEGIN_SHADER_CLASS(Default)
 		return materialBindGroup;
 	}
 
-	// those are persistent resources
-	IGPURenderPipelinePtr	m_renderPipeline;
-	IGPUPipelineLayoutPtr	m_pipelineLayout;
-	MatTextureProxy			m_baseTexture;
+	IGPUPipelineLayoutPtr GetPipelineLayout() const
+	{
+		return m_pipelineLayout;
+	}
+
+	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
+	IGPUPipelineLayoutPtr						m_pipelineLayout;
+	MatTextureProxy								m_baseTexture;
 
 	//------------------------------------------------------------------
 	// DEPRECATED all below
@@ -197,6 +256,4 @@ BEGIN_SHADER_CLASS(Default)
 	}
 
 	SHADER_DECLARE_PASS(Unlit);
-
-	
 END_SHADER_CLASS

@@ -14,15 +14,6 @@ class IShaderAPI;
 
 using IShaderProgramPtr = CRefPtr<IShaderProgram>;
 
-// valid if MATERIAL_FLAG_TRANSPARENT
-enum EShaderBlendMode : int
-{
-	SHADER_BLEND_NONE = 0,
-	SHADER_BLEND_TRANSLUCENT,		// is transparent
-	SHADER_BLEND_ADDITIVE,			// additive transparency
-	SHADER_BLEND_MODULATE,			// modulate
-};
-
 #define BEGIN_SHADER_CLASS(name)								\
 	namespace C##name##ShaderLocalNamespace						\
 	{															\
@@ -179,8 +170,10 @@ public:
 	virtual void				FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const;
 
 	// Temporary
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI) const { return nullptr; }
-	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI) const { return nullptr; }
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
+	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
+	virtual IGPUBindGroupPtr		GetMatSystemBindGroup(IShaderAPI* renderAPI) const;
+	virtual IGPUPipelineLayoutPtr	GetPipelineLayout() const { return nullptr; }
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };

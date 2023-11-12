@@ -15,7 +15,7 @@
 
 bool CDynamicMesh::Init(ArrayCRef<VertexLayoutDesc> vertexLayout)
 {
-	if(m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr)
+	if(m_vertexFormat != nullptr)
 		return true;
 
 	ASSERT_MSG(vertexLayout.numElem(), "CDynamicMesh::Init - no vertex layout descs");
@@ -26,36 +26,23 @@ bool CDynamicMesh::Init(ArrayCRef<VertexLayoutDesc> vertexLayout)
 	ASSERT_MSG(vertexDesc.stride > 0, "CDynamicMesh::Init - vertex layout stride hasn't set\n");
 
 	m_vertexStride = vertexDesc.stride;
-
-	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BufferInfo(m_vertexStride, MAX_DYNAMIC_VERTICES, BUFFER_DYNAMIC));
-	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(sizeof(uint16), MAX_DYNAMIC_INDICES, BUFFER_DYNAMIC));
 	m_vertexFormat = g_renderAPI->CreateVertexFormat("DynMeshVertex", vertexLayout);
 
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
 
-	return (m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr);
+	return m_vertices && m_indices;
 }
 
 void CDynamicMesh::Destroy()
 {
-	if(m_vertexBuffer == nullptr && m_indexBuffer == nullptr && m_vertexFormat == nullptr)
-		return;
-
 	Reset();
 
-	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_renderAPI->DestroyVertexBuffer(m_vertexBuffer);
-
 	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
+	m_vertexFormat = nullptr;
 
 	PPFree(m_vertices);
 	PPFree(m_indices);
-
-	m_vertexBuffer = nullptr;
-	m_indexBuffer = nullptr;
-
-	m_vertexFormat = nullptr;
 
 	m_vertices = nullptr;
 	m_indices = nullptr;
@@ -107,8 +94,6 @@ void CDynamicMesh::AddStripBreak()
 		memcpy(&m_indices[m_numIndices], degenerate, sizeof(uint16) * 2);
 		m_numIndices += 2;
 	}
-
-	m_vboDirty = 0;
 }
 
 // allocates geometry chunk. Returns the start index. Will return -1 if failed
@@ -147,8 +132,6 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 
 	memset(*verts, 0, m_vertexStride*nVertices);
 
-	m_vboDirty = 0;
-
 	return startVertex;
 }
 
@@ -157,25 +140,17 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 	if (m_numVertices == 0)
 		return false;
 
-	const bool drawIndexed = m_numIndices > 0;
-	if (m_vboDirty == 0)
-	{
-		// FIXME: CMeshBuilder::End should return new trainsient buffer really?
-		// would be cool probably
-		m_vertexBuffer->Update(m_vertices, m_numVertices);
-		if (drawIndexed)
-			m_indexBuffer->Update(m_indices, m_numIndices);
-		m_vboDirty = -1;
-	}
+	drawCmd.vertexBuffers[0] = g_renderAPI->CreateBuffer(BufferInfo(m_vertices, m_vertexStride, m_numVertices), BUFFERUSAGE_VERTEX, "DynMeshVertexBuffer");
+	if (m_numIndices > 0)
+		drawCmd.indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(m_indices, sizeof(uint16), m_numIndices), BUFFERUSAGE_INDEX, "DynMeshIndexBuffer");
 
 	if (numIndices < 0)
 		numIndices = m_numIndices;
 
 	drawCmd.vertexLayout = m_vertexFormat;
-	drawCmd.vertexBuffers[0] = m_vertexBuffer;
-	drawCmd.indexBuffer = drawIndexed ? m_indexBuffer : nullptr;
 	drawCmd.primitiveTopology = m_primType;
-	if (drawIndexed)
+
+	if (m_numIndices > 0)
 		drawCmd.SetDrawIndexed(numIndices, firstIndex, m_numVertices);
 	else
 		drawCmd.SetDrawNonIndexed(m_numVertices);
@@ -188,6 +163,4 @@ void CDynamicMesh::Reset()
 {
 	m_numVertices = 0;
 	m_numIndices = 0;
-
-	m_vboDirty = -1;
 }

@@ -12,13 +12,13 @@
 EGFInstBuffer::~EGFInstBuffer()
 {
 	PPFree(instances);
-	g_renderAPI->DestroyVertexBuffer(instanceVB);
+	//g_renderAPI->DestroyVertexBuffer(instanceVB);
 }
 
 void EGFInstBuffer::Init(int sizeOfInstance)
 {
-	instanceVB = g_renderAPI->CreateVertexBuffer(BufferInfo(sizeOfInstance, EGF_INST_POOL_MAX_INSTANCES, BUFFER_DYNAMIC));
-	instanceVB->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
+	//instanceVB = g_renderAPI->CreateBuffer(BufferInfo(sizeOfInstance, EGF_INST_POOL_MAX_INSTANCES, BUFFER_DYNAMIC));
+	//instanceVB->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
 
 	instances = PPAlloc(sizeOfInstance * EGF_INST_POOL_MAX_INSTANCES);
 }
@@ -148,7 +148,6 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	// proceed to render
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
-	const int maxVertexCount = model->m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
 	int instanceStreamId = -1;
 
 	RenderDrawCmd drawCmd;
@@ -232,7 +231,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
 					drawCmd.primitiveTopology = (EPrimTopology)meshRef.primType;
-					drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex, maxVertexCount);
+					drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex);
 
 					g_matSystem->Draw(drawCmd);
 				}

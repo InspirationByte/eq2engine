@@ -13,7 +13,7 @@ public:
 	void SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1);
 
 	void SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth);
-	void SetScissorRectangle(const IAARectangle& rectangle, float minDepth, float maxDepth);
+	void SetScissorRectangle(const IAARectangle& rectangle);
 
 	void Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance = 0);
 	void DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex = 0, int firstInstance = 0);

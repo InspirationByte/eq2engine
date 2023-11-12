@@ -97,7 +97,7 @@ public:
 	virtual void					SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
 
 	virtual void					SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth) = 0;
-	virtual void					SetScissorRectangle(const IAARectangle& rectangle, float minDepth, float maxDepth) = 0;
+	virtual void					SetScissorRectangle(const IAARectangle& rectangle) = 0;
 
 	virtual void					Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance = 0) = 0;
 	virtual void					DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex = 0, int firstInstance = 0) = 0;
