@@ -107,3 +107,10 @@ static size_t VSWrite(IVirtualStream* stream, const T& obj)
 {
 	return stream->Write(&obj, 1, sizeof(T));
 }
+
+
+template<typename T, size_t N>
+static size_t VSWrite(IVirtualStream* stream, T(&obj)[N])
+{
+	return stream->Write(&obj, N, sizeof(T));
+}
