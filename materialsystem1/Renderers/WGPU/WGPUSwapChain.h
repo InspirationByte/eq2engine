@@ -37,7 +37,6 @@ protected:
 	CWGPURenderLib*		m_host{ nullptr };
 	RenderWindowInfo	m_winInfo;
 
-	WGPUTextureFormat	m_swapFmt{ WGPUTextureFormat_Undefined };
 	WGPUSurface			m_surface{ nullptr };
 	WGPUSwapChain		m_swapChain{ nullptr };
 	IVector2D			m_backbufferSize{ 0 };

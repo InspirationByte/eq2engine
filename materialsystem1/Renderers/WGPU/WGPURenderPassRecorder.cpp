@@ -14,6 +14,7 @@ CWGPURenderPassRecorder::~CWGPURenderPassRecorder()
 
 void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
+	ASSERT(pipeline);
 	CWGPURenderPipeline* pipelineImpl = static_cast<CWGPURenderPipeline*>(pipeline);
 	wgpuRenderPassEncoderSetPipeline(m_rhiRenderPassEncoder, pipelineImpl->m_rhiRenderPipeline);
 }
@@ -26,18 +27,28 @@ void CWGPURenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGr
 
 void CWGPURenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset, int64 size)
 {
-	if (size < 0) size = WGPU_WHOLE_SIZE;
 	CWGPUBuffer* vertexBufferImpl = static_cast<CWGPUBuffer*>(vertexBuffer);
-	ASSERT_MSG(vertexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Vertex, "buffer doesn't have Vertex buffer usage bit");
-	wgpuRenderPassEncoderSetVertexBuffer(m_rhiRenderPassEncoder, slot, vertexBufferImpl->GetWGPUBuffer(), offset, size);
+	if (vertexBufferImpl)
+	{
+		if (size < 0) size = WGPU_WHOLE_SIZE;
+		ASSERT_MSG(vertexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Vertex, "buffer doesn't have Vertex buffer usage bit");
+		wgpuRenderPassEncoderSetVertexBuffer(m_rhiRenderPassEncoder, slot, vertexBufferImpl->GetWGPUBuffer(), offset, size);
+	}
+	else
+		wgpuRenderPassEncoderSetVertexBuffer(m_rhiRenderPassEncoder, slot, nullptr, 0, 0);
 }
 
 void CWGPURenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset, int64 size)
 {
-	if (size < 0) size = WGPU_WHOLE_SIZE;
 	CWGPUBuffer* indexBufferImpl = static_cast<CWGPUBuffer*>(indexBuf);
-	ASSERT_MSG(indexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Index, "buffer doesn't have Index buffer usage bit");
-	wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], 0, size);
+	if (indexBufferImpl)
+	{
+		if (size < 0) size = WGPU_WHOLE_SIZE;
+		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Index, "buffer doesn't have Index buffer usage bit");
+		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], 0, size);
+	}
+	else
+		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, nullptr, WGPUIndexFormat_Undefined, 0, 0);
 }
 
 void CWGPURenderPassRecorder::SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth)

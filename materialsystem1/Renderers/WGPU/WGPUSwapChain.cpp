@@ -9,18 +9,16 @@
 #include "WGPUBackend.h"
 #include "WGPUSwapChain.h"
 #include "WGPULibrary.h"
+#include "WGPURenderDefs.h"
 
-// TODO: determine properly?
-const WGPUTextureFormat kSwapChainFormat = WGPUTextureFormat_BGRA8Unorm;
 
 CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
 	: m_host(host)
 	, m_winInfo(windowInfo)
 {
 	m_textureRef = CRefPtr<CWGPUTexture>(static_cast<CWGPUTexture*>(swapChainTexture.Ptr()));
-	m_textureRef->SetFormat(FORMAT_RGBA8);
+	m_textureRef->SetFormat(MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB));
 
-	m_swapFmt = kSwapChainFormat;
 }
 
 CWGPUSwapChain::~CWGPUSwapChain()
@@ -111,7 +109,7 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 	WGPUSwapChainDescriptor swapChainDesc = {};
 	swapChainDesc.width = m_backbufferSize.x;
 	swapChainDesc.height = m_backbufferSize.y;
-	swapChainDesc.format = m_swapFmt;
+	swapChainDesc.format = GetWGPUTextureFormat(m_textureRef->GetFormat());
 	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment;
 	swapChainDesc.presentMode = WGPUPresentMode_Immediate;// WGPUPresentMode_Fifo; // TODO: other modes
 

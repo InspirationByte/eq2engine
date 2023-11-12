@@ -81,7 +81,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 		textureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
 		textureDesc.sampleCount = 1;
 		textureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
-		textureDesc.format = g_wgpuTexFormats[imgFmt];
+		textureDesc.format = GetWGPUTextureFormat(imgFmt);
 		textureDesc.viewFormatCount = 0;
 		textureDesc.viewFormats = nullptr;
 

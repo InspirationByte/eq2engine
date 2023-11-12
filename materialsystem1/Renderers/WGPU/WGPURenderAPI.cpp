@@ -339,7 +339,7 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 				case BINDENTRY_STORAGETEXTURE:
 					bglEntry.storageTexture.access = g_wgpuStorageTexAccess[entry.storageTexture.access];
 					bglEntry.storageTexture.viewDimension = g_wgpuTexViewDimensions[entry.storageTexture.dimension];
-					bglEntry.storageTexture.format = g_wgpuTexFormats[entry.storageTexture.format];
+					bglEntry.storageTexture.format = GetWGPUTextureFormat(entry.storageTexture.format);
 					break;
 			}
 			rhiBindGroupLayoutEntry.append(bglEntry);
@@ -594,7 +594,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	{
 		ASSERT_MSG(pipelineDesc.depthStencil.format != FORMAT_NONE, "Must set valid depthStencil texture format");
 		
-		rhiDepthStencil.format = g_wgpuTexFormats[pipelineDesc.depthStencil.format];
+		rhiDepthStencil.format = GetWGPUTextureFormat(pipelineDesc.depthStencil.format);
 		rhiDepthStencil.depthWriteEnabled = pipelineDesc.depthStencil.depthWrite;
 		rhiDepthStencil.depthCompare = g_wgpuCompareFunc[pipelineDesc.depthStencil.depthFunc];
 		rhiDepthStencil.stencilReadMask = pipelineDesc.depthStencil.stencilMask;
@@ -637,7 +637,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			}
 
 			WGPUColorTargetState rhiColorTarget = {};
-			rhiColorTarget.format = g_wgpuTexFormats[target.format];
+			rhiColorTarget.format = GetWGPUTextureFormat(target.format);
 			rhiColorTarget.blend = &rhiColorTargetBlends.back();
 			rhiColorTarget.writeMask = target.writeMask;
 			rhiColorTargets.append(rhiColorTarget);

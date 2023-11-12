@@ -92,6 +92,49 @@ static WGPUTextureFormat g_wgpuTexFormats[] = {
 	WGPUTextureFormat_Undefined,
 };
 
+static WGPUTextureFormat GetWGPUFormatSRGB(WGPUTextureFormat baseFormat)
+{
+	switch (baseFormat)
+	{
+	case WGPUTextureFormat_RGBA8Unorm:
+		return WGPUTextureFormat_RGBA8UnormSrgb;
+	case WGPUTextureFormat_BGRA8Unorm:
+		return WGPUTextureFormat_BGRA8UnormSrgb;
+	case WGPUTextureFormat_BC1RGBAUnorm:
+		return WGPUTextureFormat_BC1RGBAUnormSrgb;
+	case WGPUTextureFormat_BC2RGBAUnorm:
+		return WGPUTextureFormat_BC2RGBAUnormSrgb;
+	case WGPUTextureFormat_BC3RGBAUnorm:
+		return WGPUTextureFormat_BC3RGBAUnormSrgb;
+	}
+
+	// TODO: ASTC
+	return baseFormat;
+}
+
+static WGPUTextureFormat GetWGPUSwappedChannelsFormat(WGPUTextureFormat baseFormat)
+{
+	switch (baseFormat)
+	{
+	case WGPUTextureFormat_RGBA8Unorm:
+		return WGPUTextureFormat_BGRA8Unorm;
+	}
+
+	return baseFormat;
+}
+
+static WGPUTextureFormat GetWGPUTextureFormat(ETextureFormat formatWithFlags)
+{
+	WGPUTextureFormat format = g_wgpuTexFormats[GetTexFormat(formatWithFlags)];
+	if (HasTexFormatFlags(formatWithFlags, TEXFORMAT_FLAG_SWAP_RB))
+		format = GetWGPUSwappedChannelsFormat(format);
+
+	if (HasTexFormatFlags(formatWithFlags, TEXFORMAT_FLAG_SRGB))
+		format = GetWGPUFormatSRGB(format);
+
+	return format;
+}
+
 // EBufferBindType
 static WGPUBufferBindingType g_wgpuBufferBindingType[] = {
 	WGPUBufferBindingType_Uniform,

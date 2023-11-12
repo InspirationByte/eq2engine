@@ -215,7 +215,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
 
 	// create default swap chain
-	CreateSwapChain(params.windowInfo);
+	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
 
 	CWGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
 	CWGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
@@ -259,7 +259,7 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 void CWGPURenderLib::EndFrame()
 {
 	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
-		.ColorTarget(m_currentSwapChain->GetBackbuffer(), true, MColor(0.25f, 0.15f, 0.15f, 1.0f))
+		.ColorTarget(GetCurrentBackbuffer(), true, MColor(0.25f, 0.15f, 0.15f, 1.0f))
 		.Name("clearScreen")
 		.End();
 	
@@ -272,6 +272,11 @@ void CWGPURenderLib::EndFrame()
 		m_currentSwapChain->SwapBuffers();
 		return 0;
 	});
+}
+
+ITexturePtr	CWGPURenderLib::GetCurrentBackbuffer() const
+{
+	return m_currentSwapChain->GetBackbuffer();
 }
 
 ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)

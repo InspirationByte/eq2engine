@@ -12,6 +12,8 @@ class ISwapChain;
 class IShaderAPI;
 class CImage;
 class IRenderLibrary;
+class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
 struct ShaderAPIParams;
 struct RenderWindowInfo;
 
@@ -36,10 +38,13 @@ public:
 
 	virtual void			BeginFrame(ISwapChain* swapChain = nullptr) = 0;
 	virtual void			EndFrame() = 0;
+	
+	// returns backbuffer texture associated with swap chain used in BeginFrame
+	virtual ITexturePtr		GetCurrentBackbuffer() const = 0;
 
 	virtual IShaderAPI*		GetRenderer() const = 0;
 	virtual void			SetBackbufferSize(int w, int h) = 0;
-
+	
 	virtual void			SetFocused(bool inFocus) = 0;
 
 	virtual bool			SetWindowed(bool enabled) = 0;
@@ -47,6 +52,6 @@ public:
 
 	virtual	bool			CaptureScreenshot(CImage &img) = 0;
 
-	virtual ISwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
+	virtual ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo) = 0;
 	virtual void			DestroySwapChain(ISwapChain* swapChain) = 0;
 };
