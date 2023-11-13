@@ -87,9 +87,9 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			Array<EqString>& shaderQuery = renderPipelineDesc.shaderQuery;
 
 			bool vertexColor = false;
-			SHADER_PARAM_BOOL(StudioVertexColor, vertexColor, false);
+			SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
 			if (vertexColor)
-				shaderQuery.append("STUDIOVERTEXCOLOR");
+				shaderQuery.append("VERTEXCOLOR");
 
 			if (m_flags & MATERIAL_FLAG_ALPHATESTED)
 				shaderQuery.append("ALPHATEST");

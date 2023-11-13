@@ -134,10 +134,10 @@ bool CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl&
 	{
 		const KVSection* itemSec = *it;
 
+		const char* kindStr = KV_GetValueString(itemSec, 1);
 		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
 		int kind = 0;
 		{
-			const char* kindStr = KV_GetValueString(itemSec, 1);
 			if (!stricmp(kindStr, "Vertex"))
 				kind = SHADERKIND_VERTEX;
 			else if (!stricmp(kindStr, "Fragment"))
@@ -172,12 +172,14 @@ bool CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl&
 			}
 
 			const int moduleIndex = output.rhiModules.append(rhiShaderModule);
+			ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s module already added, fix shader compiler", kindStr, queryStr);
 			output.modulesMap.insert(shaderModuleId, moduleIndex);
 			++filesFound;
 		}
 		else if (!stricmp(itemSec->GetName(), "ref"))
 		{
 			const int refIndex = KV_GetValueInt(itemSec, 3);
+			ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s already added, fix shader compiler\n", kindStr, queryStr);
 			output.modulesMap.insert(shaderModuleId, refIndex);
 		}
 	}
@@ -449,11 +451,6 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 	
 	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
 	bindGroup->m_rhiBindGroup = rhiBindGroup;
-
-	// After bindGroupList successfully created, they can be bound to the pipeline
-	//WGPURenderPassEncoder renderPassEnc = nullptr;
-	//for (int bindGroup = 0; bindGroup < bindGroupList.numElem(); ++bindGroup)
-	//	wgpuRenderPassEncoderSetBindGroup(renderPassEnc, bindGroup, bindGroupList[bindGroup], 0, nullptr);
 
 	return IGPUBindGroupPtr(bindGroup);
 }

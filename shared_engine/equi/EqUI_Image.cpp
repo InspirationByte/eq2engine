@@ -104,11 +104,10 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRe
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.drawColor = m_color;
 	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-		//meshBuilder.Color4fv(m_color);
+		meshBuilder.Color4fv(m_color);
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 
 			atlasRect.GetLeftBottom(), atlasRect.GetRightBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightTop());
 	if(meshBuilder.End(drawCmd))
