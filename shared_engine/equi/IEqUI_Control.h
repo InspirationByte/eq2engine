@@ -174,6 +174,7 @@ public:
 
 	// rendering
 	void						Render();
+	virtual void				Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
 
 	// Events
 	int							AddEventHandler(const char* pszName, uiEventCallback_t cb);
@@ -185,8 +186,7 @@ public:
 
 protected:
 
-	virtual void				Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
-	
+
 	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) = 0;
 

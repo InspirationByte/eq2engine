@@ -627,11 +627,6 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 			rendPassRecorder->SetScissorRectangle(scissorRect);
 		}
 
-		// force rasterizer state
-		// other states are pretty useless
-		g_matSystem->SetRasterizerStates(rasterState);
-		g_matSystem->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
-
 		// paint control itself
 		DrawSelf( clientRectRender, rasterState.scissor, rendPassRecorder);
 	}
@@ -657,6 +652,13 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 
 	// always reset previous absolute transformation
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
+
+	// reset scissor after drawing equi
+	if (depth <= 1)
+	{
+		IAARectangle scissorRect(IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+		rendPassRecorder->SetScissorRectangle(scissorRect);
+	}
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point) const
