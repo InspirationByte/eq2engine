@@ -29,6 +29,7 @@ public:
 
 	bool					InitAPI(const ShaderAPIParams &params);
 	void					ExitAPI();
+	ITexturePtr				GetCurrentBackbuffer() const { return nullptr; }
 
 	void					ReleaseSurface();
 	bool					CreateSurface();

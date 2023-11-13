@@ -43,6 +43,7 @@ public:
 
 	void					BeginFrame(ISwapChain* swapChain = nullptr);
 	void					EndFrame();
+	ITexturePtr				GetCurrentBackbuffer() const { return nullptr; }
 
 	IShaderAPI*				GetRenderer() const;
 
