@@ -106,19 +106,12 @@ public:
 	void				Render(int nRenderFlags);
 	void				ClearBuffers();
 
-	// returns VBO index
-	bool				MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup);
-
 protected:
 	bool				InitBuffers();
 	bool				ShutdownBuffers();
 
 	Array<CParticleBatch*>	m_batchs{ PP_SL };
-
-	IVertexBuffer*		m_vertexBuffer{ nullptr };
-	IIndexBuffer*		m_indexBuffer{ nullptr };
 	IVertexFormat*		m_vertexFormat{ nullptr };
-
 	int					m_vbMaxQuads{ 0 };
 
 	bool				m_initialized{ false };

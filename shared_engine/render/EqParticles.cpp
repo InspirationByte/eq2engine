@@ -196,12 +196,7 @@ bool CParticleLowLevelRenderer::InitBuffers()
 	if(m_initialized)
 		return true;
 
-	MsgWarning("Initializing particle buffers...\n");
-
 	m_vbMaxQuads = r_particleBufferSize.GetInt();
-
-	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BufferInfo(sizeof(PFXVertex_t), m_vbMaxQuads * 4, BUFFER_DYNAMIC));
-	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(sizeof(int16), m_vbMaxQuads * 6, BUFFER_DYNAMIC));
 
 	if(!m_vertexFormat)
 	{
@@ -209,7 +204,7 @@ bool CParticleLowLevelRenderer::InitBuffers()
 		m_vertexFormat = g_renderAPI->CreateVertexFormat("PFXVertex", ArrayCRef(&fmtDesc, 1));
 	}
 
-	if(m_vertexBuffer && m_indexBuffer && m_vertexFormat)
+	if(m_vertexFormat)
 		m_initialized = true;
 
 	return false;
@@ -219,19 +214,7 @@ bool CParticleLowLevelRenderer::ShutdownBuffers()
 {
 	if(!m_initialized)
 		return true;
-
-	MsgWarning("Destroying particle buffers...\n");
-
-	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
-	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_renderAPI->DestroyVertexBuffer(m_vertexBuffer);
-
-	m_vertexBuffer = nullptr;
-	m_indexBuffer = nullptr;
-	m_vertexFormat = nullptr;
-
 	m_initialized = false;
-
 	return true;
 }
 
@@ -282,27 +265,6 @@ void CParticleLowLevelRenderer::ClearBuffers()
 		m_batchs[i]->ClearBuffers();
 }
 
-bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pMesh)
-{
-	if(!m_initialized)
-		return false;
-
-	const uint16 nVerts	= pMesh->m_numVertices;
-	const uint16 nIndices = pMesh->m_numIndices;
-
-	if(nVerts == 0)
-		return false;
-
-	if(nVerts > SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t))
-		return false;
-
-	m_vertexBuffer->Update((void*)pMesh->m_pVerts, nVerts);
-
-	if(nIndices)
-		m_indexBuffer->Update((void*)pMesh->m_pIndices, nIndices);
-
-	return true;
-}
 //----------------------------------------------------------------------------------------------------
 
 void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* frustum)
