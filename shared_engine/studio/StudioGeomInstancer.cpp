@@ -17,9 +17,7 @@ EGFInstBuffer::~EGFInstBuffer()
 
 void EGFInstBuffer::Init(int sizeOfInstance)
 {
-	//instanceVB = g_renderAPI->CreateBuffer(BufferInfo(sizeOfInstance, EGF_INST_POOL_MAX_INSTANCES, BUFFER_DYNAMIC));
-	//instanceVB->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
-
+	instanceVB = g_renderAPI->CreateBuffer(BufferInfo(sizeOfInstance, EGF_INST_POOL_MAX_INSTANCES, BUFFER_DYNAMIC), BUFFERUSAGE_VERTEX, "EGFInstBuffer");
 	instances = PPAlloc(sizeOfInstance * EGF_INST_POOL_MAX_INSTANCES);
 }
 

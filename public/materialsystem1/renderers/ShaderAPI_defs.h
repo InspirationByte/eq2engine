@@ -89,7 +89,7 @@ struct SamplerStateParams
 		, addressV(address)
 		, addressW(address)
 		, compareFunc(compareFunc)
-		, maxAnisotropy((filterType == TEXFILTER_BILINEAR_ANISO) ? 16 : 0)
+		, maxAnisotropy((filterType == TEXFILTER_BILINEAR_ANISO) ? 16 : 1)
 		, lod(lod)
 	{
 	}
@@ -436,7 +436,6 @@ struct RenderPipelineDesc
 	FragmentPipelineDesc	fragment;
 	MultiSampleState		multiSample;
 	PrimitiveDesc			primitive;
-	EqString				name;
 
 	EqString				shaderName;
 	EqString				shaderVertexLayoutName;
@@ -451,7 +450,6 @@ FLUENT_BEGIN_TYPE(RenderPipelineDesc);
 	FLUENT_SET_VALUE(fragment, FragmentState);
 	FLUENT_SET_VALUE(multiSample, MultiSampleState);
 	FLUENT_SET_VALUE(primitive, PrimitiveState);
-	FLUENT_SET_VALUE(name, Name);
 	FLUENT_SET_VALUE(shaderName, ShaderName)
 	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
 	FLUENT_SET_VALUE(shaderVertexLayoutName, ShaderVertexLayoutName)

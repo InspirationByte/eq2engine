@@ -3,12 +3,13 @@
 #include "renderers/ShaderAPICaps.h"
 
 class IVertexFormat;
-class IIndexBuffer;
-class IVertexBuffer;
 class IMaterial;
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
+
+class IGPUBuffer;
+using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
 enum EPrimTopology : int;
 

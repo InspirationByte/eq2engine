@@ -58,6 +58,7 @@ public:
 
 	ITexturePtr					CreateTextureResource(const char* pszName);
 	ITexturePtr					CreateRenderTarget(const char* pszName, int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR, ETexAddressMode textureAddress = TEXADDRESS_WRAP, ECompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
+	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall);
 
 //-------------------------------------------------------------
 // Pipeline management
@@ -127,7 +128,6 @@ public:
 	
 	void			ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice = nullptr, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0);
 	void			ChangeRenderTargetToBackBuffer();
-	void			ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int newTall);
 
 //-------------------------------------------------------------
 // DEPRECATED Various setup functions for drawing

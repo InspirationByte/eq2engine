@@ -73,42 +73,45 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 
 		const int texWidth = img->GetWidth(mipStart);
 		const int texHeight = img->GetHeight(mipStart);
-		const int texDepth = img->GetDepth(mipStart);
+		int texDepth = img->GetDepth(mipStart);
 
-		WGPUTextureDescriptor textureDesc{};
-		textureDesc.label = img->GetName();
-		textureDesc.mipLevelCount = img->GetMipMapCount(); // TODO: compute as we used to
-		textureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
-		textureDesc.sampleCount = 1;
-		textureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
-		textureDesc.format = GetWGPUTextureFormat(imgFmt);
-		textureDesc.viewFormatCount = 0;
-		textureDesc.viewFormats = nullptr;
+		if (imgType == IMAGE_TYPE_CUBE)
+			texDepth = 6;
 
-		WGPUTextureViewDimension texViewDimension = WGPUTextureViewDimension_Undefined;
+		WGPUTextureDescriptor rhiTextureDesc{};
+		rhiTextureDesc.label = img->GetName();
+		rhiTextureDesc.mipLevelCount = img->GetMipMapCount(); // TODO: compute as we used to
+		rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
+		rhiTextureDesc.sampleCount = 1;
+		rhiTextureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+		rhiTextureDesc.format = GetWGPUTextureFormat(imgFmt);
+		rhiTextureDesc.viewFormatCount = 0;
+		rhiTextureDesc.viewFormats = nullptr;
+
+		WGPUTextureViewDimension rhiTexViewDimension = WGPUTextureViewDimension_Undefined;
 		switch (imgType)
 		{
 		case IMAGE_TYPE_1D:
-			textureDesc.dimension = WGPUTextureDimension_1D;
-			texViewDimension = WGPUTextureViewDimension_1D;
+			rhiTextureDesc.dimension = WGPUTextureDimension_1D;
+			rhiTexViewDimension = WGPUTextureViewDimension_1D;
 			break;
 		case IMAGE_TYPE_2D:
-			textureDesc.dimension = WGPUTextureDimension_2D;
-			texViewDimension = WGPUTextureViewDimension_2D;
+			rhiTextureDesc.dimension = WGPUTextureDimension_2D;
+			rhiTexViewDimension = WGPUTextureViewDimension_2D;
 			break;
 		case IMAGE_TYPE_3D:
-			textureDesc.dimension = WGPUTextureDimension_3D;
-			texViewDimension = WGPUTextureViewDimension_3D;
+			rhiTextureDesc.dimension = WGPUTextureDimension_3D;
+			rhiTexViewDimension = WGPUTextureViewDimension_3D;
 			break;
 		case IMAGE_TYPE_CUBE:
-			textureDesc.dimension = WGPUTextureDimension_2D;
-			texViewDimension = WGPUTextureViewDimension_Cube;
+			rhiTextureDesc.dimension = WGPUTextureDimension_2D;
+			rhiTexViewDimension = WGPUTextureViewDimension_Cube;
 			break;
 		default:
 			ASSERT_FAIL("Invalid image type of %s", img->GetName());
 		}
 
-		WGPUTexture rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &textureDesc);
+		WGPUTexture rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
 		if (!rhiTexture)
 		{
 			MsgError("ERROR: failed to create texture for image %s\n", img->GetName());
@@ -179,16 +182,16 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 		}
 
 		{
-			WGPUTextureViewDescriptor texViewDesc = {};
-			texViewDesc.format = textureDesc.format;
-			texViewDesc.aspect = WGPUTextureAspect_All;
-			texViewDesc.arrayLayerCount = 1;
-			texViewDesc.baseArrayLayer = 0;
-			texViewDesc.baseMipLevel = 0;
-			texViewDesc.mipLevelCount = textureDesc.mipLevelCount;
-			texViewDesc.dimension = texViewDimension;
+			WGPUTextureViewDescriptor rhiTexViewDesc = {};
+			rhiTexViewDesc.format = rhiTextureDesc.format;
+			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
+			rhiTexViewDesc.arrayLayerCount = 1;
+			rhiTexViewDesc.baseArrayLayer = 0;
+			rhiTexViewDesc.baseMipLevel = 0;
+			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
+			rhiTexViewDesc.dimension = rhiTexViewDimension;
 		
-			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &texViewDesc);
+			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
 			m_rhiViews.append(rhiView);
 		}
 

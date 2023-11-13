@@ -288,19 +288,82 @@ ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
 }
 
 // It will add new rendertarget
-ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType, ETexAddressMode textureAddress, ECompareFunc comparison, int nFlags)
+ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName, int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType, ETexAddressMode textureAddress, ECompareFunc comparison, int nFlags)
 {
-	CRefPtr<CWGPUTexture> pTexture = CRefPtr_new(CWGPUTexture);
-	pTexture->SetName(pszName);
+	CRefPtr<CWGPUTexture> texture = CRefPtr_new(CWGPUTexture);
+	texture->SetName(pszName);
+	texture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
+	texture->SetFormat(nRTFormat);
+	texture->SetSamplerState(SamplerStateParams(textureFilterType, textureAddress));
 
-	CScopedMutex scoped(g_sapi_TextureMutex);
-	CHECK_TEXTURE_ALREADY_ADDED(pTexture);
-	m_TextureList.insert(pTexture->m_nameHash, pTexture);
+	ResizeRenderTarget(ITexturePtr(texture), width, height);
 
-	pTexture->SetDimensions(width, height);
-	pTexture->SetFormat(nRTFormat);
+	if (!texture->m_rhiTextures.numElem()) 
+		return nullptr;
 
-	return ITexturePtr(pTexture);
+	{
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		CHECK_TEXTURE_ALREADY_ADDED(texture);
+		m_TextureList.insert(texture->m_nameHash, texture);
+	}
+
+	return ITexturePtr(texture);
+}
+
+void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
+{
+	CWGPUTexture* texture = static_cast<CWGPUTexture*>(renderTarget.Ptr());
+	if (!texture)
+		return;
+
+	if (texture->GetWidth() == newWide && texture->GetHeight() == newTall)
+		return;
+
+	texture->SetDimensions(newWide, newTall);
+	texture->Release();
+
+	int texDepth = 1;
+	if (texture->GetFlags() & TEXFLAG_CUBEMAP)
+		texDepth = 6;
+
+	WGPUTextureDescriptor rhiTextureDesc = {};
+	rhiTextureDesc.label = texture->GetName();
+	rhiTextureDesc.mipLevelCount = 1;
+	rhiTextureDesc.size = WGPUExtent3D{ (uint)newWide, (uint)newTall, (uint)texDepth };
+	rhiTextureDesc.sampleCount = 1;
+	rhiTextureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
+	rhiTextureDesc.format = GetWGPUTextureFormat(texture->GetFormat());
+	rhiTextureDesc.dimension = WGPUTextureDimension_2D;
+	rhiTextureDesc.viewFormatCount = 0;
+	rhiTextureDesc.viewFormats = nullptr;
+
+	if (rhiTextureDesc.format == WGPUTextureFormat_Undefined)
+	{
+		MsgError("Unsupported texture format %d\n", texture->GetFormat());
+		return;
+	}
+
+	WGPUTexture rhiTexture = wgpuDeviceCreateTexture(m_rhiDevice, &rhiTextureDesc);
+	if (!rhiTexture)
+	{
+		ErrorMsg("Failed to create render target %s\n", texture->GetName());
+		return;
+	}
+
+	texture->m_rhiTextures.append(rhiTexture);
+	{
+		WGPUTextureViewDescriptor rhiTexViewDesc = {};
+		rhiTexViewDesc.format = rhiTextureDesc.format;
+		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
+		rhiTexViewDesc.arrayLayerCount = 1;
+		rhiTexViewDesc.baseArrayLayer = 0;
+		rhiTexViewDesc.baseMipLevel = 0;
+		rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
+		rhiTexViewDesc.dimension = (texture->GetFlags() & TEXFLAG_CUBEMAP) ? WGPUTextureViewDimension_Cube : WGPUTextureViewDimension_2D;
+
+		WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
+		texture->m_rhiViews.append(rhiView);
+	}
 }
 
 //-------------------------------------------------------------
@@ -439,6 +502,8 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 				WGPUSamplerDescriptor rhiSamplerDesc = {};
 				FillWGPUSamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
 
+				ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
+
 				rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(m_rhiDevice, &rhiSamplerDesc);
 				break;
 			}
@@ -448,7 +513,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 
 				// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
 				if(texture)
+				{
+					ASSERT_MSG(texture->m_rhiViews.numElem(), "Texture '%s' has no views", texture->GetName());
 					rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView();
+				}
 				else
 					ASSERT_FAIL("NULL texture for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
 				break;
@@ -721,7 +789,9 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	rhiRenderPipelineDesc.primitive.cullMode = g_wgpuCullMode[pipelineDesc.primitive.cullMode];
 	rhiRenderPipelineDesc.primitive.topology = g_wgpuPrimTopology[pipelineDesc.primitive.topology];
 	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
-	rhiRenderPipelineDesc.label = pipelineDesc.name.Length() ? pipelineDesc.name.ToCString() : nullptr;
+
+	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), pipelineDesc.shaderVertexLayoutName.ToCString());
+	rhiRenderPipelineDesc.label = pipelineName;
 
 	WGPURenderPipeline rhiRenderPipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &rhiRenderPipelineDesc);
 
@@ -909,11 +979,6 @@ void CWGPURenderAPI::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, A
 }
 
 void CWGPURenderAPI::ChangeRenderTargetToBackBuffer()
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int newTall)
 {
 	ASSERT_DEPRECATED();
 }
