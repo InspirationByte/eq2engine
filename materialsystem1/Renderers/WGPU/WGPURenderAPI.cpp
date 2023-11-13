@@ -30,8 +30,8 @@ static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind)
 
 void ShaderInfoWGPUImpl::Release()
 {
-	for (WGPUShaderModule module : rhiModules)
-		wgpuShaderModuleRelease(module);
+	for (ShaderInfoWGPUImpl::Module module : modules)
+		wgpuShaderModuleRelease(module.rhiModule);
 }
 
 bool ShaderInfoWGPUImpl::GetShaderQueryHash(const Array<EqString>& findDefines, int& outHash) const
@@ -130,7 +130,7 @@ bool CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl&
 	}
 
 	int filesFound = 0;
-	for (KVKeyIterator it(shaderInfoKvs.FindSection("FileList")); !it.atEnd(); ++it)
+	for (KVKeyIterator it(shaderInfoKvs.FindSection("FileList"), "spv"); !it.atEnd(); ++it)
 	{
 		const KVSection* itemSec = *it;
 
@@ -151,37 +151,59 @@ bool CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl&
 
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, kind);
 
-		if (!stricmp(itemSec->GetName(), "spv"))
+		const char* shaderFileName = KV_GetValueString(itemSec, 3);
+		IFilePtr shaderFile = shaderPackRead->Open(shaderFileName, VS_OPEN_READ);
+		if (!shaderFile)
 		{
-			const char* shaderFileName = KV_GetValueString(itemSec, 3);
-			IFilePtr shaderFile = shaderPackRead->Open(shaderFileName, VS_OPEN_READ);
-			if (!shaderFile)
-			{
-				MsgError("Can't open shader %s in shader package!\n", shaderFileName);
-				return false;
-			}
-
-			CMemoryStream shaderData(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, shaderFile->GetSize(), PP_SL);
-			shaderData.AppendStream(shaderFile);
-
-			WGPUShaderModule rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), shaderFileName);
-			if (!rhiShaderModule)
-			{
-				MsgError("Can't create shader module %s!\n", shaderFileName);
-				return false;
-			}
-
-			const int moduleIndex = output.rhiModules.append(rhiShaderModule);
-			ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s module already added, fix shader compiler", kindStr, queryStr);
-			output.modulesMap.insert(shaderModuleId, moduleIndex);
-			++filesFound;
+			MsgError("Can't open shader %s in shader package!\n", shaderFileName);
+			return false;
 		}
-		else if (!stricmp(itemSec->GetName(), "ref"))
+
+		CMemoryStream shaderData(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, shaderFile->GetSize(), PP_SL);
+		shaderData.AppendStream(shaderFile);
+
+		WGPUShaderModule rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), shaderFileName);
+		if (!rhiShaderModule)
 		{
-			const int refIndex = KV_GetValueInt(itemSec, 3);
-			ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s already added, fix shader compiler\n", kindStr, queryStr);
-			output.modulesMap.insert(shaderModuleId, refIndex);
+			MsgError("Can't create shader module %s!\n", shaderFileName);
+			return false;
 		}
+
+		Msg("%d %s %s\n", output.modules.numElem(), kindStr, queryStr);
+
+		const int moduleIndex = output.modules.append({ rhiShaderModule, static_cast<EShaderKind>(kind) });
+		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s module already added, fix shader compiler", kindStr, queryStr);
+		output.modulesMap.insert(shaderModuleId, moduleIndex);
+		++filesFound;
+	}
+
+	// we need to validate references so collect refs in second pass
+	for (KVKeyIterator it(shaderInfoKvs.FindSection("FileList"), "ref"); !it.atEnd(); ++it)
+	{
+		const KVSection* itemSec = *it;
+
+		const char* kindStr = KV_GetValueString(itemSec, 1);
+		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
+		int kind = 0;
+		{
+			if (!stricmp(kindStr, "Vertex"))
+				kind = SHADERKIND_VERTEX;
+			else if (!stricmp(kindStr, "Fragment"))
+				kind = SHADERKIND_FRAGMENT;
+			else if (!stricmp(kindStr, "Compute"))
+				kind = SHADERKIND_COMPUTE;
+		}
+		ASSERT_MSG(kind != 0, "Shader kind is not valid");
+		const char* queryStr = KV_GetValueString(itemSec, 2);
+		const int queryStrHash = StringToHash(queryStr);
+
+		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, kind);
+		const int refIndex = KV_GetValueInt(itemSec, 3);
+
+		ASSERT_MSG(output.modules[refIndex].kind == static_cast<EShaderKind>(kind), "ref %d (%s-%s) points to invalid shader kind", refIndex, kindStr, queryStr);
+
+		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s already added, fix shader compiler\n", kindStr, queryStr);
+		output.modulesMap.insert(shaderModuleId, refIndex);
 	}
 
 	g_fileSystem->ClosePackage(shaderPackRead);
@@ -566,7 +588,13 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
 			if (!itShaderModuleId.atEnd())
-				rhiVertexShaderModule = shaderInfo.rhiModules[*itShaderModuleId];
+			{
+				EqString queryStr;
+				for (EqString& str : pipelineDesc.shaderQuery)
+					queryStr.Append(str);
+				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_VERTEX, "Incorrect shader kind for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+				rhiVertexShaderModule = shaderInfo.modules[*itShaderModuleId].rhiModule;
+			}
 		}
 
 		WGPUVertexState& rhiVertexState = rhiRenderPipelineDesc.vertex;
@@ -579,7 +607,11 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 
 		if (!rhiVertexState.module)
 		{
-			ASSERT_FAIL("Render pipeline vertex state has no shader module specified");
+			EqString queryStr;
+			for (EqString& str : pipelineDesc.shaderQuery)
+				queryStr.Append(str);
+
+			ASSERT_FAIL("No vertex shader module found for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 			return nullptr;
 		}
 	}
@@ -646,7 +678,13 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
 			if (!itShaderModuleId.atEnd())
-				rhiFragmentShaderModule = shaderInfo.rhiModules[*itShaderModuleId];
+			{
+				EqString queryStr;
+				for (EqString& str : pipelineDesc.shaderQuery)
+					queryStr.Append(str);
+				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_FRAGMENT, "Incorrect shader kind for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+				rhiFragmentShaderModule = shaderInfo.modules[*itShaderModuleId].rhiModule;
+			}
 		}
 
 		rhiFragmentState.module = rhiFragmentShaderModule;
@@ -658,7 +696,11 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 
 		if(!rhiFragmentState.module)
 		{
-			ASSERT_FAIL("Render pipeline defines fragment state but no shader module specified");
+			EqString queryStr;
+			for (EqString& str : pipelineDesc.shaderQuery)
+				queryStr.Append(str);
+
+			ASSERT_FAIL("No fragment shader module found for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 			return nullptr;
 		}
 

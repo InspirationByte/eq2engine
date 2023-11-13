@@ -11,9 +11,15 @@ struct ShaderInfoWGPUImpl
 		int			aliasOf{ -1 };
 	};
 
-	Array<VertLayout>		vertexLayouts{ PP_SL };
-	Array<EqString>			defines{ PP_SL };
-	Array<WGPUShaderModule>	rhiModules{ PP_SL };
-	Map<uint, int>			modulesMap{ PP_SL };
-	int						shaderKinds{ 0 };
+	struct Module
+	{
+		WGPUShaderModule	rhiModule{ nullptr };
+		EShaderKind			kind;
+	};
+
+	Array<VertLayout>	vertexLayouts{ PP_SL };
+	Array<EqString>		defines{ PP_SL };
+	Array<Module>		modules{ PP_SL };
+	Map<uint, int>		modulesMap{ PP_SL };
+	int					shaderKinds{ 0 };
 };

@@ -105,8 +105,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			m_renderPipelines[0] = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
 		}
 
-		// m_renderPipelines = ;
-
 		bool fogEnable = true;
 		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false)
 
