@@ -169,8 +169,6 @@ bool CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl&
 			return false;
 		}
 
-		Msg("%d %s %s\n", output.modules.numElem(), kindStr, queryStr);
-
 		const int moduleIndex = output.modules.append({ rhiShaderModule, static_cast<EShaderKind>(kind) });
 		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s module already added, fix shader compiler", kindStr, queryStr);
 		output.modulesMap.insert(shaderModuleId, moduleIndex);

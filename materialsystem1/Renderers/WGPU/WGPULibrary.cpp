@@ -254,6 +254,8 @@ void CWGPURenderLib::ExitAPI()
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
+	m_currentSwapChain->UpdateResize();
+	m_currentSwapChain->GetBackbuffer(); // HACK: reference backbuffer texture now
 }
 
 void CWGPURenderLib::EndFrame()

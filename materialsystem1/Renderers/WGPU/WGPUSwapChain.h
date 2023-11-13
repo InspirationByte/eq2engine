@@ -30,6 +30,8 @@ public:
 	bool			SetBackbufferSize(int wide, int tall);
 
 	bool			SwapBuffers();
+
+	bool			UpdateResize();
 	
 protected:
 	CRefPtr<CWGPUTexture>	m_textureRef;

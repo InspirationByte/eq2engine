@@ -53,23 +53,19 @@ void CWGPUSwapChain::GetBackbufferSize(int& wide, int& tall) const
 	tall = m_backbufferSize.y;
 }
 
-bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
-{	 
-	const IVector2D newSize(wide, tall);
+bool CWGPUSwapChain::UpdateResize()
+{
+	if (m_textureRef->GetWidth() == m_backbufferSize.x && m_textureRef->GetHeight() == m_backbufferSize.y)
+		return true;
 
-	if (m_backbufferSize == newSize)
-		return false;
-
-	m_backbufferSize = newSize;
-
-	m_textureRef->SetDimensions(newSize.x, newSize.y);
+	m_textureRef->SetDimensions(m_backbufferSize.x, m_backbufferSize.y);
 	if (m_swapChain)
 	{
 		m_textureRef->Release();
 		wgpuSwapChainRelease(m_swapChain);
 	}
 
-	if(!m_surface)
+	if (!m_surface)
 	{
 		WGPUSurfaceDescriptor surfDesc = {};
 
@@ -103,7 +99,7 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 		default:
 			ASSERT_FAIL("Unsupported RHI_WINDOW_HANDLE value!");
 		}
-
+	
 		m_surface = wgpuInstanceCreateSurface(m_host->m_instance, &surfDesc);
 	}
 
@@ -112,11 +108,16 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 	swapChainDesc.height = m_backbufferSize.y;
 	swapChainDesc.format = GetWGPUTextureFormat(m_textureRef->GetFormat());
 	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment;
-	swapChainDesc.presentMode = WGPUPresentMode_Immediate;// WGPUPresentMode_Fifo; // TODO: other modes
+	swapChainDesc.presentMode = WGPUPresentMode_Mailbox;
 
 	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &swapChainDesc);
+	return m_swapChain;
+}
 
-	return m_swapChain != nullptr;
+bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
+{	 
+	m_backbufferSize = IVector2D(wide, tall);
+	return true;
 }
 	 
 bool CWGPUSwapChain::SwapBuffers()
@@ -125,5 +126,6 @@ bool CWGPUSwapChain::SwapBuffers()
 		return false;
 
 	wgpuSwapChainPresent(m_swapChain);
+	m_textureRef->Release();
 	return true;
 }
