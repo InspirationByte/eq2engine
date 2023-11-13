@@ -206,6 +206,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 
 		if(length > 0 || *pc == '\n')	// print non empty text and newlines
 		{
+			CScopedMutex m(s_conInputMutex);
 			currentSpewLine = new(s_spewMessagesPool.allocate()) ConMessage;
 			currentSpewLine->type = type;
 			currentSpewLine->text.Assign(lineStart, length);
@@ -215,7 +216,6 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text.ToCString());
 
 			{
-				CScopedMutex m(s_conInputMutex);
 				s_spewMessages.append(currentSpewLine);
 			}
 		}
