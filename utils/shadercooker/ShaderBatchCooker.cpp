@@ -44,12 +44,6 @@ enum EShaderConvStatus
 	SHADERCONV_SKIPPED
 };
 
-enum EShaderVariantType
-{
-	SHADERVARIANT_RENDERPASS = 0,	// separate render pass
-	SHADERVARIANT_MATVAR,			// definition
-};
-
 enum EShaderSourceType
 {
 	SHADERSOURCE_UNDEFINED,
@@ -69,11 +63,11 @@ struct ShaderInfo
 	{
 		EqString name;
 		int aliasOf{ -1 };
+		Array<EqString>		excludeDefines{ PP_SL };
 	};
 	struct Variant
 	{
 		EqString			name;
-		EShaderVariantType	type{ SHADERVARIANT_RENDERPASS };
 		int					baseVariant{ -1 };
 		Array<EqString>		defines{ PP_SL };
 	};
@@ -134,6 +128,11 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 class EqShaderIncluder: public shaderc::CompileOptions::IncluderInterface
 {
 public:
+	EqShaderIncluder(ShaderInfo& shaderInfo) 
+		: m_shaderInfo(shaderInfo)
+	{
+	}
+
 	virtual shaderc_include_result* GetInclude(
 		const char* requested_source, shaderc_include_type type,
 		const char* requesting_source, size_t include_depth)
@@ -172,10 +171,30 @@ public:
 			if (!shaderSourceName.CompareCaseIns("ShaderCooker"))
 			{
 				result->includeContent.Print(s_boilerPlateStrGLSL);
+
+				// also add vertex layout defines
+				for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
+				{
+					const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
+					const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
+					result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), vertexId);
+				}
+				
 				result->includeName = shaderSourceName;
 			}
 			else if (!shaderSourceName.CompareCaseIns("VertexLayout"))
 			{
+				int vertexId = -1;
+				for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
+				{
+					const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
+					if (layout.name == m_vertexLayoutName)
+					{
+						vertexId = i;
+						break;
+					}
+				}
+
 				CombinePath(shaderSourceName, sourcePath, "VertexLayouts", m_vertexLayoutName + ".h");
 				IFilePtr file = g_fileSystem->Open(shaderSourceName, "r", SP_ROOT);
 				if (!file)
@@ -189,6 +208,7 @@ public:
 				result->includeName = shaderSourceName;
 				result->includeContent.Close();
 				result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
+				result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", vertexId);
 				result->includeContent.AppendStream(file);
 			}
 		}
@@ -212,11 +232,6 @@ public:
 		m_freeSlots.append(index);
 	}
 
-	void SetShaderInfo(const ShaderInfo& shaderInfo)
-	{
-		m_shaderInfo = &shaderInfo;
-	}
-
 	void SetVertexLayout(const char* vertexLayoutName)
 	{
 		m_vertexLayoutName = vertexLayoutName;
@@ -233,7 +248,7 @@ private:
 
 	FixedArray<IncludeResult, 32>	m_shaderIncludes;
 	FixedArray<int, 32>		m_freeSlots;
-	const ShaderInfo*		m_shaderInfo{ nullptr };
+	const ShaderInfo&		m_shaderInfo;
 	EqString				m_vertexLayoutName;
 };
 
@@ -437,19 +452,26 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 			// add vertex layouts
 			for (const KVSection* layoutKey : nestedSec->keys)
 			{
-				int aliasLayout = -1;
+				ShaderInfo::VertLayout& vertLayout = shaderInfo.vertexLayouts.append();
+
+				vertLayout.name = layoutKey->GetName();
+				
 				if (!stricmp(KV_GetValueString(layoutKey, 0), "aliasOf"))
 				{
 					const char* aliasOfStr = KV_GetValueString(layoutKey, 1);
-					aliasLayout = arrayFindIndexF(shaderInfo.vertexLayouts, [aliasOfStr](const ShaderInfo::VertLayout& layout) {
+					const int aliasLayout = arrayFindIndexF(shaderInfo.vertexLayouts, [aliasOfStr](const ShaderInfo::VertLayout& layout) {
 						return layout.name == aliasOfStr;
 					});
 					if (aliasLayout == -1)
-					{
 						MsgError("%s - vertex layout %s for 'aliasOf' not found\n", shaderInfo.name.ToCString(), aliasOfStr);
-					}
+
+					vertLayout.aliasOf = aliasLayout;
 				}
-				shaderInfo.vertexLayouts.append({ layoutKey->GetName(), aliasLayout });
+				else if (!stricmp(KV_GetValueString(layoutKey, 0), "excludeDefines"))
+				{
+					for (KVValueIterator<EqString> it(layoutKey, 1); !it.atEnd(); ++it)
+						vertLayout.excludeDefines.append(it);
+				}
 			}
 		}
 		else if (!stricmp(nestedSec->GetName(), "UniformLayout"))
@@ -552,9 +574,12 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 				}
 
 				shaderc::Compiler compiler;
-				auto fillMacros = [&queryStr, &switchDefines, nSwitch](shaderc::CompileOptions& options) {
+				auto fillMacros = [vertexLayout, &queryStr, &switchDefines, nSwitch](shaderc::CompileOptions& options) {
 					for (int j = 0; j < switchDefines.numElem(); ++j)
 					{
+						if (arrayFindIndex(vertexLayout.excludeDefines, switchDefines[j]) != -1)
+							continue;
+
 						if (nSwitch & (1 << j))
 							options.AddMacroDefinition(switchDefines[j], switchDefines[j].Length(), nullptr, 0u);
 					}
@@ -562,8 +587,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 				auto compileShaderKind = [&](const char* kindStr, int kindFlag, shaderc_shader_kind shaderCKind)
 				{
-					std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>();
-					includer->SetShaderInfo(shaderInfo);
+					std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>(shaderInfo);
 					includer->SetVertexLayout(vertexLayout.name);
 
 					shaderc::CompileOptions options;
@@ -611,7 +635,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					}
 					else
 					{
-						MsgError("Failed compiling %s\n%s\n", queryStr.ToCString(), compilationResult.GetErrorMessage().c_str());
+						MsgError("Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), compilationResult.GetErrorMessage().c_str());
 						if (compileStatus == shaderc_compilation_status_compilation_error)
 							stopCompilation = true;
 					}
