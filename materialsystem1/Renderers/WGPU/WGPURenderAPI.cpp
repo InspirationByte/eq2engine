@@ -355,7 +355,7 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 		WGPUTextureViewDescriptor rhiTexViewDesc = {};
 		rhiTexViewDesc.format = rhiTextureDesc.format;
 		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-		rhiTexViewDesc.arrayLayerCount = 1;
+		rhiTexViewDesc.arrayLayerCount = (texture->GetFlags() & TEXFLAG_CUBEMAP) ? 6 : 1;
 		rhiTexViewDesc.baseArrayLayer = 0;
 		rhiTexViewDesc.baseMipLevel = 0;
 		rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;

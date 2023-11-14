@@ -484,6 +484,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 				{
 					data.lockData = (ubyte*)box.pBits;
 					data.lockPitch = box.RowPitch;
+					data.lockByteCount = box.RowPitch * box.SlicePitch * (lockBox.Back - lockBox.Front); // could be incorrect
 					m_lockData = &data;
 				}
 				break;
@@ -501,6 +502,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 				{
 					data.lockData = (ubyte*)rect.pBits;
 					data.lockPitch = rect.Pitch;
+					data.lockByteCount = rect.Pitch * (lockRect.top - lockRect.bottom);
 					m_lockData = &data;
 				}
 				break;
@@ -518,6 +520,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 				{
 					data.lockData = (ubyte*)rect.pBits;
 					data.lockPitch = rect.Pitch;
+					data.lockByteCount = rect.Pitch * (lockRect.top - lockRect.bottom);
 					m_lockData = &data;
 				}
 				break;

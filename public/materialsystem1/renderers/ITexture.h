@@ -121,6 +121,7 @@ struct ITexture::LockInOutData
 
 	void*			lockData{ nullptr };	// the place where you can write the data
 	int				lockPitch{ 0 };
+	int				lockByteCount{ 0 };
 
 	int				flags{ 0 };
 	int				level{ 0 };

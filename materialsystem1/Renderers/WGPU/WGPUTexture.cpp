@@ -16,7 +16,6 @@
 #include "WGPURenderDefs.h"
 #include "imaging/ImageLoader.h"
 
-
 CWGPUTexture::~CWGPUTexture()
 {
 	Release();
@@ -185,7 +184,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 			WGPUTextureViewDescriptor rhiTexViewDesc = {};
 			rhiTexViewDesc.format = rhiTextureDesc.format;
 			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-			rhiTexViewDesc.arrayLayerCount = 1;
+			rhiTexViewDesc.arrayLayerCount = texDepth;
 			rhiTexViewDesc.baseArrayLayer = 0;
 			rhiTexViewDesc.baseMipLevel = 0;
 			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
@@ -201,6 +200,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 		m_height = max(m_height, texHeight);
 		m_depth = max(m_depth, texDepth);
 		m_format = imgFmt;
+		m_imgType = imgType;
 
 		m_texSize += img->GetMipMappedSize(mipStart);
 	}
@@ -216,10 +216,74 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 // locks texture for modifications, etc
 bool CWGPUTexture::Lock(LockInOutData& data)
 {
-	m_lockData = &data;
+	ASSERT_MSG(!m_lockData, "CGLTexture: already locked");
 
-	data.lockData = PPAlloc(16 * 1024 * 1024);
-	data.lockPitch = 16;
+	if (m_lockData)
+		return false;
+
+	if (m_rhiTextures.numElem() > 1)
+	{
+		ASSERT_FAIL("Couldn't handle locking of animated texture! Please tell to programmer!");
+		return false;
+	}
+
+	if (IsCompressedFormat(m_format))
+	{
+		ASSERT_FAIL("Compressed textures aren't lockable!");
+		return false;
+	}
+
+	if (data.flags & TEXLOCK_REGION_BOX)
+	{
+		ASSERT_FAIL("does not support locking 3D texture yet");
+		return false;
+	}
+
+	int sizeToLock = 0;
+	int lockOffset = 0;
+	int lockPitch = 0;
+	switch (m_imgType)
+	{
+	case IMAGE_TYPE_3D:
+	{
+		// COULD BE INVALID! I'VE NEVER TESTED THAT
+
+		IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
+		const IVector3D size = box.GetSize();
+
+		sizeToLock = size.x * size.y * size.y;
+		lockOffset = box.minPoint.x * box.minPoint.y * box.minPoint.z;
+		lockPitch = size.x;
+
+		break;
+	}
+	case IMAGE_TYPE_CUBE:
+	case IMAGE_TYPE_2D:
+	{
+		const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
+		const IVector2D size = lockRect.GetSize();
+		sizeToLock = size.x * size.y;
+		lockOffset = lockRect.leftTop.x * lockRect.leftTop.y;
+		lockPitch = lockRect.GetSize().x;
+		break;
+	}
+	default:
+		ASSERT_FAIL("Invalid image type of %s", GetName());
+	}
+
+	const int lockByteCount = GetBytesPerPixel(m_format) * sizeToLock;
+
+	// allocate memory for lock data
+	data.lockData = (ubyte*)PPAlloc(lockByteCount);
+	data.lockPitch = lockPitch * GetBytesPerPixel(m_format);
+	data.lockByteCount = lockByteCount;
+
+	if (!(data.flags & TEXLOCK_DISCARD))
+	{
+		// TODO: texture readback (possibly Async)
+	}
+
+	m_lockData = &data;
 	return true;
 }
 
@@ -229,8 +293,63 @@ void CWGPUTexture::Unlock()
 	if (!m_lockData)
 		return;
 
-	PPFree(m_lockData->lockData);
-	m_lockData->lockData = nullptr;
+	ASSERT(m_lockData->lockData != nullptr);
+
+	LockInOutData& data = *m_lockData;
+
+	if (!(data.flags & TEXLOCK_READONLY))
+	{
+		g_renderWorker.WaitForExecute("UnlockTex", [&]() {
+
+			WGPUImageCopyTexture texImage{};
+			texImage.texture = m_rhiTextures[0];
+			texImage.aspect = WGPUTextureAspect_All;
+			texImage.mipLevel = 0;
+
+			WGPUTextureDataLayout texLayout{};
+			texLayout.offset = 0;
+			texLayout.bytesPerRow = data.lockPitch;
+			texLayout.rowsPerImage = m_height;
+
+			switch (m_imgType)
+			{
+			case IMAGE_TYPE_3D:
+			{
+				IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
+				const IVector3D boxSize = box.GetSize();
+
+				texImage.origin = WGPUOrigin3D{ (uint)box.minPoint.x, (uint)box.minPoint.y, (uint)box.minPoint.z };
+				const WGPUExtent3D texSize{ (uint)boxSize.x, (uint)boxSize.y, (uint)boxSize.z };
+				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, data.lockData, data.lockByteCount, &texLayout, &texSize);
+				break;
+			}
+			case IMAGE_TYPE_CUBE:
+			{
+				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
+				const IVector2D size = lockRect.GetSize();
+
+				texImage.origin = WGPUOrigin3D{ (uint)lockRect.leftTop.x, (uint)lockRect.leftTop.y, (uint)data.cubeFaceIdx };
+				const WGPUExtent3D texSize{ (uint)size.x, (uint)size.y, 1u };
+				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, data.lockData, data.lockByteCount, &texLayout, &texSize);
+			}
+			case IMAGE_TYPE_2D:
+			{
+				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
+				const IVector2D size = lockRect.GetSize();
+
+				texImage.origin = WGPUOrigin3D{ (uint)lockRect.leftTop.x, (uint)lockRect.leftTop.y, 0u };
+				const WGPUExtent3D texSize{ (uint)size.x, (uint)size.y, 1u };
+				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, data.lockData, data.lockByteCount, &texLayout, &texSize);
+				break;
+			}
+			}
+
+			return 0;
+		});
+	}
+
+	PPFree(data.lockData);
+	data.lockData = nullptr;
 
 	m_lockData = nullptr;
 }

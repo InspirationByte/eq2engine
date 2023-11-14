@@ -620,6 +620,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 	// allocate memory for lock data
 	data.lockData = (ubyte*)PPAlloc(lockByteCount);
 	data.lockPitch = lockPitch * GetBytesPerPixel(m_format);
+	data.lockByteCount = lockByteCount;
 
 #ifdef USE_GLES2
 	// Always need to discard data from GLES :(

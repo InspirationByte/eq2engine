@@ -29,5 +29,6 @@ protected:
 
 	Array<WGPUTexture>		m_rhiTextures{ PP_SL };
 	Array<WGPUTextureView>	m_rhiViews{ PP_SL };
+	EImageType				m_imgType{ IMAGE_TYPE_INVALID };
 	int						m_texSize{ 0 };
 };
