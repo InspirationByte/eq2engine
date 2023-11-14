@@ -26,7 +26,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	SHADER_INIT_TEXTURES()
 	{
 		// parse material variables
-		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture, m_baseTexture);
+		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
 	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
@@ -51,13 +51,13 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 		{
 			FixedArray<Vector4D, 4> bufferData;
-			bufferData.append(m_colorVar.Get() /* * g_matSystem->GetAmbientColor()*/);
+			bufferData.append(m_colorVar.Get());
 			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
 			m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 		}
 
 		{
-			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture();
+			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
 				.Sampler(1, baseTexture->GetSamplerState())

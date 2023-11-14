@@ -334,7 +334,10 @@ ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName, bool& justC
 		return CRefPtr(*it);
 
 	if (*pszName == '$')
+	{
+		ASSERT_FAIL("Texture %s should be pre-created\n", pszName);
 		return nullptr;
+	}
 
 	justCreated = true;
 	return CreateTextureResource(pszName);
