@@ -6,7 +6,9 @@ class CWGPURenderPassRecorder : public IGPURenderPassRecorder
 public:
 	~CWGPURenderPassRecorder();
 
-	IVector2D GetRenderTargetDimensions() const { return m_renderTargetDims; }
+	IVector2D		GetRenderTargetDimensions() const { return m_renderTargetDims; }
+	ETextureFormat	GetRenderTargetFormat(int idx) const { return m_renderTargetsFormat[idx]; }
+	ETextureFormat	GetDepthTargetFormat() const { return m_depthTargetFormat; }
 
 	void SetPipeline(IGPURenderPipeline* pipeline);
 
@@ -39,6 +41,8 @@ public:
 
 	IGPUCommandBufferPtr	End();
 
+	ETextureFormat			m_renderTargetsFormat[MAX_RENDERTARGETS]{ FORMAT_NONE };
+	ETextureFormat			m_depthTargetFormat{ FORMAT_NONE };
 	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
 	WGPURenderPassEncoder	m_rhiRenderPassEncoder{ nullptr };
 	IVector2D				m_renderTargetDims{ 0 };

@@ -8,17 +8,18 @@
 #pragma once
 
 class IShaderProgram;
+class IMaterial;
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
+
+class IGPURenderPassRecorder;
 
 class IGPURenderPipeline;
 using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
 class IGPUBindGroup;
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
-
-class IMaterial;
 
 enum EShaderParamSetup
 {
@@ -54,7 +55,7 @@ class IMatSystemShader
 public:
 	virtual ~IMatSystemShader() = default;
 
-	virtual void					Init(IShaderAPI* renderAPI, IMaterial* assignee) = 0;
+	virtual void					Init(IShaderAPI* renderAPI, IMaterial* material) = 0;
 	virtual void					Unload() = 0;
 
 	virtual void					InitTextures(IShaderAPI* renderAPI) = 0;
@@ -70,7 +71,7 @@ public:
 	virtual const ITexturePtr&		GetBumpTexture(int stage = 0) const = 0;
 
 	virtual bool					IsSupportVertexFormat(int nameHash) const = 0;
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primitiveTopology, const void* userData) const = 0;
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primitiveTopology, const void* userData) const = 0;
 	virtual IGPUBindGroupPtr		GetMatSystemBindGroup(IShaderAPI* renderAPI) const = 0;
 	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const = 0;
 

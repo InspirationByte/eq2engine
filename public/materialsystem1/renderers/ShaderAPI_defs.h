@@ -12,6 +12,9 @@ class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
 class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
+class ITexture;
 
 enum ERHIWindowType : int
 {
@@ -438,7 +441,7 @@ struct RenderPipelineDesc
 	PrimitiveDesc			primitive;
 
 	EqString				shaderName;
-	EqString				shaderVertexLayoutName;
+	int						shaderVertexLayoutId{ 0 };
 	Array<EqString>			shaderQuery{ PP_SL };
 };
 
@@ -452,7 +455,7 @@ FLUENT_BEGIN_TYPE(RenderPipelineDesc);
 	FLUENT_SET_VALUE(primitive, PrimitiveState);
 	FLUENT_SET_VALUE(shaderName, ShaderName)
 	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
-	FLUENT_SET_VALUE(shaderVertexLayoutName, ShaderVertexLayoutName)
+	FLUENT_SET_VALUE(shaderVertexLayoutId, ShaderVertexLayoutId)
 FLUENT_END_TYPE
 
 enum EBufferBindType : int
@@ -855,7 +858,7 @@ struct RenderPassDesc
 {
 	struct ColorTargetDesc
 	{
-		ITexture*	target{ nullptr };
+		ITexturePtr	target;
 		// TODO: resolveTarget
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
 		EStoreFunc	storeOp{ STOREFUNC_STORE };
@@ -865,7 +868,7 @@ struct RenderPassDesc
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 	ColorTargetList	colorTargets;
 
-	ITexture*		depthStencil{ nullptr };
+	ITexturePtr		depthStencil;
 	float			depthClearValue{ 1.0f };
 	ELoadFunc		depthLoadOp{ LOADFUNC_LOAD };
 	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };
@@ -875,11 +878,17 @@ struct RenderPassDesc
 	EStoreFunc		stencilStoreOp{ STOREFUNC_STORE };
 
 	EqString		name;
+	int				nameHash{ 0 };
 };
 
 FLUENT_BEGIN_TYPE(RenderPassDesc)
-	FLUENT_SET_VALUE(name, Name)
-	ThisType& ColorTarget(ITexture* colorTarget, bool clear = false, const MColor& clearColor = color_black)
+	ThisType& Name(const char* str)
+	{
+		ref.name = str;
+		ref.nameHash = StringToHash(str);
+		return *this; 
+	}
+	ThisType& ColorTarget(ITexturePtr colorTarget, bool clear = false, const MColor& clearColor = color_black)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
 		entry.target = colorTarget;

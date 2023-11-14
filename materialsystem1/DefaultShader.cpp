@@ -93,10 +93,6 @@ BEGIN_SHADER_CLASS(Default)
 		if(SHADER_PASS(Unlit))
 			return true;
 
-		PipelineLayoutDesc pipelineLayoutDesc;
-		FillPipelineLayoutDesc(pipelineLayoutDesc);
-		m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;
 
@@ -106,7 +102,7 @@ BEGIN_SHADER_CLASS(Default)
 		return true;
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primitiveTopology, const void* userData) const
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primitiveTopology, const void* userData) const
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
@@ -118,7 +114,7 @@ BEGIN_SHADER_CLASS(Default)
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
-				.ShaderVertexLayoutName("DynMeshVertex")
+				.ShaderVertexLayoutId(vertexLayoutId)
 				.VertexState(
 					Builder<VertexPipelineDesc>()
 					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
@@ -175,7 +171,7 @@ BEGIN_SHADER_CLASS(Default)
 				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 			
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
+			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(GetPipelineLayout(), renderPipelineDesc);
 			it = m_renderPipelines.insert(pipelineId, renderPipeline);
 		}
 		return *it;
@@ -214,18 +210,12 @@ BEGIN_SHADER_CLASS(Default)
 				.Sampler(1, baseTexture->GetSamplerState())
 				.Texture(2, baseTexture)
 				.End();
-			materialBindGroup = renderAPI->CreateBindGroup(m_pipelineLayout, 1, shaderBindGroupDesc);
+			materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
 		}
 		return materialBindGroup;
 	}
 
-	IGPUPipelineLayoutPtr GetPipelineLayout() const
-	{
-		return m_pipelineLayout;
-	}
-
 	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
-	IGPUPipelineLayoutPtr						m_pipelineLayout;
 	MatTextureProxy								m_baseTexture;
 
 	//------------------------------------------------------------------

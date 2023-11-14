@@ -41,23 +41,10 @@ BEGIN_SHADER_CLASS(SDFFont)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
-	}
-
 	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
-
-		PipelineLayoutDesc pipelineLayoutDesc;
-		FillPipelineLayoutDesc(pipelineLayoutDesc);
-		m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
 
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;
@@ -68,7 +55,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 		return true;
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primitiveTopology, const void* userData) const
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primitiveTopology, const void* userData) const
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
@@ -80,7 +67,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
-				.ShaderVertexLayoutName("DynMeshVertex")
+				.ShaderVertexLayoutId(vertexLayoutId)
 				.VertexState(
 					Builder<VertexPipelineDesc>()
 					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
@@ -137,15 +124,19 @@ BEGIN_SHADER_CLASS(SDFFont)
 				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 			
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
+			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(GetPipelineLayout(), renderPipelineDesc);
 			it = m_renderPipelines.insert(pipelineId, renderPipeline);
 		}
 		return *it;
 	}
 
-	IGPUPipelineLayoutPtr GetPipelineLayout() const
+	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		return m_pipelineLayout;
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
 	}
 
 	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
@@ -169,13 +160,12 @@ BEGIN_SHADER_CLASS(SDFFont)
 				.Sampler(1, baseTexture->GetSamplerState())
 				.Texture(2, baseTexture)
 				.End();
-			materialBindGroup = renderAPI->CreateBindGroup(m_pipelineLayout, 1, shaderBindGroupDesc);
+			materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
 		}
 		return materialBindGroup;
 	}
 
 	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
-	IGPUPipelineLayoutPtr	m_pipelineLayout;
 
 	SHADER_SETUP_STAGE()
 	{

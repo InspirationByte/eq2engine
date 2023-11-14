@@ -90,6 +90,8 @@ class IGPURenderPassRecorder : public RefCountedObject<IGPURenderPassRecorder>
 {
 public:
 	virtual IVector2D				GetRenderTargetDimensions() const = 0;
+	virtual ETextureFormat			GetRenderTargetFormat(int idx) const = 0;
+	virtual ETextureFormat			GetDepthTargetFormat() const = 0;
 
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;

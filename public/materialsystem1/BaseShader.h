@@ -166,14 +166,15 @@ public:
 	int							GetFlags() const { return m_flags; }
 
 	virtual void				FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const {}
-	virtual void				FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
 	virtual void				FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const;
 
-	// Temporary
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primTopology, const void* userData) const { return nullptr; }
+	// Temporary virtual
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primTopology, const void* userData) const { return nullptr; }
 	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
 	virtual IGPUBindGroupPtr		GetMatSystemBindGroup(IShaderAPI* renderAPI) const;
-	virtual IGPUPipelineLayoutPtr	GetPipelineLayout() const { return nullptr; }
+
+	void						FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
+	IGPUPipelineLayoutPtr		GetPipelineLayout() const;
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };
@@ -189,10 +190,7 @@ protected:
 	void						AddManagedShader(IShaderProgramPtr* pShader);
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
-	// TODO: Ideally shader is just a pipeline and bind group associated with it
-	// IRenderPipeline*			m_renderPipeline{ nullptr };
-	// IBindGroup*				m_materialBindGroup{ nullptr };
-
+	IGPUPipelineLayoutPtr		m_pipelineLayout;
 	IMaterial*					m_material{ nullptr };
 
 	MatVec2Proxy				m_baseTextureTransformVar;

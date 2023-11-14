@@ -87,10 +87,16 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	m_flags = materialFlags;
 	m_blendMode = blendMode;
 
+	PipelineLayoutDesc pipelineLayoutDesc;
+	FillPipelineLayoutDesc(pipelineLayoutDesc);
+	m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+
+
 	// DEPRECATED Init function table
 	for (int i = 0; i < SHADERPARAM_COUNT; i++)
 		SetParameterFunctor(i, &CBaseShader::ParamSetup_Empty);
 
+	/*
 	if (blendMode == SHADER_BLEND_TRANSLUCENT)
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
 	else if (blendMode == SHADER_BLEND_ADDITIVE)
@@ -109,6 +115,12 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
 	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
 	SetParameterFunctor(SHADERPARAM_BONETRANSFORMS, &CBaseShader::ParamSetup_BoneTransforms);
+	*/
+}
+
+IGPUPipelineLayoutPtr CBaseShader::GetPipelineLayout() const
+{
+	return m_pipelineLayout;
 }
 
 void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const

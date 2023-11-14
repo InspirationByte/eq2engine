@@ -21,6 +21,11 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	SHADER_INIT_PARAMS()
 	{
 		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
+
+		FixedArray<Vector4D, 4> bufferData;
+		bufferData.append(m_colorVar.Get());
+		bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
+		m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -29,81 +34,10 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
-	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
-	}
-
 	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
-
-		{
-			PipelineLayoutDesc pipelineLayoutDesc;
-			FillPipelineLayoutDesc(pipelineLayoutDesc);
-			m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-		}
-
-		{
-			FixedArray<Vector4D, 4> bufferData;
-			bufferData.append(m_colorVar.Get());
-			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
-			m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
-		}
-
-		{
-			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
-				.End();
-			m_materialBindGroup = renderAPI->CreateBindGroup(m_pipelineLayout, 1, shaderBindGroupDesc);
-		}
-
-		{
-			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
-				.ShaderName(GetName())
-				.ShaderVertexLayoutName("DynMeshVertex")
-				.VertexState(
-					Builder<VertexPipelineDesc>()
-					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
-					.End()
-				)
-				.FragmentState(
-					Builder<FragmentPipelineDesc>()
-					.ColorTarget("Default", g_matSystem->GetCurrentBackbuffer()->GetFormat())
-					.End()
-				)
-				.End();
-
-			FillRenderPipelineDesc(renderPipelineDesc);
-
-			Array<EqString>& shaderQuery = renderPipelineDesc.shaderQuery;
-
-			bool vertexColor = false;
-			SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
-			if (vertexColor)
-				shaderQuery.append("VERTEXCOLOR");
-
-			if (m_flags & MATERIAL_FLAG_ALPHATESTED)
-				shaderQuery.append("ALPHATEST");
-
-			EPrimTopology primitiveTopology = PRIM_TRIANGLE_STRIP;
-
-			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
-				.Topology(primitiveTopology)
-				.Cull((m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : CULL_BACK) // TODO: variant
-				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
-				.End();
-
-			m_renderPipelines[0] = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
-		}
 
 		bool fogEnable = true;
 		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false)
@@ -156,25 +90,76 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		return true;
 	}
 
-	IGPUPipelineLayoutPtr GetPipelineLayout() const
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primitiveTopology, const void* userData) const
 	{
-		return m_pipelineLayout;
+		if (!m_renderPipelines[0])
+		{
+			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
+				.ShaderName(GetName())
+				.ShaderVertexLayoutId(vertexLayoutId)
+				.VertexState(
+					Builder<VertexPipelineDesc>()
+					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
+					.End()
+				)
+				.FragmentState(
+					Builder<FragmentPipelineDesc>()
+					.ColorTarget("Default", g_matSystem->GetCurrentBackbuffer()->GetFormat())
+					.End()
+				)
+				.End();
+
+			FillRenderPipelineDesc(renderPipelineDesc);
+
+			Array<EqString>& shaderQuery = renderPipelineDesc.shaderQuery;
+
+			bool vertexColor = false;
+			SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
+			if (vertexColor)
+				shaderQuery.append("VERTEXCOLOR");
+
+			if (m_flags & MATERIAL_FLAG_ALPHATESTED)
+				shaderQuery.append("ALPHATEST");
+
+			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
+				.Topology(primitiveTopology)
+				.Cull((m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : CULL_BACK) // TODO: variant
+				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
+				.End();
+
+			m_renderPipelines[0] = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
+		}
+		return m_renderPipelines[0];
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, EPrimTopology primitiveTopology, const void* userData) const
+	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		return m_renderPipelines[0];
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
 	}
 
 	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
 	{
+		if (!m_materialBindGroup)
+		{
+			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+				.Sampler(1, baseTexture->GetSamplerState())
+				.Texture(2, baseTexture)
+				.End();
+			m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
+		}
+
 		return m_materialBindGroup;
 	}
 
-	IGPURenderPipelinePtr	m_renderPipelines[2];
-	IGPUPipelineLayoutPtr	m_pipelineLayout;
+	mutable IGPURenderPipelinePtr	m_renderPipelines[2];
+	mutable IGPUBindGroupPtr		m_materialBindGroup;
 	IGPUBufferPtr			m_materialParamsBuffer;
-	IGPUBindGroupPtr		m_materialBindGroup;
 
 	SHADER_SETUP_STAGE()
 	{

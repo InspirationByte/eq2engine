@@ -1418,8 +1418,7 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 
 	const IMatSystemShader* matShader = static_cast<CMaterial*>(material)->m_shader;
 
-	// TODO: GetRenderPipeline with vertexLayoutId or NULL vertex layout
-	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, primTopology, userData));
+	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, vertexLayoutId, primTopology, userData));
 
 	// TODO: MatSystemBindGroup must be preserved unless camera state or fog state changes
 	rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
@@ -1478,9 +1477,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	{
 		ASSERT_MSG(matShader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
 
-		// TODO: GetRenderPipeline(drawCmd.primitiveTopology)
-
-		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, drawCmd.primitiveTopology, &rendPassInfo));
+		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, StringToHashConst("DynMeshVertex"), drawCmd.primitiveTopology, &rendPassInfo));
 		rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
 		rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, &rendPassInfo), nullptr);
 

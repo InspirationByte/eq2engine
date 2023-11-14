@@ -121,6 +121,7 @@ bool CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl&
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = output.vertexLayouts.append();
 		layout.name = EqString(it);
+		layout.nameHash = StringToHash(layout.name);
 		if (!stricmp(KV_GetValueString(*it, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(output.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
@@ -582,12 +583,12 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	}
 
 	int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
-		return layout.name == pipelineDesc.shaderVertexLayoutName;
+		return layout.nameHash == pipelineDesc.shaderVertexLayoutId;
 	});
 
 	if (vertexLayoutIdx == -1)
 	{
-		ASSERT_FAIL("Render pipeline has unknown vertex layout for vertex shader '%s'", pipelineDesc.shaderVertexLayoutName.ToCString());
+		ASSERT_FAIL("Render pipeline %s has unknown vertex layout for vertex shader", pipelineDesc.shaderName.ToCString());
 		return nullptr;
 	}
 	if (shaderInfo.vertexLayouts[vertexLayoutIdx].aliasOf != -1)
@@ -658,7 +659,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 				EqString queryStr;
 				for (EqString& str : pipelineDesc.shaderQuery)
 					queryStr.Append(str);
-				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_VERTEX, "Incorrect shader kind for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_VERTEX, "Incorrect shader kind for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 				rhiVertexShaderModule = shaderInfo.modules[*itShaderModuleId].rhiModule;
 			}
 		}
@@ -677,7 +678,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			for (EqString& str : pipelineDesc.shaderQuery)
 				queryStr.Append(str);
 
-			ASSERT_FAIL("No vertex shader module found for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+			ASSERT_FAIL("No vertex shader module found for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 			return nullptr;
 		}
 	}
@@ -748,7 +749,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 				EqString queryStr;
 				for (EqString& str : pipelineDesc.shaderQuery)
 					queryStr.Append(str);
-				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_FRAGMENT, "Incorrect shader kind for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+				ASSERT_MSG(shaderInfo.modules[*itShaderModuleId].kind == SHADERKIND_FRAGMENT, "Incorrect shader kind for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 				rhiFragmentShaderModule = shaderInfo.modules[*itShaderModuleId].rhiModule;
 			}
 		}
@@ -766,7 +767,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			for (EqString& str : pipelineDesc.shaderQuery)
 				queryStr.Append(str);
 
-			ASSERT_FAIL("No fragment shader module found for %s %s in shader package %s", pipelineDesc.shaderVertexLayoutName.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
+			ASSERT_FAIL("No fragment shader module found for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 			return nullptr;
 		}
 
@@ -790,7 +791,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	rhiRenderPipelineDesc.primitive.topology = g_wgpuPrimTopology[pipelineDesc.primitive.topology];
 	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
 
-	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), pipelineDesc.shaderVertexLayoutName.ToCString());
+	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
 	rhiRenderPipelineDesc.label = pipelineName;
 
 	WGPURenderPipeline rhiRenderPipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &rhiRenderPipelineDesc);
@@ -816,10 +817,10 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 
 	IVector2D renderTargetDims = 0;
 
-	for(RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
+	for(const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
 	{
 		// TODO: backbuffer alteration?
-		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target);
+		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target.Ptr());
 		ASSERT_MSG(targetTexture, "NULL texture for color target");
 
 		WGPURenderPassColorAttachment rhiColorAttachment = {};
@@ -840,7 +841,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 
 	if(renderPassDesc.depthStencil)
 	{
-		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil);
+		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil.Ptr());
 
 		rhiDepthStencilAttachment.depthClearValue = renderPassDesc.depthClearValue;
 		rhiDepthStencilAttachment.depthReadOnly = false; // TODO
@@ -868,6 +869,12 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 		return nullptr;
 
 	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
+	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
+	{
+		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
+		renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target->GetFormat() : FORMAT_NONE;
+	}
+	renderPass->m_depthTargetFormat = renderPassDesc.depthStencil ? renderPassDesc.depthStencil->GetFormat() : FORMAT_NONE;
 	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
 	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
 	renderPass->m_renderTargetDims = renderTargetDims;

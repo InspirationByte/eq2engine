@@ -8,6 +8,7 @@ struct ShaderInfoWGPUImpl
 	struct VertLayout
 	{
 		EqString	name;
+		int			nameHash{ 0 };
 		int			aliasOf{ -1 };
 	};
 
