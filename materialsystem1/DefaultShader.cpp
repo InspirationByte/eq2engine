@@ -71,16 +71,8 @@ static void ShaderRenderPassDescBuild()
 //------------------------------------------------------------
 
 BEGIN_SHADER_CLASS(Default)
-
-	bool IsSupportVertexFormat(int nameHash) const
-	{
-		return nameHash == StringToHashConst("DynMeshVertex");
-	}
-
 	SHADER_INIT_PARAMS()
 	{
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
-		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -88,21 +80,12 @@ BEGIN_SHADER_CLASS(Default)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	SHADER_INIT_RENDERPASS_PIPELINE()
+	bool IsSupportVertexFormat(int nameHash) const
 	{
-		if(SHADER_PASS(Unlit))
-			return true;
-
-		// begin shader definitions
-		SHADERDEFINES_BEGIN;
-
-		// compile without fog
-		SHADER_FIND_OR_COMPILE(Unlit, "Default");
-
-		return true;
+		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primitiveTopology, const void* userData) const
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology, const void* userData) const
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
@@ -114,30 +97,25 @@ BEGIN_SHADER_CLASS(Default)
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
-				.ShaderVertexLayoutId(vertexLayoutId)
-				.VertexState(
-					Builder<VertexPipelineDesc>()
-					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
-					.End()
-				)
-				.FragmentState(
-					Builder<FragmentPipelineDesc>()
-					.ColorTarget("Default", g_matSystem->GetCurrentBackbuffer()->GetFormat())
-					.End()
-				)
+				.ShaderVertexLayoutId(vertexLayout->GetNameHash())
 				.End();
 
-			// TODO: depth state!
+			for (const VertexLayoutDesc& layoutDesc : vertexLayout->GetFormatDesc())
+				renderPipelineDesc.vertex.vertexLayout.append(layoutDesc);
+
+			const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();
+			if(depthTargetFormat != FORMAT_NONE)
 			{
 				if (m_flags & MATERIAL_FLAG_DECAL)
 					g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
 				// TODO: must be selective whenever Z test is on
-				//Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-				//	.DepthTestOn()
-				//	.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-				//	.DepthFormat(g_matSystem->GetDefaultDepthBuffer()->GetFormat());
+				Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
+					.DepthTestOn()
+					.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
+					.DepthFormat(depthTargetFormat);
 			}
+
 			{
 				BlendStateParams colorBlend;
 				BlendStateParams alphaBlend;
@@ -157,12 +135,15 @@ BEGIN_SHADER_CLASS(Default)
 					break;
 				}
 
-				// FIXME: apply differently?
-				for (FragmentPipelineDesc::ColorTargetDesc& colorTarget : renderPipelineDesc.fragment.targets)
+				Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
+				for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 				{
-					colorTarget.alphaBlend = alphaBlend;
-					colorTarget.colorBlend = colorBlend;
+					const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
+					if (format == FORMAT_NONE)
+						break;
+					pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
 				}
+				pipelineBuilder.End();
 			}
 
 			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
@@ -177,26 +158,26 @@ BEGIN_SHADER_CLASS(Default)
 		return *it;
 	}
 
-	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
+	void FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.Buffer("cameraParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Buffer("materialParams", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 2, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 3, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
 			.End();
 	}
 
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
 	{
-		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
-		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
-
-		IGPUBindGroupPtr materialBindGroup;
-		IGPUBufferPtr materialParamsBuffer;
+		if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
+			const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
+			ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
+
 			ITexturePtr baseTexture = rendPassInfo->texture ? rendPassInfo->texture : g_matSystem->GetWhiteTexture();
 
 			// can use either fixed array or CMemoryStream with on-stack storage
@@ -204,46 +185,21 @@ BEGIN_SHADER_CLASS(Default)
 			bufferData.append(rendPassInfo->drawColor);
 			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
 
-			materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
+			IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, materialParamsBuffer, 0, bufferData.numElem() * sizeof(bufferData[0]))
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
+				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
+				.Buffer(1, materialParamsBuffer, 0, materialParamsBuffer->GetSize())
+				.Sampler(2, baseTexture->GetSamplerState())
+				.Texture(3, baseTexture)
 				.End();
-			materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
+
+			return renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
 		}
-		return materialBindGroup;
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
 	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
 	MatTextureProxy								m_baseTexture;
 
-	//------------------------------------------------------------------
-	// DEPRECATED all below
-
-	SHADER_SETUP_STAGE()
-	{
-		SHADER_BIND_PASS_SIMPLE(Unlit);
-	}
-
-	SHADER_SETUP_CONSTANTS()
-	{
-		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
-		SetupDefaultParameter(SHADERPARAM_BONETRANSFORMS);
-		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
-		SetupDefaultParameter(SHADERPARAM_COLOR);
-	}
-
-	void SetupBaseTexture(IShaderAPI* renderAPI)
-	{
-		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetWhiteTexture());
-	}
-
-	void SetColorModulation(IShaderAPI* renderAPI)
-	{
-		ColorRGBA setColor = g_matSystem->GetAmbientColor();
-		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
-	}
-
-	SHADER_DECLARE_PASS(Unlit);
 END_SHADER_CLASS

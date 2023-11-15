@@ -258,7 +258,6 @@ void CAnimatedModel::RenderPhysModel()
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.drawColor = MColor(1.0f, 0.0f, 1.0f, 1.0f);
 	defaultRenderPass.depthTest = true;
 	drawCmd.userData = &defaultRenderPass;

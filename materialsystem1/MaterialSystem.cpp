@@ -76,11 +76,6 @@ DECLARE_CMD(mat_print, "Print MatSystem info and loaded material list",0)
 	s_matsystem.PrintLoadedMaterials();
 }
 
-DECLARE_CMD(mat_releaseStates, "Releases all render states",0)
-{
-	s_matsystem.ClearRenderStates();
-}
-
 DECLARE_CMD(mat_releaseUnused, "Releases unused materials",0)
 {
 	s_matsystem.ReleaseUnusedMaterials();
@@ -387,15 +382,14 @@ void CMaterialSystem::Shutdown()
 	m_globalMaterialVars.variableMap.clear(true);
 	m_globalMaterialVars.variables.clear(true);
 		
-	ClearRenderStates();
 	m_dynamicMesh.Destroy();
 
-	m_setMaterial = nullptr;
 	m_defaultMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
 	m_currentEnvmapTexture = nullptr;
-	m_whiteTexture = nullptr;
 	m_errorTexture = nullptr;
+	for (int i = 0; i < elementsOf(m_whiteTexture); ++i)
+		m_whiteTexture[i] = nullptr;
 
 	FreeMaterials();
 
@@ -415,30 +409,24 @@ void CMaterialSystem::Shutdown()
 void CMaterialSystem::CreateWhiteTexture()
 {
 	CImagePtr img = CRefPtr_new(CImage);
-	img->SetName("_matsys_white");
-
 	const int nWidth = 4;
 	const int nHeight = 4;
 
-	ubyte* pLightmapData = img->Create(FORMAT_RGBA8, nWidth,nHeight,1,1);
-
-	PixelWriter pixw(FORMAT_RGBA8, pLightmapData, 0);
-
-	for (int y = 0; y < nHeight; ++y)
-	{
-		pixw.Seek( 0, y );
-		for (int x = 0; x < nWidth; ++x)
-		{
-			pixw.WritePixel( 255, 255, 255, 255 );
-		}
-	}
-
-	SamplerStateParams texSamplerParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
+	ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, IMAGE_DEPTH_CUBEMAP, 1);
+	const int dataSize = img->GetMipMappedSize(0, 1) * img->GetArraySize();
+	memset(texData, 0xffffffff, dataSize);
 
 	FixedArray<CImagePtr, 1> images;
 	images.append(img);
+	img->SetDepth(1);
+	img->SetName("_matsys_white");
+	ASSERT(img->GetImageType() == IMAGE_TYPE_2D);
+	m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_NOQUALITYLOD);
 
-	m_whiteTexture = m_shaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
+	img->SetDepth(IMAGE_DEPTH_CUBEMAP);
+	img->SetName("_matsys_white_cb");
+	ASSERT(img->GetImageType() == IMAGE_TYPE_CUBE);
+	m_whiteTexture[TEXDIMENSION_CUBE] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_NOQUALITYLOD);
 
 	images.clear();
 }
@@ -694,21 +682,6 @@ void CMaterialSystem::FreeMaterials()
 	m_loadedMaterials.clear();
 }
 
-void CMaterialSystem::ClearRenderStates()
-{
-	for (auto i = m_blendStates.begin(); !i.atEnd(); ++i)
-		m_shaderAPI->DestroyRenderState(*i);
-	m_blendStates.clear();
-	
-	for (auto i = m_depthStates.begin(); !i.atEnd(); ++i)
-		m_shaderAPI->DestroyRenderState(*i);
-	m_depthStates.clear();
-	
-	for (auto i = m_rasterStates.begin(); !i.atEnd(); ++i)
-		m_shaderAPI->DestroyRenderState(*i);
-	m_rasterStates.clear();
-}
-
 // frees single material
 void CMaterialSystem::FreeMaterial(IMaterial* pMaterial)
 {
@@ -807,44 +780,6 @@ IMatSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName
 
 //------------------------------------------------------------------------------------------------
 
-typedef bool (*PFNMATERIALBINDCALLBACK)(IShaderAPI* renderAPI, IMaterial* pMaterial, uint paramMask);
-
-static void BindFFPMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, int paramMask)
-{
-	renderAPI->SetShader(nullptr);
-
-	renderAPI->SetBlendingState(nullptr);
-	renderAPI->SetRasterizerState(nullptr);
-	renderAPI->SetDepthStencilState(nullptr);
-}
-
-static bool Callback_BindErrorTextureFFPMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, uint paramMask)
-{
-	BindFFPMaterial(renderAPI, pMaterial, paramMask);
-	renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), g_matSystem->GetErrorCheckerboardTexture());
-
-	return false;
-}
-
-static bool Callback_BindNormalMaterial(IShaderAPI* renderAPI, IMaterial* pMaterial, uint paramMask)
-{
-	((CMaterial*)pMaterial)->Setup(renderAPI, paramMask);
-
-	return true;
-}
-
-PFNMATERIALBINDCALLBACK materialstate_callbacks[] =
-{
-	Callback_BindErrorTextureFFPMaterial,	// binds ffp shader with error texture, error shader only
-	Callback_BindNormalMaterial				// binds normal material.
-};
-
-enum EMaterialRenderSubroutine
-{
-	MATERIAL_SUBROUTINE_ERROR = 0,
-	MATERIAL_SUBROUTINE_NORMAL,
-};
-
 // loads material or sends it to loader thread
 void CMaterialSystem::QueueLoading(const IMaterialPtr& pMaterial)
 {
@@ -867,14 +802,6 @@ void CMaterialSystem::QueueLoading(const IMaterialPtr& pMaterial)
 int CMaterialSystem::GetLoadingQueue() const
 {
 	return s_threadedMaterialLoader.GetCount();
-}
-
-void CMaterialSystem::SetShaderParameterOverriden(int param, bool set)
-{
-	if(set)
-		m_paramOverrideMask &= ~(1 << (uint)param);
-	else
-		m_paramOverrideMask |= (1 << (uint)param);
 }
 
 void CMaterialSystem::SetProxyDeltaTime(float deltaTime)
@@ -915,89 +842,6 @@ MatVarProxyUnk	CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarNam
 	m_globalMaterialVars.variableMap.insert(nameHash, varId);
 
 	return MatVarProxyUnk(varId, m_globalMaterialVars);
-}
-
-bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
-{
-	if(!pMaterial)
-	{
-		InitDefaultMaterial();
-		pMaterial = m_defaultMaterial;
-	}
-
-	CMaterial* pSetupMaterial = (CMaterial*)pMaterial;
-
-	// proxy update is dirty if material was not bound to this frame
-	if (pSetupMaterial->m_frameBound != m_frame)
-		pSetupMaterial->UpdateProxy(m_proxyDeltaTime);
-
-	pSetupMaterial->m_frameBound = m_frame;
-
-	// it's now a more critical section to the material
-	pSetupMaterial->DoLoadShaderAndTextures();
-
-	// set the current material
-	IMaterial* setMaterial = pMaterial;
-
-	// try overriding material
-	if (m_preApplyCallback)
-		setMaterial = m_preApplyCallback->OnPreBindMaterial(setMaterial);
-	
-	EMaterialRenderSubroutine subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
-
-	if( pMaterial->GetState() == MATERIAL_LOAD_ERROR || pMaterial->GetState() == MATERIAL_LOAD_NEED_LOAD )
-		subRoutineId = MATERIAL_SUBROUTINE_ERROR;
-
-	// if material is still loading, use the default material for a while
-	if( pMaterial->GetState() == MATERIAL_LOAD_INQUEUE )
-	{
-		setMaterial = m_defaultMaterial;
-		subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
-	}
-
-	bool success;
-
-	if( m_config.overdrawMode )
-	{
-		m_ambColor = color_white;
-		success = (*materialstate_callbacks[subRoutineId])(m_shaderAPI, m_overdrawMaterial, 0xFFFFFFFF);
-	}
-	else
-		success = (*materialstate_callbacks[subRoutineId])(m_shaderAPI, setMaterial, m_paramOverrideMask);
-
-	m_setMaterial = IMaterialPtr(setMaterial);
-
-	if (!(flags & MATERIAL_BIND_KEEPOVERRIDE))
-		m_paramOverrideMask = 0xFFFFFFFF; // reset override mask shortly after we bind material
-
-	if(flags & MATERIAL_BIND_PREAPPLY)
-		Apply();
-
-	return success;
-}
-
-// Applies current material
-void CMaterialSystem::Apply()
-{
-	IMaterial* setMaterial = m_setMaterial;
-
-	if(!setMaterial)
-	{
-		m_shaderAPI->Apply();
-		return;
-	}
-
-	// callback before applying
-	if(m_preApplyCallback)
-		m_preApplyCallback->OnPreApplyMaterial(setMaterial);
-
-	m_shaderAPI->Apply();
-}
-
-// returns bound material
-IMaterialPtr CMaterialSystem::GetBoundMaterial() const
-{
-	return m_setMaterial;
 }
 
 // waits for material loader thread is finished
@@ -1058,9 +902,9 @@ const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
 	return m_defaultMaterial;
 }
 
-const ITexturePtr& CMaterialSystem::GetWhiteTexture() const
+const ITexturePtr& CMaterialSystem::GetWhiteTexture(ETextureDimension texDimension) const
 {
-	return m_whiteTexture;
+	return m_whiteTexture[texDimension];
 }
 
 const ITexturePtr& CMaterialSystem::GetErrorCheckerboardTexture() const
@@ -1392,7 +1236,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 	if (!drawCmd.material)
 		return;
 
-	SetupMaterialPipeline(drawCmd.material, drawCmd.primitiveTopology, StringToHashConst("DynMeshVertex"), drawCmd.userData, rendPassRecorder);
+	SetupMaterialPipeline(drawCmd.material, drawCmd.primitiveTopology, drawCmd.vertexLayout, drawCmd.userData, rendPassRecorder);
 
 	if (drawCmd.vertexLayout)
 	{
@@ -1412,17 +1256,22 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 		rendPassRecorder->DrawIndexed(drawCmd.numIndices, drawCmd.firstIndex, 1, drawCmd.baseVertex);
 }
 
-void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, int vertexLayoutId, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
+void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const IVertexFormat* vertexLayout, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
 
+	// force load shader and textures if not already
+	material->LoadShaderAndTextures();
+
 	const IMatSystemShader* matShader = static_cast<CMaterial*>(material)->m_shader;
 
-	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, vertexLayoutId, primTopology, userData));
+	// TODO: overdraw material. Or maybe debug property in shader?
 
-	// TODO: MatSystemBindGroup must be preserved unless camera state or fog state changes
-	rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
-	rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, userData), nullptr);
+	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, vertexLayout, primTopology, userData));
+	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(BINDGROUP_CONSTANT, renderAPI, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(BINDGROUP_RENDERPASS, renderAPI, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(BINDGROUP_TRANSIENT, renderAPI, userData), nullptr);
+
 }
 
 bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
@@ -1477,9 +1326,10 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	{
 		ASSERT_MSG(matShader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
 
-		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, StringToHashConst("DynMeshVertex"), drawCmd.primitiveTopology, &rendPassInfo));
-		rendPassRecorder->SetBindGroup(0, matShader->GetMatSystemBindGroup(renderAPI), nullptr);
-		rendPassRecorder->SetBindGroup(1, matShader->GetMaterialBindGroup(renderAPI, &rendPassInfo), nullptr);
+		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, drawCmd.vertexLayout, drawCmd.primitiveTopology, &rendPassInfo));
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(BINDGROUP_CONSTANT, renderAPI, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(BINDGROUP_RENDERPASS, renderAPI, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(BINDGROUP_TRANSIENT, renderAPI, &rendPassInfo), nullptr);
 
 		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
 			rendPassRecorder->SetVertexBuffer(i, drawCmd.vertexBuffers[i]);
@@ -1514,167 +1364,6 @@ void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 
 	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
 	renderAPI->SubmitCommandBuffer(commandBuffer);
-}
-
-//-----------------------------
-// RHI render states setup
-//-----------------------------
-
-// sets blending
-void CMaterialSystem::SetBlendingStates(const BlendStateParams& blend)
-{
-	SetBlendingStates(blend.srcFactor, blend.dstFactor, blend.blendFunc, blend.mask);
-}
-
-// sets depth stencil state
-void CMaterialSystem::SetDepthStates(const DepthStencilStateParams& depth)
-{
-	SetDepthStates(depth.depthTest, depth.depthWrite, depth.useDepthBias, depth.depthFunc);
-}
-
-// sets rasterizer extended mode
-void CMaterialSystem::SetRasterizerStates(const RasterizerStateParams& raster)
-{
-	SetRasterizerStates(raster.cullMode, raster.fillMode, raster.multiSample, raster.scissor);
-}
-
-// pack blending function to ushort
-struct blendStateIndex_t
-{
-	blendStateIndex_t( EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunc nBlendingFunc, int colormask )
-		: srcFactor(nSrcFactor), destFactor(nDestFactor), colMask(colormask), blendFunc(nBlendingFunc)
-	{
-	}
-
-	ushort srcFactor : 4;
-	ushort destFactor : 4;
-	ushort colMask : 4;
-	ushort blendFunc : 4;
-};
-
-assert_sizeof(blendStateIndex_t,2);
-
-// sets blending
-void CMaterialSystem::SetBlendingStates(EBlendFactor nSrcFactor, EBlendFactor nDestFactor, EBlendFunc nBlendingFunc, int colormask)
-{
-	blendStateIndex_t idx(nSrcFactor, nDestFactor, nBlendingFunc, colormask);
-	ushort stateIndex = *(ushort*)&idx;
-
-	IRenderState* state = nullptr;
-
-	auto blendState = m_blendStates.find(stateIndex);
-
-	if(blendState.atEnd())
-	{
-		BlendStateParams desc;
-		// no sense to enable blending when no visual effects...
-		desc.enable = !(nSrcFactor == BLENDFACTOR_ONE && nDestFactor == BLENDFACTOR_ZERO && nBlendingFunc == BLENDFUNC_ADD);
-		desc.srcFactor = nSrcFactor;
-		desc.dstFactor = nDestFactor;
-		desc.blendFunc = nBlendingFunc;
-		desc.mask = colormask;
-
-		state = m_shaderAPI->CreateBlendingState(desc);
-		m_blendStates.insert(stateIndex, state);
-	}
-	else
-		state = *blendState;
-
-	m_shaderAPI->SetBlendingState( state );
-}
-
-// pack depth states to ubyte
-struct depthStateIndex_t
-{
-	depthStateIndex_t( bool bDoDepthTest, bool bDoDepthWrite, bool depthBias, ECompareFunc depthCompFunc )
-		: doDepthTest(bDoDepthTest), doDepthWrite(bDoDepthWrite), depthBias(depthBias), compFunc(depthCompFunc)
-	{
-	}
-
-	ubyte doDepthTest : 1;
-	ubyte doDepthWrite : 1;
-	ubyte depthBias : 1;
-	ubyte compFunc : 3;
-	ubyte pad{ 0 };
-};
-
-assert_sizeof(depthStateIndex_t,2);
-
-// sets depth stencil state
-void CMaterialSystem::SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset, ECompareFunc depthCompFunc)
-{
-	depthStateIndex_t idx(depthTest, depthWrite, polyOffset, depthCompFunc);
-	ushort stateIndex = *(ushort*)&idx;
-
-	IRenderState* state = nullptr;
-
-	auto depthState = m_depthStates.find(stateIndex);
-
-	if(depthState.atEnd())
-	{
-		DepthStencilStateParams desc;
-		desc.depthWrite = depthWrite;
-		desc.depthTest = depthTest;
-		desc.depthFunc = depthCompFunc;
-		desc.stencilTest = false;
-		desc.useDepthBias = polyOffset;
-		if (desc.useDepthBias)
-		{
-			desc.depthBias = r_depthBias.GetFloat();
-			desc.depthBiasSlopeScale = r_slopeDepthBias.GetFloat();
-		}
-
-		state = m_shaderAPI->CreateDepthStencilState(desc);
-		m_depthStates.insert(stateIndex, state);
-	}
-	else
-		state = *depthState;
-
-	m_shaderAPI->SetDepthStencilState( state );
-}
-
-// pack blending function to ushort
-struct rasterStateIndex_t
-{
-	rasterStateIndex_t(ECullMode nCullMode, EFillMode nFillMode, bool bMultiSample,bool bScissor )
-		: cullMode(nCullMode), fillMode(nFillMode), multisample(bMultiSample), scissor(bScissor)
-	{
-	}
-
-	ubyte cullMode : 2;
-	ubyte fillMode : 2;
-	ubyte multisample : 1;
-	ubyte scissor : 1;
-	ubyte pad[1]{ 0 };
-};
-
-assert_sizeof(rasterStateIndex_t,2);
-
-// sets rasterizer extended mode
-void CMaterialSystem::SetRasterizerStates(ECullMode cullMode, EFillMode fillMode, bool multiSample, bool scissor)
-{
-	rasterStateIndex_t idx(cullMode, fillMode, multiSample, scissor);
-	ushort stateIndex = *(ushort*)&idx;
-
-	IRenderState* state = nullptr;
-
-	auto rasterState = m_rasterStates.find(stateIndex);
-
-	if(rasterState.atEnd())
-	{
-		RasterizerStateParams desc;
-		desc.cullMode = cullMode;
-		desc.fillMode = fillMode;
-		desc.multiSample = multiSample;
-		desc.scissor = scissor;
-
-		state = m_shaderAPI->CreateRasterizerState(desc);
-		m_rasterStates.insert(stateIndex, state);
-	}
-	else
-		state = *rasterState;
-
-	m_shaderAPI->SetRasterizerState( state );
 }
 
 // use this if you have objects that must be destroyed when device is lost

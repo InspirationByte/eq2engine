@@ -54,10 +54,12 @@ struct ShaderAPICaps
 	int				maxVertexGenericAttributes{ 0 };
 	int				maxVertexTexcoordAttributes{ 0 };
 	int				maxTextureSize{ 0 };
+	int				maxTextureArrayLayers{ 0 };
 	int				maxTextureUnits{ 0 };
 	int				maxVertexTextureUnits{ 0 };
 	int				maxTextureAnisotropicLevel{ 0 };
-
+	int				maxBindGroups{ 0 };
+	int				maxBindingsPerBindGroup{ 0 };
 	int				maxRenderTargets{ 0 };
 
 	int				shadersSupportedFlags{ 0 };		// EShaderSupportFlags

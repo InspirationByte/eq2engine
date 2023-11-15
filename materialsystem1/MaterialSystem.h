@@ -89,7 +89,7 @@ public:
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
 	const IMaterialPtr&			GetDefaultMaterial() const;
-	const ITexturePtr&			GetWhiteTexture() const;
+	const ITexturePtr&			GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const;
 	const ITexturePtr&			GetErrorCheckerboardTexture() const;
 								
 	IMaterialPtr				CreateMaterial(const char* szMaterialName, KVSection* params);
@@ -110,7 +110,6 @@ public:
 	void						FreeMaterial(IMaterial *pMaterial);
 								
 	void						FreeMaterials();
-	void						ClearRenderStates();
 
 	void						SetProxyDeltaTime(float deltaTime);
 
@@ -139,29 +138,13 @@ public:
 	void						SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture);
 	const ITexturePtr&			GetEnvironmentMapTexture() const;
 
-
-	void						SetBlendingStates(const BlendStateParams& blend);
-	void						SetBlendingStates(EBlendFactor srcFactor, EBlendFactor destFactor, EBlendFunc blendingFunc = BLENDFUNC_ADD, int colormask = COLORMASK_ALL);
-
-	void						SetDepthStates(const DepthStencilStateParams& depth);
-	void						SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset = false, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL);
-
-	void						SetRasterizerStates(const RasterizerStateParams& raster);
-	void						SetRasterizerStates(ECullMode cullMode, EFillMode fillMode = FILL_SOLID, bool multiSample = true, bool scissor = false);
-
 	//------------------
 	// Materials or shader static states
-
-	void						SetShaderParameterOverriden(int param, bool set = true);
 
 	MatVarProxyUnk				FindGlobalMaterialVar(int nameHash) const;
 	MatVarProxyUnk				FindGlobalMaterialVarByName(const char* pszVarName) const;
 	MatVarProxyUnk				GetGlobalMaterialVarByName(const char* pszVarName, const char* defaultValue);
 
-	bool						BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY);
-	void						Apply();
-
-	IMaterialPtr				GetBoundMaterial() const;
 	void						SetRenderCallbacks( IMatSysRenderCallbacks* callback );
 	IMatSysRenderCallbacks*		GetRenderCallbacks() const;
 
@@ -181,7 +164,7 @@ public:
 	// returns the dynamic mesh
 	IDynamicMesh*				GetDynamicMesh() const;
 
-	void						SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, int vertexLayoutId, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
+	void						SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const IVertexFormat* vertexLayout, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
 	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder);
 	bool						SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
 
@@ -218,10 +201,6 @@ private:
 
 	//-------------------------------------------------------------------------
 	IVector2D					m_backbufferSize{ 800, 600 };
-	Map<ushort, IRenderState*>	m_blendStates{ PP_SL };
-	Map<ushort, IRenderState*>	m_depthStates{ PP_SL };
-	Map<ushort, IRenderState*>	m_rasterStates{ PP_SL };
-
 	IMatSysRenderCallbacks*		m_preApplyCallback{ nullptr };
 
 	Matrix4x4					m_viewProjMatrix{ identity4 };
@@ -232,11 +211,9 @@ private:
 
 	IMaterialPtr				m_defaultMaterial;
 	IMaterialPtr				m_overdrawMaterial;
-	IMaterialPtr				m_setMaterial;						// currently bound material
-	uint						m_paramOverrideMask{ UINT_MAX };	// parameter setup mask for overrides
 
 	ITexturePtr					m_currentEnvmapTexture;
-	ITexturePtr					m_whiteTexture;
+	ITexturePtr					m_whiteTexture[5];
 	ITexturePtr					m_errorTexture;
 	ITexturePtr					m_defaultDepthTexture;
 

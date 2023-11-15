@@ -54,9 +54,9 @@ BEGIN_SHADER_CLASS(Skybox)
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 
 		// do depth testing for my type of skybox (looks like quake 3/unreal tournament style skyboxes)
-		g_matSystem->SetDepthStates(true, false);
-		g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
-		g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+		//g_matSystem->SetDepthStates(true, false);
+		//g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
+		//g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	
 		Matrix4x4 wvp;
 		g_matSystem->GetWorldViewProjection(wvp);

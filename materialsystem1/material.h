@@ -53,8 +53,6 @@ public:
 // render-time operations
 	void					UpdateProxy(float fDt);					
 	const ITexturePtr&		GetBaseTexture(int stage = 0);
-
-	void					Setup(IShaderAPI* renderAPI, uint paramMask);
 private:
 
 	void					InitVars(KVSection* kvs, const char* renderAPIName);

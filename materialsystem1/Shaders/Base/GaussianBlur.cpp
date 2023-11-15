@@ -10,80 +10,84 @@
 #include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(GaussianBlur)
+	SHADER_INIT_PARAMS()
+	{
+		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
+		m_blurProps = m_material->GetMaterialVar("BlurProps", "[0.6 40 100 100]");
+	}
+
+	SHADER_INIT_TEXTURES()
+	{
+		m_blurSource = m_material->GetMaterialVar("BlurSource", "");
+	}
+
 	bool IsSupportVertexFormat(int nameHash) const
 	{
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	SHADER_INIT_PARAMS()
+	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
-		m_blurProps = m_material->GetMaterialVar("BlurProps", "[0.6 40 100 100]");
-		m_blurSource = m_material->GetMaterialVar("BlurSource", "");
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
 	}
 
-	SHADER_INIT_TEXTURES()
+	void FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTextures);
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("cameraParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.End();
 	}
 
-	SHADER_INIT_RENDERPASS_PIPELINE()
+	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
 	{
-		if(SHADER_PASS(Unlit))
-			return true;
-
-		// begin shader definitions
-		SHADERDEFINES_BEGIN;
-
-		// compile without fog
-		SHADER_FIND_OR_COMPILE(Unlit, "GaussianBlur");
-
-		return true;
-	}
-
-	SHADER_SETUP_STAGE()
-	{
-		SHADER_BIND_PASS_SIMPLE(Unlit);
-	}
-
-	SHADER_SETUP_CONSTANTS()
-	{
-		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
-
-		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
-
-		SetupDefaultParameter(SHADERPARAM_ALPHASETUP);
-		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
-		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
-
-		const ITexturePtr& bloomTex = m_blurSource.Get();
-
-		Vector4D textureSizeProps;
-
-		if (bloomTex)
+		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			textureSizeProps.x = bloomTex->GetWidth();
-			textureSizeProps.y = bloomTex->GetHeight();
+			if (!m_materialBindGroup)
+			{
+				const ITexturePtr& bloomTex = m_blurSource.Get();
+				Vector4D textureSizeProps(1.0f);
+				if (bloomTex)
+				{
+					textureSizeProps.x = bloomTex->GetWidth();
+					textureSizeProps.y = bloomTex->GetHeight();
+					textureSizeProps.z = 1.0f / textureSizeProps.x;
+					textureSizeProps.w = 1.0f / textureSizeProps.y;
+				}
 
-			textureSizeProps.z = 1.0f / textureSizeProps.x;
-			textureSizeProps.w = 1.0f / textureSizeProps.y;
+				FixedArray<Vector4D, 4> bufferData;
+				bufferData.append(m_blurProps.Get());
+				bufferData.append(textureSizeProps);
+				m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+
+				ITexturePtr baseTexture = m_blurSource.Get() ? m_blurSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
+				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+					.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
+					.Texture(2, baseTexture)
+					.End();
+				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+			}
+			return m_materialBindGroup;
 		}
-
-		renderAPI->SetShaderConstant(StringToHashConst("BlurProps"), m_blurProps.Get());
-		renderAPI->SetShaderConstant(StringToHashConst("TextureSize"), textureSizeProps);		
+		else if (bindGroupId == BINDGROUP_RENDERPASS)
+		{
+			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
+				.End();
+			return renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+		}
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
-	void SetupBaseTextures(IShaderAPI* renderAPI)
-	{
-		renderAPI->SetTexture(StringToHashConst("BaseTexture"), m_blurSource.Get());
-	}
+	mutable IGPUBindGroupPtr	m_materialBindGroup;
+	mutable IGPUBufferPtr		m_materialParamsBuffer;
 
-private:
-
-	SHADER_DECLARE_PASS(Unlit);
-
-	MatVec4Proxy	m_blurProps;
-	MatTextureProxy m_blurSource;
+	MatVec4Proxy				m_blurProps;
+	MatTextureProxy				m_blurSource;
 
 END_SHADER_CLASS

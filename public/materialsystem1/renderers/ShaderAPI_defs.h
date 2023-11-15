@@ -92,7 +92,7 @@ struct SamplerStateParams
 		, addressV(address)
 		, addressW(address)
 		, compareFunc(compareFunc)
-		, maxAnisotropy((filterType == TEXFILTER_BILINEAR_ANISO) ? 16 : 1)
+		, maxAnisotropy((filterType >= TEXFILTER_BILINEAR_ANISO) ? 16 : 1)
 		, lod(lod)
 	{
 	}

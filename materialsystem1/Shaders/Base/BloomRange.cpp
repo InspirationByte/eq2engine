@@ -10,67 +10,54 @@
 #include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(BloomRange)
+	SHADER_INIT_PARAMS()
+	{
+		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
+		m_rangeProps = m_material->GetMaterialVar("RangeProps", "[0.6 40 100 100]");
+
+		FixedArray<Vector4D, 4> bufferData;
+		bufferData.append(m_rangeProps.Get());
+		m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+	}
+
+	SHADER_INIT_TEXTURES()
+	{
+		m_bloomSource = m_material->GetMaterialVar("BloomSource", "");
+	}
 
 	bool IsSupportVertexFormat(int nameHash) const
 	{
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	SHADER_INIT_PARAMS()
+	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
-		m_rangeProps = m_material->GetMaterialVar("RangeProps", "[0.6 40 100 100]");
-		m_bloomSource = m_material->GetMaterialVar("BloomSource", "");
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
 	}
 
-	SHADER_INIT_TEXTURES()
+	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
 	{
-		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTextures);
+		if (!m_materialBindGroup)
+		{
+			ITexturePtr baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+				.Sampler(1, baseTexture->GetSamplerState())
+				.Texture(2, baseTexture)
+				.End();
+			m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
+		}
+
+		return m_materialBindGroup;
 	}
 
-	SHADER_INIT_RENDERPASS_PIPELINE()
-	{
-		if(SHADER_PASS(Unlit))
-			return true;
+	mutable IGPUBindGroupPtr	m_materialBindGroup;
+	IGPUBufferPtr				m_materialParamsBuffer;
 
-		// begin shader definitions
-		SHADERDEFINES_BEGIN;
-
-		// compile without fog
-		SHADER_FIND_OR_COMPILE(Unlit, "BloomRange");
-
-		return true;
-	}
-
-	SHADER_SETUP_STAGE()
-	{
-		SHADER_BIND_PASS_SIMPLE(Unlit);
-	}
-
-	SHADER_SETUP_CONSTANTS()
-	{
-		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
-
-		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
-
-		SetupDefaultParameter(SHADERPARAM_ALPHASETUP);
-		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
-		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
-
-		renderAPI->SetShaderConstant(StringToHashConst("RangeProps"), m_rangeProps.Get());
-	}
-
-	void SetupBaseTextures(IShaderAPI* renderAPI)
-	{
-		renderAPI->SetTexture(StringToHashConst("BaseTexture"), m_bloomSource.Get());
-	}
-
-private:
-
-	SHADER_DECLARE_PASS(Unlit);
-
-	MatVec4Proxy	m_rangeProps;
-	MatTextureProxy m_bloomSource;
-
+	MatVec4Proxy				m_rangeProps;
+	MatTextureProxy				m_bloomSource;
 END_SHADER_CLASS

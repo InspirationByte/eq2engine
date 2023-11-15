@@ -11,6 +11,7 @@
 class IMaterial;
 class IShaderProgram;
 class IShaderAPI;
+struct MatSysCamera;
 
 using IShaderProgramPtr = CRefPtr<IShaderProgram>;
 
@@ -26,42 +27,11 @@ using IShaderProgramPtr = CRefPtr<IShaderProgram>;
 			void Init(IShaderAPI* renderAPI, IMaterial* material) override \
 			{ CBaseShader::Init(renderAPI, material); ShaderInitParams(renderAPI); }
 
+#define END_SHADER_CLASS }; DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
 #define SHADER_INIT_PARAMS()				void ShaderInitParams(IShaderAPI* renderAPI)
 #define SHADER_INIT_TEXTURES()				void InitTextures(IShaderAPI* renderAPI)
-#define SHADER_INIT_RENDERPASS_PIPELINE()	bool InitRenderPassPipeline(IShaderAPI* renderAPI)
 
-#define SHADER_SETUP_STAGE()				void SetupShader(IShaderAPI* renderAPI)
-#define SHADER_SETUP_CONSTANTS()			void SetupConstants(IShaderAPI* renderAPI, uint paramMask)
-
-#define END_SHADER_CLASS }; DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
-
-#define SHADER_DECLARE_PASS(shader) \
-	IShaderProgramPtr	m_pShader##shader
-
-#define SHADER_DECLARE_FOGPASS(shader) \
-	IShaderProgramPtr	m_pShader##shader##_fog
-
-#define SHADER_PASS(shader) m_pShader##shader
-#define SHADER_FOGPASS(shader) m_pShader##shader##_fog
-
-#define SHADER_BIND_PASS_FOGSELECT(shader) { \
-	FogInfo fog;										\
-	g_matSystem->GetFogInfo(fog);						\
-	if(fog.enableFog)					\
-		renderAPI->SetShader(m_pShader##shader##_fog);	\
-	else												\
-		renderAPI->SetShader(m_pShader##shader);		\
-	}
-
-#define SHADER_BIND_PASS_SIMPLE(shader)	\
-	renderAPI->SetShader(m_pShader##shader);
-
-#define SHADER_PASS_UNLOAD(shader) \
-	m_pShader##shader## = nullptr;
-
-#define SHADER_FOGPASS_UNLOAD(shader) \
-	m_pShader##shader##_fog = nullptr;
 
 #define _SHADER_PARAM_OP_EMPTY
 #define _SHADER_PARAM_OP_NOT !
@@ -100,55 +70,7 @@ using IShaderProgramPtr = CRefPtr<IShaderProgram>;
 #define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ variable = LoadTextureByVar(renderAPI, #param, false); }
 #define SHADER_PARAM_TEXTURE_FIND(param, variable)		{ variable = FindTextureByVar(renderAPI, #param, false); }
 
-#define SHADERDEFINES_DEFAULTS \
-	SHADER_DECLARE_SIMPLE_DEFINITION(g_matSystem->GetConfiguration().lowShaderQuality, "LOWQUALITY");\
-	SHADER_DECLARE_SIMPLE_DEFINITION(g_matSystem->GetConfiguration().editormode, "EDITOR");
-
-#define SHADERDEFINES_BEGIN \
-	EqString defines, findQuery; \
-	SHADERDEFINES_DEFAULTS
-
-#define SHADER_BEGIN_DEFINITION(b, def)				\
-	if(b){											\
-		defines.Append("#define " def "\n");		\
-		findQuery.Append("_" def);
-
-#define SHADER_DECLARE_SIMPLE_DEFINITION(b, def)			\
-	if(b){											\
-		defines.Append("#define " def "\n");		\
-		findQuery.Append("_" def);					\
-	}
-
-#define SHADER_ADD_FLOAT_DEFINITION(def, num)		\
-	defines.Append(EqString::Format("#define " def " %g\n", num));\
-	findQuery.Append(EqString::Format("_" def "%g", num));
-
-#define SHADER_ADD_INT_DEFINITION(def, num)		\
-	defines.Append(EqString::Format("#define " def " %d\n", num));\
-	findQuery.Append(EqString::Format("_" def "%d", num));
-
-#define SHADER_END_DEFINITION \
-	}
-
-#define SHADER_FIND_OR_COMPILE(shader, sname) \
-	{																						\
-	m_pShader##shader = renderAPI->FindShaderProgram(sname, (findQuery).GetData());			\
-	if(!m_pShader##shader) {																\
-		m_pShader##shader = renderAPI->CreateNewShaderProgram(sname, findQuery.GetData());	\
-		if(!renderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData())) {	\
-			renderAPI->FreeShaderProgram(m_pShader##shader);								\
-			return false;																	\
-		}																					\
-	}																						\
-	AddManagedShader(&m_pShader##shader);													\
-	}
-
-#define SHADER_FIND_OR_COMPILE_FOG(shader, sname)	SHADER_FIND_OR_COMPILE(shader##_fog, sname)
-
 class CBaseShader;
-
-// this is a special callback for shader parameter binding
-typedef void (CBaseShader::*SHADERPARAMFUNC)(IShaderAPI* renderAPI);
 
 // base shader class
 class CBaseShader : public IMatSystemShader
@@ -161,19 +83,11 @@ public:
 	virtual void				Init(IShaderAPI* renderAPI, IMaterial* material);
 	void						InitShader(IShaderAPI* renderAPI);
 
-	bool						IsError() const { return m_error; }
 	bool						IsInitialized() const { return m_isInit; }
 	int							GetFlags() const { return m_flags; }
 
-	virtual void				FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const {}
-	virtual void				FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const;
-
-	// Temporary virtual
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primTopology, const void* userData) const { return nullptr; }
-	virtual IGPUBindGroupPtr		GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
-	virtual IGPUBindGroupPtr		GetMatSystemBindGroup(IShaderAPI* renderAPI) const;
-
-	void						FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
+	virtual IGPUBindGroupPtr	GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primTopology, const void* userData) const;
 	IGPUPipelineLayoutPtr		GetPipelineLayout() const;
 
 	// returns base texture from shader
@@ -181,16 +95,31 @@ public:
 	virtual const ITexturePtr&	GetBumpTexture(int stage) const	{ return ITexturePtr::Null(); };
 
 protected:
-	virtual bool				InitRenderPassPipeline(IShaderAPI* renderAPI) = 0;
+	virtual void				FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const {}
+	virtual void				FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const {}
+	virtual void				FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const {}
+
+	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
+	virtual void				BuildPipelineShaderQuery(const IVertexFormat* vertexLayout, Array<EqString>& shaderQuery) const {}
+	
+	IGPUBindGroupPtr			GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const;
+	IGPUBufferPtr				GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI) const;
+
+	void						GetCameraParams(MatSysCamera& cameraParams) const;
+
+	void						FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
+	uint						GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar);
 	MatTextureProxy				LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar);
 
-	void						AddManagedShader(IShaderProgramPtr* pShader);
+	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
+
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
 	IGPUPipelineLayoutPtr		m_pipelineLayout;
+	mutable IGPUBindGroupPtr	m_emptyBindGroup[4];
 	IMaterial*					m_material{ nullptr };
 
 	MatVec2Proxy				m_baseTextureTransformVar;
@@ -198,35 +127,44 @@ protected:
 	MatIntProxy					m_baseTextureFrame;
 
 	Array<MatTextureProxy>		m_usedTextures{ PP_SL };
-	Array<IShaderProgramPtr*>	m_usedPrograms{ PP_SL };
 
-	int							m_texAddressMode{ TEXADDRESS_WRAP };
-	int							m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
+	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
+	ETexAddressMode				m_texAddressMode{ TEXADDRESS_WRAP };
+	ETexFilterMode				m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
 	EShaderBlendMode			m_blendMode{ SHADER_BLEND_NONE };
 
 	int							m_flags{ 0 };
-	bool						m_error{ false };
 	bool						m_isInit{ false };
-
-	// DEPRECATED all things down below 
-	void						SetupParameter(IShaderAPI* renderAPI, uint mask, EShaderParamSetup param);
-	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;	// get texture transformation from vars
-	
-	void						ParamSetup_Empty(IShaderAPI* renderAPI) {}
-	void						ParamSetup_AlphaModel_Solid(IShaderAPI* renderAPI);
-	void						ParamSetup_AlphaModel_Translucent(IShaderAPI* renderAPI);
-	void						ParamSetup_AlphaModel_Additive(IShaderAPI* renderAPI);
-	void						ParamSetup_AlphaModel_Modulate(IShaderAPI* renderAPI);
-	void						ParamSetup_DepthSetup(IShaderAPI* renderAPI);
-	void						ParamSetup_RasterState(IShaderAPI* renderAPI);
-	void						ParamSetup_RasterState_NoCull(IShaderAPI* renderAPI);
-	void						ParamSetup_Transform(IShaderAPI* renderAPI);
-	void						ParamSetup_Fog(IShaderAPI* renderAPI);
-	void						ParamSetup_BoneTransforms(IShaderAPI* renderAPI);
-
-	SHADERPARAMFUNC				m_paramFunc[SHADERPARAM_COUNT]{ nullptr };
 };
 
 // DEPRECATED
-#define SetParameterFunctor( type, a) m_paramFunc[type] = (static_cast <SHADERPARAMFUNC>(a))
-#define SetupDefaultParameter( type ) SetupParameter(renderAPI, paramMask, type)
+
+#define SetParameterFunctor( type, a)
+#define SetupDefaultParameter( type )
+
+#define SHADER_INIT_RENDERPASS_PIPELINE()	bool InitRenderPassPipeline(IShaderAPI* renderAPI)
+#define SHADER_DECLARE_PASS(shader)
+#define SHADER_DECLARE_FOGPASS(shader)
+#define SHADER_SETUP_STAGE()				void SetupShader(IShaderAPI* renderAPI)
+#define SHADER_SETUP_CONSTANTS()			void SetupConstants(IShaderAPI* renderAPI, uint paramMask)
+
+#define SHADER_PASS(shader) true
+#define SHADER_FOGPASS(shader) true
+#define SHADER_BIND_PASS_FOGSELECT(shader) 
+#define SHADER_BIND_PASS_SIMPLE(shader)	
+#define SHADER_PASS_UNLOAD(shader)
+#define SHADER_FOGPASS_UNLOAD(shader)
+
+#define SHADERDEFINES_DEFAULTS 
+#define SHADERDEFINES_BEGIN EqString defines; EqString findQuery;
+
+#define SHADER_BEGIN_DEFINITION(b, def)	\
+	if(b) {
+#define SHADER_DECLARE_SIMPLE_DEFINITION(b, def)
+#define SHADER_ADD_FLOAT_DEFINITION(def, num)
+#define SHADER_ADD_INT_DEFINITION(def, num)	
+#define SHADER_END_DEFINITION \
+	}
+
+#define SHADER_FIND_OR_COMPILE(shader, sname)
+#define SHADER_FIND_OR_COMPILE_FOG(shader, sname)

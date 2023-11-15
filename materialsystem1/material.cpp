@@ -352,17 +352,15 @@ bool CMaterial::DoLoadShaderAndTextures()
 	Atomic::Exchange(m_state, MATERIAL_LOAD_INQUEUE);
 
 	// try init
-	if(!shader->IsInitialized() && !shader->IsError())
+	if(!shader->IsInitialized())
 	{
 		PROF_EVENT("MatSystem Load Material Shader and Textures");
-		shader->InitTextures(renderAPI);
 		shader->InitShader(renderAPI);
+		shader->InitTextures(renderAPI);
 	}
 
 	if(shader->IsInitialized() )
 		Atomic::Exchange(m_state, MATERIAL_LOAD_OK);
-	else if(shader->IsError() )
-		Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
 	else
 		ASSERT_FAIL("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName());
 
@@ -484,14 +482,4 @@ void CMaterial::UpdateProxy(float fDt)
 {
 	for(int i = 0; i < m_proxies.numElem(); i++)
 		m_proxies[i]->UpdateProxy( fDt );
-}
-
-void CMaterial::Setup(IShaderAPI* renderAPI, uint paramMask)
-{
-	IMatSystemShader* shader = m_shader;
-
-	// shaders and textures needs to be reset
-	renderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
-	shader->SetupShader(renderAPI);
-	shader->SetupConstants(renderAPI, paramMask );
 }

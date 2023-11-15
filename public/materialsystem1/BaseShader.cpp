@@ -90,32 +90,17 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	PipelineLayoutDesc pipelineLayoutDesc;
 	FillPipelineLayoutDesc(pipelineLayoutDesc);
 	m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+}
 
-
-	// DEPRECATED Init function table
-	for (int i = 0; i < SHADERPARAM_COUNT; i++)
-		SetParameterFunctor(i, &CBaseShader::ParamSetup_Empty);
-
-	/*
-	if (blendMode == SHADER_BLEND_TRANSLUCENT)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
-	else if (blendMode == SHADER_BLEND_ADDITIVE)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
-	else if (blendMode == SHADER_BLEND_MODULATE)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
-	else
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
-
-	if (materialFlags & MATERIAL_FLAG_NO_CULL)
-		SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState_NoCull);
-	else
-		SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
-
-	SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
-	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
-	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
-	SetParameterFunctor(SHADERPARAM_BONETRANSFORMS, &CBaseShader::ParamSetup_BoneTransforms);
-	*/
+IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const
+{
+	// create empty bind group
+	if(!m_emptyBindGroup[bindGroupId])
+	{
+		BindGroupDesc emptyBindGroupDesc;
+		m_emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, emptyBindGroupDesc);
+	}
+	return m_emptyBindGroup[bindGroupId];
 }
 
 IGPUPipelineLayoutPtr CBaseShader::GetPipelineLayout() const
@@ -125,69 +110,100 @@ IGPUPipelineLayoutPtr CBaseShader::GetPipelineLayout() const
 
 void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const
 {
-	// matsystem bindgroup is always first
-	Builder<PipelineLayoutDesc>(renderPipelineLayoutDesc)
-		.Group(
-			Builder<BindGroupLayoutDesc>()
-			.Buffer("camera", 0, SHADERKIND_FRAGMENT | SHADERKIND_VERTEX, BUFFERBIND_UNIFORM)
-			.End()
-		);
+	// MatSystem shader defines three bind groups, which differ by the lifetime:
+	// 
+	//	BINDGROUP_CONSTANT
+	//		- Bind group data is never going to be changed during the life time of the material
+	//	BINDGROUP_RENDERPASS
+	//		- Bind group persists across single render pass
+	//	BINDGROUP_TRANSIENT
+	//		- Bind group is unique for each draw call
 
-	FillMaterialBindGroupLayout(renderPipelineLayoutDesc.bindGroups.append());
+	FillBindGroupLayout_Constant(renderPipelineLayoutDesc.bindGroups.append());
+	FillBindGroupLayout_RenderPass(renderPipelineLayoutDesc.bindGroups.append());
+	FillBindGroupLayout_Transient(renderPipelineLayoutDesc.bindGroups.append());
 }
 
-IGPUBindGroupPtr CBaseShader::GetMatSystemBindGroup(IShaderAPI* renderAPI) const
+void CBaseShader::GetCameraParams(MatSysCamera& cameraParams) const
 {
-	Matrix4x4 wvp_matrix, world, view, proj;
-	g_matSystem->GetWorldViewProjection(wvp_matrix);
-	g_matSystem->GetMatrix(MATRIXMODE_WORLD, world);
-	g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
-	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, proj);
-
 	FogInfo fog;
+	Matrix4x4 wvp_matrix, view, proj;
+	g_matSystem->GetWorldViewProjection(cameraParams.ViewProj);
+	g_matSystem->GetMatrix(MATRIXMODE_VIEW, cameraParams.View);
+	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, cameraParams.Proj);
+
 	g_matSystem->GetFogInfo(fog);
+	cameraParams.Pos = fog.viewPos;
 
-	// setup shader fog
-	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
-	const Vector3D fogParams(fog.fognear, fog.fogfar, fogScale);
-
-	IGPUBindGroupPtr matSysBindGroup;
-	IGPUBufferPtr matSysCameraBuffer;
+	// can use either fixed array or CMemoryStream with on-stack storage
+	if (fog.enableFog)
 	{
-		// can use either fixed array or CMemoryStream with on-stack storage
-		Vector4D bufferMem[32];
-		CMemoryStream bufferData(reinterpret_cast<ubyte*>(bufferMem), VS_OPEN_WRITE, sizeof(bufferMem), PP_SL);
-		VSWrite(&bufferData, wvp_matrix);
-		VSWrite(&bufferData, view);
-		VSWrite(&bufferData, proj);
-		VSWrite(&bufferData, fog.fogColor);
-		VSWrite(&bufferData, fogParams);
-		VSWrite(&bufferData, fog.viewPos);
-		float padding[3]{ 0 };
-		VSWrite(&bufferData, padding);
-
-		matSysCameraBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.GetBasePointer(), bufferData.GetSize()), BUFFERUSAGE_UNIFORM, "matSysCamera");
-		BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-			.Buffer(0, matSysCameraBuffer, 0, bufferData.GetSize())
-			.End();
-		matSysBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 0, shaderBindGroupDesc);
+		const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
+		cameraParams.FogParams = Vector3D(fog.fognear, fog.fogfar, fogScale);
+		cameraParams.FogColor = Vector4D(fog.fogColor, fog.enableFog ? 1.0f : 0.0f);
 	}
-	return matSysBindGroup;
 }
 
-void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
+IGPUBufferPtr CBaseShader::GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI) const
 {
+	MatSysCamera cameraParams;
+	GetCameraParams(cameraParams);
+
+	Vector4D bufferMem[16];
+	CMemoryStream bufferData(reinterpret_cast<ubyte*>(bufferMem), VS_OPEN_WRITE, sizeof(bufferMem), PP_SL);
+	VSWrite(&bufferData, cameraParams);
+
+	return renderAPI->CreateBuffer(BufferInfo(bufferMem, 16), BUFFERUSAGE_UNIFORM, "matSysCamera");
+}
+
+uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology) const
+{
+	uint hash = vertexLayout->GetNameHash();
+	hash *= 31;
+	hash += static_cast<uint>(primitiveTopology);
+	for (int i = 0; i < MAX_RENDERTARGETS; ++i)
+	{
+		const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
+		if (format == FORMAT_NONE)
+			break;
+		hash *= 31;
+		hash += static_cast<uint>(i);
+		hash *= 31;
+		hash += static_cast<uint>(format);
+	}
+	const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();
+	hash *= 31;
+	hash += static_cast<uint>(depthTargetFormat);
+	return hash;
+}
+
+void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
+{
+	Builder<RenderPipelineDesc>(renderPipelineDesc)
+		.ShaderName(GetName())
+		.ShaderVertexLayoutId(vertexLayout->GetNameHash())
+		.PrimitiveState(Builder<PrimitiveDesc>()
+			.Topology(primitiveTopology)
+			.Cull((m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : CULL_BACK) // TODO: variant
+			.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
+			.End())
+		.End();
+
+	Builder<VertexPipelineDesc> vertexPipelineBuilder(renderPipelineDesc.vertex);
+	for (const VertexLayoutDesc& layoutDesc : vertexLayout->GetFormatDesc())
+		vertexPipelineBuilder.VertexLayout(layoutDesc);
+
 	// setup render & shadowing parameters
-	if (!(m_flags & MATERIAL_FLAG_NO_Z_TEST))
+	const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();
+	if (!(m_flags & MATERIAL_FLAG_NO_Z_TEST) && depthTargetFormat != FORMAT_NONE)
 	{
 		if (m_flags & MATERIAL_FLAG_DECAL)
 			g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
-		// TODO: must be selective whenever Z test is on
-		//Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-		//	.DepthTestOn()
-		//	.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-		//	.DepthFormat(g_matSystem->GetDefaultDepthBuffer()->GetFormat());
+		Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
+			.DepthTestOn()
+			.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
+			.DepthFormat(renderPass->GetDepthTargetFormat());
 	}
 
 	if (!(m_flags & MATERIAL_FLAG_ONLY_Z))
@@ -210,40 +226,47 @@ void CBaseShader::FillRenderPipelineDesc(RenderPipelineDesc& renderPipelineDesc)
 			break;
 		}
 
-		// FIXME: apply differently?
-		for (FragmentPipelineDesc::ColorTargetDesc& colorTarget : renderPipelineDesc.fragment.targets)
+		Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
+		for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 		{
-			colorTarget.alphaBlend = alphaBlend;
-			colorTarget.colorBlend = colorBlend;
+			const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
+			if (format == FORMAT_NONE)
+				break;
+			pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
 		}
+		pipelineBuilder.End();
 	}
+}
+
+IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology, const void* userData) const
+{
+	const uint pipelineId = GetRenderPipelineId(renderPass, vertexLayout, primitiveTopology);
+	auto it = m_renderPipelines.find(pipelineId);
+	if (it.atEnd())
+	{
+		RenderPipelineDesc renderPipelineDesc;
+		FillRenderPipelineDesc(renderPass, vertexLayout, primitiveTopology, renderPipelineDesc);
+		BuildPipelineShaderQuery(vertexLayout, renderPipelineDesc.shaderQuery);
+		it = m_renderPipelines.insert(pipelineId, renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc));
+	}
+	return *it;
 }
 
 void CBaseShader::InitShader(IShaderAPI* renderAPI)
 {
-	// And then init shaders
-	if( InitRenderPassPipeline(renderAPI) )
-		m_isInit = true;
-	else
-		m_error = true;
+	m_isInit = true;
 }
 
 // Unload shaders, textures
 void CBaseShader::Unload()
 {
-	for(int i = 0; i < m_usedPrograms.numElem(); ++i)
-		*m_usedPrograms[i] = nullptr;
-	m_usedPrograms.clear(true);
-
+	m_renderPipelines.clear(true);
 	for (int i = 0; i < m_usedTextures.numElem(); ++i)
 	{
 		MatTextureProxy& texProxy = m_usedTextures[i];
 		texProxy.Set(nullptr);
 	}
 	m_usedTextures.clear(true);
-
-	m_isInit = false;
-	m_error = false;
 }
 
 MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlobals) const
@@ -285,10 +308,8 @@ MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char*
 
 	if(mv.IsValid()) 
 	{
-		SamplerStateParams samplerParams((ETexFilterMode)m_texFilter, (ETexAddressMode)m_texAddressMode);
-
 		if(mv.Get().Length())
-			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
+			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), SamplerStateParams(m_texFilter, m_texAddressMode)));
 	}
 	else if(errorTextureIfNoVar)
 		AddManagedTexture(MatTextureProxy(mv), g_matSystem->GetErrorCheckerboardTexture());
@@ -305,13 +326,6 @@ Vector4D CBaseShader::GetTextureTransform(const MatVec2Proxy& transformVar, cons
 	return Vector4D(1, 1, 0, 0);
 }
 
-void CBaseShader::AddManagedShader(IShaderProgramPtr* pShader)
-{
-	if (!*pShader)
-		return;
-	m_usedPrograms.append(pShader);
-}
-
 void CBaseShader::AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex)
 {
 	if (!tex)
@@ -319,99 +333,4 @@ void CBaseShader::AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex)
 
 	var.Set(tex);
 	m_usedTextures.append(var);
-}
-
-// DEPRECATED BELOW
-
-void CBaseShader::SetupParameter(IShaderAPI* renderAPI, uint mask, EShaderParamSetup type)
-{
-	// call it from this
-	if (mask & (1 << (uint)type))
-		(this->*m_paramFunc[type]) (renderAPI);
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Solid(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates( BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD );
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Translucent(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Additive(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Modulate(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR, BLENDFUNC_ADD);
-}
-
-void CBaseShader::ParamSetup_RasterState(IShaderAPI* renderAPI)
-{
-	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
-
-	ECullMode cull_mode = g_matSystem->GetCurrentCullMode();
-	if(config.wireframeMode && config.editormode)
-		cull_mode = CULL_NONE;
-
-	g_matSystem->SetRasterizerStates(cull_mode, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)));
-}
-
-void CBaseShader::ParamSetup_RasterState_NoCull(IShaderAPI* renderAPI)
-{
-	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
-	g_matSystem->SetRasterizerStates(CULL_NONE, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)));
-}
-
-void CBaseShader::ParamSetup_Transform(IShaderAPI* renderAPI)
-{
-	Matrix4x4 wvp_matrix, world, view, proj;
-	g_matSystem->GetWorldViewProjection(wvp_matrix);
-	g_matSystem->GetMatrix(MATRIXMODE_WORLD, world);
-	g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
-	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, proj);
-
-	// TODO: constant buffer CameraTransform
-	renderAPI->SetShaderConstant(StringToHashConst("WVP"), wvp_matrix);
-	renderAPI->SetShaderConstant(StringToHashConst("World"), world);
-	renderAPI->SetShaderConstant(StringToHashConst("View"), view);
-	renderAPI->SetShaderConstant(StringToHashConst("Proj"), proj);
-
-	// setup texture transform
-	const Vector4D texTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
-	renderAPI->SetShaderConstant(StringToHashConst("BaseTextureTransform"), texTransform);
-}
-
-void CBaseShader::ParamSetup_DepthSetup(IShaderAPI* renderAPI)
-{
-	const int flags = m_flags;
-	g_matSystem->SetDepthStates((flags & MATERIAL_FLAG_NO_Z_TEST) == 0, (flags & MATERIAL_FLAG_NO_Z_WRITE) == 0, (flags & MATERIAL_FLAG_DECAL) != 0);
-}
-
-void CBaseShader::ParamSetup_Fog(IShaderAPI* renderAPI)
-{
-	FogInfo fog;
-	g_matSystem->GetFogInfo(fog);
-
-	// setup shader fog
-	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
-	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
-
-	// TODO: constant buffer FogInfo
-	renderAPI->SetShaderConstant(StringToHashConst("ViewPos"), fog.viewPos);
-	renderAPI->SetShaderConstant(StringToHashConst("FogParams"), VectorFOGParams);
-	renderAPI->SetShaderConstant(StringToHashConst("FogColor"), fog.fogColor);
-}
-
-void CBaseShader::ParamSetup_BoneTransforms(IShaderAPI* renderAPI)
-{
-	if (!g_matSystem->IsSkinningEnabled())
-		return;
-	ArrayCRef<RenderBoneTransform> rendBones(nullptr);
-	g_matSystem->GetSkinningBones(rendBones);
-	renderAPI->SetShaderConstantArray(StringToHashConst("Bones"), rendBones);
 }

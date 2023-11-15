@@ -58,11 +58,13 @@ int CStudioCache::PrecacheModel(const char* modelName)
 
 	if (m_egfFormat[0] == nullptr)
 	{
+		// TODO: remove
+
 		{
 			FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
 			egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
 			egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
+			//egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
 			m_egfFormat[0] = g_renderAPI->CreateVertexFormat("EGFVertex", egfVertexLayout);
 		}
 

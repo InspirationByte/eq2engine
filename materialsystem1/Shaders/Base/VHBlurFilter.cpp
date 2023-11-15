@@ -19,33 +19,6 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 	SHADER_INIT_PARAMS()
 	{
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
-		m_blurAxes = 0;
-		m_blurModes = 0;
-		m_texSize = vec4_zero;
-
-		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
-	}
-
-	SHADER_INIT_TEXTURES()
-	{
-		// parse material variables
-		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
-
-		if(m_baseTexture.Get())
-		{
-			m_texSize = Vector4D(m_baseTexture.Get()->GetWidth(), m_baseTexture.Get()->GetHeight(),
-								1.0f / (float)m_baseTexture.Get()->GetWidth(),
-								1.0f / (float)m_baseTexture.Get()->GetHeight());
-		}
-
-		bool blurX = false;
-		bool blurY = false;
-		SHADER_PARAM_BOOL(BlurX, blurX, false);
-		SHADER_PARAM_BOOL(BlurY, blurY, false);
-
-		m_blurAxes |= blurX ? 0x1 : 0;
-		m_blurAxes |= blurY ? 0x2 : 0;
 
 		bool blurXLow = false;
 		bool blurYLow = false;
@@ -62,66 +35,84 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		m_blurModes |= blurYHigh ? 0x8 : 0;
 	}
 
-	SHADER_INIT_RENDERPASS_PIPELINE()
+	SHADER_INIT_TEXTURES()
 	{
-		if(SHADER_PASS(Unlit))
-			return true;
-
-		// begin shader definitions
-		SHADERDEFINES_BEGIN;
-
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_blurAxes & 0x1) > 0, "BLUR_X");
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_blurAxes & 0x2) > 0, "BLUR_Y");
-
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_blurModes & 0x1) > 0, "BLUR_X_LOW");
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_blurModes & 0x2) > 0, "BLUR_Y_LOW");
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_blurModes & 0x4) > 0, "BLUR_X_HIGH");
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_blurModes & 0x8) > 0, "BLUR_Y_HIGH");
-
-		// compile without fog
-		SHADER_FIND_OR_COMPILE(Unlit, "VHBlurFilter");
-
-		return true;
+		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 	}
 
-	SHADER_SETUP_STAGE()
+	void BuildPipelineShaderQuery(const IVertexFormat* vertexLayout, Array<EqString>& shaderQuery) const
 	{
-		SHADER_BIND_PASS_SIMPLE(Unlit);
+		if(m_blurModes & 0x1)
+			shaderQuery.append("BLUR_X_LOW");
+		if(m_blurModes & 0x2)
+			shaderQuery.append("BLUR_Y_LOW");
+		if(m_blurModes & 0x4)
+			shaderQuery.append("BLUR_X_HIGH");
+		if(m_blurModes & 0x8)
+			shaderQuery.append("BLUR_Y_HIGH");
 	}
 
-	SHADER_SETUP_CONSTANTS()
+	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
-
-		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
-
-		SetupDefaultParameter(SHADERPARAM_ALPHASETUP);
-		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
-		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
-		SetupDefaultParameter(SHADERPARAM_COLOR);
-
-		renderAPI->SetShaderConstant(StringToHashConst("TEXSIZE"), m_texSize);
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+			.End();
 	}
 
-	void SetColorModulation(IShaderAPI* renderAPI)
+	void FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("cameraParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.End();
 	}
 
-	void SetupBaseTexture0(IShaderAPI* renderAPI)
+	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
 	{
-		const ITexturePtr& setupTexture = g_matSystem->GetConfiguration().wireframeMode ? g_matSystem->GetWhiteTexture() : m_baseTexture.Get();
-		renderAPI->SetTexture(StringToHashConst("BaseTexture"), setupTexture);
+		if (bindGroupId == BINDGROUP_CONSTANT)
+		{
+			if (!m_materialBindGroup)
+			{
+				ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
+
+				Vector4D texSize;
+				texSize.x = baseTexture->GetWidth();
+				texSize.y = baseTexture->GetHeight();
+				texSize.z = 1.0f / texSize.x;
+				texSize.w = 1.0f / texSize.y;
+
+				FixedArray<Vector4D, 4> bufferData;
+				bufferData.append(texSize);
+				bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
+				IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+
+				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+					.Buffer(0, materialParamsBuffer, 0, materialParamsBuffer->GetSize())
+					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
+					.Texture(2, baseTexture)
+					.End();
+				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+			}
+			return m_materialBindGroup;
+		}
+		else if (bindGroupId == BINDGROUP_RENDERPASS)
+		{
+			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
+			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
+				.End();
+			return renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+		}
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
+	const ITexturePtr& GetBaseTexture(int stage) const
+	{
+		return m_baseTexture.Get();
+	}
 
-	MatTextureProxy	m_baseTexture;
-	int				m_blurAxes;
-	int				m_blurModes;
-
-	Vector4D		m_texSize;
-
-	SHADER_DECLARE_PASS(Unlit);
-
+	mutable IGPUBindGroupPtr	m_materialBindGroup;
+	MatTextureProxy				m_baseTexture;
+	int							m_blurModes{ 0 };
 END_SHADER_CLASS

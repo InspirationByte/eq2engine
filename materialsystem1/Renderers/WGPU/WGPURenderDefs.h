@@ -325,8 +325,10 @@ inline static void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerPa
 	rhiSamplerDesc.minFilter = g_wgpuFilterMode[samplerParams.minFilter];
 	rhiSamplerDesc.magFilter = g_wgpuFilterMode[samplerParams.magFilter];
 	rhiSamplerDesc.mipmapFilter = g_wgpuMipmapFilterMode[samplerParams.mipmapFilter];
+	rhiSamplerDesc.lodMinClamp = 0.0f;
+	rhiSamplerDesc.lodMaxClamp = 8192.0f;
 
-	if(rhiSamplerDesc.minFilter == WGPUFilterMode_Nearest)
+	if (rhiSamplerDesc.minFilter == WGPUFilterMode_Nearest)
 		rhiSamplerDesc.maxAnisotropy = 1;
 	else
 		rhiSamplerDesc.maxAnisotropy = samplerParams.maxAnisotropy;

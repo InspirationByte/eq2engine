@@ -37,13 +37,6 @@ enum EMaterialLightingMode
 	MATERIAL_LIGHT_FORWARD,		// forward shading, also for use in deferred, if you setting non-state lighting model, it will be fully forward
 };
 
-// material bind flags
-enum EMaterialBindFlags
-{
-	MATERIAL_BIND_PREAPPLY = (1 << 0),
-	MATERIAL_BIND_KEEPOVERRIDE = (1 << 1),
-};
-
 //-----------------------------------------------------
 // material system configuration
 //-----------------------------------------------------
@@ -79,7 +72,7 @@ struct MaterialsInitSettings
 class IMaterialSystem : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E1_MaterialSystem_024")
+	CORE_INTERFACE("E1_MaterialSystem_026")
 
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
@@ -133,7 +126,7 @@ public:
 
 	virtual const IMaterialPtr&		GetDefaultMaterial() const = 0;
 	virtual const ITexturePtr&		GetErrorCheckerboardTexture() const = 0;
-	virtual	const ITexturePtr&		GetWhiteTexture() const = 0;
+	virtual	const ITexturePtr&		GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const = 0;
 
 	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
 	virtual IMaterialPtr			GetMaterial(const char* szMaterialName) = 0;
@@ -181,13 +174,6 @@ public:
 
 	virtual void					GetWorldViewProjection(Matrix4x4& matrix) = 0;
 
-	//---
-	virtual void					SetShaderParameterOverriden(int /*EShaderParamSetup*/ param, bool set = true) = 0;
-
-	virtual IMaterialPtr			GetBoundMaterial() const = 0;
-	virtual bool					BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
-	virtual void					Apply() = 0;
-
 	// sets the custom rendering callbacks
 	// useful for proxy updates, setting up constants that shader objects can't access by themselves
 	virtual void					SetRenderCallbacks(IMatSysRenderCallbacks* callback) = 0;
@@ -196,40 +182,23 @@ public:
 	virtual ECullMode				GetCurrentCullMode() const = 0;
 	virtual void					SetCullMode(ECullMode cullMode) = 0;
 
-	virtual void					SetSkinningEnabled(bool bEnable) = 0;
-	virtual bool					IsSkinningEnabled() const = 0;
-
-	// TODO: per instance
-	virtual void					SetSkinningBones(ArrayCRef<RenderBoneTransform> bones) = 0;
-	virtual void					GetSkinningBones(ArrayCRef<RenderBoneTransform>& outBones) const = 0;
-
-	virtual void					SetInstancingEnabled(bool bEnable) = 0;
-	virtual bool					IsInstancingEnabled() const = 0;
-
 	virtual void					SetFogInfo(const FogInfo& info) = 0;
 	virtual void					GetFogInfo(FogInfo& info) const = 0;
 
 	virtual void					SetAmbientColor(const ColorRGBA& color) = 0;
 	virtual ColorRGBA				GetAmbientColor() const = 0;
 
-	virtual void					SetBlendingStates(const BlendStateParams& blend) = 0;
-	virtual void					SetBlendingStates(EBlendFactor src, EBlendFactor dest, EBlendFunc func = BLENDFUNC_ADD, int colormask = COLORMASK_ALL) = 0;
-
-	virtual void					SetDepthStates(const DepthStencilStateParams& depth) = 0;
-	virtual void					SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset = false, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
-
-	virtual void					SetRasterizerStates(const RasterizerStateParams& raster) = 0;
-	virtual void					SetRasterizerStates(ECullMode cullMode, EFillMode fillMode = FILL_SOLID, bool multiSample = true, bool scissor = false) = 0;
-
-
 	//-----------------------------
 	// Drawing
-	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, int vertexLayoutId, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
+
+	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const IVertexFormat* vertexLayout, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual bool					SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
-	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
+	// DEPRECATED
 	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
+	// END DEPRECATED
 
 	// draw primitives with default material
 	virtual void					DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts) = 0;

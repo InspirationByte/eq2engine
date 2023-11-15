@@ -28,7 +28,6 @@ void DrawWorldCenter()
 	ListLine(Vector3D(0,0,-F_INFINITY),Vector3D(0,0, F_INFINITY), grid_vertices);
 
 	MatSysDefaultRenderPass defaultRender;
-	defaultRender.cullMode = CULL_BACK;
 	defaultRender.drawColor = MColor(0.0f, 0.45f, 0.45f, 1.0f);
 
 	g_matSystem->DrawDefaultUP(defaultRender, PRIM_LINES, grid_vertices);
@@ -45,7 +44,6 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	drawCmd.userData = &defaultRenderPass;
 

@@ -168,7 +168,7 @@ struct RenderDrawCmd
 	IGPUBufferPtr	indexBuffer{ nullptr };
 
 	// DEPRECATED
-	IVertexFormat* vertexLayout{ nullptr };		// MUST BE VERTEX LAYOUT NAME HASH???
+	IVertexFormat*	vertexLayout{ nullptr };		// MUST BE VERTEX LAYOUT NAME HASH???
 	IGPUBufferPtr	instanceBuffer{ nullptr };
 	// END DEPRECATED
 

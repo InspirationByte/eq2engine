@@ -11,13 +11,6 @@
 #include "IDynamicMesh.h"
 
 BEGIN_SHADER_CLASS(BaseUnlit)
-
-	bool IsSupportVertexFormat(int nameHash) const
-	{
-		// must support any vertex
-		return true;
-	}
-
 	SHADER_INIT_PARAMS()
 	{
 		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
@@ -30,109 +23,37 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	SHADER_INIT_TEXTURES()
 	{
-		// parse material variables
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
-	SHADER_INIT_RENDERPASS_PIPELINE()
+	bool IsSupportVertexFormat(int nameHash) const
 	{
-		if(SHADER_PASS(Unlit))
-			return true;
-
-		bool fogEnable = true;
-		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false)
-
-		// begin shader definitions
-		SHADERDEFINES_BEGIN;
-
-		// alphatesting
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_flags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
-
-		bool bVertexColor = false;
-		SHADER_PARAM_BOOL(StudioVertexColor, bVertexColor, false);
-		SHADER_DECLARE_SIMPLE_DEFINITION(bVertexColor, "STUDIOVERTEXCOLOR");
-
-		// compile without fog
-		{
-			SHADER_FIND_OR_COMPILE(Unlit_noskin, "BaseUnlit");
-		}
-		
-		{
-			EqString oldDefines = defines;
-			EqString oldFindQuery = findQuery;
-
-			SHADER_DECLARE_SIMPLE_DEFINITION(true, "SKIN");
-			SHADER_FIND_OR_COMPILE(Unlit, "BaseUnlit");
-
-			defines = oldDefines;
-			findQuery = oldFindQuery;
-		}
-
-		// define fog parameter.
-		SHADER_DECLARE_SIMPLE_DEFINITION(fogEnable, "DOFOG");
-
-		// compile with fog
-		{
-			SHADER_FIND_OR_COMPILE(Unlit_noskin_fog, "BaseUnlit");
-		}
-
-		{
-			SHADER_DECLARE_SIMPLE_DEFINITION(true, "SKIN");
-			SHADER_FIND_OR_COMPILE(Unlit_fog, "BaseUnlit");
-		}
-
-		// set texture setup
-		if (m_baseTexture.IsValid())
-			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
-
-		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
-
+		// must support any vertex
 		return true;
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, int vertexLayoutId, EPrimTopology primitiveTopology, const void* userData) const
+	void BuildPipelineShaderQuery(const IVertexFormat* vertexLayout, Array<EqString>& shaderQuery) const
 	{
-		if (!m_renderPipelines[0])
-		{
-			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
-				.ShaderName(GetName())
-				.ShaderVertexLayoutId(vertexLayoutId)
-				.VertexState(
-					Builder<VertexPipelineDesc>()
-					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
-					.End()
-				)
-				.FragmentState(
-					Builder<FragmentPipelineDesc>()
-					.ColorTarget("Default", g_matSystem->GetCurrentBackbuffer()->GetFormat())
-					.End()
-				)
-				.End();
+		bool vertexColor = false;
+		SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
 
-			FillRenderPipelineDesc(renderPipelineDesc);
+		bool fogEnable = true;
+		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false);
 
-			Array<EqString>& shaderQuery = renderPipelineDesc.shaderQuery;
+		if (fogEnable)
+			shaderQuery.append("DOFOG");
 
-			bool vertexColor = false;
-			SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
-			if (vertexColor)
-				shaderQuery.append("VERTEXCOLOR");
+		if (vertexColor)
+			shaderQuery.append("VERTEXCOLOR");
 
-			if (m_flags & MATERIAL_FLAG_ALPHATESTED)
-				shaderQuery.append("ALPHATEST");
+		if (m_flags & MATERIAL_FLAG_ALPHATESTED)
+			shaderQuery.append("ALPHATEST");
 
-			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
-				.Topology(primitiveTopology)
-				.Cull((m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : CULL_BACK) // TODO: variant
-				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
-				.End();
-
-			m_renderPipelines[0] = renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc);
-		}
-		return m_renderPipelines[0];
+		if (vertexLayout->GetNameHash() == StringToHashConst("EGFVertexSkinned"))
+			shaderQuery.append("SKIN");
 	}
 
-	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
+	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
 			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
@@ -141,75 +62,51 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
+	void FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const
 	{
-		if (!m_materialBindGroup)
+		Builder<BindGroupLayoutDesc>(bindGroupLayout)
+			.Buffer("cameraParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+			.End();
+	}
+
+	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
+	{
+		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
+			if (!m_materialBindGroup)
+			{
+				ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
+				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+					.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
+					.Texture(2, baseTexture)
+					.End();
+				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+			}
+
+			// TODO: update BaseTextureTransform
+
+			return m_materialBindGroup;
+		}
+		else if (bindGroupId == BINDGROUP_RENDERPASS)
+		{
+			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
+				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
 				.End();
-			m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
+			return renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
 		}
-
-		return m_materialBindGroup;
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
-	mutable IGPURenderPipelinePtr	m_renderPipelines[2];
-	mutable IGPUBindGroupPtr		m_materialBindGroup;
-	IGPUBufferPtr			m_materialParamsBuffer;
-
-	SHADER_SETUP_STAGE()
+	const ITexturePtr& GetBaseTexture(int stage) const
 	{
-		if (g_matSystem->IsSkinningEnabled())
-		{
-			SHADER_BIND_PASS_FOGSELECT(Unlit)
-		}
-		else
-		{
-			SHADER_BIND_PASS_FOGSELECT(Unlit_noskin)
-		}
+		return m_baseTexture.Get();
 	}
 
-	SHADER_SETUP_CONSTANTS()
-	{
-		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
-		SetupDefaultParameter(SHADERPARAM_BONETRANSFORMS);
+	mutable IGPUBindGroupPtr	m_materialBindGroup;
+	IGPUBufferPtr				m_materialParamsBuffer;
 
-		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
-
-		SetupDefaultParameter(SHADERPARAM_ALPHASETUP);
-		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
-		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
-		SetupDefaultParameter(SHADERPARAM_COLOR);
-		SetupDefaultParameter(SHADERPARAM_FOG);
-	}
-
-	void SetColorModulation(IShaderAPI* renderAPI)
-	{
-		ColorRGBA setColor = m_colorVar.Get() * g_matSystem->GetAmbientColor();
-
-		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), setColor);
-	}
-
-	void SetupBaseTexture0(IShaderAPI* renderAPI)
-	{
-		ITexturePtr setupTexture = g_matSystem->GetConfiguration().wireframeMode ? g_matSystem->GetWhiteTexture() : m_baseTexture.Get();
-
-		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), setupTexture);
-	}
-
-	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
-
-	MatTextureProxy	m_baseTexture;
-	MatVec4Proxy	m_colorVar;
-
-	SHADER_DECLARE_PASS(Unlit);
-	SHADER_DECLARE_FOGPASS(Unlit);
-
-	SHADER_DECLARE_PASS(Unlit_noskin);
-	SHADER_DECLARE_FOGPASS(Unlit_noskin);
-
+	MatTextureProxy				m_baseTexture;
+	MatVec4Proxy				m_colorVar;
 END_SHADER_CLASS

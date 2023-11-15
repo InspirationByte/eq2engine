@@ -14,6 +14,7 @@
 #define DBGOVERLAY_INTERFACE_VERSION "DebugOverlay_001"
 
 class IEqFont;
+class IGPURenderPassRecorder;
 
 struct DbgGraphBucket
 {
@@ -43,7 +44,7 @@ struct DbgGraphBucket
 	bool					dynamic{ false };
 };
 
-using OnDebugDrawFn = EqFunction<bool()>;
+using OnDebugDrawFn = EqFunction<bool(IGPURenderPassRecorder* rendPassRecorder)>;
 
 class IDebugOverlay
 {

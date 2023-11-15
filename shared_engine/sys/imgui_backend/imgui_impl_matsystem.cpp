@@ -22,6 +22,18 @@ static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
 	return ImGui::GetCurrentContext() ? (ImGui_ImplMatSystem_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
 }
 
+static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder, const RenderDrawCmd& drawCmd)
+{
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+
+	g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), drawCmd.primitiveTopology, drawCmd.vertexLayout, &defaultRenderPass, rendPassRecorder);
+
+	rendPassRecorder->SetViewport(AARectangle(0.0f, 0.0f, draw_data->FramebufferScale.x * draw_data->DisplaySize.x, draw_data->FramebufferScale.y * draw_data->DisplaySize.y), 0.0f, 1.0f);
+	rendPassRecorder->SetVertexBuffer(0, drawCmd.vertexBuffers[0]);
+	rendPassRecorder->SetIndexBuffer(drawCmd.indexBuffer, INDEXFMT_UINT16);
+}
+
 // Render function.
 void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder)
 {
@@ -74,9 +86,9 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 			{
 				// User callback, registered via ImDrawList::AddCallback()
 				// (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
-				//if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-				//	ImGui_ImplMatSystem_SetupRenderState(draw_data);
-				//else
+				if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+					ImGui_ImplMatSystem_SetupRenderState(draw_data, rendPassRecorder, drawCmd);
+				else
 					pcmd->UserCallback(cmd_list, pcmd);
 			}
 			else
@@ -93,7 +105,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 				defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 				defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
 
-				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), drawCmd.primitiveTopology, StringToHashConst("DynMeshVertex"), &defaultRenderPass, rendPassRecorder);
+				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), drawCmd.primitiveTopology, drawCmd.vertexLayout, &defaultRenderPass, rendPassRecorder);
 
 				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
 				rendPassRecorder->SetVertexBuffer(0, drawCmd.vertexBuffers[0]);

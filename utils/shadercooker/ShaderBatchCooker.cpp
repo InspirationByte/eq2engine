@@ -71,7 +71,6 @@ struct ShaderInfo
 		int					baseVariant{ -1 };
 		Array<EqString>		defines{ PP_SL };
 	};
-
 	struct Result
 	{
 		shaderc::SpvCompilationResult data;
@@ -81,9 +80,14 @@ struct ShaderInfo
 		int				kindFlag{ -1 };
 		uint32			crc32{ 0 };
 	};
+	struct SkipCombo
+	{
+		Array<EqString>	defines{ PP_SL };
+	};
 	Array<Result>		results{ PP_SL };
 	Array<VertLayout>	vertexLayouts{ PP_SL };
 	Array<Variant>		variants{ PP_SL };
+	Array<SkipCombo>	skipCombos{ PP_SL };
 
 	EqString			name;
 
@@ -98,7 +102,6 @@ struct ShaderInfo
 };
 
 static const char s_boilerPlateStrGLSL[] = R"(
-
 // functions
 #define     frac        fract
 #define     lerp        mix
@@ -120,16 +123,17 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #endif
 
 // See BaseShader and shaders layouts
-#define MATERIAL_BINDING( N )	layout(set = 1, binding = N) 
-#define MATSYS_BINDING( N )		layout(set = 0, binding = N) 
+#define BIND_CONSTANT( N )		layout(set = 0, binding = N)
+#define BIND_RENDERPASS( N )	layout(set = 1, binding = N)
+#define BIND_TRANSIENT( N )		layout(set = 2, binding = N)
 
 )";
 
 class EqShaderIncluder: public shaderc::CompileOptions::IncluderInterface
 {
 public:
-	EqShaderIncluder(ShaderInfo& shaderInfo) 
-		: m_shaderInfo(shaderInfo)
+	EqShaderIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
+		: m_shaderInfo(shaderInfo), m_includePaths(includePaths)
 	{
 	}
 
@@ -138,7 +142,6 @@ public:
 		const char* requesting_source, size_t include_depth)
 	{
 		const EqString sourcePath = EqString(requesting_source).Path_Extract_Path();
-		EqString shaderSourceName = requested_source;
 
 		IncludeResult* result = nullptr;
 		if (m_freeSlots.numElem())
@@ -148,18 +151,16 @@ public:
 
 		if (type == shaderc_include_type_relative)
 		{
-			CombinePath(shaderSourceName, sourcePath, requested_source);
-
-			IFilePtr file = g_fileSystem->Open(shaderSourceName, "r", SP_ROOT);
+			IFilePtr file = TryOpenIncludeFile(sourcePath, requested_source);
 			if (!file)
 			{
 				result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-				result->includeContent.Print("Could not open %s", shaderSourceName.ToCString());
+				result->includeContent.Print("Could not open %s", requested_source);
 				result->resultData.content = (const char*)result->includeContent.GetBasePointer();
 				result->resultData.content_length = result->includeContent.GetSize();
 				return &result->resultData;
 			}
-			result->includeName = shaderSourceName;
+			result->includeName = requested_source;
 			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
 			result->includeContent.AppendStream(file);
 		}
@@ -168,7 +169,7 @@ public:
 			result->includeContent.Close();
 			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
 
-			if (!shaderSourceName.CompareCaseIns("ShaderCooker"))
+			if (!strcmp(requested_source, "ShaderCooker"))
 			{
 				result->includeContent.Print(s_boilerPlateStrGLSL);
 
@@ -180,9 +181,9 @@ public:
 					result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), vertexId);
 				}
 				
-				result->includeName = shaderSourceName;
+				result->includeName = requested_source;
 			}
-			else if (!shaderSourceName.CompareCaseIns("VertexLayout"))
+			else if (!strcmp(requested_source, "VertexLayout"))
 			{
 				int vertexId = -1;
 				for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
@@ -195,8 +196,10 @@ public:
 					}
 				}
 
-				CombinePath(shaderSourceName, sourcePath, "VertexLayouts", m_vertexLayoutName + ".h");
-				IFilePtr file = g_fileSystem->Open(shaderSourceName, "r", SP_ROOT);
+				EqString shaderSourceName;
+				CombinePath(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");
+
+				IFilePtr file = TryOpenIncludeFile(sourcePath, shaderSourceName);
 				if (!file)
 				{
 					result->includeContent.Print("Cannot open %s", shaderSourceName.ToCString());
@@ -217,6 +220,21 @@ public:
 		result->resultData.source_name = result->includeName;
 		result->resultData.source_name_length = result->includeName.Length();
 		return &result->resultData;
+	}
+
+	IFilePtr TryOpenIncludeFile(const char* reqSource, const char* fileName)
+	{
+		EqString fullPath;
+		for (const EqString& incPath : m_includePaths)
+		{
+			CombinePath(fullPath, incPath, fileName);
+			IFilePtr file = g_fileSystem->Open(fullPath, "r", SP_ROOT);
+			if (file)
+				return file;
+		}
+
+		CombinePath(fullPath, reqSource, fileName);
+		return g_fileSystem->Open(fullPath, "r", SP_ROOT);
 	}
 
 	// Handles shaderc_include_result_release_fn callbacks.
@@ -246,6 +264,7 @@ private:
 		CMemoryStream			includeContent{ PP_SL };
 	};
 
+	ArrayCRef<EqString>			m_includePaths;
 	FixedArray<IncludeResult, 32>	m_shaderIncludes;
 	FixedArray<int, 32>		m_freeSlots;
 	const ShaderInfo&		m_shaderInfo;
@@ -275,9 +294,10 @@ private:
 
 	struct TargetProperties
 	{
-		EqString	sourceShaderPath;
-		EqString	sourceShaderDescExt;
-		EqString	targetFolder;
+		Array<EqString>	includePaths{ PP_SL };
+		EqString		sourceShaderPath;
+		EqString		sourceShaderDescExt;
+		EqString		targetFolder;
 	};
 
 	BatchConfig			m_batchConfig;
@@ -474,6 +494,15 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 				}
 			}
 		}
+		else if(!stricmp(nestedSec->GetName(), "SkipCombo"))
+		{
+			// TODO: expression parser?
+			ShaderInfo::SkipCombo& skipCombo = shaderInfo.skipCombos.append();
+			for (KVValueIterator<EqString> it(nestedSec); !it.atEnd(); ++it)
+			{
+				skipCombo.defines.append(it);
+			}
+		}
 		else if (!stricmp(nestedSec->GetName(), "UniformLayout"))
 		{
 			// atm skip
@@ -486,7 +515,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 {
 	EqString shaderSourceName;
-	CombinePath(shaderSourceName, m_targetProps.sourceShaderPath.Path_Extract_Path().ToCString(), shaderInfo.sourceFilename.ToCString());
+	CombinePath(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
 
 	CMemoryStream shaderSourceString(PP_SL);
 	{
@@ -504,9 +533,6 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	uint32 srcCRC = shaderInfo.crc32;
 	CRC32_UpdateChecksum(srcCRC, shaderSourceString.GetBasePointer(), shaderSourceString.GetSize());
 
-	// store new CRC
-	m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), shaderInfo.sourceFilename);
-
 	EqString targetFileName;
 	CombinePath(targetFileName, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
 
@@ -516,6 +542,9 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		// check if  output exists
 		if (g_fileSystem->FileExist(targetFileName, SP_ROOT))
 		{
+			// store new CRC
+			m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), shaderInfo.sourceFilename);
+
 			MsgInfo("Skipping shader '%s' (no changes made)\n", shaderInfo.name.ToCString());
 			return;
 		}
@@ -544,6 +573,10 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	// reserve variant count * (vertex + fragment)
 	shaderInfo.results.reserve(shaderInfo.vertexLayouts.numElem() * totalVariantCount * 2);
 
+	ArrayCRef<EqString> includePaths(m_targetProps.includePaths);
+
+	bool compileErrors = false;
+
 	CEqMutex resultsMutex;
 	for (int vertLayoutIdx = 0; vertLayoutIdx < shaderInfo.vertexLayouts.numElem(); ++vertLayoutIdx)
 	{
@@ -556,12 +589,10 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		}
 
 		MsgWarning("   Compiling for vertex %s\n", vertexLayout.name.ToCString());
-
-		bool stopCompilation = false;
 		for (int i = 0; i < totalVariantCount; ++i)
 		{
 			g_parallelJobs->AddJob(JOB_TYPE_ANY, 
-				[&resultsMutex, &shaderSourceString, &shaderSourceName, &stopCompilation, &shaderInfo, vertexLayout, &switchDefines, nSwitch = i, vertLayoutIdx](void*, int) {
+				[includePaths, &resultsMutex, &shaderSourceString, &shaderSourceName, &compileErrors, &shaderInfo, vertexLayout, &switchDefines, nSwitch = i, vertLayoutIdx](void*, int) {
 				EqString queryStr;
 				for (int j = 0; j < switchDefines.numElem(); ++j)
 				{
@@ -579,6 +610,32 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					}
 				}
 
+				auto foundDefineLen = [](const char* str)
+					{
+						const char* p = str;
+						while (!(*p == 0 || *p == '|'))
+							++p;
+						return p - str;
+					};
+
+				for (const ShaderInfo::SkipCombo& skip : shaderInfo.skipCombos)
+				{
+					if (skip.defines.numElem() == 0)
+						continue;
+
+					int foundCount = 0;
+					for (const EqString& define : skip.defines)
+					{
+						const int foundIdx = queryStr.Find(define, true);
+						if (foundIdx != -1 && foundDefineLen(queryStr.ToCString() + foundIdx) == define.Length())
+						{
+							++foundCount;
+						}
+					}
+					if (foundCount == skip.defines.numElem())
+						return;
+				}
+
 				shaderc::Compiler compiler;
 				auto fillMacros = [vertexLayout, &queryStr, &switchDefines, nSwitch](shaderc::CompileOptions& options) {
 					for (int j = 0; j < switchDefines.numElem(); ++j)
@@ -590,7 +647,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 				auto compileShaderKind = [&](const char* kindStr, int kindFlag, shaderc_shader_kind shaderCKind)
 				{
-					std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>(shaderInfo);
+					std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>(shaderInfo, includePaths);
 					includer->SetVertexLayout(vertexLayout.name);
 
 					shaderc::CompileOptions options;
@@ -640,35 +697,32 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					{
 						MsgError("Failed compiling %s %s\n%s\n", vertexLayout.name.ToCString(), queryStr.ToCString(), compilationResult.GetErrorMessage().c_str());
 						if (compileStatus == shaderc_compilation_status_compilation_error)
-							stopCompilation = true;
+							compileErrors = true;
 					}
 				};
 
-				if (!stopCompilation && (shaderInfo.kind & SHADERKIND_VERTEX))
+				if (!compileErrors && (shaderInfo.kind & SHADERKIND_VERTEX))
 					compileShaderKind("VERTEX", SHADERKIND_VERTEX, shaderc_vertex_shader);
 
-				if (!stopCompilation && (shaderInfo.kind & SHADERKIND_FRAGMENT))
+				if (!compileErrors && (shaderInfo.kind & SHADERKIND_FRAGMENT))
 					compileShaderKind("FRAGMENT", SHADERKIND_FRAGMENT, shaderc_fragment_shader);
 
-				if (!stopCompilation && (shaderInfo.kind & SHADERKIND_COMPUTE))
+				if (!compileErrors && (shaderInfo.kind & SHADERKIND_COMPUTE))
 					compileShaderKind("COMPUTE", SHADERKIND_COMPUTE, shaderc_compute_shader);
 
 				//if(!stopCompilation)
 				//	Msg("   - compiled variant '%s' (%d)\n", queryStr.ToCString(), nSwitch);
 			});
-			if (stopCompilation)
+			if (compileErrors)
 				break;
 		}
 
 		g_parallelJobs->Submit();
-
-		//if (stopCompilation)
-		//	break;
 	}
 	g_parallelJobs->Wait();
 
 	// Store files
-	if (shaderInfo.results.numElem())
+	if (!compileErrors && shaderInfo.results.numElem())
 	{
 		CDPKFileWriter shaderPackFile("shaders", 4);
 		if (!shaderPackFile.Begin(targetFileName))
@@ -677,8 +731,12 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			return;
 		}
 
+		// store new CRC
+		m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), shaderInfo.sourceFilename);
+
 		// Store shader info
 		KVSection shaderInfoKvs;
+		shaderInfoKvs.SetName(shaderInfo.name);
 		{
 			KVSection* definesSec = shaderInfoKvs.CreateSection("Defines");
 			for (EqString& defineStr : switchDefines)
@@ -748,7 +806,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			}
 			
 			spvSec->AddValue(result.queryStr);
-			spvSec->AddValue(shaderFileName);
+			// spvSec->AddValue(shaderFileName);
 
 			// Write shader bytecode file
 			const uint32* shaderData = result.data.begin();
@@ -840,6 +898,11 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 				sourceImageExt = "tga";
 			}
 
+			for (KVKeyIterator it(currentTarget, "includePath"); !it.atEnd(); ++it)
+			{
+				m_targetProps.includePaths.append(KV_GetValueString(*it));
+			}
+
 			m_targetProps.sourceShaderPath = shadersSrc;
 			m_targetProps.sourceShaderDescExt = _Es(sourceImageExt).TrimChar('.');
 		}
@@ -867,7 +930,7 @@ void CShaderCooker::Execute()
 	Msg("Shader source path: '%s'\n", m_targetProps.sourceShaderPath.ToCString());
 
 	EqString searchTemplate;
-	CombinePath(searchTemplate, m_targetProps.sourceShaderPath.ToCString(), "*");
+	CombinePath(searchTemplate, m_targetProps.sourceShaderPath, "*");
 
 	// walk up shader files
 	SearchFolderForShaders(searchTemplate);

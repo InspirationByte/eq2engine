@@ -139,8 +139,11 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		caps.maxVertexGenericAttributes = supLimits.limits.maxVertexAttributes;
 		caps.maxVertexTexcoordAttributes = supLimits.limits.maxVertexAttributes;
 		caps.maxTextureSize = supLimits.limits.maxTextureDimension2D;
+		caps.maxTextureArrayLayers = supLimits.limits.maxTextureArrayLayers;
 		caps.maxTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
 		caps.maxVertexTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
+		caps.maxBindGroups = supLimits.limits.maxBindGroups;
+		caps.maxBindingsPerBindGroup = supLimits.limits.maxBindingsPerBindGroup;
 		caps.maxTextureAnisotropicLevel = 16;
 		caps.maxRenderTargets = supLimits.limits.maxColorAttachments;
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED

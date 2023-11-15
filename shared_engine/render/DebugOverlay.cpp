@@ -443,7 +443,6 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime, IGPURe
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
 	drawCmd.userData = &defaultRenderPass;
@@ -482,7 +481,6 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
 	drawCmd.userData = &defaultRenderPass;
@@ -556,7 +554,6 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime, IGPURend
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
 	drawCmd.userData = &defaultRenderPass;
@@ -677,7 +674,6 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
 	drawCmd.userData = &defaultRenderPass;
@@ -734,10 +730,6 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 	pFont->SetupRenderText(graph->name, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl, rendPassRecorder);
 	pFont->SetupRenderText("0", Vector2D(x_pos + 5, y_pos), textStl, rendPassRecorder);
 	pFont->SetupRenderText(EqString::Format("%.2f", graph->maxValue).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl, rendPassRecorder);
-
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
 	MatSysDefaultRenderPass defaultRender;
 	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -816,7 +808,7 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime, IGPU
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
+	defaultRenderPass.cullMode = CULL_FRONT;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
 	drawCmd.userData = &defaultRenderPass;
@@ -1046,7 +1038,6 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime, 
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
 	drawCmd.userData = &defaultRenderPass;
@@ -1099,7 +1090,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		for (int i = 0; i < m_draw3DFuncs.numElem(); i++)
 		{
-			if (!m_draw3DFuncs[i].func())
+			if (!m_draw3DFuncs[i].func(rendPassRecorder))
 			{
 				m_draw3DFuncs.fastRemoveIndex(i);
 				--i;
@@ -1289,7 +1280,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
 		{
-			if (!m_draw2DFuncs[i].func())
+			if (!m_draw2DFuncs[i].func(rendPassRecorder))
 			{
 				m_draw2DFuncs.fastRemoveIndex(i);
 				--i;

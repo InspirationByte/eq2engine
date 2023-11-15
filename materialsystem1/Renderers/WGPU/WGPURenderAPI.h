@@ -173,9 +173,10 @@ public:
 
 protected:
 
-	WGPUShaderModule	CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr);
+	WGPUShaderModule	CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
 
-	bool				LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output);
+	WGPUShaderModule	GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
+	int					LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output);
 
 
 	WGPUDevice			m_rhiDevice{ nullptr };

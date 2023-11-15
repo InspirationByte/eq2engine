@@ -2,6 +2,8 @@
 
 struct ShaderInfoWGPUImpl
 {
+	~ShaderInfoWGPUImpl();
+
 	void Release();
 	bool GetShaderQueryHash(const Array<EqString>& findDefines, int& outHash) const;
 
@@ -16,8 +18,11 @@ struct ShaderInfoWGPUImpl
 	{
 		WGPUShaderModule	rhiModule{ nullptr };
 		EShaderKind			kind;
+		int					fileIndex{ -1 };
 	};
 
+	EqString			shaderName;
+	IFilePackageReader* shaderPackFile{ nullptr };
 	Array<VertLayout>	vertexLayouts{ PP_SL };
 	Array<EqString>		defines{ PP_SL };
 	Array<Module>		modules{ PP_SL };

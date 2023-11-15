@@ -28,3 +28,17 @@ struct FogInfo
 	float		fogfar;
 	bool		enableFog{ false };
 };
+
+//---------------------------------------------
+// structs used in shader
+
+struct MatSysCamera
+{
+	Matrix4x4	ViewProj;
+	Matrix4x4	View;
+	Matrix4x4	Proj;
+	Vector3D	Pos;
+	Vector4D	FogColor;		// .a is factor
+	Vector3D	FogParams;
+	float padding[2];
+};
