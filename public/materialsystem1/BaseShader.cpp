@@ -138,9 +138,19 @@ void CBaseShader::GetCameraParams(MatSysCamera& cameraParams) const
 	// can use either fixed array or CMemoryStream with on-stack storage
 	if (fog.enableFog)
 	{
-		const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
-		cameraParams.FogParams = Vector3D(fog.fognear, fog.fogfar, fogScale);
-		cameraParams.FogColor = Vector4D(fog.fogColor, fog.enableFog ? 1.0f : 0.0f);
+		cameraParams.FogFactor = fog.enableFog ? 1.0f : 0.0f;
+		cameraParams.FogNear = fog.fognear;
+		cameraParams.FogFar = fog.fogfar;
+		cameraParams.FogScale = 1.0f / (fog.fogfar - fog.fognear);
+		cameraParams.FogColor = fog.fogColor;
+	}
+	else
+	{
+		cameraParams.FogFactor = 0.0f;
+		cameraParams.FogNear = 1000000.0f;
+		cameraParams.FogFar = 1000000.0f;
+		cameraParams.FogScale = 1.0f;
+		cameraParams.FogColor = color_white;
 	}
 }
 
@@ -149,11 +159,7 @@ IGPUBufferPtr CBaseShader::GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI
 	MatSysCamera cameraParams;
 	GetCameraParams(cameraParams);
 
-	Vector4D bufferMem[16];
-	CMemoryStream bufferData(reinterpret_cast<ubyte*>(bufferMem), VS_OPEN_WRITE, sizeof(bufferMem), PP_SL);
-	VSWrite(&bufferData, cameraParams);
-
-	return renderAPI->CreateBuffer(BufferInfo(bufferMem, 16), BUFFERUSAGE_UNIFORM, "matSysCamera");
+	return renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 }
 
 uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology) const

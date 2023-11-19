@@ -17,7 +17,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 		FixedArray<Vector4D, 4> bufferData;
 		bufferData.append(m_colorVar.Get());
-		bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
 		m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 	}
 
@@ -39,7 +38,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 		bool fogEnable = true;
 		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false);
-
 		if (fogEnable)
 			shaderQuery.append("DOFOG");
 
@@ -90,9 +88,16 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		}
 		else if (bindGroupId == BINDGROUP_RENDERPASS)
 		{
-			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
+			struct {
+				MatSysCamera camera;
+				Vector4D textureTransform;
+			} passParams;
+			GetCameraParams(passParams.camera);
+			passParams.textureTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
+			
+			IGPUBufferPtr passParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&passParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
+				.Buffer(0, passParamsBuffer, 0, passParamsBuffer->GetSize())
 				.End();
 			return renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
 		}
