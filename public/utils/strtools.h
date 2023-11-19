@@ -157,29 +157,11 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
 
 namespace EqStringConv
 {
-	class utf8_to_wchar
-	{
-	public:
-		utf8_to_wchar(EqWString& outStr, const char* val, int length = -1);
-		utf8_to_wchar(wchar_t* outStr, int maxLength, const char* val, int length = -1);
-	private:
-		uint32 NextByte()
-		{
-			if (!(*m_utf8))
-				return 0;
+class CUTF8Conv
+{
+public:
+	CUTF8Conv(EqString& outStr, const wchar_t* val, int length = -1);
+	CUTF8Conv(EqWString& outStr, const char* val, int length = -1);
+};
 
-			return *m_utf8++;
-		}
-
-		int		GetLength();
-		uint32	GetChar();
-
-		ubyte* m_utf8;
-	};
-
-	class wchar_to_utf8
-	{
-	public:
-		wchar_to_utf8(EqString& outStr, const wchar_t* val, int length = -1);
-	};
 };
