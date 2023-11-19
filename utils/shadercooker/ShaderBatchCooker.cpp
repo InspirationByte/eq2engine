@@ -13,6 +13,9 @@
 #include "utils/KeyValues.h"
 #include "dpk/DPKFileWriter.h"
 
+#include "ShaderInfo.h"
+#include "ShaderIncluder.h"
+
 using namespace Threading;
 
 /*
@@ -28,248 +31,6 @@ Targets
 }
 */
 
-enum EShaderKindFlags
-{
-	SHADERKIND_VERTEX	= (1 << 0),
-	SHADERKIND_FRAGMENT	= (1 << 1),
-	SHADERKIND_COMPUTE	= (1 << 2),
-};
-
-enum EShaderConvStatus
-{
-	SHADERCONV_INIT = 0,
-	SHADERCONV_CRC_LOADED,
-	SHADERCONV_COMPILED,
-	SHADERCONV_FAILED,
-	SHADERCONV_SKIPPED
-};
-
-enum EShaderSourceType
-{
-	SHADERSOURCE_UNDEFINED,
-	SHADERSOURCE_HLSL,
-	SHADERSOURCE_GLSL,
-	//SHADERSOURCE_WGSL,
-};
-
-static shaderc_source_language s_sourceLanguage[] = {
-	shaderc_source_language_hlsl,
-	shaderc_source_language_glsl,
-};
-
-struct ShaderInfo
-{
-	struct VertLayout
-	{
-		EqString name;
-		int aliasOf{ -1 };
-		Array<EqString>		excludeDefines{ PP_SL };
-	};
-	struct Variant
-	{
-		EqString			name;
-		int					baseVariant{ -1 };
-		Array<EqString>		defines{ PP_SL };
-	};
-	struct Result
-	{
-		shaderc::SpvCompilationResult data;
-		EqString		queryStr;
-		int				refResult{ -1 };
-		int				vertLayoutIdx{ -1 };
-		int				kindFlag{ -1 };
-		uint32			crc32{ 0 };
-	};
-	struct SkipCombo
-	{
-		Array<EqString>	defines{ PP_SL };
-	};
-	Array<Result>		results{ PP_SL };
-	Array<VertLayout>	vertexLayouts{ PP_SL };
-	Array<Variant>		variants{ PP_SL };
-	Array<SkipCombo>	skipCombos{ PP_SL };
-
-	EqString			name;
-
-	EqString			sourceFilename;
-	EShaderSourceType	sourceType;
-
-	uint32				crc32{ 0 };
-	int					totalVariationCount{ 0 };
-	
-	int					kind{ 0 };	// EShaderKindFlags
-	EShaderConvStatus	status{ SHADERCONV_INIT };
-};
-
-static const char s_boilerPlateStrGLSL[] = R"(
-// functions
-#define     frac        fract
-#define     lerp        mix
-#define     saturate(x) clamp(x, 0.0, 1.0)
-#define     mul(a,b)    ((a)*(b))
-
-float fmod(float x, float y) { return x - y * floor(x / y); }
-
-#ifdef VERTEX
-#	define clip(x)	(x)
-#	define ddx(x)	(x)
-#	define ddy(x)	(x)
-#endif
-
-#ifdef FRAGMENT
-#	define clip(x)	if((x) < 0.0) discard
-#	define ddx    	dFdx
-#	define ddy    	dFdy
-#endif
-
-// See BaseShader and shaders layouts
-#define BIND_CONSTANT( N )		layout(set = 0, binding = N)
-#define BIND_RENDERPASS( N )	layout(set = 1, binding = N)
-#define BIND_TRANSIENT( N )		layout(set = 2, binding = N)
-
-)";
-
-class EqShaderIncluder: public shaderc::CompileOptions::IncluderInterface
-{
-public:
-	EqShaderIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
-		: m_shaderInfo(shaderInfo), m_includePaths(includePaths)
-	{
-	}
-
-	virtual shaderc_include_result* GetInclude(
-		const char* requested_source, shaderc_include_type type,
-		const char* requesting_source, size_t include_depth)
-	{
-		const EqString sourcePath = EqString(requesting_source).Path_Extract_Path();
-
-		IncludeResult* result = nullptr;
-		if (m_freeSlots.numElem())
-			result = &m_shaderIncludes[m_freeSlots.popBack()];
-		else
-			result = &m_shaderIncludes.append();
-
-		if (type == shaderc_include_type_relative)
-		{
-			IFilePtr file = TryOpenIncludeFile(sourcePath, requested_source);
-			if (!file)
-			{
-				result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-				result->includeContent.Print("Could not open %s", requested_source);
-				result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-				result->resultData.content_length = result->includeContent.GetSize();
-				return &result->resultData;
-			}
-			result->includeName = requested_source;
-			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
-			result->includeContent.AppendStream(file);
-		}
-		else
-		{
-			result->includeContent.Close();
-			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-
-			if (!strcmp(requested_source, "ShaderCooker"))
-			{
-				result->includeContent.Print(s_boilerPlateStrGLSL);
-
-				// also add vertex layout defines
-				for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
-				{
-					const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
-					const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
-					result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), vertexId);
-				}
-				
-				result->includeName = requested_source;
-			}
-			else if (!strcmp(requested_source, "VertexLayout"))
-			{
-				int vertexId = -1;
-				for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
-				{
-					const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
-					if (layout.name == m_vertexLayoutName)
-					{
-						vertexId = i;
-						break;
-					}
-				}
-
-				EqString shaderSourceName;
-				CombinePath(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");
-
-				IFilePtr file = TryOpenIncludeFile(sourcePath, shaderSourceName);
-				if (!file)
-				{
-					result->includeContent.Print("Cannot open %s", shaderSourceName.ToCString());
-					result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-					result->resultData.content_length = result->includeContent.GetSize();
-					return &result->resultData;
-				}
-
-				result->includeName = shaderSourceName;
-				result->includeContent.Close();
-				result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
-				result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", vertexId);
-				result->includeContent.AppendStream(file);
-			}
-		}
-		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-		result->resultData.content_length = result->includeContent.GetSize();
-		result->resultData.source_name = result->includeName;
-		result->resultData.source_name_length = result->includeName.Length();
-		return &result->resultData;
-	}
-
-	IFilePtr TryOpenIncludeFile(const char* reqSource, const char* fileName)
-	{
-		EqString fullPath;
-		for (const EqString& incPath : m_includePaths)
-		{
-			CombinePath(fullPath, incPath, fileName);
-			IFilePtr file = g_fileSystem->Open(fullPath, "r", SP_ROOT);
-			if (file)
-				return file;
-		}
-
-		CombinePath(fullPath, reqSource, fileName);
-		return g_fileSystem->Open(fullPath, "r", SP_ROOT);
-	}
-
-	// Handles shaderc_include_result_release_fn callbacks.
-	void ReleaseInclude(shaderc_include_result* data)
-	{
-		IncludeResult* incRes = reinterpret_cast<IncludeResult*>(data);
-		const int index = incRes - m_shaderIncludes.ptr();
-		memset(data, 0, sizeof(*data));
-
-		incRes->includeName.Clear();
-		incRes->includeContent.Close();
-
-		m_freeSlots.append(index);
-	}
-
-	void SetVertexLayout(const char* vertexLayoutName)
-	{
-		m_vertexLayoutName = vertexLayoutName;
-	}
-
-private:
-
-	struct IncludeResult
-	{
-		shaderc_include_result	resultData;
-		EqString				includeName;
-		CMemoryStream			includeContent{ PP_SL };
-	};
-
-	ArrayCRef<EqString>			m_includePaths;
-	FixedArray<IncludeResult, 32>	m_shaderIncludes;
-	FixedArray<int, 32>		m_freeSlots;
-	const ShaderInfo&		m_shaderInfo;
-	EqString				m_vertexLayoutName;
-};
 
 //-------------------------------------
 
@@ -283,6 +44,7 @@ private:
 	void				SearchFolderForShaders(const char* wildcard);
 	bool				HasMatchingCRC(uint32 crc);
 
+	bool				ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection);
 	void				InitShaderVariants(ShaderInfo& shaderInfo, int baseVariant, const KVSection* section);
 	void				ProcessShader(ShaderInfo& shaderInfo);
 
@@ -307,6 +69,83 @@ private:
 };
 
 //-----------------------------------------------------------------------
+
+bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection)
+{
+	const char* shaderFileName = KV_GetValueString(shaderSection->FindSection("SourceFile"), 0, nullptr);
+	if (!shaderFileName)
+	{
+		MsgWarning("%s missing 'SourceFile'", shaderDefFileName);
+		return false;
+	}
+
+	const KVSection* kinds = shaderSection->FindSection("SourceKind");
+	if (!kinds)
+	{
+		MsgWarning("%s missing 'SourceKind' section", shaderDefFileName);
+		return false;
+	}
+
+	int shaderKind = 0;
+	for (KVKeyIterator keysIter(kinds); !keysIter.atEnd(); ++keysIter)
+	{
+		if (!stricmp(keysIter, "Vertex"))
+			shaderKind |= SHADERKIND_VERTEX;
+		else if (!stricmp(keysIter, "Fragment"))
+			shaderKind |= SHADERKIND_FRAGMENT;
+		else if (!stricmp(keysIter, "Compute"))
+			shaderKind |= SHADERKIND_COMPUTE;
+	}
+
+	if ((shaderKind & SHADERKIND_COMPUTE) == 0 && (shaderKind & SHADERKIND_VERTEX) == 0)
+	{
+		MsgWarning("%s must have Vertex kind section if it doesn't serve Compute", shaderDefFileName);
+		return false;
+	}
+
+	ShaderInfo& shaderInfo = m_shaderList.append();
+	shaderInfo.crc32 = g_fileSystem->GetFileCRC32(shaderDefFileName, SP_ROOT);
+	shaderInfo.name = KV_GetValueString(shaderSection);
+	shaderInfo.sourceFilename = shaderFileName;
+	shaderInfo.kind = shaderKind;
+
+	const char* shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
+	if (!stricmp(shaderType, "hlsl"))
+		shaderInfo.sourceType = SHADERSOURCE_HLSL;
+	else if (!stricmp(shaderType, "glsl"))
+		shaderInfo.sourceType = SHADERSOURCE_GLSL;
+	//else if (!stricmp(shaderType, "wgsl"))
+	//	shaderInfo.sourceType = SHADERSOURCE_WGSL;
+
+	InitShaderVariants(shaderInfo, -1, shaderSection);
+
+	// count all shader variations
+	int numSwitchableDefines = 0;
+	for (int i = 0; i < shaderInfo.variants.numElem(); ++i)
+	{
+		const ShaderInfo::Variant* variant = &shaderInfo.variants[i];
+		do
+		{
+			if (variant->baseVariant != -1)
+			{
+				numSwitchableDefines += variant->defines.numElem();
+				variant = &shaderInfo.variants[variant->baseVariant];
+			}
+			else
+				break;
+		} while (variant);
+	}
+	int nonAliasVertLayouts = 0;
+	for (const ShaderInfo::VertLayout& vertexLayout : shaderInfo.vertexLayouts)
+	{
+		if (vertexLayout.aliasOf == -1)
+			++nonAliasVertLayouts;
+	}
+
+	shaderInfo.totalVariationCount = nonAliasVertLayouts * (1 << numSwitchableDefines);
+
+	return true;
+}
 
 void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 {
@@ -340,77 +179,7 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 				continue;
 			}
 
-			const char* shaderFileName = KV_GetValueString(shaderSection->FindSection("SourceFile"), 0, nullptr);
-			if (!shaderFileName)
-			{
-				MsgWarning("%s missing 'SourceFile'", fullShaderPath.ToCString());
-				continue;
-			}
-
-			const KVSection* kinds = shaderSection->FindSection("SourceKind");
-			if (!kinds)
-			{
-				MsgWarning("%s missing 'SourceKind' section", fullShaderPath.ToCString());
-				continue;
-			}
-
-			int shaderKind = 0;
-			for (KVKeyIterator keysIter(kinds); !keysIter.atEnd(); ++keysIter)
-			{
-				if (!stricmp(keysIter, "Vertex"))
-					shaderKind |= SHADERKIND_VERTEX;
-				else if (!stricmp(keysIter, "Fragment"))
-					shaderKind |= SHADERKIND_FRAGMENT;
-				else if (!stricmp(keysIter, "Compute"))
-					shaderKind |= SHADERKIND_COMPUTE;
-			}
-
-			if ((shaderKind & SHADERKIND_COMPUTE) == 0 && (shaderKind & SHADERKIND_VERTEX) == 0)
-			{
-				MsgWarning("%s must have Vertex kind section if it doesn't serve Compute", fullShaderPath.ToCString());
-				continue;
-			}
-
-			ShaderInfo& shaderInfo = m_shaderList.append();
-			shaderInfo.crc32 = g_fileSystem->GetFileCRC32(fullShaderPath, SP_ROOT);
-			shaderInfo.name = KV_GetValueString(shaderSection);
-			shaderInfo.sourceFilename = shaderFileName;
-			shaderInfo.kind = shaderKind;
-
-			const char* shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
-			if (!stricmp(shaderType, "hlsl"))
-				shaderInfo.sourceType = SHADERSOURCE_HLSL;
-			else if (!stricmp(shaderType, "glsl"))
-				shaderInfo.sourceType = SHADERSOURCE_GLSL;
-			//else if (!stricmp(shaderType, "wgsl"))
-			//	shaderInfo.sourceType = SHADERSOURCE_WGSL;
-
-			InitShaderVariants(shaderInfo, -1, shaderSection);
-
-			// count all shader variations
-			int numSwitchableDefines = 0;
-			for (int i = 0; i < shaderInfo.variants.numElem(); ++i)
-			{
-				const ShaderInfo::Variant* variant = &shaderInfo.variants[i];
-				do
-				{
-					if (variant->baseVariant != -1)
-					{
-						numSwitchableDefines += variant->defines.numElem();
-						variant = &shaderInfo.variants[variant->baseVariant];
-					}
-					else
-						break;
-				} while (variant);
-			}
-			int nonAliasVertLayouts = 0;
-			for (const ShaderInfo::VertLayout& vertexLayout : shaderInfo.vertexLayouts)
-			{
-				if (vertexLayout.aliasOf == -1)
-					++nonAliasVertLayouts;
-			}
-
-			shaderInfo.totalVariationCount = nonAliasVertLayouts * (1 << numSwitchableDefines);
+			ParseShaderInfo(fullShaderPath, shaderSection);
 		}
 	}
 }
