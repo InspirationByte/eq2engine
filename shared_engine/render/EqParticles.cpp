@@ -14,13 +14,13 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-const VertexLayoutDesc& PFXVertex_t::GetVertexLayoutDesc()
+const VertexLayoutDesc& PFXVertex::GetVertexLayoutDesc()
 {
 	static VertexLayoutDesc s_PFXVertexLayoutDesc = Builder<VertexLayoutDesc>()
-		.Stride(sizeof(PFXVertex_t))
+		.Stride(sizeof(PFXVertex))
 		.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(PFXVertex_t, texcoord), ATTRIBUTEFORMAT_HALF, 2)
-		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(PFXVertex_t, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(PFXVertex, texcoord), ATTRIBUTEFORMAT_HALF, 2)
+		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(PFXVertex, color), ATTRIBUTEFORMAT_UINT8, 4)
 		.End();
 	return s_PFXVertexLayoutDesc;
 }
@@ -66,7 +66,7 @@ void CParticleBatch::SetCustomProjectionMatrix(const Matrix4x4& mat)
 	m_customProjMat = mat;
 }
 
-int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices )
+int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex** verts, uint16** indices, bool preSetIndices )
 {
 	if(!g_pfxRender->IsInitialized())
 		return -1;
@@ -76,7 +76,7 @@ int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** ver
 	return _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
 }
 
-void CParticleBatch::AddParticleStrip(PFXVertex_t* verts, int nVertices)
+void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
 {
 	if(!g_pfxRender->IsInitialized())
 		return;
@@ -202,7 +202,7 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	if(!m_vertexFormat)
 	{
-		const VertexLayoutDesc& fmtDesc = PFXVertex_t::GetVertexLayoutDesc();
+		const VertexLayoutDesc& fmtDesc = PFXVertex::GetVertexLayoutDesc();
 		m_vertexFormat = g_renderAPI->CreateVertexFormat("PFXVertex", ArrayCRef(&fmtDesc, 1));
 	}
 
@@ -279,7 +279,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 			return;
 	}
 
-	PFXVertex_t* verts;
+	PFXVertex* verts;
 	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
@@ -333,7 +333,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 	}
 
 
-	PFXVertex_t* verts;
+	PFXVertex* verts;
 	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 

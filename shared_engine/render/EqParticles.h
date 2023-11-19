@@ -26,12 +26,12 @@ enum EPartRenderFlags
 };
 
 // particle vertex with color
-struct PFXVertex_t
+struct PFXVertex
 {
 	static const VertexLayoutDesc& GetVertexLayoutDesc();
 
-	PFXVertex_t() = default;
-	PFXVertex_t(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)
+	PFXVertex() = default;
+	PFXVertex(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)
 	{
 		point = p;
 		texcoord = t;
@@ -46,7 +46,7 @@ struct PFXVertex_t
 //
 // Particle batch for creating primitives
 //
-class CParticleBatch : public CSpriteBuilder<PFXVertex_t>
+class CParticleBatch : public CSpriteBuilder<PFXVertex>
 {
 	friend class CParticleLowLevelRenderer;
 
@@ -59,8 +59,8 @@ public:
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
-	int					AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices = false );
-	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
+	int					AllocateGeom( int nVertices, int nIndices, PFXVertex** verts, uint16** indices, bool preSetIndices = false );
+	void				AddParticleStrip(PFXVertex* verts, int nVertices);
 
 	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
 
