@@ -98,13 +98,13 @@ public:
 
 	EPackageReaderType		GetType() const { return PACKAGE_READER_DPK; }
 
-	IFilePtr				Open( const char* filename, int modeFlags);
+	IFilePtr				Open(const char* filename, int modeFlags);
+	IFilePtr				Open(int fileIndex, int modeFlags);
 	bool					FileExists(const char* filename) const;
+	int						FindFileIndex(const char* filename) const;
 
 protected:
-
 	bool					InitPackage(COSFile& osFile, const char* mountPath /*= nullptr*/);
-	int						FindFileIndex(const char* filename) const;
 
 	Array<dpkfileinfo_t>	m_dpkFiles{ PP_SL };
 	Map<int, int>			m_fileIndices{ PP_SL };
