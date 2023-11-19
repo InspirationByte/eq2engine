@@ -53,6 +53,7 @@ INTERFACE_SINGLETON( ILocalize, CLocalize, g_localizer )
 inline const wchar_t* LocalizedString( const char* pszString )
 {
 	static EqWString defaultUnicodeString;
+	defaultUnicodeString.Empty();
 
 	if(!pszString || (pszString && pszString[0] == '\0'))
 		return defaultUnicodeString;
