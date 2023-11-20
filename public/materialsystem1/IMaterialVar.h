@@ -127,7 +127,7 @@ inline const float& MatVarProxy<float>::Get() const
 }
 
 template<>
-inline float* MatVarProxy<float>::GetArray()
+inline float* MatVarProxy<float>::GetArray() const
 {
 	if (!m_vars)
 		return nullptr;

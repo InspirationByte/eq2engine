@@ -236,9 +236,9 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, kind);
 		const int refIndex = KV_GetValueInt(itemSec, 3);
 
-		ASSERT_MSG(output.modules[refIndex].kind == static_cast<EShaderKind>(kind), "ref %d (%s-%s) points to invalid shader kind", refIndex, kindStr, queryStr);
+		ASSERT_MSG(output.modules[refIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", output.shaderName.ToCString(), refIndex, kindStr, queryStr);
 
-		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s already added, fix shader compiler\n", kindStr, queryStr);
+		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s %s-%s already added, fix shader compiler\n", output.shaderName.ToCString(), kindStr, queryStr);
 		output.modulesMap.insert(shaderModuleId, refIndex);
 	}
 
@@ -704,6 +704,9 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 			const int firstVertexAttrib = rhiVertexAttribList.numElem();
 			for(const VertexLayoutDesc::AttribDesc& attrib : vertexLayout.attributes)
 			{
+				if (attrib.format == ATTRIBUTEFORMAT_NONE)
+					continue;
+
 				WGPUVertexAttribute vertAttr = {};
 				vertAttr.format = g_wgpuVertexFormats[attrib.format][attrib.count-1];
 				vertAttr.offset = attrib.offset;

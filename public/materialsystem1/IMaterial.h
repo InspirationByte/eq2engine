@@ -50,8 +50,7 @@ public:
 
 	void				Set(const T& value);
 	const T&			Get() const;
-
-	T*					GetArray();
+	T*					GetArray() const;
 
 	void				Purge();
 
