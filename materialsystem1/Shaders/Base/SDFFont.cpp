@@ -10,15 +10,18 @@
 #include "IDynamicMesh.h"
 #include "BaseShader.h"
 
-static uint GenDefaultPipelineId(EPrimTopology primitiveTopology, const MatSysDefaultRenderPass& renderPass)
+static uint GenDefaultPipelineId(const IGPURenderPassRecorder* renderPass, const MatSysDefaultRenderPass& renderPassInfo, EPrimTopology primitiveTopology)
 {
 	uint id = 0;
-	id |= renderPass.cullMode; // 2 bits
+	id |= renderPassInfo.cullMode; // 2 bits
 	id |= primitiveTopology << 2;	// 3 bits
-	id |= renderPass.blendMode << (2 + 3); // 2 bits
-	id |= renderPass.depthFunc << (2 + 3 + 2); // 1 bit
-	id |= renderPass.depthTest << (2 + 3 + 2 + 1); // 1 bit
-	id |= renderPass.depthWrite << (2 + 3 + 2 + 1 + 1); // 4 bits
+	id |= renderPassInfo.blendMode << (2 + 3); // 2 bits
+	id |= renderPassInfo.depthFunc << (2 + 3 + 2); // 1 bit
+	id |= renderPassInfo.depthTest << (2 + 3 + 2 + 1); // 1 bit
+	id |= renderPassInfo.depthWrite << (2 + 3 + 2 + 1 + 1); // 4 bits
+	id |= (GetTexFormat(renderPass->GetRenderTargetFormat(0)) & 63) << (2 + 3 + 2 + 1 + 1 + 4);
+	id |= (renderPass->GetRenderTargetFormat(0) >> 10 & 3) << (2 + 3 + 2 + 1 + 1 + 4 + 6);
+	id |= (renderPass->GetDepthTargetFormat() & 63) << (2 + 3 + 2 + 1 + 1 + 4 + 6 + 2);
 	return id;
 }
 
@@ -43,7 +46,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
-		const uint pipelineId = GenDefaultPipelineId(primitiveTopology , *rendPassInfo);
+		const uint pipelineId = GenDefaultPipelineId(renderPass, *rendPassInfo, primitiveTopology);
 		auto it = m_renderPipelines.find(pipelineId);
 
 		if (it.atEnd())
