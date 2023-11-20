@@ -71,7 +71,7 @@ struct EGFHwVertex
 		BoneWeights();
 		BoneWeights(const studioBoneWeight_t& initFrom);
 
-		half			boneIndices[MAX_MODEL_VERTEX_WEIGHTS];
+		uint8			boneIndices[MAX_MODEL_VERTEX_WEIGHTS];
 		half			boneWeights[MAX_MODEL_VERTEX_WEIGHTS];
 	};
 

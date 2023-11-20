@@ -93,7 +93,7 @@ const VertexLayoutDesc& EGFHwVertex::BoneWeights::GetVertexLayoutDesc()
 	static const VertexLayoutDesc g_EGFBoneWeightsFormat = Builder<VertexLayoutDesc>()
 		.UserId(EGFHwVertex::VERT_BONEWEIGHT)
 		.Stride(sizeof(EGFHwVertex::BoneWeights))
-		.Attribute(VERTEXATTRIB_TEXCOORD, "boneId", 5, offsetOf(EGFHwVertex::BoneWeights, boneIndices), ATTRIBUTEFORMAT_HALF, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "boneId", 5, offsetOf(EGFHwVertex::BoneWeights, boneIndices), ATTRIBUTEFORMAT_UINT8, 4)
 		.Attribute(VERTEXATTRIB_TEXCOORD, "boneWt", 6, offsetOf(EGFHwVertex::BoneWeights, boneWeights), ATTRIBUTEFORMAT_HALF, 4)
 		.End();
 	return g_EGFBoneWeightsFormat;
