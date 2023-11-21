@@ -185,6 +185,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, kind);
 		const EqString shaderFileName = EqString::Format("%s-%s%s", output.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr, kindExt.ToCString());
 		const int shaderModuleFileIndex = output.shaderPackFile->FindFileIndex(shaderFileName);
+		WGPUShaderModule rhiShaderModule = nullptr;
 		if (wgpu_preload_shaders.GetBool())
 		{
 			CMemoryStream shaderData(PP_SL);
@@ -199,7 +200,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 				shaderData.AppendStream(shaderFile);
 			}
 
-			WGPUShaderModule rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), EqString::Format("%s-%s", shaderInfoKvs.GetName(), shaderFileName.ToCString()));
+			rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), EqString::Format("%s-%s", shaderInfoKvs.GetName(), shaderFileName.ToCString()));
 			if (!rhiShaderModule)
 			{
 				MsgError("Can't create shader module %s!\n", shaderFileName.ToCString());
@@ -207,7 +208,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 			}
 		}
 
-		const int moduleIndex = output.modules.append({ nullptr, static_cast<EShaderKind>(kind), shaderModuleFileIndex });
+		const int moduleIndex = output.modules.append({ rhiShaderModule, static_cast<EShaderKind>(kind), shaderModuleFileIndex });
 		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s module already added, fix shader compiler", kindStr, queryStr);
 		output.modulesMap.insert(shaderModuleId, moduleIndex);
 		++filesFound;
