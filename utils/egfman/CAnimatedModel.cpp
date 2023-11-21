@@ -334,7 +334,7 @@ const gposecontroller_t& CAnimatedModel::GetPoseController(int pc) const
 }
 
 // renders model
-void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt)
+void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!m_pModel)
 		return;
@@ -390,7 +390,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	drawProperties.boneTransforms = m_boneTransforms;
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
-	m_pModel->Draw(drawProperties);
+	m_pModel->Draw(drawProperties, rendPassRecorder);
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
 		RenderPhysModel();

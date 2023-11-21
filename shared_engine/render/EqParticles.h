@@ -15,6 +15,7 @@ class IIndexBuffer;
 class IVertexFormat;
 class CViewParams;
 class Volume;
+class IGPURenderPassRecorder;
 struct AtlasEntry;
 struct VertexLayoutDesc;
 
@@ -54,7 +55,7 @@ public:
 	virtual	~CParticleBatch();
 
 	// renders this buffer
-	void				Render(int nViewRenderFlags);
+	void				Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder);
 	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
 
 	// allocates a fixed strip for further use.
@@ -103,7 +104,7 @@ public:
 	void				PreloadMaterials();
 
 	// prepares render buffers and sends renderables to ViewRenderer
-	void				Render(int nRenderFlags);
+	void				Render(int nRenderFlags, IGPURenderPassRecorder* rendPassRecorder);
 	void				ClearBuffers();
 
 protected:

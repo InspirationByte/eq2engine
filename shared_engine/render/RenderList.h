@@ -7,6 +7,7 @@
 
 #pragma once
 class CBaseRenderableObject;
+class IGPURenderPassRecorder;
 
 //----------------------------------------------------
 // Base render list interface.
@@ -26,7 +27,7 @@ public:
 	int					GetRenderableCount();					// returns count of renderables in this list
 	Renderable*			GetRenderable(int id);					// returns renderable pointer
 
-	void				Render(int renderFlags, void* userdata);// draws render list
+	void				Render(int renderFlags, IGPURenderPassRecorder* rendPassRecorder, void* userdata);// draws render list
 
 	void				SortByDistanceFrom(const Vector3D& origin, bool reverse);
 

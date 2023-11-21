@@ -13,6 +13,7 @@ struct gposecontroller_t;
 struct ragdoll_t;
 class CEqStudioGeom;
 class IPhysicsObject;
+class IGPURenderPassRecorder;
 
 enum ViewerRenderFlags
 {
@@ -30,7 +31,7 @@ public:
 								CAnimatedModel();
 
 	// renders model
-	virtual void				Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt);
+	virtual void				Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt, IGPURenderPassRecorder* rendPassRecorder);
 	virtual void				RenderPhysModel();
 	virtual void				Update(float dt);
 

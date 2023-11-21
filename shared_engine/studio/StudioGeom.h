@@ -18,6 +18,7 @@ class IVertexFormat;
 class IVertexBuffer;
 class IIndexBuffer;
 class CBaseEqGeomInstancer;
+class IGPURenderPassRecorder;
 struct RenderDrawCmd;
 struct DecalMakeInfo;
 struct DecalData;
@@ -139,7 +140,7 @@ public:
 	int							SelectLod(float distance) const;
 	int							FindManualLod(float value) const;
 
-	void						Draw(const DrawProps& drawProperties) const;
+	void						Draw(const DrawProps& drawProperties, IGPURenderPassRecorder* rendPassRecorder) const;
 
 	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
 	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;

@@ -707,8 +707,6 @@ bool CGameHost::Frame()
 
 	BeginScene();
 
-	g_consoleInput->BeginFrame();
-
 	if (r_showFPSGraph.GetBool())
 		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
 
@@ -795,9 +793,6 @@ bool CGameHost::Frame()
 		}
 	}
 
-	g_inputCommandBinder->DebugDraw(m_winSize);
-	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, gameFrameTime);
-
 	// End frame from render lib
 	EndScene();
 
@@ -840,10 +835,15 @@ void CGameHost::BeginScene()
 	MaterialsRenderSettings& rendSettings = g_matSystem->GetConfiguration();
 	rendSettings.wireframeMode = r_wireframe.GetBool();
 	rendSettings.overdrawMode = r_overdraw.GetBool();
+
+	g_consoleInput->BeginFrame();
 }
 
 void CGameHost::EndScene()
 {
+	g_inputCommandBinder->DebugDraw(m_winSize);
+	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
+
 	g_matSystem->EndFrame();
 }
 

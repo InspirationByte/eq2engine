@@ -87,7 +87,7 @@ void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleBatch::Render(int nViewRenderFlags)
+void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!m_initialized || !r_drawParticles.GetBool())
 	{
@@ -118,7 +118,7 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	else
 		drawCmd.SetDrawNonIndexed(m_numVertices);
 
-	g_matSystem->Draw(drawCmd);
+	g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
 	{
@@ -255,10 +255,10 @@ void CParticleLowLevelRenderer::PreloadMaterials()
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleLowLevelRenderer::Render(int nRenderFlags)
+void CParticleLowLevelRenderer::Render(int nRenderFlags, IGPURenderPassRecorder* rendPassRecorder)
 {
 	for(int i = 0; i < m_batchs.numElem(); i++)
-		m_batchs[i]->Render( nRenderFlags );
+		m_batchs[i]->Render(nRenderFlags, rendPassRecorder);
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()

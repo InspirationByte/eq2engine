@@ -210,15 +210,15 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 
 	// setup render & shadowing parameters
 	const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();
-	if (!(m_flags & MATERIAL_FLAG_NO_Z_TEST) && depthTargetFormat != FORMAT_NONE)
+	if (depthTargetFormat != FORMAT_NONE)
 	{
 		if (m_flags & MATERIAL_FLAG_DECAL)
 			g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
 		Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-			.DepthTestOn()
+			.DepthTestOn(!(m_flags & MATERIAL_FLAG_NO_Z_TEST))
 			.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-			.DepthFormat(renderPass->GetDepthTargetFormat());
+			.DepthFormat(depthTargetFormat);
 	}
 
 	if (!(m_flags & MATERIAL_FLAG_ONLY_Z))

@@ -782,13 +782,11 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	// Depth state
 	// Optional when depth read = false
 	WGPUDepthStencilState rhiDepthStencil = {};
-	if (pipelineDesc.depthStencil.depthTest)
+	if (pipelineDesc.depthStencil.format != FORMAT_NONE)
 	{
-		ASSERT_MSG(pipelineDesc.depthStencil.format != FORMAT_NONE, "Must set valid depthStencil texture format");
-		
 		rhiDepthStencil.format = GetWGPUTextureFormat(pipelineDesc.depthStencil.format);
 		rhiDepthStencil.depthWriteEnabled = pipelineDesc.depthStencil.depthWrite;
-		rhiDepthStencil.depthCompare = g_wgpuCompareFunc[pipelineDesc.depthStencil.depthFunc];
+		rhiDepthStencil.depthCompare = pipelineDesc.depthStencil.depthTest ? g_wgpuCompareFunc[pipelineDesc.depthStencil.depthFunc] : WGPUCompareFunction_Always;
 		rhiDepthStencil.stencilReadMask = pipelineDesc.depthStencil.stencilMask;
 		rhiDepthStencil.stencilWriteMask = pipelineDesc.depthStencil.stencilWriteMask;
 		rhiDepthStencil.depthBias = pipelineDesc.depthStencil.depthBias;

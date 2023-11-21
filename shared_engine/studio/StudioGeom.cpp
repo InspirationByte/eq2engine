@@ -884,7 +884,7 @@ IGPUBufferPtr CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStreamId vertStr
 	return m_vertexBuffers[vertStream];
 }
 
-void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
+void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder* rendPassRecorder) const
 {
 	if (!drawProperties.bodyGroupFlags)
 		return;
@@ -983,7 +983,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 			if (!drawProperties.skipMaterials)
 				drawCmd.material = material;
 
-			g_matSystem->Draw(drawCmd);
+			g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 		}
 	}
 }
