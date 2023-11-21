@@ -85,7 +85,7 @@ public:
 	virtual const ITexturePtr&		GetBumpTexture(int stage = 0) const = 0;
 
 	virtual bool					IsSupportVertexFormat(int nameHash) const = 0;
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology, const void* userData) const = 0;
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const = 0;
 	virtual IGPUBindGroupPtr		GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const = 0;
 };
 

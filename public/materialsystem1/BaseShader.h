@@ -87,7 +87,7 @@ public:
 	int							GetFlags() const { return m_flags; }
 
 	virtual IGPUBindGroupPtr	GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primTopology, const void* userData) const;
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primTopology, const void* userData) const;
 	IGPUPipelineLayoutPtr		GetPipelineLayout() const;
 
 	// returns base texture from shader
@@ -99,7 +99,7 @@ protected:
 	virtual void				FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const {}
 
-	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
+	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
 	virtual void				BuildPipelineShaderQuery(const IVertexFormat* vertexLayout, Array<EqString>& shaderQuery) const {}
 	
 	IGPUBindGroupPtr			GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const;
@@ -108,7 +108,7 @@ protected:
 	void						GetCameraParams(MatSysCamera& cameraParams) const;
 
 	void						FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
-	uint						GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, EPrimTopology primitiveTopology) const;
+	uint						GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar);

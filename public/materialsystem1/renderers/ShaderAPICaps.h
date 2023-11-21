@@ -51,8 +51,7 @@ struct ShaderAPICaps
 	bool			isHardwareOcclusionQuerySupported{ 0 };
 
 	int				maxVertexStreams{ 0 };
-	int				maxVertexGenericAttributes{ 0 };
-	int				maxVertexTexcoordAttributes{ 0 };
+	int				maxVertexAttributes{ 0 };
 	int				maxTextureSize{ 0 };
 	int				maxTextureArrayLayers{ 0 };
 	int				maxTextureUnits{ 0 };

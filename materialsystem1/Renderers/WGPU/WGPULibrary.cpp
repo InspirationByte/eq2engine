@@ -136,8 +136,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		caps.isInstancingSupported = true;
 		caps.isHardwareOcclusionQuerySupported = true;
 		caps.maxVertexStreams = supLimits.limits.maxVertexBuffers;
-		caps.maxVertexGenericAttributes = supLimits.limits.maxVertexAttributes;
-		caps.maxVertexTexcoordAttributes = supLimits.limits.maxVertexAttributes;
+		caps.maxVertexAttributes = supLimits.limits.maxVertexAttributes;
 		caps.maxTextureSize = supLimits.limits.maxTextureDimension2D;
 		caps.maxTextureArrayLayers = supLimits.limits.maxTextureArrayLayers;
 		caps.maxTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;

@@ -145,8 +145,7 @@ void InitGLHardwareCapabilities(ShaderAPICaps& caps)
 
 	caps.maxRenderTargets = MAX_RENDERTARGETS;
 
-	caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
-	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
+	caps.maxVertexAttributes = MAX_GL_GENERIC_ATTRIB;
 
 	caps.maxTextureUnits = 1;
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
@@ -162,8 +161,8 @@ void InitGLHardwareCapabilities(ShaderAPICaps& caps)
 	glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &caps.maxVertexTextureUnits);
 	caps.maxVertexTextureUnits = min(caps.maxVertexTextureUnits, MAX_VERTEXTEXTURES);
 
-	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps.maxVertexGenericAttributes);
-	caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexGenericAttributes);
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps.maxVertexAttributes);
+	caps.maxVertexAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexAttributes);
 
 	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
 
@@ -1249,7 +1248,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 	if( pVertexFormat != pCurrentFormat)
 	{
-		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
+		for (int i = 0; i < m_caps.maxVertexAttributes; i++)
 		{
 			const CVertexFormatGL::eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
 			const CVertexFormatGL::eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
@@ -1305,7 +1304,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 		if (currentFormat && vbo != 0)
 		{
-			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
+			for (int i = 0; i < m_caps.maxVertexAttributes; i++)
 			{
 				const CVertexFormatGL::eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 				if (attrib.streamId == nStream && attrib.count)
@@ -1321,7 +1320,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
 			GLCheckError("bind array");
 
-			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
+			for (int i = 0; i < m_caps.maxVertexAttributes; i++)
 			{
 				const CVertexFormatGL::eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 
