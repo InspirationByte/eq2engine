@@ -64,7 +64,7 @@ bool ShaderInfoWGPUImpl::GetShaderQueryHash(const Array<EqString>& findDefines, 
 			queryStr.Append("|");
 		queryStr.Append(defines[id]);
 	}
-	outHash = StringToHash(queryStr);
+	outHash = StringToHash(queryStr, true);
 	return true;
 }
 
@@ -94,6 +94,7 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 
 	Msg("Init shader cache from %d packages, %d shader modules loaded\n", shaderPackCount, shaderModCount);
 }
+
 
 int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output)
 {
@@ -152,8 +153,10 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 		}
 	}
 
+	const KVSection* fileListSec = shaderInfoKvs.FindSection("FileList");
+
 	int filesFound = 0;
-	for (KVKeyIterator it(shaderInfoKvs.FindSection("FileList"), "spv"); !it.atEnd(); ++it)
+	for (KVKeyIterator it(fileListSec, "spv"); !it.atEnd(); ++it)
 	{
 		const KVSection* itemSec = *it;
 
@@ -180,7 +183,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 		}
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");
 		const char* queryStr = KV_GetValueString(itemSec, 2);
-		const int queryStrHash = StringToHash(queryStr);
+		const int queryStrHash = StringToHash(queryStr, true);
 
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, kind);
 		const EqString shaderFileName = EqString::Format("%s-%s%s", output.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr, kindExt.ToCString());
@@ -209,13 +212,18 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 		}
 
 		const int moduleIndex = output.modules.append({ rhiShaderModule, static_cast<EShaderKind>(kind), shaderModuleFileIndex });
-		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s-%s module already added, fix shader compiler", kindStr, queryStr);
+		auto exIt = output.modulesMap.find(shaderModuleId);
+		if (!exIt.atEnd())
+		{
+			ASSERT_FAIL("%s-%s module already added at idx %d (check for hash collisions)", output.shaderName.ToCString(), kindStr, queryStr, exIt.value());
+		}
 		output.modulesMap.insert(shaderModuleId, moduleIndex);
 		++filesFound;
 	}
 
 	// we need to validate references so collect refs in second pass
-	for (KVKeyIterator it(shaderInfoKvs.FindSection("FileList"), "ref"); !it.atEnd(); ++it)
+	int refIdx = 0;
+	for (KVKeyIterator it(fileListSec, "ref"); !it.atEnd(); ++it)
 	{
 		const KVSection* itemSec = *it;
 
@@ -232,15 +240,21 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 		}
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");
 		const char* queryStr = KV_GetValueString(itemSec, 2);
-		const int queryStrHash = StringToHash(queryStr);
+		const int queryStrHash = StringToHash(queryStr, true);
 
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, kind);
-		const int refIndex = KV_GetValueInt(itemSec, 3);
+		const int refSpvIndex = KV_GetValueInt(itemSec, 3);
 
-		ASSERT_MSG(output.modules[refIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", output.shaderName.ToCString(), refIndex, kindStr, queryStr);
+		ASSERT_MSG(output.modules[refSpvIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", output.shaderName.ToCString(), refSpvIndex, kindStr, queryStr);
 
-		ASSERT_MSG(output.modulesMap.find(shaderModuleId).atEnd(), "%s %s-%s already added, fix shader compiler\n", output.shaderName.ToCString(), kindStr, queryStr);
-		output.modulesMap.insert(shaderModuleId, refIndex);
+		auto exIt = output.modulesMap.find(shaderModuleId);
+		if (!exIt.atEnd())
+		{
+			ASSERT_FAIL("%s %s-%s module reference already added at idx %d (check for hash collisions)", output.shaderName.ToCString(), kindStr, queryStr, exIt.value());			
+		}
+
+		output.modulesMap.insert(shaderModuleId, refSpvIndex);
+		++refIdx;
 	}
 
 	return filesFound;
