@@ -172,6 +172,7 @@ public:
 	virtual void					SetMatrix(EMatrixMode mode, const Matrix4x4& matrix) = 0;
 	virtual void					GetMatrix(EMatrixMode mode, Matrix4x4& matrix) = 0;
 
+	virtual void					GetViewProjection(Matrix4x4& matrix) = 0;
 	virtual void					GetWorldViewProjection(Matrix4x4& matrix) = 0;
 
 	// sets the custom rendering callbacks

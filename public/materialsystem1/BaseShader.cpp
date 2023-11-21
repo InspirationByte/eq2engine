@@ -103,6 +103,21 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(EBindGroupId bindGroupId, IShade
 	return m_emptyBindGroup[bindGroupId];
 }
 
+IGPUBindGroupPtr CBaseShader::GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
+{
+	if (bindGroupId == BINDGROUP_RENDERPASS)
+	{
+		if(m_lastFrame != frameIdx || !m_rendPassBindGroup)
+			m_rendPassBindGroup = GetBindGroup(bindGroupId, renderAPI, userData);
+		return m_rendPassBindGroup;
+	}
+
+	// TODO: update buffers that constant?
+	//		 callback on material var changes flags for update?
+
+	return GetBindGroup(bindGroupId, renderAPI, userData);
+}
+
 IGPUPipelineLayoutPtr CBaseShader::GetPipelineLayout() const
 {
 	return m_pipelineLayout;
@@ -124,11 +139,14 @@ void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayou
 	FillBindGroupLayout_Transient(renderPipelineLayoutDesc.bindGroups.append());
 }
 
-void CBaseShader::GetCameraParams(MatSysCamera& cameraParams) const
+void CBaseShader::GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const
 {
 	FogInfo fog;
 	Matrix4x4 wvp_matrix, view, proj;
-	g_matSystem->GetWorldViewProjection(cameraParams.ViewProj);
+	if(worldViewProj)
+		g_matSystem->GetWorldViewProjection(cameraParams.ViewProj);
+	else
+		g_matSystem->GetViewProjection(cameraParams.ViewProj);
 	g_matSystem->GetMatrix(MATRIXMODE_VIEW, cameraParams.View);
 	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, cameraParams.Proj);
 
@@ -154,10 +172,10 @@ void CBaseShader::GetCameraParams(MatSysCamera& cameraParams) const
 	}
 }
 
-IGPUBufferPtr CBaseShader::GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI) const
+IGPUBufferPtr CBaseShader::GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI, bool worldViewProj) const
 {
 	MatSysCamera cameraParams;
-	GetCameraParams(cameraParams);
+	GetCameraParams(cameraParams, worldViewProj);
 
 	return renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 }

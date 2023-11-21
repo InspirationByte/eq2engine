@@ -156,6 +156,8 @@ public:
 	void						SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar);
 	void						SetMatrix(EMatrixMode mode, const Matrix4x4 &matrix);
 	void						GetMatrix(EMatrixMode mode, Matrix4x4 &matrix);
+
+	void						GetViewProjection(Matrix4x4& matrix);
 	void						GetWorldViewProjection(Matrix4x4 &matrix);
 
 	//-----------------------------

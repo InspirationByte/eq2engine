@@ -865,18 +865,28 @@ void CMaterialSystem::GetMatrix(EMatrixMode mode, Matrix4x4 &matrix)
 	matrix = m_matrices[(int)mode];
 }
 
+void CMaterialSystem::GetViewProjection(Matrix4x4& matrix)
+{
+	const int viewProjBits = (1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW);
+
+	// cache view projection
+	if (m_matrixDirty & viewProjBits)
+		m_viewProjMatrix = matrix = m_matrices[MATRIXMODE_PROJECTION] * m_matrices[MATRIXMODE_VIEW];
+	else
+		matrix = m_viewProjMatrix;
+}
+
 // retunrs multiplied matrix
 void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix)
 {
+	const int viewProjBits = (1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW);
+
+	const int wvpBits = viewProjBits | (1 << MATRIXMODE_WORLD) | (1 << MATRIXMODE_WORLD2);
 	Matrix4x4 vproj = m_viewProjMatrix;
 	Matrix4x4 wvpMatrix = m_wvpMatrix;
 
-	const int viewProjBits = (1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW);
-	const int wvpBits = viewProjBits | (1 << MATRIXMODE_WORLD) | (1 << MATRIXMODE_WORLD2);
-
-	// cache view projection
-	if(m_matrixDirty & viewProjBits)
-		m_viewProjMatrix = vproj = m_matrices[MATRIXMODE_PROJECTION] * m_matrices[MATRIXMODE_VIEW];
+	if (m_matrixDirty & viewProjBits)
+		GetViewProjection(vproj);
 
 	if(m_matrixDirty & wvpBits)
 		m_wvpMatrix = wvpMatrix = vproj * (m_matrices[MATRIXMODE_WORLD2] * m_matrices[MATRIXMODE_WORLD]);
@@ -1269,15 +1279,15 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 	// force load shader and textures if not already
 	material->LoadShaderAndTextures();
 
-	const IMatSystemShader* matShader = static_cast<CMaterial*>(material)->m_shader;
+	IMatSystemShader* matShader = static_cast<CMaterial*>(material)->m_shader;
 
 	// TODO: overdraw material. Or maybe debug property in shader?
 
 	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, vertexLayout, vertexLayoutBits, primTopology, userData));
-	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(BINDGROUP_CONSTANT, renderAPI, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(BINDGROUP_RENDERPASS, renderAPI, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(BINDGROUP_TRANSIENT, renderAPI, userData), nullptr);
-
+	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, userData), nullptr);
+	matShader->SetLastFrame(m_frame);
 }
 
 bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
@@ -1337,9 +1347,9 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 			vertexLayoutBits |= drawCmd.vertexBuffers[i] ? (1 << i) : 0;
 
 		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, drawCmd.vertexLayout, vertexLayoutBits, drawCmd.primitiveTopology, &rendPassInfo));
-		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(BINDGROUP_CONSTANT, renderAPI, &rendPassInfo), nullptr);
-		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(BINDGROUP_RENDERPASS, renderAPI, &rendPassInfo), nullptr);
-		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(BINDGROUP_TRANSIENT, renderAPI, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, &rendPassInfo), nullptr);
 
 		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
 			rendPassRecorder->SetVertexBuffer(i, drawCmd.vertexBuffers[i]);

@@ -174,7 +174,7 @@ BEGIN_SHADER_CLASS(Default)
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
@@ -188,7 +188,7 @@ BEGIN_SHADER_CLASS(Default)
 			bufferData.append(rendPassInfo->drawColor);
 			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
 
-			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
+			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI, true);
 			IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())

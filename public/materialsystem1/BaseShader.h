@@ -86,15 +86,18 @@ public:
 	bool						IsInitialized() const { return m_isInit; }
 	int							GetFlags() const { return m_flags; }
 
-	virtual IGPUBindGroupPtr	GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
 	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primTopology, const void* userData) const;
 	IGPUPipelineLayoutPtr		GetPipelineLayout() const;
+
+	IGPUBindGroupPtr			GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const;
+	void						SetLastFrame(uint frame) { m_lastFrame = frame; }
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };
 	virtual const ITexturePtr&	GetBumpTexture(int stage) const	{ return ITexturePtr::Null(); };
 
 protected:
+	virtual IGPUBindGroupPtr	GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const { return nullptr; }
 	virtual void				FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const {}
@@ -103,9 +106,9 @@ protected:
 	virtual void				BuildPipelineShaderQuery(const IVertexFormat* vertexLayout, Array<EqString>& shaderQuery) const {}
 	
 	IGPUBindGroupPtr			GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const;
-	IGPUBufferPtr				GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI) const;
+	IGPUBufferPtr				GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI, bool worldViewProj = false) const;
 
-	void						GetCameraParams(MatSysCamera& cameraParams) const;
+	void						GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj = false) const;
 
 	void						FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const;
 	uint						GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology) const;
@@ -129,10 +132,12 @@ protected:
 	Array<MatTextureProxy>		m_usedTextures{ PP_SL };
 
 	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
+	mutable IGPUBindGroupPtr	m_rendPassBindGroup;
 	ETexAddressMode				m_texAddressMode{ TEXADDRESS_WRAP };
 	ETexFilterMode				m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
 	EShaderBlendMode			m_blendMode{ SHADER_BLEND_NONE };
 
+	uint						m_lastFrame{ UINT_MAX };
 	int							m_flags{ 0 };
 	bool						m_isInit{ false };
 };

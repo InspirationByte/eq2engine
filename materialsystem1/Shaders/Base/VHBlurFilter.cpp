@@ -98,7 +98,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		}
 		else if (bindGroupId == BINDGROUP_RENDERPASS)
 		{
-			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
+			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI, true);
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
 				.End();

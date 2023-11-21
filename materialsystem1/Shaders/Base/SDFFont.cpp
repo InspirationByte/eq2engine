@@ -141,7 +141,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 			bufferData.append(g_matSystem->GetAmbientColor()); // TODO ???
 			bufferData.append(m_fontParamsVar.Get());
 
-			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI);
+			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI, true);
 			IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
