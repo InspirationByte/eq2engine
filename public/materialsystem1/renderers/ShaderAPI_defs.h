@@ -330,6 +330,14 @@ FLUENT_BEGIN_TYPE(VertexPipelineDesc)
 	ThisType& VertexLayout(const VertexLayoutDesc& x) { ref.vertexLayout.append(x); return *this; }
 FLUENT_END_TYPE
 
+// structure to hold vertex layout
+struct MeshInstanceFormat
+{
+	EqString				name;
+	int						nameHash{ 0 };
+	Array<VertexLayoutDesc> layout{ PP_SL };
+};
+
 //-------------------------------------------
 
 // Cull modes

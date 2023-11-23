@@ -14,7 +14,7 @@
 //--------------------------------------
 
 BEGIN_SHADER_CLASS(EnvMapTest)
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		return nameHash == StringToHashConst("EGFVertex");
 	}

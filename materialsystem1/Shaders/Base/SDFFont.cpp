@@ -37,12 +37,12 @@ BEGIN_SHADER_CLASS(SDFFont)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const override
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
@@ -54,7 +54,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
-				.ShaderVertexLayoutId(vertexLayout->GetNameHash())
+				.ShaderVertexLayoutId(meshInstFormat.nameHash)
 				.VertexState(
 					Builder<VertexPipelineDesc>()
 					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])

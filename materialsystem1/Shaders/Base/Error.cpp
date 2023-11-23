@@ -10,7 +10,7 @@
 #include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(Error)
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		return true;
 	}

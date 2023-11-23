@@ -1,6 +1,7 @@
 #pragma once
 
 #include "renderers/ShaderAPICaps.h"
+#include "renderers/IVertexFormat.h" // DEPRECATED
 
 class IVertexFormat;
 class IMaterial;
@@ -160,55 +161,127 @@ struct RenderBoneTransform
 // must be exactly two regs
 assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
 
-// render command to draw geometry
-struct RenderDrawCmd
+struct MeshInstanceFormatRef
 {
-	// TODO: render states
-	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>	vertexBuffers;
-	IGPUBufferPtr	indexBuffer{ nullptr };
+	const char*					name{ nullptr };
+	int							nameHash{ 0 };
+	ArrayCRef<VertexLayoutDesc>	layout{ nullptr };
+};
 
-	// DEPRECATED
-	IVertexFormat*	vertexLayout{ nullptr };		// MUST BE VERTEX LAYOUT NAME HASH???
-	IGPUBufferPtr	instanceBuffer{ nullptr };
-	// END DEPRECATED
+struct RenderInstanceInfo
+{
+	RenderInstanceInfo()
+	{
+		streamBuffers.assureSizeEmplace(streamBuffers.numAllocated(), nullptr);
+		streamOffsets.assureSizeEmplace(streamOffsets.numAllocated(), 0);
+	}
 
-	EPrimTopology	primitiveTopology{ (EPrimTopology)0 };
+	using BufferArray = FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>;
+	using OffsetArray = FixedArray<int, MAX_VERTEXSTREAM>;
 
-	IMaterial*		material{ nullptr };
-	const void*		userData{ nullptr };
+	// use SetVertexBuffer
+	BufferArray				streamBuffers;
+	OffsetArray				streamOffsets;
 
-	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: buffer
-	// TODO: atm material vars are used but for newer GAPI we should
-	// use bind groups to setup extra material properties
-	// suitable for skinned mesh, world properties, car damage stuff
-	// and so on. We can do extra material textures there too.
+	// use SetIndexBuffer
+	IGPUBufferPtr			indexBuffer;
+	EIndexFormat			indexFormat{ INDEXFMT_UINT16 };
+	int						indexOffset{ 0 };
 
+	// use SetInstanceFormat
+	MeshInstanceFormatRef	instFormat;
+	IGPUBufferPtr			instBuffer;
+	int						instCount{ 0 };
+	int						instSize{ 0 };
+	int						instOffset{ 0 };
+};
+
+struct RenderMeshInfo
+{
+	EPrimTopology	primTopology{ (EPrimTopology)0 };
 	int				firstVertex{ 0 };
 	int				firstIndex{ 0 };
 	int				numVertices{ 0 };
 	int				numIndices{ 0 };
 	int				baseVertex{ 0 };
+};
 
-	RenderDrawCmd()
+// render command to draw geometry
+struct RenderDrawCmd
+{
+	RenderInstanceInfo	instanceInfo;
+	RenderMeshInfo		meshInfo;
+	IMaterial*			material{ nullptr };
+	const void*			userData{ nullptr };
+
+	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: instance buffer properties
+
+	RenderDrawCmd& SetMaterial(IMaterial* _material)
 	{
-		vertexBuffers.assureSizeEmplace(vertexBuffers.numAllocated(), nullptr);
+		material = _material;
+		return *this;
 	}
 
-	void SetDrawIndexed(int idxCount, int firstIdx, int vertCount = -1, int firstVert = 0, int baseVert = 0)
+	RenderDrawCmd& SetInstanceFormat(const MeshInstanceFormat& meshInst)
 	{
-		firstVertex = firstVert;
-		numVertices = vertCount;
-		firstIndex = firstIdx;
-		numIndices = idxCount;
-		baseVertex = baseVert;
+		instanceInfo.instFormat.name = meshInst.name;
+		instanceInfo.instFormat.nameHash = meshInst.nameHash;
+		instanceInfo.instFormat.layout = meshInst.layout;
+		return *this;
 	}
 
-	void SetDrawNonIndexed(int vertCount = -1, int firstVert = 0)
+	// DEPRECATED
+	RenderDrawCmd& SetInstanceFormat(const IVertexFormat* vertFormat)
 	{
-		firstVertex = firstVert;
-		numVertices = vertCount;
-		firstIndex = -1;
-		numIndices = 0;
+		instanceInfo.instFormat.name = vertFormat->GetName();
+		instanceInfo.instFormat.nameHash = vertFormat->GetNameHash();
+		instanceInfo.instFormat.layout = vertFormat->GetFormatDesc();
+		return *this;
+	}
+
+	RenderDrawCmd& SetInstanceData(IGPUBufferPtr buffer, int instanceSize = 1, int instanceCount = 1, int offset = 0)
+	{
+		instanceInfo.instBuffer = buffer;
+		instanceInfo.instCount = instanceCount;
+		instanceInfo.instSize = instanceSize;
+		instanceInfo.instOffset = offset;
+		return *this;
+	}
+
+	RenderDrawCmd& SetVertexBuffer(int idx, IGPUBufferPtr buffer, int offset = 0)
+	{
+		instanceInfo.streamBuffers[idx] = buffer;
+		instanceInfo.streamOffsets[idx] = offset;
+		return *this;
+	}
+
+	RenderDrawCmd& SetIndexBuffer(IGPUBufferPtr buffer, EIndexFormat indexFormat, int offset = 0)
+	{
+		instanceInfo.indexBuffer = buffer;
+		instanceInfo.indexFormat = indexFormat;
+		instanceInfo.indexOffset = offset;
+		return *this;
+	}
+
+	RenderDrawCmd& SetDrawIndexed(EPrimTopology topology, int idxCount, int firstIdx, int vertCount = -1, int firstVert = 0, int baseVert = 0)
+	{
+		meshInfo.primTopology = topology;
+		meshInfo.firstVertex = firstVert;
+		meshInfo.numVertices = vertCount;
+		meshInfo.firstIndex = firstIdx;
+		meshInfo.numIndices = idxCount;
+		meshInfo.baseVertex = baseVert;
+		return *this;
+	}
+
+	RenderDrawCmd& SetDrawNonIndexed(EPrimTopology topology, int vertCount = -1, int firstVert = 0)
+	{
+		meshInfo.primTopology = topology;
+		meshInfo.firstVertex = firstVert;
+		meshInfo.numVertices = vertCount;
+		meshInfo.firstIndex = -1;
+		meshInfo.numIndices = 0;
+		return *this;
 	}
 };
 

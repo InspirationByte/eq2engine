@@ -603,6 +603,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 		m_vertexBuffers[EGFHwVertex::VERT_COLOR] = g_renderAPI->CreateBuffer({ allColorList, numVertices }, BUFFERUSAGE_VERTEX, "EGFColBuf");
 
 	m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(allIndices, indexSize, numIndices), BUFFERUSAGE_INDEX, "EGFIdxBuffer");
+	m_indexFmt = (indexSize == 2) ? INDEXFMT_UINT16 : INDEXFMT_UINT32;
 
 	// if we using software skinning, we need to create temporary vertices
 #if 0
@@ -900,18 +901,16 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder
 		rendBoneTransformsArray = ArrayCRef(rendBoneTransforms, numBones);
 	}
 
-	IVertexFormat* rhiVertFmt = drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat(isSkinned);
-
 	RenderDrawCmd drawCmd;
-	drawCmd.vertexLayout = rhiVertFmt;
-	drawCmd.indexBuffer = m_indexBuffer;
+	drawCmd.SetInstanceFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat())
+		.SetIndexBuffer(m_indexBuffer, static_cast<EIndexFormat>(m_indexFmt));
 
 	// setup vertex buffers
 	{
 		int setVertStreams = 0;
 		int numBitsSet = 0;
 		
-		ArrayCRef<VertexLayoutDesc> layoutDescList = rhiVertFmt->GetFormatDesc();
+		ArrayCRef<VertexLayoutDesc> layoutDescList = drawCmd.instanceInfo.instFormat.layout;
 		for (int i = 0; i < layoutDescList.numElem(); ++i)
 		{
 			if (numBitsSet == EGFHwVertex::VERT_COUNT)
@@ -921,7 +920,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 
-			drawCmd.vertexBuffers[i] = m_vertexBuffers[vertStreamId];
+			drawCmd.SetVertexBuffer(i, m_vertexBuffers[vertStreamId]);
 			setVertStreams |= (1 << int(vertStreamId));
 			++numBitsSet;
 		}
@@ -974,8 +973,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder
 			else
 				drawCmd.boneTransforms = ArrayCRef<RenderBoneTransform>(nullptr);
 
-			drawCmd.primitiveTopology = (EPrimTopology)meshRef.primType;
-			drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex);
+			drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
 			if (drawProperties.setupBodyGroup)
 				drawProperties.setupBodyGroup(drawCmd, material, i, j);

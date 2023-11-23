@@ -86,7 +86,7 @@ public:
 	bool						IsInitialized() const { return m_isInit; }
 	int							GetFlags() const { return m_flags; }
 
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primTopology, const void* userData) const;
+	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primTopology, const void* userData) const;
 	IGPUPipelineLayoutPtr		GetPipelineLayout() const;
 
 	IGPUBindGroupPtr			GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const;
@@ -102,8 +102,8 @@ protected:
 	virtual void				FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const {}
 
-	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
-	virtual void				BuildPipelineShaderQuery(const IVertexFormat* vertexLayout, Array<EqString>& shaderQuery) const {}
+	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
+	virtual void				BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const {}
 	
 	IGPUBindGroupPtr			GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const;
 	IGPUBufferPtr				GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI, bool worldViewProj = false) const;

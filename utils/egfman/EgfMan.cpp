@@ -462,6 +462,10 @@ void CEGFViewFrame::InitializeEq()
 	InitMatSystem(m_pRenderPanel->GetHandle());
 #endif
 
+	int w, h;
+	m_pRenderPanel->GetSize(&w, &h);
+	g_matSystem->SetDeviceBackbufferSize(w, h);
+
 	debugoverlay->Init(false);
 }
 
@@ -1279,8 +1283,18 @@ void CEGFViewFrame::ReDraw()
 
 		g_renderAPI->ResetCounters();
 
+		IGPURenderPassRecorderPtr modelDrawRenderPass = g_renderAPI->BeginRenderPass(
+			Builder<RenderPassDesc>()
+			.ColorTarget(g_matSystem->GetCurrentBackbuffer(), true, ColorRGBA(0.5f, 0.5f, 0.5f, 1.0f))
+			.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+			.DepthClear()
+			.End()
+		);
+
 		// Now we can draw our model
-		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);
+		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime, modelDrawRenderPass);
+
+		g_renderAPI->SubmitCommandBuffer(modelDrawRenderPass->End());
 
 		debugoverlay->Text(color_white, "polygon count: %d\n", g_renderAPI->GetTrianglesCount());
 

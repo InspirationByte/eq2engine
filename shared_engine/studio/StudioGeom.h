@@ -195,6 +195,7 @@ private:
 
 	IGPUBufferPtr			m_vertexBuffers[EGFHwVertex::VERT_COUNT];
 	IGPUBufferPtr			m_indexBuffer;
+	int						m_indexFmt{ -1 };
 
 	int						m_materialCount{ 0 };
 	int						m_materialGroupsCount{ 0 };

@@ -25,7 +25,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 		m_bloomSource = m_material->GetMaterialVar("BloomSource", "");
 	}
 
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}

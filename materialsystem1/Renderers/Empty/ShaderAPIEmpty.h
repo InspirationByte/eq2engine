@@ -98,7 +98,6 @@ public:
 	{
 		m_name = name;
 		m_nameHash = StringToHash(name);
-		memset(m_streamStride, 0, sizeof(m_streamStride));
 
 		m_vertexDesc.setNum(desc.numElem());
 		for(int i = 0; i < desc.numElem(); i++)
@@ -119,7 +118,6 @@ public:
 	}
 
 protected:
-	int						m_streamStride[MAX_VERTEXSTREAM];
 	EqString				m_name;
 	int						m_nameHash;
 	Array<VertexLayoutDesc>	m_vertexDesc{ PP_SL };

@@ -83,12 +83,12 @@ BEGIN_SHADER_CLASS(Default)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const override
+	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
@@ -100,10 +100,10 @@ BEGIN_SHADER_CLASS(Default)
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
-				.ShaderVertexLayoutId(vertexLayout->GetNameHash())
+				.ShaderVertexLayoutId(meshInstFormat.nameHash)
 				.End();
 
-			for (const VertexLayoutDesc& layoutDesc : vertexLayout->GetFormatDesc())
+			for (const VertexLayoutDesc& layoutDesc : meshInstFormat.layout)
 				renderPipelineDesc.vertex.vertexLayout.append(layoutDesc);
 
 			const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();

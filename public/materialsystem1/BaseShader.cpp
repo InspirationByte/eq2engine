@@ -182,7 +182,7 @@ IGPUBufferPtr CBaseShader::GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI
 
 uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology) const
 {
-	uint hash = vertexLayoutNameHash;// | (vertexLayoutUsedBufferBits << 24);
+	uint hash = vertexLayoutNameHash | (vertexLayoutUsedBufferBits << 24);
 	hash *= 31;
 	hash += static_cast<uint>(primitiveTopology);
 	for (int i = 0; i < MAX_RENDERTARGETS; ++i)
@@ -201,7 +201,7 @@ uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, 
 	return hash;
 }
 
-void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
+void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
 {
 	Builder<RenderPipelineDesc>(renderPipelineDesc)
 		.ShaderName(GetName())
@@ -212,12 +212,12 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 			.End())
 		.End();
 
-	if (vertexLayout)
+	if (meshInstFormat.layout.numElem())
 	{
-		renderPipelineDesc.shaderVertexLayoutId = vertexLayout->GetNameHash();
+		renderPipelineDesc.shaderVertexLayoutId = meshInstFormat.nameHash;
 
 		Builder<VertexPipelineDesc> vertexPipelineBuilder(renderPipelineDesc.vertex);
-		ArrayCRef<VertexLayoutDesc> vertexLayouts = vertexLayout->GetFormatDesc();
+		ArrayCRef<VertexLayoutDesc> vertexLayouts = meshInstFormat.layout;
 		for (int i = 0; i < vertexLayouts.numElem(); ++i)
 		{
 			const VertexLayoutDesc& layoutDesc = vertexLayouts[i];
@@ -271,17 +271,17 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 	}
 }
 
-IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const IVertexFormat* vertexLayout, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const
+IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const
 {
 	// TODO: int vertexLayoutNameHash, int vertexLayoutUsedBufferBits
 
-	const uint pipelineId = GetRenderPipelineId(renderPass, vertexLayout->GetNameHash(), vertexLayoutUsedBufferBits, primitiveTopology);
+	const uint pipelineId = GetRenderPipelineId(renderPass, meshInstFormat.nameHash, vertexLayoutUsedBufferBits, primitiveTopology);
 	auto it = m_renderPipelines.find(pipelineId);
 	if (it.atEnd())
 	{
 		RenderPipelineDesc renderPipelineDesc;
-		FillRenderPipelineDesc(renderPass, vertexLayout, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
-		BuildPipelineShaderQuery(vertexLayout, renderPipelineDesc.shaderQuery);
+		FillRenderPipelineDesc(renderPass, meshInstFormat, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
+		BuildPipelineShaderQuery(meshInstFormat, renderPipelineDesc.shaderQuery);
 		it = m_renderPipelines.insert(pipelineId, renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc));
 	}
 	return *it;

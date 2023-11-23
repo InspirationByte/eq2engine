@@ -25,13 +25,13 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		// must support any vertex
 		return true;
 	}
 
-	void BuildPipelineShaderQuery(const IVertexFormat* vertexLayout, Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const
 	{
 		bool vertexColor = false;
 		SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
@@ -47,7 +47,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		if (m_flags & MATERIAL_FLAG_ALPHATESTED)
 			shaderQuery.append("ALPHATEST");
 
-		if (vertexLayout->GetNameHash() == StringToHashConst("EGFVertexSkinned"))
+		if (meshInstFormat.nameHash == StringToHashConst("EGFVertexSkinned"))
 			shaderQuery.append("SKIN");
 	}
 

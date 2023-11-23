@@ -56,26 +56,14 @@ int CStudioCache::PrecacheModel(const char* modelName)
 	if (strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
 
-	if (m_egfFormat[0] == nullptr)
+	if (!m_egfFormat)
 	{
-		// TODO: remove
-
-		{
-			FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
-			egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
-			m_egfFormat[0] = g_renderAPI->CreateVertexFormat("EGFVertex", egfVertexLayout);
-		}
-
-		{
-			FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
-			egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::BoneWeights::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
-			m_egfFormat[1] = g_renderAPI->CreateVertexFormat("EGFVertexSkinned", egfVertexLayout);
-		}
+		FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
+		egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
+		egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
+		egfVertexLayout.append(EGFHwVertex::BoneWeights::GetVertexLayoutDesc());
+		egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
+		m_egfFormat = g_renderAPI->CreateVertexFormat("EGFVertex", egfVertexLayout);
 	}
 	
 	const int idx = GetModelIndex(modelName);
@@ -200,17 +188,14 @@ void CStudioCache::ReleaseCache()
 	m_cacheIndex.clear(true);
 	m_freeCacheSlots.clear(true);
 
-	for(int i = 0; i < 2; ++i)
-	{
-		g_renderAPI->DestroyVertexFormat(m_egfFormat[i]);
-		m_egfFormat[i] = nullptr;
-	}
+	g_renderAPI->DestroyVertexFormat(m_egfFormat);
+	m_egfFormat = nullptr;
 	m_errorMaterial = nullptr;
 }
 
-IVertexFormat* CStudioCache::GetEGFVertexFormat(bool skinned) const
+IVertexFormat* CStudioCache::GetEGFVertexFormat() const
 {
-	return m_egfFormat[skinned];
+	return m_egfFormat;
 }
 
 // prints loaded models to console

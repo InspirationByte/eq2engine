@@ -140,20 +140,20 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 	if (m_numVertices == 0)
 		return false;
 
-	drawCmd.vertexBuffers[0] = g_renderAPI->CreateBuffer(BufferInfo(m_vertices, m_vertexStride, m_numVertices), BUFFERUSAGE_VERTEX, "DynMeshVertexBuffer");
+	drawCmd.SetVertexBuffer(0, g_renderAPI->CreateBuffer(BufferInfo(m_vertices, m_vertexStride, m_numVertices), BUFFERUSAGE_VERTEX, "DynMeshVertexBuffer"));
+	
 	if (m_numIndices > 0)
-		drawCmd.indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(m_indices, sizeof(uint16), m_numIndices), BUFFERUSAGE_INDEX, "DynMeshIndexBuffer");
+		drawCmd.SetIndexBuffer(g_renderAPI->CreateBuffer(BufferInfo(m_indices, sizeof(uint16), m_numIndices), BUFFERUSAGE_INDEX, "DynMeshIndexBuffer"), INDEXFMT_UINT16);
 
 	if (numIndices < 0)
 		numIndices = m_numIndices;
 
-	drawCmd.vertexLayout = m_vertexFormat;
-	drawCmd.primitiveTopology = m_primType;
+	drawCmd.SetInstanceFormat(m_vertexFormat);
 
 	if (m_numIndices > 0)
-		drawCmd.SetDrawIndexed(numIndices, firstIndex, m_numVertices);
+		drawCmd.SetDrawIndexed(m_primType, numIndices, firstIndex, m_numVertices);
 	else
-		drawCmd.SetDrawNonIndexed(m_numVertices);
+		drawCmd.SetDrawNonIndexed(m_primType, m_numVertices);
 
 	return true;
 }

@@ -21,7 +21,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 		m_blurSource = m_material->GetMaterialVar("BlurSource", "");
 	}
 
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}

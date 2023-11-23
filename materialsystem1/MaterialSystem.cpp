@@ -1247,32 +1247,29 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 		return;
 
 	int vertexLayoutBits = 0;
-	if (drawCmd.vertexLayout)
-	{
-		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
-			vertexLayoutBits |= drawCmd.vertexBuffers[i] ? (1 << i) : 0;
-	}
-	SetupMaterialPipeline(drawCmd.material, drawCmd.primitiveTopology, drawCmd.vertexLayout, vertexLayoutBits, drawCmd.userData, rendPassRecorder);
+	for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
+		vertexLayoutBits |= drawCmd.instanceInfo.streamBuffers[i] ? (1 << i) : 0;
+	SetupMaterialPipeline(drawCmd.material, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, vertexLayoutBits, drawCmd.userData, rendPassRecorder);
 
-	if (drawCmd.vertexLayout)
+	if (drawCmd.instanceInfo.instFormat.layout.numElem())
 	{
 		CMaterial* material = static_cast<CMaterial*>(drawCmd.material);
 		IMatSystemShader* matShader = material->m_shader;
 
-		ASSERT_MSG(matShader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
+		ASSERT_MSG(matShader->IsSupportInstanceFormat(drawCmd.instanceInfo.instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.instanceInfo.instFormat.name);
 
-		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBuffer(i, drawCmd.vertexBuffers[i]);
-		rendPassRecorder->SetIndexBuffer(drawCmd.indexBuffer, INDEXFMT_UINT16);	// TODO: figure out where to take index format
+		for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
+			rendPassRecorder->SetVertexBuffer(i, drawCmd.instanceInfo.streamBuffers[i]);
+		rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
 	}
 
-	if (drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
-		rendPassRecorder->Draw(drawCmd.numVertices, drawCmd.firstVertex, 1);
+	if (drawCmd.meshInfo.firstIndex < 0 && drawCmd.meshInfo.numIndices == 0)
+		rendPassRecorder->Draw(drawCmd.meshInfo.numVertices, drawCmd.meshInfo.firstVertex, 1);
 	else
-		rendPassRecorder->DrawIndexed(drawCmd.numIndices, drawCmd.firstIndex, 1, drawCmd.baseVertex);
+		rendPassRecorder->DrawIndexed(drawCmd.meshInfo.numIndices, drawCmd.meshInfo.firstIndex, 1, drawCmd.meshInfo.baseVertex);
 }
 
-void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const IVertexFormat* vertexLayout, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
+void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
 
@@ -1283,7 +1280,7 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 
 	// TODO: overdraw material. Or maybe debug property in shader?
 
-	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, vertexLayout, vertexLayoutBits, primTopology, userData));
+	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, meshInstFormat, vertexLayoutBits, primTopology, userData));
 	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, userData), nullptr);
 	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, userData), nullptr);
 	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, userData), nullptr);
@@ -1338,33 +1335,32 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	const IMatSystemShader* matShader = material->m_shader;
 
 	// material must support correct vertex layout state
-	if (drawCmd.vertexLayout)
+	if (drawCmd.instanceInfo.instFormat.layout.numElem())
 	{
-		ASSERT_MSG(matShader->IsSupportVertexFormat(drawCmd.vertexLayout->GetNameHash()), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.vertexLayout->GetName());
+		ASSERT_MSG(matShader->IsSupportInstanceFormat(drawCmd.instanceInfo.instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.instanceInfo.instFormat.name);
 
 		int vertexLayoutBits = 0;
-		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
-			vertexLayoutBits |= drawCmd.vertexBuffers[i] ? (1 << i) : 0;
+		for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
+			vertexLayoutBits |= drawCmd.instanceInfo.streamBuffers[i] ? (1 << i) : 0;
 
-		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, drawCmd.vertexLayout, vertexLayoutBits, drawCmd.primitiveTopology, &rendPassInfo));
+		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, drawCmd.instanceInfo.instFormat, vertexLayoutBits, drawCmd.meshInfo.primTopology, &rendPassInfo));
 		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, &rendPassInfo), nullptr);
 		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, &rendPassInfo), nullptr);
 		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, &rendPassInfo), nullptr);
 
-		for (int i = 0; i < drawCmd.vertexBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBuffer(i, drawCmd.vertexBuffers[i]);
-
-		rendPassRecorder->SetIndexBuffer(drawCmd.indexBuffer, INDEXFMT_UINT16);	// TODO: figure out where to take index format
+		for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
+			rendPassRecorder->SetVertexBuffer(i, drawCmd.instanceInfo.streamBuffers[i]);
+		rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
 	}
 
 
 	if (rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1, -1))
 		rendPassRecorder->SetScissorRectangle(rendPassInfo.scissorRectangle);
 
-	if (drawCmd.firstIndex < 0 && drawCmd.numIndices == 0)
-		rendPassRecorder->Draw(drawCmd.numVertices, drawCmd.firstVertex, 1);
+	if (drawCmd.meshInfo.firstIndex < 0 && drawCmd.meshInfo.numIndices == 0)
+		rendPassRecorder->Draw(drawCmd.meshInfo.numVertices, drawCmd.meshInfo.firstVertex, 1);
 	else
-		rendPassRecorder->DrawIndexed(drawCmd.numIndices, drawCmd.firstIndex, 1, drawCmd.baseVertex);
+		rendPassRecorder->DrawIndexed(drawCmd.meshInfo.numIndices, drawCmd.meshInfo.firstIndex, 1, drawCmd.meshInfo.baseVertex);
 
 	return true;
 }

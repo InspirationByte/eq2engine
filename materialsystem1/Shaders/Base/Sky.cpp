@@ -14,7 +14,7 @@
 //--------------------------------------
 
 BEGIN_SHADER_CLASS(Skybox)
-	bool IsSupportVertexFormat(int nameHash) const
+	bool IsSupportInstanceFormat(int nameHash) const
 	{
 		return true;
 	}

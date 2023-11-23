@@ -106,17 +106,19 @@ void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPa
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 	RenderDrawCmd drawCmd;
-	drawCmd.vertexLayout = g_pfxRender->m_vertexFormat;
-	drawCmd.vertexBuffers[0] = g_renderAPI->CreateBuffer(BufferInfo(m_pVerts, m_numVertices), BUFFERUSAGE_VERTEX, "PFXVertexBuffer");
-	drawCmd.material = m_material;
-	drawCmd.primitiveTopology = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
+	drawCmd
+		.SetMaterial(m_material)
+		.SetInstanceFormat(g_pfxRender->m_vertexFormat)
+		.SetVertexBuffer(0, g_renderAPI->CreateBuffer(BufferInfo(m_pVerts, m_numVertices), BUFFERUSAGE_VERTEX, "PFXVertexBuffer"));
+		
 	if (m_numIndices)
 	{
-		drawCmd.indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(m_pIndices, m_numIndices), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
-		drawCmd.SetDrawIndexed(m_numIndices, 0, m_numVertices);
+		drawCmd
+			.SetIndexBuffer(g_renderAPI->CreateBuffer(BufferInfo(m_pIndices, m_numIndices), BUFFERUSAGE_INDEX, "PFXIndexBuffer"), INDEXFMT_UINT16)
+			.SetDrawIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numIndices, 0, m_numVertices);
 	}
 	else
-		drawCmd.SetDrawNonIndexed(m_numVertices);
+		drawCmd.SetDrawNonIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numVertices);
 
 	g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 

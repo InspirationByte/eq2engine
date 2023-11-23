@@ -149,7 +149,8 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	int instanceStreamId = -1;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.vertexLayout = m_vertFormat;
+	drawCmd.SetInstanceFormat(m_vertFormat)
+		.SetIndexBuffer(model->m_indexBuffer, static_cast<EIndexFormat>(model->m_indexFmt));
 
 	// setup vertex buffers
 	{
@@ -167,15 +168,13 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			}
 			else
 			{
-				drawCmd.vertexBuffers[stream] = model->m_vertexBuffers[egfVertStreamId];
+				drawCmd.SetVertexBuffer(stream, model->m_vertexBuffers[egfVertStreamId]);
 				setVertStreams |= (1 << int(egfVertStreamId));
 			}
 		}
 	}
 
 	ASSERT_MSG(instanceStreamId != -1, "No instance stream has been configured in vertex format!");
-
-	drawCmd.indexBuffer = model->m_indexBuffer;
 
 	const studioHdr_t& studio = model->GetStudioHdr();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
@@ -210,8 +209,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				if (buffer.numInstances == 0)
 					continue;
 
-				drawCmd.vertexBuffers[instanceStreamId] = buffer.instanceVB;
-				drawCmd.instanceBuffer = buffer.instanceVB;
+				drawCmd.SetInstanceData(buffer.instanceVB, m_instanceSize, buffer.numInstances, 0);
 
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numMeshes; i++)
@@ -228,8 +226,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 					
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
-					drawCmd.primitiveTopology = (EPrimTopology)meshRef.primType;
-					drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex);
+					drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
 					g_matSystem->Draw(drawCmd);
 				}

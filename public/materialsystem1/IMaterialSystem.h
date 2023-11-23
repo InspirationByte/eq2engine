@@ -193,7 +193,7 @@ public:
 	// Drawing
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 
-	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const IVertexFormat* vertexLayout, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual bool					SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
