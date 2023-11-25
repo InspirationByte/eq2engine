@@ -31,7 +31,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		return true;
 	}
 
-	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, Array<EqString>& shaderQuery) const
 	{
 		bool vertexColor = false;
 		SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
@@ -92,7 +92,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 				MatSysCamera camera;
 				Vector4D textureTransform;
 			} passParams;
-			GetCameraParams(passParams.camera);
+			GetCameraParams(passParams.camera, true);
 			passParams.textureTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
 			
 			IGPUBufferPtr passParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&passParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");

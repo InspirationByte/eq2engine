@@ -77,7 +77,7 @@ void CWGPURenderPassRecorder::Draw(int vertexCount, int firstVertex, int instanc
 
 void CWGPURenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex, int firstInstance)
 {
-	wgpuRenderPassEncoderDrawIndexed(m_rhiRenderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstIndex);
+	wgpuRenderPassEncoderDrawIndexed(m_rhiRenderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
 void CWGPURenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)

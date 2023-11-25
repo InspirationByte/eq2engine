@@ -40,7 +40,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 	}
 
-	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, Array<EqString>& shaderQuery) const
 	{
 		if(m_blurModes & 0x1)
 			shaderQuery.append("BLUR_X_LOW");

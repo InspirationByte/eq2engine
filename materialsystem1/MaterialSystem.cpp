@@ -388,6 +388,7 @@ void CMaterialSystem::Shutdown()
 	m_overdrawMaterial = nullptr;
 	m_currentEnvmapTexture = nullptr;
 	m_errorTexture = nullptr;
+	m_defaultDepthTexture = nullptr;
 	for (int i = 0; i < elementsOf(m_whiteTexture); ++i)
 		m_whiteTexture[i] = nullptr;
 
@@ -1246,27 +1247,56 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 	if (!drawCmd.material)
 		return;
 
-	int vertexLayoutBits = 0;
-	for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
-		vertexLayoutBits |= drawCmd.instanceInfo.streamBuffers[i] ? (1 << i) : 0;
-	SetupMaterialPipeline(drawCmd.material, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, vertexLayoutBits, drawCmd.userData, rendPassRecorder);
+	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
+	const MeshInstanceFormatRef& instFormat = instInfo.instFormat;
+	const MeshInstanceData& instData = instInfo.instData;
+	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
 
-	if (drawCmd.instanceInfo.instFormat.layout.numElem())
+	const int instanceCount = instData.buffer ? instData.count : 1;
+
+	int firstEmptyVb = MAX_VERTEXSTREAM;
+	int vertexLayoutBits = 0;
+	for (int i = 0; i < instFormat.layout.numElem(); ++i)
+	{
+		if (instData.buffer && instFormat.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
+		{
+			firstEmptyVb = i;
+			vertexLayoutBits |= (1 << i);
+		}
+		else
+			vertexLayoutBits |= instInfo.streamBuffers[i] ? (1 << i) : 0;
+	}
+
+	SetupMaterialPipeline(drawCmd.material, meshInfo.primTopology, instFormat, vertexLayoutBits, drawCmd.userData, rendPassRecorder);
+
+	if (instFormat.layout.numElem())
 	{
 		CMaterial* material = static_cast<CMaterial*>(drawCmd.material);
 		IMatSystemShader* matShader = material->m_shader;
 
-		ASSERT_MSG(matShader->IsSupportInstanceFormat(drawCmd.instanceInfo.instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.instanceInfo.instFormat.name);
+		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instInfo.instFormat.name);
 
-		for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBuffer(i, drawCmd.instanceInfo.streamBuffers[i]);
-		rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
+		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
+		{
+			//if (firstEmptyVb == MAX_VERTEXSTREAM && !instInfo.streamBuffers[i])
+			//	firstEmptyVb = i;
+			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i]);
+		}
+
+		// bind instance
+		if (instData.buffer)
+		{
+			ASSERT_MSG(firstEmptyVb != MAX_VERTEXSTREAM, "No free slots for instance buffer");
+			rendPassRecorder->SetVertexBuffer(firstEmptyVb, instData.buffer, instData.offset, instData.stride * instData.count);
+		}
+
+		rendPassRecorder->SetIndexBuffer(instInfo.indexBuffer, instInfo.indexFormat);
 	}
 
-	if (drawCmd.meshInfo.firstIndex < 0 && drawCmd.meshInfo.numIndices == 0)
-		rendPassRecorder->Draw(drawCmd.meshInfo.numVertices, drawCmd.meshInfo.firstVertex, 1);
+	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
+		rendPassRecorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
 	else
-		rendPassRecorder->DrawIndexed(drawCmd.meshInfo.numIndices, drawCmd.meshInfo.firstIndex, 1, drawCmd.meshInfo.baseVertex);
+		rendPassRecorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
 }
 
 void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
@@ -1280,7 +1310,8 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 
 	// TODO: overdraw material. Or maybe debug property in shader?
 
-	rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, meshInstFormat, vertexLayoutBits, primTopology, userData));
+	IGPURenderPipelinePtr pipeline = matShader->GetRenderPipeline(renderAPI, rendPassRecorder, meshInstFormat, vertexLayoutBits, primTopology, userData);
+	rendPassRecorder->SetPipeline(pipeline);
 	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, userData), nullptr);
 	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, userData), nullptr);
 	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, userData), nullptr);
@@ -1334,33 +1365,45 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
 	const IMatSystemShader* matShader = material->m_shader;
 
+	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
+	const MeshInstanceData& instData = instInfo.instData;
+	const MeshInstanceFormatRef& instFormat = instInfo.instFormat;
+	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
+
+	const int instanceCount = instData.buffer ? instData.count : 1;
+
 	// material must support correct vertex layout state
-	if (drawCmd.instanceInfo.instFormat.layout.numElem())
+	if (instFormat.layout.numElem())
 	{
-		ASSERT_MSG(matShader->IsSupportInstanceFormat(drawCmd.instanceInfo.instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), drawCmd.instanceInfo.instFormat.name);
+		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instFormat.name);
 
 		int vertexLayoutBits = 0;
-		for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
-			vertexLayoutBits |= drawCmd.instanceInfo.streamBuffers[i] ? (1 << i) : 0;
+		for (int i = 0; i < instFormat.layout.numElem(); ++i)
+		{
+			if (instData.buffer && instFormat.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
+			{
+				ASSERT_FAIL("DrawDefaultUP does not support instancing yet");
+			}
+			else
+				vertexLayoutBits |= instInfo.streamBuffers[i] ? (1 << i) : 0;
+		}
 
-		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, drawCmd.instanceInfo.instFormat, vertexLayoutBits, drawCmd.meshInfo.primTopology, &rendPassInfo));
+		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, instFormat, vertexLayoutBits, meshInfo.primTopology, &rendPassInfo));
 		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, &rendPassInfo), nullptr);
 		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, &rendPassInfo), nullptr);
 		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, &rendPassInfo), nullptr);
 
-		for (int i = 0; i < drawCmd.instanceInfo.streamBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBuffer(i, drawCmd.instanceInfo.streamBuffers[i]);
-		rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
+		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
+			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i]);
 	}
-
 
 	if (rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1, -1))
 		rendPassRecorder->SetScissorRectangle(rendPassInfo.scissorRectangle);
 
-	if (drawCmd.meshInfo.firstIndex < 0 && drawCmd.meshInfo.numIndices == 0)
-		rendPassRecorder->Draw(drawCmd.meshInfo.numVertices, drawCmd.meshInfo.firstVertex, 1);
+	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
+		rendPassRecorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
 	else
-		rendPassRecorder->DrawIndexed(drawCmd.meshInfo.numIndices, drawCmd.meshInfo.firstIndex, 1, drawCmd.meshInfo.baseVertex);
+		rendPassRecorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
 
 	return true;
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderers/ShaderAPICaps.h"
+#include "renderers/ShaderAPI_defs.h"
 #include "renderers/IVertexFormat.h" // DEPRECATED
 
 class IVertexFormat;
@@ -163,9 +163,20 @@ assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
 
 struct MeshInstanceFormatRef
 {
-	const char*					name{ nullptr };
-	int							nameHash{ 0 };
-	ArrayCRef<VertexLayoutDesc>	layout{ nullptr };
+	using VertexLayoutList = ArrayCRef<VertexLayoutDesc>;
+
+	const char*			name{ nullptr };
+	int					nameHash{ 0 };
+	VertexLayoutList	layout{ nullptr };
+};
+
+struct MeshInstanceData
+{
+	IGPUBufferPtr	buffer;
+	int				first{ 0 };
+	int				count{ 0 };
+	int				stride{ 0 };
+	int				offset{ 0 };
 };
 
 struct RenderInstanceInfo
@@ -190,10 +201,9 @@ struct RenderInstanceInfo
 
 	// use SetInstanceFormat
 	MeshInstanceFormatRef	instFormat;
-	IGPUBufferPtr			instBuffer;
-	int						instCount{ 0 };
-	int						instSize{ 0 };
-	int						instOffset{ 0 };
+
+	// use SetInstanceData
+	MeshInstanceData		instData;
 };
 
 struct RenderMeshInfo
@@ -239,12 +249,18 @@ struct RenderDrawCmd
 		return *this;
 	}
 
+	RenderDrawCmd& SetInstanceData(const MeshInstanceData& instData)
+	{
+		instanceInfo.instData = instData;
+		return *this;
+	}
+
 	RenderDrawCmd& SetInstanceData(IGPUBufferPtr buffer, int instanceSize = 1, int instanceCount = 1, int offset = 0)
 	{
-		instanceInfo.instBuffer = buffer;
-		instanceInfo.instCount = instanceCount;
-		instanceInfo.instSize = instanceSize;
-		instanceInfo.instOffset = offset;
+		instanceInfo.instData.buffer = buffer;
+		instanceInfo.instData.count = instanceCount;
+		instanceInfo.instData.stride = instanceSize;
+		instanceInfo.instData.offset = offset;
 		return *this;
 	}
 

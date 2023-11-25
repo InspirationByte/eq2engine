@@ -885,7 +885,7 @@ IGPUBufferPtr CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStreamId vertStr
 	return m_vertexBuffers[vertStream];
 }
 
-void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder* rendPassRecorder) const
+void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData& instData, IGPURenderPassRecorder* rendPassRecorder) const
 {
 	if (!drawProperties.bodyGroupFlags)
 		return;
@@ -893,7 +893,6 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder
 	RenderBoneTransform rendBoneTransforms[128];
 	ArrayCRef<RenderBoneTransform> rendBoneTransformsArray(nullptr);
 	const bool isSkinned = drawProperties.boneTransforms;
-
 
 	if (isSkinned)
 	{
@@ -903,6 +902,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder
 
 	RenderDrawCmd drawCmd;
 	drawCmd.SetInstanceFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat())
+		.SetInstanceData(instData)
 		.SetIndexBuffer(m_indexBuffer, static_cast<EIndexFormat>(m_indexFmt));
 
 	// setup vertex buffers
@@ -917,6 +917,9 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, IGPURenderPassRecorder
 				break;
 
 			const EGFHwVertex::VertexStreamId vertStreamId = (EGFHwVertex::VertexStreamId)layoutDescList[i].userId;
+			if (vertStreamId >= EGFHwVertex::VERT_COUNT)
+				continue;
+
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 

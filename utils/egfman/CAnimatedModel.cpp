@@ -390,7 +390,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	drawProperties.boneTransforms = m_boneTransforms;
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
-	m_pModel->Draw(drawProperties, rendPassRecorder);
+	m_pModel->Draw(drawProperties, MeshInstanceData{}, rendPassRecorder);
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
 		RenderPhysModel();

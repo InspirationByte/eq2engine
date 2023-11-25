@@ -103,7 +103,7 @@ protected:
 	virtual void				FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const {}
 
 	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
-	virtual void				BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const {}
+	virtual void				BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, Array<EqString>& shaderQuery) const {}
 	
 	IGPUBindGroupPtr			GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const;
 	IGPUBufferPtr				GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI, bool worldViewProj = false) const;
