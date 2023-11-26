@@ -41,9 +41,12 @@ public:
 
 	IGPUCommandBufferPtr	End();
 
+	void*					GetUserData() const { return m_userData; }
+
 	ETextureFormat			m_renderTargetsFormat[MAX_RENDERTARGETS]{ FORMAT_NONE };
 	ETextureFormat			m_depthTargetFormat{ FORMAT_NONE };
 	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
 	WGPURenderPassEncoder	m_rhiRenderPassEncoder{ nullptr };
 	IVector2D				m_renderTargetDims{ 0 };
+	void*					m_userData{ nullptr };
 };

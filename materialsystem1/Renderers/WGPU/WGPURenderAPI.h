@@ -77,7 +77,7 @@ public:
 //-------------------------------------------------------------
 // Render pass management
 
-	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc) const;
+	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const;
 
 //-------------------------------------------------------------
 // Command buffer management

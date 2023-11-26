@@ -87,7 +87,7 @@ public:
 
 	virtual bool					IsSupportInstanceFormat(int nameHash) const = 0;
 	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const = 0;
-	virtual IGPUBindGroupPtr		GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const = 0;
+	virtual IGPUBindGroupPtr		GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const = 0;
 	virtual void					SetLastFrame(uint frame) = 0;
 };
 

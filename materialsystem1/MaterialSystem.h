@@ -155,10 +155,12 @@ public:
 	void						SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar);
 	void						SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar);
 	void						SetMatrix(EMatrixMode mode, const Matrix4x4 &matrix);
-	void						GetMatrix(EMatrixMode mode, Matrix4x4 &matrix);
+	void						GetMatrix(EMatrixMode mode, Matrix4x4 &matrix) const;
 
-	void						GetViewProjection(Matrix4x4& matrix);
-	void						GetWorldViewProjection(Matrix4x4 &matrix);
+	void						GetViewProjection(Matrix4x4& matrix) const;
+	void						GetWorldViewProjection(Matrix4x4 &matrix) const;
+
+	void						GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const;
 
 	//-----------------------------
 	// Helper rendering operations
@@ -205,9 +207,9 @@ private:
 	IVector2D					m_backbufferSize{ 800, 600 };
 	IMatSysRenderCallbacks*		m_preApplyCallback{ nullptr };
 
-	Matrix4x4					m_viewProjMatrix{ identity4 };
-	Matrix4x4					m_wvpMatrix{ identity4 };
-	Matrix4x4					m_matrices[5]{ identity4 };
+	mutable Matrix4x4			m_viewProjMatrix{ identity4 };
+	mutable Matrix4x4			m_wvpMatrix{ identity4 };
+	mutable Matrix4x4			m_matrices[5]{ identity4 };
 
 	Array<RenderBoneTransform>	m_boneTransforms{ PP_SL };
 
@@ -230,7 +232,7 @@ private:
 	uint						m_frame{ 0 };
 	float						m_proxyDeltaTime{ 0.0f };
 
-	uint8						m_matrixDirty{ UINT8_MAX };
+	mutable uint8				m_matrixDirty{ UINT8_MAX };
 	bool						m_skinningEnabled{ false };
 	bool						m_instancingEnabled{ false };
 	bool						m_deviceActiveState{ true };

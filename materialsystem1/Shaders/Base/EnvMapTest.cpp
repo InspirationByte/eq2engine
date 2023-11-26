@@ -29,6 +29,11 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture);
 	}
 
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	{
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
+	}
+
 	SHADER_INIT_RENDERPASS_PIPELINE()
 	{
 		// begin shader definitions

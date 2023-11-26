@@ -67,7 +67,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -79,7 +79,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 			}
 
 			// TODO: update BaseTextureTransform
@@ -92,14 +92,14 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 				MatSysCamera camera;
 				Vector4D textureTransform;
 			} passParams;
-			GetCameraParams(passParams.camera, true);
+			g_matSystem->GetCameraParams(passParams.camera, true);
 			passParams.textureTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
 			
 			IGPUBufferPtr passParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&passParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, passParamsBuffer, 0, passParamsBuffer->GetSize())
 				.End();
-			return renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 		}
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}

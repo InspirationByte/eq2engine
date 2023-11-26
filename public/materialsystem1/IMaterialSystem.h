@@ -170,10 +170,12 @@ public:
 	virtual void					SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar) = 0;
 
 	virtual void					SetMatrix(EMatrixMode mode, const Matrix4x4& matrix) = 0;
-	virtual void					GetMatrix(EMatrixMode mode, Matrix4x4& matrix) = 0;
+	virtual void					GetMatrix(EMatrixMode mode, Matrix4x4& matrix) const = 0;
 
-	virtual void					GetViewProjection(Matrix4x4& matrix) = 0;
-	virtual void					GetWorldViewProjection(Matrix4x4& matrix) = 0;
+	virtual void					GetViewProjection(Matrix4x4& matrix) const = 0;
+	virtual void					GetWorldViewProjection(Matrix4x4& matrix) const = 0;
+
+	virtual void					GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj = false) const = 0;
 
 	// sets the custom rendering callbacks
 	// useful for proxy updates, setting up constants that shader objects can't access by themselves

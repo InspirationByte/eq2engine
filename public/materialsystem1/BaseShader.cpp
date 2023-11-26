@@ -86,10 +86,6 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 
 	m_flags = materialFlags;
 	m_blendMode = blendMode;
-
-	PipelineLayoutDesc pipelineLayoutDesc;
-	FillPipelineLayoutDesc(pipelineLayoutDesc);
-	m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
 }
 
 IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const
@@ -98,28 +94,19 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(EBindGroupId bindGroupId, IShade
 	if(!m_emptyBindGroup[bindGroupId])
 	{
 		BindGroupDesc emptyBindGroupDesc;
-		m_emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, emptyBindGroupDesc);
+		m_emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, emptyBindGroupDesc);
 	}
 	return m_emptyBindGroup[bindGroupId];
 }
 
-IGPUBindGroupPtr CBaseShader::GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
+IGPUPipelineLayoutPtr CBaseShader::GetPipelineLayout(IShaderAPI* renderAPI) const
 {
-	if (bindGroupId == BINDGROUP_RENDERPASS)
+	if (!m_pipelineLayout)
 	{
-		if(m_lastFrame != frameIdx || !m_rendPassBindGroup)
-			m_rendPassBindGroup = GetBindGroup(bindGroupId, renderAPI, userData);
-		return m_rendPassBindGroup;
+		PipelineLayoutDesc pipelineLayoutDesc;
+		FillPipelineLayoutDesc(pipelineLayoutDesc);
+		m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
 	}
-
-	// TODO: update buffers that constant?
-	//		 callback on material var changes flags for update?
-
-	return GetBindGroup(bindGroupId, renderAPI, userData);
-}
-
-IGPUPipelineLayoutPtr CBaseShader::GetPipelineLayout() const
-{
 	return m_pipelineLayout;
 }
 
@@ -137,47 +124,6 @@ void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayou
 	FillBindGroupLayout_Constant(renderPipelineLayoutDesc.bindGroups.append());
 	FillBindGroupLayout_RenderPass(renderPipelineLayoutDesc.bindGroups.append());
 	FillBindGroupLayout_Transient(renderPipelineLayoutDesc.bindGroups.append());
-}
-
-void CBaseShader::GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const
-{
-	FogInfo fog;
-	Matrix4x4 wvp_matrix, view, proj;
-	if(worldViewProj)
-		g_matSystem->GetWorldViewProjection(cameraParams.ViewProj);
-	else
-		g_matSystem->GetViewProjection(cameraParams.ViewProj);
-	g_matSystem->GetMatrix(MATRIXMODE_VIEW, cameraParams.View);
-	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, cameraParams.Proj);
-
-	g_matSystem->GetFogInfo(fog);
-	cameraParams.Pos = fog.viewPos;
-
-	// can use either fixed array or CMemoryStream with on-stack storage
-	if (fog.enableFog)
-	{
-		cameraParams.FogFactor = fog.enableFog ? 1.0f : 0.0f;
-		cameraParams.FogNear = fog.fognear;
-		cameraParams.FogFar = fog.fogfar;
-		cameraParams.FogScale = 1.0f / (fog.fogfar - fog.fognear);
-		cameraParams.FogColor = fog.fogColor;
-	}
-	else
-	{
-		cameraParams.FogFactor = 0.0f;
-		cameraParams.FogNear = 1000000.0f;
-		cameraParams.FogFar = 1000000.0f;
-		cameraParams.FogScale = 1.0f;
-		cameraParams.FogColor = color_white;
-	}
-}
-
-IGPUBufferPtr CBaseShader::GetRenderPassCameraParamsBuffer(IShaderAPI* renderAPI, bool worldViewProj) const
-{
-	MatSysCamera cameraParams;
-	GetCameraParams(cameraParams, worldViewProj);
-
-	return renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 }
 
 uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology) const
@@ -282,9 +228,27 @@ IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, cons
 		RenderPipelineDesc renderPipelineDesc;
 		FillRenderPipelineDesc(renderPass, meshInstFormat, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
 		BuildPipelineShaderQuery(meshInstFormat, vertexLayoutUsedBufferBits, renderPipelineDesc.shaderQuery);
-		it = m_renderPipelines.insert(pipelineId, renderAPI->CreateRenderPipeline(m_pipelineLayout, renderPipelineDesc));
+		it = m_renderPipelines.insert(pipelineId, renderAPI->CreateRenderPipeline(GetPipelineLayout(renderAPI), renderPipelineDesc));
 	}
 	return *it;
+}
+
+void CBaseShader::FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const
+{
+	Builder<BindGroupLayoutDesc>(bindGroupLayout)
+		.Sampler("MaterialSampler", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler("LinearMirrorWrapSampler", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler("LinearClampSampler", 2, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler("NearestSampler", 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING);
+}
+
+void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const
+{
+	Builder<BindGroupDesc>(bindGroupDesc)
+		.Sampler(0, SamplerStateParams(m_texFilter, m_texAddressMode))
+		.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_MIRROR))
+		.Sampler(2, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
+		.Sampler(3, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP));
 }
 
 void CBaseShader::InitShader(IShaderAPI* renderAPI)

@@ -910,7 +910,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	return IGPURenderPipelinePtr(renderPipeline);
 }
 
-IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc) const
+IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
 	WGPURenderPassDescriptor rhiRenderPassDesc = {};
 	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
@@ -980,6 +980,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
 	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
 	renderPass->m_renderTargetDims = renderTargetDims;
+	renderPass->m_userData = userData;
 
 	return IGPURenderPassRecorderPtr(renderPass);
 }

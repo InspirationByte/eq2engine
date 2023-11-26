@@ -39,6 +39,11 @@ BEGIN_SHADER_CLASS(Error)
 		return true;
 	}
 
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	{
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
+	}
+
 	SHADER_SETUP_STAGE()
 	{
 		SHADER_BIND_PASS_SIMPLE(Unlit);

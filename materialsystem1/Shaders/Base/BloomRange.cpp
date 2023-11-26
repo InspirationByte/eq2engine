@@ -30,7 +30,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
+	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
 			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
@@ -39,20 +39,25 @@ BEGIN_SHADER_CLASS(BloomRange)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
-		if (!m_materialBindGroup)
+		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			ITexturePtr baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
-				.Sampler(1, baseTexture->GetSamplerState())
-				.Texture(2, baseTexture)
-				.End();
-			m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
+			if (!m_materialBindGroup)
+			{
+				ITexturePtr baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
+				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+					.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+					.Sampler(1, baseTexture->GetSamplerState())
+					.Texture(2, baseTexture)
+					.End();
+				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), 1, shaderBindGroupDesc);
+			}
+
+			return m_materialBindGroup;
 		}
 
-		return m_materialBindGroup;
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
 	mutable IGPUBindGroupPtr	m_materialBindGroup;

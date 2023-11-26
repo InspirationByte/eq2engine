@@ -309,6 +309,21 @@ enum EShaderBlendMode : int
 	SHADER_BLEND_MODULATE,			// modulate
 };
 
+enum ERenderPassType
+{
+	RENDERPASS_SHADOW,		// shadow texture drawing (decal)
+	RENDERPASS_DEPTH,			// depth pass (shadow mapping and other things)
+	RENDERPASS_GAME_SCENE_VIEW,	// scene drawing
+};
+
+struct RenderPassBaseData
+{
+	RenderPassBaseData(ERenderPassType type) : type(type) {}
+
+	ERenderPassType	type;
+	IGPUBufferPtr	cameraParamsBuffer;
+};
+
 // used for debug geometry and UIs
 struct MatSysDefaultRenderPass
 {

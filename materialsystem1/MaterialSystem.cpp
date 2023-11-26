@@ -861,12 +861,12 @@ void CMaterialSystem::SetMatrix(EMatrixMode mode, const Matrix4x4 &matrix)
 }
 
 // returns a typed matrix
-void CMaterialSystem::GetMatrix(EMatrixMode mode, Matrix4x4 &matrix)
+void CMaterialSystem::GetMatrix(EMatrixMode mode, Matrix4x4 &matrix) const
 {
 	matrix = m_matrices[(int)mode];
 }
 
-void CMaterialSystem::GetViewProjection(Matrix4x4& matrix)
+void CMaterialSystem::GetViewProjection(Matrix4x4& matrix) const
 {
 	const int viewProjBits = (1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW);
 
@@ -878,7 +878,7 @@ void CMaterialSystem::GetViewProjection(Matrix4x4& matrix)
 }
 
 // retunrs multiplied matrix
-void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix)
+void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix) const
 {
 	const int viewProjBits = (1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW);
 
@@ -895,6 +895,39 @@ void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix)
 	m_matrixDirty = 0;
 
 	matrix = wvpMatrix;
+}
+
+void CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const
+{
+	FogInfo fog;
+	Matrix4x4 wvp_matrix, view, proj;
+	if (worldViewProj)
+		GetWorldViewProjection(cameraParams.viewProj);
+	else
+		GetViewProjection(cameraParams.viewProj);
+	GetMatrix(MATRIXMODE_VIEW, cameraParams.view);
+	GetMatrix(MATRIXMODE_PROJECTION, cameraParams.proj);
+
+	GetFogInfo(fog);
+	cameraParams.position = fog.viewPos;
+
+	// can use either fixed array or CMemoryStream with on-stack storage
+	if (fog.enableFog)
+	{
+		cameraParams.fogFactor = fog.enableFog ? 1.0f : 0.0f;
+		cameraParams.fogNear = fog.fognear;
+		cameraParams.fogFar = fog.fogfar;
+		cameraParams.fogScale = 1.0f / (fog.fogfar - fog.fognear);
+		cameraParams.fogColor = fog.fogColor;
+	}
+	else
+	{
+		cameraParams.fogFactor = 0.0f;
+		cameraParams.fogNear = 1000000.0f;
+		cameraParams.fogFar = 1000000.0f;
+		cameraParams.fogScale = 1.0f;
+		cameraParams.fogColor = color_white;
+	}
 }
 
 // sets an ambient light
@@ -1312,9 +1345,9 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 
 	IGPURenderPipelinePtr pipeline = matShader->GetRenderPipeline(renderAPI, rendPassRecorder, meshInstFormat, vertexLayoutBits, primTopology, userData);
 	rendPassRecorder->SetPipeline(pipeline);
-	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, rendPassRecorder, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, userData), nullptr);
 	matShader->SetLastFrame(m_frame);
 }
 
@@ -1389,9 +1422,9 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 		}
 
 		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, instFormat, vertexLayoutBits, meshInfo.primTopology, &rendPassInfo));
-		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, &rendPassInfo), nullptr);
-		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, &rendPassInfo), nullptr);
-		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, rendPassRecorder, &rendPassInfo), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, &rendPassInfo), nullptr);
 
 		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
 			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i]);

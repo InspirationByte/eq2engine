@@ -27,7 +27,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	void FillMaterialBindGroupLayout(BindGroupLayoutDesc& bindGroupLayout) const
+	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
 			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
@@ -37,20 +37,24 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetMaterialBindGroup(IShaderAPI* renderAPI, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
-		if (!m_materialBindGroup)
+		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			ITexturePtr tex1 = m_textures[0].Get();
-			ITexturePtr tex2 = m_textures[1].Get();
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Sampler(1, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
-				.Texture(2, tex1)
-				.Texture(3, tex2)
-				.End();
-			m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), 1, shaderBindGroupDesc);
+			if (!m_materialBindGroup)
+			{
+				ITexturePtr tex1 = m_textures[0].Get();
+				ITexturePtr tex2 = m_textures[1].Get();
+				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+					.Sampler(1, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
+					.Texture(2, tex1)
+					.Texture(3, tex2)
+					.End();
+				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), 1, shaderBindGroupDesc);
+			}
+			return m_materialBindGroup;
 		}
-		return m_materialBindGroup;
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const

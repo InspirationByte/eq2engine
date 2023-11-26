@@ -109,6 +109,8 @@ public:
 	virtual void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
 
 	virtual IGPUCommandBufferPtr	End() = 0;
+
+	virtual void*					GetUserData() const = 0;
 };
 using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
 
@@ -174,7 +176,7 @@ public:
 //-------------------------------------------------------------
 // Pass management
 
-	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc) const = 0;
+	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
 	// TODO: virtual IGPUComputePassRecorderPtr BeginComputePass();
 
 //-------------------------------------------------------------

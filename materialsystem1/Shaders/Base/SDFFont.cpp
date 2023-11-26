@@ -111,7 +111,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 			
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(GetPipelineLayout(), renderPipelineDesc);
+			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(GetPipelineLayout(renderAPI), renderPipelineDesc);
 			it = m_renderPipelines.insert(pipelineId, renderPipeline);
 		}
 		return *it;
@@ -127,7 +127,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
@@ -141,7 +141,10 @@ BEGIN_SHADER_CLASS(SDFFont)
 			bufferData.append(g_matSystem->GetAmbientColor()); // TODO ???
 			bufferData.append(m_fontParamsVar.Get());
 
-			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI, true);
+			MatSysCamera cameraParams;
+			g_matSystem->GetCameraParams(cameraParams, true);
+
+			IGPUBufferPtr cameraParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
@@ -149,7 +152,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 				.Sampler(2, baseTexture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();
-			IGPUBindGroupPtr materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+			IGPUBindGroupPtr materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 			return materialBindGroup;
 		}
 

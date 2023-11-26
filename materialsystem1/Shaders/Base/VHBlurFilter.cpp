@@ -68,7 +68,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -92,17 +92,20 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 			}
 			return m_materialBindGroup;
 		}
 		else if (bindGroupId == BINDGROUP_RENDERPASS)
 		{
-			IGPUBufferPtr cameraParamsBuffer = GetRenderPassCameraParamsBuffer(renderAPI, true);
+			MatSysCamera cameraParams;
+			g_matSystem->GetCameraParams(cameraParams, true);
+
+			IGPUBufferPtr cameraParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
 				.End();
-			return renderAPI->CreateBindGroup(GetPipelineLayout(), bindGroupId, shaderBindGroupDesc);
+			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 		}
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}

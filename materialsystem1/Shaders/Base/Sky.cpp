@@ -43,6 +43,11 @@ BEGIN_SHADER_CLASS(Skybox)
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
 
+	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	{
+		return GetEmptyBindGroup(bindGroupId, renderAPI);
+	}
+
 	SHADER_SETUP_STAGE()
 	{
 		SHADER_BIND_PASS_SIMPLE(Unlit);
