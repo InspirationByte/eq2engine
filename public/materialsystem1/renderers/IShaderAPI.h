@@ -130,6 +130,8 @@ public:
 //-------------------------------------------------------------
 // Pipeline management
 
+	virtual void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const = 0;
+
 	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
 	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
 	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const = 0;

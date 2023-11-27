@@ -15,7 +15,7 @@ CRenderWorkThread g_renderWorker;
 void CRenderWorkThread::Init(RenderWorkerHandler* workHandler, int workPoolSize)
 {
 	m_workHandler = workHandler;
-	StartWorkerThread(m_workHandler->GetAsyncThreadName());
+	StartWorkerThread(m_workHandler->GetAsyncThreadName(), TP_ABOVE_NORMAL, 3072 * 1024);
 
 	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
 	m_workRingPool.setNum(poolSize);
@@ -32,7 +32,7 @@ void CRenderWorkThread::InitLoop(RenderWorkerHandler* workHandler, FUNC_TYPE loo
 {
 	m_loopFunc = loopFunc;
 	m_workHandler = workHandler;
-	StartWorkerThread(m_workHandler->GetAsyncThreadName());
+	StartWorkerThread(m_workHandler->GetAsyncThreadName(), TP_ABOVE_NORMAL, 3072 * 1024);
 
 	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
 	m_workRingPool.setNum(poolSize);
@@ -80,7 +80,7 @@ int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
 	} while(!work);
 
 
-	work->func = f;
+	work->func = std::move(f);
 	work->sync = true;
 	Atomic::Exchange(work->result, WORK_PENDING);
 
@@ -123,7 +123,7 @@ void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
 		}
 	}while(!work);
 
-	work->func = f;
+	work->func = std::move(f);
 	work->sync = false;
 	Atomic::Exchange(work->result, WORK_PENDING);
 
@@ -157,7 +157,7 @@ int CRenderWorkThread::Run()
 			begun = true;
 
 			const int result = work.func();
-
+			work.func = nullptr;
 			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
 			m_completionSignal[i].Raise();
 		}

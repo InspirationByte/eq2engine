@@ -44,10 +44,10 @@ void ShaderInfoWGPUImpl::Release()
 		wgpuShaderModuleRelease(module.rhiModule);
 }
 
-bool ShaderInfoWGPUImpl::GetShaderQueryHash(const Array<EqString>& findDefines, int& outHash) const
+bool ShaderInfoWGPUImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
 {
 	Array<int> defineIds(PP_SL);
-	for (EqString& define : findDefines)
+	for (const EqString& define : findDefines)
 	{
 		const int defineId = arrayFindIndex(defines, define);
 		if (defineId == -1)
@@ -610,7 +610,13 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 	rhiShaderModuleDesc.nextInChain = &rhiSpirvDesc.chain;
 	rhiShaderModuleDesc.label = name;
 
-	return wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
+	WGPUShaderModule shaderModule = nullptr;
+	g_renderWorker.WaitForExecute("createShader", [this, &shaderModule, &rhiShaderModuleDesc]() {
+		shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
+		return 0;
+	});
+
+	return shaderModule;
 }
 
 WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const
@@ -641,6 +647,54 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl&
 		mod.rhiModule = rhiShaderModule;
 	}
 	return mod.rhiModule;
+}
+
+void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const
+{
+	const int shaderNameHash = StringToHash(shaderName);
+	auto shaderIt = m_shaderCache.find(shaderNameHash);
+	if (shaderIt.atEnd())
+	{
+		MsgError("LoadShaderModules: unknown shader '%s' specified", shaderName);
+		return;
+	}
+
+	const ShaderInfoWGPUImpl& shaderInfo = *shaderIt;
+	int queryStrHash = 0;
+	if (!shaderInfo.GetShaderQueryHash(defines, queryStrHash))
+	{
+		MsgError("LoadShaderModules: unknown defines in query for shader '%s'", shaderName);
+		return;
+	}
+
+	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
+	{
+		const ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts[i];
+		if (layout.aliasOf != -1)
+			continue;
+
+		if(shaderInfo.shaderKinds & SHADERKIND_FRAGMENT)
+		{
+			const uint shaderModuleId = PackShaderModuleId(queryStrHash, i, SHADERKIND_FRAGMENT);
+			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
+			if (!itShaderModuleId.atEnd())
+				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
+		}
+		if (shaderInfo.shaderKinds & SHADERKIND_VERTEX)
+		{
+			const uint shaderModuleId = PackShaderModuleId(queryStrHash, i, SHADERKIND_VERTEX);
+			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
+			if (!itShaderModuleId.atEnd())
+				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
+		}
+		if (shaderInfo.shaderKinds & SHADERKIND_COMPUTE)
+		{
+			const uint shaderModuleId = PackShaderModuleId(queryStrHash, i, SHADERKIND_COMPUTE);
+			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
+			if (!itShaderModuleId.atEnd())
+				GetOrLoadShaderModule(shaderInfo, *itShaderModuleId);
+		}
+	}
 }
 
 IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc) const

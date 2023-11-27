@@ -253,6 +253,14 @@ void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) 
 
 void CBaseShader::InitShader(IShaderAPI* renderAPI)
 {
+	if (!m_isInit)
+	{
+		// cache shader modules
+		MeshInstanceFormatRef dummy;
+		Array<EqString> shaderQuery(PP_SL);
+		BuildPipelineShaderQuery(dummy, UINT_MAX, shaderQuery);
+		renderAPI->LoadShaderModules(GetName(), shaderQuery);
+	}
 	m_isInit = true;
 }
 

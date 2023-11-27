@@ -5,7 +5,7 @@ struct ShaderInfoWGPUImpl
 	~ShaderInfoWGPUImpl();
 
 	void Release();
-	bool GetShaderQueryHash(const Array<EqString>& findDefines, int& outHash) const;
+	bool GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
 
 	struct VertLayout
 	{

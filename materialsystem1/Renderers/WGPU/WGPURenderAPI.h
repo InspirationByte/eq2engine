@@ -63,7 +63,7 @@ public:
 //-------------------------------------------------------------
 // Pipeline management
 
-	//IGPUShaderModulePtr			FindOrCreateShaderModule(const char* name, bool& justCreated) const;
+	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const;
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const;
 	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const;

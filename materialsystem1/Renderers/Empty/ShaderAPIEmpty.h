@@ -339,6 +339,7 @@ public:
 
 //-------------------------------------------------------------
 // Pipeline management
+	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const {}
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const { return nullptr; }
 	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
