@@ -213,6 +213,8 @@ private:
 
 	Array<RenderBoneTransform>	m_boneTransforms{ PP_SL };
 
+	IGPUCommandRecorderPtr		m_proxyUpdateCmdRecorder;
+
 	IMaterialPtr				m_defaultMaterial;
 	IMaterialPtr				m_overdrawMaterial;
 

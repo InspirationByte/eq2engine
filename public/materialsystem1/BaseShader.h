@@ -89,7 +89,8 @@ public:
 	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primTopology, const void* userData) const;
 	IGPUPipelineLayoutPtr		GetPipelineLayout(IShaderAPI* renderAPI) const;
 
-	void						SetLastFrame(uint frame) { m_lastFrame = frame; }
+	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const {}
+
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };
@@ -135,7 +136,6 @@ protected:
 	ETexFilterMode				m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
 	EShaderBlendMode			m_blendMode{ SHADER_BLEND_NONE };
 
-	uint						m_lastFrame{ UINT_MAX };
 	int							m_flags{ 0 };
 	bool						m_isInit{ false };
 };

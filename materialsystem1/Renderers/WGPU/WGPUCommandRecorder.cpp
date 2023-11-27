@@ -14,11 +14,18 @@ CWGPUCommandRecorder::~CWGPUCommandRecorder()
 		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
 }
 
-void CWGPUCommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset)
+void CWGPUCommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const
 {
 	CWGPUBuffer* bufferImpl = static_cast<CWGPUBuffer*>(buffer);
-	if (bufferImpl)
-		wgpuCommandEncoderWriteBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, reinterpret_cast<const uint8_t*>(data), size);
+	if (!bufferImpl)
+		return;
+
+	const int64 writeDataSize = (size + 3) & ~3;
+	if (writeDataSize <= 0)
+		return;
+
+	wgpuCommandEncoderWriteBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, reinterpret_cast<const uint8_t*>(data), writeDataSize);
+	m_hasCommands = true;
 }
 
 IGPUCommandBufferPtr CWGPUCommandRecorder::End()
@@ -28,6 +35,9 @@ IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 		ASSERT_FAIL("Command recorder was already ended");
 		return nullptr;
 	}
+
+	if (!m_hasCommands)
+		return nullptr;
 
 	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
 
@@ -106,6 +116,8 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
 	renderPass->m_renderTargetDims = renderTargetDims;
 	renderPass->m_userData = userData;
+
+	m_hasCommands = true;
 
 	return IGPURenderPassRecorderPtr(renderPass);
 }

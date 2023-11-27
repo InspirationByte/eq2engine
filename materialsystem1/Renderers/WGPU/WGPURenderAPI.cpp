@@ -655,7 +655,7 @@ void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStrin
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
 	if (shaderIt.atEnd())
 	{
-		MsgError("LoadShaderModules: unknown shader '%s' specified", shaderName);
+		MsgError("LoadShaderModules: unknown shader '%s' specified\n", shaderName);
 		return;
 	}
 
@@ -663,7 +663,7 @@ void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStrin
 	int queryStrHash = 0;
 	if (!shaderInfo.GetShaderQueryHash(defines, queryStrHash))
 	{
-		MsgError("LoadShaderModules: unknown defines in query for shader '%s'", shaderName);
+		MsgError("LoadShaderModules: unknown defines in query for shader '%s'\n", shaderName);
 		return;
 	}
 
@@ -1069,6 +1069,7 @@ void CWGPURenderAPI::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) con
 		return;
 	const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(cmdBuffer);
 	WGPUCommandBuffer rhiCmdBuffer = bufferImpl->m_rhiCommandBuffer;
+	ASSERT(rhiCmdBuffer);
 	wgpuCommandBufferReference(rhiCmdBuffer);
 	g_renderWorker.Execute(__func__, [this, rhiCmdBuffer]() {
 		wgpuQueueSubmit(m_rhiQueue, 1, &rhiCmdBuffer);

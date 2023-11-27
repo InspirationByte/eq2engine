@@ -145,9 +145,6 @@ public:
 	// waits for material loading
 	virtual void					WaitForLoading() const = 0;
 
-	// updates material proxies
-	virtual void					UpdateProxy(float fDt) = 0;
-
 	// retrieves the base texture on specified stage
 	virtual const ITexturePtr&		GetBaseTexture(int stage = 0) = 0;
 

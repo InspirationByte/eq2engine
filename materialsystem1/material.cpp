@@ -478,8 +478,10 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 }
 
-void CMaterial::UpdateProxy(float fDt)
+void CMaterial::UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder)
 {
-	for(int i = 0; i < m_proxies.numElem(); i++)
-		m_proxies[i]->UpdateProxy( fDt );
+	for(IMaterialProxy* proxy : m_proxies)
+		proxy->UpdateProxy(fDt);
+
+	m_shader->UpdateProxy(cmdRecorder);
 }

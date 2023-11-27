@@ -51,7 +51,7 @@ public:
 	MatVarProxyUnk			GetMaterialVar(const char* pszVarName, const char* defaultValue);
 
 // render-time operations
-	void					UpdateProxy(float fDt);					
+	void					UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder);
 	const ITexturePtr&		GetBaseTexture(int stage = 0);
 private:
 

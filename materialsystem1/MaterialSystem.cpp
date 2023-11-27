@@ -384,6 +384,7 @@ void CMaterialSystem::Shutdown()
 		
 	m_dynamicMesh.Destroy();
 
+	m_proxyUpdateCmdRecorder = nullptr;
 	m_defaultMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
 	m_currentEnvmapTexture = nullptr;
@@ -1018,6 +1019,8 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	m_shaderAPI->Clear(clearBackBuffer, true, false, clearColor);
 #endif
 
+	m_proxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
+
 	return true;
 }
 
@@ -1030,6 +1033,8 @@ bool CMaterialSystem::EndFrame()
 	// issue the rendering of anything
 	m_shaderAPI->Flush();
 	m_shaderAPI->ResetCounters();
+
+	m_shaderAPI->SubmitCommandBuffer(m_proxyUpdateCmdRecorder->End());
 
 	m_renderLibrary->EndFrame();
 
@@ -1339,10 +1344,18 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
 
+	if (m_preApplyCallback)
+		material = m_preApplyCallback->OnPreBindMaterial(material);
+
 	// force load shader and textures if not already
 	material->LoadShaderAndTextures();
 
-	IMatSystemShader* matShader = static_cast<CMaterial*>(material)->m_shader;
+	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
+	IMatSystemShader* matShader = matSysMaterial->m_shader;
+
+	if (matSysMaterial->m_frameBound != m_frame)
+		matSysMaterial->UpdateProxy(m_proxyDeltaTime, m_proxyUpdateCmdRecorder);
+	matSysMaterial->m_frameBound = m_frame;
 
 	// TODO: overdraw material. Or maybe debug property in shader?
 
@@ -1351,7 +1364,6 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
 	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, rendPassRecorder, userData), nullptr);
 	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, userData), nullptr);
-	matShader->SetLastFrame(m_frame);
 }
 
 bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)

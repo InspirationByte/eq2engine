@@ -84,7 +84,7 @@ void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder)
+void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds)
 {
 	if(!m_initialized || !r_drawParticles.GetBool())
 	{
@@ -101,10 +101,10 @@ void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPa
 	if(!m_vertexBuffer)
 		m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX, "PFXVertexBuffer");
 	if(!m_indexBuffer)
-		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
+		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
 
-	m_vertexBuffer->Update(m_pVerts, (int64)m_numVertices * sizeof(PFXVertex), 0);
-	m_indexBuffer->Update(m_pIndices, (int64)m_numIndices * sizeof(uint16), 0);
+	bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, (int64)m_numVertices * sizeof(PFXVertex), 0);
+	bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, (int64)m_numIndices * sizeof(uint16), 0);
 
 	RenderDrawCmd drawCmd;
 	drawCmd
@@ -190,8 +190,8 @@ void CParticleLowLevelRenderer::Shutdown()
 {
 	ShutdownBuffers();
 
-	for (int i = 0; i < m_batchs.numElem(); i++)
-		delete m_batchs[i];
+	for (CParticleBatch* batch : m_batchs)
+		delete batch;
 	m_batchs.clear(true);
 }
 
@@ -240,31 +240,35 @@ CParticleBatch*	CParticleLowLevelRenderer::CreateBatch(const char* materialName,
 
 CParticleBatch* CParticleLowLevelRenderer::FindBatch(const char* materialName) const
 {
-	for (int i = 0; i < m_batchs.numElem(); ++i)
+	for (CParticleBatch* batch : m_batchs)
 	{
-		if (!stricmp(m_batchs[i]->m_material->GetName(), materialName))
-			return m_batchs[i];
+		if (!stricmp(batch->m_material->GetName(), materialName))
+			return batch;
 	}
 	return nullptr;
 }
 
 void CParticleLowLevelRenderer::PreloadMaterials()
 {
-	for(int i = 0; i < m_batchs.numElem(); i++)
-		g_matSystem->QueueLoading(m_batchs[i]->m_material);
+	for(CParticleBatch* batch : m_batchs)
+		g_matSystem->QueueLoading(batch->m_material);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
 void CParticleLowLevelRenderer::Render(int nRenderFlags, IGPURenderPassRecorder* rendPassRecorder)
 {
-	for(int i = 0; i < m_batchs.numElem(); i++)
-		m_batchs[i]->Render(nRenderFlags, rendPassRecorder);
+	IGPUCommandRecorderPtr particleRenderUpdate = g_renderAPI->CreateCommandRecorder("ParticleRenderUpdate");
+
+	for(CParticleBatch* batch : m_batchs)
+		batch->Render(nRenderFlags, rendPassRecorder, particleRenderUpdate);
+
+	g_renderAPI->SubmitCommandBuffer(particleRenderUpdate->End());
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()
 {
-	for(int i = 0; i < m_batchs.numElem(); i++)
-		m_batchs[i]->ClearBuffers();
+	for(CParticleBatch* batch : m_batchs)
+		batch->ClearBuffers();
 }
 
 //----------------------------------------------------------------------------------------------------

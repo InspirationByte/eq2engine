@@ -300,7 +300,6 @@ void CWGPUTexture::Unlock()
 	if (!(data.flags & TEXLOCK_READONLY))
 	{
 		g_renderWorker.WaitForExecute("UnlockTex", [&]() {
-
 			WGPUImageCopyTexture texImage{};
 			texImage.texture = m_rhiTextures[0];
 			texImage.aspect = WGPUTextureAspect_All;

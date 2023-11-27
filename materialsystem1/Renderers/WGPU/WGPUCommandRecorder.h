@@ -7,7 +7,7 @@ public:
 	~CWGPUCommandRecorder();
 	void*						GetUserData() const { return m_userData; }
 
-	void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset);
+	void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const;
 
 	// TODO:
 
@@ -28,4 +28,5 @@ public:
 
 	WGPUCommandEncoder			m_rhiCommandEncoder{ nullptr };
 	void*						m_userData{ nullptr };
+	mutable bool				m_hasCommands{ false };
 };

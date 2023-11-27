@@ -57,7 +57,7 @@ public:
 
 	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
 
-	virtual void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) = 0;
+	virtual void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const = 0;
 
 	virtual void*						GetUserData() const = 0;
 	virtual IGPUCommandBufferPtr		End() = 0;

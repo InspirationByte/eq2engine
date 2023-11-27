@@ -16,6 +16,7 @@ class IVertexFormat;
 class CViewParams;
 class Volume;
 class IGPURenderPassRecorder;
+class IGPUCommandRecorder;
 struct AtlasEntry;
 struct VertexLayoutDesc;
 
@@ -59,7 +60,7 @@ public:
 	virtual	~CParticleBatch();
 
 	// renders this buffer
-	void				Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder);
+	void				Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
