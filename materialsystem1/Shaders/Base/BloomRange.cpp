@@ -47,7 +47,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 			{
 				ITexturePtr baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+					.Buffer(0, m_materialParamsBuffer)
 					.Sampler(1, baseTexture->GetSamplerState())
 					.Texture(2, baseTexture)
 					.End();

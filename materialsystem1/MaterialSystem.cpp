@@ -434,7 +434,7 @@ void CMaterialSystem::CreateWhiteTexture()
 
 void CMaterialSystem::CreateDefaultDepthTexture()
 {
-	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget("_matSys_depthBuffer", 800, 600, FORMAT_D24S8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
+	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget("_matSys_depthBuffer", 800, 600, FORMAT_D24, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 
 	ASSERT_MSG(m_defaultDepthTexture, "Unable to create default depth texture");
 }
@@ -908,7 +908,10 @@ void CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldView
 	GetMatrix(MATRIXMODE_VIEW, cameraParams.view);
 	GetMatrix(MATRIXMODE_PROJECTION, cameraParams.proj);
 
+	cameraParams.invViewProj = !cameraParams.viewProj;
+
 	GetFogInfo(fog);
+	cameraParams.zNearFar = 0.0f;
 	cameraParams.position = fog.viewPos;
 
 	// can use either fixed array or CMemoryStream with on-stack storage

@@ -218,3 +218,26 @@ inline void MatVarProxy<ITexturePtr>::Set(const ITexturePtr& pTexture)
 
 	var.texture = pTexture;
 }
+
+template<>
+inline const IGPUBufferPtr& MatVarProxy<IGPUBufferPtr>::Get() const
+{
+	if (!m_vars)
+		return IGPUBufferPtr::Null();
+
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return var.buffer;
+}
+
+template<>
+inline void MatVarProxy<IGPUBufferPtr>::Set(const IGPUBufferPtr& buffer)
+{
+	if (!m_vars)
+		return;
+
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	if (buffer == var.buffer)
+		return;
+
+	var.buffer = buffer;
+}

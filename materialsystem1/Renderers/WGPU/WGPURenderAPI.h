@@ -75,9 +75,10 @@ public:
 	IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const;
 
 //-------------------------------------------------------------
-// Render pass management
+// Command management
 
-	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const;
+	IGPUCommandRecorderPtr		CreateCommandRecorder(const char* name = nullptr, void* userData = nullptr) const;
+	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, const char* name = nullptr, void* userData = nullptr) const;
 
 //-------------------------------------------------------------
 // Command buffer management

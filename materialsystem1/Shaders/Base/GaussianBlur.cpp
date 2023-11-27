@@ -65,7 +65,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 
 				ITexturePtr baseTexture = m_blurSource.Get() ? m_blurSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+					.Buffer(0, m_materialParamsBuffer)
 					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
 					.Texture(2, baseTexture)
 					.End();
@@ -80,7 +80,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 
 			IGPUBufferPtr cameraParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
+				.Buffer(0, cameraParamsBuffer)
 				.End();
 			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 		}

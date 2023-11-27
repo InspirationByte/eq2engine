@@ -12,6 +12,8 @@
 #include "renderers/IIndexBuffer.h"
 #include "renderers/IGPUBuffer.h"
 
+struct BufferInfo;
+
 class CWGPUBuffer : public IGPUBuffer
 {
 public:
@@ -22,7 +24,7 @@ public:
 
 	int			GetSize() const { return m_bufSize; }
 
-	void		Update(void* data, int size, int offset);
+	void		Update(const void* data, int64 size, int64 offset);
 	LockFuture	Lock(int lockOfs, int sizeToLock, int flags);
 	void		Unlock();
 

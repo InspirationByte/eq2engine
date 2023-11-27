@@ -58,12 +58,9 @@ void CParticleBatch::Shutdown()
 
 	CSpriteBuilder::Shutdown();
 	m_material = nullptr;
-}
 
-void CParticleBatch::SetCustomProjectionMatrix(const Matrix4x4& mat)
-{
-	m_useCustomProjMat = true;
-	m_customProjMat = mat;
+	m_vertexBuffer = nullptr;
+	m_indexBuffer = nullptr;
 }
 
 int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex** verts, uint16** indices, bool preSetIndices )
@@ -101,20 +98,24 @@ void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPa
 
 	g_matSystem->SetCullMode(CULL_FRONT);
 
-	if (m_useCustomProjMat)
-		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
+	if(!m_vertexBuffer)
+		m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX, "PFXVertexBuffer");
+	if(!m_indexBuffer)
+		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
+
+	m_vertexBuffer->Update(m_pVerts, (int64)m_numVertices * sizeof(PFXVertex), 0);
+	m_indexBuffer->Update(m_pIndices, (int64)m_numIndices * sizeof(uint16), 0);
 
 	RenderDrawCmd drawCmd;
 	drawCmd
 		.SetMaterial(m_material)
 		.SetInstanceFormat(g_pfxRender->m_vertexFormat)
-		.SetVertexBuffer(0, g_renderAPI->CreateBuffer(BufferInfo(m_pVerts, m_numVertices), BUFFERUSAGE_VERTEX, "PFXVertexBuffer"));
+		.SetVertexBuffer(0, m_vertexBuffer);
 		
 	if (m_numIndices)
 	{
 		drawCmd
-			.SetIndexBuffer(g_renderAPI->CreateBuffer(BufferInfo(m_pIndices, m_numIndices), BUFFERUSAGE_INDEX, "PFXIndexBuffer"), INDEXFMT_UINT16)
+			.SetIndexBuffer(m_indexBuffer, INDEXFMT_UINT16)
 			.SetDrawIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numIndices, 0, m_numVertices);
 	}
 	else
@@ -126,7 +127,6 @@ void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPa
 	{
 		m_numVertices = 0;
 		m_numIndices = 0;
-		m_useCustomProjMat = false;
 	}
 }
 
@@ -199,8 +199,6 @@ bool CParticleLowLevelRenderer::InitBuffers()
 {
 	if(m_initialized)
 		return true;
-
-	m_vbMaxQuads = r_particleBufferSize.GetInt();
 
 	if(!m_vertexFormat)
 	{

@@ -147,8 +147,8 @@ BEGIN_SHADER_CLASS(SDFFont)
 			IGPUBufferPtr cameraParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
-				.Buffer(1, materialParamsBuffer, 0, materialParamsBuffer->GetSize())
+				.Buffer(0, cameraParamsBuffer)
+				.Buffer(1, materialParamsBuffer)
 				.Sampler(2, baseTexture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();

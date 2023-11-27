@@ -37,14 +37,19 @@ void* CWGPUSwapChain::GetWindow() const
 
 ITexturePtr CWGPUSwapChain::GetBackbuffer() const
 {
-	// must obtain valid texture view upon Present
-	if (m_swapChain)
-	{
-		m_textureRef->m_rhiViews.setNum(1);
-		m_textureRef->m_rhiViews[0] = wgpuSwapChainGetCurrentTextureView(m_swapChain);
-	}
-
 	return ITexturePtr(m_textureRef);
+}
+
+void CWGPUSwapChain::UpdateBackbufferView() const
+{
+	if (!m_swapChain)
+		return;
+
+	if(m_textureRef->m_rhiViews.numElem())
+		wgpuTextureViewRelease(m_textureRef->m_rhiViews[0]);
+	else
+		m_textureRef->m_rhiViews.setNum(1);
+	m_textureRef->m_rhiViews[0] = wgpuSwapChainGetCurrentTextureView(m_swapChain);
 }
 
 void CWGPUSwapChain::GetBackbufferSize(int& wide, int& tall) const
@@ -108,7 +113,7 @@ bool CWGPUSwapChain::UpdateResize()
 	swapChainDesc.height = m_backbufferSize.y;
 	swapChainDesc.format = GetWGPUTextureFormat(m_textureRef->GetFormat());
 	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment;
-	swapChainDesc.presentMode = WGPUPresentMode_Mailbox;
+	swapChainDesc.presentMode = WGPUPresentMode_Fifo;// WGPUPresentMode_Mailbox;
 
 	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &swapChainDesc);
 	return m_swapChain;
@@ -126,6 +131,5 @@ bool CWGPUSwapChain::SwapBuffers()
 		return false;
 
 	wgpuSwapChainPresent(m_swapChain);
-	m_textureRef->Release();
 	return true;
 }

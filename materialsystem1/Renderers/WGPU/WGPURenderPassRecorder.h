@@ -39,6 +39,8 @@ public:
 	// SetBlendConstant(WGPUColor const* color);
 	// SetStencilReference(uint32_t reference);
 
+	void					Complete();
+
 	IGPUCommandBufferPtr	End();
 
 	void*					GetUserData() const { return m_userData; }

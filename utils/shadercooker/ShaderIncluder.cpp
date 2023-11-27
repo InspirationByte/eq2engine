@@ -25,26 +25,14 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 
 	if (type == shaderc_include_type_relative)
 	{
-		IFilePtr file = TryOpenIncludeFile(sourcePath, requested_source);
-		if (!file)
-		{
-			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-			result->includeContent.Print("Could not open %s", requested_source);
-			result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-			result->resultData.content_length = result->includeContent.GetSize();
+		if (!TryOpenIncludeFile(sourcePath, requested_source, result))
 			return &result->resultData;
-		}
-		result->includeName = requested_source;
-		result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
-		result->includeContent.AppendStream(file);
 	}
 	else
 	{
-		result->includeContent.Close();
-		result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-
 		if (!strcmp(requested_source, "ShaderCooker"))
 		{
+			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
 			result->includeContent.Print(s_boilerPlateStrGLSL);
 
 			// also add vertex layout defines
@@ -73,20 +61,11 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 			EqString shaderSourceName;
 			CombinePath(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");
 
-			IFilePtr file = TryOpenIncludeFile(sourcePath, shaderSourceName);
-			if (!file)
-			{
-				result->includeContent.Print("Cannot open %s", shaderSourceName.ToCString());
-				result->resultData.content = (const char*)result->includeContent.GetBasePointer();
-				result->resultData.content_length = result->includeContent.GetSize();
+			if (!TryOpenIncludeFile(sourcePath, shaderSourceName, result))
 				return &result->resultData;
-			}
 
 			result->includeName = shaderSourceName;
-			result->includeContent.Close();
-			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
 			result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", vertexId);
-			result->includeContent.AppendStream(file);
 		}
 	}
 	result->resultData.content = (const char*)result->includeContent.GetBasePointer();
@@ -96,19 +75,39 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	return &result->resultData;
 }
 
-IFilePtr EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fileName)
+bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result)
 {
+	IFilePtr openFile = nullptr;
+
 	EqString fullPath;
 	for (const EqString& incPath : m_includePaths)
 	{
 		CombinePath(fullPath, incPath, fileName);
-		IFilePtr file = g_fileSystem->Open(fullPath, "r", SP_ROOT);
-		if (file)
-			return file;
+		openFile = g_fileSystem->Open(fullPath, "r", SP_ROOT);
+		if (openFile)
+			break;
 	}
 
-	CombinePath(fullPath, reqSource, fileName);
-	return g_fileSystem->Open(fullPath, "r", SP_ROOT);
+	if (!openFile)
+	{
+		CombinePath(fullPath, reqSource, fileName);
+		openFile = g_fileSystem->Open(fullPath, "r", SP_ROOT);
+	}
+
+	if (!openFile)
+	{
+		result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
+		result->includeContent.Print("Could not open %s", reqSource);
+		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
+		result->resultData.content_length = result->includeContent.GetSize();
+		// leave source_name and source_name_length empty
+		return false;
+	}
+
+	result->includeName = fullPath;
+	result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, openFile->GetSize());
+	result->includeContent.AppendStream(openFile);
+	return true;
 }
 
 // Handles shaderc_include_result_release_fn callbacks.

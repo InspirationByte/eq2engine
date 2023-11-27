@@ -6,10 +6,15 @@
 #include "WGPURenderPassRecorder.h"
 #include "WGPURenderDefs.h"
 
+//-------------------------------------------
+
 CWGPURenderPassRecorder::~CWGPURenderPassRecorder()
 {
-	wgpuCommandEncoderRelease(m_rhiCommandEncoder);
-	wgpuRenderPassEncoderRelease(m_rhiRenderPassEncoder);
+	if (m_rhiRenderPassEncoder)
+		wgpuRenderPassEncoderRelease(m_rhiRenderPassEncoder);
+
+	if(m_rhiCommandEncoder)
+		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
 }
 
 void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
@@ -107,12 +112,32 @@ void CWGPURenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indir
 // CWGPURenderPassRecorder::SetBlendConstant(WGPUColor const* color);
 // CWGPURenderPassRecorder::SetStencilReference(uint32_t reference);
 
+void CWGPURenderPassRecorder::Complete()
+{
+	if (!m_rhiRenderPassEncoder)
+	{
+		ASSERT_FAIL("Render pass recorder was already ended");
+		return;
+	}
+	wgpuRenderPassEncoderEnd(m_rhiRenderPassEncoder);
+	m_rhiRenderPassEncoder = nullptr;
+}
+
 IGPUCommandBufferPtr CWGPURenderPassRecorder::End()
 {
-	wgpuRenderPassEncoderEnd(m_rhiRenderPassEncoder);
+	Complete();
+
+	if (!m_rhiCommandEncoder)
+	{
+		ASSERT_FAIL("Render pass recorder was already ended");
+		return nullptr;
+	}
 
 	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
+
 	WGPUCommandBuffer rhiCommandBuffer = wgpuCommandEncoderFinish(m_rhiCommandEncoder, nullptr);
 	commandBuffer->m_rhiCommandBuffer = rhiCommandBuffer;
+	m_rhiCommandEncoder = nullptr;
+
 	return IGPUCommandBufferPtr(commandBuffer);
 }

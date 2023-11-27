@@ -7,6 +7,7 @@
 
 #pragma once
 #include "renderers/ITexture.h"
+#include "renderers/IGPUBuffer.h"
 
 struct MatVarData
 {
@@ -14,6 +15,7 @@ struct MatVarData
 	int				intValue;
 	EqString		strValue;
 	ITexturePtr		texture;
+	IGPUBufferPtr	buffer;
 };
 
 struct MaterialVarBlock : public WeakRefObject<MaterialVarBlock>
@@ -63,6 +65,7 @@ protected:
 	int							m_matVarIdx{ -1 };
 };
 
+using MatBufferProxy = MatVarProxy<IGPUBufferPtr>;
 using MatTextureProxy = MatVarProxy<ITexturePtr>;
 using MatStringProxy = MatVarProxy<EqString>;
 using MatIntProxy = MatVarProxy<int>;

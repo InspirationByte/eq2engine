@@ -343,7 +343,6 @@ void CWGPUTexture::Unlock()
 				break;
 			}
 			}
-
 			return 0;
 		});
 	}

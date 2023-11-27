@@ -75,7 +75,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			{
 				ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_materialParamsBuffer, 0, m_materialParamsBuffer->GetSize())
+					.Buffer(0, m_materialParamsBuffer)
 					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
 					.Texture(2, baseTexture)
 					.End();
@@ -97,7 +97,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			
 			IGPUBufferPtr passParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&passParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, passParamsBuffer, 0, passParamsBuffer->GetSize())
+				.Buffer(0, passParamsBuffer)
 				.End();
 			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 		}

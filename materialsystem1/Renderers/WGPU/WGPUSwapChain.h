@@ -34,6 +34,9 @@ public:
 	bool			UpdateResize();
 	
 protected:
+
+	void			UpdateBackbufferView() const;
+
 	CRefPtr<CWGPUTexture>	m_textureRef;
 
 	CWGPURenderLib*		m_host{ nullptr };

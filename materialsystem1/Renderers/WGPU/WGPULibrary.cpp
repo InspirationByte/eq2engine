@@ -255,14 +255,27 @@ void CWGPURenderLib::ExitAPI()
 
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
+	do{
+		g_renderWorker.WaitForThread();
+	} while (g_renderWorker.HasPendingWork());
+
+	ASSERT(g_renderWorker.HasPendingWork() == false);
+
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 	m_currentSwapChain->UpdateResize();
-	m_currentSwapChain->GetBackbuffer(); // HACK: reference backbuffer texture now
+
+	// must obtain valid texture view upon Present
+	m_currentSwapChain->UpdateBackbufferView();
 }
 
 void CWGPURenderLib::EndFrame()
 {
-	g_renderWorker.WaitForExecute(__func__, [&]() {
+	// Wait until all tasks get finished before all gets fucked by swap chain
+	do {
+		g_renderWorker.WaitForThread();
+	} while (g_renderWorker.HasPendingWork());
+
+	g_renderWorker.Execute("Swap", [this]() {
 		m_currentSwapChain->SwapBuffers();
 		return 0;
 	});

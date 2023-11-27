@@ -35,11 +35,13 @@ struct FogInfo
 struct MatSysCamera
 {
 	Matrix4x4	viewProj;
+	Matrix4x4	invViewProj;
 	Matrix4x4	view;
 	Matrix4x4	proj;
-	Vector3D	position;
-	Vector3D	fogColor;		// .a is factor
-	float		padding[2];
+	Vector3D	position; float _pad0;
+	Vector3D	fogColor; float _pad1;
+	Vector2D	zNearFar;
+	Vector2D	_pad2;
 	float		fogFactor;
 	float		fogNear;
 	float		fogFar;

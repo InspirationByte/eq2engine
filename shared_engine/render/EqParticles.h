@@ -9,7 +9,7 @@
 #pragma once
 #include "SpriteBuilder.h"
 
-class IMaterial;
+
 class IVertexBuffer;
 class IIndexBuffer;
 class IVertexFormat;
@@ -19,6 +19,10 @@ class IGPURenderPassRecorder;
 struct AtlasEntry;
 struct VertexLayoutDesc;
 
+class IGPUBuffer;
+using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
+class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
 
 enum EPartRenderFlags
@@ -56,7 +60,6 @@ public:
 
 	// renders this buffer
 	void				Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder);
-	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
@@ -78,8 +81,8 @@ protected:
 	void				Shutdown();
 
 	IMaterialPtr		m_material;
-	Matrix4x4			m_customProjMat;
-	bool				m_useCustomProjMat{ false };
+	IGPUBufferPtr		m_vertexBuffer;
+	IGPUBufferPtr		m_indexBuffer;
 };
 
 //------------------------------------------------------------------------------------
@@ -113,8 +116,6 @@ protected:
 
 	Array<CParticleBatch*>	m_batchs{ PP_SL };
 	IVertexFormat*		m_vertexFormat{ nullptr };
-	int					m_vbMaxQuads{ 0 };
-
 	bool				m_initialized{ false };
 };
 

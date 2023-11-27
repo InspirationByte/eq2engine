@@ -88,7 +88,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 				IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, materialParamsBuffer, 0, materialParamsBuffer->GetSize())
+					.Buffer(0, materialParamsBuffer)
 					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
 					.Texture(2, baseTexture)
 					.End();
@@ -103,7 +103,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 			IGPUBufferPtr cameraParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer, 0, cameraParamsBuffer->GetSize())
+				.Buffer(0, cameraParamsBuffer)
 				.End();
 			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 		}

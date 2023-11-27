@@ -13,14 +13,14 @@ public:
 	void SetVertexLayout(const char* vertexLayoutName);
 
 private:
-	IFilePtr TryOpenIncludeFile(const char* reqSource, const char* fileName);
-
 	struct IncludeResult
 	{
 		shaderc_include_result	resultData;
 		EqString				includeName;
 		CMemoryStream			includeContent{ PP_SL };
 	};
+
+	bool TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result);
 
 	ArrayCRef<EqString>			m_includePaths;
 	FixedArray<IncludeResult, 32>	m_shaderIncludes;

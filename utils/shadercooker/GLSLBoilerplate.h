@@ -5,7 +5,6 @@ static const char s_boilerPlateStrGLSL[] = R"(
 #define     frac        fract
 #define     lerp        mix
 #define     saturate(x) clamp(x, 0.0, 1.0)
-#define     mul(a,b)    ((a)*(b))
 
 float fmod(float x, float y) { return x - y * floor(x / y); }
 

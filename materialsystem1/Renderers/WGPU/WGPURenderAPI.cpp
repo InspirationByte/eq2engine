@@ -16,9 +16,11 @@
 #include "WGPURenderAPI.h"
 #include "WGPURenderDefs.h"
 #include "WGPUStates.h"
+#include "WGPUCommandRecorder.h"
 #include "WGPURenderPassRecorder.h"
 
 #include "../RenderWorker.h"
+
 
 #define ASSERT_DEPRECATED() // ASSERT_FAIL("Deprecated API %s", __func__)
 
@@ -547,7 +549,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 				else
 					ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
 
-				rhiBindGroupEntryDesc.size = bindGroupEntry.bufferSize;
+				rhiBindGroupEntryDesc.size = bindGroupEntry.bufferSize > 0 ? bindGroupEntry.bufferSize : buffer->GetSize();
 				rhiBindGroupEntryDesc.offset = bindGroupEntry.bufferOffset;
 				break;
 			}
@@ -910,7 +912,22 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	return IGPURenderPipelinePtr(renderPipeline);
 }
 
-IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
+IGPUCommandRecorderPtr CWGPURenderAPI::CreateCommandRecorder(const char* name, void* userData) const
+{
+	WGPUCommandEncoderDescriptor rhiEncoderDesc = {};
+	rhiEncoderDesc.label = name;
+	WGPUCommandEncoder rhiCommandEncoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
+	if (!rhiCommandEncoder)
+		return nullptr;
+
+	CRefPtr<CWGPUCommandRecorder> commandRecorder = CRefPtr_new(CWGPUCommandRecorder);
+	commandRecorder->m_rhiCommandEncoder = rhiCommandEncoder;
+	commandRecorder->m_userData = userData;
+
+	return IGPUCommandRecorderPtr(commandRecorder);
+}
+
+IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc, const char* name, void* userData) const
 {
 	WGPURenderPassDescriptor rhiRenderPassDesc = {};
 	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
@@ -944,18 +961,24 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	if(renderPassDesc.depthStencil)
 	{
 		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil.Ptr());
-
-		rhiDepthStencilAttachment.depthClearValue = renderPassDesc.depthClearValue;
-		rhiDepthStencilAttachment.depthReadOnly = false; // TODO
-		rhiDepthStencilAttachment.depthLoadOp = g_wgpuLoadOp[renderPassDesc.depthLoadOp];
-		rhiDepthStencilAttachment.depthStoreOp = g_wgpuStoreOp[renderPassDesc.depthStoreOp];
-
-		rhiDepthStencilAttachment.stencilClearValue = renderPassDesc.stencilClearValue;
-		rhiDepthStencilAttachment.stencilReadOnly = false;  // TODO
-		rhiDepthStencilAttachment.stencilLoadOp = g_wgpuLoadOp[renderPassDesc.stencilLoadOp];
-		rhiDepthStencilAttachment.stencilStoreOp = g_wgpuStoreOp[renderPassDesc.stencilStoreOp];
-
 		rhiDepthStencilAttachment.view = depthTexture->GetWGPUTextureView();
+
+		rhiDepthStencilAttachment.depthReadOnly = renderPassDesc.depthReadOnly;
+		if (!renderPassDesc.depthReadOnly)
+		{
+			rhiDepthStencilAttachment.depthClearValue = renderPassDesc.depthClearValue;
+			rhiDepthStencilAttachment.depthLoadOp = g_wgpuLoadOp[renderPassDesc.depthLoadOp];
+			rhiDepthStencilAttachment.depthStoreOp = g_wgpuStoreOp[renderPassDesc.depthStoreOp];
+		}
+
+		const bool hasStencil = IsStencilFormat(renderPassDesc.depthStencil->GetFormat());
+		rhiDepthStencilAttachment.stencilReadOnly = renderPassDesc.stencilReadOnly;
+		if (hasStencil && !renderPassDesc.stencilReadOnly)
+		{
+			rhiDepthStencilAttachment.stencilClearValue = renderPassDesc.stencilClearValue;
+			rhiDepthStencilAttachment.stencilLoadOp = g_wgpuLoadOp[renderPassDesc.stencilLoadOp];
+			rhiDepthStencilAttachment.stencilStoreOp = g_wgpuStoreOp[renderPassDesc.stencilStoreOp];
+		}
 		rhiRenderPassDesc.depthStencilAttachment = &rhiDepthStencilAttachment;
 	}
 	
@@ -966,6 +989,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	if (!rhiCommandEncoder)
 		return nullptr;
 
+	rhiRenderPassDesc.label = name;
 	WGPURenderPassEncoder rhiRenderPassEncoder = wgpuCommandEncoderBeginRenderPass(rhiCommandEncoder, &rhiRenderPassDesc);
 	if (!rhiRenderPassEncoder)
 		return nullptr;
@@ -989,10 +1013,12 @@ void CWGPURenderAPI::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) con
 {
 	if (!cmdBuffer)
 		return;
-
-	g_renderWorker.Execute(__func__, [this, buffer = IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer))]() {
-		const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(buffer.Ptr());
-		wgpuQueueSubmit(m_rhiQueue, 1, &bufferImpl->m_rhiCommandBuffer);
+	const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(cmdBuffer);
+	WGPUCommandBuffer rhiCmdBuffer = bufferImpl->m_rhiCommandBuffer;
+	wgpuCommandBufferReference(rhiCmdBuffer);
+	g_renderWorker.Execute(__func__, [this, rhiCmdBuffer]() {
+		wgpuQueueSubmit(m_rhiQueue, 1, &rhiCmdBuffer);
+		wgpuCommandBufferRelease(rhiCmdBuffer);
 		return 0;
 	});
 }

@@ -678,7 +678,7 @@ struct BindGroupDesc
 
 FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(int binding, IGPUBuffer* buffer, int offset, int size)
+	ThisType& Buffer(int binding, IGPUBuffer* buffer, int offset = 0, int size = -1)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
 		Entry& entry = ref.entries.append();
@@ -880,10 +880,12 @@ struct RenderPassDesc
 	float			depthClearValue{ 1.0f };
 	ELoadFunc		depthLoadOp{ LOADFUNC_LOAD };
 	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };
+	bool			depthReadOnly{ false };
 
 	int				stencilClearValue{ 0 };
 	ELoadFunc		stencilLoadOp{ LOADFUNC_LOAD };
 	EStoreFunc		stencilStoreOp{ STOREFUNC_STORE };
+	bool			stencilReadOnly{ false };
 
 	EqString		name;
 	int				nameHash{ 0 };
@@ -907,6 +909,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 	}
 	FLUENT_SET_VALUE(depthStencil, DepthStencilTarget)
 	FLUENT_SET_VALUE(depthStoreOp, DepthStoreOp)
+	FLUENT_SET_VALUE(depthReadOnly, DepthReadOnly)
 	ThisType& DepthClear(float clearValue = 1.0f)
 	{
 		ref.depthClearValue = clearValue;
@@ -914,6 +917,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		return *this; 
 	}
 	FLUENT_SET_VALUE(stencilStoreOp, StencilStoreOp)
+	FLUENT_SET_VALUE(stencilReadOnly, StencilReadOnly)
 	ThisType& StencilClear(int clearValue = 0)
 	{
 		ref.stencilClearValue = clearValue;

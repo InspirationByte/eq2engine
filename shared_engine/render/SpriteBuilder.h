@@ -216,29 +216,40 @@ void CSpriteBuilder<VTX_TYPE>::_AddParticleStrip(VTX_TYPE* verts, int nVertices)
 		return;
 	}
 
+#if 1
+	uint16 firstIndex = 0;
+	if(m_numIndices)
+	{
+		uint16 lastIdx = m_pIndices[m_numIndices - 1];
+		firstIndex = lastIdx + 1;
+	}
+
+	uint16 restart = 0xFFFF;
+	AddIndices(&restart, 1);
+#else
 	int num_ind = m_numIndices;
 
-	uint16 nIndicesCurr = 0;
+	uint16 firstIndex = 0;
 
 	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
 	if( num_ind > 0 )
 	{
 		uint16 lastIdx = m_pIndices[ num_ind-1 ];
 
-		nIndicesCurr = lastIdx+1;
+		firstIndex = lastIdx+1;
 
 		// add two last indices to make degenerates
-		uint16 degenerate[2] = {lastIdx, nIndicesCurr};
+		uint16 degenerate[2] = {lastIdx, firstIndex };
 
 		AddIndices(degenerate, 2);
 	}
 
 	// add indices
-
+#endif
 	AddVertices(verts, nVertices);
 
 	for(int i = 0; i < nVertices; i++)
-		m_pIndices[m_numIndices++] = nIndicesCurr+i;
+		m_pIndices[m_numIndices++] = firstIndex + i;
 }
 
 template <class VTX_TYPE>
@@ -246,7 +257,10 @@ void CSpriteBuilder<VTX_TYPE>::AddStripBreak()
 {
 	if(m_triangleListMode)
 		return;
-
+#if 1
+	uint16 restart = 0xFFFF;
+	AddIndices(&restart, 1);
+#else
 	int num_ind = m_numIndices;
 
 	uint16 nIndicesCurr = 0;
@@ -263,8 +277,7 @@ void CSpriteBuilder<VTX_TYPE>::AddStripBreak()
 
 		AddIndices(degenerate, 2);
 	}
-
-	//AddIndex( 0xFFFF );
+#endif
 }
 
 template <class VTX_TYPE>

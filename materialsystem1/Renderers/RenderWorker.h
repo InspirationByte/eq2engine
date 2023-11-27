@@ -30,6 +30,8 @@ public:
 	void		InitLoop(RenderWorkerHandler* workHandler, FUNC_TYPE loopFunc, int workPoolSize = 32);
 	void		Shutdown();
 
+	bool		HasPendingWork() const;
+
 	// syncronous execution
 	int			WaitForExecute(const char* name, FUNC_TYPE f);
 
@@ -38,8 +40,6 @@ public:
 
 protected:
 	int			Run() override;
-
-	void		Execute();
 
 	struct Work
 	{
@@ -52,7 +52,6 @@ protected:
 	FixedArray<Work, 96>					m_workRingPool;
 	FixedArray<Threading::CEqSignal, 96>	m_completionSignal;
 	RenderWorkerHandler*					m_workHandler{ nullptr };
-	volatile bool							m_loopStop{ false };
 };
 
 extern CRenderWorkThread g_renderWorker;

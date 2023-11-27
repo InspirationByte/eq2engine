@@ -39,7 +39,7 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 	if (m_rhiBuffer && bufferInfo.data && bufferInfo.dataSize)
 	{
 		// sadly...
-		g_renderWorker.WaitForExecute("UploadCreatedBuffer", [&]() {
+		g_renderWorker.WaitForExecute("UploadCreatedBuffer", [this, bufferInfo, writeDataSize]() {
 			void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
 			ASSERT_MSG(outData, "Buffer mapped range is NULL");
 			memcpy(outData, bufferInfo.data, writeDataSize);
@@ -55,12 +55,15 @@ void CWGPUBuffer::Terminate()
 	m_rhiBuffer = nullptr;
 }
 
-void CWGPUBuffer::Update(void* data, int size, int offset)
+void CWGPUBuffer::Update(const void* data, int64 size, int64 offset)
 {
 	if (!m_rhiBuffer)
 		return;
 
-	const int writeDataSize = (size + 3) & ~3;
+	if (!size)
+		return;
+
+	const int64 writeDataSize = (size + 3) & ~3;
 
 	// next commands in queue are not executed until data is uploded
 	g_renderWorker.WaitForExecute("UpdateBuffer", [&]() {
