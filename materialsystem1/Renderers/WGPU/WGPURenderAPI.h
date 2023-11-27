@@ -83,7 +83,7 @@ public:
 //-------------------------------------------------------------
 // Command buffer management
 
-	void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const;
+	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const;
 
 //-------------------------------------------------------------
 //DEPRECATED Vertex buffer objects

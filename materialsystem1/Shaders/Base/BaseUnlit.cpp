@@ -95,9 +95,11 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			g_matSystem->GetCameraParams(passParams.camera, true);
 			passParams.textureTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
 			
-			IGPUBufferPtr passParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&passParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
+			int64 passParamsOfs = 0;
+			IGPUBufferPtr passParamsBuffer = g_matSystem->GetTransientUniformBuffer(&passParams, sizeof(passParams), passParamsOfs);
+
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, passParamsBuffer)
+				.Buffer(0, passParamsBuffer, passParamsOfs, sizeof(passParams))
 				.End();
 			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
 		}

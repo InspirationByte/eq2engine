@@ -12,6 +12,7 @@
 #include "EqUI_Manager.h"
 #include "font/IFontCache.h"
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/IDynamicMesh.h"
 
 //-----
 // include all needed elements here
@@ -252,7 +253,7 @@ void CUIManager::Render()
 	m_rootPanel->ResetSizeDiffs();
 	m_rootPanel->Render(1, rendPassRecorder);
 
-	g_renderAPI->SubmitCommandBuffer(rendPassRecorder->End());
+	g_matSystem->SubmitCommandBuffer(rendPassRecorder->End());
 }
 
 equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)

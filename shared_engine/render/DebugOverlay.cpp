@@ -1322,7 +1322,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 	++m_frameId;
 
-	g_renderAPI->SubmitCommandBuffer(rendPassRecorder->End());
+	g_matSystem->SubmitCommandBuffer(rendPassRecorder->End());
 #endif
 }
 

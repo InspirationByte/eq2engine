@@ -43,10 +43,14 @@ public:
 	virtual ITexturePtr		GetCurrentBackbuffer() const = 0;
 
 	virtual IShaderAPI*		GetRenderer() const = 0;
+
+	// set vsync on default swapchain
+	virtual void			SetVSync(bool enable) = 0;
+
+	// set backbuffer size on default swap chain
 	virtual void			SetBackbufferSize(int w, int h) = 0;
 	
 	virtual void			SetFocused(bool inFocus) = 0;
-
 	virtual bool			SetWindowed(bool enabled) = 0;
 	virtual bool			IsWindowed() const = 0;
 

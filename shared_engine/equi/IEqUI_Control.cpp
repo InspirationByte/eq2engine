@@ -522,7 +522,7 @@ void IUIControl::GetCalcFontStyle(eqFontStyleParam_t& style) const
 	style.textColor = m_font.textColor;
 }
 
-inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
+inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2, IGPURenderPassRecorder* rendPassRecorder)
 {
 	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
 	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
@@ -550,23 +550,7 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
-}
-
-void IUIControl::Render()
-{
-	// Standalone drawing of element.
-	// for GameHUD
-	// TODO: use render pass from arguments!
-	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
-		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-		.End()
-	);
-
-	Render(1, rendPassRecorder);
-
-	g_renderAPI->SubmitCommandBuffer(rendPassRecorder->End());
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 // rendering function
@@ -634,7 +618,7 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	HOOK_TO_CVAR(equi_debug);
 	if (equi_debug->GetInt() > 0 && equi_debug->GetInt() <= depth)
 	{
-		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8));
+		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8), rendPassRecorder);
 
 		eqFontStyleParam_t params;
 		debugoverlay->GetFont()->RenderText(

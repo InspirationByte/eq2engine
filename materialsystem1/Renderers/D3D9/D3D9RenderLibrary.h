@@ -31,6 +31,7 @@ public:
 
 	IShaderAPI*				GetRenderer() const;
 
+	void					SetVSync(bool enable) { m_vSync = enable; }
 	void					SetBackbufferSize(int w, int h);
 
 	void					SetFocused(bool inFocus);
@@ -41,15 +42,15 @@ public:
 	bool					CaptureScreenshot(CImage &img);
 
 
-	ISwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo);
+	ISwapChain*				CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void					DestroySwapChain(ISwapChain* swapChain);
 
 protected:
 
 	void					SetupSwapEffect(const ShaderAPIParams& params);
 
-	Array<ISwapChain*>	m_swapChains{ PP_SL };
-	ISwapChain*			m_curSwapChain{ nullptr };
+	Array<ISwapChain*>		m_swapChains{ PP_SL };
+	ISwapChain*				m_curSwapChain{ nullptr };
 
 	HWND					m_hwnd;
 	DISPLAY_DEVICE			m_dispDev;
@@ -62,4 +63,5 @@ protected:
 
 	int						m_width{ 0 };
 	int						m_height{ 0 };
+	bool					m_vSync{ false };
 };

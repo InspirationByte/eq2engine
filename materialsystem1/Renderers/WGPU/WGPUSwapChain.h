@@ -21,9 +21,9 @@ public:
 	~CWGPUSwapChain();
 	CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture);
 
-	void*			GetWindow() const;
-	int				GetMSAASamples() const { return m_msaaSamples; }
+	void			SetVSync(bool enable);
 
+	void*			GetWindow() const;
 	ITexturePtr		GetBackbuffer() const;
 
 	void			GetBackbufferSize(int& wide, int& tall) const;
@@ -45,5 +45,5 @@ protected:
 	WGPUSurface			m_surface{ nullptr };
 	WGPUSwapChain		m_swapChain{ nullptr };
 	IVector2D			m_backbufferSize{ 0 };
-	int					m_msaaSamples{ 1 };
+	int					m_vSync{ -1 };
 };

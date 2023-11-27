@@ -108,8 +108,8 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, 1, &defaultRenderPass, rendPassRecorder);
 
 				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
-				rendPassRecorder->SetVertexBuffer(0, drawCmd.instanceInfo.streamBuffers[0]);
-				rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, INDEXFMT_UINT16);
+				rendPassRecorder->SetVertexBuffer(0, drawCmd.instanceInfo.streamBuffers[0], drawCmd.instanceInfo.streamOffsets[0], drawCmd.instanceInfo.streamSizes[0]);
+				rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, INDEXFMT_UINT16, drawCmd.instanceInfo.indexBufOffset, drawCmd.instanceInfo.indexBufSize);
 				rendPassRecorder->DrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, 1);
 			}
 		}

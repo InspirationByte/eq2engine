@@ -56,8 +56,6 @@ struct ShaderAPIParams
 	int					screenRefreshRateHZ{ 60 };			// refresh rate in HZ
 	int					multiSamplingMode{ 0 };				// multisampling
 	int					depthBits{ 24 };					// bit depth for depth/stencil
-
-	bool				verticalSyncEnabled{ false };		// vertical syncronization
 };
 
 //---------------------------------------------------------------
@@ -151,6 +149,7 @@ public:
 //-------------------------------------------------------------
 // Command buffer management
 	
+	virtual void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const = 0;
 	virtual void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const = 0;
 
 //-------------------------------------------------------------

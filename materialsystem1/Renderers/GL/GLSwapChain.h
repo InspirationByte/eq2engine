@@ -19,6 +19,8 @@ public:
 
 	bool			Initialize(const RenderWindowInfo& windowInfo);
 
+	void			SetVSync(bool enable) { m_vSync = enable; }
+
 	void*			GetWindow() const;
 	ITexturePtr		GetBackbuffer() const { return nullptr; }
 
@@ -31,4 +33,6 @@ protected:
 #endif
 	int				m_width{ 0 };
 	int				m_height{ 0 };
+
+	bool			m_vSync{ false };
 };

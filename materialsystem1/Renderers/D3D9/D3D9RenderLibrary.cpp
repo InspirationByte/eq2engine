@@ -19,8 +19,6 @@
 #include "ShaderAPID3D9.h"
 #include "D3D9SwapChain.h"
 
-HOOK_TO_CVAR(r_screen);
-
 ShaderAPID3D9 s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
 
@@ -121,9 +119,9 @@ bool CD3D9RenderLib::InitAPI( const ShaderAPIParams &params )
 	ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
 
 	// setup backbuffer format
-	if (params.verticalSyncEnabled)
-		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
-	else
+	//if (params.verticalSyncEnabled)
+	//	m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+	//else
 		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
 	m_d3dpp.BackBufferFormat = g_d3d9_imageFormats[params.screenFormat];

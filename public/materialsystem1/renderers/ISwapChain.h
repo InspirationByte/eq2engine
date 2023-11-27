@@ -17,6 +17,8 @@ class ISwapChain
 public:
 	virtual ~ISwapChain() = default;
 
+	virtual void		SetVSync(bool enable) = 0;
+
 	virtual void*		GetWindow()  const = 0;
 	virtual ITexturePtr	GetBackbuffer() const = 0;
 

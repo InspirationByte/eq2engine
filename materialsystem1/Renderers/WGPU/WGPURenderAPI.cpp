@@ -549,7 +549,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 				else
 					ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
 
-				rhiBindGroupEntryDesc.size = bindGroupEntry.bufferSize > 0 ? bindGroupEntry.bufferSize : buffer->GetSize();
+				rhiBindGroupEntryDesc.size = bindGroupEntry.bufferSize < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.bufferSize;
 				rhiBindGroupEntryDesc.offset = bindGroupEntry.bufferOffset;
 				break;
 			}
@@ -1063,17 +1063,26 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	return IGPURenderPassRecorderPtr(renderPass);
 }
 
-void CWGPURenderAPI::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const
+void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
 {
-	if (!cmdBuffer)
-		return;
-	const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(cmdBuffer);
-	WGPUCommandBuffer rhiCmdBuffer = bufferImpl->m_rhiCommandBuffer;
-	ASSERT(rhiCmdBuffer);
-	wgpuCommandBufferReference(rhiCmdBuffer);
-	g_renderWorker.Execute(__func__, [this, rhiCmdBuffer]() {
-		wgpuQueueSubmit(m_rhiQueue, 1, &rhiCmdBuffer);
-		wgpuCommandBufferRelease(rhiCmdBuffer);
+	Array<WGPUCommandBuffer> submitBuffers(PP_SL);
+	submitBuffers.reserve(cmdBuffers.numElem());
+	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
+	{
+		if (!cmdBuffer)
+			continue;
+		const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(cmdBuffer);
+		WGPUCommandBuffer rhiCmdBuffer = bufferImpl->m_rhiCommandBuffer;
+		ASSERT(rhiCmdBuffer);
+
+		wgpuCommandBufferReference(rhiCmdBuffer);
+		submitBuffers.append(rhiCmdBuffer);
+	}
+
+	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(submitBuffers)]() {
+		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
+		for(WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
+			wgpuCommandBufferRelease(rhiCmdBuffer);
 		return 0;
 	});
 }

@@ -1294,7 +1294,7 @@ void CEGFViewFrame::ReDraw()
 		// Now we can draw our model
 		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime, modelDrawRenderPass);
 
-		g_renderAPI->SubmitCommandBuffer(modelDrawRenderPass->End());
+		g_matSystem->SubmitCommandBuffer(modelDrawRenderPass->End());
 
 		debugoverlay->Text(color_white, "polygon count: %d\n", g_renderAPI->GetTrianglesCount());
 

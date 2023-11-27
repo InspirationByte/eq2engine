@@ -48,7 +48,6 @@ DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Cl`oses current
 DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quti, "quti", CGameHost::HostExitCmd, "This made for keyboard writing errors", 0);
 
-DECLARE_CVAR(r_vSync, "0", "Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing, "0", "Multisample antialiasing", CV_ARCHIVE);
 DECLARE_CVAR(r_fastShaders, "0", "Low shader quality mode", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
@@ -57,6 +56,7 @@ DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 DECLARE_CVAR(r_overdraw, "0", "Renders all materials in overdraw shader", CV_CHEAT);
 DECLARE_CVAR(r_wireframe, "0", "Enables wireframe rendering", CV_CHEAT);
 
+DECLARE_CVAR(sys_screen, "0", "Fullscreen mode screen ID", CV_ARCHIVE);
 DECLARE_CVAR(sys_vmode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
 DECLARE_CVAR(sys_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(sys_maxfps, "0", 0.0f, 300.0f, "Frame rate limit", CV_ARCHIVE);
@@ -393,7 +393,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
 	materials_config.shaderApiParams.screenFormat = screenFormat;
-	materials_config.shaderApiParams.verticalSyncEnabled = r_vSync.GetBool();
 	materials_config.renderConfig.lowShaderQuality = r_fastShaders.GetBool();
 
 	if(!g_matSystem->Init(materials_config))
@@ -782,15 +781,24 @@ bool CGameHost::Frame()
 		else if (fps < 60)
 			params.textColor = ColorRGBA(1, 0.8f, 0, 1);
 
-		m_defaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
+
+		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+			Builder<RenderPassDesc>()
+			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+			.End()
+		);
+
+		m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
 
 		size_t totalMem = PPMemGetUsage();
 		if (totalMem)
 		{
 			eqFontStyleParam_t memParams;
 			memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-			m_defaultFont->RenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams);
+			m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
 		}
+
+		g_matSystem->SubmitCommandBuffer(rendPassRecorder->End());
 	}
 
 	// End frame from render lib

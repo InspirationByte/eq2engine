@@ -70,8 +70,6 @@ static int dComp(const DispRes& d0, const DispRes& d1)
 	if (d0.w != d1.w) return (d0.w - d1.w); else return (d0.h - d1.h);
 }
 
-HOOK_TO_CVAR(r_screen);
-
 IShaderAPI* CGLRenderLib_GLX::GetRenderer() const
 {
 	return &s_renderApi;
@@ -366,7 +364,7 @@ void CGLRenderLib_GLX::EndFrame()
 {
 	if (glX::exts::var_EXT_swap_control)
 	{
-		glX::SwapIntervalEXT(m_display, m_window, s_renderApi.m_params.verticalSyncEnabled ? 1 : 0);
+		glX::SwapIntervalEXT(m_display, m_window, m_vSync ? 1 : 0);
 	}
 
 	glXSwapBuffers(m_display, m_window);

@@ -173,7 +173,6 @@ public:
 	virtual const char*			GetClassname() const = 0;
 
 	// rendering
-	void						Render();
 	virtual void				Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
 
 	// Events

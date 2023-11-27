@@ -25,6 +25,7 @@ public:
 
 	IShaderAPI*		GetRenderer() const;
 
+	void			SetVSync(bool enable) {}
 	void			SetBackbufferSize(int w, int h);
 	void			SetFocused(bool inFocus) {}
 

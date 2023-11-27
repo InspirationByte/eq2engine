@@ -303,7 +303,7 @@ void CGLRenderLib_EGL::BeginFrame(ISwapChain* swapChain)
 
 void CGLRenderLib_EGL::EndFrame()
 {
-	eglSwapInterval(m_eglDisplay, s_renderApi.m_params.verticalSyncEnabled ? 1 : 0);
+	eglSwapInterval(m_eglDisplay, m_vSync ? 1 : 0);
 
 #ifdef glInvalidateFramebuffer
 	const GLenum attachments[] = { GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT };

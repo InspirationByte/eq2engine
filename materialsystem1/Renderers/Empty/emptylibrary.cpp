@@ -13,8 +13,6 @@
 #include "emptyLibrary.h"
 #include "ShaderAPIEmpty.h"
 
-HOOK_TO_CVAR(r_screen);
-
 ShaderAPIEmpty s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
 

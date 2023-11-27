@@ -54,7 +54,7 @@ static VertexLayoutDesc& GetDynamicMeshLayout()
 	return s_levModelDrawVertLayout;
 }
 
-DECLARE_CVAR(r_screen, "0", "Screen count", CV_ARCHIVE);
+DECLARE_CVAR(r_vSync, "0", "Vertical syncronization", CV_ARCHIVE);
 DECLARE_CVAR(r_clear, "0", "Clear the backbuffer", CV_ARCHIVE);
 DECLARE_CVAR(r_lightscale, "1.0f", "Global light scale", CV_ARCHIVE);
 DECLARE_CVAR(r_shaderCompilerShowLogs, "0","Show warnings of shader compilation",CV_ARCHIVE);
@@ -385,11 +385,16 @@ void CMaterialSystem::Shutdown()
 	m_dynamicMesh.Destroy();
 
 	m_proxyUpdateCmdRecorder = nullptr;
+	m_bufferCmdRecorder = nullptr;
+	for (int i = 0; i < elementsOf(m_transietBuffers); ++i)
+		m_transietBuffers[i] = nullptr;
+
 	m_defaultMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
 	m_currentEnvmapTexture = nullptr;
 	m_errorTexture = nullptr;
 	m_defaultDepthTexture = nullptr;
+
 	for (int i = 0; i < elementsOf(m_whiteTexture); ++i)
 		m_whiteTexture[i] = nullptr;
 
@@ -987,6 +992,7 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	if(s_threadedMaterialLoader.GetCount())
 		s_threadedMaterialLoader.SignalWork();
 
+	m_renderLibrary->SetVSync(r_vSync.GetBool());
 	m_renderLibrary->BeginFrame(swapChain);
 
 	if(state && state != oldState)
@@ -1253,12 +1259,71 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 }
 
 //-----------------------------
-// Helper rendering operations (warning, slow)
+// Helper rendering operations
 //-----------------------------
 
 IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 {
 	return (IDynamicMesh*)&m_dynamicMesh;
+}
+
+// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
+IGPUBufferPtr CMaterialSystem::GetTransientUniformBuffer(const void* data, int64 size, int64& bufferOffset)
+{
+	const int bufferAlignment = m_shaderAPI->GetCaps().minUniformBufferOffsetAlignment;
+	constexpr int64 maxTransientBufferSize = 128 * 1024;
+
+	if (!m_bufferCmdRecorder)
+		m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
+
+	const int bufferIndex = (m_transientBufferIdx + 1) % elementsOf(m_transietBuffers);
+	IGPUBufferPtr buffer = m_transietBuffers[bufferIndex];
+	if (!buffer)
+	{
+		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_UNIFORM, "TransientBuffer");
+		m_transietBuffers[bufferIndex] = buffer;
+	}
+	
+	const int64 writeOffset = NextBufferOffset(size, m_transientBufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
+	m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
+
+	bufferOffset = writeOffset;
+	return buffer;
+}
+
+void CMaterialSystem::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
+{
+	FixedArray<IGPUCommandBufferPtr, 32> buffers;
+
+	buffers.append(m_dynamicMesh.GetSubmitBuffer());
+	if (m_bufferCmdRecorder)
+	{
+		buffers.append(m_bufferCmdRecorder->End());
+		m_bufferCmdRecorder = nullptr;
+		m_transientBufferIdx = (m_transientBufferIdx + 1) % elementsOf(m_transietBuffers);
+		memset(m_transientBufferOffsets, 0, sizeof(m_transientBufferOffsets));
+	}
+
+	for (const IGPUCommandBufferPtr& buffer : cmdBuffers)
+		buffers.append(buffer);
+	m_shaderAPI->SubmitCommandBuffers(buffers);
+}
+
+void CMaterialSystem::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
+{
+	FixedArray<IGPUCommandBufferPtr, 32> buffers;
+	
+	buffers.append(m_dynamicMesh.GetSubmitBuffer());
+	if (m_bufferCmdRecorder)
+	{
+		buffers.append(m_bufferCmdRecorder->End());
+		m_bufferCmdRecorder = nullptr;
+		m_transientBufferIdx = (m_transientBufferIdx + 1) % elementsOf(m_transietBuffers);
+		memset(m_transientBufferOffsets, 0, sizeof(m_transientBufferOffsets));
+	}
+
+	buffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
+	m_shaderAPI->SubmitCommandBuffers(buffers);
 }
 
 void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
@@ -1279,8 +1344,7 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 
 	SetupDrawCommand(drawCmd, rendPassRecorder);
 
-	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
-	renderAPI->SubmitCommandBuffer(commandBuffer);
+	SubmitCommandBuffer(rendPassRecorder->End());
 }
 
 void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder)
@@ -1318,11 +1382,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instInfo.instFormat.name);
 
 		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
-		{
-			//if (firstEmptyVb == MAX_VERTEXSTREAM && !instInfo.streamBuffers[i])
-			//	firstEmptyVb = i;
-			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i]);
-		}
+			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i], instInfo.streamOffsets[i], instInfo.streamSizes[i]);
 
 		// bind instance
 		if (instData.buffer)
@@ -1331,7 +1391,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 			rendPassRecorder->SetVertexBuffer(firstEmptyVb, instData.buffer, instData.offset, instData.stride * instData.count);
 		}
 
-		rendPassRecorder->SetIndexBuffer(instInfo.indexBuffer, instInfo.indexFormat);
+		rendPassRecorder->SetIndexBuffer(instInfo.indexBuffer, instInfo.indexFormat, instInfo.indexBufOffset, instInfo.indexBufSize);
 	}
 
 	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
@@ -1442,7 +1502,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, &rendPassInfo), nullptr);
 
 		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i]);
+			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i], instInfo.streamOffsets[i], instInfo.streamSizes	[i]);
 	}
 
 	if (rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1, -1))
@@ -1470,8 +1530,7 @@ void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 	if (!SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts, numVerts, rendPassRecorder))
 		return;
 
-	IGPUCommandBufferPtr commandBuffer = rendPassRecorder->End();
-	renderAPI->SubmitCommandBuffer(commandBuffer);
+	SubmitCommandBuffer(rendPassRecorder->End());
 }
 
 // use this if you have objects that must be destroyed when device is lost

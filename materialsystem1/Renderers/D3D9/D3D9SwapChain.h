@@ -13,6 +13,8 @@ class CD3D9SwapChain : public ISwapChain
 public:
 	bool		Initialize(const RenderWindowInfo& windowInfo);
 
+	void		SetVSync(bool enable) { m_vSync = enable; }
+
 	void*		GetWindow() const { return m_window; }
 	ITexturePtr	GetBackbuffer() const { return nullptr; }
 
@@ -22,4 +24,5 @@ protected:
 	HWND		m_window{ nullptr };
 	int			m_width{ 0 };
 	int			m_height{ 0 };
+	bool		m_vSync{ false };
 };

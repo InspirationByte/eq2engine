@@ -195,6 +195,12 @@ public:
 	// Drawing
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 
+	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
+	virtual IGPUBufferPtr			GetTransientUniformBuffer(const void* data, int64 size, int64& bufferOffset) = 0;
+
+	virtual void					SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) = 0;
+	virtual void					SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) = 0;
+
 	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual bool					SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder) = 0;

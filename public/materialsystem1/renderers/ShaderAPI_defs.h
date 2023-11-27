@@ -667,8 +667,8 @@ struct BindGroupDesc
 		};
 		EBindEntryType	type{ BINDENTRY_BUFFER };
 		int				binding{ 0 };
-		int				bufferOffset{ 0 };
-		int				bufferSize{ 0 };
+		int64			bufferOffset{ 0 };
+		int64			bufferSize{ 0 };
 	};
 
 	using EntryList = Array<Entry>;
@@ -678,7 +678,7 @@ struct BindGroupDesc
 
 FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(int binding, IGPUBuffer* buffer, int offset = 0, int size = -1)
+	ThisType& Buffer(int binding, IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
 		Entry& entry = ref.entries.append();

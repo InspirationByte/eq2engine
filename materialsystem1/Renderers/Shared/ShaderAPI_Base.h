@@ -53,6 +53,8 @@ public:
 	void						SetProgressiveTextureFrequency(int frames);
 	int							GetProgressiveTextureFrequency() const;
 
+	void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const;
+
 //-------------------------------------------------------------
 // Apply/Reset functions
 //-------------------------------------------------------------

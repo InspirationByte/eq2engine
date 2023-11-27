@@ -31,6 +31,9 @@ bool CDynamicMesh::Init(ArrayCRef<VertexLayoutDesc> vertexLayout)
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
 
+	m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(m_vertexStride, MAX_DYNAMIC_VERTICES), BUFFERUSAGE_VERTEX, "DynMeshVertexBuffer");
+	m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(uint16), MAX_DYNAMIC_VERTICES), BUFFERUSAGE_INDEX, "DynMeshIndexBuffer");
+
 	return m_vertices && m_indices;
 }
 
@@ -46,6 +49,9 @@ void CDynamicMesh::Destroy()
 
 	m_vertices = nullptr;
 	m_indices = nullptr;
+	m_vertexBuffer = nullptr;
+	m_indexBuffer = nullptr;
+	m_cmdRecorder = nullptr;
 }
 
 // returns a pointer to vertex format description
@@ -71,29 +77,14 @@ EPrimTopology CDynamicMesh::GetPrimitiveType() const
 
 void CDynamicMesh::AddStripBreak()
 {
-	// may be FAN also needs it, I forgot it =(
 	if(m_primType != PRIM_TRIANGLE_STRIP)
 		return;
 
 	if(m_numIndices == 0)
 		return; // no problemo 
 
-	int num_ind = m_numIndices;
-
-	uint16 nIndicesCurr = 0;
-
-	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
-	if( num_ind > 0 )
-	{
-		uint16 lastIdx = m_indices[ num_ind-1 ];
-		nIndicesCurr = lastIdx+1;
-
-		// add two last indices to make degenerates
-		uint16 degenerate[2] = {lastIdx, nIndicesCurr};
-
-		memcpy(&m_indices[m_numIndices], degenerate, sizeof(uint16) * 2);
-		m_numIndices += 2;
-	}
+	const uint16 restart = 0xffff;
+	m_indices[m_numIndices++] = restart;
 }
 
 // allocates geometry chunk. Returns the start index. Will return -1 if failed
@@ -140,17 +131,32 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 	if (m_numVertices == 0)
 		return false;
 
-	drawCmd.SetVertexBuffer(0, g_renderAPI->CreateBuffer(BufferInfo(m_vertices, m_vertexStride, m_numVertices), BUFFERUSAGE_VERTEX, "DynMeshVertexBuffer"));
-	
+	if(!m_cmdRecorder)
+		m_cmdRecorder = g_renderAPI->CreateCommandRecorder("DynamicMeshSubmit");
+
+	{
+		const int writeSize = m_vertexStride * m_numVertices;
+		const int writeOffset = NextBufferOffset(writeSize, m_vtxBufferOffset, m_vertexStride * MAX_DYNAMIC_VERTICES);
+
+		m_cmdRecorder->WriteBuffer(m_vertexBuffer, m_vertices, writeSize, writeOffset);
+		drawCmd.SetVertexBuffer(0, m_vertexBuffer, writeOffset, writeSize);
+	}
+
 	if (m_numIndices > 0)
-		drawCmd.SetIndexBuffer(g_renderAPI->CreateBuffer(BufferInfo(m_indices, sizeof(uint16), m_numIndices), BUFFERUSAGE_INDEX, "DynMeshIndexBuffer"), INDEXFMT_UINT16);
+	{
+		const int writeSize = sizeof(uint16) * m_numIndices;
+		const int writeOffset = NextBufferOffset(writeSize, m_idxBufferOffset, static_cast<int>(sizeof(uint16)) * MAX_DYNAMIC_VERTICES);
+
+		m_cmdRecorder->WriteBuffer(m_indexBuffer, m_indices, writeSize, writeOffset);
+		drawCmd.SetIndexBuffer(m_indexBuffer, INDEXFMT_UINT16, writeOffset, writeSize);
+	}
+
+	drawCmd.SetInstanceFormat(m_vertexFormat);
 
 	if (numIndices < 0)
 		numIndices = m_numIndices;
 
-	drawCmd.SetInstanceFormat(m_vertexFormat);
-
-	if (m_numIndices > 0)
+	if (numIndices > 0)
 		drawCmd.SetDrawIndexed(m_primType, numIndices, firstIndex, m_numVertices);
 	else
 		drawCmd.SetDrawNonIndexed(m_primType, m_numVertices);
@@ -158,7 +164,18 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 	return true;
 }
 
-// resets the dynamic mesh
+IGPUCommandBufferPtr CDynamicMesh::GetSubmitBuffer()
+{
+	if (!m_cmdRecorder)
+		return nullptr;
+
+	IGPUCommandBufferPtr cmdBuffer = m_cmdRecorder->End();
+	m_cmdRecorder = nullptr;
+	m_vtxBufferOffset = 0;
+	m_idxBufferOffset = 0;
+	return cmdBuffer;
+}
+
 void CDynamicMesh::Reset()
 {
 	m_numVertices = 0;

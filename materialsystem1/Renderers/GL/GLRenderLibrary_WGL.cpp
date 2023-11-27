@@ -74,9 +74,6 @@ static LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	return DefWindowProc(hwnd, message, wParam, lParam);
 };
 
-
-HOOK_TO_CVAR(r_screen);
-
 IShaderAPI* CGLRenderLib_WGL::GetRenderer() const
 {
 	return &s_renderApi;
@@ -186,7 +183,7 @@ void CGLRenderLib_WGL::InitSharedContexts()
 
 bool CGLRenderLib_WGL::InitAPI(const ShaderAPIParams& params)
 {
-	int displayNumber = r_screen->GetInt();
+	int displayNumber = 0;// r_screen.GetInt();
 	if (displayNumber >= GetSystemMetrics(SM_CMONITORS))
 		displayNumber = 0;
 
@@ -425,7 +422,7 @@ void CGLRenderLib_WGL::BeginFrame(ISwapChain* swapChain)
 
 void CGLRenderLib_WGL::EndFrame()
 {
-	int swapInterval = s_renderApi.m_params.verticalSyncEnabled ? 1 : 0;
+	int swapInterval = m_vSync ? 1 : 0;
 
 	HDC drawContext = m_hdc;
 	if (m_curSwapChain)

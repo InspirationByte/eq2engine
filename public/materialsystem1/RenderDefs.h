@@ -185,6 +185,7 @@ struct RenderInstanceInfo
 	{
 		streamBuffers.assureSizeEmplace(streamBuffers.numAllocated(), nullptr);
 		streamOffsets.assureSizeEmplace(streamOffsets.numAllocated(), 0);
+		streamSizes.assureSizeEmplace(streamOffsets.numAllocated(), -1);
 	}
 
 	using BufferArray = FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>;
@@ -193,11 +194,13 @@ struct RenderInstanceInfo
 	// use SetVertexBuffer
 	BufferArray				streamBuffers;
 	OffsetArray				streamOffsets;
+	OffsetArray				streamSizes;
 
 	// use SetIndexBuffer
 	IGPUBufferPtr			indexBuffer;
 	EIndexFormat			indexFormat{ INDEXFMT_UINT16 };
-	int						indexOffset{ 0 };
+	int						indexBufOffset{ 0 };
+	int						indexBufSize{ -1 };
 
 	// use SetInstanceFormat
 	MeshInstanceFormatRef	instFormat;
@@ -264,18 +267,20 @@ struct RenderDrawCmd
 		return *this;
 	}
 
-	RenderDrawCmd& SetVertexBuffer(int idx, IGPUBufferPtr buffer, int offset = 0)
+	RenderDrawCmd& SetVertexBuffer(int idx, IGPUBufferPtr buffer, int offset = 0, int size = -1)
 	{
 		instanceInfo.streamBuffers[idx] = buffer;
 		instanceInfo.streamOffsets[idx] = offset;
+		instanceInfo.streamSizes[idx] = size;
 		return *this;
 	}
 
-	RenderDrawCmd& SetIndexBuffer(IGPUBufferPtr buffer, EIndexFormat indexFormat, int offset = 0)
+	RenderDrawCmd& SetIndexBuffer(IGPUBufferPtr buffer, EIndexFormat indexFormat, int offset = 0, int size = -1)
 	{
 		instanceInfo.indexBuffer = buffer;
 		instanceInfo.indexFormat = indexFormat;
-		instanceInfo.indexOffset = offset;
+		instanceInfo.indexBufOffset = offset;
+		instanceInfo.indexBufSize = size;
 		return *this;
 	}
 

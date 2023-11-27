@@ -19,8 +19,6 @@
 #include "WGPURenderAPI.h"
 #include "WGPUSwapChain.h"
 
-HOOK_TO_CVAR(r_screen);
-
 IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
 
 DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
@@ -135,6 +133,10 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		//caps.renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 		caps.isInstancingSupported = true;
 		caps.isHardwareOcclusionQuerySupported = true;
+		caps.minUniformBufferOffsetAlignment = supLimits.limits.minUniformBufferOffsetAlignment;
+		caps.minStorageBufferOffsetAlignment = supLimits.limits.minStorageBufferOffsetAlignment;
+		caps.maxDynamicUniformBuffersPerPipelineLayout = supLimits.limits.maxDynamicUniformBuffersPerPipelineLayout;
+		caps.maxDynamicStorageBuffersPerPipelineLayout = supLimits.limits.maxDynamicStorageBuffersPerPipelineLayout;
 		caps.maxVertexStreams = supLimits.limits.maxVertexBuffers;
 		caps.maxVertexAttributes = supLimits.limits.maxVertexAttributes;
 		caps.maxTextureSize = supLimits.limits.maxTextureDimension2D;
@@ -307,6 +309,11 @@ void CWGPURenderLib::DestroySwapChain(ISwapChain* swapChain)
 {
 	if (m_swapChains.fastRemove(static_cast<CWGPUSwapChain*>(swapChain)))
 		delete swapChain;
+}
+
+void CWGPURenderLib::SetVSync(bool enable)
+{
+	m_swapChains[0]->SetVSync(enable);
 }
 
 void CWGPURenderLib::SetBackbufferSize(const int w, const int h)

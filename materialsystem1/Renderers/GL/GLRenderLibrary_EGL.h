@@ -40,6 +40,7 @@ public:
 
 	IShaderAPI*				GetRenderer() const;
 
+	void					SetVSync(bool enable) { m_vSync = enable; }
 	void					SetBackbufferSize(int w, int h);
 
 	void					SetFocused(bool inFocus);
@@ -48,7 +49,7 @@ public:
 
 	bool					CaptureScreenshot(CImage &img);
 
-	ISwapChain*			CreateSwapChain(const RenderWindowInfo& windowInfo);
+	ISwapChain*				CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void					DestroySwapChain(ISwapChain* swapChain);
 
 	// start capturing GL commands from specific thread id
@@ -83,4 +84,5 @@ protected:
 
 	bool					m_bResized{ false };
 	bool					m_windowed{ true };
+	bool					m_vSync{ false };
 };

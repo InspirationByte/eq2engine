@@ -47,6 +47,7 @@ public:
 
 	IShaderAPI*				GetRenderer() const;
 
+	void					SetVSync(bool enable) { m_vSync = enable; }
 	void					SetBackbufferSize(int w, int h);
 
 	void					SetFocused(bool inFocus);
@@ -87,4 +88,5 @@ protected:
 	int						m_width{ 0 };
 	int						m_height{ 0 };
 	bool					m_windowed{ true };
+	bool					m_vSync{ false };
 };

@@ -11,6 +11,7 @@
 #include "WGPULibrary.h"
 #include "WGPURenderDefs.h"
 
+constexpr int TOGGLE_BIT = 0x80000000;
 
 CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
 	: m_host(host)
@@ -58,10 +59,18 @@ void CWGPUSwapChain::GetBackbufferSize(int& wide, int& tall) const
 	tall = m_backbufferSize.y;
 }
 
+void CWGPUSwapChain::SetVSync(bool enable)
+{
+	if((m_vSync > 0) != enable)
+		m_vSync = TOGGLE_BIT | (int)enable;
+}
+
 bool CWGPUSwapChain::UpdateResize()
 {
-	if (m_textureRef->GetWidth() == m_backbufferSize.x && m_textureRef->GetHeight() == m_backbufferSize.y)
+	if ((m_vSync & TOGGLE_BIT) == 0 && m_textureRef->GetWidth() == m_backbufferSize.x && m_textureRef->GetHeight() == m_backbufferSize.y)
 		return true;
+
+	m_vSync &= ~TOGGLE_BIT;
 
 	m_textureRef->SetDimensions(m_backbufferSize.x, m_backbufferSize.y);
 	if (m_swapChain)
@@ -113,7 +122,7 @@ bool CWGPUSwapChain::UpdateResize()
 	swapChainDesc.height = m_backbufferSize.y;
 	swapChainDesc.format = GetWGPUTextureFormat(m_textureRef->GetFormat());
 	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment;
-	swapChainDesc.presentMode = WGPUPresentMode_Fifo;// WGPUPresentMode_Mailbox;
+	swapChainDesc.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
 
 	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &swapChainDesc);
 	return m_swapChain;

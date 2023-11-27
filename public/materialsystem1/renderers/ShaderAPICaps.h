@@ -49,7 +49,11 @@ struct ShaderAPICaps
 
 	bool			isInstancingSupported{ 0 };
 	bool			isHardwareOcclusionQuerySupported{ 0 };
-
+	
+	int				minUniformBufferOffsetAlignment{ 1 };
+	int				minStorageBufferOffsetAlignment{ 1 };
+	int				maxDynamicUniformBuffersPerPipelineLayout{ 0 };
+	int				maxDynamicStorageBuffersPerPipelineLayout{ 0 };
 	int				maxVertexStreams{ 0 };
 	int				maxVertexAttributes{ 0 };
 	int				maxTextureSize{ 0 };

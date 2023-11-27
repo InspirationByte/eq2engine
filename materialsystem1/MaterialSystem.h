@@ -168,6 +168,12 @@ public:
 	// returns the dynamic mesh
 	IDynamicMesh*				GetDynamicMesh() const;
 
+	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
+	IGPUBufferPtr				GetTransientUniformBuffer(const void* data, int64 size, int64& bufferOffset);
+
+	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers);
+	void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer);
+
 	void						SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
 	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder);
 	bool						SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
@@ -214,6 +220,10 @@ private:
 	Array<RenderBoneTransform>	m_boneTransforms{ PP_SL };
 
 	IGPUCommandRecorderPtr		m_proxyUpdateCmdRecorder;
+	IGPUCommandRecorderPtr		m_bufferCmdRecorder;
+	IGPUBufferPtr				m_transietBuffers[8];
+	int64						m_transientBufferOffsets[8]{ 0 };
+	int							m_transientBufferIdx{ 0 };
 
 	IMaterialPtr				m_defaultMaterial;
 	IMaterialPtr				m_overdrawMaterial;

@@ -55,7 +55,7 @@ void CWGPURenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat 
 	{
 		if (size < 0) size = WGPU_WHOLE_SIZE;
 		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Index, "buffer doesn't have Index buffer usage bit");
-		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], 0, size);
+		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], offset, size);
 	}
 	//else
 	//	wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, nullptr, WGPUIndexFormat_Undefined, 0, 0);

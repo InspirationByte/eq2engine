@@ -77,7 +77,7 @@ EQWNDHANDLE Sys_CreateWindow()
 	int nAdjustedWide = 800;
 	int nAdjustedTall = 600;
 
-	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN;
 
 #ifdef PLAT_ANDROID
 	nAdjustedPosX = nAdjustedPosY = SDL_WINDOWPOS_UNDEFINED;
@@ -90,7 +90,7 @@ EQWNDHANDLE Sys_CreateWindow()
 		nAdjustedTall = displayRect.h;
 	}
 
-	sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN;
+	sdlFlags |= SDL_WINDOW_FULLSCREEN;
 #endif // PLAT_ANDROID
 	
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");

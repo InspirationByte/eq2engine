@@ -176,6 +176,12 @@ void ShaderAPI_Base::ResetCounters()
 	m_nDrawIndexedPrimitiveCalls	= 0;
 }
 
+void ShaderAPI_Base::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const
+{
+	IGPUCommandBufferPtr ptr(const_cast<IGPUCommandBuffer*>(cmdBuffer));
+	SubmitCommandBuffers(ArrayCRef(&ptr, 1));
+}
+
 void ShaderAPI_Base::Reset(int nResetTypeFlags)
 {
 	if (nResetTypeFlags & STATE_RESET_SHADER)
