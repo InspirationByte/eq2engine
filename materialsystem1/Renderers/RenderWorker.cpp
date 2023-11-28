@@ -79,7 +79,7 @@ int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
 		Threading::YieldCurrentThread();
 	} while(!work);
 
-
+	work->name = name;
 	work->func = std::move(f);
 	work->sync = true;
 	Atomic::Exchange(work->result, WORK_PENDING);
@@ -123,6 +123,7 @@ void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
 		}
 	}while(!work);
 
+	work->name = name;
 	work->func = std::move(f);
 	work->sync = false;
 	Atomic::Exchange(work->result, WORK_PENDING);
@@ -135,7 +136,7 @@ bool CRenderWorkThread::HasPendingWork() const
 	for (int i = 0; i < m_workRingPool.numElem(); ++i)
 	{
 		const Work& work = m_workRingPool[i];
-		if (work.result != WORK_NOT_STARTED)
+		if (Atomic::Load(work.result) != WORK_NOT_STARTED)
 		{
 			return true;
 		}
@@ -156,6 +157,7 @@ int CRenderWorkThread::Run()
 				m_workHandler->BeginAsyncOperation(GetThreadID());
 			begun = true;
 
+			PROF_EVENT(work.name);
 			const int result = work.func();
 			work.func = nullptr;
 			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);

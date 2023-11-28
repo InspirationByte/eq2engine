@@ -103,8 +103,8 @@ void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPa
 	if(!m_indexBuffer)
 		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
 
-	bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, (int64)m_numVertices * sizeof(PFXVertex), 0);
-	bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, (int64)m_numIndices * sizeof(uint16), 0);
+	bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+	bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
 
 	RenderDrawCmd drawCmd;
 	drawCmd

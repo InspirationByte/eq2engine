@@ -219,8 +219,6 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 
 IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const
 {
-	// TODO: int vertexLayoutNameHash, int vertexLayoutUsedBufferBits
-
 	const uint pipelineId = GetRenderPipelineId(renderPass, meshInstFormat.nameHash, vertexLayoutUsedBufferBits, primitiveTopology);
 	auto it = m_renderPipelines.find(pipelineId);
 	if (it.atEnd())
@@ -228,7 +226,8 @@ IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, cons
 		RenderPipelineDesc renderPipelineDesc;
 		FillRenderPipelineDesc(renderPass, meshInstFormat, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
 		BuildPipelineShaderQuery(meshInstFormat, vertexLayoutUsedBufferBits, renderPipelineDesc.shaderQuery);
-		it = m_renderPipelines.insert(pipelineId, renderAPI->CreateRenderPipeline(GetPipelineLayout(renderAPI), renderPipelineDesc));
+		it = m_renderPipelines.insert(pipelineId);
+		*it = renderAPI->CreateRenderPipeline(GetPipelineLayout(renderAPI), renderPipelineDesc);
 	}
 	return *it;
 }
@@ -260,6 +259,8 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 		Array<EqString> shaderQuery(PP_SL);
 		BuildPipelineShaderQuery(dummy, UINT_MAX, shaderQuery);
 		renderAPI->LoadShaderModules(GetName(), shaderQuery);
+
+		// TODO: also cache pipelines
 	}
 	m_isInit = true;
 }

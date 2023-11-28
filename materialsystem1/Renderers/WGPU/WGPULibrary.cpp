@@ -261,8 +261,6 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 		g_renderWorker.WaitForThread();
 	} while (g_renderWorker.HasPendingWork());
 
-	ASSERT(g_renderWorker.HasPendingWork() == false);
-
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 	m_currentSwapChain->UpdateResize();
 
@@ -277,7 +275,7 @@ void CWGPURenderLib::EndFrame()
 		g_renderWorker.WaitForThread();
 	} while (g_renderWorker.HasPendingWork());
 
-	g_renderWorker.Execute("Swap", [this]() {
+	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		return 0;
 	});

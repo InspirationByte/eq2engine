@@ -44,6 +44,7 @@ protected:
 	struct Work
 	{
 		FUNC_TYPE	func;
+		EqString	name;
 		int			result{ WORK_NOT_STARTED };
 		bool		sync{ false };
 	};

@@ -22,3 +22,25 @@ public:
 	virtual int			GetSize() const = 0;
 };
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
+template<typename T>
+static T AlignBufferSize(T size, int alignment = 4)
+{
+	return (size + (alignment - 1)) & ~(alignment - 1);
+}
+
+template<typename T>
+static T NextBufferOffset(T writeSize, T& offset, T bufferSize, int alignment = 4)
+{
+	ASSERT(writeSize < bufferSize);
+	if (offset + writeSize > bufferSize)
+	{
+		ASSERT_FAIL("Exceeded buffer size %d, needed %d", bufferSize, offset + writeSize);
+	}
+
+	offset = (offset + (alignment - 1)) & ~(alignment - 1);
+
+	const T writeOffset = offset;
+	offset += (writeSize + (alignment - 1)) & ~(alignment - 1);
+	return writeOffset;
+}

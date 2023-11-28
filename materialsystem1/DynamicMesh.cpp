@@ -138,7 +138,7 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 		const int writeSize = m_vertexStride * m_numVertices;
 		const int writeOffset = NextBufferOffset(writeSize, m_vtxBufferOffset, m_vertexStride * MAX_DYNAMIC_VERTICES);
 
-		m_cmdRecorder->WriteBuffer(m_vertexBuffer, m_vertices, writeSize, writeOffset);
+		m_cmdRecorder->WriteBuffer(m_vertexBuffer, m_vertices, AlignBufferSize(writeSize), writeOffset);
 		drawCmd.SetVertexBuffer(0, m_vertexBuffer, writeOffset, writeSize);
 	}
 
@@ -147,7 +147,7 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 		const int writeSize = sizeof(uint16) * m_numIndices;
 		const int writeOffset = NextBufferOffset(writeSize, m_idxBufferOffset, static_cast<int>(sizeof(uint16)) * MAX_DYNAMIC_VERTICES);
 
-		m_cmdRecorder->WriteBuffer(m_indexBuffer, m_indices, writeSize, writeOffset);
+		m_cmdRecorder->WriteBuffer(m_indexBuffer, m_indices, AlignBufferSize(writeSize), writeOffset);
 		drawCmd.SetIndexBuffer(m_indexBuffer, INDEXFMT_UINT16, writeOffset, writeSize);
 	}
 

@@ -41,19 +41,3 @@ public:
 	// resets the buffer offsets
 	virtual void					Reset() = 0;
 };
-
-template<typename T>
-static T NextBufferOffset(T writeSize, T& offset, T bufferSize, int alignment = 4)
-{
-	ASSERT(writeSize < bufferSize);
-	if (offset + writeSize > bufferSize)
-	{ 
-		ASSERT_FAIL("Exceeded buffer size %d, needed %d", bufferSize, offset + writeSize);
-	}
-
-	offset = (offset + (alignment - 1)) & ~(alignment - 1);
-
-	const T writeOffset = offset;
-	offset += (writeSize + (alignment - 1)) & ~(alignment - 1);
-	return writeOffset;
-}

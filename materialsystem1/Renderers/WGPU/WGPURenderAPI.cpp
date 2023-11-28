@@ -601,6 +601,8 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 
 WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 size, const char* name) const
 {
+	PROF_EVENT("CreateShaderSPIRV");
+
 	WGPUShaderModuleSPIRVDescriptor rhiSpirvDesc = {};
 	rhiSpirvDesc.chain.sType = WGPUSType_ShaderModuleSPIRVDescriptor;
 	rhiSpirvDesc.codeSize = size / sizeof(uint32_t);
@@ -611,7 +613,7 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 	rhiShaderModuleDesc.label = name;
 
 	WGPUShaderModule shaderModule = nullptr;
-	g_renderWorker.WaitForExecute("createShader", [this, &shaderModule, &rhiShaderModuleDesc]() {
+	g_renderWorker.WaitForExecute(__func__, [this, &shaderModule, &rhiShaderModuleDesc]() {
 		shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
 		return 0;
 	});
@@ -704,6 +706,8 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 		ASSERT_FAIL("layoutDesc is null");
 		return nullptr;
 	}
+
+	PROF_EVENT("CWGPURenderAPI::CreateRenderPipeline");
 
 	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
@@ -952,18 +956,20 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
 	rhiRenderPipelineDesc.label = pipelineName;
 
-	WGPURenderPipeline rhiRenderPipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &rhiRenderPipelineDesc);
-
-	if (!rhiRenderPipeline)
 	{
-		ASSERT_FAIL("Render pipeline creation failed");
-		return nullptr;
+		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
+		WGPURenderPipeline rhiRenderPipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &rhiRenderPipelineDesc);
+		if (!rhiRenderPipeline)
+		{
+			ASSERT_FAIL("Render pipeline creation failed");
+			return nullptr;
+		}
+
+		CRefPtr<CWGPURenderPipeline> renderPipeline = CRefPtr_new(CWGPURenderPipeline);
+		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
+
+		return IGPURenderPipelinePtr(renderPipeline);
 	}
-
-	CRefPtr<CWGPURenderPipeline> renderPipeline = CRefPtr_new(CWGPURenderPipeline);
-	renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
-
-	return IGPURenderPipelinePtr(renderPipeline);
 }
 
 IGPUCommandRecorderPtr CWGPURenderAPI::CreateCommandRecorder(const char* name, void* userData) const
@@ -1065,8 +1071,8 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 
 void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
 {
-	Array<WGPUCommandBuffer> submitBuffers(PP_SL);
-	submitBuffers.reserve(cmdBuffers.numElem());
+	Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
+	rhiSubmitBuffers.reserve(cmdBuffers.numElem());
 	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
 	{
 		if (!cmdBuffer)
@@ -1076,10 +1082,10 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 		ASSERT(rhiCmdBuffer);
 
 		wgpuCommandBufferReference(rhiCmdBuffer);
-		submitBuffers.append(rhiCmdBuffer);
+		rhiSubmitBuffers.append(rhiCmdBuffer);
 	}
 
-	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(submitBuffers)]() {
+	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers)]() {
 		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
 		for(WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
 			wgpuCommandBufferRelease(rhiCmdBuffer);
