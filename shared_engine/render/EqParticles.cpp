@@ -262,7 +262,7 @@ void CParticleLowLevelRenderer::Render(int nRenderFlags, IGPURenderPassRecorder*
 	for(CParticleBatch* batch : m_batchs)
 		batch->Render(nRenderFlags, rendPassRecorder, particleRenderUpdate);
 
-	g_renderAPI->SubmitCommandBuffer(particleRenderUpdate->End());
+	g_matSystem->SubmitCommandBuffer(particleRenderUpdate->End());
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()

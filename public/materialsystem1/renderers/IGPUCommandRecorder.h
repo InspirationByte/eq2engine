@@ -28,6 +28,9 @@ public:
 	virtual ETextureFormat			GetRenderTargetFormat(int idx) const = 0;
 	virtual ETextureFormat			GetDepthTargetFormat() const = 0;
 
+	virtual bool					IsDepthReadOnly() const = 0;
+	virtual bool					IsStencilReadOnly() const = 0;
+
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
 

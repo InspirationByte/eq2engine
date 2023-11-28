@@ -10,6 +10,9 @@ public:
 	ETextureFormat	GetRenderTargetFormat(int idx) const { return m_renderTargetsFormat[idx]; }
 	ETextureFormat	GetDepthTargetFormat() const { return m_depthTargetFormat; }
 
+	bool			IsDepthReadOnly() const { return m_depthReadOnly; }
+	bool			IsStencilReadOnly() const { return m_stencilReadOnly; }
+
 	void SetPipeline(IGPURenderPipeline* pipeline);
 
 	void SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets);
@@ -47,6 +50,8 @@ public:
 
 	ETextureFormat			m_renderTargetsFormat[MAX_RENDERTARGETS]{ FORMAT_NONE };
 	ETextureFormat			m_depthTargetFormat{ FORMAT_NONE };
+	bool					m_depthReadOnly{ false };
+	bool					m_stencilReadOnly{ false };
 	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
 	WGPURenderPassEncoder	m_rhiRenderPassEncoder{ nullptr };
 	IVector2D				m_renderTargetDims{ 0 };

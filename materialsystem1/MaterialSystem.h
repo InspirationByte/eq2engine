@@ -219,6 +219,7 @@ private:
 
 	Array<RenderBoneTransform>	m_boneTransforms{ PP_SL };
 
+	Array<IGPUCommandBufferPtr>	m_pendingCmdBuffers{ PP_SL };
 	IGPUCommandRecorderPtr		m_proxyUpdateCmdRecorder;
 	IGPUCommandRecorderPtr		m_bufferCmdRecorder;
 	IGPUBufferPtr				m_transietBuffers[8];

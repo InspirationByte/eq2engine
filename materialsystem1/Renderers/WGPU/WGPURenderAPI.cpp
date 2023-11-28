@@ -1061,6 +1061,9 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 		renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target->GetFormat() : FORMAT_NONE;
 	}
 	renderPass->m_depthTargetFormat = renderPassDesc.depthStencil ? renderPassDesc.depthStencil->GetFormat() : FORMAT_NONE;
+	renderPass->m_depthReadOnly = renderPassDesc.depthReadOnly;
+	renderPass->m_stencilReadOnly = renderPassDesc.stencilReadOnly;
+
 	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
 	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
 	renderPass->m_renderTargetDims = renderTargetDims;

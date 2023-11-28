@@ -124,6 +124,7 @@ void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayou
 	FillBindGroupLayout_Constant(renderPipelineLayoutDesc.bindGroups.append());
 	FillBindGroupLayout_RenderPass(renderPipelineLayoutDesc.bindGroups.append());
 	FillBindGroupLayout_Transient(renderPipelineLayoutDesc.bindGroups.append());
+	renderPipelineLayoutDesc.name = GetName();
 }
 
 uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology) const
@@ -167,6 +168,12 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 		for (int i = 0; i < vertexLayouts.numElem(); ++i)
 		{
 			const VertexLayoutDesc& layoutDesc = vertexLayouts[i];
+
+			if (layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
+			{
+				ASSERT_MSG(vertexLayoutUsedBufferBits & (1 << i), "Instance buffer must be bound");
+			}
+
 			if (vertexLayoutUsedBufferBits & (1 << i))
 				vertexPipelineBuilder.VertexLayout(layoutDesc);
 		}
@@ -260,7 +267,7 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 		BuildPipelineShaderQuery(dummy, UINT_MAX, shaderQuery);
 		renderAPI->LoadShaderModules(GetName(), shaderQuery);
 
-		// TODO: also cache pipelines
+		// TODO: also cache PSO
 	}
 	m_isInit = true;
 }

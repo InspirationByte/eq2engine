@@ -394,6 +394,7 @@ void CMaterialSystem::Shutdown()
 	m_currentEnvmapTexture = nullptr;
 	m_errorTexture = nullptr;
 	m_defaultDepthTexture = nullptr;
+	m_pendingCmdBuffers.clear(true);
 
 	for (int i = 0; i < elementsOf(m_whiteTexture); ++i)
 		m_whiteTexture[i] = nullptr;
@@ -1040,7 +1041,9 @@ bool CMaterialSystem::EndFrame()
 	m_shaderAPI->Flush();
 	m_shaderAPI->ResetCounters();
 
-	m_shaderAPI->SubmitCommandBuffer(m_proxyUpdateCmdRecorder->End());
+	m_pendingCmdBuffers.append(m_proxyUpdateCmdRecorder->End());
+	m_shaderAPI->SubmitCommandBuffers(m_pendingCmdBuffers);
+	m_pendingCmdBuffers.clear();
 
 	m_renderLibrary->EndFrame();
 
@@ -1276,7 +1279,7 @@ IGPUBufferPtr CMaterialSystem::GetTransientUniformBuffer(const void* data, int64
 	if (!m_bufferCmdRecorder)
 		m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
 
-	const int bufferIndex = (m_transientBufferIdx + 1) % elementsOf(m_transietBuffers);
+	const int bufferIndex = m_transientBufferIdx;
 	IGPUBufferPtr buffer = m_transietBuffers[bufferIndex];
 	if (!buffer)
 	{
@@ -1293,7 +1296,7 @@ IGPUBufferPtr CMaterialSystem::GetTransientUniformBuffer(const void* data, int64
 
 void CMaterialSystem::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
 {
-	FixedArray<IGPUCommandBufferPtr, 32> buffers;
+	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
 
 	buffers.append(m_dynamicMesh.GetSubmitBuffer());
 	if (m_bufferCmdRecorder)
@@ -1306,12 +1309,11 @@ void CMaterialSystem::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBu
 
 	for (const IGPUCommandBufferPtr& buffer : cmdBuffers)
 		buffers.append(buffer);
-	m_shaderAPI->SubmitCommandBuffers(buffers);
 }
 
 void CMaterialSystem::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 {
-	FixedArray<IGPUCommandBufferPtr, 32> buffers;
+	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
 	
 	buffers.append(m_dynamicMesh.GetSubmitBuffer());
 	if (m_bufferCmdRecorder)
@@ -1323,7 +1325,6 @@ void CMaterialSystem::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 	}
 
 	buffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
-	m_shaderAPI->SubmitCommandBuffers(buffers);
 }
 
 void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
