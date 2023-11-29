@@ -51,6 +51,7 @@ IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 
 IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
+	/*
 	WGPURenderPassDescriptor rhiRenderPassDesc = {};
 	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
 
@@ -68,7 +69,7 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 		rhiColorAttachment.loadOp = g_wgpuLoadOp[colorTarget.loadOp];
 		rhiColorAttachment.storeOp = g_wgpuStoreOp[colorTarget.storeOp];
 		rhiColorAttachment.depthSlice = colorTarget.depthSlice;
-		rhiColorAttachment.view = targetTexture->GetWGPUTextureView();
+		rhiColorAttachment.view = targetTexture->GetWGPUTextureView(colorTarget.arraySlice);
 		rhiColorAttachment.resolveTarget = nullptr; // TODO
 		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
 		rhiColorAttachmentList.append(rhiColorAttachment);
@@ -120,4 +121,6 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 	m_hasCommands = true;
 
 	return IGPURenderPassRecorderPtr(renderPass);
+		*/
+	return nullptr;
 }

@@ -871,6 +871,7 @@ struct RenderPassDesc
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
 		EStoreFunc	storeOp{ STOREFUNC_STORE };
 		MColor		clearColor{ color_black };
+		int			arraySlice{ 0 };
 		int			depthSlice{ 0 };
 	};
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
@@ -898,13 +899,15 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		ref.nameHash = StringToHash(str);
 		return *this; 
 	}
-	ThisType& ColorTarget(ITexturePtr colorTarget, bool clear = false, const MColor& clearColor = color_black)
+	ThisType& ColorTarget(ITexturePtr colorTarget, bool clear = false, const MColor& clearColor = color_black, int arraySlice = 0, int depthSlice = 0)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
 		entry.target.Assign(colorTarget);
 		entry.loadOp = clear ? LOADFUNC_CLEAR : LOADFUNC_LOAD;
 		entry.storeOp = STOREFUNC_STORE;
 		entry.clearColor = clearColor;
+		entry.arraySlice = arraySlice;
+		entry.depthSlice = depthSlice;
 		return *this;
 	}
 	FLUENT_SET_VALUE(depthStencil, DepthStencilTarget)

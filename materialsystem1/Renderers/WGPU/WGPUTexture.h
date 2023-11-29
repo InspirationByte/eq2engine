@@ -22,7 +22,7 @@ public:
 	bool			Lock(LockInOutData& data);
 	void			Unlock();
 
-	WGPUTextureView	GetWGPUTextureView() const { return m_rhiViews[m_animFrame]; }
+	WGPUTextureView	GetWGPUTextureView(int viewIdx = -1) const { return m_rhiViews[viewIdx >= 0 ? viewIdx : m_animFrame]; }
 
 protected:
 	void			Ref_DeleteObject();
