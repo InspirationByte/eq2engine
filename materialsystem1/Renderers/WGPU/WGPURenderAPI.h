@@ -179,9 +179,8 @@ protected:
 	WGPUShaderModule	GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
 	int					LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output);
 
-
+	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
 	WGPUDevice			m_rhiDevice{ nullptr };
 	WGPUQueue			m_rhiQueue{ nullptr };
-
-	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
+	bool				m_deviceLost{ false };
 };

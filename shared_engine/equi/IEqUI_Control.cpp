@@ -565,8 +565,6 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	rasterState.scissor = true;
 
 	const IAARectangle clientRectRender = GetClientRectangle();
-
-	g_matSystem->SetAmbientColor(color_white);	// max color mode
 	g_matSystem->SetFogInfo(FogInfo());			// disable fog
 
 	// calculate absolute transformation using previous matrix

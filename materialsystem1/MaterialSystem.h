@@ -116,9 +116,6 @@ public:
 	//-----------------------------
 	// Shader dynamic states
 
-	ECullMode					GetCurrentCullMode() const;
-	void						SetCullMode(ECullMode cullMode);
-
 	void						SetSkinningEnabled( bool bEnable );
 	bool						IsSkinningEnabled() const;
 
@@ -131,9 +128,6 @@ public:
 
 	void						SetFogInfo(const FogInfo &info);
 	void						GetFogInfo(FogInfo &info) const;
-
-	void						SetAmbientColor(const ColorRGBA &color);
-	ColorRGBA					GetAmbientColor() const;
 
 	void						SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture);
 	const ITexturePtr&			GetEnvironmentMapTexture() const;
@@ -168,11 +162,14 @@ public:
 	// returns the dynamic mesh
 	IDynamicMesh*				GetDynamicMesh() const;
 
-	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
-	IGPUBufferPtr				GetTransientUniformBuffer(const void* data, int64 size, int64& bufferOffset);
+	// returns temp buffer with data written. SubmitQueuedCommands uploads it to GPU
+	GPUBufferPtrView			GetTransientUniformBuffer(const void* data, int64 size);
+	GPUBufferPtrView			GetTransientVertexBuffer(const void* data, int64 size);
 
-	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers);
-	void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer);
+	void						QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers);
+	void						QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer);
+
+	void						SubmitQueuedCommands();
 
 	void						SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
 	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder);
@@ -222,9 +219,16 @@ private:
 	Array<IGPUCommandBufferPtr>	m_pendingCmdBuffers{ PP_SL };
 	IGPUCommandRecorderPtr		m_proxyUpdateCmdRecorder;
 	IGPUCommandRecorderPtr		m_bufferCmdRecorder;
-	IGPUBufferPtr				m_transietBuffers[8];
-	int64						m_transientBufferOffsets[8]{ 0 };
-	int							m_transientBufferIdx{ 0 };
+
+	struct TransientBufferCollection
+	{
+		IGPUBufferPtr	buffers[8];
+		int64			bufferOffsets[8]{ 0 };
+		int				bufferIdx{ 0 };
+	};
+
+	TransientBufferCollection	m_transientUniformBuffers;
+	TransientBufferCollection	m_transientVertexBuffers;
 
 	IMaterialPtr				m_defaultMaterial;
 	IMaterialPtr				m_overdrawMaterial;
@@ -238,7 +242,6 @@ private:
 	Array<DEVLICELOSTRESTORE>	m_restoreDeviceCb{ PP_SL };
 
 	FogInfo						m_fogInfo;
-	ColorRGBA					m_ambColor;
 
 	CEqTimer					m_proxyTimer;
 

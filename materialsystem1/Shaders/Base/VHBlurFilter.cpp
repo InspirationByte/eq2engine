@@ -10,12 +10,6 @@
 #include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(VHBlurFilter)
-
-	bool IsSupportInstanceFormat(int nameHash) const
-	{
-		return nameHash == StringToHashConst("DynMeshVertex");
-	}
-
 	SHADER_INIT_PARAMS()
 	{
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
@@ -38,6 +32,11 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 	SHADER_INIT_TEXTURES()
 	{
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
+	}
+
+	bool IsSupportInstanceFormat(int nameHash) const
+	{
+		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
 	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, Array<EqString>& shaderQuery) const
@@ -74,21 +73,20 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		{
 			if (!m_materialBindGroup)
 			{
-				ITexturePtr baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
-
-				Vector4D texSize;
-				texSize.x = baseTexture->GetWidth();
-				texSize.y = baseTexture->GetHeight();
-				texSize.z = 1.0f / texSize.x;
-				texSize.w = 1.0f / texSize.y;
-
+				const ITexturePtr& baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				FixedArray<Vector4D, 4> bufferData;
-				bufferData.append(texSize);
-				bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
-				IGPUBufferPtr materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+				{
+					Vector4D& texSize = bufferData.append();
+					texSize.x = baseTexture->GetWidth();
+					texSize.y = baseTexture->GetHeight();
+					texSize.z = 1.0f / texSize.x;
+					texSize.w = 1.0f / texSize.y;
+					bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
+				}
 
+				m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, materialParamsBuffer)
+					.Buffer(0, m_materialParamsBuffer)
 					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
 					.Texture(2, baseTexture)
 					.End();
@@ -101,7 +99,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 			MatSysCamera cameraParams;
 			g_matSystem->GetCameraParams(cameraParams, true);
 
-			IGPUBufferPtr cameraParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&cameraParams, 1), BUFFERUSAGE_UNIFORM, "matSysCamera");
+			GPUBufferPtrView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer)
 				.End();
@@ -116,6 +114,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 	}
 
 	mutable IGPUBindGroupPtr	m_materialBindGroup;
+	mutable IGPUBufferPtr		m_materialParamsBuffer;
 	MatTextureProxy				m_baseTexture;
 	int							m_blurModes{ 0 };
 END_SHADER_CLASS

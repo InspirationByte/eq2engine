@@ -135,7 +135,7 @@ BEGIN_SHADER_CLASS(Default)
 			const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 			ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
 
-			ITexturePtr baseTexture = rendPassInfo->texture ? rendPassInfo->texture : g_matSystem->GetWhiteTexture();
+			const ITexturePtr& baseTexture = rendPassInfo->texture ? rendPassInfo->texture : g_matSystem->GetWhiteTexture();
 
 			// can use either fixed array or CMemoryStream with on-stack storage
 			FixedArray<Vector4D, 4> bufferData;
@@ -145,15 +145,12 @@ BEGIN_SHADER_CLASS(Default)
 			MatSysCamera cameraParams;
 			g_matSystem->GetCameraParams(cameraParams, true);
 
-			int64 cameraParamsOfs = 0;
-			IGPUBufferPtr cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams), cameraParamsOfs);
-
-			int64 materialParamsOfs = 0;
-			IGPUBufferPtr materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem(), materialParamsOfs);
+			GPUBufferPtrView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+			GPUBufferPtrView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer, cameraParamsOfs, sizeof(cameraParams))
-				.Buffer(1, materialParamsBuffer, materialParamsOfs, sizeof(bufferData[0]) * bufferData.numElem())
+				.Buffer(0, cameraParamsBuffer)
+				.Buffer(1, materialParamsBuffer)
 				.Sampler(2, baseTexture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();

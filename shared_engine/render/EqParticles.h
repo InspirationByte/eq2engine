@@ -60,7 +60,7 @@ public:
 	virtual	~CParticleBatch();
 
 	// renders this buffer
-	void				Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds);
+	void				Render(int viewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
@@ -84,6 +84,7 @@ protected:
 	IMaterialPtr		m_material;
 	IGPUBufferPtr		m_vertexBuffer;
 	IGPUBufferPtr		m_indexBuffer;
+	bool				m_bufferDirty{ true };
 };
 
 //------------------------------------------------------------------------------------

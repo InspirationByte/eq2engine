@@ -470,7 +470,7 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 	}
 #endif // IMGUI_ENABLED
 
-	g_matSystem->SubmitCommandBuffer(rendPassRecorder->End());
+	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 }
 
 void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)

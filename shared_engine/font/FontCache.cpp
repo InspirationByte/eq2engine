@@ -173,6 +173,7 @@ bool CEqFontCache::Init()
 
 	m_sdfMaterial = g_matSystem->CreateMaterial("_sdfRegular", &sdfFontParams);
 	m_fontParams = m_sdfMaterial->GetMaterialVar("FontParams", "[0.94 0.06, 0, 1]");
+	m_fontBaseColor = m_sdfMaterial->GetMaterialVar("FontBaseColor", "[1 1 1 1]");
 
 	m_sdfMaterial->LoadShaderAndTextures();
 

@@ -43,8 +43,8 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 		{
 			if (!m_materialBindGroup)
 			{
-				ITexturePtr tex1 = m_textures[0].Get();
-				ITexturePtr tex2 = m_textures[1].Get();
+				const ITexturePtr& tex1 = m_textures[0].Get();
+				const ITexturePtr& tex2 = m_textures[1].Get();
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 					.Sampler(1, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
 					.Texture(2, tex1)

@@ -29,7 +29,8 @@ BEGIN_SHADER_CLASS(SDFFont)
 	SHADER_INIT_PARAMS()
 	{
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
-		m_fontParamsVar = m_material->GetMaterialVar("FontParams", "[0.94 0.95, 0, 1]");
+		m_fontParamsVar = m_material->GetMaterialVar("FontParams", "[0.94 0.95 0, 1]");
+		m_fontBaseColor = m_material->GetMaterialVar("FontBaseColor", "[1 1 0 1]");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -134,25 +135,22 @@ BEGIN_SHADER_CLASS(SDFFont)
 			const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 			ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
 
-			ITexturePtr baseTexture = rendPassInfo->texture ? rendPassInfo->texture : g_matSystem->GetWhiteTexture();
+			const ITexturePtr& baseTexture = rendPassInfo->texture ? rendPassInfo->texture : g_matSystem->GetWhiteTexture();
 
 			// can use either fixed array or CMemoryStream with on-stack storage
 			FixedArray<Vector4D, 4> bufferData;
-			bufferData.append(g_matSystem->GetAmbientColor()); // TODO ???
+			bufferData.append(m_fontBaseColor.Get());
 			bufferData.append(m_fontParamsVar.Get());
 
 			MatSysCamera cameraParams;
 			g_matSystem->GetCameraParams(cameraParams, true);
 
-			int64 cameraParamsOfs = 0;
-			IGPUBufferPtr cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams), cameraParamsOfs);
-
-			int64 materialParamsOfs = 0;
-			IGPUBufferPtr materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem(), materialParamsOfs);
+			GPUBufferPtrView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+			GPUBufferPtrView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 
 			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer, cameraParamsOfs, sizeof(cameraParams))
-				.Buffer(1, materialParamsBuffer, materialParamsOfs, sizeof(bufferData[0]) * bufferData.numElem())
+				.Buffer(0, cameraParamsBuffer)
+				.Buffer(1, materialParamsBuffer)
 				.Sampler(2, baseTexture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();
@@ -165,5 +163,6 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
 	MatTextureProxy		m_baseTexture;
+	MatVec4Proxy		m_fontBaseColor;
 	MatVec4Proxy		m_fontParamsVar;
 END_SHADER_CLASS

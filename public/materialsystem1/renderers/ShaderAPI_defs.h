@@ -7,9 +7,7 @@
 
 #pragma once
 #include "ShaderAPICaps.h"
-
-class IGPUBuffer;
-using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+#include "IGPUBuffer.h" // for GPUBufferView
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
@@ -659,16 +657,11 @@ struct BindGroupDesc
 	struct Entry 
 	{
 		Entry() {}
-		union
-		{
-			IGPUBuffer*			buffer; // uniform buffer
-			SamplerStateParams	sampler;
-			ITexture*			texture;
-		};
-		EBindEntryType	type{ BINDENTRY_BUFFER };
-		int				binding{ 0 };
-		int64			bufferOffset{ 0 };
-		int64			bufferSize{ 0 };
+		SamplerStateParams	sampler;
+		GPUBufferPtrView	buffer; // uniform buffer
+		ITexturePtr			texture;
+		EBindEntryType		type{ static_cast<EBindEntryType>(-1) };
+		int					binding{ 0 };
 	};
 
 	using EntryList = Array<Entry>;
@@ -678,15 +671,22 @@ struct BindGroupDesc
 
 FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(int binding, IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
+	ThisType& Buffer(int binding, const GPUBufferPtrView& buffer)
+	{
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
+		Entry& entry = ref.entries.append();
+		entry.binding = std::move(binding);
+		entry.type = BINDENTRY_BUFFER;
+		entry.buffer = buffer;
+		return *this; 
+	}
+	ThisType& Buffer(int binding, IGPUBufferPtr buffer, int64 offset = 0, int64 size = -1)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_BUFFER;
-		entry.buffer = buffer;
-		entry.bufferOffset = offset;
-		entry.bufferSize = size;
+		entry.buffer = GPUBufferPtrView(buffer, offset, size);
 		return *this; 
 	}
 	ThisType& Sampler(int binding, const SamplerStateParams& samplerParams)
@@ -704,7 +704,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_TEXTURE;
-		entry.texture = texture;
+		entry.texture.Assign(texture);
 		return *this;
 	}
 	ThisType& StorageTexture(int binding, ITexture* texture)
@@ -713,7 +713,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_STORAGETEXTURE;
-		entry.texture = texture;
+		entry.texture.Assign(texture);
 		return *this;
 	}
 FLUENT_END_TYPE
@@ -866,7 +866,7 @@ struct RenderPassDesc
 {
 	struct ColorTargetDesc
 	{
-		ITexturePtr	target;
+		ITexturePtr	target{ nullptr };
 		// TODO: resolveTarget
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
 		EStoreFunc	storeOp{ STOREFUNC_STORE };
@@ -876,7 +876,7 @@ struct RenderPassDesc
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 	ColorTargetList	colorTargets;
 
-	ITexturePtr		depthStencil;
+	ITexturePtr		depthStencil{ nullptr };
 	float			depthClearValue{ 1.0f };
 	ELoadFunc		depthLoadOp{ LOADFUNC_LOAD };
 	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };
@@ -901,7 +901,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 	ThisType& ColorTarget(ITexturePtr colorTarget, bool clear = false, const MColor& clearColor = color_black)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
-		entry.target = colorTarget;
+		entry.target.Assign(colorTarget);
 		entry.loadOp = clear ? LOADFUNC_CLEAR : LOADFUNC_LOAD;
 		entry.storeOp = STOREFUNC_STORE;
 		entry.clearColor = clearColor;

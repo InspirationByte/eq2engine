@@ -72,8 +72,8 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 
 		const int texWidth = img->GetWidth(mipStart);
 		const int texHeight = img->GetHeight(mipStart);
-		int texDepth = img->GetDepth(mipStart);
 
+		int texDepth = img->GetDepth(mipStart);
 		if (imgType == IMAGE_TYPE_CUBE)
 			texDepth = 6;
 
@@ -159,22 +159,20 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 				const ubyte* src = img->GetPixels(mipMapLevel);
 				const int size = img->GetMipMappedSize(mipMapLevel, 1);
 
-				// TODO: make a temp buffer and make a command to copy it to texture
-				//{
-				//	WGPUCommandEncoder asyncCmdsEncoder = wgpuDeviceCreateCommandEncoder(CWGPURenderAPI::Instance.GetWGPUDevice(), nullptr);
-				//
-				//	//wgpuCommandEncoderCopyBufferToTexture(asyncCmdsEncoder, );
-				//
-				//	WGPUCommandBuffer asyncCmdBuffer = wgpuCommandEncoderFinish(asyncCmdsEncoder, nullptr);
-				//	wgpuCommandEncoderRelease(asyncCmdsEncoder);
-				//
-				//
-				//	// TODO: put asyncCmdBuffer into queue in our main thread
-				//	//wgpuQueueSubmit(m_deviceQueue, 1, &asyncCmdBuffer);
-				//	//wgpuCommandBufferRelease(asyncCmdBuffer);
-				//}
-
-				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+				if (imgType == IMAGE_TYPE_CUBE)
+				{
+					const int cubeFaceSize = size / 6;
+					for (int i = 0; i < 6; ++i)
+					{
+						texImage.origin.z = (uint32)i;
+						wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+						src += cubeFaceSize;
+					}
+				}
+				else
+				{
+					wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+				}
 				return 0;
 			});
 			--mipMapLevel;

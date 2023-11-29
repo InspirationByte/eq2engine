@@ -717,6 +717,11 @@ bool CGameHost::Frame()
 		return false;
 	}
 
+	// submit all command buffers queued inside UpdateStates
+	// this is made to display Debug Overlays and, console input 
+	// and ImGui in case of some command buffers were invalid
+	g_matSystem->SubmitQueuedCommands();
+
 	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
 
 	const bool allJobsDone = g_parallelJobs->AllJobsCompleted();
@@ -798,7 +803,7 @@ bool CGameHost::Frame()
 			m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
 		}
 
-		g_matSystem->SubmitCommandBuffer(rendPassRecorder->End());
+		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 	}
 
 	// End frame from render lib

@@ -261,6 +261,8 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 		g_renderWorker.WaitForThread();
 	} while (g_renderWorker.HasPendingWork());
 
+	CWGPURenderAPI::Instance.m_deviceLost = false;
+
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 	m_currentSwapChain->UpdateResize();
 
@@ -316,6 +318,12 @@ void CWGPURenderLib::SetVSync(bool enable)
 
 void CWGPURenderLib::SetBackbufferSize(const int w, const int h)
 {
+	int oldW, oldH;
+	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
+
+	if(w != oldW || h != oldH)
+		CWGPURenderAPI::Instance.m_deviceLost = true;
+
 	m_swapChains[0]->SetBackbufferSize(w, h);
 }
 

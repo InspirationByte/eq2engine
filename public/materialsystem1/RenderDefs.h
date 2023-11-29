@@ -326,7 +326,7 @@ struct RenderPassBaseData
 	RenderPassBaseData(ERenderPassType type) : type(type) {}
 
 	ERenderPassType	type;
-	IGPUBufferPtr	cameraParamsBuffer;
+	GPUBufferPtrView	cameraParamsBuffer;
 };
 
 // used for debug geometry and UIs

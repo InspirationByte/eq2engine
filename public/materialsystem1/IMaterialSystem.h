@@ -182,32 +182,38 @@ public:
 	virtual void					SetRenderCallbacks(IMatSysRenderCallbacks* callback) = 0;
 	virtual IMatSysRenderCallbacks* GetRenderCallbacks() const = 0;
 
-	virtual ECullMode				GetCurrentCullMode() const = 0;
-	virtual void					SetCullMode(ECullMode cullMode) = 0;
-
-	virtual void					SetFogInfo(const FogInfo& info) = 0;
-	virtual void					GetFogInfo(FogInfo& info) const = 0;
-
-	virtual void					SetAmbientColor(const ColorRGBA& color) = 0;
-	virtual ColorRGBA				GetAmbientColor() const = 0;
-
 	//-----------------------------
 	// Drawing
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 
 	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
-	virtual IGPUBufferPtr			GetTransientUniformBuffer(const void* data, int64 size, int64& bufferOffset) = 0;
+	virtual GPUBufferPtrView		GetTransientUniformBuffer(const void* data, int64 size) = 0;
+	virtual GPUBufferPtrView		GetTransientVertexBuffer(const void* data, int64 size) = 0;
 
-	virtual void					SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) = 0;
-	virtual void					SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) = 0;
+	// queues command buffer. Execution order is guaranteed
+	virtual void					QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) = 0;
+	virtual void					QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer) = 0;
+
+	// submits all queued command buffers to RHI.
+	virtual void					SubmitQueuedCommands() = 0;
 
 	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual bool					SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
+	template<typename VERT>
+	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
+
+	template<typename ARRAY_TYPE>
+	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts, IGPURenderPassRecorder* rendPassRecorder);
+
+	//--------------------------------------------------
 	// DEPRECATED
+
+	virtual void					SetFogInfo(const FogInfo& info) = 0;
+	virtual void					GetFogInfo(FogInfo& info) const = 0;
+
 	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
-	// END DEPRECATED
 
 	// draw primitives with default material
 	virtual void					DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts) = 0;
@@ -217,13 +223,6 @@ public:
 
 	template<typename ARRAY_TYPE>
 	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts);
-
-	template<typename VERT>
-	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
-
-	template<typename ARRAY_TYPE>
-	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts, IGPURenderPassRecorder* rendPassRecorder);
-
 };
 
 template<typename VERT>

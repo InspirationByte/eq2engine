@@ -377,8 +377,6 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	*/
 
-	g_matSystem->SetAmbientColor( color_white );
-
 	int startLOD = m_pModel->SelectLod( fDist );
 
 	if(!overrideLod)

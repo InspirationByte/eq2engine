@@ -56,7 +56,6 @@ static VertexLayoutDesc& GetDynamicMeshLayout()
 
 DECLARE_CVAR(r_vSync, "0", "Vertical syncronization", CV_ARCHIVE);
 DECLARE_CVAR(r_clear, "0", "Clear the backbuffer", CV_ARCHIVE);
-DECLARE_CVAR(r_lightscale, "1.0f", "Global light scale", CV_ARCHIVE);
 DECLARE_CVAR(r_shaderCompilerShowLogs, "0","Show warnings of shader compilation",CV_ARCHIVE);
 
 DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE);
@@ -386,8 +385,8 @@ void CMaterialSystem::Shutdown()
 
 	m_proxyUpdateCmdRecorder = nullptr;
 	m_bufferCmdRecorder = nullptr;
-	for (int i = 0; i < elementsOf(m_transietBuffers); ++i)
-		m_transietBuffers[i] = nullptr;
+	m_transientUniformBuffers = {};
+	m_transientVertexBuffers = {};
 
 	m_defaultMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
@@ -426,15 +425,16 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	FixedArray<CImagePtr, 1> images;
 	images.append(img);
-	img->SetDepth(1);
-	img->SetName("_matsys_white");
-	ASSERT(img->GetImageType() == IMAGE_TYPE_2D);
-	m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_NOQUALITYLOD);
 
 	img->SetDepth(IMAGE_DEPTH_CUBEMAP);
 	img->SetName("_matsys_white_cb");
 	ASSERT(img->GetImageType() == IMAGE_TYPE_CUBE);
 	m_whiteTexture[TEXDIMENSION_CUBE] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_NOQUALITYLOD);
+
+	img->SetDepth(1);
+	img->SetName("_matsys_white");
+	ASSERT(img->GetImageType() == IMAGE_TYPE_2D);
+	m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_NOQUALITYLOD);
 
 	images.clear();
 }
@@ -917,38 +917,32 @@ void CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldView
 
 	cameraParams.invViewProj = !cameraParams.viewProj;
 
+	// TODO: viewport parameters in Matsystem
+	cameraParams.viewport.near = 0.0f;
+	cameraParams.viewport.far = 0.0f;
+	cameraParams.viewport.invWidth = 1.0f;
+	cameraParams.viewport.invHeight = 1.0f;
+
 	GetFogInfo(fog);
-	cameraParams.zNearFar = 0.0f;
 	cameraParams.position = fog.viewPos;
 
 	// can use either fixed array or CMemoryStream with on-stack storage
 	if (fog.enableFog)
 	{
-		cameraParams.fogFactor = fog.enableFog ? 1.0f : 0.0f;
-		cameraParams.fogNear = fog.fognear;
-		cameraParams.fogFar = fog.fogfar;
-		cameraParams.fogScale = 1.0f / (fog.fogfar - fog.fognear);
-		cameraParams.fogColor = fog.fogColor;
+		cameraParams.fog.factor = fog.enableFog ? 1.0f : 0.0f;
+		cameraParams.fog.near = fog.fognear;
+		cameraParams.fog.far = fog.fogfar;
+		cameraParams.fog.scale = 1.0f / (fog.fogfar - fog.fognear);
+		cameraParams.fog.color = fog.fogColor;
 	}
 	else
 	{
-		cameraParams.fogFactor = 0.0f;
-		cameraParams.fogNear = 1000000.0f;
-		cameraParams.fogFar = 1000000.0f;
-		cameraParams.fogScale = 1.0f;
-		cameraParams.fogColor = color_white;
+		cameraParams.fog.factor = 0.0f;
+		cameraParams.fog.near = 1000000.0f;
+		cameraParams.fog.far = 1000000.0f;
+		cameraParams.fog.scale = 1.0f;
+		cameraParams.fog.color = color_white;
 	}
-}
-
-// sets an ambient light
-void CMaterialSystem::SetAmbientColor(const ColorRGBA &color)
-{
-	m_ambColor = color;
-}
-
-ColorRGBA CMaterialSystem::GetAmbientColor() const
-{
-	return m_ambColor;
 }
 
 const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
@@ -1042,8 +1036,7 @@ bool CMaterialSystem::EndFrame()
 	m_shaderAPI->ResetCounters();
 
 	m_pendingCmdBuffers.append(m_proxyUpdateCmdRecorder->End());
-	m_shaderAPI->SubmitCommandBuffers(m_pendingCmdBuffers);
-	m_pendingCmdBuffers.clear();
+	SubmitQueuedCommands();
 
 	m_renderLibrary->EndFrame();
 
@@ -1051,6 +1044,12 @@ bool CMaterialSystem::EndFrame()
 	m_proxyDeltaTime = m_proxyTimer.GetTime(true);
 
 	return true;
+}
+
+void CMaterialSystem::SubmitQueuedCommands()
+{
+	m_shaderAPI->SubmitCommandBuffers(m_pendingCmdBuffers);
+	m_pendingCmdBuffers.clear();
 }
 
 ITexturePtr CMaterialSystem::GetCurrentBackbuffer() const
@@ -1192,16 +1191,6 @@ const ITexturePtr& CMaterialSystem::GetEnvironmentMapTexture() const
 	return m_currentEnvmapTexture;
 }
 
-ECullMode CMaterialSystem::GetCurrentCullMode() const
-{
-	return m_cullMode;
-}
-
-void CMaterialSystem::SetCullMode(ECullMode cullMode)
-{
-	m_cullMode = cullMode;
-}
-
 // skinning mode
 void CMaterialSystem::SetSkinningEnabled( bool bEnable )
 {
@@ -1271,30 +1260,49 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 }
 
 // returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
-IGPUBufferPtr CMaterialSystem::GetTransientUniformBuffer(const void* data, int64 size, int64& bufferOffset)
+GPUBufferPtrView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64 size)
 {
 	const int bufferAlignment = m_shaderAPI->GetCaps().minUniformBufferOffsetAlignment;
 	constexpr int64 maxTransientBufferSize = 128 * 1024;
 
+	TransientBufferCollection& collection = m_transientUniformBuffers;
+
 	if (!m_bufferCmdRecorder)
 		m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
 
-	const int bufferIndex = m_transientBufferIdx;
-	IGPUBufferPtr buffer = m_transietBuffers[bufferIndex];
+	const int bufferIndex = collection.bufferIdx;
+	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
 	if (!buffer)
-	{
-		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_UNIFORM, "TransientBuffer");
-		m_transietBuffers[bufferIndex] = buffer;
-	}
+		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_UNIFORM, "TransientUniformBuffer");
 	
-	const int64 writeOffset = NextBufferOffset(size, m_transientBufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
+	const int64 writeOffset = NextBufferOffset(size, collection.bufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
 	m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
 
-	bufferOffset = writeOffset;
-	return buffer;
+	return GPUBufferPtrView(buffer, writeOffset, size);
 }
 
-void CMaterialSystem::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
+GPUBufferPtrView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 size)
+{
+	const int bufferAlignment = 4; // vertex buffers are aligned always 4 bytes
+	constexpr int64 maxTransientBufferSize = 128 * 1024;
+
+	TransientBufferCollection& collection = m_transientVertexBuffers;
+
+	if (!m_bufferCmdRecorder)
+		m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
+
+	const int bufferIndex = collection.bufferIdx;
+	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
+	if (!buffer)
+		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_VERTEX, "TransientVertexBuffer");
+
+	const int64 writeOffset = NextBufferOffset(size, collection.bufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
+	m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
+
+	return GPUBufferPtrView(buffer, writeOffset, size);
+}
+
+void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
 {
 	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
 
@@ -1303,15 +1311,25 @@ void CMaterialSystem::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBu
 	{
 		buffers.append(m_bufferCmdRecorder->End());
 		m_bufferCmdRecorder = nullptr;
-		m_transientBufferIdx = (m_transientBufferIdx + 1) % elementsOf(m_transietBuffers);
-		memset(m_transientBufferOffsets, 0, sizeof(m_transientBufferOffsets));
+
+		{
+			TransientBufferCollection& collection = m_transientUniformBuffers;
+			collection.bufferOffsets[collection.bufferIdx] = 0;
+			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
+		}
+
+		{
+			TransientBufferCollection& collection = m_transientVertexBuffers;
+			collection.bufferOffsets[collection.bufferIdx] = 0;
+			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
+		}
 	}
 
 	for (const IGPUCommandBufferPtr& buffer : cmdBuffers)
 		buffers.append(buffer);
 }
 
-void CMaterialSystem::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
+void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 {
 	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
 	
@@ -1320,8 +1338,18 @@ void CMaterialSystem::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 	{
 		buffers.append(m_bufferCmdRecorder->End());
 		m_bufferCmdRecorder = nullptr;
-		m_transientBufferIdx = (m_transientBufferIdx + 1) % elementsOf(m_transietBuffers);
-		memset(m_transientBufferOffsets, 0, sizeof(m_transientBufferOffsets));
+
+		{
+			TransientBufferCollection& collection = m_transientUniformBuffers;
+			collection.bufferOffsets[collection.bufferIdx] = 0;
+			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
+		}
+
+		{
+			TransientBufferCollection& collection = m_transientVertexBuffers;
+			collection.bufferOffsets[collection.bufferIdx] = 0;
+			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
+		}
 	}
 
 	buffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
@@ -1345,7 +1373,7 @@ void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
 
 	SetupDrawCommand(drawCmd, rendPassRecorder);
 
-	SubmitCommandBuffer(rendPassRecorder->End());
+	QueueCommandBuffer(rendPassRecorder->End());
 }
 
 void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder)
@@ -1531,7 +1559,7 @@ void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo,
 	if (!SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts, numVerts, rendPassRecorder))
 		return;
 
-	SubmitCommandBuffer(rendPassRecorder->End());
+	QueueCommandBuffer(rendPassRecorder->End());
 }
 
 // use this if you have objects that must be destroyed when device is lost

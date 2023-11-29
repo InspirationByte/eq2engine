@@ -283,7 +283,7 @@ void CWGPURenderAPI::PrintAPIInfo() const
 
 bool CWGPURenderAPI::IsDeviceActive() const
 {
-	return true;
+	return !m_deviceLost;
 }
 
 IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
@@ -407,6 +407,8 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 	}
 
 	texture->m_rhiTextures.append(rhiTexture);
+
+	// add default view
 	{
 		WGPUTextureViewDescriptor rhiTexViewDesc = {};
 		rhiTexViewDesc.format = rhiTextureDesc.format;
@@ -419,6 +421,25 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 
 		WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
 		texture->m_rhiViews.append(rhiView);
+	}
+
+	// add individual cubemap views
+	if (isCubeMap)
+	{
+		for (int i = 0; i < 6; ++i)
+		{
+			WGPUTextureViewDescriptor rhiTexViewDesc = {};
+			rhiTexViewDesc.format = rhiTextureDesc.format;
+			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
+			rhiTexViewDesc.arrayLayerCount = 1;
+			rhiTexViewDesc.baseArrayLayer = i;
+			rhiTexViewDesc.baseMipLevel = 0;
+			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
+			rhiTexViewDesc.dimension = WGPUTextureViewDimension_2D;
+
+			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
+			texture->m_rhiViews.append(rhiView);
+		}
 	}
 }
 
@@ -543,14 +564,14 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 		{
 			case BINDENTRY_BUFFER:
 			{
-				CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer);
+				CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
 				if (buffer)
 					rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
 				else
 					ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
 
-				rhiBindGroupEntryDesc.size = bindGroupEntry.bufferSize < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.bufferSize;
-				rhiBindGroupEntryDesc.offset = bindGroupEntry.bufferOffset;
+				rhiBindGroupEntryDesc.size = bindGroupEntry.buffer.size < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.buffer.size;
+				rhiBindGroupEntryDesc.offset = bindGroupEntry.buffer.offset;
 				break;
 			}
 			case BINDENTRY_SAMPLER:
@@ -565,7 +586,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 			}
 			case BINDENTRY_STORAGETEXTURE:
 			case BINDENTRY_TEXTURE:
-				CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture);
+				CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.Ptr());
 
 				// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
 				if(texture)
@@ -1094,6 +1115,7 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 			wgpuCommandBufferRelease(rhiCmdBuffer);
 		return 0;
 	});
+
 }
 
 static void CreateQuerySet()

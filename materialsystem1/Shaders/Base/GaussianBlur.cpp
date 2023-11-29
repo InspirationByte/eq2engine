@@ -48,7 +48,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 		{
 			if (!m_materialBindGroup)
 			{
-				const ITexturePtr& bloomTex = m_blurSource.Get();
+				const ITexturePtr& bloomTex = m_blurSource.Get() ? m_blurSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				Vector4D textureSizeProps(1.0f);
 				if (bloomTex)
 				{
@@ -63,7 +63,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 				bufferData.append(textureSizeProps);
 				m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 
-				ITexturePtr baseTexture = m_blurSource.Get() ? m_blurSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
+				const ITexturePtr& baseTexture = m_blurSource.Get() ? m_blurSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
 					.Buffer(0, m_materialParamsBuffer)
 					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))

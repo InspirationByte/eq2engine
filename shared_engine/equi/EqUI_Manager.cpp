@@ -253,7 +253,7 @@ void CUIManager::Render()
 	m_rootPanel->ResetSizeDiffs();
 	m_rootPanel->Render(1, rendPassRecorder);
 
-	g_matSystem->SubmitCommandBuffer(rendPassRecorder->End());
+	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 }
 
 equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)

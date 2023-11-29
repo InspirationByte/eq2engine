@@ -72,7 +72,7 @@ BEGIN_SHADER_CLASS(Skybox)
 
 		// camera direction
 		renderAPI->SetShaderConstant(StringToHashConst("camPos"), camPos * 2.0f);
-		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
+		//renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
 
 		// setup base texture
 		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());

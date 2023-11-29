@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "ShaderAPI_defs.h"
+
 class IGPUBuffer;
 class IGPURenderPipeline;
 class IGPUBindGroup;
@@ -61,8 +63,19 @@ public:
 	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
 
 	virtual void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const = 0;
+	void								WriteBufferView(const GPUBufferPtrView& bufferView, const void* data, int64 size = -1, int64 offset = 0) const;
 
 	virtual void*						GetUserData() const = 0;
 	virtual IGPUCommandBufferPtr		End() = 0;
 };
 using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
+
+inline void IGPUCommandRecorder::WriteBufferView(const GPUBufferPtrView& bufferView, const void* data, int64 size, int64 offset) const
+{
+	if (size < 0) // write whole view
+		size = bufferView.size - offset;
+
+	ASSERT(offset + size <= bufferView.size);
+
+	WriteBuffer(bufferView.buffer.Ptr(), data, size, bufferView.offset + offset);
+}

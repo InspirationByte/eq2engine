@@ -513,6 +513,7 @@ void CFont::DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t&
 
 	drawCmd.material = fontCache->m_sdfMaterial;
 	MatVec3Proxy sdfRange = fontCache->m_fontParams;
+	MatVec4Proxy baseColor = fontCache->m_fontBaseColor;
 
 	// draw shadow
 	// TODO: shadow color should be separate from text vertices color!!!
@@ -520,7 +521,7 @@ void CFont::DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t&
 	{
 		// TODO: shadow offset
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset, params.shadowOffset,0.0f));
-		g_matSystem->SetAmbientColor(ColorRGBA(params.shadowColor,params.shadowAlpha));
+		baseColor.Set(ColorRGBA(params.shadowColor,params.shadowAlpha));
 
 		if (m_flags.sdf)
 		{
@@ -542,9 +543,8 @@ void CFont::DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t&
 	else
 		sdfRange.Set(Vector3D(0.0f, 1.0f, 1.0f));
 
-	g_matSystem->SetAmbientColor(color_white);
+	baseColor.Set(color_white);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-
 	g_matSystem->Draw(drawCmd);
 }
 
@@ -561,6 +561,7 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStylePar
 
 	drawCmd.material = fontCache->m_sdfMaterial;
 	MatVec3Proxy sdfRange = fontCache->m_fontParams;
+	MatVec4Proxy baseColor = fontCache->m_fontBaseColor;
 
 	// draw shadow
 	// TODO: shadow color should be separate from text vertices color!!!
@@ -568,7 +569,7 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStylePar
 	{
 		// TODO: shadow offset
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset, params.shadowOffset, 0.0f));
-		g_matSystem->SetAmbientColor(ColorRGBA(params.shadowColor, params.shadowAlpha));
+		baseColor.Set(ColorRGBA(params.shadowColor, params.shadowAlpha));
 
 		if (m_flags.sdf)
 		{
@@ -590,9 +591,8 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStylePar
 	else
 		sdfRange.Set(Vector3D(0.0f, 1.0f, 1.0f));
 
-	g_matSystem->SetAmbientColor(color_white);
+	baseColor.Set(color_white);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-
 	g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 

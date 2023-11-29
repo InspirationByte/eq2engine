@@ -17,7 +17,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 
 		FixedArray<Vector4D, 4> bufferData;
 		bufferData.append(m_rangeProps.Get());
-		m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+		m_proxyBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -39,15 +39,22 @@ BEGIN_SHADER_CLASS(BloomRange)
 			.End();
 	}
 
+	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const
+	{
+		FixedArray<Vector4D, 4> bufferData;
+		bufferData.append(m_rangeProps.Get());
+		cmdRecorder->WriteBuffer(m_proxyBuffer, bufferData.ptr(), bufferData.numElem() , 0);
+	}
+
 	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
 			if (!m_materialBindGroup)
 			{
-				ITexturePtr baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
+				const ITexturePtr& baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_materialParamsBuffer)
+					.Buffer(0, m_proxyBuffer)
 					.Sampler(1, baseTexture->GetSamplerState())
 					.Texture(2, baseTexture)
 					.End();
@@ -61,7 +68,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 	}
 
 	mutable IGPUBindGroupPtr	m_materialBindGroup;
-	IGPUBufferPtr				m_materialParamsBuffer;
+	IGPUBufferPtr				m_proxyBuffer;
 
 	MatVec4Proxy				m_rangeProps;
 	MatTextureProxy				m_bloomSource;

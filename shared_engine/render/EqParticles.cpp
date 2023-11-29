@@ -58,7 +58,6 @@ void CParticleBatch::Shutdown()
 
 	CSpriteBuilder::Shutdown();
 	m_material = nullptr;
-
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;
 }
@@ -70,7 +69,10 @@ int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex** verts
 
 	Threading::CScopedMutex m(s_particleRenderMutex);
 
-	return _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
+	const int result = _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
+	if (result != -1) 
+		m_bufferDirty = true;
+	return result;
 }
 
 void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
@@ -81,30 +83,33 @@ void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
 	Threading::CScopedMutex m(s_particleRenderMutex);
 
 	_AddParticleStrip(verts, nVertices);
+	m_bufferDirty = true;
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds)
+void CParticleBatch::Render(int viewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds)
 {
-	if(!m_initialized || !r_drawParticles.GetBool())
+	if (!m_initialized || !r_drawParticles.GetBool())
 	{
 		m_numIndices = 0;
 		m_numVertices = 0;
 		return;
 	}
 
-	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
+	if (m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	g_matSystem->SetCullMode(CULL_FRONT);
+	if (m_bufferDirty)
+	{
+		m_bufferDirty = false;
+		if (!m_vertexBuffer)
+			m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX, "PFXVertexBuffer");
+		if (!m_indexBuffer)
+			m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
 
-	if(!m_vertexBuffer)
-		m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX, "PFXVertexBuffer");
-	if(!m_indexBuffer)
-		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX, "PFXIndexBuffer");
-
-	bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
-	bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+		bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+		bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+	}
 
 	RenderDrawCmd drawCmd;
 	drawCmd
@@ -123,7 +128,7 @@ void CParticleBatch::Render(int nViewRenderFlags, IGPURenderPassRecorder* rendPa
 
 	g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 
-	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
+	if(!(viewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
 	{
 		m_numVertices = 0;
 		m_numIndices = 0;
@@ -262,7 +267,7 @@ void CParticleLowLevelRenderer::Render(int nRenderFlags, IGPURenderPassRecorder*
 	for(CParticleBatch* batch : m_batchs)
 		batch->Render(nRenderFlags, rendPassRecorder, particleRenderUpdate);
 
-	g_matSystem->SubmitCommandBuffer(particleRenderUpdate->End());
+	g_matSystem->QueueCommandBuffer(particleRenderUpdate->End());
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()

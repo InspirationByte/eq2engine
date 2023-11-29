@@ -23,6 +23,29 @@ public:
 };
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
+//---------------------------------------
+
+struct GPUBufferPtrView
+{
+	GPUBufferPtrView() = default;
+	GPUBufferPtrView(IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
+		: buffer(buffer), offset(offset), size((buffer&& size > 0) ? size : buffer->GetSize())
+	{
+	}
+	GPUBufferPtrView(IGPUBufferPtr buffer, int64 offset = 0, int64 size = -1)
+		: buffer(buffer), offset(offset), size((buffer&& size > 0) ? size : buffer->GetSize())
+	{
+	}
+
+	operator bool() const { return buffer; }
+
+	IGPUBufferPtr	buffer;
+	int64			offset{ 0 };
+	int64			size{ -1 };
+};
+
+//---------------------------------------
+
 template<typename T>
 static T AlignBufferSize(T size, int alignment = 4)
 {

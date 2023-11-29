@@ -1080,7 +1080,6 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-	g_matSystem->SetAmbientColor(1.0f);
 
 	CleanOverlays();
 
@@ -1104,7 +1103,6 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-	g_matSystem->SetAmbientColor(1.0f);
 
 	// draw all of 3d stuff
 	{
@@ -1322,7 +1320,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 	++m_frameId;
 
-	g_matSystem->SubmitCommandBuffer(rendPassRecorder->End());
+	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 #endif
 }
 
