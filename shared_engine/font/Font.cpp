@@ -679,7 +679,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 	EqString finalFileName = _Es(FONT_DEFAULT_PATH) + m_name + _Es(".fnt");
 
 	KeyValues pKV;
-	if( pKV.LoadFromFile( finalFileName.GetData() ) )
+	if( pKV.LoadFromFile( finalFileName ) )
 	{
 		KVSection* fontSec = pKV.GetRootSection()->FindSection("Font", KV_FLAG_SECTION);
 
@@ -701,7 +701,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			m_spacing = 0.0f;
 			{
 				SamplerStateParams samplerParams(filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP);
-				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_NOQUALITYLOD);
+				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_NOQUALITYLOD, finalFileName);
 			}
 
 			if(m_flags.sdf)
@@ -782,7 +782,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				{
 					SamplerStateParams samplerParams(filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP);
 
-					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD);
+					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD, finalFileName);
 				}
 
 				if(m_fontTexture == nullptr)

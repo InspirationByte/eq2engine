@@ -66,9 +66,9 @@ using IShaderProgramPtr = CRefPtr<IShaderProgram>;
 #define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec3, _SHADER_PARAM_OP_EMPTY)
 #define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec4, _SHADER_PARAM_OP_EMPTY)
 
-#define SHADER_PARAM_TEXTURE(param, variable)			{ variable = LoadTextureByVar(renderAPI, #param, true); }
-#define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ variable = LoadTextureByVar(renderAPI, #param, false); }
-#define SHADER_PARAM_TEXTURE_FIND(param, variable)		{ variable = FindTextureByVar(renderAPI, #param, false); }
+#define SHADER_PARAM_TEXTURE(param, variable, ...)			{ variable = LoadTextureByVar(renderAPI, #param, true, __VA_ARGS__); }
+#define SHADER_PARAM_TEXTURE_NOERROR(param, variable, ...)	{ variable = LoadTextureByVar(renderAPI, #param, false, __VA_ARGS__); }
+#define SHADER_PARAM_TEXTURE_FIND(param, variable, ...)		{ variable = FindTextureByVar(renderAPI, #param, false, __VA_ARGS__); }
 
 class CBaseShader;
 
@@ -114,8 +114,8 @@ protected:
 	uint						GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
-	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar);
-	MatTextureProxy				LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar);
+	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
+	MatTextureProxy				LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
 
 	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
 

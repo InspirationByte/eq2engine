@@ -411,6 +411,7 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 	// add default view
 	{
 		WGPUTextureViewDescriptor rhiTexViewDesc = {};
+		rhiTexViewDesc.label = rhiTextureDesc.label;
 		rhiTexViewDesc.format = rhiTextureDesc.format;
 		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
 		rhiTexViewDesc.arrayLayerCount = isCubeMap ? 6 : 1;
@@ -429,6 +430,7 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 		for (int i = 0; i < 6; ++i)
 		{
 			WGPUTextureViewDescriptor rhiTexViewDesc = {};
+			rhiTexViewDesc.label = rhiTextureDesc.label;
 			rhiTexViewDesc.format = rhiTextureDesc.format;
 			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
 			rhiTexViewDesc.arrayLayerCount = 1;

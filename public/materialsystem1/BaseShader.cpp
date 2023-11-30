@@ -304,30 +304,42 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlo
 	return mv;
 }
 
-MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar)
+MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
-		AddManagedTexture(mv, renderAPI->FindTexture(mv.Get()));
+		ITexturePtr texture = renderAPI->FindTexture(mv.Get());
+		if (texture)
+		{
+			ASSERT_MSG((texture->GetFlags() & texFlags) == texFlags, "MatVar '%s' texture '%s' doesn't match required flags", paramName, texture->GetName());
+		}
+		AddManagedTexture(mv, texture);
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(mv, g_matSystem->GetErrorCheckerboardTexture());
+		AddManagedTexture(mv, g_matSystem->GetErrorCheckerboardTexture((texFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D));
 
 	return mv;
 }
 
-MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar)
+MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 
 	if(mv.IsValid()) 
 	{
 		if(mv.Get().Length())
-			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), SamplerStateParams(m_texFilter, m_texAddressMode)));
+		{
+			ITexturePtr texture = g_texLoader->LoadTextureFromFileSync(mv.Get(), SamplerStateParams(m_texFilter, m_texAddressMode), texFlags, EqString::Format("Material %s var '%s'", m_material->GetName(), paramName));
+			if (texture)
+			{
+				ASSERT_MSG((texture->GetFlags() & texFlags) == texFlags, "MatVar '%s' texture '%s' doesn't match required flags", paramName, texture->GetName());
+			}
+			AddManagedTexture(MatTextureProxy(mv), texture);
+		}
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(MatTextureProxy(mv), g_matSystem->GetErrorCheckerboardTexture());
+		AddManagedTexture(MatTextureProxy(mv), g_matSystem->GetErrorCheckerboardTexture((texFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D));
 
 	return mv;
 }

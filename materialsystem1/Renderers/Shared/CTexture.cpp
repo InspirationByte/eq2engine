@@ -91,6 +91,7 @@ bool CTexture::GenerateErrorTexture(int flags)
 	const int CHECKER_SIZE = 4;
 
 	CImagePtr image = CRefPtr_new(CImage);
+	image->SetName("Error");
 	ubyte* destPixels = image->Create(FORMAT_RGBA8, 64, 64, depth, 1);
 
 	const int size = image->GetMipMappedSize(0, 1);

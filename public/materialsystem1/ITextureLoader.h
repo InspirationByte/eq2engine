@@ -19,8 +19,8 @@ public:
 
 	bool			IsInitialized() const { return true; }
 
-	virtual ITexturePtr			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0) = 0;
-	virtual Future<ITexturePtr>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0) = 0;
+	virtual ITexturePtr			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0, const char* requestedBy = nullptr) = 0;
+	virtual Future<ITexturePtr>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0, const char* requestedBy = nullptr) = 0;
 };
 
 INTERFACE_SINGLETON(ITextureLoader, CTextureLoader, g_texLoader)

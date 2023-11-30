@@ -125,7 +125,7 @@ public:
 	// Resource operations
 
 	virtual const IMaterialPtr&		GetDefaultMaterial() const = 0;
-	virtual const ITexturePtr&		GetErrorCheckerboardTexture() const = 0;
+	virtual const ITexturePtr&		GetErrorCheckerboardTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const = 0;
 	virtual	const ITexturePtr&		GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const = 0;
 
 	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, KVSection* params) = 0;

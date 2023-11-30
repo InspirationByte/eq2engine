@@ -187,6 +187,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 			rhiTexViewDesc.baseMipLevel = 0;
 			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
 			rhiTexViewDesc.dimension = rhiTexViewDimension;
+			rhiTexViewDesc.label = rhiTextureDesc.label;
 		
 			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
 			m_rhiViews.append(rhiView);

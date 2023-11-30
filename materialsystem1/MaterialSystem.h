@@ -90,7 +90,7 @@ public:
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
 	const IMaterialPtr&			GetDefaultMaterial() const;
 	const ITexturePtr&			GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const;
-	const ITexturePtr&			GetErrorCheckerboardTexture() const;
+	const ITexturePtr&			GetErrorCheckerboardTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const;
 								
 	IMaterialPtr				CreateMaterial(const char* szMaterialName, KVSection* params);
 	IMaterialPtr				GetMaterial(const char* szMaterialName);
@@ -182,6 +182,7 @@ private:
 
 	void						CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params);
 	void						CreateWhiteTexture();
+	void						CreateErrorTexture();
 	void						CreateDefaultDepthTexture();
 	void						InitDefaultMaterial();
 
@@ -234,8 +235,8 @@ private:
 	IMaterialPtr				m_overdrawMaterial;
 
 	ITexturePtr					m_currentEnvmapTexture;
-	ITexturePtr					m_whiteTexture[5];
-	ITexturePtr					m_errorTexture;
+	ITexturePtr					m_whiteTexture[TEXDIMENSION_COUNT];
+	ITexturePtr					m_errorTexture[TEXDIMENSION_COUNT];
 	ITexturePtr					m_defaultDepthTexture;
 
 	Array<DEVLICELOSTRESTORE>	m_lostDeviceCb{ PP_SL };

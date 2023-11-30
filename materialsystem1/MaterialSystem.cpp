@@ -360,6 +360,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	// initialize some resources
 	REGISTER_INTERNAL_SHADERS();
 	CreateWhiteTexture();
+	CreateErrorTexture();
 	CreateDefaultDepthTexture();
 	InitDefaultMaterial();
 	InitStandardMaterialProxies();
@@ -391,9 +392,11 @@ void CMaterialSystem::Shutdown()
 	m_defaultMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
 	m_currentEnvmapTexture = nullptr;
-	m_errorTexture = nullptr;
 	m_defaultDepthTexture = nullptr;
 	m_pendingCmdBuffers.clear(true);
+
+	for (int i = 0; i < elementsOf(m_errorTexture); ++i)
+		m_errorTexture[i] = nullptr;
 
 	for (int i = 0; i < elementsOf(m_whiteTexture); ++i)
 		m_whiteTexture[i] = nullptr;
@@ -439,6 +442,16 @@ void CMaterialSystem::CreateWhiteTexture()
 	images.clear();
 }
 
+void CMaterialSystem::CreateErrorTexture()
+{
+	bool justCreated = false;
+	m_errorTexture[TEXDIMENSION_2D] = m_shaderAPI->FindOrCreateTexture("error", justCreated);
+	m_errorTexture[TEXDIMENSION_2D]->GenerateErrorTexture();
+
+	m_errorTexture[TEXDIMENSION_CUBE] = m_shaderAPI->FindOrCreateTexture("error_cube", justCreated);
+	m_errorTexture[TEXDIMENSION_CUBE]->GenerateErrorTexture(TEXFLAG_CUBEMAP);
+}
+
 void CMaterialSystem::CreateDefaultDepthTexture()
 {
 	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget("_matSys_depthBuffer", 800, 600, FORMAT_D24, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
@@ -475,11 +488,6 @@ void CMaterialSystem::InitDefaultMaterial()
 
 		m_overdrawMaterial = pMaterial;
 	}
-
-	bool justCreated = false;
-	m_errorTexture = m_shaderAPI->FindOrCreateTexture("error", justCreated);
-	if(justCreated)
-		m_errorTexture->GenerateErrorTexture();
 }
 
 MaterialsRenderSettings& CMaterialSystem::GetConfiguration()
@@ -955,9 +963,9 @@ const ITexturePtr& CMaterialSystem::GetWhiteTexture(ETextureDimension texDimensi
 	return m_whiteTexture[texDimension];
 }
 
-const ITexturePtr& CMaterialSystem::GetErrorCheckerboardTexture() const
+const ITexturePtr& CMaterialSystem::GetErrorCheckerboardTexture(ETextureDimension texDimension) const
 {
-	return m_errorTexture;
+	return m_errorTexture[texDimension];
 }
 //-----------------------------
 // Frame operations
