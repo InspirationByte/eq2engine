@@ -120,6 +120,7 @@ void CWGPURenderPassRecorder::Complete()
 		return;
 	}
 	wgpuRenderPassEncoderEnd(m_rhiRenderPassEncoder);
+	wgpuRenderPassEncoderRelease(m_rhiRenderPassEncoder);
 	m_rhiRenderPassEncoder = nullptr;
 }
 
@@ -136,6 +137,8 @@ IGPUCommandBufferPtr CWGPURenderPassRecorder::End()
 	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
 
 	WGPUCommandBuffer rhiCommandBuffer = wgpuCommandEncoderFinish(m_rhiCommandEncoder, nullptr);
+	wgpuCommandEncoderRelease(m_rhiCommandEncoder);
+
 	commandBuffer->m_rhiCommandBuffer = rhiCommandBuffer;
 	m_rhiCommandEncoder = nullptr;
 

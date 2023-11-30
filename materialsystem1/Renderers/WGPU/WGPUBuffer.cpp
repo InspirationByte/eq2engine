@@ -38,12 +38,14 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 
 	if (m_rhiBuffer && bufferInfo.data && bufferInfo.dataSize)
 	{
-		// sadly...
-		g_renderWorker.WaitForExecute("UploadCreatedBuffer", [this, bufferInfo, writeDataSize]() {
-			void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
-			ASSERT_MSG(outData, "Buffer mapped range is NULL");
-			memcpy(outData, bufferInfo.data, writeDataSize);
-			wgpuBufferUnmap(m_rhiBuffer);
+		wgpuBufferReference(m_rhiBuffer);
+		void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
+		ASSERT_MSG(outData, "Buffer mapped range is NULL");
+		memcpy(outData, bufferInfo.data, writeDataSize);
+
+		g_renderWorker.Execute("UnmapBuffer", [buffer = m_rhiBuffer]() {
+			wgpuBufferUnmap(buffer);
+			wgpuBufferRelease(buffer);
 			return 0;
 		});
 	}

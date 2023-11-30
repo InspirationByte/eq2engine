@@ -46,13 +46,19 @@ protected:
 		FUNC_TYPE	func;
 		EqString	name;
 		int			result{ WORK_NOT_STARTED };
+		uint		workIdx{ 0 };
 		bool		sync{ false };
 	};
 
-	FUNC_TYPE								m_loopFunc;
-	FixedArray<Work, 96>					m_workRingPool;
-	FixedArray<Threading::CEqSignal, 96>	m_completionSignal;
-	RenderWorkerHandler*					m_workHandler{ nullptr };
+	using SignalPool = FixedArray<Threading::CEqSignal, 96>;
+	using WorkPool = FixedArray<Work, 96>;
+
+	FUNC_TYPE				m_loopFunc;
+	WorkPool				m_workRingPool;
+	SignalPool				m_completionSignal;
+	RenderWorkerHandler*	m_workHandler{ nullptr };
+	uint					m_workIdx{ 0 };
+	uint					m_lastWorkIdx{ 0 };
 };
 
 extern CRenderWorkThread g_renderWorker;

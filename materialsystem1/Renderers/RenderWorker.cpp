@@ -79,6 +79,7 @@ int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
 		Threading::YieldCurrentThread();
 	} while(!work);
 
+	work->workIdx = Atomic::Increment(m_workIdx);
 	work->name = name;
 	work->func = std::move(f);
 	work->sync = true;
@@ -123,6 +124,7 @@ void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
 		}
 	}while(!work);
 
+	work->workIdx = Atomic::Increment(m_workIdx);
 	work->name = name;
 	work->func = std::move(f);
 	work->sync = false;
@@ -161,6 +163,8 @@ int CRenderWorkThread::Run()
 			const int result = work.func();
 			work.func = nullptr;
 			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
+
+			m_lastWorkIdx = work.workIdx;
 			m_completionSignal[i].Raise();
 		}
 	}

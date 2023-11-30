@@ -73,6 +73,11 @@ class IGPURenderPipeline : public RefCountedObject<IGPURenderPipeline> {};
 using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
 //---------------------------------
+// Compute pipeline
+class IGPUComputePipeline : public RefCountedObject<IGPUComputePipeline> {};
+using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
+
+//---------------------------------
 // Bind group. References used resources needed to render (textures, uniform buffers etc)
 // not used for Vertex and Index buffers.
 class IGPUBindGroup : public RefCountedObject<IGPUBindGroup> {};
@@ -134,6 +139,8 @@ public:
 	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
 	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const = 0;
 
+	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const = 0;
+
 //-------------------------------------------------------------
 // Buffer management
 
@@ -143,8 +150,8 @@ public:
 // Command management
 
 	virtual IGPUCommandRecorderPtr		CreateCommandRecorder(const char* name = nullptr, void* userData = nullptr) const = 0;
-	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, const char* name = nullptr, void* userData = nullptr) const = 0;
-	// TODO: virtual IGPUComputePassRecorderPtr BeginComputePass();
+	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
+	virtual IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData = nullptr) const = 0;
 
 //-------------------------------------------------------------
 // Command buffer management

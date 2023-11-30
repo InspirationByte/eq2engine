@@ -238,6 +238,8 @@ public:
 	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
 	IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const { return nullptr; }
 
+	IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const { return nullptr; }
+
 //-------------------------------------------------------------
 // Buffer management
 
@@ -247,7 +249,8 @@ public:
 // Render pass management
 
 	IGPUCommandRecorderPtr		CreateCommandRecorder(const char* name = nullptr, void* userData = nullptr) const { return nullptr; }
-	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, const char* name = nullptr, void* userData = nullptr) const { return nullptr; }
+	IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const { return nullptr; }
+	IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData = nullptr) const { return nullptr; }
 
 //-------------------------------------------------------------
 // Command buffer management

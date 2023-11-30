@@ -11,6 +11,7 @@
 
 class IGPUBuffer;
 class IGPURenderPipeline;
+class IGPUComputePipeline;
 class IGPUBindGroup;
 struct RenderPassDesc;
 enum EIndexFormat : int;
@@ -49,9 +50,29 @@ public:
 	virtual void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
 
 	virtual void*					GetUserData() const = 0;
+
+	//virtual void					Complete() = 0;
 	virtual IGPUCommandBufferPtr	End() = 0;
 };
 using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
+
+//---------------------------------
+// Compute pass recorder
+class IGPUComputePassRecorder : public RefCountedObject<IGPUComputePassRecorder>
+{
+public:
+	virtual void					SetPipeline(IGPUComputePipeline* pipeline) = 0;
+	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
+
+	virtual void					DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ) = 0;
+	virtual void					DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset) = 0;
+
+	virtual void*					GetUserData() const = 0;
+
+	//virtual void					Complete() = 0;
+	virtual IGPUCommandBufferPtr	End() = 0;
+};
+using IGPUComputePassRecorderPtr = CRefPtr<IGPUComputePassRecorder>;
 
 //---------------------------------
 // Command recorded. Used for render passes and compute passes

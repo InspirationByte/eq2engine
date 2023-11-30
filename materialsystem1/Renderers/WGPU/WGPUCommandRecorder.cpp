@@ -51,60 +51,20 @@ IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 
 IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
-	/*
 	WGPURenderPassDescriptor rhiRenderPassDesc = {};
-	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
-
 	FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS> rhiColorAttachmentList;
+	WGPURenderPassDepthStencilAttachment rhiDepthStencilAttachment = {};
+	FillWGPURenderPassDescriptor(renderPassDesc, rhiRenderPassDesc, rhiColorAttachmentList, rhiDepthStencilAttachment);
 
 	IVector2D renderTargetDims = 0;
-
 	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
-	{
-		// TODO: backbuffer alteration?
-		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target.Ptr());
-		ASSERT_MSG(targetTexture, "NULL texture for color target");
-
-		WGPURenderPassColorAttachment rhiColorAttachment = {};
-		rhiColorAttachment.loadOp = g_wgpuLoadOp[colorTarget.loadOp];
-		rhiColorAttachment.storeOp = g_wgpuStoreOp[colorTarget.storeOp];
-		rhiColorAttachment.depthSlice = colorTarget.depthSlice;
-		rhiColorAttachment.view = targetTexture->GetWGPUTextureView(colorTarget.arraySlice);
-		rhiColorAttachment.resolveTarget = nullptr; // TODO
-		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
-		rhiColorAttachmentList.append(rhiColorAttachment);
-
-		renderTargetDims = IVector2D(targetTexture->GetWidth(), targetTexture->GetHeight());
-	}
-	rhiRenderPassDesc.colorAttachmentCount = rhiColorAttachmentList.numElem();
-	rhiRenderPassDesc.colorAttachments = rhiColorAttachmentList.ptr();
-
-	WGPURenderPassDepthStencilAttachment rhiDepthStencilAttachment = {};
-
-	if (renderPassDesc.depthStencil)
-	{
-		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil.Ptr());
-
-		rhiDepthStencilAttachment.depthClearValue = renderPassDesc.depthClearValue;
-		rhiDepthStencilAttachment.depthReadOnly = false; // TODO
-		rhiDepthStencilAttachment.depthLoadOp = g_wgpuLoadOp[renderPassDesc.depthLoadOp];
-		rhiDepthStencilAttachment.depthStoreOp = g_wgpuStoreOp[renderPassDesc.depthStoreOp];
-
-		rhiDepthStencilAttachment.stencilClearValue = renderPassDesc.stencilClearValue;
-		rhiDepthStencilAttachment.stencilReadOnly = false;  // TODO
-		rhiDepthStencilAttachment.stencilLoadOp = g_wgpuLoadOp[renderPassDesc.stencilLoadOp];
-		rhiDepthStencilAttachment.stencilStoreOp = g_wgpuStoreOp[renderPassDesc.stencilStoreOp];
-
-		rhiDepthStencilAttachment.view = depthTexture->GetWGPUTextureView();
-		rhiRenderPassDesc.depthStencilAttachment = &rhiDepthStencilAttachment;
-	}
-
-	// TODO:
-	// rhiRenderPassDesc.occlusionQuerySet
+		renderTargetDims = IVector2D(colorTarget.target->GetWidth(), colorTarget.target->GetHeight());
 
 	WGPURenderPassEncoder rhiRenderPassEncoder = wgpuCommandEncoderBeginRenderPass(m_rhiCommandEncoder, &rhiRenderPassDesc);
 	if (!rhiRenderPassEncoder)
 		return nullptr;
+
+	m_hasCommands = true;
 
 	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
 	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
@@ -113,14 +73,13 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 		renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target->GetFormat() : FORMAT_NONE;
 	}
 	renderPass->m_depthTargetFormat = renderPassDesc.depthStencil ? renderPassDesc.depthStencil->GetFormat() : FORMAT_NONE;
+	renderPass->m_depthReadOnly = renderPassDesc.depthReadOnly;
+	renderPass->m_stencilReadOnly = renderPassDesc.stencilReadOnly;
+
 	renderPass->m_rhiCommandEncoder = m_rhiCommandEncoder;
 	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
 	renderPass->m_renderTargetDims = renderTargetDims;
 	renderPass->m_userData = userData;
 
-	m_hasCommands = true;
-
 	return IGPURenderPassRecorderPtr(renderPass);
-		*/
-	return nullptr;
 }

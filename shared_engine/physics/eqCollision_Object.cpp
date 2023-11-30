@@ -403,8 +403,9 @@ void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 {
 	if(m_flags & COLLOBJ_TRANSFORM_DIRTY)
 	{
-		Matrix4x4 rotation = Matrix4x4(m_orientation);
-		m_cachedTransform = translate(Vector3D(m_position)) * rotation;
+		Matrix4x4 transform = Matrix4x4(m_orientation);
+		transform.setTranslationTransposed(Vector3D(m_position));
+		m_cachedTransform = transform;
 		m_flags &= ~COLLOBJ_TRANSFORM_DIRTY;
 	}
 

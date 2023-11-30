@@ -325,7 +325,8 @@ struct RenderPassBaseData
 {
 	RenderPassBaseData(ERenderPassType type) : type(type) {}
 
-	ERenderPassType	type;
+	ERenderPassType		type;
+	uint				version{ 0 };
 	GPUBufferPtrView	cameraParamsBuffer;
 };
 

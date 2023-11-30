@@ -50,10 +50,11 @@ public:
 
 	ETextureFormat			m_renderTargetsFormat[MAX_RENDERTARGETS]{ FORMAT_NONE };
 	ETextureFormat			m_depthTargetFormat{ FORMAT_NONE };
+	IVector2D				m_renderTargetDims{ 0 };
 	bool					m_depthReadOnly{ false };
 	bool					m_stencilReadOnly{ false };
+
 	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
 	WGPURenderPassEncoder	m_rhiRenderPassEncoder{ nullptr };
-	IVector2D				m_renderTargetDims{ 0 };
 	void*					m_userData{ nullptr };
 };

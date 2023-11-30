@@ -340,3 +340,52 @@ inline static void FillWGPUBlendComponent(const BlendStateParams& blendParams, W
 	rhiBlendComponent.srcFactor = g_wgpuBlendFactor[blendParams.srcFactor];
 	rhiBlendComponent.dstFactor = g_wgpuBlendFactor[blendParams.dstFactor];
 }
+
+static void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, WGPURenderPassDescriptor& rhiRenderPassDesc, FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS>& rhiColorAttachmentList, WGPURenderPassDepthStencilAttachment& rhiDepthStencilAttachment)
+{
+	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
+	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
+	{
+		// TODO: backbuffer alteration?
+		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target.Ptr());
+		ASSERT_MSG(targetTexture, "NULL texture for color target");
+
+		WGPURenderPassColorAttachment rhiColorAttachment = {};
+		rhiColorAttachment.loadOp = g_wgpuLoadOp[colorTarget.loadOp];
+		rhiColorAttachment.storeOp = g_wgpuStoreOp[colorTarget.storeOp];
+		rhiColorAttachment.depthSlice = colorTarget.depthSlice;
+		rhiColorAttachment.view = targetTexture->GetWGPUTextureView(colorTarget.arraySlice);
+		rhiColorAttachment.resolveTarget = nullptr; // TODO
+		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
+		rhiColorAttachmentList.append(rhiColorAttachment);
+	}
+	rhiRenderPassDesc.colorAttachmentCount = rhiColorAttachmentList.numElem();
+	rhiRenderPassDesc.colorAttachments = rhiColorAttachmentList.ptr();
+
+	if (renderPassDesc.depthStencil)
+	{
+		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil.Ptr());
+		rhiDepthStencilAttachment.view = depthTexture->GetWGPUTextureView();
+
+		rhiDepthStencilAttachment.depthReadOnly = renderPassDesc.depthReadOnly;
+		if (!renderPassDesc.depthReadOnly)
+		{
+			rhiDepthStencilAttachment.depthClearValue = renderPassDesc.depthClearValue;
+			rhiDepthStencilAttachment.depthLoadOp = g_wgpuLoadOp[renderPassDesc.depthLoadOp];
+			rhiDepthStencilAttachment.depthStoreOp = g_wgpuStoreOp[renderPassDesc.depthStoreOp];
+		}
+
+		const bool hasStencil = IsStencilFormat(renderPassDesc.depthStencil->GetFormat());
+		rhiDepthStencilAttachment.stencilReadOnly = renderPassDesc.stencilReadOnly;
+		if (hasStencil && !renderPassDesc.stencilReadOnly)
+		{
+			rhiDepthStencilAttachment.stencilClearValue = renderPassDesc.stencilClearValue;
+			rhiDepthStencilAttachment.stencilLoadOp = g_wgpuLoadOp[renderPassDesc.stencilLoadOp];
+			rhiDepthStencilAttachment.stencilStoreOp = g_wgpuStoreOp[renderPassDesc.stencilStoreOp];
+		}
+		rhiRenderPassDesc.depthStencilAttachment = &rhiDepthStencilAttachment;
+	}
+
+	// TODO:
+	// rhiRenderPassDesc.occlusionQuerySet
+}

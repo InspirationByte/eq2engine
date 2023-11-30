@@ -20,6 +20,15 @@ public:
 	WGPURenderPipeline	m_rhiRenderPipeline{ nullptr };
 };
 
+class CWGPUComputePipeline : public IGPUComputePipeline
+{
+public:
+	~CWGPUComputePipeline();
+
+	// TODO: name
+	WGPUComputePipeline	m_rhiComputePipeline{ nullptr };
+};
+
 class CWGPUBindGroup : public IGPUBindGroup
 {
 public:

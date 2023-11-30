@@ -9,7 +9,7 @@
 
 struct SpatialListUtil
 {
-	static int				Hash(const IVector2D& cell);
+	static int				Hash(const IVector2D& cell, int maxSize);
 	static int				SizeInCells(float units);
 	static IVector2D		GetCell(const Vector3D& pos);
 	static Vector3D			GetPosition(const IVector2D& cell);
@@ -21,28 +21,35 @@ struct SpatialObjectAccessor
 	static Vector3D GetPosition(T* obj);
 };
 
-template<typename T>
-struct SpatialList
+class SpatialList
 {
-	SpatialList(PPSourceLine sl) 
-		: indexGrid(sl), objects(sl) 
-	{
-	}
+public:
+	using WalkCellFunc = EqFunction<bool(ushort idx)>;
 
-	void Clear(bool deallocate = false)
-	{
-		indexGrid.clear(deallocate);
-		objects.clear(deallocate);
-	}
 
-	void Add(T* obj)
+	SpatialList(PPSourceLine sl, const int poolSize);
+
+	void Clear();
+	void Add(const IVector2D cell, ushort id);
+	void QueryCell(const IVector2D& cell, const WalkCellFunc& func) const;
+
+	template<typename T>
+	void Add(T* obj, ushort id)
 	{
 		const IVector2D cell = SpatialListUtil::GetCell(SpatialObjectAccessor<T>::GetPosition(obj));
-
-		Array<int>& objIndexList = indexGrid[SpatialListUtil::Hash(cell)];
-		objIndexList.append(objects.append(obj));
+		Add(cell, id);
 	}
 
-	Map<int, Array<int>>	indexGrid;
-	Array<T*>				objects;
+private:
+	struct Item
+	{
+		ushort id;
+		ushort next;
+		TVec2D<short> pos;
+	};
+
+	Array<Item>		m_pool;
+	int				m_poolHead{ 0 };
+
+	Array<ushort>	m_buckets;
 };

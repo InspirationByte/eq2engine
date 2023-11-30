@@ -931,6 +931,16 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 	}
 FLUENT_END_TYPE
 
+//-------------------------------
+// Compute pipeline descs
+struct ComputePipelineDesc
+{
+	EqString			shaderName;
+	int					shaderLayoutId{ 0 };
+	Array<EqString>		shaderQuery{ PP_SL };
+	EqString			shaderEntryPoint{ "main" };
+};
+
 // ------------------------------
 // DEPRECATED STRUCTURES
 
