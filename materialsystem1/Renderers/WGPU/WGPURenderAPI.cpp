@@ -536,7 +536,57 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 	return IGPUPipelineLayoutPtr(pipelineLayout);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const
+static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, int layoutBindGroupIdx, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
+{
+	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
+	{
+		WGPUBindGroupEntry rhiBindGroupEntryDesc = {};
+		rhiBindGroupEntryDesc.binding = bindGroupEntry.binding;
+		switch (bindGroupEntry.type)
+		{
+		case BINDENTRY_BUFFER:
+		{
+			CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
+			if (buffer)
+				rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
+			else
+				ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
+
+			rhiBindGroupEntryDesc.size = bindGroupEntry.buffer.size < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.buffer.size;
+			rhiBindGroupEntryDesc.offset = bindGroupEntry.buffer.offset;
+			break;
+		}
+		case BINDENTRY_SAMPLER:
+		{
+			WGPUSamplerDescriptor rhiSamplerDesc = {};
+			FillWGPUSamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
+
+			ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
+
+			rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(rhiDevice, &rhiSamplerDesc);
+			break;
+		}
+		case BINDENTRY_STORAGETEXTURE:
+		case BINDENTRY_TEXTURE:
+			CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.Ptr());
+
+			// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
+			if (texture)
+			{
+				ASSERT_MSG(texture->GetWGPUTextureViewCount(), "Texture '%s' has no views", texture->GetName());
+				rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView();
+			}
+			else
+				ASSERT_FAIL("NULL texture for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
+			break;
+		}
+
+		rhiBindGroupEntryList.append(rhiBindGroupEntryDesc);
+	}
+
+}
+
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!layoutDesc)
 	{
@@ -544,13 +594,11 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 		return nullptr;
 	}
 
-	// Bind group is a collection of GPU resources (buffers, samplers, textures)
-	// layed out for the pipelines so you can set resources in one shot.
+	const CWGPUPipelineLayout* pipelineLayout = static_cast<const CWGPUPipelineLayout*>(layoutDesc);
 	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
 
-	// release samplers after bind groups has been made
-	// other things like textures and buffer are released by user
-	// and still can be used by this bind groups
+	// samplers are created in FillWGPUBindGroupEntries
 	defer{
 		for (WGPUBindGroupEntry& entry : rhiBindGroupEntryList)
 		{
@@ -559,57 +607,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 		}
 	};
 
-	for(const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
-	{
-		WGPUBindGroupEntry rhiBindGroupEntryDesc = {};
-		rhiBindGroupEntryDesc.binding = bindGroupEntry.binding;
-		switch (bindGroupEntry.type)
-		{
-			case BINDENTRY_BUFFER:
-			{
-				CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
-				if (buffer)
-					rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
-				else
-					ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
-
-				rhiBindGroupEntryDesc.size = bindGroupEntry.buffer.size < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.buffer.size;
-				rhiBindGroupEntryDesc.offset = bindGroupEntry.buffer.offset;
-				break;
-			}
-			case BINDENTRY_SAMPLER:
-			{
-				WGPUSamplerDescriptor rhiSamplerDesc = {};
-				FillWGPUSamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
-
-				ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
-
-				rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(m_rhiDevice, &rhiSamplerDesc);
-				break;
-			}
-			case BINDENTRY_STORAGETEXTURE:
-			case BINDENTRY_TEXTURE:
-				CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.Ptr());
-
-				// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
-				if(texture)
-				{
-					ASSERT_MSG(texture->m_rhiViews.numElem(), "Texture '%s' has no views", texture->GetName());
-					rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView();
-				}
-				else
-					ASSERT_FAIL("NULL texture for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
-				break;
-		}
-
-		rhiBindGroupEntryList.append(rhiBindGroupEntryDesc);
-	}
-
-	const CWGPUPipelineLayout* pipelineLayoutDesc = static_cast<CWGPUPipelineLayout*>(layoutDesc.Ptr());
-
-	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, layoutBindGroupIdx, rhiBindGroupEntryList);
+	
 	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
-	rhiBindGroupDesc.layout = pipelineLayoutDesc->m_rhiBindGroupLayout[layoutBindGroupIdx];
+	rhiBindGroupDesc.layout = pipelineLayout->m_rhiBindGroupLayout[layoutBindGroupIdx];
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
 
@@ -617,6 +618,82 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayoutPtr lay
 	if (!rhiBindGroup)
 		return nullptr;
 	
+	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
+	bindGroup->m_rhiBindGroup = rhiBindGroup;
+
+	return IGPUBindGroupPtr(bindGroup);
+}
+
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const
+{
+	if (!renderPipeline)
+	{
+		ASSERT_FAIL("renderPipeline is null");
+		return nullptr;
+	}
+
+	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
+
+	// samplers are created in FillWGPUBindGroupEntries
+	defer{
+		for (WGPUBindGroupEntry& entry : rhiBindGroupEntryList)
+		{
+			if (entry.sampler)
+				wgpuSamplerRelease(entry.sampler);
+		}
+		wgpuBindGroupLayoutRelease(rhiBindGroupDesc.layout);
+	};
+
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, bindGroupIdx, rhiBindGroupEntryList);
+
+	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CWGPURenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupIdx);
+	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
+	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
+
+	WGPUBindGroup rhiBindGroup = wgpuDeviceCreateBindGroup(m_rhiDevice, &rhiBindGroupDesc);
+	if (!rhiBindGroup)
+		return nullptr;
+
+	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
+	bindGroup->m_rhiBindGroup = rhiBindGroup;
+
+	return IGPUBindGroupPtr(bindGroup);
+}
+
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const
+{
+	if (!computePipeline)
+	{
+		ASSERT_FAIL("computePipeline is null");
+		return nullptr;
+	}
+
+	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
+	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
+
+	// samplers are created in FillWGPUBindGroupEntries
+	defer{
+		for (WGPUBindGroupEntry& entry : rhiBindGroupEntryList)
+		{
+			if (entry.sampler)
+				wgpuSamplerRelease(entry.sampler);
+		}
+		wgpuBindGroupLayoutRelease(rhiBindGroupDesc.layout);
+	};
+
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, bindGroupIdx, rhiBindGroupEntryList);
+
+	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(static_cast<const CWGPUComputePipeline*>(computePipeline)->m_rhiComputePipeline, bindGroupIdx);
+	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
+	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
+
+	WGPUBindGroup rhiBindGroup = wgpuDeviceCreateBindGroup(m_rhiDevice, &rhiBindGroupDesc);
+	if (!rhiBindGroup)
+		return nullptr;
+
 	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
 	bindGroup->m_rhiBindGroup = rhiBindGroup;
 
@@ -723,14 +800,8 @@ void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStrin
 	}
 }
 
-IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLayoutPtr layoutDesc, const RenderPipelineDesc& pipelineDesc) const
+IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
 {
-	if (!layoutDesc)
-	{
-		ASSERT_FAIL("layoutDesc is null");
-		return nullptr;
-	}
-
 	PROF_EVENT("CWGPURenderAPI::CreateRenderPipeline");
 
 	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
@@ -795,7 +866,10 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const IGPUPipelineLay
 	Array<WGPUConstantEntry> rhiFragmentPipelineConstants(PP_SL);
 
 	WGPURenderPipelineDescriptor rhiRenderPipelineDesc = {};
-	rhiRenderPipelineDesc.layout = static_cast<CWGPUPipelineLayout*>(layoutDesc.Ptr())->m_rhiPipelineLayout;
+	if (pipelineLayout)
+	{
+		rhiRenderPipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
+	}
 
 	// Setup vertex pipeline
 	// Required

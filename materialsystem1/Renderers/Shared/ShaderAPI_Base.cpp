@@ -71,8 +71,6 @@ void ShaderAPI_Base::Shutdown()
 	if(r_debugShowTexture)
 		r_debugShowTexture->SetVariantsCallback(nullptr);
 
-	ChangeRenderTargetToBackBuffer();
-
 	Reset();
 	Apply();
 

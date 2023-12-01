@@ -112,7 +112,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 			
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(GetPipelineLayout(renderAPI), renderPipelineDesc);
+			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, GetPipelineLayout(renderAPI));
 			it = m_renderPipelines.insert(pipelineId, renderPipeline);
 		}
 		return *it;

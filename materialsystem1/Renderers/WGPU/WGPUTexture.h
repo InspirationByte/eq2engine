@@ -23,6 +23,7 @@ public:
 	void			Unlock();
 
 	WGPUTextureView	GetWGPUTextureView(int viewIdx = -1) const { return m_rhiViews[viewIdx >= 0 ? viewIdx : m_animFrame]; }
+	int				GetWGPUTextureViewCount() const { return m_rhiViews.numElem(); }
 
 protected:
 	void			Ref_DeleteObject();

@@ -342,8 +342,10 @@ public:
 	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const {}
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const { return nullptr; }
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
-	IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const { return nullptr; }
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
+	IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
+	IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const { return nullptr; }
 
 	IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const { return nullptr; }
 

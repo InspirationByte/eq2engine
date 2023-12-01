@@ -234,7 +234,7 @@ IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, cons
 		FillRenderPipelineDesc(renderPass, meshInstFormat, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
 		BuildPipelineShaderQuery(meshInstFormat, vertexLayoutUsedBufferBits, renderPipelineDesc.shaderQuery);
 		it = m_renderPipelines.insert(pipelineId);
-		*it = renderAPI->CreateRenderPipeline(GetPipelineLayout(renderAPI), renderPipelineDesc);
+		*it = renderAPI->CreateRenderPipeline(renderPipelineDesc, GetPipelineLayout(renderAPI));
 	}
 	return *it;
 }

@@ -10,20 +10,28 @@ CWGPUPipelineLayout::~CWGPUPipelineLayout()
 		wgpuBindGroupLayoutRelease(layout);
 }
 
+//--------------------------------------------
+
 CWGPURenderPipeline::~CWGPURenderPipeline()
 {
 	wgpuRenderPipelineRelease(m_rhiRenderPipeline);
 }
+
+//--------------------------------------------
 
 CWGPUComputePipeline::~CWGPUComputePipeline()
 {
 	wgpuComputePipelineRelease(m_rhiComputePipeline);
 }
 
+//--------------------------------------------
+
 CWGPUBindGroup::~CWGPUBindGroup()
 {
 	wgpuBindGroupRelease(m_rhiBindGroup);
 }
+
+//--------------------------------------------
 
 CWGPUCommandBuffer::~CWGPUCommandBuffer()
 {

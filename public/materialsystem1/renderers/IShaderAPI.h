@@ -131,21 +131,29 @@ public:
 	virtual void				Finish() = 0;
 
 //-------------------------------------------------------------
-// Pipeline management
-
-	virtual void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const = 0;
-
-	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
-	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
-	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const = 0;
-
-	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const = 0;
-
-//-------------------------------------------------------------
 // Buffer management
 
 	virtual IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const = 0;
 
+
+//-------------------------------------------------------------
+// Pipeline management
+
+	// loads shader modules (caches in RHI/Driver)
+	virtual void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const = 0;
+
+	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
+	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;
+	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const = 0;
+
+	// constructs bind group using explicit user-defined pipeline layoyt
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
+	
+	// constructs bind group using render pipeline layout  defined by shader module
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
+	
+	// constructs bind group using compute pipeline layout defined by shader module
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
 //-------------------------------------------------------------
 // Command management
 
@@ -158,43 +166,6 @@ public:
 	
 	virtual void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const = 0;
 	virtual void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Pipeline state layout
-//-------------------------------------------------------------
-
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout ) = 0;
-	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Buffer objects
-//-------------------------------------------------------------
-
-	virtual IVertexBuffer*		CreateVertexBuffer(const BufferInfo& bufferInfo) = 0;
-	virtual IIndexBuffer*		CreateIndexBuffer(const BufferInfo& bufferInfo) = 0;
-
-	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
-	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
-	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Shader resource management
-//-------------------------------------------------------------
-
-	virtual IShaderProgramPtr	FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
-
-	virtual IShaderProgramPtr	CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
-	virtual void				FreeShaderProgram(IShaderProgram* pShaderProgram) = 0;
-
-	virtual bool				LoadShadersFromFile(IShaderProgramPtr pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
-	virtual bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Occlusion query management
-//-------------------------------------------------------------
-
-	virtual IOcclusionQuery*	CreateOcclusionQuery() = 0;
-	virtual void				DestroyOcclusionQuery(IOcclusionQuery* pQuery) = 0;
 
 //-------------------------------------------------------------
 // Texture resource managenent
@@ -232,6 +203,42 @@ public:
 													ECompareFunc comparison = COMPFUNC_NEVER,
 													int nFlags = 0
 													) = 0;
+//-------------------------------------------------------------
+// DEPRECATED Pipeline state layout
+//-------------------------------------------------------------
+
+	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout ) = 0;
+	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
+	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
+
+//-------------------------------------------------------------
+// DEPRECATED Buffer objects
+//-------------------------------------------------------------
+
+	virtual IVertexBuffer*		CreateVertexBuffer(const BufferInfo& bufferInfo) = 0;
+	virtual IIndexBuffer*		CreateIndexBuffer(const BufferInfo& bufferInfo) = 0;
+
+	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
+	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
+
+//-------------------------------------------------------------
+// DEPRECATED Shader resource management
+//-------------------------------------------------------------
+
+	virtual IShaderProgramPtr	FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
+
+	virtual IShaderProgramPtr	CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
+	virtual void				FreeShaderProgram(IShaderProgram* pShaderProgram) = 0;
+
+	virtual bool				LoadShadersFromFile(IShaderProgramPtr pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
+	virtual bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
+
+//-------------------------------------------------------------
+// DEPRECATED Occlusion query management
+//-------------------------------------------------------------
+
+	virtual IOcclusionQuery*	CreateOcclusionQuery() = 0;
+	virtual void				DestroyOcclusionQuery(IOcclusionQuery* pQuery) = 0;
 
 //-------------------------------------------------------------
 // DEPRECATED Render states management

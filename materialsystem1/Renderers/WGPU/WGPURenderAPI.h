@@ -66,10 +66,13 @@ public:
 	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const;
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const;
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayoutPtr pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
-	IGPURenderPipelinePtr		CreateRenderPipeline(const IGPUPipelineLayoutPtr pipelineLayout, const RenderPipelineDesc& pipelineDesc) const;
-	
+	IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const;
 	IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const;
+
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
+	IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
+
 
 //-------------------------------------------------------------
 // Buffer management
