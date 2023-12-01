@@ -1450,17 +1450,16 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
 	IMatSystemShader* matShader = matSysMaterial->m_shader;
 
-	if (matSysMaterial->m_frameBound != m_frame)
+	const uint proxyFrame = m_frame;
+	if (matSysMaterial->m_frameBound != proxyFrame)
+	{
 		matSysMaterial->UpdateProxy(m_proxyDeltaTime, m_proxyUpdateCmdRecorder);
-	matSysMaterial->m_frameBound = m_frame;
+		matSysMaterial->m_frameBound = proxyFrame;
+	}
 
 	// TODO: overdraw material. Or maybe debug property in shader?
 
-	IGPURenderPipelinePtr pipeline = matShader->GetRenderPipeline(renderAPI, rendPassRecorder, meshInstFormat, vertexLayoutBits, primTopology, userData);
-	rendPassRecorder->SetPipeline(pipeline);
-	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, rendPassRecorder, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, userData), nullptr);
+	matShader->SetupRenderPass(renderAPI, rendPassRecorder, meshInstFormat, vertexLayoutBits, primTopology, userData);
 }
 
 bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
@@ -1508,7 +1507,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	IShaderAPI* renderAPI = m_shaderAPI;
 
 	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
-	const IMatSystemShader* matShader = material->m_shader;
+	IMatSystemShader* matShader = material->m_shader;
 
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
 	const MeshInstanceData& instData = instInfo.instData;
@@ -1533,10 +1532,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 				vertexLayoutBits |= instInfo.streamBuffers[i] ? (1 << i) : 0;
 		}
 
-		rendPassRecorder->SetPipeline(matShader->GetRenderPipeline(renderAPI, rendPassRecorder, instFormat, vertexLayoutBits, meshInfo.primTopology, &rendPassInfo));
-		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, matShader->GetBindGroup(m_frame, BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, &rendPassInfo), nullptr);
-		rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, matShader->GetBindGroup(m_frame, BINDGROUP_RENDERPASS, renderAPI, rendPassRecorder, &rendPassInfo), nullptr);
-		rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, matShader->GetBindGroup(m_frame, BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, &rendPassInfo), nullptr);
+		matShader->SetupRenderPass(renderAPI, rendPassRecorder, instFormat, vertexLayoutBits, primTopology, &rendPassInfo);
 
 		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
 			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i], instInfo.streamOffsets[i], instInfo.streamSizes	[i]);

@@ -19,6 +19,8 @@ CWGPURenderPassRecorder::~CWGPURenderPassRecorder()
 
 void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
+	m_pipeline.Assign(pipeline);
+
 	ASSERT(pipeline);
 	CWGPURenderPipeline* pipelineImpl = static_cast<CWGPURenderPipeline*>(pipeline);
 	if (!pipelineImpl)

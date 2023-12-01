@@ -43,42 +43,38 @@ BEGIN_SHADER_CLASS(SDFFont)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const override
+	bool SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
-		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
-		const uint pipelineId = GenDefaultPipelineId(renderPass, *rendPassInfo, primitiveTopology);
-		auto it = m_renderPipelines.find(pipelineId);
+		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
+		const uint pipelineId = GenDefaultPipelineId(rendPassRecorder, *rendPassInfo, primitiveTopology);
 
+		IGPURenderPipelinePtr pipeline;
+		auto it = m_renderPipelines.find(pipelineId);
 		if (it.atEnd())
 		{
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
 				.ShaderVertexLayoutId(meshInstFormat.nameHash)
-				.VertexState(
-					Builder<VertexPipelineDesc>()
-					.VertexLayout(g_matSystem->GetDynamicMesh()->GetVertexLayoutDesc()[0])
-					.End()
-				)
-				.FragmentState(
-					Builder<FragmentPipelineDesc>()
-					.ColorTarget("Default", g_matSystem->GetCurrentBackbuffer()->GetFormat())
-					.End()
-				)
 				.End();
 
-			// TODO: depth state!
+			for (const VertexLayoutDesc& layoutDesc : meshInstFormat.layout)
+				renderPipelineDesc.vertex.vertexLayout.append(layoutDesc);
+
+			const ETextureFormat depthTargetFormat = rendPassRecorder->GetDepthTargetFormat();
+			if (depthTargetFormat != FORMAT_NONE)
 			{
 				if (m_flags & MATERIAL_FLAG_DECAL)
 					g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
 				// TODO: must be selective whenever Z test is on
-				//Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-				//	.DepthTestOn()
-				//	.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-				//	.DepthFormat(g_matSystem->GetDefaultDepthBuffer()->GetFormat());
+				Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
+					.DepthTestOn()
+					.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
+					.DepthFormat(depthTargetFormat);
 			}
+
 			{
 				BlendStateParams colorBlend;
 				BlendStateParams alphaBlend;
@@ -98,12 +94,15 @@ BEGIN_SHADER_CLASS(SDFFont)
 					break;
 				}
 
-				// FIXME: apply differently?
-				for (FragmentPipelineDesc::ColorTargetDesc& colorTarget : renderPipelineDesc.fragment.targets)
+				Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
+				for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 				{
-					colorTarget.alphaBlend = alphaBlend;
-					colorTarget.colorBlend = colorBlend;
+					const ETextureFormat format = rendPassRecorder->GetRenderTargetFormat(i);
+					if (format == FORMAT_NONE)
+						break;
+					pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
 				}
+				pipelineBuilder.End();
 			}
 
 			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
@@ -111,26 +110,21 @@ BEGIN_SHADER_CLASS(SDFFont)
 				.Cull(rendPassInfo->cullMode)
 				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
-			
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, GetPipelineLayout(renderAPI));
-			it = m_renderPipelines.insert(pipelineId, renderPipeline);
+
+			pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc);
+			it = m_renderPipelines.insert(pipelineId, pipeline);
 		}
-		return *it;
+		else
+			pipeline = *it;
+
+		rendPassRecorder->SetPipeline(pipeline);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
+		return true;
 	}
 
-	void FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const
+	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("cameraParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Buffer("materialParams", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 2, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 3, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
-	}
-
-	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
-	{
-		if (bindGroupId == BINDGROUP_TRANSIENT)
+		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
 			const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 			ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
@@ -154,14 +148,14 @@ BEGIN_SHADER_CLASS(SDFFont)
 				.Sampler(2, baseTexture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();
-			IGPUBindGroupPtr materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
+			IGPUBindGroupPtr materialBindGroup = renderAPI->CreateBindGroup(rendPassRecorder->GetPipeline(), bindGroupId, shaderBindGroupDesc);
 			return materialBindGroup;
 		}
 
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
-	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
+	Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
 	MatTextureProxy		m_baseTexture;
 	MatVec4Proxy		m_fontBaseColor;
 	MatVec4Proxy		m_fontParamsVar;

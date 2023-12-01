@@ -6,26 +6,27 @@ class CWGPURenderPassRecorder : public IGPURenderPassRecorder
 public:
 	~CWGPURenderPassRecorder();
 
-	IVector2D		GetRenderTargetDimensions() const { return m_renderTargetDims; }
-	ETextureFormat	GetRenderTargetFormat(int idx) const { return m_renderTargetsFormat[idx]; }
-	ETextureFormat	GetDepthTargetFormat() const { return m_depthTargetFormat; }
+	IVector2D				GetRenderTargetDimensions() const { return m_renderTargetDims; }
+	ETextureFormat			GetRenderTargetFormat(int idx) const { return m_renderTargetsFormat[idx]; }
+	ETextureFormat			GetDepthTargetFormat() const { return m_depthTargetFormat; }
 
-	bool			IsDepthReadOnly() const { return m_depthReadOnly; }
-	bool			IsStencilReadOnly() const { return m_stencilReadOnly; }
+	bool					IsDepthReadOnly() const { return m_depthReadOnly; }
+	bool					IsStencilReadOnly() const { return m_stencilReadOnly; }
 
-	void SetPipeline(IGPURenderPipeline* pipeline);
+	void					SetPipeline(IGPURenderPipeline* pipeline);
+	IGPURenderPipelinePtr	GetPipeline() const { return m_pipeline; }
 
-	void SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets);
-	void SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1);
-	void SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1);
+	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets);
+	void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1);
+	void					SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1);
 
-	void SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth);
-	void SetScissorRectangle(const IAARectangle& rectangle);
+	void					SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth);
+	void					SetScissorRectangle(const IAARectangle& rectangle);
 
-	void Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance = 0);
-	void DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex = 0, int firstInstance = 0);
-	void DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset);
-	void DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset);
+	void					Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance = 0);
+	void					DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex = 0, int firstInstance = 0);
+	void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset);
+	void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset);
 
 	// TODO:
 
@@ -53,6 +54,8 @@ public:
 	IVector2D				m_renderTargetDims{ 0 };
 	bool					m_depthReadOnly{ false };
 	bool					m_stencilReadOnly{ false };
+
+	IGPURenderPipelinePtr	m_pipeline;
 
 	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
 	WGPURenderPassEncoder	m_rhiRenderPassEncoder{ nullptr };

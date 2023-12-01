@@ -71,25 +71,24 @@ class IMatSystemShader
 public:
 	virtual ~IMatSystemShader() = default;
 
-	virtual void					Init(IShaderAPI* renderAPI, IMaterial* material) = 0;
-	virtual void					Unload() = 0;
+	virtual void				Init(IShaderAPI* renderAPI, IMaterial* material) = 0;
+	virtual void				Unload() = 0;
 
-	virtual bool					IsInitialized() const = 0;
+	virtual bool				IsInitialized() const = 0;
 
-	virtual void					InitTextures(IShaderAPI* renderAPI) = 0;
-	virtual void					InitShader(IShaderAPI* renderAPI) = 0;
+	virtual void				InitTextures(IShaderAPI* renderAPI) = 0;
+	virtual void				InitShader(IShaderAPI* renderAPI) = 0;
 
-	virtual const char*				GetName() const = 0;
-	virtual int						GetFlags() const = 0;
+	virtual const char*			GetName() const = 0;
+	virtual int					GetFlags() const = 0;
 
-	virtual const ITexturePtr&		GetBaseTexture(int stage = 0) const = 0;
-	virtual const ITexturePtr&		GetBumpTexture(int stage = 0) const = 0;
+	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
+	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
 
-	virtual bool					IsSupportInstanceFormat(int nameHash) const = 0;
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const = 0;
-	virtual IGPUBindGroupPtr		GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const = 0;
+	virtual bool				IsSupportInstanceFormat(int nameHash) const = 0;
+	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) = 0;
 
-	virtual void					UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
+	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
 };
 
 typedef IMatSystemShader* (*DISPATCH_CREATE_SHADER)(void);

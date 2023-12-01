@@ -42,13 +42,14 @@ BEGIN_SHADER_CLASS(Default)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	IGPURenderPipelinePtr GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const override
+	bool SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
-		const uint pipelineId = GenDefaultPipelineId(renderPass, *rendPassInfo, primitiveTopology);
-		auto it = m_renderPipelines.find(pipelineId);
+		const uint pipelineId = GenDefaultPipelineId(rendPassRecorder, *rendPassInfo, primitiveTopology);
 
+		IGPURenderPipelinePtr pipeline;
+		auto it = m_renderPipelines.find(pipelineId);
 		if (it.atEnd())
 		{
 			// prepare basic pipeline descriptor
@@ -60,8 +61,8 @@ BEGIN_SHADER_CLASS(Default)
 			for (const VertexLayoutDesc& layoutDesc : meshInstFormat.layout)
 				renderPipelineDesc.vertex.vertexLayout.append(layoutDesc);
 
-			const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();
-			if(depthTargetFormat != FORMAT_NONE)
+			const ETextureFormat depthTargetFormat = rendPassRecorder->GetDepthTargetFormat();
+			if (depthTargetFormat != FORMAT_NONE)
 			{
 				if (m_flags & MATERIAL_FLAG_DECAL)
 					g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
@@ -95,7 +96,7 @@ BEGIN_SHADER_CLASS(Default)
 				Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
 				for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 				{
-					const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
+					const ETextureFormat format = rendPassRecorder->GetRenderTargetFormat(i);
 					if (format == FORMAT_NONE)
 						break;
 					pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
@@ -108,29 +109,24 @@ BEGIN_SHADER_CLASS(Default)
 				.Cull(rendPassInfo->cullMode)
 				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
-			
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, GetPipelineLayout(renderAPI));
-			it = m_renderPipelines.insert(pipelineId, renderPipeline);
-		}
-		return *it;
-	}
 
-	void FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("cameraParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Buffer("materialParams", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 2, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 3, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
+			pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc);
+			it = m_renderPipelines.insert(pipelineId, pipeline);
+		}
+		else
+			pipeline = *it;
+
+		rendPassRecorder->SetPipeline(pipeline);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
+		return true;
 	}
 
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
-		if (bindGroupId == BINDGROUP_TRANSIENT)
+		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
 			const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 			ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
@@ -155,12 +151,12 @@ BEGIN_SHADER_CLASS(Default)
 				.Texture(3, baseTexture)
 				.End();
 
-			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
+			return renderAPI->CreateBindGroup(rendPassRecorder->GetPipeline(), bindGroupId, shaderBindGroupDesc);
 		}
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}
 
-	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
-	MatTextureProxy								m_baseTexture;
+	Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
+	MatTextureProxy			m_baseTexture;
 
 END_SHADER_CLASS

@@ -37,7 +37,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetBindGroup(uint frameIdx, EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{

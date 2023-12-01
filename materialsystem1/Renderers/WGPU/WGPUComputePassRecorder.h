@@ -9,6 +9,8 @@ public:
 	void*					GetUserData() const { return m_userData; }
 
 	void					SetPipeline(IGPUComputePipeline* pipeline);
+	IGPUComputePipelinePtr	GetPipeline() const { return m_pipeline; }
+
 	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets);
 
 	void					DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ);
@@ -25,6 +27,7 @@ public:
 	void					Complete();
 	IGPUCommandBufferPtr	End();
 
+	IGPUComputePipelinePtr	m_pipeline;
 	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
 	WGPUComputePassEncoder	m_rhiComputePassEncoder{ nullptr };
 	void*					m_userData{ nullptr };

@@ -86,17 +86,17 @@ public:
 	bool						IsInitialized() const { return m_isInit; }
 	int							GetFlags() const { return m_flags; }
 
-	virtual IGPURenderPipelinePtr	GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primTopology, const void* userData) const;
-	IGPUPipelineLayoutPtr		GetPipelineLayout(IShaderAPI* renderAPI) const;
-
 	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const {}
-
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };
 	virtual const ITexturePtr&	GetBumpTexture(int stage) const	{ return ITexturePtr::Null(); };
 
+	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData);
+
 protected:
+	IGPUPipelineLayoutPtr		GetPipelineLayout(IShaderAPI* renderAPI) const;
+
 	virtual IGPUBindGroupPtr	GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const { return nullptr; }
 	virtual void				FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const {}

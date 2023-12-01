@@ -16,6 +16,8 @@ CWGPUComputePassRecorder::~CWGPUComputePassRecorder()
 
 void CWGPUComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)
 {
+	m_pipeline.Assign(pipeline);
+
 	ASSERT(pipeline);
 	CWGPUComputePipeline* pipelineImpl = static_cast<CWGPUComputePipeline*>(pipeline);
 	if (!pipelineImpl)

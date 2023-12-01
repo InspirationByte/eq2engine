@@ -10,8 +10,13 @@
 #include "ShaderAPI_defs.h"
 
 class IGPUBuffer;
+
 class IGPURenderPipeline;
+using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
+
 class IGPUComputePipeline;
+using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
+
 class IGPUBindGroup;
 struct RenderPassDesc;
 enum EIndexFormat : int;
@@ -35,6 +40,7 @@ public:
 	virtual bool					IsStencilReadOnly() const = 0;
 
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
+	virtual IGPURenderPipelinePtr	GetPipeline() const = 0;
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
 
 	// TODO: use IGPUBuffer instead of IVertexBuffer and IIndexBuffer
@@ -62,6 +68,8 @@ class IGPUComputePassRecorder : public RefCountedObject<IGPUComputePassRecorder>
 {
 public:
 	virtual void					SetPipeline(IGPUComputePipeline* pipeline) = 0;
+	virtual IGPUComputePipelinePtr	GetPipeline() const = 0;
+
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
 
 	virtual void					DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ) = 0;

@@ -224,19 +224,38 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 	}
 }
 
-IGPURenderPipelinePtr CBaseShader::GetRenderPipeline(IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) const
+bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData)
 {
-	const uint pipelineId = GetRenderPipelineId(renderPass, meshInstFormat.nameHash, vertexLayoutUsedBufferBits, primitiveTopology);
+	const uint pipelineId = GetRenderPipelineId(rendPassRecorder, meshInstFormat.nameHash, vertexLayoutUsedBufferBits, primitiveTopology);
+	
 	auto it = m_renderPipelines.find(pipelineId);
+	IGPURenderPipelinePtr pipeline;
 	if (it.atEnd())
 	{
 		RenderPipelineDesc renderPipelineDesc;
-		FillRenderPipelineDesc(renderPass, meshInstFormat, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
+		FillRenderPipelineDesc(rendPassRecorder, meshInstFormat, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
 		BuildPipelineShaderQuery(meshInstFormat, vertexLayoutUsedBufferBits, renderPipelineDesc.shaderQuery);
-		it = m_renderPipelines.insert(pipelineId);
-		*it = renderAPI->CreateRenderPipeline(renderPipelineDesc, GetPipelineLayout(renderAPI));
+
+		pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, GetPipelineLayout(renderAPI));
+		if (!pipeline)
+		{
+			ASSERT_FAIL("Shader %s is unable to create pipeline %s", GetName());
+			return false;
+		}
+		it = m_renderPipelines.insert(pipelineId, pipeline);
 	}
-	return *it;
+	else
+		pipeline = *it;
+
+	if (!pipeline)
+		return false;
+
+	rendPassRecorder->SetPipeline(pipeline);
+	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(BINDGROUP_RENDERPASS, renderAPI, rendPassRecorder, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, userData), nullptr);
+
+	return true;
 }
 
 void CBaseShader::FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const
