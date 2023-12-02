@@ -57,7 +57,7 @@ public:
 
 	virtual void*					GetUserData() const = 0;
 
-	//virtual void					Complete() = 0;
+	virtual void					Complete() = 0;
 	virtual IGPUCommandBufferPtr	End() = 0;
 };
 using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
@@ -77,7 +77,7 @@ public:
 
 	virtual void*					GetUserData() const = 0;
 
-	//virtual void					Complete() = 0;
+	virtual void					Complete() = 0;
 	virtual IGPUCommandBufferPtr	End() = 0;
 };
 using IGPUComputePassRecorderPtr = CRefPtr<IGPUComputePassRecorder>;
@@ -90,9 +90,12 @@ public:
 	virtual ~IGPUCommandRecorder() {}
 
 	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
+	virtual IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData) const = 0;
 
 	virtual void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const = 0;
 	void								WriteBufferView(const GPUBufferPtrView& bufferView, const void* data, int64 size = -1, int64 offset = 0) const;
+	virtual void						CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const = 0;
+	virtual void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const = 0;
 
 	virtual void*						GetUserData() const = 0;
 	virtual IGPUCommandBufferPtr		End() = 0;

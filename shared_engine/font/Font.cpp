@@ -701,7 +701,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			m_spacing = 0.0f;
 			{
 				SamplerStateParams samplerParams(filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP);
-				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_NOQUALITYLOD, finalFileName);
+				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_IGNORE_QUALITY, finalFileName);
 			}
 
 			if(m_flags.sdf)
@@ -782,7 +782,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				{
 					SamplerStateParams samplerParams(filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP);
 
-					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD, finalFileName);
+					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_IGNORE_QUALITY, finalFileName);
 				}
 
 				if(m_fontTexture == nullptr)

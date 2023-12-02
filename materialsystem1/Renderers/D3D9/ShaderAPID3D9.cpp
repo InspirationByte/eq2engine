@@ -309,7 +309,7 @@ bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 		m_fbColorTexture = PPNew CD3D9Texture();
 		m_fbColorTexture->SetName("rhi_fb_color");
 		m_fbColorTexture->SetDimensions(0, 0);
-		m_fbColorTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_NOQUALITYLOD);
+		m_fbColorTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_IGNORE_QUALITY);
 		m_fbColorTexture->Ref_Grab();
 
 		CScopedMutex m(g_sapi_TextureMutex);
@@ -322,7 +322,7 @@ bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 		m_fbDepthTexture = PPNew CD3D9Texture();
 		m_fbDepthTexture->SetName("rhi_fb_depth");
 		m_fbDepthTexture->SetDimensions(0, 0);
-		m_fbDepthTexture->SetFlags(TEXFLAG_RENDERDEPTH | TEXFLAG_NOQUALITYLOD);
+		m_fbDepthTexture->SetFlags(TEXFLAG_RENDERDEPTH | TEXFLAG_IGNORE_QUALITY);
 		m_fbDepthTexture->Ref_Grab();
 
 		CScopedMutex m(g_sapi_TextureMutex);

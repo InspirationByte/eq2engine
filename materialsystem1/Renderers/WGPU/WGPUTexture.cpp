@@ -44,12 +44,12 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 	// FIXME: only release if pool, flags, format and size is different
 	Release();
 
-	HOOK_TO_CVAR(r_loadmiplevel);
-	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
-
 	m_samplerState = sampler;
 	m_samplerState.maxAnisotropy = max(CWGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.maxAnisotropy);
 	m_flags = flags;
+
+	HOOK_TO_CVAR(r_loadmiplevel);
+	const int quality = (m_flags & TEXFLAG_IGNORE_QUALITY) ? 0 : r_loadmiplevel->GetInt();
 
 	for (CImage* image : images)
 	{
@@ -59,6 +59,10 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 
 	m_rhiTextures.reserve(images.numElem());
 	m_rhiViews.reserve(images.numElem());
+
+	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+	if (m_flags & TEXFLAG_STORAGE)
+		rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 
 	for (CImagePtr img : images)
 	{
@@ -77,13 +81,17 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 		if (imgType == IMAGE_TYPE_CUBE)
 			texDepth = 6;
 
+		int texFormat = imgFmt;
+		if (m_flags & TEXFLAG_SRGB)
+			texFormat |= TEXFORMAT_FLAG_SRGB;
+
 		WGPUTextureDescriptor rhiTextureDesc{};
 		rhiTextureDesc.label = img->GetName();
-		rhiTextureDesc.mipLevelCount = img->GetMipMapCount(); // TODO: compute as we used to
+		rhiTextureDesc.mipLevelCount = mipCount;
 		rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
 		rhiTextureDesc.sampleCount = 1;
-		rhiTextureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
-		rhiTextureDesc.format = GetWGPUTextureFormat(imgFmt);
+		rhiTextureDesc.usage = rhiUsageFlags;
+		rhiTextureDesc.format = GetWGPUTextureFormat(static_cast<ETextureFormat>(texFormat));
 		rhiTextureDesc.viewFormatCount = 0;
 		rhiTextureDesc.viewFormats = nullptr;
 
@@ -135,25 +143,25 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 					mipHeight = max(4, mipHeight & ~3);
 				}
 
-				const WGPUExtent3D texSize{ (uint)mipWidth, (uint)mipHeight, (uint)mipDepth };
+				const WGPUExtent3D rhiTexSize{ (uint)mipWidth, (uint)mipHeight, (uint)mipDepth };
 
-				WGPUImageCopyTexture texImage{};
-				texImage.texture = rhiTexture;
-				texImage.aspect = WGPUTextureAspect_All;
-				texImage.mipLevel = lockBoxLevel;
-				texImage.origin = WGPUOrigin3D{ 0, 0, 0 };
+				WGPUImageCopyTexture rhImageCopy{};
+				rhImageCopy.texture = rhiTexture;
+				rhImageCopy.aspect = WGPUTextureAspect_All;
+				rhImageCopy.mipLevel = lockBoxLevel;
+				rhImageCopy.origin = WGPUOrigin3D{ 0, 0, 0 };
 
-				WGPUTextureDataLayout texLayout{};
-				texLayout.offset = 0;
+				WGPUTextureDataLayout rhiTexDataLayout{};
+				rhiTexDataLayout.offset = 0;
 				if (IsCompressedFormat(imgFmt))
 				{
-					texLayout.bytesPerRow = ((mipWidth + 3) >> 2) * GetBytesPerBlock(imgFmt);
-					texLayout.rowsPerImage = ((mipHeight + 3) >> 2);
+					rhiTexDataLayout.bytesPerRow = ((mipWidth + 3) >> 2) * GetBytesPerBlock(imgFmt);
+					rhiTexDataLayout.rowsPerImage = ((mipHeight + 3) >> 2);
 				}
 				else
 				{
-					texLayout.bytesPerRow = mipWidth * GetBytesPerPixel(imgFmt);
-					texLayout.rowsPerImage = mipHeight;
+					rhiTexDataLayout.bytesPerRow = mipWidth * GetBytesPerPixel(imgFmt);
+					rhiTexDataLayout.rowsPerImage = mipHeight;
 				}
 
 				const ubyte* src = img->GetPixels(mipMapLevel);
@@ -164,14 +172,14 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 					const int cubeFaceSize = size / 6;
 					for (int i = 0; i < 6; ++i)
 					{
-						texImage.origin.z = (uint32)i;
-						wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+						rhImageCopy.origin.z = (uint32)i;
+						wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhImageCopy, src, size, &rhiTexDataLayout, &rhiTexSize);
 						src += cubeFaceSize;
 					}
 				}
 				else
 				{
-					wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, src, size, &texLayout, &texSize);
+					wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhImageCopy, src, size, &rhiTexDataLayout, &rhiTexSize);
 				}
 				return 0;
 			});

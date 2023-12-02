@@ -8,11 +8,7 @@
 #pragma once
 #include "ShaderAPICaps.h"
 #include "IGPUBuffer.h" // for GPUBufferView
-
-class ITexture;
-using ITexturePtr = CRefPtr<ITexture>;
-
-class ITexture;
+#include "ITexture.h"	// for TextureView
 
 enum ERHIWindowType : int
 {
@@ -656,12 +652,12 @@ FLUENT_END_TYPE
 // FIXME: rename to ResourceBindGroupDesc ???
 struct BindGroupDesc
 {
-	struct Entry 
+	struct Entry
 	{
 		Entry() {}
 		SamplerStateParams	sampler;
 		GPUBufferPtrView	buffer; // uniform buffer
-		ITexturePtr			texture;
+		TextureView			texture;
 		EBindEntryType		type{ static_cast<EBindEntryType>(-1) };
 		int					binding{ 0 };
 	};
@@ -700,22 +696,22 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 		entry.sampler = samplerParams;
 		return *this;
 	}
-	ThisType& Texture(int binding, ITexture* texture)
+	ThisType& Texture(int binding, ITexture* texture, int arraySlice = 0)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_TEXTURE;
-		entry.texture.Assign(texture);
+		entry.texture = TextureView(texture, arraySlice);
 		return *this;
 	}
-	ThisType& StorageTexture(int binding, ITexture* texture)
+	ThisType& StorageTexture(int binding, ITexture* texture, int arraySlice = 0)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_STORAGETEXTURE;
-		entry.texture.Assign(texture);
+		entry.texture = TextureView(texture, arraySlice);
 		return *this;
 	}
 FLUENT_END_TYPE

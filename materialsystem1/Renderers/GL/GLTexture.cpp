@@ -379,7 +379,7 @@ bool CGLTexture::Init(const SamplerStateParams &sampler, const ArrayCRef<CImageP
 
 	m_glTarget = g_gl_texTargetType[images[0]->GetImageType()];
 
-	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
+	const int quality = (m_flags & TEXFLAG_IGNORE_QUALITY) ? 0 : r_loadmiplevel->GetInt();
 	if (s_renderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());
 	m_textures.reserve(images.numElem());

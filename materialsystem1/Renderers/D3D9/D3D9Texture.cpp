@@ -181,7 +181,7 @@ bool CD3D9Texture::Init(const SamplerStateParams& sampler, const ArrayCRef<CRefP
 			m_flags |= TEXFLAG_CUBEMAP;
 	}
 
-	const int quality = (m_flags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
+	const int quality = (m_flags & TEXFLAG_IGNORE_QUALITY) ? 0 : r_loadmiplevel->GetInt();
 
 	if(s_renderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());

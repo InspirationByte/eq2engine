@@ -377,19 +377,29 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 	texture->SetDimensions(newWide, newTall);
 	texture->Release();
 
-	const bool isCubeMap = (texture->GetFlags() & TEXFLAG_CUBEMAP);
+	const int texFlags = texture->GetFlags();
+
+	const bool isCubeMap = (texFlags & TEXFLAG_CUBEMAP);
 
 	int texDepth = 1;
 	if (isCubeMap)
 		texDepth = 6;
+
+	int texFormat = texture->GetFormat();
+	if (texFlags & TEXFLAG_SRGB)
+		texFormat |= TEXFORMAT_FLAG_SRGB;
+
+	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_RenderAttachment;
+	if (texFlags & TEXFLAG_STORAGE)
+		rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 
 	WGPUTextureDescriptor rhiTextureDesc = {};
 	rhiTextureDesc.label = texture->GetName();
 	rhiTextureDesc.mipLevelCount = 1;
 	rhiTextureDesc.size = WGPUExtent3D{ (uint)newWide, (uint)newTall, (uint)texDepth };
 	rhiTextureDesc.sampleCount = 1;
-	rhiTextureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
-	rhiTextureDesc.format = GetWGPUTextureFormat(texture->GetFormat());
+	rhiTextureDesc.usage = rhiUsageFlags;
+	rhiTextureDesc.format = GetWGPUTextureFormat(static_cast<ETextureFormat>(texFormat));
 	rhiTextureDesc.dimension = WGPUTextureDimension_2D;
 	rhiTextureDesc.viewFormatCount = 0;
 	rhiTextureDesc.viewFormats = nullptr;
@@ -568,13 +578,13 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 		}
 		case BINDENTRY_STORAGETEXTURE:
 		case BINDENTRY_TEXTURE:
-			CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.Ptr());
+			CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.texture.Ptr());
 
 			// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
 			if (texture)
 			{
 				ASSERT_MSG(texture->GetWGPUTextureViewCount(), "Texture '%s' has no views", texture->GetName());
-				rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView();
+				rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView(bindGroupEntry.texture.arraySlice);
 			}
 			else
 				ASSERT_FAIL("NULL texture for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);

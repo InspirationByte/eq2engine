@@ -17,15 +17,16 @@ enum ETextureFormat : int;
 enum ETextureFlags : int
 {
 	// texture creation flags
-	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, might improve performance
-	TEXFLAG_NULL_ON_ERROR			= (1 << 1),
-	TEXFLAG_CUBEMAP					= (1 << 2),		// should create cubemap
-	TEXFLAG_NOQUALITYLOD			= (1 << 3),		// not affected by texture quality Cvar, always load all mip levels
-	TEXFLAG_SRGB					= (1 << 4),		// texture should be sampled as in sRGB color space
+	TEXFLAG_PROGRESSIVE_LODS	= (1 << 0),		// progressive LOD uploading, might improve performance
+	TEXFLAG_NULL_ON_ERROR		= (1 << 1),
+	TEXFLAG_CUBEMAP				= (1 << 2),		// should create cubemap
+	TEXFLAG_IGNORE_QUALITY		= (1 << 3),		// not affected by "r_loadmiplevel", always all mip levels are loaded
+	TEXFLAG_SRGB				= (1 << 4),		// texture should be sampled as in sRGB color space
+	TEXFLAG_STORAGE				= (1 << 5),		// allows storage access (compute)
 
 	// texture identification flags
-	TEXFLAG_RENDERTARGET			= (1 << 5),		// this is a rendertarget texture
-	TEXFLAG_RENDERDEPTH				= (1 << 6),		// rendertarget with depth texture
+	TEXFLAG_RENDERTARGET		= (1 << 16),	// this is a rendertarget texture
+	TEXFLAG_RENDERDEPTH			= (1 << 17),	// rendertarget with depth texture
 };
 
 enum ETextureLockFlags
@@ -38,11 +39,17 @@ enum ETextureLockFlags
 	TEXLOCK_REGION_BOX	= (1 << 3),
 };
 
-using TextureView = uintptr_t;
-
 class ITexture : public RefCountedObject<ITexture>
 {
 public:
+	static constexpr const int CUBEMAP_DEFAULT_VIEW = 0;
+
+	// NOTE: side must correspond ECubeSide. Valid only for RenderTargets.
+	inline static int CubemapArraySlice(int side)
+	{
+		return 1 + static_cast<int>(side);
+	}
+
 	struct LockInOutData;
 
 	// initializes procedural (lockable) texture
@@ -85,8 +92,25 @@ public:
 	virtual bool			Lock(LockInOutData& data) = 0;
 	virtual void			Unlock() = 0;
 };
-
 using ITexturePtr = CRefPtr<ITexture>;
+
+struct TextureView
+{
+	TextureView() = default;
+	TextureView(ITexture* texture, int arraySlice = 0)
+		: texture(texture), arraySlice(arraySlice)
+	{
+	}
+	TextureView(ITexturePtr texture, int arraySlice = 0)
+		: texture(texture), arraySlice(arraySlice)
+	{
+	}
+
+	operator bool() const { return texture; }
+
+	ITexturePtr	texture;
+	int			arraySlice{ 0 };
+};
 
 struct ITexture::LockInOutData
 {

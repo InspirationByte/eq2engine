@@ -132,7 +132,7 @@ IGPUCommandBufferPtr CWGPURenderPassRecorder::End()
 
 	if (!m_rhiCommandEncoder)
 	{
-		ASSERT_FAIL("Render pass recorder was already ended");
+		ASSERT_FAIL("Render pass recorder was already ended or is owned by GPUCommandRecorder, use Complete in this case");
 		return nullptr;
 	}
 

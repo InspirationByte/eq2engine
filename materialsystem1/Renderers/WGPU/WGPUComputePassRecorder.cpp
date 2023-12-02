@@ -63,7 +63,7 @@ IGPUCommandBufferPtr CWGPUComputePassRecorder::End()
 
 	if (!m_rhiCommandEncoder)
 	{
-		ASSERT_FAIL("Compute pass recorder was already ended");
+		ASSERT_FAIL("Compute pass recorder was already ended or is owned by GPUCommandRecorder, use Complete in this case");
 		return nullptr;
 	}
 

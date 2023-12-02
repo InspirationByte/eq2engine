@@ -432,12 +432,12 @@ void CMaterialSystem::CreateWhiteTexture()
 	img->SetDepth(IMAGE_DEPTH_CUBEMAP);
 	img->SetName("_matsys_white_cb");
 	ASSERT(img->GetImageType() == IMAGE_TYPE_CUBE);
-	m_whiteTexture[TEXDIMENSION_CUBE] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_NOQUALITYLOD);
+	m_whiteTexture[TEXDIMENSION_CUBE] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_IGNORE_QUALITY);
 
 	img->SetDepth(1);
 	img->SetName("_matsys_white");
 	ASSERT(img->GetImageType() == IMAGE_TYPE_2D);
-	m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_NOQUALITYLOD);
+	m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_IGNORE_QUALITY);
 
 	images.clear();
 }

@@ -30,11 +30,7 @@ void CTexture::SetAnimationFrame(int frame)
 // initializes procedural (lockable) texture
 bool CTexture::InitProcedural(const SamplerStateParams& sampler, ETextureFormat format, int width, int height, int depth, int arraySize, int flags)
 {
-	if (depth == 0)
-	{
-		flags |= TEXFLAG_CUBEMAP;
-	}
-	else if (flags & TEXFLAG_CUBEMAP)
+	if (flags & TEXFLAG_CUBEMAP)
 	{
 		ASSERT_MSG(depth > 1, "depth for TEXFLAG_CUBEMAP should be not greater than 1");
 		depth = 0;
