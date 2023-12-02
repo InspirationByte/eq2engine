@@ -27,11 +27,11 @@ static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data, IGPURend
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 
-	g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, 1, &defaultRenderPass, rendPassRecorder);
+	g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, &defaultRenderPass, rendPassRecorder);
 
 	rendPassRecorder->SetViewport(AARectangle(0.0f, 0.0f, draw_data->FramebufferScale.x * draw_data->DisplaySize.x, draw_data->FramebufferScale.y * draw_data->DisplaySize.y), 0.0f, 1.0f);
-	rendPassRecorder->SetVertexBuffer(0, drawCmd.instanceInfo.streamBuffers[0]);
-	rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
+	rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);
+	rendPassRecorder->SetIndexBufferView(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
 }
 
 // Render function.
@@ -105,11 +105,11 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 				defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 				defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
 
-				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, 1, &defaultRenderPass, rendPassRecorder);
+				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, &defaultRenderPass, rendPassRecorder);
 
 				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
-				rendPassRecorder->SetVertexBuffer(0, drawCmd.instanceInfo.streamBuffers[0], drawCmd.instanceInfo.streamOffsets[0], drawCmd.instanceInfo.streamSizes[0]);
-				rendPassRecorder->SetIndexBuffer(drawCmd.instanceInfo.indexBuffer, INDEXFMT_UINT16, drawCmd.instanceInfo.indexBufOffset, drawCmd.instanceInfo.indexBufSize);
+				rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);
+				rendPassRecorder->SetIndexBufferView(drawCmd.instanceInfo.indexBuffer, INDEXFMT_UINT16);
 				rendPassRecorder->DrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, 1);
 			}
 		}

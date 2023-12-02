@@ -7,8 +7,8 @@
 
 #pragma once
 
-#define RIFF_ID				MCHAR4('R','I','F','F')
-#define WAVE_ID				MCHAR4('W','A','V','E')
+#define RIFF_ID				MAKECHAR4('R','I','F','F')
+#define WAVE_ID				MAKECHAR4('W','A','V','E')
 
 // RIFF WAVE FILE HEADERS
 typedef struct

@@ -90,23 +90,21 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 	WGPURenderPassDepthStencilAttachment rhiDepthStencilAttachment = {};
 	FillWGPURenderPassDescriptor(renderPassDesc, rhiRenderPassDesc, rhiColorAttachmentList, rhiDepthStencilAttachment);
 
-	IVector2D renderTargetDims = 0;
-	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
-		renderTargetDims = IVector2D(colorTarget.target->GetWidth(), colorTarget.target->GetHeight());
-
 	WGPURenderPassEncoder rhiRenderPassEncoder = wgpuCommandEncoderBeginRenderPass(m_rhiCommandEncoder, &rhiRenderPassDesc);
 	if (!rhiRenderPassEncoder)
 		return nullptr;
 
 	m_hasCommands = true;
 
+	IVector2D renderTargetDims = 0;
 	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
 	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
 	{
 		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
-		renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target->GetFormat() : FORMAT_NONE;
+		renderTargetDims = IVector2D(colorTarget.target.texture->GetWidth(), colorTarget.target.texture->GetHeight());
+		renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
 	}
-	renderPass->m_depthTargetFormat = renderPassDesc.depthStencil ? renderPassDesc.depthStencil->GetFormat() : FORMAT_NONE;
+	renderPass->m_depthTargetFormat = renderPassDesc.depthStencil ? renderPassDesc.depthStencil.texture->GetFormat() : FORMAT_NONE;
 	renderPass->m_depthReadOnly = renderPassDesc.depthReadOnly;
 	renderPass->m_stencilReadOnly = renderPassDesc.stencilReadOnly;
 

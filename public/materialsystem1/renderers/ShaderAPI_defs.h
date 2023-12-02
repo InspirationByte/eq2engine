@@ -656,7 +656,7 @@ struct BindGroupDesc
 	{
 		Entry() {}
 		SamplerStateParams	sampler;
-		GPUBufferPtrView	buffer; // uniform buffer
+		GPUBufferView	buffer; // uniform buffer
 		TextureView			texture;
 		EBindEntryType		type{ static_cast<EBindEntryType>(-1) };
 		int					binding{ 0 };
@@ -669,7 +669,7 @@ struct BindGroupDesc
 
 FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(int binding, const GPUBufferPtrView& buffer)
+	ThisType& Buffer(int binding, const GPUBufferView& buffer)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
 		Entry& entry = ref.entries.append();
@@ -684,7 +684,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_BUFFER;
-		entry.buffer = GPUBufferPtrView(buffer, offset, size);
+		entry.buffer = GPUBufferView(buffer, offset, size);
 		return *this; 
 	}
 	ThisType& Sampler(int binding, const SamplerStateParams& samplerParams)
@@ -864,18 +864,17 @@ struct RenderPassDesc
 {
 	struct ColorTargetDesc
 	{
-		ITexturePtr	target{ nullptr };
+		TextureView	target;
 		// TODO: resolveTarget
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
 		EStoreFunc	storeOp{ STOREFUNC_STORE };
 		MColor		clearColor{ color_black };
-		int			arraySlice{ 0 };
 		int			depthSlice{ 0 };
 	};
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 	ColorTargetList	colorTargets;
 
-	ITexturePtr		depthStencil{ nullptr };
+	TextureView		depthStencil;
 	float			depthClearValue{ 1.0f };
 	ELoadFunc		depthLoadOp{ LOADFUNC_LOAD };
 	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };
@@ -897,18 +896,21 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		ref.nameHash = StringToHash(str);
 		return *this; 
 	}
-	ThisType& ColorTarget(ITexturePtr colorTarget, bool clear = false, const MColor& clearColor = color_black, int arraySlice = 0, int depthSlice = 0)
+	ThisType& ColorTarget(ITexture* colorTarget, bool clear = false, const MColor& clearColor = color_black, int arraySlice = 0, int depthSlice = 0)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
-		entry.target.Assign(colorTarget);
+		entry.target = TextureView(colorTarget, arraySlice);
 		entry.loadOp = clear ? LOADFUNC_CLEAR : LOADFUNC_LOAD;
 		entry.storeOp = STOREFUNC_STORE;
 		entry.clearColor = clearColor;
-		entry.arraySlice = arraySlice;
 		entry.depthSlice = depthSlice;
 		return *this;
 	}
-	FLUENT_SET_VALUE(depthStencil, DepthStencilTarget)
+	ThisType& DepthStencilTarget(ITexture* depthTarget, int arraySlice = 0)
+	{
+		ref.depthStencil = TextureView(depthTarget, arraySlice);
+		return *this;
+	}
 	FLUENT_SET_VALUE(depthStoreOp, DepthStoreOp)
 	FLUENT_SET_VALUE(depthReadOnly, DepthReadOnly)
 	ThisType& DepthClear(float clearValue = 1.0f)

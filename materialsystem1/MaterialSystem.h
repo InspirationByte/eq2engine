@@ -116,16 +116,6 @@ public:
 	//-----------------------------
 	// Shader dynamic states
 
-	void						SetSkinningEnabled( bool bEnable );
-	bool						IsSkinningEnabled() const;
-
-	// TODO: per instance
-	void						SetSkinningBones(ArrayCRef<RenderBoneTransform> bones);
-	void						GetSkinningBones(ArrayCRef<RenderBoneTransform>& outBones) const;
-
-	void						SetInstancingEnabled( bool bEnable );
-	bool						IsInstancingEnabled() const;
-
 	void						SetFogInfo(const FogInfo &info);
 	void						GetFogInfo(FogInfo &info) const;
 
@@ -163,15 +153,15 @@ public:
 	IDynamicMesh*				GetDynamicMesh() const;
 
 	// returns temp buffer with data written. SubmitQueuedCommands uploads it to GPU
-	GPUBufferPtrView			GetTransientUniformBuffer(const void* data, int64 size);
-	GPUBufferPtrView			GetTransientVertexBuffer(const void* data, int64 size);
+	GPUBufferView				GetTransientUniformBuffer(const void* data, int64 size);
+	GPUBufferView				GetTransientVertexBuffer(const void* data, int64 size);
 
 	void						QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers);
 	void						QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer);
 
 	void						SubmitQueuedCommands();
 
-	void						SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
+	bool						SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
 	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder);
 	bool						SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
 
@@ -215,8 +205,6 @@ private:
 	mutable Matrix4x4			m_wvpMatrix{ identity4 };
 	mutable Matrix4x4			m_matrices[5]{ identity4 };
 
-	Array<RenderBoneTransform>	m_boneTransforms{ PP_SL };
-
 	Array<IGPUCommandBufferPtr>	m_pendingCmdBuffers{ PP_SL };
 	IGPUCommandRecorderPtr		m_proxyUpdateCmdRecorder;
 	IGPUCommandRecorderPtr		m_bufferCmdRecorder;
@@ -250,7 +238,5 @@ private:
 	float						m_proxyDeltaTime{ 0.0f };
 
 	mutable uint8				m_matrixDirty{ UINT8_MAX };
-	bool						m_skinningEnabled{ false };
-	bool						m_instancingEnabled{ false };
 	bool						m_deviceActiveState{ true };
 };

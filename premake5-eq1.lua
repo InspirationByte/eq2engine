@@ -150,7 +150,8 @@ project "BaseShader"
 		"corelib", "frameworkLib"
 	}
     files {
-		Folders.public.."materialsystem1/*.cpp"
+		Folders.public.."materialsystem1/*.cpp",
+		Folders.public.."materialsystem1/*.h"
 	}
 
 project "eqMatSystem"

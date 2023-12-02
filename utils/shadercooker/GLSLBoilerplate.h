@@ -25,4 +25,6 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #define BIND_RENDERPASS( N )	layout(set = 1, binding = N)
 #define BIND_TRANSIENT( N )		layout(set = 2, binding = N)
 
+#define VERTEX_ID( name ) (VID_ ## name)
+
 )";

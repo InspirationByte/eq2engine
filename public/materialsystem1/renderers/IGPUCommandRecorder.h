@@ -47,6 +47,9 @@ public:
 	virtual void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
 	virtual void					SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
 
+	void							SetVertexBufferView(int slot, const GPUBufferView& vertexBuffer);
+	void							SetIndexBufferView(const GPUBufferView& indexBuffer, EIndexFormat indexFormat);
+
 	virtual void					SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth) = 0;
 	virtual void					SetScissorRectangle(const IAARectangle& rectangle) = 0;
 
@@ -61,6 +64,16 @@ public:
 	virtual IGPUCommandBufferPtr	End() = 0;
 };
 using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
+
+inline void IGPURenderPassRecorder::SetVertexBufferView(int slot, const GPUBufferView& vertexBuffer)
+{
+	SetVertexBuffer(slot, vertexBuffer.buffer, vertexBuffer.offset, vertexBuffer.size);
+}
+
+inline void IGPURenderPassRecorder::SetIndexBufferView(const GPUBufferView& indexBuffer, EIndexFormat indexFormat)
+{
+	SetIndexBuffer(indexBuffer.buffer, indexFormat, indexBuffer.offset, indexBuffer.size);
+}
 
 //---------------------------------
 // Compute pass recorder
@@ -93,7 +106,7 @@ public:
 	virtual IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData) const = 0;
 
 	virtual void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const = 0;
-	void								WriteBufferView(const GPUBufferPtrView& bufferView, const void* data, int64 size = -1, int64 offset = 0) const;
+	void								WriteBufferView(const GPUBufferView& bufferView, const void* data, int64 size = -1, int64 offset = 0) const;
 	virtual void						CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const = 0;
 	virtual void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const = 0;
 
@@ -102,7 +115,7 @@ public:
 };
 using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
 
-inline void IGPUCommandRecorder::WriteBufferView(const GPUBufferPtrView& bufferView, const void* data, int64 size, int64 offset) const
+inline void IGPUCommandRecorder::WriteBufferView(const GPUBufferView& bufferView, const void* data, int64 size, int64 offset) const
 {
 	if (size < 0) // write whole view
 		size = bufferView.size - offset;

@@ -10,7 +10,7 @@
 #include "font/IFont.h"
 
 class CMeshBuilder;
-class RenderDrawCmd;
+struct RenderDrawCmd;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 

@@ -1074,6 +1074,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
 		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
 		.End()
 	);
 

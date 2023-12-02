@@ -347,14 +347,14 @@ static void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, W
 	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
 	{
 		// TODO: backbuffer alteration?
-		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target.Ptr());
+		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target.texture.Ptr());
 		ASSERT_MSG(targetTexture, "NULL texture for color target");
 
 		WGPURenderPassColorAttachment rhiColorAttachment = {};
 		rhiColorAttachment.loadOp = g_wgpuLoadOp[colorTarget.loadOp];
 		rhiColorAttachment.storeOp = g_wgpuStoreOp[colorTarget.storeOp];
 		rhiColorAttachment.depthSlice = colorTarget.depthSlice;
-		rhiColorAttachment.view = targetTexture->GetWGPUTextureView(colorTarget.arraySlice);
+		rhiColorAttachment.view = targetTexture->GetWGPUTextureView(colorTarget.target.arraySlice);
 		rhiColorAttachment.resolveTarget = nullptr; // TODO
 		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
 		rhiColorAttachmentList.append(rhiColorAttachment);
@@ -364,8 +364,8 @@ static void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, W
 
 	if (renderPassDesc.depthStencil)
 	{
-		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil.Ptr());
-		rhiDepthStencilAttachment.view = depthTexture->GetWGPUTextureView();
+		const CWGPUTexture* depthTexture = static_cast<CWGPUTexture*>(renderPassDesc.depthStencil.texture.Ptr());
+		rhiDepthStencilAttachment.view = depthTexture->GetWGPUTextureView(renderPassDesc.depthStencil.arraySlice);
 
 		rhiDepthStencilAttachment.depthReadOnly = renderPassDesc.depthReadOnly;
 		if (!renderPassDesc.depthReadOnly)
@@ -375,7 +375,7 @@ static void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, W
 			rhiDepthStencilAttachment.depthStoreOp = g_wgpuStoreOp[renderPassDesc.depthStoreOp];
 		}
 
-		const bool hasStencil = IsStencilFormat(renderPassDesc.depthStencil->GetFormat());
+		const bool hasStencil = IsStencilFormat(renderPassDesc.depthStencil.texture->GetFormat());
 		rhiDepthStencilAttachment.stencilReadOnly = renderPassDesc.stencilReadOnly;
 		if (hasStencil && !renderPassDesc.stencilReadOnly)
 		{

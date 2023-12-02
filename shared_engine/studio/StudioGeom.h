@@ -7,6 +7,7 @@
 
 #pragma once
 #include "egf/model.h"
+#include "StudioVertex.h"
 
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
@@ -23,69 +24,6 @@ struct MeshInstanceData;
 struct RenderDrawCmd;
 struct DecalMakeInfo;
 struct DecalData;
-struct VertexLayoutDesc;
-
-// egf model hardware vertex
-struct EGFHwVertex
-{
-	enum VertexStreamId : int
-	{
-		VERT_POS_UV,
-		VERT_TBN,
-		VERT_BONEWEIGHT,
-		VERT_COLOR,
-
-		// TODO: more UVs ?
-
-		VERT_COUNT,
-	};
-
-	struct PositionUV
-	{
-		static const VertexLayoutDesc& GetVertexLayoutDesc();
-
-		PositionUV() = default;
-		PositionUV(const studioVertexPosUv_t& initFrom);
-
-		TVec4D<half>	pos;
-		TVec2D<half>	texcoord;
-	};
-
-	struct TBN
-	{
-		static const VertexLayoutDesc& GetVertexLayoutDesc();
-
-		TBN() = default;
-		TBN(const studioVertexTBN_t& initFrom);
-
-		TVec3D<half>	tangent;
-		half			unused1;	// half float types are unsupported with v3d, turn them into v4d
-		TVec3D<half>	binormal;
-		half			unused2;
-		TVec3D<half>	normal;
-		half			unused3;
-	};
-
-	struct BoneWeights
-	{
-		static const VertexLayoutDesc& GetVertexLayoutDesc();
-
-		BoneWeights();
-		BoneWeights(const studioBoneWeight_t& initFrom);
-
-		uint8			boneIndices[MAX_MODEL_VERTEX_WEIGHTS];
-		half			boneWeights[MAX_MODEL_VERTEX_WEIGHTS];
-	};
-
-	struct Color
-	{
-		Color() = default;
-		Color(const studioVertexColor_t& initFrom);
-
-		static const VertexLayoutDesc& GetVertexLayoutDesc();
-		uint			color{ color_white.pack() };
-	};
-};
 
 enum EModelLoadingState
 {
@@ -215,17 +153,19 @@ struct CEqStudioGeom::DrawProps
 	using BodyGroupFunc = EqFunction<void(RenderDrawCmd& drawCmd, IMaterial* material, int bodyGroup, int meshIndex)>;
 
 	ArrayCRef<EGFHwVertex::VertexStreamId> vertexStreamMapping{ g_defaultVertexStreamMapping };
-	IVertexFormat*	vertexFormat{ nullptr };
-	Matrix4x4*		boneTransforms{ nullptr };
+	//MeshInstanceFormatRef	instFormat;
+	//MeshInstanceFormatRef	instFormatSkinned;
+	IVertexFormat*			vertexFormat{ nullptr };
+	Matrix4x4*				boneTransforms{ nullptr };
 
-	SetupDrawFunc	setupDrawCmd;		// called once before entire EGF is drawn
-	BodyGroupFunc	setupBodyGroup;	// called multiple times before body group is drawn
+	SetupDrawFunc			setupDrawCmd;		// called once before entire EGF is drawn
+	BodyGroupFunc			setupBodyGroup;	// called multiple times before body group is drawn
 	
-	int				bodyGroupFlags{ -1 };
-	int				materialGroup{ 0 };
-	int				lod{ 0 };
+	int						bodyGroupFlags{ -1 };
+	int						materialGroup{ 0 };
+	int						lod{ 0 };
 
-	int				materialFlags{ -1 };
-	bool			excludeMaterialFlags{ false };
-	bool			skipMaterials{ false };
+	int						materialFlags{ -1 };
+	bool					excludeMaterialFlags{ false };
+	bool					skipMaterials{ false };
 };

@@ -7,5 +7,7 @@
 
 #pragma once
 
-void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest);
+class IGPURenderPassRecorder;
+
+void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest, IGPURenderPassRecorder* rendPassRecorder);
 void DrawWorldCenter();

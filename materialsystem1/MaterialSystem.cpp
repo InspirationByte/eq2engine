@@ -1199,43 +1199,6 @@ const ITexturePtr& CMaterialSystem::GetEnvironmentMapTexture() const
 	return m_currentEnvmapTexture;
 }
 
-// skinning mode
-void CMaterialSystem::SetSkinningEnabled( bool bEnable )
-{
-	m_skinningEnabled = bEnable;
-}
-
-bool CMaterialSystem::IsSkinningEnabled() const
-{
-	return m_skinningEnabled;
-}
-
-// TODO: per instance
-void CMaterialSystem::SetSkinningBones(ArrayCRef<RenderBoneTransform> bones)
-{
-	m_boneTransforms.clear();
-	m_skinningEnabled = bones.numElem() > 0;
-	m_boneTransforms.reserve(bones.numElem());
-	for (const RenderBoneTransform& bone : bones)
-		m_boneTransforms.append(bone);
-}
-
-void CMaterialSystem::GetSkinningBones(ArrayCRef<RenderBoneTransform>& outBones) const
-{
-	outBones = m_boneTransforms;
-}
-
-// instancing mode
-void CMaterialSystem::SetInstancingEnabled( bool bEnable )
-{
-	m_instancingEnabled = bEnable;
-}
-
-bool CMaterialSystem::IsInstancingEnabled() const
-{
-	return m_instancingEnabled;
-}
-
 // sets up a 2D mode
 void CMaterialSystem::Setup2D(float wide, float tall)
 {
@@ -1268,46 +1231,55 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 }
 
 // returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
-GPUBufferPtrView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64 size)
+GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64 size)
 {
 	const int bufferAlignment = m_shaderAPI->GetCaps().minUniformBufferOffsetAlignment;
 	constexpr int64 maxTransientBufferSize = 128 * 1024;
 
 	TransientBufferCollection& collection = m_transientUniformBuffers;
 
-	if (!m_bufferCmdRecorder)
-		m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
-
 	const int bufferIndex = collection.bufferIdx;
 	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
 	if (!buffer)
-		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_UNIFORM, "TransientUniformBuffer");
-	
-	const int64 writeOffset = NextBufferOffset(size, collection.bufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
-	m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
+		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE, "TransientUniformBuffer");
 
-	return GPUBufferPtrView(buffer, writeOffset, size);
+	if (data && size > 0)
+	{
+		if (!m_bufferCmdRecorder)
+			m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
+
+		const int64 writeOffset = NextBufferOffset(size, collection.bufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
+		m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
+
+		return GPUBufferView(buffer, writeOffset, size);
+	}
+	return GPUBufferView(buffer, collection.bufferOffsets[bufferIndex]);
 }
 
-GPUBufferPtrView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 size)
+GPUBufferView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 size)
 {
 	const int bufferAlignment = 4; // vertex buffers are aligned always 4 bytes
 	constexpr int64 maxTransientBufferSize = 128 * 1024;
 
 	TransientBufferCollection& collection = m_transientVertexBuffers;
 
-	if (!m_bufferCmdRecorder)
-		m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
-
 	const int bufferIndex = collection.bufferIdx;
 	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
 	if (!buffer)
 		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_VERTEX, "TransientVertexBuffer");
 
-	const int64 writeOffset = NextBufferOffset(size, collection.bufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
-	m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
+	if (data && size > 0)
+	{
+		if (!m_bufferCmdRecorder)
+			m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
 
-	return GPUBufferPtrView(buffer, writeOffset, size);
+		const int64 writeOffset = NextBufferOffset(size, collection.bufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
+		m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
+
+		return GPUBufferView(buffer, writeOffset, size);
+	}
+
+	return GPUBufferView(buffer, collection.bufferOffsets[bufferIndex]);
 }
 
 void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
@@ -1390,45 +1362,51 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 		return;
 
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
-	const MeshInstanceFormatRef& instFormat = instInfo.instFormat;
 	const MeshInstanceData& instData = instInfo.instData;
 	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
 
 	const int instanceCount = instData.buffer ? instData.count : 1;
 
-	int firstEmptyVb = MAX_VERTEXSTREAM;
-	int vertexLayoutBits = 0;
-	for (int i = 0; i < instFormat.layout.numElem(); ++i)
+	FixedArray<GPUBufferView, MAX_VERTEXSTREAM> bindVertexBuffers;
+
+	uint usedVertexLayoutBits = 0;
+	MeshInstanceFormatRef instFormatRef = instInfo.instFormat;
+	if (instFormatRef.layout.numElem())
 	{
-		if (instData.buffer && instFormat.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
+		int bufferSlot = 0;
+		for (int i = 0; i < instFormatRef.layout.numElem(); ++i)
 		{
-			firstEmptyVb = i;
-			vertexLayoutBits |= (1 << i);
+			if (instData.buffer && instFormatRef.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
+			{
+				bindVertexBuffers.append(GPUBufferView(instData.buffer, instData.offset, instData.stride * instData.count));
+				usedVertexLayoutBits |= (1 << i);
+			}
+			else if(instInfo.vertexBuffers[i])
+			{
+				bindVertexBuffers.append(instInfo.vertexBuffers[i]);
+				usedVertexLayoutBits |= (1 << i);
+			}
 		}
-		else
-			vertexLayoutBits |= instInfo.streamBuffers[i] ? (1 << i) : 0;
 	}
 
-	SetupMaterialPipeline(drawCmd.material, meshInfo.primTopology, instFormat, vertexLayoutBits, drawCmd.userData, rendPassRecorder);
+	// modify used layout flags
+	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
-	if (instFormat.layout.numElem())
+	if (!SetupMaterialPipeline(drawCmd.material, drawCmd.uniformBuffers, meshInfo.primTopology, instFormatRef, drawCmd.userData, rendPassRecorder))
+		return;
+
+	if (instFormatRef.layout.numElem())
 	{
 		CMaterial* material = static_cast<CMaterial*>(drawCmd.material);
 		IMatSystemShader* matShader = material->m_shader;
 
-		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instInfo.instFormat.name);
+		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormatRef.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instInfo.instFormat.name);
 
-		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i], instInfo.streamOffsets[i], instInfo.streamSizes[i]);
+		int bufferSlot = 0;
+		for (const GPUBufferView& bindBufferView : bindVertexBuffers)
+			rendPassRecorder->SetVertexBufferView(bufferSlot++, bindBufferView);
 
-		// bind instance
-		if (instData.buffer)
-		{
-			ASSERT_MSG(firstEmptyVb != MAX_VERTEXSTREAM, "No free slots for instance buffer");
-			rendPassRecorder->SetVertexBuffer(firstEmptyVb, instData.buffer, instData.offset, instData.stride * instData.count);
-		}
-
-		rendPassRecorder->SetIndexBuffer(instInfo.indexBuffer, instInfo.indexFormat, instInfo.indexBufOffset, instInfo.indexBufSize);
+		rendPassRecorder->SetIndexBufferView(instInfo.indexBuffer, instInfo.indexFormat);
 	}
 
 	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
@@ -1437,9 +1415,11 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 		rendPassRecorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
 }
 
-void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
+bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
+
+	// TODO: overdraw material. Or maybe debug property in shader?
 
 	if (m_preApplyCallback)
 		material = m_preApplyCallback->OnPreBindMaterial(material);
@@ -1457,9 +1437,7 @@ void CMaterialSystem::SetupMaterialPipeline(IMaterial* material, EPrimTopology p
 		matSysMaterial->m_frameBound = proxyFrame;
 	}
 
-	// TODO: overdraw material. Or maybe debug property in shader?
-
-	matShader->SetupRenderPass(renderAPI, rendPassRecorder, meshInstFormat, vertexLayoutBits, primTopology, userData);
+	return matShader->SetupRenderPass(renderAPI, meshInstFormat, primTopology, uniformBuffers, rendPassRecorder, userData);
 }
 
 bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
@@ -1504,38 +1482,46 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	if (!meshBuilder.End(drawCmd))
 		return false;
 
-	IShaderAPI* renderAPI = m_shaderAPI;
-
-	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
-	IMatSystemShader* matShader = material->m_shader;
-
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
 	const MeshInstanceData& instData = instInfo.instData;
-	const MeshInstanceFormatRef& instFormat = instInfo.instFormat;
 	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
 
 	const int instanceCount = instData.buffer ? instData.count : 1;
 
-	// material must support correct vertex layout state
-	if (instFormat.layout.numElem())
-	{
-		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormat.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instFormat.name);
+	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
+	IMatSystemShader* matShader = material->m_shader;
 
-		int vertexLayoutBits = 0;
-		for (int i = 0; i < instFormat.layout.numElem(); ++i)
+	// material must support correct vertex layout state
+	uint usedVertexLayoutBits = 0;
+	MeshInstanceFormatRef instFormatRef = instInfo.instFormat;
+	if (instFormatRef.layout.numElem())
+	{
+		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormatRef.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instFormatRef.name);
+		
+		for (int i = 0; i < instFormatRef.layout.numElem(); ++i)
 		{
-			if (instData.buffer && instFormat.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
+			if (instData.buffer && instFormatRef.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
 			{
 				ASSERT_FAIL("DrawDefaultUP does not support instancing yet");
 			}
 			else
-				vertexLayoutBits |= instInfo.streamBuffers[i] ? (1 << i) : 0;
+				usedVertexLayoutBits |= instInfo.vertexBuffers[i] ? (1 << i) : 0;
 		}
+	}
 
-		matShader->SetupRenderPass(renderAPI, rendPassRecorder, instFormat, vertexLayoutBits, primTopology, &rendPassInfo);
+	// modify used layout flags
+	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
-		for (int i = 0; i < instInfo.streamBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBuffer(i, instInfo.streamBuffers[i], instInfo.streamOffsets[i], instInfo.streamSizes	[i]);
+	IShaderAPI* renderAPI = m_shaderAPI;
+	if (!matShader->SetupRenderPass(renderAPI, instFormatRef, primTopology, nullptr, rendPassRecorder, &rendPassInfo))
+	{
+		return false;
+	}
+
+	if (instFormatRef.layout.numElem())
+	{
+		for (int i = 0; i < instInfo.vertexBuffers.numElem(); ++i)
+			rendPassRecorder->SetVertexBufferView(i, instInfo.vertexBuffers[i]);
 	}
 
 	if (rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1, -1))

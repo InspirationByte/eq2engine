@@ -152,22 +152,20 @@ struct VertexFVFResolver<Vertex3D>
 	Vertex2D(Vector2D(x1 - o, y1 - o), Vector2D(1, 1), colorRB)
 
 
-struct RenderBoneTransform
+struct RenderBufferInfo
 {
-	Quaternion	quat;
-	Vector4D	origin;
+	GPUBufferView	bufferView;
+	int					signature;	// use MAKECHAR4(a,b,c,d)
 };
-
-// must be exactly two regs
-assert_sizeof(RenderBoneTransform, sizeof(Vector4D) * 2);
 
 struct MeshInstanceFormatRef
 {
-	using VertexLayoutList = ArrayCRef<VertexLayoutDesc>;
+	using LayoutList = ArrayCRef<VertexLayoutDesc>;
 
-	const char*			name{ nullptr };
-	int					nameHash{ 0 };
-	VertexLayoutList	layout{ nullptr };
+	const char*		name{ nullptr };
+	int				nameHash{ 0 };
+	LayoutList		layout{ nullptr };
+	uint			usedLayoutBits{ 0xff };
 };
 
 struct MeshInstanceData
@@ -183,24 +181,17 @@ struct RenderInstanceInfo
 {
 	RenderInstanceInfo()
 	{
-		streamBuffers.assureSizeEmplace(streamBuffers.numAllocated(), nullptr);
-		streamOffsets.assureSizeEmplace(streamOffsets.numAllocated(), 0);
-		streamSizes.assureSizeEmplace(streamOffsets.numAllocated(), -1);
+		vertexBuffers.assureSizeEmplace(vertexBuffers.numAllocated(), GPUBufferView{});
 	}
 
-	using BufferArray = FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>;
-	using OffsetArray = FixedArray<int, MAX_VERTEXSTREAM>;
+	using VertexBufferArray = FixedArray<GPUBufferView, MAX_VERTEXSTREAM>;
 
 	// use SetVertexBuffer
-	BufferArray				streamBuffers;
-	OffsetArray				streamOffsets;
-	OffsetArray				streamSizes;
+	VertexBufferArray		vertexBuffers;
 
 	// use SetIndexBuffer
-	IGPUBufferPtr			indexBuffer;
+	GPUBufferView		indexBuffer;
 	EIndexFormat			indexFormat{ INDEXFMT_UINT16 };
-	int						indexBufOffset{ 0 };
-	int						indexBufSize{ -1 };
 
 	// use SetInstanceFormat
 	MeshInstanceFormatRef	instFormat;
@@ -222,12 +213,16 @@ struct RenderMeshInfo
 // render command to draw geometry
 struct RenderDrawCmd
 {
+	using BufferArray = FixedArray<RenderBufferInfo, 8>;
+
 	RenderInstanceInfo	instanceInfo;
 	RenderMeshInfo		meshInfo;
 	IMaterial*			material{ nullptr };
-	const void*			userData{ nullptr };
 
-	ArrayCRef<RenderBoneTransform> boneTransforms{ nullptr }; // TODO: instance buffer properties
+	// use AddUniformBuffer
+	BufferArray			uniformBuffers;
+
+	const void*			userData{ nullptr };
 
 	RenderDrawCmd& SetMaterial(IMaterial* _material)
 	{
@@ -267,20 +262,16 @@ struct RenderDrawCmd
 		return *this;
 	}
 
-	RenderDrawCmd& SetVertexBuffer(int idx, IGPUBufferPtr buffer, int offset = 0, int size = -1)
+	RenderDrawCmd& SetVertexBuffer(int idx, IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
 	{
-		instanceInfo.streamBuffers[idx] = buffer;
-		instanceInfo.streamOffsets[idx] = offset;
-		instanceInfo.streamSizes[idx] = size;
+		instanceInfo.vertexBuffers[idx] = GPUBufferView(buffer, offset, size);
 		return *this;
 	}
 
 	RenderDrawCmd& SetIndexBuffer(IGPUBufferPtr buffer, EIndexFormat indexFormat, int offset = 0, int size = -1)
 	{
-		instanceInfo.indexBuffer = buffer;
+		instanceInfo.indexBuffer = GPUBufferView(buffer, offset, size);
 		instanceInfo.indexFormat = indexFormat;
-		instanceInfo.indexBufOffset = offset;
-		instanceInfo.indexBufSize = size;
 		return *this;
 	}
 
@@ -302,6 +293,18 @@ struct RenderDrawCmd
 		meshInfo.numVertices = vertCount;
 		meshInfo.firstIndex = -1;
 		meshInfo.numIndices = 0;
+		return *this;
+	}
+
+	RenderDrawCmd& AddUniformBuffer(int signature, IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
+	{
+		uniformBuffers.append({ GPUBufferView(buffer, offset, size), signature });
+		return *this;
+	}
+
+	RenderDrawCmd& AddUniformBufferView(int signature, const GPUBufferView& bufferView)
+	{
+		uniformBuffers.append({ bufferView, signature });
 		return *this;
 	}
 };
@@ -327,7 +330,7 @@ struct RenderPassBaseData
 
 	ERenderPassType		type;
 	uint				version{ 0 };
-	GPUBufferPtrView	cameraParamsBuffer;
+	GPUBufferView	cameraParamsBuffer;
 };
 
 // used for debug geometry and UIs

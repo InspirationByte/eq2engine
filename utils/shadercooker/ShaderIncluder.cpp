@@ -43,10 +43,6 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 				result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), vertexId);
 			}
 
-			result->includeName = requested_source;
-		}
-		else if (!strcmp(requested_source, "VertexLayout"))
-		{
 			int vertexId = -1;
 			for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
 			{
@@ -57,7 +53,12 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 					break;
 				}
 			}
+			result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", vertexId);
 
+			result->includeName = requested_source;
+		}
+		else if (!strcmp(requested_source, "VertexLayout"))
+		{
 			EqString shaderSourceName;
 			CombinePath(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");
 
@@ -65,7 +66,6 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 				return &result->resultData;
 
 			result->includeName = shaderSourceName;
-			result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", vertexId);
 		}
 	}
 	result->resultData.content = (const char*)result->includeContent.GetBasePointer();

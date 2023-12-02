@@ -25,15 +25,15 @@ using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
 //---------------------------------------
 
-struct GPUBufferPtrView
+struct GPUBufferView
 {
-	GPUBufferPtrView() = default;
-	GPUBufferPtrView(IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
-		: buffer(buffer), offset(offset), size((buffer&& size > 0) ? size : buffer->GetSize())
+	GPUBufferView() = default;
+	GPUBufferView(IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
+		: buffer(buffer), offset(offset), size(size > 0 ? size : (buffer ? buffer->GetSize() - offset : -1))
 	{
 	}
-	GPUBufferPtrView(IGPUBufferPtr buffer, int64 offset = 0, int64 size = -1)
-		: buffer(buffer), offset(offset), size((buffer&& size > 0) ? size : buffer->GetSize())
+	GPUBufferView(IGPUBufferPtr buffer, int64 offset = 0, int64 size = -1)
+		: buffer(buffer), offset(offset), size(size > 0 ? size : (buffer ? buffer->GetSize() - offset : -1))
 	{
 	}
 

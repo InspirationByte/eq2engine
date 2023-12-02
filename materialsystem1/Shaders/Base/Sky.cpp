@@ -43,7 +43,7 @@ BEGIN_SHADER_CLASS(Skybox)
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
 
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}

@@ -88,48 +88,41 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	m_blendMode = blendMode;
 }
 
+IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass) const
+{
+	static const char* s_bindGroupNames[] = {
+		"Constant",
+		"RenderPass",
+		"Transient",
+	};
+
+	if(m_pipelineLayout)
+	{
+		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		return renderAPI->CreateBindGroup(m_pipelineLayout, bindGroupId, bindGroupDesc);
+	}
+
+	bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+	return renderAPI->CreateBindGroup(renderPass->GetPipeline(), bindGroupId, bindGroupDesc);
+}
+
 IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const
 {
+	if (!m_pipelineLayout)
+		return nullptr;
+
 	// create empty bind group
-	if(!m_emptyBindGroup[bindGroupId])
+	if (!m_emptyBindGroup[bindGroupId])
 	{
 		BindGroupDesc emptyBindGroupDesc;
-		m_emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, emptyBindGroupDesc);
+		m_emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(m_pipelineLayout, bindGroupId, emptyBindGroupDesc);
 	}
 	return m_emptyBindGroup[bindGroupId];
 }
 
-IGPUPipelineLayoutPtr CBaseShader::GetPipelineLayout(IShaderAPI* renderAPI) const
+uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const
 {
-	if (!m_pipelineLayout)
-	{
-		PipelineLayoutDesc pipelineLayoutDesc;
-		FillPipelineLayoutDesc(pipelineLayoutDesc);
-		m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-	}
-	return m_pipelineLayout;
-}
-
-void CBaseShader::FillPipelineLayoutDesc(PipelineLayoutDesc& renderPipelineLayoutDesc) const
-{
-	// MatSystem shader defines three bind groups, which differ by the lifetime:
-	// 
-	//	BINDGROUP_CONSTANT
-	//		- Bind group data is never going to be changed during the life time of the material
-	//	BINDGROUP_RENDERPASS
-	//		- Bind group persists across single render pass
-	//	BINDGROUP_TRANSIENT
-	//		- Bind group is unique for each draw call
-
-	FillBindGroupLayout_Constant(renderPipelineLayoutDesc.bindGroups.append());
-	FillBindGroupLayout_RenderPass(renderPipelineLayoutDesc.bindGroups.append());
-	FillBindGroupLayout_Transient(renderPipelineLayoutDesc.bindGroups.append());
-	renderPipelineLayoutDesc.name = GetName();
-}
-
-uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology) const
-{
-	uint hash = vertexLayoutNameHash | (vertexLayoutUsedBufferBits << 24);
+	uint hash = vertexLayoutNameHash | (usedVertexLayoutBits << 24);
 	hash *= 31;
 	hash += static_cast<uint>(primitiveTopology);
 	for (int i = 0; i < MAX_RENDERTARGETS; ++i)
@@ -148,7 +141,7 @@ uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, 
 	return hash;
 }
 
-void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
+void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
 {
 	Builder<RenderPipelineDesc>(renderPipelineDesc)
 		.ShaderName(GetName())
@@ -171,10 +164,10 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 
 			if (layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
 			{
-				ASSERT_MSG(vertexLayoutUsedBufferBits & (1 << i), "Instance buffer must be bound");
+				ASSERT_MSG(meshInstFormat.usedLayoutBits & (1 << i), "Instance buffer must be bound");
 			}
 
-			if (vertexLayoutUsedBufferBits & (1 << i))
+			if (meshInstFormat.usedLayoutBits & (1 << i))
 				vertexPipelineBuilder.VertexLayout(layoutDesc);
 		}
 	}
@@ -224,19 +217,55 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 	}
 }
 
-bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData)
+bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, IGPURenderPassRecorder* rendPassRecorder, const void* userData)
 {
-	const uint pipelineId = GetRenderPipelineId(rendPassRecorder, meshInstFormat.nameHash, vertexLayoutUsedBufferBits, primitiveTopology);
+	const uint pipelineId = GetRenderPipelineId(rendPassRecorder, meshInstFormat.nameHash, meshInstFormat.usedLayoutBits, primTopology);
 	
 	auto it = m_renderPipelines.find(pipelineId);
 	IGPURenderPipelinePtr pipeline;
 	if (it.atEnd())
 	{
 		RenderPipelineDesc renderPipelineDesc;
-		FillRenderPipelineDesc(rendPassRecorder, meshInstFormat, vertexLayoutUsedBufferBits, primitiveTopology, renderPipelineDesc);
-		BuildPipelineShaderQuery(meshInstFormat, vertexLayoutUsedBufferBits, renderPipelineDesc.shaderQuery);
+		FillRenderPipelineDesc(rendPassRecorder, meshInstFormat,  primTopology, renderPipelineDesc);
+		BuildPipelineShaderQuery(meshInstFormat, renderPipelineDesc.shaderQuery);
 
-		pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, GetPipelineLayout(renderAPI));
+		// Create pipeline layout
+		if (m_pipelineLayoutNeeded)
+		{
+			// MatSystem shader by default defines three bind groups, which differ by the lifetime:
+			// 
+			//	BINDGROUP_CONSTANT
+			//		- Bind group data is never going to be changed during the life time of the material
+			//	BINDGROUP_RENDERPASS
+			//		- Bind group persists across single render pass
+			//	BINDGROUP_TRANSIENT
+			//		- Bind group is unique for each draw call
+			//
+			// you're not obligated to use all of them
+
+			PipelineLayoutDesc pipelineLayoutDesc;
+			pipelineLayoutDesc.name = GetName();
+
+			FillBindGroupLayout_Constant(pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_RenderPass(pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_Transient(pipelineLayoutDesc.bindGroups.append());
+
+			bool userDefinedPipelineLayout = false;
+			for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
+			{
+				if (layout.entries.numElem() > 0)
+				{
+					userDefinedPipelineLayout = true;
+					break;
+				}
+			}
+
+			if (userDefinedPipelineLayout)
+				m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+			m_pipelineLayoutNeeded = false;
+		}
+
+		pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, m_pipelineLayout);
 		if (!pipeline)
 		{
 			ASSERT_FAIL("Shader %s is unable to create pipeline %s", GetName());
@@ -251,9 +280,9 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder*
 		return false;
 
 	rendPassRecorder->SetPipeline(pipeline);
-	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(BINDGROUP_RENDERPASS, renderAPI, rendPassRecorder, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(BINDGROUP_TRANSIENT, renderAPI, rendPassRecorder, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_CONSTANT, meshInstFormat, uniformBuffers, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_RENDERPASS, meshInstFormat, uniformBuffers, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_TRANSIENT, meshInstFormat, uniformBuffers, userData), nullptr);
 
 	return true;
 }
@@ -282,11 +311,11 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 	{
 		// cache shader modules
 		MeshInstanceFormatRef dummy;
-		Array<EqString> shaderQuery(PP_SL);
-		BuildPipelineShaderQuery(dummy, UINT_MAX, shaderQuery);
-		renderAPI->LoadShaderModules(GetName(), shaderQuery);
 
-		// TODO: also cache PSO
+		Array<EqString> shaderQuery(PP_SL);
+		BuildPipelineShaderQuery(dummy, shaderQuery);
+
+		renderAPI->LoadShaderModules(GetName(), shaderQuery);
 	}
 	m_isInit = true;
 }
@@ -294,6 +323,10 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 // Unload shaders, textures
 void CBaseShader::Unload()
 {
+	m_pipelineLayout = nullptr;
+	for (int i = 0; i < elementsOf(m_emptyBindGroup); ++i)
+		m_emptyBindGroup[i] = 0;
+
 	m_renderPipelines.clear(true);
 	for (int i = 0; i < m_usedTextures.numElem(); ++i)
 	{

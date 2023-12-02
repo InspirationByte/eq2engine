@@ -77,8 +77,8 @@ static constexpr TR max(T x, T2 y) { return (TR)((x > y) ? x : y); }
 //------------------------------------------------------------------------------------------------
 
 // Define some useful macros
-#define MCHAR2(a, b)					(a | (b << 8))
-#define MCHAR4(a, b, c, d)				(a | (b << 8) | (c << 16) | (d << 24))
+#define MAKECHAR2(a, b)					(a | (b << 8))
+#define MAKECHAR4(a, b, c, d)			(a | (b << 8) | (c << 16) | (d << 24))
 
 #define _STR_(x) #x
 #define DEFINE_STR(x)					"#define " #x " " _STR_(x) "\n"

@@ -9,6 +9,7 @@
 #include "IMaterialSystem.h"
 #include "BaseShader.h"
 #include "IDynamicMesh.h"
+#include "render/StudioRenderDefs.h"
 
 BEGIN_SHADER_CLASS(BaseUnlit)
 	SHADER_INIT_PARAMS()
@@ -31,7 +32,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		return true;
 	}
 
-	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const
 	{
 		bool vertexColor = false;
 		SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
@@ -46,40 +47,21 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 		if (m_flags & MATERIAL_FLAG_ALPHATESTED)
 			shaderQuery.append("ALPHATEST");
-
-		if (meshInstFormat.nameHash == StringToHashConst("EGFVertexSkinned"))
-			shaderQuery.append("SKIN");
 	}
 
-	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
-	}
-
-	void FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("cameraParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.End();
-	}
-
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
 			if (!m_materialBindGroup)
 			{
 				const ITexturePtr& baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
-				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 					.Buffer(0, m_materialParamsBuffer)
 					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
 			}
 
 			// TODO: update BaseTextureTransform
@@ -95,11 +77,23 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			g_matSystem->GetCameraParams(passParams.camera, true);
 			passParams.textureTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
 			
-			GPUBufferPtrView passParamsBuffer = g_matSystem->GetTransientUniformBuffer(&passParams, sizeof(passParams));
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+			GPUBufferView passParamsBuffer = g_matSystem->GetTransientUniformBuffer(&passParams, sizeof(passParams));
+			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, passParamsBuffer)
 				.End();
-			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+		}
+		else if (bindGroupId == BINDGROUP_TRANSIENT)
+		{
+			if (meshInstFormat.nameHash == StringToHashConst("EGFVertexSkinned"))
+			{
+				ASSERT(uniformBuffers[0].signature == RenderBoneTransformID)
+
+				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
+					.Buffer(0, uniformBuffers[0].bufferView)
+					.End();
+				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+			}
 		}
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}

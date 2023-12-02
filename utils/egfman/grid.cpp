@@ -33,7 +33,7 @@ void DrawWorldCenter()
 	g_matSystem->DrawDefaultUP(defaultRender, PRIM_LINES, grid_vertices);
 }
 
-void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest)
+void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest, IGPURenderPassRecorder* rendPassRecorder)
 {
 	const int grid_lines = count;
 	const int numOfLines = grid_lines / size;
@@ -71,5 +71,5 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }

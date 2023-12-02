@@ -9,14 +9,14 @@
 #include "snd_wav_source.h"
 #include "utils/riff.h"
 
-#define CHUNK_FMT			MCHAR4('f','m','t',' ')
-#define CHUNK_CUE			MCHAR4('c','u','e',' ')
-#define CHUNK_DATA			MCHAR4('d','a','t','a')
-#define CHUNK_SAMPLE		MCHAR4('s','m','p','l')
-#define CHUNK_LTXT			MCHAR4('l','t','x','t')
-#define CHUNK_LABEL			MCHAR4('l','a','b','l')
-#define CHUNK_LIST			MCHAR4('L','I','S','T')
-#define CHUNK_ADTLLIST		MCHAR4('a','d','t','l')
+#define CHUNK_FMT			MAKECHAR4('f','m','t',' ')
+#define CHUNK_CUE			MAKECHAR4('c','u','e',' ')
+#define CHUNK_DATA			MAKECHAR4('d','a','t','a')
+#define CHUNK_SAMPLE		MAKECHAR4('s','m','p','l')
+#define CHUNK_LTXT			MAKECHAR4('l','t','x','t')
+#define CHUNK_LABEL			MAKECHAR4('l','a','b','l')
+#define CHUNK_LIST			MAKECHAR4('L','I','S','T')
+#define CHUNK_ADTLLIST		MAKECHAR4('a','d','t','l')
 
 typedef struct // CHUNK_FMT
 {

@@ -14,7 +14,7 @@
 
 //------------------------------------------------------------
 
-#define SHADERCACHE_IDENT		MCHAR4('C','A','C','H')
+#define SHADERCACHE_IDENT		MAKECHAR4('C','A','C','H')
 
 struct shaderCacheHdr_t
 {

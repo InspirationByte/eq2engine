@@ -462,6 +462,22 @@ void CEGFViewFrame::InitializeEq()
 	InitMatSystem(m_pRenderPanel->GetHandle());
 #endif
 
+	const int modelArgIdx = g_cmdLine->FindArgument("-model");
+	if (modelArgIdx != -1)
+	{
+		EqString modelPath(g_cmdLine->GetArgumentsOf(modelArgIdx));
+
+		g_model.SetModel(nullptr);
+		FlushCache();
+
+		int cache_index = g_studioModelCache->PrecacheModel(modelPath);
+		if (cache_index != CACHE_INVALID_MODEL)
+		{
+			g_model.SetModel(g_studioModelCache->GetModel(cache_index));
+			RefreshGUI();
+	}
+}
+
 	int w, h;
 	m_pRenderPanel->GetSize(&w, &h);
 	g_matSystem->SetDeviceBackbufferSize(w, h);
@@ -1152,7 +1168,7 @@ void ShowFPS()
 #define MAX_FRAMETIME	0.3
 #define MIN_FRAMETIME	0.00001
 
-void RenderFloor()
+void RenderFloor(IGPURenderPassRecorder* rendPassRecorder)
 {
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
@@ -1174,7 +1190,7 @@ void RenderFloor()
 			vec2_zero, vec2_zero, vec2_zero, vec2_zero);
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 }
 
 void CEGFViewFrame::ReDraw()
@@ -1248,10 +1264,10 @@ void CEGFViewFrame::ReDraw()
 
 		g_model.Update( g_frametime );
 
-		if(g_model.IsSequencePlaying() )
+		const int selectedSeqIdx = m_pMotionSelection->GetSelection();
+		if(g_model.IsSequencePlaying() && selectedSeqIdx != -1)
 		{
-			int nSeq = m_pMotionSelection->GetSelection();
-			const gsequence_t& seq = g_model.GetSequence(nSeq);
+			const gsequence_t& seq = g_model.GetSequence(selectedSeqIdx);
 
 			float setFrameRate = atoi(m_pAnimFramerate->GetValue());
 
@@ -1290,7 +1306,6 @@ void CEGFViewFrame::ReDraw()
 		// Now we can draw our model
 		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime, modelDrawRenderPass);
 
-		g_matSystem->QueueCommandBuffer(modelDrawRenderPass->End());
 
 		debugoverlay->Text(color_white, "polygon count: %d\n", g_renderAPI->GetTrianglesCount());
 
@@ -1299,16 +1314,17 @@ void CEGFViewFrame::ReDraw()
 
 		// draw floor 1x1 meters
 		if(m_drawFloor->IsChecked())
-			RenderFloor();
+			RenderFloor(modelDrawRenderPass);
 
 		if (m_drawGrid->IsChecked())
 		{
-			DrawGrid(1.0f, 8, vec3_zero, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), true);
+			DrawGrid(1.0f, 8, vec3_zero, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), true, modelDrawRenderPass);
 			debugoverlay->Line3D(vec3_zero, vec3_right, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
 			debugoverlay->Line3D(vec3_zero, vec3_up, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
 			debugoverlay->Line3D(vec3_zero, vec3_forward, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
 		}
 
+		g_matSystem->QueueCommandBuffer(modelDrawRenderPass->End());
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
 		g_matSystem->EndFrame();

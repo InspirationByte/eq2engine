@@ -42,11 +42,11 @@ BEGIN_SHADER_CLASS(Default)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	bool SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) override
+	bool SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, IGPURenderPassRecorder* rendPassRecorder, const void* userData) override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = reinterpret_cast<const MatSysDefaultRenderPass*>(userData);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
-		const uint pipelineId = GenDefaultPipelineId(rendPassRecorder, *rendPassInfo, primitiveTopology);
+		const uint pipelineId = GenDefaultPipelineId(rendPassRecorder, *rendPassInfo, primTopology);
 
 		IGPURenderPipelinePtr pipeline;
 		auto it = m_renderPipelines.find(pipelineId);
@@ -105,9 +105,9 @@ BEGIN_SHADER_CLASS(Default)
 			}
 
 			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
-				.Topology(primitiveTopology)
+				.Topology(primTopology)
 				.Cull(rendPassInfo->cullMode)
-				.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
+				.StripIndex(primTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 
 			pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc);
@@ -117,14 +117,14 @@ BEGIN_SHADER_CLASS(Default)
 			pipeline = *it;
 
 		rendPassRecorder->SetPipeline(pipeline);
-		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(BINDGROUP_CONSTANT, renderAPI, rendPassRecorder, userData), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_CONSTANT, meshInstFormat, uniformBuffers, userData), nullptr);
 		return true;
 	}
 
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -141,17 +141,17 @@ BEGIN_SHADER_CLASS(Default)
 			MatSysCamera cameraParams;
 			g_matSystem->GetCameraParams(cameraParams, true);
 
-			GPUBufferPtrView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
-			GPUBufferPtrView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
+			GPUBufferView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+			GPUBufferView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer)
 				.Buffer(1, materialParamsBuffer)
 				.Sampler(2, baseTexture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();
 
-			return renderAPI->CreateBindGroup(rendPassRecorder->GetPipeline(), bindGroupId, shaderBindGroupDesc);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
 		}
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}

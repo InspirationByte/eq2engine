@@ -39,7 +39,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		return nameHash == StringToHashConst("DynMeshVertex");
 	}
 
-	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, uint usedVertexLayoutBits, Array<EqString>& shaderQuery) const
 	{
 		if(m_blurModes & 0x1)
 			shaderQuery.append("BLUR_X_LOW");
@@ -67,7 +67,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -85,12 +85,12 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 				}
 
 				m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
-				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 					.Buffer(0, m_materialParamsBuffer)
 					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
 			}
 			return m_materialBindGroup;
 		}
@@ -99,11 +99,12 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 			MatSysCamera cameraParams;
 			g_matSystem->GetCameraParams(cameraParams, true);
 
-			GPUBufferPtrView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
-			BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+			GPUBufferView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
+				.Name(GetName())
 				.Buffer(0, cameraParamsBuffer)
 				.End();
-			return renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), bindGroupId, shaderBindGroupDesc);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
 		}
 		return GetEmptyBindGroup(bindGroupId, renderAPI);
 	}

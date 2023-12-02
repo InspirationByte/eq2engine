@@ -15,6 +15,7 @@ using ITexturePtr = CRefPtr<ITexture>;
 
 class IGPURenderPassRecorder;
 struct MeshInstanceFormatRef;
+struct RenderBufferInfo;
 
 class IGPURenderPipeline;
 using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
@@ -86,7 +87,7 @@ public:
 	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
 
 	virtual bool				IsSupportInstanceFormat(int nameHash) const = 0;
-	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutUsedBufferBits, EPrimTopology primitiveTopology, const void* userData) = 0;
+	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, IGPURenderPassRecorder* rendPassRecorder, const void* userData) = 0;
 
 	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
 };

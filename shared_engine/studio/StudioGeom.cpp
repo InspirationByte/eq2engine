@@ -18,96 +18,10 @@
 
 #include "physics/IStudioShapeCache.h"
 #include "render/Decals.h"
+#include "render/StudioRenderDefs.h"
 #include "materialsystem1/IMaterialSystem.h"
 
 using namespace Threading;
-
-static EGFHwVertex::VertexStreamId s_defaultVertexStreamMappingDesc[] = {
-	EGFHwVertex::VERT_POS_UV,
-	EGFHwVertex::VERT_TBN,
-	EGFHwVertex::VERT_BONEWEIGHT,
-	EGFHwVertex::VERT_COLOR,
-};
-ArrayCRef<EGFHwVertex::VertexStreamId> g_defaultVertexStreamMapping = { s_defaultVertexStreamMappingDesc ,  elementsOf(s_defaultVertexStreamMappingDesc) };
-
-EGFHwVertex::PositionUV::PositionUV(const studioVertexPosUv_t& initFrom)
-{
-	pos = Vector4D(initFrom.point, 1.0f);
-	texcoord = initFrom.texCoord;
-}
-
-EGFHwVertex::TBN::TBN(const studioVertexTBN_t& initFrom)
-{
-	tangent = initFrom.tangent;
-	binormal = initFrom.binormal;
-	normal = initFrom.normal;
-}
-
-EGFHwVertex::BoneWeights::BoneWeights()
-{
-	memset(boneWeights, 0, sizeof(boneWeights));
-	for (int i = 0; i < MAX_MODEL_VERTEX_WEIGHTS; i++)
-		boneIndices[i] = -1;
-}
-
-EGFHwVertex::BoneWeights::BoneWeights(const studioBoneWeight_t& initFrom) : BoneWeights()
-{
-	ASSERT(initFrom.numweights <= MAX_MODEL_VERTEX_WEIGHTS);
-	for (int i = 0; i < min(initFrom.numweights, MAX_MODEL_VERTEX_WEIGHTS); i++)
-	{
-		boneIndices[i] = initFrom.bones[i];
-		boneWeights[i] = initFrom.weight[i];
-	}
-}
-
-EGFHwVertex::Color::Color(const studioVertexColor_t& initFrom)
-{
-	color = initFrom.color;
-}
-
-const VertexLayoutDesc& EGFHwVertex::PositionUV::GetVertexLayoutDesc()
-{
-	static const VertexLayoutDesc g_EGFVertexUvFormat = Builder<VertexLayoutDesc>()
-		.UserId(EGFHwVertex::VERT_POS_UV)
-		.Stride(sizeof(EGFHwVertex::PositionUV))
-		.Attribute(VERTEXATTRIB_POSITION, "position", 0, offsetOf(EGFHwVertex::PositionUV, pos), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(EGFHwVertex::PositionUV, texcoord), ATTRIBUTEFORMAT_HALF, 2)
-		.End();
-	return g_EGFVertexUvFormat;
-}
-
-const VertexLayoutDesc& EGFHwVertex::TBN::GetVertexLayoutDesc()
-{
-	static const VertexLayoutDesc g_EGFTBNFormat = Builder<VertexLayoutDesc>()
-		.UserId(EGFHwVertex::VERT_TBN)
-		.Stride(sizeof(EGFHwVertex::TBN))
-		.Attribute(VERTEXATTRIB_TEXCOORD, "tangent", 2, offsetOf(EGFHwVertex::TBN, tangent), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "binormal", 3, offsetOf(EGFHwVertex::TBN, binormal), ATTRIBUTEFORMAT_HALF, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "normal", 4, offsetOf(EGFHwVertex::TBN, normal), ATTRIBUTEFORMAT_HALF, 4)
-		.End();
-	return g_EGFTBNFormat;
-}
-
-const VertexLayoutDesc& EGFHwVertex::BoneWeights::GetVertexLayoutDesc()
-{
-	static const VertexLayoutDesc g_EGFBoneWeightsFormat = Builder<VertexLayoutDesc>()
-		.UserId(EGFHwVertex::VERT_BONEWEIGHT)
-		.Stride(sizeof(EGFHwVertex::BoneWeights))
-		.Attribute(VERTEXATTRIB_TEXCOORD, "boneId", 5, offsetOf(EGFHwVertex::BoneWeights, boneIndices), ATTRIBUTEFORMAT_UINT8, 4)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "boneWt", 6, offsetOf(EGFHwVertex::BoneWeights, boneWeights), ATTRIBUTEFORMAT_HALF, 4)
-		.End();
-	return g_EGFBoneWeightsFormat;
-}
-
-const VertexLayoutDesc& EGFHwVertex::Color::GetVertexLayoutDesc()
-{
-	static const VertexLayoutDesc g_EGFColorFormat = Builder<VertexLayoutDesc>()
-		.UserId(EGFHwVertex::VERT_COLOR)
-		.Stride(sizeof(EGFHwVertex::Color))
-		.Attribute(VERTEXATTRIB_TEXCOORD, "color", 7, offsetOf(EGFHwVertex::Color, color), ATTRIBUTEFORMAT_UINT8, 4)
-		.End();
-	return g_EGFColorFormat;
-}
 
 DECLARE_CVAR_CLAMP(r_egf_LodTest, "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
 DECLARE_CVAR(r_egf_NoTempDecals, "0", "Disables temp decals", CV_CHEAT);
@@ -890,24 +804,30 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 	if (!drawProperties.bodyGroupFlags)
 		return;
 
-	RenderBoneTransform rendBoneTransforms[128];
-	ArrayCRef<RenderBoneTransform> rendBoneTransformsArray(nullptr);
-	const bool isSkinned = drawProperties.boneTransforms;
-
-	if (isSkinned)
-	{
-		const int numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
-		rendBoneTransformsArray = ArrayCRef(rendBoneTransforms, numBones);
-	}
-
 	RenderDrawCmd drawCmd;
 	drawCmd.SetInstanceFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat())
 		.SetInstanceData(instData)
 		.SetIndexBuffer(m_indexBuffer, static_cast<EIndexFormat>(m_indexFmt));
 
+	GPUBufferView bonesBuffer;	// TODO: buffer with rest pose.
+	const bool isSkinned = drawProperties.boneTransforms && m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT];
+	if (isSkinned)
+	{
+		RenderBoneTransform rendBoneTransforms[128];
+		const int numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
+		if(numBones)
+		{
+			bonesBuffer = g_matSystem->GetTransientUniformBuffer(rendBoneTransforms, numBones * sizeof(RenderBoneTransform));
+
+			// HACK: This is a temporary hack until we get proper identification
+			// or maybe hardware skinning using Compute shaders
+			drawCmd.instanceInfo.instFormat.nameHash = StringToHash(EqString(drawCmd.instanceInfo.instFormat.name) + "Skinned");
+		}
+	}
+
 	// setup vertex buffers
 	{
-		int setVertStreams = 0;
+		uint setVertStreams = 0;
 		int numBitsSet = 0;
 		
 		ArrayCRef<VertexLayoutDesc> layoutDescList = drawCmd.instanceInfo.instFormat.layout;
@@ -920,6 +840,9 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			if (vertStreamId >= EGFHwVertex::VERT_COUNT)
 				continue;
 
+			if (!m_vertexBuffers[vertStreamId])
+				continue;
+
 			if (setVertStreams & (1 << int(vertStreamId)))
 				continue;
 
@@ -927,6 +850,9 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			setVertStreams |= (1 << int(vertStreamId));
 			++numBitsSet;
 		}
+
+		drawCmd.instanceInfo.instFormat.usedLayoutBits &= ~7;
+		drawCmd.instanceInfo.instFormat.usedLayoutBits |= setVertStreams;
 	}
 
 	if (drawProperties.setupDrawCmd)
@@ -970,19 +896,19 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			else if (materialFlags && !drawProperties.excludeMaterialFlags && !materialFlagsMask)
 				continue;
 
-			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
-			if (meshRef.supportsSkinning)
-				drawCmd.boneTransforms = rendBoneTransformsArray;
-			else
-				drawCmd.boneTransforms = ArrayCRef<RenderBoneTransform>(nullptr);
+			drawCmd.uniformBuffers.clear();
 
-			drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
+			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
+			if (isSkinned && meshRef.supportsSkinning)
+				drawCmd.AddUniformBufferView(RenderBoneTransformID, bonesBuffer);
 
 			if (drawProperties.setupBodyGroup)
 				drawProperties.setupBodyGroup(drawCmd, material, i, j);
 
 			if (!drawProperties.skipMaterials)
-				drawCmd.material = material;
+				drawCmd.SetMaterial(material);
+
+			drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
 			g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
 		}

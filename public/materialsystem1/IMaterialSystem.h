@@ -187,8 +187,8 @@ public:
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 
 	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
-	virtual GPUBufferPtrView		GetTransientUniformBuffer(const void* data, int64 size) = 0;
-	virtual GPUBufferPtrView		GetTransientVertexBuffer(const void* data, int64 size) = 0;
+	virtual GPUBufferView		GetTransientUniformBuffer(const void* data, int64 size) = 0;
+	virtual GPUBufferView		GetTransientVertexBuffer(const void* data, int64 size) = 0;
 
 	// queues command buffer. Execution order is guaranteed
 	virtual void					QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) = 0;
@@ -197,7 +197,7 @@ public:
 	// submits all queued command buffers to RHI.
 	virtual void					SubmitQueuedCommands() = 0;
 
-	virtual void					SetupMaterialPipeline(IMaterial* material, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, int vertexLayoutBits, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual bool					SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder) = 0;
 	virtual bool					SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder) = 0;
 

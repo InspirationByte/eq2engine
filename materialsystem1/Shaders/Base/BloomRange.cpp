@@ -46,19 +46,19 @@ BEGIN_SHADER_CLASS(BloomRange)
 		cmdRecorder->WriteBuffer(m_proxyBuffer, bufferData.ptr(), bufferData.numElem() , 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI, IGPURenderPassRecorder* rendPassRecorder, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
 			if (!m_materialBindGroup)
 			{
 				const ITexturePtr& baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
-				BindGroupDesc shaderBindGroupDesc = Builder<BindGroupDesc>()
+				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 					.Buffer(0, m_proxyBuffer)
 					.Sampler(1, baseTexture->GetSamplerState())
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = renderAPI->CreateBindGroup(GetPipelineLayout(renderAPI), 1, shaderBindGroupDesc);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
 			}
 
 			return m_materialBindGroup;
