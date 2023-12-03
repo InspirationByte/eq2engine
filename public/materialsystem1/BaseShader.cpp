@@ -269,7 +269,7 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 		newPipelineInfo.pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
 		if (!newPipelineInfo.pipeline)
 		{
-			ASSERT_FAIL("Shader %s is unable to create pipeline %s", GetName());
+			ASSERT_FAIL("Shader %s is unable to create pipeline", GetName());
 			return false;
 		}
 	}
