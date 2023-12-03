@@ -8,6 +8,7 @@
 #pragma once
 #include "egf/model.h"
 #include "StudioVertex.h"
+#include "materialsystem1/renderers/IGPUBuffer.h"
 
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
@@ -24,6 +25,7 @@ struct MeshInstanceData;
 struct RenderDrawCmd;
 struct DecalMakeInfo;
 struct DecalData;
+struct RenderBoneTransform;
 
 enum EModelLoadingState
 {
@@ -64,6 +66,8 @@ public:
 	Matrix4x4					GetLocalTransformMatrix(int transformIdx) const;
 
 	const BoundingBox&			GetBoundingBox() const;
+
+	int							ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const;
 
 	// Makes dynamic temporary decal
 	CRefPtr<DecalData>			MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
@@ -155,11 +159,10 @@ struct CEqStudioGeom::DrawProps
 	// DEPRECATED
 	ArrayCRef<EGFHwVertex::VertexStreamId> vertexStreamMapping{ g_defaultVertexStreamMapping };
 	IVertexFormat*			vertexFormat{ nullptr };
-	Matrix4x4*				boneTransforms{ nullptr };
 	// END DEPRECATED
 
 	//MeshInstanceFormatRef	instFormat;
-	//GPUBufferView			boneTransforms; // BSKN uniform buffer
+	GPUBufferView			boneTransforms; // BSKN uniform buffer
 
 	SetupDrawFunc			setupDrawCmd;	// called once before entire EGF is drawn
 	BodyGroupFunc			setupBodyGroup;	// called multiple times before body group is drawn

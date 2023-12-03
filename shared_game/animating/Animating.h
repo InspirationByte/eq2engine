@@ -80,7 +80,7 @@ public:
 	void						AdvanceFrame(float fDt);
 	void						UpdateIK(float fDt, const Matrix4x4& worldTransform);
 
-	void						RecalcBoneTransforms();
+	virtual void				RecalcBoneTransforms();
 
 	void						DebugRender(const Matrix4x4& worldTransform);
 protected:

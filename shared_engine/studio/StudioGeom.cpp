@@ -104,20 +104,19 @@ static bool TransformEGFVertex(EGFHwVertex::PositionUV& vertPos, EGFHwVertex::TB
 	return bAffected;
 }
 
-static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, const Matrix4x4* boneMatrices, RenderBoneTransform* bquats)
+int CEqStudioGeom::ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const
 {
-	const studioHdr_t& studio = model->GetStudioHdr();
+	const studioHdr_t& studio = GetStudioHdr();
 	const int numBones = studio.numBones;
 
 	for (int i = 0; i < numBones; i++)
 	{
-		// FIXME: kind of slowness
-		const Matrix4x4 toAbsTransform = (!model->GetJoint(i).absTrans * boneMatrices[i]);
+		const Matrix4x4 transform = m_joints[i].invAbsTrans * boneMatrices[i];
 
 		// cast matrices to quaternions
 		// note that quaternions uses transposes matrix set.
-		bquats[i].quat = Quaternion(transpose(toAbsTransform).getRotationComponent()).asVector4D();
-		bquats[i].origin = Vector4D(toAbsTransform.rows[3].xyz(), 1);
+		bquats[i].quat = Quaternion(transform.getRotationComponentTransposed());
+		bquats[i].origin = Vector4D(transform.getTranslationComponent(), 1);
 	}
 
 	return numBones;
@@ -734,6 +733,8 @@ void CEqStudioGeom::LoadSetupBones()
 			joint.absTrans = joint.localTrans * m_joints[joint.parent].absTrans;
 		else
 			joint.absTrans = joint.localTrans;
+
+		joint.invAbsTrans = !joint.absTrans;
 	}
 
 	// init ik chain links
@@ -809,21 +810,27 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		.SetInstanceData(instData)
 		.SetIndexBuffer(m_indexBuffer, static_cast<EIndexFormat>(m_indexFmt));
 
-	const bool isSkinned = drawProperties.boneTransforms && m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT];
+	const bool isSkinned = [&]() -> bool{
+		if (!m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT])
+			return false;
+
+		if (!drawProperties.boneTransforms)
+			return false;
+
+		const studioHdr_t& studio = GetStudioHdr();
+		const int numBones = studio.numBones;
+		ASSERT_MSG(drawProperties.boneTransforms.size >= numBones * sizeof(RenderBoneTransform), "Bones buffer size %d while required %d", drawProperties.boneTransforms.size, numBones * sizeof(RenderBoneTransform));
+
+		return true;
+	}();
+
 	if (isSkinned)
 	{
-		RenderBoneTransform rendBoneTransforms[128];
-		const int numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
-		if(numBones > 0)
-		{
-			GPUBufferView bonesBuffer = g_matSystem->GetTransientUniformBuffer(rendBoneTransforms, numBones * sizeof(RenderBoneTransform));
+		drawCmd.AddUniformBufferView(RenderBoneTransformID, drawProperties.boneTransforms);
 
-			drawCmd.AddUniformBufferView(RenderBoneTransformID, bonesBuffer);
-
-			// HACK: This is a temporary hack until we get proper identification
-			// or maybe hardware skinning using Compute shaders
-			drawCmd.instanceInfo.instFormat.nameHash = StringToHash(EqString(drawCmd.instanceInfo.instFormat.name) + "Skinned");
-		}
+		// HACK: This is a temporary hack until we get proper identification
+		// or maybe hardware skinning using Compute shaders
+		drawCmd.instanceInfo.instFormat.nameHash = StringToHash(EqString(drawCmd.instanceInfo.instFormat.name) + "Skinned");
 	}
 
 	// setup vertex buffers

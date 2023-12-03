@@ -130,6 +130,7 @@ struct studioMotionData_t
 struct studioJoint_t
 {
 	Matrix4x4			absTrans;
+	Matrix4x4			invAbsTrans;
 	Matrix4x4			localTrans;
 	FixedArray<int, 16>	childs;
 

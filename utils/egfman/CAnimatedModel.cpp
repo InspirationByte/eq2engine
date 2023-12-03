@@ -19,6 +19,7 @@
 #include "materialsystem1/MeshBuilder.h"
 
 #include "render/IDebugOverlay.h"
+#include "render/StudioRenderDefs.h"
 
 #define INITIAL_TIME 0.0f
 
@@ -384,8 +385,11 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	else
 		startLOD = startLod;
 
+	RenderBoneTransform boneTransforms[128];
+	const int numBones = m_pModel->ConvertBoneMatricesToQuaternions(m_boneTransforms, boneTransforms);
+	
 	CEqStudioGeom::DrawProps drawProperties;
-	drawProperties.boneTransforms = m_boneTransforms;
+	drawProperties.boneTransforms = g_matSystem->GetTransientUniformBuffer(boneTransforms, numBones * sizeof(RenderBoneTransform));
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
 	m_pModel->Draw(drawProperties, MeshInstanceData{}, rendPassRecorder);
