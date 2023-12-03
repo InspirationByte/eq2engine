@@ -95,10 +95,18 @@ public:
 	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, IGPURenderPassRecorder* rendPassRecorder, const void* userData);
 
 protected:
-	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const { return nullptr; }
-	virtual void				FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const {}
-	virtual void				FillBindGroupLayout_RenderPass(BindGroupLayoutDesc& bindGroupLayout) const {}
-	virtual void				FillBindGroupLayout_Transient(BindGroupLayoutDesc& bindGroupLayout) const {}
+	struct PipelineInfo
+	{
+		mutable IGPUBindGroupPtr	emptyBindGroup[4];
+		IGPURenderPipelinePtr		pipeline;
+		IGPUPipelineLayoutPtr		layout;
+		int							vertexLayoutNameHash;
+	};
+
+	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, const IGPURenderPassRecorder* rendPassRecorder, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const { return nullptr; }
+	virtual void				FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
+	virtual void				FillBindGroupLayout_RenderPass(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
+	virtual void				FillBindGroupLayout_Transient(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
 
 	void						FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const;
 	void						FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const;
@@ -106,9 +114,9 @@ protected:
 	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
 	virtual void				BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const {}
 	
-	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass) const;
+	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 
-	IGPUBindGroupPtr			GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const;
+	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
 	uint						GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
@@ -119,8 +127,6 @@ protected:
 
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
-	mutable IGPUPipelineLayoutPtr	m_pipelineLayout;
-	mutable IGPUBindGroupPtr	m_emptyBindGroup[4];
 	IMaterial*					m_material{ nullptr };
 
 	MatVec2Proxy				m_baseTextureTransformVar;
@@ -129,14 +135,13 @@ protected:
 
 	Array<MatTextureProxy>		m_usedTextures{ PP_SL };
 
-	mutable Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
+	mutable Map<uint, PipelineInfo>	m_renderPipelines{ PP_SL };
 	ETexAddressMode				m_texAddressMode{ TEXADDRESS_WRAP };
 	ETexFilterMode				m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
 	EShaderBlendMode			m_blendMode{ SHADER_BLEND_NONE };
 
 	int							m_flags{ 0 };
 	bool						m_isInit{ false };
-	mutable bool				m_pipelineLayoutNeeded{ true };
 };
 
 // DEPRECATED

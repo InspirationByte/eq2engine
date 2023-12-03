@@ -88,7 +88,7 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	m_blendMode = blendMode;
 }
 
-IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const IGPURenderPassRecorder* renderPass) const
+IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
 {
 	static const char* s_bindGroupNames[] = {
 		"Constant",
@@ -96,28 +96,28 @@ IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBin
 		"Transient",
 	};
 
-	if(m_pipelineLayout)
+	if(pipelineInfo.layout)
 	{
 		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
-		return renderAPI->CreateBindGroup(m_pipelineLayout, bindGroupId, bindGroupDesc);
+		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupId, bindGroupDesc);
 	}
 
 	bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
-	return renderAPI->CreateBindGroup(renderPass->GetPipeline(), bindGroupId, bindGroupDesc);
+	return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupId, bindGroupDesc);
 }
 
-IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(EBindGroupId bindGroupId, IShaderAPI* renderAPI) const
+IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const
 {
-	if (!m_pipelineLayout)
+	if (!pipelineInfo.layout)
 		return nullptr;
 
 	// create empty bind group
-	if (!m_emptyBindGroup[bindGroupId])
+	if (!pipelineInfo.emptyBindGroup[bindGroupId])
 	{
 		BindGroupDesc emptyBindGroupDesc;
-		m_emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(m_pipelineLayout, bindGroupId, emptyBindGroupDesc);
+		pipelineInfo.emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupId, emptyBindGroupDesc);
 	}
-	return m_emptyBindGroup[bindGroupId];
+	return pipelineInfo.emptyBindGroup[bindGroupId];
 }
 
 uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const
@@ -222,15 +222,17 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 	const uint pipelineId = GetRenderPipelineId(rendPassRecorder, meshInstFormat.nameHash, meshInstFormat.usedLayoutBits, primTopology);
 	
 	auto it = m_renderPipelines.find(pipelineId);
-	IGPURenderPipelinePtr pipeline;
 	if (it.atEnd())
 	{
 		RenderPipelineDesc renderPipelineDesc;
 		FillRenderPipelineDesc(rendPassRecorder, meshInstFormat,  primTopology, renderPipelineDesc);
 		BuildPipelineShaderQuery(meshInstFormat, renderPipelineDesc.shaderQuery);
 
+		it = m_renderPipelines.insert(pipelineId);
+		PipelineInfo& newPipelineInfo = *it;
+		newPipelineInfo.vertexLayoutNameHash = meshInstFormat.nameHash;
+
 		// Create pipeline layout
-		if (m_pipelineLayoutNeeded)
 		{
 			// MatSystem shader by default defines three bind groups, which differ by the lifetime:
 			// 
@@ -246,9 +248,9 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 			PipelineLayoutDesc pipelineLayoutDesc;
 			pipelineLayoutDesc.name = GetName();
 
-			FillBindGroupLayout_Constant(pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_RenderPass(pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_Transient(pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_Constant(meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_RenderPass(meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_Transient(meshInstFormat, pipelineLayoutDesc.bindGroups.append());
 
 			bool userDefinedPipelineLayout = false;
 			for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
@@ -261,28 +263,26 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 			}
 
 			if (userDefinedPipelineLayout)
-				m_pipelineLayout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-			m_pipelineLayoutNeeded = false;
+				newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
 		}
 
-		pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, m_pipelineLayout);
-		if (!pipeline)
+		newPipelineInfo.pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
+		if (!newPipelineInfo.pipeline)
 		{
 			ASSERT_FAIL("Shader %s is unable to create pipeline %s", GetName());
 			return false;
 		}
-		it = m_renderPipelines.insert(pipelineId, pipeline);
 	}
-	else
-		pipeline = *it;
 
-	if (!pipeline)
+	const PipelineInfo& pipelineInfo = *it;
+
+	if (!pipelineInfo.pipeline)
 		return false;
 
-	rendPassRecorder->SetPipeline(pipeline);
-	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_CONSTANT, meshInstFormat, uniformBuffers, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_RENDERPASS, meshInstFormat, uniformBuffers, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_TRANSIENT, meshInstFormat, uniformBuffers, userData), nullptr);
+	rendPassRecorder->SetPipeline(pipelineInfo.pipeline);
+	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, uniformBuffers, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, BINDGROUP_RENDERPASS, pipelineInfo, rendPassRecorder, uniformBuffers, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, BINDGROUP_TRANSIENT, pipelineInfo, rendPassRecorder, uniformBuffers, userData), nullptr);
 
 	return true;
 }
@@ -323,10 +323,6 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 // Unload shaders, textures
 void CBaseShader::Unload()
 {
-	m_pipelineLayout = nullptr;
-	for (int i = 0; i < elementsOf(m_emptyBindGroup); ++i)
-		m_emptyBindGroup[i] = 0;
-
 	m_renderPipelines.clear(true);
 	for (int i = 0; i < m_usedTextures.numElem(); ++i)
 	{

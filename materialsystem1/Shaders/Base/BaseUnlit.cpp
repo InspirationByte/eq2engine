@@ -49,7 +49,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			shaderQuery.append("ALPHATEST");
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, const IGPURenderPassRecorder* rendPassRecorder, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -61,7 +61,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
 			}
 
 			// TODO: update BaseTextureTransform
@@ -81,21 +81,21 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, passParamsBuffer)
 				.End();
-			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
 		}
 		else if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
-			if (meshInstFormat.nameHash == StringToHashConst("EGFVertexSkinned"))
+			if (pipelineInfo.vertexLayoutNameHash == StringToHashConst("EGFVertexSkinned"))
 			{
 				ASSERT(uniformBuffers[0].signature == RenderBoneTransformID)
 
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 					.Buffer(0, uniformBuffers[0].bufferView)
 					.End();
-				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
 			}
 		}
-		return GetEmptyBindGroup(bindGroupId, renderAPI);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const

@@ -48,7 +48,6 @@ BEGIN_SHADER_CLASS(Default)
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
 		const uint pipelineId = GenDefaultPipelineId(rendPassRecorder, *rendPassInfo, primTopology);
 
-		IGPURenderPipelinePtr pipeline;
 		auto it = m_renderPipelines.find(pipelineId);
 		if (it.atEnd())
 		{
@@ -110,21 +109,27 @@ BEGIN_SHADER_CLASS(Default)
 				.StripIndex(primTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 
-			pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc);
-			it = m_renderPipelines.insert(pipelineId, pipeline);
-		}
-		else
-			pipeline = *it;
+			it = m_renderPipelines.insert(pipelineId);
+			PipelineInfo& newPipelineInfo = *it;
+			newPipelineInfo.vertexLayoutNameHash = meshInstFormat.nameHash;
 
-		rendPassRecorder->SetPipeline(pipeline);
-		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, rendPassRecorder, BINDGROUP_CONSTANT, meshInstFormat, uniformBuffers, userData), nullptr);
+			newPipelineInfo.pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc);
+		}
+
+		const PipelineInfo& pipelineInfo = *it;
+
+		if (!pipelineInfo.pipeline)
+			return false;
+
+		rendPassRecorder->SetPipeline(pipelineInfo.pipeline);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, meshInstFormat, uniformBuffers, userData), nullptr);
 		return true;
 	}
 
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, const IGPURenderPassRecorder* rendPassRecorder, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -151,12 +156,11 @@ BEGIN_SHADER_CLASS(Default)
 				.Texture(3, baseTexture)
 				.End();
 
-			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
 		}
-		return GetEmptyBindGroup(bindGroupId, renderAPI);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
 	}
 
-	Map<uint, IGPURenderPipelinePtr>	m_renderPipelines{ PP_SL };
 	MatTextureProxy			m_baseTexture;
 
 END_SHADER_CLASS

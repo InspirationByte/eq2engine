@@ -37,7 +37,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, const IGPURenderPassRecorder* rendPassRecorder, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -50,11 +50,11 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 					.Texture(2, tex1)
 					.Texture(3, tex2)
 					.End();
-				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
 			}
 			return m_materialBindGroup;
 		}
-		return GetEmptyBindGroup(bindGroupId, renderAPI);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const

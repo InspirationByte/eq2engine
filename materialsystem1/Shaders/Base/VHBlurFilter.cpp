@@ -67,7 +67,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 			.End();
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, const IGPURenderPassRecorder* rendPassRecorder, EBindGroupId bindGroupId, const MeshInstanceFormatRef& meshInstFormat, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, const IGPURenderPassRecorder* rendPassRecorder, ArrayCRef<RenderBufferInfo> uniformBuffers, const void* userData) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -90,7 +90,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 					.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
 			}
 			return m_materialBindGroup;
 		}
@@ -104,9 +104,9 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 				.Name(GetName())
 				.Buffer(0, cameraParamsBuffer)
 				.End();
-			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, rendPassRecorder);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
 		}
-		return GetEmptyBindGroup(bindGroupId, renderAPI);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const

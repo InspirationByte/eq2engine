@@ -152,13 +152,16 @@ struct CEqStudioGeom::DrawProps
 	using SetupDrawFunc = EqFunction<void(RenderDrawCmd& drawCmd)>;
 	using BodyGroupFunc = EqFunction<void(RenderDrawCmd& drawCmd, IMaterial* material, int bodyGroup, int meshIndex)>;
 
+	// DEPRECATED
 	ArrayCRef<EGFHwVertex::VertexStreamId> vertexStreamMapping{ g_defaultVertexStreamMapping };
-	//MeshInstanceFormatRef	instFormat;
-	//MeshInstanceFormatRef	instFormatSkinned;
 	IVertexFormat*			vertexFormat{ nullptr };
 	Matrix4x4*				boneTransforms{ nullptr };
+	// END DEPRECATED
 
-	SetupDrawFunc			setupDrawCmd;		// called once before entire EGF is drawn
+	//MeshInstanceFormatRef	instFormat;
+	//GPUBufferView			boneTransforms; // BSKN uniform buffer
+
+	SetupDrawFunc			setupDrawCmd;	// called once before entire EGF is drawn
 	BodyGroupFunc			setupBodyGroup;	// called multiple times before body group is drawn
 	
 	int						bodyGroupFlags{ -1 };

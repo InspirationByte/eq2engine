@@ -809,15 +809,16 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		.SetInstanceData(instData)
 		.SetIndexBuffer(m_indexBuffer, static_cast<EIndexFormat>(m_indexFmt));
 
-	GPUBufferView bonesBuffer;	// TODO: buffer with rest pose.
 	const bool isSkinned = drawProperties.boneTransforms && m_vertexBuffers[EGFHwVertex::VERT_BONEWEIGHT];
 	if (isSkinned)
 	{
 		RenderBoneTransform rendBoneTransforms[128];
 		const int numBones = ComputeQuaternionsForSkinning(this, drawProperties.boneTransforms, rendBoneTransforms);
-		if(numBones)
+		if(numBones > 0)
 		{
-			bonesBuffer = g_matSystem->GetTransientUniformBuffer(rendBoneTransforms, numBones * sizeof(RenderBoneTransform));
+			GPUBufferView bonesBuffer = g_matSystem->GetTransientUniformBuffer(rendBoneTransforms, numBones * sizeof(RenderBoneTransform));
+
+			drawCmd.AddUniformBufferView(RenderBoneTransformID, bonesBuffer);
 
 			// HACK: This is a temporary hack until we get proper identification
 			// or maybe hardware skinning using Compute shaders
@@ -896,18 +897,13 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			else if (materialFlags && !drawProperties.excludeMaterialFlags && !materialFlagsMask)
 				continue;
 
-			drawCmd.uniformBuffers.clear();
-
-			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
-			if (isSkinned && meshRef.supportsSkinning)
-				drawCmd.AddUniformBufferView(RenderBoneTransformID, bonesBuffer);
-
 			if (drawProperties.setupBodyGroup)
 				drawProperties.setupBodyGroup(drawCmd, material, i, j);
 
 			if (!drawProperties.skipMaterials)
 				drawCmd.SetMaterial(material);
 
+			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
 			drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
 			g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
