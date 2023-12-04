@@ -41,7 +41,7 @@ public:
 
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
 	virtual IGPURenderPipelinePtr	GetPipeline() const = 0;
-	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
+	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) = 0;
 
 	// TODO: use IGPUBuffer instead of IVertexBuffer and IIndexBuffer
 	virtual void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
@@ -60,7 +60,10 @@ public:
 
 	virtual void*					GetUserData() const = 0;
 
+	// completes pass recording. After this recorder can be disposed
 	virtual void					Complete() = 0;
+
+	// completes pass recording and command recording.
 	virtual IGPUCommandBufferPtr	End() = 0;
 };
 using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
@@ -83,14 +86,17 @@ public:
 	virtual void					SetPipeline(IGPUComputePipeline* pipeline) = 0;
 	virtual IGPUComputePipelinePtr	GetPipeline() const = 0;
 
-	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) = 0;
+	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) = 0;
 
 	virtual void					DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ) = 0;
 	virtual void					DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset) = 0;
 
 	virtual void*					GetUserData() const = 0;
 
+	// completes pass recording. After this recorder can be disposed
 	virtual void					Complete() = 0;
+
+	// completes pass recording and command recording.
 	virtual IGPUCommandBufferPtr	End() = 0;
 };
 using IGPUComputePassRecorderPtr = CRefPtr<IGPUComputePassRecorder>;
@@ -103,7 +109,7 @@ public:
 	virtual ~IGPUCommandRecorder() {}
 
 	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
-	virtual IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData) const = 0;
+	virtual IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData = nullptr) const = 0;
 
 	virtual void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const = 0;
 	void								WriteBufferView(const GPUBufferView& bufferView, const void* data, int64 size = -1, int64 offset = 0) const;

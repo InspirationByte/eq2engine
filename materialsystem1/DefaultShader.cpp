@@ -122,7 +122,7 @@ BEGIN_SHADER_CLASS(Default)
 			return false;
 
 		rendPassRecorder->SetPipeline(pipelineInfo.pipeline);
-		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, meshInstFormat, uniformBuffers, userData), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, meshInstFormat, uniformBuffers, userData));
 		return true;
 	}
 

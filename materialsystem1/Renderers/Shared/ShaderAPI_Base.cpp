@@ -400,31 +400,28 @@ ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CImagePtr>& pImages, c
 ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 													ETextureFormat nFormat,
 													int width, int height,
-													int depth,
 													int arraySize,
-													ETexFilterMode texFilter,
-													ETexAddressMode textureAddress,
-													int nFlags,
-													int nDataSize, const ubyte* pData)
+													const SamplerStateParams& sampler,
+													int flags,
+													int dataSize, const ubyte* data)
 {
 	CImagePtr genTex = CRefPtr_new(CImage);
 	genTex->SetName(pszName);
 
 	// make texture
-	ubyte* newData = genTex->Create(nFormat, width, height, depth, 1, arraySize);
+	ubyte* newData = genTex->Create(nFormat, width, height, 1, 1, arraySize);
 
 	if(newData)
 	{
-		int nTexDataSize = width*height*depth*arraySize*GetBytesPerPixel(nFormat);
+		const int texDataSize = width * height * arraySize * GetBytesPerPixel(nFormat);
 
-		memset(newData, 0, nTexDataSize);
+		memset(newData, 0, texDataSize);
 
 		// copy data if available
-		if(pData && nDataSize)
+		if(data && dataSize)
 		{
-			ASSERT(nDataSize <= nTexDataSize);
-
-			memcpy(newData, pData, nDataSize);
+			ASSERT(dataSize <= texDataSize);
+			memcpy(newData, data, dataSize);
 		}
 	}
 	else
@@ -436,9 +433,7 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 	FixedArray<CImagePtr, 1> imgs;
 	imgs.append(genTex);
 
-	SamplerStateParams sampler(texFilter, textureAddress);
-
-	return CreateTexture(imgs, sampler, nFlags);
+	return CreateTexture(imgs, sampler, flags);
 }
 
 //-------------------------------------------------------------

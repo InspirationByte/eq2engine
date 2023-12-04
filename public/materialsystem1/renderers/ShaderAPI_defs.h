@@ -665,10 +665,12 @@ struct BindGroupDesc
 	using EntryList = Array<Entry>;
 	EntryList			entries{ PP_SL };
 	EqString			name;
+	int					groupIdx{ -1 };
 };
 
 FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(name, Name)
+	FLUENT_SET_VALUE(groupIdx, GroupIndex)
 	ThisType& Buffer(int binding, const GPUBufferView& buffer)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
@@ -938,6 +940,13 @@ struct ComputePipelineDesc
 	Array<EqString>		shaderQuery{ PP_SL };
 	EqString			shaderEntryPoint{ "main" };
 };
+
+FLUENT_BEGIN_TYPE(ComputePipelineDesc);
+	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntryPoint);
+	FLUENT_SET_VALUE(shaderName, ShaderName)
+	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
+	FLUENT_SET_VALUE(shaderLayoutId, ShaderLayoutId)
+FLUENT_END_TYPE
 
 // ------------------------------
 // DEPRECATED STRUCTURES

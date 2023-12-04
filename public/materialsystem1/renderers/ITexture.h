@@ -42,12 +42,12 @@ enum ETextureLockFlags
 class ITexture : public RefCountedObject<ITexture>
 {
 public:
-	static constexpr const int CUBEMAP_DEFAULT_VIEW = 0;
+	static constexpr const int DEFAULT_VIEW = 0;
 
 	// NOTE: side must correspond ECubeSide. Valid only for RenderTargets.
-	inline static int CubemapArraySlice(int side)
+	inline static int ArraySlice(int index)
 	{
-		return 1 + static_cast<int>(side);
+		return 1 + static_cast<int>(index);
 	}
 
 	struct LockInOutData;

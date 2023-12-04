@@ -123,7 +123,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 			return false;
 
 		rendPassRecorder->SetPipeline(pipelineInfo.pipeline);
-		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, uniformBuffers, userData), nullptr);
+		rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, uniformBuffers, userData));
 		return true;
 	}
 

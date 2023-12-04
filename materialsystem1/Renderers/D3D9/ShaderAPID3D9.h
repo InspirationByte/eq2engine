@@ -105,12 +105,7 @@ public:
 //-------------------------------------------------------------
 
 	// It will add new rendertarget
-	ITexturePtr					CreateRenderTarget(const char* pszName,
-														int width, int height, 
-														ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR,
-														ETexAddressMode textureAddress = TEXADDRESS_WRAP,
-														ECompareFunc comparison = COMPFUNC_NEVER,
-														int nFlags = 0);
+	ITexturePtr					CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize = 1, const SamplerStateParams& sampler = {}, int flags = 0);
 
 //-------------------------------------------------------------
 // State manipulation 
@@ -166,7 +161,7 @@ public:
 	void						ChangeRenderTargetToBackBuffer();
 
 	// resizes render target
-	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall);
+	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize);
 
 //-------------------------------------------------------------
 // State setup functions for drawing
@@ -235,9 +230,9 @@ public:
 	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const {}
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const { return nullptr; }
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
-	IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
+	IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const { return nullptr; }
 
 	IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const { return nullptr; }
 

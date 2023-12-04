@@ -57,8 +57,8 @@ public:
 // Textures
 
 	ITexturePtr					CreateTextureResource(const char* pszName);
-	ITexturePtr					CreateRenderTarget(const char* pszName, int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType = TEXFILTER_LINEAR, ETexAddressMode textureAddress = TEXADDRESS_WRAP, ECompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
-	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall);
+	ITexturePtr					CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize = 1, const SamplerStateParams& sampler = {}, int flags = 0);
+	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize = 1);
 
 //-------------------------------------------------------------
 // Pipeline management
@@ -69,9 +69,9 @@ public:
 	IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const;
 	IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const;
 
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
-	IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
-	IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const;
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const;
+	IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const;
+	IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const;
 
 
 //-------------------------------------------------------------

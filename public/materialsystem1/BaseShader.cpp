@@ -96,14 +96,15 @@ IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBin
 		"Transient",
 	};
 
+	bindGroupDesc.groupIdx = bindGroupId;
 	if(pipelineInfo.layout)
 	{
 		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
-		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupId, bindGroupDesc);
+		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
 	}
 
 	bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
-	return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupId, bindGroupDesc);
+	return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
 }
 
 IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const
@@ -115,7 +116,8 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 	if (!pipelineInfo.emptyBindGroup[bindGroupId])
 	{
 		BindGroupDesc emptyBindGroupDesc;
-		pipelineInfo.emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupId, emptyBindGroupDesc);
+		emptyBindGroupDesc.groupIdx = bindGroupId;
+		pipelineInfo.emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
 	}
 	return pipelineInfo.emptyBindGroup[bindGroupId];
 }
@@ -280,9 +282,9 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 		return false;
 
 	rendPassRecorder->SetPipeline(pipelineInfo.pipeline);
-	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, uniformBuffers, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, BINDGROUP_RENDERPASS, pipelineInfo, rendPassRecorder, uniformBuffers, userData), nullptr);
-	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, BINDGROUP_TRANSIENT, pipelineInfo, rendPassRecorder, uniformBuffers, userData), nullptr);
+	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, uniformBuffers, userData));
+	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, BINDGROUP_RENDERPASS, pipelineInfo, rendPassRecorder, uniformBuffers, userData));
+	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, BINDGROUP_TRANSIENT, pipelineInfo, rendPassRecorder, uniformBuffers, userData));
 
 	return true;
 }

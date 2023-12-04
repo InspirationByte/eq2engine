@@ -147,13 +147,13 @@ public:
 	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const = 0;
 
 	// constructs bind group using explicit user-defined pipeline layoyt
-	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const = 0;
 	
 	// constructs bind group using render pipeline layout  defined by shader module
-	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const = 0;
 	
 	// constructs bind group using compute pipeline layout defined by shader module
-	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const = 0;
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const = 0;
 //-------------------------------------------------------------
 // Command management
 
@@ -182,27 +182,13 @@ public:
 
 	// creates static texture from image (array for animated textures)
 	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& images, const SamplerStateParams& sampler, int flags = 0) = 0;
+	
+	// creates texture that will be render target or storage target
+	virtual ITexturePtr			CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize = 1, const SamplerStateParams& sampler = {}, int flags = 0) = 0;
+	
+	// resizes render target with new size (NOTE: data is not preserved)
+	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize = 1) = 0;
 
-	// creates lockable texture
-	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
-														ETextureFormat nFormat,
-														int width, int height,
-														int depth = 1,
-														int arraySize = 1,
-														ETexFilterMode texFilter = TEXFILTER_NEAREST,
-														ETexAddressMode textureAddress = TEXADDRESS_WRAP,
-														int flags = 0,
-														int dataSize = 0, const ubyte* data = nullptr
-														) = 0;
-
-	virtual ITexturePtr			CreateRenderTarget(const char* pszName,
-													int width, int height,
-													ETextureFormat nRTFormat,
-													ETexFilterMode textureFilterType = TEXFILTER_LINEAR,
-													ETexAddressMode textureAddress = TEXADDRESS_WRAP,
-													ECompareFunc comparison = COMPFUNC_NEVER,
-													int nFlags = 0
-													) = 0;
 //-------------------------------------------------------------
 // DEPRECATED Pipeline state layout
 //-------------------------------------------------------------
@@ -312,8 +298,15 @@ public:
 													const ITexturePtr& depthTarget = nullptr,
 													int depthSlice = 0) = 0;
 
-	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall ) = 0;
-
+	// creates lockable texture
+	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
+														ETextureFormat nFormat,
+														int width, int height,
+														int arraySize = 1,
+														const SamplerStateParams& sampler = {},
+														int flags = 0,
+														int dataSize = 0, const ubyte* data = nullptr
+														) = 0;
 //-------------------------------------------------------------
 // DEPRECATED Sending states to API
 //-------------------------------------------------------------

@@ -105,12 +105,10 @@ public:
 	ITexturePtr					CreateProceduralTexture(const char* pszName,
 														ETextureFormat nFormat,
 														int width, int height,
-														int depth = 1,
 														int arraySize = 1,
-														ETexFilterMode texFilter = TEXFILTER_NEAREST,
-														ETexAddressMode textureAddress = TEXADDRESS_WRAP,
-														int nFlags = 0,
-														int nDataSize = 0, const unsigned char* pData = nullptr
+														const SamplerStateParams& sampler = {},
+														int flags = 0,
+														int dataSize = 0, const ubyte* data = nullptr
 														);
 
 	// Finds texture by name

@@ -1246,22 +1246,19 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 }
 
 // It will add new rendertarget
-ITexturePtr ShaderAPID3D9::CreateRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ETexFilterMode textureFilterType, ETexAddressMode textureAddress, ECompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3D9::CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize, const SamplerStateParams& sampler, int flags)
 {
 	// TODO: use CreateTextureResource
 
 	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
 
-	pTexture->SetDimensions(width,height);
-	pTexture->SetFormat(nRTFormat);
-	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
+	pTexture->SetDimensions(width, height, arraySize);
+	pTexture->SetFormat(format);
+	pTexture->SetFlags(flags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
+	pTexture->SetSamplerState(sampler);
 
-	SamplerStateParams texSamplerParams(textureFilterType, textureAddress);
-
-	pTexture->SetSamplerState(texSamplerParams);
-
-	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
+	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, flags, m_caps))
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
 		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
@@ -1458,7 +1455,7 @@ void ShaderAPID3D9::ChangeRenderTargetToBackBuffer()
 }
 
 // resizes render target
-void ShaderAPID3D9::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
+void ShaderAPID3D9::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize)
 {
 	if(renderTarget->GetWidth() == newWide && renderTarget->GetHeight() == newTall)
 		return;
@@ -1466,7 +1463,7 @@ void ShaderAPID3D9::ResizeRenderTarget(const ITexturePtr& renderTarget, int newW
 	CD3D9Texture* pRenderTarget = (CD3D9Texture*)renderTarget.Ptr();
 
 	pRenderTarget->Release();
-	pRenderTarget->SetDimensions(newWide, newTall);
+	pRenderTarget->SetDimensions(newWide, newTall, newArraySize);
 
 	InternalCreateRenderTarget(m_pD3DDevice, pRenderTarget, pRenderTarget->GetFlags(), m_caps);
 }

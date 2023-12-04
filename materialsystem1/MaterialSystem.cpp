@@ -454,7 +454,7 @@ void CMaterialSystem::CreateErrorTexture()
 
 void CMaterialSystem::CreateDefaultDepthTexture()
 {
-	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget("_matSys_depthBuffer", 800, 600, FORMAT_D24, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
+	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget("_matSys_depthBuffer", FORMAT_D24, 800, 600, 1, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP));
 
 	ASSERT_MSG(m_defaultDepthTexture, "Unable to create default depth texture");
 }

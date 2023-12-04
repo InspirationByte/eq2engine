@@ -342,16 +342,16 @@ ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
 }
 
 // It will add new rendertarget
-ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName, int width, int height, ETextureFormat nRTFormat, ETexFilterMode textureFilterType, ETexAddressMode textureAddress, ECompareFunc comparison, int nFlags)
+ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize, const SamplerStateParams& sampler, int flags)
 {
 	CRefPtr<CWGPUTexture> texture = CRefPtr_new(CWGPUTexture);
 	texture->SetName(pszName);
-	texture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
-	texture->SetFormat(nRTFormat);
-	texture->SetSamplerState(SamplerStateParams(textureFilterType, textureAddress));
-	texture->m_imgType = (nFlags & TEXFLAG_CUBEMAP) ? IMAGE_TYPE_CUBE : IMAGE_TYPE_2D;
+	texture->SetFlags(flags | TEXFLAG_RENDERTARGET);
+	texture->SetFormat(format);
+	texture->SetSamplerState(sampler);
+	texture->m_imgType = (flags & TEXFLAG_CUBEMAP) ? IMAGE_TYPE_CUBE : IMAGE_TYPE_2D;
 
-	ResizeRenderTarget(ITexturePtr(texture), width, height);
+	ResizeRenderTarget(ITexturePtr(texture), width, height, arraySize);
 
 	if (!texture->m_rhiTextures.numElem()) 
 		return nullptr;
@@ -365,7 +365,7 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName, int width, i
 	return ITexturePtr(texture);
 }
 
-void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
+void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize)
 {
 	CWGPUTexture* texture = static_cast<CWGPUTexture*>(renderTarget.Ptr());
 	if (!texture)
@@ -374,16 +374,16 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 	if (texture->GetWidth() == newWide && texture->GetHeight() == newTall)
 		return;
 
-	texture->SetDimensions(newWide, newTall);
+	texture->SetDimensions(newWide, newTall, newArraySize);
 	texture->Release();
 
 	const int texFlags = texture->GetFlags();
 
 	const bool isCubeMap = (texFlags & TEXFLAG_CUBEMAP);
 
-	int texDepth = 1;
+	int texDepth = newArraySize;
 	if (isCubeMap)
-		texDepth = 6;
+		texDepth = 6; // TODO: CubeArray, WGPU supports it
 
 	int texFormat = texture->GetFormat();
 	if (texFlags & TEXFLAG_SRGB)
@@ -425,11 +425,13 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 		rhiTexViewDesc.label = rhiTextureDesc.label;
 		rhiTexViewDesc.format = rhiTextureDesc.format;
 		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-		rhiTexViewDesc.arrayLayerCount = isCubeMap ? 6 : 1;
+		rhiTexViewDesc.arrayLayerCount = isCubeMap ? 6 : newArraySize;
 		rhiTexViewDesc.baseArrayLayer = 0;
 		rhiTexViewDesc.baseMipLevel = 0;
 		rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
-		rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_Cube : WGPUTextureViewDimension_2D;
+
+		// TODO: CubeArray
+		rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_Cube : (newArraySize > 1 ? WGPUTextureViewDimension_2DArray : WGPUTextureViewDimension_2D);
 
 		WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
 		texture->m_rhiViews.append(rhiView);
@@ -439,6 +441,25 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 	if (isCubeMap)
 	{
 		for (int i = 0; i < 6; ++i)
+		{
+			WGPUTextureViewDescriptor rhiTexViewDesc = {};
+			rhiTexViewDesc.label = rhiTextureDesc.label;
+			rhiTexViewDesc.format = rhiTextureDesc.format;
+			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
+			rhiTexViewDesc.arrayLayerCount = 1;
+			rhiTexViewDesc.baseArrayLayer = i;
+			rhiTexViewDesc.baseMipLevel = 0;
+			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
+			rhiTexViewDesc.dimension = WGPUTextureViewDimension_2D;
+
+			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
+			texture->m_rhiViews.append(rhiView);
+		}
+	}
+	else if(newArraySize > 1)
+	{
+		// add array views
+		for (int i = 0; i < newArraySize; ++i)
 		{
 			WGPUTextureViewDescriptor rhiTexViewDesc = {};
 			rhiTexViewDesc.label = rhiTextureDesc.label;
@@ -546,7 +567,7 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 	return IGPUPipelineLayoutPtr(pipelineLayout);
 }
 
-static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, int layoutBindGroupIdx, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
+static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
 {
 	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
 	{
@@ -560,7 +581,7 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 			if (buffer)
 				rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
 			else
-				ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
+				ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", bindGroupDesc.groupIdx, bindGroupEntry.binding);
 
 			rhiBindGroupEntryDesc.size = bindGroupEntry.buffer.size < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.buffer.size;
 			rhiBindGroupEntryDesc.offset = bindGroupEntry.buffer.offset;
@@ -587,7 +608,7 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 				rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView(bindGroupEntry.texture.arraySlice);
 			}
 			else
-				ASSERT_FAIL("NULL texture for bindGroup %d binding %d", layoutBindGroupIdx, bindGroupEntry.binding);
+				ASSERT_FAIL("NULL texture for bindGroup %d binding %d", bindGroupDesc.groupIdx, bindGroupEntry.binding);
 			break;
 		}
 
@@ -596,7 +617,7 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, int layoutBindGroupIdx, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!layoutDesc)
 	{
@@ -617,10 +638,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 		}
 	};
 
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, layoutBindGroupIdx, rhiBindGroupEntryList);
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 	
 	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
-	rhiBindGroupDesc.layout = pipelineLayout->m_rhiBindGroupLayout[layoutBindGroupIdx];
+	rhiBindGroupDesc.layout = pipelineLayout->m_rhiBindGroupLayout[bindGroupDesc.groupIdx];
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
 
@@ -634,7 +655,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!renderPipeline)
 	{
@@ -655,10 +676,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 		wgpuBindGroupLayoutRelease(rhiBindGroupDesc.layout);
 	};
 
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, bindGroupIdx, rhiBindGroupEntryList);
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 
 	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
-	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CWGPURenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupIdx);
+	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CWGPURenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
 
@@ -672,7 +693,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, int bindGroupIdx, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!computePipeline)
 	{
@@ -693,10 +714,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 		wgpuBindGroupLayoutRelease(rhiBindGroupDesc.layout);
 	};
 
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, bindGroupIdx, rhiBindGroupEntryList);
+	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 
 	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
-	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(static_cast<const CWGPUComputePipeline*>(computePipeline)->m_rhiComputePipeline, bindGroupIdx);
+	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(static_cast<const CWGPUComputePipeline*>(computePipeline)->m_rhiComputePipeline, bindGroupDesc.groupIdx);
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
 

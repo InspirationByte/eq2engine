@@ -788,55 +788,47 @@ void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 //-------------------------------------------------------------
 
 // It will add new rendertarget
-ITexturePtr ShaderAPIGL::CreateRenderTarget(	const char* pszName,
-												int width, int height,
-												ETextureFormat nRTFormat, ETexFilterMode textureFilterType,
-												ETexAddressMode textureAddress,
-												ECompareFunc comparison,
-												int nFlags)
+ITexturePtr ShaderAPIGL::CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize, const SamplerStateParams& sampler, int flags)
 {
 	CRefPtr<CGLTexture> pTexture = CRefPtr_new(CGLTexture);
 
 	pTexture->SetDimensions(width,height);
-	pTexture->SetFormat(nRTFormat);
-	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
+	pTexture->SetFormat(format);
+	pTexture->SetFlags(flags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
+	pTexture->SetSamplerState(sampler);
 
-	pTexture->m_glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+	pTexture->m_glTarget = (flags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
-	SamplerStateParams texSamplerParams(textureFilterType, textureAddress);
-
-	pTexture->SetSamplerState(texSamplerParams);
-
-	if (nFlags & TEXFLAG_RENDERDEPTH)
+	if (flags & TEXFLAG_RENDERDEPTH)
 	{
 		glGenTextures(1, &pTexture->m_glDepthID);
 		GLCheckError("gen depth tex");
 
 		glBindTexture(GL_TEXTURE_2D, pTexture->m_glDepthID);
-		SetupGLSamplerState(GL_TEXTURE_2D, texSamplerParams);
+		SetupGLSamplerState(GL_TEXTURE_2D, sampler);
 	}
 
 	// create texture
 	GLTextureRef_t texture;
 
-	if (nFlags & TEXFLAG_CUBEMAP)
+	if (flags & TEXFLAG_CUBEMAP)
 		texture.type = IMAGE_TYPE_CUBE;
 	else
 		texture.type = IMAGE_TYPE_2D;
 
-	if(nRTFormat != FORMAT_NONE)
+	if(format != FORMAT_NONE)
 	{
 		glGenTextures(1, &texture.glTexID);
 		GLCheckError("gen tex");
 
 		glBindTexture(pTexture->m_glTarget, texture.glTexID);
-		SetupGLSamplerState(pTexture->m_glTarget, texSamplerParams);
+		SetupGLSamplerState(pTexture->m_glTarget, sampler);
 
 		pTexture->m_textures.append(texture);
 
 		// this generates the render target
-		ResizeRenderTarget(ITexturePtr(pTexture), width, height);
+		ResizeRenderTarget(ITexturePtr(pTexture), width, height, arraySize);
 	}
 	else
 	{
@@ -853,12 +845,12 @@ ITexturePtr ShaderAPIGL::CreateRenderTarget(	const char* pszName,
 	return ITexturePtr(pTexture);
 }
 
-void ShaderAPIGL::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
+void ShaderAPIGL::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize)
 {
 	CGLTexture* pTex = (CGLTexture*)renderTarget.Ptr();
 	ETextureFormat format = pTex->GetFormat();
 
-	pTex->SetDimensions(newWide,newTall);
+	pTex->SetDimensions(newWide, newTall, newArraySize);
 
 	if (format == FORMAT_NONE)
 		return;
