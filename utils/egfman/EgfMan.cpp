@@ -394,7 +394,7 @@ static void InitMatSystem(void* window)
 		}
 
 		MaterialsInitSettings materials_config;
-		MaterialsRenderSettings& render_config = materials_config.renderConfig;
+		MatSysRenderSettings& render_config = materials_config.renderConfig;
 
 		render_config.enableShadows = false;
 		render_config.wireframeMode = false;

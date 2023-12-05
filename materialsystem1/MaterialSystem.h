@@ -44,7 +44,7 @@ public:
 	void						Shutdown();
 
 	bool						LoadShaderLibrary(const char* libname);
-	MaterialsRenderSettings&	GetConfiguration();
+	MatSysRenderSettings&	GetConfiguration();
 
 	const char*					GetMaterialPath() const;
 	const char*					GetMaterialSRCPath() const;
@@ -178,7 +178,7 @@ private:
 	void						CreateDefaultDepthTexture();
 	void						InitDefaultMaterial();
 
-	MaterialsRenderSettings		m_config;
+	MatSysRenderSettings		m_config;
 
 	IRenderLibrary*				m_renderLibrary{ nullptr };	// render library.
 	DKMODULE*					m_rendermodule{ nullptr };	// render dll.

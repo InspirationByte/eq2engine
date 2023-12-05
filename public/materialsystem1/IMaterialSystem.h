@@ -41,7 +41,7 @@ enum EMaterialLightingMode
 // material system configuration
 //-----------------------------------------------------
 
-struct MaterialsRenderSettings
+struct MatSysRenderSettings
 {
 	int			materialFlushThresh{ 1000 };	// flush (unload) threshold in frames
 
@@ -56,7 +56,7 @@ struct MaterialsRenderSettings
 
 struct MaterialsInitSettings
 {
-	MaterialsRenderSettings	renderConfig;
+	MatSysRenderSettings	renderConfig;
 	ShaderAPIParams		shaderApiParams;
 
 	EqString	rendererName;		// shaderAPI library filename
@@ -82,7 +82,7 @@ public:
 
 	virtual bool					LoadShaderLibrary(const char* libname) = 0;
 
-	virtual MaterialsRenderSettings&	GetConfiguration() = 0;
+	virtual MatSysRenderSettings&	GetConfiguration() = 0;
 
 	// returns material path
 	virtual const char*				GetMaterialPath() const = 0;

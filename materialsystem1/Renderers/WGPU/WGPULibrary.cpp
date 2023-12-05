@@ -151,13 +151,6 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 									| SHADER_CAPS_PIXEL_SUPPORTED
 									| SHADER_CAPS_COMPUTE_SUPPORTED;
 
-		// FIXME: deprecated
-		caps.INTZSupported = true;
-		caps.INTZFormat = FORMAT_D16;
-
-		caps.NULLSupported = true;
-		caps.NULLFormat = FORMAT_NONE;
-
 		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
 		{
 			caps.textureFormatsSupported[i] = true;

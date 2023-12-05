@@ -40,13 +40,6 @@ struct ShaderAPICaps
 	bool			textureFormatsSupported[FORMAT_COUNT]{ false };
 	bool			renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 
-	// FIXME: deprecated after D3D9 removal
-	bool			INTZSupported{ false };		// Direct3D9 INTZ (internal Z buffer) sampling as texture is supported
-	ETextureFormat	INTZFormat{ FORMAT_NONE };
-
-	bool			NULLSupported{ false };		// Direct3D9 NULL sampling as texture is supported
-	ETextureFormat	NULLFormat{ FORMAT_NONE };
-
 	bool			isInstancingSupported{ 0 };
 	bool			isHardwareOcclusionQuerySupported{ 0 };
 	

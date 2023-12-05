@@ -845,7 +845,7 @@ void CGameHost::BeginScene()
 {
 	g_matSystem->BeginFrame(nullptr);
 
-	MaterialsRenderSettings& rendSettings = g_matSystem->GetConfiguration();
+	MatSysRenderSettings& rendSettings = g_matSystem->GetConfiguration();
 	rendSettings.wireframeMode = r_wireframe.GetBool();
 	rendSettings.overdrawMode = r_overdraw.GetBool();
 

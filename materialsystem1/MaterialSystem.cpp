@@ -497,7 +497,7 @@ void CMaterialSystem::InitDefaultMaterial()
 	}
 }
 
-MaterialsRenderSettings& CMaterialSystem::GetConfiguration()
+MatSysRenderSettings& CMaterialSystem::GetConfiguration()
 {
 	return m_config;
 }
