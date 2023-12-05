@@ -143,11 +143,15 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& 
 	}
 	output.shaderKinds = shaderKinds;
 
+	static constexpr const char* DefaultVertexLayoutName = "Default";
+
 	for (KVKeyIterator it(shaderInfoKvs.FindSection("VertexLayouts")); !it.atEnd(); ++it)
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = output.vertexLayouts.append();
 		layout.name = EqString(it);
-		layout.nameHash = StringToHash(layout.name);
+		if (layout.name != DefaultVertexLayoutName)
+			layout.nameHash = StringToHash(layout.name);
+		
 		if (!stricmp(KV_GetValueString(*it, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(output.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {

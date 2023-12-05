@@ -279,6 +279,13 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 		else
 			InitShaderVariants(shaderInfo, thisVariantIndex, nestedSec);
 	}
+
+	// Add default vertex layout (For compute of VBOless)
+	if (shaderInfo.vertexLayouts.numElem() == 0)
+	{
+		ShaderInfo::VertLayout& defaultVertexLayout = shaderInfo.vertexLayouts.append();
+		defaultVertexLayout.name = "Default";
+	}
 }
 
 void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
@@ -317,12 +324,6 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			MsgInfo("Skipping shader '%s' (no changes made)\n", shaderInfo.name.ToCString());
 			return;
 		}
-	}
-
-	if (shaderInfo.vertexLayouts.numElem() == 0)
-	{
-		MsgError("Shader '%s' has no vertex layouts defined, skipping...\n", shaderInfo.name.ToCString());
-		return;
 	}
 
 	// collect all defines into flat list

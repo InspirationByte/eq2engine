@@ -26,6 +26,8 @@ enum ETextureFlags : int
 
 	// texture identification flags
 	TEXFLAG_RENDERTARGET		= (1 << 16),	// this is a rendertarget texture
+
+	// DEPRECATED
 	TEXFLAG_RENDERDEPTH			= (1 << 17),	// rendertarget with depth texture
 };
 
