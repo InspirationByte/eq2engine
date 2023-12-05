@@ -14,6 +14,8 @@ using CImagePtr = CRefPtr<CImage>;
 struct SamplerStateParams;
 enum ETextureFormat : int;
 
+struct TextureDesc;
+
 enum ETextureFlags : int
 {
 	// texture creation flags
@@ -25,6 +27,8 @@ enum ETextureFlags : int
 	TEXFLAG_STORAGE				= (1 << 5),		// allows storage access (compute)
 	TEXFLAG_COPY_SRC			= (1 << 6),		// texture can be used as copy source
 	TEXFLAG_COPY_DST			= (1 << 7),		// texture can be used as copy destination
+
+	TEXFLAG_TRANSIENT			= (1 << 8),		// (RenderTarget Only) texture is temporary and not registered in RenderAPI list
 
 	// texture identification flags
 	TEXFLAG_RENDERTARGET		= (1 << 16),	// this is a rendertarget texture
@@ -49,14 +53,10 @@ public:
 	struct LockInOutData;
 
 	// initializes procedural (lockable) texture
-	virtual bool			InitProcedural(const SamplerStateParams& sampler,
-											ETextureFormat format,
-											int width, int height, int depth = 1, int arraySize = 1,
-											int flags = 0
-											) = 0;
+	virtual bool			InitProcedural(const TextureDesc& textureDesc) = 0;
 
 	// initializes texture from image array of images
-	virtual	bool			Init(const SamplerStateParams& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0) = 0;
+	virtual	bool			Init(const ArrayCRef<CRefPtr<CImage>> images, const SamplerStateParams& sampler, int flags = 0) = 0;
 
 	// generates a checkerboard texture
 	virtual bool			GenerateErrorTexture(int flags = 0) = 0;
@@ -73,6 +73,7 @@ public:
 	virtual int				GetArraySize() const = 0;
 
 	virtual int				GetMipCount() const = 0;
+	virtual int				GetSampleCount() const = 0;
 
 	// texture data management
 	virtual bool			Lock(LockInOutData& data) = 0;

@@ -318,20 +318,21 @@ ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
 }
 
 // It will add new rendertarget
-ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize, const SamplerStateParams& sampler, int flags)
+ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 {
 	CRefPtr<CWGPUTexture> texture = CRefPtr_new(CWGPUTexture);
-	texture->SetName(pszName);
-	texture->SetFlags(flags | TEXFLAG_RENDERTARGET);
-	texture->SetFormat(format);
-	texture->SetSamplerState(sampler);
-	texture->m_imgType = (flags & TEXFLAG_CUBEMAP) ? IMAGE_TYPE_CUBE : IMAGE_TYPE_2D;
+	texture->SetName(targetDesc.name);
+	texture->SetFlags(targetDesc.flags | TEXFLAG_RENDERTARGET);
+	texture->SetFormat(targetDesc.format);
+	texture->SetSamplerState(targetDesc.sampler);
+	texture->m_imgType = (targetDesc.flags & TEXFLAG_CUBEMAP) ? IMAGE_TYPE_CUBE : IMAGE_TYPE_2D;
 
-	ResizeRenderTarget(ITexturePtr(texture), width, height, arraySize);
+	ResizeRenderTarget(texture, targetDesc.size, targetDesc.mipmapCount, targetDesc.sampleCount);
 
 	if (!texture->m_rhiTextures.numElem()) 
 		return nullptr;
 
+	if (!(targetDesc.flags & TEXFLAG_TRANSIENT))
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
 		CHECK_TEXTURE_ALREADY_ADDED(texture);
@@ -341,23 +342,35 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const char* pszName, ETextureForm
 	return ITexturePtr(texture);
 }
 
-void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize)
+void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount, int sampleCount)
 {
-	CWGPUTexture* texture = static_cast<CWGPUTexture*>(renderTarget.Ptr());
+	CWGPUTexture* texture = static_cast<CWGPUTexture*>(renderTarget);
 	if (!texture)
 		return;
 
-	if (texture->GetWidth() == newWide && texture->GetHeight() == newTall)
+	if (texture->GetWidth() == newSize.width && 
+		texture->GetHeight() == newSize.height && 
+		texture->GetArraySize() == newSize.arraySize &&
+		texture->GetMipCount() == mipmapCount &&
+		texture->GetSampleCount() == sampleCount)
 		return;
 
-	texture->SetDimensions(newWide, newTall, newArraySize);
+	if (!(texture->GetFlags() & TEXFLAG_RENDERTARGET))
+	{
+		ASSERT_FAIL("Must be a rendertarget");
+		return;
+	}
+
+	texture->SetDimensions(newSize.width, newSize.height, newSize.arraySize);
+	texture->SetMipCount(mipmapCount);
+	texture->SetSampleCount(sampleCount);
 	texture->Release();
 
 	const int flags = texture->GetFlags();
 
 	const bool isCubeMap = (flags & TEXFLAG_CUBEMAP);
 
-	int texDepth = newArraySize;
+	int texDepth = newSize.arraySize;
 	if (isCubeMap)
 		texDepth = 6; // TODO: CubeArray, WGPU supports it
 
@@ -372,9 +385,9 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 
 	WGPUTextureDescriptor rhiTextureDesc = {};
 	rhiTextureDesc.label = texture->GetName();
-	rhiTextureDesc.mipLevelCount = 1;
-	rhiTextureDesc.size = WGPUExtent3D{ (uint)newWide, (uint)newTall, (uint)texDepth };
-	rhiTextureDesc.sampleCount = 1;
+	rhiTextureDesc.mipLevelCount = mipmapCount;
+	rhiTextureDesc.size = WGPUExtent3D{ (uint)newSize.width, (uint)newSize.height, (uint)texDepth };
+	rhiTextureDesc.sampleCount = sampleCount;
 	rhiTextureDesc.usage = rhiUsageFlags;
 	rhiTextureDesc.format = GetWGPUTextureFormat(static_cast<ETextureFormat>(texFormat));
 	rhiTextureDesc.dimension = WGPUTextureDimension_2D;
@@ -383,7 +396,7 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 
 	if (rhiTextureDesc.format == WGPUTextureFormat_Undefined)
 	{
-		MsgError("Unsupported texture format %d\n", texture->GetFormat());
+		MsgError("Invalid or unsupported texture format %d\n", texture->GetFormat());
 		return;
 	}
 
@@ -402,13 +415,13 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 		rhiTexViewDesc.label = rhiTextureDesc.label;
 		rhiTexViewDesc.format = rhiTextureDesc.format;
 		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-		rhiTexViewDesc.arrayLayerCount = isCubeMap ? 6 : newArraySize;
+		rhiTexViewDesc.arrayLayerCount = isCubeMap ? 6 : newSize.arraySize;
 		rhiTexViewDesc.baseArrayLayer = 0;
 		rhiTexViewDesc.baseMipLevel = 0;
 		rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
 
 		// TODO: CubeArray
-		rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_Cube : (newArraySize > 1 ? WGPUTextureViewDimension_2DArray : WGPUTextureViewDimension_2D);
+		rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_Cube : (newSize.arraySize > 1 ? WGPUTextureViewDimension_2DArray : WGPUTextureViewDimension_2D);
 
 		WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
 		texture->m_rhiViews.append(rhiView);
@@ -433,10 +446,10 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 			texture->m_rhiViews.append(rhiView);
 		}
 	}
-	else if(newArraySize > 1)
+	else if(newSize.arraySize > 1)
 	{
 		// add array views
-		for (int i = 0; i < newArraySize; ++i)
+		for (int i = 0; i < newSize.arraySize; ++i)
 		{
 			WGPUTextureViewDescriptor rhiTexViewDesc = {};
 			rhiTexViewDesc.label = rhiTextureDesc.label;

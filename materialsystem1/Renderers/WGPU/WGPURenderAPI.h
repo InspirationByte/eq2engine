@@ -57,8 +57,8 @@ public:
 // Textures
 
 	ITexturePtr					CreateTextureResource(const char* pszName);
-	ITexturePtr					CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize = 1, const SamplerStateParams& sampler = {}, int flags = 0);
-	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize = 1);
+	ITexturePtr					CreateRenderTarget(const TextureDesc& targetDesc);
+	void						ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount = 1, int sampleCount = 1);
 
 //-------------------------------------------------------------
 // Pipeline management

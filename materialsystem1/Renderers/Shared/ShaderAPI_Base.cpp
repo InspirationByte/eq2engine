@@ -206,7 +206,7 @@ ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CImagePtr>& images, co
 		}
 	}
 	
-	texture->Init(sampler, images, nFlags);
+	texture->Init(images, sampler, nFlags);
 
 	// the created texture is automatically added to list
 	return texture;

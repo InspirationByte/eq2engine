@@ -32,17 +32,21 @@ void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, WGPURend
 	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
 	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
 	{
-		// TODO: backbuffer alteration?
 		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target.texture.Ptr());
-		ASSERT_MSG(targetTexture, "NULL texture for color target");
+		const CWGPUTexture* resolveTargetTexture = static_cast<CWGPUTexture*>(colorTarget.resolveTarget.texture.Ptr());
 
 		WGPURenderPassColorAttachment rhiColorAttachment = {};
 		rhiColorAttachment.loadOp = g_wgpuLoadOp[colorTarget.loadOp];
 		rhiColorAttachment.storeOp = g_wgpuStoreOp[colorTarget.storeOp];
 		rhiColorAttachment.depthSlice = colorTarget.depthSlice;
-		rhiColorAttachment.view = targetTexture->GetWGPUTextureView(colorTarget.target.arraySlice);
-		rhiColorAttachment.resolveTarget = nullptr; // TODO
 		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
+
+		if (targetTexture)
+			rhiColorAttachment.view = targetTexture->GetWGPUTextureView(colorTarget.target.arraySlice);
+
+		if (resolveTargetTexture)
+			rhiColorAttachment.resolveTarget = resolveTargetTexture->GetWGPUTextureView(colorTarget.resolveTarget.arraySlice);
+
 		rhiColorAttachmentList.append(rhiColorAttachment);
 	}
 	rhiRenderPassDesc.colorAttachmentCount = rhiColorAttachmentList.numElem();

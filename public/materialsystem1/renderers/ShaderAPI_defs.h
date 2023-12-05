@@ -827,6 +827,46 @@ struct BufferInfo
 };
 
 //-------------------------------
+// Texture descriptor
+
+struct TextureDesc
+{
+	TextureDesc() = default;
+	TextureDesc(const char* name, int flags, ETextureFormat format,
+		int width, int height, int arraySize = 1, int mipmapCount = 1, int sampleCount = 1,
+		const SamplerStateParams& sampler = {})
+			: name(name), flags(flags), format(format)
+			, size({ width ,height , arraySize }), mipmapCount(1), sampleCount(sampleCount)
+			, sampler(sampler)
+	{
+	}
+
+	EqString			name;
+	int					flags{ 0 };
+	ETextureFormat		format{ FORMAT_NONE };
+
+	TextureExtent		size;
+	int					mipmapCount{ 1 };
+	int					sampleCount{ 1 };
+
+	SamplerStateParams	sampler{};
+};
+
+FLUENT_BEGIN_TYPE(TextureDesc)
+	FLUENT_SET_VALUE(name, Name)
+	FLUENT_SET_VALUE(format, Format)
+	FLUENT_SET_VALUE(flags, Flags)
+	FLUENT_SET_VALUE(mipmapCount, MipCount)
+	FLUENT_SET_VALUE(sampleCount, SampleCount)
+	FLUENT_SET_VALUE(sampler, Sampler)
+	ThisType& Size(int width, int height, int arraySize = 1)
+	{
+		ref.size = { width ,height , arraySize };
+		return *this;
+	}
+FLUENT_END_TYPE
+
+//-------------------------------
 // Render pass builders
 
 enum ELoadFunc
@@ -846,7 +886,7 @@ struct RenderPassDesc
 	struct ColorTargetDesc
 	{
 		TextureView	target;
-		// TODO: resolveTarget
+		TextureView	resolveTarget;
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
 		EStoreFunc	storeOp{ STOREFUNC_STORE };
 		MColor		clearColor{ color_black };
@@ -877,10 +917,11 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		ref.nameHash = StringToHash(str);
 		return *this; 
 	}
-	ThisType& ColorTarget(ITexture* colorTarget, bool clear = false, const MColor& clearColor = color_black, int arraySlice = 0, int depthSlice = 0)
+	ThisType& ColorTarget(ITexture* colorTarget, bool clear = false, const MColor& clearColor = color_black, int arraySlice = 0, int depthSlice = 0, ITexture* resolveTarget = nullptr, int resolveArraySlice = 0)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
 		entry.target = TextureView(colorTarget, arraySlice);
+		entry.resolveTarget = TextureView(resolveTarget, resolveArraySlice);
 		entry.loadOp = clear ? LOADFUNC_CLEAR : LOADFUNC_LOAD;
 		entry.storeOp = STOREFUNC_STORE;
 		entry.clearColor = clearColor;
@@ -926,4 +967,3 @@ FLUENT_BEGIN_TYPE(ComputePipelineDesc);
 	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
 	FLUENT_SET_VALUE(shaderLayoutId, ShaderLayoutId)
 FLUENT_END_TYPE
-

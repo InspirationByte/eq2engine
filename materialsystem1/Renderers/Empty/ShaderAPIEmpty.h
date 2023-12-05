@@ -158,22 +158,22 @@ public:
 //-------------------------------------------------------------
 
 	// It will add new rendertarget
-	ITexturePtr		CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize, const SamplerStateParams& sampler, int flags)
+	ITexturePtr		CreateRenderTarget(const TextureDesc& targetDesc)
 	{
 		CRefPtr<CEmptyTexture> pTexture = CRefPtr_new(CEmptyTexture);
-		pTexture->SetName(pszName);
+		pTexture->SetName(targetDesc.name);
 
 		CScopedMutex scoped(g_sapi_TextureMutex);
 		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
-		pTexture->SetDimensions(width, height, arraySize);
-		pTexture->SetFormat(format);
+		pTexture->SetDimensions(targetDesc.size.width, targetDesc.size.height, targetDesc.size.arraySize);
+		pTexture->SetFormat(targetDesc.format);
 
 		return ITexturePtr(pTexture);
 	}
 
-	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize = 1) {}
+	void						ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount = 1, int sampleCount = 1) {}
 
 //-------------------------------------------------------------
 // Pipeline management

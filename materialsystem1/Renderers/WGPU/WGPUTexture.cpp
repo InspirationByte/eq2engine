@@ -35,11 +35,13 @@ void CWGPUTexture::Release()
 
 void CWGPUTexture::Ref_DeleteObject()
 {
-	CWGPURenderAPI::Instance.FreeTexture(this);
+	if (!(m_flags & TEXFLAG_TRANSIENT))
+		CWGPURenderAPI::Instance.FreeTexture(this);
+
 	RefCountedObject::Ref_DeleteObject();
 }
 
-bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImagePtr> images, int flags)
+bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStateParams& sampler, int flags)
 {
 	// FIXME: only release if pool, flags, format and size is different
 	Release();

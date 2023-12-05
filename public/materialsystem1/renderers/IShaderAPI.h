@@ -167,10 +167,10 @@ public:
 	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& images, const SamplerStateParams& sampler, int flags = 0) = 0;
 	
 	// creates texture that will be render target or storage target
-	virtual ITexturePtr			CreateRenderTarget(const char* pszName, ETextureFormat format, int width, int height, int arraySize = 1, const SamplerStateParams& sampler = {}, int flags = 0) = 0;
+	virtual ITexturePtr			CreateRenderTarget(const TextureDesc& targetDesc) = 0;
 	
 	// resizes render target with new size (NOTE: data is not preserved)
-	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize = 1) = 0;
+	virtual void				ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount = 1, int sampleCount = 1) = 0;
 
 //-------------------------------------------------------------
 // DEPRECATED Procedural texture creation

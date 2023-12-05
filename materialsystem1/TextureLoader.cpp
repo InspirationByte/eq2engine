@@ -181,7 +181,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	caps.maxTextureAnisotropicLevel;
 
 	// initialize texture
-	if (!imgList.numElem() || !texture->Init(samplerParams, imgList, nFlags | TEXFLAG_PROGRESSIVE_LODS))
+	if (!imgList.numElem() || !texture->Init(imgList, samplerParams, nFlags | TEXFLAG_PROGRESSIVE_LODS))
 	{
 		if (nFlags & TEXFLAG_NULL_ON_ERROR)
 			texture = nullptr;

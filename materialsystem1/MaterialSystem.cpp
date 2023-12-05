@@ -454,7 +454,14 @@ void CMaterialSystem::CreateErrorTexture()
 
 void CMaterialSystem::CreateDefaultDepthTexture()
 {
-	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget("_matSys_depthBuffer", FORMAT_D24, 800, 600, 1, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP));
+	m_defaultDepthTexture = m_shaderAPI->CreateRenderTarget(
+		Builder<TextureDesc>()
+		.Name("_matSys_depthBuffer")
+		.Format(FORMAT_D24)
+		.Size(800, 600)
+		.Sampler(SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
+		.End()
+	);
 
 	ASSERT_MSG(m_defaultDepthTexture, "Unable to create default depth texture");
 }
@@ -1074,7 +1081,7 @@ void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 		return;
 
 	m_renderLibrary->SetBackbufferSize(wide, tall);
-	m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, wide, tall);
+	m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, { wide, tall, 1 });
 }
 
 // reports device focus mode
