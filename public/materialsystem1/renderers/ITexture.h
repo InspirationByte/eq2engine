@@ -23,6 +23,8 @@ enum ETextureFlags : int
 	TEXFLAG_IGNORE_QUALITY		= (1 << 3),		// not affected by "r_loadmiplevel", always all mip levels are loaded
 	TEXFLAG_SRGB				= (1 << 4),		// texture should be sampled as in sRGB color space
 	TEXFLAG_STORAGE				= (1 << 5),		// allows storage access (compute)
+	TEXFLAG_COPY_SRC			= (1 << 6),		// texture can be used as copy source
+	TEXFLAG_COPY_DST			= (1 << 7),		// texture can be used as copy destination
 
 	// texture identification flags
 	TEXFLAG_RENDERTARGET		= (1 << 16),	// this is a rendertarget texture
@@ -42,7 +44,7 @@ class ITexture : public RefCountedObject<ITexture>
 public:
 	static constexpr const int DEFAULT_VIEW = 0;
 
-	inline static int ArraySlice(int index)
+	inline static int ViewArraySlice(int index)
 	{
 		return 1 + static_cast<int>(index);
 	}

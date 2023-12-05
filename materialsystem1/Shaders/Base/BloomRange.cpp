@@ -17,7 +17,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 
 		FixedArray<Vector4D, 4> bufferData;
 		bufferData.append(m_rangeProps.Get());
-		m_proxyBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM, "materialParams");
+		m_proxyBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "materialParams");
 	}
 
 	SHADER_INIT_TEXTURES()

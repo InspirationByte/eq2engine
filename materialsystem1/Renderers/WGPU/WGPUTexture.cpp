@@ -44,6 +44,9 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 	// FIXME: only release if pool, flags, format and size is different
 	Release();
 
+	// since texture is initialized from image buffer, it neeeds copy destination flag
+	flags |= TEXFLAG_COPY_DST;
+
 	m_samplerState = sampler;
 	m_samplerState.maxAnisotropy = max(CWGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.maxAnisotropy);
 	m_flags = flags;
@@ -60,9 +63,10 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 	m_rhiTextures.reserve(images.numElem());
 	m_rhiViews.reserve(images.numElem());
 
-	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
-	if (m_flags & TEXFLAG_STORAGE)
-		rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
+	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding;
+	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
+	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
+	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
 
 	for (CImagePtr img : images)
 	{

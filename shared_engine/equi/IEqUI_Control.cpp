@@ -559,10 +559,7 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	if(!m_visible)
 		return;
 
-	RasterizerStateParams rasterState;
-	//rasterState.fillMode = FILL_SOLID;
-	rasterState.cullMode = CULL_NONE;
-	rasterState.scissor = true;
+	bool scissorOn = true;
 
 	const IAARectangle clientRectRender = GetClientRectangle();
 	g_matSystem->SetFogInfo(FogInfo());			// disable fog
@@ -590,13 +587,9 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 		// only if no transformation applied
 		if (newTransform.rows[0].x != 1.0f)
 		{
-			rasterState.scissor = false;
-		}
-
-		if (newTransform.rows[0].x != 1.0f)
-		{
 			IAARectangle scissorRect(IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
 			rendPassRecorder->SetScissorRectangle(scissorRect);
+			scissorOn = false;
 		}
 		else
 		{
@@ -610,7 +603,7 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 		}
 
 		// paint control itself
-		DrawSelf( clientRectRender, rasterState.scissor, rendPassRecorder);
+		DrawSelf( clientRectRender, scissorOn, rendPassRecorder);
 	}
 
 	HOOK_TO_CVAR(equi_debug);

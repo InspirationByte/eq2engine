@@ -381,21 +381,22 @@ void CWGPURenderAPI::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 	texture->SetDimensions(newWide, newTall, newArraySize);
 	texture->Release();
 
-	const int texFlags = texture->GetFlags();
+	const int flags = texture->GetFlags();
 
-	const bool isCubeMap = (texFlags & TEXFLAG_CUBEMAP);
+	const bool isCubeMap = (flags & TEXFLAG_CUBEMAP);
 
 	int texDepth = newArraySize;
 	if (isCubeMap)
 		texDepth = 6; // TODO: CubeArray, WGPU supports it
 
 	int texFormat = texture->GetFormat();
-	if (texFlags & TEXFLAG_SRGB)
+	if (flags & TEXFLAG_SRGB)
 		texFormat |= TEXFORMAT_FLAG_SRGB;
 
-	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_RenderAttachment;
-	if (texFlags & TEXFLAG_STORAGE)
-		rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
+	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
+	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
+	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
+	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
 
 	WGPUTextureDescriptor rhiTextureDesc = {};
 	rhiTextureDesc.label = texture->GetName();
@@ -494,6 +495,11 @@ IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int buf
 	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	wgpuUsageFlags |= WGPUBufferUsage_Index;
 	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)wgpuUsageFlags |= WGPUBufferUsage_Indirect;
 	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	wgpuUsageFlags |= WGPUBufferUsage_Storage;
+
+	if (bufferUsageFlags & BUFFERUSAGE_READ)	wgpuUsageFlags |= WGPUBufferUsage_MapRead;
+	if (bufferUsageFlags & BUFFERUSAGE_WRITE)	wgpuUsageFlags |= WGPUBufferUsage_MapWrite;
+	if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC) wgpuUsageFlags |= WGPUBufferUsage_CopySrc;
+	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST) wgpuUsageFlags |= WGPUBufferUsage_CopyDst;
 
 	buffer->Init(bufferInfo, wgpuUsageFlags , name);
 	return IGPUBufferPtr(buffer);

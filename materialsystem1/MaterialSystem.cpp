@@ -1242,7 +1242,7 @@ GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64
 	const int bufferIndex = collection.bufferIdx;
 	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
 	if (!buffer)
-		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE, "TransientUniformBuffer");
+		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "TransientUniformBuffer");
 
 	if (data && size > 0)
 	{
@@ -1267,7 +1267,7 @@ GPUBufferView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 
 	const int bufferIndex = collection.bufferIdx;
 	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
 	if (!buffer)
-		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_VERTEX, "TransientVertexBuffer");
+		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "TransientVertexBuffer");
 
 	if (data && size > 0)
 	{

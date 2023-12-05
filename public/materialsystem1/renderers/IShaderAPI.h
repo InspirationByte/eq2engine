@@ -29,7 +29,12 @@
 struct KVSection;
 class CImage;
 
-// DEPRECATED API reset type
+
+
+// DEPRECATED 
+struct RasterizerStateParams;
+
+// API reset type
 enum EStateResetFlags : int
 {
 	STATE_RESET_SHADER = (1 << 0),
@@ -47,6 +52,8 @@ enum EStateResetFlags : int
 	STATE_RESET_VBO = (STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
 };
 
+// END DEPRECATED
+
 // shader api initializer
 struct ShaderAPIParams
 {
@@ -59,8 +66,6 @@ struct ShaderAPIParams
 };
 
 //---------------------------------------------------------------
-
-// TODO: more appropriate name, like ShaderAPI* ???
 
 //---------------------------------
 // Pipeline layout. Used for creating bind groups and pipelines

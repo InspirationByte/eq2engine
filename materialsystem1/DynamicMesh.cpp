@@ -31,8 +31,8 @@ bool CDynamicMesh::Init(ArrayCRef<VertexLayoutDesc> vertexLayout)
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
 
-	m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(m_vertexStride, MAX_DYNAMIC_VERTICES), BUFFERUSAGE_VERTEX, "DynMeshVertexBuffer");
-	m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(uint16), MAX_DYNAMIC_VERTICES), BUFFERUSAGE_INDEX, "DynMeshIndexBuffer");
+	m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(m_vertexStride, MAX_DYNAMIC_VERTICES), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "DynMeshVertexBuffer");
+	m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(uint16), MAX_DYNAMIC_VERTICES), BUFFERUSAGE_INDEX | BUFFERUSAGE_COPY_DST, "DynMeshIndexBuffer");
 
 	return m_vertices && m_indices;
 }

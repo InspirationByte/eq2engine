@@ -769,79 +769,58 @@ enum EBufferUsage
 	BUFFERUSAGE_INDEX		= (1 << 2),
 	BUFFERUSAGE_INDIRECT	= (1 << 3),
 	BUFFERUSAGE_STORAGE		= (1 << 4),
-};
 
-// DEPRECATED buffer access flags
-enum EBufferAccessType : int
-{
-	BUFFER_STREAM = 0,
-	BUFFER_STATIC,		// = 1,
-	BUFFER_DYNAMIC,		// = 2
-};
-
-enum EBufferFlags : int
-{
-	BUFFER_FLAG_READ = (1 << 0),	// allows reading from buffer to system memory
-	BUFFER_FLAG_WRITE = (1 << 1),	// allows writing to buffer (effectively marking it as dynamic)
+	BUFFERUSAGE_READ		= (1 << 5),	// allows reading from buffer to system memory
+	BUFFERUSAGE_WRITE		= (1 << 6),	// allows writing to buffer (effectively marking it as dynamic)
+	BUFFERUSAGE_COPY_SRC	= (1 << 7),	// buffer can be used as Copy source
+	BUFFERUSAGE_COPY_DST	= (1 << 8),	// buffer can be used as Copy destination
 };
 
 struct BufferInfo
 {
 	BufferInfo() = default;
 
-	BufferInfo(int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(capacity)
+	BufferInfo(int elementSize, int capacity)
+		: elementCapacity(capacity)
 		, elementSize(elementSize)
-		, flags(flags)
 	{
 	}
 
-	BufferInfo(const void* data, int elementSize, int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(capacity)
+	BufferInfo(const void* data, int elementSize, int capacity)
+		: elementCapacity(capacity)
 		, elementSize(elementSize)
-		, flags(flags)
 		, data(data)
 		, dataSize(elementSize * capacity)
 	{
 	}
 
 	template<typename T>
-	BufferInfo(int capacity, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(capacity)
+	BufferInfo(int capacity)
+		: elementCapacity(capacity)
 		, elementSize(sizeof(T))
-		, flags(flags)
 	{
 	}
 
 	template<typename T>
-	BufferInfo(const T* array, int numElem, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(numElem)
+	BufferInfo(const T* array, int numElem)
+		: elementCapacity(numElem)
 		, elementSize(sizeof(T))
-		, flags(flags)
 		, data(array)
 		, dataSize(sizeof(T) * numElem)
 	{
 	}
 
 	template<typename ARRAY_TYPE>
-	BufferInfo(const ARRAY_TYPE& array, EBufferAccessType accessType = BUFFER_STATIC, int flags = 0)
-		: accessType(accessType)
-		, elementCapacity(array.numElem())
+	BufferInfo(const ARRAY_TYPE& array)
+		: elementCapacity(array.numElem())
 		, elementSize(sizeof(typename ARRAY_TYPE::ITEM))
-		, flags(flags)
 		, data(array.ptr())
 		, dataSize(sizeof(typename ARRAY_TYPE::ITEM) * array.numElem())
 	{
 	}
 
-	EBufferAccessType	accessType{ BUFFER_STATIC };
 	int					elementCapacity{ 0 };
 	int					elementSize{ 0 };
-	int					flags{ 0 };
 
 	const void*			data{ nullptr };
 	int					dataSize{ 0 };
@@ -948,21 +927,3 @@ FLUENT_BEGIN_TYPE(ComputePipelineDesc);
 	FLUENT_SET_VALUE(shaderLayoutId, ShaderLayoutId)
 FLUENT_END_TYPE
 
-// ------------------------------
-// DEPRECATED STRUCTURES
-
-// Fillmode constants
-enum EFillMode : int
-{
-	FILL_SOLID		= 0,
-	FILL_WIREFRAME,
-	FILL_POINT,
-};
-
-struct RasterizerStateParams // DEPRECATED
-{
-	ECullMode	cullMode{ CULL_NONE };
-	EFillMode	fillMode{ FILL_SOLID };
-	bool		multiSample{ false };
-	bool		scissor{ false };
-};

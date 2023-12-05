@@ -24,12 +24,10 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 	m_bufSize = (sizeInBytes + 3) & ~3;
 
 	WGPUBufferDescriptor desc = {};
-	desc.usage = WGPUBufferUsage_CopyDst | wgpuUsage;
+	desc.usage = wgpuUsage;
 	desc.size = m_bufSize;
 	desc.mappedAtCreation = bufferInfo.data && bufferInfo.dataSize;
 	desc.label = label;
-	if (bufferInfo.flags & BUFFER_FLAG_READ)
-		desc.usage |= WGPUBufferUsage_MapRead;
 
 	m_usageFlags = desc.usage;
 	m_rhiBuffer = wgpuDeviceCreateBuffer(CWGPURenderAPI::Instance.GetWGPUDevice(), &desc);
