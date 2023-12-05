@@ -317,7 +317,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	else
 	{
 		// try first working renderer from EQ.CONFIG
-		const KVSection* rendererKey = matSystemSettings->FindSection("Renderer");
+		const KVSection* rendererKey = matSystemSettings ? matSystemSettings->FindSection("Renderer") : nullptr;
 		if(rendererKey)
 		{
 			for(int i = 0; i < rendererKey->ValueCount(); ++i)
@@ -336,7 +336,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 		}
 		else
 		{
-			rendererName = "eqGLRHI";
+			rendererName = "eqWGPURHI";
 
 			if(!tryLoadRenderer(rendererName))
 			{
