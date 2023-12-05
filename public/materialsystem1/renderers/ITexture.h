@@ -34,11 +34,7 @@ enum ETextureFlags : int
 enum ETextureLockFlags
 {
 	TEXLOCK_READONLY	= (1 << 0),
-	TEXLOCK_DISCARD		= (1 << 1),
-
-	// don't use manually, use constructor
-	TEXLOCK_REGION_RECT	= (1 << 2),
-	TEXLOCK_REGION_BOX	= (1 << 3),
+	TEXLOCK_DISCARD		= (1 << 1)
 };
 
 class ITexture : public RefCountedObject<ITexture>
@@ -46,7 +42,6 @@ class ITexture : public RefCountedObject<ITexture>
 public:
 	static constexpr const int DEFAULT_VIEW = 0;
 
-	// NOTE: side must correspond ECubeSide. Valid only for RenderTargets.
 	inline static int ArraySlice(int index)
 	{
 		return 1 + static_cast<int>(index);
@@ -74,25 +69,25 @@ public:
 	// The dimensions of texture
 	virtual ETextureFormat	GetFormat() const = 0;
 
-	virtual const SamplerStateParams& GetSamplerState() const = 0;
-
 	virtual int				GetWidth() const = 0;
 	virtual int				GetHeight() const = 0;
-	virtual int				GetDepth() const = 0;
+	virtual int				GetArraySize() const = 0;
 
 	virtual int				GetMipCount() const = 0;
-
-	// Animated texture props (matsystem usage)
-	virtual int				GetAnimationFrameCount() const = 0;
-	virtual int				GetAnimationFrame() const = 0;
-	virtual void			SetAnimationFrame(int frame) = 0;
-
-	// TODO:
-	//virtual TextureView		CreateTextureView(...) = 0;
 
 	// texture data management
 	virtual bool			Lock(LockInOutData& data) = 0;
 	virtual void			Unlock() = 0;
+
+	// FIXME: remove?
+	virtual const SamplerStateParams& GetSamplerState() const = 0;
+
+	// DEPRECATED
+	virtual int				GetAnimationFrameCount() const = 0;
+	virtual int				GetAnimationFrame() const = 0;
+	virtual void			SetAnimationFrame(int frame) = 0;
+
+
 };
 using ITexturePtr = CRefPtr<ITexture>;
 
@@ -114,23 +109,47 @@ struct TextureView
 	int			arraySlice{ 0 };
 };
 
+struct TextureOrigin
+{
+	int		x{ 0 };
+	int		y{ 0 };
+	int		arraySlice{ 0 };
+	int		mipLevel{ 0 };
+};
+
+struct TextureExtent
+{
+	int		width{ -1 };
+	int		height{ -1 };
+	int		arraySize{ 1 };
+};
+
 struct ITexture::LockInOutData
 {
-	LockInOutData(int lockFlags, int level = 0, int cubeFaceIdx = 0)
+	LockInOutData(int lockFlags, const IAARectangle& rectangle, int mipLevel = 0)
 		: flags(lockFlags)
 	{
+		lockOrigin.x = rectangle.leftTop.x;
+		lockOrigin.y = rectangle.leftTop.y;
+		lockOrigin.arraySlice = 0;
+		lockOrigin.mipLevel = mipLevel;
+
+		lockSize.width = rectangle.rightBottom.x - lockOrigin.x;
+		lockSize.height = rectangle.rightBottom.y - lockOrigin.y;
+		lockSize.arraySize = 1;
 	}
 
-	LockInOutData(int lockFlags, const IAARectangle & rectangle, int level = 0, int cubeFaceIdx = 0)
-		: flags(lockFlags | TEXLOCK_REGION_RECT)
+	LockInOutData(int lockFlags, const IBoundingBox& box, int mipLevel = 0)
+		: flags(lockFlags)
 	{
-		region.rectangle = rectangle;
-	}
+		lockOrigin.x = box.minPoint.x;
+		lockOrigin.y = box.minPoint.y;
+		lockOrigin.arraySlice = box.minPoint.z;
+		lockOrigin.mipLevel = mipLevel;
 
-	LockInOutData(int lockFlags, const IBoundingBox & box, int level = 0, int cubeFaceIdx = 0)
-		: flags(lockFlags | TEXLOCK_REGION_BOX)
-	{
-		region.box = box;
+		lockSize.width = box.maxPoint.x - lockOrigin.x;
+		lockSize.height = box.maxPoint.y - lockOrigin.y;
+		lockSize.arraySize = box.maxPoint.z - lockOrigin.arraySlice;
 	}
 
 	~LockInOutData()
@@ -138,10 +157,8 @@ struct ITexture::LockInOutData
 		ASSERT_MSG(lockData == nullptr, "CRITICAL - Texture was still locked! Unlock() implementation must set lockData to NULL");
 	}
 
-	union LockRegion {
-		IAARectangle		rectangle;
-		IBoundingBox	box;
-	} region{};
+	TextureOrigin	lockOrigin;
+	TextureExtent	lockSize;
 
 	operator const bool() const { return lockData != nullptr; }
 
@@ -150,6 +167,4 @@ struct ITexture::LockInOutData
 	int				lockByteCount{ 0 };
 
 	int				flags{ 0 };
-	int				level{ 0 };
-	int				cubeFaceIdx{ 0 };
 };

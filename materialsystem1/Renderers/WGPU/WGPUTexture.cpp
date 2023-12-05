@@ -205,7 +205,7 @@ bool CWGPUTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImag
 		m_mipCount = max(m_mipCount, mipCount);
 		m_width = max(m_width, texWidth);
 		m_height = max(m_height, texHeight);
-		m_depth = max(m_depth, texDepth);
+		m_arraySize = max(m_arraySize, texDepth);
 		m_format = imgFmt;
 		m_imgType = imgType;
 
@@ -240,43 +240,12 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 		return false;
 	}
 
-	if (data.flags & TEXLOCK_REGION_BOX)
-	{
-		ASSERT_FAIL("does not support locking 3D texture yet");
-		return false;
-	}
+	ASSERT(data.lockOrigin.x >= 0 && data.lockOrigin.y >= 0 && data.lockOrigin.arraySlice >= 0);
+	ASSERT(data.lockSize.width >= 0 && data.lockSize.height >= 0 && data.lockSize.arraySize >= 0);
 
-	int sizeToLock = 0;
-	int lockOffset = 0;
-	int lockPitch = 0;
-	switch (m_imgType)
-	{
-	case IMAGE_TYPE_3D:
-	{
-		// COULD BE INVALID! I'VE NEVER TESTED THAT
-
-		IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
-		const IVector3D size = box.GetSize();
-
-		sizeToLock = size.x * size.y * size.y;
-		lockOffset = box.minPoint.x * box.minPoint.y * box.minPoint.z;
-		lockPitch = size.x;
-
-		break;
-	}
-	case IMAGE_TYPE_CUBE:
-	case IMAGE_TYPE_2D:
-	{
-		const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
-		const IVector2D size = lockRect.GetSize();
-		sizeToLock = size.x * size.y;
-		lockOffset = lockRect.leftTop.x * lockRect.leftTop.y;
-		lockPitch = lockRect.GetSize().x;
-		break;
-	}
-	default:
-		ASSERT_FAIL("Invalid image type of %s", GetName());
-	}
+	const int lockPitch = data.lockSize.width;
+	const int lockOffset = data.lockOrigin.x * data.lockOrigin.y * data.lockOrigin.arraySlice;
+	const int sizeToLock = data.lockSize.width * data.lockSize.height * data.lockSize.arraySize;
 
 	const int lockByteCount = GetBytesPerPixel(m_format) * sizeToLock;
 
@@ -288,6 +257,7 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 	if (!(data.flags & TEXLOCK_DISCARD))
 	{
 		// TODO: texture readback (possibly Async)
+		ASSERT_FAIL("texture reading is unsupported (yet)");
 	}
 
 	m_lockData = &data;
@@ -310,45 +280,17 @@ void CWGPUTexture::Unlock()
 			WGPUImageCopyTexture texImage{};
 			texImage.texture = m_rhiTextures[0];
 			texImage.aspect = WGPUTextureAspect_All;
-			texImage.mipLevel = 0;
+			texImage.mipLevel = data.lockOrigin.mipLevel;
 
 			WGPUTextureDataLayout texLayout{};
 			texLayout.offset = 0;
 			texLayout.bytesPerRow = data.lockPitch;
-			texLayout.rowsPerImage = m_height;
+			texLayout.rowsPerImage = data.lockSize.height;
 
-			switch (m_imgType)
-			{
-			case IMAGE_TYPE_3D:
-			{
-				IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
-				const IVector3D boxSize = box.GetSize();
+			texImage.origin = WGPUOrigin3D{ (uint)data.lockOrigin.x, (uint)data.lockOrigin.y, (uint)data.lockOrigin.arraySlice };
+			const WGPUExtent3D texSize{ (uint)data.lockSize.width, (uint)data.lockSize.height, (uint)data.lockSize.arraySize };
+			wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, data.lockData, data.lockByteCount, &texLayout, &texSize);
 
-				texImage.origin = WGPUOrigin3D{ (uint)box.minPoint.x, (uint)box.minPoint.y, (uint)box.minPoint.z };
-				const WGPUExtent3D texSize{ (uint)boxSize.x, (uint)boxSize.y, (uint)boxSize.z };
-				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, data.lockData, data.lockByteCount, &texLayout, &texSize);
-				break;
-			}
-			case IMAGE_TYPE_CUBE:
-			{
-				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
-				const IVector2D size = lockRect.GetSize();
-
-				texImage.origin = WGPUOrigin3D{ (uint)lockRect.leftTop.x, (uint)lockRect.leftTop.y, (uint)data.cubeFaceIdx };
-				const WGPUExtent3D texSize{ (uint)size.x, (uint)size.y, 1u };
-				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, data.lockData, data.lockByteCount, &texLayout, &texSize);
-			}
-			case IMAGE_TYPE_2D:
-			{
-				const IAARectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IAARectangle(0, 0, GetWidth(), GetHeight());
-				const IVector2D size = lockRect.GetSize();
-
-				texImage.origin = WGPUOrigin3D{ (uint)lockRect.leftTop.x, (uint)lockRect.leftTop.y, 0u };
-				const WGPUExtent3D texSize{ (uint)size.x, (uint)size.y, 1u };
-				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &texImage, data.lockData, data.lockByteCount, &texLayout, &texSize);
-				break;
-			}
-			}
 			return 0;
 		});
 	}

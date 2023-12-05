@@ -365,32 +365,32 @@ void ShaderAPI_Base::FreeTexture(ITexture* pTexture)
 // Textures
 //-------------------------------------------------------------
 
-ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CImagePtr>& pImages, const SamplerStateParams& sampler, int nFlags)
+ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CImagePtr>& images, const SamplerStateParams& sampler, int nFlags)
 {
-	if(!pImages.numElem())
+	if(!images.numElem())
 		return nullptr;
 
 	// create texture
 	ITexturePtr texture = nullptr;
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
-		texture = CreateTextureResource(pImages[0]->GetName());
+		texture = CreateTextureResource(images[0]->GetName());
 	}
 
-	for (int i = 0; i < pImages.numElem(); ++i)
+	for (int i = 0; i < images.numElem(); ++i)
 	{
 		if (GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 		{
-			if (pImages[i]->GetFormat() == FORMAT_RGB8 || pImages[i]->GetFormat() == FORMAT_RGBA8)
-				pImages[i]->SwapChannels(0, 2); // convert to BGR
+			if (images[i]->GetFormat() == FORMAT_RGB8 || images[i]->GetFormat() == FORMAT_RGBA8)
+				images[i]->SwapChannels(0, 2); // convert to BGR
 
 			// Convert if needed and upload datas
-			if (pImages[i]->GetFormat() == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
-				pImages[i]->Convert(FORMAT_RGBA8);
+			if (images[i]->GetFormat() == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
+				images[i]->Convert(FORMAT_RGBA8);
 		}
 	}
 	
-	texture->Init(sampler, pImages, nFlags);
+	texture->Init(sampler, images, nFlags);
 
 	// the created texture is automatically added to list
 	return texture;
@@ -398,7 +398,7 @@ ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CImagePtr>& pImages, c
 
 // creates procedural (lockable) texture
 ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
-													ETextureFormat nFormat,
+													ETextureFormat format,
 													int width, int height,
 													int arraySize,
 													const SamplerStateParams& sampler,
@@ -408,16 +408,15 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 	CImagePtr genTex = CRefPtr_new(CImage);
 	genTex->SetName(pszName);
 
-	// make texture
-	ubyte* newData = genTex->Create(nFormat, width, height, 1, 1, arraySize);
+	const int depth = (flags & TEXFLAG_CUBEMAP) ? 0 : 1;
 
+	// make texture
+	ubyte* newData = genTex->Create(format, width, height, depth, 1, arraySize);
 	if(newData)
 	{
-		const int texDataSize = width * height * arraySize * GetBytesPerPixel(nFormat);
-
+		const int texDataSize = width * height * arraySize * GetBytesPerPixel(format);
 		memset(newData, 0, texDataSize);
 
-		// copy data if available
 		if(data && dataSize)
 		{
 			ASSERT(dataSize <= texDataSize);

@@ -62,6 +62,35 @@ void CWGPUCommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 s
 	m_hasCommands = true;
 }
 
+void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const
+{
+	ASSERT(source.origin.x >= 0 && source.origin.y >= 0 && source.origin.arraySlice >= 0);
+	ASSERT(copySize.width >= 0 && copySize.height >= 0 && copySize.arraySize >= 0);
+
+	CWGPUTexture* srcTexture = static_cast<CWGPUTexture*>(source.texture);
+	CWGPUTexture* dstTexture = static_cast<CWGPUTexture*>(destination.texture);
+
+	WGPUImageCopyTexture rhiImageSrc{};
+	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
+	rhiImageSrc.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
+	rhiImageSrc.mipLevel = source.origin.mipLevel;
+	rhiImageSrc.origin = WGPUOrigin3D{ (uint)source.origin.x, (uint)source.origin.y, (uint)source.origin.arraySlice };
+	
+	WGPUImageCopyTexture rhiImageDst{};
+	rhiImageDst.texture = dstTexture->GetWGPUTexture();
+	rhiImageDst.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
+	rhiImageDst.mipLevel = destination.origin.mipLevel;
+	rhiImageDst.origin = WGPUOrigin3D{ (uint)destination.origin.x, (uint)destination.origin.y, (uint)destination.origin.arraySlice };
+	
+	WGPUExtent3D rhiCopySize;
+	rhiCopySize.depthOrArrayLayers = copySize.arraySize;
+	rhiCopySize.width = copySize.width;
+	rhiCopySize.height = copySize.height;
+	
+	wgpuCommandEncoderCopyTextureToTexture(m_rhiCommandEncoder, &rhiImageSrc, &rhiImageDst, &rhiCopySize);
+	m_hasCommands = true;
+}
+
 IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 {
 	if (!m_rhiCommandEncoder)
@@ -82,6 +111,8 @@ IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 	commandBuffer->m_rhiCommandBuffer = rhiCommandBuffer;
 	return IGPUCommandBufferPtr(commandBuffer);
 }
+
+//---------------------------------------------------------------
 
 IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
@@ -115,6 +146,8 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 
 	return IGPURenderPassRecorderPtr(renderPass);
 }
+
+//---------------------------------------------------------------
 
 IGPUComputePassRecorderPtr CWGPUCommandRecorder::BeginComputePass(const char* name, void* userData) const
 {

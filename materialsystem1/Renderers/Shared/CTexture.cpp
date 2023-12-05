@@ -30,11 +30,7 @@ void CTexture::SetAnimationFrame(int frame)
 // initializes procedural (lockable) texture
 bool CTexture::InitProcedural(const SamplerStateParams& sampler, ETextureFormat format, int width, int height, int depth, int arraySize, int flags)
 {
-	if (flags & TEXFLAG_CUBEMAP)
-	{
-		ASSERT_MSG(depth > 1, "depth for TEXFLAG_CUBEMAP should be not greater than 1");
-		depth = 0;
-	}
+	depth = (flags & TEXFLAG_CUBEMAP) ? 0 : 1;
 
 	// make texture
 	CImagePtr genTex = CRefPtr_new(CImage);

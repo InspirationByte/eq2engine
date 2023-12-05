@@ -479,7 +479,7 @@ static void PlayerVideoDecodeStep(MoviePlayerData* player, ITexturePtr texture)
 		videoState.presentFlag = false;
 
 		// time to update renderer texture
-		ITexture::LockInOutData writeTo(TEXLOCK_DISCARD);
+		ITexture::LockInOutData writeTo(TEXLOCK_DISCARD, IAARectangle(0, 0, player->videoCodec->width, player->videoCodec->height));
 		if (texture->Lock(writeTo))
 		{
 			uint8_t* data[1] = {

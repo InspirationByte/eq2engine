@@ -22,6 +22,7 @@ public:
 	bool			Lock(LockInOutData& data);
 	void			Unlock();
 
+	WGPUTexture		GetWGPUTexture() const { return m_rhiTextures[0]; }
 	WGPUTextureView	GetWGPUTextureView(int viewIdx = -1) const { return m_rhiViews[viewIdx >= 0 ? viewIdx : m_animFrame]; }
 	int				GetWGPUTextureViewCount() const { return m_rhiViews.numElem(); }
 

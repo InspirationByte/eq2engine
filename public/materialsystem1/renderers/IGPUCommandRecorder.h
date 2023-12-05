@@ -21,6 +21,11 @@ class IGPUBindGroup;
 struct RenderPassDesc;
 enum EIndexFormat : int;
 
+struct TextureCopyInfo
+{
+	ITexture*		texture{ nullptr };
+	TextureOrigin	origin;
+};
 
 //---------------------------------
 // The command buffer ready to be passed into queue for execution
@@ -115,6 +120,7 @@ public:
 	void								WriteBufferView(const GPUBufferView& bufferView, const void* data, int64 size = -1, int64 offset = 0) const;
 	virtual void						CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const = 0;
 	virtual void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const = 0;
+	virtual void						CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const = 0;
 
 	virtual void*						GetUserData() const = 0;
 	virtual IGPUCommandBufferPtr		End() = 0;
