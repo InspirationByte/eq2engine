@@ -22,15 +22,6 @@
 #include "ShaderAPI_Base.h"
 #include "CTexture.h"
 
-#ifdef EQRHI_GL
-#define STB_INCLUDE_LINE_GLSL
-#endif
-#define STB_INCLUDE_IMPLEMENTATION
-#include "dependency/stb_include.h"
-
-
-#define SHADERS_DEFAULT_PATH			"shaders/"
-
 using namespace Threading;
 
 CEqMutex g_sapi_TextureMutex;
