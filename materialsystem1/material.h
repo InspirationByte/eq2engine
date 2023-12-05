@@ -72,7 +72,7 @@ protected:
 	Array<IMaterialProxy*>	m_proxies{ PP_SL };
 
 	CTextureAtlas*			m_atlas{ nullptr };
-	IMatSystemShader*	m_shader{ nullptr };
+	IMatSystemShader*		m_shader{ nullptr };
 
 	int						m_state{ MATERIAL_LOAD_ERROR };	// FIXME: may be interlocked?
 	int						m_nameHash{ 0 };

@@ -120,32 +120,19 @@ public:
 	virtual const char*				GetName() const = 0;
 	virtual const char*				GetShaderName() const = 0;
 
-	// returns the atlas
-	virtual CTextureAtlas*			GetAtlas() const = 0;
-	
-	// returns shader flags in short			
+	virtual CTextureAtlas*			GetAtlas() const = 0;		
 	virtual int						GetFlags() const = 0;
 
-	// returns material loading state
 	virtual int						GetState() const = 0;
-
-	// loading error indicator
 	virtual bool					IsError() const = 0;
 
-// material var operations
+	// material var operations
 	virtual MatVarProxyUnk			FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
-
-	// finds or creates material var
 	virtual MatVarProxyUnk			GetMaterialVar( const char* pszVarName, const char* defaultValue = nullptr) = 0;
 
-// render-time operations
-
 	virtual bool					LoadShaderAndTextures() = 0;
-
-	// waits for material loading
 	virtual void					WaitForLoading() const = 0;
 
-	// retrieves the base texture on specified stage
 	virtual const ITexturePtr&		GetBaseTexture(int stage = 0) = 0;
 
 private:

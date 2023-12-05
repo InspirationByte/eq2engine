@@ -1416,6 +1416,21 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 		rendPassRecorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
 }
 
+void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const
+{
+	if (!material)
+		return;
+
+	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
+
+	const uint proxyFrame = m_frame;
+	if (matSysMaterial->m_frameBound == proxyFrame)
+		return;
+
+	matSysMaterial->UpdateProxy(m_proxyDeltaTime, commandRecorder);
+	matSysMaterial->m_frameBound = proxyFrame;
+}
+
 bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
@@ -1430,6 +1445,7 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 
 	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
 	IMatSystemShader* matShader = matSysMaterial->m_shader;
+	UpdateMaterialProxies(material, m_proxyUpdateCmdRecorder);
 
 	const uint proxyFrame = m_frame;
 	if (matSysMaterial->m_frameBound != proxyFrame)
