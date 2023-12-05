@@ -194,7 +194,6 @@ void CEqStudioGeom::DestroyModel()
 
 	SAFE_DELETE(m_instancer);
 
-	g_renderAPI->Reset(STATE_RESET_VBO);
 	for (int i = 0; i < EGFHwVertex::VERT_COUNT; ++i)
 		m_vertexBuffers[i] = nullptr;
 	m_indexBuffer = nullptr;

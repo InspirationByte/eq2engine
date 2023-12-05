@@ -298,39 +298,11 @@ IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<Ve
 	return pVF;
 }
 
-IVertexBuffer* CWGPURenderAPI::CreateVertexBuffer(const BufferInfo& bufferInfo)
-{
-	CWGPUVertexBuffer* buffer = PPNew CWGPUVertexBuffer(bufferInfo);
-	m_VBList.append(buffer);
-	return buffer;
-}
-
-IIndexBuffer* CWGPURenderAPI::CreateIndexBuffer(const BufferInfo& bufferInfo)
-{
-	CWGPUIndexBuffer* buffer = PPNew CWGPUIndexBuffer(bufferInfo);
-	m_IBList.append(buffer);
-	return buffer;
-}
-
 // Destroy vertex format
 void CWGPURenderAPI::DestroyVertexFormat(IVertexFormat* pFormat)
 {
 	if (m_VFList.fastRemove(pFormat))
 		delete pFormat;
-}
-
-// Destroy vertex buffer
-void CWGPURenderAPI::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
-{
-	if (m_VBList.fastRemove(pVertexBuffer))
-		delete pVertexBuffer;
-}
-
-// Destroy index buffer
-void CWGPURenderAPI::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
-{
-	if (m_IBList.fastRemove(pIndexBuffer))
-		delete pIndexBuffer;
 }
 
 //-------------------------------------------------------------
@@ -1319,6 +1291,7 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 	*/
 }
 
+
 static void CreateQuerySet()
 {
 	WGPUQuerySetDescriptor rhiQuerySetDesc = {};
@@ -1326,153 +1299,4 @@ static void CreateQuerySet()
 	rhiQuerySetDesc.type = WGPUQueryType_Occlusion;
 	rhiQuerySetDesc.count = 32;
 	WGPUQuerySet rhiQuerySet = wgpuDeviceCreateQuerySet(nullptr, &rhiQuerySetDesc);
-}
-
-//-------------------------------------------------------------
-// Shaders and it's operations
-
-IShaderProgramPtr CWGPURenderAPI::CreateNewShaderProgram(const char* pszName, const char* query)
-{
-	return nullptr;
-}
-
-void CWGPURenderAPI::FreeShaderProgram(IShaderProgram* pShaderProgram)
-{
-}
-
-bool CWGPURenderAPI::CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra)
-{
-	return true; 
-}
-
-//-------------------------------------------------------------
-// Occlusion query
-
-// creates occlusion query object
-IOcclusionQuery* CWGPURenderAPI::CreateOcclusionQuery()
-{
-	ASSERT_DEPRECATED();
-	return nullptr;
-}
-
-// removal of occlusion query object
-void CWGPURenderAPI::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
-{
-	ASSERT_DEPRECATED();
-}
-
-//-------------------------------------------------------------
-// Render states management
-
-IRenderState* CWGPURenderAPI::CreateBlendingState( const BlendStateParams &blendDesc )
-{
-	ASSERT_DEPRECATED();
-	return nullptr;
-}
-
-IRenderState* CWGPURenderAPI::CreateDepthStencilState( const DepthStencilStateParams &depthDesc )
-{
-	ASSERT_DEPRECATED();
-	return nullptr;
-}
-
-IRenderState* CWGPURenderAPI::CreateRasterizerState( const RasterizerStateParams &rasterDesc )
-{
-	ASSERT_DEPRECATED();
-	return nullptr;
-}
-
-void CWGPURenderAPI::DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs)
-{
-	ASSERT_DEPRECATED();
-}
-
-//-------------------------------------------------------------
-// Render target operations
-
-void CWGPURenderAPI::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor& fillColor, float fDepth, int nStencil)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect, IAARectangle* destRect)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::ChangeRenderTargetToBackBuffer()
-{
-	ASSERT_DEPRECATED();
-}
-
-//-------------------------------------------------------------
-// Various setup functions for drawing
-
-void CWGPURenderAPI::ChangeVertexFormat(IVertexFormat* pVertexFormat)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
-{
-	ASSERT_DEPRECATED();
-}
-
-//-------------------------------------------------------------
-// State management
-
-void  CWGPURenderAPI::SetScissorRectangle(const IAARectangle& rect)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::SetDepthRange(float fZNear, float fZFar)
-{
-	ASSERT_DEPRECATED();
-}
-
-//-------------------------------------------------------------
-// Renderer state managemet
-
-void CWGPURenderAPI::SetShader(IShaderProgramPtr pShader)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::SetTexture(int nameHash, const ITexturePtr& texture)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::SetShaderConstantRaw(int nameHash, const void* data, int nSize)
-{
-	ASSERT_DEPRECATED();
-}
-
-//-------------------------------------------------------------
-// Primitive drawing
-
-void CWGPURenderAPI::DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
-{
-	ASSERT_DEPRECATED();
-}
-
-void CWGPURenderAPI::DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices)
-{
-	ASSERT_DEPRECATED();
 }

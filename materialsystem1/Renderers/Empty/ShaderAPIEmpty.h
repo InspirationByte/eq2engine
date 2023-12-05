@@ -141,32 +141,8 @@ public:
 	//void			Shutdown() {}
 
 	void			PrintAPIInfo() const {}
-
 	bool			IsDeviceActive() const {return true;}
-
-//-------------------------------------------------------------
-// Rendering's applies
-//-------------------------------------------------------------
-	void			Reset(int nResetType = STATE_RESET_ALL) {}
-
-	void			ApplyTextures() {}
-	void			ApplySamplerState() {}
-	void			ApplyBlendState() {}
-	void			ApplyDepthState() {}
-	void			ApplyRasterizerState() {}
-	void			ApplyShaderProgram() {}
-	void			ApplyConstants() {}
-
-	void			Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor &fillColor,float fDepth, int nStencil) {}
-
-//-------------------------------------------------------------
-// Renderer information
-//-------------------------------------------------------------
-
-	// shader API class type for shader developers.
 	EShaderAPIType	GetShaderAPIClass() {return SHADERAPI_EMPTY;}
-
-	// Renderer string (ex: OpenGL, D3D9)
 	const char*		GetRendererName() const {return "Empty";}
 
 //-------------------------------------------------------------
@@ -176,16 +152,6 @@ public:
 	// Synchronization
 	void			Flush() {}
 	void			Finish() {}
-
-//-------------------------------------------------------------
-// Occlusion query
-//-------------------------------------------------------------
-
-	// creates occlusion query object
-	IOcclusionQuery*	CreateOcclusionQuery() { return nullptr; }
-
-	// removal of occlusion query object
-	void			DestroyOcclusionQuery(IOcclusionQuery* pQuery) {}
 
 //-------------------------------------------------------------
 // Textures
@@ -207,135 +173,7 @@ public:
 		return ITexturePtr(pTexture);
 	}
 
-//-------------------------------------------------------------
-// Texture operations
-//-------------------------------------------------------------
-
-	// Copy render target to texture
-	void			CopyFramebufferToTexture(const ITexturePtr& pTargetTexture) {}
-
-	// Copy render target to texture
-	void			CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) {}
-
-	// Changes render target (MRT)
-	void			ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
-											ArrayCRef<int> rtSlice = nullptr,
-											const ITexturePtr& depthTarget = nullptr,
-											int depthSlice = 0) {}
-
-	// Changes back to backbuffer
-	void			ChangeRenderTargetToBackBuffer(){}
-
-	// resizes render target
-	void			ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize) {}
-
-	// sets scissor rectangle
-	void			SetScissorRectangle( const IAARectangle &rect ) {}
-
-//-------------------------------------------------------------
-// Various setup functions for drawing
-//-------------------------------------------------------------
-
-	// Set Depth range for next primitives
-	void			SetDepthRange(float fZNear,float fZFar){}
-
-	// Changes the vertex format
-	void			ChangeVertexFormat(IVertexFormat* pVertexFormat){}
-
-	// Changes the vertex buffer
-	void			ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset = 0){}
-
-	// Changes the index buffer
-	void			ChangeIndexBuffer(IIndexBuffer* pIndexBuffer){}
-
-//-------------------------------------------------------------
-// State manipulation
-//-------------------------------------------------------------
-
-	// creates blending state
-	IRenderState*	CreateBlendingState( const BlendStateParams &blendDesc ) {return nullptr;}
-
-	// creates depth/stencil state
-	IRenderState*	CreateDepthStencilState( const DepthStencilStateParams &depthDesc ) {return nullptr;}
-
-	// creates rasterizer state
-	IRenderState*	CreateRasterizerState( const RasterizerStateParams &rasterDesc ) {return nullptr;}
-
-	// completely destroys shader
-	void			DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) {}
-
-//-------------------------------------------------------------
-// Shaders and it's operations
-//-------------------------------------------------------------
-
-	// Creates shader class for needed ShaderAPI
-	IShaderProgramPtr	CreateNewShaderProgram(const char* pszName, const char* query = nullptr)
-	{
-		return nullptr;
-	}
-
-	// Destroy all shader
-	void			FreeShaderProgram(IShaderProgram* pShaderProgram)
-	{
-	}
-
-	// Load any shader from stream
-	bool			CompileShadersFromStream(IShaderProgramPtr pShaderOutput,
-											const ShaderProgCompileInfo& info,
-											const char* extra = nullptr){return true;}
-
-	// Set current shader for rendering
-	void			SetShader(IShaderProgramPtr pShader) {}
-
-	// Set Texture for shader
-	void			SetTexture(int nameHash, const ITexturePtr& texture) {}
-
-	// RAW Constant (Used for structure types, etc.)
-	void			SetShaderConstantRaw(int nameHash, const void *data, int nSize){}
-
-//-------------------------------------------------------------
-// Vertex buffer objects
-//-------------------------------------------------------------
-
-	IVertexFormat*	CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
-	{
-		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc);
-		m_VFList.append(pVF);
-		return pVF;
-	}
-	IVertexBuffer*	CreateVertexBuffer(const BufferInfo& bufferInfo)
-	{
-		CEmptyVertexBuffer* buffer = new CEmptyVertexBuffer(bufferInfo.elementSize);
-		m_VBList.append(buffer);
-		return buffer;
-	}
-	IIndexBuffer*	CreateIndexBuffer(const BufferInfo& bufferInfo)
-	{
-		CEmptyIndexBuffer* buffer = new CEmptyIndexBuffer(bufferInfo.elementSize);
-		m_IBList.append(buffer);
-		return buffer;
-	}
-
-	// Destroy vertex format
-	void			DestroyVertexFormat(IVertexFormat* pFormat)
-	{
-		if (m_VFList.fastRemove(pFormat))
-			delete pFormat;
-	}
-
-	// Destroy vertex buffer
-	void			DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
-	{
-		if (m_VBList.fastRemove(pVertexBuffer))
-			delete pVertexBuffer;
-	}
-
-	// Destroy index buffer
-	void			DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
-	{
-		if (m_IBList.fastRemove(pIndexBuffer))
-			delete pIndexBuffer;
-	}
+	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize = 1) {}
 
 //-------------------------------------------------------------
 // Pipeline management
@@ -354,6 +192,19 @@ public:
 
 	IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const { return nullptr; }
 
+	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
+	{
+		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc);
+		m_VFList.append(pVF);
+		return pVF;
+	}
+
+	void						DestroyVertexFormat(IVertexFormat* pFormat)
+	{
+		if (m_VFList.fastRemove(pFormat))
+			delete pFormat;
+	}
+
 //-------------------------------------------------------------
 // Render pass management
 
@@ -365,16 +216,6 @@ public:
 // Command buffer management
 
 	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const {}
-
-//-------------------------------------------------------------
-// Primitive drawing (lower level than DrawPrimitives2D)
-//-------------------------------------------------------------
-
-	// Indexed primitive drawer
-	void			DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0){}
-
-	// Draw elements
-	void			DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices){}
 
 protected:
 

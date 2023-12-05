@@ -54,11 +54,8 @@ void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFH
 void CBaseEqGeomInstancer::Cleanup()
 {
 	if(m_vertFormat && m_ownsVertexFormat)
-	{
-		g_renderAPI->Reset(STATE_RESET_VBO);
-		g_renderAPI->ApplyBuffers();
 		g_renderAPI->DestroyVertexFormat(m_vertFormat);
-	}
+
 	m_data.clear(true);
 	m_vertFormat = nullptr;
 

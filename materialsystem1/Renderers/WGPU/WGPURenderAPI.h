@@ -32,26 +32,26 @@ public:
 	~CWGPURenderAPI() {}
 
 	// Init + Shurdown
-	void			Init(const ShaderAPIParams& params);
-	//void			Shutdown() {}
+	void						Init(const ShaderAPIParams& params);
+	//void						Shutdown() {}
 
 //-------------------------------------------------------------
 // Renderer information
-	void			PrintAPIInfo() const;
-	bool			IsDeviceActive() const;
+	void						PrintAPIInfo() const;
+	bool						IsDeviceActive() const;
 
 	// shader API class type for shader developers.
-	EShaderAPIType	GetShaderAPIClass()		{ return SHADERAPI_WEBGPU; }
+	EShaderAPIType				GetShaderAPIClass()		{ return SHADERAPI_WEBGPU; }
 
 	// Renderer string (ex: OpenGL, D3D9)
-	const char*		GetRendererName() const { return "WebGPU"; }
+	const char*					GetRendererName() const { return "WebGPU"; }
 
 //-------------------------------------------------------------
 // MT Synchronization
 
 	// Synchronization
-	void			Flush() {}
-	void			Finish() {}
+	void						Flush() {}
+	void						Finish() {}
 
 //-------------------------------------------------------------
 // Textures
@@ -91,102 +91,25 @@ public:
 
 	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const;
 
-//-------------------------------------------------------------
-//DEPRECATED Vertex buffer objects
-
-	IVertexFormat*	CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
-	IVertexBuffer*	CreateVertexBuffer(const BufferInfo& bufferInfo);
-	IIndexBuffer*	CreateIndexBuffer(const BufferInfo& bufferInfo);
-	void			DestroyVertexFormat(IVertexFormat* pFormat);
-	void			DestroyVertexBuffer(IVertexBuffer* pVertexBuffer);
-	void			DestroyIndexBuffer(IIndexBuffer* pIndexBuffer);
-
-//-------------------------------------------------------------
-// DEPRECATED Shaders and it's operations
-
-	IShaderProgramPtr	CreateNewShaderProgram(const char* pszName, const char* query = nullptr);
-	void				FreeShaderProgram(IShaderProgram* pShaderProgram);
-	bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr);
-
-//-------------------------------------------------------------
-// DEPRECATED Occlusion query
-
-	// creates occlusion query object
-	IOcclusionQuery*	CreateOcclusionQuery();
-
-	// removal of occlusion query object
-	void				DestroyOcclusionQuery(IOcclusionQuery* pQuery);
-
-//-------------------------------------------------------------
-// DEPRECATED Render states management
-
-	IRenderState*	CreateBlendingState(const BlendStateParams& blendDesc);
-	IRenderState*	CreateDepthStencilState(const DepthStencilStateParams& depthDesc);
-	IRenderState*	CreateRasterizerState(const RasterizerStateParams& rasterDesc);
-	void			DestroyRenderState(IRenderState* pShaderProgram, bool removeAllRefs = false);
-
-//-------------------------------------------------------------
-// DEPRECATED Render target operations
-
-	void			Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const MColor& fillColor, float fDepth, int nStencil);
-
-	void			CopyFramebufferToTexture(const ITexturePtr& pTargetTexture);
-	void			CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr);
-	
-	void			ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice = nullptr, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0);
-	void			ChangeRenderTargetToBackBuffer();
-
-//-------------------------------------------------------------
-// DEPRECATED Various setup functions for drawing
-
-	void			ChangeVertexFormat(IVertexFormat* pVertexFormat);
-	void			ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, const intptr offset = 0);
-	void			ChangeIndexBuffer(IIndexBuffer* pIndexBuffer);
-
-//-------------------------------------------------------------
-// DEPRECATED State management
-
-	void			SetScissorRectangle(const IAARectangle& rect);
-	void			SetDepthRange(float fZNear, float fZFar);
-
-//-------------------------------------------------------------
-// DEPRECATED Renderer state managemet
-
-	void			SetShader(IShaderProgramPtr pShader);
-	void			SetTexture(int nameHash, const ITexturePtr& texture);
-	void			SetShaderConstantRaw(int nameHash, const void* data, int nSize);
-
-	void			Reset(int nResetType = STATE_RESET_ALL) {}
-
-	void			ApplyTextures() {}
-	void			ApplySamplerState() {}
-	void			ApplyBlendState() {}
-	void			ApplyDepthState() {}
-	void			ApplyRasterizerState() {}
-	void			ApplyShaderProgram() {}
-	void			ApplyConstants() {}
-
-//-------------------------------------------------------------
-// DEPRECATED Primitive drawing
-
-	void			DrawIndexedPrimitives(EPrimTopology nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
-	void			DrawNonIndexedPrimitives(EPrimTopology nType, int nFirstVertex, int nVertices);
+// DEPRECATED
+	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
+	void						DestroyVertexFormat(IVertexFormat* pFormat);
 
 //-------------------------------------------------------------
 // Private access
 
-	WGPUDevice			GetWGPUDevice() const { return m_rhiDevice; }
-	WGPUQueue			GetWGPUQueue() const { return m_rhiQueue; };
+	WGPUDevice					GetWGPUDevice() const { return m_rhiDevice; }
+	WGPUQueue					GetWGPUQueue() const { return m_rhiQueue; };
 
 protected:
 
-	WGPUShaderModule	CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
+	WGPUShaderModule			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
 
-	WGPUShaderModule	GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
-	int					LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output);
+	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
+	int							LoadShaderPackage(const char* filename, ShaderInfoWGPUImpl& output);
 
 	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
-	WGPUDevice			m_rhiDevice{ nullptr };
-	WGPUQueue			m_rhiQueue{ nullptr };
-	bool				m_deviceLost{ false };
+	WGPUDevice					m_rhiDevice{ nullptr };
+	WGPUQueue					m_rhiQueue{ nullptr };
+	bool						m_deviceLost{ false };
 };

@@ -1018,16 +1018,6 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	if (swapChain)
 		swapChain->GetBackbufferSize(backbufferSize.x, backbufferSize.y);
 
-	m_shaderAPI->SetViewport(IAARectangle(0, 0, backbufferSize.x, backbufferSize.y));
-	m_shaderAPI->SetScissorRectangle(IAARectangle(0, 0, backbufferSize.x, backbufferSize.y));
-
-#ifdef PLAT_ANDROID
-	// always clear all on Android
-	m_shaderAPI->Clear(true, true, true, clearColor);
-#else
-	m_shaderAPI->Clear(clearBackBuffer, true, false, clearColor);
-#endif
-
 	m_proxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
 
 	return true;

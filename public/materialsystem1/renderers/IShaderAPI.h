@@ -29,31 +29,6 @@
 struct KVSection;
 class CImage;
 
-
-
-// DEPRECATED 
-struct RasterizerStateParams;
-
-// API reset type
-enum EStateResetFlags : int
-{
-	STATE_RESET_SHADER = (1 << 0),
-	STATE_RESET_VF = (1 << 1),
-	STATE_RESET_VB = (1 << 2),
-	STATE_RESET_IB = (1 << 3),
-	STATE_RESET_DS = (1 << 4),
-	STATE_RESET_BS = (1 << 5),
-	STATE_RESET_RS = (1 << 6),
-	STATE_RESET_SS = (1 << 7),
-	STATE_RESET_TEX = (1 << 8),
-	STATE_RESET_SHADERCONST = (1 << 9),
-
-	STATE_RESET_ALL = 0xFFFF,
-	STATE_RESET_VBO = (STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
-};
-
-// END DEPRECATED
-
 // shader api initializer
 struct ShaderAPIParams
 {
@@ -125,7 +100,6 @@ public:
 	virtual int					GetDrawCallsCount() const = 0;
 	virtual int					GetDrawIndexedPrimitiveCallsCount() const = 0;
 	virtual int					GetTrianglesCount() const = 0;
-
 	virtual void				ResetCounters() = 0;
 
 //-------------------------------------------------------------
@@ -140,6 +114,10 @@ public:
 
 	virtual IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const = 0;
 
+	// DEPRECATED
+	virtual IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout) = 0;
+	virtual void						DestroyVertexFormat(IVertexFormat* pFormat) = 0;
+	virtual IVertexFormat*				FindVertexFormat(const char* name) const = 0;
 
 //-------------------------------------------------------------
 // Pipeline management
@@ -195,113 +173,8 @@ public:
 	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall, int newArraySize = 1) = 0;
 
 //-------------------------------------------------------------
-// DEPRECATED Pipeline state layout
+// DEPRECATED Procedural texture creation
 //-------------------------------------------------------------
-
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout ) = 0;
-	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
-	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Buffer objects
-//-------------------------------------------------------------
-
-	virtual IVertexBuffer*		CreateVertexBuffer(const BufferInfo& bufferInfo) = 0;
-	virtual IIndexBuffer*		CreateIndexBuffer(const BufferInfo& bufferInfo) = 0;
-
-	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
-	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Shader resource management
-//-------------------------------------------------------------
-
-	virtual IShaderProgramPtr	FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
-
-	virtual IShaderProgramPtr	CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
-	virtual void				FreeShaderProgram(IShaderProgram* pShaderProgram) = 0;
-
-	virtual bool				LoadShadersFromFile(IShaderProgramPtr pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
-	virtual bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Occlusion query management
-//-------------------------------------------------------------
-
-	virtual IOcclusionQuery*	CreateOcclusionQuery() = 0;
-	virtual void				DestroyOcclusionQuery(IOcclusionQuery* pQuery) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Render states management
-//-------------------------------------------------------------
-
-	virtual IRenderState*		CreateBlendingState( const BlendStateParams &blendDesc ) = 0;
-	virtual IRenderState*		CreateDepthStencilState( const DepthStencilStateParams &depthDesc ) = 0;
-	virtual IRenderState*		CreateRasterizerState( const RasterizerStateParams &rasterDesc ) = 0;
-	virtual void				DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Rasterizer and render state properties
-//-------------------------------------------------------------
-
-	virtual void				SetDepthRange( float near, float far ) = 0;
-	virtual void				SetViewport(const IAARectangle& rect) = 0;
-	virtual void				SetScissorRectangle(const IAARectangle& rect) = 0;
-
-	virtual void				SetBlendingState( IRenderState* pBlending ) = 0;
-	virtual void				SetDepthStencilState( IRenderState *pDepthStencilState ) = 0;
-	virtual void				SetRasterizerState( IRenderState* pState ) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Vertex buffer object handling
-//-------------------------------------------------------------
-
-	virtual void				SetVertexFormat( IVertexFormat* pVertexFormat ) = 0;
-	virtual void				SetVertexBuffer( IVertexBuffer* pVertexBuffer, int nStream, const intptr offset = 0 ) = 0;
-	virtual void				SetIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
-
-	virtual void				ChangeVertexFormat( IVertexFormat* pVertexFormat ) = 0;
-	virtual void				ChangeVertexBuffer( IVertexBuffer* pVertexBuffer,int nStream, const intptr offset = 0 ) = 0;
-	virtual void				ChangeIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Shaders state operations
-//-------------------------------------------------------------
-
-	virtual void				SetShader(IShaderProgramPtr pShader) = 0;
-
-    virtual void				SetShaderConstantRaw(int nameHash, const void *data, int nSize) = 0;
-
-	template<typename ARRAY_TYPE>
-	void						SetShaderConstantArray(int nameHash, const ARRAY_TYPE& arr);
-	template<typename T> void	SetShaderConstant(int nameHash, const T* constant, int count = 1);
-	template<typename T> void	SetShaderConstant(int nameHash, const T& constant);
-
-	virtual void				SetTexture(int nameHash, const ITexturePtr& pTexture) = 0;
-	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Render target state operations
-//-------------------------------------------------------------
-
-	// clear current rendertarget
-	virtual void				Clear(	bool color,
-										bool depth = true,
-										bool stencil = true,
-										const MColor& fillColor = color_black,
-										float depthValue = 1.0f,
-										int stencilValue = 0
-										) = 0;
-
-	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
-	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) = 0;
-	
-	virtual void				ChangeRenderTargetToBackBuffer() = 0;
-	virtual void				ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0) = 0;
-	virtual void				ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
-													ArrayCRef<int> rtSlice = nullptr,
-													const ITexturePtr& depthTarget = nullptr,
-													int depthSlice = 0) = 0;
 
 	// creates lockable texture
 	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
@@ -312,50 +185,8 @@ public:
 														int flags = 0,
 														int dataSize = 0, const ubyte* data = nullptr
 														) = 0;
-//-------------------------------------------------------------
-// DEPRECATED Sending states to API
-//-------------------------------------------------------------
-
-	// reset states. Use RESET_TYPE flags. By default all states reset
-	virtual void				Reset(int resetFlags = STATE_RESET_ALL) = 0;
-
-	// applies all states
-	virtual void				Apply() = 0;
-
-	virtual void				ApplyTextures() = 0;
-	virtual void				ApplySamplerState() = 0;
-	virtual void				ApplyBlendState() = 0;
-	virtual void				ApplyDepthState() = 0;
-	virtual void				ApplyRasterizerState() = 0;
-	virtual void				ApplyBuffers() = 0;
-	virtual void				ApplyShaderProgram() = 0;
-	virtual void				ApplyConstants() = 0;
-
-//-------------------------------------------------------------
-// DEPRECATED Primitive drawing
-//-------------------------------------------------------------
-
-	virtual void				DrawIndexedPrimitives(EPrimTopology nType, int firstIndex, int indices, int firstVertex, int vertices, int baseVertex = 0) = 0;
-	virtual void				DrawNonIndexedPrimitives(EPrimTopology nType, int firstVertex, int vertices) = 0;
 };
 
-template<typename ARRAY_TYPE>
-inline void IShaderAPI::SetShaderConstantArray(int nameHash, const ARRAY_TYPE& arr)
-{
-	SetShaderConstantRaw(nameHash, arr.ptr(), sizeof(typename ARRAY_TYPE::ITEM) * arr.numElem());
-}
-
-template<typename T>
-inline void IShaderAPI::SetShaderConstant(int nameHash, const T* constant, int count)
-{
-	SetShaderConstantRaw(nameHash, constant, sizeof(T) * count);
-}
-
-template<typename T>
-inline void IShaderAPI::SetShaderConstant(int nameHash, const T& constant)
-{
-	SetShaderConstantRaw(nameHash, &constant, sizeof(T));
-}
 
 // it always external, declare new one in your app...
 extern IShaderAPI* g_renderAPI;
