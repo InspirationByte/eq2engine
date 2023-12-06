@@ -119,6 +119,13 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 
 	InitShaderVariants(shaderInfo, -1, shaderSection);
 
+	// Add default vertex layout (For compute of VBOless)
+	if (shaderInfo.vertexLayouts.numElem() == 0)
+	{
+		ShaderInfo::VertLayout& defaultVertexLayout = shaderInfo.vertexLayouts.append();
+		defaultVertexLayout.name = "Default";
+	}
+
 	// count all shader variations
 	int numSwitchableDefines = 0;
 	for (int i = 0; i < shaderInfo.variants.numElem(); ++i)
@@ -278,13 +285,6 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 		}
 		else
 			InitShaderVariants(shaderInfo, thisVariantIndex, nestedSec);
-	}
-
-	// Add default vertex layout (For compute of VBOless)
-	if (shaderInfo.vertexLayouts.numElem() == 0)
-	{
-		ShaderInfo::VertLayout& defaultVertexLayout = shaderInfo.vertexLayouts.append();
-		defaultVertexLayout.name = "Default";
 	}
 }
 
