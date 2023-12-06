@@ -84,7 +84,6 @@ bool CWGPURenderLib::InitCaps()
 {
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
-	//WGPUInstanceDescriptor instDesc;
 	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
 	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
 
@@ -129,8 +128,6 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		// fill ShaderAPI capabilities
 		ShaderAPICaps& caps = CWGPURenderAPI::Instance.m_caps;
-		//caps.textureFormatsSupported[FORMAT_COUNT]{ false };
-		//caps.renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 		caps.isInstancingSupported = true;
 		caps.isHardwareOcclusionQuerySupported = true;
 		caps.minUniformBufferOffsetAlignment = supLimits.limits.minUniformBufferOffsetAlignment;
@@ -164,15 +161,27 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		}
 
 		caps.textureFormatsSupported[FORMAT_D32F] =
-			caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
+		caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
 
 		for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
 			caps.textureFormatsSupported[i] = true;
 
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 
-		WGPUDeviceDescriptor desc{};
-		
+		WGPUDeviceDescriptor rhiDeviceDesc{};
+
+		const char* const enabledToggles[] = {
+			"allow_unsafe_apis",
+			"use_user_defined_labels_in_backend"
+		};
+
+		WGPUDawnTogglesDescriptor deviceTogglesDesc{};
+		deviceTogglesDesc.enabledToggles = enabledToggles;
+		deviceTogglesDesc.enabledToggleCount = elementsOf(enabledToggles);
+		deviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
+
+		rhiDeviceDesc.nextInChain = &deviceTogglesDesc.chain;
+
 		WGPUFeatureName requiredFeatures[] = {
 			WGPUFeatureName_TextureCompressionBC,
 			WGPUFeatureName_BGRA8UnormStorage,
@@ -181,17 +190,17 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 			//WGPUFeatureName_TextureCompressionASTC,
 			//WGPUFeatureName_ShaderF16,
 		};
-		desc.requiredFeatures = requiredFeatures;
-		desc.requiredFeatureCount = elementsOf(requiredFeatures);
+		rhiDeviceDesc.requiredFeatures = requiredFeatures;
+		rhiDeviceDesc.requiredFeatureCount = elementsOf(requiredFeatures);
 
 		// setup required limits
 		WGPURequiredLimits reqLimits{};
 		reqLimits.limits = requiredLimits;
 
-		desc.requiredLimits = &reqLimits;
-		desc.deviceLostCallback = OnWGPUDeviceLost;
+		rhiDeviceDesc.requiredLimits = &reqLimits;
+		rhiDeviceDesc.deviceLostCallback = OnWGPUDeviceLost;
 
-		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &desc);
+		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &rhiDeviceDesc);
 
 		if (!m_rhiDevice)
 		{
