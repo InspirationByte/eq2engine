@@ -149,7 +149,6 @@ void DrawWindowRectangle(const AARectangle& rect, const ColorRGBA& color1, const
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	drawCmd.userData = &defaultRenderPass;
 
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
@@ -164,7 +163,7 @@ void DrawWindowRectangle(const AARectangle& rect, const ColorRGBA& color1, const
 		//meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		//meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 void Panel::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)

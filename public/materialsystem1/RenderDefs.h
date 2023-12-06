@@ -222,8 +222,6 @@ struct RenderDrawCmd
 	// use AddUniformBuffer
 	BufferArray			uniformBuffers;
 
-	const void*			userData{ nullptr };
-
 	RenderDrawCmd& SetMaterial(IMaterial* _material)
 	{
 		material = _material;
@@ -319,7 +317,8 @@ enum EShaderBlendMode : int
 
 enum ERenderPassType
 {
-	RENDERPASS_SHADOW,		// shadow texture drawing (decal)
+	RENDERPASS_DEFAULT,
+	RENDERPASS_SHADOW,			// shadow texture drawing (decal)
 	RENDERPASS_DEPTH,			// depth pass (shadow mapping and other things)
 	RENDERPASS_GAME_SCENE_VIEW,	// scene drawing
 };
@@ -330,12 +329,14 @@ struct RenderPassBaseData
 
 	ERenderPassType		type;
 	uint				version{ 0 };
-	GPUBufferView	cameraParamsBuffer;
+	GPUBufferView		cameraParamsBuffer;
 };
 
 // used for debug geometry and UIs
-struct MatSysDefaultRenderPass
+struct MatSysDefaultRenderPass : public RenderPassBaseData
 {
+	MatSysDefaultRenderPass() : RenderPassBaseData(RENDERPASS_DEFAULT) {}
+
 	MColor				drawColor{ color_white };
 	IAARectangle		scissorRectangle{ -1, -1, -1, -1 };
 	ITexturePtr			texture{ nullptr };
@@ -344,4 +345,22 @@ struct MatSysDefaultRenderPass
 	ECompareFunc		depthFunc{ COMPFUNC_LEQUAL };
 	bool				depthTest{ false };
 	bool				depthWrite{ false };
+};
+
+struct RenderPassContext
+{
+	RenderPassContext() = default;
+	//RenderPassContext(IGPURenderPassRecorder* recorder)
+	//	: recorder(recorder)
+	//{}
+
+	RenderPassContext(IGPURenderPassRecorder* recorder, const RenderPassBaseData* passData) 
+		: recorder(recorder), data(passData)
+	{}
+
+	using BeforeMaterialSetupFunc = EqFunction<IMaterial* (IMaterial* material)>;
+
+	IGPURenderPassRecorder*		recorder{ nullptr };	// FIXME: refptr?
+	const RenderPassBaseData*	data{ nullptr };
+	BeforeMaterialSetupFunc		beforeMaterialSetup{ nullptr };
 };

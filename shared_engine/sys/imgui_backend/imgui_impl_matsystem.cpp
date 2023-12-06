@@ -27,7 +27,7 @@ static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data, IGPURend
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 
-	g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, &defaultRenderPass, rendPassRecorder);
+	g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 
 	rendPassRecorder->SetViewport(AARectangle(0.0f, 0.0f, draw_data->FramebufferScale.x * draw_data->DisplaySize.x, draw_data->FramebufferScale.y * draw_data->DisplaySize.y), 0.0f, 1.0f);
 	rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);
@@ -105,7 +105,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 				defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 				defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
 
-				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, &defaultRenderPass, rendPassRecorder);
+				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.meshInfo.primTopology, drawCmd.instanceInfo.instFormat, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 
 				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
 				rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);

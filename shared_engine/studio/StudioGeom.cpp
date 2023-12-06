@@ -799,7 +799,7 @@ IGPUBufferPtr CEqStudioGeom::GetVertexBuffer(EGFHwVertex::VertexStreamId vertStr
 	return m_vertexBuffers[vertStream];
 }
 
-void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData& instData, IGPURenderPassRecorder* rendPassRecorder) const
+void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData& instData, const RenderPassContext& passContext) const
 {
 	if (!drawProperties.bodyGroupFlags)
 		return;
@@ -912,7 +912,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
 			drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
-			g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+			g_matSystem->SetupDrawCommand(drawCmd, passContext);
 		}
 	}
 }

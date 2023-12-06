@@ -26,7 +26,6 @@
 #include "TextureLoader.h"
 #include "Renderers/IRenderLibrary.h"
 #include "materialsystem1/MeshBuilder.h"
-#include "materialsystem1/IMaterialCallback.h"
 
 
 using namespace Threading;
@@ -1173,18 +1172,6 @@ void CMaterialSystem::GetFogInfo(FogInfo &info) const
 }
 
 // sets pre-apply callback
-void CMaterialSystem::SetRenderCallbacks( IMatSysRenderCallbacks* callback )
-{
-	m_preApplyCallback = callback;
-}
-
-// returns current pre-apply callback
-IMatSysRenderCallbacks* CMaterialSystem::GetRenderCallbacks() const
-{
-	return m_preApplyCallback;
-}
-
-// sets pre-apply callback
 void CMaterialSystem::SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture)
 {
 	m_currentEnvmapTexture = pEnvMapTexture;
@@ -1333,28 +1320,7 @@ void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 	buffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
 }
 
-void CMaterialSystem::Draw(const RenderDrawCmd& drawCmd)
-{
-	// no material means no pipeline state
-	if (!drawCmd.material)
-		return;
-
-	IShaderAPI* renderAPI = m_shaderAPI;
-
-	// TODO: render pass description should come as argument
-	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
-		.ColorTarget(m_renderLibrary->GetCurrentBackbuffer())
-		//.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
-		.End();
-
-	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
-
-	SetupDrawCommand(drawCmd, rendPassRecorder);
-
-	QueueCommandBuffer(rendPassRecorder->End());
-}
-
-void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder)
+void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext)
 {
 	if (!drawCmd.material)
 		return;
@@ -1390,7 +1356,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 	// modify used layout flags
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
-	if (!SetupMaterialPipeline(drawCmd.material, drawCmd.uniformBuffers, meshInfo.primTopology, instFormatRef, drawCmd.userData, rendPassRecorder))
+	if (!SetupMaterialPipeline(drawCmd.material, drawCmd.uniformBuffers, meshInfo.primTopology, instFormatRef, passContext))
 		return;
 
 	if (instFormatRef.layout.numElem())
@@ -1402,15 +1368,15 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderP
 
 		int bufferSlot = 0;
 		for (const GPUBufferView& bindBufferView : bindVertexBuffers)
-			rendPassRecorder->SetVertexBufferView(bufferSlot++, bindBufferView);
+			passContext.recorder->SetVertexBufferView(bufferSlot++, bindBufferView);
 
-		rendPassRecorder->SetIndexBufferView(instInfo.indexBuffer, instInfo.indexFormat);
+		passContext.recorder->SetIndexBufferView(instInfo.indexBuffer, instInfo.indexFormat);
 	}
 
 	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
-		rendPassRecorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
+		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
 	else
-		rendPassRecorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
+		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
 }
 
 void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const
@@ -1428,14 +1394,14 @@ void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandReco
 	matSysMaterial->m_frameBound = proxyFrame;
 }
 
-bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const void* userData, IGPURenderPassRecorder* rendPassRecorder)
+bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
 
 	// TODO: overdraw material. Or maybe debug property in shader?
 
-	if (m_preApplyCallback)
-		material = m_preApplyCallback->OnPreBindMaterial(material);
+	if (passContext.beforeMaterialSetup)
+		material = passContext.beforeMaterialSetup(material);
 
 	// force load shader and textures if not already
 	material->LoadShaderAndTextures();
@@ -1451,11 +1417,13 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 		matSysMaterial->m_frameBound = proxyFrame;
 	}
 
-	return matShader->SetupRenderPass(renderAPI, meshInstFormat, primTopology, uniformBuffers, rendPassRecorder, userData);
+	return matShader->SetupRenderPass(renderAPI, meshInstFormat, primTopology, uniformBuffers, passContext);
 }
 
-bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
+bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext)
 {
+	ASSERT_MSG(passContext.data && passContext.data->type == RENDERPASS_DEFAULT, "RenderPassContext for DrawDefaultUP must always have MatSysDefaultRenderPass");
+
 	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
@@ -1527,7 +1495,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
 	IShaderAPI* renderAPI = m_shaderAPI;
-	if (!matShader->SetupRenderPass(renderAPI, instFormatRef, primTopology, nullptr, rendPassRecorder, &rendPassInfo))
+	if (!matShader->SetupRenderPass(renderAPI, instFormatRef, primTopology, nullptr, passContext))
 	{
 		return false;
 	}
@@ -1535,35 +1503,20 @@ bool CMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPass
 	if (instFormatRef.layout.numElem())
 	{
 		for (int i = 0; i < instInfo.vertexBuffers.numElem(); ++i)
-			rendPassRecorder->SetVertexBufferView(i, instInfo.vertexBuffers[i]);
+			passContext.recorder->SetVertexBufferView(i, instInfo.vertexBuffers[i]);
 	}
 
+	const MatSysDefaultRenderPass& rendPassInfo = *reinterpret_cast<const MatSysDefaultRenderPass*>(passContext.data);
+
 	if (rendPassInfo.scissorRectangle.leftTop != IVector2D(-1, -1) && rendPassInfo.scissorRectangle.rightBottom != IVector2D(-1, -1))
-		rendPassRecorder->SetScissorRectangle(rendPassInfo.scissorRectangle);
+		passContext.recorder->SetScissorRectangle(rendPassInfo.scissorRectangle);
 
 	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
-		rendPassRecorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
+		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
 	else
-		rendPassRecorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
+		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
 
 	return true;
-}
-
-void CMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts)
-{
-	// Draw to default view
-	RenderPassDesc renderPassDesc = Builder<RenderPassDesc>()
-		.ColorTarget(m_renderLibrary->GetCurrentBackbuffer())
-		//.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
-		.End();
-
-	IShaderAPI* renderAPI = m_shaderAPI;
-	IGPURenderPassRecorderPtr rendPassRecorder = renderAPI->BeginRenderPass(renderPassDesc);
-
-	if (!SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts, numVerts, rendPassRecorder))
-		return;
-
-	QueueCommandBuffer(rendPassRecorder->End());
 }
 
 // use this if you have objects that must be destroyed when device is lost

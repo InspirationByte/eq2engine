@@ -627,7 +627,7 @@ void CInputCommandBinder::OnJoyAxisEvent( short axis, short value )
 	}
 }
 
-void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
+void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!in_touchzones_debug.GetBool())
 		return;
@@ -648,7 +648,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	drawCmd.userData = &defaultRenderPass;
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
@@ -669,7 +669,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 
 	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
 	for (int i = 0; i < m_touchZones.numElem(); i++)
@@ -677,7 +677,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 		const in_touchzone_t* tz = &m_touchZones[i];
 		const AARectangle& rect = rects[i];
 
-		defaultFont->RenderText(tz->name.ToCString(), rect.leftTop, fontParams);
+		defaultFont->SetupRenderText(tz->name.ToCString(), rect.leftTop, fontParams, rendPassRecorder);
 	}
 }
 

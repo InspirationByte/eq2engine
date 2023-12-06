@@ -46,12 +46,9 @@ void CRenderList::Append(CRenderList* pAnotherList)
 		m_objectList.append(pAnotherList->GetRenderable(i));
 }
 
-void CRenderList::Render(int renderFlags, IGPURenderPassRecorder* rendPassRecorder, void* userdata)
+void CRenderList::Render(int renderFlags, const RenderPassContext& passContext, void* userdata)
 {
-	RenderInfo rinfo;
-	rinfo.rendPassRecorder = rendPassRecorder;
-	rinfo.renderFlags = renderFlags;
-	rinfo.userData = userdata;
+	RenderInfo rinfo{ passContext, userdata, 0.0f, renderFlags };
 	for (const RendPair& renderable : m_viewDistance)
 	{
 		rinfo.distance = renderable.distance;

@@ -1178,8 +1178,6 @@ void RenderFloor(IGPURenderPassRecorder* rendPassRecorder)
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.cullMode = CULL_FRONT;
 	defaultRenderPass.drawColor = MColor(1.0f, 1.0f, 0.0f, 0.15f);
-	
-	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		meshBuilder.TexturedQuad3(
@@ -1190,7 +1188,7 @@ void RenderFloor(IGPURenderPassRecorder* rendPassRecorder)
 			vec2_zero, vec2_zero, vec2_zero, vec2_zero);
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 void CEGFViewFrame::ReDraw()

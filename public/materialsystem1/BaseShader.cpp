@@ -219,15 +219,15 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 	}
 }
 
-bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, IGPURenderPassRecorder* rendPassRecorder, const void* userData)
+bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext)
 {
-	const uint pipelineId = GetRenderPipelineId(rendPassRecorder, meshInstFormat.nameHash, meshInstFormat.usedLayoutBits, primTopology);
+	const uint pipelineId = GetRenderPipelineId(passContext.recorder, meshInstFormat.nameHash, meshInstFormat.usedLayoutBits, primTopology);
 	
 	auto it = m_renderPipelines.find(pipelineId);
 	if (it.atEnd())
 	{
 		RenderPipelineDesc renderPipelineDesc;
-		FillRenderPipelineDesc(rendPassRecorder, meshInstFormat,  primTopology, renderPipelineDesc);
+		FillRenderPipelineDesc(passContext.recorder, meshInstFormat,  primTopology, renderPipelineDesc);
 		BuildPipelineShaderQuery(meshInstFormat, renderPipelineDesc.shaderQuery);
 
 		it = m_renderPipelines.insert(pipelineId);
@@ -281,10 +281,10 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 	if (!pipelineInfo.pipeline)
 		return false;
 
-	rendPassRecorder->SetPipeline(pipelineInfo.pipeline);
-	rendPassRecorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, rendPassRecorder, uniformBuffers, userData));
-	rendPassRecorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, BINDGROUP_RENDERPASS, pipelineInfo, rendPassRecorder, uniformBuffers, userData));
-	rendPassRecorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, BINDGROUP_TRANSIENT, pipelineInfo, rendPassRecorder, uniformBuffers, userData));
+	passContext.recorder->SetPipeline(pipelineInfo.pipeline);
+	passContext.recorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, uniformBuffers, passContext));
+	passContext.recorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, BINDGROUP_RENDERPASS, pipelineInfo, uniformBuffers, passContext));
+	passContext.recorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, BINDGROUP_TRANSIENT, pipelineInfo, uniformBuffers, passContext));
 
 	return true;
 }

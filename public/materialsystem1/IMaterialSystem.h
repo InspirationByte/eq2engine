@@ -177,18 +177,13 @@ public:
 
 	virtual void					GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj = false) const = 0;
 
-	// sets the custom rendering callbacks
-	// useful for proxy updates, setting up constants that shader objects can't access by themselves
-	virtual void					SetRenderCallbacks(IMatSysRenderCallbacks* callback) = 0;
-	virtual IMatSysRenderCallbacks* GetRenderCallbacks() const = 0;
-
 	//-----------------------------
 	// Drawing
 	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
 
 	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
-	virtual GPUBufferView		GetTransientUniformBuffer(const void* data, int64 size) = 0;
-	virtual GPUBufferView		GetTransientVertexBuffer(const void* data, int64 size) = 0;
+	virtual GPUBufferView			GetTransientUniformBuffer(const void* data, int64 size) = 0;
+	virtual GPUBufferView			GetTransientVertexBuffer(const void* data, int64 size) = 0;
 
 	// queues command buffer. Execution order is guaranteed
 	virtual void					QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) = 0;
@@ -198,64 +193,37 @@ public:
 	virtual void					SubmitQueuedCommands() = 0;
 	virtual void					UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const = 0;
 
-	virtual bool					SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const void* userData, IGPURenderPassRecorder* rendPassRecorder) = 0;
-	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder) = 0;
-	virtual bool					SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual bool					SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext) = 0;
+	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext) = 0;
+	virtual bool					SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext) = 0;
 
 	template<typename VERT>
-	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
+	void							SetupDrawDefaultUP(EPrimTopology primTopology, const VERT* verts, int numVerts, const RenderPassContext& passContext);
 
 	template<typename ARRAY_TYPE>
-	void							SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts, IGPURenderPassRecorder* rendPassRecorder);
+	void							SetupDrawDefaultUP(EPrimTopology primTopology, const ARRAY_TYPE& verts, const RenderPassContext& passContext);
 
 	//--------------------------------------------------
 	// DEPRECATED
 
 	virtual void					SetFogInfo(const FogInfo& info) = 0;
 	virtual void					GetFogInfo(FogInfo& info) const = 0;
-
-	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
-
-	// draw primitives with default material
-	virtual void					DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts) = 0;
-
-	template<typename VERT>
-	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts);
-
-	template<typename ARRAY_TYPE>
-	void							DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts);
 };
 
 template<typename VERT>
-void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts)
+void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const VERT* verts, int numVerts, const RenderPassContext& passContext)
 {
 	const void* vertPtr = reinterpret_cast<void*>(&verts);
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(rendPassInfo, primTopology, vertFVF, vertPtr, numVerts);
+	SetupDrawDefaultUP(primTopology, vertFVF, vertPtr, numVerts, passContext);
 }
 
 template<typename ARRAY_TYPE>
-void IMaterialSystem::DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts)
+void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const ARRAY_TYPE& verts, const RenderPassContext& passContext)
 {
 	using VERT = typename ARRAY_TYPE::ITEM;
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts.ptr(), verts.numElem());
-}
-
-template<typename VERT>
-void IMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const VERT* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder)
-{
-	const void* vertPtr = reinterpret_cast<void*>(&verts);
-	const int vertFVF = VertexFVFResolver<VERT>::value;
-	SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, vertPtr, numVerts, rendPassRecorder);
-}
-
-template<typename ARRAY_TYPE>
-void IMaterialSystem::SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, const ARRAY_TYPE& verts, IGPURenderPassRecorder* rendPassRecorder)
-{
-	using VERT = typename ARRAY_TYPE::ITEM;
-	const int vertFVF = VertexFVFResolver<VERT>::value;
-	SetupDrawDefaultUP(rendPassInfo, primTopology, vertFVF, verts.ptr(), verts.numElem(), rendPassRecorder);
+	SetupDrawDefaultUP(primTopology, vertFVF, verts.ptr(), verts.numElem(), passContext);
 }
 
 extern IMaterialSystem* g_matSystem;

@@ -534,7 +534,6 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 
 	RenderDrawCmd drawCmd;
 	drawCmd.material = g_matSystem->GetDefaultMaterial();
-	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
@@ -548,7 +547,7 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder)
@@ -618,7 +617,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 			MatSysDefaultRenderPass defaultRender;
 			defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
-			g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), rendPassRecorder);
+			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), RenderPassContext(rendPassRecorder, &defaultRender));
 		}
 
 		m_font->SetupRenderText(item.ToCString(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle, rendPassRecorder);
@@ -739,7 +738,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 					MatSysDefaultRenderPass defaultRender;
 					defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 					defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.8f);
-					g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), rendPassRecorder);
+					g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), RenderPassContext(rendPassRecorder, &defaultRender));
 
 					m_cmdSelection = i;
 
@@ -789,7 +788,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 					MatSysDefaultRenderPass defaultRender;
 					defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 					defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
-					g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(rectVerts), rendPassRecorder);
+					g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rectVerts), RenderPassContext(rendPassRecorder, &defaultRender));
 				}
 			}
 		}
@@ -1288,6 +1287,8 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 	MatSysDefaultRenderPass defaultRender;
 	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRender);
+
 	// render selection
 	if(m_startCursorPos != m_cursorPos)
 	{
@@ -1299,7 +1300,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 											inputTextPos.y + 4, 0) };
 
 		defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
-		g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(rect), rendPassRecorder);
+		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
 	}
 
 	// render cursor
@@ -1311,7 +1312,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 											inputTextPos.y + 4, 0) };
 
 		defaultRender.drawColor = color_white;
-		g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(rect), rendPassRecorder);
+		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
 	}
 }
 

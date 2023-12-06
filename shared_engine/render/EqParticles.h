@@ -19,6 +19,7 @@ class IGPURenderPassRecorder;
 class IGPUCommandRecorder;
 struct AtlasEntry;
 struct VertexLayoutDesc;
+struct RenderPassContext;
 
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
@@ -60,7 +61,7 @@ public:
 	virtual	~CParticleBatch();
 
 	// renders this buffer
-	void				Render(int viewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds);
+	void				Render(int viewRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
@@ -109,7 +110,7 @@ public:
 	void				PreloadMaterials();
 
 	// prepares render buffers and sends renderables to ViewRenderer
-	void				Render(int nRenderFlags, IGPURenderPassRecorder* rendPassRecorder);
+	void				Render(int nRenderFlags, const RenderPassContext& passContext);
 	void				ClearBuffers();
 
 protected:

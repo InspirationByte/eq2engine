@@ -225,7 +225,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
 					drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
-					g_matSystem->Draw(drawCmd);
+					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(nullptr, nullptr));
 				}
 			} // mGrp
 		} // bodyGrp

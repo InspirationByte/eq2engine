@@ -129,9 +129,6 @@ public:
 	MatVarProxyUnk				FindGlobalMaterialVarByName(const char* pszVarName) const;
 	MatVarProxyUnk				GetGlobalMaterialVarByName(const char* pszVarName, const char* defaultValue);
 
-	void						SetRenderCallbacks( IMatSysRenderCallbacks* callback );
-	IMatSysRenderCallbacks*		GetRenderCallbacks() const;
-
 	//-----------------------------
 	// Rendering projection helper operations
 
@@ -163,12 +160,9 @@ public:
 
 	void						UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const;
 
-	bool						SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const void* userData, IGPURenderPassRecorder* rendPassRecorder);
-	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, IGPURenderPassRecorder* rendPassRecorder);
-	bool						SetupDrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, IGPURenderPassRecorder* rendPassRecorder);
-
-	void						Draw(const RenderDrawCmd& drawCmd);
-	void						DrawDefaultUP(const MatSysDefaultRenderPass& rendPassInfo, EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts);
+	bool						SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext);
+	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext);
+	bool						SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext);
 
 private:
 
@@ -201,7 +195,6 @@ private:
 
 	//-------------------------------------------------------------------------
 	IVector2D					m_backbufferSize{ 800, 600 };
-	IMatSysRenderCallbacks*		m_preApplyCallback{ nullptr };
 
 	mutable Matrix4x4			m_viewProjMatrix{ identity4 };
 	mutable Matrix4x4			m_wvpMatrix{ identity4 };

@@ -8,6 +8,7 @@
 #pragma once
 
 class IGPURenderPassRecorder;
+struct RenderPassContext;
 
 enum RenderableVisibilityState_e
 {
@@ -18,7 +19,7 @@ enum RenderableVisibilityState_e
 
 struct RenderInfo
 {
-	IGPURenderPassRecorder* rendPassRecorder{ nullptr };
+	const RenderPassContext& passContext;
 	void*	userData{ nullptr };
 	float	distance{ 0.0f };		// dist from camera
 	int		renderFlags{ 0 };

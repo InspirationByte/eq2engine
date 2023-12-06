@@ -105,14 +105,13 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRe
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.cullMode = CULL_NONE;
-	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		meshBuilder.Color4fv(m_color);
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetLeftTop(), rect.GetRightBottom(), rect.GetRightTop(),
 			atlasRect.GetLeftBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightBottom(), atlasRect.GetRightTop());
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 };

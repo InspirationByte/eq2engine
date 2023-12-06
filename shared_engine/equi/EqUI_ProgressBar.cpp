@@ -43,7 +43,6 @@ void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn, IGPURender
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
@@ -63,7 +62,7 @@ void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn, IGPURender
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 }

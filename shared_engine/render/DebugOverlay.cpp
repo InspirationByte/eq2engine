@@ -67,7 +67,6 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = false;
 	defaultRenderPass.depthWrite = false;
-	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
@@ -81,7 +80,7 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 #define BBOX_STRIP_VERTS(min, max) \
@@ -445,7 +444,6 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime, IGPURe
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
-	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -468,7 +466,7 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime, IGPURe
 		}
 
 	if(meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
@@ -483,7 +481,6 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
-	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -535,13 +532,13 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 		if ((i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
-				g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
@@ -556,7 +553,6 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime, IGPURend
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
-	drawCmd.userData = &defaultRenderPass;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -608,13 +604,13 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime, IGPURend
 			if((i % BOXES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinder, float frametime)
@@ -676,7 +672,6 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
-	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_LINES);
 
@@ -687,13 +682,13 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 		if ((i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
-				g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float frame_time, IGPURenderPassRecorder* rendPassRecorder)
@@ -733,7 +728,9 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 
 	MatSysDefaultRenderPass defaultRender;
 	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
-	g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(lines), rendPassRecorder);
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRender);
+
+	g_matSystem->SetupDrawDefaultUP(PRIM_LINES, ArrayCRef(lines), defaultPassContext);
 
 	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl, rendPassRecorder);
 	pFont->SetupRenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl, rendPassRecorder);
@@ -789,7 +786,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 		graph->maxValue = graph_max_value;
 
 	defaultRender.blendMode = SHADER_BLEND_NONE;
-	g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts), rendPassRecorder);
+	g_matSystem->SetupDrawDefaultUP(PRIM_LINES, ArrayCRef(graph_line_verts, num_line_verts), defaultPassContext);
 
 	graph->remainingTime -= frame_time;
 
@@ -811,7 +808,8 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime, IGPU
 	defaultRenderPass.cullMode = CULL_FRONT;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
-	drawCmd.userData = &defaultRenderPass;
+
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLES);
@@ -834,13 +832,13 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime, IGPU
 			if((i % POLYS_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
 		}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 
 	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < polygons.numElem(); i++)
@@ -868,12 +866,12 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime, IGPU
 			if((i % LINES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
-					g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 }
 
 static Vector3D v3sphere(float theta, float phi)
@@ -1040,7 +1038,8 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime, 
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
-	drawCmd.userData = &defaultRenderPass;
+
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -1052,7 +1051,7 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime, 
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 }
 
 #endif // DISABLE_DEBUG_DRAWING
@@ -1310,7 +1309,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		MatSysDefaultRenderPass defaultRender;
 		defaultRender.texture = g_pDebugTexture;
-		g_matSystem->SetupDrawDefaultUP(defaultRender, PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), rendPassRecorder);
+		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), RenderPassContext(rendPassRecorder, &defaultRender));
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;

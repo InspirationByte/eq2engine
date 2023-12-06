@@ -11,6 +11,7 @@
 
 class CMeshBuilder;
 struct RenderDrawCmd;
+struct RenderPassContext;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
@@ -43,20 +44,7 @@ public:
 								const Vector2D& start,
 								const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
 
-	// DEPRECATED
-	// renders text (wide char)
-	void					RenderText(	const wchar_t* pszText,
-								const Vector2D& start,
-								const eqFontStyleParam_t& params);
-	// renders text (ASCII)
-	void					RenderText(	const char* pszText,
-								const Vector2D& start,
-								const eqFontStyleParam_t& params);
-
-
 protected:
-
-	void					DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params);
 	void					SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
 
 	// returns the character data

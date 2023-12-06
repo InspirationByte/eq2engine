@@ -239,7 +239,7 @@ void CAnimatedModel::UpdateRagdollBones()
 	}
 }
 
-void CAnimatedModel::RenderPhysModel()
+void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!m_pModel)
 		return;
@@ -261,7 +261,7 @@ void CAnimatedModel::RenderPhysModel()
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.drawColor = MColor(1.0f, 0.0f, 1.0f, 1.0f);
 	defaultRenderPass.depthTest = true;
-	drawCmd.userData = &defaultRenderPass;
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
 	Matrix4x4 worldPosMatrix;
 	g_matSystem->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
@@ -296,7 +296,7 @@ void CAnimatedModel::RenderPhysModel()
 				meshBuilder.AdvanceVertex();
 			}
 			if (meshBuilder.End(drawCmd))
-				g_matSystem->Draw(drawCmd);
+				g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 		}
 	}
 }
@@ -392,10 +392,10 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	drawProperties.boneTransforms = g_matSystem->GetTransientUniformBuffer(boneTransforms, numBones * sizeof(RenderBoneTransform));
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
-	m_pModel->Draw(drawProperties, MeshInstanceData{}, rendPassRecorder);
+	m_pModel->Draw(drawProperties, MeshInstanceData{}, RenderPassContext(rendPassRecorder, nullptr));
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
-		RenderPhysModel();
+		RenderPhysModel(rendPassRecorder);
 
 	if( nViewRenderFlags & RFLAG_BONES )
 		VisualizeBones();

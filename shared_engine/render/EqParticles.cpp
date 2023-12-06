@@ -87,7 +87,7 @@ void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleBatch::Render(int viewRenderFlags, IGPURenderPassRecorder* rendPassRecorder, IGPUCommandRecorder* bufferUpdateCmds)
+void CParticleBatch::Render(int viewRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
 {
 	if (!m_initialized || !r_drawParticles.GetBool())
 	{
@@ -126,7 +126,7 @@ void CParticleBatch::Render(int viewRenderFlags, IGPURenderPassRecorder* rendPas
 	else
 		drawCmd.SetDrawNonIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numVertices);
 
-	g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+	g_matSystem->SetupDrawCommand(drawCmd, passContext);
 
 	if(!(viewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
 	{
@@ -260,12 +260,12 @@ void CParticleLowLevelRenderer::PreloadMaterials()
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleLowLevelRenderer::Render(int nRenderFlags, IGPURenderPassRecorder* rendPassRecorder)
+void CParticleLowLevelRenderer::Render(int nRenderFlags, const RenderPassContext& passContext)
 {
 	IGPUCommandRecorderPtr particleRenderUpdate = g_renderAPI->CreateCommandRecorder("ParticleRenderUpdate");
 
 	for(CParticleBatch* batch : m_batchs)
-		batch->Render(nRenderFlags, rendPassRecorder, particleRenderUpdate);
+		batch->Render(nRenderFlags, passContext, particleRenderUpdate);
 
 	g_matSystem->QueueCommandBuffer(particleRenderUpdate->End());
 }

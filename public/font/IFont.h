@@ -172,16 +172,4 @@ public:
 	virtual void				SetupRenderText(const char* pszText,
 											const Vector2D& start,
 											const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
-
-	// DEPRECATED
-	// renders text
-	virtual void				RenderText(const wchar_t* pszText,
-		const Vector2D& start,
-		const eqFontStyleParam_t& params) = 0;
-
-	// renders text
-	virtual void				RenderText(const char* pszText,
-		const Vector2D& start,
-		const eqFontStyleParam_t& params) = 0;
-
 };

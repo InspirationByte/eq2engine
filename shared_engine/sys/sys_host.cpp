@@ -775,6 +775,12 @@ bool CGameHost::Frame()
 	equi::Manager->SetViewFrame(IAARectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
 
+	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+		Builder<RenderPassDesc>()
+		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.End()
+	);
+
 	if (r_showFPS.GetBool())
 	{
 		eqFontStyleParam_t params;
@@ -786,13 +792,6 @@ bool CGameHost::Frame()
 		else if (fps < 60)
 			params.textColor = ColorRGBA(1, 0.8f, 0, 1);
 
-
-		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
-			Builder<RenderPassDesc>()
-			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-			.End()
-		);
-
 		m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
 
 		size_t totalMem = PPMemGetUsage();
@@ -802,9 +801,10 @@ bool CGameHost::Frame()
 			memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 			m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
 		}
-
-		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 	}
+
+	g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
+	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 
 	// End frame from render lib
 	EndScene();
@@ -854,7 +854,6 @@ void CGameHost::BeginScene()
 
 void CGameHost::EndScene()
 {
-	g_inputCommandBinder->DebugDraw(m_winSize);
 	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
 
 	g_matSystem->EndFrame();

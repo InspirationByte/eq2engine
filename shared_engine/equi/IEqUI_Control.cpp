@@ -536,7 +536,6 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	drawCmd.userData = &defaultRenderPass;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
@@ -550,7 +549,7 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, rendPassRecorder);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 // rendering function
@@ -612,9 +611,9 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8), rendPassRecorder);
 
 		eqFontStyleParam_t params;
-		debugoverlay->GetFont()->RenderText(
+		debugoverlay->GetFont()->SetupRenderText(
 			EqString::Format("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible).ToCString(), 
-			clientRectRender.GetLeftBottom(), params);
+			clientRectRender.GetLeftBottom(), params, rendPassRecorder);
 	}
 
 	// render from last
