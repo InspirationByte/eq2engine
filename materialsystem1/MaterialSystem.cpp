@@ -1403,6 +1403,9 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 	if (passContext.beforeMaterialSetup)
 		material = passContext.beforeMaterialSetup(material);
 
+	if (!material)
+		return false;
+
 	// force load shader and textures if not already
 	material->LoadShaderAndTextures();
 
