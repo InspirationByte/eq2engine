@@ -154,28 +154,26 @@ struct BlendStateParams
 	EBlendFactor	srcFactor{ BLENDFACTOR_ONE };
 	EBlendFactor	dstFactor{ BLENDFACTOR_ZERO };
 	EBlendFunc		blendFunc{ BLENDFUNC_ADD };
-	int				mask{ COLORMASK_ALL };			// TODO: remove
-	bool			enable { false };
 };
 
 static const BlendStateParams BlendStateAdditive = {
 	BLENDFACTOR_ONE, BLENDFACTOR_ONE, 
-	BLENDFUNC_ADD, COLORMASK_ALL, true
+	BLENDFUNC_ADD
 };
 
 static const BlendStateParams BlendStateTranslucent = {
 	BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-	BLENDFUNC_ADD, COLORMASK_ALL, true
+	BLENDFUNC_ADD
 };
 
 static const BlendStateParams BlendStateTranslucentAlpha = {
 	BLENDFACTOR_ONE, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-	BLENDFUNC_ADD, COLORMASK_ALL, true
+	BLENDFUNC_ADD
 };
 
 static const BlendStateParams BlendStateModulate = {
 	BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR,
-	BLENDFUNC_ADD, COLORMASK_ALL, true
+	BLENDFUNC_ADD
 };
 
 // HOW BLENDING WORKS:
@@ -403,9 +401,10 @@ struct FragmentPipelineDesc
 	{
 		EqString			name;
 		ETextureFormat		format{ FORMAT_NONE };
+		bool				blendEnable{ false };
+		int					writeMask{ COLORMASK_ALL };
 		BlendStateParams	colorBlend;
 		BlendStateParams	alphaBlend;
-		int					writeMask{ COLORMASK_ALL };
 	};
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 
@@ -419,9 +418,15 @@ FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
 	{
 		ref.targets.append(std::move(x)); return *this;
 	}
-	ThisType& ColorTarget(const char* name, ETextureFormat format, const BlendStateParams& colorBlend = BlendStateParams{}, const BlendStateParams& alphaBlend = BlendStateParams{}) 
+	ThisType& ColorTarget(const char* name, ETextureFormat format)
 	{
-		ref.targets.append({ name, format, colorBlend, alphaBlend }); return *this;
+		ref.targets.append({ name, format, false }); return *this;
+	}
+
+	// with blending on
+	ThisType& ColorTarget(const char* name, ETextureFormat format, const BlendStateParams& colorBlend, const BlendStateParams& alphaBlend) 
+	{
+		ref.targets.append({ name, format, true, COLORMASK_ALL, colorBlend, alphaBlend }); return *this;
 	}
 FLUENT_END_TYPE
 
@@ -920,13 +925,13 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		ref.nameHash = StringToHash(str);
 		return *this; 
 	}
-	ThisType& ColorTarget(ITexture* colorTarget, bool clear = false, const MColor& clearColor = color_black, int arraySlice = 0, int depthSlice = 0, ITexture* resolveTarget = nullptr, int resolveArraySlice = 0)
+	ThisType& ColorTarget(const TextureView& colorTarget, bool clear = false, const MColor& clearColor = color_black, bool discard = false, int depthSlice = 0, const TextureView& resolveTarget = nullptr)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
-		entry.target = TextureView(colorTarget, arraySlice);
-		entry.resolveTarget = TextureView(resolveTarget, resolveArraySlice);
+		entry.target = colorTarget;
+		entry.resolveTarget = resolveTarget;
 		entry.loadOp = clear ? LOADFUNC_CLEAR : LOADFUNC_LOAD;
-		entry.storeOp = STOREFUNC_STORE;
+		entry.storeOp = discard ? STOREFUNC_DISCARD : STOREFUNC_STORE;
 		entry.clearColor = clearColor;
 		entry.depthSlice = depthSlice;
 		return *this;

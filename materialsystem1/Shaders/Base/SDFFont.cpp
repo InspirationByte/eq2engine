@@ -99,7 +99,11 @@ BEGIN_SHADER_CLASS(SDFFont)
 					const ETextureFormat format = passContext.recorder->GetRenderTargetFormat(i);
 					if (format == FORMAT_NONE)
 						break;
-					pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
+
+					if (rendPassInfo->blendMode != SHADER_BLEND_NONE)
+						pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
+					else
+						pipelineBuilder.ColorTarget("CT", format);
 				}
 				pipelineBuilder.End();
 			}

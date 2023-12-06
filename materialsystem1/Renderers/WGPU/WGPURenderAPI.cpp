@@ -1009,16 +1009,19 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 
 		for(const FragmentPipelineDesc::ColorTargetDesc& target : pipelineDesc.fragment.targets)
 		{
+			WGPUColorTargetState rhiColorTarget = {};
+
+			if(target.blendEnable)
 			{
 				WGPUBlendState rhiBlend = {};
 				FillWGPUBlendComponent(target.colorBlend, rhiBlend.color);
 				FillWGPUBlendComponent(target.alphaBlend, rhiBlend.alpha);
 				rhiColorTargetBlends.append(rhiBlend);
+
+				rhiColorTarget.blend = &rhiColorTargetBlends.back();
 			}
 
-			WGPUColorTargetState rhiColorTarget = {};
 			rhiColorTarget.format = GetWGPUTextureFormat(target.format);
-			rhiColorTarget.blend = &rhiColorTargetBlends.back();
 			rhiColorTarget.writeMask = target.writeMask;
 			rhiColorTargets.append(rhiColorTarget);
 		}
@@ -1137,10 +1140,21 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
 	{
 		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
-		renderTargetDims = IVector2D(colorTarget.target.texture->GetWidth(), colorTarget.target.texture->GetHeight());
-		renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
+		if (colorTarget.target.texture)
+		{
+			renderTargetDims = IVector2D(colorTarget.target.texture->GetWidth(), colorTarget.target.texture->GetHeight());
+			renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
+		}
 	}
-	renderPass->m_depthTargetFormat = renderPassDesc.depthStencil ? renderPassDesc.depthStencil.texture->GetFormat() : FORMAT_NONE;
+
+	if (renderPassDesc.depthStencil)
+	{
+		renderTargetDims = IVector2D(renderPassDesc.depthStencil.texture->GetWidth(), renderPassDesc.depthStencil.texture->GetHeight());
+		renderPass->m_depthTargetFormat = renderPassDesc.depthStencil.texture->GetFormat();
+	}
+	else
+		renderPass->m_depthTargetFormat = FORMAT_NONE;
+
 	renderPass->m_depthReadOnly = renderPassDesc.depthReadOnly;
 	renderPass->m_stencilReadOnly = renderPassDesc.stencilReadOnly;
 

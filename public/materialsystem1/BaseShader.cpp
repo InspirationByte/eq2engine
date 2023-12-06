@@ -213,7 +213,11 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 			const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
 			if (format == FORMAT_NONE)
 				break;
-			pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
+
+			if(m_blendMode != SHADER_BLEND_NONE)
+				pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
+			else
+				pipelineBuilder.ColorTarget("CT", format);
 		}
 		pipelineBuilder.End();
 	}
