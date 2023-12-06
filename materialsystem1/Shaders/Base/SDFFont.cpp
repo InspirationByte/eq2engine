@@ -134,7 +134,8 @@ BEGIN_SHADER_CLASS(SDFFont)
 			const MatSysDefaultRenderPass* rendPassInfo = static_cast<const MatSysDefaultRenderPass*>(passContext.data);
 			ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with SDFFont material");
 
-			const ITexturePtr& baseTexture = rendPassInfo->texture ? rendPassInfo->texture : g_matSystem->GetWhiteTexture();
+			TextureView whiteTexView = g_matSystem->GetWhiteTexture();
+			const TextureView& baseTexture = rendPassInfo->texture ? rendPassInfo->texture : whiteTexView;
 
 			// can use either fixed array or CMemoryStream with on-stack storage
 			FixedArray<Vector4D, 4> bufferData;
@@ -150,7 +151,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer)
 				.Buffer(1, materialParamsBuffer)
-				.Sampler(2, baseTexture->GetSamplerState())
+				.Sampler(2, baseTexture.texture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();
 			IGPUBindGroupPtr materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);

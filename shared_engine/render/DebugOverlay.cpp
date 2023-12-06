@@ -1307,8 +1307,12 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		Vertex2D light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
 
+		const int flags = g_pDebugTexture->GetFlags();
+		const int cubeOrArrayIndex = (m_frameId / 30) % ((flags & TEXFLAG_CUBEMAP) ? 6 : g_pDebugTexture->GetArraySize());
+		const int viewIndex = (g_pDebugTexture->GetArraySize() > 1) ? ITexture::ViewArraySlice(cubeOrArrayIndex) : ITexture::DEFAULT_VIEW;
+
 		MatSysDefaultRenderPass defaultRender;
-		defaultRender.texture = g_pDebugTexture;
+		defaultRender.texture = TextureView(g_pDebugTexture, viewIndex);
 		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), RenderPassContext(rendPassRecorder, &defaultRender));
 
 		eqFontStyleParam_t textStl;

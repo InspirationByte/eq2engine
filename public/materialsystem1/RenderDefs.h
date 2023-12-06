@@ -339,7 +339,7 @@ struct MatSysDefaultRenderPass : public RenderPassBaseData
 
 	MColor				drawColor{ color_white };
 	IAARectangle		scissorRectangle{ -1, -1, -1, -1 };
-	ITexturePtr			texture{ nullptr };
+	TextureView			texture;
 	ECullMode			cullMode{ CULL_NONE };
 	EShaderBlendMode	blendMode{ SHADER_BLEND_NONE };
 	ECompareFunc		depthFunc{ COMPFUNC_LEQUAL };

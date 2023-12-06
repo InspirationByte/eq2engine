@@ -98,7 +98,7 @@ struct TextureView
 		: texture(texture), arraySlice(arraySlice)
 	{
 	}
-	TextureView(ITexturePtr texture, int arraySlice = 0)
+	TextureView(const ITexturePtr& texture, int arraySlice = 0)
 		: texture(texture), arraySlice(arraySlice)
 	{
 	}

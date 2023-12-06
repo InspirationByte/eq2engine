@@ -682,12 +682,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& Buffer(int binding, IGPUBufferPtr buffer, int64 offset = 0, int64 size = -1)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
-		Entry& entry = ref.entries.append();
-		entry.binding = binding;
-		entry.type = BINDENTRY_BUFFER;
-		entry.buffer = GPUBufferView(buffer, offset, size);
-		return *this; 
+		return Buffer(binding, GPUBufferView(buffer, offset, size));
 	}
 	ThisType& Sampler(int binding, const SamplerStateParams& samplerParams)
 	{
@@ -698,23 +693,31 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 		entry.sampler = samplerParams;
 		return *this;
 	}
-	ThisType& Texture(int binding, ITexture* texture, int arraySlice = 0)
+	ThisType& Texture(int binding, const TextureView& texView)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
-		Entry& entry = ref.entries.append();
+			Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_TEXTURE;
-		entry.texture = TextureView(texture, arraySlice);
+		entry.texture = texView;
 		return *this;
 	}
-	ThisType& StorageTexture(int binding, ITexture* texture, int arraySlice = 0)
+	ThisType& StorageTexture(int binding, const TextureView& texView)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_STORAGETEXTURE;
-		entry.texture = TextureView(texture, arraySlice);
+		entry.texture = texView;
 		return *this;
+	}
+	ThisType& Texture(int binding, ITexture* texture, int arraySlice)
+	{
+		return Texture(binding, TextureView(texture, arraySlice));
+	}
+	ThisType& StorageTexture(int binding, ITexture* texture, int arraySlice)
+	{
+		return StorageTexture(binding, TextureView(texture, arraySlice));
 	}
 FLUENT_END_TYPE
 
