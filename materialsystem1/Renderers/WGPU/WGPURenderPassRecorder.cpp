@@ -59,8 +59,6 @@ void CWGPURenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat 
 		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Index, "buffer doesn't have Index buffer usage bit");
 		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], offset, size);
 	}
-	//else
-	//	wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, nullptr, WGPUIndexFormat_Undefined, 0, 0);
 }
 
 void CWGPURenderPassRecorder::SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth)
