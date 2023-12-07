@@ -260,14 +260,10 @@ void CParticleLowLevelRenderer::PreloadMaterials()
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleLowLevelRenderer::Render(int nRenderFlags, const RenderPassContext& passContext)
+void CParticleLowLevelRenderer::Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
 {
-	IGPUCommandRecorderPtr particleRenderUpdate = g_renderAPI->CreateCommandRecorder("ParticleRenderUpdate");
-
 	for(CParticleBatch* batch : m_batchs)
-		batch->Render(nRenderFlags, passContext, particleRenderUpdate);
-
-	g_matSystem->QueueCommandBuffer(particleRenderUpdate->End());
+		batch->Render(nRenderFlags, passContext, bufferUpdateCmds);
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()

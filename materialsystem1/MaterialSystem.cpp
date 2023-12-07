@@ -1327,9 +1327,6 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
 	const MeshInstanceData& instData = instInfo.instData;
-	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
-
-	const int instanceCount = instData.buffer ? instData.count : 1;
 
 	FixedArray<GPUBufferView, MAX_VERTEXSTREAM> bindVertexBuffers;
 
@@ -1356,14 +1353,13 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	// modify used layout flags
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
+	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
 	if (!SetupMaterialPipeline(drawCmd.material, drawCmd.uniformBuffers, meshInfo.primTopology, instFormatRef, passContext))
 		return;
 
 	if (instFormatRef.layout.numElem())
 	{
-		CMaterial* material = static_cast<CMaterial*>(drawCmd.material);
-		IMatSystemShader* matShader = material->m_shader;
-
+		IMatSystemShader* matShader = static_cast<CMaterial*>(drawCmd.material)->m_shader;
 		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormatRef.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instInfo.instFormat.name);
 
 		int bufferSlot = 0;
@@ -1372,7 +1368,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 
 		passContext.recorder->SetIndexBufferView(instInfo.indexBuffer, instInfo.indexFormat);
 	}
-
+	const int instanceCount = instData.buffer ? instData.count : 1;
 	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
 		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
 	else

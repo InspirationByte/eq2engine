@@ -823,13 +823,15 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		return true;
 	}();
 
+	MeshInstanceFormatRef& meshInstFormat = drawCmd.instanceInfo.instFormat;
+
 	if (isSkinned)
 	{
 		drawCmd.AddUniformBufferView(RenderBoneTransformID, drawProperties.boneTransforms);
 
 		// HACK: This is a temporary hack until we get proper identification
 		// or maybe hardware skinning using Compute shaders
-		drawCmd.instanceInfo.instFormat.nameHash = StringToHash(EqString(drawCmd.instanceInfo.instFormat.name) + "Skinned");
+		meshInstFormat.nameHash = StringToHash(EqString(meshInstFormat.name) + "Skinned");
 	}
 
 	// setup vertex buffers
@@ -837,7 +839,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		uint setVertStreams = 0;
 		int numBitsSet = 0;
 		
-		ArrayCRef<VertexLayoutDesc> layoutDescList = drawCmd.instanceInfo.instFormat.layout;
+		ArrayCRef<VertexLayoutDesc> layoutDescList = meshInstFormat.layout;
 		for (int i = 0; i < layoutDescList.numElem(); ++i)
 		{
 			if (numBitsSet == EGFHwVertex::VERT_COUNT)
@@ -858,8 +860,8 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			++numBitsSet;
 		}
 
-		drawCmd.instanceInfo.instFormat.usedLayoutBits &= ~7;
-		drawCmd.instanceInfo.instFormat.usedLayoutBits |= setVertStreams;
+		meshInstFormat.usedLayoutBits &= ~7;
+		meshInstFormat.usedLayoutBits |= setVertStreams;
 	}
 
 	if (drawProperties.setupDrawCmd)
