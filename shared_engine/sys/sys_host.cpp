@@ -710,8 +710,11 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
 
 	const double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
+	
+	const float stateTimeStepDelta = gameFrameTime * timescale * sys_timescale.GetFloat();
+	g_matSystem->SetProxyDeltaTime(stateTimeStepDelta);
 
-	if(!EqStateMgr::UpdateStates(gameFrameTime * timescale * sys_timescale.GetFloat()))
+	if(!EqStateMgr::UpdateStates(stateTimeStepDelta))
 	{
 		m_quitState = CGameHost::QUIT_TODESKTOP;
 		return false;
