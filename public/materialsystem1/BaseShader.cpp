@@ -187,7 +187,14 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 			.DepthFormat(depthTargetFormat);
 	}
 
-	if (!(m_flags & MATERIAL_FLAG_ONLY_Z))
+	const bool onlyZ = (m_flags & MATERIAL_FLAG_ONLY_Z);
+	Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
+	if (onlyZ)
+	{
+		// leave empty entry point to disable fragment pipeline
+		pipelineBuilder.ShaderEntry("");
+	}
+	else
 	{
 		BlendStateParams colorBlend;
 		BlendStateParams alphaBlend;
@@ -207,7 +214,6 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 			break;
 		}
 
-		Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
 		for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 		{
 			const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
@@ -219,8 +225,8 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 			else
 				pipelineBuilder.ColorTarget("CT", format);
 		}
-		pipelineBuilder.End();
 	}
+	pipelineBuilder.End();
 }
 
 bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext)

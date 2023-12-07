@@ -1003,10 +1003,8 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	WGPUFragmentState rhiFragmentState = {};
 	FixedArray<WGPUColorTargetState, MAX_RENDERTARGETS> rhiColorTargets;
 	FixedArray<WGPUBlendState, MAX_RENDERTARGETS> rhiColorTargetBlends;
-	if(pipelineDesc.fragment.targets.numElem())
+	if(pipelineDesc.fragment.shaderEntryPoint.Length())
 	{
-		ASSERT_MSG(pipelineDesc.vertex.shaderEntryPoint.Length(), "No fragment shader entrypoint set");
-
 		for(const FragmentPipelineDesc::ColorTargetDesc& target : pipelineDesc.fragment.targets)
 		{
 			WGPUColorTargetState rhiColorTarget = {};
