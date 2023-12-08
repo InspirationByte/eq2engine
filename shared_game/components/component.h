@@ -29,7 +29,13 @@ protected:
 #define DECLARE_COMPONENT(name) \
 	static constexpr const char Name[] = name; \
 	static constexpr int NameHash{ StringToHashConst(name) }; \
-	virtual const char* GetName() const override { return name; }\
+	virtual const char* GetName() const override { return name; } \
+	virtual int GetNameHash() const override { return NameHash; }
+
+#define DECLARE_COMPONENT_DERIVED(name, baseClass) \
+	static constexpr const char Name[] = name; \
+	static constexpr int NameHash{ StringToHashConst(baseClass::Name) }; \
+	virtual const char* GetName() const override { return name; } \
 	virtual int GetNameHash() const override { return NameHash; }
 
 // hard-linked component instantiator

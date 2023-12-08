@@ -25,6 +25,9 @@ CRenderList::~CRenderList()
 
 void CRenderList::AddRenderable(Renderable* pObject)
 {
+	if (!pObject)
+		return;
+
 	const int idx = m_objectList.append(pObject);
 	m_viewDistance.append({ 0.0f, idx });
 }
