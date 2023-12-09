@@ -532,7 +532,7 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;

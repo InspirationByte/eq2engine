@@ -395,7 +395,7 @@ void CFont::SetupRenderText(const wchar_t* pszText, const Vector2D& start, const
 	if (r_font_debug.GetBool())
 	{
 		RenderDrawCmd drawCmd;
-		drawCmd.material = g_matSystem->GetDefaultMaterial();
+		drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 		MatSysDefaultRenderPass defaultRenderPass;
 		defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -447,7 +447,7 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStylePar
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 
-	drawCmd.material = fontCache->m_sdfMaterial;
+	drawCmd.SetMaterial(fontCache->m_sdfMaterial);
 	MatVec3Proxy sdfRange = fontCache->m_fontParams;
 	MatVec4Proxy baseColor = fontCache->m_fontBaseColor;
 

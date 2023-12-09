@@ -100,7 +100,7 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRe
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = m_material;
+	drawCmd.SetMaterial(m_material);
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;

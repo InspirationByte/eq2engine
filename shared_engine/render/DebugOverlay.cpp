@@ -61,7 +61,7 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -438,7 +438,7 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime, IGPURe
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -475,7 +475,7 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -547,7 +547,7 @@ static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime, IGPURend
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -666,7 +666,7 @@ static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float framet
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -801,7 +801,7 @@ static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime, IGPU
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -1032,7 +1032,7 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime, 
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;

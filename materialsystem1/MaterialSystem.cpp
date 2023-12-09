@@ -1322,7 +1322,7 @@ void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 
 void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext)
 {
-	if (!drawCmd.material)
+	if (!drawCmd.batchInfo.material)
 		return;
 
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
@@ -1353,13 +1353,13 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	// modify used layout flags
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
-	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
-	if (!SetupMaterialPipeline(drawCmd.material, drawCmd.uniformBuffers, meshInfo.primTopology, instFormatRef, passContext))
+	const RenderDrawBatch& meshInfo = drawCmd.batchInfo;
+	if (!SetupMaterialPipeline(drawCmd.batchInfo.material, drawCmd.instanceInfo.uniformBuffers, meshInfo.primTopology, instFormatRef, passContext))
 		return;
 
 	if (instFormatRef.layout.numElem())
 	{
-		IMatSystemShader* matShader = static_cast<CMaterial*>(drawCmd.material)->m_shader;
+		IMatSystemShader* matShader = static_cast<CMaterial*>(drawCmd.batchInfo.material)->m_shader;
 		int bufferSlot = 0;
 		for (const GPUBufferView& bindBufferView : bindVertexBuffers)
 			passContext.recorder->SetVertexBufferView(bufferSlot++, bindBufferView);
@@ -1463,7 +1463,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
 	const MeshInstanceData& instData = instInfo.instData;
-	const RenderMeshInfo& meshInfo = drawCmd.meshInfo;
+	const RenderDrawBatch& meshInfo = drawCmd.batchInfo;
 
 	const int instanceCount = instData.buffer ? instData.count : 1;
 

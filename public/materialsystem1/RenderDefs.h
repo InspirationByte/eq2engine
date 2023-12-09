@@ -184,13 +184,14 @@ struct RenderInstanceInfo
 		vertexBuffers.assureSizeEmplace(vertexBuffers.numAllocated(), GPUBufferView{});
 	}
 
+	using BufferArray = FixedArray<RenderBufferInfo, 8>;
 	using VertexBufferArray = FixedArray<GPUBufferView, MAX_VERTEXSTREAM>;
 
 	// use SetVertexBuffer
 	VertexBufferArray		vertexBuffers;
 
 	// use SetIndexBuffer
-	GPUBufferView		indexBuffer;
+	GPUBufferView			indexBuffer;
 	EIndexFormat			indexFormat{ INDEXFMT_UINT16 };
 
 	// use SetInstanceFormat
@@ -198,10 +199,14 @@ struct RenderInstanceInfo
 
 	// use SetInstanceData
 	MeshInstanceData		instData;
+
+	// use AddUniformBuffer
+	BufferArray				uniformBuffers;
 };
 
-struct RenderMeshInfo
+struct RenderDrawBatch
 {
+	IMaterial*		material{ nullptr };
 	EPrimTopology	primTopology{ (EPrimTopology)0 };
 	int				firstVertex{ 0 };
 	int				firstIndex{ 0 };
@@ -213,18 +218,12 @@ struct RenderMeshInfo
 // render command to draw geometry
 struct RenderDrawCmd
 {
-	using BufferArray = FixedArray<RenderBufferInfo, 8>;
-
 	RenderInstanceInfo	instanceInfo;
-	RenderMeshInfo		meshInfo;
-	IMaterial*			material{ nullptr };
-
-	// use AddUniformBuffer
-	BufferArray			uniformBuffers;
+	RenderDrawBatch		batchInfo;
 
 	RenderDrawCmd& SetMaterial(IMaterial* _material)
 	{
-		material = _material;
+		batchInfo.material = _material;
 		return *this;
 	}
 
@@ -275,34 +274,34 @@ struct RenderDrawCmd
 
 	RenderDrawCmd& SetDrawIndexed(EPrimTopology topology, int idxCount, int firstIdx, int vertCount = -1, int firstVert = 0, int baseVert = 0)
 	{
-		meshInfo.primTopology = topology;
-		meshInfo.firstVertex = firstVert;
-		meshInfo.numVertices = vertCount;
-		meshInfo.firstIndex = firstIdx;
-		meshInfo.numIndices = idxCount;
-		meshInfo.baseVertex = baseVert;
+		batchInfo.primTopology = topology;
+		batchInfo.firstVertex = firstVert;
+		batchInfo.numVertices = vertCount;
+		batchInfo.firstIndex = firstIdx;
+		batchInfo.numIndices = idxCount;
+		batchInfo.baseVertex = baseVert;
 		return *this;
 	}
 
 	RenderDrawCmd& SetDrawNonIndexed(EPrimTopology topology, int vertCount = -1, int firstVert = 0)
 	{
-		meshInfo.primTopology = topology;
-		meshInfo.firstVertex = firstVert;
-		meshInfo.numVertices = vertCount;
-		meshInfo.firstIndex = -1;
-		meshInfo.numIndices = 0;
+		batchInfo.primTopology = topology;
+		batchInfo.firstVertex = firstVert;
+		batchInfo.numVertices = vertCount;
+		batchInfo.firstIndex = -1;
+		batchInfo.numIndices = 0;
 		return *this;
 	}
 
 	RenderDrawCmd& AddUniformBuffer(int signature, IGPUBuffer* buffer, int64 offset = 0, int64 size = -1)
 	{
-		uniformBuffers.append({ GPUBufferView(buffer, offset, size), signature });
+		instanceInfo.uniformBuffers.append({ GPUBufferView(buffer, offset, size), signature });
 		return *this;
 	}
 
 	RenderDrawCmd& AddUniformBufferView(int signature, const GPUBufferView& bufferView)
 	{
-		uniformBuffers.append({ bufferView, signature });
+		instanceInfo.uniformBuffers.append({ bufferView, signature });
 		return *this;
 	}
 };

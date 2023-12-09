@@ -40,7 +40,7 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;

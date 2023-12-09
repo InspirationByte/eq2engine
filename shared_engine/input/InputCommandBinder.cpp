@@ -644,7 +644,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRe
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;

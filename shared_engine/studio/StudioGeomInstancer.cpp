@@ -219,8 +219,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 						continue;
 
 					//materials->SetSkinningEnabled(true);
-					drawCmd.material = material;
-					
+					drawCmd.SetMaterial(material);
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
 					drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);

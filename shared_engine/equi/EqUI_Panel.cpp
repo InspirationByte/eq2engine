@@ -150,7 +150,7 @@ void DrawWindowRectangle(const AARectangle& rect, const ColorRGBA& color1, const
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
 		meshBuilder.Color4fv(color1);
