@@ -77,9 +77,9 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 
 		// clamp point in bbox
 		if(!bbox.Contains(origin))
-			m_viewDistance[i].distance = lengthSqr(origin - bbox.ClampPoint(origin));
+			m_viewDistance[i].distance = length(origin - bbox.ClampPoint(origin));
 		else
-			m_viewDistance[i].distance = lengthSqr(origin - bbox.GetCenter());
+			m_viewDistance[i].distance = length(origin - bbox.GetCenter());
 	}
 
 	if (reverse)
