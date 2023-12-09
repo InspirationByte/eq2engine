@@ -26,10 +26,9 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
-	bool IsSupportInstanceFormat(int nameHash) const
+	ArrayCRef<int> GetSupportedVertexLayoutIds() const
 	{
-		// must support any vertex
-		return true;
+		return nullptr;
 	}
 
 	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const
@@ -85,7 +84,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		}
 		else if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
-			if (pipelineInfo.vertexLayoutNameHash == StringToHashConst("EGFVertexSkinned"))
+			if (pipelineInfo.vertexLayoutId == StringToHashConst("EGFVertexSkinned"))
 			{
 				ASSERT(uniformBuffers[0].signature == RenderBoneTransformID)
 

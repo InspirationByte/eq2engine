@@ -122,14 +122,14 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 	return pipelineInfo.emptyBindGroup[bindGroupId];
 }
 
-uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const
+uint CBaseShader::GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, int vertexLayoutId, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const
 {
-	uint hash = vertexLayoutNameHash | (usedVertexLayoutBits << 24);
+	uint hash = vertexLayoutId | (usedVertexLayoutBits << 24);
 	hash *= 31;
 	hash += static_cast<uint>(primitiveTopology);
 	for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 	{
-		const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
+		const ETextureFormat format = colorTargetFormat[i];
 		if (format == FORMAT_NONE)
 			break;
 		hash *= 31;
@@ -137,7 +137,6 @@ uint CBaseShader::GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, 
 		hash *= 31;
 		hash += static_cast<uint>(format);
 	}
-	const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();
 	hash *= 31;
 	hash += static_cast<uint>(depthTargetFormat);
 	return hash;
@@ -156,7 +155,7 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 
 	if (meshInstFormat.layout.numElem())
 	{
-		renderPipelineDesc.shaderVertexLayoutId = meshInstFormat.nameHash;
+		renderPipelineDesc.shaderVertexLayoutId = meshInstFormat.formatId;
 
 		Builder<VertexPipelineDesc> vertexPipelineBuilder(renderPipelineDesc.vertex);
 		ArrayCRef<VertexLayoutDesc> vertexLayouts = meshInstFormat.layout;
@@ -216,7 +215,7 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 
 		for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 		{
-			const ETextureFormat format = renderPass->GetRenderTargetFormat(i);
+			const ETextureFormat format = renderPass->GetRenderTargetFormats()[i];
 			if (format == FORMAT_NONE)
 				break;
 
@@ -229,20 +228,21 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 	pipelineBuilder.End();
 }
 
+
 bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext)
 {
-	const uint pipelineId = GetRenderPipelineId(passContext.recorder, meshInstFormat.nameHash, meshInstFormat.usedLayoutBits, primTopology);
-	
+	const uint pipelineId = GetRenderPipelineId(passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), meshInstFormat.formatId, meshInstFormat.usedLayoutBits, primTopology);
+
 	auto it = m_renderPipelines.find(pipelineId);
 	if (it.atEnd())
 	{
 		RenderPipelineDesc renderPipelineDesc;
-		FillRenderPipelineDesc(passContext.recorder, meshInstFormat,  primTopology, renderPipelineDesc);
+		FillRenderPipelineDesc(passContext.recorder, meshInstFormat, primTopology, renderPipelineDesc);
 		BuildPipelineShaderQuery(meshInstFormat, renderPipelineDesc.shaderQuery);
 
 		it = m_renderPipelines.insert(pipelineId);
 		PipelineInfo& newPipelineInfo = *it;
-		newPipelineInfo.vertexLayoutNameHash = meshInstFormat.nameHash;
+		newPipelineInfo.vertexLayoutId = meshInstFormat.formatId;
 
 		// Create pipeline layout
 		{
@@ -326,8 +326,13 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 
 		Array<EqString> shaderQuery(PP_SL);
 		BuildPipelineShaderQuery(dummy, shaderQuery);
-
 		renderAPI->LoadShaderModules(GetName(), shaderQuery);
+
+		ArrayCRef<int> supportedLayoutIds = GetSupportedVertexLayoutIds();
+		for (int i = 0; i < supportedLayoutIds.numElem(); ++i) 
+		{
+
+		}
 	}
 	m_isInit = true;
 }

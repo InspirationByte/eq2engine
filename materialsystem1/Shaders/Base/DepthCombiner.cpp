@@ -22,9 +22,12 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 		SHADER_PARAM_TEXTURE_FIND(Texture2, m_textures[1]);
 	}
 
-	bool IsSupportInstanceFormat(int nameHash) const
+	ArrayCRef<int> GetSupportedVertexLayoutIds() const
 	{
-		return nameHash == StringToHashConst("DynMeshVertex");
+		static const int supportedFormats[] = {
+			StringToHashConst("DynMeshVertex")
+		};
+		return ArrayCRef(supportedFormats);
 	}
 
 	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const

@@ -26,7 +26,6 @@ struct ShaderOverride
 };
 
 class IRenderLibrary;
-class IRenderState;
 class CMaterial;
 struct DKMODULE;
 

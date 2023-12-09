@@ -831,7 +831,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 
 		// HACK: This is a temporary hack until we get proper identification
 		// or maybe hardware skinning using Compute shaders
-		meshInstFormat.nameHash = StringToHash(EqString(meshInstFormat.name) + "Skinned");
+		meshInstFormat.formatId = StringToHash(EqString(meshInstFormat.name) + "Skinned");
 	}
 
 	// setup vertex buffers

@@ -25,9 +25,6 @@ static constexpr const int EGF_INST_BUFFERS = 2;
 
 static constexpr const int EGF_INST_POOL_MAX_INSTANCES = 256;
 
-class IVertexFormat;
-class IVertexBuffer;
-
 struct EGFInstBuffer
 {
 	IGPUBufferPtr	instanceVB{ nullptr };

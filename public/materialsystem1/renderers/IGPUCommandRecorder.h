@@ -37,8 +37,8 @@ using IGPUCommandBufferPtr = CRefPtr<IGPUCommandBuffer>;
 class IGPURenderPassRecorder : public RefCountedObject<IGPURenderPassRecorder>
 {
 public:
-	virtual IVector2D				GetRenderTargetDimensions() const = 0;
-	virtual ETextureFormat			GetRenderTargetFormat(int idx) const = 0;
+	virtual IVector2D					GetRenderTargetDimensions() const = 0;
+	virtual ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const = 0;
 	virtual ETextureFormat			GetDepthTargetFormat() const = 0;
 
 	virtual bool					IsDepthReadOnly() const = 0;
@@ -48,7 +48,6 @@ public:
 	virtual IGPURenderPipelinePtr	GetPipeline() const = 0;
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) = 0;
 
-	// TODO: use IGPUBuffer instead of IVertexBuffer and IIndexBuffer
 	virtual void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
 	virtual void					SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
 

@@ -7,9 +7,6 @@
 
 #pragma once
 #include <webgpu/webgpu.h>
-
-#include "renderers/IVertexBuffer.h"
-#include "renderers/IIndexBuffer.h"
 #include "renderers/IGPUBuffer.h"
 
 struct BufferInfo;

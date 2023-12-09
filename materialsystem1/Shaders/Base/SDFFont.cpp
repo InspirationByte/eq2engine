@@ -10,7 +10,7 @@
 #include "IDynamicMesh.h"
 #include "BaseShader.h"
 
-static uint GenDefaultPipelineId(const IGPURenderPassRecorder* renderPass, const MatSysDefaultRenderPass& renderPassInfo, EPrimTopology primitiveTopology)
+static uint GenDefaultPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MatSysDefaultRenderPass& renderPassInfo, EPrimTopology primitiveTopology)
 {
 	uint id = 0;
 	id |= renderPassInfo.cullMode; // 2 bits
@@ -19,9 +19,9 @@ static uint GenDefaultPipelineId(const IGPURenderPassRecorder* renderPass, const
 	id |= renderPassInfo.depthFunc << (2 + 3 + 2); // 1 bit
 	id |= renderPassInfo.depthTest << (2 + 3 + 2 + 1); // 1 bit
 	id |= renderPassInfo.depthWrite << (2 + 3 + 2 + 1 + 1); // 4 bits
-	id |= (GetTexFormat(renderPass->GetRenderTargetFormat(0)) & 63) << (2 + 3 + 2 + 1 + 1 + 4);
-	id |= (renderPass->GetRenderTargetFormat(0) >> 10 & 3) << (2 + 3 + 2 + 1 + 1 + 4 + 6);
-	id |= (renderPass->GetDepthTargetFormat() & 63) << (2 + 3 + 2 + 1 + 1 + 4 + 6 + 2);
+	id |= (GetTexFormat(colorTargetFormat[0]) & 63) << (2 + 3 + 2 + 1 + 1 + 4);
+	id |= (colorTargetFormat[0] >> 10 & 3) << (2 + 3 + 2 + 1 + 1 + 4 + 6);
+	id |= (depthTargetFormat & 63) << (2 + 3 + 2 + 1 + 1 + 4 + 6 + 2);
 	return id;
 }
 
@@ -38,16 +38,19 @@ BEGIN_SHADER_CLASS(SDFFont)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	bool IsSupportInstanceFormat(int nameHash) const
+	ArrayCRef<int> GetSupportedVertexLayoutIds() const
 	{
-		return nameHash == StringToHashConst("DynMeshVertex");
+		static const int supportedFormats[] = {
+			StringToHashConst("DynMeshVertex")
+		};
+		return ArrayCRef(supportedFormats);
 	}
 
 	bool SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = static_cast<const MatSysDefaultRenderPass*>(passContext.data);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
-		const uint pipelineId = GenDefaultPipelineId(passContext.recorder, *rendPassInfo, primTopology);
+		const uint pipelineId = GenDefaultPipelineId(passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), *rendPassInfo, primTopology);
 
 		auto it = m_renderPipelines.find(pipelineId);
 		if (it.atEnd())
@@ -55,7 +58,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
-				.ShaderVertexLayoutId(meshInstFormat.nameHash)
+				.ShaderVertexLayoutId(meshInstFormat.formatId)
 				.End();
 
 			for (const VertexLayoutDesc& layoutDesc : meshInstFormat.layout)
@@ -96,7 +99,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 				Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
 				for (int i = 0; i < MAX_RENDERTARGETS; ++i)
 				{
-					const ETextureFormat format = passContext.recorder->GetRenderTargetFormat(i);
+					const ETextureFormat format = passContext.recorder->GetRenderTargetFormats()[i];
 					if (format == FORMAT_NONE)
 						break;
 
@@ -116,7 +119,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 			it = m_renderPipelines.insert(pipelineId);
 			PipelineInfo& newPipelineInfo = *it;
-			newPipelineInfo.vertexLayoutNameHash = meshInstFormat.nameHash;
+			newPipelineInfo.vertexLayoutId = meshInstFormat.formatId;
 
 			newPipelineInfo.pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc);
 		}

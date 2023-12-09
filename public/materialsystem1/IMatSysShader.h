@@ -7,7 +7,6 @@
 
 #pragma once
 
-class IShaderProgram;
 class IMaterial;
 
 class ITexture;
@@ -87,9 +86,7 @@ public:
 	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
 	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
 
-	virtual bool				IsSupportInstanceFormat(int nameHash) const = 0;
 	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) = 0;
-
 	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
 };
 

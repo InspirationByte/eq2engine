@@ -9,9 +9,6 @@
 #pragma once
 #include "SpriteBuilder.h"
 
-
-class IVertexBuffer;
-class IIndexBuffer;
 class IVertexFormat;
 class CViewParams;
 class Volume;

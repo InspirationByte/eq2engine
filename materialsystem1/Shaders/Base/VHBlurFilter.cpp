@@ -34,9 +34,12 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 	}
 
-	bool IsSupportInstanceFormat(int nameHash) const
+	ArrayCRef<int> GetSupportedVertexLayoutIds() const
 	{
-		return nameHash == StringToHashConst("DynMeshVertex");
+		static const int supportedFormats[] = {
+			StringToHashConst("DynMeshVertex")
+		};
+		return ArrayCRef(supportedFormats);
 	}
 
 	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, uint usedVertexLayoutBits, Array<EqString>& shaderQuery) const

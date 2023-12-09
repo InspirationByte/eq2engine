@@ -15,13 +15,8 @@
 
 #include "IGPUBuffer.h"
 #include "IGPUCommandRecorder.h"
-#include "IVertexBuffer.h"
 #include "IVertexFormat.h"
-#include "IIndexBuffer.h"
 #include "ITexture.h"
-#include "IOcclusionQuery.h"
-#include "IRenderState.h"
-#include "IShaderProgram.h"
 
 #undef far
 #undef near

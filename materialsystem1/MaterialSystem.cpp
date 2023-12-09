@@ -1360,8 +1360,6 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	if (instFormatRef.layout.numElem())
 	{
 		IMatSystemShader* matShader = static_cast<CMaterial*>(drawCmd.material)->m_shader;
-		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormatRef.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instInfo.instFormat.name);
-
 		int bufferSlot = 0;
 		for (const GPUBufferView& bindBufferView : bindVertexBuffers)
 			passContext.recorder->SetVertexBufferView(bufferSlot++, bindBufferView);
@@ -1477,8 +1475,6 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 	MeshInstanceFormatRef instFormatRef = instInfo.instFormat;
 	if (instFormatRef.layout.numElem())
 	{
-		ASSERT_MSG(matShader->IsSupportInstanceFormat(instFormatRef.nameHash), "Shader '%s' used by %s does not support vertex format '%s'", drawCmd.material->GetShaderName(), drawCmd.material->GetName(), instFormatRef.name);
-		
 		for (int i = 0; i < instFormatRef.layout.numElem(); ++i)
 		{
 			if (instData.buffer && instFormatRef.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)

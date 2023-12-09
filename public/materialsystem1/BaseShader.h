@@ -9,11 +9,8 @@
 #include "renderers/ShaderAPI_defs.h"
 
 class IMaterial;
-class IShaderProgram;
 class IShaderAPI;
 struct MatSysCamera;
-
-using IShaderProgramPtr = CRefPtr<IShaderProgram>;
 
 #define BEGIN_SHADER_CLASS(name)								\
 	namespace C##name##ShaderLocalNamespace						\
@@ -100,8 +97,10 @@ protected:
 		mutable IGPUBindGroupPtr	emptyBindGroup[4];
 		IGPURenderPipelinePtr		pipeline;
 		IGPUPipelineLayoutPtr		layout;
-		int							vertexLayoutNameHash;
+		int							vertexLayoutId{ 0 };
 	};
+
+	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const = 0;
 
 	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const { return nullptr; }
 	virtual void				FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
@@ -117,14 +116,13 @@ protected:
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
-	uint						GetRenderPipelineId(const IGPURenderPassRecorder* renderPass, int vertexLayoutNameHash, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const;
+	uint						GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, int vertexLayoutId, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
 	MatTextureProxy				LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
 
 	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
-
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
 	IMaterial*					m_material{ nullptr };

@@ -14,11 +14,6 @@
 //--------------------------------------
 
 BEGIN_SHADER_CLASS(Skybox)
-	bool IsSupportInstanceFormat(int nameHash) const
-	{
-		return true;
-	}
-
 	SHADER_INIT_PARAMS()
 	{
 		m_flags |= MATERIAL_FLAG_SKY;
@@ -39,6 +34,11 @@ BEGIN_SHADER_CLASS(Skybox)
 		SHADER_FIND_OR_COMPILE(Unlit, "SkyBox");
 
 		return true;
+	}
+
+	ArrayCRef<int> GetSupportedVertexLayoutIds() const
+	{
+		return nullptr;
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}

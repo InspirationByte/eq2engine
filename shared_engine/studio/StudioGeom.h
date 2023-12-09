@@ -17,8 +17,6 @@ class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
 class IVertexFormat;
-class IVertexBuffer;
-class IIndexBuffer;
 class CBaseEqGeomInstancer;
 struct MeshInstanceData;
 struct RenderDrawCmd;

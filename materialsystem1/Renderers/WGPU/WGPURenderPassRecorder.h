@@ -7,7 +7,7 @@ public:
 	~CWGPURenderPassRecorder();
 
 	IVector2D				GetRenderTargetDimensions() const { return m_renderTargetDims; }
-	ETextureFormat			GetRenderTargetFormat(int idx) const { return m_renderTargetsFormat[idx]; }
+	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return ArrayCRef(m_renderTargetsFormat); }
 	ETextureFormat			GetDepthTargetFormat() const { return m_depthTargetFormat; }
 
 	bool					IsDepthReadOnly() const { return m_depthReadOnly; }
