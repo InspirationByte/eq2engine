@@ -6,11 +6,17 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "ds/event.h"
 
 #define GAME_STATE_NONE 0
 
 class CBaseStateHandler;
 extern CBaseStateHandler* g_states[];
+
+using StatePreUpdateEvent = Event<void(const float deltaTime)>;
+using StatePostUpdateEvent = Event<void(const float deltaTime)>;
+using StateEnterEvent = Event<void(CBaseStateHandler* oldState, CBaseStateHandler* newState)>;
+using StateLeaveEvent = Event<void(CBaseStateHandler* oldState, CBaseStateHandler* newState)>;
 
 //--------------------------------------------------------------------------------
 // game state handler
@@ -56,35 +62,42 @@ private:
 
 namespace EqStateMgr
 {
-	// forces the current state
-	void					SetCurrentState(CBaseStateHandler* state, bool force = false);
+	extern StatePreUpdateEvent g_onPreUpdateState;
+	extern StatePostUpdateEvent g_onPostUpdateState;
+	extern StateEnterEvent g_onEnterState;
+	extern StateLeaveEvent g_onLeaveState;
 
-	void					ChangeState(CBaseStateHandler* state);
+	// forces the current state
+	void				SetCurrentState(CBaseStateHandler* state, bool force = false);
+
+	void				ChangeState(CBaseStateHandler* state);
 
 	// returns the current state
-	CBaseStateHandler*		GetCurrentState();
+	CBaseStateHandler*	GetCurrentState();
 
 	// returns the current state type
-	int						GetCurrentStateType();
-	void					SetCurrentStateType(int stateType);
+	int					GetCurrentStateType();
+	void				SetCurrentStateType(int stateType);
 
-	void					ChangeStateType(int stateType);
+	void				ChangeStateType(int stateType);
 
-	void					ScheduleNextState(CBaseStateHandler* state);
-	void					ScheduleNextStateType(int stateType);
+	void				ScheduleNextState(CBaseStateHandler* state);
+	void				ScheduleNextStateType(int stateType);
 
 	// updates and manages the states
-	void					PreUpdateState(float fDt);
-	bool					UpdateStates(float fDt);
-	void					GetStateMouseCursorProperties(bool& visible, bool& centered);
+	void				PreUpdateState(float fDt);
+	void				PostUpdateState(float fDt);
 
-	bool					IsMultiplayerGameState();
-	bool					IsInGameState();
+	bool				UpdateStates(float fDt);
+	void				GetStateMouseCursorProperties(bool& visible, bool& centered);
 
-	void					SignalPause();
+	bool				IsMultiplayerGameState();
+	bool				IsInGameState();
 
-	bool					InitRegisterStates();
-	void					ShutdownStates();
+	void				SignalPause();
+
+	bool				InitRegisterStates();
+	void				ShutdownStates();
 };
 
 //---------------------------------------------------------------------------------

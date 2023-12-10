@@ -21,6 +21,10 @@
 
 namespace EqStateMgr
 {
+StatePreUpdateEvent g_onPreUpdateState;
+StatePostUpdateEvent g_onPostUpdateState;
+StateEnterEvent g_onEnterState;
+StateLeaveEvent g_onLeaveState;
 
 static CBaseStateHandler* s_currentState = nullptr;
 static CBaseStateHandler* s_nextState = nullptr;
@@ -40,12 +44,14 @@ void SetCurrentState( CBaseStateHandler* state, bool force )
 void ChangeState(CBaseStateHandler* state)
 {
 	// perform state transition
+	g_onLeaveState(s_currentState, state);
 	if( s_currentState )
 		s_currentState->OnLeave( state );
 
 	// call the set of callbacks provided by states
 	if( state )
 		state->OnEnter( s_currentState );
+	g_onEnterState(s_currentState, state);
 
 	s_currentState = state;
 }
@@ -111,6 +117,7 @@ bool UpdateStates( float fDt )
 	}
 
 	PreUpdateState(fDt);
+	g_onPreUpdateState(fDt);
 
 	if( !s_currentState->Update(fDt) )
 	{
@@ -120,6 +127,8 @@ bool UpdateStates( float fDt )
 
 		SetCurrentState( nextState, forced );
 	}
+
+	g_onPostUpdateState(fDt);
 
 	return true;
 }

@@ -69,10 +69,11 @@ struct MoviePlayerData
 		int64_t		lastVideoPts{ 0 };
 		double		presentationDelay{ 0.0f };
 
+		AVFrame*	presentFrame{ nullptr };
+
 		AVFrame*	frame{ nullptr };
 		AVPacket*	deqPacket{ nullptr };
 		DecodeState state{ DEC_ERROR };
-		bool		presentFlag{ false };
 
 	} videoState;
 
@@ -471,26 +472,11 @@ static void PlayerVideoDecodeStep(MoviePlayerData* player, ITexturePtr texture)
 		if (videoState.presentationDelay > videoState.timer.GetTime())
 			return;
 
+		if (!videoState.presentFrame)
+			videoState.presentFrame = av_frame_clone(videoState.frame);
+
 		videoState.timer.GetTime(true);
 		state = DEC_RECV_FRAME;
-
-		if (!videoState.presentFlag)
-			return;
-		videoState.presentFlag = false;
-
-		// time to update renderer texture
-		ITexture::LockInOutData writeTo(TEXLOCK_DISCARD, IAARectangle(0, 0, player->videoCodec->width, player->videoCodec->height));
-		if (texture->Lock(writeTo))
-		{
-			uint8_t* data[1] = {
-				(ubyte*)writeTo.lockData
-			};
-			const int stride[1] = {
-				(int)player->videoCodec->width * 4
-			};
-			sws_scale(player->videoSws, videoState.frame->data, videoState.frame->linesize, 0, videoState.frame->height, data, stride);
-			texture->Unlock();
-		}
 	}
 #endif // MOVIELIB_DISABLE
 }
@@ -849,7 +835,32 @@ void CMoviePlayer::Present()
 	if (!m_player)
 		return;
 
-	m_player->videoState.presentFlag = true;
+	ITexture* texture = m_mvTexture.Get();
+
+	MoviePlayerData* player = m_player;
+	MoviePlayerData::VideoState& videoState = m_player->videoState;
+
+	if (!videoState.presentFrame)
+		return;
+
+	const int width = player->videoCodec->width;
+	const int height = player->videoCodec->height;
+
+	// time to update renderer texture
+	ITexture::LockInOutData writeTo(TEXLOCK_DISCARD, IAARectangle(0, 0, width, height));
+	if (texture->Lock(writeTo))
+	{
+		uint8_t* data[1] = {
+			(ubyte*)writeTo.lockData
+		};
+		const int stride[1] = {
+			(int)width * 4
+		};
+		sws_scale(player->videoSws, videoState.presentFrame->data, videoState.presentFrame->linesize, 0, videoState.presentFrame->height, data, stride);
+		texture->Unlock();
+	}
+
+	av_frame_free(&videoState.presentFrame);
 #endif // MOVIELIB_DISABLE
 }
 
