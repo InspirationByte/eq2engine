@@ -46,11 +46,21 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 	if (!m_swapChain)
 		return;
 
-	if(m_textureRef->m_rhiViews.numElem())
-		wgpuTextureViewRelease(m_textureRef->m_rhiViews[0]);
-	else
-		m_textureRef->m_rhiViews.setNum(1);
-	m_textureRef->m_rhiViews[0] = wgpuSwapChainGetCurrentTextureView(m_swapChain);
+	{
+		if (m_textureRef->m_rhiTextures.numElem())
+			wgpuTextureRelease(m_textureRef->m_rhiTextures[0]);
+		else
+			m_textureRef->m_rhiTextures.setNum(1);
+		m_textureRef->m_rhiTextures[0] = wgpuSwapChainGetCurrentTexture(m_swapChain);
+	}
+
+	{
+		if (m_textureRef->m_rhiViews.numElem())
+			wgpuTextureViewRelease(m_textureRef->m_rhiViews[0]);
+		else
+			m_textureRef->m_rhiViews.setNum(1);
+		m_textureRef->m_rhiViews[0] = wgpuSwapChainGetCurrentTextureView(m_swapChain);
+	}
 }
 
 void CWGPUSwapChain::GetBackbufferSize(int& wide, int& tall) const

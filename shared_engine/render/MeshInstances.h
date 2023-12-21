@@ -6,55 +6,46 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
 #include "materialsystem1/renderers/ShaderAPI_defs.h"
+#include "materialsystem1/RenderDefs.h"
+
+class IMaterial;
+using IMaterialPtr = CRefPtr<IMaterial>;
 
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
-struct MeshInstanceBuffer
+struct DrawableDesc
 {
-	IGPUBufferPtr	instBuffer;
-	ushort			firstInst{ 0 };
-	ushort			instCount{ 0 };
+	struct BatchDesc
+	{
+		IMaterialPtr	material;
+		EPrimTopology	primitiveType{ (EPrimTopology)0 };
+		int				firstIndex{ 0 };
+		int				numIndices{ 0 };
+		int				firstVertex{ 0 };
+		int				numVertices{ 0 };
+	};
+
+	using VertexBufferArray = FixedArray<GPUBufferView, MAX_VERTEXSTREAM>;
+
+	MeshInstanceFormatRef	meshInstFormat;
+	VertexBufferArray		vertexBuffers;
+	GPUBufferView			indexBuffer;
+	Array<BatchDesc>		batches;
 };
 
-struct MeshInstanceRef
+struct DrawableInstanceList
 {
-	ushort			index{ 0xffff };
+	using InstanceRef = int;
+	using BufferArray = FixedArray<RenderBufferInfo, 8>;
+
+	DrawableDesc*		drawable;
+	int					batchIndex{ 0 };
+
+	GPUBufferView		indirectBuffer;
+	GPUBufferView		instanceRefsBuffer;
+	BufferArray			storageUniformBuffers;
+
+	Array<InstanceRef>	instanceRefs;
 };
-
-template<typename T>
-class MeshInstancePool
-{
-public:
-	void					SetBufferFrequency(int instancesPerBuffer);
-	MeshInstanceRef*		AllocInstance();
-
-	void					GetInstanceBufferAndOffset(int instanceIdx, IGPUBufferPtr& buffer, int& offset);
-
-private:
-	Array<T>				m_instancePool{ PP_SL };
-	Array<MeshInstanceRef>	m_instanceRefs{ PP_SL };
-	Array<IGPUBufferPtr>	m_buffers{ PP_SL };
-	int						m_instFrequency{ 256 };
-};
-
-template<typename T>
-void MeshInstancePool<T>::SetBufferFrequency(int instancesPerBuffer)
-{
-	m_instFrequency = instancesPerBuffer;
-}
-
-template<typename T>
-MeshInstanceRef* MeshInstancePool<T>::AllocInstance()
-{
-	return m_instancePool.append(std::move(inst));
-}
-
-template<typename T>
-void MeshInstancePool<T>::GetInstanceBufferAndOffset(int instanceIdx, IGPUBufferPtr& buffer, int& offset)
-{
-	buffer = m_buffers[instanceIdx / m_instFrequency];
-	offset = (instanceIdx % m_instFrequency) * sizeof(T);
-}

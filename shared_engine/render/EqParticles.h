@@ -153,7 +153,7 @@ struct PFXBillboard_t
 };
 
 // draws particle
-void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* frustum);
+void Effects_DrawBillboard(PFXBillboard_t* effect, const CViewParams* view, Volume* frustum);
 void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, Volume* frustum);
 
 //------------------------------------------------------------------------------------

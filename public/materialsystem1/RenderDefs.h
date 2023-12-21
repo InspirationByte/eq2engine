@@ -155,7 +155,7 @@ struct VertexFVFResolver<Vertex3D>
 struct RenderBufferInfo
 {
 	GPUBufferView	bufferView;
-	int					signature;	// use MAKECHAR4(a,b,c,d)
+	int				signature;	// use MAKECHAR4(a,b,c,d)
 };
 
 struct MeshInstanceFormatRef

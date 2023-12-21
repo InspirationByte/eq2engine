@@ -274,7 +274,7 @@ void CParticleLowLevelRenderer::ClearBuffers()
 
 //----------------------------------------------------------------------------------------------------
 
-void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* frustum)
+void Effects_DrawBillboard(PFXBillboard_t* effect, const CViewParams* view, Volume* frustum)
 {
 	if(!(effect->nFlags & EFFECT_FLAG_NO_FRUSTUM_CHECK))
 	{
