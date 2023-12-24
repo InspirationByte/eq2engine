@@ -232,5 +232,4 @@ private:
 	float						m_proxyDeltaTime{ 0.0f };
 
 	mutable uint8				m_matrixDirty{ UINT8_MAX };
-	bool						m_deviceActiveState{ true };
 };

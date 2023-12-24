@@ -54,7 +54,6 @@ static VertexLayoutDesc& GetDynamicMeshLayout()
 }
 
 DECLARE_CVAR(r_vSync, "0", "Vertical syncronization", CV_ARCHIVE);
-DECLARE_CVAR(r_clear, "0", "Clear the backbuffer", CV_ARCHIVE);
 DECLARE_CVAR(r_shaderCompilerShowLogs, "0","Show warnings of shader compilation",CV_ARCHIVE);
 
 DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE);
@@ -983,10 +982,8 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	if(!m_shaderAPI)
 		return false;
 
-	bool state, oldState = m_deviceActiveState;
-	m_deviceActiveState = state = m_shaderAPI->IsDeviceActive();
-
-	if(!state && state != oldState)
+	const bool prevDeviceState = m_shaderAPI->IsDeviceActive();
+	if(!prevDeviceState)
 	{
 		for(int i = 0; i < m_lostDeviceCb.numElem(); i++)
 		{
@@ -998,13 +995,15 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 		}
 	}
 
-	if(s_threadedMaterialLoader.GetCount())
-		s_threadedMaterialLoader.SignalWork();
-
 	m_renderLibrary->SetVSync(r_vSync.GetBool());
 	m_renderLibrary->BeginFrame(swapChain);
+	const bool deviceState = m_shaderAPI->IsDeviceActive();
 
-	if(state && state != oldState)
+	// reset viewport and scissor
+	if (!swapChain)
+		m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, { m_backbufferSize.x, m_backbufferSize.y, 1 });
+
+	if(deviceState)
 	{
 		for(int i = 0; i < m_restoreDeviceCb.numElem(); i++)
 		{
@@ -1016,13 +1015,8 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 		}
 	}
 
-	const bool clearBackBuffer = m_config.overdrawMode || r_clear.GetBool();
-	const MColor clearColor = m_config.overdrawMode ? color_black : MColor(0.1f, 0.1f, 0.1f, 1.0f);
-
-	// reset viewport and scissor
-	IVector2D backbufferSize = m_backbufferSize;
-	if (swapChain)
-		swapChain->GetBackbufferSize(backbufferSize.x, backbufferSize.y);
+	if (s_threadedMaterialLoader.GetCount())
+		s_threadedMaterialLoader.SignalWork();
 
 	m_proxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
 
@@ -1080,7 +1074,6 @@ void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 		return;
 
 	m_renderLibrary->SetBackbufferSize(wide, tall);
-	m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, { wide, tall, 1 });
 }
 
 // reports device focus mode
