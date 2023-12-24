@@ -426,6 +426,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					options.SetIncluder(std::move(includer));
 					options.AddMacroDefinition(kindStr);
 					options.SetForcedVersionProfile(450, shaderc_profile_none);
+					options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
 					fillMacros(options);
 
 					shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv((const char*)shaderSourceString.GetBasePointer(), shaderSourceString.GetSize(), shaderCKind, shaderSourceName, options);

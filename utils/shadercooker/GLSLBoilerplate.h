@@ -18,6 +18,8 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #	define clip(x)	if((x) < 0.0) discard
 #	define ddx    	dFdx
 #	define ddy    	dFdy
+#	define gl_VertexIndex 0
+#	define gl_InstanceIndex 0
 #endif
 
 // See BaseShader and shaders layouts
