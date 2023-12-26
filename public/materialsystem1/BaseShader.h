@@ -112,7 +112,7 @@ protected:
 
 	virtual void				FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
 	virtual void				BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const {}
-	
+
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
@@ -121,9 +121,13 @@ protected:
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
 	MatTextureProxy				LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
-
-	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
+
+	// makes a texture atlas rectangle collection buffer
+	IGPUBufferPtr				CreateAtlasBuffer(IShaderAPI* renderAPI) const;
+
+	// makes a texture transform (scale + offset)
+	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
 
 	IMaterial*					m_material{ nullptr };
 

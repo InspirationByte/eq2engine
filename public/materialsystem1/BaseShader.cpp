@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "utils/TextureAtlas.h"
+
 #include "IMaterialSystem.h"
 #include "BaseShader.h"
 #include "materialsystem1/ITextureLoader.h"
@@ -315,6 +317,29 @@ void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) 
 		.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_MIRROR))
 		.Sampler(2, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
 		.Sampler(3, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP));
+}
+
+IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
+{
+	struct {
+		int entryCount{ 0 };
+		int _pad[3];
+		Vector4D entries[64]{ 0 };
+	} atlasBufferData;
+
+	// add default atlas entry
+	atlasBufferData.entries[0] = Vector4D(1.0f, 1.0f, 0.0f, 0.0f);
+
+	const CTextureAtlas* atlas = m_material->GetAtlas();
+	if (atlas)
+	{
+		for (int i = 0; i < atlas->GetEntryCount(); ++i)
+		{
+			const AtlasEntry& entry = *atlas->GetEntry(i);
+			atlasBufferData.entries[1 + atlasBufferData.entryCount++] = Vector4D(entry.rect.GetSize(), entry.rect.leftTop);
+		}
+	}
+	return renderAPI->CreateBuffer(BufferInfo(reinterpret_cast<ubyte*>(&atlasBufferData), sizeof(int) * 4 + sizeof(Vector4D) * (1 + atlasBufferData.entryCount)), BUFFERUSAGE_STORAGE, "atlasRects");
 }
 
 void CBaseShader::InitShader(IShaderAPI* renderAPI)

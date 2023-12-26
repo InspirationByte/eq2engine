@@ -15,7 +15,7 @@ struct MatVarData
 	int				intValue;
 	EqString		strValue;
 	ITexturePtr		texture;
-	IGPUBufferPtr	buffer;
+	GPUBufferView	buffer;
 };
 
 struct MaterialVarBlock : public WeakRefObject<MaterialVarBlock>
@@ -65,7 +65,7 @@ protected:
 	int							m_matVarIdx{ -1 };
 };
 
-using MatBufferProxy = MatVarProxy<IGPUBufferPtr>;
+using MatBufferProxy = MatVarProxy<GPUBufferView>;
 using MatTextureProxy = MatVarProxy<ITexturePtr>;
 using MatStringProxy = MatVarProxy<EqString>;
 using MatIntProxy = MatVarProxy<int>;
