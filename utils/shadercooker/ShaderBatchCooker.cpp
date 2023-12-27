@@ -75,14 +75,14 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	const char* shaderFileName = KV_GetValueString(shaderSection->FindSection("SourceFile"), 0, nullptr);
 	if (!shaderFileName)
 	{
-		MsgWarning("%s missing 'SourceFile'", shaderDefFileName);
+		MsgWarning("%s missing 'SourceFile'\n", shaderDefFileName);
 		return false;
 	}
 
 	const KVSection* kinds = shaderSection->FindSection("SourceKind");
 	if (!kinds)
 	{
-		MsgWarning("%s missing 'SourceKind' section", shaderDefFileName);
+		MsgWarning("%s missing 'SourceKind' section\n", shaderDefFileName);
 		return false;
 	}
 
@@ -99,7 +99,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 
 	if ((shaderKind & SHADERKIND_COMPUTE) == 0 && (shaderKind & SHADERKIND_VERTEX) == 0)
 	{
-		MsgWarning("%s must have Vertex kind section if it doesn't serve Compute", shaderDefFileName);
+		MsgWarning("%s must have Vertex kind section if it doesn't serve Compute\n", shaderDefFileName);
 		return false;
 	}
 
@@ -182,7 +182,7 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 			const KVSection* shaderSection = rootSec.FindSection("shader");
 			if (!shaderSection)
 			{
-				MsgWarning("%s does not describe shader or section 'shader' is missing.", fullShaderPath.ToCString());
+				MsgWarning("%s does not describe shader or section 'shader' is missing.\n", fullShaderPath.ToCString());
 				continue;
 			}
 
