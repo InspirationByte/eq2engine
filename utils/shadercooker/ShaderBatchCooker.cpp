@@ -179,14 +179,18 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 			if (!KV_LoadFromFile(fullShaderPath, SP_ROOT, &rootSec))
 				continue;
 
-			const KVSection* shaderSection = rootSec.FindSection("shader");
-			if (!shaderSection)
+			int shadersFound = 0;
+			for (KVKeyIterator it(&rootSec, "shader"); !it.atEnd(); ++it)
+			{
+				ParseShaderInfo(fullShaderPath, *it);
+				++shadersFound;
+			}
+
+			if (!shadersFound)
 			{
 				MsgWarning("%s does not describe shader or section 'shader' is missing.\n", fullShaderPath.ToCString());
 				continue;
 			}
-
-			ParseShaderInfo(fullShaderPath, shaderSection);
 		}
 	}
 }
