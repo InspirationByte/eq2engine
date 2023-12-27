@@ -188,6 +188,9 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 			.DepthFormat(depthTargetFormat);
 	}
 
+	// TODO: 
+	//renderPipelineDesc.multiSample.count = renderPass->GetSampleCount();
+
 	const bool onlyZ = (m_flags & MATERIAL_FLAG_ONLY_Z);
 	Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
 	if (onlyZ)

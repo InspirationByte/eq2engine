@@ -1003,7 +1003,7 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	if (!swapChain)
 		m_shaderAPI->ResizeRenderTarget(m_defaultDepthTexture, { m_backbufferSize.x, m_backbufferSize.y, 1 });
 
-	if(deviceState)
+	if(!prevDeviceState && deviceState)
 	{
 		for(int i = 0; i < m_restoreDeviceCb.numElem(); i++)
 		{
