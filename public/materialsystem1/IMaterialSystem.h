@@ -45,7 +45,6 @@ struct MatSysRenderSettings
 {
 	int			materialFlushThresh{ 1000 };	// flush (unload) threshold in frames
 
-	bool		lowShaderQuality{ false };
 	bool		editormode{ false };			// enable editor mode
 	bool		threadedloader{ true };
 

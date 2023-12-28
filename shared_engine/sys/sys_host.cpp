@@ -49,7 +49,6 @@ DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current 
 DECLARE_CMD_FN_RENAME(cmd_quti, "quti", CGameHost::HostExitCmd, "This made for keyboard writing errors", 0);
 
 DECLARE_CVAR(r_antialiasing, "0", "Multisample antialiasing", CV_ARCHIVE);
-DECLARE_CVAR(r_fastShaders, "0", "Low shader quality mode", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 
@@ -393,7 +392,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
 	materials_config.shaderApiParams.screenFormat = screenFormat;
-	materials_config.renderConfig.lowShaderQuality = r_fastShaders.GetBool();
 
 	if(!g_matSystem->Init(materials_config))
 		return false;
