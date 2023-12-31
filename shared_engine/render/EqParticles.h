@@ -41,7 +41,7 @@ struct PFXVertex
 		texcoord = t;
 		color = MColor(c).pack();
 	}
-
+	
 	Vector3D		point;
 	TVec2D<half>	texcoord;
 	uint			color{ 0xffffffff };
@@ -135,7 +135,7 @@ enum EffectFlags_e
 	EFFECT_FLAG_RADIAL_ALIGNING		= (1 << 5),
 };
 
-struct PFXBillboard_t
+struct PFXBillboard
 {
 	CParticleBatch*	group { nullptr };		// atlas
 	AtlasEntry*		tex {nullptr};			// texture name in atlas
@@ -153,8 +153,8 @@ struct PFXBillboard_t
 };
 
 // draws particle
-void Effects_DrawBillboard(PFXBillboard_t* effect, const CViewParams* view, Volume* frustum);
-void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, Volume* frustum);
+void Effects_DrawBillboard(PFXBillboard* effect, const CViewParams* view, Volume* frustum);
+void Effects_DrawBillboard(PFXBillboard* effect, const Matrix4x4& viewMatrix, Volume* frustum);
 
 //------------------------------------------------------------------------------------
 

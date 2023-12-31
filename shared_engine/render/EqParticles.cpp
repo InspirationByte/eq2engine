@@ -274,7 +274,7 @@ void CParticleLowLevelRenderer::ClearBuffers()
 
 //----------------------------------------------------------------------------------------------------
 
-void Effects_DrawBillboard(PFXBillboard_t* effect, const CViewParams* view, Volume* frustum)
+void Effects_DrawBillboard(PFXBillboard* effect, const CViewParams* view, Volume* frustum)
 {
 	if(!(effect->nFlags & EFFECT_FLAG_NO_FRUSTUM_CHECK))
 	{
@@ -327,7 +327,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const CViewParams* view, Volu
 	verts[3].color = color;
 }
 
-void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, Volume* frustum)
+void Effects_DrawBillboard(PFXBillboard* effect, const Matrix4x4& viewMatrix, Volume* frustum)
 {
 	if(!(effect->nFlags & EFFECT_FLAG_NO_FRUSTUM_CHECK))
 	{
