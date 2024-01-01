@@ -35,28 +35,34 @@ enum EShaderSupportFlags
 
 //-------------------------------------------------------------------------------------
 
-struct ShaderAPICaps
+struct ShaderAPICapabilities
 {
-	bool			textureFormatsSupported[FORMAT_COUNT]{ false };
-	bool			renderTargetFormatsSupported[FORMAT_COUNT]{ false };
+	bool	textureFormatsSupported[FORMAT_COUNT]{ false };
+	bool	renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 
-	bool			isInstancingSupported{ 0 };
-	bool			isHardwareOcclusionQuerySupported{ 0 };
+	bool	isInstancingSupported{ 0 };
+	bool	isHardwareOcclusionQuerySupported{ 0 };
 	
-	int				minUniformBufferOffsetAlignment{ 1 };
-	int				minStorageBufferOffsetAlignment{ 1 };
-	int				maxDynamicUniformBuffersPerPipelineLayout{ 0 };
-	int				maxDynamicStorageBuffersPerPipelineLayout{ 0 };
-	int				maxVertexStreams{ 0 };
-	int				maxVertexAttributes{ 0 };
-	int				maxTextureSize{ 0 };
-	int				maxTextureArrayLayers{ 0 };
-	int				maxTextureUnits{ 0 };
-	int				maxVertexTextureUnits{ 0 };
-	int				maxTextureAnisotropicLevel{ 0 };
-	int				maxBindGroups{ 0 };
-	int				maxBindingsPerBindGroup{ 0 };
-	int				maxRenderTargets{ 0 };
+	int		minUniformBufferOffsetAlignment{ 1 };
+	int		minStorageBufferOffsetAlignment{ 1 };
+	int		maxDynamicUniformBuffersPerPipelineLayout{ 0 };
+	int		maxDynamicStorageBuffersPerPipelineLayout{ 0 };
+	int		maxVertexStreams{ 0 };
+	int		maxVertexAttributes{ 0 };
+	int		maxTextureSize{ 0 };
+	int		maxTextureArrayLayers{ 0 };
+	int		maxTextureUnits{ 0 };
+	int		maxVertexTextureUnits{ 0 };
+	int		maxTextureAnisotropicLevel{ 0 };
+	int		maxBindGroups{ 0 };
+	int		maxBindingsPerBindGroup{ 0 };
+	int		maxRenderTargets{ 0 };
 
-	int				shadersSupportedFlags{ 0 };		// EShaderSupportFlags
+	int		maxComputeInvocationsPerWorkgroup{ 0 };
+	int		maxComputeWorkgroupSizeX{ 0 };
+	int		maxComputeWorkgroupSizeY{ 0 };
+	int		maxComputeWorkgroupSizeZ{ 0 };
+	int		maxComputeWorkgroupsPerDimension{ 0 };
+
+	int		shadersSupportedFlags{ 0 };		// EShaderSupportFlags
 };

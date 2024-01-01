@@ -24,7 +24,7 @@ public:
 	virtual void			Shutdown();
 
 	const ShaderAPIParams&	GetParams() const { return m_params; }
-	const ShaderAPICaps&	GetCaps() const {return m_caps;}
+	const ShaderAPICapabilities&	GetCaps() const {return m_caps;}
 	virtual EShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_EMPTY;}
 
 	static void				GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
@@ -99,7 +99,7 @@ protected:
 //-------------------------------------------------------------
 
 	ShaderAPIParams			m_params;
-	ShaderAPICaps			m_caps;
+	ShaderAPICapabilities			m_caps;
 
 	Map<int, ITexture*>		m_TextureList{ PP_SL };
 	Array<IVertexFormat*>	m_VFList{ PP_SL };

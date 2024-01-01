@@ -127,7 +127,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPULimits requiredLimits = supLimits.limits;
 
 		// fill ShaderAPI capabilities
-		ShaderAPICaps& caps = CWGPURenderAPI::Instance.m_caps;
+		ShaderAPICapabilities& caps = CWGPURenderAPI::Instance.m_caps;
 		caps.isInstancingSupported = true;
 		caps.isHardwareOcclusionQuerySupported = true;
 		caps.minUniformBufferOffsetAlignment = supLimits.limits.minUniformBufferOffsetAlignment;
@@ -144,6 +144,13 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		caps.maxBindingsPerBindGroup = supLimits.limits.maxBindingsPerBindGroup;
 		caps.maxTextureAnisotropicLevel = 16;
 		caps.maxRenderTargets = supLimits.limits.maxColorAttachments;
+
+		caps.maxComputeInvocationsPerWorkgroup = supLimits.limits.maxComputeInvocationsPerWorkgroup;
+		caps.maxComputeWorkgroupSizeX = supLimits.limits.maxComputeWorkgroupSizeX;
+		caps.maxComputeWorkgroupSizeY = supLimits.limits.maxComputeWorkgroupSizeY;
+		caps.maxComputeWorkgroupSizeZ = supLimits.limits.maxComputeWorkgroupSizeZ;
+		caps.maxComputeWorkgroupsPerDimension = supLimits.limits.maxComputeWorkgroupsPerDimension;
+
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 									| SHADER_CAPS_PIXEL_SUPPORTED
 									| SHADER_CAPS_COMPUTE_SUPPORTED;

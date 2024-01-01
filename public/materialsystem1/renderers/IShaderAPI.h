@@ -80,7 +80,7 @@ public:
 // Renderer capabilities and information
 //-------------------------------------------------------------
 
-	virtual const ShaderAPICaps&	GetCaps() const = 0;
+	virtual const ShaderAPICapabilities&	GetCaps() const = 0;
 
 	virtual EShaderAPIType		GetShaderAPIClass() const = 0;
 	virtual const char*			GetRendererName() const = 0;

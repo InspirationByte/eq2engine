@@ -1210,7 +1210,7 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 // returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
 GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64 size)
 {
-	const ShaderAPICaps& caps = m_shaderAPI->GetCaps();
+	const ShaderAPICapabilities& caps = m_shaderAPI->GetCaps();
 	const int bufferAlignment = max(caps.minUniformBufferOffsetAlignment, caps.minStorageBufferOffsetAlignment);
 	constexpr int64 maxTransientBufferSize = 128 * 1024;
 

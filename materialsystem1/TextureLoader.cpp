@@ -148,7 +148,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 		if (isLoaded)
 		{
-			const ShaderAPICaps& caps = g_renderAPI->GetCaps();
+			const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
 
 			if(!caps.textureFormatsSupported[img->GetFormat()])
 			{
@@ -177,7 +177,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		}
 	}
 
-	const ShaderAPICaps& caps = g_renderAPI->GetCaps();
+	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
 	caps.maxTextureAnisotropicLevel;
 
 	// initialize texture
