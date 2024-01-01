@@ -38,7 +38,7 @@ void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, WGPURend
 		WGPURenderPassColorAttachment rhiColorAttachment = {};
 		rhiColorAttachment.loadOp = g_wgpuLoadOp[colorTarget.loadOp];
 		rhiColorAttachment.storeOp = g_wgpuStoreOp[colorTarget.storeOp];
-		rhiColorAttachment.depthSlice = colorTarget.depthSlice;
+		rhiColorAttachment.depthSlice = colorTarget.depthSlice >= 0 ? colorTarget.depthSlice : WGPU_DEPTH_SLICE_UNDEFINED;
 		rhiColorAttachment.clearValue = WGPUColor{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a };
 
 		if (targetTexture)

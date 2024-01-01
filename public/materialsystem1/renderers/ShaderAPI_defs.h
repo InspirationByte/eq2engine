@@ -898,7 +898,7 @@ struct RenderPassDesc
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
 		EStoreFunc	storeOp{ STOREFUNC_STORE };
 		MColor		clearColor{ color_black };
-		int			depthSlice{ 0 };
+		int			depthSlice{ -1 };
 	};
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 	ColorTargetList	colorTargets;
@@ -925,7 +925,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		ref.nameHash = StringToHash(str);
 		return *this; 
 	}
-	ThisType& ColorTarget(const TextureView& colorTarget, bool clear = false, const MColor& clearColor = color_black, bool discard = false, int depthSlice = 0, const TextureView& resolveTarget = nullptr)
+	ThisType& ColorTarget(const TextureView& colorTarget, bool clear = false, const MColor& clearColor = color_black, bool discard = false, int depthSlice = -1, const TextureView& resolveTarget = nullptr)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
 		entry.target = colorTarget;
