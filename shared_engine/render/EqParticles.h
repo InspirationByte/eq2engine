@@ -58,6 +58,7 @@ public:
 	virtual	~CParticleBatch();
 
 	// renders this buffer
+	void				UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds);
 	void				Render(int viewRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds);
 
 	// allocates a fixed strip for further use.

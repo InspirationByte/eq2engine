@@ -20,7 +20,8 @@ enum ECubeSide : int
 	NEGATIVE_Z,
 
 	FIRST = 0,
-	LAST = 5
+	LAST = 5,
+	COUNT,
 };
 
 #ifndef IsNaN
