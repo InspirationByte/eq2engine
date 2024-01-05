@@ -20,10 +20,10 @@
 #define DISABLE_DEBUG_DRAWING
 #endif
 
-#define BOXES_DRAW_SUBDIV (64)
-#define LINES_DRAW_SUBDIV (128)
-#define POLYS_DRAW_SUBDIV (64)
-#define GRAPH_MAX_VALUES  400
+static constexpr const int BOXES_DRAW_SUBDIV = 64;
+static constexpr const int LINES_DRAW_SUBDIV = 128;
+static constexpr const int POLYS_DRAW_SUBDIV = 64;
+static constexpr const int GRAPH_MAX_VALUES = 400;
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
@@ -36,17 +36,15 @@ DECLARE_CVAR(r_debugDrawGraphs, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(r_debugDrawShapes, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(r_debugDrawLines, "0", nullptr, CV_ARCHIVE);
 
-ITexturePtr g_pDebugTexture = nullptr;
-
-static void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
+void CDebugOverlay::OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 {
 	if (!g_renderAPI)
 		return;
 
-	g_pDebugTexture = g_renderAPI->FindTexture( pVar->GetString() );
+	g_DebugOverlays.m_dbgTexture = g_renderAPI->FindTexture( pVar->GetString() );
 }
 
-DECLARE_CVAR_CHANGE(r_debugShowTexture, "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
+DECLARE_CVAR_CHANGE(r_debugShowTexture, "", &CDebugOverlay::OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
 DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 
 static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURenderPassRecorder* rendPassRecorder)
@@ -83,33 +81,33 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-#define BBOX_STRIP_VERTS(min, max) \
-	Vector3D(min.x, max.y, max.z),\
-	Vector3D(max.x, max.y, max.z),\
-	Vector3D(min.x, max.y, min.z),\
-	Vector3D(max.x, max.y, min.z),\
-	Vector3D(min.x, min.y, min.z),\
-	Vector3D(max.x, min.y, min.z),\
-	Vector3D(min.x, min.y, max.z),\
-	Vector3D(max.x, min.y, max.z),\
-	Vector3D(max.x, min.y, max.z),\
-	Vector3D(max.x, min.y, min.z),\
-	Vector3D(max.x, min.y, min.z),\
-	Vector3D(max.x, max.y, min.z),\
-	Vector3D(max.x, min.y, max.z),\
-	Vector3D(max.x, max.y, max.z),\
-	Vector3D(min.x, min.y, max.z),\
-	Vector3D(min.x, max.y, max.z),\
-	Vector3D(min.x, min.y, min.z),\
-	Vector3D(min.x, max.y, min.z)
 
-// TODO: this must be replaced
-static void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const MColor& color, float fTime = 0.0f)
+// NOTE: unused, kept for reference and further use
+static void DrawOrientedBoxFilled(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const MColor& color, float fTime = 0.0f)
 {
-	Vector3D verts[18] = { BBOX_STRIP_VERTS(mins, maxs) };
+	Vector3D verts[18] = { 
+		Vector3D(mins.x, maxs.y, maxs.z),
+		Vector3D(maxs.x, maxs.y, maxs.z),
+		Vector3D(mins.x, maxs.y, mins.z),
+		Vector3D(maxs.x, maxs.y, mins.z),
+		Vector3D(mins.x, mins.y, mins.z),
+		Vector3D(maxs.x, mins.y, mins.z),
+		Vector3D(mins.x, mins.y, maxs.z),
+		Vector3D(maxs.x, mins.y, maxs.z),
+		Vector3D(maxs.x, mins.y, maxs.z),
+		Vector3D(maxs.x, mins.y, mins.z),
+		Vector3D(maxs.x, mins.y, mins.z),
+		Vector3D(maxs.x, maxs.y, mins.z),
+		Vector3D(maxs.x, mins.y, maxs.z),
+		Vector3D(maxs.x, maxs.y, maxs.z),
+		Vector3D(mins.x, mins.y, maxs.z),
+		Vector3D(mins.x, maxs.y, maxs.z),
+		Vector3D(mins.x, mins.y, mins.z),
+		Vector3D(mins.x, maxs.y, mins.z)
+	};
 
 	// transform them
-	for (int i = 0; i < 18; i++)
+	for (int i = 0; i < elementsOf(verts); i++)
 		verts[i] = position + rotateVector(verts[i], quat);
 
 	Vector3D r, u, f;
@@ -163,7 +161,7 @@ void CDebugOverlay::Init(bool hidden)
 void CDebugOverlay::Shutdown()
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	g_pDebugTexture = nullptr;
+	m_dbgTexture = nullptr;
 #endif
 }
 
@@ -1278,24 +1276,31 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
 		{
-			if (!m_draw2DFuncs[i].func(rendPassRecorder))
+			DebugDrawFunc_t& drawFunc = m_draw2DFuncs[i];
+			if (!drawFunc.func(rendPassRecorder))
 			{
 				m_draw2DFuncs.fastRemoveIndex(i);
 				--i;
 				continue;
 			}
-			m_draw2DFuncs[i].lifetime -= m_frameTime;
+			drawFunc.lifetime -= m_frameTime;
 		}
 	}
 
-	// more universal thing
-	if( g_pDebugTexture )
+	if(m_dbgTexture)
 	{
+		// destroy texture if debug overlay is the only one owning it
+		if (m_dbgTexture->Ref_Count() == 1)
+		{
+			m_dbgTexture = nullptr;
+			return;
+		}
+
 		g_matSystem->Setup2D( winWide, winTall );
 
 		float w, h;
-		w = (float)g_pDebugTexture->GetWidth()*r_debugShowTextureScale.GetFloat();
-		h = (float)g_pDebugTexture->GetHeight()*r_debugShowTextureScale.GetFloat();
+		w = (float)m_dbgTexture->GetWidth()*r_debugShowTextureScale.GetFloat();
+		h = (float)m_dbgTexture->GetHeight()*r_debugShowTextureScale.GetFloat();
 
 		if(h > winTall)
 		{
@@ -1307,20 +1312,20 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		Vertex2D light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
 
-		const int flags = g_pDebugTexture->GetFlags();
+		const int flags = m_dbgTexture->GetFlags();
 		const bool isCubemap = (flags & TEXFLAG_CUBEMAP);
 
-		const int cubeOrArrayIndex = (m_frameId / 30) % (isCubemap ? 6 : g_pDebugTexture->GetArraySize());
+		const int cubeOrArrayIndex = (m_frameId / 30) % (isCubemap ? 6 : m_dbgTexture->GetArraySize());
 		const int viewIndex = isCubemap ? ITexture::ViewArraySlice(cubeOrArrayIndex) : ITexture::DEFAULT_VIEW;
 
 		MatSysDefaultRenderPass defaultRender;
-		defaultRender.texture = TextureView(g_pDebugTexture, viewIndex);
+		defaultRender.texture = TextureView(m_dbgTexture, viewIndex);
 		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), RenderPassContext(rendPassRecorder, &defaultRender));
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-		EqString str = EqString::Format("%dx%d (frame %d)\n%s\nrefcnt %d", g_pDebugTexture->GetWidth(), g_pDebugTexture->GetHeight(), g_pDebugTexture->GetAnimationFrame(), g_pDebugTexture->GetName(), g_pDebugTexture->Ref_Count());
+		EqString str = EqString::Format("%dx%d (frame %d)\n%s\nrefcnt %d", m_dbgTexture->GetWidth(), m_dbgTexture->GetHeight(), m_dbgTexture->GetAnimationFrame(), m_dbgTexture->GetName(), m_dbgTexture->Ref_Count());
 		m_debugFont2->SetupRenderText(str, Vector2D(10, 10), textStl, rendPassRecorder);
 	}
 
