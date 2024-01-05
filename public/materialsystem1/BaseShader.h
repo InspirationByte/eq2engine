@@ -100,7 +100,7 @@ protected:
 		int							vertexLayoutId{ 0 };
 	};
 
-	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const = 0;
+	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const;
 
 	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const { return nullptr; }
 	virtual void				FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}

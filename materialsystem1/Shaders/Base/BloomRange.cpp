@@ -25,14 +25,6 @@ BEGIN_SHADER_CLASS(BloomRange)
 		m_bloomSource = m_material->GetMaterialVar("BloomSource", "");
 	}
 
-	ArrayCRef<int> GetSupportedVertexLayoutIds() const
-	{
-		static const int supportedFormats[] = {
-			StringToHashConst("DynMeshVertex")
-		};
-		return ArrayCRef(supportedFormats);
-	}
-
 	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)

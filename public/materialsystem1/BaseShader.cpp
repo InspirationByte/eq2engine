@@ -347,6 +347,12 @@ IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
 	return renderAPI->CreateBuffer(BufferInfo(reinterpret_cast<ubyte*>(&atlasBufferData), sizeof(int) * 4 + sizeof(Vector4D) * (1 + atlasBufferData.entryCount)), BUFFERUSAGE_STORAGE, "atlasRects");
 }
 
+ArrayCRef<int> CBaseShader::GetSupportedVertexLayoutIds() const
+{
+	static const int defaultVertexLayoutId = 0;
+	return ArrayCRef(&defaultVertexLayoutId, 1);
+}
+
 void CBaseShader::InitShader(IShaderAPI* renderAPI)
 {
 	if (m_isInit)
@@ -376,6 +382,7 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 		instFormat.formatId = vertFormat->GetNameHash();
 		instFormat.layout = vertFormat->GetFormatDesc();
 
+		// TODO: different variants of instFormat.usedLayoutBits
 		EnsureRenderPipeline(renderAPI, ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES);
 		EnsureRenderPipeline(renderAPI, ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLE_STRIP);
 	}
