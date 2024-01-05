@@ -262,6 +262,16 @@ IVertexFormat* ShaderAPI_Base::FindVertexFormat(const char* name) const
 	return nullptr;
 }
 
+IVertexFormat* ShaderAPI_Base::FindVertexFormatById(int nameHash) const
+{
+	for (int i = 0; i < m_VFList.numElem(); i++)
+	{
+		if (m_VFList[i]->GetNameHash() == nameHash)
+			return m_VFList[i];
+	}
+	return nullptr;
+}
+
 int	ShaderAPI_Base::GetDrawCallsCount() const
 {
 	return m_statDrawCount;

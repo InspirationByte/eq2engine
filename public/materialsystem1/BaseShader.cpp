@@ -129,7 +129,7 @@ uint CBaseShader::GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetForma
 	uint hash = vertexLayoutId | (usedVertexLayoutBits << 24);
 	hash *= 31;
 	hash += static_cast<uint>(primitiveTopology);
-	for (int i = 0; i < MAX_RENDERTARGETS; ++i)
+	for (int i = 0; i < colorTargetFormat.numElem(); ++i)
 	{
 		const ETextureFormat format = colorTargetFormat[i];
 		if (format == FORMAT_NONE)
@@ -144,7 +144,7 @@ uint CBaseShader::GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetForma
 	return hash;
 }
 
-void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPass, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
+void CBaseShader::FillRenderPipelineDesc(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
 {
 	Builder<RenderPipelineDesc>(renderPipelineDesc)
 		.ShaderName(GetName())
@@ -176,7 +176,6 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 	}
 
 	// setup render & shadowing parameters
-	const ETextureFormat depthTargetFormat = renderPass->GetDepthTargetFormat();
 	if (depthTargetFormat != FORMAT_NONE)
 	{
 		if (m_flags & MATERIAL_FLAG_DECAL)
@@ -218,9 +217,9 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 			break;
 		}
 
-		for (int i = 0; i < MAX_RENDERTARGETS; ++i)
+		for (int i = 0; i < colorTargetFormat.numElem(); ++i)
 		{
-			const ETextureFormat format = renderPass->GetRenderTargetFormats()[i];
+			const ETextureFormat format = colorTargetFormat[i];
 			if (format == FORMAT_NONE)
 				break;
 
@@ -233,17 +232,16 @@ void CBaseShader::FillRenderPipelineDesc(const IGPURenderPassRecorder* renderPas
 	pipelineBuilder.End();
 }
 
-
-bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext)
+const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology)
 {
-	const uint pipelineId = GetRenderPipelineId(passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), meshInstFormat.formatId, meshInstFormat.usedLayoutBits, primTopology);
+	const uint pipelineId = GetRenderPipelineId(colorTargetFormat, depthTargetFormat, meshInstFormat.formatId, meshInstFormat.usedLayoutBits, primTopology);
 
 	auto it = m_renderPipelines.find(pipelineId);
 	if (it.atEnd())
 	{
 		RenderPipelineDesc renderPipelineDesc;
-		FillRenderPipelineDesc(passContext.recorder, meshInstFormat, primTopology, renderPipelineDesc);
-		BuildPipelineShaderQuery(meshInstFormat, renderPipelineDesc.shaderQuery);
+		FillRenderPipelineDesc(colorTargetFormat, depthTargetFormat, meshInstFormat, primTopology, renderPipelineDesc);
+		BuildPipelineShaderQuery(renderPipelineDesc.shaderQuery);
 
 		it = m_renderPipelines.insert(pipelineId);
 		PipelineInfo& newPipelineInfo = *it;
@@ -287,11 +285,15 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 		if (!newPipelineInfo.pipeline)
 		{
 			ASSERT_FAIL("Shader %s is unable to create pipeline", GetName());
-			return false;
 		}
 	}
 
-	const PipelineInfo& pipelineInfo = *it;
+	return *it;
+}
+
+bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext)
+{
+	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), meshInstFormat, primTopology);
 
 	if (!pipelineInfo.pipeline)
 		return false;
@@ -347,22 +349,36 @@ IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
 
 void CBaseShader::InitShader(IShaderAPI* renderAPI)
 {
-	if (!m_isInit)
-	{
-		// cache shader modules
-		MeshInstanceFormatRef dummy;
+	if (m_isInit)
+		return;
 
-		Array<EqString> shaderQuery(PP_SL);
-		BuildPipelineShaderQuery(dummy, shaderQuery);
-		renderAPI->LoadShaderModules(GetName(), shaderQuery);
-
-		ArrayCRef<int> supportedLayoutIds = GetSupportedVertexLayoutIds();
-		for (int i = 0; i < supportedLayoutIds.numElem(); ++i) 
-		{
-
-		}
-	}
 	m_isInit = true;
+
+	// cache shader modules
+	Array<EqString> shaderQuery(PP_SL);
+	BuildPipelineShaderQuery(shaderQuery);
+	renderAPI->LoadShaderModules(GetName(), shaderQuery);
+	
+	// TODO: more RT format variants
+	ETextureFormat rtFormat = FORMAT_RGBA8;
+	ETextureFormat depthFormat = g_matSystem->GetDefaultDepthBuffer()->GetFormat();
+
+	// cache pipeline state objects
+	ArrayCRef<int> supportedLayoutIds = GetSupportedVertexLayoutIds();
+	for (int i = 0; i < supportedLayoutIds.numElem(); ++i) 
+	{
+		IVertexFormat* vertFormat = renderAPI->FindVertexFormatById(supportedLayoutIds[i]);
+		if (!vertFormat)
+			continue;
+
+		MeshInstanceFormatRef instFormat;
+		instFormat.name = vertFormat->GetName();
+		instFormat.formatId = vertFormat->GetNameHash();
+		instFormat.layout = vertFormat->GetFormatDesc();
+
+		EnsureRenderPipeline(renderAPI, ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES);
+		EnsureRenderPipeline(renderAPI, ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLE_STRIP);
+	}
 }
 
 // Unload shaders, textures

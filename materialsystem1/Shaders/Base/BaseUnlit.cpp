@@ -31,7 +31,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		return nullptr;
 	}
 
-	void BuildPipelineShaderQuery(const MeshInstanceFormatRef& meshInstFormat, Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const
 	{
 		bool vertexColor = false;
 		SHADER_PARAM_BOOL(VertexColor, vertexColor, false);

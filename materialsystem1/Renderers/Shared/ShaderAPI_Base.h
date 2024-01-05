@@ -84,8 +84,8 @@ public:
 // Vertex format
 //-------------------------------------------------------------
 
-	// returns vertex format
 	IVertexFormat*			FindVertexFormat(const char* name) const;
+	IVertexFormat*			FindVertexFormatById(int nameHash) const;
 
 protected:
 

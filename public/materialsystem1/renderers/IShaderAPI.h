@@ -113,6 +113,7 @@ public:
 	virtual IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout) = 0;
 	virtual void						DestroyVertexFormat(IVertexFormat* pFormat) = 0;
 	virtual IVertexFormat*				FindVertexFormat(const char* name) const = 0;
+	virtual IVertexFormat*				FindVertexFormatById(int nameHash) const = 0;
 
 //-------------------------------------------------------------
 // Pipeline management
