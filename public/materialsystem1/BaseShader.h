@@ -21,6 +21,7 @@ struct MatSysCamera;
 		class C##name##Shader : public CBaseShader {			\
 		public:													\
 			const char* GetName() const	{ return ThisClassNameStr; } \
+			int GetNameHash() const	{ return StringToHashConst(#name); } \
 			void Init(IShaderAPI* renderAPI, IMaterial* material) override \
 			{ CBaseShader::Init(renderAPI, material); ShaderInitParams(renderAPI); }
 
@@ -113,12 +114,12 @@ protected:
 	virtual void				FillRenderPipelineDesc(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
 	virtual void				BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const {}
 
-	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology);
+	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, bool onInit);
 
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
-	uint						GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, int vertexLayoutId, uint usedVertexLayoutBits, EPrimTopology primitiveTopology) const;
+	uint						GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
@@ -144,6 +145,8 @@ protected:
 	ETexFilterMode				m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
 	EShaderBlendMode			m_blendMode{ SHADER_BLEND_NONE };
 
+	Array<EqString>				m_shaderQuery{ PP_SL };
+	int							m_shaderQueryId{ 0 };
 	int							m_flags{ 0 };
 	bool						m_isInit{ false };
 };

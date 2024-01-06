@@ -132,6 +132,7 @@ public:
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
 	virtual IMatSystemShader*		CreateShaderInstance(const char* szShaderName) = 0;
+	virtual MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash) = 0;
 
 	virtual void					QueueLoading(const IMaterialPtr& pMaterial) = 0;
 	virtual void					PreloadNewMaterials() = 0;

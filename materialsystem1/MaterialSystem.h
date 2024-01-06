@@ -96,6 +96,7 @@ public:
 	bool						IsMaterialExist(const char* szMaterialName) const;
 								
 	IMatSystemShader*			CreateShaderInstance(const char* szShaderName);
+	MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash);
 								
 	void						PreloadNewMaterials();
 	void						WaitAllMaterialsLoaded();
@@ -187,6 +188,7 @@ private:
 	Array<ShaderOverride>		m_shaderOverrideList{ PP_SL };		// shader override functors
 	Array<ShaderProxyFactory>	m_proxyFactoryList{ PP_SL };
 
+	Map<int, MatSysShaderPipelineCache> m_renderPipelineCache{ PP_SL };
 	Map<int, IMaterial*>		m_loadedMaterials{ PP_SL };			// loaded material list
 	ECullMode					m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
 

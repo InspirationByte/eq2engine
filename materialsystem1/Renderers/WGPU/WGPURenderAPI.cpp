@@ -935,7 +935,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 			if (!itShaderModuleId.atEnd())
 			{
 				EqString queryStr;
-				for (EqString& str : pipelineDesc.shaderQuery)
+				for (const EqString& str : pipelineDesc.shaderQuery)
 				{
 					if (queryStr.Length())
 						queryStr.Append("|");
@@ -957,7 +957,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 		if (!rhiVertexState.module)
 		{
 			EqString queryStr;
-			for (EqString& str : pipelineDesc.shaderQuery)
+			for (const EqString& str : pipelineDesc.shaderQuery)
 			{
 				if (queryStr.Length())
 					queryStr.Append("|");
@@ -1032,7 +1032,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 			if (!itShaderModuleId.atEnd())
 			{
 				EqString queryStr;
-				for (EqString& str : pipelineDesc.shaderQuery)
+				for (const EqString& str : pipelineDesc.shaderQuery)
 				{
 					if (queryStr.Length())
 						queryStr.Append("|");
@@ -1053,7 +1053,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 		if(!rhiFragmentState.module)
 		{
 			EqString queryStr;
-			for (EqString& str : pipelineDesc.shaderQuery)
+			for (const EqString& str : pipelineDesc.shaderQuery)
 			{
 				if (queryStr.Length())
 					queryStr.Append("|");
@@ -1210,7 +1210,7 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 		if (!itShaderModuleId.atEnd())
 		{
 			EqString queryStr;
-			for (EqString& str : pipelineDesc.shaderQuery)
+			for (const EqString& str : pipelineDesc.shaderQuery)
 			{
 				if (queryStr.Length())
 					queryStr.Append("|");

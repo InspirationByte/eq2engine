@@ -67,6 +67,11 @@ enum EBindGroupId
 	BINDGROUP_TRANSIENT = 2,
 };
 
+struct MatSysShaderPipelineCache
+{
+	Map<uint, IGPURenderPipelinePtr> pipelines{ PP_SL };
+};
+
 class IMatSystemShader
 {
 public:
@@ -81,6 +86,8 @@ public:
 	virtual void				InitShader(IShaderAPI* renderAPI) = 0;
 
 	virtual const char*			GetName() const = 0;
+	virtual int					GetNameHash() const = 0;
+
 	virtual int					GetFlags() const = 0;
 
 	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;

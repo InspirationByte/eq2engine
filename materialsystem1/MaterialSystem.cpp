@@ -54,7 +54,7 @@ static VertexLayoutDesc& GetDynamicMeshLayout()
 }
 
 DECLARE_CVAR(r_vSync, "0", "Vertical syncronization", CV_ARCHIVE);
-DECLARE_CVAR(r_shaderCompilerShowLogs, "0","Show warnings of shader compilation",CV_ARCHIVE);
+DECLARE_CVAR(r_showPipelineCacheMisses, "0", "Show warning messages about shader pipeline cache misses", CV_ARCHIVE);
 
 DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(r_anisotropic, "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE);
@@ -401,6 +401,7 @@ void CMaterialSystem::Shutdown()
 
 	FreeMaterials();
 
+	m_renderPipelineCache.clear();
 	m_shaderOverrideList.clear();
 	m_proxyFactoryList.clear();
 
@@ -771,6 +772,11 @@ void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, DIS
 
 	// this is a higher priority
 	m_shaderOverrideList.insert(new_override, 0);
+}
+
+MatSysShaderPipelineCache& CMaterialSystem::GetRenderPipelineCache(int shaderNameHash)
+{
+	return m_renderPipelineCache[shaderNameHash];
 }
 
 IMatSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName)

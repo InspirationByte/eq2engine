@@ -449,7 +449,7 @@ struct RenderPipelineDesc
 
 	EqString				shaderName;
 	int						shaderVertexLayoutId{ 0 };
-	Array<EqString>			shaderQuery{ PP_SL };
+	ArrayCRef<EqString>		shaderQuery{ nullptr };
 };
 
 //-------------------------------------------
@@ -965,7 +965,7 @@ struct ComputePipelineDesc
 {
 	EqString			shaderName;
 	int					shaderLayoutId{ 0 };
-	Array<EqString>		shaderQuery{ PP_SL };
+	ArrayCRef<EqString>	shaderQuery{ nullptr };
 	EqString			shaderEntryPoint{ "main" };
 };
 
