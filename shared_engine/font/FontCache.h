@@ -71,6 +71,11 @@ protected:
 	eqFontFamily_t*				m_defaultFont{ nullptr };
 
 	IMaterialPtr				m_sdfMaterial;
+
 	MatVec4Proxy				m_fontBaseColor;
 	MatVec4Proxy				m_fontParams;
+
+	MatVec4Proxy				m_shadowColor;
+	MatVec4Proxy				m_shadowParams;
+	MatVec2Proxy				m_shadowOffset;
 };

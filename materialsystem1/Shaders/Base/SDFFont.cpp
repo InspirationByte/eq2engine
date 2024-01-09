@@ -31,6 +31,10 @@ BEGIN_SHADER_CLASS(SDFFont)
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
 		m_fontParamsVar = m_material->GetMaterialVar("FontParams", "[0.94 0.95 0, 1]");
 		m_fontBaseColor = m_material->GetMaterialVar("FontBaseColor", "[1 1 0 1]");
+
+		m_shadowParamsVar = m_material->GetMaterialVar("ShadowParams", "[0.94 0.95 0, 1]");
+		m_shadowColor = m_material->GetMaterialVar("ShadowColor", "[0 0 0 1]");
+		m_shadowOffset = m_material->GetMaterialVar("ShadowOffset", "[0 0]");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -145,16 +149,27 @@ BEGIN_SHADER_CLASS(SDFFont)
 			const TextureView& baseTexture = rendPassInfo->texture ? rendPassInfo->texture : whiteTexView;
 
 			// can use either fixed array or CMemoryStream with on-stack storage
-			FixedArray<Vector4D, 4> bufferData;
+			FixedArray<Vector4D, 8> bufferData;
 			bufferData.append(m_fontBaseColor.Get());
 			bufferData.append(m_fontParamsVar.Get());
+			bufferData.append(m_shadowColor.Get());
+			bufferData.append(m_shadowParamsVar.Get());
+			bufferData.append(Vector4D(m_shadowOffset.Get(), 0.0f));
 
 			MatSysCamera cameraParams;
 			g_matSystem->GetCameraParams(cameraParams, true);
 
-			GPUBufferView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
-			GPUBufferView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
+			GPUBufferView cameraParamsBuffer;
+			for (const RenderBufferInfo& rendBuffer : uniformBuffers)
+			{
+				if (rendBuffer.signature == MAKECHAR4('C','M','R','A'))
+					cameraParamsBuffer = rendBuffer.bufferView;
+			}
 
+			if(!cameraParamsBuffer)
+				cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+
+			GPUBufferView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer)
 				.Buffer(1, materialParamsBuffer)
@@ -171,4 +186,8 @@ BEGIN_SHADER_CLASS(SDFFont)
 	MatTextureProxy		m_baseTexture;
 	MatVec4Proxy		m_fontBaseColor;
 	MatVec4Proxy		m_fontParamsVar;
+
+	MatVec4Proxy		m_shadowColor;
+	MatVec4Proxy		m_shadowParamsVar;
+	MatVec2Proxy		m_shadowOffset;
 END_SHADER_CLASS

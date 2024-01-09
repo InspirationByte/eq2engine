@@ -121,7 +121,7 @@ struct eqFontStyleParam_t
 	int					align{ 0 };			// ETextAlignment
 	int					styleFlag{ 0 };		// ETextStyleFlag
 
-	float				shadowOffset{ 1.0f };
+	Vector2D			shadowOffset{ 1.0f };
 	float				shadowWeight{ 0.01f };
 
 	ITextLayoutBuilder* layoutBuilder{ nullptr };
