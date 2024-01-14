@@ -43,6 +43,7 @@ void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueC
 #else
 
 #define PROF_EVENT(name)
+#define PROF_EVENT_F()
 #define PROF_MARKER(name)
 #define PROF_RELEASE_THREAD_MARKERS()
 

@@ -3,9 +3,6 @@
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium material
-//
-// TODO:	mat-file serialization for material editor purposes and other issues
-//			serialize material file to memory buffer
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
@@ -17,7 +14,7 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "material.h"
 
-DECLARE_CVAR(r_allowSourceTextures, "0", "enable materials and textures loading from source paths", 0);
+DECLARE_CVAR(r_allowSourceTextures, "0", "enable materials and textures loading from source paths", CV_CHEAT);
 
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"
@@ -25,11 +22,12 @@ DECLARE_CVAR(r_allowSourceTextures, "0", "enable materials and textures loading 
 using namespace Threading;
 static CEqMutex s_materialVarMutex;
 
-CMaterial::CMaterial(const char* materialName, bool loadFromDisk)
+CMaterial::CMaterial(const char* materialName, int instanceFormatId, bool loadFromDisk)
 	: m_loadFromDisk(loadFromDisk)
 {
 	m_szMaterialName = materialName;
 	m_nameHash = StringToHash(m_szMaterialName, true);
+	m_instanceFormatId = instanceFormatId;
 }
 
 CMaterial::~CMaterial()
@@ -115,9 +113,8 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		return;
 	}
 
-	KVSection* shader_root = root.keys.numElem() ? root.keys[0] : nullptr;
-
-	if(!shader_root)
+	const KVSection* shaderRoot = root.keys.numElem() ? root.keys[0] : nullptr;
+	if(!shaderRoot)
 	{
 		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.ToCString());
 		Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
@@ -125,26 +122,26 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 	}
 
 	// section name is used as shader name
-	m_szShaderName = shader_root->name;
+	m_szShaderName = shaderRoot->name;
 
 	// begin initialization
-	InitVars( shader_root, renderAPI->GetRendererName() );
+	InitVars( shaderRoot, renderAPI->GetRendererName() );
 	InitShader(g_matSystem->GetShaderAPI());
 }
 
 // initializes material from keyvalues
-void CMaterial::Init(IShaderAPI* renderAPI, KVSection* shader_root)
+void CMaterial::Init(IShaderAPI* renderAPI, const KVSection* shaderRoot)
 {
-	if(shader_root)
+	if(shaderRoot)
 		ASSERT(m_loadFromDisk == false);
 
-	if (shader_root)
+	if (shaderRoot)
 	{
 		// section name is used as shader name
-		m_szShaderName = shader_root->name;
+		m_szShaderName = shaderRoot->name;
 
 		// begin initialization
-		InitVars(shader_root, renderAPI->GetRendererName());
+		InitVars(shaderRoot, renderAPI->GetRendererName());
 	}
 
 	InitShader(renderAPI);
@@ -153,7 +150,7 @@ void CMaterial::Init(IShaderAPI* renderAPI, KVSection* shader_root)
 //
 // Initializes the proxy data from section
 //
-void CMaterial::InitMaterialProxy(KVSection* proxySec)
+void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 {
 	if(!proxySec)
 		return;
@@ -179,14 +176,13 @@ void CMaterial::InitMaterialProxy(KVSection* proxySec)
 //
 // Initializes the material vars from the keyvalues section
 //
-void CMaterial::InitMaterialVars(KVSection* kvs, const char* prefix)
+void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 {
 	int numMaterialVars = 0;
 
 	for (int i = 0; i < kvs->keys.numElem(); i++)
 	{
-		KVSection* materialVarSec = kvs->keys[i];
-
+		const KVSection* materialVarSec = kvs->keys[i];
 		if (materialVarSec->IsSection())
 			continue;
 
@@ -202,8 +198,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs, const char* prefix)
 	// init material vars
 	for(int i = 0; i < kvs->keys.numElem();i++)
 	{
-		KVSection* materialVarSec = kvs->keys[i];
-
+		const KVSection* materialVarSec = kvs->keys[i];
 		if(materialVarSec->IsSection() )
 			continue;
 
@@ -239,60 +234,52 @@ void CMaterial::InitMaterialVars(KVSection* kvs, const char* prefix)
 //
 void CMaterial::InitShader(IShaderAPI* renderAPI)
 {
-	if( m_shader != nullptr)
+	if(m_shader)
 		return;
 
-	// don't need to do anything if NODRAW
-	if( !m_szShaderName.CompareCaseIns("NODRAW") )
+	PROF_EVENT_F();
+
+	const ShaderFactory* shaderFactory = g_matSystem->GetShaderFactory(m_szShaderName.GetData(), m_instanceFormatId);
+	if (!shaderFactory)
 	{
-		Atomic::Exchange(m_state, MATERIAL_LOAD_OK);
-		return;
+		MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.GetData(), m_szMaterialName.GetData());
+		shaderFactory = g_matSystem->GetShaderFactory("Error", m_instanceFormatId);
 	}
 
+	if(shaderFactory && arrayFindIndex(shaderFactory->vertexLayoutIds, m_instanceFormatId) == -1)
 	{
-		PROF_EVENT("MatSystem Load Material InitShader");
-
-		IMatSystemShader* shader = g_matSystem->CreateShaderInstance(m_szShaderName.GetData());
-
-		// if not found - try make Error shader
-		if (!shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
-		{
-			MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.GetData(), m_szMaterialName.GetData());
-
-			if (!shader)
-				shader = g_matSystem->CreateShaderInstance("Error");
-		}
-
-		if (shader)
-		{
-			// just init the parameters
-			shader->Init(renderAPI, this);
-			Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
-		}
-		else
-			Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
-
-		m_shader = shader;
+		MsgError("Vertex instance format is unsupported by shader '%s' specified for material '%s'\n", m_szShaderName.GetData(), m_szMaterialName.GetData());
+		shaderFactory = g_matSystem->GetShaderFactory("Error", m_instanceFormatId);
 	}
+	ASSERT_MSG(shaderFactory, "Error shader is not registered or overrides hasn't been set up");
+
+	if (shaderFactory)
+	{
+		m_shader = shaderFactory->func();
+		m_shader->Init(renderAPI, this);
+		Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
+	}
+	else
+		Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
 }
 
 //
 // Initializes material vars and shader name
 //
-void CMaterial::InitVars(KVSection* shader_root, const char* renderAPIName)
+void CMaterial::InitVars(const KVSection* shaderRoot, const char* renderAPIName)
 {
 	// Get an API preferences
-	KVSection* apiPrefs = shader_root->FindSection(EqString::Format("API_%s", renderAPIName).ToCString(), KV_FLAG_SECTION);
+	const KVSection* apiPrefs = shaderRoot->FindSection(EqString::Format("API_%s", renderAPIName).ToCString(), KV_FLAG_SECTION);
 
 	// init root material vars
-	InitMaterialVars( shader_root );
+	InitMaterialVars( shaderRoot );
 
 	//
 	// API preference lookup
 	//
 	if(apiPrefs)
 	{
-		KVSection* pPair = apiPrefs->FindSection("Shader");
+		const KVSection* pPair = apiPrefs->FindSection("Shader");
 
 		// Set shader name from API prefs if available
 		if(pPair)
@@ -307,12 +294,12 @@ void CMaterial::InitVars(KVSection* shader_root, const char* renderAPIName)
 	//
 	if(g_matSystem->GetConfiguration().editormode)
 	{
-		KVSection* editorPrefs = shader_root->FindSection("editor", KV_FLAG_SECTION);
+		const KVSection* editorPrefs = shaderRoot->FindSection("editor", KV_FLAG_SECTION);
 
 		// API preference lookup
 		if(editorPrefs)
 		{
-			KVSection* pPair = editorPrefs->FindSection("Shader");
+			const KVSection* pPair = editorPrefs->FindSection("Shader");
 
 			// Set shader name from API prefs if available
 			if(pPair)
@@ -325,8 +312,8 @@ void CMaterial::InitVars(KVSection* shader_root, const char* renderAPIName)
 	}
 
 	// init material proxies
-	KVSection* proxy_sec = shader_root->FindSection("MaterialProxy", KV_FLAG_SECTION);
-	InitMaterialProxy( proxy_sec );
+	const KVSection* proxySec = shaderRoot->FindSection("MaterialProxy", KV_FLAG_SECTION);
+	InitMaterialProxy(proxySec);
 }
 
 MatVarData& CMaterial::VarAt(int idx) const
@@ -452,24 +439,18 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 {
 	WaitForLoading();
 	
-	// drop shader if we need
 	if(dropShader && m_shader)
 	{
 		m_shader->Unload();
-
-		delete m_shader;
-		m_shader = nullptr;
+		SAFE_DELETE(m_shader);
 	}
 
 	if(dropVars)
 	{
 		CScopedMutex m(s_materialVarMutex);
-
 		m_vars.variables.clear(true);
 		m_vars.variableMap.clear(true);
-
-		delete m_atlas;
-		m_atlas = nullptr;
+		SAFE_DELETE(m_atlas);
 	}
 
 	// always drop proxies

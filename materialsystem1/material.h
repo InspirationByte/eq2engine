@@ -20,7 +20,7 @@ public:
 	friend class			CEqMatSystemThreadedLoader;
 
 							// constructor, destructor
-							CMaterial(const char* materialName, bool loadFromDisk);
+							CMaterial(const char* materialName, int instanceFormatId, bool loadFromDisk);
 							~CMaterial();
 
 	void					Ref_DeleteObject();
@@ -39,7 +39,7 @@ public:
 	void					Init(IShaderAPI* renderAPI);
 	
 	// initializes material from keyvalues
-	void					Init(IShaderAPI* renderAPI, KVSection* shader_root);
+	void					Init(IShaderAPI* renderAPI, const KVSection* shaderRoot);
 
 	void					Cleanup(bool dropVars = true, bool dropShader = true);
 
@@ -55,12 +55,12 @@ public:
 	const ITexturePtr&		GetBaseTexture(int stage = 0);
 private:
 
-	void					InitVars(KVSection* kvs, const char* renderAPIName);
+	void					InitVars(const KVSection* kvs, const char* renderAPIName);
 	MatVarData&				VarAt(int idx) const;
 
 	void					InitShader(IShaderAPI* renderAPI);
-	void					InitMaterialVars(KVSection* kvs, const char* prefix = nullptr);
-	void					InitMaterialProxy(KVSection* kvs);
+	void					InitMaterialVars(const KVSection* kvs, const char* prefix = nullptr);
+	void					InitMaterialProxy(const KVSection* kvs);
 
 protected:
 	bool					DoLoadShaderAndTextures();
@@ -76,6 +76,7 @@ protected:
 
 	int						m_state{ MATERIAL_LOAD_ERROR };	// FIXME: may be interlocked?
 	int						m_nameHash{ 0 };
+	int						m_instanceFormatId{ 0 };
 
 	uint					m_frameBound{ 0 };
 	bool					m_loadFromDisk{ false };

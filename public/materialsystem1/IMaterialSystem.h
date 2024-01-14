@@ -22,12 +22,9 @@
 
 class CImage;
 class IDynamicMesh;
-class IMatSysRenderCallbacks;
 
-typedef void					(*RESOURCELOADCALLBACK)(void);
-typedef const char*				(*DISPATCH_OVERRIDE_SHADER)(void);
-typedef bool					(*DEVLICELOSTRESTORE)(void);
-typedef IMaterialProxy*			(*PROXY_DISPATCHER)(void);
+using DEVICE_LOST_RESTORE_CB	= bool (*)(void);
+using PROXY_FACTORY_CB			= IMaterialProxy* (*)(void);
 
 // Lighting model for material system
 enum EMaterialLightingMode
@@ -92,14 +89,14 @@ public:
 
 	virtual IShaderAPI*				GetShaderAPI() const = 0;
 
-	virtual void					RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
+	virtual void					RegisterProxy(PROXY_FACTORY_CB dispfunc, const char* pszName) = 0;
 	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
 
 	virtual void					RegisterShader(const ShaderFactory& factory) = 0;
-	virtual void					RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
+	virtual void					RegisterShaderOverrideFunction(const char* shaderName, OVERRIDE_SHADER_CB func) = 0;
 
-	virtual void					AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
-	virtual void					RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
+	virtual void					AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;
+	virtual void					RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;
 
 	//-----------------------------
 	// Swap chains
@@ -127,11 +124,11 @@ public:
 	virtual const ITexturePtr&		GetErrorCheckerboardTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const = 0;
 	virtual	const ITexturePtr&		GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const = 0;
 
-	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
-	virtual IMaterialPtr			GetMaterial(const char* szMaterialName) = 0;
+	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, const KVSection* params, int instanceFormatId = 0) = 0;
+	virtual IMaterialPtr			GetMaterial(const char* szMaterialName, int instanceFormatId = 0) = 0;
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
-	virtual IMatSystemShader*		CreateShaderInstance(const char* szShaderName) = 0;
+	virtual const ShaderFactory*	GetShaderFactory(const char* szShaderName, int instanceFormatId) = 0;
 	virtual MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash) = 0;
 
 	virtual void					QueueLoading(const IMaterialPtr& pMaterial) = 0;

@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "IMaterialSystem.h"
 
-const char* OverrideShader_Error()
+const char* OverrideShader_Error(int instanceFormatId)
 {
 	return "BaseUnlit";
 }

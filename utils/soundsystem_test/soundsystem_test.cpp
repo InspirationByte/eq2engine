@@ -347,7 +347,7 @@ void InitMatSystem(EQWNDHANDLE window)
 
 	// register all shaders
 	for(int i = 0; i < pShaderRegistrators.numElem(); i++)
-		g_matSystem->RegisterShader( pShaderRegistrators[i].shader_name, pShaderRegistrators[i].dispatcher );
+		g_matSystem->RegisterShader( pShaderRegistrators[i]);
 }
 
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style )

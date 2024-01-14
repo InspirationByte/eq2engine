@@ -8,6 +8,7 @@
 #pragma once
 
 class IMaterial;
+class IMatSystemShader;
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
@@ -22,6 +23,9 @@ using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
 class IGPUBindGroup;
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
+
+using OVERRIDE_SHADER_CB = const char* (*)(int instanceFormatId);
+using CREATE_SHADER_CB = IMatSystemShader * (*)();
 
 enum EShaderParamSetup
 {
@@ -97,12 +101,11 @@ public:
 	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
 };
 
-using DISPATCH_CREATE_SHADER = IMatSystemShader* (*)(void);
 struct ShaderFactory
 {
-	ArrayCRef<int>			vertexLayoutIds{ nullptr };
-	DISPATCH_CREATE_SHADER	dispatcher;
-	const char*				shaderName;
+	ArrayCRef<int>		vertexLayoutIds{ nullptr };
+	CREATE_SHADER_CB	func;
+	const char*			shaderName;
 };
 using FactoryList = Array<ShaderFactory>;
 
@@ -118,7 +121,7 @@ extern FactoryList& _InternalShaderList();
 
 #define DEFINE_SHADER(stringName, className) \
 	static IMatSystemShader* C##className##Factory() { \
-		IMatSystemShader *pShader = static_cast< IMatSystemShader * >(new className()); \
+		IMatSystemShader* pShader = static_cast< IMatSystemShader * >(new className()); \
 		return pShader;	\
 	} \
 	class C_ShaderClassFactoryFoo {	\
@@ -126,7 +129,7 @@ extern FactoryList& _InternalShaderList();
 		C_ShaderClassFactoryFoo() { \
 			ShaderFactory& factory = _InternalShaderList().append(); \
 			factory.vertexLayoutIds = GetSupportedVertexLayoutIds(); \
-			factory.dispatcher = &C##className##Factory; \
+			factory.func = &C##className##Factory; \
 			factory.shaderName = stringName; \
 		} \
 	}; \

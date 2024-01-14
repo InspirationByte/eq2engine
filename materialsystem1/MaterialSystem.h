@@ -16,13 +16,13 @@
 struct ShaderProxyFactory
 {
 	EqString			name;
-	PROXY_DISPATCHER	disp;
+	PROXY_FACTORY_CB	func;
 };
 
 struct ShaderOverride
 {
-	EqString					shaderName;
-	DISPATCH_OVERRIDE_SHADER	function;
+	EqString			shaderName;
+	OVERRIDE_SHADER_CB	func;
 };
 
 class IRenderLibrary;
@@ -50,14 +50,14 @@ public:
 
 	IShaderAPI*					GetShaderAPI() const;
 
-	void						RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName);
+	void						RegisterProxy(PROXY_FACTORY_CB dispfunc, const char* pszName);
 	IMaterialProxy*				CreateProxyByName(const char* pszName);
 
 	void						RegisterShader(const ShaderFactory& factory);
-	void						RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
+	void						RegisterShaderOverrideFunction(const char* shaderName, OVERRIDE_SHADER_CB func);
 
-	void						AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
-	void						RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
+	void						AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore);
+	void						RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore);
 
 	void						PrintLoadedMaterials() const;
 
@@ -91,11 +91,11 @@ public:
 	const ITexturePtr&			GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const;
 	const ITexturePtr&			GetErrorCheckerboardTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const;
 								
-	IMaterialPtr				CreateMaterial(const char* szMaterialName, KVSection* params);
-	IMaterialPtr				GetMaterial(const char* szMaterialName);
+	IMaterialPtr				CreateMaterial(const char* szMaterialName, const KVSection* params, int instanceFormatId = 0);
+	IMaterialPtr				GetMaterial(const char* szMaterialName, int instanceFormatId = 0);
 	bool						IsMaterialExist(const char* szMaterialName) const;
 								
-	IMatSystemShader*			CreateShaderInstance(const char* szShaderName);
+	const ShaderFactory*		GetShaderFactory(const char* szShaderName, int instanceFormatId);
 	MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash);
 								
 	void						PreloadNewMaterials();
@@ -166,7 +166,7 @@ public:
 
 private:
 
-	void						CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params);
+	void						CreateMaterialInternal(CRefPtr<CMaterial> material, const KVSection* params);
 	void						CreateWhiteTexture();
 	void						CreateErrorTexture();
 	void						CreateDefaultDepthTexture();
@@ -223,8 +223,8 @@ private:
 	ITexturePtr					m_errorTexture[TEXDIMENSION_COUNT];
 	ITexturePtr					m_defaultDepthTexture;
 
-	Array<DEVLICELOSTRESTORE>	m_lostDeviceCb{ PP_SL };
-	Array<DEVLICELOSTRESTORE>	m_restoreDeviceCb{ PP_SL };
+	Array<DEVICE_LOST_RESTORE_CB>	m_lostDeviceCb{ PP_SL };
+	Array<DEVICE_LOST_RESTORE_CB>	m_restoreDeviceCb{ PP_SL };
 
 	FogInfo						m_fogInfo;
 

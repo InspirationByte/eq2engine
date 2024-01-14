@@ -547,7 +547,7 @@ bool CMaterialSystem::IsMaterialExist(const char* szMaterialName) const
 }
 
 // creates new material with defined parameters
-void CMaterialSystem::CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params)
+void CMaterialSystem::CreateMaterialInternal(CRefPtr<CMaterial> material, const KVSection* params)
 {
 	PROF_EVENT("MatSystem Load Material");
 
@@ -561,12 +561,12 @@ void CMaterialSystem::CreateMaterialInternal(CRefPtr<CMaterial> material, KVSect
 		pMaterial->Init(m_shaderAPI);
 }
 
-IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection* params)
+IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, const KVSection* params, int instanceFormatId)
 {
 	// must have names
 	ASSERT_MSG(strlen(szMaterialName) > 0, "CreateMaterial - name is empty!");
 
-	CRefPtr<CMaterial> material = CRefPtr_new(CMaterial, szMaterialName, false);
+	CRefPtr<CMaterial> material = CRefPtr_new(CMaterial, szMaterialName, instanceFormatId, false);
 
 	{
 		CScopedMutex m(s_matSystemMutex);
@@ -582,7 +582,7 @@ IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSecti
 	return IMaterialPtr(material);
 }
 
-IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
+IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName, int instanceFormatId)
 {
 	if(*szMaterialName == 0)
 		return nullptr;
@@ -608,7 +608,7 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 			return IMaterialPtr(*it);
 
 		// by default try to load material file from disk
-		newMaterial = CRefPtr_new(CMaterial, materialName, true);
+		newMaterial = CRefPtr_new(CMaterial, materialName, instanceFormatId, true);
 		m_loadedMaterials.insert(nameHash, newMaterial);
 	}
 
@@ -718,23 +718,21 @@ void CMaterialSystem::FreeMaterial(IMaterial* pMaterial)
 	}
 }
 
-void CMaterialSystem::RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName)
+void CMaterialSystem::RegisterProxy(PROXY_FACTORY_CB dispfunc, const char* pszName)
 {
 	ShaderProxyFactory factory;
 	factory.name = pszName;
-	factory.disp = dispfunc;
+	factory.func = dispfunc;
 
 	m_proxyFactoryList.append(factory);
 }
 
 IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 {
-	for(int i = 0; i < m_proxyFactoryList.numElem(); i++)
+	for(const ShaderProxyFactory& factory : m_proxyFactoryList)
 	{
-		if(!stricmp(m_proxyFactoryList[i].name, pszName))
-		{
-			return (m_proxyFactoryList[i].disp)();
-		}
+		if(!stricmp(factory.name, pszName))
+			return (factory.func)();
 	}
 
 	return nullptr;
@@ -742,12 +740,12 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 
 void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
 {
-	for(int i = 0; i < m_shaderFactoryList.numElem(); i++)
+	for(const ShaderFactory& otherFactory : m_shaderFactoryList)
 	{
-		if(!stricmp(m_shaderFactoryList[i].shaderName, factory.shaderName))
+		if(!stricmp(otherFactory.shaderName, factory.shaderName))
 		{
-			ErrorMsg("Programming Error! The shader '%s' is already exist!\n", factory.shaderName);
-			exit(-1);
+			ASSERT_FAIL("MatSys shader '%s' already exists!\n", factory.shaderName);
+			return;
 		}
 	}
 
@@ -756,11 +754,13 @@ void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
 }
 
 // registers overrider for shaders
-void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function)
+void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, OVERRIDE_SHADER_CB func)
 {
+	ASSERT(func);
+
 	ShaderOverride new_override;
 	new_override.shaderName = shaderName;
-	new_override.function = check_function;
+	new_override.func = func;
 
 	// this is a higher priority
 	m_shaderOverrideList.insert(new_override, 0);
@@ -771,7 +771,7 @@ MatSysShaderPipelineCache& CMaterialSystem::GetRenderPipelineCache(int shaderNam
 	return m_renderPipelineCache[shaderNameHash];
 }
 
-IMatSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName)
+const ShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName, int instanceFormatId)
 {
 	EqString shaderName( szShaderName );
 
@@ -780,7 +780,7 @@ IMatSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName
 	{
 		if(!stricmp(szShaderName, override.shaderName))
 		{
-			shaderName = override.function();
+			shaderName = override.func(instanceFormatId);
 			if(shaderName.Length() > 0) // only if we have shader name
 				break;
 		}
@@ -789,8 +789,8 @@ IMatSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName
 	// now find the factory and dispatch
 	for(const ShaderFactory& factory : m_shaderFactoryList)
 	{
-		if(!shaderName.CompareCaseIns(factory.shaderName ))
-			return (factory.dispatcher)();
+		if(!shaderName.CompareCaseIns(factory.shaderName))
+			return &factory;
 	}
 
 	return nullptr;
@@ -1505,7 +1505,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 }
 
 // use this if you have objects that must be destroyed when device is lost
-void CMaterialSystem::AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore)
+void CMaterialSystem::AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore)
 {
 	m_lostDeviceCb.addUnique(destroy);
 	m_restoreDeviceCb.addUnique(restore);
@@ -1527,7 +1527,7 @@ void CMaterialSystem::PrintLoadedMaterials() const
 }
 
 // removes callbacks from list
-void CMaterialSystem::RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore)
+void CMaterialSystem::RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore)
 {
 	m_lostDeviceCb.remove(destroy);
 	m_restoreDeviceCb.remove(restore);
