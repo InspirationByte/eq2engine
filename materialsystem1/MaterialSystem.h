@@ -15,13 +15,13 @@
 
 struct ShaderProxyFactory
 {
-	EqString name;
-	PROXY_DISPATCHER disp;
+	EqString			name;
+	PROXY_DISPATCHER	disp;
 };
 
 struct ShaderOverride
 {
-	EqString shadername;
+	EqString					shaderName;
 	DISPATCH_OVERRIDE_SHADER	function;
 };
 
@@ -43,7 +43,7 @@ public:
 	void						Shutdown();
 
 	bool						LoadShaderLibrary(const char* libname);
-	MatSysRenderSettings&	GetConfiguration();
+	MatSysRenderSettings&		GetConfiguration();
 
 	const char*					GetMaterialPath() const;
 	const char*					GetMaterialSRCPath() const;
@@ -53,7 +53,7 @@ public:
 	void						RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName);
 	IMaterialProxy*				CreateProxyByName(const char* pszName);
 
-	void						RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation);
+	void						RegisterShader(const ShaderFactory& factory);
 	void						RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
 
 	void						AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);

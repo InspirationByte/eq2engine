@@ -13,7 +13,10 @@
 // Basic cubemap skybox shader
 //--------------------------------------
 
-BEGIN_SHADER_CLASS(EnvMapTest)
+BEGIN_SHADER_CLASS(
+	EnvMapTest,
+	VERTEX_ID(EGFVertex)
+)
 	SHADER_INIT_PARAMS()
 	{
 	}
@@ -22,14 +25,6 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 	SHADER_INIT_TEXTURES()
 	{
 		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture, TEXFLAG_CUBEMAP);
-	}
-
-	ArrayCRef<int> GetSupportedVertexLayoutIds() const
-	{
-		static const int supportedFormats[] = {
-			StringToHashConst("EGFVertex")
-		};
-		return ArrayCRef(supportedFormats);
 	}
 
 	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const

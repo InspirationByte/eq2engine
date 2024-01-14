@@ -479,7 +479,7 @@ void CMaterialSystem::InitDefaultMaterial()
 		m_defaultMaterial = pMaterial;
 	}
 
-	if(!m_overdrawMaterial)
+	/*if (!m_overdrawMaterial)
 	{
 		KVSection overdrawParams;
 		overdrawParams.SetName("BaseUnlit"); // set shader 'BaseUnlit'
@@ -490,10 +490,10 @@ void CMaterialSystem::InitDefaultMaterial()
 		overdrawParams.SetKey("zwrite", "0");
 	
 		IMaterialPtr pMaterial = CreateMaterial("_overdraw", &overdrawParams);
-		pMaterial->LoadShaderAndTextures();
+		//pMaterial->LoadShaderAndTextures();
 
 		m_overdrawMaterial = pMaterial;
-	}
+	}*/
 }
 
 MatSysRenderSettings& CMaterialSystem::GetConfiguration()
@@ -546,6 +546,21 @@ bool CMaterialSystem::IsMaterialExist(const char* szMaterialName) const
 	return g_fileSystem->FileExist(mat_path.GetData());
 }
 
+// creates new material with defined parameters
+void CMaterialSystem::CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params)
+{
+	PROF_EVENT("MatSystem Load Material");
+
+	// create new material
+	CMaterial* pMaterial = static_cast<CMaterial*>(material.Ptr());
+
+	// if no params, we can load it a usual way
+	if (params)
+		pMaterial->Init(m_shaderAPI, params);
+	else
+		pMaterial->Init(m_shaderAPI);
+}
+
 IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection* params)
 {
 	// must have names
@@ -564,39 +579,22 @@ IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSecti
 	}
 
 	CreateMaterialInternal(material, params);
-
 	return IMaterialPtr(material);
-}
-
-// creates new material with defined parameters
-void CMaterialSystem::CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params)
-{
-	PROF_EVENT("MatSystem Load Material");
-
-	// create new material
-	CMaterial* pMaterial = (CMaterial*)material.Ptr();
-
-	// if no params, we can load it a usual way
-	if (params)
-		pMaterial->Init(m_shaderAPI, params);
-	else
-		pMaterial->Init(m_shaderAPI);
 }
 
 IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 {
-	// Don't load null materials
-	if( strlen(szMaterialName) == 0 )
+	if(*szMaterialName == 0)
 		return nullptr;
 
 	EqString materialName = szMaterialName;
 	materialName = materialName.LowerCase();
 	materialName.Path_FixSlashes();
 
-	if (materialName.ToCString()[0] == CORRECT_PATH_SEPARATOR)
+	if (materialName[0] == CORRECT_PATH_SEPARATOR)
 		materialName = materialName.ToCString() + 1;
 
-	const int nameHash = StringToHash(materialName.ToCString(), true);
+	const int nameHash = StringToHash(materialName, true);
 
 	CRefPtr<CMaterial> newMaterial;
 
@@ -742,32 +740,26 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 	return nullptr;
 }
 
-void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation)
+void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
 {
 	for(int i = 0; i < m_shaderFactoryList.numElem(); i++)
 	{
-		if(!stricmp(m_shaderFactoryList[i].shader_name,pszShaderName))
+		if(!stricmp(m_shaderFactoryList[i].shaderName, factory.shaderName))
 		{
-			ErrorMsg("Programming Error! The shader '%s' is already exist!\n",pszShaderName);
+			ErrorMsg("Programming Error! The shader '%s' is already exist!\n", factory.shaderName);
 			exit(-1);
 		}
 	}
 
-	DevMsg(DEVMSG_MATSYSTEM, "Registering shader '%s'\n", pszShaderName);
-
-	ShaderFactory newShader;
-
-	newShader.dispatcher = dispatcher_creation;
-	newShader.shader_name = (char*)pszShaderName;
-
-	m_shaderFactoryList.append(newShader);
+	DevMsg(DEVMSG_MATSYSTEM, "Registering shader '%s'\n", factory.shaderName);
+	m_shaderFactoryList.append(factory);
 }
 
 // registers overrider for shaders
 void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function)
 {
 	ShaderOverride new_override;
-	new_override.shadername = shaderName;
+	new_override.shaderName = shaderName;
 	new_override.function = check_function;
 
 	// this is a higher priority
@@ -784,22 +776,21 @@ IMatSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShaderName
 	EqString shaderName( szShaderName );
 
 	// check the override table
-	for(int i = 0; i < m_shaderOverrideList.numElem(); i++)
+	for(const ShaderOverride& override : m_shaderOverrideList)
 	{
-		if(!stricmp(szShaderName,m_shaderOverrideList[i].shadername))
+		if(!stricmp(szShaderName, override.shaderName))
 		{
-			shaderName = m_shaderOverrideList[i].function();
-
+			shaderName = override.function();
 			if(shaderName.Length() > 0) // only if we have shader name
 				break;
 		}
 	}
 
 	// now find the factory and dispatch
-	for(int i = 0; i < m_shaderFactoryList.numElem(); i++)
+	for(const ShaderFactory& factory : m_shaderFactoryList)
 	{
-		if(!shaderName.CompareCaseIns( m_shaderFactoryList[i].shader_name ))
-			return (m_shaderFactoryList[i].dispatcher)();
+		if(!shaderName.CompareCaseIns(factory.shaderName ))
+			return (factory.dispatcher)();
 	}
 
 	return nullptr;

@@ -95,7 +95,7 @@ public:
 	virtual void					RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
 	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
 
-	virtual void					RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
+	virtual void					RegisterShader(const ShaderFactory& factory) = 0;
 	virtual void					RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
 
 	virtual void					AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;

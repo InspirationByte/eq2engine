@@ -27,7 +27,10 @@ static uint GenDefaultPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ET
 
 //------------------------------------------------------------
 
-BEGIN_SHADER_CLASS(Default)
+BEGIN_SHADER_CLASS(
+	Default,
+	VERTEX_ID(DynMeshVertex)
+)
 	SHADER_INIT_PARAMS()
 	{
 	}
@@ -35,14 +38,6 @@ BEGIN_SHADER_CLASS(Default)
 	SHADER_INIT_TEXTURES()
 	{
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
-	}
-
-	ArrayCRef<int> GetSupportedVertexLayoutIds() const
-	{
-		static const int supportedFormats[] = {
-			StringToHashConst("DynMeshVertex")
-		};
-		return ArrayCRef(supportedFormats);
 	}
 
 	bool SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) override

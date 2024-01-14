@@ -298,7 +298,7 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
 			if (!renderPipeline)
 			{
-				ASSERT_FAIL("Shader %s is unable to create pipeline", GetName());
+				MsgError("Shader %s is unable to create pipeline", GetName());
 			}
 
 			cacheIt = shaderPipelineCache.pipelines.insert(pipelineId, renderPipeline);
@@ -390,12 +390,6 @@ IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
 		}
 	}
 	return renderAPI->CreateBuffer(BufferInfo(reinterpret_cast<ubyte*>(&atlasBufferData), sizeof(int) * 4 + sizeof(Vector4D) * (1 + atlasBufferData.entryCount)), BUFFERUSAGE_STORAGE, "atlasRects");
-}
-
-ArrayCRef<int> CBaseShader::GetSupportedVertexLayoutIds() const
-{
-	static const int defaultVertexLayoutId = 0;
-	return ArrayCRef(&defaultVertexLayoutId, 1);
 }
 
 void CBaseShader::InitShader(IShaderAPI* renderAPI)

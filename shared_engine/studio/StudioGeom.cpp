@@ -201,6 +201,7 @@ void CEqStudioGeom::DestroyModel()
 	m_materials.clear(true);
 	m_materialCount = 0;
 	m_materialGroupsCount = 0;
+	m_boundingBox.Reset();
 
 	if (m_studio)
 	{

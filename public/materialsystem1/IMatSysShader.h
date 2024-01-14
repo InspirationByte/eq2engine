@@ -97,11 +97,12 @@ public:
 	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
 };
 
-typedef IMatSystemShader* (*DISPATCH_CREATE_SHADER)(void);
+using DISPATCH_CREATE_SHADER = IMatSystemShader* (*)(void);
 struct ShaderFactory
 {
-	DISPATCH_CREATE_SHADER dispatcher;
-	const char* shader_name;
+	ArrayCRef<int>			vertexLayoutIds{ nullptr };
+	DISPATCH_CREATE_SHADER	dispatcher;
+	const char*				shaderName;
 };
 using FactoryList = Array<ShaderFactory>;
 
@@ -113,7 +114,7 @@ extern FactoryList& _InternalShaderList();
 
 #define REGISTER_INTERNAL_SHADERS()	\
 	for(const ShaderFactory& factory : _InternalShaderList())	\
-		g_matSystem->RegisterShader( factory.shader_name, factory.dispatcher );
+		g_matSystem->RegisterShader( factory );
 
 #define DEFINE_SHADER(stringName, className) \
 	static IMatSystemShader* C##className##Factory() { \
@@ -123,10 +124,10 @@ extern FactoryList& _InternalShaderList();
 	class C_ShaderClassFactoryFoo {	\
 	public: \
 		C_ShaderClassFactoryFoo() { \
-			ShaderFactory factory; \
+			ShaderFactory& factory = _InternalShaderList().append(); \
+			factory.vertexLayoutIds = GetSupportedVertexLayoutIds(); \
 			factory.dispatcher = &C##className##Factory; \
-			factory.shader_name = stringName; \
-			_InternalShaderList().append(factory); \
+			factory.shaderName = stringName; \
 		} \
 	}; \
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;

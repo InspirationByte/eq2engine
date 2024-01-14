@@ -11,7 +11,12 @@
 #include "IDynamicMesh.h"
 #include "render/StudioRenderDefs.h"
 
-BEGIN_SHADER_CLASS(BaseUnlit)
+BEGIN_SHADER_CLASS(
+	BaseUnlit,
+	VERTEX_ID(DynMeshVertex),
+	VERTEX_ID(EGFVertex),
+	VERTEX_ID(EGFVertexSkinned)
+)
 	SHADER_INIT_PARAMS()
 	{
 		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
@@ -24,11 +29,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	SHADER_INIT_TEXTURES()
 	{
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
-	}
-
-	ArrayCRef<int> GetSupportedVertexLayoutIds() const
-	{
-		return nullptr;
 	}
 
 	void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const

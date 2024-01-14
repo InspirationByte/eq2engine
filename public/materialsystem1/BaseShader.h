@@ -12,14 +12,22 @@ class IMaterial;
 class IShaderAPI;
 struct MatSysCamera;
 
-#define BEGIN_SHADER_CLASS(name)								\
-	namespace C##name##ShaderLocalNamespace						\
-	{															\
+#define VERTEX_ID(name)	StringToHashConst(#name)
+
+#define BEGIN_SHADER_CLASS(name, ...)					\
+	namespace C##name##ShaderLocalNamespace {					\
 		class C##name##Shader;									\
 		typedef C##name##Shader ThisShaderClass;				\
 		static const char* ThisClassNameStr = #name;			\
+		static ArrayCRef<int> GetSupportedVertexLayoutIds() {	\
+			static const int supportedFormats[] = {				\
+				0, __VA_ARGS__									\
+			};													\
+			return ArrayCRef(supportedFormats);					\
+		}														\
 		class C##name##Shader : public CBaseShader {			\
 		public:													\
+			ArrayCRef<int> GetSupportedVertexLayoutIds() const override { return C##name##ShaderLocalNamespace::GetSupportedVertexLayoutIds(); } \
 			const char* GetName() const	{ return ThisClassNameStr; } \
 			int GetNameHash() const	{ return StringToHashConst(#name); } \
 			void Init(IShaderAPI* renderAPI, IMaterial* material) override \
@@ -29,7 +37,6 @@ struct MatSysCamera;
 
 #define SHADER_INIT_PARAMS()				void ShaderInitParams(IShaderAPI* renderAPI)
 #define SHADER_INIT_TEXTURES()				void InitTextures(IShaderAPI* renderAPI)
-
 
 #define _SHADER_PARAM_OP_EMPTY
 #define _SHADER_PARAM_OP_NOT !
@@ -101,7 +108,7 @@ protected:
 		int							vertexLayoutId{ 0 };
 	};
 
-	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const;
+	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const = 0;
 
 	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const { return nullptr; }
 	virtual void				FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}

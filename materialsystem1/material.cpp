@@ -107,6 +107,8 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 	if (!success)
 	{
 		MsgError("Can't load material '%s'\n", m_szMaterialName.ToCString());
+
+		// TODO: pick valid error shader based on Vertex Layout ID
 		m_szShaderName = "Error";
 
 		Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
