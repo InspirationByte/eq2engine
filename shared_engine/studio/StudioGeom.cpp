@@ -29,14 +29,7 @@ DECLARE_CVAR(r_egf_LodScale, "1.0", "Studio model LOD scale", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(r_egf_LodStart, "0", 0, MAX_MODEL_LODS, "Studio LOD start index", CV_ARCHIVE);
 DECLARE_CVAR(r_force_softwareskinning, "0", "Force software skinning", CV_UNREGISTERED);
 
-CEqStudioGeom::CEqStudioGeom()
-{
-}
 
-CEqStudioGeom::~CEqStudioGeom()
-{
-	DestroyModel();
-}
 
 namespace {
 
@@ -102,6 +95,21 @@ static bool TransformEGFVertex(EGFHwVertex::PositionUV& vertPos, EGFHwVertex::TB
 	}
 
 	return bAffected;
+}
+
+static int s_studioInstanceFormatId = 0;
+void CEqStudioGeom::SetInstanceFormatId(int instanceFormatId)
+{
+	s_studioInstanceFormatId = instanceFormatId;
+}
+
+CEqStudioGeom::CEqStudioGeom()
+{
+}
+
+CEqStudioGeom::~CEqStudioGeom()
+{
+	DestroyModel();
 }
 
 int CEqStudioGeom::ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const
@@ -628,7 +636,7 @@ void CEqStudioGeom::LoadMaterials()
 				if (!g_matSystem->IsMaterialExist(extend_path))
 					continue;
 
-				IMaterialPtr material = g_matSystem->GetMaterial(extend_path.GetData());
+				IMaterialPtr material = g_matSystem->GetMaterial(extend_path.GetData(), s_studioInstanceFormatId);
 				g_matSystem->QueueLoading(material);
 
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))

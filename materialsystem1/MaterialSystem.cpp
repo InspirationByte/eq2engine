@@ -754,7 +754,7 @@ void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
 }
 
 // registers overrider for shaders
-void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, OVERRIDE_SHADER_CB func)
+void CMaterialSystem::RegisterShaderOverride(const char* shaderName, OVERRIDE_SHADER_CB func)
 {
 	ASSERT(func);
 
@@ -780,9 +780,12 @@ const ShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName,
 	{
 		if(!stricmp(szShaderName, override.shaderName))
 		{
-			shaderName = override.func(instanceFormatId);
-			if(shaderName.Length() > 0) // only if we have shader name
+			const char* overrideShaderName = override.func(instanceFormatId);
+			if(overrideShaderName && *overrideShaderName) // only if we have shader name
+			{
+				shaderName = overrideShaderName;
 				break;
+			}
 		}
 	}
 
@@ -1395,6 +1398,10 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 
 	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
 	IMatSystemShader* matShader = matSysMaterial->m_shader;
+
+	if (!matShader)
+		return false;
+
 	UpdateMaterialProxies(material, m_proxyUpdateCmdRecorder);
 
 	const uint proxyFrame = m_frame;

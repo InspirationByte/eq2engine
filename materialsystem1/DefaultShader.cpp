@@ -29,7 +29,7 @@ static uint GenDefaultPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ET
 
 BEGIN_SHADER_CLASS(
 	Default,
-	VERTEX_ID(DynMeshVertex)
+	SHADER_VERTEX_ID(DynMeshVertex)
 )
 	SHADER_INIT_PARAMS()
 	{

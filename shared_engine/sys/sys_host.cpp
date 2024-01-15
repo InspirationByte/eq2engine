@@ -390,7 +390,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	else if(renderBPP == 16)
 		screenFormat = FORMAT_RGB565;
 
-	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
 	materials_config.shaderApiParams.screenFormat = screenFormat;
 
 	if(!g_matSystem->Init(materials_config))

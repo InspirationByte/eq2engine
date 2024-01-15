@@ -54,7 +54,7 @@ public:
 	IMaterialProxy*				CreateProxyByName(const char* pszName);
 
 	void						RegisterShader(const ShaderFactory& factory);
-	void						RegisterShaderOverrideFunction(const char* shaderName, OVERRIDE_SHADER_CB func);
+	void						RegisterShaderOverride(const char* shaderName, OVERRIDE_SHADER_CB func);
 
 	void						AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore);
 	void						RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore);

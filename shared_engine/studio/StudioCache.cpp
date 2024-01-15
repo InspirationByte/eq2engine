@@ -43,7 +43,7 @@ void CStudioCache::InitErrorMaterial()
 		return;
 
 	KVSection overdrawParams;
-	overdrawParams.SetName("Skinned"); // set shader 'BaseUnlit'
+	overdrawParams.SetName("Skinned"); // set shader
 	overdrawParams.SetKey("BaseTexture", "error");
 
 	m_errorMaterial = g_matSystem->CreateMaterial("_studioErrorMaterial", &overdrawParams);
@@ -168,8 +168,8 @@ void CStudioCache::FreeCachedModel(CEqStudioGeom* model)
 
 	// wait for loading completion
 	m_cachedList[modelIndex]->GetStudioHdr();
-	delete m_cachedList[modelIndex];
-	m_cachedList[modelIndex] = nullptr;
+
+	SAFE_DELETE(m_cachedList[modelIndex]);
 }
 
 void CStudioCache::ReleaseCache()
@@ -180,7 +180,7 @@ void CStudioCache::ReleaseCache()
 		{
 			// wait for loading completion
 			m_cachedList[i]->GetStudioHdr();
-			delete m_cachedList[i];
+			SAFE_DELETE(m_cachedList[i]);
 		}
 	}
 

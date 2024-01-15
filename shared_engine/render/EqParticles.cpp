@@ -47,7 +47,7 @@ void CParticleBatch::Init( const char* pszMaterialName, bool bCreateOwnVBO, int 
 	// init sprite stuff
 	CSpriteBuilder::Init(maxQuads);
 
-	m_material = g_matSystem->GetMaterial(pszMaterialName);
+	m_material = g_matSystem->GetMaterial(pszMaterialName, SHADER_VERTEX_ID(PFXVertex));
 	g_matSystem->QueueLoading(m_material);
 }
 

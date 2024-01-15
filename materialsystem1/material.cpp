@@ -463,6 +463,9 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 
 void CMaterial::UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder)
 {
+	if (!m_shader)
+		return;
+
 	for(IMaterialProxy* proxy : m_proxies)
 		proxy->UpdateProxy(fDt);
 

@@ -93,7 +93,7 @@ public:
 	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
 
 	virtual void					RegisterShader(const ShaderFactory& factory) = 0;
-	virtual void					RegisterShaderOverrideFunction(const char* shaderName, OVERRIDE_SHADER_CB func) = 0;
+	virtual void					RegisterShaderOverride(const char* shaderName, OVERRIDE_SHADER_CB func) = 0;
 
 	virtual void					AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;
 	virtual void					RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;

@@ -13,9 +13,9 @@
 
 BEGIN_SHADER_CLASS(
 	BaseUnlit,
-	VERTEX_ID(DynMeshVertex),
-	VERTEX_ID(EGFVertex),
-	VERTEX_ID(EGFVertexSkinned)
+	SHADER_VERTEX_ID(DynMeshVertex),
+	SHADER_VERTEX_ID(EGFVertex),
+	SHADER_VERTEX_ID(EGFVertexSkinned)
 )
 	SHADER_INIT_PARAMS()
 	{

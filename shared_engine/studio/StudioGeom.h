@@ -44,6 +44,8 @@ public:
 
 	struct DrawProps;
 
+	static void					SetInstanceFormatId(int instanceFormatId);
+
 	CEqStudioGeom();
 	~CEqStudioGeom();
 

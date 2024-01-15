@@ -12,8 +12,6 @@ class IMaterial;
 class IShaderAPI;
 struct MatSysCamera;
 
-#define VERTEX_ID(name)	StringToHashConst(#name)
-
 #define BEGIN_SHADER_CLASS(name, ...)					\
 	namespace C##name##ShaderLocalNamespace {					\
 		class C##name##Shader;									\
