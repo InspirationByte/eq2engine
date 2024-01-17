@@ -153,7 +153,7 @@ public:
 	CEGFViewFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("EGFman"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 915,697 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		
 	void			ReDraw();
-	void			OnPaint(wxPaintEvent& event);
+	void			OnPaint(wxPaintEvent& event) {}
 	void			OnEraseBackground(wxEraseEvent& event) {}
 	void			OnSize(wxSizeEvent& event);
 
@@ -233,24 +233,17 @@ protected:
 
 BEGIN_EVENT_TABLE(CEGFViewFrame, wxFrame)
 	EVT_SIZE(OnSize)
+
 	EVT_ERASE_BACKGROUND(OnEraseBackground)
 	EVT_IDLE(OnIdle)
 	EVT_PAINT(OnPaint)
+
 	EVT_COMBOBOX(-1, OnComboboxChanged)
 	EVT_BUTTON(-1, OnButtons)
 	EVT_SLIDER(-1, OnButtons)
 	EVT_CHECKLISTBOX( -1, OnBodyGroupToggled )
 
 	EVT_MENU_RANGE( Event_File_OpenModel, Event_Max_Menu_Range, ProcessAllMenuCommands)
-	
-	EVT_SIZE(OnSize)
-
-	/*
-	EVT_KEY_DOWN(ProcessKeyboardDownEvents)
-	EVT_KEY_UP(ProcessKeyboardUpEvents)
-	EVT_CONTEXT_MENU(OnContextMenu)
-	EVT_SET_FOCUS(OnFocus)
-	*/
 END_EVENT_TABLE()
 
 DECLARE_INTERNAL_SHADERS();
@@ -433,7 +426,7 @@ static void InitMatSystem(void* window)
 
 	g_matSystem->LoadShaderLibrary("eqBaseShaders");
 
-	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
+	if (!g_parallelJobs->Init(s_jobTypes))
 		return;
 
 	if (!g_fontCache->Init())
@@ -800,10 +793,6 @@ void CEGFViewFrame::OnIdle(wxIdleEvent &event)
 	ReDraw();
 }
 
-void CEGFViewFrame::OnPaint(wxPaintEvent& event)
-{
-}
-
 void CEGFViewFrame::ProcessMouseEnter(wxMouseEvent& event)
 {
 	//CaptureMouse();
@@ -1118,16 +1107,16 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 
 void CEGFViewFrame::OnSize(wxSizeEvent& event)
 {
-	wxFrame::OnSize( event );
+	wxFrame::OnSize(event);
 
-	if(!g_matSystem)
+	if (!g_matSystem)
 		return;
 
 	int w, h;
-	m_pRenderPanel->GetSize(&w,&h);
-	g_matSystem->SetDeviceBackbufferSize(w,h);
+	m_pRenderPanel->GetSize(&w, &h);
+	g_matSystem->SetDeviceBackbufferSize(w, h);
 
-	ReDraw();
+	m_bDoRefresh = true;
 }
 
 float g_frametime = 0;

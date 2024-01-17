@@ -399,7 +399,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	InitMatSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
 
-	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
+	if (!g_parallelJobs->Init(s_jobTypes))
 		return;
 
 	if (!g_fontCache->Init())

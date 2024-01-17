@@ -232,6 +232,7 @@ private:
 
 	uint						m_frame{ 0 };
 	float						m_proxyDeltaTime{ 0.0f };
+	bool						m_frameBegun{ false };
 
 	mutable uint8				m_matrixDirty{ UINT8_MAX };
 };

@@ -97,20 +97,18 @@ CEqParallelJobThreads::~CEqParallelJobThreads()
 }
 
 // creates new job thread
-bool CEqParallelJobThreads::Init(int numJobTypes, eqJobThreadDesc_t* jobTypes)
+bool CEqParallelJobThreads::Init(ArrayCRef<eqJobThreadDesc_t> jobTypes)
 {
-	ASSERT_MSG(numJobTypes > 0 && jobTypes != nullptr, "EqParallelJobThreads ERROR: Invalid parameters passed to Init!!!");
-
 	int numThreadsSpawned = 0;
 
-	for (int i = 0; i < numJobTypes; i++)
+	for (const eqJobThreadDesc_t& jobType : jobTypes)
 	{
-		for (int j = 0; j < jobTypes[i].numThreads; j++)
+		for (int j = 0; j < jobType.numThreads; j++)
 		{
-			CEqJobThread* pJobThread = PPNew CEqJobThread(this, jobTypes[i].jobTypeId);
+			CEqJobThread* pJobThread = PPNew CEqJobThread(this, jobType.jobTypeId);
 			m_jobThreads.append(pJobThread);
 
-			pJobThread->StartWorkerThread(EqString::Format("jobThread_%d_%d", jobTypes[i].jobTypeId, j).ToCString());
+			pJobThread->StartWorkerThread(EqString::Format("eqWorker_%d_%d", jobType.jobTypeId, j).ToCString());
 			numThreadsSpawned++;
 		}
 	}

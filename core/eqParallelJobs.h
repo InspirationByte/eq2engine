@@ -61,7 +61,7 @@ public:
 	bool							IsInitialized() const { return m_jobThreads.numElem() > 0; }
 
 	// creates new job thread
-	bool							Init(int numJobTypes, eqJobThreadDesc_t* jobTypes);
+	bool							Init(ArrayCRef<eqJobThreadDesc_t> jobTypes);
 	void							Shutdown();
 
 	// adds the job

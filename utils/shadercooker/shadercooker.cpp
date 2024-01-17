@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 		Usage();
 	}
 
-	g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes);
+	g_parallelJobs->Init(s_jobTypes);
 
 	for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 	{

@@ -1017,6 +1017,7 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 		s_threadedMaterialLoader.SignalWork();
 
 	m_proxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
+	m_frameBegun = true;
 
 	return true;
 }
@@ -1027,17 +1028,24 @@ bool CMaterialSystem::EndFrame()
 	if (!m_shaderAPI)
 		return false;
 
+	if (!m_frameBegun)
+		return false;
+
 	// issue the rendering of anything
 	m_shaderAPI->Flush();
 	m_shaderAPI->ResetCounters();
 
 	m_pendingCmdBuffers.append(m_proxyUpdateCmdRecorder->End());
+	m_proxyUpdateCmdRecorder = nullptr;
+
 	SubmitQueuedCommands();
 
 	m_renderLibrary->EndFrame();
 
 	m_frame++;
 	m_proxyDeltaTime = m_proxyTimer.GetTime(true);
+
+	m_frameBegun = false;
 
 	return true;
 }
@@ -1316,6 +1324,8 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	if (!drawCmd.batchInfo.material)
 		return;
 
+	ASSERT_MSG(m_frameBegun, "SetupDrawCommand called outside of BeginFrame/EndFrame");
+
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
 	const MeshInstanceData& instData = instInfo.instData;
 
@@ -1414,6 +1424,8 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 
 bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext)
 {
+	ASSERT_MSG(m_frameBegun, "SetupDrawDefaultUP called outside of BeginFrame/EndFrame");
+
 	ASSERT_MSG(passContext.data && passContext.data->type == RENDERPASS_DEFAULT, "RenderPassContext for DrawDefaultUP must always have MatSysDefaultRenderPass");
 
 	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
