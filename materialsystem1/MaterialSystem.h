@@ -184,7 +184,7 @@ private:
 	MaterialVarBlock			m_globalMaterialVars;
 
 	Array<DKMODULE*>			m_shaderLibs{ PP_SL };				// loaded shader libraries
-	Array<ShaderFactory>		m_shaderFactoryList{ PP_SL };		// registered shaders
+	Map<int, ShaderFactory>		m_shaderFactoryList{ PP_SL };		// registered shaders
 	Array<ShaderOverride>		m_shaderOverrideList{ PP_SL };		// shader override functors
 	Array<ShaderProxyFactory>	m_proxyFactoryList{ PP_SL };
 

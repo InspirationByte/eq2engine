@@ -740,17 +740,16 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 
 void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
 {
-	for(const ShaderFactory& otherFactory : m_shaderFactoryList)
+	const int nameHash = StringToHash(factory.shaderName, true);
+	auto it = m_shaderFactoryList.find(nameHash);
+	if (!it.atEnd())
 	{
-		if(!stricmp(otherFactory.shaderName, factory.shaderName))
-		{
-			ASSERT_FAIL("MatSys shader '%s' already exists!\n", factory.shaderName);
-			return;
-		}
+		ASSERT_FAIL("MatSys shader '%s' already exists!\n", factory.shaderName);
+		return;
 	}
 
 	DevMsg(DEVMSG_MATSYSTEM, "Registering shader '%s'\n", factory.shaderName);
-	m_shaderFactoryList.append(factory);
+	m_shaderFactoryList.insert(nameHash, factory);
 }
 
 // registers overrider for shaders
@@ -790,13 +789,12 @@ const ShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName,
 	}
 
 	// now find the factory and dispatch
-	for(const ShaderFactory& factory : m_shaderFactoryList)
-	{
-		if(!shaderName.CompareCaseIns(factory.shaderName))
-			return &factory;
-	}
-
-	return nullptr;
+	const int nameHash = StringToHash(shaderName, true);
+	auto it = m_shaderFactoryList.find(nameHash);
+	if (it.atEnd())
+		return nullptr;
+	
+	return &it.value();
 }
 
 //------------------------------------------------------------------------------------------------
