@@ -68,7 +68,7 @@ CEqRigidBody::CEqRigidBody() : CEqCollisionObject()
 	m_minFrameTimeIgnoreMotion = false;
 
 	m_prevPosition = FVector3D(0.0f);
-	m_prevOrientation = identity();
+	m_prevOrientation = qidentity;
 }
 
 CEqRigidBody::~CEqRigidBody()

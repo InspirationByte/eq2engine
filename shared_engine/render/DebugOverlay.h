@@ -47,7 +47,7 @@ struct DebugBoxNode_t : public DebugNodeBase
 struct DebugOriBoxNode_t : public DebugNodeBase
 {
 	Vector3D mins, maxs;
-	Quaternion rotation{ identity() };
+	Quaternion rotation{ qidentity };
 	Vector3D position;
 	uint color{ color_white.pack() };
 };

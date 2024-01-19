@@ -43,7 +43,7 @@ CEqCollisionObject::CEqCollisionObject()
 	m_friction = 0.1f;
 
 	m_position = FVector3D(0);
-	m_orientation = identity();
+	m_orientation = qidentity;
 
 	m_cellRange = IVector4D(0,0,0,0);
 

@@ -78,7 +78,7 @@ static void AddFrameTransform(const qanimframe_t& frame1, const qanimframe_t& fr
 // zero frame
 static void ZeroFrameTransform(qanimframe_t& frame)
 {
-	frame.angBoneAngles = identity();
+	frame.angBoneAngles = qidentity;
 	frame.vecBonePosition = vec3_zero;
 }
 

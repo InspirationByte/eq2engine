@@ -154,7 +154,7 @@ typedef struct DbgOriBoxBuilder
 
 private:
 	Vector3D mins, maxs;
-	Quaternion rotation{ identity() };
+	Quaternion rotation{ qidentity };
 	Vector3D position;
 	uint color{ color_white.pack() };
 	float lifetime{ 0.0f };

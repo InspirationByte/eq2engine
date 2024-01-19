@@ -20,7 +20,7 @@ struct qanimframe_t
 	qanimframe_t() = default;
 	qanimframe_t(animframe_t& frame);
 
-	Quaternion	angBoneAngles{ identity() };
+	Quaternion	angBoneAngles{ qidentity };
 	Vector3D	vecBonePosition{ vec3_zero };
 	float		pad{ 0.0f };
 };

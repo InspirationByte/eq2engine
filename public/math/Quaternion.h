@@ -98,5 +98,4 @@ bool			compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps
 // vector rotation
 Vector3D		rotateVector( const Vector3D& p, const Quaternion& q );
 
-// quaternion identity
-Quaternion		identity();
+static const Quaternion qidentity = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
