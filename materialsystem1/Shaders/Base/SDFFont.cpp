@@ -71,8 +71,9 @@ BEGIN_SHADER_CLASS(
 
 				// TODO: must be selective whenever Z test is on
 				Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-					.DepthTestOn()
-					.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
+					.DepthTestOn(rendPassInfo->depthTest)
+					.DepthFunction(rendPassInfo->depthFunc)
+					.DepthWriteOn(rendPassInfo->depthWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
 					.DepthFormat(depthTargetFormat);
 			}
 
@@ -101,7 +102,6 @@ BEGIN_SHADER_CLASS(
 					const ETextureFormat format = passContext.recorder->GetRenderTargetFormats()[i];
 					if (format == FORMAT_NONE)
 						break;
-
 					if (rendPassInfo->blendMode != SHADER_BLEND_NONE)
 						pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
 					else

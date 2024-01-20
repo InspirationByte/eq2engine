@@ -229,6 +229,7 @@ struct DepthStencilStateParams
 FLUENT_BEGIN_TYPE(DepthStencilStateParams);
 	FLUENT_SET(depthTest, DepthTestOn, true);
 	FLUENT_SET(depthWrite, DepthWriteOn, true);
+	FLUENT_SET_VALUE(depthFunc, DepthFunction);
 	FLUENT_SET_VALUE(format, DepthFormat);
 	FLUENT_SET(stencilTest, StencilTestOn, true);
 	FLUENT_SET_VALUE(depthBias, DepthBias);
