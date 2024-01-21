@@ -20,9 +20,9 @@
 #define DISABLE_DEBUG_DRAWING
 #endif
 
-static constexpr const int BOXES_DRAW_SUBDIV = 64;
-static constexpr const int LINES_DRAW_SUBDIV = 128;
-static constexpr const int POLYS_DRAW_SUBDIV = 64;
+static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 8;
+static constexpr const int LINES_DRAW_SUBDIV = 4096;
+static constexpr const int POLYS_DRAW_SUBDIV = 256;
 static constexpr const int GRAPH_MAX_VALUES = 400;
 
 static CDebugOverlay g_DebugOverlays;
@@ -430,7 +430,7 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 }
 
 #ifndef DISABLE_DEBUG_DRAWING
-static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawLineArray(ArrayRef<DebugLineNode_t> lines, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!lines.numElem())
 		return;
@@ -467,7 +467,7 @@ static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime, IGPURe
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if (!boxes.numElem())
 		return;
@@ -539,7 +539,7 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!boxes.numElem())
 		return;
@@ -659,7 +659,7 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinde
 	cylinder.lifetime -= frametime;
 }
 
-static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
@@ -793,7 +793,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 
 }
 
-static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!polygons.numElem())
 		return;
@@ -1024,7 +1024,7 @@ static void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& spher
 	}
 }
 
-static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawSphereArray(ArrayRef<DebugSphereNode_t> spheres, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!spheres.numElem())
 		return;
