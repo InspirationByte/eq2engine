@@ -1016,10 +1016,16 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	if (s_threadedMaterialLoader.GetCount())
 		s_threadedMaterialLoader.SignalWork();
 
-	m_proxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
-	m_frameBegun = true;
-
+	FramePrepareInternal();
 	return true;
+}
+
+void CMaterialSystem::FramePrepareInternal()
+{
+	if (m_frameBegun)
+		return;
+	m_frameBegun = true;
+	m_proxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
 }
 
 // tells 3d device to end and present frame
@@ -1042,7 +1048,7 @@ bool CMaterialSystem::EndFrame()
 
 	m_renderLibrary->EndFrame();
 
-	m_frame++;
+	++m_frame;
 	m_proxyDeltaTime = m_proxyTimer.GetTime(true);
 
 	m_frameBegun = false;
@@ -1324,7 +1330,8 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	if (!drawCmd.batchInfo.material)
 		return;
 
-	ASSERT_MSG(m_frameBegun, "SetupDrawCommand called outside of BeginFrame/EndFrame");
+	// as it could be called outside of BeginFrame/EndFrame
+	FramePrepareInternal();
 
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
 	const MeshInstanceData& instData = instInfo.instData;
@@ -1424,7 +1431,8 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 
 bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext)
 {
-	ASSERT_MSG(m_frameBegun, "SetupDrawDefaultUP called outside of BeginFrame/EndFrame");
+	// as it could be called outside of BeginFrame/EndFrame
+	FramePrepareInternal();
 
 	ASSERT_MSG(passContext.data && passContext.data->type == RENDERPASS_DEFAULT, "RenderPassContext for DrawDefaultUP must always have MatSysDefaultRenderPass");
 

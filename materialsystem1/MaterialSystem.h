@@ -172,6 +172,8 @@ private:
 	void						CreateDefaultDepthTexture();
 	void						InitDefaultMaterial();
 
+	void						FramePrepareInternal();
+
 	MatSysRenderSettings		m_config;
 
 	IRenderLibrary*				m_renderLibrary{ nullptr };	// render library.
