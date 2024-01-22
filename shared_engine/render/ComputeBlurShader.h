@@ -32,8 +32,8 @@ protected:
 	IGPUBindGroupPtr	m_bindGroupStg1;
 	IGPUBindGroupPtr	m_bindGroupStg2;
 
-	ITexture* m_srcTexture{ nullptr };
-	ITexture* m_dstTexture{ nullptr };
+	ITexture*			m_srcTexture{ nullptr };
+	ITexture*			m_dstTexture{ nullptr };
 
 	int					m_iterations{ 4 };
 	int					m_filterSize{ 2 };
