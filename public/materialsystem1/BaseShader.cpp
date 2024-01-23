@@ -86,7 +86,7 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	SHADER_PARAM_ENUM(Modulate, blendMode, EShaderBlendMode, SHADER_BLEND_MODULATE)
 
 	if (blendMode != SHADER_BLEND_NONE)
-		materialFlags |= MATERIAL_FLAG_TRANSPARENT | MATERIAL_FLAG_NO_Z_WRITE;
+		materialFlags |= MATERIAL_FLAG_TRANSPARENT;
 
 	m_flags = materialFlags;
 	m_blendMode = blendMode;
@@ -132,11 +132,13 @@ struct CBaseShader::PipelineInputParams
 		ArrayCRef<ETextureFormat> colorTargetFormat, 
 		ETextureFormat depthTargetFormat, 
 		const MeshInstanceFormatRef& meshInstFormat, 
-		EPrimTopology primitiveTopology)
+		EPrimTopology primitiveTopology,
+		bool depthReadOnly)
 		: colorTargetFormat(colorTargetFormat)
 		, depthTargetFormat(depthTargetFormat)
 		, meshInstFormat(meshInstFormat)
 		, primitiveTopology(primitiveTopology)
+		, depthReadOnly(depthReadOnly)
 	{
 	}
 
@@ -145,14 +147,17 @@ struct CBaseShader::PipelineInputParams
 	const MeshInstanceFormatRef&	meshInstFormat;
 	EPrimTopology					primitiveTopology;
 	ECullMode						cullMode{ CULL_BACK };
+	bool							depthReadOnly{ false };
 	bool							skipFragmentPipeline{ false };
 };
 
 uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) const
 {
+	const bool translucentZWrite = !inputParams.depthReadOnly && ((m_flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
+
 	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
 	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
-	const bool depthWriteEnable = (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool depthWriteEnable = translucentZWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
 	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
 	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
@@ -187,9 +192,11 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 
 void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams, RenderPipelineDesc& renderPipelineDesc) const
 {
+	const bool translucentZWrite = !inputParams.depthReadOnly && ((m_flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
+
 	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
 	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
-	const bool depthWriteEnable = (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool depthWriteEnable = translucentZWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
 	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
 	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
@@ -385,7 +392,8 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceForma
 		passContext.recorder->GetRenderTargetFormats(), 
 		passContext.recorder->GetDepthTargetFormat(), 
 		meshInstFormat,
-		primTopology
+		primTopology,
+		passContext.recorder->IsDepthReadOnly()
 	);
 
 	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineInputParams, false);
@@ -487,7 +495,7 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 		// TODO: different variants of instFormat.usedLayoutBits
 		instFormat.usedLayoutBits &= layoutMask;
 
-		PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES);
+		PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES, false);
 		EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
 
 		pipelineInputParams.primitiveTopology = PRIM_TRIANGLE_STRIP;
