@@ -111,9 +111,6 @@ public:
 	//--------------------
 
 	virtual void				ConstructRenderMatrix( Matrix4x4& outMatrix );						///< constructs render matrix
-
-	void						DebugDraw();
-
 	void						SetDebugName(const char* name);
 
 	//--------------------

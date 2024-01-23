@@ -140,9 +140,6 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 	Upload();
 
-	// proceed to render
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-
 	int instanceStreamId = -1;
 
 	RenderDrawCmd drawCmd;

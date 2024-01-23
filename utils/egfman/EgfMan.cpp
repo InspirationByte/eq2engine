@@ -1227,7 +1227,6 @@ void CEGFViewFrame::ReDraw()
 
 		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		g_matSystem->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
-
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		// Update things

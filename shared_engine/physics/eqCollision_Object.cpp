@@ -412,17 +412,6 @@ void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 	outMatrix = m_cachedTransform;
 }
 
-void CEqCollisionObject::DebugDraw()
-{
-	if(m_studioShape)
-	{
-		Matrix4x4 m;
-		ConstructRenderMatrix(m);
-
-		g_matSystem->SetMatrix(MATRIXMODE_WORLD,m);
-	}
-}
-
 void CEqCollisionObject::SetDebugName(const char* name)
 {
 #ifdef _DEBUG
