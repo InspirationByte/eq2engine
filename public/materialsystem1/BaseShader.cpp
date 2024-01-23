@@ -126,20 +126,53 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 	return pipelineInfo.emptyBindGroup[bindGroupId];
 }
 
-uint CBaseShader::GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology) const
+struct CBaseShader::PipelineInputParams
 {
-	uint hash = meshInstFormat.formatId | (meshInstFormat.usedLayoutBits << 24);
+	PipelineInputParams(
+		ArrayCRef<ETextureFormat> colorTargetFormat, 
+		ETextureFormat depthTargetFormat, 
+		const MeshInstanceFormatRef& meshInstFormat, 
+		EPrimTopology primitiveTopology)
+		: colorTargetFormat(colorTargetFormat)
+		, depthTargetFormat(depthTargetFormat)
+		, meshInstFormat(meshInstFormat)
+		, primitiveTopology(primitiveTopology)
+	{
+	}
+
+	ArrayCRef<ETextureFormat>		colorTargetFormat;
+	ETextureFormat					depthTargetFormat;
+	const MeshInstanceFormatRef&	meshInstFormat;
+	EPrimTopology					primitiveTopology;
+	ECullMode						cullMode{ CULL_BACK };
+	bool							skipFragmentPipeline{ false };
+};
+
+uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) const
+{
+	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
+	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
+	const bool depthWriteEnable = (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
+	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+
+	const uint pipelineFlags = 
+		  static_cast<uint>(cullMode)
+		| (depthTestEnable << 2)
+		| (depthWriteEnable << 3)
+		| (polyOffsetEnable << 4)
+		| (onlyZ << 5)
+		| (static_cast<uint>(inputParams.primitiveTopology) << 6)
+		| (m_blendMode << 9);
+
+	uint hash = inputParams.meshInstFormat.formatId | (inputParams.meshInstFormat.usedLayoutBits << 24);
 	hash *= 31;
 	hash += m_shaderQueryId;
 	hash *= 31;
-	hash += static_cast<uint>(primitiveTopology);
-	hash *= 31;
-	hash += m_flags;
-	hash *= 31;
-	hash += m_blendMode;
-	for (int i = 0; i < colorTargetFormat.numElem(); ++i)
+	hash += pipelineFlags;
+	for (int i = 0; i < inputParams.colorTargetFormat.numElem(); ++i)
 	{
-		const ETextureFormat format = colorTargetFormat[i];
+		const ETextureFormat format = inputParams.colorTargetFormat[i];
 		if (format == FORMAT_NONE)
 			break;
 		hash *= 31;
@@ -148,58 +181,62 @@ uint CBaseShader::GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetForma
 		hash += static_cast<uint>(format);
 	}
 	hash *= 31;
-	hash += static_cast<uint>(depthTargetFormat);
+	hash += static_cast<uint>(inputParams.depthTargetFormat);
 	return hash;
 }
 
-void CBaseShader::FillRenderPipelineDesc(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const
+void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams, RenderPipelineDesc& renderPipelineDesc) const
 {
+	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
+	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
+	const bool depthWriteEnable = (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
+	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+
 	Builder<RenderPipelineDesc>(renderPipelineDesc)
 		.ShaderName(GetName())
 		.ShaderQuery(m_shaderQuery)
 		.PrimitiveState(Builder<PrimitiveDesc>()
-			.Topology(primitiveTopology)
-			.Cull((m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : CULL_BACK) // TODO: variant
-			.StripIndex(primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
+			.Topology(inputParams.primitiveTopology)
+			.Cull(cullMode)
+			.StripIndex(inputParams.primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
 			.End())
 		.End();
 
-	if (meshInstFormat.layout.numElem())
+	if (inputParams.meshInstFormat.layout.numElem())
 	{
-		renderPipelineDesc.shaderVertexLayoutId = meshInstFormat.formatId;
+		renderPipelineDesc.shaderVertexLayoutId = inputParams.meshInstFormat.formatId;
 
 		Builder<VertexPipelineDesc> vertexPipelineBuilder(renderPipelineDesc.vertex);
-		ArrayCRef<VertexLayoutDesc> vertexLayouts = meshInstFormat.layout;
+		ArrayCRef<VertexLayoutDesc> vertexLayouts = inputParams.meshInstFormat.layout;
 		for (int i = 0; i < vertexLayouts.numElem(); ++i)
 		{
 			const VertexLayoutDesc& layoutDesc = vertexLayouts[i];
-
 			if (layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
 			{
-				ASSERT_MSG(meshInstFormat.usedLayoutBits & (1 << i), "Instance buffer must be bound");
+				ASSERT_MSG(inputParams.meshInstFormat.usedLayoutBits & (1 << i), "Instance buffer must be bound");
 			}
 
-			if (meshInstFormat.usedLayoutBits & (1 << i))
+			if (inputParams.meshInstFormat.usedLayoutBits & (1 << i))
 				vertexPipelineBuilder.VertexLayout(layoutDesc);
 		}
 	}
 
 	// setup render & shadowing parameters
-	if (depthTargetFormat != FORMAT_NONE)
+	if (inputParams.depthTargetFormat != FORMAT_NONE)
 	{
-		if (m_flags & MATERIAL_FLAG_DECAL)
+		if (polyOffsetEnable)
 			g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
 		Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-			.DepthTestOn(!(m_flags & MATERIAL_FLAG_NO_Z_TEST))
-			.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-			.DepthFormat(depthTargetFormat);
+			.DepthTestOn(depthTestEnable)
+			.DepthWriteOn(depthWriteEnable)
+			.DepthFormat(inputParams.depthTargetFormat);
 	}
 
 	// TODO: 
 	//renderPipelineDesc.multiSample.count = renderPass->GetSampleCount();
 
-	const bool onlyZ = (m_flags & MATERIAL_FLAG_ONLY_Z);
 	Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
 	if (onlyZ)
 	{
@@ -226,9 +263,9 @@ void CBaseShader::FillRenderPipelineDesc(ArrayCRef<ETextureFormat> colorTargetFo
 			break;
 		}
 
-		for (int i = 0; i < colorTargetFormat.numElem(); ++i)
+		for (int i = 0; i < inputParams.colorTargetFormat.numElem(); ++i)
 		{
-			const ETextureFormat format = colorTargetFormat[i];
+			const ETextureFormat format = inputParams.colorTargetFormat[i];
 			if (format == FORMAT_NONE)
 				break;
 
@@ -241,18 +278,18 @@ void CBaseShader::FillRenderPipelineDesc(ArrayCRef<ETextureFormat> colorTargetFo
 	pipelineBuilder.End();
 }
 
-const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, bool onInit)
+const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit)
 {
 	HOOK_TO_CVAR(r_showPipelineCacheMisses);
 
-	const uint pipelineId = GetRenderPipelineId(colorTargetFormat, depthTargetFormat, meshInstFormat, primTopology);
+	const uint pipelineId = GetRenderPipelineId(inputParams);
 
 	auto it = m_renderPipelines.find(pipelineId);
 	if (it.atEnd())
 	{
 		it = m_renderPipelines.insert(pipelineId);
 		PipelineInfo& newPipelineInfo = *it;
-		newPipelineInfo.vertexLayoutId = meshInstFormat.formatId;
+		newPipelineInfo.vertexLayoutId = inputParams.meshInstFormat.formatId;
 
 		// Create pipeline layout
 		{
@@ -270,9 +307,9 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			PipelineLayoutDesc pipelineLayoutDesc;
 			pipelineLayoutDesc.name = GetName();
 
-			FillBindGroupLayout_Constant(meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_RenderPass(meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_Transient(meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
 
 			bool userDefinedPipelineLayout = false;
 			for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
@@ -293,7 +330,7 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		if (cacheIt.atEnd())
 		{
 			RenderPipelineDesc renderPipelineDesc;
-			FillRenderPipelineDesc(colorTargetFormat, depthTargetFormat, meshInstFormat, primTopology, renderPipelineDesc);
+			FillRenderPipelineDesc(inputParams, renderPipelineDesc);
 
 			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
 			if (!renderPipeline)
@@ -320,11 +357,17 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			{
 				if (onInit)
 				{
-					MsgInfo("Pre-create pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d\n", GetName(), meshInstFormat.name, BYTE_TO_BINARY(meshInstFormat.usedLayoutBits), primTopology, depthTargetFormat, colorTargetFormat[0]);
+					MsgInfo("Pre-create pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d\n", 
+						GetName(), inputParams.meshInstFormat.name, 
+						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits), 
+						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
 				}
 				else
 				{
-					MsgWarning("Render pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d was not pre-created\n", GetName(), meshInstFormat.name, BYTE_TO_BINARY(meshInstFormat.usedLayoutBits), primTopology, depthTargetFormat, colorTargetFormat[0]);
+					MsgWarning("Render pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d was not pre-created\n", 
+						GetName(), inputParams.meshInstFormat.name,
+						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
+						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
 				}
 			}
 		}
@@ -338,7 +381,14 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 
 bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext)
 {
-	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), meshInstFormat, primTopology, false);
+	const PipelineInputParams pipelineInputParams(
+		passContext.recorder->GetRenderTargetFormats(), 
+		passContext.recorder->GetDepthTargetFormat(), 
+		meshInstFormat,
+		primTopology
+	);
+
+	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineInputParams, false);
 
 	if (!pipelineInfo.pipeline)
 		return false;
@@ -434,11 +484,14 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 		for (int i = 0; i < instFormat.layout.numElem(); ++i)
 			layoutMask |= (1 << i);
 
+		// TODO: different variants of instFormat.usedLayoutBits
 		instFormat.usedLayoutBits &= layoutMask;
 
-		// TODO: different variants of instFormat.usedLayoutBits
-		EnsureRenderPipeline(renderAPI, ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES, true);
-		EnsureRenderPipeline(renderAPI, ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLE_STRIP, true);
+		PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES);
+		EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+
+		pipelineInputParams.primitiveTopology = PRIM_TRIANGLE_STRIP;
+		EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
 	}
 }
 

@@ -98,9 +98,11 @@ public:
 	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext);
 
 protected:
+	struct PipelineInputParams;
+
 	struct PipelineInfo
 	{
-		mutable IGPUBindGroupPtr	emptyBindGroup[4];
+		mutable IGPUBindGroupPtr	emptyBindGroup[MAX_BINDGROUPS];
 		IGPURenderPipelinePtr		pipeline;
 		IGPUPipelineLayoutPtr		layout;
 		int							vertexLayoutId{ 0 };
@@ -116,15 +118,15 @@ protected:
 	void						FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const;
 	void						FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const;
 
-	virtual void				FillRenderPipelineDesc(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology, RenderPipelineDesc& renderPipelineDesc) const;
+	uint						GetRenderPipelineId(const PipelineInputParams& inputParams) const;
+	virtual void				FillRenderPipelineDesc(const PipelineInputParams& inputParams, RenderPipelineDesc& renderPipelineDesc) const;
 	virtual void				BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const {}
 
-	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, bool onInit);
+	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit);
 
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
-	uint						GetRenderPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primitiveTopology) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
