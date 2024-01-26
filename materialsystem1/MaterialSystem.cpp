@@ -875,6 +875,7 @@ void CMaterialSystem::SetMatrix(EMatrixMode mode, const Matrix4x4 &matrix)
 {
 	m_matrices[(int)mode] = matrix;
 	m_matrixDirty |= (1 << mode);
+	++m_cameraChangeId;
 }
 
 // returns a typed matrix
@@ -914,7 +915,7 @@ void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix) const
 	matrix = wvpMatrix;
 }
 
-void CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const
+int CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const
 {
 	FogInfo fog;
 	Matrix4x4 wvp_matrix, view, proj;
@@ -953,6 +954,7 @@ void CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldView
 		cameraParams.fog.scale = 1.0f;
 		cameraParams.fog.color = color_white;
 	}
+	return m_cameraChangeId;
 }
 
 const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
@@ -1160,6 +1162,7 @@ void CMaterialSystem::GetPolyOffsetSettings(float& depthBias, float& depthBiasSl
 void CMaterialSystem::SetFogInfo(const FogInfo &info)
 {
 	m_fogInfo = info;
+	++m_cameraChangeId;
 }
 
 // returns fog info
@@ -1319,6 +1322,7 @@ void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 			collection.bufferOffsets[collection.bufferIdx] = 0;
 			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
 		}
+		m_cameraChangeId += 8192;
 	}
 
 	for (const IGPUCommandBufferPtr& buffer : cmdBuffers)
@@ -1353,6 +1357,7 @@ void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 			collection.bufferOffsets[collection.bufferIdx] = 0;
 			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
 		}
+		m_cameraChangeId += 8192;
 	}
 
 	buffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));

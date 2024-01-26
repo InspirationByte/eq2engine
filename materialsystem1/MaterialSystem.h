@@ -141,7 +141,7 @@ public:
 	void						GetViewProjection(Matrix4x4& matrix) const;
 	void						GetWorldViewProjection(Matrix4x4 &matrix) const;
 
-	void						GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const;
+	int							GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const;
 
 	//-----------------------------
 	// Helper rendering operations
@@ -239,5 +239,6 @@ private:
 	float						m_proxyDeltaTime{ 0.0f };
 	bool						m_frameBegun{ false };
 
+	int							m_cameraChangeId{ 0 };
 	mutable uint8				m_matrixDirty{ UINT8_MAX };
 };

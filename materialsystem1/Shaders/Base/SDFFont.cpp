@@ -151,9 +151,6 @@ BEGIN_SHADER_CLASS(
 			bufferData.append(m_shadowParamsVar.Get());
 			bufferData.append(Vector4D(m_shadowOffset.Get(), 0.0f));
 
-			MatSysCamera cameraParams;
-			g_matSystem->GetCameraParams(cameraParams, true);
-
 			GPUBufferView cameraParamsBuffer;
 			for (const RenderBufferInfo& rendBuffer : uniformBuffers)
 			{
@@ -162,7 +159,18 @@ BEGIN_SHADER_CLASS(
 			}
 
 			if(!cameraParamsBuffer)
-				cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+			{
+				cameraParamsBuffer = m_currentCameraBuffer;
+
+				MatSysCamera cameraParams;
+				const int cameraChangeId = g_matSystem->GetCameraParams(cameraParams, true);
+				if (m_currentCameraId != cameraChangeId)
+				{
+					m_currentCameraId = cameraChangeId;
+					m_currentCameraBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+					cameraParamsBuffer = m_currentCameraBuffer;
+				}
+			}
 
 			GPUBufferView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
@@ -177,6 +185,9 @@ BEGIN_SHADER_CLASS(
 
 		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
 	}
+
+	mutable GPUBufferView	m_currentCameraBuffer;
+	mutable int				m_currentCameraId{ -1 };
 
 	MatTextureProxy		m_baseTexture;
 	MatVec4Proxy		m_fontBaseColor;

@@ -146,14 +146,31 @@ BEGIN_SHADER_CLASS(
 			bufferData.append(rendPassInfo->drawColor);
 			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
 
-			MatSysCamera cameraParams;
-			g_matSystem->GetCameraParams(cameraParams, true);
+			GPUBufferView cameraParamsBuffer;
+			for (const RenderBufferInfo& rendBuffer : uniformBuffers)
+			{
+				if (rendBuffer.signature == MAKECHAR4('C','M','R','A'))
+					cameraParamsBuffer = rendBuffer.bufferView;
+			}
 
-			GPUBufferView cameraParamsBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+			if(!cameraParamsBuffer)
+			{
+				cameraParamsBuffer = m_currentCameraBuffer;
+
+				MatSysCamera cameraParams;
+				const int cameraChangeId = g_matSystem->GetCameraParams(cameraParams, true);
+				if (m_currentCameraId != cameraChangeId)
+				{
+					m_currentCameraId = cameraChangeId;
+					m_currentCameraBuffer = g_matSystem->GetTransientUniformBuffer(&cameraParams, sizeof(cameraParams));
+					cameraParamsBuffer = m_currentCameraBuffer;
+				}
+			}
+
 			GPUBufferView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, cameraParamsBuffer)
+				.Buffer(0, m_currentCameraBuffer)
 				.Buffer(1, materialParamsBuffer)
 				.Sampler(2, baseTexture.texture->GetSamplerState())
 				.Texture(3, baseTexture)
@@ -164,6 +181,8 @@ BEGIN_SHADER_CLASS(
 		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
 	}
 
-	MatTextureProxy			m_baseTexture;
+	MatTextureProxy		m_baseTexture;
+	mutable GPUBufferView	m_currentCameraBuffer;
+	mutable int				m_currentCameraId{ -1 };
 
 END_SHADER_CLASS

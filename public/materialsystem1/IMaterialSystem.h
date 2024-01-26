@@ -173,7 +173,7 @@ public:
 	virtual void					GetViewProjection(Matrix4x4& matrix) const = 0;
 	virtual void					GetWorldViewProjection(Matrix4x4& matrix) const = 0;
 
-	virtual void					GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj = false) const = 0;
+	virtual int						GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj = false) const = 0;
 
 	//-----------------------------
 	// Drawing
