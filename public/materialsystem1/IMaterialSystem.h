@@ -22,6 +22,7 @@
 
 class CImage;
 class IDynamicMesh;
+using IDynamicMeshPtr = CRefPtr<IDynamicMesh>;
 
 using DEVICE_LOST_RESTORE_CB	= bool (*)(void);
 using PROXY_FACTORY_CB			= IMaterialProxy* (*)(void);
@@ -176,7 +177,8 @@ public:
 
 	//-----------------------------
 	// Drawing
-	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
+	virtual IDynamicMeshPtr			GetDynamicMesh() = 0;
+	virtual void					ReleaseDynamicMesh(int id) = 0;
 
 	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
 	virtual GPUBufferView			GetTransientUniformBuffer(const void* data, int64 size) = 0;

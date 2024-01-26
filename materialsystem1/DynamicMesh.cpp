@@ -7,26 +7,35 @@
 
 #include "core/core_common.h"
 #include "materialsystem1/RenderDefs.h"
-#include "materialsystem1/renderers/IShaderAPI.h"
+#include "materialsystem1/IMaterialSystem.h"
 #include "DynamicMesh.h"
 
 #define MAX_DYNAMIC_VERTICES	32767
 #define MAX_DYNAMIC_INDICES		32767
 
-bool CDynamicMesh::Init(ArrayCRef<VertexLayoutDesc> vertexLayout)
+CDynamicMesh::~CDynamicMesh()
+{
+	Destroy();
+}
+
+void CDynamicMesh::Ref_DeleteObject()
+{
+	g_matSystem->ReleaseDynamicMesh(m_id);
+	RefCountedObject::Ref_DeleteObject();
+}
+
+bool CDynamicMesh::Init(int id, IVertexFormat* vertexFormat)
 {
 	if(m_vertexFormat != nullptr)
 		return true;
 
-	ASSERT_MSG(vertexLayout.numElem(), "CDynamicMesh::Init - no vertex layout descs");
-	ASSERT_MSG(vertexLayout.numElem() == 1, "CDynamicMesh::Init - only one vertex buffer layout supported\n");
+	m_id = id;
 
-	const VertexLayoutDesc& vertexDesc = vertexLayout[0];
-	ASSERT_MSG(vertexDesc.attributes.numElem() > 0, "CDynamicMesh::Init - attributes count is ZERO\n");
-	ASSERT_MSG(vertexDesc.stride > 0, "CDynamicMesh::Init - vertex layout stride hasn't set\n");
+	ASSERT(vertexFormat);
+	ASSERT_MSG(vertexFormat->GetFormatDesc().numElem() == 1, "CDynamicMesh::Init - only one vertex buffer layout supported\n");
 
-	m_vertexStride = vertexDesc.stride;
-	m_vertexFormat = g_renderAPI->CreateVertexFormat("DynMeshVertex", vertexLayout);
+	m_vertexStride = vertexFormat->GetVertexSize(0);
+	m_vertexFormat = vertexFormat;
 
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
@@ -41,17 +50,15 @@ void CDynamicMesh::Destroy()
 {
 	Reset();
 
-	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
-	m_vertexFormat = nullptr;
-
 	PPFree(m_vertices);
 	PPFree(m_indices);
-
 	m_vertices = nullptr;
 	m_indices = nullptr;
+
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;
 	m_cmdRecorder = nullptr;
+	m_vertexFormat = nullptr;
 }
 
 // returns a pointer to vertex format description

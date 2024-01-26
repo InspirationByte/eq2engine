@@ -16,10 +16,10 @@ enum EPrimTopology : int;
 //
 // The dynamic mesh interface
 //
-class IDynamicMesh
+class IDynamicMesh : public RefCountedObject<IDynamicMesh, RefCountedKeepPolicy> // used to grab/release by meshbuffer
 {
 public:
-	virtual ~IDynamicMesh() {}
+	virtual ~IDynamicMesh() = default;
 
 	// returns a pointer to vertex format description
 	virtual ArrayCRef<VertexLayoutDesc>	GetVertexLayoutDesc() const = 0;
@@ -41,3 +41,5 @@ public:
 	// resets the buffer offsets
 	virtual void					Reset() = 0;
 };
+
+using IDynamicMeshPtr = CRefPtr<IDynamicMesh>;

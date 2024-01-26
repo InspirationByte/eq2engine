@@ -389,7 +389,7 @@ void CFont::SetupRenderText(const wchar_t* pszText, const Vector2D& start, const
 	if (vertCount == 0)
 		return;
 
-	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
+	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
 	if (r_font_debug.GetBool())
@@ -425,7 +425,7 @@ void CFont::SetupRenderText(const char* pszText, const Vector2D& start, const eq
 	if (vertCount == 0)
 		return;
 
-	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
+	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
 	RenderDrawCmd drawCmd;

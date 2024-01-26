@@ -147,7 +147,8 @@ public:
 	// Helper rendering operations
 
 	// returns the dynamic mesh
-	IDynamicMesh*				GetDynamicMesh() const;
+	IDynamicMeshPtr				GetDynamicMesh();
+	void						ReleaseDynamicMesh(int id);
 
 	// returns temp buffer with data written. SubmitQueuedCommands uploads it to GPU
 	GPUBufferView				GetTransientUniformBuffer(const void* data, int64 size);
@@ -194,7 +195,9 @@ private:
 	Map<int, IMaterial*>		m_loadedMaterials{ PP_SL };			// loaded material list
 	ECullMode					m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
-	CDynamicMesh				m_dynamicMesh;
+	Array<CDynamicMesh>			m_dynamicMeshes{ PP_SL };
+	Array<int>					m_freeDynamicMeshes{ PP_SL };
+	IVertexFormat*				m_dynamicMeshVertexFormat{ nullptr };
 
 	//-------------------------------------------------------------------------
 	IVector2D					m_backbufferSize{ 800, 600 };

@@ -41,7 +41,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 	if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
 		return;
 
-	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
+	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder mb(dynMesh);
 	
 	float halfPixelOfs = 0.0f;

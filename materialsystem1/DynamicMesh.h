@@ -19,7 +19,11 @@ using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
 class CDynamicMesh : public IDynamicMesh
 {
 public:
-	bool					Init(ArrayCRef<VertexLayoutDesc> vertexLayout);
+	~CDynamicMesh();
+
+	void Ref_DeleteObject() override;
+
+	bool					Init(int id, IVertexFormat* vertexFormat);
 	void					Destroy();
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
@@ -51,6 +55,7 @@ protected:
 
 	EPrimTopology			m_primType{ PRIM_TRIANGLES };
 	int						m_vertexStride{ 0 };
+	int						m_id{ -1 };
 
 	IGPUCommandRecorderPtr	m_cmdRecorder;
 	int						m_vtxBufferOffset{ 0 };

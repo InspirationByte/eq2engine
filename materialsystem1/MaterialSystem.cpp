@@ -348,13 +348,6 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 
 	g_renderAPI = m_shaderAPI;
 
-	const VertexLayoutDesc& dynMeshLayout = GetDynamicMeshLayout();
-	if(!m_dynamicMesh.Init(ArrayCRef(&dynMeshLayout, 1)))
-	{
-		ErrorMsg("Couldn't init DynamicMesh!\n");
-		return false;
-	}
-
 	// initialize some resources
 	REGISTER_INTERNAL_SHADERS();
 	CreateWhiteTexture();
@@ -362,6 +355,9 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	CreateDefaultDepthTexture();
 	InitDefaultMaterial();
 	InitStandardMaterialProxies();
+
+	const VertexLayoutDesc& dynMeshLayout = GetDynamicMeshLayout();
+	m_dynamicMeshVertexFormat = g_renderAPI->CreateVertexFormat("DynMeshVertex", ArrayCRef(&dynMeshLayout, 1));
 	
 	return true;
 }
@@ -379,8 +375,6 @@ void CMaterialSystem::Shutdown()
 
 	m_globalMaterialVars.variableMap.clear(true);
 	m_globalMaterialVars.variables.clear(true);
-		
-	m_dynamicMesh.Destroy();
 
 	m_proxyUpdateCmdRecorder = nullptr;
 	m_bufferCmdRecorder = nullptr;
@@ -392,6 +386,11 @@ void CMaterialSystem::Shutdown()
 	m_currentEnvmapTexture = nullptr;
 	m_defaultDepthTexture = nullptr;
 	m_pendingCmdBuffers.clear(true);
+	m_dynamicMeshes.clear(true);
+	m_freeDynamicMeshes.clear(true);
+
+	g_renderAPI->DestroyVertexFormat(m_dynamicMeshVertexFormat);
+	m_dynamicMeshVertexFormat = nullptr;
 
 	for (int i = 0; i < elementsOf(m_errorTexture); ++i)
 		m_errorTexture[i] = nullptr;
@@ -1214,9 +1213,29 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 // Helper rendering operations
 //-----------------------------
 
-IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
+IDynamicMeshPtr CMaterialSystem::GetDynamicMesh()
 {
-	return (IDynamicMesh*)&m_dynamicMesh;
+	if (m_freeDynamicMeshes.numElem())
+		return IDynamicMeshPtr(&m_dynamicMeshes[m_freeDynamicMeshes.popBack()]);
+
+	const int id = m_dynamicMeshes.numElem();
+	CDynamicMesh& dynMesh = m_dynamicMeshes.append();
+	if (!dynMesh.Init(id, m_dynamicMeshVertexFormat))
+	{
+		m_dynamicMeshes.removeIndex(m_dynamicMeshes.numElem() - 1);
+		ASSERT_FAIL("Failed to init DynamicMesh");
+		return nullptr;
+	}
+
+	// TODO: release on MeshBuffer::End
+
+	return IDynamicMeshPtr(&dynMesh);
+}
+
+void CMaterialSystem::ReleaseDynamicMesh(int id)
+{
+	ASSERT_MSG(arrayFindIndex(m_freeDynamicMeshes, id), "DynamicMesh already released");
+	m_freeDynamicMeshes.append(id);
 }
 
 // returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
@@ -1276,7 +1295,14 @@ void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 {
 	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
 
-	buffers.append(m_dynamicMesh.GetSubmitBuffer());
+	for(CDynamicMesh& dynMesh : m_dynamicMeshes)
+	{
+		IGPUCommandBufferPtr submitBuf = dynMesh.GetSubmitBuffer();
+		if (!submitBuf)
+			continue;
+		buffers.append(submitBuf);
+	}
+
 	if (m_bufferCmdRecorder)
 	{
 		buffers.append(m_bufferCmdRecorder->End());
@@ -1303,7 +1329,14 @@ void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 {
 	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
 	
-	buffers.append(m_dynamicMesh.GetSubmitBuffer());
+	for (CDynamicMesh& dynMesh : m_dynamicMeshes)
+	{
+		IGPUCommandBufferPtr submitBuf = dynMesh.GetSubmitBuffer();
+		if (!submitBuf)
+			continue;
+		buffers.append(submitBuf);
+	}
+
 	if (m_bufferCmdRecorder)
 	{
 		buffers.append(m_bufferCmdRecorder->End());
@@ -1438,7 +1471,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 
 	ASSERT_MSG(vertFVF & VERTEX_FVF_XYZ, "DrawDefaultUP must have FVF_XYZ in vertex flags");
 
-	CMeshBuilder meshBuilder(&m_dynamicMesh);
+	CMeshBuilder meshBuilder(GetDynamicMesh());
 	meshBuilder.Begin(primTopology);
 
 	const ubyte* vertPtr = reinterpret_cast<const ubyte*>(verts);

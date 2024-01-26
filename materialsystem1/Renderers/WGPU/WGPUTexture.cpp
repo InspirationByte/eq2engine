@@ -229,7 +229,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 // locks texture for modifications, etc
 bool CWGPUTexture::Lock(LockInOutData& data)
 {
-	ASSERT_MSG(!m_lockData, "CGLTexture: already locked");
+	ASSERT_MSG(!m_lockData, "CWGPUTexture: already locked");
 
 	if (m_lockData)
 		return false;
