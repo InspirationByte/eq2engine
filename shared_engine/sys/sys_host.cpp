@@ -15,6 +15,8 @@
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
 
+#include "imaging/ImageLoader.h"
+
 #include "render/IDebugOverlay.h"
 
 #include <SDL.h>
@@ -86,6 +88,56 @@ DECLARE_CMD(sys_vmode_list, nullptr, 0)
 			vmodes[i].displayId,
 			vmodes[i].bitsPerPixel, vmodes[i].width, vmodes[i].height, vmodes[i].refreshRate);
 	}
+}
+
+DECLARE_CVAR(screenshotJpegQuality, "100", "JPEG Quality", CV_ARCHIVE);
+
+static EqString requestScreenshotName;
+
+DECLARE_CMD(screenshot, "Save screenshot", 0)
+{
+	if (g_matSystem == nullptr)
+		return;
+
+	// pick the best filename
+	if (CMD_ARGC == 0)
+	{
+		int i = 0;
+		do
+		{
+			g_fileSystem->MakeDir("screenshots", SP_ROOT);
+			EqString path(EqString::Format("screenshots/screenshot_%04d.jpg", i));
+
+			if (g_fileSystem->FileExist(path.ToCString(), SP_ROOT))
+				continue;
+
+			CombinePath(requestScreenshotName, g_fileSystem->GetBasePath(), path.ToCString());
+			break;
+		} while (i++ < 9999);
+	}
+	else
+	{
+		requestScreenshotName = CMD_ARGV(0) + ".jpg";
+	}
+}
+
+static void Sys_SaveScreenshot()
+{
+	if (!requestScreenshotName.Length())
+		return;
+
+	g_matSystem->SubmitQueuedCommands();
+
+	CImage img;
+	if (!g_matSystem->CaptureScreenshot(img))
+		return;
+
+	if (img.SaveJPEG(requestScreenshotName, screenshotJpegQuality.GetInt()))
+		MsgInfo("Saved screenshot to '%s'\n", requestScreenshotName.ToCString());
+	else
+		MsgError("Failed to save or capture screenshot\n");
+
+	requestScreenshotName.Empty();
 }
 
 DECLARE_INTERNAL_SHADERS();
@@ -854,8 +906,10 @@ void CGameHost::BeginScene()
 
 void CGameHost::EndScene()
 {
-	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
+	// save screenshots without ImGui/Console visible
+	Sys_SaveScreenshot();
 
+	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
 	g_matSystem->EndFrame();
 }
 

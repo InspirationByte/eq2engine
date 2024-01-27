@@ -11,7 +11,6 @@
 #include "core/ICommandLine.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-#include "imaging/ImageLoader.h"
 
 #include <SDL.h>
 
@@ -25,44 +24,6 @@
 // Renderer
 DECLARE_CVAR(r_bpp, "32", "Screen bits per pixel", CV_ARCHIVE);
 DECLARE_CVAR(sys_sleep, "0", "Sleep time for every frame", CV_ARCHIVE);
-
-DECLARE_CVAR(screenshotJpegQuality, "100", "JPEG Quality", CV_ARCHIVE);
-
-DECLARE_CMD(screenshot, "Save screenshot", 0)
-{
-	if(g_matSystem == nullptr)
-		return;
-
-	CImage img;
-	if( !g_matSystem->CaptureScreenshot(img) )
-		return;
-
-	// pick the best filename
-	if(CMD_ARGC == 0)
-	{
-		int i = 0;
-		do
-		{
-			g_fileSystem->MakeDir("screenshots", SP_ROOT);
-			EqString path(EqString::Format("screenshots/screenshot_%04d.jpg", i));
-
-			if(g_fileSystem->FileExist(path.ToCString(), SP_ROOT))
-				continue;
-
-			CombinePath(path, g_fileSystem->GetBasePath(), path.ToCString());
-
-			MsgInfo("Writing screenshot to '%s'\n", path.ToCString());
-			img.SaveJPEG(path.ToCString(), screenshotJpegQuality.GetInt());
-			break;
-		}
-		while (i++ < 9999);
-	}
-	else
-	{
-		EqString path(CMD_ARGV(0) + ".jpg");
-		img.SaveJPEG(path.ToCString(), screenshotJpegQuality.GetInt());
-	}
-}
 
 #define DEFAULT_WINDOW_TITLE "Initializing..."
 

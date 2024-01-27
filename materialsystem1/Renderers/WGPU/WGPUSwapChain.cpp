@@ -18,8 +18,12 @@ CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& win
 	, m_winInfo(windowInfo)
 {
 	m_textureRef = CRefPtr<CWGPUTexture>(static_cast<CWGPUTexture*>(swapChainTexture.Ptr()));
-	m_textureRef->SetFormat(MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB));
 
+	// FIXME: API type too?
+	if(m_winInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WINDOWS)
+		m_textureRef->SetFormat(MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB));
+	else
+		m_textureRef->SetFormat(FORMAT_RGBA8);
 }
 
 CWGPUSwapChain::~CWGPUSwapChain()
@@ -134,7 +138,7 @@ bool CWGPUSwapChain::UpdateResize()
 	swapChainDesc.width = m_backbufferSize.x;
 	swapChainDesc.height = m_backbufferSize.y;
 	swapChainDesc.format = GetWGPUTextureFormat(m_textureRef->GetFormat());
-	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment;
+	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
 	swapChainDesc.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
 
 	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &swapChainDesc);

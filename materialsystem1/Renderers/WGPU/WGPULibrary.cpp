@@ -13,6 +13,8 @@
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 
+#include "imaging/ImageLoader.h"
+
 #include "WGPUBackend.h"
 
 #include "WGPULibrary.h"
@@ -192,6 +194,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUFeatureName requiredFeatures[] = {
 			WGPUFeatureName_TextureCompressionBC,
 			WGPUFeatureName_BGRA8UnormStorage,
+			WGPUFeatureName_SurfaceCapabilities,
 			// TODO: android
 			//WGPUFeatureName_TextureCompressionETC2,
 			//WGPUFeatureName_TextureCompressionASTC,
@@ -309,7 +312,6 @@ ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 
 	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo, swapChainTexture);
 
-
 	m_swapChains.append(swapChain);
 	return swapChain;
 }
@@ -353,8 +355,41 @@ bool CWGPURenderLib::IsWindowed() const
 
 bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 {
-	// TODO: screenshots
-	return false;
+	ITexturePtr currentTexture = m_swapChains[0]->GetBackbuffer();
+
+	BufferInfo bufInfo(GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat())), currentTexture->GetWidth() * currentTexture->GetHeight());
+	IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(bufInfo, BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "ScreenshotImgBuffer");
+	{
+		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
+		cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
+		g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
+	}
+	
+	IGPUBuffer::LockFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
+	future.AddCallback([currentTexture, &img](const FutureResult<BufferLockData>& result) {
+		ASSERT(result->data);
+		ubyte* dst = img.Create(FORMAT_RGB8, currentTexture->GetWidth(), currentTexture->GetHeight(), 1, 1);
+
+		for (int y = 0; y < currentTexture->GetHeight(); y++)
+		{
+			ubyte* src = (ubyte*)result->data + 4 * y * currentTexture->GetWidth();
+			for (int x = 0; x < currentTexture->GetWidth(); ++x)
+			{
+				dst[0] = src[2];
+				dst[1] = src[1];
+				dst[2] = src[0];
+				dst += 3;
+				src += 4;
+			}
+		}
+	});
+
+	// force WebGPU to process everything it has queued
+	while (!future.HasResult()) {
+		wgpuInstanceProcessEvents(m_instance);
+	}
+
+	return true;
 }
 
 bool CWGPURenderLib::IsMainThread(uintptr_t threadId) const
