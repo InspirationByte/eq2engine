@@ -91,6 +91,35 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	m_hasCommands = true;
 }
 
+void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const
+{
+	ASSERT(source.origin.x >= 0 && source.origin.y >= 0 && source.origin.arraySlice >= 0);
+	CWGPUTexture* srcTexture = static_cast<CWGPUTexture*>(source.texture);
+	const CWGPUBuffer* dstBuffer = static_cast<const CWGPUBuffer*>(destination);
+
+	WGPUImageCopyTexture rhiImageSrc{};
+	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
+	rhiImageSrc.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
+	rhiImageSrc.mipLevel = source.origin.mipLevel;
+	rhiImageSrc.origin = WGPUOrigin3D{ (uint)source.origin.x, (uint)source.origin.y, (uint)source.origin.arraySlice };
+
+	WGPUExtent3D rhiCopySize;
+	rhiCopySize.depthOrArrayLayers = copySize.arraySize;
+	rhiCopySize.width = copySize.width;
+	rhiCopySize.height = copySize.height;
+
+	// TODO: account arraySize in bytesPerRow
+	ASSERT_MSG(copySize.arraySize == 1, "array size > 1 is unsupported yet");
+	WGPUImageCopyBuffer rhiBufferDst;
+	rhiBufferDst.buffer = dstBuffer->GetWGPUBuffer();
+	rhiBufferDst.layout.offset = 0;
+	rhiBufferDst.layout.bytesPerRow = copySize.width * GetBytesPerPixel(GetTexFormat(srcTexture->GetFormat()));
+	rhiBufferDst.layout.rowsPerImage = copySize.height;
+
+	wgpuCommandEncoderCopyTextureToBuffer(m_rhiCommandEncoder, &rhiImageSrc, &rhiBufferDst, &rhiCopySize);
+	m_hasCommands = true;
+}
+
 IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 {
 	if (!m_rhiCommandEncoder)

@@ -12,6 +12,7 @@ public:
 	void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const;
 	
 	void						CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const;
+	void						CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const;
 
 	// TODO:
 	// CopyBufferToTexture(const WGPUImageCopyBuffer& source, const WGPUImageCopyTexture& destination, const WGPUExtent3D& copySize) const;
