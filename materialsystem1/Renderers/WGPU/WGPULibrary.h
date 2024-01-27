@@ -41,7 +41,6 @@ public:
 
 	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void			DestroySwapChain(ISwapChain* swapChain);
-
 protected:
 
 	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }

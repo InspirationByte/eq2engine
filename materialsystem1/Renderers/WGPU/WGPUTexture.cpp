@@ -260,10 +260,24 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 	data.lockPitch = lockPitch * GetBytesPerPixel(m_format);
 	data.lockByteCount = lockByteCount;
 
-	if (!(data.flags & TEXLOCK_DISCARD))
+	if (!(data.flags & TEXLOCK_DISCARD) && (m_flags & TEXFLAG_COPY_SRC))
 	{
-		// TODO: texture readback (possibly Async)
-		ASSERT_FAIL("texture reading is unsupported (yet)");
+		IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, lockByteCount), BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "TexLockBuffer");
+		{
+			IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
+			cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ this }, tempBuffer, data.lockSize);
+			g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
+		}
+
+		IGPUBuffer::LockFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
+		future.AddCallback([this, &data, lockByteCount](const FutureResult<BufferLockData>& result) {
+			memcpy(data.lockData, result->data, lockByteCount);
+		});
+
+		// force WebGPU to process everything it has queued
+		while (!future.HasResult()) {
+			g_renderWorker.SignalWork();
+		}
 	}
 
 	m_lockData = &data;

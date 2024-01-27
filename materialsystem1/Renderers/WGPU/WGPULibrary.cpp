@@ -386,7 +386,7 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 
 	// force WebGPU to process everything it has queued
 	while (!future.HasResult()) {
-		wgpuInstanceProcessEvents(m_instance);
+		g_renderWorker.SignalWork();
 	}
 
 	return true;
