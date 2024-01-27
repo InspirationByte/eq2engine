@@ -77,8 +77,9 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 	struct LockContext
 	{
 		Promise<BufferLockData> promise;
-		BufferLockData data;
-		WGPUBuffer buffer;
+		BufferLockData			data;
+		WGPUBuffer				buffer;
+		int						flags;
 	};
 
 	if (!m_rhiBuffer || lockOfs < 0 || lockOfs + sizeToLock > m_bufSize)
@@ -91,6 +92,7 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 
 	LockContext* context = PPNew LockContext;
 	context->buffer = m_rhiBuffer;
+	context->flags = m_usageFlags;
 
 	BufferLockData& lockData = context->data;
 	lockData.flags = flags;
@@ -110,9 +112,18 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		}
 
 		BufferLockData& lockData = context->data;
-		lockData.data = wgpuBufferGetMappedRange(context->buffer, lockData.offset, lockData.size);
-		context->promise.SetResult(std::move(context->data));
+		if(context->flags & BUFFERUSAGE_WRITE)
+			lockData.data = wgpuBufferGetMappedRange(context->buffer, lockData.offset, lockData.size);
+		else
+			lockData.data = const_cast<void*>(wgpuBufferGetConstMappedRange(context->buffer, lockData.offset, lockData.size));
+
+		if(!lockData.data)
+			context->promise.SetError(-1, "Failed to lock buffer, wrong usage?");
+		else
+			context->promise.SetResult(std::move(context->data));
 	};
+
+	wgpuBufferReference(m_rhiBuffer);
 	wgpuBufferMapAsync(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, callback, context);
 
 	return context->promise.CreateFuture();
@@ -121,4 +132,5 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 void CWGPUBuffer::Unlock()
 {
 	wgpuBufferUnmap(m_rhiBuffer);
+	wgpuBufferRelease(m_rhiBuffer);
 }
