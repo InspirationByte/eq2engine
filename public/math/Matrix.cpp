@@ -95,14 +95,15 @@ Matrix4x4 orthoMatrix(const float left, const float right, const float top, cons
 Matrix4x4 projection2DScreen(float wide, float tall)
 {
 	// create valid screen matrix
-	Matrix4x4 ortho_transform = _identity4<float>();
+	Matrix4x4 mat = _identity4<float>();
 
-	ortho_transform.rows[0].x = (2.0f / wide);
-	ortho_transform.rows[1].y = -(2.0f / tall);
+	mat.rows[0].x = (2.0f / wide);
+	mat.rows[0].w = -1.0f;
 
-	ortho_transform.translate(-Vector3D(wide * 0.5f, tall * 0.5f, 0));
+	mat.rows[1].y = -(2.0f / tall);
+	mat.rows[1].w = 1.0f;
 
-	return ortho_transform;
+	return mat;
 }
 
 Matrix4x4 toD3DProjection(const Matrix4x4 &m)
