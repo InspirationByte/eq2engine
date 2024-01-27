@@ -6,6 +6,10 @@ struct ShaderInfoWGPUImpl
 {
 	~ShaderInfoWGPUImpl();
 
+	ShaderInfoWGPUImpl() = default;
+	ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept;
+	ShaderInfoWGPUImpl& operator=(ShaderInfoWGPUImpl&& other) noexcept;
+
 	void Release();
 	bool GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
 
