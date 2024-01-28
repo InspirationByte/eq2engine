@@ -333,7 +333,10 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 		}
 
 		MatSysShaderPipelineCache& shaderPipelineCache = g_matSystem->GetRenderPipelineCache(GetNameHash());
+		shaderPipelineCache.rwLock.LockRead();
 		auto cacheIt = shaderPipelineCache.pipelines.find(pipelineId);
+		shaderPipelineCache.rwLock.UnlockRead();
+
 		if (cacheIt.atEnd())
 		{
 			RenderPipelineDesc renderPipelineDesc;
@@ -345,7 +348,10 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 				MsgError("Shader %s is unable to create pipeline", GetName());
 			}
 
-			cacheIt = shaderPipelineCache.pipelines.insert(pipelineId, renderPipeline);
+			{
+				Threading::CScopedWriteLocker lock(shaderPipelineCache.rwLock);
+				cacheIt = shaderPipelineCache.pipelines.insert(pipelineId, renderPipeline);
+			}
 
 #ifndef _RETAIL
 

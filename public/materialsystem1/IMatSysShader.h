@@ -73,7 +73,8 @@ enum EBindGroupId
 
 struct MatSysShaderPipelineCache
 {
-	Map<uint, IGPURenderPipelinePtr> pipelines{ PP_SL };
+	Map<uint, IGPURenderPipelinePtr>	pipelines{ PP_SL };
+	Threading::CEqReadWriteLock			rwLock;
 };
 
 class IMatSystemShader

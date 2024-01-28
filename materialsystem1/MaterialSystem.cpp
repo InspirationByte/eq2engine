@@ -29,7 +29,8 @@
 
 
 using namespace Threading;
-CEqMutex s_matSystemMutex;
+static CEqMutex s_matSystemMutex;
+static CEqMutex s_matSystemPipelineMutex;
 
 DECLARE_INTERNAL_SHADERS()
 
@@ -766,6 +767,7 @@ void CMaterialSystem::RegisterShaderOverride(const char* shaderName, OVERRIDE_SH
 
 MatSysShaderPipelineCache& CMaterialSystem::GetRenderPipelineCache(int shaderNameHash)
 {
+	CScopedMutex m(s_matSystemPipelineMutex);
 	return m_renderPipelineCache[shaderNameHash];
 }
 
