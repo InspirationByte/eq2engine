@@ -917,14 +917,10 @@ void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix) const
 	matrix = wvpMatrix;
 }
 
-int CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const
+int CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams) const
 {
-	FogInfo fog;
-	Matrix4x4 wvp_matrix, view, proj;
-	if (worldViewProj)
-		GetWorldViewProjection(cameraParams.viewProj);
-	else
-		GetViewProjection(cameraParams.viewProj);
+	GetWorldViewProjection(cameraParams.viewProj);
+
 	GetMatrix(MATRIXMODE_VIEW, cameraParams.view);
 	GetMatrix(MATRIXMODE_PROJECTION, cameraParams.proj);
 
@@ -936,6 +932,8 @@ int CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldViewP
 	cameraParams.viewport.invWidth = 1.0f;
 	cameraParams.viewport.invHeight = 1.0f;
 
+	// TODO: this is hacky wacky way, need to use CViewParams
+	FogInfo fog;
 	GetFogInfo(fog);
 	cameraParams.position = fog.viewPos;
 
@@ -943,9 +941,9 @@ int CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, bool worldViewP
 	if (fog.enableFog)
 	{
 		cameraParams.fog.factor = fog.enableFog ? 1.0f : 0.0f;
-		cameraParams.fog.near = fog.fognear;
-		cameraParams.fog.far = fog.fogfar;
-		cameraParams.fog.scale = 1.0f / (fog.fogfar - fog.fognear);
+		cameraParams.fog.near = fog.fogNear;
+		cameraParams.fog.far = fog.fogFar;
+		cameraParams.fog.scale = 1.0f / (fog.fogFar - fog.fogNear);
 		cameraParams.fog.color = fog.fogColor;
 	}
 	else

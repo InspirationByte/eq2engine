@@ -23,9 +23,9 @@ struct FogInfo
 {
 	Vector3D	viewPos;
 	Vector3D	fogColor;
-	float		fogdensity;
-	float		fognear;
-	float		fogfar;
+	float		fogDensity;
+	float		fogNear;
+	float		fogFar;
 	bool		enableFog{ false };
 };
 
@@ -48,6 +48,8 @@ struct MatSysFog
 	float		far;
 	float		scale;
 };
+
+static constexpr const int s_matSysCameraBufferId = MAKECHAR4('C','M','R','A');
 
 struct MatSysCamera
 {

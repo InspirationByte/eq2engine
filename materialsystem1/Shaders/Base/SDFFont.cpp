@@ -154,7 +154,7 @@ BEGIN_SHADER_CLASS(
 			GPUBufferView cameraParamsBuffer;
 			for (const RenderBufferInfo& rendBuffer : uniformBuffers)
 			{
-				if (rendBuffer.signature == MAKECHAR4('C','M','R','A'))
+				if (rendBuffer.signature == s_matSysCameraBufferId)
 					cameraParamsBuffer = rendBuffer.bufferView;
 			}
 
@@ -163,7 +163,7 @@ BEGIN_SHADER_CLASS(
 				cameraParamsBuffer = m_currentCameraBuffer;
 
 				MatSysCamera cameraParams;
-				const int cameraChangeId = g_matSystem->GetCameraParams(cameraParams, true);
+				const int cameraChangeId = g_matSystem->GetCameraParams(cameraParams);
 				if (m_currentCameraId != cameraChangeId)
 				{
 					m_currentCameraId = cameraChangeId;

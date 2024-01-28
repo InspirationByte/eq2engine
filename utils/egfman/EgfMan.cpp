@@ -415,9 +415,9 @@ static void InitMatSystem(void* window)
 		FogInfo fog;
 		fog.enableFog = true;
 		fog.fogColor = ColorRGB(0.25,0.25,0.25);
-		fog.fogdensity = 1.0f;
-		fog.fogfar = 14250;
-		fog.fognear = -2750;
+		fog.fogDensity = 1.0f;
+		fog.fogFar = 14250;
+		fog.fogNear = -2750;
 
 		g_matSystem->SetFogInfo(fog);
 

@@ -141,7 +141,7 @@ public:
 	void						GetViewProjection(Matrix4x4& matrix) const;
 	void						GetWorldViewProjection(Matrix4x4 &matrix) const;
 
-	int							GetCameraParams(MatSysCamera& cameraParams, bool worldViewProj) const;
+	int							GetCameraParams(MatSysCamera& cameraParams) const;
 
 	//-----------------------------
 	// Helper rendering operations
