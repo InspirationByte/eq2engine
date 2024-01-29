@@ -447,7 +447,8 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	const SoundScriptDesc* script = emitter->script;
 	CSoundingObject* soundingObj = emitter->soundingObj;
 
-	ASSERT(script);
+	if (!script || !soundingObj)
+		return 0;
 
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
