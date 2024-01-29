@@ -9,6 +9,7 @@
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
+#include "core/ICommandLine.h"
 #include "core/IDkCore.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
@@ -23,8 +24,8 @@
 
 IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
 
-DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
-DECLARE_CVAR(wgpu_break_on_error, "1", nullptr, 0);
+DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
+DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
 
 static const char* s_wgpuErrorTypesStr[] = {
 	"NoError",
@@ -179,29 +180,33 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		WGPUDeviceDescriptor rhiDeviceDesc{};
 
-		const char* const enabledToggles[] = {
-			"allow_unsafe_apis",
-			"use_user_defined_labels_in_backend"
-		};
+		FixedArray<const char*, 32> enabledToggles;
+		enabledToggles.append("allow_unsafe_apis");
+		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
+		{
+			enabledToggles.append("use_user_defined_labels_in_backend");
+			wgpu_report_errors.SetBool(true);
+			wgpu_break_on_error.SetBool(true);
+		}
 
 		WGPUDawnTogglesDescriptor deviceTogglesDesc{};
-		deviceTogglesDesc.enabledToggles = enabledToggles;
-		deviceTogglesDesc.enabledToggleCount = elementsOf(enabledToggles);
+		deviceTogglesDesc.enabledToggles = enabledToggles.ptr();
+		deviceTogglesDesc.enabledToggleCount = enabledToggles.numElem();
 		deviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
 
 		rhiDeviceDesc.nextInChain = &deviceTogglesDesc.chain;
 
-		WGPUFeatureName requiredFeatures[] = {
-			WGPUFeatureName_TextureCompressionBC,
-			WGPUFeatureName_BGRA8UnormStorage,
-			WGPUFeatureName_SurfaceCapabilities,
-			// TODO: android
-			//WGPUFeatureName_TextureCompressionETC2,
-			//WGPUFeatureName_TextureCompressionASTC,
-			//WGPUFeatureName_ShaderF16,
-		};
-		rhiDeviceDesc.requiredFeatures = requiredFeatures;
-		rhiDeviceDesc.requiredFeatureCount = elementsOf(requiredFeatures);
+		FixedArray<WGPUFeatureName, 32> requiredFeatures;
+		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
+		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
+		requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
+		// TODO: android
+		//requiredFeatures.append(WGPUFeatureName_TextureCompressionETC2),
+		//requiredFeatures.append(WGPUFeatureName_TextureCompressionASTC),
+		//requiredFeatures.append(WGPUFeatureName_ShaderF16),
+
+		rhiDeviceDesc.requiredFeatures = requiredFeatures.ptr();
+		rhiDeviceDesc.requiredFeatureCount = requiredFeatures.numElem();
 
 		// setup required limits
 		WGPURequiredLimits reqLimits{};
