@@ -1412,11 +1412,11 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 
 		passContext.recorder->SetIndexBufferView(instInfo.indexBuffer, instInfo.indexFormat);
 	}
-	const int instanceCount = instData.buffer ? instData.count : 1;
+
 	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
-		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
+		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instData.count, instData.first);
 	else
-		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
+		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instData.count, meshInfo.baseVertex, instData.first);
 }
 
 void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const
@@ -1518,8 +1518,6 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 	const MeshInstanceData& instData = instInfo.instData;
 	const RenderDrawBatch& meshInfo = drawCmd.batchInfo;
 
-	const int instanceCount = instData.buffer ? instData.count : 1;
-
 	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
 	IMatSystemShader* matShader = material->m_shader;
 
@@ -1560,9 +1558,9 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 		passContext.recorder->SetScissorRectangle(rendPassInfo.scissorRectangle);
 
 	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
-		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instanceCount, instData.first);
+		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instData.count, instData.first);
 	else
-		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instanceCount, meshInfo.baseVertex, instData.first);
+		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instData.count, meshInfo.baseVertex, instData.first);
 
 	return true;
 }

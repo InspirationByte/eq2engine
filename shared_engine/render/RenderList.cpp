@@ -9,11 +9,11 @@
 #include "RenderList.h"
 #include "BaseRenderableObject.h"
 
-#define MIN_OBJECT_RENDERLIST_MEMSIZE 64
+static constexpr const int MIN_OBJECT_RENDERLIST_SIZE = 64;
 
 CRenderList::CRenderList()
-	: m_objectList(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
-	, m_viewDistance(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
+	: m_objectList(PP_SL, MIN_OBJECT_RENDERLIST_SIZE)
+	, m_viewDistance(PP_SL, MIN_OBJECT_RENDERLIST_SIZE)
 {
 
 }
@@ -72,7 +72,7 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 	// pre-compute object distances
 	for(int i = 0; i < m_objectList.numElem(); ++i)
 	{
-		Renderable* renderable = m_objectList[i];
+		const Renderable* renderable = m_objectList[i];
 		const BoundingBox& bbox = renderable->GetBoundingBox();
 
 		// clamp point in bbox

@@ -12,6 +12,12 @@ using ITexturePtr = CRefPtr<ITexture>;
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
+class IGPURenderPassRecorder;
+using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
+
+class IGPUCommandRecorder;
+using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
+
 enum EPrimTopology : int;
 
 struct Vertex2D
@@ -221,6 +227,11 @@ struct RenderDrawCmd
 	RenderInstanceInfo	instanceInfo;
 	RenderDrawBatch		batchInfo;
 
+	RenderDrawCmd()
+	{
+		instanceInfo.instData.count = 1;
+	}
+
 	RenderDrawCmd& SetMaterial(IMaterial* _material)
 	{
 		batchInfo.material = _material;
@@ -241,6 +252,12 @@ struct RenderDrawCmd
 		instanceInfo.instFormat.name = vertFormat->GetName();
 		instanceInfo.instFormat.formatId = vertFormat->GetNameHash();
 		instanceInfo.instFormat.layout = vertFormat->GetFormatDesc();
+		return *this;
+	}
+
+	RenderDrawCmd& SetInstanceCount(int count)
+	{
+		instanceInfo.instData.count = count;
 		return *this;
 	}
 
@@ -360,7 +377,9 @@ struct RenderPassContext
 
 	using BeforeMaterialSetupFunc = EqFunction<IMaterial* (IMaterial* material)>;
 
-	IGPURenderPassRecorder*		recorder{ nullptr };	// FIXME: refptr?
+	IGPURenderPassRecorderPtr	recorder;			// render pass recorder
+	IGPUCommandRecorderPtr		preRenderRecorder;	// separate command buffer for writing commands prior to render
+
 	const RenderPassBaseData*	data{ nullptr };
 	BeforeMaterialSetupFunc		beforeMaterialSetup{ nullptr };
 };
