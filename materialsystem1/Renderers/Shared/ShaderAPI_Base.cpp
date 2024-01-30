@@ -77,6 +77,12 @@ void ShaderAPI_Base::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) con
 	SubmitCommandBuffers(ArrayCRef(&ptr, 1));
 }
 
+Future<bool> ShaderAPI_Base::SubmitCommandBufferAwaitable(const IGPUCommandBuffer* cmdBuffer) const
+{
+	IGPUCommandBufferPtr ptr(const_cast<IGPUCommandBuffer*>(cmdBuffer));
+	return SubmitCommandBuffersAwaitable(ArrayCRef(&ptr, 1));
+}
+
 void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {
 	const int LIST_LIMIT = 50;

@@ -101,7 +101,6 @@ public:
 //-------------------------------------------------------------
 
 	virtual void				Flush() = 0;
-	virtual void				Finish() = 0;
 
 //-------------------------------------------------------------
 // Buffer management
@@ -144,6 +143,9 @@ public:
 	
 	virtual void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const = 0;
 	virtual void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const = 0;
+
+	virtual Future<bool>				SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const = 0;
+	virtual Future<bool>				SubmitCommandBufferAwaitable(const IGPUCommandBuffer* cmdBuffer) const = 0;
 
 //-------------------------------------------------------------
 // Texture resource managenent

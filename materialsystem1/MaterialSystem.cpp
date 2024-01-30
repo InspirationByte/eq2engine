@@ -1039,7 +1039,6 @@ bool CMaterialSystem::EndFrame()
 		return false;
 
 	// issue the rendering of anything
-	m_shaderAPI->Flush();
 	m_shaderAPI->ResetCounters();
 
 	m_pendingCmdBuffers.append(m_proxyUpdateCmdRecorder->End());

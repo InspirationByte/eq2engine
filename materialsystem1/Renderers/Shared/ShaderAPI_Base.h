@@ -34,6 +34,7 @@ public:
 	int						GetProgressiveTextureFrequency() const;
 
 	void					SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const;
+	Future<bool>			SubmitCommandBufferAwaitable(const IGPUCommandBuffer* cmdBuffer) const;
 
 //-------------------------------------------------------------
 // Renderer statistics

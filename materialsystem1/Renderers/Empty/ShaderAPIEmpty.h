@@ -78,7 +78,6 @@ public:
 
 	// Synchronization
 	void			Flush() {}
-	void			Finish() {}
 
 //-------------------------------------------------------------
 // Textures
@@ -143,6 +142,7 @@ public:
 // Command buffer management
 
 	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const {}
+	Future<bool>				SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const { return Future<bool>::Succeed(true); }
 
 protected:
 

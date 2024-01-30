@@ -276,7 +276,7 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 
 		// force WebGPU to process everything it has queued
 		while (!future.HasResult()) {
-			g_renderWorker.SignalWork();
+			WGPU_INSTANCE_SPIN;
 		}
 	}
 

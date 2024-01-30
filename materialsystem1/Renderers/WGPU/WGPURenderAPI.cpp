@@ -1317,8 +1317,11 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 		wgpuQueueSubmit(m_rhiQueue, rhiSubmitBuffers.numElem(), rhiSubmitBuffers.ptr());
 		return 0;
 	});
-	
-	/*
+}
+
+
+Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
+{
 	Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
 	rhiSubmitBuffers.reserve(cmdBuffers.numElem());
 	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
@@ -1329,19 +1332,54 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 		WGPUCommandBuffer rhiCmdBuffer = bufferImpl->m_rhiCommandBuffer;
 		ASSERT(rhiCmdBuffer);
 
-		wgpuCommandBufferReference(rhiCmdBuffer);
 		rhiSubmitBuffers.append(rhiCmdBuffer);
+		wgpuCommandBufferReference(rhiCmdBuffer);
 	}
 
-	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers)]() {
+	if (!rhiSubmitBuffers.numElem())
+	{
+		return Future<bool>::Succeed(true);
+	}
+
+	Promise<bool> promise;
+	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers), &promise]() {
 		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
-		for(WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
+		for (WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
 			wgpuCommandBufferRelease(rhiCmdBuffer);
+
+		wgpuQueueOnSubmittedWorkDone(m_rhiQueue, [](WGPUQueueWorkDoneStatus status, void* userdata) {
+			Promise<bool> promise(reinterpret_cast<Promise<bool>::Data*>(userdata));
+			promise.SetResult(status == WGPUQueueWorkDoneStatus_Success);
+
+			if(status != WGPUQueueWorkDoneStatus_Success)
+			{
+				const char* str = "Invalid";
+				switch (status)
+				{
+				case WGPUQueueWorkDoneStatus_Error:
+					str = "Error";
+					break;
+				case WGPUQueueWorkDoneStatus_Unknown:
+					str = "UnknownStatus";
+					break;
+				case WGPUQueueWorkDoneStatus_DeviceLost:
+					str = "DeviceLost";
+					break;
+				}
+				promise.SetError(-1, str);
+			}
+		}, promise.GrabDataPtr());
+
 		return 0;
 	});
-	*/
+
+	return promise.CreateFuture();
 }
 
+void CWGPURenderAPI::Flush()
+{
+	WGPU_INSTANCE_SPIN;
+}
 
 static void CreateQuerySet()
 {
