@@ -74,6 +74,7 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 	if(m_isInit)
 		return;
 
+	m_channelTypes.clear();
 	m_updateDone.Raise();
 
 	m_defaultMaxDistance = defaultMaxDistance;
