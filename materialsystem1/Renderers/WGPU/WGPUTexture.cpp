@@ -176,7 +176,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 				if (imgType == IMAGE_TYPE_CUBE)
 				{
 					const int cubeFaceSize = size / 6;
-					for (int i = 0; i < 6; ++i)
+					for (int i = 0; i < CUBESIDE_COUNT; ++i)
 					{
 						rhImageCopy.origin.z = (uint32)i;
 						wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhImageCopy, src, size, &rhiTexDataLayout, &rhiTexSize);

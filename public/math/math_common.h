@@ -19,9 +19,9 @@ enum ECubeSide : int
 	POSITIVE_Z,
 	NEGATIVE_Z,
 
-	FIRST = 0,
-	LAST = 5,
-	COUNT,
+	CUBESIDE_FIRST = 0,
+	CUBESIDE_LAST = 5,
+	CUBESIDE_COUNT,
 };
 
 #ifndef IsNaN
