@@ -96,8 +96,17 @@ void CParticleBatch::UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds)
 	if (!m_indexBuffer)
 		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX | BUFFERUSAGE_COPY_DST, "PFXIndexBuffer");
 
-	bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
-	bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+	if (bufferUpdateCmds)
+	{
+		bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+		bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+	}
+	else
+	{
+		m_vertexBuffer->Update(m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+		m_indexBuffer->Update(m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+	}
+
 	m_bufferDirty = false;
 }
 
@@ -263,6 +272,12 @@ void CParticleLowLevelRenderer::PreloadMaterials()
 {
 	for(CParticleBatch* batch : m_batchs)
 		g_matSystem->QueueLoading(batch->m_material);
+}
+
+void CParticleLowLevelRenderer::UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds)
+{
+	for (CParticleBatch* batch : m_batchs)
+		batch->UpdateVBO(bufferUpdateCmds);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer

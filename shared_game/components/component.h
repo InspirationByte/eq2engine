@@ -33,6 +33,7 @@ protected:
 	virtual int GetNameHash() const override { return NameHash; }
 
 #define DECLARE_COMPONENT_DERIVED(name, baseClass) \
+	using BaseClass = baseClass; \
 	static constexpr const char Name[] = name; \
 	static constexpr int NameHash{ StringToHashConst(baseClass::Name) }; \
 	virtual const char* GetName() const override { return name; } \

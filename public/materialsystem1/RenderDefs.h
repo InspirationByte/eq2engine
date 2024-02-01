@@ -364,21 +364,18 @@ struct MatSysDefaultRenderPass : public RenderPassBaseData
 	bool				depthWrite{ false };
 };
 
+
 struct RenderPassContext
 {
 	RenderPassContext() = default;
-	//RenderPassContext(IGPURenderPassRecorder* recorder)
-	//	: recorder(recorder)
-	//{}
-
 	RenderPassContext(IGPURenderPassRecorder* recorder, const RenderPassBaseData* passData) 
-		: recorder(recorder), data(passData)
+		: recorder(recorder)
+		, data(passData)
 	{}
 
 	using BeforeMaterialSetupFunc = EqFunction<IMaterial* (IMaterial* material)>;
 
 	IGPURenderPassRecorderPtr	recorder;			// render pass recorder
-	IGPUCommandRecorderPtr		preRenderRecorder;	// separate command buffer for writing commands prior to render
 
 	const RenderPassBaseData*	data{ nullptr };
 	BeforeMaterialSetupFunc		beforeMaterialSetup{ nullptr };

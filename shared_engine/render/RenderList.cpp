@@ -18,35 +18,15 @@ CRenderList::CRenderList()
 
 }
 
-CRenderList::~CRenderList()
-{
-	
-}
-
-void CRenderList::AddRenderable(Renderable* pObject)
+void CRenderList::AddRenderable(Renderable* pObject, void* userData)
 {
 	if (!pObject)
 		return;
 
+	pObject->OnAddedToRender(this, userData);
+
 	const int idx = m_objectList.append(pObject);
 	m_viewDistance.append({ 0.0f, idx });
-}
-
-int CRenderList::GetRenderableCount()
-{
-	return m_objectList.numElem();
-}
-
-CRenderList::Renderable* CRenderList::GetRenderable(int id)
-{
-	return m_objectList[id];
-}
-
-void CRenderList::Append(CRenderList* pAnotherList)
-{
-	const int num = pAnotherList->GetRenderableCount();
-	for(int i = 0; i < num; i++)
-		m_objectList.append(pAnotherList->GetRenderable(i));
 }
 
 void CRenderList::Render(int renderFlags, const RenderPassContext& passContext, void* userdata)

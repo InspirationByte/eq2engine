@@ -108,7 +108,9 @@ public:
 	void				PreloadMaterials();
 
 	// prepares render buffers and sends renderables to ViewRenderer
-	void				Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds);
+	void				UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds);
+
+	void				Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr);
 	void				ClearBuffers();
 
 protected:

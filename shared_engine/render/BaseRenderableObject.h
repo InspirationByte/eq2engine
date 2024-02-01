@@ -7,7 +7,8 @@
 
 #pragma once
 
-class IGPURenderPassRecorder;
+class CRenderList;
+class IGPUCommandRecorder;
 struct RenderPassContext;
 
 enum RenderableVisibilityState_e
@@ -30,10 +31,8 @@ class CBaseRenderableObject
 {
 	friend class CRenderList;
 public:
-//------------------------------------------------------------
-// basic methods and helpers
-//------------------------------------------------------------
-	virtual ~CBaseRenderableObject() {}
+
+	virtual ~CBaseRenderableObject() = default;
 
 	virtual void				Render(const RenderInfo& rinfo) = 0;
 
@@ -43,5 +42,7 @@ public:
 	virtual int					GetRenderFlags() const;
 
 protected:
+	virtual void				OnAddedToRender(CRenderList* list, void* userData) {}
+
 	int							m_renderFlags{ 0 };
 };
