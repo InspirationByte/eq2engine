@@ -129,7 +129,11 @@ IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 	}
 
 	if (!m_hasCommands)
+	{
+		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
+		m_rhiCommandEncoder = nullptr;
 		return nullptr;
+	}
 
 	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
 
