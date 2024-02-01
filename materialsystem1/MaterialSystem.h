@@ -174,6 +174,7 @@ private:
 	void						InitDefaultMaterial();
 
 	void						FramePrepareInternal();
+	void						QueueCommitInternalBuffers();
 
 	MatSysRenderSettings		m_config;
 

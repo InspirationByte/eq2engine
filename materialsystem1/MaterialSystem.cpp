@@ -31,6 +31,7 @@
 using namespace Threading;
 static CEqMutex s_matSystemMutex;
 static CEqMutex s_matSystemPipelineMutex;
+static CEqMutex s_matSystemBufferMutex;
 
 DECLARE_INTERNAL_SHADERS()
 
@@ -1169,8 +1170,8 @@ void CMaterialSystem::GetFogInfo(FogInfo &info) const
 {
 	if( m_config.overdrawMode)
 	{
-		static FogInfo nofog;
-		info = nofog;
+		info = {};
+		info.viewPos = m_fogInfo.viewPos;
 		return;
 	}
 
@@ -1229,8 +1230,7 @@ IDynamicMeshPtr CMaterialSystem::GetDynamicMesh()
 		return nullptr;
 	}
 
-	// TODO: release on MeshBuffer::End
-
+	// NOTE: buffer is released on MeshBuffer::End
 	return IDynamicMeshPtr(&dynMesh);
 }
 
@@ -1243,6 +1243,8 @@ void CMaterialSystem::ReleaseDynamicMesh(int id)
 // returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
 GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64 size)
 {
+	CScopedMutex m(s_matSystemBufferMutex);
+
 	const ShaderAPICapabilities& caps = m_shaderAPI->GetCaps();
 	const int bufferAlignment = max(caps.minUniformBufferOffsetAlignment, caps.minStorageBufferOffsetAlignment);
 	constexpr int64 maxTransientBufferSize = 128 * 1024;
@@ -1269,6 +1271,8 @@ GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64
 
 GPUBufferView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 size)
 {
+	CScopedMutex m(s_matSystemBufferMutex);
+
 	const int bufferAlignment = 4; // vertex buffers are aligned always 4 bytes
 	constexpr int64 maxTransientBufferSize = 128 * 1024;
 
@@ -1295,43 +1299,21 @@ GPUBufferView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 
 
 void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
 {
-	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
-
-	for(CDynamicMesh& dynMesh : m_dynamicMeshes)
-	{
-		IGPUCommandBufferPtr submitBuf = dynMesh.GetSubmitBuffer();
-		if (!submitBuf)
-			continue;
-		buffers.append(submitBuf);
-	}
-
-	if (m_bufferCmdRecorder)
-	{
-		buffers.append(m_bufferCmdRecorder->End());
-		m_bufferCmdRecorder = nullptr;
-
-		{
-			TransientBufferCollection& collection = m_transientUniformBuffers;
-			collection.bufferOffsets[collection.bufferIdx] = 0;
-			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
-		}
-
-		{
-			TransientBufferCollection& collection = m_transientVertexBuffers;
-			collection.bufferOffsets[collection.bufferIdx] = 0;
-			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
-		}
-		m_cameraChangeId += 8192;
-	}
-
+	QueueCommitInternalBuffers();
 	for (const IGPUCommandBufferPtr& buffer : cmdBuffers)
-		buffers.append(buffer);
+		m_pendingCmdBuffers.append(buffer);
 }
 
 void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 {
+	QueueCommitInternalBuffers();
+	m_pendingCmdBuffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
+}
+
+void CMaterialSystem::QueueCommitInternalBuffers()
+{
 	Array<IGPUCommandBufferPtr>& buffers = m_pendingCmdBuffers;
-	
+
 	for (CDynamicMesh& dynMesh : m_dynamicMeshes)
 	{
 		IGPUCommandBufferPtr submitBuf = dynMesh.GetSubmitBuffer();
@@ -1358,8 +1340,6 @@ void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 		}
 		m_cameraChangeId += 8192;
 	}
-
-	buffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
 }
 
 void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext)
