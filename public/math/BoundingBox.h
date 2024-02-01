@@ -10,7 +10,7 @@
 template <class T>
 struct TAABBox3D
 {
-	static constexpr const int VertexCount = 9;
+	static constexpr const int VertexCount = 8;
 
 	TVec3D<T>	minPoint;
 	TVec3D<T>	maxPoint;
