@@ -23,7 +23,7 @@ void CRenderList::AddRenderable(Renderable* pObject, void* userData)
 	if (!pObject)
 		return;
 
-	pObject->OnAddedToRender(this, userData);
+	pObject->OnAddedToRenderList(this, userData);
 
 	const int idx = m_objectList.append(pObject);
 	m_viewDistance.append({ 0.0f, idx });

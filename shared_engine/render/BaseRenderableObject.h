@@ -42,7 +42,7 @@ public:
 	virtual int					GetRenderFlags() const;
 
 protected:
-	virtual void				OnAddedToRender(CRenderList* list, void* userData) {}
+	virtual void				OnAddedToRenderList(CRenderList* list, void* userData) {}
 
 	int							m_renderFlags{ 0 };
 };
