@@ -159,7 +159,7 @@ public:
 
 	void						SubmitQueuedCommands();
 
-	void						UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const;
+	void						UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force = false) const;
 
 	bool						SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext);
 	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext);

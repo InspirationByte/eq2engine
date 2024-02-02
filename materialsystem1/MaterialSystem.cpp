@@ -1398,7 +1398,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instData.count, meshInfo.baseVertex, instData.first);
 }
 
-void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const
+void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force) const
 {
 	if (!material)
 		return;
@@ -1406,7 +1406,7 @@ void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandReco
 	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
 
 	const uint proxyFrame = m_frame;
-	if (matSysMaterial->m_frameBound == proxyFrame)
+	if (!force && matSysMaterial->m_frameBound == proxyFrame)
 		return;
 
 	matSysMaterial->UpdateProxy(m_proxyDeltaTime, commandRecorder);

@@ -190,7 +190,7 @@ public:
 
 	// submits all queued command buffers to RHI.
 	virtual void					SubmitQueuedCommands() = 0;
-	virtual void					UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder) const = 0;
+	virtual void					UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force = false) const = 0;
 
 	virtual bool					SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext) = 0;
 	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext) = 0;
