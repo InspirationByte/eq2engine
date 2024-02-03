@@ -45,12 +45,23 @@ public:
 	virtual bool					IsDepthReadOnly() const = 0;
 	virtual bool					IsStencilReadOnly() const = 0;
 
+	/* TODO: multi - threaded recorder
+		like:
+			GPUCommandBlock* block = cmdRec->BeginCommandBlock()
+				block.SetPipeline
+				block.SetBindGroup(n...)
+				block.SetVertexBuffer(...)
+				block.SetIndexBuffer(...)
+				block.Draw(...)
+			EndBlock(block)
+	*/
+
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
 	virtual IGPURenderPipelinePtr	GetPipeline() const = 0;
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) = 0;
 
 	virtual void					SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset = 0, int64 size = -1) = 0;
-	virtual void					SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
+	virtual void					SetIndexBuffer(IGPUBuffer* indexBuffer, EIndexFormat indexFormat, int64 offset = 0, int64 size = -1) = 0;
 
 	void							SetVertexBufferView(int slot, const GPUBufferView& vertexBuffer);
 	void							SetIndexBufferView(const GPUBufferView& indexBuffer, EIndexFormat indexFormat);

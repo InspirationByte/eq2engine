@@ -46,7 +46,7 @@ struct MatSysRenderSettings
 	bool		editormode{ false };			// enable editor mode
 	bool		threadedloader{ true };
 
-	bool		enableShadows{ true };			// enable shadows?
+	bool		enableShadows{ false };			// enable shadows?
 	bool		wireframeMode{ false };			// matsystem wireframe mode
 	bool		overdrawMode{ false };			// matsystem overdraw mode
 };
