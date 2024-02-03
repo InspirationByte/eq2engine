@@ -236,7 +236,7 @@ project "eqWGPURHI"
 		"RENDERER_TYPE=4"
 	}
 	files {
-		Folders.matsystem1.. "renderers/WGPU/**.cpp",
-		Folders.matsystem1.."renderers/WGPU/**.h"
+		Folders.matsystem1.. "Renderers/WGPU/**.cpp",
+		Folders.matsystem1.."Renderers/WGPU/**.h"
 	}
 

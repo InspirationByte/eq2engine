@@ -20,10 +20,10 @@ CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& win
 	m_textureRef = CRefPtr<CWGPUTexture>(static_cast<CWGPUTexture*>(swapChainTexture.Ptr()));
 
 	// FIXME: API type too?
-	if(m_winInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WINDOWS)
-		m_textureRef->SetFormat(MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB));
-	else
+	if(m_winInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_ANDROID)
 		m_textureRef->SetFormat(FORMAT_RGBA8);
+	else
+		m_textureRef->SetFormat(MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB));
 }
 
 CWGPUSwapChain::~CWGPUSwapChain()
@@ -111,19 +111,19 @@ bool CWGPUSwapChain::UpdateResize()
 			surfDesc.nextInChain = &windowsSurfDesc.chain;
 			break;
 		case RHI_WINDOW_HANDLE_NATIVE_X11:
-			windowsSurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromXlibWindow;
+			x11SurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromXlibWindow;
 			x11SurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
-			x11SurfDesc.window = (uint32_t)m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
+			x11SurfDesc.window = (uint64_t)m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
 			surfDesc.nextInChain = &x11SurfDesc.chain;
 			break;
 		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
-			windowsSurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromWaylandSurface;
+			waylandSurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromWaylandSurface;
 			waylandSurfDesc.display = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::DISPLAY);
 			waylandSurfDesc.surface = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::SURFACE);
 			surfDesc.nextInChain = &waylandSurfDesc.chain;
 			break;
 		case RHI_WINDOW_HANDLE_NATIVE_ANDROID:
-			windowsSurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromAndroidNativeWindow;
+			androidWindowSurfDesc.chain.sType = WGPUSType_SurfaceDescriptorFromAndroidNativeWindow;
 			androidWindowSurfDesc.window = m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
 			surfDesc.nextInChain = &androidWindowSurfDesc.chain;
 			break;

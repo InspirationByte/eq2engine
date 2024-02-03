@@ -7,6 +7,7 @@
 
 #pragma once
 #include <webgpu/webgpu.h>
+#include "renderers/ShaderAPI_defs.h"
 
 // ETextureFormat
 static WGPUTextureFormat g_wgpuTexFormats[] = {
