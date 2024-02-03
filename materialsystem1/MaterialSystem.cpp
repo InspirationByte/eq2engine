@@ -234,6 +234,8 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 		IRenderManager* renderMng = nullptr;
 		IRenderLibrary* renderLib = nullptr;
 		IShaderAPI* shaderAPI = nullptr;
+
+		DevMsg(DEVMSG_MATSYSTEM, "Trying renderer %s\n", rendererName);
 		
 		defer 
 		{
@@ -251,7 +253,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 
 		if(!renderModule)
 		{
-			DevMsg(DEVMSG_MATSYSTEM, "Can't load renderer '%s' - %s", rendererName, loadErr.ToCString());
+			MsgError("Can't load renderer '%s' - %s\n", rendererName, loadErr.ToCString());
 			return false;
 		}
 
@@ -292,7 +294,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	};
 
 #ifdef PLAT_ANDROID
-	EqString rendererName = "libeqGLESRHI";
+	EqString rendererName = "libeqWGPURHI";
 
 	if(!tryLoadRenderer(rendererName))
 		return false;

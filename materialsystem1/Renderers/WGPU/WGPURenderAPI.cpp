@@ -28,6 +28,7 @@
 DECLARE_CVAR(wgpu_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 
 CWGPURenderAPI CWGPURenderAPI::Instance;
+IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
 
 static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind)
 {

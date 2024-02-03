@@ -345,7 +345,7 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
 			if (!renderPipeline)
 			{
-				MsgError("Shader %s is unable to create pipeline", GetName());
+				MsgError("Shader %s is unable to create pipeline\n", GetName());
 			}
 
 			{

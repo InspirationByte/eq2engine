@@ -8,6 +8,9 @@
 #pragma once
 #include "render/IDebugOverlay.h"
 
+class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
 struct DebugTextNode_t
 {
 	EqString	pszText;

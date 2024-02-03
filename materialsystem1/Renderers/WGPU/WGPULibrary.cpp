@@ -22,8 +22,6 @@
 #include "WGPURenderAPI.h"
 #include "WGPUSwapChain.h"
 
-IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
-
 DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
 

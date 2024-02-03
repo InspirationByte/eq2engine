@@ -1,7 +1,8 @@
 #pragma once
 
 #include "renderers/ShaderAPI_defs.h"
-#include "renderers/IVertexFormat.h" // DEPRECATED
+#include "renderers/IVertexFormat.h"
+#include "renderers/IGPUCommandRecorder.h"
 
 class IVertexFormat;
 class IMaterial;
@@ -11,12 +12,6 @@ using ITexturePtr = CRefPtr<ITexture>;
 
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
-
-class IGPURenderPassRecorder;
-using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
-
-class IGPUCommandRecorder;
-using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
 
 enum EPrimTopology : int;
 

@@ -2,6 +2,8 @@
 #pragma once
 #include <imgui.h>      // IMGUI_IMPL_API
 
+class IGPURenderPassRecorder;
+
 IMGUI_IMPL_API bool     ImGui_ImplMatSystem_Init();
 IMGUI_IMPL_API void     ImGui_ImplMatSystem_Shutdown();
 IMGUI_IMPL_API void     ImGui_ImplMatSystem_NewFrame();

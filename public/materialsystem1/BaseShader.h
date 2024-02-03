@@ -69,9 +69,9 @@ struct MatSysCamera;
 #define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec3, _SHADER_PARAM_OP_EMPTY)
 #define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec4, _SHADER_PARAM_OP_EMPTY)
 
-#define SHADER_PARAM_TEXTURE(param, variable, ...)			{ variable = LoadTextureByVar(renderAPI, #param, true, __VA_ARGS__); }
-#define SHADER_PARAM_TEXTURE_NOERROR(param, variable, ...)	{ variable = LoadTextureByVar(renderAPI, #param, false, __VA_ARGS__); }
-#define SHADER_PARAM_TEXTURE_FIND(param, variable, ...)		{ variable = FindTextureByVar(renderAPI, #param, false, __VA_ARGS__); }
+#define SHADER_PARAM_TEXTURE(param, variable, ...)			{ variable = LoadTextureByVar(renderAPI, #param, true, ##__VA_ARGS__ ); }
+#define SHADER_PARAM_TEXTURE_NOERROR(param, variable, ...)	{ variable = LoadTextureByVar(renderAPI, #param, false, ##__VA_ARGS__ ); }
+#define SHADER_PARAM_TEXTURE_FIND(param, variable, ...)		{ variable = FindTextureByVar(renderAPI, #param, false, ##__VA_ARGS__ ); }
 
 class CBaseShader;
 

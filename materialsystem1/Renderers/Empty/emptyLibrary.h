@@ -8,6 +8,8 @@
 #pragma once
 #include "../IRenderLibrary.h"
 
+class CEmptySwapChain;
+
 class CEmptyRenderLib : public IRenderLibrary
 {
 public:
@@ -21,7 +23,7 @@ public:
 
 	void			BeginFrame(ISwapChain* swapChain = nullptr);
 	void			EndFrame();
-	ITexturePtr		GetCurrentBackbuffer() const { return nullptr; }
+	ITexturePtr		GetCurrentBackbuffer() const;
 
 	IShaderAPI*		GetRenderer() const;
 
@@ -34,17 +36,21 @@ public:
 
 	bool			CaptureScreenshot(CImage &img);
 
-	ISwapChain*	CreateSwapChain(const RenderWindowInfo& windowInfo) {return nullptr;}
-	void			DestroySwapChain(ISwapChain* swapChain) {}
+	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
+	void			DestroySwapChain(ISwapChain* swapChain);
 
 protected:
-	EQWNDHANDLE				hwnd;
+	EQWNDHANDLE		hwnd;
 
-	int						width, height;
-	bool					bHasWireframeRendering;
-	bool					m_bActive;
+	int				m_swapChainCounter{ 0 };
+	ISwapChain*		m_currentSwapChain{ nullptr };
+	Array<CEmptySwapChain*>	m_swapChains{ PP_SL };
 
-	bool					m_bResized;
-	bool					m_windowed;
+	int				width, height;
+	bool			bHasWireframeRendering;
+	bool			m_bActive;
+
+	bool			m_bResized;
+	bool			m_windowed;
 };
 

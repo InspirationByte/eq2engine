@@ -223,7 +223,10 @@ template<>
 inline const GPUBufferView& MatVarProxy<GPUBufferView>::Get() const
 {
 	if (!m_vars)
-		return {};
+	{
+		static GPUBufferView _empty;
+		return _empty;
+	}
 
 	const MatVarData& var = m_vars->variables[m_matVarIdx];
 	return var.buffer;
