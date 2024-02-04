@@ -13,13 +13,26 @@ enum EMessageBoxType
 	MSGBOX_WARNING,
 	MSGBOX_ERROR,
 	MSGBOX_CRASH,
+
+	MSGBOX_YESNO,
+	MSGBOX_ABORTRETRYINGORE
 };
 
-typedef void	(*PREERRORMESSAGECALLBACK)( void );
-typedef void 	(*MESSAGECB)( const char* str, EMessageBoxType type );
+enum EMessageBoxButton
+{
+	MSGBOX_BUTTON_OK = 0,
 
-IEXPORTS void	SetPreErrorCallback(PREERRORMESSAGECALLBACK callback);
-IEXPORTS void	SetMessageBoxCallback(MESSAGECB callback);
+	MSGBOX_BUTTON_YES,
+	MSGBOX_BUTTON_NO,
+
+	MSGBOX_BUTTON_ABORT,
+	MSGBOX_BUTTON_RETRY,
+	MSGBOX_BUTTON_IGNORE,
+};
+
+using MessageBoxCb = int (*)(const char* messageStr, const char* titleStr, EMessageBoxType type);
+
+IEXPORTS void	SetMessageBoxCallback(MessageBoxCb callback);
 
 IEXPORTS void	CrashMsg(const char* fmt, ...);
 IEXPORTS void	ErrorMsg(const char* fmt, ...);

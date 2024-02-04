@@ -90,7 +90,6 @@ ConCommand* c_log_flush;
 
 void PPMemInit();
 void PPMemShutdown();
-void InitMessageBoxPlatform();
 
 CDkCore::CDkCore()
 {
@@ -157,7 +156,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 #ifdef _WIN32
 	setlocale(LC_ALL,"C");
-	InitMessageBoxPlatform();
 #endif // _WIN32
 
 	// Assume the core is always init from first thread

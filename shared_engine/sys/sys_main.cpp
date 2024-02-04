@@ -33,23 +33,66 @@
 DECLARE_CVAR_G(__cheats, QUOTE(CHEATS_DEFAULT_VALUE), "Wireframe", CV_PROTECTED | CV_INVISIBLE);
 
 // To not use GTK or java messages, we just using SDL for it. Neat. Noice.
-static void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
+static int EQSDLMessageBoxCallback(const char* messageStr, const char* titleStr, EMessageBoxType type)
 {
 	switch(type)
 	{
 		case MSGBOX_INFO:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, nullptr);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, titleStr, messageStr, nullptr);
 			break;
 		case MSGBOX_WARNING:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, nullptr);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, titleStr, messageStr, nullptr);
 			break;
 		case MSGBOX_ERROR:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, nullptr);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, titleStr, messageStr, nullptr);
 			break;
 		case MSGBOX_CRASH:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, nullptr);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, titleStr, messageStr, nullptr);
 			break;
+		case MSGBOX_YESNO:
+		{
+			const SDL_MessageBoxButtonData buttons[] = {
+				{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, MSGBOX_BUTTON_YES, "Yes" },
+				{ 0, MSGBOX_BUTTON_NO, "No"},
+			};
+
+			SDL_MessageBoxData msgBox{};
+			msgBox.window = nullptr;
+			msgBox.title = titleStr;
+			msgBox.buttons = buttons;
+			msgBox.numbuttons = elementsOf(buttons);
+			msgBox.flags = SDL_MESSAGEBOX_INFORMATION;
+			msgBox.message = messageStr;
+
+			int buttonId = -1;
+			SDL_ShowMessageBox(&msgBox, &buttonId);
+
+			return buttonId;
+		}
+		case MSGBOX_ABORTRETRYINGORE:
+		{
+			const SDL_MessageBoxButtonData buttons[] = {
+				{ 0, MSGBOX_BUTTON_ABORT, "Abort" },
+				{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, MSGBOX_BUTTON_RETRY, "Retry"},
+				{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, MSGBOX_BUTTON_IGNORE, "Ignore" },
+			};
+
+			SDL_MessageBoxData msgBox{};
+			msgBox.window = nullptr;
+			msgBox.title = titleStr;
+			msgBox.buttons = buttons;
+			msgBox.numbuttons = elementsOf(buttons);
+			msgBox.flags = SDL_MESSAGEBOX_ERROR;
+			msgBox.message = messageStr;
+
+			int buttonId = -1;
+			SDL_ShowMessageBox(&msgBox, &buttonId);
+
+			return buttonId;
+		}
 	}
+
+	return 0;
 }
 
 static void Sys_InitConfiguration()
