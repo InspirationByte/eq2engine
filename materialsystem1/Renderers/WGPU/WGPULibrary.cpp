@@ -24,6 +24,7 @@
 
 DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
+DECLARE_CVAR(wgpu_backend, "vulkan", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
 
 static const char* s_wgpuErrorTypesStr[] = {
 	"NoError",
@@ -100,10 +101,56 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 	return &CWGPURenderAPI::Instance;
 }
 
+static const char* GetWGPUBackendTypeStr(WGPUBackendType backendType)
+{
+	switch (backendType)
+	{
+		case WGPUBackendType_D3D11:
+			return "D3D11";
+		case WGPUBackendType_D3D12:
+			return "D3D12";
+		case WGPUBackendType_Metal:
+			return "Metal";
+		case WGPUBackendType_Vulkan:
+			return "Vulkan";
+		case WGPUBackendType_OpenGL:
+			return "OpenGL";
+		case WGPUBackendType_OpenGLES:
+			return "OpenGLES";
+	}
+	return "Unknown";
+}
+
+static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
+{
+	switch (adapterType)
+	{
+	case WGPUAdapterType_DiscreteGPU:
+		return "Discrete GPU";
+	case WGPUAdapterType_IntegratedGPU:
+		return "Integrated GPU";
+	case WGPUAdapterType_CPU:
+		return "Software";
+	}
+	return "Unknown";
+}
+
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
+	
+	if (!stricmp(wgpu_backend.GetString(), "D3D11"))
+		options.backendType = WGPUBackendType_D3D11;
+	else if(!stricmp(wgpu_backend.GetString(), "D3D12"))
+		options.backendType = WGPUBackendType_D3D12;
+	else if (!stricmp(wgpu_backend.GetString(), "Vulkan"))
+		options.backendType = WGPUBackendType_Vulkan;
+	else if (!stricmp(wgpu_backend.GetString(), "OpenGL"))
+		options.backendType = WGPUBackendType_OpenGL;
+	else if (!stricmp(wgpu_backend.GetString(), "OpenGLES"))
+		options.backendType = WGPUBackendType_OpenGLES;
+
 	//options.compatibleSurface = surface;
 	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
 
@@ -117,7 +164,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUAdapterProperties properties = {};
 		wgpuAdapterGetProperties(m_rhiAdapter, &properties);
 
-		Msg("WGPU adapter: %s %s %s\n", properties.name, properties.driverDescription, properties.vendorName);
+		Msg("WGPU Adapter Info: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(properties.backendType), properties.name, GetWGPUAdapterTypeStr(properties.adapterType), properties.driverDescription);
 	}
 
 	{
