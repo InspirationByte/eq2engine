@@ -9,7 +9,10 @@
 #include "core/IDkCore.h"
 #include "core/platform/messagebox.h"
 
-#if !defined(_WIN32) && defined(USE_GTK)
+#ifdef _WIN32
+#include <Windows.h>
+
+#elif defined(USE_GTK)
 
 void InitMessageBoxPlatform()
 {
@@ -53,7 +56,7 @@ static int DefaultPlatformMessageBoxCallback(const char* messageStr, const char*
 		case MSGBOX_CRASH:
 			MessageBoxA(GetDesktopWindow(), messageStr, titleStr, MB_OK | MB_ICONERROR);
 			break;
-		case MSGBOX_YESNO
+		case MSGBOX_YESNO:
 		{
 			const int res = MessageBoxA(nullptr, messageStr, titleStr, MB_YESNO | MB_DEFBUTTON2);
 			if (res == IDYES)
