@@ -18,12 +18,6 @@ CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& win
 	, m_winInfo(windowInfo)
 {
 	m_textureRef = CRefPtr<CWGPUTexture>(static_cast<CWGPUTexture*>(swapChainTexture.Ptr()));
-
-	// FIXME: API type too?
-	if(m_winInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_ANDROID)
-		m_textureRef->SetFormat(FORMAT_RGBA8);
-	else
-		m_textureRef->SetFormat(MakeTexFormat(FORMAT_RGBA8, TEXFORMAT_FLAG_SWAP_RB));
 }
 
 CWGPUSwapChain::~CWGPUSwapChain()
@@ -134,14 +128,47 @@ bool CWGPUSwapChain::UpdateResize()
 		m_surface = wgpuInstanceCreateSurface(m_host->m_instance, &surfDesc);
 	}
 
-	WGPUSwapChainDescriptor swapChainDesc = {};
-	swapChainDesc.width = m_backbufferSize.x;
-	swapChainDesc.height = m_backbufferSize.y;
-	swapChainDesc.format = GetWGPUTextureFormat(m_textureRef->GetFormat());
-	swapChainDesc.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
-	swapChainDesc.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
+	WGPUTextureFormat rhiSurfaceFormat = wgpuSurfaceGetPreferredFormat(m_surface, m_host->m_rhiAdapter);
+	for(int i = 0; i < FORMAT_COUNT; ++i)
+	{
+		const ETextureFormat format = static_cast<ETextureFormat>(i);
+		const ETextureFormat srgbFormat = MakeTexFormat(format, TEXFORMAT_FLAG_SRGB);
+		const ETextureFormat rbSwapFormat = MakeTexFormat(format, TEXFORMAT_FLAG_SWAP_RB);
+		const ETextureFormat rbSwapSrgbFormat = MakeTexFormat(format, TEXFORMAT_FLAG_SWAP_RB | TEXFORMAT_FLAG_SRGB);
 
-	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &swapChainDesc);
+		if(GetWGPUTextureFormat(format) == rhiSurfaceFormat)
+		{
+			m_textureRef->SetFormat(format);
+			break;
+		}
+
+		if(GetWGPUTextureFormat(srgbFormat) == rhiSurfaceFormat)
+		{
+			m_textureRef->SetFormat(srgbFormat);
+			break;
+		}
+
+		if(GetWGPUTextureFormat(rbSwapFormat) == rhiSurfaceFormat)
+		{	
+			m_textureRef->SetFormat(rbSwapFormat);
+			break;
+		}
+
+		if(GetWGPUTextureFormat(rbSwapSrgbFormat) == rhiSurfaceFormat)
+		{	
+			m_textureRef->SetFormat(rbSwapSrgbFormat);
+			break;
+		}
+	}
+
+	WGPUSwapChainDescriptor rhiSwapChainDesc = {};
+	rhiSwapChainDesc.width = m_backbufferSize.x;
+	rhiSwapChainDesc.height = m_backbufferSize.y;
+	rhiSwapChainDesc.format = rhiSurfaceFormat;
+	rhiSwapChainDesc.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
+	rhiSwapChainDesc.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
+
+	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &rhiSwapChainDesc);
 	return m_swapChain;
 }
 

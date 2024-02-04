@@ -51,7 +51,8 @@ protected:
 	uintptr_t				m_mainThreadId{ 0 };
 	WGPUInstance			m_instance{ nullptr };
 
-	WGPUBackendType			m_backendType{ WGPUBackendType_Null };
+	WGPUBackendType			m_rhiBackendType{ WGPUBackendType_Null };
+	WGPUAdapter				m_rhiAdapter{ nullptr };
 	WGPUDevice				m_rhiDevice{ nullptr };
 	WGPUQueue				m_deviceQueue{ nullptr };
 

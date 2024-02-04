@@ -102,13 +102,12 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
-	WGPUAdapter adapter = nullptr;
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
 	//options.compatibleSurface = surface;
-	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &adapter);
+	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
 
-	if (!adapter)
+	if (!m_rhiAdapter)
 	{
 		MsgError("No WGPU supported adapter found\n");
 		return false;
@@ -116,14 +115,14 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 	{
 		WGPUAdapterProperties properties = {};
-		wgpuAdapterGetProperties(adapter, &properties);
+		wgpuAdapterGetProperties(m_rhiAdapter, &properties);
 
 		Msg("WGPU adapter: %s %s %s\n", properties.name, properties.driverDescription, properties.vendorName);
 	}
 
 	{
 		WGPUSupportedLimits supLimits = {};
-		wgpuAdapterGetLimits(adapter, &supLimits);
+		wgpuAdapterGetLimits(m_rhiAdapter, &supLimits);
 
 		WGPULimits requiredLimits = supLimits.limits;
 
@@ -213,7 +212,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		rhiDeviceDesc.requiredLimits = &reqLimits;
 		rhiDeviceDesc.deviceLostCallback = OnWGPUDeviceLost;
 
-		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &rhiDeviceDesc);
+		m_rhiDevice = wgpuAdapterCreateDevice(m_rhiAdapter, &rhiDeviceDesc);
 
 		if (!m_rhiDevice)
 		{
@@ -251,7 +250,7 @@ void CWGPURenderLib::ExitAPI()
 	m_swapChains.clear();
 	m_currentSwapChain = nullptr;
 
-	m_backendType = WGPUBackendType_Null;
+	m_rhiBackendType = WGPUBackendType_Null;
 
 	if (m_deviceQueue)
 		wgpuQueueRelease(m_deviceQueue);
@@ -360,7 +359,10 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 {
 	ITexturePtr currentTexture = m_swapChains[0]->GetBackbuffer();
 
-	BufferInfo bufInfo(GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat())), currentTexture->GetWidth() * currentTexture->GetHeight());
+	const int bytesPerPixel = GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat()));
+	const bool rbSwapped = HasTexFormatFlags(currentTexture->GetFormat(), TEXFORMAT_FLAG_SWAP_RB);
+
+	const BufferInfo bufInfo(bytesPerPixel, currentTexture->GetWidth() * currentTexture->GetHeight());
 	IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(bufInfo, BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "ScreenshotImgBuffer");
 	{
 		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
@@ -369,20 +371,29 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 	}
 	
 	IGPUBuffer::LockFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
-	future.AddCallback([currentTexture, &img](const FutureResult<BufferLockData>& result) {
+	future.AddCallback([currentTexture, bytesPerPixel, rbSwapped, &img](const FutureResult<BufferLockData>& result) {
 		ASSERT(result->data);
 		ubyte* dst = img.Create(FORMAT_RGB8, currentTexture->GetWidth(), currentTexture->GetHeight(), 1, 1);
 
 		for (int y = 0; y < currentTexture->GetHeight(); y++)
 		{
-			ubyte* src = (ubyte*)result->data + 4 * y * currentTexture->GetWidth();
+			const ubyte* src = (ubyte*)result->data + bytesPerPixel * y * currentTexture->GetWidth();
 			for (int x = 0; x < currentTexture->GetWidth(); ++x)
 			{
-				dst[0] = src[2];
-				dst[1] = src[1];
-				dst[2] = src[0];
+				if(rbSwapped)
+				{
+					dst[0] = src[2];
+					dst[1] = src[1];
+					dst[2] = src[0];
+				}
+				else
+				{
+					dst[0] = src[0];
+					dst[1] = src[1];
+					dst[2] = src[2];
+				}
 				dst += 3;
-				src += 4;
+				src += bytesPerPixel;
 			}
 		}
 	});
