@@ -21,12 +21,14 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 {
 	const int sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
 	const int writeDataSize = (bufferInfo.dataSize + 3) & ~3;
+	const bool hasData = bufferInfo.data && bufferInfo.dataSize;
 	m_bufSize = (sizeInBytes + 3) & ~3;
 
 	WGPUBufferDescriptor desc = {};
 	desc.usage = wgpuUsage;
 	desc.size = m_bufSize;
-	desc.mappedAtCreation = bufferInfo.data && bufferInfo.dataSize;
+	desc.mappedAtCreation = true; // TEMPORARY FIX FOR VULKAN ON NVIDIA
+	// desc.mappedAtCreation = hasData;
 	desc.label = label;
 
 	m_usageFlags = desc.usage;
@@ -34,12 +36,19 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 
 	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer");
 
-	if (m_rhiBuffer && bufferInfo.data && bufferInfo.dataSize)
+	if (!m_rhiBuffer)
+		return;
+
+	if (desc.mappedAtCreation)
 	{
 		wgpuBufferReference(m_rhiBuffer);
-		void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
-		ASSERT_MSG(outData, "Buffer mapped range is NULL");
-		memcpy(outData, bufferInfo.data, writeDataSize);
+
+		if (hasData)
+		{
+			void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
+			ASSERT_MSG(outData, "Buffer mapped range is NULL");
+			memcpy(outData, bufferInfo.data, writeDataSize);
+		}
 
 		g_renderWorker.Execute("UnmapBuffer", [buffer = m_rhiBuffer]() {
 			wgpuBufferUnmap(buffer);
