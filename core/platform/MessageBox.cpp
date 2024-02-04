@@ -255,7 +255,7 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char *fmt
 	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
 	if (Platform_IsDebuggerPresent())
 	{
-		const int res = g_msgBoxCallback(messageStr + "Press 'Retry' to Break the execution", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
+		const int res = g_msgBoxCallback(messageStr + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
 		if (res == MSGBOX_BUTTON_RETRY)
 			return _EQASSERT_SKIP;
 		else if (res == MSGBOX_BUTTON_IGNORE)
