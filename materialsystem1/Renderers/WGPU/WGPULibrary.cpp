@@ -24,7 +24,7 @@
 
 DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
-DECLARE_CVAR(wgpu_backend, "vulkan", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
+DECLARE_CVAR(wgpu_backend, "", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
 
 static const char* s_wgpuErrorTypesStr[] = {
 	"NoError",
