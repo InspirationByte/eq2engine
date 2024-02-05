@@ -7,7 +7,6 @@ class MemoryPool
 {
 public:
 	MemoryPool(const MemoryPool& memoryPool) = delete;
-	MemoryPool operator =(MemoryPool&& memoryPool) = delete;
 	MemoryPool operator =(const MemoryPool& memoryPool) = delete;
 
 	MemoryPool(PPSourceLine sl)
@@ -15,12 +14,25 @@ public:
 	{
 	}
 
-	MemoryPool(MemoryPool&& other) 
+	MemoryPool(MemoryPool&& other) noexcept
 		: m_sl(other.m_sl)
 		, m_firstFreeBlock(other.m_firstFreeBlock)
 		, m_firstBuffer(other.m_firstBuffer)
 		, m_bufferedBlocks(other.m_bufferedBlocks)
 	{
+		other.m_firstFreeBlock = nullptr;
+		other.m_firstBuffer = nullptr;
+	}
+
+	MemoryPool& operator=(MemoryPool&& other) noexcept
+	{
+		m_sl = other.m_sl;
+		m_firstFreeBlock = other.m_firstFreeBlock;
+		m_firstBuffer = other.m_firstBuffer;
+		m_bufferedBlocks = other.m_bufferedBlocks;
+		other.m_firstFreeBlock = nullptr;
+		other.m_firstBuffer = nullptr;
+		return *this;
 	}
 
 	virtual ~MemoryPool()
@@ -94,10 +106,10 @@ private:
 		T*				getBlock(int index) { return reinterpret_cast<T*>(&data[blockSize * index]); }
 	};
 
-	const PPSourceLine 	m_sl;
-	Block*				m_firstFreeBlock{ nullptr };
-	Buffer*				m_firstBuffer{ nullptr };
-	int					m_bufferedBlocks{ CHUNK_ITEMS };
+	PPSourceLine 	m_sl;
+	Block*			m_firstFreeBlock{ nullptr };
+	Buffer*			m_firstBuffer{ nullptr };
+	int				m_bufferedBlocks{ CHUNK_ITEMS };
 };
 
 

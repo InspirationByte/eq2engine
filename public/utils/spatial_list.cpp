@@ -13,9 +13,9 @@ constexpr const float	s_spatialOneByObjectGridCell = 1.0f / static_cast<float>(s
 constexpr const int		s_spatialObjectGridSize = 2048 * s_spatialObjectGridCell;
 
 
-int SpatialListUtil::Hash(const IVector2D& cell)
+int SpatialListUtil::Hash(const IVector2D& cell, int maxSize)
 {
-	return cell.y << 16 | cell.x;
+	return ((cell.x * 73856093) ^ (cell.y * 19349663)) & (maxSize - 1);
 }
 
 int SpatialListUtil::SizeInCells(float units)
@@ -42,4 +42,53 @@ Vector3D SpatialListUtil::GetPosition(const IVector2D& cell)
 	);
 
 	return pos;
+}
+
+SpatialList::SpatialList(PPSourceLine sl, const int poolSize)
+	: m_pool(sl), m_buckets(sl)
+{
+	ASSERT(poolSize > 0);
+
+	const int bucketsSize = nextPowerOf2(poolSize);
+	m_buckets.setNum(bucketsSize);
+	m_pool.setNum(poolSize);
+
+	Clear();
+}
+
+void SpatialList::Clear()
+{
+	for (int i = 0; i < m_buckets.numElem(); ++i)
+		m_buckets[i] = 0xffff;
+	m_poolHead = 0;
+}
+
+void SpatialList::Add(const IVector2D cell, ushort id)
+{
+	if (m_poolHead >= m_pool.numElem())
+		return;
+
+	const int h = SpatialListUtil::Hash(cell, m_buckets.numElem());
+	const ushort idx = (ushort)m_poolHead++;
+	Item& item = m_pool[idx];
+	item.pos = cell;
+	item.id = id;
+	item.next = m_buckets[h];
+	m_buckets[h] = idx;
+}
+
+void SpatialList::QueryCell(const IVector2D& cell, const WalkCellFunc& func) const
+{
+	const int h = SpatialListUtil::Hash(cell, m_buckets.numElem());
+	ushort idx = m_buckets[h];
+	while (idx != 0xffff)
+	{
+		const Item& item = m_pool[idx];
+		if (item.pos == cell)
+		{
+			if (!func(item.id))
+				return;
+		}
+		idx = item.next;
+	}
 }

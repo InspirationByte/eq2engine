@@ -14,13 +14,13 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-const VertexLayoutDesc& PFXVertex_t::GetVertexLayoutDesc()
+const VertexLayoutDesc& PFXVertex::GetVertexLayoutDesc()
 {
 	static VertexLayoutDesc s_PFXVertexLayoutDesc = Builder<VertexLayoutDesc>()
-		.Stride(sizeof(PFXVertex_t))
+		.Stride(sizeof(PFXVertex))
 		.Attribute(VERTEXATTRIB_POSITION, "position", 0, 0, ATTRIBUTEFORMAT_FLOAT, 3)
-		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(PFXVertex_t, texcoord), ATTRIBUTEFORMAT_HALF, 2)
-		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(PFXVertex_t, color), ATTRIBUTEFORMAT_UINT8, 4)
+		.Attribute(VERTEXATTRIB_TEXCOORD, "texCoord", 1, offsetOf(PFXVertex, texcoord), ATTRIBUTEFORMAT_HALF, 2)
+		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(PFXVertex, color), ATTRIBUTEFORMAT_UINT8, 4)
 		.End();
 	return s_PFXVertexLayoutDesc;
 }
@@ -47,7 +47,8 @@ void CParticleBatch::Init( const char* pszMaterialName, bool bCreateOwnVBO, int 
 	// init sprite stuff
 	CSpriteBuilder::Init(maxQuads);
 
-	m_material = g_matSystem->GetMaterial(pszMaterialName);
+	m_material = g_matSystem->GetMaterial(pszMaterialName, SHADER_VERTEX_ID(PFXVertex));
+	g_matSystem->QueueLoading(m_material);
 }
 
 void CParticleBatch::Shutdown()
@@ -57,25 +58,24 @@ void CParticleBatch::Shutdown()
 
 	CSpriteBuilder::Shutdown();
 	m_material = nullptr;
+	m_vertexBuffer = nullptr;
+	m_indexBuffer = nullptr;
 }
 
-void CParticleBatch::SetCustomProjectionMatrix(const Matrix4x4& mat)
-{
-	m_useCustomProjMat = true;
-	m_customProjMat = mat;
-}
-
-int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices )
+int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex** verts, uint16** indices, bool preSetIndices )
 {
 	if(!g_pfxRender->IsInitialized())
 		return -1;
 
 	Threading::CScopedMutex m(s_particleRenderMutex);
 
-	return _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
+	const int result = _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
+	if (result != -1) 
+		m_bufferDirty = true;
+	return result;
 }
 
-void CParticleBatch::AddParticleStrip(PFXVertex_t* verts, int nVertices)
+void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
 {
 	if(!g_pfxRender->IsInitialized())
 		return;
@@ -83,51 +83,70 @@ void CParticleBatch::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 	Threading::CScopedMutex m(s_particleRenderMutex);
 
 	_AddParticleStrip(verts, nVertices);
+	m_bufferDirty = true;
+}
+
+void CParticleBatch::UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds)
+{
+	if (!m_bufferDirty)
+		return;
+
+	if (!m_vertexBuffer)
+		m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "PFXVertexBuffer");
+	if (!m_indexBuffer)
+		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX | BUFFERUSAGE_COPY_DST, "PFXIndexBuffer");
+
+	if (bufferUpdateCmds)
+	{
+		bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+		bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+	}
+	else
+	{
+		m_vertexBuffer->Update(m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+		m_indexBuffer->Update(m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+	}
+
+	m_bufferDirty = false;
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleBatch::Render(int nViewRenderFlags)
+void CParticleBatch::Render(int viewRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
 {
-	if(!m_initialized || !r_drawParticles.GetBool())
+	if (!m_initialized || !r_drawParticles.GetBool())
 	{
 		m_numIndices = 0;
 		m_numVertices = 0;
 		return;
 	}
 
-	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
+	if (m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	// copy buffers
-	if(!g_pfxRender->MakeVBOFrom(this))
-		return;
-
-	g_matSystem->SetCullMode(CULL_FRONT);
-
-	if (m_useCustomProjMat)
-		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
+	if (bufferUpdateCmds)
+		UpdateVBO(bufferUpdateCmds);
 
 	RenderDrawCmd drawCmd;
-	drawCmd.vertexLayout = g_pfxRender->m_vertexFormat;
-	drawCmd.vertexBuffers[0] = g_pfxRender->m_vertexBuffer;
-	drawCmd.material = m_material;
-	drawCmd.primitiveTopology = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
+	drawCmd
+		.SetMaterial(m_material)
+		.SetInstanceFormat(g_pfxRender->m_vertexFormat)
+		.SetVertexBuffer(0, m_vertexBuffer);
+		
 	if (m_numIndices)
 	{
-		drawCmd.indexBuffer = g_pfxRender->m_indexBuffer;
-		drawCmd.SetDrawIndexed(m_numIndices, 0, m_numVertices);
+		drawCmd
+			.SetIndexBuffer(m_indexBuffer, INDEXFMT_UINT16)
+			.SetDrawIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numIndices, 0, m_numVertices);
 	}
 	else
-		drawCmd.SetDrawNonIndexed(m_numVertices);
+		drawCmd.SetDrawNonIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numVertices);
 
-	g_matSystem->Draw(drawCmd);
+	g_matSystem->SetupDrawCommand(drawCmd, passContext);
 
-	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
+	if(!(viewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
 	{
 		m_numVertices = 0;
 		m_numIndices = 0;
-		m_useCustomProjMat = false;
 	}
 }
 
@@ -191,8 +210,8 @@ void CParticleLowLevelRenderer::Shutdown()
 {
 	ShutdownBuffers();
 
-	for (int i = 0; i < m_batchs.numElem(); i++)
-		delete m_batchs[i];
+	for (CParticleBatch* batch : m_batchs)
+		delete batch;
 	m_batchs.clear(true);
 }
 
@@ -201,20 +220,13 @@ bool CParticleLowLevelRenderer::InitBuffers()
 	if(m_initialized)
 		return true;
 
-	MsgWarning("Initializing particle buffers...\n");
-
-	m_vbMaxQuads = r_particleBufferSize.GetInt();
-
-	m_vertexBuffer = g_renderAPI->CreateVertexBuffer(BufferInfo(sizeof(PFXVertex_t), m_vbMaxQuads * 4, BUFFER_DYNAMIC));
-	m_indexBuffer = g_renderAPI->CreateIndexBuffer(BufferInfo(sizeof(int16), m_vbMaxQuads * 6, BUFFER_DYNAMIC));
-
 	if(!m_vertexFormat)
 	{
-		const VertexLayoutDesc& fmtDesc = PFXVertex_t::GetVertexLayoutDesc();
+		const VertexLayoutDesc& fmtDesc = PFXVertex::GetVertexLayoutDesc();
 		m_vertexFormat = g_renderAPI->CreateVertexFormat("PFXVertex", ArrayCRef(&fmtDesc, 1));
 	}
 
-	if(m_vertexBuffer && m_indexBuffer && m_vertexFormat)
+	if(m_vertexFormat)
 		m_initialized = true;
 
 	return false;
@@ -224,19 +236,7 @@ bool CParticleLowLevelRenderer::ShutdownBuffers()
 {
 	if(!m_initialized)
 		return true;
-
-	MsgWarning("Destroying particle buffers...\n");
-
-	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
-	g_renderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_renderAPI->DestroyVertexBuffer(m_vertexBuffer);
-
-	m_vertexBuffer = nullptr;
-	m_indexBuffer = nullptr;
-	m_vertexFormat = nullptr;
-
 	m_initialized = false;
-
 	return true;
 }
 
@@ -260,57 +260,42 @@ CParticleBatch*	CParticleLowLevelRenderer::CreateBatch(const char* materialName,
 
 CParticleBatch* CParticleLowLevelRenderer::FindBatch(const char* materialName) const
 {
-	for (int i = 0; i < m_batchs.numElem(); ++i)
+	for (CParticleBatch* batch : m_batchs)
 	{
-		if (!stricmp(m_batchs[i]->m_material->GetName(), materialName))
-			return m_batchs[i];
+		if (!stricmp(batch->m_material->GetName(), materialName))
+			return batch;
 	}
 	return nullptr;
 }
 
 void CParticleLowLevelRenderer::PreloadMaterials()
 {
-	for(int i = 0; i < m_batchs.numElem(); i++)
-		g_matSystem->QueueLoading(m_batchs[i]->m_material);
+	for(CParticleBatch* batch : m_batchs)
+		g_matSystem->QueueLoading(batch->m_material);
+}
+
+void CParticleLowLevelRenderer::UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds)
+{
+	for (CParticleBatch* batch : m_batchs)
+		batch->UpdateVBO(bufferUpdateCmds);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleLowLevelRenderer::Render(int nRenderFlags)
+void CParticleLowLevelRenderer::Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
 {
-	for(int i = 0; i < m_batchs.numElem(); i++)
-		m_batchs[i]->Render( nRenderFlags );
+	for(CParticleBatch* batch : m_batchs)
+		batch->Render(nRenderFlags, passContext, bufferUpdateCmds);
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()
 {
-	for(int i = 0; i < m_batchs.numElem(); i++)
-		m_batchs[i]->ClearBuffers();
+	for(CParticleBatch* batch : m_batchs)
+		batch->ClearBuffers();
 }
 
-bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pMesh)
-{
-	if(!m_initialized)
-		return false;
-
-	const uint16 nVerts	= pMesh->m_numVertices;
-	const uint16 nIndices = pMesh->m_numIndices;
-
-	if(nVerts == 0)
-		return false;
-
-	if(nVerts > SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t))
-		return false;
-
-	m_vertexBuffer->Update((void*)pMesh->m_pVerts, nVerts);
-
-	if(nIndices)
-		m_indexBuffer->Update((void*)pMesh->m_pIndices, nIndices);
-
-	return true;
-}
 //----------------------------------------------------------------------------------------------------
 
-void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* frustum)
+void Effects_DrawBillboard(PFXBillboard* effect, const CViewParams* view, Volume* frustum)
 {
 	if(!(effect->nFlags & EFFECT_FLAG_NO_FRUSTUM_CHECK))
 	{
@@ -320,7 +305,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 			return;
 	}
 
-	PFXVertex_t* verts;
+	PFXVertex* verts;
 	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
@@ -363,7 +348,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 	verts[3].color = color;
 }
 
-void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, Volume* frustum)
+void Effects_DrawBillboard(PFXBillboard* effect, const Matrix4x4& viewMatrix, Volume* frustum)
 {
 	if(!(effect->nFlags & EFFECT_FLAG_NO_FRUSTUM_CHECK))
 	{
@@ -374,7 +359,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 	}
 
 
-	PFXVertex_t* verts;
+	PFXVertex* verts;
 	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 

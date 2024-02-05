@@ -522,26 +522,20 @@ void IUIControl::GetCalcFontStyle(eqFontStyleParam_t& style) const
 	style.textColor = m_font.textColor;
 }
 
-inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
+inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2, IGPURenderPassRecorder* rendPassRecorder)
 {
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-	g_matSystem->SetDepthStates(false, false);
-
-	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
-	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
+	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
@@ -555,28 +549,18 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
-}
-
-void IUIControl::Render()
-{
-	Render(1);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 // rendering function
-void IUIControl::Render(int depth)
+void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!m_visible)
 		return;
 
-	RasterizerStateParams rasterState;
-	//rasterState.fillMode = FILL_SOLID;
-	rasterState.cullMode = CULL_NONE;
-	rasterState.scissor = true;
+	bool scissorOn = true;
 
 	const IAARectangle clientRectRender = GetClientRectangle();
-
-	g_matSystem->SetAmbientColor(color_white);	// max color mode
 	g_matSystem->SetFogInfo(FogInfo());			// disable fog
 
 	// calculate absolute transformation using previous matrix
@@ -602,32 +586,34 @@ void IUIControl::Render(int depth)
 		// only if no transformation applied
 		if (newTransform.rows[0].x != 1.0f)
 		{
-			rasterState.scissor = false;
+			IAARectangle scissorRect(IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+			rendPassRecorder->SetScissorRectangle(scissorRect);
+			scissorOn = false;
+		}
+		else
+		{
+			IAARectangle scissorRect = GetClientScissorRectangle();
+			scissorRect.leftTop += m_transform.translation * scale;
+			scissorRect.rightBottom += m_transform.translation * scale;
+			scissorRect.leftTop = clamp(scissorRect.leftTop, IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+			scissorRect.rightBottom = clamp(scissorRect.rightBottom, IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+
+			rendPassRecorder->SetScissorRectangle(scissorRect);
 		}
 
-		IAARectangle scissorRect = GetClientScissorRectangle();
-		scissorRect.leftTop += m_transform.translation * scale;
-		scissorRect.rightBottom += m_transform.translation * scale;
-		g_renderAPI->SetScissorRectangle(scissorRect);
-
-		// force rasterizer state
-		// other states are pretty useless
-		g_matSystem->SetRasterizerStates(rasterState);
-		g_matSystem->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
-
 		// paint control itself
-		DrawSelf( clientRectRender, rasterState.scissor);
+		DrawSelf( clientRectRender, scissorOn, rendPassRecorder);
 	}
 
 	HOOK_TO_CVAR(equi_debug);
 	if (equi_debug->GetInt() > 0 && equi_debug->GetInt() <= depth)
 	{
-		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8));
+		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8), rendPassRecorder);
 
 		eqFontStyleParam_t params;
-		debugoverlay->GetFont()->RenderText(
+		debugoverlay->GetFont()->SetupRenderText(
 			EqString::Format("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible).ToCString(), 
-			clientRectRender.GetLeftBottom(), params);
+			clientRectRender.GetLeftBottom(), params, rendPassRecorder);
 	}
 
 	// render from last
@@ -635,11 +621,18 @@ void IUIControl::Render(int depth)
 	{
 		// load new absolulte transformation
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-		(*it)->Render(depth + 1);
+		(*it)->Render(depth + 1, rendPassRecorder);
 	}
 
 	// always reset previous absolute transformation
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
+
+	// reset scissor after drawing equi
+	if (depth <= 1)
+	{
+		IAARectangle scissorRect(IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
+		rendPassRecorder->SetScissorRectangle(scissorRect);
+	}
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point) const

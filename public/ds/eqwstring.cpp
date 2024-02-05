@@ -193,12 +193,12 @@ bool EqWString::Resize(int nSize, bool bCopy)
 // string assignment with conversion (or setvalue)
 void EqWString::Assign(const char* pszStr, int len)
 {
-	EqStringConv::utf8_to_wchar conv( (*this), pszStr, len);
+	EqStringConv::CUTF8Conv(*this, pszStr, len);
 }
 
 void EqWString::Assign(const EqString &str, int nStart, int len)
 {
-	EqStringConv::utf8_to_wchar conv((*this), str.ToCString() + nStart);
+	EqStringConv::CUTF8Conv(*this, str.ToCString() + nStart, len);
 }
 
 // string assignment (or setvalue)

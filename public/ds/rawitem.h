@@ -35,4 +35,6 @@ struct RawItem
 	};
 	T* operator->() { return reinterpret_cast<T*>(&data); }
 	T& operator*() { return *reinterpret_cast<T*>(&data); }
+	const T* operator->() const { return reinterpret_cast<const T*>(&data); }
+	const T& operator*() const { return *reinterpret_cast<const T*>(&data); }
 };

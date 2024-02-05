@@ -13,12 +13,10 @@
 // Basic cubemap skybox shader
 //--------------------------------------
 
-BEGIN_SHADER_CLASS(EnvMapTest)
-	bool IsSupportVertexFormat(int nameHash) const
-	{
-		return nameHash == StringToHashConst("EGFVertex");
-	}
-
+BEGIN_SHADER_CLASS(
+	EnvMapTest,
+	SHADER_VERTEX_ID(EGFVertex)
+)
 	SHADER_INIT_PARAMS()
 	{
 	}
@@ -26,7 +24,12 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 	// Initialize textures
 	SHADER_INIT_TEXTURES()
 	{
-		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture);
+		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture, TEXFLAG_CUBEMAP);
+	}
+
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const
+	{
+		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
 	}
 
 	SHADER_INIT_RENDERPASS_PIPELINE()
@@ -57,7 +60,7 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 		SetupDefaultParameter(SHADERPARAM_FOG);
 
-		renderAPI->SetTexture(StringToHashConst("Base"), m_cubemapTexture.Get());
+		//renderAPI->SetTexture(StringToHashConst("Base"), m_cubemapTexture.Get());
 	}
 
 	MatTextureProxy m_cubemapTexture;

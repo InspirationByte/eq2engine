@@ -54,7 +54,7 @@ using ReadWriteLockHandle_t = pthread_rwlock_t;
 #endif // _WIN32
 
 static constexpr const int WAIT_INFINITE = -1;
-static constexpr const int DEFAULT_THREAD_STACK_SIZE = 256 * 1024;
+static constexpr const int DEFAULT_THREAD_STACK_SIZE = 3072 * 1024;
 
 void			YieldCurrentThread();
 uintptr_t		GetCurrentThreadID();

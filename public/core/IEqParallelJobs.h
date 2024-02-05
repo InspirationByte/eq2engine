@@ -65,7 +65,7 @@ public:
 	CORE_INTERFACE("E2_ParallelJobs_002")
 
 	// creates new job thread
-	virtual bool							Init(int numJobTypes, eqJobThreadDesc_t* jobTypes) = 0;
+	virtual bool							Init(ArrayCRef<eqJobThreadDesc_t> jobTypes) = 0;
 	virtual void							Shutdown() = 0;
 
 	// adds the job

@@ -72,12 +72,35 @@ project "texcooker"
 	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
-		"e2Core" 
+		"e2Core"
 	}
     files {
 		"texcooker/*.cpp",
 		"texcooker/*.h"
 	}
+	
+----------------------------------------------
+-- Shader cooker
+
+local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK")
+
+if VULKAN_SDK_LOCATION ~= nil and VULKAN_SDK_LOCATION ~= "" then
+	project "shadercooker"
+		kind "ConsoleApp"
+		unitybuild "on"
+		uses {
+			"corelib", "frameworkLib",
+			"e2Core",
+			"dpkLib",
+			"shaderc"
+		}
+		files {
+			"shadercooker/*.cpp",
+			"shadercooker/*.h"
+		}
+else
+	print("WARNING: Vulkan SDK is missing (env VULKAN_SDK not found), ShaderCooker will not be built")
+end
 
 if ENABLE_GUI_TOOLS then
 	

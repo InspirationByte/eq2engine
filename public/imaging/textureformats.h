@@ -7,8 +7,6 @@
 
 #pragma once
 
-// TODO: RENAME ENUMS TO TEXTURE_FORMAT_***
-
 enum EImageType : int
 {
 	IMAGE_TYPE_INVALID = -1,
@@ -17,6 +15,8 @@ enum EImageType : int
 	IMAGE_TYPE_3D,
 	IMAGE_TYPE_CUBE
 };
+
+// TODO: RENAME MEMBERS TO TEXFORMAT_***
 
 enum ETextureFormat : int
 {
@@ -108,6 +108,29 @@ enum ETextureFormat : int
 
 	FORMAT_COUNT,
 };
+
+static constexpr const int TEXFORMAT_MASK = (1 << 10) - 1;
+
+enum ETextureFormatFlags
+{
+	TEXFORMAT_FLAG_SWAP_RB	= (1 << 10),	// Swaps R and B channels (for DXGI swap chains)
+	TEXFORMAT_FLAG_SRGB		= (1 << 11),	// SRGB variant
+};
+
+inline static ETextureFormat MakeTexFormat(ETextureFormat format, int flags = 0)
+{
+	return static_cast<ETextureFormat>(static_cast<int>(format) | flags);
+}
+
+inline static ETextureFormat GetTexFormat(ETextureFormat formatWithFlags)
+{
+	return static_cast<ETextureFormat>((static_cast<int>(formatWithFlags) & TEXFORMAT_MASK));
+}
+
+inline static int HasTexFormatFlags(ETextureFormat formatWithFlags, int flags)
+{
+	return static_cast<int>(formatWithFlags) & flags;
+}
 
 #define FORMAT_I8    FORMAT_R8
 #define FORMAT_IA8   FORMAT_RG8

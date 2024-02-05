@@ -9,15 +9,19 @@
 #pragma once
 #include "SpriteBuilder.h"
 
-class IMaterial;
-class IVertexBuffer;
-class IIndexBuffer;
 class IVertexFormat;
 class CViewParams;
 class Volume;
+class IGPURenderPassRecorder;
+class IGPUCommandRecorder;
 struct AtlasEntry;
 struct VertexLayoutDesc;
+struct RenderPassContext;
 
+class IGPUBuffer;
+using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
+class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
 
 enum EPartRenderFlags
@@ -26,18 +30,18 @@ enum EPartRenderFlags
 };
 
 // particle vertex with color
-struct PFXVertex_t
+struct PFXVertex
 {
 	static const VertexLayoutDesc& GetVertexLayoutDesc();
 
-	PFXVertex_t() = default;
-	PFXVertex_t(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)
+	PFXVertex() = default;
+	PFXVertex(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)
 	{
 		point = p;
 		texcoord = t;
 		color = MColor(c).pack();
 	}
-
+	
 	Vector3D		point;
 	TVec2D<half>	texcoord;
 	uint			color{ 0xffffffff };
@@ -46,7 +50,7 @@ struct PFXVertex_t
 //
 // Particle batch for creating primitives
 //
-class CParticleBatch : public CSpriteBuilder<PFXVertex_t>
+class CParticleBatch : public CSpriteBuilder<PFXVertex>
 {
 	friend class CParticleLowLevelRenderer;
 
@@ -54,13 +58,13 @@ public:
 	virtual	~CParticleBatch();
 
 	// renders this buffer
-	void				Render(int nViewRenderFlags);
-	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
+	void				UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds);
+	void				Render(int viewRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
-	int					AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices = false );
-	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
+	int					AllocateGeom( int nVertices, int nIndices, PFXVertex** verts, uint16** indices, bool preSetIndices = false );
+	void				AddParticleStrip(PFXVertex* verts, int nVertices);
 
 	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
 
@@ -77,8 +81,9 @@ protected:
 	void				Shutdown();
 
 	IMaterialPtr		m_material;
-	Matrix4x4			m_customProjMat;
-	bool				m_useCustomProjMat{ false };
+	IGPUBufferPtr		m_vertexBuffer;
+	IGPUBufferPtr		m_indexBuffer;
+	bool				m_bufferDirty{ true };
 };
 
 //------------------------------------------------------------------------------------
@@ -103,24 +108,17 @@ public:
 	void				PreloadMaterials();
 
 	// prepares render buffers and sends renderables to ViewRenderer
-	void				Render(int nRenderFlags);
-	void				ClearBuffers();
+	void				UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds);
 
-	// returns VBO index
-	bool				MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup);
+	void				Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr);
+	void				ClearBuffers();
 
 protected:
 	bool				InitBuffers();
 	bool				ShutdownBuffers();
 
 	Array<CParticleBatch*>	m_batchs{ PP_SL };
-
-	IVertexBuffer*		m_vertexBuffer{ nullptr };
-	IIndexBuffer*		m_indexBuffer{ nullptr };
 	IVertexFormat*		m_vertexFormat{ nullptr };
-
-	int					m_vbMaxQuads{ 0 };
-
 	bool				m_initialized{ false };
 };
 
@@ -140,7 +138,7 @@ enum EffectFlags_e
 	EFFECT_FLAG_RADIAL_ALIGNING		= (1 << 5),
 };
 
-struct PFXBillboard_t
+struct PFXBillboard
 {
 	CParticleBatch*	group { nullptr };		// atlas
 	AtlasEntry*		tex {nullptr};			// texture name in atlas
@@ -158,8 +156,8 @@ struct PFXBillboard_t
 };
 
 // draws particle
-void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* frustum);
-void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, Volume* frustum);
+void Effects_DrawBillboard(PFXBillboard* effect, const CViewParams* view, Volume* frustum);
+void Effects_DrawBillboard(PFXBillboard* effect, const Matrix4x4& viewMatrix, Volume* frustum);
 
 //------------------------------------------------------------------------------------
 

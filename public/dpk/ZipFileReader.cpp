@@ -213,8 +213,8 @@ IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	unzFile zipFileHandle = GetZippedFile(filename);
-
+	const int nameHash = StringToHash(filename, true);
+	unzFile zipFileHandle = GetZippedFile(nameHash);
 	if (!zipFileHandle)
 		return nullptr;
 
@@ -229,13 +229,45 @@ IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 	return IFilePtr(newStream);
 }
 
+IFilePtr CZipFileReader::Open(int fileIndex, int modeFlags)
+{
+	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
+	{
+		ASSERT_FAIL("Archived files only can open for reading!\n");
+		return nullptr;
+	}
+
+	unzFile zipFileHandle = GetZippedFile(fileIndex);
+	if (!zipFileHandle)
+		return nullptr;
+
+	if (unzOpenCurrentFile(zipFileHandle) != UNZ_OK)
+	{
+		unzClose(zipFileHandle);
+		return nullptr;
+	}
+
+	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, EqString::Format("zipFile%d", fileIndex), zipFileHandle, this);
+	return IFilePtr(newStream);
+}
+
 bool CZipFileReader::FileExists(const char* filename) const
 {
-	unzFile test = GetZippedFile(filename);
+	const int nameHash = StringToHash(filename, true);
+	unzFile test = GetZippedFile(nameHash);
 	if(test)
 		unzClose(test);
 
 	return test != nullptr;
+}
+
+int CZipFileReader::FindFileIndex(const char* filename) const
+{
+	const int nameHash = StringToHash(filename, true);
+	auto it = m_files.find(nameHash);
+	if (!it.atEnd())
+		return it.key();
+	return -1;
 }
 
 unzFile CZipFileReader::GetNewZipHandle() const
@@ -243,12 +275,8 @@ unzFile CZipFileReader::GetNewZipHandle() const
 	return unzOpen(m_packagePath.ToCString());
 }
 
-unzFile	CZipFileReader::GetZippedFile(const char* filename) const
+unzFile	CZipFileReader::GetZippedFile(int nameHash) const
 {
-	const int nameHash = StringToHash(filename, true);
-
-	//Msg("Request file '%s' %d\n", filename, strHash);
-
 	auto it = m_files.find(nameHash);
 	if (!it.atEnd())
 	{

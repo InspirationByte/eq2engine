@@ -14,6 +14,7 @@
 #define DBGOVERLAY_INTERFACE_VERSION "DebugOverlay_001"
 
 class IEqFont;
+class IGPURenderPassRecorder;
 
 struct DbgGraphBucket
 {
@@ -43,7 +44,7 @@ struct DbgGraphBucket
 	bool					dynamic{ false };
 };
 
-using OnDebugDrawFn = EqFunction<bool()>;
+using OnDebugDrawFn = EqFunction<bool(IGPURenderPassRecorder* rendPassRecorder)>;
 
 class IDebugOverlay
 {
@@ -153,7 +154,7 @@ typedef struct DbgOriBoxBuilder
 
 private:
 	Vector3D mins, maxs;
-	Quaternion rotation{ identity() };
+	Quaternion rotation{ qidentity };
 	Vector3D position;
 	uint color{ color_white.pack() };
 	float lifetime{ 0.0f };

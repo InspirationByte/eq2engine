@@ -8,7 +8,7 @@
 #pragma once
 
 #define PHYSFILE_VERSION	2
-#define PHYSFILE_ID			MCHAR4('P','O','D','I')
+#define PHYSFILE_ID			MAKECHAR4('P','O','D','I')
 
 static constexpr const int MAX_PHYS_NAME_LENGTH			= 64;
 static constexpr const int MAX_PHYS_SURF_NAME_LENGTH	= 64;

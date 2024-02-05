@@ -13,6 +13,7 @@
 #undef GetParent
 #endif //GetParent
 
+class IGPURenderPassRecorder;
 struct KVSection;
 struct eqFontStyleParam_t;
 
@@ -172,7 +173,7 @@ public:
 	virtual const char*			GetClassname() const = 0;
 
 	// rendering
-	void						Render();
+	virtual void				Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
 
 	// Events
 	int							AddEventHandler(const char* pszName, uiEventCallback_t cb);
@@ -184,10 +185,9 @@ public:
 
 protected:
 
-	virtual void				Render(int depth);
-	
+
 	void						ResetSizeDiffs();
-	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn) = 0;
+	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
 	static int					CommandCb(IUIControl* control, ui_event& event, void* userData);
 

@@ -34,8 +34,8 @@
 using namespace Threading;
 
 #define PPMEM_EXTRA_DEBUGINFO
-constexpr const uint PPMEM_CHECKMARK	   = MCHAR4('P','P','M','E');
-constexpr const uint PPMEM_CHECKMARK_FREED = MCHAR4('E','M','T','Y');
+constexpr const uint PPMEM_CHECKMARK	   = MAKECHAR4('P','P','M','E');
+constexpr const uint PPMEM_CHECKMARK_FREED = MAKECHAR4('E','M','T','Y');
 constexpr const uint PPMEM_EXTRA_MARKS = 4;
 
 struct ppallocinfo_t
@@ -54,12 +54,12 @@ struct ppallocinfo_t
 };
 
 // allocation map
-struct ppmem_src_counter_t
+struct ppsrc_counter_t
 {
 	uint64 count{ 0 };
 	uint64 lastTime{ 0 };
 };
-using source_counter_map = Map<uint64, ppmem_src_counter_t>;
+using source_counter_map = Map<uint64, ppsrc_counter_t>;
 using source_map = Map<const char*, const char*>;
 
 struct ppmem_state_t
@@ -341,7 +341,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		if (!st.sourceFileNameMap.count(sl.GetFileName()))
 			st.sourceFileNameMap[sl.GetFileName()] = strdup(sl.GetFileName());
 
-		ppmem_src_counter_t& cnt = st.sourceCounterMap[sl.data];
+		ppsrc_counter_t& cnt = st.sourceCounterMap[sl.data];
 		++cnt.count;
 		cnt.lastTime = st.timer.GetTimeMS();
 #endif
@@ -437,7 +437,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		st.last = alloc;
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
-		ppmem_src_counter_t& cnt = st.sourceCounterMap[sl.data];
+		ppsrc_counter_t& cnt = st.sourceCounterMap[sl.data];
 		++cnt.count;
 		cnt.lastTime = st.timer.GetTimeMS();
 #endif

@@ -12,6 +12,8 @@ struct axisAction_t;
 class IVirtualStream;
 class ConCommand;
 class ConCommandBase;
+class IGPURenderPassRecorder;
+
 typedef void (*JOYAXISFUNC)(short value);
 
 class in_binding_t
@@ -108,7 +110,7 @@ public:
 	Array<axisAction_t>*	GetAxisActionList() {return &m_axisActs;}
 
 	// debug render
-	void					DebugDraw(const Vector2D& screenSize);
+	void					DebugDraw(const Vector2D& screenSize, IGPURenderPassRecorder* rendPassRecorder);
 
 	//
 	// Event processing

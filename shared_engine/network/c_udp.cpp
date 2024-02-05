@@ -26,7 +26,7 @@ namespace Networking
 // protocol definitions
 //
 
-#define UDP_CDP_IDENT						MCHAR4('E','Q','D','P')		// signature: EqDatagramPacket
+#define UDP_CDP_IDENT						MAKECHAR4('E','Q','D','P')		// signature: EqDatagramPacket
 
 #define UDP_CDP_PROTOCOL_VERSION			9			// protocol version
 

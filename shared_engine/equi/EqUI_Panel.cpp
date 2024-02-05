@@ -136,26 +136,21 @@ void Panel::CenterOnScreen()
 	SetPosition(screenCenter - panelSize/2);
 }
 
-void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
+void DrawWindowRectangle(const AARectangle& rect, const ColorRGBA& color1, const ColorRGBA& color2, IGPURenderPassRecorder* rendPassRecorder)
 {
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-	g_matSystem->SetDepthStates(false,false);
-
-	Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
-	Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
+	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
+	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		// put main rectangle
 		meshBuilder.Color4fv(color1);
@@ -168,10 +163,10 @@ void DrawWindowRectangle(const AARectangle &rect, const ColorRGBA &color1, const
 		//meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
 		//meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-void Panel::Render(int depth)
+void Panel::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 {
 	// move window controls
 	if(m_closeButton)
@@ -181,12 +176,12 @@ void Panel::Render(int depth)
 		m_closeButton->SetPosition(closePos);
 	}
 
-	BaseClass::Render(depth);
+	BaseClass::Render(depth, rendPassRecorder);
 }
 
-void Panel::DrawSelf(const IAARectangle& rect, bool scissorOn)
+void Panel::DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
 {
-	DrawWindowRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f) );
+	DrawWindowRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f), rendPassRecorder);
 }
 
 bool Panel::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
@@ -219,7 +214,7 @@ public:
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)	{return true;}
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags)					{return true;}
 
-	void			DrawSelf( const IAARectangle& rect, bool scissorOn) {}
+	void			DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
 };
 
 class Container : public IUIControl
@@ -234,7 +229,7 @@ public:
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
 
-	void			DrawSelf(const IAARectangle& rect, bool scissorOn) {}
+	void			DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
 };
 
 };

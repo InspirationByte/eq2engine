@@ -24,37 +24,40 @@ class CTexture : public ITexture
 	friend class ShaderAPI_Base;
 
 public:
-	bool						InitProcedural(const SamplerStateParams& sampler, ETextureFormat format, int width, int height, int depth = 1, int arraySize = 1, int flags = 0);
-	bool						GenerateErrorTexture(int flags = 0);
+	bool				InitProcedural(const TextureDesc& textureDesc);
+	bool				GenerateErrorTexture(int flags = 0);
 
-	void						SetName(const char* pszNewName);
-	const char*					GetName() const { return m_name.ToCString(); }
-	int							GetNameHash() const { return m_nameHash; }
-	ETextureFormat				GetFormat() const { return m_format; }
+	void				SetName(const char* pszNewName);
+	const char*			GetName() const { return m_name.ToCString(); }
+	int					GetNameHash() const { return m_nameHash; }
+	ETextureFormat		GetFormat() const { return m_format; }
 
-	int							GetWidth() const { return m_width; }
-	int							GetHeight() const { return m_height; }
-	int							GetDepth() const { return m_depth; }
+	int					GetWidth() const { return m_width; }
+	int					GetHeight() const { return m_height; }
+	int					GetArraySize() const { return m_arraySize; }
 
-	int							GetMipCount() const { return m_mipCount; }
+	int					GetMipCount() const { return m_mipCount; }
+	int					GetSampleCount() const { return m_sampleCount; }
 
-	void						SetFlags(int iFlags) { m_flags = iFlags; }
-	int							GetFlags() const { return m_flags; }
+	int					GetFlags() const { return m_flags; }
 
 	// FIXME: remove?
 	const SamplerStateParams&	GetSamplerState() const {return m_samplerState;}
 
-	int							GetAnimationFrameCount() const { return m_animFrameCount; }
-	int							GetAnimationFrame() const { return m_animFrame; }
-	void						SetAnimationFrame(int frame);
-
-	void						SetDimensions(int width, int height, int depth = 1) { m_width = width; m_height = height; m_depth = depth; }
-
-	void						SetMipCount(int count) { m_mipCount = count; }
-	void						SetFormat(ETextureFormat newformat) { m_format = newformat; }
-	void						SetSamplerState(const SamplerStateParams& newSamplerState) { m_samplerState = newSamplerState; }
+	// DEPRECATED
+	int					GetAnimationFrameCount() const { return m_animFrameCount; }
+	int					GetAnimationFrame() const { return m_animFrame; }
+	void				SetAnimationFrame(int frame);
 
 protected:
+	void				SetFlags(int flags) { m_flags = flags; }
+	void				SetDimensions(int width, int height, int arraySize = 1) { m_width = width; m_height = height; m_arraySize = arraySize; }
+	void				SetMipCount(int count) { m_mipCount = count; }
+	void				SetSampleCount(int count) { m_sampleCount = count; }
+	void				SetFormat(ETextureFormat newformat) { m_format = newformat; }
+	void				SetSamplerState(const SamplerStateParams& newSamplerState) { m_samplerState = newSamplerState; }
+
+
 	EqString			m_name;
 	int					m_nameHash{ 0 };
 
@@ -71,15 +74,16 @@ protected:
 	Array<LodState>		m_progressiveState{ PP_SL };
 
 	LockInOutData*		m_lockData{ nullptr };
-	ushort				m_progressiveFrameDelay{ 1 };
 
-	ushort				m_flags{ 0 };
+	int					m_flags{ 0 };
 	ushort				m_width{ 0 };
 	ushort				m_height{ 0 };
-	ushort				m_depth{ 0 };
-	// TODO: arraySize
+	ushort				m_arraySize{ 0 };
 	ushort				m_mipCount{ 1 };
+	ushort				m_sampleCount{ 1 };
 
 	ushort				m_animFrame{ 0 };
 	ushort				m_animFrameCount{ 1 };
+
+	ushort				m_progressiveFrameDelay{ 1 };
 };

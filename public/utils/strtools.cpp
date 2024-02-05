@@ -398,172 +398,143 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 //------------------------------------------------------
 namespace EqStringConv
 {
-	utf8_to_wchar::utf8_to_wchar(EqWString& outStr, const char* val, int len /*= -1*/)
+static uint32 GetWideChar(ubyte** utf8);
+
+static int GetUTF8Length(ubyte* utf8)
+{
+	int utfStringLength = 0;
+	ubyte* tmp = utf8;
+	while(GetWideChar(&tmp))
+		++utfStringLength;
+
+	return utfStringLength;
+}
+
+static uint32 GetUTF8NextByte(ubyte** utf8)
+{
+	if (!*(*utf8))
+		return 0;
+
+	return *(*utf8)++;
+}
+
+static uint32 udec(uint32 val)
+{
+	return (val & 0x3f);
+}
+
+static uint32 GetWideChar(ubyte** utf8)
+{
+	const uint32 b1 = GetUTF8NextByte(utf8);
+	if (!b1)
+		return 0;
+
+	// Determine whether we are dealing
+	// with a one-, two-, three-, or four-
+	// byte sequence.
+	if ((b1 & 0x80) == 0)
 	{
-		ASSERT(val);
-
-		m_utf8 = (ubyte*)val;
-
-		int length = GetLength();
-
-		if (len == -1)
-			len = length;
-
-		outStr.ExtendAlloc(length);
-
-		do
-		{
-			uint32 wch = GetChar();
-
-			if (!wch)
-				break;
-
-			outStr.Append(wch);
-		} while (length--);
+		// 1-byte sequence: 000000000xxxxxxx = 0xxxxxxx
+		return b1;
+	}
+	else if ((b1 & 0xe0) == 0xc0)
+	{
+		// 2-byte sequence: 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
+		uint32 r = (b1 & 0x1f) << 6;
+		r |= udec(GetUTF8NextByte(utf8));
+		return r;
+	}
+	else if ((b1 & 0xf0) == 0xe0)
+	{
+		// 3-byte sequence: zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
+		uint32 r = (b1 & 0x0f) << 12;
+		r |= udec(GetUTF8NextByte(utf8)) << 6;
+		r |= udec(GetUTF8NextByte(utf8));
+		return r;
+	}
+	else if ((b1 & 0xf8) == 0xf0)
+	{
+		// 4-byte sequence: 11101110wwwwzzzzyy + 110111yyyyxxxxxx
+		//     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
+		// (uuuuu = wwww + 1)
+		int b2 = udec(GetUTF8NextByte(utf8));
+		int b3 = udec(GetUTF8NextByte(utf8));
+		int b4 = udec(GetUTF8NextByte(utf8));
+		return ((b1 & 7) << 18) | ((b2 & 0x3f) << 12) |
+			((b3 & 0x3f) << 6) | (b4 & 0x3f);
 	}
 
-	utf8_to_wchar::utf8_to_wchar(wchar_t* outStr, int maxLength, const char* val, int len /*= -1*/)
+	//bad start for UTF-8 multi-byte sequence
+	return '?';
+}
+
+//--------------------------------------------------------------
+
+CUTF8Conv::CUTF8Conv(EqWString& outStr, const char* val, int len /*= -1*/)
+{
+	ASSERT(val);
+
+	ubyte* utf8 = (ubyte*)val;
+	int length = GetUTF8Length(utf8);
+	if (len == -1)
+		len = length;
+	outStr.ExtendAlloc(length);
+	do {
+		const uint32 wch = GetWideChar(&utf8);
+		if (!wch)
+			break;
+		outStr.Append(wch);
+	} while (length--);
+}
+
+CUTF8Conv::CUTF8Conv(EqString& outStr, const wchar_t* val, int len/* = -1*/)
+{
+	ASSERT(val);
+
+	if (len == -1)
+		len = wcslen(val) * 4;
+	else
+		len *= 4;
+
+	// to not call too many allocations
+	outStr.ExtendAlloc(len);
+
+	uint32 code;
+	do
 	{
-		ASSERT(outStr);
-		ASSERT(val);
+		code = *val++;
 
-		m_utf8 = (ubyte*)val;
+		if(code == 0)
+			break;
 
-		if (len == -1)
-			len = maxLength;
-
-		if (len > maxLength)
-			len = maxLength;
-
-		do
+		if (code <= 0x7F)
 		{
-			uint32 wch = GetChar();
-
-			if (!wch)
-				break;
-
-			*outStr++ = wch;
-		} while (len--);
-
-		*outStr = '\0';
+			outStr.Append((char)code);
+		}
+		else if (code <= 0x7FF)
+		{
+			outStr.Append((code >> 6) + 192);
+			outStr.Append((code & 63) + 128);
+		}
+		else if (code <= 0xFFFF)
+		{
+			outStr.Append((code >> 12) + 224);
+			outStr.Append(((code >> 6) & 63) + 128);
+			outStr.Append((code & 63) + 128);
+		}
+		else if (code <= 0x10FFFF)
+		{
+			outStr.Append((code >> 18) + 240);
+			outStr.Append(((code >> 12) & 63) + 128);
+			outStr.Append(((code >> 6) & 63) + 128);
+			outStr.Append((code & 63) + 128);
+		}
+		else if (0xd800 <= code && code <= 0xdfff)
+		{
+			//invalid block of utf8
+		}
 	}
-
-	int utf8_to_wchar::GetLength()
-	{
-		int utfStringLength = 0;
-		ubyte* tmp = m_utf8;
-		while(true)
-		{
-			if (!GetChar())
-				break;
-
-			utfStringLength++;
-		}
-		m_utf8 = tmp;
-		return utfStringLength;
-	}
-
-	inline uint32 udec(uint32 val)
-	{
-		return (val & 0x3f);
-	}
-
-	uint32 utf8_to_wchar::GetChar()
-	{
-		uint32 b1 = NextByte();
-
-		if (!b1)
-			return 0;
-
-		// Determine whether we are dealing
-		// with a one-, two-, three-, or four-
-		// byte sequence.
-		if ((b1 & 0x80) == 0)
-		{
-			// 1-byte sequence: 000000000xxxxxxx = 0xxxxxxx
-			return b1;
-		}
-		else if ((b1 & 0xe0) == 0xc0)
-		{
-			// 2-byte sequence: 00000yyyyyxxxxxx = 110yyyyy 10xxxxxx
-			uint32 r = (b1 & 0x1f) << 6;
-			r |= udec(NextByte());
-			return r;
-		}
-		else if ((b1 & 0xf0) == 0xe0)
-		{
-			// 3-byte sequence: zzzzyyyyyyxxxxxx = 1110zzzz 10yyyyyy 10xxxxxx
-			uint32 r = (b1 & 0x0f) << 12;
-			r |= udec(NextByte()) << 6;
-			r |= udec(NextByte());
-			return r;
-		}
-		else if ((b1 & 0xf8) == 0xf0)
-		{
-			// 4-byte sequence: 11101110wwwwzzzzyy + 110111yyyyxxxxxx
-			//     = 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
-			// (uuuuu = wwww + 1)
-			int b2 = udec(NextByte());
-			int b3 = udec(NextByte());
-			int b4 = udec(NextByte());
-			return ((b1 & 7) << 18) | ((b2 & 0x3f) << 12) |
-				((b3 & 0x3f) << 6) | (b4 & 0x3f);
-		}
-
-		//bad start for UTF-8 multi-byte sequence
-		return '?';
-	}
-
-	//--------------------------------------------------------------
-
-	wchar_to_utf8::wchar_to_utf8(EqString& outStr, const wchar_t* val, int len/* = -1*/)
-	{
-		ASSERT(val);
-
-		if (len == -1)
-			len = wcslen(val) * 4;
-		else
-			len *= 4;
-
-		// to not call too many allocations
-		outStr.ExtendAlloc(len);
-
-		uint32 code;
-		do
-		{
-			code = *val++;
-
-			if(code == 0)
-				break;
-
-			if (code <= 0x7F)
-			{
-				outStr.Append((char)code);
-			}
-			else if (code <= 0x7FF)
-			{
-				outStr.Append((code >> 6) + 192);
-				outStr.Append((code & 63) + 128);
-			}
-			else if (code <= 0xFFFF)
-			{
-				outStr.Append((code >> 12) + 224);
-				outStr.Append(((code >> 6) & 63) + 128);
-				outStr.Append((code & 63) + 128);
-			}
-			else if (code <= 0x10FFFF)
-			{
-				outStr.Append((code >> 18) + 240);
-				outStr.Append(((code >> 12) & 63) + 128);
-				outStr.Append(((code >> 6) & 63) + 128);
-				outStr.Append((code & 63) + 128);
-			}
-			else if (0xd800 <= code && code <= 0xdfff)
-			{
-				//invalid block of utf8
-			}
-		}
-		while(len--);
-	}
+	while(len--);
+}
 
 }

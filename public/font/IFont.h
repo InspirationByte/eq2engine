@@ -63,6 +63,7 @@ struct eqFontChar_t
 	float advX;
 };
 
+class IGPURenderPassRecorder;
 class IEqFont;
 struct eqFontStyleParam_t;
 
@@ -120,7 +121,7 @@ struct eqFontStyleParam_t
 	int					align{ 0 };			// ETextAlignment
 	int					styleFlag{ 0 };		// ETextStyleFlag
 
-	float				shadowOffset{ 1.0f };
+	Vector2D			shadowOffset{ 1.0f };
 	float				shadowWeight{ 0.01f };
 
 	ITextLayoutBuilder* layoutBuilder{ nullptr };
@@ -161,13 +162,14 @@ public:
 	// returns the scaled character
 	virtual void				GetScaledCharacter( eqFontChar_t& chr, const int chrId, const Vector2D& scale = 1.0f ) const = 0;
 
-	// renders text
-	virtual void				RenderText(	const wchar_t* pszText,
-											const Vector2D& start,
-											const eqFontStyleParam_t& params) = 0;
 
 	// renders text
-	virtual void				RenderText(	const char* pszText,
+	virtual void				SetupRenderText(const wchar_t* pszText,
 											const Vector2D& start,
-											const eqFontStyleParam_t& params) = 0;
+											const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
+
+	// renders text
+	virtual void				SetupRenderText(const char* pszText,
+											const Vector2D& start,
+											const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
 };

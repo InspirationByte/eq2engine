@@ -10,6 +10,7 @@
 
 class IEqFont;
 class IMaterial;
+class IGPURenderPassRecorder;
 
 namespace equi
 {

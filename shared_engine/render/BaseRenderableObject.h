@@ -7,9 +7,9 @@
 
 #pragma once
 
-//------------------------------------------------
-// A new inheritable renderable object
-//------------------------------------------------
+class CRenderList;
+class IGPUCommandRecorder;
+struct RenderPassContext;
 
 enum RenderableVisibilityState_e
 {
@@ -20,6 +20,7 @@ enum RenderableVisibilityState_e
 
 struct RenderInfo
 {
+	const RenderPassContext& passContext;
 	void*	userData{ nullptr };
 	float	distance{ 0.0f };		// dist from camera
 	int		renderFlags{ 0 };
@@ -30,10 +31,8 @@ class CBaseRenderableObject
 {
 	friend class CRenderList;
 public:
-//------------------------------------------------------------
-// basic methods and helpers
-//------------------------------------------------------------
-	virtual ~CBaseRenderableObject() {}
+
+	virtual ~CBaseRenderableObject() = default;
 
 	virtual void				Render(const RenderInfo& rinfo) = 0;
 
@@ -43,5 +42,7 @@ public:
 	virtual int					GetRenderFlags() const;
 
 protected:
+	virtual void				OnAddedToRenderList(CRenderList* list, void* userData) {}
+
 	int							m_renderFlags{ 0 };
 };

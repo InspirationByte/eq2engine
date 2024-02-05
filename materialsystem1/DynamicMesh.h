@@ -10,46 +10,58 @@
 
 struct VertexLayoutDesc;
 class IVertexFormat;
-class IVertexBuffer;
-class IIndexBuffer;
+class IGPUBuffer;
+using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
+class IGPUCommandRecorder;
+using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
 
 class CDynamicMesh : public IDynamicMesh
 {
 public:
-	bool			Init(ArrayCRef<VertexLayoutDesc> vertexLayout);
-	void			Destroy();
+	~CDynamicMesh();
+
+	void Ref_DeleteObject() override;
+
+	bool					Init(int id, IVertexFormat* vertexFormat);
+	void					Destroy();
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
-	void			SetPrimitiveType( EPrimTopology primType );
-	EPrimTopology	GetPrimitiveType() const;
+	void					SetPrimitiveType( EPrimTopology primType );
+	EPrimTopology			GetPrimitiveType() const;
 
 	// returns a pointer to vertex format description
 	ArrayCRef<VertexLayoutDesc>	GetVertexLayoutDesc() const;
 
 	// allocates geometry chunk. Returns the start index. Will return -1 if failed
 	// addStripBreak is for PRIM_TRIANGLE_STRIP. Set it false to work with current strip
-	int				AllocateGeom( int nVertices, int nIndices, void** verts, uint16** indices, bool addStripBreak = true );
+	int						AllocateGeom( int nVertices, int nIndices, void** verts, uint16** indices, bool addStripBreak = true );
 
 	// uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
-	bool			FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices);
+	bool					FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices);
 
 	// resets the dynamic mesh
-	void			Reset();
+	void					Reset();
 
-	void			AddStripBreak();
+	void					AddStripBreak();
+
+	IGPUCommandBufferPtr	GetSubmitBuffer();
 
 protected:
-	void*			m_vertices{ nullptr };
-	uint16*			m_indices{ nullptr };
+	void*					m_vertices{ nullptr };
+	uint16*					m_indices{ nullptr };
+	uint16					m_numVertices{ 0 };
+	uint16					m_numIndices{ 0 };
 
-	IVertexFormat*	m_vertexFormat{ nullptr };
-	IVertexBuffer*	m_vertexBuffer{ nullptr };
-	IIndexBuffer*	m_indexBuffer{ nullptr };
+	EPrimTopology			m_primType{ PRIM_TRIANGLES };
+	int						m_vertexStride{ 0 };
+	int						m_id{ -1 };
 
-	EPrimTopology	m_primType{ PRIM_TRIANGLES };
-	int				m_vertexStride{ 0 };
-	int				m_vboDirty{ -1 };
+	IGPUCommandRecorderPtr	m_cmdRecorder;
+	int						m_vtxBufferOffset{ 0 };
+	int						m_idxBufferOffset{ 0 };
 
-	uint16			m_numVertices{ 0 };
-	uint16			m_numIndices{ 0 };
+	IVertexFormat*			m_vertexFormat{ nullptr };
+	IGPUBufferPtr			m_vertexBuffer;
+	IGPUBufferPtr			m_indexBuffer;
 };

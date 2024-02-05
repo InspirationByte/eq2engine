@@ -106,3 +106,4 @@ typedef void*			EQCURSOR;
 #endif // PLAT_SDL
 
 IEXPORTS void Platform_Sleep(uint32 nMilliseconds);
+IEXPORTS bool Platform_IsDebuggerPresent();

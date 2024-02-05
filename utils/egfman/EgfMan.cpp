@@ -153,7 +153,7 @@ public:
 	CEGFViewFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("EGFman"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 915,697 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		
 	void			ReDraw();
-	void			OnPaint(wxPaintEvent& event);
+	void			OnPaint(wxPaintEvent& event) {}
 	void			OnEraseBackground(wxEraseEvent& event) {}
 	void			OnSize(wxSizeEvent& event);
 
@@ -233,24 +233,17 @@ protected:
 
 BEGIN_EVENT_TABLE(CEGFViewFrame, wxFrame)
 	EVT_SIZE(OnSize)
+
 	EVT_ERASE_BACKGROUND(OnEraseBackground)
 	EVT_IDLE(OnIdle)
 	EVT_PAINT(OnPaint)
+
 	EVT_COMBOBOX(-1, OnComboboxChanged)
 	EVT_BUTTON(-1, OnButtons)
 	EVT_SLIDER(-1, OnButtons)
 	EVT_CHECKLISTBOX( -1, OnBodyGroupToggled )
 
 	EVT_MENU_RANGE( Event_File_OpenModel, Event_Max_Menu_Range, ProcessAllMenuCommands)
-	
-	EVT_SIZE(OnSize)
-
-	/*
-	EVT_KEY_DOWN(ProcessKeyboardDownEvents)
-	EVT_KEY_UP(ProcessKeyboardUpEvents)
-	EVT_CONTEXT_MENU(OnContextMenu)
-	EVT_SET_FOCUS(OnFocus)
-	*/
 END_EVENT_TABLE()
 
 DECLARE_INTERNAL_SHADERS();
@@ -394,7 +387,7 @@ static void InitMatSystem(void* window)
 		}
 
 		MaterialsInitSettings materials_config;
-		MaterialsRenderSettings& render_config = materials_config.renderConfig;
+		MatSysRenderSettings& render_config = materials_config.renderConfig;
 
 		render_config.enableShadows = false;
 		render_config.wireframeMode = false;
@@ -422,9 +415,9 @@ static void InitMatSystem(void* window)
 		FogInfo fog;
 		fog.enableFog = true;
 		fog.fogColor = ColorRGB(0.25,0.25,0.25);
-		fog.fogdensity = 1.0f;
-		fog.fogfar = 14250;
-		fog.fognear = -2750;
+		fog.fogDensity = 1.0f;
+		fog.fogFar = 14250;
+		fog.fogNear = -2750;
 
 		g_matSystem->SetFogInfo(fog);
 
@@ -433,7 +426,7 @@ static void InitMatSystem(void* window)
 
 	g_matSystem->LoadShaderLibrary("eqBaseShaders");
 
-	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
+	if (!g_parallelJobs->Init(s_jobTypes))
 		return;
 
 	if (!g_fontCache->Init())
@@ -461,6 +454,26 @@ void CEGFViewFrame::InitializeEq()
 #else
 	InitMatSystem(m_pRenderPanel->GetHandle());
 #endif
+
+	const int modelArgIdx = g_cmdLine->FindArgument("-model");
+	if (modelArgIdx != -1)
+	{
+		EqString modelPath(g_cmdLine->GetArgumentsOf(modelArgIdx));
+
+		g_model.SetModel(nullptr);
+		FlushCache();
+
+		int cache_index = g_studioModelCache->PrecacheModel(modelPath);
+		if (cache_index != CACHE_INVALID_MODEL)
+		{
+			g_model.SetModel(g_studioModelCache->GetModel(cache_index));
+			RefreshGUI();
+	}
+}
+
+	int w, h;
+	m_pRenderPanel->GetSize(&w, &h);
+	g_matSystem->SetDeviceBackbufferSize(w, h);
 
 	debugoverlay->Init(false);
 }
@@ -780,10 +793,6 @@ void CEGFViewFrame::OnIdle(wxIdleEvent &event)
 	ReDraw();
 }
 
-void CEGFViewFrame::OnPaint(wxPaintEvent& event)
-{
-}
-
 void CEGFViewFrame::ProcessMouseEnter(wxMouseEvent& event)
 {
 	//CaptureMouse();
@@ -1098,16 +1107,16 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 
 void CEGFViewFrame::OnSize(wxSizeEvent& event)
 {
-	wxFrame::OnSize( event );
+	wxFrame::OnSize(event);
 
-	if(!g_matSystem)
+	if (!g_matSystem)
 		return;
 
 	int w, h;
-	m_pRenderPanel->GetSize(&w,&h);
-	g_matSystem->SetDeviceBackbufferSize(w,h);
+	m_pRenderPanel->GetSize(&w, &h);
+	g_matSystem->SetDeviceBackbufferSize(w, h);
 
-	ReDraw();
+	m_bDoRefresh = true;
 }
 
 float g_frametime = 0;
@@ -1148,35 +1157,27 @@ void ShowFPS()
 #define MAX_FRAMETIME	0.3
 #define MIN_FRAMETIME	0.00001
 
-void RenderFloor()
+void RenderFloor(IGPURenderPassRecorder* rendPassRecorder)
 {
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->SetAmbientColor(ColorRGBA(1, 1, 0, 0.15f));
-
-	g_matSystem->SetDepthStates(true,true);
-	g_matSystem->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
-	g_matSystem->SetBlendingStates(blending);
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_FRONT;
+	defaultRenderPass.drawColor = MColor(1.0f, 1.0f, 0.0f, 0.15f);
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-
-	meshBuilder.TexturedQuad3(
-		Vector3D(-64, 0, -64), 
-		Vector3D(64, 0, -64), 
-		Vector3D(-64, 0, 64), 
-		Vector3D(64, 0, 64), 
-		vec2_zero, vec2_zero, vec2_zero, vec2_zero);
+		meshBuilder.TexturedQuad3(
+			Vector3D(-64, 0, -64), 
+			Vector3D(64, 0, -64), 
+			Vector3D(-64, 0, 64), 
+			Vector3D(64, 0, 64), 
+			vec2_zero, vec2_zero, vec2_zero, vec2_zero);
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 void CEGFViewFrame::ReDraw()
@@ -1203,9 +1204,6 @@ void CEGFViewFrame::ReDraw()
 	m_pRenderPanel->GetSize(&w, &h);
 	if(g_matSystem->BeginFrame(nullptr))
 	{
-		g_renderAPI->SetViewport(IAARectangle(0, 0, w, h));
-		g_renderAPI->Clear(true,true,false, ColorRGBA(0.5,0.5,0.5, 1));
-
 		Vector3D forward, right;
 		AngleVectors(g_camera_rotation, &forward, &right);
 
@@ -1229,7 +1227,6 @@ void CEGFViewFrame::ReDraw()
 
 		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		g_matSystem->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
-
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		// Update things
@@ -1253,10 +1250,10 @@ void CEGFViewFrame::ReDraw()
 
 		g_model.Update( g_frametime );
 
-		if(g_model.IsSequencePlaying() )
+		const int selectedSeqIdx = m_pMotionSelection->GetSelection();
+		if(g_model.IsSequencePlaying() && selectedSeqIdx != -1)
 		{
-			int nSeq = m_pMotionSelection->GetSelection();
-			const gsequence_t& seq = g_model.GetSequence(nSeq);
+			const gsequence_t& seq = g_model.GetSequence(selectedSeqIdx);
 
 			float setFrameRate = atoi(m_pAnimFramerate->GetValue());
 
@@ -1282,11 +1279,19 @@ void CEGFViewFrame::ReDraw()
 			renderFlags |= RFLAG_ATTACHMENTS;
 
 		g_matSystem->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
-
 		g_renderAPI->ResetCounters();
 
+		IGPURenderPassRecorderPtr modelDrawRenderPass = g_renderAPI->BeginRenderPass(
+			Builder<RenderPassDesc>()
+			.ColorTarget(g_matSystem->GetCurrentBackbuffer(), true, ColorRGBA(0.5f, 0.5f, 0.5f, 1.0f))
+			.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+			.DepthClear()
+			.End()
+		);
+
 		// Now we can draw our model
-		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);
+		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime, modelDrawRenderPass);
+
 
 		debugoverlay->Text(color_white, "polygon count: %d\n", g_renderAPI->GetTrianglesCount());
 
@@ -1295,18 +1300,17 @@ void CEGFViewFrame::ReDraw()
 
 		// draw floor 1x1 meters
 		if(m_drawFloor->IsChecked())
-			RenderFloor();
-
-		g_matSystem->SetAmbientColor(ColorRGBA(1, 1, 1, 1));
+			RenderFloor(modelDrawRenderPass);
 
 		if (m_drawGrid->IsChecked())
 		{
-			DrawGrid(1.0f, 8, vec3_zero, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), true);
+			DrawGrid(1.0f, 8, vec3_zero, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), true, modelDrawRenderPass);
 			debugoverlay->Line3D(vec3_zero, vec3_right, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
 			debugoverlay->Line3D(vec3_zero, vec3_up, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
 			debugoverlay->Line3D(vec3_zero, vec3_forward, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
 		}
 
+		g_matSystem->QueueCommandBuffer(modelDrawRenderPass->End());
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
 		g_matSystem->EndFrame();

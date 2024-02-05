@@ -12,14 +12,12 @@
 EGFInstBuffer::~EGFInstBuffer()
 {
 	PPFree(instances);
-	g_renderAPI->DestroyVertexBuffer(instanceVB);
+	//g_renderAPI->DestroyVertexBuffer(instanceVB);
 }
 
 void EGFInstBuffer::Init(int sizeOfInstance)
 {
-	instanceVB = g_renderAPI->CreateVertexBuffer(BufferInfo(sizeOfInstance, EGF_INST_POOL_MAX_INSTANCES, BUFFER_DYNAMIC));
-	instanceVB->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
-
+	instanceVB = g_renderAPI->CreateBuffer(BufferInfo(sizeOfInstance, EGF_INST_POOL_MAX_INSTANCES), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "EGFInstBuffer");
 	instances = PPAlloc(sizeOfInstance * EGF_INST_POOL_MAX_INSTANCES);
 }
 
@@ -56,11 +54,8 @@ void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFH
 void CBaseEqGeomInstancer::Cleanup()
 {
 	if(m_vertFormat && m_ownsVertexFormat)
-	{
-		g_renderAPI->Reset(STATE_RESET_VBO);
-		g_renderAPI->ApplyBuffers();
 		g_renderAPI->DestroyVertexFormat(m_vertFormat);
-	}
+
 	m_data.clear(true);
 	m_vertFormat = nullptr;
 
@@ -145,14 +140,11 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 	Upload();
 
-	// proceed to render
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-
-	const int maxVertexCount = model->m_vertexBuffers[EGFHwVertex::VERT_POS_UV]->GetVertexCount();
 	int instanceStreamId = -1;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.vertexLayout = m_vertFormat;
+	drawCmd.SetInstanceFormat(m_vertFormat)
+		.SetIndexBuffer(model->m_indexBuffer, static_cast<EIndexFormat>(model->m_indexFmt));
 
 	// setup vertex buffers
 	{
@@ -170,15 +162,13 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			}
 			else
 			{
-				drawCmd.vertexBuffers[stream] = model->m_vertexBuffers[egfVertStreamId];
+				drawCmd.SetVertexBuffer(stream, model->m_vertexBuffers[egfVertStreamId]);
 				setVertStreams |= (1 << int(egfVertStreamId));
 			}
 		}
 	}
 
 	ASSERT_MSG(instanceStreamId != -1, "No instance stream has been configured in vertex format!");
-
-	drawCmd.indexBuffer = model->m_indexBuffer;
 
 	const studioHdr_t& studio = model->GetStudioHdr();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
@@ -213,8 +203,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				if (buffer.numInstances == 0)
 					continue;
 
-				drawCmd.vertexBuffers[instanceStreamId] = buffer.instanceVB;
-				drawCmd.instanceBuffer = buffer.instanceVB;
+				drawCmd.SetInstanceData(buffer.instanceVB, m_instanceSize, buffer.numInstances, 0);
 
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numMeshes; i++)
@@ -227,14 +216,12 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 						continue;
 
 					//materials->SetSkinningEnabled(true);
-					drawCmd.material = material;
-					
+					drawCmd.SetMaterial(material);
 
 					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
-					drawCmd.primitiveTopology = (EPrimTopology)meshRef.primType;
-					drawCmd.SetDrawIndexed(meshRef.indexCount, meshRef.firstIndex, maxVertexCount);
+					drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
-					g_matSystem->Draw(drawCmd);
+					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(nullptr, nullptr));
 				}
 			} // mGrp
 		} // bodyGrp

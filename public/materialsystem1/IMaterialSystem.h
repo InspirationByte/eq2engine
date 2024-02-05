@@ -22,12 +22,10 @@
 
 class CImage;
 class IDynamicMesh;
-class IMatSysRenderCallbacks;
+using IDynamicMeshPtr = CRefPtr<IDynamicMesh>;
 
-typedef void					(*RESOURCELOADCALLBACK)(void);
-typedef const char*				(*DISPATCH_OVERRIDE_SHADER)(void);
-typedef bool					(*DEVLICELOSTRESTORE)(void);
-typedef IMaterialProxy*			(*PROXY_DISPATCHER)(void);
+using DEVICE_LOST_RESTORE_CB	= bool (*)(void);
+using PROXY_FACTORY_CB			= IMaterialProxy* (*)(void);
 
 // Lighting model for material system
 enum EMaterialLightingMode
@@ -37,33 +35,25 @@ enum EMaterialLightingMode
 	MATERIAL_LIGHT_FORWARD,		// forward shading, also for use in deferred, if you setting non-state lighting model, it will be fully forward
 };
 
-// material bind flags
-enum EMaterialBindFlags
-{
-	MATERIAL_BIND_PREAPPLY = (1 << 0),
-	MATERIAL_BIND_KEEPOVERRIDE = (1 << 1),
-};
-
 //-----------------------------------------------------
 // material system configuration
 //-----------------------------------------------------
 
-struct MaterialsRenderSettings
+struct MatSysRenderSettings
 {
 	int			materialFlushThresh{ 1000 };	// flush (unload) threshold in frames
 
-	bool		lowShaderQuality{ false };
 	bool		editormode{ false };			// enable editor mode
 	bool		threadedloader{ true };
 
-	bool		enableShadows{ true };			// enable shadows?
+	bool		enableShadows{ false };			// enable shadows?
 	bool		wireframeMode{ false };			// matsystem wireframe mode
 	bool		overdrawMode{ false };			// matsystem overdraw mode
 };
 
 struct MaterialsInitSettings
 {
-	MaterialsRenderSettings	renderConfig;
+	MatSysRenderSettings	renderConfig;
 	ShaderAPIParams		shaderApiParams;
 
 	EqString	rendererName;		// shaderAPI library filename
@@ -79,7 +69,7 @@ struct MaterialsInitSettings
 class IMaterialSystem : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E1_MaterialSystem_024")
+	CORE_INTERFACE("E1_MaterialSystem_026")
 
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
@@ -89,7 +79,7 @@ public:
 
 	virtual bool					LoadShaderLibrary(const char* libname) = 0;
 
-	virtual MaterialsRenderSettings&	GetConfiguration() = 0;
+	virtual MatSysRenderSettings&	GetConfiguration() = 0;
 
 	// returns material path
 	virtual const char*				GetMaterialPath() const = 0;
@@ -100,25 +90,24 @@ public:
 
 	virtual IShaderAPI*				GetShaderAPI() const = 0;
 
-	virtual void					RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
+	virtual void					RegisterProxy(PROXY_FACTORY_CB dispfunc, const char* pszName) = 0;
 	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
 
-	virtual void					RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
-	virtual void					RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
+	virtual void					RegisterShader(const ShaderFactory& factory) = 0;
+	virtual void					RegisterShaderOverride(const char* shaderName, OVERRIDE_SHADER_CB func) = 0;
 
-	virtual void					AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
-	virtual void					RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
+	virtual void					AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;
+	virtual void					RemoveLostRestoreCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;
 
 	//-----------------------------
 	// Swap chains
 
 	virtual bool					BeginFrame(ISwapChain* swapChain) = 0;
 	virtual bool					EndFrame() = 0;
+	virtual ITexturePtr				GetCurrentBackbuffer() const = 0;
+	virtual ITexturePtr				GetDefaultDepthBuffer() const = 0;
 
 	virtual bool					CaptureScreenshot(CImage& img) = 0;
-
-	virtual ETextureFormat			GetBackBufferColorFormat() const = 0;
-	virtual ETextureFormat			GetBackBufferDepthFormat() const = 0;
 
 	virtual void					SetDeviceBackbufferSize(int wide, int tall) = 0;
 	virtual void					SetDeviceFocused(bool inFocus) = 0;
@@ -133,14 +122,15 @@ public:
 	// Resource operations
 
 	virtual const IMaterialPtr&		GetDefaultMaterial() const = 0;
-	virtual const ITexturePtr&		GetErrorCheckerboardTexture() const = 0;
-	virtual	const ITexturePtr&		GetWhiteTexture() const = 0;
+	virtual const ITexturePtr&		GetErrorCheckerboardTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const = 0;
+	virtual	const ITexturePtr&		GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const = 0;
 
-	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
-	virtual IMaterialPtr			GetMaterial(const char* szMaterialName) = 0;
+	virtual IMaterialPtr			CreateMaterial(const char* szMaterialName, const KVSection* params, int instanceFormatId = 0) = 0;
+	virtual IMaterialPtr			GetMaterial(const char* szMaterialName, int instanceFormatId = 0) = 0;
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
-	virtual IMatSystemShader*		CreateShaderInstance(const char* szShaderName) = 0;
+	virtual const ShaderFactory*	GetShaderFactory(const char* szShaderName, int instanceFormatId) = 0;
+	virtual MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash) = 0;
 
 	virtual void					QueueLoading(const IMaterialPtr& pMaterial) = 0;
 	virtual void					PreloadNewMaterials() = 0;
@@ -178,94 +168,61 @@ public:
 	virtual void					SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar) = 0;
 
 	virtual void					SetMatrix(EMatrixMode mode, const Matrix4x4& matrix) = 0;
-	virtual void					GetMatrix(EMatrixMode mode, Matrix4x4& matrix) = 0;
+	virtual void					GetMatrix(EMatrixMode mode, Matrix4x4& matrix) const = 0;
 
-	virtual void					GetWorldViewProjection(Matrix4x4& matrix) = 0;
+	virtual void					GetViewProjection(Matrix4x4& matrix) const = 0;
+	virtual void					GetWorldViewProjection(Matrix4x4& matrix) const = 0;
 
-	//---
-	virtual void					SetShaderParameterOverriden(int /*EShaderParamSetup*/ param, bool set = true) = 0;
-
-	virtual IMaterialPtr			GetBoundMaterial() const = 0;
-	virtual bool					BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
-	virtual void					Apply() = 0;
-
-	// sets the custom rendering callbacks
-	// useful for proxy updates, setting up constants that shader objects can't access by themselves
-	virtual void					SetRenderCallbacks(IMatSysRenderCallbacks* callback) = 0;
-	virtual IMatSysRenderCallbacks* GetRenderCallbacks() const = 0;
-
-	virtual ECullMode				GetCurrentCullMode() const = 0;
-	virtual void					SetCullMode(ECullMode cullMode) = 0;
-
-	virtual void					SetSkinningEnabled(bool bEnable) = 0;
-	virtual bool					IsSkinningEnabled() const = 0;
-
-	// TODO: per instance
-	virtual void					SetSkinningBones(ArrayCRef<RenderBoneTransform> bones) = 0;
-	virtual void					GetSkinningBones(ArrayCRef<RenderBoneTransform>& outBones) const = 0;
-
-	virtual void					SetInstancingEnabled(bool bEnable) = 0;
-	virtual bool					IsInstancingEnabled() const = 0;
-
-	virtual void					SetFogInfo(const FogInfo& info) = 0;
-	virtual void					GetFogInfo(FogInfo& info) const = 0;
-
-	virtual void					SetAmbientColor(const ColorRGBA& color) = 0;
-	virtual ColorRGBA				GetAmbientColor() const = 0;
-
-	virtual void					SetBlendingStates(const BlendStateParams& blend) = 0;
-	virtual void					SetBlendingStates(EBlendFactor src, EBlendFactor dest, EBlendFunc func = BLENDFUNC_ADD, int colormask = COLORMASK_ALL) = 0;
-
-	virtual void					SetDepthStates(const DepthStencilStateParams& depth) = 0;
-	virtual void					SetDepthStates(bool depthTest, bool depthWrite, bool polyOffset = false, ECompareFunc depthCompFunc = COMPFUNC_LEQUAL) = 0;
-
-	virtual void					SetRasterizerStates(const RasterizerStateParams& raster) = 0;
-	virtual void					SetRasterizerStates(ECullMode cullMode, EFillMode fillMode = FILL_SOLID, bool multiSample = true, bool scissor = false) = 0;
-
+	virtual int						GetCameraParams(MatSysCamera& cameraParams) const = 0;
 
 	//-----------------------------
 	// Drawing
+	virtual IDynamicMeshPtr			GetDynamicMesh() = 0;
+	virtual void					ReleaseDynamicMesh(int id) = 0;
 
-	virtual IDynamicMesh*			GetDynamicMesh() const = 0;
+	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
+	virtual GPUBufferView			GetTransientUniformBuffer(const void* data, int64 size) = 0;
+	virtual GPUBufferView			GetTransientVertexBuffer(const void* data, int64 size) = 0;
 
-	virtual void					Draw(const RenderDrawCmd& drawCmd) = 0;
+	// queues command buffer. Execution order is guaranteed
+	virtual void					QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) = 0;
+	virtual void					QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer) = 0;
 
-	// draw primitives with default material
-	virtual void					DrawDefaultUP(EPrimTopology type, int vertFVF, const void* verts, int numVerts,
-													const ITexturePtr& texture = nullptr, const MColor &color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr) = 0;
+	// submits all queued command buffers to RHI.
+	virtual void					SubmitQueuedCommands() = 0;
+	virtual void					UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force = false) const = 0;
+
+	virtual bool					SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext) = 0;
+	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext) = 0;
+	virtual bool					SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext) = 0;
 
 	template<typename VERT>
-	void							DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts,
-													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr);
+	void							SetupDrawDefaultUP(EPrimTopology primTopology, const VERT* verts, int numVerts, const RenderPassContext& passContext);
 
 	template<typename ARRAY_TYPE>
-	void							DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts,
-													const ITexturePtr& texture = nullptr, const MColor& color = color_white,
-													BlendStateParams* blendParams = nullptr, DepthStencilStateParams* depthParams = nullptr,
-													RasterizerStateParams* rasterParams = nullptr);
+	void							SetupDrawDefaultUP(EPrimTopology primTopology, const ARRAY_TYPE& verts, const RenderPassContext& passContext);
 
+	//--------------------------------------------------
+	// DEPRECATED
+
+	virtual void					SetFogInfo(const FogInfo& info) = 0;
+	virtual void					GetFogInfo(FogInfo& info) const = 0;
 };
 
 template<typename VERT>
-void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const VERT* verts, int numVerts, const ITexturePtr& texture, const MColor& color,
-		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
+void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const VERT* verts, int numVerts, const RenderPassContext& passContext)
 {
 	const void* vertPtr = reinterpret_cast<void*>(&verts);
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(type, vertFVF, vertPtr, numVerts, texture, color, blendParams, depthParams, rasterParams);
+	SetupDrawDefaultUP(primTopology, vertFVF, vertPtr, numVerts, passContext);
 }
 
 template<typename ARRAY_TYPE>
-void IMaterialSystem::DrawDefaultUP(EPrimTopology type, const ARRAY_TYPE& verts, const ITexturePtr& texture, const MColor& color,
-		BlendStateParams* blendParams, DepthStencilStateParams* depthParams, RasterizerStateParams* rasterParams)
+void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const ARRAY_TYPE& verts, const RenderPassContext& passContext)
 {
 	using VERT = typename ARRAY_TYPE::ITEM;
 	const int vertFVF = VertexFVFResolver<VERT>::value;
-	DrawDefaultUP(type, vertFVF, verts.ptr(), verts.numElem(), texture, color, blendParams, depthParams, rasterParams);
+	SetupDrawDefaultUP(primTopology, vertFVF, verts.ptr(), verts.numElem(), passContext);
 }
 
 extern IMaterialSystem* g_matSystem;

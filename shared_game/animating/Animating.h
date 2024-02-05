@@ -80,7 +80,7 @@ public:
 	void						AdvanceFrame(float fDt);
 	void						UpdateIK(float fDt, const Matrix4x4& worldTransform);
 
-	void						RecalcBoneTransforms();
+	virtual void				RecalcBoneTransforms();
 
 	void						DebugRender(const Matrix4x4& worldTransform);
 protected:
@@ -94,9 +94,14 @@ protected:
 
 	virtual void				AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData);
 
+	using SequenceTimers = FixedArray<sequencetimer_t, MAX_SEQUENCE_TIMERS>;
+
 	// transition time from previous
-	float						m_transitionTime;
-	float						m_transitionRemTime;
+	// sequence timers. first timer is main, and transitional is last
+	SequenceTimers				m_sequenceTimers;
+
+	float						m_transitionTime{ 0 };
+	float						m_transitionRemTime{ 0 };
 	qanimframe_t*				m_transitionFrames{ nullptr };
 	qanimframe_t*				m_velocityFrames{ nullptr };
 
@@ -112,6 +117,5 @@ protected:
 	Array<gposecontroller_t>	m_poseControllers{ PP_SL }; // pose controllers
 	Array<gikchain_t>			m_ikChains{ PP_SL };
 
-	// sequence timers. first timer is main, and transitional is last
-	FixedArray<sequencetimer_t, MAX_SEQUENCE_TIMERS>	m_sequenceTimers;
+	bool						m_bonesNeedUpdate{ true };
 };

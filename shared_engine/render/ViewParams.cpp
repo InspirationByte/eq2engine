@@ -65,12 +65,14 @@ float CViewParams::GetZNear() const
 	return m_fZNear;
 }
 
+float CViewParams::GetLodScale() const
+{
+	return min(1.0f, m_fFOV * BASE_LOD_FOV);
+}
+
 float CViewParams::GetLODScaledDistFrom( const Vector3D& position ) const
 {
-	float fLodDistScale = m_fFOV * BASE_LOD_FOV;
-	fLodDistScale = min(fLodDistScale, 1.0f);
-
-	return fLodDistScale * length(position-m_vecOrigin);
+	return length(position - m_vecOrigin) * GetLodScale();
 }
 
 void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic) const

@@ -13,34 +13,13 @@
 
 #include "ShaderAPI_defs.h"
 
-#include "IVertexBuffer.h"
+#include "IGPUBuffer.h"
+#include "IGPUCommandRecorder.h"
 #include "IVertexFormat.h"
-#include "IIndexBuffer.h"
 #include "ITexture.h"
-#include "IOcclusionQuery.h"
-#include "IRenderState.h"
-#include "IShaderProgram.h"
 
 #undef far
 #undef near
-
-// API reset type
-enum EStateResetFlags : int
-{
-	STATE_RESET_SHADER = (1 << 0),
-	STATE_RESET_VF = (1 << 1),
-	STATE_RESET_VB = (1 << 2),
-	STATE_RESET_IB = (1 << 3),
-	STATE_RESET_DS = (1 << 4),
-	STATE_RESET_BS = (1 << 5),
-	STATE_RESET_RS = (1 << 6),
-	STATE_RESET_SS = (1 << 7),
-	STATE_RESET_TEX = (1 << 8),
-	STATE_RESET_SHADERCONST = (1 << 9),
-
-	STATE_RESET_ALL = 0xFFFF,
-	STATE_RESET_VBO = (STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
-};
 
 struct KVSection;
 class CImage;
@@ -52,13 +31,33 @@ struct ShaderAPIParams
 	ETextureFormat		screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
 	int					screenRefreshRateHZ{ 60 };			// refresh rate in HZ
-	int					multiSamplingMode{ 0 };				// multisampling
 	int					depthBits{ 24 };					// bit depth for depth/stencil
-
-	bool				verticalSyncEnabled{ false };		// vertical syncronization
 };
 
-//
+//---------------------------------------------------------------
+
+//---------------------------------
+// Pipeline layout. Used for creating bind groups and pipelines
+class IGPUPipelineLayout : public RefCountedObject<IGPUPipelineLayout> {};
+using IGPUPipelineLayoutPtr = CRefPtr<IGPUPipelineLayout>;
+
+//---------------------------------
+// Render pipeline. Used for rendering things
+class IGPURenderPipeline : public RefCountedObject<IGPURenderPipeline> {};
+using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
+
+//---------------------------------
+// Compute pipeline
+class IGPUComputePipeline : public RefCountedObject<IGPUComputePipeline> {};
+using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
+
+//---------------------------------
+// Bind group. References used resources needed to render (textures, uniform buffers etc)
+// not used for Vertex and Index buffers.
+class IGPUBindGroup : public RefCountedObject<IGPUBindGroup> {};
+using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
+
+//---------------------------------
 // ShaderAPI interface
 //
 class IShaderAPI
@@ -80,7 +79,7 @@ public:
 // Renderer capabilities and information
 //-------------------------------------------------------------
 
-	virtual const ShaderAPICaps&	GetCaps() const = 0;
+	virtual const ShaderAPICapabilities&	GetCaps() const = 0;
 
 	virtual EShaderAPIType		GetShaderAPIClass() const = 0;
 	virtual const char*			GetRendererName() const = 0;
@@ -95,7 +94,6 @@ public:
 	virtual int					GetDrawCallsCount() const = 0;
 	virtual int					GetDrawIndexedPrimitiveCallsCount() const = 0;
 	virtual int					GetTrianglesCount() const = 0;
-
 	virtual void				ResetCounters() = 0;
 
 //-------------------------------------------------------------
@@ -103,45 +101,51 @@ public:
 //-------------------------------------------------------------
 
 	virtual void				Flush() = 0;
-	virtual void				Finish() = 0;
 
 //-------------------------------------------------------------
-// Pipeline state layout
-//-------------------------------------------------------------
+// Buffer management
+
+	virtual IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const = 0;
 
 	// DEPRECATED
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout ) = 0;
-	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
+	virtual IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout) = 0;
+	virtual void						DestroyVertexFormat(IVertexFormat* pFormat) = 0;
+	virtual IVertexFormat*				FindVertexFormat(const char* name) const = 0;
+	virtual IVertexFormat*				FindVertexFormatById(int nameHash) const = 0;
 
 //-------------------------------------------------------------
-// Buffer objects
+// Pipeline management
+
+	// loads shader modules (caches in RHI/Driver)
+	virtual void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const = 0;
+
+	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
+	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;
+	virtual IGPUComputePipelinePtr		CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const = 0;
+
+	// constructs bind group using explicit user-defined pipeline layoyt
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const = 0;
+	
+	// constructs bind group using render pipeline layout  defined by shader module
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const = 0;
+	
+	// constructs bind group using compute pipeline layout defined by shader module
+	virtual IGPUBindGroupPtr			CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const = 0;
 //-------------------------------------------------------------
+// Command management
 
-	virtual IVertexBuffer*		CreateVertexBuffer(const BufferInfo& bufferInfo) = 0;
-	virtual IIndexBuffer*		CreateIndexBuffer(const BufferInfo& bufferInfo) = 0;
-
-	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
-	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
-	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
+	virtual IGPUCommandRecorderPtr		CreateCommandRecorder(const char* name = nullptr, void* userData = nullptr) const = 0;
+	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
+	virtual IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData = nullptr) const = 0;
 
 //-------------------------------------------------------------
-// Shader resource management
-//-------------------------------------------------------------
+// Command buffer management
+	
+	virtual void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const = 0;
+	virtual void						SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const = 0;
 
-	virtual IShaderProgramPtr	FindShaderProgram(const char* pszName, const char* query = nullptr) = 0;
-
-	virtual IShaderProgramPtr	CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
-	virtual void				FreeShaderProgram(IShaderProgram* pShaderProgram) = 0;
-
-	virtual bool				LoadShadersFromFile(IShaderProgramPtr pShaderOutput, const char* pszFileNamePrefix, const char* extra = nullptr) = 0;
-	virtual bool				CompileShadersFromStream(IShaderProgramPtr pShaderOutput, const ShaderProgCompileInfo& info, const char* extra = nullptr) = 0;
-
-//-------------------------------------------------------------
-// Occlusion query management
-//-------------------------------------------------------------
-
-	virtual IOcclusionQuery*	CreateOcclusionQuery() = 0;
-	virtual void				DestroyOcclusionQuery(IOcclusionQuery* pQuery) = 0;
+	virtual Future<bool>				SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const = 0;
+	virtual Future<bool>				SubmitCommandBufferAwaitable(const IGPUCommandBuffer* cmdBuffer) const = 0;
 
 //-------------------------------------------------------------
 // Texture resource managenent
@@ -158,146 +162,28 @@ public:
 
 	// creates static texture from image (array for animated textures)
 	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& images, const SamplerStateParams& sampler, int flags = 0) = 0;
+	
+	// creates texture that will be render target or storage target
+	virtual ITexturePtr			CreateRenderTarget(const TextureDesc& targetDesc) = 0;
+	
+	// resizes render target with new size (NOTE: data is not preserved)
+	virtual void				ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount = 1, int sampleCount = 1) = 0;
+
+//-------------------------------------------------------------
+// DEPRECATED Procedural texture creation
+//-------------------------------------------------------------
 
 	// creates lockable texture
 	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
 														ETextureFormat nFormat,
 														int width, int height,
-														int depth = 1,
 														int arraySize = 1,
-														ETexFilterMode texFilter = TEXFILTER_NEAREST,
-														ETexAddressMode textureAddress = TEXADDRESS_WRAP,
+														const SamplerStateParams& sampler = {},
 														int flags = 0,
 														int dataSize = 0, const ubyte* data = nullptr
 														) = 0;
-
-	virtual ITexturePtr			CreateRenderTarget(const char* pszName,
-													int width, int height,
-													ETextureFormat nRTFormat,
-													ETexFilterMode textureFilterType = TEXFILTER_LINEAR,
-													ETexAddressMode textureAddress = TEXADDRESS_WRAP,
-													ECompareFunc comparison = COMPFUNC_NEVER,
-													int nFlags = 0
-													) = 0;
-
-//-------------------------------------------------------------
-// Render states management
-//-------------------------------------------------------------
-
-	virtual IRenderState*		CreateBlendingState( const BlendStateParams &blendDesc ) = 0;
-	virtual IRenderState*		CreateDepthStencilState( const DepthStencilStateParams &depthDesc ) = 0;
-	virtual IRenderState*		CreateRasterizerState( const RasterizerStateParams &rasterDesc ) = 0;
-	virtual void				DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) = 0;
-
-//-------------------------------------------------------------
-// Rasterizer and render state properties
-//-------------------------------------------------------------
-
-	virtual void				SetDepthRange( float near, float far ) = 0;
-	virtual void				SetViewport(const IAARectangle& rect) = 0;
-	virtual void				SetScissorRectangle(const IAARectangle& rect) = 0;
-
-	virtual void				SetBlendingState( IRenderState* pBlending ) = 0;
-	virtual void				SetDepthStencilState( IRenderState *pDepthStencilState ) = 0;
-	virtual void				SetRasterizerState( IRenderState* pState ) = 0;
-
-//-------------------------------------------------------------
-// Vertex buffer object handling
-//-------------------------------------------------------------
-
-	virtual void				SetVertexFormat( IVertexFormat* pVertexFormat ) = 0;
-	virtual void				SetVertexBuffer( IVertexBuffer* pVertexBuffer, int nStream, const intptr offset = 0 ) = 0;
-	virtual void				SetIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
-
-	virtual void				ChangeVertexFormat( IVertexFormat* pVertexFormat ) = 0;
-	virtual void				ChangeVertexBuffer( IVertexBuffer* pVertexBuffer,int nStream, const intptr offset = 0 ) = 0;
-	virtual void				ChangeIndexBuffer( IIndexBuffer *pIndexBuffer ) = 0;
-
-//-------------------------------------------------------------
-// Shaders state operations
-//-------------------------------------------------------------
-
-	virtual void				SetShader(IShaderProgramPtr pShader) = 0;
-
-    virtual void				SetShaderConstantRaw(int nameHash, const void *data, int nSize) = 0;
-
-	template<typename ARRAY_TYPE>
-	void						SetShaderConstantArray(int nameHash, const ARRAY_TYPE& arr);
-	template<typename T> void	SetShaderConstant(int nameHash, const T* constant, int count = 1);
-	template<typename T> void	SetShaderConstant(int nameHash, const T& constant);
-
-	virtual void				SetTexture(int nameHash, const ITexturePtr& pTexture) = 0;
-	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
-
-//-------------------------------------------------------------
-// Render target state operations
-//-------------------------------------------------------------
-
-	// clear current rendertarget
-	virtual void				Clear(	bool color,
-										bool depth = true,
-										bool stencil = true,
-										const MColor& fillColor = color_black,
-										float depthValue = 1.0f,
-										int stencilValue = 0
-										) = 0;
-
-	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
-	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IAARectangle* srcRect = nullptr, IAARectangle* destRect = nullptr) = 0;
-	
-	virtual void				ChangeRenderTargetToBackBuffer() = 0;
-	virtual void				ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0) = 0;
-	virtual void				ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
-													ArrayCRef<int> rtSlice = nullptr,
-													const ITexturePtr& depthTarget = nullptr,
-													int depthSlice = 0) = 0;
-
-	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall ) = 0;
-
-//-------------------------------------------------------------
-// Sending states to API
-//-------------------------------------------------------------
-
-	// reset states. Use RESET_TYPE flags. By default all states reset
-	virtual void				Reset(int resetFlags = STATE_RESET_ALL) = 0;
-
-	// applies all states
-	virtual void				Apply() = 0;
-
-	virtual void				ApplyTextures() = 0;
-	virtual void				ApplySamplerState() = 0;
-	virtual void				ApplyBlendState() = 0;
-	virtual void				ApplyDepthState() = 0;
-	virtual void				ApplyRasterizerState() = 0;
-	virtual void				ApplyBuffers() = 0;
-	virtual void				ApplyShaderProgram() = 0;
-	virtual void				ApplyConstants() = 0;
-
-//-------------------------------------------------------------
-// Primitive drawing
-//-------------------------------------------------------------
-
-	virtual void				DrawIndexedPrimitives(EPrimTopology nType, int firstIndex, int indices, int firstVertex, int vertices, int baseVertex = 0) = 0;
-	virtual void				DrawNonIndexedPrimitives(EPrimTopology nType, int firstVertex, int vertices) = 0;
 };
 
-template<typename ARRAY_TYPE>
-inline void IShaderAPI::SetShaderConstantArray(int nameHash, const ARRAY_TYPE& arr)
-{
-	SetShaderConstantRaw(nameHash, arr.ptr(), sizeof(typename ARRAY_TYPE::ITEM) * arr.numElem());
-}
-
-template<typename T>
-inline void IShaderAPI::SetShaderConstant(int nameHash, const T* constant, int count)
-{
-	SetShaderConstantRaw(nameHash, constant, sizeof(T) * count);
-}
-
-template<typename T>
-inline void IShaderAPI::SetShaderConstant(int nameHash, const T& constant)
-{
-	SetShaderConstantRaw(nameHash, &constant, sizeof(T));
-}
 
 // it always external, declare new one in your app...
 extern IShaderAPI* g_renderAPI;

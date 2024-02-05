@@ -22,40 +22,28 @@ static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
 	return ImGui::GetCurrentContext() ? (ImGui_ImplMatSystem_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
 }
 
-
-// Functions
-static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data)
+static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder, const RenderDrawCmd& drawCmd)
 {
-	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 
-	//materials->Setup2D(draw_data->DisplaySize.x, draw_data->DisplaySize.y);
+	g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.batchInfo.primTopology, drawCmd.instanceInfo.instFormat, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->SetAmbientColor(color_white);
-	g_matSystem->SetDepthStates(false, false);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_NONE, FILL_SOLID, true, true);
+	rendPassRecorder->SetViewport(AARectangle(0.0f, 0.0f, draw_data->FramebufferScale.x * draw_data->DisplaySize.x, draw_data->FramebufferScale.y * draw_data->DisplaySize.y), 0.0f, 1.0f);
+	rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);
+	rendPassRecorder->SetIndexBufferView(drawCmd.instanceInfo.indexBuffer, drawCmd.instanceInfo.indexFormat);
 }
 
 // Render function.
-void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
+void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRecorder* rendPassRecorder)
 {
 	// Avoid rendering when minimized
 	if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
 		return;
 
-	// Setup desired DX state
-	ImGui_ImplMatSystem_SetupRenderState(draw_data);
-
-	IDynamicMesh* pMatsysMesh = g_matSystem->GetDynamicMesh();
-
-	CMeshBuilder mb(pMatsysMesh);
-	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
-
+	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
+	CMeshBuilder mb(dynMesh);
+	
 	float halfPixelOfs = 0.0f;
 	if (g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 		halfPixelOfs = 0.5f;
@@ -81,11 +69,12 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 
 		ImDrawIdx* idx_dst;
 		void* vtx_dst;
-		if (pMatsysMesh->AllocateGeom(0, cmd_list->IdxBuffer.Size, &vtx_dst, &idx_dst, false) != -1)
+		if (dynMesh->AllocateGeom(0, cmd_list->IdxBuffer.Size, &vtx_dst, &idx_dst, false) != -1)
 		{
 			memcpy(idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
 		}
 
+		RenderDrawCmd drawCmd;
 		mb.End(drawCmd);
 
 		// render command buffers now
@@ -98,7 +87,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 				// User callback, registered via ImDrawList::AddCallback()
 				// (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
 				if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-					ImGui_ImplMatSystem_SetupRenderState(draw_data);
+					ImGui_ImplMatSystem_SetupRenderState(draw_data, rendPassRecorder, drawCmd);
 				else
 					pcmd->UserCallback(cmd_list, pcmd);
 			}
@@ -111,14 +100,17 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 					continue;
 
 				// Apply Scissor/clipping rectangle, Bind texture, Draw
-				ITexture* texture = (ITexture*)pcmd->GetTexID();
-				IAARectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
-				g_renderAPI->SetScissorRectangle(scissor);
 
-				g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(ITexturePtr(texture));
+				MatSysDefaultRenderPass defaultRenderPass;
+				defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+				defaultRenderPass.texture = ITexturePtr((ITexture*)pcmd->GetTexID());
 
-				drawCmd.SetDrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, drawCmd.numVertices);
-				g_matSystem->Draw(drawCmd);
+				g_matSystem->SetupMaterialPipeline(g_matSystem->GetDefaultMaterial(), nullptr, drawCmd.batchInfo.primTopology, drawCmd.instanceInfo.instFormat, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+				rendPassRecorder->SetScissorRectangle(IAARectangle((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y));
+				rendPassRecorder->SetVertexBufferView(0, drawCmd.instanceInfo.vertexBuffers[0]);
+				rendPassRecorder->SetIndexBufferView(drawCmd.instanceInfo.indexBuffer, INDEXFMT_UINT16);
+				rendPassRecorder->DrawIndexed(pcmd->ElemCount, pcmd->IdxOffset, 1);
 			}
 		}
 	}

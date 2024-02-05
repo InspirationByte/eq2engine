@@ -15,6 +15,8 @@
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
 
+#include "imaging/ImageLoader.h"
+
 #include "render/IDebugOverlay.h"
 
 #include <SDL.h>
@@ -48,15 +50,14 @@ DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Cl`oses current
 DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quti, "quti", CGameHost::HostExitCmd, "This made for keyboard writing errors", 0);
 
-DECLARE_CVAR(r_vSync, "0", "Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing, "0", "Multisample antialiasing", CV_ARCHIVE);
-DECLARE_CVAR(r_fastShaders, "0", "Low shader quality mode", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
 DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 
 DECLARE_CVAR(r_overdraw, "0", "Renders all materials in overdraw shader", CV_CHEAT);
 DECLARE_CVAR(r_wireframe, "0", "Enables wireframe rendering", CV_CHEAT);
 
+DECLARE_CVAR(sys_screen, "0", "Fullscreen mode screen ID", CV_ARCHIVE);
 DECLARE_CVAR(sys_vmode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
 DECLARE_CVAR(sys_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(sys_maxfps, "0", 0.0f, 300.0f, "Frame rate limit", CV_ARCHIVE);
@@ -87,6 +88,56 @@ DECLARE_CMD(sys_vmode_list, nullptr, 0)
 			vmodes[i].displayId,
 			vmodes[i].bitsPerPixel, vmodes[i].width, vmodes[i].height, vmodes[i].refreshRate);
 	}
+}
+
+DECLARE_CVAR(screenshotJpegQuality, "100", "JPEG Quality", CV_ARCHIVE);
+
+static EqString requestScreenshotName;
+
+DECLARE_CMD(screenshot, "Save screenshot", 0)
+{
+	if (g_matSystem == nullptr)
+		return;
+
+	// pick the best filename
+	if (CMD_ARGC == 0)
+	{
+		int i = 0;
+		do
+		{
+			g_fileSystem->MakeDir("screenshots", SP_ROOT);
+			EqString path(EqString::Format("screenshots/screenshot_%04d.jpg", i));
+
+			if (g_fileSystem->FileExist(path.ToCString(), SP_ROOT))
+				continue;
+
+			CombinePath(requestScreenshotName, g_fileSystem->GetBasePath(), path.ToCString());
+			break;
+		} while (i++ < 9999);
+	}
+	else
+	{
+		requestScreenshotName = CMD_ARGV(0) + ".jpg";
+	}
+}
+
+static void Sys_SaveScreenshot()
+{
+	if (!requestScreenshotName.Length())
+		return;
+
+	g_matSystem->SubmitQueuedCommands();
+
+	CImage img;
+	if (!g_matSystem->CaptureScreenshot(img))
+		return;
+
+	if (img.SaveJPEG(requestScreenshotName, screenshotJpegQuality.GetInt()))
+		MsgInfo("Saved screenshot to '%s'\n", requestScreenshotName.ToCString());
+	else
+		MsgError("Failed to save or capture screenshot\n");
+
+	requestScreenshotName.Empty();
 }
 
 DECLARE_INTERNAL_SHADERS();
@@ -391,10 +442,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	else if(renderBPP == 16)
 		screenFormat = FORMAT_RGB565;
 
-	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
 	materials_config.shaderApiParams.screenFormat = screenFormat;
-	materials_config.shaderApiParams.verticalSyncEnabled = r_vSync.GetBool();
-	materials_config.renderConfig.lowShaderQuality = r_fastShaders.GetBool();
 
 	if(!g_matSystem->Init(materials_config))
 		return false;
@@ -707,18 +755,24 @@ bool CGameHost::Frame()
 
 	BeginScene();
 
-	g_consoleInput->BeginFrame();
-
 	if (r_showFPSGraph.GetBool())
 		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
 
 	const double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
+	
+	const float stateTimeStepDelta = gameFrameTime * timescale * sys_timescale.GetFloat();
+	g_matSystem->SetProxyDeltaTime(stateTimeStepDelta);
 
-	if(!EqStateMgr::UpdateStates(gameFrameTime * timescale * sys_timescale.GetFloat()))
+	if(!EqStateMgr::UpdateStates(stateTimeStepDelta))
 	{
 		m_quitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
+
+	// submit all command buffers queued inside UpdateStates
+	// this is made to display Debug Overlays and, console input 
+	// and ImGui in case of some command buffers were invalid
+	g_matSystem->SubmitQueuedCommands();
 
 	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
 
@@ -773,6 +827,12 @@ bool CGameHost::Frame()
 	equi::Manager->SetViewFrame(IAARectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
 
+	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+		Builder<RenderPassDesc>()
+		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.End()
+	);
+
 	if (r_showFPS.GetBool())
 	{
 		eqFontStyleParam_t params;
@@ -784,19 +844,19 @@ bool CGameHost::Frame()
 		else if (fps < 60)
 			params.textColor = ColorRGBA(1, 0.8f, 0, 1);
 
-		m_defaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
+		m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
 
 		size_t totalMem = PPMemGetUsage();
 		if (totalMem)
 		{
 			eqFontStyleParam_t memParams;
 			memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-			m_defaultFont->RenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams);
+			m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
 		}
 	}
 
-	g_inputCommandBinder->DebugDraw(m_winSize);
-	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, gameFrameTime);
+	g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
+	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 
 	// End frame from render lib
 	EndScene();
@@ -837,13 +897,19 @@ void CGameHost::BeginScene()
 {
 	g_matSystem->BeginFrame(nullptr);
 
-	MaterialsRenderSettings& rendSettings = g_matSystem->GetConfiguration();
+	MatSysRenderSettings& rendSettings = g_matSystem->GetConfiguration();
 	rendSettings.wireframeMode = r_wireframe.GetBool();
 	rendSettings.overdrawMode = r_overdraw.GetBool();
+
+	g_consoleInput->BeginFrame();
 }
 
 void CGameHost::EndScene()
 {
+	// save screenshots without ImGui/Console visible
+	Sys_SaveScreenshot();
+
+	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
 	g_matSystem->EndFrame();
 }
 

@@ -395,6 +395,7 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 
 	g_pfxRender->Init();
 
+	/*
 	m_moviePlayer = CRefPtr_new(CMoviePlayer);
 
 	m_moviePlayer->OnCompleted += [&]() {
@@ -422,7 +423,7 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 		EmitParams ep(soundSec.GetName());
 		g_sounds->EmitSound(&ep);
 	}
-
+	*/
 	{
 		static constexpr const int particlesGroupId = StringToHashConst("particles/translucent");
 
@@ -493,16 +494,17 @@ void CState_SampleGameDemo::InitGame()
 // when 'false' returned the next state goes on
 bool CState_SampleGameDemo::Update(float fDt)
 {
-	m_moviePlayer->Present();
+	//m_moviePlayer->Present();
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	g_renderAPI->Clear(true, true, false, ColorRGBA(0.5f));
-	materials->SetupOrtho((-screenSize.x / 2) * m_zoomLevel, (screenSize.x / 2) * m_zoomLevel, (screenSize.y / 2) * m_zoomLevel, (-screenSize.y / 2) * m_zoomLevel, -1000, 1000);
-	materials->SetMatrix(MATRIXMODE_VIEW, translate(-m_pan.x, -m_pan.y, 0.0f));
+	g_matSystem->SetupOrtho((-screenSize.x / 2) * m_zoomLevel, (screenSize.x / 2) * m_zoomLevel, (screenSize.y / 2) * m_zoomLevel, (-screenSize.y / 2) * m_zoomLevel, -1000, 1000);
+	g_matSystem->SetMatrix(MATRIXMODE_VIEW, translate(-m_pan.x, -m_pan.y, 0.0f));
 
-	materials->SetAmbientColor(color_white);
+	g_matSystem->SetAmbientColor(color_white);
 
+	/*
 	// draw video
 	{
 		ITexturePtr videoTexture = m_moviePlayer->GetImage();
@@ -590,7 +592,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 
 		meshBuilder.End();
 	}
-
+	*/
 	const AtlasEntry* atlRock = m_pfxGroup->FindEntry("rock");
 	const AtlasEntry* atlPaper = m_pfxGroup->FindEntry("paper");
 	const AtlasEntry* atlScissors = m_pfxGroup->FindEntry("scissors");

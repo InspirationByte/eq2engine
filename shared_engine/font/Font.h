@@ -10,7 +10,8 @@
 #include "font/IFont.h"
 
 class CMeshBuilder;
-class RenderDrawCmd;
+struct RenderDrawCmd;
+struct RenderPassContext;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
@@ -35,17 +36,16 @@ public:
 	float					GetBaselineOffs( const eqFontStyleParam_t& params ) const;
 
 	// renders text (wide char)
-	void					RenderText(	const wchar_t* pszText,
+	void					SetupRenderText(const wchar_t* pszText,
 								const Vector2D& start,
-								const eqFontStyleParam_t& params);
+								const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
 	// renders text (ASCII)
-	void					RenderText(	const char* pszText,
+	void					SetupRenderText(const char* pszText,
 								const Vector2D& start,
-								const eqFontStyleParam_t& params);
+								const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
 
 protected:
-
-	void					DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params);
+	void					SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder);
 
 	// returns the character data
 	const eqFontChar_t&		GetFontCharById( const int chrId ) const;

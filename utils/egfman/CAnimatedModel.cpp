@@ -19,6 +19,7 @@
 #include "materialsystem1/MeshBuilder.h"
 
 #include "render/IDebugOverlay.h"
+#include "render/StudioRenderDefs.h"
 
 #define INITIAL_TIME 0.0f
 
@@ -238,7 +239,7 @@ void CAnimatedModel::UpdateRagdollBones()
 	}
 }
 
-void CAnimatedModel::RenderPhysModel()
+void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!m_pModel)
 		return;
@@ -251,20 +252,16 @@ void CAnimatedModel::RenderPhysModel()
 	if(physData.numShapes == 0)
 		return;
 
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	g_matSystem->SetAmbientColor(ColorRGBA(1,0,1,1));
-	g_matSystem->SetDepthStates(true,false);
-	g_matSystem->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.drawColor = MColor(1.0f, 0.0f, 1.0f, 1.0f);
+	defaultRenderPass.depthTest = true;
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
 	Matrix4x4 worldPosMatrix;
 	g_matSystem->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
@@ -299,7 +296,7 @@ void CAnimatedModel::RenderPhysModel()
 				meshBuilder.AdvanceVertex();
 			}
 			if (meshBuilder.End(drawCmd))
-				g_matSystem->Draw(drawCmd);
+				g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 		}
 	}
 }
@@ -338,7 +335,7 @@ const gposecontroller_t& CAnimatedModel::GetPoseController(int pc) const
 }
 
 // renders model
-void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt)
+void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!m_pModel)
 		return;
@@ -381,8 +378,6 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	*/
 
-	g_matSystem->SetAmbientColor( color_white );
-
 	int startLOD = m_pModel->SelectLod( fDist );
 
 	if(!overrideLod)
@@ -390,14 +385,17 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	else
 		startLOD = startLod;
 
+	RenderBoneTransform boneTransforms[128];
+	const int numBones = m_pModel->ConvertBoneMatricesToQuaternions(m_boneTransforms, boneTransforms);
+	
 	CEqStudioGeom::DrawProps drawProperties;
-	drawProperties.boneTransforms = m_boneTransforms;
+	drawProperties.boneTransforms = g_matSystem->GetTransientUniformBuffer(boneTransforms, numBones * sizeof(RenderBoneTransform));
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
-	m_pModel->Draw(drawProperties);
+	m_pModel->Draw(drawProperties, MeshInstanceData{}, RenderPassContext(rendPassRecorder, nullptr));
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
-		RenderPhysModel();
+		RenderPhysModel(rendPassRecorder);
 
 	if( nViewRenderFlags & RFLAG_BONES )
 		VisualizeBones();

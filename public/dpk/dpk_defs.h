@@ -9,7 +9,7 @@
 
 #define DPK_VERSION					8
 #define DPK_PREV_VERSION			7
-#define DPK_SIGNATURE				MCHAR4('E','Q','P','K')
+#define DPK_SIGNATURE				MAKECHAR4('E','Q','P','K')
 
 #define DPK_BLOCK_MAXSIZE			(8*1024)
 #define DPK_STRING_SIZE				255

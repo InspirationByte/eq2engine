@@ -93,7 +93,7 @@ void CTextureLoader::Initialize(const char* texturePath, const char* textureSRCP
 	m_textureSRCPath.Path_FixSlashes();
 }
 
-ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags)
+ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags, const char* requestedBy)
 {
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
@@ -101,7 +101,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	ITexturePtr texture = g_renderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
 
 	if (!texture)
-		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_matSystem->GetErrorCheckerboardTexture();
+		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_matSystem->GetErrorCheckerboardTexture((nFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D);
 
 	if (!isJustCreated)
 		return texture;
@@ -148,11 +148,11 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 		if (isLoaded)
 		{
-			const ShaderAPICaps& caps = g_renderAPI->GetCaps();
+			const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
 
 			if(!caps.textureFormatsSupported[img->GetFormat()])
 			{
-				MsgWarning("Texture has unsupported format %d: %s\n", img->GetFormat(), texturePathExt.ToCString());
+				MsgWarning("%s: Texture %s unsupported format %d\n", requestedBy, texturePathExt.ToCString(), img->GetFormat());
 				continue;
 			}
 
@@ -169,19 +169,19 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 			imgList.append(img);
 
 			if (r_reportTextureLoading.GetBool())
-				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
+				MsgInfo("%s: Texture loaded: %s\n", requestedBy, texturePathExt.ToCString());
 		}
 		else
 		{
-			MsgError("Can't open texture \"%s\"\n", texturePathExt.ToCString());
+			MsgError("%s: Can't open texture \"%s\"\n", requestedBy, texturePathExt.ToCString());
 		}
 	}
 
-	const ShaderAPICaps& caps = g_renderAPI->GetCaps();
+	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
 	caps.maxTextureAnisotropicLevel;
 
 	// initialize texture
-	if (!imgList.numElem() || !texture->Init(samplerParams, imgList, nFlags | TEXFLAG_PROGRESSIVE_LODS))
+	if (!imgList.numElem() || !texture->Init(imgList, samplerParams, nFlags | TEXFLAG_PROGRESSIVE_LODS))
 	{
 		if (nFlags & TEXFLAG_NULL_ON_ERROR)
 			texture = nullptr;
@@ -192,7 +192,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	return texture;
 }
 
-Future<ITexturePtr> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags)
+Future<ITexturePtr> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags, const char* requestedBy)
 {
 	PROF_EVENT("Load Texture from file");
 

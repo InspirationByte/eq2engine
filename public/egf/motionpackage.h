@@ -7,7 +7,7 @@
 
 #pragma once
 
-#define ANIMFILE_IDENT				MCHAR4('E','Q','M','P')
+#define ANIMFILE_IDENT				MAKECHAR4('E','Q','M','P')
 #define ANIMFILE_VERSION			6
 
 // use tag ANIMCA_VERSION change

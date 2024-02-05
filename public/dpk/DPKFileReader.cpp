@@ -408,3 +408,29 @@ IFilePtr CDPKFileReader::Open(const char* filename, int modeFlags)
 
 	return IFilePtr(newStream);
 }
+
+IFilePtr CDPKFileReader::Open(int fileIndex, int modeFlags)
+{
+	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
+	{
+		ASSERT_FAIL("Archived files only can open for reading!\n");
+		return nullptr;
+	}
+
+	if (fileIndex == -1)
+		return nullptr;
+
+	const dpkfileinfo_t& fileInfo = m_dpkFiles[fileIndex];
+
+	COSFile osFile;
+	if (!osFile.Open(m_packagePath.ToCString(), COSFile::OPEN_EXIST | COSFile::READ))
+	{
+		ASSERT_FAIL("CDPKFileReader::Open FATAL ERROR - failed to open package file");
+		return nullptr;
+	}
+
+	CRefPtr<CDPKFileStream> newStream = CRefPtr_new(CDPKFileStream, EqString::Format("dpkFile%d", fileIndex), fileInfo, std::move(osFile));
+	newStream->m_host = this;
+	newStream->m_ice.set((unsigned char*)m_key.ToCString());
+	return IFilePtr(newStream);
+}

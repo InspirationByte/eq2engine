@@ -35,7 +35,7 @@ enum ETextTagType
 	TEXT_TAG_COLOR,
 };
 
-bool IsVisibleChar( int ch )
+static bool IsVisibleChar( int ch )
 {
 	return	(ch != '\n') && 
 			(ch != '\r');
@@ -382,37 +382,24 @@ DECLARE_CVAR(r_font_sdf_start, "0.94", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_font_sdf_range, "0.06", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
 
-//
-// Renders new styled tagged text - wide chars only
-//
-void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFontStyleParam_t& params)
+// renders text (wide char)
+void CFont::SetupRenderText(const wchar_t* pszText, const Vector2D& start, const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder)
 {
 	int vertCount = GetTextQuadsCount(pszText, params) * 6;
 	if (vertCount == 0)
 		return;
 
-	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
+	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
 	if (r_font_debug.GetBool())
 	{
-		RasterizerStateParams raster;
-		raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR);
-		BlendStateParams blending;
-		blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-		blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-		g_matSystem->SetDepthStates(false, false);
-		g_matSystem->SetBlendingStates(blending);
-		g_matSystem->SetRasterizerStates(raster);
-
-		g_matSystem->SetAmbientColor(color_white);
-		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-
-		g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-
 		RenderDrawCmd drawCmd;
-		drawCmd.material = g_matSystem->GetDefaultMaterial();
+		drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+
+		MatSysDefaultRenderPass defaultRenderPass;
+		defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+		RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
 		// set character color
 		meshBuilder.Begin(PRIM_LINES);
@@ -420,88 +407,86 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 		meshBuilder.Line2fv(start, start + IVector2D(512, 0));
 
 		if (meshBuilder.End(drawCmd))
-			g_matSystem->Draw(drawCmd);
+			g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 	}
 
 	RenderDrawCmd drawCmd;
 
-	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
-	if(meshBuilder.End(drawCmd))
-		DrawTextMeshBuffer(drawCmd, params);
+	if (meshBuilder.End(drawCmd))
+		SetupDrawTextMeshBuffer(drawCmd, params, rendPassRecorder);
 }
 
-//
-// Renders new styled tagged text - wide chars only
-//
-void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontStyleParam_t& params)
+// renders text (ASCII)
+void CFont::SetupRenderText(const char* pszText, const Vector2D& start, const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder)
 {
 	int vertCount = GetTextQuadsCount(pszText, params) * 6;
 	if (vertCount == 0)
 		return;
 
-	IDynamicMesh* dynMesh = g_matSystem->GetDynamicMesh();
+	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
 	RenderDrawCmd drawCmd;
-
-	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
-	if(meshBuilder.End(drawCmd))
-		DrawTextMeshBuffer(drawCmd, params);
+	if (meshBuilder.End(drawCmd))
+		SetupDrawTextMeshBuffer(drawCmd, params, rendPassRecorder);
 }
 
-void CFont::DrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params)
+void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder)
 {
-	RasterizerStateParams raster;
-	raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR);
-	BlendStateParams blending;
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.texture = m_fontTexture;
 
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
-	g_matSystem->SetDepthStates(false,false);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(raster);
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(m_fontTexture);
+	// TODO: defaultRenderPass.scissor (params.styleFlag & TEXT_STYLE_SCISSOR)
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 
-	drawCmd.material = fontCache->m_sdfMaterial;
+	drawCmd.SetMaterial(fontCache->m_sdfMaterial);
 	MatVec3Proxy sdfRange = fontCache->m_fontParams;
+	MatVec4Proxy baseColor = fontCache->m_fontBaseColor;
+	MatVec4Proxy shadowColor = fontCache->m_shadowColor;
+	MatVec3Proxy shadowSdfRange = fontCache->m_shadowParams;
+	MatVec2Proxy shadowOffset = fontCache->m_shadowOffset;
+
+	baseColor.Set(color_white);
 
 	// draw shadow
 	// TODO: shadow color should be separate from text vertices color!!!
 	if ((params.styleFlag & TEXT_STYLE_SHADOW) && params.shadowAlpha > 0.0f)
 	{
-		g_matSystem->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
-		g_matSystem->SetAmbientColor(ColorRGBA(params.shadowColor,params.shadowAlpha));
+		shadowColor.Set(ColorRGBA(params.shadowColor, params.shadowAlpha));
+		shadowOffset.Set(params.shadowOffset / Vector2D(m_fontTexture->GetWidth(), m_fontTexture->GetHeight()));
+
+		// g_matSystem->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset, params.shadowOffset, 0.0f));
 
 		if (m_flags.sdf)
 		{
 			// shadow width
-			float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.shadowWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-			sdfRange.Set(Vector3D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f));
+			const float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.shadowWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+			shadowSdfRange.Set(Vector3D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f));
 		}
 		else
-			sdfRange.Set(Vector3D(0.0f, 1.0f, 0.0f));
-
-		g_matSystem->Draw(drawCmd);
+			shadowSdfRange.Set(Vector3D(0.0f, 1.0f, 0.0f));
 	}
+	else
+		shadowColor.Set(vec4_zero);
 
 	if (m_flags.sdf)
 	{
-		float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+		const float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
 		sdfRange.Set(Vector3D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped, 1.0f));
 	}
 	else
 		sdfRange.Set(Vector3D(0.0f, 1.0f, 1.0f));
 
-	g_matSystem->SetAmbientColor(color_white);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
-
-	g_matSystem->Draw(drawCmd);
+	g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 }
 
 //
@@ -587,7 +572,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 	EqString finalFileName = _Es(FONT_DEFAULT_PATH) + m_name + _Es(".fnt");
 
 	KeyValues pKV;
-	if( pKV.LoadFromFile( finalFileName.GetData() ) )
+	if( pKV.LoadFromFile( finalFileName ) )
 	{
 		KVSection* fontSec = pKV.GetRootSection()->FindSection("Font", KV_FLAG_SECTION);
 
@@ -609,7 +594,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			m_spacing = 0.0f;
 			{
 				SamplerStateParams samplerParams(filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP);
-				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_NOQUALITYLOD);
+				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_IGNORE_QUALITY, finalFileName);
 			}
 
 			if(m_flags.sdf)
@@ -665,7 +650,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 			bool isAutogeneratedFont = false;
 
-			bool filter_font = KV_GetValueBool( fontSec->FindSection("FilterFontTexture") );
+			bool filterTexture = KV_GetValueBool( fontSec->FindSection("FilterFontTexture") );
 
 			float fSpacing = KV_GetValueFloat( fontSec->FindSection("spacing") );
 
@@ -688,9 +673,9 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				float interval = KV_GetValueFloat(pFontSizeSection->FindSection("interval"), 0, 0.75);
 
 				{
-					SamplerStateParams samplerParams(filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP);
+					SamplerStateParams samplerParams(filterTexture ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP);
 
-					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD);
+					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_IGNORE_QUALITY, finalFileName);
 				}
 
 				if(m_fontTexture == nullptr)

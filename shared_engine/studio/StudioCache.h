@@ -37,7 +37,7 @@ public:
 
 	void					ReleaseCache();
 
-	IVertexFormat*			GetEGFVertexFormat(bool skinned) const;
+	IVertexFormat*			GetEGFVertexFormat() const;
 	IMaterialPtr			GetErrorMaterial();
 
 	void					PrintLoadedModels() const;
@@ -49,7 +49,7 @@ private:
 	Array<CEqStudioGeom*>	m_cachedList{ PP_SL };
 	Array<int>				m_freeCacheSlots{ PP_SL };
 
-	IVertexFormat*			m_egfFormat[2]{ nullptr };
+	IVertexFormat*			m_egfFormat{ nullptr };
 	IMaterialPtr			m_errorMaterial;
 };
 

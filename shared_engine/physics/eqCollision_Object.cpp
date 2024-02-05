@@ -43,7 +43,7 @@ CEqCollisionObject::CEqCollisionObject()
 	m_friction = 0.1f;
 
 	m_position = FVector3D(0);
-	m_orientation = identity();
+	m_orientation = qidentity;
 
 	m_cellRange = IVector4D(0,0,0,0);
 
@@ -403,23 +403,13 @@ void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 {
 	if(m_flags & COLLOBJ_TRANSFORM_DIRTY)
 	{
-		Matrix4x4 rotation = Matrix4x4(m_orientation);
-		m_cachedTransform = translate(Vector3D(m_position)) * rotation;
+		Matrix4x4 transform = Matrix4x4(m_orientation);
+		transform.setTranslationTransposed(Vector3D(m_position));
+		m_cachedTransform = transform;
 		m_flags &= ~COLLOBJ_TRANSFORM_DIRTY;
 	}
 
 	outMatrix = m_cachedTransform;
-}
-
-void CEqCollisionObject::DebugDraw()
-{
-	if(m_studioShape)
-	{
-		Matrix4x4 m;
-		ConstructRenderMatrix(m);
-
-		g_matSystem->SetMatrix(MATRIXMODE_WORLD,m);
-	}
 }
 
 void CEqCollisionObject::SetDebugName(const char* name)

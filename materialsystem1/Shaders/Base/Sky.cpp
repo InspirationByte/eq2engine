@@ -14,11 +14,6 @@
 //--------------------------------------
 
 BEGIN_SHADER_CLASS(Skybox)
-	bool IsSupportVertexFormat(int nameHash) const
-	{
-		return true;
-	}
-
 	SHADER_INIT_PARAMS()
 	{
 		m_flags |= MATERIAL_FLAG_SKY;
@@ -43,6 +38,11 @@ BEGIN_SHADER_CLASS(Skybox)
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
 
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const
+	{
+		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
+	}
+
 	SHADER_SETUP_STAGE()
 	{
 		SHADER_BIND_PASS_SIMPLE(Unlit);
@@ -54,9 +54,9 @@ BEGIN_SHADER_CLASS(Skybox)
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 
 		// do depth testing for my type of skybox (looks like quake 3/unreal tournament style skyboxes)
-		g_matSystem->SetDepthStates(true, false);
-		g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
-		g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+		//g_matSystem->SetDepthStates(true, false);
+		//g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
+		//g_matSystem->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	
 		Matrix4x4 wvp;
 		g_matSystem->GetWorldViewProjection(wvp);
@@ -66,11 +66,11 @@ BEGIN_SHADER_CLASS(Skybox)
 		Vector3D camPos(wvp.rows[0].w, wvp.rows[1].w, wvp.rows[2].w);
 
 		// camera direction
-		renderAPI->SetShaderConstant(StringToHashConst("camPos"), camPos * 2.0f);
-		renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
+		//renderAPI->SetShaderConstant(StringToHashConst("camPos"), camPos * 2.0f);
+		//renderAPI->SetShaderConstant(StringToHashConst("AmbientColor"), g_matSystem->GetAmbientColor());
 
 		// setup base texture
-		renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());
+		//renderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

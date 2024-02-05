@@ -149,11 +149,7 @@ void InitMatSystem(EQWNDHANDLE window)
 		materials_config.shaderapi_params.windowHandle = window;
 		materials_config.shaderapi_params.screenFormat = format;
 
-#ifdef _WIN32
-		bool materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
-#elif LINUX
-        bool materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
-#endif // _WIN32
+        bool materialSystemStatus = materials->Init("materials/", "eqWGPURHI", materials_config);
 
 		FogInfo_t fog;
 		fog.enableFog = true;

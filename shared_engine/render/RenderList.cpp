@@ -9,48 +9,29 @@
 #include "RenderList.h"
 #include "BaseRenderableObject.h"
 
-#define MIN_OBJECT_RENDERLIST_MEMSIZE 64
+static constexpr const int MIN_OBJECT_RENDERLIST_SIZE = 64;
 
 CRenderList::CRenderList()
-	: m_objectList(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
-	, m_viewDistance(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
+	: m_objectList(PP_SL, MIN_OBJECT_RENDERLIST_SIZE)
+	, m_viewDistance(PP_SL, MIN_OBJECT_RENDERLIST_SIZE)
 {
 
 }
 
-CRenderList::~CRenderList()
+void CRenderList::AddRenderable(Renderable* pObject, void* userData)
 {
-	
-}
+	if (!pObject)
+		return;
 
-void CRenderList::AddRenderable(Renderable* pObject)
-{
+	pObject->OnAddedToRenderList(this, userData);
+
 	const int idx = m_objectList.append(pObject);
 	m_viewDistance.append({ 0.0f, idx });
 }
 
-int CRenderList::GetRenderableCount()
+void CRenderList::Render(int renderFlags, const RenderPassContext& passContext, void* userdata)
 {
-	return m_objectList.numElem();
-}
-
-CRenderList::Renderable* CRenderList::GetRenderable(int id)
-{
-	return m_objectList[id];
-}
-
-void CRenderList::Append(CRenderList* pAnotherList)
-{
-	const int num = pAnotherList->GetRenderableCount();
-	for(int i = 0; i < num; i++)
-		m_objectList.append(pAnotherList->GetRenderable(i));
-}
-
-void CRenderList::Render(int renderFlags, void* userdata)
-{
-	RenderInfo rinfo;
-	rinfo.renderFlags = renderFlags;
-	rinfo.userData = userdata;
+	RenderInfo rinfo{ passContext, userdata, 0.0f, renderFlags };
 	for (const RendPair& renderable : m_viewDistance)
 	{
 		rinfo.distance = renderable.distance;
@@ -71,14 +52,14 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 	// pre-compute object distances
 	for(int i = 0; i < m_objectList.numElem(); ++i)
 	{
-		Renderable* renderable = m_objectList[i];
+		const Renderable* renderable = m_objectList[i];
 		const BoundingBox& bbox = renderable->GetBoundingBox();
 
 		// clamp point in bbox
 		if(!bbox.Contains(origin))
-			m_viewDistance[i].distance = lengthSqr(origin - bbox.ClampPoint(origin));
+			m_viewDistance[i].distance = length(origin - bbox.ClampPoint(origin));
 		else
-			m_viewDistance[i].distance = lengthSqr(origin - bbox.GetCenter());
+			m_viewDistance[i].distance = length(origin - bbox.GetCenter());
 	}
 
 	if (reverse)

@@ -8,12 +8,10 @@
 #include "core/core_common.h"
 #include "IMaterialSystem.h"
 
-//const char* OverrideShader_Base()
-//{
-//	return "BaseUnlit";
-//}
-
 void InitShaderOverrides()
 {
-	//g_matSystem->RegisterShaderOverrideFunction("Base", OverrideShader_Base);
+	g_matSystem->RegisterShaderOverride("Error", [](int instanceFormatId) -> const char*
+		{
+			return "BaseUnlit";
+		});
 }

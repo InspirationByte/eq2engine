@@ -87,10 +87,8 @@ const ColorRGBA& Image::GetColor() const
 	return m_color;
 }
 
-void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
+void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
 {
-	
-
 	AARectangle atlasRect = m_atlasRegion;
 	if (m_imageFlags & FLIP_X)
 		atlasRect.FlipX();
@@ -100,17 +98,20 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn)
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+
 	RenderDrawCmd drawCmd;
-	drawCmd.material = m_material;
+	drawCmd.SetMaterial(m_material);
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.cullMode = CULL_NONE;
+
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-		//meshBuilder.Color4fv(m_color);
-		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 
-			atlasRect.GetLeftBottom(), atlasRect.GetRightBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightTop());
+		meshBuilder.Color4fv(m_color);
+		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetLeftTop(), rect.GetRightBottom(), rect.GetRightTop(),
+			atlasRect.GetLeftBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightBottom(), atlasRect.GetRightTop());
 	if(meshBuilder.End(drawCmd))
-	{
-		g_matSystem->SetAmbientColor(m_color);
-		g_matSystem->Draw(drawCmd);
-	}
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
 };

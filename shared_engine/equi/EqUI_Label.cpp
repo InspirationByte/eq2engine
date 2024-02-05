@@ -32,7 +32,7 @@ IAARectangle Label::GetClientScissorRectangle() const
 	return rect;
 }
 
-void Label::DrawSelf( const IAARectangle& rect, bool scissorOn)
+void Label::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
 {
 	CRectangleTextLayoutBuilder rectLayout;
 	rectLayout.SetRectangle(AARectangle(rect));
@@ -49,7 +49,7 @@ void Label::DrawSelf( const IAARectangle& rect, bool scissorOn)
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0, font->GetLineHeight(style)*0.5f);
 
 	// draw label
-	font->RenderText(m_label.ToCString(), pos, style);
+	font->SetupRenderText(m_label.ToCString(), pos, style, rendPassRecorder);
 }
 
 };

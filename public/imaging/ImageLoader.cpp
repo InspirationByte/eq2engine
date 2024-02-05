@@ -455,7 +455,7 @@ bool CImage::LoadDDSfromHandle(IFilePtr fileHandle, uint flags)
 
 	fileHandle->Read(&header, sizeof(header), 1);
 
-	if (header.dwMagic != MCHAR4('D', 'D', 'S', ' '))
+	if (header.dwMagic != MAKECHAR4('D', 'D', 'S', ' '))
 	{
 		MsgError("This image is not Direct Draw Surface!\n");
 		return false;
@@ -467,7 +467,7 @@ bool CImage::LoadDDSfromHandle(IFilePtr fileHandle, uint flags)
 	m_nMipMaps = ((flags & DONT_LOAD_MIPMAPS) || (header.dwMipMapCount == 0)) ? 1 : header.dwMipMapCount;
 	m_nArraySize = 1;
 
-	if (header.ddpfPixelFormat.dwFourCC == MCHAR4('D', 'X', '1', '0'))
+	if (header.ddpfPixelFormat.dwFourCC == MAKECHAR4('D', 'X', '1', '0'))
 	{
 		DDSHeaderDXT10 dxt10Header;
 		fileHandle->Read(&dxt10Header, sizeof(dxt10Header), 1);
@@ -523,15 +523,15 @@ bool CImage::LoadDDSfromHandle(IFilePtr fileHandle, uint flags)
 		case 114: m_nFormat = FORMAT_R32F; break;
 		case 115: m_nFormat = FORMAT_RG32F; break;
 		case 116: m_nFormat = FORMAT_RGBA32F; break;
-		case MCHAR4('D', 'X', 'T', '1'): m_nFormat = FORMAT_DXT1; break;
-		case MCHAR4('D', 'X', 'T', '3'): m_nFormat = FORMAT_DXT3; break;
-		case MCHAR4('D', 'X', 'T', '5'): m_nFormat = FORMAT_DXT5; break;
-		case MCHAR4('A', 'T', 'I', '1'): m_nFormat = FORMAT_ATI1N; break;
-		case MCHAR4('A', 'T', 'I', '2'): m_nFormat = FORMAT_ATI2N; break;
-		case MCHAR4('E', 'T', 'C', '1'): m_nFormat = FORMAT_ETC1; break;
-		case MCHAR4('E', 'T', 'C', '2'): m_nFormat = FORMAT_ETC2; break;
-		case MCHAR4('E', 'T', 'C', 'P'): m_nFormat = FORMAT_ETC2A1; break;
-		case MCHAR4('E', 'T', 'C', 'A'): m_nFormat = FORMAT_ETC2A8; break;
+		case MAKECHAR4('D', 'X', 'T', '1'): m_nFormat = FORMAT_DXT1; break;
+		case MAKECHAR4('D', 'X', 'T', '3'): m_nFormat = FORMAT_DXT3; break;
+		case MAKECHAR4('D', 'X', 'T', '5'): m_nFormat = FORMAT_DXT5; break;
+		case MAKECHAR4('A', 'T', 'I', '1'): m_nFormat = FORMAT_ATI1N; break;
+		case MAKECHAR4('A', 'T', 'I', '2'): m_nFormat = FORMAT_ATI2N; break;
+		case MAKECHAR4('E', 'T', 'C', '1'): m_nFormat = FORMAT_ETC1; break;
+		case MAKECHAR4('E', 'T', 'C', '2'): m_nFormat = FORMAT_ETC2; break;
+		case MAKECHAR4('E', 'T', 'C', 'P'): m_nFormat = FORMAT_ETC2A1; break;
+		case MAKECHAR4('E', 'T', 'C', 'A'): m_nFormat = FORMAT_ETC2A8; break;
 		default:
 			switch (header.ddpfPixelFormat.dwRGBBitCount)
 			{
@@ -883,7 +883,7 @@ bool CImage::SaveDDS(const char* fileName)
 	DDSHeaderDXT10 headerDXT10;
 	memset(&headerDXT10, 0, sizeof(headerDXT10));
 
-	header.dwMagic = MCHAR4('D', 'D', 'S', ' ');
+	header.dwMagic = MAKECHAR4('D', 'D', 'S', ' ');
 	header.dwSize = 124;
 	header.dwFlags = DDSD_CAPS | DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT | (m_nMipMaps > 1 ? DDSD_MIPMAPCOUNT : 0) | (m_nDepth > 1 ? DDSD_DEPTH : 0);
 	header.dwHeight = m_nHeight;
@@ -934,13 +934,13 @@ bool CImage::SaveDDS(const char* fileName)
 		case FORMAT_R32F:    header.ddpfPixelFormat.dwFourCC = 114; break;
 		case FORMAT_RG32F:   header.ddpfPixelFormat.dwFourCC = 115; break;
 		case FORMAT_RGBA32F: header.ddpfPixelFormat.dwFourCC = 116; break;
-		case FORMAT_DXT1:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', 'T', '1'); break;
-		case FORMAT_DXT3:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', 'T', '3'); break;
-		case FORMAT_DXT5:    header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', 'T', '5'); break;
-		case FORMAT_ATI1N:   header.ddpfPixelFormat.dwFourCC = MCHAR4('A', 'T', 'I', '1'); break;
-		case FORMAT_ATI2N:   header.ddpfPixelFormat.dwFourCC = MCHAR4('A', 'T', 'I', '2'); break;
+		case FORMAT_DXT1:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '1'); break;
+		case FORMAT_DXT3:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '3'); break;
+		case FORMAT_DXT5:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '5'); break;
+		case FORMAT_ATI1N:   header.ddpfPixelFormat.dwFourCC = MAKECHAR4('A', 'T', 'I', '1'); break;
+		case FORMAT_ATI2N:   header.ddpfPixelFormat.dwFourCC = MAKECHAR4('A', 'T', 'I', '2'); break;
 		default:
-			header.ddpfPixelFormat.dwFourCC = MCHAR4('D', 'X', '1', '0');
+			header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', '1', '0');
 			headerDXT10.arraySize = 1;
 			headerDXT10.miscFlag = (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
 			headerDXT10.resourceDimension = Is1D() ? D3D10_RESOURCE_DIMENSION_TEXTURE1D : Is3D() ? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;

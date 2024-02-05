@@ -305,7 +305,7 @@ void InitMatSystem(EQWNDHANDLE window)
 		}
 
 		MaterialsInitSettings materials_config;
-		MaterialsRenderSettings& render_config = materials_config.renderConfig;
+		MatSysRenderSettings& render_config = materials_config.renderConfig;
 		render_config.enableShadows = false;
 		render_config.wireframeMode = false;
 		render_config.editormode = false;
@@ -334,9 +334,9 @@ void InitMatSystem(EQWNDHANDLE window)
 		FogInfo fog;
 		fog.enableFog = true;
 		fog.fogColor = ColorRGB(0.25,0.25,0.25);
-		fog.fogdensity = 1.0f;
-		fog.fogfar = 14250;
-		fog.fognear = -2750;
+		fog.fogDensity = 1.0f;
+		fog.fogFar = 14250;
+		fog.fogNear = -2750;
 
 		g_matSystem->SetFogInfo(fog);
 
@@ -347,7 +347,7 @@ void InitMatSystem(EQWNDHANDLE window)
 
 	// register all shaders
 	for(int i = 0; i < pShaderRegistrators.numElem(); i++)
-		g_matSystem->RegisterShader( pShaderRegistrators[i].shader_name, pShaderRegistrators[i].dispatcher );
+		g_matSystem->RegisterShader( pShaderRegistrators[i]);
 }
 
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style )
@@ -399,7 +399,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	InitMatSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
 
-	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
+	if (!g_parallelJobs->Init(s_jobTypes))
 		return;
 
 	if (!g_fontCache->Init())
@@ -717,9 +717,6 @@ void CMainWindow::ReDraw()
  
 	if(g_matSystem->BeginFrame(nullptr))
 	{
-		g_renderAPI->SetViewport(IAARectangle(0, 0, w, h));
-		g_renderAPI->Clear(true,true,false, ColorRGBA(0.2,0.2,0.2, 1));
-
 		Vector3D forward, right, up;
 		AngleVectors(g_camera_rotation, &forward, &right, &up);
 
@@ -750,7 +747,6 @@ void CMainWindow::ReDraw()
 
 		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		g_matSystem->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
-
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		int nRenderFlags = 0;

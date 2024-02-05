@@ -12,7 +12,7 @@
 extern ShaderAPIEmpty s_renderApi;
 
 // initializes texture from image array of images
-bool CEmptyTexture::Init(const SamplerStateParams& sampler, const ArrayCRef<CImagePtr> images, int flags)
+bool CEmptyTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStateParams& sampler, int flags)
 {
 	return true;
 }

@@ -19,7 +19,7 @@ inline void ListLine(const Vector3D &from, const Vector3D &to, Array<Vertex3D> &
 	verts.append(Vertex3D(to, vec2_zero));
 }
 
-void DrawWorldCenter()
+void DrawWorldCenter(IGPURenderPassRecorder* rendPassRecorder)
 {
 	Array<Vertex3D> grid_vertices(PP_SL);
 
@@ -27,35 +27,24 @@ void DrawWorldCenter()
 	ListLine(Vector3D(0,-F_INFINITY,0),Vector3D(0, F_INFINITY,0), grid_vertices);
 	ListLine(Vector3D(0,0,-F_INFINITY),Vector3D(0,0, F_INFINITY), grid_vertices);
 
-	DepthStencilStateParams depth;
-	depth.depthTest = false;
-	depth.depthWrite = false;
-	depth.depthFunc = COMPFUNC_LEQUAL;
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.drawColor = MColor(0.0f, 0.45f, 0.45f, 1.0f);
 
-	RasterizerStateParams raster;
-	raster.cullMode = CULL_BACK;
-	raster.fillMode = FILL_SOLID;
-	raster.multiSample = true;
-	raster.scissor = false;
-
-	const ColorRGBA color(0, 0.45f, 0.45f, 1);
-	g_matSystem->DrawDefaultUP(PRIM_LINES, grid_vertices, nullptr, color, nullptr, &depth, &raster);
+	g_matSystem->SetupDrawDefaultUP(PRIM_LINES, grid_vertices, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest)
+void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest, IGPURenderPassRecorder* rendPassRecorder)
 {
-	int grid_lines = count;
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetDepthStates(depthTest, false, true);
-	g_matSystem->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false);
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
-
-	int numOfLines = grid_lines / size;
+	const int grid_lines = count;
+	const int numOfLines = grid_lines / size;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.depthTest = true;
 
 	meshBuilder.Begin(PRIM_LINES);
 
@@ -81,5 +70,5 @@ void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }

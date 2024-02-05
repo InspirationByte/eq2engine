@@ -7,12 +7,25 @@
 
 #pragma once
 
-class IShaderProgram;
+class IMaterial;
+class IMatSystemShader;
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
-class IMaterial;
+class IGPURenderPassRecorder;
+struct MeshInstanceFormatRef;
+struct RenderBufferInfo;
+struct RenderPassContext;
+
+class IGPURenderPipeline;
+using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
+
+class IGPUBindGroup;
+using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
+
+using OVERRIDE_SHADER_CB = const char* (*)(int instanceFormatId);
+using CREATE_SHADER_CB = IMatSystemShader * (*)();
 
 enum EShaderParamSetup
 {
@@ -43,42 +56,63 @@ enum EShaderParamSetup
 	SHADERPARAM_COUNT,
 };
 
+enum EBindGroupId
+{
+	// Data is never going to be changed during the life time of the material. 
+	//   Used for material parameters and textures.
+	BINDGROUP_CONSTANT = 0,
+
+	// Persists across single render pass. 
+	//   Use for camera & fog properties, material proxy values.
+	BINDGROUP_RENDERPASS = 1,
+
+	// Unique for each draw call. 
+	//   Use for something that would be unique for drawn object.
+	BINDGROUP_TRANSIENT = 2,
+};
+
+struct MatSysShaderPipelineCache
+{
+	Map<uint, IGPURenderPipelinePtr>	pipelines{ PP_SL };
+	Threading::CEqReadWriteLock			rwLock;
+};
 
 class IMatSystemShader
 {
 public:
 	virtual ~IMatSystemShader() = default;
 
-	virtual void				Init(IShaderAPI* renderAPI, IMaterial* assignee) = 0;
+	virtual void				Init(IShaderAPI* renderAPI, IMaterial* material) = 0;
 	virtual void				Unload() = 0;
+
+	virtual bool				IsInitialized() const = 0;
 
 	virtual void				InitTextures(IShaderAPI* renderAPI) = 0;
 	virtual void				InitShader(IShaderAPI* renderAPI) = 0;
 
-	virtual void				SetupShader(IShaderAPI* renderAPI) = 0;
-	virtual void				SetupConstants(IShaderAPI* renderAPI, uint paramMask) = 0;
-
 	virtual const char*			GetName() const = 0;
+	virtual int					GetNameHash() const = 0;
 
-	virtual bool				IsError() const = 0;
-	virtual bool				IsInitialized() const = 0;
 	virtual int					GetFlags() const = 0;
 
 	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
 	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
 
-	virtual bool				IsSupportVertexFormat(int nameHash) const = 0;
+	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) = 0;
+	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
 };
 
-typedef IMatSystemShader* (*DISPATCH_CREATE_SHADER)(void);
 struct ShaderFactory
 {
-	DISPATCH_CREATE_SHADER dispatcher;
-	const char* shader_name;
+	ArrayCRef<int>		vertexLayoutIds{ nullptr };
+	CREATE_SHADER_CB	func;
+	const char*			shaderName;
 };
 using FactoryList = Array<ShaderFactory>;
 
 extern FactoryList& _InternalShaderList();
+
+#define SHADER_VERTEX_ID(name)	StringToHashConst(#name)
 
 #define DECLARE_INTERNAL_SHADERS()  \
 	FactoryList* s_internalShaderReg = nullptr; \
@@ -86,20 +120,20 @@ extern FactoryList& _InternalShaderList();
 
 #define REGISTER_INTERNAL_SHADERS()	\
 	for(const ShaderFactory& factory : _InternalShaderList())	\
-		g_matSystem->RegisterShader( factory.shader_name, factory.dispatcher );
+		g_matSystem->RegisterShader( factory );
 
 #define DEFINE_SHADER(stringName, className) \
 	static IMatSystemShader* C##className##Factory() { \
-		IMatSystemShader *pShader = static_cast< IMatSystemShader * >(new className()); \
+		IMatSystemShader* pShader = static_cast< IMatSystemShader * >(new className()); \
 		return pShader;	\
 	} \
 	class C_ShaderClassFactoryFoo {	\
 	public: \
 		C_ShaderClassFactoryFoo() { \
-			ShaderFactory factory; \
-			factory.dispatcher = &C##className##Factory; \
-			factory.shader_name = stringName; \
-			_InternalShaderList().append(factory); \
+			ShaderFactory& factory = _InternalShaderList().append(); \
+			factory.vertexLayoutIds = GetSupportedVertexLayoutIds(); \
+			factory.func = &C##className##Factory; \
+			factory.shaderName = stringName; \
 		} \
 	}; \
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;

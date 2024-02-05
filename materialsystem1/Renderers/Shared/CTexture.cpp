@@ -28,26 +28,18 @@ void CTexture::SetAnimationFrame(int frame)
 }
 
 // initializes procedural (lockable) texture
-bool CTexture::InitProcedural(const SamplerStateParams& sampler, ETextureFormat format, int width, int height, int depth, int arraySize, int flags)
+bool CTexture::InitProcedural(const TextureDesc& textureDesc)
 {
-	if (depth == 0)
-	{
-		flags |= TEXFLAG_CUBEMAP;
-	}
-	else if (flags & TEXFLAG_CUBEMAP)
-	{
-		ASSERT_MSG(depth > 1, "depth for TEXFLAG_CUBEMAP should be not greater than 1");
-		depth = 0;
-	}
+	const int depth = (textureDesc.flags & TEXFLAG_CUBEMAP) ? 0 : 1;
 
 	// make texture
 	CImagePtr genTex = CRefPtr_new(CImage);
 	
-	ubyte* newData = genTex->Create(format, width, height, depth, 1, arraySize);
+	ubyte* newData = genTex->Create(textureDesc.format, textureDesc.size.width, textureDesc.size.height, depth, 1, textureDesc.size.arraySize);
 
 	if(newData)
 	{
-		const int texDataSize = width * height * depth * arraySize * GetBytesPerPixel(format);
+		const int texDataSize = textureDesc.size.width * textureDesc.size.height * depth * textureDesc.size.arraySize * GetBytesPerPixel(textureDesc.format);
 		memset(newData, 0, texDataSize);
 	}
 	else
@@ -59,7 +51,7 @@ bool CTexture::InitProcedural(const SamplerStateParams& sampler, ETextureFormat 
 	FixedArray<CImagePtr, 1> imgs;
 	imgs.append(genTex);
 
-	return Init(sampler, imgs, flags);
+	return Init(imgs, textureDesc.sampler, textureDesc.flags);
 }
 
 static void MakeCheckerBoxImage(ubyte* dest, int width, int height, int checkerSize, const MColor& color1, const MColor& color2)
@@ -91,6 +83,7 @@ bool CTexture::GenerateErrorTexture(int flags)
 	const int CHECKER_SIZE = 4;
 
 	CImagePtr image = CRefPtr_new(CImage);
+	image->SetName("Error");
 	ubyte* destPixels = image->Create(FORMAT_RGBA8, 64, 64, depth, 1);
 
 	const int size = image->GetMipMappedSize(0, 1);
@@ -113,5 +106,5 @@ bool CTexture::GenerateErrorTexture(int flags)
 	FixedArray<CImagePtr, 1> images;
 	images.append(image);
 
-	return Init(texSamplerParams, images, flags);
+	return Init(images, texSamplerParams, flags);
 }

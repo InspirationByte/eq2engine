@@ -78,7 +78,7 @@ static void AddFrameTransform(const qanimframe_t& frame1, const qanimframe_t& fr
 // zero frame
 static void ZeroFrameTransform(qanimframe_t& frame)
 {
-	frame.angBoneAngles = identity();
+	frame.angBoneAngles = qidentity;
 	frame.vecBonePosition = vec3_zero;
 }
 
@@ -478,18 +478,31 @@ void CAnimatingEGF::SetSequenceBlending(int slot, float factor)
 // advances frame (and computes interpolation between all blended animations)
 void CAnimatingEGF::AdvanceFrame(float frameTime)
 {
+	bool didUpdate = false;
+
 	if (m_sequenceTimers[0].seq)
 	{
 		const float div_frametime = (frameTime * 30);
 
 		// interpolate pose parameter values
 		for(gposecontroller_t& ctrl : m_poseControllers)
-			ctrl.interpolatedValue = approachValue(ctrl.interpolatedValue, ctrl.value, div_frametime * (ctrl.value - ctrl.interpolatedValue));
+		{
+			const float diff = ctrl.value - ctrl.interpolatedValue;
+			if(abs(diff) > F_EPS)
+				didUpdate = true;
+
+			ctrl.interpolatedValue = approachValue(ctrl.interpolatedValue, ctrl.value, div_frametime * diff);
+		}
 
 		if (m_sequenceTimers[0].active)
 		{
-			m_transitionRemTime -= frameTime;
-			m_transitionRemTime = max(m_transitionRemTime, 0.0f);
+			const float oldTransitionTime = m_transitionRemTime;
+			const float newTransitionTime = max(oldTransitionTime - frameTime, 0.0f);
+
+			if(abs(newTransitionTime - m_transitionRemTime) > F_EPS)
+				didUpdate = true;
+
+			m_transitionRemTime = newTransitionTime;
 		}
 	}
 
@@ -500,10 +513,14 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 		if (timer.seq_idx >= 0 && !timer.seq)
 			timer.seq = &m_seqList[timer.seq_idx];
 
-		timer.AdvanceFrame(frameTime);
+		if (timer.active)
+			didUpdate = true;
 
+		timer.AdvanceFrame(frameTime);
 		RaiseSequenceEvents(timer);
 	}
+
+	m_bonesNeedUpdate = didUpdate;
 }
 
 void CAnimatingEGF::RaiseSequenceEvents(sequencetimer_t& timer)
@@ -640,6 +657,10 @@ static void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, qanimfr
 // updates bones
 void CAnimatingEGF::RecalcBoneTransforms()
 {
+	if (!m_bonesNeedUpdate)
+		return;
+	m_bonesNeedUpdate = false;
+
 	m_sequenceTimers[0].blendWeight = 1.0f;
 
 	// setup each bone's transformation
@@ -935,6 +956,9 @@ bool SolveIKLinks(giklink_t& effector, Vector3D& target, float fDt, int numItera
 // updates inverse kinematics
 void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 {
+	if (!m_ikChains.numElem())
+		return;
+
 	bool ik_enabled_bones[128];
 	memset(ik_enabled_bones, 0, sizeof(ik_enabled_bones));
 
@@ -998,6 +1022,8 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 			}
 		}
 	}
+
+	m_bonesNeedUpdate = true;
 }
 
 // solves single ik chain

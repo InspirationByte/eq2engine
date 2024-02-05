@@ -115,10 +115,12 @@ protected:
 template<typename T>
 class Promise
 {
-	using Data = FutureImpl::FutureData<T>;
 public:
+	using Data = FutureImpl::FutureData<T>;
+
 					Promise();
 					Promise(const Promise& other);
+					Promise(Data* refDataPtr);
 
 	Future<T>		CreateFuture() const;
 
@@ -127,6 +129,8 @@ public:
 
 	EFutureStatus	GetStatus() const;
 
+	// for use in C callbacks
+	Data*			GrabDataPtr() { m_data.Ptr()->Ref_Grab(); return m_data.Ptr(); }
 protected:
 	CRefPtr<Data>	m_data;
 };
@@ -179,6 +183,13 @@ inline Promise<T>::Promise(const Promise& other)
 	: m_data(other.m_data)
 {
 
+}
+
+template<typename T>
+inline Promise<T>::Promise(Data* ref)
+	: m_data(ref)
+{
+	ref->Ref_Drop();
 }
 
 template<typename T>

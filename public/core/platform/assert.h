@@ -23,9 +23,12 @@
 
 #endif
 
-#define _EQASSERT_IGNORE_ALWAYS		-1
-#define _EQASSERT_BREAK				1
-#define _EQASSERT_SKIP				0	// only when debugger is not present
+enum EEqAssertType {
+	_EQASSERT_IGNORE_ALWAYS	= -1,
+	_EQASSERT_BREAK			= 1,
+	_EQASSERT_SKIP			= 0,	// only when debugger is not present
+};
+
 
 #if defined(_RETAIL) || defined(_PROFILE)
 
@@ -84,7 +87,7 @@ template<int x> struct compile_time_assert_test {};
 assert_sizeof(char, 1);
 assert_sizeof(short, 2);
 assert_sizeof(int, 4);
-assert_sizeof(long, 4);
+assert_sizeof(long, 4); // FIXME: not valid on GCC m64
 assert_sizeof(long long, 8);
 assert_sizeof(float, 4);
 assert_sizeof(double, 8);

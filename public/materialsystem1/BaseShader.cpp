@@ -6,6 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/ConVar.h"
+#include "core/IConsoleCommands.h"
+#include "utils/TextureAtlas.h"
+
 #include "IMaterialSystem.h"
 #include "BaseShader.h"
 #include "materialsystem1/ITextureLoader.h"
@@ -82,70 +86,179 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	SHADER_PARAM_ENUM(Modulate, blendMode, EShaderBlendMode, SHADER_BLEND_MODULATE)
 
 	if (blendMode != SHADER_BLEND_NONE)
-		materialFlags |= MATERIAL_FLAG_TRANSPARENT | MATERIAL_FLAG_NO_Z_WRITE;
+		materialFlags |= MATERIAL_FLAG_TRANSPARENT;
 
 	m_flags = materialFlags;
 	m_blendMode = blendMode;
-
-	// DEPRECATED Init function table
-	for (int i = 0; i < SHADERPARAM_COUNT; i++)
-		SetParameterFunctor(i, &CBaseShader::ParamSetup_Empty);
-
-	if (blendMode == SHADER_BLEND_TRANSLUCENT)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
-	else if (blendMode == SHADER_BLEND_ADDITIVE)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
-	else if (blendMode == SHADER_BLEND_MODULATE)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
-	else
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
-
-	if (materialFlags & MATERIAL_FLAG_NO_CULL)
-		SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState_NoCull);
-	else
-		SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
-
-	SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
-	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
-	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
-	SetParameterFunctor(SHADERPARAM_BONETRANSFORMS, &CBaseShader::ParamSetup_BoneTransforms);
 }
 
-void CBaseShader::FillPipelineLayoutDesc(RenderPipelineLayoutDesc& renderPipelineLayoutDesc) const
+IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
 {
-	// add default bind groups
-	Builder<RenderPipelineLayoutDesc>(renderPipelineLayoutDesc)
-		.Group(
-			Builder<BindGroupLayoutDesc>()
-			.Buffer("matSystemTransform", 0, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
-			.Buffer("materialParams", 1, SHADER_VISIBLE_FRAGMENT | SHADER_VISIBLE_VERTEX, BUFFERBIND_UNIFORM)
-			.End()
-		);
-}
+	static const char* s_bindGroupNames[] = {
+		"Constant",
+		"RenderPass",
+		"Transient",
+	};
 
-void CBaseShader::FillPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
-{
-	// setup render & shadowing parameters
-	if (!(m_flags & MATERIAL_FLAG_NO_Z_TEST))
+	bindGroupDesc.groupIdx = bindGroupId;
+	if(pipelineInfo.layout)
 	{
-		if (m_flags & MATERIAL_FLAG_DECAL)
+		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+	}
+
+	bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+	return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
+}
+
+IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const
+{
+	if (!pipelineInfo.layout)
+		return nullptr;
+
+	// create empty bind group
+	if (!pipelineInfo.emptyBindGroup[bindGroupId])
+	{
+		BindGroupDesc emptyBindGroupDesc;
+		emptyBindGroupDesc.groupIdx = bindGroupId;
+		pipelineInfo.emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
+	}
+	return pipelineInfo.emptyBindGroup[bindGroupId];
+}
+
+struct CBaseShader::PipelineInputParams
+{
+	PipelineInputParams(
+		ArrayCRef<ETextureFormat> colorTargetFormat, 
+		ETextureFormat depthTargetFormat, 
+		const MeshInstanceFormatRef& meshInstFormat, 
+		EPrimTopology primitiveTopology,
+		bool depthReadOnly)
+		: colorTargetFormat(colorTargetFormat)
+		, depthTargetFormat(depthTargetFormat)
+		, meshInstFormat(meshInstFormat)
+		, primitiveTopology(primitiveTopology)
+		, depthReadOnly(depthReadOnly)
+	{
+	}
+
+	ArrayCRef<ETextureFormat>		colorTargetFormat;
+	ETextureFormat					depthTargetFormat;
+	const MeshInstanceFormatRef&	meshInstFormat;
+	EPrimTopology					primitiveTopology;
+	ECullMode						cullMode{ CULL_BACK };
+	bool							depthReadOnly{ false };
+	bool							skipFragmentPipeline{ false };
+};
+
+uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) const
+{
+	const bool translucentZWrite = !inputParams.depthReadOnly && ((m_flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
+
+	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
+	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
+	const bool depthWriteEnable = translucentZWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
+	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+
+	const uint pipelineFlags = 
+		  static_cast<uint>(cullMode)
+		| (depthTestEnable << 2)
+		| (depthWriteEnable << 3)
+		| (polyOffsetEnable << 4)
+		| (onlyZ << 5)
+		| (static_cast<uint>(inputParams.primitiveTopology) << 6)
+		| (m_blendMode << 9);
+
+	uint hash = inputParams.meshInstFormat.formatId | (inputParams.meshInstFormat.usedLayoutBits << 24);
+	hash *= 31;
+	hash += m_shaderQueryId;
+	hash *= 31;
+	hash += pipelineFlags;
+	for (int i = 0; i < inputParams.colorTargetFormat.numElem(); ++i)
+	{
+		const ETextureFormat format = inputParams.colorTargetFormat[i];
+		if (format == FORMAT_NONE)
+			break;
+		hash *= 31;
+		hash += static_cast<uint>(i);
+		hash *= 31;
+		hash += static_cast<uint>(format);
+	}
+	hash *= 31;
+	hash += static_cast<uint>(inputParams.depthTargetFormat);
+	return hash;
+}
+
+void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams, RenderPipelineDesc& renderPipelineDesc) const
+{
+	const bool translucentZWrite = !inputParams.depthReadOnly && ((m_flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
+
+	const bool onlyZ = inputParams.skipFragmentPipeline || (m_flags & MATERIAL_FLAG_ONLY_Z);
+	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
+	const bool depthWriteEnable = translucentZWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
+	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
+	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
+
+	Builder<RenderPipelineDesc>(renderPipelineDesc)
+		.ShaderName(GetName())
+		.ShaderQuery(m_shaderQuery)
+		.PrimitiveState(Builder<PrimitiveDesc>()
+			.Topology(inputParams.primitiveTopology)
+			.Cull(cullMode)
+			.StripIndex(inputParams.primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
+			.End())
+		.End();
+
+	if (inputParams.meshInstFormat.layout.numElem())
+	{
+		renderPipelineDesc.shaderVertexLayoutId = inputParams.meshInstFormat.formatId;
+
+		Builder<VertexPipelineDesc> vertexPipelineBuilder(renderPipelineDesc.vertex);
+		ArrayCRef<VertexLayoutDesc> vertexLayouts = inputParams.meshInstFormat.layout;
+		for (int i = 0; i < vertexLayouts.numElem(); ++i)
+		{
+			const VertexLayoutDesc& layoutDesc = vertexLayouts[i];
+			if (layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
+			{
+				ASSERT_MSG(inputParams.meshInstFormat.usedLayoutBits & (1 << i), "Instance buffer must be bound");
+			}
+
+			if (inputParams.meshInstFormat.usedLayoutBits & (1 << i))
+				vertexPipelineBuilder.VertexLayout(layoutDesc);
+		}
+	}
+
+	// setup render & shadowing parameters
+	if (inputParams.depthTargetFormat != FORMAT_NONE)
+	{
+		if (polyOffsetEnable)
 			g_matSystem->GetPolyOffsetSettings(renderPipelineDesc.depthStencil.depthBias, renderPipelineDesc.depthStencil.depthBiasSlopeScale);
 
 		Builder<DepthStencilStateParams>(renderPipelineDesc.depthStencil)
-			.DepthTestOn()
-			.DepthWriteOn((m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0)
-			.DepthFormat(FORMAT_D24S8);		// TODO: specific depth texture format of render pass
+			.DepthTestOn(depthTestEnable)
+			.DepthWriteOn(depthWriteEnable)
+			.DepthFormat(inputParams.depthTargetFormat);
 	}
 
-	if (!(m_flags & MATERIAL_FLAG_ONLY_Z))
+	// TODO: 
+	//renderPipelineDesc.multiSample.count = renderPass->GetSampleCount();
+
+	Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
+	if (onlyZ)
+	{
+		// leave empty entry point to disable fragment pipeline
+		pipelineBuilder.ShaderEntry("");
+	}
+	else
 	{
 		BlendStateParams colorBlend;
 		BlendStateParams alphaBlend;
 		switch (m_blendMode)
 		{
 		case SHADER_BLEND_TRANSLUCENT:
-			colorBlend = BlendStateAlpha;
-			alphaBlend = BlendStateAlpha;
+			colorBlend = BlendStateTranslucent;
+			alphaBlend = BlendStateTranslucentAlpha;
 			break;
 		case SHADER_BLEND_ADDITIVE:
 			colorBlend = BlendStateAdditive;
@@ -153,42 +266,259 @@ void CBaseShader::FillPipelineDesc(RenderPipelineDesc& renderPipelineDesc) const
 			break;
 		case SHADER_BLEND_MODULATE:
 			colorBlend = BlendStateModulate;
-			alphaBlend = BlendStateModulate;
+			alphaBlend = BlendStateModulate; // TODO: figure out
 			break;
 		}
 
-		// TODO: number of rendertargets and their formats
-		// and their types should come from render pass defined by shader!!!
-		Builder<FragmentPipelineDesc>(renderPipelineDesc.fragment)
-			.ColorTarget("Albedo", FORMAT_RGBA8, colorBlend, alphaBlend);
+		for (int i = 0; i < inputParams.colorTargetFormat.numElem(); ++i)
+		{
+			const ETextureFormat format = inputParams.colorTargetFormat[i];
+			if (format == FORMAT_NONE)
+				break;
+
+			if(m_blendMode != SHADER_BLEND_NONE)
+				pipelineBuilder.ColorTarget("CT", format, colorBlend, alphaBlend);
+			else
+				pipelineBuilder.ColorTarget("CT", format);
+		}
 	}
+	pipelineBuilder.End();
+}
+
+const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit)
+{
+	HOOK_TO_CVAR(r_showPipelineCacheMisses);
+
+	const uint pipelineId = GetRenderPipelineId(inputParams);
+
+	auto it = m_renderPipelines.find(pipelineId);
+	if (it.atEnd())
+	{
+		it = m_renderPipelines.insert(pipelineId);
+		PipelineInfo& newPipelineInfo = *it;
+		newPipelineInfo.vertexLayoutId = inputParams.meshInstFormat.formatId;
+
+		// Create pipeline layout
+		{
+			// MatSystem shader by default defines three bind groups, which differ by the lifetime:
+			// 
+			//	BINDGROUP_CONSTANT
+			//		- Bind group data is never going to be changed during the life time of the material
+			//	BINDGROUP_RENDERPASS
+			//		- Bind group persists across single render pass
+			//	BINDGROUP_TRANSIENT
+			//		- Bind group is unique for each draw call
+			//
+			// you're not obligated to use all of them
+
+			PipelineLayoutDesc pipelineLayoutDesc;
+			pipelineLayoutDesc.name = GetName();
+
+			FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+
+			bool userDefinedPipelineLayout = false;
+			for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
+			{
+				if (layout.entries.numElem() > 0)
+				{
+					userDefinedPipelineLayout = true;
+					break;
+				}
+			}
+
+			if (userDefinedPipelineLayout)
+				newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+		}
+
+		MatSysShaderPipelineCache& shaderPipelineCache = g_matSystem->GetRenderPipelineCache(GetNameHash());
+		shaderPipelineCache.rwLock.LockRead();
+		auto cacheIt = shaderPipelineCache.pipelines.find(pipelineId);
+		shaderPipelineCache.rwLock.UnlockRead();
+
+		if (cacheIt.atEnd())
+		{
+			RenderPipelineDesc renderPipelineDesc;
+			FillRenderPipelineDesc(inputParams, renderPipelineDesc);
+
+			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
+			if (!renderPipeline)
+			{
+				MsgError("Shader %s is unable to create pipeline\n", GetName());
+			}
+
+			{
+				Threading::CScopedWriteLocker lock(shaderPipelineCache.rwLock);
+				cacheIt = shaderPipelineCache.pipelines.insert(pipelineId, renderPipeline);
+			}
+
+#ifndef _RETAIL
+
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  ((byte) & 0x80 ? '1' : '0'), \
+  ((byte) & 0x40 ? '1' : '0'), \
+  ((byte) & 0x20 ? '1' : '0'), \
+  ((byte) & 0x10 ? '1' : '0'), \
+  ((byte) & 0x08 ? '1' : '0'), \
+  ((byte) & 0x04 ? '1' : '0'), \
+  ((byte) & 0x02 ? '1' : '0'), \
+  ((byte) & 0x01 ? '1' : '0') 
+
+			if (renderPipeline && r_showPipelineCacheMisses->GetBool())
+			{
+				if (onInit)
+				{
+					MsgInfo("Pre-create pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d\n", 
+						GetName(), inputParams.meshInstFormat.name, 
+						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits), 
+						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
+				}
+				else
+				{
+					MsgWarning("Render pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d was not pre-created\n", 
+						GetName(), inputParams.meshInstFormat.name,
+						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
+						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
+				}
+			}
+		}
+#endif // !_RETAIL
+
+		newPipelineInfo.pipeline = *cacheIt;
+	}
+
+	return *it;
+}
+
+bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext)
+{
+	const PipelineInputParams pipelineInputParams(
+		passContext.recorder->GetRenderTargetFormats(), 
+		passContext.recorder->GetDepthTargetFormat(), 
+		meshInstFormat,
+		primTopology,
+		passContext.recorder->IsDepthReadOnly()
+	);
+
+	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineInputParams, false);
+
+	if (!pipelineInfo.pipeline)
+		return false;
+
+	passContext.recorder->SetPipeline(pipelineInfo.pipeline);
+	passContext.recorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, uniformBuffers, passContext));
+	passContext.recorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, BINDGROUP_RENDERPASS, pipelineInfo, uniformBuffers, passContext));
+	passContext.recorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, BINDGROUP_TRANSIENT, pipelineInfo, uniformBuffers, passContext));
+
+	return true;
+}
+
+void CBaseShader::FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const
+{
+	Builder<BindGroupLayoutDesc>(bindGroupLayout)
+		.Sampler("MaterialSampler", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler("LinearMirrorWrapSampler", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler("LinearClampSampler", 2, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler("NearestSampler", 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING);
+}
+
+void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const
+{
+	Builder<BindGroupDesc>(bindGroupDesc)
+		.Sampler(0, SamplerStateParams(m_texFilter, m_texAddressMode))
+		.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_MIRROR))
+		.Sampler(2, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
+		.Sampler(3, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP));
+}
+
+IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
+{
+	struct {
+		int entryCount{ 0 };
+		int _pad[3];
+		Vector4D entries[64]{ 0 };
+	} atlasBufferData;
+
+	// add default atlas entry
+	atlasBufferData.entries[0] = Vector4D(1.0f, 1.0f, 0.0f, 0.0f);
+
+	const CTextureAtlas* atlas = m_material->GetAtlas();
+	if (atlas)
+	{
+		for (int i = 0; i < atlas->GetEntryCount(); ++i)
+		{
+			const AtlasEntry& entry = *atlas->GetEntry(i);
+			atlasBufferData.entries[1 + atlasBufferData.entryCount++] = Vector4D(entry.rect.GetSize(), entry.rect.leftTop);
+		}
+	}
+	return renderAPI->CreateBuffer(BufferInfo(reinterpret_cast<ubyte*>(&atlasBufferData), sizeof(int) * 4 + sizeof(Vector4D) * (1 + atlasBufferData.entryCount)), BUFFERUSAGE_STORAGE, "atlasRects");
 }
 
 void CBaseShader::InitShader(IShaderAPI* renderAPI)
 {
-	// And then init shaders
-	if( InitRenderPassPipeline(renderAPI) )
-		m_isInit = true;
-	else
-		m_error = true;
+	if (m_isInit)
+		return;
+
+	m_isInit = true;
+
+	BuildPipelineShaderQuery(m_shaderQuery);
+	
+	EqString queryStr;
+	for (const EqString& define : m_shaderQuery)
+	{
+		if (queryStr.Length())
+			queryStr.Append("|");
+		queryStr.Append(define);
+	}
+	m_shaderQueryId = StringToHash(queryStr, true);
+
+	// cache shader modules
+	renderAPI->LoadShaderModules(GetName(), m_shaderQuery);
+
+	// TODO: more RT format variants
+	ETextureFormat rtFormat = FORMAT_RGBA8;
+	ETextureFormat depthFormat = g_matSystem->GetDefaultDepthBuffer()->GetFormat();
+
+	// cache pipeline state objects
+	ArrayCRef<int> supportedLayoutIds = GetSupportedVertexLayoutIds();
+	for (const int layoutId : supportedLayoutIds)
+	{
+		const IVertexFormat* vertFormat = renderAPI->FindVertexFormatById(layoutId);
+		if (!vertFormat)
+			continue;
+
+		MeshInstanceFormatRef instFormat;
+		instFormat.name = vertFormat->GetName();
+		instFormat.formatId = vertFormat->GetNameHash();
+		instFormat.layout = vertFormat->GetFormatDesc();
+
+		uint layoutMask = 0;
+		for (int i = 0; i < instFormat.layout.numElem(); ++i)
+			layoutMask |= (1 << i);
+
+		// TODO: different variants of instFormat.usedLayoutBits
+		instFormat.usedLayoutBits &= layoutMask;
+
+		PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES, false);
+		EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+
+		pipelineInputParams.primitiveTopology = PRIM_TRIANGLE_STRIP;
+		EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+	}
 }
 
 // Unload shaders, textures
 void CBaseShader::Unload()
 {
-	for(int i = 0; i < m_usedPrograms.numElem(); ++i)
-		*m_usedPrograms[i] = nullptr;
-	m_usedPrograms.clear(true);
-
+	m_renderPipelines.clear(true);
 	for (int i = 0; i < m_usedTextures.numElem(); ++i)
 	{
 		MatTextureProxy& texProxy = m_usedTextures[i];
 		texProxy.Set(nullptr);
 	}
 	m_usedTextures.clear(true);
-
-	m_isInit = false;
-	m_error = false;
 }
 
 MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlobals) const
@@ -211,32 +541,42 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlo
 	return mv;
 }
 
-MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar)
+MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
-		AddManagedTexture(mv, renderAPI->FindTexture(mv.Get()));
+		ITexturePtr texture = renderAPI->FindTexture(mv.Get());
+		if (texture)
+		{
+			ASSERT_MSG((texture->GetFlags() & texFlags) == texFlags, "MatVar '%s' texture '%s' doesn't match required flags", paramName, texture->GetName());
+		}
+		AddManagedTexture(mv, texture);
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(mv, g_matSystem->GetErrorCheckerboardTexture());
+		AddManagedTexture(mv, g_matSystem->GetErrorCheckerboardTexture((texFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D));
 
 	return mv;
 }
 
-MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar)
+MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 
 	if(mv.IsValid()) 
 	{
-		SamplerStateParams samplerParams((ETexFilterMode)m_texFilter, (ETexAddressMode)m_texAddressMode);
-
 		if(mv.Get().Length())
-			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
+		{
+			ITexturePtr texture = g_texLoader->LoadTextureFromFileSync(mv.Get(), SamplerStateParams(m_texFilter, m_texAddressMode), texFlags, EqString::Format("Material %s var '%s'", m_material->GetName(), paramName));
+			if (texture)
+			{
+				ASSERT_MSG((texture->GetFlags() & texFlags) == texFlags, "MatVar '%s' texture '%s' doesn't match required flags", paramName, texture->GetName());
+			}
+			AddManagedTexture(MatTextureProxy(mv), texture);
+		}
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(MatTextureProxy(mv), g_matSystem->GetErrorCheckerboardTexture());
+		AddManagedTexture(MatTextureProxy(mv), g_matSystem->GetErrorCheckerboardTexture((texFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D));
 
 	return mv;
 }
@@ -250,13 +590,6 @@ Vector4D CBaseShader::GetTextureTransform(const MatVec2Proxy& transformVar, cons
 	return Vector4D(1, 1, 0, 0);
 }
 
-void CBaseShader::AddManagedShader(IShaderProgramPtr* pShader)
-{
-	if (!*pShader)
-		return;
-	m_usedPrograms.append(pShader);
-}
-
 void CBaseShader::AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex)
 {
 	if (!tex)
@@ -264,99 +597,4 @@ void CBaseShader::AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex)
 
 	var.Set(tex);
 	m_usedTextures.append(var);
-}
-
-// DEPRECATED BELOW
-
-void CBaseShader::SetupParameter(IShaderAPI* renderAPI, uint mask, EShaderParamSetup type)
-{
-	// call it from this
-	if (mask & (1 << (uint)type))
-		(this->*m_paramFunc[type]) (renderAPI);
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Solid(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates( BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD );
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Translucent(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Additive(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
-}
-
-void CBaseShader::ParamSetup_AlphaModel_Modulate(IShaderAPI* renderAPI)
-{
-	g_matSystem->SetBlendingStates(BLENDFACTOR_SRC_COLOR, BLENDFACTOR_DST_COLOR, BLENDFUNC_ADD);
-}
-
-void CBaseShader::ParamSetup_RasterState(IShaderAPI* renderAPI)
-{
-	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
-
-	ECullMode cull_mode = g_matSystem->GetCurrentCullMode();
-	if(config.wireframeMode && config.editormode)
-		cull_mode = CULL_NONE;
-
-	g_matSystem->SetRasterizerStates(cull_mode, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)));
-}
-
-void CBaseShader::ParamSetup_RasterState_NoCull(IShaderAPI* renderAPI)
-{
-	const MaterialsRenderSettings& config = g_matSystem->GetConfiguration();
-	g_matSystem->SetRasterizerStates(CULL_NONE, (EFillMode)(config.wireframeMode || (m_flags & MATERIAL_FLAG_WIREFRAME)));
-}
-
-void CBaseShader::ParamSetup_Transform(IShaderAPI* renderAPI)
-{
-	Matrix4x4 wvp_matrix, world, view, proj;
-	g_matSystem->GetWorldViewProjection(wvp_matrix);
-	g_matSystem->GetMatrix(MATRIXMODE_WORLD, world);
-	g_matSystem->GetMatrix(MATRIXMODE_VIEW, view);
-	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, proj);
-
-	// TODO: constant buffer CameraTransform
-	renderAPI->SetShaderConstant(StringToHashConst("WVP"), wvp_matrix);
-	renderAPI->SetShaderConstant(StringToHashConst("World"), world);
-	renderAPI->SetShaderConstant(StringToHashConst("View"), view);
-	renderAPI->SetShaderConstant(StringToHashConst("Proj"), proj);
-
-	// setup texture transform
-	const Vector4D texTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
-	renderAPI->SetShaderConstant(StringToHashConst("BaseTextureTransform"), texTransform);
-}
-
-void CBaseShader::ParamSetup_DepthSetup(IShaderAPI* renderAPI)
-{
-	const int flags = m_flags;
-	g_matSystem->SetDepthStates((flags & MATERIAL_FLAG_NO_Z_TEST) == 0, (flags & MATERIAL_FLAG_NO_Z_WRITE) == 0, (flags & MATERIAL_FLAG_DECAL) != 0);
-}
-
-void CBaseShader::ParamSetup_Fog(IShaderAPI* renderAPI)
-{
-	FogInfo fog;
-	g_matSystem->GetFogInfo(fog);
-
-	// setup shader fog
-	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
-	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
-
-	// TODO: constant buffer FogInfo
-	renderAPI->SetShaderConstant(StringToHashConst("ViewPos"), fog.viewPos);
-	renderAPI->SetShaderConstant(StringToHashConst("FogParams"), VectorFOGParams);
-	renderAPI->SetShaderConstant(StringToHashConst("FogColor"), fog.fogColor);
-}
-
-void CBaseShader::ParamSetup_BoneTransforms(IShaderAPI* renderAPI)
-{
-	if (!g_matSystem->IsSkinningEnabled())
-		return;
-	ArrayCRef<RenderBoneTransform> rendBones(nullptr);
-	g_matSystem->GetSkinningBones(rendBones);
-	renderAPI->SetShaderConstantArray(StringToHashConst("Bones"), rendBones);
 }

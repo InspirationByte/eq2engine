@@ -19,8 +19,9 @@ enum ECubeSide : int
 	POSITIVE_Z,
 	NEGATIVE_Z,
 
-	FIRST = 0,
-	LAST = 5
+	CUBESIDE_FIRST = 0,
+	CUBESIDE_LAST = 5,
+	CUBESIDE_COUNT,
 };
 
 #ifndef IsNaN
@@ -139,6 +140,18 @@ inline bool dsimilar( double a, double b, double cmp = F_EPS )
 inline bool isPowerOf2(const int x)
 {
 	return (x & (x - 1)) == 0;
+}
+
+inline uint nextPowerOf2(uint v)
+{
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
 }
 
 template <typename T, typename T2>

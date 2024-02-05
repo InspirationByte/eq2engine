@@ -251,12 +251,12 @@ void EqString::Assign(const EqString &str, int nStart, int len)
 // string assignment (or setvalue)
 void EqString::Assign(const wchar_t* pszStr, int len)
 {
-	EqStringConv::wchar_to_utf8 conv( *this, pszStr, len );
+	EqStringConv::CUTF8Conv(*this, pszStr, len );
 }
 
 void EqString::Assign(const EqWString &str, int nStart, int len)
 {
-	EqStringConv::wchar_to_utf8 conv(*this, str.ToCString()+nStart, len);
+	EqStringConv::CUTF8Conv(*this, str.ToCString() + nStart, len);
 }
 
 void EqString::Append(const char c)

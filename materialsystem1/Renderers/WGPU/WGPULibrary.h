@@ -26,9 +26,11 @@ public:
 
 	void			BeginFrame(ISwapChain* swapChain = nullptr);
 	void			EndFrame();
+	ITexturePtr		GetCurrentBackbuffer() const;
 
 	IShaderAPI*		GetRenderer() const;
 
+	void			SetVSync(bool enable);
 	void			SetBackbufferSize(int w, int h);
 	void			SetFocused(bool inFocus) {}
 
@@ -39,7 +41,6 @@ public:
 
 	ISwapChain*		CreateSwapChain(const RenderWindowInfo& windowInfo);
 	void			DestroySwapChain(ISwapChain* swapChain);
-
 protected:
 
 	const char*		GetAsyncThreadName() const { return "EqRenderThread"; }
@@ -50,11 +51,13 @@ protected:
 	uintptr_t				m_mainThreadId{ 0 };
 	WGPUInstance			m_instance{ nullptr };
 
-	WGPUBackendType			m_backendType{ WGPUBackendType_Null };
+	WGPUBackendType			m_rhiBackendType{ WGPUBackendType_Null };
+	WGPUAdapter				m_rhiAdapter{ nullptr };
 	WGPUDevice				m_rhiDevice{ nullptr };
 	WGPUQueue				m_deviceQueue{ nullptr };
 
 	Array<CWGPUSwapChain*>	m_swapChains{ PP_SL };
+	int						m_swapChainCounter{ 0 };
 	CWGPUSwapChain*			m_currentSwapChain{ nullptr };
 	bool					m_windowed{ false };
 };

@@ -13,4 +13,8 @@ usage "wgpu-dawn"
 		}
 		
 	filter "system:Linux"
+		links {
+			"dawn_native",
+			"webgpu_dawn",
+		}
 	

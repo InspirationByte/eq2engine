@@ -12,32 +12,47 @@
 #include "WGPURenderAPI.h"
 
 
+CWGPUBuffer::~CWGPUBuffer()
+{
+	Terminate();
+}
+
 void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* label)
 {
 	const int sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
 	const int writeDataSize = (bufferInfo.dataSize + 3) & ~3;
+	const bool hasData = bufferInfo.data && bufferInfo.dataSize;
 	m_bufSize = (sizeInBytes + 3) & ~3;
 
 	WGPUBufferDescriptor desc = {};
-	desc.usage = WGPUBufferUsage_CopyDst | wgpuUsage;
+	desc.usage = wgpuUsage;
 	desc.size = m_bufSize;
-	desc.mappedAtCreation = bufferInfo.data && bufferInfo.dataSize;
+	desc.mappedAtCreation = true; // TEMPORARY FIX FOR VULKAN ON NVIDIA
+	// desc.mappedAtCreation = hasData;
 	desc.label = label;
-	if (bufferInfo.flags & BUFFER_FLAG_READ)
-		desc.usage |= WGPUBufferUsage_MapRead;
 
+	m_usageFlags = desc.usage;
 	m_rhiBuffer = wgpuDeviceCreateBuffer(CWGPURenderAPI::Instance.GetWGPUDevice(), &desc);
 
 	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer");
 
-	if (m_rhiBuffer && bufferInfo.data && bufferInfo.dataSize)
+	if (!m_rhiBuffer)
+		return;
+
+	if (desc.mappedAtCreation)
 	{
-		// sadly...
-		g_renderWorker.WaitForExecute("UploadCreatedBuffer", [&]() {
+		wgpuBufferReference(m_rhiBuffer);
+
+		if (hasData)
+		{
 			void* outData = wgpuBufferGetMappedRange(m_rhiBuffer, 0, m_bufSize);
 			ASSERT_MSG(outData, "Buffer mapped range is NULL");
 			memcpy(outData, bufferInfo.data, writeDataSize);
-			wgpuBufferUnmap(m_rhiBuffer);
+		}
+
+		g_renderWorker.Execute("UnmapBuffer", [buffer = m_rhiBuffer]() {
+			wgpuBufferUnmap(buffer);
+			wgpuBufferRelease(buffer);
 			return 0;
 		});
 	}
@@ -49,12 +64,15 @@ void CWGPUBuffer::Terminate()
 	m_rhiBuffer = nullptr;
 }
 
-void CWGPUBuffer::Update(void* data, int size, int offset)
+void CWGPUBuffer::Update(const void* data, int64 size, int64 offset)
 {
 	if (!m_rhiBuffer)
 		return;
 
-	const int writeDataSize = (size + 3) & ~3;
+	if (!size)
+		return;
+
+	const int64 writeDataSize = (size + 3) & ~3;
 
 	// next commands in queue are not executed until data is uploded
 	g_renderWorker.WaitForExecute("UpdateBuffer", [&]() {
@@ -68,8 +86,9 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 	struct LockContext
 	{
 		Promise<BufferLockData> promise;
-		BufferLockData data;
-		WGPUBuffer buffer;
+		BufferLockData			data;
+		WGPUBuffer				buffer;
+		int						flags;
 	};
 
 	if (!m_rhiBuffer || lockOfs < 0 || lockOfs + sizeToLock > m_bufSize)
@@ -82,6 +101,7 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 
 	LockContext* context = PPNew LockContext;
 	context->buffer = m_rhiBuffer;
+	context->flags = m_usageFlags;
 
 	BufferLockData& lockData = context->data;
 	lockData.flags = flags;
@@ -101,9 +121,18 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		}
 
 		BufferLockData& lockData = context->data;
-		lockData.data = wgpuBufferGetMappedRange(context->buffer, lockData.offset, lockData.size);
-		context->promise.SetResult(std::move(context->data));
+		if(context->flags & BUFFERUSAGE_WRITE)
+			lockData.data = wgpuBufferGetMappedRange(context->buffer, lockData.offset, lockData.size);
+		else
+			lockData.data = const_cast<void*>(wgpuBufferGetConstMappedRange(context->buffer, lockData.offset, lockData.size));
+
+		if(!lockData.data)
+			context->promise.SetError(-1, "Failed to lock buffer, wrong usage?");
+		else
+			context->promise.SetResult(std::move(context->data));
 	};
+
+	wgpuBufferReference(m_rhiBuffer);
 	wgpuBufferMapAsync(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, callback, context);
 
 	return context->promise.CreateFuture();
@@ -112,104 +141,5 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 void CWGPUBuffer::Unlock()
 {
 	wgpuBufferUnmap(m_rhiBuffer);
-}
-
-//-----------------------------------------------------
-
-CWGPUVertexBuffer::CWGPUVertexBuffer(const BufferInfo& bufferInfo)
-	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
-{
-	// TODO: extra buffer flags for lock read
-	const int bufferUsage = WGPUBufferUsage_Vertex;
-	m_buffer.Init(bufferInfo, bufferUsage, "EqVertexBuffer");
-}
-
-CWGPUVertexBuffer::~CWGPUVertexBuffer()
-{
-	m_buffer.Terminate();
-}
-
-void CWGPUVertexBuffer::Update(void* data, int size, int offset)
-{
-	const int ofsBytes = offset * m_bufElemSize;
-	const int sizeBytes = size * m_bufElemSize;
-
-	m_buffer.Update(data, sizeBytes, ofsBytes);
-}
-
-bool CWGPUVertexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
-{
-	const int lockOfsBytes = lockOfs * m_bufElemSize;
-	const int lockSizeBytes = sizeToLock * m_bufElemSize;
-
-	CWGPUBuffer::LockFuture lockFuture = m_buffer.Lock(lockOfsBytes, lockSizeBytes, flags);
-
-	lockFuture.AddCallback([this](FutureResult<BufferLockData> lockData) {
-		if (lockData.IsError())
-			return;
-		m_lockData = *lockData;
-	});
-	lockFuture.Wait();
-	return m_lockData.data != nullptr;
-}
-
-void CWGPUVertexBuffer::Unlock()
-{
-	if (m_lockData.data) 
-	{
-		ASSERT_FAIL("Buffer is not locked");
-		return;
-	}
-	m_lockData = BufferLockData{};
-	m_buffer.Unlock();
-}
-
-//-----------------------------------------------------
-
-CWGPUIndexBuffer::CWGPUIndexBuffer(const BufferInfo& bufferInfo)
-	: m_bufElemSize(bufferInfo.elementSize), m_bufElemCapacity(bufferInfo.elementCapacity)
-{
-	// TODO: extra buffer flags for lock read
-	const int bufferUsage = WGPUBufferUsage_Index;
-	m_buffer.Init(bufferInfo, bufferUsage, "EqIndexBuffer");
-}
-
-CWGPUIndexBuffer::~CWGPUIndexBuffer()
-{
-	m_buffer.Terminate();
-}
-
-void CWGPUIndexBuffer::Update(void* data, int size, int offset)
-{
-	const int ofsBytes = offset * m_bufElemSize;
-	const int sizeBytes = size * m_bufElemSize;
-
-	m_buffer.Update(data, sizeBytes, ofsBytes);
-}
-
-bool CWGPUIndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, int flags)
-{
-	const int lockOfsBytes = lockOfs * m_bufElemSize;
-	const int lockSizeBytes = sizeToLock * m_bufElemSize;
-
-	CWGPUBuffer::LockFuture lockFuture = m_buffer.Lock(lockOfsBytes, lockSizeBytes, flags);
-
-	lockFuture.AddCallback([this](FutureResult<BufferLockData> lockData) {
-		if (lockData.IsError())
-			return;
-		m_lockData = *lockData;
-		});
-	lockFuture.Wait();
-	return m_lockData.data != nullptr;
-}
-
-void CWGPUIndexBuffer::Unlock()
-{
-	if (m_lockData.data)
-	{
-		ASSERT_FAIL("Buffer is not locked");
-		return;
-	}
-	m_lockData = BufferLockData{};
-	m_buffer.Unlock();
+	wgpuBufferRelease(m_rhiBuffer);
 }

@@ -11,6 +11,8 @@
 
 #include "EqUI_Manager.h"
 #include "font/IFontCache.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/IDynamicMesh.h"
 
 //-----
 // include all needed elements here
@@ -231,6 +233,12 @@ void CUIManager::Render()
 	if(!m_rootPanel)
 		return;
 
+	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+		Builder<RenderPassDesc>()
+		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.End()
+	);
+
 	for(int i = 0; i < m_panels.numElem(); i++)
 	{
 		if(m_panels[i]->m_screenOverlay)
@@ -243,7 +251,9 @@ void CUIManager::Render()
 	// begin from the render panel
 	m_rootPanel->SetRectangle( m_viewFrameRect );
 	m_rootPanel->ResetSizeDiffs();
-	m_rootPanel->Render(1);
+	m_rootPanel->Render(1, rendPassRecorder);
+
+	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 }
 
 equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)

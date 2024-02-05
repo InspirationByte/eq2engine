@@ -29,6 +29,7 @@ public:
 	void			SetFOV( float fFov );
 	void			SetZNear( float fNear );
 
+	float			GetLodScale() const;
 	float			GetLODScaledDistFrom(const Vector3D& position ) const;
 
 	void			GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic = false) const;

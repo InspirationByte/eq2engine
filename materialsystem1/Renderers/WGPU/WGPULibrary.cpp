@@ -9,9 +9,12 @@
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
+#include "core/ICommandLine.h"
 #include "core/IDkCore.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+
+#include "imaging/ImageLoader.h"
 
 #include "WGPUBackend.h"
 
@@ -19,12 +22,9 @@
 #include "WGPURenderAPI.h"
 #include "WGPUSwapChain.h"
 
-HOOK_TO_CVAR(r_screen);
-
-IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
-
-DECLARE_CVAR(wgpu_report_errors, "1", nullptr, 0);
-DECLARE_CVAR(wgpu_break_on_error, "1", nullptr, 0);
+DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
+DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
+DECLARE_CVAR(wgpu_backend, "", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
 
 static const char* s_wgpuErrorTypesStr[] = {
 	"NoError",
@@ -86,7 +86,6 @@ bool CWGPURenderLib::InitCaps()
 {
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
-	//WGPUInstanceDescriptor instDesc;
 	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
 	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
 
@@ -102,15 +101,60 @@ IShaderAPI* CWGPURenderLib::GetRenderer() const
 	return &CWGPURenderAPI::Instance;
 }
 
+static const char* GetWGPUBackendTypeStr(WGPUBackendType backendType)
+{
+	switch (backendType)
+	{
+		case WGPUBackendType_D3D11:
+			return "D3D11";
+		case WGPUBackendType_D3D12:
+			return "D3D12";
+		case WGPUBackendType_Metal:
+			return "Metal";
+		case WGPUBackendType_Vulkan:
+			return "Vulkan";
+		case WGPUBackendType_OpenGL:
+			return "OpenGL";
+		case WGPUBackendType_OpenGLES:
+			return "OpenGLES";
+	}
+	return "Unknown";
+}
+
+static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
+{
+	switch (adapterType)
+	{
+	case WGPUAdapterType_DiscreteGPU:
+		return "Discrete GPU";
+	case WGPUAdapterType_IntegratedGPU:
+		return "Integrated GPU";
+	case WGPUAdapterType_CPU:
+		return "Software";
+	}
+	return "Unknown";
+}
+
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
-	WGPUAdapter adapter = nullptr;
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
-	//options.compatibleSurface = surface;
-	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &adapter);
+	
+	if (!stricmp(wgpu_backend.GetString(), "D3D11"))
+		options.backendType = WGPUBackendType_D3D11;
+	else if(!stricmp(wgpu_backend.GetString(), "D3D12"))
+		options.backendType = WGPUBackendType_D3D12;
+	else if (!stricmp(wgpu_backend.GetString(), "Vulkan"))
+		options.backendType = WGPUBackendType_Vulkan;
+	else if (!stricmp(wgpu_backend.GetString(), "OpenGL"))
+		options.backendType = WGPUBackendType_OpenGL;
+	else if (!stricmp(wgpu_backend.GetString(), "OpenGLES"))
+		options.backendType = WGPUBackendType_OpenGLES;
 
-	if (!adapter)
+	//options.compatibleSurface = surface;
+	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
+
+	if (!m_rhiAdapter)
 	{
 		MsgError("No WGPU supported adapter found\n");
 		return false;
@@ -118,41 +162,45 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 	{
 		WGPUAdapterProperties properties = {};
-		wgpuAdapterGetProperties(adapter, &properties);
+		wgpuAdapterGetProperties(m_rhiAdapter, &properties);
 
-		Msg("WGPU adapter: %s %s %s\n", properties.name, properties.driverDescription, properties.vendorName);
+		Msg("WGPU Adapter Info: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(properties.backendType), properties.name, GetWGPUAdapterTypeStr(properties.adapterType), properties.driverDescription);
 	}
 
 	{
 		WGPUSupportedLimits supLimits = {};
-		wgpuAdapterGetLimits(adapter, &supLimits);
+		wgpuAdapterGetLimits(m_rhiAdapter, &supLimits);
 
 		WGPULimits requiredLimits = supLimits.limits;
 
 		// fill ShaderAPI capabilities
-		ShaderAPICaps& caps = CWGPURenderAPI::Instance.m_caps;
-		//caps.textureFormatsSupported[FORMAT_COUNT]{ false };
-		//caps.renderTargetFormatsSupported[FORMAT_COUNT]{ false };
+		ShaderAPICapabilities& caps = CWGPURenderAPI::Instance.m_caps;
 		caps.isInstancingSupported = true;
 		caps.isHardwareOcclusionQuerySupported = true;
+		caps.minUniformBufferOffsetAlignment = supLimits.limits.minUniformBufferOffsetAlignment;
+		caps.minStorageBufferOffsetAlignment = supLimits.limits.minStorageBufferOffsetAlignment;
+		caps.maxDynamicUniformBuffersPerPipelineLayout = supLimits.limits.maxDynamicUniformBuffersPerPipelineLayout;
+		caps.maxDynamicStorageBuffersPerPipelineLayout = supLimits.limits.maxDynamicStorageBuffersPerPipelineLayout;
 		caps.maxVertexStreams = supLimits.limits.maxVertexBuffers;
-		caps.maxVertexGenericAttributes = supLimits.limits.maxVertexAttributes;
-		caps.maxVertexTexcoordAttributes = supLimits.limits.maxVertexAttributes;
+		caps.maxVertexAttributes = supLimits.limits.maxVertexAttributes;
 		caps.maxTextureSize = supLimits.limits.maxTextureDimension2D;
+		caps.maxTextureArrayLayers = supLimits.limits.maxTextureArrayLayers;
 		caps.maxTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
 		caps.maxVertexTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
+		caps.maxBindGroups = supLimits.limits.maxBindGroups;
+		caps.maxBindingsPerBindGroup = supLimits.limits.maxBindingsPerBindGroup;
 		caps.maxTextureAnisotropicLevel = 16;
 		caps.maxRenderTargets = supLimits.limits.maxColorAttachments;
+
+		caps.maxComputeInvocationsPerWorkgroup = supLimits.limits.maxComputeInvocationsPerWorkgroup;
+		caps.maxComputeWorkgroupSizeX = supLimits.limits.maxComputeWorkgroupSizeX;
+		caps.maxComputeWorkgroupSizeY = supLimits.limits.maxComputeWorkgroupSizeY;
+		caps.maxComputeWorkgroupSizeZ = supLimits.limits.maxComputeWorkgroupSizeZ;
+		caps.maxComputeWorkgroupsPerDimension = supLimits.limits.maxComputeWorkgroupsPerDimension;
+
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 									| SHADER_CAPS_PIXEL_SUPPORTED
 									| SHADER_CAPS_COMPUTE_SUPPORTED;
-
-		// FIXME: deprecated
-		caps.INTZSupported = true;
-		caps.INTZFormat = FORMAT_D16;
-
-		caps.NULLSupported = true;
-		caps.NULLFormat = FORMAT_NONE;
 
 		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
 		{
@@ -167,34 +215,51 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		}
 
 		caps.textureFormatsSupported[FORMAT_D32F] =
-			caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
+		caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
 
 		for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
 			caps.textureFormatsSupported[i] = true;
 
 		caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 
-		WGPUDeviceDescriptor desc{};
-		
-		WGPUFeatureName requiredFeatures[] = {
-			WGPUFeatureName_TextureCompressionBC,
-			WGPUFeatureName_BGRA8UnormStorage,
-			// TODO: android
-			//WGPUFeatureName_TextureCompressionETC2,
-			//WGPUFeatureName_TextureCompressionASTC,
-			//WGPUFeatureName_ShaderF16,
-		};
-		desc.requiredFeatures = requiredFeatures;
-		desc.requiredFeatureCount = elementsOf(requiredFeatures);
+		WGPUDeviceDescriptor rhiDeviceDesc{};
+
+		FixedArray<const char*, 32> enabledToggles;
+		enabledToggles.append("allow_unsafe_apis");
+		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
+		{
+			enabledToggles.append("use_user_defined_labels_in_backend");
+			wgpu_report_errors.SetBool(true);
+			wgpu_break_on_error.SetBool(true);
+		}
+
+		WGPUDawnTogglesDescriptor deviceTogglesDesc{};
+		deviceTogglesDesc.enabledToggles = enabledToggles.ptr();
+		deviceTogglesDesc.enabledToggleCount = enabledToggles.numElem();
+		deviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
+
+		rhiDeviceDesc.nextInChain = &deviceTogglesDesc.chain;
+
+		FixedArray<WGPUFeatureName, 32> requiredFeatures;
+		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
+		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
+		requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
+		// TODO: android
+		//requiredFeatures.append(WGPUFeatureName_TextureCompressionETC2),
+		//requiredFeatures.append(WGPUFeatureName_TextureCompressionASTC),
+		//requiredFeatures.append(WGPUFeatureName_ShaderF16),
+
+		rhiDeviceDesc.requiredFeatures = requiredFeatures.ptr();
+		rhiDeviceDesc.requiredFeatureCount = requiredFeatures.numElem();
 
 		// setup required limits
 		WGPURequiredLimits reqLimits{};
 		reqLimits.limits = requiredLimits;
 
-		desc.requiredLimits = &reqLimits;
-		desc.deviceLostCallback = OnWGPUDeviceLost;
+		rhiDeviceDesc.requiredLimits = &reqLimits;
+		rhiDeviceDesc.deviceLostCallback = OnWGPUDeviceLost;
 
-		m_rhiDevice = wgpuAdapterCreateDevice(adapter, &desc);
+		m_rhiDevice = wgpuAdapterCreateDevice(m_rhiAdapter, &rhiDeviceDesc);
 
 		if (!m_rhiDevice)
 		{
@@ -215,7 +280,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
 
 	// create default swap chain
-	CreateSwapChain(params.windowInfo);
+	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
 
 	CWGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
 	CWGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
@@ -232,7 +297,7 @@ void CWGPURenderLib::ExitAPI()
 	m_swapChains.clear();
 	m_currentSwapChain = nullptr;
 
-	m_backendType = WGPUBackendType_Null;
+	m_rhiBackendType = WGPUBackendType_Null;
 
 	if (m_deviceQueue)
 		wgpuQueueRelease(m_deviceQueue);
@@ -253,54 +318,49 @@ void CWGPURenderLib::ExitAPI()
 
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
+	do{
+		g_renderWorker.WaitForThread();
+	} while (g_renderWorker.HasPendingWork());
+
+	CWGPURenderAPI::Instance.m_deviceLost = false;
+
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
+	m_currentSwapChain->UpdateResize();
+
+	// must obtain valid texture view upon Present
+	m_currentSwapChain->UpdateBackbufferView();
 }
 
 void CWGPURenderLib::EndFrame()
 {
-	g_renderWorker.WaitForExecute(__func__, [&]() {
-		CWGPUSwapChain* currentSwapChain = m_currentSwapChain;
-		WGPUTextureView backBufView = wgpuSwapChainGetCurrentTextureView(currentSwapChain->m_swapChain);
+	// Wait until all tasks get finished before all gets fucked by swap chain
+	do {
+		g_renderWorker.WaitForThread();
+	} while (g_renderWorker.HasPendingWork());
 
-		WGPURenderPassColorAttachment colorDesc = {};
-		colorDesc.view = backBufView;
-		colorDesc.loadOp = WGPULoadOp_Clear;
-		colorDesc.storeOp = WGPUStoreOp_Store;
-		colorDesc.clearValue = WGPUColor{ 0.9, 0.1, 0.2, 1.0 };
-
-		// my first command buffer
-		{
-			WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
-			{
-				WGPURenderPassDescriptor renderPass = {};
-				renderPass.colorAttachmentCount = 1;
-				renderPass.colorAttachments = &colorDesc;
-
-				WGPURenderPassEncoder renderPassEnc = wgpuCommandEncoderBeginRenderPass(encoder, &renderPass);
-				wgpuRenderPassEncoderEnd(renderPassEnc);
-				wgpuRenderPassEncoderRelease(renderPassEnc);
-			}
-			{
-				WGPUCommandBuffer commands = wgpuCommandEncoderFinish(encoder, nullptr);
-				wgpuCommandEncoderRelease(encoder);
-
-				wgpuQueueSubmit(m_deviceQueue, 1, &commands);
-				wgpuCommandBufferRelease(commands);
-			}
-		}
-		//wgpuQueueOnSubmittedWorkDone(m_deviceQueue, OnWGPUSwapChainWorkSubmittedCallback, this);
-
-		// wait for queues to be submitted from other job threads
-		currentSwapChain->SwapBuffers();
-		wgpuTextureViewRelease(backBufView);
-
+	g_renderWorker.Execute(__func__, [this]() {
+		m_currentSwapChain->SwapBuffers();
 		return 0;
 	});
 }
 
+ITexturePtr	CWGPURenderLib::GetCurrentBackbuffer() const
+{
+	return m_currentSwapChain->GetBackbuffer();
+}
+
 ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
-	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo);
+	bool justCreated = false;
+
+	EqString texName(EqString::Format("swapChain%d", m_swapChainCounter));
+	ITexturePtr swapChainTexture = g_renderAPI->FindOrCreateTexture(texName, justCreated);
+	++m_swapChainCounter;
+
+	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
+
+	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo, swapChainTexture);
+
 	m_swapChains.append(swapChain);
 	return swapChain;
 }
@@ -311,8 +371,19 @@ void CWGPURenderLib::DestroySwapChain(ISwapChain* swapChain)
 		delete swapChain;
 }
 
+void CWGPURenderLib::SetVSync(bool enable)
+{
+	m_swapChains[0]->SetVSync(enable);
+}
+
 void CWGPURenderLib::SetBackbufferSize(const int w, const int h)
 {
+	int oldW, oldH;
+	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
+
+	if(w != oldW || h != oldH)
+		CWGPURenderAPI::Instance.m_deviceLost = true;
+
 	m_swapChains[0]->SetBackbufferSize(w, h);
 }
 
@@ -333,8 +404,53 @@ bool CWGPURenderLib::IsWindowed() const
 
 bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 {
-	// TODO: screenshots
-	return false;
+	ITexturePtr currentTexture = m_swapChains[0]->GetBackbuffer();
+
+	const int bytesPerPixel = GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat()));
+	const bool rbSwapped = HasTexFormatFlags(currentTexture->GetFormat(), TEXFORMAT_FLAG_SWAP_RB);
+
+	const BufferInfo bufInfo(bytesPerPixel, currentTexture->GetWidth() * currentTexture->GetHeight());
+	IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(bufInfo, BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "ScreenshotImgBuffer");
+	{
+		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
+		cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
+		g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
+	}
+	
+	IGPUBuffer::LockFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
+	future.AddCallback([currentTexture, bytesPerPixel, rbSwapped, &img](const FutureResult<BufferLockData>& result) {
+		ASSERT(result->data);
+		ubyte* dst = img.Create(FORMAT_RGB8, currentTexture->GetWidth(), currentTexture->GetHeight(), 1, 1);
+
+		for (int y = 0; y < currentTexture->GetHeight(); y++)
+		{
+			const ubyte* src = (ubyte*)result->data + bytesPerPixel * y * currentTexture->GetWidth();
+			for (int x = 0; x < currentTexture->GetWidth(); ++x)
+			{
+				if(rbSwapped)
+				{
+					dst[0] = src[2];
+					dst[1] = src[1];
+					dst[2] = src[0];
+				}
+				else
+				{
+					dst[0] = src[0];
+					dst[1] = src[1];
+					dst[2] = src[2];
+				}
+				dst += 3;
+				src += bytesPerPixel;
+			}
+		}
+	});
+
+	// force WebGPU to process everything it has queued
+	while (!future.HasResult()) {
+		WGPU_INSTANCE_SPIN
+	}
+
+	return true;
 }
 
 bool CWGPURenderLib::IsMainThread(uintptr_t threadId) const

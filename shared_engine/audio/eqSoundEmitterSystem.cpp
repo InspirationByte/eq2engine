@@ -74,6 +74,7 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 	if(m_isInit)
 		return;
 
+	m_channelTypes.clear();
 	m_updateDone.Raise();
 
 	m_defaultMaxDistance = defaultMaxDistance;
@@ -447,7 +448,8 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	const SoundScriptDesc* script = emitter->script;
 	CSoundingObject* soundingObj = emitter->soundingObj;
 
-	ASSERT(script);
+	if (!script || !soundingObj)
+		return 0;
 
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;

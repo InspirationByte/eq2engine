@@ -43,7 +43,7 @@ void CStudioCache::InitErrorMaterial()
 		return;
 
 	KVSection overdrawParams;
-	overdrawParams.SetName("Skinned"); // set shader 'BaseUnlit'
+	overdrawParams.SetName("Skinned"); // set shader
 	overdrawParams.SetKey("BaseTexture", "error");
 
 	m_errorMaterial = g_matSystem->CreateMaterial("_studioErrorMaterial", &overdrawParams);
@@ -56,24 +56,14 @@ int CStudioCache::PrecacheModel(const char* modelName)
 	if (strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
 
-	if (m_egfFormat[0] == nullptr)
+	if (!m_egfFormat)
 	{
-		{
-			FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
-			egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
-			m_egfFormat[0] = g_renderAPI->CreateVertexFormat("EGFVertex", egfVertexLayout);
-		}
-
-		{
-			FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
-			egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::BoneWeights::GetVertexLayoutDesc());
-			egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
-			m_egfFormat[1] = g_renderAPI->CreateVertexFormat("EGFVertexSkinned", egfVertexLayout);
-		}
+		FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
+		egfVertexLayout.append(EGFHwVertex::PositionUV::GetVertexLayoutDesc());
+		egfVertexLayout.append(EGFHwVertex::TBN::GetVertexLayoutDesc());
+		egfVertexLayout.append(EGFHwVertex::BoneWeights::GetVertexLayoutDesc());
+		egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
+		m_egfFormat = g_renderAPI->CreateVertexFormat("EGFVertex", egfVertexLayout);
 	}
 	
 	const int idx = GetModelIndex(modelName);
@@ -178,8 +168,8 @@ void CStudioCache::FreeCachedModel(CEqStudioGeom* model)
 
 	// wait for loading completion
 	m_cachedList[modelIndex]->GetStudioHdr();
-	delete m_cachedList[modelIndex];
-	m_cachedList[modelIndex] = nullptr;
+
+	SAFE_DELETE(m_cachedList[modelIndex]);
 }
 
 void CStudioCache::ReleaseCache()
@@ -190,7 +180,7 @@ void CStudioCache::ReleaseCache()
 		{
 			// wait for loading completion
 			m_cachedList[i]->GetStudioHdr();
-			delete m_cachedList[i];
+			SAFE_DELETE(m_cachedList[i]);
 		}
 	}
 
@@ -198,17 +188,14 @@ void CStudioCache::ReleaseCache()
 	m_cacheIndex.clear(true);
 	m_freeCacheSlots.clear(true);
 
-	for(int i = 0; i < 2; ++i)
-	{
-		g_renderAPI->DestroyVertexFormat(m_egfFormat[i]);
-		m_egfFormat[i] = nullptr;
-	}
+	g_renderAPI->DestroyVertexFormat(m_egfFormat);
+	m_egfFormat = nullptr;
 	m_errorMaterial = nullptr;
 }
 
-IVertexFormat* CStudioCache::GetEGFVertexFormat(bool skinned) const
+IVertexFormat* CStudioCache::GetEGFVertexFormat() const
 {
-	return m_egfFormat[skinned];
+	return m_egfFormat;
 }
 
 // prints loaded models to console

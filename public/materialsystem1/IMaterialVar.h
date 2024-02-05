@@ -127,7 +127,7 @@ inline const float& MatVarProxy<float>::Get() const
 }
 
 template<>
-inline float* MatVarProxy<float>::GetArray()
+inline float* MatVarProxy<float>::GetArray() const
 {
 	if (!m_vars)
 		return nullptr;
@@ -217,4 +217,30 @@ inline void MatVarProxy<ITexturePtr>::Set(const ITexturePtr& pTexture)
 		return;
 
 	var.texture = pTexture;
+}
+
+template<>
+inline const GPUBufferView& MatVarProxy<GPUBufferView>::Get() const
+{
+	if (!m_vars)
+	{
+		static GPUBufferView _empty;
+		return _empty;
+	}
+
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return var.buffer;
+}
+
+template<>
+inline void MatVarProxy<GPUBufferView>::Set(const GPUBufferView& buffer)
+{
+	if (!m_vars)
+		return;
+
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	if (buffer == var.buffer)
+		return;
+
+	var.buffer = buffer;
 }

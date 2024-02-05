@@ -262,8 +262,8 @@ struct KVPairValuesGetter;
 template<typename T = const char*>
 struct KVValueIterator
 {
-	KVValueIterator(const KVSection* section)
-		: section(section)
+	KVValueIterator(const KVSection* section, int start = 0)
+		: section(section), index(start)
 	{
 	}
 

@@ -109,7 +109,7 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 
 			newRagdoll->m_nBodyParts[i] = physModel.objects[i].object.bodyPartId;
 
-			newRagdoll->m_pParts[i]->SetUserData((void*)newRagdoll->m_nBodyParts[i]);
+			newRagdoll->m_pParts[i]->SetUserData(reinterpret_cast<void*>(newRagdoll->m_nBodyParts[i]));
 		}
 
 		// create joints

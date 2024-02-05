@@ -111,7 +111,7 @@ static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength =
 
 #define KV_ESCAPE_SYMBOL			'\\'
 
-#define KV_IDENT_BINARY				MCHAR4('B','K','V','S')
+#define KV_IDENT_BINARY				MAKECHAR4('B','K','V','S')
 
 #define IsKVBufferEOF()				((pData - pszBuffer) > bufferSize-1)
 #define IsKVArrayEndOrSeparator(c)	((c) == KV_ARRAY_SEPARATOR || (c) == KV_ARRAY_END)
@@ -1015,7 +1015,7 @@ int	KVSection::GetType() const
 // Iterators
 
 KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags)
-	: section(section), nameHashFilter(nameFilter ? StringToHash(nameFilter) : 0)
+	: section(section), nameHashFilter(nameFilter ? StringToHash(nameFilter, true) : 0)
 {
 	Rewind();
 }

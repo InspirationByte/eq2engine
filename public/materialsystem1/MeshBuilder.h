@@ -12,7 +12,7 @@
 class CMeshBuilder
 {
 public:
-	CMeshBuilder(IDynamicMesh* mesh);
+	CMeshBuilder(IDynamicMeshPtr mesh);
 	~CMeshBuilder();
 
 	// begins the mesh
@@ -91,42 +91,37 @@ public:
 	// advances index with custom index
 	int			AdvanceVertexIndex(uint16 index);
 
-	IDynamicMesh* GetMesh() const { return m_mesh; }
-
 protected:
 	ArrayCRef<VertexLayoutDesc>	m_formatDesc{ nullptr };
-	IDynamicMesh*		m_mesh{ nullptr };
-	void*				m_curVertex{ nullptr };
-	int					m_stride{ 0 };
 
-	struct vertdata_t
+	IDynamicMeshPtr	m_mesh{ nullptr };
+	void*			m_curVertex{ nullptr };
+	int				m_stride{ 0 };
+
+	struct VertData
 	{
-		vertdata_t(){
-			offset = -1;
-			count = 0;
-		}
-
-		int8				offset;
-		int8				count;
-		EVertAttribFormat	format;
-		Vector4D			value;
+		int8				offset{ -1 };
+		int8				count{ 0 };
+		EVertAttribFormat	format{VERTEXATTRIB_UNKNOWN};
+		Vector4D			value{ 0 };
 	};
 
-	void				CopyVertData(vertdata_t& vert, bool isNormal = false);
-	void				AdvanceVertexPtr();
+	void			CopyVertData(VertData& vert, bool isNormal = false);
+	void			AdvanceVertexPtr();
 
-	vertdata_t			m_position;
-	vertdata_t			m_normal;
-	vertdata_t			m_texcoord;
-	vertdata_t			m_color;
+	VertData		m_position;
+	VertData		m_normal;
+	VertData		m_texcoord;
+	VertData		m_color;
 
-	bool				m_pushedVert{ false };
-	bool				m_begun{ false };
+	EPrimTopology	m_topology{ PRIM_POINTS };
+	bool			m_pushedVert{ false };
+	bool			m_begun{ false };
 };
 
 //----------------------------------------------------------
 
-inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh)
+inline CMeshBuilder::CMeshBuilder(IDynamicMeshPtr mesh)
 {
 	m_mesh = mesh;
 
@@ -189,6 +184,8 @@ inline void CMeshBuilder::Begin(EPrimTopology type)
 	m_mesh->Reset();
 	m_mesh->SetPrimitiveType(type);
 
+	m_topology = type;
+
 	m_position.value = Vector4D(0,0,0,1.0f);
 	m_texcoord.value = vec4_zero;
 	m_normal.value = Vector4D(0,1,0,0);
@@ -203,6 +200,8 @@ inline void CMeshBuilder::Begin(EPrimTopology type)
 // ends building and renders the mesh
 inline bool CMeshBuilder::End(RenderDrawCmd& drawCmd)
 {
+	ASSERT_MSG(m_mesh->GetPrimitiveType() == m_topology, "dynamic mesh has wrong primitive type in the end, is it used in different CMeshBuilder instances?");
+
 	const bool success = m_mesh->FillDrawCmd(drawCmd);
 	m_begun = false;
 	return success;
@@ -698,7 +697,7 @@ inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, 
 	}
 }
 
-inline void CMeshBuilder::CopyVertData(vertdata_t& vert, bool isNormal)
+inline void CMeshBuilder::CopyVertData(VertData& vert, bool isNormal)
 {
 	if(!vert.count)
 		return;

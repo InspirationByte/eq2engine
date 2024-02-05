@@ -7,6 +7,7 @@
 
 #pragma once
 #include <webgpu/webgpu.h>
+#include "renderers/ShaderAPI_defs.h"
 
 // ETextureFormat
 static WGPUTextureFormat g_wgpuTexFormats[] = {
@@ -92,6 +93,49 @@ static WGPUTextureFormat g_wgpuTexFormats[] = {
 	WGPUTextureFormat_Undefined,
 };
 
+static WGPUTextureFormat GetWGPUFormatSRGB(WGPUTextureFormat baseFormat)
+{
+	switch (baseFormat)
+	{
+	case WGPUTextureFormat_RGBA8Unorm:
+		return WGPUTextureFormat_RGBA8UnormSrgb;
+	case WGPUTextureFormat_BGRA8Unorm:
+		return WGPUTextureFormat_BGRA8UnormSrgb;
+	case WGPUTextureFormat_BC1RGBAUnorm:
+		return WGPUTextureFormat_BC1RGBAUnormSrgb;
+	case WGPUTextureFormat_BC2RGBAUnorm:
+		return WGPUTextureFormat_BC2RGBAUnormSrgb;
+	case WGPUTextureFormat_BC3RGBAUnorm:
+		return WGPUTextureFormat_BC3RGBAUnormSrgb;
+	}
+
+	// TODO: ASTC
+	return baseFormat;
+}
+
+static WGPUTextureFormat GetWGPUSwappedChannelsFormat(WGPUTextureFormat baseFormat)
+{
+	switch (baseFormat)
+	{
+	case WGPUTextureFormat_RGBA8Unorm:
+		return WGPUTextureFormat_BGRA8Unorm;
+	}
+
+	return baseFormat;
+}
+
+static WGPUTextureFormat GetWGPUTextureFormat(ETextureFormat formatWithFlags)
+{
+	WGPUTextureFormat format = g_wgpuTexFormats[GetTexFormat(formatWithFlags)];
+	if (HasTexFormatFlags(formatWithFlags, TEXFORMAT_FLAG_SWAP_RB))
+		format = GetWGPUSwappedChannelsFormat(format);
+
+	if (HasTexFormatFlags(formatWithFlags, TEXFORMAT_FLAG_SRGB))
+		format = GetWGPUFormatSRGB(format);
+
+	return format;
+}
+
 // EBufferBindType
 static WGPUBufferBindingType g_wgpuBufferBindingType[] = {
 	WGPUBufferBindingType_Uniform,
@@ -126,7 +170,7 @@ static WGPUTextureViewDimension g_wgpuTexViewDimensions[] = {
 	WGPUTextureViewDimension_3D,
 };
 
-// EShaderVisibility
+// EShaderKind
 static WGPUStorageTextureAccess g_wgpuStorageTexAccess[] = {
 	WGPUStorageTextureAccess_WriteOnly,
 	WGPUStorageTextureAccess_ReadOnly,
@@ -139,7 +183,8 @@ static WGPUVertexFormat g_wgpuVertexFormats[][4] = {
 		WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined
 	},
 	{
-		WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint8x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint8x4
+		// HACK: GLSL does not support vector of Uint8 so we use WGPUVertexFormat_Uint32 instead of Uint8x4
+		WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint32
 	},
 	{
 		WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x4
@@ -253,3 +298,25 @@ static WGPUMipmapFilterMode g_wgpuMipmapFilterMode[] = {
 	WGPUMipmapFilterMode_Linear,
 	WGPUMipmapFilterMode_Linear,
 };
+
+// ELoadFunc
+static WGPULoadOp g_wgpuLoadOp[] = {
+	WGPULoadOp_Load,
+	WGPULoadOp_Clear
+};
+
+// EStoreFunc
+static WGPUStoreOp g_wgpuStoreOp[] = {
+	WGPUStoreOp_Store,
+	WGPUStoreOp_Discard,
+};
+
+// EIndexFormat
+static WGPUIndexFormat g_wgpuIndexFormat[] = {
+	WGPUIndexFormat_Uint16,
+	WGPUIndexFormat_Uint32,
+};
+
+void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerParams, WGPUSamplerDescriptor& rhiSamplerDesc);
+void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendComponent& rhiBlendComponent);
+void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, WGPURenderPassDescriptor& rhiRenderPassDesc, FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS>& rhiColorAttachmentList, WGPURenderPassDepthStencilAttachment& rhiDepthStencilAttachment);

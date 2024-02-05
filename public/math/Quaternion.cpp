@@ -256,7 +256,7 @@ void Quaternion::normalize()
 
 	if(slen == 0.0f)
 	{
-		*this = identity();
+		*this = qidentity;
 		return;
 	}
 
@@ -566,11 +566,6 @@ Vector3D rotateVector( const Vector3D& p, const Quaternion& q )
 {
     Quaternion temp = q * Quaternion( 0.0f, p.x, p.y, p.z );
     return ( temp * !q ).asVector4D().xyz();
-}
-
-Quaternion identity()
-{
-	return Quaternion(1.0f,0.0f,0.0f,0.0f);
 }
 
 #pragma warning(pop)

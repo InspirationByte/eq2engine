@@ -36,12 +36,14 @@ void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueC
 #ifdef PROFILE_ENABLE
 
 #define PROF_EVENT(name)				ProfEventWrp _profEvt(name)
+#define PROF_EVENT_F()					ProfEventWrp _profEvt(__func__)
 #define PROF_MARKER(name)				ProfAddMarker(name)
 #define PROF_RELEASE_THREAD_MARKERS()	ProfReleaseCurrentThreadMarkers()
 
 #else
 
 #define PROF_EVENT(name)
+#define PROF_EVENT_F()
 #define PROF_MARKER(name)
 #define PROF_RELEASE_THREAD_MARKERS()
 

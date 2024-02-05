@@ -8,6 +8,9 @@
 #pragma once
 #include "render/IDebugOverlay.h"
 
+class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
 struct DebugTextNode_t
 {
 	EqString	pszText;
@@ -47,7 +50,7 @@ struct DebugBoxNode_t : public DebugNodeBase
 struct DebugOriBoxNode_t : public DebugNodeBase
 {
 	Vector3D mins, maxs;
-	Quaternion rotation{ identity() };
+	Quaternion rotation{ qidentity };
 	Vector3D position;
 	uint color{ color_white.pack() };
 };
@@ -113,6 +116,8 @@ public:
 
 	void							SetMatrices(const Matrix4x4& proj, const Matrix4x4& view);
 	void							Draw(int winWide, int winTall, float timescale = 1.0f);
+
+	static void						OnShowTextureChanged(ConVar* pVar, char const* pszOldValue);
 private:
 	void							CleanOverlays();
 	bool							CheckNodeLifetime(DebugNodeBase& node);
@@ -136,6 +141,7 @@ private:
 	Array<DebugDrawFunc_t>			m_draw3DFuncs{ PP_SL };
 
 	Map<int, uint>					m_newNames{ PP_SL };
+	ITexturePtr						m_dbgTexture;
 
 	CEqTimer						m_timer;
 	IEqFont*						m_debugFont{ nullptr };

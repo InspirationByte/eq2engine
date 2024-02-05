@@ -6,7 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+
+struct RenderPassContext;
 class CBaseRenderableObject;
+class IGPURenderPassRecorder;
 
 //----------------------------------------------------
 // Base render list interface.
@@ -17,20 +20,16 @@ public:
 	using Renderable = CBaseRenderableObject;
 
 	CRenderList();
-	virtual ~CRenderList();
+	virtual ~CRenderList() = default;
 
-	void				AddRenderable(Renderable* pObject);		// adds a single object
+	void					Clear();
 
-	void				Append(CRenderList* pAnotherList);		// copies objects from another render list. Call update if it's distance-sorted.
+	void					AddRenderable(Renderable* pObject, void* userData = nullptr);		// adds a single object
+	ArrayCRef<Renderable*>	GetRenderables() const { return m_objectList; }
+	void					SortByDistanceFrom(const Vector3D& origin, bool reverse);
 
-	int					GetRenderableCount();					// returns count of renderables in this list
-	Renderable*			GetRenderable(int id);					// returns renderable pointer
+	void					Render(int renderFlags, const RenderPassContext& passContext, void* userdata = nullptr);// draws render list
 
-	void				Render(int renderFlags, void* userdata);// draws render list
-
-	void				SortByDistanceFrom(const Vector3D& origin, bool reverse);
-
-	void				Clear();
 protected:
 	struct RendPair
 	{

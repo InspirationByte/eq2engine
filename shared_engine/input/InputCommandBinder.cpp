@@ -627,7 +627,7 @@ void CInputCommandBinder::OnJoyAxisEvent( short axis, short value )
 	}
 }
 
-void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
+void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!in_touchzones_debug.GetBool())
 		return;
@@ -638,24 +638,17 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParams.textColor = color_white;
 
-	BlendStateParams blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
-
-	g_matSystem->FindGlobalMaterialVar<MatTextureProxy>(StringToHashConst("basetexture")).Set(nullptr);
-	g_matSystem->SetBlendingStates(blending);
-	g_matSystem->SetRasterizerStates(CULL_FRONT);
-	g_matSystem->SetDepthStates(false, false);
-
 	Array<AARectangle> rects(PP_SL);
 	rects.resize(m_touchZones.numElem());
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 
 	RenderDrawCmd drawCmd;
-	drawCmd.material = g_matSystem->GetDefaultMaterial();
+	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
@@ -676,14 +669,15 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	}
 
 	if (meshBuilder.End(drawCmd))
-		g_matSystem->Draw(drawCmd);
+		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 
+	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
 	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{
 		const in_touchzone_t* tz = &m_touchZones[i];
 		const AARectangle& rect = rects[i];
 
-		defaultFont->RenderText(tz->name.ToCString(), rect.leftTop, fontParams);
+		defaultFont->SetupRenderText(tz->name.ToCString(), rect.leftTop, fontParams, rendPassRecorder);
 	}
 }
 
