@@ -35,7 +35,7 @@ public:
 	void					Close(IVirtualStream* virtStream);
 #endif
 	void					Flush();
-	int						End();
+	int						End(bool storeFileList = false);
 
 	int						GetFileCount() const { return m_files.size(); }
 

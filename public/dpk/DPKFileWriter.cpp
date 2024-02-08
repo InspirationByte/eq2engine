@@ -72,12 +72,18 @@ void CDPKFileWriter::Flush()
 	m_output.Flush();
 }
 
-int CDPKFileWriter::End()
+int CDPKFileWriter::End(bool storeFileList)
 {
 	if (!m_output.IsOpen())
-	{
-		ASSERT(m_output.IsOpen() == true);
 		return 0;
+
+	if (storeFileList)
+	{
+		CMemoryStream lstFile(nullptr, VS_OPEN_WRITE, 8192 * 1024, PP_SL);
+		for (FileInfo& info : m_files)
+			lstFile.Print("%s\n", info.fileName.ToCString());
+
+		Add(&lstFile, "dpkfiles.lst");
 	}
 
 	m_header.fileInfoOffset = m_output.Tell();
