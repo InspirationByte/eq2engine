@@ -1,10 +1,13 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright (C) Inspiration Byte
+// 2009-2023
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Multithreaded job manager
+//////////////////////////////////////////////////////////////////////////////////
+
 #pragma once
 
-
-using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
-using EQ_JOB_COMPLETE_FUNC = EqFunction<void(struct eqParallelJob_t*)>;
-
-enum EJobTypes
+enum EJobType : int
 {
 	JOB_TYPE_ANY = -1,
 
@@ -22,77 +25,112 @@ enum EJobTypes
 	JOB_TYPE_COUNT,
 };
 
-enum EJobFlags
+struct ParallelJobThreadDesc
 {
-	JOB_FLAG_DELETE = (1 << 0),			// job has to be deleted after executing. If not set, please specify 'onComplete' function
-	JOB_FLAG_CURRENT = (1 << 1),		// it's current job
-	JOB_FLAG_EXECUTED = (1 << 2),		// execution is completed
+	EJobType	jobTypeId;
+	int			numThreads;
 };
 
-const uintptr_t JOB_THREAD_ANY = 0;
+using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
+using EQ_JOB_COMPLETE_FUNC = EqFunction<void(void*, int i)>;
 
-struct eqParallelJob_t
+#if 0
+class IParallelJob
 {
-	eqParallelJob_t() 
-		: flags(0), typeId(-1), func(nullptr), arguments(nullptr), numIter(1), threadId(0), onComplete(nullptr)
-	{}
+public:
+	virtual ~IParallelJob();
 
-	eqParallelJob_t(int jobTypeId, EQ_JOB_FUNC fn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr)
-		: flags(0), typeId(jobTypeId), func(std::move(fn)), arguments(args), numIter(count), threadId(0), onComplete(std::move(completeFn))
+	virtual void			Execute() = 0;
+	virtual void			FillJobGroup() = 0;
+
+	void					InitSignal();
+	Threading::CEqSignal*	GetJobSignal() const { return m_jobSignalDone; }
+
+protected:
+	void					Run();
+	void					AddWait(IParallelJob* jobWait);
+
+	EqString				m_jobName;
+	Threading::CEqSignal*	m_jobSignalDone{ nullptr };
+	Array<IParallelJob*>	m_waitJobs{ PP_SL };
+};
+
+IParallelJob::~IParallelJob()
+{
+	SAFE_DELETE(m_jobSignalDone);
+}
+
+void IParallelJob::InitSignal()
+{
+	if (!m_jobSignalDone)
+		m_jobSignalDone = PPNew Threading::CEqSignal(true);
+
+	m_jobSignalDone->Clear(); 
+}
+
+void IParallelJob::Run()
+{
+	Threading::CEqSignal* jobSignalDone = m_jobSignalDone;
+	if(jobSignalDone)
+		jobSignalDone->Clear();
+
+	m_waitJobs.clear();
+
+	FillJobGroup();
+
+	for (IParallelJob* waitJob : m_waitJobs)
+		waitJob->GetJobSignal()->Wait();
+
 	{
+		PROF_EVENT(m_jobName);
+		Execute();
 	}
 
-	EQ_JOB_FUNC				func;				// job function. This is a parallel work
-	EQ_JOB_COMPLETE_FUNC	onComplete;			// job completion callback after all numIter is complete. Always executed before Submit() called on job manager
-	void*					arguments;			// job argument object passed to job function
-	volatile int			flags;				// EJobFlags
-	uintptr_t				threadId;			// selected thread
-	int						numIter;
-	int						typeId;				// the job type that specific thread will take
-};
+	if(jobSignalDone)
+		jobSignalDone->Raise();
+}
 
-// structure for initialization
-struct eqJobThreadDesc_t
+void IParallelJob::AddWait(IParallelJob* jobWait)
 {
-	int jobTypeId;
-	int numThreads;
-};
+	jobWait->InitSignal();
+	m_waitJobs.append(jobWait);
+}
+#endif // 0
 
-// job arranger thread
-class IEqParallelJobThreads : public IEqCoreModule
+//--------------------------------------------
+// job manager
+
+
+class IEqParallelJobManager : public IEqCoreModule
 {
 public:
 	CORE_INTERFACE("E2_ParallelJobs_002")
 
 	// creates new job thread
-	virtual bool							Init(ArrayCRef<eqJobThreadDesc_t> jobTypes) = 0;
-	virtual void							Shutdown() = 0;
+	virtual bool			Init(ArrayCRef<ParallelJobThreadDesc> jobTypes) = 0;
+	virtual void			Shutdown() = 0;
 
 	// adds the job
-	virtual eqParallelJob_t*				AddJob(int jobTypeId, EQ_JOB_FUNC jobFn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr) = 0;	// and puts JOB_FLAG_DELETE flag for this job
-	virtual void							AddJob(eqParallelJob_t* job) = 0;
+	virtual void			AddJob(EJobType jobTypeId, EQ_JOB_FUNC jobFn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr) = 0;	// and puts JOB_FLAG_DELETE flag for this job
 
 	// this submits jobs to the CEqJobThreads
-	virtual void							Submit() = 0;
+	virtual void			Submit() = 0;
 
 	// wait for completion
-	virtual void							Wait() = 0;
+	virtual void			Wait() = 0;
 
 	// returns state if all jobs has been done
-	virtual bool							AllJobsCompleted() const = 0;
-
-	// wait for specific job
-	virtual void							WaitForJob(eqParallelJob_t* job) = 0;
+	virtual bool			AllJobsCompleted() const = 0;
 
 	// manually invokes job callbacks on completed jobs
 	// should be called in main loop thread or in critical places
-	virtual void							CompleteJobCallbacks() = 0;
+	virtual void			CompleteJobCallbacks() = 0;
 
 	// job thread counter
-	virtual int								GetActiveJobThreadsCount() = 0;
-	virtual int								GetJobThreadsCount() = 0;
-	virtual int								GetActiveJobsCount(int type = -1) = 0;
-	virtual int								GetPendingJobCount(int type = -1) = 0;
+	virtual int				GetActiveJobThreadsCount() = 0;
+	virtual int				GetJobThreadsCount() = 0;
+	virtual int				GetActiveJobsCount(int type = -1) = 0;
+	virtual int				GetPendingJobCount(int type = -1) = 0;
 };
 
-INTERFACE_SINGLETON(IEqParallelJobThreads, CEqParallelJobThreads, g_parallelJobs)
+INTERFACE_SINGLETON(IEqParallelJobManager, CEqParallelJobManager, g_parallelJobs)

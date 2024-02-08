@@ -110,7 +110,7 @@ private:
 	static void				LoadPhysicsJob(void* data, int i);
 	static void				LoadMotionJob(void* data, int i);
 	
-	static void				OnLoadingJobComplete(struct eqParallelJob_t* job);
+	static void				OnLoadingJobComplete(void* data, int count);
 	
 	bool					LoadFromFile();
 	void					LoadMaterials();

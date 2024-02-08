@@ -359,9 +359,9 @@ void CEqStudioGeom::LoadMotionJob(void* data, int i)
 	model->LoadMotionPackages();
 }
 
-void CEqStudioGeom::OnLoadingJobComplete(struct eqParallelJob_t* job)
+void CEqStudioGeom::OnLoadingJobComplete(void* data, int count)
 {
-	CEqStudioGeom* model = (CEqStudioGeom*)job->arguments;
+	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
 
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;

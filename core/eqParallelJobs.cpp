@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium multithreaded parallel jobs
+// Description: multithreaded job manager
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
@@ -11,9 +11,9 @@
 
 using namespace Threading;
 
-EXPORTED_INTERFACE(IEqParallelJobThreads, CEqParallelJobThreads);
+EXPORTED_INTERFACE(IEqParallelJobManager, CEqParallelJobManager);
 
-CEqJobThread::CEqJobThread(CEqParallelJobThreads* owner, int jobTypeId) 
+CEqJobThread::CEqJobThread(CEqParallelJobManager* owner, int jobTypeId) 
 	: m_owner(owner), 
 	m_curJob(nullptr), 
 	m_threadJobTypeId(jobTypeId)
@@ -26,12 +26,13 @@ int CEqJobThread::Run()
 	// thread will find job by himself
 	while( m_owner->AssignFreeJob( this ) )
 	{
-		eqParallelJob_t* job = const_cast<eqParallelJob_t*>(m_curJob);
+		ParallelJob* job = const_cast<ParallelJob*>(m_curJob);
 		
 		job->flags |= JOB_FLAG_CURRENT;
 
 		// execute
 		int iter = 0;
+		job->numIterOrig = job->numIter;
 		while(job->numIter-- > 0)
 		{
 			job->func(job->arguments, iter );
@@ -56,7 +57,7 @@ int CEqJobThread::Run()
 	return 0;
 }
 
-bool CEqJobThread::AssignJob( eqParallelJob_t* job )
+bool CEqJobThread::TryAssignJob( ParallelJob* job )
 {
 	if( m_curJob )
 		return false;
@@ -71,44 +72,43 @@ bool CEqJobThread::AssignJob( eqParallelJob_t* job )
 			return false;
 	}
 
-	// ��������� ������ � ������
 	job->threadId = GetThreadID();
 	m_curJob = job;
 
 	return true;
 }
 
-const eqParallelJob_t* CEqJobThread::GetCurrentJob() const
+const ParallelJob* CEqJobThread::GetCurrentJob() const
 {
-	return const_cast<eqParallelJob_t*>(m_curJob);
+	return const_cast<ParallelJob*>(m_curJob);
 }
 
 //-------------------------------------------------------------------------------------------
 
-CEqParallelJobThreads::CEqParallelJobThreads()
+CEqParallelJobManager::CEqParallelJobManager()
 {
 	// required by mobile port
 	g_eqCore->RegisterInterface(this);
 }
 
-CEqParallelJobThreads::~CEqParallelJobThreads()
+CEqParallelJobManager::~CEqParallelJobManager()
 {
-	g_eqCore->UnregisterInterface<CEqParallelJobThreads>();
+	g_eqCore->UnregisterInterface<CEqParallelJobManager>();
 }
 
 // creates new job thread
-bool CEqParallelJobThreads::Init(ArrayCRef<eqJobThreadDesc_t> jobTypes)
+bool CEqParallelJobManager::Init(ArrayCRef<ParallelJobThreadDesc> jobTypes)
 {
 	int numThreadsSpawned = 0;
 
-	for (const eqJobThreadDesc_t& jobType : jobTypes)
+	for (const ParallelJobThreadDesc& jobType : jobTypes)
 	{
 		for (int j = 0; j < jobType.numThreads; j++)
 		{
-			CEqJobThread* pJobThread = PPNew CEqJobThread(this, jobType.jobTypeId);
-			m_jobThreads.append(pJobThread);
+			CEqJobThread* jobThread = PPNew CEqJobThread(this, jobType.jobTypeId);
+			m_jobThreads.append(jobThread);
 
-			pJobThread->StartWorkerThread(EqString::Format("eqWorker_%d_%d", jobType.jobTypeId, j).ToCString());
+			jobThread->StartWorkerThread(EqString::Format("eqWorker_%d_%d", jobType.jobTypeId, j).ToCString());
 			numThreadsSpawned++;
 		}
 	}
@@ -120,12 +120,12 @@ bool CEqParallelJobThreads::Init(ArrayCRef<eqJobThreadDesc_t> jobTypes)
 	return true;
 }
 
-void CEqParallelJobThreads::Shutdown()
+void CEqParallelJobManager::Shutdown()
 {
 	Wait();
 
-	for (int i = 0; i < m_jobThreads.numElem(); i++)
-		delete m_jobThreads[i];
+	for (CEqJobThread* jobThread : m_jobThreads)
+		delete jobThread;
 
 	m_jobThreads.clear(true);
 	m_workQueue.clear(true);
@@ -133,40 +133,38 @@ void CEqParallelJobThreads::Shutdown()
 }
 
 // adds the job
-eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, EQ_JOB_FUNC func, void* args, int count /*= 1*/, EQ_JOB_COMPLETE_FUNC completeFn /*= nullptr*/)
+void CEqParallelJobManager::AddJob(EJobType jobTypeId, EQ_JOB_FUNC func, void* args, int count /*= 1*/, EQ_JOB_COMPLETE_FUNC completeFn /*= nullptr*/)
 {
 	ASSERT(count > 0);
 
-	eqParallelJob_t* job = PPNew eqParallelJob_t(jobTypeId, std::move(func), args, count, std::move(completeFn));
+	ParallelJob* job = PPNew ParallelJob(jobTypeId, std::move(func), args, count, std::move(completeFn));
 	job->flags = JOB_FLAG_DELETE;
 
 	{
 		CScopedMutex m(m_mutex);
 		m_workQueue.append(job);
 	}
-
-	return job;
 }
 
-void CEqParallelJobThreads::AddJob(eqParallelJob_t* job)
+void CEqParallelJobManager::AddJob(ParallelJob* job)
 {
 	CScopedMutex m(m_mutex);
 	m_workQueue.append( job );
 }
 
 // this submits jobs to the CEqJobThreads
-void CEqParallelJobThreads::Submit()
+void CEqParallelJobManager::Submit()
 {
 	CompleteJobCallbacks();
 
 	if (!m_workQueue.numElem())
 		return;
 
-	for (int i = 0; i < m_jobThreads.numElem(); i++)
-		m_jobThreads[i]->SignalWork();
+	for (CEqJobThread* jobThread : m_jobThreads)
+		jobThread->SignalWork();
 }
 
-void CEqParallelJobThreads::CompleteJobCallbacks()
+void CEqParallelJobManager::CompleteJobCallbacks()
 {
 	// only for main thread
 	if (Threading::GetCurrentThreadID() != m_mainThreadId)
@@ -176,12 +174,11 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 	{
 		CScopedMutex m(m_completeMutex);
 
-		for (int i = 0; i < m_completedJobs.numElem(); ++i)
+		for (ParallelJob* job : m_completedJobs)
 		{
-			eqParallelJob_t* job = m_completedJobs[i];
-			bool deleteJob = (job->flags & JOB_FLAG_DELETE);
+			const bool deleteJob = (job->flags & JOB_FLAG_DELETE);
 
-			job->onComplete(job);
+			job->onComplete(job->arguments, job->numIterOrig);
 
 			// done with it
 			if (deleteJob)
@@ -191,43 +188,32 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 	}
 }
 
-bool CEqParallelJobThreads::AllJobsCompleted() const
+bool CEqParallelJobManager::AllJobsCompleted() const
 {
 	return m_workQueue.numElem() == 0;
 }
 
 // wait for completion
-void CEqParallelJobThreads::Wait()
+void CEqParallelJobManager::Wait()
 {
-	for (int i = 0; i < m_jobThreads.numElem(); i++)
-		m_jobThreads[i]->WaitForThread();
+	for (CEqJobThread* jobThread : m_jobThreads)
+		jobThread->WaitForThread();
 
 	CompleteJobCallbacks();
 }
 
-// wait for specific job
-void CEqParallelJobThreads::WaitForJob(eqParallelJob_t* job)
-{
-	while(!(job->flags & JOB_FLAG_EXECUTED))
-	{
-		CompleteJobCallbacks();
-		YieldCurrentThread();
-	}
-}
-
 // called by job thread
-bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
+bool CEqParallelJobManager::AssignFreeJob( CEqJobThread* requestBy )
 {
 	CScopedMutex m(m_mutex);
 
 	for (int i = 0; i < m_workQueue.numElem(); ++i)
 	{
-		eqParallelJob_t* job = m_workQueue[i];
-
+		ParallelJob* job = m_workQueue[i];
 		if (!job)
 			continue;
 
-		if (requestBy->AssignJob(job))
+		if (requestBy->TryAssignJob(job))
 		{
 			m_workQueue.fastRemoveIndex(i);
 			return true;
@@ -237,34 +223,33 @@ bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
 	return false;
 }
 
-void CEqParallelJobThreads::AddCompleted(eqParallelJob_t* job)
+void CEqParallelJobManager::AddCompleted(ParallelJob* job)
 {
 	CScopedMutex m(m_completeMutex);
 	m_completedJobs.append(job);
 }
 
-int	CEqParallelJobThreads::GetActiveJobThreadsCount()
+int	CEqParallelJobManager::GetActiveJobThreadsCount()
 {
 	int cnt = 0;
-	for (int i = 0; i < m_jobThreads.numElem(); i++)
-		cnt += (m_jobThreads[i]->IsWorkDone() == false) ? 1 : 0;
+	for (CEqJobThread* jobThread : m_jobThreads)
+		cnt += (jobThread->IsWorkDone() == false) ? 1 : 0;
 
 	return cnt;
 }
 
-int	CEqParallelJobThreads::GetJobThreadsCount()
+int	CEqParallelJobManager::GetJobThreadsCount()
 {
 	return m_jobThreads.numElem();
 }
 
-int	CEqParallelJobThreads::GetActiveJobsCount(int type /*= -1*/)
+int	CEqParallelJobManager::GetActiveJobsCount(int type /*= -1*/)
 {
 	CScopedMutex m(m_mutex);
 
 	int cnt = 0;
-	for (int i = 0; i < m_workQueue.numElem(); ++i)
+	for (const ParallelJob* job : m_workQueue)
 	{
-		const eqParallelJob_t* job = m_workQueue[i];
 		if (job->typeId == type && job->threadId != 0)
 			cnt++;
 	}
@@ -272,14 +257,14 @@ int	CEqParallelJobThreads::GetActiveJobsCount(int type /*= -1*/)
 	return cnt;
 }
 
-int	CEqParallelJobThreads::GetPendingJobCount(int type /*= -1*/)
+int	CEqParallelJobManager::GetPendingJobCount(int type /*= -1*/)
 {
 	CScopedMutex m(m_mutex);
 
 	int cnt = 0;
 	for (int i = 0; i < m_workQueue.numElem(); ++i)
 	{
-		const eqParallelJob_t* job = m_workQueue[i];
+		const ParallelJob* job = m_workQueue[i];
 		if (job->typeId == type && job->threadId == 0)
 			cnt++;
 	}

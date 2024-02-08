@@ -35,7 +35,7 @@
 
 #define TITLE_TOKEN				"Equilibrium Sound Engine Test"	// you can use hashtag # to use localization token
 
-static eqJobThreadDesc_t s_jobTypes[] = {
+static ParallelJobThreadDesc s_jobTypes[] = {
 	//{JOB_TYPE_ANY, 1},
 	{JOB_TYPE_AUDIO, 1},
 	//{JOB_TYPE_PHYSICS, 1},

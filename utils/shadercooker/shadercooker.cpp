@@ -11,7 +11,7 @@
 #include "core/IFileSystem.h"
 #include "core/IEqParallelJobs.h"
 
-static eqJobThreadDesc_t s_jobTypes[] = {
+static ParallelJobThreadDesc s_jobTypes[] = {
 	{JOB_TYPE_ANY, 16},
 };
 
