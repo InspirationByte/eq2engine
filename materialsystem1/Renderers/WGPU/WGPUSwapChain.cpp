@@ -166,7 +166,7 @@ bool CWGPUSwapChain::UpdateResize()
 	rhiSwapChainDesc.height = m_backbufferSize.y;
 	rhiSwapChainDesc.format = rhiSurfaceFormat;
 	rhiSwapChainDesc.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
-	rhiSwapChainDesc.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
+	rhiSwapChainDesc.presentMode = m_vSync ? WGPUPresentMode_Immediate : WGPUPresentMode_Mailbox;
 
 	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &rhiSwapChainDesc);
 	return m_swapChain;
