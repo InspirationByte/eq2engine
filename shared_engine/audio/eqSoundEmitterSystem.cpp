@@ -62,6 +62,7 @@ DECLARE_CVAR(snd_scriptsound_showWarnings, "0", nullptr, 0);
 //----------------------------------------------------------------------------
 
 CSoundEmitterSystem::CSoundEmitterSystem()
+	: IParallelJob("SoundEmitterSystemJob", JOB_TYPE_AUDIO)
 {
 }
 
@@ -75,7 +76,6 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 		return;
 
 	m_channelTypes.clear();
-	m_updateDone.Raise();
 
 	m_defaultMaxDistance = defaultMaxDistance;
 
@@ -184,7 +184,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 {
 	ASSERT(ep);
 
-	const bool forceStartOnUpdate = (ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || !m_updateDone.Wait(0);
+	const bool forceStartOnUpdate = (ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || !(GetJobSignal() && GetJobSignal()->Wait(0));
 	if(forceStartOnUpdate && !(ep->flags & EMITSOUND_FLAG_PENDING))
 	{
 		CScopedMutex m(s_soundEmitterSystemMutex);
@@ -553,6 +553,39 @@ int CSoundEmitterSystem::LoopSourceUpdateCallback(IEqAudioSource* source, IEqAud
 	return 0;
 }
 
+void CSoundEmitterSystem::Execute()
+{
+	g_audioSystem->BeginUpdate();
+
+	// start all pending sounds we accumulated during sound pause
+	{
+		CScopedMutex m(s_soundEmitterSystemMutex);
+
+		for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
+		{
+			PendingSound& pending = m_pendingStartSounds[i];
+			EmitSoundInternal(&pending.params, pending.objUniqueId, pending.soundingObj);
+		}
+
+		m_pendingStartSounds.clear();
+	}
+
+	const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
+
+	{
+		CScopedMutex m(s_soundEmitterSystemMutex);
+		for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
+		{
+			CSoundingObject* obj = it.key();
+
+			if (!obj->UpdateEmitters(listenerPos))
+				m_soundingObjects.remove(it);
+		}
+	}
+
+	g_audioSystem->EndUpdate();
+}
+
 //
 // Updates all emitters and sound system itself
 //
@@ -560,49 +593,14 @@ void CSoundEmitterSystem::Update(Threading::CEqSignal* waitFor)
 {
 	m_deltaTime = m_updateTimer.GetTime(true);
 
-	PROF_EVENT("Sound Emitter System Update");
-	m_updateDone.Wait();
+	if(!GetJobSignal() || GetJobSignal()->Wait(0))
+	{
+		InitSignal();
+		AddWait(waitFor);
 
-	m_updateDone.Clear();
-	g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this, waitFor](void*, int i) {
-
-		if(waitFor)
-			waitFor->Wait();
-
-		PROF_EVENT("SoundEmitterSystem Update Job");
-
-		g_audioSystem->BeginUpdate();
-
-		// start all pending sounds we accumulated during sound pause
-		{
-			CScopedMutex m(s_soundEmitterSystemMutex);
-
-			for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
-			{
-				PendingSound& pending = m_pendingStartSounds[i];
-				EmitSoundInternal(&pending.params, pending.objUniqueId, pending.soundingObj);
-			}
-
-			m_pendingStartSounds.clear();
-		}
-
-		const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
-
-		{
-			CScopedMutex m(s_soundEmitterSystemMutex);
-			for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
-			{
-				CSoundingObject* obj = it.key();
-
-				if(!obj->UpdateEmitters(listenerPos))
-					m_soundingObjects.remove(it);
-			}
-		}
-
-		g_audioSystem->EndUpdate();
-		m_updateDone.Raise();
-	});
-	g_parallelJobs->Submit();
+		g_parallelJobs->AddJob(this);
+		g_parallelJobs->Submit();
+	}
 }
 
 void CSoundEmitterSystem::OnRemoveSoundingObject(CSoundingObject* obj)

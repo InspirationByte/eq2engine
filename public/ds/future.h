@@ -214,9 +214,10 @@ inline void Promise<T>::SetResult(T&& value) const
 
 	new(&m_data->m_value.getData()) T(value);
 	FutureResult<T> result(m_data->m_value.getData());
-	for (int i = 0; i < m_data->m_resultCb.numElem(); ++i)
-		m_data->m_resultCb[i](result);
+	for (Data::ResultCb cb : m_data->m_resultCb)
+		cb(result);
 
+	m_data->m_resultCb.clear(true);
 	m_data->m_waitSignal.Raise();
 }
 
@@ -231,10 +232,10 @@ inline void Promise<T>::SetError(int code, const char* message) const
 	new(&m_data->m_errorInfo.getData()) typename Data::ErrorInfo{ message, code };
 
 	FutureResult<T> result(m_data->m_errorInfo.getData().code, m_data->m_errorInfo.getData().message);
-	for (int i = 0; i < m_data->m_resultCb.numElem(); ++i)
-		m_data->m_resultCb[i](result);
+	for (Data::ResultCb cb : m_data->m_resultCb)
+		cb(result);
 
-	m_data->m_resultCb.clear();
+	m_data->m_resultCb.clear(true);
 	m_data->m_waitSignal.Raise();
 }
 

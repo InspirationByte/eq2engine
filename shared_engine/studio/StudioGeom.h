@@ -33,7 +33,7 @@ enum EModelLoadingState
 };
 
 #define EGF_LOADING_CRITICAL_SECTION(m)	\
-	while(m->GetLoadingState() != MODEL_LOAD_OK) {	g_parallelJobs->CompleteJobCallbacks(); Platform_Sleep(1); }
+	while(m->GetLoadingState() != MODEL_LOAD_OK) { Platform_Sleep(1); }
 
 // streams in studio models used exclusively in interpolation
 class CEqStudioGeom

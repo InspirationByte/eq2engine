@@ -36,23 +36,17 @@ enum EJobFlags : int
 struct ParallelJob
 {
 	ParallelJob() = default;
-	ParallelJob(EJobType jobTypeId, EQ_JOB_FUNC fn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr)
-		: typeId(jobTypeId)
-		, func(std::move(fn))
-		, arguments(args)
-		, numIter(count)
-		, onComplete(std::move(completeFn))
+	ParallelJob(IParallelJob* job)
+		: job(job)
+		, typeId(job->GetType())
 	{
 	}
 
-	EQ_JOB_FUNC				func;					// job function. This is a parallel work
-	EQ_JOB_COMPLETE_FUNC	onComplete;				// job completion callback after all numIter is complete. Always executed before Submit() called on job manager
-	uintptr_t				threadId{ 0 };			// selected thread
-	void*					arguments{ nullptr };	// job argument object passed to job function
-	int						numIterOrig{ 1 };
-	volatile int			flags{ 0 };				// EJobFlags
-	int						numIter{ 1 };
-	EJobType				typeId{ JOB_TYPE_ANY };	// the job type that specific thread will take
+	IParallelJob*	job{ nullptr };
+
+	uintptr_t		threadId{ 0 };			// selected thread
+	volatile int	flags{ 0 };				// EJobFlags
+	EJobType		typeId{ JOB_TYPE_ANY };	// the job type that specific thread will take
 };
 
 //
@@ -93,37 +87,29 @@ public:
 	void			Shutdown();
 
 	// adds the job
-	void			AddJob(EJobType jobTypeId, EQ_JOB_FUNC func, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr);	// and puts JOB_FLAG_DELETE flag for this job
-	void			AddJob(ParallelJob* job);
+	void			AddJob(IParallelJob* job);
+	void			AddJob(EJobType jobTypeId, EQ_JOB_FUNC func, void* args = nullptr, int count = 1);	// and puts JOB_FLAG_DELETE flag for this job
 
 	// this submits jobs to the CEqJobThreads
 	void			Submit();
 
-	// wait for completion
-	void			Wait();
+	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
 
-	// returns state if all jobs has been done
 	bool			AllJobsCompleted() const;
-
-	// manually invokes job callbacks on completed jobs
-	void			CompleteJobCallbacks();
 
 	int				GetActiveJobThreadsCount();
 	int				GetJobThreadsCount();
 
-	int				GetActiveJobsCount(int type = -1);
-	int				GetPendingJobCount(int type = -1);
+	int				GetActiveJobsCount(EJobType type = JOB_TYPE_ANY);
+	int				GetPendingJobCount(EJobType type = JOB_TYPE_ANY);
 
 protected:
 
 	// called from worker thread
 	bool					AssignFreeJob( CEqJobThread* requestBy );
-	void					AddCompleted(ParallelJob* job);
 
 	Array<CEqJobThread*>	m_jobThreads{ PP_SL };
-
 	Array<ParallelJob*>		m_workQueue{ PP_SL };
-	Array<ParallelJob*>		m_completedJobs{ PP_SL };
 
 	Threading::CEqMutex		m_mutex;
 	Threading::CEqMutex		m_completeMutex;

@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
+#include "core/IEqParallelJobs.h"
 #include "audio/IEqAudioSystem.h"
 #include "eqSoundEmitterCommon.h"
 
@@ -20,7 +20,7 @@ class CSoundScriptEditor;
 class ConCommandBase;
 
 // the sound emitter system
-class CSoundEmitterSystem
+class CSoundEmitterSystem : public IParallelJob
 {
 	friend class CSoundingObject;
 	friend class CEmitterObjectSound;
@@ -43,6 +43,7 @@ public:
 
 	void				GetAllSoundsList(Array<SoundScriptDesc*>& list) const;
 	static const char*	GetScriptName(SoundScriptDesc* desc);
+
 private:
 	int					EmitSoundInternal(EmitParams* emit, int objUniqueId, CSoundingObject* soundingObj);
 
@@ -53,11 +54,11 @@ private:
 	static int			LoopSourceUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, SoundScriptDesc* script);
 
 	bool				SwitchSourceState(SoundEmitterData* emit, bool isVirtual);
-
 	int					ChannelTypeByName(const char* str) const;
 
-	// Editor features
-	void				RestartEmittersByScript(SoundScriptDesc* soundScript);
+	void				RestartEmittersByScript(SoundScriptDesc* soundScript);	// for SoundScript editor
+
+	void				Execute() override;
 
 	struct PendingSound
 	{
@@ -66,7 +67,6 @@ private:
 		CWeakPtr<CSoundingObject>	soundingObj;
 	};
 
-	Threading::CEqSignal				m_updateDone{ true };
 	CEqTimer							m_updateTimer;
 
 	FixedArray<ChannelDef, CHAN_MAX>	m_channelTypes;

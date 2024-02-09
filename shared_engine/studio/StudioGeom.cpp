@@ -316,47 +316,55 @@ static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int curren
 
 void CEqStudioGeom::LoadModelJob(void* data, int i)
 {
-	CEqStudioGeom* model = (CEqStudioGeom*)data;
+	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
 
 	model->LoadMaterials();
 	model->LoadPhysicsData();
 
-	//g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadPhysicsJob, data, 1, OnLoadingJobComplete);
-	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadVertsJob, data, 1, OnLoadingJobComplete);
-	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadMotionJob, data, 1, OnLoadingJobComplete);
+	//g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadPhysicsJob, data);
+	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadVertsJob, data);
+	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadMotionJob, data);
 
 	g_parallelJobs->Submit();
+
+	OnLoadingJobComplete(data, i);
 }
 
 void CEqStudioGeom::LoadVertsJob(void* data, int i)
 {
-	CEqStudioGeom* model = (CEqStudioGeom*)data;
+	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
 	
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
 
 	if (!model->LoadGenerateVertexBuffer())
 		model->DestroyModel();
+
+	OnLoadingJobComplete(data, i);
 }
 
 void CEqStudioGeom::LoadPhysicsJob(void* data, int i)
 {
-	CEqStudioGeom* model = (CEqStudioGeom*)data;
+	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
 
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
 
 	model->LoadPhysicsData();
+
+	OnLoadingJobComplete(data, i);
 }
 
 void CEqStudioGeom::LoadMotionJob(void* data, int i)
 {
-	CEqStudioGeom* model = (CEqStudioGeom*)data;
+	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
 
 	model->LoadSetupBones();
 	model->LoadMotionPackages();
+
+	OnLoadingJobComplete(data, i);
 }
 
 void CEqStudioGeom::OnLoadingJobComplete(void* data, int count)
@@ -369,7 +377,7 @@ void CEqStudioGeom::OnLoadingJobComplete(void* data, int count)
 	if (Atomic::Decrement(model->m_loading) <= 0)
 	{
 		Atomic::Exchange(model->m_readyState, MODEL_LOAD_OK);
-		//DevMsg(DEVMSG_CORE, "EGF loading completed\n");
+		DevMsg(DEVMSG_CORE, "Loaded %s\n", model->GetName());
 	}
 }
 
@@ -391,7 +399,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	if (useJob)
 	{
 		m_loading = 3;
-		g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadModelJob, this, 1, OnLoadingJobComplete);
+		g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadModelJob, this);
 
 		g_parallelJobs->Submit();
 		return true;
@@ -943,7 +951,6 @@ const char* CEqStudioGeom::GetName() const
 
 int	CEqStudioGeom::GetLoadingState() const
 {
-	g_parallelJobs->CompleteJobCallbacks();
 	return m_readyState;
 }
 
