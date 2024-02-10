@@ -43,16 +43,23 @@ void Event<SIGNATURE>::Clear()
 template<typename SIGNATURE>
 const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce /*= false*/)
 {
-	SubscriptionObject* sub = PPNewSL(m_sl) SubscriptionObject();
-	sub->func = func;
-	sub->runOnce = runOnce;
+	SubscriptionObject* newSub = PPNewSL(m_sl) SubscriptionObject();
+	newSub->func = func;
+	newSub->runOnce = runOnce;
 
 	// sub->next = m_subs;
 	// m_subs = sub;
 
-	Atomic::Store(sub->next, Atomic::Exchange(m_subs, sub));
+	while(true)
+	{
+		SubscriptionObject* oldHead = Atomic::Load(m_subs);
+		newSub->next = oldHead;
 
-	return CWeakPtr(sub);
+		if(Atomic::CompareExchange(m_subs, oldHead, newSub) == oldHead)
+			break;
+	}
+	
+	return CWeakPtr(newSub);
 }
 
 template<typename SIGNATURE>
@@ -63,31 +70,45 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 	SubscriptionObject* prevSub = nullptr;
 	while (sub)
 	{
-		if (sub->unsubscribe)
+		if (sub->unsubscribe || sub->runOnce)
 		{
+			if(sub->runOnce)
+			{
+				sub->runOnce = false;
+				sub->unsubscribe = true;
+				
+				sub->func(std::forward<Params>(args)...);
+			}
+
 			// if(sub == m_subs)
 			//		m_subs = sub->next;
 			// else
 			//		prevSub->next = sub->next;
 			
 			SubscriptionObject* del = Atomic::Exchange(sub, Atomic::Load(sub->next));
-			
-			Atomic::CompareExchange(m_subs, del, Atomic::Load(del->next));
-
-			if (prevSub)
-				Atomic::Exchange(prevSub->next, Atomic::Load(del->next));
-
+			if(Atomic::CompareExchange(m_subs, del, sub) != del)
+			{
+				if(prevSub)
+				{
+					if(Atomic::CompareExchange(prevSub->next, del, sub) != del)
+					{
+						// try unlink and delete next time
+						continue;
+					}
+				}
+				else
+					continue;
+			}
 			delete del;
+
 			continue;
 		}
+		else
+		{
+			sub->func(std::forward<Params>(args)...);
 
-		EqFunction<SIGNATURE> func = sub->func;
-		Atomic::CompareExchange(sub->unsubscribe, false, sub->runOnce);
-
-		// goto next
-		prevSub = Atomic::Exchange(sub, sub->next);
-
-		// exec
-		func(std::forward<Params>(args)...);
+			// goto next
+			prevSub = Atomic::Exchange(sub, sub->next);
+		}
 	}
 }
