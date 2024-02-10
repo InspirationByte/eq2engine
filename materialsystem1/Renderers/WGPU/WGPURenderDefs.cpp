@@ -2,7 +2,7 @@
 #include "WGPURenderDefs.h"
 #include "WGPUTexture.h"
 
-static void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerParams, WGPUSamplerDescriptor& rhiSamplerDesc)
+void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerParams, WGPUSamplerDescriptor& rhiSamplerDesc)
 {
 	rhiSamplerDesc.addressModeU = g_wgpuAddressMode[samplerParams.addressU];
 	rhiSamplerDesc.addressModeV = g_wgpuAddressMode[samplerParams.addressV];
@@ -20,7 +20,7 @@ static void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerParams, W
 		rhiSamplerDesc.maxAnisotropy = samplerParams.maxAnisotropy;
 }
 
-static void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendComponent& rhiBlendComponent)
+void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendComponent& rhiBlendComponent)
 {
 	rhiBlendComponent.operation = g_wgpuBlendOp[blendParams.blendFunc];
 	rhiBlendComponent.srcFactor = g_wgpuBlendFactor[blendParams.srcFactor];
