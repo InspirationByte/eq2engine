@@ -33,7 +33,7 @@ public:
 	void				SetTimeScale(float value);
 
 	// Used to signal user when movie is completed. Not thread-safe
-	MovieCompletedEvent	OnCompleted;
+	MovieCompletedEvent	OnCompleted{PP_SL};
 
 protected:
 	int					Run() override;

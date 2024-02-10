@@ -13,10 +13,9 @@ template<typename SIGNATURE>
 struct EventSubscriptionObject : public WeakRefObject<EventSubscriptionObject<SIGNATURE>>
 {
 	EqFunction<SIGNATURE>		func{ nullptr };
-	mutable bool				unsubscribe{ false };
-	bool						runOnce{ false };
-
-	EventSubscriptionObject* next{ nullptr };
+	EventSubscriptionObject*	next{ nullptr };
+	int							unsubscribe{ false };
+	int							runOnce{ false };
 };
 
 template<typename SIGNATURE>
@@ -46,6 +45,10 @@ public:
 		SubscriptionPtr m_sub;
 	};
 
+	Event(PPSourceLine sl)
+		: m_sl(sl)
+	{
+	}
 	~Event<SIGNATURE>();
 
 	void								Clear();
@@ -58,6 +61,7 @@ public:
 
 private:
 	SubscriptionObject*		m_subs{ nullptr };
+	const PPSourceLine		m_sl;
 };
 
 #include "event.inl"

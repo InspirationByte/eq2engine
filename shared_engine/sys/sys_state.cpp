@@ -21,10 +21,10 @@
 
 namespace EqStateMgr
 {
-StatePreUpdateEvent g_onPreUpdateState;
-StatePostUpdateEvent g_onPostUpdateState;
-StateEnterEvent g_onEnterState;
-StateLeaveEvent g_onLeaveState;
+StatePreUpdateEvent g_onPreUpdateState(PP_SL);
+StatePostUpdateEvent g_onPostUpdateState(PP_SL);
+StateEnterEvent g_onEnterState(PP_SL);
+StateLeaveEvent g_onLeaveState(PP_SL);
 
 static CBaseStateHandler* s_currentState = nullptr;
 static CBaseStateHandler* s_nextState = nullptr;

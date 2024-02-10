@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Game events
@@ -43,12 +43,13 @@ void Event<SIGNATURE>::Clear()
 template<typename SIGNATURE>
 const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce /*= false*/)
 {
-	SubscriptionObject* sub = PPNew SubscriptionObject();
+	SubscriptionObject* sub = PPNewSL(m_sl) SubscriptionObject();
 	sub->func = func;
 	sub->runOnce = runOnce;
 
 	// sub->next = m_subs;
 	// m_subs = sub;
+
 	Atomic::Store(sub->next, Atomic::Exchange(m_subs, sub));
 
 	return CWeakPtr(sub);
@@ -64,28 +65,29 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 	{
 		if (sub->unsubscribe)
 		{
-			// Soapy: Not sure, could be wrong
-			SubscriptionObject* del = sub;
+			// if(sub == m_subs)
+			//		m_subs = sub->next;
+			// else
+			//		prevSub->next = sub->next;
 			
-			if (prevSub)
-				Atomic::Exchange(prevSub->next, Atomic::Load(sub->next));
-			else
-				Atomic::CompareExchange(m_subs, sub, Atomic::Load(sub->next));
+			SubscriptionObject* del = Atomic::Exchange(sub, Atomic::Load(sub->next));
+			
+			Atomic::CompareExchange(m_subs, del, Atomic::Load(del->next));
 
-			sub = Atomic::Load(sub->next);
+			if (prevSub)
+				Atomic::Exchange(prevSub->next, Atomic::Load(del->next));
 
 			delete del;
 			continue;
 		}
 
-		if (sub->runOnce)
-			sub->unsubscribe = true;
-
-		// set the right handler and go
-		sub->func(std::forward<Params>(args)...);
+		EqFunction<SIGNATURE> func = sub->func;
+		Atomic::CompareExchange(sub->unsubscribe, false, sub->runOnce);
 
 		// goto next
-		prevSub = sub;
-		sub = Atomic::Load(sub->next);
+		prevSub = Atomic::Exchange(sub, sub->next);
+
+		// exec
+		func(std::forward<Params>(args)...);
 	}
 }
