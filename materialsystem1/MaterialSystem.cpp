@@ -103,26 +103,38 @@ public:
 		if (!nextMaterial)
 			return 0;
 
-		if (nextMaterial->Ref_Drop())
+		CMaterial* matSysMaterial = static_cast<CMaterial*>(nextMaterial);
+
+		// check if loader is only one owning the material
+		if (matSysMaterial->Ref_Count() == 1)
 		{
-			MsgWarning("Material %x is freed before loading\n", nextMaterial);
+			MsgWarning("Material %s is freed before loading\n", matSysMaterial->GetName());
+
+			// switch state back
+			Atomic::CompareExchange(matSysMaterial->m_state, MATERIAL_LOAD_INQUEUE, MATERIAL_LOAD_NEED_LOAD);
+			matSysMaterial->Ref_Drop();
 			return 0;
 		}
 
-		// load this material
-		// BUG: may be null
-		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
+		matSysMaterial->Ref_Drop();
 
+		// load this material
+		matSysMaterial->DoLoadShaderAndTextures();
+
+		// try load text
 		if(m_newMaterials.size())
-		{
 			SignalWork();
-		}
 
 		return 0;
 	}
 
 	void AddMaterial(IMaterialPtr pMaterial)
 	{
+		if (!pMaterial)
+			return;
+
+		ASSERT(pMaterial->GetState() == MATERIAL_LOAD_INQUEUE);
+
 		if (g_parallelJobs->IsInitialized() && g_renderAPI->GetProgressiveTextureFrequency() == 0)
 		{
 			// Wooohoo Blast Processing!
