@@ -27,35 +27,6 @@ using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 using OVERRIDE_SHADER_CB = const char* (*)(int instanceFormatId);
 using CREATE_SHADER_CB = IMatSystemShader * (*)();
 
-enum EShaderParamSetup
-{
-	SHADERPARAM_INVALID = -1,	// invalid parameter.
-
-	SHADERPARAM_BASETEXTURE,	// base texture						s0-s3
-	SHADERPARAM_BUMPMAP,		// bumpmap texture					s4-s7
-	SHADERPARAM_SPECULARILLUM,	// specular and illumination		s8-s11
-
-	SHADERPARAM_CUBEMAP,		// some cubemap						s12
-
-	SHADERPARAM_ALPHASETUP,		// alphatest or translucensy setup
-	SHADERPARAM_DEPTHSETUP,		// depth mode setup
-	SHADERPARAM_RASTERSETUP,	// culling mode, etc setup
-
-	SHADERPARAM_COLOR,			// material color					c0
-
-	SHADERPARAM_FOG,			// fog parameters
-
-	SHADERPARAM_TRANSFORM,		// transformation from matsystem to vertex shader, also an texture transform setup
-	SHADERPARAM_BONETRANSFORMS,	// skinning bone transform matrices
-
-	// forward-shading specified lighting setup (next three enums must be equal to DynLightType_e)
-	SHADERPARAM_LIGHTING_POINT, // point light setup
-	SHADERPARAM_LIGHTING_SPOT,	// spot light setup
-	SHADERPARAM_LIGHTING_SUN,	// sun light setup
-
-	SHADERPARAM_COUNT,
-};
-
 enum EBindGroupId
 {
 	// Data is never going to be changed during the life time of the material. 
