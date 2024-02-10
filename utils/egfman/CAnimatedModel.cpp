@@ -388,11 +388,14 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	RenderBoneTransform boneTransforms[128];
 	const int numBones = m_pModel->ConvertBoneMatricesToQuaternions(m_boneTransforms, boneTransforms);
 	
+	MeshInstanceData instData;
+	instData.count = 1;
+
 	CEqStudioGeom::DrawProps drawProperties;
 	drawProperties.boneTransforms = g_matSystem->GetTransientUniformBuffer(boneTransforms, numBones * sizeof(RenderBoneTransform));
 	drawProperties.lod = startLOD;
 	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
-	m_pModel->Draw(drawProperties, MeshInstanceData{}, RenderPassContext(rendPassRecorder, nullptr));
+	m_pModel->Draw(drawProperties, instData, RenderPassContext(rendPassRecorder, nullptr));
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
 		RenderPhysModel(rendPassRecorder);
