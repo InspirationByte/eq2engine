@@ -17,6 +17,8 @@ public:
 		Any array storage class must be implemented with those methods:
 
 	void		free() = 0;
+
+	int			calculateGranulatedCapacity(int capacity);
 	void		resize(int newSize, int& numOfElements) = 0;
 
 	int			getSize() const = 0;
@@ -66,6 +68,11 @@ public:
 		m_nSize = 0;
 	}
 
+	int calculateGranulatedCapacity(int capacity)
+	{
+		return (capacity + m_nGranularity - 1) / m_nGranularity * m_nGranularity;
+	}
+
 	void resize(int newCapacity, int& numOfElements)
 	{
 		ASSERT_MSG(newCapacity >= 0, "DynamicArrayStorage<%s> requested capacity is %d", typeid(T).name(), newCapacity);
@@ -77,12 +84,12 @@ public:
 			return;
 		}
 
-		// not changing the elemCount, so just exit
-		if (newCapacity <= m_nSize)
+		const int newCapacityWithGranularity = calculateGranulatedCapacity(newCapacity);
+		if (newCapacityWithGranularity == m_nSize)
 			return;
 
 		T* temp = m_pListPtr;
-		m_nSize = (newCapacity + m_nGranularity - 1) / m_nGranularity * m_nGranularity;
+		m_nSize = newCapacityWithGranularity;
 
 		const int oldNumOfElems = numOfElements;
 		if (m_nSize < numOfElements)
@@ -152,6 +159,11 @@ public:
 
 	void free()
 	{
+	}
+
+	int calculateGranulatedCapacity(int capacity)
+	{
+		return capacity;
 	}
 
 	void resize(int newSize, int& numOfElements)
@@ -550,8 +562,6 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const A
 	return *this;
 }
 
-
-
 // -----------------------------------------------------------------
 // Allocates memory for the amount of elements requested while keeping the contents intact.
 // Contents are copied using their = operator so that data is correnctly instantiated.
@@ -561,7 +571,6 @@ inline void ArrayBase<T, STORAGE_TYPE>::resize(int newSize)
 {
 	STORAGE_TYPE::resize(newSize, m_nNumElem);
 }
-
 
 // -----------------------------------------------------------------
 // Reserves memory for the amount of elements requested
@@ -684,7 +693,7 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElements)
 {
-	resize(m_nNumElem + newElements);
+	reserve(m_nNumElem + newElements);
 }
 
 // -----------------------------------------------------------------

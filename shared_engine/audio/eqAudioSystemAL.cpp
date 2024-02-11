@@ -771,15 +771,21 @@ void CEqAudioSystemAL::SuspendSourcesWithSample(ISoundSource* sample)
 // updates all channels
 void CEqAudioSystemAL::BeginUpdate()
 {
-	ASSERT(m_begunUpdate == false);
+	if (m_begunUpdate)
+		return;
+
 	m_begunUpdate = true;
 	alcSuspendContext(m_ctx);
 }
 
 void CEqAudioSystemAL::EndUpdate()
 {
+	if (!m_begunUpdate)
+		return;
+
+	m_begunUpdate = false;
+
 	PROF_EVENT("AudioSystemAL EndUpdate");
-	ASSERT(m_begunUpdate);
 
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
@@ -841,8 +847,6 @@ void CEqAudioSystemAL::EndUpdate()
 		debugoverlay->Text(color_white, "  sources: %d, (%d allocated)", playing, m_sources.numElem());
 		debugoverlay->Text(color_white, "  samples: %d, mem: %d kbytes (non-streamed)", m_samples.size(), sampleMem / 1024);
 	}
-
-	m_begunUpdate = false;
 }
 
 void CEqAudioSystemAL::SetMasterVolume(float value)
