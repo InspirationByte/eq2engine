@@ -82,9 +82,10 @@ inline IParallelJob::~IParallelJob()
 inline void IParallelJob::InitSignal()
 {
 	if (!m_jobSignalDone)
+	{
 		m_jobSignalDone = PPNew Threading::CEqSignal(true);
-
-	m_jobSignalDone->Clear(); 
+		m_jobSignalDone->Raise();
+	}
 }
 
 inline void IParallelJob::OnAddedToQueue()
@@ -123,12 +124,14 @@ inline void IParallelJob::AddWait(Threading::CEqSignal* jobWait)
 	if (!jobWait)
 		return;
 
+	jobWait->Clear();
 	m_waitList.append(jobWait);
 }
 
 inline void IParallelJob::AddWait(IParallelJob* jobWait)
 {
 	jobWait->InitSignal();
+
 	AddWait(jobWait->GetJobSignal());
 }
 

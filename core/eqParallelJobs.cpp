@@ -135,10 +135,17 @@ void CEqParallelJobManager::Shutdown()
 // adds the job to the queue
 void CEqParallelJobManager::AddJob(IParallelJob* job)
 {
-	ParallelJob* pjob = PPNew ParallelJob(job);
-	job->FillJobGroup();
-
 	CScopedMutex m(m_mutex);
+
+	// check if already queued
+	for (ParallelJob* pjob : m_workQueue)
+	{
+		if (pjob->job == job)
+			return;
+	}
+
+	ParallelJob* pjob = PPNew ParallelJob(job);
+	job->OnAddedToQueue();
 	m_workQueue.append(pjob);
 }
 
