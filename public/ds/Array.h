@@ -569,6 +569,12 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const A
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::resize(int newSize)
 {
+	if (newSize < m_nNumElem)
+	{
+		T* listPtr = STORAGE_TYPE::getData();
+		ArrayStorageBase<T>::destructElements(listPtr + newSize, m_nNumElem - newSize);
+	}
+
 	STORAGE_TYPE::resize(newSize, m_nNumElem);
 }
 

@@ -125,7 +125,7 @@ namespace ComponentHostImpl
 		inline void						RemoveAllComponents() { ComponentHostImpl::RemoveAll(m_components); } \
 		template<class CType> CType*	Add() { \
 			ASSERT(GetComponent(CType::NameHash) == nullptr); \
-			CType* component = PPNew CType(this); \
+			CType* component = PPNewSL(PPSourceLine::Make(CType::Name, 0)) CType(this); \
 			ComponentHostImpl::AddComponent<componentBase>(m_components, CType::NameHash, component); \
 			return component; \
 		}\
