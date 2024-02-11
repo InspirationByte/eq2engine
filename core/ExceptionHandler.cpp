@@ -19,6 +19,7 @@ static void DoCoreExceptionCallbacks()
 }
 
 #ifdef PLAT_WIN
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <DbgHelp.h>
@@ -29,14 +30,14 @@ typedef struct _MODULEINFO {
 	LPVOID EntryPoint;
 } MODULEINFO, *LPMODULEINFO;
 
-typedef BOOL (APIENTRY *ENUMPROCESSMODULESFUNC)(HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded);
-typedef BOOL (APIENTRY *GETMODULEINFORMATIONPROC)(HANDLE hProcess, HMODULE hModule, LPMODULEINFO lpmodinfo, DWORD cb);
+using ENUMPROCESSMODULESFUNC = BOOL (APIENTRY *)(HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded);
+using GETMODULEINFORMATIONPROC = BOOL (APIENTRY *)(HANDLE hProcess, HMODULE hModule, LPMODULEINFO lpmodinfo, DWORD cb);
 
-typedef struct exception_codes_s {
+struct exception_codes {
 	DWORD		exCode;
 	const char*	exName;
 	const char*	exDescription;
-} exception_codes;
+};
 
 static exception_codes except_info[] = {
 	{EXCEPTION_ACCESS_VIOLATION,		"ACCESS VIOLATION",
@@ -102,9 +103,7 @@ static exception_codes except_info[] = {
 
 static void GetExceptionStrings( DWORD code, const char* *pName, const char* *pDescription )
 {
-	int i;
-	int count = sizeof(except_info) / sizeof(exception_codes);
-	for (i = 0; i < count; i++)
+	for (int i = 0; i < elementsOf(except_info); i++)
 	{
 		if (code == except_info[i].exCode)
 		{
@@ -120,46 +119,96 @@ static void GetExceptionStrings( DWORD code, const char* *pName, const char* *pD
 
 static void CreateMiniDump( EXCEPTION_POINTERS* pep )
 {
-	// Open the file
+	SYSTEMTIME t;
+	GetSystemTime(&t);
 
-	char tmp_path[2048];
-	sprintf(tmp_path, "logs/CrashDump_%s.dmp", g_eqCore->GetApplicationName());
+	char dumpPath[2048];
+	sprintf(dumpPath, "logs/%s_%4d%02d%02d_%02d%02d%02d.mdmp", g_eqCore->GetApplicationName(), t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
 
-	HANDLE hFile = CreateFileA(tmp_path, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
-
-	if( ( hFile != nullptr) && ( hFile != INVALID_HANDLE_VALUE ) )
+	HANDLE dumpFileFd = CreateFileA(dumpPath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+	if (!dumpFileFd || dumpFileFd == INVALID_HANDLE_VALUE)
 	{
-		// Create the minidump
-
-		MINIDUMP_EXCEPTION_INFORMATION mdei;
-
-		mdei.ThreadId           = GetCurrentThreadId();
-		mdei.ExceptionPointers  = pep;
-		mdei.ClientPointers     = FALSE;
-
-		MINIDUMP_TYPE mdt       = MiniDumpNormal;
-
-		BOOL rv = MiniDumpWriteDump( GetCurrentProcess(), GetCurrentProcessId(),
-			hFile, mdt, (pep != 0) ? &mdei : 0, 0, 0 );
-
-		if( !rv )
-			ErrorMsg("Minidump write error\n");
-		else
-			WarningMsg("Minidump saved to:\n%s\n", tmp_path);
-
-		// Close the file
-		CloseHandle( hFile );
+		MsgError("Unable to create crash dump");
+		return;
 	}
+
+	const MINIDUMP_TYPE dumpType = MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory | MiniDumpScanMemory);
+
+	MINIDUMP_EXCEPTION_INFORMATION dumpExceptionInfo;
+	dumpExceptionInfo.ThreadId = GetCurrentThreadId();
+	dumpExceptionInfo.ExceptionPointers = pep;
+	dumpExceptionInfo.ClientPointers = FALSE;
+
+	const bool result = MiniDumpWriteDump( GetCurrentProcess(), GetCurrentProcessId(), dumpFileFd, dumpType, (pep != 0) ? &dumpExceptionInfo : 0, 0, 0 );
+	if( !result )
+		ErrorMsg("Minidump write error\n");
 	else
+		WarningMsg("Minidump saved to:\n%s\n", dumpPath);
+
+	// Close the file
+	CloseHandle( dumpFileFd );
+}
+
+static void PrintCurrentProcessModules()
+{
+	HMODULE PsapiLib = LoadLibraryA("psapi.dll");
+	if (!PsapiLib)
 	{
-		ErrorMsg("Minidump file creation error\n");
+		MsgError("Can't load psapi.dll, modules listing unavailable\n");
+		return;
 	}
 
+	defer{
+		FreeLibrary(PsapiLib);
+	};
+
+	ENUMPROCESSMODULESFUNC EnumProcessModules = (ENUMPROCESSMODULESFUNC)GetProcAddress(PsapiLib, "EnumProcessModules");
+	GETMODULEINFORMATIONPROC GetModuleInformation = (GETMODULEINFORMATIONPROC)GetProcAddress(PsapiLib, "GetModuleInformation");
+	if (!EnumProcessModules || !GetModuleInformation)
+	{
+		MsgError("Can't import functions from psapi.dll!\n");
+		return;
+	}
+
+	DWORD needBytes;
+	HMODULE hModules[1024];
+	if (!EnumProcessModules(GetCurrentProcess(), hModules, sizeof(hModules), &needBytes))
+	{
+		MsgError("EnumProcessModules failed!\n");
+		return;
+	}
+
+	if (needBytes > sizeof(hModules))
+	{
+		MsgError("Module limit exceeded (1024), can't print\n");
+		return;
+	}
+
+	MsgError("\nModules listing:\n");
+
+	const int numModules = needBytes / sizeof(HMODULE);
+	for (int i = 0; i < numModules; i++)
+	{
+		char modName[MAX_PATH];
+		if (GetModuleFileNameA(hModules[i], modName, MAX_PATH))
+		{
+			modName[MAX_PATH - 1] = 0;
+			MsgError("%s : ", modName);
+		}
+		else
+			MsgError("<error> : ");
+
+		MODULEINFO modInfo;
+		if (GetModuleInformation(GetCurrentProcess(), hModules[i], &modInfo, sizeof(modInfo)))
+			MsgError("Base address: %p, Image size: %p\n", modInfo.lpBaseOfDll, modInfo.SizeOfImage);
+		else
+			MsgError("<error>\n");
+	}
 }
 
 static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 {
-    EXCEPTION_RECORD* pRecord = ExceptionInfo->ExceptionRecord;
+    const EXCEPTION_RECORD* pRecord = ExceptionInfo->ExceptionRecord;
 
 	//if (pRecord->ExceptionCode == EXCEPTION_BREAKPOINT ||
 	//	pRecord->ExceptionCode == EXCEPTION_SINGLE_STEP)
@@ -167,93 +216,38 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	//	return EXCEPTION_EXECUTE_HANDLER;
 	//}
 
-	const char *pName, *pDescription;
-	GetExceptionStrings( pRecord->ExceptionCode, &pName, &pDescription );
+	const char* pName;
+	const char* pDescription;
+	GetExceptionStrings(pRecord->ExceptionCode, &pName, &pDescription);
 
-	EqString fmtStr = EqString::Format(
-		"Unhandled Exception\n"
+	CrashMsg("We've got an fatal error\nMinidump will be saved in logs folder.\n\n"
 		"Exception code: %s (0x%x)\n"
 		"Address: %p\n\n\n"
-		"See application log for details.", pName, pRecord->ExceptionCode, pRecord->ExceptionAddress);
+		"See application log for details.", 
+		pName, pRecord->ExceptionCode,
+		pRecord->ExceptionAddress);
 
-	CrashMsg(fmtStr.ToCString());
+	CreateMiniDump(ExceptionInfo);
+
 	DoCoreExceptionCallbacks();
 
 	if (pRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
 	{
 		if (pRecord->ExceptionInformation[0])
-		{
-			MsgError("Info: the thread attempted to write to an inaccessible address %p\n",
-				pRecord->ExceptionInformation[1]);
-		}
+			MsgError("Info: the thread attempted to write to an inaccessible address %p\n", pRecord->ExceptionInformation[1]);
 		else
-		{
-			MsgError("Info: the thread attempted to read the inaccessible data at %p\n",
-				pRecord->ExceptionInformation[1]);
-		}
+			MsgError("Info: the thread attempted to read the inaccessible data at %p\n", pRecord->ExceptionInformation[1]);
 	}
 
 	MsgError("\nDescription: %s\n", pDescription);
-	MsgError("\nModules listing:\n");
 
 	// show modules list
-	HMODULE PsapiLib = LoadLibraryA("psapi.dll");
-	if (PsapiLib)
-	{
-		ENUMPROCESSMODULESFUNC		EnumProcessModules;
-		GETMODULEINFORMATIONPROC	GetModuleInformation;
-		EnumProcessModules = (ENUMPROCESSMODULESFUNC)GetProcAddress (PsapiLib, "EnumProcessModules");
-		GetModuleInformation = (GETMODULEINFORMATIONPROC)GetProcAddress (PsapiLib, "GetModuleInformation");
-		if (EnumProcessModules && GetModuleInformation)
-		{
-			DWORD needBytes;
-			HMODULE hModules[1024];
-			if (EnumProcessModules( GetCurrentProcess(), hModules, sizeof(hModules), &needBytes ))
-			{
-				if (needBytes <= sizeof(hModules))
-				{
-					DWORD i;
-					DWORD numModules = needBytes / sizeof(HMODULE);
-
-					for(i = 0; i < numModules; i++)
-					{
-						char modname[MAX_PATH];
-						if (GetModuleFileNameA(hModules[i], modname, MAX_PATH))
-						{
-							modname[MAX_PATH-1] = 0;
-							MsgError("%s : ", modname);
-						}
-						else
-							MsgError("<error> : ");
-
-						MODULEINFO modInfo;
-						if (GetModuleInformation(GetCurrentProcess(), hModules[i], &modInfo, sizeof(modInfo)))
-						{
-							MsgError("Base address: %p, Image size: %p\n", modInfo.lpBaseOfDll, modInfo.SizeOfImage);
-						}
-						else
-							MsgError("<error>\n");
-					}
-				}
-				else
-					MsgError("Too many modules loaded!\n");
-			}
-			else
-				MsgError("EnumProcessModules failed!\n");
-		}
-		else
-			MsgError("Can't import functions from psapi.dll!\n");
-
-		FreeLibrary(PsapiLib);
-	}
-	else
-		MsgError("Unable to load psapi.dll!\n");
+	PrintCurrentProcessModules();
 
 	MsgError("==========================================================\n\n");
 
+	// dump memory allocator
 	PPMemInfo(false);
-
-	CreateMiniDump(ExceptionInfo);
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
