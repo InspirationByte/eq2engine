@@ -321,9 +321,9 @@ void CEqStudioGeom::LoadModelJob(void* data, int i)
 	model->LoadMaterials();
 	model->LoadPhysicsData();
 
-	//g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadPhysicsJob, data);
-	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadVertsJob, data);
-	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadMotionJob, data);
+	//g_parallelJobs->AddJob(LoadPhysicsJob, data);
+	g_parallelJobs->AddJob(LoadVertsJob, data);
+	g_parallelJobs->AddJob(LoadMotionJob, data);
 
 	g_parallelJobs->Submit();
 
@@ -399,7 +399,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	if (useJob)
 	{
 		m_loading = 3;
-		g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadModelJob, this);
+		g_parallelJobs->AddJob(LoadModelJob, this);
 
 		g_parallelJobs->Submit();
 		return true;

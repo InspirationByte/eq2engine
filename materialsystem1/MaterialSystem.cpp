@@ -138,7 +138,7 @@ public:
 		if (g_parallelJobs->IsInitialized() && g_renderAPI->GetProgressiveTextureFrequency() == 0)
 		{
 			// Wooohoo Blast Processing!
-			g_parallelJobs->AddJob(JOB_TYPE_ANY, [pMaterial](void*, int) {
+			g_parallelJobs->AddJob([pMaterial](void*, int) {
 				((CMaterial*)pMaterial.Ptr())->DoLoadShaderAndTextures();
 			});
 

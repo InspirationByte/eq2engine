@@ -38,7 +38,6 @@ struct ParallelJob
 	ParallelJob() = default;
 	ParallelJob(IParallelJob* job)
 		: job(job)
-		, typeId(job->GetType())
 	{
 	}
 
@@ -46,7 +45,6 @@ struct ParallelJob
 
 	uintptr_t		threadId{ 0 };			// selected thread
 	volatile int	flags{ 0 };				// EJobFlags
-	EJobType		typeId{ JOB_TYPE_ANY };	// the job type that specific thread will take
 };
 
 //
@@ -56,7 +54,7 @@ class CEqJobThread : public Threading::CEqThread
 {
 	friend class CEqParallelJobManager;
 public:
-	CEqJobThread(CEqParallelJobManager* owner, int threadJobTypeId );
+	CEqJobThread(CEqParallelJobManager* owner);
 
 	int						Run();
 	bool					TryAssignJob(ParallelJob* job);
@@ -67,7 +65,6 @@ protected:
 
 	volatile ParallelJob*	m_curJob;
 	CEqParallelJobManager*	m_owner;
-	int						m_threadJobTypeId;
 };
 
 //
@@ -83,12 +80,12 @@ public:
 	bool			IsInitialized() const { return m_jobThreads.numElem() > 0; }
 
 	// creates new job thread
-	bool			Init(ArrayCRef<ParallelJobThreadDesc> jobTypes);
+	bool			Init();
 	void			Shutdown();
 
 	// adds the job
 	void			AddJob(IParallelJob* job);
-	void			AddJob(EJobType jobTypeId, EQ_JOB_FUNC func, void* args = nullptr, int count = 1);	// and puts JOB_FLAG_DELETE flag for this job
+	void			AddJob(EQ_JOB_FUNC func, void* args = nullptr, int count = 1);	// and puts JOB_FLAG_DELETE flag for this job
 
 	// this submits jobs to the CEqJobThreads
 	void			Submit();
@@ -100,8 +97,8 @@ public:
 	int				GetActiveJobThreadsCount();
 	int				GetJobThreadsCount();
 
-	int				GetActiveJobsCount(EJobType type = JOB_TYPE_ANY);
-	int				GetPendingJobCount(EJobType type = JOB_TYPE_ANY);
+	int				GetActiveJobsCount();
+	int				GetPendingJobCount();
 
 protected:
 

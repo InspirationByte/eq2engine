@@ -35,20 +35,6 @@
 
 #define TITLE_TOKEN				"Equilibrium Sound Engine Test"	// you can use hashtag # to use localization token
 
-static ParallelJobThreadDesc s_jobTypes[] = {
-	//{JOB_TYPE_ANY, 1},
-	{JOB_TYPE_AUDIO, 1},
-	//{JOB_TYPE_PHYSICS, 1},
-	{JOB_TYPE_RENDERER, 1},
-	{JOB_TYPE_PARTICLES, 1},
-	{JOB_TYPE_DECALS, 1},
-	{JOB_TYPE_SPOOL_AUDIO, 1},
-	{JOB_TYPE_SPOOL_EGF, 2},
-	{JOB_TYPE_SPOOL_WORLD, 1},
-	{JOB_TYPE_OBJECTS, 1},
-};
-
-
 DKMODULE*			g_matsysmodule = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
@@ -399,7 +385,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	InitMatSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
 
-	if (!g_parallelJobs->Init(s_jobTypes))
+	if (!g_parallelJobs->Init())
 		return;
 
 	if (!g_fontCache->Init())

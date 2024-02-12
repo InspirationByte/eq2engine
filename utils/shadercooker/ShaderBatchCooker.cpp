@@ -365,7 +365,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		MsgWarning("   Compiling for vertex %s\n", vertexLayout.name.ToCString());
 		for (int i = 0; i < totalVariantCount; ++i)
 		{
-			g_parallelJobs->AddJob(JOB_TYPE_ANY, 
+			g_parallelJobs->AddJob( 
 				[includePaths, &resultsMutex, &shaderSourceString, &shaderSourceName, &compileErrors, &shaderInfo, vertexLayout, &switchDefines, nSwitch = i, vertLayoutIdx](void*, int) {
 				EqString queryStr;
 				for (int j = 0; j < switchDefines.numElem(); ++j)

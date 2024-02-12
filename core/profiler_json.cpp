@@ -122,7 +122,7 @@ void EqCVTracerJSON::FlushTempBuffer()
 
 	Array<CVTraceEvent>* writeBuffer = PPNew Array<CVTraceEvent>(PP_SL);
 	writeBuffer->swap(m_tmpBuffer);
-	g_parallelJobs->AddJob(JOB_TYPE_ANY, [_initialStart = initialStart, this, writeBuffer](void*, int) {
+	g_parallelJobs->AddJob([_initialStart = initialStart, this, writeBuffer](void*, int) {
 		CScopedMutex m(s_jsonTracerMutex);
 
 		bool initialStart = _initialStart;

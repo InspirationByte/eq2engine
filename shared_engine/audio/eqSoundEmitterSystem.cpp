@@ -62,7 +62,7 @@ DECLARE_CVAR(snd_scriptsound_showWarnings, "0", nullptr, 0);
 //----------------------------------------------------------------------------
 
 CSoundEmitterSystem::CSoundEmitterSystem()
-	: IParallelJob("SoundEmitterSystemJob", JOB_TYPE_AUDIO)
+	: IParallelJob("SoundEmitterSystemJob")
 {
 }
 
@@ -184,7 +184,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 {
 	ASSERT(ep);
 
-	const bool forceStartOnUpdate = (ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || !(GetJobSignal() && GetJobSignal()->Wait(0));
+	const bool forceStartOnUpdate = (ep->flags & EMITSOUND_FLAG_START_ON_UPDATE);
 	if(forceStartOnUpdate && !(ep->flags & EMITSOUND_FLAG_PENDING))
 	{
 		CScopedMutex m(s_soundEmitterSystemMutex);
@@ -557,23 +557,10 @@ void CSoundEmitterSystem::Execute()
 {
 	g_audioSystem->BeginUpdate();
 
-	// start all pending sounds we accumulated during sound pause
-	{
-		CScopedMutex m(s_soundEmitterSystemMutex);
-
-		for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
-		{
-			PendingSound& pending = m_pendingStartSounds[i];
-			EmitSoundInternal(&pending.params, pending.objUniqueId, pending.soundingObj);
-		}
-
-		m_pendingStartSounds.clear();
-	}
-
 	const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
-
 	{
 		CScopedMutex m(s_soundEmitterSystemMutex);
+
 		for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
 		{
 			CSoundingObject* obj = it.key();
@@ -581,6 +568,13 @@ void CSoundEmitterSystem::Execute()
 			if (!obj->UpdateEmitters(listenerPos))
 				m_soundingObjects.remove(it);
 		}
+
+		// start all pending sounds we accumulated during sound pause
+		for (PendingSound& pending : m_pendingStartSounds)
+		{
+			EmitSoundInternal(&pending.params, pending.objUniqueId, pending.soundingObj);
+		}
+		m_pendingStartSounds.clear();
 	}
 
 	g_audioSystem->EndUpdate();

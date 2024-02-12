@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: States of Driver Syndicate
@@ -27,27 +27,12 @@
 
 CBaseStateHandler* g_states[GAME_STATE_COUNT] = { nullptr };
 
-
-static eqJobThreadDesc_t s_jobTypes[] = {
-	{JOB_TYPE_ANY, 1},
-	{JOB_TYPE_AUDIO, 1},
-	//{JOB_TYPE_PHYSICS, 1},
-	{JOB_TYPE_RENDERER, 1},
-	{JOB_TYPE_PARTICLES, 1},
-	{JOB_TYPE_DECALS, 1},
-	{JOB_TYPE_SPOOL_AUDIO, 1},
-	{JOB_TYPE_SPOOL_EGF, 1},
-	{JOB_TYPE_SPOOL_WORLD, 1},
-	{JOB_TYPE_SPOOL_NAV, 1},
-	{JOB_TYPE_OBJECTS, 1},
-};
-
 namespace EqStateMgr
 {
 
 bool InitRegisterStates()
 {
-	g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes);
+	g_parallelJobs->Init();
 	g_audioSystem->Init();
 
 #ifdef ENABLE_MULTIPLAYER

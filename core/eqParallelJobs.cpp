@@ -8,15 +8,15 @@
 #include "core/core_common.h"
 #include "eqParallelJobs.h"
 #include "core/IDkCore.h"
+#include "core/IEqCPUServices.h"
 
 using namespace Threading;
 
 EXPORTED_INTERFACE(IEqParallelJobManager, CEqParallelJobManager);
 
-CEqJobThread::CEqJobThread(CEqParallelJobManager* owner, int jobTypeId) 
+CEqJobThread::CEqJobThread(CEqParallelJobManager* owner) 
 	: m_owner(owner), 
-	m_curJob(nullptr), 
-	m_threadJobTypeId(jobTypeId)
+	m_curJob(nullptr)
 {
 
 }
@@ -66,13 +66,6 @@ bool CEqJobThread::TryAssignJob( ParallelJob* pjob )
 	if(pjob->threadId != 0)
 		return false;
 
-	// job only for specific thread?
-	if (pjob->typeId != JOB_TYPE_ANY && m_threadJobTypeId != JOB_TYPE_ANY)
-	{
-		if (pjob->typeId != m_threadJobTypeId)
-			return false;
-	}
-
 	pjob->threadId = GetThreadID();
 	m_curJob = pjob;
 
@@ -98,23 +91,18 @@ CEqParallelJobManager::~CEqParallelJobManager()
 }
 
 // creates new job thread
-bool CEqParallelJobManager::Init(ArrayCRef<ParallelJobThreadDesc> jobTypes)
+bool CEqParallelJobManager::Init()
 {
-	int numThreadsSpawned = 0;
-
-	for (const ParallelJobThreadDesc& jobType : jobTypes)
+	const int numThreadsToSpawn = max(4, g_cpuCaps->GetCPUCount());
+	for (int i = 0; i < numThreadsToSpawn; ++i)
 	{
-		for (int j = 0; j < jobType.numThreads; ++j)
-		{
-			CEqJobThread* jobThread = PPNew CEqJobThread(this, jobType.jobTypeId);
-			m_jobThreads.append(jobThread);
+		CEqJobThread* jobThread = PPNew CEqJobThread(this);
+		m_jobThreads.append(jobThread);
 
-			jobThread->StartWorkerThread(EqString::Format("eqWorker_%d_%d", jobType.jobTypeId, j).ToCString());
-			numThreadsSpawned++;
-		}
+		jobThread->StartWorkerThread(EqString::Format("eqWorker_%d", i));
 	}
 
-	MsgInfo("*Parallel jobs threads: %d\n", numThreadsSpawned);
+	MsgInfo("*Parallel jobs threads: %d\n", numThreadsToSpawn);
 
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
@@ -150,11 +138,11 @@ void CEqParallelJobManager::AddJob(IParallelJob* job)
 }
 
 // adds the job
-void CEqParallelJobManager::AddJob(EJobType jobTypeId, EQ_JOB_FUNC func, void* args, int count /*= 1*/)
+void CEqParallelJobManager::AddJob(EQ_JOB_FUNC func, void* args, int count /*= 1*/)
 {
 	ASSERT(count > 0);
 
-	FunctionParallelJob* funcJob = PPNew FunctionParallelJob("PJob", jobTypeId, func, args, count);
+	FunctionParallelJob* funcJob = PPNew FunctionParallelJob("PJob", func, args, count);
 
 	ParallelJob* job = PPNew ParallelJob(funcJob);
 	job->flags = JOB_FLAG_DELETE;
@@ -222,21 +210,21 @@ int	CEqParallelJobManager::GetJobThreadsCount()
 	return m_jobThreads.numElem();
 }
 
-int	CEqParallelJobManager::GetActiveJobsCount(EJobType type)
+int	CEqParallelJobManager::GetActiveJobsCount()
 {
 	CScopedMutex m(m_mutex);
 
 	int cnt = 0;
 	for (const ParallelJob* job : m_workQueue)
 	{
-		if (job->typeId == type && job->threadId != 0)
+		if (job->threadId != 0)
 			cnt++;
 	}
 
 	return cnt;
 }
 
-int	CEqParallelJobManager::GetPendingJobCount(EJobType type)
+int	CEqParallelJobManager::GetPendingJobCount()
 {
 	CScopedMutex m(m_mutex);
 
@@ -244,7 +232,7 @@ int	CEqParallelJobManager::GetPendingJobCount(EJobType type)
 	for (int i = 0; i < m_workQueue.numElem(); ++i)
 	{
 		const ParallelJob* job = m_workQueue[i];
-		if (job->typeId == type && job->threadId == 0)
+		if (job->threadId == 0)
 			cnt++;
 	}
 

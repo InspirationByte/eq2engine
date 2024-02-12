@@ -11,10 +11,6 @@
 #include "core/IFileSystem.h"
 #include "core/IEqParallelJobs.h"
 
-static ParallelJobThreadDesc s_jobTypes[] = {
-	{JOB_TYPE_ANY, 16},
-};
-
 void Usage()
 {
 	MsgWarning("USAGE:\n	shadercooker -target <target name>\n");
@@ -38,7 +34,7 @@ int main(int argc, char* argv[])
 		Usage();
 	}
 
-	g_parallelJobs->Init(s_jobTypes);
+	g_parallelJobs->Init();
 
 	for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 	{

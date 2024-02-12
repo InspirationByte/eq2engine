@@ -45,19 +45,6 @@
 #include "grid.h"
 
 
-static ParallelJobThreadDesc s_jobTypes[] = {
-	//{JOB_TYPE_ANY, 1},
-	{JOB_TYPE_AUDIO, 1},
-	//{JOB_TYPE_PHYSICS, 1},
-	{JOB_TYPE_RENDERER, 1},
-	{JOB_TYPE_PARTICLES, 1},
-	{JOB_TYPE_DECALS, 1},
-	{JOB_TYPE_SPOOL_AUDIO, 1},
-	{JOB_TYPE_SPOOL_EGF, 2},
-	{JOB_TYPE_SPOOL_WORLD, 1},
-	{JOB_TYPE_OBJECTS, 1},
-};
-
 DECLARE_CVAR(__cheats, "1", nullptr, CV_PROTECTED | CV_INVISIBLE);
 
 static DkPhysics s_physics;
@@ -426,7 +413,7 @@ static void InitMatSystem(void* window)
 
 	g_matSystem->LoadShaderLibrary("eqBaseShaders");
 
-	if (!g_parallelJobs->Init(s_jobTypes))
+	if (!g_parallelJobs->Init())
 		return;
 
 	if (!g_fontCache->Init())

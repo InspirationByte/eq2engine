@@ -7,31 +7,6 @@
 
 #pragma once
 
-// Job thread type
-enum EJobType : int
-{
-	JOB_TYPE_ANY = -1,
-
-	JOB_TYPE_AUDIO,
-	JOB_TYPE_PHYSICS,
-	JOB_TYPE_RENDERER,
-	JOB_TYPE_PARTICLES,
-	JOB_TYPE_DECALS,
-	JOB_TYPE_SPOOL_AUDIO,
-	JOB_TYPE_SPOOL_EGF,
-	JOB_TYPE_SPOOL_WORLD,
-	JOB_TYPE_SPOOL_NAV,
-	JOB_TYPE_OBJECTS,
-
-	JOB_TYPE_COUNT,
-};
-
-struct ParallelJobThreadDesc
-{
-	EJobType	jobTypeId;
-	int			numThreads;
-};
-
 using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
 
 //--------------------------------------------
@@ -43,16 +18,14 @@ class IParallelJob
 	friend class CEqParallelJobManager;
 public:
 	virtual ~IParallelJob();
-	IParallelJob(const char* jobName, EJobType jobType)
+	IParallelJob(const char* jobName)
 		: m_jobName(jobName)
-		, m_jobType(jobType)
 	{
 	}
 
 	void					InitSignal();
 	Threading::CEqSignal*	GetJobSignal() const { return m_jobSignalDone; }
 
-	EJobType				GetType() { return m_jobType; }
 	const char*				GetName() const { return m_jobName; }
 
 	void					AddWait(Threading::CEqSignal* jobWait);
@@ -71,7 +44,6 @@ protected:
 	EqString						m_jobName;
 	Threading::CEqSignal*			m_jobSignalDone{ nullptr };
 	Array<Threading::CEqSignal*>	m_waitList{ PP_SL };
-	EJobType						m_jobType;
 };
 
 inline IParallelJob::~IParallelJob()
@@ -141,8 +113,8 @@ class FunctionParallelJob : public IParallelJob
 {
 public:
 	template<typename F>
-	FunctionParallelJob(const char* jobName, EJobType jobType, F func, void* data, int count)
-		: IParallelJob(jobName, jobType)
+	FunctionParallelJob(const char* jobName, F func, void* data, int count)
+		: IParallelJob(jobName)
 		, m_jobFunction(std::move(func))
 		, m_data(data)
 		, m_count(count)
@@ -169,14 +141,14 @@ public:
 	CORE_INTERFACE("E2_ParallelJobManager_004")
 
 	// creates new job thread
-	virtual bool			Init(ArrayCRef<ParallelJobThreadDesc> jobTypes) = 0;
+	virtual bool			Init() = 0;
 	virtual void			Shutdown() = 0;
 
 	// adds the job to the queue
 	virtual void			AddJob(IParallelJob* job) = 0;
 
 	// adds the job to the queue
-	virtual void			AddJob(EJobType jobTypeId, EQ_JOB_FUNC jobFn, void* args = nullptr, int count = 1) = 0;	// and puts JOB_FLAG_DELETE flag for this job
+	virtual void			AddJob(EQ_JOB_FUNC jobFn, void* args = nullptr, int count = 1) = 0;	// and puts JOB_FLAG_DELETE flag for this job
 
 	// submits all queued jobs
 	virtual void			Submit() = 0;
@@ -188,8 +160,8 @@ public:
 	// job thread counter
 	virtual int				GetActiveJobThreadsCount() = 0;
 	virtual int				GetJobThreadsCount() = 0;
-	virtual int				GetActiveJobsCount(EJobType type = JOB_TYPE_ANY) = 0;
-	virtual int				GetPendingJobCount(EJobType type = JOB_TYPE_ANY) = 0;
+	virtual int				GetActiveJobsCount() = 0;
+	virtual int				GetPendingJobCount() = 0;
 };
 
 INTERFACE_SINGLETON(IEqParallelJobManager, CEqParallelJobManager, g_parallelJobs)
