@@ -1439,7 +1439,7 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 
 	if (m_streams.numElem() == 1)
 	{
-		SourceStream& mainStream = GetSourceStream();
+		SourceStream& mainStream = m_streams.front();
 		ISoundSource* sample = mainStream.sample;
 
 		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
@@ -1625,7 +1625,10 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 {
 	static ubyte pcmBuffer[EQSND_STREAM_BUFFER_SIZE];
 
-	SourceStream& mainStream = GetSourceStream();
+	if (m_streams.numElem() == 0)
+		return false;
+
+	SourceStream& mainStream = m_streams.front();
 	ISoundSource* sample = mainStream.sample;
 	const int streamPos = mainStream.curPos;
 

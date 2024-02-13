@@ -163,7 +163,6 @@ protected:
 	void					SetupSample(const ISoundSource* sample);
 	void					SetupSamples(ArrayCRef<const ISoundSource*> samples);
 
-	SourceStream&			GetSourceStream() { return m_streams.front(); }
 	bool					IsStreamed() const;
 
 	bool					InitSource();
