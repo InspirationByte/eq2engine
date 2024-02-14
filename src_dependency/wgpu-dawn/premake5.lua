@@ -7,14 +7,7 @@ usage "wgpu-dawn"
 		"./lib/%{cfg.platform}",
 	}
 
-	filter "system:Windows"
-		links {
-			"webgpu.lib",
-		}
-		
-	filter "system:Linux"
-		links {
-			"dawn_native",
-			"webgpu_dawn",
-		}
-	
+	links {
+		"webgpu",
+	}
+
