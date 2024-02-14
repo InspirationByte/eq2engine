@@ -44,16 +44,16 @@ static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
 {
 	if (wgpu_break_on_error.GetBool())
 	{
-		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message);
+		ASSERT_FAIL("WGPU device %s error (after %s):\n\n%s", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message);
 	}
 
 	if (wgpu_report_errors.GetBool())
-		MsgError("[WGPU] %s - %s\n", s_wgpuErrorTypesStr[type], message);
+		MsgError("[WGPU] after %s: %s - %s\n", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message);
 }
 
 static void OnWGPUDeviceLost(WGPUDeviceLostReason reason, char const* message, void* userdata)
 {
-	ASSERT_FAIL("WGPU device lost reason %s\n\n%s", s_wgpuDeviceLostReasonStr[reason], message);
+	ASSERT_FAIL("WGPU device lost (after %s) reason %s\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], message);
 	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message);
 }
 
