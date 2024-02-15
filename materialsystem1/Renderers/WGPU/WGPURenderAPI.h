@@ -35,7 +35,7 @@ public:
 
 	// Init + Shurdown
 	void						Init(const ShaderAPIParams& params);
-	//void						Shutdown() {}
+	void						Shutdown();
 
 //-------------------------------------------------------------
 // Renderer information

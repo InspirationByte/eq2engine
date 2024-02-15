@@ -122,6 +122,13 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 	Msg("Init shader cache from %d packages, %d shader modules loaded\n", shaderPackCount, shaderModCount);
 }
 
+void CWGPURenderAPI::Shutdown()
+{
+	ShaderAPI_Base::Shutdown();
+	m_shaderCache.clear(true);
+	m_rhiDevice = nullptr;
+	m_rhiQueue = nullptr;
+}
 
 int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 {
