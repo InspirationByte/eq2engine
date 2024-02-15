@@ -30,6 +30,8 @@ public:
 	void		InitLoop(RenderWorkerHandler* workHandler, FUNC_TYPE loopFunc, int workPoolSize = 32);
 	void		Shutdown();
 
+	const char* GetLastWorkName() const { return m_lastWorkName; }
+
 	bool		HasPendingWork() const;
 
 	// syncronous execution
@@ -52,6 +54,8 @@ protected:
 
 	using SignalPool = FixedArray<Threading::CEqSignal, 96>;
 	using WorkPool = FixedArray<Work, 96>;
+
+	EqString				m_lastWorkName;
 
 	FUNC_TYPE				m_loopFunc;
 	WorkPool				m_workRingPool;

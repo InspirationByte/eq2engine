@@ -164,13 +164,14 @@ int CRenderWorkThread::Run()
 			work.func = nullptr;
 			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
 
+			m_lastWorkName = work.name;
 			m_lastWorkIdx = work.workIdx;
 			m_completionSignal[i].Raise();
+
+			if (m_loopFunc)
+				m_loopFunc();
 		}
 	}
-
-	if (m_loopFunc)
-		m_loopFunc();
 
 	if (begun)
 		m_workHandler->EndAsyncOperation();
