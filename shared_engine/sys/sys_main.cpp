@@ -199,7 +199,7 @@ void Sys_Android_InitJNI()
 // init base path to extract
 bool Sys_Android_InitCore(int argc, char** argv)
 {
-	// 1. Extract EQ.CONFIG file
+	// 1. Extract E2.CONFIG file
 	// preconfigure game base path
 	const char* bestStoragePath = nullptr;// "/storage/6135-3937/eqengine"
 
@@ -227,8 +227,8 @@ bool Sys_Android_InitCore(int argc, char** argv)
 	while ((filename = AAssetDir_getNextFileName(assetDir)) != nullptr)
 	{
 		//search for desired file
-		if (!stricmp(filename, "EQ.CONFIG") ||
-			!stricmp(filename, "eqBase.epk"))
+		if (!stricmp(filename, "E2.CONFIG") ||
+			!stricmp(filename, "e2Base.epk"))
 		{
 			AAsset* asset = AAssetManager_open(g_jni.assetManager, filename, AASSET_MODE_STREAMING);
 

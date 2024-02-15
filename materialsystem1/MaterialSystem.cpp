@@ -330,7 +330,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	}
 	else
 	{
-		// try first working renderer from EQ.CONFIG
+		// try first working renderer from E2.CONFIG
 		const KVSection* rendererKey = matSystemSettings ? matSystemSettings->FindSection("Renderer") : nullptr;
 		if(rendererKey)
 		{

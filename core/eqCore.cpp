@@ -185,11 +185,11 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	m_coreConfiguration = PPNew KeyValues();
 	KVSection* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
-	// try different locations of EQ.CONFIG
-	bool eqConfigFound = m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT);
+	// try different locations of E2.CONFIG
+	bool eqConfigFound = m_coreConfiguration->LoadFromFile("E2.CONFIG", SP_ROOT);
 	if (!eqConfigFound)
 	{
-		eqConfigFound = m_coreConfiguration->LoadFromFile("../EQ.CONFIG", SP_ROOT);
+		eqConfigFound = m_coreConfiguration->LoadFromFile("../E2.CONFIG", SP_ROOT);
 		g_fileSystem->SetBasePath(".."); // little hack
 	}
 
@@ -203,7 +203,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		KVSection& fsSection = *coreConfigRoot->CreateSection("FileSystem");
 
 		fsSection
-			.SetKey("EngineDataDir", "EqBase")
+			.SetKey("EngineDataDir", "E2Base")
 			.SetKey("DefaultGameDir", "GameData");
 
 		KVSection& regionalConfig = *coreConfigRoot->CreateSection("RegionalSettings");

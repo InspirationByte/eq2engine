@@ -226,7 +226,7 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	if (!pFilesystem)
 	{
-		Msg("EQ.CONFIG missing FileSystemDirectories section!\n");
+		Msg("E2.CONFIG missing FileSystemDirectories section!\n");
 		return false;
 	}
 
