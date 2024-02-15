@@ -87,6 +87,13 @@ typedef struct DbgText3DBuilder
 {
 	~DbgText3DBuilder() 
 	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
 		debugoverlay->Text3D(origin, dist, MColor(color), pszText, lifetime, hashId);
 	}
 
@@ -112,12 +119,21 @@ private:
 	float		lifetime{ 0.0f };
 	uint		color{ color_white.pack() };
 	int			hashId{ 0 };
+
+	bool		dispatch{ false };
 } DbgText3D;
 
 typedef struct DbgBoxBuilder
 {
 	~DbgBoxBuilder()
 	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
 		debugoverlay->Box3D(mins, maxs, MColor(color), lifetime, hashId);
 	}
 
@@ -130,17 +146,26 @@ typedef struct DbgBoxBuilder
 	DbgBoxBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
 
 private:
-	Vector3D mins;
-	Vector3D maxs;
-	uint color{ color_white.pack() };
-	float lifetime{ 0.0f };
-	int hashId{ 0 };
+	Vector3D	mins;
+	Vector3D	maxs;
+	uint		color{ color_white.pack() };
+	float		lifetime{ 0.0f };
+	int			hashId{ 0 };
+
+	bool		dispatch{ false };
 } DbgBox;
 
 typedef struct DbgOriBoxBuilder
 {
 	~DbgOriBoxBuilder()
 	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
 		debugoverlay->OrientedBox3D(mins, maxs, position, rotation, MColor(color), lifetime, hashId);
 	}	
 	
@@ -153,18 +178,27 @@ typedef struct DbgOriBoxBuilder
 	DbgOriBoxBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
 
 private:
-	Vector3D mins, maxs;
-	Quaternion rotation{ qidentity };
-	Vector3D position;
-	uint color{ color_white.pack() };
-	float lifetime{ 0.0f };
-	int hashId{ 0 };
+	Vector3D	mins, maxs;
+	Quaternion	rotation{ qidentity };
+	Vector3D	position;
+	uint		color{ color_white.pack() };
+	float		lifetime{ 0.0f };
+	int			hashId{ 0 };
+
+	bool		dispatch{ false };
 } DbgOriBox;
 
 typedef struct DbgSphereBuilder
 {
 	~DbgSphereBuilder()
 	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
 		debugoverlay->Sphere3D(origin, radius, MColor(color), lifetime, hashId);
 	}
 
@@ -175,17 +209,26 @@ typedef struct DbgSphereBuilder
 	DbgSphereBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
 
 private:
-	Vector3D origin;
-	float radius{ 1.0f };
-	uint color{ color_white.pack() };
-	float lifetime{ 0.0f };
-	int hashId{ 0 };
+	Vector3D	origin;
+	float		radius{ 1.0f };
+	uint		color{ color_white.pack() };
+	float		lifetime{ 0.0f };
+	int			hashId{ 0 };
+
+	bool		dispatch{ false };
 } DbgSphere;
 
 typedef struct DbgCylinderBuilder
 {
 	~DbgCylinderBuilder()
 	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
 		debugoverlay->Cylinder3D(origin, radius, height, MColor(color), lifetime, hashId);
 	}
 
@@ -197,18 +240,27 @@ typedef struct DbgCylinderBuilder
 	DbgCylinderBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
 
 private:
-	Vector3D origin;
-	float radius{ 1.0f };
-	float height{ 1.0f };
-	uint color{ color_white.pack() };
-	float lifetime{ 0.0f };
-	int hashId{ 0 };
+	Vector3D	origin;
+	float		radius{ 1.0f };
+	float		height{ 1.0f };
+	uint		color{ color_white.pack() };
+	float		lifetime{ 0.0f };
+	int			hashId{ 0 };
+
+	bool		dispatch{ false };
 } DbgCylinder;
 
 typedef struct DbgLineBuilder
 {
 	~DbgLineBuilder()
 	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
 		debugoverlay->Line3D(start, end, MColor(color1), MColor(color2), lifetime, hashId);
 	}
 
@@ -221,18 +273,27 @@ typedef struct DbgLineBuilder
 	DbgLineBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
 
 private:
-	Vector3D start;
-	Vector3D end;
-	uint color1{ color_white.pack() };
-	uint color2{ color_white.pack() };
-	float lifetime{ 0.0f };
-	int hashId{ 0 };
+	Vector3D	start;
+	Vector3D	end;
+	uint		color1{ color_white.pack() };
+	uint		color2{ color_white.pack() };
+	float		lifetime{ 0.0f };
+	int			hashId{ 0 };
+
+	bool		dispatch{ false };
 } DbgLine;
 
 typedef struct DbgPolyBuilder
 {
 	~DbgPolyBuilder()
 	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
 		debugoverlay->Polygon3D(v0, v1, v2, MColor(color), lifetime, hashId);
 	}
 
@@ -245,8 +306,10 @@ typedef struct DbgPolyBuilder
 	DbgPolyBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
 
 private:
-	Vector3D v0, v1, v2;
-	uint color{ color_white.pack() };
-	float lifetime{ 0.0f };
-	int hashId{ 0 };
+	Vector3D	v0, v1, v2;
+	uint		color{ color_white.pack() };
+	float		lifetime{ 0.0f };
+	int			hashId{ 0 };
+
+	bool		dispatch{ false };
 } DbgPoly;
