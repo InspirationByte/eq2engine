@@ -27,8 +27,7 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 	WGPUBufferDescriptor desc = {};
 	desc.usage = wgpuUsage;
 	desc.size = m_bufSize;
-	desc.mappedAtCreation = true; // TEMPORARY FIX FOR VULKAN ON NVIDIA
-	// desc.mappedAtCreation = hasData;
+	desc.mappedAtCreation = hasData;
 	desc.label = label;
 
 	m_usageFlags = desc.usage;

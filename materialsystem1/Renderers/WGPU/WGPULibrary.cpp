@@ -225,7 +225,11 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUDeviceDescriptor rhiDeviceDesc{};
 
 		FixedArray<const char*, 32> enabledToggles;
+		FixedArray<const char*, 32> disabledToggles;
+
 		enabledToggles.append("allow_unsafe_apis");
+		disabledToggles.append("lazy_clear_resource_on_first_use");
+
 		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
 		{
 			enabledToggles.append("use_user_defined_labels_in_backend");
@@ -236,8 +240,11 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUDawnTogglesDescriptor deviceTogglesDesc{};
 		deviceTogglesDesc.enabledToggles = enabledToggles.ptr();
 		deviceTogglesDesc.enabledToggleCount = enabledToggles.numElem();
-		deviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
 
+		deviceTogglesDesc.disabledToggles = disabledToggles.ptr();
+		deviceTogglesDesc.disabledToggleCount = disabledToggles.numElem();
+
+		deviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
 		rhiDeviceDesc.nextInChain = &deviceTogglesDesc.chain;
 
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
