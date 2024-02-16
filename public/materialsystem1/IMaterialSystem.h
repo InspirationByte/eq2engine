@@ -173,7 +173,10 @@ public:
 	virtual void					GetViewProjection(Matrix4x4& matrix) const = 0;
 	virtual void					GetWorldViewProjection(Matrix4x4& matrix) const = 0;
 
-	virtual int						GetCameraParams(MatSysCamera& cameraParams) const = 0;
+	virtual int						GetCameraChangeId() const = 0;
+
+	virtual void					GetCameraParams(MatSysCamera& cameraParams, const Matrix4x4& proj, const Matrix4x4& view, const Matrix4x4& world = identity4) const = 0;
+	int								GetCameraParams(MatSysCamera& cameraParams);
 
 	//-----------------------------
 	// Drawing
@@ -208,6 +211,19 @@ public:
 	virtual void					SetFogInfo(const FogInfo& info) = 0;
 	virtual void					GetFogInfo(FogInfo& info) const = 0;
 };
+
+inline int IMaterialSystem::GetCameraParams(MatSysCamera& cameraParams)
+{
+	Matrix4x4 world, world2;
+	GetMatrix(MATRIXMODE_PROJECTION, cameraParams.proj);
+	GetMatrix(MATRIXMODE_VIEW, cameraParams.view);
+	GetMatrix(MATRIXMODE_WORLD, world);
+	GetMatrix(MATRIXMODE_WORLD2, world2);
+
+	GetCameraParams(cameraParams, cameraParams.proj, cameraParams.view, world * world2);
+
+	return GetCameraChangeId();
+}
 
 template<typename VERT>
 void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const VERT* verts, int numVerts, const RenderPassContext& passContext)

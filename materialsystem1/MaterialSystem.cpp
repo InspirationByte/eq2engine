@@ -932,13 +932,12 @@ void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix) const
 	matrix = wvpMatrix;
 }
 
-int CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams) const
+void CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, const Matrix4x4& proj, const Matrix4x4& view, const Matrix4x4& world) const
 {
-	GetWorldViewProjection(cameraParams.viewProj);
+	cameraParams.proj = proj;
+	cameraParams.view = view;
 
-	GetMatrix(MATRIXMODE_VIEW, cameraParams.view);
-	GetMatrix(MATRIXMODE_PROJECTION, cameraParams.proj);
-
+	cameraParams.viewProj = proj * view * world;
 	cameraParams.invViewProj = !cameraParams.viewProj;
 
 	// TODO: viewport parameters in Matsystem
@@ -969,7 +968,6 @@ int CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams) const
 		cameraParams.fog.scale = 1.0f;
 		cameraParams.fog.color = color_white;
 	}
-	return m_cameraChangeId;
 }
 
 const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
