@@ -13,6 +13,8 @@ public:
 	bool					IsDepthReadOnly() const { return m_depthReadOnly; }
 	bool					IsStencilReadOnly() const { return m_stencilReadOnly; }
 
+	void					AddBundle(IGPURenderBundleRecorder* bundle);
+
 	void					SetPipeline(IGPURenderPipeline* pipeline);
 	IGPURenderPipelinePtr	GetPipeline() const { return m_pipeline; }
 

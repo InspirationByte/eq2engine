@@ -17,6 +17,11 @@ CWGPURenderPassRecorder::~CWGPURenderPassRecorder()
 		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
 }
 
+void CWGPURenderPassRecorder::AddBundle(IGPURenderBundleRecorder* bundle)
+{
+
+}
+
 void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
 	m_pipeline.Assign(pipeline);

@@ -233,6 +233,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
 		{
 			enabledToggles.append("use_user_defined_labels_in_backend");
+			enabledToggles.append("enable_immediate_error_handling");
 			wgpu_report_errors.SetBool(true);
 			wgpu_break_on_error.SetBool(true);
 		}

@@ -30,5 +30,4 @@ public:
 
 	WGPUCommandEncoder			m_rhiCommandEncoder{ nullptr };
 	void*						m_userData{ nullptr };
-	mutable bool				m_hasCommands{ false };
 };

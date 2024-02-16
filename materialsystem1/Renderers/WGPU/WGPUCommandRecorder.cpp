@@ -27,7 +27,6 @@ void CWGPUCommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int
 		return;
 
 	wgpuCommandEncoderWriteBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, reinterpret_cast<const uint8_t*>(data), writeDataSize);
-	m_hasCommands = true;
 }
 
 void CWGPUCommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const
@@ -45,7 +44,6 @@ void CWGPUCommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOf
 		return;
 
 	wgpuCommandEncoderCopyBufferToBuffer(m_rhiCommandEncoder, sourceImpl->GetWGPUBuffer(), sourceOffset, destinationImpl->GetWGPUBuffer(), destinationOffset, copyDataSize);
-	m_hasCommands = true;
 }
 
 void CWGPUCommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const
@@ -59,7 +57,6 @@ void CWGPUCommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 s
 		return;
 
 	wgpuCommandEncoderClearBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, clearDataSize);
-	m_hasCommands = true;
 }
 
 void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const
@@ -88,7 +85,6 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	rhiCopySize.height = copySize.height;
 	
 	wgpuCommandEncoderCopyTextureToTexture(m_rhiCommandEncoder, &rhiImageSrc, &rhiImageDst, &rhiCopySize);
-	m_hasCommands = true;
 }
 
 void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const
@@ -117,7 +113,6 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 	rhiBufferDst.layout.rowsPerImage = copySize.height;
 
 	wgpuCommandEncoderCopyTextureToBuffer(m_rhiCommandEncoder, &rhiImageSrc, &rhiBufferDst, &rhiCopySize);
-	m_hasCommands = true;
 }
 
 IGPUCommandBufferPtr CWGPUCommandRecorder::End()
@@ -125,13 +120,6 @@ IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 	if (!m_rhiCommandEncoder)
 	{
 		ASSERT_FAIL("Command recorder was already ended");
-		return nullptr;
-	}
-
-	if (!m_hasCommands)
-	{
-		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
-		m_rhiCommandEncoder = nullptr;
 		return nullptr;
 	}
 
@@ -157,8 +145,6 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 	WGPURenderPassEncoder rhiRenderPassEncoder = wgpuCommandEncoderBeginRenderPass(m_rhiCommandEncoder, &rhiRenderPassDesc);
 	if (!rhiRenderPassEncoder)
 		return nullptr;
-
-	m_hasCommands = true;
 
 	IVector2D renderTargetDims = 0;
 	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);

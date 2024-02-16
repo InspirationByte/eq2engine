@@ -77,6 +77,8 @@ public:
 	bool					IsDepthReadOnly() const { return true; }
 	bool					IsStencilReadOnly() const  { return true; }
 
+	void					AddBundle(IGPURenderBundleRecorder* bundle) {}
+
 	void					SetPipeline(IGPURenderPipeline* pipeline)  { m_curPipeline.Assign(pipeline); }
 	IGPURenderPipelinePtr	GetPipeline() const { return m_curPipeline; }
 	void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) {}
