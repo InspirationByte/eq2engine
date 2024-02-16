@@ -189,7 +189,8 @@ template<typename T>
 inline Promise<T>::Promise(Data* ref)
 	: m_data(ref)
 {
-	ref->Ref_Drop();
+	const bool deleted = ref->Ref_Drop();
+	ASSERT_MSG(deleted == false, "Future data was not acquired with GrabDataPtr");
 }
 
 template<typename T>

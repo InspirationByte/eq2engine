@@ -129,7 +129,7 @@ bool CWGPUSwapChain::UpdateResize()
 	}
 
 	WGPUTextureFormat rhiSurfaceFormat = wgpuSurfaceGetPreferredFormat(m_surface, m_host->m_rhiAdapter);
-	for(int i = 0; i < FORMAT_COUNT; ++i)
+	for(int i = 1; i < FORMAT_COUNT; ++i)
 	{
 		const ETextureFormat format = static_cast<ETextureFormat>(i);
 		const ETextureFormat srgbFormat = MakeTexFormat(format, TEXFORMAT_FLAG_SRGB);

@@ -1350,11 +1350,8 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 	}
 
 	Promise<bool> promise;
-	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers), &promise]() {
+	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers), promiseData = promise.GrabDataPtr()]() {
 		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
-		for (WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
-			wgpuCommandBufferRelease(rhiCmdBuffer);
-
 		wgpuQueueOnSubmittedWorkDone(m_rhiQueue, [](WGPUQueueWorkDoneStatus status, void* userdata) {
 			Promise<bool> promise(reinterpret_cast<Promise<bool>::Data*>(userdata));
 			promise.SetResult(status == WGPUQueueWorkDoneStatus_Success);
@@ -1376,7 +1373,10 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 				}
 				promise.SetError(-1, str);
 			}
-		}, promise.GrabDataPtr());
+		}, promiseData);
+
+		for (WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
+			wgpuCommandBufferRelease(rhiCmdBuffer);
 
 		return 0;
 	});

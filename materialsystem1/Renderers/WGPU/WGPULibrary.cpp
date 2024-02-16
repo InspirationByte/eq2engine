@@ -228,7 +228,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		FixedArray<const char*, 32> disabledToggles;
 
 		enabledToggles.append("allow_unsafe_apis");
-		disabledToggles.append("lazy_clear_resource_on_first_use");
+		disabledToggles.append("lazy_clear_resource_on_first_use");	// this switch requires us to clear buffers and render targets
 
 		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
 		{
@@ -341,9 +341,9 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 void CWGPURenderLib::EndFrame()
 {
 	// Wait until all tasks get finished before all gets fucked by swap chain
-	do {
-		g_renderWorker.WaitForThread();
-	} while (g_renderWorker.HasPendingWork());
+	//do {
+	//	g_renderWorker.WaitForThread();
+	//} while (g_renderWorker.HasPendingWork());
 
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
@@ -418,12 +418,18 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 
 	const BufferInfo bufInfo(bytesPerPixel, currentTexture->GetWidth() * currentTexture->GetHeight());
 	IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(bufInfo, BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "ScreenshotImgBuffer");
-	{
-		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
-		cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
-		g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
-	}
+	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
+	cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
+	Future<bool> cmdFuture = g_renderAPI->SubmitCommandBufferAwaitable(cmdRecorder->End());
 	
+	while (!cmdFuture.HasResult()) {
+		WGPU_INSTANCE_SPIN
+	}
+
+	//cmdFuture.AddCallback([](FutureResult<bool>& result) {
+	//
+	//});
+
 	IGPUBuffer::LockFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
 	future.AddCallback([currentTexture, bytesPerPixel, rbSwapped, &img](const FutureResult<BufferLockData>& result) {
 		ASSERT(result->data);

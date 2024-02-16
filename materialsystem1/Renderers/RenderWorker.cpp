@@ -176,6 +176,9 @@ int CRenderWorkThread::Run()
 	if (begun)
 		m_workHandler->EndAsyncOperation();
 
+	if (m_loopFunc)
+		m_loopFunc();
+
 	YieldCurrentThread();
 
 	return 0;

@@ -15,7 +15,7 @@ static WGPUTextureFormat g_wgpuTexFormats[] = {
 
 	WGPUTextureFormat_R8Unorm,
 	WGPUTextureFormat_RG8Unorm,
-	WGPUTextureFormat_RGBA8Unorm, // RGB8 not directly supported, threat as RGBA8
+	WGPUTextureFormat_Undefined, // RGB8 not directly supported, threat as RGBA8
 	WGPUTextureFormat_RGBA8Unorm,
 
 	WGPUTextureFormat_R16Unorm,
