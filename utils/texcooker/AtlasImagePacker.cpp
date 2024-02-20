@@ -442,7 +442,7 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 		if (!value.Length())
 			continue;
 
-		if (value.ReplaceSubstr(s_outputTag, imageFileName) != -1)
+		if (value.ReplaceSubstr(s_outputTag, outputMaterialName) != -1)
 			key->SetValue(value, 0);
 	}
 
