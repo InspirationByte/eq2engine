@@ -3,10 +3,10 @@ local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK") or ""
 
 usage "shaderc"
 	includedirs {
-		VULKAN_SDK_LOCATION.."/Include"
+		VULKAN_SDK_LOCATION.."/include"
 	}
 	libdirs { 
-		VULKAN_SDK_LOCATION.."./Lib",
+		VULKAN_SDK_LOCATION.."./lib",
 	}
 	links {
 		"shaderc",

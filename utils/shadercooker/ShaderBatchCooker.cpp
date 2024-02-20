@@ -692,6 +692,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 			}
 
 			m_targetProps.targetFolder = targetFolder;
+			g_fileSystem->MakeDir(targetFolder, SP_ROOT);
 		}
 	}
 

@@ -49,22 +49,6 @@ project "animca"
 	}
 
 ----------------------------------------------
--- Texture atlas generator (AtlasGen)
-
-project "atlasgen"
-    kind "ConsoleApp"
-	unitybuild "on"
-    uses {
-		"corelib", "frameworkLib",
-		"e2Core"
-	}
-    files {
-		"atlasgen/*.cpp",
-		"atlasgen/*.h"
-	}
-
-
-----------------------------------------------
 -- Texture cooker (TexCooker)
 
 project "texcooker"

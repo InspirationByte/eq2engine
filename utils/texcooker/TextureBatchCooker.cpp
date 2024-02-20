@@ -11,6 +11,8 @@
 #include "imaging/PixWriter.h"
 #include "utils/KeyValues.h"
 
+extern void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath);
+
 /*
 
 // Configuration structure
@@ -124,7 +126,10 @@ private:
 	void				LoadBatchConfig(const KVSection* batchSec);
 	bool				AddTexture(const EqString& texturePath, const EqString& imageUsage);
 	void				LoadMaterialImages(const char* materialFileName);
+
 	void				SearchFolderForMaterialsAndGetTextures(const char* wildcard);
+	void				SearchFolderForAtlasesAndConvert(const char* wildcard);
+
 	bool				HasMatchingCRC(uint32 crc);
 	void				ProcessMaterial(const EqString& materialFileName);
 	void				ProcessTexture(TexInfo& textureInfo);
@@ -169,7 +174,7 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	{
 		const KVSection* sec = batchSec->keys[i];
 
-		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), m_targetProps.targetCompression.ToCString()))
+		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), m_targetProps.targetCompression))
 		{
 			compressionSec = sec;
 			break;
@@ -182,7 +187,7 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 		return;
 	}
 
-	m_batchConfig.applicationName = KV_GetValueString(compressionSec->FindSection("application"), 0, m_batchConfig.applicationName.ToCString());
+	m_batchConfig.applicationName = KV_GetValueString(compressionSec->FindSection("application"), 0, m_batchConfig.applicationName);
 	m_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindSection("arguments"), 0, "");
 
 	// load usages
@@ -203,7 +208,7 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 
 		UsageProperties usage;
 		usage.usageName = usageName;
-		usage.applicationName = KV_GetValueString(usageKey->FindSection("application"), 0, m_batchConfig.applicationName.ToCString());
+		usage.applicationName = KV_GetValueString(usageKey->FindSection("application"), 0, m_batchConfig.applicationName);
 		usage.applicationArguments = KV_GetValueString(usageKey->FindSection("arguments"), 0, "");
 
 		if (!stricmp(usageName, "default"))
@@ -216,9 +221,9 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& imageUsage)
 {
 	EqString filename;
-	CombinePath(filename, m_targetProps.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", texturePath.ToCString(), m_targetProps.sourceImageExt.ToCString()).ToCString());
+	CombinePath(filename, m_targetProps.sourceMaterialPath, EqString::Format("%s.%s", texturePath.ToCString(), m_targetProps.sourceImageExt.ToCString()));
 
-	if (!g_fileSystem->FileExist(filename.ToCString()))
+	if (!g_fileSystem->FileExist(filename))
 	{
 		MsgError("  - texture '%s' does not exists!\n", filename.ToCString());
 		return false;
@@ -298,7 +303,7 @@ void CTextureCooker::LoadMaterialImages(const char* materialFileName)
 				// trying to load animated texture
 				EqString textureWildcard = texturePath.Left(animCountStart);
 				EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
-				int numFrames = atoi(textureFrameCount.ToCString());
+				int numFrames = atoi(textureFrameCount);
 
 				for (int i = 0; i < numFrames; i++)
 				{
@@ -325,6 +330,33 @@ void CTextureCooker::LoadMaterialImages(const char* materialFileName)
 
 }
 
+
+void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
+{
+	EqString searchFolder(wildcard);
+	searchFolder.ReplaceSubstr("*", "");
+
+	CFileSystemFind fsFind(wildcard, SP_ROOT);
+	while (fsFind.Next())
+	{
+		EqString fileName = fsFind.GetPath();
+		if (fsFind.IsDirectory() && fileName != "." && fileName != "..")
+		{
+			EqString searchTemplate;
+			CombinePath(searchTemplate, searchFolder, fileName, "*");
+
+			SearchFolderForAtlasesAndConvert(searchTemplate);
+		}
+		else if(fileName.Path_Extract_Ext() == "atl")
+		{
+			EqString fullAtlPath;
+			CombinePath(fullAtlPath, searchFolder, fileName);
+			
+			ProcessAtlasFile(fullAtlPath, m_targetProps.sourceMaterialPath);
+		}
+	}
+}
+
 void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 {
 	EqString searchFolder(wildcard);
@@ -337,15 +369,15 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 		if (fsFind.IsDirectory() && fileName != "." && fileName != "..")
 		{
 			EqString searchTemplate;
-			CombinePath(searchTemplate, searchFolder.ToCString(), fileName.ToCString(), "*");
+			CombinePath(searchTemplate, searchFolder, fileName, "*");
 
-			SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
+			SearchFolderForMaterialsAndGetTextures(searchTemplate);
 		}
 		else if(fileName.Path_Extract_Ext() == "mat")
 		{
 			EqString fullMaterialPath;
-			CombinePath(fullMaterialPath, searchFolder.ToCString(), fileName.ToCString());
-			LoadMaterialImages(fullMaterialPath.ToCString());
+			CombinePath(fullMaterialPath, searchFolder, fileName);
+			LoadMaterialImages(fullMaterialPath);
 		}
 	}
 }
@@ -368,16 +400,16 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	const EqString atlasFileName = _Es(materialFileName).Path_Strip_Ext() + ".atlas";
 
 	EqString sourceMaterialFileName;
-	CombinePath(sourceMaterialFileName, m_targetProps.sourceMaterialPath.ToCString(), materialFileName.ToCString());
+	CombinePath(sourceMaterialFileName, m_targetProps.sourceMaterialPath, materialFileName);
 
 	EqString sourceAtlasFileName;
-	CombinePath(sourceAtlasFileName, m_targetProps.sourceMaterialPath.ToCString(), atlasFileName.ToCString());
+	CombinePath(sourceAtlasFileName, m_targetProps.sourceMaterialPath, atlasFileName);
 
 	EqString targetMaterialFileName;
-	CombinePath(targetMaterialFileName, m_targetProps.targetFolder.ToCString(), materialFileName.ToCString());
+	CombinePath(targetMaterialFileName, m_targetProps.targetFolder, materialFileName);
 
 	EqString targetAtlasFileName;
-	CombinePath(targetAtlasFileName, m_targetProps.targetFolder.ToCString(), atlasFileName.ToCString());
+	CombinePath(targetAtlasFileName, m_targetProps.targetFolder, atlasFileName);
 
 	// make target material file path
 	g_fileSystem->MakeDir(targetMaterialFileName.Path_Strip_Name(), SP_ROOT);
@@ -407,32 +439,32 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 {
 	// before this, create folders...
 	EqString sourceFilename;
-	CombinePath(sourceFilename, m_targetProps.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo.sourcePath.ToCString(), m_targetProps.sourceImageExt.ToCString()).ToCString());
+	CombinePath(sourceFilename, m_targetProps.sourceMaterialPath, EqString::Format("%s.%s", textureInfo.sourcePath.ToCString(), m_targetProps.sourceImageExt.ToCString()));
 	
 	EqString targetFilename;
-	CombinePath(targetFilename, m_targetProps.targetFolder.ToCString(), (textureInfo.sourcePath.Path_Strip_Ext() + ".dds").ToCString());
+	CombinePath(targetFilename, m_targetProps.targetFolder, (textureInfo.sourcePath.Path_Strip_Ext() + ".dds"));
 	
 	const EqString targetFilePath = targetFilename.Path_Strip_Name().TrimChar(CORRECT_PATH_SEPARATOR);
 
 	// make image folder
-	g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);
+	g_fileSystem->MakeDir(targetFilePath, SP_ROOT);
 
 	EqString arguments(m_batchConfig.applicationArgumentsTemplate);
-	arguments.ReplaceSubstr(s_argumentsTag.ToCString(), (m_batchConfig.compressionApplicationArguments + " " + textureInfo.usage->applicationArguments).ToCString());
-	arguments.ReplaceSubstr(s_inputFileNameTag.ToCString(), sourceFilename.ToCString());
-	arguments.ReplaceSubstr(s_outputFilePathTag.ToCString(), targetFilePath.ToCString());
+	arguments.ReplaceSubstr(s_argumentsTag, (m_batchConfig.compressionApplicationArguments + " " + textureInfo.usage->applicationArguments));
+	arguments.ReplaceSubstr(s_inputFileNameTag, sourceFilename);
+	arguments.ReplaceSubstr(s_outputFilePathTag, targetFilePath);
 
 	// generate CRC from image file content and arguments it's going to be built
-	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.ToCString(), SP_ROOT);
+	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename, SP_ROOT);
 	CRC32_UpdateChecksum(srcCRC, arguments.ToCString(), arguments.Length());
 
 	// store new CRC
-	m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC).ToCString(), sourceFilename.ToCString());
+	m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), sourceFilename);
 
 	// now check CRC from loaded file
 	if (HasMatchingCRC(srcCRC))
 	{
-		if (g_fileSystem->FileExist(targetFilename.ToCString(), SP_ROOT))
+		if (g_fileSystem->FileExist(targetFilename, SP_ROOT))
 		{
 			MsgInfo("Skipping %s: %s...\n", textureInfo.usage->usageName.ToCString(), textureInfo.sourcePath.ToCString());
 			textureInfo.status = SKIPPED;
@@ -558,17 +590,20 @@ void CTextureCooker::Execute()
 	Msg("Material source path: '%s'\n", m_targetProps.sourceMaterialPath.ToCString());
 
 	EqString searchTemplate;
-	CombinePath(searchTemplate, m_targetProps.sourceMaterialPath.ToCString(), "*");
+	CombinePath(searchTemplate, m_targetProps.sourceMaterialPath, "*");
+
+	// convert atlas sources first
+	SearchFolderForAtlasesAndConvert(searchTemplate);
 
 	// walk up material files
-	SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
+	SearchFolderForMaterialsAndGetTextures(searchTemplate);
 
 	Msg("Got %d textures\n", m_textureList.numElem());
 
 	EqString crcFileName(EqString::Format("%s/cook_%s_crc.txt", m_targetProps.sourceMaterialPath.ToCString(), m_targetProps.targetCompression.ToCString()));
 
 	// load CRC list, check for existing DDS files, and skip if necessary
-	KV_LoadFromFile(crcFileName.ToCString(), SP_ROOT, &m_batchConfig.crcSec);
+	KV_LoadFromFile(crcFileName, SP_ROOT, &m_batchConfig.crcSec);
 
 	// process material files
 	// this makes target folders and copies materials
@@ -586,7 +621,7 @@ void CTextureCooker::Execute()
 	}
 
 	// save CRC list file
-	IFilePtr pStream = g_fileSystem->Open(crcFileName.ToCString(), "wt", SP_ROOT);
+	IFilePtr pStream = g_fileSystem->Open(crcFileName, "wt", SP_ROOT);
 
 	if (pStream)
 	{

@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "utils/KeyValues.h"
 #include "utils/RectanglePacker.h"
 #include "imaging/ImageLoader.h"
@@ -13,7 +14,7 @@
 
 static const EqString s_outputTag("%OUTPUT%");
 
-unsigned long upper_power_of_two(unsigned long v)
+unsigned long UpperPowerOfTwo(unsigned long v)
 {
 	v--;
 	v |= v >> 1;
@@ -57,51 +58,51 @@ static const char* s_blendModeStr[] =
 	"lerp_alpha",
 };
 
-Vector4D fnBlendLerp(const Vector4D& dest, const Vector4D& src, float transparency)
+static Vector4D fnBlendLerp(const Vector4D& dest, const Vector4D& src, float transparency)
 {
 	return lerp(dest, src, transparency);
 }
 
-Vector4D fnBlendAdd(const Vector4D& dest, const Vector4D& src, float transparency)
+static Vector4D fnBlendAdd(const Vector4D& dest, const Vector4D& src, float transparency)
 {
 	return dest + src * transparency;
 }
 
-Vector4D fnBlendSub(const Vector4D& dest, const Vector4D& src, float transparency)
+static Vector4D fnBlendSub(const Vector4D& dest, const Vector4D& src, float transparency)
 {
 	return dest - src * transparency;
 }
 
-Vector4D fnBlendMul(const Vector4D& dest, const Vector4D& src, float transparency)
+static Vector4D fnBlendMul(const Vector4D& dest, const Vector4D& src, float transparency)
 {
 	// do it like photoshop does
 	return fnBlendLerp(dest, dest * src, transparency);
 }
 
-Vector4D fnBlendDiv(const Vector4D& dest, const Vector4D& src, float transparency)
+static Vector4D fnBlendDiv(const Vector4D& dest, const Vector4D& src, float transparency)
 {
 	// do it like photoshop does
 	return fnBlendLerp(dest, dest / src, transparency);
 }
 
-Vector4D fnBlendLerpAlpha(const Vector4D& dest, const Vector4D& src, float transparency)
+static Vector4D fnBlendLerpAlpha(const Vector4D& dest, const Vector4D& src, float transparency)
 {
 	return Vector4D(lerp(dest.xyz(), src.xyz(), transparency*src.w), dest.w);
 }
 
-typedef Vector4D (*BLENDPIXFUNC)(const Vector4D& dest, const Vector4D& src, float transparency);
+using BlendPixFunc = Vector4D(*)(const Vector4D& dest, const Vector4D& src, float transparency);
 
-static BLENDPIXFUNC s_BlendFuncs[] = 
+static BlendPixFunc s_BlendFuncs[] = 
 {
-	fnBlendLerp,
-	fnBlendAdd,
-	fnBlendSub,
-	fnBlendMul,
-	fnBlendDiv,
-	fnBlendLerpAlpha
+	&fnBlendLerp,
+	&fnBlendAdd,
+	&fnBlendSub,
+	&fnBlendMul,
+	&fnBlendDiv,
+	&fnBlendLerpAlpha
 };
 
-EBlendMode GetBlendmodeByStr(const char* mode)
+static EBlendMode GetBlendmodeByStr(const char* mode)
 {
 	for(int i = 0; i < BLEND_MODES; i++)
 	{
@@ -112,7 +113,7 @@ EBlendMode GetBlendmodeByStr(const char* mode)
 	return BLEND_NONE;
 }
 
-struct imgLayer_t
+struct ImgLayer
 {
 	CRefPtr<CImage>	image;
 	ColorRGB		color{ color_white };
@@ -120,16 +121,16 @@ struct imgLayer_t
 	EBlendMode		blendMode{ BLEND_ADD };
 };
 
-struct imageDesc_t
+struct ImageDesc
 {
-	Array<imgLayer_t> layers{ PP_SL };
+	Array<ImgLayer> layers{ PP_SL };
 	EqString name;
 };
 
 //
 // Parses image description keybase
 //
-bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
+static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSection* kv)
 {
 	EqString atlas_dir = _Es(atlasPath).Path_Strip_Name();
 	EqString image_name = KV_GetValueString(kv, 0, nullptr);
@@ -156,7 +157,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 		}
 		else
 		{
-			imgLayer_t& layer = dest.layers.append();
+			ImgLayer& layer = dest.layers.append();
 			layer.image = pImg;
 		}
 	}	
@@ -171,7 +172,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 		{
 			KVSection* kb = kv->keys[i];
 
-			imgLayer_t& layer = dest.layers.append();
+			ImgLayer& layer = dest.layers.append();
 			layer.blendMode = GetBlendmodeByStr( kb->name );
 			layer.image = nullptr;
 
@@ -237,7 +238,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 	return dest.layers.numElem() > 0;
 }
 
-void BlendPixel(ubyte* destPixels, int destStride, const imgLayer_t& layer, int srcStride)
+static void BlendPixel(ubyte* destPixels, int destStride, const ImgLayer& layer, int srcStride)
 {
 	// initial source color is layer color
 	Vector4D srcPixel(layer.color, 1.0f);
@@ -268,11 +269,11 @@ void BlendPixel(ubyte* destPixels, int destStride, const imgLayer_t& layer, int 
 
 #define ROLLING_VALUE(x, max) ((x < 0) ? max+x : ((x >= max) ? x-max : x ))
 
-void BlendAtlasTo(ubyte* pDst, const imageDesc_t* srcImage, int dst_x, int dst_y, int dst_wide, int padding, EPaddingMode padMode)
+static void BlendAtlasTo(ubyte* pDst, const ImageDesc* srcImage, int dst_x, int dst_y, int dst_wide, int padding, EPaddingMode padMode)
 {
 	for(int i = 0; i < srcImage->layers.numElem(); i++)
 	{
-		const imgLayer_t& layer = srcImage->layers[i];
+		const ImgLayer& layer = srcImage->layers[i];
 
 		int src_w, src_h;
 
@@ -343,13 +344,13 @@ void BlendAtlasTo(ubyte* pDst, const imageDesc_t* srcImage, int dst_x, int dst_y
 	}
 }
 
-inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+inline static int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
 {
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
-bool CreateAtlasImage(const Array<imageDesc_t>& images_list, 
-						const char* pszOutputImageName, 
+static bool CreateAtlasImage(const Array<ImageDesc>& images_list, 
+						const char* materialsPath, const char* outputMaterialName, 
 						KVSection* pParams)
 {
 	int padding = KV_GetValueInt(pParams->FindSection("padding"), 0, 0);
@@ -404,26 +405,32 @@ bool CreateAtlasImage(const Array<imageDesc_t>& images_list,
 		return false;
 	}
 
-	Msg("Trying to generate atlas for '%s' (%g %g)...\n", pszOutputImageName, wide, tall);
+	Msg("Trying to generate atlas for '%s' (%g %g)...\n", outputMaterialName, wide, tall);
 
-	wide = upper_power_of_two(wide);
-	tall = upper_power_of_two(tall);
+	wide = UpperPowerOfTwo(wide);
+	tall = UpperPowerOfTwo(tall);
 
 	// create new image
 	CImage destImage;
 	ubyte* destData = destImage.Create(FORMAT_RGBA8, wide, tall, 1, 1);
-
 	ASSERT(destData);
 
-	EqString file_name = _Es(pszOutputImageName).Path_Strip_Ext();
-	EqString mat_file_name = file_name + ".mat";
+	memset(destData, 0, destImage.GetMipMappedSize(0, destImage.GetMipMapCount()));
+
+	EqString fullMaterialPath;
+	CombinePath(fullMaterialPath, materialsPath, outputMaterialName);
+	const EqString imageFileName = fullMaterialPath + ".tga";
+	const EqString matFileName = fullMaterialPath + ".mat";
+	const EqString atlasFileName =fullMaterialPath + ".mat";
+
+	g_fileSystem->MakeDir(matFileName.Path_Strip_Name(), SP_ROOT);
 
 	// save atlas info
 	KeyValues kvs;
-	KVSection* pAtlasGroup = kvs.GetRootSection()->CreateSection("atlasgroup", file_name.GetData());
+	KVSection* atlasGroupKey = kvs.GetRootSection()->CreateSection("atlasgroup", outputMaterialName);
 
-	KeyValues kv_material;
-	KVSection* pShaderEntry = kv_material.GetRootSection()->CreateSection(shaderName.GetData());
+	KeyValues materialKvs;
+	KVSection* pShaderEntry = materialKvs.GetRootSection()->CreateSection(shaderName);
 	pShaderEntry->MergeFrom(shaderBase, true);
 
 	// process setting up
@@ -435,8 +442,8 @@ bool CreateAtlasImage(const Array<imageDesc_t>& images_list,
 		if (!value.Length())
 			continue;
 
-		if (value.ReplaceSubstr(s_outputTag.ToCString(), file_name.ToCString()) != -1)
-			key->SetValue(value.ToCString(), 0);
+		if (value.ReplaceSubstr(s_outputTag, imageFileName) != -1)
+			key->SetValue(value, 0);
 	}
 
 	Vector2D sizeTexels(1.0f / wide, 1.0f / tall);
@@ -448,7 +455,7 @@ bool CreateAtlasImage(const Array<imageDesc_t>& images_list,
 		AARectangle rect;
 
 		packer.GetRectangle(rect, &userData, i);
-		const imageDesc_t* imgDesc = (imageDesc_t*)userData;
+		const ImageDesc* imgDesc = (ImageDesc*)userData;
 
 		// rgba8 is pretty simple
 		BlendAtlasTo(destData, imgDesc, (int)rect.leftTop.x, (int)rect.leftTop.y, (int)wide, padding, padMode);
@@ -457,7 +464,7 @@ bool CreateAtlasImage(const Array<imageDesc_t>& images_list,
 		rect.rightBottom *= sizeTexels;
 
 		// add info to keyvalues
-		KVSection* rect_kv = pAtlasGroup->CreateSection(imgDesc->name.ToCString());
+		KVSection* rect_kv = atlasGroupKey->CreateSection(imgDesc->name);
 		rect_kv->AddValue(rect.leftTop.x);
 		rect_kv->AddValue(rect.leftTop.y);
 		rect_kv->AddValue(rect.rightBottom.x);
@@ -465,46 +472,47 @@ bool CreateAtlasImage(const Array<imageDesc_t>& images_list,
 	}
 
 	// save image as DDS, or TGA ???
-	if(destImage.SaveImage(pszOutputImageName))
+	if(destImage.SaveImage(imageFileName))
 	{
-		kvs.SaveToFile((file_name + ".atlas").GetData());
-		kv_material.SaveToFile((file_name + ".mat").GetData());
+		kvs.SaveToFile(atlasFileName);
+		materialKvs.SaveToFile(matFileName);
 	}
 	else
 	{
-		MsgError("Error while saving '%s' atlas texture...\n",pszOutputImageName);
+		MsgError("Error while saving '%s' atlas texture...\n", outputMaterialName);
 		return false;
 	}
 
 	return true;
 }
 
-void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
+void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 {
-	Array<imageDesc_t> imageList(PP_SL);
+	Array<ImageDesc> imageList(PP_SL);
 
 	KeyValues kvs;
-	if( !kvs.LoadFromFile(atlasPath) )
+	if( !kvs.LoadFromFile(atlasSrcFileName) )
 	{
-		MsgError("Can't open '%s'\n", atlasPath);
+		MsgError("Can't open '%s'\n", atlasSrcFileName);
+		return;
+	}
+
+	const KVSection* root = kvs.GetRootSection();
+	const char* materialFileName = KV_GetValueString(root->FindSection("material"), 0, nullptr);
+	if(!materialFileName)
+	{
+		MsgError("Atlas file %s missing 'material'\n", atlasSrcFileName);
 		return;
 	}
 
 	// try loading images
-	for(int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
+	for(KVKeyIterator iter(root, "image"); !iter.atEnd(); ++iter)
 	{
-		if(!stricmp(kvs.GetRootSection()->keys[i]->name, "image"))
-		{
-			KVSection* kb = kvs.GetRootSection()->keys[i];
-
-			const int idx = imageList.numElem();
-			if (!ParseImageDesc(atlasPath, imageList.append(), kb))
-			{
-				imageList.fastRemoveIndex(idx);
-			}
-		}
+		const int idx = imageList.numElem();
+		if (!ParseImageDesc(atlasSrcFileName, imageList.append(), *iter))
+			imageList.fastRemoveIndex(idx);
 	}
 
 	// pack atlas
-	CreateAtlasImage(imageList, pszOutputName, kvs.GetRootSection());
+	CreateAtlasImage(imageList, materialsPath, materialFileName, kvs.GetRootSection());
 }
