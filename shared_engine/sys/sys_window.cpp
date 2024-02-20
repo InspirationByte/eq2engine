@@ -38,7 +38,7 @@ EQWNDHANDLE Sys_CreateWindow()
 	int nAdjustedWide = 800;
 	int nAdjustedTall = 600;
 
-	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN;
+	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
 #ifdef PLAT_ANDROID
 	nAdjustedPosX = nAdjustedPosY = SDL_WINDOWPOS_UNDEFINED;
