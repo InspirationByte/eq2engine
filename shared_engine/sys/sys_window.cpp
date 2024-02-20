@@ -51,7 +51,7 @@ EQWNDHANDLE Sys_CreateWindow()
 		nAdjustedTall = displayRect.h;
 	}
 
-	sdlFlags |= SDL_WINDOW_FULLSCREEN;
+	sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN; // SDL on android WUT
 #endif // PLAT_ANDROID
 	
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
