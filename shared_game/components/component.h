@@ -124,7 +124,7 @@ namespace ComponentHostImpl
 		inline void						Remove(const char* name) { return ComponentHostImpl::RemoveComponent(m_components, name); } \
 		inline void						RemoveAllComponents() { ComponentHostImpl::RemoveAll(m_components); } \
 		template<class CType> CType*	Add() { \
-			ASSERT(GetComponent(CType::NameHash) == nullptr); \
+			ASSERT_MSG(GetComponent(CType::NameHash) == nullptr, "Component %s is already added", CType::Name); \
 			CType* component = PPNewSL(PPSourceLine::Make(CType::Name, 0)) CType(this); \
 			ComponentHostImpl::AddComponent<componentBase>(m_components, CType::NameHash, component); \
 			return component; \
