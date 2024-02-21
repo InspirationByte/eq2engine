@@ -25,7 +25,7 @@ int CEqJobThread::Run()
 {
 	// thread will find job by himself
 	if( !m_owner->TryPopNewJob( this ) )
-		return;
+		return 0;
 
 	ParallelJob* pjob = const_cast<ParallelJob*>(m_curJob);
 	m_curJob = nullptr;

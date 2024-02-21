@@ -103,6 +103,7 @@ typedef struct WGPURenderPassEncoderImpl* WGPURenderPassEncoder WGPU_OBJECT_ATTR
 typedef struct WGPURenderPipelineImpl* WGPURenderPipeline WGPU_OBJECT_ATTRIBUTE;
 typedef struct WGPUSamplerImpl* WGPUSampler WGPU_OBJECT_ATTRIBUTE;
 typedef struct WGPUShaderModuleImpl* WGPUShaderModule WGPU_OBJECT_ATTRIBUTE;
+typedef struct WGPUSharedBufferMemoryImpl* WGPUSharedBufferMemory WGPU_OBJECT_ATTRIBUTE;
 typedef struct WGPUSharedFenceImpl* WGPUSharedFence WGPU_OBJECT_ATTRIBUTE;
 typedef struct WGPUSharedTextureMemoryImpl* WGPUSharedTextureMemory WGPU_OBJECT_ATTRIBUTE;
 typedef struct WGPUSurfaceImpl* WGPUSurface WGPU_OBJECT_ATTRIBUTE;
@@ -122,6 +123,7 @@ struct WGPUBufferMapCallbackInfo;
 struct WGPUColor;
 struct WGPUCommandBufferDescriptor;
 struct WGPUCommandEncoderDescriptor;
+struct WGPUCompilationInfoCallbackInfo;
 struct WGPUCompilationMessage;
 struct WGPUComputePassTimestampWrites;
 struct WGPUConstantEntry;
@@ -174,6 +176,10 @@ struct WGPUSamplerDescriptor;
 struct WGPUShaderModuleSPIRVDescriptor;
 struct WGPUShaderModuleWGSLDescriptor;
 struct WGPUShaderModuleDescriptor;
+struct WGPUSharedBufferMemoryBeginAccessDescriptor;
+struct WGPUSharedBufferMemoryDescriptor;
+struct WGPUSharedBufferMemoryEndAccessState;
+struct WGPUSharedBufferMemoryProperties;
 struct WGPUSharedFenceDXGISharedHandleDescriptor;
 struct WGPUSharedFenceDXGISharedHandleExportInfo;
 struct WGPUSharedFenceMTLSharedEventDescriptor;
@@ -1099,6 +1105,13 @@ typedef struct WGPUCommandEncoderDescriptor {
     WGPU_NULLABLE char const * label;
 } WGPUCommandEncoderDescriptor WGPU_STRUCTURE_ATTRIBUTE;
 
+typedef struct WGPUCompilationInfoCallbackInfo {
+    WGPUChainedStruct const * nextInChain;
+    WGPUCallbackMode mode;
+    WGPUCompilationInfoCallback callback;
+    void * userdata;
+} WGPUCompilationInfoCallbackInfo WGPU_STRUCTURE_ATTRIBUTE;
+
 typedef struct WGPUCompilationMessage {
     WGPUChainedStruct const * nextInChain;
     WGPU_NULLABLE char const * message;
@@ -1490,6 +1503,33 @@ typedef struct WGPUShaderModuleDescriptor {
     WGPUChainedStruct const * nextInChain;
     WGPU_NULLABLE char const * label;
 } WGPUShaderModuleDescriptor WGPU_STRUCTURE_ATTRIBUTE;
+
+typedef struct WGPUSharedBufferMemoryBeginAccessDescriptor {
+    WGPUChainedStruct const * nextInChain;
+    WGPUBool initialized;
+    size_t fenceCount;
+    WGPUSharedFence const * fences;
+    uint64_t const * signaledValues;
+} WGPUSharedBufferMemoryBeginAccessDescriptor WGPU_STRUCTURE_ATTRIBUTE;
+
+typedef struct WGPUSharedBufferMemoryDescriptor {
+    WGPUChainedStruct const * nextInChain;
+    WGPU_NULLABLE char const * label;
+} WGPUSharedBufferMemoryDescriptor WGPU_STRUCTURE_ATTRIBUTE;
+
+typedef struct WGPUSharedBufferMemoryEndAccessState {
+    WGPUChainedStructOut * nextInChain;
+    WGPUBool initialized;
+    size_t fenceCount;
+    WGPUSharedFence const * fences;
+    uint64_t const * signaledValues;
+} WGPUSharedBufferMemoryEndAccessState WGPU_STRUCTURE_ATTRIBUTE;
+
+typedef struct WGPUSharedBufferMemoryProperties {
+    WGPUChainedStructOut * nextInChain;
+    WGPUBufferUsageFlags usage;
+    uint64_t size;
+} WGPUSharedBufferMemoryProperties WGPU_STRUCTURE_ATTRIBUTE;
 
 // Can be chained in WGPUSharedFenceDescriptor
 typedef struct WGPUSharedFenceDXGISharedHandleDescriptor {
@@ -2054,6 +2094,7 @@ typedef void (*WGPUProcAdapterPropertiesMemoryHeapsFreeMembers)(WGPUAdapterPrope
 typedef WGPUInstance (*WGPUProcCreateInstance)(WGPUInstanceDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUBool (*WGPUProcGetInstanceFeatures)(WGPUInstanceFeatures * features) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUProc (*WGPUProcGetProcAddress)(WGPUDevice device, char const * procName) WGPU_FUNCTION_ATTRIBUTE;
+typedef void (*WGPUProcSharedBufferMemoryEndAccessStateFreeMembers)(WGPUSharedBufferMemoryEndAccessState value) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcSharedTextureMemoryEndAccessStateFreeMembers)(WGPUSharedTextureMemoryEndAccessState value) WGPU_FUNCTION_ATTRIBUTE;
 
 // Procs of Adapter
@@ -2168,6 +2209,7 @@ typedef WGPUBool (*WGPUProcDeviceGetLimits)(WGPUDevice device, WGPUSupportedLimi
 typedef WGPUQueue (*WGPUProcDeviceGetQueue)(WGPUDevice device) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUTextureUsageFlags (*WGPUProcDeviceGetSupportedSurfaceUsage)(WGPUDevice device, WGPUSurface surface) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUBool (*WGPUProcDeviceHasFeature)(WGPUDevice device, WGPUFeatureName feature) WGPU_FUNCTION_ATTRIBUTE;
+typedef WGPUSharedBufferMemory (*WGPUProcDeviceImportSharedBufferMemory)(WGPUDevice device, WGPUSharedBufferMemoryDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUSharedFence (*WGPUProcDeviceImportSharedFence)(WGPUDevice device, WGPUSharedFenceDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUSharedTextureMemory (*WGPUProcDeviceImportSharedTextureMemory)(WGPUDevice device, WGPUSharedTextureMemoryDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcDeviceInjectError)(WGPUDevice device, WGPUErrorType type, char const * message) WGPU_FUNCTION_ATTRIBUTE;
@@ -2288,9 +2330,20 @@ typedef void (*WGPUProcSamplerRelease)(WGPUSampler sampler) WGPU_FUNCTION_ATTRIB
 
 // Procs of ShaderModule
 typedef void (*WGPUProcShaderModuleGetCompilationInfo)(WGPUShaderModule shaderModule, WGPUCompilationInfoCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
+typedef WGPUFuture (*WGPUProcShaderModuleGetCompilationInfoF)(WGPUShaderModule shaderModule, WGPUCompilationInfoCallbackInfo callbackInfo) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcShaderModuleSetLabel)(WGPUShaderModule shaderModule, char const * label) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcShaderModuleReference)(WGPUShaderModule shaderModule) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcShaderModuleRelease)(WGPUShaderModule shaderModule) WGPU_FUNCTION_ATTRIBUTE;
+
+// Procs of SharedBufferMemory
+typedef WGPUBool (*WGPUProcSharedBufferMemoryBeginAccess)(WGPUSharedBufferMemory sharedBufferMemory, WGPUBuffer buffer, WGPUSharedBufferMemoryBeginAccessDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
+typedef WGPUBuffer (*WGPUProcSharedBufferMemoryCreateBuffer)(WGPUSharedBufferMemory sharedBufferMemory, WGPU_NULLABLE WGPUBufferDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
+typedef WGPUBool (*WGPUProcSharedBufferMemoryEndAccess)(WGPUSharedBufferMemory sharedBufferMemory, WGPUBuffer buffer, WGPUSharedBufferMemoryEndAccessState * descriptor) WGPU_FUNCTION_ATTRIBUTE;
+typedef void (*WGPUProcSharedBufferMemoryGetProperties)(WGPUSharedBufferMemory sharedBufferMemory, WGPUSharedBufferMemoryProperties * properties) WGPU_FUNCTION_ATTRIBUTE;
+typedef WGPUBool (*WGPUProcSharedBufferMemoryIsDeviceLost)(WGPUSharedBufferMemory sharedBufferMemory) WGPU_FUNCTION_ATTRIBUTE;
+typedef void (*WGPUProcSharedBufferMemorySetLabel)(WGPUSharedBufferMemory sharedBufferMemory, char const * label) WGPU_FUNCTION_ATTRIBUTE;
+typedef void (*WGPUProcSharedBufferMemoryReference)(WGPUSharedBufferMemory sharedBufferMemory) WGPU_FUNCTION_ATTRIBUTE;
+typedef void (*WGPUProcSharedBufferMemoryRelease)(WGPUSharedBufferMemory sharedBufferMemory) WGPU_FUNCTION_ATTRIBUTE;
 
 // Procs of SharedFence
 typedef void (*WGPUProcSharedFenceExportInfo)(WGPUSharedFence sharedFence, WGPUSharedFenceExportInfo * info) WGPU_FUNCTION_ATTRIBUTE;
@@ -2350,6 +2403,7 @@ WGPU_EXPORT void wgpuAdapterPropertiesMemoryHeapsFreeMembers(WGPUAdapterProperti
 WGPU_EXPORT WGPUInstance wgpuCreateInstance(WGPU_NULLABLE WGPUInstanceDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUBool wgpuGetInstanceFeatures(WGPUInstanceFeatures * features) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUProc wgpuGetProcAddress(WGPU_NULLABLE WGPUDevice device, char const * procName) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT void wgpuSharedBufferMemoryEndAccessStateFreeMembers(WGPUSharedBufferMemoryEndAccessState value) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuSharedTextureMemoryEndAccessStateFreeMembers(WGPUSharedTextureMemoryEndAccessState value) WGPU_FUNCTION_ATTRIBUTE;
 
 // Methods of Adapter
@@ -2464,6 +2518,7 @@ WGPU_EXPORT WGPUBool wgpuDeviceGetLimits(WGPUDevice device, WGPUSupportedLimits 
 WGPU_EXPORT WGPUQueue wgpuDeviceGetQueue(WGPUDevice device) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUTextureUsageFlags wgpuDeviceGetSupportedSurfaceUsage(WGPUDevice device, WGPUSurface surface) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUBool wgpuDeviceHasFeature(WGPUDevice device, WGPUFeatureName feature) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT WGPUSharedBufferMemory wgpuDeviceImportSharedBufferMemory(WGPUDevice device, WGPUSharedBufferMemoryDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUSharedFence wgpuDeviceImportSharedFence(WGPUDevice device, WGPUSharedFenceDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUSharedTextureMemory wgpuDeviceImportSharedTextureMemory(WGPUDevice device, WGPUSharedTextureMemoryDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuDeviceInjectError(WGPUDevice device, WGPUErrorType type, char const * message) WGPU_FUNCTION_ATTRIBUTE;
@@ -2584,9 +2639,20 @@ WGPU_EXPORT void wgpuSamplerRelease(WGPUSampler sampler) WGPU_FUNCTION_ATTRIBUTE
 
 // Methods of ShaderModule
 WGPU_EXPORT void wgpuShaderModuleGetCompilationInfo(WGPUShaderModule shaderModule, WGPUCompilationInfoCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT WGPUFuture wgpuShaderModuleGetCompilationInfoF(WGPUShaderModule shaderModule, WGPUCompilationInfoCallbackInfo callbackInfo) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuShaderModuleSetLabel(WGPUShaderModule shaderModule, char const * label) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuShaderModuleReference(WGPUShaderModule shaderModule) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuShaderModuleRelease(WGPUShaderModule shaderModule) WGPU_FUNCTION_ATTRIBUTE;
+
+// Methods of SharedBufferMemory
+WGPU_EXPORT WGPUBool wgpuSharedBufferMemoryBeginAccess(WGPUSharedBufferMemory sharedBufferMemory, WGPUBuffer buffer, WGPUSharedBufferMemoryBeginAccessDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT WGPUBuffer wgpuSharedBufferMemoryCreateBuffer(WGPUSharedBufferMemory sharedBufferMemory, WGPU_NULLABLE WGPUBufferDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT WGPUBool wgpuSharedBufferMemoryEndAccess(WGPUSharedBufferMemory sharedBufferMemory, WGPUBuffer buffer, WGPUSharedBufferMemoryEndAccessState * descriptor) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT void wgpuSharedBufferMemoryGetProperties(WGPUSharedBufferMemory sharedBufferMemory, WGPUSharedBufferMemoryProperties * properties) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT WGPUBool wgpuSharedBufferMemoryIsDeviceLost(WGPUSharedBufferMemory sharedBufferMemory) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT void wgpuSharedBufferMemorySetLabel(WGPUSharedBufferMemory sharedBufferMemory, char const * label) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT void wgpuSharedBufferMemoryReference(WGPUSharedBufferMemory sharedBufferMemory) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT void wgpuSharedBufferMemoryRelease(WGPUSharedBufferMemory sharedBufferMemory) WGPU_FUNCTION_ATTRIBUTE;
 
 // Methods of SharedFence
 WGPU_EXPORT void wgpuSharedFenceExportInfo(WGPUSharedFence sharedFence, WGPUSharedFenceExportInfo * info) WGPU_FUNCTION_ATTRIBUTE;
