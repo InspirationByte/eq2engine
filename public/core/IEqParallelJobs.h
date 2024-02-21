@@ -76,6 +76,7 @@ inline bool IParallelJob::WaitForJobGroup(int timeout)
 		if (signal->Wait(timeout))
 			return false;
 	}
+	m_waitList.clear();
 
 	return true;
 }
@@ -86,17 +87,13 @@ inline void IParallelJob::Run()
 	Execute();
 
 	if(m_jobSignalDone)
-		m_jobSignalDone->Raise();
-
-	m_waitList.clear();
+		m_jobSignalDone->Raise();	
 }
 
 inline void IParallelJob::AddWait(Threading::CEqSignal* jobWait)
 {
 	if (!jobWait)
 		return;
-
-	jobWait->Clear();
 	m_waitList.append(jobWait);
 }
 

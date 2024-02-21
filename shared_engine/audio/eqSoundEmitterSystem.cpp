@@ -587,8 +587,8 @@ void CSoundEmitterSystem::Update(Threading::CEqSignal* waitFor)
 {
 	m_deltaTime = m_updateTimer.GetTime(true);
 
+	if(!GetJobSignal() || GetJobSignal()->Wait(0))
 	{
-		InitSignal();
 		AddWait(waitFor);
 
 		g_parallelJobs->AddJob(this);

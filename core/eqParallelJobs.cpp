@@ -24,33 +24,31 @@ CEqJobThread::CEqJobThread(CEqParallelJobManager* owner)
 int CEqJobThread::Run()
 {
 	// thread will find job by himself
-	while( m_owner->AssignFreeJob( this ) )
+	if( !m_owner->TryPopNewJob( this ) )
+		return;
+
+	ParallelJob* pjob = const_cast<ParallelJob*>(m_curJob);
+	m_curJob = nullptr;
+	
+	pjob->flags |= JOB_FLAG_CURRENT;
+
+	// execute
+	pjob->job->Run();
+
+	pjob->flags |= JOB_FLAG_EXECUTED;
+	pjob->flags &= ~JOB_FLAG_CURRENT;
+
+	/*if (pjob->onComplete)
 	{
-		ParallelJob* pjob = const_cast<ParallelJob*>(m_curJob);
-		
-		pjob->flags |= JOB_FLAG_CURRENT;
-
-		// execute
-		pjob->job->Run();
-
-		pjob->flags |= JOB_FLAG_EXECUTED;
-		pjob->flags &= ~JOB_FLAG_CURRENT;
-
-		/*if (pjob->onComplete)
-		{
-			m_owner->AddCompleted(pjob);
-		}
-		else */
-
-		if (pjob->flags & JOB_FLAG_DELETE)
-		{
-			delete pjob->job;
-		}
-
-		delete pjob;
-
-		m_curJob = nullptr;
+		m_owner->AddCompleted(pjob);
 	}
+	else */
+
+	if (pjob->flags & JOB_FLAG_DELETE)
+		delete pjob->job;
+	delete pjob;
+
+	SignalWork();
 
 	return 0;
 }
@@ -58,9 +56,6 @@ int CEqJobThread::Run()
 bool CEqJobThread::TryAssignJob( ParallelJob* pjob )
 {
 	if( m_curJob )
-		return false;
-
-	if (!pjob->job->WaitForJobGroup(0))
 		return false;
 
 	if(pjob->threadId != 0)
@@ -133,8 +128,9 @@ void CEqParallelJobManager::AddJob(IParallelJob* job)
 	}
 
 	ParallelJob* pjob = PPNew ParallelJob(job);
-	job->OnAddedToQueue();
 	m_workQueue.append(pjob);
+
+	job->OnAddedToQueue();
 }
 
 // adds the job
@@ -176,17 +172,17 @@ void CEqParallelJobManager::Wait(int waitTimeout)
 }
 
 // called by job thread
-bool CEqParallelJobManager::AssignFreeJob( CEqJobThread* requestBy )
+bool CEqParallelJobManager::TryPopNewJob( CEqJobThread* requestBy )
 {
 	CScopedMutex m(m_mutex);
 
 	for (int i = 0; i < m_workQueue.numElem(); ++i)
 	{
-		ParallelJob* job = m_workQueue[i];
-		if (!job)
+		ParallelJob* pjob = m_workQueue[i];
+		if (!pjob->job->WaitForJobGroup(0))
 			continue;
 
-		if (requestBy->TryAssignJob(job))
+		if (requestBy->TryAssignJob(pjob))
 		{
 			m_workQueue.fastRemoveIndex(i);
 			return true;

@@ -43,8 +43,8 @@ struct ParallelJob
 
 	IParallelJob*	job{ nullptr };
 
-	uintptr_t		threadId{ 0 };			// selected thread
-	volatile int	flags{ 0 };				// EJobFlags
+	volatile uintptr_t	threadId{ 0 };			// selected thread
+	volatile int		flags{ 0 };				// EJobFlags
 };
 
 //
@@ -103,7 +103,7 @@ public:
 protected:
 
 	// called from worker thread
-	bool					AssignFreeJob( CEqJobThread* requestBy );
+	bool					TryPopNewJob( CEqJobThread* requestBy );
 
 	Array<CEqJobThread*>	m_jobThreads{ PP_SL };
 	Array<ParallelJob*>		m_workQueue{ PP_SL };
