@@ -787,6 +787,7 @@ void CEqAudioSystemAL::EndUpdate()
 
 	PROF_EVENT("AudioSystemAL EndUpdate");
 
+	CScopedMutex m(s_audioSysMutex);
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
 		CEqAudioSourceAL* src = m_sources[i].Ptr();
@@ -801,7 +802,6 @@ void CEqAudioSystemAL::EndUpdate()
 		{
 			if (src->m_releaseOnStop)
 			{
-				CScopedMutex m(s_audioSysMutex);
 				m_sources.fastRemoveIndex(i);
 				i--;
 			}
