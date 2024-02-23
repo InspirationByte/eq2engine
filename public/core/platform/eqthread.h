@@ -264,7 +264,10 @@ public:
 
 	void			StopThread( bool wait = true );
 
-	void			WaitForThread(int timeout = WAIT_INFINITE);
+	// Return value is only valid for worker thread.
+	// Wait returns true if the object is in a signalled state and
+	// returns false if the wait timed out.
+	bool			WaitForThread(int timeout = WAIT_INFINITE);
 	void			SignalWork();
 	bool			IsWorkDone();
 

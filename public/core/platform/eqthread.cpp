@@ -686,17 +686,19 @@ void CEqThread::StopThread( bool wait )
 		WaitForThread();
 }
 
-void CEqThread::WaitForThread(int timeout)
+bool CEqThread::WaitForThread(int timeout)
 {
 	if ( m_bIsWorker )
 	{
-		m_SignalWorkerDone.Wait(timeout);
+		return m_SignalWorkerDone.Wait(timeout);
 	}
 	else if ( m_bIsRunning )
 	{
 		ThreadDestroy( m_nThreadHandle );
 		m_nThreadHandle = 0;
+		return true;
 	}
+	return false;
 }
 
 void CEqThread::SignalWork()
