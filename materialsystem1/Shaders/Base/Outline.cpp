@@ -54,7 +54,7 @@ BEGIN_SHADER_CLASS(Outline)
 		cmdRecorder->WriteBuffer(m_proxyBuffer, &materialParams, sizeof(materialParams), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -65,10 +65,10 @@ BEGIN_SHADER_CLASS(Outline)
 				.Texture(2, baseTexture)
 				.End();
 
-			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);;
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
 
-		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 	}
 
 	IGPUBufferPtr				m_proxyBuffer;

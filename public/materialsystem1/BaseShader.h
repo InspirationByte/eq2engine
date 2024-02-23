@@ -95,11 +95,10 @@ public:
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };
 	virtual const ITexturePtr&	GetBumpTexture(int stage) const	{ return ITexturePtr::Null(); };
 
-	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext);
+	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial);
 
 protected:
 	struct PipelineInputParams;
-
 	struct PipelineInfo
 	{
 		mutable IGPUBindGroupPtr	emptyBindGroup[MAX_BINDGROUPS];
@@ -108,9 +107,17 @@ protected:
 		int							vertexLayoutId{ 0 };
 	};
 
+	struct BindGroupSetupParams
+	{
+		ArrayCRef<RenderBufferInfo>	uniformBuffers;
+		const PipelineInfo&			pipelineInfo;
+		const RenderPassContext&	passContext;
+		IMaterial* 					originalMaterial;
+	};
+
 	virtual ArrayCRef<int>		GetSupportedVertexLayoutIds() const = 0;
 
-	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const { return nullptr; }
+	virtual IGPUBindGroupPtr	GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const { return nullptr; }
 	virtual void				FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_RenderPass(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_Transient(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}

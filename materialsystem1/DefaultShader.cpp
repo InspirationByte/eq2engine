@@ -40,7 +40,7 @@ BEGIN_SHADER_CLASS(
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	bool SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) override
+	bool SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = static_cast<const MatSysDefaultRenderPass*>(passContext.data);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
@@ -123,19 +123,26 @@ BEGIN_SHADER_CLASS(
 		if (!pipelineInfo.pipeline)
 			return false;
 
+		const BindGroupSetupParams setupParams {
+			uniformBuffers,
+			pipelineInfo,
+			passContext,
+			originalMaterial
+		};
+
 		passContext.recorder->SetPipeline(pipelineInfo.pipeline);
-		passContext.recorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, pipelineInfo, uniformBuffers, passContext));
+		passContext.recorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, setupParams));
 		return true;
 	}
 
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			const MatSysDefaultRenderPass* rendPassInfo = static_cast<const MatSysDefaultRenderPass*>(passContext.data);
+			const MatSysDefaultRenderPass* rendPassInfo = static_cast<const MatSysDefaultRenderPass*>(setupParams.passContext.data);
 			ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
 
 			TextureView whiteTexView = g_matSystem->GetWhiteTexture();
@@ -147,7 +154,7 @@ BEGIN_SHADER_CLASS(
 			bufferData.append(GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar));
 
 			GPUBufferView cameraParamsBuffer;
-			for (const RenderBufferInfo& rendBuffer : uniformBuffers)
+			for (const RenderBufferInfo& rendBuffer : setupParams.uniformBuffers)
 			{
 				if (rendBuffer.signature == s_matSysCameraBufferId)
 					cameraParamsBuffer = rendBuffer.bufferView;
@@ -176,9 +183,9 @@ BEGIN_SHADER_CLASS(
 				.Texture(3, baseTexture)
 				.End();
 
-			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
-		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 	}
 
 	MatTextureProxy		m_baseTexture;

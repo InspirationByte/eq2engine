@@ -129,6 +129,7 @@ public:
 	// material var operations
 	virtual MatVarProxyUnk			FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
 	virtual MatVarProxyUnk			GetMaterialVar( const char* pszVarName, const char* defaultValue = nullptr) = 0;
+	virtual const MaterialVarBlock& GetMaterialVars() const = 0;
 
 	virtual bool					LoadShaderAndTextures() = 0;
 	virtual void					WaitForLoading() const = 0;

@@ -860,7 +860,7 @@ MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVarByName(const char* pszVarNa
 	return FindGlobalMaterialVar(nameHash);
 }
 
-MatVarProxyUnk	CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarName, const char* defaultValue)
+MatVarProxyUnk CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarName, const char* defaultValue)
 {
 	CScopedMutex m(s_matSystemMutex);
 
@@ -1430,9 +1430,15 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 	IShaderAPI* renderAPI = m_shaderAPI;
 
 	// TODO: overdraw material. Or maybe debug property in shader?
-
+	IMaterialPtr originalMaterial;
 	if (passContext.beforeMaterialSetup)
+	{
+		originalMaterial.Assign(material);
 		material = passContext.beforeMaterialSetup(material);
+
+		if(material == originalMaterial)
+			originalMaterial = nullptr;
+	}
 
 	if (!material)
 		return false;
@@ -1455,7 +1461,7 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 		matSysMaterial->m_frameBound = proxyFrame;
 	}
 
-	return matShader->SetupRenderPass(renderAPI, meshInstFormat, primTopology, uniformBuffers, passContext);
+	return matShader->SetupRenderPass(renderAPI, meshInstFormat, primTopology, uniformBuffers, passContext, originalMaterial);
 }
 
 bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext)
@@ -1532,7 +1538,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
 	IShaderAPI* renderAPI = m_shaderAPI;
-	if (!matShader->SetupRenderPass(renderAPI, instFormatRef, primTopology, nullptr, passContext))
+	if (!matShader->SetupRenderPass(renderAPI, instFormatRef, primTopology, nullptr, passContext, nullptr))
 	{
 		return false;
 	}

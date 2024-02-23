@@ -60,7 +60,7 @@ BEGIN_SHADER_CLASS(
 		cmdRecorder->WriteBuffer(m_materialParamsBuffer, &bufferData, sizeof(bufferData), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -72,14 +72,14 @@ BEGIN_SHADER_CLASS(
 					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
 			return m_materialBindGroup;
 		}
 		else if (bindGroupId == BINDGROUP_RENDERPASS)
 		{
 			GPUBufferView cameraParamsBuffer;
-			for (const RenderBufferInfo& rendBuffer : uniformBuffers)
+			for (const RenderBufferInfo& rendBuffer : setupParams.uniformBuffers)
 			{
 				if (rendBuffer.signature == s_matSysCameraBufferId)
 					cameraParamsBuffer = rendBuffer.bufferView;
@@ -102,21 +102,21 @@ BEGIN_SHADER_CLASS(
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 				.Buffer(0, cameraParamsBuffer)
 				.End();
-			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
 		else if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
-			if (pipelineInfo.vertexLayoutId == StringToHashConst("EGFVertexSkinned"))
+			if (setupParams.pipelineInfo.vertexLayoutId == StringToHashConst("EGFVertexSkinned"))
 			{
-				ASSERT(uniformBuffers[0].signature == RenderBoneTransformID)
+				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID)
 
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, uniformBuffers[0].bufferView)
+					.Buffer(0, setupParams.uniformBuffers[0].bufferView)
 					.End();
-				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
+				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
 		}
-		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const

@@ -41,7 +41,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 		cmdRecorder->WriteBuffer(m_proxyBuffer, bufferData.ptr(), bufferData.numElem() * sizeof(bufferData[0]), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
@@ -53,13 +53,13 @@ BEGIN_SHADER_CLASS(BloomRange)
 					.Sampler(1, baseTexture->GetSamplerState())
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, pipelineInfo);
+				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
 
 			return m_materialBindGroup;
 		}
 
-		return GetEmptyBindGroup(renderAPI, bindGroupId, pipelineInfo);
+		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 	}
 
 	mutable IGPUBindGroupPtr	m_materialBindGroup;

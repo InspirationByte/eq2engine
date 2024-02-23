@@ -195,7 +195,6 @@ private:
 
 	Map<int, MatSysShaderPipelineCache> m_renderPipelineCache{ PP_SL };
 	Map<int, IMaterial*>		m_loadedMaterials{ PP_SL };			// loaded material list
-	ECullMode					m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	Array<CDynamicMesh>			m_dynamicMeshes{ PP_SL };
 	Array<int>					m_freeDynamicMeshes{ PP_SL };

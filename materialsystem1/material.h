@@ -49,6 +49,7 @@ public:
 // material var operations
 	MatVarProxyUnk			FindMaterialVar(const char* pszVarName) const;
 	MatVarProxyUnk			GetMaterialVar(const char* pszVarName, const char* defaultValue);
+	const MaterialVarBlock&	GetMaterialVars() const { return m_vars; }
 
 // render-time operations
 	void					UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder);
