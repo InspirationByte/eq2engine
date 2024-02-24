@@ -592,7 +592,6 @@ void CSoundEmitterSystem::Update(Threading::CEqSignal* waitFor)
 		AddWait(waitFor);
 
 		g_parallelJobs->AddJob(this);
-		g_parallelJobs->Submit();
 	}
 }
 

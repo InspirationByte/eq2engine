@@ -34,6 +34,13 @@ public:
 	virtual void			Execute() = 0;
 
 protected:
+	enum EPhase : int
+	{
+		JOB_INIT,
+		JOB_STARTED,
+		JOB_DONE,
+	};
+
 	virtual void			FillJobGroup() {}
 
 	bool					WaitForJobGroup(int timeout = Threading::WAIT_INFINITE);
@@ -42,8 +49,10 @@ protected:
 	void					Run();
 
 	EqString						m_jobName;
-	Threading::CEqSignal*			m_jobSignalDone{ nullptr };
 	Array<Threading::CEqSignal*>	m_waitList{ PP_SL };
+	Threading::CEqSignal*			m_jobSignalDone{ nullptr };
+	volatile EPhase					m_phase{ JOB_INIT };
+	bool							m_deleteJob{ false };
 };
 
 inline IParallelJob::~IParallelJob()
@@ -147,18 +156,10 @@ public:
 	// adds the job to the queue
 	virtual void			AddJob(EQ_JOB_FUNC jobFn, void* args = nullptr, int count = 1) = 0;	// and puts JOB_FLAG_DELETE flag for this job
 
-	// submits all queued jobs
-	virtual void			Submit() = 0;
-
 	virtual void			Wait(int waitTimeout = Threading::WAIT_INFINITE) = 0;
 
 	virtual bool			AllJobsCompleted() const = 0;
-
-	// job thread counter
-	virtual int				GetActiveJobThreadsCount() = 0;
 	virtual int				GetJobThreadsCount() = 0;
-	virtual int				GetActiveJobsCount() = 0;
-	virtual int				GetPendingJobCount() = 0;
 };
 
 INTERFACE_SINGLETON(IEqParallelJobManager, CEqParallelJobManager, g_parallelJobs)

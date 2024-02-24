@@ -324,9 +324,7 @@ void CEqStudioGeom::LoadModelJob(void* data, int i)
 	//g_parallelJobs->AddJob(LoadPhysicsJob, data);
 	g_parallelJobs->AddJob(LoadVertsJob, data);
 	g_parallelJobs->AddJob(LoadMotionJob, data);
-
-	g_parallelJobs->Submit();
-
+	
 	OnLoadingJobComplete(data, i);
 }
 
@@ -400,8 +398,6 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	{
 		m_loading = 3;
 		g_parallelJobs->AddJob(LoadModelJob, this);
-
-		g_parallelJobs->Submit();
 		return true;
 	}
 

@@ -490,8 +490,6 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			if (compileErrors)
 				break;
 		}
-
-		g_parallelJobs->Submit();
 	}
 	g_parallelJobs->Wait();
 

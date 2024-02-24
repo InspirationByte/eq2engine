@@ -9,6 +9,7 @@ extern "C" __int64 _InterlockedCompareExchange64(__int64 volatile*, __int64, __i
 extern "C" long _InterlockedExchange(long volatile*, long);
 extern "C" long _InterlockedExchangeAdd(long volatile*, long);
 extern "C" long _InterlockedOr(long volatile*, long);
+extern "C" void _ReadWriteBarrier(void);
 #ifdef _M_AMD64
 extern "C" __int64 _InterlockedIncrement64(__int64 volatile*);
 extern "C" __int64 _InterlockedDecrement64(__int64 volatile*);
@@ -24,6 +25,7 @@ extern "C" __int64 _InterlockedOr64(__int64 volatile*, __int64);
 #pragma intrinsic(_InterlockedExchange)
 #pragma intrinsic(_InterlockedExchangeAdd)
 #pragma intrinsic(_InterlockedOr)
+#pragma intrinsic(_ReadWriteBarrier)
 #ifdef _M_AMD64
 #pragma intrinsic(_InterlockedIncrement64)
 #pragma intrinsic(_InterlockedDecrement64)
@@ -31,6 +33,7 @@ extern "C" __int64 _InterlockedOr64(__int64 volatile*, __int64);
 #pragma intrinsic(_InterlockedExchange64)
 #pragma intrinsic(_InterlockedExchangeAdd64)
 #pragma intrinsic(_InterlockedOr64)
+#pragma intrinsic(_ReadWriteBarrier)
 #endif // _M_AMD64
 #endif
 
@@ -52,10 +55,10 @@ inline int32	Atomic::Exchange(int32 volatile& var, int32 val)			{ return _Interl
 inline uint32	Atomic::Exchange(uint32 volatile& var, uint32 val)			{ return _InterlockedExchange((long volatile*)&var, val); }
 
 #ifndef _M_ARM
-inline int32	Atomic::Load(const int32 volatile& var)						{ return var; }
-inline uint32	Atomic::Load(const uint32 volatile& var)					{ return var; }
-inline void		Atomic::Store(int32 volatile& var, int32 val)				{ var = val; }
-inline void		Atomic::Store(uint32 volatile& var, uint32 val)				{ var = val; }
+inline int32	Atomic::Load(const int32 volatile& var)						{ _ReadWriteBarrier(); return var; }
+inline uint32	Atomic::Load(const uint32 volatile& var)					{ _ReadWriteBarrier(); return var; }
+inline void		Atomic::Store(int32 volatile& var, int32 val)				{ _ReadWriteBarrier(); var = val; }
+inline void		Atomic::Store(uint32 volatile& var, uint32 val)				{ _ReadWriteBarrier(); var = val; }
 #endif // _M_ARM
 
 #ifdef _M_AMD64
@@ -80,10 +83,10 @@ inline uint64	Atomic::Load(const uint64 volatile& var)					{ return var; }
 template <typename T>
 inline T*		Atomic::Load(T* const volatile& ptr)						{ return ptr; }
 
-inline void		Atomic::Store(int64 volatile& var, int64 val)				{ var = val; }
-inline void		Atomic::Store(uint64 volatile& var, uint64 val)				{ var = val; }
+inline void		Atomic::Store(int64 volatile& var, int64 val)				{ _ReadWriteBarrier(); var = val; }
+inline void		Atomic::Store(uint64 volatile& var, uint64 val)				{ _ReadWriteBarrier(); var = val; }
 template <typename T>
-inline void		Atomic::Store(T* volatile& ptr, T* val)						{ ptr = val; }
+inline void		Atomic::Store(T* volatile& ptr, T* val)						{ _ReadWriteBarrier(); ptr = val; }
 #endif	// !_M_ARM
 
 #else // _M_AMD64

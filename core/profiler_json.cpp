@@ -143,7 +143,6 @@ void EqCVTracerJSON::FlushTempBuffer()
 
 		delete writeBuffer;
 	});
-	g_parallelJobs->Submit();
 
 	m_tmpBuffer.reserve(bufferThreshold);
 }

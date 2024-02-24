@@ -141,8 +141,6 @@ public:
 			g_parallelJobs->AddJob([pMaterial](void*, int) {
 				((CMaterial*)pMaterial.Ptr())->DoLoadShaderAndTextures();
 			});
-
-			g_parallelJobs->Submit();
 			return;
 		}
 

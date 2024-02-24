@@ -34,6 +34,7 @@ public:
 	template <typename T>
 	static T*		CompareExchange(T* volatile& ptr, T* oldVal, T* newVal);
 
+	// AKA Sequential consistent store
 	static int32	Exchange(int32 volatile& var, int32 val);
 	static uint32	Exchange(uint32 volatile& var, uint32 val);
 	static int64	Exchange(int64 volatile& var, int64 val);
@@ -41,6 +42,7 @@ public:
 	template <typename T>
 	static T*		Exchange(T* volatile& ptr, T* val);
 
+	// Relaxed load
 	static int32	Load(const int32 volatile& var);
 	static uint32	Load(const uint32 volatile& var);
 	static int64	Load(const int64 volatile& var);
@@ -48,12 +50,23 @@ public:
 	template <typename T> 
 	static T*		Load(T* const volatile& ptr);
 
+	// Relaxed store
 	static void		Store(int32 volatile& var, int32 value);
 	static void		Store(uint32 volatile& var, uint32 value);
 	static void		Store(int64 volatile& var, int64 value);
 	static void		Store(uint64 volatile& var, uint64 value);
 	template <typename T>
 	static void		Store(T* volatile& ptr, T* value);
+
+	template <typename T>
+	static bool CompareExchangeWeak(T volatile& var, T oldVal, T newVal)
+    {
+        T prev = CompareExchange(var, oldVal, newVal);
+        if (prev == oldVal)
+            return true;
+        oldVal = prev;
+        return false;
+    }
 };
 
 #include "eqatomic.inl"

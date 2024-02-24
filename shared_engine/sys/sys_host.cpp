@@ -606,7 +606,6 @@ void InputCommands_SDL(SDL_Event* event)
 }
 
 static DbgGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
-static DbgGraphBucket s_jobThreads("Active job threads", ColorRGB(1, 1, 0), 16.0f);
 
 CGameHost::CGameHost() :
 	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_window(nullptr), m_quitState(QUIT_NOTQUITTING),
@@ -776,9 +775,6 @@ bool CGameHost::Frame()
 
 	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
 
-	const bool allJobsDone = g_parallelJobs->AllJobsCompleted();
-	debugoverlay->Text(allJobsDone ? Vector4D(1) : Vector4D(1, 1, 0, 1), "job threads: %i/%i (%d jobs)", g_parallelJobs->GetActiveJobThreadsCount(), g_parallelJobs->GetJobThreadsCount(), g_parallelJobs->GetActiveJobsCount());
-
 	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
 	// this also resets matsystem from overdraw
 	g_matSystem->GetConfiguration().overdrawMode = false;
@@ -812,8 +808,6 @@ bool CGameHost::Frame()
 
 		debugoverlay->Graph_AddValue(&s_fpsGraph, gamefps);
 	}
-
-	debugoverlay->Graph_AddValue(&s_jobThreads, g_parallelJobs->GetActiveJobsCount());
 
 	debugoverlay->Text(color_white, "System framerate: %i", fps);
 	debugoverlay->Text(color_white, "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
