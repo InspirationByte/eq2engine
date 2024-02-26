@@ -35,12 +35,12 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 
 	if (!active)
 	{
-		SetTime(seq_time);
+		SetTime(seqTime);
 		return;
 	}
 
 	const float frame_time = fDt * playbackSpeedScale * seqDesc->framerate;
-	SetTime(seq_time + frame_time);
+	SetTime(seqTime + frame_time);
 }
 
 void sequencetimer_t::SetTime(float time)
@@ -80,14 +80,14 @@ void sequencetimer_t::SetTime(float time)
 		nextFrame = min(currFrame + 1, numAnimationFrames - 1);
 	}
 
-	seq_time = time;
+	seqTime = time;
 }
 
 void sequencetimer_t::Reset()
 {
 	active = false;
 	seq = nullptr;
-	seq_idx = -1;
+	seqIdx = -1;
 	blendWeight = 0.0f;
 
 	playbackSpeedScale = 1.0f;
@@ -97,7 +97,7 @@ void sequencetimer_t::Reset()
 
 void sequencetimer_t::ResetPlayback()
 {
-	seq_time = 0.0f;
+	seqTime = 0.0f;
 	blendWeight = 0.0f;
 	eventCounter = 0;
 	nextFrame = 0;

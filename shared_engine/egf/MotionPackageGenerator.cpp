@@ -933,10 +933,10 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	else
 		desc.framerate = KV_GetValueFloat(pFramerateKey);
 
-	KVSection* anim_list = section->FindSection("weights");
-	if(anim_list)
+	const KVSection* animListKvs = section->FindSection("weights");
+	if(animListKvs)
 	{
-		desc.numAnimations = anim_list->keys.numElem();
+		desc.numAnimations = animListKvs->keys.numElem();
 
 		if(desc.numAnimations == 0)
 		{
@@ -944,12 +944,12 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 			return;
 		}
 
-		for(int i = 0; i < anim_list->keys.numElem(); i++)
+		for(int i = 0; i < animListKvs->keys.numElem(); i++)
 		{
-			if (stricmp(anim_list->keys[i]->name, "animation"))
+			if (stricmp(animListKvs->keys[i]->name, "animation"))
 				continue;
 
-			const char* animName = KV_GetValueString(anim_list->keys[i]);
+			const char* animName = KV_GetValueString(animListKvs->keys[i]);
 			int anim_index = GetAnimationIndex(animName);
 
 			if(anim_index == -1) // try to load new one if not found

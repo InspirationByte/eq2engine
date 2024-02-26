@@ -23,76 +23,76 @@ public:
 	CAnimatingEGF();
 	virtual ~CAnimatingEGF();
 
-	virtual void				InitAnimating(CEqStudioGeom* model);
-	void						DestroyAnimating();
+	virtual void		InitAnimating(CEqStudioGeom* model);
+	void				DestroyAnimating();
 
-	virtual int					FindBone(const char* boneName) const;			// finds bone
+	int					FindBone(const char* boneName) const;			// finds bone
 
-	virtual const Vector3D&		GetLocalBoneOrigin(int nBone) const;			// gets local bone position
-	virtual const Vector3D&		GetLocalBoneDirection(int nBone) const;			// gets local bone direction
+	const Vector3D&		GetLocalBoneOrigin(int nBone) const;			// gets local bone position
+	const Vector3D&		GetLocalBoneDirection(int nBone) const;			// gets local bone direction
 
-	virtual Matrix4x4*			GetBoneMatrices() const;						// returns transformed bones
+	Matrix4x4			GetLocalStudioTransformMatrix(int transformIdx) const;
 
-	void						SetSequenceBlending(int slot, float factor);
-	void						SwapSequenceTimers(int index, int swapTo);
+	Matrix4x4*			GetBoneMatrices() const;						// returns transformed bones
+	virtual void		RecalcBoneTransforms();
 
-// forward kinematics
+	// advances frame (and computes interpolation between all blended animations)
+	void				AdvanceFrame(float fDt);
+	void				UpdateIK(float fDt, const Matrix4x4& worldTransform);
 
-	int							FindSequence(const char* name) const;				// finds animation
-	int							FindSequenceByActivity(Activity act, int slot = 0) const;
+	void				DebugRender(const Matrix4x4& worldTransform);
 
-	void						SetActivity(Activity act, int slot = 0);	// sets activity
-	Activity					GetCurrentActivity(int slot = 0) const;		// returns current activity
+// activity control (simple sequence state machine)
 
-	bool						IsSequencePlaying(int slot = 0) const;
-	void						SetSequence(int seqIdx, int slot = 0);			// sets new sequence
-	void						SetSequenceByName(const char* name, int slot = 0);	// sets new sequence by it's name
-	void						PlaySequence(int slot = 0);						// plays/resumes animation
-	void						StopSequence(int slot = 0);						// stops/pauses animation
-	void						ResetSequenceTime(int slot = 0);				// resets animation time, and restarts animation
-	void						SetSequenceTime(float newTime, int slot = 0);	// sets new animation time
+	void				SetActivity(Activity act, int slot = 0);	// sets activity
+	Activity			GetCurrentActivity(int slot = 0) const;		// returns current activity
 
-	float						GetCurrentAnimationDuration(int slot = 0) const;			// returns duration time of the current animation
-	float						GetCurrentAnimationTime(int slot = 0) const;				// returns elapsed time of the current animation
-	float						GetCurrentRemainingAnimationDuration(int slot = 0) const;	// returns remaining duration time of the current animation
+// forward kinematics sequence control
 
-	float						GetAnimationDuration(int animIndex) const;		// returns duration time of the specific animation
-	
-	int							FindPoseController(const char *name) const;					// returns pose controller index
-	void						SetPoseControllerValue(int poseCtrlId, float value);			// sets value of the pose controller
-	float						GetPoseControllerValue(int poseCtrlId) const;
-	void						GetPoseControllerRange(int poseCtrlId, float& rMin, float& rMax) const;
+	int					FindSequence(const char* name) const;				// finds animation
+	int					FindSequenceByActivity(Activity act, int slot = 0) const;
+	void				SetSequence(int sequenceIndex, int slot = 0);		// sets new sequence
+	void				SetSequenceByName(const char* name, int slot = 0);	// sets new sequence by it's name
 
-	void						SetPlaybackSpeedScale(float scale, int slotindex = 0);		// sets playback speed scale
+	bool				IsSequencePlaying(int slot = 0) const;
+	void				PlaySequence(int slot = 0);							// plays/resumes animation
+	void				StopSequence(int slot = 0);							// stops/pauses animation
+	void				SetPlaybackSpeedScale(float scale, int slot = 0);	// sets playback speed scale
+	void				ResetSequenceTime(int slot = 0);					// resets animation time, and restarts animation
+	void				SetSequenceTime(float newTime, int slot = 0);		// sets new animation time
+	void				SetSequenceBlending(float factor, int slot);
 
-	Matrix4x4					GetLocalStudioTransformMatrix(int transformIdx) const;
+	void				SwapSequenceTimers(int slotFrom, int swapTo);
+
+	float				GetCurrentAnimationDuration(int slot = 0) const;			// returns duration time of the current animation
+	float				GetCurrentAnimationTime(int slot = 0) const;				// returns elapsed time of the current animation
+	float				GetCurrentAnimationRemainingDuration(int slot = 0) const;	// returns remaining duration time of the current animation
+
+// pose controllers
+
+	int					FindPoseController(const char* name) const;					// returns pose controller index
+	void				SetPoseControllerValue(int poseCtrlId, float value);		// sets value of the pose controller
+	float				GetPoseControllerValue(int poseCtrlId) const;
+	void				GetPoseControllerRange(int poseCtrlId, float& rMin, float& rMax) const;
 
 // inverse kinematics
 
-	void						SetIKWorldTarget(int chainId, const Vector3D &world_position, const Matrix4x4& worldTransform); // sets ik world point, use external transform if model transform differs from entity transform
-	void						SetIKLocalTarget(int chainId, const Vector3D &local_position);	// sets local, model-space ik point target
+	void				SetIKWorldTarget(int chainId, const Vector3D &world_position, const Matrix4x4& worldTransform); // sets ik world point, use external transform if model transform differs from entity transform
+	void				SetIKLocalTarget(int chainId, const Vector3D &local_position);	// sets local, model-space ik point target
 
-	void						SetIKChainEnabled(int chainId, bool enabled);				// enables or disables ik chain.
-	bool						IsIKChainEnabled(int chainId);								// returns status if ik chain
-	int							FindIKChain(const char* pszName);							// searches for ik chain
+	void				SetIKChainEnabled(int chainId, bool enabled);				// enables or disables ik chain.
+	bool				IsIKChainEnabled(int chainId);								// returns status if ik chain
+	int					FindIKChain(const char* pszName);							// searches for ik chain
 
-	// advances frame (and computes interpolation between all blended animations)
-	void						AdvanceFrame(float fDt);
-	void						UpdateIK(float fDt, const Matrix4x4& worldTransform);
-
-	virtual void				RecalcBoneTransforms();
-
-	void						DebugRender(const Matrix4x4& worldTransform);
 protected:
 
-	void						RaiseSequenceEvents(sequencetimer_t& timer);
-	void						UpdateIkChain(gikchain_t* pIkChain, float fDt);
+	void				RaiseSequenceEvents(sequencetimer_t& timer);
+	void				UpdateIkChain(gikchain_t* pIkChain, float fDt);
 	
+	virtual Activity	TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
+	virtual void		HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
-	virtual Activity			TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
-	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
-
-	virtual void				AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData);
+	virtual void		AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData);
 
 	using SequenceTimers = FixedArray<sequencetimer_t, MAX_SEQUENCE_TIMERS>;
 
@@ -100,6 +100,7 @@ protected:
 	// sequence timers. first timer is main, and transitional is last
 	SequenceTimers				m_sequenceTimers;
 
+	// NOTE: those transitions must be really per-sequence timer.
 	float						m_transitionTime{ 0 };
 	float						m_transitionRemTime{ 0 };
 	qanimframe_t*				m_transitionFrames{ nullptr };
