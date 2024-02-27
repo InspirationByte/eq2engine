@@ -61,9 +61,6 @@ private:
 	// Crops animation
 	void CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newEnd);
 
-	// Reverse animated bones
-	void ReverseAnimationBoneFrames(studioBoneAnimation_t* pBone);
-
 	// Reverse animation
 	void ReverseAnimation(studioAnimation_t* pAnim);
 

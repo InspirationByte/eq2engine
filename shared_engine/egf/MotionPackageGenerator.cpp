@@ -21,6 +21,9 @@
 #include "egf/model.h"
 #include "studiofile/StudioLoader.h"
 
+#define MIN_MOTIONPACKAGE_SIZE		(16 * 1024 * 1024)
+#define BONE_NOT_SET				(65536)
+
 namespace SharedModel {
 	extern float readFloat(Tokenizer& tok);
 }
@@ -37,8 +40,6 @@ static void FreeAnimationData(studioAnimation_t* anim, int numBones)
 
 	PPFree(anim->bones);
 }
-
-#define BONE_NOT_SET 65536
 
 struct animCaBoneFrames_t
 {
@@ -57,10 +58,8 @@ CMotionPackageGenerator::~CMotionPackageGenerator()
 void CMotionPackageGenerator::Cleanup()
 {
 	// delete animations
-	for(int i = 0; i < m_animations.numElem(); i++)
-	{
-		FreeAnimationData(&m_animations[i], m_model->numBones);
-	}
+	for(studioAnimation_t& anim : m_animations)
+		FreeAnimationData(&anim, m_model->numBones);
 
 	m_animations.clear();
 	m_sequences.clear();
@@ -114,31 +113,6 @@ int	CMotionPackageGenerator::GetPoseControllerIndex(const char* name)
 	return -1;
 }
 
-/*
-//************************************
-// Shifts animation start
-//************************************
-void CMotionPackageGenerator::ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame)
-{
-	animframe_t* frames_copy = PPAllocStructArray(animframe_t, bone->numFrames);
-
-	for(int i = 0; i < new_start_frame; i++)
-	{
-		frames_copy[i] = bone->keyFrames[(bone->numFrames-1) - new_start_frame];
-	}
-
-	int c = 0;
-	for(int i = new_start_frame-1; i < bone->numFrames; i++; c++)
-	{
-		frames_copy[i] = bone->keyFrames[c++];
-	}
-
-	PPFree(bone->keyFrames);
-
-	bone->keyFrames = frames_copy;
-}
-*/
-
 //*******************************************************
 // TODO: use from bonesetup.h
 //*******************************************************
@@ -164,8 +138,7 @@ void CMotionPackageGenerator::SubtractAnimationFrames(studioBoneAnimation_t* bon
 }
 
 //*******************************************************
-// Advances every frame position on reversed velocity
-// Helps with motion capture issues.
+// Subtracts root motion from the bone transform
 //*******************************************************
 void CMotionPackageGenerator::VelocityBackTransform(studioBoneAnimation_t* bone, Vector3D &velocity)
 {
@@ -174,8 +147,6 @@ void CMotionPackageGenerator::VelocityBackTransform(studioBoneAnimation_t* bone,
 		bone->keyFrames[i].vecBonePosition -= velocity*float(i);
 	}
 }
-
-#define BONE_NOT_SET 65536
 
 //*******************************************************
 // key marked as empty?
@@ -197,8 +168,8 @@ void CMotionPackageGenerator::InterpolateBoneAnimationFrames(studioBoneAnimation
 	float lastKeyframeTime = 0;
 	float nextKeyframeTime = 0;
 
-	animframe_t *lastKeyFrame = nullptr;
-	animframe_t *nextInterpKeyFrame = nullptr;
+	animframe_t* lastKeyFrame = nullptr;
+	animframe_t* nextInterpKeyFrame = nullptr;
 
 	// TODO: interpolate bone at the missing animation frames
 	for(int i = 0; i < bone->numFrames; i++)
@@ -301,15 +272,13 @@ void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneAnimation_t* pBo
 		return;
 	}
 
-	animframe_t* new_frames = PPAllocStructArray(animframe_t, newLength);
+	animframe_t* newFrames = PPAllocStructArray(animframe_t, newLength);
 
 	for(int i = 0; i < newLength; i++)
-	{
-		new_frames[i] = pBone->keyFrames[i + newStart];
-	}
+		newFrames[i] = pBone->keyFrames[i + newStart];
 
 	PPFree(pBone->keyFrames);
-	pBone->keyFrames = new_frames;
+	pBone->keyFrames = newFrames;
 	pBone->numFrames = newLength;
 }
 
@@ -323,31 +292,13 @@ void CMotionPackageGenerator::CropAnimationDimensions(studioAnimation_t* pAnim, 
 }
 
 //************************************
-// Reverse animated bones
-//************************************
-void CMotionPackageGenerator::ReverseAnimationBoneFrames(studioBoneAnimation_t* pBone)
-{
-	animframe_t* new_frames = PPAllocStructArray(animframe_t, pBone->numFrames);
-
-	for(int i = 0; i < pBone->numFrames; i++)
-	{
-		int rev_idx = (pBone->numFrames-1)-i;
-
-		new_frames[i] = pBone->keyFrames[rev_idx];
-	}
-
-	PPFree(pBone->keyFrames);
-	pBone->keyFrames = new_frames;
-}
-
-//************************************
 // Reverse animation
 //************************************
 
 void CMotionPackageGenerator::ReverseAnimation(studioAnimation_t* pAnim )
 {
 	for(int i = 0; i < m_model->numBones; i++)
-		ReverseAnimationBoneFrames( &pAnim->bones[i] );
+		arrayReverse(&pAnim->bones[i], 0, pAnim->bones[i].numFrames);
 }
 
 //************************************
@@ -382,9 +333,7 @@ inline void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *nex
 void CMotionPackageGenerator::RemapBoneFrames(studioBoneAnimation_t* pBone, int newLength)
 {
 	animframe_t* newFrames = PPAllocStructArray(animframe_t, newLength);
-	bool* bSetFrames = PPAllocStructArray(bool, newLength);
-
-	memset(bSetFrames, 0, sizeof(bool) * newLength);
+	BitArray setFrames(PP_SL, max(pBone->numFrames, newLength));
 
 	for(int i = 0; i < newLength; i++)
 	{
@@ -392,43 +341,38 @@ void CMotionPackageGenerator::RemapBoneFrames(studioBoneAnimation_t* pBone, int 
 		newFrames[i].angBoneAngles.x = BONE_NOT_SET;
 	}
 
-	float fFrameFactor = (float)newLength / (float)pBone->numFrames;
-	float fFrameFactor_to_old = (float)pBone->numFrames / (float)newLength;
+	const float frameFactor = (float)newLength / (float)pBone->numFrames;
+	const float frameFactorToOld = (float)pBone->numFrames / (float)newLength;
 
-
-	bSetFrames[0] = true;
-	bSetFrames[newLength-1] = true;
+	setFrames.setTrue(0);
+	setFrames.setTrue(newLength-1);
 
 	newFrames[0] = pBone->keyFrames[0];
 	newFrames[newLength-1] = pBone->keyFrames[pBone->numFrames-1];
 
 	for(int i = 0; i < pBone->numFrames; i++)
 	{
-		float fframe_id = fFrameFactor*(float)i;
+		if (setFrames[i])
+			continue;
 
-		int new_frame_1 = 0;
-		int new_frame_2 = 0;
-		GetCurrAndNextFrameFromTime(fframe_id, newLength, &new_frame_1, &new_frame_2);
+		const float timeFactorToNew = frameFactor * (float)i;
 
-		int interp_frame1 = 0;
-		int interp_frame2 = 0;
-		float timefactor_to_old = fFrameFactor_to_old*(float)new_frame_1;
-		GetCurrAndNextFrameFromTime(timefactor_to_old, pBone->numFrames, &interp_frame1, &interp_frame2);
+		int newFrameA = 0;
+		int newFrameB = 0;
+		GetCurrAndNextFrameFromTime(timeFactorToNew, newLength, &newFrameA, &newFrameB);
 
-		if(!bSetFrames[i])
-		{
-			float ftime_interp = timefactor_to_old - (int)interp_frame1;
+		int oldFrameA = 0;
+		int oldFrameB = 0;
+		const float timeFactorToOld = frameFactorToOld * (float)newFrameA;
+		GetCurrAndNextFrameFromTime(timeFactorToOld, pBone->numFrames, &oldFrameA, &oldFrameB);
 
-			InterpolateFrameTransform(pBone->keyFrames[interp_frame1], pBone->keyFrames[interp_frame2], ftime_interp, newFrames[new_frame_1]);
-		}
-
-		bSetFrames[i] = true;
+		const float timeInterp = timeFactorToOld - (int)oldFrameA;
+		InterpolateFrameTransform(pBone->keyFrames[oldFrameA], pBone->keyFrames[oldFrameB], timeInterp, newFrames[newFrameA]);
+		setFrames.setTrue(i);
 	}
 
 	// finally, replace bones
-
 	PPFree(pBone->keyFrames);
-	PPFree(bSetFrames);
 
 	pBone->keyFrames = newFrames;
 	pBone->numFrames = newLength;
@@ -534,7 +478,7 @@ static bool ReadFramesForBone(Tokenizer& tok, Array<animCaBoneFrames_t>& bones)
 	return false;
 }
 
-bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pModel, studioAnimation_t* pAnim)
+static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pModel, studioAnimation_t* pAnim)
 {
 	char *str;
 
@@ -578,7 +522,7 @@ bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pMo
 	// copy all data
 	for(int i = 0; i < bones.numElem(); i++)
 	{
-		int numFrames = bones[i].frames.numElem();
+		const int numFrames = bones[i].frames.numElem();
 		pAnim->bones[i].numFrames = numFrames;
 		pAnim->bones[i].keyFrames = PPAllocStructArray(animframe_t, numFrames);
 
@@ -586,7 +530,7 @@ bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pMo
 		memcpy(pAnim->bones[i].keyFrames, bones[i].frames.ptr(), numFrames * sizeof(animframe_t));
 
 		// try fix and iterpolate
-		//InterpolateBoneAnimationFrames( &pAnim->bones[i] );
+		//InterpolateBoneAnimationFrames( &currentAnim->bones[i] );
 
 		// convert rotations to local
 
@@ -713,128 +657,114 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 
 	const char* animName = KV_GetValueString(pPathKey);
 
-	KVSection* externalpath = section->FindSection("externalfile");
-
+	const KVSection* externalpath = section->FindSection("externalFile");
 	if(externalpath)
 		animName = KV_GetValueString(externalpath);
 
 	Msg(" loading animation '%s' as '%s'\n", animName, KV_GetValueString(section));
 
-	Vector3D anim_offset(0);
-	Vector3D anim_movevelocity(0);
-
 	KVSection* offsetPos = section->FindSection("offset");
 
-	anim_offset = KV_GetVector3D(offsetPos, 0, vec3_zero);
+	Vector3D animOffsetPos = KV_GetVector3D(offsetPos, 0, vec3_zero);
+	Vector3D animRootVelocity = vec3_zero;
 
-	KVSection* velocity = section->FindSection("movevelocity");
-	if(velocity)
+	KVSection* moveVelocityKey = section->FindSection("moveVelocity");
+	if(moveVelocityKey)
 	{
-		float frame_rate = 1;
+		animRootVelocity = KV_GetVector3D(moveVelocityKey, 0, vec3_zero);
+		const float frameRate = KV_GetValueFloat(moveVelocityKey, 3, 1.0f);
 
-		anim_movevelocity = KV_GetVector3D(velocity, 0, vec3_zero);
-		frame_rate = KV_GetValueFloat(velocity, 3, 1.0f);
-
-		anim_movevelocity /= frame_rate;
+		animRootVelocity /= frameRate;
 	}
 
-	KVSection* cust_length_key = section->FindSection("customlength");
-	int custom_length = KV_GetValueInt(cust_length_key, 0, -1);
+	bool doCut = false;
+	int cropFrom = 0;
+	int cropTo = -1;
 
-	bool enable_cutting = false;
-	bool reverse = false;
-	int cut_start = 0;
-	int cut_end = -1;
-
-	KVSection* cut_anim_key = section->FindSection("crop");
-	if(cut_anim_key)
+	const KVSection* cropAnimKey = section->FindSection("crop");
+	if(cropAnimKey)
 	{
-		cut_start = KV_GetValueInt(cut_anim_key, 0, -1);
-		cut_end = KV_GetValueInt(cut_anim_key, 0, -1);
+		cropFrom = KV_GetValueInt(cropAnimKey, 0, -1);
+		cropTo = KV_GetValueInt(cropAnimKey, 0, -1);
 
-		if(cut_start == -1)
+		if(cropFrom == -1)
 		{
 			MsgError("Key error: crop must have at least one value (min)\n");
 			MsgWarning("Usage: crop (min frame) (max frame)\n");
 		}
 		else
-			enable_cutting = true;
+			doCut = true;
 	}
 
-	KVSection* rev_key = section->FindSection("reverse");
+	int animIdx = GetAnimationIndex(animName);
+	if(animIdx != -1)
+		animIdx = DuplicateAnimationByIndex(animIdx);
 
-	reverse = KV_GetValueBool(rev_key, 0, false);
+	if (animIdx == -1) // try to load new one if not found
+		animIdx = LoadAnimationFromESA(animName);
 
-	int anim_index = GetAnimationIndex(animName);
-
-	if(anim_index != -1)
-		anim_index = DuplicateAnimationByIndex(anim_index);
-
-	if (anim_index == -1) // try to load new one if not found
-		anim_index = LoadAnimationFromESA(animName);
-
-	if(anim_index == -1)
+	if(animIdx == -1)
 	{
 		MsgError("ERROR: Cannot open animation file '%s'!\n", animName);
 		return;
 	}
 
-	studioAnimation_t* pAnim = &m_animations[ anim_index ];
-
+	studioAnimation_t* currentAnim = &m_animations[ animIdx ];
 	for(int i = 0; i < m_model->numBones; i++)
 	{
 		if (m_model->pBone(i)->parent != -1)
 			continue;
 
-		if(length(anim_offset) > 0)
-			Msg("Animation offset: %f %f %f\n", anim_offset.x, anim_offset.y, anim_offset.z);
+		if(length(animOffsetPos) > 0)
+			Msg("Animation offset: %f %f %f\n", animOffsetPos.x, animOffsetPos.y, animOffsetPos.z);
 
 		// move bones to user-defined position
-		TranslateAnimationFrames(&pAnim->bones[i], anim_offset);
+		TranslateAnimationFrames(&currentAnim->bones[i], animOffsetPos);
 
-		// transform model back using linear velocity
-		VelocityBackTransform(&pAnim->bones[i], anim_movevelocity);
+		// transform model back using linear moveVelocityKey
+		VelocityBackTransform(&currentAnim->bones[i], animRootVelocity);
 	}
 
-	KVSection* subtract_key = section->FindSection("subtract");
-
-	if(subtract_key)
+	const KVSection* subtractKey = section->FindSection("subtract");
+	if(subtractKey)
 	{
-		int subtract_by_anim = GetAnimationIndex( KV_GetValueString(subtract_key) );
-		if(subtract_by_anim != -1)
+		const int subtractByAnimIdx = GetAnimationIndex( KV_GetValueString(subtractKey) );
+		if(subtractByAnimIdx != -1)
 		{
 			for(int i = 0; i < m_model->numBones; i++)
-				SubtractAnimationFrames(&pAnim->bones[i], &m_animations[subtract_by_anim].bones[i]);
+				SubtractAnimationFrames(&currentAnim->bones[i], &m_animations[subtractByAnimIdx].bones[i]);
 		}
 		else
 		{
-			MsgError("Subtract: animation %s not found\n", subtract_key->values[0]);
+			MsgError("Subtract: animation %s not found\n", subtractKey->values[0]);
 		}
 	}
 
-	if(enable_cutting)
+	if(doCut)
 	{
-		Msg("  Cropping from [0 %d] to [%d %d]\n", pAnim->bones[0].numFrames, cut_start, cut_end);
-		CropAnimationDimensions( pAnim, cut_start, cut_end );
+		Msg("  Cropping from [0 %d] to [%d %d]\n", currentAnim->bones[0].numFrames, cropFrom, cropTo);
+		CropAnimationDimensions( currentAnim, cropFrom, cropTo );
 
-		if(cut_start == cut_end)
-			RemapAnimationLength(pAnim, 2);
+		if(cropFrom == cropTo)
+			RemapAnimationLength(currentAnim, 2);
 	}
 
-	if(custom_length != -1)
+	const int customLength = KV_GetValueInt(section->FindSection("customLength"), 0, -1);
+	if(customLength != -1)
 	{
-		Msg("Changing length to %d\n", custom_length);
-		RemapAnimationLength( pAnim, custom_length );
+		Msg("Changing length to %d\n", customLength);
+		RemapAnimationLength( currentAnim, customLength );
 	}
 
+	const bool reverse = KV_GetValueBool(section->FindSection("reverse"), 0, false);
 	if(reverse)
 	{
 		Msg("Reverse\n");
-		ReverseAnimation( pAnim );
+		ReverseAnimation( currentAnim );
 	}
 
 	// make final name
-	strcpy(pAnim->name, KV_GetValueString(section));
+	strcpy(currentAnim->name, KV_GetValueString(section));
 }
 
 //************************************
@@ -843,13 +773,8 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 bool CMotionPackageGenerator::ParseAnimations(const KVSection* section)
 {
 	Msg("Processing animations\n");
-	for(int i = 0; i < section->keys.numElem(); i++)
-	{
-		if(!stricmp(section->keys[i]->name, "animation"))
-		{
-			LoadAnimation( section->keys[i] );
-		}
-	}
+	for(KVKeyIterator it(section, "animation"); !it.atEnd(); ++it)
+		LoadAnimation(*it);
 
 	return m_animations.numElem() > 0;
 }
@@ -860,122 +785,108 @@ bool CMotionPackageGenerator::ParseAnimations(const KVSection* section)
 void CMotionPackageGenerator::ParsePoseparameters(const KVSection* section)
 {
 	Msg("Processing pose parameters\n");
-	for(int i = 0; i < section->keys.numElem(); i++)
+	for (KVKeyIterator it(section, "poseParameter"); !it.atEnd(); ++it)
 	{
-		KVSection* poseParamKey = section->keys[i];
-
-		if(!stricmp(poseParamKey->name, "poseparameter"))
+		const KVSection* poseParamKey = *it;
+		if(poseParamKey->values.numElem() < 3)
 		{
-			if(poseParamKey->values.numElem() < 3)
-			{
-				MsgError("Incorrect usage. Example: poseparameter <poseparam name> <min range> <max range>");
-				continue;
-			}
-
-			posecontroller_t controller;
-
-			strcpy(controller.name, KV_GetValueString(poseParamKey, 0));
-			controller.blendRange[0] = KV_GetValueFloat(poseParamKey, 1);
-			controller.blendRange[1] = KV_GetValueFloat(poseParamKey, 2);
-
-			m_posecontrollers.append(controller);
+			MsgError("Incorrect usage. Example: poseparameter <poseparam name> <min range> <max range>");
+			continue;
 		}
+
+		posecontroller_t& controller = m_posecontrollers.append();
+
+		strcpy(controller.name, KV_GetValueString(poseParamKey, 0));
+		controller.blendRange[0] = KV_GetValueFloat(poseParamKey, 1);
+		controller.blendRange[1] = KV_GetValueFloat(poseParamKey, 2);
 	}
 }
 
 //************************************
 // Loads sequence parameters
 //************************************
-void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char* seq_name)
+void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char* seqName)
 {
 	sequencedesc_t desc;
 	memset(&desc,0,sizeof(sequencedesc_t));
-
-	bool bAlignAnimationLengths = false;
-
-	strcpy(desc.name, seq_name);
+	strcpy(desc.name, seqName);
 
 	// UNDONE: duplicate animation and translate if the key "translate" found.
 
-	for(int i = 0; i < section->keys.numElem(); i++)
+	for (KVKeyIterator it(section, "sequenceLayer"); !it.atEnd(); ++it)
 	{
-		if(!stricmp(section->keys[i]->name, "sequencelayer"))
+		const int seqIndex = GetSequenceIndex(KV_GetValueString(*it));
+		if(seqIndex == -1)
 		{
-			int seq_index = GetSequenceIndex(KV_GetValueString(section->keys[i]));
-
-			if(seq_index == -1)
-			{
-				MsgError("No such sequence '%s' for making layer in sequence '%s'\n", KV_GetValueString(section->keys[i]), seq_name);
-				return;
-			}
-
-			desc.sequenceblends[desc.numSequenceBlends] = seq_index;
-			desc.numSequenceBlends++;
+			MsgError("No such sequence '%s' for making layer in sequence '%s'\n", KV_GetValueString(*it), seqName);
+			return;
 		}
+
+		if (desc.numSequenceBlends >= MAX_SEQUENCE_BLENDS)
+		{
+			MsgError("Too many sequence layers in '%s' (max %d)\n", seqName, MAX_SEQUENCE_BLENDS);
+			return;
+		}
+
+		desc.sequenceblends[desc.numSequenceBlends++] = seqIndex;
 	}
 
 	// length alignment, for differrent animation lengths, takes the first animation as etalon
-	KVSection* pAlignLengthKey = section->FindSection("alignlengths");
+	bool alignAnimationLengths = KV_GetValueBool(section->FindSection("alignLengths"));
 
-	bAlignAnimationLengths = KV_GetValueBool(pAlignLengthKey);
-
-	int arg_index = g_cmdLine->FindArgument("-forcealign");
-	if(arg_index != -1)
-	{
-		bAlignAnimationLengths = true;
-	}
+	if(g_cmdLine->FindArgument("-forceAlign") != -1)
+		alignAnimationLengths = true;
 
 	// parse default parameters
-	KVSection* pFramerateKey = section->FindSection("framerate");
-
-	if(!pFramerateKey)
+	const KVSection* frameRateKey = section->FindSection("frameRate");
+	if(!frameRateKey)
 		desc.framerate = 30;
 	else
-		desc.framerate = KV_GetValueFloat(pFramerateKey);
+		desc.framerate = KV_GetValueFloat(frameRateKey);
 
 	const KVSection* animListKvs = section->FindSection("weights");
 	if(animListKvs)
 	{
-		desc.numAnimations = animListKvs->keys.numElem();
-
-		if(desc.numAnimations == 0)
+		desc.numAnimations = 0;
+		for(KVKeyIterator it(animListKvs, "animation"); !it.atEnd(); ++it)
 		{
-			MsgError("No values in 'weights' section.\n");
-			return;
-		}
+			const char* animName = KV_GetValueString(*it);
 
-		for(int i = 0; i < animListKvs->keys.numElem(); i++)
-		{
-			if (stricmp(animListKvs->keys[i]->name, "animation"))
-				continue;
+			int animIdx = GetAnimationIndex(animName);
+			if(animIdx == -1) // try to load new one if not found
+				animIdx = LoadAnimationFromESA(animName);
 
-			const char* animName = KV_GetValueString(animListKvs->keys[i]);
-			int anim_index = GetAnimationIndex(animName);
-
-			if(anim_index == -1) // try to load new one if not found
-				anim_index = LoadAnimationFromESA(animName);
-
-			if(anim_index == -1)
+			if(animIdx == -1)
 			{
 				MsgError("No such animation '%s'\n", animName);
 				return;
 			}
 
-			desc.animations[i] = anim_index;
+			if (desc.numAnimations >= MAX_BLEND_WIDTH)
+			{
+				MsgError("Too many weights in animation '%s' (max %d)\n", animName, MAX_BLEND_WIDTH);
+				return;
+			}
+
+			desc.animations[desc.numAnimations++] = animIdx;
+		}
+
+		if (desc.numAnimations == 0)
+		{
+			MsgError("No values in 'weights' section.\n");
+			return;
 		}
 
 		// check for validness
 		int checkFrameCount = m_animations[desc.animations[0]].bones[0].numFrames;
 		const int oldFrameCount = checkFrameCount;
 
-		if(bAlignAnimationLengths)
+		if(alignAnimationLengths)
 		{
 			for(int i = 0; i < desc.numAnimations; i++)
 			{
-				int real_frames = m_animations[desc.animations[i]].bones[0].numFrames;
-
-				if(real_frames > checkFrameCount)
-					checkFrameCount = real_frames;
+				const int frameCount = m_animations[desc.animations[i]].bones[0].numFrames;
+				checkFrameCount = max(checkFrameCount, frameCount);
 			}
 
 			desc.framerate *= (float)checkFrameCount / (float)oldFrameCount;
@@ -983,13 +894,13 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 
 		for(int i = 0; i < desc.numAnimations; i++)
 		{
-			const int real_frames = m_animations[desc.animations[i]].bones[0].numFrames;
+			const int frameCount = m_animations[desc.animations[i]].bones[0].numFrames;
 
 			if(m_animations[desc.animations[i]].bones[0].numFrames != checkFrameCount)
 			{
-				if(bAlignAnimationLengths)
+				if(alignAnimationLengths)
 				{
-					if(checkFrameCount < real_frames)
+					if(checkFrameCount < frameCount)
 					{
 						MsgWarning("WARNING! Animation quality reduction.\n");
 					}
@@ -1013,21 +924,17 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 			return;
 		}
 
-		int anim_index = GetAnimationIndex(KV_GetValueString(pKey));
+		int animIdx = GetAnimationIndex(KV_GetValueString(pKey));
+		if(animIdx == -1) // try to load new one if not found
+			animIdx = LoadAnimationFromESA(KV_GetValueString(pKey));
 
-		if(anim_index == -1)
-		{
-			// try to load new one if not found
-			anim_index = LoadAnimationFromESA(KV_GetValueString(pKey));
-		}
-
-		if(anim_index == -1)
+		if(animIdx == -1)
 		{
 			MsgError("No such animation %s\n", pKey->values[0]);
 			return;
 		}
 
-		desc.animations[0] = anim_index;
+		desc.animations[0] = animIdx;
 	}
 
 	if(desc.numAnimations == 0)
@@ -1040,71 +947,77 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	strcpy(desc.activity, KV_GetValueString(section->FindSection("activity"), 0, "ACT_INVALID"));
 
 	Msg("  Adding sequence '%s' with activity '%s'\n", desc.name, desc.activity);
-
-	// parse loop flag
-	KVSection* pLoopKey = section->FindSection("loop");
-	desc.flags |= KV_GetValueBool(pLoopKey) ? SEQFLAG_LOOP : 0;
-
-	// parse blend between slots flag
-	KVSection* pSlotBlend = section->FindSection("slotblend");
-	desc.flags |= KV_GetValueBool(pSlotBlend) ? SEQFLAG_SLOTBLEND : 0;
-
-	// parse notransition flag
-	KVSection* pNoTransitionKey = section->FindSection("notransition");
-	desc.flags |= KV_GetValueBool(pNoTransitionKey) ? SEQFLAG_NO_TRANSITION : 0;
-
-	// parse autoplay flag
-	KVSection* pAutoplayKey = section->FindSection("autoplay");
-	desc.flags |= KV_GetValueBool(pAutoplayKey) ? SEQFLAG_AUTOPLAY : 0;
+	{
+		desc.flags |= KV_GetValueBool(section->FindSection("loop")) ? SEQFLAG_LOOP : 0;
+		desc.flags |= KV_GetValueBool(section->FindSection("slotBlend")) ? SEQFLAG_SLOTBLEND : 0;
+	}
 
 	// parse transitiontime value
-	KVSection* pTransitionTimekey = section->FindSection("transitiontime");
-	if(pTransitionTimekey)
-		desc.transitiontime = KV_GetValueFloat(pTransitionTimekey);
+	const KVSection* transitionTimeKv = section->FindSection("transitionTime");
+	if(transitionTimeKv)
+		desc.transitiontime = KV_GetValueFloat(transitionTimeKv);
 	else
 		desc.transitiontime = SEQ_DEFAULT_TRANSITION_TIME;
 
 	// parse events
-	KVSection* event_list = section->FindSection("events");
-
-	if(event_list)
+	const KVSection* eventList = section->FindSection("events");
+	if(eventList)
 	{
-		for(int i = 0; i < event_list->keys.numElem(); i++)
+		int kvSecCount = 0;
+		for(const KVSection* sec : eventList->keys)
 		{
-			float ev_frame = (float)atof(event_list->keys[i]->name);
-
-			KVSection* pEventCommand = event_list->keys[i]->FindSection("command");
-			KVSection* pEventOptions = event_list->keys[i]->FindSection("options");
+			const float eventTime = (float)atof(sec->name);
+			const KVSection* pEventCommand = sec->FindSection("command");
+			const KVSection* pEventOptions = sec->FindSection("options");
 
 			if(pEventCommand && pEventOptions)
 			{
-				// create event
-				sequenceevent_t seq_event;
-				memset(&seq_event,0,sizeof(sequenceevent_t));
+				if (desc.numEvents >= MAX_EVENTS_PER_SEQ)
+				{
+					MsgError("Too many events in sequence %s (max %d)\n", seqName, MAX_EVENTS_PER_SEQ);
+					return;
+				}
 
-				seq_event.frame = ev_frame;
-				strcpy(seq_event.command, KV_GetValueString(pEventCommand));
-				strcpy(seq_event.parameter, KV_GetValueString(pEventOptions));
+				// create event
+				sequenceevent_t seqEvent;
+				memset(&seqEvent, 0, sizeof(sequenceevent_t));
+
+				seqEvent.frame = eventTime;
+				strcpy(seqEvent.command, KV_GetValueString(pEventCommand));
+				strcpy(seqEvent.parameter, KV_GetValueString(pEventOptions));
 
 				// add event to list.
-				desc.events[desc.numEvents] = m_events.append(seq_event);
-				desc.numEvents++;
+				desc.events[desc.numEvents++] = m_events.append(seqEvent);
 			}
+			else
+			{
+				MsgWarning("Event %d for sequence %s missing command and options\n", kvSecCount, desc.name);
+			}
+			++kvSecCount;
 		}
 	}
 
-	const char* poseParameterName = KV_GetValueString(section->FindSection("poseparameter"), 0, nullptr);
-
+	const char* poseParameterName = KV_GetValueString(section->FindSection("poseParameter"), 0, nullptr);
 	if (poseParameterName)
 	{
 		desc.posecontroller = GetPoseControllerIndex(poseParameterName);
 		if (desc.posecontroller == -1)
-			MsgWarning("Pose parameter '%s' for sequence '%s' not found\n", seq_name);
+			MsgWarning("Pose parameter '%s' for sequence '%s' not found (poseParameter)\n", seqName);
 	}
 	else
 		desc.posecontroller = -1;
 
-	desc.slot = KV_GetValueInt(section->FindSection("slot"), 0, 0);
+	const char* timeParameterName = KV_GetValueString(section->FindSection("timeParameter"), 0, nullptr);
+	if (timeParameterName)
+	{
+		desc.timecontroller = GetPoseControllerIndex(timeParameterName);
+		if (desc.timecontroller == -1)
+			MsgWarning("Pose parameter '%s' for sequence '%s' not found (timeParameter)\n", seqName);
+	}
+	else
+		desc.timecontroller = -1;
+
+	desc.activityslot = KV_GetValueInt(section->FindSection("activitySlot"), 0, 0);
 
 	// add sequence
 	m_sequences.append(desc);
@@ -1116,14 +1029,10 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 void CMotionPackageGenerator::ParseSequences(const KVSection* section)
 {
 	Msg("Processing sequences\n");
-	for(int i = 0; i < section->keys.numElem(); i++)
+	for (KVKeyIterator it(section, "sequence"); !it.atEnd(); ++it)
 	{
-		KVSection* seqSec = section->keys[i];
-
-		if(!stricmp(seqSec->GetName(), "sequence"))
-		{
-			LoadSequence(seqSec, KV_GetValueString(seqSec, 0, "no_name"));
-		}
+		const KVSection* seqSec = *it;
+		LoadSequence(seqSec, KV_GetValueString(seqSec, 0, "unnamed_seq"));
 	}
 }
 
@@ -1132,30 +1041,25 @@ void CMotionPackageGenerator::ParseSequences(const KVSection* section)
 //************************************
 void CMotionPackageGenerator::ConvertAnimationsToWrite()
 {
-	for(int i = 0; i < m_animations.numElem(); i++)
+	for(studioAnimation_t& studioAnim : m_animations)
 	{
-		animationdesc_t anim;
-		memset(&anim, 0, sizeof(animationdesc_t));
+		animationdesc_t& animDesc = m_animationdescs.append();
+		memset(&animDesc, 0, sizeof(animationdesc_t));
 
-		anim.firstFrame = m_animframes.numElem();
-
-		strcpy(anim.name, m_animations[i].name);
+		animDesc.firstFrame = m_animframes.numElem();
+		strcpy(animDesc.name, studioAnim.name);
 
 		// convert bones.
-		for(int j = 0; j < m_model->numBones; j++)
+		for(int i = 0; i < m_model->numBones; i++)
 		{
-			const studioBoneAnimation_t& boneFrame = m_animations[i].bones[j];
-			for(int k = 0; k < boneFrame.numFrames; ++k)
-				m_animframes.append(boneFrame.keyFrames[k]);
+			const studioBoneAnimation_t& boneFrame = studioAnim.bones[i];
+			for(int j = 0; j < boneFrame.numFrames; ++j)
+				m_animframes.append(boneFrame.keyFrames[j]);
 
-			anim.numFrames += boneFrame.numFrames;
-		}
-
-		m_animationdescs.append(anim);
+			animDesc.numFrames += boneFrame.numFrames;
+		}		
 	}
 }
-
-void WriteAnimationPackage(const char* packageFileName);
 
 //************************************
 // Makes standard pose.
@@ -1260,11 +1164,9 @@ void CopyLumpToFile(IVirtualStream* data, int lump_type, ubyte* toCopy, int toCo
 	data->Write(toCopy, toCopySize, 1);
 }
 
-#define MAX_MOTIONPACKAGE_SIZE 16*1024*1024
-
 void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFilename)
 {
-	CMemoryStream lumpDataStream(nullptr, VS_OPEN_WRITE, MAX_MOTIONPACKAGE_SIZE, PP_SL);
+	CMemoryStream lumpDataStream(nullptr, VS_OPEN_WRITE, MIN_MOTIONPACKAGE_SIZE, PP_SL);
 
 	lumpfilehdr_t header;
 	header.ident = ANIMFILE_IDENT;

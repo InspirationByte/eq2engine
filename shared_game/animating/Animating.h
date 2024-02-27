@@ -64,6 +64,7 @@ public:
 
 	void				SwapSequenceTimers(int slotFrom, int swapTo);
 
+	int					GetCurrentAnimationFrameCount(int slot = 0) const;
 	float				GetCurrentAnimationDuration(int slot = 0) const;			// returns duration time of the current animation
 	float				GetCurrentAnimationTime(int slot = 0) const;				// returns elapsed time of the current animation
 	float				GetCurrentAnimationRemainingDuration(int slot = 0) const;	// returns remaining duration time of the current animation
@@ -73,6 +74,7 @@ public:
 	int					FindPoseController(const char* name) const;					// returns pose controller index
 	void				SetPoseControllerValue(int poseCtrlId, float value);		// sets value of the pose controller
 	float				GetPoseControllerValue(int poseCtrlId) const;
+	float				GetPoseControllerInterpValue(int poseCtrlId) const;
 	void				GetPoseControllerRange(int poseCtrlId, float& rMin, float& rMax) const;
 
 // inverse kinematics

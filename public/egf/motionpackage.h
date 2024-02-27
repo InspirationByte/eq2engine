@@ -8,7 +8,7 @@
 #pragma once
 
 #define ANIMFILE_IDENT				MAKECHAR4('E','Q','M','P')
-#define ANIMFILE_VERSION			6
+#define ANIMFILE_VERSION			7
 
 // use tag ANIMCA_VERSION change
 
@@ -35,12 +35,8 @@ enum EAnimLumps
 // sequence flags
 enum EAnimSequenceFlags
 {
-	SEQFLAG_LOOP			= (1 << 1),	// this animation is looped
-	SEQFLAG_NO_TRANSITION	= (1 << 2),	// has disabled blending transition
-	SEQFLAG_AUTOPLAY		= (1 << 3),	// automatically plays if no animation plays
-	SEQFLAG_SLOTBLEND		= (1 << 4),	// part blend to slot instead of interpolation
-	//SEQFLAG_LERPPOSE		= (1 << 5)	// wrap weights
-
+	SEQFLAG_LOOP					= (1 << 0),	// is played infinitely
+	SEQFLAG_SLOTBLEND				= (1 << 1),	// part blend to slot instead of interpolation
 };
 
 // animation descriptor
@@ -65,11 +61,11 @@ struct sequencedesc_s
 	float	framerate;			// framerate
 	float	transitiontime;		// transition time to this animation, in seconds
 
-	// used pose controller - one per sequence
-	int8	posecontroller;
-	int8	slot;
+	int8	timecontroller;		// controller used for frame/time control (default: -1)
+	int8	posecontroller;		// pose controller - used for blending between weights
+	int8	activityslot;		// activity slot placement
 
-	// sequence layers that used for blending.
+	// sequence layers that added to this animation (or blending between slots when SEQFLAG_SLOTBLEND is set)
 	int8	numSequenceBlends;
 	int8	sequenceblends[MAX_SEQUENCE_BLENDS];
 
@@ -105,8 +101,6 @@ ALIGNED_TYPE(animframe_s, 4) animframe_t;
 struct posecontroller_s
 {
 	char	name[44];
-
-	// blending range
 	float	blendRange[2];
 };
 ALIGNED_TYPE(posecontroller_s, 4) posecontroller_t;

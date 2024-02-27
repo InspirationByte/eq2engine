@@ -321,7 +321,7 @@ int CAnimatingEGF::FindSequenceByActivity(Activity act, int slot) const
 	for (int i = 0; i < m_seqList.numElem(); i++)
 	{
 		const gsequence_t& seq = m_seqList[i];
-		if (seq.activity == act && seq.s->slot == slot)
+		if (seq.activity == act && seq.s->activityslot == slot)
 			return i;
 	}
 
@@ -451,6 +451,15 @@ const Vector3D& CAnimatingEGF::GetLocalBoneDirection(int nBone) const
 	return m_boneTransforms[nBone].rows[2].xyz();
 }
 
+int CAnimatingEGF::GetCurrentAnimationFrameCount(int slot) const
+{
+	const gsequence_t* seq = m_sequenceTimers[slot].seq;
+	if (!seq)
+		return 0.0f;
+
+	return m_sequenceTimers[0].seq->animations[0]->bones[0].numFrames-1;
+}
+
 // returns duration time of the current animation
 float CAnimatingEGF::GetCurrentAnimationDuration(int slot) const
 {
@@ -542,7 +551,7 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 		if (timer.seqIdx >= 0 && !timer.seq)
 			timer.seq = &m_seqList[timer.seqIdx];
 
-		if (timer.active)
+		//if (timer.active)
 			didUpdate = true;
 
 		timer.AdvanceFrame(frameTime);
@@ -602,6 +611,14 @@ float CAnimatingEGF::GetPoseControllerValue(int nPoseCtrl) const
 		return 0.0f;
 
 	return m_poseControllers[nPoseCtrl].value;
+}
+
+float CAnimatingEGF::GetPoseControllerInterpValue(int nPoseCtrl) const
+{
+	if (!m_poseControllers.inRange(nPoseCtrl))
+		return 0.0f;
+
+	return m_poseControllers[nPoseCtrl].interpolatedValue;
 }
 
 void CAnimatingEGF::SetPoseControllerValue(int nPoseCtrl, float value)
