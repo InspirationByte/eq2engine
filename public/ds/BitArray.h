@@ -93,7 +93,7 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 {
 	resize(other.m_nSize);
 
-	const int typeSize = m_nSize / sizeof(STORAGE_TYPE);
+	const int typeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
 	if (typeSize)
 	{
 		for (int i = 0; i < typeSize; i++)
@@ -106,7 +106,7 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 // cleans all bits to zero
 inline void BitArray::clear()
 {
-	memset(m_pListPtr, 0, m_nSize / sizeof(STORAGE_TYPE));
+	memset(m_pListPtr, 0, m_nSize / sizeof(STORAGE_TYPE) + 1);
 }
 
 // resizes the list
@@ -121,8 +121,8 @@ inline void BitArray::resize(int newBitCount)
 		ASSERT_FAIL("BitArray is not resizable");
 	}
 
-	const int oldTypeSize = m_nSize / sizeof(STORAGE_TYPE);
-	const int newTypeSize = newBitCount / sizeof(STORAGE_TYPE);
+	const int oldTypeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
+	const int newTypeSize = newBitCount / sizeof(STORAGE_TYPE) + 1;
 
 	STORAGE_TYPE* temp = m_pListPtr;
 
@@ -151,7 +151,7 @@ inline int BitArray::numBits() const
 inline int BitArray::numTrue() const
 {
 	int count = 0;
-	const int typeSize = m_nSize / sizeof(STORAGE_TYPE);
+	const int typeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
 	if (typeSize)
 	{
 		for (int i = 0; i < typeSize; i++)
@@ -164,7 +164,7 @@ inline int BitArray::numTrue() const
 inline int BitArray::numFalse() const
 {
 	int count = 0;
-	const int typeSize = m_nSize / sizeof(STORAGE_TYPE);
+	const int typeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
 	if (typeSize)
 	{
 		for (int i = 0; i < typeSize; i++)
