@@ -45,7 +45,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			if (!m_materialBindGroup)
+			if (!setupParams.pipelineInfo.bindGroup[bindGroupId])
 			{
 				const ITexturePtr& baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
@@ -53,16 +53,15 @@ BEGIN_SHADER_CLASS(BloomRange)
 					.Sampler(1, baseTexture->GetSamplerState())
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
+				CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
 
-			return m_materialBindGroup;
+			return setupParams.pipelineInfo.bindGroup[bindGroupId];
 		}
 
 		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 	}
 
-	mutable IGPUBindGroupPtr	m_materialBindGroup;
 	IGPUBufferPtr				m_proxyBuffer;
 
 	MatVec4Proxy				m_rangeProps;

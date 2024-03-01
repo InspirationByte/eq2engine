@@ -64,7 +64,7 @@ BEGIN_SHADER_CLASS(
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			if (!m_materialBindGroup)
+			if (!setupParams.pipelineInfo.bindGroup[bindGroupId])
 			{
 				const ITexturePtr& baseTexture = m_baseTexture.Get() ? m_baseTexture.Get() : g_matSystem->GetErrorCheckerboardTexture();
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
@@ -72,9 +72,9 @@ BEGIN_SHADER_CLASS(
 					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
 					.Texture(2, baseTexture)
 					.End();
-				m_materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
+				CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
-			return m_materialBindGroup;
+			return setupParams.pipelineInfo.bindGroup[bindGroupId];
 		}
 		else if (bindGroupId == BINDGROUP_RENDERPASS)
 		{
@@ -126,8 +126,6 @@ BEGIN_SHADER_CLASS(
 
 	mutable GPUBufferView		m_currentCameraBuffer;
 	mutable int					m_currentCameraId{ -1 };
-
-	mutable IGPUBindGroupPtr	m_materialBindGroup;
 	IGPUBufferPtr				m_materialParamsBuffer;
 
 	MatTextureProxy				m_baseTexture;

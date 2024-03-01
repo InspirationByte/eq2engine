@@ -101,10 +101,11 @@ protected:
 	struct PipelineInputParams;
 	struct PipelineInfo
 	{
-		mutable IGPUBindGroupPtr	emptyBindGroup[MAX_BINDGROUPS];
+		mutable IGPUBindGroupPtr	bindGroup[MAX_BINDGROUPS];
 		IGPURenderPipelinePtr		pipeline;
 		IGPUPipelineLayoutPtr		layout;
 		int							vertexLayoutId{ 0 };
+		mutable uint8				isBindGroupPipelineLayout{ 0 };
 	};
 
 	struct BindGroupSetupParams

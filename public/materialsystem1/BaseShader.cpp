@@ -104,11 +104,17 @@ IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBin
 	if(pipelineInfo.layout)
 	{
 		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
-		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+		pipelineInfo.isBindGroupPipelineLayout &= ~(1 << bindGroupId);
+	}
+	else
+	{
+		bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
+		pipelineInfo.isBindGroupPipelineLayout |= (1 << bindGroupId);
 	}
 
-	bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
-	return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
+	return pipelineInfo.bindGroup[bindGroupId];
 }
 
 IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const
@@ -117,13 +123,14 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 		return nullptr;
 
 	// create empty bind group
-	if (!pipelineInfo.emptyBindGroup[bindGroupId])
+	if (!pipelineInfo.bindGroup[bindGroupId])
 	{
 		BindGroupDesc emptyBindGroupDesc;
 		emptyBindGroupDesc.groupIdx = bindGroupId;
-		pipelineInfo.emptyBindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
+		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
+		pipelineInfo.isBindGroupPipelineLayout |= (1 << bindGroupId);
 	}
-	return pipelineInfo.emptyBindGroup[bindGroupId];
+	return pipelineInfo.bindGroup[bindGroupId];
 }
 
 struct CBaseShader::PipelineInputParams
@@ -508,11 +515,25 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 		// TODO: different variants of instFormat.usedLayoutBits
 		instFormat.usedLayoutBits &= layoutMask;
 
-		PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES, false);
-		EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+		{
+			PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES, false);
+			EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+		}
 
-		pipelineInputParams.primitiveTopology = PRIM_TRIANGLE_STRIP;
-		EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+		{
+			PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLE_STRIP, false);
+			EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+		}
+
+		{
+			PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLES, true);
+			EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+		}
+
+		{
+			PipelineInputParams pipelineInputParams(ArrayCRef(&rtFormat, 1), depthFormat, instFormat, PRIM_TRIANGLE_STRIP, true);
+			EnsureRenderPipeline(renderAPI, pipelineInputParams, true);
+		}
 	}
 }
 

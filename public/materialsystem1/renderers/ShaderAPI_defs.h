@@ -582,36 +582,36 @@ struct BindGroupLayoutDesc
 
 FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(const char* name, int binding, int visibilityFlags, EBufferBindType bindType)
+	ThisType& Buffer(const char* name, int binding, int shaderKind, EBufferBindType bindType)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.name = name;
-		entry.visibility = visibilityFlags;
+		entry.visibility = shaderKind;
 		entry.binding = binding;
 		entry.type = BINDENTRY_BUFFER;
 		entry.buffer = BindBuffer();
 		entry.buffer.bindType = bindType;
 		return *this; 
 	}
-	ThisType& Sampler(const char* name, int binding, int visibilityFlags, ESamplerBindType bindType)
+	ThisType& Sampler(const char* name, int binding, int shaderKind, ESamplerBindType bindType)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.name = name;
-		entry.visibility = visibilityFlags;
+		entry.visibility = shaderKind;
 		entry.binding = binding;
 		entry.type = BINDENTRY_SAMPLER;
 		entry.sampler = BindSampler();
 		entry.sampler.bindType = bindType;
 		return *this;
 	}
-	ThisType& Texture(const char* name, int binding, int visibilityFlags, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
+	ThisType& Texture(const char* name, int binding, int shaderKind, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.name = name;
-		entry.visibility = visibilityFlags;
+		entry.visibility = shaderKind;
 		entry.binding = binding;
 		entry.type = BINDENTRY_TEXTURE;
 		entry.texture = BindTexture();
@@ -620,12 +620,12 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		entry.texture.multisampled = multisample;
 		return *this;
 	}
-	ThisType& StorageTexture(const char* name, int binding, int visibilityFlags, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
+	ThisType& StorageTexture(const char* name, int binding, int shaderKind, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
 		Entry& entry = ref.entries.append();
 		entry.name = name;
-		entry.visibility = visibilityFlags;
+		entry.visibility = shaderKind;
 		entry.binding = binding;
 		entry.type = BINDENTRY_STORAGETEXTURE;
 		entry.storageTexture = BindStorageTexture();
