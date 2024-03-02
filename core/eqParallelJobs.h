@@ -46,6 +46,4 @@ protected:
 
 	Array<CEqJobThread*>		m_jobThreads{ PP_SL };
 	BoundedQueue<IParallelJob*>	m_jobs{ 1024 };
-
-	uintptr_t					m_mainThreadId;
 };

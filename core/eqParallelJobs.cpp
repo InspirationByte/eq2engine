@@ -106,8 +106,6 @@ bool CEqParallelJobManager::Init()
 
 	MsgInfo("*Parallel jobs threads: %d\n", numThreadsToSpawn);
 
-	m_mainThreadId = Threading::GetCurrentThreadID();
-
 	return true;
 }
 
