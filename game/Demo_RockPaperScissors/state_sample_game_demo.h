@@ -3,21 +3,8 @@
 
 class CParticleBatch;
 class CMoviePlayer;
-
-enum class RPSType
-{
-	ROCK,
-	PAPER,
-	SCISSORS,
-
-	COUNT,
-};
-
-struct RPSObject
-{
-	Vector2D	pos;
-	RPSType		type;
-};
+class IGPURenderPassRecorder;
+struct RPSObject;
 
 class CState_SampleGameDemo : public CBaseStateHandler
 {
@@ -48,6 +35,9 @@ public:
 private:
 
 	void		InitGame();
+
+	void		InitMovie();
+	void		ShowMovie(IGPURenderPassRecorder* cmdRecorder);
 	
 	Array<RPSObject>	m_objects{ PP_SL };
 

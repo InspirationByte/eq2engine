@@ -14,6 +14,7 @@
 BEGIN_SHADER_CLASS(
 	BaseUnlit,
 	SHADER_VERTEX_ID(DynMeshVertex),
+	SHADER_VERTEX_ID(PFXVertex), // aliasOf DynMeshVertex
 	SHADER_VERTEX_ID(EGFVertex),
 	SHADER_VERTEX_ID(EGFVertexSkinned)
 )

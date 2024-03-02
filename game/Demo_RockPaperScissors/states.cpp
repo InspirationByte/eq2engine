@@ -74,7 +74,6 @@ bool InitRegisterStates()
 
 void PreUpdateState(float fDt)
 {
-	g_parallelJobs->CompleteJobCallbacks();
 }
 
 void ShutdownStates()

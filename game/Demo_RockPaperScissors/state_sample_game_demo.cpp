@@ -30,330 +30,61 @@ static const char* s_soundNames[] = {
 	"effect.scissors",
 };
 
-static int CheckWhoDefeats(const RPSType& a, const RPSType& b)
+enum class RPSBeating
+{
+	NONE = 0,
+	WON_A,
+	WON_B,
+};
+
+enum class RPSType
+{
+	ROCK,
+	PAPER,
+	SCISSORS,
+
+	COUNT,
+};
+
+struct RPSObject
+{
+	Vector2D	pos;
+	RPSType		type;
+};
+
+static RPSBeating CheckWhoDefeats(const RPSType& a, const RPSType& b)
 {
 	if (a == b)
-		return 0;
+		return RPSBeating::NONE;
 
 	// GPT3 helped to optimize commented code below!
 	const int diff = (static_cast<int>(a) - static_cast<int>(b) + 3) % 3;
 	if (diff == 1)
-		return 1; // a wins
+		return RPSBeating::WON_A; // a wins
 	else
-		return 2; // b wins
+		return RPSBeating::WON_B; // b wins
 
 	/*
 	// rock break scissors
 	if (a.type == RPSType::ROCK && b.type == RPSType::SCISSORS)
-		return 1;
+		return RPSBeating::WON_A;
 	else if (b.type == RPSType::ROCK && a.type == RPSType::SCISSORS)
-		return 2;
+		return RPSBeating::WON_B;
 
 	// paper covers rock
 	if (a.type == RPSType::PAPER && b.type == RPSType::ROCK)
-		return 1;
+		return RPSBeating::WON_A;
 	else if (b.type == RPSType::PAPER && a.type == RPSType::ROCK)
-		return 2;
+		return RPSBeating::WON_B;
 
 	// scissors cut paper
 	if (a.type == RPSType::SCISSORS && b.type == RPSType::PAPER)
-		return 1;
+		return RPSBeating::WON_A;
 	else if (b.type == RPSType::SCISSORS && a.type == RPSType::PAPER)
-		return 2;
+		return RPSBeating::WON_B;
 
-	return 0; // WTF?
+	return RPSBeating::NONE; // WTF?
 	*/
-}
-
-static uint ECSGenComponentID(bool inc = true)
-{
-	static uint compIdGen = 0;
-	return inc ? compIdGen++ : compIdGen;
-}
-
-// A component registry
-template<typename T>
-struct ECSComponent
-{
-	inline static uint COMP_ID = ECSGenComponentID();
-
-	// TODO:	Thread safety
-	//			More efficient component lookup
-	//			Non-static storage
-
-	static T* Get(Map<int, int>::Iterator& iterator)
-	{
-		return &pool[*iterator];
-	}
-
-	static T* Get(int entity)
-	{
-		auto it = entityComponent.find(entity);
-		if (it.atEnd())
-			return nullptr;
-		return &pool[*it];
-	}
-
-	static T* GetOrCreate(int entity)
-	{
-		auto it = entityComponent.find(entity);
-		if (it.atEnd())
-		{
-			if (freeSlots.numElem())
-			{
-				const int poolIdx = freeSlots.popBack();
-				it = entityComponent.insert(entity, poolIdx);
-				pool[poolIdx] = T();
-			}
-			else
-			{
-				it = entityComponent.insert(entity, pool.numElem());
-				pool.append();
-			}
-		}
-		return &pool[*it];
-	}
-
-	template<typename ...Params>
-	static T* GetOrCreate(int entity, Params&&... args)
-	{
-		auto it = entityComponent.find(entity);
-		if (it.atEnd())
-		{
-			if (freeSlots.numElem())
-			{
-				const int poolIdx = freeSlots.popBack();
-				it = entityComponent.insert(entity, poolIdx);
-				pool[poolIdx] = T(std::forward<Params>(args)...);
-			}
-			else
-			{
-				it = entityComponent.insert(entity, pool.numElem());
-				pool.append(T(std::forward<Params>(args)...));
-			}
-		}
-		return &pool[*it];
-	}
-
-	static void Remove(int entity)
-	{
-		auto it = entityComponent.find(entity);
-		if (it.atEnd())
-			return;
-		freeSlots.append(it.value());
-		entityComponent.remove(it);
-	}
-
-	static void RemoveAll()
-	{
-		entityComponent.clear(true);
-		freeSlots.clear(true);
-		pool.clear(true);
-	}
-
-	// FIXME: this could be slow, use different data structures to search instead?
-	inline static Map<int, int>	entityComponent{ PP_SL };
-private:
-	inline static Array<T>		pool{ PP_SL };
-	inline static Array<int>	freeSlots{ PP_SL };
-};
-
-// System template
-template<typename T>
-struct ECSSystem
-{
-	using Sys = T;
-	static void Process(T& system);
-};
-
-// System to System Messages
-template<typename T>
-struct ECSMessage
-{
-	int fromEntity{ -1 };
-
-	static void Push(T&& message)
-	{
-		messages.append(std::move(message));
-	}
-
-	static void Push(const T& message)
-	{
-		messages.append(message);
-	}
-
-	static Array<T> PullAll()
-	{
-		Array<T> pulled(PP_SL);
-		messages.swap(pulled);
-		return pulled;
-	}
-
-private:
-	inline static Array<T>	messages{ PP_SL };
-};
-
-//---------------------------------------------
-
-struct Position
-{
-	Position() = default;
-	Position(Vector2D& initPos) : pos(initPos){}
-
-	Vector2D pos{ vec2_zero };
-};
-
-struct State
-{
-	State() = default;
-	State(RPSType initType) : type(initType) {}
-
-	RPSType type{ RPSType::ROCK };
-};
-
-struct Movement
-{
-	// alias for components used by system
-	using Position = ECSComponent<Position>;
-	using State = ECSComponent<State>;
-
-	// system arguments and feedback
-	float deltaTime{ 0.0f };
-};
-
-struct StateUpdate
-{
-	struct DefeatMessage : public ECSMessage<DefeatMessage> 
-	{
-		int defeatedBy{ -1 };
-	};
-
-	// alias for components used by system
-	using Position = ECSComponent<Position>;
-	using State = ECSComponent<State>;
-
-	// system arguments and feedback
-	int counts[static_cast<int>(RPSType::COUNT)]{ 0 };
-};
-
-struct Draw
-{
-	// alias for components used by system
-	using Position = ECSComponent<Position>;
-	using State = ECSComponent<State>;
-
-	// system arguments and feedback
-	const AtlasEntry**	atlEntries{ nullptr };
-	CParticleBatch*		pfxGroup{ nullptr };
-};
-
-void ECSSystem<Movement>::Process(Movement& sysState)
-{
-	const float deltaTime = sysState.deltaTime;
-
-	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
-	{
-		Position& curPos = *Sys::Position::Get(it);
-		State& state = *Sys::State::Get(*it);
-
-		Vector2D moveVector(0.0f);
-		float criticalMass = 1.0f;
-
-		for (auto otherIt = Sys::Position::entityComponent.begin(); !otherIt.atEnd(); ++otherIt)
-		{
-			if (*it == *otherIt)
-				continue;
-
-			Position& otherPos = *Sys::Position::Get(*otherIt);
-			State& otherState = *Sys::State::Get(*otherIt);
-
-			const int whoDefeats = CheckWhoDefeats(state.type, otherState.type);
-			const float distSqr = distanceSqr(curPos.pos, otherPos.pos);
-
-			if (whoDefeats == 1)
-				moveVector += normalize(otherPos.pos - curPos.pos) / distSqr;
-			else if (whoDefeats == 2)
-				moveVector -= normalize(otherPos.pos - curPos.pos) / distSqr * 0.25f;
-			else
-				criticalMass += rsqrtf(distSqr);
-
-			// send message to the state update system
-			if (distSqr < s_radiusSqr)
-				StateUpdate::DefeatMessage::Push({ *it, *otherIt });
-		}
-
-		curPos.pos += moveVector * s_moveSpeed * criticalMass * deltaTime;
-	}
-}
-
-void ECSSystem<StateUpdate>::Process(StateUpdate& sysState)
-{
-	// NOTE: proof of concept
-	for (Sys::DefeatMessage& message : Sys::DefeatMessage::PullAll())
-	{
-		State& state = *Sys::State::Get(message.fromEntity);
-		State& otherState = *Sys::State::Get(message.defeatedBy);
-		const int whoDefeats = CheckWhoDefeats(state.type, otherState.type);
-
-		// turn loser into winner type and play winner sound
-		if (whoDefeats == 1) // a beaten b
-		{
-			Position& curPos = *Sys::Position::Get(message.fromEntity);
-			otherState.type = state.type;
-
-			EmitParams ep(s_soundNames[static_cast<int>(state.type)]);
-			ep.origin.x = curPos.pos.x * 0.01f;
-			g_sounds->EmitSound(&ep);
-		}
-		else if (whoDefeats == 2) // b beaten a
-		{
-			Position& otherPos = *Sys::Position::Get(message.defeatedBy);
-			state.type = otherState.type;
-
-			EmitParams ep(s_soundNames[static_cast<int>(otherState.type)]);
-			ep.origin.x = otherPos.pos.x * 0.01f;
-			g_sounds->EmitSound(&ep);
-		}
-	}
-
-	for (auto it = Sys::State::entityComponent.begin(); !it.atEnd(); ++it)
-	{
-		State& state = *Sys::State::Get(it);
-		++sysState.counts[static_cast<int>(state.type)];
-	}
-}
-
-void ECSSystem<Draw>::Process(Draw& sysState)
-{
-	for (auto it = Sys::Position::entityComponent.begin(); !it.atEnd(); ++it)
-	{
-		Position& curPos = *Sys::Position::Get(it);
-		State& state = *Sys::State::Get(*it);
-
-		// draw
-		const AARectangle rect = sysState.atlEntries[static_cast<int>(state.type)]->rect;
-
-		PFXVertex_t* verts;
-		if (sysState.pfxGroup->AllocateGeom(4, 4, &verts, nullptr, true) == -1)
-			break;
-
-		verts[0].point = Vector3D(0, 0, 0);
-		verts[1].point = Vector3D(0, s_spriteSize, 0);
-		verts[2].point = Vector3D(s_spriteSize, 0, 0);
-		verts[3].point = Vector3D(s_spriteSize, s_spriteSize, 0);
-
-		verts[0].texcoord = rect.GetLeftTop();
-		verts[1].texcoord = rect.GetLeftBottom();
-		verts[2].texcoord = rect.GetRightTop();
-		verts[3].texcoord = rect.GetRightBottom();
-
-		const Vector3D transform = Vector3D(curPos.pos, 0.0f);
-
-		verts[0].point += transform;
-		verts[1].point += transform;
-		verts[2].point += transform;
-		verts[3].point += transform;
-	}
 }
 
 //---------------------------------------------
@@ -395,7 +126,17 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 
 	g_pfxRender->Init();
 
-	/*
+	InitMovie();
+
+	{
+		static constexpr const int particlesGroupId = StringToHashConst("particles/translucent");
+
+		m_pfxGroup = g_pfxRender->CreateBatch("particles/translucent");
+	}
+}
+
+void CState_SampleGameDemo::InitMovie()
+{
 	m_moviePlayer = CRefPtr_new(CMoviePlayer);
 
 	m_moviePlayer->OnCompleted += [&]() {
@@ -423,105 +164,29 @@ void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
 		EmitParams ep(soundSec.GetName());
 		g_sounds->EmitSound(&ep);
 	}
-	*/
-	{
-		static constexpr const int particlesGroupId = StringToHashConst("particles/translucent");
-
-		m_pfxGroup = g_pfxRender->CreateBatch("particles/translucent");
-	}
 }
 
-// when the state changes to something
-// @to - used to transfer data
-void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
+void CState_SampleGameDemo::ShowMovie(IGPURenderPassRecorder* rendPassRecorder)
 {
-	m_moviePlayer = nullptr;
-
-	g_pfxRender->Shutdown();
-	m_pfxGroup = nullptr;
-}
-
-void CState_SampleGameDemo::InitGame()
-{
-	ECSComponent<Position>::RemoveAll();
-	ECSComponent<State>::RemoveAll();
-
-	int count = 0;
-	for (int i = 0; i < g_maxObjects.GetInt() / 3; ++i)
-	{
-		{
-			const int entIdx = count++;
-			ECSComponent<Position>::GetOrCreate(entIdx, Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f)));
-			ECSComponent<State>::GetOrCreate(entIdx, RPSType::ROCK);
-		}
-
-		{
-			const int entIdx = count++;
-			ECSComponent<Position>::GetOrCreate(entIdx, Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f)));
-			ECSComponent<State>::GetOrCreate(entIdx, RPSType::PAPER);
-		}
-
-		{
-			const int entIdx = count++;
-			ECSComponent<Position>::GetOrCreate(entIdx, Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f)));
-			ECSComponent<State>::GetOrCreate(entIdx, RPSType::SCISSORS);
-		}
-
-		/*
-		{
-			RPSObject& newObj = m_objects.append();
-			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
-			newObj.type = RPSType::ROCK;
-		}
-
-		{
-			RPSObject& newObj = m_objects.append();
-			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
-			newObj.type = RPSType::PAPER;
-		}
-
-		{
-			RPSObject& newObj = m_objects.append();
-			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
-			newObj.type = RPSType::SCISSORS;
-		}
-		*/
-
-
-	}
-}
-
-// when 'false' returned the next state goes on
-bool CState_SampleGameDemo::Update(float fDt)
-{
-	//m_moviePlayer->Present();
-
-	const IVector2D& screenSize = g_pHost->GetWindowSize();
-
-	g_renderAPI->Clear(true, true, false, ColorRGBA(0.5f));
-	g_matSystem->SetupOrtho((-screenSize.x / 2) * m_zoomLevel, (screenSize.x / 2) * m_zoomLevel, (screenSize.y / 2) * m_zoomLevel, (-screenSize.y / 2) * m_zoomLevel, -1000, 1000);
-	g_matSystem->SetMatrix(MATRIXMODE_VIEW, translate(-m_pan.x, -m_pan.y, 0.0f));
-
-	g_matSystem->SetAmbientColor(color_white);
-
-	/*
 	// draw video
 	{
+		m_moviePlayer->Present();
 		ITexturePtr videoTexture = m_moviePlayer->GetImage();
 
-		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(m_moviePlayer->GetImage());
-		materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
-		materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
-		materials->SetDepthStates(false, false);
-		materials->BindMaterial(materials->GetDefaultMaterial());
+		RenderDrawCmd drawCmd;
+
+		MatSysDefaultRenderPass defaultRenderPass;
+		defaultRenderPass.texture = m_moviePlayer->GetImage();
+
+		drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
 		AARectangle rect1(0, 0, 0, 0);
 		AARectangle rect1UV(0, 0, 1, 1);
 
-		if(videoTexture)
+		if (videoTexture)
 			rect1.Expand(Vector2D(videoTexture->GetWidth(), videoTexture->GetHeight()));
 
-		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+		CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 		meshBuilder.Begin(PRIM_TRIANGLES);
 		{
 			meshBuilder.Color4(color_white);
@@ -536,9 +201,11 @@ bool CState_SampleGameDemo::Update(float fDt)
 				rect1UV.GetVertex(3));
 		}
 
-		meshBuilder.End();
+		if (meshBuilder.End(drawCmd))
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 	}
 
+	/*
 	// Test code for math stuff
 	{
 		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
@@ -575,24 +242,73 @@ bool CState_SampleGameDemo::Update(float fDt)
 				meshBuilder.Color4f(1.0f, 0.25f, 0.25f, 0.7f);
 
 			debugoverlay->Text3D(Vector3D(box1PosRot.xy() * Vector2D(1, -1), 0.0f), 1000.0f, color_white, EqString::Format("Separation: %.2f", separationValue));
-			
+
 			meshBuilder.Quad2(
-				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(0),
-				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(1),
-				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(2),
-				box1PosRot.xy()*Vector2D(1,-1) + box1Rot * rect1.GetVertex(3));
+				box1PosRot.xy() * Vector2D(1, -1) + box1Rot * rect1.GetVertex(0),
+				box1PosRot.xy() * Vector2D(1, -1) + box1Rot * rect1.GetVertex(1),
+				box1PosRot.xy() * Vector2D(1, -1) + box1Rot * rect1.GetVertex(2),
+				box1PosRot.xy() * Vector2D(1, -1) + box1Rot * rect1.GetVertex(3));
 
 			meshBuilder.Color4f(0.25f, 0.25f, 1.0f, 0.7f);
 			meshBuilder.Quad2(
-				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(0), 
-				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(1), 
-				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(2),
-				box2PosRot.xy()*Vector2D(1,-1) + box2Rot * rect2.GetVertex(3));
+				box2PosRot.xy() * Vector2D(1, -1) + box2Rot * rect2.GetVertex(0),
+				box2PosRot.xy() * Vector2D(1, -1) + box2Rot * rect2.GetVertex(1),
+				box2PosRot.xy() * Vector2D(1, -1) + box2Rot * rect2.GetVertex(2),
+				box2PosRot.xy() * Vector2D(1, -1) + box2Rot * rect2.GetVertex(3));
 		}
 
 		meshBuilder.End();
 	}
 	*/
+}
+
+// when the state changes to something
+// @to - used to transfer data
+void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
+{
+	m_moviePlayer = nullptr;
+
+	g_pfxRender->Shutdown();
+	m_pfxGroup = nullptr;
+}
+
+void CState_SampleGameDemo::InitGame()
+{
+	m_objects.clear();
+
+	int count = 0;
+	for (int i = 0; i < g_maxObjects.GetInt() / 3; ++i)
+	{
+		{
+			RPSObject& newObj = m_objects.append();
+			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
+			newObj.type = RPSType::ROCK;
+		}
+
+		{
+			RPSObject& newObj = m_objects.append();
+			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
+			newObj.type = RPSType::PAPER;
+		}
+
+		{
+			RPSObject& newObj = m_objects.append();
+			newObj.pos = Vector2D(RandomFloat(-1000.0f, 1000.0f), RandomFloat(-1000.0f, 1000.0f));
+			newObj.type = RPSType::SCISSORS;
+		}
+	}
+}
+
+// when 'false' returned the next state goes on
+bool CState_SampleGameDemo::Update(float fDt)
+{
+	//m_moviePlayer->Present();
+
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+
+	g_matSystem->SetupOrtho((-screenSize.x / 2) * m_zoomLevel, (screenSize.x / 2) * m_zoomLevel, (screenSize.y / 2) * m_zoomLevel, (-screenSize.y / 2) * m_zoomLevel, -1000, 1000);
+	g_matSystem->SetMatrix(MATRIXMODE_VIEW, translate(-m_pan.x, -m_pan.y, 0.0f));
+
 	const AtlasEntry* atlRock = m_pfxGroup->FindEntry("rock");
 	const AtlasEntry* atlPaper = m_pfxGroup->FindEntry("paper");
 	const AtlasEntry* atlScissors = m_pfxGroup->FindEntry("scissors");
@@ -601,17 +317,6 @@ bool CState_SampleGameDemo::Update(float fDt)
 		atlRock, atlPaper, atlScissors
 	};
 
-	//if (m_objects.numElem() == 0)
-	//{
-	//	InitGame();
-	//}
-
-	ECSSystem<Movement>::Process(Movement{ fDt });
-	StateUpdate stateUpdate;
-	ECSSystem<StateUpdate>::Process(stateUpdate);
-	ECSSystem<Draw>::Process(Draw{ atlEntries, m_pfxGroup });
-
-	/*
 	int counts[static_cast<int>(RPSType::COUNT)]{ 0 };
 	for (int i = 0; i < m_objects.numElem(); ++i)
 	{
@@ -630,12 +335,12 @@ bool CState_SampleGameDemo::Update(float fDt)
 			if (&curObj == &otherObj)
 				continue;
 
-			const int whoDefeats = CheckWhoDefeats(curObj.type, otherObj.type);
+			const RPSBeating whoDefeats = CheckWhoDefeats(curObj.type, otherObj.type);
 			const float distSqr = distanceSqr(curObj.pos, otherObj.pos);
 
-			if (whoDefeats == 1)
+			if (whoDefeats == RPSBeating::WON_A)
 				moveVector += normalize(otherObj.pos - curObj.pos) / distSqr;
-			else if (whoDefeats == 2)
+			else if (whoDefeats == RPSBeating::WON_B)
 				moveVector -= normalize(otherObj.pos - curObj.pos) / distSqr * 0.25f;
 			else
 				criticalMass += rsqrtf(distSqr);
@@ -643,7 +348,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 			if (distanceSqr(curObj.pos, otherObj.pos) > s_radiusSqr)
 				continue;
 
-			if (whoDefeats == 1) // a beaten b
+			if (whoDefeats == RPSBeating::WON_A) // a beaten b
 			{
 				otherObj.type = curObj.type;
 
@@ -651,7 +356,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 				ep.origin.x = curObj.pos.x * 0.01f;
 				g_sounds->EmitSound(&ep);
 			}
-			else if (whoDefeats == 2) // b beaten a
+			else if (whoDefeats == RPSBeating::WON_B) // b beaten a
 			{
 				curObj.type = otherObj.type;
 
@@ -669,7 +374,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 		{
 			const AARectangle rect = atlEntries[static_cast<int>(curObj.type)]->rect;
 
-			PFXVertex_t* verts;
+			PFXVertex* verts;
 			if (m_pfxGroup->AllocateGeom(4, 4, &verts, nullptr, true) == -1)
 				break;
 
@@ -689,21 +394,41 @@ bool CState_SampleGameDemo::Update(float fDt)
 			verts[1].point += transform;
 			verts[2].point += transform;
 			verts[3].point += transform;
+
+			verts[0].color = color_white.pack();
+			verts[1].color = color_white.pack();
+			verts[2].color = color_white.pack();
+			verts[3].color = color_white.pack();
 		}
-	}*/
+	}
 
 	int numLost = 0;
-
 	for (int i = 0; i < static_cast<int>(RPSType::COUNT); ++i)
 	{
-		if (stateUpdate.counts[i] == 0)
+		if (counts[i] == 0)
 			++numLost;
 	}
 
 	if(numLost >= 2)
 		InitGame();
 
-	g_pfxRender->Render(0);
+	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder();
+	g_pfxRender->UpdateBuffers(cmdRecorder);
+
+	IGPURenderPassRecorderPtr rendPassRecorder = cmdRecorder->BeginRenderPass(
+		Builder<RenderPassDesc>()
+		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+		.End()
+	);
+
+	ShowMovie(rendPassRecorder);
+
+	const RenderPassContext rendPassCtx(rendPassRecorder, nullptr);
+	g_pfxRender->Render(0, rendPassCtx, nullptr);
+
+	rendPassRecorder->Complete();
+
+	g_matSystem->QueueCommandBuffer(cmdRecorder->End());
 
 	g_sounds->Update();
 	return true;
