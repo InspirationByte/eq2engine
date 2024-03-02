@@ -30,17 +30,14 @@ typedef struct studioIkLink_s studioIkLink_t;
 
 struct giklink_t
 {
-	studioIkLink_t*	l;
+	studioIkLink_t* l{ nullptr };
+	giklink_t*		parent{ nullptr };
+	gikchain_t*		chain{ nullptr };
 
-	Quaternion		quat;
-	Vector3D		position;
-
-	giklink_t*		parent;
-
-	Matrix4x4		localTrans;
-	Matrix4x4		absTrans;
-
-	gikchain_t*		chain;
+	Matrix4x4		localTrans{ identity4 };
+	Matrix4x4		absTrans{ identity4 };
+	Quaternion		quat{ qidentity };
+	Vector3D		position{ vec3_zero };
 };
 
 

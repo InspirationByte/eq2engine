@@ -106,7 +106,6 @@ protected:
 	float						m_transitionTime{ 0 };
 	float						m_transitionRemTime{ 0 };
 	qanimframe_t*				m_transitionFrames{ nullptr };
-	qanimframe_t*				m_velocityFrames{ nullptr };
 
 	// computed ready-to-use matrices
 	Matrix4x4*					m_boneTransforms{ nullptr };

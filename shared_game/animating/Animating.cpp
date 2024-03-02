@@ -123,8 +123,6 @@ static qanimframe_t GetSequenceLayerBoneFrame(const gsequence_t* seq, int boneId
 
 CAnimatingEGF::CAnimatingEGF()
 {
-	m_boneTransforms = nullptr;
-	m_transitionFrames = nullptr;
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
 	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
 }
@@ -136,22 +134,17 @@ CAnimatingEGF::~CAnimatingEGF()
 
 void CAnimatingEGF::DestroyAnimating()
 {
+	m_sequenceTimers.clear();
 	m_seqList.clear();
 	m_poseControllers.clear();
 	m_ikChains.clear();
 	m_joints = ArrayCRef<studioJoint_t>(nullptr);
 	m_transforms = ArrayCRef<studioTransform_t>(nullptr);;
 
-	if (m_boneTransforms)
-		PPFree(m_boneTransforms);
-	m_boneTransforms = nullptr;
-
-	if (m_transitionFrames)
-		PPFree(m_transitionFrames);
-	m_transitionFrames = nullptr;
+	SAFE_DELETE_ARRAY(m_boneTransforms);
+	SAFE_DELETE_ARRAY(m_transitionFrames);
 
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
-	m_sequenceTimers.clear();
 	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
 }
 
@@ -166,16 +159,11 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 
 	m_joints = ArrayCRef(&model->GetJoint(0), studio.numBones);
 	m_transforms = ArrayCRef(model->GetStudioHdr().pTransform(0), model->GetStudioHdr().numTransforms);
-	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_joints.numElem());
 
+	m_transitionFrames = PPNew qanimframe_t[m_joints.numElem()];
+	m_boneTransforms = PPNew Matrix4x4[m_joints.numElem()];
 	for (int i = 0; i < m_joints.numElem(); i++)
 		m_boneTransforms[i] = m_joints[i].absTrans;
-
-	m_transitionFrames = PPAllocStructArray(qanimframe_t, m_joints.numElem());
-	memset(m_transitionFrames, 0, sizeof(qanimframe_t) * m_joints.numElem());
-
-	//m_velocityFrames = PPAllocStructArray(qanimframe_t, m_numBones);
-	//memset(m_velocityFrames, 0, sizeof(qanimframe_t)*m_numBones);
 
 	// init ik chains
 	const int numIkChains = studio.numIKChains;
@@ -737,6 +725,7 @@ void CAnimatingEGF::RecalcBoneTransforms()
 				finalBoneFrame = InterpolateFrameTransform(finalBoneFrame, cTimedFrame, timer.blendWeight);
 		}
 
+		// TODO: transition frames must be build from old timer states
 		// first sequence timer is main and has transition effects
 		if (m_transitionTime > 0.0f && m_transitionRemTime > 0.0f)
 		{
