@@ -132,8 +132,8 @@ protected:
 
 	const PipelineInfo&			EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit);
 
+	IGPUBindGroupPtr			CreatePersistentBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
-
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
 
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;

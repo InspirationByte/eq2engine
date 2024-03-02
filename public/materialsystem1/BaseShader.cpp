@@ -92,16 +92,16 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	m_blendMode = blendMode;
 }
 
-IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
-{
-	static const char* s_bindGroupNames[] = {
-		"Constant",
-		"RenderPass",
-		"Transient",
-	};
+static const char* s_bindGroupNames[] = {
+	"Constant",
+	"RenderPass",
+	"Transient",
+};
 
+IGPUBindGroupPtr CBaseShader::CreatePersistentBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
+{
 	bindGroupDesc.groupIdx = bindGroupId;
-	if(pipelineInfo.layout)
+	if (pipelineInfo.layout)
 	{
 		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
@@ -115,6 +115,21 @@ IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBin
 	}
 
 	return pipelineInfo.bindGroup[bindGroupId];
+}
+
+IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
+{
+	bindGroupDesc.groupIdx = bindGroupId;
+	if(pipelineInfo.layout)
+	{
+		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
+	}
+	else
+	{
+		bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
+	}
 }
 
 IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const

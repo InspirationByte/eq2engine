@@ -72,7 +72,7 @@ BEGIN_SHADER_CLASS(
 					.Sampler(1, SamplerStateParams(m_texFilter, m_texAddressMode))
 					.Texture(2, baseTexture)
 					.End();
-				CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
+				CreatePersistentBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
 			return setupParams.pipelineInfo.bindGroup[bindGroupId];
 		}
