@@ -66,6 +66,8 @@ static const EqString s_argumentsTag("%ARGS%");
 static const EqString s_inputFileNameTag("%INPUT_FILENAME%");
 static const EqString s_outputFileNameTag("%OUTPUT_FILENAME%");
 static const EqString s_outputFilePathTag("%OUTPUT_FILEPATH%");
+static const EqString s_engineDirTag("%ENGINE_DIR%");
+static const EqString s_gameDirTag("%GAME_DIR%");
 
 static const char* s_textureValueIdentifier = "usage:";
 
@@ -540,6 +542,9 @@ bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 
 			m_targetProps.sourceMaterialPath = materialsSrc;
 			m_targetProps.sourceImageExt = _Es(sourceImageExt).TrimChar('.');
+
+			m_targetProps.sourceMaterialPath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
+			m_targetProps.sourceMaterialPath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
 		}
 
 		// target settings
@@ -561,6 +566,9 @@ bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 
 			m_targetProps.targetCompression = targetCompression;
 			m_targetProps.targetFolder = targetFolder;
+
+			m_targetProps.targetFolder.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
+			m_targetProps.targetFolder.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
 		}
 	}
 

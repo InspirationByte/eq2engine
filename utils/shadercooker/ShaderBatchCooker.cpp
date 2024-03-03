@@ -31,6 +31,9 @@ Targets
 }
 */
 
+static const EqString s_engineDirTag("%ENGINE_DIR%");
+static const EqString s_gameDirTag("%GAME_DIR%");
+
 
 //-------------------------------------
 
@@ -655,7 +658,6 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 		// source shader settings
 		{
 			const char* shadersSrc = KV_GetValueString(currentTarget->FindSection("SourcePath"), 0, nullptr);
-
 			if (!shadersSrc)
 			{
 				MsgError("Target '%s' SourcePath folder is not specified!\n", targetName);
@@ -672,17 +674,23 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 
 			for (KVKeyIterator it(currentTarget, "includePath"); !it.atEnd(); ++it)
 			{
-				m_targetProps.includePaths.append(KV_GetValueString(*it));
+				EqString includePath = KV_GetValueString(*it);
+				includePath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
+				includePath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
+
+				m_targetProps.includePaths.append(includePath);
 			}
 
 			m_targetProps.sourceShaderPath = shadersSrc;
 			m_targetProps.sourceShaderDescExt = _Es(sourceImageExt).TrimChar('.');
+
+			m_targetProps.sourceShaderPath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
+			m_targetProps.sourceShaderPath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
 		}
 
 		// target settings
 		{
 			const char* targetFolder = KV_GetValueString(currentTarget->FindSection("output"), 0, nullptr);
-
 			if (!targetFolder)
 			{
 				MsgError("Target '%s' missing 'output' value\n", targetName);
@@ -690,7 +698,11 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 			}
 
 			m_targetProps.targetFolder = targetFolder;
-			g_fileSystem->MakeDir(targetFolder, SP_ROOT);
+
+			m_targetProps.targetFolder.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
+			m_targetProps.targetFolder.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
+
+			g_fileSystem->MakeDir(m_targetProps.targetFolder, SP_ROOT);
 		}
 	}
 
