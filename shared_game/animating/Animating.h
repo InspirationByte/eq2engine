@@ -102,6 +102,8 @@ protected:
 	// sequence timers. first timer is main, and transitional is last
 	SequenceTimers				m_sequenceTimers;
 
+	CEqStudioGeom*				m_geomReference{ nullptr };
+
 	// NOTE: those transitions must be really per-sequence timer.
 	float						m_transitionTime{ 0 };
 	float						m_transitionRemTime{ 0 };

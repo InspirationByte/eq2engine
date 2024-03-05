@@ -129,7 +129,8 @@ CAnimatingEGF::CAnimatingEGF()
 
 CAnimatingEGF::~CAnimatingEGF()
 {
-	DestroyAnimating();
+	SAFE_DELETE_ARRAY(m_boneTransforms);
+	SAFE_DELETE_ARRAY(m_transitionFrames);
 }
 
 void CAnimatingEGF::DestroyAnimating()
@@ -146,14 +147,17 @@ void CAnimatingEGF::DestroyAnimating()
 
 	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
 	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
+
+	m_geomReference = nullptr;
 }
 
 void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 {
+	DestroyAnimating();
+	m_geomReference = model;
+
 	if (!model)
 		return;
-
-	DestroyAnimating();
 
 	const studioHdr_t& studio = model->GetStudioHdr();
 
@@ -357,10 +361,9 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 	Activity nTranslatedActivity = TranslateActivity(act, slot);
 
 	const int seqIdx = FindSequenceByActivity(nTranslatedActivity, slot);
-
 	if (seqIdx == -1)
 	{
-		MsgWarning("Activity \"%s\" not valid!\n", GetActivityName(act));
+		MsgWarning("No sequence matching activity %s found in motion packages for '%s'!\n", GetActivityName(act), m_geomReference->GetName());
 	}
 
 	SetSequence(seqIdx, slot);
@@ -371,11 +374,10 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 
 void CAnimatingEGF::SetSequenceByName(const char* name, int slot)
 {
-	int seqIdx = FindSequence(name);
-
+	const int seqIdx = FindSequence(name);
 	if (seqIdx == -1)
 	{
-		MsgWarning("Sequence \"%s\" not valid!\n", name);
+		MsgWarning("No sequence '%s' found in motion packages for '%s'!\n", name, m_geomReference->GetName());
 	}
 
 	SetSequence(seqIdx, slot);
