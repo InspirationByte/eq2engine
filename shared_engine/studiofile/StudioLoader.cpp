@@ -107,7 +107,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	if(pHDR->version != ANIMFILE_VERSION)
 	{
-		MsgError("Bad motion package version, please update or reinstall the game.\n", pszPath);
+		MsgError("%s: bad motion package version\n", pszPath);
 		PPFree(pData);
 		return nullptr;
 	}
