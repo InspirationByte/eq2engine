@@ -520,7 +520,20 @@ public:
 	const dtNavMesh* getAttachedNavMesh() const { return m_nav; }
 
 	/// @}
+
+	// Appends intermediate portal points to a straight path.
+	dtStatus appendPortals(const int startIdx, const int endIdx, const float* endPos, const dtPolyRef* path,
+						   float* straightPath, unsigned char* straightPathFlags, dtPolyRef* straightPathRefs,
+						   int* straightPathCount, const int maxStraightPath, const int options) const;
 	
+	// Appends vertex to a straight path
+	dtStatus appendVertex(const float* pos, const unsigned char flags, const dtPolyRef ref,
+						  float* straightPath, unsigned char* straightPathFlags, dtPolyRef* straightPathRefs,
+						  int* straightPathCount, const int maxStraightPath) const;
+
+	dtStatus getPortalPoints(dtPolyRef from, dtPolyRef to, float* left, float* right,
+							 unsigned char& fromType, unsigned char& toType) const;
+
 private:
 	// Explicitly disabled copy constructor and copy assignment operator
 	dtNavMeshQuery(const dtNavMeshQuery&);
@@ -531,8 +544,6 @@ private:
 							 const dtQueryFilter* filter, dtPolyQuery* query) const;
 
 	/// Returns portal points between two polygons.
-	dtStatus getPortalPoints(dtPolyRef from, dtPolyRef to, float* left, float* right,
-							 unsigned char& fromType, unsigned char& toType) const;
 	dtStatus getPortalPoints(dtPolyRef from, const dtPoly* fromPoly, const dtMeshTile* fromTile,
 							 dtPolyRef to, const dtPoly* toPoly, const dtMeshTile* toTile,
 							 float* left, float* right) const;
@@ -542,16 +553,7 @@ private:
 	dtStatus getEdgeMidPoint(dtPolyRef from, const dtPoly* fromPoly, const dtMeshTile* fromTile,
 							 dtPolyRef to, const dtPoly* toPoly, const dtMeshTile* toTile,
 							 float* mid) const;
-	
-	// Appends vertex to a straight path
-	dtStatus appendVertex(const float* pos, const unsigned char flags, const dtPolyRef ref,
-						  float* straightPath, unsigned char* straightPathFlags, dtPolyRef* straightPathRefs,
-						  int* straightPathCount, const int maxStraightPath) const;
 
-	// Appends intermediate portal points to a straight path.
-	dtStatus appendPortals(const int startIdx, const int endIdx, const float* endPos, const dtPolyRef* path,
-						   float* straightPath, unsigned char* straightPathFlags, dtPolyRef* straightPathRefs,
-						   int* straightPathCount, const int maxStraightPath, const int options) const;
 
 	// Gets the path leading to the specified end node.
 	dtStatus getPathToNode(struct dtNode* endNode, dtPolyRef* path, int* pathCount, int maxPath) const;

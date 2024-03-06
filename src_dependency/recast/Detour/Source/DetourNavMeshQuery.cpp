@@ -1733,11 +1733,7 @@ dtStatus dtNavMeshQuery::appendPortals(const int startIdx, const int endIdx, con
 		const dtPoly* toPoly = 0;
 		if (dtStatusFailed(m_nav->getTileAndPolyByRef(to, &toTile, &toPoly)))
 			return DT_FAILURE | DT_INVALID_PARAM;
-		
-		float left[3], right[3];
-		if (dtStatusFailed(getPortalPoints(from, fromPoly, fromTile, to, toPoly, toTile, left, right)))
-			break;
-	
+
 		if (options & DT_STRAIGHTPATH_AREA_CROSSINGS)
 		{
 			// Skip intersection if only area crossings are requested.
@@ -1745,9 +1741,13 @@ dtStatus dtNavMeshQuery::appendPortals(const int startIdx, const int endIdx, con
 				continue;
 		}
 		
+		float left[3], right[3];
+		if (dtStatusFailed(getPortalPoints(from, fromPoly, fromTile, to, toPoly, toTile, left, right)))
+			break;
+		
 		// Append intersection
 		float s,t;
-		if (dtIntersectSegSeg2D(startPos, endPos, left, right, s, t))
+		if (dtIntersectSegSeg2D(startPos, endPos, left, right, s, t) && s >= 0.0f && s <= 1.0f)
 		{
 			float pt[3];
 			dtVlerp(pt, left,right, t);
