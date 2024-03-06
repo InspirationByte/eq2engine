@@ -65,6 +65,7 @@ public:
 	virtual void		OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
+	virtual void		Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
 
 	virtual void		Draw2DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Draw3DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
@@ -294,19 +295,17 @@ typedef struct DbgPolyBuilder
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Polygon3D(v0, v1, v2, MColor(color), lifetime, hashId);
+		debugoverlay->Polygon3D(verts, MColor(color), lifetime, hashId);
 	}
 
-	DbgPolyBuilder& Point1(const Vector3D& v) { v0 = v; return *this; }
-	DbgPolyBuilder& Point2(const Vector3D& v) { v1 = v; return *this; }
-	DbgPolyBuilder& Point3(const Vector3D& v) { v2 = v; return *this; }
-	DbgPolyBuilder& Points(const Vector3D& _v0, const Vector3D& _v1, const Vector3D& _v2) { v0 = _v0; v1 = _v1; v2 = _v2; return *this; }
+	DbgPolyBuilder& Point(const Vector3D& v) { verts.append(v); return *this; }
+	DbgPolyBuilder& Points(const ArrayCRef<Vector3D> _verts) { verts.append(_verts.ptr(), _verts.numElem()); return *this; }
 	DbgPolyBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgPolyBuilder& Time(float t) { lifetime = t; return *this; }
 	DbgPolyBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
 
 private:
-	Vector3D	v0, v1, v2;
+	FixedArray<Vector3D, 20> verts;
 	uint		color{ color_white.pack() };
 	float		lifetime{ 0.0f };
 	int			hashId{ 0 };

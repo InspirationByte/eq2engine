@@ -80,7 +80,7 @@ struct DebugLineNode_t : public DebugNodeBase
 
 struct DebugPolyNode_t : public DebugNodeBase
 {
-	Vector3D v0, v1, v2;
+	FixedArray<Vector3D, 20> verts;
 	uint color{ color_white.pack()};
 };
 
@@ -107,6 +107,7 @@ public:
 	void							OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0);
 	void							Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0);
 	void							Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0);
+	void							Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0);
 
 	void							Draw2DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);
 	void							Draw3DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);

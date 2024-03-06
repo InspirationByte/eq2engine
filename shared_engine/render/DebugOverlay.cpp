@@ -380,9 +380,44 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugPolyNode_t& poly = m_polygons.append();
-	poly.v0 = v0;
-	poly.v1 = v1;
-	poly.v2 = v2;
+	poly.verts.append(v0);
+	poly.verts.append(v1);
+	poly.verts.append(v2);
+
+	poly.color = color.pack();
+	poly.lifetime = fTime;
+
+	poly.frameindex = m_frameId;
+	poly.nameHash = hashId;
+
+	if (hashId != 0)
+		m_newNames.insert(hashId, m_frameId);
+#endif
+}
+
+void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime, int hashId)
+{
+#ifndef DISABLE_DEBUG_DRAWING
+	if (hashId == 0)
+	{
+		bool anyVisible = false;
+		for (int i = 0; i < verts.numElem() - 2; ++i)
+		{
+			if (m_frustum.IsTriangleInside(verts[0], verts[i + 1], verts[i + 2]))
+			{
+				anyVisible = true;
+				break;
+			}
+		}
+
+		if (!anyVisible)
+			return;
+	}
+
+	Threading::CScopedMutex m(s_debugOverlayMutex);
+
+	DebugPolyNode_t& poly = m_polygons.append();
+	poly.verts.append(verts.ptr(), verts.numElem());
 
 	poly.color = color.pack();
 	poly.lifetime = fTime;
@@ -803,7 +838,7 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.cullMode = CULL_FRONT;
+	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = true;
 
@@ -816,14 +851,10 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 		{
 			meshBuilder.Color4(polygons[i].color);
 
-			meshBuilder.Position3fv(polygons[i].v0);
-			meshBuilder.AdvanceVertex();
-
-			meshBuilder.Position3fv(polygons[i].v1);
-			meshBuilder.AdvanceVertex();
-
-			meshBuilder.Position3fv(polygons[i].v2);
-			meshBuilder.AdvanceVertex();
+			for(int j = 0; j < polygons[i].verts.numElem()-2; ++j)
+			{
+				meshBuilder.Triangle3(polygons[i].verts[0], polygons[i].verts[j+1], polygons[i].verts[j+2]);
+			}
 
 			polygons[i].lifetime -= frameTime;
 
@@ -843,23 +874,10 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 		{
 			meshBuilder.Color4(polygons[i].color);
 
-			meshBuilder.Position3fv(polygons[i].v0);
-			meshBuilder.AdvanceVertex();
-
-			meshBuilder.Position3fv(polygons[i].v1);
-			meshBuilder.AdvanceVertex();
-
-			meshBuilder.Position3fv(polygons[i].v1);
-			meshBuilder.AdvanceVertex();
-
-			meshBuilder.Position3fv(polygons[i].v2);
-			meshBuilder.AdvanceVertex();
-
-			meshBuilder.Position3fv(polygons[i].v2);
-			meshBuilder.AdvanceVertex();
-
-			meshBuilder.Position3fv(polygons[i].v0);
-			meshBuilder.AdvanceVertex();
+			for (int j = 0; j < polygons[i].verts.numElem(); ++j)
+			{
+				meshBuilder.Line3fv(polygons[i].verts[j], polygons[i].verts[(j+1) % polygons[i].verts.numElem()]);
+			}
 
 			if((i % LINES_DRAW_SUBDIV) == 0)
 			{
