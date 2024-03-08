@@ -12,8 +12,11 @@
 class CMeshBuilder
 {
 public:
+	~CMeshBuilder() = default;
+	CMeshBuilder() = default;
 	CMeshBuilder(IDynamicMeshPtr mesh);
-	~CMeshBuilder();
+
+	void		Init(IDynamicMeshPtr mesh);
 
 	// begins the mesh
 	void		Begin(EPrimTopology type);
@@ -121,7 +124,7 @@ protected:
 
 //----------------------------------------------------------
 
-inline CMeshBuilder::CMeshBuilder(IDynamicMeshPtr mesh)
+inline void CMeshBuilder::Init(IDynamicMeshPtr mesh)
 {
 	m_mesh = mesh;
 
@@ -135,32 +138,32 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMeshPtr mesh)
 	ASSERT_MSG(vertexDesc.attributes.numElem() > 0, "CMeshBuilder - attributes count is ZERO\n");
 	ASSERT_MSG(vertexDesc.stride > 0, "CMeshBuilder - vertex layout stride hasn't set\n");
 
-	for(const VertexLayoutDesc::AttribDesc& attrib : vertexDesc.attributes)
+	for (const VertexLayoutDesc::AttribDesc& attrib : vertexDesc.attributes)
 	{
 		const EVertAttribFormat format = attrib.format;
 		const EVertAttribType type = attrib.type;
 		const int vecCount = attrib.count;
 		const int attribSize = vecCount * s_attributeSize[format];
 
-		if(type == VERTEXATTRIB_POSITION)
+		if (type == VERTEXATTRIB_POSITION)
 		{
 			m_position.offset = attrib.offset;
 			m_position.count = vecCount;
 			m_position.format = format;
 		}
-		else if(type == VERTEXATTRIB_NORMAL)
+		else if (type == VERTEXATTRIB_NORMAL)
 		{
 			m_normal.offset = attrib.offset;
 			m_normal.count = vecCount;
 			m_normal.format = format;
 		}
-		else if(type == VERTEXATTRIB_TEXCOORD)
+		else if (type == VERTEXATTRIB_TEXCOORD)
 		{
 			m_texcoord.offset = attrib.offset;
 			m_texcoord.count = vecCount;
 			m_texcoord.format = format;
 		}
-		else if(type == VERTEXATTRIB_COLOR)
+		else if (type == VERTEXATTRIB_COLOR)
 		{
 			m_color.offset = attrib.offset;
 			m_color.count = vecCount;
@@ -173,9 +176,9 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMeshPtr mesh)
 	m_stride = vertexDesc.stride;
 }
 
-inline CMeshBuilder::~CMeshBuilder()
+inline CMeshBuilder::CMeshBuilder(IDynamicMeshPtr mesh)
 {
-
+	Init(mesh);
 }
 
 // begins the mesh

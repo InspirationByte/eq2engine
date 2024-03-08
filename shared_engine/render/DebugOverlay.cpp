@@ -476,7 +476,7 @@ static void DrawLineArray(ArrayRef<DebugLineNode_t> lines, float frametime, IGPU
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = true;
+	defaultRenderPass.depthWrite = false;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -513,7 +513,7 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = true;
+	defaultRenderPass.depthWrite = false;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -566,6 +566,9 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 		{
 			if (meshBuilder.End(drawCmd))
 				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+			// start with new mesh
+			meshBuilder.Init(g_matSystem->GetDynamicMesh());
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
@@ -585,7 +588,7 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = true;
+	defaultRenderPass.depthWrite = false;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
@@ -638,6 +641,9 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 			{
 				if (meshBuilder.End(drawCmd))
 					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+				// start with new mesh
+				meshBuilder.Init(g_matSystem->GetDynamicMesh());
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
@@ -704,7 +710,7 @@ static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float fram
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = true;
+	defaultRenderPass.depthWrite = false;
 
 	meshBuilder.Begin(PRIM_LINES);
 
@@ -716,6 +722,9 @@ static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float fram
 		{
 			if (meshBuilder.End(drawCmd))
 				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+			// start with new mesh
+			meshBuilder.Init(g_matSystem->GetDynamicMesh());
 			meshBuilder.Begin(PRIM_LINES);
 		}
 	}
@@ -840,7 +849,7 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.cullMode = CULL_BACK;
 	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = true;
+	defaultRenderPass.depthWrite = false;
 
 	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
@@ -862,6 +871,9 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 			{
 				if (meshBuilder.End(drawCmd))
 					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
+
+				// start with new mesh
+				meshBuilder.Init(g_matSystem->GetDynamicMesh());
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
 		}
@@ -883,6 +895,9 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 			{
 				if (meshBuilder.End(drawCmd))
 					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
+
+				// start with new mesh
+				meshBuilder.Init(g_matSystem->GetDynamicMesh());
 				meshBuilder.Begin(PRIM_LINES);
 			}
 		}
@@ -1053,7 +1068,7 @@ static void DrawSphereArray(ArrayRef<DebugSphereNode_t> spheres, float frameTime
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
 	defaultRenderPass.depthTest = true;
-	defaultRenderPass.depthWrite = true;
+	defaultRenderPass.depthWrite = false;
 
 	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
