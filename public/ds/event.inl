@@ -84,23 +84,26 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 			//		m_subs = sub->next;
 			// else
 			//		prevSub->next = sub->next;
-			
-			SubscriptionObject* del = Atomic::Exchange(sub, Atomic::Load(sub->next));
-			if(Atomic::CompareExchange(m_subs, del, sub) != del)
-			{
-				if(prevSub)
-				{
-					if(Atomic::CompareExchange(prevSub->next, del, sub) != del)
-					{
-						// try unlink and delete next time
-						continue;
-					}
-				}
-				else
-					continue;
-			}
-			delete del;
 
+			SubscriptionObject* del = sub;
+
+			while (true)
+			{
+				SubscriptionObject* next = del->next;
+				if (Atomic::CompareExchange(m_subs, del, next) == del)
+				{
+					sub = next;
+					break;
+				}
+				else if(prevSub)
+				{
+					sub = next;
+					prevSub->next = next;
+					break;
+				}
+			}
+
+			delete del;
 			continue;
 		}
 		else
@@ -108,7 +111,8 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 			sub->func(std::forward<Params>(args)...);
 
 			// goto next
-			prevSub = Atomic::Exchange(sub, sub->next);
+			prevSub = sub;
+			sub = sub->next;
 		}
 	}
 }
