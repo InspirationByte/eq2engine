@@ -477,6 +477,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 				params.set_state(IEqAudioSource::STOPPED);
 
 			emitter->loopCommand = LOOPCMD_NONE;
+			emitter->loopCommandTimeFactor = remainTimeFactorTarget;
 		}
 	}
 	else if(loopCommandChanged)

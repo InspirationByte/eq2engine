@@ -432,7 +432,7 @@ void CSoundingObject::SetEmitterState(SoundEmitterData* emitter, IEqAudioSource:
 	{
 		emitter->loopCommand = LOOPCMD_NONE | LOOPCMD_FLAG_CHANGED;
 		emitter->loopCommandRatePerSecond = 0.0f;
-		emitter->loopCommandTimeFactor = 1.0f;
+		emitter->loopCommandTimeFactor = (state == IEqAudioSource::PLAYING) ? 1.0f : 0.0f;
 		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 	}
 
@@ -528,12 +528,10 @@ void CSoundingObject::StartLoop(SoundEmitterData* emitter, float fadeInTime)
 		fadeInTime = emitter->script->startLoopTime;
 
 	const bool wasStopped = emitter->virtualParams.state == IEqAudioSource::STOPPED;
-	const bool loopCmdChanged = (emitter->loopCommand & 31) != LOOPCMD_FADE_IN;
-
 	if(wasStopped)
 		PlayEmitter(emitter, false);
 
-	if(loopCmdChanged)
+	if((emitter->loopCommand & 31) != LOOPCMD_FADE_IN)
 	{
 		if(emitter->soundSource)
 		{
@@ -542,11 +540,19 @@ void CSoundingObject::StartLoop(SoundEmitterData* emitter, float fadeInTime)
 			emitter->soundSource->UpdateParams(param);
 		}
 
-		emitter->loopCommandRatePerSecond = 1.0f / fadeInTime;
-		emitter->loopCommand = LOOPCMD_FADE_IN | LOOPCMD_FLAG_CHANGED;
+		if (fadeInTime >= F_EPS)
+		{
+			emitter->loopCommandRatePerSecond = 1.0f / fadeInTime;
+			emitter->loopCommand = LOOPCMD_FADE_IN | LOOPCMD_FLAG_CHANGED;
 
-		if(wasStopped)
-			emitter->loopCommandTimeFactor = 0.0f;
+			if (wasStopped)
+				emitter->loopCommandTimeFactor = 0.0f;
+		}
+		else
+		{
+			emitter->loopCommand = LOOPCMD_NONE | LOOPCMD_FLAG_CHANGED;
+			emitter->loopCommandTimeFactor = 1.0f;
+		}
 	}
 }
 
@@ -562,16 +568,18 @@ void CSoundingObject::StopLoop(SoundEmitterData* emitter, float fadeOutTime)
 
 		emitter->loopCommandRatePerSecond = 1.0f / fadeOutTime;
 		emitter->loopCommand = LOOPCMD_FADE_OUT | LOOPCMD_FLAG_CHANGED;
-	}
 
-	if(fadeOutTime <= 0.0f)
-	{
-		// set it directly
-		IEqAudioSource::Params param;
-		param.set_looping(false);
+		if (fadeOutTime <= 0.0f)
+		{
+			emitter->loopCommandTimeFactor = 0.0f;
 
-		if (emitter->soundSource)
-			emitter->soundSource->UpdateParams(param);
+			// set it directly
+			IEqAudioSource::Params param;
+			param.set_looping(false);
+
+			if (emitter->soundSource)
+				emitter->soundSource->UpdateParams(param);
+		}
 	}
 }
 
