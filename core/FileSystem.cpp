@@ -146,6 +146,7 @@ struct DKFINDDATA
 	EqString	wildcard;
 	int			searchPaths{ -1 };
 	int			dirIndex{ 0 };
+	bool		singleDir{ false };
 };
 
 //--------------------------------------------------
@@ -936,6 +937,9 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 			CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
 			if (findData->osFind.Init(searchWildcard))
 				return true;
+
+			if(findData->singleDir)
+				break;
 		}
 		findData->searchPaths &= ~SP_MOD;
 	}
@@ -964,7 +968,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 }
 
 // opens directory for search props
-const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath)
+const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath, int dirIndex)
 {
 	ASSERT(findData != nullptr);
 
@@ -977,7 +981,8 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	newFind->searchPaths = searchPath;
 	newFind->wildcard = wildcard;
 	newFind->wildcard.Path_FixSlashes();
-	newFind->dirIndex = 0;
+	newFind->dirIndex = max(0, dirIndex);
+	newFind->singleDir = (dirIndex >= 0);
 
 	if (!InitNextPath(newFind))
 		return nullptr;
@@ -1007,7 +1012,6 @@ void CFileSystem::FindClose(DKFINDDATA* findData)
 {
 	if(!findData)
 		return;
-
 	if(m_findDatas.fastRemove(findData))
 		delete findData;
 }
@@ -1016,8 +1020,14 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 {
 	if(!findData)
 		return false;
-
 	return findData->osFind.IsDirectory();
+}
+
+int	CFileSystem::FindGetDirIndex(DKFINDDATA* findData) const
+{
+	if(!findData)
+		return -1;
+	return findData->dirIndex - 1;
 }
 
 // loads module

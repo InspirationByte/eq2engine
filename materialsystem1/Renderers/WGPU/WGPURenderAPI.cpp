@@ -107,7 +107,7 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 	int shaderPackCount = 0;
 	int shaderModCount = 0;
 	EqString shaderPackPath;
-	CFileSystemFind fsFind("shaders/*.shd");
+	CFileSystemFind fsFind("shaders/*.shd", SP_MOD | SP_DATA);
 	while (fsFind.Next())
 	{
 		if (fsFind.IsDirectory())
