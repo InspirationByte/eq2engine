@@ -567,7 +567,7 @@ inline bool operator != (const TVec4D<T>& u, const TVec4D<T2>& v)
 
 // compares vector2 with epsilon
 template <typename T>
-inline bool compare_epsilon(const TVec2D<T> &u, const TVec2D<T> &v, const T eps)
+inline bool vecSimilar(const TVec2D<T> &u, const TVec2D<T> &v, const T eps)
 {
 	return	fsimilar(u.x, v.x, eps) &&
 			fsimilar(u.y, v.y, eps);
@@ -575,7 +575,7 @@ inline bool compare_epsilon(const TVec2D<T> &u, const TVec2D<T> &v, const T eps)
 
 // compares vector3 with epsilon
 template <typename T>
-inline bool compare_epsilon(const TVec3D<T> &u, const TVec3D<T> &v, const T eps)
+inline bool vecSimilar(const TVec3D<T> &u, const TVec3D<T> &v, const T eps)
 {
 	return	fsimilar(u.x, v.x, eps) &&
 			fsimilar(u.y, v.y, eps) &&
@@ -583,7 +583,7 @@ inline bool compare_epsilon(const TVec3D<T> &u, const TVec3D<T> &v, const T eps)
 }
 
 template <typename T>
-inline bool compare_epsilon(const TVec4D<T> &u, const TVec4D<T> &v, const T eps)
+inline bool vecSimilar(const TVec4D<T> &u, const TVec4D<T> &v, const T eps)
 {
 	return	fsimilar(u.x, v.x, eps) &&
 			fsimilar(u.y, v.y, eps) &&

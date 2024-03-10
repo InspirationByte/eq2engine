@@ -489,7 +489,7 @@ Vector3D eulersXYZ(const Quaternion &q)
 
 	Vector3D euler;
 
-	if (dsimilar(test, 1.0, Q_D_EPS))
+	if (fsimilar(test, 1.0, Q_D_EPS))
 	{
 		// heading = rotation about z-axis
 		euler.z = (float) (-2.0*atan2(q.x, q.w));
@@ -498,7 +498,7 @@ Vector3D eulersXYZ(const Quaternion &q)
 		// attitude = rotation about y-axis
 		euler.y = (float) (M_PI_D * 0.5);
 	}
-	else if (dsimilar(test, -1.0, Q_D_EPS))
+	else if (fsimilar(test, -1.0, Q_D_EPS))
 	{
 		// heading = rotation about z-axis
 		euler.z = (float) (2.0 * atan2(q.x, q.w));
@@ -521,7 +521,7 @@ Vector3D eulersXYZ(const Quaternion &q)
 }
 
 // compares two quaternions with epsilon
-bool compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps)
+bool quaternionSimilar(const Quaternion &u, const Quaternion &v, const float eps)
 {
 	// FIXME: use quaternion difference
 	return	fsimilar(u.x,v.x, eps) &&

@@ -401,15 +401,15 @@ using IVector4D = TVec4D<int>;
 
 // compares vector2 with epsilon
 template <typename T>
-bool		compare_epsilon(const TVec2D<T> &u, const TVec2D<T> &v, const T eps);
+bool		vecSimilar(const TVec2D<T> &u, const TVec2D<T> &v, const T eps);
 
 // compares vector3 with epsilon
 template <typename T>
-bool		compare_epsilon(const TVec3D<T> &u, const TVec3D<T> &v, const T eps);
+bool		vecSimilar(const TVec3D<T> &u, const TVec3D<T> &v, const T eps);
 
 // compares vector4 with epsilon
 template <typename T>
-bool		compare_epsilon(const TVec4D<T> &u, const TVec4D<T> &v, const T eps);
+bool		vecSimilar(const TVec4D<T> &u, const TVec4D<T> &v, const T eps);
 
 // vector2 dot product
 template <typename T>
