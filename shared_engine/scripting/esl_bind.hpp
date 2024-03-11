@@ -288,7 +288,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	if constexpr (std::is_same_v<T, bool>) 
 	{
 		if(!checkType(L, index, LUA_TBOOLEAN))
-			return Result{ false, {}};
+			return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index)))};
 
 		return Result{ true, {}, lua_toboolean(L, index) != 0 };
     }
@@ -307,7 +307,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		|| std::is_enum_v<T>)
 	{
 		if (!checkType(L, index, LUA_TNUMBER))
-			return Result{ false, {} };
+			return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
 
 		return Result{ true, {}, static_cast<T>(lua_tointeger(L, index)) };
 	}
@@ -316,7 +316,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		|| std::is_same_v<T, double>)
 	{
 		if (!checkType(L, index, LUA_TNUMBER))
-			return Result{ false, {} };
+			return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
 
 		return Result{ true, {}, static_cast<T>(lua_tonumber(L, index)) };
     } 
@@ -346,7 +346,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			if constexpr (IsEqString<T>::value)
 				return ResultWithValue<EqString>{ false, {}, EqString() };
 			else
-				return Result{ false, {}, nullptr };
+				return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
 		}
 
 		size_t len = 0;
@@ -413,9 +413,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		ASSERT_FAIL("Unsupported argument type %s", typeid(T).name());
 
 		if constexpr (std::is_reference_v<T>)
-			return Result{ false, {}, reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
+			return Result{ false, "Unsupported argument type", reinterpret_cast<T>(*(BaseType<T>*)nullptr)};
 		else
-			return Result{ false, {}, reinterpret_cast<T>(nullptr) };
+			return Result{ false, "Unsupported argument type", reinterpret_cast<T>(nullptr) };
 
         // NOTE: GCC struggles here, need to rethink this code
 		// static_assert(false, "Unsupported argument type");
@@ -490,9 +490,14 @@ private:
 		if (res == 0)
 		{
 			if constexpr (std::is_void_v<R>)
+			{
 				return Result{ true };
+			}
 			else
-				return Result{ true, {}, *runtime::GetValue<R, false>(L, -1) };
+			{
+				auto value = runtime::GetValue<R, true>(L, -1);
+				return Result{ value.success, value.success ? EqString() : EqString::Format("return value: %s", value.errorMessage.ToCString()), *value};
+			}
 		}
 
 		const char* errorMessage = nullptr;
