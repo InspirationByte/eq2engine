@@ -77,9 +77,9 @@ static bool CompareVertex(const StudioVertexData& v0, const StudioVertexData&v1)
 	static constexpr const float VERT_MERGE_EPS = 0.001f;
 	static constexpr const float WEIGHT_MERGE_EPS = 0.001f;
 
-	if (compare_epsilon(v0.posUvs.point, v1.posUvs.point, VERT_MERGE_EPS) &&
-		compare_epsilon(v0.posUvs.texCoord, v1.posUvs.texCoord, VERT_MERGE_EPS) &&
-		compare_epsilon(v0.tbn.normal, v1.tbn.normal, VERT_MERGE_EPS)) // FIXME: dot product?
+	if (vecSimilar(v0.posUvs.point, v1.posUvs.point, VERT_MERGE_EPS) &&
+		vecSimilar(v0.posUvs.texCoord, v1.posUvs.texCoord, VERT_MERGE_EPS) &&
+		vecSimilar(v0.tbn.normal, v1.tbn.normal, VERT_MERGE_EPS)) // FIXME: dot product?
 	{
 		// check each bone weight
 		int numEqual = 0;

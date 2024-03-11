@@ -131,7 +131,7 @@ inline bool fsimilar( float a, float b, float cmp = F_EPS )
 	return fabs(a-b) < cmp;
 }
 
-inline bool dsimilar( double a, double b, double cmp = F_EPS )
+inline bool fsimilar( double a, double b, double cmp = F_EPS )
 {
 	return fabs(a-b) < cmp;
 }

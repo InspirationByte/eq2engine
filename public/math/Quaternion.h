@@ -93,7 +93,7 @@ void			renormalize(Quaternion& q);
 void			axisAngle(const Quaternion& q, Vector3D&axis, float &angle);
 
 // compares quaternion with epsilon
-bool			compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps);
+bool			quaternionSimilar(const Quaternion &u, const Quaternion &v, const float eps);
 
 // vector rotation
 Vector3D		rotateVector( const Vector3D& p, const Quaternion& q );
