@@ -244,9 +244,14 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 			return nullptr;
 		}
 
-		player->audioSwr = swr_alloc_set_opts(nullptr,
-			AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 44100,
-			player->audioStream->codecpar->channel_layout, (enum AVSampleFormat)player->audioStream->codecpar->format, player->audioStream->codecpar->sample_rate,
+		AVChannelLayout outChLayout;
+		av_channel_layout_default(&outChLayout, 2);
+
+		swr_alloc_set_opts2(&player->audioSwr,
+			&outChLayout, AV_SAMPLE_FMT_S16, 44100,
+			&player->audioStream->codecpar->ch_layout,
+			(enum AVSampleFormat)player->audioStream->codecpar->format, 
+			player->audioStream->codecpar->sample_rate,
 			0, nullptr);
 
 		if (player->audioSwr == nullptr)
@@ -534,8 +539,8 @@ static void PlayerAudioDecodeStep(MoviePlayerData* player, FrameQueue& frameQueu
 		state = DEC_RECV_FRAME;
 		
 		AVFrame* convFrame = av_frame_alloc();
-		convFrame->channels = 2;
-		convFrame->channel_layout = AV_CH_LAYOUT_STEREO;
+		av_channel_layout_default(&convFrame->ch_layout, 2);
+
 		convFrame->format = AV_SAMPLE_FMT_S16;
 		convFrame->sample_rate = 44100;
 		convFrame->pts = static_cast<double>(audioState.frame->pts) / player->clockSpeed;
