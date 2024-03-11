@@ -192,7 +192,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 			const studioJoint_t& joint = m_joints[link.l->bone];
 
 			const Vector3D& rotation = joint.bone->rotation;
-			link.quat = Quaternion(rotation.x, rotation.y, rotation.z);
+			link.quat = rotateXYZ(rotation.x, rotation.y, rotation.z);
 			link.position = joint.bone->position;
 
 			// initial transform
@@ -858,7 +858,7 @@ static void IKLimitDOF(giklink_t* link)
 	// get all back
 	euler = DEG2RAD(euler);
 
-	link->quat = Quaternion(euler.x, euler.y, euler.z);
+	link->quat = rotateXYZ(euler.x, euler.y, euler.z);
 }
 
 // solves Ik chain

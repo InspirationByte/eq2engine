@@ -107,8 +107,8 @@ void CViewParams::Interpolate(const CViewParams& from, const CViewParams& to, fl
 	const Vector3D vRadianRotationA = DEG2RAD(anglesA);
 	const Vector3D vRadianRotationB = DEG2RAD(anglesB);
 
-	Quaternion qA(vRadianRotationA.x, vRadianRotationA.y, vRadianRotationA.z);
-	Quaternion qB(vRadianRotationB.x, vRadianRotationB.y, vRadianRotationB.z);
+	Quaternion qA = rotateXYZ(vRadianRotationA.x, vRadianRotationA.y, vRadianRotationA.z);
+	Quaternion qB = rotateXYZ(vRadianRotationB.x, vRadianRotationB.y, vRadianRotationB.z);
 	qA.normalize();
 	qB.normalize();
 	Quaternion qR = slerp(qA, qB, factor);

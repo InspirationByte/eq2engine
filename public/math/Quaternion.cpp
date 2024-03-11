@@ -11,41 +11,6 @@
 #pragma warning(push)
 #pragma warning(disable:4244)
 
-Quaternion::Quaternion(const float Wx, const float Wy)
-{
-	float cx,sx,cy,sy;
-
-	SinCos(Wx * 0.5f, &sx, &cx);
-	SinCos(Wy * 0.5f, &sy, &cy);
-
-	x = -cy * sx;
-	y =  cx * sy;
-	z =  sx * sy;
-
-	w =  cx * cy;
-}
-
-Quaternion::Quaternion(const float Wx, const float Wy, const float Wz)
-{
-	double cr,sr,cp,sp,cy,sy;
-
-	SinCos(Wx * 0.5f, &sr, &cr);
-	SinCos(Wy * 0.5f, &sp, &cp);
-	SinCos(Wz * 0.5f, &sy, &cy);
-
-	double cpcy = cp * cy;
-	double spcy = sp * cy;
-	double cpsy = cp * sy;
-	double spsy = sp * sy;
-
-	x = (float)(sr * cpcy - cr * spsy);
-	y = (float)(cr * spcy + sr * cpsy);
-	z = (float)(cr * cpsy - sr * spcy);
-	w = (float)(cr * cpcy + sr * spsy);
-
-	normalize();
-}
-
 Quaternion::Quaternion(const Matrix3x3 &matrix)
 {
 
@@ -203,7 +168,6 @@ Quaternion::Quaternion(const Vector4D &v)
 	z = v.z;
 }
 
-
 Quaternion::Quaternion(const float a, const Vector3D& axis)
 {
 	double sa = sin( a * 0.5f);
@@ -343,6 +307,99 @@ Quaternion operator / (const Quaternion &v, const float d)
 	return Quaternion(v.w / d, v.x / d, v.y / d, v.z / d);
 }
 
+//-------------------------------------------------
+
+Quaternion rotateX(float angle)
+{
+	Quaternion qr;
+
+	float s, c;
+	SinCos(angle * 0.5f, &s, &c);
+
+	qr.w = c;
+	qr.x = s;
+	qr.y = 0;
+	qr.z = 0;
+	return qr;
+}
+
+Quaternion rotateY(float angle)
+{
+	Quaternion qr;
+
+	float s, c;
+	SinCos(angle * 0.5f, &s, &c);
+
+	qr.w = c;
+	qr.x = 0;
+	qr.y = s;
+	qr.z = 0;
+	return qr;
+}
+
+Quaternion rotateZ(float angle)
+{
+	Quaternion qr;
+
+	float s, c;
+	SinCos(angle * 0.5f, &s, &c);
+
+	qr.w = c;
+	qr.x = 0;
+	qr.y = 0;
+	qr.z = s;
+	return qr;
+}
+
+Quaternion rotateXY(float x, float y)
+{
+	Quaternion qr;
+	double cx, sx, cy, sy;
+
+	SinCos(x * 0.5f, &sx, &cx);
+	SinCos(y * 0.5f, &sy, &cy);
+
+	qr.x = (float)(-cy * sx);
+	qr.y = (float)(cx * sy);
+	qr.z = (float)(sx * sy);
+	qr.w = (float)(cx * cy);
+
+	return qr;
+}
+
+Quaternion rotateXYZ(float x, float y, float z)
+{
+	Quaternion qr;
+	double cx, sx, cy, sy, cz, sz;
+
+	SinCos(x * 0.5f, &sx, &cx);
+	SinCos(y * 0.5f, &sy, &cy);
+	SinCos(z * 0.5f, &sz, &cz);
+
+	double cycz = cy * cz;
+	double sycz = sy * cz;
+	double cysz = cy * sz;
+	double sysz = sy * sz;
+
+	qr.x = (float)(sx * cycz - cx * sysz);
+	qr.y = (float)(cx * sycz + sx * cysz);
+	qr.z = (float)(cx * cysz - sx * sycz);
+	qr.w = (float)(cx * cycz + sx * sysz);
+
+	qr.normalize(); // FIXME: is that needed?
+
+	return qr;
+}
+
+Quaternion rotateZXY(float x, float y, float z)
+{
+	Quaternion qx, qy, qz;
+	qx = rotateX(x);
+	qy = rotateY(y);
+	qz = rotateZ(z);
+
+	return (qz * qy) * qx;
+}
 
 Quaternion slerp(const Quaternion &x, const Quaternion &y, const float a)
 {
@@ -400,6 +457,7 @@ static void threeAxisRot(float r11, float r12, float r21, float r31, float r32, 
 
 Vector3D quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq)
 {
+	
 	Vector3D res;
 	switch(seq)
 	{

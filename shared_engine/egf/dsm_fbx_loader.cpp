@@ -24,7 +24,7 @@ namespace SharedModel
 Vector3D FromFBXRotation(const ofbx::Vec3& vec, const Matrix3x3& orient)
 {
 	Quaternion o(orient);
-	Quaternion q(vec.x, vec.y, vec.z);
+	Quaternion q = rotateXYZ(vec.x, vec.y, vec.z);
 
 	return eulersXYZ(o * q);
 }
@@ -32,7 +32,7 @@ Vector3D FromFBXRotation(const ofbx::Vec3& vec, const Matrix3x3& orient)
 Vector3D FromFBXRotation(const Vector3D& vec, const Matrix3x3& orient)
 {
 	Quaternion o(orient);
-	Quaternion q(vec.x, vec.y, vec.z);
+	Quaternion q = rotateXYZ(vec.x, vec.y, vec.z);
 
 	return eulersXYZ(o * q);
 }
@@ -620,8 +620,8 @@ Vector3D InterpVec<Vector3D, INTERP_ANGLES>(const Array<Vector3D>& src, float x,
 		return src[n - 1];
 
 	const int j = int(x);
-	Quaternion a1(DEG2RAD(src[j].x), DEG2RAD(src[j].y), DEG2RAD(src[j].z));
-	Quaternion a2(DEG2RAD(src[j+1].x), DEG2RAD(src[j+1].y), DEG2RAD(src[j+1].z));
+	Quaternion a1 = rotateXYZ(DEG2RAD(src[j].x), DEG2RAD(src[j].y), DEG2RAD(src[j].z));
+	Quaternion a2 = rotateXYZ(DEG2RAD(src[j+1].x), DEG2RAD(src[j+1].y), DEG2RAD(src[j+1].z));
 	Quaternion r = slerp(a1, a2, x - float(j));
 	return eulersXYZ(r) * M_RAD2DEG;
 }

@@ -10,7 +10,7 @@
 
 qanimframe_t::qanimframe_t(animframe_t& frame)
 {
-	angBoneAngles = Quaternion(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
+	angBoneAngles = rotateXYZ(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
 	vecBonePosition = frame.vecBonePosition;
 	pad = 0.0f;
 }

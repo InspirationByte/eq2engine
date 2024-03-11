@@ -32,8 +32,6 @@ struct Quaternion
 	float x,y,z,w;
 
 	Quaternion() {}
-	Quaternion(const float Wx, const float Wy);
-	Quaternion(const float Wx, const float Wy, const float Wz);
 	Quaternion(const float iw, const float ix, const float iy, const float iz) 
 		: w(iw), x(ix),y(iy),z(iz)
 	{
@@ -41,7 +39,7 @@ struct Quaternion
 
 	Quaternion(const Matrix3x3& m);
 	Quaternion(const Vector4D& v);
-	Quaternion(const float a, const TVec3D<float>& axis);
+	Quaternion(const float a, const Vector3D& axis);
 
 	operator float *() const { return (float *) &x; }
 
@@ -65,10 +63,28 @@ Quaternion operator * (const Quaternion &u, const Quaternion &v);
 Quaternion operator * (float scalar, const Quaternion &v);
 Quaternion operator * (const Quaternion &v, const float scalar);
 Quaternion operator / (const Quaternion &v, const float dividend);
-Quaternion operator * (const TVec3D<float>& v, const Quaternion& q);
+Quaternion operator * (const Vector3D& v, const Quaternion& q);
 Quaternion operator ! (const Quaternion &q);
 
 // ------------------------------------------------------------------------------
+
+// constructs quaternion with rotation around X axis
+Quaternion		rotateX(float angle);
+
+// constructs quaternion with rotation around Y axis
+Quaternion		rotateY(float angle);
+
+// constructs quaternion with rotation around Z axis
+Quaternion		rotateZ(float angle);
+
+// constructs quaternion with rotation in X-Y order
+Quaternion		rotateXY(float x, float y);
+
+// constructs quaternion with rotation in X-Y-Z order
+Quaternion		rotateXYZ(float x, float y, float z);
+
+// constructs quaternion with rotation in Z-X-Y order
+Quaternion		rotateZXY(float x, float y, float z);
 
 // interpolates quaternion
 Quaternion		slerp(const Quaternion &q0, const Quaternion &q1, const float t);
@@ -90,10 +106,10 @@ Vector3D		quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq);
 void			renormalize(Quaternion& q);
 
 // axis angle of quaternion
-void			axisAngle(const Quaternion& q, Vector3D&axis, float &angle);
+void			axisAngle(const Quaternion& q, Vector3D& axis, float& angle);
 
 // compares quaternion with epsilon
-bool			quaternionSimilar(const Quaternion &u, const Quaternion &v, const float eps);
+bool			quaternionSimilar(const Quaternion& u, const Quaternion& v, const float eps);
 
 // vector rotation
 Vector3D		rotateVector( const Vector3D& p, const Quaternion& q );
