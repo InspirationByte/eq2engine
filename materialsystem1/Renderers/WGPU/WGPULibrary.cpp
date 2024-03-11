@@ -11,6 +11,7 @@
 #include "core/IConsoleCommands.h"
 #include "core/ICommandLine.h"
 #include "core/IDkCore.h"
+#include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 
@@ -135,6 +136,30 @@ static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
 	return "Unknown";
 }
 
+static size_t wgpuLoadCacheDataFunction(void const* key, size_t keySize, void* value, size_t valueSize, void* userdata)
+{
+	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
+
+	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), "r", SP_ROOT);
+
+	if (!file)
+		return 0;
+
+	if (!value)
+		return file->GetSize();
+
+	return file->Read(value, 1, valueSize);
+}
+
+static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void const* value, size_t valueSize, void* userdata)
+{
+	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
+
+	g_fileSystem->MakeDir("PSOCache", SP_ROOT);
+	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), "w", SP_ROOT);
+	file->Write(value, 1, valueSize);
+}
+
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
@@ -238,15 +263,22 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 			wgpu_break_on_error.SetBool(true);
 		}
 
-		WGPUDawnTogglesDescriptor deviceTogglesDesc{};
-		deviceTogglesDesc.enabledToggles = enabledToggles.ptr();
-		deviceTogglesDesc.enabledToggleCount = enabledToggles.numElem();
+		WGPUDawnCacheDeviceDescriptor rhiDawnCache{};
+		rhiDawnCache.chain.sType = WGPUSType_DawnCacheDeviceDescriptor;
+		rhiDawnCache.isolationKey = "E2Render";
+		rhiDawnCache.loadDataFunction = wgpuLoadCacheDataFunction;
+		rhiDawnCache.storeDataFunction = wgpuStoreCacheDataFunction;
 
-		deviceTogglesDesc.disabledToggles = disabledToggles.ptr();
-		deviceTogglesDesc.disabledToggleCount = disabledToggles.numElem();
+		WGPUDawnTogglesDescriptor rhiDeviceTogglesDesc{};
+		rhiDeviceTogglesDesc.chain.next = &rhiDawnCache.chain;
+		rhiDeviceTogglesDesc.enabledToggles = enabledToggles.ptr();
+		rhiDeviceTogglesDesc.enabledToggleCount = enabledToggles.numElem();
 
-		deviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
-		rhiDeviceDesc.nextInChain = &deviceTogglesDesc.chain;
+		rhiDeviceTogglesDesc.disabledToggles = disabledToggles.ptr();
+		rhiDeviceTogglesDesc.disabledToggleCount = disabledToggles.numElem();
+
+		rhiDeviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
+		rhiDeviceDesc.nextInChain = &rhiDeviceTogglesDesc.chain;
 
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
