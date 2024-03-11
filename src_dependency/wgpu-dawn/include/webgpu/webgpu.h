@@ -491,6 +491,7 @@ typedef enum WGPUFeatureName {
     WGPUFeatureName_BufferMapExtendedUsages = 0x00000402,
     WGPUFeatureName_AdapterPropertiesMemoryHeaps = 0x00000403,
     WGPUFeatureName_AdapterPropertiesD3D = 0x00000404,
+    WGPUFeatureName_R8UnormStorage = 0x00000405,
     WGPUFeatureName_SharedTextureMemoryVkDedicatedAllocation = 0x0000044C,
     WGPUFeatureName_SharedTextureMemoryAHardwareBuffer = 0x0000044D,
     WGPUFeatureName_SharedTextureMemoryDmaBuf = 0x0000044E,
@@ -505,6 +506,7 @@ typedef enum WGPUFeatureName {
     WGPUFeatureName_SharedFenceVkSemaphoreZirconHandle = 0x000004B2,
     WGPUFeatureName_SharedFenceDXGISharedHandle = 0x000004B3,
     WGPUFeatureName_SharedFenceMTLSharedEvent = 0x000004B4,
+    WGPUFeatureName_SharedBufferMemoryD3D12Resource = 0x000004B5,
     WGPUFeatureName_Force32 = 0x7FFFFFFF
 } WGPUFeatureName WGPU_ENUM_ATTRIBUTE;
 
@@ -677,6 +679,7 @@ typedef enum WGPUSType {
     WGPUSType_SharedFenceDXGISharedHandleExportInfo = 0x000004BB,
     WGPUSType_SharedFenceMTLSharedEventDescriptor = 0x000004BC,
     WGPUSType_SharedFenceMTLSharedEventExportInfo = 0x000004BD,
+    WGPUSType_SharedBufferMemoryD3D12ResourceDescriptor = 0x000004BE,
     WGPUSType_Force32 = 0x7FFFFFFF
 } WGPUSType WGPU_ENUM_ATTRIBUTE;
 
@@ -1605,6 +1608,7 @@ typedef struct WGPUSharedFenceVkSemaphoreZirconHandleExportInfo {
 typedef struct WGPUSharedTextureMemoryDXGISharedHandleDescriptor {
     WGPUChainedStruct chain;
     void * handle;
+    WGPUBool useKeyedMutex;
 } WGPUSharedTextureMemoryDXGISharedHandleDescriptor WGPU_STRUCTURE_ATTRIBUTE;
 
 // Can be chained in WGPUSharedTextureMemoryDescriptor
@@ -2213,7 +2217,7 @@ typedef WGPUSharedBufferMemory (*WGPUProcDeviceImportSharedBufferMemory)(WGPUDev
 typedef WGPUSharedFence (*WGPUProcDeviceImportSharedFence)(WGPUDevice device, WGPUSharedFenceDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUSharedTextureMemory (*WGPUProcDeviceImportSharedTextureMemory)(WGPUDevice device, WGPUSharedTextureMemoryDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcDeviceInjectError)(WGPUDevice device, WGPUErrorType type, char const * message) WGPU_FUNCTION_ATTRIBUTE;
-typedef void (*WGPUProcDevicePopErrorScope)(WGPUDevice device, WGPUErrorCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
+typedef void (*WGPUProcDevicePopErrorScope)(WGPUDevice device, WGPUErrorCallback oldCallback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
 typedef WGPUFuture (*WGPUProcDevicePopErrorScopeF)(WGPUDevice device, WGPUPopErrorScopeCallbackInfo callbackInfo) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcDevicePushErrorScope)(WGPUDevice device, WGPUErrorFilter filter) WGPU_FUNCTION_ATTRIBUTE;
 typedef void (*WGPUProcDeviceSetDeviceLostCallback)(WGPUDevice device, WGPUDeviceLostCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
@@ -2522,7 +2526,7 @@ WGPU_EXPORT WGPUSharedBufferMemory wgpuDeviceImportSharedBufferMemory(WGPUDevice
 WGPU_EXPORT WGPUSharedFence wgpuDeviceImportSharedFence(WGPUDevice device, WGPUSharedFenceDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUSharedTextureMemory wgpuDeviceImportSharedTextureMemory(WGPUDevice device, WGPUSharedTextureMemoryDescriptor const * descriptor) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuDeviceInjectError(WGPUDevice device, WGPUErrorType type, char const * message) WGPU_FUNCTION_ATTRIBUTE;
-WGPU_EXPORT void wgpuDevicePopErrorScope(WGPUDevice device, WGPUErrorCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
+WGPU_EXPORT void wgpuDevicePopErrorScope(WGPUDevice device, WGPUErrorCallback oldCallback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT WGPUFuture wgpuDevicePopErrorScopeF(WGPUDevice device, WGPUPopErrorScopeCallbackInfo callbackInfo) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuDevicePushErrorScope(WGPUDevice device, WGPUErrorFilter filter) WGPU_FUNCTION_ATTRIBUTE;
 WGPU_EXPORT void wgpuDeviceSetDeviceLostCallback(WGPUDevice device, WGPUDeviceLostCallback callback, void * userdata) WGPU_FUNCTION_ATTRIBUTE;
