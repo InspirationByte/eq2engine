@@ -142,10 +142,6 @@ static void Sys_SaveScreenshot()
 
 DECLARE_INTERNAL_SHADERS();
 
-static EQCURSOR s_defaultCursor[20];
-
-CStaticAutoPtr<CGameHost> g_pHost;
-
 // TODO: Move this to GUI
 enum CursorCode
 {
@@ -166,8 +162,13 @@ enum CursorCode
 	dc_last,
 };
 
-static DKMODULE*	g_matsysmodule = nullptr;
+static EQCURSOR s_defaultCursor[20];
 
+CStaticAutoPtr<CGameHost> g_pHost;
+SyncJob*			g_beginSceneJob = nullptr;
+SyncJob*			g_endSceneJob = nullptr;
+
+static DKMODULE*	g_matsysmodule = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
 
@@ -444,6 +445,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	materials_config.shaderApiParams.screenFormat = screenFormat;
 
+	g_parallelJobs->Init();
+
 	if(!g_matSystem->Init(materials_config))
 		return false;
 
@@ -483,6 +486,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	else
 		SetWindowedMode();
 #endif
+
+	g_beginSceneJob = PPNew SyncJob("BeginSceneJob");
+	g_endSceneJob = PPNew SyncJob("EndSceneJob");
 
 	return true;
 }
@@ -627,8 +633,6 @@ void CGameHost::ShutdownSystems()
 
 	// Save configuration before full unload
 	WriteCfgFile( user_cfg.GetString(), true );
-
-	g_parallelJobs->Shutdown();
 	
 	debugoverlay->Shutdown();
 	equi::Manager->Shutdown();
@@ -642,6 +646,10 @@ void CGameHost::ShutdownSystems()
 
 	g_matSystem->Shutdown();
 	g_fileSystem->CloseModule( g_matsysmodule );
+
+	g_parallelJobs->Shutdown();
+	SAFE_DELETE(g_beginSceneJob);
+	SAFE_DELETE(g_endSceneJob);
 
 	SDL_DestroyWindow(g_pHost->m_window);
 }
@@ -896,10 +904,14 @@ void CGameHost::BeginScene()
 	rendSettings.overdrawMode = r_overdraw.GetBool();
 
 	g_consoleInput->BeginFrame();
+
+	g_parallelJobs->AddJob(g_beginSceneJob);
 }
 
 void CGameHost::EndScene()
 {
+	g_parallelJobs->AddJob(g_endSceneJob);
+
 	// save screenshots without ImGui/Console visible
 	Sys_SaveScreenshot();
 

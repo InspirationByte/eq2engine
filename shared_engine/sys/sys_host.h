@@ -14,6 +14,7 @@
 class IEqFont;
 class ConCommand;
 class CGameSystemJob;
+class SyncJob;
 
 struct VideoMode_t
 {
@@ -129,7 +130,8 @@ protected:
 	bool				m_keyDoneTrapping;
 	bool				m_skipMouseMove;
 	bool				m_cursorCentered;
-
 };
 
 extern CStaticAutoPtr<CGameHost> g_pHost;
+extern SyncJob* g_beginSceneJob;
+extern SyncJob* g_endSceneJob;

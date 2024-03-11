@@ -32,7 +32,6 @@ namespace EqStateMgr
 
 bool InitRegisterStates()
 {
-	g_parallelJobs->Init();
 	g_audioSystem->Init();
 
 #ifdef ENABLE_MULTIPLAYER

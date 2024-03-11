@@ -114,6 +114,18 @@ inline void IParallelJob::AddWait(IParallelJob* jobWait)
 }
 
 //--------------------------------------------
+// Dummy Sync Job
+class SyncJob : public IParallelJob
+{
+public:
+	SyncJob(const char* jobName)
+		: IParallelJob(jobName)
+	{}
+
+	void	Execute() override {}
+};
+
+//--------------------------------------------
 // Function Job
 class FunctionParallelJob : public IParallelJob
 {
