@@ -20,7 +20,7 @@
 #define DISABLE_DEBUG_DRAWING
 #endif
 
-static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 8;
+static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 16;
 static constexpr const int LINES_DRAW_SUBDIV = 4096;
 static constexpr const int POLYS_DRAW_SUBDIV = 256;
 static constexpr const int GRAPH_MAX_VALUES = 400;

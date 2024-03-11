@@ -33,7 +33,7 @@ struct CollisionData_t
 	FVector3D			position{ vec3_undef };		// position in world
 	Vector3D			normal{ vec3_undef };
 
-	CEqCollisionObject* hitobject{ nullptr };
+	CEqCollisionObject* hitobject{ nullptr };		// FIXME: might need to use weakPtr as we store this as state in car wheels
 
 	float				fract{ 1.0f };				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
 	int					materialIndex{ -1 };
