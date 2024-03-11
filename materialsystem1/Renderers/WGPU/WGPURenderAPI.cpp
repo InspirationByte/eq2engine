@@ -1354,7 +1354,6 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
 		wgpuQueueOnSubmittedWorkDone(m_rhiQueue, [](WGPUQueueWorkDoneStatus status, void* userdata) {
 			Promise<bool> promise(reinterpret_cast<Promise<bool>::Data*>(userdata));
-			promise.SetResult(status == WGPUQueueWorkDoneStatus_Success);
 
 			if(status != WGPUQueueWorkDoneStatus_Success)
 			{
@@ -1372,6 +1371,10 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 					break;
 				}
 				promise.SetError(-1, str);
+			}
+			else
+			{
+				promise.SetResult(true);
 			}
 		}, promiseData);
 
