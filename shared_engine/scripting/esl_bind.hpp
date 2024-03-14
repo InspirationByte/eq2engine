@@ -271,6 +271,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			luaL_error(L, "insufficient number of arguments - %s expected", LuaBaseTypeAlias<T>::value);
 	}
 
+	// TODO: Nullable trait instead of checks for table, function and ptr userdata
+	const bool isArgNull = lua_type(L, index) == LUA_TNIL;
+
 	auto checkType = [](lua_State* L, int index, int type) -> bool
 	{
 		if constexpr (SilentTypeCheck)
@@ -327,17 +330,20 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (std::is_same_v<BaseType<T>, LuaFunctionRef>)
 	{
-		if (!checkType(L, index, LUA_TFUNCTION))
+		if (!isArgNull && !checkType(L, index, LUA_TFUNCTION))
 			return ResultWithValue<BaseType<T>>{ false, {}, BaseType<T>(L) };
+
 		return ResultWithValue<BaseType<T>>{ true, {}, BaseType<T>(L, index) };
 	}
 	else if constexpr (
 		   std::is_same_v<BaseType<T>, LuaTableRef>
 		|| std::is_same_v<BaseType<T>, LuaTable>)
 	{
-		if (!checkType(L, index, LUA_TTABLE))
+		if (!isArgNull && !checkType(L, index, LUA_TTABLE))
 			return ResultWithValue<BaseType<T>>{ false, {}, BaseType<T>(L) };
+
 		return ResultWithValue<BaseType<T>>{ true, {}, BaseType<T>(L, index) };
+
 	}
 	else if constexpr (IsString<T>::value)
 	{
@@ -369,7 +375,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, type));
 			if constexpr(!SilentTypeCheck)
 			{
-				if (type == LUA_TNIL)
+				if (isArgNull)
 				{
 					if constexpr (!std::is_pointer_v<T>)
 						luaL_argerror(L, index, err);
@@ -524,6 +530,8 @@ struct FuncTraits
 	using TR = UR;
 	using TArgs = std::tuple<UArgs...>;
 };
+
+using FuncTraitsDefault = FuncTraits<void>;
 
 template <typename Func>
 struct TransformSignature;
@@ -792,9 +800,9 @@ struct VariableBinder<T, MemberVar> : public esl::ScriptBind
 
 		// all non-trivial types should be treated as userdata
 		if constexpr (std::is_trivial<V>::value)
-			thisPtr->*MemberVar = *runtime::GetValue<V, true>(L, 1);
+			thisPtr->*MemberVar = *runtime::GetValue<V, true>(L, 2);
 		else
-			thisPtr->*MemberVar = *runtime::GetValue<V&, true>(L, 1);
+			thisPtr->*MemberVar = *runtime::GetValue<V&, true>(L, 2);
 		return 0;
 	}
 };
@@ -954,6 +962,19 @@ Member ClassBinder<T>::MakeVariable(const char* name)
 	m.name = name;
 	m.signature = GetVariableTypeName<T, V>();
 	m.func = binder::BindVariableSetter<T, V>();
+	m.getFunc = binder::BindVariableGetter<T, V>();
+	return m;
+}
+
+template<typename T>
+template<auto V, auto F>
+Member ClassBinder<T>::MakeVariableWithSetter(const char* name)
+{
+	Member m;
+	m.type = MEMB_VAR;
+	m.name = name;
+	m.signature = GetVariableTypeName<T, V>();
+	m.func = binder::BindMemberFunction<T, F, binder::FuncTraitsDefault>(); //binder::BindVariableSetter<T, V>();
 	m.getFunc = binder::BindVariableGetter<T, V>();
 	return m;
 }

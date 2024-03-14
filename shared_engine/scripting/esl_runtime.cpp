@@ -440,8 +440,8 @@ int NewIndexImpl(lua_State* L)
 			return 0;
 		}
 
-		// ensure that value is at index 1.
-		lua_replace(L, 1);
+		// ensure that value is at index 2.
+		lua_replace(L, 2);
 		esl::ScriptBind bindObj{ userData };
 		return (bindObj.*(mem->func))(L);
 	};

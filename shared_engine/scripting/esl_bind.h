@@ -69,6 +69,9 @@ struct ClassBinder
 	template<auto V>
 	static Member	MakeVariable(const char* name);
 
+	template<auto V, auto F>
+	static Member	MakeVariableWithSetter(const char* name);
+
 	template<typename ...Args>
 	static Member	MakeConstructor();
 
@@ -184,7 +187,7 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 #define ESL_PUSH_BY_VALUE(x)		/* usage: BY_VALUE */ \
 	template<> struct esl::LuaTypeByVal<x> : std::true_type {};
 
-#define ESL_CLASS_FUNC(Name) 		(&BindClass::Name)
+#define ESL_CLASS_MEMBER(Name) 		(&BindClass::Name)
 #define ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
 #define ESL_CFUNC_OVERLOAD(R, ...) 	static_cast<R(*)__VA_ARGS__>
 #define ESL_APPLY_TRAITS(...)		, __VA_ARGS__
@@ -224,19 +227,19 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 // Func(Name, [ ESL_APPLY_TRAITS(rgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC(Name, ...) \
-	MakeFunction<ESL_CLASS_FUNC(Name)__VA_ARGS__>(#Name),
+	MakeFunction<ESL_CLASS_MEMBER(Name)__VA_ARGS__>(#Name),
 
 // Func(Name, Ret, (ArgT1, ArgT2, ...ArgTN), [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC_OVERLOAD(Name, R, Signature, ...) \
-	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature) ESL_CLASS_FUNC(Name)__VA_ARGS__>(#Name),
+	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature) ESL_CLASS_MEMBER(Name)__VA_ARGS__>(#Name),
 
 // Func("StrName", Name, [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC_NAMED(FuncName, Name, ...) \
-	MakeFunction<ESL_CLASS_FUNC(Name)__VA_ARGS__>(FuncName),
+	MakeFunction<ESL_CLASS_MEMBER(Name)__VA_ARGS__>(FuncName),
 
 // Func("StrName", Name, Ret, (ArgT1, ArgT2, ...ArgTN), [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD(FuncName, Name, R, Signature, ...) \
-	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature) ESL_CLASS_FUNC(Name)__VA_ARGS__>(FuncName),
+	MakeFunction<ESL_CLASS_OVERLOAD(R, Signature) ESL_CLASS_MEMBER(Name)__VA_ARGS__>(FuncName),
 
 #define EQSCRIPT_BIND_OP(Name) \
 	MakeOperator<binder::OP_##Name>("__" #Name),
@@ -245,7 +248,16 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 	MakeOperator(&Func<BindClass, binder::OP_##Name>, "__" #Name),
 
 #define EQSCRIPT_BIND_VAR(Name) \
-	MakeVariable<ESL_CLASS_FUNC(Name)>(#Name),
+	MakeVariable<ESL_CLASS_MEMBER(Name)>(#Name),
+
+#define EQSCRIPT_BIND_VAR_NAMED(Name, Var) \
+	MakeVariable<ESL_CLASS_MEMBER(Var)>(Name),
+
+#define EQSCRIPT_BIND_VAR_EX_SET(Name, SetterName) \
+	MakeVariableWithSetter<ESL_CLASS_MEMBER(Name), ESL_CLASS_MEMBER(SetterName)>(#Name),
+
+#define EQSCRIPT_BIND_VAR_EX_SET_NAMED(Name, Ver, SetterName) \
+	MakeVariableWithSetter<ESL_CLASS_MEMBER(Ver), ESL_CLASS_MEMBER(SetterName)>(Name),
 
 // Func(Name, [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_CFUNC(Name, ...) \
