@@ -985,7 +985,10 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	newFind->singleDir = (dirIndex >= 0);
 
 	if (!InitNextPath(newFind))
+	{
+		delete newFind;
 		return nullptr;
+	}
 
 	m_findDatas.append(newFind);
 	*findData = newFind;
