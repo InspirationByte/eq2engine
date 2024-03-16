@@ -272,7 +272,7 @@ Quaternion operator - (const Quaternion &v)
 	return Quaternion(-v.w, -v.x, -v.y, -v.z);
 }
 
-Quaternion operator * (const Quaternion &u, const Quaternion &v)
+Quaternion operator * (const Quaternion& u, const Quaternion& v)
 {
 	Quaternion tmp;
 
@@ -280,7 +280,6 @@ Quaternion operator * (const Quaternion &u, const Quaternion &v)
 	tmp.x = (v.w * u.x) + (v.x * u.w) + (v.y * u.z) - (v.z * u.y);
 	tmp.y = (v.w * u.y) + (v.y * u.w) + (v.z * u.x) - (v.x * u.z);
 	tmp.z = (v.w * u.z) + (v.z * u.w) + (v.x * u.y) - (v.y * u.x);
-
 	return tmp;
 }
 
@@ -620,10 +619,13 @@ void axisAngle(const Quaternion& q, Vector3D &axis, float &angle)
 }
 
 // vector rotation
-Vector3D rotateVector( const Vector3D& p, const Quaternion& q )
+Vector3D rotateVector( const Vector3D& v, const Quaternion& q )
 {
-    Quaternion temp = q * Quaternion( 0.0f, p.x, p.y, p.z );
-    return ( temp * !q ).asVector4D().xyz();
+	const Vector3D u = -q.asVector4D().xyz();
+	const float s = q.w;
+	return 2.0f * dot(u, v) * u
+		   + (sqr(s) - dot(u, u)) * v
+		   + 2.0f * s * cross(u, v);
 }
 
 #pragma warning(pop)
