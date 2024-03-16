@@ -45,5 +45,5 @@ protected:
 	bool					TryPopNewJob( CEqJobThread* requestBy );
 
 	Array<CEqJobThread*>		m_jobThreads{ PP_SL };
-	BoundedQueue<IParallelJob*>	m_jobs{ 1024 };
+	mutable BoundedQueue<IParallelJob*>	m_jobs{ 1024 };
 };

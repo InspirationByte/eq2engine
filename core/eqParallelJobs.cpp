@@ -126,7 +126,12 @@ void CEqParallelJobManager::AddJob(IParallelJob* job)
 		return;
 
 	job->m_phase = IParallelJob::JOB_STARTED;
-	m_jobs.enqueue(job);
+
+	while (!m_jobs.enqueue(job))
+	{
+		Submit();
+		Threading::YieldCurrentThread();
+	}
 	
 	job->OnAddedToQueue();
 
@@ -142,7 +147,12 @@ void CEqParallelJobManager::AddJob(EQ_JOB_FUNC func, void* args, int count /*= 1
 	job->m_phase = IParallelJob::JOB_STARTED;
 	job->m_deleteJob = true;
 	
-	m_jobs.enqueue(job);
+	while (!m_jobs.enqueue(job))
+	{
+		Submit();
+		Threading::YieldCurrentThread();
+	}
+
 	job->OnAddedToQueue();
 
 	Submit();
@@ -162,7 +172,13 @@ bool CEqParallelJobManager::AllJobsCompleted() const
 		if(!jobThread->WaitForThread(0))
 			return false;
 	}
-	return true;
+
+	IParallelJob* job = nullptr;
+	if (!m_jobs.dequeue(job))
+		return true;
+
+	m_jobs.enqueue(job);
+	return false;
 }
 
 // wait for completion
