@@ -421,7 +421,7 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	CombinePath(fullMaterialPath, materialsPath, outputMaterialName);
 	const EqString imageFileName = fullMaterialPath + ".tga";
 	const EqString matFileName = fullMaterialPath + ".mat";
-	const EqString atlasFileName =fullMaterialPath + ".mat";
+	const EqString atlasFileName = fullMaterialPath + ".atlas";
 
 	g_fileSystem->MakeDir(matFileName.Path_Strip_Name(), SP_ROOT);
 
