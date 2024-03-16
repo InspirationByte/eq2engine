@@ -26,9 +26,6 @@ DependencyPath = {
 Groups = {
     core = "Framework",
     
-    engine1 = "Equilibrium 1 port",
-    component1 = "Equilibrium 1 port/Components",
-
     engine2 = "Equilibrium 2",
     tools = "Tools",
 
@@ -57,7 +54,7 @@ workspace(WORKSPACE_NAME)
 	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
 
 	if _ACTION ~= "vscode" then
-		location "project_%{_ACTION}"
+		location "%{WORKSPACE_NAME}_%{_ACTION}"
 	end
 
 	defines {
@@ -123,7 +120,7 @@ workspace(WORKSPACE_NAME)
 		platforms { 
 			"x86", "x64" -- maybe add ARM & ARM64 for RPi?
 		}
-		vscode_makefile "project_gmake2"
+		vscode_makefile "%{WORKSPACE_NAME}_gmake2"
 		vscode_launch_cwd ("${workspaceRoot}/../"..WORKSPACE_NAME.."/build")
 		vscode_launch_environment {
 			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
@@ -304,181 +301,113 @@ project "e2Core"
 		
 usage "e2Core"
 	links "e2Core"
-
+	
 ----------------------------------------------
--- Sub usages
+-- Material System and rendering
 
-group "Components"
+group "MatSystem"
 
-project "dpkLib"
-	kind "StaticLib"
-	unitybuild "on"
-	uses { 
-		"lz4", "zlib"
+project "BaseShader"
+    kind "StaticLib"
+	uses {
+		"corelib", "frameworkLib"
 	}
     files {
-		Folders.public.. "dpk/**.c",
-		Folders.public.. "dpk/**.cpp",
-		Folders.public.. "dpk/**.h",
-	}
-    includedirs {
-		Folders.public
+		Folders.public.."materialsystem1/*.cpp",
+		Folders.public.."materialsystem1/*.h"
 	}
 
-project "sysLib"
-	kind "StaticLib"
-	unitybuild "on"
-	uses { 
-		"corelib", "frameworkLib",
-		"equiLib",
-		"SDL2", "imgui"
-	}
-    files {
-		Folders.shared_engine.. "sys/**.cpp",
-		Folders.shared_engine.. "sys/**.h",
-		Folders.shared_engine.. "input/**.cpp",
-		Folders.shared_engine.. "input/**.h",
-		Folders.public.. "input/**.h"
-	}
-    includedirs {
-		Folders.shared_engine
-	}
-
-project "equiLib"
-	kind "StaticLib"
-	unitybuild "on"
-	uses { 
-		"corelib", "frameworkLib",
-		"fontLib",
-	}
-    files {
-		Folders.shared_engine.. "equi/**.cpp",
-		Folders.shared_engine.. "equi/**.h"
-	}
-    includedirs {
-		Folders.shared_engine
-	}
-	
-project "scriptLib"
-	kind "StaticLib"
-	unitybuild "on"
-	uses { 
-		"corelib", "frameworkLib",
-		"lua",
-	}
-    files {
-		Folders.shared_engine.. "scripting/**.cpp",
-		Folders.shared_engine.. "scripting/**.h",
-		Folders.shared_engine.. "scripting/**.hpp"
-	}
-    includedirs {
-		Folders.shared_engine
-	}
-	
-project "networkLib"
-	kind "StaticLib"
+project "eqMatSystem"
+    kind "SharedLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib",
-		"zlib" 
+		"corelib", "frameworkLib", "e2Core",
+		"BaseShader"
 	}
     files {
-		Folders.shared_engine.. "network/**.cpp",
-		Folders.shared_engine.. "network/**.h"
-	}
-	-- this one is temporary. Once rewrite done it will be removed
-	excludes {
-		Folders.shared_engine.. "network/NETThread.cpp",
-	}
-    includedirs {
-		Folders.shared_engine
-	}
-	
-	filter "system:Windows"
-		links { "wsock32" }
-
-project "soundSystemLib"
-	kind "StaticLib"
-	unitybuild "on"
-	uses { 
-		"corelib", "frameworkLib",
-		"minivorbis", "openal-soft",
-		"imgui"
-	}
-    files {
-		Folders.shared_engine.. "audio/**.cpp",
-		Folders.shared_engine.. "audio/**.h",
-		Folders.public.. "audio/**.h"
-	}
-    includedirs {
-		Folders.public
+        Folders.matsystem1.. "*.cpp",
+		Folders.matsystem1.. "*.h",
+		Folders.matsystem1.. "Renderers/*.h",
+		Folders.public.."materialsystem1/**.h"
 	}
 
-project "physicsLib"
-	kind "StaticLib"
+usage "BaseShader"
+	links "BaseShader"
+
+-- base shader library
+project "eqBaseShaders"
+    kind "SharedLib"
 	unitybuild "on"
-	uses { 
-		"corelib", "frameworkLib",
-		"bullet2"
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"BaseShader"
 	}
     files {
-		Folders.shared_engine.. "physics/**.cpp",
-		Folders.shared_engine.. "physics/**.h",
-		Folders.public.. "physics/**.h"
+        Folders.matsystem1.."Shaders/*.cpp",
+		Folders.matsystem1.."Shaders/**.h",
+        Folders.matsystem1.."Shaders/Base/**.cpp",
 	}
     includedirs {
-		Folders.shared_engine
+		Folders.public.."materialsystem1"
 	}
-	
-project "movieLib"
-	kind "StaticLib"
+
+----------------------------------------------
+-- Render hardware interface libraries of Eq1
+group "MatSystem/RHI"
+
+-- base library
+usage "eqRHIBaseLib"
+    files {
+		Folders.matsystem1.. "Renderers/Shared/**.cpp",
+		Folders.matsystem1.."Renderers/Shared/**.h", 
+		Folders.matsystem1.."Renderers/*.cpp",
+		Folders.matsystem1.."Renderers/*.h",
+		Folders.public.."materialsystem1/renderers/**.h",
+	}
+    includedirs {
+		Folders.public.."materialsystem1/",
+		Folders.matsystem1.."Renderers/Shared"
+	}
+
+-- empty renderer
+project "eqNullRHI"
+    kind "SharedLib"
 	unitybuild "on"
-	uses { 
-		"corelib", "frameworkLib", "ffmpeg"
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"eqRHIBaseLib"
+	}
+	defines{
+		"EQRHI_NULL",
+		"RENDERER_TYPE=0"
 	}
     files {
-		Folders.shared_engine.. "movie/**.cpp",
-		Folders.shared_engine.. "movie/**.h",
+		Folders.matsystem1.. "Renderers/Empty/**.cpp",
+		Folders.matsystem1.."Renderers/Empty/**.h"
 	}
-    includedirs {
-		Folders.shared_engine
+
+-- WebGPU renderer (atm Windows-only)
+project "eqWGPURHI"
+	kind "SharedLib"
+	unitybuild "on"
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"eqRHIBaseLib", "wgpu-dawn"
 	}
-	filter "system:android"
-		defines {
-			"MOVIELIB_DISABLE"
-		}
-	
+	defines{
+		"EQRHI_WGPU",
+		"RENDERER_TYPE=4"
+	}
+	files {
+		Folders.matsystem1.. "Renderers/WGPU/**.cpp",
+		Folders.matsystem1.."Renderers/WGPU/**.h"
+	}
+
 group ""
 
-include "premake5-eq1.lua"
+include "premake5-components.lua"
 
 -- only build tools for big machines
 if ENABLE_TOOLS then
-
-	-- EGF generator
-	project "egfLib"
-		kind "StaticLib"
-		unitybuild "on"
-		uses {
-			"corelib", "frameworkLib", "e2Core",
-			"bullet2", "zlib", "openfbx", 
-			"studioFileLib"
-		}
-		files {
-			Folders.shared_engine.. "egf/**.cpp",
-			Folders.shared_engine.. "egf/**.c",
-			Folders.shared_engine.. "egf/**.h",
-			Folders.public.. "egf/**.h"
-		}
-		includedirs {
-			Folders.shared_engine
-		}
-		
-	usage "egfLib"
-		links "egfLib"
-		includedirs {
-			Folders.shared_engine
-		}
-
-    include "utils/premake5.lua"
+	include "utils/premake5.lua"
 end

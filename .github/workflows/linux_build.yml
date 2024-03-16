@@ -60,7 +60,7 @@ jobs:
       run: premake5 gmake2
       
     - name: make
-      working-directory: ./project_gmake2
+      working-directory: ./DriverSyndicate_gmake2
       run: make config=${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}} -j10
       
     - name: Create appimage
