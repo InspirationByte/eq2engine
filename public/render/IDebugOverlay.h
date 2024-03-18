@@ -66,6 +66,7 @@ public:
 	virtual void		Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
+	virtual void		Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
 
 	virtual void		Draw2DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Draw3DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
@@ -312,3 +313,33 @@ private:
 
 	bool		dispatch{ false };
 } DbgPoly;
+
+
+typedef struct DbgVolumeBuilder
+{
+	~DbgVolumeBuilder()
+	{
+		if(!dispatch)
+			Dispatch();
+	}
+
+	void Dispatch()
+	{
+		dispatch = true;
+		debugoverlay->Volume3D(planes, MColor(color), lifetime, hashId);
+	}
+
+	DbgVolumeBuilder& Planes(const ArrayCRef<Plane> _planes) { planes.append(_planes.ptr(), _planes.numElem()); return *this; }
+	DbgVolumeBuilder& Volume(const Volume& volume) { planes.append(volume.GetPlanes().ptr(), volume.GetPlanes().numElem()); }
+	DbgVolumeBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
+	DbgVolumeBuilder& Time(float t) { lifetime = t; return *this; }
+	DbgVolumeBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+
+private:
+	FixedArray<Plane, 20> planes;
+	uint		color{ color_white.pack() };
+	float		lifetime{ 0.0f };
+	int			hashId{ 0 };
+
+	bool		dispatch{ false };
+} DbgVolume;

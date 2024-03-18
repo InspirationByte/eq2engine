@@ -7,6 +7,7 @@
 
 #pragma once
 #include "core/InterfaceManager.h"
+#include "core/profiler.h"				// PPSourceLine
 
 #ifndef _WIN32
 

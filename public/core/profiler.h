@@ -33,12 +33,29 @@ void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueC
 
 #define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
 
+struct ProfEventWrp
+{
+public:
+	ProfEventWrp(const char* name);
+	~ProfEventWrp();
+private:
+	int eventId{ -1 };
+};
+
 #ifdef PROFILE_ENABLE
+
+IEXPORTS void ProfAddMarker(const char* text);
+IEXPORTS int ProfBeginMarker(const char* text);
+IEXPORTS void ProfEndMarker(int eventId);
+IEXPORTS void ProfReleaseCurrentThreadMarkers();
 
 #define PROF_EVENT(name)				ProfEventWrp _profEvt(name)
 #define PROF_EVENT_F()					ProfEventWrp _profEvt(__func__)
 #define PROF_MARKER(name)				ProfAddMarker(name)
 #define PROF_RELEASE_THREAD_MARKERS()	ProfReleaseCurrentThreadMarkers()
+
+inline ProfEventWrp::ProfEventWrp(const char* name)	{ eventId = ProfBeginMarker(name); }
+inline ProfEventWrp::~ProfEventWrp()				{ ProfEndMarker(eventId); }
 
 #else
 
@@ -47,18 +64,7 @@ void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueC
 #define PROF_MARKER(name)
 #define PROF_RELEASE_THREAD_MARKERS()
 
+inline ProfEventWrp::ProfEventWrp(const char* name) {};
+inline ProfEventWrp::~ProfEventWrp() = default;
+
 #endif // PROFILE_ENABLE
-
-IEXPORTS void ProfAddMarker(const char* text);
-IEXPORTS int ProfBeginMarker(const char* text);
-IEXPORTS void ProfEndMarker(int eventId);
-IEXPORTS void ProfReleaseCurrentThreadMarkers();
-
-struct ProfEventWrp
-{
-public:
-	ProfEventWrp(const char* name) { eventId = ProfBeginMarker(name); }
-	~ProfEventWrp() { ProfEndMarker(eventId); }
-private:
-	int eventId{ -1 };
-};

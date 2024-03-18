@@ -84,6 +84,12 @@ struct DebugPolyNode_t : public DebugNodeBase
 	uint color{ color_white.pack()};
 };
 
+struct DebugVolumeNode_t : public DebugNodeBase
+{
+	FixedArray<Plane, 20> planes;
+	uint color{ color_white.pack() };
+};
+
 struct DebugDrawFunc_t : public DebugNodeBase
 {
 	OnDebugDrawFn func;
@@ -108,6 +114,7 @@ public:
 	void							Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0);
 	void							Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0);
 	void							Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0);
+	void							Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0);
 
 	void							Draw2DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);
 	void							Draw3DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);
@@ -137,6 +144,7 @@ private:
 
 	Array<DbgGraphBucket*>			m_graphbuckets{ PP_SL };
 	Array<DebugPolyNode_t>			m_polygons{ PP_SL };
+	Array<DebugVolumeNode_t>		m_volumes{ PP_SL };
 
 	Array<DebugDrawFunc_t>			m_draw2DFuncs{ PP_SL };
 	Array<DebugDrawFunc_t>			m_draw3DFuncs{ PP_SL };

@@ -79,6 +79,7 @@
 #include "ds/singleton.h"
 #include "ds/range_for.h"
 #include "ds/Array.h"
+#include "ds/ArrayRef.h"
 #include "ds/BitArray.h"
 #include "ds/Map.h"
 #include "ds/List.h"

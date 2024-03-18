@@ -140,7 +140,7 @@ static void DrawOrientedBoxFilled(const Vector3D& position, const Vector3D& mins
 	debugoverlay->Polygon3D(verts[14], verts[15], verts[16], polyColor);
 	debugoverlay->Polygon3D(verts[16], verts[15], verts[17], polyColor);
 }
-#endif 
+#endif // DISABLE_DEBUG_DRAWING
 
 void CDebugOverlay::Init(bool hidden)
 {
@@ -152,7 +152,7 @@ void CDebugOverlay::Init(bool hidden)
 		r_debugDrawShapes.SetBool(true);
 		r_debugDrawLines.SetBool(true);
 	}
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 
 	m_debugFont = g_fontCache->GetFont("debug", 0);
 	m_debugFont2 = g_fontCache->GetFont("default", 0);
@@ -162,7 +162,7 @@ void CDebugOverlay::Shutdown()
 {
 #ifndef DISABLE_DEBUG_DRAWING
 	m_dbgTexture = nullptr;
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
@@ -180,7 +180,7 @@ void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
 	va_start (argptr,fmt);
 	textNode.pszText = EqString::FormatVa(fmt, argptr);
 	va_end (argptr);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& color, const char* text, float fTime, int hashId)
@@ -203,7 +203,7 @@ void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& col
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 #define MAX_MINICON_MESSAGES 32
@@ -237,7 +237,7 @@ void CDebugOverlay::TextFadeOut(int position, const MColor& color,float fFadeTim
 	}
 	else
 		m_RightTextFadeArray.append(std::move(textNode));
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MColor& color, float fTime, int hashId)
@@ -263,7 +263,7 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MCol
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime, int hashId)
@@ -290,7 +290,7 @@ void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float hei
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MColor& color1, const MColor& color2, float fTime, int hashId)
@@ -316,7 +316,7 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MCo
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime, int hashId)
@@ -343,7 +343,7 @@ void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, co
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime, int hashId)
@@ -368,7 +368,7 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColo
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, float fTime, int hashId)
@@ -392,7 +392,7 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime, int hashId)
@@ -427,7 +427,42 @@ void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, fl
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
+}
+
+void CDebugOverlay::Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime, int hashId)
+{
+#ifndef DISABLE_DEBUG_DRAWING
+	// if (hashId == 0)
+	// {
+	// 	bool anyVisible = false;
+	// 	for (int i = 0; i < verts.numElem() - 2; ++i)
+	// 	{
+	// 		if (m_frustum.IsTriangleInside(verts[0], verts[i + 1], verts[i + 2]))
+	// 		{
+	// 			anyVisible = true;
+	// 			break;
+	// 		}
+	// 	}
+	// 
+	// 	if (!anyVisible)
+	// 		return;
+	// }
+
+	Threading::CScopedMutex m(s_debugOverlayMutex);
+
+	DebugVolumeNode_t& volume = m_volumes.append();
+	volume.planes.append(planes.ptr(), planes.numElem());
+
+	volume.color = color.pack();
+	volume.lifetime = fTime;
+
+	volume.frameindex = m_frameId;
+	volume.nameHash = hashId;
+
+	if (hashId != 0)
+		m_newNames.insert(hashId, m_frameId);
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
@@ -444,7 +479,7 @@ void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
@@ -461,7 +496,7 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
-#endif
+#endif // DISABLE_DEBUG_DRAWING
 }
 
 #ifndef DISABLE_DEBUG_DRAWING
@@ -905,6 +940,140 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 }
 
+static bool SortWindingIndices(ArrayCRef<Vector3D> vertices, ArrayRef<int> indices, const Plane& plane)
+{
+	if (indices.numElem() < 3)
+		return false;
+
+	// get the center of that poly
+	const float countFac = 1.0f / (float)indices.numElem();
+
+	Vector3D center(0);
+	for (int i = 0; i < indices.numElem(); i++)
+		center += vertices[indices[i]] * countFac;
+
+	// sort them now
+	for (int i = 0; i < indices.numElem() - 2; i++)
+	{
+		const Vector3D iVert = vertices[indices[i]];
+
+		float smallestAngle = -1;
+		int smallestIdx = -1;
+
+		Vector3D a = normalize(iVert - center);
+		Plane p(iVert, center, center + plane.normal, true);
+
+		for (int j = i + 1; j < indices.numElem(); j++)
+		{
+			const Vector3D jVert = vertices[indices[j]];
+
+			// the vertex is in front or lies on the plane
+			if (p.ClassifyPoint(jVert) != CP_BACK)
+			{
+				const Vector3D b = normalize(jVert - center);
+				const float cosAngle = dot(b, a);
+				if (cosAngle > smallestAngle)
+				{
+					smallestAngle = cosAngle;
+					smallestIdx = j;
+				}
+			}
+		}
+
+		if (smallestIdx == -1)
+			return false;
+
+		// swap the indices
+		QuickSwap(indices[smallestIdx], indices[i + 1]);
+	}
+
+	return true;
+}
+
+const void DebugDrawVolume(const ArrayCRef<Plane>& volume, const MColor& color)
+{
+	Array<Vector3D> tempVerts(PP_SL);
+	Map<int, Set<int>> intersectedWindings(PP_SL);
+
+	const int numPlanes = volume.numElem();
+
+	for (int i = 0; i < numPlanes; ++i)
+	{
+		const Plane& iPlane = volume[i];
+		for (int j = i + 1; j < numPlanes; ++j)
+		{
+			const Plane& jPlane = volume[j];
+			for (int k = j + 1; k < numPlanes; ++k)
+			{
+				const Plane& kPlane = volume[k];
+
+				Vector3D point;
+				if (!iPlane.GetIntersectionWithPlanes(jPlane, kPlane, point))
+					continue;
+
+				const int vertexId = tempVerts.addUnique(point, [](const Vector3D& a, const Vector3D& b) {
+					constexpr float VERTEX_PRECISION = 0.001f;
+					return vecSimilar(a, b, VERTEX_PRECISION);
+				});
+
+				Set<int>& windingIDs = intersectedWindings[vertexId];
+				windingIDs.insert(i);
+				windingIDs.insert(j);
+				windingIDs.insert(k);
+			}
+		}
+	}
+
+	struct Winding
+	{
+		Array<int> indices{ PP_SL };
+	};
+
+	Array<Vector3D> windingVerts(PP_SL);
+	Array<Winding> windings(PP_SL);
+	windings.setNum(numPlanes);
+
+	for (int i = 0; i < tempVerts.numElem(); ++i)
+	{
+		const Vector3D point = tempVerts[i];
+		if (!Volume::IsSphereInside(volume, point, 0.01f))
+			continue;
+
+		const int vertexId = windingVerts.numElem();
+		windingVerts.append(point);
+
+		const Set<int>& windingIDs = intersectedWindings[i];
+		for (auto it = windingIDs.begin(); !it.atEnd(); ++it)
+		{
+			Winding& wnd = windings[it.key()];
+			wnd.indices.append(vertexId);
+		}
+	}
+
+	int planeIdx = 0;
+	for (Winding& wnd : windings)
+	{
+		SortWindingIndices(windingVerts, wnd.indices, volume[planeIdx++]);
+		if (wnd.indices.numElem() < 3)
+			continue;
+
+		DbgPoly builder;
+		builder.Color(color);
+
+		for (int i = 0; i < wnd.indices.numElem(); ++i)
+			builder.Point(windingVerts[wnd.indices[i]]);
+	}
+}
+
+static void DrawVolumes(ArrayRef<DebugVolumeNode_t> volumes, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+{
+	for (int i = 0; i < volumes.numElem(); i++)
+	{
+		DebugDrawVolume(volumes[i].planes, volumes[i].color);
+		volumes[i].lifetime -= frameTime;
+	}
+}
+
 static Vector3D v3sphere(float theta, float phi)
 {
 	return Vector3D(
@@ -1149,6 +1318,11 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime, rendPassRecorder);
+	}
+
+	{
+		Threading::CScopedMutex m(s_debugOverlayMutex);
+		DrawVolumes(m_volumes, m_frameTime, rendPassRecorder);
 	}
 
 	{
@@ -1481,6 +1655,15 @@ void CDebugOverlay::CleanOverlays()
 		if(!CheckNodeLifetime(m_polygons[i]))
 		{
 			m_polygons.fastRemoveIndex(i);
+			i--;
+		}
+	}
+
+	for (int i = 0; i < m_volumes.numElem(); i++)
+	{
+		if (!CheckNodeLifetime(m_volumes[i]))
+		{
+			m_volumes.fastRemoveIndex(i);
 			i--;
 		}
 	}
