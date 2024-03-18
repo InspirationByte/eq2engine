@@ -2,6 +2,3 @@
 	path = game/DriverSyndicate
 	url = git@github.com:InspirationByte/DriverSyndicate.git
 
-[submodule "src_dependency/oolua"]
-	path = src_dependency/oolua
-	url = git@github.com:SoapyMan/oolua.git
