@@ -520,6 +520,16 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 
 	for (int i = 0; i < boxes.numElem(); i++)
 	{
+		if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
+		{
+			if (meshBuilder.End(drawCmd))
+				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+			// start with new mesh
+			meshBuilder.Init(g_matSystem->GetDynamicMesh());
+			meshBuilder.Begin(PRIM_LINES);
+		}
+
 		DebugOriBoxNode_t& node = boxes[i];
 
 		meshBuilder.Color4(node.color);
@@ -561,16 +571,6 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation));
 
 		node.lifetime -= frametime;
-
-		if ((i % BOXES_DRAW_SUBDIV) == 0)
-		{
-			if (meshBuilder.End(drawCmd))
-				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
-
-			// start with new mesh
-			meshBuilder.Init(g_matSystem->GetDynamicMesh());
-			meshBuilder.Begin(PRIM_LINES);
-		}
 	}
 
 	if (meshBuilder.End(drawCmd))
@@ -595,6 +595,16 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 
 		for(int i = 0; i < boxes.numElem(); i++)
 		{
+			if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
+			{
+				if (meshBuilder.End(drawCmd))
+					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+				// start with new mesh
+				meshBuilder.Init(g_matSystem->GetDynamicMesh());
+				meshBuilder.Begin(PRIM_LINES);
+			}
+
 			DebugBoxNode_t& node = boxes[i];
 
 			meshBuilder.Color4(node.color);
@@ -636,16 +646,6 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 								Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
 
 			node.lifetime -= frametime;
-
-			if((i % BOXES_DRAW_SUBDIV) == 0)
-			{
-				if (meshBuilder.End(drawCmd))
-					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
-
-				// start with new mesh
-				meshBuilder.Init(g_matSystem->GetDynamicMesh());
-				meshBuilder.Begin(PRIM_LINES);
-			}
 		}
 
 	if (meshBuilder.End(drawCmd))
@@ -716,9 +716,7 @@ static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float fram
 
 	for (int i = 0; i < cylArray.numElem(); ++i)
 	{
-		DrawCylinder(meshBuilder, cylArray[i], frametime);
-
-		if ((i % BOXES_DRAW_SUBDIV) == 0)
+		if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
 				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
@@ -727,6 +725,8 @@ static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float fram
 			meshBuilder.Init(g_matSystem->GetDynamicMesh());
 			meshBuilder.Begin(PRIM_LINES);
 		}
+
+		DrawCylinder(meshBuilder, cylArray[i], frametime);
 	}
 
 	if (meshBuilder.End(drawCmd))
@@ -858,16 +858,7 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 
 		for(int i = 0; i < polygons.numElem(); i++)
 		{
-			meshBuilder.Color4(polygons[i].color);
-
-			for(int j = 0; j < polygons[i].verts.numElem()-2; ++j)
-			{
-				meshBuilder.Triangle3(polygons[i].verts[0], polygons[i].verts[j+1], polygons[i].verts[j+2]);
-			}
-
-			polygons[i].lifetime -= frameTime;
-
-			if((i % POLYS_DRAW_SUBDIV) == 0)
+			if (i > 0 && (i % POLYS_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
 					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
@@ -876,6 +867,15 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 				meshBuilder.Init(g_matSystem->GetDynamicMesh());
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
+
+			meshBuilder.Color4(polygons[i].color);
+
+			for(int j = 0; j < polygons[i].verts.numElem()-2; ++j)
+			{
+				meshBuilder.Triangle3(polygons[i].verts[0], polygons[i].verts[j+1], polygons[i].verts[j+2]);
+			}
+
+			polygons[i].lifetime -= frameTime;
 		}
 
 	if (meshBuilder.End(drawCmd))
@@ -884,14 +884,7 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < polygons.numElem(); i++)
 		{
-			meshBuilder.Color4(polygons[i].color);
-
-			for (int j = 0; j < polygons[i].verts.numElem(); ++j)
-			{
-				meshBuilder.Line3fv(polygons[i].verts[j], polygons[i].verts[(j+1) % polygons[i].verts.numElem()]);
-			}
-
-			if((i % LINES_DRAW_SUBDIV) == 0)
+			if (i > 0 && (i % LINES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
 					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
@@ -899,6 +892,13 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 				// start with new mesh
 				meshBuilder.Init(g_matSystem->GetDynamicMesh());
 				meshBuilder.Begin(PRIM_LINES);
+			}
+
+			meshBuilder.Color4(polygons[i].color);
+
+			for (int j = 0; j < polygons[i].verts.numElem(); ++j)
+			{
+				meshBuilder.Line3fv(polygons[i].verts[j], polygons[i].verts[(j+1) % polygons[i].verts.numElem()]);
 			}
 		}
 	if (meshBuilder.End(drawCmd))
