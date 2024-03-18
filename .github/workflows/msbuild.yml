@@ -57,14 +57,10 @@ jobs:
     - name: Run PS commands
       shell: pwsh
       run: .\windows_dev_prepare.ps1
-    
-    - uses: abel0b/setup-premake@v2.2
-      with:
-        version: "5.0.0-beta2"
-        
+            
     - name: Generate Solution
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: premake5 --file=game/DriverSyndicate/premake5.lua vs2022
+      run: ./premake5 --file=game/DriverSyndicate/premake5.lua vs2022
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
