@@ -156,16 +156,6 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 				continue;
 			}
 
-			if (g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
-			{
-				if (img->GetFormat() == FORMAT_RGB8 || img->GetFormat() == FORMAT_RGBA8)
-					img->SwapChannels(0, 2); // convert to BGR
-
-				// Convert if needed and upload datas
-				if (img->GetFormat() == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
-					img->Convert(FORMAT_RGBA8);
-			}
-
 			imgList.append(img);
 
 			if (r_reportTextureLoading.GetBool())

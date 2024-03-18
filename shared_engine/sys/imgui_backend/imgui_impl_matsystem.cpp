@@ -43,10 +43,6 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 
 	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder mb(dynMesh);
-	
-	float halfPixelOfs = 0.0f;
-	if (g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
-		halfPixelOfs = 0.5f;
 
 	// Copy vertices to matsystem mesh
 	ImVec2 clip_off = draw_data->DisplayPos;
@@ -61,7 +57,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 			const ImDrawVert& vtx_src = cmd_list->VtxBuffer.Data[i];
 			MColor color(vtx_src.col);
 
-			mb.Position2f(vtx_src.pos.x + halfPixelOfs, vtx_src.pos.y + halfPixelOfs);
+			mb.Position2f(vtx_src.pos.x, vtx_src.pos.y);
 			mb.TexCoord2f(vtx_src.uv.x, vtx_src.uv.y);
 			mb.Color4fv(color);
 			mb.AdvanceVertex();

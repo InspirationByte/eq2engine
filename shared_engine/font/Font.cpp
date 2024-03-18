@@ -633,15 +633,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				fontChar.ofsX = KV_GetValueFloat(k, 4)*m_scale.x;
 				fontChar.ofsY = KV_GetValueFloat(k, 5)*m_scale.y;
 				fontChar.advX = KV_GetValueFloat(k, 6)*m_scale.x;
-				
-				if( g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 )
-				{
-					// fix half texel on DX9
-					fontChar.x0 = fontChar.x0 - 0.5f;
-					fontChar.y0 = fontChar.y0 - 0.5f;
-					fontChar.x1 = fontChar.x1 - 0.5f;
-					fontChar.y1 = fontChar.y1 - 0.5f;
-				}
 			}
 		}
 		else

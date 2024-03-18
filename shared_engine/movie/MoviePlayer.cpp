@@ -185,25 +185,15 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 		return nullptr;
 	}
 
-	AVCodec* c = nullptr;
 	for (uint i = 0; i < player->formatCtx->nb_streams; ++i)
 	{
-		AVStream* stream;
-		stream = player->formatCtx->streams[i];
+		AVStream* stream = player->formatCtx->streams[i];
 
-		{
-			int r = player->videoStream == nullptr;
-			r = r && (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO);
-			if (r)
-				player->videoStream = stream;
-		}
+		if (!player->videoStream && (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO))
+			player->videoStream = stream;
 
-		{
-			int r = player->audioStream == nullptr;
-			r = r && (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO);
-			if (r)
-				player->audioStream = stream;
-		}
+		if (!player->audioStream && (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))
+			player->audioStream = stream;
 
 		if (player->audioStream && player->videoStream)
 			break;
@@ -223,13 +213,11 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 		return nullptr;
 	}
 
-	const bool isD3D = g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 || g_renderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D10;
-
 	player->videoSws = sws_getContext(
 		player->videoCodec->width, player->videoCodec->height,
 		player->videoCodec->pix_fmt,
 		player->videoCodec->width, player->videoCodec->height,
-		isD3D ? AV_PIX_FMT_BGRA : AV_PIX_FMT_RGBA,
+		AV_PIX_FMT_RGBA,
 		SWS_POINT,
 		nullptr,
 		nullptr,

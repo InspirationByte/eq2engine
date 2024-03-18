@@ -198,19 +198,6 @@ ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CImagePtr>& images, co
 		CScopedMutex m(g_sapi_TextureMutex);
 		texture = CreateTextureResource(images[0]->GetName());
 	}
-
-	for (int i = 0; i < images.numElem(); ++i)
-	{
-		if (GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
-		{
-			if (images[i]->GetFormat() == FORMAT_RGB8 || images[i]->GetFormat() == FORMAT_RGBA8)
-				images[i]->SwapChannels(0, 2); // convert to BGR
-
-			// Convert if needed and upload datas
-			if (images[i]->GetFormat() == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
-				images[i]->Convert(FORMAT_RGBA8);
-		}
-	}
 	
 	texture->Init(images, sampler, nFlags);
 
