@@ -4,9 +4,6 @@ dofile "premake5-engine.lua"
 
 group "Game"
 
-local FolderDriversGame = Folders.game.."Demo_RockPaperScissors/"
-local GroupDriversGame = Groups.game.."/Demo_RockPaperScissors"
-
 project "Demo_RockPaperScissors"
 	if IS_ANDROID then
 		kind "SharedLib"

@@ -57,7 +57,7 @@ jobs:
 
     - name: Generate Makefile
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: premake5 gmake2
+      run: premake5 --file=game/DriverSyndicate/premake5.lua gmake2
       
     - name: make
       working-directory: ./DriverSyndicate_gmake2
