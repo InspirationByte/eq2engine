@@ -360,7 +360,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 			break;
 		case 'a':
 		case '+':
-			modeFlags |= COSFile::APPEND;
+			modeFlags |= COSFile::WRITE | COSFile::APPEND;
 			break;
 		}
 		++mode;
