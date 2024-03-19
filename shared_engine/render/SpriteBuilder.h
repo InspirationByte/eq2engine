@@ -13,7 +13,7 @@
 template <class VTX_TYPE>
 class CSpriteBuilder
 {
-	friend class CParticleLowLevelRenderer;
+	friend class CParticleRenderer;
 public:
 						CSpriteBuilder();
 			virtual		~CSpriteBuilder();

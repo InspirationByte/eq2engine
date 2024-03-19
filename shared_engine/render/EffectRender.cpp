@@ -18,15 +18,6 @@ static CEqMutex s_effectRenderMutex;
 
 CStaticAutoPtr<CEffectRenderer> effectrenderer;
 
-IEffect::IEffect() :	m_vOrigin(0.0f),
-						m_fStartLifeTime(0),
-						m_fLifeTime(0),
-						m_atlEntry(nullptr),
-						m_atlGroup(nullptr),
-						m_fDistanceToView(0.0f)
-{
-}
-
 void IEffect::SetSortOrigin(const Vector3D &origin)
 {
 	m_fDistanceToView = length(origin - effectrenderer->m_viewPos);

@@ -52,7 +52,7 @@ struct PFXVertex
 //
 class CParticleBatch : public CSpriteBuilder<PFXVertex>
 {
-	friend class CParticleLowLevelRenderer;
+	friend class CParticleRenderer;
 
 public:
 	virtual	~CParticleBatch();
@@ -68,9 +68,9 @@ public:
 
 	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
 
-	AtlasEntry*			GetEntry(int idx) const;
+	const AtlasEntry*	GetEntry(int idx) const;
 
-	AtlasEntry*			FindEntry(const char* pszName) const;
+	const AtlasEntry*	FindEntry(const char* pszName) const;
 	int					FindEntryIndex(const char* pszName) const;
 
 	int					GetEntryCount() const;
@@ -88,7 +88,16 @@ protected:
 
 //------------------------------------------------------------------------------------
 
-class CParticleLowLevelRenderer
+struct PFXAtlasRef
+{
+	const AtlasEntry*	entry{ nullptr };
+	CParticleBatch*		batch{ nullptr };
+
+	operator bool() const { return entry != nullptr; }
+	PFXAtlasRef& operator=(std::nullptr_t) { batch = nullptr; entry = nullptr; }
+};
+
+class CParticleRenderer
 {
 	friend class CParticleBatch;
 	friend class CShadowDecalRenderer;
@@ -102,8 +111,7 @@ public:
 	CParticleBatch*		CreateBatch(const char* materialName, bool createOwnVBO = false, int maxQuads = 16384, CParticleBatch* insertAfter = nullptr);
 	CParticleBatch*		FindBatch(const char* materialName) const;
 
-	// void				AddRenderGroup(CParticleBatch* pRenderGroup, CParticleBatch* after = nullptr);
-	// void				RemoveRenderGroup(CParticleBatch* pRenderGroup);
+	PFXAtlasRef			FindAtlasRef(const char* name) const;
 
 	void				PreloadMaterials();
 
@@ -133,33 +141,31 @@ enum EffectFlags_e
 	EFFECT_FLAG_LOCK_X				= (1 << 0),
 	EFFECT_FLAG_LOCK_Y				= (1 << 1),
 	EFFECT_FLAG_ALWAYS_VISIBLE		= (1 << 2),
-	EFFECT_FLAG_NO_FRUSTUM_CHECK	= (1 << 3),
-	EFFECT_FLAG_NO_DEPTHTEST		= (1 << 4),
-	EFFECT_FLAG_RADIAL_ALIGNING		= (1 << 5),
+	EFFECT_FLAG_NO_DEPTHTEST		= (1 << 3),
+	EFFECT_FLAG_RADIAL_ALIGNING		= (1 << 4),
 };
 
 struct PFXBillboard
 {
-	CParticleBatch*	group { nullptr };		// atlas
-	AtlasEntry*		tex {nullptr};			// texture name in atlas
+	PFXAtlasRef	atlasRef;
 
-	MColor			vColor;
-	Vector3D		vOrigin;
-	Vector3D		vLockDir;
+	MColor		vColor;
+	Vector3D	vOrigin;
+	Vector3D	vLockDir;
 
-	float			fWide { 1.0f };
-	float			fTall { 1.0f };
+	float		fWide { 1.0f };
+	float		fTall { 1.0f };
 
-	float			fZAngle { 1.0f };
+	float		fZAngle { 1.0f };
 
-	int				nFlags { 0 };
+	int			nFlags { 0 };
 };
 
 // draws particle
-void Effects_DrawBillboard(PFXBillboard* effect, const CViewParams* view, Volume* frustum);
-void Effects_DrawBillboard(PFXBillboard* effect, const Matrix4x4& viewMatrix, Volume* frustum);
+void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, const Volume* frustum = nullptr);
+void Effects_DrawBillboard(const PFXBillboard& effect, const Matrix4x4& viewMatrix, const Volume* frustum = nullptr);
 
 //------------------------------------------------------------------------------------
 
-extern CStaticAutoPtr<CParticleLowLevelRenderer> g_pfxRender;
+extern CStaticAutoPtr<CParticleRenderer> g_pfxRender;
 

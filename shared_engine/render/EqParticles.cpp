@@ -28,7 +28,7 @@ const VertexLayoutDesc& PFXVertex::GetVertexLayoutDesc()
 using namespace Threading;
 static CEqMutex s_particleRenderMutex;
 
-CStaticAutoPtr<CParticleLowLevelRenderer> g_pfxRender;
+CStaticAutoPtr<CParticleRenderer> g_pfxRender;
 
 //----------------------------------------------------------------------------------------------------
 
@@ -150,9 +150,9 @@ void CParticleBatch::Render(int viewRenderFlags, const RenderPassContext& passCo
 	}
 }
 
-AtlasEntry* CParticleBatch::GetEntry(int idx) const
+const AtlasEntry* CParticleBatch::GetEntry(int idx) const
 {
-	CTextureAtlas* atlas = m_material->GetAtlas();
+	const CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 	{
 		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
@@ -162,16 +162,16 @@ AtlasEntry* CParticleBatch::GetEntry(int idx) const
 	return atlas->GetEntry(idx);
 }
 
-AtlasEntry* CParticleBatch::FindEntry(const char* pszName) const
+const AtlasEntry* CParticleBatch::FindEntry(const char* pszName) const
 {
-	CTextureAtlas* atlas = m_material->GetAtlas();
+	const CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 	{
 		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
 		return nullptr;
 	}
 
-	AtlasEntry* atlEntry = atlas->FindEntry(pszName);
+	const AtlasEntry* atlEntry = atlas->FindEntry(pszName);
 	ASSERT_MSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_material->GetName());
 	return atlEntry;
 }
@@ -201,12 +201,12 @@ int CParticleBatch::GetEntryCount() const
 
 //----------------------------------------------------------------------------------------------------------
 
-void CParticleLowLevelRenderer::Init()
+void CParticleRenderer::Init()
 {
 	InitBuffers();
 }
 
-void CParticleLowLevelRenderer::Shutdown()
+void CParticleRenderer::Shutdown()
 {
 	ShutdownBuffers();
 
@@ -215,7 +215,7 @@ void CParticleLowLevelRenderer::Shutdown()
 	m_batchs.clear(true);
 }
 
-bool CParticleLowLevelRenderer::InitBuffers()
+bool CParticleRenderer::InitBuffers()
 {
 	if(m_initialized)
 		return true;
@@ -232,20 +232,30 @@ bool CParticleLowLevelRenderer::InitBuffers()
 	return false;
 }
 
-bool CParticleLowLevelRenderer::ShutdownBuffers()
+bool CParticleRenderer::ShutdownBuffers()
 {
 	if(!m_initialized)
 		return true;
+
+	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
+	m_vertexFormat = nullptr;
+
 	m_initialized = false;
 	return true;
 }
 
-CParticleBatch*	CParticleLowLevelRenderer::CreateBatch(const char* materialName, bool createOwnVBO, int maxQuads, CParticleBatch* insertAfter)
+CParticleBatch*	CParticleRenderer::CreateBatch(const char* materialName, bool createOwnVBO, int maxQuads, CParticleBatch* insertAfter)
 {
 	ASSERT(FindBatch(materialName) == nullptr);
 
 	CParticleBatch* batch = PPNew CParticleBatch();
 	batch->Init(materialName, createOwnVBO, maxQuads);
+	for (int i = 0; i < batch->GetEntryCount(); ++i)
+	{
+		const AtlasEntry* atlEntry = batch->GetEntry(i);
+		PFXAtlasRef ref = FindAtlasRef(atlEntry->name);
+		ASSERT_MSG(!ref, "Particle atlas' %s' has '%s' which is already found in '%s'", atlEntry->name, batch->GetMaterial()->GetName(), ref.batch->GetMaterial()->GetName());
+	}
 
 	if (insertAfter)
 	{
@@ -258,7 +268,7 @@ CParticleBatch*	CParticleLowLevelRenderer::CreateBatch(const char* materialName,
 	return batch;
 }
 
-CParticleBatch* CParticleLowLevelRenderer::FindBatch(const char* materialName) const
+CParticleBatch* CParticleRenderer::FindBatch(const char* materialName) const
 {
 	for (CParticleBatch* batch : m_batchs)
 	{
@@ -268,26 +278,38 @@ CParticleBatch* CParticleLowLevelRenderer::FindBatch(const char* materialName) c
 	return nullptr;
 }
 
-void CParticleLowLevelRenderer::PreloadMaterials()
+PFXAtlasRef CParticleRenderer::FindAtlasRef(const char* name) const
+{
+	for (CParticleBatch* batch : m_batchs)
+	{
+		const AtlasEntry* atlEntry = batch->GetMaterial()->GetAtlas()->FindEntry(name);
+
+		if(atlEntry)
+			return PFXAtlasRef{ atlEntry, batch };
+	}
+	return PFXAtlasRef{};
+}
+
+void CParticleRenderer::PreloadMaterials()
 {
 	for(CParticleBatch* batch : m_batchs)
 		g_matSystem->QueueLoading(batch->m_material);
 }
 
-void CParticleLowLevelRenderer::UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds)
+void CParticleRenderer::UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds)
 {
 	for (CParticleBatch* batch : m_batchs)
 		batch->UpdateVBO(bufferUpdateCmds);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleLowLevelRenderer::Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
+void CParticleRenderer::Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
 {
 	for(CParticleBatch* batch : m_batchs)
 		batch->Render(nRenderFlags, passContext, bufferUpdateCmds);
 }
 
-void CParticleLowLevelRenderer::ClearBuffers()
+void CParticleRenderer::ClearBuffers()
 {
 	for(CParticleBatch* batch : m_batchs)
 		batch->ClearBuffers();
@@ -295,99 +317,95 @@ void CParticleLowLevelRenderer::ClearBuffers()
 
 //----------------------------------------------------------------------------------------------------
 
-void Effects_DrawBillboard(PFXBillboard* effect, const CViewParams* view, Volume* frustum)
+void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, const Volume* frustum)
 {
-	if(!(effect->nFlags & EFFECT_FLAG_NO_FRUSTUM_CHECK))
-	{
-		float fBillboardSize = (effect->fWide > effect->fTall) ? effect->fWide : effect->fTall;
+	ASSERT(effect.atlasRef);
+	if (!effect.atlasRef)
+		return;
 
-		if(!frustum->IsSphereInside(effect->vOrigin, fBillboardSize))
+	if(frustum)
+	{
+		const float size = max(effect.fWide, effect.fTall);
+		if(!frustum->IsSphereInside(effect.vOrigin, size))
 			return;
 	}
 
 	PFXVertex* verts;
-	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
+	if(effect.atlasRef.batch->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
-	Vector3D angles, vRight, vUp;
-
-	if(effect->nFlags & EFFECT_FLAG_RADIAL_ALIGNING)
-		angles = VectorAngles(fastNormalize(effect->vOrigin - view->GetOrigin()));
+	Vector3D angles;
+	if(effect.nFlags & EFFECT_FLAG_RADIAL_ALIGNING)
+		angles = VectorAngles(fastNormalize(effect.vOrigin - view.GetOrigin()));
 	else
-		angles = view->GetAngles() + Vector3D(0,0,effect->fZAngle);
+		angles = view.GetAngles() + Vector3D(0,0,effect.fZAngle);
 
-	if(effect->nFlags & EFFECT_FLAG_LOCK_X)
+	if(effect.nFlags & EFFECT_FLAG_LOCK_X)
 		angles.x = 0;
 
-	if(effect->nFlags & EFFECT_FLAG_LOCK_Y)
+	if(effect.nFlags & EFFECT_FLAG_LOCK_Y)
 		angles.y = 0;
 
+	Vector3D vRight, vUp;
 	AngleVectors(angles, nullptr, &vRight, &vUp);
 
-	AARectangle texCoords(0,0,1,1);
+	const AARectangle texCoords = effect.atlasRef.entry->rect;
 
-	if(effect->tex)
-		texCoords = effect->tex->rect;
+	const uint color = effect.vColor.pack();
 
-	const uint color = effect->vColor.pack();
-
-	verts[0].point = effect->vOrigin + (vUp * effect->fTall) + (effect->fWide * vRight);
+	verts[0].point = effect.vOrigin + (vUp * effect.fTall) + (effect.fWide * vRight);
 	verts[0].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.rightBottom.y);
 	verts[0].color = color;
 
-	verts[1].point = effect->vOrigin + (vUp * effect->fTall) - (effect->fWide * vRight);
+	verts[1].point = effect.vOrigin + (vUp * effect.fTall) - (effect.fWide * vRight);
 	verts[1].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.leftTop.y);
 	verts[1].color = color;
 
-	verts[2].point = effect->vOrigin - (vUp * effect->fTall) + (effect->fWide * vRight);
+	verts[2].point = effect.vOrigin - (vUp * effect.fTall) + (effect.fWide * vRight);
 	verts[2].texcoord = Vector2D(texCoords.leftTop.x, texCoords.rightBottom.y);
 	verts[2].color = color;
 
-	verts[3].point = effect->vOrigin - (vUp * effect->fTall) - (effect->fWide * vRight);
+	verts[3].point = effect.vOrigin - (vUp * effect.fTall) - (effect.fWide * vRight);
 	verts[3].texcoord = Vector2D(texCoords.leftTop.x, texCoords.leftTop.y);
 	verts[3].color = color;
 }
 
-void Effects_DrawBillboard(PFXBillboard* effect, const Matrix4x4& viewMatrix, Volume* frustum)
+void Effects_DrawBillboard(const PFXBillboard& effect, const Matrix4x4& viewMatrix, const Volume* frustum)
 {
-	if(!(effect->nFlags & EFFECT_FLAG_NO_FRUSTUM_CHECK))
-	{
-		float fBillboardSize = (effect->fWide > effect->fTall) ? effect->fWide : effect->fTall;
+	ASSERT(effect.atlasRef);
+	if (!effect.atlasRef)
+		return;
 
-		if(!frustum->IsSphereInside(effect->vOrigin, fBillboardSize))
+	if (frustum)
+	{
+		const float size = max(effect.fWide, effect.fTall);
+		if (!frustum->IsSphereInside(effect.vOrigin, size))
 			return;
 	}
 
-
 	PFXVertex* verts;
-	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
+	if(effect.atlasRef.batch->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
-	Vector3D vRight, vUp;
+	const Vector3D vRight = viewMatrix.rows[0].xyz();
+	const Vector3D vUp = viewMatrix.rows[1].xyz();
 
-	vRight = viewMatrix.rows[0].xyz();
-	vUp = viewMatrix.rows[1].xyz();
+	const AARectangle texCoords = effect.atlasRef.entry->rect;
+	const uint color = effect.vColor.pack();
 
-	AARectangle texCoords(0,0,1,1);
-
-	if(effect->tex)
-		texCoords = effect->tex->rect;
-
-	const uint color = effect->vColor.pack();
-
-	verts[0].point = effect->vOrigin + (vUp * effect->fTall) + (effect->fWide * vRight);
+	verts[0].point = effect.vOrigin + (vUp * effect.fTall) + (effect.fWide * vRight);
 	verts[0].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.rightBottom.y);
 	verts[0].color = color;
 
-	verts[1].point = effect->vOrigin + (vUp * effect->fTall) - (effect->fWide * vRight);
+	verts[1].point = effect.vOrigin + (vUp * effect.fTall) - (effect.fWide * vRight);
 	verts[1].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.leftTop.y);
 	verts[1].color = color;
 
-	verts[2].point = effect->vOrigin - (vUp * effect->fTall) + (effect->fWide * vRight);
+	verts[2].point = effect.vOrigin - (vUp * effect.fTall) + (effect.fWide * vRight);
 	verts[2].texcoord = Vector2D(texCoords.leftTop.x, texCoords.rightBottom.y);
 	verts[2].color = color;
 
-	verts[3].point = effect->vOrigin - (vUp * effect->fTall) - (effect->fWide * vRight);
+	verts[3].point = effect.vOrigin - (vUp * effect.fTall) - (effect.fWide * vRight);
 	verts[3].texcoord = Vector2D(texCoords.leftTop.x, texCoords.leftTop.y);
 	verts[3].color = color;
 }

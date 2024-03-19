@@ -15,8 +15,7 @@ struct AtlasEntry;
 class IEffect
 {
 public:
-					IEffect();
-	virtual			~IEffect() {}
+	virtual			~IEffect() = default;
 
 	void			SetSortOrigin(const Vector3D &origin);
 	const Vector3D& GetOrigin() const { return m_vOrigin; }
@@ -26,14 +25,14 @@ public:
 	// Draws effect. required for overriding
 	virtual bool	DrawEffect(float dTime) = 0;
 
-	float			GetLifetime() const			{return m_fLifeTime;}
-	float			GetStartLifetime() const	{return m_fStartLifeTime;}
-	float			GetLifetimePercent() const	{return m_fLifeTime / m_fStartLifeTime;}
-	float			GetDistanceToCamera() const	{return m_fDistanceToView;}
+	float			GetLifetime() const			{ return m_fLifeTime; }
+	float			GetStartLifetime() const	{ return m_fStartLifeTime; }
+	float			GetLifetimePercent() const	{ return m_fLifeTime / m_fStartLifeTime; }
+	float			GetDistanceToCamera() const	{ return m_fDistanceToView; }
 
 protected:
 
-	void InternalInit(const Vector3D &origin, float lifetime, CParticleBatch* group, AtlasEntry* entry)
+	void InternalInit(const Vector3D &origin, float lifetime, CParticleBatch* group, const AtlasEntry* entry)
 	{
 		m_vOrigin = origin;
 		SetSortOrigin(origin);
@@ -45,13 +44,13 @@ protected:
 		m_atlEntry = entry;
 	}
 
-	Vector3D			m_vOrigin;
-	CParticleBatch*		m_atlGroup;
-	AtlasEntry*			m_atlEntry;
+	Vector3D			m_vOrigin{ vec3_zero };
+	CParticleBatch*		m_atlGroup{ nullptr };
+	const AtlasEntry*	m_atlEntry{ nullptr };
 
-	float				m_fStartLifeTime;
-	float				m_fLifeTime;
-	float				m_fDistanceToView;
+	float				m_fStartLifeTime{ 0.0f };
+	float				m_fLifeTime{ 0.0f };
+	float				m_fDistanceToView{ 0.0f };
 };
 
 //-------------------------------------------------------------------------------------
