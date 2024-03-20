@@ -24,11 +24,6 @@ using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
 
-enum EPartRenderFlags
-{
-	EPRFLAG_DONT_FLUSHBUFFERS	= (1 << 24),
-};
-
 // particle vertex with color
 struct PFXVertex
 {
@@ -59,7 +54,7 @@ public:
 
 	// renders this buffer
 	void				UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds);
-	void				Render(int viewRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds);
+	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr, bool flushBuffer = true);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
@@ -118,7 +113,7 @@ public:
 	// prepares render buffers and sends renderables to ViewRenderer
 	void				UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds);
 
-	void				Render(int nRenderFlags, const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr);
+	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr, bool flushBuffer = true);
 	void				ClearBuffers();
 
 protected:
@@ -132,11 +127,7 @@ protected:
 
 //------------------------------------------------------------------------------------
 
-//-----------------------------------
-// Effect elementary
-//-----------------------------------8
-
-enum EffectFlags_e
+enum EEffectFlags
 {
 	EFFECT_FLAG_LOCK_X				= (1 << 0),
 	EFFECT_FLAG_LOCK_Y				= (1 << 1),
