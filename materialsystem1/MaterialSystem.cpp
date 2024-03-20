@@ -360,6 +360,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 
 #endif // PLAT_ANDROID
 
+	m_renderLibrary->SetBackbufferSize(m_backbufferSize.x, m_backbufferSize.y);
 	g_renderAPI = m_shaderAPI;
 
 	// initialize some resources
@@ -1096,7 +1097,7 @@ void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 	if (!m_renderLibrary)
 		return;
 
-	m_renderLibrary->SetBackbufferSize(wide, tall);
+	m_renderLibrary->SetBackbufferSize(m_backbufferSize.x, m_backbufferSize.y);
 }
 
 // reports device focus mode
@@ -1124,6 +1125,8 @@ void CMaterialSystem::DestroySwapChain(ISwapChain* swapChain)
 // fullscreen mode changing
 bool CMaterialSystem::SetWindowed(bool enable)
 {
+	ASSERT_MSG(m_renderLibrary, "MatSystem is not initialized");
+
 	const bool changeMode = (m_renderLibrary->IsWindowed() != enable);
 	if(!changeMode)
 		return true;

@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Drivers window handler
+// Description: 
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
@@ -22,10 +22,26 @@
 #include "materialsystem1/IMaterialSystem.h"
 
 // Renderer
-DECLARE_CVAR(r_bpp, "32", "Screen bits per pixel", CV_ARCHIVE);
-DECLARE_CVAR(sys_sleep, "0", "Sleep time for every frame", CV_ARCHIVE);
+DECLARE_CVAR(sys_sleep, "1", "Sleep time for every frame", CV_ARCHIVE);
+DECLARE_CVAR(vid_screen, "0", "Fullscreen mode screen ID", CV_ARCHIVE);
+DECLARE_CVAR(vid_mode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
+DECLARE_CVAR(vid_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
 
 #define DEFAULT_WINDOW_TITLE "Initializing..."
+
+void Sys_GetWindowConfig(bool& fullscreen, int& screen, int& wide, int& tall)
+{
+	const char* str = vid_mode.GetString();
+
+	Array<EqString> args(PP_SL);
+	xstrsplit(str, "x", args);
+
+	wide = atoi(args[0].GetData());
+	tall = atoi(args[1].GetData());
+
+	screen = vid_screen.GetInt();
+	fullscreen = vid_fullscreen.GetBool();
+}
 
 EQWNDHANDLE Sys_CreateWindow()
 {
@@ -33,31 +49,35 @@ EQWNDHANDLE Sys_CreateWindow()
 
 #ifdef PLAT_SDL
 
-	int nAdjustedPosX = SDL_WINDOWPOS_CENTERED;
-	int nAdjustedPosY = SDL_WINDOWPOS_CENTERED;
-	int nAdjustedWide = 800;
-	int nAdjustedTall = 600;
+	int adjustedPosX = SDL_WINDOWPOS_CENTERED;
+	int adjustedPosY = SDL_WINDOWPOS_CENTERED;
+	int adjustedWide = 800;
+	int adjustedTall = 600;
+	int screen = 0;
+	bool fullscreen = false;
+	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
 
 	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+	if (fullscreen)
+		sdlFlags |= SDL_WINDOW_FULLSCREEN;
 
 #ifdef PLAT_ANDROID
-	nAdjustedPosX = nAdjustedPosY = SDL_WINDOWPOS_UNDEFINED;
+	adjustedPosX = adjustedPosY = SDL_WINDOWPOS_UNDEFINED;
 
 	//Get device display mode
 	SDL_Rect displayRect;
 	if (SDL_GetDisplayBounds(0, &displayRect) == 0)
 	{
-		nAdjustedWide = displayRect.w;
-		nAdjustedTall = displayRect.h;
+		adjustedWide = displayRect.w;
+		adjustedTall = displayRect.h;
 	}
 
 	sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN; // SDL on android WUT
 #endif // PLAT_ANDROID
-	
+
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
 	
-	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
-
+	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, adjustedPosX, adjustedPosY, adjustedWide, adjustedTall, sdlFlags);
 	if(handle == nullptr)
 	{
 		ASSERT_MSG("Can't create window!\n%s\n",SDL_GetError());
@@ -74,7 +94,7 @@ bool s_bProcessInput = true;
 
 void InputCommands_SDL(SDL_Event* event);
 
-void EQHandleSDLEvents(SDL_Event* event)
+void Host_HandleSDLEvents(SDL_Event* event)
 {
 	switch (event->type)
 	{
@@ -133,9 +153,7 @@ bool Host_Init()
 	if(!g_pHost->LoadModules())
 		return false;
 
-	EQWNDHANDLE mainWindow = Sys_CreateWindow();
-
-	if(!g_pHost->InitSystems( mainWindow ))
+	if(!g_pHost->InitSystems())
 		return false;
 
 	CEqGameControllerSDL::Init();
@@ -153,7 +171,7 @@ void Host_GameLoop()
 	do
 	{
 		while(SDL_PollEvent(&event))
-			EQHandleSDLEvents( &event );
+			Host_HandleSDLEvents( &event );
 
 		if (s_bActive || g_pHost->IsInMultiplayerGame())
 		{

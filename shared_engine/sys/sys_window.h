@@ -2,13 +2,14 @@
 // Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Drivers window handler
+// Description:
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-void Sys_SetFullscreenMode(EQWNDHANDLE window);
-void Sys_SetWindowedMode(EQWNDHANDLE window);
+EQWNDHANDLE Sys_CreateWindow();
+
+void Sys_GetWindowConfig(bool& fullscreen, int& screen, int& wide, int& tall);
 
 bool Host_Init();
 void Host_GameLoop();

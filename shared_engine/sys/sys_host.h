@@ -38,7 +38,7 @@ public:
 	CGameHost();
 
 	bool				LoadModules();
-	bool				InitSystems( EQWNDHANDLE pWindow );
+	bool				InitSystems();
 	void				ShutdownSystems();
 
 	bool				Frame();
@@ -56,7 +56,7 @@ public:
 	void				SetWindowedMode();
 	void				ApplyVideoMode();
 
-	void				GetVideoModes(Array<VideoMode_t>& displayModes);
+	void				GetVideoModes(Array<VideoMode_t>& displayModes) const;
 
 	//---------------------------------
 	// INPUT
@@ -110,26 +110,27 @@ protected:
 
 	bool				FilterTime( double fDt );
 
-	IVector2D			m_winSize;
-	IVector2D			m_mousePos;
-	IVector2D			m_prevMousePos;
-	Vector2D			m_mouseDelta;
+	IVector2D			m_winSize{ 0 };
+	IVector2D			m_mousePos{ 0 };
+	IVector2D			m_prevMousePos{ 0 };
+	Vector2D			m_mouseDelta{ 0.0f };
+
+	EqString			m_windowTitle;
+	EQWNDHANDLE			m_window{ nullptr };
+
+	IEqFont*			m_defaultFont{ nullptr };
 
 	CEqTimer			m_timer;
+	double				m_accumTime{ 0.0 };
 
-	EQWNDHANDLE			m_window;
+	int					m_quitState{ QUIT_NOTQUITTING };
 
-	IEqFont*			m_defaultFont;
-
-	double				m_accumTime;
-	int					m_quitState;
-
-	int					m_trapKey;
-	int					m_trapButtons;
-	bool				m_keyTrapMode;
-	bool				m_keyDoneTrapping;
-	bool				m_skipMouseMove;
-	bool				m_cursorCentered;
+	int					m_trapKey{ 0 };
+	int					m_trapButtons{ 0 };
+	bool				m_keyTrapMode{ false };
+	bool				m_keyDoneTrapping{ false };
+	bool				m_skipMouseMove{ false };
+	bool				m_cursorCentered{ false };
 };
 
 extern CStaticAutoPtr<CGameHost> g_pHost;

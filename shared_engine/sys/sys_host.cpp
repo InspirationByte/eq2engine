@@ -26,8 +26,8 @@
 #include "sys_state.h"
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
-#include "sys_window.h"
 #include "sys_version.h"
+#include "sys_window.h"
 #include "cfgloader.h"
 
 #include "font/IFontCache.h"
@@ -57,9 +57,8 @@ DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 DECLARE_CVAR(r_overdraw, "0", "Renders all materials in overdraw shader", CV_CHEAT);
 DECLARE_CVAR(r_wireframe, "0", "Enables wireframe rendering", CV_CHEAT);
 
-DECLARE_CVAR(sys_screen, "0", "Fullscreen mode screen ID", CV_ARCHIVE);
-DECLARE_CVAR(sys_vmode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
-DECLARE_CVAR(sys_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
+DECLARE_CVAR(vid_bpp, "32", "Screen bits per pixel", CV_ARCHIVE);
+
 DECLARE_CVAR_CLAMP(sys_maxfps, "0", 0.0f, 300.0f, "Frame rate limit", CV_ARCHIVE);
 DECLARE_CVAR(sys_timescale, "1.0", "Frame time scale factor", CV_CHEAT);
 
@@ -206,12 +205,7 @@ bool CGameHost::LoadModules()
 
 void CGameHost::SetWindowTitle(const char* windowTitle)
 {
-#ifdef _RETAIL
-	SDL_SetWindowTitle(m_window, windowTitle);
-#else
-	EqString str = EqString::Format("%s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", windowTitle, BUILD_NUMBER_ENGINE);
-	SDL_SetWindowTitle(m_window, str);
-#endif
+	m_windowTitle = windowTitle;
 }
 
 bool CGameHost::IsWindowed() const
@@ -221,70 +215,76 @@ bool CGameHost::IsWindowed() const
 
 void CGameHost::SetFullscreenMode(bool screenSize)
 {
-	int nAdjustedWide;
-	int nAdjustedTall;
-
 	if (screenSize)
 	{
+		int adjustedWide;
+		int adjustedTall;
+
 		SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
-		SDL_GetWindowSize(m_window, &nAdjustedWide, &nAdjustedTall);
+		SDL_GetWindowSize(m_window, &adjustedWide, &adjustedTall);
 
-		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
+		Msg("Set %dx%d mode (fullscreen)\n", adjustedWide, adjustedTall);
 
-		OnWindowResize(nAdjustedWide, nAdjustedTall);
+		OnWindowResize(adjustedWide, adjustedTall);
 	}
 	else
 	{
-		const char *str = sys_vmode.GetString();
-		Array<EqString> args(PP_SL);
-		xstrsplit(str, "x", args);
+		int adjustedWide = 800;
+		int adjustedTall = 600;
+		bool fullscreen = false;
+		int screen = 0;
+		Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
 
-		nAdjustedWide = atoi(args[0].GetData());
-		nAdjustedTall = atoi(args[1].GetData());
+		OnWindowResize(adjustedWide, adjustedTall);
 
-		OnWindowResize(nAdjustedWide, nAdjustedTall);
-
-		if (g_matSystem->SetWindowed(false))
+		if (!g_matSystem->IsInitialized() || g_matSystem->SetWindowed(false))
 		{
-			Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
+			Msg("Set %dx%d mode (fullscreen)\n", adjustedWide, adjustedTall);
 
 			SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN);
-			SDL_SetWindowSize(m_window, nAdjustedWide, nAdjustedTall);
+			SDL_SetWindowSize(m_window, adjustedWide, adjustedTall);
 		}
 	}
 }
 
 void CGameHost::SetWindowedMode()
 {
-	const char* str = sys_vmode.GetString();
-	Array<EqString> args(PP_SL);
-	xstrsplit(str, "x", args);
+	const int adjustedPosX = SDL_WINDOWPOS_CENTERED;
+	const int adjustedPosY = SDL_WINDOWPOS_CENTERED;
+	int adjustedWide = 800;
+	int adjustedTall = 600;
+	bool fullscreen = false;
+	int screen = 0;
+	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
 
-	int nAdjustedPosX = SDL_WINDOWPOS_CENTERED;
-	int nAdjustedPosY = SDL_WINDOWPOS_CENTERED;
-	int nAdjustedWide = atoi(args[0].GetData());
-	int nAdjustedTall = atoi(args[1].GetData());
-
-	OnWindowResize(nAdjustedWide, nAdjustedTall);
-	if (g_matSystem->SetWindowed(true))
+	OnWindowResize(adjustedWide, adjustedTall);
+	if (!g_matSystem->IsInitialized() || g_matSystem->SetWindowed(true))
 	{
-		Msg("Set %dx%d mode (windowed)\n", nAdjustedWide, nAdjustedTall);
+		Msg("Set %dx%d mode (windowed)\n", adjustedWide, adjustedTall);
 
 		SDL_SetWindowFullscreen(m_window, 0);
-		SDL_SetWindowSize(m_window, nAdjustedWide, nAdjustedTall);
-		SDL_SetWindowPosition(m_window, nAdjustedPosX, nAdjustedPosY);
+		SDL_SetWindowSize(m_window, adjustedWide, adjustedTall);
+		SDL_SetWindowPosition(m_window, adjustedPosX, adjustedPosY);
 	}
 }
 
 void CGameHost::ApplyVideoMode()
 {
-	if(sys_fullscreen.GetBool())
+#ifndef PLAT_ANDROID
+	int adjustedWide = 800;
+	int adjustedTall = 600;
+	bool fullscreen = false;
+	int screen = 0;
+	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
+
+	if(fullscreen)
 		SetFullscreenMode(false);
 	else
 		SetWindowedMode();
+#endif
 }
 
-void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
+void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes) const
 {
 #ifdef PLAT_ANDROID
 	displayModes.append(VideoMode_t{ 0, 16, 1024, 768, 60 });
@@ -371,23 +371,8 @@ static void* Helper_GetWindowInfo(void* userData, RenderWindowInfo::Attribute at
 	return nullptr;
 }
 
-bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
+bool CGameHost::InitSystems()
 {
-	m_window = pWindow;
-
-	MaterialsInitSettings materials_config;
-
-	// set window info
-	SDL_SysWMinfo winfo;
-	SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
-
-	if( !SDL_GetWindowWMInfo(m_window, &winfo) )
-	{
-		MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_window);
-		ErrorMsg("Can't get SDL window WM info!\n");
-		return false;
-	}
-
 	s_defaultCursor[dc_none] = nullptr;
 	s_defaultCursor[dc_arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 	s_defaultCursor[dc_ibeam] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
@@ -405,16 +390,50 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	// Set default cursor
 	SDL_SetCursor(s_defaultCursor[dc_arrow]);
 
-	int renderBPP = 32;
+	// init game states and proceed
+	if (!EqStateMgr::InitRegisterStates())
+		return false;
 
-	{
-		RenderWindowInfo &winInfo = materials_config.shaderApiParams.windowInfo;
-		winInfo.userData = m_window;
-		winInfo.get = Helper_GetWindowInfo;
-		
-		// needed for initialization
-		switch(winfo.subsystem)
+	m_window = Sys_CreateWindow();
+	ApplyVideoMode();
+
+	g_cmdLine->ExecuteCommandLine();
+
+	{	
+		// set window info
+		SDL_SysWMinfo winfo;
+		SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
+
+		if (!SDL_GetWindowWMInfo(m_window, &winfo))
 		{
+			MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_window);
+			ErrorMsg("Can't get SDL window WM info!\n");
+			return false;
+		}
+
+		MaterialsInitSettings matSystemCfg;
+		{
+			ShaderAPIParams& rhiParams = matSystemCfg.shaderApiParams;
+
+			int renderBPP = vid_bpp.GetInt();
+
+			// Figure display format to use
+			if (renderBPP == 32)
+				rhiParams.screenFormat = FORMAT_RGB8;
+			else if (renderBPP == 24)
+				rhiParams.screenFormat = FORMAT_RGB8;
+			else if (renderBPP == 16)
+				rhiParams.screenFormat = FORMAT_RGB565;
+			else
+				rhiParams.screenFormat = FORMAT_RGB8;
+
+			RenderWindowInfo& winInfo = rhiParams.windowInfo;
+			winInfo.userData = m_window;
+			winInfo.get = Helper_GetWindowInfo;
+
+			// needed for initialization
+			switch (winfo.subsystem)
+			{
 			case SDL_SYSWM_X11:
 				winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_X11;
 				break;
@@ -430,65 +449,39 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 				break;
 			default:
 				ASSERT_FAIL("Not supported window type - %d", winfo.subsystem);
+			}
 		}
+
+		g_parallelJobs->Init();
+		if (!g_matSystem->Init(matSystemCfg))
+			return false;
+
+		g_renderAPI = g_matSystem->GetShaderAPI();
+		g_matSystem->LoadShaderLibrary("eqBaseShaders");
+		REGISTER_INTERNAL_SHADERS();
 	}
-
-	ETextureFormat screenFormat = FORMAT_RGB8;
-
-	// Figure display format to use
-	if(renderBPP == 32)
-		screenFormat = FORMAT_RGB8;
-	else if(renderBPP == 24)
-		screenFormat = FORMAT_RGB8;
-	else if(renderBPP == 16)
-		screenFormat = FORMAT_RGB565;
-
-	materials_config.shaderApiParams.screenFormat = screenFormat;
-
-	g_parallelJobs->Init();
-
-	if(!g_matSystem->Init(materials_config))
-		return false;
-
-	g_renderAPI = g_matSystem->GetShaderAPI();
-
-	g_matSystem->LoadShaderLibrary("eqBaseShaders");
-
-	// register all shaders
-	REGISTER_INTERNAL_SHADERS();
-
-	// init game states and proceed
-	if (!EqStateMgr::InitRegisterStates())
-		return false;
-
-	// override configuration file by executing command line
-	g_cmdLine->ExecuteCommandLine();
 
 	if( !g_fontCache->Init() )
 		return false;
 
-	m_defaultFont = g_fontCache->GetFont("default",0);
-
 	debugoverlay->Init();
 	equi::Manager->Init();
-
-	// finally init input and adjust bindings
 	g_inputCommandBinder->Init();
-
-	// init console
-	g_consoleInput->Initialize(pWindow);
+	g_consoleInput->Initialize(m_window);
 
 	MsgInfo("--- EqEngine systems init successfully ---\n");
-
-#ifndef PLAT_ANDROID
-	if (sys_fullscreen.GetBool())
-		SetFullscreenMode(false);
-	else
-		SetWindowedMode();
-#endif
-
 	g_beginSceneJob = PPNew SyncJob("BeginSceneJob");
 	g_endSceneJob = PPNew SyncJob("EndSceneJob");
+	m_defaultFont = g_fontCache->GetFont("default",0);
+
+	if (m_window)
+	{
+#ifdef _RETAIL
+		SDL_SetWindowTitle(m_window, windowTitle);
+#else
+		SDL_SetWindowTitle(m_window, EqString::Format("%s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", m_windowTitle.ToCString(), BUILD_NUMBER_ENGINE));
+#endif
+	}
 
 	return true;
 }
@@ -613,13 +606,8 @@ void InputCommands_SDL(SDL_Event* event)
 
 static DbgGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
 
-CGameHost::CGameHost() :
-	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_window(nullptr), m_quitState(QUIT_NOTQUITTING),
-	m_keyTrapMode(false), m_skipMouseMove(false), m_keyDoneTrapping(false), m_trapKey(0), m_trapButtons(0), m_cursorCentered(false),
-	m_defaultFont(nullptr),
-	m_accumTime(0.0)
+CGameHost::CGameHost()
 {
-
 }
 
 void CGameHost::ShutdownSystems()
@@ -886,8 +874,7 @@ void CGameHost::OnWindowResize(int width, int height)
 	m_winSize.x = width;
 	m_winSize.y = height;
 
-	if(g_matSystem)
-		g_matSystem->SetDeviceBackbufferSize( width, height );
+	g_matSystem->SetDeviceBackbufferSize( width, height );
 }
 
 void CGameHost::OnFocusChanged(bool inFocus)

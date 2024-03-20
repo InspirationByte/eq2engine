@@ -16,8 +16,8 @@
 #include "utils/KeyValues.h"
 
 #include "sys_in_console.h"
-#include "sys_window.h"
 #include "sys_version.h"
+#include "sys_window.h"
 
 #include <SDL_messagebox.h>
 #include <SDL_system.h>
