@@ -200,6 +200,8 @@ bool CGameHost::LoadModules()
 		return false;
 	}
 
+	g_matSystem->LoadShaderLibrary("eqBaseShaders");
+
 	return true;
 }
 
@@ -457,9 +459,9 @@ bool CGameHost::InitSystems()
 			return false;
 
 		g_renderAPI = g_matSystem->GetShaderAPI();
-		g_matSystem->LoadShaderLibrary("eqBaseShaders");
-		REGISTER_INTERNAL_SHADERS();
 	}
+
+	REGISTER_INTERNAL_SHADERS();
 
 	if( !g_fontCache->Init() )
 		return false;
