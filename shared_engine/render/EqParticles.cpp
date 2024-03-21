@@ -325,8 +325,8 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 
 	if(frustum)
 	{
-		const float size = max(effect.fWide, effect.fTall);
-		if(!frustum->IsSphereInside(effect.vOrigin, size))
+		const float size = max(effect.size.x, effect.size.y);
+		if(!frustum->IsSphereInside(effect.origin, size))
 			return;
 	}
 
@@ -335,15 +335,15 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 		return;
 
 	Vector3D angles;
-	if(effect.nFlags & EFFECT_FLAG_RADIAL_ALIGNING)
-		angles = VectorAngles(fastNormalize(effect.vOrigin - view.GetOrigin()));
+	if(effect.flags & EFFECT_FLAG_RADIAL_ALIGNING)
+		angles = VectorAngles(fastNormalize(effect.origin - view.GetOrigin()));
 	else
-		angles = view.GetAngles() + Vector3D(0,0,effect.fZAngle);
+		angles = view.GetAngles() + Vector3D(0,0,effect.zAngle);
 
-	if(effect.nFlags & EFFECT_FLAG_LOCK_X)
+	if(effect.flags & EFFECT_FLAG_LOCK_X)
 		angles.x = 0;
 
-	if(effect.nFlags & EFFECT_FLAG_LOCK_Y)
+	if(effect.flags & EFFECT_FLAG_LOCK_Y)
 		angles.y = 0;
 
 	Vector3D vRight, vUp;
@@ -351,21 +351,21 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 
 	const AARectangle texCoords = effect.atlasRef.entry->rect;
 
-	const uint color = effect.vColor.pack();
+	const uint color = effect.color.pack();
 
-	verts[0].point = effect.vOrigin + (vUp * effect.fTall) + (effect.fWide * vRight);
+	verts[0].point = effect.origin + (vUp * effect.size.y) + (effect.size.x * vRight);
 	verts[0].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.rightBottom.y);
 	verts[0].color = color;
 
-	verts[1].point = effect.vOrigin + (vUp * effect.fTall) - (effect.fWide * vRight);
+	verts[1].point = effect.origin + (vUp * effect.size.y) - (effect.size.x * vRight);
 	verts[1].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.leftTop.y);
 	verts[1].color = color;
 
-	verts[2].point = effect.vOrigin - (vUp * effect.fTall) + (effect.fWide * vRight);
+	verts[2].point = effect.origin - (vUp * effect.size.y) + (effect.size.x * vRight);
 	verts[2].texcoord = Vector2D(texCoords.leftTop.x, texCoords.rightBottom.y);
 	verts[2].color = color;
 
-	verts[3].point = effect.vOrigin - (vUp * effect.fTall) - (effect.fWide * vRight);
+	verts[3].point = effect.origin - (vUp * effect.size.y) - (effect.size.x * vRight);
 	verts[3].texcoord = Vector2D(texCoords.leftTop.x, texCoords.leftTop.y);
 	verts[3].color = color;
 }
@@ -378,8 +378,8 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const Matrix4x4& viewMatr
 
 	if (frustum)
 	{
-		const float size = max(effect.fWide, effect.fTall);
-		if (!frustum->IsSphereInside(effect.vOrigin, size))
+		const float size = max(effect.size.x, effect.size.y);
+		if (!frustum->IsSphereInside(effect.origin, size))
 			return;
 	}
 
@@ -391,21 +391,21 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const Matrix4x4& viewMatr
 	const Vector3D vUp = viewMatrix.rows[1].xyz();
 
 	const AARectangle texCoords = effect.atlasRef.entry->rect;
-	const uint color = effect.vColor.pack();
+	const uint color = effect.color.pack();
 
-	verts[0].point = effect.vOrigin + (vUp * effect.fTall) + (effect.fWide * vRight);
+	verts[0].point = effect.origin + (vUp * effect.size.y) + (effect.size.x * vRight);
 	verts[0].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.rightBottom.y);
 	verts[0].color = color;
 
-	verts[1].point = effect.vOrigin + (vUp * effect.fTall) - (effect.fWide * vRight);
+	verts[1].point = effect.origin + (vUp * effect.size.y) - (effect.size.x * vRight);
 	verts[1].texcoord = Vector2D(texCoords.rightBottom.x, texCoords.leftTop.y);
 	verts[1].color = color;
 
-	verts[2].point = effect.vOrigin - (vUp * effect.fTall) + (effect.fWide * vRight);
+	verts[2].point = effect.origin - (vUp * effect.size.y) + (effect.size.x * vRight);
 	verts[2].texcoord = Vector2D(texCoords.leftTop.x, texCoords.rightBottom.y);
 	verts[2].color = color;
 
-	verts[3].point = effect.vOrigin - (vUp * effect.fTall) - (effect.fWide * vRight);
+	verts[3].point = effect.origin - (vUp * effect.size.y) - (effect.size.x * vRight);
 	verts[3].texcoord = Vector2D(texCoords.leftTop.x, texCoords.leftTop.y);
 	verts[3].color = color;
 }

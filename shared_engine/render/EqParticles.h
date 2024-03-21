@@ -89,7 +89,7 @@ struct PFXAtlasRef
 	CParticleBatch*		batch{ nullptr };
 
 	operator bool() const { return entry != nullptr; }
-	PFXAtlasRef& operator=(std::nullptr_t) { batch = nullptr; entry = nullptr; }
+	PFXAtlasRef& operator=(std::nullptr_t) { batch = nullptr; entry = nullptr; return *this; }
 };
 
 class CParticleRenderer
@@ -140,16 +140,14 @@ struct PFXBillboard
 {
 	PFXAtlasRef	atlasRef;
 
-	MColor		vColor;
-	Vector3D	vOrigin;
-	Vector3D	vLockDir;
+	MColor		color;
+	Vector3D	origin;
+	Vector3D	lockDir;
 
-	float		fWide { 1.0f };
-	float		fTall { 1.0f };
+	Vector2D	size{ 1.0f, 1.0f };
 
-	float		fZAngle { 1.0f };
-
-	int			nFlags { 0 };
+	float		zAngle { 1.0f };
+	int			flags { 0 };
 };
 
 // draws particle
