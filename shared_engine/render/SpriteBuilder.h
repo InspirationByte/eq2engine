@@ -167,7 +167,7 @@ int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TY
 		return -1;
 	}
 
-	if(nVertices == 0)
+	if(nVertices == 0 || indices && nIndices == 0)
 		return -1;
 
 	AddStripBreak();
