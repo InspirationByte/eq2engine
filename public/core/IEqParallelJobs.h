@@ -6,149 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
-using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
-
-//--------------------------------------------
-// parallel job type
-
-class IParallelJob
-{
-	friend class CEqJobThread;
-	friend class CEqParallelJobManager;
-public:
-	virtual ~IParallelJob();
-	IParallelJob(const char* jobName)
-		: m_jobName(jobName)
-	{
-	}
-
-	void					InitSignal();
-	Threading::CEqSignal*	GetJobSignal() const { return m_jobSignalDone; }
-
-	const char*				GetName() const { return m_jobName; }
-
-	void					AddWait(Threading::CEqSignal* jobWait);
-	void					AddWait(IParallelJob* jobWait);
-
-	virtual void			Execute() = 0;
-
-protected:
-	enum EPhase : int
-	{
-		JOB_INIT,
-		JOB_STARTED,
-		JOB_DONE,
-	};
-
-	virtual void			FillJobGroup() {}
-
-	bool					WaitForJobGroup(int timeout = Threading::WAIT_INFINITE);
-	void					OnAddedToQueue();
-
-	void					Run();
-
-	EqString						m_jobName;
-	Array<Threading::CEqSignal*>	m_waitList{ PP_SL };
-	Threading::CEqSignal*			m_jobSignalDone{ nullptr };
-	volatile EPhase					m_phase{ JOB_INIT };
-	bool							m_deleteJob{ false };
-};
-
-inline IParallelJob::~IParallelJob()
-{
-	SAFE_DELETE(m_jobSignalDone);
-}
-
-inline void IParallelJob::InitSignal()
-{
-	if (!m_jobSignalDone)
-	{
-		m_jobSignalDone = PPNew Threading::CEqSignal(true);
-		m_jobSignalDone->Raise();
-	}
-}
-
-inline void IParallelJob::OnAddedToQueue()
-{
-	if (m_jobSignalDone)
-		m_jobSignalDone->Clear();
-
-	FillJobGroup();
-}
-
-inline bool IParallelJob::WaitForJobGroup(int timeout)
-{
-	// wait until all jobs has been done
-	for (Threading::CEqSignal* signal : m_waitList)
-	{
-		if (signal->Wait(timeout))
-			return false;
-	}
-	m_waitList.clear();
-
-	return true;
-}
-
-inline void IParallelJob::Run()
-{
-	PROF_EVENT(m_jobName);
-	Execute();
-
-	if(m_jobSignalDone)
-		m_jobSignalDone->Raise();	
-}
-
-inline void IParallelJob::AddWait(Threading::CEqSignal* jobWait)
-{
-	if (!jobWait)
-		return;
-	m_waitList.append(jobWait);
-}
-
-inline void IParallelJob::AddWait(IParallelJob* jobWait)
-{
-	jobWait->InitSignal();
-
-	AddWait(jobWait->GetJobSignal());
-}
-
-//--------------------------------------------
-// Dummy Sync Job
-class SyncJob : public IParallelJob
-{
-public:
-	SyncJob(const char* jobName)
-		: IParallelJob(jobName)
-	{}
-
-	void	Execute() override {}
-};
-
-//--------------------------------------------
-// Function Job
-class FunctionParallelJob : public IParallelJob
-{
-public:
-	template<typename F>
-	FunctionParallelJob(const char* jobName, F func, void* data, int count)
-		: IParallelJob(jobName)
-		, m_jobFunction(std::move(func))
-		, m_data(data)
-		, m_count(count)
-	{
-	}
-
-	void Execute()
-	{
-		for (int i = 0; i < m_count; ++i)
-			m_jobFunction(m_data, i);		
-	}
-
-	EQ_JOB_FUNC	m_jobFunction;
-	void*		m_data{ nullptr };
-	int			m_count{ 0 };
-};
+#include "core/platform/eqjobmanager.h"
 
 //--------------------------------------------
 // job manager
@@ -171,7 +29,7 @@ public:
 	virtual void			Wait(int waitTimeout = Threading::WAIT_INFINITE) = 0;
 
 	virtual bool			AllJobsCompleted() const = 0;
-	virtual int				GetJobThreadsCount() = 0;
+	virtual int				GetJobThreadsCount() const = 0;
 };
 
 INTERFACE_SINGLETON(IEqParallelJobManager, CEqParallelJobManager, g_parallelJobs)

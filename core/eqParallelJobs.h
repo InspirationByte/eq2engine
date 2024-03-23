@@ -7,21 +7,17 @@
 
 #pragma once
 #include "core/IEqParallelJobs.h"
-#include "ds/boundedqueue.h"
-
-class CEqJobThread;
 
 //
 // Job thread list
 //
 class CEqParallelJobManager : public IEqParallelJobManager
 {
-	friend class CEqJobThread;
 public:
 	CEqParallelJobManager();
 	virtual ~CEqParallelJobManager();
 
-	bool			IsInitialized() const { return m_jobThreads.numElem() > 0; }
+	bool			IsInitialized() const { return m_jobMng->GetJobThreadsCount(); }
 
 	// creates new job thread
 	bool			Init();
@@ -37,13 +33,9 @@ public:
 	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
 
 	bool			AllJobsCompleted() const;
-	int				GetJobThreadsCount();
+	int				GetJobThreadsCount() const { return m_jobMng->GetJobThreadsCount(); }
 
 protected:
 
-	// called from worker thread
-	bool					TryPopNewJob( CEqJobThread* requestBy );
-
-	Array<CEqJobThread*>		m_jobThreads{ PP_SL };
-	mutable BoundedQueue<IParallelJob*>	m_jobs{ 1024 };
+	CEqJobManager*	m_jobMng{ nullptr };
 };

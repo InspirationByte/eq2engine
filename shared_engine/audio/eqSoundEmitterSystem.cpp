@@ -158,6 +158,10 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 			CScopedMutex m(s_soundEmitterSystemMutex);
 			script->samples.append(sample);
 		}
+		else
+		{
+			MsgError("Can't precache sample '%s' for '%s'\n", soundName.ToCString(), pszName);
+		}
 	}
 
 	return script->samples.numElem() > 0;

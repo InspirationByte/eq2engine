@@ -18,9 +18,9 @@ IEXPORTS void	PPDCheck( void* ptr );
 
 IEXPORTS void	PPFree( void* ptr );
 
-#define	PPAlloc(size)									PPDAlloc(size, PP_SL)
-#define	PPAllocStructArray(type, count)					(type*)	PPDAlloc(count*sizeof(type), PP_SL)
-#define	PPReAlloc(ptr, size)							PPDReAlloc(ptr, size, PP_SL)
+#define	PPAlloc(size)						PPDAlloc(size, PP_SL)
+#define	PPAllocStructArray(type, count)		reinterpret_cast<type*>(PPDAlloc(count*sizeof(type), PP_SL))
+#define	PPReAlloc(ptr, size)				PPDReAlloc(ptr, size, PP_SL)
 
 #ifdef PPMEM_DISABLED
 

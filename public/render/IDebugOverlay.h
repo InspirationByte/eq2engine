@@ -330,7 +330,7 @@ typedef struct DbgVolumeBuilder
 	}
 
 	DbgVolumeBuilder& Planes(const ArrayCRef<Plane> _planes) { planes.append(_planes.ptr(), _planes.numElem()); return *this; }
-	DbgVolumeBuilder& Volume(const Volume& volume) { planes.append(volume.GetPlanes().ptr(), volume.GetPlanes().numElem()); }
+	DbgVolumeBuilder& Volume(const Volume& volume) { planes.append(volume.GetPlanes().ptr(), volume.GetPlanes().numElem()); return *this; }
 	DbgVolumeBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgVolumeBuilder& Time(float t) { lifetime = t; return *this; }
 	DbgVolumeBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }

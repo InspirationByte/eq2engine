@@ -51,10 +51,7 @@ ISoundSourcePtr ISoundSource::CreateSound( const char* szFilename )
 	pSource->SetFilename(szFilename);
 
 	if(pSource && !pSource->Load())
-	{
-		MsgError( "Cannot load sound '%s'\n", szFilename );
 		return nullptr;
-	}
 
 	return pSource;
 }

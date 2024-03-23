@@ -14,72 +14,6 @@ using namespace Threading;
 
 EXPORTED_INTERFACE(IEqParallelJobManager, CEqParallelJobManager);
 
-//
-// The job execution thread
-//
-class CEqJobThread : public Threading::CEqThread
-{
-	friend class CEqParallelJobManager;
-public:
-	CEqJobThread(CEqParallelJobManager* owner);
-
-	int						Run();
-	bool					TryAssignJob(IParallelJob* job);
-
-	const IParallelJob*		GetCurrentJob() const;
-
-protected:
-
-	volatile IParallelJob*	m_curJob;
-	CEqParallelJobManager*	m_owner;
-};
-
-CEqJobThread::CEqJobThread(CEqParallelJobManager* owner) 
-	: m_owner(owner), 
-	m_curJob(nullptr)
-{
-}
-
-int CEqJobThread::Run()
-{
-	// thread will find job by himself
-	if( !m_owner->TryPopNewJob( this ) )
-	{
-		//SignalWork();
-		return 0;
-	}
-
-	IParallelJob* job = const_cast<IParallelJob*>(m_curJob);
-	m_curJob = nullptr;
-
-	// execute
-	job->Run();
-	job->m_phase = IParallelJob::JOB_DONE;
-
-	if(job->m_deleteJob)
-		delete job;
-
-	SignalWork();
-
-	return 0;
-}
-
-bool CEqJobThread::TryAssignJob( IParallelJob* pjob )
-{
-	if( m_curJob )
-		return false;
-
-	m_curJob = pjob;
-
-	return true;
-}
-
-const IParallelJob* CEqJobThread::GetCurrentJob() const
-{
-	return const_cast<IParallelJob*>(m_curJob);
-}
-
-//-------------------------------------------------------------------------------------------
 
 CEqParallelJobManager::CEqParallelJobManager()
 {
@@ -96,13 +30,7 @@ CEqParallelJobManager::~CEqParallelJobManager()
 bool CEqParallelJobManager::Init()
 {
 	const int numThreadsToSpawn = max(4, g_cpuCaps->GetCPUCount());
-	for (int i = 0; i < numThreadsToSpawn; ++i)
-	{
-		CEqJobThread* jobThread = PPNew CEqJobThread(this);
-		m_jobThreads.append(jobThread);
-
-		jobThread->StartWorkerThread(EqString::Format("eqWorker_%d", i));
-	}
+	m_jobMng = PPNew CEqJobManager("e2CoreJobMng", numThreadsToSpawn, 8192);
 
 	MsgInfo("*Parallel jobs threads: %d\n", numThreadsToSpawn);
 
@@ -111,31 +39,14 @@ bool CEqParallelJobManager::Init()
 
 void CEqParallelJobManager::Shutdown()
 {
-	Wait();
-
-	for (CEqJobThread* jobThread : m_jobThreads)
-		delete jobThread;
-
-	m_jobThreads.clear(true);
+	m_jobMng->Wait();
+	SAFE_DELETE(m_jobMng);
 }
 
 // adds the job to the queue
 void CEqParallelJobManager::AddJob(IParallelJob* job)
 {
-	if(job->m_phase == IParallelJob::JOB_STARTED)
-		return;
-
-	job->m_phase = IParallelJob::JOB_STARTED;
-
-	while (!m_jobs.enqueue(job))
-	{
-		Submit();
-		Threading::YieldCurrentThread();
-	}
-	
-	job->OnAddedToQueue();
-
-	Submit();
+	m_jobMng->AddJob(job);
 }
 
 // adds the job
@@ -144,68 +55,24 @@ void CEqParallelJobManager::AddJob(EQ_JOB_FUNC func, void* args, int count /*= 1
 	ASSERT(count > 0);
 
 	FunctionParallelJob* job = PPNew FunctionParallelJob("PJob", func, args, count);
-	job->m_phase = IParallelJob::JOB_STARTED;
 	job->m_deleteJob = true;
-	
-	while (!m_jobs.enqueue(job))
-	{
-		Submit();
-		Threading::YieldCurrentThread();
-	}
 
-	job->OnAddedToQueue();
-
-	Submit();
+	m_jobMng->AddJob(job);
 }
 
 // this submits jobs to the CEqJobThreads
 void CEqParallelJobManager::Submit()
 {
-	for (CEqJobThread* jobThread : m_jobThreads)
-		jobThread->SignalWork();
+	m_jobMng->Submit();
 }
 
 bool CEqParallelJobManager::AllJobsCompleted() const
 {
-	for (CEqJobThread* jobThread : m_jobThreads)
-	{
-		if(!jobThread->WaitForThread(0))
-			return false;
-	}
-
-	IParallelJob* job = nullptr;
-	if (!m_jobs.dequeue(job))
-		return true;
-
-	m_jobs.enqueue(job);
-	return false;
+	return m_jobMng->AllJobsCompleted();
 }
 
 // wait for completion
 void CEqParallelJobManager::Wait(int waitTimeout)
 {
-	for (CEqJobThread* jobThread : m_jobThreads)
-		jobThread->WaitForThread(waitTimeout);
-}
-
-// called by job thread
-bool CEqParallelJobManager::TryPopNewJob( CEqJobThread* requestBy )
-{
-	IParallelJob* job = nullptr;
-	if(!m_jobs.dequeue(job))
-		return false;
-	
-	if(job->WaitForJobGroup(0) && requestBy->TryAssignJob(job))
-	{
-		return true;
-	}
-	else
-		m_jobs.enqueue(job);
-
-	return false;
-}
-
-int	CEqParallelJobManager::GetJobThreadsCount()
-{
-	return m_jobThreads.numElem();
+	m_jobMng->Wait(waitTimeout);
 }

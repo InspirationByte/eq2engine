@@ -50,15 +50,15 @@ public:
 	template<typename ARRAY_TYPE>
 	ArrayRef<T>& operator=(const ARRAY_TYPE& other)
 	{
-		m_pListPtr = other.ptr();
-		m_nNumElem = other.numElem();
+		m_pListPtr = other.m_pListPtr;
+		m_nNumElem = other.m_nNumElem;
 		return *this;
 	}
 
 	ArrayRef<T>& operator=(const ArrayRef<T>& other)
 	{
-		m_pListPtr = other.ptr();
-		m_nNumElem = other.numElem();
+		m_pListPtr = other.m_pListPtr;
+		m_nNumElem = other.m_nNumElem;
 		return *this;
 	}
 
@@ -152,15 +152,15 @@ public:
 
 	ArrayCRef<T>& operator=(const ArrayRef<T>& other)
 	{
-		m_pListPtr = other.ptr();
-		m_nNumElem = other.numElem();
+		m_pListPtr = other.m_pListPtr;
+		m_nNumElem = other.m_nNumElem;
 		return *this;
 	}
 
 	ArrayCRef<T>& operator=(const ArrayCRef<T>& other)
 	{
-		m_pListPtr = other.ptr();
-		m_nNumElem = other.numElem();
+		m_pListPtr = other.m_pListPtr;
+		m_nNumElem = other.m_nNumElem;
 		return *this;
 	}
 
