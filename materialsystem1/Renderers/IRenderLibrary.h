@@ -20,7 +20,7 @@ struct RenderWindowInfo;
 class IRenderManager : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E1RenderManager_001")
+	CORE_INTERFACE("E2_RenderManager_001")
 
 	virtual IRenderLibrary* CreateRenderer(const ShaderAPIParams &params) const = 0;
 

@@ -30,6 +30,8 @@ public:
 
 	virtual bool			AllJobsCompleted() const = 0;
 	virtual int				GetJobThreadsCount() const = 0;
+
+	virtual CEqJobManager*	GetJobMng() const = 0;
 };
 
 INTERFACE_SINGLETON(IEqParallelJobManager, CEqParallelJobManager, g_parallelJobs)

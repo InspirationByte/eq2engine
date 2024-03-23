@@ -27,13 +27,12 @@ public:
 	void			AddJob(IParallelJob* job);
 	void			AddJob(EQ_JOB_FUNC func, void* args = nullptr, int count = 1);	// and puts JOB_FLAG_DELETE flag for this job
 
-	// this submits jobs to the CEqJobThreads
-	void			Submit();
-
 	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
 
 	bool			AllJobsCompleted() const;
 	int				GetJobThreadsCount() const { return m_jobMng->GetJobThreadsCount(); }
+
+	CEqJobManager*	GetJobMng() const { return m_jobMng; }
 
 protected:
 

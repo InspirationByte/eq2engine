@@ -5,60 +5,41 @@ using namespace Threading;
 
 IParallelJob::~IParallelJob()
 {
-	SAFE_DELETE(m_jobSignalDone);
+	SAFE_DELETE(m_doneEvent);
+}
+
+void IParallelJob::InitJob()
+{
+	ASSERT(m_phase != JOB_STARTED);
+	m_nextJobs.clear();
+
+	m_phase = JOB_INIT;
+	m_primeJobs = 1;
+
+	if (m_doneEvent)
+		m_doneEvent->Clear();
 }
 
 void IParallelJob::InitSignal()
 {
-	if (!m_jobSignalDone)
+	if (!m_doneEvent)
 	{
-		m_jobSignalDone = PPNew Threading::CEqSignal(true);
-		m_jobSignalDone->Raise();
+		m_doneEvent = PPNew Threading::CEqSignal(true);
+		m_doneEvent->Raise();
 	}
 }
 
-void IParallelJob::OnAddedToQueue()
-{
-	if (m_jobSignalDone)
-		m_jobSignalDone->Clear();
 
-	FillJobGroup();
-}
-
-bool IParallelJob::WaitForJobGroup(int timeout)
+void IParallelJob::AddWait(IParallelJob* jobToWait)
 {
-	// wait until all jobs has been done
-	for (Threading::CEqSignal* signal : m_waitList)
+	ASSERT(jobToWait != this);
+	ASSERT(m_phase == JOB_INIT || (m_phase == JOB_STARTED && m_primeJobs > 0));
+
+	if (jobToWait->m_phase != JOB_DONE)
 	{
-		if (signal->Wait(timeout))
-			return false;
+		Atomic::Increment(m_primeJobs);
+		jobToWait->m_nextJobs.append(this);
 	}
-	m_waitList.clear();
-
-	return true;
-}
-
-void IParallelJob::Run()
-{
-	PROF_EVENT(m_jobName);
-	Execute();
-
-	if(m_jobSignalDone)
-		m_jobSignalDone->Raise();	
-}
-
-void IParallelJob::AddWait(Threading::CEqSignal* jobWait)
-{
-	if (!jobWait)
-		return;
-	m_waitList.append(jobWait);
-}
-
-void IParallelJob::AddWait(IParallelJob* jobWait)
-{
-	jobWait->InitSignal();
-
-	AddWait(jobWait->GetJobSignal());
 }
 
 //---------------------------------------------------------- 
@@ -72,59 +53,24 @@ public:
 	WorkerThread(CEqJobManager& jobManager);
 
 	int						Run();
-	bool					TryAssignJob(IParallelJob* job);
-
-	const IParallelJob*		GetCurrentJob() const;
-
 protected:
-
-	volatile IParallelJob*	m_curJob;
 	CEqJobManager&      	m_jobManager;
 };
 
 CEqJobManager::WorkerThread::WorkerThread(CEqJobManager& jobMng) 
-	: m_jobManager(jobMng), 
-	m_curJob(nullptr)
+	: m_jobManager(jobMng)
 {
 }
 
 int CEqJobManager::WorkerThread::Run()
 {
 	// thread will find job by himself
-	if( !m_jobManager.TryPopNewJob( *this ) )
-	{
-		//SignalWork();
+	IParallelJob* job = m_jobManager.ExtractJobFromQueue();
+	if (!job)
 		return 0;
-	}
 
-	IParallelJob* job = const_cast<IParallelJob*>(m_curJob);
-	m_curJob = nullptr;
-
-	// execute
-	job->Run();
-	job->m_phase = IParallelJob::JOB_DONE;
-
-	if(job->m_deleteJob)
-		delete job;
-
-	SignalWork();
-
+	m_jobManager.ExecuteJob(*job);
 	return 0;
-}
-
-bool CEqJobManager::WorkerThread::TryAssignJob( IParallelJob* pjob )
-{
-	if( m_curJob )
-		return false;
-
-	m_curJob = pjob;
-
-	return true;
-}
-
-const IParallelJob* CEqJobManager::WorkerThread::GetCurrentJob() const
-{
-	return const_cast<IParallelJob*>(m_curJob);
 }
 
 //---------------------------------------------------------- 
@@ -140,6 +86,7 @@ CEqJobManager::~CEqJobManager()
 CEqJobManager::CEqJobManager(const char* name, int numThreads, int queueSize)
 	: m_jobQueue(queueSize)
 {
+	m_queueSize = queueSize;
 	m_workerThreads = ArrayRef(PPAllocStructArray(WorkerThread, numThreads), numThreads);
 	for (int i = 0; i < numThreads; ++i)
 	{
@@ -148,22 +95,59 @@ CEqJobManager::CEqJobManager(const char* name, int numThreads, int queueSize)
 	}
 }
 
-void CEqJobManager::AddJob(IParallelJob* job)
+void CEqJobManager::StartJob(IParallelJob* job)
 {
-	if(job->m_phase == IParallelJob::JOB_STARTED)
-		return;
-
+	ASSERT(job->m_phase == IParallelJob::JOB_INIT);
+	ASSERT(job->m_primeJobs > 0);
+	
+	job->m_jobMng = this;
 	job->m_phase = IParallelJob::JOB_STARTED;
 
-	while (!m_jobQueue.enqueue(job))
+	const bool canBeStarted = Atomic::Decrement(job->m_primeJobs) == 0;
+	if (canBeStarted)
 	{
+		const bool queued = m_jobQueue.enqueue(job);
+		ASSERT_MSG(queued, "Jobs queue is too small (%d), please increase", m_queueSize);
 		Submit();
-		Threading::YieldCurrentThread();
 	}
-	
-	job->OnAddedToQueue();
+}
 
-	Submit();
+void CEqJobManager::ExecuteJob(IParallelJob& job)
+{
+	ASSERT(job.m_primeJobs <= 0);
+	ASSERT(job.m_phase == IParallelJob::JOB_STARTED);
+	ASSERT(job.m_jobMng == this);
+
+	// execute
+	{
+		PROF_EVENT(job.m_jobName);
+		job.Execute();
+	}
+	job.m_phase = IParallelJob::JOB_DONE;
+
+	IParallelJob** unblockedJobs = reinterpret_cast<IParallelJob**>(m_queueSize * sizeof(IParallelJob*));
+	int numUnblocked = 0;
+
+	for (IParallelJob* nextJob : job.m_nextJobs)
+	{
+		const bool canBeStarted = Atomic::Decrement(nextJob->m_primeJobs) == 0;
+		if (canBeStarted)
+			unblockedJobs[numUnblocked++] = nextJob;
+	}
+
+	if (job.m_doneEvent)
+		job.m_doneEvent->Raise();
+
+	for (int i = 0; i < numUnblocked; ++i)
+	{
+		IParallelJob* unblockedJob = unblockedJobs[i];
+		CEqJobManager* unblockedMng = unblockedJob->m_jobMng;
+		unblockedMng->StartJob(unblockedJob);
+		unblockedMng->Submit();
+	}
+
+	if (job.m_deleteJob)
+		delete& job;
 }
 
 void CEqJobManager::Submit()
@@ -176,7 +160,7 @@ bool CEqJobManager::AllJobsCompleted() const
 {
 	for (WorkerThread& thread : m_workerThreads)
 	{
-		if(!thread.GetCurrentJob())
+		if(!thread.WaitForThread(0))
 			return false;
 	}
 
@@ -194,18 +178,11 @@ void CEqJobManager::Wait(int waitTimeout)
 		thread.WaitForThread(waitTimeout);
 }
 
-bool CEqJobManager::TryPopNewJob(WorkerThread& thread)
+IParallelJob* CEqJobManager::ExtractJobFromQueue()
 {
 	IParallelJob* job = nullptr;
-	if(!m_jobQueue.dequeue(job))
-		return false;
-	
-	if(job->WaitForJobGroup(0) && thread.TryAssignJob(job))
-	{
-		return true;
-	}
-	else
-		m_jobQueue.enqueue(job);
+	if (!m_jobQueue.dequeue(job))
+		return nullptr;
 
-	return false;
+	return job;
 }

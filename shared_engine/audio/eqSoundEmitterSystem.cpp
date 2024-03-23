@@ -588,16 +588,12 @@ void CSoundEmitterSystem::Execute()
 //
 // Updates all emitters and sound system itself
 //
-void CSoundEmitterSystem::Update(Threading::CEqSignal* waitFor)
+void CSoundEmitterSystem::Update()
 {
 	m_deltaTime = m_updateTimer.GetTime(true);
 
 	if(!GetJobSignal() || GetJobSignal()->Wait(0))
-	{
-		AddWait(waitFor);
-
 		g_parallelJobs->AddJob(this);
-	}
 }
 
 void CSoundEmitterSystem::OnRemoveSoundingObject(CSoundingObject* obj)

@@ -6,11 +6,11 @@
 //--------------------------------------------
 // parallel job type
 
+ class CEqJobManager;
+
 class IParallelJob
 {
     friend class CEqJobManager;
-	friend class CEqJobThread;
-	friend class CEqParallelJobManager;
 public:
 	virtual ~IParallelJob();
 	IParallelJob(const char* jobName)
@@ -18,13 +18,15 @@ public:
 	{
 	}
 
+	void					InitJob();
+	void					DeleteOnFinish() { m_deleteJob = true; }
+
 	void					InitSignal();
-	Threading::CEqSignal*	GetJobSignal() const { return m_jobSignalDone; }
+	Threading::CEqSignal*	GetJobSignal() const { return m_doneEvent; }
 
 	const char*				GetName() const { return m_jobName; }
 
-	void					AddWait(Threading::CEqSignal* jobWait);
-	void					AddWait(IParallelJob* jobWait);
+	void					AddWait(IParallelJob* jobToWait);
 
 	virtual void			Execute() = 0;
 
@@ -38,16 +40,16 @@ protected:
 
 	virtual void			FillJobGroup() {}
 
-	bool					WaitForJobGroup(int timeout = Threading::WAIT_INFINITE);
-	void					OnAddedToQueue();
+	EqString				m_jobName;
+	Array<IParallelJob*>	m_nextJobs{ PP_SL };
+	Threading::CEqSignal*	m_doneEvent{ nullptr };
 
-	void					Run();
+	CEqJobManager*			m_jobMng{ nullptr };
 
-	EqString						m_jobName;
-	Array<Threading::CEqSignal*>	m_waitList{ PP_SL };
-	Threading::CEqSignal*			m_jobSignalDone{ nullptr };
-	volatile EPhase					m_phase{ JOB_INIT };
-	bool							m_deleteJob{ false };
+	volatile EPhase			m_phase{ JOB_INIT };
+	volatile int			m_primeJobs{ 0 };
+
+	bool					m_deleteJob{ false };
 };
 
 //--------------------------------------------
@@ -97,7 +99,7 @@ public:
 	~CEqJobManager();
 	CEqJobManager(const char* name, int numThreads, int queueSize);
 
-	void			AddJob(IParallelJob* job);
+	void			StartJob(IParallelJob* job);
 	
 	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
 
@@ -107,8 +109,13 @@ public:
 	void			Submit();
 private:
 
-	bool			TryPopNewJob(WorkerThread& requestBy);
+	void			ExecuteJob(IParallelJob& job);
+
+	IParallelJob*	ExtractJobFromQueue();
+
+	using JobQueue = BoundedQueue<IParallelJob*>;
 
 	ArrayRef<WorkerThread>	m_workerThreads{ nullptr };
-	mutable BoundedQueue<IParallelJob*>	m_jobQueue;
+	mutable JobQueue		m_jobQueue;
+	int						m_queueSize{ 0 };
 };

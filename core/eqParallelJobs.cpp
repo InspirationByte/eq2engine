@@ -46,7 +46,8 @@ void CEqParallelJobManager::Shutdown()
 // adds the job to the queue
 void CEqParallelJobManager::AddJob(IParallelJob* job)
 {
-	m_jobMng->AddJob(job);
+	job->InitJob();
+	m_jobMng->StartJob(job);
 }
 
 // adds the job
@@ -55,15 +56,10 @@ void CEqParallelJobManager::AddJob(EQ_JOB_FUNC func, void* args, int count /*= 1
 	ASSERT(count > 0);
 
 	FunctionParallelJob* job = PPNew FunctionParallelJob("PJob", func, args, count);
-	job->m_deleteJob = true;
+	job->DeleteOnFinish();
 
-	m_jobMng->AddJob(job);
-}
-
-// this submits jobs to the CEqJobThreads
-void CEqParallelJobManager::Submit()
-{
-	m_jobMng->Submit();
+	job->InitJob();
+	m_jobMng->StartJob(job);
 }
 
 bool CEqParallelJobManager::AllJobsCompleted() const
