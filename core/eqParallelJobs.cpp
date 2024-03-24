@@ -39,7 +39,6 @@ bool CEqParallelJobManager::Init()
 
 void CEqParallelJobManager::Shutdown()
 {
-	m_jobMng->Wait();
 	SAFE_DELETE(m_jobMng);
 }
 
