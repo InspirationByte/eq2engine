@@ -106,7 +106,7 @@ public:
 	bool			AllJobsCompleted() const;
 	int				GetJobThreadsCount() const { return m_workerThreads.numElem(); }
 
-	void			Submit();
+	bool			Submit(int numWorkers);
 private:
 
 	void			ExecuteJob(IParallelJob& job);
@@ -118,4 +118,5 @@ private:
 	ArrayRef<WorkerThread>	m_workerThreads{ nullptr };
 	mutable JobQueue		m_jobQueue;
 	int						m_queueSize{ 0 };
+	volatile int			m_jobAvailability{ 0 };
 };

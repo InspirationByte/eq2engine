@@ -18,11 +18,16 @@ vs2019/*
 package/*
 build/*
 bin*
-project_*/*
+
+## project files
+*_vs2022/*
+*_gmake2/*
+*_androidndk/*
 android-project/app/build/
 android-project/build/
 android-project/.gradle/
 android-project/.idea
+
 src_dependency/wxWidgets/*
 src_dependency/openal-soft/*
 src_dependency/SDL2/*
