@@ -1,7 +1,7 @@
- #pragma once
- #include "ds/boundedqueue.h"
+#pragma once
+#include "ds/boundedqueue.h"
 
- using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
+using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
 
 //--------------------------------------------
 // parallel job type
@@ -97,7 +97,7 @@ public:
 	class WorkerThread;
 
 	~CEqJobManager();
-	CEqJobManager(const char* name, int numThreads, int queueSize);
+	CEqJobManager(const char* name, int numThreads, int queueSize, int stackSize = Threading::DEFAULT_THREAD_STACK_SIZE);
 
 	void			StartJob(IParallelJob* job);
 	

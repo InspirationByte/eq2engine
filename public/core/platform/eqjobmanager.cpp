@@ -98,7 +98,7 @@ CEqJobManager::~CEqJobManager()
 	} while (job);
 }
 
-CEqJobManager::CEqJobManager(const char* name, int numThreads, int queueSize)
+CEqJobManager::CEqJobManager(const char* name, int numThreads, int queueSize, int stackSize)
 	: m_jobQueue(queueSize)
 {
 	numThreads = min(numThreads, MAX_JOB_MANAGER_THREADS);
@@ -108,7 +108,7 @@ CEqJobManager::CEqJobManager(const char* name, int numThreads, int queueSize)
 	for (int i = 0; i < numThreads; ++i)
 	{
 		new (&m_workerThreads[i]) WorkerThread(*this);
-		m_workerThreads[i].StartWorkerThread(EqString::Format("%s_%d", name, i));
+		m_workerThreads[i].StartWorkerThread(EqString::Format("%s_%d", name, i), TP_NORMAL, stackSize);
 	}
 }
 
@@ -163,7 +163,7 @@ void CEqJobManager::ExecuteJob(IParallelJob& job)
 	int numBatchs = 0;
 
 	if(numUnblocked)
-		JobBatch* batchs = reinterpret_cast<JobBatch*>(stackalloc(numUnblocked * sizeof(JobBatch)));
+		batchs = reinterpret_cast<JobBatch*>(stackalloc(numUnblocked * sizeof(JobBatch)));
 
 	for (int i = 0; i < numUnblocked; ++i)
 	{
