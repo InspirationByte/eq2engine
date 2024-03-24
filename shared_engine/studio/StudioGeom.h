@@ -36,7 +36,7 @@ enum EModelLoadingState
 	while(m->GetLoadingState() != MODEL_LOAD_OK) { Platform_Sleep(1); }
 
 // streams in studio models used exclusively in interpolation
-class CEqStudioGeom
+class CEqStudioGeom : public RefCountedObject<CEqStudioGeom>
 {
 	friend class CStudioCache;
 	friend class CBaseEqGeomInstancer;
@@ -49,10 +49,14 @@ public:
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
+	void						Ref_DeleteObject() override;
+
 	int							GetCacheIndex() const { return m_cacheIdx; }
 
 	const char*					GetName() const;
-	int							GetLoadingState() const;	// EModelLoadingState
+	EModelLoadingState			GetLoadingState() const;	// EModelLoadingState
+	Future<bool>				GetLoadingFuture() const;
+
 	void						LoadMotionPackage(const char* filename);
 
 	int							GetMotionPackageCount() const { return m_motionData.numElem(); }
@@ -104,13 +108,6 @@ private:
 
 	bool					LoadModel(const char* pszPath, bool useJob = true);
 	void					DestroyModel();
-
-	static void				LoadModelJob(void* data, int i);
-	static void				LoadVertsJob(void* data, int i);
-	static void				LoadPhysicsJob(void* data, int i);
-	static void				LoadMotionJob(void* data, int i);
-	
-	static void				OnLoadingJobComplete(void* data, int count);
 	
 	bool					LoadFromFile();
 	void					LoadMaterials();
@@ -120,6 +117,8 @@ private:
 	void					LoadSetupBones();
 
 	//-----------------------------------------------
+
+	Future<bool>			m_loadingFuture;
 
 	// array of material index for each group
 	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>		m_materials;
@@ -145,7 +144,6 @@ private:
 
 	int						m_cacheIdx{ -1 };
 
-	mutable int				m_loading{ MODEL_LOAD_ERROR };
 	mutable int				m_readyState{ 0 };
 };
 

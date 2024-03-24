@@ -8,6 +8,7 @@
 #pragma once
 #include "materialsystem1/IMaterial.h"
 
+class CEqJobManager;
 class CEqStudioGeom;
 class IVertexFormat;
 
@@ -23,6 +24,11 @@ class CStudioCache
 
 public:
 	CStudioCache() = default;
+
+	void					Init(CEqJobManager* jobMng);
+	void					Shutdown();
+
+	CEqJobManager*			GetJobMng() const;
 
 	// caches model and returns it's index
 	int						PrecacheModel(const char* modelName);
@@ -44,6 +50,8 @@ public:
 
 private:
 	void					InitErrorMaterial();
+
+	CEqJobManager*			m_jobMng{ nullptr };
 
 	Map<int, int>			m_cacheIndex{ PP_SL };
 	Array<CEqStudioGeom*>	m_cachedList{ PP_SL };

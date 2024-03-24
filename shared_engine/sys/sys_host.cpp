@@ -392,6 +392,8 @@ bool CGameHost::InitSystems()
 	// Set default cursor
 	SDL_SetCursor(s_defaultCursor[dc_arrow]);
 
+	g_parallelJobs->Init();
+
 	// init game states and proceed
 	if (!EqStateMgr::InitRegisterStates())
 		return false;
@@ -454,7 +456,6 @@ bool CGameHost::InitSystems()
 			}
 		}
 
-		g_parallelJobs->Init();
 		if (!g_matSystem->Init(matSystemCfg))
 			return false;
 
@@ -894,12 +895,12 @@ void CGameHost::BeginScene()
 
 	g_consoleInput->BeginFrame();
 
-	g_parallelJobs->AddJob(g_beginSceneJob);
+	//g_parallelJobs->AddJob(g_beginSceneJob);
 }
 
 void CGameHost::EndScene()
 {
-	g_parallelJobs->AddJob(g_endSceneJob);
+	//g_parallelJobs->AddJob(g_endSceneJob);
 
 	// save screenshots without ImGui/Console visible
 	Sys_SaveScreenshot();

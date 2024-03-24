@@ -30,10 +30,27 @@ DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
 	}
 }
 
+void CStudioCache::Init(CEqJobManager* jobMng)
+{
+	m_jobMng = jobMng;
+}
+
+void CStudioCache::Shutdown()
+{
+	ReleaseCache();
+	m_jobMng = nullptr;
+	m_errorMaterial = nullptr;
+}
+
+CEqJobManager* CStudioCache::GetJobMng() const
+{
+	ASSERT_MSG(m_jobMng, "Studio cache is not initialized");
+	return m_jobMng; 
+}
+
 IMaterialPtr CStudioCache::GetErrorMaterial()
 {
 	InitErrorMaterial();
-
 	return m_errorMaterial;
 }
 

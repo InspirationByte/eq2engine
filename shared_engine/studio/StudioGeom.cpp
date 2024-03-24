@@ -6,8 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
+#include "core/IFileSystem.h"
+#include "core/platform/eqjobmanager.h"
 
 #include "math/Utility.h"
 
@@ -110,6 +111,12 @@ CEqStudioGeom::CEqStudioGeom()
 CEqStudioGeom::~CEqStudioGeom()
 {
 	DestroyModel();
+}
+
+void CEqStudioGeom::Ref_DeleteObject()
+{
+	g_studioModelCache->FreeCachedModel(this);
+	RefCountedObject::Ref_DeleteObject();
 }
 
 int CEqStudioGeom::ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const
@@ -314,71 +321,6 @@ static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int curren
 	return pMesh->numIndices;
 }
 
-void CEqStudioGeom::LoadModelJob(void* data, int i)
-{
-	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
-
-	model->LoadMaterials();
-	model->LoadPhysicsData();
-
-	//g_parallelJobs->AddJob(LoadPhysicsJob, data);
-	g_parallelJobs->AddJob(LoadVertsJob, data);
-	g_parallelJobs->AddJob(LoadMotionJob, data);
-	
-	OnLoadingJobComplete(data, i);
-}
-
-void CEqStudioGeom::LoadVertsJob(void* data, int i)
-{
-	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
-	
-	if (model->m_readyState == MODEL_LOAD_ERROR)
-		return;
-
-	if (!model->LoadGenerateVertexBuffer())
-		model->DestroyModel();
-
-	OnLoadingJobComplete(data, i);
-}
-
-void CEqStudioGeom::LoadPhysicsJob(void* data, int i)
-{
-	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
-
-	if (model->m_readyState == MODEL_LOAD_ERROR)
-		return;
-
-	model->LoadPhysicsData();
-
-	OnLoadingJobComplete(data, i);
-}
-
-void CEqStudioGeom::LoadMotionJob(void* data, int i)
-{
-	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
-	if (model->m_readyState == MODEL_LOAD_ERROR)
-		return;
-
-	model->LoadSetupBones();
-	model->LoadMotionPackages();
-
-	OnLoadingJobComplete(data, i);
-}
-
-void CEqStudioGeom::OnLoadingJobComplete(void* data, int count)
-{
-	CEqStudioGeom* model = reinterpret_cast<CEqStudioGeom*>(data);
-
-	if (model->m_readyState == MODEL_LOAD_ERROR)
-		return;
-	
-	if (Atomic::Decrement(model->m_loading) <= 0)
-	{
-		Atomic::Exchange(model->m_readyState, MODEL_LOAD_OK);
-		DevMsg(DEVMSG_CORE, "Loaded %s\n", model->GetName());
-	}
-}
-
 bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 {
 	m_name = pszPath;
@@ -387,7 +329,6 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	// first we switch to loading
 	Atomic::Exchange(m_readyState, MODEL_LOAD_IN_PROGRESS);
 
-	// multi-threaded version
 	if (!LoadFromFile())
 	{
 		DestroyModel();
@@ -396,8 +337,68 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 
 	if (useJob)
 	{
-		m_loading = 3;
-		g_parallelJobs->AddJob(LoadModelJob, this);
+		Promise<bool> loadingPromise;
+		m_loadingFuture = loadingPromise.CreateFuture();
+
+		FunctionJob* loadModelJob = PPNew FunctionJob("LoadEGF", [this](void*, int) {
+			LoadMaterials();
+			LoadPhysicsData();
+			LoadSetupBones();
+		});
+		loadModelJob->DeleteOnFinish();
+		loadModelJob->InitJob();
+
+		CEqJobManager* jobMng = g_studioModelCache->GetJobMng();
+
+		const int numPackages = m_studio->numMotionPackages
+			+ g_fileSystem->FileExist(m_name.Path_Strip_Ext() + ".mop", SP_MOD);
+
+		FunctionJob* loadGeomJob = PPNew FunctionJob("LoadEGFHWGeom", [this](void*, int) {
+			DevMsg(DEVMSG_CORE, "Loading HW geom for %s, state: %d\n", GetName());
+
+			if (!LoadGenerateVertexBuffer())
+			{
+				DestroyModel();
+				return;
+			}
+		});
+		loadGeomJob->DeleteOnFinish();
+		loadGeomJob->InitJob();
+
+		FunctionJob* finishJob = PPNew FunctionJob("FinishSyncJob", [this, loadingPromise](void*, int) {
+			if (m_readyState != MODEL_LOAD_ERROR)
+				Atomic::Exchange(m_readyState, MODEL_LOAD_OK);
+
+			DevMsg(DEVMSG_CORE, "Finished loading %s, state: %d\n", GetName(), m_readyState);
+			loadingPromise.SetResult(m_readyState == MODEL_LOAD_OK);
+			m_loadingFuture = nullptr;
+		});
+		finishJob->DeleteOnFinish();
+		finishJob->InitJob();
+		finishJob->AddWait(loadModelJob);
+		finishJob->AddWait(loadGeomJob);
+
+		if (numPackages)
+		{
+			FunctionJob* loadMotionsJob = PPNew FunctionJob("LoadStudioMotion", [this](void*, int) {
+				if (m_readyState == MODEL_LOAD_ERROR)
+					return;
+				DevMsg(DEVMSG_CORE, "Loading motions for %s, state: %d\n", GetName());
+
+				LoadMotionPackages();
+			});
+			loadMotionsJob->DeleteOnFinish();
+			loadMotionsJob->InitJob();
+			loadMotionsJob->AddWait(loadModelJob);
+			finishJob->AddWait(loadMotionsJob);
+
+			jobMng->StartJob(loadMotionsJob);
+		}
+
+		jobMng->StartJob(loadModelJob);
+		jobMng->StartJob(loadGeomJob);
+		jobMng->StartJob(finishJob);
+
 		return true;
 	}
 
@@ -573,7 +574,7 @@ void CEqStudioGeom::LoadMotionPackages()
 	const studioHdr_t* studio = m_studio;
 
 	// Try load default motion file
-	studioMotionData_t* motionData = Studio_LoadMotionData((m_name.Path_Strip_Ext() + ".mop").GetData(), studio->numBones);
+	studioMotionData_t* motionData = Studio_LoadMotionData(m_name.Path_Strip_Ext() + ".mop", studio->numBones);
 	if (motionData)
 		m_motionData.append(motionData);
 
@@ -640,7 +641,7 @@ void CEqStudioGeom::LoadMaterials()
 				if (!g_matSystem->IsMaterialExist(extend_path))
 					continue;
 
-				IMaterialPtr material = g_matSystem->GetMaterial(extend_path.GetData(), s_studioInstanceFormatId);
+				IMaterialPtr material = g_matSystem->GetMaterial(extend_path, s_studioInstanceFormatId);
 				g_matSystem->QueueLoading(material);
 
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
@@ -945,9 +946,17 @@ const char* CEqStudioGeom::GetName() const
 	return m_name.ToCString();
 }
 
-int	CEqStudioGeom::GetLoadingState() const
+EModelLoadingState CEqStudioGeom::GetLoadingState() const
 {
-	return m_readyState;
+	return static_cast<EModelLoadingState>(m_readyState);
+}
+
+Future<bool> CEqStudioGeom::GetLoadingFuture() const
+{
+	if (m_readyState != MODEL_LOAD_IN_PROGRESS)
+		return Future<bool>::Succeed(m_readyState == MODEL_LOAD_OK);
+
+	return m_loadingFuture;
 }
 
 const studioHdr_t& CEqStudioGeom::GetStudioHdr() const
