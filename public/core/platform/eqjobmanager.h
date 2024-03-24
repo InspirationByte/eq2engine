@@ -66,11 +66,11 @@ public:
 
 //--------------------------------------------
 // Function Job
-class FunctionParallelJob : public IParallelJob
+class FunctionJob : public IParallelJob
 {
 public:
 	template<typename F>
-	FunctionParallelJob(const char* jobName, F func, void* data, int count)
+	FunctionJob(const char* jobName, F func, void* data = nullptr, int count = 1)
 		: IParallelJob(jobName)
 		, m_jobFunction(std::move(func))
 		, m_data(data)
@@ -109,6 +109,7 @@ public:
 	bool			Submit(int numWorkers);
 private:
 
+	void			DoStartJob(IParallelJob* job);
 	void			ExecuteJob(IParallelJob& job);
 
 	IParallelJob*	ExtractJobFromQueue();

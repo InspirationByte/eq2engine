@@ -123,10 +123,15 @@ void CEqJobManager::StartJob(IParallelJob* job)
 	const bool canBeStarted = Atomic::Decrement(job->m_primeJobs) == 0;
 	if (canBeStarted)
 	{
-		const bool queued = m_jobQueue.enqueue(job);
-		ASSERT_MSG(queued, "Jobs queue is too small (%d), please increase", m_queueSize);
+		DoStartJob(job);
 		Submit(1);
 	}
+}
+
+void CEqJobManager::DoStartJob(IParallelJob* job)
+{
+	const bool queued = m_jobQueue.enqueue(job);
+	ASSERT_MSG(queued, "Jobs queue is too small (%d), please increase", m_queueSize);
 }
 
 void CEqJobManager::ExecuteJob(IParallelJob& job)
@@ -169,7 +174,7 @@ void CEqJobManager::ExecuteJob(IParallelJob& job)
 	{
 		IParallelJob* unblockedJob = unblockedJobs[i];
 		CEqJobManager* unblockedMng = unblockedJob->m_jobMng;
-		unblockedMng->StartJob(unblockedJob);
+		unblockedMng->DoStartJob(unblockedJob);
 
 		int j = 0;
 		while(j < numBatchs)
@@ -188,11 +193,11 @@ void CEqJobManager::ExecuteJob(IParallelJob& job)
 		}
 	}
 
-	if(numBatchs == 1 && batchs[0].count == 1 && batchs[0].mng == this)
-	{
-		// don't bother, we'll check job queue anyway
-	}
-	else
+	//if(numBatchs == 1 && batchs[0].count == 1 && batchs[0].mng == this)
+	//{
+	//	// don't bother, we'll check job queue anyway
+	//}
+	//else if(numBatchs)
 	{
 		for(int i = 0; i < numBatchs; ++i)
 			batchs[i].mng->Submit(batchs[i].count);

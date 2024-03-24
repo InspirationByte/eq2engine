@@ -55,7 +55,7 @@ void CEqParallelJobManager::AddJob(EQ_JOB_FUNC func, void* args, int count /*= 1
 {
 	ASSERT(count > 0);
 
-	FunctionParallelJob* job = PPNew FunctionParallelJob("PJob", func, args, count);
+	FunctionJob* job = PPNew FunctionJob("PJob", func, args, count);
 	job->DeleteOnFinish();
 
 	job->InitJob();
