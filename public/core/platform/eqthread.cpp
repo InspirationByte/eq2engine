@@ -824,7 +824,7 @@ void CEqSignal::Clear()
 	SignalClear(m_nHandle); 
 }
 
-bool CEqSignal:: Wait(int timeout)
+bool CEqSignal::Wait(int timeout)
 {
 	return SignalWait(m_nHandle, timeout); 
 }

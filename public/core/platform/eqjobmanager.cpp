@@ -31,7 +31,6 @@ void IParallelJob::InitSignal()
 	}
 }
 
-
 void IParallelJob::AddWait(IParallelJob* jobToWait)
 {
 	ASSERT(jobToWait != this);
@@ -119,6 +118,8 @@ void CEqJobManager::StartJob(IParallelJob* job)
 	
 	job->m_jobMng = this;
 	job->m_phase = IParallelJob::JOB_STARTED;
+
+	job->FillJobGroup();
 
 	const bool canBeStarted = Atomic::Decrement(job->m_primeJobs) == 0;
 	if (canBeStarted)
