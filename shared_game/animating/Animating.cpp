@@ -357,6 +357,9 @@ void CAnimatingEGF::HandleAnimatingEvent(AnimationEvent nEvent, const char* opti
 // sets activity
 void CAnimatingEGF::SetActivity(Activity act, int slot)
 {
+	if(!m_geomReference)
+		return;
+
 	// pick the best activity if available
 	Activity nTranslatedActivity = TranslateActivity(act, slot);
 
@@ -374,6 +377,9 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 
 void CAnimatingEGF::SetSequenceByName(const char* name, int slot)
 {
+	if(!m_geomReference)
+		return;
+
 	const int seqIdx = FindSequence(name);
 	if (seqIdx == -1)
 	{
@@ -548,7 +554,7 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 		RaiseSequenceEvents(timer);
 	}
 
-	m_bonesNeedUpdate = didUpdate;
+	Atomic::Exchange(m_bonesNeedUpdate, didUpdate);
 }
 
 void CAnimatingEGF::RaiseSequenceEvents(sequencetimer_t& timer)
@@ -636,9 +642,8 @@ void CAnimatingEGF::GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rM
 // updates bones
 void CAnimatingEGF::RecalcBoneTransforms()
 {
-	if (!m_bonesNeedUpdate)
+	if (Atomic::CompareExchange(m_bonesNeedUpdate, true, false) != true)
 		return;
-	m_bonesNeedUpdate = false;
 
 	// FIXME: do we really need this hack?
 	m_sequenceTimers[0].blendWeight = 1.0f;
@@ -989,7 +994,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 		}
 	}
 
-	m_bonesNeedUpdate = true;
+	Atomic::Exchange(m_bonesNeedUpdate, true);
 }
 
 // solves single ik chain

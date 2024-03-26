@@ -121,5 +121,5 @@ protected:
 	Array<gposecontroller_t>	m_poseControllers{ PP_SL }; // pose controllers
 	Array<gikchain_t>			m_ikChains{ PP_SL };
 
-	bool						m_bonesNeedUpdate{ true };
+	volatile uint				m_bonesNeedUpdate{ true };
 };
