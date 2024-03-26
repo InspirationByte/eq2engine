@@ -9,6 +9,8 @@
 #include "core/IDkCore.h"
 #include "core/platform/messagebox.h"
 
+#define ASSERT_DEBUGGER_PROMPT 0
+
 #ifdef _WIN32
 #include <Windows.h>
 
@@ -252,9 +254,10 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char *fmt
 	if(isSkipped)
 		return _EQASSERT_SKIP;
 
-	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
 	if (Platform_IsDebuggerPresent())
 	{
+#if ASSERT_DEBUGGER_PROMPT
+		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
 		const int res = g_msgBoxCallback(messageStr + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
 		if (res == MSGBOX_BUTTON_RETRY)
 			return _EQASSERT_SKIP;
@@ -262,9 +265,13 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char *fmt
 			return _EQASSERT_IGNORE_ALWAYS;
 		else if (res == MSGBOX_BUTTON_ABORT)
 			return _EQASSERT_BREAK;
+#else
+		return _EQASSERT_BREAK;
+#endif
 	}
 	else
 	{
+		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
 		const int res = g_msgBoxCallback(messageStr + " - Display more asserts?", "Assertion failed", MSGBOX_YESNO);
 		if (res != MSGBOX_BUTTON_YES)
 			return _EQASSERT_IGNORE_ALWAYS;
