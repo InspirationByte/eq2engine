@@ -9,7 +9,7 @@
 #include "core/IDkCore.h"
 #include "core/platform/messagebox.h"
 
-#define ASSERT_DEBUGGER_PROMPT 0
+#define ASSERT_DEBUGGER_PROMPT 1
 
 #ifdef _WIN32
 #include <Windows.h>

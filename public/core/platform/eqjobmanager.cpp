@@ -7,12 +7,25 @@ static constexpr const int MAX_JOB_MANAGER_THREADS = 32;
 
 IParallelJob::~IParallelJob()
 {
+	CScopedMutex m(m_deleteMutex);
+
+	if (m_phase != JOB_DONE)
+	{
+		m_phase = JOB_DONE;
+		for (IParallelJob* nextJobs : m_nextJobs)
+			Atomic::Decrement(nextJobs->m_primeJobs);
+		m_nextJobs.clear();
+	}
+
 	SAFE_DELETE(m_doneEvent);
 }
 
 void IParallelJob::InitJob()
 {
 	ASSERT(m_phase != JOB_STARTED);
+	if (m_phase == JOB_INIT)
+		return;
+
 	m_nextJobs.clear();
 
 	m_phase = JOB_INIT;
@@ -36,6 +49,7 @@ void IParallelJob::AddWait(IParallelJob* jobToWait)
 	ASSERT(jobToWait != this);
 	ASSERT(m_phase == JOB_INIT || (m_phase == JOB_STARTED && m_primeJobs > 0));
 
+	CScopedMutex m(jobToWait->m_deleteMutex);
 	if (jobToWait->m_phase != JOB_DONE)
 	{
 		Atomic::Increment(m_primeJobs);
@@ -111,6 +125,12 @@ CEqJobManager::CEqJobManager(const char* name, int numThreads, int queueSize, in
 	}
 }
 
+void CEqJobManager::InitStartJob(IParallelJob* job)
+{
+	job->InitJob();
+	StartJob(job);
+}
+
 void CEqJobManager::StartJob(IParallelJob* job)
 {
 	ASSERT(job->m_phase == IParallelJob::JOB_INIT);
@@ -131,6 +151,8 @@ void CEqJobManager::StartJob(IParallelJob* job)
 
 void CEqJobManager::DoStartJob(IParallelJob* job)
 {
+	ASSERT(job->m_primeJobs <= 0);
+
 	const bool queued = m_jobQueue.enqueue(job);
 	ASSERT_MSG(queued, "Jobs queue is too small (%d), please increase", m_queueSize);
 }
@@ -146,19 +168,23 @@ void CEqJobManager::ExecuteJob(IParallelJob& job)
 		PROF_EVENT(job.m_jobName);
 		job.Execute();
 	}
+
+	job.m_deleteMutex.Lock();
 	job.m_phase = IParallelJob::JOB_DONE;
 
 	IParallelJob** unblockedJobs = reinterpret_cast<IParallelJob**>(stackalloc(m_queueSize * sizeof(IParallelJob*)));
 	int numUnblocked = 0;
-	for (IParallelJob* nextJob : job.m_nextJobs)
+	for (int i = 0; i < job.m_nextJobs.numElem(); ++i)
 	{
-		const bool canBeStarted = Atomic::Decrement(nextJob->m_primeJobs) == 0;
+		const bool canBeStarted = Atomic::Decrement(job.m_nextJobs[i]->m_primeJobs) == 0;
 		if (canBeStarted)
-			unblockedJobs[numUnblocked++] = nextJob;
+			unblockedJobs[numUnblocked++] = job.m_nextJobs[i];
 	}
 
 	if (job.m_doneEvent)
 		job.m_doneEvent->Raise();
+
+	job.m_deleteMutex.Unlock();
 
 	struct JobBatch
 	{

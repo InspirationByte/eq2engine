@@ -590,10 +590,11 @@ void CSoundEmitterSystem::Execute()
 //
 void CSoundEmitterSystem::Update()
 {
-	m_deltaTime = m_updateTimer.GetTime(true);
+	CEqJobManager* jobMng = g_parallelJobs->GetJobMng();
+	InitJob();
+	jobMng->StartJob(this);
 
-	if(!GetJobSignal() || GetJobSignal()->Wait(0))
-		g_parallelJobs->AddJob(this);
+	m_deltaTime = m_updateTimer.GetTime(true);
 }
 
 void CSoundEmitterSystem::OnRemoveSoundingObject(CSoundingObject* obj)

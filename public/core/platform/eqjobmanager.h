@@ -12,25 +12,6 @@ class IParallelJob
 {
     friend class CEqJobManager;
 public:
-	virtual ~IParallelJob();
-	IParallelJob(const char* jobName)
-		: m_jobName(jobName)
-	{
-	}
-
-	void					InitJob();
-	void					DeleteOnFinish() { m_deleteJob = true; }
-
-	void					InitSignal();
-	Threading::CEqSignal*	GetJobSignal() const { return m_doneEvent; }
-
-	const char*				GetName() const { return m_jobName; }
-
-	void					AddWait(IParallelJob* jobToWait);
-
-	virtual void			Execute() = 0;
-
-protected:
 	enum EPhase : int
 	{
 		JOB_INIT,
@@ -38,16 +19,37 @@ protected:
 		JOB_DONE,
 	};
 
+	virtual ~IParallelJob();
+	IParallelJob(const char* jobName)
+		: m_jobName(jobName)
+	{
+	}
+
+	const char*				GetName() const { return m_jobName; }
+
+	void					InitJob();
+	void					DeleteOnFinish() { m_deleteJob = true; }
+
+	void					AddWait(IParallelJob* jobToWait);
+
+	void					InitSignal();
+	Threading::CEqSignal*	GetSignal() const { return m_doneEvent; }
+	EPhase					GetPhase() const { return m_phase; }
+
+	virtual void			Execute() = 0;
+
+protected:
 	virtual void			FillJobGroup() {}
 
 	EqString				m_jobName;
 	Array<IParallelJob*>	m_nextJobs{ PP_SL };
 	Threading::CEqSignal*	m_doneEvent{ nullptr };
+	Threading::CEqMutex		m_deleteMutex;
 
 	CEqJobManager*			m_jobMng{ nullptr };
 
 	volatile EPhase			m_phase{ JOB_INIT };
-	volatile int			m_primeJobs{ 0 };
+	volatile int			m_primeJobs{ 1 };
 
 	bool					m_deleteJob{ false };
 };
@@ -99,6 +101,7 @@ public:
 	~CEqJobManager();
 	CEqJobManager(const char* name, int numThreads, int queueSize, int stackSize = Threading::DEFAULT_THREAD_STACK_SIZE);
 
+	void			InitStartJob(IParallelJob* job);
 	void			StartJob(IParallelJob* job);
 	
 	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
