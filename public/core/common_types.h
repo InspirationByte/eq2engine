@@ -76,6 +76,14 @@ static constexpr TR max(T x, T2 y) { return (TR)((x > y) ? x : y); }
 
 //------------------------------------------------------------------------------------------------
 
+#ifndef TRUE
+#define TRUE	(1)
+#endif
+
+#ifndef FALSE
+#define FALSE	(0)
+#endif
+
 // Define some useful macros
 #define MAKECHAR4(a, b, c, d)			(a | (b << 8) | (c << 16) | (d << 24))
 

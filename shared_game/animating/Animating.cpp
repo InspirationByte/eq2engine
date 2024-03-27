@@ -642,7 +642,7 @@ void CAnimatingEGF::GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rM
 // updates bones
 void CAnimatingEGF::RecalcBoneTransforms()
 {
-	if (Atomic::CompareExchange(m_bonesNeedUpdate, true, false) != true)
+	if (Atomic::CompareExchange(m_bonesNeedUpdate, TRUE, FALSE) != TRUE)
 		return;
 
 	// FIXME: do we really need this hack?
@@ -994,7 +994,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 		}
 	}
 
-	Atomic::Exchange(m_bonesNeedUpdate, true);
+	Atomic::Exchange(m_bonesNeedUpdate, TRUE);
 }
 
 // solves single ik chain
