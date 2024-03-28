@@ -8,7 +8,7 @@
 #include <shaderc/shaderc.hpp>
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
-#include "core/IEqParallelJobs.h"
+#include "core/platform/eqjobmanager.h"
 #include "ds/MemoryStream.h"
 #include "utils/KeyValues.h"
 #include "dpk/DPKFileWriter.h"
@@ -40,6 +40,10 @@ static const EqString s_gameDirTag("%GAME_DIR%");
 class CShaderCooker
 {
 public:
+	CShaderCooker(CEqJobManager& jobMng)
+		: m_jobMng(jobMng)
+	{
+	}
 
 	bool				Init(const char* confFileName, const char* targetName);
 	void				Execute();
@@ -65,6 +69,7 @@ private:
 		EqString		targetFolder;
 	};
 
+	CEqJobManager&		m_jobMng;
 	BatchConfig			m_batchConfig;
 	TargetProperties	m_targetProps;
 
@@ -368,7 +373,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		MsgWarning("   Compiling for vertex %s\n", vertexLayout.name.ToCString());
 		for (int i = 0; i < totalVariantCount; ++i)
 		{
-			g_parallelJobs->AddJob( 
+			FunctionJob* funcJob = PPNew FunctionJob(vertexLayout.name, 
 				[includePaths, &resultsMutex, &shaderSourceString, &shaderSourceName, &compileErrors, &shaderInfo, vertexLayout, &switchDefines, nSwitch = i, vertLayoutIdx](void*, int) {
 				EqString queryStr;
 				for (int j = 0; j < switchDefines.numElem(); ++j)
@@ -490,11 +495,15 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 				//if(!stopCompilation)
 				//	Msg("   - compiled variant '%s' (%d)\n", queryStr.ToCString(), nSwitch);
 			});
+
+			funcJob->DeleteOnFinish();
+			m_jobMng.InitStartJob(funcJob);
+
 			if (compileErrors)
 				break;
 		}
 	}
-	g_parallelJobs->Wait();
+	m_jobMng.Wait();
 
 	// Store files
 	if (!compileErrors && shaderInfo.results.numElem())
@@ -744,9 +753,9 @@ void CShaderCooker::Execute()
 		KV_WriteToStream(pStream, &m_batchConfig.newCRCSec, 0, true);
 }
 
-void CookTarget(const char* pszTargetName)
+void CookTarget(const char* pszTargetName, CEqJobManager& jobMng)
 {
-	CShaderCooker cooker;
+	CShaderCooker cooker(jobMng);
 	if (!cooker.Init("ShaderCooker.CONFIG", pszTargetName))
 		return;
 
