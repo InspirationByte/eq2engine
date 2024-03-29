@@ -163,15 +163,21 @@ inline T clamp(const T v, const T2 c0, const T2 c1)
 // Remap a value in the range [A,B] to [C,D].
 inline float RemapVal(float val, float A, float B, float C, float D)
 {
-	return 	(C + (D - C) * (val - A) / (B - A));
+	return C + (D - C) * (val - A) / (B - A);
 }
 
 // Remap a value in the range [A,B] to [C,D] and clamp result to [C,D]
 inline float RemapValClamp(float val, float A, float B, float C, float D)
 {
+	if (D < C)
+	{
+		QuickSwap(A, B);
+		QuickSwap(C, D);
+	}
+
 	if (val < A) return C;
 	if (val > B) return D;
-	return C + (D - C) * (val - A) / (B - A);
+	return RemapVal(val, A, B, C, D);
 }
 
 template<typename T>
