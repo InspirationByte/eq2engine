@@ -8,9 +8,6 @@
 #pragma once
 #include "ds/SimpleBinaryHeap.h"
 
-// set to 1 if somehow having problems
-#define GRAPH_SLOW_OPENSET		0
-
 template<typename NODE_ID>
 class IGraphEdgeIterator
 {
@@ -20,11 +17,15 @@ public:
 
 	virtual void	operator++(int) = 0;
 
-	virtual void	Rewind(NODE_ID node) = 0;
+	virtual void	Rewind(NODE_ID nodeId) { m_nodeId = nodeId; }
 
 	virtual bool	IsEdgeValid() const = 0;
 	virtual bool	AtEnd() const = 0;
 	virtual int		GetEdgeId() const = 0;
+	int				GetNodeId() const { return m_nodeId; }
+
+protected:
+	NODE_ID			m_nodeId;
 };
 
 template<typename EDGE_ITER, typename NODE_ID>
@@ -49,8 +50,8 @@ protected:
 	virtual NODE_ID		Node_GetParent(NODE_ID nodeId) const = 0;
 	virtual void		Node_SetParent(NODE_ID nodeId, NODE_ID newParent) = 0;
 
-	virtual float		Edge_GetLength(NODE_ID nodeId, int edgeId) const = 0;
-	virtual NODE_ID		Edge_GetNeighbourNode(NODE_ID nodeId, int edgeId) const = 0;
+	virtual float		Edge_GetLength(const EDGE_ITER& edgeIt) const = 0;
+	virtual NODE_ID		Edge_GetNeighbourNode(const EDGE_ITER& edgeIt) const = 0;
 };
 
 //--------------------------------------------------------------------
@@ -74,75 +75,39 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(ArrayCRef<NODE_ID> startNode
 	ResetNodeStates();
 
 	// make initial front which consists of node id and total distance
-#if GRAPH_SLOW_OPENSET
-	Map<NODE_ID, float> openSet(PP_SL);
-	for (int i = 0; i < startNodes.numElem(); ++i)
-	{
-		Node_SetDistance(startNodes[i], 0.0f);
-		openSet.insert(startNodes[i], 0.0f);
-	}
-#else
 	SimpleBinaryHeap<GraphNode<NODE_ID>> openSet(PP_SL);
-	for (int i = 0; i < startNodes.numElem(); ++i)
+	for (NODE_ID nodeId: startNodes)
 	{
-		Node_SetDistance(startNodes[i], 0.0f);
-		openSet.Add({ startNodes[i], 0.0f });
+		Node_SetDistance(nodeId, 0.0f);
+		openSet.Add({ nodeId, 0.0f });
 	}
-#endif
 
-	NODE_ID cheapestNode;
+	NODE_ID cheapestNode = -1;
 	EDGE_ITER edgeIt(this);
 	while (openSet.HasItems())
 	{
-		cheapestNode = -1;
-
-#if GRAPH_SLOW_OPENSET
-		float minDist = F_INFINITY;
-		auto bestNode = openSet.begin();
-		for (auto it = openSet.begin(); !it.atEnd(); ++it)
-		{
-			if (*it > minDist)
-				continue;
-
-			bestNode = it;
-			minDist = *it;
-		}
-
-		if (bestNode.atEnd())
-			break;
-
-		cheapestNode = bestNode.key();
-
-		Node_MarkProcessed(cheapestNode);
-		openSet.remove(bestNode);
-#else
 		GraphNode<NODE_ID> bestNode = openSet.PopMin();
+
 		cheapestNode = bestNode.nodeId;
-		float minDist = bestNode.dist;
+		const float minDist = bestNode.dist;
 
 		Node_MarkProcessed(cheapestNode);
-#endif // GRAPH_SLOW_OPENSET
 
 		// walk through edges and neighbour nodes
 		for (edgeIt.Rewind(cheapestNode); !edgeIt.AtEnd(); edgeIt++)
 		{
-			const int edgeId = edgeIt.GetEdgeId();
-			const NODE_ID neighbourNode = Edge_GetNeighbourNode(cheapestNode, edgeId);
+			const NODE_ID neighbourNode = Edge_GetNeighbourNode(edgeIt);
 
 			if (Node_IsProcessed(neighbourNode))
 				continue;
 
-			const float edgeLen = Edge_GetLength(cheapestNode, edgeId);
+			const float edgeLen = Edge_GetLength(edgeIt);
 			const float distance = minDist + edgeLen;
 			if (distance < Node_GetDistance(neighbourNode))
 			{
 				Node_SetDistance(neighbourNode, distance);
 				Node_SetParent(neighbourNode, cheapestNode);
-#if GRAPH_SLOW_OPENSET
-				openSet.insert(neighbourNode, distance);
-#else
 				openSet.Add({ neighbourNode, distance });
-#endif
 			}
 		}
 

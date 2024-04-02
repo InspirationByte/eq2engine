@@ -606,6 +606,8 @@ Vector3D CEqRigidBody::ComputeFrictionVelocity(	const Vector3D& collNormal,
 
 void CEqRigidBody::CopyValues(CEqRigidBody* dest, const CEqRigidBody* src)
 {
+	// TODO: state structure
+
 	dest->m_cachedTransform = src->m_cachedTransform;
 	dest->m_orientation = src->m_orientation;
 	dest->m_center = src->m_center;
