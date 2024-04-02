@@ -173,6 +173,8 @@ typedef struct DbgOriBoxBuilder
 	
 	DbgOriBoxBuilder& Mins(const Vector3D& v) { mins = v; return *this; }
 	DbgOriBoxBuilder& Maxs(const Vector3D& v) { maxs = v; return *this; }
+	DbgOriBoxBuilder& Box(const BoundingBox& bbox) { mins = bbox.minPoint; maxs = bbox.maxPoint; return *this; }
+	DbgOriBoxBuilder& CenterSize(const Vector3D& center, const Vector3D& size) { mins = center - size; maxs = center + size; return *this; }
 	DbgOriBoxBuilder& Position(const Vector3D& v) { position = v; return *this; }
 	DbgOriBoxBuilder& Rotation(const Quaternion& r) { rotation = r; return *this; }
 	DbgOriBoxBuilder& Color(const MColor& v) { color = v.pack(); return *this; }

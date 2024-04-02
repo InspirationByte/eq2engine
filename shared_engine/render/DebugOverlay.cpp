@@ -1346,13 +1346,16 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	const Vector2D drawFadedTextBoxPosition = Vector2D(15,45);
 	const Vector2D drawTextBoxPosition = Vector2D(15,45);
 
-	int idx = 0;
+	eqFontStyleParam_t textStl;
+	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
 		using TextIterator = List< DebugFadingTextNode_t>::Iterator;
 		Array<TextIterator> deletedNodes(PP_SL);
+
+		int n = 0;
 		for(auto it = m_LeftTextFadeArray.begin(); !it.atEnd(); ++it)
 		{
 			DebugFadingTextNode_t& current = *it;
@@ -1361,58 +1364,43 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 				deletedNodes.append(it);
 				continue;
 			}
+			current.lifetime -= m_frameTime;
 
 			MColor curColor(current.color);
-				
 			if (current.initialLifetime > 0.05f)
 				curColor.a = clamp(current.lifetime, 0.0f, 1.0f);
 			else
 				curColor.a = 1.0f;
 
-			eqFontStyleParam_t textStl;
-			textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 			textStl.textColor = curColor;
 
-			Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (idx * m_debugFont->GetLineHeight(textStl)));
-
+			const Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (n * m_debugFont->GetLineHeight(textStl)));
 			m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, textStl, rendPassRecorder);
 
-			idx++;
-
-			current.lifetime -= m_frameTime;
-
+			++n;
 		}
 
 		for (TextIterator it : deletedNodes)
 			m_LeftTextFadeArray.remove(it);
 	}
 
-	eqFontStyleParam_t textStl;
-	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
-		for (int i = 0; i < m_Text3DArray.numElem(); i++)
+		for (DebugText3DNode_t& current : m_Text3DArray)
 		{
-			DebugText3DNode_t& current = m_Text3DArray[i];
-
-			Vector3D screen(0);
-
-			bool beh = PointToScreen(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
-
-			bool visible = true;
-
-			if (current.dist > 0)
-				visible = (screen.z < current.dist);
-
 			current.lifetime -= m_frameTime;
 
-			if (!beh && visible)
-			{
-				textStl.textColor = current.color;
-				m_debugFont2->SetupRenderText(current.pszText.GetData(), screen.xy(), textStl, rendPassRecorder);
-			}
+			Vector3D screen(0);
+			const bool behind = PointToScreen(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
+			if (behind)
+				continue;
+
+			if (screen.z > current.dist)
+				continue;
+
+			textStl.textColor = current.color;
+			m_debugFont2->SetupRenderText(current.pszText.GetData(), screen.xy(), textStl, rendPassRecorder);
 		}
 	}
 
@@ -1424,32 +1412,31 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			{
 				GUIDrawWindow(AARectangle(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), MColor(0.5f, 0.5f, 0.5f, 0.5f), rendPassRecorder);
 
-				for (int i = 0; i < m_TextArray.numElem(); i++)
+				int n = 0;
+				for (DebugTextNode_t& current : m_TextArray)
 				{
-					DebugTextNode_t& current = m_TextArray[i];
+					const Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (n * m_debugFont->GetLineHeight(textStl)));
 
 					textStl.textColor = current.color;
-
-					Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (i * m_debugFont->GetLineHeight(textStl)));
-
 					m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, textStl, rendPassRecorder);
+					++n;
 				}
 			}
 			m_TextArray.clear();
 		}
 
-		eqFontStyleParam_t rTextFadeStyle;
-		rTextFadeStyle.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		eqFontStyleParam_t rTextFadeStyle = textStl;
 		rTextFadeStyle.align = TEXT_ALIGN_RIGHT;
 
 		{
 			Threading::CScopedMutex m(s_debugOverlayMutex);
-			for (int i = 0; i < m_RightTextFadeArray.numElem(); i++)
+
+			int n = 0;
+			for (DebugFadingTextNode_t& current : m_RightTextFadeArray)
 			{
-				DebugFadingTextNode_t& current = m_RightTextFadeArray[i];
+				current.lifetime -= m_frameTime;
 
 				MColor curColor(current.color);
-
 				if (current.initialLifetime > 0.05f)
 					curColor.a = clamp(current.lifetime, 0.0f, 1.0f);
 				else
@@ -1457,12 +1444,11 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 				rTextFadeStyle.textColor = curColor;
 
-				float textLen = m_debugFont->GetStringWidth(current.pszText.ToCString(), textStl);
-				Vector2D textPos(winWide - (textLen * m_debugFont->GetLineHeight(textStl)), 45 + (i * m_debugFont->GetLineHeight(textStl)));
+				const float textLen = m_debugFont->GetStringWidth(current.pszText.ToCString(), textStl);
+				const Vector2D textPos(winWide - (textLen * m_debugFont->GetLineHeight(textStl)), 45 + (n * m_debugFont->GetLineHeight(textStl)));
 
 				m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, rTextFadeStyle, rendPassRecorder);
-
-				current.lifetime -= m_frameTime;
+				++n;
 			}
 		}
 	}
@@ -1505,19 +1491,17 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		g_matSystem->Setup2D( winWide, winTall );
 
-		float w, h;
-		w = (float)m_dbgTexture->GetWidth()*r_debugShowTextureScale.GetFloat();
-		h = (float)m_dbgTexture->GetHeight()*r_debugShowTextureScale.GetFloat();
+		float w = (float)m_dbgTexture->GetWidth() * r_debugShowTextureScale.GetFloat();
+		float h = (float)m_dbgTexture->GetHeight() * r_debugShowTextureScale.GetFloat();
 
 		if(h > winTall)
 		{
-			float fac = (float)winTall/h;
-
+			float fac = (float)winTall / h;
 			w *= fac;
 			h *= fac;
 		}
 
-		Vertex2D light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
+		Vertex2D rect[] = { MAKETEXQUAD(0, 0, w, h, 0) };
 
 		const int flags = m_dbgTexture->GetFlags();
 		const bool isCubemap = (flags & TEXFLAG_CUBEMAP);
@@ -1527,7 +1511,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		MatSysDefaultRenderPass defaultRender;
 		defaultRender.texture = TextureView(m_dbgTexture, viewIndex);
-		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(light_depth), RenderPassContext(rendPassRecorder, &defaultRender));
+		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), RenderPassContext(rendPassRecorder, &defaultRender));
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;

@@ -74,11 +74,13 @@ public:
 	void			AddToLinePos(int num);
 	void			SetText( const char* text, bool quiet = false );
 
-	void			SetVisible(bool bVisible);
-	bool			IsVisible() const				{return m_visible;}
+	void			SetHostCursorActive(bool value)	{ m_hostCursorActive = value; }
 
-	void			SetLogVisible(bool bVisible);
-	bool			IsLogVisible() const			{ return m_logVisible; }
+	void			SetVisible(bool value);
+	bool			IsVisible() const			{ return m_visible; }
+
+	void			SetLogVisible(bool value);
+	bool			IsLogVisible() const		{ return m_logVisible; }
 
 	// events
 	bool			KeyPress(int key, bool pressed);
@@ -135,6 +137,7 @@ private:
 	bool							m_showConsole;
 
 	bool							m_cursorVisible;
+	bool							m_hostCursorActive;
 	float							m_cursorTime;
 	int								m_maxLines;
 

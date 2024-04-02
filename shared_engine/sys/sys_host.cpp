@@ -706,8 +706,7 @@ void CGameHost::SetCursorPosition(int x, int y)
 
 void CGameHost::SetCursorShow(bool bShow)
 {
-	const bool state = SDL_ShowCursor(-1);
-
+	const bool state = SDL_ShowCursor(SDL_QUERY);
 	if(state == bShow)
 		return;
 
@@ -894,6 +893,10 @@ void CGameHost::BeginScene()
 	rendSettings.overdrawMode = r_overdraw.GetBool();
 
 	g_consoleInput->BeginFrame();
+
+	const bool cursorVisible = SDL_ShowCursor(SDL_QUERY);
+	const bool cursorIsActive = cursorVisible && !m_cursorCentered;
+	g_consoleInput->SetHostCursorActive(cursorIsActive);
 
 	//g_parallelJobs->AddJob(g_beginSceneJob);
 }

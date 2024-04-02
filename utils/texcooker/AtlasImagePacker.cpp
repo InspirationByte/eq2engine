@@ -267,7 +267,7 @@ static void BlendPixel(ubyte* destPixels, int destStride, const ImgLayer& layer,
 	destPixels[destStride+3] = result[3] * 255.0f;
 }
 
-#define ROLLING_VALUE(x, max) ((x < 0) ? max+x : ((x >= max) ? x-max : x ))
+#define ROLLING_VALUE(x, limit)		((x + limit) % limit)
 
 static void BlendAtlasTo(ubyte* pDst, const ImageDesc* srcImage, int dst_x, int dst_y, int dst_wide, int padding, EPaddingMode padMode)
 {

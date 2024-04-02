@@ -110,17 +110,6 @@ public:
 	static UISoundNodeDesc* s_currentEditingSplineNode;
 };
 
-#endif
-
-void SoundScriptEditorUIDraw(bool& open)
-{
-#ifdef SOUNDSCRIPT_EDITOR
-	CSoundScriptEditor::DrawScriptEditor(open);
-#endif // SOUNDSCRIPT_EDITOR
-}
-
-#ifdef SOUNDSCRIPT_EDITOR
-
 static bool SoundScriptDescTextGetter(void* data, int idx, const char** outStr)
 {
 	Array<SoundScriptDesc*>& allSounds = *reinterpret_cast<Array<SoundScriptDesc*>*>(data);
@@ -1710,3 +1699,10 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 }
 
 #endif // SOUNDSCRIPT_EDITOR
+
+void SoundScriptEditorUIDraw(bool& open)
+{
+#ifdef SOUNDSCRIPT_EDITOR
+	CSoundScriptEditor::DrawScriptEditor(open);
+#endif // SOUNDSCRIPT_EDITOR
+}

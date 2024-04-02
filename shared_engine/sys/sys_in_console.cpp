@@ -1323,6 +1323,9 @@ void CEqConsoleInput::MousePos(const Vector2D &pos)
 
 bool CEqConsoleInput::KeyChar(const char* utfChar)
 {
+	if (!m_hostCursorActive)
+		return false;
+
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputText(utfChar);
 	if (IsImGuiItemsInFocus())
@@ -1363,6 +1366,9 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 
 bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 {
+	if (!m_hostCursorActive)
+		return false;
+
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMousePress(Button, pressed);
 	if (IsImGuiItemsInFocus())
@@ -1388,6 +1394,9 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 
 bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
 {
+	if (!m_hostCursorActive)
+		return false;
+
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
 	if (IsImGuiItemsInFocus())
@@ -1442,6 +1451,9 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 			return false;
 		}
 	}
+
+	if (!m_hostCursorActive)
+		return false;
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputKeyPress(key, pressed);
