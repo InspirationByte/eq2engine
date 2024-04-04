@@ -222,7 +222,7 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 		int adjustedWide;
 		int adjustedTall;
 
-		SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+		SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 		SDL_GetWindowSize(m_window, &adjustedWide, &adjustedTall);
 
 		Msg("Set %dx%d mode (fullscreen)\n", adjustedWide, adjustedTall);
@@ -268,6 +268,11 @@ void CGameHost::SetWindowedMode()
 		SDL_SetWindowSize(m_window, adjustedWide, adjustedTall);
 		SDL_SetWindowPosition(m_window, adjustedPosX, adjustedPosY);
 	}
+}
+
+void CGameHost::ToggleFullscreen()
+{
+	m_wantsToggleFullscreen = true;
 }
 
 void CGameHost::ApplyVideoMode()
@@ -513,10 +518,7 @@ void InputCommands_SDL(SDL_Event* event)
 				{
 					if (event->key.type == SDL_KEYDOWN)
 					{
-						if (g_pHost->IsWindowed())
-							g_pHost->SetFullscreenMode(true);
-						else
-							g_pHost->SetWindowedMode();
+						g_pHost->ToggleFullscreen();
 					}
 					return;
 				}
@@ -852,6 +854,15 @@ bool CGameHost::Frame()
 
 	// End frame from render lib
 	EndScene();
+
+	if (m_wantsToggleFullscreen)
+	{
+		m_wantsToggleFullscreen = false;
+		if (g_pHost->IsWindowed())
+			g_pHost->SetFullscreenMode(true);
+		else
+			g_pHost->SetWindowedMode();
+	}
 
 	m_accumTime = 0.0f;
 

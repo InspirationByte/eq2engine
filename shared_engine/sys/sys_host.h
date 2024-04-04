@@ -55,6 +55,7 @@ public:
 	void				SetFullscreenMode(bool screenSize);
 	void				SetWindowedMode();
 	void				ApplyVideoMode();
+	void				ToggleFullscreen();
 
 	void				GetVideoModes(Array<VideoMode_t>& displayModes) const;
 
@@ -131,6 +132,7 @@ protected:
 	bool				m_keyDoneTrapping{ false };
 	bool				m_skipMouseMove{ false };
 	bool				m_cursorCentered{ false };
+	bool				m_wantsToggleFullscreen{ false };
 };
 
 extern CStaticAutoPtr<CGameHost> g_pHost;

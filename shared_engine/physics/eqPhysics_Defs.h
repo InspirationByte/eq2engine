@@ -38,9 +38,9 @@ struct eqPhysCollisionFilter
 
 	FixedArray<const void*, MAX_COLLISION_FILTER_OBJECTS>	objectPtrs;
 
-	int		type{ EQPHYS_FILTER_TYPE_EXCLUDE };
-	int		flags{ EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS };
-	int		ignoreContentsMask{ 0 };
+	EPhysFilterType		type{ EQPHYS_FILTER_TYPE_EXCLUDE };
+	int					flags{ EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS };
+	int					ignoreContentsMask{ 0 };
 };
 
 struct eqPhysSurfParam

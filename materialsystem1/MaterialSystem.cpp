@@ -1566,8 +1566,11 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 // use this if you have objects that must be destroyed when device is lost
 void CMaterialSystem::AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore)
 {
-	m_lostDeviceCb.addUnique(destroy);
-	m_restoreDeviceCb.addUnique(restore);
+	if(destroy)
+		m_lostDeviceCb.addUnique(destroy);
+
+	if(restore)
+		m_restoreDeviceCb.addUnique(restore);
 }
 
 // prints loaded materials to console

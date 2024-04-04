@@ -1,6 +1,6 @@
 
-$openal_ver = '1.22.2'
-$sdl2_ver = '2.26.2'
+$openal_ver = '1.23.1'
+$sdl2_ver = '2.30.2'
 $wx_ver = '3.2.1'
 $ffmpeg_ver = 'master-latest-win64-gpl-shared'
 
