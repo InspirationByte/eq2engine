@@ -132,32 +132,52 @@ void CWGPURenderAPI::Shutdown()
 
 int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 {
-	ShaderInfoWGPUImpl shaderInfo;
-	shaderInfo.shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
-	if (!shaderInfo.shaderPackFile)
-		return false;
+	IFilePackageReader* shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
+	if (!shaderPackFile)
+		return 0;
 
 	KVSection shaderInfoKvs;
 	{
-		IFilePtr file = shaderInfo.shaderPackFile->Open("ShaderInfo", VS_OPEN_READ);
+		IFilePtr file = shaderPackFile->Open("ShaderInfo", VS_OPEN_READ);
 		if (!KV_LoadFromStream(file, &shaderInfoKvs))
 		{
+			
 			Msg("No ShaderInfo in file %s\n", filename);
-			return false;
+			return 0;
 		}
 	}
+
+	defer{
+		if (shaderPackFile)
+		{
+			m_shaderCache.remove(StringToHash(shaderInfoKvs.GetName()));
+			g_fileSystem->ClosePackage(shaderPackFile);
+		}
+	};
 
 	if (!strstr(filename, shaderInfoKvs.GetName()))
 	{
 		ASSERT_FAIL("Shader package '%s' file name doesn't match it's name '%s' in desc", filename, shaderInfoKvs.GetName());
+		return 0;
 	}
 
+	auto it = m_shaderCache.find(StringToHash(shaderInfoKvs.GetName()));
+	if (!it.atEnd())
+	{
+		ASSERT_FAIL("Shader '%s' has been already loaded from different package", shaderInfoKvs.GetName());
+		return 0;
+	}
+
+	it = m_shaderCache.insert(StringToHash(shaderInfoKvs.GetName()));
+
+	ShaderInfoWGPUImpl& shaderInfo = *it;
+	shaderInfo.shaderPackFile = shaderPackFile;
 	shaderInfo.shaderName = shaderInfoKvs.GetName();
 
 	const KVSection* defines = shaderInfoKvs.FindSection("Defines");
 	if (defines)
 	{
-		shaderInfo.defines.reserve(defines->KeyCount());
+		shaderInfo.defines.reserve(defines->ValueCount());
 		for (KVValueIterator<EqString> it(defines); !it.atEnd(); ++it)
 			shaderInfo.defines.append(it);
 	}
@@ -236,7 +256,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 				if (!shaderFile)
 				{
 					MsgError("Can't open shader %s in shader package!\n", shaderFileName.ToCString());
-					return false;
+					return 0;
 				}
 				shaderData.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, shaderFile->GetSize());
 				shaderData.AppendStream(shaderFile);
@@ -246,7 +266,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			if (!rhiShaderModule)
 			{
 				MsgError("Can't create shader module %s!\n", shaderFileName.ToCString());
-				return false;
+				return 0;
 			}
 		}
 
@@ -296,7 +316,8 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		++refIdx;
 	}
 
-	m_shaderCache.insert(StringToHash(shaderInfoKvs.GetName()), std::move(shaderInfo));
+	shaderPackFile = nullptr;
+
 	return filesFound;
 }
 

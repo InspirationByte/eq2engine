@@ -51,7 +51,8 @@ private:
 	void				SearchFolderForShaders(const char* wildcard);
 	bool				HasMatchingCRC(uint32 crc);
 
-	bool				ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection);
+	bool				ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection, bool isExt = false);
+	bool				ParseShaderExtensionInfo(const char* shaderDefFileName, const KVSection* shaderSection);
 	void				InitShaderVariants(ShaderInfo& shaderInfo, int baseVariant, const KVSection* section);
 	void				ProcessShader(ShaderInfo& shaderInfo);
 
@@ -78,7 +79,7 @@ private:
 
 //-----------------------------------------------------------------------
 
-bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection)
+bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection, bool isExt)
 {
 	const char* shaderFileName = KV_GetValueString(shaderSection->FindSection("SourceFile"), 0, nullptr);
 	if (!shaderFileName)
@@ -116,6 +117,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	shaderInfo.name = KV_GetValueString(shaderSection);
 	shaderInfo.sourceFilename = shaderFileName;
 	shaderInfo.kind = shaderKind;
+	shaderInfo.isExt = isExt;
 
 	const char* shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
 	if (!stricmp(shaderType, "hlsl"))
@@ -162,6 +164,53 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	return true;
 }
 
+bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, const KVSection* shaderSection)
+{
+	EqString extShaderDefFileName;
+	for (const EqString& path : m_targetProps.includePaths)
+	{
+		CombinePath(extShaderDefFileName, path, KV_GetValueString(shaderSection, 0));
+		if (g_fileSystem->FileExist(extShaderDefFileName, SP_ROOT))
+			break;
+	}
+
+	KVSection baseShaderRoot;
+	if (!KV_LoadFromFile(extShaderDefFileName, SP_ROOT, &baseShaderRoot))
+	{
+		MsgWarning("%s: unknown shader file '%s', check include paths\n", shaderDefFileName, KV_GetValueString(shaderSection, 0));
+		return false;
+	}
+
+	KVSection* shaderRoot = nullptr;
+	for (KVKeyIterator it(&baseShaderRoot, "shader"); !it.atEnd(); ++it)
+	{
+		if (!stricmp(KV_GetValueString(*it), KV_GetValueString(shaderSection, 1)))
+		{
+			shaderRoot = *it;
+			break;
+		}
+	}
+
+	if (!shaderRoot)
+	{
+		MsgWarning("%s: can't find shader '%s' in %s\n", shaderDefFileName, KV_GetValueString(shaderSection, 1), extShaderDefFileName.ToCString());
+		return false;
+	}
+
+	// merge sections softly
+	for (KVSection* section : shaderSection->keys)
+	{
+		KVSection* baseSec = shaderRoot->FindSection(section->GetName());
+		if (baseSec)
+		{
+			baseSec->Cleanup();
+			section->CopyTo(baseSec);
+		}
+	}
+
+	return ParseShaderInfo(extShaderDefFileName, shaderRoot, true);
+}
+
 void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 {
 	EqString searchFolder(wildcard);
@@ -190,13 +239,19 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 			int shadersFound = 0;
 			for (KVKeyIterator it(&rootSec, "shader"); !it.atEnd(); ++it)
 			{
-				ParseShaderInfo(fullShaderPath, *it);
-				++shadersFound;
+				if(ParseShaderInfo(fullShaderPath, *it))
+					++shadersFound;
+			}
+
+			for (KVKeyIterator it(&rootSec, "shaderExt"); !it.atEnd(); ++it)
+			{
+				if(ParseShaderExtensionInfo(fullShaderPath, *it))
+					++shadersFound;
 			}
 
 			if (!shadersFound)
 			{
-				MsgWarning("%s does not describe shader or section 'shader' is missing.\n", fullShaderPath.ToCString());
+				MsgWarning("%s does not have 'shader' or 'shaderExt' section.\n", fullShaderPath.ToCString());
 				continue;
 			}
 		}
@@ -303,7 +358,17 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 {
 	EqString shaderSourceName;
-	CombinePath(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
+	if (shaderInfo.isExt)
+	{
+		for (const EqString& path : m_targetProps.includePaths)
+		{
+			CombinePath(shaderSourceName, path, shaderInfo.sourceFilename);
+			if (g_fileSystem->FileExist(shaderSourceName, SP_ROOT))
+				break;
+		}
+	}
+	else
+		CombinePath(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
 
 	CMemoryStream shaderSourceString(PP_SL);
 	{

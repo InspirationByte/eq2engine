@@ -70,5 +70,6 @@ struct ShaderInfo
 	int					totalVariationCount{ 0 };
 
 	int					kind{ 0 };	// EShaderKindFlags
+	bool				isExt{ false };
 	EShaderConvStatus	status{ SHADERCONV_INIT };
 };

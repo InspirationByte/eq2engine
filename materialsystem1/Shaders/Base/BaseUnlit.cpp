@@ -16,7 +16,9 @@ BEGIN_SHADER_CLASS(
 	SHADER_VERTEX_ID(DynMeshVertex),
 	SHADER_VERTEX_ID(PFXVertex), // aliasOf DynMeshVertex
 	SHADER_VERTEX_ID(EGFVertex),
-	SHADER_VERTEX_ID(EGFVertexSkinned)
+	SHADER_VERTEX_ID(EGFVertexSkinned),
+	SHADER_VERTEX_ID(EGFVertexGameObj),	// aliasOf EGFVertex or Project-defined
+	SHADER_VERTEX_ID(EGFVertexGameObjSkinned)	// aliasOf EGFVertexSkinned or Project-defined
 )
 	SHADER_INIT_PARAMS()
 	{
