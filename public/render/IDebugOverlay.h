@@ -13,6 +13,10 @@
 
 #define DBGOVERLAY_INTERFACE_VERSION "DebugOverlay_001"
 
+#if !defined(_RETAIL) && !defined(_PROFILE)
+#define ENABLE_DEBUG_DRAWING
+#endif
+
 class IEqFont;
 class IGPURenderPassRecorder;
 

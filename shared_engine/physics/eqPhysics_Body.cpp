@@ -263,7 +263,7 @@ void CEqRigidBody::Integrate(float delta)
 	// accumulate with custom delta time
 	AccumulateForces( m_lastFrameTime );
 
-#ifndef _RETAIL
+#ifdef ENABLE_DEBUG_DRAWING
 	if(ph_debugRigidBody.GetBool())
 	{
 		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1),
@@ -279,7 +279,7 @@ void CEqRigidBody::Integrate(float delta)
 			(float)m_mass,
 			m_cell != nullptr));
 	}
-#endif // _RETAIL
+#endif // ENABLE_DEBUG_DRAWING
 }
 
 void CEqRigidBody::Update(float time)

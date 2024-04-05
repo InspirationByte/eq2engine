@@ -362,7 +362,7 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 
 void CEqCollisionBroadphaseGrid::DebugRender()
 {
-#ifndef _RETAIL
+#ifdef ENABLE_DEBUG_DRAWING
 	Vector3D mins, maxs;
 
 	for(int y = 0; y < m_gridWide; y++)
@@ -392,5 +392,5 @@ void CEqCollisionBroadphaseGrid::DebugRender()
 			} // debug display
 		}
 	}
-#endif // _RETAIL
+#endif // ENABLE_DEBUG_DRAWING
 }

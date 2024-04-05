@@ -820,14 +820,14 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		newPair.restitutionB = bodyB->GetRestitution();
 		newPair.frictionB = bodyB->GetFriction();
 
-#ifndef _RETAIL
+#ifdef ENABLE_DEBUG_DRAWING
 		if(ph_showcontacts.GetBool())
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), EqString::Format("penetration depth: %f", hitDepth), 1.0f);
 		}
-#endif // _RETAIL
+#endif // ENABLE_DEBUG_DRAWING
 	}
 }
 
@@ -970,14 +970,14 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 		newPair.restitutionB = bodyB->GetRestitution();
 		newPair.frictionB = bodyB->GetFriction();
-#ifndef _RETAIL
+#ifdef ENABLE_DEBUG_DRAWING
 		if(ph_showcontacts.GetBool())
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), EqString::Format("penetration depth: %f", hitDepth), 1.0f);
 		}
-#endif // _RETAIL
+#endif // ENABLE_DEBUG_DRAWING
 	}
 }
 
@@ -1455,7 +1455,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	// TODO: special flag that ignores bound check
 	const bool staticInBoundTest = true; // (rayBox.minPoint.y <= cell->cellBoundUsed); TEMPORARY ALLOWED because Chicago bridges. 
 
-#ifndef _RETAIL
+#ifdef ENABLE_DEBUG_DRAWING
 	if(staticInBoundTest && m_debugRaycast)
 	{
 		const float cellBound = cell->cellBoundUsed;
@@ -1938,7 +1938,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 
 void CEqPhysics::DebugDrawBodies(int mode)
 {
-#ifndef _RETAIL
+#ifdef ENABLE_DEBUG_DRAWING
 	if (mode >= 1 && mode != 4 && mode != 5)
 	{
 		for (CEqRigidBody* body: m_dynObjects)
@@ -1980,5 +1980,5 @@ void CEqPhysics::DebugDrawBodies(int mode)
 			debugoverlay->Box3D(body->m_aabb_transformed.minPoint, body->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
 		}
 	}
-#endif // _RETAIL
+#endif // ENABLE_DEBUG_DRAWING
 }
