@@ -392,21 +392,21 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			{
 				if (onInit)
 				{
-					MsgInfo("Pre-create pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d\n", 
-						GetName(), inputParams.meshInstFormat.name, 
-						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits), 
+					MsgInfo("Pre-create pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d\n",
+						GetName(), inputParams.meshInstFormat.name,
+						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
 						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
 				}
 				else
 				{
-					MsgWarning("Render pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d was not pre-created\n", 
+					MsgWarning("Render pipeline %s-%s_" BYTE_TO_BINARY_PATTERN "-PT%d-DF%d-CF%d was not pre-created\n",
 						GetName(), inputParams.meshInstFormat.name,
 						BYTE_TO_BINARY(inputParams.meshInstFormat.usedLayoutBits),
 						inputParams.primitiveTopology, inputParams.depthTargetFormat, inputParams.colorTargetFormat[0]);
 				}
 			}
-		}
 #endif // !_RETAIL
+		}
 
 		newPipelineInfo.pipeline = *cacheIt;
 	}

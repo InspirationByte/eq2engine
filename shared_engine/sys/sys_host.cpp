@@ -485,7 +485,7 @@ bool CGameHost::InitSystems()
 	if (m_window)
 	{
 #ifdef _RETAIL
-		SDL_SetWindowTitle(m_window, windowTitle);
+		SDL_SetWindowTitle(m_window, m_windowTitle);
 #else
 		SDL_SetWindowTitle(m_window, EqString::Format("%s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", m_windowTitle.ToCString(), BUILD_NUMBER_ENGINE));
 #endif
