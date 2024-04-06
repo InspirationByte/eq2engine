@@ -1140,7 +1140,7 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 		return result;
 	};
 
-	for (; (dataPtr - buffer) <= bufferSize; ++dataPtr)
+	for (; (dataPtr - buffer) < bufferSize; ++dataPtr)
 	{
 		const char c = *dataPtr;
 
