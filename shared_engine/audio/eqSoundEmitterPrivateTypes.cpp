@@ -221,6 +221,9 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			// TODO: SetupNode(SOUND_NODE_INPUT)
 
 			const int nodeIdx = nodeDescs.numElem();
+
+			ASSERT_MSG(nodeDescs.numElem()+1 < MAX_SOUND_NODES, "Too many nodes in %s", scriptDesc.name.ToCString());
+
 			SoundNodeDesc& inputDesc = nodeDescs.append();
 			inputDesc.type = nodeType;
 			strncpy(inputDesc.name, nodeName, sizeof(inputDesc.name));
