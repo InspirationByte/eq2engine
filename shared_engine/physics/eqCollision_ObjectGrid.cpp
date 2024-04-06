@@ -227,7 +227,7 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 	m_gridMap.remove(it);
 }
 
-void CEqCollisionBroadphaseGrid::FindBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const
+void CEqCollisionBroadphaseGrid::FindBoxRange(const BoundingBox& bbox, IAARectangle& gridRange, float extTolerance) const
 {
 	const float invGridSize = m_invGridSize;
 	const float halfGridNeg = m_gridSize*-0.5f;
@@ -248,18 +248,18 @@ void CEqCollisionBroadphaseGrid::FindBoxRange(const BoundingBox& bbox, IVector2D
 		const float dx2 = xz_pos2.x - floor(xz_pos2.x);
 		const float dy2 = xz_pos2.y - floor(xz_pos2.y);
 
-		cr_min.x = (dx1 < EXT_TOLERANCE) ? (floor(xz_pos1.x)-1) : floor(xz_pos1.x);
-		cr_min.y = (dy1 < EXT_TOLERANCE) ? (floor(xz_pos1.y)-1) : floor(xz_pos1.y);
+		gridRange.leftTop.x = (dx1 < EXT_TOLERANCE) ? (floor(xz_pos1.x)-1) : floor(xz_pos1.x);
+		gridRange.leftTop.y = (dy1 < EXT_TOLERANCE) ? (floor(xz_pos1.y)-1) : floor(xz_pos1.y);
 
-		cr_max.x = (dx2 > EXT_TOLERANCE_REC) ? (floor(xz_pos2.x)+1) : floor(xz_pos2.x);
-		cr_max.y = (dy2 > EXT_TOLERANCE_REC) ? (floor(xz_pos2.y)+1) : floor(xz_pos2.y);
+		gridRange.rightBottom.x = (dx2 > EXT_TOLERANCE_REC) ? (floor(xz_pos2.x)+1) : floor(xz_pos2.x);
+		gridRange.rightBottom.y = (dy2 > EXT_TOLERANCE_REC) ? (floor(xz_pos2.y)+1) : floor(xz_pos2.y);
 	}
 	else
 	{
-		cr_min.x = floor(xz_pos1.x);
-		cr_min.y = floor(xz_pos1.y);
-		cr_max.x = floor(xz_pos2.x);
-		cr_max.y = floor(xz_pos2.y);
+		gridRange.leftTop.x = floor(xz_pos1.x);
+		gridRange.leftTop.y = floor(xz_pos1.y);
+		gridRange.rightBottom.x = floor(xz_pos2.x);
+		gridRange.rightBottom.y = floor(xz_pos2.y);
 	}
 }
 
@@ -284,20 +284,21 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 		// and add this object tho another cells of grid
 		collisionObject->UpdateBoundingBoxTransform();
 
-		BoundingBox& bbox = collisionObject->m_aabb_transformed;
-		float boxSizeY = bbox.maxPoint.y;
+		const BoundingBox bbox = collisionObject->m_aabb_transformed;
+		const float boxSizeY = bbox.maxPoint.y;
 
-		IVector2D crMin, crMax;
-		FindBoxRange(bbox, crMin, crMax, 0.0f );
+		IAARectangle gridRange;
+		FindBoxRange(bbox, gridRange, 0.0f );
 
-		ASSERT_MSG(crMin.x >=0 && crMin.y >= 0 && crMin.x < m_gridWide && crMin.y < m_gridTall, "FindBoxRange: outside of grid bounds, box is [%.2f %.2f %.2f] [%.2f %.2f %.2f]", 
+		ASSERT_MSG(gridRange.leftTop.x >=0 && gridRange.leftTop.y >= 0 && gridRange.rightBottom.x < m_gridWide && gridRange.rightBottom.y < m_gridTall,
+			"FindBoxRange: outside of grid bounds, box is [%.2f %.2f %.2f] [%.2f %.2f %.2f]",
 			bbox.minPoint.x, bbox.minPoint.y, bbox.minPoint.z,
 			bbox.maxPoint.x, bbox.maxPoint.y, bbox.maxPoint.z);
 
 		// in this range do...
-		for(int y = crMin.y; y < crMax.y+1; y++)
+		for(int y = gridRange.leftTop.y; y <= gridRange.rightBottom.y; y++)
 		{
-			for(int x = crMin.x; x < crMax.x+1; x++)
+			for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
 			{
 				collgridcell_t* ncell = GetAllocCellAt( x, y );
 
@@ -312,10 +313,7 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 			}
 		}
 
-		collisionObject->m_cellRange.x = crMin.x;
-		collisionObject->m_cellRange.y = crMin.y;
-		collisionObject->m_cellRange.z = crMax.x;
-		collisionObject->m_cellRange.w = crMax.y;
+		collisionObject->m_cellRange = gridRange;
 	}
 	else
 	{
@@ -331,19 +329,16 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 	// now check in a bounding box extents
 	// and add this object tho another cells of grid
 
-	int cr_x1 = collisionObject->m_cellRange.x;
-	int cr_y1 = collisionObject->m_cellRange.y;
-	int cr_x2 = collisionObject->m_cellRange.z;
-	int cr_y2 = collisionObject->m_cellRange.w;
+	IAARectangle gridRange = collisionObject->m_cellRange;
 
 	collisionObject->SetCell(nullptr);
 
-	//Msg("Removing OBJECT %p [%d %d] [%d %d]\n", collisionObject, cr_x1, cr_y1, cr_x2, cr_y2);
+	//Msg("Removing OBJECT %p [%d %d] [%d %d]\n", collisionObject, gridRange.leftTop.x, gridRange.leftTop.y, gridRange.rightBottom.x, gridRange.rightBottom.y);
 
 	// in this range do...
-	for(int y = cr_y1; y < cr_y2+1; y++)
+	for(int y = gridRange.leftTop.y; y <= gridRange.rightBottom.y; y++)
 	{
-		for(int x = cr_x1; x < cr_x2+1; x++)
+		for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
 		{
 			collgridcell_t* ncell = GetCellAt( x, y );
 

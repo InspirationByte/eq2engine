@@ -43,7 +43,7 @@ enum EBodyFlags
 	// special flags
 
 	// appears in moveable list
-	BODY_MOVEABLE				= (1 << 30),
+	BODY_MOVEABLE				= (1 << 24),
 };
 
 ///
@@ -53,25 +53,6 @@ inline Quaternion AngularVelocityToSpin( const Quaternion& orientation, const Ve
 {
 	Quaternion vel( 0, angularVelocity.x*0.5f, angularVelocity.y*0.5f, angularVelocity.z*0.5f );
     return vel * orientation;
-}
-
-inline FMatrix4x4 RigidBodyInverse( const FMatrix4x4 & matrix )
-{
-	FMatrix4x4 inverse = matrix;
-	FVector4D translation = matrix.rows[3];
-
-	inverse.rows[3] = FVector4D(0,0,0,1);
-	inverse = transpose( inverse );
-
-	FVector4D x = matrix.rows[0];
-	FVector4D y = matrix.rows[1];
-	FVector4D z = matrix.rows[2];
-
-	inverse.rows[3] = FVector4D(-dot( x, translation ),
-								-dot( y, translation ),
-								-dot( z, translation ),
-								1.0f );
-	return inverse;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------

@@ -22,7 +22,7 @@ using namespace EqBulletUtils;
 
 DECLARE_CVAR(ph_margin, "0.0001", nullptr, CV_CHEAT | CV_UNREGISTERED);
 
-#define AABB_GROWVALUE	 (0.15f)
+static constexpr const float EQPHYSICS_AABB_EXPAND = 0.15f;
 
 CEqCollisionObject::GetSurfaceParamIdFunc CEqCollisionObject::GetSurfaceParamId = nullptr;
 
@@ -45,7 +45,7 @@ CEqCollisionObject::CEqCollisionObject()
 	m_position = FVector3D(0);
 	m_orientation = qidentity;
 
-	m_cellRange = IVector4D(0,0,0,0);
+	m_cellRange = IAARectangle(0,0,0,0);
 
 	m_contents = 0xffffffff;
 	m_collMask = 0xffffffff;
@@ -312,7 +312,7 @@ const Quaternion& CEqCollisionObject::GetOrientation() const
 void CEqCollisionObject::SetPosition(const FVector3D& position)
 {
 	m_position = position;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }
@@ -320,26 +320,29 @@ void CEqCollisionObject::SetPosition(const FVector3D& position)
 void CEqCollisionObject::SetOrientation(const Quaternion& orient)
 {
 	m_orientation = orient;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }
 
 void CEqCollisionObject::UpdateBoundingBoxTransform()
 {
-	Matrix4x4 mat;
-	ConstructRenderMatrix(mat);
+	if ((m_flags & COLLOBJ_BOUNDBOX_DIRTY) == 0)
+		return;
+	m_flags &= ~COLLOBJ_BOUNDBOX_DIRTY;
 
-	BoundingBox src_aabb = m_aabb;
-	BoundingBox aabb;
+	BoundingBox srcBox = m_aabb;
+	BoundingBox finalBox;
 
-	for(int i = 0; i < 8; i++)
-		aabb.AddVertex(inverseTransformPoint(src_aabb.GetVertex(i), mat));
+	for(int i = 0; i < BoundingBox::VertexCount; i++)
+		finalBox.AddVertex(rotateVector(srcBox.GetVertex(i), m_orientation));
 
-	aabb.maxPoint += AABB_GROWVALUE;
-	aabb.minPoint -= AABB_GROWVALUE;
+	const Vector3D offset = m_position;
+	finalBox.Expand(EQPHYSICS_AABB_EXPAND);
+	finalBox.minPoint += offset;
+	finalBox.maxPoint += offset;
 
-	m_aabb_transformed = aabb;
+	m_aabb_transformed = finalBox;
 }
 
 //------------------------------

@@ -39,7 +39,7 @@ public:
 	void				GetCellBoundsXZ(int x, int y, Vector2D& mins, Vector2D& maxs) const;
 	bool				GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const;
 
-	void				FindBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const;
+	void				FindBoxRange(const BoundingBox& bbox, IAARectangle& gridRange, float extTolerance) const;
 
 	void				DebugRender();
 

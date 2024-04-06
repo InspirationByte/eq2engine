@@ -44,8 +44,9 @@ enum ECollisionObjectFlags
 	//---------------
 	// special flags
 
-	COLLOBJ_IS_PROCESSING			= (1 << 30),
-	COLLOBJ_TRANSFORM_DIRTY			= (1 << 31),
+	COLLOBJ_IS_PROCESSING			= (1 << 29),
+	COLLOBJ_TRANSFORM_DIRTY			= (1 << 30),
+	COLLOBJ_BOUNDBOX_DIRTY			= (1 << 31)
 };
 
 class CEqCollisionObject
@@ -120,7 +121,7 @@ public:
 	BoundingBox					m_aabb;																///< bounding box
 	BoundingBox					m_aabb_transformed;													///< transformed bounding box, does not updated in dynamic objects
 
-	IVector4D					m_cellRange;														///< static object cell range for broadphase searching
+	IAARectangle				m_cellRange;														///< static object cell range for broadphase searching
 
 	IEqPhysCallback*			m_callbacks;
 

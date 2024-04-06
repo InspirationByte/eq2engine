@@ -378,7 +378,7 @@ void CEqRigidBody::AccumulateForces(float time)
 	m_totalTorque = Vector3D(0);
 	m_totalForce = Vector3D(0);
 
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateInertiaTensor();
 }
@@ -473,7 +473,7 @@ void CEqRigidBody::SetPosition(const FVector3D& position)
 {
 	// explicitly reset previous position
 	m_position = m_prevPosition = position;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }
@@ -481,7 +481,7 @@ void CEqRigidBody::SetPosition(const FVector3D& position)
 void CEqRigidBody::SetOrientation(const Quaternion& orient)
 {
 	m_orientation = m_prevOrientation = orient;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }

@@ -463,7 +463,7 @@ void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 
 	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
 
-	body->m_flags |= COLLOBJ_TRANSFORM_DIRTY;
+	body->m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
 	m_dynObjects.append(body);
 
@@ -782,8 +782,11 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 			}
 		}
 
-		algorithm->~btCollisionAlgorithm();
-		m_collDispatcher->freeCollisionAlgorithm(algorithm);
+		if (algorithm)
+		{
+			algorithm->~btCollisionAlgorithm();
+			m_collDispatcher->freeCollisionAlgorithm(algorithm);
+		}
 	}
 
 	// so collision test were performed, get our results to contact pairs
@@ -1046,19 +1049,23 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	if (!body->IsCanIntegrate())
 		return;
 
-	bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
+	const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
 
-	const BoundingBox& aabb = body->m_aabb_transformed;
-
+	body->UpdateBoundingBoxTransform();
+	const BoundingBox aabb = body->m_aabb_transformed;
+	
 	// get the grid box range for searching collision objects
-	IVector2D crMin, crMax;
-	m_grid->FindBoxRange(aabb, crMin, crMax, PHYSGRID_BOX_TOLERANCE);
+	IAARectangle gridRange;
+	m_grid->FindBoxRange(aabb, gridRange, PHYSGRID_BOX_TOLERANCE);
+
+	const IVector2D rangeSize = gridRange.GetSize();
+	ASSERT_MSG(rangeSize.x < 100 && rangeSize.y < 100, "Dynamic object might be too large in physics world");
 
 	// in this range do all collision checks
 	// might be slow
-	for(int y = crMin.y; y < crMax.y+1; y++)
+	for(int y = gridRange.leftTop.y; y <= gridRange.rightBottom.y; y++)
 	{
-		for(int x = crMin.x; x < crMax.x+1; x++)
+		for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
 		{
 			collgridcell_t* ncell = m_grid->GetCellAt( x, y );
 
@@ -1069,25 +1076,23 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 			const Array<CEqCollisionObject*>& dynamicObjects = ncell->m_dynamicObjs;
 			
 			// iterate over static objects in cell
-			for (int i = 0; i < gridObjects.numElem(); i++)
-				DetectStaticVsBodyCollision(gridObjects[i], body, body->GetLastFrameTime());
+			for (CEqCollisionObject* obj : ncell->m_gridObjects)
+				DetectStaticVsBodyCollision(obj, body, body->GetLastFrameTime());
 
 			// if object is only affected by other dynamic objects, don't waste my cycles!
 			if (disabledCollisionChecks)
 				continue;
 
 			// iterate over dynamic objects in cell
-			for (int i = 0; i < dynamicObjects.numElem(); i++)
+			for (CEqCollisionObject* dynObj : ncell->m_dynamicObjs)
 			{
-				CEqCollisionObject* collObj = dynamicObjects[i];
-
-				if (collObj == body)
+				if (dynObj == body)
 					continue;
 
-				if (collObj->IsDynamic())
-					DetectBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
+				if (dynObj->IsDynamic())
+					DetectBodyCollisions(body, static_cast<CEqRigidBody*>(dynObj), body->GetLastFrameTime());
 				else // purpose for triggers
-					DetectStaticVsBodyCollision(collObj, body, body->GetLastFrameTime());
+					DetectStaticVsBodyCollision(dynObj, body, body->GetLastFrameTime());
 			}
 		}
 	}
