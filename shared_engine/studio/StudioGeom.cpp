@@ -708,6 +708,12 @@ const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int materialGrou
 	return m_materials[m_materialCount * materialGroupIdx + materialIdx];
 }
 
+ArrayCRef<IMaterialPtr>	CEqStudioGeom::GetMaterials(int materialGroupIdx) const
+{
+	materialGroupIdx = clamp(materialGroupIdx, 0, m_materialGroupsCount - 1);
+	return ArrayCRef(&m_materials[m_materialCount * materialGroupIdx], m_materialCount);
+}
+
 void CEqStudioGeom::LoadSetupBones()
 {
 	studioHdr_t* studio = m_studio;

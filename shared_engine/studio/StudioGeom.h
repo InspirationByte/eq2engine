@@ -91,6 +91,7 @@ public:
 
 	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
 	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	ArrayCRef<IMaterialPtr>		GetMaterials(int materialGroupIdx = 0) const;
 
 private:
 
@@ -144,7 +145,7 @@ private:
 
 	int						m_cacheIdx{ -1 };
 
-	mutable int				m_readyState{ 0 };
+	volatile int			m_readyState{ 0 };
 };
 
 extern ArrayCRef<EGFHwVertex::VertexStreamId> g_defaultVertexStreamMapping;
