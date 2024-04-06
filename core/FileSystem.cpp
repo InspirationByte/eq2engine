@@ -244,7 +244,7 @@ bool CFileSystem::Init(bool bEditorMode)
 	m_basePath = KV_GetValueString(pFilesystem->FindSection("BasePath"), 0, m_basePath);
 
 	if(m_basePath.Length() > 0)
-		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());
+		MsgInfo("* Base directory: %s\n", m_basePath.GetData());
 
 	m_dataDir = KV_GetValueString(pFilesystem->FindSection("EngineDataDir"), 0, "EngineBase" );
 
