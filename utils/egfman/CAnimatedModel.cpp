@@ -324,12 +324,12 @@ int	CAnimatedModel::GetNumPoseControllers() const
 	return m_poseControllers.numElem();
 }
 
-const gsequence_t& CAnimatedModel::GetSequence(int seq) const
+const AnimSequence& CAnimatedModel::GetSequence(int seq) const
 {
 	return m_seqList[seq];
 }
 
-const gposecontroller_t& CAnimatedModel::GetPoseController(int pc) const
+const AnimPoseController& CAnimatedModel::GetPoseController(int pc) const
 {
 	return m_poseControllers[pc];
 }
@@ -482,7 +482,7 @@ void CAnimatedModel::AttachIKChain(int chain, int attach_type)
 		return;
 
 	int effector_id = m_ikChains[chain].numLinks - 1;
-	giklink_t& link = m_ikChains[chain].links[effector_id];
+	AnimIkChain::Link& link = m_ikChains[chain].links[effector_id];
 
 	switch (attach_type)
 	{

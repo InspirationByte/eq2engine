@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "BoneSetup.h"
 
-qanimframe_t::qanimframe_t(animframe_t& frame)
+AnimFrame::AnimFrame(animframe_t& frame)
 {
 	angBoneAngles = rotateXYZ(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
 	vecBonePosition = frame.vecBonePosition;
@@ -26,12 +26,10 @@ bool RollingValue(T& inout, T min, T max)
 	return old != inout;
 }
 
-void sequencetimer_t::AdvanceFrame(float fDt)
+void AnimSequenceTimer::AdvanceFrame(float fDt)
 {
 	if(!seq)
 		return;
-
-	const sequencedesc_t* seqDesc = seq->s;
 
 	if (!active)
 	{
@@ -39,11 +37,12 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 		return;
 	}
 
-	const float frame_time = fDt * playbackSpeedScale * seqDesc->framerate;
-	SetTime(seqTime + frame_time);
+	const sequencedesc_t* seqDesc = seq->s;
+	const float timeDelta = fDt * playbackSpeedScale * seqDesc->framerate;
+	SetTime(seqTime + timeDelta);
 }
 
-void sequencetimer_t::SetTime(float time)
+void AnimSequenceTimer::SetTime(float time)
 {
 	if(!seq)
 		return;
@@ -83,23 +82,27 @@ void sequencetimer_t::SetTime(float time)
 	seqTime = time;
 }
 
-void sequencetimer_t::Reset()
+void AnimSequenceTimer::Reset()
 {
-	active = false;
 	seq = nullptr;
 	seqIdx = -1;
+
+	active = false;
 	blendWeight = 0.0f;
 
 	playbackSpeedScale = 1.0f;
+	transitionRemainingTime = 0.0f;
 
 	ResetPlayback();
 }
 
-void sequencetimer_t::ResetPlayback()
+void AnimSequenceTimer::ResetPlayback()
 {
+	transitionRemainingTime = 0.0f;
 	seqTime = 0.0f;
-	blendWeight = 0.0f;
-	eventCounter = 0;
 	nextFrame = 0;
 	currFrame = 0;
+
+	blendWeight = 0.0f;
+	eventCounter = 0;
 }

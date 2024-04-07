@@ -19,7 +19,7 @@ DECLARE_CVAR(r_debugSkeleton, "0", "Draw debug information about bones", CV_CHEA
 DECLARE_CVAR(r_debugShowBone, "-1", "Shows the bone", CV_CHEAT);
 DECLARE_CVAR(r_ikIterations, "100", "IK link iterations per update", CV_ARCHIVE);
 
-static Matrix4x4 CalculateLocalBonematrix(const qanimframe_t& frame)
+static Matrix4x4 CalculateLocalBonematrix(const AnimFrame& frame)
 {
 	Matrix4x4 bonetransform(frame.angBoneAngles);
 	bonetransform.setTranslation(frame.vecBonePosition);
@@ -37,7 +37,6 @@ static void ComputeAnimationBlend(int numWeights, const float blendrange[2], flo
 
 	// compute animation index
 	const float normalizedBlend = actualBlendValue * (float)(numWeights - 1);
-
 	const int blendMainAnimation = (int)normalizedBlend;
 
 	blendWeight = normalizedBlend - ((int)normalizedBlend);
@@ -61,9 +60,9 @@ static void ComputeAnimationBlend(int numWeights, const float blendrange[2], flo
 }
 
 // adds transform
-static qanimframe_t AddFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2)
+static AnimFrame AddFrameTransform(const AnimFrame& frame1, const AnimFrame& frame2)
 {
-	qanimframe_t out;
+	AnimFrame out;
 	out.angBoneAngles = frame1.angBoneAngles * frame2.angBoneAngles;
 	out.angBoneAngles.fastNormalize();
 	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
@@ -72,15 +71,15 @@ static qanimframe_t AddFrameTransform(const qanimframe_t& frame1, const qanimfra
 }
 
 // interpolates frame transform
-static qanimframe_t InterpolateFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2, float value)
+static AnimFrame InterpolateFrameTransform(const AnimFrame& frame1, const AnimFrame& frame2, float value)
 {
-	qanimframe_t out;
+	AnimFrame out;
 	out.angBoneAngles = slerp(frame1.angBoneAngles, frame2.angBoneAngles, value);
 	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
 	return out;
 }
 
-static qanimframe_t GetInterpolatedBoneFrame(const studioAnimation_t& anim, int nBone, int firstframe, int lastframe, float interp)
+static AnimFrame GetInterpolatedBoneFrame(const studioAnimation_t& anim, int nBone, int firstframe, int lastframe, float interp)
 {
 	const studioBoneAnimation_t& frame = anim.bones[nBone];
 	ASSERT(firstframe >= 0);
@@ -90,18 +89,18 @@ static qanimframe_t GetInterpolatedBoneFrame(const studioAnimation_t& anim, int 
 	return InterpolateFrameTransform(frame.keyFrames[firstframe], frame.keyFrames[lastframe], interp);
 }
 
-static qanimframe_t GetInterpolatedBoneFrameBetweenTwoAnimations(
+static AnimFrame GetInterpolatedBoneFrameBetweenTwoAnimations(
 	const studioAnimation_t& anim1, const studioAnimation_t& anim2,
 	int boneIdx, int firstframe, int lastframe, float interp, float animTransition)
 {
-	qanimframe_t frameA = GetInterpolatedBoneFrame(anim1, boneIdx, firstframe, lastframe, interp);
-	qanimframe_t frameB = GetInterpolatedBoneFrame(anim2, boneIdx, firstframe, lastframe, interp);
+	AnimFrame frameA = GetInterpolatedBoneFrame(anim1, boneIdx, firstframe, lastframe, interp);
+	AnimFrame frameB = GetInterpolatedBoneFrame(anim2, boneIdx, firstframe, lastframe, interp);
 
 	// resultative interpolation
 	return InterpolateFrameTransform(frameA, frameB, animTransition);
 }
 
-static qanimframe_t GetSequenceLayerBoneFrame(const gsequence_t* seq, int boneIdx)
+static AnimFrame GetSequenceLayerBoneFrame(const AnimSequence* seq, int boneIdx)
 {
 	float blendWeight = 0;
 	int blendAnimation1 = 0;
@@ -121,21 +120,100 @@ static qanimframe_t GetSequenceLayerBoneFrame(const gsequence_t* seq, int boneId
 	return GetInterpolatedBoneFrameBetweenTwoAnimations(*anim1, *anim2, boneIdx, 0, 0, 0, blendWeight);
 }
 
+static void CalculateSequenceBoneFrame(const AnimSequenceTimer& timer, int boneId, AnimFrame& inOutBoneFrame)
+{
+	// if no animation plays on this timer, continue
+	if (!timer.seq)
+		return;
+
+	if (timer.blendWeight <= 0)
+		return;
+
+	const AnimSequence* seq = timer.seq;
+	const studioAnimation_t* curAnim = seq->animations[0];
+	if (!curAnim)
+		return;
+
+	const sequencedesc_t* seqDesc = seq->s;
+	const int numAnims = seqDesc->numAnimations;
+	const int numSeqBlends = seqDesc->numSequenceBlends;
+
+	// the computed frame
+	AnimFrame animationFrame;
+
+	const float frameInterp = min(timer.seqTime - timer.currFrame, 1.0f);
+
+	// blend between many animations in sequence using pose controller
+	if (numAnims > 1 && seq->posecontroller)
+	{
+		AnimPoseController* ctrl = seq->posecontroller;
+
+		float playingBlendWeight = 0;
+		int playingBlendAnimation1 = 0;
+		int playingBlendAnimation2 = 0;
+
+		// get frame indexes and lerp value of blended animation
+		ComputeAnimationBlend(numAnims,
+			ctrl->p->blendRange,
+			ctrl->interpolatedValue,
+			playingBlendWeight,
+			playingBlendAnimation1,
+			playingBlendAnimation2);
+
+		// get frame pointers
+		const studioAnimation_t* playingAnim1 = seq->animations[playingBlendAnimation1];
+		const studioAnimation_t* playingAnim2 = seq->animations[playingBlendAnimation2];
+
+		// compute blending frame
+		animationFrame = GetInterpolatedBoneFrameBetweenTwoAnimations(*playingAnim1, *playingAnim2, boneId, timer.currFrame, timer.nextFrame, frameInterp, playingBlendWeight);
+	}
+	else
+	{
+		// simply compute frames
+		animationFrame = GetInterpolatedBoneFrame(*curAnim, boneId, timer.currFrame, timer.nextFrame, frameInterp);
+	}
+
+	AnimFrame seqBlendsFrame;
+	for (int blendSeqIdx = 0; blendSeqIdx < numSeqBlends; blendSeqIdx++)
+	{
+		// get bone frame of layer
+		AnimFrame seqFrame = GetSequenceLayerBoneFrame(seq->blends[blendSeqIdx], boneId);
+		seqBlendsFrame = AddFrameTransform(seqBlendsFrame, seqFrame);
+	}
+
+	AnimFrame animFrameBlend = AddFrameTransform(animationFrame, seqBlendsFrame);
+
+	// interpolate or add the slots, this is useful for body part splitting
+	if (seqDesc->flags & SEQFLAG_SLOTBLEND)
+	{
+		// TODO: check if that incorrect since we've switched to quaternions
+		animFrameBlend.angBoneAngles *= timer.blendWeight;
+		animFrameBlend.vecBonePosition *= timer.blendWeight;
+
+		inOutBoneFrame = AddFrameTransform(inOutBoneFrame, animFrameBlend);
+	}
+	else
+		inOutBoneFrame = InterpolateFrameTransform(inOutBoneFrame, animFrameBlend, timer.blendWeight);
+}
+
+//-----------------------------------------------------------
+
 CAnimatingEGF::CAnimatingEGF()
 {
-	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
 	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
+	m_transitionTimers.setNum(m_transitionTimers.numAllocated());
 }
 
 CAnimatingEGF::~CAnimatingEGF()
 {
 	SAFE_DELETE_ARRAY(m_boneTransforms);
-	SAFE_DELETE_ARRAY(m_transitionFrames);
 }
 
 void CAnimatingEGF::DestroyAnimating()
 {
 	m_sequenceTimers.clear();
+	m_transitionTimers.clear();
+
 	m_seqList.clear();
 	m_poseControllers.clear();
 	m_ikChains.clear();
@@ -143,10 +221,9 @@ void CAnimatingEGF::DestroyAnimating()
 	m_transforms = ArrayCRef<studioTransform_t>(nullptr);;
 
 	SAFE_DELETE_ARRAY(m_boneTransforms);
-	SAFE_DELETE_ARRAY(m_transitionFrames);
 
-	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
 	m_sequenceTimers.setNum(m_sequenceTimers.numAllocated());
+	m_transitionTimers.setNum(m_transitionTimers.numAllocated());
 
 	m_geomReference = nullptr;
 }
@@ -164,7 +241,6 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 	m_joints = ArrayCRef(&model->GetJoint(0), studio.numBones);
 	m_transforms = ArrayCRef(model->GetStudioHdr().pTransform(0), model->GetStudioHdr().numTransforms);
 
-	m_transitionFrames = PPNew qanimframe_t[m_joints.numElem()];
 	m_boneTransforms = PPNew Matrix4x4[m_joints.numElem()];
 	for (int i = 0; i < m_joints.numElem(); i++)
 		m_boneTransforms[i] = m_joints[i].absTrans;
@@ -175,17 +251,17 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 	{
 		const studioIkChain_t* pStudioChain = studio.pIkChain(i);
 
-		gikchain_t& chain = m_ikChains.append();
+		AnimIkChain& chain = m_ikChains.append();
 
 		chain.c = pStudioChain;
 		chain.numLinks = pStudioChain->numLinks;
 		chain.enable = false;
 
-		chain.links = PPNew giklink_t[chain.numLinks];
+		chain.links = PPNew AnimIkChain::Link[chain.numLinks];
 
 		for (int j = 0; j < chain.numLinks; j++)
 		{
-			giklink_t& link = chain.links[j];
+			AnimIkChain::Link& link = chain.links[j];
 			link.l = pStudioChain->pLink(j);
 			link.chain = &chain;
 
@@ -211,7 +287,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 
 		for (int j = 0; j < chain.numLinks; j++)
 		{
-			giklink_t& link = chain.links[j];
+			AnimIkChain::Link& link = chain.links[j];
 
 			if (link.parent)
 				link.absTrans = link.localTrans * link.parent->absTrans;
@@ -234,14 +310,14 @@ void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& m
 	// TODO: hash-merge
 	for (int i = 0; i < motionData.numPoseControllers; i++)
 	{
-		gposecontroller_t controller;
+		AnimPoseController controller;
 		controller.p = &motionData.poseControllers[i];
 
 		// get center in blending range
 		controller.value = lerp(controller.p->blendRange[0], controller.p->blendRange[1], 0.5f);
 		controller.interpolatedValue = controller.value;
 
-		const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [controller](const gposecontroller_t& ctrl) {
+		const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [controller](const AnimPoseController& ctrl) {
 			return stricmp(ctrl.p->name, controller.p->name) == 0;
 		});
 
@@ -260,7 +336,7 @@ void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& m
 	{
 		sequencedesc_t& seq = motionData.sequences[i];
 
-		gsequence_t& seqData = m_seqList.append();
+		AnimSequence& seqData = m_seqList.append();
 		seqData.s = &seq;
 		seqData.activity = GetActivityByName(seq.activity);
 
@@ -271,7 +347,7 @@ void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& m
 		{
 			const posecontroller_t& mopPoseCtrl = motionData.poseControllers[seq.posecontroller];
 
-			const int poseCtrlIdx = arrayFindIndexF(m_poseControllers, [&](const gposecontroller_t& ctrl) {
+			const int poseCtrlIdx = arrayFindIndexF(m_poseControllers, [&](const AnimPoseController& ctrl) {
 				return stricmp(ctrl.p->name, mopPoseCtrl.name) == 0;
 			});
 			ASSERT(poseCtrlIdx != -1);
@@ -312,7 +388,7 @@ int CAnimatingEGF::FindSequenceByActivity(Activity act, int slot) const
 {
 	for (int i = 0; i < m_seqList.numElem(); i++)
 	{
-		const gsequence_t& seq = m_seqList[i];
+		const AnimSequence& seq = m_seqList[i];
 		if (seq.activity == act && seq.s->activityslot == slot)
 			return i;
 	}
@@ -323,23 +399,26 @@ int CAnimatingEGF::FindSequenceByActivity(Activity act, int slot) const
 // sets animation
 void CAnimatingEGF::SetSequence(int seqIdx, int slot)
 {
-	sequencetimer_t& timer = m_sequenceTimers[slot];
+	AnimSequenceTimer& timer = m_sequenceTimers[slot];
+	AnimSequenceTimer transitionFromTimer = timer;
 
 	const bool wasEmpty = (timer.seq == nullptr);
-	gsequence_t* prevSeq = timer.seq;
+	AnimSequence* prevSeq = timer.seq;
 
 	// assign sequence and reset playback speed
 	// if sequence is not valid, reset it to the Default Pose
 	timer.seq = seqIdx >= 0 ? &m_seqList[seqIdx] : nullptr;
-	timer.seqIdx = timer.seq ? seqIdx : -1;
 	timer.playbackSpeedScale = 1.0f;
 
-	if (slot == 0)
+	if (wasEmpty)
 	{
-		if (!wasEmpty)
-			m_transitionTime = m_transitionRemTime = timer.seq ? timer.seq->s->transitiontime : SEQ_DEFAULT_TRANSITION_TIME;
-		else
-			m_transitionTime = m_transitionRemTime = 0.0f;	// if not were used, don't apply transition
+		m_transitionTimers[slot].transitionRemainingTime = 0.0f;
+	}
+	else
+	{
+		transitionFromTimer.transitionTime = timer.seq ? timer.seq->s->transitiontime : SEQ_DEFAULT_TRANSITION_TIME;
+		transitionFromTimer.transitionRemainingTime = transitionFromTimer.transitionTime;
+		m_transitionTimers[slot] = transitionFromTimer;
 	}
 }
 
@@ -449,7 +528,7 @@ const Vector3D& CAnimatingEGF::GetLocalBoneDirection(int nBone) const
 
 int CAnimatingEGF::GetCurrentAnimationFrameCount(int slot) const
 {
-	const gsequence_t* seq = m_sequenceTimers[slot].seq;
+	const AnimSequence* seq = m_sequenceTimers[slot].seq;
 	if (!seq)
 		return 0.0f;
 
@@ -459,7 +538,7 @@ int CAnimatingEGF::GetCurrentAnimationFrameCount(int slot) const
 // returns duration time of the current animation
 float CAnimatingEGF::GetCurrentAnimationDuration(int slot) const
 {
-	const gsequence_t* seq = m_sequenceTimers[slot].seq;
+	const AnimSequence* seq = m_sequenceTimers[slot].seq;
 	if (!seq)
 		return 0.0f;
 
@@ -469,7 +548,7 @@ float CAnimatingEGF::GetCurrentAnimationDuration(int slot) const
 // returns elapsed time of the current animation
 float CAnimatingEGF::GetCurrentAnimationTime(int slot) const
 {
-	const gsequence_t* seq = m_sequenceTimers[slot].seq;
+	const AnimSequence* seq = m_sequenceTimers[slot].seq;
 	if (!seq)
 		return 0.0f;
 
@@ -512,52 +591,52 @@ void CAnimatingEGF::SetSequenceBlending(float factor, int slot)
 // advances frame (and computes interpolation between all blended animations)
 void CAnimatingEGF::AdvanceFrame(float frameTime)
 {
-	bool didUpdate = false;
+	uint didUpdate = FALSE;
 
 	if (m_sequenceTimers[0].seq)
 	{
 		const float div_frametime = (frameTime * 30);
 
 		// interpolate pose parameter values
-		for(gposecontroller_t& ctrl : m_poseControllers)
+		for(AnimPoseController& ctrl : m_poseControllers)
 		{
 			const float diff = ctrl.value - ctrl.interpolatedValue;
 			if(abs(diff) > F_EPS)
-				didUpdate = true;
+				didUpdate = TRUE;
 
 			ctrl.interpolatedValue = approachValue(ctrl.interpolatedValue, ctrl.value, div_frametime * diff);
 		}
+	}
 
-		if (m_sequenceTimers[0].active)
-		{
-			const float oldTransitionTime = m_transitionRemTime;
-			const float newTransitionTime = max(oldTransitionTime - frameTime, 0.0f);
+	for (AnimSequenceTimer& transitionTimer : m_transitionTimers)
+	{
+		const float oldTransitionTime = transitionTimer.transitionRemainingTime;
+		const float newTransitionTime = max(oldTransitionTime - frameTime, 0.0f);
 
-			if(abs(newTransitionTime - m_transitionRemTime) > F_EPS)
-				didUpdate = true;
+		if (abs(newTransitionTime - oldTransitionTime) > F_EPS)
+			didUpdate = TRUE;
 
-			m_transitionRemTime = newTransitionTime;
-		}
+		transitionTimer.transitionRemainingTime = newTransitionTime;
 	}
 
 	// update timers and raise events
-	for (sequencetimer_t& timer : m_sequenceTimers)
+	for (AnimSequenceTimer& timer : m_sequenceTimers)
 	{
 		// for savegame purpose resolving sequences
 		if (timer.seqIdx >= 0 && !timer.seq)
 			timer.seq = &m_seqList[timer.seqIdx];
 
 		//if (timer.active)
-			didUpdate = true;
+			didUpdate = TRUE;
 
 		timer.AdvanceFrame(frameTime);
 		RaiseSequenceEvents(timer);
 	}
 
-	Atomic::Exchange(m_bonesNeedUpdate, didUpdate);
+	Atomic::CompareExchange(m_bonesNeedUpdate, FALSE, didUpdate);
 }
 
-void CAnimatingEGF::RaiseSequenceEvents(sequencetimer_t& timer)
+void CAnimatingEGF::RaiseSequenceEvents(AnimSequenceTimer& timer)
 {
 	if (!timer.seq)
 		return;
@@ -588,14 +667,14 @@ void CAnimatingEGF::RaiseSequenceEvents(sequencetimer_t& timer)
 // swaps sequence timers
 void CAnimatingEGF::SwapSequenceTimers(int slotFrom, int swapTo)
 {
-	sequencetimer_t swap_to = m_sequenceTimers[swapTo];
+	AnimSequenceTimer swap_to = m_sequenceTimers[swapTo];
 	m_sequenceTimers[swapTo] = m_sequenceTimers[slotFrom];
 	m_sequenceTimers[slotFrom] = swap_to;
 }
 
 int CAnimatingEGF::FindPoseController(const char* name) const
 {
-	const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [name](const gposecontroller_t& ctrl) {
+	const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [name](const AnimPoseController& ctrl) {
 		return stricmp(ctrl.p->name, name) == 0;
 	});
 	return existingPoseCtrlIdx;
@@ -634,7 +713,7 @@ void CAnimatingEGF::GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rM
 		return;
 	}
 
-	const gposecontroller_t& poseCtrl = m_poseControllers[nPoseCtrl];
+	const AnimPoseController& poseCtrl = m_poseControllers[nPoseCtrl];
 	rMin = poseCtrl.p->blendRange[0];
 	rMax = poseCtrl.p->blendRange[1];
 }
@@ -651,104 +730,28 @@ void CAnimatingEGF::RecalcBoneTransforms()
 	// setup each bone's transformation
 	for (int boneId = 0; boneId < m_joints.numElem(); boneId++)
 	{
-		qanimframe_t finalBoneFrame;
-
-		for (const sequencetimer_t& timer : m_sequenceTimers)
+		AnimFrame finalBoneFrame;
+		for (int i = 0; i < m_sequenceTimers.numElem(); ++i)
 		{
-			// if no animation plays on this timer, continue
-			if (!timer.seq)
-				continue;
+			AnimFrame timerFrame;
+			CalculateSequenceBoneFrame(m_sequenceTimers[i], boneId, timerFrame);
 
-			const gsequence_t* seq = timer.seq;
-			const sequencedesc_t* seqDesc = seq->s;
-
-			if (timer.blendWeight <= 0)
-				continue;
-
-			const studioAnimation_t* curAnim = seq->animations[0];
-			if (!curAnim)
-				continue;
-
-			// the computed frame
-			qanimframe_t cTimedFrame;
-
-			const float frameInterp = min(timer.seqTime - timer.currFrame, 1.0f);
-			const int numAnims = seqDesc->numAnimations;
-
-			// blend between many animations in sequence using pose controller
-			if (numAnims > 1 && timer.seq->posecontroller)
+			const AnimSequenceTimer& transitionTimer = m_transitionTimers[i];
+			if (transitionTimer.transitionRemainingTime > 0.0f)
 			{
-				gposecontroller_t* ctrl = timer.seq->posecontroller;
+				// mix in the transition
+				AnimFrame transitionFrame;
+				CalculateSequenceBoneFrame(transitionTimer, boneId, transitionFrame);
 
-				float playingBlendWeight = 0;
-				int playingBlendAnimation1 = 0;
-				int playingBlendAnimation2 = 0;
-
-				// get frame indexes and lerp value of blended animation
-				ComputeAnimationBlend(numAnims,
-					ctrl->p->blendRange,
-					ctrl->interpolatedValue,
-					playingBlendWeight,
-					playingBlendAnimation1,
-					playingBlendAnimation2);
-
-				// get frame pointers
-				const studioAnimation_t* playingAnim1 = seq->animations[playingBlendAnimation1];
-				const studioAnimation_t* playingAnim2 = seq->animations[playingBlendAnimation2];
-
-				// compute blending frame
-				cTimedFrame = GetInterpolatedBoneFrameBetweenTwoAnimations(*playingAnim1, *playingAnim2, boneId, timer.currFrame, timer.nextFrame, frameInterp, playingBlendWeight);
-			}
-			else
-			{
-				// simply compute frames
-				cTimedFrame = GetInterpolatedBoneFrame(*curAnim, boneId, timer.currFrame, timer.nextFrame, frameInterp);
+				const float transitionFactor = transitionTimer.transitionRemainingTime / transitionTimer.transitionTime;
+				timerFrame = InterpolateFrameTransform(timerFrame, transitionFrame, transitionFactor);
 			}
 
-			qanimframe_t cAddFrame;
-
-			const int numSeqBlends = seqDesc->numSequenceBlends;
-
-			// add blended sequences to this
-			for (int blendSeqIdx = 0; blendSeqIdx < numSeqBlends; blendSeqIdx++)
-			{
-				// get bone frame of layer
-				qanimframe_t frame = GetSequenceLayerBoneFrame(seq->blends[blendSeqIdx], boneId);
-				cAddFrame = AddFrameTransform(cAddFrame, frame);
-			}
-
-			cTimedFrame = AddFrameTransform(cTimedFrame, cAddFrame);
-
-			// interpolate or add the slots, this is useful for body part splitting
-			if (seqDesc->flags & SEQFLAG_SLOTBLEND)
-			{
-				// TODO: check if that incorrect since we've switched to quaternions
-				cTimedFrame.angBoneAngles *= timer.blendWeight;
-				cTimedFrame.vecBonePosition *= timer.blendWeight;
-
-				finalBoneFrame = AddFrameTransform(finalBoneFrame, cTimedFrame);
-			}
-			else
-				finalBoneFrame = InterpolateFrameTransform(finalBoneFrame, cTimedFrame, timer.blendWeight);
-		}
-
-		// TODO: transition frames must be build from old timer states
-		// first sequence timer is main and has transition effects
-		if (m_transitionTime > 0.0f && m_transitionRemTime > 0.0f)
-		{
-			// perform transition based on the last frame
-			const float transitionLerp = m_transitionRemTime / m_transitionTime;
-			finalBoneFrame = InterpolateFrameTransform(finalBoneFrame, m_transitionFrames[boneId], transitionLerp);
-		}
-		else
-		{
-			m_transitionFrames[boneId] = finalBoneFrame;
+			finalBoneFrame = AddFrameTransform(finalBoneFrame, timerFrame);
 		}
 
 		// compute transformation
 		const Matrix4x4 calculatedFrameMat = CalculateLocalBonematrix(finalBoneFrame);
-
-		// store matrix
 		m_boneTransforms[boneId] = (calculatedFrameMat * m_joints[boneId].localTrans);
 	}
 
@@ -810,7 +813,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 
 	if (r_debugIK.GetBool())
 	{
-		for (const gikchain_t& chain : m_ikChains)
+		for (const AnimIkChain& chain : m_ikChains)
 		{
 			if (!chain.enable)
 				continue;
@@ -821,7 +824,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 
 			for (int j = 0; j < chain.numLinks; j++)
 			{
-				const giklink_t& link = chain.links[j];
+				const AnimIkChain::Link& link = chain.links[j];
 
 				const Vector3D& bone_pos = link.absTrans.rows[3].xyz();
 				Vector3D parent_pos = inverseTransformPoint(link.parent->absTrans.rows[3].xyz(), worldTransform);
@@ -845,7 +848,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 
 #define IK_DISTANCE_EPSILON 0.05f
 
-static void IKLimitDOF(giklink_t* link)
+static void IKLimitDOF(AnimIkChain::Link* link)
 {
 	// FIXME: broken here
 	// gimbal lock always occurent
@@ -867,12 +870,12 @@ static void IKLimitDOF(giklink_t* link)
 }
 
 // solves Ik chain
-static bool SolveIKLinks(giklink_t& effector, Vector3D& target, float fDt, int numIterations = 100)
+static bool SolveIKLinks(AnimIkChain::Link& effector, const Vector3D& target, float fDt, int numIterations = 100)
 {
 	Vector3D	rootPos, curEnd, targetVector, desiredEnd, curVector, crossResult;
 
 	// start at the last link in the chain
-	giklink_t* link = effector.parent;
+	AnimIkChain::Link* link = effector.parent;
 
 	int nIter = 0;
 	do
@@ -941,7 +944,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 
 		if (link_id != -1 && chain_id != -1 && m_ikChains[chain_id].enable)
 		{
-			const gikchain_t& chain = m_ikChains[chain_id];
+			const AnimIkChain& chain = m_ikChains[chain_id];
 
 			for (int i = 0; i < chain.numLinks; i++)
 			{
@@ -957,7 +960,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 	// solve ik links or copy frames to disabled links
 	for (int i = 0; i < m_ikChains.numElem(); i++)
 	{
-		gikchain_t& chain = m_ikChains[i];
+		AnimIkChain& chain = m_ikChains[i];
 
 		if (chain.enable)
 		{
@@ -976,7 +979,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 			// copy last frames to all links
 			for (int j = 0; j < chain.numLinks; j++)
 			{
-				giklink_t& link = chain.links[j];
+				AnimIkChain::Link& link = chain.links[j];
 
 				const int boneIdx = link.l->bone;
 				const studioJoint_t& joint = m_joints[boneIdx];
@@ -998,11 +1001,11 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 }
 
 // solves single ik chain
-void CAnimatingEGF::UpdateIkChain(gikchain_t* pIkChain, float fDt)
+void CAnimatingEGF::UpdateIkChain(AnimIkChain* pIkChain, float fDt)
 {
 	for (int i = 0; i < pIkChain->numLinks; i++)
 	{
-		giklink_t& link = pIkChain->links[i];
+		AnimIkChain::Link& link = pIkChain->links[i];
 
 		// this is broken
 		link.localTrans = Matrix4x4(link.quat);
@@ -1014,7 +1017,7 @@ void CAnimatingEGF::UpdateIkChain(gikchain_t* pIkChain, float fDt)
 
 	for (int i = 0; i < pIkChain->numLinks; i++)
 	{
-		giklink_t& link = pIkChain->links[i];
+		AnimIkChain::Link& link = pIkChain->links[i];
 
 		if (link.parent)
 		{

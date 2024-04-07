@@ -12,51 +12,46 @@
 typedef struct studioModelHeader_s studioHdr_t;
 typedef struct animframe_s animframe_t;
 typedef struct sequencedesc_s sequencedesc_t;
-typedef struct sequenceevent_s sequenceevent_t;;
+typedef struct sequenceevent_s sequenceevent_t;
 typedef struct posecontroller_s posecontroller_t;
+typedef struct studioIkLink_s studioIkLink_t;
 
-struct qanimframe_t
+struct AnimFrame
 {
-	qanimframe_t() = default;
-	qanimframe_t(animframe_t& frame);
+	AnimFrame() = default;
+	AnimFrame(animframe_t& frame);
 
 	Quaternion	angBoneAngles{ qidentity };
 	Vector3D	vecBonePosition{ vec3_zero };
 	float		pad{ 0.0f };
 };
 
-struct gikchain_t;
-typedef struct studioIkLink_s studioIkLink_t;
-
-struct giklink_t
-{
-	studioIkLink_t* l{ nullptr };
-	giklink_t*		parent{ nullptr };
-	gikchain_t*		chain{ nullptr };
-
-	Matrix4x4		localTrans{ identity4 };
-	Matrix4x4		absTrans{ identity4 };
-	Quaternion		quat{ qidentity };
-	Vector3D		position{ vec3_zero };
-};
-
-
 // used by baseanimating
-struct gikchain_t
+struct AnimIkChain
 {
-	~gikchain_t() 
+	struct Link
 	{
-		delete[] links;
-	}
+		studioIkLink_t* l{ nullptr };
+		Link*			parent{ nullptr };
+		AnimIkChain*	chain{ nullptr };
+
+		Matrix4x4		localTrans{ identity4 };
+		Matrix4x4		absTrans{ identity4 };
+		Quaternion		quat{ qidentity };
+		Vector3D		position{ vec3_zero };
+	};
+
+	~AnimIkChain() { delete[] links; }
+
 	const studioIkChain_t*	c{ nullptr };
 	Vector3D				localTarget{ vec3_zero };
-	giklink_t*				links { nullptr };
+	Link*					links { nullptr };
 	int						numLinks{ 0 };
 	bool					enable{ false }; // if false then it will be updated from FK
 };
 
 // pose controller
-struct gposecontroller_t
+struct AnimPoseController
 {
 	const posecontroller_t*	p{ nullptr };
 	float				value{ 0.0f };
@@ -64,31 +59,34 @@ struct gposecontroller_t
 };
 
 // translated game sequence
-struct gsequence_t
+struct AnimSequence
 {
 	Activity					activity{ ACT_INVALID };
-	gposecontroller_t*			posecontroller{ nullptr };
+	AnimPoseController*			posecontroller{ nullptr };
 	const sequencedesc_t*		s{ nullptr };
 
-	gsequence_t*				blends[MAX_SEQUENCE_BLENDS]{ nullptr };
+	AnimSequence*				blends[MAX_SEQUENCE_BLENDS]{ nullptr };
 	const sequenceevent_t*		events[MAX_EVENTS_PER_SEQ]{ nullptr };
 	const studioAnimation_t*	animations[MAX_BLEND_WIDTH]{ nullptr };
 };
 
 // sequence timer with events
-struct sequencetimer_t
+struct AnimSequenceTimer
 {
-	gsequence_t* seq{ nullptr };
-	int			 seqIdx{ -1 };
-	float		 seqTime{ 0.0f };
-				 
-	int			 nextFrame{ 0 };
-	int			 currFrame{ 0 };
-	int			 eventCounter{ 0 };
+	AnimSequence*	seq{ nullptr };
+	int				seqIdx{ -1 };
+	float			seqTime{ 0.0f };
+	float			transitionRemainingTime{ 0.0f };
+	float			transitionTime{ 0.0f };
+	
+	int				nextFrame{ 0 };
+	int				currFrame{ 0 };
 
-	float		 playbackSpeedScale{ 1.0f };
-	float		 blendWeight{ 0.0f };
-	bool		 active{ false };
+	int				eventCounter{ 0 };
+
+	float			playbackSpeedScale{ 1.0f };
+	float			blendWeight{ 0.0f };
+	bool			active{ false };
 
 	void Reset();
 	void ResetPlayback();

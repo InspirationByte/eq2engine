@@ -953,11 +953,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	}
 
 	// parse transitiontime value
-	const KVSection* transitionTimeKv = section->FindSection("transitionTime");
-	if(transitionTimeKv)
-		desc.transitiontime = KV_GetValueFloat(transitionTimeKv);
-	else
-		desc.transitiontime = SEQ_DEFAULT_TRANSITION_TIME;
+	desc.transitiontime = KV_GetValueFloat(section->FindSection("transitionTime"), 0, SEQ_DEFAULT_TRANSITION_TIME);
 
 	// parse events
 	const KVSection* eventList = section->FindSection("events");

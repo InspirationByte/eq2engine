@@ -1240,7 +1240,7 @@ void CEGFViewFrame::ReDraw()
 		const int selectedSeqIdx = m_pMotionSelection->GetSelection();
 		if(g_model.IsSequencePlaying() && selectedSeqIdx != -1)
 		{
-			const gsequence_t& seq = g_model.GetSequence(selectedSeqIdx);
+			const AnimSequence& seq = g_model.GetSequence(selectedSeqIdx);
 
 			float setFrameRate = atoi(m_pAnimFramerate->GetValue());
 
@@ -1364,7 +1364,7 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 			g_model.ResetSequenceTime(0);
 			g_model.PlaySequence(0);
 
-			const gsequence_t& seq = g_model.GetSequence(nSeq);
+			const AnimSequence& seq = g_model.GetSequence(nSeq);
 			m_pAnimFramerate->SetValue(EqString::Format("%g", seq.s->framerate).ToCString() );
 
 			int maxFrames = g_model.GetCurrentAnimationDurationInFrames();

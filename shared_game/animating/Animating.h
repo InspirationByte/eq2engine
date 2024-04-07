@@ -10,7 +10,7 @@
 #include "anim_events.h"
 #include "anim_activity.h"
 
-#define MAX_SEQUENCE_TIMERS			5
+static constexpr const int MAX_SEQUENCE_TIMERS = 5;
 
 //--------------------------------------------------------------------------------------
 
@@ -88,26 +88,22 @@ public:
 
 protected:
 
-	void				RaiseSequenceEvents(sequencetimer_t& timer);
-	void				UpdateIkChain(gikchain_t* pIkChain, float fDt);
+	void				RaiseSequenceEvents(AnimSequenceTimer& timer);
+	void				UpdateIkChain(AnimIkChain* pIkChain, float fDt);
 	
 	virtual Activity	TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
 	virtual void		HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
 	virtual void		AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData);
 
-	using SequenceTimers = FixedArray<sequencetimer_t, MAX_SEQUENCE_TIMERS>;
+	using SequenceTimers = FixedArray<AnimSequenceTimer, MAX_SEQUENCE_TIMERS>;
 
 	// transition time from previous
 	// sequence timers. first timer is main, and transitional is last
 	SequenceTimers				m_sequenceTimers;
+	SequenceTimers				m_transitionTimers;
 
 	CEqStudioGeom*				m_geomReference{ nullptr };
-
-	// NOTE: those transitions must be really per-sequence timer.
-	float						m_transitionTime{ 0 };
-	float						m_transitionRemTime{ 0 };
-	qanimframe_t*				m_transitionFrames{ nullptr };
 
 	// computed ready-to-use matrices
 	Matrix4x4*					m_boneTransforms{ nullptr };
@@ -117,9 +113,9 @@ protected:
 	ArrayCRef<studioTransform_t>	m_transforms{ nullptr };
 
 	// different motion packages has different sequience list
-	Array<gsequence_t>			m_seqList{ PP_SL }; // loaded sequences
-	Array<gposecontroller_t>	m_poseControllers{ PP_SL }; // pose controllers
-	Array<gikchain_t>			m_ikChains{ PP_SL };
+	Array<AnimSequence>			m_seqList{ PP_SL }; // loaded sequences
+	Array<AnimPoseController>	m_poseControllers{ PP_SL }; // pose controllers
+	Array<AnimIkChain>			m_ikChains{ PP_SL };
 
 	volatile uint				m_bonesNeedUpdate{ TRUE };
 };

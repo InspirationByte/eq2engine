@@ -8,8 +8,8 @@
 #pragma once
 #include "animating/Animating.h"
 
-struct gsequence_t;
-struct gposecontroller_t;
+struct AnimSequence;
+struct AnimPoseController;
 struct ragdoll_t;
 class CEqStudioGeom;
 class IPhysicsObject;
@@ -47,8 +47,8 @@ public:
 	int							GetNumSequences() const;
 	int							GetNumPoseControllers() const;
 
-	const gsequence_t&			GetSequence(int seq) const;
-	const gposecontroller_t&	GetPoseController(int seq) const;
+	const AnimSequence&			GetSequence(int seq) const;
+	const AnimPoseController&	GetPoseController(int seq) const;
 
 protected:
 
