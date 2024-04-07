@@ -34,7 +34,7 @@ public:
 	Matrix4x4			GetLocalStudioTransformMatrix(int transformIdx) const;
 
 	Matrix4x4*			GetBoneMatrices() const;						// returns transformed bones
-	virtual void		RecalcBoneTransforms();
+	bool				RecalcBoneTransforms();
 
 	// advances frame (and computes interpolation between all blended animations)
 	void				AdvanceFrame(float fDt);

@@ -241,6 +241,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 	m_joints = ArrayCRef(&model->GetJoint(0), studio.numBones);
 	m_transforms = ArrayCRef(model->GetStudioHdr().pTransform(0), model->GetStudioHdr().numTransforms);
 
+	m_bonesNeedUpdate = TRUE;
 	m_boneTransforms = PPNew Matrix4x4[m_joints.numElem()];
 	for (int i = 0; i < m_joints.numElem(); i++)
 		m_boneTransforms[i] = m_joints[i].absTrans;
@@ -719,10 +720,10 @@ void CAnimatingEGF::GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rM
 }
 
 // updates bones
-void CAnimatingEGF::RecalcBoneTransforms()
+bool CAnimatingEGF::RecalcBoneTransforms()
 {
 	if (Atomic::CompareExchange(m_bonesNeedUpdate, TRUE, FALSE) != TRUE)
-		return;
+		return false;
 
 	// FIXME: do we really need this hack?
 	m_sequenceTimers[0].blendWeight = 1.0f;
@@ -762,6 +763,8 @@ void CAnimatingEGF::RecalcBoneTransforms()
 		if (parentIdx != -1)
 			m_boneTransforms[i] = m_boneTransforms[i] * m_boneTransforms[parentIdx];
 	}
+
+	return true;
 }
 
 Matrix4x4 CAnimatingEGF::GetLocalStudioTransformMatrix(int attachmentIdx) const
