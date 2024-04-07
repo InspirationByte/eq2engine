@@ -403,16 +403,14 @@ void CAnimatingEGF::SetSequence(int seqIdx, int slot)
 	AnimSequenceTimer& timer = m_sequenceTimers[slot];
 	AnimSequenceTimer transitionFromTimer = timer;
 
-	const bool wasEmpty = (timer.seq == nullptr);
-	AnimSequence* prevSeq = timer.seq;
-
 	// assign sequence and reset playback speed
 	// if sequence is not valid, reset it to the Default Pose
 	timer.seq = seqIdx >= 0 ? &m_seqList[seqIdx] : nullptr;
 	timer.playbackSpeedScale = 1.0f;
 
-	if (wasEmpty)
+	if (transitionFromTimer.seq == nullptr || timer.seq == transitionFromTimer.seq)
 	{
+		m_transitionTimers[slot].transitionTime = 0.0f;
 		m_transitionTimers[slot].transitionRemainingTime = 0.0f;
 	}
 	else
