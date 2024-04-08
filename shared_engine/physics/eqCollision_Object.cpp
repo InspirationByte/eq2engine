@@ -28,34 +28,6 @@ CEqCollisionObject::GetSurfaceParamIdFunc CEqCollisionObject::GetSurfaceParamId 
 
 CEqCollisionObject::CEqCollisionObject()
 {
-	m_collObject = nullptr;
-	m_shape = nullptr;
-	m_mesh = nullptr;
-	m_userData = nullptr;
-	m_center = vec3_zero;
-	m_surfParam = 0;
-	m_trimap = nullptr;
-	m_cell = nullptr;
-	m_erp = 0.0f;
-	m_callbacks = nullptr;
-
-	m_restitution = 0.1f;
-	m_friction = 0.1f;
-
-	m_position = FVector3D(0);
-	m_orientation = qidentity;
-
-	m_cellRange = IAARectangle(0,0,0,0);
-
-	m_contents = 0xffffffff;
-	m_collMask = 0xffffffff;
-
-	m_flags = COLLOBJ_TRANSFORM_DIRTY;
-	m_studioShape = false;
-
-	m_cachedTransform = identity4;
-
-	m_numShapes = 0;
 }
 
 CEqCollisionObject::~CEqCollisionObject()
@@ -65,14 +37,16 @@ CEqCollisionObject::~CEqCollisionObject()
 
 void CEqCollisionObject::Destroy()
 {
-	delete m_collObject;
+	SAFE_DELETE(m_collObject);
 
 	if (!m_studioShape)
-		delete m_shape;
+	{
+		SAFE_DELETE(m_shape);
+	}
 
 	m_studioShape = false;
 
-	delete m_trimap;
+	SAFE_DELETE(m_trimap);
 
 	m_shape = nullptr;
 	m_mesh = nullptr;

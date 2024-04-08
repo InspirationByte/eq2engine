@@ -52,9 +52,12 @@ enum ECollisionObjectFlags
 class CEqCollisionObject
 {
 	friend class CEqPhysics;
+	friend class IEqPhysCallback;
 
 public:
 	using GetSurfaceParamIdFunc = int(*)(const char*);
+	using CollisionPairList = FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>;
+
 	static GetSurfaceParamIdFunc GetSurfaceParamId;
 
 	CEqCollisionObject();
@@ -115,53 +118,47 @@ public:
 	void						SetDebugName(const char* name);
 
 	//--------------------
+	CollisionPairList		m_collisionList;
 
-	FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>	m_collisionList;
+	BoundingBox				m_aabb;							///< bounding box
+	BoundingBox				m_aabb_transformed;				///< transformed bounding box, does not updated in dynamic objects
+	IAARectangle			m_cellRange{ 0, 0, 0, 0 };		///< static object cell range for broadphase searching
 
-	BoundingBox					m_aabb;																///< bounding box
-	BoundingBox					m_aabb_transformed;													///< transformed bounding box, does not updated in dynamic objects
+	int						m_surfParam{ 0 };					///< surface parameters if no CEqBulletIndexedMesh defined
+	int						m_flags{ COLLOBJ_TRANSFORM_DIRTY };	///< collision object flags, ECollisionObjectFlags and EBodyFlags
 
-	IAARectangle				m_cellRange;														///< static object cell range for broadphase searching
-
-	IEqPhysCallback*			m_callbacks;
-
-	int							m_surfParam;														///< surface parameters if no CEqBulletIndexedMesh defined
-	volatile int				m_flags;															///< collision object flags, ECollisionObjectFlags and EBodyFlags
-
-	float						m_erp;
+	float					m_erp{ 0.0f };
 
 	//--------------------------------------------------------------------------------
 protected:
-	void						InitAABB();
+	void					InitAABB();
 
 #ifdef _DEBUG
-	EqString					m_debugName;
+	EqString				m_debugName;
 #endif // _DEBUG
 
-	Matrix4x4					m_cachedTransform;
-	Quaternion					m_orientation;			// floating point Quaternions are ok
-	Vector3D					m_center;
-	FVector3D					m_position;				// fixed point positions are ideal
-
-	btCollisionObject*			m_collObject;
-
-	CEqBulletIndexedMesh*		m_mesh;
-	btTriangleInfoMap*			m_trimap;
-
-	collgridcell_t*				m_cell;
-
-	btCollisionShape*			m_shape;
-
-	btCollisionShape**			m_shapeList;
-	int							m_numShapes;			// > 1 indicates it's a compound
+	Matrix4x4				m_cachedTransform{ identity4 };
+	Quaternion				m_orientation{ qidentity };		// floating point Quaternions are ok
+	Vector3D				m_center{ vec3_zero };
+	FVector3D				m_position{ 0.0f };				// fixed point positions are ideal
 	
-	void*						m_userData;
+	IEqPhysCallback*		m_callbacks{ nullptr };
+	void*					m_userData{ nullptr };
 
-	int							m_contents;
-	int							m_collMask;
+	btCollisionObject*		m_collObject{ nullptr };
+	CEqBulletIndexedMesh*	m_mesh{ nullptr };
+	btTriangleInfoMap*		m_trimap{ nullptr };
+	collgridcell_t*			m_cell{ nullptr };
 
-	float						m_restitution;
-	float						m_friction;
+	btCollisionShape*		m_shape{ nullptr };
+	btCollisionShape**		m_shapeList{ nullptr };
+	int						m_numShapes{ 0 };			// > 1 indicates it's a compound
 
-	bool						m_studioShape;
+	int						m_contents{ (int)0xffffffff };
+	int						m_collMask{ (int)0xffffffff };
+
+	float					m_restitution{ 0.1f };
+	float					m_friction{ 0.1f };
+
+	bool					m_studioShape{ false };
 };

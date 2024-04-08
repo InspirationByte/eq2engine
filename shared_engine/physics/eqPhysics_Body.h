@@ -75,125 +75,119 @@ public:
 
 	//---------------------------------------------------------------
 
-							CEqRigidBody();
-							~CEqRigidBody();
+	CEqRigidBody();
+	~CEqRigidBody();
 
-	void					ClearContacts();
+	void				ClearContacts();
 
-	bool					IsDynamic() const {return true;}
+	bool				IsDynamic() const {return true;}
 
-	void					SetMass(float mass, float inertiaScale = 1.0f);
-	float					GetMass() const;
-	float					GetInvMass() const;
+	void				SetMass(float mass, float inertiaScale = 1.0f);
+	float				GetMass() const;
+	float				GetInvMass() const;
 
-	void					ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse);			///< apply impulse at relative position
-	void					ApplyForce(const FVector3D& rel_pos, const Vector3D& force);				///< apply force at relative position
+	void				ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse);			///< apply impulse at relative position
+	void				ApplyForce(const FVector3D& rel_pos, const Vector3D& force);				///< apply force at relative position
 
-	void					ApplyAngularImpulse( const Vector3D& impulse );
-	void					ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse);
+	void				ApplyAngularImpulse( const Vector3D& impulse );
+	void				ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse);
 
-	void					ApplyAngularForce(const Vector3D& force);
-	void					ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force);
+	void				ApplyAngularForce(const Vector3D& force);
+	void				ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force);
 
-	void					ApplyLinearImpulse(const Vector3D& impulse);
-	void					ApplyLinearForce(const Vector3D& force);
+	void				ApplyLinearImpulse(const Vector3D& impulse);
+	void				ApplyLinearForce(const Vector3D& force);
 
-	void					ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
-	void					ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
+	void				ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
+	void				ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
 
-	void					SetPosition(const FVector3D& position);										///< sets new position
-	void					SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
+	void				SetPosition(const FVector3D& position);										///< sets new position
+	void				SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
 
-	const FVector3D&		GetPrevPosition() const;													///< returns last frame body position
-	const Quaternion&		GetPrevOrientation() const;													///< returns last frame body Quaternion orientation
+	const FVector3D&	GetPrevPosition() const;													///< returns last frame body position
+	const Quaternion&	GetPrevOrientation() const;													///< returns last frame body Quaternion orientation
 
-	void					SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
-	const FVector3D&		GetCenterOfMass() const;													///< returns body center of mass
+	void				SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
+	const FVector3D&	GetCenterOfMass() const;													///< returns body center of mass
 
-	Vector3D				GetVelocityAtLocalPoint(const FVector3D& point) const;						///< returns velocity at specified local point
-	Vector3D				GetVelocityAtWorldPoint(const FVector3D& point) const;						///< returns velocity at specified world point
+	Vector3D			GetVelocityAtLocalPoint(const FVector3D& point) const;						///< returns velocity at specified local point
+	Vector3D			GetVelocityAtWorldPoint(const FVector3D& point) const;						///< returns velocity at specified world point
 
-	const Vector3D&			GetLinearVelocity() const;													///< returns linear velocity
-	const Vector3D&			GetAngularVelocity() const;													///< returns angular velocity
+	const Vector3D&		GetLinearVelocity() const;													///< returns linear velocity
+	const Vector3D&		GetAngularVelocity() const;													///< returns angular velocity
 
-	void					SetLinearVelocity(const Vector3D& velocity);								///< sets new linear velocity (momentum / invMass)
-	void					SetAngularVelocity(const Vector3D& velocity);								///< sets new angular velocity
+	void				SetLinearVelocity(const Vector3D& velocity);								///< sets new linear velocity (momentum / invMass)
+	void				SetAngularVelocity(const Vector3D& velocity);								///< sets new angular velocity
 
-	void					SetLinearFactor(const Vector3D& fac);										///< sets new linear factor
-	void					SetAngularFactor(const Vector3D& fac);										///< sets new angular factor
+	void				SetLinearFactor(const Vector3D& fac);										///< sets new linear factor
+	void				SetAngularFactor(const Vector3D& fac);										///< sets new angular factor
 
-	float					GetGravity() const;
-	void					SetGravity(float value);													///< sets new gravity force
+	float				GetGravity() const;
+	void				SetGravity(float value);													///< sets new gravity force
 
-	const Matrix3x3&		GetWorldInvInertiaTensor() const;											///< returns world transformed inverse inertia tensor
+	const Matrix3x3&	GetWorldInvInertiaTensor() const;											///< returns world transformed inverse inertia tensor
 
-	bool					TryWake( bool velocityCheck = true );										///< tries to wake the body up
-	void					Wake();																		///< unfreezes the body even if it was forced to freeze
-	void					Freeze();																	///< force freezes body and external powers will not wake it up
-	bool					IsFrozen() const;															///< indicates that body has been frozen (forced or timed out)
+	bool				TryWake( bool velocityCheck = true );										///< tries to wake the body up
+	void				Wake();																		///< unfreezes the body even if it was forced to freeze
+	void				Freeze();																	///< force freezes body and external powers will not wake it up
+	bool				IsFrozen() const;															///< indicates that body has been frozen (forced or timed out)
 
-	void					SetMinFrameTime( float time, bool ignoreMotion = true );					///< sets minimal frame time for collision detections
-	float					GetMinFrametime() const;
-	float					GetLastFrameTime() const;													///< returns last frame time (used if min frame time set)
-	float					GetAccumDeltaTime() const;
-	bool					IsCanIntegrate( bool checkIgnore = false) const;
+	void				SetMinFrameTime( float time, bool ignoreMotion = true );					///< sets minimal frame time for collision detections
+	float				GetMinFrametime() const;
+	float				GetLastFrameTime() const;													///< returns last frame time (used if min frame time set)
+	float				GetAccumDeltaTime() const;
+	bool				IsCanIntegrate( bool checkIgnore = false) const;
 
-	void					Integrate( float time );													///< integrates velocities on body and stores position
-	void					Update( float time );														///< updates body position
+	void				Integrate( float time );													///< integrates velocities on body and stores position
+	void				Update( float time );														///< updates body position
 	
 	// constraints
-	void					AddConstraint( IEqPhysicsConstraint* constraint );
-	void					RemoveConstraint( IEqPhysicsConstraint* constraint );
-	void					RemoveAllConstraints();
+	void				AddConstraint( IEqPhysicsConstraint* constraint );
+	void				RemoveConstraint( IEqPhysicsConstraint* constraint );
+	void				RemoveAllConstraints();
 
-	void					SetConstraintsUnsatisfied();
+	void				SetConstraintsUnsatisfied();
 
-	float					ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
+	float				ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
 
 protected:
-
-
-	void					ComputeInertia(float scale);
-	void					UpdateInertiaTensor();		///< updates inertia tensor
-	void					AccumulateForces(float time);	///< accumulates forces
+	void				ComputeInertia(float scale);
+	void				UpdateInertiaTensor();		///< updates inertia tensor
+	void				AccumulateForces(float time);	///< accumulates forces
 
 	FixedArray<ContactPair_t, 32>			m_contactPairs; // contact pair list in single frame
 	FixedArray<IEqPhysicsConstraint*, 8>	m_constraints;
 
-	Matrix3x3						m_invInertiaTensor;
+	Matrix3x3			m_invInertiaTensor{ identity3 };
 
-	Vector3D						m_linearVelocity;	// linear velocity - IS READ ONLY! To set: linearMomentum * mass
-	Vector3D						m_angularVelocity;
+	Quaternion			m_prevOrientation{ qidentity };
+	FVector3D			m_prevPosition{ 0.0f };
 
-	Vector3D						m_linearFactor;
-	Vector3D						m_angularFactor;
+	FVector3D			m_centerOfMassTrans{ 0.0f };
 
-	Vector3D						m_totalTorque;
-	Vector3D						m_totalForce;
+	Vector3D			m_linearVelocity{ vec3_zero };	// linear velocity - IS READ ONLY! To set: linearMomentum * mass
+	Vector3D			m_angularVelocity{ vec3_zero };
+
+	Vector3D			m_linearFactor{ 1.0f };
+	Vector3D			m_angularFactor{ 1.0f };
+
+	Vector3D			m_totalTorque{ vec3_zero };
+	Vector3D			m_totalForce{ vec3_zero };
 
 	// constant params
-	Vector3D						m_inertia;
-	Vector3D						m_invInertia;
+	Vector3D			m_inertia{ 1.0f };
+	Vector3D			m_invInertia{ 1.0f };
 
-	FVector3D						m_centerOfMass;
+	FVector3D			m_centerOfMass{ 0.0f };
 
-	float							m_freezeTime;
+	float				m_gravity{ 0.0f };
+	float				m_mass{ 1.0f };
+	float				m_invMass{ 1.0f };
 
-	float							m_minFrameTime;
-	float							m_frameTimeAccumulator;
-	float							m_lastFrameTime;
-	bool							m_minFrameTimeIgnoreMotion;
+	float				m_freezeTime{ 0.0f };
 
-public:
-	FVector3D						m_centerOfMassTrans;
-
-	Quaternion						m_prevOrientation;
-	FVector3D						m_prevPosition;
-
-protected:
-
-	float				m_gravity;
-
-	float				m_mass;
-	float				m_invMass;
+	float				m_minFrameTime{ 0.0f };
+	float				m_frameTimeAccumulator{ 0.0f };
+	float				m_lastFrameTime{ 0.0f };
+	bool				m_minFrameTimeIgnoreMotion{ false };
 };

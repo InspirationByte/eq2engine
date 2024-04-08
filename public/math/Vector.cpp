@@ -195,7 +195,7 @@ void VectorVectors( const Vector3D &forward, Vector3D &right, Vector3D &up )
 
 void VectorRotate( const Vector3D &in1, const Vector3D &angles, Vector3D *out, Vector3D *center)
 {
-	Vector3D psvdCenter = Vector3D(0);
+	Vector3D psvdCenter = vec3_zero;
 
 	if(center != nullptr)
 	{

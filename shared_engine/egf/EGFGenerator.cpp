@@ -485,7 +485,7 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 		if(!stricmp(keyBase->name, "global_offset"))
 		{
 			// try apply global offset
-			m_modelOffset = KV_GetVector3D(keyBase, 0, Vector3D(0.0f));
+			m_modelOffset = KV_GetVector3D(keyBase, 0, vec3_zero);
 		}
 		else if (!stricmp(keyBase->name, "FBXSource"))
 		{

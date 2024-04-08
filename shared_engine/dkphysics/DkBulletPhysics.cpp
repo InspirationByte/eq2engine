@@ -554,7 +554,7 @@ void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &tr
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
-	trace->normal = Vector3D(0);
+	trace->normal = vec3_zero;
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
 	trace->hitObj = nullptr;
@@ -591,7 +591,7 @@ void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &tra
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
-	trace->normal = Vector3D(0);
+	trace->normal = vec3_zero;
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
 	trace->hitObj = nullptr;
@@ -646,7 +646,7 @@ void DkPhysics::InternalTraceSphere(const Vector3D &tracestart, const Vector3D &
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
-	trace->normal = Vector3D(0);
+	trace->normal = vec3_zero;
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
 	trace->hitObj = nullptr;
@@ -689,7 +689,7 @@ void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &t
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
-	trace->normal = Vector3D(0);
+	trace->normal = vec3_zero;
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
 	trace->hitObj = nullptr;

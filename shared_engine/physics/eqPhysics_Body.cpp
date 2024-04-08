@@ -43,32 +43,8 @@ const float BODY_MIN_VELOCITY_WAKE_ANG	= 0.005f;
 
 CEqRigidBody::CEqRigidBody() : CEqCollisionObject()
 {
-	//m_linearMomentum = FVector3D(0.0f);
-	m_linearVelocity = Vector3D(0.0f);
-	m_angularVelocity = Vector3D(0.0f);
-	m_totalTorque = Vector3D(0.0f);
-	m_totalForce = Vector3D(0.0f);
-
-	m_linearFactor = Vector3D(1.0f);
-	m_angularFactor = Vector3D(1.0f);
-
-	m_restitution = 0.1f;
-	m_friction = 0.1f;
-
-	m_centerOfMass = FVector3D(0.0f);
-	m_centerOfMassTrans = m_centerOfMass;
-
-	m_gravity = gravity_const;
-
 	m_freezeTime = BODY_FREEZE_TIME;
-
-	m_minFrameTime = 0.0f;
-	m_frameTimeAccumulator = 0.0f;
-	m_lastFrameTime = 0.0f;
-	m_minFrameTimeIgnoreMotion = false;
-
-	m_prevPosition = FVector3D(0.0f);
-	m_prevOrientation = qidentity;
+	m_gravity = gravity_const;
 }
 
 CEqRigidBody::~CEqRigidBody()
@@ -216,10 +192,10 @@ void CEqRigidBody::Integrate(float delta)
 		if(!(m_flags & BODY_FORCE_PRESERVEFORCES))
 		{
 			// zero some forces
-			m_totalTorque = Vector3D(0);
-			m_totalForce = Vector3D(0);
-			m_linearVelocity = Vector3D(0);
-			m_angularVelocity = Vector3D(0);
+			m_totalTorque = vec3_zero;
+			m_totalForce = vec3_zero;
+			m_linearVelocity = vec3_zero;
+			m_angularVelocity = vec3_zero;
 		}
 
 		return;
@@ -352,7 +328,7 @@ void CEqRigidBody::AccumulateForces(float time)
 		if(scale > 0)
 			angularVelocity *= scale;
 		else
-			angularVelocity = FVector3D(0);
+			angularVelocity = vec3_zero;
 	}
 
 	ASSERT_MSG(!IsNaN(angularVelocity.x) && !IsNaN(angularVelocity.y) && !IsNaN(angularVelocity.z), "Rigid body angular velocity is NaN");
@@ -375,8 +351,8 @@ void CEqRigidBody::AccumulateForces(float time)
 	m_angularVelocity = angularVelocity;
 
 	// clear them
-	m_totalTorque = Vector3D(0);
-	m_totalForce = Vector3D(0);
+	m_totalTorque = vec3_zero;
+	m_totalForce = vec3_zero;
 
 	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
@@ -411,8 +387,9 @@ const FVector3D& CEqRigidBody::GetCenterOfMass() const
 void CEqRigidBody::ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse)
 {
 	m_linearVelocity += impulse * m_invMass;
-	m_angularVelocity += m_invInertiaTensor*cross(Vector3D(rel_pos + m_centerOfMassTrans), impulse);
+	m_angularVelocity += m_invInertiaTensor * cross(Vector3D(rel_pos + m_centerOfMassTrans), impulse);
 }
+
 
 // applies world impulse
 void CEqRigidBody::ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse)
@@ -425,7 +402,7 @@ void CEqRigidBody::ApplyWorldImpulse(const FVector3D& position, const Vector3D& 
 void CEqRigidBody::ApplyForce(const FVector3D& rel_pos, const Vector3D& force)
 {
 	m_totalForce += force;
-	Vector3D torqueAdd = cross(Vector3D(rel_pos+m_centerOfMassTrans), force);
+	Vector3D torqueAdd = cross(Vector3D(rel_pos + m_centerOfMassTrans), force);
 	m_totalTorque += torqueAdd;
 }
 
@@ -444,12 +421,12 @@ void CEqRigidBody::ApplyAngularImpulse(const Vector3D& impulse)
 
 void CEqRigidBody::ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse)
 {
-	m_angularVelocity += m_invInertiaTensor*cross(Vector3D(rel_pos), impulse);
+	m_angularVelocity += m_invInertiaTensor * cross(Vector3D(rel_pos), impulse);
 }
 
 void CEqRigidBody::ApplyLinearImpulse(const Vector3D& impulse)
 {
-	m_linearVelocity += impulse*m_invMass;
+	m_linearVelocity += impulse * m_invMass;
 }
 
 void CEqRigidBody::ApplyAngularForce(const Vector3D& force)
@@ -639,11 +616,10 @@ void CEqRigidBody::CopyValues(CEqRigidBody* dest, const CEqRigidBody* src)
 }
 
 
-float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_correction_factor)
+float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float errorCorrectionFactor)
 {
 	FVector3D contactPoint = pair.position;
 	Vector3D contactNormal = pair.normal;
-	int pairFlag = pair.flags;
 
 	CEqCollisionObject* bodyA = pair.bodyA;
 	CEqRigidBody* bodyB = (CEqRigidBody*)pair.bodyB;
@@ -651,73 +627,69 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_corr
 	FVector3D contactRelativePosA(0);
 	FVector3D contactRelativePosB;
 	Vector3D contactVelocity;
-	float denominator = 0.0f;
-
-	Vector3D relVelA;
-	Vector3D relVelB;
+	
 	const bool bodyADynamic = bodyA->IsDynamic();
 	
 	// body B
+	Vector3D relVelB;
 	{
-		contactRelativePosB = bodyB->GetPosition()-contactPoint;
+		contactRelativePosB = bodyB->GetPosition() - contactPoint;
 		contactVelocity = relVelB = bodyB->GetVelocityAtLocalPoint(contactRelativePosB);
 	}
 
 	// body A
 	if (bodyADynamic)
 	{
-		contactRelativePosA = bodyA->GetPosition()-contactPoint;
-		relVelA = ((CEqRigidBody*)bodyA)->GetVelocityAtLocalPoint(contactRelativePosA);
-		contactVelocity -= relVelA;
+		contactRelativePosA = bodyA->GetPosition() - contactPoint;
+		contactVelocity -= static_cast<CEqRigidBody*>(bodyA)->GetVelocityAtLocalPoint(contactRelativePosA);;
 	}
 
 	const bool forceFrozenA = (bodyA->m_flags & BODY_FORCE_FREEZE);
 	const bool forceFrozenB = (bodyB->m_flags & BODY_FORCE_FREEZE);
 
+	float denominator = 0.0f;
+
 	// check velocity from opposite object to add denominator
 	// if object is frozen
 	if(bodyADynamic && (!forceFrozenA /* || forceFrozenA && lengthSqr(relVelB) > 3.0f*/)) // TODO: unfreeze activation variable
-		denominator += ((CEqRigidBody*)bodyA)->ComputeImpulseDenominator(contactRelativePosA, contactNormal);
+		denominator += static_cast<CEqRigidBody*>(bodyA)->ComputeImpulseDenominator(contactRelativePosA, contactNormal);
 
 	if(!forceFrozenB /* || forceFrozenB && lengthSqr(relVelA) > 3.0f*/) // TODO: unfreeze activation variable
 		denominator += bodyB->ComputeImpulseDenominator(contactRelativePosB, contactNormal);
 
-	if (denominator < 0.0000001)
+	if (denominator < 0.0000001f)
 		return 0.0f;
 
-	const float combined_rest = 1.0f + (pair.restitutionA + pair.restitutionB);
-	const float combined_friction = (pair.frictionA + pair.frictionB) * 0.5f;
+	const float combinedRest = 1.0f + (pair.restitutionA + pair.restitutionB);
+	const float combinedFriction = (pair.frictionA + pair.frictionB) * 0.5f;
 
-	const float impulse_speed = dot(contactVelocity, contactNormal);
-	const float jacDiagABInv = 1.0f / denominator;
+	const float impulse = dot(contactVelocity, contactNormal);
+	const float jacDiagABInv = 1.0f  / denominator;
 
-	const float penetrationImpulse = error_correction_factor * jacDiagABInv;
-	const float velocityImpulse = impulse_speed * jacDiagABInv;
+	const float penetrationImpulse = errorCorrectionFactor * jacDiagABInv;
+	const float velocityImpulse = impulse * jacDiagABInv;
 
-	float velocityImpulseRest = impulse_speed * combined_rest * jacDiagABInv;
+	const float velocityImpulseRest = impulse * combinedRest * jacDiagABInv;
 
-	float normalImpulse = penetrationImpulse+velocityImpulse;
-	normalImpulse =  max(0.0f, normalImpulse); //(0.0f > normalImpulse) ? 0.0f: normalImpulse;
-
-	float normalImpulseRest = penetrationImpulse+velocityImpulseRest;
-	normalImpulseRest = max(0.0f, normalImpulseRest); // (0.0f > normalImpulseRest) ? 0.0f : normalImpulseRest;
+	const float normalImpulse = max(0.0f, penetrationImpulse + velocityImpulse);
+	const float normalImpulseRest = max(0.0f, penetrationImpulse + velocityImpulseRest);
 
 	// apply impact based on point velocity
-	Vector3D impulseVector = contactNormal*normalImpulseRest;
+	const Vector3D impulseVector = contactNormal*normalImpulseRest;
 
+#ifdef ENABLE_DEBUG_DRAWING
 	if(ph_showCollisionResponses.GetBool())
 	{
 		debugoverlay->Line3D(contactPoint, contactPoint+impulseVector*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
 		debugoverlay->Line3D(contactPoint, contactPoint-impulseVector*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
 		debugoverlay->Box3D(contactPoint-0.01f, contactPoint+0.01f, ColorRGBA(1,1,0,1), 3.0f);
 	}
+#endif
 
-	Vector3D frictionImpulse = ComputeFrictionVelocity(contactNormal, 
-		contactVelocity,
-		normalImpulse, 
-		denominator, 
-		combined_friction,
-		combined_friction);
+	const Vector3D frictionImpulse = ComputeFrictionVelocity(contactNormal, contactVelocity, normalImpulse, 
+		denominator, combinedFriction, combinedFriction);
+
+	const int pairFlag = pair.flags;
 
 	// apply now
 	if( bodyADynamic && 
@@ -726,8 +698,8 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_corr
 		!(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE) &&
 		!(bodyA->m_flags & BODY_FORCE_FREEZE))
 	{
-		((CEqRigidBody*)bodyA)->ApplyImpulse(contactRelativePosA, impulseVector - frictionImpulse);
-		((CEqRigidBody*)bodyA)->TryWake();
+		static_cast<CEqRigidBody*>(bodyA)->ApplyImpulse(contactRelativePosA, impulseVector - frictionImpulse);
+		static_cast<CEqRigidBody*>(bodyA)->TryWake();
 	}
 
 	if( !(pairFlag & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && 
