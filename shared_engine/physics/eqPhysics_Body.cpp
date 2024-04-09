@@ -17,21 +17,16 @@
 #include "physics/BulletConvert.h"
 using namespace EqBulletUtils;
 
-#define COLLRESPONSE_DEBUG_SCALE 0.005f
-
 //-----------------------------------------------------------------------------------------
 
 DECLARE_CVAR(ph_showCollisionResponses, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_debugRigidBody, "0", nullptr, CV_CHEAT);
 
-const float frictionTimeScale = 10.0f;
-const float dampingTimeScale = 1.0f;
-const float minimumAngularVelocity = 0.000001f;	// squared value
+const float BODY_DAMPING_TIMESCALE = 1.0f;
+const float BODY_MIN_ANGULAR_VELOCITY = 0.000001f;	// squared value
 
-const float gravity_const = 9.81f;
-const float angVelDamp = 0.01f;//0.0125f;
-
-const float inertiaMassScale = 1.5f;
+const float BODY_DEFAULT_GRAVITY = 9.81f;
+const float BODY_ANGULAR_VELOCITY_DAMPING = 0.01f;//0.0125f;
 
 const float BODY_FREEZE_TIME		= 0.5f;
 
@@ -44,7 +39,7 @@ const float BODY_MIN_VELOCITY_WAKE_ANG	= 0.005f;
 CEqRigidBody::CEqRigidBody() : CEqCollisionObject()
 {
 	m_freezeTime = BODY_FREEZE_TIME;
-	m_gravity = gravity_const;
+	m_gravity = BODY_DEFAULT_GRAVITY;
 }
 
 CEqRigidBody::~CEqRigidBody()
@@ -92,9 +87,9 @@ void CEqRigidBody::ComputeInertia(float scale)
 
 	ConvertBulletToDKVectors(m_inertia, inertia);
 
-	m_invInertia = Vector3D(	m_inertia.x != 0.0f ? 1.0f / m_inertia.x: 0.0f,
-								m_inertia.y != 0.0f ? 1.0f / m_inertia.y: 0.0f,
-								m_inertia.z != 0.0f ? 1.0f / m_inertia.z: 0.0f);
+	m_invInertia = Vector3D(m_inertia.x != 0.0f ? 1.0f / m_inertia.x: 0.0f,
+							m_inertia.y != 0.0f ? 1.0f / m_inertia.y: 0.0f,
+							m_inertia.z != 0.0f ? 1.0f / m_inertia.z: 0.0f);
 
 	UpdateInertiaTensor();
 }
@@ -129,7 +124,9 @@ bool CEqRigidBody::TryWake( bool velocityCheck )
 	if (velocityCheck &&
 		lengthSqr(m_linearVelocity) < BODY_MIN_VELOCITY_WAKE &&
 		lengthSqr(m_angularVelocity) < BODY_MIN_VELOCITY_WAKE_ANG)
+	{
 		return false;
+	}
 
 	m_flags &= ~BODY_FROZEN;
 	m_freezeTime = BODY_FREEZE_TIME;
@@ -149,8 +146,7 @@ void CEqRigidBody::Freeze()
 
 bool CEqRigidBody::IsFrozen() const
 {
-	int flags = m_flags;
-	return flags & (BODY_FROZEN | BODY_FORCE_FREEZE);
+	return m_flags & (BODY_FROZEN | BODY_FORCE_FREEZE);
 }
 
 bool CEqRigidBody::IsCanIntegrate(bool checkIgnore) const
@@ -242,18 +238,21 @@ void CEqRigidBody::Integrate(float delta)
 #ifdef ENABLE_DEBUG_DRAWING
 	if(ph_debugRigidBody.GetBool())
 	{
-		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1),
-			EqString::Format(
-			"Position: [%.2f %.2f %.2f]\n"
-			"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
-			"Ang. vel: [%.2f %.2f %.2f]\n"
-			"mass: %g\n"
-			"cell: %d",
-			(float)m_position.x,(float)m_position.y,(float)m_position.z,
-			(float)m_linearVelocity.x,(float)m_linearVelocity.y,(float)m_linearVelocity.z, (float)length(m_linearVelocity),
-			(float)m_angularVelocity.x,(float)m_angularVelocity.y,(float)m_angularVelocity.z,
-			(float)m_mass,
-			m_cell != nullptr));
+		DbgText3D()
+			.Position(m_position)
+			.Distance(50.0f)
+			.Color(ColorRGBA(1, 1, 1, 1))
+			.Text(
+				"Position: [%.2f %.2f %.2f]\n"
+				"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
+				"Ang. vel: [%.2f %.2f %.2f]\n"
+				"mass: %g\n"
+				"cell: %d",
+				(float)m_position.x,(float)m_position.y,(float)m_position.z,
+				(float)m_linearVelocity.x,(float)m_linearVelocity.y,(float)m_linearVelocity.z, (float)length(m_linearVelocity),
+				(float)m_angularVelocity.x,(float)m_angularVelocity.y,(float)m_angularVelocity.z,
+				(float)m_mass,
+				m_cell != nullptr);
 	}
 #endif // ENABLE_DEBUG_DRAWING
 }
@@ -265,9 +264,8 @@ void CEqRigidBody::Update(float time)
 	// re-calculate velocity
 	m_linearVelocity = (m_position - m_prevPosition) / time;
 
-	float r_time = 1.0f / time;
-	
-	Quaternion dq  = m_orientation * !m_prevOrientation;
+	const float r_time = 1.0f / time;
+	const Quaternion dq  = m_orientation * !m_prevOrientation;
 
 	angularVelocity = Vector3D(dq.x * 2.0 * r_time, dq.y * 2.0 * r_time, dq.z * 2.0 * r_time);
 
@@ -286,7 +284,7 @@ void CEqRigidBody::AccumulateForces(float time)
 	Vector3D angularVelocity = m_angularVelocity;
 	Quaternion orientation = m_orientation;
 
-	int flags = m_flags;
+	const int flags = m_flags;
 
 	if (!(flags & BODY_NO_AUTO_FREEZE))
 	{
@@ -303,7 +301,8 @@ void CEqRigidBody::AccumulateForces(float time)
 	}
 
 	// gravity to momentum
-	linearVelocity += Vector3D(0,-m_gravity,0) * time;
+	// TODO: gravity vector variable
+	linearVelocity += Vector3D(0, -m_gravity, 0) * time;
 
 	// apply force to momentum
 	linearVelocity += m_totalForce * m_invMass * time;
@@ -317,13 +316,13 @@ void CEqRigidBody::AccumulateForces(float time)
 	// apply torque
 	angularVelocity += (m_invInertiaTensor * m_totalTorque) * time;
 
-	if( lengthSqr(angularVelocity) < minimumAngularVelocity )
+	if( lengthSqr(angularVelocity) < BODY_MIN_ANGULAR_VELOCITY )
 		angularVelocity = vec3_zero;
 
 	if(!(flags & BODY_DISABLE_DAMPING))
 	{
 		// apply damping to angular velocity
-		const float scale = 1.0f - (angVelDamp * time * dampingTimeScale);
+		const float scale = 1.0f - (BODY_ANGULAR_VELOCITY_DAMPING * time * BODY_DAMPING_TIMESCALE);
 
 		if(scale > 0)
 			angularVelocity *= scale;
@@ -680,9 +679,22 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float errorCorre
 #ifdef ENABLE_DEBUG_DRAWING
 	if(ph_showCollisionResponses.GetBool())
 	{
-		debugoverlay->Line3D(contactPoint, contactPoint+impulseVector*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
-		debugoverlay->Line3D(contactPoint, contactPoint-impulseVector*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
-		debugoverlay->Box3D(contactPoint-0.01f, contactPoint+0.01f, ColorRGBA(1,1,0,1), 3.0f);
+		const float vectorScale = 0.005f;
+
+		DbgLine()
+			.Start(contactPoint).End(contactPoint + impulseVector * vectorScale)
+			.ColorStart(ColorRGBA(1, 0, 0, 1)).ColorEnd(ColorRGBA(1, 1, 0, 1))
+			.Time(3.0f);
+
+		DbgLine()
+			.Start(contactPoint).End(contactPoint - impulseVector * vectorScale)
+			.ColorStart(ColorRGBA(1, 0, 0, 1)).ColorEnd(ColorRGBA(1, 1, 0, 1))
+			.Time(3.0f);
+
+		DbgBox()
+			.CenterSize(contactPoint, 0.1f)
+			.Color(ColorRGBA(1, 1, 0, 1))
+			.Time(3.0f);
 	}
 #endif
 
