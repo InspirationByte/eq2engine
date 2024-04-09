@@ -401,23 +401,28 @@ int CAnimatingEGF::FindSequenceByActivity(Activity act, int slot) const
 void CAnimatingEGF::SetSequence(int seqIdx, int slot)
 {
 	AnimSequenceTimer& timer = m_sequenceTimers[slot];
-	AnimSequenceTimer transitionFromTimer = timer;
+	AnimSequenceTimer oldTimer = timer;
 
 	// assign sequence and reset playback speed
 	// if sequence is not valid, reset it to the Default Pose
 	timer.seq = seqIdx >= 0 ? &m_seqList[seqIdx] : nullptr;
 	timer.playbackSpeedScale = 1.0f;
 
-	if (transitionFromTimer.seq == nullptr || timer.seq == transitionFromTimer.seq)
+	AnimSequenceTimer& transitionTimer = m_transitionTimers[slot];
+	if (transitionTimer.transitionRemainingTime > 0.0f && transitionTimer.seq)
+		return;
+
+	if (oldTimer.seq == nullptr)
 	{
-		m_transitionTimers[slot].transitionTime = 0.0f;
-		m_transitionTimers[slot].transitionRemainingTime = 0.0f;
+		transitionTimer.transitionTime = 0.0f;
+		transitionTimer.transitionRemainingTime = 0.0f;
 	}
 	else
 	{
-		transitionFromTimer.transitionTime = timer.seq ? timer.seq->s->transitiontime : SEQ_DEFAULT_TRANSITION_TIME;
-		transitionFromTimer.transitionRemainingTime = transitionFromTimer.transitionTime;
-		m_transitionTimers[slot] = transitionFromTimer;
+		transitionTimer = oldTimer;
+
+		transitionTimer.transitionTime = timer.seq ? timer.seq->s->transitiontime : SEQ_DEFAULT_TRANSITION_TIME;
+		transitionTimer.transitionRemainingTime = transitionTimer.transitionTime;	
 	}
 }
 
