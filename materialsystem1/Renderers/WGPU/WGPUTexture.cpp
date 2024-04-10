@@ -298,41 +298,40 @@ void CWGPUTexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 
 	if (!(data.flags & TEXLOCK_READONLY))
 	{
-		g_renderWorker.WaitForExecute("UnlockTex", [&]() {
-			WGPUTextureDataLayout rhiTexLayout{};
-			rhiTexLayout.offset = 0;
-			rhiTexLayout.bytesPerRow = data.lockPitch;
-			rhiTexLayout.rowsPerImage = data.lockSize.height;
+		WGPUTextureDataLayout rhiTexLayout{};
+		rhiTexLayout.offset = 0;
+		rhiTexLayout.bytesPerRow = data.lockPitch;
+		rhiTexLayout.rowsPerImage = data.lockSize.height;
 
-			WGPUImageCopyTexture rhiTexDestination{};
-			rhiTexDestination.texture = m_rhiTextures[0];
-			rhiTexDestination.aspect = WGPUTextureAspect_All;
-			rhiTexDestination.mipLevel = data.lockOrigin.mipLevel;
-			rhiTexDestination.origin = WGPUOrigin3D{ (uint)data.lockOrigin.x, (uint)data.lockOrigin.y, (uint)data.lockOrigin.arraySlice };
+		WGPUImageCopyTexture rhiTexDestination{};
+		rhiTexDestination.texture = m_rhiTextures[0];
+		rhiTexDestination.aspect = WGPUTextureAspect_All;
+		rhiTexDestination.mipLevel = data.lockOrigin.mipLevel;
+		rhiTexDestination.origin = WGPUOrigin3D{ (uint)data.lockOrigin.x, (uint)data.lockOrigin.y, (uint)data.lockOrigin.arraySlice };
 
-			const WGPUExtent3D rhiTexSize{ (uint)data.lockSize.width, (uint)data.lockSize.height, (uint)data.lockSize.arraySize };
+		const WGPUExtent3D rhiTexSize{ (uint)data.lockSize.width, (uint)data.lockSize.height, (uint)data.lockSize.arraySize };
 
-			if (writeCmdRecorder)
-			{
-				CWGPUCommandRecorder* recorder = static_cast<CWGPUCommandRecorder*>(writeCmdRecorder);
-				// TODO: all of this must be CWGPUCommandRecorder::WriteTexture();
+		if (writeCmdRecorder)
+		{
+			CWGPUCommandRecorder* recorder = static_cast<CWGPUCommandRecorder*>(writeCmdRecorder);
+			// TODO: all of this must be CWGPUCommandRecorder::WriteTexture();
 
-				CWGPUBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "TexLockWriteBuffer");
-				writeCmdRecorder->WriteBuffer(&tmpBuffer, data.lockData, data.lockByteCount, 0);
+			CWGPUBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "TexLockWriteBuffer");
+			writeCmdRecorder->WriteBuffer(&tmpBuffer, data.lockData, data.lockByteCount, 0);
 
-				WGPUImageCopyBuffer rhiTexBuffer{};
-				rhiTexBuffer.layout = rhiTexLayout;
-				rhiTexBuffer.buffer = tmpBuffer.GetWGPUBuffer();
+			WGPUImageCopyBuffer rhiTexBuffer{};
+			rhiTexBuffer.layout = rhiTexLayout;
+			rhiTexBuffer.buffer = tmpBuffer.GetWGPUBuffer();
 
-				wgpuCommandEncoderCopyBufferToTexture(recorder->m_rhiCommandEncoder, &rhiTexBuffer, &rhiTexDestination, &rhiTexSize);
-			}
-			else
-			{
+			wgpuCommandEncoderCopyBufferToTexture(recorder->m_rhiCommandEncoder, &rhiTexBuffer, &rhiTexDestination, &rhiTexSize);
+		}
+		else
+		{
+			g_renderWorker.WaitForExecute("UnlockTex", [&]() {
 				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhiTexDestination, data.lockData, data.lockByteCount, &rhiTexLayout, &rhiTexSize);
-			}
-		
-			return 0;
-		});
+				return 0;
+			});
+		}
 	}
 
 	PPFree(data.lockData);
