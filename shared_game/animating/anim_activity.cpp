@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "anim_activity.h"
 
-struct actnamegroup_t
+struct ActivityName
 {
 	char*		name;
 	Activity	act;
@@ -17,7 +17,7 @@ struct actnamegroup_t
 #define MAKE_ACTIVITY(activity) \
 	{#activity, activity}
 
-actnamegroup_t anim_activities[ACT_COUNT + 1] = 
+static ActivityName activityNames[ACT_COUNT + 1] =
 {
 	// basic
 	MAKE_ACTIVITY( ACT_RAGDOLL ),
@@ -33,6 +33,8 @@ actnamegroup_t anim_activities[ACT_COUNT + 1] =
 
 	MAKE_ACTIVITY( ACT_VEHICLE_IDLE ),
 	MAKE_ACTIVITY( ACT_VEHICLE_STEER ),
+	MAKE_ACTIVITY( ACT_VEHICLE_STEER_BACK ),
+	MAKE_ACTIVITY( ACT_VEHICLE_CRASH ),
 
 	MAKE_ACTIVITY( ACT_CAR_HEADLIGHTS ),
 	MAKE_ACTIVITY( ACT_CAR_ANTENNA ),
@@ -50,11 +52,11 @@ Activity GetActivityByName(const char* name)
 
 	for(int i = 0; i < ACT_COUNT; i++)
 	{
-		if(anim_activities[i].name == nullptr)
+		if(activityNames[i].name == nullptr)
 			break;
 
-		if(!stricmp(anim_activities[i].name, name))
-			return anim_activities[i].act;
+		if(!stricmp(activityNames[i].name, name))
+			return activityNames[i].act;
 	}
 
 	return ACT_INVALID;
@@ -64,8 +66,8 @@ const char* GetActivityName(Activity act)
 {
 	for(int i = 0; i < ACT_COUNT; i++)
 	{
-		if(anim_activities[i].act == act)
-			return anim_activities[i].name;
+		if(activityNames[i].act == act)
+			return activityNames[i].name;
 	}
 
 	return "ACT_INVALID";

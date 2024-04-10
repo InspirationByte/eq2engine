@@ -25,6 +25,8 @@ enum Activity
 
 	ACT_VEHICLE_IDLE,
 	ACT_VEHICLE_STEER,
+	ACT_VEHICLE_STEER_BACK,
+	ACT_VEHICLE_CRASH,
 
 	ACT_CAR_HEADLIGHTS,	// headlight animations for cars
 	ACT_CAR_ANTENNA,	// antenna extension for cars

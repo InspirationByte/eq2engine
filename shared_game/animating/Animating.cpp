@@ -530,13 +530,18 @@ const Vector3D& CAnimatingEGF::GetLocalBoneDirection(int nBone) const
 	return m_boneTransforms[nBone].rows[2].xyz();
 }
 
+bool CAnimatingEGF::IsTransitionCompleted(int slot) const
+{
+	return m_transitionTimers[slot].transitionRemainingTime <= 0.0f;
+}
+
 int CAnimatingEGF::GetCurrentAnimationFrameCount(int slot) const
 {
 	const AnimSequence* seq = m_sequenceTimers[slot].seq;
 	if (!seq)
 		return 0.0f;
 
-	return m_sequenceTimers[0].seq->animations[0]->bones[0].numFrames-1;
+	return seq->animations[0]->bones[0].numFrames-1;
 }
 
 // returns duration time of the current animation

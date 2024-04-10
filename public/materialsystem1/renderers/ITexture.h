@@ -8,11 +8,9 @@
 #pragma once
 #include "imaging/textureformats.h"
 
+class IGPUCommandRecorder;
 class CImage;
 using CImagePtr = CRefPtr<CImage>;
-
-class IGPUCommandRecorder;
-using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
 
 struct SamplerStateParams;
 enum ETextureFormat : int;

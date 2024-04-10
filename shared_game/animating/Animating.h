@@ -64,6 +64,8 @@ public:
 
 	void				SwapSequenceTimers(int slotFrom, int swapTo);
 
+	bool				IsTransitionCompleted(int slot = 0) const;
+
 	int					GetCurrentAnimationFrameCount(int slot = 0) const;
 	float				GetCurrentAnimationDuration(int slot = 0) const;			// returns duration time of the current animation
 	float				GetCurrentAnimationTime(int slot = 0) const;				// returns elapsed time of the current animation
