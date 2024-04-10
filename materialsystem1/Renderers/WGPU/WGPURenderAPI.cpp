@@ -526,21 +526,9 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 
 IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name) const
 {
-	CRefPtr<CWGPUBuffer> buffer = CRefPtr_new(CWGPUBuffer);
-	int wgpuUsageFlags = 0;
-	
-	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM) wgpuUsageFlags |= WGPUBufferUsage_Uniform;
-	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	wgpuUsageFlags |= WGPUBufferUsage_Vertex;
-	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	wgpuUsageFlags |= WGPUBufferUsage_Index;
-	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)wgpuUsageFlags |= WGPUBufferUsage_Indirect;
-	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	wgpuUsageFlags |= WGPUBufferUsage_Storage;
+	CRefPtr<CWGPUBuffer> buffer = CRefPtr_new(CWGPUBuffer, bufferInfo, bufferUsageFlags, name);
+	//TODO: buffer->IsValid();
 
-	if (bufferUsageFlags & BUFFERUSAGE_READ)	wgpuUsageFlags |= WGPUBufferUsage_MapRead;
-	if (bufferUsageFlags & BUFFERUSAGE_WRITE)	wgpuUsageFlags |= WGPUBufferUsage_MapWrite;
-	if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC) wgpuUsageFlags |= WGPUBufferUsage_CopySrc;
-	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST) wgpuUsageFlags |= WGPUBufferUsage_CopyDst;
-
-	buffer->Init(bufferInfo, wgpuUsageFlags , name);
 	return IGPUBufferPtr(buffer);
 }
 

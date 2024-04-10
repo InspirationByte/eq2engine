@@ -59,12 +59,17 @@ class CEmptyComputePipeline : public IGPUComputePipeline {};
 class CEmptyBuffer : public IGPUBuffer
 {
 public:
+	CEmptyBuffer(int size, int usageFlags) : m_size(size), m_usageFlags(usageFlags) {}
+
 	void		Update(const void* data, int64 size, int64 offset) {}
 	LockFuture	Lock(int lockOfs, int sizeToLock, int flags) { return LockFuture::Failure(-1, "Unsupported"); }
 	void		Unlock() {}
 	int			GetSize() const { return m_size; }
 
+	int			GetUsageFlags() const { return m_usageFlags; }
+
 	int			m_size{ 0 };
+	int			m_usageFlags{ 0 };
 };
 
 class CEmptyRenderPassRecorder : public IGPURenderPassRecorder
@@ -231,9 +236,7 @@ public:
 
 	IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const
 	{
-		CRefPtr<CEmptyBuffer> buffer = CRefPtr_new(CEmptyBuffer);
-		buffer->m_size = bufferInfo.elementSize * bufferInfo.elementCapacity;
-	
+		CRefPtr<CEmptyBuffer> buffer = CRefPtr_new(CEmptyBuffer, bufferInfo.elementSize * bufferInfo.elementCapacity, bufferUsageFlags);
 		return IGPUBufferPtr(buffer); 
 	}
 

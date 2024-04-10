@@ -15,9 +15,7 @@ class CWGPUBuffer : public IGPUBuffer
 {
 public:
 	~CWGPUBuffer();
-
-	void		Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* label = nullptr);
-	void		Terminate();
+	CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label = nullptr);
 
 	int			GetSize() const { return m_bufSize; }
 

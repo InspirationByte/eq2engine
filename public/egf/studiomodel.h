@@ -7,10 +7,8 @@
 
 #pragma once
 
-#define EQUILIBRIUM_MODEL_VERSION		13
-#define EQUILIBRIUM_MODEL_SIGNATURE		MAKECHAR4('E','Q','G','F')
-
-#define ENABLE_OLD_VERTEX_FORMAT		0
+static constexpr const int EQUILIBRIUM_MODEL_VERSION	= 13;
+static constexpr const int EQUILIBRIUM_MODEL_SIGNATURE	= MAKECHAR4('E','Q','G','F');
 
 static constexpr const int MAX_MODEL_LODS				= 8;
 static constexpr const int MAX_MODEL_PATH_LENGTH		= 256;
@@ -19,6 +17,8 @@ static constexpr const int MAX_MODEL_PART_NAME_LENGTH	= 44;
 static constexpr const int MAX_MODEL_VERTEX_WEIGHTS		= 4;
 
 static constexpr const uint8 EGF_INVALID_IDX = 0xff;
+
+#define ENABLE_OLD_VERTEX_FORMAT 0
 
 enum EStudioFlags
 {

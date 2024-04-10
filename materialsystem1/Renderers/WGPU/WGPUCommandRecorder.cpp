@@ -26,6 +26,8 @@ void CWGPUCommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int
 	if (!bufferImpl)
 		return;
 
+	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_WRITE, "buffer doesn't have Write usage bit");
+
 	wgpuCommandEncoderWriteBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, reinterpret_cast<const uint8_t*>(data), writeDataSize);
 }
 
@@ -36,10 +38,11 @@ void CWGPUCommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOf
 		return;
 
 	CWGPUBuffer* sourceImpl = static_cast<CWGPUBuffer*>(source);
+	CWGPUBuffer* destinationImpl = static_cast<CWGPUBuffer*>(destination);
+
 	if (!sourceImpl)
 		return;
 
-	CWGPUBuffer* destinationImpl = static_cast<CWGPUBuffer*>(destination);
 	if (!destinationImpl)
 		return;
 
@@ -67,6 +70,12 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	CWGPUTexture* srcTexture = static_cast<CWGPUTexture*>(source.texture);
 	CWGPUTexture* dstTexture = static_cast<CWGPUTexture*>(destination.texture);
 
+	if (!srcTexture)
+		return;
+
+	if (!dstTexture)
+		return;
+
 	WGPUImageCopyTexture rhiImageSrc{};
 	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
 	rhiImageSrc.aspect = WGPUTextureAspect_All;			// TODO: Aspect specification
@@ -91,7 +100,15 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 {
 	ASSERT(source.origin.x >= 0 && source.origin.y >= 0 && source.origin.arraySlice >= 0);
 	CWGPUTexture* srcTexture = static_cast<CWGPUTexture*>(source.texture);
-	const CWGPUBuffer* dstBuffer = static_cast<const CWGPUBuffer*>(destination);
+	const CWGPUBuffer* dstBufferImpl = static_cast<const CWGPUBuffer*>(destination);
+
+	if (!srcTexture)
+		return;
+
+	if (!dstBufferImpl)
+		return;
+
+	ASSERT_MSG(dstBufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer doesn't have Copy_Dst usage bit");
 
 	WGPUImageCopyTexture rhiImageSrc{};
 	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
@@ -107,7 +124,7 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 	// TODO: account arraySize in bytesPerRow
 	ASSERT_MSG(copySize.arraySize == 1, "array size > 1 is unsupported yet");
 	WGPUImageCopyBuffer rhiBufferDst;
-	rhiBufferDst.buffer = dstBuffer->GetWGPUBuffer();
+	rhiBufferDst.buffer = dstBufferImpl->GetWGPUBuffer();
 	rhiBufferDst.layout.offset = 0;
 	rhiBufferDst.layout.bytesPerRow = copySize.width * GetBytesPerPixel(GetTexFormat(srcTexture->GetFormat()));
 	rhiBufferDst.layout.rowsPerImage = copySize.height;

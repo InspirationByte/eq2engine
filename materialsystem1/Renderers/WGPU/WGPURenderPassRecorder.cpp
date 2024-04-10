@@ -48,7 +48,7 @@ void CWGPURenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer
 	if (vertexBufferImpl)
 	{
 		if (size < 0) size = WGPU_WHOLE_SIZE;
-		ASSERT_MSG(vertexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Vertex, "buffer doesn't have Vertex buffer usage bit");
+		ASSERT_MSG(vertexBufferImpl->GetUsageFlags() & BUFFERUSAGE_VERTEX, "buffer doesn't have Vertex buffer usage bit");
 		wgpuRenderPassEncoderSetVertexBuffer(m_rhiRenderPassEncoder, slot, vertexBufferImpl->GetWGPUBuffer(), offset, size);
 	}
 	else
@@ -61,7 +61,7 @@ void CWGPURenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat 
 	if (indexBufferImpl)
 	{
 		if (size < 0) size = WGPU_WHOLE_SIZE;
-		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & WGPUBufferUsage_Index, "buffer doesn't have Index buffer usage bit");
+		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDEX, "buffer doesn't have Index buffer usage bit");
 		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], offset, size);
 	}
 }

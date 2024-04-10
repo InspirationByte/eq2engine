@@ -11,6 +11,9 @@
 class CImage;
 using CImagePtr = CRefPtr<CImage>;
 
+class IGPUCommandRecorder;
+using IGPUCommandRecorderPtr = CRefPtr<IGPUCommandRecorder>;
+
 struct SamplerStateParams;
 enum ETextureFormat : int;
 
@@ -157,14 +160,16 @@ struct ITexture::LockInOutData
 		ASSERT_MSG(lockData == nullptr, "CRITICAL - Texture was still locked! Unlock() implementation must set lockData to NULL");
 	}
 
-	TextureOrigin	lockOrigin;
-	TextureExtent	lockSize;
-
 	operator const bool() const { return lockData != nullptr; }
 
-	void*			lockData{ nullptr };	// the place where you can write the data
-	int				lockPitch{ 0 };
-	int				lockByteCount{ 0 };
+	IGPUCommandRecorderPtr	writeCmdRecorder;		// if null - the device queue will be used
 
-	int				flags{ 0 };
+	TextureOrigin			lockOrigin;
+	TextureExtent			lockSize;
+
+	void*					lockData{ nullptr };	// the place where you can write the data
+	int						lockPitch{ 0 };
+	int						lockByteCount{ 0 };
+
+	int						flags{ 0 };
 };

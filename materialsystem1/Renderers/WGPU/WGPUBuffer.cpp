@@ -14,31 +14,46 @@
 
 CWGPUBuffer::~CWGPUBuffer()
 {
-	Terminate();
+	wgpuBufferRelease(m_rhiBuffer);
+	m_rhiBuffer = nullptr;
 }
 
-void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* label)
+CWGPUBuffer::CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* label)
 {
+	int wgpuUsageFlags = 0;
+
+	if (bufferUsageFlags & BUFFERUSAGE_UNIFORM) wgpuUsageFlags |= WGPUBufferUsage_Uniform;
+	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	wgpuUsageFlags |= WGPUBufferUsage_Vertex;
+	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	wgpuUsageFlags |= WGPUBufferUsage_Index;
+	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)wgpuUsageFlags |= WGPUBufferUsage_Indirect;
+	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	wgpuUsageFlags |= WGPUBufferUsage_Storage;
+
+	if (bufferUsageFlags & BUFFERUSAGE_READ)	wgpuUsageFlags |= WGPUBufferUsage_MapRead;
+	if (bufferUsageFlags & BUFFERUSAGE_WRITE)	wgpuUsageFlags |= WGPUBufferUsage_MapWrite;
+	if (bufferUsageFlags & BUFFERUSAGE_COPY_SRC) wgpuUsageFlags |= WGPUBufferUsage_CopySrc;
+	if (bufferUsageFlags & BUFFERUSAGE_COPY_DST) wgpuUsageFlags |= WGPUBufferUsage_CopyDst;
+
 	const int sizeInBytes = bufferInfo.elementSize * bufferInfo.elementCapacity;
 	const int writeDataSize = (bufferInfo.dataSize + 3) & ~3;
 	const bool hasData = bufferInfo.data && bufferInfo.dataSize;
+
 	m_bufSize = (sizeInBytes + 3) & ~3;
+	m_usageFlags = bufferUsageFlags;
 
-	WGPUBufferDescriptor desc = {};
-	desc.usage = wgpuUsage;
-	desc.size = m_bufSize;
-	desc.mappedAtCreation = hasData;
-	desc.label = label;
+	WGPUBufferDescriptor rhiBufferDesc = {};
+	rhiBufferDesc.usage = wgpuUsageFlags;
+	rhiBufferDesc.size = m_bufSize;
+	rhiBufferDesc.mappedAtCreation = hasData;
+	rhiBufferDesc.label = label;
 
-	m_usageFlags = desc.usage;
-	m_rhiBuffer = wgpuDeviceCreateBuffer(CWGPURenderAPI::Instance.GetWGPUDevice(), &desc);
+	m_rhiBuffer = wgpuDeviceCreateBuffer(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiBufferDesc);
 
-	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer");
+	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer %s", label);
 
 	if (!m_rhiBuffer)
 		return;
 
-	if (desc.mappedAtCreation)
+	if (rhiBufferDesc.mappedAtCreation)
 	{
 		wgpuBufferReference(m_rhiBuffer);
 
@@ -55,12 +70,6 @@ void CWGPUBuffer::Init(const BufferInfo& bufferInfo, int wgpuUsage, const char* 
 			return 0;
 		});
 	}
-}
-
-void CWGPUBuffer::Terminate()
-{
-	wgpuBufferRelease(m_rhiBuffer);
-	m_rhiBuffer = nullptr;
 }
 
 void CWGPUBuffer::Update(const void* data, int64 size, int64 offset)

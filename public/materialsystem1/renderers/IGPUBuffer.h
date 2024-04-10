@@ -20,6 +20,7 @@ public:
 	virtual void		Unlock() = 0;
 
 	virtual int			GetSize() const = 0;
+	virtual int			GetUsageFlags() const = 0;
 };
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
