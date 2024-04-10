@@ -26,7 +26,7 @@ void CWGPUCommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int
 	if (!bufferImpl)
 		return;
 
-	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_WRITE, "buffer doesn't have Write usage bit");
+	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer doesn't have Copy_Dst usage bit");
 
 	wgpuCommandEncoderWriteBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, reinterpret_cast<const uint8_t*>(data), writeDataSize);
 }
