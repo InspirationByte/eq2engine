@@ -20,7 +20,7 @@ public:
 	void			Release();
 
 	bool			Lock(LockInOutData& data);
-	void			Unlock();
+	void			Unlock(IGPUCommandRecorder* writeCmdRecorder = nullptr);
 
 	WGPUTexture		GetWGPUTexture() const { return m_rhiTextures[0]; }
 	WGPUTextureView	GetWGPUTextureView(int viewIdx = -1) const { return m_rhiViews[viewIdx >= 0 ? viewIdx : m_animFrame]; }

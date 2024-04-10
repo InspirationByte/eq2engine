@@ -80,7 +80,7 @@ public:
 
 	// texture data management
 	virtual bool			Lock(LockInOutData& data) = 0;
-	virtual void			Unlock() = 0;
+	virtual void			Unlock(IGPUCommandRecorder* writeCmdRecorder = nullptr) = 0;
 
 	// FIXME: remove?
 	virtual const SamplerStateParams& GetSamplerState() const = 0;
@@ -161,8 +161,6 @@ struct ITexture::LockInOutData
 	}
 
 	operator const bool() const { return lockData != nullptr; }
-
-	IGPUCommandRecorderPtr	writeCmdRecorder;		// if null - the device queue will be used
 
 	TextureOrigin			lockOrigin;
 	TextureExtent			lockSize;

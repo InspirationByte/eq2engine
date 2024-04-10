@@ -20,7 +20,7 @@ public:
 	bool Lock(LockInOutData& data);
 	
 	// unlocks texture for modifications, etc
-	void Unlock();
+	void Unlock(IGPUCommandRecorder* recorder = nullptr);
 
 	void Ref_DeleteObject();
 };

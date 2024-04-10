@@ -287,7 +287,7 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 }
 
 // unlocks texture for modifications, etc
-void CWGPUTexture::Unlock()
+void CWGPUTexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 {
 	if (!m_lockData)
 		return;
@@ -312,19 +312,18 @@ void CWGPUTexture::Unlock()
 
 			const WGPUExtent3D rhiTexSize{ (uint)data.lockSize.width, (uint)data.lockSize.height, (uint)data.lockSize.arraySize };
 
-			if (data.writeCmdRecorder)
+			if (writeCmdRecorder)
 			{
+				CWGPUCommandRecorder* recorder = static_cast<CWGPUCommandRecorder*>(writeCmdRecorder);
 				// TODO: all of this must be CWGPUCommandRecorder::WriteTexture();
 
 				CWGPUBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "TexLockWriteBuffer");
-
-				data.writeCmdRecorder->WriteBuffer(&tmpBuffer, data.lockData, data.lockByteCount, 0);
+				writeCmdRecorder->WriteBuffer(&tmpBuffer, data.lockData, data.lockByteCount, 0);
 
 				WGPUImageCopyBuffer rhiTexBuffer{};
 				rhiTexBuffer.layout = rhiTexLayout;
 				rhiTexBuffer.buffer = tmpBuffer.GetWGPUBuffer();
 
-				CWGPUCommandRecorder* recorder = static_cast<CWGPUCommandRecorder*>(data.writeCmdRecorder.Ptr());
 				wgpuCommandEncoderCopyBufferToTexture(recorder->m_rhiCommandEncoder, &rhiTexBuffer, &rhiTexDestination, &rhiTexSize);
 			}
 			else

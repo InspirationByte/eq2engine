@@ -28,7 +28,7 @@ bool CEmptyTexture::Lock(LockInOutData& data)
 }
 
 // unlocks texture for modifications, etc
-void CEmptyTexture::Unlock()
+void CEmptyTexture::Unlock(IGPUCommandRecorder* recorder)
 {
 	if (!m_lockData)
 		return;
