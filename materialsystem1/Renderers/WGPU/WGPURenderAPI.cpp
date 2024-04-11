@@ -772,8 +772,13 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 {
 	PROF_EVENT_F();
 
+	WGPUDawnShaderModuleSPIRVOptionsDescriptor rhiDawnShaderModuleDesc = {};
+	rhiDawnShaderModuleDesc.chain.sType = WGPUSType_DawnShaderModuleSPIRVOptionsDescriptor;
+	rhiDawnShaderModuleDesc.allowNonUniformDerivatives = true;
+
 	WGPUShaderModuleSPIRVDescriptor rhiSpirvDesc = {};
 	rhiSpirvDesc.chain.sType = WGPUSType_ShaderModuleSPIRVDescriptor;
+	rhiSpirvDesc.chain.next = &rhiDawnShaderModuleDesc.chain;
 	rhiSpirvDesc.codeSize = size / sizeof(uint32_t);
 	rhiSpirvDesc.code = code;
 
