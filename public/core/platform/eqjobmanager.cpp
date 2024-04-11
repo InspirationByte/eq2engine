@@ -23,6 +23,10 @@ IParallelJob::~IParallelJob()
 void IParallelJob::InitJob()
 {
 	ASSERT(m_phase != JOB_STARTED);
+
+	if (m_doneEvent)
+		m_doneEvent->Clear();
+
 	if (m_phase == JOB_INIT)
 		return;
 
@@ -30,9 +34,6 @@ void IParallelJob::InitJob()
 
 	m_phase = JOB_INIT;
 	m_primeJobs = 1;
-
-	if (m_doneEvent)
-		m_doneEvent->Clear();
 }
 
 void IParallelJob::InitSignal()
