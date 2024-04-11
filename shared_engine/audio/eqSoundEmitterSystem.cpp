@@ -75,6 +75,8 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 	if(m_isInit)
 		return;
 
+	InitSignal();
+
 	m_channelTypes.clear();
 
 	m_defaultMaxDistance = defaultMaxDistance;
@@ -591,8 +593,11 @@ void CSoundEmitterSystem::Execute()
 void CSoundEmitterSystem::Update()
 {
 	CEqJobManager* jobMng = g_parallelJobs->GetJobMng();
-	InitJob();
-	jobMng->StartJob(this);
+	if(GetSignal()->Wait(0))
+	{
+		InitJob();
+		jobMng->StartJob(this);
+	}
 
 	m_deltaTime = m_updateTimer.GetTime(true);
 }
