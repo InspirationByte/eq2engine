@@ -130,7 +130,11 @@ int Sys_Main()
 	// in case of game FS is packed
 	// create configuration directory
 	g_fileSystem->MakeDir("cfg", SP_MOD);
-	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %ls %ls", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
+	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"v%d (%ls %ls)", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
+	g_localizer->AddToken("BUILD_NUMBER", EqWString::Format(L"v%d", BUILD_NUMBER_ENGINE));
+	g_localizer->AddToken("COMPILE_DATE", EqWString::Format(L"%ls", L"" COMPILE_DATE));
+	g_localizer->AddToken("COMPILE_TIME", EqWString::Format(L"%ls", L"" COMPILE_TIME));
+
 	g_localizer->AddTokensFile("game");
 
 	if (!Host_Init())
