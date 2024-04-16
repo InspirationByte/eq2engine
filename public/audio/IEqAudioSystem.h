@@ -183,20 +183,20 @@ public:
 											const Vector3D& upVec) = 0;
 
 	// gets listener properties
-	virtual const Vector3D&			GetListenerPosition() const = 0;
+	virtual const Vector3D&		GetListenerPosition() const = 0;
 
 	// loads sample source data
-	virtual ISoundSourcePtr			GetSample(const char* filename) = 0;
+	virtual ISoundSourcePtr		GetSample(const char* filename) = 0;
 
-	virtual void					AddSample(ISoundSource* sample) = 0;
-	virtual void					OnSampleDeleted(ISoundSource* sample) = 0;
+	virtual void				AddSample(ISoundSource* sample) = 0;
+	virtual void				OnSampleDeleted(ISoundSource* sample) = 0;
 
 	// finds the effect. May return EFFECT_ID_NONE
-	virtual audioEffectId_t			FindEffect(const char* name) const = 0;
+	virtual audioEffectId_t		FindEffect(const char* name) const = 0;
 
 	// sets the new effect
-	virtual void					SetEffect(int slot, audioEffectId_t effect) = 0;
-	virtual int						GetEffectSlotCount() const = 0;
+	virtual void				SetEffect(int slot, audioEffectId_t effect) = 0;
+	virtual int					GetEffectSlotCount() const = 0;
 };
 
 extern IEqAudioSystem* g_audioSystem;

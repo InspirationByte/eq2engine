@@ -95,7 +95,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_consoleCommands->ExecuteCommandBuffer();
 
 	g_audioSystem->Init();
-	g_sounds->Init(120.0f, s_soundChannels, elementsOf(s_soundChannels));
+	g_sounds->Init(120.0f, s_soundChannels);
 	
 	{
 		KVSection soundSec;

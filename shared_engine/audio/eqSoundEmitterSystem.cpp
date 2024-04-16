@@ -70,7 +70,7 @@ CSoundEmitterSystem::~CSoundEmitterSystem()
 {
 }
 
-void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs, int numChannels)
+void CSoundEmitterSystem::Init(float defaultMaxDistance, ArrayCRef<ChannelDef> channelDefs)
 {
 	if(m_isInit)
 		return;
@@ -78,10 +78,9 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 	InitSignal();
 
 	m_channelTypes.clear();
-
 	m_defaultMaxDistance = defaultMaxDistance;
 
-	for (int i = 0; i < numChannels; ++i)
+	for (int i = 0; i < channelDefs.numElem(); ++i)
 	{
 		m_channelTypes.append(channelDefs[i]);
 		g_audioSystem->ResetMixer(channelDefs[i].id);

@@ -29,7 +29,7 @@ public:
 	CSoundEmitterSystem();
 	~CSoundEmitterSystem();
 
-	void				Init(float defaultMaxDistance, ChannelDef* channelDefs, int numChannels);
+	void				Init(float defaultMaxDistance, ArrayCRef<ChannelDef> channelDefs);
 	void				Shutdown();
 
 	void				LoadScriptSoundFile(const char* fileName);
