@@ -120,7 +120,7 @@ public:
 	//--------------------
 	CollisionPairList		m_collisionList;
 
-	BoundingBox				m_aabb;							///< bounding box
+	BoundingBox				m_aabb;							///< local shape bounding box
 	BoundingBox				m_aabb_transformed;				///< transformed bounding box, does not updated in dynamic objects
 	IAARectangle			m_cellRange{ 0, 0, 0, 0 };		///< static object cell range for broadphase searching
 
