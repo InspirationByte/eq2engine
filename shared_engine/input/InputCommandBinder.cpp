@@ -321,16 +321,25 @@ axisAction_t* CInputCommandBinder::FindAxisAction(const char* name) const
 }
 
 // searches for binding
-in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr) const
+in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr, const char* cmdPrefixStr) const
 {
 	int bindingKeyIndices[3];
 
 	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return nullptr;
 
-	for(int i = 0; i < m_bindings.numElem();i++)
+	for(in_binding_t* binding : m_bindings)
 	{
-		in_binding_t* binding = m_bindings[i];
+		const char* cmdNameStr = binding->commandString;
+		if (*cmdNameStr == '+' || *cmdNameStr == '-')
+			++cmdNameStr;
+		const char* catSubChr = strchr(cmdNameStr, '.');
+		if (catSubChr)
+		{
+			const int catLen = catSubChr - cmdNameStr;
+			if (strncmp(cmdNameStr, cmdPrefixStr, catLen))
+				continue;
+		}
 
 		if (binding->mod_index[0] == bindingKeyIndices[0] &&
 			binding->mod_index[1] == bindingKeyIndices[1] &&
@@ -345,10 +354,8 @@ in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase,
 {
 	const int startIdx = arrayFindIndex(m_bindings, startFrom) + 1;
 
-	for (int i = startIdx; i < m_bindings.numElem(); i++)
+	for (in_binding_t* binding : m_bindings)
 	{
-		in_binding_t* binding = m_bindings[i];
-
 		if ((binding->cmd_act == cmdBase || binding->cmd_deact == cmdBase) && 
 			(!argStr || argStr && !binding->argumentString.CompareCaseIns(argStr)))
 			return binding;

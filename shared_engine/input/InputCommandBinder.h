@@ -96,7 +96,7 @@ public:
 	void					UnbindAll_Joystick();
 
 	// searches for binding
-	in_binding_t*			FindBinding(const char* pszKeyStr) const;
+	in_binding_t*			FindBinding(const char* pszKeyStr, const char* cmdPrefixStr = nullptr) const;
 	in_binding_t*			FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr = nullptr, in_binding_t* startFrom = nullptr) const;
 	in_binding_t*			FindBindingByCommandName(const char* name, const char* argStr = nullptr, in_binding_t* startFrom = nullptr) const;
 
