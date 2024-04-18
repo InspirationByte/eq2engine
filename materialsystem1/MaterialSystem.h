@@ -159,6 +159,7 @@ public:
 	void						QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer);
 
 	void						SubmitQueuedCommands();
+	Future<bool>				SubmitQueuedCommandsAwaitable();
 
 	void						UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force = false) const;
 

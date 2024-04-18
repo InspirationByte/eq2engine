@@ -1082,6 +1082,14 @@ void CMaterialSystem::SubmitQueuedCommands()
 	m_pendingCmdBuffers.clear();
 }
 
+Future<bool> CMaterialSystem::SubmitQueuedCommandsAwaitable()
+{
+	Future<bool> future = m_shaderAPI->SubmitCommandBuffersAwaitable(m_pendingCmdBuffers);
+	m_pendingCmdBuffers.clear();
+
+	return future;
+}
+
 ITexturePtr CMaterialSystem::GetCurrentBackbuffer() const
 {
 	return m_renderLibrary->GetCurrentBackbuffer();
