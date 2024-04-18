@@ -131,7 +131,7 @@ static void Sys_SaveScreenshot()
 	if (!g_matSystem->CaptureScreenshot(img))
 		return;
 
-	if (img.SaveJPEG(requestScreenshotName, screenshotJpegQuality.GetInt()))
+	if (img.SaveImage(requestScreenshotName, screenshotJpegQuality.GetInt()))
 		MsgInfo("Saved screenshot to '%s'\n", requestScreenshotName.ToCString());
 	else
 		MsgError("Failed to save or capture screenshot\n");

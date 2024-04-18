@@ -435,22 +435,30 @@ void CMaterialSystem::CreateWhiteTexture()
 	const int nWidth = 4;
 	const int nHeight = 4;
 
-	ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, IMAGE_DEPTH_CUBEMAP, 1);
-	const int dataSize = img->GetMipMappedSize(0, 1) * img->GetArraySize();
-	memset(texData, 0xffffffff, dataSize);
-
 	FixedArray<CImagePtr, 1> images;
 	images.append(img);
 
-	img->SetDepth(IMAGE_DEPTH_CUBEMAP);
-	img->SetName("_matsys_white_cb");
-	ASSERT(img->GetImageType() == IMAGE_TYPE_CUBE);
-	m_whiteTexture[TEXDIMENSION_CUBE] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_IGNORE_QUALITY);
+	{
+		ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, IMAGE_DEPTH_CUBEMAP, 1);
+		const int dataSize = img->GetMipMappedSize(0, 1) * img->GetArraySize();
+		memset(texData, 0xffffffff, dataSize);
 
-	img->SetDepth(1);
-	img->SetName("_matsys_white");
-	ASSERT(img->GetImageType() == IMAGE_TYPE_2D);
-	m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_IGNORE_QUALITY);
+		img->SetName("_matsys_white_cb");
+
+		ASSERT(img->GetImageType() == IMAGE_TYPE_CUBE);
+		m_whiteTexture[TEXDIMENSION_CUBE] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_IGNORE_QUALITY);
+	}
+
+	{
+		ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, 1, 1);
+		const int dataSize = img->GetMipMappedSize(0, 1) * img->GetArraySize();
+		memset(texData, 0xffffffff, dataSize);
+
+		img->SetName("_matsys_white");
+
+		ASSERT(img->GetImageType() == IMAGE_TYPE_2D);
+		m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_IGNORE_QUALITY);
+	}
 
 	images.clear();
 }

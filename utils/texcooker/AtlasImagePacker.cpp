@@ -472,7 +472,7 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	}
 
 	// save image as DDS, or TGA ???
-	if(destImage.SaveImage(imageFileName))
+	if(destImage.SaveImage(imageFileName, SP_ROOT))
 	{
 		kvs.SaveToFile(atlasFileName);
 		materialKvs.SaveToFile(matFileName);
