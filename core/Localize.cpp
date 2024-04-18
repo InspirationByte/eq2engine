@@ -24,11 +24,8 @@ static void languageChangeCb(ConVar* pVar, char const* pszOldValue)
 	if (!g_localizer->IsInitialized())
 		return;
 
-	MsgWarning("Language will be changed upon game restart\n");
-#if 0
 	g_localizer->SetLanguageName(pVar->GetString());
 	g_localizer->ReloadLanguageFiles();
-#endif
 }
 DECLARE_CVAR_CHANGE(language, "", languageChangeCb, "The language of the game", CV_UNREGISTERED | CV_ARCHIVE);
 
@@ -128,12 +125,17 @@ void CLocalize::ReloadLanguageFiles()
 	// only delete tokens which has been added by the files
 	for (auto it = m_tokens.begin(); !it.atEnd(); ++it)
 	{
-		if (!it.value().m_customToken)
-			m_tokens.remove(it);
+		CLocToken& token = *it;
+		if (token.m_customToken)
+			continue;
+
+		// de-localize token
+		token.m_token.Clear();
+		EqStringConv::CUTF8Conv(token.m_text, token.m_token);
 	}
 
 	for (EqString& tokenFilePrefix : m_languageFilePrefixes)
-		ParseLanguageFile(tokenFilePrefix);
+		ParseLanguageFile(tokenFilePrefix, true);
 
 	Msg("Language files reloaded: %d\n", m_languageFilePrefixes.numElem());
 }
@@ -184,7 +186,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 	ParseLanguageFile(pszFilePrefix);
 }
 
-void CLocalize::ParseLanguageFile(const char* pszFilePrefix)
+void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 {
 	EqString path = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
 
@@ -202,12 +204,12 @@ void CLocalize::ParseLanguageFile(const char* pszFilePrefix)
 	{
 		if(!stricmp(key->name, "#include" ))
 		{
-			ParseLanguageFile( KV_GetValueString(key) );
+			ParseLanguageFile( KV_GetValueString(key), reload);
 			continue;
 		}
 
 		// Cannot add same one
-		if(_FindToken( key->name ))
+		if(!reload && _FindToken( key->name ))
 		{
 			MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, key->name );
 			continue;
