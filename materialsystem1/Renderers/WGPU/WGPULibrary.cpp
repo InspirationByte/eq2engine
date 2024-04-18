@@ -284,6 +284,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
 		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
 		requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
+		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
 		// TODO: android
 		//requiredFeatures.append(WGPUFeatureName_TextureCompressionETC2),
 		//requiredFeatures.append(WGPUFeatureName_TextureCompressionASTC),
