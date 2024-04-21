@@ -160,7 +160,7 @@ BEGIN_SHADER_CLASS(
 					cameraParamsBuffer = rendBuffer.bufferView;
 			}
 
-			if(!cameraParamsBuffer)
+			if (!cameraParamsBuffer)
 			{
 				cameraParamsBuffer = m_currentCameraBuffer;
 
@@ -177,7 +177,7 @@ BEGIN_SHADER_CLASS(
 			GPUBufferView materialParamsBuffer = g_matSystem->GetTransientUniformBuffer(bufferData.ptr(), sizeof(bufferData[0]) * bufferData.numElem());
 
 			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-				.Buffer(0, m_currentCameraBuffer)
+				.Buffer(0, cameraParamsBuffer)
 				.Buffer(1, materialParamsBuffer)
 				.Sampler(2, baseTexture.texture->GetSamplerState())
 				.Texture(3, baseTexture)
