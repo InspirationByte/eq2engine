@@ -227,13 +227,13 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 									| SHADER_CAPS_PIXEL_SUPPORTED
 									| SHADER_CAPS_COMPUTE_SUPPORTED;
 
-		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
+		for (int i = FORMAT_R8; i <= FORMAT_RGBA32F; i++)
 		{
 			caps.textureFormatsSupported[i] = true;
 			caps.renderTargetFormatsSupported[i] = true;
 		}
 
-		for (int i = FORMAT_D16; i <= FORMAT_D24S8; i++)
+		for (int i = FORMAT_D16; i <= FORMAT_D32F; i++)
 		{
 			caps.textureFormatsSupported[i] = true;
 			caps.renderTargetFormatsSupported[i] = true;
