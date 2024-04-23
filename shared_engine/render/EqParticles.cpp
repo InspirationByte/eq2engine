@@ -13,6 +13,22 @@
 #include "ViewParams.h"
 
 #include "materialsystem1/IMaterialSystem.h"
+#pragma optimize("", off)
+
+static int PFXAtlasRefUnpackBatchIdx(PFXAtlasRef ref)
+{
+	return ref & 0xffff;
+}
+
+static int PFXAtlasRefUnpackAtlasIdx(PFXAtlasRef ref)
+{
+	return (ref >> 16) & 0xffff;
+}
+
+static PFXAtlasRef PFXAtlasRefPack(int batchIdx, int atlIdx)
+{
+	return batchIdx | (atlIdx << 16);
+}
 
 const VertexLayoutDesc& PFXVertex::GetVertexLayoutDesc()
 {
@@ -23,6 +39,13 @@ const VertexLayoutDesc& PFXVertex::GetVertexLayoutDesc()
 		.Attribute(VERTEXATTRIB_COLOR, "color", 2, offsetOf(PFXVertex, color), ATTRIBUTEFORMAT_UINT8, 4)
 		.End();
 	return s_PFXVertexLayoutDesc;
+}
+
+PFXVertex::PFXVertex(const Vector3D& p, const Vector2D& t, const ColorRGBA& c)
+{
+	point = p;
+	texcoord = t;
+	color = MColor(c).pack();
 }
 
 using namespace Threading;
@@ -171,9 +194,7 @@ const AtlasEntry* CParticleBatch::FindEntry(const char* pszName) const
 		return nullptr;
 	}
 
-	const AtlasEntry* atlEntry = atlas->FindEntry(pszName);
-	ASSERT_MSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_material->GetName());
-	return atlEntry;
+	return atlas->FindEntry(pszName);
 }
 
 int CParticleBatch::FindEntryIndex(const char* pszName) const
@@ -184,10 +205,7 @@ int CParticleBatch::FindEntryIndex(const char* pszName) const
 		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
 		return -1;
 	}
-
-	const int atlEntryIdx = atlas->FindEntryIndex(pszName);
-	ASSERT_MSG(atlEntryIdx != -1, "Atlas entry '%s' not found in %s", pszName, m_material->GetName());
-	return atlEntryIdx;
+	return atlas->FindEntryIndex(pszName);
 }
 
 int CParticleBatch::GetEntryCount() const
@@ -203,50 +221,52 @@ int CParticleBatch::GetEntryCount() const
 
 void CParticleRenderer::Init()
 {
+	if (m_initialized)
+		return;
+
 	InitBuffers();
+
+	CreateBatch("particles/defaultparticle");
+	m_initialized = true;
 }
 
 void CParticleRenderer::Shutdown()
 {
+	if (!m_initialized)
+		return;
+
 	ShutdownBuffers();
 
 	for (CParticleBatch* batch : m_batchs)
 		delete batch;
 	m_batchs.clear(true);
+
+	m_initialized = false;
 }
 
 bool CParticleRenderer::InitBuffers()
 {
-	if(m_initialized)
-		return true;
-
 	if(!m_vertexFormat)
 	{
 		const VertexLayoutDesc& fmtDesc = PFXVertex::GetVertexLayoutDesc();
 		m_vertexFormat = g_renderAPI->CreateVertexFormat("PFXVertex", ArrayCRef(&fmtDesc, 1));
 	}
 
-	if(m_vertexFormat)
-		m_initialized = true;
-
 	return false;
 }
 
 bool CParticleRenderer::ShutdownBuffers()
 {
-	if(!m_initialized)
-		return true;
-
 	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
 	m_vertexFormat = nullptr;
-
-	m_initialized = false;
 	return true;
 }
 
 CParticleBatch*	CParticleRenderer::CreateBatch(const char* materialName, bool createOwnVBO, int maxQuads, CParticleBatch* insertAfter)
 {
-	ASSERT(FindBatch(materialName) == nullptr);
+	CParticleBatch* existingBatch = FindBatch(materialName);
+	if (existingBatch)
+		return existingBatch;
 
 	CParticleBatch* batch = PPNew CParticleBatch();
 	batch->Init(materialName, createOwnVBO, maxQuads);
@@ -254,7 +274,11 @@ CParticleBatch*	CParticleRenderer::CreateBatch(const char* materialName, bool cr
 	{
 		const AtlasEntry* atlEntry = batch->GetEntry(i);
 		PFXAtlasRef ref = FindAtlasRef(atlEntry->name);
-		ASSERT_MSG(!ref, "Particle atlas' %s' has '%s' which is already found in '%s'", atlEntry->name, batch->GetMaterial()->GetName(), ref.batch->GetMaterial()->GetName());
+		if (ref != PFX_ATLAS_REF_INVALID)
+		{
+			CParticleBatch* otherBatch = m_batchs[PFXAtlasRefUnpackBatchIdx(ref)];
+			ASSERT_MSG(ref == PFX_ATLAS_REF_INVALID, "Particle atlas' %s' has '%s' which is already found in '%s'", atlEntry->name, batch->GetMaterial()->GetName(), otherBatch->GetMaterial()->GetName());
+		}
 	}
 
 	if (insertAfter)
@@ -278,16 +302,56 @@ CParticleBatch* CParticleRenderer::FindBatch(const char* materialName) const
 	return nullptr;
 }
 
+bool CParticleRenderer::GetBatchAndRectangle(PFXAtlasRef atlasRef, CParticleBatch*& batch, AARectangle& rect) const
+{
+	if (atlasRef == PFX_ATLAS_REF_INVALID)
+	{
+		// return default particle
+		batch = m_batchs[0];
+		rect = batch->GetEntry(0)->rect;
+
+		return true;
+	}
+
+	const int batchIdx = PFXAtlasRefUnpackBatchIdx(atlasRef);
+	const int atlIdx = PFXAtlasRefUnpackAtlasIdx(atlasRef);
+
+	batch = m_batchs[batchIdx];
+	rect = batch->GetEntry(atlIdx)->rect;
+	return true;
+}
+
+AARectangle CParticleRenderer::GetRectangle(PFXAtlasRef atlasRef) const
+{
+	if (atlasRef == PFX_ATLAS_REF_INVALID)
+		return AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
+
+	const int batchIdx = PFXAtlasRefUnpackBatchIdx(atlasRef);
+	const int atlIdx = PFXAtlasRefUnpackAtlasIdx(atlasRef);
+
+	return m_batchs[batchIdx]->GetEntry(atlIdx)->rect;
+}
+
 PFXAtlasRef CParticleRenderer::FindAtlasRef(const char* name) const
 {
-	for (CParticleBatch* batch : m_batchs)
+	for (int batchIdx = 0; batchIdx < m_batchs.numElem(); ++batchIdx)
 	{
-		const AtlasEntry* atlEntry = batch->GetMaterial()->GetAtlas()->FindEntry(name);
+		const CParticleBatch* batch = m_batchs[batchIdx];
+		const int entryIdx = batch->FindEntryIndex(name);
 
-		if(atlEntry)
-			return PFXAtlasRef{ atlEntry, batch };
+		if (entryIdx != -1)
+			return PFXAtlasRefPack(batchIdx, entryIdx);
 	}
-	return PFXAtlasRef{};
+	return PFX_ATLAS_REF_INVALID;
+}
+
+int	CParticleRenderer::AllocateGeom(PFXAtlasRef atlasRef, int vertCount, int indexCount, PFXVertex** verts, uint16** indices, bool preSetIndices)
+{
+	if (atlasRef == PFX_ATLAS_REF_INVALID)
+		return -1;
+
+	CParticleBatch* batch = m_batchs[PFXAtlasRefUnpackBatchIdx(atlasRef)];
+	return batch->AllocateGeom(vertCount, indexCount, verts, indices, preSetIndices);
 }
 
 void CParticleRenderer::PreloadMaterials()
@@ -319,10 +383,6 @@ void CParticleRenderer::ClearBuffers()
 
 void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, const Volume* frustum)
 {
-	ASSERT(effect.atlasRef);
-	if (!effect.atlasRef)
-		return;
-
 	if(frustum)
 	{
 		const float size = max(effect.size.x, effect.size.y);
@@ -330,8 +390,13 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 			return;
 	}
 
+	AARectangle rect;
+	CParticleBatch* batch;
+	if (!g_pfxRender->GetBatchAndRectangle(effect.atlasRef, batch, rect))
+		return;
+
 	PFXVertex* verts;
-	if(effect.atlasRef.batch->AllocateGeom(4,4,&verts, nullptr, true) < 0)
+	if(batch->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
 	Vector3D angles;
@@ -349,7 +414,7 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 	Vector3D vRight, vUp;
 	AngleVectors(angles, nullptr, &vRight, &vUp);
 
-	const AARectangle texCoords = effect.atlasRef.entry->rect;
+	const AARectangle texCoords = rect;
 
 	const uint color = effect.color.pack();
 
@@ -372,8 +437,8 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const CViewParams& view, 
 
 void Effects_DrawBillboard(const PFXBillboard& effect, const Matrix4x4& viewMatrix, const Volume* frustum)
 {
-	ASSERT(effect.atlasRef);
-	if (!effect.atlasRef)
+	ASSERT(effect.atlasRef != PFX_ATLAS_REF_INVALID);
+	if (effect.atlasRef == PFX_ATLAS_REF_INVALID)
 		return;
 
 	if (frustum)
@@ -383,14 +448,19 @@ void Effects_DrawBillboard(const PFXBillboard& effect, const Matrix4x4& viewMatr
 			return;
 	}
 
+	AARectangle rect;
+	CParticleBatch* batch;
+	if (!g_pfxRender->GetBatchAndRectangle(effect.atlasRef, batch, rect))
+		return;
+
 	PFXVertex* verts;
-	if(effect.atlasRef.batch->AllocateGeom(4,4,&verts, nullptr, true) < 0)
+	if(batch->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
 	const Vector3D vRight = viewMatrix.rows[0].xyz();
 	const Vector3D vUp = viewMatrix.rows[1].xyz();
 
-	const AARectangle texCoords = effect.atlasRef.entry->rect;
+	const AARectangle texCoords = rect;
 	const uint color = effect.color.pack();
 
 	verts[0].point = effect.origin + (vUp * effect.size.y) + (effect.size.x * vRight);

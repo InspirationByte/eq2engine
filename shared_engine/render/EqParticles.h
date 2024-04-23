@@ -24,18 +24,17 @@ using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
 
+using PFXAtlasRef = int;
+
+static constexpr const PFXAtlasRef PFX_ATLAS_REF_INVALID = -1;
+
 // particle vertex with color
 struct PFXVertex
 {
 	static const VertexLayoutDesc& GetVertexLayoutDesc();
 
 	PFXVertex() = default;
-	PFXVertex(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)
-	{
-		point = p;
-		texcoord = t;
-		color = MColor(c).pack();
-	}
+	PFXVertex(const Vector3D& p, const Vector2D& t, const ColorRGBA& c);
 	
 	Vector3D		point;
 	TVec2D<half>	texcoord;
@@ -61,10 +60,9 @@ public:
 	int					AllocateGeom( int nVertices, int nIndices, PFXVertex** verts, uint16** indices, bool preSetIndices = false );
 	void				AddParticleStrip(PFXVertex* verts, int nVertices);
 
-	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
+	const IMaterialPtr&	GetMaterial() const	{ return m_material; }
 
 	const AtlasEntry*	GetEntry(int idx) const;
-
 	const AtlasEntry*	FindEntry(const char* pszName) const;
 	int					FindEntryIndex(const char* pszName) const;
 
@@ -83,15 +81,6 @@ protected:
 
 //------------------------------------------------------------------------------------
 
-struct PFXAtlasRef
-{
-	const AtlasEntry*	entry{ nullptr };
-	CParticleBatch*		batch{ nullptr };
-
-	operator bool() const { return entry != nullptr; }
-	PFXAtlasRef& operator=(std::nullptr_t) { batch = nullptr; entry = nullptr; return *this; }
-};
-
 class CParticleRenderer
 {
 	friend class CParticleBatch;
@@ -100,15 +89,17 @@ class CParticleRenderer
 public:
 	void				Init();
 	void				Shutdown();
-
 	bool				IsInitialized() const { return m_initialized; }
 
 	CParticleBatch*		CreateBatch(const char* materialName, bool createOwnVBO = false, int maxQuads = 16384, CParticleBatch* insertAfter = nullptr);
 	CParticleBatch*		FindBatch(const char* materialName) const;
-
-	PFXAtlasRef			FindAtlasRef(const char* name) const;
+	bool				GetBatchAndRectangle(PFXAtlasRef atlasRef, CParticleBatch*& batch, AARectangle& rect) const;
+	AARectangle			GetRectangle(PFXAtlasRef atlasRef) const;
 
 	void				PreloadMaterials();
+
+	PFXAtlasRef			FindAtlasRef(const char* name) const;
+	int					AllocateGeom(PFXAtlasRef atlasRef, int vertCount, int indexCount, PFXVertex** verts, uint16** indices, bool preSetIndices = false);
 
 	// prepares render buffers and sends renderables to ViewRenderer
 	void				UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds);

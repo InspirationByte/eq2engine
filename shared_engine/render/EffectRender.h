@@ -7,10 +7,11 @@
 
 #pragma once
 
+class CParticleBatch;
+using PFXAtlasRef = int;
+
 static constexpr const int MAX_VISIBLE_EFFECTS = 4096;
 
-class CParticleBatch;
-struct AtlasEntry;
 
 class IEffect
 {
@@ -32,7 +33,7 @@ public:
 
 protected:
 
-	void InternalInit(const Vector3D &origin, float lifetime, CParticleBatch* group, const AtlasEntry* entry)
+	void InternalInit(const Vector3D &origin, float lifetime, PFXAtlasRef atlasRef)
 	{
 		m_vOrigin = origin;
 		SetSortOrigin(origin);
@@ -40,13 +41,11 @@ protected:
 		m_fStartLifeTime = lifetime;
 		m_fLifeTime = lifetime;
 
-		m_atlGroup = group;
-		m_atlEntry = entry;
+		m_atlasRef = atlasRef;
 	}
 
 	Vector3D			m_vOrigin{ vec3_zero };
-	CParticleBatch*		m_atlGroup{ nullptr };
-	const AtlasEntry*	m_atlEntry{ nullptr };
+	PFXAtlasRef			m_atlasRef;
 
 	float				m_fStartLifeTime{ 0.0f };
 	float				m_fLifeTime{ 0.0f };
