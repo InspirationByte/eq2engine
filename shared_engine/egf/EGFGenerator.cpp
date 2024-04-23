@@ -305,16 +305,18 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		mod.transform = cont.transform;
 
 		// DRVSYN: vertex order for damaged model
-		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeby"))
+		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeBy"))
 		{
-			const char* shapekeyName = KV_GetValueString(modelSec, 2, nullptr);
+			const char* shapeKeyName = KV_GetValueString(modelSec, 2, nullptr);
 
-			// set shapeby
-			if (shapekeyName)
+			if (shapeKeyName)
 			{
-				Msg("Model shape key is '%s'\n", shapekeyName);
-				mod.shapeIndex = FindShapeKeyIndex(mod.shapeData, shapekeyName);
+				mod.shapeIndex = FindShapeKeyIndex(mod.shapeData, shapeKeyName);
+				if (mod.shapeIndex == -1)
+					MsgError("Error: shapeBy - Can't find shape key %s in model %s (ref %s)\n", shapeKeyName, mod.model->name.ToCString(), mod.name.ToCString());
 			}
+			else
+				MsgError("Error: shapeBy - no shape key specified for ref %s\n", shapeKeyName, mod.model->name.ToCString());
 		}
 
 		if (!PostProcessDSM(mod))
@@ -349,7 +351,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	if(pKeyBase->values.numElem() > 1)
 	{
 		// DRVSYN: vertex order for damaged model
-		if(pKeyBase->values.numElem() > 3 && !stricmp(KV_GetValueString(pKeyBase, 2), "shapeby"))
+		if(pKeyBase->values.numElem() > 3 && !stricmp(KV_GetValueString(pKeyBase, 2), "shapeBy"))
 		{
 			const char* shapekeyName = KV_GetValueString(pKeyBase, 3, nullptr);
 
@@ -384,20 +386,24 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	{
 		Msg("Loading model '%s'\n", modelfilenames[i].ToCString());
 
-		GenModel model;
-		if(!LoadModel(modelfilenames[i].ToCString(), model))
+		GenModel mod;
+		if(!LoadModel(modelfilenames[i].ToCString(), mod))
 			continue;
 
-		model.shapeIndex = FindShapeKeyIndex(model.shapeData, shapeByModels[i].ToCString());;
-
-		if (model.shapeIndex != -1)
-			Msg("Shape key used: %s\n", shapeByModels[i].ToCString());
-
 		// set model to as part name
-		model.name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
+		mod.name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
+
+		if (shapeByModels[i])
+		{
+			mod.shapeIndex = FindShapeKeyIndex(mod.shapeData, shapeByModels[i]);
+			if (mod.shapeIndex == -1)
+				MsgError("Error: shapeBy - Can't find shape key %s in model %s (ref %s)\n", shapeByModels[i].ToCString(), mod.model->name.ToCString(), mod.name.ToCString());
+		}
+		else
+			MsgError("Error: shapeBy - no shape key specified for ref %s\n", shapeByModels[i].ToCString(), mod.model->name.ToCString());
 
 		// add finally
-		models.append( model );
+		models.append(mod);
 	}
 
 	// merge the models
