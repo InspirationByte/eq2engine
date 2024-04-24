@@ -13,7 +13,6 @@
 #include "ViewParams.h"
 
 #include "materialsystem1/IMaterialSystem.h"
-#pragma optimize("", off)
 
 static int PFXAtlasRefUnpackBatchIdx(PFXAtlasRef ref)
 {
