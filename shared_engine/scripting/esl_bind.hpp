@@ -591,8 +591,22 @@ struct ConstructorBinder<T>
 {
 	static int Func(lua_State* L)
 	{
-		T* newObj = PPNew T();
-		runtime::PushGet<T>::Push(L, *newObj, UD_FLAG_OWNED);
+		ESL_VERBOSE_LOG("ctor(def) %s, byval %d", EqScriptClass<T>::className, EqScriptClass<T>::isByVal);
+
+		// Extract arguments from Lua and forward them to the constructor
+		using UT = StripTraitsT<T>;
+		using BaseUType = BaseType<UT>;
+
+		if constexpr (LuaTypeByVal<BaseUType>::value)
+		{
+			T newObjVal;
+			runtime::PushGet<T>::Push(L, newObjVal, UD_FLAG_OWNED);
+		}
+		else
+		{
+			T* newObj = PPNew T();
+			runtime::PushGet<T>::Push(L, *newObj, UD_FLAG_OWNED);
+		}
 		return 1;
 	}
 };
@@ -604,7 +618,7 @@ struct ConstructorBinder
 	template<size_t... IDX>
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
-		ESL_VERBOSE_LOG("create %s, byval %d", EqScriptClass<T>::className, EqScriptClass<T>::isByVal);
+		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", EqScriptClass<T>::className, EqScriptClass<T>::isByVal);
 
 		// Extract arguments from Lua and forward them to the constructor
 		using UT = StripTraitsT<T>;
