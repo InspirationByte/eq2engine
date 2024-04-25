@@ -164,8 +164,8 @@ struct MeshInstanceFormatRef
 	using LayoutList = ArrayCRef<VertexLayoutDesc>;
 
 	const char*		name{ nullptr };
-	int				formatId{ 0 };
 	LayoutList		layout{ nullptr };
+	int				formatId{ 0 };
 	uint			usedLayoutBits{ 0xff };
 };
 
@@ -191,10 +191,6 @@ struct RenderInstanceInfo
 	// use SetVertexBuffer
 	VertexBufferArray		vertexBuffers;
 
-	// use SetIndexBuffer
-	GPUBufferView			indexBuffer;
-	EIndexFormat			indexFormat{ INDEXFMT_UINT16 };
-
 	// use SetInstanceFormat
 	MeshInstanceFormatRef	instFormat;
 
@@ -203,6 +199,10 @@ struct RenderInstanceInfo
 
 	// use AddUniformBuffer
 	BufferArray				uniformBuffers;
+
+	// use SetIndexBuffer
+	GPUBufferView			indexBuffer;
+	EIndexFormat			indexFormat{ INDEXFMT_UINT16 };
 };
 
 struct RenderDrawBatch
@@ -326,7 +326,7 @@ enum EShaderBlendMode : int
 	SHADER_BLEND_MODULATE,			// modulate
 };
 
-enum ERenderPassType
+enum ERenderPassType : int
 {
 	RENDERPASS_DEFAULT,
 	RENDERPASS_SHADOW,			// shadow texture drawing (decal)
@@ -336,12 +336,13 @@ enum ERenderPassType
 
 struct RenderPassBaseData
 {
-	RenderPassBaseData(ERenderPassType type) : type(type) {}
+	RenderPassBaseData(ERenderPassType type)
+		: type(type) {}
 
+	GPUBufferView		cameraParamsBuffer;
 	ERenderPassType		type;
 	uint				id{ 0 };
 	uint				version{ 0 };
-	GPUBufferView		cameraParamsBuffer;
 };
 
 // used for debug geometry and UIs
@@ -370,8 +371,8 @@ struct RenderPassContext
 
 	using BeforeMaterialSetupFunc = EqFunction<IMaterial* (IMaterial* material)>;
 
-	IGPURenderPassRecorderPtr	recorder;			// render pass recorder
-
-	const RenderPassBaseData*	data{ nullptr };
 	BeforeMaterialSetupFunc		beforeMaterialSetup{ nullptr };
+
+	IGPURenderPassRecorderPtr	recorder;			// render pass recorder
+	const RenderPassBaseData*	data{ nullptr };
 };
