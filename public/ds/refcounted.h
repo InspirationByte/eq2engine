@@ -73,10 +73,11 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 
 #define CRefPtr_new(TYPE, ...) CRefPtr<TYPE>(PPNew TYPE(__VA_ARGS__))
 
-template< class TYPE >
+template< class _TYPE >
 class CRefPtr
 {
 public:
+	using TYPE = _TYPE;
 	using PTR_TYPE = TYPE*;
 
 	CRefPtr() = default;

@@ -80,10 +80,11 @@ private:
 //-----------------------------------------------------------------------------
 // weak pointer for weak ref counted
 
-template< class TYPE >
+template< class _TYPE >
 class CWeakPtr
 {
 public:
+	using TYPE = _TYPE;
 	using PTR_TYPE = TYPE*;
 
 	CWeakPtr() = default;

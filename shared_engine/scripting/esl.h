@@ -33,6 +33,12 @@ template <typename T>
 struct LuaTypeByVal : std::false_type {};
 
 template <typename T>
+struct LuaTypeRefCountedObj : std::false_type {};
+
+//template <typename T>
+//struct LuaTypeWeakRefObject : std::false_type {};
+
+template <typename T>
 struct LuaTypeAlias
 {
 	static const char* value;

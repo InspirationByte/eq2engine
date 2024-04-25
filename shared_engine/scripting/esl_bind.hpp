@@ -2,12 +2,6 @@
 
 namespace esl
 {
-enum EUserDataType : int
-{
-	UD_TYPE_PTR		= 0,	// raw pointer
-	UD_TYPE_REFPTR,			// CRefPtr<T>
-	UD_TYPE_WEAKPTR,		// CWeakPtr<T>
-};
 
 enum EUserDataFlags : int
 {
@@ -19,8 +13,7 @@ enum EUserDataFlags : int
 struct BoxUD
 {
 	void*	objPtr{ nullptr };
-	ushort	type{ UD_TYPE_PTR };
-	ushort	flags{ 0 };
+	uint	flags{ 0 };
 };
 }
 
@@ -70,6 +63,14 @@ struct ArgsSignature<First, Rest...>
 template<typename T> struct IsUserObj : std::false_type {};
 template<typename T> struct IsUserObj<T*> : std::true_type {};
 template<typename T> struct IsUserObj<T&> : std::true_type {};
+template<typename T> struct IsUserObj<CRefPtr<T>> : std::true_type {};
+template<typename T> struct IsUserObj<CWeakPtr<T>> : std::true_type {};
+
+template<typename T> struct IsRefPtr : std::false_type {};
+template<typename T> struct IsRefPtr<CRefPtr<T>> : std::true_type {};
+
+template<typename T> struct IsWeakPtr : std::false_type {};
+template<typename T> struct IsWeakPtr<CWeakPtr<T>> : std::true_type {};
 
 template<> struct IsUserObj<EqString> : std::false_type {};
 template<> struct IsUserObj<EqString*> : std::false_type {};
@@ -113,8 +114,12 @@ struct PushGetImpl
 		{
 			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
 			ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
-			ud->type = UD_TYPE_PTR;
 			ud->flags = flags;
+
+			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
+			{
+				const_cast<BaseUType*>(&obj)->Ref_Grab();
+			}
 		}
 		luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 	}
@@ -140,6 +145,7 @@ struct PushGetImpl
 				return static_cast<BaseUType*>(nullptr);
 
 			// drop ownership flag when ToCpp is specified
+			// so Lua can no longer delete object (C++ now has to)
 			if(toCpp)
 				userData->flags &= ~UD_FLAG_OWNED;
 
@@ -162,12 +168,20 @@ struct PushGetImpl
 		else
 		{
 			BoxUD* userData = static_cast<BoxUD*>(lua_touserdata(L, 1));
-			if (userData->flags & UD_FLAG_OWNED)
+			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
 			{
-				ESL_VERBOSE_LOG("destruct owned ref %s", LuaBaseTypeAlias<BaseUType>::value);
-				delete static_cast<T*>(userData->objPtr);
-				userData->flags &= ~UD_FLAG_OWNED;
-				userData->objPtr = nullptr;
+				ESL_VERBOSE_LOG("deref obj %s", LuaBaseTypeAlias<BaseUType>::value);
+				static_cast<T*>(userData->objPtr)->Ref_Drop();
+			}
+			else
+			{
+				if (userData->flags & UD_FLAG_OWNED)
+				{
+					ESL_VERBOSE_LOG("destruct owned obj %s", LuaBaseTypeAlias<BaseUType>::value);
+					delete static_cast<T*>(userData->objPtr);
+					userData->flags &= ~UD_FLAG_OWNED;
+					userData->objPtr = nullptr;
+				}
 			}
 		}
 		return 0;
@@ -224,6 +238,16 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		if (value)
 			value.Push();
+		else
+			lua_pushnil(L);
+	}
+	else if constexpr (IsRefPtr<T>::value)
+	{
+		// really does not matter since deleter will still Ref_Drop() 
+		// object but we'll keep it anyway
+		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
+		if (value != nullptr)
+			PushGet<typename T::TYPE>::Push(L, value.Ref(), (std::is_const_v<typename T::TYPE> ? UD_FLAG_CONST : 0) | retTraitFlag);
 		else
 			lua_pushnil(L);
 	}
@@ -367,6 +391,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (IsUserObj<UT>::value)
 	{
+		static_assert(!IsRefPtr<UT>::value, "CRefPtr<> not implemented yet as argument");
+
 		const bool toCpp = HasToCppParamTrait<T>::value;
 
 		const int type = lua_type(L, index);
