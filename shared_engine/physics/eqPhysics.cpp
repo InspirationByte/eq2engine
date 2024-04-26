@@ -711,6 +711,8 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	// prepare for testing...
 	btCollisionObject* objA = bodyA->m_collObject;
 	btCollisionObject* objB = bodyB->m_collObject;
+	if (!objA || !objB)
+		return;
 
 	/*
 	btBoxShape boxShapeA(ConvertDKToBulletVectors(bodyA->m_aabb.GetSize()*0.5f));
@@ -850,6 +852,8 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	// prepare for testing...
 	btCollisionObject* objA = staticObj->m_collObject;
 	btCollisionObject* objB = bodyB->m_collObject;
+	if (!objA || !objB)
+		return;
 
 	// body a
 	Matrix4x4 eqTransA;
