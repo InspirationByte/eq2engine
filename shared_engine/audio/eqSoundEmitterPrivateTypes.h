@@ -262,7 +262,7 @@ struct SoundScriptDesc
 	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
 	Array<SoundSplineDesc>	splineDescs{ PP_SL };
 	uint8					paramNodeMap[SOUND_PARAM_COUNT];
-	Map<int, int>			inputNodeMap{ PP_SL };
+	Map<int, int>			inputNodeMap{ PP_SL };	// maps nodeName -> nodeIdx
 
 	uint		sampleRandomizer{ 0 };
 
