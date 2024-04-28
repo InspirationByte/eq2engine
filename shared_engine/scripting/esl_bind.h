@@ -187,6 +187,13 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 #define ESL_PUSH_BY_VALUE(x)		/* usage: BY_VALUE */ \
 	template<> struct esl::LuaTypeByVal<x> : std::true_type {};
 
+#define ESL_PUSH_REF_PTR(x)			/* usage: REF_PTR */ \
+	template<> struct esl::LuaTypeRefCountedObj<x> : std::true_type {};
+
+// TODO: WEAK_PTR
+//#define ESL_PUSH_WEAK_PTR(x)		/* usage: WEAK_PTR */ \
+//	template<> struct esl::LuaTypeWeakRefObject<x> : std::true_type {};
+
 #define ESL_CLASS_MEMBER(Name) 		(&BindClass::Name)
 #define ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
 #define ESL_CFUNC_OVERLOAD(R, ...) 	static_cast<R(*)__VA_ARGS__>
@@ -214,6 +221,13 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name) \
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, INHERIT_PARENT) \
+	template<> inline bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<ParentClass>::value; \
+	template<> inline const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
+	template<> inline esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo();
+
+// Binder for class that has bound parent class
+#define EQSCRIPT_BIND_TYPE_WITH_PARENT_EX(Class, ParentClass, name, type) \
+	EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
 	template<> inline bool EqScriptClass<Class>::isByVal = esl::LuaTypeByVal<ParentClass>::value; \
 	template<> inline const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
 	template<> inline esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo();

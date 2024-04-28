@@ -237,6 +237,8 @@ CImage::~CImage()
 
 ubyte* CImage::Create(const ETextureFormat fmt, const int w, const int h, const int d, const int mipMapCount, const int arraysize)
 {
+	Free();
+
 	m_nFormat = fmt;
 	m_nWidth = w;
 	m_nHeight = h;
@@ -409,50 +411,12 @@ EImageType CImage::GetImageType() const
 	return IMAGE_TYPE_INVALID;
 }
 
-bool CImage::LoadDDS(const char* fileName, uint flags)
+bool CImage::LoadDDS(IFilePtr fileHandle, uint flags)
 {
-	IFilePtr file;
-	if (!(file = g_fileSystem->Open(fileName, "rb")))
-		return false;
-
-	SetName(fileName);
-
-	return LoadDDSfromHandle(file, flags);
-}
-
-#ifndef NO_JPEG
-bool CImage::LoadJPEG(const char* fileName)
-{
-	IFilePtr file;
-	if (!(file = g_fileSystem->Open(fileName, "rb")))
-		return false;
-
-	SetName(fileName);
-
-	return LoadJPEGfromHandle(file);
-}
-#endif // NO_JPEG
-
-#ifndef NO_TGA
-bool CImage::LoadTGA(const char* fileName)
-{
-	IFilePtr file;
-	if (!(file = g_fileSystem->Open(fileName, "rb")))
-		return false;
-
-	SetName(fileName);
-
-	return LoadTGAfromHandle(file);
-}
-#endif
-
-bool CImage::LoadDDSfromHandle(IFilePtr fileHandle, uint flags)
-{
-	DDSHeader header;
-
 	if (!fileHandle)
 		return false;
 
+	DDSHeader header;
 	fileHandle->Read(&header, sizeof(header), 1);
 
 	if (header.dwMagic != MAKECHAR4('D', 'D', 'S', ' '))
@@ -582,9 +546,11 @@ bool CImage::LoadDDSfromHandle(IFilePtr fileHandle, uint flags)
 	return true;
 }
 
-#ifndef NO_JPEG
-bool CImage::LoadJPEGfromHandle(IFilePtr fileHandle)
+bool CImage::LoadJPEG(IFilePtr fileHandle)
 {
+#ifdef NO_JPEG
+	return false
+#else
 	jpeg_decompress_struct cinfo;
 	jpeg_error_mgr jerr;
 
@@ -639,12 +605,14 @@ bool CImage::LoadJPEGfromHandle(IFilePtr fileHandle)
 	PPFree(jpegFileBuff);
 
 	return true;
+#endif
 }
-#endif // NO_JPEG
 
-#ifndef NO_TGA
-bool CImage::LoadTGAfromHandle(IFilePtr fileHandle)
+bool CImage::LoadTGA(IFilePtr fileHandle)
 {
+#ifdef NO_TGA
+	return false;
+#else
 	TGAHeader header;
 
 	int size, x, y, pixelSize, palLength;
@@ -677,7 +645,6 @@ bool CImage::LoadTGAfromHandle(IFilePtr fileHandle)
 	size = m_nWidth * m_nHeight * pixelSize;
 
 	tempBuffer = PPNew ubyte[size];
-
 
 	// Decode if rle compressed. Bit 3 of .imagetype tells if the file is compressed
 	if (header.imagetype & 0x08)
@@ -809,35 +776,36 @@ bool CImage::LoadTGAfromHandle(IFilePtr fileHandle)
 
 	delete[] tempBuffer;
 	delete[] fBuffer;
-
-	return true;
-}
 #endif
+	return true;
+}
 
-bool CImage::LoadImage(const char* fileName, uint flags)
+bool CImage::LoadImage(const char* fileName, uint flags, int searchFlags)
 {
-	const char* extension = strrchr(fileName, '.');
-
 	Clear();
 
-	if (extension == nullptr) return false;
+	const char* extension = strrchr(fileName, '.');
+	if (extension == nullptr)
+		return false;
+
+	SetName(fileName);
+
+	IFilePtr file;
+	if (!(file = g_fileSystem->Open(fileName, "rb", searchFlags)))
+		return false;
 
 	if (stricmp(extension, ".dds") == 0)
 	{
-		if (!LoadDDS(fileName, flags)) return false;
+		if (!LoadDDS(file, flags)) return false;
 	}
-#ifndef NO_JPEG
 	else if (stricmp(extension, ".jpg") == 0 || stricmp(extension, ".jpeg") == 0)
 	{
-		if (!LoadJPEG(fileName)) return false;
+		if (!LoadJPEG(file)) return false;
 	}
-#endif // NO_JPEG
-#ifndef NO_TGA
 	else if (stricmp(extension, ".tga") == 0)
 	{
-		if (!LoadTGA(fileName)) return false;
+		if (!LoadTGA(file)) return false;
 	}
-#endif // NO_TGA
 	else
 	{
 		return false;
@@ -845,38 +813,11 @@ bool CImage::LoadImage(const char* fileName, uint flags)
 	return true;
 }
 
-bool CImage::LoadFromHandle(IFilePtr fileHandle, const char* fileName, uint flags)
+bool CImage::SaveDDS(IVirtualStreamPtr fileHandle) const
 {
-	const char* extension = strrchr(fileName, '.');
-
-	Clear();
-
-	if (extension == nullptr) return false;
-
-	if (stricmp(extension, ".dds") == 0)
-	{
-		if (!LoadDDSfromHandle(fileHandle, flags)) return false;
-	}
-#ifndef NO_JPEG
-	else if (stricmp(extension, ".jpg") == 0 || stricmp(extension, ".jpeg") == 0)
-	{
-		if (!LoadJPEGfromHandle(fileHandle)) return false;
-	}
-#endif // NO_JPEG
-#ifndef NO_TGA
-	else if (stricmp(extension, ".tga") == 0)
-	{
-		if (!LoadTGAfromHandle(fileHandle)) return false;
-	}
-#endif // NO_TGA
-	else
+	if (!fileHandle)
 		return false;
 
-	return true;
-}
-
-bool CImage::SaveDDS(const char* fileName)
-{
 	// Set up the header
 	DDSHeader header;
 	memset(&header, 0, sizeof(header));
@@ -892,7 +833,7 @@ bool CImage::SaveDDS(const char* fileName)
 	header.dwDepth = (m_nDepth > 1) ? m_nDepth : 0;
 	header.dwMipMapCount = (m_nMipMaps > 1) ? m_nMipMaps : 0;
 
-	int nChannels = GetChannelCount(m_nFormat);
+	const int nChannels = GetChannelCount(m_nFormat);
 
 	header.ddpfPixelFormat.dwSize = 32;
 	if (m_nFormat <= FORMAT_I16 || m_nFormat == FORMAT_RGB10A2)
@@ -962,13 +903,9 @@ bool CImage::SaveDDS(const char* fileName)
 	header.ddsCaps.Reserved[1] = 0;
 	header.dwReserved2 = 0;
 
-	IFilePtr file = g_fileSystem->Open(fileName, "wb");
-	if (!file)
-		return false;
-
-	file->Write(&header, sizeof(header), 1);
+	fileHandle->Write(&header, sizeof(header), 1);
 	if (headerDXT10.dxgiFormat)
-		file->Write(&headerDXT10, sizeof(headerDXT10), 1);
+		fileHandle->Write(&headerDXT10, sizeof(headerDXT10), 1);
 
 	int size = GetMipMappedSize(0, m_nMipMaps);
 
@@ -978,17 +915,18 @@ bool CImage::SaveDDS(const char* fileName)
 
 	if (IsCube())
 	{
-		for (int face = 0; face < 6; face++) {
+		for (int face = 0; face < 6; face++) 
+		{
 			for (int mipMapLevel = 0; mipMapLevel < m_nMipMaps; mipMapLevel++)
 			{
 				int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
 				ubyte* src = GetPixels(mipMapLevel) + face * faceSize;
-				file->Write(src, 1, faceSize);
+				fileHandle->Write(src, 1, faceSize);
 			}
 		}
 	}
 	else
-		file->Write(m_pPixels, size, 1);
+		fileHandle->Write(m_pPixels, size, 1);
 
 	// Restore to RGB
 	if (m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8)
@@ -997,10 +935,11 @@ bool CImage::SaveDDS(const char* fileName)
 	return true;
 }
 
-#ifndef NO_JPEG
-
-bool CImage::SaveJPEG(const char* fileName, const int quality)
+bool CImage::SaveJPEG(IVirtualStreamPtr fileHandle, const int quality) const
 {
+#ifdef NO_JPEG
+	return false;
+#else
 	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8)
 		return false;
 
@@ -1041,24 +980,23 @@ bool CImage::SaveJPEG(const char* fileName, const int quality)
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
 
-	IFilePtr file = g_fileSystem->Open(fileName, "wb");
-	if (file)
-		file->Write(mem, memSize, 1);
+	fileHandle->Write(mem, memSize, 1);
 
 	free(mem);
 
 	return true;
-}
 #endif // NO_JPEG
+}
 
-#ifndef NO_TGA
-bool CImage::SaveTGA(const char* fileName)
+bool CImage::SaveTGA(IVirtualStreamPtr fileHandle) const
 {
-	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8 && m_nFormat != FORMAT_RGBA8)
+#ifdef NO_TGA
+	return false;
+#else
+	if (!fileHandle)
 		return false;
 
-	IFilePtr file = g_fileSystem->Open(fileName, "wb");
-	if (!file)
+	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8 && m_nFormat != FORMAT_RGBA8)
 		return false;
 
 	int nChannels = GetChannelCount(m_nFormat);
@@ -1078,10 +1016,9 @@ bool CImage::SaveTGA(const char* fileName)
 		0x00
 	};
 
-	file->Write(&header, sizeof(header), 1);
+	fileHandle->Write(&header, sizeof(header), 1);
 
 	ubyte* dest, * src, * buffer;
-
 	if (m_nFormat == FORMAT_I8)
 	{
 		ubyte pal[768];
@@ -1092,13 +1029,13 @@ bool CImage::SaveTGA(const char* fileName)
 			pal[p++] = i;
 			pal[p++] = i;
 		}
-		file->Write(pal, sizeof(pal), 1);
+		fileHandle->Write(pal, sizeof(pal), 1);
 
 		src = m_pPixels + m_nWidth * m_nHeight;
 		for (int y = 0; y < m_nHeight; y++)
 		{
 			src -= m_nWidth;
-			file->Write(src, m_nWidth, 1);
+			fileHandle->Write(src, m_nWidth, 1);
 		}
 
 	}
@@ -1110,7 +1047,8 @@ bool CImage::SaveTGA(const char* fileName)
 		buffer = PPNew ubyte[m_nHeight * lineLength];
 		int len;
 
-		for (int y = 0; y < m_nHeight; y++) {
+		for (int y = 0; y < m_nHeight; y++)
+		{
 			dest = buffer + (m_nHeight - y - 1) * lineLength;
 			src = m_pPixels + y * m_nWidth * nChannels;
 			len = m_nWidth;
@@ -1125,34 +1063,38 @@ bool CImage::SaveTGA(const char* fileName)
 			} while (--len);
 		}
 
-		file->Write(buffer, m_nHeight * lineLength, 1);
+		fileHandle->Write(buffer, m_nHeight * lineLength, 1);
 		delete[] buffer;
 	}
 
 	return true;
-}
 #endif // NO_TGA
+}
 
-bool CImage::SaveImage(const char* fileName)
+bool CImage::SaveImage(const char* fileName, int searchFlags) const
 {
 	const char* extension = strrchr(fileName, '.');
 
-	if (extension != nullptr) {
-		if (stricmp(extension, ".dds") == 0) {
-			return SaveDDS(fileName);
-		}
-#ifndef NO_JPEG
-		else if (stricmp(extension, ".jpg") == 0 ||
-			stricmp(extension, ".jpeg") == 0) {
-			return SaveJPEG(fileName, 75);
-		}
-#endif // NO_JPEG
-#ifndef NO_TGA
-		else if (stricmp(extension, ".tga") == 0) {
-			return SaveTGA(fileName);
-		}
-#endif // NO_TGA
+	if (extension == nullptr)
+		return false;
+
+	IFilePtr file;
+	if (!(file = g_fileSystem->Open(fileName, "wb", searchFlags)))
+		return false;
+
+	if (stricmp(extension, ".dds") == 0) 
+	{
+		return SaveDDS(file);
 	}
+	else if (stricmp(extension, ".jpg") == 0 || stricmp(extension, ".jpeg") == 0)
+	{
+		return SaveJPEG(file, 75);
+	}
+	else if (stricmp(extension, ".tga") == 0)
+	{
+		return SaveTGA(file);
+	}
+
 	return false;
 }
 

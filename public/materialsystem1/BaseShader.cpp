@@ -503,10 +503,10 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 	}
 	m_shaderQueryId = StringToHash(queryStr, true);
 
-#if 0 // Dawn allows PSO caching and it is quite fast. This entire code needed for first time init anyway.
 	// cache shader modules
 	renderAPI->LoadShaderModules(GetName(), m_shaderQuery);
-	
+
+#if 1 // Dawn allows PSO caching and it is quite fast. This entire code needed for first time init anyway.
 	// TODO: more RT format variants
 	ETextureFormat rtFormat = FORMAT_RGBA8;
 	ETextureFormat depthFormat = g_matSystem->GetDefaultDepthBuffer()->GetFormat();

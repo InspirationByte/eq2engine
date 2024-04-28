@@ -802,12 +802,10 @@ static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncT
 
 void SoundEmitterData::UpdateNodes()
 {
-	if (!Atomic::Load(nodesNeedUpdate))
+	if (Atomic::CompareExchange(nodesNeedUpdate, TRUE, FALSE) != TRUE)
 		return;
 
 	PROF_EVENT("Emitter Data Nodes Eval");
-
-	Atomic::Exchange(nodesNeedUpdate, 0);
 
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 	const Array<SoundSplineDesc>& splineDescs = script->splineDescs;

@@ -77,52 +77,30 @@ public:
 		m_pExtraData = (unsigned char*)data;
 	}
 
-	bool			LoadDDS(const char* fileName, uint flags = 0);
-#ifndef NO_JPEG
-	bool			LoadJPEG(const char* fileName);
-#endif // NO_JPEG
-#ifndef NO_TGA
-	bool			LoadTGA(const char* fileName);
-#endif // NO_TGA
+	bool			LoadDDS(IVirtualStreamPtr fileHandle, uint flags = 0);
+	bool			SaveDDS(IVirtualStreamPtr fileHandle) const;
 
-	bool			LoadDDSfromHandle(IVirtualStreamPtr fileHandle, uint flags = 0);
-#ifndef NO_JPEG
-	bool			LoadJPEGfromHandle(IVirtualStreamPtr fileHandle);
-#endif // NO_JPEG
-#ifndef NO_TGA
-	bool			LoadTGAfromHandle(IVirtualStreamPtr fileHandle);
-#endif // NO_TGA
+	bool			LoadJPEG(IVirtualStreamPtr fileHandle);
+	bool			SaveJPEG(IVirtualStreamPtr fileHandle, const int quality) const;
 
-	bool			SaveDDS(const char* fileName);
-#ifndef NO_JPEG
-	bool			SaveJPEG(const char* fileName, const int quality);
-#endif // NO_JPEG
-#ifndef NO_TGA
-	bool			SaveTGA(const char* fileName);
-#endif // NO_TGA
+	bool			LoadTGA(IVirtualStreamPtr fileHandle);
+	bool			SaveTGA(IVirtualStreamPtr fileHandle) const;
 
-	bool			LoadImage(const char* fileName, uint flags = 0);
-	bool			LoadFromHandle(IVirtualStreamPtr fileHandle, const char* fileName, uint flags = 0);
-
-	bool			SaveImage(const char* fileName);
-
-	void			SetDepth(int nDepth) { m_nDepth = nDepth; }
+	bool			LoadImage(const char* fileName, uint flags = 0, int searchFlags = -1);
+	bool			SaveImage(const char* fileName, int searchFlags = -1) const;
 
 	void			LoadFromMemory(void* mem, const ETextureFormat frmt, const int wide, const int tall, const int nDepth, const int mipMapCount, bool ownsMemory);
 
 	bool			CreateMipMaps(const int mipMaps = ALL_MIPMAPS);
 	bool			RemoveMipMaps(const int firstMipMap, const int mipMapsToSave = ALL_MIPMAPS);
 
-	// not supported
-	//bool			UncompressImage();
-	//bool			UnpackImage();
-
 	bool			SwapChannels(const int ch0, const int ch1);
 
 	bool			Convert(const ETextureFormat newFormat);
 
 protected:
-	ubyte* m_pPixels;
+
+	ubyte*			m_pPixels;
 	int				m_nWidth;
 	int				m_nHeight;
 	int				m_nDepth;

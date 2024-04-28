@@ -110,7 +110,7 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 			if (g_fileSystem->FileExist(path.ToCString(), SP_ROOT))
 				continue;
 
-			CombinePath(requestScreenshotName, g_fileSystem->GetBasePath(), path.ToCString());
+			requestScreenshotName = path;
 			break;
 		} while (i++ < 9999);
 	}
@@ -131,10 +131,18 @@ static void Sys_SaveScreenshot()
 	if (!g_matSystem->CaptureScreenshot(img))
 		return;
 
-	if (img.SaveJPEG(requestScreenshotName, screenshotJpegQuality.GetInt()))
+	IFilePtr saveJpegFile = g_fileSystem->Open(requestScreenshotName, "wb", SP_ROOT);
+	if (!saveJpegFile)
+	{
+		requestScreenshotName.Empty();
+		MsgError("Failed to create screenshot file\n");
+		return;
+	}
+
+	if (img.SaveJPEG(saveJpegFile, screenshotJpegQuality.GetInt()))
 		MsgInfo("Saved screenshot to '%s'\n", requestScreenshotName.ToCString());
 	else
-		MsgError("Failed to save or capture screenshot\n");
+		MsgError("Failed to save screenshot\n");
 
 	requestScreenshotName.Empty();
 }
@@ -652,7 +660,7 @@ void CGameHost::ShutdownSystems()
 #define MIN_FPS 0.01
 #define MAX_FPS 10000.0
 
-#define MAX_FRAMETIME	0.1
+#define MAX_FRAMETIME	1.0
 #define MIN_FRAMETIME	0.001
 
 bool CGameHost::FilterTime( double dTime )

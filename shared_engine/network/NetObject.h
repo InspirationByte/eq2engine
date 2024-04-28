@@ -37,7 +37,7 @@ public:
 		return m_value;
 	}
 
-	const TYPE&				Get() const					{return m_value;}
+	const TYPE&	Get() const	{ return m_value; }
 
 	TYPE& GetForModify()
 	{
@@ -45,12 +45,12 @@ public:
 		return m_value;
 	}
 
-	const TYPE& operator	=(TYPE const& v)			{return Set(v);}
+	const TYPE& operator=(TYPE const& v) { return Set(v); }
 
-	operator const			TYPE&() const				{return m_value;}
-	operator				TYPE&()						{return m_value;}
+	operator const TYPE& () const { return m_value; }
+	operator TYPE& () {return m_value;}
 
-	const TYPE*				operator->() const			{return &m_value; }
+	const TYPE* operator->() const { return &m_value; }
 
 	const TYPE& operator++()
 	{

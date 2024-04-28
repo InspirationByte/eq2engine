@@ -528,8 +528,15 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 			DSShapeKey* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
 			WriteGroup(header, stream, modelRef.model->meshes[j], key, groupDesc);
 
+			Msg("Wrote group %s:%d", modelRef.name.ToCString(), j);
+
+			if (key)
+				Msg(", shape key: %s", key->name.ToCString());
+
 			if(groupDesc->materialIndex != -1)
-				Msg("Wrote group %s:%d material used: %s\n", modelRef.name.ToCString(), j, m_usedMaterials[groupDesc->materialIndex]->materialname);
+				Msg(", material used: %s", modelRef.name.ToCString(), j, m_usedMaterials[groupDesc->materialIndex]->materialname);
+
+			Msg("\n");
 		}
 	}
 }

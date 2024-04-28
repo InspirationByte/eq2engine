@@ -56,7 +56,7 @@ public:
 	bool				IsInitialized() const {return m_languageFilePrefixes.numElem() > 0;}
 
 private:
-	void				ParseLanguageFile(const char* pszFilePrefix);
+	void				ParseLanguageFile(const char* pszFilePrefix, bool reload = false);
 
 	const ILocToken*	_FindToken( const char* pszToken ) const;
 

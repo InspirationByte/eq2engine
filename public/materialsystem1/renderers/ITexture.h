@@ -160,12 +160,12 @@ struct ITexture::LockInOutData
 
 	operator const bool() const { return lockData != nullptr; }
 
-	TextureOrigin			lockOrigin;
-	TextureExtent			lockSize;
+	TextureOrigin	lockOrigin;
+	TextureExtent	lockSize;
 
-	void*					lockData{ nullptr };	// the place where you can write the data
-	int						lockPitch{ 0 };
-	int						lockByteCount{ 0 };
+	void*			lockData{ nullptr };	// the place where you can write the data
+	int				lockPitch{ 0 };
+	int				lockByteCount{ 0 };
 
-	int						flags{ 0 };
+	int				flags{ 0 };
 };

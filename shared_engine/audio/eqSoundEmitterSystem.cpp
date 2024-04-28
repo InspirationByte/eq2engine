@@ -338,9 +338,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		PROF_EVENT("Emitter Switch Source - Create");
 
 		FixedArray<const ISoundSource*, 16> samples;
-
 		bool hasLoop = script->loop;
-
 		if (script->randomSample || emit->sampleId != -1)
 		{
 			const ISoundSource* bestSample = script->GetBestSample(emit->sampleId);
@@ -353,8 +351,8 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		{
 			// put all samples
 			samples.append(script->samples);
-			for(int i = 0; i < samples.numElem(); ++i)
-				hasLoop = hasLoop || samples[i]->GetLoopRegions(nullptr) > 0;
+			for(const ISoundSource* sample : samples)
+				hasLoop = hasLoop || sample->GetLoopRegions(nullptr) > 0;
 		}
 
 		// sound parameters to initialize SoundEmitter
@@ -362,6 +360,8 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		IEqAudioSource::Params startParams = emit->virtualParams;
 
 		CRefPtr<IEqAudioSource> source = g_audioSystem->CreateSource();
+		emit->soundSource = source;
+
 		if (!emit->soundingObj)
 		{
 			// no sounding object
@@ -387,27 +387,41 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 			};
 
 			source->Setup(startParams.channel, samples, callbackFunc);
+
+			emit->UpdateNodes();
+			emit->CalcFinalParameters(emit->soundingObj->GetSoundVolumeScale(), startParams);
 		}
 
 		// start sound
 		source->UpdateParams(startParams);
 
-		emit->soundSource = source;
-
+#ifdef ENABLE_DEBUG_DRAWING
 		if (snd_scriptsound_debug.GetBool())
 		{
 			DbgSphere()
 				.Position(startParams.position).Radius(startParams.referenceDistance)
 				.Color(color_yellow)
-				.Time(1.0f);
+				.Name(EqString::Format("emit %x", emit))
+				.Time(30.0f);
+
+			EqString inputParams;
+			for (int i = 0; i < script->nodeDescs.numElem(); ++i)
+			{
+				const SoundNodeDesc& nodeDesc = script->nodeDescs[i];
+				if (nodeDesc.type != SOUND_NODE_INPUT)
+					continue;
+				inputParams.Append(EqString::Format("  %s: %.2f\n", nodeDesc.name, emit->inputs[i].values[0]));
+			}
 
 			DbgText3D()
 				.Position(startParams.position)
 				.Distance(50.0f)
-				.Time(1.0f)
-				.Text("start %s v=%.2f p=%.2f", script->name.ToCString(), startParams.volume[0], startParams.pitch);
+				.Time(30.0f)
+				.Name(EqString::Format("emit %x", emit))
+				.Text("start %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), startParams.volume[0], startParams.pitch, inputParams.ToCString());
+		
 		}
-
+#endif
 		return true;
 	}
 	
@@ -495,17 +509,30 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	emitter->UpdateNodes();
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
 
+#ifdef ENABLE_DEBUG_DRAWING
 	if (snd_scriptsound_debug.GetBool() && !script->is2d)
 	{
 		DbgSphere()
 			.Position(params.position).Radius(params.referenceDistance)
+			.Name(EqString::Format("strt emit %x", emitter))
 			.Color(color_white);
+
+		EqString inputParams;
+		for (int i = 0; i < script->nodeDescs.numElem(); ++i)
+		{
+			const SoundNodeDesc& nodeDesc = script->nodeDescs[i];
+			if (nodeDesc.type != SOUND_NODE_INPUT)
+				continue;
+			inputParams.Append(EqString::Format("  %s: %.2f\n", nodeDesc.name, emitter->inputs[i].values[0]));
+		}
 
 		DbgText3D()
 			.Position(params.position)
 			.Distance(50.0f)
-			.Text("%s v=%.2f p=%.2f", script->name.ToCString(), params.volume[0], params.pitch);
+			.Name(EqString::Format("strt emit %x", emitter))
+			.Text("update %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), params.volume[0], params.pitch, inputParams.ToCString());
 	}
+#endif
 
 	// update samples volume if they were
 	{

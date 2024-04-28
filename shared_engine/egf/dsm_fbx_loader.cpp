@@ -336,7 +336,7 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 					{
 						const int tVertId = vertId + (invertFaces ? 2 - tVert : tVert);
 
-						DSShapeVert vert = shapeKey->verts.append();
+						DSShapeVert& vert = shapeKey->verts.append();
 						vert.vertexId = tVertId;
 						vert.position = FromFBXVector(shapeVertices[tVertId], settings);
 						vert.normal = FromFBXVector(shapeNormals[tVertId], settings);

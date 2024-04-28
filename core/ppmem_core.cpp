@@ -21,10 +21,6 @@
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 
-#ifdef _RETAIL
-#define PPMEM_DISABLED
-#endif
-
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
 #else

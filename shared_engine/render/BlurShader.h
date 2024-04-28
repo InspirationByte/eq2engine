@@ -2,11 +2,12 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 
 class IGPUCommandRecorder;
-class IGPUComputePipeline;
-using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
+class IGPURenderPipeline;
+using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
-// Blur shader on compute pipeline
-class ComputeBlurShader : public RefCountedObject<ComputeBlurShader>
+// Blur shader using render pipeline
+// Supports more formats like R16, R32 but might be slower
+class BlurShader : public RefCountedObject<BlurShader>
 {
 public:
 	enum EBlurFlags
@@ -16,7 +17,7 @@ public:
 		BLUR_BOTH = (BLUR_VERTICAL | BLUR_HORIZONTAL)
 	};
 
-	ComputeBlurShader(int iterations = 4, int filterSize = 2, int blurFlags = BLUR_BOTH);
+	BlurShader(int iterations = 4, float filterSize = 2.0, int blurFlags = BLUR_BOTH);
 
 	void	SetSourceTexture(ITexture* source) { m_srcTexture = source; }
 	void	SetDestinationTexture(ITexture* dest);
@@ -24,7 +25,7 @@ public:
 	void	SetupExecute(IGPUCommandRecorder* commandRecorder, int arraySlice = -1);
 
 protected:
-	IGPUComputePipelinePtr	m_pipeline;
+	IGPURenderPipelinePtr	m_pipeline;
 	IGPUBufferPtr		m_switchBuffer0;
 	IGPUBufferPtr		m_switchBuffer1;
 	IGPUBindGroupPtr	m_bindGroupConst;
@@ -36,12 +37,10 @@ protected:
 	ITexture*			m_srcTexture{ nullptr };
 	ITexture*			m_dstTexture{ nullptr };
 
+	ETextureFormat		m_destTextureFormat{ FORMAT_NONE };
 	int					m_iterations{ 4 };
-	int					m_filterSize{ 2 };
+	float				m_filterSize{ 2.0f };
 	int					m_blurFlags{ 0 };
-
-	float				m_oneByBlockDim{ 1.0f };
-	float				m_oneByBatchSizeY{ 1.0f };
 };
 
-using ComputeBlurShaderPtr = CRefPtr<ComputeBlurShader>;
+using BlurShaderPtr = CRefPtr<BlurShader>;
