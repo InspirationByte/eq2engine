@@ -81,6 +81,7 @@ public:
 
 	bool					IsDepthReadOnly() const { return true; }
 	bool					IsStencilReadOnly() const  { return true; }
+	int						GetTargetMultiSamples() const { return 1; }
 
 	void					AddBundle(IGPURenderBundleRecorder* bundle) {}
 

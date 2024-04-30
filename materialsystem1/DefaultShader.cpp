@@ -40,11 +40,11 @@ BEGIN_SHADER_CLASS(
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
-	bool SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) override
+	bool SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) override
 	{
 		const MatSysDefaultRenderPass* rendPassInfo = static_cast<const MatSysDefaultRenderPass*>(passContext.data);
 		ASSERT_MSG(rendPassInfo, "Must specify MatSysDefaultRenderPass in userData when drawing with default material");
-		const uint pipelineId = GenDefaultPipelineId(passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), *rendPassInfo, primTopology);
+		const uint pipelineId = GenDefaultPipelineId(passContext.recorder->GetRenderTargetFormats(), passContext.recorder->GetDepthTargetFormat(), *rendPassInfo, pipelineParams.primitiveTopology);
 
 		auto it = m_renderPipelines.find(pipelineId);
 		if (it.atEnd())
@@ -52,10 +52,10 @@ BEGIN_SHADER_CLASS(
 			// prepare basic pipeline descriptor
 			RenderPipelineDesc renderPipelineDesc = Builder<RenderPipelineDesc>()
 				.ShaderName(GetName())
-				.ShaderVertexLayoutId(meshInstFormat.formatId)
+				.ShaderVertexLayoutId(pipelineParams.meshInstFormat.formatId)
 				.End();
 
-			for (const VertexLayoutDesc& layoutDesc : meshInstFormat.layout)
+			for (const VertexLayoutDesc& layoutDesc : pipelineParams.meshInstFormat.layout)
 				renderPipelineDesc.vertex.vertexLayout.append(layoutDesc);
 
 			const ETextureFormat depthTargetFormat = passContext.recorder->GetDepthTargetFormat();
@@ -106,14 +106,14 @@ BEGIN_SHADER_CLASS(
 			}
 
 			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
-				.Topology(primTopology)
+				.Topology(pipelineParams.primitiveTopology)
 				.Cull(rendPassInfo->cullMode)
-				.StripIndex(primTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
+				.StripIndex(pipelineParams.primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 
 			it = m_renderPipelines.insert(pipelineId);
 			PipelineInfo& newPipelineInfo = *it;
-			newPipelineInfo.vertexLayoutId = meshInstFormat.formatId;
+			newPipelineInfo.vertexLayoutId = pipelineParams.meshInstFormat.formatId;
 
 			newPipelineInfo.pipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc);
 		}
@@ -123,7 +123,7 @@ BEGIN_SHADER_CLASS(
 		if (!pipelineInfo.pipeline)
 			return false;
 
-		const BindGroupSetupParams setupParams {
+		const BindGroupSetupParams setupParams{
 			uniformBuffers,
 			pipelineInfo,
 			passContext,

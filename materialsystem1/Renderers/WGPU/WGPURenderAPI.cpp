@@ -1190,6 +1190,9 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 		{
 			renderTargetDims = IVector2D(colorTarget.target.texture->GetWidth(), colorTarget.target.texture->GetHeight());
 			renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
+
+			if (colorTarget.target)
+				renderPass->m_renderTargetMSAASamples = colorTarget.target.texture->GetSampleCount();
 		}
 	}
 

@@ -13,6 +13,10 @@ class IMatSystemShader;
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
+enum ETextureFormat : int;
+enum EPrimTopology : int;
+enum ECullMode : int;
+
 class IGPURenderPassRecorder;
 struct MeshInstanceFormatRef;
 struct RenderBufferInfo;
@@ -27,7 +31,7 @@ using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 using OVERRIDE_SHADER_CB = const char* (*)(int instanceFormatId);
 using CREATE_SHADER_CB = IMatSystemShader * (*)();
 
-enum EBindGroupId
+enum EBindGroupId : int
 {
 	// Data is never going to be changed during the life time of the material. 
 	//   Used for material parameters and textures.
@@ -51,6 +55,8 @@ struct MatSysShaderPipelineCache
 class IMatSystemShader
 {
 public:
+	struct PipelineInputParams;
+
 	virtual ~IMatSystemShader() = default;
 
 	virtual void				Init(IShaderAPI* renderAPI, IMaterial* material) = 0;
@@ -69,8 +75,24 @@ public:
 	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
 	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
 
-	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) = 0;
+	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) = 0;
 	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const = 0;
+
+	struct PipelineInputParams
+	{
+		ArrayCRef<ETextureFormat>		colorTargetFormat;
+		ETextureFormat					depthTargetFormat;
+		const MeshInstanceFormatRef&	meshInstFormat;
+		EPrimTopology					primitiveTopology{ (EPrimTopology)0 };
+		ECullMode						cullMode{ (EPrimTopology)0 };
+
+		int								multiSampleCount{ 1 };
+		uint32							multiSampleMask{ 0xffffffff };
+		bool							multiSampleAlphaToCoverage{ false };
+
+		bool							depthReadOnly{ false };
+		bool							skipFragmentPipeline{ false };
+	};
 };
 
 struct ShaderFactory
