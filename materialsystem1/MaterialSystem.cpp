@@ -1478,7 +1478,19 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 		matSysMaterial->m_frameBound = proxyFrame;
 	}
 
-	return matShader->SetupRenderPass(renderAPI, meshInstFormat, primTopology, uniformBuffers, passContext, originalMaterial);
+	const IMatSystemShader::PipelineInputParams pipelineInputParams {
+		passContext.recorder->GetRenderTargetFormats(),
+		passContext.recorder->GetDepthTargetFormat(),
+		meshInstFormat,
+		primTopology,
+		CULL_BACK,
+		passContext.recorder->GetTargetMultiSamples(),
+		0xffffffff, // TODO: msaa
+		false, // TODO: msaa
+		passContext.recorder->IsDepthReadOnly()
+	};
+
+	return matShader->SetupRenderPass(renderAPI, pipelineInputParams, uniformBuffers, passContext, originalMaterial);
 }
 
 bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext)
@@ -1554,8 +1566,20 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 	// modify used layout flags
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
+	const IMatSystemShader::PipelineInputParams pipelineInputParams {
+		passContext.recorder->GetRenderTargetFormats(),
+		passContext.recorder->GetDepthTargetFormat(),
+		instFormatRef,
+		primTopology,
+		CULL_BACK,
+		1, // TODO: msaa
+		0xffffffff, // TODO: msaa
+		false, // TODO: msaa
+		passContext.recorder->IsDepthReadOnly()
+	};
+
 	IShaderAPI* renderAPI = m_shaderAPI;
-	if (!matShader->SetupRenderPass(renderAPI, instFormatRef, primTopology, nullptr, passContext, nullptr))
+	if (!matShader->SetupRenderPass(renderAPI, pipelineInputParams, nullptr, passContext, nullptr))
 	{
 		return false;
 	}

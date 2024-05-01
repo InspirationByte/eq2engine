@@ -148,31 +148,6 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 	return pipelineInfo.bindGroup[bindGroupId];
 }
 
-struct CBaseShader::PipelineInputParams
-{
-	PipelineInputParams(
-		ArrayCRef<ETextureFormat> colorTargetFormat, 
-		ETextureFormat depthTargetFormat, 
-		const MeshInstanceFormatRef& meshInstFormat, 
-		EPrimTopology primitiveTopology,
-		bool depthReadOnly)
-		: colorTargetFormat(colorTargetFormat)
-		, depthTargetFormat(depthTargetFormat)
-		, meshInstFormat(meshInstFormat)
-		, primitiveTopology(primitiveTopology)
-		, depthReadOnly(depthReadOnly)
-	{
-	}
-
-	ArrayCRef<ETextureFormat>		colorTargetFormat;
-	ETextureFormat					depthTargetFormat;
-	const MeshInstanceFormatRef&	meshInstFormat;
-	EPrimTopology					primitiveTopology;
-	ECullMode						cullMode{ CULL_BACK };
-	bool							depthReadOnly{ false };
-	bool							skipFragmentPipeline{ false };
-};
-
 uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) const
 {
 	const bool translucentZWrite = !inputParams.depthReadOnly && ((m_flags & MATERIAL_FLAG_TRANSPARENT) ? inputParams.colorTargetFormat.numElem() > 0 : true);
@@ -197,6 +172,8 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 	hash += m_shaderQueryId;
 	hash *= 31;
 	hash += pipelineFlags;
+	hash *= 31;
+	hash += (inputParams.multiSampleCount & 15) | ((uint)inputParams.multiSampleAlphaToCoverage << 5) | (inputParams.multiSampleMask << 16);
 	for (int i = 0; i < inputParams.colorTargetFormat.numElem(); ++i)
 	{
 		const ETextureFormat format = inputParams.colorTargetFormat[i];
@@ -263,8 +240,12 @@ void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams,
 			.DepthFormat(inputParams.depthTargetFormat);
 	}
 
-	// TODO: 
-	//renderPipelineDesc.multiSample.count = renderPass->GetSampleCount();
+	{
+		MultiSampleState& multiSample = renderPipelineDesc.multiSample;
+		multiSample.count = inputParams.multiSampleCount;
+		multiSample.mask = inputParams.multiSampleMask;
+		multiSample.alphaToCoverage = inputParams.multiSampleAlphaToCoverage;
+	}
 
 	Builder<FragmentPipelineDesc> pipelineBuilder(renderPipelineDesc.fragment);
 	if (onlyZ)
@@ -414,18 +395,9 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 	return *it;
 }
 
-bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const MeshInstanceFormatRef& meshInstFormat, EPrimTopology primTopology, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial)
+bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial)
 {
-	const PipelineInputParams pipelineInputParams(
-		passContext.recorder->GetRenderTargetFormats(), 
-		passContext.recorder->GetDepthTargetFormat(), 
-		meshInstFormat,
-		primTopology,
-		passContext.recorder->IsDepthReadOnly()
-	);
-
-	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineInputParams, false);
-
+	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineParams, false);
 	if (!pipelineInfo.pipeline)
 		return false;
 
@@ -506,7 +478,7 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 	// cache shader modules
 	renderAPI->LoadShaderModules(GetName(), m_shaderQuery);
 
-#if 1 // Dawn allows PSO caching and it is quite fast. This entire code needed for first time init anyway.
+#if 0 // Dawn allows PSO caching and it is quite fast. This entire code needed for first time init anyway.
 	// TODO: more RT format variants
 	ETextureFormat rtFormat = FORMAT_RGBA8;
 	ETextureFormat depthFormat = g_matSystem->GetDefaultDepthBuffer()->GetFormat();

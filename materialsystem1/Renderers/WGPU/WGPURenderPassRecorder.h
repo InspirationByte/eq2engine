@@ -12,6 +12,7 @@ public:
 
 	bool					IsDepthReadOnly() const { return m_depthReadOnly; }
 	bool					IsStencilReadOnly() const { return m_stencilReadOnly; }
+	int						GetTargetMultiSamples() const { return m_renderTargetMSAASamples; }
 
 	void					AddBundle(IGPURenderBundleRecorder* bundle);
 
@@ -54,6 +55,7 @@ public:
 	ETextureFormat			m_renderTargetsFormat[MAX_RENDERTARGETS]{ FORMAT_NONE };
 	ETextureFormat			m_depthTargetFormat{ FORMAT_NONE };
 	IVector2D				m_renderTargetDims{ 0 };
+	int						m_renderTargetMSAASamples{ 1 };
 	bool					m_depthReadOnly{ false };
 	bool					m_stencilReadOnly{ false };
 

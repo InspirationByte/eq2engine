@@ -51,6 +51,8 @@ public:
 	virtual bool					IsDepthReadOnly() const = 0;
 	virtual bool					IsStencilReadOnly() const = 0;
 
+	virtual int						GetTargetMultiSamples() const = 0;
+
 	/* TODO: multi - threaded recorder
 		like:
 			GPUCommandBlock* block = cmdRec->BeginCommandBlock()
