@@ -101,14 +101,12 @@ struct ScriptBind
 	void* thisPtr{ nullptr }; // used for function invocation
 
 	using BindFunc = int (ScriptBind::*)(lua_State*);
-	using BindFuncConst = int (ScriptBind::*)(lua_State*) const;
 };
 
 // Member function registrator
 struct Member
 {
 	using BindFunc = int (ScriptBind::*)(lua_State*);
-	using BindFuncConst = int (ScriptBind::*)(lua_State*) const;
 
 	EMemberType		type{ MEMB_NULL };
 	const char*		name{ nullptr };
@@ -116,11 +114,10 @@ struct Member
 	void*			data{ nullptr };
 	struct {
 		union {
-			BindFunc		func;
-			BindFuncConst	constFunc;
-			StaticFunc		staticFunc;
+			BindFunc	func;
+			StaticFunc	staticFunc;
 		};
-		BindFuncConst	getFunc;
+		BindFunc		getFunc;
 	};
 	int				numArgs{ -1 };
 	bool			isConst{ false };
