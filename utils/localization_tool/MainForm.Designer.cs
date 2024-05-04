@@ -31,9 +31,6 @@
 			this.components = new System.ComponentModel.Container();
 			this.dataGridView1 = new System.Windows.Forms.DataGridView();
 			this.ID = new System.Windows.Forms.DataGridViewTextBoxColumn();
-			this.englishDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-			this.localizedDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-			this.localizationDataBindingSource = new System.Windows.Forms.BindingSource(this.components);
 			this.label1 = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
 			this.tbGameDir = new System.Windows.Forms.TextBox();
@@ -54,9 +51,12 @@
 			this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
 			this.cbCategory = new System.Windows.Forms.ComboBox();
 			this.label5 = new System.Windows.Forms.Label();
+			this.localizationDataBindingSource = new System.Windows.Forms.BindingSource(this.components);
+			this.englishDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+			this.localizedDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
 			((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.localizationDataBindingSource)).BeginInit();
 			this.panel1.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.localizationDataBindingSource)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// dataGridView1
@@ -88,27 +88,6 @@
 			this.ID.HeaderText = "ID";
 			this.ID.Name = "ID";
 			this.ID.ReadOnly = true;
-			// 
-			// englishDataGridViewTextBoxColumn
-			// 
-			this.englishDataGridViewTextBoxColumn.DataPropertyName = "English";
-			this.englishDataGridViewTextBoxColumn.FillWeight = 67.47509F;
-			this.englishDataGridViewTextBoxColumn.HeaderText = "English";
-			this.englishDataGridViewTextBoxColumn.Name = "englishDataGridViewTextBoxColumn";
-			this.englishDataGridViewTextBoxColumn.ReadOnly = true;
-			// 
-			// localizedDataGridViewTextBoxColumn
-			// 
-			this.localizedDataGridViewTextBoxColumn.DataPropertyName = "Localized";
-			this.localizedDataGridViewTextBoxColumn.FillWeight = 67.47509F;
-			this.localizedDataGridViewTextBoxColumn.HeaderText = "Localized";
-			this.localizedDataGridViewTextBoxColumn.Name = "localizedDataGridViewTextBoxColumn";
-			this.localizedDataGridViewTextBoxColumn.ReadOnly = true;
-			// 
-			// localizationDataBindingSource
-			// 
-			this.localizationDataBindingSource.AllowNew = false;
-			this.localizationDataBindingSource.DataSource = typeof(EqLocalizationTool.LocalizationData);
 			// 
 			// label1
 			// 
@@ -283,6 +262,8 @@
 			// 
 			this.cbDontSaveNotLocalized.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
 			this.cbDontSaveNotLocalized.AutoSize = true;
+			this.cbDontSaveNotLocalized.Checked = true;
+			this.cbDontSaveNotLocalized.CheckState = System.Windows.Forms.CheckState.Checked;
 			this.cbDontSaveNotLocalized.Location = new System.Drawing.Point(775, 298);
 			this.cbDontSaveNotLocalized.Margin = new System.Windows.Forms.Padding(2);
 			this.cbDontSaveNotLocalized.Name = "cbDontSaveNotLocalized";
@@ -294,7 +275,7 @@
 			// lblPerc
 			// 
 			this.lblPerc.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.lblPerc.Location = new System.Drawing.Point(800, 59);
+			this.lblPerc.Location = new System.Drawing.Point(772, 59);
 			this.lblPerc.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
 			this.lblPerc.Name = "lblPerc";
 			this.lblPerc.Size = new System.Drawing.Size(49, 14);
@@ -342,6 +323,27 @@
 			this.label5.TabIndex = 9;
 			this.label5.Text = "Localized language";
 			// 
+			// localizationDataBindingSource
+			// 
+			this.localizationDataBindingSource.AllowNew = false;
+			this.localizationDataBindingSource.DataSource = typeof(EqLocalizationTool.LocalizationData);
+			// 
+			// englishDataGridViewTextBoxColumn
+			// 
+			this.englishDataGridViewTextBoxColumn.DataPropertyName = "English";
+			this.englishDataGridViewTextBoxColumn.FillWeight = 67.47509F;
+			this.englishDataGridViewTextBoxColumn.HeaderText = "English";
+			this.englishDataGridViewTextBoxColumn.Name = "englishDataGridViewTextBoxColumn";
+			this.englishDataGridViewTextBoxColumn.ReadOnly = true;
+			// 
+			// localizedDataGridViewTextBoxColumn
+			// 
+			this.localizedDataGridViewTextBoxColumn.DataPropertyName = "Localized";
+			this.localizedDataGridViewTextBoxColumn.FillWeight = 67.47509F;
+			this.localizedDataGridViewTextBoxColumn.HeaderText = "Localized";
+			this.localizedDataGridViewTextBoxColumn.Name = "localizedDataGridViewTextBoxColumn";
+			this.localizedDataGridViewTextBoxColumn.ReadOnly = true;
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -369,9 +371,9 @@
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
 			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
 			((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.localizationDataBindingSource)).EndInit();
 			this.panel1.ResumeLayout(false);
 			this.panel1.PerformLayout();
+			((System.ComponentModel.ISupportInitialize)(this.localizationDataBindingSource)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 

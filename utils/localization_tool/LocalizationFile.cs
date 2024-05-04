@@ -75,7 +75,6 @@ namespace EqLocalizationTool
 				            if (currentData == null)
 				            {
 							    currentData = new LocalizationData();
-                                currentData.DelimeterID = tk.line.ToString();
 								currentData.ID = (string)args[0];
 							}
 				            else
@@ -116,23 +115,16 @@ namespace EqLocalizationTool
             {
                 foreach (var d in data)
                 {
-                    if (d.ID != null)
-                    {
-                        if (DontSaveNotLocalized && d.English == d.Localized)
-                            continue;
+                    if (DontSaveNotLocalized && d.English == d.Localized)
+                        continue;
 
-                        string loc = d.Localized
-							.Replace("\"", "\\\"")
-							.Replace(Environment.NewLine, "\\n")
-							.Replace("\t", "\\t")
-							.Replace("\r", "\\r");
+                    string loc = d.Localized
+						.Replace("\"", "\\\"")
+						.Replace(Environment.NewLine, "\\n")
+						.Replace("\t", "\\t")
+						.Replace("\r", "\\r");
 
-						sw.WriteLine($"{d.ID}\t\t\"{loc}\";");
-                    }
-                    else
-                    {
-                        sw.WriteLine(d.DelimeterID);
-                    }
+					sw.WriteLine($"{d.ID}\t\t\"{loc}\";");
                 }
                 sw.Close();
             }

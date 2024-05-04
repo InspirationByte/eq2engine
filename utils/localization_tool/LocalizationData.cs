@@ -2,9 +2,6 @@
 {
 	class LocalizationData
     {
-        public string DelimeterID
-        { get; set; }
-
         public string ID
         { get; set; }
 
