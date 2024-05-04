@@ -223,31 +223,38 @@ void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 	}
 }
 
-void CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
+const ILocToken* CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
 {
 	if(token == nullptr || pszTokenString == nullptr)
-		return;
+		return nullptr;
 
 	LocalizeConvertSymbols( (char*)pszTokenString, true );
 
 	const int hash = StringToHash(token, true);
-	m_tokens.insert(hash, CLocToken(token, pszTokenString, true));
+	auto newIt = m_tokens.insert(hash, CLocToken(token, pszTokenString, true));
+	return &newIt.value();
 }
 
-void CLocalize::AddToken(const char* token, const char* pszUTF8TokenString)
+const ILocToken* CLocalize::AddToken(const char* token, const char* pszUTF8TokenString)
 {
 	if(token == nullptr || pszUTF8TokenString == nullptr)
-		return;
+		return nullptr;
 
 	LocalizeConvertSymbols( (char*)pszUTF8TokenString, true );
 
 	const int hash = StringToHash(token, true);
-	m_tokens.insert(hash, CLocToken(token, pszUTF8TokenString, true));
+	auto newIt = m_tokens.insert(hash, CLocToken(token, pszUTF8TokenString, true));
+	return &newIt.value();
 }
 
 const wchar_t* CLocalize::GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken) const
 {
 	const ILocToken* foundTok = GetToken(pszToken);
+
+	if(!foundTok)
+	{
+		DevMsg(DEVMSG_LOCALE, "Localization warning - no text for token '%s'\n", pszToken);
+	}
 
 	return foundTok ? foundTok->GetText() : pszDefaultToken;
 }
@@ -257,7 +264,9 @@ const ILocToken* CLocalize::GetToken( const char* pszToken ) const
 	const ILocToken* foundTok = _FindToken(pszToken);
 
 	if(!foundTok)
-		DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token '%s' not found\n", pszToken);
+	{
+		DevMsg(DEVMSG_LOCALE, "Localization warning - token '%s' not found\n", pszToken);
+	}
 
 	return foundTok;
 }

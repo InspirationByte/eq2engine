@@ -36,8 +36,8 @@ public:
 	virtual const char*			GetLanguageName() const = 0;
 
 	virtual void				AddTokensFile(const char* pszFilePrefix) = 0;
-	virtual void				AddToken(const char* token, const wchar_t* pszTokenString) = 0;
-	virtual void				AddToken(const char* token, const char* pszTokenString) = 0;
+	virtual const ILocToken* 	AddToken(const char* token, const wchar_t* pszTokenString) = 0;
+	virtual const ILocToken* 	AddToken(const char* token, const char* pszTokenString) = 0;
 
 	virtual const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const = 0;
 	virtual const ILocToken*	GetToken( const char* pszToken ) const = 0;
@@ -66,6 +66,7 @@ inline const wchar_t* LocalizedString( const char* pszString )
 	}
 	else
 	{
+		DevMsg(DEVMSG_LOCALE, "Localization warning - '%s' must have translation\n", pszString);
 		return defaultUnicodeString;
 	}
 
