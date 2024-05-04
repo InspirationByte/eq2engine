@@ -2,7 +2,7 @@
 #include <lua.hpp>
 
 #include "core/core_common.h"
-#include "core/IFileSystem.h"
+
 #include "esl.h"
 #include "esl_luaref.h"
 

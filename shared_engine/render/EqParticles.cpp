@@ -133,7 +133,7 @@ void CParticleBatch::UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleBatch::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds, bool flushBuffer)
+void CParticleBatch::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds, bool flushBuffers)
 {
 	if (!m_initialized || !r_drawParticles.GetBool())
 	{
@@ -165,7 +165,7 @@ void CParticleBatch::Render(const RenderPassContext& passContext, IGPUCommandRec
 
 	g_matSystem->SetupDrawCommand(drawCmd, passContext);
 
-	if(flushBuffer)
+	if(flushBuffers)
 	{
 		m_numVertices = 0;
 		m_numIndices = 0;
@@ -366,10 +366,10 @@ void CParticleRenderer::UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleRenderer::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds, bool flushBuffer)
+void CParticleRenderer::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds, bool flushBuffers)
 {
 	for(CParticleBatch* batch : m_batchs)
-		batch->Render(passContext, bufferUpdateCmds, flushBuffer);
+		batch->Render(passContext, bufferUpdateCmds, flushBuffers);
 }
 
 void CParticleRenderer::ClearBuffers()
