@@ -660,7 +660,7 @@ void CGameHost::ShutdownSystems()
 #define MIN_FPS 0.01
 #define MAX_FPS 10000.0
 
-#define MAX_FRAMETIME	1.0
+#define MAX_FRAMETIME	0.1
 #define MIN_FRAMETIME	0.001
 
 bool CGameHost::FilterTime( double dTime )

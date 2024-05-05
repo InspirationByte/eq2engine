@@ -53,7 +53,7 @@ public:
 
 	// renders this buffer
 	void				UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds);
-	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr, bool flushBuffer = true);
+	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr, bool flushBuffers = true);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed

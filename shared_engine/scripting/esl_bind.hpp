@@ -22,43 +22,8 @@ struct BoxUD
 
 //-----------------------------------------------
 // TYPE BINDER
-namespace esl::runtime
+namespace esl::binder
 {
-template <bool Cond, typename Then, typename OrElse>
-decltype(auto) constexpr_if(Then&& then, OrElse&& or_else)
-{
-	if constexpr (Cond)
-		return std::forward<Then>(then);
-	else
-		return std::forward<OrElse>(or_else);
-}
-
-// Function arguments signature generator
-// Used mainly for constructors
-template <typename... Args>
-struct ArgsSignature;
-
-// Base specialization: When there are no types left.
-template <>
-struct ArgsSignature<> 
-{
-	static const char* Get() { return ""; }
-};
-
-// Recursive specialization: One type followed by rest of the types.
-template <typename First, typename... Rest>
-struct ArgsSignature<First, Rest...>
-{
-	static const char* Get()
-	{
-		static EqString result = []() {
-			const char* restStr = ArgsSignature<Rest...>::Get();
-			return EqString(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;
-		}();
-		return result;
-	}
-};
-
 // Traits to detect which types are pullable from Lua
 template<typename T> struct IsUserObj : std::false_type {};
 template<typename T> struct IsUserObj<T*> : std::true_type {};
@@ -93,6 +58,36 @@ template<typename T> struct IsEqString : std::false_type {};
 template<> struct IsEqString<EqString> : std::true_type {};
 template<> struct IsEqString<EqString&> : std::true_type {};
 template<> struct IsEqString<const EqString&> : std::true_type {};
+
+} // end esl::binder
+
+namespace esl::runtime
+{
+// Function arguments signature generator
+// Used mainly for constructors
+template <typename... Args>
+struct ArgsSignature;
+
+// Base specialization: When there are no types left.
+template <>
+struct ArgsSignature<>
+{
+	static const char* Get() { return ""; }
+};
+
+// Recursive specialization: One type followed by rest of the types.
+template <typename First, typename... Rest>
+struct ArgsSignature<First, Rest...>
+{
+	static const char* Get()
+	{
+		static EqString result = []() {
+			const char* restStr = ArgsSignature<Rest...>::Get();
+			return EqString(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;
+		}();
+		return result;
+	}
+};
 
 // Push pull is essential when you want to send or get values from Lua
 template<typename T>
@@ -217,7 +212,7 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		lua_pushnumber(L, value);
 	}
-	else if constexpr (IsString<T>::value)
+	else if constexpr (binder::IsString<T>::value)
 	{
 		lua_pushstring(L, value);
 	}
@@ -241,7 +236,7 @@ static void PushValue(lua_State* L, const T& value)
 		else
 			lua_pushnil(L);
 	}
-	else if constexpr (IsRefPtr<T>::value)
+	else if constexpr (binder::IsRefPtr<T>::value)
 	{
 		// really does not matter since deleter will still Ref_Drop() 
 		// object but we'll keep it anyway
@@ -251,7 +246,7 @@ static void PushValue(lua_State* L, const T& value)
 		else
 			lua_pushnil(L);
 	}
-	else if constexpr (IsUserObj<T>::value)
+	else if constexpr (binder::IsUserObj<T>::value)
 	{
 		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
 		if constexpr (std::is_pointer_v<T>)
@@ -369,11 +364,11 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		return ResultWithValue<BaseType<T>>{ true, {}, BaseType<T>(L, index) };
 
 	}
-	else if constexpr (IsString<T>::value)
+	else if constexpr (binder::IsString<T>::value)
 	{
 		if (!checkType(L, index, LUA_TSTRING))
 		{
-			if constexpr (IsEqString<T>::value)
+			if constexpr (binder::IsEqString<T>::value)
 				return ResultWithValue<EqString>{ false, {}, EqString() };
 			else
 				return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
@@ -381,7 +376,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 
 		size_t len = 0;
 		const char* value = lua_tolstring(L, index, &len);
-		if constexpr (IsEqString<T>::value)
+		if constexpr (binder::IsEqString<T>::value)
 		{
 			static_assert(!std::is_pointer_v<T>, "passing EqString by pointer is not supported yet");
 			return ResultWithValue<EqString>{ true, {}, EqString(value, len) };
@@ -389,9 +384,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		else
 			return Result{ true, {}, value };
 	}
-	else if constexpr (IsUserObj<UT>::value)
+	else if constexpr (binder::IsUserObj<UT>::value)
 	{
-		static_assert(!IsRefPtr<UT>::value, "CRefPtr<> not implemented yet as argument");
+		static_assert(!binder::IsRefPtr<UT>::value, "CRefPtr<> not implemented yet as argument");
 
 		const bool toCpp = HasToCppParamTrait<T>::value;
 
@@ -550,34 +545,14 @@ private:
 namespace esl::binder
 {
 // Traits signature wrapper to simplify templates
-template<typename UR, typename ... UArgs>
-struct FuncTraits
+template<typename R, typename ... Args>
+struct FuncSignature
 {
-	using TR = UR;
-	using TArgs = std::tuple<UArgs...>;
+	using TR = R;
+	using TArgs = std::tuple<Args...>;
 };
 
-using FuncTraitsDefault = FuncTraits<void>;
-
-template <typename Func>
-struct TransformSignature;
-
-// For member functions
-template <typename R, typename C, typename... Args>
-struct TransformSignature<R(C::*)(Args...)> 
-{
-    using type = R(C::*)(StripTraitsT<Args>...);
-};
-
-// Add const qualifier variant if needed
-template <typename R, typename C, typename... Args>
-struct TransformSignature<R(C::*)(Args...) const> 
-{
-    using type = R(C::*)(StripTraitsT<Args>...) const;
-};
-
-template <typename Func>
-using TransformSignatureT = typename TransformSignature<Func>::type;
+using FuncSignatureDefault = FuncSignature<void>;
 
 //---------------------------------------------------------------
 // Constructor binder
@@ -653,27 +628,22 @@ static auto BindDestructor()
 // Member function binder
 
 template<typename T, auto FuncPtr, typename Traits>
-struct MemberFunctionBinder;
+struct MemberFunctionBinder {};
 
-// Non-const binder
-template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...), typename Traits>
-struct MemberFunctionBinder<T, FuncPtr, Traits> : public esl::ScriptBind
+template <typename T, auto FuncPtr, typename Traits, typename R, typename ... Args>
+struct MemberFunction
 {
-	using UR = typename Traits::TR;
-	using UArgs = typename Traits::TArgs;
-
 	template <size_t... IDX>
 	static R Invoke(T* thisPtr, lua_State* L, std::index_sequence<IDX...>)
 	{
-		// Member functions start with IDX = 2
-		return (thisPtr->*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, UArgs>, false>(L, IDX + 2)...);
+		// NOTES: Member functions start with IDX = 2
+		// this is now unsafe, CallMemberFunc must have been taken care for us
+		return (thisPtr->*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 2)...);
 	}
 
-	int Func(lua_State* L)
+	static int FuncImpl(T* thisPtr, lua_State* L)
 	{
 		ESL_VERBOSE_LOG("call member %s:%x", EqScriptClass<T>::className, FuncPtr);
-
-		T* thisPtr = static_cast<T*>(this->thisPtr); // NOTE: unsafe, CallMemberFunc must check types first
 		if constexpr (std::is_void_v<R>)
 		{
 			Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
@@ -682,11 +652,17 @@ struct MemberFunctionBinder<T, FuncPtr, Traits> : public esl::ScriptBind
 		else
 		{
 			R ret = Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
-			runtime::PushValue<R, UR>(L, ret);
+			runtime::PushValue<R, typename Traits::TR>(L, ret);
 			return 1;
 		}
 	}
+};
 
+// Non-const binder
+template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...), typename Traits>
+struct MemberFunctionBinder<T, FuncPtr, Traits> : public esl::ScriptBind
+{
+	int Func(lua_State* L) { return MemberFunction<T, FuncPtr, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
 	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
 	static int GetFuncArgsCount() { return sizeof...(Args); }
 };
@@ -695,34 +671,7 @@ struct MemberFunctionBinder<T, FuncPtr, Traits> : public esl::ScriptBind
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...) const, typename Traits>
 struct MemberFunctionBinder<T, FuncPtr, Traits> : public esl::ScriptBind
 {
-	using UR = typename Traits::TR;
-	using UArgs = typename Traits::TArgs;
-
-	template <size_t... IDX>
-	static R Invoke(T* thisPtr, lua_State* L, std::index_sequence<IDX...>)
-	{
-		// Member functions start with IDX = 2
-		return (thisPtr->*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, UArgs>, false>(L, IDX + 2)...);
-	}
-
-	int Func(lua_State* L) const
-	{
-		ESL_VERBOSE_LOG("call member %s:%x const", EqScriptClass<T>::className, FuncPtr);
-
-		T* thisPtr = static_cast<T*>(this->thisPtr); // NOTE: unsafe, CallMemberFunc must check types first
-		if constexpr (std::is_void_v<R>)
-		{
-			Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
-			return 0;
-		}
-		else
-		{
-			R ret = Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
-			runtime::PushValue<R, UR>(L, ret);
-			return 1;
-		}
-	}
-
+	int Func(lua_State* L) { return MemberFunction<T, FuncPtr, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
 	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
 	static int GetFuncArgsCount() { return sizeof...(Args); }
 };
@@ -731,33 +680,20 @@ template<typename T, auto FuncPtr>
 struct MemberFunctionBinderNoTraits;
 
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...)>
-struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, FuncTraits<R, Args...>> {};
+struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, FuncSignature<R, Args...>> {};
 
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...) const>
-struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, FuncTraits<R, Args...>> {};
+struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, FuncSignature<R, Args...>> {};
 
 template<typename T, auto FuncPtr, typename Traits>
 static auto BindMemberFunction() 
 { 
-	using BindFuncConst = esl::ScriptBind::BindFuncConst;
 	using BindFunc = esl::ScriptBind::BindFunc;
-	using UR = typename Traits::TR;
-	using UArgs = typename Traits::TArgs;
 
-	if constexpr (std::is_void_v<UR> && std::tuple_size_v<UArgs> == 0)
-	{
-		if constexpr (IsConstMemberFunc<decltype(FuncPtr)>::value)
-			return static_cast<BindFuncConst>(&MemberFunctionBinderNoTraits<T, FuncPtr>::Func);
-		else
-			return static_cast<BindFunc>(&MemberFunctionBinderNoTraits<T, FuncPtr>::Func);
-	}
+	if constexpr (std::is_void_v<typename Traits::TR> && std::tuple_size_v<typename Traits::TArgs> == 0)
+		return static_cast<BindFunc>(&MemberFunctionBinderNoTraits<T, FuncPtr>::Func);
 	else
-	{
-		if constexpr (IsConstMemberFunc<decltype(FuncPtr)>::value)
-			return static_cast<BindFuncConst>(&MemberFunctionBinder<T, FuncPtr, Traits>::Func);
-		else
-			return static_cast<BindFunc>(&MemberFunctionBinder<T, FuncPtr, Traits>::Func);
-	}
+		return static_cast<BindFunc>(&MemberFunctionBinder<T, FuncPtr, Traits>::Func);
 }
 
 //---------------------------------------------------------------
@@ -769,15 +705,11 @@ struct FunctionBinder;
 template<typename R, typename ... Args, typename Traits>
 struct FunctionBinder<R(*)(Args...), Traits>
 {
-	using FuncType = R(*)(Args...);
-	using UR = typename Traits::TR;
-	using UArgs = typename Traits::TArgs;
-
 	template<size_t... IDX>
 	static R Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
-		const FuncType FuncPtr = reinterpret_cast<FuncType>(lua_touserdata(L, lua_upvalueindex(1)));
-		return (*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, UArgs>, false>(L, IDX + 1)...);
+		const auto FuncPtr = reinterpret_cast<R(*)(Args...)>(lua_touserdata(L, lua_upvalueindex(1)));
+		return (*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 1)...);
 	}
 
 	static int Func(lua_State* L)
@@ -790,7 +722,7 @@ struct FunctionBinder<R(*)(Args...), Traits>
 		else
 		{
 			R ret = Invoke(L, std::index_sequence_for<Args...>{});
-			runtime::PushValue<R, UR>(L, ret);
+			runtime::PushValue<R, typename Traits::TR>(L, ret);
 			return 1;
 		}
 	}
@@ -803,7 +735,7 @@ template<typename Func>
 struct FunctionBinderNoTraits;
 
 template<typename R, typename ... Args>
-struct FunctionBinderNoTraits<R(*)(Args...)> : public FunctionBinder<R(*)(Args...), FuncTraits<R, Args...>> {};
+struct FunctionBinderNoTraits<R(*)(Args...)> : public FunctionBinder<R(*)(Args...), FuncSignature<R, Args...>> {};
 
 template<typename UR = void, typename ... UArgs, typename Func>
 static bindings::LuaCFunction BindCFunction(Func f)
@@ -814,7 +746,7 @@ static bindings::LuaCFunction BindCFunction(Func f)
 	if constexpr (std::is_void_v<UR> && sizeof...(UArgs) == 0)
 		funcInfo.luaFuncImpl = &FunctionBinderNoTraits<Func>::Func;
 	else
-		funcInfo.luaFuncImpl = &FunctionBinder<Func, FuncTraits<UR, UArgs...>>::Func;
+		funcInfo.luaFuncImpl = &FunctionBinder<Func, FuncSignature<UR, UArgs...>>::Func;
 	return funcInfo;
 }
 
@@ -827,16 +759,16 @@ struct VariableBinder;
 template<typename T, typename V, V T::* MemberVar>
 struct VariableBinder<T, MemberVar> : public esl::ScriptBind
 {
-	int GetterFunc(lua_State* L) const
+	int GetterFunc(lua_State* L)
 	{
-		T* thisPtr = static_cast<T*>(this->thisPtr);	// NOTE: unsafe, CallMemberFunc must check types first
+		T* thisPtr = static_cast<T*>(this->thisPtr);
 		runtime::PushValue<V>(L, thisPtr->*MemberVar);
 		return 1;
 	}
 
 	int SetterFunc(lua_State* L)
 	{
-		T* thisPtr = static_cast<T*>(this->thisPtr);	// NOTE: unsafe, CallMemberFunc must check types first
+		T* thisPtr = static_cast<T*>(this->thisPtr);
 
 		// all non-trivial types should be treated as userdata
 		if constexpr (std::is_trivial<V>::value)
@@ -850,7 +782,7 @@ struct VariableBinder<T, MemberVar> : public esl::ScriptBind
 template<typename T, auto V>
 static auto BindVariableGetter()
 {
-	return static_cast<typename esl::ScriptBind::BindFuncConst>(&VariableBinder<T, V>::GetterFunc);
+	return static_cast<typename esl::ScriptBind::BindFunc>(&VariableBinder<T, V>::GetterFunc);
 }
 
 template<typename T, auto V>
@@ -958,7 +890,7 @@ template<typename T>
 template<typename UR, typename ... UArgs, typename F>
 Member ClassBinder<T>::MakeStaticFunction(F func, const char* name)
 {
-	using Traits = binder::FuncTraits<UR, UArgs...>;
+	using Traits = binder::FuncSignature<UR, UArgs...>;
 
 	LuaCFunction funcInfo = binder::BindCFunction<UR, UArgs...>(func);
 
@@ -978,17 +910,14 @@ template<typename T>
 template<auto F, typename UR, typename ... UArgs>
 Member ClassBinder<T>::MakeFunction(const char* name)
 {
-	using Traits = binder::FuncTraits<UR, UArgs...>;
+	using Traits = binder::FuncSignature<UR, UArgs...>;
 
 	Member m;
 	m.type = MEMB_FUNC;
 	m.name = name;
 	m.signature = binder::MemberFunctionBinder<T, F, Traits>::GetFuncArgsSignature();
 	m.numArgs = binder::MemberFunctionBinder<T, F, Traits>::GetFuncArgsCount();
-	if constexpr (IsConstMemberFunc<decltype(F)>::value)
-		m.constFunc = binder::BindMemberFunction<T, F, Traits>();
-	else
-		m.func = binder::BindMemberFunction<T, F, Traits>();
+	m.func = binder::BindMemberFunction<T, F, Traits>();
 	m.isConst = false;
 	return m;
 }
@@ -1014,7 +943,7 @@ Member ClassBinder<T>::MakeVariableWithSetter(const char* name)
 	m.type = MEMB_VAR;
 	m.name = name;
 	m.signature = GetVariableTypeName<T, V>();
-	m.func = binder::BindMemberFunction<T, F, binder::FuncTraitsDefault>(); //binder::BindVariableSetter<T, V>();
+	m.func = binder::BindMemberFunction<T, F, binder::FuncSignatureDefault>();
 	m.getFunc = binder::BindVariableGetter<T, V>();
 	return m;
 }

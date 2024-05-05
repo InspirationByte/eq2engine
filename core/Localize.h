@@ -47,8 +47,8 @@ public:
 	const char*			GetLanguageName() const;
 
 	void				AddTokensFile(const char* pszFilePrefix);
-	void				AddToken(const char* token, const wchar_t* pszTokenString);
-	void				AddToken(const char* token, const char* pszUTF8TokenString);
+	const ILocToken* 	AddToken(const char* token, const wchar_t* pszTokenString);
+	const ILocToken* 	AddToken(const char* token, const char* pszUTF8TokenString);
 
 	const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const;
 	const ILocToken*	GetToken( const char* pszToken ) const;

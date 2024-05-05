@@ -135,8 +135,6 @@ int Sys_Main()
 	g_localizer->AddToken("COMPILE_DATE", EqWString::Format(L"%ls", L"" COMPILE_DATE));
 	g_localizer->AddToken("COMPILE_TIME", EqWString::Format(L"%ls", L"" COMPILE_TIME));
 
-	g_localizer->AddTokensFile("game");
-
 	if (!Host_Init())
 	{
 		// shutdown
