@@ -1392,7 +1392,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			if (behind)
 				continue;
 
-			if (screen.z > current.dist)
+			if (current.dist > 0 && screen.z > current.dist)
 				continue;
 
 			textStl.textColor = current.color;

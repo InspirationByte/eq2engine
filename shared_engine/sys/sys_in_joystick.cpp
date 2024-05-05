@@ -282,8 +282,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 					KeyIndexToString(JOYSTICK_START_AXES + axis), event->caxis.value);
 			}
 
-			int cIndex = GetControllerIndex(event->cdevice.which);
-
+			const int cIndex = GetControllerIndex(event->cdevice.which);
 			if (cIndex >= 0)
 			{
 				if (in_joy_id.GetInt() == -1 || in_joy_id.GetInt() == cIndex)

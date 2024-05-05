@@ -713,6 +713,8 @@ void CMainWindow::ReDraw()
 		g_audioSystem->SetListener(g_camera_target, vec3_zero, forward, up);
 		g_sounds->Update();
 
+		debugoverlay->SetMatrices(g_mProjMat, g_mViewMat);
+
 		debugoverlay->Box3D(-1.0f, 1.0f, ColorRGBA(1,1,1,1), 1.0f);
 
 		ShowFPS();
@@ -742,7 +744,7 @@ void CMainWindow::ReDraw()
 		debugoverlay->Line3D(vec3_zero, Vector3D(0,1,0), ColorRGBA(0,0,0,1), ColorRGBA(0,1,0,1));
 		debugoverlay->Line3D(vec3_zero, Vector3D(0,0,1), ColorRGBA(0,0,0,1), ColorRGBA(0,0,1,1));
 
-		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
+		debugoverlay->Draw(w, h);
 
         // TODO: swap chain
 		g_matSystem->EndFrame();

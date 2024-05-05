@@ -1215,6 +1215,7 @@ void CEGFViewFrame::ReDraw()
 		g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		g_matSystem->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
 		g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
+		debugoverlay->SetMatrices(g_mProjMat, g_mViewMat);
 
 		// Update things
 
@@ -1298,7 +1299,7 @@ void CEGFViewFrame::ReDraw()
 		}
 
 		g_matSystem->QueueCommandBuffer(modelDrawRenderPass->End());
-		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
+		debugoverlay->Draw(w, h);
 
 		g_matSystem->EndFrame();
 		Platform_Sleep(1);

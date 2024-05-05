@@ -75,16 +75,11 @@ public:
 	virtual void		Draw2DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Draw3DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
 
-	//virtual void		Line2D(Vector2D &start, Vector2D &end, MColor &color1, MColor &color2, float fTime = 0.0f) = 0;
-	//virtual void		Box2D(Vector2D &mins, Vector2D &maxs, MColor &color, float fTime = 0.0f) = 0;
-
 	virtual void		Graph_DrawBucket(DbgGraphBucket* pBucket) = 0;
 	virtual void		Graph_AddValue( DbgGraphBucket* pBucket, float value) = 0;
 
 	virtual void		SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view ) = 0;
-	virtual void		Draw(int winWide, int winTall, float timeScale = 1.0f) = 0;	// draws debug overlay.
-
-	void				Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWide, int winTall) { SetMatrices(proj, view); Draw(winWide, winTall); }
+	virtual void		Draw(int winWide, int winTall, float timeScale = 1.0f) = 0;
 };
 
 extern IDebugOverlay *debugoverlay;
