@@ -9,95 +9,60 @@ namespace EqLocalizationTool
 {
 	class LocalizationFile
     {
-        private string gameDir;
-		private string categoryName;
+		public bool DontSaveNotLocalized { get; set; }
+		private string GameDir;
+		private string CategoryName;
+		
 		public LocalizationFile(string gameDir, string category)
         {
-            this.gameDir = gameDir;
-            categoryName = category;
+            GameDir = gameDir;
+            CategoryName = category;
 		}
-
-        public bool DontSaveNotLocalized { get; set; }
 
         private string GetLangFileName(string langName)
         {
-            string fileName = gameDir + "\\resources\\text_" + langName + "\\" + categoryName + ".txt";
+            string fileName = GameDir + "\\resources\\text_" + langName + "\\" + CategoryName + ".txt";
             return fileName;
 		}
-
 
         public List<LocalizationData> ReadData(string langName)
         {
 			List<LocalizationData> data = new List<LocalizationData>();
-            int l = 0;
-            //try
-            {
-                var fileName = GetLangFileName(langName);
 
-				LocalizationData currentData = null;
+            var fileName = GetLangFileName(langName);
+			var fileData = File.ReadAllText(fileName, Encoding.UTF8).ToArray();
 
-				KV_Tokenizer(fileName, File.ReadAllText(fileName, Encoding.UTF8).ToArray(), (tk, sig, args) => {
-		            switch (sig[0])
-		            {
-			            case 'c':
-			            {
-				            // character filtering
+			LocalizationData currentData = null;
 
-				            // not supporting arrays on KV2
-				            //if (*dataPtr == KV_ARRAY_SEPARATOR || *dataPtr == KV_ARRAY_BEGIN || *dataPtr == KV_ARRAY_END)
-					        //    return KV_PARSE_ERROR;
+			KV_Tokenizer(fileName, fileData, (tk, sig, args) => {
+		        switch (sig[0])
+		        {
+					case 't':   // text token
+					{                        
+						if (currentData == null)
+						{
+							currentData = new LocalizationData();
+							currentData.ID = (string)args[0];
+						}
+						else
+						{
+							currentData.Localized = (string)args[0];
+						}
 
-				            break;
-			            }
-			            case 's':
-			            {
-				            // increase/decrease section depth
-				            if (sig[1] == '+')
-				            {
-					            //if (currentSection == nullptr)
-						        //    return KV_PARSE_ERROR;
-                                //
-					            //sectionStack.append(currentSection);
-					            //currentSection = nullptr;
-				            }
-				            else if (sig[1] == '-')
-				            {
-					            //sectionStack.popBack();
-					            //currentSection = nullptr;
-				            }
+						break;
+					}
+					case 'b': // break
+					{				       
+						if(currentData != null)
+							data.Add(currentData);
+						currentData = null;
+						break;
+					}
+		        }
 
-				            break;
-			            }
-			            case 't':
-			            {
-                            // text token
-
-				            if (currentData == null)
-				            {
-							    currentData = new LocalizationData();
-								currentData.ID = (string)args[0];
-							}
-				            else
-				            {
-								currentData.Localized = (string)args[0];
-							}
-
-				            break;
-			            }
-			            case 'b':
-			            {
-				            // break
-                            if(currentData != null)
-                                data.Add(currentData);
-				            currentData = null;
-				            break;
-			            }
-		            }
-
-                    return EKVTokenState.KV_PARSE_RESUME;
-				});
+                return EKVTokenState.KV_PARSE_RESUME;
+			});
 				
-			}
 			return data;
         }
 

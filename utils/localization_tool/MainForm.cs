@@ -17,7 +17,9 @@ namespace EqLocalizationTool
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            folderBrowserDialog1.SelectedPath = Properties.Settings.Default.InitialDir;
+			var settings = Properties.Settings.Default;
+
+			folderBrowserDialog1.SelectedPath = settings.InitialDir;
 
 			if (folderBrowserDialog1.ShowDialog(this) != DialogResult.OK)
                 return;
@@ -26,10 +28,10 @@ namespace EqLocalizationTool
 
 			string path = tbGameDir.Text;
 
-			var allEnglishFiles =
-	            from s in Directory.GetFiles(path + "\\resources\\text_english\\", "*.txt")
-	            orderby s
-	            select Path.GetFileNameWithoutExtension(s);
+            var allEnglishFiles = Directory
+                .GetFiles(path + "\\resources\\text_english\\", "*.txt")
+                .OrderBy(x => x)
+                .Select(x => Path.GetFileNameWithoutExtension(x));
 
             cbCategory.Items.Clear();
 			foreach (string fn in allEnglishFiles)
@@ -37,10 +39,10 @@ namespace EqLocalizationTool
                 cbCategory.Items.Add(fn);
 			}
 
-            var allLangs = 
-                from s in Directory.GetDirectories(path + "\\resources\\", "text_*")
-                orderby s
-                select Path.GetFileName(s).Remove(0, "text_".Length);
+            var allLangs = Directory
+                .GetDirectories(path + "\\resources\\", "text_*")
+                .OrderBy(x => x)
+                .Select(x => Path.GetFileName(x).Remove(0, "text_".Length));
 
 			cbLocal.Items.Clear();
 			foreach (string fn in allLangs)
@@ -52,16 +54,16 @@ namespace EqLocalizationTool
 
 			localizationDataBindingSource.DataSource = new List<LocalizationData>();
             lblPerc.Text = "";
-            if (Properties.Settings.Default.DefLang != "")
+            if (settings.DefLang != "")
             {
-                int i = cbLocal.Items.IndexOf(Properties.Settings.Default.DefLang);
+                int i = cbLocal.Items.IndexOf(settings.DefLang);
                 if (i >= 0)
                     cbLocal.SelectedIndex = i;
             }
 
-            if(Properties.Settings.Default.DefCategory != "")
+            if(settings.DefCategory != "")
             {
-				int i = cbCategory.Items.IndexOf(Properties.Settings.Default.DefCategory);
+				int i = cbCategory.Items.IndexOf(settings.DefCategory);
 				if (i >= 0)
 					cbCategory.SelectedIndex = i;
 			}
@@ -111,14 +113,11 @@ namespace EqLocalizationTool
 
 			foreach (var en in eng)
 			{
-				var lc = (from l in loc
-						  where en.ID == l.ID
-						  select l).SingleOrDefault();
+				var lc = loc.SingleOrDefault(l => l.ID == en.ID);
 				en.English = en.Localized;
+
 				if (lc != null && lc.Localized != null)
-				{
 					en.Localized = lc.Localized;
-				}
 			}
 
 			localizationDataBindingSource.DataSource = eng;
@@ -178,63 +177,71 @@ namespace EqLocalizationTool
                 data = (LocalizationData) localizationDataBindingSource.Current;
             } while ((localizationDataBindingSource.Position + 1 < localizationDataBindingSource.Count) &&
                 (data.ID == null || IsLocalizedToken(data.English, data.Localized)));
-            this.Invalidate();
+            Invalidate();
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if(folderBrowserDialog1.SelectedPath != "")
-                Properties.Settings.Default.InitialDir = folderBrowserDialog1.SelectedPath;
+            var settings = Properties.Settings.Default;
 
-            Properties.Settings.Default.FindText = dialog.tbText.Text;
-            Properties.Settings.Default.IDDefault = dialog.rbID.Checked;
-            Properties.Settings.Default.EnglishDefault = dialog.rbEnglish.Checked;
-            Properties.Settings.Default.LocalizedDefault = dialog.rbLocalized.Checked;
-            if (cbLocal.Text != "")
-                Properties.Settings.Default.DefLang = cbLocal.Text;
+			settings.FindText = dialog.tbText.Text;
+			settings.IDDefault = dialog.rbID.Checked;
+			settings.EnglishDefault = dialog.rbEnglish.Checked;
+			settings.LocalizedDefault = dialog.rbLocalized.Checked;
+
+			if (folderBrowserDialog1.SelectedPath != "")
+				settings.InitialDir = folderBrowserDialog1.SelectedPath;
+
+			if (cbLocal.Text != "")
+				settings.DefLang = cbLocal.Text;
+
 			if (cbCategory.Text != "")
-				Properties.Settings.Default.DefCategory = cbCategory.Text;
-			Properties.Settings.Default.Save();
+				settings.DefCategory = cbCategory.Text;
 
-            Application.Exit();
+			settings.Save();
         }
 
-        FindTextDialog dialog = new FindTextDialog();
+		FindTextDialog dialog = new FindTextDialog();
+
+		private void btFind_Click(object sender, EventArgs e)
+		{
+			dialog.Show(this);
+		}
 
 		internal void FindNext()
         {
-            string text = dialog.tbText.Text.ToLower();
+            string searchText = dialog.tbText.Text.ToLower();
             int ind = dialog.rbID.Checked ? 0 : dialog.rbEnglish.Checked ? 1 : 2;
-            if (text != "")
+            if (searchText == "")
+                return;
+
+            bool gotoNext;
+            do
             {
-                LocalizationData data;
-                bool gotoNext;
-                do
+                localizationDataBindingSource.MoveNext();
+				var data = (LocalizationData)localizationDataBindingSource.Current;
+                gotoNext = (localizationDataBindingSource.Position + 1 < localizationDataBindingSource.Count);
+                if (!gotoNext)
+                    continue;
+
+                string text = null;
+				switch (ind)
                 {
-                    localizationDataBindingSource.MoveNext();
-                    data = (LocalizationData)localizationDataBindingSource.Current;
-                    gotoNext = (localizationDataBindingSource.Position + 1 < localizationDataBindingSource.Count);
-                    if (gotoNext)
-                    {
-                        if (data.ID != null)
-                        {
-                            switch (ind)
-                            {
-                            	case 0:
-                                    gotoNext = (data.ID.ToLower().IndexOf(text) == -1);
-                            		break;
-                            	case 1:
-                                    gotoNext = (data.English.ToLower().IndexOf(text) == -1);
-                            		break;
-                            	case 2:
-                                    gotoNext = (data.Localized.ToLower().IndexOf(text) == -1);
-                            		break;
-                            }
-                        }
-                    }
-                } while (gotoNext);
-                this.Invalidate();
-            }
+                    case 0:
+						text = data.ID;
+                        break;
+                    case 1:
+						text = data.English;
+                        break;
+                    case 2:
+						text = data.Localized;
+                        break;
+                }
+                if(text != null)
+				    gotoNext = !text.ToLower().Contains(searchText);
+			} while (gotoNext);
+
+            Invalidate();
         }
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
@@ -245,12 +252,6 @@ namespace EqLocalizationTool
                 btFind_Click(null, null);
             else if (e.KeyCode == Keys.F3)
                 FindNext();            
-        }
-
-        private void btFind_Click(object sender, EventArgs e)
-        {
-            dialog.mainForm = this;
-			dialog.Show(this);
         }
 	}
 }
