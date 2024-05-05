@@ -92,7 +92,6 @@ namespace EqStateMgr
 	void				GetStateMouseCursorProperties(bool& visible, bool& centered);
 
 	bool				IsMultiplayerGameState();
-	bool				IsInGameState();
 
 	void				SignalPause();
 

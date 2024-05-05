@@ -884,9 +884,6 @@ bool CGameHost::IsInMultiplayerGame() const
 
 void CGameHost::SignalPause()
 {
-	if(EqStateMgr::IsInGameState())
-		return;
-
 	EqStateMgr::SignalPause();
 }
 
