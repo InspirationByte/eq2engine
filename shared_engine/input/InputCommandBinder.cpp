@@ -9,6 +9,7 @@
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "core/ILocalize.h"
 #include "utils/KeyValues.h"
 
 #include <SDL.h>
@@ -17,6 +18,10 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 #include "font/IFontCache.h"
+
+
+static constexpr const char INPUT_CMD_ACTIVATE_PREFIX		= '+';
+static constexpr const char INPUT_CMD_DEACTIVATE_PREFIX		= '-';
 
 CStaticAutoPtr<CInputCommandBinder> g_inputCommandBinder;
 
@@ -28,10 +33,168 @@ DECLARE_CMD(in_touchzones_reload, "Reload touch zones", 0)
 	g_inputCommandBinder->InitTouchZones();
 }
 
+static void cmd_conKeyList(const ConCommandBase* base, Array<EqString>& list, const char* query)
+{
+	const int LIST_LIMIT = 50;
+
+	keyNameMap_t* names = s_keyMapList;
+
+	do
+	{
+		keyNameMap_t& name = *names;
+
+		if (name.name == nullptr)
+			break;
+
+		if (list.numElem() == LIST_LIMIT)
+		{
+			list.append("...");
+			break;
+		}
+
+		if (*query == 0 || xstristr(name.name, query))
+			list.append(name.name);
+
+	} while (names++);
+}
+
+static void cmd_boundKeysList(const ConCommandBase* base, Array<EqString>& list, const char* query)
+{
+	const int LIST_LIMIT = 50;
+
+	ArrayCRef<InputBinding*> bindingList = g_inputCommandBinder->GetBindingList();
+
+	EqString keyNameString;
+	for (const InputBinding* binding : bindingList)
+	{
+		keyNameString.Clear();
+		UTIL_GetBindingKeyString(keyNameString, binding);
+
+		if (list.numElem() == LIST_LIMIT)
+		{
+			list.append("...");
+			break;
+		}
+
+		list.append(keyNameString);
+	}
+}
+
+static void InputExecAxisActionCommand(void* userData, short value)
+{
+	const InputBinding& binding = *reinterpret_cast<const InputBinding*>(userData);
+	binding.boundAxisAction->func(value);
+}
+
+static void InputExecInputCommand(void* userData, short value)
+{
+	const InputCommand& cmd = *reinterpret_cast<const InputBinding*>(userData);
+
+	Array<EqString> args(PP_SL);
+	xstrsplit(cmd.argumentString, " ", args);
+
+	const ConCommand* conCmd = (abs(value) > 16384) ? cmd.activateCmd : cmd.deactivateCmd;
+	if (!conCmd)
+		return;
+
+	if (in_keys_debug.GetBool())
+		MsgWarning("dispatch %s\n", conCmd->GetName());
+
+	conCmd->DispatchFunc(args);
+}
+
+DECLARE_CMD_VARIANTS(bind, "Binds action to key", cmd_conKeyList, 0)
+{
+	if (CMD_ARGC > 1)
+	{
+		EqString agrstr;
+
+		for (int i = 2; i < CMD_ARGC; i++)
+			agrstr.Append(EqString::Format((i < CMD_ARGC - 1) ? "%s " : "%s", CMD_ARGV(i).ToCString()));
+
+		g_inputCommandBinder->BindKey(CMD_ARGV(0), CMD_ARGV(1), agrstr);
+	}
+	else
+		MsgInfo("Usage: bind <key> <command> [args,...]\n");
+}
+
+DECLARE_CMD(in_listBinding, "Shows bound keys", 0)
+{
+	MsgInfo("---- List of bound keys to commands ----\n");
+	ArrayCRef<InputBinding*> bindingList = g_inputCommandBinder->GetBindingList();
+
+	for (const InputBinding* binding : bindingList)
+	{
+		EqString keyNameString;
+		UTIL_GetBindingKeyString(keyNameString, binding);
+
+		Msg("bind %s %s %s\n", 
+			keyNameString.ToCString(), 
+			binding->commandString.ToCString(), 
+			binding->custom ? "(custom)" : binding->argumentString.ToCString());
+	}
+
+	MsgInfo("---- %d keys/commands bound ----\n", bindingList.numElem());
+}
+
+DECLARE_CMD(in_listTouchZones, "Shows bound keys", 0)
+{
+	MsgInfo("---- List of bound touchzones to commands ----\n");
+	ArrayCRef<InputTouchZone> touchList = g_inputCommandBinder->GetTouchZoneList();
+
+	for (const InputTouchZone& tz : touchList)
+	{
+		Msg("Touchzone %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n",
+			tz.name.ToCString(),
+			tz.commandString.ToCString(),
+			tz.position.x, tz.position.y,
+			tz.size.x, tz.size.y);
+	}
+
+	MsgInfo("---- %d touch zones ----\n", touchList.numElem());
+}
+
+DECLARE_CMD(in_listAxisActions, "Shows axis list can be bound", 0)
+{
+	MsgInfo("---- List of axese ----\n");
+	ArrayCRef<InputAxisAction> axisActs = g_inputCommandBinder->GetAxisActionList();
+
+	for (const InputAxisAction& act : axisActs)
+	{
+		Msg("    %s\n", act.name.ToCString());
+	}
+
+	MsgInfo("---- %d axes ----\n", axisActs.numElem());
+}
+
+
+DECLARE_CMD_VARIANTS(unbind, "Unbinds a key", cmd_boundKeysList, 0)
+{
+	if (CMD_ARGC > 0)
+	{
+		g_inputCommandBinder->UnbindKey(CMD_ARGV(0));
+	}
+}
+
+DECLARE_CMD(unbindall, "Unbinds all keys", 0)
+{
+	g_inputCommandBinder->UnbindAll();
+}
+
+DECLARE_CMD(unbindjoystick, "Unbinds joystick controls", 0)
+{
+	g_inputCommandBinder->UnbindAll_Joystick();
+}
+
 //---------------------------------------------------------
 // UTILITY FUNCTIONS
 
-bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
+static int InputBindingGetModifierCount(const InputBinding& binding)
+{
+	return (binding.modifierIds[1] != -1) ? 2 : ((binding.modifierIds[0] != -1) ? 1 : 0);
+}
+
+static bool InputGetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 {
 	// parse pszKeyStr into modifiers
 	const char* keyStr = pszKeyStr;
@@ -44,20 +207,19 @@ bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 	for (int i = 0; i < 2; i++)
 	{
 		const char* subStart = xstristr(keyStr, "+");
-		if (subStart)
+		if (!subStart)
+			continue;
+
+		EqString modifier(keyStr, subStart - keyStr);
+		outKeys[i] = KeyStringToKeyIndex(modifier);
+		if (outKeys[i] == -1)
 		{
-			EqString modifier(keyStr, subStart - keyStr);
-
-			outKeys[i] = KeyStringToKeyIndex(modifier.ToCString());
-
-			if (outKeys[i] == -1)
-			{
-				MsgError("Unknown key/mapping '%s'\n", modifier.ToCString());
-				return false;
-			}
-
-			keyStr = subStart + 1;
+			MsgError("Unknown key/mapping '%s'\n", modifier.ToCString());
+			return false;
 		}
+
+		keyStr = subStart + 1;
+
 	}
 
 	// Find the final key matching the *keychar
@@ -72,33 +234,68 @@ bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 	return true;
 }
 
-void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding, bool humanReadable /*= false*/)
+static void ResolveInputCommand(InputCommand& cmd)
+{
+	// if we connecting libraries dynamically, that wouldn't properly execute
+	cmd.activateCmd = g_consoleCommands->FindCommand(EqString::Format("+%s", cmd.commandString.ToCString()));
+	cmd.deactivateCmd = g_consoleCommands->FindCommand(EqString::Format("-%s", cmd.commandString.ToCString()));
+
+	// if found only one command with plus or minus
+	if (!cmd.activateCmd || !cmd.deactivateCmd)
+		cmd.activateCmd = g_consoleCommands->FindCommand(cmd.commandString);
+}
+
+void UTIL_GetBindingKeyString(EqString& outStr, const InputBinding* binding, bool humanReadable /*= false*/)
 {
 	if (!binding)
 		return;
 
 	outStr.Clear();
 
-	int validModifiers = (binding->mod_index[1] != -1) ? 2 : ((binding->mod_index[0] != -1) ? 1 : 0);
-
+	const int validModifiers = InputBindingGetModifierCount(*binding);
 	for (int i = 0; i < validModifiers; i++)
 	{
 		if(humanReadable)
-			outStr.Append(s_keyMapList[binding->mod_index[i]].hrname); // TODO: apply localizer
+			outStr.Append(s_keyMapList[binding->modifierIds[i]].hrname); // TODO: apply localizer
 		else
-			outStr.Append(s_keyMapList[binding->mod_index[i]].name);
-		outStr.Append('+');
+			outStr.Append(s_keyMapList[binding->modifierIds[i]].name);
+		outStr.Append(INPUT_CMD_ACTIVATE_PREFIX);
 	}
 
 	if (humanReadable)
-		outStr.Append(s_keyMapList[binding->key_index].hrname); // TODO: apply localizer
+		outStr.Append(s_keyMapList[binding->keyIdx].hrname); // TODO: apply localizer
 	else
-		outStr.Append(s_keyMapList[binding->key_index].name);
+		outStr.Append(s_keyMapList[binding->keyIdx].name);
+}
+
+void UTIL_GetBindingKeyStringLocalized(EqWString& outStr, const InputBinding* binding, bool humanReadable /*= false*/)
+{
+	if (!binding)
+		return;
+
+	outStr.Clear();
+
+	const int validModifiers = (binding->modifierIds[1] != -1) ? 2 : ((binding->modifierIds[0] != -1) ? 1 : 0);
+	for (int i = 0; i < validModifiers; i++)
+	{
+		const char* token = humanReadable ? s_keyMapList[binding->modifierIds[i]].hrname : nullptr;
+		if (!token)
+			token = s_keyMapList[binding->modifierIds[i]].name;
+
+		outStr.Append(LocalizedString(token));
+		outStr.Append('+');
+	}
+
+	const char* token = humanReadable ? s_keyMapList[binding->keyIdx].hrname : nullptr;
+	if (!token)
+		token = s_keyMapList[binding->keyIdx].name;
+
+	outStr.Append(LocalizedString(token));
 }
 
 //---------------------------------------------------------
 
-CInputCommandBinder::CInputCommandBinder() : m_init(false)
+CInputCommandBinder::CInputCommandBinder()
 {
 }
 
@@ -111,15 +308,13 @@ void CInputCommandBinder::Init()
 	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (!kn->hrname)
-		{
 			kn->hrname = xstrdup(SDL_GetKeyName(SDL_SCANCODE_TO_KEYCODE(kn->keynum)));
-		}
 	}
 #endif // PLAT_SDL
 
-	// resolve bindings
-	for(int i = 0; i < m_bindings.numElem(); i++)
-		ResolveCommandBinding( m_bindings[i], true);
+	// resolve bindings for first time quietly
+	for (InputBinding* binding : m_bindings)
+		ResolveCommandBinding(*binding, true);
 
 	m_init = true;
 }
@@ -137,9 +332,13 @@ void CInputCommandBinder::Shutdown()
 	}
 #endif // PLAT_SDL
 
-	m_touchZones.clear(true);
-	UnbindAll();
+	for (InputBinding* binding : m_bindings)
+		delete binding;
 
+	m_bindings.clear(true);
+	m_axisActs.clear(true);
+	m_currentButtons.clear(true);
+	m_touchZones.clear(true);
 	m_init = false;
 }
 
@@ -158,11 +357,9 @@ void CInputCommandBinder::InitTouchZones()
 		return;
 	}
 
-	for(int i = 0; i < zones->keys.numElem(); i++)
+	for(const KVSection* zoneDef : zones->keys)
 	{
-		KVSection* zoneDef = zones->keys[i];
-
-		in_touchzone_t newZone;
+		InputTouchZone newZone;
 		newZone.name = zoneDef->name;
 
 		KVSection* zoneCmd = zoneDef->FindSection("bind");
@@ -176,12 +373,7 @@ void CInputCommandBinder::InitTouchZones()
 		// resolve commands
 
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("+%s", newZone.commandString.ToCString()).ToCString());
-		newZone.cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("-%s", newZone.commandString.ToCString()).ToCString());
-
-		// if found only one command with plus or minus
-		if(!newZone.cmd_act || !newZone.cmd_deact)
-			newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand( newZone.commandString.ToCString() );
+		ResolveInputCommand(newZone);
 
 		DevMsg(DEVMSG_CORE, "Touchzone: %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n", 
 			newZone.name.ToCString(), newZone.commandString.ToCString(), 
@@ -189,7 +381,7 @@ void CInputCommandBinder::InitTouchZones()
 			newZone.size.x, newZone.size.y);
 
 		// if anly command found
-		if(newZone.cmd_act || newZone.cmd_deact)
+		if(newZone.activateCmd || newZone.deactivateCmd)
 		{
 			m_touchZones.append( newZone );
 		}
@@ -208,28 +400,28 @@ void CInputCommandBinder::WriteBindings(IVirtualStream* stream)
 
 	stream->Print("unbindall\n" );
 
-	for(int i = 0; i < m_bindings.numElem();i++)
+	for(const InputBinding* binding : m_bindings)
 	{
-		in_binding_t* binding = m_bindings[i];
+		if (binding->custom)
+			continue;
 
-		// resolve key name
 		EqString keyNameString;
 		UTIL_GetBindingKeyString(keyNameString, binding);
 
-		stream->Print("bind %s %s %s\n",	keyNameString.GetData(),
-											binding->commandString.GetData(),
-											binding->argumentString.GetData() );
+		stream->Print("bind %s %s %s\n",keyNameString.GetData(),
+										binding->commandString.GetData(),
+										binding->argumentString.GetData() );
 	}
 }
 
 bool CInputCommandBinder::BindKey( const char* pszKeyStr, const char* pszCommand, const char* pszArgs )
 {
-	in_binding_t* binding = AddBinding(pszKeyStr, pszCommand, pszArgs);
+	InputBinding* binding = AddBinding(pszKeyStr, pszCommand, pszArgs);
 
 	if (!binding)
 		return false;
 
-	if(m_init && !ResolveCommandBinding(binding, false))
+	if(m_init && !ResolveCommandBinding(*binding, false))
 	{
 		DeleteBinding( binding );
 		return false;
@@ -239,9 +431,9 @@ bool CInputCommandBinder::BindKey( const char* pszKeyStr, const char* pszCommand
 }
 
 // binds a command with arguments to known key
-in_binding_t* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char* pszCommand, const char *pszArgs )
+InputBinding* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char* pszCommand, const char *pszArgs )
 {
-	in_binding_t* binding = nullptr;
+	InputBinding* binding = nullptr;
 	while (binding = FindBindingByCommandName(pszCommand, pszArgs, binding))
 	{
 		EqString keyNameString;
@@ -259,80 +451,100 @@ in_binding_t* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char
 	}
 
 	int bindingKeyIndices[3];
-
-	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+	if (!InputGetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return nullptr;
 
 	// create new binding
-	in_binding_t* newBind = PPNew in_binding_t;
-
-	newBind->mod_index[0] = bindingKeyIndices[0];
-	newBind->mod_index[1] = bindingKeyIndices[1];
-	newBind->key_index = bindingKeyIndices[2];
-
+	InputBinding* newBind = PPNew InputBinding;
+	newBind->modifierIds[0] = bindingKeyIndices[0];
+	newBind->modifierIds[1] = bindingKeyIndices[1];
+	newBind->keyIdx = bindingKeyIndices[2];
 	newBind->commandString = pszCommand;
 
 	if(pszArgs)
 		newBind->argumentString = pszArgs;
 
-	m_bindings.append( newBind );
+	m_bindings.append(newBind);
 
 	return newBind;
 }
 
-bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding, bool quiet)
+InputBinding* CInputCommandBinder::AddBinding(const char* pszKeyStr, const char* name, InputCommand::Func func, void* userData /*= nullptr*/)
 {
-	const bool isJoyAxis = (s_keyMapList[binding->key_index].keynum >= JOYSTICK_START_AXES);
+	int bindingKeyIndices[3];
+	if (!InputGetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+		return nullptr;
 
-	// resolve axis first
-	if(isJoyAxis)
-		binding->boundAction = FindAxisAction( binding->commandString.ToCString() );
+	// create new binding
+	InputBinding* newBind = PPNew InputBinding;
+	newBind->modifierIds[0] = bindingKeyIndices[0];
+	newBind->modifierIds[1] = bindingKeyIndices[1];
+	newBind->keyIdx = bindingKeyIndices[2];
+	newBind->commandString = name;
+	newBind->func = func;
+	newBind->userData = userData;
+	newBind->custom = true;
 
-	// if no axis action is bound, try bind concommands
-	if(!binding->boundAction)
+	m_bindings.append(newBind);
+
+	return newBind;
+}
+
+bool CInputCommandBinder::ResolveCommandBinding(InputBinding& binding, bool quiet)
+{
+	if (binding.func)
+		return true;
+
+	// try resolve axis first
+	if(s_keyMapList[binding.keyIdx].keynum >= JOYSTICK_START_AXES)
 	{
-		// if we connecting libraries dynamically, that wouldn't properly execute
-		binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("+%s", binding->commandString.ToCString()).ToCString());
-		binding->cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("-%s", binding->commandString.ToCString()).ToCString());
-
-		// if found only one command with plus or minus
-		if(!binding->cmd_act || !binding->cmd_deact)
-			binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand( binding->commandString.ToCString() );
+		binding.boundAxisAction = FindAxisAction(binding.commandString);
+		if(binding.boundAxisAction)
+			binding.func = InputExecAxisActionCommand;
 	}
 
-	if(!quiet && !binding->cmd_act && !binding->cmd_deact && !binding->boundAction)
+	// if no axis action is bound, try bind concommands
+	if(!binding.func)
 	{
-		MsgError("Cannot bind command '%s' to '%s'\n", binding->commandString.ToCString(), s_keyMapList[binding->key_index].name);
+		ResolveInputCommand(binding);
+
+		if(binding.activateCmd || binding.deactivateCmd)
+			binding.func = InputExecInputCommand;
+	}
+	
+	if(!quiet && !binding.func)
+	{
+		MsgError("Cannot bind command '%s' to '%s'\n", binding.commandString.ToCString(), s_keyMapList[binding.keyIdx].name);
 		return false;
 	}
 
 	return true;
 }
 
-axisAction_t* CInputCommandBinder::FindAxisAction(const char* name) const
+InputAxisAction* CInputCommandBinder::FindAxisAction(const char* name) const
 {
 	for(int i = 0; i < m_axisActs.numElem();i++)
 	{
 		if(!m_axisActs[i].name.CompareCaseIns(name))
-			return (axisAction_t*)&m_axisActs[i];
+			return const_cast<InputAxisAction*>(&m_axisActs[i]);
 	}
 
 	return nullptr;
 }
 
 // searches for binding
-in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr, const char* cmdPrefixStr) const
+InputBinding* CInputCommandBinder::FindBinding(const char* pszKeyStr, const char* cmdPrefixStr) const
 {
 	int bindingKeyIndices[3];
-
-	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+	if (!InputGetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return nullptr;
 
-	for(in_binding_t* binding : m_bindings)
+	for(InputBinding* binding : m_bindings)
 	{
 		const char* cmdNameStr = binding->commandString;
-		if (*cmdNameStr == '+' || *cmdNameStr == '-')
+		if (*cmdNameStr == INPUT_CMD_ACTIVATE_PREFIX || *cmdNameStr == INPUT_CMD_DEACTIVATE_PREFIX)
 			++cmdNameStr;
+
 		const char* catSubChr = strchr(cmdNameStr, '.');
 		if (catSubChr)
 		{
@@ -341,51 +553,56 @@ in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr, const char
 				continue;
 		}
 
-		if (binding->mod_index[0] == bindingKeyIndices[0] &&
-			binding->mod_index[1] == bindingKeyIndices[1] &&
-			binding->key_index == bindingKeyIndices[2])
+		if (binding->modifierIds[0] == bindingKeyIndices[0] &&
+			binding->modifierIds[1] == bindingKeyIndices[1] &&
+			binding->keyIdx == bindingKeyIndices[2])
+		{
 			return binding;
+		}
 	}
 
 	return nullptr;
 }
 
-in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/) const
+InputBinding* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/, const InputBinding* startFrom /*= nullptr*/) const
 {
 	const int startIdx = arrayFindIndex(m_bindings, startFrom) + 1;
-
-	for (in_binding_t* binding : m_bindings)
-	{
-		if ((binding->cmd_act == cmdBase || binding->cmd_deact == cmdBase) && 
-			(!argStr || argStr && !binding->argumentString.CompareCaseIns(argStr)))
-			return binding;
-	}
-
-	return nullptr;
-}
-
-in_binding_t* CInputCommandBinder::FindBindingByCommandName(const char* name, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/) const
-{
-	const int startIdx = arrayFindIndex(m_bindings, startFrom) + 1;
-
 	for (int i = startIdx; i < m_bindings.numElem(); i++)
 	{
-		in_binding_t* binding = m_bindings[i];
-
-		if(!binding->commandString.CompareCaseIns(name) &&
-			(!argStr || argStr && !binding->argumentString.CompareCaseIns(argStr)))
-			return binding;
+		InputBinding& binding = const_cast<InputBinding&>(*m_bindings[i]);
+		if ((binding.activateCmd == cmdBase || binding.deactivateCmd == cmdBase) && 
+			(!argStr || argStr && !binding.argumentString.CompareCaseIns(argStr)))
+		{
+			return &binding;
+		}
 	}
 
 	return nullptr;
 }
 
-void CInputCommandBinder::DeleteBinding( in_binding_t* binding )
+InputBinding* CInputCommandBinder::FindBindingByCommandName(const char* name, const char* argStr /*= nullptr*/, const InputBinding* startFrom /*= nullptr*/) const
+{
+	const int startIdx = arrayFindIndex(m_bindings, startFrom) + 1;
+	for (int i = startIdx; i < m_bindings.numElem(); i++)
+	{
+		InputBinding& binding = const_cast<InputBinding&>(*m_bindings[i]);
+
+		if(!binding.commandString.CompareCaseIns(name) &&
+			(!argStr || argStr && !binding.argumentString.CompareCaseIns(argStr)))
+		{
+			return &binding;
+		}
+	}
+
+	return nullptr;
+}
+
+void CInputCommandBinder::DeleteBinding( InputBinding* binding )
 {
 	if(binding == nullptr)
 		return;
 
-	if(m_bindings.remove(binding))
+	if(m_bindings.fastRemove(binding))
 		delete binding;
 }
 
@@ -393,23 +610,22 @@ void CInputCommandBinder::DeleteBinding( in_binding_t* binding )
 void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 {
 	int bindingKeyIndices[3];
-
-	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+	if (!InputGetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return;
 
 	int results = 0;
-
 	for(int i = 0; i < m_bindings.numElem();i++)
 	{
-		in_binding_t* binding = m_bindings[i];
+		InputBinding* binding = m_bindings[i];
+		if (binding->custom)
+			continue;
 
-		if (binding->mod_index[0] == bindingKeyIndices[0] &&
-			binding->mod_index[1] == bindingKeyIndices[1] &&
-			binding->key_index == bindingKeyIndices[2])
+		if (binding->modifierIds[0] == bindingKeyIndices[0] &&
+			binding->modifierIds[1] == bindingKeyIndices[1] &&
+			binding->keyIdx == bindingKeyIndices[2])
 		{
+			m_bindings.fastRemoveIndex(i--);
 			delete binding;
-			m_bindings.removeIndex(i);
-			i--;
 
 			results++;
 		}
@@ -421,9 +637,12 @@ void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 
 void CInputCommandBinder::UnbindCommandByName(const char* name, const char* argStr /*= nullptr*/)
 {
-	in_binding_t* binding = nullptr;
+	InputBinding* binding = nullptr;
 	while (binding = FindBindingByCommandName(name, argStr, binding))
 	{
+		if (binding->custom)
+			continue;
+
 		DeleteBinding(binding);
 	}
 }
@@ -431,10 +650,14 @@ void CInputCommandBinder::UnbindCommandByName(const char* name, const char* argS
 // clears and removes all key bindings
 void CInputCommandBinder::UnbindAll()
 {
-	for(int i = 0; i < m_bindings.numElem();i++)
+	for (int i = 0; i < m_bindings.numElem(); i++)
+	{
+		if (m_bindings[i]->custom)
+			continue;
 		delete m_bindings[i];
+		m_bindings.fastRemoveIndex(i);
+	}
 
-	m_bindings.clear(true);
 	m_axisActs.clear(true);
 	m_currentButtons.clear(true);
 }
@@ -443,47 +666,43 @@ void CInputCommandBinder::UnbindAll_Joystick()
 {
 	for(int i = 0; i < m_bindings.numElem();i++)
 	{
-		in_binding_t* binding = m_bindings[i];
-
-		int keyNum = s_keyMapList[binding->key_index].keynum;
-
+		InputBinding* binding = m_bindings[i];
+		const int keyNum = s_keyMapList[binding->keyIdx].keynum;
 		if(keyNum >= JOYSTICK_START_KEYS && keyNum < MOU_B1)
 		{
+			m_bindings.fastRemoveIndex(i--);
 			delete binding;
-			m_bindings.removeIndex(i);
-			i--;
 		}
 	}
 }
 
 // registers axis action
-void CInputCommandBinder::RegisterJoyAxisAction( const char* name, JOYAXISFUNC axisFunc )
+void CInputCommandBinder::RegisterJoyAxisAction( const char* name, InputAxisAction::Func axisFunc )
 {
-	axisAction_t act;
+	InputAxisAction act;
 	act.name = "ax_" + _Es(name);
 	act.func = axisFunc;
 
 	m_axisActs.append( act );
 }
 
-bool CInputCommandBinder::CheckModifiersAndDepress(in_binding_t* binding, int currentKeyIdent, bool bPressed)
+bool CInputCommandBinder::CheckModifiersAndDepress(InputBinding& binding, int currentKeyIdent, bool bPressed)
 {
-	int validModifiers = (binding->mod_index[1] != -1) ? 2 : ((binding->mod_index[0] != -1) ? 1 : 0);
+	const int validModifiers = InputBindingGetModifierCount(binding);
 
 	// if we don't have modifiers, skip the check with returning TRUE
 	if (!validModifiers)
 		return true;
 
 	int numModifiers = 0;
-
-	for (int i = 0; i < m_currentButtons.numElem(); i++)
+	for (int buttons : m_currentButtons)
 	{
-		int keyIdent = s_keyMapList[binding->mod_index[numModifiers]].keynum;
+		const int keyIdent = s_keyMapList[binding.modifierIds[numModifiers]].keynum;
 
 		if (!bPressed && currentKeyIdent == keyIdent)
-			ExecuteBinding(binding, false);
+			ExecuteBinding(binding, 0);
 
-		if (m_currentButtons[i] == keyIdent)
+		if (buttons == keyIdent)
 			numModifiers++;
 
 		if (numModifiers >= validModifiers)
@@ -496,32 +715,31 @@ bool CInputCommandBinder::CheckModifiersAndDepress(in_binding_t* binding, int cu
 //
 // Event processing
 //
-void CInputCommandBinder::OnKeyEvent(int keyIdent, bool bPressed)
+void CInputCommandBinder::OnKeyEvent(int keyIdent, bool pressed)
 {
 	if(in_keys_debug.GetBool())
-		MsgWarning("-- KeyPress: %s (%d)\n", KeyIndexToString(keyIdent), bPressed);
+		MsgWarning("-- KeyPress: %s (%d)\n", KeyIndexToString(keyIdent), pressed);
 
-	if (bPressed)
+	if (pressed)
 		m_currentButtons.addUnique(keyIdent);
 	else
 		m_currentButtons.fastRemove(keyIdent);
 
-	Array<in_binding_t*> complexExecuteList(PP_SL);
-	Array<in_binding_t*> executeList(PP_SL);
+	Array<InputBinding*> complexExecuteList(PP_SL);
+	Array<InputBinding*> executeList(PP_SL);
 
-	for(int i = 0; i < m_bindings.numElem();i++)
+	const short pressure = pressed ? SHRT_MAX : 0;
+
+	for(InputBinding* binding : m_bindings)
 	{
-		in_binding_t* binding = m_bindings[i];
-		
 		// here we also depress modifiers if has any
-		if (!CheckModifiersAndDepress(binding, keyIdent, bPressed))
+		if (!CheckModifiersAndDepress(*binding, keyIdent, pressed))
 			continue;
 
 		// check on the keymap
-		if (s_keyMapList[binding->key_index].keynum == keyIdent)
+		if (s_keyMapList[binding->keyIdx].keynum == keyIdent)
 		{
-			int validModifiers = (binding->mod_index[1] != -1) ? 2 : ((binding->mod_index[0] != -1) ? 1 : 0);
-
+			const int validModifiers = InputBindingGetModifierCount(*binding);
 			if (validModifiers)
 				complexExecuteList.append(binding);
 			else
@@ -533,50 +751,41 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool bPressed)
 	if (complexExecuteList.numElem())
 	{
 		for (int i = 0; i < complexExecuteList.numElem(); i++)
-		{
-			ExecuteBinding(complexExecuteList[i], bPressed);
-		}
+			ExecuteBinding(*complexExecuteList[i], pressure);
 
 		return;
 	}
 
 	for (int i = 0; i < executeList.numElem(); i++)
-	{
-		ExecuteBinding(executeList[i], bPressed);
-	}
+		ExecuteBinding(*executeList[i], pressure);
 }
 
-void CInputCommandBinder::OnMouseEvent( int button, bool bPressed )
+void CInputCommandBinder::OnMouseEvent( int button, bool pressed )
 {
-	for(int i = 0; i < m_bindings.numElem();i++)
-	{
-		in_binding_t* binding = m_bindings[i];
+	const short pressure = pressed ? SHRT_MAX : 0;
 
-		if (!CheckModifiersAndDepress(binding, button, bPressed))
+	for(InputBinding* binding : m_bindings)
+	{
+		if (!CheckModifiersAndDepress(*binding, button, pressed))
 			continue;
 
-		if(s_keyMapList[binding->key_index].keynum == button)
-		{
-			ExecuteBinding( binding, bPressed);
-		}
+		if(s_keyMapList[binding->keyIdx].keynum == button)
+			ExecuteBinding(*binding, pressure);
 	}
 }
 
 void CInputCommandBinder::OnMouseWheel( int scroll )
 {
-	int button = (scroll > 0) ?  MOU_WHUP : MOU_WHDN;
+	const short pressure = (scroll > 0) ? SHRT_MAX : 0;
 
-	for(int i = 0; i < m_bindings.numElem();i++)
+	const int button = (scroll > 0) ?  MOU_WHUP : MOU_WHDN;
+	for(InputBinding* binding : m_bindings)
 	{
-		in_binding_t* binding = m_bindings[i];
-
-		if (!CheckModifiersAndDepress(binding, 0, true))
+		if (!CheckModifiersAndDepress(*binding, 0, true))
 			continue;
 
-		if(s_keyMapList[binding->key_index].keynum == button)
-		{
-			ExecuteBinding( binding, (scroll > 0));
-		}
+		if(s_keyMapList[binding->keyIdx].keynum == button)
+			ExecuteBinding(*binding, pressure);
 	}
 }
 
@@ -585,51 +794,41 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 	if(in_touchzones_debug.GetInt() == 2)
 		MsgWarning("-- Touch [%g %g] (%d)\n", pos.x, pos.y, down);
 
-	for(int i = 0; i < m_touchZones.numElem(); i++)
+	for(InputTouchZone& tz : m_touchZones)
 	{
-		in_touchzone_t* tz = &m_touchZones[i];
-
-		AARectangle rect(tz->position - tz->size*0.5f, tz->position + tz->size*0.5f);
+		const AARectangle rect(tz.position - tz.size*0.5f, tz.position + tz.size*0.5f);
 
 		if(!down)
 		{
-			if(tz->finger == finger) // if finger up
+			if(tz.finger == finger) // if finger up
 			{
-				ExecuteTouchZone( tz, down );
-				tz->finger = -1;
+				ExecuteTouchZone( tz, 0);
+				tz.finger = -1;
 			}
 		}
 		else if( rect.Contains(pos) )
 		{
 			if (in_touchzones_debug.GetInt() == 2)
-				Msg("found zone %s\n", tz->name.ToCString());
+				Msg("found zone %s\n", tz.name.ToCString());
 
-			tz->finger = finger;
-
-			ExecuteTouchZone( tz, down );
-			continue;
+			tz.finger = finger;
+			ExecuteTouchZone( tz, SHRT_MAX); // TODO: variable touchzone values (stick support)
 		}
 	}
 }
 
 void CInputCommandBinder::OnJoyAxisEvent( short axis, short value )
 {
-	int joyAxisCode = axis + JOYSTICK_START_AXES;
-	in_binding_t* axisBinding = nullptr;
+	const int joyAxisCode = axis + JOYSTICK_START_AXES;
 
-	for (int i = 0; i < m_bindings.numElem(); i++)
+	for (InputBinding* binding : m_bindings)
 	{
-		in_binding_t* binding = m_bindings[i];
-
 		// run through all axes
-		if (binding->mod_index[0] == -1 &&
-			binding->mod_index[1] == -1 &&
-			s_keyMapList[binding->key_index].keynum == joyAxisCode)
+		if (binding->modifierIds[0] == -1 &&
+			binding->modifierIds[1] == -1 &&
+			s_keyMapList[binding->keyIdx].keynum == joyAxisCode)
 		{
-			if (binding->boundAction)
-				binding->boundAction->func(value);
-			else
-				ExecuteBinding(binding, (abs(value) > 16384));
+			ExecuteBinding(*binding, value);
 		}
 	}
 }
@@ -661,7 +860,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRe
 
 	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{
-		const in_touchzone_t* tz = &m_touchZones[i];
+		const InputTouchZone* tz = &m_touchZones[i];
 		AARectangle rect((tz->position - tz->size * 0.5f) * screenSize, (tz->position + tz->size * 0.5f) * screenSize);
 
 		rects.append(rect);
@@ -681,170 +880,22 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRe
 	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
 	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{
-		const in_touchzone_t* tz = &m_touchZones[i];
+		const InputTouchZone& tz = m_touchZones[i];
 		const AARectangle& rect = rects[i];
 
-		defaultFont->SetupRenderText(tz->name.ToCString(), rect.leftTop, fontParams, rendPassRecorder);
+		defaultFont->SetupRenderText(tz.name, rect.leftTop, fontParams, rendPassRecorder);
 	}
 }
 
 // executes binding with selected state
-void CInputCommandBinder::ExecuteBinding( in_binding_t* pBinding, bool bState )
+void CInputCommandBinder::ExecuteBinding(InputBinding& binding, short value)
 {
-	ResolveCommandBinding(pBinding, false);
-	ExecuteBoundCommands(pBinding, bState);
+	ResolveCommandBinding(binding, false);
+
+	binding.func(binding.custom ? binding.userData : &binding, value);
 }
 
-void CInputCommandBinder::ExecuteTouchZone( in_touchzone_t* zone, bool bState )
+void CInputCommandBinder::ExecuteTouchZone(InputTouchZone& zone, short value)
 {
-	ExecuteBoundCommands(zone, bState);
-}
-
-template <typename T>
-void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
-{
-	Array<EqString> args(PP_SL);
-
-	xstrsplit( zone->argumentString.GetData(), " ", args);
-
-	ConCommand *cmd = bState ? zone->cmd_act : zone->cmd_deact;
-
-	// dispatch command
-	if(cmd)
-	{
-		if(in_keys_debug.GetBool())
-			MsgWarning("dispatch %s\n", cmd->GetName());
-
-		cmd->DispatchFunc( args );
-	}
-}
-
-void con_key_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
-{
-	const int LIST_LIMIT = 50;
-
-	keyNameMap_t* names = s_keyMapList;
-
-	do
-	{
-		keyNameMap_t& name = *names;
-
-		if(name.name == nullptr)
-			break;
-
-		if(list.numElem() == LIST_LIMIT)
-		{
-			list.append("...");
-			break;
-		}
-
-		if(*query == 0 || xstristr(name.name, query))
-			list.append(name.name);
-
-	}while(names++);
-}
-
-void binding_key_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
-{
-	const int LIST_LIMIT = 50;
-
-	Array<in_binding_t*> *bindingList = g_inputCommandBinder->GetBindingList();
-
-	for (int i = 0; i < bindingList->numElem(); i++)
-	{
-		in_binding_t* binding = bindingList->ptr()[i];
-
-		EqString keyNameString;
-		UTIL_GetBindingKeyString(keyNameString, binding);
-
-		if (list.numElem() == LIST_LIMIT)
-		{
-			list.append("...");
-			break;
-		}
-
-		list.append(keyNameString.ToCString());
-	}
-}
-
-DECLARE_CMD_VARIANTS(bind,"Binds action to key", con_key_list, 0)
-{
-	if(CMD_ARGC > 1)
-	{
-		EqString agrstr;
-
-		for(int i = 2; i < CMD_ARGC; i++)
-			agrstr.Append(EqString::Format((i < CMD_ARGC-1) ? "%s " : "%s", CMD_ARGV(i).ToCString()));
-
-		g_inputCommandBinder->BindKey(CMD_ARGV(0).ToCString(), CMD_ARGV(1).ToCString(),(char*)agrstr.GetData());
-	}
-	else
-		MsgInfo("Usage: bind <key> <command> [args,...]\n");
-}
-
-DECLARE_CMD(list_binding,"Shows bound keys",0)
-{
-	MsgInfo("---- List of bound keys to commands ----\n");
-	Array<in_binding_t*> *bindingList = g_inputCommandBinder->GetBindingList();
-
-	for(int i = 0; i < bindingList->numElem();i++)
-	{
-		in_binding_t* binding = bindingList->ptr()[i];
-
-		EqString keyNameString;
-		UTIL_GetBindingKeyString(keyNameString, binding);
-
-		Msg("bind %s %s %s\n", keyNameString.ToCString(), binding->commandString.ToCString(), binding->argumentString.ToCString() );
-	}
-
-	MsgInfo("---- %d keys/commands bound ----\n", bindingList->numElem());
-}
-
-DECLARE_CMD(list_touchzones,"Shows bound keys",0)
-{
-	MsgInfo("---- List of bound touchzones to commands ----\n");
-	Array<in_touchzone_t> *touchList = g_inputCommandBinder->GetTouchZoneList();
-
-	for(int i = 0; i < touchList->numElem();i++)
-	{
-		in_touchzone_t* tz = &touchList->ptr()[i];
-
-		Msg("Touchzone %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n", tz->name.ToCString(), tz->commandString.ToCString(), tz->position.x, tz->position.y, tz->size.x, tz->size.y);
-	}
-
-	MsgInfo("---- %d touch zones ----\n", touchList->numElem());
-}
-
-DECLARE_CMD(list_axisActions,"Shows axis list can be bound",0)
-{
-	MsgInfo("---- List of axese ----\n");
-	Array<axisAction_t>* axisActs = g_inputCommandBinder->GetAxisActionList();
-
-	for(int i = 0; i < axisActs->numElem();i++)
-	{
-		axisAction_t* act = &axisActs->ptr()[i];
-
-		Msg("    %s\n", act->name.ToCString());
-	}
-
-	MsgInfo("---- %d axes ----\n", axisActs->numElem());
-}
-
-
-DECLARE_CMD_VARIANTS(unbind,"Unbinds a key", binding_key_list, 0)
-{
-	if(CMD_ARGC > 0)
-	{
-		g_inputCommandBinder->UnbindKey(CMD_ARGV(0).ToCString());
-	}
-}
-
-DECLARE_CMD(unbindall,"Unbinds all keys",0)
-{
-	g_inputCommandBinder->UnbindAll();
-}
-
-DECLARE_CMD(unbindjoystick,"Unbinds joystick controls",0)
-{
-	g_inputCommandBinder->UnbindAll_Joystick();
+	zone.func(zone.custom ? zone.userData : &zone, value);
 }

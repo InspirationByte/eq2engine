@@ -1437,9 +1437,9 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 {
 	if (pressed) // catch "DOWN" event
 	{
-		in_binding_t* tgBind = g_inputCommandBinder->FindBindingByCommand(&toggleconsole);
+		InputBinding* tgBind = g_inputCommandBinder->FindBindingByCommand(&toggleconsole);
 
-		if (tgBind && s_keyMapList[tgBind->key_index].keynum == key)
+		if (tgBind && s_keyMapList[tgBind->keyIdx].keynum == key)
 		{
 			if (IsVisible() && IsShiftPressed())
 			{

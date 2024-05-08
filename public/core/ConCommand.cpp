@@ -21,7 +21,7 @@ ConCommand::ConCommand(const char* name, CON_COMMAND_CALLBACK callback, int flag
 		Register(this);
 }
 
-void ConCommand::DispatchFunc(Array<EqString>& args)
+void ConCommand::DispatchFunc(Array<EqString>& args) const
 {
 	if(GetFlags() & CV_CHEAT)
 	{
