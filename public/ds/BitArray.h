@@ -7,6 +7,8 @@
 
 #pragma once
 
+using BIT_STORAGE_TYPE = int;
+
 template <int p>
 constexpr int getIntExp(int _x = 0) { return getIntExp<p / 2>(_x + 1); }
 
@@ -23,10 +25,161 @@ static constexpr int numBitsSet(uint x)
 	return x & 0x0000003F;
 }
 
+template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
+constexpr int bitArray2Dword(int elems)
+{
+	return elems / (bitStorageSize * 8) + 1;
+}
+
+template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
+constexpr int bitArrayShift()
+{
+	return getIntExp<bitStorageSize * 8>();
+}
+
+template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
+constexpr int bitArrayRemainder()
+{
+	return (bitStorageSize * 8 - 1);
+}
+
+class BitArrayImpl
+{
+public:
+	using STORAGE_TYPE = BIT_STORAGE_TYPE;
+
+	// cleans all bits to zero
+	static void		clear(STORAGE_TYPE* bitArray, int bitCount);
+
+	static bool		isTrue(const STORAGE_TYPE* bitArray, int bitCount, int index);
+
+	// returns total number of bits that are set to true
+	static int		numTrue(const STORAGE_TYPE* bitArray, int bitCount);
+
+	// returns total number of bits that are set to false
+	static int		numFalse(const STORAGE_TYPE* bitArray, int bitCount);
+
+	// set the bit value
+	static void		set(STORAGE_TYPE* bitArray, int bitCount, int index, bool value);
+
+	// set bit range
+	static void		setRange(STORAGE_TYPE* bitArray, int bitCount, int startIndex, int count, bool value);
+
+	static void		setTrue(STORAGE_TYPE* bitArray, int bitCount, int index);
+	static void		setFalse(STORAGE_TYPE* bitArray, int bitCount, int index);
+};
+
+inline void BitArrayImpl::clear(STORAGE_TYPE* bitArray, int bitCount)
+{
+	memset(bitArray, 0, bitArray2Dword(bitCount));
+}
+
+// returns total number of bits that are set to true
+inline int BitArrayImpl::numTrue(const STORAGE_TYPE* bitArray, int bitCount)
+{
+	int count = 0;
+	const int typeSize = bitArray2Dword(bitCount);
+	if (typeSize)
+	{
+		for (int i = 0; i < typeSize; i++)
+			count += numBitsSet(static_cast<uint>(bitArray[i]));
+	}
+	return count;
+}
+
+// returns total number of bits that are set to false
+inline int BitArrayImpl::numFalse(const STORAGE_TYPE* bitArray, int bitCount)
+{
+	int count = 0;
+	const int typeSize = bitArray2Dword(bitCount);
+	if (typeSize)
+	{
+		for (int i = 0; i < typeSize; i++)
+			count += numBitsSet(~static_cast<uint>(bitArray[i]));
+	}
+	return count;
+}
+
+// set the bit value
+inline void BitArrayImpl::set(STORAGE_TYPE* bitArray, int bitCount, int index, bool value)
+{
+	if (value) 
+		setTrue(bitArray, bitCount, index);
+	else 
+		setFalse(bitArray, bitCount, index);
+}
+
+// set bit range
+inline void BitArrayImpl::setRange(STORAGE_TYPE* bitArray, int bitCount, int startIndex, int count, bool value)
+{
+	const int endIndex = min(bitCount, startIndex + count);
+#if 0
+	// slow - for reference
+	for (int index = startIndex; index < endIndex; ++index)
+		set(bitArray, bitCount, index, value);
+#else
+	if (count <= 0)
+		return;
+
+	const int startWordIndex = startIndex >> bitArrayShift();
+	const int endWordIndex = (endIndex - 1) >> bitArrayShift();
+
+	const int firstBitIdx = startIndex & bitArrayRemainder();
+	const int lastBitIdx = endIndex & bitArrayRemainder();
+
+	const STORAGE_TYPE startMask = ~((1 << firstBitIdx) - 1);
+	const STORAGE_TYPE endMask = ((1 << lastBitIdx) - 1);
+	if (startWordIndex == endWordIndex)
+	{
+		if(value)
+			bitArray[startWordIndex] |= startMask & endMask;
+		else
+			bitArray[startWordIndex] &= ~(startMask & endMask);
+		return;
+	}
+
+	if (value)
+	{
+		bitArray[startWordIndex] |= startMask;
+		bitArray[endWordIndex-1] |= endMask;
+		for (int i = startWordIndex+1; i < endWordIndex-1; ++i)
+			bitArray[i] = 0xffffffff;
+	}
+	else
+	{
+		bitArray[startWordIndex] &= ~startMask;
+		bitArray[endWordIndex-1] &= ~endMask;
+		for (int i = startWordIndex+1; i < endWordIndex-1; ++i)
+			bitArray[i] = 0;
+	}
+#endif
+}
+
+inline bool	BitArrayImpl::isTrue(const STORAGE_TYPE* bitArray, int bitCount, int index)
+{
+	const int bitIndex = index & bitArrayRemainder();
+	return bitArray[index >> bitArrayShift()] & (1 << bitIndex);
+}
+
+inline void BitArrayImpl::setTrue(STORAGE_TYPE* bitArray, int bitCount, int index)
+{
+	const int bitIndex = index & bitArrayRemainder();
+	bitArray[index >> bitArrayShift()] |= (1 << bitIndex);
+}
+
+inline void BitArrayImpl::setFalse(STORAGE_TYPE* bitArray, int bitCount, int index)
+{
+	const int bitIndex = index & bitArrayRemainder();
+	bitArray[index >> bitArrayShift()] &= ~(1 << bitIndex);
+}
+
+//--------------------------------------------------------
+
 class BitArray
 {
-	using STORAGE_TYPE = int;
 public:
+	using STORAGE_TYPE = BIT_STORAGE_TYPE;
+
 	BitArray(PPSourceLine sl, int bitCount = 64);
 	BitArray(STORAGE_TYPE* storage, int bitCount);
 	~BitArray();
@@ -41,7 +194,7 @@ public:
 	void					resize(int newBitCount);
 
 	// returns total number of bits
-	int						numBits() const;
+	int						numBits() const { return m_nSize; }
 
 	// returns total number of bits that are set to true
 	int						numTrue() const;
@@ -62,8 +215,6 @@ public:
 	const STORAGE_TYPE*		ptr() const { return m_pListPtr; }
 
 private:
-	STORAGE_TYPE&			getV(int);
-	const STORAGE_TYPE&		getV(int) const;
 
 	STORAGE_TYPE*			m_pListPtr{ nullptr };
 	int						m_nSize{ 0 };
@@ -93,7 +244,7 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 {
 	resize(other.m_nSize);
 
-	const int typeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
+	const int typeSize = bitArray2Dword(m_nSize);
 	if (typeSize)
 	{
 		for (int i = 0; i < typeSize; i++)
@@ -106,7 +257,7 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 // cleans all bits to zero
 inline void BitArray::clear()
 {
-	memset(m_pListPtr, 0, m_nSize / sizeof(STORAGE_TYPE) + 1);
+	memset(m_pListPtr, 0, bitArray2Dword(m_nSize));
 }
 
 // resizes the list
@@ -121,8 +272,8 @@ inline void BitArray::resize(int newBitCount)
 		ASSERT_FAIL("BitArray is not resizable");
 	}
 
-	const int oldTypeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
-	const int newTypeSize = newBitCount / sizeof(STORAGE_TYPE) + 1;
+	const int oldTypeSize = bitArray2Dword(m_nSize);
+	const int newTypeSize = bitArray2Dword(newBitCount);
 
 	STORAGE_TYPE* temp = m_pListPtr;
 
@@ -141,36 +292,16 @@ inline void BitArray::resize(int newBitCount)
 		m_pListPtr[i] = 0;
 }
 
-// returns number of bits
-inline int BitArray::numBits() const
-{
-	return m_nSize;
-}
-
 // returns total number of bits that are set to true
 inline int BitArray::numTrue() const
 {
-	int count = 0;
-	const int typeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
-	if (typeSize)
-	{
-		for (int i = 0; i < typeSize; i++)
-			count += numBitsSet(static_cast<uint>(m_pListPtr[i]));
-	}
-	return count;
+	return BitArrayImpl::numTrue(m_pListPtr, m_nSize);
 }
 
 // returns total number of bits that are set to false
 inline int BitArray::numFalse() const
 {
-	int count = 0;
-	const int typeSize = m_nSize / sizeof(STORAGE_TYPE) + 1;
-	if (typeSize)
-	{
-		for (int i = 0; i < typeSize; i++)
-			count += numBitsSet(~static_cast<uint>(m_pListPtr[i]));
-	}
-	return count;
+	return BitArrayImpl::numFalse(m_pListPtr, m_nSize);
 }
 
 // set the bit value
@@ -185,38 +316,20 @@ inline void BitArray::set(int index, bool value)
 // set bit range
 inline void BitArray::setRange(int startIndex, int count, bool value)
 {
-	const int endIndex = min(m_nSize, startIndex + count);
-	for (int index = startIndex; index < endIndex; ++index)
-		set(index, value);
-}
-
-inline BitArray::STORAGE_TYPE& BitArray::getV(int index)
-{
-	constexpr const int shiftVal = getIntExp<sizeof(STORAGE_TYPE) * 8>();
-	return m_pListPtr[index >> shiftVal];
-}
-
-inline const BitArray::STORAGE_TYPE& BitArray::getV(int index) const
-{
-	constexpr const int shiftVal = getIntExp<sizeof(STORAGE_TYPE) * 8>();
-	return m_pListPtr[index >> shiftVal];
+	BitArrayImpl::setRange(m_pListPtr, m_nSize, startIndex, count, true);
 }
 
 inline void BitArray::setTrue(int index)
 {
-	const int bitIndex = index & (sizeof(STORAGE_TYPE) * 8 - 1);
-	getV(index) |= (1 << bitIndex);
+	BitArrayImpl::setTrue(m_pListPtr, m_nSize, index);
 }
 
 inline void BitArray::setFalse(int index)
 {
-	const int bitIndex = index & (sizeof(STORAGE_TYPE) * 8 - 1);
-	getV(index) &= ~(1 << bitIndex);
+	BitArrayImpl::setFalse(m_pListPtr, m_nSize, index);
 }
 
 inline const bool BitArray::operator[](int index) const
 {
-	const int bitIndex = index & (sizeof(STORAGE_TYPE) * 8 - 1);
-	const STORAGE_TYPE set = getV(index);
-	return getV(index) & (1 << bitIndex);
+	return BitArrayImpl::isTrue(m_pListPtr, m_nSize, index);
 }
