@@ -337,9 +337,9 @@ void CInputCommandBinder::Shutdown()
 
 	m_bindings.clear(true);
 	m_axisActs.clear(true);
-	m_currentButtons.clear(true);
 	m_touchZones.clear(true);
 	m_init = false;
+	BitArrayImpl::clear(m_currentButtonBits, elementsOf(m_currentButtonBits));
 }
 
 void CInputCommandBinder::InitTouchZones()
@@ -652,14 +652,15 @@ void CInputCommandBinder::UnbindAll()
 {
 	for (int i = 0; i < m_bindings.numElem(); i++)
 	{
-		if (m_bindings[i]->custom)
+		InputBinding* binding = m_bindings[i];
+		if (binding->custom)
 			continue;
-		delete m_bindings[i];
-		m_bindings.fastRemoveIndex(i);
+		delete binding;
+		m_bindings.fastRemoveIndex(i--);
 	}
 
 	m_axisActs.clear(true);
-	m_currentButtons.clear(true);
+	BitArrayImpl::clear(m_currentButtonBits, elementsOf(m_currentButtonBits));
 }
 
 void CInputCommandBinder::UnbindAll_Joystick()
@@ -686,24 +687,24 @@ void CInputCommandBinder::RegisterJoyAxisAction( const char* name, InputAxisActi
 	m_axisActs.append( act );
 }
 
-bool CInputCommandBinder::CheckModifiersAndDepress(InputBinding& binding, int currentKeyIdent, bool bPressed)
+bool CInputCommandBinder::CheckModifiersAndDepress(InputBinding& binding, int currentKeyIdent, bool currentPressed)
 {
 	const int validModifiers = InputBindingGetModifierCount(binding);
-
-	// if we don't have modifiers, skip the check with returning TRUE
 	if (!validModifiers)
 		return true;
 
 	int numModifiers = 0;
-	for (int buttons : m_currentButtons)
+	for (int i = 0; i < validModifiers; i++)
 	{
 		const int keyIdent = s_keyMapList[binding.modifierIds[numModifiers]].keynum;
 
-		if (!bPressed && currentKeyIdent == keyIdent)
+		// depress 
+		if (!currentPressed && currentKeyIdent == keyIdent)
 			ExecuteBinding(binding, 0);
 
-		if (buttons == keyIdent)
-			numModifiers++;
+		const bool modifierIsPressed = BitArrayImpl::isTrue(m_currentButtonBits, elementsOf(m_currentButtonBits), keyIdent);
+		if (modifierIsPressed)
+			++numModifiers;
 
 		if (numModifiers >= validModifiers)
 			break;
@@ -720,10 +721,7 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool pressed)
 	if(in_keys_debug.GetBool())
 		MsgWarning("-- KeyPress: %s (%d)\n", KeyIndexToString(keyIdent), pressed);
 
-	if (pressed)
-		m_currentButtons.addUnique(keyIdent);
-	else
-		m_currentButtons.fastRemove(keyIdent);
+	BitArrayImpl::set(m_currentButtonBits, elementsOf(m_currentButtonBits), keyIdent, pressed);
 
 	Array<InputBinding*> complexExecuteList(PP_SL);
 	Array<InputBinding*> executeList(PP_SL);
