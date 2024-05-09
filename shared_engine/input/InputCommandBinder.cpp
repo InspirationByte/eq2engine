@@ -471,6 +471,22 @@ InputBinding* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char
 
 InputBinding* CInputCommandBinder::AddBinding(const char* pszKeyStr, const char* name, InputCommand::Func func, void* userData /*= nullptr*/)
 {
+	InputBinding* binding = nullptr;
+	while (binding = FindBindingByCommandName(name, nullptr, binding))
+	{
+		if (!binding->custom)
+			continue;
+
+		EqString keyNameString;
+		UTIL_GetBindingKeyString(keyNameString, binding);
+
+		if (!keyNameString.CompareCaseIns(pszKeyStr))
+		{
+			MsgWarning("Command '%s' already bound to '%s'\n", name, pszKeyStr);
+			return nullptr;
+		}
+	}
+
 	int bindingKeyIndices[3];
 	if (!InputGetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return nullptr;
@@ -748,14 +764,14 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool pressed)
 	// complex actions are in favor
 	if (complexExecuteList.numElem())
 	{
-		for (int i = 0; i < complexExecuteList.numElem(); i++)
-			ExecuteBinding(*complexExecuteList[i], pressure);
+		for (InputBinding* binding: complexExecuteList)
+			ExecuteBinding(*binding, pressure);
 
 		return;
 	}
 
-	for (int i = 0; i < executeList.numElem(); i++)
-		ExecuteBinding(*executeList[i], pressure);
+	for (InputBinding* binding : executeList)
+		ExecuteBinding(*binding, pressure);
 }
 
 void CInputCommandBinder::OnMouseEvent( int button, bool pressed )
