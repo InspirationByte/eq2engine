@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Keys
+// Description: Key identifiers
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -25,10 +25,10 @@
 #define KEY_8			SDL_SCANCODE_8
 #define KEY_9			SDL_SCANCODE_9
 
-#define KEY_LEFT		SDL_SCANCODE_LEFT
-#define KEY_RIGHT		SDL_SCANCODE_RIGHT
-#define KEY_UP			SDL_SCANCODE_UP
-#define KEY_DOWN		SDL_SCANCODE_DOWN
+#define KEY_LEFTARROW	SDL_SCANCODE_LEFT
+#define KEY_RIGHTARROW	SDL_SCANCODE_RIGHT
+#define KEY_UPARROW		SDL_SCANCODE_UP
+#define KEY_DOWNARROW	SDL_SCANCODE_DOWN
 #define KEY_CTRL		SDL_SCANCODE_LCTRL
 #define KEY_SHIFT		SDL_SCANCODE_LSHIFT
 #define KEY_ALT			SDL_SCANCODE_LALT
@@ -41,7 +41,7 @@
 #define KEY_END			SDL_SCANCODE_END
 #define KEY_INSERT		SDL_SCANCODE_INSERT
 #define KEY_DELETE		SDL_SCANCODE_DELETE
-#define KEY_TILDE		SDL_SCANCODE_GRAVE
+#define KEY_GRAVE		SDL_SCANCODE_GRAVE
 #define KEY_PGDN		SDL_SCANCODE_PAGEDOWN
 #define KEY_PGUP		SDL_SCANCODE_PAGEUP
 
@@ -86,6 +86,7 @@
 #define KEY_EQUALS		SDL_SCANCODE_EQUALS
 #define KEY_SLASH		SDL_SCANCODE_SLASH
 #define KEY_BACKSLASH	SDL_SCANCODE_BACKSLASH
+#define KEY_SEMICOLON	';'
 
 #define KEY_A			SDL_SCANCODE_A
 #define KEY_B			SDL_SCANCODE_B
@@ -120,21 +121,21 @@
 #define JOYSTICK_START_AXES		(JOYSTICK_START_KEYS+JOYSTICK_MAX_BUTTONS)
 #define JOYSTICK_MAX_AXES		32
 
-#define KEY_JOY_A						(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_A)
-#define KEY_JOY_B						(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_B)
-#define KEY_JOY_X						(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_X)
-#define KEY_JOY_Y						(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_Y)
-#define KEY_JOY_BACK					(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_BACK)
-#define KEY_JOY_GUIDE					(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_GUIDE)
-#define KEY_JOY_START					(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_START)
-#define KEY_JOY_LSTICK					(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_LEFTSTICK)
-#define KEY_JOY_RSTICK					(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_RIGHTSTICK)
-#define KEY_JOY_LSHOULDER				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
-#define KEY_JOY_RSHOULDER				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
-#define KEY_JOY_DPAD_UP					(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_UP)
-#define KEY_JOY_DPAD_DOWN				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_DOWN)
-#define KEY_JOY_DPAD_LEFT				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_LEFT)
-#define KEY_JOY_DPAD_RIGHT				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+#define KEY_JOY_A				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_A)
+#define KEY_JOY_B				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_B)
+#define KEY_JOY_X				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_X)
+#define KEY_JOY_Y				(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_Y)
+#define KEY_JOY_BACK			(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_BACK)
+#define KEY_JOY_GUIDE			(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_GUIDE)
+#define KEY_JOY_START			(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_START)
+#define KEY_JOY_LSTICK			(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_LEFTSTICK)
+#define KEY_JOY_RSTICK			(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_RIGHTSTICK)
+#define KEY_JOY_LSHOULDER		(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
+#define KEY_JOY_RSHOULDER		(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
+#define KEY_JOY_DPAD_UP			(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_UP)
+#define KEY_JOY_DPAD_DOWN		(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_DOWN)
+#define KEY_JOY_DPAD_LEFT		(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_LEFT)
+#define KEY_JOY_DPAD_RIGHT		(JOYSTICK_START_KEYS + SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
 
 // Mouse definitions
 enum EMouseCodes
@@ -198,7 +199,7 @@ enum EMouseCodes
 #define KEY_END			VK_END
 #define KEY_INSERT		VK_INSERT
 #define KEY_DELETE		VK_DELETE
-#define KEY_TILDE		VK_OEM_3
+#define KEY_GRAVE		VK_OEM_3
 #define KEY_LALT		VK_LMENU
 #define KEY_RALT		VK_RMENU
 #define KEY_PGDN		VK_NEXT
@@ -237,6 +238,7 @@ enum EMouseCodes
 #define KEY_PAUSE		VK_PAUSE
 #define KEY_CAPSLOCK	VK_CAPITAL
 #define KEY_KP_ENTER	VK_RETURN
+#define KEY_SEMICOLON	VK_OEM_1
 
 #define KEY_A			int('A')
 #define KEY_B			int('B')
@@ -273,6 +275,7 @@ enum EMouseCodes
 #define KEY_EQUALS		int('=')
 #define KEY_SLASH		int('/')
 #define KEY_BACKSLASH	int('\\')
+#define KEY_SEMICOLON	int(';')
 
 #define	JOYSTICK_START_AXES	512
 
@@ -453,152 +456,153 @@ enum EMouseCodes
 #endif // JOYSTICK_START_KEYS
 
 // the name associations
-struct keyNameMap_t
+struct InputKeyMap
 {
 	const char*	name;
 	int		    keynum;
 	const char* hrname;		// human-readable name
 };
 
-static keyNameMap_t s_keyMapList[] =
+#define MAP_KEY(name)					{ #name, KEY_##name, nullptr }
+#define MAP_KEY_L(name)					{ #name, KEY_##name, "#IN_" #name }
+#define MAP_KEY_N(name, key)			{ name, key, nullptr }
+#define MAP_KEY_N_L(name, key, locName) { name, key, locName }
+
+static InputKeyMap s_keyMapList[] =
 {
-	//{"MOUSE_MOVE", MOU_MOVE},
+	MAP_KEY(TAB),
+	MAP_KEY(ENTER),
+	MAP_KEY(ESCAPE),
+	MAP_KEY(SPACE),
+	MAP_KEY(BACKSPACE),
 
-	{"TAB", KEY_TAB, nullptr},
-	{"ENTER", KEY_ENTER, nullptr},
-	{"ESCAPE", KEY_ESCAPE, nullptr},
-	{"SPACE", KEY_SPACE, nullptr},
-	{"BACKSPACE", KEY_BACKSPACE, nullptr},
+	MAP_KEY(UPARROW),
+	MAP_KEY(DOWNARROW),
+	MAP_KEY(LEFTARROW),
+	MAP_KEY(RIGHTARROW),
 
-	{"UPARROW", KEY_UP, nullptr},
-	{"DOWNARROW", KEY_DOWN, nullptr},
-	{"LEFTARROW", KEY_LEFT, nullptr},
-	{"RIGHTARROW", KEY_RIGHT, nullptr},
+	MAP_KEY(ALT),
+	MAP_KEY(CTRL),
+	MAP_KEY(SHIFT),
+	MAP_KEY(CAPSLOCK),
 
-	{"ALT", KEY_ALT, nullptr},
-	{"CTRL", KEY_CTRL, nullptr},
-	{"SHIFT", KEY_SHIFT, nullptr},
+	MAP_KEY(F1),
+	MAP_KEY(F2),
+	MAP_KEY(F3),
+	MAP_KEY(F4),
+	MAP_KEY(F5),
+	MAP_KEY(F6),
+	MAP_KEY(F7),
+	MAP_KEY(F8),
+	MAP_KEY(F9),
+	MAP_KEY(F10),
+	MAP_KEY(F11),
+	MAP_KEY(F12),
 
-	{"CAPSLOCK", KEY_CAPSLOCK, nullptr},
+	MAP_KEY(INSERT),
+	MAP_KEY(DELETE),
+	MAP_KEY(PGDN),
+	MAP_KEY(PGUP),
+	MAP_KEY(HOME),
+	MAP_KEY(END),
 
-	{"F1", KEY_F1, nullptr},
-	{"F2", KEY_F2, nullptr},
-	{"F3", KEY_F3, nullptr},
-	{"F4", KEY_F4, nullptr},
-	{"F5", KEY_F5, nullptr},
-	{"F6", KEY_F6, nullptr},
-	{"F7", KEY_F7, nullptr},
-	{"F8", KEY_F8, nullptr},
-	{"F9", KEY_F9, nullptr},
-	{"F10", KEY_F10, nullptr},
-	{"F11", KEY_F11, nullptr},
-	{"F12", KEY_F12, nullptr},
+	MAP_KEY_N_L("MOUSE1", MOU_B1, "#IN_MOU_B1"),
+	MAP_KEY_N_L("MOUSE2", MOU_B2, "#IN_MOU_B2"),
+	MAP_KEY_N_L("MOUSE3", MOU_B3, "#IN_MOU_B3"),
+	MAP_KEY_N_L("MOUSE4", MOU_B4, "#IN_MOU_B4"),
+	MAP_KEY_N_L("MOUSE5", MOU_B5, "#IN_MOU_B5"),
 
-	{"INS", KEY_INSERT, nullptr},
-	{"DEL", KEY_DELETE, nullptr},
-	{"PGDN", KEY_PGDN, nullptr},
-	{"PGUP", KEY_PGUP, nullptr},
-	{"HOME", KEY_HOME, nullptr},
-	{"END", KEY_END, nullptr},
+	MAP_KEY_N("NUM_1", KEY_1),
+	MAP_KEY_N("NUM_2", KEY_2),
+	MAP_KEY_N("NUM_3", KEY_3),
+	MAP_KEY_N("NUM_4", KEY_4),
+	MAP_KEY_N("NUM_5", KEY_5),
+	MAP_KEY_N("NUM_6", KEY_6),
+	MAP_KEY_N("NUM_7", KEY_7),
+	MAP_KEY_N("NUM_8", KEY_8),
+	MAP_KEY_N("NUM_9", KEY_9),
+	MAP_KEY_N("NUM_0", KEY_0),
 
-	{"MOUSE1", MOU_B1, "#IN_MOU_B1"},
-	{"MOUSE2", MOU_B2, "#IN_MOU_B2"},
-	{"MOUSE3", MOU_B3, "#IN_MOU_B3"},
-	{"MOUSE4", MOU_B4, "#IN_MOU_B4"},
-	{"MOUSE5", MOU_B5, "#IN_MOU_B5"},
+	MAP_KEY(A),
+	MAP_KEY(B),
+	MAP_KEY(C),
+	MAP_KEY(D),
+	MAP_KEY(E),
+	MAP_KEY(F),
+	MAP_KEY(G),
+	MAP_KEY(H),
+	MAP_KEY(I),
+	MAP_KEY(J),
+	MAP_KEY(K),
+	MAP_KEY(L),
+	MAP_KEY(M),
+	MAP_KEY(N),
+	MAP_KEY(O),
+	MAP_KEY(P),
+	MAP_KEY(Q),
+	MAP_KEY(R),
+	MAP_KEY(S),
+	MAP_KEY(T),
+	MAP_KEY(U),
+	MAP_KEY(V),
+	MAP_KEY(W),
+	MAP_KEY(X),
+	MAP_KEY(Y),
+	MAP_KEY(Z),
 
-	{"NUM_1", KEY_1, nullptr},
-	{"NUM_2", KEY_2, nullptr},
-	{"NUM_3", KEY_3, nullptr},
-	{"NUM_4", KEY_4, nullptr},
-	{"NUM_5", KEY_5, nullptr},
-	{"NUM_6", KEY_6, nullptr},
-	{"NUM_7", KEY_7, nullptr},
-	{"NUM_8", KEY_8, nullptr},
-	{"NUM_9", KEY_9, nullptr},
-	{"NUM_0",KEY_0, nullptr},
+	MAP_KEY_N("KP_HOME",		KEY_NUMPAD7),
+	MAP_KEY_N("KP_UPARROW",		KEY_NUMPAD8),
+	MAP_KEY_N("KP_PGUP",		KEY_NUMPAD9),
+	MAP_KEY_N("KP_LEFTARROW",	KEY_NUMPAD4),
+	MAP_KEY_N("KP_5",			KEY_NUMPAD5),
+	MAP_KEY_N("KP_RIGHTARROW",	KEY_NUMPAD6),
+	MAP_KEY_N("KP_END",			KEY_NUMPAD1),
+	MAP_KEY_N("KP_DOWNARROW",	KEY_NUMPAD2),
+	MAP_KEY_N("KP_PGDN",		KEY_NUMPAD3),
+	MAP_KEY_N("CAPSLOCK",		KEY_CAPSLOCK),
+	MAP_KEY_N("KP_ADD",			KEY_ADD),
+	MAP_KEY_N("KP_SUB",			KEY_SUBTRACT),
+	MAP_KEY_N("KP_MUL",			KEY_MULTIPLY),
+	MAP_KEY_N("KP_DIV",			KEY_DIVIDE),
+	MAP_KEY_N("KP_ENTER",		KEY_KP_ENTER),
 
-	{"A", KEY_A, nullptr},
-	{"B", KEY_B, nullptr},
-	{"C", KEY_C, nullptr},
-	{"D", KEY_D, nullptr},
-	{"E", KEY_E, nullptr},
-	{"F", KEY_F, nullptr},
-	{"G", KEY_G, nullptr},
-	{"H", KEY_H, nullptr},
-	{"I", KEY_I, nullptr},
-	{"J", KEY_J, nullptr},
-	{"K", KEY_K, nullptr},
-	{"L", KEY_L, nullptr},
-	{"M", KEY_M, nullptr},
-	{"N", KEY_N, nullptr},
-	{"O", KEY_O, nullptr},
-	{"P", KEY_P, nullptr},
-	{"Q", KEY_Q, nullptr},
-	{"R", KEY_R, nullptr},
-	{"S", KEY_S, nullptr},
-	{"T", KEY_T, nullptr},
-	{"U", KEY_U, nullptr},
-	{"V", KEY_V, nullptr},
-	{"W", KEY_W, nullptr},
-	{"X", KEY_X, nullptr},
-	{"Y", KEY_Y, nullptr},
-	{"Z", KEY_Z, nullptr},
-
-	{"KP_HOME",			KEY_NUMPAD7, nullptr },
-	{"KP_UPARROW",		KEY_NUMPAD8, nullptr },
-	{"KP_PGUP",			KEY_NUMPAD9, nullptr },
-	{"KP_LEFTARROW",	KEY_NUMPAD4, nullptr },
-	{"KP_5",			KEY_NUMPAD5, nullptr },
-	{"KP_RIGHTARROW",	KEY_NUMPAD6, nullptr },
-	{"KP_END",			KEY_NUMPAD1, nullptr },
-	{"KP_DOWNARROW",	KEY_NUMPAD2, nullptr },
-	{"KP_PGDN",			KEY_NUMPAD3, nullptr },
-	{"CAPSLOCK",		KEY_CAPSLOCK, nullptr },
-	{"KP_ADD",			KEY_ADD, nullptr},
-	{"KP_SUB",			KEY_SUBTRACT, nullptr},
-	{"KP_MUL",			KEY_MULTIPLY, nullptr},
-	{"KP_DIV",			KEY_DIVIDE, nullptr},
-	{"KP_ENTER",		KEY_KP_ENTER, nullptr},
-
-	{"MWHEELUP",		MOU_WHUP, "#IN_MOU_WHUP" },
-	{"MWHEELDOWN",		MOU_WHDN, "#IN_MOU_WHDN" },
-	{"PAUSE",			KEY_PAUSE, nullptr },
-	{"SEMICOLON",		';', nullptr },	// because a raw semicolon seperates commands
-	{"COMMA",			KEY_COMMA, nullptr },
-	{"PERIOD",			KEY_PERIOD, nullptr },
-	{"LBRACKET",		KEY_LBRACKET, nullptr },
-	{"RBRACKET",		KEY_RBRACKET, nullptr },
-	{"MINUS",			KEY_MINUS, nullptr },
-	{"EQUALS",			KEY_EQUALS, nullptr },
-	{"SLASH",			KEY_SLASH, nullptr },
-	{"BACKSLASH",		KEY_BACKSLASH, nullptr },
-
-	{"GRAVE",			KEY_TILDE, nullptr },
+	MAP_KEY_N_L("MWHEELUP",		MOU_WHUP, "#IN_MOU_WHUP" ),
+	MAP_KEY_N_L("MWHEELDOWN",	MOU_WHDN, "#IN_MOU_WHDN" ),
+	MAP_KEY(PAUSE),
+	MAP_KEY(SEMICOLON),
+	MAP_KEY(COMMA),
+	MAP_KEY(PERIOD),
+	MAP_KEY(LBRACKET),
+	MAP_KEY(RBRACKET),
+	MAP_KEY(MINUS),
+	MAP_KEY(EQUALS),
+	MAP_KEY(SLASH),
+	MAP_KEY(BACKSLASH),
+	MAP_KEY(GRAVE),
 
 #ifdef PLAT_SDL
-	{"JOY_A", KEY_JOY_A, "#IN_JOY_A" },
-	{"JOY_B", KEY_JOY_B, "#IN_JOY_B" },
-	{"JOY_X", KEY_JOY_X, "#IN_JOY_X" },
-	{"JOY_Y", KEY_JOY_Y, "#IN_JOY_Y" },
-	{"JOY_BACK", KEY_JOY_BACK, "#IN_JOY_BACK" },
-	{"JOY_GUIDE", KEY_JOY_GUIDE, "#IN_JOY_GUIDE" },
-	{"JOY_START", KEY_JOY_START, "#IN_JOY_START" },
-	{"JOY_LSTICK", KEY_JOY_LSTICK, "#IN_JOY_LSTICK" },
-	{"JOY_RSTICK", KEY_JOY_RSTICK, "#IN_JOY_RSTICK" },
-	{"JOY_LSHOULDER", KEY_JOY_LSHOULDER, "#IN_JOY_LSHOULDER" },
-	{"JOY_RSHOULDER", KEY_JOY_RSHOULDER, "#IN_JOY_RSHOULDER" },
-	{"JOY_DPAD_UP", KEY_JOY_DPAD_UP, "#IN_JOY_DPAD_UP" },
-	{"JOY_DPAD_DOWN", KEY_JOY_DPAD_DOWN, "#IN_JOY_DPAD_DOWN" },
-	{"JOY_DPAD_LEFT", KEY_JOY_DPAD_LEFT, "#IN_JOY_DPAD_LEFT" },
-	{"JOY_DPAD_RIGHT", KEY_JOY_DPAD_RIGHT, "#IN_JOY_DPAD_RIGHT" },
+	MAP_KEY_L(JOY_A),
+	MAP_KEY_L(JOY_B),
+	MAP_KEY_L(JOY_X),
+	MAP_KEY_L(JOY_Y),
+	MAP_KEY_L(JOY_BACK),
+	MAP_KEY_L(JOY_GUIDE),
+	MAP_KEY_L(JOY_START),
+	MAP_KEY_L(JOY_LSTICK),
+	MAP_KEY_L(JOY_RSTICK),
+	MAP_KEY_L(JOY_LSHOULDER),
+	MAP_KEY_L(JOY_RSHOULDER),
+	MAP_KEY_L(JOY_DPAD_UP),
+	MAP_KEY_L(JOY_DPAD_DOWN),
+	MAP_KEY_L(JOY_DPAD_LEFT),
+	MAP_KEY_L(JOY_DPAD_RIGHT),
 
-	{"JOYAXIS_LX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTX, "#IN_JOYAXIS_LX" },
-	{"JOYAXIS_LY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTY, "#IN_JOYAXIS_LY" },
-	{"JOYAXIS_RX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTX, "#IN_JOYAXIS_RX" },
-	{"JOYAXIS_RY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTY, "#IN_JOYAXIS_RY" },
-	{"JOYAXIS_TL", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERLEFT, "#IN_JOYAXIS_TL" },
-	{"JOYAXIS_TR", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERRIGHT, "#IN_JOYAXIS_TR" },
+	MAP_KEY_N_L("JOYAXIS_LX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTX, "#IN_JOYAXIS_LX"),
+	MAP_KEY_N_L("JOYAXIS_LY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTY, "#IN_JOYAXIS_LY"),
+	MAP_KEY_N_L("JOYAXIS_RX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTX, "#IN_JOYAXIS_RX"),
+	MAP_KEY_N_L("JOYAXIS_RY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTY, "#IN_JOYAXIS_RY"),
+	MAP_KEY_N_L("JOYAXIS_TL", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERLEFT, "#IN_JOYAXIS_TL"),
+	MAP_KEY_N_L("JOYAXIS_TR", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERRIGHT, "#IN_JOYAXIS_TR"),
 #endif
 	{ nullptr, 0, nullptr}
 };
@@ -610,7 +614,7 @@ static int KeyStringToKeyIndex(const char *str)
 		return -1;
 
 	int keyind = 0;
-	for(keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	for(InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (!stricmp(str,kn->name))
 			return keyind;
@@ -623,7 +627,7 @@ static int KeyStringToKeyIndex(const char *str)
 
 static const char* KeyIndexToString(int key)
 {
-	for(keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	for(InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (kn->keynum == key)
 			return kn->name;
@@ -634,7 +638,7 @@ static const char* KeyIndexToString(int key)
 
 static const char* KeyIndexToHumanReadableString(int key)
 {
-	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	for (InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (kn->keynum == key)
 			return kn->hrname;

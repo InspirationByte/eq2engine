@@ -118,7 +118,6 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	if(hasConstructors)
 	{
 		// methods["new"] = function [className, typeInfoMembers] (...)
-
 		lua_pushstring(L, "new");
 		lua_pushstring(L, typeInfo.className);
 		lua_pushlightuserdata(L, const_cast<esl::Member*>(typeInfo.members.ptr()));

@@ -165,10 +165,10 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
 
     // Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array.
     io.KeyMap[ImGuiKey_Tab] = KEY_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = KEY_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = KEY_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = KEY_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = KEY_DOWN;
+    io.KeyMap[ImGuiKey_LeftArrow] = KEY_LEFTARROW;
+    io.KeyMap[ImGuiKey_RightArrow] = KEY_RIGHTARROW;
+    io.KeyMap[ImGuiKey_UpArrow] = KEY_UPARROW;
+    io.KeyMap[ImGuiKey_DownArrow] = KEY_DOWNARROW;
     io.KeyMap[ImGuiKey_PageUp] = KEY_PGUP;
     io.KeyMap[ImGuiKey_PageDown] = KEY_PGDN;
     io.KeyMap[ImGuiKey_Home] = KEY_HOME;

@@ -1519,7 +1519,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 				break;
 			}
-			case KEY_LEFT:
+			case KEY_LEFTARROW:
 			{
 				m_cursorPos--;
 				m_cursorPos = max(m_cursorPos, 0);
@@ -1529,7 +1529,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 				break;
 			}
-			case KEY_RIGHT:
+			case KEY_RIGHTARROW:
 			{
 				m_cursorPos++;
 				m_cursorPos = min(m_cursorPos, (int)m_inputText.Length());
@@ -1653,7 +1653,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 				break;
 
-			case KEY_DOWN: // FIXME: invalid indices
+			case KEY_DOWNARROW: // FIXME: invalid indices
 
 				if(m_fastfind_cmdbase && m_variantList.numElem())
 				{
@@ -1681,7 +1681,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 					SetText(m_commandHistory[m_histIndex].ToCString(), true);
 
 				break;
-			case KEY_UP:
+			case KEY_UPARROW:
 
 				if(m_fastfind_cmdbase && m_variantList.numElem())
 				{

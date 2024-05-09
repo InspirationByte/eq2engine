@@ -37,11 +37,11 @@ static void cmd_conKeyList(const ConCommandBase* base, Array<EqString>& list, co
 {
 	const int LIST_LIMIT = 50;
 
-	keyNameMap_t* names = s_keyMapList;
+	InputKeyMap* names = s_keyMapList;
 
 	do
 	{
-		keyNameMap_t& name = *names;
+		InputKeyMap& name = *names;
 
 		if (name.name == nullptr)
 			break;
@@ -305,7 +305,7 @@ void CInputCommandBinder::Init()
 
 #ifdef PLAT_SDL
 	// init key names
-	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	for (InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (!kn->hrname)
 			kn->hrname = xstrdup(SDL_GetKeyName(SDL_SCANCODE_TO_KEYCODE(kn->keynum)));
@@ -323,7 +323,7 @@ void CInputCommandBinder::Shutdown()
 {
 #ifdef PLAT_SDL
 	// free key names
-	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	for (InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (kn->hrname && *kn->hrname != '#')
 		{
