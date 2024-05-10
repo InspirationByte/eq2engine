@@ -265,12 +265,10 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else
 	{
+		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
-		static_assert(HasToLuaReturnTrait<WT>::value == false, "ToLua trait makes no sense when type is pushed as BY_VALUE");
-
-		BaseUType pushObj(value);
-		PushGet<BaseUType>::Push(L, pushObj, UD_FLAG_OWNED);
+		PushGet<BaseUType>::Push(L, value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
 	}
 }
 

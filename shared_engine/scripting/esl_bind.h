@@ -1,6 +1,6 @@
 #pragma once
 
-#include "esl_luaref.h"
+#include "esl_event.h"
 #include "esl_runtime.h"
 
 namespace esl::binder
@@ -205,6 +205,19 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 #define ESL_ENUM(x) ESL_ALIAS_TYPE(x, "number")
 
+#define _ESL_EVENT_NAME(Name)		m_eslEvent##Name
+
+// used for declaring event inside bound class
+#define ESL_DECLARE_EVENT(Name)		esl::LuaEvent _ESL_EVENT_NAME(Name)
+
+// declares event caller for use
+#define ESL_DECLARE_EVENT_CALL(Obj, EventName, ...) \
+	auto EventName##Caller = esl::LuaEventCaller<__VA_ARGS__>((Obj)->_ESL_EVENT_NAME(EventName));
+
+// calls the event
+#define ESL_CALL_EVENT(EventName, ...) \
+	EventName##Caller.Invoke(__VA_ARGS__)
+
 // Basic type binder
 #define EQSCRIPT_BIND_TYPE_BASICS(Class, name, type) \
 	ESL_ALIAS_TYPE(Class, name) \
@@ -272,6 +285,9 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 #define EQSCRIPT_BIND_VAR_EX_SET_NAMED(Name, Ver, SetterName) \
 	MakeVariableWithSetter<ESL_CLASS_MEMBER(Ver), ESL_CLASS_MEMBER(SetterName)>(Name),
+
+#define EQSCRIPT_BIND_EVENT(Name) \
+	MakeVariable<ESL_CLASS_MEMBER(_ESL_EVENT_NAME(Name))>(#Name),
 
 // Func(Name, [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_CFUNC(Name, ...) \

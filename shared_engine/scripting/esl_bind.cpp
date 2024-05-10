@@ -4,6 +4,7 @@
 #include "esl.h"
 #include "esl_bind.h"
 #include "esl_luaref.h"
+#include "esl_event.h"
 #include "esl_runtime.h"
 
 #define ESL_BUILTIN_ALIAS_TYPE(x, n) \

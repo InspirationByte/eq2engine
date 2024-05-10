@@ -29,7 +29,6 @@ public:
 	operator bool() const { return IsValid(); }
 
 	lua_State* GetState() const { return m_state; }
-
 protected:
 	void Unref();
 
