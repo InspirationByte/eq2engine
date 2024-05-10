@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="PPSourceLine">
+		<DisplayString Condition="data == 0">[empty]</DisplayString>
+		<DisplayString Condition="data != 0">[{ (const char*)(data &amp; ((1ULL &lt;&lt; PPSL_ADDR_BITS) - 1)),sb }]:{ int((data &gt;&gt; PPSL_ADDR_BITS) &amp; ((1 &lt;&lt; 16) - 1)) }</DisplayString>
+		<Expand>
+			<Item Name = "filename">
+				(const char*)(data &amp; ((1ULL &lt;&lt; PPSL_ADDR_BITS) - 1))
+			</Item>
+			<Item Name = "line">
+				int((data &gt;&gt; PPSL_ADDR_BITS) &amp; ((1 &lt;&lt; 16) - 1))
+			</Item>
+		</Expand>
+
+	</Type>
 	<Type Name="CRefPtr&lt;*&gt;">
 		<SmartPointer Usage="Minimal">m_ptrObj</SmartPointer>
 		<DisplayString Condition="m_ptrObj == 0">[unallocated]</DisplayString>
