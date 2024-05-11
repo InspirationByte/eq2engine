@@ -1015,7 +1015,9 @@ int	KVSection::GetType() const
 // Iterators
 
 KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags)
-	: section(section), nameHashFilter(nameFilter ? StringToHash(nameFilter, true) : 0)
+	: section(section)
+	, nameHashFilter(nameFilter ? StringToHash(nameFilter, true) : 0)
+	, searchFlags(searchFlags)
 {
 	Rewind();
 }

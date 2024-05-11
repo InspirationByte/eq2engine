@@ -9,6 +9,7 @@
 #pragma once
 
 class IVirtualStream;
+struct KVSection;
 
 /*
 
@@ -76,7 +77,7 @@ struct KVPairValue
 		float	fValue;
 	};
 
-	struct KVSection*	section;
+	KVSection*			section;
 
 	char*				value;
 
