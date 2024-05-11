@@ -906,10 +906,16 @@ void CInputCommandBinder::ExecuteBinding(InputBinding& binding, short value)
 {
 	ResolveCommandBinding(binding, false);
 
+	if (!binding.func)
+		return;
+
 	binding.func(binding.custom ? binding.userData : &binding, value);
 }
 
 void CInputCommandBinder::ExecuteTouchZone(InputTouchZone& zone, short value)
 {
+	if (!zone.func)
+		return;
+
 	zone.func(zone.custom ? zone.userData : &zone, value);
 }
