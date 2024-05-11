@@ -44,68 +44,100 @@ protected:
 #define	ADD_COMPONENT_INST(type)	Type m_inst##Type(this);
 
 template<typename TComponentBase>
-using COMPONENT_MAP = Map<int, TComponentBase*>;
+struct COMPONENT_STORAGE
+{
+	COMPONENT_STORAGE(PPSourceLine sl)
+		: idToComponent(sl)
+		, components(sl)
+	{
+	}
+
+	Map<int, int>			idToComponent;
+	Array<TComponentBase*>	components;
+};
 
 namespace ComponentHostImpl
 {
 	template<typename TComponentBase>
-	inline TComponentBase* GetComponent(const COMPONENT_MAP<TComponentBase>& components, int hash)
+	inline TComponentBase* GetComponent(const COMPONENT_STORAGE<TComponentBase>& storage, int hash)
 	{
-		auto it = components.find(hash);
-		if (it == components.end())
+		auto it = storage.idToComponent.find(hash);
+		if (it.atEnd())
 			return nullptr;
-		return *it;
+		return storage.components[*it];
 	}
 
 	template<typename TComponentBase>
-	inline void AddComponent(COMPONENT_MAP<TComponentBase>& components, int hash, TComponentBase* component)
+	inline void AddComponent(COMPONENT_STORAGE<TComponentBase>& storage, int hash, TComponentBase* component)
 	{
-		components[hash] = component;
+		auto existingIt = storage.idToComponent.find(hash);
+		if (existingIt.atEnd())
+		{
+			const int newIndex = storage.components.append(component);
+			storage.idToComponent.insert(hash, newIndex);
+		}
+		else
+		{
+			// add component back to slot
+			storage.components[*existingIt] = component;
+		}
 		component->OnAdded();
 	}
 
 	template<typename TComponentBase>
-	inline TComponentBase* GetComponent(const COMPONENT_MAP<TComponentBase>& components, const char* name)
+	inline TComponentBase* GetComponent(const COMPONENT_STORAGE<TComponentBase>& storage, const char* name)
 	{
 		const int hash = StringToHash(name);
-		return GetComponent(components, hash);
+		return GetComponent(storage, hash);
 	}
 
 	template<typename TComponentBase>
-	inline void ForEachComponent(COMPONENT_MAP<TComponentBase>& components, const EqFunction<void(TComponentBase* pComponent)>& componentWalkFn)
+	inline void ForEachComponent(COMPONENT_STORAGE<TComponentBase>& storage, const EqFunction<void(TComponentBase* pComponent)>& componentWalkFn)
 	{
 		ASSERT(componentWalkFn);
-		for (auto it = components.begin(); !it.atEnd(); ++it)
-			componentWalkFn(*it);
+		for (TComponentBase* component : storage.components)
+		{
+			if (!component)
+				continue;
+			componentWalkFn(component);
+		}
 	}
 
 	template<typename TComponentBase>
-	inline void RemoveComponent(COMPONENT_MAP<TComponentBase>& components, int hash)
+	inline void RemoveComponent(COMPONENT_STORAGE<TComponentBase>& storage, int hash)
 	{
-		auto it = components.find(hash);
-		if (it == components.end())
+		auto it = storage.idToComponent.find(hash);
+		if (it.atEnd())
 			return;
-		(*it)->OnRemoved();
-		delete* it;
-		components.remove(it);
+
+		TComponentBase* component = storage.components[*it];
+		if(component)
+		{
+			storage.components[*it] = nullptr;
+			component->OnRemoved();
+			delete component;
+		}
 	}
 
 	template<typename TComponentBase>
-	inline void RemoveComponent(COMPONENT_MAP<TComponentBase>& components, const char* name)
+	inline void RemoveComponent(COMPONENT_STORAGE<TComponentBase>& storage, const char* name)
 	{
 		const int hash = StringToHash(name);
-		RemoveComponent(components, hash);
+		RemoveComponent(storage, hash);
 	}
 
 	template<typename TComponentBase>
-	inline void RemoveAll(COMPONENT_MAP<TComponentBase>& components)
+	inline void RemoveAll(COMPONENT_STORAGE<TComponentBase>& storage)
 	{
-		for (auto it = components.begin(); !it.atEnd(); ++it)
+		for (TComponentBase* component : storage.components)
 		{
-			(*it)->OnRemoved();
-			delete* it;
+			if (!component)
+				continue;
+			component->OnRemoved();
+			delete component;
 		}
-		components.clear();
+		storage.components.clear(true);
+		storage.idToComponent.clear(true);
 	}
 }
 
@@ -114,7 +146,7 @@ namespace ComponentHostImpl
 // Put this in class declaration
 #define DECLARE_COMPONENT_HOST(hostType, componentBase) \
 	private: \
-		COMPONENT_MAP<componentBase>	m_components{ PP_SL }; \
+		COMPONENT_STORAGE<componentBase>	m_components{ PP_SL }; \
 	public: \
 		inline componentBase*			GetComponent(int hash) const { return ComponentHostImpl::GetComponent(m_components, hash); } \
 		inline void						AddComponent(int hash, componentBase* component) { return ComponentHostImpl::AddComponent(m_components, hash, component); } \
