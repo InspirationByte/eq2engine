@@ -33,8 +33,8 @@ public:
 	bool				GetPointAt(const Vector3D& origin, IVector2D& xzCell) const;
 	bool				GetPointAt(const Vector3D& origin, Vector2D& xzCell) const;
 
-	void				AddStaticObjectToGrid( CEqCollisionObject* m_collisionObject );
-	void				RemoveStaticObjectFromGrid( CEqCollisionObject* m_collisionObject );
+	void				AddStaticObjectToGrid( CEqCollisionObject* collisionObject );
+	void				RemoveStaticObjectFromGrid( CEqCollisionObject* collisionObject );
 
 	void				GetCellBoundsXZ(int x, int y, Vector2D& mins, Vector2D& maxs) const;
 	bool				GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const;

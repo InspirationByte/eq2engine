@@ -335,29 +335,29 @@ void CEqPhysics::DestroyWorld()
 	for(int i = 0; i < m_dynObjects.numElem(); i++)
 		delete m_dynObjects[i];
 
-	m_dynObjects.clear();
-	m_moveable.clear();
+	m_dynObjects.clear(true);
+	m_moveable.clear(true);
 
 	for(int i = 0; i < m_staticObjects.numElem(); i++)
 		delete m_staticObjects[i];
-	m_staticObjects.clear();
+	m_staticObjects.clear(true);
 
 	for(int i = 0; i < m_ghostObjects.numElem(); i++)
 		delete m_ghostObjects[i];
 
-	m_ghostObjects.clear();
+	m_ghostObjects.clear(true);
 
 	// update the controllers
 	for (int i = 0; i < m_controllers.numElem(); i++)
 		m_controllers[i]->SetEnabled(false);
 
-	m_controllers.clear();
-	m_constraints.clear();
+	m_controllers.clear(true);
+	m_constraints.clear(true);
 
 	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
 		delete m_physSurfaceParams[i];
 
-	m_physSurfaceParams.clear();
+	m_physSurfaceParams.clear(true);
 
 	SAFE_DELETE(m_collisionWorld);
 	SAFE_DELETE(m_collDispatcher);

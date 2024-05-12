@@ -215,7 +215,7 @@ protected:
 
 protected:
 
-	Array<eqPhysSurfParam*>		m_physSurfaceParams{ PP_SL };
+	Array<eqPhysSurfParam*>			m_physSurfaceParams{ PP_SL };
 
 	Array<CEqRigidBody*>			m_moveable{ PP_SL };
 
