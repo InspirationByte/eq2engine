@@ -355,7 +355,7 @@ struct MatSysDefaultRenderPass : public RenderPassBaseData
 	TextureView			texture;
 	ECullMode			cullMode{ CULL_NONE };
 	EShaderBlendMode	blendMode{ SHADER_BLEND_NONE };
-	ECompareFunc		depthFunc{ COMPFUNC_LEQUAL };
+	ECompareFunc		depthFunc{ COMPFUNC_GEQUAL };
 	bool				depthTest{ false };
 	bool				depthWrite{ false };
 };

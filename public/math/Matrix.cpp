@@ -16,12 +16,11 @@ Matrix4x4 perspectiveMatrix(const float fov, const float zNear, const float zFar
 	SinCos(0.5f * fov,&sinF,&cosF);
 
 	const float s = cosF / sinF;
-	const float zz = 1.0f / (zFar - zNear);
 
 	return Matrix4x4(
 		s, 0, 0, 0,
 		0, s, 0, 0,
-		0, 0, (zFar + zNear) * zz, -(2.0f * zFar * zNear) * zz,
+		0, 0, zNear / (zNear - zFar), (zFar * zNear) / (zFar - zNear),
 		0, 0, 1, 0);
 }
 
@@ -32,12 +31,11 @@ Matrix4x4 perspectiveMatrixX(const float fov, const int width, const int height,
 
 	const float w = cosF / sinF;
 	const float h = (w * width) / height;
-	const float zz = 1.0f / (zFar - zNear);
 
 	return Matrix4x4(
 		w, 0, 0, 0,
 		0, h, 0, 0,
-		0, 0, (zFar + zNear) * zz, -(2.0f * zFar * zNear) * zz,
+		0, 0, zNear / (zNear - zFar), (zFar * zNear) / (zFar - zNear),
 		0, 0, 1, 0);
 }
 
@@ -48,12 +46,11 @@ Matrix4x4 perspectiveMatrixY(const float fov, const int width, const int height,
 
 	const float h = cosF / sinF;
 	const float w = (h * height) / width;
-	const float zz = 1.0f / (zFar - zNear);
 
 	return Matrix4x4(
 		w, 0, 0, 0,
 		0, h, 0, 0,
-		0, 0, (zFar + zNear) * zz, -(2.0f * zFar * zNear) * zz,
+		0, 0, zNear / (zNear - zFar), (zFar * zNear) / (zFar - zNear),
 		0, 0, 1, 0);
 }
 
@@ -65,11 +62,11 @@ Matrix4x4 orthoMatrixR(const float left, const float right, const float top, con
 
 	mat.rows[0][0] = 2.0f / (right - left);
 	mat.rows[1][1] = 2.0f * yy;
-	mat.rows[2][2] = 1.0f / (zFar - zNear);
+	mat.rows[2][2] = 1.0f / (zNear - zFar);
 
 	mat.rows[0][3] = (left + right) / (left - right);
 	mat.rows[1][3] = (top + bottom) * yy;
-	mat.rows[2][3] = zNear / (zNear - zFar);
+	mat.rows[2][3] = zFar / (zFar - zNear);
 
 	return mat;
 }
@@ -79,7 +76,7 @@ Matrix4x4 orthoMatrix(const float left, const float right, const float top, cons
 	Matrix4x4 mat = _identity4<float>();
 
 	const float yy = 1.0f / (bottom - top);
-	const float zz = 1.0f / (zFar - zNear);
+	const float zz = 1.0f / (zNear - zFar);
 
 	mat.rows[0][0] = 2.0f / (right - left);
 	mat.rows[1][1] = 2.0f * yy;
@@ -87,7 +84,7 @@ Matrix4x4 orthoMatrix(const float left, const float right, const float top, cons
 
 	mat.rows[0][3] = (right + left) / (left - right);
 	mat.rows[1][3] = (top + bottom) * yy;
-	mat.rows[2][3] = (zFar + zNear) * zz;
+	mat.rows[2][3] = (zNear + zFar) * zz;
 
 	return mat;
 }

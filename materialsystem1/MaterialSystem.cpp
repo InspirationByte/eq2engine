@@ -1180,8 +1180,8 @@ IShaderAPI* CMaterialSystem::GetShaderAPI() const
 
 void CMaterialSystem::GetPolyOffsetSettings(float& depthBias, float& depthBiasSlopeScale) const
 {
-	depthBias = r_depthBias.GetFloat();
-	depthBiasSlopeScale = r_slopeDepthBias.GetFloat();
+	depthBias = -r_depthBias.GetFloat();
+	depthBiasSlopeScale = -r_slopeDepthBias.GetFloat();
 }
 
 //--------------------------------------------------------------------------------------

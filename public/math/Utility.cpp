@@ -42,7 +42,7 @@ bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& wor
 
 	screen.x = (screenDims.x * outMat.x * zDiv + screenDims.x) * 0.5f;
 	screen.y = (screenDims.y - screenDims.y * outMat.y * zDiv) * 0.5f;
-	screen.z = outMat.z;
+	screen.z = -outMat.z;
 
 	return behind;
 }
@@ -57,24 +57,24 @@ bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 & wo
 	return behind;
 }
 
-void ScreenToDirection(const Vector3D& cam_pos, const Vector2D& point, const Vector2D& screensize, Vector3D& start, Vector3D& dir, const Matrix4x4& wwp, bool bIsOrthogonal)
+void ScreenToDirection(const Vector3D& cameraPosition, const Vector2D& pointOnScreen, const Vector2D& screenSize, Vector3D& start, Vector3D& dir, const Matrix4x4& wwp, bool isOrthogonal)
 {
 	Volume frs;
 	frs.LoadAsFrustum(wwp);
 
 	const Vector3D farLeftUp = frs.GetFarLeftUp();
-	const Vector3D lefttoright = frs.GetFarRightUp() - farLeftUp;
-	const Vector3D uptodown = frs.GetFarLeftDown() - farLeftUp;
+	const Vector3D leftToRight = frs.GetFarRightUp() - farLeftUp;
+	const Vector3D upToDown = frs.GetFarLeftDown() - farLeftUp;
 
-	const float dx = point.x / screensize.x;
-	const float dy = point.y / screensize.y;
+	const float dx = pointOnScreen.x / screenSize.x;
+	const float dy = pointOnScreen.y / screenSize.y;
 
-	if (bIsOrthogonal)
-		start = cam_pos + (lefttoright * (dx-0.5f)) + (uptodown * (dy-0.5f));
+	if (isOrthogonal)
+		start = cameraPosition + (leftToRight * (dx - 0.5f)) + (upToDown * (dy - 0.5f));
 	else
-		start = cam_pos;
+		start = cameraPosition;
 
-	dir = (farLeftUp + (lefttoright * dx) + (uptodown * dy)) - start;
+	dir = (farLeftUp + (leftToRight * dx) + (upToDown * dy)) - start;
 }
 
 Vector2D UVFromPointOnTriangle( const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,

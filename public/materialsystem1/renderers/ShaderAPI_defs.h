@@ -208,7 +208,7 @@ struct DepthStencilStateParams
 {
 	bool			depthTest{ false };
 	bool			depthWrite{ false };
-	ECompareFunc	depthFunc{ COMPFUNC_LEQUAL };
+	ECompareFunc	depthFunc{ COMPFUNC_GEQUAL };
 
 	ETextureFormat	format{ FORMAT_NONE };
 
@@ -905,7 +905,7 @@ struct RenderPassDesc
 	ColorTargetList	colorTargets;
 
 	TextureView		depthStencil;
-	float			depthClearValue{ 1.0f };
+	float			depthClearValue{ 0.0f };
 	ELoadFunc		depthLoadOp{ LOADFUNC_LOAD };
 	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };
 	bool			depthReadOnly{ false };
@@ -944,7 +944,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 	}
 	FLUENT_SET_VALUE(depthStoreOp, DepthStoreOp)
 	FLUENT_SET_VALUE(depthReadOnly, DepthReadOnly)
-	ThisType& DepthClear(float clearValue = 1.0f)
+	ThisType& DepthClear(float clearValue = 0.0f)
 	{
 		ref.depthClearValue = clearValue;
 		ref.depthLoadOp = LOADFUNC_CLEAR;
