@@ -31,6 +31,7 @@ public:
 	const char*			GetName() const { return m_name.ToCString(); }
 	int					GetNameHash() const { return m_nameHash; }
 	ETextureFormat		GetFormat() const { return m_format; }
+	TextureExtent		GetSize() const { return { m_width, m_height, m_arraySize }; }
 
 	int					GetWidth() const { return m_width; }
 	int					GetHeight() const { return m_height; }

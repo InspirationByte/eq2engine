@@ -873,6 +873,16 @@ FLUENT_BEGIN_TYPE(TextureDesc)
 		ref.size = { width ,height , arraySize };
 		return *this;
 	}
+	ThisType& Size(const TextureExtent& extent)
+	{
+		ref.size = extent;
+		return *this;
+	}
+	ThisType& Size(const IVector2D& size, int arraySize = 1)
+	{
+		ref.size = { size.x, size.y, arraySize};
+		return *this;
+	}
 FLUENT_END_TYPE
 
 //-------------------------------

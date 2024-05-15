@@ -36,9 +36,7 @@ void BlurShader::SetDestinationTexture(ITexture* dest)
 {
 	m_dstTexture = dest;
 
-	const int dstWidth = m_dstTexture->GetWidth();
-	const int dstHeight = m_dstTexture->GetHeight();
-
+	const IVector2D dstSize = m_dstTexture->GetSize();
 	const ETextureFormat destTexFormat = m_dstTexture->GetFormat();
 
 	if(m_destTextureFormat != destTexFormat || !m_pipeline)
@@ -81,7 +79,7 @@ void BlurShader::SetDestinationTexture(ITexture* dest)
 		Builder<TextureDesc>()
 		.Name("_blurTemp")
 		.Format(m_destTextureFormat)
-		.Size(dstWidth, dstHeight, 2)
+		.Size(dstSize, 2)
 		.Flags(TEXFLAG_COPY_SRC | TEXFLAG_TRANSIENT)
 		.End()
 	);
@@ -103,8 +101,7 @@ void BlurShader::SetDestinationTexture(ITexture* dest)
 
 void BlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int arraySlice)
 {
-	const int dstWidth = m_dstTexture->GetWidth();
-	const int dstHeight = m_dstTexture->GetHeight();
+	const IVector2D dstSize = m_dstTexture->GetSize();
 
 	IGPUBindGroupPtr bindGroupStg0 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(1)
@@ -180,6 +177,6 @@ void BlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int arraySli
 	TextureCopyInfo dstTex{ m_dstTexture };
 	dstTex.origin.arraySlice = arraySlice < 0 ? 0 : arraySlice;
 
-	TextureExtent texExtents{ dstWidth, dstHeight, 1 };
+	TextureExtent texExtents{ dstSize };
 	commandRecorder->CopyTextureToTexture(srcTex, dstTex, texExtents);
 }

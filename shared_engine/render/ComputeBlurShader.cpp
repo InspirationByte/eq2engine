@@ -68,14 +68,13 @@ void ComputeBlurShader::SetDestinationTexture(ITexture* dest)
 {
 	m_dstTexture = dest;
 
-	const int dstWidth = m_dstTexture->GetWidth();
-	const int dstHeight = m_dstTexture->GetHeight();
+	const IVector2D dstSize = m_dstTexture->GetSize();
 
 	m_blurTemp = g_renderAPI->CreateRenderTarget(
 		Builder<TextureDesc>()
 		.Name("_blurTemp")
 		.Format(FORMAT_RGBA8)
-		.Size(dstWidth, dstHeight, 2)
+		.Size(dstSize, 2)
 		.Flags(TEXFLAG_STORAGE | TEXFLAG_COPY_SRC | TEXFLAG_TRANSIENT)
 		.End()
 	);
@@ -99,8 +98,7 @@ void ComputeBlurShader::SetDestinationTexture(ITexture* dest)
 
 void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int arraySlice)
 {
-	const int dstWidth = m_dstTexture->GetWidth();
-	const int dstHeight = m_dstTexture->GetHeight();
+	const IVector2D dstSize = m_dstTexture->GetSize();
 
 	IGPUBindGroupPtr bindGroupStg0 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(1)
@@ -115,18 +113,18 @@ void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int a
 	blurPassRecorder->SetBindGroup(0, m_bindGroupConst);
 
 	blurPassRecorder->SetBindGroup(1, bindGroupStg0);
-	blurPassRecorder->DispatchWorkgroups(ceil(dstWidth * m_oneByBlockDim), ceil(dstHeight * m_oneByBatchSizeY), 1);
+	blurPassRecorder->DispatchWorkgroups(ceil(dstSize.x * m_oneByBlockDim), ceil(dstSize.y * m_oneByBatchSizeY), 1);
 
 	blurPassRecorder->SetBindGroup(1, m_bindGroupStg1);
-	blurPassRecorder->DispatchWorkgroups(ceil(dstHeight * m_oneByBlockDim), ceil(dstWidth * m_oneByBatchSizeY), 1);
+	blurPassRecorder->DispatchWorkgroups(ceil(dstSize.y * m_oneByBlockDim), ceil(dstSize.x * m_oneByBatchSizeY), 1);
 
 	for (int i = 0; i < m_iterations - 1; ++i)
 	{
 		blurPassRecorder->SetBindGroup(1, m_bindGroupStg2);
-		blurPassRecorder->DispatchWorkgroups(ceil(dstWidth * m_oneByBlockDim), ceil(dstHeight * m_oneByBatchSizeY), 1);
+		blurPassRecorder->DispatchWorkgroups(ceil(dstSize.x * m_oneByBlockDim), ceil(dstSize.y * m_oneByBatchSizeY), 1);
 
 		blurPassRecorder->SetBindGroup(1, m_bindGroupStg1);
-		blurPassRecorder->DispatchWorkgroups(ceil(dstHeight * m_oneByBlockDim), ceil(dstWidth * m_oneByBatchSizeY), 1);
+		blurPassRecorder->DispatchWorkgroups(ceil(dstSize.y * m_oneByBlockDim), ceil(dstSize.x * m_oneByBatchSizeY), 1);
 	}
 
 	blurPassRecorder->Complete();
@@ -137,6 +135,6 @@ void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int a
 	TextureCopyInfo dstTex{ m_dstTexture };
 	dstTex.origin.arraySlice = arraySlice < 0 ? 0 : arraySlice;
 
-	TextureExtent texExtents{ dstWidth, dstHeight, 1 };
+	TextureExtent texExtents{ dstSize };
 	commandRecorder->CopyTextureToTexture(srcTex, dstTex, texExtents);
 }

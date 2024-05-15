@@ -39,6 +39,38 @@ enum ETextureLockFlags
 	TEXLOCK_DISCARD		= (1 << 1)
 };
 
+struct TextureOrigin
+{
+	int		x{ 0 };
+	int		y{ 0 };
+	int		arraySlice{ 0 };
+	int		mipLevel{ 0 };
+};
+
+struct TextureExtent
+{
+	int		width{ -1 };
+	int		height{ -1 };
+	int		arraySize{ 1 };
+
+	TextureExtent() = default;
+	TextureExtent(const IVector2D& size, int arraySize = 1)
+		: width(size.x)
+		, height(size.y)
+		, arraySize(arraySize)
+	{
+	}
+	TextureExtent(int width, int height, int arraySize = 1) 
+		: width(width)
+		, height(height)
+		, arraySize(arraySize)
+	{
+	}
+
+	operator IVector2D() const { return { width, height }; }
+	IVector2D xy() const { return { width, height }; }
+};
+
 class ITexture : public RefCountedObject<ITexture>
 {
 public:
@@ -63,9 +95,8 @@ public:
 	// Name of texture
 	virtual const char*		GetName() const = 0;
 	virtual int				GetFlags() const = 0;
-
-	// The dimensions of texture
 	virtual ETextureFormat	GetFormat() const = 0;
+	virtual TextureExtent	GetSize() const = 0;
 
 	virtual int				GetWidth() const = 0;
 	virtual int				GetHeight() const = 0;
@@ -106,21 +137,6 @@ struct TextureView
 
 	ITexturePtr	texture;
 	int			arraySlice{ 0 };
-};
-
-struct TextureOrigin
-{
-	int		x{ 0 };
-	int		y{ 0 };
-	int		arraySlice{ 0 };
-	int		mipLevel{ 0 };
-};
-
-struct TextureExtent
-{
-	int		width{ -1 };
-	int		height{ -1 };
-	int		arraySize{ 1 };
 };
 
 struct ITexture::LockInOutData
