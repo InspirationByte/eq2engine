@@ -21,21 +21,21 @@ void ScreenToDirection(	const Vector3D& cam_pos, const Vector2D& point, const Ve
 //---------------------------------------------------------------------------------
 
 // uv point from triangle and 3d position
-Vector2D UVFromPointOnTriangle(  const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,
-											const Vector2D &uv1, const Vector2D &uv2, const Vector2D &uv3,
-											const Vector3D &point);
+Vector2D UVFromPointOnTriangle( const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,
+								const Vector2D &uv1, const Vector2D &uv2, const Vector2D &uv3,
+								const Vector3D &point);
 // point from triangle and uv position
-Vector3D PointFromUVOnTriangle(  const Vector3D& v1, const Vector3D& v2, const Vector3D& v3,
-											const Vector3D& t1, const Vector3D& t2, const Vector3D& t3,
-											const Vector2D& p);
+Vector3D PointFromUVOnTriangle( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3,
+								const Vector3D& t1, const Vector3D& t2, const Vector3D& t3,
+								const Vector2D& p);
 
 // point in cone
-bool IsPointInCone(Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAngle, float cone_length );
+bool IsPointInCone(const Vector3D &pt, const Vector3D &origin, const Vector3D &axis, float cosAngle, float coneLength );
 
 // checks triangle-ray intersection
 bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vector3D& pt3, 
-											const Vector3D& linept, const Vector3D& vect, 
-											float& fraction, bool doTwoSided = false);
+								const Vector3D& linept, const Vector3D& vect, 
+								float& fraction, bool doTwoSided = false);
 
 //---------------------------------------------------------------------------------
 
@@ -65,9 +65,9 @@ void ComputeTriangleNormal(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3
 
 // Compute a TBN space for triangle
 template <typename T, typename T2>
-void ComputeTriangleTBN(	const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, 
-										const TVec2D<T2>& t0, const TVec2D<T2>& t1, const TVec2D<T2>& t2, 
-										TVec3D<T>& normal, TVec3D<T>& tangent, TVec3D<T>& binormal);
+void ComputeTriangleTBN(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, 
+						const TVec2D<T2>& t0, const TVec2D<T2>& t1, const TVec2D<T2>& t2, 
+						TVec3D<T>& normal, TVec3D<T>& tangent, TVec3D<T>& binormal);
 
 // returns triangle area
 template <typename T>
@@ -101,9 +101,6 @@ float VecAngleDiff(const Vector2D& dirA, const Vector2D& dirB);
 float PackNormal(const Vector3D& normal);
 Vector3D UnpackNormal(float value);
 
-#define f3_f(c) (dot(round((c) * 255.0), Vector3D(65536.0, 256.0, 1.0)))
-#define f_f3(f) (fract((f) / Vector3D(16777216.0, 65536.0, 256.0)))
-
 // Fourier square wave function
 template <int N>
 inline float FT_SquareWave( float x )
@@ -112,8 +109,8 @@ inline float FT_SquareWave( float x )
 
 	for(float i = 0; i < N; i++)
 	{
-		float v1 = (1+2.0f*i);
-		float v2 = (i+i+1)*2.0f;
+		const float v1 = (1+2.0f*i);
+		const float v2 = (i+i+1)*2.0f;
 		val += (1.0f / v1) * sinf(v2*x);
 	}
 
@@ -126,15 +123,11 @@ template<typename T>
 inline void SpringFunction(T& value, T& velocity, float spring_const, float spring_damp, float fDt)
 {
 	value += velocity * fDt;
-	float damping = 1 - (spring_damp * fDt);
 
-	if ( damping < 0 )
-		damping = 0.0f;
-
+	const float damping = max(0.0f, 1.0f - (spring_damp * fDt));
 	velocity *= damping;
 
 	// torsional spring
-	float springForceMagnitude = spring_const * fDt;
-	springForceMagnitude = clamp(springForceMagnitude, 0.0f, 2.0f );
-	velocity -= value * springForceMagnitude;
+	const float springForceMagnitude = spring_const * fDt;
+	velocity -= value * clamp(springForceMagnitude, 0.0f, 2.0f);
 }

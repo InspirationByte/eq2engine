@@ -20,17 +20,17 @@ int HashVector3D(const Vector3D& v, float tolerance)
 	return (fixed.x * 12391) + (fixed.y * 14561) + (fixed.z * 18397);
 }
 
-float SnapFloat(float grid_spacing, float val)
+float SnapFloat(float gridSpacing, float val)
 {
-	return round(val / grid_spacing) * grid_spacing;
+	return round(val / gridSpacing) * gridSpacing;
 }
 
-Vector3D SnapVector(float grid_spacing, const Vector3D& vector)
+Vector3D SnapVector(float gridSpacing, const Vector3D& vector)
 {
 	return Vector3D(
-		SnapFloat(grid_spacing, vector.x),
-		SnapFloat(grid_spacing, vector.y),
-		SnapFloat(grid_spacing, vector.z));
+		SnapFloat(gridSpacing, vector.x),
+		SnapFloat(gridSpacing, vector.y),
+		SnapFloat(gridSpacing, vector.z));
 }
 
 bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& worldToScreen, const Vector2D& screenDims)
@@ -47,13 +47,11 @@ bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& wor
 	return behind;
 }
 
-bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 & worldToScreen, const Vector2D &screenDims)
+bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4& worldToScreen, const Vector2D& screenDims)
 {
 	Vector3D tmpScreen;
 	const bool behind = PointToScreen(point, tmpScreen, worldToScreen, screenDims);
-
 	screen = tmpScreen.xy();
-
 	return behind;
 }
 
@@ -77,9 +75,9 @@ void ScreenToDirection(const Vector3D& cameraPosition, const Vector2D& pointOnSc
 	dir = (farLeftUp + (leftToRight * dx) + (upToDown * dy)) - start;
 }
 
-Vector2D UVFromPointOnTriangle( const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,
-								const Vector2D &uv1, const Vector2D &uv2, const Vector2D &uv3,
-								const Vector3D &point)
+Vector2D UVFromPointOnTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,
+	const Vector2D& uv1, const Vector2D& uv2, const Vector2D& uv3,
+	const Vector3D& point)
 {
 	// edges
 	const Vector3D v0 = p3 - p1;
@@ -87,46 +85,46 @@ Vector2D UVFromPointOnTriangle( const Vector3D& p1, const Vector3D& p2, const Ve
 	const Vector3D v2 = point - p1;
 
 	// edge lengths
-    const float dot00 = dot(v0, v0);
-    const float dot01 = dot(v0, v1);
-    const float dot02 = dot(v0, v2);
-    const float dot11 = dot(v1, v1);
-    const float dot12 = dot(v1, v2);
+	const float dot00 = dot(v0, v0);
+	const float dot01 = dot(v0, v1);
+	const float dot02 = dot(v0, v2);
+	const float dot11 = dot(v1, v1);
+	const float dot12 = dot(v1, v2);
 
-    // make barycentric coordinates
-    const float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+	// make barycentric coordinates
+	const float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
 
-    const float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-    const float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+	const float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	const float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
-    const Vector2D t2 = uv2-uv1;
-    const Vector2D t1 = uv3-uv1;
+	const Vector2D t2 = uv2 - uv1;
+	const Vector2D t1 = uv3 - uv1;
 
-    return uv1 + t1*u + t2*v;
+	return uv1 + t1 * u + t2 * v;
 }
 
-Vector3D PointFromUVOnTriangle( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3,
-								 const Vector3D& t1, const Vector3D& t2, const Vector3D& t3,
-								 const Vector2D& p)
+Vector3D PointFromUVOnTriangle(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3,
+	const Vector3D& t1, const Vector3D& t2, const Vector3D& t3,
+	const Vector2D& p)
 {
-	const float i = 1 / ((t2.x - t1.x) * (t3.y - t1.y) - (t2.y - t1.y) * (t3.x - t1.x));
-	const float s = i * ( (t3.y - t1.y) * (p.x - t1.x) - (t3.x - t1.x) * (p.y - t1.y));
+	const float i = 1.0f / ((t2.x - t1.x) * (t3.y - t1.y) - (t2.y - t1.y) * (t3.x - t1.x));
+	const float s = i * ((t3.y - t1.y) * (p.x - t1.x) - (t3.x - t1.x) * (p.y - t1.y));
 	const float t = i * (-(t2.y - t1.y) * (p.x - t1.x) + (t2.x - t1.x) * (p.y - t1.y));
 
-	return Vector3D(v1 + s*(v2-v1) + t*(v3-v1));
+	return Vector3D(v1 + s * (v2 - v1) + t * (v3 - v1));
 }
 
-bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAngle, float cone_length )
+bool IsPointInCone(const Vector3D& pt, const Vector3D& origin, const Vector3D& axis, float cosAngle, float coneLength)
 {
 	const Vector3D delta = pt - origin;
 
 	const float dist = length(delta);
-	const float fdot = dot( normalize(delta), axis );
+	const float fdot = dot(normalize(delta), axis);
 
-	if ( fdot < cosAngle )
+	if (fdot < cosAngle)
 		return false;
 
-	if ( dist * fdot > cone_length )
+	if (dist * fdot > coneLength)
 		return false;
 
 	return true;
@@ -136,59 +134,57 @@ bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAng
 bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vector3D& pt3, const Vector3D& linept, const Vector3D& vect, float& fraction, bool doTwoSided)
 {
 	// get triangle edges
-	const Vector3D edge1 = pt2-pt1;
-	const Vector3D edge2 = pt3-pt1;
+	const Vector3D edge1 = pt2 - pt1;
+	const Vector3D edge2 = pt3 - pt1;
 
 	// find normal
 	const Vector3D pvec = cross(vect, edge2);
+	const Vector3D tvec = linept - pt1;
+	const Vector3D qvec = cross(tvec, edge1);
 
 	const float det = dot(edge1, pvec);
-
-	Vector3D uvCoord;
-
-	if(!doTwoSided)
+	if (!doTwoSided)
 	{
 		// Use culling
-		if(det < F_EPS)
+		if (det < F_EPS)
 			return false;
 
-		Vector3D tvec = linept-pt1;
+		Vector2D uvCoord;
 		uvCoord.x = dot(tvec, pvec);
 
-		if(uvCoord.x < 0.0f || uvCoord.x > det)
+		if (uvCoord.x < 0.0f || uvCoord.x > det)
 			return false;
 
-		Vector3D qvec = cross(tvec, edge1);
 		uvCoord.y = dot(vect, qvec);
 
-		if(uvCoord.y < 0.0f || uvCoord.y + uvCoord.x > det)
+		if (uvCoord.y < 0.0f || uvCoord.y + uvCoord.x > det)
 			return false;
 
-		float inv_det = 1.0f / det;
+		const float invDet = 1.0f / det;
 
-		fraction = dot(edge2, qvec) * inv_det;
+		fraction = dot(edge2, qvec) * invDet;
 	}
 	else
 	{
 		// No culling
-		if(det > -F_EPS && det < F_EPS)
+		if (det > -F_EPS && det < F_EPS)
 			return false;
 
-		float inv_det = 1.0f / det;
+		const float invDet = 1.0f / det;
 
-		Vector3D tvec = linept-pt1;
-		uvCoord.x = dot(tvec, pvec)*inv_det;
+		Vector2D uvCoord;
+		uvCoord.x = dot(tvec, pvec) * invDet;
 
-		if(uvCoord.x < 0.0f || uvCoord.x > 1.0f)
+		if (uvCoord.x < 0.0f || uvCoord.x > 1.0f)
 			return false;
 
 		Vector3D qvec = cross(tvec, edge1);
-		uvCoord.y = dot(vect, qvec) * inv_det;
+		uvCoord.y = dot(vect, qvec) * invDet;
 
-		if(uvCoord.y < 0.0f || uvCoord.y + uvCoord.x > 1.0f)
+		if (uvCoord.y < 0.0f || uvCoord.y + uvCoord.x > 1.0f)
 			return false;
 
-		fraction = dot(edge2, qvec) * inv_det;
+		fraction = dot(edge2, qvec) * invDet;
 	}
 
 	return true;
@@ -360,8 +356,8 @@ Vector3D AnglesDiff(const Vector3D& a, const Vector3D& b)
 	return angDiff;
 }
 
-/* 
-The number of bits of precision per color channel are log_2(c_precision), 
+/*
+The number of bits of precision per color channel are log_2(c_precision),
 in this case 7 bits per color, or 21 bits total.
 
 A c_precision of 128 fits within 7 base-10 digits.
@@ -375,8 +371,8 @@ float PackNormal(const Vector3D& normal)
 {
 	const Vector3D n = clamp(normal, 0.0f, 1.0f);
 	return floor(n.x * c_precision + 0.5)
-		 + floor(n.y * c_precision + 0.5) * c_precisionp1
-		 + floor(n.z * c_precision + 0.5) * c_precisionp1 * c_precisionp1;
+		+ floor(n.y * c_precision + 0.5) * c_precisionp1
+		+ floor(n.z * c_precision + 0.5) * c_precisionp1 * c_precisionp1;
 }
 
 Vector3D UnpackNormal(float value)
