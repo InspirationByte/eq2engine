@@ -397,6 +397,7 @@ void CMaterialSystem::Shutdown()
 	m_transientVertexBuffers = {};
 
 	m_defaultMaterial = nullptr;
+	m_gridMaterial = nullptr;
 	m_overdrawMaterial = nullptr;
 	m_currentEnvmapTexture = nullptr;
 	m_defaultDepthTexture = nullptr;
@@ -495,10 +496,18 @@ void CMaterialSystem::InitDefaultMaterial()
 		defaultParams.SetName("Default"); // set shader 'Default'
 		defaultParams.SetKey("BaseTexture", "$basetexture");
 
-		IMaterialPtr pMaterial = CreateMaterial("_default", &defaultParams);
-		pMaterial->LoadShaderAndTextures();
+		m_defaultMaterial = CreateMaterial("_default", &defaultParams);
+		m_defaultMaterial->LoadShaderAndTextures();
+	}
 
-		m_defaultMaterial = pMaterial;
+	if (!m_gridMaterial)
+	{
+		KVSection gridParams;
+		gridParams.SetName("PristineGrid");
+		gridParams
+			.SetKey("lineWidth", 0.05f)
+			.SetKey("lineSpacing", 1.0f);
+		m_gridMaterial = g_matSystem->CreateMaterial("MatSysPristineGrid", &gridParams);
 	}
 
 	/*if (!m_overdrawMaterial)
@@ -980,6 +989,11 @@ void CMaterialSystem::GetCameraParams(MatSysCamera& cameraParams, const Matrix4x
 const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
 {
 	return m_defaultMaterial;
+}
+
+const IMaterialPtr& CMaterialSystem::GetGridMaterial() const
+{
+	return m_gridMaterial;
 }
 
 const ITexturePtr& CMaterialSystem::GetWhiteTexture(ETextureDimension texDimension) const
@@ -1495,6 +1509,11 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 
 bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext)
 {
+	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
+	IMatSystemShader* matShader = material->m_shader;
+	if (!matShader)
+		return false;
+
 	// as it could be called outside of BeginFrame/EndFrame
 	FramePrepareInternal();
 
@@ -1543,9 +1562,6 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 	const RenderInstanceInfo& instInfo = drawCmd.instanceInfo;
 	const MeshInstanceData& instData = instInfo.instData;
 	const RenderDrawBatch& meshInfo = drawCmd.batchInfo;
-
-	const CMaterial* material = static_cast<CMaterial*>(GetDefaultMaterial().Ptr());
-	IMatSystemShader* matShader = material->m_shader;
 
 	// material must support correct vertex layout state
 	uint usedVertexLayoutBits = 0;

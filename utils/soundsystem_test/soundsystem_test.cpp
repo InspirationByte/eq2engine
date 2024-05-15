@@ -314,6 +314,7 @@ void InitMatSystem(EQWNDHANDLE window)
 			return nullptr;
 		};
 
+		g_matSystem->LoadShaderLibrary("eqBaseShaders.dll");
 		if (!g_matSystem->Init(materials_config))
 			exit(0);
 
@@ -328,8 +329,6 @@ void InitMatSystem(EQWNDHANDLE window)
 
 		g_renderAPI = g_matSystem->GetShaderAPI();
 	}
-
-	g_matSystem->LoadShaderLibrary("eqBaseShaders.dll");
 
 	// register all shaders
 	for(int i = 0; i < pShaderRegistrators.numElem(); i++)

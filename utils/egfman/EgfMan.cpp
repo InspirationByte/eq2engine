@@ -396,6 +396,7 @@ static void InitMatSystem(void* window)
 			return nullptr;
 		};
 
+		g_matSystem->LoadShaderLibrary("eqBaseShaders");
 		if (!g_matSystem->Init(materials_config))
 			exit(0);
 
@@ -410,8 +411,6 @@ static void InitMatSystem(void* window)
 
 		g_renderAPI = g_matSystem->GetShaderAPI();
 	}
-
-	g_matSystem->LoadShaderLibrary("eqBaseShaders");
 
 	if (!g_parallelJobs->Init())
 		return;

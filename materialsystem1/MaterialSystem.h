@@ -88,6 +88,7 @@ public:
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
 	const IMaterialPtr&			GetDefaultMaterial() const;
+	const IMaterialPtr&			GetGridMaterial() const;
 	const ITexturePtr&			GetWhiteTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const;
 	const ITexturePtr&			GetErrorCheckerboardTexture(ETextureDimension texDimension = TEXDIMENSION_2D) const;
 								
@@ -223,6 +224,7 @@ private:
 	TransientBufferCollection	m_transientVertexBuffers;
 
 	IMaterialPtr				m_defaultMaterial;
+	IMaterialPtr				m_gridMaterial;
 	IMaterialPtr				m_overdrawMaterial;
 
 	ITexturePtr					m_currentEnvmapTexture;
