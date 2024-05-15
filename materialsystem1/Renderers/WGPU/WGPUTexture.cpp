@@ -88,9 +88,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 		if (imgType == IMAGE_TYPE_CUBE)
 			texDepth = 6;
 
-		int texFormat = imgFmt;
-		if (m_flags & TEXFLAG_SRGB)
-			texFormat |= TEXFORMAT_FLAG_SRGB;
+		const ETextureFormat texFormat = imgFmt;
 
 		WGPUTextureDescriptor rhiTextureDesc{};
 		rhiTextureDesc.label = img->GetName();
@@ -98,7 +96,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 		rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
 		rhiTextureDesc.sampleCount = 1;
 		rhiTextureDesc.usage = rhiUsageFlags;
-		rhiTextureDesc.format = GetWGPUTextureFormat(static_cast<ETextureFormat>(texFormat));
+		rhiTextureDesc.format = GetWGPUTextureFormat(texFormat);
 		rhiTextureDesc.viewFormatCount = 0;
 		rhiTextureDesc.viewFormats = nullptr;
 
@@ -195,7 +193,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 
 		{
 			WGPUTextureViewDescriptor rhiTexViewDesc = {};
-			rhiTexViewDesc.format = rhiTextureDesc.format;
+			rhiTexViewDesc.format = GetWGPUTextureFormat(texFormat);
 			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
 			rhiTexViewDesc.arrayLayerCount = texDepth;
 			rhiTexViewDesc.baseArrayLayer = 0;
@@ -250,15 +248,15 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 	ASSERT(data.lockOrigin.x >= 0 && data.lockOrigin.y >= 0 && data.lockOrigin.arraySlice >= 0);
 	ASSERT(data.lockSize.width >= 0 && data.lockSize.height >= 0 && data.lockSize.arraySize >= 0);
 
-	const int lockPitch = data.lockSize.width;
 	const int lockOffset = data.lockOrigin.x * data.lockOrigin.y * data.lockOrigin.arraySlice;
 	const int sizeToLock = data.lockSize.width * data.lockSize.height * data.lockSize.arraySize;
 
+	const int lockPitch = data.lockSize.width * GetBytesPerPixel(m_format);
 	const int lockByteCount = GetBytesPerPixel(m_format) * sizeToLock;
 
 	// allocate memory for lock data
 	data.lockData = (ubyte*)PPAlloc(lockByteCount);
-	data.lockPitch = lockPitch * GetBytesPerPixel(m_format);
+	data.lockPitch = lockPitch;
 	data.lockByteCount = lockByteCount;
 
 	if (!(data.flags & TEXLOCK_DISCARD) && (m_flags & TEXFLAG_COPY_SRC))

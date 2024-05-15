@@ -146,7 +146,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		{
 			const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
 
-			if(!caps.textureFormatsSupported[img->GetFormat()])
+			if (!caps.IsSupportedTextureFormat(img->GetFormat()))
 			{
 				MsgWarning("%s: Texture %s unsupported format %d\n", requestedBy, texturePathExt.ToCString(), img->GetFormat());
 				continue;

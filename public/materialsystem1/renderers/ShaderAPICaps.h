@@ -35,6 +35,9 @@ enum EShaderSupportFlags
 
 struct ShaderAPICapabilities
 {
+	bool	IsSupportedTextureFormat(const ETextureFormat format) const { return textureFormatsSupported[GetTexFormat(format)];}
+	bool	IsSupportedRenderTargetFormat(const ETextureFormat format) const { return renderTargetFormatsSupported[GetTexFormat(format)]; }
+
 	bool	textureFormatsSupported[FORMAT_COUNT]{ false };
 	bool	renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 

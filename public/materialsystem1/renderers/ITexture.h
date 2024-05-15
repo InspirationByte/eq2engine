@@ -24,12 +24,10 @@ enum ETextureFlags : int
 	TEXFLAG_NULL_ON_ERROR		= (1 << 1),
 	TEXFLAG_CUBEMAP				= (1 << 2),		// should create cubemap
 	TEXFLAG_IGNORE_QUALITY		= (1 << 3),		// not affected by "r_loadmiplevel", always all mip levels are loaded
-	TEXFLAG_SRGB				= (1 << 4),		// texture should be sampled as in sRGB color space
-	TEXFLAG_STORAGE				= (1 << 5),		// allows storage access (compute)
-	TEXFLAG_COPY_SRC			= (1 << 6),		// texture can be used as copy source
-	TEXFLAG_COPY_DST			= (1 << 7),		// texture can be used as copy destination
-
-	TEXFLAG_TRANSIENT			= (1 << 8),		// (RenderTarget Only) texture is temporary and not registered in RenderAPI list
+	TEXFLAG_STORAGE				= (1 << 4),		// allows storage access (compute)
+	TEXFLAG_COPY_SRC			= (1 << 5),		// texture can be used as copy source
+	TEXFLAG_COPY_DST			= (1 << 6),		// texture can be used as copy destination
+	TEXFLAG_TRANSIENT			= (1 << 7),		// (RenderTarget Only) texture is temporary and not registered in RenderAPI list
 
 	// texture identification flags
 	TEXFLAG_RENDERTARGET		= (1 << 16),	// this is a rendertarget texture

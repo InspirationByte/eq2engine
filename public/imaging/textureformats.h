@@ -143,47 +143,55 @@ inline static int HasTexFormatFlags(ETextureFormat formatWithFlags, int flags)
 
 inline bool IsPlainFormat(const ETextureFormat format)
 {
-	return (format <= FORMAT_RGBA32UI);
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt <= FORMAT_RGBA32UI);
 }
 
 inline bool IsPackedFormat(const ETextureFormat format)
 {
-	return (format >= FORMAT_RGBE8 && format <= FORMAT_RGB10A2);
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt >= FORMAT_RGBE8 && fmt <= FORMAT_RGB10A2);
 }
 
 inline bool IsDepthFormat(const ETextureFormat format)
 {
-	return (format >= FORMAT_D16 && format <= FORMAT_D32F);
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt >= FORMAT_D16 && fmt <= FORMAT_D32F);
 }
 
 inline bool IsStencilFormat(const ETextureFormat format)
 {
-	return (format == FORMAT_D24S8);
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt == FORMAT_D24S8);
 }
 
 inline bool IsSignedFormat(const ETextureFormat format)
 {
-	return ((format >= FORMAT_R8S) && (format <= FORMAT_RGBA16S)) || ((format >= FORMAT_R16I) && (format <= FORMAT_RGBA32I));
+	const ETextureFormat fmt = GetTexFormat(format);
+	return ((fmt >= FORMAT_R8S) && (fmt <= FORMAT_RGBA16S)) || ((fmt >= FORMAT_R16I) && (fmt <= FORMAT_RGBA32I));
 }
 
 inline bool IsCompressedFormat(const ETextureFormat format)
 {
-	return (format >= FORMAT_DXT1) && (format <= FORMAT_PVRTC_A_4BPP);
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt >= FORMAT_DXT1) && (fmt <= FORMAT_PVRTC_A_4BPP);
 }
 
 inline bool IsFloatFormat(const ETextureFormat format)
 {
-//	return (format >= FORMAT_R16F && format <= FORMAT_RGBA32F);
-	return (format >= FORMAT_R16F && format <= FORMAT_RG11B10F) || (format == FORMAT_D32F);
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt >= FORMAT_R16F && fmt <= FORMAT_RG11B10F) || (fmt == FORMAT_D32F);
 }
 
 inline bool IsIntegerFormat(const ETextureFormat format)
 {
-	return (format >= FORMAT_R16I && format <= FORMAT_RGBA32UI);
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt >= FORMAT_R16I && fmt <= FORMAT_RGBA32UI);
 }
 
 inline int GetChannelCount(const ETextureFormat format)
 {
+	const ETextureFormat fmt = GetTexFormat(format);
 	static const int chCount[] = {
 		0,
 		1, 2, 3, 4,					//  8-bit unsigned
@@ -202,12 +210,13 @@ inline int GetChannelCount(const ETextureFormat format)
 		3, 3, 4, 3, 3, 4, 4			// Compressed mobile formats
 	};
 
-	return chCount[format];
+	return chCount[fmt];
 }
 
 // Accepts only plain formats
 inline int GetBytesPerChannel(const ETextureFormat format)
 {
+	const ETextureFormat fmt = GetTexFormat(format);
 	static const int bytesPC[] = {
 		1, //  8-bit unsigned
 		2, // 16-bit unsigned
@@ -221,12 +230,13 @@ inline int GetBytesPerChannel(const ETextureFormat format)
 		4, // 32-bit signed integer
 	};
 
-	return bytesPC[(format - 1) >> 2];
+	return bytesPC[(fmt - 1) >> 2];
 }
 
 // Does not accept compressed formats
 inline int GetBytesPerPixel(const ETextureFormat format)
 {
+	const ETextureFormat fmt = GetTexFormat(format);
 	static const int bytesPP[] = {
 		0,
 		1, 2, 3, 4,       //  8-bit unsigned
@@ -242,16 +252,17 @@ inline int GetBytesPerPixel(const ETextureFormat format)
 		4, 4, 4, 2, 2, 4, // Packed
 		2, 4, 4, 4,       // Depth
 	};
-	return bytesPP[format];
+	return bytesPP[fmt];
 }
 
 // Accepts only compressed formats
 inline int GetBytesPerBlock(const ETextureFormat format)
 {
-	return (format == FORMAT_DXT1 ||
-			format == FORMAT_ATI1N ||
-			format == FORMAT_ETC1 ||
-			format == FORMAT_ETC2A1 ||
-			(format >= FORMAT_PVRTC_2BPP && format <= FORMAT_PVRTC_A_4BPP))
-		? 8 : 16;
+	const ETextureFormat fmt = GetTexFormat(format);
+	return (fmt == FORMAT_DXT1 ||
+			fmt == FORMAT_ATI1N ||
+			fmt == FORMAT_ETC1 ||
+			fmt == FORMAT_ETC2A1 ||
+			(fmt >= FORMAT_PVRTC_2BPP && fmt <= FORMAT_PVRTC_A_4BPP))
+			? 8 : 16;
 }

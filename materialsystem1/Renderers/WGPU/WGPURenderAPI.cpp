@@ -428,10 +428,6 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	if (isCubeMap)
 		texDepth = 6; // TODO: CubeArray, WGPU supports it
 
-	int texFormat = texture->GetFormat();
-	if (flags & TEXFLAG_SRGB)
-		texFormat |= TEXFORMAT_FLAG_SRGB;
-
 	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
 	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
@@ -443,7 +439,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	rhiTextureDesc.size = WGPUExtent3D{ (uint)newSize.width, (uint)newSize.height, (uint)texDepth };
 	rhiTextureDesc.sampleCount = sampleCount;
 	rhiTextureDesc.usage = rhiUsageFlags;
-	rhiTextureDesc.format = GetWGPUTextureFormat(static_cast<ETextureFormat>(texFormat));
+	rhiTextureDesc.format = GetWGPUTextureFormat(texture->GetFormat());
 	rhiTextureDesc.dimension = WGPUTextureDimension_2D;
 	rhiTextureDesc.viewFormatCount = 0;
 	rhiTextureDesc.viewFormats = nullptr;
@@ -467,7 +463,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	{
 		WGPUTextureViewDescriptor rhiTexViewDesc = {};
 		rhiTexViewDesc.label = rhiTextureDesc.label;
-		rhiTexViewDesc.format = rhiTextureDesc.format;
+		rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
 		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
 		rhiTexViewDesc.arrayLayerCount = isCubeMap ? 6 : newSize.arraySize;
 		rhiTexViewDesc.baseArrayLayer = 0;
@@ -488,7 +484,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 		{
 			WGPUTextureViewDescriptor rhiTexViewDesc = {};
 			rhiTexViewDesc.label = rhiTextureDesc.label;
-			rhiTexViewDesc.format = rhiTextureDesc.format;
+			rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
 			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
 			rhiTexViewDesc.arrayLayerCount = 1;
 			rhiTexViewDesc.baseArrayLayer = i;
@@ -507,7 +503,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 		{
 			WGPUTextureViewDescriptor rhiTexViewDesc = {};
 			rhiTexViewDesc.label = rhiTextureDesc.label;
-			rhiTexViewDesc.format = rhiTextureDesc.format;
+			rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
 			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
 			rhiTexViewDesc.arrayLayerCount = 1;
 			rhiTexViewDesc.baseArrayLayer = i;

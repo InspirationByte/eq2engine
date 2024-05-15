@@ -120,14 +120,14 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 	rhiCopySize.depthOrArrayLayers = copySize.arraySize;
 	rhiCopySize.width = copySize.width;
 	rhiCopySize.height = copySize.height;
-
+	
 	// TODO: account arraySize in bytesPerRow
 	ASSERT_MSG(copySize.arraySize == 1, "array size > 1 is unsupported yet");
 	WGPUImageCopyBuffer rhiBufferDst;
 	rhiBufferDst.buffer = dstBufferImpl->GetWGPUBuffer();
 	rhiBufferDst.layout.offset = 0;
-	rhiBufferDst.layout.bytesPerRow = copySize.width * GetBytesPerPixel(GetTexFormat(srcTexture->GetFormat()));
-	rhiBufferDst.layout.rowsPerImage = copySize.height;
+	rhiBufferDst.layout.bytesPerRow = copySize.width * GetBytesPerPixel(srcTexture->GetFormat());
+	rhiBufferDst.layout.rowsPerImage = rhiBufferDst.layout.bytesPerRow * copySize.height;
 
 	wgpuCommandEncoderCopyTextureToBuffer(m_rhiCommandEncoder, &rhiImageSrc, &rhiBufferDst, &rhiCopySize);
 }
