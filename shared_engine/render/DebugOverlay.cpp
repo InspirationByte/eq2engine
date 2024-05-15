@@ -792,7 +792,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 		Vertex2D(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.25f), vec2_zero),
 	};
 
-	eqFontStyleParam_t textStl;
+	FontStyleParam textStl;
 	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
 	pFont->SetupRenderText(graph->name, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl, rendPassRecorder);
@@ -1342,7 +1342,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	const Vector2D drawFadedTextBoxPosition = Vector2D(15,45);
 	const Vector2D drawTextBoxPosition = Vector2D(15,45);
 
-	eqFontStyleParam_t textStl;
+	FontStyleParam textStl;
 	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
 	{
@@ -1421,7 +1421,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			m_TextArray.clear();
 		}
 
-		eqFontStyleParam_t rTextFadeStyle = textStl;
+		FontStyleParam rTextFadeStyle = textStl;
 		rTextFadeStyle.align = TEXT_ALIGN_RIGHT;
 
 		{
@@ -1509,7 +1509,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		defaultRender.texture = TextureView(m_dbgTexture, viewIndex);
 		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), RenderPassContext(rendPassRecorder, &defaultRender));
 
-		eqFontStyleParam_t textStl;
+		FontStyleParam textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
 		EqString str = EqString::Format("%dx%d (frame %d)\n%s\nrefcnt %d", m_dbgTexture->GetWidth(), m_dbgTexture->GetHeight(), m_dbgTexture->GetAnimationFrame(), m_dbgTexture->GetName(), m_dbgTexture->Ref_Count());

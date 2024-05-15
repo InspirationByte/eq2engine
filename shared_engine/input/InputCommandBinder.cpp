@@ -854,7 +854,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRe
 
 	g_matSystem->Setup2D(screenSize.x,screenSize.y);
 
-	eqFontStyleParam_t fontParams;
+	FontStyleParam fontParams;
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParams.textColor = color_white;
 

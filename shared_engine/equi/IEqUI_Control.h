@@ -15,7 +15,7 @@
 
 class IGPURenderPassRecorder;
 struct KVSection;
-struct eqFontStyleParam_t;
+struct FontStyleParam;
 
 #define UICMD_ARGV(index)		event.args.ptr()[index]
 #define UICMD_ARGC				event.args.numElem()
@@ -167,7 +167,7 @@ public:
 	void						SetTextAlignment(int alignmentFlags)	{ m_font.textAlignment = alignmentFlags; }
 	int							GetTextAlignment() const				{ return m_font.textAlignment; }
 
-	virtual	void				GetCalcFontStyle(eqFontStyleParam_t& style) const;
+	virtual	void				GetCalcFontStyle(FontStyleParam& style) const;
 
 	// PURE VIRTUAL
 	virtual const char*			GetClassname() const = 0;

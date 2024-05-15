@@ -25,7 +25,6 @@ static const char* s_szkKVValueTypes[KVPAIR_TYPES] =
 	"section",		// sections
 };
 
-
 static EKVPairType KV_ResolvePairType( const char* string )
 {
 	char* typeName = (char*)string;
@@ -116,6 +115,8 @@ static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength =
 #define IsKVBufferEOF()				((pData - pszBuffer) > bufferSize-1)
 #define IsKVArrayEndOrSeparator(c)	((c) == KV_ARRAY_SEPARATOR || (c) == KV_ARRAY_END)
 #define IsKVWhitespace(c)			(isspace(c) || (c) == KV_STRING_NEWLINE || (c) == KV_STRING_CARRIAGERETURN)
+
+constexpr int KV_MAX_SECTION_DEPTH = 10;
 
 //-----------------------------------------------------------------------------------------
 
@@ -380,9 +381,6 @@ KVSection* KeyValues::operator[](const char* pszName)
 
 KVSection::KVSection()
 {
-	line = 0;
-	unicode = false;
-	type = KVPAIR_STRING,
 	strcpy(name, "unnamed");
 }
 
@@ -1319,7 +1317,7 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 //
 KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine)
 {
-	FixedArray<KVSection*, 32> sectionStack;
+	FixedArray<KVSection*, KV_MAX_SECTION_DEPTH> sectionStack;
 
 	// add root section to the stack
 	{
@@ -1401,7 +1399,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 //
 KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine )
 {
-	FixedArray<KVSection*, 32> sectionStack;
+	FixedArray<KVSection*, KV_MAX_SECTION_DEPTH> sectionStack;
 
 	// add root section to the stack
 	{

@@ -35,15 +35,14 @@ int main(int argc, char* argv[])
 		Usage();
 	}
 
-	CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount()), 16384);
-
-	for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 	{
-		EqString argStr = g_cmdLine->GetArgumentString(i);
-
-		if (!argStr.CompareCaseIns("-target"))
+		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount()), 16384);
+		for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 		{
-			CookTarget(g_cmdLine->GetArgumentsOf(i), jobMng);
+			EqString argStr = g_cmdLine->GetArgumentString(i);
+
+			if (!argStr.CompareCaseIns("-target"))
+				CookTarget(g_cmdLine->GetArgumentsOf(i), jobMng);
 		}
 	}
 

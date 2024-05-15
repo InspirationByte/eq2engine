@@ -29,7 +29,7 @@ void Button::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassR
 
 	DrawWindowRectangle(rect, btnColor, ColorRGBA(0.5f), rendPassRecorder);
 
-	eqFontStyleParam_t style;
+	FontStyleParam style;
 	GetCalcFontStyle(style);
 
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);

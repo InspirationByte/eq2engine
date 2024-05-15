@@ -18,7 +18,7 @@ public:
 	bool	HasNotDrawnLines() const {return m_hasNotdrawnLines;}
 
 	// controls the newline. For different text orientations
-	void	OnNewLine(	const eqFontStyleParam_t& params, 
+	void	OnNewLine(	const FontStyleParam& params, 
 						void* strCurPos, bool isWideChar,
 						int lineNumber,
 						const Vector2D& textStart,
@@ -26,9 +26,9 @@ public:
 
 	// for special layouts like rectangles
 	// if false then stops output, and don't render this char
-	bool	LayoutChar( const eqFontStyleParam_t& params, 
+	bool	LayoutChar( const FontStyleParam& params, 
 						void* strCurPos, bool isWideChar,
-						const eqFontChar_t& chr,
+						const FontChar& chr,
 						Vector2D& curTextPos,
 						Vector2D& cPos, Vector2D& cSize );
 

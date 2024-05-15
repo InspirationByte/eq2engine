@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "FontLayoutBuilders.h"
 
-void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
+void CRectangleTextLayoutBuilder::OnNewLine(const FontStyleParam& params,
 										void* strCurPos, bool isWideChar,
 										int lineNumber,
 										const Vector2D& textStart,
@@ -45,9 +45,9 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 	m_newWord = true;
 }
 
-bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
+bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 											void* strCurPos, bool isWideChar,
-											const eqFontChar_t& chr,
+											const FontChar& chr,
 											Vector2D& curTextPos,
 											Vector2D& cPos, Vector2D& cSize )
 {

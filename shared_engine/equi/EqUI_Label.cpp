@@ -21,7 +21,7 @@ namespace equi
 // drawn rectangle
 IAARectangle Label::GetClientScissorRectangle() const
 {
-	eqFontStyleParam_t style;
+	FontStyleParam style;
 	GetCalcFontStyle(style);
 
 	float lineHeight = GetFont()->GetLineHeight(style);
@@ -38,7 +38,7 @@ void Label::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRe
 	rectLayout.SetRectangle(AARectangle(rect));
 
 	IEqFont* font = GetFont();
-	eqFontStyleParam_t style;
+	FontStyleParam style;
 	GetCalcFontStyle(style);
 
 	style.layoutBuilder = &rectLayout;

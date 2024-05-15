@@ -20,7 +20,7 @@
 #pragma once
 
 // text styles
-enum ETextStyleFlag
+enum ETextStyleFlag : int
 {
 	TEXT_STYLE_SHADOW		= (1 << 0), // render a shadow
 	TEXT_STYLE_MONOSPACE	= (1 << 1), // act as monospace, don't use advX
@@ -37,7 +37,7 @@ enum ETextStyleFlag
 };
 
 // alignment types
-enum ETextAlignment
+enum ETextAlignment : int
 {
 	TEXT_ALIGN_LEFT		= 0, // default flag
 	TEXT_ALIGN_RIGHT	= (1 << 0), // has no right?
@@ -48,24 +48,21 @@ enum ETextAlignment
 	TEXT_ALIGN_VCENTER	= (1 << 4),
 };
 
-struct eqFontChar_t
+struct FontChar
 {
-	eqFontChar_t()
-	{
-		x0 = y0 = x1 = y1 = ofsX = ofsY = advX = 0.0f;
-	}
+	float x0{ 0.0f };
+	float y0{ 0.0f };
+	float x1{ 0.0f };
+	float y1{ 0.0f };
 
-	// rectangle
-	float x0, y0;
-	float x1, y1;
-
-	float ofsX,ofsY;
-	float advX;
+	float ofsX{ 0.0f }; 
+	float ofsY{ 0.0f };
+	float advX{ 0.0f };
 };
 
 class IGPURenderPassRecorder;
 class IEqFont;
-struct eqFontStyleParam_t;
+struct FontStyleParam;
 
 //-------------------------------------------------------------------------
 // Font layout interface
@@ -78,7 +75,7 @@ public:
 	virtual void	Reset( IEqFont* font ) { m_font = font; }
 
 	// controls the newline. For different text orientations
-	virtual void	OnNewLine(	const eqFontStyleParam_t& params,
+	virtual void	OnNewLine(	const FontStyleParam& params,
 								void* strCurPos, bool isWideChar,
 								int lineNumber,
 								const Vector2D& textStart,
@@ -86,50 +83,31 @@ public:
 
 	// for special layouts like rectangles
 	// if false then stops output, and don't render this char
-	virtual bool	LayoutChar( const eqFontStyleParam_t& params,
+	virtual bool	LayoutChar( const FontStyleParam& params,
 								void* strCurPos, bool isWideChar,
-								const eqFontChar_t& chr,
+								const FontChar& chr,
 								Vector2D& curTextPos,
 								Vector2D& cPos, Vector2D& cSize ) = 0;
 
 protected:
-	IEqFont*		m_font;
+	IEqFont*	m_font{ nullptr };
 };
 
 // text
-struct eqFontStyleParam_t
+struct FontStyleParam
 {
-	eqFontStyleParam_t() = default;
-	eqFontStyleParam_t(const eqFontStyleParam_t& derived)
-	{
-		align = derived.align;
-		styleFlag = derived.styleFlag;
-
-		shadowOffset = derived.shadowOffset;
-		shadowWeight = derived.shadowWeight;
-
-		layoutBuilder = derived.layoutBuilder;
-
-		shadowColor = derived.shadowColor;
-		shadowAlpha = derived.shadowAlpha;
-
-		textColor = derived.textColor;
-
-		scale = derived.scale;
-	}
+	ITextLayoutBuilder* layoutBuilder{ nullptr };
 
 	int					align{ 0 };			// ETextAlignment
 	int					styleFlag{ 0 };		// ETextStyleFlag
 
+	MColor				textColor{ color_white };
+
 	Vector2D			shadowOffset{ 1.0f };
 	float				shadowWeight{ 0.01f };
 
-	ITextLayoutBuilder* layoutBuilder{ nullptr };
-
 	MColor				shadowColor{ 0 };
 	float				shadowAlpha{ 0.7f };
-
-	MColor				textColor{ color_white };
 
 	// SDF font size scaling
 	Vector2D			scale{ 1.0f };
@@ -145,31 +123,31 @@ public:
 	virtual ~IEqFont() {}
 
 	// returns string width in pixels
-	virtual float				GetStringWidth( const wchar_t* str, const eqFontStyleParam_t& params, int charCount = -1, int breakOnChar = -1) const = 0;
+	virtual float				GetStringWidth( const wchar_t* str, const FontStyleParam& params, int charCount = -1, int breakOnChar = -1) const = 0;
 
 	// returns string width in pixels
-	virtual float				GetStringWidth( const char* str, const eqFontStyleParam_t& params, int charCount = -1, int breakOnChar = -1) const = 0;
+	virtual float				GetStringWidth( const char* str, const FontStyleParam& params, int charCount = -1, int breakOnChar = -1) const = 0;
 
 	// returns font line height in pixels
-	virtual float				GetLineHeight(const eqFontStyleParam_t& params) const = 0;
+	virtual float				GetLineHeight(const FontStyleParam& params) const = 0;
 
 	// returns font baseline offset in pixels
-	virtual float				GetBaselineOffs(const eqFontStyleParam_t& params) const = 0;
+	virtual float				GetBaselineOffs(const FontStyleParam& params) const = 0;
 
 	// returns the character data
-	virtual const eqFontChar_t&	GetFontCharById( const int chrId ) const = 0;
+	virtual const FontChar&		GetFontCharById( const int chrId ) const = 0;
 
 	// returns the scaled character
-	virtual void				GetScaledCharacter( eqFontChar_t& chr, const int chrId, const Vector2D& scale = 1.0f ) const = 0;
+	virtual void				GetScaledCharacter( FontChar& chr, const int chrId, const Vector2D& scale = 1.0f ) const = 0;
 
 
 	// renders text
 	virtual void				SetupRenderText(const wchar_t* pszText,
 											const Vector2D& start,
-											const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
+											const FontStyleParam& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
 	// renders text
 	virtual void				SetupRenderText(const char* pszText,
 											const Vector2D& start,
-											const eqFontStyleParam_t& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
+											const FontStyleParam& params, IGPURenderPassRecorder* rendPassRecorder) = 0;
 };

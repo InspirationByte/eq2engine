@@ -837,7 +837,7 @@ bool CGameHost::Frame()
 
 	if (r_showFPS.GetBool())
 	{
-		eqFontStyleParam_t params;
+		FontStyleParam params;
 		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 		params.textColor = ColorRGBA(1, 1, 1, 1);
 
@@ -851,7 +851,7 @@ bool CGameHost::Frame()
 		size_t totalMem = PPMemGetUsage();
 		if (totalMem)
 		{
-			eqFontStyleParam_t memParams;
+			FontStyleParam memParams;
 			memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 			m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
 		}

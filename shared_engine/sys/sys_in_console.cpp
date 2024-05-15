@@ -443,7 +443,7 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 		if (m_showConsole)
 			DrawSelf(width, height, frameTime, rendPassRecorder);
 
-		eqFontStyleParam_t versionTextStl;
+		FontStyleParam versionTextStl;
 		versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 		versionTextStl.align = TEXT_ALIGN_HCENTER;
 		versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
@@ -552,15 +552,15 @@ void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, 
 
 void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder)
 {
-	eqFontStyleParam_t tooltipStyle;
+	FontStyleParam tooltipStyle;
 	tooltipStyle.textColor = s_conHelpTextColor;
 	tooltipStyle.styleFlag = TEXT_STYLE_FROM_CAP;
 	tooltipStyle.scale = m_fontScale;
 
-	eqFontStyleParam_t itemStyle(tooltipStyle);
+	FontStyleParam itemStyle(tooltipStyle);
 	itemStyle.textColor = s_conListItemColor;
 
-	eqFontStyleParam_t selectedItemStyle(itemStyle);
+	FontStyleParam selectedItemStyle(itemStyle);
 	selectedItemStyle.textColor = s_conListItemSelectedColor;
 
 	const int linesToDraw = min(items.numElem() - startItem, maxItems);	// +1 because tooltip
@@ -626,7 +626,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder)
 {
-	eqFontStyleParam_t helpTextParams;
+	FontStyleParam helpTextParams;
 	helpTextParams.textColor = s_conHelpTextColor;
 	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 	helpTextParams.scale = m_fontScale;
@@ -694,7 +694,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 		}
 		else if(m_foundCmdList.numElem() > 0)
 		{
-			eqFontStyleParam_t variantsTextParams;
+			FontStyleParam variantsTextParams;
 			variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 			variantsTextParams.scale = m_fontScale;
 
@@ -1209,7 +1209,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 		}
 	}
 
-	eqFontStyleParam_t fontStyle;
+	FontStyleParam fontStyle;
 	fontStyle.scale = m_fontScale;
 
 	int drawstart = m_logScrollPosition;
@@ -1233,10 +1233,10 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 
 		int numDrawn = 0;
 
-		eqFontStyleParam_t outputTextStyle;
+		FontStyleParam outputTextStyle;
 		outputTextStyle.scale = m_fontScale;
 
-		eqFontStyleParam_t hasLinesStyle;
+		FontStyleParam hasLinesStyle;
 		hasLinesStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
 		hasLinesStyle.scale = m_fontScale;
 
@@ -1272,7 +1272,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 
 	DrawAlphaFilledRectangle(inputTextEntryRect, s_conInputBackColor, s_conBorderColor, rendPassRecorder);
 
-	eqFontStyleParam_t inputTextStyle;
+	FontStyleParam inputTextStyle;
 	inputTextStyle.textColor = s_conInputTextColor;
 	inputTextStyle.scale = m_fontScale;
 

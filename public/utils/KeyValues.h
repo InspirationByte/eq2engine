@@ -59,27 +59,18 @@ enum EKVSearchFlags
 //
 struct KVPairValue
 {
-	KVPairValue()
-	{
-		value = nullptr;
-		section = nullptr;
-		type = KVPAIR_STRING;
-	}
-
 	~KVPairValue();
 
-	EKVPairType	type;
+	KVSection*	section{ nullptr };
+	char*		value{ nullptr };
+	EKVPairType	type{ KVPAIR_STRING };
 
 	union
 	{
-		int		nValue;
+		int		nValue{ 0 };
 		bool	bValue;
 		float	fValue;
 	};
-
-	KVSection*			section;
-
-	char*				value;
 
 	// sets string value
 	void				SetStringValue(const char* pszValue, int len = -1);
@@ -219,18 +210,14 @@ struct KVSection
 	void				SetType(int newType);
 	int					GetType() const;
 
-	// the line that the key is on
-	int					line;
+	char				name[KV_MAX_NAME_LENGTH]{ 0 };
+	int					nameHash{ 0 };
+	int					line{ 0 };				// the line that the key is on
 
-	char				name[KV_MAX_NAME_LENGTH];
-	int					nameHash;
-
+	Array<KVSection*>	keys{ PP_SL };			// the nested keys
 	Array<KVPairValue*>	values{ PP_SL };
-	EKVPairType			type;		// default type of values
-
-	// the nested keys
-	Array<KVSection*>	keys{ PP_SL };
-	bool				unicode;
+	EKVPairType			type{ KVPAIR_STRING };
+	bool				unicode{ false };
 };
 
 // easy key iteration
