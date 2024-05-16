@@ -730,6 +730,9 @@ void CAnimatingEGF::GetPoseControllerRange(int nPoseCtrl, float& rMin, float& rM
 // updates bones
 bool CAnimatingEGF::RecalcBoneTransforms()
 {
+	if (!m_boneTransforms)
+		return false;
+
 	if (Atomic::CompareExchange(m_bonesNeedUpdate, TRUE, FALSE) != TRUE)
 		return false;
 
