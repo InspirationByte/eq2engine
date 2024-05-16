@@ -12,17 +12,30 @@
 
 static uint GenDefaultPipelineId(ArrayCRef<ETextureFormat> colorTargetFormat, ETextureFormat depthTargetFormat, const MatSysDefaultRenderPass& renderPassInfo, EPrimTopology primitiveTopology)
 {
-	uint id = 0;
-	id |= renderPassInfo.cullMode; // 2 bits
-	id |= primitiveTopology << 2;	// 3 bits
-	id |= renderPassInfo.blendMode << (2 + 3); // 2 bits
-	id |= renderPassInfo.depthFunc << (2 + 3 + 2); // 1 bit
-	id |= renderPassInfo.depthTest << (2 + 3 + 2 + 1); // 1 bit
-	id |= renderPassInfo.depthWrite << (2 + 3 + 2 + 1 + 1); // 4 bits
-	id |= (GetTexFormat(colorTargetFormat[0]) & 63) << (2 + 3 + 2 + 1 + 1 + 4);
-	id |= (colorTargetFormat[0] >> 10 & 3) << (2 + 3 + 2 + 1 + 1 + 4 + 6);
-	id |= (depthTargetFormat & 63) << (2 + 3 + 2 + 1 + 1 + 4 + 6 + 2);
-	return id;
+	const uint pipelineFlags =
+		static_cast<uint>(renderPassInfo.cullMode)
+		| (renderPassInfo.depthTest << 2)
+		| (renderPassInfo.depthWrite << 3)
+		| (renderPassInfo.depthFunc << 4)
+		| (static_cast<uint>(primitiveTopology) << 7)
+		| (renderPassInfo.blendMode << 10);
+
+	uint hash = pipelineFlags;
+	hash *= 31;
+	hash += pipelineFlags;
+	for (int i = 0; i < colorTargetFormat.numElem(); ++i)
+	{
+		const ETextureFormat format = colorTargetFormat[i];
+		if (format == FORMAT_NONE)
+			break;
+		hash *= 31;
+		hash += static_cast<uint>(i);
+		hash *= 31;
+		hash += static_cast<uint>(format);
+	}
+	hash *= 31;
+	hash += static_cast<uint>(depthTargetFormat);
+	return hash;
 }
 
 BEGIN_SHADER_CLASS(
