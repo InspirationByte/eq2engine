@@ -840,21 +840,29 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	CEqManifoldResult cbResult(&obA, &obB, /*(bodyB->m_flags & BODY_ISCAR)*/true, center);
 
 	{
-		//discrete collision detection query
 		btCollisionAlgorithm* algorithm = nullptr;
 
+		// FIXME:
+		// Due to btCompoundShape producing unreliable results, there is a really slow checks appear...
 		for (const btCollisionShape* shapeB : bodyB->GetBulletCollisionShapes())
 		{
-			btCollisionObjectWrapper obB(nullptr, shapeB, objB, transB, -1, -1);
+			for (const btCollisionShape* shapeA : staticObj->GetBulletCollisionShapes())
+			{
+				btCollisionObjectWrapper obA(nullptr, shapeA, objA, transA, -1, -1);
+				btCollisionObjectWrapper obB(nullptr, shapeB, objB, transB, -1, -1);
 
-			if(!algorithm)
-				algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, nullptr, BT_CONTACT_POINT_ALGORITHMS);
+				if (!algorithm)
+					algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, nullptr, BT_CONTACT_POINT_ALGORITHMS);
 
-			algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
+				algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
+			}
 		}
 
-		algorithm->~btCollisionAlgorithm();
-		m_collDispatcher->freeCollisionAlgorithm(algorithm);
+		if (algorithm)
+		{
+			algorithm->~btCollisionAlgorithm();
+			m_collDispatcher->freeCollisionAlgorithm(algorithm);
+		}
 	}
 
 	const int numCollResults = cbResult.m_collisions.numElem();
@@ -1552,8 +1560,11 @@ public:
 
 	btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult,bool normalInWorldSpace)
 	{
+		if (rayResult.m_hitFraction > m_closestHitFraction)
+			return 1.0f;
+
 		// do default result
-		const btScalar res = ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
+		const btScalar hitFraction = ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
 
 		m_surfMaterialId = -1;
 
@@ -1575,7 +1586,7 @@ public:
 				m_surfMaterialId = obj->m_surfParam;
 		}
 
-		return res;
+		return hitFraction;
 	}
 
 	int m_surfMaterialId{ -1 };
@@ -1685,28 +1696,26 @@ bool CEqPhysics::TestLineSingleObject(
 	const btTransform startTrans(btident3, strt);
 	const btTransform endTrans(btident3, endt);
 
-#if BT_BULLET_VERSION >= 283 // new bullet
-	btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform, -1, -1);
-#else
-    btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform);
-#endif
-
-	CEqRayTestCallback rayCallback(strt, endt);
-	m_collisionWorld->rayTestSingleInternal( startTrans, endTrans, &objWrap, rayCallback);
+	CEqRayTestCallback hitResultCallback(strt, endt);
+	for (const btCollisionShape* shape : object->GetBulletCollisionShapes())
+	{
+		btCollisionObjectWrapper objWrap(nullptr, shape, object->m_collObject, objTransform, -1, -1);
+		m_collisionWorld->rayTestSingleInternal(startTrans, endTrans, &objWrap, hitResultCallback);
+	}
 
 	m_numRayQueries++;
 
 	// put our result
-	if (!rayCallback.hasHit())
+	if (!hitResultCallback.hasHit())
 		return false;
 
 	Vector3D hitPoint;
-	ConvertBulletToDKVectors(hitPoint, rayCallback.m_hitPointWorld);
-	ConvertBulletToDKVectors(coll.normal, rayCallback.m_hitNormalWorld);
+	ConvertBulletToDKVectors(hitPoint, hitResultCallback.m_hitPointWorld);
+	ConvertBulletToDKVectors(coll.normal, hitResultCallback.m_hitNormalWorld);
 
 	coll.position = hitPoint + position;
-	coll.fract = rayCallback.m_closestHitFraction;
-	coll.materialIndex = rayCallback.m_surfMaterialId;
+	coll.fract = hitResultCallback.m_closestHitFraction;
+	coll.materialIndex = hitResultCallback.m_surfMaterialId;
 	coll.hitobject = object;
 
 	return true;
@@ -1725,17 +1734,22 @@ public:
 		m_closestHitFraction = PHYSICS_WORLD_MAX_UNITS;
 	}
 
-	btScalar addSingleResult(btCollisionWorld::LocalConvexResult& rayResult,bool normalInWorldSpace)
+	btScalar addSingleResult(btCollisionWorld::LocalConvexResult& rayResult, bool normalInWorldSpace)
 	{
+		if (rayResult.m_hitFraction > m_closestHitFraction)
+			return 1.0f;
+
 		// do default result
-		btScalar res = ClosestConvexResultCallback::addSingleResult(rayResult, normalInWorldSpace);
+		const btScalar hitFraction = ClosestConvexResultCallback::addSingleResult(rayResult, normalInWorldSpace);
 
 		m_surfMaterialId = -1;
 
 		// if something is a NaN we have to deny it
 		if (rayResult.m_hitNormalLocal != rayResult.m_hitNormalLocal ||
 			rayResult.m_hitFraction != rayResult.m_hitFraction)
+		{
 			return 1.0f;
+		}
 
 		// check our object is triangle mesh
 		const CEqCollisionObject* obj = (CEqCollisionObject*)m_hitCollisionObject->getUserPointer();
@@ -1752,7 +1766,7 @@ public:
 				m_surfMaterialId = obj->m_surfParam;
 		}
 
-		return res;
+		return hitFraction;
 	}
 
 	int m_surfMaterialId{ -1 };
@@ -1812,26 +1826,24 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 		return false;
 	}
 
-	// THIS MAY CRASH HERE IF YOU CAST WRONG SHAPE
-	CEqConvexTestCallback convexCallback(strt, endt);
-	m_collisionWorld->objectQuerySingle((btConvexShape*)params.shape, startTrans, endTrans,
-				object->m_collObject,
-				object->m_shape,
-				objTransform,
-				convexCallback,
-				0.01f);
+	CEqConvexTestCallback hitResultCallback(strt, endt);
+	for (const btCollisionShape* shape : object->GetBulletCollisionShapes())
+	{
+		btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform, -1, -1);
+		m_collisionWorld->objectQuerySingleInternal((btConvexShape*)params.shape, startTrans, endTrans, &objWrap, hitResultCallback, 0.01f);
+	}
 
 	// put our result
-	if (!convexCallback.hasHit())
+	if (!hitResultCallback.hasHit())
 		return false;
 
 	Vector3D hitPoint;
-	ConvertBulletToDKVectors(hitPoint, convexCallback.m_hitPointWorld);
-	ConvertBulletToDKVectors(coll.normal, convexCallback.m_hitNormalWorld);
+	ConvertBulletToDKVectors(hitPoint, hitResultCallback.m_hitPointWorld);
+	ConvertBulletToDKVectors(coll.normal, hitResultCallback.m_hitNormalWorld);
 
 	coll.position = hitPoint + position;
-	coll.fract = convexCallback.m_closestHitFraction;
-	coll.materialIndex = convexCallback.m_surfMaterialId;
+	coll.fract = hitResultCallback.m_closestHitFraction;
+	coll.materialIndex = hitResultCallback.m_surfMaterialId;
 	coll.hitobject = object;
 
 	return true;

@@ -35,7 +35,7 @@ void btStridingMeshInterface::InternalProcessAllTriangles(btInternalTriangleInde
 	int gfxindex;
 	btVector3 triangle[3];
 
-	btVector3 meshScaling = getScaling();
+	btVector3 meshScaling = m_scaling;
 
 	///if the number of parts is big, the performance might drop due to the innerloop switch on indextype
 	for (part = 0; part < graphicssubparts; part++)

@@ -37,21 +37,28 @@ CEqCollisionObject::~CEqCollisionObject()
 
 void CEqCollisionObject::Destroy()
 {
+	SAFE_DELETE(m_trimap);
 	SAFE_DELETE(m_collObject);
 
 	if (!m_studioShape)
 	{
 		SAFE_DELETE(m_shape);
+
+		if (m_shapeList)
+		{
+			for (int i = 0; i < m_numShapes; ++i)
+				delete m_shapeList[i];
+		}
+		SAFE_DELETE_ARRAY(m_shapeList);
 	}
-
-	m_studioShape = false;
-
-	SAFE_DELETE(m_trimap);
 
 	m_shape = nullptr;
 	m_mesh = nullptr;
 	m_collObject = nullptr;
 	m_trimap = nullptr;
+
+	m_studioShape = false;
+	m_numShapes = 0;
 }
 
 void CEqCollisionObject::ClearContacts()
@@ -135,8 +142,10 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 
 	m_mesh = mesh;
 
-	m_numShapes = 1;
+	m_numShapes = m_mesh->getNumSubParts();
 	m_shapeList = nullptr;
+
+	ASSERT(m_numShapes > 0);
 
 	const bool buildBVH = true; // always 'true' because 'false' has not been fucking implemented...
 
@@ -147,7 +156,22 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 		m_trimap = PPNew btTriangleInfoMap();
 		btGenerateInternalEdgeInfo(meshShape, m_trimap);
 	}
+	
+	if (m_numShapes > 1)
+	{
+		const int numShapes = m_numShapes;
+		m_shapeList = PPNew btCollisionShape*[numShapes];
 
+		// create shape for every subpart
+		for (int i = 0; i < m_mesh->getNumSubParts(); ++i)
+		{
+			btBvhTriangleMeshShape* subMeshShape = new btBvhTriangleMeshShape(m_mesh->GetSubpart(i), false, false);
+			subMeshShape->setTriangleInfoMap(m_trimap);
+			subMeshShape->setOptimizedBvh(meshShape->getOptimizedBvh());
+			m_shapeList[i] = subMeshShape;
+		}
+	}
+	
 	m_shape = meshShape;
 	m_shape->setMargin(ph_margin.GetFloat());
 
