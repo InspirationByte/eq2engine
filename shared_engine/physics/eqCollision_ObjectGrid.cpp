@@ -40,13 +40,13 @@ CEqCollisionBroadphaseGrid::~CEqCollisionBroadphaseGrid()
 			if(it.atEnd())
 				continue;
 
-			collgridcell_t& cell = *it;
+			eqPhysGridCell& cell = *it;
 
-			for (int i = 0; i < cell.m_dynamicObjs.numElem(); i++)
-				cell.m_dynamicObjs[i]->SetCell(nullptr);
+			for (CEqCollisionObject* collObj: cell.dynamicObjs)
+				collObj->SetCell(nullptr);
 
-			for (int i = 0; i < cell.m_gridObjects.numElem(); i++)
-				cell.m_gridObjects[i]->SetCell(nullptr);
+			for (CEqCollisionObject* collObj: cell.gridObjects)
+				collObj->SetCell(nullptr);
 		}
 	}
 	m_gridMap.clear(true);
@@ -81,7 +81,7 @@ bool CEqCollisionBroadphaseGrid::GetPointAt(const Vector3D& origin, Vector2D& xz
 	return true;
 }
 
-collgridcell_t*	CEqCollisionBroadphaseGrid::GetPreallocatedCellAtPos(const Vector3D& origin)
+eqPhysGridCell*	CEqCollisionBroadphaseGrid::GetPreallocatedCellAtPos(const Vector3D& origin)
 {
 	float halfGridNeg = m_gridSize*-0.5f;
 
@@ -100,7 +100,7 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetPreallocatedCellAtPos(const Vecto
 	return GetAllocCellAt( xz_pos.x, xz_pos.y );
 }
 
-collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAtPos(const Vector3D& origin) const
+eqPhysGridCell* CEqCollisionBroadphaseGrid::GetCellAtPos(const Vector3D& origin) const
 {
 	const float halfGridNeg = m_gridSize*-0.5f;
 
@@ -118,10 +118,10 @@ collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAtPos(const Vector3D& origin)
 
 	auto it = m_gridMap.find(xz_pos.y*gridWide + xz_pos.x);
 
-	return it.atEnd() ? static_cast<collgridcell_t*>(nullptr) : &(*it);
+	return it.atEnd() ? static_cast<eqPhysGridCell*>(nullptr) : &(*it);
 }
 
-collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAt(int x, int y) const
+eqPhysGridCell* CEqCollisionBroadphaseGrid::GetCellAt(int x, int y) const
 {
 	const int gridWide = m_gridWide;
 	const int gridTall = m_gridTall;
@@ -134,7 +134,7 @@ collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAt(int x, int y) const
 
 	auto it = m_gridMap.find(y*gridWide + x);
 
-	return it.atEnd() ? static_cast<collgridcell_t*>(nullptr) : &(*it);
+	return it.atEnd() ? static_cast<eqPhysGridCell*>(nullptr) : &(*it);
 }
 
 void CEqCollisionBroadphaseGrid::GetCellBoundsXZ(int x, int y, Vector2D& mins, Vector2D& maxs) const
@@ -151,7 +151,7 @@ void CEqCollisionBroadphaseGrid::GetCellBoundsXZ(int x, int y, Vector2D& mins, V
 
 bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const
 {
-	collgridcell_t* cell = GetCellAt(x,y);
+	eqPhysGridCell* cell = GetCellAt(x,y);
 
 	if(!cell)
 		return false;
@@ -166,7 +166,7 @@ bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vec
 	return true;
 }
 
-collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
+eqPhysGridCell*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 {
 	const int gridWide = m_gridWide;
 	const int gridTall = m_gridTall;
@@ -181,14 +181,7 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 	auto it = m_gridMap.find(cellIdx);
 
 	if(it.atEnd())
-	{
 		it = m_gridMap.insert(cellIdx);
-		collgridcell_t& newCell = *it;
-
-		newCell.x = x;
-		newCell.y = y;
-		newCell.cellBoundUsed = 0;
-	}
 
 	return &(*it);
 }
@@ -210,9 +203,9 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 	if(it.atEnd())
 		return;
 
-	collgridcell_t& cell = *it;
+	eqPhysGridCell& cell = *it;
 
-	Array<CEqCollisionObject*>& dynamicObjs = cell.m_dynamicObjs;
+	Array<CEqCollisionObject*>& dynamicObjs = cell.dynamicObjs;
 	int count = dynamicObjs.numElem();
 
 	for(int i = 0; i < count; i++)
@@ -221,8 +214,8 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 		pObj->SetCell(nullptr);
 	}
 
-	if(cell.m_gridObjects.numElem())
-		MsgWarning( "Cell deallocated, but in use (%d)\n", cell.m_gridObjects.numElem());
+	if(cell.gridObjects.numElem())
+		MsgWarning( "Cell deallocated, but in use (%d)\n", cell.gridObjects.numElem());
 
 	m_gridMap.remove(it);
 }
@@ -273,7 +266,7 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 		return;
 
 	// we're adding object to all nodes occupied by bbox
-	collgridcell_t* cell = GetAllocCellAt( cxz.x, cxz.y );
+	eqPhysGridCell* cell = GetAllocCellAt( cxz.x, cxz.y );
 
 	if(cell)
 	{
@@ -300,16 +293,16 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 		{
 			for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
 			{
-				collgridcell_t* ncell = GetAllocCellAt( x, y );
+				eqPhysGridCell* ncell = GetAllocCellAt( x, y );
 
-				if(ncell)
-				{
-					ncell->m_gridObjects.append( collisionObject );
+				if (!ncell)
+					continue;
 
-					// change height bounds
-					if(boxSizeY > ncell->cellBoundUsed)
-						ncell->cellBoundUsed = boxSizeY;
-				}
+				ncell->gridObjects.append( collisionObject );
+
+				// change height bounds
+				if(boxSizeY > ncell->cellBoundUsed)
+					ncell->cellBoundUsed = boxSizeY;
 			}
 		}
 
@@ -340,17 +333,17 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 	{
 		for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
 		{
-			collgridcell_t* ncell = GetCellAt( x, y );
+			eqPhysGridCell* ncell = GetCellAt( x, y );
 
-			if(ncell)
-			{
-				if(!ncell->m_gridObjects.fastRemove( collisionObject ))
-					MsgError("Not found in [%d %d]\n", x, y);
+			if (!ncell)
+				continue;
 
-				// remove cell if no users
-				if( ncell->m_gridObjects.numElem() <= 0 )
-					FreeCellAt(x,y);
-			}
+			if(!ncell->gridObjects.fastRemove( collisionObject ))
+				MsgError("Not found in [%d %d]\n", x, y);
+
+			// remove cell if no users
+			if( ncell->gridObjects.numElem() <= 0 )
+				FreeCellAt(x,y);
 		}
 	}
 }
@@ -358,33 +351,31 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 void CEqCollisionBroadphaseGrid::DebugRender()
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	Vector3D mins, maxs;
-
 	for(int y = 0; y < m_gridWide; y++)
 	{
 		for(int x = 0; x < m_gridTall; x++)
 		{
+			Vector3D mins, maxs;
 			if(!GetCellBounds(x,y, mins, maxs))
 				continue;
 
 			debugoverlay->Box3D(mins, maxs, ColorRGBA(1,0,1,0.25f));
 
-			if (ph_debugGridX.GetInt() == x && ph_debugGridY.GetInt() == y)
+			if (ph_debugGridX.GetInt() != x || ph_debugGridY.GetInt() != y)
+				continue;
+
+			eqPhysGridCell* cell = GetCellAt(x, y);
+			if (!cell)
+				continue;
+
+			for (int i = 0; i < cell->dynamicObjs.numElem(); i++)
 			{
-				collgridcell_t* cell = GetCellAt(x, y);
+				CEqCollisionObject* obj = cell->dynamicObjs[i];
 
-				if (cell)
-				{
-					for (int i = 0; i < cell->m_dynamicObjs.numElem(); i++)
-					{
-						CEqCollisionObject* obj = cell->m_dynamicObjs[i];
+				ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 1.0f);
 
-						ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 1.0f);
-
-						debugoverlay->Box3D(obj->m_aabb_transformed.minPoint, obj->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
-					}
-				}
-			} // debug display
+				debugoverlay->Box3D(obj->m_aabb_transformed.minPoint, obj->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
+			}
 		}
 	}
 #endif // ENABLE_DEBUG_DRAWING

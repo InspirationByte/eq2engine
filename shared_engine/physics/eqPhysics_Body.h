@@ -36,9 +36,6 @@ enum EBodyFlags
 	// cars have some specials like "Car vs Car" is a "Box vs Box" collision detection and faster game object detection
 	BODY_ISCAR					= (1 << 22),
 
-	// forces to use Box instead of this object's shape
-	BODY_BOXVSDYNAMIC			= (1 << 23),
-
 	//---------------
 	// special flags
 

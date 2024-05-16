@@ -16,7 +16,7 @@ class CEqPhysics;
 class CEqCollisionObject;
 class IEqPhysCallback;
 struct studioPhysData_t;
-struct collgridcell_t;
+struct eqPhysGridCell;
 
 const int PHYSICS_COLLISION_LIST_MAX = 8;
 
@@ -75,7 +75,8 @@ public:
 	virtual void				ClearContacts();
 
 	btCollisionObject*			GetBulletObject() const;											///< returns bullet physics collision object
-	btCollisionShape*			GetBulletShape() const;												///< returns bullet physics shape
+	btCollisionShape*			GetCompoundBulletShape() const { return m_shape; };					///< returns bullet physics shape (compound variant if multiple)
+	ArrayCRef<btCollisionShape*>	GetBulletCollisionShapes() const;								///< returns bullet physics shape
 	CEqBulletIndexedMesh*		GetMesh() const;													///< returns indexed shape
 
 	const Vector3D&				GetShapeCenter() const;
@@ -91,8 +92,8 @@ public:
 
 	virtual bool				IsDynamic() const {return false;}									///< is dynamic?
 
-	collgridcell_t*				GetCell() const					{return m_cell;}					///< returns collision grid cell
-	void						SetCell(collgridcell_t* cell)	{m_cell = cell;}					///< sets collision grid cell
+	eqPhysGridCell*				GetCell() const					{return m_cell;}					///< returns collision grid cell
+	void						SetCell(eqPhysGridCell* cell)	{m_cell = cell;}					///< sets collision grid cell
 
 	float						GetFriction() const;
 	float						GetRestitution() const;
@@ -148,7 +149,7 @@ protected:
 	btCollisionObject*		m_collObject{ nullptr };
 	CEqBulletIndexedMesh*	m_mesh{ nullptr };
 	btTriangleInfoMap*		m_trimap{ nullptr };
-	collgridcell_t*			m_cell{ nullptr };
+	eqPhysGridCell*			m_cell{ nullptr };
 
 	btCollisionShape*		m_shape{ nullptr };
 	btCollisionShape**		m_shapeList{ nullptr };

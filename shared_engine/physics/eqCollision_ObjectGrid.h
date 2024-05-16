@@ -10,13 +10,11 @@
 class CEqCollisionObject;
 class CEqPhysics;
 
-struct collgridcell_t
+struct eqPhysGridCell
 {
-	Array<CEqCollisionObject*> m_gridObjects{ PP_SL };
-	Array<CEqCollisionObject*> m_dynamicObjs{ PP_SL };
-	float cellBoundUsed = 0.0f;	// unsigned z of usage by static objects
-	short x = -1;
-	short y = -1;
+	Array<CEqCollisionObject*>	gridObjects{ PP_SL };
+	Array<CEqCollisionObject*>	dynamicObjs{ PP_SL };
+	float						cellBoundUsed = 0.0f;	// unsigned z of usage by static objects
 };
 
 class CEqCollisionBroadphaseGrid
@@ -25,10 +23,10 @@ public:
 	CEqCollisionBroadphaseGrid(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs);
 	~CEqCollisionBroadphaseGrid();
 
-	collgridcell_t*		GetPreallocatedCellAtPos(const Vector3D& origin);
+	eqPhysGridCell*		GetPreallocatedCellAtPos(const Vector3D& origin);
 
-	collgridcell_t*		GetCellAtPos(const Vector3D& origin) const;
-	collgridcell_t*		GetCellAt(int x, int y) const;
+	eqPhysGridCell*		GetCellAtPos(const Vector3D& origin) const;
+	eqPhysGridCell*		GetCellAt(int x, int y) const;
 
 	bool				GetPointAt(const Vector3D& origin, IVector2D& xzCell) const;
 	bool				GetPointAt(const Vector3D& origin, Vector2D& xzCell) const;
@@ -47,12 +45,10 @@ public:
 
 protected:
 
-	collgridcell_t*		GetAllocCellAt(int x, int y);
+	eqPhysGridCell*		GetAllocCellAt(int x, int y);
 	void				FreeCellAt( int x, int y );
 
-	//collgridcell_t**	m_gridMap{ nullptr };
-	Map<int, collgridcell_t> m_gridMap{ PP_SL };
-
+	Map<int, eqPhysGridCell> m_gridMap{ PP_SL };
 	CEqPhysics*			m_physics{ nullptr };
 
 	int					m_gridSize;

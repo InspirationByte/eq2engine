@@ -138,8 +138,9 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 	m_numShapes = 1;
 	m_shapeList = nullptr;
 
-	btBvhTriangleMeshShape* meshShape = new btBvhTriangleMeshShape(m_mesh, true, true);
+	const bool buildBVH = true; // always 'true' because 'false' has not been fucking implemented...
 
+	btBvhTriangleMeshShape* meshShape = new btBvhTriangleMeshShape(m_mesh, buildBVH, buildBVH);
 	if (internalEdges)
 	{
 		// WARNING: this is slow!
@@ -244,9 +245,9 @@ btCollisionObject* CEqCollisionObject::GetBulletObject() const
 	return m_collObject;
 }
 
-btCollisionShape* CEqCollisionObject::GetBulletShape() const
+ArrayCRef<btCollisionShape*> CEqCollisionObject::GetBulletCollisionShapes() const
 {
-	return m_shape;
+	return ArrayCRef<btCollisionShape*>(m_numShapes > 1 ? m_shapeList : &m_shape, m_numShapes);
 }
 
 CEqBulletIndexedMesh* CEqCollisionObject::GetMesh() const

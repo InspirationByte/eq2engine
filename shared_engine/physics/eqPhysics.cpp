@@ -122,14 +122,16 @@ const float CONTACT_GROUPING_NORMAL_TOLERANCE		= 0.85f;		// cosine
 struct CEqManifoldResult : public btManifoldResult
 {
 	CEqManifoldResult(const btCollisionObjectWrapper* obj0Wrap, const btCollisionObjectWrapper* obj1Wrap, bool singleSided, const Vector3D& center)
-		: btManifoldResult(obj0Wrap, obj1Wrap), m_center(center), m_singleSided(singleSided)
+		: btManifoldResult(obj0Wrap, obj1Wrap)
+		, m_center(center)
+		, m_singleSided(singleSided)
 	{
 		m_closestPointDistanceThreshold = 0.0f;
 	}
 
 	virtual void addContactPoint(const btVector3& normalOnBInWorld, const btVector3& pointInWorld, btScalar depth)
 	{
-		bool isSwapped = m_manifoldPtr->getBody0() != m_body0Wrap->getCollisionObject();
+		const bool isSwapped = m_manifoldPtr->getBody0() != m_body0Wrap->getCollisionObject();
 
 		btVector3 pointA = pointInWorld + normalOnBInWorld * depth;
 		btVector3 localA;
@@ -180,43 +182,36 @@ struct CEqManifoldResult : public btManifoldResult
 		else
 			btAdjustInternalEdgeContacts(cp, colObj1Wrap, colObj0Wrap, cp.m_partId1, cp.m_index1);
 
-		float distance = cp.getDistance();
-
 		// if something is a NaN we have to deny it
 		if (cp.m_positionWorldOnA != cp.m_positionWorldOnA || 
 			cp.m_normalWorldOnB != cp.m_normalWorldOnB)
 			return;
 
 		Vector3D position;
-		Vector3D normal;
-
 		ConvertBulletToDKVectors(position, cp.m_positionWorldOnA);
 		position -= m_center;
 		
+		Vector3D normal;
 		ConvertBulletToDKVectors(normal, cp.m_normalWorldOnB);
-		int materialIndex = -1;
 
-		const btCollisionShape* shape0 = colObj0Wrap->getCollisionShape();
 		const btCollisionShape* shape1 = colObj1Wrap->getCollisionShape();
 
+		int materialIndex = -1;
 		if (shape1->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
 		{
-			CEqCollisionObject* obj = (CEqCollisionObject*)colObj1Wrap->getCollisionObject()->getUserPointer();
-
+			CEqCollisionObject* obj = reinterpret_cast<CEqCollisionObject*>(colObj1Wrap->getCollisionObject()->getUserPointer());
 			if (obj && obj->GetMesh())
 			{
-				CEqBulletIndexedMesh* mesh = (CEqBulletIndexedMesh*)obj->GetMesh();
+				CEqBulletIndexedMesh* mesh = obj->GetMesh();
 				materialIndex = mesh->getSubPartMaterialId(cp.m_partId1);
 			}
 		}
 
-		float processingThreshold = m_manifoldPtr->getContactProcessingThreshold();
+		const float distance = cp.getDistance();
 
 #ifdef ENABLE_CONTACT_GROUPING		
-		for(int i = 0; i < m_collisions.numElem(); i++)
+		for(CollisionData_t& coll : m_collisions)
 		{
-			CollisionData_t& coll = m_collisions[i];
-
 			if(	coll.materialIndex == materialIndex &&
 				fsimilar(coll.position.x, position.x, CONTACT_GROUPING_POSITION_TOLERANCE) &&
 				fsimilar(coll.position.y, position.y, CONTACT_GROUPING_POSITION_TOLERANCE) &&
@@ -240,46 +235,17 @@ struct CEqManifoldResult : public btManifoldResult
 			return;
 		
 		CollisionData_t& data = m_collisions.append();
-
-		data.fract = distance;
 		ConvertBulletToDKVectors(data.normal, cp.m_normalWorldOnB);
 		ConvertBulletToDKVectors(position, cp.m_positionWorldOnA);
 		data.position = position - m_center;
 		data.materialIndex = materialIndex;
+		data.fract = distance;
 		data.pad = 1;
 	}
 
-	bool GetSingleContact(CollisionData_t& coll)
-	{
-		coll.normal = 0;
-		coll.position = vec3_zero;
-		coll.fract = 0;
-		coll.materialIndex = -1;
-
-		const int count = m_collisions.numElem();
-
-		if (!count)
-			return false;
-	
-		for(int i = 0; i < m_collisions.numElem(); i++)
-		{
-			coll.position += m_collisions[i].position;
-			coll.normal += m_collisions[i].normal;
-			coll.fract += m_collisions[i].fract;
-
-			coll.materialIndex = m_collisions[i].materialIndex;
-		}
-
-		coll.normal /= float(count);
-		coll.position /= float(count);
-		coll.fract /= float(count);
-
-		return true;
-	}
-
-	FixedArray<CollisionData_t, 64>		m_collisions;
-	Vector3D							m_center;
-	bool								m_singleSided;
+	FixedArray<CollisionData_t, 64>	m_collisions;
+	Vector3D						m_center;
+	bool							m_singleSided;
 };
 
 //------------------------------------------------------------------------------------------------------------
@@ -478,12 +444,12 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 	if(!body)
 		return false;
 
-	collgridcell_t* cell = body->GetCell();
+	eqPhysGridCell* cell = body->GetCell();
 
 	if (cell)
 	{
 		CScopedMutex m(s_eqPhysMutex);
-		cell->m_dynamicObjs.fastRemove(body);
+		cell->dynamicObjs.fastRemove(body);
 	}
 
 	const bool result = m_dynObjects.fastRemove(body);
@@ -543,12 +509,12 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 		}
 		else
 		{
-			collgridcell_t* cell = object->GetCell();
+			eqPhysGridCell* cell = object->GetCell();
 
 			if (cell)
 			{
 				CScopedMutex m(s_eqPhysMutex);
-				cell->m_dynamicObjs.fastRemove(object);
+				cell->dynamicObjs.fastRemove(object);
 			}
 		}
 	}
@@ -613,7 +579,7 @@ bool CEqPhysics::IsValidBody( CEqCollisionObject* body ) const
     if(!body->IsDynamic())
         return false;
 
-    return arrayFindIndex(m_dynObjects, (CEqRigidBody*)body ) != -1;
+	return arrayFindIndex(m_dynObjects, static_cast<CEqRigidBody*>(body)) != -1;
 }
 
 void CEqPhysics::AddConstraint( IEqPhysicsConstraint* constraint )
@@ -685,9 +651,9 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 
 #pragma todo("SolveBodyCollisions - add speed vector for more 'swept' broadphase detection")
 
-	const FVector3D center = (bodyA->GetPosition()-bodyB->GetPosition());
+	const FVector3D centerOffset = (bodyA->GetPosition()-bodyB->GetPosition());
 
-	const float distBetweenObjects = lengthSqr(center);
+	const float distBetweenObjects = lengthSqr(Vector3D(centerOffset));
 
 	// yep, center is a length also...
 	if(distBetweenObjects > lenA+lenB)
@@ -695,15 +661,10 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 
 	// check the contact pairs of bodyB (because it has been already processed by the order)
 	// if we had any contact pair with bodyA we should discard this collision
+	for (const ContactPair_t& pair : bodyB->m_contactPairs)
 	{
-		ArrayRef<ContactPair_t> pairsB(bodyB->m_contactPairs);
-
-		// don't process collisions again
-		for (int i = 0; i < pairsB.numElem(); i++)
-		{
-			if (pairsB[i].bodyA == bodyB && pairsB[i].bodyB == bodyA)
-				return;
-		}
+		if (pair.bodyA == bodyB && pair.bodyB == bodyA)
+			return;
 	}
 
 	// trasform collision objects and test
@@ -714,37 +675,17 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	if (!objA || !objB)
 		return;
 
-	/*
-	btBoxShape boxShapeA(ConvertDKToBulletVectors(bodyA->m_aabb.GetSize()*0.5f));
-	boxShapeA.setMargin(ph_margin.GetFloat());
-
-	btBoxShape boxShapeB(ConvertDKToBulletVectors(bodyB->m_aabb.GetSize()*0.5f));
-	boxShapeB.setMargin(ph_margin.GetFloat());
-
-	btCollisionObject boxObjectA;
-	boxObjectA.setCollisionShape(&boxShapeA);
-
-	btCollisionObject boxObjectB;
-	boxObjectB.setCollisionShape(&boxShapeB);
-
-	if(bodyA->m_flags & BODY_BOXVSDYNAMIC)
-		objA = &boxObjectA;
-
-	if(bodyB->m_flags & BODY_BOXVSDYNAMIC)
-		objB = &boxObjectB;
-	*/
-
 	// body a
 	Matrix4x4 eqTransA = Matrix4x4( bodyA->GetOrientation() );
 	eqTransA.translate(bodyA->GetShapeCenter());
 	eqTransA = transpose(eqTransA);
-	eqTransA.rows[3] += Vector4D(bodyA->GetPosition()+center, 1.0f);
+	eqTransA.rows[3] += Vector4D(bodyA->GetPosition()+centerOffset, 1.0f);
 
 	// body b
 	Matrix4x4 eqTransB = Matrix4x4( bodyB->GetOrientation() );
 	eqTransB.translate(bodyB->GetShapeCenter());
 	eqTransB = transpose(eqTransB);
-	eqTransB.rows[3] += Vector4D(bodyB->GetPosition()+center, 1.0f);
+	eqTransB.rows[3] += Vector4D(bodyB->GetPosition()+centerOffset, 1.0f);
 
 	btTransform transA;
 	btTransform transB;
@@ -758,27 +699,22 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	btCollisionObjectWrapper obA(nullptr, bodyA->m_shape, objA, transA, -1, -1);
 	btCollisionObjectWrapper obB(nullptr, bodyB->m_shape, objB, transB, -1, -1);
 
-	CEqManifoldResult cbResult(&obA, &obB, true, center);
+	CEqManifoldResult cbResult(&obA, &obB, true, centerOffset);
 
 	{
 		btCollisionAlgorithm* algorithm = nullptr;
 
-		const int numShapesA = bodyA->m_numShapes;
-		const int numShapesB = bodyB->m_numShapes;
-		const btCollisionShape* shapeA[] = { bodyA->m_shape };
-		const btCollisionShape* shapeB[] = { bodyB->m_shape };
-
 		// FIXME:
 		// Due to btCompoundShape producing unreliable results, there is a really slow checks appear...
-		for (int i = 0; i < numShapesB; i++)
+		for (const btCollisionShape* shapeB : bodyB->GetBulletCollisionShapes())
 		{
-			for (int j = 0; j < numShapesA; j++)
+			for (const btCollisionShape* shapeA : bodyA->GetBulletCollisionShapes())
 			{
-				btCollisionObjectWrapper obA(nullptr, numShapesA > 1 ? bodyA->m_shapeList[j] : shapeA[j], objA, transA, -1, -1);
-				btCollisionObjectWrapper obB(nullptr, numShapesB > 1 ? bodyB->m_shapeList[i] : shapeB[i], objB, transB, -1, -1);
+				btCollisionObjectWrapper obA(nullptr, shapeA, objA, transA, -1, -1);
+				btCollisionObjectWrapper obB(nullptr, shapeB, objB, transB, -1, -1);
 
 				if(!algorithm)
-					algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
+					algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, nullptr, BT_CONTACT_POINT_ALGORITHMS);
 
 				algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
 			}
@@ -793,15 +729,12 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 
 	// so collision test were performed, get our results to contact pairs
 	const int numCollResults = cbResult.m_collisions.numElem();
+	const float iterDelta = 1.0f / numCollResults;
 
-	const float iter_delta = 1.0f / numCollResults;
-
-	for(int j = 0; j < numCollResults; j++)
+	for(CollisionData_t& coll : cbResult.m_collisions)
 	{
 		if (bodyA->m_contactPairs.numElem() == bodyA->m_contactPairs.numAllocated())
 			break;
-
-		CollisionData_t& coll = cbResult.m_collisions[j];
 
 		Vector3D	hitNormal = coll.normal;
 		float		hitDepth = -coll.fract; // so hit depth is the time
@@ -817,7 +750,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		newPair.position = hitPos;
 		newPair.bodyA = bodyA;
 		newPair.bodyB = bodyB;
-		newPair.dt = iter_delta;
+		newPair.dt = iterDelta;
 
 		newPair.restitutionA = bodyA->GetRestitution();
 		newPair.frictionA = bodyA->GetFriction();
@@ -910,16 +843,12 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		//discrete collision detection query
 		btCollisionAlgorithm* algorithm = nullptr;
 
-		const int numShapesB = bodyB->m_numShapes;
-		const btCollisionShape* shapeB[] = { bodyB->m_shape };
-		const btCollisionShape* const* shapesB = numShapesB > 1 ? bodyB->m_shapeList : reinterpret_cast<const btCollisionShape* const*>(shapeB);
-
-		for (int i = 0; i < numShapesB; i++)
+		for (const btCollisionShape* shapeB : bodyB->GetBulletCollisionShapes())
 		{
-			btCollisionObjectWrapper obB(nullptr, shapesB[i], objB, transB, -1, -1);
+			btCollisionObjectWrapper obB(nullptr, shapeB, objB, transB, -1, -1);
 
 			if(!algorithm)
-				algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
+				algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, nullptr, BT_CONTACT_POINT_ALGORITHMS);
 
 			algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
 		}
@@ -929,15 +858,12 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	}
 
 	const int numCollResults = cbResult.m_collisions.numElem();
+	const float iterDelta = 1.0f / numCollResults;
 
-	const float iter_delta = 1.0f / numCollResults;
-
-	for(int j = 0; j < numCollResults; j++)
+	for(CollisionData_t& coll : cbResult.m_collisions)
 	{
 		if (bodyB->m_contactPairs.numElem() == bodyB->m_contactPairs.numAllocated())
 			break;
-
-		CollisionData_t& coll = cbResult.m_collisions[j];
 
 		Vector3D	hitNormal = coll.normal;
 		float		hitDepth = -coll.fract; // so hit depth is the time
@@ -957,7 +883,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		newPair.position = hitPos;
 		newPair.bodyA = staticObj;
 		newPair.bodyB = bodyB;
-		newPair.dt = iter_delta;
+		newPair.dt = iterDelta;
 
 		const eqPhysSurfParam* sparam = GetSurfaceParamByID(coll.materialIndex);
 
@@ -994,20 +920,20 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 	if(!m_grid)
 		return;
 
-	collgridcell_t* oldCell = body->GetCell();
+	eqPhysGridCell* oldCell = body->GetCell();
 
 	// get new cell
-	collgridcell_t* newCell = m_grid->GetPreallocatedCellAtPos( body->GetPosition() );
+	eqPhysGridCell* newCell = m_grid->GetPreallocatedCellAtPos( body->GetPosition() );
 
 	// move object in grid
 	if (newCell != oldCell)
 	{
 		CScopedMutex m(s_eqPhysMutex);
 		if (oldCell)
-			oldCell->m_dynamicObjs.fastRemove(body);
+			oldCell->dynamicObjs.fastRemove(body);
 
 		if (newCell)
-			newCell->m_dynamicObjs.append(body);
+			newCell->dynamicObjs.append(body);
 
 		body->SetCell(newCell);
 	}
@@ -1015,7 +941,7 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 
 void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 {
-	collgridcell_t* oldCell = body->GetCell();
+	eqPhysGridCell* oldCell = body->GetCell();
 
 	// move object
 	body->Integrate( m_fDt );
@@ -1026,17 +952,17 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	if(!bodyFrozen && body->IsCanIntegrate(true) || forceSetCell)
 	{
 		// get new cell
-		collgridcell_t* newCell = m_grid->GetCellAtPos( body->GetPosition() );
+		eqPhysGridCell* newCell = m_grid->GetCellAtPos( body->GetPosition() );
 
 		// move object in grid if it's a really new cell
 		if (newCell != oldCell)
 		{
 			CScopedMutex m(s_eqPhysMutex);
 			if (oldCell)
-				oldCell->m_dynamicObjs.fastRemove(body);
+				oldCell->dynamicObjs.fastRemove(body);
 
 			if (newCell)
-				newCell->m_dynamicObjs.append(body);
+				newCell->dynamicObjs.append(body);
 
 			body->SetCell(newCell);
 		}
@@ -1071,16 +997,15 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	{
 		for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
 		{
-			collgridcell_t* ncell = m_grid->GetCellAt( x, y );
-
+			const eqPhysGridCell* ncell = m_grid->GetCellAt( x, y );
 			if(!ncell)
 				continue;
 
-			const Array<CEqCollisionObject*>& gridObjects = ncell->m_gridObjects;
-			const Array<CEqCollisionObject*>& dynamicObjects = ncell->m_dynamicObjs;
+			const Array<CEqCollisionObject*>& gridObjects = ncell->gridObjects;
+			const Array<CEqCollisionObject*>& dynamicObjects = ncell->dynamicObjs;
 			
 			// iterate over static objects in cell
-			for (CEqCollisionObject* obj : ncell->m_gridObjects)
+			for (CEqCollisionObject* obj : ncell->gridObjects)
 				DetectStaticVsBodyCollision(obj, body, body->GetLastFrameTime());
 
 			// if object is only affected by other dynamic objects, don't waste my cycles!
@@ -1088,7 +1013,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 				continue;
 
 			// iterate over dynamic objects in cell
-			for (CEqCollisionObject* dynObj : ncell->m_dynamicObjs)
+			for (CEqCollisionObject* dynObj : ncell->dynamicObjs)
 			{
 				if (dynObj == body)
 					continue;
@@ -1104,16 +1029,14 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 {
-	CEqRigidBody* bodyB = (CEqRigidBody*)pair.bodyB;
-	int bodyAFlags = pair.bodyA->m_flags;
-	int bodyBFlags = bodyB->m_flags;
+	CEqRigidBody* bodyB = static_cast<CEqRigidBody*>(pair.bodyB);
+	const int bodyAFlags = pair.bodyA->m_flags;
+	const int bodyBFlags = bodyB->m_flags;
 
 	float appliedImpulse = 0.0f;
 	float impactVelocity = 0.0f;
 
 	bool bodyADisableResponse = false;
-
-
 	IEqPhysCallback* callbacksA = pair.bodyA->m_callbacks;
 	IEqPhysCallback* callbacksB = pair.bodyB->m_callbacks;
 
@@ -1140,10 +1063,8 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 			pair.normal *= -1.0f;
 			pair.depth *= -1.0f;
 
-			float combinedErp = ph_erp.GetFloat() + pair.bodyA->m_erp + pair.bodyB->m_erp;
-			float positionalError = pair.depth * pair.dt;
-
-			combinedErp = max(combinedErp, ph_erp.GetFloat());
+			const float combinedErp = ph_erp.GetFloat() + max(0.0f, pair.bodyA->m_erp + pair.bodyB->m_erp);
+			const float positionalError = pair.depth * pair.dt;
 
 			bodyB->m_position += pair.normal * positionalError * combinedErp;
 			bodyB->m_prevPosition += pair.normal * positionalError * combinedErp;
@@ -1156,18 +1077,16 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	}
 	else
 	{
-		CEqRigidBody* bodyA = (CEqRigidBody*)pair.bodyA;
+		CEqRigidBody* bodyA = static_cast<CEqRigidBody*>(pair.bodyA);
 
-		bool isCarCollidingWithCar = (bodyAFlags & BODY_ISCAR) && (bodyBFlags & BODY_ISCAR);
-		float varyErp = (isCarCollidingWithCar ? ph_carVsCarErp.GetFloat() : ph_erp.GetFloat());
-		
-		int bodyAFlags = pair.bodyA->m_flags;
-		int bodyBFlags = bodyB->m_flags;
+		const bool isCarCollidingWithCar = (bodyAFlags & BODY_ISCAR) && (bodyBFlags & BODY_ISCAR);
+		const float varyErp = (isCarCollidingWithCar ? ph_carVsCarErp.GetFloat() : ph_erp.GetFloat());
 
-		float combinedErp = varyErp + pair.bodyA->m_erp + pair.bodyB->m_erp;
-		float positionalError = pair.depth * pair.dt;
+		const int bodyAFlags = pair.bodyA->m_flags;
+		const int bodyBFlags = bodyB->m_flags;
 
-		combinedErp = max(combinedErp, varyErp);
+		const float combinedErp = varyErp + max(0.0f, pair.bodyA->m_erp + pair.bodyB->m_erp);
+		const float positionalError = pair.depth * pair.dt;
 
 		impactVelocity = fabs( dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position)) );
 
@@ -1278,33 +1197,27 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	m_fDt = deltaTime;
 
 	// prepare all the constraints
+	for (IEqPhysicsConstraint* constr : m_constraints)
 	{
-		for (int i = 0; i < m_constraints.numElem(); i++)
-		{
-			IEqPhysicsConstraint* constr = m_constraints[i];
-
-			if(constr->IsEnabled())
-				constr->PreApply( m_fDt );
-		}
+		if (!constr->IsEnabled())
+			continue;
+		constr->PreApply( m_fDt );
 	}
 
 	// update the controllers
-	for (int i = 0; i < m_controllers.numElem(); i++)
+	for (IEqPhysicsController* contr : m_controllers)
 	{
-		IEqPhysicsController* contr = m_controllers[i];
-
-		if(contr->IsEnabled())
-			contr->Update( m_fDt );
+		if (!contr->IsEnabled())
+			continue;
+		contr->Update( m_fDt );
 	}
 	
 	Array<CEqRigidBody*> movingMoveables{ PP_SL };
 	movingMoveables.resize(m_moveable.numElem());
 
 	// move all bodies
-	for (int i = 0; i < m_moveable.numElem(); i++)
+	for (CEqRigidBody* body : m_moveable)
 	{
-		CEqRigidBody* body = m_moveable[i];
-
 		// execute pre-simulation callbacks
 		IEqPhysCallback* callbacks = body->m_callbacks;
 
@@ -1327,44 +1240,32 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 		preIntegrFunc(m_fDt, iteration);
 
 	// calculate collisions
-	for (int i = 0; i < movingMoveables.numElem(); i++)
-	{
-		DetectCollisionsSingle(movingMoveables[i]);
-	}
+	for (CEqRigidBody* body : movingMoveables)
+		DetectCollisionsSingle(body);
 
 	// TODO: job barrier
 
 	// solve positions
-	for (int i = 0; i < movingMoveables.numElem(); i++)
-	{
-		CEqRigidBody* body = movingMoveables[i];
+	for (CEqRigidBody* body : movingMoveables)
 		body->Update(m_fDt);
-	}
 	
 	// process generated contact pairs
-	for (int i = 0; i < movingMoveables.numElem(); i++)
+	for (CEqRigidBody* body : movingMoveables)
 	{
-		CEqRigidBody* body = movingMoveables[i];
-
-		ArrayRef<ContactPair_t> pairs(body->m_contactPairs);
-		int numContactPairs = pairs.numElem();
-
-		for (int j = 0; j < numContactPairs; j++)
-			ProcessContactPair(pairs[j]);
+		for (ContactPair_t& pair: body->m_contactPairs)
+			ProcessContactPair(pair);
 
 		IEqPhysCallback* callbacks = body->m_callbacks;
-
 		if (callbacks) // execute post simulation callbacks
 			callbacks->PostSimulate(m_fDt);
 	}
 
 	// update all constraints
-	for (int i = 0; i < m_constraints.numElem(); i++)
+	for (IEqPhysicsConstraint* constr : m_constraints)
 	{
-		IEqPhysicsConstraint* constr = m_constraints[i];
-
-		if (constr->IsEnabled())
-			constr->Apply( m_fDt );
+		if (!constr->IsEnabled())
+			continue;
+		constr->Apply( m_fDt );
 	}
 
 	m_numRayQueries = 0;
@@ -1435,7 +1336,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	if (!m_grid)
 		return false;
 
-	collgridcell_t* cell = m_grid->GetCellAt(x,y);
+	eqPhysGridCell* cell = m_grid->GetCellAt(x,y);
 
 	if (!cell)
 		return true;
@@ -1480,7 +1381,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	{
 		CScopedMutex m(s_eqPhysMutex);
 
-		for (CEqCollisionObject* object : cell->m_gridObjects)
+		for (CEqCollisionObject* object : cell->gridObjects)
 		{
 			if (skipObjects.contains(object))
 				continue;
@@ -1506,7 +1407,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	{
 		CScopedMutex m(s_eqPhysMutex);
 
-		for (CEqCollisionObject* object : cell->m_dynamicObjs)
+		for (CEqCollisionObject* object : cell->dynamicObjs)
 		{
 			if (skipObjects.contains(object))
 				continue;
@@ -1643,16 +1544,16 @@ bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
 class CEqRayTestCallback : public btCollisionWorld::ClosestRayResultCallback
 {
 public:
-	CEqRayTestCallback(const btVector3&	rayFromWorld,const btVector3&	rayToWorld) : ClosestRayResultCallback(rayFromWorld, rayToWorld)
+	CEqRayTestCallback(const btVector3&	rayFromWorld,const btVector3&	rayToWorld)
+		: ClosestRayResultCallback(rayFromWorld, rayToWorld)
 	{
-		m_surfMaterialId = 0;
 		m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
 	}
 
 	btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult,bool normalInWorldSpace)
 	{
 		// do default result
-		btScalar res = ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
+		const btScalar res = ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
 
 		m_surfMaterialId = -1;
 
@@ -1661,8 +1562,7 @@ public:
 			return 1.0f;
 
 		// check our object is triangle mesh
-		CEqCollisionObject* obj = (CEqCollisionObject*)m_collisionObject->getUserPointer();
-
+		CEqCollisionObject* obj = reinterpret_cast<CEqCollisionObject*>(m_collisionObject->getUserPointer());
 		if(obj)
 		{
 			if(obj->GetMesh() && rayResult.m_localShapeInfo)
@@ -1678,7 +1578,7 @@ public:
 		return res;
 	}
 
-	int m_surfMaterialId;
+	int m_surfMaterialId{ -1 };
 };
 
 bool CEqPhysics::CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object)
@@ -1770,9 +1670,7 @@ bool CEqPhysics::TestLineSingleObject(
 	const Quaternion& objQuat = object->m_orientation;
 	const Vector3D& position = object->m_position;
 
-	btTransform objTransform;
-	objTransform.setRotation(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
-	objTransform.setOrigin(btVector3(0.0f, 0.0f, 0.0f)); 
+	const btTransform objTransform(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
 
 	const FVector3D lineStartLocal = start - position;
 	const FVector3D lineEndLocal = end - position;
@@ -1788,7 +1686,7 @@ bool CEqPhysics::TestLineSingleObject(
 	const btTransform endTrans(btident3, endt);
 
 #if BT_BULLET_VERSION >= 283 // new bullet
-	btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform, 0, 0);
+	btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform, -1, -1);
 #else
     btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform);
 #endif
@@ -1799,20 +1697,19 @@ bool CEqPhysics::TestLineSingleObject(
 	m_numRayQueries++;
 
 	// put our result
-	if(rayCallback.hasHit())
-	{
-		Vector3D hitPoint;
-		ConvertBulletToDKVectors(hitPoint, rayCallback.m_hitPointWorld);
-		ConvertBulletToDKVectors(coll.normal, rayCallback.m_hitNormalWorld);
+	if (!rayCallback.hasHit())
+		return false;
 
-		coll.position = hitPoint + position;
-		coll.fract = rayCallback.m_closestHitFraction;
-		coll.materialIndex = rayCallback.m_surfMaterialId;
-		coll.hitobject = object;
-		return true;
-	}
+	Vector3D hitPoint;
+	ConvertBulletToDKVectors(hitPoint, rayCallback.m_hitPointWorld);
+	ConvertBulletToDKVectors(coll.normal, rayCallback.m_hitNormalWorld);
 
-	return false;
+	coll.position = hitPoint + position;
+	coll.fract = rayCallback.m_closestHitFraction;
+	coll.materialIndex = rayCallback.m_surfMaterialId;
+	coll.hitobject = object;
+
+	return true;
 }
 
 
@@ -1822,10 +1719,10 @@ bool CEqPhysics::TestLineSingleObject(
 class CEqConvexTestCallback : public btCollisionWorld::ClosestConvexResultCallback
 {
 public:
-	CEqConvexTestCallback(const btVector3&	rayFromWorld,const btVector3&	rayToWorld) : ClosestConvexResultCallback(rayFromWorld, rayToWorld)
+	CEqConvexTestCallback(const btVector3& rayFromWorld,const btVector3& rayToWorld) 
+		: ClosestConvexResultCallback(rayFromWorld, rayToWorld)
 	{
 		m_closestHitFraction = PHYSICS_WORLD_MAX_UNITS;
-		m_surfMaterialId = 0;
 	}
 
 	btScalar addSingleResult(btCollisionWorld::LocalConvexResult& rayResult,bool normalInWorldSpace)
@@ -1836,7 +1733,8 @@ public:
 		m_surfMaterialId = -1;
 
 		// if something is a NaN we have to deny it
-		if (rayResult.m_hitNormalLocal != rayResult.m_hitNormalLocal || rayResult.m_hitFraction != rayResult.m_hitFraction)
+		if (rayResult.m_hitNormalLocal != rayResult.m_hitNormalLocal ||
+			rayResult.m_hitFraction != rayResult.m_hitFraction)
 			return 1.0f;
 
 		// check our object is triangle mesh
@@ -1857,7 +1755,7 @@ public:
 		return res;
 	}
 
-	int m_surfMaterialId;
+	int m_surfMaterialId{ -1 };
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -1891,15 +1789,13 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 
 	const sweptTestParams_t& params = *(sweptTestParams_t*)args;
 
-	const Quaternion& objQuat = object->m_orientation;
-	const Vector3D& position = object->m_position;
+	const Quaternion objQuat = object->m_orientation;
+	const Vector3D position = object->m_position;
 
-	btTransform objTransform;
-	objTransform.setRotation(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
-	objTransform.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
+	const btTransform objTransform(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
 
-	const FVector3D lineStartLocal = start - position;
-	const FVector3D lineEndLocal = end - position;
+	const Vector3D lineStartLocal = start - position;
+	const Vector3D lineEndLocal = end - position;
 
 	btVector3 strt;
 	btVector3 endt;
@@ -1926,21 +1822,19 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 				0.01f);
 
 	// put our result
-	if(convexCallback.hasHit())
-	{
-		Vector3D hitPoint;
-		ConvertBulletToDKVectors(hitPoint, convexCallback.m_hitPointWorld);
-		ConvertBulletToDKVectors(coll.normal, convexCallback.m_hitNormalWorld);
+	if (!convexCallback.hasHit())
+		return false;
 
-		coll.position = hitPoint + position;
-		coll.fract = convexCallback.m_closestHitFraction;
-		coll.materialIndex = convexCallback.m_surfMaterialId;
-		coll.hitobject = object;
+	Vector3D hitPoint;
+	ConvertBulletToDKVectors(hitPoint, convexCallback.m_hitPointWorld);
+	ConvertBulletToDKVectors(coll.normal, convexCallback.m_hitNormalWorld);
 
-		return true;
-	}
+	coll.position = hitPoint + position;
+	coll.fract = convexCallback.m_closestHitFraction;
+	coll.materialIndex = convexCallback.m_surfMaterialId;
+	coll.hitobject = object;
 
-	return false;
+	return true;
 }
 
 //--------------------------------------------------------------------------------------------------------------
