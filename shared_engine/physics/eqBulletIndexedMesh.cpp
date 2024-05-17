@@ -103,7 +103,7 @@ void CEqBulletIndexedMesh::getLockedReadOnlyVertexIndexBase(const unsigned char*
 	m_subparts[subpart].getLockedReadOnlyVertexIndexBase(vertexbase, numverts, type, stride, indexbase, indexstride, numfaces, indicestype, subpart);
 }
 
-int CEqBulletIndexedMesh::getSubPartMaterialId(int subpart) const
+int CEqBulletIndexedMesh::GetSubpartMaterialIdx(int subpart) const
 {
 	return m_subparts[subpart].m_materialId;
 }

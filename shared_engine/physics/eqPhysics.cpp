@@ -203,7 +203,7 @@ struct CEqManifoldResult : public btManifoldResult
 			if (obj && obj->GetMesh())
 			{
 				CEqBulletIndexedMesh* mesh = obj->GetMesh();
-				materialIndex = mesh->getSubPartMaterialId(cp.m_partId1);
+				materialIndex = mesh->GetSubpartMaterialIdx(cp.m_partId1);
 			}
 		}
 
@@ -348,7 +348,7 @@ void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSect
 	eqPhysSurfParam* surfParam = PPNew eqPhysSurfParam;
 	surfParam->id = m_physSurfaceParams.append(surfParam);
 	surfParam->name = name;
-	surfParam->collideMask = KV_GetValueInt(kvSection->FindSection("collideMask"), 0, UINT_MAX);
+	surfParam->collideMask = KV_GetValueInt(kvSection->FindSection("collideMask"), 0, -1);
 	surfParam->friction = KV_GetValueFloat(kvSection->FindSection("friction"), 0, PHYSICS_DEFAULT_FRICTION);
 	surfParam->restitution = KV_GetValueFloat(kvSection->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
 	surfParam->tirefriction = KV_GetValueFloat(kvSection->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
@@ -842,13 +842,28 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	{
 		btCollisionAlgorithm* algorithm = nullptr;
 
+		const int bodyContents = bodyB->GetContents();
+
+		const CEqBulletIndexedMesh* staticIndexedMesh = staticObj->GetMesh();
+		ArrayCRef<btCollisionShape*> staticShapes = staticObj->GetBulletCollisionShapes();
+
 		// FIXME:
 		// Due to btCompoundShape producing unreliable results, there is a really slow checks appear...
 		for (const btCollisionShape* shapeB : bodyB->GetBulletCollisionShapes())
 		{
-			for (const btCollisionShape* shapeA : staticObj->GetBulletCollisionShapes())
+			for (int i = 0; i < staticShapes.numElem(); ++i)
 			{
-				btCollisionObjectWrapper obA(nullptr, shapeA, objA, transA, -1, -1);
+				if (staticIndexedMesh)
+				{
+					const int surfMaterialIdx = staticIndexedMesh->GetSubpartMaterialIdx(i);
+					const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
+
+					// skip the shape if collide mask not meeting expectation
+					if (surfParam && (surfParam->collideMask & bodyContents) != bodyContents)
+						continue;
+				}
+
+				btCollisionObjectWrapper obA(nullptr, staticShapes[i], objA, transA, -1, -1);
 				btCollisionObjectWrapper obB(nullptr, shapeB, objB, transB, -1, -1);
 
 				if (!algorithm)
@@ -1579,7 +1594,7 @@ public:
 			if(obj->GetMesh() && rayResult.m_localShapeInfo)
 			{
 				CEqBulletIndexedMesh* mesh = obj->GetMesh();
-				m_surfMaterialId = mesh->getSubPartMaterialId( rayResult.m_localShapeInfo->m_shapePart );
+				m_surfMaterialId = mesh->GetSubpartMaterialIdx( rayResult.m_localShapeInfo->m_shapePart );
 			}
 
 			if(m_surfMaterialId == -1)
@@ -1683,8 +1698,8 @@ bool CEqPhysics::TestLineSingleObject(
 
 	const btTransform objTransform(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
 
-	const FVector3D lineStartLocal = start - position;
-	const FVector3D lineEndLocal = end - position;
+	const Vector3D lineStartLocal = start - position;
+	const Vector3D lineEndLocal = end - position;
 
 	btVector3 strt;
 	btVector3 endt;
@@ -1697,9 +1712,22 @@ bool CEqPhysics::TestLineSingleObject(
 	const btTransform endTrans(btident3, endt);
 
 	CEqRayTestCallback hitResultCallback(strt, endt);
-	for (const btCollisionShape* shape : object->GetBulletCollisionShapes())
+
+	const CEqBulletIndexedMesh* indexedMesh = object->GetMesh();
+	ArrayCRef<btCollisionShape*> objectShapes = object->GetBulletCollisionShapes();
+	for (int i = 0; i < objectShapes.numElem(); ++i)
 	{
-		btCollisionObjectWrapper objWrap(nullptr, shape, object->m_collObject, objTransform, -1, -1);
+		if (indexedMesh)
+		{
+			const int surfMaterialIdx = indexedMesh->GetSubpartMaterialIdx(i);
+			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
+
+			// skip the shape if collide mask not meeting expectation
+			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
+				continue;
+		}
+
+		btCollisionObjectWrapper objWrap(nullptr, objectShapes[i], object->m_collObject, objTransform, -1, -1);
 		m_collisionWorld->rayTestSingleInternal(startTrans, endTrans, &objWrap, hitResultCallback);
 	}
 
@@ -1759,7 +1787,7 @@ public:
 			if(obj->GetMesh() && rayResult.m_localShapeInfo)
 			{
 				CEqBulletIndexedMesh* mesh = obj->GetMesh();
-				m_surfMaterialId = mesh->getSubPartMaterialId( rayResult.m_localShapeInfo->m_shapePart );
+				m_surfMaterialId = mesh->GetSubpartMaterialIdx( rayResult.m_localShapeInfo->m_shapePart );
 			}
 
 			if(m_surfMaterialId == -1)
@@ -1827,9 +1855,22 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 	}
 
 	CEqConvexTestCallback hitResultCallback(strt, endt);
-	for (const btCollisionShape* shape : object->GetBulletCollisionShapes())
+
+	const CEqBulletIndexedMesh* indexedMesh = object->GetMesh();
+	ArrayCRef<btCollisionShape*> objectShapes = object->GetBulletCollisionShapes();
+	for (int i = 0; i < objectShapes.numElem(); ++i)
 	{
-		btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform, -1, -1);
+		if (indexedMesh)
+		{
+			const int surfMaterialIdx = indexedMesh->GetSubpartMaterialIdx(i);
+			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
+
+			// skip the shape if collide mask not meeting expectation
+			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
+				continue;
+		}
+
+		btCollisionObjectWrapper objWrap(nullptr, objectShapes[i], object->m_collObject, objTransform, -1, -1);
 		m_collisionWorld->objectQuerySingleInternal((btConvexShape*)params.shape, startTrans, endTrans, &objWrap, hitResultCallback, 0.01f);
 	}
 

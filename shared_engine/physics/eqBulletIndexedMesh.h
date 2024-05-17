@@ -17,9 +17,9 @@ public:
 	
 	void			AddSubpart(int firstIndex, int numIndices, int firstVertex, int numVerts, int materialId);
 	MeshSubPart*	GetSubpart(int index) const { return const_cast<MeshSubPart*>(&m_subparts[index]); }
+	int				GetSubpartMaterialIdx(int subpart) const;
 
 	int				getNumSubParts() const { return m_subparts.numElem(); }
-	int				getSubPartMaterialId(int subpart) const;
 
 	void			getLockedVertexIndexBase(unsigned char** vertexbase, int& numverts, PHY_ScalarType& type, int& stride, unsigned char** indexbase, int& indexstride, int& numfaces, PHY_ScalarType& indicestype, int subpart = 0);
 	void			getLockedReadOnlyVertexIndexBase(const unsigned char** vertexbase, int& numverts, PHY_ScalarType& type, int& stride, const unsigned char** indexbase, int& indexstride, int& numfaces, PHY_ScalarType& indicestype, int subpart = 0) const;
