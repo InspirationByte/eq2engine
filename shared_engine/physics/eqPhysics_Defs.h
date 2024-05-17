@@ -48,7 +48,7 @@ struct eqPhysSurfParam
 	EqString	name;
 
 	int			id{ -1 };
-	int			collideMask{ -1 };
+	int			contentsMask{ -1 };	// this mask is applied on top of the object contents and collision mask
 
 	float		restitution{ 0.0f };
 	float		friction{ 0.0f };

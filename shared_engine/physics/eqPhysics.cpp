@@ -4,8 +4,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium fixed point 3D physics engine
 //
-//	TODO:
-//				support collideMask from physics surfaces
 //	FEATURES:
 //				Fixed point object positions
 //				Best works with fixed timestep
@@ -348,7 +346,7 @@ void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSect
 	eqPhysSurfParam* surfParam = PPNew eqPhysSurfParam;
 	surfParam->id = m_physSurfaceParams.append(surfParam);
 	surfParam->name = name;
-	surfParam->collideMask = KV_GetValueInt(kvSection->FindSection("collideMask"), 0, -1);
+	surfParam->contentsMask = KV_GetValueInt(kvSection->FindSection("contentsMask"), 0, -1);
 	surfParam->friction = KV_GetValueFloat(kvSection->FindSection("friction"), 0, PHYSICS_DEFAULT_FRICTION);
 	surfParam->restitution = KV_GetValueFloat(kvSection->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
 	surfParam->tirefriction = KV_GetValueFloat(kvSection->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
@@ -859,7 +857,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 					const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 					// skip the shape if collide mask not meeting expectation
-					if (surfParam && (surfParam->collideMask & bodyContents) != bodyContents)
+					if (surfParam && (surfParam->contentsMask & bodyContents) != bodyContents)
 						continue;
 				}
 
@@ -1723,7 +1721,7 @@ bool CEqPhysics::TestLineSingleObject(
 			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 			// skip the shape if collide mask not meeting expectation
-			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
+			if (surfParam && (surfParam->contentsMask & rayMask) != rayMask)
 				continue;
 		}
 
@@ -1866,7 +1864,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 			// skip the shape if collide mask not meeting expectation
-			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
+			if (surfParam && (surfParam->contentsMask & rayMask) != rayMask)
 				continue;
 		}
 
