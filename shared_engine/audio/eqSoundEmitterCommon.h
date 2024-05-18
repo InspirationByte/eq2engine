@@ -21,9 +21,9 @@ static constexpr const int CHAN_MAX = 16;
 // mandatory: rename to SoundChannelDef
 struct ChannelDef
 {
-	const char* name;
-	int id;
-	int limit;
+	const char*		name;
+	int				id;
+	int				limit;
 };
 
 #define DEFINE_SOUND_CHANNEL(name, limit) { #name, name, limit }

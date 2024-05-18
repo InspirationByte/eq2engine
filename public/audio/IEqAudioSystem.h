@@ -11,10 +11,14 @@
 
 class ISoundSource;
 using ISoundSourcePtr = CRefPtr<ISoundSource>;
-using audioEffectId_t = uint;
+using AudioEffectId = uint;
 
 #define EFFECT_ID_NONE				(0)
+
 #define EQSND_EFFECT_SLOTS			(6)
+#define EQSND_MIXER_CHANNELS		(16)
+#define EQSND_STREAM_BUFFER_COUNT	(4)
+#define EQSND_SAMPLE_COUNT			(8)
 
 //-----------------------------------------------------------------
 // Audio source interface
@@ -192,10 +196,10 @@ public:
 	virtual void				OnSampleDeleted(ISoundSource* sample) = 0;
 
 	// finds the effect. May return EFFECT_ID_NONE
-	virtual audioEffectId_t		FindEffect(const char* name) const = 0;
+	virtual AudioEffectId		FindEffect(const char* name) const = 0;
 
 	// sets the new effect
-	virtual void				SetEffect(int slot, audioEffectId_t effect) = 0;
+	virtual void				SetEffect(int slot, AudioEffectId effect) = 0;
 	virtual int					GetEffectSlotCount() const = 0;
 };
 
