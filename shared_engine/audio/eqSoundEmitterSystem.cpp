@@ -541,6 +541,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 		{
 			const float playbackPos = emitter->samplePos[i];
 			soundSource->SetSampleVolume(i, emitter->sampleVolume[i]);
+			soundSource->SetSamplePitch(i, emitter->samplePitch[i]);
 
 			if (playbackPos >= 0.0f)
 			{

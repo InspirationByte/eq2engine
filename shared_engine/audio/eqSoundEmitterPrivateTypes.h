@@ -45,6 +45,10 @@ struct KVSection;
 	svolume 1 "lateralSampleFade[0]";
 	svolume 2 "lateralSampleFade[1]";
 
+	// spitch is individual sample pitch (for each "wave")
+	spitch 1 "tractionSampleFade[0]";
+	spitch 2 "lateralSampleFade[0]";
+
 	// specifying string value makes use of the mixed value or input
 	volume "volume";
 	pitch "pitch";
@@ -63,6 +67,7 @@ enum ESoundParamType : int
 	SOUND_PARAM_ROLLOFF,
 	SOUND_PARAM_ATTENUATION,
 	SOUND_PARAM_SAMPLE_VOLUME,
+	SOUND_PARAM_SAMPLE_PITCH,
 
 	SOUND_PARAM_COUNT,
 };
@@ -85,6 +90,7 @@ static const char* s_soundParamNames[] = {
 	"rollOff",
 	"distance",
 	"svolume",
+	"spitch",
 };
 static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamNames and SOUND_PARAM_COUNT needs to be in sync");
 
@@ -95,6 +101,7 @@ static float s_soundParamDefaults[] = {
 	1.0f,
 	0.0f,
 	2.0f,
+	1.0f,
 	1.0f,
 	1.0f,
 };
@@ -109,6 +116,7 @@ static float s_soundParamLimits[] = {
 	8.0f,
 	10.0f,
 	1.0f,
+	100.0f,
 };
 static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamNames and SOUND_PARAM_COUNT needs to be in sync");
 
@@ -288,12 +296,14 @@ struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 	// additional enum
 	enum ExtraSourceUpdateFlags
 	{
-		UPDATE_SAMPLE_VOLUME = (1 << 31)
+		UPDATE_SAMPLE_VOLUME = (1 << 30),
+		UPDATE_SAMPLE_PITCH = (1 << 31)
 	};
 
 	IEqAudioSource::Params		nodeParams;
 	IEqAudioSource::Params		virtualParams;
 	float						sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
+	float						samplePitch[MAX_SOUND_SAMPLES_SCRIPT];
 	float						samplePos[MAX_SOUND_SAMPLES_SCRIPT];
 	float						params[SOUND_PARAM_COUNT];
 

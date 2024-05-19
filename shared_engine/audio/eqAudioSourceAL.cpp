@@ -265,7 +265,7 @@ void CEqAudioSourceAL::SetSamplePlaybackPosition(int sourceIdx, float seconds)
 	m_streams[sourceIdx].curPos = WrapAroundSampleOffset(seconds * fmt.frequency, m_streams[sourceIdx].sample, m_looping);
 }
 
-float CEqAudioSourceAL::GetSamplePlaybackPosition(int sourceIdx)
+float CEqAudioSourceAL::GetSamplePlaybackPosition(int sourceIdx) const
 {
 	if (m_streams.inRange(sourceIdx))
 	{
@@ -289,7 +289,28 @@ void CEqAudioSourceAL::SetSampleVolume(int sourceIdx, float volume)
 		m_streams[sourceIdx].volume = volume;
 }
 
-float CEqAudioSourceAL::GetSampleVolume(int sourceIdx)
+float CEqAudioSourceAL::GetSampleVolume(int sourceIdx) const
+{
+	if (m_streams.inRange(sourceIdx))
+		return m_streams[sourceIdx].volume;
+	return 0.0f;
+}
+
+void CEqAudioSourceAL::SetSamplePitch(int sourceIdx, float pitch)
+{
+	if (sourceIdx == -1)
+	{
+		for (int i = 0; i < m_streams.numElem(); ++i)
+			m_streams[i].pitch = pitch;
+
+		return;
+	}
+
+	if (m_streams.inRange(sourceIdx))
+		m_streams[sourceIdx].pitch = pitch;
+}
+
+float CEqAudioSourceAL::GetSamplePitch(int sourceIdx) const
 {
 	if (m_streams.inRange(sourceIdx))
 		return m_streams[sourceIdx].volume;
@@ -562,87 +583,73 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 {
 	const bool looping = m_looping;
 
-	if (m_streams.numElem() == 1)
-	{
-		SourceStream& mainStream = m_streams.front();
-		ISoundSource* sample = mainStream.sample;
-
-		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
-		const int numLoopRegions = sample->GetLoopRegions(loopPoints);
-
-		const ISoundSource::Format& fmt = sample->GetFormat();
-		const int sampleUnit = (fmt.bitwidth >> 3);
-		const int sampleSize = sampleUnit * fmt.channels;
-
-		const int streamPos = mainStream.curPos;
-		const int samplesRead = sample->GetSamples(data, size / sampleSize, streamPos, looping);
-
-		mainStream.curPos = WrapAroundSampleOffset(streamPos + samplesRead, sample, looping);
-
-		// clever, if numRead < size then source will be stopped automatically!
-		return samplesRead * sampleSize;
-	}
-
-	// TODO: perform sample rate conversion
-
 	// silence before mix
 	memset(data, 0, size);
+
+	int numChannels;
+	alGetBufferi(m_buffers[0], AL_CHANNELS, &numChannels);
 	
 	// We are mixing always into 16 bit no matter what
-	const int sizeOfChannels = sizeof(short) * m_bufferChannels;
-	const int numSamplesToRead = size / sizeOfChannels;
-	int numRead = 0;
+	const int sizeOfChannels = sizeof(short) * numChannels;
+	const int requestedSamples = size / sizeOfChannels;
+	int totalMixed = 0;
+
+	constexpr const int MIN_SAMPLES = 2;
+	constexpr const int EXTRA_SAMPLES_CORRECTION = 1;
 
 	// we can mix up to 8 samples simultaneously
 	for(SourceStream& stream : m_streams)
 	{
-		ISoundSource* sample = stream.sample;
+		const ISoundSource* sample = stream.sample;
 		const float sampleVolume = min(stream.volume, 1.0f);
 
-		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
-		const int numLoopRegions = sample->GetLoopRegions(loopPoints);
+		const int numSamplesToRead = max(MIN_SAMPLES, requestedSamples * stream.pitch + (stream.pitch < 1.0f ? EXTRA_SAMPLES_CORRECTION : 0));
 
-		if (sampleVolume <= 0.0f)
+		if (sampleVolume <= 0.0f || !stream.mixFunc)
 		{
 			// update playback progress still but don't mix
 			stream.curPos = WrapAroundSampleOffset(stream.curPos + numSamplesToRead, sample, looping);
-			numRead = max(numRead, numSamplesToRead);
+			totalMixed = max(totalMixed, requestedSamples);
 			continue;
 		}
 
 		const ISoundSource::Format& fmt = sample->GetFormat();
 		const int sampleUnit = (fmt.bitwidth >> 3);
-		const int sampleSize = sampleUnit;
-		const int sampleCount = sample->GetSampleCount();
 
-		const int streamPos = stream.curPos;
-		int samplesRead = 0;
-		if (sampleUnit == sizeof(uint8))
-		{
-			uint8* tmpSamples = (uint8*)stackalloc(numSamplesToRead * sampleSize * fmt.channels);
-			samplesRead = sample->GetSamples(tmpSamples, numSamplesToRead, streamPos, looping);
+		void* streamSamples = stackalloc(numSamplesToRead * sampleUnit * fmt.channels);
+		const int samplesRead = sample->GetSamples(streamSamples, numSamplesToRead, stream.curPos, looping);
 
-			if(fmt.channels == 1)
-				Mixer::MixMono8(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
-			else if(fmt.channels == 2)
-				Mixer::MixStereo8(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
-		}
-		else if (sampleUnit == sizeof(uint16))
-		{
-			int16* tmpSamples = (int16*)stackalloc(numSamplesToRead * sampleSize * fmt.channels);
-			samplesRead = sample->GetSamples(tmpSamples, numSamplesToRead, streamPos, looping);
-
-			if (fmt.channels == 1)
-				Mixer::MixMono16(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
-			else if (fmt.channels == 2)
-				Mixer::MixStereo16(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
-		}
+		const int mixedSamples = stream.mixFunc(streamSamples, samplesRead, data, requestedSamples, sampleVolume, stream.pitch);
 		
-		stream.curPos = WrapAroundSampleOffset(streamPos + samplesRead, sample, looping);
-		numRead = max(numRead, samplesRead);
+		stream.curPos = WrapAroundSampleOffset(stream.curPos + samplesRead, sample, looping);
+		totalMixed = max(totalMixed, mixedSamples);
 	}
 
-	return numRead * sizeOfChannels;
+	return totalMixed * sizeOfChannels;
+}
+
+void CEqAudioSourceAL::SetupStreamMixer(SourceStream& stream) const
+{
+	stream.mixFunc = nullptr;
+
+	const ISoundSource::Format& fmt = stream.sample->GetFormat();
+	const int sampleUnit = (fmt.bitwidth >> 3);
+	if (sampleUnit == sizeof(uint8))
+	{
+		if (fmt.channels == 1)
+			stream.mixFunc = Mixer::MixMono8;
+		else if (fmt.channels == 2)
+			stream.mixFunc = Mixer::MixStereo8;
+	}
+	else if (sampleUnit == sizeof(uint16))
+	{
+		if (fmt.channels == 1)
+			stream.mixFunc = Mixer::MixMono16;
+		else if (fmt.channels == 2)
+			stream.mixFunc = Mixer::MixStereo16;
+	}
+
+	ASSERT_MSG(stream.mixFunc, "Unsupported audio sample '%s' format (bits=%d, channels=%d)", stream.sample->GetFilename(), fmt.bitwidth, fmt.channels);
 }
 
 void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
@@ -653,97 +660,69 @@ void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
 	SourceStream& stream = m_streams.append();
 	stream.sample = const_cast<ISoundSource*>(sample);
 
-	if (!sample->IsStreaming())
-	{
-#if USE_ALSOFT_BUFFER_CALLBACK
-		if (GetAlExt().alBufferCallbackSOFT)
-		{
-			// set the callback on AL buffer
-			// alBufferData will reset this to NULL for us
-			const ISoundSource::Format& fmt = sample->GetFormat();
-			ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
+	if (sample->IsStreaming())
+		return;
 
-			GetAlExt().alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
-			alSourcei(m_source, AL_BUFFER, m_buffers[0]);
-		}
-		else
-#endif
-		{
-			CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)sample;
-			alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
-		}
-	}
+	const CSoundSource_OpenALCache* alSource = static_cast<const CSoundSource_OpenALCache*>(sample);
+	alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
 }
 
 void CEqAudioSourceAL::SetupSamples(ArrayCRef<const ISoundSource*> samples)
 {
 #if !USE_ALSOFT_BUFFER_CALLBACK
-	ASSERT_MSG(samples.numElem() > 1, "SetupSample - USE_ALSOFT_BUFFER_CALLBACK required to setup more than one samples");
+	ASSERT_MSG(samples.numElem() == 1, "SetupSample - USE_ALSOFT_BUFFER_CALLBACK required to setup more than one samples");
 #endif
 
 	ASSERT_MSG(samples.numElem() > 0, "SetupSample - No samples");
 	ASSERT_MSG(samples.numElem() < EQSND_SAMPLE_COUNT, "SetupSamples - exceeding EQSND_SAMPLE_COUNT (%d), required %d", EQSND_SAMPLE_COUNT, samples.numElem());
 
-	// set the callback on AL buffer
-	// alBufferData will reset this to NULL for us
-	const ISoundSource::Format& fmt = samples.front()->GetFormat();
-	ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
-
 	// create streams
-	for (int i = 0; i < samples.numElem(); ++i)
+	for (const ISoundSource* sample : samples)
 	{
 		SourceStream& stream = m_streams.append();
-		stream.sample = const_cast<ISoundSource*>(samples[i]);
+		stream.sample = const_cast<ISoundSource*>(sample);
 	}
 
-	m_bufferChannels = fmt.channels;
+	if (samples.front()->IsStreaming())
+		return;
 
-	if (!m_streams.front().sample->IsStreaming())
-	{
 #if USE_ALSOFT_BUFFER_CALLBACK // all this possible because of this
-		if (samples.numElem() > 1)
+	if (GetAlExt().alBufferCallbackSOFT)
+	{
+		int channels = 1;
+		for (SourceStream& stream : m_streams)
 		{
-			int channels = 1;
-
-			// validate each sample
-			for (int i = 0; i < m_streams.numElem(); ++i)
+			ASSERT(stream.sample);
+			if (stream.sample->IsStreaming())
 			{
-				ISoundSource* sample = m_streams[i].sample;
-				channels = max(sample->GetFormat().channels, channels);
-
-				if (sample->IsStreaming())
-				{
-					m_streams[i].sample = nullptr;
-					ASSERT_FAIL("Streaming is not yet supported with multi-sample feature");
-					continue;
-				}
-
-				// extra validations?
+				ASSERT_FAIL("Got streamed sample %s which not yet supported with multi-sample feature", stream.sample->GetFilename());
+				continue;
 			}
-
-			// For multi-sample sound we need to specify the best format to work with if they are different
-			// So we're mixing always into 16 bit no matter what
-			if (channels == 1)
-				alFormat = AL_FORMAT_MONO16;
-			else if (channels == 2)
-				alFormat = AL_FORMAT_STEREO16;
-
-			m_bufferChannels = channels;
+			SetupStreamMixer(stream);
+			channels = max(stream.sample->GetFormat().channels, channels);
 		}
 
-		if (GetAlExt().alBufferCallbackSOFT)
-		{
-			GetAlExt().alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
-			alSourcei(m_source, AL_BUFFER, m_buffers[0]);
-		}
-		else
-#endif
-		{
-			CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)samples[0];
-			alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
-		}
+		// For multi-sample sound we need to specify the best format to work with if they are different
+		// So we're mixing always into 16 bit no matter what
+		ALenum alFormat;
+		if (channels == 1)
+			alFormat = AL_FORMAT_MONO16;
+		else if (channels == 2)
+			alFormat = AL_FORMAT_STEREO16;
+
+		// TODO: choose device frequency?
+		const ISoundSource::Format fmt = m_streams.front().sample->GetFormat();
+
+		// set the callback on AL buffer
+		// alBufferData will reset this to NULL for us
+		GetAlExt().alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
+		alSourcei(m_source, AL_BUFFER, m_buffers[0]);
+		return;
 	}
+#endif // USE_ALSOFT_BUFFER_CALLBACK
 
+	const CSoundSource_OpenALCache* alSource = static_cast<const CSoundSource_OpenALCache*>(samples.front());
+	alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
 }
 
 bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)

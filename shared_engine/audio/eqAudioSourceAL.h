@@ -3,6 +3,7 @@
 #include "audio/IEqAudioSystem.h"
 
 class CEqAudioSystemAL;
+using SoundMixFunc = int (*)(const void* in, int numInSamples, void* out, int numOutSamples, float volume, float rate);
 
 //-----------------------------------------------------------------
 // Sound source
@@ -23,9 +24,14 @@ public:
 	void				UpdateParams(const Params& params, int overrideUpdateFlags = -1);
 
 	void				SetSamplePlaybackPosition(int sourceIdx, float seconds);
-	float				GetSamplePlaybackPosition(int sourceIdx);
+	float				GetSamplePlaybackPosition(int sourceIdx) const;
+
 	void				SetSampleVolume(int sourceIdx, float volume);
-	float				GetSampleVolume(int sourceIdx);
+	float				GetSampleVolume(int sourceIdx) const;
+
+	void				SetSamplePitch(int sourceIdx, float pitch);
+	float				GetSamplePitch(int sourceIdx) const;
+
 	int					GetSampleCount() const;
 
 	// atomic
@@ -39,10 +45,14 @@ protected:
 	struct SourceStream
 	{
 		ISoundSource*	sample{ nullptr };
+		SoundMixFunc	mixFunc{ nullptr };
 		int				curPos{ 0 };
 		float			volume{ 1.0f };
+		float			pitch{ 1.0f };
 	};
 	using SourceStreamList = FixedArray<SourceStream, EQSND_SAMPLE_COUNT>;
+
+	void				SetupStreamMixer(SourceStream& stream) const;
 
 	bool				QueueStreamChannel(ALuint buffer);
 	void				SetupSample(const ISoundSource* sample);
@@ -60,7 +70,6 @@ protected:
 	SourceStreamList	m_streams;
 
 	ALuint				m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
-	ALuint				m_bufferChannels{ 0 };
 	ALuint				m_source{ 0 };
 	ALuint				m_filter{ 0 };
 

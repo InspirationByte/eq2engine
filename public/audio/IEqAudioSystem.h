@@ -141,9 +141,13 @@ public:
 	virtual void			UpdateParams(const Params& params, int overrideUpdateFlags = -1) = 0;
 
 	virtual void			SetSamplePlaybackPosition(int sourceIdx, float seconds) = 0;
-	virtual float			GetSamplePlaybackPosition(int sourceIdx) = 0;
+	virtual float			GetSamplePlaybackPosition(int sourceIdx) const = 0;
+
 	virtual void			SetSampleVolume(int sourceIdx, float volume) = 0;
-	virtual float			GetSampleVolume(int sourceIdx) = 0;
+	virtual float			GetSampleVolume(int sourceIdx) const = 0;
+	virtual void			SetSamplePitch(int sourceIdx, float pitch) = 0;
+	virtual float			GetSamplePitch(int sourceIdx) const = 0;
+
 	virtual int				GetSampleCount() const = 0;
 
 	// atomic

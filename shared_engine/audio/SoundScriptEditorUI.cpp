@@ -357,7 +357,7 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 				}
 			}
 
-			if (uiDesc.c.paramId == SOUND_PARAM_SAMPLE_VOLUME)
+			if (uiDesc.c.paramId >= SOUND_PARAM_SAMPLE_VOLUME)
 				uiDesc.c.inputCount = script.soundFileNames.numElem();
 
 			uiDesc.lhsValue[0] = nodeDesc.c.value;
@@ -383,7 +383,7 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 					}
 				}
 
-				if (uiDesc.c.paramId == SOUND_PARAM_SAMPLE_VOLUME)
+				if (uiDesc.c.paramId >= SOUND_PARAM_SAMPLE_VOLUME)
 					uiDesc.c.inputCount = script.soundFileNames.numElem();
 
 				for (int i = 0; i < uiDesc.GetInputCount(false); ++i)
@@ -698,7 +698,16 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 			if (!foundLinks.numElem())
 			{
 				// add a numeric constant and we're done
-				if (uiNode.c.paramId != SOUND_PARAM_SAMPLE_VOLUME && !fsimilar(s_soundParamDefaults[uiNode.c.paramId], uiNode.lhsValue[i]))
+				if(uiNode.c.paramId >= SOUND_PARAM_SAMPLE_VOLUME)
+				{
+					if (!fsimilar(s_soundParamDefaults[uiNode.c.paramId], uiNode.lhsValue[i]))
+					{
+						KVSection* sec = out.CreateSection(uiNode.name);
+						sec->AddValue(i);
+						sec->AddValue(uiNode.lhsValue[i]);
+					}
+				}
+				else if(!fsimilar(s_soundParamDefaults[uiNode.c.paramId], uiNode.lhsValue[i]))
 				{
 					KVSection* sec = out.CreateSection(uiNode.name);
 					sec->AddValue(uiNode.lhsValue[i]);
@@ -1563,15 +1572,32 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 							{
 								for (int i = 0; i < src->GetSampleCount(); ++i)
 								{
-									ImGui::SameLine();
-
-									float sampleVolume = emitter->sampleVolume[i];
-									if (ImGui::VSliderFloat(EqString::Format("%d##smpl%dv", i + 1, i), ImVec2(18, 160), &sampleVolume, 0.0f, 1.0f, ""))
 									{
-										emitter->sampleVolume[i] = sampleVolume;
+										ImGui::SameLine();
+
+										float sampleVolume = emitter->sampleVolume[i];
+										if (ImGui::VSliderFloat(EqString::Format("%d##smpl%dv", i + 1, i), ImVec2(18, 160), &sampleVolume, 0.0f, 1.0f, ""))
+											emitter->sampleVolume[i] = sampleVolume;
+
+										if (ImGui::IsItemActive() || ImGui::IsItemHovered())
+											ImGui::SetTooltip("Sample %d volume %.3f", i + 1, sampleVolume);
 									}
-									if (ImGui::IsItemActive() || ImGui::IsItemHovered())
-										ImGui::SetTooltip("Sample %d volume %.3f", i + 1, sampleVolume);
+
+									{
+										ImGui::SameLine();
+
+										ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(0 / 7.0f, 0.5f, 0.5f));
+										ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(0 / 7.0f, 0.6f, 0.5f));
+										ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(0 / 7.0f, 0.7f, 0.5f));
+										ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(0 / 7.0f, 0.9f, 0.9f));
+										float samplePitch = emitter->samplePitch[i];
+										if (ImGui::VSliderFloat(EqString::Format("%d##smpl%dp", i + 1, i), ImVec2(18, 160), &samplePitch, 0.0f, 8.0f, ""))
+											emitter->samplePitch[i] = samplePitch;
+
+										if (ImGui::IsItemActive() || ImGui::IsItemHovered())
+											ImGui::SetTooltip("Sample %d pitch %.3f", i + 1, samplePitch);
+										ImGui::PopStyleColor(4);
+									}
 								}
 							}
 

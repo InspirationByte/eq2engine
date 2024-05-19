@@ -36,6 +36,6 @@ private:
 	virtual bool			Load();
 	virtual void			Unload();
 
-	uint					m_alBuffer;
+	uint					m_alBuffer{ 0 };
 	Format					m_format;
 };

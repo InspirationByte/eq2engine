@@ -23,10 +23,10 @@ public:
 
 	struct Format
 	{
-		int dataFormat;
-		int channels;
-		int bitwidth;
-		int frequency;
+		int dataFormat{ FORMAT_INVALID };
+		int channels{ 0 };
+		int bitwidth{ 0 };
+		int frequency{ 0 };
 	};
 
 	virtual ~ISoundSource() {}

@@ -491,7 +491,11 @@ ISoundSourcePtr CEqAudioSystemAL::GetSample(const char* filename)
 			return nullptr;
 		}
 
+#if USE_ALSOFT_BUFFER_CALLBACK
 		if (!GetAlExt().alBufferCallbackSOFT && !sampleSource->IsStreaming())
+#else
+		if (!sampleSource->IsStreaming())
+#endif
 		{
 			// Set memory to OpenAL and destroy original source (as it's not needed anymore)
 			sampleSource = ISoundSourcePtr(CRefPtr_new(CSoundSource_OpenALCache, sampleSource));
