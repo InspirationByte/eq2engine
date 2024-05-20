@@ -221,19 +221,19 @@ struct SoundNodeDesc
 
 	union {
 		struct {
-			uint8	inputIds[MAX_ARRAY_IDX];		// id :5, index: 3
-			uint8	type;
+			uint8	inputIds[MAX_ARRAY_IDX];
+			uint8	type;						// ESoundFuncType
 			uint8	outputCount;
 			uint8	inputCount;
 		} func;
 		struct {
 			float	rMin;
 			float	rMax;
-			int		valueCount;
+			uint8	valueCount;
 		} input;
 		struct {
-			float	value;
 			uint8	paramId;
+			uint8	valueCount;
 		} c;
 	};
 

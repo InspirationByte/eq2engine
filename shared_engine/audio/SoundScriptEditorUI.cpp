@@ -346,7 +346,7 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 		}
 		else if (nodeDesc.type == SOUND_NODE_CONST)
 		{
-			uiDesc.c.inputCount = 1;
+			uiDesc.c.inputCount = nodeDesc.c.valueCount;
 
 			for (int i = 0; i < SOUND_PARAM_COUNT; ++i)
 			{
@@ -360,7 +360,8 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 			if (uiDesc.c.paramId >= SOUND_PARAM_SAMPLE_VOLUME)
 				uiDesc.c.inputCount = script.soundFileNames.numElem();
 
-			uiDesc.lhsValue[0] = nodeDesc.c.value;
+			for(int i = 0; i < uiDesc.c.inputCount; ++i)
+				uiDesc.lhsValue[i] = nodeDesc.inputConst[i];
 		}
 		else if (nodeDesc.type == SOUND_NODE_FUNC)
 		{
@@ -1464,7 +1465,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 										continue;
 
 									ImGui::PushID(paramId);
-									modified = ImGui::SliderFloat(s_soundParamNames[paramId], &desc.c.value, 0.0f, s_soundParamLimits[paramId], "%.3f", 1.0f) || modified;
+									modified = ImGui::SliderFloat(s_soundParamNames[paramId], &desc.inputConst[0], 0.0f, s_soundParamLimits[paramId], "%.3f", 1.0f) || modified;
 									ImGui::PopID();
 
 									// sync with node editor
@@ -1473,7 +1474,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 										UISoundNodeDesc& uiNode = *it;
 										if ((uiNode.flags & SOUND_NODE_FLAG_OUTPUT) && uiNode.c.paramId == paramId)
 										{
-											uiNode.lhsValue[0] = desc.c.value;
+											uiNode.lhsValue[0] = desc.inputConst[0];
 										}
 									}
 								}

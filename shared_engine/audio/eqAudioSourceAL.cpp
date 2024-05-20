@@ -602,8 +602,9 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 	{
 		const ISoundSource* sample = stream.sample;
 		const float sampleVolume = min(stream.volume, 1.0f);
+		const float samplePitch = min(stream.pitch, 8.0f);
 
-		const int numSamplesToRead = max(MIN_SAMPLES, requestedSamples * stream.pitch + (stream.pitch < 1.0f ? EXTRA_SAMPLES_CORRECTION : 0));
+		const int numSamplesToRead = max(MIN_SAMPLES, requestedSamples * samplePitch + (samplePitch < 1.0f ? EXTRA_SAMPLES_CORRECTION : 0));
 
 		if (sampleVolume <= 0.0f || !stream.mixFunc)
 		{
@@ -619,7 +620,7 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 		void* streamSamples = stackalloc(numSamplesToRead * sampleUnit * fmt.channels);
 		const int samplesRead = sample->GetSamples(streamSamples, numSamplesToRead, stream.curPos, looping);
 
-		const int mixedSamples = stream.mixFunc(streamSamples, samplesRead, data, requestedSamples, sampleVolume, stream.pitch);
+		const int mixedSamples = stream.mixFunc(streamSamples, samplesRead, data, requestedSamples, sampleVolume, samplePitch);
 		
 		stream.curPos = WrapAroundSampleOffset(stream.curPos + samplesRead, sample, looping);
 		totalMixed = max(totalMixed, mixedSamples);
