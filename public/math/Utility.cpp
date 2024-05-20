@@ -40,9 +40,9 @@ bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& wor
 	const bool behind = (outMat.w < 0);
 	const float zDiv = outMat.w == 0.0f ? 1.0f : (1.0f / outMat.w);
 
-	screen.x = (screenDims.x * outMat.x * zDiv + screenDims.x) * 0.5f;
+	screen.x = (screenDims.x + screenDims.x * outMat.x * zDiv) * 0.5f;
 	screen.y = (screenDims.y - screenDims.y * outMat.y * zDiv) * 0.5f;
-	screen.z = -outMat.z;
+	screen.z = outMat.z * outMat.w * 2.0f;
 
 	return behind;
 }
