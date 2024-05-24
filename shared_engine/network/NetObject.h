@@ -275,20 +275,20 @@ struct netvariablemap_t
 #define memb(structure,member)			(((structure *)0)->member)
 
 // network variable declarations
-#define DEFINE_SENDPROP_BYTE(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_BYTE, offsetOf(classNameTypedef, name), sizeof(ubyte), nullptr}
-#define DEFINE_SENDPROP_INT(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_INT, offsetOf(classNameTypedef, name), sizeof(int), nullptr}
-#define DEFINE_SENDPROP_FLOAT(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_FLOAT, offsetOf(classNameTypedef, name), sizeof(float), nullptr}
-#define DEFINE_SENDPROP_FREAL(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_FREAL, offsetOf(classNameTypedef, name), sizeof(FReal), nullptr}
+#define DEFINE_SENDPROP_BYTE(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_BYTE, offsetOf(classNameTypedef, name), sizeof(ubyte), nullptr},
+#define DEFINE_SENDPROP_INT(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_INT, offsetOf(classNameTypedef, name), sizeof(int), nullptr},
+#define DEFINE_SENDPROP_FLOAT(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_FLOAT, offsetOf(classNameTypedef, name), sizeof(float), nullptr},
+#define DEFINE_SENDPROP_FREAL(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_FREAL, offsetOf(classNameTypedef, name), sizeof(FReal), nullptr},
 
-#define DEFINE_SENDPROP_VECTOR2D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR2D, offsetOf(classNameTypedef, name), sizeof(Vector2D), nullptr}
-#define DEFINE_SENDPROP_VECTOR3D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR3D, offsetOf(classNameTypedef, name), sizeof(Vector3D), nullptr}
-#define DEFINE_SENDPROP_VECTOR4D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR4D, offsetOf(classNameTypedef, name), sizeof(Vector4D), nullptr}
+#define DEFINE_SENDPROP_VECTOR2D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR2D, offsetOf(classNameTypedef, name), sizeof(Vector2D), nullptr},
+#define DEFINE_SENDPROP_VECTOR3D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR3D, offsetOf(classNameTypedef, name), sizeof(Vector3D), nullptr},
+#define DEFINE_SENDPROP_VECTOR4D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR4D, offsetOf(classNameTypedef, name), sizeof(Vector4D), nullptr},
 
-#define DEFINE_SENDPROP_FVECTOR2D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR2D, offsetOf(classNameTypedef, name), sizeof(FVector2D), nullptr}
-#define DEFINE_SENDPROP_FVECTOR3D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR3D, offsetOf(classNameTypedef, name), sizeof(FVector3D), nullptr}
-#define DEFINE_SENDPROP_FVECTOR4D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR4D, offsetOf(classNameTypedef, name), sizeof(FVector4D), nullptr}
+#define DEFINE_SENDPROP_FVECTOR2D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR2D, offsetOf(classNameTypedef, name), sizeof(FVector2D), nullptr},
+#define DEFINE_SENDPROP_FVECTOR3D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR3D, offsetOf(classNameTypedef, name), sizeof(FVector3D), nullptr},
+#define DEFINE_SENDPROP_FVECTOR4D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR4D, offsetOf(classNameTypedef, name), sizeof(FVector4D), nullptr},
 
-#define DEFINE_SENDPROP_EMBEDDED(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(classNameTypedef, name), 0, &memb(classNameTypedef, name).m_NetworkVariableMap}
+#define DEFINE_SENDPROP_EMBEDDED(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(classNameTypedef, name), 0, &memb(classNameTypedef, name).m_NetworkVariableMap},
 
 #define NETWORK_CHANGELIST(name)			m_changeList_##name
 #define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
