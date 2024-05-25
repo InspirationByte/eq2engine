@@ -38,10 +38,19 @@ struct LuaTypeRefCountedObj : std::false_type {};
 //template <typename T>
 //struct LuaTypeWeakRefObject : std::false_type {};
 
+template <typename T, bool isEnum>
+struct LuaTypeAlias;
+
 template <typename T>
-struct LuaTypeAlias
+struct LuaTypeAlias<T, false>
 {
 	static const char* value;
+};
+
+template <typename T>
+struct LuaTypeAlias<T, true>
+{
+	static constexpr const char* value = "number";
 };
 
 // parameter trait 
@@ -91,7 +100,7 @@ template<typename T> struct HasToLuaReturnTrait : std::false_type {};
 template<typename T> struct HasToLuaReturnTrait<ToLua<T>> : std::true_type {};
 
 template <typename T>
-struct LuaBaseTypeAlias : LuaTypeAlias<StripRefPtrT<BaseType<StripTraitsT<T>>>> {};
+struct LuaBaseTypeAlias : LuaTypeAlias<StripRefPtrT<BaseType<StripTraitsT<T>>>, std::is_enum_v<T>> {};
 
 
 enum EMemberType : int

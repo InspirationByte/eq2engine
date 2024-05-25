@@ -201,9 +201,9 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 // type name definition
 #define ESL_ALIAS_TYPE(x, n) \
-	template<> inline const char* esl::LuaTypeAlias<x>::value = n;
+	template<> inline const char* esl::LuaTypeAlias<x, false>::value = n;
 
-#define ESL_ENUM(x) ESL_ALIAS_TYPE(x, "number")
+#define ESL_ENUM(x) // it was LuaTypeAlias before but now left as placeholder macro for future use only
 
 #define _ESL_EVENT_NAME(Name)		m_eslEvent##Name
 

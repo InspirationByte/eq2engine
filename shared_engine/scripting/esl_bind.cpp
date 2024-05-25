@@ -8,7 +8,7 @@
 #include "esl_runtime.h"
 
 #define ESL_BUILTIN_ALIAS_TYPE(x, n) \
-	template<> const char* esl::LuaTypeAlias<x>::value = n;
+	template<> const char* esl::LuaTypeAlias<x, false>::value = n;
 
 // default types. Required.
 ESL_BUILTIN_ALIAS_TYPE(bool, "boolean")
