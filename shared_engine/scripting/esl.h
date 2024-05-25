@@ -78,7 +78,7 @@ struct StripRefPtr
 template <typename T>
 struct StripRefPtr<CRefPtr<T>>
 {
-	using type = typename T;
+	using type = T;
 };
 
 template <typename T>

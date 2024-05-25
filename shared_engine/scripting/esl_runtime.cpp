@@ -300,8 +300,11 @@ int CompareBoxedPointers(lua_State* L)
 	esl::BoxUD* rhs = static_cast<esl::BoxUD*>(lua_touserdata(L, 2));
 
 	if (!lhs || !rhs)
-		return lhs == rhs; // both maybe nil
-
+	{
+		// both maybe nil
+		lua_pushboolean(L, lhs == rhs);
+		return 1;
+	}
 	lua_pushboolean(L, lhs->objPtr == rhs->objPtr);
 	return 1;
 }
