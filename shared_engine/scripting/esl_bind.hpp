@@ -33,9 +33,13 @@ template<typename T> struct IsUserObj<CWeakPtr<T>> : std::true_type {};
 
 template<typename T> struct IsRefPtr : std::false_type {};
 template<typename T> struct IsRefPtr<CRefPtr<T>> : std::true_type {};
+template<typename T> struct IsRefPtr<CRefPtr<T>&> : std::true_type {};
+template<typename T> struct IsRefPtr<const CRefPtr<T>&> : std::true_type {};
 
 template<typename T> struct IsWeakPtr : std::false_type {};
 template<typename T> struct IsWeakPtr<CWeakPtr<T>> : std::true_type {};
+template<typename T> struct IsWeakPtr<CWeakPtr<T>&> : std::true_type {};
+template<typename T> struct IsWeakPtr<const CWeakPtr<T>&> : std::true_type {};
 
 template<> struct IsUserObj<EqString> : std::false_type {};
 template<> struct IsUserObj<EqString*> : std::false_type {};
@@ -216,11 +220,11 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		lua_pushstring(L, value);
 	}
-	else if constexpr(std::is_same_v<BasePtrType<T>, lua_CFunction>)
+	else if constexpr(std::is_same_v<BaseRefType<T>, lua_CFunction>)
 	{
 		lua_pushcfunction(L, value);
 	}
-	else if constexpr (std::is_same_v<BasePtrType<T>, bindings::LuaCFunction>)
+	else if constexpr (std::is_same_v<BaseRefType<T>, bindings::LuaCFunction>)
 	{
 		lua_pushlightuserdata(L, value.funcPtr);
 		lua_pushcclosure(L, value.luaFuncImpl, 1);
@@ -238,11 +242,13 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else if constexpr (binder::IsRefPtr<T>::value)
 	{
+		using UT = BaseType<StripRefPtrT<BaseType<T>>>;
+
 		// really does not matter since deleter will still Ref_Drop() 
 		// object but we'll keep it anyway
 		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
-		if (value != nullptr)
-			PushGet<typename T::TYPE>::Push(L, value.Ref(), (std::is_const_v<typename T::TYPE> ? UD_FLAG_CONST : 0) | retTraitFlag);
+		if (value)
+			PushGet<UT>::Push(L, value.Ref(), (std::is_const_v<UT> ? UD_FLAG_CONST : 0) | retTraitFlag);
 		else
 			lua_pushnil(L);
 	}
@@ -266,8 +272,7 @@ static void PushValue(lua_State* L, const T& value)
 	else
 	{
 		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
-		using UT = StripTraitsT<T>;
-		using BaseUType = BaseType<UT>;
+		using BaseUType = StripRefPtrT<BaseType<StripTraitsT<T>>>;
 		PushGet<BaseUType>::Push(L, value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
 	}
 }
@@ -384,54 +389,89 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (binder::IsUserObj<UT>::value)
 	{
-		static_assert(!binder::IsRefPtr<UT>::value, "CRefPtr<> not implemented yet as argument");
-
-		const bool toCpp = HasToCppParamTrait<T>::value;
-
 		const int type = lua_type(L, index);
-		if (type != LUA_TUSERDATA)
+		if constexpr (binder::IsRefPtr<UT>::value)
 		{
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, type));
-			if constexpr(!SilentTypeCheck)
+			using RT = StripRefPtrT<BaseType<UT>>;
+			using REFPTR = CRefPtr<RT>;
+
+			if (type != LUA_TUSERDATA)
 			{
-				if (isArgNull)
+				EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<UT>::value, lua_typename(L, type));
+				if constexpr (!SilentTypeCheck)
 				{
-					if constexpr (!std::is_pointer_v<T>)
+					if (!isArgNull)
 						luaL_argerror(L, index, err);
 				}
-				else
-					luaL_argerror(L, index, err);
+
+				return ResultWithValue<REFPTR>{ false, std::move(err), nullptr };
 			}
 
-			if constexpr (std::is_reference_v<T>)
-				return Result{ false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
-			else
-				return Result{ false, std::move(err), nullptr };
+			if (!CheckUserdataCanBeUpcasted(L, index, LuaBaseTypeAlias<RT>::value))
+			{
+				const int type = luaL_getmetafield(L, index, "__name");
+				const char* className = lua_tostring(L, -1);
+				lua_pop(L, 1);
+
+				EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, className);
+				if constexpr (!SilentTypeCheck)
+					luaL_argerror(L, index, err);
+
+				return ResultWithValue<REFPTR>{ false, std::move(err), nullptr };
+			}
+
+			static_assert(!HasToCppParamTrait<T>::value, "can't use ToCpp trait on CRefPtr");
+			REFPTR objPtr(PushGet<RT>::Get(L, index, false));
+
+			return ResultWithValue<REFPTR>{ true, {}, std::move(objPtr) };
 		}
-		
-		// we still won't allow null value to be pushed if upcasting has failed
-		if (!CheckUserdataCanBeUpcasted(L, index, LuaBaseTypeAlias<T>::value))
+		else
 		{
-			const int type = luaL_getmetafield(L, index, "__name");
-			const char* className = lua_tostring(L, -1);
-			lua_pop(L, 1);
+			if (type != LUA_TUSERDATA)
+			{
+				EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, type));
+				if constexpr (!SilentTypeCheck)
+				{
+					if (isArgNull)
+					{
+						if constexpr (!std::is_pointer_v<T>)
+							luaL_argerror(L, index, err);
+					}
+					else
+						luaL_argerror(L, index, err);
+				}
 
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, className);
-			if constexpr (!SilentTypeCheck)
-				luaL_argerror(L, index, err);
+				if constexpr (std::is_reference_v<T>)
+					return Result{ false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
+				else
+					return Result{ false, std::move(err), nullptr };
+			}
 
-			if constexpr (std::is_reference_v<T>)
-				return Result{ false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
+			// we still won't allow null value to be pushed if upcasting has failed
+			if (!CheckUserdataCanBeUpcasted(L, index, LuaBaseTypeAlias<T>::value))
+			{
+				const int type = luaL_getmetafield(L, index, "__name");
+				const char* className = lua_tostring(L, -1);
+				lua_pop(L, 1);
+
+				EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, className);
+				if constexpr (!SilentTypeCheck)
+					luaL_argerror(L, index, err);
+
+				if constexpr (std::is_reference_v<T>)
+					return Result{ false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
+				else
+					return Result{ false, std::move(err), nullptr };
+			}
+
+			const bool toCpp = HasToCppParamTrait<T>::value;
+			BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp));
+
+			if constexpr (std::is_reference_v<UT>)
+				return Result{ true, {}, reinterpret_cast<UT>(*objPtr) };
 			else
-				return Result{ false, std::move(err), nullptr };
+				return Result{ true, {}, reinterpret_cast<UT>(objPtr) };
 		}
-
-		BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp));
-
-		if constexpr (std::is_reference_v<UT>)
-			return Result{ true, {}, reinterpret_cast<UT>(*objPtr) };
-		else 
-			return Result{ true, {}, reinterpret_cast<UT>(objPtr) };
 	}
 	else 
 	{

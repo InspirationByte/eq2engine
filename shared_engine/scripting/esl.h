@@ -24,10 +24,10 @@ template<typename T>
 using BaseType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
 
 template<typename T>
-using BasePtrType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+using BasePtrType = typename std::remove_cv<typename std::remove_pointer<T>::type>::type;
 
 template<typename T>
-using BaseRefType = typename std::remove_cv<typename std::remove_pointer<T>::type>::type;
+using BaseRefType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
 template <typename T>
 struct LuaTypeByVal : std::false_type {};
@@ -69,6 +69,21 @@ struct StripTraits<ToLua<T>>
 template <typename T>
 using StripTraitsT = typename StripTraits<T>::type;
 
+template <typename T>
+struct StripRefPtr
+{
+	using type = T;
+};
+
+template <typename T>
+struct StripRefPtr<CRefPtr<T>>
+{
+	using type = typename T;
+};
+
+template <typename T>
+using StripRefPtrT = typename StripRefPtr<T>::type;
+
 template<typename T> struct HasToCppParamTrait : std::false_type {};
 template<typename T> struct HasToCppParamTrait<ToCpp<T>> : std::true_type {};
 
@@ -76,7 +91,7 @@ template<typename T> struct HasToLuaReturnTrait : std::false_type {};
 template<typename T> struct HasToLuaReturnTrait<ToLua<T>> : std::true_type {};
 
 template <typename T>
-struct LuaBaseTypeAlias : LuaTypeAlias<BaseType<StripTraitsT<T>>> {};
+struct LuaBaseTypeAlias : LuaTypeAlias<StripRefPtrT<BaseType<StripTraitsT<T>>>> {};
 
 
 enum EMemberType : int
@@ -139,8 +154,8 @@ template<typename V>
 struct ResultWithValue
 {
 	operator bool() { return success; }
-	V			operator*() { return value; }
-	const V		operator*() const { return value; }
+	V&			operator*() { return value; }
+	const V&	operator*() const { return value; }
 	bool		success{ false };
 	EqString	errorMessage;
 	V			value;
