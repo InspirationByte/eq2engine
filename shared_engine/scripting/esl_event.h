@@ -5,35 +5,35 @@
 
 namespace esl
 {
-class LuaEvent
+class LuaEvent : public WeakRefObject<LuaEvent>
 {
+	friend struct Handle;
 public:
-	struct FuncRefWrapper : esl::LuaFunctionRef
+	struct Handle : public RefCountedObject<Handle>
 	{
-		FuncRefWrapper() = default;
-		FuncRefWrapper(const esl::LuaFunctionRef& funcRef) : esl::LuaFunctionRef(funcRef) {}
-		FuncRefWrapper(const FuncRefWrapper& other) : esl::LuaFunctionRef(other) {}
-		FuncRefWrapper(FuncRefWrapper&& other) noexcept : esl::LuaFunctionRef(std::move(other)) {}
+		~Handle();
+		Handle() = default;
+		Handle(LuaEvent* event, uint id);
+		Handle(Handle&& other) noexcept;
+		Handle& operator=(Handle&& other) noexcept;
 
-		FuncRefWrapper& operator=(FuncRefWrapper&& other) noexcept { *(static_cast<LuaRawRef*>(this)) = std::move(other); return *this; }
-
-		inline friend bool operator==(const FuncRefWrapper& a, const FuncRefWrapper& b) { return a.m_ref == b.m_ref; }
-		inline friend bool operator!=(const FuncRefWrapper& a, const FuncRefWrapper& b) { return a.m_ref != b.m_ref; }
-		inline friend bool operator>(const FuncRefWrapper& a, const FuncRefWrapper& b) { return a.m_ref > b.m_ref; }
-		inline friend bool operator<(const FuncRefWrapper& a, const FuncRefWrapper& b) { return a.m_ref < b.m_ref; }
-		inline friend bool operator>=(const FuncRefWrapper& a, const FuncRefWrapper& b) { return a.m_ref >= b.m_ref; }
-		inline friend bool operator<=(const FuncRefWrapper& a, const FuncRefWrapper& b) { return a.m_ref <= b.m_ref; }
+		CWeakPtr<LuaEvent>	owner;
+		uint				id{ static_cast<uint>(-1) };
 	};
 
-	using FunctionSet = Set<FuncRefWrapper>;
+	using HandlePtr = CRefPtr<Handle>;
+	using FunctionSet = Map<int, esl::LuaFunctionRef>;
 
-	void		AddHandler(const esl::LuaFunctionRef& func);
-	void		RemoveHandler(const esl::LuaFunctionRef& func);
+	HandlePtr	AddHandler(const esl::LuaFunctionRef& func);
+	void		RemoveHandler(const HandlePtr& handle);
 	void		Clear();
 
 	FunctionSet::Iterator	GetFirstHandler() { return m_eventHandlers.begin(); }
 protected:
-	Set<FuncRefWrapper>		m_eventHandlers{ PP_SL };
+	void			RemoveHandlerInternal(uint handle);
+
+	FunctionSet		m_eventHandlers{ PP_SL };
+	uint			m_handleIdCnt{ 0 };
 };
 
 template<typename ... Args>
@@ -46,13 +46,16 @@ public:
 	}
 
 	using EventFuncLuaCall = esl::runtime::FunctionCall<void, Args...>;
-	void Invoke(Args... args) const
+	bool Invoke(Args... args) const
 	{
+		bool allSuccess = true;
 		for (auto it = m_abstract.GetFirstHandler(); !it.atEnd(); ++it)
 		{
-			esl::runtime::StackGuard g(it.key().GetState());
-			EventFuncLuaCall::Invoke(it.key(), args...);
+			esl::runtime::StackGuard g(it.value().GetState());
+			if (!EventFuncLuaCall::Invoke(it.value(), args...))
+				allSuccess = false;
 		}
+		return allSuccess;
 	}
 
 private:
