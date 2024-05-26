@@ -39,13 +39,13 @@ enum EEqAssertType {
 
 #else
 
-IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* statement, ...);
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char* statement, ...);
 
 #define	ASSERT_MSG(x, msgFmt, ...) \
 { \
 	static bool ignoreAssert = false; \
 	if (!(x)) { \
-		const int result = _InternalAssertMsg(PP_SL, ignoreAssert, msgFmt, ##__VA_ARGS__); \
+		const int result = _InternalAssertMsg(PP_SL, ignoreAssert, #x, msgFmt, ##__VA_ARGS__); \
 		if (result == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
 		else if (result == _EQASSERT_IGNORE_ALWAYS) { ignoreAssert = true; }\
 	} \
@@ -56,33 +56,12 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* sta
 
 #endif // _RETAIL || _PROFILE
 
-#if !defined( __TYPEINFOGEN__ ) && !defined( _lint ) && defined(_WIN32)	// pcLint has problems with assert_offsetof()
-
-template<bool> struct compile_time_assert_failed;
-template<> struct compile_time_assert_failed<true> {};
-template<int x> struct compile_time_assert_test {};
-#define compile_time_assert_join2( a, b )	a##b
-#define compile_time_assert_join( a, b )	compile_time_assert_join2(a,b)
-#define compile_time_assert( x )			typedef compile_time_assert_test<sizeof(compile_time_assert_failed<(bool)(x)>)> compile_time_assert_join(compile_time_assert_typedef_, __LINE__)
-
-#define assert_sizeof( type, size )						compile_time_assert( sizeof( type ) == size )
-#define assert_sizeof_8_byte_multiple( type )			compile_time_assert( ( sizeof( type ) &  7 ) == 0 )
-#define assert_sizeof_16_byte_multiple( type )			compile_time_assert( ( sizeof( type ) & 15 ) == 0 )
-#define assert_offsetof( type, field, offset )			compile_time_assert( offsetof( type, field ) == offset )
-#define assert_offsetof_8_byte_multiple( type, field )	compile_time_assert( ( offsetof( type, field ) & 7 ) == 0 )
-#define assert_offsetof_16_byte_multiple( type, field )	compile_time_assert( ( offsetof( type, field ) & 15 ) == 0 )
-
-#else
-
-#define compile_time_assert( x )
-#define assert_sizeof( type, size )
-#define assert_sizeof_8_byte_multiple( type )
-#define assert_sizeof_16_byte_multiple( type )
-#define assert_offsetof( type, field, offset )
-#define assert_offsetof_8_byte_multiple( type, field )
-#define assert_offsetof_16_byte_multiple( type, field )
-
-#endif
+#define assert_sizeof( type, size )						static_assert( sizeof( type ) == size, "type '" #type "' size " #size " - size mismatch" )
+#define assert_sizeof_8_byte_multiple( type )			static_assert( ( sizeof( type ) &  7 ) == 0, "type '" #type "' size is not multiple of 8 bytes" )
+#define assert_sizeof_16_byte_multiple( type )			static_assert( ( sizeof( type ) & 15 ) == 0, "type '" #type "' size is not multiple of 16 bytes" )
+#define assert_offsetof( type, field, offset )			static_assert( offsetof( type, field ) == offset, "field '" #type "." #field "' size " #offset " - offset mismatch" )
+#define assert_offsetof_8_byte_multiple( type, field )	static_assert( ( offsetof( type, field ) & 7 ) == 0, "field '" #type "." #field "' offset is not multiple of 8 bytes" )
+#define assert_offsetof_16_byte_multiple( type, field )	static_assert( ( offsetof( type, field ) & 15 ) == 0 , "field '" #type "." #field "' offset is not multiple of 16 bytes" )
 
 // test for C++ standard
 assert_sizeof(char, 1);

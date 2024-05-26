@@ -158,9 +158,11 @@ static int DefaultPlatformMessageBoxCallback(const char* messageStr, const char*
 
 static MessageBoxCb g_msgBoxCallback = DefaultPlatformMessageBoxCallback;
 
-IEXPORTS void SetMessageBoxCallback(MessageBoxCb callback)
+IEXPORTS MessageBoxCb SetMessageBoxCallback(MessageBoxCb callback)
 {
+	MessageBoxCb oldCb = g_msgBoxCallback;
 	g_msgBoxCallback = callback ? callback : DefaultPlatformMessageBoxCallback;
+	return oldCb;
 }
 
 IEXPORTS void ErrorMsg(const char* fmt, ...)
@@ -240,7 +242,45 @@ static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
 	}
 }
 
-IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char *fmt, ...)
+static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly)
+{
+	const bool eqCoreInit = g_eqCore->IsInitialized();
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), message);
+
+	if (skipOnly)
+	{
+		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", message, sl.GetFileName(), sl.GetLine());
+		const int res = g_msgBoxCallback(messageStr + " - Display more asserts?", "Assertion failed", MSGBOX_YESNO);
+		if (res != MSGBOX_BUTTON_YES)
+			return _EQASSERT_IGNORE_ALWAYS;
+	}
+
+#if ASSERT_DEBUGGER_PROMPT
+	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", message, sl.GetFileName(), sl.GetLine());
+	const int res = g_msgBoxCallback(messageStr + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
+	if (res == MSGBOX_BUTTON_RETRY)
+		return _EQASSERT_SKIP;
+	else if (res == MSGBOX_BUTTON_IGNORE)
+		return _EQASSERT_IGNORE_ALWAYS;
+	else if (res == MSGBOX_BUTTON_ABORT)
+		return _EQASSERT_BREAK;
+
+	return _EQASSERT_SKIP;
+#else
+	return _EQASSERT_BREAK;
+#endif
+}
+
+
+static AssertHandlerFn s_assertHandler = DefaultAssertHandler;
+IEXPORTS AssertHandlerFn SetAssertHandler(AssertHandlerFn newHandler)
+{
+	AssertHandlerFn oldHandler = s_assertHandler;
+	s_assertHandler = newHandler;
+	return oldHandler;
+}
+
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char *fmt, ...)
 {
 	va_list argptr;
 
@@ -248,35 +288,9 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char *fmt
 	EqString formattedStr = EqString::FormatVa(fmt, argptr);
 	va_end(argptr);
 
-	const bool eqCoreInit = g_eqCore->IsInitialized();
-	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
-
 	if(isSkipped)
 		return _EQASSERT_SKIP;
 
-	if (Platform_IsDebuggerPresent())
-	{
-#if ASSERT_DEBUGGER_PROMPT
-		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
-		const int res = g_msgBoxCallback(messageStr + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
-		if (res == MSGBOX_BUTTON_RETRY)
-			return _EQASSERT_SKIP;
-		else if (res == MSGBOX_BUTTON_IGNORE)
-			return _EQASSERT_IGNORE_ALWAYS;
-		else if (res == MSGBOX_BUTTON_ABORT)
-			return _EQASSERT_BREAK;
-#else
-		return _EQASSERT_BREAK;
-#endif
-	}
-	else
-	{
-		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
-		const int res = g_msgBoxCallback(messageStr + " - Display more asserts?", "Assertion failed", MSGBOX_YESNO);
-		if (res != MSGBOX_BUTTON_YES)
-			return _EQASSERT_IGNORE_ALWAYS;
-	}
-
-	return _EQASSERT_SKIP;
+	return s_assertHandler(sl, expression, formattedStr, Platform_IsDebuggerPresent() == false);
 }
 
