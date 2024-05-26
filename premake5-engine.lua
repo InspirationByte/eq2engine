@@ -6,9 +6,22 @@ require ".premake_modules/unitybuild"
 require ".premake_modules/wxwidgets"
 require ".premake_modules/vscode"
 
+function if_then_else(cond, a, b)
+	if cond then
+		return a
+	else
+		return b
+	end
+end
+
+local CAN_BUILD_TOOLS = (os.target() == "linux" or os.target() == "windows") and not IS_ANDROID
+local CAN_BUILD_GUI_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
+
 IS_ANDROID = (_ACTION == "androidndk")
-ENABLE_TOOLS = (os.target() == "linux" or os.target() == "windows") and not IS_ANDROID
-ENABLE_GUI_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
+ENABLE_TOOLS = if_then_else(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
+ENABLE_GUI_TOOLS = if_then_else(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
+ENABLE_MATSYSTEM = if_then_else(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
+ENABLE_TESTS = if_then_else(ENABLE_TESTS == nil, false, ENABLE_TESTS)
 WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 
 -- you can redefine dependencies
@@ -50,11 +63,11 @@ workspace(WORKSPACE_NAME)
 	linkgroups 'On'
 	
 	--characterset "ASCII"
-	objdir "build"
-	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
+	objdir "build_%{_ACTION}/obj"
+	targetdir "build_%{_ACTION}/bin/%{cfg.platform}/%{cfg.buildcfg}"
 
 	if _ACTION ~= "vscode" then
-		location "%{WORKSPACE_NAME}_%{_ACTION}"
+		location "build_%{ _ACTION }"
 	end
 
 	defines {
@@ -204,17 +217,11 @@ workspace(WORKSPACE_NAME)
 		defines { 
 			"EQ_USE_SDL"
 		}
-		
-group "Dependencies"
-		
--- dependencies are in separate configuration
-include "src_dependency/premake5.lua"
-include "src_dependency_android/premake5.lua"
 
 group "Core"
 
 -- eqCore essentials
-project "corelib"
+project "coreLib"
     kind "StaticLib"
 	uses "concurrency_vis"
 	
@@ -227,11 +234,11 @@ project "corelib"
 		Folders.public
 	}
 	
-usage "corelib"
+usage "coreLib"
     includedirs {
 		Folders.public
 	}
-	links {"coreLib"}
+	links { "coreLib" }
 
 	filter "system:Linux"
 		links { "pthread" }
@@ -241,7 +248,7 @@ project "frameworkLib"
     kind "StaticLib"
 
 	unitybuild "on"
-	uses { "corelib", "libjpeg" }
+	uses { "coreLib", "libjpeg" }
 
     files {
 		Folders.public.. "ds/*.cpp",
@@ -284,7 +291,7 @@ project "e2Core"
 	defines { "CORE_INTERFACE_EXPORT", "COREDLL_EXPORT" }
 	
     uses {
-		"corelib", "frameworkLib", "dpkLib"
+		"coreLib", "frameworkLib", "dpkLib"
 	}
 
 	filter "system:Windows"
@@ -301,16 +308,29 @@ project "e2Core"
 		
 usage "e2Core"
 	links "e2Core"
-	
+
+group "Dependencies"
+		
+-- dependencies are in separate configuration
+include "src_dependency/premake5.lua"
+include "src_dependency_android/premake5.lua"
+
+group "Components"
+
+-- components are in separate configuration
+include "premake5-components.lua"	
+
 ----------------------------------------------
 -- Material System and rendering
+
+if ENABLE_MATSYSTEM then
 
 group "MatSystem"
 
 project "BaseShader"
     kind "StaticLib"
 	uses {
-		"corelib", "frameworkLib"
+		"coreLib", "frameworkLib"
 	}
     files {
 		Folders.public.."materialsystem1/*.cpp",
@@ -321,7 +341,7 @@ project "eqMatSystem"
     kind "SharedLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core",
+		"coreLib", "frameworkLib", "e2Core",
 		"BaseShader"
 	}
     files {
@@ -339,7 +359,7 @@ project "eqBaseShaders"
     kind "SharedLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core",
+		"coreLib", "frameworkLib", "e2Core",
 		"BaseShader"
 	}
     files {
@@ -374,7 +394,7 @@ project "eqNullRHI"
     kind "SharedLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core",
+		"coreLib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
 	}
 	defines{
@@ -391,7 +411,7 @@ project "eqWGPURHI"
 	kind "SharedLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core",
+		"coreLib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib", "wgpu-dawn"
 	}
 	defines{
@@ -403,9 +423,9 @@ project "eqWGPURHI"
 		Folders.matsystem1.."Renderers/WGPU/**.h"
 	}
 
-group ""
+end -- ENABLE_MATSYSTEM
 
-include "premake5-components.lua"
+group ""
 
 -- only build tools for big machines
 if ENABLE_TOOLS then

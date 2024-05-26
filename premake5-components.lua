@@ -1,11 +1,14 @@
-group "Components"
+usage "shared_engine"
+	includedirs {
+		Folders.shared_engine
+	}
 
 -- fonts
 project "fontLib"
     kind "StaticLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core"
+		"coreLib", "frameworkLib", "e2Core"
 	}
     files {
 		Folders.shared_engine.. "font/**.cpp",
@@ -26,7 +29,7 @@ project "renderUtilLib"
     kind "StaticLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core"
+		"coreLib", "frameworkLib", "e2Core"
 	}
     files {
 		Folders.shared_engine.. "render/**.cpp",
@@ -48,7 +51,7 @@ project "studioFileLib"
     kind "StaticLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core",
+		"coreLib", "frameworkLib", "e2Core",
 		"renderUtilLib", "bullet2", "zlib"
 	}
     files {
@@ -71,7 +74,7 @@ project "studioLib"
     kind "StaticLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core",
+		"coreLib", "frameworkLib", "e2Core",
 		"renderUtilLib", "bullet2", "zlib",
 		"studioFileLib"
 	}
@@ -96,7 +99,7 @@ project "animatingLib"
     kind "StaticLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib", "e2Core",
+		"coreLib", "frameworkLib", "e2Core",
 		"studioLib", "bullet2"
 	}
     files {
@@ -134,7 +137,7 @@ project "sysLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
-		"corelib", "frameworkLib",
+		"coreLib", "frameworkLib",
 		"equiLib",
 		"SDL2", "imgui"
 	}
@@ -153,7 +156,7 @@ project "equiLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
-		"corelib", "frameworkLib",
+		"coreLib", "frameworkLib",
 		"fontLib",
 	}
     files {
@@ -168,7 +171,7 @@ project "scriptLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
-		"corelib", "frameworkLib",
+		"coreLib", "frameworkLib",
 		"lua",
 	}
     files {
@@ -178,13 +181,13 @@ project "scriptLib"
 	}
     includedirs {
 		Folders.shared_engine
-	}
+	}	
 	
 project "networkLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses {
-		"corelib", "frameworkLib",
+		"coreLib", "frameworkLib",
 		"zlib" 
 	}
     files {
@@ -206,7 +209,7 @@ project "soundSystemLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
-		"corelib", "frameworkLib",
+		"coreLib", "frameworkLib",
 		"minivorbis", "openal-soft",
 		"imgui"
 	}
@@ -223,7 +226,7 @@ project "physicsLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
-		"corelib", "frameworkLib",
+		"coreLib", "frameworkLib",
 		"bullet2"
 	}
     files {
@@ -239,7 +242,7 @@ project "movieLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
-		"corelib", "frameworkLib", "ffmpeg"
+		"coreLib", "frameworkLib", "ffmpeg"
 	}
     files {
 		Folders.shared_engine.. "movie/**.cpp",
@@ -261,7 +264,7 @@ if ENABLE_TOOLS then
 		kind "StaticLib"
 		unitybuild "on"
 		uses {
-			"corelib", "frameworkLib", "e2Core",
+			"coreLib", "frameworkLib", "e2Core",
 			"bullet2", "zlib", "openfbx", 
 			"studioFileLib"
 		}
@@ -286,7 +289,7 @@ if ENABLE_TOOLS then
 		kind "StaticLib"
 		unitybuild "on"
 		uses {
-			"corelib", "frameworkLib", "e2Core",
+			"coreLib", "frameworkLib", "e2Core",
 			"studioLib", "animatingLib", "bullet2"
 		}
 		files {

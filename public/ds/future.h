@@ -294,7 +294,7 @@ inline int Future<T>::GetErrorCode() const
 	ASSERT(m_data);
 
 	Threading::CScopedMutex m(m_data->m_condMutex);
-	return m_data->m_errorCode;
+	return m_data->m_errorInfo.getData().code;
 }
 
 template<typename T>
@@ -303,7 +303,7 @@ inline const EqString& Future<T>::GetErrorMessage() const
 	ASSERT(m_data);
 
 	Threading::CScopedMutex m(m_data->m_condMutex);
-	return m_data->m_errorMessage;
+	return m_data->m_errorInfo.getData().message;
 }
 
 template<typename T>

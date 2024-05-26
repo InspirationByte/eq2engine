@@ -5,35 +5,51 @@
 // Description: Lua object
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <gtest/gtest.h>
+
 #include "core/core_common.h"
-#include "core/ConCommand.h"
-#include "common/drvsyn_engine_common.h"
-#include "luaobj.h"
-#include "LuaBinding.h"
-struct KVSection;
+#include "utils/KeyValues.h"
 
 #include "scripting/esl.h"
 #include "scripting/esl_luaref.h"
 #include "scripting/esl_bind.h"
 
+class LuaStateTest
+{
+public:
+	LuaStateTest();
+	~LuaStateTest();
+
+	operator lua_State* () { return m_instance; }
+
+private:
+
+	lua_State* m_instance;
+};
 
 //---------------------------------------------------
 
 struct Spline
 {
 	virtual ~Spline() = default;
+	Spline() = default;
+	Spline(int value)
+	{
+		nonDefaultConstructor = true;
+	}
+
 	virtual void Load(const KVSection* section)
 	{
-		Msg("Load Base!\n");
+		loadBaseCalled = true;		
 	}
 	virtual void Save(KVSection* section)
 	{
-		Msg("Save Base!\n");
+		saveBaseCalled = true;
 	}
 
 	void NonVirtualFunc()
 	{
-		Msg("Called non-virtual!\n");
+		nonVirtualCalled = true;
 	}
 
 	EqString	name;
@@ -47,7 +63,13 @@ struct Spline
 	int16		laneDirs{ 0 };				// lane dir flags (oncoming = 1)
 	int16		laneDisabled{ 0 };
 	int16		flags{ 0 };					// EStraightFlags
+
+	bool loadBaseCalled = false;
+	bool saveBaseCalled = false;
+	bool nonVirtualCalled = false;
+	bool nonDefaultConstructor = false;
 };
+
 
 // Inheritance test only
 struct TerrainSpline : public Spline
@@ -56,7 +78,7 @@ struct TerrainSpline : public Spline
 	TerrainSpline(int value, const char* message, Spline& other)
 	{
 		other.Save(nullptr);
-		MsgWarning("TerrainSpline::Ctor variant called, arg %d, %s, other name: %s\n", value, message, other.name.ToCString());
+		//MsgWarning("TerrainSpline::Ctor variant called, arg %d, %s, other name: %s\n", value, message, other.name.ToCString());
 		name = message;
 		vehicleZoneNameHash = value;
 	}
@@ -64,252 +86,78 @@ struct TerrainSpline : public Spline
 	Vector2D GetPoint(int index, const Vector2D& from, const EqString& str)
 	{ 
 		ASSERT(str.Length() > 0);
-		MsgWarning("TerrainSpline::GetPoint called, arg %d, vehicleZoneNameHash = %d, from = %.2f, %.2f, %s\n", index, vehicleZoneNameHash, from.x, from.y, str.ToCString());
+		//MsgWarning("TerrainSpline::GetPoint called, arg %d, vehicleZoneNameHash = %d, from = %.2f, %.2f, %s\n", index, vehicleZoneNameHash, from.x, from.y, str.ToCString());
 		return position.xz();// points[index];
 	}
 
 	void Load(const KVSection* section) override
 	{
-		Msg("Load Override!\n");
+		loadOverrideCalled = true;
 	}
+
 	void Save(KVSection* section) override
 	{
-		Msg("Save Override!\n");
+		saveOverrideCalled = true;
 	}
 
 	void Save(KVSection* section, bool useTest)
 	{
-		Msg("Save that hides override!\n");
+		// ToCpp gives us this opportunity
+		if(section)
+		{
+			delete section;
+		}
+
+		saveOverloadCalled = true;
 	}
 
 	Array<Vector3D> points{ PP_SL };
+
+	bool loadOverrideCalled = false;
+	bool saveOverrideCalled = false;
+	bool saveOverloadCalled = false;
 };
 
-DECLARE_CMD(test_classReg, nullptr, 0)
-{
-	EqScriptState state(GetLuaState());
+EQSCRIPT_BIND_TYPE_NO_PARENT(Vector2D, "Vector2D", BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(Vector2D)
+	EQSCRIPT_BIND_CONSTRUCTOR(float)
+	EQSCRIPT_BIND_CONSTRUCTOR(float, float)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector2D&)
 
-	static const char* typesStr[] = {
-		"null",
-		"const",
-		"dtor",
-		"ctor",
-		"function",
-		"var",
-	};
+	//BIND_VECTOR_OPERATORS()
 
-	// registrator test of class with push as ByVal
-	{
-		esl::TypeInfo typeInfo = EqScriptClass<Vector2D>::GetTypeInfo();
+	EQSCRIPT_BIND_VAR(x)
+	EQSCRIPT_BIND_VAR(y)
+EQSCRIPT_TYPE_END
 
-		Msg("class %s : %s\n", typeInfo.className, typeInfo.baseClassName);
-		for (const esl::Member& mem : typeInfo.members)
-		{
-			if (mem.type == esl::MEMB_CTOR)
-				Msg("  %s(%s)\n", mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_VAR)
-				Msg("  %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_FUNC)
-				Msg("  %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
-		}
-		Msg("Members: %d\n", typeInfo.members.numElem());
+EQSCRIPT_BIND_TYPE_NO_PARENT(Vector3D, "Vector3D", BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(Vector3D)
+	EQSCRIPT_BIND_CONSTRUCTOR(float)
+	EQSCRIPT_BIND_CONSTRUCTOR(float, float, float)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector2D&, float)
+	EQSCRIPT_BIND_CONSTRUCTOR(float, const Vector2D&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&)
 
-		esl::RegisterType(state, typeInfo);
-	}
+	//BIND_VECTOR_OPERATORS()
 
-	// registrator test
-	{
-		esl::TypeInfo typeInfo = EqScriptClass<Spline>::GetTypeInfo();
+	EQSCRIPT_BIND_FUNC(xy)
+	EQSCRIPT_BIND_FUNC(yz)
+	EQSCRIPT_BIND_FUNC(xz)
 
-		Msg("class %s : %s\n", typeInfo.className, typeInfo.baseClassName);
-		for (const esl::Member& mem : typeInfo.members)
-		{
-			if (mem.type == esl::MEMB_CTOR)
-				Msg("  %s(%s)\n", mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_VAR)
-				Msg("  %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_FUNC)
-				Msg("  %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
-		}
-		Msg("Members: %d\n", typeInfo.members.numElem());
+	EQSCRIPT_BIND_VAR(x)
+	EQSCRIPT_BIND_VAR(y)
+	EQSCRIPT_BIND_VAR(z)
+EQSCRIPT_TYPE_END
 
-		esl::RegisterType(state, typeInfo);
-	}
-
-	// registrator test with base class
-	{
-		esl::TypeInfo typeInfo = EqScriptClass<TerrainSpline>::GetTypeInfo();
-
-		Msg("class %s : %s\n", typeInfo.className, typeInfo.baseClassName);
-		for (const esl::Member& mem : typeInfo.members)
-		{
-			if (mem.type == esl::MEMB_CTOR)
-				Msg("  %s(%s)\n", mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_VAR)
-				Msg("  %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_FUNC)
-				Msg("  %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
-		}
-		Msg("Members: %d\n", typeInfo.members.numElem());
-
-		esl::RegisterType(state, typeInfo);
-	}
-
-	// TEST: default constructor
-	if (!state.RunChunk("spl=Spline.new()"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: optional constructor
-	if (!state.RunChunk("spl=TerrainSpline.new(333, \"Hello from Universe\", spl)"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: constructor call with upcasting argument: TerrainSpline to Spline
-	if (!state.RunChunk("spl=TerrainSpline.new(1337, \"BaseClass check\", spl)"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: property newindex (setter)
-	if (!state.RunChunk("spl.vehicleZoneNameHash = 555"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: property index (getter)
-	if (!state.RunChunk("Msg(\"expected: 555\", spl.vehicleZoneNameHash)"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: adding methods to metatable
-	if (!state.RunChunk("TerrainSpline.Try = function(self, v) return v end;Msg(\"expected: 120\", spl:Try(120))"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: function call with arguments
-	if (!state.RunChunk("spl:GetPoint(1337, vec2.new(0, 68), \"Hello from Lua\")"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: should fail on nil
-	if (!state.RunChunk("spl:GetPoint(666, nil, \"From Russia with NIL\")"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-
-	// TEST: should fail on incorrect userdata
-	if (!state.RunChunk("spl:GetPoint(1900 / 2, 8192, \"Whoops\")"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(state));
-	}
-}
-
-#if 0
-
-//---------------------------------------------------
-// Class registrator source
-// macros:
-//  EQSCRIPT_BIND_TYPE_NO_PARENT
-//  EQSCRIPT_BEGIN_BIND
-//  EQSCRIPT_BIND_CONSTRUCTOR
-//  EQSCRIPT_BIND_FUNC*
-//  EQSCRIPT_BIND_VAR
-//  EQSCRIPT_END_BIND
-EQSCRIPT_ALIAS_TYPE(Vector2D, "vec2")
-template<> struct esl::LuaTypeByVal<Vector2D> : std::true_type {};
-template<> bool EqScriptClass<Vector2D>::isByVal = esl::LuaTypeByVal<Vector2D>::value;
-template<> const char EqScriptClass<Vector2D>::className[] = "vec2";
-template<> const char* EqScriptClass<Vector2D>::baseClassName = nullptr;
-template<> esl::TypeInfo EqScriptClass<Vector2D>::baseClassTypeInfo = {};
-namespace esl::bindings {
-	template<> ArrayCRef<Member> ClassBinder<Vector2D>::GetMembers() {
-		esl::bindings::BaseClassStorage::Add<BindClass>();
-		static Member members[] = {
-			MakeDestructor(),
-			MakeConstructor(),
-			MakeConstructor<float>(),
-			MakeConstructor<float, float>(),
-			MakeConstructor<const Vector2D&>(),
-			MakeVariable<&BindClass::x>("x"),
-			MakeVariable<&BindClass::y>("y"),
-			MakeOperator<binder::OP_add>("__add"),
-			MakeOperator<binder::OP_sub>("__sub"),
-			MakeOperator<binder::OP_mul>("__mul"),
-			MakeOperator<binder::OP_div>("__div"),
-			MakeOperator<binder::OP_eq>("__eq"),
-			MakeOperator<binder::OP_lt>("__lt"),
-			MakeOperator<binder::OP_le>("__le"),
-			{} // default/end element
-		};
-		return ArrayCRef<Member>(members, elementsOf(members) - 1);
-	}
-}
-
-//---------------------------------------------------
-// Class registrator source
-EQSCRIPT_ALIAS_TYPE(Spline, "Spline")
-template<> const char EqScriptClass<Spline>::className[] = "Spline";
-template<> bool EqScriptClass<Spline>::isByVal = esl::LuaTypeByVal<Spline>::value;
-template<> const char* EqScriptClass<Spline>::baseClassName = nullptr;
-template<> esl::TypeInfo EqScriptClass<Spline>::baseClassTypeInfo = {};
-namespace esl::bindings {
-template<> ArrayCRef<Member> ClassBinder<Spline>::GetMembers() {
-	esl::bindings::BaseClassStorage::Add<BindClass>();
-	static Member members[] = {
-		MakeDestructor(),
-		MakeConstructor(),
-		MakeFunction(&BindClass::Load, "Load"),
-		MakeFunction(&BindClass::Save, "Save"),
-		MakeVariable<&BindClass::name>("name"),
-		MakeVariable<&BindClass::position>("position"),
-		MakeVariable<&BindClass::angle>("angle"),
-		MakeVariable<&BindClass::length>("length"),
-		MakeVariable<&BindClass::vehicleZoneNameHash>("vehicleZoneNameHash"),
-		MakeVariable<&BindClass::speedLimit>("speedLimit"),
-		MakeVariable<&BindClass::numLanes>("numLanes"),
-		MakeVariable<&BindClass::laneDirs>("laneDirs"),
-		MakeVariable<&BindClass::laneDisabled>("laneDisabled"),
-		MakeVariable<&BindClass::flags>("flags"),
-		{} // default/end element
-	};
-	return ArrayCRef<Member>(members, elementsOf(members) - 1);
-}
-}
-
-
-//---------------------------------------------------
-// Class registrator source
-EQSCRIPT_ALIAS_TYPE(TerrainSpline, "TerrainSpline")
-template<> const char EqScriptClass<TerrainSpline>::className[] = "TerrainSpline";
-template<> bool EqScriptClass<TerrainSpline>::isByVal = esl::LuaTypeByVal<TerrainSpline>::value;
-template<> const char* EqScriptClass<TerrainSpline>::baseClassName = EqScriptClass<Spline>::className;
-template<> esl::TypeInfo EqScriptClass<TerrainSpline>::baseClassTypeInfo(EqScriptClass<Spline>::GetTypeInfo());
-namespace esl::bindings {
-template<> ArrayCRef<Member> ClassBinder<TerrainSpline>::GetMembers() {
-	esl::bindings::BaseClassStorage::Add<BindClass>();
-	static Member members[] = {
-		MakeDestructor(),
-		MakeConstructor(),
-		MakeConstructor<int, const char*, Spline&>(),
-		MakeFunction(&BindClass::GetPoint, "GetPoint"),
-		MakeFunction<void, KVSection*, bool>(&BindClass::Save, "Save"),
-		MakeFunction<void, KVSection*>(&BindClass::Save, "SaveStandard"),
-		{} // default/end element
-	};
-	return ArrayCRef<Member>(members, elementsOf(members) - 1); 
-}
-}
-#else
+EQSCRIPT_BIND_TYPE_NO_PARENT(KVSection, "KVSection", BY_REF)
+EQSCRIPT_TYPE_BEGIN(KVSection)
+	EQSCRIPT_BIND_CONSTRUCTOR()
+EQSCRIPT_TYPE_END
 
 EQSCRIPT_BIND_TYPE_NO_PARENT(Spline, "Spline", BY_REF)
-EQSCRIPT_BEGIN_BIND(Spline)
+EQSCRIPT_TYPE_BEGIN(Spline)
 	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_CONSTRUCTOR(int)
 	EQSCRIPT_BIND_FUNC(Load)
 	EQSCRIPT_BIND_FUNC(Save)
 	EQSCRIPT_BIND_FUNC(NonVirtualFunc)
@@ -323,29 +171,330 @@ EQSCRIPT_BEGIN_BIND(Spline)
 	EQSCRIPT_BIND_VAR(laneDirs)
 	EQSCRIPT_BIND_VAR(laneDisabled)
 	EQSCRIPT_BIND_VAR(flags)
-EQSCRIPT_END_BIND
+EQSCRIPT_TYPE_END
 
 EQSCRIPT_BIND_TYPE_WITH_PARENT(TerrainSpline, Spline, "TerrainSpline")
-EQSCRIPT_BEGIN_BIND(TerrainSpline)
+EQSCRIPT_TYPE_BEGIN(TerrainSpline)
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_CONSTRUCTOR(int, const char*, Spline&)
 	EQSCRIPT_BIND_FUNC(GetPoint)
 	EQSCRIPT_BIND_FUNC_OVERLOAD(Save, void, (KVSection*, bool), ESL_APPLY_TRAITS(void, esl::ToCpp<KVSection*)>, bool)
 	EQSCRIPT_BIND_FUNC_NAMED_OVERLOAD("SaveStandard", Save, void, (KVSection*))
-EQSCRIPT_END_BIND
-#endif
+EQSCRIPT_TYPE_END
 
+//-------------------------------------------------------
 
-//---------------------------------------------
-
-DECLARE_CMD(test_valueGetter, nullptr, 0)
+LuaStateTest::LuaStateTest()
 {
-	EqScriptState state(GetLuaState());
+	m_instance = luaL_newstate();
+	luaL_openlibs(m_instance);
+
+	// TODO: move this to esl::InitState()
+	EqScriptState state(m_instance);
+	state.RegisterClass<esl::LuaEvent>();
+	state.RegisterClass<esl::LuaEvent::Handle>();
+
+	state.RegisterClass<Vector2D>();
+	state.RegisterClass<Vector3D>();
+	state.RegisterClass<KVSection>();
+
+	// setup stuff for tests
+	state.RunChunk(R"(
+
+function EXPECT_EQ(val, exp)
+	if val ~= exp then
+		error("expected: " .. tostring(exp) .. ", got " .. tostring(val))
+	end
+end
+
+checkValueNumber = 555
+checkValueString1 = "Hello from Universe"
+checkValueString2 = "BaseClass check"
+
+)");
+}
+
+LuaStateTest::~LuaStateTest()
+{
+	lua_gc(m_instance, LUA_GCCOLLECT, 0);
+	lua_close(m_instance);
+}
+
+#define LUA_GTEST_CHUNK(expression) \
+  GTEST_AMBIGUOUS_ELSE_BLOCKER_                                 \
+  if (const ::testing::AssertionResult gtest_ar_ =              \
+	::testing::AssertionResult(state.RunChunk(expression)));    \
+  else                                                          \
+	GTEST_NONFATAL_FAILURE_(expression) << esl::runtime::GetLastError(state)
+
+#define LUA_GTEST_CHUNK_FAIL(expression) \
+  GTEST_AMBIGUOUS_ELSE_BLOCKER_                                 \
+  if (const ::testing::AssertionResult gtest_ar_ =              \
+	::testing::AssertionResult(!state.RunChunk(expression)));    \
+  else                                                          \
+	GTEST_NONFATAL_FAILURE_(expression) << esl::runtime::GetLastError(state)
+
+//-------------------------------------------------------
+
+TEST(EqScriptTests, TestBinder)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	static const char* typesStr[] = {
+		"null",
+		"const",
+		"dtor",
+		"ctor",
+		"func",
+		"c_func",
+		"var",
+		"operator",
+	};
+
+	// test type info for Spline
+	{
+		esl::TypeInfo typeInfo = EqScriptClass<Spline>::GetTypeInfo();
+
+		Msg("class %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
+		for (const esl::Member& mem : typeInfo.members)
+		{
+			if (mem.type == esl::MEMB_CTOR)
+				Msg("  %s(%s)\n", mem.name, mem.signature);
+			else if (mem.type == esl::MEMB_VAR)
+				Msg("  %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
+			else if (mem.type == esl::MEMB_FUNC)
+				Msg("  %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
+		}
+		Msg("Members: %d\n", typeInfo.members.numElem());
+
+		esl::RegisterType(state, typeInfo);
+	}
+
+	// test type info for TerrainSpline
+	{
+		esl::TypeInfo typeInfo = EqScriptClass<TerrainSpline>::GetTypeInfo();
+
+		Msg("class %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
+		for (const esl::Member& mem : typeInfo.members)
+		{
+			if (mem.type == esl::MEMB_CTOR)
+				Msg("  %s(%s)\n", mem.name, mem.signature);
+			else if (mem.type == esl::MEMB_VAR)
+				Msg("  %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
+			else if (mem.type == esl::MEMB_FUNC)
+				Msg("  %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
+		}
+		Msg("Members: %d\n", typeInfo.members.numElem());
+
+		esl::RegisterType(state, typeInfo);
+	}
+}
+
+TEST(EqScriptTests, TestInstantiation)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
 
-	state.RunChunk("TestFunc = function(intVal, strVal) MsgInfo(intVal, strVal, \"\\n\"); return 1500.0 / 3.0 end");
+	// TEST: default constructor
+	LUA_GTEST_CHUNK("spl = Spline.new()");
+	{
+		Spline& testResults = *state.GetGlobal<Spline&>("spl");
+		ASSERT_FALSE(testResults.nonDefaultConstructor);
+	}
+
+	// TEST: additional constructor
+	LUA_GTEST_CHUNK("spl = Spline.new(9999)");
+	{
+		Spline& testResults = *state.GetGlobal<Spline&>("spl");
+		ASSERT_TRUE(testResults.nonDefaultConstructor);
+	}
+
+	// TEST: other object and upcasting brought to native code
+	LUA_GTEST_CHUNK("spl = TerrainSpline.new()");
+}
+
+TEST(EqScriptTests, TestVariables)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
+	state.RegisterClass<TerrainSpline>();
+
+	// TEST: default constructor
+	LUA_GTEST_CHUNK("spl = Spline.new()");
+
+	// TEST: other class with additional costructor
+	LUA_GTEST_CHUNK("spl = TerrainSpline.new(333, checkValueString1, spl)");
+
+	// TEST: constructor passing arguments to object
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl.name, checkValueString1)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl.vehicleZoneNameHash, 333)");
+	{
+		TerrainSpline* testResults = *state.GetGlobal<TerrainSpline*>("spl");
+		ASSERT_EQ(testResults->vehicleZoneNameHash, 333);
+	}
+
+	// TEST: constructor call with upcasting argument: TerrainSpline to Spline
+	LUA_GTEST_CHUNK("spl = TerrainSpline.new(1337, checkValueString2, spl)");
+	{
+		TerrainSpline& testResults = *state.GetGlobal<TerrainSpline&>("spl");
+		ASSERT_FALSE(testResults.nonDefaultConstructor);
+	}
+
+	// TEST: constructor passing arguments to object
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl.name, checkValueString2)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl.vehicleZoneNameHash, 1337)");
+
+	// TEST: property newindex (setter) and index (getter)
+	LUA_GTEST_CHUNK("spl.vehicleZoneNameHash = checkValueNumber");
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl.vehicleZoneNameHash, checkValueNumber)");
+}
+
+TEST(EqScriptTests, TestAddingToMetatable)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
+	state.RegisterClass<TerrainSpline>();
+
+	LUA_GTEST_CHUNK("spl = TerrainSpline.new()");
+
+	// TEST: adding methods to metatable
+	LUA_GTEST_CHUNK("TerrainSpline.Try = function(self, v) return v end; EXPECT_EQ(120, spl:Try(120))");
+}
+
+TEST(EqScriptTests, TestFunctionCalls)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
+	state.RegisterClass<TerrainSpline>();
+
+	// TEST: default constructor
+	LUA_GTEST_CHUNK("spl = TerrainSpline.new()");
+
+	// TEST: function call with arguments
+	LUA_GTEST_CHUNK("spl:GetPoint(1337, Vector2D.new(0, 68), \"Hello from Lua\")");
+
+	// TEST: argument matching - should fail on nil
+	LUA_GTEST_CHUNK_FAIL("spl:GetPoint(666, nil, \"From Russia with NIL\")");
+
+	// TEST: argument matching - should fail on non-userdata
+	LUA_GTEST_CHUNK_FAIL("spl:GetPoint(1900 / 2, 9999, \"Whoops\")");
+
+	// TEST: argument matching - should fail on incorrect userdata
+	LUA_GTEST_CHUNK_FAIL("spl:GetPoint(1900 / 2, spl, \"Whoops\")");
+}
+
+TEST(EqScriptTests, TestInheritClassFunctionCalls)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
+	state.RegisterClass<TerrainSpline>();
+
+	// TEST: default constructor
+	LUA_GTEST_CHUNK("spl = Spline.new()");
+
+	// TEST: calling member function - should fail due to 'self' is nil, must use ':' operator in order to call member function
+	LUA_GTEST_CHUNK_FAIL("spl.Save(nil)");
+	{
+		Spline* testResults = *state.GetGlobal<Spline*>("spl");
+		ASSERT_FALSE(testResults->saveBaseCalled);
+	}
+
+	// TEST: calling member function
+	LUA_GTEST_CHUNK("spl:Load(nil)");
+	{
+		Spline* testResults = *state.GetGlobal<Spline*>("spl");
+		ASSERT_TRUE(testResults->loadBaseCalled);
+	}
+
+	// TEST: other object and upcasting brought to native code
+	LUA_GTEST_CHUNK("spl = TerrainSpline.new()");
+	{
+		Spline* testResults = *state.GetGlobal<Spline*>("spl");
+		ASSERT_TRUE(testResults != nullptr) << "Upcasting TerrainSpline to Spline failure";
+	}
+
+	// TEST: calling member function with same name (that hides other function due to different args)
+	LUA_GTEST_CHUNK("spl:Save(KVSection.new(), true)");
+	{
+		TerrainSpline* testResults = *state.GetGlobal<TerrainSpline*>("spl");
+		ASSERT_FALSE(testResults->saveBaseCalled);
+		ASSERT_FALSE(testResults->saveOverrideCalled);
+		ASSERT_TRUE(testResults->saveOverloadCalled);
+	}
+
+	// TEST: calling hidden member function which is under other name in Lua
+	LUA_GTEST_CHUNK("spl = TerrainSpline.new(); spl:SaveStandard(nil)");
+	{
+		TerrainSpline* testResults = *state.GetGlobal<TerrainSpline*>("spl");
+		ASSERT_FALSE(testResults->saveBaseCalled);
+		ASSERT_TRUE(testResults->saveOverrideCalled);
+		ASSERT_FALSE(testResults->saveOverloadCalled);
+	}
+
+	// TEST: calling member function
+	LUA_GTEST_CHUNK("spl:Load(nil)");
+	{
+		Spline* testResults = *state.GetGlobal<Spline*>("spl");
+		ASSERT_TRUE(testResults != nullptr) << "Upcasting TerrainSpline to Spline failure";
+		ASSERT_FALSE(testResults->loadBaseCalled);
+	}
+}
+
+//---------------------------------------------
+
+TEST(EqScriptTests, SetGlobal)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
+
+	Spline* temp = PPNew Spline();
+	{
+		temp->name = "Some spline name";
+		state.SetGlobal("testSpline", temp);
+	}
+
+	// TEST: spline from TestTable must be retrieved as well as it's name (tests binding in Lua)
+	LUA_GTEST_CHUNK("EXPECT_EQ(\"Some spline name\", testSpline.name)");
+
+	// TEST: retrieve from globals, check pointers, check name (paranoid about memory damage lol)
+	{
+		Spline* spline = *state.GetGlobal<Spline*>("testSpline");
+		ASSERT_EQ(temp, spline);
+		ASSERT_EQ(spline->name, "Some spline name");
+	}
+
+	// TEST: calling member function on global
+	LUA_GTEST_CHUNK("testSpline:Load(nil)");
+	{
+		ASSERT_TRUE(temp->loadBaseCalled);
+	}
+
+	delete temp;
+}
+
+TEST(EqScriptTests, TestGetGlobal)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
+	state.RegisterClass<TerrainSpline>();
+
+	state.RunChunk("TestFunc = function(intVal, strVal) print(intVal, strVal, \"\\n\"); return 1500.0 / 3.0 end");
 	state.RunChunk("TestValue = Spline.new()");
 	state.RunChunk("TestValueUpcast = TerrainSpline.new()");
 	state.RunChunk("TestNilValue = nil");
@@ -399,12 +548,16 @@ DECLARE_CMD(test_valueGetter, nullptr, 0)
 	}
 }
 
-DECLARE_CMD(test_funcCall, nullptr, 0)
+TEST(EqScriptTests, TestFunctionInvocations)
 {
-	EqScriptState state(GetLuaState());
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
 
-	state.RunChunk("TestFunc = function(intVal, strVal) MsgInfo(intVal, strVal, \"\\n\"); return 1500.0 / 3.0 end");
-	state.RunChunk("TestFunc2 = function() MsgInfo(\"Simple function call\\n\") end");
+	state.RegisterClass<Spline>();
+	state.RegisterClass<TerrainSpline>();
+
+	state.RunChunk("TestFunc = function(intVal, strVal) print(intVal, strVal, \"\\n\"); return 1500 / 3 end");
+	state.RunChunk("TestFunc2 = function() print(\"Simple function call\\n\") end");
 	state.RunChunk("TestFunc4 = function() r = a + b end");
 
 	// TEST: function with return value and arguments
@@ -414,35 +567,29 @@ DECLARE_CMD(test_funcCall, nullptr, 0)
 		using TestFunc = esl::runtime::FunctionCall<float, int, const char*>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult, 1337, "Hello from C++ to Lua");
 		if (result)
-			Msg("invoke result: %.2f\n", result.value);
+			ASSERT_EQ(result.value, 1500 / 3);
 		else
-			MsgError("Error while executing function TestFunc: %s\n", result.errorMessage.ToCString());
+			ASSERT_FAIL("Error while executing function TestFunc: %s\n", result.errorMessage.ToCString());
 	}
 	
-	// TEST: function without return value
+	// TEST: function without return value (success must be false)
 	{
 		auto funcResult = state.GetGlobal<esl::LuaFunctionRef>("TestFunc2");
 
 		using TestFunc = esl::runtime::FunctionCall<void>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult);
 
-		if (result)
-			Msg("invoke success\n");
-		else
-			MsgError("Error while executing function TestFunc2: %s\n", result.errorMessage.ToCString());
+		ASSERT_TRUE(result.success) << result.errorMessage;
 	}
 
-	// TEST: function calling nil
+	// TEST: function calling nil (success must be false)
 	{
 		auto funcResult = state.GetGlobal<esl::LuaFunctionRef>("TestFunc3");
 
 		using TestFunc = esl::runtime::FunctionCall<void>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult);
 
-		if (result)
-			Msg("invoke success\n");
-		else
-			MsgError("Error while executing function TestFunc3: %s\n", result.errorMessage.ToCString());
+		ASSERT_FALSE(result.success) << result.errorMessage;
 	}
 
 	// TEST: function calling with error
@@ -452,39 +599,36 @@ DECLARE_CMD(test_funcCall, nullptr, 0)
 		using TestFunc = esl::runtime::FunctionCall<void>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult);
 
-		if (result)
-			Msg("invoke success\n");
-		else
-			MsgError("Error while executing function TestFunc4: %s\n", result.errorMessage.ToCString());
+		ASSERT_FALSE(result.success) << result.errorMessage;
 	}
 }
 
-DECLARE_CMD(test_tables, nullptr, 0)
+TEST(EqScriptTests, TestTables)
 {
-	EqScriptState state(GetLuaState());
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
 
 	state.RunChunk("TestTable = { keyA = \"string AAB value\", num = 1657 }");
 
-	lua_State* L = GetLuaState();
 	// TEST: get table and check if it's valid
 	{
 		esl::LuaTable tableRes = *state.GetGlobal<esl::LuaTable>("TestTable");
-		ASSERT(tableRes.IsValid());
+		ASSERT_TRUE(tableRes.IsValid());
 	}
 
 	// TEST: get a value from table
 	{
 		esl::LuaTable tableRes = *state.GetGlobal<esl::LuaTable>("TestTable");
-		ASSERT(tableRes.IsValid());
+		ASSERT_TRUE(tableRes.IsValid());
 
 		const EqString str = *tableRes.Get<EqString>("keyA");
 		const int val = *tableRes.Get<int>("num");
-		ASSERT(str == "string AAB value");
-		ASSERT(val == 1657);
-		Msg("Table has values %s, %d\n", str.ToCString(), val);
+		ASSERT_EQ(str, "string AAB value");
+		ASSERT_EQ(val, 1657);
+		//Msg("Table has values %s, %d\n", str.ToCString(), val);
 	}
 
 	// TEST: set a value in table
@@ -504,8 +648,8 @@ DECLARE_CMD(test_tables, nullptr, 0)
 		const EqString str = *tableRes.value.Get<EqString>("stringValue");
 		const EqString str2 = *tableRes.value.Get<EqString>(temp);
 
-		ASSERT(val == 1337);
-		ASSERT(str == "This is a string set from C++");
+		ASSERT_EQ(val, 1337);
+		ASSERT_EQ(str, "This is a string set from C++");
 
 		// This will fail because the value is boxed and we always pushing new userdata.
 		// We need somehow to make comparison mechanism to do this between native and Lua.
@@ -514,15 +658,12 @@ DECLARE_CMD(test_tables, nullptr, 0)
 		//ASSERT(str2 != "Spline as a key");
 		ASSERT(str2.Length() == 0);
 
-		Msg("Table has values %s, %d\n", str.ToCString(), val);
+		//Msg("Table has values %s, %d\n", str.ToCString(), val);
 	}
 
 	// TEST: set a function in table and call it with self as a table
 	{
-		if(!state.RunChunk("TempFunction = function(self, arg2) MsgInfo(\"Simple function call with self -\", self.valueNum, arg2,\"\\n\") end"))
-		{
-			MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(GetLuaState()));
-		}
+		state.RunChunk("TempFunction = function(self, arg2) print(\"Simple function call with self -\", self.valueNum, arg2,\"\\n\") end");
 
 		auto tableRes = state.GetGlobal<esl::LuaTable>("TestTable");
 		ASSERT(tableRes && tableRes.value.IsValid());
@@ -534,25 +675,16 @@ DECLARE_CMD(test_tables, nullptr, 0)
 		using TestFunc = esl::runtime::FunctionCall<void, const esl::LuaTableRef&, int>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult, *tableRes, 999666);
 
-		if (result)
-			Msg("invoke success\n");
-		else
-			MsgError("Error while executing function TestTable.TempFunction: %s\n", result.errorMessage.ToCString());
-	}
-
-	// TEST: spline from TestTable must be retrieved as well as it's name (tests binding in Lua)
-	if (!state.RunChunk("MsgInfo(\"Spline name\", TestTable.testSpline.name, \"\\n\")"))
-	{
-		MsgError("Error while running chunk: %s\n", esl::runtime::GetLastError(GetLuaState()));
+		ASSERT_TRUE(result.success) << result.errorMessage;
 	}
 
 	// TEST: spline from TestTable must be retrieved as well as it's name (tests native getter)
 	{
-		auto tableRes = esl::runtime::GetGlobal<esl::LuaTable>(L, "TestTable");
+		auto tableRes = esl::runtime::GetGlobal<esl::LuaTable>(stateTest, "TestTable");
 		ASSERT(tableRes && tableRes.value.IsValid());
 
 		Spline* spline = *tableRes.value.Get<Spline*>("testSpline");
-		ASSERT(spline->name == "Some name");
+		ASSERT_EQ(spline->name, "Some name");
 	}
 }
 
@@ -561,14 +693,107 @@ static bool ValueTest(const Spline* test)
 	return test != nullptr;
 }
 
-DECLARE_CMD(test_globals, nullptr, 0)
+TEST(EqScriptTests, TestCFunction)
 {
-	EqScriptState state(GetLuaState());
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<Spline>();
 
 	Spline* spline = PPNew Spline();
 	spline->name = "Spline of test_globals";
 	state.SetGlobal("spl", spline);
-	state.SetGlobal("TestCFunction", esl::binder::BindCFunction<ValueTest>());
+	state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(ValueTest));
+
+	// TEST: C function call with arguments (nil)
+	LUA_GTEST_CHUNK("EXPECT_EQ(TestCFunction(testValue), false)");
+
+	// TEST: C function call with arguments
+	LUA_GTEST_CHUNK("EXPECT_EQ(TestCFunction(spl), true)");
 }
 
-//---------------------------------------------------
+struct TestRefPtr : public RefCountedObject<TestRefPtr>
+{
+	TestRefPtr() = default;
+	TestRefPtr(int& controlValue)
+		: controlValue(controlValue)
+	{
+	}
+
+	~TestRefPtr()
+	{
+		controlValue = 0xFEDABEEF;
+	}
+
+	int& controlValue = value;
+	int					value{ 0 };
+	EqString			strValue;
+};
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(TestRefPtr, "TestRefPtr", REF_PTR)
+EQSCRIPT_TYPE_BEGIN(TestRefPtr)
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_VAR(value)
+	EQSCRIPT_BIND_VAR(strValue)
+EQSCRIPT_TYPE_END
+
+TEST(EqScriptTests, RefPtrDereference)
+{
+	int controlValue = 0xDEADBEEF;
+
+	{
+		LuaStateTest stateTest;
+		EqScriptState state(stateTest);
+		state.RegisterClass<TestRefPtr>();
+
+		// TEST: refptr owned by lua, dereferenced by C++
+		{
+			CRefPtr<TestRefPtr> testPush = CRefPtr_new(TestRefPtr, controlValue);
+			state.SetGlobal("testRefPtr", testPush);
+
+			ASSERT_EQ(controlValue, 0xDEADBEEF);
+		}
+
+		// TEST: refptr still owns pointer
+		ASSERT_NE(controlValue, 0xFEDABEEF);
+	}
+
+	// TEST: refptr deferenced by Lua GC destructor call
+	ASSERT_EQ(controlValue, 0xFEDABEEF);
+}
+
+static void RefPtrTestNotNull(const CRefPtr<TestRefPtr>& testPtr)
+{
+	ASSERT_TRUE(testPtr != nullptr);
+
+	// Lua owns this as well as binder
+	ASSERT_EQ(testPtr->Ref_Count(), 2);
+}
+
+TEST(EqScriptTests, RefPtrFromLua)
+{
+	CRefPtr<TestRefPtr> testGet;
+
+	{
+		LuaStateTest stateTest;
+		EqScriptState state(stateTest);
+		state.RegisterClass<TestRefPtr>();
+
+		state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(RefPtrTestNotNull));
+
+		// TEST: refptr created inside lua
+		LUA_GTEST_CHUNK("testValue = TestRefPtr.new(); testValue.value = 555; testValue.strValue = 'Hi from Lua'");
+
+		// TEST: refptr is passed as argument to function
+		LUA_GTEST_CHUNK("TestCFunction(testValue)");
+
+		testGet = *state.GetGlobal<CRefPtr<TestRefPtr>>("testValue");
+		ASSERT_EQ(testGet->Ref_Count(), 2);
+	}
+	
+	// TEST: only C++ must own this object
+	ASSERT_EQ(testGet->Ref_Count(), 1);
+
+	ASSERT_EQ(testGet->value, 555);
+	ASSERT_EQ(testGet->strValue, "Hi from Lua");
+}

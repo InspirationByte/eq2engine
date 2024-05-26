@@ -43,11 +43,11 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* exp
 
 #define	ASSERT_MSG(x, msgFmt, ...) \
 { \
-	static bool ignoreAssert = false; \
+	static bool _ignoreAssert = false; \
 	if (!(x)) { \
-		const int result = _InternalAssertMsg(PP_SL, ignoreAssert, #x, msgFmt, ##__VA_ARGS__); \
-		if (result == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
-		else if (result == _EQASSERT_IGNORE_ALWAYS) { ignoreAssert = true; }\
+		const int _assertResult = _InternalAssertMsg(PP_SL, _ignoreAssert, #x, msgFmt, ##__VA_ARGS__); \
+		if (_assertResult == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
+		else if (_assertResult == _EQASSERT_IGNORE_ALWAYS) { _ignoreAssert = true; }\
 	} \
 }
 

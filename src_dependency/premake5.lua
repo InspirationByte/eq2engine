@@ -9,6 +9,10 @@ include("shaderc/premake5.lua")
 include("wxWidgets/premake5.lua")
 end
 
+if ENABLE_TESTS then
+include("gtest/premake5.lua")
+end
+
 include("lz4/premake5.lua")
 include("cv_sdk/premake5.lua")
 
