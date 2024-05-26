@@ -63,11 +63,11 @@ workspace(WORKSPACE_NAME)
 	linkgroups 'On'
 	
 	--characterset "ASCII"
-	objdir "build_%{_ACTION}/obj"
-	targetdir "build_%{_ACTION}/bin/%{cfg.platform}/%{cfg.buildcfg}"
+	objdir "build/obj"
+	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 
 	if _ACTION ~= "vscode" then
-		location "build_%{ _ACTION }"
+		location "build/%{wks.name}"
 	end
 
 	defines {
@@ -133,8 +133,8 @@ workspace(WORKSPACE_NAME)
 		platforms { 
 			"x86", "x64" -- maybe add ARM & ARM64 for RPi?
 		}
-		vscode_makefile "%{WORKSPACE_NAME}_gmake2"
-		vscode_launch_cwd ("${workspaceRoot}/../"..WORKSPACE_NAME.."/build")
+		vscode_makefile "build/%{wks.name}"
+		vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build")
 		vscode_launch_environment {
 			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
 		}

@@ -55,6 +55,7 @@ p.api.register {
 	display = "[VSCode] launch working directory",
 	description = "Working directory of launched app",
 	kind = "string",
+    tokens = true,
 }
 
 p.api.register {
@@ -63,6 +64,7 @@ p.api.register {
 	display = "[VSCode] launch environment strings",
 	description = "Environment strings of launched app",
 	kind = "table",
+    tokens = true,
 }
 
 p.api.register {
@@ -71,6 +73,7 @@ p.api.register {
 	display = "[VSCode] launch arguments",
 	description = "Launched app arguments",
 	kind = "list:string",
+    tokens = true,
 }
 
 function vscode.generateWorkspace(wks)
