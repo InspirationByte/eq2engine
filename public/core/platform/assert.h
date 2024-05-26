@@ -67,7 +67,8 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* exp
 assert_sizeof(char, 1);
 assert_sizeof(short, 2);
 assert_sizeof(int, 4);
-assert_sizeof(long, 4); // FIXME: not valid on GCC m64
+//assert_sizeof(long, 4); // NOTE: we should really not use long type in any way.
 assert_sizeof(long long, 8);
 assert_sizeof(float, 4);
 assert_sizeof(double, 8);
+
