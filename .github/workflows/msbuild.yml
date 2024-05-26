@@ -76,6 +76,6 @@ jobs:
       with:
         name: DrvSyn_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
         path: |
-          bin/x64/Release/*.pdb
-          bin/x64/Release/*.exe
-          bin/x64/Release/*.dll
+          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/*.pdb
+          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/*.exe
+          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/*.dll

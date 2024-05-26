@@ -70,10 +70,10 @@ jobs:
         path: |
           *.AppImage
 
-#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/*.so
-#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/DrvSyn_${{env.BUILD_CONFIGURATION_U}}
-#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/fcompress
-#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/animca
-#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/egfca
-#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/atlasgen
-#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/texcooker
+#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/*.so
+#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/DrvSyn_${{env.BUILD_CONFIGURATION_U}}
+#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/fcompress
+#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/animca
+#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/egfca
+#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/atlasgen
+#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/texcooker
