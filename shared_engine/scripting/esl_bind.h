@@ -291,7 +291,7 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 // Func(Name, [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_CFUNC(Name, ...) \
-	esl::binder::BindCFunction<__VA_ARGS__>(&Name)
+	esl::binder::BindCFunction<__VA_ARGS__>(Name)
 
 // Func(Name, Ret, (ArgT1, ArgT2, ...ArgTN), [ ESL_APPLY_TRAITS(ArgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_CFUNC_OVERLOAD(Name, R, Signature,...) \

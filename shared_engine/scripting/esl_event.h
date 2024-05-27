@@ -26,6 +26,7 @@ public:
 
 	HandlePtr	AddHandler(const esl::LuaFunctionRef& func);
 	void		RemoveHandler(const HandlePtr& handle);
+	int			GetHandlerCount() const { return m_eventHandlers.size(); }
 	void		Clear();
 
 	FunctionSet::Iterator	GetFirstHandler() { return m_eventHandlers.begin(); }

@@ -779,7 +779,7 @@ template<typename UR = void, typename ... UArgs, typename Func>
 static bindings::LuaCFunction BindCFunction(Func f)
 {
 	bindings::LuaCFunction funcInfo;
-	funcInfo.funcPtr = reinterpret_cast<void*>(f);
+	funcInfo.funcPtr = f;
 
 	if constexpr (std::is_void_v<UR> && sizeof...(UArgs) == 0)
 		funcInfo.luaFuncImpl = &FunctionBinderNoTraits<Func>::Func;
@@ -915,7 +915,7 @@ struct MemberVarTypeName;
 template<typename T, typename V, V T::* MemberVar>
 struct MemberVarTypeName<T, MemberVar>
 {
-	static const char* Get() { return LuaBaseTypeAlias<T>::value; }
+	static const char* Get() { return LuaBaseTypeAlias<V>::value; }
 };
 
 template<typename T, auto V>
