@@ -29,6 +29,20 @@ private:
 
 //---------------------------------------------------
 
+enum ETestUntyped
+{
+	TEST_ENUM_1,
+	TEST_ENUM_2,
+	TEST_ENUM_3
+};
+
+enum ETestTyped : int
+{
+	TEST_TYPED_ENUM_1,
+	TEST_TYPED_ENUM_2,
+	TEST_TYPED_ENUM_3
+};
+
 struct Spline
 {
 	virtual ~Spline() = default;
@@ -52,17 +66,16 @@ struct Spline
 		nonVirtualCalled = true;
 	}
 
-	EqString	name;
-	ushort		connections[2]{ 0xffff };	// connected roads or junctions
-	Vector3D	position;
-	float		angle;
-	float		length;
-	int			vehicleZoneNameHash{ 0 };	// hash for vehicle zone name. 0 means default.
-	float		speedLimit{ 50.0f };
-	int16		numLanes{ 0 };
-	int16		laneDirs{ 0 };				// lane dir flags (oncoming = 1)
-	int16		laneDisabled{ 0 };
-	int16		flags{ 0 };					// EStraightFlags
+	EqString		name;
+	Vector3D		position;
+	ETestTyped		angle;
+	ETestUntyped	length;
+	int				vehicleZoneNameHash{ 0 };
+	float			speedLimit{ 50.0f };
+	int16			numLanes{ 0 };
+	int16			laneDirs{ 0 };
+	int16			laneDisabled{ 0 };
+	int16			flags{ 0 };
 
 	bool loadBaseCalled = false;
 	bool saveBaseCalled = false;
@@ -236,11 +249,9 @@ LuaStateTest::~LuaStateTest()
 
 //-------------------------------------------------------
 
-TEST(EqScriptTests, TestBinder)
+template<typename T>
+static void PrintTypeInfo()
 {
-	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
-
 	static const char* typesStr[] = {
 		"null",
 		"const",
@@ -252,46 +263,78 @@ TEST(EqScriptTests, TestBinder)
 		"operator",
 	};
 
-	// test type info for Spline
+	esl::TypeInfo typeInfo = EqScriptClass<T>::GetTypeInfo();
+
+	Msg("type %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
+	for (const esl::Member& mem : typeInfo.members)
+	{
+		if (mem.type == esl::MEMB_CTOR)
+			Msg("   %s(%s)\n", mem.name, mem.signature);
+		else if (mem.type == esl::MEMB_VAR)
+			Msg("   %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
+		else if (mem.type == esl::MEMB_FUNC)
+			Msg("   %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
+		else
+			Msg("   %s\n", mem.name);
+	}
+	Msg("end\n");
+}
+
+TEST(EQSCRIPT_TESTS, TestBinder)
+{
+	//PrintTypeInfo<Spline>();
+	//PrintTypeInfo<TerrainSpline>();
+
+	// TEST: validate binder
 	{
 		esl::TypeInfo typeInfo = EqScriptClass<Spline>::GetTypeInfo();
 
-		Msg("class %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
-		for (const esl::Member& mem : typeInfo.members)
-		{
-			if (mem.type == esl::MEMB_CTOR)
-				Msg("  %s(%s)\n", mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_VAR)
-				Msg("  %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_FUNC)
-				Msg("  %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
-		}
-		Msg("Members: %d\n", typeInfo.members.numElem());
+		ASSERT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
 
-		esl::RegisterType(state, typeInfo);
+		// check constructors
+		ASSERT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
+		ASSERT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
+		ASSERT_EQ(_Es(typeInfo.members[2].signature), "number");
+
+		// check members
+		ASSERT_EQ(typeInfo.members[3].type, esl::MEMB_FUNC);
+		ASSERT_EQ(_Es(typeInfo.members[3].signature), "KVSection");
+
+		// TEST: validate LuaTypeAlias
+		ASSERT_EQ(typeInfo.members[6].type, esl::MEMB_VAR);
+		ASSERT_EQ(_Es(typeInfo.members[6].signature), "string");
+
+		// TEST: validate LuaTypeAlias
+		ASSERT_EQ(typeInfo.members[7].type, esl::MEMB_VAR);
+		ASSERT_EQ(_Es(typeInfo.members[7].signature), "Vector3D");
+
+		// TEST: validate LuaTypeAlias enum type
+		ASSERT_EQ(typeInfo.members[8].type, esl::MEMB_VAR);
+		ASSERT_EQ(_Es(typeInfo.members[8].signature), "number");
+
+		// TEST: validate LuaTypeAlias enum type
+		ASSERT_EQ(typeInfo.members[9].type, esl::MEMB_VAR);
+		ASSERT_EQ(_Es(typeInfo.members[9].signature), "number");
 	}
 
-	// test type info for TerrainSpline
+	// TEST: validate binder with base class
 	{
 		esl::TypeInfo typeInfo = EqScriptClass<TerrainSpline>::GetTypeInfo();
 
-		Msg("class %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
-		for (const esl::Member& mem : typeInfo.members)
-		{
-			if (mem.type == esl::MEMB_CTOR)
-				Msg("  %s(%s)\n", mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_VAR)
-				Msg("  %s %s : %s\n", typesStr[mem.type], mem.name, mem.signature);
-			else if (mem.type == esl::MEMB_FUNC)
-				Msg("  %s %s(%s) %s\n", typesStr[mem.type], mem.name, mem.signature, mem.isConst ? "const" : "");
-		}
-		Msg("Members: %d\n", typeInfo.members.numElem());
+		// TEST: base class matching
+		ASSERT_EQ(typeInfo.base->className, typeInfo.baseClassName);
 
-		esl::RegisterType(state, typeInfo);
+		// TEST: derived types must have their destructor too
+		ASSERT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
+
+		// check constructors
+		ASSERT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
+		ASSERT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
+		ASSERT_EQ(_Es(typeInfo.members[2].signature), "number,string,Spline");
 	}
 }
 
-TEST(EqScriptTests, TestInstantiation)
+TEST(EQSCRIPT_TESTS, TestInstantiation)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -317,7 +360,7 @@ TEST(EqScriptTests, TestInstantiation)
 	LUA_GTEST_CHUNK("spl = TerrainSpline.new()");
 }
 
-TEST(EqScriptTests, TestVariables)
+TEST(EQSCRIPT_TESTS, TestVariables)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -355,7 +398,7 @@ TEST(EqScriptTests, TestVariables)
 	LUA_GTEST_CHUNK("EXPECT_EQ(spl.vehicleZoneNameHash, checkValueNumber)");
 }
 
-TEST(EqScriptTests, TestAddingToMetatable)
+TEST(EQSCRIPT_TESTS, TestAddingToMetatable)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -369,7 +412,7 @@ TEST(EqScriptTests, TestAddingToMetatable)
 	LUA_GTEST_CHUNK("TerrainSpline.Try = function(self, v) return v end; EXPECT_EQ(120, spl:Try(120))");
 }
 
-TEST(EqScriptTests, TestFunctionCalls)
+TEST(EQSCRIPT_TESTS, TestFunctionCalls)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -393,7 +436,7 @@ TEST(EqScriptTests, TestFunctionCalls)
 	LUA_GTEST_CHUNK_FAIL("spl:GetPoint(1900 / 2, spl, \"Whoops\")");
 }
 
-TEST(EqScriptTests, TestInheritClassFunctionCalls)
+TEST(EQSCRIPT_TESTS, TestInheritClassFunctionCalls)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -454,7 +497,7 @@ TEST(EqScriptTests, TestInheritClassFunctionCalls)
 
 //---------------------------------------------
 
-TEST(EqScriptTests, SetGlobal)
+TEST(EQSCRIPT_TESTS, SetGlobal)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -486,7 +529,7 @@ TEST(EqScriptTests, SetGlobal)
 	delete temp;
 }
 
-TEST(EqScriptTests, TestGetGlobal)
+TEST(EQSCRIPT_TESTS, TestGetGlobal)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -534,21 +577,21 @@ TEST(EqScriptTests, TestGetGlobal)
 	// TEST: get number values
 	{
 		auto result = state.GetGlobal<int8>("TestNumberValue");
-		ASSERT(result.value == int8(768127));
+		ASSERT_EQ(result.value, int8(768127));
 	}
 
 	{
 		auto result = state.GetGlobal<int16>("TestNumberValue");
-		ASSERT(result.value == int16(768127));
+		ASSERT_EQ(result.value, int16(768127));
 	}
 
 	{
 		auto result = state.GetGlobal<int32>("TestNumberValue");
-		ASSERT(result.value == int32(768127));
+		ASSERT_EQ(result.value, int32(768127));
 	}
 }
 
-TEST(EqScriptTests, TestFunctionInvocations)
+TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -603,7 +646,7 @@ TEST(EqScriptTests, TestFunctionInvocations)
 	}
 }
 
-TEST(EqScriptTests, TestTables)
+TEST(EQSCRIPT_TESTS, TestTables)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -685,6 +728,8 @@ TEST(EqScriptTests, TestTables)
 
 		Spline* spline = *tableRes.value.Get<Spline*>("testSpline");
 		ASSERT_EQ(spline->name, "Some name");
+
+		delete spline;
 	}
 }
 
@@ -693,7 +738,7 @@ static bool ValueTest(const Spline* test)
 	return test != nullptr;
 }
 
-TEST(EqScriptTests, TestCFunction)
+TEST(EQSCRIPT_TESTS, TestCFunction)
 {
 	LuaStateTest stateTest;
 	EqScriptState state(stateTest);
@@ -710,6 +755,8 @@ TEST(EqScriptTests, TestCFunction)
 
 	// TEST: C function call with arguments
 	LUA_GTEST_CHUNK("EXPECT_EQ(TestCFunction(spl), true)");
+
+	delete spline;
 }
 
 struct TestRefPtr : public RefCountedObject<TestRefPtr>
@@ -737,7 +784,7 @@ EQSCRIPT_TYPE_BEGIN(TestRefPtr)
 	EQSCRIPT_BIND_VAR(strValue)
 EQSCRIPT_TYPE_END
 
-TEST(EqScriptTests, RefPtrDereference)
+TEST(EQSCRIPT_TESTS, RefPtrDereference)
 {
 	int controlValue = 0xDEADBEEF;
 
@@ -770,7 +817,7 @@ static void RefPtrTestNotNull(const CRefPtr<TestRefPtr>& testPtr)
 	ASSERT_EQ(testPtr->Ref_Count(), 2);
 }
 
-TEST(EqScriptTests, RefPtrFromLua)
+TEST(EQSCRIPT_TESTS, RefPtrFromLua)
 {
 	CRefPtr<TestRefPtr> testGet;
 
@@ -796,4 +843,54 @@ TEST(EqScriptTests, RefPtrFromLua)
 
 	ASSERT_EQ(testGet->value, 555);
 	ASSERT_EQ(testGet->strValue, "Hi from Lua");
+}
+
+struct TestEvent
+{
+	ESL_DECLARE_EVENT(Event);
+};
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(TestEvent, "TestEvent", BY_REF)
+EQSCRIPT_TYPE_BEGIN(TestEvent)
+	EQSCRIPT_BIND_EVENT(Event)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, TestNativeEvent)
+{
+	TestEvent* evtTestObj = PPNew TestEvent();
+
+	{
+		LuaStateTest stateTest;
+		EqScriptState state(stateTest);
+
+		state.RegisterClass<TestEvent>();
+		state.SetGlobal("evtTest", evtTestObj);
+
+		// TEST: lambda function binder
+		state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(+[](const EqString& message) {
+			ASSERT_EQ("Event Called", message);
+		}));
+
+		// TEST: event handlers added
+		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(function() end)");
+		ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
+
+		// TEST: call event from native code
+		ESL_DECLARE_EVENT_CALL(evtTestObj, Event, const EqString&);
+		ESL_CALL_EVENT(Event, "Event Called");
+
+		LUA_GTEST_CHUNK("evtTest.Event:RemoveHandler(testHandle)");
+
+		// TEST: handler removed
+		ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 0);
+
+		// TEST: re-add event
+		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(TestCFunction)");
+		ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
+	}
+
+	// TEST: handler remove due to GC of Handle and Lua state closed
+	ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 0);
+
+	delete evtTestObj;
 }

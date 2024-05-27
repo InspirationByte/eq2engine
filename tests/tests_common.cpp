@@ -19,5 +19,6 @@ TestAppWrapper::~TestAppWrapper()
 TestAppWrapper::TestAppWrapper(const char* name, int argc, char** argv)
 {
 	GetCDkCore()->Init(name, argc, argv);
+	Install_SpewFunction();
 	m_oldAssertHandler = SetAssertHandler(TestsAssertHandler);
 }
