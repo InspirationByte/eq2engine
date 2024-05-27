@@ -26,7 +26,6 @@ enum EOpType : int
 	OP_eq,
 	OP_lt,
 	OP_le,
-	OP_call
 };
 }
 
@@ -273,6 +272,9 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 
 #define EQSCRIPT_BIND_OP_CUSTOM(Func, Name) \
 	MakeOperator(&Func<BindClass, binder::OP_##Name>, "__" #Name),
+
+#define EQSCRIPT_BIND_OP_TOSTRING(Func) \
+	MakeOperator(binder::ToStringOperator<BindClass, &Func>, "__tostring"),
 
 #define EQSCRIPT_BIND_VAR(Name) \
 	MakeVariable<ESL_CLASS_MEMBER(Name)>(#Name),

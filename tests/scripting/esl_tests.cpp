@@ -137,8 +137,6 @@ EQSCRIPT_TYPE_BEGIN(Vector2D)
 	EQSCRIPT_BIND_CONSTRUCTOR(float, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector2D&)
 
-	//BIND_VECTOR_OPERATORS()
-
 	EQSCRIPT_BIND_VAR(x)
 	EQSCRIPT_BIND_VAR(y)
 EQSCRIPT_TYPE_END
@@ -150,8 +148,6 @@ EQSCRIPT_TYPE_BEGIN(Vector3D)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector2D&, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(float, const Vector2D&)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&)
-
-	//BIND_VECTOR_OPERATORS()
 
 	EQSCRIPT_BIND_FUNC(xy)
 	EQSCRIPT_BIND_FUNC(yz)
@@ -893,4 +889,38 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 	ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 0);
 
 	delete evtTestObj;
+}
+
+struct OperatorTests
+{
+	int value;
+};
+
+static void ToStringTest(const OperatorTests& v, char* dest, const int destSize)
+{
+	snprintf(dest, destSize, "current value: %d", v.value);
+}
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(OperatorTests, "TestOperators", BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(OperatorTests)
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_OP_TOSTRING(ToStringTest)
+
+	// currently no point to test every operator because their 
+	// implementation is completely user-defined, ESL does not handle anything.
+
+	EQSCRIPT_BIND_VAR(value)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, TestOperatorBinding)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<OperatorTests>();
+
+	LUA_GTEST_CHUNK("test = TestOperators.new(); test.value = 545999");
+
+	// TEST: tostring operator
+	LUA_GTEST_CHUNK("EXPECT_EQ(tostring(test), 'current value: 545999')");
 }

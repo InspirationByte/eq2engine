@@ -128,7 +128,7 @@ struct PushGetImpl
 		using UT = StripTraitsT<T>;
 		using BaseUType = BaseType<UT>;
 
-		static_assert(std::is_trivial_v<BaseUType> == false, "GetObject for trivial type");
+		static_assert(std::is_fundamental_v<BaseUType> == false, "GetObject used for fundamental type");
 
 		ASSERT_MSG(LuaTypeByVal<BaseUType>::value == EqScriptClass<BaseUType>::isByVal, "Incorrect object push type on GET");
 
@@ -808,8 +808,8 @@ struct VariableBinder<T, MemberVar> : public esl::ScriptBind
 	{
 		T* thisPtr = static_cast<T*>(this->thisPtr);
 
-		// all non-trivial types should be treated as userdata
-		if constexpr (std::is_trivial<V>::value)
+		// enums and fundamental types should be by-value
+		if constexpr (std::is_fundamental<V>::value || std::is_enum<V>::value)
 			thisPtr->*MemberVar = *runtime::GetValue<V, true>(L, 2);
 		else
 			thisPtr->*MemberVar = *runtime::GetValue<V&, true>(L, 2);
@@ -892,6 +892,26 @@ template<typename T, EOpType OpType>
 static auto BindOperator()
 {
 	return &StandardOperatorBinder<T, OpType>::OpFunc;
+}
+
+template<typename T, void (*Func)(const T&, char*, const int)>
+int ToStringOperator(lua_State* L)
+{
+	const int opType = lua_type(L, 1);
+	if (opType == LUA_TNIL)
+	{
+		lua_pushstring(L, "(null)");
+		return 1;
+	}
+
+	const T& val = *esl::runtime::GetValue<T&, false>(L, 1);
+
+	// FIXME: consider dynamic allocation
+	char tmpStr[256];
+	Func(val, tmpStr, elementsOf(tmpStr));
+
+	lua_pushstring(L, tmpStr);
+	return 1;
 }
 
 }
