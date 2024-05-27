@@ -140,7 +140,7 @@ function m.vscode_launch(prj, launchFile)
 			output = output .. string.format('\t\t\t\t"program": "${workspaceRoot}/%s",\n', programPath)
 			output = output .. '\t\t\t},\n'
 			output = output .. '\t\t\t"stopAtEntry": false,\n'
-			output = output .. '\t\t\t"cwd": "'..(prj.vscode_launch_cwd or string.format('${workspaceRoot}/%s', target))..'",\n'
+			output = output .. '\t\t\t"cwd": "'..(cfg.vscode_launch_cwd or string.format('${workspaceRoot}/%s', target))..'",\n'
 			if prj.vscode_launch_visualizerFile ~= nil then
 				output = output .. '\t\t\t"visualizerFile": "'..prj.vscode_launch_visualizerFile..'",\n'
 				output = output .. '\t\t\t"showDisplayString": true,\n'
@@ -152,9 +152,9 @@ function m.vscode_launch(prj, launchFile)
 				end
 				output = output .. '\t\t\t],\n'
 			end
-			if prj.vscode_launch_environment ~= nil then
+			if cfg.vscode_launch_environment ~= nil then
 				output = output .. '\t\t\t"environment":[\n'
-				for k,v in pairs(prj.vscode_launch_environment) do
+				for k,v in pairs(cfg.vscode_launch_environment) do
 					output = output .. '\t\t\t\t{\n'
 					output = output .. '\t\t\t\t\t"name": "'..k..'",\n'
 					output = output .. '\t\t\t\t\t"value": "'..v..'"\n'

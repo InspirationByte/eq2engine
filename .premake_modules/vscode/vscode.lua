@@ -24,7 +24,7 @@ local project = p.project
 
 p.api.register {
 	name = "vscode_makefile",
-	scope = "project",
+	scope = "workspace",
 	display = "[vscode] makefile location",
 	description = "Location of the makefile",
 	kind = "string",
@@ -33,7 +33,7 @@ p.api.register {
 
 p.api.register {
 	name = "vscode_solution",
-	scope = "project",
+	scope = "workspace",
 	display = "[VSCode] sln location",
 	description = "Location of the solution file",
 	kind = "string",
@@ -51,7 +51,7 @@ p.api.register {
 
 p.api.register {
 	name = "vscode_launch_cwd",
-	scope = "project",
+	scope = "config",
 	display = "[VSCode] launch working directory",
 	description = "Working directory of launched app",
 	kind = "string",
@@ -60,7 +60,7 @@ p.api.register {
 
 p.api.register {
 	name = "vscode_launch_environment",
-	scope = "project",
+	scope = "config",
 	display = "[VSCode] launch environment strings",
 	description = "Environment strings of launched app",
 	kind = "table",
@@ -69,7 +69,7 @@ p.api.register {
 
 p.api.register {
 	name = "vscode_launch_args",
-	scope = "project",
+	scope = "config",
 	display = "[VSCode] launch arguments",
 	description = "Launched app arguments",
 	kind = "list:string",

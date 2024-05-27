@@ -134,9 +134,9 @@ workspace(WORKSPACE_NAME)
 			"x86", "x64" -- maybe add ARM & ARM64 for RPi?
 		}
 		vscode_makefile "build/%{wks.name}"
-		vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build")
+		vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build/bin64linux")
 		vscode_launch_environment {
-			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../%{wks.name}/build/bin64linux"
 		}
 		vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
         buildoptions {
