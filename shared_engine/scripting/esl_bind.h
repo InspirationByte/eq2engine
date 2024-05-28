@@ -3,6 +3,85 @@
 #include "esl_event.h"
 #include "esl_runtime.h"
 
+namespace esl::binder
+{
+enum EOpType : int
+{
+	OP_add,
+	OP_sub,
+	OP_mul,
+	OP_div,
+	OP_mod,
+	OP_pow,
+	OP_unm,
+	OP_idiv,
+	OP_band,
+	OP_bor,
+	OP_xor,
+	OP_not,
+	OP_shl,
+	OP_shr,
+	OP_concat,
+	OP_len,
+	OP_eq,
+	OP_lt,
+	OP_le,
+};
+}
+
+// The binder itself.
+namespace esl::bindings
+{
+struct LuaCFunction
+{
+	void*			funcPtr;
+	lua_CFunction	luaFuncImpl;
+};
+
+struct BaseClassStorage
+{
+	static Map<int, EqString>& GetBaseClassNames();
+
+	template<typename T>
+	static void			Add();
+
+	template<typename T>
+	static const char*	Get();
+
+	static const char*	Get(const char* className);
+};
+
+template <typename T>
+struct ClassBinder
+{
+	using BindClass = T;
+	static ArrayCRef<Member>	GetMembers();
+
+	static Member	MakeDestructor();
+
+	template<typename UR = void, typename ... UArgs, typename F>
+	static Member	MakeStaticFunction(F func, const char* name);
+
+	template<auto F, typename UR = void, typename ... UArgs>
+	static Member	MakeFunction(const char* name);
+
+	template<auto V>
+	static Member	MakeVariable(const char* name);
+
+	template<auto V, auto F>
+	static Member	MakeVariableWithSetter(const char* name);
+
+	template<typename ...Args>
+	static Member	MakeConstructor();
+
+	template<binder::EOpType OpType>
+	static Member	MakeOperator(const char* name);
+
+	template<typename F>
+	static Member	MakeOperator(F func, const char* name);
+};
+}
+
 namespace esl
 {
 template<typename T>
@@ -84,99 +163,6 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 	const int top = GetStackTop();
 	return FuncSignature::Invoke(m_state, top, std::forward<Args>(args)...);		
 }
-}
-
-namespace esl::binder
-{
-enum EOpType : int
-{
-	OP_add,
-	OP_sub,
-	OP_mul,
-	OP_div,
-	OP_mod,
-	OP_pow,
-	OP_unm,
-	OP_idiv,
-	OP_band,
-	OP_bor,
-	OP_xor,
-	OP_not,
-	OP_shl,
-	OP_shr,
-	OP_concat,
-	OP_len,
-	OP_eq,
-	OP_lt,
-	OP_le,
-};
-}
-
-// The binder itself.
-namespace esl::bindings
-{
-struct LuaCFunction
-{
-	void*			funcPtr;
-	lua_CFunction	luaFuncImpl;
-};
-
-struct BaseClassStorage
-{
-	static Map<int, EqString>& GetBaseClassNames();
-
-	template<typename T>
-	static void			Add();
-
-	template<typename T>
-	static const char*	Get();
-
-	static const char*	Get(const char* className);
-};
-
-template <typename T>
-struct ClassBinder
-{
-	using BindClass = T;
-	static ArrayCRef<Member>	GetMembers();
-
-	static Member	MakeDestructor();
-
-	template<typename UR = void, typename ... UArgs, typename F>
-	static Member	MakeStaticFunction(F func, const char* name);
-
-	template<auto F, typename UR = void, typename ... UArgs>
-	static Member	MakeFunction(const char* name);
-
-	template<auto V>
-	static Member	MakeVariable(const char* name);
-
-	template<auto V, auto F>
-	static Member	MakeVariableWithSetter(const char* name);
-
-	template<typename ...Args>
-	static Member	MakeConstructor();
-
-	template<binder::EOpType OpType>
-	static Member	MakeOperator(const char* name);
-
-	template<typename F>
-	static Member	MakeOperator(F func, const char* name);
-};
-}
-
-namespace esl::runtime
-{
-// Push pull is essential when you want to send or get values from Lua
-template<typename T>
-struct PushGet
-{
-	using PushFunc = void(*)(lua_State* L, const BaseType<T>& obj, int flags);
-	using GetFunc = BaseType<T>* (*)(lua_State* L, int index, bool toCpp);
-
-	static PushFunc Push;
-	static GetFunc Get;
-};
 }
 
 //---------------------------------------------------
