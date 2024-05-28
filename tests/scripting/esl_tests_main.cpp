@@ -5,7 +5,7 @@
 
 int main(int argc, char** argv) 
 {
-	TestAppWrapper test("esl_tests", argc, argv);
+	TestAppWrapper test(false, "esl_tests", argc, argv);
 
 	testing::InitGoogleTest(&argc, argv);
 

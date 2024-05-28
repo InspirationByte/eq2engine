@@ -12,13 +12,18 @@ static int TestsAssertHandler(PPSourceLine sl, const char* expression, const cha
 
 TestAppWrapper::~TestAppWrapper()
 {
-	GetCDkCore()->Shutdown();
+	if (m_enableCore)
+		GetCDkCore()->Shutdown();
+
 	SetAssertHandler(m_oldAssertHandler);
 }
 
-TestAppWrapper::TestAppWrapper(const char* name, int argc, char** argv)
+TestAppWrapper::TestAppWrapper(bool enableCore, const char* name, int argc, char** argv)
+	: m_enableCore(enableCore)
 {
-	GetCDkCore()->Init(name, argc, argv);
+	if(m_enableCore)
+		GetCDkCore()->Init(name, argc, argv);
+
 	Install_SpewFunction();
 	m_oldAssertHandler = SetAssertHandler(TestsAssertHandler);
 }
