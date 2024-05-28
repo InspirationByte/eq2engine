@@ -93,6 +93,33 @@ struct ArgsSignature<First, Rest...>
 	}
 };
 
+template<typename T, typename... Args>
+T& New(lua_State* L, Args&&... args)
+{
+	if constexpr (LuaTypeByVal<T>::value)
+	{
+		T* ud = static_cast<T*>(lua_newuserdata(L, sizeof(T)));
+		new(ud) T{ std::forward<Args>(args)... };
+		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
+
+		return *ud;
+	}
+	else
+	{
+		T* newObj = PPNew T{ std::forward<Args>(args)... };
+
+		BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
+		ud->objPtr = newObj;
+		ud->flags = UD_FLAG_OWNED;
+
+		if constexpr (LuaTypeRefCountedObj<T>::value)
+			newObj->Ref_Grab();
+
+		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
+		return *newObj;
+	}
+}
+
 // Push pull is essential when you want to send or get values from Lua
 template<typename T>
 struct PushGetImpl
@@ -601,26 +628,7 @@ struct ConstructorBinder<T>
 	static int Func(lua_State* L)
 	{
 		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", EqScriptClass<T>::className, LuaTypeByVal<T>::value);
-
-		if constexpr (LuaTypeByVal<BaseUType>::value)
-		{
-			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
-			new(ud) BaseUType(); // FIXME: use move?
-			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
-		}
-		else
-		{
-			T* newObj = PPNew T();
-
-			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
-			ud->objPtr = newObj;
-			ud->flags = UD_FLAG_OWNED;
-
-			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
-				newObj->Ref_Grab();
-
-			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
-		}
+		runtime::New<BaseUType>(L);
 		return 1;
 	}
 };
@@ -636,26 +644,7 @@ struct ConstructorBinder
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
 		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", EqScriptClass<T>::className, LuaTypeByVal<T>::value);
-
-		if constexpr (LuaTypeByVal<BaseUType>::value)
-		{
-			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
-			new(ud) BaseUType(*runtime::GetValue<Args, true>(L, IDX + 1)...); // FIXME: use move?
-			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
-		}
-		else
-		{
-			T* newObj = PPNew T(*runtime::GetValue<Args, true>(L, IDX + 1)...);
-
-			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
-			ud->objPtr = newObj;
-			ud->flags = UD_FLAG_OWNED;
-
-			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
-				newObj->Ref_Grab();
-
-			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
-		}
+		runtime::New<BaseUType>(L, *runtime::GetValue<Args, true>(L, IDX + 1)...);
 	}
 
 	static int Func(lua_State* L) 

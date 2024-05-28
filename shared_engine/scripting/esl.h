@@ -191,22 +191,30 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo);
 
 namespace esl::runtime
 {
-void		SetLuaErrorFromTopOfStack(lua_State* L);
-void		ResetErrorValue(lua_State* L);
-const char*	GetLastError(lua_State* L);
-int			StackTrace(lua_State* L);
+void					SetLuaErrorFromTopOfStack(lua_State* L);
+void					ResetErrorValue(lua_State* L);
+const char*				GetLastError(lua_State* L);
+int						StackTrace(lua_State* L);
 
+// Creates new user object and immediately pushes it to stack
+template<typename T, typename... Args>
+static T&				New(lua_State* L, Args&&... args);
+
+// Pushes user object or fundamental value to stack
 template<typename T, typename WT = T>
-static void PushValue(lua_State* L, const T& value);
+static void				PushValue(lua_State* L, const T& value);
 
+// Returns a T value from stack by index. Allows to specify pointer/reference in T type
 template<typename T, bool SilentTypeCheck>
-static decltype(auto) GetValue(lua_State* L, int index);
+static decltype(auto)	GetValue(lua_State* L, int index);
 
+// Pushes user object or fundamental value to global table (_G) by name
 template<typename T>
-static decltype(auto) GetGlobal(lua_State* L, const char* fieldName);
+static void				SetGlobal(lua_State* L, const char* fieldName, const T& value);
 
+// Returns a T value from global table (_G) by name. Allows to specify pointer/reference in T type
 template<typename T>
-static void SetGlobal(lua_State* L, const char* fieldName, const T& value);
+static decltype(auto)	GetGlobal(lua_State* L, const char* fieldName);
 
 template<typename R, typename ... Args>
 struct FunctionCall;
