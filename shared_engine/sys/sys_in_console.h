@@ -72,7 +72,6 @@ public:
 
 	void			SetLastLine();
 	void			AddToLinePos(int num);
-	void			SetText( const char* text, bool quiet = false );
 
 	void			SetHostCursorActive(bool value)	{ m_hostCursorActive = value; }
 
@@ -105,8 +104,9 @@ protected:
 	void			DrawFastFind(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
 	void			DrawAutoCompletion(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
 
-	void			consoleInsText(const char* text,int pos);
-	void			consoleRemTextInRange(int start,int len);
+	void			DelText(int start, int len);
+	void			InsText(const char* text,int pos);
+	void			SetText(const char* text, bool quiet = false);
 
 	void			UpdateCommandAutocompletionList(const EqString& queryStr);
 	void			UpdateVariantsList( const EqString& queryStr );
@@ -164,10 +164,10 @@ private:
 	Array<EqString>					m_commandHistory{ PP_SL };
 	int								m_histIndex;
 
-	Array<ConCommandBase*>			m_foundCmdList{ PP_SL };
+	Array<const ConCommandBase*>	m_foundCmdList{ PP_SL };
 	int								m_cmdSelection;
 
-	ConCommandBase*					m_fastfind_cmdbase;
+	const ConCommandBase*			m_fastfind_cmdbase;
 	Array<EqString>					m_variantList{ PP_SL };
 	int								m_variantSelection;
 
