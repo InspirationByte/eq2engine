@@ -953,6 +953,11 @@ EQSCRIPT_TYPE_BEGIN(ByValueTests)
 	EQSCRIPT_BIND_VAR(isMoved)
 EQSCRIPT_TYPE_END
 
+ByValueTests& ByValueBypassFunc(ByValueTests& ref)
+{
+	return ref;
+}
+
 TEST(EQSCRIPT_TESTS, TestByValue)
 {
 	LuaStateTest stateTest;
@@ -993,4 +998,28 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 		test4.value = 888666;
 		LUA_GTEST_CHUNK("EXPECT_EQ(test4.value, 888666)");
 	}
+
+	state.SetGlobal("TestRefArgument", EQSCRIPT_CFUNC(+[](const ByValueTests& ref, const int checkValue) {
+		EXPECT_EQ(ref.value, checkValue);
+		EXPECT_FALSE(ref.isMoved);
+		EXPECT_FALSE(ref.usedCopyConstructor);
+	}));
+
+	state.SetGlobal("TestPtrArgument", EQSCRIPT_CFUNC(+[](ByValueTests* ptr, const int checkValue) {
+		EXPECT_EQ(ptr->value, checkValue);
+		EXPECT_FALSE(ptr->isMoved);
+		EXPECT_FALSE(ptr->usedCopyConstructor);
+	}));
+
+
+	state.SetGlobal("ByValueBypassFunc", EQSCRIPT_CFUNC(ByValueBypassFunc));
+
+	// TEST: value should not be copied or moved when passed as argument
+	LUA_GTEST_CHUNK("TestRefArgument(test4, 888666)");
+	LUA_GTEST_CHUNK("TestPtrArgument(test2, 4444)");
+
+	// TEST: use copy constructor
+	LUA_GTEST_CHUNK("testRet = ByValueBypassFunc(test4)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.isMoved, false)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.usedCopyConstructor, true)");
 }

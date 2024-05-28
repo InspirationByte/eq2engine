@@ -131,6 +131,8 @@ struct PushGetImpl
 
 	static void PushObject(lua_State* L, const T& obj, int flags)
 	{
+		static_assert(std::is_fundamental_v<BaseUType> == false, "PushObject used for fundamental type");
+
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
 			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
