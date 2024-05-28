@@ -282,14 +282,17 @@ IEXPORTS AssertHandlerFn SetAssertHandler(AssertHandlerFn newHandler)
 
 IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char *fmt, ...)
 {
-	va_list argptr;
-
-	va_start(argptr, fmt);
-	EqString formattedStr = EqString::FormatVa(fmt, argptr);
-	va_end(argptr);
-
 	if(isSkipped)
 		return _EQASSERT_SKIP;
+
+	EqString formattedStr;
+	if (fmt)
+	{
+		va_list argptr;
+		va_start(argptr, fmt);
+		formattedStr = EqString::FormatVa(fmt, argptr);
+		va_end(argptr);
+	}
 
 	return s_assertHandler(sl, expression, formattedStr, Platform_IsDebuggerPresent() == false);
 }
