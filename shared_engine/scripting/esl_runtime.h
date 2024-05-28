@@ -2,8 +2,6 @@
 
 namespace esl::runtime
 {
-using ThisGetterFunc = void* (*)(lua_State* L, bool& isConstRef);
-
 class StackGuard
 {
 public:

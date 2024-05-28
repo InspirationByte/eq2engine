@@ -87,7 +87,7 @@ struct ArgsSignature<First, Rest...>
 	{
 		static EqString result = []() {
 			const char* restStr = ArgsSignature<Rest...>::Get();
-			if constexpr (std::is_same_v<First, EqScriptState>)
+			if constexpr (std::is_same_v<First, ScriptState>)
 				return EqString(*restStr ? "," : "") + restStr;
 			else
 				return EqString(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;			
@@ -632,7 +632,7 @@ struct ConstructorBinder<T>
 
 	static int Func(lua_State* L)
 	{
-		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", EqScriptClass<T>::className, LuaTypeByVal<T>::value);
+		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", ScriptClass<T>::className, LuaTypeByVal<T>::value);
 		runtime::New<BaseUType>(L);
 		return 1;
 	}
@@ -648,7 +648,7 @@ struct ConstructorBinder
 	template<size_t... IDX>
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
-		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", EqScriptClass<T>::className, LuaTypeByVal<T>::value);
+		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", ScriptClass<T>::className, LuaTypeByVal<T>::value);
 		runtime::New<BaseUType>(L, *runtime::GetValue<Args, true>(L, IDX + 1)...);
 	}
 
@@ -669,7 +669,7 @@ template<typename ... Args>
 struct CheckLuaStateArg : std::false_type {};
 
 template<typename First, typename ... Rest>
-struct CheckLuaStateArg<First, Rest...> : std::is_same<First, EqScriptState> {};
+struct CheckLuaStateArg<First, Rest...> : std::is_same<First, ScriptState> {};
 
 //---------------------------------------------------------------
 // Member function binder
@@ -696,7 +696,7 @@ struct MemberFunction
 
 	static int FuncImpl(T* thisPtr, lua_State* L)
 	{
-		ESL_VERBOSE_LOG("call member %s:%x", EqScriptClass<T>::className, FuncPtr);
+		ESL_VERBOSE_LOG("call member %s:%x", ScriptClass<T>::className, FuncPtr);
 		if constexpr (std::is_void_v<R>)
 		{
 			Invoke(thisPtr, L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
@@ -1060,16 +1060,16 @@ Member ClassBinder<T>::MakeOperator(F f, const char* name)
 template<typename T>
 void BaseClassStorage::Add()
 {
-	const int nameHash = StringToHash(EqScriptClass<T>::className);
-	if (!EqScriptClass<T>::baseClassName)
+	const int nameHash = StringToHash(ScriptClass<T>::className);
+	if (!ScriptClass<T>::baseClassName)
 		return;
-	GetBaseClassNames().insert(nameHash, EqScriptClass<T>::baseClassName);
+	GetBaseClassNames().insert(nameHash, ScriptClass<T>::baseClassName);
 }
 
 template<typename T>
 const char* BaseClassStorage::Get()
 {
-	return Get(EqScriptClass<T>::className);
+	return Get(ScriptClass<T>::className);
 }
 }
 

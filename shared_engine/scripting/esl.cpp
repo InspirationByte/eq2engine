@@ -6,7 +6,10 @@
 #include "esl.h"
 #include "esl_luaref.h"
 
-bool EqScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
+namespace esl
+{
+
+bool ScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
 {
 	if (!virtStream)
 	{
@@ -50,7 +53,7 @@ bool EqScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) cons
 	return true;
 }
 
-bool EqScriptState::RunChunk(const EqString& chunk, const char* name) const
+bool ScriptState::RunChunk(const EqString& chunk, const char* name) const
 {
 	const int res = luaL_loadbuffer(m_state, chunk.ToCString(), chunk.Length(), name);
 	if (res != 0)
@@ -69,17 +72,17 @@ bool EqScriptState::RunChunk(const EqString& chunk, const char* name) const
 	return true;
 }
 
-int EqScriptState::GetStackTop() const
+int ScriptState::GetStackTop() const
 {
 	return lua_gettop(m_state);
 }
 
-int EqScriptState::GetStackType(int index) const
+int ScriptState::GetStackType(int index) const
 {
 	return lua_type(m_state, index);
 }
 
-void EqScriptState::ThrowError(const char* fmt, ...) const
+void ScriptState::ThrowError(const char* fmt, ...) const
 {
 	va_list argp;
 	va_start(argp, fmt);
@@ -90,11 +93,13 @@ void EqScriptState::ThrowError(const char* fmt, ...) const
 	lua_error(m_state);
 }
 
-esl::LuaTable EqScriptState::CreateTable() const
+esl::LuaTable ScriptState::CreateTable() const
 {
 	lua_newtable(m_state);
 	const int tableIdx = lua_gettop(m_state);
 	esl::LuaTable result = esl::LuaTable(m_state, tableIdx);
 	lua_pop(m_state, 1);
 	return result;
+}
+
 }

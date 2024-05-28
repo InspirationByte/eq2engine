@@ -3,6 +3,89 @@
 #include "esl_event.h"
 #include "esl_runtime.h"
 
+namespace esl
+{
+template<typename T>
+esl::TypeInfo ScriptClass<T>::GetTypeInfo()
+{
+	return {
+		&ScriptClass<T>::baseClassTypeInfo,
+		ScriptClass<T>::className,
+		ScriptClass<T>::baseClassName,
+		esl::bindings::ClassBinder<T>::GetMembers(),
+		esl::LuaTypeByVal<T>::value
+	};
+};
+
+template<typename T>
+void ScriptState::SetGlobal(const char* name, const T& value) const
+{
+	esl::runtime::SetGlobal(m_state, name, value);
+}
+
+template<typename T>
+decltype(auto) ScriptState::GetGlobal(const char* name) const
+{
+	return esl::runtime::GetGlobal<T>(m_state, name);
+}
+
+template<typename T>
+void ScriptState::PushValue(const T& value) const
+{
+	esl::runtime::PushValue(m_state, value);
+}
+
+template<typename T>
+decltype(auto) ScriptState::GetValue(int index) const
+{
+	return esl::runtime::GetValue<T, true>(m_state, index);
+}
+
+template<typename T>
+void ScriptState::RegisterClass() const
+{
+	esl::runtime::RegisterType(m_state, ScriptClass<T>::GetTypeInfo());
+}
+
+template<typename T, typename K, typename V>
+void ScriptState::RegisterClassStatic(const K& k, const V& v) const
+{
+	lua_getglobal(m_state, ScriptClass<T>::className);
+	const int top = lua_gettop(m_state);
+	esl::LuaTable metaTable(m_state, top);
+	metaTable.Set(k, v);
+	lua_pop(m_state, 1); // getglobal
+}
+
+template<typename T>
+esl::LuaTable ScriptState::GetClassTable() const
+{
+	lua_getglobal(m_state, ScriptClass<T>::className);
+	const int top = lua_gettop(m_state);
+	esl::LuaTable metaTable(m_state, top);
+	lua_pop(m_state, 1); // getglobal
+	return metaTable;
+}
+
+template<typename T, typename V, typename K>
+decltype(auto) ScriptState::GetClassStatic(const K& k) const
+{
+	lua_getglobal(m_state, ScriptClass<T>::className);
+	const int top = GetStackTop();
+	esl::LuaTable metaTable(m_state, top);
+	return metaTable.Get<V>(k);
+}
+
+template<typename R, typename ... Args>
+decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
+{
+	using FuncSignature = esl::runtime::FunctionCall<R, Args...>;
+	lua_getglobal(m_state, name);
+	const int top = GetStackTop();
+	return FuncSignature::Invoke(m_state, top, std::forward<Args>(args)...);		
+}
+}
+
 namespace esl::binder
 {
 enum EOpType : int
@@ -96,87 +179,6 @@ struct PushGet
 };
 }
 
-template<typename T>
-esl::TypeInfo EqScriptClass<T>::GetTypeInfo()
-{
-	return {
-		&EqScriptClass<T>::baseClassTypeInfo,
-		EqScriptClass<T>::className,
-		EqScriptClass<T>::baseClassName,
-		esl::bindings::ClassBinder<T>::GetMembers(),
-		esl::LuaTypeByVal<T>::value
-	};
-};
-
-
-template<typename T>
-void EqScriptState::SetGlobal(const char* name, const T& value) const
-{
-	esl::runtime::SetGlobal(m_state, name, value);
-}
-
-template<typename T>
-decltype(auto) EqScriptState::GetGlobal(const char* name) const
-{
-	return esl::runtime::GetGlobal<T>(m_state, name);
-}
-
-template<typename T>
-void EqScriptState::PushValue(const T& value) const
-{
-	esl::runtime::PushValue(m_state, value);
-}
-
-template<typename T>
-decltype(auto) EqScriptState::GetValue(int index) const
-{
-	return esl::runtime::GetValue<T, true>(m_state, index);
-}
-
-template<typename T>
-void EqScriptState::RegisterClass() const
-{
-	esl::RegisterType(m_state, EqScriptClass<T>::GetTypeInfo());
-}
-
-template<typename T, typename K, typename V>
-void EqScriptState::RegisterClassStatic(const K& k, const V& v) const
-{
-	lua_getglobal(m_state, EqScriptClass<T>::className);
-	const int top = lua_gettop(m_state);
-	esl::LuaTable metaTable(m_state, top);
-	metaTable.Set(k, v);
-	lua_pop(m_state, 1); // getglobal
-}
-
-template<typename T>
-esl::LuaTable EqScriptState::GetClassTable() const
-{
-	lua_getglobal(m_state, EqScriptClass<T>::className);
-	const int top = lua_gettop(m_state);
-	esl::LuaTable metaTable(m_state, top);
-	lua_pop(m_state, 1); // getglobal
-	return metaTable;
-}
-
-template<typename T, typename V, typename K>
-decltype(auto) EqScriptState::GetClassStatic(const K& k) const
-{
-	lua_getglobal(m_state, EqScriptClass<T>::className);
-	const int top = GetStackTop();
-	esl::LuaTable metaTable(m_state, top);
-	return metaTable.Get<V>(k);
-}
-
-template<typename R, typename ... Args>
-decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
-{
-	using FuncSignature = esl::runtime::FunctionCall<R, Args...>;
-	lua_getglobal(m_state, name);
-	const int top = GetStackTop();
-	return FuncSignature::Invoke(m_state, top, std::forward<Args>(args)...);		
-}
-
 //---------------------------------------------------
 
 #include "esl_bind.hpp"
@@ -216,26 +218,26 @@ decltype(auto) EqScriptState::CallFunction(const char* name, Args...args)
 // Basic type binder
 #define EQSCRIPT_BIND_TYPE_BASICS(Class, name, pushtype) \
 	ESL_ALIAS_TYPE(Class, name) \
-	template<> inline const char EqScriptClass<Class>::className[] = name; \
+	template<> inline const char esl::ScriptClass<Class>::className[] = name; \
 	_ESL_PUSH_##pushtype(Class)
 
 // Binder for class without parent type that was bound
 #define EQSCRIPT_BIND_TYPE_NO_PARENT(Class, name, pushtype) \
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, pushtype) \
-	template<> inline const char* EqScriptClass<Class>::baseClassName = nullptr; \
-	template<> inline esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = {};
+	template<> inline const char* esl::ScriptClass<Class>::baseClassName = nullptr; \
+	template<> inline esl::TypeInfo esl::ScriptClass<Class>::baseClassTypeInfo = {};
 
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name) \
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, INHERIT_PARENT) \
-	template<> inline const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
-	template<> inline esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo();
+	template<> inline const char* esl::ScriptClass<Class>::baseClassName = esl::ScriptClass<ParentClass>::className; \
+	template<> inline esl::TypeInfo esl::ScriptClass<Class>::baseClassTypeInfo = esl::ScriptClass<ParentClass>::GetTypeInfo();
 
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT_EX(Class, ParentClass, name, pushtype) \
 	EQSCRIPT_BIND_TYPE_BASICS(Class, name, pushtype) \
-	template<> inline const char* EqScriptClass<Class>::baseClassName = EqScriptClass<ParentClass>::className; \
-	template<> inline esl::TypeInfo EqScriptClass<Class>::baseClassTypeInfo = EqScriptClass<ParentClass>::GetTypeInfo();
+	template<> inline const char* esl::ScriptClass<Class>::baseClassName = esl::ScriptClass<ParentClass>::className; \
+	template<> inline esl::TypeInfo esl::ScriptClass<Class>::baseClassTypeInfo = esl::ScriptClass<ParentClass>::GetTypeInfo();
 
 // Constructor([ ArgT1, ArgT2, ...ArgTN ])
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \

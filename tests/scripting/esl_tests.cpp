@@ -61,7 +61,7 @@ struct Spline
 		saveBaseCalled = true;
 	}
 
-	int NonVirtualFunc(EqScriptState state, int valueA, int valueB, int valueC)
+	int NonVirtualFunc(esl::ScriptState state, int valueA, int valueB, int valueC)
 	{
 		nonVirtualCalled = true;
 		return valueB;
@@ -200,7 +200,7 @@ LuaStateTest::LuaStateTest()
 	luaL_openlibs(m_instance);
 
 	// TODO: move this to esl::InitState()
-	EqScriptState state(m_instance);
+	esl::ScriptState state(m_instance);
 	state.RegisterClass<esl::LuaEvent>();
 	state.RegisterClass<esl::LuaEvent::Handle>();
 
@@ -260,7 +260,7 @@ static void PrintTypeInfo()
 		"operator",
 	};
 
-	esl::TypeInfo typeInfo = EqScriptClass<T>::GetTypeInfo();
+	esl::TypeInfo typeInfo = ScriptClass<T>::GetTypeInfo();
 
 	Msg("type %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
 	for (const esl::Member& mem : typeInfo.members)
@@ -284,7 +284,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 
 	// TEST: validate binder
 	{
-		esl::TypeInfo typeInfo = EqScriptClass<Spline>::GetTypeInfo();
+		esl::TypeInfo typeInfo = esl::ScriptClass<Spline>::GetTypeInfo();
 
 		EXPECT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
 
@@ -316,7 +316,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 
 	// TEST: validate binder with base class
 	{
-		esl::TypeInfo typeInfo = EqScriptClass<TerrainSpline>::GetTypeInfo();
+		esl::TypeInfo typeInfo = esl::ScriptClass<TerrainSpline>::GetTypeInfo();
 
 		// TEST: base class matching
 		EXPECT_EQ(typeInfo.base->className, typeInfo.baseClassName);
@@ -334,7 +334,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 TEST(EQSCRIPT_TESTS, TestInstantiation)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -360,7 +360,7 @@ TEST(EQSCRIPT_TESTS, TestInstantiation)
 TEST(EQSCRIPT_TESTS, TestVariables)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -398,7 +398,7 @@ TEST(EQSCRIPT_TESTS, TestVariables)
 TEST(EQSCRIPT_TESTS, TestAddingToMetatable)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -412,7 +412,7 @@ TEST(EQSCRIPT_TESTS, TestAddingToMetatable)
 TEST(EQSCRIPT_TESTS, TestFunctionCalls)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -439,7 +439,7 @@ TEST(EQSCRIPT_TESTS, TestFunctionCalls)
 TEST(EQSCRIPT_TESTS, TestInheritClassFunctionCalls)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -500,7 +500,7 @@ TEST(EQSCRIPT_TESTS, TestInheritClassFunctionCalls)
 TEST(EQSCRIPT_TESTS, SetGlobal)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 
@@ -532,7 +532,7 @@ TEST(EQSCRIPT_TESTS, SetGlobal)
 TEST(EQSCRIPT_TESTS, TestGetGlobal)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -594,7 +594,7 @@ TEST(EQSCRIPT_TESTS, TestGetGlobal)
 TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -649,7 +649,7 @@ TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 TEST(EQSCRIPT_TESTS, TestTables)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 	state.RegisterClass<TerrainSpline>();
@@ -738,7 +738,7 @@ static bool ValueTest(const Spline* test)
 	return test != nullptr;
 }
 
-int ValueTestWithScriptState(EqScriptState state, int valueA, int valueB, int valueC)
+int ValueTestWithScriptState(esl::ScriptState state, int valueA, int valueB, int valueC)
 {
 	return valueB;
 }
@@ -746,7 +746,7 @@ int ValueTestWithScriptState(EqScriptState state, int valueA, int valueB, int va
 TEST(EQSCRIPT_TESTS, TestCFunction)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<Spline>();
 
@@ -799,7 +799,7 @@ TEST(EQSCRIPT_TESTS, RefPtrDereference)
 
 	{
 		LuaStateTest stateTest;
-		EqScriptState state(stateTest);
+		esl::ScriptState state(stateTest);
 		state.RegisterClass<TestRefPtr>();
 
 		// TEST: refptr owned by lua, dereferenced by C++
@@ -832,7 +832,7 @@ TEST(EQSCRIPT_TESTS, RefPtrFromLua)
 
 	{
 		LuaStateTest stateTest;
-		EqScriptState state(stateTest);
+		esl::ScriptState state(stateTest);
 		state.RegisterClass<TestRefPtr>();
 
 		state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(RefPtrTestNotNull));
@@ -870,7 +870,7 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 
 	{
 		LuaStateTest stateTest;
-		EqScriptState state(stateTest);
+		esl::ScriptState state(stateTest);
 
 		state.RegisterClass<TestEvent>();
 		state.SetGlobal("evtTest", evtTestObj);
@@ -928,7 +928,7 @@ EQSCRIPT_TYPE_END
 TEST(EQSCRIPT_TESTS, TestOperatorBinding)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<OperatorTests>();
 
@@ -966,7 +966,7 @@ EQSCRIPT_TYPE_BEGIN(ByValueTests)
 	EQSCRIPT_BIND_VAR(isMoved)
 EQSCRIPT_TYPE_END
 
-ByValueTests& ByValueBypassFunc(EqScriptState scriptState, ByValueTests& ref)
+ByValueTests& ByValueBypassFunc(esl::ScriptState scriptState, ByValueTests& ref)
 {
 	return ref;
 }
@@ -974,7 +974,7 @@ ByValueTests& ByValueBypassFunc(EqScriptState scriptState, ByValueTests& ref)
 TEST(EQSCRIPT_TESTS, TestByValue)
 {
 	LuaStateTest stateTest;
-	EqScriptState state(stateTest);
+	esl::ScriptState state(stateTest);
 
 	state.RegisterClass<ByValueTests>();
 

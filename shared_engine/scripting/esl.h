@@ -186,43 +186,9 @@ namespace runtime {}
 class LuaRawRef;
 class LuaTable;
 
-void RegisterType(lua_State* L, esl::TypeInfo typeInfo);
-}
-
-namespace esl::runtime
-{
-void					SetLuaErrorFromTopOfStack(lua_State* L);
-void					ResetErrorValue(lua_State* L);
-const char*				GetLastError(lua_State* L);
-int						StackTrace(lua_State* L);
-
-// Creates new user object and immediately pushes it to stack
-template<typename T, typename... Args>
-static T&				New(lua_State* L, Args&&... args);
-
-// Pushes user object or fundamental value to stack
-template<typename T, typename WT = T>
-static void				PushValue(lua_State* L, const T& value);
-
-// Returns a T value from stack by index. Allows to specify pointer/reference in T type
-template<typename T, bool SilentTypeCheck>
-static decltype(auto)	GetValue(lua_State* L, int index);
-
-// Pushes user object or fundamental value to global table (_G) by name
-template<typename T>
-static void				SetGlobal(lua_State* L, const char* fieldName, const T& value);
-
-// Returns a T value from global table (_G) by name. Allows to specify pointer/reference in T type
-template<typename T>
-static decltype(auto)	GetGlobal(lua_State* L, const char* fieldName);
-
-template<typename R, typename ... Args>
-struct FunctionCall;
-}
-
 /// script engine class registrator
 template<typename T>
-struct EqScriptClass
+struct ScriptClass
 {
 	static esl::TypeInfo	GetTypeInfo();
 
@@ -232,10 +198,10 @@ struct EqScriptClass
 	static const char*		baseClassName;
 };
 
-class EqScriptState
+class ScriptState
 {
 public:
-	EqScriptState(lua_State* state)
+	ScriptState(lua_State* state)
 		: m_state(state)
 	{
 	}
@@ -282,3 +248,39 @@ public:
 protected:
 	lua_State*	m_state{ nullptr };
 };
+}
+
+namespace esl::runtime
+{
+void					SetLuaErrorFromTopOfStack(lua_State* L);
+void					ResetErrorValue(lua_State* L);
+const char*				GetLastError(lua_State* L);
+int						StackTrace(lua_State* L);
+
+// Registers type in the specific lua state
+void					RegisterType(lua_State* L, esl::TypeInfo typeInfo);
+
+// Creates new user object and immediately pushes it to stack
+template<typename T, typename... Args>
+static T&				New(lua_State* L, Args&&... args);
+
+// Pushes user object or fundamental value to stack
+template<typename T, typename WT = T>
+static void				PushValue(lua_State* L, const T& value);
+
+// Returns a T value from stack by index. Allows to specify pointer/reference in T type
+template<typename T, bool SilentTypeCheck>
+static decltype(auto)	GetValue(lua_State* L, int index);
+
+// Pushes user object or fundamental value to global table (_G) by name
+template<typename T>
+static void				SetGlobal(lua_State* L, const char* fieldName, const T& value);
+
+// Returns a T value from global table (_G) by name. Allows to specify pointer/reference in T type
+template<typename T>
+static decltype(auto)	GetGlobal(lua_State* L, const char* fieldName);
+
+template<typename R, typename ... Args>
+struct FunctionCall;
+}
+
