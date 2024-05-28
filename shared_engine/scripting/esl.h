@@ -224,7 +224,7 @@ struct FunctionCall;
 template<typename T>
 struct EqScriptClass
 {
-	static esl::TypeInfo GetTypeInfo();
+	static esl::TypeInfo	GetTypeInfo();
 
 	// NOTE: don't access these directly, use typeinfo
 	static esl::TypeInfo	baseClassTypeInfo;

@@ -87,7 +87,10 @@ struct ArgsSignature<First, Rest...>
 	{
 		static EqString result = []() {
 			const char* restStr = ArgsSignature<Rest...>::Get();
-			return EqString(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;
+			if constexpr (std::is_same_v<First, EqScriptState>)
+				return EqString(*restStr ? "," : "") + restStr;
+			else
+				return EqString(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;			
 		}();
 		return result;
 	}
@@ -662,6 +665,12 @@ static auto BindDestructor()
 	return &runtime::PushGetImpl<T>::ObjectDestructor;
 }
 
+template<typename ... Args>
+struct CheckLuaStateArg : std::false_type {};
+
+template<typename First, typename ... Rest>
+struct CheckLuaStateArg<First, Rest...> : std::is_same<First, EqScriptState> {};
+
 //---------------------------------------------------------------
 // Member function binder
 
@@ -671,12 +680,18 @@ struct MemberFunctionBinder {};
 template <typename T, auto FuncPtr, typename Traits, typename R, typename ... Args>
 struct MemberFunction
 {
+	// first argument is Lua state?
+	using HasLuaStateArg = CheckLuaStateArg<Args...>;
+
 	template <size_t... IDX>
 	static R Invoke(T* thisPtr, lua_State* L, std::index_sequence<IDX...>)
 	{
 		// NOTES: Member functions start with IDX = 2
 		// this is now unsafe, CallMemberFunc must have been taken care for us
-		return (thisPtr->*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 2)...);
+		if constexpr (HasLuaStateArg::value)
+			return (thisPtr->*FuncPtr)(L, *runtime::GetValue<std::tuple_element_t<IDX+1, typename Traits::TArgs>, false>(L, IDX + 2)...);
+		else
+			return (thisPtr->*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 2)...);
 	}
 
 	static int FuncImpl(T* thisPtr, lua_State* L)
@@ -684,12 +699,12 @@ struct MemberFunction
 		ESL_VERBOSE_LOG("call member %s:%x", EqScriptClass<T>::className, FuncPtr);
 		if constexpr (std::is_void_v<R>)
 		{
-			Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
+			Invoke(thisPtr, L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
 			return 0;
 		}
 		else
 		{
-			R ret = Invoke(thisPtr, L, std::index_sequence_for<Args...>{});
+			R ret = Invoke(thisPtr, L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
 			runtime::PushValue<R, typename Traits::TR>(L, ret);
 			return 1;
 		}
@@ -743,23 +758,29 @@ struct FunctionBinder;
 template<typename R, typename ... Args, typename Traits>
 struct FunctionBinder<R(*)(Args...), Traits>
 {
+	// first argument is Lua state?
+	using HasLuaStateArg = CheckLuaStateArg<Args...>;
+
 	template<size_t... IDX>
 	static R Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
 		const auto FuncPtr = reinterpret_cast<R(*)(Args...)>(lua_touserdata(L, lua_upvalueindex(1)));
-		return (*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 1)...);
+		if constexpr(HasLuaStateArg::value)
+			return (*FuncPtr)(L, *runtime::GetValue<std::tuple_element_t<IDX+1, typename Traits::TArgs>, false>(L, IDX + 1)...);
+		else
+			return (*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 1)...);
 	}
 
 	static int Func(lua_State* L)
 	{
 		if constexpr (std::is_void_v<R>)
 		{
-			Invoke(L, std::index_sequence_for<Args...>{});
+			Invoke(L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
 			return 0;
 		}
 		else
 		{
-			R ret = Invoke(L, std::index_sequence_for<Args...>{});
+			R ret = Invoke(L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
 			runtime::PushValue<R, typename Traits::TR>(L, ret);
 			return 1;
 		}
@@ -841,49 +862,44 @@ struct StandardOperatorBinder
 		const T& lhs = *runtime::GetValue<T&, false>(L, 1);
 		if constexpr (OpType == OP_unm)
 		{
-			result = -lhs;
+			runtime::New<T>(L,-lhs);
 		}
 		else if constexpr (OpType == OP_not)
 		{
-			result = !lhs;
+			lua_pushboolean(!lhs);
 		}
 		else
 		{
 			const T& rhs = *runtime::GetValue<T&, false>(L, 2);
 			if constexpr (OpType == OP_add)
-				result = lhs + rhs;
+				runtime::New<T>(L, lhs + rhs);
 			else if constexpr (OpType == OP_sub)
-				result = lhs - rhs;
+				runtime::New<T>(L, lhs - rhs);
 			else if constexpr (OpType == OP_mul)
-				result = lhs * rhs;
+				runtime::New<T>(L, lhs * rhs);
 			else if constexpr (OpType == OP_div)
-				result = lhs / rhs;
+				runtime::New<T>(L, lhs / rhs);
 			else if constexpr (OpType == OP_mod)
-				result = lhs % rhs;
+				runtime::New<T>(L, lhs % rhs);
 			else if constexpr (OpType == OP_band)
-				result = lhs & rhs;
+				runtime::New<T>(L, lhs & rhs);
 			else if constexpr (OpType == OP_bor)
-				result = lhs | rhs;
+				runtime::New<T>(L, lhs | rhs);
 			else if constexpr (OpType == OP_xor)
-				result = lhs ^ rhs;
+				runtime::New<T>(L, lhs ^ rhs);
 			else if constexpr (OpType == OP_shl)
-				result = lhs << rhs;
+				runtime::New<T>(L, lhs << rhs);
 			else if constexpr (OpType == OP_shr)
-				result = lhs >> rhs;
+				runtime::New<T>(L, lhs >> rhs);
 			else if constexpr (OpType == OP_eq)
-				result = lhs == rhs;
+				lua_pushboolean(lhs == rhs);
 			else if constexpr (OpType == OP_lt)
-				result = lhs < rhs;
+				lua_pushboolean(lhs < rhs);
 			else if constexpr (OpType == OP_le)
-				result = lhs <= rhs;
+				lua_pushboolean(lhs <= rhs);
 			else
 				static_assert(sizeof(T) > 0, "Unsupported operator type");
 		}
-
-		if constexpr (LuaTypeByVal<T>::value)
-			runtime::PushGet<T>::Push(L, result, UD_FLAG_OWNED);
-		else
-			runtime::PushGet<T>::Push(L, *(PPNew T(result)), UD_FLAG_OWNED);
 		return 1;
 	}
 };

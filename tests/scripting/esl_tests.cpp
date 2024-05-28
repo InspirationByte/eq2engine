@@ -61,9 +61,10 @@ struct Spline
 		saveBaseCalled = true;
 	}
 
-	void NonVirtualFunc()
+	int NonVirtualFunc(EqScriptState state, int valueA, int valueB, int valueC)
 	{
 		nonVirtualCalled = true;
+		return valueB;
 	}
 
 	EqString		name;
@@ -430,6 +431,9 @@ TEST(EQSCRIPT_TESTS, TestFunctionCalls)
 
 	// TEST: argument matching - should fail on incorrect userdata
 	LUA_GTEST_CHUNK_FAIL("spl:GetPoint(1900 / 2, spl, \"Whoops\")");
+
+	// TEST: check arguments with function that has Lua State as first argument
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl:NonVirtualFunc(1555, 625, 525), 625)");
 }
 
 TEST(EQSCRIPT_TESTS, TestInheritClassFunctionCalls)
@@ -734,6 +738,11 @@ static bool ValueTest(const Spline* test)
 	return test != nullptr;
 }
 
+int ValueTestWithScriptState(EqScriptState state, int valueA, int valueB, int valueC)
+{
+	return valueB;
+}
+
 TEST(EQSCRIPT_TESTS, TestCFunction)
 {
 	LuaStateTest stateTest;
@@ -745,12 +754,16 @@ TEST(EQSCRIPT_TESTS, TestCFunction)
 	spline->name = "Spline of test_globals";
 	state.SetGlobal("spl", spline);
 	state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(ValueTest));
-
+	state.SetGlobal("TestCFunction2", EQSCRIPT_CFUNC(ValueTestWithScriptState));
+	
 	// TEST: C function call with arguments (nil)
 	LUA_GTEST_CHUNK("EXPECT_EQ(TestCFunction(testValue), false)");
 
 	// TEST: C function call with arguments
 	LUA_GTEST_CHUNK("EXPECT_EQ(TestCFunction(spl), true)");
+
+	// TEST: C function call which has Lua State as first argument
+	LUA_GTEST_CHUNK("EXPECT_EQ(TestCFunction2(555, 968, 782), 968)");
 
 	delete spline;
 }
@@ -953,7 +966,7 @@ EQSCRIPT_TYPE_BEGIN(ByValueTests)
 	EQSCRIPT_BIND_VAR(isMoved)
 EQSCRIPT_TYPE_END
 
-ByValueTests& ByValueBypassFunc(ByValueTests& ref)
+ByValueTests& ByValueBypassFunc(EqScriptState scriptState, ByValueTests& ref)
 {
 	return ref;
 }
