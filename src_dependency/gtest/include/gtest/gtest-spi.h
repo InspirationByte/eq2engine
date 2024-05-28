@@ -136,8 +136,6 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251
 // throws an exception or aborts the current function.
 //
 // Known restrictions:
-//   - 'statement' cannot reference local non-static variables or
-//     non-static members of the current object.
 //   - 'statement' cannot return a value.
 //   - You cannot stream a failure message to this macro.
 //
@@ -146,12 +144,8 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251
 // helper macro, due to some peculiarity in how the preprocessor
 // works.  The AcceptsMacroThatExpandsToUnprotectedComma test in
 // gtest_unittest.cc will fail to compile if we do that.
-#define EXPECT_FATAL_FAILURE(statement, substr)                               \
+#define EXPECT_FATAL_FAILURE(statementLambda, substr)                         \
   do {                                                                        \
-    class GTestExpectFatalFailureHelper {                                     \
-     public:                                                                  \
-      static void Execute() { statement; }                                    \
-    };                                                                        \
     ::testing::TestPartResultArray gtest_failures;                            \
     ::testing::internal::SingleFailureChecker gtest_checker(                  \
         &gtest_failures, ::testing::TestPartResult::kFatalFailure, (substr)); \
@@ -160,16 +154,12 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251
           ::testing::ScopedFakeTestPartResultReporter::                       \
               INTERCEPT_ONLY_CURRENT_THREAD,                                  \
           &gtest_failures);                                                   \
-      GTestExpectFatalFailureHelper::Execute();                               \
+      statementLambda();                                                      \
     }                                                                         \
   } while (::testing::internal::AlwaysFalse())
 
-#define EXPECT_FATAL_FAILURE_ON_ALL_THREADS(statement, substr)                \
+#define EXPECT_FATAL_FAILURE_ON_ALL_THREADS(statementLambda, substr)          \
   do {                                                                        \
-    class GTestExpectFatalFailureHelper {                                     \
-     public:                                                                  \
-      static void Execute() { statement; }                                    \
-    };                                                                        \
     ::testing::TestPartResultArray gtest_failures;                            \
     ::testing::internal::SingleFailureChecker gtest_checker(                  \
         &gtest_failures, ::testing::TestPartResult::kFatalFailure, (substr)); \
@@ -177,7 +167,7 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251
       ::testing::ScopedFakeTestPartResultReporter gtest_reporter(             \
           ::testing::ScopedFakeTestPartResultReporter::INTERCEPT_ALL_THREADS, \
           &gtest_failures);                                                   \
-      GTestExpectFatalFailureHelper::Execute();                               \
+      statementLambda();                                                      \
     }                                                                         \
   } while (::testing::internal::AlwaysFalse())
 
