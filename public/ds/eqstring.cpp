@@ -118,8 +118,7 @@ uint16 EqString::Length() const
 
 bool EqString::IsValid() const
 {
-	// check the data is non overflowing
-	return strlen(StrPtr()) <= m_nLength;
+	return strlen(StrPtr()) == m_nLength;
 }
 
 // string allocated size in bytes
@@ -149,7 +148,7 @@ void EqString::Empty()
 // an internal operation of allocation/extend
 bool EqString::ExtendAlloc(int nSize, bool bCopy)
 {
-	if(nSize+1u > m_nAllocated || m_pszString == nullptr)
+	if(nSize+1 > m_nAllocated || m_pszString == nullptr)
 	{
 		nSize += EXTEND_CHARS;
 		if(!Resize( nSize - nSize % EXTEND_CHARS, bCopy ))
@@ -240,12 +239,12 @@ void EqString::Assign(const EqString &str, int nStart, int len)
 	if(len != -1)
 		nLen = len;
 
-	if( ExtendAlloc( nLen+1, false ) )
-	{
-		strcpy( m_pszString+nStart, str.GetData() );
-		m_pszString[nLen] = 0;
-		m_nLength = nLen;
-	}
+	if (!ExtendAlloc(nLen + 1, false))
+		return;
+
+	strcpy( m_pszString+nStart, str.GetData() );
+	m_pszString[nLen] = 0;
+	m_nLength = nLen;
 }
 
 // string assignment (or setvalue)
@@ -262,12 +261,12 @@ void EqString::Assign(const EqWString &str, int nStart, int len)
 void EqString::Append(const char c)
 {
 	const int nNewLen = m_nLength + 1;
-	if( ExtendAlloc( nNewLen ) )
-	{
-		m_pszString[nNewLen-1] = c;
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	if (!ExtendAlloc(nNewLen))
+		return;
+
+	m_pszString[nNewLen-1] = c;
+	m_pszString[nNewLen] = 0;
+	m_nLength = nNewLen;
 }
 
 // appends another string
@@ -279,98 +278,102 @@ void EqString::Append(const char* pszStr, int nCount)
 	int nLen = strlen( pszStr );
 
 	ASSERT(nCount <= nLen);
-
 	if(nCount != -1)
 		nLen = nCount;
 
 	const int nNewLen = m_nLength + nLen;
-	if( ExtendAlloc( nNewLen+1 ) )
-	{
-		strncpy( (m_pszString + m_nLength), pszStr, nLen);
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	if (!ExtendAlloc(nNewLen + 1))
+		return;
+
+	strncpy( (m_pszString + m_nLength), pszStr, nLen);
+	m_pszString[nNewLen] = 0;
+	m_nLength = nNewLen;
 }
 
 void EqString::Append(const EqString &str)
 {
-	int nNewLen = m_nLength + str.Length();
+	const int nNewLen = m_nLength + str.Length();
+	if (!ExtendAlloc(nNewLen + 1))
+		return;
 
-	if( ExtendAlloc( nNewLen+1 ) )
-	{
-		strcpy( (m_pszString + m_nLength), str.GetData() );
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	strcpy( (m_pszString + m_nLength), str.GetData() );
+	m_pszString[nNewLen] = 0;
+	m_nLength = nNewLen;
+}
+
+bool EqString::MakeInsertSpace(int startPos, int count)
+{
+	const int newLength = m_nLength + count;
+	if (!ExtendAlloc(newLength + 1))
+		return false;
+
+	char* insStartPtr = m_pszString + startPos;
+	char* insEndPtr = m_pszString + startPos + count;
+
+	// move the right part of the string further
+	memmove(insEndPtr, insStartPtr, sizeof(insStartPtr[0]) * (int(m_nLength) - startPos));
+
+	m_pszString[newLength] = 0;
+	m_nLength = newLength;
+
+	return true;
 }
 
 // inserts another string at position
-void EqString::Insert(const char* pszStr, int nInsertPos)
+void EqString::Insert(const char* pszStr, int nInsertPos, int nInsertCount)
 {
-	if(pszStr == nullptr)
+	if(pszStr == nullptr || nInsertCount == 0)
 		return;
 
-	const int nInsertCount = strlen( pszStr );
-	const int nNewLen = m_nLength + nInsertCount;
-	if( ExtendAlloc( nNewLen+1 ) )
-	{
-		char* tmp = (char*)stackalloc(m_nLength - nInsertPos + 1);
-		strcpy(tmp, &m_pszString[nInsertPos]);
+	const int strLen = strlen(pszStr);
+	ASSERT(nInsertCount <= strLen);
+	if (nInsertCount < 0)
+		nInsertCount = strLen;
 
-		// copy the part to the far
-		strncpy(&m_pszString[nInsertPos + nInsertCount], tmp, m_nLength - nInsertPos);
+	if (!MakeInsertSpace(nInsertPos, nInsertCount))
+		return;
 
-		// copy insertable
-		strncpy(m_pszString + nInsertPos, pszStr, nInsertCount);
+	// copy the inserted string in to the middle
+	memcpy(m_pszString + nInsertPos, pszStr, sizeof(m_pszString[0]) * nInsertCount);
 
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	ASSERT(IsValid());
 }
 
 void EqString::Insert(const EqString &str, int nInsertPos)
 {
-	const int nNewLen = m_nLength + str.Length();
-	if( ExtendAlloc( nNewLen+1 ) )
-	{
-		char* tmp = (char*)stackalloc(m_nLength - nInsertPos + 1);
-		strcpy(tmp, &m_pszString[nInsertPos]);
-
-		// copy the part to the far
-		strncpy(&m_pszString[nInsertPos + str.Length()], tmp, m_nLength - nInsertPos);
-
-		// copy insertable
-		strncpy(m_pszString + nInsertPos, str.GetData(), str.Length());
-
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	ASSERT(str.IsValid());
+	Insert(str, nInsertPos, str.Length());
 }
 
 // removes characters
 void EqString::Remove(int nStart, int nCount)
 {
-	char* temp = (char*)stackalloc( m_nAllocated );
-	strcpy(temp, m_pszString);
+	if (!m_pszString || nCount <= 0)
+		return;
 
-	char* str = m_pszString;
-	const uint realEnd = nStart+nCount;
-	for(uint i = 0; i < m_nLength; i++)
-	{
-		if(i >= nStart && i < realEnd)
-			continue;
-		*str++ = temp[i];
-	}
-	*str = 0;
+	ASSERT(nStart >= 0);
+	ASSERT(nStart + nCount <= m_nLength);
+	if (nStart < 0 || nStart + nCount > m_nLength)
+		return;
 
-	int newLen = m_nLength-nCount+1;
+	char* remStartPtr = m_pszString + nStart;
+	const char* remEndPtr = m_pszString + nStart + nCount;
 
-	Resize( newLen );
+	// move the right part of the string to the left
+	memmove(remStartPtr, remEndPtr, sizeof(remStartPtr[0]) * (int(m_nLength) - (nStart + nCount)));
+
+	// put terminator
+	const int newLength = m_nLength - nCount;
+	m_pszString[newLength] = 0;
+	m_nLength = newLength;
 }
 
 // replaces characters
 void EqString::Replace( char whichChar, char to )
 {
+	if (whichChar == 0 || to == 0) // can't replace to terminator
+		return;
+
 	if (!m_pszString)
 		return;
 
@@ -379,10 +382,8 @@ void EqString::Replace( char whichChar, char to )
 	{
 		if(*str == 0)
 			break;
-
 		if(*str == whichChar)
 			*str = to;
-
 		str++;
 	}
 }
@@ -395,7 +396,7 @@ EqString EqString::Left(int nCount) const
 
 EqString EqString::Right(int nCount) const
 {
-	if ( (uint)nCount >= m_nLength )
+	if ( nCount >= m_nLength )
 		return (*this);
 
 	return Mid( m_nLength - nCount, nCount );
@@ -404,21 +405,14 @@ EqString EqString::Right(int nCount) const
 EqString EqString::Mid(int nStart, int nCount) const
 {
 	if (!m_pszString)
-		return EqString();
+		return EqString::EmptyStr;
 
-	uint n;
-	EqString result;
+	ASSERT(nStart >= 0);
+	ASSERT(nStart + nCount <= m_nLength);
+	if (nStart < 0 || nStart + nCount > m_nLength)
+		return EqString::EmptyStr;
 
-	n = m_nLength;
-	if( n == 0 || nCount <= 0 || (uint)nStart >= n )
-		return result;
-
-	if( uint(nStart+nCount) >= m_nLength )
-		nCount = n-nStart;
-
-	result.Assign( &m_pszString[nStart], nCount );
-
-	return result;
+	return EqString(&m_pszString[nStart], nCount);
 }
 
 // convert to lower case
@@ -442,35 +436,45 @@ EqString EqString::UpperCase() const
 // search, returns char index
 int	EqString::Find(const char* pszSub, bool caseSensivite, int nStart) const
 {
-	if (!m_pszString)
+	if (!m_pszString || nStart < 0)
 		return -1;
-
-	int nFound = -1;
 
 	char* strStart = m_pszString + min((uint16)nStart, m_nLength);
 
-	char* st = nullptr;
+	const char* subStr = caseSensivite ? strstr(strStart, pszSub) : xstristr(strStart, pszSub);
+	if (!subStr)
+		return -1;
 
-	if(caseSensivite)
-		st = strstr(strStart, pszSub);
-	else
-		st = xstristr(strStart, pszSub);
-
-	if(st)
-		nFound = (st - m_pszString);
-
-	return nFound;
+	return (subStr - m_pszString);
 }
 
 // searches for substring and replaces it
 int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool caseSensivite /*= false*/, int nStart /*= 0*/)
 {
 	// replace substring
-	const int foundStrIdx = Find(find, caseSensivite, nStart);
-	if (foundStrIdx != -1)
-		Assign(Left(foundStrIdx) + replaceTo + Mid(foundStrIdx + strlen(find), Length()));
+	const int foundStartPos = Find(find, caseSensivite, nStart);
+	if (foundStartPos == -1)
+		return -1;
 
-	return foundStrIdx;
+	const int findLength = strlen(find);
+	const int replaceLength = strlen(replaceTo);
+
+	if (replaceLength > findLength)
+	{
+		if (!MakeInsertSpace(foundStartPos + findLength, replaceLength - findLength))
+			return -1;
+	}
+	else if (findLength > replaceLength)
+	{
+		Remove(foundStartPos + replaceLength, findLength - replaceLength);
+	}
+
+	// just copy part of the string
+	memcpy(m_pszString + foundStartPos, replaceTo, sizeof(m_pszString[0]) * replaceLength);
+
+	ASSERT(IsValid());
+
+	return foundStartPos;
 }
 
 // swaps two strings
@@ -532,12 +536,10 @@ EqString EqString::Path_Extract_Ext() const
 	for ( int i = m_nLength-1; i >= 0; i-- )
 	{
 		if ( m_pszString[i] == '.' )
-		{
 			return Right(m_nLength-1-i);
-		}
 	}
 
-	return EqString();
+	return EqString::EmptyStr;
 }
 
 EqString EqString::Path_Extract_Name() const
@@ -567,7 +569,7 @@ EqString EqString::EatWhiteSpaces() const
 EqString EqString::TrimSpaces(bool left, bool right) const
 {
 	if(!m_pszString)
-		return EqString();
+		return EqString::EmptyStr;
 
 	const char* begin = m_pszString;
 
@@ -575,7 +577,7 @@ EqString EqString::TrimSpaces(bool left, bool right) const
 	while(*begin && xisspace(*begin)) begin++;
 
 	if(*begin == '\0')
-		return EqString();
+		return EqString::EmptyStr;
 
 	const char* end = begin + strlen(begin) - 1;
 
@@ -594,7 +596,7 @@ EqString EqString::TrimChar(char ch, bool left, bool right) const
 EqString EqString::TrimChar(const char* ch, bool left, bool right) const
 {
 	if (!m_pszString)
-		return EqString();
+		return EqString::EmptyStr;
 
 	const char* begin = m_pszString;
 
@@ -607,7 +609,7 @@ EqString EqString::TrimChar(const char* ch, bool left, bool right) const
 	while (*begin && ischr(ch, *begin)) ++begin;
 
 	if (*begin == '\0')
-		return EqString();
+		return EqString::EmptyStr;
 
 	const char* end = begin + strlen(begin) - 1;
 

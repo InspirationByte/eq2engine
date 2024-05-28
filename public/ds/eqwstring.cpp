@@ -105,6 +105,11 @@ const wchar_t* EqWString::StrPtr() const
 	return m_pszString ? m_pszString : s_zeroString;
 }
 
+bool EqWString::IsValid() const
+{
+	return wcslen(StrPtr()) == m_nLength;
+}
+
 // length of it
 uint16 EqWString::Length() const
 {
@@ -235,30 +240,28 @@ void EqWString::Assign(const EqWString &str, int nStart, int len)
 	ASSERT(nStart >= 0);
 
 	int nLen = str.Length();
-
 	ASSERT(len <= nLen);
 
 	if(len != -1)
 		nLen = len;
 
-	if( ExtendAlloc( nLen ) )
-	{
-		wcscpy( m_pszString+nStart, str.GetData() );
-		m_pszString[nLen] = 0;
-		m_nLength = nLen;
-	}
+	if (!ExtendAlloc(nLen))
+		return;
+
+	wcscpy( m_pszString+nStart, str.GetData() );
+	m_pszString[nLen] = 0;
+	m_nLength = nLen;
 }
 
 void EqWString::Append(const wchar_t c)
 {
-	int nNewLen = m_nLength + 1;
+	const int nNewLen = m_nLength + 1;
+	if (!ExtendAlloc(nNewLen))
+		return;
 
-	if( ExtendAlloc( nNewLen ) )
-	{
-		m_pszString[nNewLen-1] = c;
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	m_pszString[nNewLen-1] = c;
+	m_pszString[nNewLen] = 0;
+	m_nLength = nNewLen;
 }
 
 // appends another string
@@ -268,103 +271,104 @@ void EqWString::Append(const wchar_t* pszStr, int nCount)
 		return;
 
 	int nLen = wcslen( pszStr );
-
 	ASSERT(nCount <= nLen);
 
 	if(nCount != -1)
 		nLen = nCount;
 
-	int nNewLen = m_nLength + nLen;
+	const int nNewLen = m_nLength + nLen;
+	if (!ExtendAlloc(nNewLen))
+		return;
 
-	if( ExtendAlloc( nNewLen ) )
-	{
-		wcsncpy( (m_pszString + m_nLength), pszStr, nLen);
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	wcsncpy( (m_pszString + m_nLength), pszStr, nLen);
+	m_pszString[nNewLen] = 0;
+	m_nLength = nNewLen;
 }
 
 void EqWString::Append(const EqWString &str)
 {
 	const int nNewLen = m_nLength + str.Length();
-	if( ExtendAlloc( nNewLen ) )
-	{
-		wcscpy( (m_pszString + m_nLength), str.GetData() );
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	if (!ExtendAlloc(nNewLen))
+		return;
+
+	wcscpy( (m_pszString + m_nLength), str.GetData() );
+	m_pszString[nNewLen] = 0;
+	m_nLength = nNewLen;
+}
+
+bool EqWString::MakeInsertSpace(int startPos, int count)
+{
+	const int newLength = m_nLength + count;
+	if (!ExtendAlloc(newLength + 1))
+		return false;
+
+	wchar_t* insStartPtr = m_pszString + startPos;
+	wchar_t* insEndPtr = m_pszString + startPos + count;
+
+	// move the right part of the string further
+	memmove(insEndPtr, insStartPtr, sizeof(insStartPtr[0]) * (int(m_nLength) - startPos));
+
+	m_pszString[newLength] = 0;
+	m_nLength = newLength;
+
+	return true;
 }
 
 // inserts another string at position
-void EqWString::Insert(const wchar_t* pszStr, int nInsertPos)
+void EqWString::Insert(const wchar_t* pszStr, int nInsertPos, int nInsertCount)
 {
-	if(pszStr == nullptr)
+	if (pszStr == nullptr || nInsertCount == 0)
 		return;
 
-	const int nInsertCount = wcslen( pszStr );
-	const int nNewLen = m_nLength + nInsertCount;
-	if( ExtendAlloc( nNewLen ) )
-	{
-		wchar_t* tmp = (wchar_t*)stackalloc(m_nLength - nInsertPos);
-		wcscpy(tmp, &m_pszString[nInsertPos]);
+	const int strLen = wcslen(pszStr);
+	ASSERT(nInsertCount <= strLen);
+	if (nInsertCount < 0)
+		nInsertCount = strLen;
 
-		// copy the part to the far
-		wcsncpy(&m_pszString[nInsertPos + nInsertCount], tmp, m_nLength - nInsertPos);
+	if (!MakeInsertSpace(nInsertPos, nInsertCount))
+		return;
 
-		// copy insertable
-		wcsncpy(m_pszString + nInsertPos, pszStr, nInsertCount);
+	// copy the inserted string in to the middle
+	memcpy(m_pszString + nInsertPos, pszStr, sizeof(m_pszString[0]) * nInsertCount);
 
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	ASSERT(IsValid());
 }
 
 void EqWString::Insert(const EqWString &str, int nInsertPos)
 {
-	const int nNewLen = m_nLength + str.Length();
-	if( ExtendAlloc( nNewLen ) )
-	{
-		wchar_t* tmp = (wchar_t*)stackalloc(m_nLength - nInsertPos);
-		wcscpy(tmp, &m_pszString[nInsertPos]);
-
-		// copy the part to the far
-		wcsncpy(&m_pszString[nInsertPos + str.Length()], tmp, m_nLength - nInsertPos);
-
-		// copy insertable
-		wcsncpy(m_pszString + nInsertPos, str.GetData(), str.Length());
-
-		m_pszString[nNewLen] = 0;
-		m_nLength = nNewLen;
-	}
+	ASSERT(str.IsValid());
+	Insert(str, nInsertPos, str.Length());
 }
 
 // removes characters
 void EqWString::Remove(int nStart, int nCount)
 {
-	wchar_t* temp = (wchar_t*)stackalloc( m_nAllocated*sizeof(wchar_t) );
-	wcscpy(temp, m_pszString);
+	if (!m_pszString || nCount <= 0)
+		return;
 
-	wchar_t* str = m_pszString;
+	ASSERT(nStart >= 0);
+	ASSERT(nStart + nCount <= m_nLength);
+	if (nStart < 0 || nStart + nCount > m_nLength)
+		return;
 
-	uint realEnd = nStart+nCount;
+	wchar_t* remStartPtr = m_pszString + nStart;
+	const wchar_t* remEndPtr = m_pszString + nStart + nCount;
 
-	for(uint i = 0; i < m_nLength; i++)
-	{
-		if(i >= (uint)nStart && i < realEnd)
-			continue;
+	// move the right part of the string to the left
+	memmove(remStartPtr, remEndPtr, sizeof(remStartPtr[0]) * (int(m_nLength) - (nStart + nCount)));
 
-		*str++ = temp[i];
-	}
-	*str = 0;
-
-	int newLen = m_nLength-nCount;
-
-	Resize( newLen );
+	// put terminator
+	const int newLength = m_nLength - nCount;
+	m_pszString[newLength] = 0;
+	m_nLength = newLength;
 }
 
 // replaces characters
 void EqWString::Replace( wchar_t whichChar, wchar_t to )
 {
+	if (whichChar == 0 || to == 0) // can't replace to terminator
+		return;
+
 	if (!m_pszString)
 		return;
 
@@ -389,37 +393,30 @@ EqWString EqWString::Left(int nCount) const
 
 EqWString EqWString::Right(int nCount) const
 {
-	if ( (uint)nCount >= m_nLength )
+	if (nCount >= m_nLength)
 		return (*this);
 
-	return Mid( m_nLength - nCount, nCount );
+	return Mid(m_nLength - nCount, nCount);
 }
 
 EqWString EqWString::Mid(int nStart, int nCount) const
 {
 	if (!m_pszString)
-		return EqWString();
+		return EqWString::EmptyStr;
 
-	int n;
-	EqWString result;
+	ASSERT(nStart >= 0);
+	ASSERT(nStart + nCount <= m_nLength);
+	if (nStart < 0 || nStart + nCount > m_nLength)
+		return EqWString::EmptyStr;
 
-	n = m_nLength;
-	if( n == 0 || nCount <= 0 || nStart >= n )
-		return result;
-
-	if( uint(nStart+nCount) >= m_nLength )
-		nCount = n-nStart;
-
-	result.Append( &m_pszString[nStart], nCount );
-
-	return result;
+	return EqWString(&m_pszString[nStart], nCount);
 }
 
 // convert to lower case
 EqWString EqWString::LowerCase() const
 {
 	if (!m_pszString)
-		return EqWString();
+		return EqWString::EmptyStr;
 
 	EqWString str(*this);
 	xwcslwr(str.m_pszString);
@@ -431,7 +428,7 @@ EqWString EqWString::LowerCase() const
 EqWString EqWString::UpperCase() const
 {
 	if (!m_pszString)
-		return EqWString();
+		return EqWString::EmptyStr;
 
 	EqWString str(*this);
 	xwcsupr(str.m_pszString);
@@ -440,36 +437,47 @@ EqWString EqWString::UpperCase() const
 }
 
 // search, returns char index
-int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart) const
+int	EqWString::Find(const wchar_t* pszSub, bool caseSensivite, int nStart) const
 {
-	if (!m_pszString)
+	if (!m_pszString || nStart < 0)
 		return -1;
 
-	int nFound = -1;
-
 	wchar_t* strStart = m_pszString + min((uint16)nStart, m_nLength);
-	wchar_t* st = nullptr;
 
-	if(bCaseSensetive)
-		st = wcsstr(strStart, pszSub);
-	else
-		st = xwcsistr(strStart, pszSub);
-	 
-	if(st)
-		nFound = (st - m_pszString);
+	const wchar_t* subStr = caseSensivite ? wcsstr(strStart, pszSub) : xwcsistr(strStart, pszSub);
+	if (!subStr)
+		return -1;
 
-	return nFound;
+	return (subStr - m_pszString);
 }
 
 // searches for substring and replaces it
-int EqWString::ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive /*= false*/, int nStart /*= 0*/)
+int EqWString::ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool caseSensivite /*= false*/, int nStart /*= 0*/)
 {
 	// replace substring
-	int foundStrIdx = Find(find, bCaseSensetive, nStart);
-	if (foundStrIdx != -1)
-		Assign(Left(foundStrIdx) + replaceTo + Mid(foundStrIdx + wcslen(find), Length()));
+	const int foundStartPos = Find(find, caseSensivite, nStart);
+	if (foundStartPos == -1)
+		return -1;
 
-	return foundStrIdx;
+	const int findLength = wcslen(find);
+	const int replaceLength = wcslen(replaceTo);
+
+	if (replaceLength > findLength)
+	{
+		if (!MakeInsertSpace(foundStartPos + findLength, replaceLength - findLength))
+			return -1;
+	}
+	else if (findLength > replaceLength)
+	{
+		Remove(foundStartPos + replaceLength, findLength - replaceLength);
+	}
+
+	// just copy part of the string
+	memcpy(m_pszString + foundStartPos, replaceTo, sizeof(m_pszString[0]) * replaceLength);
+
+	ASSERT(IsValid());
+
+	return foundStartPos;
 }
 
 // comparators

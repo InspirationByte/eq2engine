@@ -77,7 +77,7 @@ public:
 	static EqString FormatVa(const char* pszFormat, va_list argptr);
 	static size_t	ReadString(IVirtualStream* stream, EqString& output);
 
-	// checks the data is non overflowing
+	// returns true if data is valid and length is valid
 	bool		IsValid() const;
 
 	// data for printing
@@ -118,7 +118,7 @@ public:
 	void		Append(const EqString &str);
 
 	// inserts another string at position
-	void		Insert(const char* pszStr, int nInsertPos);
+	void		Insert(const char* pszStr, int nInsertPos, int nInsertCount = -1);
 	void		Insert(const EqString &str, int nInsertPos);
 
 	// removes characters
@@ -214,6 +214,9 @@ public:
 	}
 
 protected:
+
+	bool		MakeInsertSpace(int startPos, int count);
+
 	const char* StrPtr() const;
 	char*		m_pszString{ nullptr };
 

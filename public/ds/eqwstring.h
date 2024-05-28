@@ -34,6 +34,9 @@ public:
 	static EqWString FormatVa(const wchar_t* pszFormat, va_list args);
 	static size_t	 ReadString(IVirtualStream* stream, EqWString& output);
 
+	// returns true if data is valid and length is valid
+	bool			IsValid() const;
+
 	// data for printing
 	const wchar_t*	GetData() const;
 
@@ -72,7 +75,7 @@ public:
 	void			Append(const EqWString &str);
 
 	// inserts another string at position
-	void			Insert(const wchar_t* pszStr, int nInsertPos);
+	void			Insert(const wchar_t* pszStr, int nInsertPos, int nInsertCount = -1);
 	void			Insert(const EqWString &str, int nInsertPos);
 
 	// removes characters
@@ -147,6 +150,7 @@ public:
 
 protected:
 	const wchar_t*	StrPtr() const;
+	bool			MakeInsertSpace(int startPos, int count);
 
 	wchar_t*		m_pszString{ nullptr };
 

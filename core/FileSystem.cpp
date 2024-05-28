@@ -646,7 +646,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	if (flags & SP_DATA)
 	{
 		EqString filePath;
-		CombinePath(filePath, basePath.ToCString(), m_dataDir.ToCString(), fileName);
+		CombinePath(filePath, basePath, m_dataDir, fileName);
 		filePath.Path_FixSlashes();
 
 		if (func(filePath, SP_DATA, flags, false))
@@ -662,7 +662,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		if(isAbsolutePath)
 			filePath = fileName;
 		else
-			CombinePath(filePath, basePath.ToCString(), fileName);
+			CombinePath(filePath, basePath, fileName);
 		filePath.Path_FixSlashes();
 
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir

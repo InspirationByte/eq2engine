@@ -84,13 +84,12 @@ void CombinePathN(EqString& outPath, int num, ...)
 		EqString pathPart = va_arg( argptr, const char* );
 		pathPart.Path_FixSlashes();
 
-		if(pathPart.Length() > 0)
-		{
-			newStr.Append(_Es(pathPart));
+		if (pathPart.Length() <= 0)
+			continue;
 
-			if(i != num-1 && *newStr.Right(1).ToCString() != CORRECT_PATH_SEPARATOR )
-				newStr.Append(CORRECT_PATH_SEPARATOR);
-		}
+		newStr.Append(_Es(pathPart));
+		if(i != num-1 && newStr.Right(1)[0] != CORRECT_PATH_SEPARATOR )
+			newStr.Append(CORRECT_PATH_SEPARATOR);
     }
 
 	va_end (argptr);
