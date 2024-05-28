@@ -234,7 +234,7 @@ LuaStateTest::~LuaStateTest()
   if (const ::testing::AssertionResult gtest_ar_ =              \
 	::testing::AssertionResult(state.RunChunk(expression)));    \
   else                                                          \
-	GTEST_NONFATAL_FAILURE_(expression) << esl::runtime::GetLastError(state)
+	GTEST_FATAL_FAILURE_(expression) << esl::runtime::GetLastError(state)
 
 #define LUA_GTEST_CHUNK_FAIL(expression) \
   GTEST_AMBIGUOUS_ELSE_BLOCKER_                                 \
@@ -285,32 +285,32 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = EqScriptClass<Spline>::GetTypeInfo();
 
-		ASSERT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
+		EXPECT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
 
 		// check constructors
-		ASSERT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
-		ASSERT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
-		ASSERT_EQ(_Es(typeInfo.members[2].signature), "number");
+		EXPECT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
+		EXPECT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
+		EXPECT_EQ(_Es(typeInfo.members[2].signature), "number");
 
 		// check members
-		ASSERT_EQ(typeInfo.members[3].type, esl::MEMB_FUNC);
-		ASSERT_EQ(_Es(typeInfo.members[3].signature), "KVSection");
+		EXPECT_EQ(typeInfo.members[3].type, esl::MEMB_FUNC);
+		EXPECT_EQ(_Es(typeInfo.members[3].signature), "KVSection");
 
 		// TEST: validate LuaTypeAlias
-		ASSERT_EQ(typeInfo.members[6].type, esl::MEMB_VAR);
-		ASSERT_EQ(_Es(typeInfo.members[6].signature), "string");
+		EXPECT_EQ(typeInfo.members[6].type, esl::MEMB_VAR);
+		EXPECT_EQ(_Es(typeInfo.members[6].signature), "string");
 
 		// TEST: validate LuaTypeAlias
-		ASSERT_EQ(typeInfo.members[7].type, esl::MEMB_VAR);
-		ASSERT_EQ(_Es(typeInfo.members[7].signature), "Vector3D");
+		EXPECT_EQ(typeInfo.members[7].type, esl::MEMB_VAR);
+		EXPECT_EQ(_Es(typeInfo.members[7].signature), "Vector3D");
 
 		// TEST: validate LuaTypeAlias enum type
-		ASSERT_EQ(typeInfo.members[8].type, esl::MEMB_VAR);
-		ASSERT_EQ(_Es(typeInfo.members[8].signature), "number");
+		EXPECT_EQ(typeInfo.members[8].type, esl::MEMB_VAR);
+		EXPECT_EQ(_Es(typeInfo.members[8].signature), "number");
 
 		// TEST: validate LuaTypeAlias enum type
-		ASSERT_EQ(typeInfo.members[9].type, esl::MEMB_VAR);
-		ASSERT_EQ(_Es(typeInfo.members[9].signature), "number");
+		EXPECT_EQ(typeInfo.members[9].type, esl::MEMB_VAR);
+		EXPECT_EQ(_Es(typeInfo.members[9].signature), "number");
 	}
 
 	// TEST: validate binder with base class
@@ -318,15 +318,15 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 		esl::TypeInfo typeInfo = EqScriptClass<TerrainSpline>::GetTypeInfo();
 
 		// TEST: base class matching
-		ASSERT_EQ(typeInfo.base->className, typeInfo.baseClassName);
+		EXPECT_EQ(typeInfo.base->className, typeInfo.baseClassName);
 
 		// TEST: derived types must have their destructor too
-		ASSERT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
+		EXPECT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
 
 		// check constructors
-		ASSERT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
-		ASSERT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
-		ASSERT_EQ(_Es(typeInfo.members[2].signature), "number,string,Spline");
+		EXPECT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
+		EXPECT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
+		EXPECT_EQ(_Es(typeInfo.members[2].signature), "number,string,Spline");
 	}
 }
 
@@ -342,14 +342,14 @@ TEST(EQSCRIPT_TESTS, TestInstantiation)
 	LUA_GTEST_CHUNK("spl = Spline.new()");
 	{
 		Spline& testResults = *state.GetGlobal<Spline&>("spl");
-		ASSERT_FALSE(testResults.nonDefaultConstructor);
+		EXPECT_FALSE(testResults.nonDefaultConstructor);
 	}
 
 	// TEST: additional constructor
 	LUA_GTEST_CHUNK("spl = Spline.new(9999)");
 	{
 		Spline& testResults = *state.GetGlobal<Spline&>("spl");
-		ASSERT_TRUE(testResults.nonDefaultConstructor);
+		EXPECT_TRUE(testResults.nonDefaultConstructor);
 	}
 
 	// TEST: other object and upcasting brought to native code
@@ -375,14 +375,14 @@ TEST(EQSCRIPT_TESTS, TestVariables)
 	LUA_GTEST_CHUNK("EXPECT_EQ(spl.vehicleZoneNameHash, 333)");
 	{
 		TerrainSpline* testResults = *state.GetGlobal<TerrainSpline*>("spl");
-		ASSERT_EQ(testResults->vehicleZoneNameHash, 333);
+		EXPECT_EQ(testResults->vehicleZoneNameHash, 333);
 	}
 
 	// TEST: constructor call with upcasting argument: TerrainSpline to Spline
 	LUA_GTEST_CHUNK("spl = TerrainSpline.new(1337, checkValueString2, spl)");
 	{
 		TerrainSpline& testResults = *state.GetGlobal<TerrainSpline&>("spl");
-		ASSERT_FALSE(testResults.nonDefaultConstructor);
+		EXPECT_FALSE(testResults.nonDefaultConstructor);
 	}
 
 	// TEST: constructor passing arguments to object
@@ -447,47 +447,47 @@ TEST(EQSCRIPT_TESTS, TestInheritClassFunctionCalls)
 	LUA_GTEST_CHUNK_FAIL("spl.Save(nil)");
 	{
 		Spline* testResults = *state.GetGlobal<Spline*>("spl");
-		ASSERT_FALSE(testResults->saveBaseCalled);
+		EXPECT_FALSE(testResults->saveBaseCalled);
 	}
 
 	// TEST: calling member function
 	LUA_GTEST_CHUNK("spl:Load(nil)");
 	{
 		Spline* testResults = *state.GetGlobal<Spline*>("spl");
-		ASSERT_TRUE(testResults->loadBaseCalled);
+		EXPECT_TRUE(testResults->loadBaseCalled);
 	}
 
 	// TEST: other object and upcasting brought to native code
 	LUA_GTEST_CHUNK("spl = TerrainSpline.new()");
 	{
 		Spline* testResults = *state.GetGlobal<Spline*>("spl");
-		ASSERT_TRUE(testResults != nullptr) << "Upcasting TerrainSpline to Spline failure";
+		EXPECT_TRUE(testResults != nullptr) << "Upcasting TerrainSpline to Spline failure";
 	}
 
 	// TEST: calling member function with same name (that hides other function due to different args)
 	LUA_GTEST_CHUNK("spl:Save(KVSection.new(), true)");
 	{
 		TerrainSpline* testResults = *state.GetGlobal<TerrainSpline*>("spl");
-		ASSERT_FALSE(testResults->saveBaseCalled);
-		ASSERT_FALSE(testResults->saveOverrideCalled);
-		ASSERT_TRUE(testResults->saveOverloadCalled);
+		EXPECT_FALSE(testResults->saveBaseCalled);
+		EXPECT_FALSE(testResults->saveOverrideCalled);
+		EXPECT_TRUE(testResults->saveOverloadCalled);
 	}
 
 	// TEST: calling hidden member function which is under other name in Lua
 	LUA_GTEST_CHUNK("spl = TerrainSpline.new(); spl:SaveStandard(nil)");
 	{
 		TerrainSpline* testResults = *state.GetGlobal<TerrainSpline*>("spl");
-		ASSERT_FALSE(testResults->saveBaseCalled);
-		ASSERT_TRUE(testResults->saveOverrideCalled);
-		ASSERT_FALSE(testResults->saveOverloadCalled);
+		EXPECT_FALSE(testResults->saveBaseCalled);
+		EXPECT_TRUE(testResults->saveOverrideCalled);
+		EXPECT_FALSE(testResults->saveOverloadCalled);
 	}
 
 	// TEST: calling member function
 	LUA_GTEST_CHUNK("spl:Load(nil)");
 	{
 		Spline* testResults = *state.GetGlobal<Spline*>("spl");
-		ASSERT_TRUE(testResults != nullptr) << "Upcasting TerrainSpline to Spline failure";
-		ASSERT_FALSE(testResults->loadBaseCalled);
+		EXPECT_TRUE(testResults != nullptr) << "Upcasting TerrainSpline to Spline failure";
+		EXPECT_FALSE(testResults->loadBaseCalled);
 	}
 }
 
@@ -512,14 +512,14 @@ TEST(EQSCRIPT_TESTS, SetGlobal)
 	// TEST: retrieve from globals, check pointers, check name (paranoid about memory damage lol)
 	{
 		Spline* spline = *state.GetGlobal<Spline*>("testSpline");
-		ASSERT_EQ(temp, spline);
-		ASSERT_EQ(spline->name, "Some spline name");
+		EXPECT_EQ(temp, spline);
+		EXPECT_EQ(spline->name, "Some spline name");
 	}
 
 	// TEST: calling member function on global
 	LUA_GTEST_CHUNK("testSpline:Load(nil)");
 	{
-		ASSERT_TRUE(temp->loadBaseCalled);
+		EXPECT_TRUE(temp->loadBaseCalled);
 	}
 
 	delete temp;
@@ -573,17 +573,17 @@ TEST(EQSCRIPT_TESTS, TestGetGlobal)
 	// TEST: get number values
 	{
 		auto result = state.GetGlobal<int8>("TestNumberValue");
-		ASSERT_EQ(result.value, int8(768127));
+		EXPECT_EQ(result.value, int8(768127));
 	}
 
 	{
 		auto result = state.GetGlobal<int16>("TestNumberValue");
-		ASSERT_EQ(result.value, int16(768127));
+		EXPECT_EQ(result.value, int16(768127));
 	}
 
 	{
 		auto result = state.GetGlobal<int32>("TestNumberValue");
-		ASSERT_EQ(result.value, int32(768127));
+		EXPECT_EQ(result.value, int32(768127));
 	}
 }
 
@@ -606,7 +606,7 @@ TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 		using TestFunc = esl::runtime::FunctionCall<float, int, const char*>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult, 1337, "Hello from C++ to Lua");
 		if (result)
-			ASSERT_EQ(result.value, 1500 / 3);
+			EXPECT_EQ(result.value, 1500 / 3);
 		else
 			ASSERT_FAIL("Error while executing function TestFunc: %s\n", result.errorMessage.ToCString());
 	}
@@ -618,7 +618,7 @@ TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 		using TestFunc = esl::runtime::FunctionCall<void>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult);
 
-		ASSERT_TRUE(result.success) << result.errorMessage;
+		EXPECT_TRUE(result.success) << result.errorMessage;
 	}
 
 	// TEST: function calling nil (success must be false)
@@ -628,7 +628,7 @@ TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 		using TestFunc = esl::runtime::FunctionCall<void>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult);
 
-		ASSERT_FALSE(result.success) << result.errorMessage;
+		EXPECT_FALSE(result.success) << result.errorMessage;
 	}
 
 	// TEST: function calling with error
@@ -638,7 +638,7 @@ TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 		using TestFunc = esl::runtime::FunctionCall<void>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult);
 
-		ASSERT_FALSE(result.success) << result.errorMessage;
+		EXPECT_FALSE(result.success) << result.errorMessage;
 	}
 }
 
@@ -655,18 +655,18 @@ TEST(EQSCRIPT_TESTS, TestTables)
 	// TEST: get table and check if it's valid
 	{
 		esl::LuaTable tableRes = *state.GetGlobal<esl::LuaTable>("TestTable");
-		ASSERT_TRUE(tableRes.IsValid());
+		EXPECT_TRUE(tableRes.IsValid());
 	}
 
 	// TEST: get a value from table
 	{
 		esl::LuaTable tableRes = *state.GetGlobal<esl::LuaTable>("TestTable");
-		ASSERT_TRUE(tableRes.IsValid());
+		EXPECT_TRUE(tableRes.IsValid());
 
 		const EqString str = *tableRes.Get<EqString>("keyA");
 		const int val = *tableRes.Get<int>("num");
-		ASSERT_EQ(str, "string AAB value");
-		ASSERT_EQ(val, 1657);
+		EXPECT_EQ(str, "string AAB value");
+		EXPECT_EQ(val, 1657);
 		//Msg("Table has values %s, %d\n", str.ToCString(), val);
 	}
 
@@ -687,8 +687,8 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		const EqString str = *tableRes.value.Get<EqString>("stringValue");
 		const EqString str2 = *tableRes.value.Get<EqString>(temp);
 
-		ASSERT_EQ(val, 1337);
-		ASSERT_EQ(str, "This is a string set from C++");
+		EXPECT_EQ(val, 1337);
+		EXPECT_EQ(str, "This is a string set from C++");
 
 		// This will fail because the value is boxed and we always pushing new userdata.
 		// We need somehow to make comparison mechanism to do this between native and Lua.
@@ -714,7 +714,7 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		using TestFunc = esl::runtime::FunctionCall<void, const esl::LuaTableRef&, int>;
 		TestFunc::Result result = TestFunc::Invoke(*funcResult, *tableRes, 999666);
 
-		ASSERT_TRUE(result.success) << result.errorMessage;
+		EXPECT_TRUE(result.success) << result.errorMessage;
 	}
 
 	// TEST: spline from TestTable must be retrieved as well as it's name (tests native getter)
@@ -723,7 +723,7 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		ASSERT(tableRes && tableRes.value.IsValid());
 
 		Spline* spline = *tableRes.value.Get<Spline*>("testSpline");
-		ASSERT_EQ(spline->name, "Some name");
+		EXPECT_EQ(spline->name, "Some name");
 
 		delete spline;
 	}
@@ -794,23 +794,23 @@ TEST(EQSCRIPT_TESTS, RefPtrDereference)
 			CRefPtr<TestRefPtr> testPush = CRefPtr_new(TestRefPtr, controlValue);
 			state.SetGlobal("testRefPtr", testPush);
 
-			ASSERT_EQ(controlValue, 0xDEADBEEF);
+			EXPECT_EQ(controlValue, 0xDEADBEEF);
 		}
 
 		// TEST: refptr still owns pointer
-		ASSERT_NE(controlValue, 0xFEDABEEF);
+		EXPECT_NE(controlValue, 0xFEDABEEF);
 	}
 
 	// TEST: refptr deferenced by Lua GC destructor call
-	ASSERT_EQ(controlValue, 0xFEDABEEF);
+	EXPECT_EQ(controlValue, 0xFEDABEEF);
 }
 
 static void RefPtrTestNotNull(const CRefPtr<TestRefPtr>& testPtr)
 {
-	ASSERT_TRUE(testPtr != nullptr);
+	EXPECT_TRUE(testPtr != nullptr);
 
 	// Lua owns this as well as binder
-	ASSERT_EQ(testPtr->Ref_Count(), 2);
+	EXPECT_EQ(testPtr->Ref_Count(), 2);
 }
 
 TEST(EQSCRIPT_TESTS, RefPtrFromLua)
@@ -831,14 +831,14 @@ TEST(EQSCRIPT_TESTS, RefPtrFromLua)
 		LUA_GTEST_CHUNK("TestCFunction(testValue)");
 
 		testGet = *state.GetGlobal<CRefPtr<TestRefPtr>>("testValue");
-		ASSERT_EQ(testGet->Ref_Count(), 2);
+		EXPECT_EQ(testGet->Ref_Count(), 2);
 	}
 	
 	// TEST: only C++ must own this object
-	ASSERT_EQ(testGet->Ref_Count(), 1);
+	EXPECT_EQ(testGet->Ref_Count(), 1);
 
-	ASSERT_EQ(testGet->value, 555);
-	ASSERT_EQ(testGet->strValue, "Hi from Lua");
+	EXPECT_EQ(testGet->value, 555);
+	EXPECT_EQ(testGet->strValue, "Hi from Lua");
 }
 
 struct TestEvent
@@ -864,12 +864,12 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 
 		// TEST: lambda function binder
 		state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(+[](const EqString& message) {
-			ASSERT_EQ("Event Called", message);
+			EXPECT_EQ("Event Called", message);
 		}));
 
 		// TEST: event handlers added
 		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(function() end)");
-		ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
+		EXPECT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
 
 		// TEST: call event from native code
 		ESL_DECLARE_EVENT_CALL(evtTestObj, Event, const EqString&);
@@ -878,15 +878,15 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 		LUA_GTEST_CHUNK("evtTest.Event:RemoveHandler(testHandle)");
 
 		// TEST: handler removed
-		ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 0);
+		EXPECT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 0);
 
 		// TEST: re-add event
 		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(TestCFunction)");
-		ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
+		EXPECT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
 	}
 
 	// TEST: handler remove due to GC of Handle and Lua state closed
-	ASSERT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 0);
+	EXPECT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 0);
 
 	delete evtTestObj;
 }
@@ -923,4 +923,74 @@ TEST(EQSCRIPT_TESTS, TestOperatorBinding)
 
 	// TEST: tostring operator
 	LUA_GTEST_CHUNK("EXPECT_EQ(tostring(test), 'current value: 545999')");
+}
+
+struct ByValueTests
+{
+	ByValueTests() = default;
+	ByValueTests(ByValueTests&& other) noexcept
+		: value(std::move(other.value))
+		, usedCopyConstructor(other.usedCopyConstructor)
+		, isMoved(true)
+	{
+	}
+	ByValueTests(const ByValueTests& other) 
+		: value(other.value)
+		, usedCopyConstructor(true)
+	{
+	}
+	int		value{ -1 };
+	bool	usedCopyConstructor { false };
+	bool	isMoved{ false };
+};
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(ByValueTests, "ByValueTests", BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(ByValueTests)
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_CONSTRUCTOR(const ByValueTests&)
+	EQSCRIPT_BIND_VAR(value)
+	EQSCRIPT_BIND_VAR(usedCopyConstructor)
+	EQSCRIPT_BIND_VAR(isMoved)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, TestByValue)
+{
+	LuaStateTest stateTest;
+	EqScriptState state(stateTest);
+
+	state.RegisterClass<ByValueTests>();
+
+	ByValueTests* testValue = PPNew ByValueTests();
+	testValue->value = 888999;
+
+	// copy to Lua
+	state.SetGlobal("testByValue", testValue);
+
+	// this is safe for BY_VALUE types
+	delete testValue;
+
+	// TEST: should copy object
+	LUA_GTEST_CHUNK("EXPECT_EQ(testByValue.value, 888999)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testByValue.usedCopyConstructor, true)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testByValue.isMoved, false)");
+
+	// TEST: should not use copy constructor
+	LUA_GTEST_CHUNK("test2 = ByValueTests.new(); test2.value = 4444; EXPECT_EQ(test2.usedCopyConstructor, false); EXPECT_EQ(test2.isMoved, false)");
+
+	// TEST: should use copy constructor and not be moved
+	LUA_GTEST_CHUNK("test3 = ByValueTests.new(test2); EXPECT_EQ(test3.usedCopyConstructor, true); EXPECT_EQ(test3.isMoved, false)");
+
+	// TEST: should give a reference to object in Lua
+	{
+		LUA_GTEST_CHUNK("test4 = ByValueTests.new(); test4.value = 4444");
+		ByValueTests& test4 = *state.GetGlobal<ByValueTests&>("test4");
+
+		EXPECT_EQ(test4.value, 4444);
+		EXPECT_FALSE(test4.isMoved);
+		EXPECT_FALSE(test4.usedCopyConstructor);
+
+		// we can access object which is in Lua to modify
+		test4.value = 888666;
+		LUA_GTEST_CHUNK("EXPECT_EQ(test4.value, 888666)");
+	}
 }

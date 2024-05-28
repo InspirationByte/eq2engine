@@ -97,13 +97,13 @@ struct ArgsSignature<First, Rest...>
 template<typename T>
 struct PushGetImpl
 {
+	using UT = StripTraitsT<T>;
+	using BaseUType = BaseType<UT>;
+
+	// TODO: MoveObject()
+
 	static void PushObject(lua_State* L, const T& obj, int flags)
 	{
-		using UT = StripTraitsT<T>;
-		using BaseUType = BaseType<UT>;
-		
-		ASSERT_MSG(LuaTypeByVal<BaseUType>::value == EqScriptClass<BaseUType>::isByVal, "Incorrect object push type on PUSH");
-
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
 			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
@@ -116,21 +116,14 @@ struct PushGetImpl
 			ud->flags = flags;
 
 			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
-			{
 				const_cast<BaseUType*>(&obj)->Ref_Grab();
-			}
 		}
 		luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 	}
 
 	static T* GetObject(lua_State* L, int index, bool toCpp)
 	{
-		using UT = StripTraitsT<T>;
-		using BaseUType = BaseType<UT>;
-
 		static_assert(std::is_fundamental_v<BaseUType> == false, "GetObject used for fundamental type");
-
-		ASSERT_MSG(LuaTypeByVal<BaseUType>::value == EqScriptClass<BaseUType>::isByVal, "Incorrect object push type on GET");
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
@@ -602,23 +595,31 @@ struct ConstructorBinder;
 template<typename T>
 struct ConstructorBinder<T>
 {
+	using UT = StripTraitsT<T>;
+	using BaseUType = BaseType<UT>;
+
 	static int Func(lua_State* L)
 	{
-		ESL_VERBOSE_LOG("ctor(def) %s, byval %d", EqScriptClass<T>::className, EqScriptClass<T>::isByVal);
-
-		// Extract arguments from Lua and forward them to the constructor
-		using UT = StripTraitsT<T>;
-		using BaseUType = BaseType<UT>;
+		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", EqScriptClass<T>::className, LuaTypeByVal<T>::value);
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
-			T newObjVal;
-			runtime::PushGet<T>::Push(L, newObjVal, UD_FLAG_OWNED);
+			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
+			new(ud) BaseUType(); // FIXME: use move?
+			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 		}
 		else
 		{
 			T* newObj = PPNew T();
-			runtime::PushGet<T>::Push(L, *newObj, UD_FLAG_OWNED);
+
+			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
+			ud->objPtr = newObj;
+			ud->flags = UD_FLAG_OWNED;
+
+			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
+				newObj->Ref_Grab();
+
+			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 		}
 		return 1;
 	}
@@ -628,24 +629,32 @@ struct ConstructorBinder<T>
 template<typename T, typename... Args>
 struct ConstructorBinder 
 {
+	using UT = StripTraitsT<T>;
+	using BaseUType = BaseType<UT>;
+
 	template<size_t... IDX>
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
-		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", EqScriptClass<T>::className, EqScriptClass<T>::isByVal);
-
-		// Extract arguments from Lua and forward them to the constructor
-		using UT = StripTraitsT<T>;
-		using BaseUType = BaseType<UT>;
+		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", EqScriptClass<T>::className, LuaTypeByVal<T>::value);
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
-			T newObjVal(*runtime::GetValue<Args, true>(L, IDX + 1)...);
-			runtime::PushGet<T>::Push(L, newObjVal, UD_FLAG_OWNED);
+			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
+			new(ud) BaseUType(*runtime::GetValue<Args, true>(L, IDX + 1)...); // FIXME: use move?
+			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 		}
 		else
 		{
 			T* newObj = PPNew T(*runtime::GetValue<Args, true>(L, IDX + 1)...);
-			runtime::PushGet<T>::Push(L, *newObj, UD_FLAG_OWNED);
+
+			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
+			ud->objPtr = newObj;
+			ud->flags = UD_FLAG_OWNED;
+
+			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
+				newObj->Ref_Grab();
+
+			luaL_setmetatable(L, LuaBaseTypeAlias<BaseUType>::value);
 		}
 	}
 

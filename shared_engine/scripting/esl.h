@@ -222,7 +222,6 @@ struct EqScriptClass
 	static esl::TypeInfo	baseClassTypeInfo;
 	static const char		className[];
 	static const char*		baseClassName;
-	static bool				isByVal;
 };
 
 class EqScriptState
