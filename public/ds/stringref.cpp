@@ -5,8 +5,9 @@
 // Description: Special String tools to do lesser memory errors
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <ctype.h>
 #include "core/core_common.h"
-#include "strtools.h"
+#include "stringref.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -74,9 +75,9 @@ wchar_t* xwcsupr(wchar_t* str)
 
 void CombinePathN(EqString& outPath, int num, ...)
 {
-	EqString newStr;
+	outPath.Empty();
 
-	va_list		argptr;
+	va_list	argptr;
 	va_start (argptr,num);
 
     for( int i = 0; i < num; i++ )        
@@ -87,15 +88,12 @@ void CombinePathN(EqString& outPath, int num, ...)
 		if (pathPart.Length() <= 0)
 			continue;
 
-		newStr.Append(_Es(pathPart));
-		if(i != num-1 && newStr.Right(1)[0] != CORRECT_PATH_SEPARATOR )
-			newStr.Append(CORRECT_PATH_SEPARATOR);
+		outPath.Append(_Es(pathPart));
+		if(i != num-1 && outPath.Right(1)[0] != CORRECT_PATH_SEPARATOR )
+			outPath.Append(CORRECT_PATH_SEPARATOR);
     }
 
 	va_end (argptr);
-
-	// drop old outPath, replace with new string
-	outPath.Swap(newStr);
 }
 
 void FixSlashes( char* str )
@@ -537,3 +535,138 @@ CUTF8Conv::CUTF8Conv(EqString& outStr, const wchar_t* val, int len/* = -1*/)
 }
 
 }
+
+namespace CType
+{
+template<> bool IsAlphabetic(char chr) { return isalpha(static_cast<uint8>(chr)); }
+template<> bool IsAlphaNumeric(char chr) { return isalnum(static_cast<uint8>(chr)); }
+template<> bool IsDigit(char chr) { return isdigit(static_cast<uint8>(chr)); }
+template<> bool IsSpace(char chr) { return isspace(static_cast<uint8>(chr)); }
+
+template<> bool IsAlphabetic(wchar_t chr) { return iswalpha(chr); }
+template<> bool IsAlphaNumeric(wchar_t chr) { return iswalnum(chr); }
+template<> bool IsDigit(wchar_t chr) { return iswdigit(chr); }
+template<> bool IsSpace(wchar_t chr) { return iswspace(chr); }
+
+template<> char LowerChar(char chr) { return tolower(chr); }
+template<> char UpperChar(char chr) { return toupper(chr); }
+
+template<> wchar_t LowerChar(wchar_t chr)
+{
+#ifdef _WIN32
+	return *CharLowerW(&chr);
+#else
+	return towlower_l(*it, xgetlocale());
+#endif // _WIN32
+}
+
+template<> wchar_t UpperChar(wchar_t chr)
+{
+#ifdef _WIN32
+	return *CharUpperW(&chr);
+#else
+	return towupper_l(*it, xgetlocale());
+#endif // _WIN32
+}
+}
+
+namespace CString
+{
+template<> int Length<char>(const char* str)
+{
+	if (!str) return 0;
+	return strlen(str);
+}
+
+template<> int Length<wchar_t>(const wchar_t* str)
+{
+	if (!str) return 0;
+	return wcslen(str);
+}
+
+template<> char* SubString(char* str, const char* search, bool caseSensitive)
+{
+	if (!str || !search) return nullptr;
+	return caseSensitive ? strstr(str, search) : xstristr(str, search);
+}
+
+template<> wchar_t* SubString(wchar_t* str, const wchar_t* search, bool caseSensitive)
+{
+	if (!str || !search) return nullptr;
+	return caseSensitive ? wcsstr(str, search) : xwcsistr(str, search);
+}
+}
+
+//------------------------------------------------
+
+template<>
+int StrRef<char>::Compare(StrRef otherStr) const
+{
+	return strcmp(m_pszString, otherStr);
+}
+
+template<>
+int StrRef<wchar_t>::Compare(StrRef otherStr) const
+{
+	return wcscmp(m_pszString, otherStr);
+}
+
+template<>
+int StrRef<char>::CompareCaseIns(StrRef otherStr) const
+{
+	return stricmp(m_pszString, otherStr);
+}
+
+template<>
+int StrRef<wchar_t>::CompareCaseIns(StrRef otherStr) const
+{
+	return xwcsicmp(m_pszString, otherStr);
+}
+
+template<typename CH>
+int StrRef<CH>::GetMathingChars(StrRef otherStr) const
+{
+	if (!IsValid())
+		return 0;
+
+	const CH* s1 = m_pszString;
+	const CH* s2 = otherStr;
+
+	int matching = 0;
+	while (*s1++ == *s2++) { matching++; }
+
+	return matching;
+}
+
+template<typename CH>
+int StrRef<CH>::GetMathingCharsCaseIns(StrRef otherStr) const
+{
+	if (!IsValid())
+		return 0;
+
+	const CH* s1 = m_pszString;
+	const CH* s2 = otherStr;
+
+	int matching = 0;
+	while (CType::LowerChar(*s1++) == CType::LowerChar(*s2++)) { matching++; }
+
+	return matching;
+}
+
+template<typename CH>
+int StrRef<CH>::Find(StrRef subStr, bool bCaseSensetive, int nStart) const
+{
+	if (!m_pszString || nStart < 0)
+		return -1;
+
+	CH* strStart = const_cast<CH*>(m_pszString) + min(nStart, Length());
+	const CH* subStrPtr = CString::SubString<CH>(strStart, subStr, bCaseSensetive);
+	if (!subStrPtr)
+		return -1;
+
+	return (subStrPtr - m_pszString);
+}
+
+// define implementations below
+template class StrRef<char>;
+template class StrRef<wchar_t>;

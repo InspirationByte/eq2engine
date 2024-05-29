@@ -14,7 +14,7 @@
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 
-#define CON_SEPARATOR ';'
+constexpr const char* CON_SEPARATORS = ";\n";
 
 static bool IsAllowedToExecute(ConCommandBase* base)
 {
@@ -49,7 +49,7 @@ static int alpha_cmd_comp(const ConCommandBase* a, const ConCommandBase* b)
 
 static bool isCvarChar(char c)
 {
-	return c == '+' || c == '-' || c == '_' || isalpha(c);
+	return c == '+' || c == '-' || c == '_' || CType::IsAlphabetic(c);
 }
 
 DECLARE_CONCOMMAND_FN(cvarlist)
@@ -264,7 +264,7 @@ DECLARE_CMD_VARIANTS_F(revertvar, "Reverts cvar to it's default value", cvar_lis
 void SplitCommandForValidArguments(const char* command, Array<EqString>& commands)
 {
 	const char* pChar = command;
-	while (*pChar && isspace(static_cast<unsigned char>(*pChar)))
+	while (*pChar && CType::IsSpace(*pChar))
 	{
 		++pChar;
 	}
@@ -297,7 +297,7 @@ void SplitCommandForValidArguments(const char* command, Array<EqString>& command
 				continue;
 			}
 
-			if (isspace(static_cast<unsigned char>(*pChar)))
+			if (CType::IsSpace(*pChar))
 				continue;
 
 			pFirstLetter = pChar;
@@ -305,7 +305,7 @@ void SplitCommandForValidArguments(const char* command, Array<EqString>& command
 		}
 
 		// Here, we're in the middle of a word. Look for the end of it.
-		if (isspace(*pChar))
+		if (CType::IsSpace(*pChar))
 		{
 			int nLen = (int)(pChar - pFirstLetter);
 			commands.append(_Es(pFirstLetter, nLen));
@@ -436,31 +436,39 @@ void CConsoleCommands::SortCommands()
 	m_commandListDirty = false;
 }
 
-void CConsoleCommands::ForEachSeparated(const char* str, char separator, FUNC fn, void* extra)
+static bool hasChar(const char* chrs, char ch)
 {
-	char c = str[0];
+	while (*chrs) 
+	{
+		if (*chrs++ == ch)
+			return true;
+	}
+	return false;
+}
+
+void CConsoleCommands::ForEachSeparated(const char* str, FUNC fn, void* extra)
+{
+	if (!str || *str == 0)
+		return;
 
 	const char* iterator = str;
+	char c = *iterator;
 
 	const char* pFirst = str;
 	const char* pLast = nullptr;
 
-	while (c != 0)
+	while (c)
 	{
 		c = *iterator;
-
-		if (c == separator || c == 0)
+		if (c == 0 || hasChar(CON_SEPARATORS, c))
 		{
 			pLast = iterator;
-
-			int char_count = pLast - pFirst;
-
-			if (char_count > 0)
-				(this->*fn)(pFirst, char_count, extra);
+			const int chrCount = pLast - pFirst;
+			if (chrCount > 0)
+				(this->*fn)(pFirst, chrCount, extra);
 
 			pFirst = iterator + 1;
 		}
-
 		iterator++;
 	}
 }
@@ -531,7 +539,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 		return; //Don't parse me about empty file
 	}
 
-	ForEachSeparated(buf, '\n', &CConsoleCommands::ParseAndAppend, nullptr);
+	ForEachSeparated(buf, &CConsoleCommands::ParseAndAppend, nullptr);
 	PPFree(buf);
 }
 
@@ -541,7 +549,7 @@ void CConsoleCommands::SetCommandBuffer(const char* pszBuffer)
 	ASSERT(strlen(pszBuffer) < COMMANDBUFFER_SIZE);
 	ClearCommandBuffer();
 
-	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, nullptr);
+	ForEachSeparated((char*)pszBuffer, &CConsoleCommands::ParseAndAppend, nullptr);
 }
 
 // Appends to command buffer
@@ -550,7 +558,7 @@ void CConsoleCommands::AppendToCommandBuffer(const char* pszBuffer)
 	const size_t new_len = strlen(pszBuffer) + strlen(m_currentCommands);
 
 	ASSERT(new_len < COMMANDBUFFER_SIZE);
-	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, nullptr);
+	ForEachSeparated((char*)pszBuffer, &CConsoleCommands::ParseAndAppend, nullptr);
 
 	//strcat(m_currentCommands, varargs("%s;",pszBuffer));
 }
@@ -661,7 +669,7 @@ bool CConsoleCommands::ExecuteCommandBuffer(cmdFilterFn_t filterFn, bool quiet, 
 	options.failedCmds = failedCmds;
 	options.quiet = quiet;
 
-	ForEachSeparated(m_currentCommands, CON_SEPARATOR, &CConsoleCommands::SplitOnArgsAndExec, &options);
+	ForEachSeparated(m_currentCommands, &CConsoleCommands::SplitOnArgsAndExec, &options);
 
 	return true;
 }

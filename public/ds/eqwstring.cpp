@@ -93,12 +93,6 @@ EqWString EqWString::FormatVa(const wchar_t* pszFormat, va_list argptr)
 	return newString;
 }
 
-// data for printing
-const wchar_t* EqWString::GetData() const
-{
-	return StrPtr();
-}
-
 const wchar_t* EqWString::StrPtr() const
 {
 	static const wchar_t s_zeroString[] = L"";
@@ -108,18 +102,6 @@ const wchar_t* EqWString::StrPtr() const
 bool EqWString::IsValid() const
 {
 	return wcslen(StrPtr()) == m_nLength;
-}
-
-// length of it
-uint16 EqWString::Length() const
-{
-	return m_nLength;
-}
-
-// string allocated size in bytes
-uint16 EqWString::GetSize() const
-{
-	return m_nAllocated;
 }
 
 // erases and deallocates data
@@ -364,7 +346,7 @@ void EqWString::Remove(int nStart, int nCount)
 }
 
 // replaces characters
-void EqWString::Replace( wchar_t whichChar, wchar_t to )
+void EqWString::ReplaceChar( wchar_t whichChar, wchar_t to )
 {
 	if (whichChar == 0 || to == 0) // can't replace to terminator
 		return;
@@ -436,21 +418,6 @@ EqWString EqWString::UpperCase() const
     return str;
 }
 
-// search, returns char index
-int	EqWString::Find(const wchar_t* pszSub, bool caseSensivite, int nStart) const
-{
-	if (!m_pszString || nStart < 0)
-		return -1;
-
-	wchar_t* strStart = m_pszString + min((uint16)nStart, m_nLength);
-
-	const wchar_t* subStr = caseSensivite ? wcsstr(strStart, pszSub) : xwcsistr(strStart, pszSub);
-	if (!subStr)
-		return -1;
-
-	return (subStr - m_pszString);
-}
-
 // searches for substring and replaces it
 int EqWString::ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool caseSensivite /*= false*/, int nStart /*= 0*/)
 {
@@ -478,27 +445,6 @@ int EqWString::ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool
 	ASSERT(IsValid());
 
 	return foundStartPos;
-}
-
-// comparators
-int	EqWString::Compare(const wchar_t* pszStr) const
-{
-	return xwcscmp(StrPtr(), pszStr);
-}
-
-int	EqWString::Compare(const EqWString &str) const
-{
-	return xwcscmp(StrPtr(), str.GetData());
-}
-
-int	EqWString::CompareCaseIns(const wchar_t* pszStr) const
-{
-	return xwcsicmp(StrPtr(), pszStr);
-}
-
-int	EqWString::CompareCaseIns(const EqWString &str) const
-{
-	return xwcsicmp(StrPtr(), str.GetData());
 }
 
 size_t EqWString::ReadString(IVirtualStream* stream, EqWString& output)

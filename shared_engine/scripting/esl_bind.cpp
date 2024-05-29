@@ -24,6 +24,7 @@ ESL_BUILTIN_ALIAS_TYPE(uint64, "number")
 ESL_BUILTIN_ALIAS_TYPE(float, "number")
 ESL_BUILTIN_ALIAS_TYPE(double, "number")
 ESL_BUILTIN_ALIAS_TYPE(EqString, "string")
+ESL_BUILTIN_ALIAS_TYPE(EqStringRef, "string")
 
 ESL_BUILTIN_ALIAS_TYPE(esl::LuaFunctionRef, "function")
 ESL_BUILTIN_ALIAS_TYPE(esl::LuaTableRef, "table")
@@ -32,9 +33,9 @@ ESL_BUILTIN_ALIAS_TYPE(esl::LuaRawRef, "any")
 
 ESL_BUILTIN_ALIAS_TYPE(char, "string")	// basically ok
 
-Map<int, EqString>& esl::bindings::BaseClassStorage::GetBaseClassNames()
+Map<int, EqStringRef>& esl::bindings::BaseClassStorage::GetBaseClassNames()
 {
-	static Map<int, EqString> baseClassNames{ PP_SL };
+	static Map<int, EqStringRef> baseClassNames{ PP_SL };
 	return baseClassNames;
 }
 

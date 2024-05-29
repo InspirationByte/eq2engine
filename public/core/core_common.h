@@ -11,10 +11,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
-#include <ctype.h>
-#include <wctype.h>
-#include <wchar.h>
+//#include <string.h>
+//#include <ctype.h>
+//#include <wctype.h>
+//#include <wchar.h>
+
 #include <limits.h>
 #include <malloc.h>
 #include <new>
@@ -64,32 +65,34 @@
 #include "platform/eqatomic.h"
 #include "platform/eqtimer.h"
 
-#include "ds/rawitem.h"
+#include "ds/refcounted.h"
+#include "ds/weakptr.h"
+#include "ds/singleton.h"
+
+#include "ds/defer.h"
+#include "ds/range_for.h"
+#include "ds/fluent.h"
+#include "ds/function.h"
+
+#include "ds/Array.h"
+#include "ds/stringref.h"
+
 #include "ds/IVirtualStream.h"
+#include "ds/MemoryStream.h"
+
+#include "ds/mempool.h"
+#include "ds/rawitem.h"
+#include "ds/ArrayRef.h"
+#include "ds/BitArray.h"
+#include "ds/Map.h"
+#include "ds/List.h"
 
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 
 #include "platform/eqthread.h"
-
-#include "ds/fluent.h"
-#include "ds/mempool.h"
-#include "ds/refcounted.h"
-#include "ds/weakptr.h"
-#include "ds/singleton.h"
-#include "ds/range_for.h"
-#include "ds/Array.h"
-#include "ds/ArrayRef.h"
-#include "ds/BitArray.h"
-#include "ds/Map.h"
-#include "ds/List.h"
-#include "ds/function.h"
 #include "ds/future.h"
-#include "ds/defer.h"
 
-#include "ds/MemoryStream.h"
-
-#include "utils/strtools.h"
 #include "utils/CRC32.h"
 
 // TODO: include individually when needed

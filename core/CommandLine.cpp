@@ -37,7 +37,7 @@ void CCommandLine::Parse(const char* pszCommandLine)
 	const char *pChar = pszCommandLine;
 
 	// trim whitespaces
-	while ( *pChar && isspace(static_cast<unsigned char>(*pChar)) )
+	while ( *pChar && CType::IsSpace(*pChar) )
 		++pChar;
 
 	bool bInQuotes = false;
@@ -67,7 +67,7 @@ void CCommandLine::Parse(const char* pszCommandLine)
 				continue;
 			}
 
-			if ( isspace( static_cast<unsigned char>(*pChar) ) )
+			if (CType::IsSpace(*pChar) )
 				continue;
 
 			pFirstLetter = pChar;
@@ -75,7 +75,7 @@ void CCommandLine::Parse(const char* pszCommandLine)
 		}
 
 		// Here, we're in the middle of a word. Look for the end of it.
-		if ( isspace( *pChar ) )
+		if (CType::IsSpace( *pChar ) )
 		{
 			AddArgument( pFirstLetter, pChar );
 			pFirstLetter = nullptr;

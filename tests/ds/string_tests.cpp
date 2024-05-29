@@ -278,12 +278,12 @@ TEST(EQSTRING_TESTS, ReplaceChar)
 {
 	EqString testString(s_StringTestStrTwoParts);
 
-	testString.Replace('S', 'x');
-	testString.Replace('i', 'E');
-	testString.Replace('E', 'i');
-	testString.Replace('x', 'S');
-	testString.Replace('e', 'b');
-	testString.Replace('a', 'e');
+	testString.ReplaceChar('S', 'x');
+	testString.ReplaceChar('i', 'E');
+	testString.ReplaceChar('E', 'i');
+	testString.ReplaceChar('x', 'S');
+	testString.ReplaceChar('e', 'b');
+	testString.ReplaceChar('a', 'e');
 
 	EqString checkPart = testString.Mid(4, 6);
 
@@ -358,4 +358,23 @@ TEST(EQSTRING_TESTS, ReplaceSubStr)
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
 	}
+}
+
+TEST(EQSTRINGREF_TESTS, Instantiate)
+{
+	GTEST_SKIP() << "TODO: string ref tests";
+
+	EqStringRef defaultRef;
+	EqStringRef nullRef = nullptr;
+	EqStringRef strRef = "String";
+	static constexpr EqStringRef cexprRef = "Extraordinary";
+
+	EqString str = "Extraordinary";
+
+	EqStringRef eqStrRef = str;
+
+	const int t = cexprRef.Find("Dinary", false, 0);
+
+	EXPECT_EQ(t, 7);
+	//EXPECT_EQ(str.Length(), 13);
 }

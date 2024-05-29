@@ -40,7 +40,7 @@ struct LuaCFunction
 
 struct BaseClassStorage
 {
-	static Map<int, EqString>& GetBaseClassNames();
+	static Map<int, EqStringRef>& GetBaseClassNames();
 
 	template<typename T>
 	static void			Add();

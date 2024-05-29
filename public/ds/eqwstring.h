@@ -34,77 +34,54 @@ public:
 	static EqWString FormatVa(const wchar_t* pszFormat, va_list args);
 	static size_t	 ReadString(IVirtualStream* stream, EqWString& output);
 
-	// returns true if data is valid and length is valid
 	bool			IsValid() const;
+	const wchar_t*	GetData() const { return StrPtr(); }
+	const wchar_t*	ToCString() const { return GetData(); }
+	EqWStringRef	Ref() const { return EqWStringRef(GetData(), Length()); }
 
-	// data for printing
-	const wchar_t*	GetData() const;
+	ushort			Length() const { return m_nLength; }
+	ushort			GetSize() const { return m_nAllocated; }
 
-	// nice std thing :)
-	const wchar_t*	ToCString() const {return GetData();}
+	// comparison operations
+	int				Compare(const wchar_t* pszStr) const { return Ref().Compare(pszStr); }
+	int				CompareCaseIns(const wchar_t* pszStr) const { return Ref().CompareCaseIns(pszStr); }
+	int				GetMathingChars(const wchar_t* pszStr) const { return Ref().GetMathingChars(pszStr); }
+	int				GetMathingCharsCaseIns(const wchar_t* pszStr) const { return Ref().GetMathingCharsCaseIns(pszStr); }
 
-	// length of it
-	uint16			Length() const;
+	// searches for substring, returns position
+	int				Find(const wchar_t* pszSub, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(pszSub, bCaseSensitive, nStart); }
 
-	// string allocated size in bytes
-	uint16			GetSize() const;
-
-	// erases and deallocates data
+	// modifying
 	void			Clear();
-
-	// empty the string and restore base buffer
 	void			Empty();
 
-	// an internal operation of allocation/extend
 	bool			ExtendAlloc(int nSize);
-
-	// just a resize
 	bool			Resize(int nSize, bool bCopy = true);
 
-	// string assignment with conversion (or setvalue)
 	void			Assign(const char* pszStr, int len = -1);
 	void			Assign(const EqString &str, int nStart = 0, int len = -1);
-
-	// string assignment (or setvalue)
 	void			Assign(const wchar_t* pszStr, int len = -1);
 	void			Assign(const EqWString &str, int nStart = 0, int len = -1);
 
-	// appends another string
 	void			Append(const wchar_t c);
 	void			Append(const wchar_t* pszStr, int nCount = -1);
 	void			Append(const EqWString &str);
 
-	// inserts another string at position
 	void			Insert(const wchar_t* pszStr, int nInsertPos, int nInsertCount = -1);
 	void			Insert(const EqWString &str, int nInsertPos);
 
-	// removes characters
 	void			Remove(int nStart, int nCount);
-
-	// replaces characters
-	void			Replace( wchar_t whichChar, wchar_t to );
-
-	// rightmost\leftmost string extractors
-	EqWString		Left(int nCount) const;
-	EqWString		Right(int nCount) const;
-	EqWString		Mid(int nStart, int nCount) const;
+	void			ReplaceChar( wchar_t whichChar, wchar_t to );
+	int				ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
 	// converters
 	EqWString		LowerCase() const;
 	EqWString		UpperCase() const;
 
-	// comparators
-	int				Compare(const wchar_t* pszStr) const;
-	int				Compare(const EqWString &str) const;
+	EqWString		Left(int nCount) const;
+	EqWString		Right(int nCount) const;
+	EqWString		Mid(int nStart, int nCount) const;
 
-	int				CompareCaseIns(const wchar_t* pszStr) const;
-	int				CompareCaseIns(const EqWString &str) const;
-
-	// search, returns char index
-	int				Find(const wchar_t* pszSub, bool bCaseSensetive = false, int nStart = 0) const;
-
-	// searches for substring and replaces it
-	int				ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
 	//------------------------------------------------------------------------------------------------
 
@@ -138,15 +115,9 @@ public:
 		return m_pszString[idx];
 	}
 
-	operator const wchar_t* () 
-	{
-		return this->ToCString();
-	}
-
-	operator const wchar_t* () const
-	{
-		return this->ToCString();
-	}
+	operator const wchar_t* () { return ToCString(); }
+	operator const wchar_t* () const { return ToCString(); }
+	operator EqWStringRef () const { return Ref(); }
 
 protected:
 	const wchar_t*	StrPtr() const;
@@ -158,7 +129,7 @@ protected:
 	uint16			m_nAllocated{ 0 };		// allocation size
 };
 
-STRING_OPERATORS(static inline, EqWString)
+STRING_OPERATORS(static inline, EqWString, wchar_t)
 
 static size_t VSRead(IVirtualStream* stream, EqWString& str)
 {

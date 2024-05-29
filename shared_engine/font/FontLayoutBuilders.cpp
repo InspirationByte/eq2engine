@@ -132,9 +132,9 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 		curTextPos.x += font->GetStringWidth((char*)strCurPos, params, 1);
 
 	if( isWideChar )
-		m_newWord = iswspace(*((wchar_t*)strCurPos));
+		m_newWord = CType::IsSpace(*((wchar_t*)strCurPos));
 	else
-		m_newWord = isspace(*((char*)strCurPos));
+		m_newWord = CType::IsSpace(*((char*)strCurPos));
 
 	return true;
 }

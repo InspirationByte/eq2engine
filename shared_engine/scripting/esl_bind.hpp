@@ -57,11 +57,18 @@ template<std::size_t N> struct IsString<char[N]> : std::true_type {};
 template<> struct IsString<EqString> : std::true_type {};
 template<> struct IsString<EqString&> : std::true_type {};
 template<> struct IsString<const EqString&> : std::true_type {};
+template<> struct IsString<EqStringRef> : std::true_type {};
+template<> struct IsString<EqStringRef&> : std::true_type {};
+template<> struct IsString<const EqStringRef&> : std::true_type {};
 
 template<typename T> struct IsEqString : std::false_type {};
 template<> struct IsEqString<EqString> : std::true_type {};
 template<> struct IsEqString<EqString&> : std::true_type {};
 template<> struct IsEqString<const EqString&> : std::true_type {};
+template<> struct IsEqString<EqStringRef> : std::true_type {};
+template<> struct IsEqString<EqStringRef&> : std::true_type {};
+template<> struct IsEqString<const EqStringRef&> : std::true_type {};
+
 
 } // end esl::binder
 
@@ -394,10 +401,12 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (binder::IsString<T>::value)
 	{
+		using BaseStringType = BaseType<UT>;
+
 		if (!checkType(L, index, LUA_TSTRING))
 		{
 			if constexpr (binder::IsEqString<T>::value)
-				return ResultWithValue<EqString>{ false, {}, EqString() };
+				return ResultWithValue<BaseStringType>{ false, {}, BaseStringType() };
 			else
 				return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
 		}
@@ -406,8 +415,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		const char* value = lua_tolstring(L, index, &len);
 		if constexpr (binder::IsEqString<T>::value)
 		{
-			static_assert(!std::is_pointer_v<T>, "passing EqString by pointer is not supported yet");
-			return ResultWithValue<EqString>{ true, {}, EqString(value, len) };
+			static_assert(!std::is_pointer_v<T>, "passing EqStringRef by pointer is not supported yet");
+			return ResultWithValue<BaseStringType>{ true, {}, BaseStringType(value, len) };
 		}
 		else
 			return Result{ true, {}, value };

@@ -66,7 +66,7 @@ public:
 	bool					IsInitialized() const { return true; }
 
 private:
-	void					ForEachSeparated(const char* str, char separator, FUNC fn, void* extra);
+	void					ForEachSeparated(const char* str, FUNC fn, void* extra);
 	void					ParseAndAppend(const char* str, int len, void* extra);
 	void					SplitOnArgsAndExec(const char* str, int len, void* extra);
 

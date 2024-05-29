@@ -7,6 +7,9 @@
 
 #pragma once
 
+class EqString;
+class EqWString;
+
 #ifdef _WIN32
 #	define CORRECT_PATH_SEPARATOR '\\'
 #	define INCORRECT_PATH_SEPARATOR '/'
@@ -17,8 +20,6 @@
 
 static constexpr const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
 static constexpr const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
-static constexpr const int StringHashBits = 24;
-static constexpr const int StringHashMask = ((1 << StringHashBits) - 1);
 
 #ifdef PLAT_POSIX
 
@@ -27,7 +28,7 @@ static constexpr const int StringHashMask = ((1 << StringHashBits) - 1);
 
 #define stricmp(a, b)			strcasecmp(a, b)
 
-#endif // LINUX
+#endif // PLAT_POSIX
 
 #ifdef PLAT_ANDROID
 
@@ -60,13 +61,14 @@ typedef __builtin_va_list	__gnuc_va_list;
 typedef __gnuc_va_list		va_list;
 typedef va_list				__va_list;
 
-//wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n);
-
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 //------------------------------------------------------
 // String hash
 //------------------------------------------------------
+
+static constexpr const int StringHashBits = 24;
+static constexpr const int StringHashMask = ((1 << StringHashBits) - 1);
 
 template<int idx, std::size_t N>
 struct StringToHashHelper {
@@ -122,9 +124,6 @@ void		xstrsplit(const char* pString, const char* pSeparator, Array<EqString>& ou
 char const* xstristr(char const* pStr, char const* pSearch);
 char*		xstristr(char* pStr, char const* pSearch);
 
-// is space?
-bool		xisspace(int c);
-
 // fast duplicate c string
 char*		xstrdup(const char*  s);
 
@@ -163,5 +162,108 @@ public:
 	CUTF8Conv(EqString& outStr, const wchar_t* val, int length = -1);
 	CUTF8Conv(EqWString& outStr, const char* val, int length = -1);
 };
+}
 
+//------------------------------------------------------
+
+namespace CType
+{
+template<typename CH> bool IsAlphabetic(CH chr);
+template<typename CH> bool IsAlphaNumeric(CH chr);
+template<typename CH> bool IsDigit(CH chr);
+template<typename CH> bool IsSpace(CH chr);
+
+template<typename CH> CH LowerChar(CH chr);
+template<typename CH> CH UpperChar(CH chr);
+
+template<> bool IsAlphabetic(char chr);
+template<> bool IsAlphaNumeric(char chr);
+template<> bool IsDigit(char chr);
+template<> bool IsSpace(char chr);
+
+template<> char LowerChar(char chr);
+template<> char UpperChar(char chr);
+
+template<> bool IsAlphabetic(wchar_t chr);
+template<> bool IsAlphaNumeric(wchar_t chr);
+template<> bool IsDigit(wchar_t chr);
+template<> bool IsSpace(wchar_t chr);
+
+template<> wchar_t LowerChar(wchar_t chr);
+template<> wchar_t UpperChar(wchar_t chr);
+}
+
+namespace CString
+{
+template<typename CH> int Length(const CH* str);
+template<typename CH> CH* SubString(CH* str, const CH* search, bool caseSensitive);
+}
+
+//------------------------------------------------------
+// String ref itself
+
+template<typename CH>
+class StrRef
+{
+public:
+	constexpr StrRef()
+		: m_pszString(nullptr)
+		, m_nLength(-1)
+	{
+	}
+
+	constexpr StrRef(std::nullptr_t)
+		: m_pszString(nullptr)
+		, m_nLength(-1)
+	{
+	}
+
+	constexpr StrRef(const CH* str)
+		: m_pszString(str)
+		, m_nLength(-1)
+	{
+	}
+
+	StrRef(const CH* str, int length)
+		: m_pszString(str)
+		, m_nLength(length == -1 ? -1 : length)
+	{
+	}
+
+	StrRef(const StrRef& other)
+		: m_pszString(other.m_pszString)
+		, m_nLength(other.m_nLength)
+	{
+	}
+	
+	bool		IsValid() const { return m_pszString != nullptr; }
+	const CH*	GetData() const { return m_pszString; }
+	const CH*	ToCString() const { return GetData(); }
+
+	int			Length() const { return (m_nLength == -1) ? m_nLength = CString::Length(m_pszString) : m_nLength; }
+
+	// comparison operations
+	int			Compare(StrRef otherStr) const;
+	int			CompareCaseIns(StrRef otherStr) const;
+	int			GetMathingChars(StrRef otherStr) const;
+	int			GetMathingCharsCaseIns(StrRef otherStr) const;
+
+	// searches for substring, returns value
+	int			Find(StrRef otherStr, bool caseSensitive = false, int start = 0) const;
+
+	CH operator[](int idx) const
+	{
+		ASSERT(idx >= 0 && idx <= Length());
+		return m_pszString[idx];
+	}
+
+	operator const CH* () const { return ToCString(); }
+	operator bool() const { return IsValid(); }
+
+private:
+	const CH*	m_pszString{ nullptr };
+	mutable int	m_nLength{ 0 };
 };
+
+using EqStringRef = StrRef<char>;
+using EqWStringRef = StrRef<wchar_t>;

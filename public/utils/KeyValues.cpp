@@ -114,7 +114,7 @@ static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength =
 
 #define IsKVBufferEOF()				((pData - pszBuffer) > bufferSize-1)
 #define IsKVArrayEndOrSeparator(c)	((c) == KV_ARRAY_SEPARATOR || (c) == KV_ARRAY_END)
-#define IsKVWhitespace(c)			(isspace(c) || (c) == KV_STRING_NEWLINE || (c) == KV_STRING_CARRIAGERETURN)
+#define IsKVWhitespace(c)			(CType::IsSpace(c) || (c) == KV_STRING_NEWLINE || (c) == KV_STRING_CARRIAGERETURN)
 
 constexpr int KV_MAX_SECTION_DEPTH = 10;
 
@@ -2239,14 +2239,6 @@ void KV_PrintSection(const KVSection* base)
 //-----------------------------------------------------------------------------------------------------
 // KeyValues value helpers
 //-----------------------------------------------------------------------------------------------------
-
-static char* skip_spaces(const char* str)
-{
-	while (isspace(*str)) {
-		++str;
-	}
-	return (char*)str;
-}
 
 //
 // sscanf-like value getter from pairbase

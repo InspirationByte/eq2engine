@@ -1037,7 +1037,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	MsgInfo("> %s\n",m_inputText.GetData());
 
 	g_consoleCommands->ResetCounter();
-	g_consoleCommands->SetCommandBuffer(m_inputText.GetData());
+	g_consoleCommands->SetCommandBuffer(m_inputText);
 
 	Array<EqString> failedCmds(PP_SL);
 	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(nullptr, m_alternateHandler != nullptr, &failedCmds);

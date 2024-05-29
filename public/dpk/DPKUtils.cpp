@@ -53,7 +53,7 @@ static int HashDJB2(const char* str, int hash = 5381)
 {
 	// http://www.cse.yorku.ca/~oz/hash.html
 	while (int c = *str++)
-		hash = ((hash << 5) + hash) + tolower(c); /* hash * 33 + c */
+		hash = ((hash << 5) + hash) + (int)CType::LowerChar<char>(c); /* hash * 33 + c */
 
 	return hash;
 }

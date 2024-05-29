@@ -26,10 +26,6 @@
 const EqString EqString::EmptyStr;
 static const PPSourceLine EqStringSL = PPSourceLine::Make(nullptr, 0);
 
-EqString::EqString()
-{
-}
-
 EqString::~EqString()
 {
 	Clear();
@@ -40,7 +36,12 @@ EqString::EqString(const char* pszString, int len)
 	Assign( pszString, len );
 }
 
-EqString::EqString(const EqString &str, int nStart, int len)
+EqString::EqString(const EqString& str, int nStart, int len)
+{
+	Assign(str, nStart, len);
+}
+
+EqString::EqString(EqStringRef str, int nStart, int len)
 {
 	Assign( str, nStart, len );
 }
@@ -98,33 +99,15 @@ EqString EqString::FormatVa(const char* pszFormat, va_list argptr)
 	return newString;
 }
 
-// data for printing
-const char* EqString::GetData() const
-{
-	return StrPtr();
-}
-
 const char* EqString::StrPtr() const
 {
 	static const char s_zeroString[] = "";
 	return m_pszString ? m_pszString : s_zeroString;
 }
 
-// length of it
-uint16 EqString::Length() const
-{
-	return m_nLength;
-}
-
 bool EqString::IsValid() const
 {
 	return strlen(StrPtr()) == m_nLength;
-}
-
-// string allocated size in bytes
-uint16 EqString::GetSize() const
-{
-	return m_nAllocated;
 }
 
 // erases and deallocates data
@@ -229,7 +212,12 @@ void EqString::Assign(const char* pszStr, int len)
 	m_nLength = len;
 }
 
-void EqString::Assign(const EqString &str, int nStart, int len)
+void EqString::Assign(const EqString& str, int nStart, int len)
+{
+	return Assign(str.Ref(), nStart, len);
+}
+
+void EqString::Assign(EqStringRef str, int nStart, int len)
 {
 	ASSERT(nStart >= 0);
 
@@ -301,6 +289,11 @@ void EqString::Append(const EqString &str)
 	m_nLength = nNewLen;
 }
 
+void EqString::Append(EqStringRef str)
+{
+	Append(str.ToCString(), str.Length());
+}
+
 bool EqString::MakeInsertSpace(int startPos, int count)
 {
 	const int newLength = m_nLength + count;
@@ -369,7 +362,7 @@ void EqString::Remove(int nStart, int nCount)
 }
 
 // replaces characters
-void EqString::Replace( char whichChar, char to )
+void EqString::ReplaceChar( char whichChar, char to )
 {
 	if (whichChar == 0 || to == 0) // can't replace to terminator
 		return;
@@ -433,23 +426,8 @@ EqString EqString::UpperCase() const
 	return str;
 }
 
-// search, returns char index
-int	EqString::Find(const char* pszSub, bool caseSensivite, int nStart) const
-{
-	if (!m_pszString || nStart < 0)
-		return -1;
-
-	char* strStart = m_pszString + min((uint16)nStart, m_nLength);
-
-	const char* subStr = caseSensivite ? strstr(strStart, pszSub) : xstristr(strStart, pszSub);
-	if (!subStr)
-		return -1;
-
-	return (subStr - m_pszString);
-}
-
 // searches for substring and replaces it
-int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool caseSensivite /*= false*/, int nStart /*= 0*/)
+int EqString::ReplaceSubstr(EqStringRef find, EqStringRef replaceTo, bool caseSensivite /*= false*/, int nStart /*= 0*/)
 {
 	// replace substring
 	const int foundStartPos = Find(find, caseSensivite, nStart);
@@ -475,16 +453,6 @@ int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool caseSe
 	ASSERT(IsValid());
 
 	return foundStartPos;
-}
-
-// swaps two strings
-void EqString::Swap(EqString& otherStr)
-{
-	// swap pointers if any of the strings are allocated
-	QuickSwap(m_pszString, otherStr.m_pszString);
-
-	QuickSwap(m_nLength, otherStr.m_nLength);
-	QuickSwap(m_nAllocated, otherStr.m_nAllocated);
 }
 
 // other
@@ -559,7 +527,7 @@ EqString EqString::EatWhiteSpaces() const
 	const char* cc = StrPtr();
 	while(cc)
 	{
-		if( !isspace(*cc) )
+		if( !CType::IsSpace(*cc) )
 			out.Append(*cc++);
 	}
 
@@ -574,7 +542,7 @@ EqString EqString::TrimSpaces(bool left, bool right) const
 	const char* begin = m_pszString;
 
 	// trim whitespace from left
-	while(*begin && xisspace(*begin)) begin++;
+	while(*begin && CType::IsSpace(*begin)) begin++;
 
 	if(*begin == '\0')
 		return EqString::EmptyStr;
@@ -582,7 +550,7 @@ EqString EqString::TrimSpaces(bool left, bool right) const
 	const char* end = begin + strlen(begin) - 1;
 
 	// trim whitespace from right
-	while(end > begin && xisspace(*end))end--;
+	while(end > begin && CType::IsSpace(*end))end--;
 
 	return Mid(begin-m_pszString, end-begin+1);
 }
@@ -624,49 +592,6 @@ void EqString::Path_FixSlashes() const
 	if(!m_pszString)
 		return;
 	FixSlashes( m_pszString );
-}
-
-// comparators
-int	EqString::Compare(const char* pszStr) const
-{
-	return strcmp(StrPtr(), pszStr);
-}
-
-int	EqString::Compare(const EqString &str) const
-{
-	return strcmp(StrPtr(), str.GetData());
-}
-
-int	EqString::CompareCaseIns(const char* pszStr) const
-{
-	return xstricmp(StrPtr(), pszStr);
-}
-
-int	EqString::CompareCaseIns(const EqString &str) const
-{
-	return xstricmp(StrPtr(), str.GetData());
-}
-
-int	EqString::GetMathingChars(const char* pszStr) const
-{
-	const char* s1 = StrPtr();
-	const char* s2 = pszStr;
-
-	int matching = 0;
-	while(*s1++ == *s2++) {matching++;}
-
-	return matching;
-}
-
-int	EqString::GetMathingChars(const EqString &str) const
-{
-	const char* s1 = StrPtr();
-	const char* s2 = (char*)str.StrPtr();
-
-	int matching = 0;
-	while(*s1++ == *s2++) {matching++;}
-
-	return matching;
 }
 
 size_t EqString::ReadString(IVirtualStream* stream, EqString& output)

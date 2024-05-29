@@ -178,8 +178,7 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 
 			EqString image_path = KV_GetValueString(kb,0, nullptr);
 
-			bool hasImagePath = image_path.Length() > 0 && (isalpha(*image_path.ToCString()) || *image_path.ToCString() == '_');
-
+			const bool hasImagePath = image_path.Length() > 0 && (CType::IsAlphabetic(*image_path.ToCString()) || *image_path.ToCString() == '_');
 			if(hasImagePath)
 			{
 				EqString imgName(atlas_dir + image_path);

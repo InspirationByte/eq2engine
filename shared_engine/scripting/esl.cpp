@@ -53,7 +53,7 @@ bool ScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
 	return true;
 }
 
-bool ScriptState::RunChunk(const EqString& chunk, const char* name) const
+bool ScriptState::RunChunk(EqStringRef chunk, const char* name) const
 {
 	const int res = luaL_loadbuffer(m_state, chunk.ToCString(), chunk.Length(), name);
 	if (res != 0)

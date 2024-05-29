@@ -212,7 +212,7 @@ public:
 	void			ThrowError(const char* fmt, ...) const;
 
 	bool			RunBuffer(IVirtualStream* virtStream, const char* name) const;
-	bool			RunChunk(const EqString& chunk, const char* name = "userChunk") const;
+	bool			RunChunk(EqStringRef chunk, const char* name = "userChunk") const;
 
 	int				GetStackTop() const;
 	int				GetStackType(int index) const;

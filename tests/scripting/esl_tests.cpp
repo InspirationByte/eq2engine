@@ -646,6 +646,22 @@ TEST(EQSCRIPT_TESTS, TestFunctionInvocations)
 	}
 }
 
+TEST(EQSCRIPT_TESTS, TestStrings)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+
+	state.RunChunk("TestString = \"string AAB value\"");
+	state.SetGlobal("TestString2", "The Awesome String Value");
+
+	EqStringRef testString = *state.GetGlobal<EqStringRef>("TestString");
+	const char* testStringPtr = *state.GetGlobal<const char*>("TestString");
+
+	EXPECT_EQ(testString.ToCString(), testStringPtr);
+	EXPECT_EQ(testString, _Es("string AAB value"));
+	LUA_GTEST_CHUNK("EXPECT_EQ(TestString2, \"The Awesome String Value\")");
+}
+
 TEST(EQSCRIPT_TESTS, TestTables)
 {
 	LuaStateTest stateTest;

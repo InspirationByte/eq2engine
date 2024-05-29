@@ -39,9 +39,9 @@ void MatVarHelper::SetString(MatVarData& data, const char* szValue)
 			if(*vchar == 0)
 				break;
 
-			if(!start && !isspace(*vchar) && *vchar != VAR_ELEM_CLOSE)
+			if(!start && !CType::IsSpace(*vchar) && *vchar != VAR_ELEM_CLOSE)
 				start = vchar;
-			else if(start && (isspace(*vchar) || *vchar == VAR_ELEM_CLOSE))
+			else if(start && (CType::IsSpace(*vchar) || *vchar == VAR_ELEM_CLOSE))
 			{
 				if(vec_count == 4)
 				{
