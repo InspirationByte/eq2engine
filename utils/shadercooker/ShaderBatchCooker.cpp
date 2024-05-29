@@ -220,7 +220,7 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 	while (fsFind.Next())
 	{
 		EqString fileName = fsFind.GetPath();
-		if (fsFind.IsDirectory() && fileName != "." && fileName != "..")
+		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
 			EqString searchTemplate;
 			CombinePath(searchTemplate, searchFolder, fileName, "*");
@@ -321,7 +321,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 				
 				if (!stricmp(KV_GetValueString(layoutKey, 0), "aliasOf"))
 				{
-					const char* aliasOfStr = KV_GetValueString(layoutKey, 1);
+					EqStringRef aliasOfStr = KV_GetValueString(layoutKey, 1);
 					const int aliasLayout = arrayFindIndexF(shaderInfo.vertexLayouts, [aliasOfStr](const ShaderInfo::VertLayout& layout) {
 						return layout.name == aliasOfStr;
 					});

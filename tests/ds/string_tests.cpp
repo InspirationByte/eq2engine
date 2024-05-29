@@ -4,14 +4,14 @@
 #include "core/core_common.h"
 
 
-constexpr const char s_StringTestStr1[] = "Testing String";
-constexpr const char s_StringTestStr2[] = "No Magic Very Long Long long hell long string Value 1234567890 0xFEDABEEF";
+constexpr EqStringRef s_StringTestStr1 = "Testing String";
+constexpr EqStringRef s_StringTestStr2 = "No Magic Very Long Long long hell long string Value 1234567890 0xFEDABEEF";
 
-constexpr const char s_StringTestStrPart1[] = "The String";
-constexpr const char s_StringTestStrPart2[] = " And the Extraordinary Nuts";
-constexpr const char s_StringTestStrPart3[] = " Nuts of God";
+constexpr EqStringRef s_StringTestStrPart1 = "The String";
+constexpr EqStringRef s_StringTestStrPart2 = " And the Extraordinary Nuts";
+constexpr EqStringRef s_StringTestStrPart3 = " Nuts of God";
 
-constexpr const char s_StringTestStrTwoParts[] = "The String And the Extraordinary Nuts";
+constexpr EqStringRef s_StringTestStrTwoParts = "The String And the Extraordinary Nuts";
 
 constexpr int s_StringTestInt = 0xFEDABEEF;
 
@@ -31,7 +31,7 @@ TEST(EQSTRING_TESTS, WithContents)
 
 	EXPECT_EQ(testString, s_StringTestStr1);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStr1));
+	EXPECT_EQ(testString.Length(), s_StringTestStr1.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStr1));
 }
 
@@ -41,7 +41,7 @@ TEST(EQSTRING_TESTS, WithLongContents)
 
 	EXPECT_EQ(testString, s_StringTestStr2);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStr2));
+	EXPECT_EQ(testString.Length(), s_StringTestStr2.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStr2));
 }
 
@@ -53,7 +53,7 @@ TEST(EQSTRING_TESTS, ReassignShortToLong)
 
 	EXPECT_EQ(testString, s_StringTestStr2);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStr2));
+	EXPECT_EQ(testString.Length(), s_StringTestStr2.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStr2));
 }
 
@@ -65,7 +65,7 @@ TEST(EQSTRING_TESTS, ReassignLongToShort)
 
 	EXPECT_EQ(testString, s_StringTestStr1);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStr1));
+	EXPECT_EQ(testString.Length(), s_StringTestStr1.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStr1));
 }
 
@@ -75,7 +75,7 @@ TEST(EQSTRING_TESTS, AssignEmpty)
 
 	testString = "";
 
-	EXPECT_EQ(testString, "");
+	EXPECT_EQ(testString, EqStringRef(""));
 	ASSERT_TRUE(testString.IsValid());
 	EXPECT_EQ(testString.Length(), 0);
 	EXPECT_GE(testString.GetSize(), 1);
@@ -89,7 +89,7 @@ TEST(EQSTRING_TESTS, EmptyAppend)
 
 	EXPECT_EQ(testString, s_StringTestStr1);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStr1));
+	EXPECT_EQ(testString.Length(), s_StringTestStr1.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStr1));
 }
 
@@ -101,7 +101,7 @@ TEST(EQSTRING_TESTS, EmptyPrepend)
 
 	EXPECT_EQ(testString, s_StringTestStr1);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStr1));
+	EXPECT_EQ(testString.Length(), s_StringTestStr1.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStr1));
 }
 
@@ -113,7 +113,7 @@ TEST(EQSTRING_TESTS, Append)
 
 	EXPECT_EQ(testString, s_StringTestStrTwoParts);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStrTwoParts));
+	EXPECT_EQ(testString.Length(), s_StringTestStrTwoParts.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStrTwoParts));
 }
 
@@ -125,7 +125,7 @@ TEST(EQSTRING_TESTS, Prepend)
 
 	EXPECT_EQ(testString, s_StringTestStrTwoParts);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStrTwoParts));
+	EXPECT_EQ(testString.Length(), s_StringTestStrTwoParts.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStrTwoParts));
 }
 
@@ -137,7 +137,7 @@ TEST(EQSTRING_TESTS, InsertLast)
 
 	EXPECT_EQ(testString, s_StringTestStrTwoParts);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_EQ(testString.Length(), strlen(s_StringTestStrTwoParts));
+	EXPECT_EQ(testString.Length(), s_StringTestStrTwoParts.Length());
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStrTwoParts));
 }
 
@@ -153,7 +153,7 @@ TEST(EQSTRING_TESTS, AppendChars)
 	testString.Append('C');
 
 	std::string checkStr = (std::string(s_StringTestStrPart1) + " and C");
-	EXPECT_EQ(testString, checkStr.c_str());
+	EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 	ASSERT_TRUE(testString.IsValid());
 	EXPECT_EQ(testString.Length(), checkStr.length());
 	EXPECT_GE(testString.GetSize(), checkStr.length()+1);
@@ -167,7 +167,7 @@ TEST(EQSTRING_TESTS, InsertInMiddle)
 
 	{
 		std::string checkStr = ("The And the Extraordinary Nuts String");
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -177,7 +177,7 @@ TEST(EQSTRING_TESTS, InsertInMiddle)
 
 	{
 		std::string checkStr = ("The Nuts of God And the Extraordinary Nuts String");
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -192,7 +192,7 @@ TEST(EQSTRING_TESTS, RemoveChars)
 		testString.Remove(0, strlen("Testing "));
 
 		std::string checkStr = ("String");
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -205,7 +205,7 @@ TEST(EQSTRING_TESTS, RemoveChars)
 
 		std::string checkStr = ("No Magic string Value 1234567890 0xFEDABEEF");
 
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -219,7 +219,7 @@ TEST(EQSTRING_TESTS, RemoveChars)
 
 		std::string checkStr = ("Testing Strin");
 
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -242,7 +242,7 @@ TEST(EQSTRING_TESTS, Left)
 	EqString leftPart = testString.Left(4);
 
 	std::string checkStr = ("Test");
-	EXPECT_EQ(leftPart, checkStr.c_str());
+	EXPECT_EQ(leftPart, EqStringRef(checkStr.c_str()));
 	ASSERT_TRUE(leftPart.IsValid());
 	EXPECT_EQ(leftPart.Length(), checkStr.length());
 	EXPECT_GE(leftPart.GetSize(), checkStr.length() + 1);
@@ -255,7 +255,7 @@ TEST(EQSTRING_TESTS, Right)
 	EqString rightPart = testString.Right(6);
 
 	std::string checkStr = ("String");
-	EXPECT_EQ(rightPart, checkStr.c_str());
+	EXPECT_EQ(rightPart, EqStringRef(checkStr.c_str()));
 	ASSERT_TRUE(rightPart.IsValid());
 	EXPECT_EQ(rightPart.Length(), checkStr.length());
 	EXPECT_GE(rightPart.GetSize(), checkStr.length() + 1);
@@ -268,7 +268,7 @@ TEST(EQSTRING_TESTS, Mid)
 	EqString midPart = testString.Mid(4, 6);
 
 	std::string checkStr = ("String");
-	EXPECT_EQ(midPart, checkStr.c_str());
+	EXPECT_EQ(midPart, EqStringRef(checkStr.c_str()));
 	ASSERT_TRUE(midPart.IsValid());
 	EXPECT_EQ(midPart.Length(), checkStr.length());
 	EXPECT_GE(midPart.GetSize(), checkStr.length() + 1);
@@ -288,7 +288,7 @@ TEST(EQSTRING_TESTS, ReplaceChar)
 	EqString checkPart = testString.Mid(4, 6);
 
 	std::string checkStr = ("String");
-	EXPECT_EQ(checkPart, checkStr.c_str());
+	EXPECT_EQ(checkPart, EqStringRef(checkStr.c_str()));
 	ASSERT_TRUE(checkPart.IsValid());
 	EXPECT_EQ(checkPart.Length(), checkStr.length());
 	EXPECT_GE(checkPart.GetSize(), checkStr.length() + 1);
@@ -304,7 +304,7 @@ TEST(EQSTRING_TESTS, ReplaceSubStr)
 		testString.ReplaceSubstr("String", "Classy");
 
 		std::string checkStr = ("The Classy And the Extraordinary Nuts");
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -317,7 +317,7 @@ TEST(EQSTRING_TESTS, ReplaceSubStr)
 		testString.ReplaceSubstr("Extraordinary", "BoomeryBazookahAmazing");
 
 		std::string checkStr = ("The String And the BoomeryBazookahAmazing Nuts");
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -331,7 +331,7 @@ TEST(EQSTRING_TESTS, ReplaceSubStr)
 		testString.ReplaceSubstr("the ", "", true);
 
 		std::string checkStr = ("The String And Deez Nuts");
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);
@@ -353,7 +353,7 @@ TEST(EQSTRING_TESTS, ReplaceSubStr)
 		pos = testString.ReplaceSubstr("1234567890", "", pos);
 
 		std::string checkStr = ("No Magic Very Short Short Short hell Short string Value  0xFEDABEEF");
-		EXPECT_EQ(testString, checkStr.c_str());
+		EXPECT_EQ(testString, EqStringRef(checkStr.c_str()));
 		ASSERT_TRUE(testString.IsValid());
 		EXPECT_EQ(testString.Length(), checkStr.length());
 		EXPECT_GE(testString.GetSize(), checkStr.length() + 1);

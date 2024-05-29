@@ -338,6 +338,11 @@ void EqString::Insert(const EqString &str, int nInsertPos)
 	Insert(str, nInsertPos, str.Length());
 }
 
+void EqString::Insert(EqStringRef str, int nInsertPos)
+{
+	Insert(str.GetData(), nInsertPos, str.Length());
+}
+
 // removes characters
 void EqString::Remove(int nStart, int nCount)
 {

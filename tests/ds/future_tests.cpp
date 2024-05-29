@@ -3,8 +3,8 @@
 #include "core/core_common.h"
 
 static constexpr const int s_FutureErrorCode = 500;
-static constexpr const char* s_FutureErrorMessage = "Error Message";
-static constexpr const char* s_FutureTestStr = "Testing String Value";
+static constexpr EqStringRef s_FutureErrorMessage = "Error Message";
+static constexpr EqStringRef s_FutureTestStr = "Testing String Value";
 static constexpr int s_FutureTestInt = 0xDEADBEEF;
 
 TEST(FUTURE_TESTS, ErrorCodeMessage)

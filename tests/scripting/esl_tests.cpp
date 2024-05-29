@@ -291,27 +291,27 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 		// check constructors
 		EXPECT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
 		EXPECT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
-		EXPECT_EQ(_Es(typeInfo.members[2].signature), "number");
+		EXPECT_EQ(EqStringRef(typeInfo.members[2].signature), EqStringRef("number"));
 
 		// check members
 		EXPECT_EQ(typeInfo.members[3].type, esl::MEMB_FUNC);
-		EXPECT_EQ(_Es(typeInfo.members[3].signature), "KVSection");
+		EXPECT_EQ(EqStringRef(typeInfo.members[3].signature), EqStringRef("KVSection"));
 
 		// TEST: validate LuaTypeAlias
 		EXPECT_EQ(typeInfo.members[6].type, esl::MEMB_VAR);
-		EXPECT_EQ(_Es(typeInfo.members[6].signature), "string");
+		EXPECT_EQ(EqStringRef(typeInfo.members[6].signature), EqStringRef("string"));
 
 		// TEST: validate LuaTypeAlias
 		EXPECT_EQ(typeInfo.members[7].type, esl::MEMB_VAR);
-		EXPECT_EQ(_Es(typeInfo.members[7].signature), "Vector3D");
+		EXPECT_EQ(EqStringRef(typeInfo.members[7].signature), EqStringRef("Vector3D"));
 
 		// TEST: validate LuaTypeAlias enum type
 		EXPECT_EQ(typeInfo.members[8].type, esl::MEMB_VAR);
-		EXPECT_EQ(_Es(typeInfo.members[8].signature), "number");
+		EXPECT_EQ(EqStringRef(typeInfo.members[8].signature), EqStringRef("number"));
 
 		// TEST: validate LuaTypeAlias enum type
 		EXPECT_EQ(typeInfo.members[9].type, esl::MEMB_VAR);
-		EXPECT_EQ(_Es(typeInfo.members[9].signature), "number");
+		EXPECT_EQ(EqStringRef(typeInfo.members[9].signature), EqStringRef("number"));
 	}
 
 	// TEST: validate binder with base class
@@ -327,7 +327,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 		// check constructors
 		EXPECT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
 		EXPECT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
-		EXPECT_EQ(_Es(typeInfo.members[2].signature), "number,string,Spline");
+		EXPECT_EQ(EqStringRef(typeInfo.members[2].signature), EqStringRef("number,string,Spline"));
 	}
 }
 
@@ -517,7 +517,7 @@ TEST(EQSCRIPT_TESTS, SetGlobal)
 	{
 		Spline* spline = *state.GetGlobal<Spline*>("testSpline");
 		EXPECT_EQ(temp, spline);
-		EXPECT_EQ(spline->name, "Some spline name");
+		EXPECT_EQ(spline->name, EqStringRef("Some spline name"));
 	}
 
 	// TEST: calling member function on global
@@ -658,7 +658,7 @@ TEST(EQSCRIPT_TESTS, TestStrings)
 	const char* testStringPtr = *state.GetGlobal<const char*>("TestString");
 
 	EXPECT_EQ(testString.ToCString(), testStringPtr);
-	EXPECT_EQ(testString, _Es("string AAB value"));
+	EXPECT_EQ(testString, EqStringRef("string AAB value"));
 	LUA_GTEST_CHUNK("EXPECT_EQ(TestString2, \"The Awesome String Value\")");
 }
 
@@ -683,9 +683,9 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		esl::LuaTable tableRes = *state.GetGlobal<esl::LuaTable>("TestTable");
 		EXPECT_TRUE(tableRes.IsValid());
 
-		const EqString str = *tableRes.Get<EqString>("keyA");
+		EqStringRef str = *tableRes.Get<EqStringRef>("keyA");
 		const int val = *tableRes.Get<int>("num");
-		EXPECT_EQ(str, "string AAB value");
+		EXPECT_EQ(str, EqStringRef("string AAB value"));
 		EXPECT_EQ(val, 1657);
 		//Msg("Table has values %s, %d\n", str.ToCString(), val);
 	}
@@ -704,11 +704,11 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		tableRes.value.Set("testSpline", temp);
 
 		const int val = *tableRes.value.Get<int>("valueNum");
-		const EqString str = *tableRes.value.Get<EqString>("stringValue");
-		const EqString str2 = *tableRes.value.Get<EqString>(temp);
+		EqStringRef str = *tableRes.value.Get<EqStringRef>("stringValue");
+		EqStringRef str2 = *tableRes.value.Get<EqStringRef>(temp);
 
 		EXPECT_EQ(val, 1337);
-		EXPECT_EQ(str, "This is a string set from C++");
+		EXPECT_EQ(str, EqStringRef("This is a string set from C++"));
 
 		// This will fail because the value is boxed and we always pushing new userdata.
 		// We need somehow to make comparison mechanism to do this between native and Lua.
@@ -743,7 +743,7 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		ASSERT(tableRes && tableRes.value.IsValid());
 
 		Spline* spline = *tableRes.value.Get<Spline*>("testSpline");
-		EXPECT_EQ(spline->name, "Some name");
+		EXPECT_EQ(spline->name, EqStringRef("Some name"));
 
 		delete spline;
 	}
@@ -867,7 +867,7 @@ TEST(EQSCRIPT_TESTS, RefPtrFromLua)
 	EXPECT_EQ(testGet->Ref_Count(), 1);
 
 	EXPECT_EQ(testGet->value, 555);
-	EXPECT_EQ(testGet->strValue, "Hi from Lua");
+	EXPECT_EQ(testGet->strValue, EqStringRef("Hi from Lua"));
 }
 
 struct TestEvent
@@ -892,8 +892,8 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 		state.SetGlobal("evtTest", evtTestObj);
 
 		// TEST: lambda function binder
-		state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(+[](const EqString& message) {
-			EXPECT_EQ("Event Called", message);
+		state.SetGlobal("TestCFunction", EQSCRIPT_CFUNC(+[](const EqStringRef& message) {
+			EXPECT_EQ(EqStringRef("Event Called"), message);
 		}));
 
 		// TEST: event handlers added

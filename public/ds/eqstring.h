@@ -72,6 +72,7 @@ public:
 
 	void		Insert(const char* pszStr, int nInsertPos, int nInsertCount = -1);
 	void		Insert(const EqString &str, int nInsertPos);
+	void		Insert(EqStringRef str, int nInsertPos);
 	void		Remove(int nStart, int nCount);
 
 	void		ReplaceChar( char whichChar, char to );
