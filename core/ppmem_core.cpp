@@ -82,11 +82,14 @@ static ppmem_state_t& PPGetState()
 }
 
 #ifndef PPMEM_DISABLED
+
+constexpr EqStringRef s_ppmemFullStatsCmd = "full";
+
 DECLARE_CMD(ppmem_stats, "Memory info", CV_UNREGISTERED)
 {
 	bool fullStats = false;
 
-	if (CMD_ARGC > 0 && CMD_ARGV(0) == "full")
+	if (CMD_ARGC > 0 && CMD_ARGV(0) == s_ppmemFullStatsCmd)
 		fullStats = true;
 
 	PPMemInfo(fullStats);

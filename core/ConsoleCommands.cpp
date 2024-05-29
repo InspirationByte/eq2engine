@@ -14,7 +14,8 @@
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 
-constexpr const char* CON_SEPARATORS = ";\n";
+constexpr EqStringRef s_commandSeparators = ";\n";
+constexpr EqStringRef s_commandsConfigFileExt = "cfg";
 
 static bool IsAllowedToExecute(ConCommandBase* base)
 {
@@ -460,7 +461,7 @@ void CConsoleCommands::ForEachSeparated(const char* str, FUNC fn, void* extra)
 	while (c)
 	{
 		c = *iterator;
-		if (c == 0 || hasChar(CON_SEPARATORS, c))
+		if (c == 0 || hasChar(s_commandSeparators, c))
 		{
 			pLast = iterator;
 			const int chrCount = pLast - pFirst;
@@ -514,7 +515,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 {
 	EqString cfgFileName(pszFilename);
 
-	if (cfgFileName.Path_Extract_Ext() != "cfg" && !g_fileSystem->FileExist(cfgFileName))
+	if (cfgFileName.Path_Extract_Ext() != s_commandsConfigFileExt && !g_fileSystem->FileExist(cfgFileName))
 	{
 		if (!g_fileSystem->FileExist("cfg/" + cfgFileName))
 			cfgFileName = cfgFileName.Path_Strip_Ext() + ".cfg";

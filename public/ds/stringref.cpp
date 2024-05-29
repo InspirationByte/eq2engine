@@ -14,6 +14,7 @@
 #include <Windows.h>
 #else
 #include <locale.h>
+#include <wctype.h>
 
 static locale_t xgetlocale()
 {
@@ -556,7 +557,7 @@ template<> wchar_t LowerChar(wchar_t chr)
 #ifdef _WIN32
 	return *CharLowerW(&chr);
 #else
-	return towlower_l(*it, xgetlocale());
+	return towlower_l(chr, xgetlocale());
 #endif // _WIN32
 }
 
@@ -565,7 +566,7 @@ template<> wchar_t UpperChar(wchar_t chr)
 #ifdef _WIN32
 	return *CharUpperW(&chr);
 #else
-	return towupper_l(*it, xgetlocale());
+	return towupper_l(chr, xgetlocale());
 #endif // _WIN32
 }
 }
@@ -595,32 +596,41 @@ template<> wchar_t* SubString(wchar_t* str, const wchar_t* search, bool caseSens
 	if (!str || !search) return nullptr;
 	return caseSensitive ? wcsstr(str, search) : xwcsistr(str, search);
 }
+
+template<> int Compare(const char* strA, const char* strB)
+{
+	return strcmp(strA, strB);
+}
+
+template<> int Compare(const wchar_t* strA, const wchar_t* strB)
+{
+	return wcscmp(strA, strB);
+}
+
+template<> int CompareCaseIns(const char* strA, const char* strB)
+{
+	return stricmp(strA, strB);
+}
+
+template<> int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
+{
+	return xwcsicmp(strA, strB);
+}
+
 }
 
 //------------------------------------------------
 
-template<>
-int StrRef<char>::Compare(StrRef otherStr) const
+template<typename CH>
+int StrRef<CH>::Compare(StrRef otherStr) const
 {
-	return strcmp(m_pszString, otherStr);
+	return CString::Compare(m_pszString, otherStr.ToCString());
 }
 
-template<>
-int StrRef<wchar_t>::Compare(StrRef otherStr) const
+template<typename CH>
+int StrRef<CH>::CompareCaseIns(StrRef otherStr) const
 {
-	return wcscmp(m_pszString, otherStr);
-}
-
-template<>
-int StrRef<char>::CompareCaseIns(StrRef otherStr) const
-{
-	return stricmp(m_pszString, otherStr);
-}
-
-template<>
-int StrRef<wchar_t>::CompareCaseIns(StrRef otherStr) const
-{
-	return xwcsicmp(m_pszString, otherStr);
+	return CString::CompareCaseIns(m_pszString, otherStr.ToCString());
 }
 
 template<typename CH>

@@ -366,6 +366,12 @@ template<> struct KVPairValuesGetter<EqString>
 	static const int vcount = 1;
 };
 
+template<> struct KVPairValuesGetter<EqStringRef>
+{
+	static const char* Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
+	static const int vcount = 1;
+};
+
 template<> struct KVPairValuesGetter<float>
 {
 	static float Get(const KVSection* section, int index) { return KV_GetValueFloat(section, index); }

@@ -12,6 +12,8 @@
 class EqString;
 
 class EqWString
+	: public StringCombinationOpsMixin<EqWString, EqWString, wchar_t>
+	, public StringComparisonOpsMixin<EqWString, wchar_t>
 {
 	friend class EqString;
 
@@ -129,7 +131,7 @@ protected:
 	uint16			m_nAllocated{ 0 };		// allocation size
 };
 
-STRING_OPERATORS(static inline, EqWString, wchar_t)
+//STRING_OPERATORS(static inline, EqWString, wchar_t)
 
 static size_t VSRead(IVirtualStream* stream, EqWString& str)
 {

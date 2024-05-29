@@ -11,10 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-//#include <string.h>
-//#include <ctype.h>
-//#include <wctype.h>
-//#include <wchar.h>
+#include <string.h>	// memset
 
 #include <limits.h>
 #include <malloc.h>

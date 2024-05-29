@@ -526,8 +526,7 @@ static void CookPackageTarget(const char* targetName)
 			if (loadRawFile)
 			{
 				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
-
-				if (fileInfo.fileName.Path_Extract_Ext() == "epk")
+				if (fileInfo.fileName.Path_Extract_Ext() == EqStringRef("epk"))
 				{
 					// validate EPK file
 					dpkheader_t hdr;

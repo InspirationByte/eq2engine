@@ -176,7 +176,7 @@ const char* CLocalize::GetLanguageName() const
 
 void CLocalize::AddTokensFile(const char* pszFilePrefix)
 {
-	if (arrayFindIndex(m_languageFilePrefixes, pszFilePrefix) != -1)
+	if (arrayFindIndex(m_languageFilePrefixes, EqStringRef(pszFilePrefix)) != -1)
 	{
 		ASSERT_FAIL("CLocalize: %s is already loaded", pszFilePrefix);
 		return;

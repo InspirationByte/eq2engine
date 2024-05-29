@@ -53,10 +53,10 @@ IEXPORTS bool Platform_IsDebuggerPresent()
 
     for (const char* characterPtr = tracerPidPtr + sizeof(tracerPidString) - 1; characterPtr <= buf + numRead; ++characterPtr)
     {
-        if (isspace(*characterPtr))
+        if (CType::IsSpace(*characterPtr))
             continue;
         else
-            return isdigit(*characterPtr) != 0 && *characterPtr != '0';
+            return CType::IsDigit(*characterPtr) != 0 && *characterPtr != '0';
     }
 
     return false;

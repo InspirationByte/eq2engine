@@ -38,7 +38,7 @@ int xstrsplitws(char* str, char** pointer_array)
 			bAdd = false;
 		}
 
-		if (isspace(c))
+		if (CType::IsSpace(c))
 		{
 			bAdd = true;
 			*str = '\0'; // make null-string

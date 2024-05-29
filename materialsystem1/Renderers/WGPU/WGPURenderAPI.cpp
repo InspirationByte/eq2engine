@@ -22,8 +22,10 @@
 #include "../RenderWorker.h"
 #include "WGPUComputePassRecorder.h"
 
-
-#define ASSERT_DEPRECATED() // ASSERT_FAIL("Deprecated API %s", __func__)
+constexpr EqStringRef s_shaderKindVertexName = "Vertex";
+constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
+constexpr EqStringRef s_shaderKindComputeName = "Compute";
+constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 
 DECLARE_CVAR(wgpu_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 
@@ -183,31 +185,29 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	}
 
 	int shaderKinds = 0;
-	for (KVValueIterator<EqString> it(shaderInfoKvs.FindSection("ShaderKinds")); !it.atEnd(); ++it)
+	for (KVValueIterator<EqStringRef> it(shaderInfoKvs.FindSection("ShaderKinds")); !it.atEnd(); ++it)
 	{
-		const EqString kindName(it);
-		if (kindName == "Vertex")
+		const EqStringRef kindName(it);
+		if (kindName == s_shaderKindVertexName)
 			shaderKinds |= SHADERKIND_VERTEX;
-		else if (kindName == "Fragment")
+		else if (kindName == s_shaderKindFragmentName)
 			shaderKinds |= SHADERKIND_FRAGMENT;
-		else if (kindName == "Compute")
+		else if (kindName == s_shaderKindComputeName)
 			shaderKinds |= SHADERKIND_COMPUTE;
 	}
 	shaderInfo.shaderKinds = shaderKinds;
-
-	static constexpr const char* DefaultVertexLayoutName = "Default";
 
 	for (KVKeyIterator it(shaderInfoKvs.FindSection("VertexLayouts")); !it.atEnd(); ++it)
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
 		layout.name = EqString(it);
-		if (layout.name != DefaultVertexLayoutName)
+		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringToHash(layout.name);
 		
 		if (!stricmp(KV_GetValueString(*it, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
-				return layout.name == KV_GetValueString(*it, 1);
+				return layout.name == EqStringRef(KV_GetValueString(*it, 1));
 			});
 		}
 	}

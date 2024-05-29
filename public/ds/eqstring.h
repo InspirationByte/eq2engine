@@ -9,70 +9,12 @@
 
 #define _Es		EqString
 
-#ifndef STRING_OPERATORS
-#define STRING_OPERATORS(spec, classname, CH)								\
-	spec classname operator+( const classname &a, const classname &b ) {	\
-		classname result(a);												\
-		result.Append(b);													\
-		return result;														\
-	}																		\
-	spec classname operator+( const classname &a, const CH *b ) {			\
-		classname result(a);												\
-		result.Append(b);													\
-		return result;														\
-	}																		\
-	spec classname operator+( const CH *a, const classname &b ) {			\
-		classname result(a);												\
-		result.Append(b);													\
-		return result;														\
-	}																		\
-	spec classname operator+( const classname &a, const StrRef<CH>& b ) {	\
-		classname result(a);												\
-		result.Append(b);													\
-		return result;														\
-	}																		\
-	spec classname operator+( const StrRef<CH>& a, const classname &b ) {	\
-		classname result(a);												\
-		result.Append(b);													\
-		return result;														\
-	}																		\
-	/* (A == B) case-sensitive comparison */													\
-	spec bool operator==(const classname& a, const classname& b) { return !a.Compare(b); }		\
-	/* (A == B) case-sensitive comparison */													\
-	spec bool operator==(const classname& a, const StrRef<CH>& b) { return !a.Compare(b); }			\
-	spec bool operator==(const classname& a, const CH* b) { return !a.Compare(b); }					\
-	/* (A==B) case-sensitive comparison */														\
-	spec bool operator==(const StrRef<CH>& a, const classname& b) { return !a.Compare(b); }			\
-	spec bool operator==(const CH* a, const classname& b) { return !b.Compare(a); }					\
-	/* (A == B) case-insensitive comparison */													\
-	spec bool operator^(const classname& a, const classname& b) { return !a.CompareCaseIns(b); }\
-	/* (A==B) case-insensitive comparison */													\
-	spec bool operator^(const classname& a, const StrRef<CH>& b) { return !a.CompareCaseIns(b); }		\
-	spec bool operator^(const classname& a, const CH* b) { return !a.CompareCaseIns(b); }		\
-	/* (A == B) case-insensitive comparison */													\
-	spec bool operator^(const StrRef<CH>& a, const classname& b) { return !a.CompareCaseIns(b); }		\
-	spec bool operator^(const CH* a, const classname& b) { return !b.CompareCaseIns(a); }		\
-	/* (A != B) case-sensitive comparison */													\
-	spec bool operator!=(const classname& a, const classname& b) { return !(a == b); }			\
-	/* (A != B) case-sensitive comparison */													\
-	spec bool operator!=(const classname& a, const StrRef<CH>& b) { return !(a == b); }				\
-	spec bool operator!=(const classname& a, const CH* b) { return !(a == b); }				\
-	/* (A != B) case-sensitive comparison */													\
-	spec bool operator!=(const StrRef<CH>& a, const classname& b) { return !(a == b); }				\
-	spec bool operator!=(const CH* a, const classname& b) { return !(a == b); }				\
-	/* (A != B) case-insensitive comparison */													\
-	spec bool operator%(const classname& a, const classname& b) { return !(a ^ b); }			\
-	/* (A != B) case-insensitive comparison */													\
-	spec bool operator%(const classname& a, const StrRef<CH>& b) { return !(a ^ b); }					\
-	spec bool operator%(const classname& a, const CH* b) { return !(a ^ b); }					\
-	/* (A != B) case-insensitive comparison*/													\
-	spec bool operator%(const StrRef<CH>& a, const classname& b) { return !(a ^ b); }			\
-	spec bool operator%(const CH* a, const classname& b) { return !(a ^ b); }
-#endif // STRING_OPERATORS
-
 class EqWString;
 
-class EqString
+class EqString 
+	: public StringCombinationOpsMixin<EqString, EqString, char>
+	, public StringComparisonOpsMixin<EqString>
+	, public StringComparisonOpsMixin<EqString, StrRef<char>>
 {
 	friend class EqWString;
 public:
@@ -198,7 +140,6 @@ public:
 		return m_pszString[idx];
 	}
 
-	operator const char* () { return ToCString(); }
 	operator const char* () const { return ToCString(); }
 	operator EqStringRef () const { return Ref(); }
 
@@ -212,8 +153,6 @@ protected:
 	uint16		m_nLength{ 0 };			// length of string
 	uint16		m_nAllocated{ 0 };		// allocation size
 };
-
-STRING_OPERATORS(static inline, EqString, char)
 
 static size_t VSRead(IVirtualStream* stream, EqString& str)
 {

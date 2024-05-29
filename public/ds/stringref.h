@@ -197,13 +197,82 @@ namespace CString
 {
 template<typename CH> int Length(const CH* str);
 template<typename CH> CH* SubString(CH* str, const CH* search, bool caseSensitive);
+template<typename CH> int Compare(const CH* strA, const CH* strB);
+template<typename CH> int CompareCaseIns(const CH* strA, const CH* strB);
 }
+
+//------------------------------------------------------
+// String Comparison Operators
+
+// TODO: move somewhere else
+template<typename Self, typename Other = Self>
+struct ComparisonEqualsOpsMixin
+{
+	friend bool operator!=(const Self& a, const Other& b) { return !(a == b); }
+};
+
+template<typename CH>
+class StrRef;
+
+template<typename TStr, typename TOther = TStr>
+struct StringComparisonOpsMixin
+	: public ComparisonEqualsOpsMixin<TStr, TOther>
+{
+	/* (A == B) case-sensitive comparison */
+	friend bool operator==(const TStr& a, const TOther& b) { return CString::Compare(a.ToCString(), b.ToCString()) == 0; }
+};
+
+//------------------------------------------------------
+// String Combination Operators
+
+template<typename R, typename TStr, typename CH>
+struct StringBaseCombinationOpsMixin
+{
+	friend R operator+( const TStr &a, const TStr &b )
+	{
+		R result(a);
+		result.Append(b);
+		return result;
+	}
+	friend R operator+( const TStr &a, const CH *b ) 
+	{
+		R result(a);
+		result.Append(b);
+		return result;
+	}
+	friend R operator+( const CH *a, const TStr &b )
+	{
+		R result(a);
+		result.Append(b);
+		return result;
+	}
+};
+
+template<typename R, typename TStr, typename CH>
+struct StringCombinationOpsMixin 
+	: public StringBaseCombinationOpsMixin<R, TStr, CH>
+{
+	friend R operator+( const TStr &a, StrRef<CH> b )
+	{
+		R result(a);
+		result.Append(b);
+		return result;
+	}
+	friend R operator+( StrRef<CH> a, const TStr &b )
+	{
+		R result(a);
+		result.Append(b);
+		return result;
+	}
+};
 
 //------------------------------------------------------
 // String ref itself
 
 template<typename CH>
 class StrRef
+	: public StringBaseCombinationOpsMixin<EqString, StrRef<CH>, char>
+	, public StringComparisonOpsMixin<StrRef<CH>>
 {
 public:
 	constexpr StrRef()

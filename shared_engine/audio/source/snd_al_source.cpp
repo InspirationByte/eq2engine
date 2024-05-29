@@ -15,16 +15,20 @@
 #include "snd_ogg_cache.h"
 #include "snd_wav_cache.h"
 
+constexpr EqStringRef s_audioExtensionWave = "wav";
+constexpr EqStringRef s_audioExtensionVorbis = "ogg";
+
 CSoundSource_OpenALCache::CSoundSource_OpenALCache(ISoundSource* source)
 {
-	if (_Es(source->GetFilename()).Path_Extract_Ext() == "wav")
+	EqString fileNameExt = _Es(source->GetFilename()).Path_Extract_Ext();
+	if (fileNameExt == s_audioExtensionWave)
 	{
-		CSoundSource_WaveCache* wav = (CSoundSource_WaveCache*)source;
+		CSoundSource_WaveCache* wav = static_cast<CSoundSource_WaveCache*>(source);
 		InitWav(wav);
 	}
-	else if (_Es(source->GetFilename()).Path_Extract_Ext() == "ogg")
+	else if (fileNameExt == s_audioExtensionVorbis)
 	{
-		CSoundSource_OggCache* ogg = (CSoundSource_OggCache*)source;
+		CSoundSource_OggCache* ogg = static_cast<CSoundSource_OggCache*>(source);
 		InitOgg(ogg);
 	}
 }

@@ -44,8 +44,8 @@ static int FSStringId(const char *str)
 
 	ASSERT(str);
 	int hash = 0;
-	for (ubyte* p = (ubyte*)str; *p; p++)
-		hash = MULTIPLIER * hash + tolower(*p);
+	for (const char* p = str; *p; p++)
+		hash = MULTIPLIER * hash + (int)CType::LowerChar(*p);
 
 	return hash;
 }
@@ -350,7 +350,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 	int modeFlags = 0;
 	while (*mode)
 	{
-		switch (tolower(*mode))
+		switch (CType::LowerChar(*mode))
 		{
 		case 'r':
 			modeFlags |= COSFile::READ;
@@ -563,7 +563,7 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 
 static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
 {
-	return (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || isalpha(dirOrFileName[0]) && dirOrFileName[1] == ':');
+	return (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || CType::IsAlphabetic(dirOrFileName[0]) && dirOrFileName[1] == ':');
 }
 
 EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const
@@ -813,7 +813,7 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
 	for (const SearchPathInfo* spInfo : m_directories)
 	{
-		if(spInfo->id == pathId)
+		if(spInfo->id == EqStringRef(pathId))
 		{
 			ErrorMsg("AddSearchPath Error: pathId %s already added", pathId);
 			return;
@@ -894,7 +894,7 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 {
 	for(int i = 0; i < m_directories.numElem(); i++)
 	{
-		if(m_directories[i]->id == pathId)
+		if(m_directories[i]->id == EqStringRef(pathId))
 		{
 			DevMsg(DEVMSG_FS, "Removing search patch '%s'\n", pathId);
 			delete m_directories[i];

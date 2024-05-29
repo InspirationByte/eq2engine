@@ -809,7 +809,7 @@ template<typename UR = void, typename ... UArgs, typename Func>
 static bindings::LuaCFunction BindCFunction(Func f)
 {
 	bindings::LuaCFunction funcInfo;
-	funcInfo.funcPtr = f;
+	funcInfo.funcPtr = reinterpret_cast<void*>(f);
 
 	if constexpr (std::is_void_v<UR> && sizeof...(UArgs) == 0)
 		funcInfo.luaFuncImpl = &FunctionBinderNoTraits<Func>::Func;
@@ -984,7 +984,7 @@ Member ClassBinder<T>::MakeStaticFunction(F func, const char* name)
 	m.signature = binder::FunctionBinder<F, Traits>::GetFuncArgsSignature();
 	m.numArgs = binder::FunctionBinder<F, Traits>::GetFuncArgsCount();
 	m.staticFunc = funcInfo.luaFuncImpl;
-	m.data = funcInfo.funcPtr;
+	m.data = reinterpret_cast<void*>(funcInfo.funcPtr);
 	m.isConst = false;
 	return m;
 }

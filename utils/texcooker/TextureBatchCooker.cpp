@@ -11,6 +11,9 @@
 #include "imaging/PixWriter.h"
 #include "utils/KeyValues.h"
 
+constexpr EqStringRef s_atlasFileExt = "atl";
+constexpr EqStringRef s_materialFileExt = "mat";
+
 extern void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath);
 
 /*
@@ -332,7 +335,6 @@ void CTextureCooker::LoadMaterialImages(const char* materialFileName)
 
 }
 
-
 void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
 {
 	EqString searchFolder(wildcard);
@@ -342,14 +344,14 @@ void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
 	while (fsFind.Next())
 	{
 		EqString fileName = fsFind.GetPath();
-		if (fsFind.IsDirectory() && fileName != "." && fileName != "..")
+		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
 			EqString searchTemplate;
 			CombinePath(searchTemplate, searchFolder, fileName, "*");
 
 			SearchFolderForAtlasesAndConvert(searchTemplate);
 		}
-		else if(fileName.Path_Extract_Ext() == "atl")
+		else if(fileName.Path_Extract_Ext() == s_atlasFileExt)
 		{
 			EqString fullAtlPath;
 			CombinePath(fullAtlPath, searchFolder, fileName);
@@ -368,14 +370,14 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 	while (fsFind.Next())
 	{
 		EqString fileName = fsFind.GetPath();
-		if (fsFind.IsDirectory() && fileName != "." && fileName != "..")
+		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
 			EqString searchTemplate;
 			CombinePath(searchTemplate, searchFolder, fileName, "*");
 
 			SearchFolderForMaterialsAndGetTextures(searchTemplate);
 		}
-		else if(fileName.Path_Extract_Ext() == "mat")
+		else if(fileName.Path_Extract_Ext() == s_materialFileExt)
 		{
 			EqString fullMaterialPath;
 			CombinePath(fullMaterialPath, searchFolder, fileName);
