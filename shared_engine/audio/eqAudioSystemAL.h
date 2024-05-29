@@ -10,7 +10,7 @@
 
 // this allows us to mix between samples in single source
 // and also eliminates few reallocations to just copy to single AL buffer
-#define USE_ALSOFT_BUFFER_CALLBACK		0
+#define USE_ALSOFT_BUFFER_CALLBACK		1
 
 //-----------------------------------------------------------------
 
