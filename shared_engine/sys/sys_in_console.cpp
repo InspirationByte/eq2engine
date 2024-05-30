@@ -940,7 +940,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 
 		if (maxMatchingChars > queryStr.Length() && queryStr.CompareCaseIns(matchingStr))
 		{
-			m_inputText.Remove(spaceIdx+1, inputText.Length());
+			m_inputText.Remove(spaceIdx+1, inputText.Length() - (spaceIdx+1));
 			m_inputText.Append(matchingStr);
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 
