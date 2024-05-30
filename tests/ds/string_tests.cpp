@@ -360,10 +360,44 @@ TEST(EQSTRING_TESTS, ReplaceSubStr)
 	}
 }
 
+TEST(EQSTRING_TESTS, TestComparisonOperators)
+{
+	EqString testString1 = s_StringTestStrTwoParts;
+	EqString testString2 = s_StringTestStr1;
+
+	EXPECT_EQ(testString1.Compare(s_StringTestStrTwoParts), 0);
+	EXPECT_TRUE(testString1 == s_StringTestStrTwoParts);
+	EXPECT_FALSE(testString1 != s_StringTestStrTwoParts);
+
+	EXPECT_FALSE(testString1 == testString2);
+}
+
+TEST(EQSTRING_TESTS, TestAppendOperators)
+{
+	// C string right
+	{
+		EqString testStr = EqString(s_StringTestStr1) + " and Another";
+		EXPECT_EQ(testStr, "Testing String and Another");
+	}
+
+	// C string left
+	{
+		EqString testStr = "Test and " + EqString(s_StringTestStr1);
+		EXPECT_EQ(testStr, "Test and Testing String");
+	}
+
+	// Two String Refs
+	{
+		EqString testString1 = "Left part";
+		EqString testString2 = " and Right part";
+
+		EqString testStr = testString1 + testString2;
+		EXPECT_EQ(testStr, "Left part and Right part");
+	}
+}
+
 TEST(EQSTRINGREF_TESTS, Instantiate)
 {
-	GTEST_SKIP() << "TODO: string ref tests";
-
 	EqStringRef defaultRef;
 	EqStringRef nullRef = nullptr;
 	EqStringRef strRef = "String";
@@ -374,7 +408,42 @@ TEST(EQSTRINGREF_TESTS, Instantiate)
 	EqStringRef eqStrRef = str;
 
 	const int t = cexprRef.Find("Dinary", false, 0);
-
 	EXPECT_EQ(t, 7);
-	//EXPECT_EQ(str.Length(), 13);
+}
+
+TEST(EQSTRINGREF_TESTS, TestComparisonOperators)
+{
+	EqString compareToTest = s_StringTestStr1;
+	EqStringRef testString = s_StringTestStr1;
+
+	EXPECT_TRUE(compareToTest == testString);
+	EXPECT_TRUE(testString == "Testing String");
+	EXPECT_EQ(testString.Compare(s_StringTestStr1), 0);
+	EXPECT_TRUE(testString == s_StringTestStr1);
+	EXPECT_FALSE(testString != s_StringTestStr1);
+	EXPECT_EQ(testString, s_StringTestStr1);
+}
+
+TEST(EQSTRINGREF_TESTS, AppendOperators)
+{
+	// C string right
+	{
+		EqString testStr = s_StringTestStr1 + " and Another";
+		EXPECT_EQ(testStr, "Testing String and Another");
+	}
+
+	// C string left
+	{
+		EqString testStr = "Test and " + s_StringTestStr1;
+		EXPECT_EQ(testStr, "Test and Testing String");
+	}
+
+	// Two String Refs
+	{
+		constexpr EqStringRef testString1 = "Left part";
+		constexpr EqStringRef testString2 = " and Right part";
+
+		EqString testStr = testString1 + testString2;
+		EXPECT_EQ(testStr, "Left part and Right part");
+	}
 }

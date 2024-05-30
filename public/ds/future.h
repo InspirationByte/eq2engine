@@ -56,20 +56,7 @@ private:
 namespace FutureImpl
 {
 template<typename T>
-struct RawVal
-{
-	T& getData()
-	{
-		return *(T*)(&data);
-	}
-
-	const T& getData() const
-	{
-		return *(T*)(&data);
-	}
-
-	mutable std::aligned_storage_t<sizeof(T), alignof(size_t)> data{ 0 };
-};
+using RawVal = RawItem<T, alignof(T)>;
 
 template<typename T>
 class FutureData : public RefCountedObject<T>
@@ -84,9 +71,9 @@ public:
 	~FutureData()
 	{
 		if (m_status == FUTURE_SUCCESS)
-			m_value.getData().~T();
+			(*m_value).~T();
 		else if (m_status == FUTURE_FAILURE)
-			m_errorInfo.getData().~ErrorInfo();
+			(*m_errorInfo).~ErrorInfo();
 	}
 	bool			HasResult() const { return m_status == FUTURE_SUCCESS || m_status == FUTURE_FAILURE; }
 
@@ -213,8 +200,8 @@ inline void Promise<T>::SetResult(T&& value) const
 	Threading::CScopedMutex m(m_data->m_condMutex);
 	m_data->m_status = FUTURE_SUCCESS;
 
-	new(&m_data->m_value.getData()) T(value);
-	FutureResult<T> result(m_data->m_value.getData());
+	new(&(*m_data->m_value)) T(value);
+	FutureResult<T> result(*m_data->m_value);
 	for (typename Data::ResultCb cb : m_data->m_resultCb)
 		cb(result);
 
@@ -230,9 +217,9 @@ inline void Promise<T>::SetError(int code, const char* message) const
 	Threading::CScopedMutex m(m_data->m_condMutex);
 	m_data->m_status = FUTURE_FAILURE;
 
-	new(&m_data->m_errorInfo.getData()) typename Data::ErrorInfo{ message, code };
+	new(&(*m_data->m_errorInfo)) typename Data::ErrorInfo{ message, code };
 
-	FutureResult<T> result(m_data->m_errorInfo.getData().code, m_data->m_errorInfo.getData().message);
+	FutureResult<T> result((*m_data->m_errorInfo).code, (*m_data->m_errorInfo).message);
 	for (typename Data::ResultCb cb : m_data->m_resultCb)
 		cb(result);
 
@@ -275,7 +262,7 @@ inline const T& Future<T>::GetResult() const
 
 	Threading::CScopedMutex m(m_data->m_condMutex);
 	ASSERT(m_data->m_status == FUTURE_SUCCESS);
-	return m_data->m_value.getData();
+	return *m_data->m_value;
 }
 
 template<typename T>
@@ -294,7 +281,7 @@ inline int Future<T>::GetErrorCode() const
 	ASSERT(m_data);
 
 	Threading::CScopedMutex m(m_data->m_condMutex);
-	return m_data->m_errorInfo.getData().code;
+	return (*m_data->m_errorInfo).code;
 }
 
 template<typename T>
@@ -303,7 +290,7 @@ inline const EqString& Future<T>::GetErrorMessage() const
 	ASSERT(m_data);
 
 	Threading::CScopedMutex m(m_data->m_condMutex);
-	return m_data->m_errorInfo.getData().message;
+	return (*m_data->m_errorInfo).message;
 }
 
 template<typename T>
@@ -324,13 +311,13 @@ inline void Future<T>::AddCallback(FutureCb callback)
 	{
 		case FUTURE_SUCCESS:
 		{
-			FutureResult<T> result(m_data->m_value.getData());
+			FutureResult<T> result(*m_data->m_value);
 			callback(result);
 			break;
 		}
 		case FUTURE_FAILURE:
 		{
-			typename Data::ErrorInfo& error = m_data->m_errorInfo.getData();
+			typename Data::ErrorInfo& error = *m_data->m_errorInfo;
 			FutureResult<T> result(error.code, error.message);
 			callback(result);
 			break;

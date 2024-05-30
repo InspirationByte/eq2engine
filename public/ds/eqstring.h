@@ -11,10 +11,11 @@
 
 class EqWString;
 
-class EqString 
+class EMPTY_BASES EqString
 	: public StringCombinationOpsMixin<EqString, EqString, char>
 	, public StringComparisonOpsMixin<EqString>
-	, public StringComparisonOpsMixin<EqString, StrRef<char>>
+	, public StringComparisonOpsMixin<EqString, EqTStrRef<char>>
+	, public CStringComparisonOpsMixin<EqString, char>
 {
 	friend class EqWString;
 public:

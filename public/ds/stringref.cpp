@@ -622,19 +622,19 @@ template<> int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
 //------------------------------------------------
 
 template<typename CH>
-int StrRef<CH>::Compare(StrRef otherStr) const
+int EqTStrRef<CH>::Compare(EqTStrRef otherStr) const
 {
 	return CString::Compare(m_pszString, otherStr.ToCString());
 }
 
 template<typename CH>
-int StrRef<CH>::CompareCaseIns(StrRef otherStr) const
+int EqTStrRef<CH>::CompareCaseIns(EqTStrRef otherStr) const
 {
 	return CString::CompareCaseIns(m_pszString, otherStr.ToCString());
 }
 
 template<typename CH>
-int StrRef<CH>::GetMathingChars(StrRef otherStr) const
+int EqTStrRef<CH>::GetMathingChars(EqTStrRef otherStr) const
 {
 	if (!IsValid())
 		return 0;
@@ -649,7 +649,7 @@ int StrRef<CH>::GetMathingChars(StrRef otherStr) const
 }
 
 template<typename CH>
-int StrRef<CH>::GetMathingCharsCaseIns(StrRef otherStr) const
+int EqTStrRef<CH>::GetMathingCharsCaseIns(EqTStrRef otherStr) const
 {
 	if (!IsValid())
 		return 0;
@@ -664,7 +664,7 @@ int StrRef<CH>::GetMathingCharsCaseIns(StrRef otherStr) const
 }
 
 template<typename CH>
-int StrRef<CH>::Find(StrRef subStr, bool bCaseSensetive, int nStart) const
+int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
 {
 	if (!m_pszString || nStart < 0)
 		return -1;
@@ -678,5 +678,5 @@ int StrRef<CH>::Find(StrRef subStr, bool bCaseSensetive, int nStart) const
 }
 
 // define implementations below
-template class StrRef<char>;
-template class StrRef<wchar_t>;
+template class EqTStrRef<char>;
+template class EqTStrRef<wchar_t>;

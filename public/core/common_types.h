@@ -84,6 +84,13 @@ static constexpr TR max(T x, T2 y) { return (TR)((x > y) ? x : y); }
 #define FALSE	(0)
 #endif
 
+#ifdef _MSC_VER
+// see https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
+#define EMPTY_BASES __declspec(empty_bases)
+#else
+#define EMPTY_BASES
+#endif
+
 // Define some useful macros
 #define MAKECHAR4(a, b, c, d)			(a | (b << 8) | (c << 16) | (d << 24))
 

@@ -206,41 +206,46 @@ template<typename CH> int CompareCaseIns(const CH* strA, const CH* strB);
 
 // TODO: move somewhere else
 template<typename Self, typename Other = Self>
-struct ComparisonEqualsOpsMixin
+struct EMPTY_BASES ComparisonEqualsOpsMixin
 {
 	friend bool operator!=(const Self& a, const Other& b) { return !(a == b); }
 };
 
-template<typename CH>
-class StrRef;
-
 template<typename TStr, typename TOther = TStr>
-struct StringComparisonOpsMixin
+struct EMPTY_BASES StringComparisonOpsMixin
 	: public ComparisonEqualsOpsMixin<TStr, TOther>
 {
 	/* (A == B) case-sensitive comparison */
 	friend bool operator==(const TStr& a, const TOther& b) { return CString::Compare(a.ToCString(), b.ToCString()) == 0; }
 };
 
+template<typename TStr, typename CH>
+struct EMPTY_BASES CStringComparisonOpsMixin
+	: public ComparisonEqualsOpsMixin<TStr, const CH*>
+{
+	/* (A == B) case-sensitive comparison */
+	friend bool operator==(const TStr& a, const CH* b) { return CString::Compare(a.ToCString(), b) == 0; }
+};
+
 //------------------------------------------------------
 // String Combination Operators
 
 template<typename R, typename TStr, typename CH>
-struct StringBaseCombinationOpsMixin
+struct EMPTY_BASES StringBaseCombinationOpsMixin
 {
-	friend R operator+( const TStr &a, const TStr &b )
+	friend R operator+(const TStr& a, const TStr& b)
 	{
 		R result(a);
 		result.Append(b);
 		return result;
 	}
-	friend R operator+( const TStr &a, const CH *b ) 
+	friend R operator+( const TStr& a, const CH *b ) 
 	{
 		R result(a);
 		result.Append(b);
 		return result;
 	}
-	friend R operator+( const CH *a, const TStr &b )
+	friend R operator+( const CH *a, const TStr& b )
 	{
 		R result(a);
 		result.Append(b);
@@ -248,17 +253,20 @@ struct StringBaseCombinationOpsMixin
 	}
 };
 
+template<typename CH>
+class EqTStrRef;
+
 template<typename R, typename TStr, typename CH>
-struct StringCombinationOpsMixin 
+struct EMPTY_BASES StringCombinationOpsMixin
 	: public StringBaseCombinationOpsMixin<R, TStr, CH>
 {
-	friend R operator+( const TStr &a, StrRef<CH> b )
+	friend R operator+( const TStr &a, EqTStrRef<CH> b )
 	{
 		R result(a);
 		result.Append(b);
 		return result;
 	}
-	friend R operator+( StrRef<CH> a, const TStr &b )
+	friend R operator+(EqTStrRef<CH> a, const TStr &b )
 	{
 		R result(a);
 		result.Append(b);
@@ -270,36 +278,37 @@ struct StringCombinationOpsMixin
 // String ref itself
 
 template<typename CH>
-class StrRef
-	: public StringBaseCombinationOpsMixin<EqString, StrRef<CH>, char>
-	, public StringComparisonOpsMixin<StrRef<CH>>
+class EMPTY_BASES EqTStrRef
+	: public StringBaseCombinationOpsMixin<EqString, EqTStrRef<CH>, char>
+	, public CStringComparisonOpsMixin<EqTStrRef<CH>, CH>
+	, public StringComparisonOpsMixin<EqTStrRef<CH>>
 {
 public:
-	constexpr StrRef()
+	constexpr EqTStrRef()
 		: m_pszString(nullptr)
 		, m_nLength(-1)
 	{
 	}
 
-	constexpr StrRef(std::nullptr_t)
+	constexpr EqTStrRef(std::nullptr_t)
 		: m_pszString(nullptr)
 		, m_nLength(-1)
 	{
 	}
 
-	constexpr StrRef(const CH* str)
+	constexpr EqTStrRef(const CH* str)
 		: m_pszString(str)
 		, m_nLength(-1)
 	{
 	}
 
-	StrRef(const CH* str, int length)
+	EqTStrRef(const CH* str, int length)
 		: m_pszString(str)
 		, m_nLength(length == -1 ? -1 : length)
 	{
 	}
 
-	StrRef(const StrRef& other)
+	EqTStrRef(const EqTStrRef& other)
 		: m_pszString(other.m_pszString)
 		, m_nLength(other.m_nLength)
 	{
@@ -312,13 +321,13 @@ public:
 	int			Length() const { return (m_nLength == -1) ? m_nLength = CString::Length(m_pszString) : m_nLength; }
 
 	// comparison operations
-	int			Compare(StrRef otherStr) const;
-	int			CompareCaseIns(StrRef otherStr) const;
-	int			GetMathingChars(StrRef otherStr) const;
-	int			GetMathingCharsCaseIns(StrRef otherStr) const;
+	int			Compare(EqTStrRef otherStr) const;
+	int			CompareCaseIns(EqTStrRef otherStr) const;
+	int			GetMathingChars(EqTStrRef otherStr) const;
+	int			GetMathingCharsCaseIns(EqTStrRef otherStr) const;
 
 	// searches for substring, returns value
-	int			Find(StrRef otherStr, bool caseSensitive = false, int start = 0) const;
+	int			Find(EqTStrRef otherStr, bool caseSensitive = false, int start = 0) const;
 
 	CH operator[](int idx) const
 	{
@@ -334,5 +343,5 @@ private:
 	mutable int	m_nLength{ 0 };
 };
 
-using EqStringRef = StrRef<char>;
-using EqWStringRef = StrRef<wchar_t>;
+using EqStringRef = EqTStrRef<char>;
+using EqWStringRef = EqTStrRef<wchar_t>;

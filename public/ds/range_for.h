@@ -14,7 +14,7 @@ struct RangeFor : RangeForMixin<RangeFor>
 struct _EndMarker {};
 
 template<typename IT>
-struct RangeForMixin 
+struct EMPTY_BASES RangeForMixin
 {
 	bool operator==(_EndMarker) { return static_cast<IT*>(this)->AtEnd(); }
 	bool operator!=(_EndMarker) { return !static_cast<IT*>(this)->AtEnd(); }
