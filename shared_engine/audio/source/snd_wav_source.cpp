@@ -75,11 +75,6 @@ typedef struct // CHUNK_LTXT
 
 //---------------------------------------------------------------------
 
-CSoundSource_Wave::CSoundSource_Wave()
-{
-
-}
-
 void CSoundSource_Wave::ParseChunk(CRIFF_Parser &chunk)
 {
 	const uint chunkId = chunk.GetName();

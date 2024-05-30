@@ -9,9 +9,6 @@
 #pragma once
 #include "snd_source.h"
 
-class CSoundSource_WaveCache;
-class CSoundSource_OggCache;
-
 class CSoundSource_OpenALCache : public ISoundSource
 {
 	friend class CEqAudioSystemAL;
@@ -30,8 +27,6 @@ public:
 	virtual bool			IsStreaming() const;
 
 private:
-	void					InitWav(CSoundSource_WaveCache* wav);
-	void					InitOgg(CSoundSource_OggCache* ogg);
 
 	virtual bool			Load();
 	virtual void			Unload();
@@ -39,3 +34,5 @@ private:
 	uint					m_alBuffer{ 0 };
 	Format					m_format;
 };
+
+ALenum GetSoundSourceFormatAsALEnum(const ISoundSource::Format& fmt);

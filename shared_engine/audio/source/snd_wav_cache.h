@@ -10,7 +10,6 @@
 
 class CSoundSource_WaveCache : public CSoundSource_Wave
 {
-	friend class CSoundSource_OpenALCache;
 public:
 	virtual int     GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
 	void*			GetDataPtr(int& dataSize) const { dataSize = m_cacheSize; return m_dataCache; }

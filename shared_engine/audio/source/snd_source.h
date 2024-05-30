@@ -29,7 +29,7 @@ public:
 		int frequency{ 0 };
 	};
 
-	virtual ~ISoundSource() {}
+	virtual ~ISoundSource() = default;
 
 	static ISoundSourcePtr	CreateSound(const char *szFilename);
 

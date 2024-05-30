@@ -15,8 +15,6 @@ class CRIFF_Parser;
 class CSoundSource_Wave : public ISoundSource
 {
 public:
-	CSoundSource_Wave();
-
 	virtual const Format&	GetFormat() const				{ return m_format; }
 	virtual int				GetSampleCount() const			{ return m_numSamples; }
 	int						GetLoopRegions(int* samplePos) const;

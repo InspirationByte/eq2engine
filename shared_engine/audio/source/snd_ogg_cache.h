@@ -10,7 +10,6 @@
 
 class CSoundSource_OggCache : public CSoundSource_Ogg
 {
-	friend class CSoundSource_OpenALCache;
 public:
 	int				GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
 	void*			GetDataPtr(int& dataSize) const { dataSize = m_cacheSize; return m_dataCache; }

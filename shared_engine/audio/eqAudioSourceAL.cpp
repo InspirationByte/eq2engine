@@ -559,20 +559,6 @@ bool CEqAudioSourceAL::DoUpdate()
 	return true;
 }
 
-static ALenum GetSoundSourceFormatAsALEnum(const ISoundSource::Format& fmt)
-{
-	ALenum alFormat;
-
-	if (fmt.bitwidth == 8)
-		alFormat = fmt.channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
-	else if (fmt.bitwidth == 16)
-		alFormat = fmt.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
-	else
-		alFormat = AL_FORMAT_MONO16;
-
-	return alFormat;
-}
-
 static ALsizei AL_APIENTRY SoundSourceSampleDataCallback(void* userPtr, void* data, ALsizei size)
 {
 	CEqAudioSourceAL* audioSrc = reinterpret_cast<CEqAudioSourceAL*>(userPtr);

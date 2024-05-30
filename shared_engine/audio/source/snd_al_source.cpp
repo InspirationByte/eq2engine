@@ -15,46 +15,41 @@
 #include "snd_ogg_cache.h"
 #include "snd_wav_cache.h"
 
-constexpr EqStringRef s_audioExtensionWave = "wav";
-constexpr EqStringRef s_audioExtensionVorbis = "ogg";
-
-CSoundSource_OpenALCache::CSoundSource_OpenALCache(ISoundSource* source)
+ALenum GetSoundSourceFormatAsALEnum(const ISoundSource::Format& fmt)
 {
-	EqString fileNameExt = _Es(source->GetFilename()).Path_Extract_Ext();
-	if (fileNameExt == s_audioExtensionWave)
-	{
-		CSoundSource_WaveCache* wav = static_cast<CSoundSource_WaveCache*>(source);
-		InitWav(wav);
-	}
-	else if (fileNameExt == s_audioExtensionVorbis)
-	{
-		CSoundSource_OggCache* ogg = static_cast<CSoundSource_OggCache*>(source);
-		InitOgg(ogg);
-	}
-}
-
-void CSoundSource_OpenALCache::InitWav(CSoundSource_WaveCache* wav)
-{
-	alGenBuffers(1, &m_alBuffer);
-
-	SetFilename(wav->GetFilename());
-
-	m_format = wav->GetFormat();
 	ALenum alFormat;
-
-	if (m_format.bitwidth == 8)
-		alFormat = m_format.channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
-	else if (m_format.bitwidth == 16)
-		alFormat = m_format.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
+	if (fmt.bitwidth == 8)
+		alFormat = fmt.channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
+	else if (fmt.bitwidth == 16)
+		alFormat = fmt.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
 	else
 		alFormat = AL_FORMAT_MONO16;
 
-	alBufferData(m_alBuffer, alFormat, wav->m_dataCache, wav->m_cacheSize, m_format.frequency);
+	return alFormat;
+}
 
-	int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2]{ 0 };
-	const int numLoopRegions = wav->GetLoopRegions(loopPoints);
+CSoundSource_OpenALCache::CSoundSource_OpenALCache(ISoundSource* source)
+{
+	SetFilename(source->GetFilename());
+	m_format = source->GetFormat();
+
+	int dataSize = 0;
+	const void* dataPtr = source->GetDataPtr(dataSize);
+	if (!dataPtr || !dataSize)
+	{
+		ASSERT_FAIL("Input source has data for creating AL cache source (unsupported format)");
+		return;
+	}
+
+	const ALenum alFormat = GetSoundSourceFormatAsALEnum(m_format);
+
+	alGenBuffers(1, &m_alBuffer);
+	alBufferData(m_alBuffer, alFormat, dataPtr, dataSize, m_format.frequency);
 
 	// setup additional loop points
+	int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2]{ 0 };
+	const int numLoopRegions = source->GetLoopRegions(loopPoints);
+
 	if (numLoopRegions)
 	{
 		if (loopPoints[1] == -1)
@@ -63,25 +58,6 @@ void CSoundSource_OpenALCache::InitWav(CSoundSource_WaveCache* wav)
 		const int sampleOffs[] = { loopPoints[0], loopPoints[1] };
 		alBufferiv(m_alBuffer, AL_LOOP_POINTS_SOFT, sampleOffs);
 	}
-}
-
-void CSoundSource_OpenALCache::InitOgg(CSoundSource_OggCache* ogg)
-{
-	alGenBuffers(1, &m_alBuffer);
-
-	SetFilename(ogg->GetFilename());
-
-	m_format = ogg->GetFormat();
-	ALenum alFormat;
-
-	if (m_format.bitwidth == 8)
-		alFormat = m_format.channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
-	else if (m_format.bitwidth == 16)
-		alFormat = m_format.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
-	else
-		alFormat = AL_FORMAT_MONO16;
-
-	alBufferData(m_alBuffer, alFormat, ogg->m_dataCache, ogg->m_cacheSize, m_format.frequency);
 }
 
 void CSoundSource_OpenALCache::Unload()
