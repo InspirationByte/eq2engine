@@ -522,6 +522,7 @@ void IUIControl::GetCalcFontStyle(FontStyleParam& style) const
 	style.textColor = m_font.textColor;
 }
 
+#ifdef ENABLE_DEBUG_DRAWING
 inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2, IGPURenderPassRecorder* rendPassRecorder)
 {
 	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
@@ -551,6 +552,7 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 	if (meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
+#endif // ENABLE_DEBUG_DRAWING
 
 // rendering function
 void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
@@ -605,6 +607,7 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 		DrawSelf( clientRectRender, scissorOn, rendPassRecorder);
 	}
 
+#ifdef ENABLE_DEBUG_DRAWING
 	HOOK_TO_CVAR(equi_debug);
 	if (equi_debug->GetInt() > 0 && equi_debug->GetInt() <= depth)
 	{
@@ -615,6 +618,7 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 			EqString::Format("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible).ToCString(), 
 			clientRectRender.GetLeftBottom(), params, rendPassRecorder);
 	}
+#endif
 
 	// render from last
 	for (auto it = m_childs.last(); !it.atEnd(); --it)

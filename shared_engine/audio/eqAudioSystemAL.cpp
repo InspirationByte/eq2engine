@@ -634,6 +634,7 @@ void CEqAudioSystemAL::EndUpdate()
 	for (int i = 0; i < m_mixerChannels.numElem(); ++i)
 		m_mixerChannels[i].updateFlags = 0;
 
+#ifdef ENABLE_DEBUG_DRAWING
 	if (snd_debug.GetBool())
 	{
 		uint sampleMem = 0;
@@ -661,6 +662,7 @@ void CEqAudioSystemAL::EndUpdate()
 		debugoverlay->Text(color_white, "  sources: %d, (%d allocated)", playing, m_sources.numElem());
 		debugoverlay->Text(color_white, "  samples: %d, mem: %d kbytes (non-streamed)", m_samples.size(), sampleMem / 1024);
 	}
+#endif // ENABLE_DEBUG_DRAWING
 }
 
 void CEqAudioSystemAL::SetMasterVolume(float value)

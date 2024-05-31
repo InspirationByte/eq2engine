@@ -849,6 +849,7 @@ void CInputCommandBinder::OnJoyAxisEvent( short axis, short value )
 
 void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRecorder* rendPassRecorder)
 {
+#ifdef ENABLE_DEBUG_DRAWING
 	if(!in_touchzones_debug.GetBool())
 		return;
 
@@ -899,6 +900,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRe
 
 		defaultFont->SetupRenderText(tz.name, rect.leftTop, fontParams, rendPassRecorder);
 	}
+#endif // ENABLE_DEBUG_DRAWING
 }
 
 // executes binding with selected state

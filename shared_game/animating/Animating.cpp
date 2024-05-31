@@ -790,6 +790,7 @@ Matrix4x4 CAnimatingEGF::GetLocalStudioTransformMatrix(int attachmentIdx) const
 
 void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 {
+#ifdef ENABLE_DEBUG_DRAWING
 	if (!r_debugSkeleton.GetBool())
 		return;
 
@@ -858,6 +859,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 			}
 		}
 	}
+#endif // ENABLE_DEBUG_DRAWING
 }
 
 #define IK_DISTANCE_EPSILON 0.05f
