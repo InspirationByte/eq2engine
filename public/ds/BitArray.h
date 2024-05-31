@@ -270,6 +270,7 @@ inline void BitArray::resize(int newBitCount)
 	if(!m_ownData)
 	{
 		ASSERT_FAIL("BitArray is not resizable");
+		return;
 	}
 
 	const int oldTypeSize = bitArray2Dword(m_nSize);

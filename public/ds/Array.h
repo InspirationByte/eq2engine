@@ -442,15 +442,14 @@ inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::clear(bool deallocate)
 {
+	const int oldNumElem = m_nNumElem;
+	m_nNumElem = 0;
+
 	T* listPtr = STORAGE_TYPE::getData();
-	ArrayStorageBase<T>::destructElements(listPtr, m_nNumElem);
+	ArrayStorageBase<T>::destructElements(listPtr, oldNumElem);
 
 	if (deallocate)
-	{
 		STORAGE_TYPE::free();
-	}
-
-	m_nNumElem = 0;
 }
 
 // -----------------------------------------------------------------

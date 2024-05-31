@@ -197,6 +197,7 @@ workspace(WORKSPACE_NAME)
 
 	filter "configurations:Profile"
         defines {
+			"NDEBUG",
 			"_PROFILE"
         }
 		optimize "On"
@@ -204,6 +205,7 @@ workspace(WORKSPACE_NAME)
 
 	filter "configurations:Retail"
         defines {
+			"NDEBUG",
 			"_RETAIL"
         }
 		optimize "On"

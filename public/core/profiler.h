@@ -31,8 +31,6 @@ struct PPSLValueCtor
 template<typename T>
 void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueCtor<T>(sl); }
 
-#define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
-
 struct ProfEventWrp
 {
 public:
@@ -43,6 +41,8 @@ private:
 };
 
 #ifdef PROFILE_ENABLE
+
+#define PP_SL PPSourceLine::Make(__FILE__, __LINE__)
 
 IEXPORTS void ProfAddMarker(const char* text);
 IEXPORTS int ProfBeginMarker(const char* text);
@@ -58,6 +58,8 @@ inline ProfEventWrp::ProfEventWrp(const char* name)	{ eventId = ProfBeginMarker(
 inline ProfEventWrp::~ProfEventWrp()				{ ProfEndMarker(eventId); }
 
 #else
+
+#define PP_SL PPSourceLine::Empty()
 
 #define PROF_EVENT(name)
 #define PROF_EVENT_F()
