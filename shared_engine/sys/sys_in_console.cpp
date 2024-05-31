@@ -42,6 +42,9 @@
 #include "imgui_backend/imgui_impl_sys.h"
 #endif // IMGUI_ENABLED
 
+#if !defined(_RETAIL)
+#define EXTENDED_DEVELOPER_CONSOLE
+#endif
 
 using namespace Threading;
 static CEqMutex s_conInputMutex;
@@ -660,6 +663,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 		return;
 	}
 
+#ifdef EXTENDED_DEVELOPER_CONSOLE
 	if (!con_suggest.GetBool())
 		return;
 
@@ -804,6 +808,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rectVerts), RenderPassContext(rendPassRecorder, &defaultRender));
 		} // for i
 	}
+#endif // EXTENDED_DEVELOPER_CONSOLE
 }
 
 void CEqConsoleInput::ResetLogScroll()
@@ -1185,6 +1190,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 	if (!m_logVisible)
 		ResetLogScroll();
 
+#ifdef EXTENDED_DEVELOPER_CONSOLE
 	if(m_logScrollDir != 0)
 	{
 		int maxScroll = s_spewMessages.numElem()-1;
@@ -1200,112 +1206,102 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 			m_logScrollPosition = max(m_logScrollPosition, 0);
 		}
 	}
+#endif // #ifdef EXTENDED_DEVELOPER_CONSOLE
 
-	FontStyleParam fontStyle;
-	fontStyle.scale = m_fontScale;
-
-	int drawstart = m_logScrollPosition;
-
-	m_maxLines = floor(height / m_font->GetLineHeight(fontStyle)) - 2;
-
-	if(m_maxLines < -4)
-		return;
-
-	AARectangle inputTextEntryRect(64, 26, width-64,46);
-
-	AARectangle con_outputRectangle(64.0f,inputTextEntryRect.rightBottom.y+26, width - 64.0f, height-inputTextEntryRect.leftTop.y);
-
-	if(m_logVisible)
+	const AARectangle inputTextEntryRect(64, 26, width - 64, 46);
 	{
-		DrawAlphaFilledRectangle(con_outputRectangle, s_conBackColor, s_conBorderColor, rendPassRecorder);
+		const Vector2D inputTextPos(inputTextEntryRect.leftTop.x + 4, inputTextEntryRect.rightBottom.y - 6);
 
-		int numRenderLines = s_spewMessages.numElem();
+		FontStyleParam inputTextStyle;
+		inputTextStyle.textColor = s_conInputTextColor;
+		inputTextStyle.scale = m_fontScale;
 
-		m_maxLines = (con_outputRectangle.GetSize().y / m_font->GetLineHeight(fontStyle))-1;
+		DrawAlphaFilledRectangle(inputTextEntryRect, s_conInputBackColor, s_conBorderColor, rendPassRecorder);
+		m_font->SetupRenderText(CONSOLE_INPUT_STARTSTR + m_inputText, inputTextPos, inputTextStyle, rendPassRecorder);
+
+		MatSysDefaultRenderPass defaultRender;
+		defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
+		RenderPassContext defaultPassContext(rendPassRecorder, &defaultRender);
+
+		const float inputGfxOfs = m_font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle);
+		const float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText, inputTextStyle, m_cursorPos);
+
+		// render selection
+		if (m_startCursorPos != m_cursorPos)
+		{
+			float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText, inputTextStyle, m_startCursorPos);
+
+			Vertex2D rect[] = { MAKETEXQUAD(inputTextPos.x + selStartPosition,
+												inputTextPos.y - 10,
+												inputTextPos.x + cursorPosition,
+												inputTextPos.y + 4, 0) };
+
+			defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
+			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
+		}
+
+		// render cursor
+		if (m_cursorVisible)
+		{
+			Vertex2D rect[] = { MAKETEXQUAD(inputTextPos.x + cursorPosition,
+												inputTextPos.y - 10,
+												inputTextPos.x + cursorPosition + 1,
+												inputTextPos.y + 4, 0) };
+
+			defaultRender.drawColor = color_white;
+			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
+		}
+	}
+
+#ifdef EXTENDED_DEVELOPER_CONSOLE
+	if (m_logVisible)
+	{
+		FontStyleParam fontStyle;
+		fontStyle.scale = m_fontScale;
+
+		AARectangle outputRectangle(64.0f, inputTextEntryRect.rightBottom.y + 26, width - 64.0f, height - inputTextEntryRect.leftTop.y);
+		DrawAlphaFilledRectangle(outputRectangle, s_conBackColor, s_conBorderColor, rendPassRecorder);
+
+		m_maxLines = floor(height / m_font->GetLineHeight(fontStyle)) - 2;
+		if (m_maxLines < -4)
+			return;
+		m_maxLines = (outputRectangle.GetSize().y / m_font->GetLineHeight(fontStyle)) - 1;
 
 		int numDrawn = 0;
 
-		FontStyleParam outputTextStyle;
-		outputTextStyle.scale = m_fontScale;
-
 		FontStyleParam hasLinesStyle;
-		hasLinesStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
+		hasLinesStyle.textColor = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
 		hasLinesStyle.scale = m_fontScale;
 
-		con_outputRectangle.leftTop.x += 5.0f;
-		con_outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle);
+		outputRectangle.leftTop.x += 5.0f;
+		outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle);
 
 		static CRectangleTextLayoutBuilder rectLayout;
-		rectLayout.SetRectangle( con_outputRectangle );
+		rectLayout.SetRectangle(outputRectangle);
 
+		FontStyleParam outputTextStyle;
+		outputTextStyle.scale = m_fontScale;
 		outputTextStyle.layoutBuilder = &rectLayout;
 
-		for(int i = drawstart; i < numRenderLines; i++, numDrawn++)
+		const int firstLine = m_logScrollPosition;
+		const int maxLinesToRender = s_spewMessages.numElem();
+
+		for (int i = firstLine; i < maxLinesToRender; i++, numDrawn++)
 		{
 			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
+			m_font->SetupRenderText(s_spewMessages[i]->text, outputRectangle.leftTop, outputTextStyle, rendPassRecorder);
 
-			m_font->SetupRenderText(s_spewMessages[i]->text, con_outputRectangle.leftTop, outputTextStyle, rendPassRecorder);
-
-			con_outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle)*rectLayout.GetProducedLines();//cnumLines;
-
-			if(rectLayout.HasNotDrawnLines() || i-drawstart >= m_maxLines)
+			outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle) * rectLayout.GetProducedLines();//cnumLines;
+			if (rectLayout.HasNotDrawnLines() || i - firstLine >= m_maxLines)
 			{
-				m_font->SetupRenderText("^ ^ ^ ^ ^ ^", Vector2D(con_outputRectangle.leftTop.x, con_outputRectangle.rightBottom.y), hasLinesStyle, rendPassRecorder);
-
+				m_font->SetupRenderText("^ ^ ^ ^ ^ ^", Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y), hasLinesStyle, rendPassRecorder);
 				break;
 			}
 		}
 	}
+#endif // EXTENDED_DEVELOPER_CONSOLE
 
-	DrawFastFind( 128, inputTextEntryRect.leftTop.y+25, width-128, rendPassRecorder);
-
-	EqString conInputStr(CONSOLE_INPUT_STARTSTR);
-	conInputStr.Append(m_inputText);
-
-	DrawAlphaFilledRectangle(inputTextEntryRect, s_conInputBackColor, s_conBorderColor, rendPassRecorder);
-
-	FontStyleParam inputTextStyle;
-	inputTextStyle.textColor = s_conInputTextColor;
-	inputTextStyle.scale = m_fontScale;
-
-	Vector2D inputTextPos(inputTextEntryRect.leftTop.x+4, inputTextEntryRect.rightBottom.y-6);
-
-	// render input text
-	m_font->SetupRenderText(conInputStr, inputTextPos, inputTextStyle, rendPassRecorder);
-
-	float inputGfxOfs = m_font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle);
-	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText, inputTextStyle, m_cursorPos);
-
-	MatSysDefaultRenderPass defaultRender;
-	defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
-
-	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRender);
-
-	// render selection
-	if(m_startCursorPos != m_cursorPos)
-	{
-		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText, inputTextStyle, m_startCursorPos);
-
-		Vertex2D rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition,
-											inputTextPos.y - 10,
-											inputTextPos.x + cursorPosition,
-											inputTextPos.y + 4, 0) };
-
-		defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
-		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
-	}
-
-	// render cursor
-	if(m_cursorVisible)
-	{
-		Vertex2D rect[] = { MAKETEXQUAD(	inputTextPos.x + cursorPosition,
-											inputTextPos.y - 10,
-											inputTextPos.x + cursorPosition + 1,
-											inputTextPos.y + 4, 0) };
-
-		defaultRender.drawColor = color_white;
-		g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
-	}
+	DrawFastFind(inputTextEntryRect.leftTop.x + 15, inputTextEntryRect.leftTop.y + 25, width - 128, rendPassRecorder);
 }
 
 void CEqConsoleInput::MousePos(const Vector2D &pos)
@@ -1618,7 +1614,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 					AutoCompleteSuggestion();
 				}
 				break;
-
+#ifdef EXTENDED_DEVELOPER_CONSOLE
 			case KEY_PGUP:
 				m_logScrollDir = -1;
 
@@ -1635,9 +1631,9 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 				m_logScrollDelay = max(m_logScrollDelay, LOG_SCROLL_DELAY_END);
 
 				break;
-
+#endif // EXTENDED_DEVELOPER_CONSOLE
 			case KEY_DOWNARROW: // FIXME: invalid indices
-
+#ifdef EXTENDED_DEVELOPER_CONSOLE
 				if(m_fastfind_cmdbase && m_variantList.numElem())
 				{
 					m_variantSelection++;
@@ -1653,7 +1649,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 						break;
 					}
 				}
-
+#endif // EXTENDED_DEVELOPER_CONSOLE
 				if(!m_commandHistory.numElem())
 					break;
 
@@ -1665,7 +1661,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 				break;
 			case KEY_UPARROW:
-
+#ifdef EXTENDED_DEVELOPER_CONSOLE
 				if(m_fastfind_cmdbase && m_variantList.numElem())
 				{
 					m_variantSelection--;
@@ -1681,7 +1677,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 						break;
 					}
 				}
-
+#endif // EXTENDED_DEVELOPER_CONSOLE
 				if(!m_commandHistory.numElem())
 					break;
 
@@ -1704,9 +1700,8 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 				if(m_startCursorPos != m_cursorPos)
 				{
-					int selStart = min(m_startCursorPos, m_cursorPos);
-					int selEnd = max(m_startCursorPos, m_cursorPos);
-
+					const int selStart = min(m_startCursorPos, m_cursorPos);
+					const int selEnd = max(m_startCursorPos, m_cursorPos);
 					m_inputText.Remove(selStart, selEnd - selStart);
 
 					m_cursorPos = selStart;
