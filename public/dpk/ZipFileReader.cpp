@@ -9,21 +9,30 @@
 #include "core/IFileSystem.h"
 #include "core/platform/OSFile.h"
 
+#include "minizip/unzip.h"
 #include "ZipFileReader.h"
 #include "DPKUtils.h"
 
 static Threading::CEqMutex s_zipMutex;
 
-CZipFileStream::CZipFileStream(const char* fileName, unzFile zip, CZipFileReader* host)
-	: m_name(fileName), m_zipHandle(zip), m_host(host)
+//-----------------------------------------------
+
+CZipFileStream::CZipFileStream(const char* fileName, uintptr_t zf, CZipFileReader* host)
+	: m_name(fileName)
+	, m_zipHandle(zf)
+	, m_host(host)
 {
-	unzGetCurrentFileInfo(m_zipHandle, &m_finfo, nullptr, 0, nullptr, 0, nullptr, 0);
+	unz_file_info fileInfo;
+	unzGetCurrentFileInfo(reinterpret_cast<unzFile>(m_zipHandle), &fileInfo, nullptr, 0, nullptr, 0, nullptr, 0);
+
+	m_uncompressedSize = fileInfo.uncompressed_size;
+	m_crc = fileInfo.crc;
 }
 
 CZipFileStream::~CZipFileStream()
 {
-	unzCloseCurrentFile(m_zipHandle);
-	unzClose(m_zipHandle);
+	unzCloseCurrentFile(reinterpret_cast<unzFile>(m_zipHandle));
+	unzClose(reinterpret_cast<unzFile>(m_zipHandle));
 }
 
 CBasePackageReader* CZipFileStream::GetHostPackage() const
@@ -34,7 +43,7 @@ CBasePackageReader* CZipFileStream::GetHostPackage() const
 // reads data from virtual stream
 size_t CZipFileStream::Read(void *dest, size_t count, size_t size)
 {
-	return unzReadCurrentFile(m_zipHandle, dest, count*size);
+	return unzReadCurrentFile(reinterpret_cast<unzFile>(m_zipHandle), dest, count*size);
 }
 
 // writes data to virtual stream
@@ -71,8 +80,8 @@ int	CZipFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
 
 	// it has to be reopened
 	// slow!!!
-	unzCloseCurrentFile(m_zipHandle);
-	unzOpenCurrentFile(m_zipHandle);
+	unzCloseCurrentFile(reinterpret_cast<unzFile>(m_zipHandle));
+	unzOpenCurrentFile(reinterpret_cast<unzFile>(m_zipHandle));
 
 	// Skip until the desired offset is reached
 	while (newOfs)
@@ -81,7 +90,7 @@ int	CZipFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
 		if (len > sizeof(dummy))
 			len = sizeof(dummy);
 
-		int numRead = unzReadCurrentFile(m_zipHandle, dummy, len);
+		int numRead = unzReadCurrentFile(reinterpret_cast<unzFile>(m_zipHandle), dummy, len);
 		if (numRead <= 0)
 			break;
 
@@ -100,39 +109,12 @@ void CZipFileStream::Print(const char* fmt, ...)
 // returns current pointer position
 int CZipFileStream::Tell() const
 {
-	return unztell(m_zipHandle);
-}
-
-// returns memory allocated for this stream
-int CZipFileStream::GetSize()
-{
-	return m_finfo.uncompressed_size;
-}
-
-// flushes stream from memory
-bool CZipFileStream::Flush()
-{
-	return false;
-}
-
-// returns CRC32 checksum of stream
-uint32 CZipFileStream::GetCRC32()
-{
-	return m_finfo.crc;
+	return unztell(reinterpret_cast<unzFile>(m_zipHandle));
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
 // ZIP host
 //-----------------------------------------------------------------------------------------------------------------------
-
-CZipFileReader::CZipFileReader()
-{
-
-}
-
-CZipFileReader::~CZipFileReader()
-{
-}
 
 bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* = nullptr*/)
 {
@@ -140,7 +122,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	m_packagePath = filename;
 
 	// perform test
-	unzFile zip = GetNewZipHandle();
+	unzFile zip = unzOpen(m_packagePath);
 	if (!zip)
 	{
 		MsgError("Cannot open Zip package '%s'\n", m_packagePath.ToCString());
@@ -165,13 +147,13 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 			warnAboutCompression = true;
 		}
 
-		zfileinfo_t zf;
-		zf.filename = path;
-		DPK_FixSlashes(zf.filename);
-		unzGetFilePos(zip, &zf.pos);
-	
-		const int nameHash = StringToHash(zf.filename.ToCString(), true);
-		m_files.insert(nameHash, zf);
+		EqString zipFilePath = path;
+		DPK_FixSlashes(zipFilePath);
+		const int nameHash = StringToHash(zipFilePath, true);
+
+		ZFileInfo& zf = *m_files.insert(nameHash);
+		zf.fileName = zipFilePath;
+		unzGetFilePos(zip, (unz_file_pos*)&zf.filePos);
 
 		unzGoToNextFile(zip);
 	}
@@ -190,7 +172,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 		if (unzOpenCurrentFile(zip) == UNZ_OK)
 		{
 			// read contents
-			CZipFileStream mountFile(filename, zip, this);
+			CZipFileStream mountFile(filename, reinterpret_cast<uintptr_t>(zip), this);
 
 			memset(path, 0, sizeof(path));
 			mountFile.Read(path, mountFile.GetSize(), 1);
@@ -214,7 +196,7 @@ IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 	}
 
 	const int nameHash = StringToHash(filename, true);
-	unzFile zipFileHandle = GetZippedFile(nameHash);
+	unzFile zipFileHandle = reinterpret_cast<unzFile>(GetZippedFile(nameHash));
 	if (!zipFileHandle)
 		return nullptr;
 
@@ -224,7 +206,7 @@ IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, filename, zipFileHandle, this);
+	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, filename, reinterpret_cast<uintptr_t>(zipFileHandle), this);
 
 	return IFilePtr(newStream);
 }
@@ -237,7 +219,7 @@ IFilePtr CZipFileReader::Open(int fileIndex, int modeFlags)
 		return nullptr;
 	}
 
-	unzFile zipFileHandle = GetZippedFile(fileIndex);
+	unzFile zipFileHandle = reinterpret_cast<unzFile>(GetZippedFile(fileIndex));
 	if (!zipFileHandle)
 		return nullptr;
 
@@ -247,14 +229,14 @@ IFilePtr CZipFileReader::Open(int fileIndex, int modeFlags)
 		return nullptr;
 	}
 
-	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, EqString::Format("zipFile%d", fileIndex), zipFileHandle, this);
+	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, EqString::Format("zipFile%d", fileIndex), reinterpret_cast<uintptr_t>(zipFileHandle), this);
 	return IFilePtr(newStream);
 }
 
 bool CZipFileReader::FileExists(const char* filename) const
 {
 	const int nameHash = StringToHash(filename, true);
-	unzFile test = GetZippedFile(nameHash);
+	unzFile test = reinterpret_cast<unzFile>(GetZippedFile(nameHash));
 	if(test)
 		unzClose(test);
 
@@ -270,27 +252,22 @@ int CZipFileReader::FindFileIndex(const char* filename) const
 	return -1;
 }
 
-unzFile CZipFileReader::GetNewZipHandle() const
-{
-	return unzOpen(m_packagePath.ToCString());
-}
-
-unzFile	CZipFileReader::GetZippedFile(int nameHash) const
+uintptr_t CZipFileReader::GetZippedFile(int nameHash) const
 {
 	auto it = m_files.find(nameHash);
 	if (!it.atEnd())
 	{
-		const zfileinfo_t& file = *it;
-		unzFile zipFile = GetNewZipHandle();
+		const ZFileInfo& file = *it;
+		unzFile zipFile = unzOpen(m_packagePath);
 
-		if (unzGoToFilePos(zipFile, (unz_file_pos*)&file.pos) != UNZ_OK)
+		if (unzGoToFilePos(zipFile, (unz_file_pos*)&file.filePos) != UNZ_OK)
 		{
 			unzClose(zipFile);
-			return nullptr;
+			return 0;
 		}
 
-		return zipFile;
+		return reinterpret_cast<uintptr_t>(zipFile);
 	}
 
-	return nullptr;
+	return 0;
 }

@@ -615,3 +615,16 @@ void CBaseShader::AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex)
 	var.Set(tex);
 	m_usedTextures.append(var);
 }
+
+/*
+template class MatVarProxy<GPUBufferView>;
+template class MatVarProxy<ITexturePtr>;
+template class MatVarProxy<EqString>;
+template class MatVarProxy<int>;
+template class MatVarProxy<float>;
+template class MatVarProxy<Vector2D>;
+template class MatVarProxy<Vector3D>;
+template class MatVarProxy<Vector4D>;
+template class MatVarProxy<Matrix3x3>;
+template class MatVarProxy<Matrix4x4>;
+*/

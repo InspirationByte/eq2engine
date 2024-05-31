@@ -7,8 +7,17 @@
 
 #pragma once
 #include "IMaterial.h"
-#include "renderers/ITexture.h"
-#include "renderers/IShaderAPI.h"
+
+using MatBufferProxy = MatVarProxy<GPUBufferView>;
+using MatTextureProxy = MatVarProxy<ITexturePtr>;
+using MatStringProxy = MatVarProxy<EqString>;
+using MatIntProxy = MatVarProxy<int>;
+using MatFloatProxy = MatVarProxy<float>;
+using MatVec2Proxy = MatVarProxy<Vector2D>;
+using MatVec3Proxy = MatVarProxy<Vector3D>;
+using MatVec4Proxy = MatVarProxy<Vector4D>;
+using MatM3x3Proxy = MatVarProxy<Matrix3x3>;
+using MatM4x4Proxy = MatVarProxy<Matrix4x4>;
 
 template<typename T>
 inline MatVarProxy<T>::MatVarProxy(int varIdx, MaterialVarBlock& owner)

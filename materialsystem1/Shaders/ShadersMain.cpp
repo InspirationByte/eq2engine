@@ -18,6 +18,12 @@ DECLARE_INTERNAL_SHADERS()
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <crtdbg.h>
+#ifdef far
+#	undef far
+#endif
+#ifdef near
+#	undef near
+#endif
 
 //---------------------------------------------------------------------------
 // Purpose: DllMain function

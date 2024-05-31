@@ -8,6 +8,12 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#ifdef far
+#	undef far
+#endif
+#ifdef near
+#	undef near
+#endif
 #endif // _WIN32
 
 #include "core/core_common.h"

@@ -5,14 +5,23 @@
 // Description: Provides all shared definitions of engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/core_common.h"
-#include "core/platform/platform.h"
-
-#ifndef _WIN32
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#ifdef far
+#	undef far
+#endif
+#ifdef near
+#	undef near
+#endif
+#else
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
 #endif
+
+#include "core/core_common.h"
+#include "core/platform/platform.h"
 
 // sleeps the execution thread and let other processes to run for a specified amount of time.
 IEXPORTS void Platform_Sleep(uint32 nMilliseconds)

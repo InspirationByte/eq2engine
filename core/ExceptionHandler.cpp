@@ -23,6 +23,12 @@ static void DoCoreExceptionCallbacks()
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <DbgHelp.h>
+#ifdef far
+#	undef far
+#endif
+#ifdef near
+#	undef near
+#endif
 
 typedef struct _MODULEINFO {
 	LPVOID lpBaseOfDll;  

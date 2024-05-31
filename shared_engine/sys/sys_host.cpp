@@ -5,6 +5,11 @@
 // Description: System and module loader
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <SDL.h>
+#include <SDL_syswm.h>
+#undef far
+#undef near
+
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
@@ -18,9 +23,6 @@
 #include "imaging/ImageLoader.h"
 
 #include "render/IDebugOverlay.h"
-
-#include <SDL.h>
-#include <SDL_syswm.h>
 
 #include "sys_host.h"
 #include "sys_state.h"

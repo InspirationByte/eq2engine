@@ -780,7 +780,7 @@ bool CImage::LoadTGA(IFilePtr fileHandle)
 	return true;
 }
 
-bool CImage::LoadImage(const char* fileName, uint flags, int searchFlags)
+bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 {
 	Clear();
 

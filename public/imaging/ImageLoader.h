@@ -10,10 +10,6 @@
 
 class IVirtualStream;
 
-#ifdef _WIN32
-#undef LoadImage
-#endif
-
 // Image loading flags
 enum EImageLoadingFlags
 {
@@ -86,7 +82,7 @@ public:
 	bool			LoadTGA(IVirtualStreamPtr fileHandle);
 	bool			SaveTGA(IVirtualStreamPtr fileHandle) const;
 
-	bool			LoadImage(const char* fileName, uint flags = 0, int searchFlags = -1);
+	bool			Load(const char* fileName, uint flags = 0, int searchFlags = -1);
 	bool			SaveImage(const char* fileName, int searchFlags = -1) const;
 
 	void			LoadFromMemory(void* mem, const ETextureFormat frmt, const int wide, const int tall, const int nDepth, const int mipMapCount, bool ownsMemory);

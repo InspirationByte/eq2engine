@@ -5,17 +5,13 @@
 // Description: Equilibrium Filesystem
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include "core/core_common.h"
-
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #ifdef CloseModule
-#undef CloseModule
+#	undef CloseModule
 #endif
+
 #include <direct.h>	// mkdir()
 #include <io.h>		// _access()
 #define access		_access
@@ -25,6 +21,10 @@
 #include <dlfcn.h>	// dlopen()
 #include <dirent.h> // opendir, readdir
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include "core/core_common.h"
 
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"

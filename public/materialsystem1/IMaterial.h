@@ -9,6 +9,8 @@
 #include "renderers/ITexture.h"
 #include "renderers/IGPUBuffer.h"
 
+class CTextureAtlas;
+
 struct MatVarData
 {
 	float			vector[16]{ 0 }; // TODO: think about memory consumption
@@ -24,7 +26,7 @@ struct MaterialVarBlock : public WeakRefObject<MaterialVarBlock>
 	Array<MatVarData>	variables{ PP_SL };
 };
 
-struct MV_VOID {};
+struct EMPTY_BASES MV_VOID {};
 
 template<typename T>
 class MatVarProxy;
@@ -65,19 +67,6 @@ protected:
 	int							m_matVarIdx{ -1 };
 };
 
-using MatBufferProxy = MatVarProxy<GPUBufferView>;
-using MatTextureProxy = MatVarProxy<ITexturePtr>;
-using MatStringProxy = MatVarProxy<EqString>;
-using MatIntProxy = MatVarProxy<int>;
-using MatFloatProxy = MatVarProxy<float>;
-using MatVec2Proxy = MatVarProxy<Vector2D>;
-using MatVec3Proxy = MatVarProxy<Vector3D>;
-using MatVec4Proxy = MatVarProxy<Vector4D>;
-using MatM3x3Proxy = MatVarProxy<Matrix3x3>;
-using MatM4x4Proxy = MatVarProxy<Matrix4x4>;
-
-class CTextureAtlas;
-
 enum EMaterialFlags
 {
 	MATERIAL_FLAG_NO_CULL			= (1 << 0),		// no culling (two sided)
@@ -113,7 +102,9 @@ enum EMaterialLoadingState
 
 //---------------------------------------------------------------------------------
 
-class IMaterial: public RefCountedObject<IMaterial>, public WeakRefObject<IMaterial>
+class IMaterial 
+	: public RefCountedObject<IMaterial>
+	, public WeakRefObject<IMaterial>
 {
 public:
 	// returns full material path

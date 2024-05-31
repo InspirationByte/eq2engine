@@ -149,7 +149,7 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 		EqString imgName(atlas_dir + image_name);
 
 		CRefPtr<CImage> pImg = CRefPtr_new(CImage);
-		bool isOk = pImg->LoadImage(imgName.ToCString());
+		bool isOk = pImg->Load(imgName.ToCString());
 
 		if(!isOk || pImg->Is1D() || pImg->IsCube())
 		{
@@ -183,7 +183,7 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 			{
 				EqString imgName(atlas_dir + image_path);
 				CRefPtr<CImage> pImg = CRefPtr_new(CImage);
-				bool isOk = pImg->LoadImage(imgName.ToCString());
+				bool isOk = pImg->Load(imgName.ToCString());
 
 				if(!isOk || pImg->Is1D() || pImg->IsCube())
 				{

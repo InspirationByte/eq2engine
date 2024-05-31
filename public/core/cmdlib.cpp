@@ -11,6 +11,12 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#ifdef far
+#	undef far
+#endif
+#ifdef near
+#	undef near
+#endif
 
 static unsigned short g_InitialColor = 0xFFFF;
 static unsigned short g_LastColor = 0xFFFF;

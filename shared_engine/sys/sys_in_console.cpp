@@ -5,6 +5,13 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#undef far
+#undef near
+#endif
+
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"

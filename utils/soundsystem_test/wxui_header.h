@@ -55,4 +55,13 @@
 #include "wx/textdlg.h"
 #include "wx/statline.h"
 
+#ifdef far
+#undef far
+#endif far
+
+#ifdef near
+#undef near
+#endif
+
+
 #endif // EDITORHDR_H

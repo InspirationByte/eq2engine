@@ -18,9 +18,6 @@
 #include "IVertexFormat.h"
 #include "ITexture.h"
 
-#undef far
-#undef near
-
 struct KVSection;
 class CImage;
 

@@ -41,10 +41,6 @@
 #define PPMEM_DISABLED
 #endif // _RETAIL
 
-#if !defined(_RETAIL)
-#define PROFILE_ENABLE
-#endif
-
 //---------------
 
 #include "common_types.h"

@@ -5,7 +5,7 @@
 // Description: DakrTech scene renderer renderable
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "math/math_common.h"
+#include "core/core_common.h"
 #include "BaseRenderableObject.h"
 
 // adds a render flags

@@ -13,6 +13,12 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#ifdef far
+#	undef far
+#endif
+#ifdef near
+#	undef near
+#endif
 
 #elif defined(USE_GTK)
 

@@ -5,7 +5,7 @@
 // Description: Box/Frustum volume
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "math_common.h"
+#include "core/core_common.h"
 #include "Volume.h"
 
 void Volume::LoadAsFrustum(const Matrix4x4 &mvp)

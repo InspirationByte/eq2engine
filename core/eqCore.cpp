@@ -9,6 +9,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <locale.h>
 #include <Windows.h>
+#ifdef far
+#	undef far
+#endif
+#ifdef near
+#	undef near
+#endif
 #ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
 #endif

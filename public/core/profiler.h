@@ -7,6 +7,10 @@
 
 #pragma once
 
+#if !defined(_RETAIL)
+#define PROFILE_ENABLE
+#endif
+
 // source-line contailer
 struct PPSourceLine
 {
