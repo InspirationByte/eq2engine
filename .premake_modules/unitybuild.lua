@@ -8,7 +8,7 @@ premake.api.register {
 }
 
 premake.api.register {
-	name = "dontincludeinunity",
+	name = "excludefromunity",
 	scope = "config",
 	kind = "boolean",
 	default_value = "off",

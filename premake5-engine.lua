@@ -6,22 +6,14 @@ require ".premake_modules/unitybuild"
 require ".premake_modules/wxwidgets"
 require ".premake_modules/vscode"
 
-function if_then_else(cond, a, b)
-	if cond then
-		return a
-	else
-		return b
-	end
-end
-
 local CAN_BUILD_TOOLS = (os.target() == "linux" or os.target() == "windows") and not IS_ANDROID
 local CAN_BUILD_GUI_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
 
 IS_ANDROID = (_ACTION == "androidndk")
-ENABLE_TOOLS = if_then_else(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
-ENABLE_GUI_TOOLS = if_then_else(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
-ENABLE_MATSYSTEM = if_then_else(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
-ENABLE_TESTS = if_then_else(ENABLE_TESTS == nil, false, ENABLE_TESTS)
+ENABLE_TOOLS = iif(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
+ENABLE_GUI_TOOLS = iif(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
+ENABLE_MATSYSTEM = iif(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
+ENABLE_TESTS = iif(ENABLE_TESTS == nil, false, ENABLE_TESTS)
 WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 
 -- you can redefine dependencies
