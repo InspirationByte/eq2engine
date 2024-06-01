@@ -234,8 +234,14 @@ public:
 	template<typename T>
 	decltype(auto)	GetGlobal(const char* name) const;
 
+	// creates table and
 	esl::LuaTable	CreateTable() const;
 
+	// creates new object and pushes it to the stack. Returns object that can be return by functions
+	template<typename T, typename... Args>
+	esl::Object<T>	MakeObject(Args&&... args);
+
+	// pushes value to the stack
 	template<typename T>
 	void			PushValue(const T& value) const;
 
@@ -260,7 +266,7 @@ protected:
 	lua_State*	m_state{ nullptr };
 };
 
-/// script object wrapper. Useful for BY_VALUE objects to not be non-copyable
+/// script object wrapper representing value on stack. Useful for BY_VALUE objects to not be non-copyable
 template<typename T>
 class Object
 {

@@ -96,6 +96,13 @@ esl::TypeInfo ScriptClass<T>::GetTypeInfo()
 	};
 };
 
+template<typename T, typename... Args>
+esl::Object<T> ScriptState::MakeObject(Args&&... args)
+{
+	esl::runtime::New<T>(m_state, std::forward<Args>(args)...);
+	return esl::Object<T>(m_state, lua_gettop(m_state));
+}
+
 template<typename T>
 void ScriptState::SetGlobal(const char* name, const T& value) const
 {
