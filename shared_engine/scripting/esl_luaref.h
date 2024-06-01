@@ -52,9 +52,6 @@ public:
 	bool operator==(LuaRef const& rhs) const	{ return *(static_cast<const LuaRawRef*>(this)) == rhs; }
 };
 
-using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
-using LuaTableRef = LuaRef<LUA_TTABLE>;
-
 //---------------------------------------------------
 // TODO: esl_luatable.h
 

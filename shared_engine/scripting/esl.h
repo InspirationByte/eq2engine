@@ -12,6 +12,16 @@
 
 namespace esl
 {
+template <typename T>
+class Object;
+
+template<int TYPE>
+class LuaRef;
+
+using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
+using LuaTableRef = LuaRef<LUA_TTABLE>;
+using LuaUserRef = LuaRef<LUA_TUSERDATA>;
+
 using StaticFunc = lua_CFunction;
 
 template <typename T>
@@ -35,9 +45,6 @@ struct LuaTypeByVal : std::false_type {};
 template <typename T>
 struct LuaTypeRefCountedObj : std::false_type {};
 
-//template <typename T>
-//struct LuaTypeWeakRefObject : std::false_type {};
-
 template <typename T, bool isEnum>
 struct LuaTypeAlias;
 
@@ -57,51 +64,52 @@ struct LuaTypeAlias<T, true>
 template <typename T> struct ToCpp {};	// input value ownership is given to native/c++
 template <typename T> struct ToLua {};	// input value ownership is given to Lua
 
-template <typename T>
-struct StripTraits 
-{
-	using type = T;
-};
-
-template <typename T>
-struct StripTraits<ToCpp<T>>
-{
-	using type = T;
-};
-
-template <typename T>
-struct StripTraits<ToLua<T>>
-{
-	using type = T;
-};
-
-template <typename T>
-using StripTraitsT = typename StripTraits<T>::type;
-
-template <typename T>
-struct StripRefPtr
-{
-	using type = T;
-};
-
-template <typename T>
-struct StripRefPtr<CRefPtr<T>>
-{
-	using type = T;
-};
-
-template <typename T>
-using StripRefPtrT = typename StripRefPtr<T>::type;
-
 template<typename T> struct HasToCppParamTrait : std::false_type {};
 template<typename T> struct HasToCppParamTrait<ToCpp<T>> : std::true_type {};
 
 template<typename T> struct HasToLuaReturnTrait : std::false_type {};
 template<typename T> struct HasToLuaReturnTrait<ToLua<T>> : std::true_type {};
 
-template <typename T>
-struct LuaBaseTypeAlias : LuaTypeAlias<StripRefPtrT<BaseType<StripTraitsT<T>>>, std::is_enum_v<T>> {};
+//------------------------
 
+template <typename T>
+struct StripTraits { using type = T; };
+
+template <typename T>
+struct StripTraits<ToCpp<T>> { using type = T; };
+
+template <typename T>
+struct StripTraits<ToLua<T>> { using type = T; };
+
+template <typename T>
+using StripTraitsT = typename StripTraits<T>::type;
+
+//------------------------
+
+template <typename T>
+struct StripRefPtr { using type = T; };
+
+template <typename T>
+struct StripRefPtr<CRefPtr<T>> { using type = T; };
+
+template <typename T>
+using StripRefPtrT = typename StripRefPtr<T>::type;
+
+//------------------------
+
+template <typename T>
+struct StripObject { using type = T; };
+
+template <typename T>
+struct StripObject<Object<T>> { using type = T; };
+
+template <typename T>
+using StripObjectT = typename StripObject<T>::type;
+
+//------------------------
+
+template <typename T>
+struct LuaBaseTypeAlias : LuaTypeAlias<StripRefPtrT<BaseType<StripTraitsT<StripObjectT<T>>>>, std::is_enum_v<T>> {};
 
 enum EMemberType : int
 {
@@ -178,7 +186,9 @@ struct ResultWithValue<void>
 	EqString	errorMessage;
 };
 
-namespace binder {}
+namespace binder {
+	struct ObjectIndexGetter;
+}
 namespace bindings {}
 namespace runtime {}
 
@@ -198,6 +208,7 @@ struct ScriptClass
 	static const char*		baseClassName;
 };
 
+/// script state wrapper
 class ScriptState
 {
 public:
@@ -248,6 +259,42 @@ public:
 protected:
 	lua_State*	m_state{ nullptr };
 };
+
+/// script object wrapper. Useful for BY_VALUE objects to not be non-copyable
+template<typename T>
+class Object
+{
+	friend struct binder::ObjectIndexGetter;
+public:
+	using TYPE = T;
+
+	Object() = default;
+	Object(lua_State* L, int index)
+		: m_state(L)
+		, m_index(index)
+	{
+	}
+	Object(const Object& other)
+		: m_state(other.m_state)
+		, m_index(other.m_index)
+	{
+	}
+
+	T&			Get() const;
+	T*			GetPtr() const;
+
+	LuaUserRef	ToRef() const;
+
+	T&			operator*() const { return Get(); }
+	T*			operator->() const { return GetPtr(); }
+
+	operator bool() const { return m_state != nullptr; }
+
+private:
+	lua_State*	m_state{ nullptr };
+	int			m_index{ 0 };
+};
+
 }
 
 namespace esl::runtime

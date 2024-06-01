@@ -987,6 +987,20 @@ ByValueTests& ByValueBypassFunc(esl::ScriptState scriptState, ByValueTests& ref)
 	return ref;
 }
 
+esl::Object<ByValueTests> ByValueBypassFuncObj(esl::ScriptState scriptState, const esl::Object<ByValueTests>& ref)
+{
+	if (ref)
+	{
+		EXPECT_TRUE(ref);
+		EXPECT_EQ(ref->value, 888666); // set in C++
+
+		ref->value = 555;
+	}
+
+	EXPECT_EQ(esl::binder::ObjectIndexGetter::Get(ref), 1);
+	return ref;
+}
+
 TEST(EQSCRIPT_TESTS, TestByValue)
 {
 	LuaStateTest stateTest;
@@ -1042,6 +1056,7 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 
 
 	state.SetGlobal("ByValueBypassFunc", EQSCRIPT_CFUNC(ByValueBypassFunc));
+	state.SetGlobal("ByValueBypassFuncObj", EQSCRIPT_CFUNC(ByValueBypassFuncObj));
 
 	// TEST: value should not be copied or moved when passed as argument
 	LUA_GTEST_CHUNK("TestRefArgument(test4, 888666)");
@@ -1051,4 +1066,11 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 	LUA_GTEST_CHUNK("testRet = ByValueBypassFunc(test4)");
 	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.isMoved, false)");
 	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.usedCopyConstructor, true)");
+
+	// TEST: use bypass reference, must be the same object
+	LUA_GTEST_CHUNK("testRet = ByValueBypassFuncObj(test4, 4)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testRet, test4)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(test4.value, 555)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.isMoved, false)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.usedCopyConstructor, false)");
 }
