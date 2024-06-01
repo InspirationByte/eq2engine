@@ -1071,6 +1071,45 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 	LUA_GTEST_CHUNK("testRet = ByValueBypassFuncObj(test4, 4)");
 	LUA_GTEST_CHUNK("EXPECT_EQ(testRet, test4)");
 	LUA_GTEST_CHUNK("EXPECT_EQ(test4.value, 555)");
+	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.value, 555)");
 	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.isMoved, false)");
 	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.usedCopyConstructor, false)");
+}
+
+struct BindTest
+{
+	int value;
+};
+
+//EQSCRIPT_BIND_TYPE_NO_PARENT(BindTest, "BindTest", BY_VALUE)
+//EQSCRIPT_TYPE_BEGIN(BindTest)
+//	EQSCRIPT_BIND_VAR(value)
+//EQSCRIPT_TYPE_END
+
+// _ESL_BIND_TYPE_BASICS
+namespace esl {
+	template<> inline const char* esl::LuaTypeAlias<BindTest, false>::value = "BindTest"; 
+	template<> struct LuaTypeByVal<BindTest> : std::true_type {}; 
+	template<> inline const char ScriptClass<BindTest>::className[] = "BindTest";
+	template<> inline const char* ScriptClass<BindTest>::baseClassName = nullptr;
+	template<> inline TypeInfo ScriptClass<BindTest>::baseClassTypeInfo = {};
+}
+// _ESL_TYPE_PUSHGET
+namespace esl::runtime {
+	template<> PushGet<BindTest>::PushFunc PushGet<BindTest>::Push = &PushGetImpl<BindTest>::PushObject; 
+	template<> PushGet<BindTest>::GetFunc PushGet<BindTest>::Get = &PushGetImpl<BindTest>::GetObject;
+}
+
+// EQSCRIPT_TYPE_BEGIN / END
+namespace esl::bindings 
+{
+template<> ArrayCRef<Member> ClassBinder<BindTest>::GetMembers() 
+{
+	BaseClassStorage::Add<BindClass>();
+	static Member members[] = {
+		MakeDestructor(),
+		MakeVariable<(&BindClass::value)>("value"),
+	};
+	return members;
+}
 }

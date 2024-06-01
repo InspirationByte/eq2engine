@@ -85,52 +85,52 @@ struct ClassBinder
 namespace esl
 {
 template<typename T>
-esl::TypeInfo ScriptClass<T>::GetTypeInfo()
+TypeInfo ScriptClass<T>::GetTypeInfo()
 {
 	return {
 		&ScriptClass<T>::baseClassTypeInfo,
 		ScriptClass<T>::className,
 		ScriptClass<T>::baseClassName,
-		esl::bindings::ClassBinder<T>::GetMembers(),
-		esl::LuaTypeByVal<T>::value
+		bindings::ClassBinder<T>::GetMembers(),
+		LuaTypeByVal<T>::value
 	};
 };
 
 template<typename T, typename... Args>
-esl::Object<T> ScriptState::MakeObject(Args&&... args)
+Object<T> ScriptState::MakeObject(Args&&... args)
 {
-	esl::runtime::New<T>(m_state, std::forward<Args>(args)...);
-	return esl::Object<T>(m_state, lua_gettop(m_state));
+	runtime::New<T>(m_state, std::forward<Args>(args)...);
+	return Object<T>(m_state, lua_gettop(m_state));
 }
 
 template<typename T>
 void ScriptState::SetGlobal(const char* name, const T& value) const
 {
-	esl::runtime::SetGlobal(m_state, name, value);
+	runtime::SetGlobal(m_state, name, value);
 }
 
 template<typename T>
 decltype(auto) ScriptState::GetGlobal(const char* name) const
 {
-	return esl::runtime::GetGlobal<T>(m_state, name);
+	return runtime::GetGlobal<T>(m_state, name);
 }
 
 template<typename T>
 void ScriptState::PushValue(const T& value) const
 {
-	esl::runtime::PushValue(m_state, value);
+	runtime::PushValue(m_state, value);
 }
 
 template<typename T>
 decltype(auto) ScriptState::GetValue(int index) const
 {
-	return esl::runtime::GetValue<T, true>(m_state, index);
+	return runtime::GetValue<T, true>(m_state, index);
 }
 
 template<typename T>
 void ScriptState::RegisterClass() const
 {
-	esl::runtime::RegisterType(m_state, ScriptClass<T>::GetTypeInfo());
+	runtime::RegisterType(m_state, ScriptClass<T>::GetTypeInfo());
 }
 
 template<typename T, typename K, typename V>
@@ -138,17 +138,17 @@ void ScriptState::RegisterClassStatic(const K& k, const V& v) const
 {
 	lua_getglobal(m_state, ScriptClass<T>::className);
 	const int top = lua_gettop(m_state);
-	esl::LuaTable metaTable(m_state, top);
+	LuaTable metaTable(m_state, top);
 	metaTable.Set(k, v);
 	lua_pop(m_state, 1); // getglobal
 }
 
 template<typename T>
-esl::LuaTable ScriptState::GetClassTable() const
+LuaTable ScriptState::GetClassTable() const
 {
 	lua_getglobal(m_state, ScriptClass<T>::className);
 	const int top = lua_gettop(m_state);
-	esl::LuaTable metaTable(m_state, top);
+	LuaTable metaTable(m_state, top);
 	lua_pop(m_state, 1); // getglobal
 	return metaTable;
 }
@@ -158,14 +158,14 @@ decltype(auto) ScriptState::GetClassStatic(const K& k) const
 {
 	lua_getglobal(m_state, ScriptClass<T>::className);
 	const int top = GetStackTop();
-	esl::LuaTable metaTable(m_state, top);
+	LuaTable metaTable(m_state, top);
 	return metaTable.Get<V>(k);
 }
 
 template<typename R, typename ... Args>
 decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 {
-	using FuncSignature = esl::runtime::FunctionCall<R, Args...>;
+	using FuncSignature = runtime::FunctionCall<R, Args...>;
 	lua_getglobal(m_state, name);
 	const int top = GetStackTop();
 	return FuncSignature::Invoke(m_state, top, std::forward<Args>(args)...);		
@@ -179,10 +179,10 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 #define _ESL_PUSH_INHERIT_PARENT(x)
 #define _ESL_PUSH_BY_REF(x)			/* usage: BY_REF */
 #define _ESL_PUSH_BY_VALUE(x)		/* usage: BY_VALUE */ \
-	template<> struct esl::LuaTypeByVal<x> : std::true_type {};
+	template<> struct LuaTypeByVal<x> : std::true_type {};
 
 #define _ESL_PUSH_REF_PTR(x)			/* usage: REF_PTR */ \
-	template<> struct esl::LuaTypeRefCountedObj<x> : std::true_type {};
+	template<> struct LuaTypeRefCountedObj<x> : std::true_type {};
 
 #define ESL_CLASS_MEMBER(Name) 		(&BindClass::Name)
 #define ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
@@ -190,8 +190,8 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 #define ESL_APPLY_TRAITS(...)		, __VA_ARGS__
 
 // type name definition
-#define ESL_ALIAS_TYPE(x, n) \
-	template<> inline const char* esl::LuaTypeAlias<x, false>::value = n;
+#define _ESL_ALIAS_TYPE(x, n) \
+	template<> inline const char* LuaTypeAlias<x, false>::value = n;
 
 #define ESL_ENUM(x) // it was LuaTypeAlias before but now left as placeholder macro for future use only
 
@@ -209,28 +209,50 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 	EventName##Caller.Invoke(__VA_ARGS__)
 
 // Basic type binder
-#define EQSCRIPT_BIND_TYPE_BASICS(Class, name, pushtype) \
-	ESL_ALIAS_TYPE(Class, name) \
-	template<> inline const char esl::ScriptClass<Class>::className[] = name; \
-	_ESL_PUSH_##pushtype(Class)
+#define _ESL_BIND_TYPE_BASICS(Class, name, pushType, baseName, baseTypeInfo) \
+	namespace esl { \
+	template<> inline const char ScriptClass<Class>::className[] = name; \
+	template<> inline const char* ScriptClass<Class>::baseClassName = baseName; \
+	template<> inline TypeInfo ScriptClass<Class>::baseClassTypeInfo = baseTypeInfo; \
+	_ESL_ALIAS_TYPE(Class, ScriptClass<Class>::className) \
+	_ESL_PUSH_##pushType(Class) \
+	}
+
+#define _ESL_TYPE_PUSHGET(Class) \
+	namespace esl::runtime { \
+	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
+	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
+	} \
 
 // Binder for class without parent type that was bound
-#define EQSCRIPT_BIND_TYPE_NO_PARENT(Class, name, pushtype) \
-	EQSCRIPT_BIND_TYPE_BASICS(Class, name, pushtype) \
-	template<> inline const char* esl::ScriptClass<Class>::baseClassName = nullptr; \
-	template<> inline esl::TypeInfo esl::ScriptClass<Class>::baseClassTypeInfo = {};
+#define EQSCRIPT_BIND_TYPE_NO_PARENT(Class, name, pushType) \
+	_ESL_BIND_TYPE_BASICS(\
+		  Class \
+		, name \
+		, pushType \
+		, nullptr \
+		, {} \
+	)
 
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name) \
-	EQSCRIPT_BIND_TYPE_BASICS(Class, name, INHERIT_PARENT) \
-	template<> inline const char* esl::ScriptClass<Class>::baseClassName = esl::ScriptClass<ParentClass>::className; \
-	template<> inline esl::TypeInfo esl::ScriptClass<Class>::baseClassTypeInfo = esl::ScriptClass<ParentClass>::GetTypeInfo();
+	_ESL_BIND_TYPE_BASICS(\
+		  Class \
+		, name \
+		, INHERIT_PARENT \
+		, ScriptClass<ParentClass>::className \
+		, ScriptClass<ParentClass>::GetTypeInfo() \
+	)
 
 // Binder for class that has bound parent class
-#define EQSCRIPT_BIND_TYPE_WITH_PARENT_EX(Class, ParentClass, name, pushtype) \
-	EQSCRIPT_BIND_TYPE_BASICS(Class, name, pushtype) \
-	template<> inline const char* esl::ScriptClass<Class>::baseClassName = esl::ScriptClass<ParentClass>::className; \
-	template<> inline esl::TypeInfo esl::ScriptClass<Class>::baseClassTypeInfo = esl::ScriptClass<ParentClass>::GetTypeInfo();
+#define EQSCRIPT_BIND_TYPE_WITH_PARENT_EX(Class, ParentClass, name, pushType) \
+	_ESL_BIND_TYPE_BASICS(\
+		  Class \
+		, name \
+		, pushType \
+		, ScriptClass<ParentClass>::className \
+		, ScriptClass<ParentClass>::GetTypeInfo() \
+	)
 
 // Constructor([ ArgT1, ArgT2, ...ArgTN ])
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
@@ -289,18 +311,16 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 
 // Begin binding of members
 #define EQSCRIPT_TYPE_BEGIN(Class) \
-	namespace esl::runtime { \
-	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
-	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
-	} \
-	template<> ArrayCRef<esl::Member> esl::bindings::ClassBinder<Class>::GetMembers() { \
-		esl::bindings::BaseClassStorage::Add<BindClass>();\
+	_ESL_TYPE_PUSHGET(Class) \
+	namespace esl::bindings { \
+	template<> ArrayCRef<Member> ClassBinder<Class>::GetMembers() { \
+		BaseClassStorage::Add<BindClass>();\
 		static Member members[] = { \
 			MakeDestructor(),
 
 // End member binding
 #define EQSCRIPT_TYPE_END	\
-			{} /* default/end element */ \
 		}; \
-		return ArrayCRef<Member>(members, elementsOf(members) - 1); \
-	}
+		return members; \
+	} \
+	} // namespace esl::bindings
