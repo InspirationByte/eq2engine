@@ -58,13 +58,13 @@ public:
 	virtual ~ConCommandBase();
 
 	// Names, descs, flags
-	const char*		GetName()	const	{return m_szName;}
-	const char*		GetDesc()	const	{return m_szDesc;}
-	int				GetFlags()	const	{return m_nFlags;}
+	const char*		GetName() const	{ return m_szName; }
+	const char*		GetDesc() const	{ return m_szDesc; }
+	int				GetFlags() const { return m_nFlags; }
 
-	bool			IsConVar( void )		const	{return (m_nFlags & CMDBASE_CONVAR) > 0;}
-	bool			IsConCommand( void )	const	{return (m_nFlags & CMDBASE_CONCOMMAND) > 0;}
-	bool			IsRegistered( void )	const	{return m_bIsRegistered;}
+	bool			IsConVar() const	{ return (m_nFlags & CMDBASE_CONVAR); }
+	bool			IsConCommand() const { return (m_nFlags & CMDBASE_CONCOMMAND); }
+	bool			IsRegistered() const { return m_bIsRegistered; }
 
     static void		Register( ConCommandBase* pBase );
 	static void		Unregister( ConCommandBase* pBase );
@@ -72,10 +72,8 @@ public:
 	bool			HasVariants() const;
 	void			GetVariants(Array<EqString>& list, const char* query) const;
 
-	void			SetVariantsCallback(CMDBASE_VARIANTS_CALLBACK fnVariants) {m_fnVariantsList = fnVariants;}
-
+	void			SetVariantsCallback(CMDBASE_VARIANTS_CALLBACK fnVariants) { m_fnVariantsList = fnVariants; }
 protected:
-
 	const char*					m_szName{ nullptr };
 	const char*					m_szDesc{ cmdDefaultDescString };
 	CMDBASE_VARIANTS_CALLBACK	m_fnVariantsList{ nullptr };

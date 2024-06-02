@@ -13,7 +13,7 @@ class ConVar;
 class ConCommand;
 class ConCommandBase;
 
-typedef bool (*cmdFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
+typedef bool (*cmdFilterFn_t)(const ConCommandBase* pCmd, Array<EqString>& args);
 using ConCommandListRef = ArrayCRef<ConCommandBase*>;
 
 class IConsoleCommands : public IEqCoreModule

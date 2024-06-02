@@ -17,7 +17,7 @@ EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 constexpr EqStringRef s_commandSeparators = ";\n";
 constexpr EqStringRef s_commandsConfigFileExt = "cfg";
 
-static bool IsAllowedToExecute(ConCommandBase* base)
+static bool IsAllowedToExecute(const ConCommandBase* base)
 {
 	if (base->GetFlags() & CV_PROTECTED)
 		return false;
@@ -492,7 +492,7 @@ void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 		SplitCommandForValidArguments(cmdStr, cmdArgs);
 
 		// executing file must be put to the command buffer in proper order
-		if (cmdArgs.numElem() && !cmdArgs[0].CompareCaseIns("exec"))
+		if (cmdArgs.numElem() && !cmdArgs.front().CompareCaseIns("exec"))
 		{
 			cmdArgs.removeIndex(0);
 			CC_exec_f(nullptr, cmdArgs);
@@ -576,7 +576,7 @@ void CConsoleCommands::ResetCounter()
 	m_sameCommandsExecuted = 0;
 }
 
-struct execOptions_t
+struct ExecOptions
 {
 	cmdFilterFn_t filterFn;
 	Array<EqString>* failedCmds;
@@ -585,38 +585,34 @@ struct execOptions_t
 
 void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 {
-	execOptions_t* options = (execOptions_t*)extra;
+	if(!str || !len)
+		return;
+
+	ExecOptions* options = (ExecOptions*)extra;
 	ASSERT(options);
 
-	EqString commandStr(str, len);
-	Array<EqString> cmdArgs(PP_SL);
+	const EqString commandStr(str, len);
 
-	// split it
+	Array<EqString> cmdArgs(PP_SL);
 	SplitCommandForValidArguments(commandStr, cmdArgs);
 
 	if (cmdArgs.numElem() == 0)
 		return;
 
-	ConCommandBase* pBase = (ConCommandBase*)FindBase(cmdArgs[0].GetData());
-
+	const ConCommandBase* pBase = FindBase(cmdArgs.front());
 	if (!pBase) //Failed?
 	{
 		if (!options->quiet)
-			MsgError("Unknown command or variable '%s'\n", cmdArgs[0].GetData());
+			MsgError("Unknown command or variable '%s'\n", cmdArgs.front().ToCString());
 
 		if (options->failedCmds)
 			options->failedCmds->append(commandStr);
+
 		return;
 	}
 
-	if (options->filterFn)
-	{
-		if (!(options->filterFn)(pBase, cmdArgs))
-			return;
-	}
-
-	// remove cmd name
-	cmdArgs.removeIndex(0);
+	if (options->filterFn && !(options->filterFn)(pBase, cmdArgs))
+		return;
 
 	if (!IsAllowedToExecute(pBase))
 	{
@@ -624,24 +620,29 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 		return;
 	}
 
-	if (pBase->IsConVar())
+	// remove cmd name
+	cmdArgs.removeIndex(0);
+	if (pBase->IsConCommand())
 	{
-		ConVar* pConVar = (ConVar*)pBase;
+		static_cast<const ConCommand*>(pBase)->DispatchFunc(cmdArgs);
+	}
+	else if(pBase->IsConVar())
+	{
+		const ConVar* pConVar = static_cast<const ConVar*>(pBase);
 
-		// Primitive executor tries to find optional arguments
 		if (cmdArgs.numElem() == 0)
 		{
 			MsgInfo("%s is '%s' (default value is '%s')\n", pConVar->GetName(), pConVar->GetString(), pConVar->GetDefaultValue());
 			return;
 		}
 
-		pConVar->SetValue(cmdArgs[0].GetData());
+		const_cast<ConVar*>(pConVar)->SetValue(cmdArgs.front());
+
 		Msg("%s set to '%s'\n", pConVar->GetName(), pConVar->GetString());
 	}
 	else
 	{
-		ConCommand* pConCommand = (ConCommand*)pBase;
-		pConCommand->DispatchFunc(cmdArgs);
+		ASSERT_FAIL("ConCommand %s has invalid flags", pBase->GetName());
 	}
 }
 
@@ -665,7 +666,7 @@ bool CConsoleCommands::ExecuteCommandBuffer(cmdFilterFn_t filterFn, bool quiet, 
 	if (strlen(m_currentCommands) <= 0)
 		return false;
 
-	execOptions_t options;
+	ExecOptions options;
 	options.filterFn = filterFn;
 	options.failedCmds = failedCmds;
 	options.quiet = quiet;
