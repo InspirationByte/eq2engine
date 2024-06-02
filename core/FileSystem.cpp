@@ -223,15 +223,14 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	m_editorMode = bEditorMode;
 
-	KVSection* pFilesystem = g_eqCore->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
-
-	if (!pFilesystem)
+	const KVSection* fsConfig = g_eqCore->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
+	if (!fsConfig)
 	{
 		Msg("E2.CONFIG missing FileSystemDirectories section!\n");
 		return false;
 	}
 
-	const char* workDir = KV_GetValueString(pFilesystem->FindSection("WorkDir"), 0, nullptr);
+	const char* workDir = KV_GetValueString(fsConfig->FindSection("WorkDir"), 0, nullptr);
 	if (workDir)
 	{
 #ifdef _WIN32
@@ -241,13 +240,16 @@ bool CFileSystem::Init(bool bEditorMode)
 #endif // _WIN32
 	}
 
-	m_basePath = KV_GetValueString(pFilesystem->FindSection("BasePath"), 0, m_basePath);
+	const char* basePathStr = KV_GetValueString(fsConfig->FindSection("BasePath"), 0, nullptr);
+	if(basePathStr)
+		SetBasePath(basePathStr);
 
 	if(m_basePath.Length() > 0)
+	{
 		MsgInfo("* Base directory: %s\n", m_basePath.GetData());
+	}
 
-	m_dataDir = KV_GetValueString(pFilesystem->FindSection("EngineDataDir"), 0, "EngineBase" );
-
+	m_dataDir = KV_GetValueString(fsConfig->FindSection("EngineDataDir"), 0, "EngineBase" );
 	MsgInfo("* Engine Data directory: %s\n", m_dataDir.GetData());
 
 	if(!m_editorMode)
@@ -259,7 +261,7 @@ bool CFileSystem::Init(bool bEditorMode)
 		if (gamePath)
 			AddSearchPath("$GAME$", gamePath);
 		else
-			AddSearchPath("$GAME$", (const char*)KV_GetValueString(pFilesystem->FindSection("DefaultGameDir"), 0, "DefaultGameDir_MISSING"));
+			AddSearchPath("$GAME$", (const char*)KV_GetValueString(fsConfig->FindSection("DefaultGameDir"), 0, "DefaultGameDir_MISSING"));
 
 		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
 
@@ -274,14 +276,10 @@ bool CFileSystem::Init(bool bEditorMode)
 		 
 	}
 
-	for(int i = 0; i < pFilesystem->keys.numElem(); i++)
+	for(KVKeyIterator it(fsConfig, "AddPackage"); !it.atEnd(); ++it)
 	{
-		if(!stricmp(pFilesystem->keys[i]->name, "AddPackage" ))
-		{
-			ESearchPath packageSearchPathFlag = GetSearchPathByName(KV_GetValueString(pFilesystem->keys[i], 1, "SP_MOD"));
-
-			AddPackage(KV_GetValueString(pFilesystem->keys[i]), packageSearchPathFlag, KV_GetValueString(pFilesystem->keys[i], 2, nullptr));
-		}
+		const ESearchPath type = GetSearchPathByName(KV_GetValueString(*it, 1, "SP_MOD"));
+		AddPackage(KV_GetValueString(*it), type, KV_GetValueString(*it, 2, nullptr));
 	}
 
 	m_isInit = true;
@@ -312,15 +310,15 @@ void CFileSystem::Shutdown()
 
 void CFileSystem::SetBasePath(const char* path) 
 { 
-	m_basePath = path; 
+	m_basePath = path;
+	m_basePath.Path_FixSlashes();
+
+	if(m_basePath[m_basePath.Length()-1] != CORRECT_PATH_SEPARATOR)
+		m_basePath.Append(CORRECT_PATH_SEPARATOR);
 }
 
 EqString CFileSystem::FindFilePath(const char* filename, int searchFlags /*= -1*/) const
 {
-	EqString basePath = m_basePath;
-	if (basePath.Length() > 0) // FIXME: is that correct?
-		basePath.Append(CORRECT_PATH_SEPARATOR);
-
 	EqString existingFilePath;
 
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
@@ -368,10 +366,6 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 
 	const bool isWrite = modeFlags & (COSFile::APPEND | COSFile::WRITE);
 
-	EqString basePath = m_basePath;
-	if (basePath.Length() > 0) // FIXME: is that correct?
-		basePath.Append(CORRECT_PATH_SEPARATOR);
-
 	IFilePtr fileHandle;
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
@@ -397,7 +391,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 				continue;
 
 			EqString pkgFileName;
-			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + m_basePath.Length()))
 				continue;
 
 			// package readers do not support base path, get rid of it
@@ -499,10 +493,6 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 {
-	EqString basePath = m_basePath;
-	if (basePath.Length() > 0) // FIXME: is that correct?
-		basePath.Append(CORRECT_PATH_SEPARATOR);
-
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
 		if (access(filePath, F_OK) != -1)
@@ -517,7 +507,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 				continue;
 
 			EqString pkgFileName;
-			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + m_basePath.Length()))
 				continue;
 
 			// package readers do not support base path, get rid of it
@@ -534,24 +524,19 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 {
 	EqString searchPath;
-
-	EqString basePath = m_basePath;
-	if (basePath.Length() > 0)
-		basePath.Append(CORRECT_PATH_SEPARATOR);
-
 	switch (search)
 	{
 		case SP_DATA:
-			CombinePath(searchPath, basePath.ToCString(), m_dataDir.ToCString());
+			CombinePath(searchPath, m_basePath, m_dataDir);
 			break;
 		case SP_MOD:
 			if(directoryId == -1) // default write path
-				CombinePath(searchPath, basePath.ToCString(), GetCurrentGameDirectory());
+				CombinePath(searchPath, m_basePath, GetCurrentGameDirectory());
 			else
-				CombinePath(searchPath, basePath.ToCString(), m_directories[directoryId]->path.ToCString());
+				CombinePath(searchPath, m_basePath, m_directories[directoryId]->path);
 			break;
 		case SP_ROOT:
-			searchPath = basePath.ToCString();
+			searchPath = m_basePath;
 			break;
 		default:
 			searchPath = ".";
@@ -610,11 +595,6 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		flags = SP_MOD | SP_DATA | SP_ROOT;
 
 	const bool isAbsolutePath = UTIL_IsAbsolutePath(fileName);
-
-	EqString basePath = m_basePath;
-	if (!isAbsolutePath && basePath.Length() > 0) // FIXME: is that correct?
-		basePath.Append(CORRECT_PATH_SEPARATOR);
-
 	if (isAbsolutePath)
 		flags = SP_ROOT;
 
@@ -624,7 +604,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		for (const SearchPathInfo* spInfo : m_directories)
 		{
 			EqString filePath;
-			CombinePath(filePath, basePath.ToCString(), spInfo->path.ToCString(), fileName);
+			CombinePath(filePath, m_basePath, spInfo->path, fileName);
 			filePath.Path_FixSlashes();
 
 #ifdef PLAT_LINUX
@@ -646,7 +626,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	if (flags & SP_DATA)
 	{
 		EqString filePath;
-		CombinePath(filePath, basePath, m_dataDir, fileName);
+		CombinePath(filePath, m_basePath, m_dataDir, fileName);
 		filePath.Path_FixSlashes();
 
 		if (func(filePath, SP_DATA, flags, false))
@@ -662,7 +642,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		if(isAbsolutePath)
 			filePath = fileName;
 		else
-			CombinePath(filePath, basePath, fileName);
+			CombinePath(filePath, m_basePath, fileName);
 		filePath.Path_FixSlashes();
 
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
@@ -747,10 +727,6 @@ void CFileSystem::RemovePackage(const char* packageName)
 // opens package for further reading. Does not add package as FS layer
 IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int searchFlags)
 {
-	EqString basePath = m_basePath;
-	if (basePath.Length() > 0) // FIXME: is that correct?
-		basePath.Append(CORRECT_PATH_SEPARATOR);
-
 	CBasePackageReader* reader = GetPackageReader(packageName);
 
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
@@ -767,7 +743,7 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 				continue;
 
 			EqString pkgFileName;
-			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + m_basePath.Length()))
 				continue;
 
 			// trying to open package file inside package (embedded DPK)
@@ -813,7 +789,7 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
 	for (const SearchPathInfo* spInfo : m_directories)
 	{
-		if(spInfo->id == EqStringRef(pathId))
+		if(spInfo->id == pathId)
 		{
 			ErrorMsg("AddSearchPath Error: pathId %s already added", pathId);
 			return;
@@ -845,7 +821,7 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 		Array<EqString> openSet(PP_SL);
 		openSet.reserve(5000);
 
-		openSet.append(spInfo.path);
+		CombinePath(openSet.append(), m_basePath, spInfo.path);
 
 		while(openSet.numElem())
 		{
