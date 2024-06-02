@@ -96,7 +96,7 @@ Panel* CUIManager::GetRootPanel() const
 }
 
 // the element loader
-void CUIManager::RegisterFactory(const char* name, EQUICONTROLFACTORYFN factory)
+void CUIManager::RegisterFactory(const char* name, ControlFactoryFunc factory)
 {
 	for(int i = 0; i < m_controlFactory.numElem(); i++)
 	{
@@ -107,7 +107,7 @@ void CUIManager::RegisterFactory(const char* name, EQUICONTROLFACTORYFN factory)
 		}
 	}
 
-	ctrlFactory_t& fac = m_controlFactory.append();
+	ControlFactory& fac = m_controlFactory.append();
 	fac.factory = factory;
 	fac.name = name;	
 }

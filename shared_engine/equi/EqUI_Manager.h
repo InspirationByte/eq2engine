@@ -93,8 +93,7 @@ private:
 extern CStaticAutoPtr<CUIManager> Manager;
 };
 
-#define EQUI_FACTORY(name) \
-	s_equi_##name##_f
+#define EQUI_FACTORY(name) s_equi_##name##_f
 
 #define EQUI_REGISTER_CONTROL(name)				\
 	extern equi::IUIControl* EQUI_FACTORY(name)();	\
@@ -112,12 +111,12 @@ extern CStaticAutoPtr<CUIManager> Manager;
 #else	// let's not get doomed by GCC thingy
 #	define EQUI_CONTROL_DECLARATION(name) \
 		namespace equi {\
-			equi::IUIControl* s_equi_##name##_f(); \
+			equi::IUIControl* EQUI_FACTORY(name)(); \
 		}
 
 #	define DECLARE_EQUI_CONTROL(name, classname) \
 		namespace equi{\
-			equi::IUIControl* s_equi_##name##_f() {return PPNew equi::classname();} \
+			equi::IUIControl* EQUI_FACTORY(name)() {return PPNew equi::classname();} \
 		}
 
 #	define EQUI_REGISTER_CONTROL2(name) \
