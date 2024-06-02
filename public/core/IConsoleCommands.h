@@ -12,16 +12,14 @@ class EqString;
 class ConVar;
 class ConCommand;
 class ConCommandBase;
-
-typedef bool (*cmdFilterFn_t)(const ConCommandBase* pCmd, Array<EqString>& args);
+using CommandFilterFn = bool (*)(const ConCommandBase* pCmd, ArrayCRef<EqString> args);
 using ConCommandListRef = ArrayCRef<ConCommandBase*>;
 
 class IConsoleCommands : public IEqCoreModule
 {
+	friend class ConCommandBase;
 public:
 	CORE_INTERFACE("E2_ConsoleCommands_005")
-
-		friend class ConCommandBase;
 
 	virtual void					RegisterCommand(ConCommandBase* pCmd) = 0;
 	virtual void					UnregisterCommand(ConCommandBase* pCmd) = 0;
@@ -49,7 +47,7 @@ public:
 	virtual void					ResetCounter() = 0;
 
 	// Executes command buffer
-	virtual bool					ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false, Array<EqString>* failedCmds = nullptr) = 0;
+	virtual bool					ExecuteCommandBuffer(CommandFilterFn filterFn = nullptr, bool quiet = false, Array<EqString>* failedCmds = nullptr) = 0;
 };
 
 INTERFACE_SINGLETON(IConsoleCommands, CConsoleCommands, g_consoleCommands)

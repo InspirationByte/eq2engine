@@ -99,7 +99,7 @@ int	CCommandLine::GetArgumentCount() const
 	return m_args.numElem();
 }
 
-void CCommandLine::ExecuteCommandLine(cmdLineFilterFn_t filterFn /*= nullptr*/) const
+void CCommandLine::ExecuteCommandLine(CommandFilterFn filterFn /*= nullptr*/) const
 {
 	if(!m_args.numElem())
 		return;
@@ -116,8 +116,6 @@ void CCommandLine::ExecuteCommandLine(cmdLineFilterFn_t filterFn /*= nullptr*/) 
 		g_consoleCommands->SetCommandBuffer(EqString::Format("%s %s", cmdOrCvarStr + 1, GetArgumentsOf(i)));
 		g_consoleCommands->ExecuteCommandBuffer(filterFn);
 	}
-
-	//g_consoleCommands->ExecuteCommandBuffer(CmdFilterFlags);
 }
 
 const char* CCommandLine::GetArgumentString(int index) const

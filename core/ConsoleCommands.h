@@ -60,7 +60,7 @@ public:
 	void					ResetCounter();
 
 	// Executes command buffer
-	bool					ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false, Array<EqString>* failedCmds = nullptr);
+	bool					ExecuteCommandBuffer(CommandFilterFn filterFn = nullptr, bool quiet = false, Array<EqString>* failedCmds = nullptr);
 
 	//-------------------------
 	bool					IsInitialized() const { return true; }

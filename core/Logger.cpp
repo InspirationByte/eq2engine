@@ -122,7 +122,7 @@ DECLARE_CONCOMMAND_FN(developer)
 
 	for(int i = 0; i < CMD_ARGC; i++)
 	{
-		EqString& str = CMD_ARGV(i);
+		const EqString& str = CMD_ARGV(i);
 
 		if( !str.CompareCaseIns("disable"))
 		{

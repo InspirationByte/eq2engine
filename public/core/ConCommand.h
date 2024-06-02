@@ -9,12 +9,12 @@
 #include "ConCommandBase.h"
 
 class ConCommand;
-#define CONCOMMAND_ARGUMENTS const ConCommand* cmd, Array<EqString>& args
+#define CONCOMMAND_ARGUMENTS const ConCommand* cmd, ArrayCRef<EqString> args
 
 // use this to access variables inside callback
-#define CMD_ARGV(index)		args.ptr()[index]
+#define CMD_ARGV(index)		args[index]
 #define CMD_ARGC			args.numElem()
-#define CMD_ARG_CONCAT(val)	{for(int i = 0; i < CMD_ARGC; i++) val = val + CMD_ARGV(i) + ' ';}
+#define CMD_ARG_CONCAT(val)	{ for(const auto& arg: args) val.Append(CMD_ARGV(i)); val.Append(' '); }
 
 typedef void (*CON_COMMAND_CALLBACK)(CONCOMMAND_ARGUMENTS);
 
@@ -31,7 +31,7 @@ public:
 	}
 
 	// Command execution
-	void DispatchFunc(Array<EqString>& args) const;
+	void DispatchFunc(ArrayCRef<EqString> args) const;
 
 private:
 	CON_COMMAND_CALLBACK m_fnCallback;

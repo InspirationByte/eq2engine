@@ -10,7 +10,7 @@
 // WARNING: this function declaration is compatible with cmdFilterFn_t
 class ConCommandBase;
 class EqString;
-typedef bool (*cmdLineFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
+using CommandFilterFn = bool (*)(const ConCommandBase* pCmd, ArrayCRef<EqString> args);
 
 class ICommandLine : public IEqCoreModule
 {
@@ -20,7 +20,7 @@ public:
 	virtual void			Init(const char* pszCommandLine) = 0;
 	virtual void			DeInit() = 0;
 
-	virtual void			ExecuteCommandLine(cmdLineFilterFn_t func = nullptr) const = 0;
+	virtual void			ExecuteCommandLine(CommandFilterFn func = nullptr) const = 0;
 
 	virtual int				FindArgument(const char* arg, int startfrom = 0) const = 0;
 

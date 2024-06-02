@@ -11,13 +11,13 @@
 class CCommandLine : public ICommandLine
 {
 public:
-						CCommandLine();
-						~CCommandLine();
+	CCommandLine();
+	~CCommandLine();
 
 	void				Init(const char* pszCommandLine);
 	void				DeInit();
 
-	void				ExecuteCommandLine(cmdLineFilterFn_t func = nullptr) const;
+	void				ExecuteCommandLine(CommandFilterFn func = nullptr) const;
 
 	const char*			GetArgumentString(int index) const;
 	int					FindArgument(const char* arg, int startfrom = 0)  const;

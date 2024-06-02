@@ -578,7 +578,7 @@ void CConsoleCommands::ResetCounter()
 
 struct ExecOptions
 {
-	cmdFilterFn_t filterFn;
+	CommandFilterFn filterFn;
 	Array<EqString>* failedCmds;
 	bool quiet;
 };
@@ -647,7 +647,7 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 }
 
 // Executes command buffer
-bool CConsoleCommands::ExecuteCommandBuffer(cmdFilterFn_t filterFn, bool quiet, Array<EqString>* failedCmds)
+bool CConsoleCommands::ExecuteCommandBuffer(CommandFilterFn filterFn, bool quiet, Array<EqString>* failedCmds)
 {
 	SortCommands();
 
