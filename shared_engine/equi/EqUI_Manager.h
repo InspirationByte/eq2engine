@@ -18,27 +18,19 @@ namespace equi
 class IUIControl;
 class Panel;
 
-typedef IUIControl* (*EQUICONTROLFACTORYFN)();
+using ControlFactoryFunc = IUIControl* (*)();
 
-struct ctrlFactory_t
+struct ControlFactory
 {
-	const char* name;
-	EQUICONTROLFACTORYFN factory;
-};
-
-typedef bool (*EQUICOMMANDPROCESSOR)(Array<EqString>& args);
-
-struct commandProcFn_t
-{
-	const char* name;
-	EQUICOMMANDPROCESSOR func;
+	const char*			name;
+	ControlFactoryFunc	factory;
 };
 
 class CUIManager
 {
 public:
-						CUIManager();
-						~CUIManager();
+	CUIManager();
+	~CUIManager();
 
 	void				Init();
 	void				Shutdown();
@@ -46,7 +38,7 @@ public:
 	equi::Panel*		GetRootPanel() const;
 
 	// the element loader
-	void				RegisterFactory(const char* name, EQUICONTROLFACTORYFN factory);
+	void				RegisterFactory(const char* name, ControlFactoryFunc factory);
 
 	IUIControl*			CreateElement( const char* pszTypeName );
 
@@ -90,12 +82,12 @@ private:
 
 	Array<equi::Panel*>		m_panels{ PP_SL };
 
-	IAARectangle				m_viewFrameRect;
+	IAARectangle			m_viewFrameRect;
 	IMaterial*				m_material;
 
 	IEqFont*				m_defaultFont;
 
-	Array<ctrlFactory_t>	m_controlFactory{ PP_SL };
+	Array<ControlFactory>	m_controlFactory{ PP_SL };
 };
 
 extern CStaticAutoPtr<CUIManager> Manager;
