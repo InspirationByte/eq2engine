@@ -241,6 +241,7 @@ public:
 	ArrayBase(const PPSourceLine& sl, int granularity = 16);
 	ArrayBase(const ArrayBase& other);
 	ArrayBase(ArrayBase&& other);
+	ArrayBase(std::initializer_list<T> list, const PPSourceLine& sl, int granularity = 16);
 
 	~ArrayBase<T, STORAGE_TYPE>();
 
@@ -427,6 +428,15 @@ inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(ArrayBase&& other)
 {
 	m_nNumElem = other.m_nNumElem;
 	other.m_nNumElem = 0;
+}
+
+template< typename T, typename STORAGE_TYPE >
+inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(std::initializer_list<T> list, const PPSourceLine& sl, int granularity)
+	: STORAGE_TYPE(sl, granularity)
+{
+	reserve(static_cast<int>(list.size()));
+	for (auto& item : list)
+		append(item);
 }
 
 template< typename T, typename STORAGE_TYPE >
