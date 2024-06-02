@@ -286,6 +286,8 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<Spline>::GetTypeInfo();
 
+		EXPECT_EQ(typeInfo.isByVal, false);
+
 		EXPECT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
 
 		// check constructors
@@ -318,6 +320,8 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<TerrainSpline>::GetTypeInfo();
 
+		EXPECT_EQ(typeInfo.isByVal, false);
+
 		// TEST: base class matching
 		EXPECT_EQ(typeInfo.base->className, typeInfo.baseClassName);
 
@@ -328,6 +332,13 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 		EXPECT_EQ(typeInfo.members[1].type, esl::MEMB_CTOR);
 		EXPECT_EQ(typeInfo.members[2].type, esl::MEMB_CTOR);
 		EXPECT_EQ(EqStringRef(typeInfo.members[2].signature), EqStringRef("number,string,Spline"));
+	}
+
+	// TEST: validate binder byVal of type info
+	{
+		esl::TypeInfo typeInfo = esl::ScriptClass<Vector2D>::GetTypeInfo();
+
+		EXPECT_EQ(typeInfo.isByVal, true);
 	}
 }
 
@@ -1088,9 +1099,9 @@ struct BindTest
 
 // _ESL_BIND_TYPE_BASICS
 namespace esl {
-	template<> inline const char* esl::LuaTypeAlias<BindTest, false>::value = "BindTest"; 
 	template<> struct LuaTypeByVal<BindTest> : std::true_type {}; 
 	template<> inline const char ScriptClass<BindTest>::className[] = "BindTest";
+	template<> inline const char* LuaTypeAlias<BindTest, false>::value = ScriptClass<BindTest>::className;
 	template<> inline const char* ScriptClass<BindTest>::baseClassName = nullptr;
 	template<> inline TypeInfo ScriptClass<BindTest>::baseClassTypeInfo = {};
 }
