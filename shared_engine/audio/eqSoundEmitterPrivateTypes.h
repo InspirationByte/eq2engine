@@ -208,11 +208,13 @@ enum ESoundNodeFlags
 	SOUND_NODE_FLAG_OUTPUT = (1 << 1),
 };
 
-static constexpr const int MAX_SOUND_NODES = 32;
-
 struct SoundNodeDesc
 {
-	static constexpr const int MAX_ARRAY_IDX = 1 << 3;
+	static constexpr int NODE_ID_BITS = 5;
+	static constexpr int ARRAY_IDX_BITS = 3;
+
+	static constexpr int MAX_SOUND_NODES = 1 << NODE_ID_BITS;
+	static constexpr int MAX_ARRAY_IDX = 1 << ARRAY_IDX_BITS;
 
 	char			name[30]{ 0 };
 	uint8			type{ 0 };
@@ -237,20 +239,8 @@ struct SoundNodeDesc
 		} c;
 	};
 
-	static void UnpackInputIdArrIdx(uint8 inputId, uint& id, uint& arrayIdx)
-	{
-		// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
-		id = inputId & 31;
-		arrayIdx = inputId >> 5 & 7;
-	}
-
-	static uint8 PackInputIdArrIdx(uint id, uint arrayIdx)
-	{
-		ASSERT(id < MAX_SOUND_NODES);
-
-		// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
-		return (id & 31) | ((arrayIdx & 7) << 5);
-	}
+	static void UnpackInputIdArrIdx(uint8 inputId, uint& id, uint& arrayIdx);
+	static uint8 PackInputIdArrIdx(uint id, uint arrayIdx);
 };
 
 struct SoundNodeInput

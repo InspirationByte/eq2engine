@@ -34,11 +34,11 @@ enum EDevMsg
 using SpewFunc = void (*)(ESpewType, const char*);
 
 // console/log messages
-IEXPORTS void	LogMsgV(ESpewType spewtype, char const* pMsgFormat, va_list args);
+IEXPORTS void	LogMsgV(ESpewType spewtype, char const* fmt, va_list args);
 IEXPORTS void	LogMsg(ESpewType spewtype, char const* fmt, ...) ATTRIB_FORMAT_PRINTF(2, 3);
 
-#define _LogMsg(spewtype, fmt, ...) \
-	((void)sizeof(printf(fmt, ##__VA_ARGS__))), \
+#define _LogMsg(spewtype, fmt, ...)	\
+	PRINTF_FMT_CHECK(fmt, ##__VA_ARGS__) \
 	LogMsg(spewtype, fmt, ##__VA_ARGS__)
 
 #define Msg(fmt, ...)			_LogMsg(SPEW_NORM, fmt, ##__VA_ARGS__)

@@ -58,6 +58,22 @@ void SoundSplineDesc::Fix()
 		values[valueCount] = -F_INFINITY;
 }
 
+void SoundNodeDesc::UnpackInputIdArrIdx(uint8 inputId, uint& id, uint& arrayIdx)
+{
+	// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
+	id = inputId & (MAX_SOUND_NODES - 1);
+	arrayIdx = inputId >> NODE_ID_BITS & (MAX_ARRAY_IDX-1);
+}
+
+uint8 SoundNodeDesc::PackInputIdArrIdx(uint id, uint arrayIdx)
+{
+	ASSERT(id < MAX_SOUND_NODES);
+	ASSERT(arrayIdx < MAX_ARRAY_IDX);
+
+	// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
+	return (id & (MAX_SOUND_NODES - 1)) | ((arrayIdx & (MAX_ARRAY_IDX - 1)) << NODE_ID_BITS);
+}
+
 SoundScriptDesc::SoundScriptDesc(const char* name) 
 	: name(name)
 {
@@ -299,7 +315,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			if (nodeName == nullptr || !nodeName[0])
 			{
-				MsgError("sound script '%s' input: name is required\n");
+				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey.name);
 				continue;
 			}
 
@@ -307,7 +323,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			const int nodeIdx = nodeDescs.numElem();
 
-			ASSERT_MSG(nodeDescs.numElem()+1 < MAX_SOUND_NODES, "Too many nodes in %s", scriptDesc.name.ToCString());
+			ASSERT_MSG(nodeDescs.numElem()+1 < SoundNodeDesc::MAX_SOUND_NODES, "Too many nodes in %s", scriptDesc.name.ToCString());
 
 			SoundNodeDesc& inputDesc = nodeDescs.append();
 			strncpy(inputDesc.name, nodeName, sizeof(inputDesc.name));
@@ -327,7 +343,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			if (nodeName == nullptr || !nodeName[0])
 			{
-				MsgError("sound script '%s' mixer: name is required\n");
+				MsgError("sound script '%s' mixer: name is required\n", scriptDesc.name.ToCString());
 				continue;
 			}
 			ASSERT_MSG(scriptDesc.FindVariableIndex(nodeName) == 0xff, "Node %s was already declared", nodeName);
@@ -336,7 +352,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			int funcType = GetSoundFuncTypeByString(funcTypeName);
 			if (funcType == -1)
 			{
-				MsgError("sound script '%s' mixer: %s unknown\n", funcTypeName);
+				MsgError("sound script '%s' mixer: %s unknown func type %s\n", scriptDesc.name.ToCString(), valKey.name, funcTypeName);
 				continue;
 			}
 
@@ -411,7 +427,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					const char* inputValName = KV_GetValueString(&valKey, 2, nullptr);
 					if (!inputValName)
 					{
-						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString());
+						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), valKey.name);
 						continue;
 					}
 

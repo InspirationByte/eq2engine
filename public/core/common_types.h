@@ -76,9 +76,11 @@ static constexpr TR max(T x, T2 y) { return static_cast<TR>((x > y) ? x : y); }
 #endif
 
 #ifdef __GNUC__
-#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos) __attribute__((format(printf, fmtpos, argspos)))
+#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos)	__attribute__((format(printf, fmtpos, argspos)))
+#define PRINTF_FMT_CHECK(fmt, ...)
 #else
 #define ATTRIB_FORMAT_PRINTF(fmtpos, argspos)
+#define PRINTF_FMT_CHECK(fmt, ...)				(void)sizeof(printf(fmt, ##__VA_ARGS__)),
 #endif // __GNUC__
 
 //------------------------------------------------------------------------------------------------
