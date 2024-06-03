@@ -14,7 +14,7 @@
 class CDPKFileReader;
 class COSFile;
 
-class CDPKFileStream : public CBasePackageFileStream
+class CDPKFileStream : public IPackFileStream
 {
 	friend class CDPKFileReader;
 	friend class CFileSystem;
@@ -26,7 +26,6 @@ public:
 	VSSize				Read(void *dest, VSSize count, VSSize size);
 	VSSize				Write(const void *src, VSSize count, VSSize size);
 	VSSize				Seek(int64 nOffset, EVirtStreamSeek seekType);
-	void				Print(const char* fmt, ...);
 
 	VSSize				Tell() const;
 	VSSize				GetSize();

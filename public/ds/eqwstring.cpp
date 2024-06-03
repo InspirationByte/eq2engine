@@ -60,19 +60,19 @@ EqWString::EqWString(EqWString&& str) noexcept
 	str.m_pszString = nullptr;
 }
 
-EqWString EqWString::Format(const wchar_t* pszFormat, ...)
+EqWString EqWString::FormatF(const wchar_t* pszFormat, ...)
 {
 	EqWString newString;
 	va_list argptr;
 
 	va_start(argptr, pszFormat);
-	newString = EqWString::FormatVa(pszFormat, argptr);
+	newString = EqWString::FormatV(pszFormat, argptr);
 	va_end(argptr);
 
 	return newString;
 }
 
-EqWString EqWString::FormatVa(const wchar_t* pszFormat, va_list argptr)
+EqWString EqWString::FormatV(const wchar_t* pszFormat, va_list argptr)
 {
 	EqWString newString;
 	newString.Resize(512, false);

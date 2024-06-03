@@ -66,19 +66,19 @@ EqString::EqString(const EqWString &str, int nStart, int len)
 	Assign( str, nStart, len );
 }
 
-EqString EqString::Format(const char* pszFormat, ...)
+EqString EqString::FormatF(const char* pszFormat, ...)
 {
 	EqString newString;
 	va_list argptr;
 
 	va_start(argptr, pszFormat);
-	newString = EqString::FormatVa(pszFormat, argptr);
+	newString = EqString::FormatV(pszFormat, argptr);
 	va_end(argptr);
 
 	return newString;
 }
 
-EqString EqString::FormatVa(const char* pszFormat, va_list argptr)
+EqString EqString::FormatV(const char* pszFormat, va_list argptr)
 {
 	EqString newString;
 	newString.Resize(512, false);

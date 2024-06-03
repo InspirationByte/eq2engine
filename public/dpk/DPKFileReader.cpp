@@ -222,12 +222,6 @@ VSSize CDPKFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
 	return static_cast<VSSize>(m_curPos);
 }
 
-// fprintf analog
-void CDPKFileStream::Print(const char* fmt, ...)
-{
-	ASSERT_FAIL("CDPKFileStream does not support WRITE OPS");
-}
-
 // returns current pointer position
 VSSize CDPKFileStream::Tell() const
 {

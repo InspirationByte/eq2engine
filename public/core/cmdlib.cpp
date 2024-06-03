@@ -69,7 +69,7 @@ static void RestoreConsoleTextColor( WORD color )
 CRITICAL_SECTION g_SpewCS;
 bool g_bSpewCSInitted = false;
 
-void fnConDebugSpew(SpewType_t type,const char* text)
+void fnConDebugSpew(ESpewType type,const char* text)
 {
 	// Hopefully two threads won't call this simultaneously right at the start!
 	if ( !g_bSpewCSInitted )
@@ -135,7 +135,7 @@ void GetInitialColors()
 {
 }
 
-void fnConDebugSpew(SpewType_t type, const char *text)
+void fnConDebugSpew(ESpewType type, const char *text)
 {
     // Hopefully two threads won't call this simultaneously right at the start!
     if (!g_bSpewMutexInitted) {

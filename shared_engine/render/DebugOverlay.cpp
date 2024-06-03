@@ -174,7 +174,7 @@ void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
 
 	va_list		argptr;
 	va_start (argptr,fmt);
-	textNode.pszText = EqString::FormatVa(fmt, argptr);
+	textNode.pszText = EqString::FormatV(fmt, argptr);
 	va_end (argptr);
 #endif // ENABLE_DEBUG_DRAWING
 }
@@ -222,7 +222,7 @@ void CDebugOverlay::TextFadeOut(int position, const MColor& color,float fFadeTim
 
 	va_list		argptr;
 	va_start (argptr,fmt);
-	textNode.pszText = EqString::FormatVa(fmt, argptr);
+	textNode.pszText = EqString::FormatV(fmt, argptr);
 	va_end (argptr);
 	if(position == 0)
 	{

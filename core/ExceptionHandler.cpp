@@ -30,6 +30,10 @@ static void DoCoreExceptionCallbacks()
 #	undef near
 #endif
 
+#pragma warning(push)
+#pragma warning(disable:4477)
+#pragma warning(disable:4313)
+
 typedef struct _MODULEINFO {
 	LPVOID lpBaseOfDll;  
 	DWORD SizeOfImage; 
@@ -290,6 +294,8 @@ void UnInstallExceptionHandler()
 		MsgError("*EXH: OK\n");
 	}
 }
+
+#pragma warning(pop)
 
 #elif defined(PLAT_POSIX)
 

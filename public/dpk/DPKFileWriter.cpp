@@ -34,7 +34,7 @@ CDPKFileWriter::CDPKFileWriter(const char* mountPath, int compression, const cha
 		}
 		else
 		{
-			MsgError("CDPKFileWriter error - encryptKey size must be %d but only got %d", m_ice.keySize(), strlen(encryptKey));
+			MsgError("CDPKFileWriter error - encryptKey size must be %d but only got %d", m_ice.keySize(), (int)strlen(encryptKey));
 		}
 	}
 }

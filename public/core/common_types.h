@@ -64,15 +64,22 @@ static constexpr TR min(T x, T2 y) { return static_cast<TR>((x < y) ? x : y); }
 template <class T, class T2 = T, class TR = T>
 static constexpr TR max(T x, T2 y) { return static_cast<TR>((x > y) ? x : y); }
 
+// portable format specifiers for int64 & uint64
 #ifndef PRId64
 #ifdef _MSC_VER
 #define PRId64   "I64d"
-#define PRIu64   "I64u"
+#define PRIu64   "I64u" 
 #else
 #define PRId64   "lld"
 #define PRIu64   "llu"
 #endif
 #endif
+
+#ifdef __GNUC__
+#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos) __attribute__((format(printf, fmtpos, argspos)))
+#else
+#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos)
+#endif // __GNUC__
 
 //------------------------------------------------------------------------------------------------
 

@@ -10,7 +10,7 @@
 
 class CZipFileReader;
 
-class CZipFileStream : public CBasePackageFileStream
+class CZipFileStream : public IPackFileStream
 {
 	friend class CZipFileReader;
 	friend class CFileSystem;
@@ -21,7 +21,6 @@ public:
 	VSSize				Read(void *dest, VSSize count, VSSize size);
 	VSSize				Write(const void *src, VSSize count, VSSize size);
 	VSSize				Seek(int64 nOffset, EVirtStreamSeek seekType);
-	void				Print(const char* fmt, ...);
 	VSSize				Tell() const;
 	VSSize				GetSize() { return static_cast<VSSize>(m_uncompressedSize); }
 	bool				Flush() { return false; }

@@ -103,12 +103,6 @@ VSSize CZipFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
 	return 0;
 }
 
-// fprintf analog
-void CZipFileStream::Print(const char* fmt, ...)
-{
-	ASSERT_FAIL("CZipFileStream does not support WRITE OPS");
-}
-
 // returns current pointer position
 VSSize CZipFileStream::Tell() const
 {

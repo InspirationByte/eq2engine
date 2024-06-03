@@ -69,7 +69,10 @@ public:
 	virtual VSSize		Seek(int64 offset, EVirtStreamSeek seekType) = 0;
 
 	// fprintf analog
-	virtual	void		Print(const char* fmt, ...);
+	void				PrintF(const char* fmt, ...);
+
+	template <typename... Args>
+	void				Print(const char* pszFormat, Args&&... args);
 
 	// returns current pointer position
 	virtual VSSize		Tell() const = 0;
@@ -111,4 +114,10 @@ template<typename T, VSSize N>
 static VSSize VSWrite(IVirtualStream* stream, T(&obj)[N])
 {
 	return stream->Write(&obj, N, sizeof(T));
+}
+
+template <typename... Args>
+inline void IVirtualStream::Print(const char* pszFormat, Args&&... args)
+{
+	return PrintF(pszFormat, StrToFmt(std::forward<Args>(args))...);
 }

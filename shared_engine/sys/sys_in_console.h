@@ -52,7 +52,7 @@ class CEqConsoleInput
 public:
 	friend class CFont;
 
-	static void		SpewFunc(SpewType_t type,const char* pMsg);
+	static void		SpewFunc(ESpewType type,const char* pMsg);
 
 	static void		SpewClear();
 	static void		SpewInit();

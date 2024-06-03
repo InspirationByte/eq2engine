@@ -68,7 +68,7 @@ struct ppmem_state_t
 
 	ppallocinfo_t* first{ nullptr };
 	ppallocinfo_t* last{ nullptr };
-	size_t numAllocs{ 0 };
+	uint64 numAllocs{ 0 };
 
 	uint allocIdCounter = 0;
 	uint64 allocMemCounter = 0;
@@ -160,7 +160,7 @@ void PPMemInfo(bool fullStats)
 	CScopedMutex m(st.allocMemMutex);
 
 	size_t totalUsage = 0;
-	size_t numErrors = 0;
+	int64 numErrors = 0;
 
 	struct SLStat_t
 	{
@@ -185,9 +185,9 @@ void PPMemInfo(bool fullStats)
 #ifdef PPMEM_EXTRA_DEBUGINFO
 			const char* filename = st.sourceFileNameMap[alloc->sl.GetFileName()];
 			const int fileLine = alloc->sl.GetLine();
-			MsgInfo("alloc id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->id, filename, fileLine, curPtr, alloc->size);
+			MsgInfo("alloc id=%u, src='%s:%d', ptr=%p, size=%" PRIu64 "\n", alloc->id, filename, fileLine, curPtr, alloc->size);
 #else
-			MsgInfo("alloc id=%d, ptr=%p, size=%d\n", alloc->id, curPtr, alloc->size);
+			MsgInfo("alloc id=%u, ptr=%p, size=%" PRIu64 "\n", alloc->id, curPtr, alloc->size);
 #endif
 
 			uint* checkMark = (uint*)((ubyte*)curPtr + alloc->size);
@@ -262,15 +262,15 @@ void PPMemInfo(bool fullStats)
 			const char* filename = st.sourceFileNameMap[sl.GetFileName()];
 			const int fileLine = sl.GetLine();
 
-			MsgInfo("'%s:%d' counter: %u\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), st.sourceCounterMap[key].count);
+			MsgInfo("'%s:%d' counter: %" PRIu64 "\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), st.sourceCounterMap[key].count);
 		}
 	}
 #endif // PPMEM_EXTRA_DEBUGINFO
 
-	MsgInfo("Total %u allocactions, mem usage: %.2f MB\n", st.numAllocs, (totalUsage / 1024.0f) / 1024.0f);
+	MsgInfo("Total %" PRIu64 " allocactions, mem usage: %.2f MB\n", st.numAllocs, (totalUsage / 1024.0f) / 1024.0f);
 
 	if(numErrors > 0)
-		MsgWarning("%d allocations has overflow/underflow happened in runtime. Please print full stats to console\n", numErrors);
+		MsgWarning("%" PRIu64 " allocations has overflow/underflow happened in runtime. Please print full stats to console\n", numErrors);
 }
 
 IEXPORTS size_t	PPMemGetUsage()

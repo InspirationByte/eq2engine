@@ -16,13 +16,13 @@
 #define VSTREAM_GRANULARITY 1024 * 4	// 4kb
 
 // prints string to stream
-void IVirtualStream::Print(const char* pFmt, ...)
+void IVirtualStream::PrintF(const char* pFmt, ...)
 {
 	EqString str;
 	va_list	argptr;
 
 	va_start (argptr,pFmt);
-	str = EqString::FormatVa(pFmt, argptr);
+	str = EqString::FormatV(pFmt, argptr);
 	va_end (argptr);
 
 	Write(str.GetData(), 1, str.Length());

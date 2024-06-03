@@ -345,3 +345,28 @@ private:
 
 using EqStringRef = EqTStrRef<char>;
 using EqWStringRef = EqTStrRef<wchar_t>;
+
+template <typename T>
+decltype(auto) StrToFmt(const T& value)
+{
+	if constexpr (
+		std::is_same_v<T, EqStringRef> ||
+		std::is_same_v<T, EqWStringRef> ||
+		std::is_same_v<T, EqString> ||
+		std::is_same_v<T, EqWString>)
+	{
+		return value.ToCString();
+	}
+#if 0
+	else if constexpr (
+		std::is_same_v<T, std::string> ||
+		std::is_same_v<T, std::wstring>)
+	{
+		return value.c_str();
+	}
+#endif
+	else
+	{
+		return value;
+	}
+}

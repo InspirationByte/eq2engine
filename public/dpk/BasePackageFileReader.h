@@ -16,7 +16,7 @@ enum EPackageReaderType
 
 class CBasePackageReader;
 
-class CBasePackageFileStream : public IFile
+class IPackFileStream : public IFile
 {
 public:
 	virtual CBasePackageReader* GetHostPackage() const = 0;

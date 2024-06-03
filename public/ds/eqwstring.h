@@ -34,8 +34,11 @@ public:
 
 	EqWString(EqWString&& str) noexcept;
 
-	static EqWString Format(const wchar_t* pszFormat, ...);
-	static EqWString FormatVa(const wchar_t* pszFormat, va_list args);
+	static EqWString FormatF(const wchar_t* pszFormat, ...);
+	static EqWString FormatV(const wchar_t* pszFormat, va_list args);
+	template <typename... Args>
+	static EqWString Format(const wchar_t* pszFormat, Args&&... args);
+
 	static size_t	 ReadString(IVirtualStream* stream, EqWString& output);
 
 	bool			IsValid() const;
@@ -146,4 +149,10 @@ static size_t VSWrite(IVirtualStream* stream, const EqWString& str)
 	stream->Write(&length, 1, sizeof(uint16));
 	stream->Write(str.GetData(), sizeof(wchar_t), length);
 	return 1;
+}
+
+template <typename... Args>
+inline EqWString EqWString::Format(const wchar_t* pszFormat, Args&&... args)
+{
+	return FormatF(pszFormat, StrToFmt(std::forward<Args>(args))...);
 }

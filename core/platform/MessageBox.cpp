@@ -231,11 +231,11 @@ IEXPORTS void InfoMsg(const char* fmt, ...)
 	g_msgBoxCallback(string, "INFO", MSGBOX_INFO);
 }
 
-static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
+static void AssertLogMsg(ESpewType _dummy, const char* fmt, ...)
 {
 	va_list	argptr;
 	va_start(argptr, fmt);
-	EqString formattedStr = EqString::FormatVa(fmt, argptr);
+	EqString formattedStr = EqString::FormatV(fmt, argptr);
 	va_end(argptr);
 
 	fprintf(stdout, "%s\n", formattedStr.ToCString());
@@ -309,7 +309,7 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* exp
 	{
 		va_list argptr;
 		va_start(argptr, fmt);
-		formattedStr = EqString::FormatVa(fmt, argptr);
+		formattedStr = EqString::FormatV(fmt, argptr);
 		va_end(argptr);
 	}
 

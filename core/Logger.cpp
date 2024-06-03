@@ -174,15 +174,15 @@ DECLARE_CONCOMMAND_FN(developer)
 DECLARE_CMD_F(developer, "Sets developer modes", CV_CHEAT | CV_UNREGISTERED);
 
 // Default spew
-void DefaultSpewFunc(SpewType_t type,const char* pMsg)
+void DefaultSpewFunc(ESpewType type,const char* pMsg)
 {
 	fputs(pMsg, stdout);
 }
 
 //Spew callback
-static SpewFunc_fn g_fnConSpewFunc = DefaultSpewFunc;
+static SpewFunc g_fnConSpewFunc = DefaultSpewFunc;
 
-IEXPORTS void SetSpewFunction(SpewFunc_fn newfunc)
+IEXPORTS void SetSpewFunction(SpewFunc newfunc)
 {
 	if(newfunc == nullptr)
 		g_fnConSpewFunc = DefaultSpewFunc;
@@ -237,7 +237,7 @@ void Log_WriteBOM(const char* fileName)
 
 #define DEBUGMESSAGE_BUFFER_SIZE 2048
 
-void SpewMessage(SpewType_t spewtype, char const* msg)
+void SpewMessage(ESpewType spewtype, char const* msg)
 {
 #ifdef PLAT_ANDROID
 	const char* logTag = EQENGINE_LOG_TAG(s_spewTypeStr[spewtype]);
@@ -272,7 +272,7 @@ void SpewMessage(SpewType_t spewtype, char const* msg)
 	}
 }
 
-IEXPORTS void LogMsgV(SpewType_t spewtype, char const* pMsgFormat, va_list args)
+IEXPORTS void LogMsgV(ESpewType spewtype, char const* pMsgFormat, va_list args)
 {
 	char pTempBuffer[DEBUGMESSAGE_BUFFER_SIZE];
 
@@ -294,7 +294,7 @@ IEXPORTS void LogMsgV(SpewType_t spewtype, char const* pMsgFormat, va_list args)
 	}
 }
 
-IEXPORTS void LogMsg(SpewType_t spewtype, char const* fmt, ...)
+IEXPORTS void LogMsg(ESpewType spewtype, char const* fmt, ...)
 {
 	va_list	argptr;
 
@@ -328,8 +328,8 @@ IEXPORTS void DevMsg(int level, const char* fmt, ...)
 
 #else
 
-IEXPORTS void	LogMsgV(SpewType_t spewtype, char const* pMsgFormat, va_list args){}
-IEXPORTS void	LogMsg(SpewType_t spewtype, char const* fmt, ...) {}
+IEXPORTS void	LogMsgV(ESpewType spewtype, char const* pMsgFormat, va_list args){}
+IEXPORTS void	LogMsg(ESpewType spewtype, char const* fmt, ...) {}
 
 IEXPORTS void	DevMsgV(int level, char const* pMsgFormat, va_list args){}
 IEXPORTS void	DevMsg(int level, const char* fmt, ...){}

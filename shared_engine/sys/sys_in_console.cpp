@@ -185,14 +185,14 @@ bool IsInRectangle(int posX, int posY,int rectX,int rectY,int rectW,int rectH)
 
 struct ConMessage
 {
-	SpewType_t	type;
+	ESpewType	type;
 	EqString	text;
 };
 static Array<ConMessage*> s_spewMessages(PP_SL);
 using ConMessagePool = MemoryPool<ConMessage>;
 static ConMessagePool s_spewMessagesPool(PP_SL);
 
-void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
+void CEqConsoleInput::SpewFunc(ESpewType type, const char* pMsg)
 {
 	// print out to std console
 	printf("%s", pMsg );

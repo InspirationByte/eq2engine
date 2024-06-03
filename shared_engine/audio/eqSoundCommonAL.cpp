@@ -44,7 +44,7 @@ bool ALCheckError(const char* op, ...)
 
 		va_list argptr;
 		va_start(argptr, op);
-		EqString errorMsg = EqString::FormatVa(op, argptr);
+		EqString errorMsg = EqString::FormatV(op, argptr);
 		va_end(argptr);
 
 		if (al_break_on_error.GetBool())
