@@ -11,8 +11,7 @@
 #include "utils/RectanglePacker.h"
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
-
-static const EqString s_outputTag("%OUTPUT%");
+#include "texcooker_defs.h"
 
 unsigned long UpperPowerOfTwo(unsigned long v)
 {
@@ -417,10 +416,10 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	memset(destData, 0, destImage.GetMipMappedSize(0, destImage.GetMipMapCount()));
 
 	EqString fullMaterialPath;
-	CombinePath(fullMaterialPath, materialsPath, outputMaterialName);
-	const EqString imageFileName = fullMaterialPath + ".tga";
-	const EqString matFileName = fullMaterialPath + ".mat";
-	const EqString atlasFileName = fullMaterialPath + ".atlas";
+	fnmPathCombine(fullMaterialPath, materialsPath, outputMaterialName);
+	const EqString imageFileName = fnmPathApplyExt(fullMaterialPath, s_sourceTextureFileExt);
+	const EqString matFileName = fnmPathApplyExt(fullMaterialPath, s_materialFileExt);
+	const EqString atlasFileName = fnmPathApplyExt(fullMaterialPath, s_materialAtlasFileExt);
 
 	g_fileSystem->MakeDir(fnmPathStripName(matFileName), SP_ROOT);
 

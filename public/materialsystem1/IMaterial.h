@@ -9,6 +9,9 @@
 #include "renderers/ITexture.h"
 #include "renderers/IGPUBuffer.h"
 
+constexpr EqStringRef s_materialFileExt = "mat";
+constexpr EqStringRef s_materialAtlasFileExt = "atlas";
+
 class CTextureAtlas;
 
 struct MatVarData

@@ -7,14 +7,16 @@
 
 #pragma once
 
-#define DPK_VERSION					8
-#define DPK_PREV_VERSION			7
-#define DPK_SIGNATURE				MAKECHAR4('E','Q','P','K')
+constexpr int DPK_VERSION		= 8;
+constexpr int DPK_PREV_VERSION	= 7;
+constexpr int DPK_SIGNATURE		= MAKECHAR4('E', 'Q', 'P', 'K');
 
-#define DPK_BLOCK_MAXSIZE			(8*1024)
-#define DPK_STRING_SIZE				255
+constexpr int DPK_BLOCK_MAXSIZE	= (8 * 1024);
+constexpr int DPK_STRING_SIZE	= 255;
 
-enum EDPKFileFlags
+constexpr EqStringRef s_dpkPackageDefaultExt = "epk";
+
+enum EDPKFileFlags : int
 {
 	DPKFILE_FLAG_COMPRESSED			= (1 << 0),
 	DPKFILE_FLAG_ENCRYPTED			= (1 << 1),

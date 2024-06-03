@@ -320,7 +320,7 @@ void Sys_Android_MountFileSystem()
 	if (obbPackageName)
 	{
 		EqString packageFullPath;
-		CombinePath(packageFullPath, g_jni.obbPath.ToCString(), KV_GetValueString(obbPackageName));
+		fnmPathCombine(packageFullPath, g_jni.obbPath.ToCString(), KV_GetValueString(obbPackageName));
 		g_fileSystem->AddPackage(packageFullPath.ToCString(), SP_MOD);
 	}
 }

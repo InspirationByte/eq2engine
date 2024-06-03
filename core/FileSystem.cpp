@@ -528,13 +528,13 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 	switch (search)
 	{
 		case SP_DATA:
-			CombinePath(searchPath, m_basePath, m_dataDir);
+			fnmPathCombine(searchPath, m_basePath, m_dataDir);
 			break;
 		case SP_MOD:
 			if(directoryId == -1) // default write path
-				CombinePath(searchPath, m_basePath, GetCurrentGameDirectory());
+				fnmPathCombine(searchPath, m_basePath, GetCurrentGameDirectory());
 			else
-				CombinePath(searchPath, m_basePath, m_directories[directoryId]->path);
+				fnmPathCombine(searchPath, m_basePath, m_directories[directoryId]->path);
 			break;
 		case SP_ROOT:
 			searchPath = m_basePath;
@@ -559,7 +559,7 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 	const bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
 
 	if (!isAbsolutePath)
-		CombinePath(fullPath, GetSearchPath(search).ToCString(), dirOrFileName);
+		fnmPathCombine(fullPath, GetSearchPath(search).ToCString(), dirOrFileName);
 	else
 		fullPath = dirOrFileName;
 
@@ -605,7 +605,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		for (const SearchPathInfo* spInfo : m_directories)
 		{
 			EqString filePath;
-			CombinePath(filePath, m_basePath, spInfo->path, fileName);
+			fnmPathCombine(filePath, m_basePath, spInfo->path, fileName);
 			fnmPathFixSeparators(filePath);
 
 #ifndef _WIN32
@@ -627,7 +627,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	if (flags & SP_DATA)
 	{
 		EqString filePath;
-		CombinePath(filePath, m_basePath, m_dataDir, fileName);
+		fnmPathCombine(filePath, m_basePath, m_dataDir, fileName);
 		fnmPathFixSeparators(filePath);
 
 		if (func(filePath, SP_DATA, flags, false))
@@ -643,7 +643,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		if(isAbsolutePath)
 			filePath = fileName;
 		else
-			CombinePath(filePath, m_basePath, fileName);
+			fnmPathCombine(filePath, m_basePath, fileName);
 		fnmPathFixSeparators(filePath);
 
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
@@ -777,7 +777,7 @@ void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
 	Array<EqString> openSet(PP_SL);
 	openSet.reserve(5000);
 
-	CombinePath(openSet.append(), m_basePath, pathInfo.path);
+	fnmPathCombine(openSet.append(), m_basePath, pathInfo.path);
 
 	while (openSet.numElem())
 	{
@@ -896,7 +896,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 		while (findData->dirIndex < m_directories.numElem())
 		{
 			fsBaseDir = GetSearchPath(SP_MOD, findData->dirIndex++);
-			CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+			fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
 			if (findData->osFind.Init(searchWildcard))
 				return true;
 
@@ -911,7 +911,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 	{
 		findData->searchPaths &= ~SP_DATA;
 		fsBaseDir = GetSearchPath(SP_DATA, -1);
-		CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+		fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
 		if (findData->osFind.Init(searchWildcard))
 			return true;
 	}
@@ -921,7 +921,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 	{
 		findData->searchPaths &= ~SP_ROOT;
 		fsBaseDir = GetSearchPath(SP_ROOT, -1);
-		CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+		fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
 		if (findData->osFind.Init(searchWildcard))
 			return true;
 	}

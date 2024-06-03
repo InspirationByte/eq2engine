@@ -394,7 +394,7 @@ static void CookPackageTarget(const char* targetName)
 
 	EqString outputFileName(targetName);
 	if (fnmPathExtractExt(outputFileName).Length() == 0)
-		outputFileName.Append(".epk");
+		outputFileName = fnmPathApplyExt(outputFileName, s_dpkPackageDefaultExt);
 
 	// load target info
 	KVSection* packages = kvs.FindSection("Packages");
@@ -525,8 +525,8 @@ static void CookPackageTarget(const char* targetName)
 			IVirtualStreamPtr stream(&fileMemoryStream);
 			if (loadRawFile)
 			{
-				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
-				if (fnmPathExtractExt(fileInfo.fileName) == "epk")
+				stream = g_fileSystem->Open(fileInfo.fileName, "rb", SP_ROOT);
+				if (fnmPathExtractExt(fileInfo.fileName) == s_dpkPackageDefaultExt)
 				{
 					// validate EPK file
 					dpkheader_t hdr;

@@ -363,6 +363,19 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 // Path utils
 //------------------------------------------------------
 
+EqString fnmPathApplyExt(EqStringRef path, EqStringRef ext)
+{
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == '.')
+			return path.Left(i+1) + ext;
+	}
+
+	if (path.Length() > 0 && path[path.Length() - 1] == '.')
+		return path + ext;
+	return path + "." + ext;
+}
+
 EqString fnmPathStripExt(EqStringRef path)
 {
 	for (int i = path.Length() - 1; i >= 0; i--)
@@ -412,7 +425,6 @@ EqString fnmPathExtractExt(EqStringRef path, bool autoLowerCase)
 		for (int i = 0; i < result.Length(); ++i)
 			data[i] = CType::LowerChar(data[i]);
 	}
-
 	return result;
 }
 

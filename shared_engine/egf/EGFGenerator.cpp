@@ -129,7 +129,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 	mod.model = CRefPtr_new(DSModel);
 
 	EqString modelPath;
-	CombinePath(modelPath, m_refsPath.ToCString(), pszFileName);
+	fnmPathCombine(modelPath, m_refsPath.ToCString(), pszFileName);
 
 	EqString ext(fnmPathExtractExt(modelPath));
 
@@ -162,7 +162,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 		if( LoadESXShapes( mod.shapeData, modelPath.ToCString() ))
 		{
 			// use referenced filename by the shape file
-			CombinePath(modelPath, m_refsPath.ToCString(), mod.shapeData->reference.ToCString());
+			fnmPathCombine(modelPath, m_refsPath.ToCString(), mod.shapeData->reference.ToCString());
 		}
 		else
 		{
@@ -198,7 +198,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 
 	if ((float)nVerts / 3.0f != nVerts / 3)
 	{
-		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", mod.model->name);
+		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", mod.model->name.ToCString());
 		return false;
 	}
 
@@ -274,7 +274,7 @@ void CEGFGenerator::FreeModel(GenModel& mod )
 void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 {
 	EqString modelPath;
-	CombinePath(modelPath, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
+	fnmPathCombine(modelPath, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
 
 	Msg("Using FBX Source '%s'\n", KV_GetValueString(pKeyBase));
 
@@ -316,7 +316,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 					MsgError("Error: shapeBy - Can't find shape key %s in model %s (ref %s)\n", shapeKeyName, mod.model->name.ToCString(), mod.name.ToCString());
 			}
 			else
-				MsgError("Error: shapeBy - no shape key specified for ref %s\n", shapeKeyName, mod.model->name.ToCString());
+				MsgError("Error: shapeBy - no shape key specified for ref %s\n", mod.model->name.ToCString());
 		}
 
 		if (!PostProcessDSM(mod))
@@ -400,7 +400,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 				MsgError("Error: shapeBy - Can't find shape key %s in model %s (ref %s)\n", shapeByModels[i].ToCString(), mod.model->name.ToCString(), mod.name.ToCString());
 		}
 		else
-			MsgError("Error: shapeBy - no shape key specified for ref %s\n", shapeByModels[i].ToCString(), mod.model->name.ToCString());
+			MsgError("Error: shapeBy - no shape key specified for ref %s\n", mod.model->name.ToCString());
 
 		// add finally
 		models.append(mod);
@@ -1138,7 +1138,7 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 
 		if (existingTransform != -1)
 		{
-			MsgError("Updating transform %s with bone attachment\n", attachBoneName, attachmentName);
+			MsgError("Updating transform '%s' with bone attachment '%s'\n", attachBoneName, attachmentName);
 			m_transforms[existingTransform].attachBoneIdx = pBone ? pBone->refBone->boneIdx : EGF_INVALID_IDX;
 			continue;
 		}
@@ -1167,7 +1167,9 @@ bool CEGFGenerator::GeneratePOD()
 		return true;
 
 	MsgWarning("\nWriting physics objects...\n");
-	m_physModels.SaveToFile( fnmPathStripExt(m_outputFilename) + ".pod" );
+
+	const EqString physDataFilename = fnmPathApplyExt(m_outputFilename, s_egfPhysicsObjectExt);
+	m_physModels.SaveToFile(physDataFilename);
 
 	return true;
 }
@@ -1292,7 +1294,7 @@ bool CEGFGenerator::InitFromKeyValues(const KVSection* mainsection)
 
 	// set source path if defined by script
 	if(pSourcePath)
-		CombinePath(m_refsPath, m_refsPath.ToCString(), KV_GetValueString(pSourcePath, 0, ""));
+		fnmPathCombine(m_refsPath, m_refsPath.ToCString(), KV_GetValueString(pSourcePath, 0, ""));
 
 	// get new model filename
 	SetOutputFilename(KV_GetValueString(mainsection->FindSection("modelfilename")));

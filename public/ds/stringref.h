@@ -115,6 +115,7 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
 //------------------------------------------------------
 
 // strip operators
+EqString	fnmPathApplyExt(EqStringRef path, EqStringRef ext);
 EqString	fnmPathStripExt(EqStringRef path);
 EqString	fnmPathStripName(EqStringRef path);
 EqString	fnmPathStripPath(EqStringRef path);
@@ -131,7 +132,7 @@ void		fnmPathFixSeparators(char* str);
 void		fnmPathCombineF(EqString& outPath, int num, ...);
 
 template<typename ...Args> // requires std::same_as<Args, const char*>...
-void		CombinePath(EqString& outPath, const Args&... args)
+void		fnmPathCombine(EqString& outPath, const Args&... args)
 {
 	fnmPathCombineF(outPath, sizeof...(Args), static_cast<const char*>(args)...);
 }

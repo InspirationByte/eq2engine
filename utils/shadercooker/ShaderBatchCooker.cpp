@@ -169,7 +169,7 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	EqString extShaderDefFileName;
 	for (const EqString& path : m_targetProps.includePaths)
 	{
-		CombinePath(extShaderDefFileName, path, KV_GetValueString(shaderSection, 0));
+		fnmPathCombine(extShaderDefFileName, path, KV_GetValueString(shaderSection, 0));
 		if (g_fileSystem->FileExist(extShaderDefFileName, SP_ROOT))
 			break;
 	}
@@ -223,14 +223,14 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
 			EqString searchTemplate;
-			CombinePath(searchTemplate, searchFolder, fileName, "*");
+			fnmPathCombine(searchTemplate, searchFolder, fileName, "*");
 
 			SearchFolderForShaders(searchTemplate);
 		}
 		else if (fnmPathExtractExt(fileName) == m_targetProps.sourceShaderDescExt.LowerCase())
 		{
 			EqString fullShaderPath;
-			CombinePath(fullShaderPath, searchFolder, fileName);
+			fnmPathCombine(fullShaderPath, searchFolder, fileName);
 
 			KVSection rootSec;
 			if (!KV_LoadFromFile(fullShaderPath, SP_ROOT, &rootSec))
@@ -362,13 +362,13 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	{
 		for (const EqString& path : m_targetProps.includePaths)
 		{
-			CombinePath(shaderSourceName, path, shaderInfo.sourceFilename);
+			fnmPathCombine(shaderSourceName, path, shaderInfo.sourceFilename);
 			if (g_fileSystem->FileExist(shaderSourceName, SP_ROOT))
 				break;
 		}
 	}
 	else
-		CombinePath(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
+		fnmPathCombine(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
 
 	CMemoryStream shaderSourceString(PP_SL);
 	{
@@ -387,7 +387,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	CRC32_UpdateChecksum(srcCRC, shaderSourceString.GetBasePointer(), shaderSourceString.GetSize());
 
 	EqString targetFileName;
-	CombinePath(targetFileName, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
+	fnmPathCombine(targetFileName, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
 
 	// now check CRC from loaded file
 	if (HasMatchingCRC(srcCRC))
@@ -789,7 +789,7 @@ void CShaderCooker::Execute()
 	Msg("Shader source path: '%s'\n", m_targetProps.sourceShaderPath.ToCString());
 
 	EqString searchTemplate;
-	CombinePath(searchTemplate, m_targetProps.sourceShaderPath, "*");
+	fnmPathCombine(searchTemplate, m_targetProps.sourceShaderPath, "*");
 
 	// walk up shader files
 	SearchFolderForShaders(searchTemplate);

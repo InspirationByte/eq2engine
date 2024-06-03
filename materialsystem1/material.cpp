@@ -16,9 +16,6 @@
 
 DECLARE_CVAR(r_allowSourceTextures, "0", "enable materials and textures loading from source paths", CV_CHEAT);
 
-#define MATERIAL_FILE_EXTENSION		".mat"
-#define ATLAS_FILE_EXTENSION		".atlas"
-
 using namespace Threading;
 static CEqMutex s_materialVarMutex;
 
@@ -69,8 +66,11 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		//
 		// loading a material description
 		//
-		EqString atlasKVSFileName(materialsPaths[i] + m_szMaterialName + ATLAS_FILE_EXTENSION);
-		EqString materialKVSFilename(materialsPaths[i] + m_szMaterialName + MATERIAL_FILE_EXTENSION);
+		EqString atlasKVSFileName;
+		fnmPathCombine(atlasKVSFileName, materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialAtlasFileExt));
+
+		EqString materialKVSFilename;
+		fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialFileExt));
 
 		// load atlas file
 		if (g_fileSystem->FileExist(atlasKVSFileName, materialSearchPath))
@@ -88,7 +88,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 					root.Cleanup();
 
 					// atlas can override material name
-					materialKVSFilename = (materialsPaths[i] + _Es(m_atlas->GetMaterialName()) + MATERIAL_FILE_EXTENSION);
+					fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_atlas->GetMaterialName(), s_materialFileExt));
 				}
 				else
 					MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.ToCString());

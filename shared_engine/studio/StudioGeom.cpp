@@ -30,8 +30,6 @@ DECLARE_CVAR(r_egf_LodScale, "1.0", "Studio model LOD scale", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(r_egf_LodStart, "0", 0, MAX_MODEL_LODS, "Studio LOD start index", CV_ARCHIVE);
 DECLARE_CVAR(r_force_softwareskinning, "0", "Force software skinning", CV_UNREGISTERED);
 
-
-
 namespace {
 
 // MUST BE SAME AS IN SHADER
@@ -243,15 +241,15 @@ void CEqStudioGeom::DestroyModel()
 
 void CEqStudioGeom::LoadPhysicsData()
 {
-	EqString podFileName = fnmPathStripExt(m_name) + ".pod";
+	const EqString physDataFilename = fnmPathApplyExt(m_name, s_egfPhysicsObjectExt);
 
-	if (Studio_LoadPhysModel(podFileName, &m_physModel))
-	{
-		DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", podFileName.ToCString());
+	if (!Studio_LoadPhysModel(physDataFilename, &m_physModel))
+		return;
 
-		ASSERT_MSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
-		g_studioShapeCache->InitStudioCache(&m_physModel);
-	}
+	DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", physDataFilename.ToCString());
+
+	ASSERT_MSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
+	g_studioShapeCache->InitStudioCache(&m_physModel);
 }
 
 static int CopyGroupVertexDataToHWList(EGFHwVertex::PositionUV* hwVertPosList, EGFHwVertex::TBN* hwVertTbnList, EGFHwVertex::BoneWeights* hwVertWeightList, EGFHwVertex::Color* hwVertColorList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)
@@ -350,7 +348,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 		CEqJobManager* jobMng = g_studioModelCache->GetJobMng();
 
 		const int numPackages = m_studio->numMotionPackages
-			+ g_fileSystem->FileExist(fnmPathStripExt(m_name) + ".mop", SP_MOD);
+			+ g_fileSystem->FileExist(fnmPathApplyExt(m_name, s_egfMotionPackageExt), SP_MOD);
 
 		FunctionJob* loadGeomJob = PPNew FunctionJob("LoadEGFHWGeom", [this](void*, int) {
 			DevMsg(DEVMSG_CORE, "Loading HW geom for %s, state: %d\n", GetName());
@@ -573,14 +571,16 @@ void CEqStudioGeom::LoadMotionPackages()
 	const studioHdr_t* studio = m_studio;
 
 	// Try load default motion file
-	studioMotionData_t* motionData = Studio_LoadMotionData(fnmPathStripExt(m_name) + ".mop", studio->numBones);
+	studioMotionData_t* motionData = Studio_LoadMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt), studio->numBones);
 	if (motionData)
 		m_motionData.append(motionData);
 
 	// load motion packages that are additionally specified in EGF model
 	for (int i = 0; i < studio->numMotionPackages; i++)
 	{
-		const EqString mopPath(fnmPathStripName(m_name) + studio->pPackage(i)->packageName + ".mop");
+		EqString mopPath;
+		fnmPathCombine(mopPath, fnmPathStripName(m_name), fnmPathApplyExt(studio->pPackage(i)->packageName, s_egfMotionPackageExt));
+
 		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
 
 		studioMotionData_t* motionData = Studio_LoadMotionData(mopPath.ToCString(), studio->numBones);
@@ -635,7 +635,7 @@ void CEqStudioGeom::LoadMaterials()
 					spath = spath.Left(spath.Length() - 1);
 
 				EqString extend_path;
-				CombinePath(extend_path, spath.ToCString(), fpath.ToCString());
+				fnmPathCombine(extend_path, spath.ToCString(), fpath.ToCString());
 
 				if (!g_matSystem->IsMaterialExist(extend_path))
 					continue;

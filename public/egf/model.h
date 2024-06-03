@@ -10,6 +10,9 @@
 #include "physmodel.h"
 #include "motionpackage.h"
 
+constexpr EqStringRef s_egfMotionPackageExt = "mop";
+constexpr EqStringRef s_egfPhysicsObjectExt = "pod";
+
 // those are just runtime limits, they don't affect file data.
 static constexpr const int MAX_MOTIONPACKAGES = 8;		// maximum allowed motion packages to be used in model
 static constexpr const int MAX_STUDIOMATERIALS = 32;	// maximum allowed materials in model
