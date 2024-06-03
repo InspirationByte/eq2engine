@@ -661,7 +661,7 @@ void CEqStudioGeom::LoadMaterials()
 
 			const char* materialName = studio->pMaterial(i)->materialname;
 			if (*materialName)
-				MsgError("Couldn't load model material '%s'\n", materialName, m_name.ToCString());
+				MsgError("Couldn't load model material '%s' for '%s'\n", materialName, m_name.ToCString());
 			else
 				MsgError("Model %s has empty material name\n", m_name.ToCString());
 

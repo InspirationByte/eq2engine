@@ -46,7 +46,7 @@
 #include "common_types.h"
 
 #include "InterfaceManager.h"
-#include "Logger.h"
+
 #include "profiler.h"
 #include "ppmem.h"
 #include "cmdlib.h"
@@ -87,6 +87,8 @@
 #include "ds/future.h"
 
 #include "utils/CRC32.h"
+
+#include "Logger.h"
 
 // TODO: include individually when needed
 #include "math/math_common.h"

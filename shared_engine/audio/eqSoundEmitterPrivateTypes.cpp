@@ -299,7 +299,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			if (nodeName == nullptr || !nodeName[0])
 			{
-				MsgError("sound script '%s' input: name is required\n");
+				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey.name);
 				continue;
 			}
 
@@ -327,7 +327,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			if (nodeName == nullptr || !nodeName[0])
 			{
-				MsgError("sound script '%s' mixer: name is required\n");
+				MsgError("sound script '%s' mixer: name is required\n", );
 				continue;
 			}
 			ASSERT_MSG(scriptDesc.FindVariableIndex(nodeName) == 0xff, "Node %s was already declared", nodeName);
@@ -336,7 +336,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			int funcType = GetSoundFuncTypeByString(funcTypeName);
 			if (funcType == -1)
 			{
-				MsgError("sound script '%s' mixer: %s unknown\n", funcTypeName);
+				MsgError("sound script '%s' mixer: %s unknown func type\n", scriptDesc.name.ToCString(), valKey.name, funcTypeName);
 				continue;
 			}
 
@@ -411,7 +411,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					const char* inputValName = KV_GetValueString(&valKey, 2, nullptr);
 					if (!inputValName)
 					{
-						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString());
+						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), valKey.name);
 						continue;
 					}
 
