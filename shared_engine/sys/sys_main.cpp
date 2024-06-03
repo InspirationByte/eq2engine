@@ -229,8 +229,8 @@ bool Sys_Android_InitCore(int argc, char** argv)
 	while ((filename = AAssetDir_getNextFileName(assetDir)) != nullptr)
 	{
 		//search for desired file
-		if (!stricmp(filename, "E2.CONFIG") ||
-			!stricmp(filename, "e2Base.epk"))
+		if (!CString::CompareCaseIns(filename, "E2.CONFIG") ||
+			!CString::CompareCaseIns(filename, "e2Base.epk"))
 		{
 			AAsset* asset = AAssetManager_open(g_jni.assetManager, filename, AASSET_MODE_STREAMING);
 

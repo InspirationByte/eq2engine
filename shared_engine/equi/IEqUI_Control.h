@@ -17,7 +17,7 @@ class IGPURenderPassRecorder;
 struct KVSection;
 struct FontStyleParam;
 
-#define UICMD_ARGV(index)		event.args.ptr()[index]
+#define UICMD_ARGV(index)		event.args[index]
 #define UICMD_ARGC				event.args.numElem()
 
 // a helper macro for baseclass defintion
@@ -232,7 +232,7 @@ T* DynamicCast(IUIControl* control)
 	if(control == nullptr)
 		return nullptr;
 
-	if(!stricmp(T::Classname(), control->GetClassname())) 
+	if(!CString::Compare(T::Classname(), control->GetClassname())) 
 		return (T*)control;
 
 	return nullptr;

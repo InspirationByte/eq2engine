@@ -862,7 +862,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 				AnsiUnicodeConverter(fname, EqWStringRef(paths[i].wchar_str()));
 				const EqString ext = fnmPathExtractExt(fname);
 
-				if(!stricmp(ext.GetData(), "asc"))
+				if(ext == "asc")
 				{
 					EqString cmdLine(EqString::Format("animca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData()));
 

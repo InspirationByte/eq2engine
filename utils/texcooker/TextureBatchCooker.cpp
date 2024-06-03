@@ -168,7 +168,8 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	{
 		const KVSection* sec = batchSec->keys[i];
 
-		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), m_targetProps.targetCompression))
+		if (!CString::CompareCaseIns(sec->name, "compression") 
+		 && !m_targetProps.targetCompression.CompareCaseIns(KV_GetValueString(sec, 0, "INVALID")))
 		{
 			compressionSec = sec;
 			break;
@@ -189,10 +190,10 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	{
 		const KVSection* usageKey = compressionSec->keys[i];
 
-		if (stricmp(usageKey->name, "usage"))
+		if (CString::CompareCaseIns(usageKey->name, "usage"))
 			continue;
 
-		const char* usageName = KV_GetValueString(usageKey, 0, nullptr);
+		EqStringRef usageName = KV_GetValueString(usageKey, 0, nullptr);
 
 		if (!usageName)
 		{
@@ -205,7 +206,7 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 		usage.applicationName = KV_GetValueString(usageKey->FindSection("application"), 0, m_batchConfig.applicationName);
 		usage.applicationArguments = KV_GetValueString(usageKey->FindSection("arguments"), 0, "");
 
-		if (!stricmp(usageName, "default"))
+		if (!usageName.CompareCaseIns("default"))
 			m_batchConfig.defaultUsage = usage;
 		else
 			m_batchConfig.usageList.append(usage);

@@ -95,7 +95,7 @@ bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
 			tok.goToNextLine();
 			continue;
 		}
-		else if(!stricmp(str, "newmtl"))
+		else if(!CString::CompareCaseIns(str, "newmtl"))
 		{
 			obj_material_t mat;
 			strcpy(mat.name, tok.next(isNotNewLine));
@@ -103,7 +103,7 @@ bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
 
 			current = &material_list[material_list.append(mat)];
 		}
-		else if(!stricmp(str, "map_Kd"))
+		else if(!CString::CompareCaseIns(str, "map_Kd"))
 		{
 			if(current)
 				strcpy(current->texture, tok.next(isNotNewLine));
@@ -123,7 +123,7 @@ const char* GetMTLTexture(const char* pszMaterial, Array<obj_material_t> &materi
 	for(int i = 0; i < material_list.numElem(); i++)
 	{
 		//Msg("search id: %d\n", i);
-		if(!strcmp(material_list[i].name, pszMaterial))
+		if(!CString::Compare(material_list[i].name, pszMaterial))
 			return material_list[i].texture;
 	}
 
@@ -159,19 +159,19 @@ bool LoadOBJ(DSModel* model, const char* filename)
 	// read counters for fast alloc
 	while ((str = tok.next()) != nullptr)
 	{
-		if(!stricmp(str, "v"))
+		if(!CString::CompareCaseIns(str, "v"))
 		{
 			nVerts++;
 		}
-		else if(!stricmp(str, "vt"))
+		else if(!CString::CompareCaseIns(str, "vt"))
 		{
 			nTexCoords++;
 		}
-		else if(!stricmp(str, "vn"))
+		else if(!CString::CompareCaseIns(str, "vn"))
 		{
 			nNormals++;
 		}
-		else if(!stricmp(str, "f"))
+		else if(!CString::CompareCaseIns(str, "f"))
 		{
 			nFaces++;
 		}
@@ -230,7 +230,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 			if (numComments <= 3) // check for blender comment to activate hack
 			{
 				char* check_tok = tok.next();
-				if (check_tok && !stricmp(check_tok, "blender"))
+				if (check_tok && !CString::CompareCaseIns(check_tok, "blender"))
 				{
 					gl_to_eq = true;
 					//blend_to_eq = true;
@@ -287,7 +287,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 				vertices.append(v);
 			}
 		}
-		else if(!stricmp(str, "f"))
+		else if(!CString::CompareCaseIns(str, "f"))
 		{
 			if(!curgroup)
 			{
@@ -453,7 +453,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 			//strcpy(material_name, tok.nextLine());
 		}
 		*/
-		else if(!stricmp(str, "usemtl"))
+		else if(!CString::CompareCaseIns(str, "usemtl"))
 		{
 			curgroup = nullptr;
 			materialName = tok.next(isNotNewLine);

@@ -441,7 +441,7 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 
 	if (!scene)
 	{
-		MsgError("FBX '%s' error: ", filename, ofbx::getError());
+		MsgError("FBX '%s' error: %s\n", filename, ofbx::getError());
 		PPFree(fileBuffer);
 		return false;
 	}
@@ -501,7 +501,7 @@ bool LoadFBXCompound( DSModel* model, const char* filename )
 
 	if (!scene)
 	{
-		MsgError("FBX '%s' error: ", filename, ofbx::getError());
+		MsgError("FBX '%s' error: %s\n", filename, ofbx::getError());
 		PPFree(fileBuffer);
 		return false;
 	}
@@ -549,7 +549,7 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 
 	if (!scene)
 	{
-		MsgError("FBX '%s' error: ", filename, ofbx::getError());
+		MsgError("FBX '%s' error: %s\n", filename, ofbx::getError());
 		PPFree(fileBuffer);
 		return false;
 	}
@@ -765,7 +765,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 	{
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
 
-		if (stricmp(mesh.name, meshFilter) != 0)
+		if (CString::CompareCaseIns(mesh.name, meshFilter) != 0)
 			continue;
 
 		// this is used to transform mesh from FBX space

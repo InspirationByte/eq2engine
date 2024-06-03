@@ -316,7 +316,7 @@ bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName)
 	const char* className = lua_tostring(L, -1);
 	while (className)
 	{
-		if (!strcmp(typeName, className))
+		if (!CString::Compare(typeName, className))
 		{
 			found = true;
 			break;

@@ -30,15 +30,6 @@ constexpr int INCORRECT_PATH_SEPARATOR	= '\\';
 static constexpr const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
 static constexpr const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
 
-#ifdef PLAT_POSIX
-
-#define _vsnwprintf vswprintf
-#define _snprintf snprintf
-
-#define stricmp(a, b)			strcasecmp(a, b)
-
-#endif // PLAT_POSIX
-
 //------------------------------------------------------
 // String hash
 //------------------------------------------------------
@@ -170,9 +161,12 @@ namespace CString
 {
 template<typename CH> int Length(const CH* str);
 template<typename CH> CH* SubString(CH* str, const CH* search, bool caseSensitive);
+
 template<typename CH> int Compare(const CH* strA, const CH* strB);
 template<typename CH> int CompareCaseIns(const CH* strA, const CH* strB);
+
 template<typename CH> int PrintFV(CH* buffer, int bufferCnt, const CH* fmt, va_list argList);
+template<typename CH> int PrintF(CH* buffer, int bufferCnt, const CH* fmt, ...);
 }
 
 //------------------------------------------------------

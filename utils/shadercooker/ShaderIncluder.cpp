@@ -30,7 +30,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	}
 	else
 	{
-		if (!strcmp(requested_source, "ShaderCooker"))
+		if (!CString::Compare(requested_source, "ShaderCooker"))
 		{
 			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
 			result->includeContent.Print(s_boilerPlateStrGLSL);
@@ -57,7 +57,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 
 			result->includeName = requested_source;
 		}
-		else if (!strcmp(requested_source, "VertexLayout"))
+		else if (!CString::Compare(requested_source, "VertexLayout"))
 		{
 			EqString shaderSourceName;
 			fnmPathCombine(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");

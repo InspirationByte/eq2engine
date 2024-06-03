@@ -375,7 +375,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 		actcEndOutput( tc );
 		actcDelete(tc);
 
-		MsgWarning("   group optimization complete\n", optimizedIndices.numElem() - 2);
+		MsgWarning("   group optimization complete\n");
 
 		// swap with new index list
 		indexList.swap(optimizedIndices);
@@ -534,7 +534,7 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 				Msg(", shape key: %s", key->name.ToCString());
 
 			if(groupDesc->materialIndex != -1)
-				Msg(", material used: %s", modelRef.name.ToCString(), j, m_usedMaterials[groupDesc->materialIndex]->materialname);
+				Msg(", material used: %s", m_usedMaterials[groupDesc->materialIndex]->materialname);
 
 			Msg("\n");
 		}

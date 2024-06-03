@@ -124,8 +124,8 @@ struct TGAHeader
 
 struct FormatString
 {
-	ETextureFormat format;
-	const char* string;
+	ETextureFormat	format;
+	EqStringRef		name;
 };
 
 static const FormatString formatStrings[] = {
@@ -166,7 +166,8 @@ static const FormatString formatStrings[] = {
 const char* GetFormatString(const ETextureFormat format)
 {
 	for (unsigned int i = 0; i < elementsOf(formatStrings); i++) {
-		if (format == formatStrings[i].format) return formatStrings[i].string;
+		if (format == formatStrings[i].format) 
+			return formatStrings[i].name;
 	}
 	return nullptr;
 }
@@ -174,7 +175,8 @@ const char* GetFormatString(const ETextureFormat format)
 ETextureFormat GetFormatFromString(const char* string)
 {
 	for (unsigned int i = 0; i < elementsOf(formatStrings); i++) {
-		if (stricmp(string, formatStrings[i].string) == 0) return formatStrings[i].format;
+		if (!formatStrings[i].name.CompareCaseIns(string))
+			return formatStrings[i].format;
 	}
 	return FORMAT_NONE;
 }
@@ -784,8 +786,8 @@ bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 {
 	Clear();
 
-	const char* extension = strrchr(fileName, '.');
-	if (extension == nullptr)
+	const EqString extension = fnmPathExtractExt(fileName);
+	if (!extension.Length())
 		return false;
 
 	SetName(fileName);
@@ -794,15 +796,15 @@ bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 	if (!(file = g_fileSystem->Open(fileName, "rb", searchFlags)))
 		return false;
 
-	if (stricmp(extension, ".dds") == 0)
+	if (extension == "dds")
 	{
 		if (!LoadDDS(file, flags)) return false;
 	}
-	else if (stricmp(extension, ".jpg") == 0 || stricmp(extension, ".jpeg") == 0)
+	else if (extension == "jpg" || extension == "jpeg")
 	{
 		if (!LoadJPEG(file)) return false;
 	}
-	else if (stricmp(extension, ".tga") == 0)
+	else if (extension == "tga")
 	{
 		if (!LoadTGA(file)) return false;
 	}
@@ -1073,24 +1075,23 @@ bool CImage::SaveTGA(IVirtualStreamPtr fileHandle) const
 
 bool CImage::SaveImage(const char* fileName, int searchFlags) const
 {
-	const char* extension = strrchr(fileName, '.');
-
-	if (extension == nullptr)
+	const EqString extension = fnmPathExtractExt(fileName);
+	if (!extension.Length())
 		return false;
 
 	IFilePtr file;
 	if (!(file = g_fileSystem->Open(fileName, "wb", searchFlags)))
 		return false;
 
-	if (stricmp(extension, ".dds") == 0) 
+	if (extension == ".dds") 
 	{
 		return SaveDDS(file);
 	}
-	else if (stricmp(extension, ".jpg") == 0 || stricmp(extension, ".jpeg") == 0)
+	else if (extension == ".jpg" || extension == ".jpeg")
 	{
 		return SaveJPEG(file, 75);
 	}
-	else if (stricmp(extension, ".tga") == 0)
+	else if (extension == ".tga")
 	{
 		return SaveTGA(file);
 	}

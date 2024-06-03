@@ -75,7 +75,7 @@ void Panel::InitFromKeyValues( KVSection* sec, bool noClear )
 			if(!csec->IsSection())
 				continue;
 
-			if(!stricmp(csec->GetName(), "child"))
+			if(!CString::CompareCaseIns(csec->GetName(), "child"))
 			{
 				const char* controlClass = KV_GetValueString(csec, 0, "");
 

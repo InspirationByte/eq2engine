@@ -90,7 +90,7 @@ inline int PhysModel_FindObjectId(const studioPhysData_t* model, const char* nam
 {
 	for (int i = 0; i < model->numObjects; i++)
 	{
-		if (!stricmp(model->objects[i].name, name))
+		if (!CString::CompareCaseIns(model->objects[i].name, name))
 			return i;
 	}
 

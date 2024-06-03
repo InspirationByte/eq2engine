@@ -254,7 +254,7 @@ bool DkPhysics::Init(int nSceneSize)
 	{
 		KVSection* pSec = pMaterials.GetRootSection()->keys[i];
 
-		if(stricmp(pSec->name, "#include"))
+		if(CString::Compare(pSec->name, "#include"))
 		{
 			phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
 
@@ -748,7 +748,7 @@ phySurfaceMaterial_t* DkPhysics::FindMaterial(const char* pszName)
 {
 	for(int i = 0; i < m_physicsMaterialDesc.numElem(); i++)
 	{
-		if(!stricmp(m_physicsMaterialDesc[i]->name, pszName))
+		if(!m_physicsMaterialDesc[i]->name.CompareCaseIns(pszName))
 			return m_physicsMaterialDesc[i];
 	}
 

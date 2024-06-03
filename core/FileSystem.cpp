@@ -156,11 +156,11 @@ struct SearchPathInfo
 
 //--------------------------------------------------
 
-static ESearchPath GetSearchPathByName(const char* str)
+static ESearchPath GetSearchPathByName(EqStringRef str)
 {
-	if (!stricmp(str, "SP_MOD"))
+	if (!str.CompareCaseIns("SP_MOD"))
 		return SP_MOD;
-	else if (!stricmp(str, "SP_DATA"))
+	else if (!str.CompareCaseIns("SP_DATA"))
 		return SP_DATA;
 
 	return SP_ROOT;

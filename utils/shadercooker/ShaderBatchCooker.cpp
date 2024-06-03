@@ -98,11 +98,13 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	int shaderKind = 0;
 	for (KVKeyIterator keysIter(kinds); !keysIter.atEnd(); ++keysIter)
 	{
-		if (!stricmp(keysIter, "Vertex"))
+		EqStringRef kindStr = keysIter;
+
+		if (!kindStr.CompareCaseIns("Vertex"))
 			shaderKind |= SHADERKIND_VERTEX;
-		else if (!stricmp(keysIter, "Fragment"))
+		else if (!kindStr.CompareCaseIns("Fragment"))
 			shaderKind |= SHADERKIND_FRAGMENT;
-		else if (!stricmp(keysIter, "Compute"))
+		else if (!kindStr.CompareCaseIns("Compute"))
 			shaderKind |= SHADERKIND_COMPUTE;
 	}
 
@@ -119,12 +121,12 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	shaderInfo.kind = shaderKind;
 	shaderInfo.isExt = isExt;
 
-	const char* shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
-	if (!stricmp(shaderType, "hlsl"))
+	EqStringRef shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
+	if (!shaderType.CompareCaseIns("hlsl"))
 		shaderInfo.sourceType = SHADERSOURCE_HLSL;
-	else if (!stricmp(shaderType, "glsl"))
+	else if (!shaderType.CompareCaseIns("glsl"))
 		shaderInfo.sourceType = SHADERSOURCE_GLSL;
-	//else if (!stricmp(shaderType, "wgsl"))
+	//else if (!shaderType.CompareCaseIns("wgsl"))
 	//	shaderInfo.sourceType = SHADERSOURCE_WGSL;
 
 	InitShaderVariants(shaderInfo, -1, shaderSection);
@@ -184,7 +186,7 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	KVSection* shaderRoot = nullptr;
 	for (KVKeyIterator it(&baseShaderRoot, "shader"); !it.atEnd(); ++it)
 	{
-		if (!stricmp(KV_GetValueString(*it), KV_GetValueString(shaderSection, 1)))
+		if (!CString::CompareCaseIns(KV_GetValueString(*it), KV_GetValueString(shaderSection, 1)))
 		{
 			shaderRoot = *it;
 			break;
@@ -276,8 +278,8 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 	bool hasVariantsThisLevel = false;
 	for (const KVSection* nestedSec : section->keys)
 	{
-		if (!stricmp(nestedSec->GetName(), "define")
-			|| !stricmp(nestedSec->GetName(), "VertexLayouts"))
+		if (!CString::CompareCaseIns(nestedSec->GetName(), "define")
+		 || !CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
 		{
 			hasVariantsThisLevel = true;
 			break;
@@ -305,12 +307,12 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 	// collect all defines and vertex layouts
 	for (const KVSection* nestedSec : section->keys)
 	{
-		if (!stricmp(nestedSec->GetName(), "define"))
+		if (!CString::CompareCaseIns(nestedSec->GetName(), "define"))
 		{
 			// TODO: define types
 			variant.defines.append(KV_GetValueString(nestedSec));
 		}
-		else if (!stricmp(nestedSec->GetName(), "VertexLayouts"))
+		else if (!CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
 		{
 			// add vertex layouts
 			for (const KVSection* layoutKey : nestedSec->keys)
@@ -319,7 +321,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 
 				vertLayout.name = layoutKey->GetName();
 				
-				if (!stricmp(KV_GetValueString(layoutKey, 0), "aliasOf"))
+				if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "aliasOf"))
 				{
 					EqStringRef aliasOfStr = KV_GetValueString(layoutKey, 1);
 					const int aliasLayout = arrayFindIndexF(shaderInfo.vertexLayouts, [aliasOfStr](const ShaderInfo::VertLayout& layout) {
@@ -330,14 +332,14 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 
 					vertLayout.aliasOf = aliasLayout;
 				}
-				else if (!stricmp(KV_GetValueString(layoutKey, 0), "excludeDefines"))
+				else if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "excludeDefines"))
 				{
 					for (KVValueIterator<EqString> it(layoutKey, 1); !it.atEnd(); ++it)
 						vertLayout.excludeDefines.append(it);
 				}
 			}
 		}
-		else if(!stricmp(nestedSec->GetName(), "SkipCombo"))
+		else if(!CString::CompareCaseIns(nestedSec->GetName(), "SkipCombo"))
 		{
 			// TODO: expression parser?
 			ShaderInfo::SkipCombo& skipCombo = shaderInfo.skipCombos.append();
@@ -346,7 +348,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 				skipCombo.defines.append(it);
 			}
 		}
-		else if (!stricmp(nestedSec->GetName(), "UniformLayout"))
+		else if (!CString::CompareCaseIns(nestedSec->GetName(), "UniformLayout"))
 		{
 			// atm skip
 		}

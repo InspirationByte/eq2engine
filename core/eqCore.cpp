@@ -245,7 +245,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		{
 			for(int i = 0; i < pForceLogged->values.numElem();i++)
 			{
-				if(!stricmp(KV_GetValueString(pForceLogged, i), m_szApplicationName.ToCString()))
+				if(!m_szApplicationName.CompareCaseIns(KV_GetValueString(pForceLogged, i)))
 				{
 					logEnabled = true;
 					break;
@@ -371,7 +371,7 @@ void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!strcmp(m_interfaces[i].name, pszName))
+		if(!CString::Compare(m_interfaces[i].name, pszName))
 			ASSERT_FAIL("Core interface module \"%s\" is already registered.", pszName);
 	}
 
@@ -394,7 +394,7 @@ IEqCoreModule* CDkCore::GetInterface(const char* pszName) const
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!strcmp(m_interfaces[i].name, pszName))
+		if(!CString::Compare(m_interfaces[i].name, pszName))
 			return m_interfaces[i].ptr;
 	}
 
@@ -405,7 +405,7 @@ void CDkCore::UnregisterInterface(const char* pszName)
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!strcmp(m_interfaces[i].name, pszName))
+		if(!CString::Compare(m_interfaces[i].name, pszName))
 		{
 			m_interfaces.fastRemoveIndex(i);
 			return;

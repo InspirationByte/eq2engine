@@ -47,8 +47,9 @@ enum EBlendMode
 	BLEND_MODES,
 };
 
-static const char* s_blendModeStr[] = 
+constexpr EqStringRef s_blendModeStr[] = 
 {
+	"none",
 	"lerp",
 	"add",
 	"sub",
@@ -105,7 +106,7 @@ static EBlendMode GetBlendmodeByStr(const char* mode)
 {
 	for(int i = 0; i < BLEND_MODES; i++)
 	{
-		if(!stricmp(s_blendModeStr[i], mode))
+		if(!s_blendModeStr[i].CompareCaseIns(mode))
 			return (EBlendMode)i;
 	}
 
@@ -354,16 +355,16 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	int padding = KV_GetValueInt(pParams->FindSection("padding"), 0, 0);
 	EPaddingMode padMode = PAD_NONE;
 
-	const char* padModeStr = KV_GetValueString(pParams->FindSection("padding"), 1, "none");
-	if(!stricmp(padModeStr, "clamp"))
+	EqStringRef padModeStr = KV_GetValueString(pParams->FindSection("padding"), 1, "none");
+	if(!padModeStr.CompareCaseIns("clamp"))
 	{
 		padMode = PAD_CLAMP;
 	}
-	else if(!stricmp(padModeStr, "repeat"))
+	else if(!padModeStr.CompareCaseIns("repeat"))
 	{
 		padMode = PAD_REPEAT;
 	}
-	else if(!stricmp(padModeStr, "mirror"))
+	else if(!padModeStr.CompareCaseIns("mirror"))
 	{
 		padMode = PAD_MIRROR;
 	}

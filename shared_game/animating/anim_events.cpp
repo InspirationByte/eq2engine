@@ -27,7 +27,7 @@ AnimationEvent GetEventByName(const char* name)
 		if(!anim_event_register[i].name)
 			continue;
 
-		if(!stricmp(anim_event_register[i].name, name))
+		if(!CString::CompareCaseIns(anim_event_register[i].name, name))
 			return anim_event_register[i].ev;
 	}
 

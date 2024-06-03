@@ -32,7 +32,7 @@ static EKVPairType KV_ResolvePairType( const char* string )
 	// check types
 	for(int i = 0; i < KVPAIR_TYPES; i++)
 	{
-		if(!stricmp(typeName, s_szkKVValueTypes[i]))
+		if(!CString::CompareCaseIns(typeName, s_szkKVValueTypes[i]))
 			return (EKVPairType)i;
 	}
 
@@ -209,7 +209,7 @@ void KVPairValue::SetInt(int value)
 	char tempbuf[64];
 
 	// copy value string
-	_snprintf(tempbuf, 64, "%d", value);
+	CString::PrintF(tempbuf, sizeof(tempbuf), "%d", value);
 
 	SetStringValue(tempbuf);
 
@@ -227,7 +227,7 @@ void KVPairValue::SetFloat(float value)
 	char tempbuf[64];
 
 	// copy value string
-	_snprintf(tempbuf, 64, "%g", value);
+	CString::PrintF(tempbuf, sizeof(tempbuf), "%g", value);
 
 	SetStringValue(tempbuf);
 
@@ -245,7 +245,7 @@ void KVPairValue::SetBool(bool value)
 	char tempbuf[64];
 
 	// copy value string
-	_snprintf(tempbuf, 64, "%d", value ? 1 : 0);
+	CString::PrintF(tempbuf, sizeof(tempbuf), "%d", value ? 1 : 0);
 
 	SetStringValue(tempbuf);
 
@@ -551,7 +551,7 @@ void KVSection::AddUniqueValue(const char* value)
 {
 	for(int i = 0; i < values.numElem(); i++)
 	{
-		if( !strcmp(KV_GetValueString(this, i, ""), value) )
+		if( !CString::Compare(KV_GetValueString(this, i, ""), value) )
 			return;
 	}
 
@@ -877,7 +877,7 @@ KVSection* KVSection::FindSection(const char* pszName, int nFlags) const
 			continue;
 
 		if(keys[i]->nameHash == hash)
-		//if(!stricmp(keys[i]->name, pszName))
+		//if(!CString::CompareCaseIns(keys[i]->name, pszName))
 			return keys[i];
 	}
 
@@ -917,7 +917,7 @@ void KVSection::RemoveSectionByName( const char* name, bool removeAll )
 	for(int i = 0; i < keys.numElem(); i++)
 	{
 		if(keys[i]->nameHash == strHash)
-		//if(!stricmp(keys[i]->name, name))
+		//if(!CString::CompareCaseIns(keys[i]->name, name))
 		{
 			delete keys[i];
 			keys.removeIndex(i);

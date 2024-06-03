@@ -33,7 +33,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -80,7 +80,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -127,7 +127,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -175,7 +175,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}

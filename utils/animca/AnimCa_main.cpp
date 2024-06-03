@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
 	g_cmdLine->ExecuteCommandLine();
 
-	if(!stricmp("none", c_filename.GetString()))
+	if(!CString::CompareCaseIns("none", c_filename.GetString()))
 	{
 		MsgError("example: animca +filename <asc_script.asc>\n");
 	}

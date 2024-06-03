@@ -16,11 +16,11 @@
 
 struct FilterTypeString
 {
-	const char*		name;
+	EqStringRef		name;
 	ETexFilterMode	type;
 };
 
-static const FilterTypeString s_textureFilterTypes[] = {
+constexpr FilterTypeString s_textureFilterTypes[] = {
 	{ "nearest",	TEXFILTER_NEAREST },
 	{ "linear",		TEXFILTER_LINEAR },
 	{ "bilinear",	TEXFILTER_BILINEAR },
@@ -32,7 +32,7 @@ static ETexFilterMode ResolveFilterType(const char* string)
 {
 	for(const FilterTypeString& ft: s_textureFilterTypes)
 	{
-		if(!stricmp(string, ft.name))
+		if(!ft.name.CompareCaseIns(string))
 			return ft.type;
 	}
 	return TEXFILTER_TRILINEAR_ANISO;
@@ -40,9 +40,9 @@ static ETexFilterMode ResolveFilterType(const char* string)
 
 static ETexAddressMode ResolveAddressType(const char* string)
 {
-	if(!stricmp(string,"wrap"))
+	if(!CString::CompareCaseIns(string, "wrap"))
 		return TEXADDRESS_WRAP;
-	else if (!stricmp(string, "mirror"))
+	else if (!CString::CompareCaseIns(string, "mirror"))
 		return TEXADDRESS_MIRROR;
 
 	return TEXADDRESS_CLAMP;

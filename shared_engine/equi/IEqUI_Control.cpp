@@ -69,7 +69,7 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 	if (!noClear)
 		ClearChilds(true);
 
-	if(!stricmp(sec->GetName(), "child"))
+	if(!CString::CompareCaseIns(sec->GetName(), "child"))
 		SetName(KV_GetValueString(sec, 1, ""));
 	else
 		SetName(KV_GetValueString(sec, 0, ""));
@@ -98,9 +98,9 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 
 		for (int i = 1; i < font->values.numElem(); i++)
 		{
-			if (!stricmp(KV_GetValueString(font, i), "bold"))
+			if (!CString::CompareCaseIns(KV_GetValueString(font, i), "bold"))
 				styleFlags |= TEXT_STYLE_BOLD;
-			else if (!stricmp(KV_GetValueString(font, i), "italic"))
+			else if (!CString::CompareCaseIns(KV_GetValueString(font, i), "italic"))
 				styleFlags |= TEXT_STYLE_ITALIC;
 		}
 
@@ -140,17 +140,17 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 
 		for(int i = 0; i < anchors->values.numElem(); i++)
 		{
-			const char* anchorVal = KV_GetValueString(anchors, i);
+			EqString anchorVal = KV_GetValueString(anchors, i);
 
-			if(!stricmp("left", anchorVal))
+			if(!anchorVal.CompareCaseIns("left"))
 				m_anchors |= UI_BORDER_LEFT;
-			else if(!stricmp("top", anchorVal))
+			else if(!anchorVal.CompareCaseIns("top"))
 				m_anchors |= UI_BORDER_TOP;
-			else if(!stricmp("right", anchorVal))
+			else if(!anchorVal.CompareCaseIns("right"))
 				m_anchors |= UI_BORDER_RIGHT;
-			else if(!stricmp("bottom", anchorVal))
+			else if(!anchorVal.CompareCaseIns("bottom"))
 				m_anchors |= UI_BORDER_BOTTOM;
-			else if (!stricmp("all", anchorVal))
+			else if (!anchorVal.CompareCaseIns("all"))
 				m_anchors = (UI_BORDER_LEFT | UI_BORDER_TOP | UI_BORDER_RIGHT | UI_BORDER_BOTTOM);
 		}
 	}
@@ -164,19 +164,19 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 
 		for(int i = 0; i < align->values.numElem(); i++)
 		{
-			const char* alignVal = KV_GetValueString(align, i);
+			EqStringRef alignVal = KV_GetValueString(align, i);
 
-			if(!stricmp("left", alignVal))
+			if(!alignVal.CompareCaseIns("left"))
 				m_alignment |= UI_ALIGN_LEFT;
-			else if(!stricmp("top", alignVal))
+			else if(!alignVal.CompareCaseIns("top"))
 				m_alignment |= UI_ALIGN_TOP;
-			else if(!stricmp("right", alignVal))
+			else if(!alignVal.CompareCaseIns("right"))
 				m_alignment |= UI_ALIGN_RIGHT;
-			else if(!stricmp("bottom", alignVal))
+			else if(!alignVal.CompareCaseIns("bottom"))
 				m_alignment |= UI_ALIGN_BOTTOM;
-			else if (!stricmp("hcenter", alignVal))
+			else if (!alignVal.CompareCaseIns("hcenter"))
 				m_alignment |= UI_ALIGN_HCENTER;
-			else if (!stricmp("vcenter", alignVal))
+			else if (!alignVal.CompareCaseIns("vcenter"))
 				m_alignment |= UI_ALIGN_VCENTER;
 		}
 	}
@@ -204,21 +204,21 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 
 		for (int i = 0; i < textAlign->values.numElem(); i++)
 		{
-			const char* alignVal = KV_GetValueString(textAlign, i);
+			EqStringRef alignVal = KV_GetValueString(textAlign, i);
 
-			if (!stricmp("left", alignVal))
+			if (!alignVal.CompareCaseIns("left"))
 				m_font.textAlignment |= TEXT_ALIGN_LEFT;
-			else if (!stricmp("top", alignVal))
+			else if (!alignVal.CompareCaseIns("top"))
 				m_font.textAlignment |= TEXT_ALIGN_TOP;
-			else if (!stricmp("right", alignVal))
+			else if (!alignVal.CompareCaseIns("right"))
 				m_font.textAlignment |= TEXT_ALIGN_RIGHT;
-			else if (!stricmp("bottom", alignVal))
+			else if (!alignVal.CompareCaseIns("bottom"))
 				m_font.textAlignment |= TEXT_ALIGN_BOTTOM;
-			else if (!stricmp("vcenter", alignVal))
+			else if (!alignVal.CompareCaseIns("vcenter"))
 				m_font.textAlignment |= TEXT_ALIGN_VCENTER;
-			else if (!stricmp("hcenter", alignVal))
+			else if (!alignVal.CompareCaseIns("hcenter"))
 				m_font.textAlignment |= TEXT_ALIGN_HCENTER;
-			else if (!stricmp("center", alignVal))
+			else if (!alignVal.CompareCaseIns("center"))
 				m_font.textAlignment |= TEXT_ALIGN_HCENTER | TEXT_ALIGN_VCENTER;
 		}
 	}
@@ -231,21 +231,21 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 	{
 		m_scaling = UI_SCALING_NONE;
 
-		const char* scalingValue = KV_GetValueString(scaling, 0, "none");
+		EqStringRef scalingValue = KV_GetValueString(scaling, 0, "none");
 
-		if (!stricmp("aspectw", scalingValue))
+		if (!scalingValue.CompareCaseIns("aspectw"))
 			m_scaling = UI_SCALING_ASPECT_W;
-		else if (!stricmp("aspecth", scalingValue) || !stricmp("uniform", scalingValue))
+		else if (!scalingValue.CompareCaseIns("aspecth") || !scalingValue.CompareCaseIns("uniform"))
 			m_scaling = UI_SCALING_ASPECT_H;
-		else if (!stricmp("inherit", scalingValue))
+		else if (!scalingValue.CompareCaseIns("inherit"))
 			m_scaling = UI_SCALING_INHERIT;
-		else if (!stricmp("inherit_min", scalingValue))
+		else if (!scalingValue.CompareCaseIns("inherit_min"))
 			m_scaling = UI_SCALING_INHERIT_MIN;
-		else if (!stricmp("inheri_tmax", scalingValue))
+		else if (!scalingValue.CompareCaseIns("inheri_tmax"))
 			m_scaling = UI_SCALING_INHERIT_MAX;
-		else if (!stricmp("aspect_min", scalingValue))
+		else if (!scalingValue.CompareCaseIns("aspect_min"))
 			m_scaling = UI_SCALING_ASPECT_MIN;
-		else if (!stricmp("aspect_max", scalingValue))
+		else if (!scalingValue.CompareCaseIns("aspect_max"))
 			m_scaling = UI_SCALING_ASPECT_MAX;
 	}
 
@@ -258,7 +258,7 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 			continue;
 	
 		// INIT CHILD CONTROLS
-		if(!stricmp(csec->GetName(), "child"))
+		if(!CString::CompareCaseIns(csec->GetName(), "child"))
 		{
 			const char* childClass = KV_GetValueString(csec, 0, "InvalidClass");
 			const char* childName = KV_GetValueString(csec, 1, "Invalid");
@@ -267,7 +267,7 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 			IUIControl* control = FindChild(childName);
 
 			// if nothing, create new one
-			if(!control || control && stricmp(control->GetClassname(), childClass))
+			if(!control || control && CString::CompareCaseIns(control->GetClassname(), childClass))
 			{
 				if (control) // replace children if it has different class
 					RemoveChild(control);
@@ -672,7 +672,7 @@ IUIControl* IUIControl::FindChild(const char* pszName)
 {
 	for (IUIControl* child : m_childs)
 	{
-		if (!strcmp(child->GetName(), pszName))
+		if (!CString::Compare(child->GetName(), pszName))
 			return child;
 	}
 
@@ -684,7 +684,7 @@ IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 	// find nearest child
 	for (IUIControl* child : m_childs)
 	{
-		if (!strcmp(child->GetName(), pszName))
+		if (!CString::Compare(child->GetName(), pszName))
 			return child;
 
 		IUIControl* foundChild = child->FindChildRecursive(pszName);
@@ -746,25 +746,25 @@ int IUIControl::CommandCb(IUIControl* control, ui_event& event, void* userData)
 	if (UICMD_ARGC == 0)
 		return 1;
 
-	if (!stricmp("hideparent", UICMD_ARGV(0).ToCString()))
+	if (!UICMD_ARGV(0).CompareCaseIns("hideparent"))
 	{
 		if (control->m_parent)
 			control->m_parent->Hide();
 	}
-	else if (!stricmp("engine", UICMD_ARGV(0).ToCString()))
+	else if (!UICMD_ARGV(0).CompareCaseIns("engine"))
 	{
 		// execute console commands
 		g_consoleCommands->SetCommandBuffer(UICMD_ARGV(1).ToCString());
 		g_consoleCommands->ExecuteCommandBuffer();
 		g_consoleCommands->ClearCommandBuffer();
 	}
-	else if (!stricmp("showpanel", UICMD_ARGV(0).ToCString()))
+	else if (!UICMD_ARGV(0).CompareCaseIns("showpanel"))
 	{
 		// show panel
 		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());
 		panel->Show();
 	}
-	else if (!stricmp("hidepanel", UICMD_ARGV(0).ToCString()))
+	else if (!UICMD_ARGV(0).CompareCaseIns("hidepanel"))
 	{
 		// hide panel
 		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());

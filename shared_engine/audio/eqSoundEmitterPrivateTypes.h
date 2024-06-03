@@ -154,7 +154,7 @@ enum ESoundFuncType : int
 
 struct SoundFuncDesc
 {
-	char* name;
+	EqStringRef name;
 	uint8 argCount;
 	uint8 retCount;
 };
@@ -164,7 +164,7 @@ enum ESoundFuncArgCount
 	SOUND_FUNC_ARG_VARIADIC = 0x80
 };
 
-static SoundFuncDesc s_soundFuncTypeDesc[] = {
+constexpr SoundFuncDesc s_soundFuncTypeDesc[] = {
 	{ "copy", SOUND_FUNC_ARG_VARIADIC, SOUND_FUNC_ARG_VARIADIC },
 	{ "add", 2, 1 },
 	{ "sub", 2, 1 },
@@ -183,7 +183,7 @@ static int GetSoundFuncTypeByString(const char* name)
 {
 	for (int i = 0; i < SOUND_FUNC_COUNT; ++i)
 	{
-		if (!stricmp(name, s_soundFuncTypeDesc[i].name))
+		if (!s_soundFuncTypeDesc[i].name.CompareCaseIns(name))
 			return (ESoundFuncType)i;
 	}
 	return -1;

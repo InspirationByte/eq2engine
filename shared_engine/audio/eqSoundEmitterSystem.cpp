@@ -653,7 +653,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	{
 		KVSection* kb = rootSec->keys[i];
 
-		if(!stricmp( kb->GetName(), "include"))
+		if(!CString::CompareCaseIns( kb->GetName(), "include"))
 			LoadScriptSoundFile( KV_GetValueString(kb) );
 	}
 
@@ -670,7 +670,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 				ASSERT_FAIL("Error processing %s: sound '%s' cannot be added (already registered?)", fileName, curSec->GetName());
 			}
 		}
-		else if(!stricmp("default", curSec->GetName()))
+		else if(!CString::CompareCaseIns("default", curSec->GetName()))
 		{
 			defaultsSec.AddKey(KV_GetValueString(curSec), KV_GetValueString(curSec, 1));
 		}
@@ -730,7 +730,7 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 {
 	for (int i = 0; i < m_channelTypes.numElem(); i++)
 	{
-		if (!stricmp(str, m_channelTypes[i].name))
+		if (!CString::CompareCaseIns(str, m_channelTypes[i].name))
 			return m_channelTypes[i].id;
 	}
 

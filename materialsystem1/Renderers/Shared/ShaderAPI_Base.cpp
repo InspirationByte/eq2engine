@@ -249,7 +249,7 @@ IVertexFormat* ShaderAPI_Base::FindVertexFormat(const char* name) const
 {
 	for (int i = 0; i < m_VFList.numElem(); i++)
 	{
-		if(!strcmp(name, m_VFList[i]->GetName()))
+		if(!CString::Compare(name, m_VFList[i]->GetName()))
 			return m_VFList[i];
 	}
 	return nullptr;

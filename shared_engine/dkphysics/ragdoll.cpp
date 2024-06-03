@@ -68,7 +68,7 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 		{
 			for(int j = 0; j < studio.numBones; j++)
 			{
-				if(!stricmp(pModel->GetJoint(j).bone->name, physModel.joints[i].name))
+				if(!CString::CompareCaseIns(pModel->GetJoint(j).bone->name, physModel.joints[i].name))
 				{
 					// assign index
 					newRagdoll->m_pBoneToVisualIndices[i] = j;

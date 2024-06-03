@@ -37,7 +37,7 @@ CEGFGenerator::GenBone* CEGFGenerator::FindBoneByName(const char* pszName) const
 {
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
-		if(!stricmp(m_bones[i].refBone->name, pszName))
+		if(!m_bones[i].refBone->name.CompareCaseIns(pszName))
 			return (GenBone*)&m_bones[i];
 	}
 	return nullptr;
@@ -99,7 +99,7 @@ int CEGFGenerator::GetMaterialIndex(const char* pszName) const
 {
 	for(int i = 0; i < m_materials.numElem(); i++)
 	{
-		if(!stricmp(m_materials[i].materialname, pszName))
+		if(!CString::CompareCaseIns(m_materials[i].materialname, pszName))
 			return i;
 	}
 
@@ -123,7 +123,7 @@ void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 //************************************
 bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 {
-	if (!stricmp(pszFileName, "_dummy"))
+	if (!CString::CompareCaseIns(pszFileName, "_dummy"))
 		return false;
 
 	mod.model = CRefPtr_new(DSModel);
@@ -290,7 +290,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		const char* refName = KV_GetValueString(modelSec);
 
 		const int foundIdx = arrayFindIndexF(fbxModels, [refName](const DSModelContainer& cont) {
-			return !stricmp(cont.model->name, refName);
+			return !cont.model->name.CompareCaseIns(refName);
 		});
 
 		if (foundIdx == -1)
@@ -305,7 +305,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		mod.transform = cont.transform;
 
 		// DRVSYN: vertex order for damaged model
-		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeBy"))
+		if (modelSec->values.numElem() > 1 && !CString::CompareCaseIns(KV_GetValueString(modelSec, 1), "shapeBy"))
 		{
 			const char* shapeKeyName = KV_GetValueString(modelSec, 2, nullptr);
 
@@ -351,7 +351,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	if(pKeyBase->values.numElem() > 1)
 	{
 		// DRVSYN: vertex order for damaged model
-		if(pKeyBase->values.numElem() > 3 && !stricmp(KV_GetValueString(pKeyBase, 2), "shapeBy"))
+		if(pKeyBase->values.numElem() > 3 && !CString::CompareCaseIns(KV_GetValueString(pKeyBase, 2), "shapeBy"))
 		{
 			const char* shapekeyName = KV_GetValueString(pKeyBase, 3, nullptr);
 
@@ -483,21 +483,21 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 	{
 		const KVSection* keyBase = pSection->keys[i];
 
-		if(!stricmp(keyBase->name, "global_scale"))
+		if(!CString::CompareCaseIns(keyBase->name, "global_scale"))
 		{
 			// try apply global scale
 			m_modelScale = KV_GetVector3D(keyBase, 0, Vector3D(1.0f));
 		}
-		if(!stricmp(keyBase->name, "global_offset"))
+		if(!CString::CompareCaseIns(keyBase->name, "global_offset"))
 		{
 			// try apply global offset
 			m_modelOffset = KV_GetVector3D(keyBase, 0, vec3_zero);
 		}
-		else if (!stricmp(keyBase->name, "FBXSource"))
+		else if (!CString::CompareCaseIns(keyBase->name, "FBXSource"))
 		{
 			LoadModelsFromFBX(keyBase);
 		}
-		else if(!stricmp(keyBase->name, "model"))
+		else if(!CString::CompareCaseIns(keyBase->name, "model"))
 		{
 			// parse and load model
 			ParseAndLoadModels( keyBase );
@@ -533,7 +533,7 @@ void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
 		KVSection* lodModelSec = pSection->keys[i];
-		if (stricmp(lodModelSec->name, "replace"))
+		if (CString::CompareCaseIns(lodModelSec->name, "replace"))
 			continue;
 
 		const char* replaceModelName = KV_GetValueString(lodModelSec);
@@ -573,7 +573,7 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 		if(!lodKey->IsSection())
 			continue;
 
-		if (stricmp(lodKey->name, "lod"))
+		if (CString::CompareCaseIns(lodKey->name, "lod"))
 			continue;
 
 		if (m_lodparams.numElem() + 1 >= MAX_MODEL_LODS)
@@ -590,7 +590,7 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 		newlod.flags = 0;
 
 		const char* lodFlagStr = KV_GetValueString(lodKey, 1, nullptr);
-		if (lodFlagStr && !stricmp(lodFlagStr, "manual"))
+		if (lodFlagStr && !CString::CompareCaseIns(lodFlagStr, "manual"))
 		{
 			newlod.flags |= STUDIO_LOD_FLAG_MANUAL;
 		}
@@ -611,7 +611,7 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 	{
 		const KVSection* keyBase = pSection->keys[i];
 
-		if(stricmp(keyBase->name, "bodygroup"))
+		if(CString::CompareCaseIns(keyBase->name, "bodygroup"))
 			continue;
 		
 		if(keyBase->values.numElem() < 2 && !keyBase->IsSection())
@@ -672,7 +672,7 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 	{
 		const KVSection* keyBase = pSection->keys[i];
 
-		if (stricmp(keyBase->name, "materialGroup"))
+		if (CString::CompareCaseIns(keyBase->name, "materialGroup"))
 			continue;
 		
 		if (!keyBase->values.numElem())
@@ -718,7 +718,7 @@ bool BoneListCheckForBone(const char* pszName, const Array<DSBone*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
-		if(!stricmp(pBones[i]->name, pszName))
+		if(!pBones[i]->name.CompareCaseIns(pszName))
 			return true;
 	}
 
@@ -732,7 +732,7 @@ int BoneListGetBoneIndex(const char* pszName, const Array<DSBone*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
-		if(!stricmp(pBones[i]->name, pszName))
+		if(!pBones[i]->name.CompareCaseIns(pszName))
 			return i;
 	}
 
@@ -890,7 +890,7 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 	{
 		const KVSection* keyBase = pSection->keys[i];
 
-		if(!stricmp(keyBase->name, "materialpath"))
+		if(!CString::CompareCaseIns(keyBase->name, "materialpath"))
 		{
 			materialPathDesc_t& desc = m_matpathes.append();
 
@@ -905,8 +905,8 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 			Msg("   '%s'\n", desc.searchPath);			
 		}
 
-		if(	!stricmp(keyBase->name, "notextures") || 
-			!stricmp(keyBase->name, "nomaterials"))
+		if(	!CString::CompareCaseIns(keyBase->name, "notextures") ||
+			!CString::CompareCaseIns(keyBase->name, "nomaterials"))
 		{
 			m_notextures = KV_GetValueBool(keyBase);
 		}
@@ -933,7 +933,7 @@ bool CEGFGenerator::ParseMotionPackagePaths(const KVSection* pSection)
 	{
 		const KVSection* keyBase = pSection->keys[i];
 
-		if (stricmp(keyBase->name, "addmotionpackage"))
+		if (CString::CompareCaseIns(keyBase->name, "addMotionPackage"))
 			continue;
 
 		if(m_lodparams.numElem() + 1 >= MAX_MOTIONPACKAGES)
@@ -998,7 +998,7 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 	{
 		const KVSection* sec = pSection->keys[i];
 
-		if(!stricmp(sec->name, "damping"))
+		if(!CString::CompareCaseIns(sec->name, "damping"))
 		{
 			if(sec->values.numElem() < 2)
 			{
@@ -1016,14 +1016,14 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 			// search for link and apply parameter if found
 			for(int j = 0; j < ikCh.link_list.numElem(); j++)
 			{
-				if(!stricmp(ikCh.link_list[j].bone->refBone->name, link_name))
+				if(!ikCh.link_list[j].bone->refBone->name.CompareCaseIns(link_name))
 				{
 					ikCh.link_list[j].damping = fDamp;
 					break;
 				}
 			}
 		}
-		else if(!stricmp(sec->name, "link_limits"))
+		else if(!CString::CompareCaseIns(sec->name, "link_limits"))
 		{
 			if(sec->values.numElem() < 7)
 			{
@@ -1044,7 +1044,7 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 			// search for link and apply parameter if found
 			for(int j = 0; j < ikCh.link_list.numElem(); j++)
 			{
-				if(!stricmp(ikCh.link_list[j].bone->refBone->name, link_name))
+				if(!ikCh.link_list[j].bone->refBone->name.CompareCaseIns(link_name))
 				{
 					ikCh.link_list[j].mins = mins;
 					ikCh.link_list[j].maxs = maxs;
@@ -1074,7 +1074,7 @@ void CEGFGenerator::ParseIKChains(const KVSection* pSection)
 	{
 		const KVSection* chainSec = pSection->keys[i];
 
-		if(chainSec->IsSection() && !stricmp(chainSec->name, "ikchain"))
+		if(chainSec->IsSection() && !CString::CompareCaseIns(chainSec->name, "ikchain"))
 		{
 			ParseIKChain(chainSec);
 		}
@@ -1107,7 +1107,7 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 
 	for(const KVSection* attachSec : pSection->keys)
 	{
-		if (stricmp(attachSec->name, "attachment"))
+		if (CString::CompareCaseIns(attachSec->name, "attachment"))
 			continue;
 
 		if(attachSec->values.numElem() < 8)
@@ -1121,7 +1121,7 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 		const char* attachBoneName = KV_GetValueString(attachSec, 1);
 
 		GenBone* pBone = nullptr;
-		if (stricmp(attachBoneName, "none"))
+		if (CString::CompareCaseIns(attachBoneName, "none"))
 		{
 			GenBone* pBone = FindBoneByName(attachBoneName);
 			if (!pBone)
@@ -1133,7 +1133,7 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 
 		const int existingTransform = arrayFindIndexF(m_transforms, [&](const studioTransform_t& tr) 
 		{
-			return !stricmp(tr.name, attachmentName); 
+			return !CString::CompareCaseIns(tr.name, attachmentName);
 		});
 
 		if (existingTransform != -1)
@@ -1231,7 +1231,7 @@ void CEGFGenerator::ParsePhysModels(const KVSection* mainsection)
 	{
 		const KVSection* physObjectSec = mainsection->keys[i];
 
-		if(stricmp(physObjectSec->name, "physics"))
+		if(CString::CompareCaseIns(physObjectSec->name, "physics"))
 			continue;
 
 		if(!physObjectSec->IsSection())

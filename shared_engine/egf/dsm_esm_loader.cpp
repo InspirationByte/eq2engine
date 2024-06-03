@@ -102,7 +102,7 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 		}
 		else if(bCouldRead)
 		{
-			if(!stricmp(str, "mat"))
+			if(!CString::CompareCaseIns(str, "mat"))
 			{
 				char* matName = tok.next();
 
@@ -123,7 +123,7 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 					pModel->meshes.append( pCurrentGroup );
 				}
 			}
-			else if(!stricmp(str, "vtx"))
+			else if(!CString::CompareCaseIns(str, "vtx"))
 			{
 				// parse vertex
 
@@ -227,7 +227,7 @@ bool ReadShapes(Tokenizer& tok, DSShapeData* data)
 		}
 		else if(bCouldRead)
 		{
-			if(!stricmp(str, "key"))
+			if(!CString::CompareCaseIns(str, "key"))
 			{
 				curShapeKey = PPNew DSShapeKey;
 
@@ -239,7 +239,7 @@ bool ReadShapes(Tokenizer& tok, DSShapeData* data)
 
 				data->shapes.append( curShapeKey );
 			}
-			else if(!stricmp(str, "vtx"))
+			else if(!CString::CompareCaseIns(str, "vtx"))
 			{
 				if(!curShapeKey)
 				{
@@ -288,12 +288,12 @@ bool LoadESM(DSModel* model, const char* filename)
 	// find faces section
 	while ((str = tok.next()) != nullptr)
 	{
-		if (!stricmp(str, "bones"))
+		if (!CString::CompareCaseIns(str, "bones"))
 		{
 			if (!ReadBones(tok, model))
 				return false;
 		}
-		else if (!stricmp(str, "faces"))
+		else if (!CString::CompareCaseIns(str, "faces"))
 		{
 			if (!ReadFaces(tok, model))
 				return false;
@@ -322,11 +322,11 @@ bool LoadESXShapes( DSShapeData* data, const char* filename )
 	// find faces section
 	while ((str = tok.next()) != nullptr)
 	{
-		if(!stricmp(str, "reference"))
+		if(!CString::CompareCaseIns(str, "reference"))
 		{
 			data->reference = tok.next(isNotWhiteSpace);
 		}
-		else if(!stricmp(str, "verts"))
+		else if(!CString::CompareCaseIns(str, "verts"))
 		{
 			if(!ReadShapes(tok, data))
 				return false;
@@ -351,7 +351,7 @@ int FindShapeKeyIndex( DSShapeData* data, const char* shapeKeyName )
 
 	for(int i = 0; i < data->shapes.numElem(); i++)
 	{
-		if(!stricmp(data->shapes[i]->name.ToCString(), shapeKeyName))
+		if(!CString::CompareCaseIns(data->shapes[i]->name.ToCString(), shapeKeyName))
 			return i;
 	}
 

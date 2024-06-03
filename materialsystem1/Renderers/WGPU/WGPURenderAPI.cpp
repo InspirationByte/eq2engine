@@ -204,7 +204,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringToHash(layout.name);
 		
-		if (!stricmp(KV_GetValueString(*it, 0), "aliasOf"))
+		if (!CString::CompareCaseIns(KV_GetValueString(*it, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
 				return layout.name == EqStringRef(KV_GetValueString(*it, 1));
@@ -220,21 +220,21 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		const KVSection* itemSec = *it;
 
 		EqString kindExt;
-		const char* kindStr = KV_GetValueString(itemSec, 1);
+		EqStringRef kindStr = KV_GetValueString(itemSec, 1);
 		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
 		int kind = 0;
 		{
-			if (!stricmp(kindStr, "Vertex"))
+			if (!kindStr.CompareCaseIns("Vertex"))
 			{
 				kind = SHADERKIND_VERTEX;
 				kindExt = ".vert";
 			}
-			else if (!stricmp(kindStr, "Fragment"))
+			else if (!kindStr.CompareCaseIns("Fragment"))
 			{
 				kind = SHADERKIND_FRAGMENT;
 				kindExt = ".frag";
 			}
-			else if (!stricmp(kindStr, "Compute"))
+			else if (!kindStr.CompareCaseIns("Compute"))
 			{
 				kind = SHADERKIND_COMPUTE;
 				kindExt = ".comp";
@@ -286,15 +286,15 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	{
 		const KVSection* itemSec = *it;
 
-		const char* kindStr = KV_GetValueString(itemSec, 1);
+		EqStringRef kindStr = KV_GetValueString(itemSec, 1);
 		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
 		int kind = 0;
 		{
-			if (!stricmp(kindStr, "Vertex"))
+			if (!kindStr.CompareCaseIns("Vertex"))
 				kind = SHADERKIND_VERTEX;
-			else if (!stricmp(kindStr, "Fragment"))
+			else if (!kindStr.CompareCaseIns("Fragment"))
 				kind = SHADERKIND_FRAGMENT;
-			else if (!stricmp(kindStr, "Compute"))
+			else if (!kindStr.CompareCaseIns("Compute"))
 				kind = SHADERKIND_COMPUTE;
 		}
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");

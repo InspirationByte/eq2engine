@@ -45,7 +45,7 @@ static void PrintConCommand(ConCommandBase* pConCommand)
 
 static int alpha_cmd_comp(const ConCommandBase* a, const ConCommandBase* b)
 {
-	return stricmp(a->GetName(), b->GetName());
+	return CString::CompareCaseIns(a->GetName(), b->GetName());
 }
 
 static bool isCvarChar(char c)
@@ -370,7 +370,7 @@ const ConCommandBase* CConsoleCommands::FindBase(const char* name)
 
 	for (int i = 0; i < m_registeredCommands.numElem(); i++)
 	{
-		if (!stricmp(name, m_registeredCommands[i]->GetName()))
+		if (!CString::CompareCaseIns(name, m_registeredCommands[i]->GetName()))
 			return m_registeredCommands[i];
 	}
 
@@ -651,7 +651,7 @@ bool CConsoleCommands::ExecuteCommandBuffer(CommandFilterFn filterFn, bool quiet
 {
 	SortCommands();
 
-	if (!stricmp(m_lastExecutedCommands, m_currentCommands))
+	if (!CString::CompareCaseIns(m_lastExecutedCommands, m_currentCommands))
 		m_sameCommandsExecuted++;
 
 	strcpy(m_lastExecutedCommands, m_currentCommands);

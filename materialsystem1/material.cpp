@@ -187,7 +187,7 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 			continue;
 
 		// ignore some preserved vars
-		if (!stricmp(materialVarSec->GetName(), "Shader"))
+		if (!CString::CompareCaseIns(materialVarSec->GetName(), "Shader"))
 			continue;
 
 		++numMaterialVars;
@@ -203,7 +203,7 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 			continue;
 
 		// ignore some preserved vars
-		if( !stricmp(materialVarSec->GetName(), "Shader") )
+		if( !CString::CompareCaseIns(materialVarSec->GetName(), "Shader") )
 			continue;
 
 		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec->GetName()) : _Es(materialVarSec->GetName()));

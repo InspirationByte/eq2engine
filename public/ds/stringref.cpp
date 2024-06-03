@@ -22,6 +22,11 @@ static locale_t xgetlocale()
 	static locale_t loc = newlocale(LC_CTYPE_MASK, getenv("LANG"), LC_CTYPE);
 	return loc;
 }
+
+#define _vsnwprintf			vswprintf
+#define _snprintf			snprintf
+#define stricmp(a, b)		strcasecmp(a, b)
+
 #endif
 
 char* xstrupr(char* str)
@@ -713,6 +718,24 @@ template<> int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list arg
 template<> int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList)
 {
 	return _vsnwprintf(buffer, bufferCnt, fmt, argList);
+}
+
+template<> int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
+	va_end(argptr);
+	return result;
+}
+
+template<> int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
+	va_end(argptr);
+	return result;
 }
 
 }

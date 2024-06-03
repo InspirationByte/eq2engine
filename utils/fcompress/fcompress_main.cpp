@@ -356,11 +356,11 @@ int CFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* alia
 				if (!folderFind.IsDirectory())
 					continue;
 
-				const char* name = folderFind.GetCurrentPath();
-				if (!stricmp("..", name) || !stricmp(".", name))
+				EqStringRef name = folderFind.GetCurrentPath();
+				if (name == ".."|| name == ".")
 					continue;
 
-				EqString targetFilename = EqString::Format("%s/%s", aliasPrefixTrimmed.ToCString(), name);
+				EqString targetFilename = EqString::Format("%s/%s", aliasPrefixTrimmed.ToCString(), name.ToCString());
 
 				fileCount += AddDirectory(EqString::Format("%s/%s/%s", nonWildcardFolder.ToCString(), name, wildcard.ToCString()), targetFilename);
 
@@ -375,7 +375,7 @@ static bool CheckExtensionList(Array<EqString>& extList, const char* ext)
 {
 	for (EqString& fromListExt : extList)
 	{
-		if (!stricmp(fromListExt, ext))
+		if (!fromListExt.CompareCaseIns(ext))
 			return true;
 	}
 	return false;
@@ -445,7 +445,7 @@ static void CookPackageTarget(const char* targetName)
 	for (int i = 0; i < currentTarget->KeyCount(); ++i)
 	{
 		const KVSection* kvSec = currentTarget->KeyAt(i);
-		if (!stricmp(kvSec->GetName(), "add"))
+		if (!CString::CompareCaseIns(kvSec->GetName(), "add"))
 		{
 			EqString wildcard = KV_GetValueString(kvSec);
 			EqString targetNameOrDir = KV_GetValueString(kvSec, 1, wildcard);
@@ -466,7 +466,7 @@ static void CookPackageTarget(const char* targetName)
 				Msg("Adding %d files in '%s' as '%s' to package\n", fileCount, wildcard.ToCString(), targetNameOrDir.ToCString());
 			}
 		}
-		else if (!stricmp(kvSec->GetName(), "ignoreCompressionExt"))
+		else if (!CString::CompareCaseIns(kvSec->GetName(), "ignoreCompressionExt"))
 		{
 			EqString extName = KV_GetValueString(kvSec);
 			ProcessVariableString(extName);

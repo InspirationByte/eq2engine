@@ -319,7 +319,7 @@ void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& m
 		controller.interpolatedValue = controller.value;
 
 		const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [controller](const AnimPoseController& ctrl) {
-			return stricmp(ctrl.p->name, controller.p->name) == 0;
+			return CString::CompareCaseIns(ctrl.p->name, controller.p->name) == 0;
 		});
 
 		if (existingPoseCtrlIdx == -1)
@@ -341,7 +341,7 @@ void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& m
 		seqData.s = &seq;
 		seqData.activity = GetActivityByName(seq.activity);
 
-		if (seqData.activity == ACT_INVALID && stricmp(seq.activity, "ACT_INVALID"))
+		if (seqData.activity == ACT_INVALID && CString::Compare(seq.activity, "ACT_INVALID"))
 			MsgError("Motion Data: Activity '%s' not registered\n", seq.activity);
 
 		if (seq.posecontroller >= 0)
@@ -349,7 +349,7 @@ void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& m
 			const posecontroller_t& mopPoseCtrl = motionData.poseControllers[seq.posecontroller];
 
 			const int poseCtrlIdx = arrayFindIndexF(m_poseControllers, [&](const AnimPoseController& ctrl) {
-				return stricmp(ctrl.p->name, mopPoseCtrl.name) == 0;
+				return CString::CompareCaseIns(ctrl.p->name, mopPoseCtrl.name) == 0;
 			});
 			ASSERT(poseCtrlIdx != -1);
 			seqData.posecontroller = &m_poseControllers[poseCtrlIdx];
@@ -378,7 +378,7 @@ int CAnimatingEGF::FindSequence(const char* name) const
 {
 	for (int i = 0; i < m_seqList.numElem(); i++)
 	{
-		if (!stricmp(m_seqList[i].s->name, name))
+		if (!CString::CompareCaseIns(m_seqList[i].s->name, name))
 			return i;
 	}
 
@@ -506,7 +506,7 @@ int CAnimatingEGF::FindBone(const char* boneName) const
 {
 	for (int i = 0; i < m_joints.numElem(); i++)
 	{
-		if (!stricmp(m_joints[i].bone->name, boneName))
+		if (!CString::CompareCaseIns(m_joints[i].bone->name, boneName))
 			return i;
 	}
 
@@ -684,7 +684,7 @@ void CAnimatingEGF::SwapSequenceTimers(int slotFrom, int swapTo)
 int CAnimatingEGF::FindPoseController(const char* name) const
 {
 	const int existingPoseCtrlIdx = arrayFindIndexF(m_poseControllers, [name](const AnimPoseController& ctrl) {
-		return stricmp(ctrl.p->name, name) == 0;
+		return CString::CompareCaseIns(ctrl.p->name, name) == 0;
 	});
 	return existingPoseCtrlIdx;
 }
@@ -1103,7 +1103,7 @@ int CAnimatingEGF::FindIKChain(const char* pszName)
 {
 	for (int i = 0; i < m_ikChains.numElem(); i++)
 	{
-		if (!stricmp(m_ikChains[i].c->name, pszName))
+		if (!CString::CompareCaseIns(m_ikChains[i].c->name, pszName))
 			return i;
 	}
 

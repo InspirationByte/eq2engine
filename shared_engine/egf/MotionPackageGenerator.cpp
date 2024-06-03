@@ -78,7 +78,7 @@ int	CMotionPackageGenerator::GetSequenceIndex(const char* name)
 {
 	for(int i = 0; i < m_sequences.numElem(); i++)
 	{
-		if(!stricmp(m_sequences[i].name, name))
+		if(!CString::CompareCaseIns(m_sequences[i].name, name))
 			return i;
 	}
 
@@ -92,7 +92,7 @@ int	CMotionPackageGenerator::GetAnimationIndex(const char* name)
 {
 	for(int i = 0; i < m_animations.numElem(); i++)
 	{
-		if(!stricmp(m_animations[i].name, name))
+		if(!CString::CompareCaseIns(m_animations[i].name, name))
 			return i;
 	}
 
@@ -106,7 +106,7 @@ int	CMotionPackageGenerator::GetPoseControllerIndex(const char* name)
 {
 	for(int i = 0; i < m_posecontrollers.numElem(); i++)
 	{
-		if(!stricmp(m_posecontrollers[i].name, name))
+		if(!CString::CompareCaseIns(m_posecontrollers[i].name, name))
 			return i;
 	}
 
@@ -585,12 +585,12 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 	char* str;
 	while ((str = tok.next()) != nullptr)
 	{
-		if(!stricmp(str, "bones"))
+		if(!CString::CompareCaseIns(str, "bones"))
 		{
 			if(!ReadBones(tok, &tempDSM))
 				return -1;
 		}
-		else if(!stricmp(str, "frames"))
+		else if(!CString::CompareCaseIns(str, "frames"))
 		{
 			if(m_model->numBones != tempDSM.bones.numElem())
 			{
@@ -736,7 +736,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 		}
 		else
 		{
-			MsgError("Subtract: animation %s not found\n", subtractKey->values[0]);
+			MsgError("Subtract: animation %s not found\n", KV_GetValueString(subtractKey));
 		}
 	}
 
@@ -930,7 +930,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 
 		if(animIdx == -1)
 		{
-			MsgError("No such animation %s\n", pKey->values[0]);
+			MsgError("No such animation %s\n", KV_GetValueString(pKey));
 			return;
 		}
 
@@ -998,7 +998,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	{
 		desc.posecontroller = GetPoseControllerIndex(poseParameterName);
 		if (desc.posecontroller == -1)
-			MsgWarning("Pose parameter '%s' for sequence '%s' not found (poseParameter)\n", seqName);
+			MsgWarning("Pose parameter '%s' for sequence '%s' not found (poseParameter)\n", poseParameterName, seqName);
 	}
 	else
 		desc.posecontroller = -1;
@@ -1008,7 +1008,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	{
 		desc.timecontroller = GetPoseControllerIndex(timeParameterName);
 		if (desc.timecontroller == -1)
-			MsgWarning("Pose parameter '%s' for sequence '%s' not found (timeParameter)\n", seqName);
+			MsgWarning("Pose parameter '%s' for sequence '%s' not found (timeParameter)\n", timeParameterName, seqName);
 	}
 	else
 		desc.timecontroller = -1;
@@ -1224,5 +1224,5 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 	file->Write(&header, 1, sizeof(header));
 	lumpDataStream.WriteToStream(file);
 
-	Msg("Total written bytes: %d\n", file->Tell());
+	Msg("Total written bytes: %" PRId64 "\n", file->Tell());
 }

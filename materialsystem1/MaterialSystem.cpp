@@ -667,7 +667,7 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 		CMaterial* material = (CMaterial*)*it;
 
 		// don't unload default material
-		if(!stricmp(material->GetName(), "Default"))
+		if(!CString::CompareCaseIns(material->GetName(), "Default"))
 			continue;
 
 		const int framesDiff = (material->m_frameBound - m_frame);
@@ -691,7 +691,7 @@ void CMaterialSystem::ReloadAllMaterials()
 		CMaterial* material = (CMaterial*)*it;
 
 		// don't unload default material
-		if(!stricmp(material->GetName(), "Default"))
+		if(!CString::CompareCaseIns(material->GetName(), "Default"))
 			continue;
 
 		const bool loadedFromDisk = material->m_loadFromDisk;
@@ -761,7 +761,7 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 {
 	for(const ShaderProxyFactory& factory : m_proxyFactoryList)
 	{
-		if(!stricmp(factory.name, pszName))
+		if(!factory.name.CompareCaseIns(pszName))
 			return (factory.func)();
 	}
 
@@ -808,7 +808,7 @@ const ShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName,
 	// check the override table
 	for(const ShaderOverride& override : m_shaderOverrideList)
 	{
-		if(!stricmp(szShaderName, override.shaderName))
+		if(!override.shaderName.CompareCaseIns(szShaderName))
 		{
 			const char* overrideShaderName = override.func(instanceFormatId);
 			if(overrideShaderName && *overrideShaderName) // only if we have shader name

@@ -214,7 +214,7 @@ void UISoundNodeDesc::GenerateUniqueName()
 				continue;
 
 			const UISoundNodeDesc& uiNode = *it;
-			if (!strcmp(name, uiNode.name))
+			if (!CString::Compare(name, uiNode.name))
 			{
 				isUnique = false;
 				break;
@@ -537,7 +537,7 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 		{
 			KVSection* sec = out.CreateSection("mixer");
 			sec->AddValue(uiNode.name);
-			sec->AddValue(s_soundFuncTypeDesc[uiNode.func.type].name);
+			sec->AddValue(s_soundFuncTypeDesc[uiNode.func.type].name.ToCString());
 
 			switch (uiNode.func.type)
 			{

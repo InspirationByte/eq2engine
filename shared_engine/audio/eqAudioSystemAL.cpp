@@ -310,7 +310,7 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 #define PARAM_VALUE(type, name, str_name)  AL_##type##_##name, clamp(KV_GetValueFloat(pSection->FindSection(str_name), 0, AL_##type##_DEFAULT_##name), AL_##type##_MIN_##name, AL_##type##_MAX_##name)
 
 
-	if (!stricmp(pszName, "reverb"))
+	if (!CString::CompareCaseIns(pszName, "reverb"))
 	{
 		GetAlExt().alGenEffects(1, &effect.nAlEffect);
 		if (!ALCheckError("gen buffers"))
@@ -331,7 +331,7 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 
 		return true;
 	}
-	else if (!stricmp(pszName, "echo"))
+	else if (!CString::CompareCaseIns(pszName, "echo"))
 	{
 		GetAlExt().alGenEffects(1, &effect.nAlEffect);
 		if (!ALCheckError("gen buffers"))

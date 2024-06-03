@@ -18,7 +18,7 @@ EXPORTED_INTERFACE(ILocalize, CLocalize);
 
 static void languageChangeCb(ConVar* pVar, char const* pszOldValue)
 {
-	if (!stricmp(pVar->GetString(), pszOldValue))
+	if (!CString::CompareCaseIns(pVar->GetString(), pszOldValue))
 		return;
 
 	if (!g_localizer->IsInitialized())
@@ -206,7 +206,7 @@ void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 
 	for(const KVSection* key : kvSec.keys)
 	{
-		if(!stricmp(key->name, "#include" ))
+		if(!CString::Compare(key->name, "#include"))
 		{
 			ParseLanguageFile( KV_GetValueString(key), reload);
 			continue;

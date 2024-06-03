@@ -10,7 +10,7 @@
 
 struct ActivityName
 {
-	char*		name;
+	EqStringRef	name;
 	Activity	act;
 };
 
@@ -47,15 +47,15 @@ static ActivityName activityNames[ACT_COUNT + 1] =
 
 Activity GetActivityByName(const char* name)
 {
-	if(!stricmp("ACT_INVALID", name))
+	if(!CString::CompareCaseIns("ACT_INVALID", name))
 		return ACT_INVALID;
 
 	for(int i = 0; i < ACT_COUNT; i++)
 	{
-		if(activityNames[i].name == nullptr)
+		if(!activityNames[i].name.IsValid())
 			break;
 
-		if(!stricmp(activityNames[i].name, name))
+		if(activityNames[i].name == name)
 			return activityNames[i].act;
 	}
 
