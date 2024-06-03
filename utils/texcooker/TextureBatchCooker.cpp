@@ -351,7 +351,7 @@ void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
 
 			SearchFolderForAtlasesAndConvert(searchTemplate);
 		}
-		else if(fileName.Path_Extract_Ext() == s_atlasFileExt)
+		else if(fnmPathExtractExt(fileName) == s_atlasFileExt)
 		{
 			EqString fullAtlPath;
 			CombinePath(fullAtlPath, searchFolder, fileName);
@@ -377,7 +377,7 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 
 			SearchFolderForMaterialsAndGetTextures(searchTemplate);
 		}
-		else if(fileName.Path_Extract_Ext() == s_materialFileExt)
+		else if(fnmPathExtractExt(fileName) == s_materialFileExt)
 		{
 			EqString fullMaterialPath;
 			CombinePath(fullMaterialPath, searchFolder, fileName);
@@ -401,7 +401,7 @@ bool CTextureCooker::HasMatchingCRC(uint32 crc)
 
 void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 {
-	const EqString atlasFileName = _Es(materialFileName).Path_Strip_Ext() + ".atlas";
+	const EqString atlasFileName = fnmPathStripExt(materialFileName) + ".atlas";
 
 	EqString sourceMaterialFileName;
 	CombinePath(sourceMaterialFileName, m_targetProps.sourceMaterialPath, materialFileName);
@@ -416,7 +416,7 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	CombinePath(targetAtlasFileName, m_targetProps.targetFolder, atlasFileName);
 
 	// make target material file path
-	g_fileSystem->MakeDir(targetMaterialFileName.Path_Strip_Name(), SP_ROOT);
+	g_fileSystem->MakeDir(fnmPathStripName(targetMaterialFileName), SP_ROOT);
 
 	// copy material file
 	if (!g_fileSystem->FileExist(targetMaterialFileName, SP_ROOT))
@@ -446,9 +446,9 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 	CombinePath(sourceFilename, m_targetProps.sourceMaterialPath, EqString::Format("%s.%s", textureInfo.sourcePath.ToCString(), m_targetProps.sourceImageExt.ToCString()));
 	
 	EqString targetFilename;
-	CombinePath(targetFilename, m_targetProps.targetFolder, (textureInfo.sourcePath.Path_Strip_Ext() + ".dds"));
+	CombinePath(targetFilename, m_targetProps.targetFolder, fnmPathStripExt(textureInfo.sourcePath) + ".dds");
 	
-	const EqString targetFilePath = targetFilename.Path_Strip_Name().TrimChar(CORRECT_PATH_SEPARATOR);
+	const EqString targetFilePath = fnmPathStripName(targetFilename).TrimChar(CORRECT_PATH_SEPARATOR);
 
 	// make image folder
 	g_fileSystem->MakeDir(targetFilePath, SP_ROOT);
@@ -485,8 +485,7 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 	MsgInfo("Processing %s: %s\n", textureInfo.usage->usageName.ToCString(), textureInfo.sourcePath.ToCString());
 
 	EqString cmdLine(EqString::Format("%s %s", m_batchConfig.applicationName.ToCString(), arguments.ToCString()));
-
-	cmdLine.Path_FixSlashes();
+	fnmPathFixSeparators(cmdLine);
 
 	DevMsg(DEVMSG_CORE, "*RUN '%s'\n", cmdLine.GetData());
 	int result = system(cmdLine.GetData());

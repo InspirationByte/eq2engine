@@ -91,7 +91,10 @@ void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 	if (!threadName.Length())
 		threadName = EqWString::Format(L"Thread %d", threadID);
 
-	strcpy_s(name, maxLength, EqString(threadName));
+	EqString ansiName;
+	AnsiUnicodeConverter(ansiName, threadName);
+
+	strcpy_s(name, maxLength, ansiName);
 }
 
 void SetThreadNameOLD(uintptr_t threadID, const char* name)
@@ -112,7 +115,7 @@ void SetThreadNameOLD(uintptr_t threadID, const char* name)
 	}
 }
 
-void SetThreadName(uintptr_t threadID, const char * name )
+void SetThreadName(uintptr_t threadID, const char* name)
 {
 #ifdef _WIN64
 	// Load up SetThreadDescription and see if it is available
@@ -120,7 +123,8 @@ void SetThreadName(uintptr_t threadID, const char * name )
 
 	if (s_SetThreadDescription)
 	{
-		EqWString wThreadName(name);
+		EqWString wThreadName;
+		AnsiUnicodeConverter(wThreadName, name);
 
 		HANDLE threadHandle = OpenThread(THREAD_SET_INFORMATION, false, threadID);
 		if (threadHandle != nullptr)

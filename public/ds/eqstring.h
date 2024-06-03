@@ -2,59 +2,57 @@
 // Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium Engine string base
+// Description: String template
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#define _Es		EqString
+#define _Es EqTStr
 
-class EqWString;
-
-class EMPTY_BASES EqString
-	: public StringCombinationOpsMixin<EqString, EqString, char>
-	, public StringComparisonOpsMixin<EqString>
-	, public StringComparisonOpsMixin<EqString, EqTStrRef<char>>
-	, public CStringComparisonOpsMixin<EqString, char>
+template<typename CH>
+class EMPTY_BASES EqTStr
+	: public StringCombinationOpsMixin<EqTStr<CH>, EqTStr<CH>, char>
+	, public StringComparisonOpsMixin<EqTStr<CH>>
+	, public StringComparisonOpsMixin<EqTStr<CH>, EqTStrRef<char>>
+	, public CStringComparisonOpsMixin<EqTStr<CH>, char>
 {
-	friend class EqWString;
 public:
-	static const EqString EmptyStr;
+	using StrRef = EqTStrRef<CH>;
 
-	~EqString();
+	static const EqTStr EmptyStr;
 
-	EqString() = default;
-	EqString(const char* pszString, int len = -1);
-	EqString(EqStringRef str, int nStart = 0, int len = -1);
-	EqString(const EqString &str, int nStart = 0, int len = -1);
-	EqString(EqString&& str) noexcept;
+	~EqTStr();
 
-	EqString(const wchar_t* pszString, int len = -1);
-	EqString(const EqWString &str, int nStart = 0, int len = -1);
+	EqTStr() = default;
+	EqTStr(const CH* pszString, int len = -1);
+	EqTStr(StrRef str, int nStart = 0, int len = -1);
+	EqTStr(const EqTStr& str, int nStart = 0, int len = -1);
+	EqTStr(EqTStr&& str) noexcept;
 
-	static EqString FormatF(const char* pszFormat, ...);
-	static EqString FormatV(const char* pszFormat, va_list argptr);
+	static EqTStr FormatF(const CH* pszFormat, ...);
+	static EqTStr FormatV(const CH* pszFormat, va_list argptr);
 	template <typename... Args>
-	static EqString Format(const char* pszFormat, Args&&... args);
+	static EqTStr Format(const CH* pszFormat, Args&&... args);
 
-	static size_t	ReadString(IVirtualStream* stream, EqString& output);
+	static size_t	ReadString(IVirtualStream* stream, EqTStr& output);
 
 	bool		IsValid() const;
-	const char* GetData() const { return StrPtr(); }
-	const char*	ToCString() const { return GetData(); }
-	EqStringRef	Ref() const { return EqStringRef(GetData(), Length()); }
+	const CH*	GetData() const { return StrPtr(); }
+	CH*			GetData() { return m_pszString; }
+	const CH*	ToCString() const { return GetData(); }
+	StrRef		Ref() const { return StrRef(GetData(), Length()); }
 
 	ushort		Length() const { return m_nLength; }
 	ushort		GetSize() const { return m_nAllocated; }
 	
 	// comparison operations
-	int			Compare(EqStringRef strRef) const { return Ref().Compare(strRef); }
-	int			CompareCaseIns(EqStringRef strRef) const { return Ref().CompareCaseIns(strRef); }
-	int			GetMathingChars(EqStringRef strRef) const { return Ref().GetMathingChars(strRef); }
-	int			GetMathingCharsCaseIns(EqStringRef strRef) const { return Ref().GetMathingCharsCaseIns(strRef); }
+	int			Compare(StrRef strRef) const { return Ref().Compare(strRef); }
+	int			CompareCaseIns(StrRef strRef) const { return Ref().CompareCaseIns(strRef); }
+	int			GetMathingChars(StrRef strRef) const { return Ref().GetMathingChars(strRef); }
+	int			GetMathingCharsCaseIns(StrRef strRef) const { return Ref().GetMathingCharsCaseIns(strRef); }
 	
 	// searches for substring, returns position
-	int			Find(EqStringRef strSub, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(strSub, bCaseSensitive, nStart); }
+	int			Find(StrRef strSub, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(strSub, bCaseSensitive, nStart); }
 
 	// modifying
 	void		Clear();
@@ -63,65 +61,52 @@ public:
 	bool		ExtendAlloc(int nSize, bool bCopy = true);
 	bool		Resize(int nSize, bool bCopy = true);
 
-	void		Assign(const char* pszStr, int len = -1);
-	void		Assign(const EqString &str, int nStart = 0, int len = -1);
-	void		Assign(EqStringRef str, int nStart = 0, int len = -1);
-	void		Assign(const wchar_t* pszStr, int len = -1);
-	void		Assign(const EqWString &str, int nStart = 0, int len = -1);
+	void		Assign(const CH* pszStr, int len = -1);
+	void		Assign(const EqTStr& str, int nStart = 0, int len = -1);
+	void		Assign(StrRef str, int nStart = 0, int len = -1);
 
-	void		Append(const char c);
-	void		Append(const char* pszStr, int nCount = -1);
-	void		Append(const EqString &str);
-	void		Append(EqStringRef str);
+	void		Append(const CH c);
+	void		Append(const CH* pszStr, int nCount = -1);
+	void		Append(const EqTStr& str);
+	void		Append(StrRef str);
 
-	void		Insert(const char* pszStr, int nInsertPos, int nInsertCount = -1);
-	void		Insert(const EqString &str, int nInsertPos);
-	void		Insert(EqStringRef str, int nInsertPos);
+	void		Insert(const CH* pszStr, int nInsertPos, int nInsertCount = -1);
+	void		Insert(const EqTStr& str, int nInsertPos);
+	void		Insert(StrRef str, int nInsertPos);
 	void		Remove(int nStart, int nCount);
 
-	void		ReplaceChar( char whichChar, char to );
-	int			ReplaceSubstr(EqStringRef find, EqStringRef replaceTo, bool bCaseSensetive = false, int nStart = 0);
-
-	void		Path_FixSlashes() const;
+	void		ReplaceChar(CH whichChar, CH to);
+	int			ReplaceSubstr(StrRef find, StrRef replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
 	// converters
-	EqString	LowerCase() const;
-	EqString	UpperCase() const;
+	EqTStr		LowerCase() const { return Ref().LowerCase(); }
+	EqTStr		UpperCase() const { return Ref().UpperCase(); }
 
 	// rightmost\leftmost string extractors
-	EqString	Left(int nCount) const;
-	EqString	Right(int nCount) const;
-	EqString	Mid(int nStart, int nCount) const;
+	EqTStr		Left(int nCount) const { return Ref().Left(nCount); }
+	EqTStr		Right(int nCount) const { return Ref().Right(nCount); }
+	EqTStr		Mid(int nStart, int nCount) const { return Ref().Mid(nStart, nCount); }
 
-	// strip operators
-	EqString	Path_Strip_Ext() const;
-	EqString	Path_Strip_Name() const;
-	EqString	Path_Strip_Path() const;
+	EqTStr		EatWhiteSpaces() const { return Ref().EatWhiteSpaces(); }
+	EqTStr		TrimSpaces(bool left = true, bool right = true) const { return Ref().TrimSpaces(left, right); }
+	EqTStr		TrimChar(const CH* ch, bool left = true, bool right = true) const { return Ref().TrimChar(ch, left, right); }
+	EqTStr		TrimChar(CH ch, bool left = true, bool right = true) const { return Ref().TrimChar(ch, left, right); }
 
-	EqString	Path_Extract_Ext() const;
-	EqString	Path_Extract_Name() const;
-	EqString	Path_Extract_Path() const;
-
-	EqString	EatWhiteSpaces() const;
-	EqString	TrimSpaces(bool left = true, bool right = true) const;
-	EqString	TrimChar(const char* ch, bool left = true, bool right = true) const;
-	EqString	TrimChar(char ch, bool left = true, bool right = true) const;
-	
 	//------------------------------------------------------------------------------------------------
 
-	EqString& operator = (const EqString& other)
+	EqTStr& operator = (const EqTStr& other)
 	{
 		this->Assign( other );
 		return *this;
 	}
 
-	EqString& operator = (const EqStringRef& other)
+	EqTStr& operator = (const StrRef& other)
 	{
 		this->Assign(other);
 		return *this;
 	}
 
-	EqString& operator = (EqString&& other) noexcept
+	EqTStr& operator = (EqTStr&& other) noexcept
 	{
 		Clear();
 		m_nAllocated = other.m_nAllocated;
@@ -133,47 +118,50 @@ public:
 		return *this;
 	}
 
-	EqString& operator = (const char* pszStr)
+	EqTStr& operator = (const CH* pszStr)
 	{
 		this->Assign( pszStr );
 		return *this;
 	}
 
-	char operator[](int idx) const
+	CH operator[](int idx) const
 	{
 		ASSERT(idx >= 0 && idx <= m_nLength);
 		return m_pszString[idx];
 	}
 
-	operator const char* () const { return ToCString(); }
-	operator EqStringRef () const { return Ref(); }
+	operator const CH* () const { return ToCString(); }
+	operator StrRef () const { return Ref(); }
 
 protected:
 
 	bool		MakeInsertSpace(int startPos, int count);
 
-	const char* StrPtr() const;
-	char*		m_pszString{ nullptr };
+	const CH*	StrPtr() const;
+	CH*			m_pszString{ nullptr };
 
 	uint16		m_nLength{ 0 };			// length of string
 	uint16		m_nAllocated{ 0 };		// allocation size
 };
 
-static size_t VSRead(IVirtualStream* stream, EqString& str)
+template<typename CH>
+static size_t VSRead(IVirtualStream* stream, EqTStr<CH>& str)
 {
-	return EqString::ReadString(stream, str);
+	return EqTStr<CH>::ReadString(stream, str);
 }
 
-static size_t VSWrite(IVirtualStream* stream, const EqString& str)
+template<typename CH>
+static size_t VSWrite(IVirtualStream* stream, const EqTStr<CH>& str)
 {
 	const uint16 length = str.Length();
 	stream->Write(&length, 1, sizeof(uint16));
-	stream->Write(str.GetData(), sizeof(char), length);
+	stream->Write(str.GetData(), sizeof(CH), length);
 	return 1;
 }
 
+template <typename CH>
 template <typename... Args>
-inline EqString EqString::Format(const char* pszFormat, Args&&... args)
+inline EqTStr<CH> EqTStr<CH>::Format(const CH* pszFormat, Args&&... args)
 {
 	return FormatF(pszFormat, StrToFmt(std::forward<Args>(args))...);
 }

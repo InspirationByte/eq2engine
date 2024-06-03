@@ -49,7 +49,7 @@ static marker_series* GetTLSMarkerSeries()
 		char threadName[maxThreadName]{ 0 };
 		Threading::GetThreadName(threadId, threadName, maxThreadName);
 
-		tlsCV_events->threadName = threadName;
+		AnsiUnicodeConverter(tlsCV_events->threadName, threadName);
 	}
 
 	const int depth = tlsCV_events->pushedEvents.numElem();
@@ -111,7 +111,9 @@ IEXPORTS void ProfAddMarker(const char* text)
 {
 #ifdef _WIN32
 	marker_series* series = GetTLSMarkerSeries();
-	span s(*series, high_importance, EqWString(text));
+	EqWString str;
+	AnsiUnicodeConverter(str, text);
+	span s(*series, high_importance, str);
 #else
 
 #endif // _WIN32
@@ -124,7 +126,8 @@ IEXPORTS int ProfBeginMarker(const char* text)
 
 	int eventId = tlsCV_events->pushedEvents.numElem();
 	cvSpanHolder& spanHld = tlsCV_events->pushedEvents.append();
-	EqWString wText(text);
+	EqWString wText;
+	AnsiUnicodeConverter(wText, text);
 	new(spanHld.data) span(*series, normal_importance, wText.ToCString());
 
 	return eventId;

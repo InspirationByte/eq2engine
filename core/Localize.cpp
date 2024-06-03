@@ -78,14 +78,18 @@ static void ReplaceStrFmt(EqWString& str)
 }
 
 CLocToken::CLocToken(const char* tok, const wchar_t* text, bool customToken)
-	: m_token(tok), m_text(text), m_customToken(customToken)
+	: m_token(tok)
+	, m_text(text)
+	, m_customToken(customToken)
 {
 	ReplaceStrFmt(m_text);
 }
 
 CLocToken::CLocToken(const char* tok, const char* text, bool customToken)
-	: m_token(tok), m_text(text), m_customToken(customToken)
+	: m_token(tok)
+	, m_customToken(customToken)
 {
+	AnsiUnicodeConverter(m_text, text);
 	ReplaceStrFmt(m_text);
 }
 
@@ -131,7 +135,7 @@ void CLocalize::ReloadLanguageFiles()
 
 		// de-localize token
 		token.m_token.Clear();
-		EqStringConv::CUTF8Conv(token.m_text, token.m_token);
+		AnsiUnicodeConverter(token.m_text, token.m_token);
 	}
 
 	for (EqString& tokenFilePrefix : m_languageFilePrefixes)

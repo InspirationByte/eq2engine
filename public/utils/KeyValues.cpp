@@ -1686,7 +1686,7 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 
 	KVSection* pBase = KV_LoadFromStream(&buffer, pParseTo);
 	if (pBase)
-		pBase->SetName(_Es(pszFileName).Path_Strip_Path().ToCString());
+		pBase->SetName(fnmPathStripPath(pszFileName));
 
 	return pBase;
 }

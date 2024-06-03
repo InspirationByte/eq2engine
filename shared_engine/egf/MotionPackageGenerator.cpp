@@ -1121,7 +1121,7 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 		return false;
 	}
 
-	m_animPath = _Es(filename).Path_Strip_Name();
+	m_animPath = fnmPathStripName(filename);
 
 	KVSection* animSourceKey = sec->FindSection("FBXSource");
 	if (animSourceKey)

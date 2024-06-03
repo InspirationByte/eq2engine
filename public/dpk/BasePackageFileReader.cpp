@@ -14,7 +14,7 @@
 
 CBasePackageReader* CBasePackageReader::CreateReaderByExtension(const char* packageName)
 {
-	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
+	const EqString fileExt = fnmPathExtractExt(packageName);
 	CBasePackageReader* reader = nullptr;
 
 	// allow zip files to be loaded
@@ -28,9 +28,8 @@ CBasePackageReader* CBasePackageReader::CreateReaderByExtension(const char* pack
 
 bool CBasePackageReader::GetInternalFileName(EqString& pkgFileName, const char* fileName) const
 {
-	EqString fullFilename(fileName);
-	fullFilename = fullFilename.LowerCase();
-	fullFilename.Path_FixSlashes();
+	EqString fullFilename = EqStringRef(fileName).LowerCase();
+	fnmPathFixSeparators(fullFilename);
 
 	if (m_mountPath.Length())
 	{

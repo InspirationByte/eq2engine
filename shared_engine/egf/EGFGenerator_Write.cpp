@@ -663,10 +663,9 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stre
 	for(int i = 0; i < m_usedMaterials.numElem(); i++)
 	{
 		GenMaterialDesc_t* mat = m_usedMaterials[i];
-		EqString mat_no_ext(mat->materialname);
 
 		studioMaterialDesc_t* matDesc = header->pMaterial(i);
-		strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext());
+		strcpy(matDesc->materialname, fnmPathStripExt(mat->materialname));
 	}
 	
 
@@ -688,10 +687,8 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stre
 
 			header->numMaterials++;
 
-			EqString mat_no_ext(mat.materialname);
-
 			studioMaterialDesc_t* matDesc = header->pMaterial(materialGroupStart + j);
-			strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext());
+			strcpy(matDesc->materialname, fnmPathStripExt(mat.materialname));
 
 			WRITE_RESERVE(studioMaterialDesc_t);
 		}
@@ -794,9 +791,8 @@ bool CEGFGenerator::GenerateEGF()
 	header->length = sizeof(studioHdr_t);
 
 	// set model name
-	strcpy( header->modelName, m_outputFilename.ToCString() );
-
-	FixSlashes( header->modelName );
+	fnmPathFixSeparators(m_outputFilename);
+	strncpy(header->modelName, m_outputFilename, elementsOf(header->modelName));
 
 	egfStream.Write(header, 1, sizeof(studioHdr_t));
 
@@ -877,7 +873,7 @@ bool CEGFGenerator::GenerateEGF()
 	Msg(" search paths: %d\n", header->numMaterialSearchPaths);
 	Msg("   Wrote %d bytes:\n", header->length);
 
-	g_fileSystem->MakeDir(m_outputFilename.Path_Extract_Path().ToCString(), SP_MOD);
+	g_fileSystem->MakeDir(fnmPathExtractPath(m_outputFilename), SP_MOD);
 
 	// open output model file
 	IFilePtr file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb", -1);

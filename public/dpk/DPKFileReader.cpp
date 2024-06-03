@@ -316,7 +316,7 @@ bool CDPKFileReader::InitPackage(COSFile& osFile, const char* mountPath /*= null
 	else
 		m_mountPath = dpkMountPath;
 
-	m_mountPath.Path_FixSlashes();
+	fnmPathFixSeparators(m_mountPath);
 
 	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packagePath.ToCString());
 

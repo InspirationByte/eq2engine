@@ -249,7 +249,7 @@ static void fncfgfiles_variants(const ConCommandBase* cmd, Array<EqString>& list
 		if (fsFind.IsDirectory())
 			continue;
 
-		list.append(_Es(fsFind.GetPath()).Path_Strip_Ext());
+		list.append(fnmPathStripExt(fsFind.GetPath()));
 	}
 }
 
@@ -515,10 +515,10 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 {
 	EqString cfgFileName(pszFilename);
 
-	if (cfgFileName.Path_Extract_Ext() != s_commandsConfigFileExt && !g_fileSystem->FileExist(cfgFileName))
+	if (fnmPathExtractExt(cfgFileName) != s_commandsConfigFileExt && !g_fileSystem->FileExist(cfgFileName))
 	{
 		if (!g_fileSystem->FileExist("cfg/" + cfgFileName))
-			cfgFileName = cfgFileName.Path_Strip_Ext() + ".cfg";
+			cfgFileName = fnmPathStripExt(cfgFileName) + ".cfg";
 		else
 			cfgFileName = "cfg/" + cfgFileName;
 	}

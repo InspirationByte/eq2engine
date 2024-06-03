@@ -87,9 +87,8 @@ int CStudioCache::PrecacheModel(const char* modelName)
 	if (idx == CACHE_INVALID_MODEL)
 	{
 		EqString str(modelName);
-		str.Path_FixSlashes();
-		const int nameHash = StringToHash(str, true);
-		
+		fnmPathFixSeparators(str);
+
 		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", str.ToCString());
 
 		CEqStudioGeom* model = PPNew CEqStudioGeom();
@@ -107,6 +106,7 @@ int CStudioCache::PrecacheModel(const char* modelName)
 				model->m_cacheIdx = newIdx;
 			}
 
+			const int nameHash = StringToHash(str, true);
 			m_cacheIndex.insert(nameHash, model->m_cacheIdx);
 		}
 		else
@@ -148,7 +148,7 @@ const char* CStudioCache::GetModelFilename(CEqStudioGeom* model) const
 int CStudioCache::GetModelIndex(const char* modelName) const
 {
 	EqString str(modelName);
-	str.Path_FixSlashes();
+	fnmPathFixSeparators(str);
 
 	const int nameHash = StringToHash(str, true);
 	auto found = m_cacheIndex.find(nameHash);

@@ -393,7 +393,7 @@ static void CookPackageTarget(const char* targetName)
 	}
 
 	EqString outputFileName(targetName);
-	if (outputFileName.Path_Extract_Ext().Length() == 0)
+	if (fnmPathExtractExt(outputFileName).Length() == 0)
 		outputFileName.Append(".epk");
 
 	// load target info
@@ -454,7 +454,7 @@ static void CookPackageTarget(const char* targetName)
 			ProcessVariableString(targetNameOrDir);
 
 			const int wildcardStart = wildcard.Find("*");
-			if (wildcardStart == -1 && wildcard.Path_Extract_Name().Length() > 0)
+			if (wildcardStart == -1 && fnmPathExtractName(wildcard).Length() > 0)
 			{
 				// try adding file directly
 				if(fileListBuilder.AddFile(wildcard, targetNameOrDir))
@@ -477,9 +477,9 @@ static void CookPackageTarget(const char* targetName)
 	}
 	
 	// also make a folder
-	outputFileName.Path_FixSlashes();
-	const EqString packagePath = outputFileName.Path_Extract_Path().TrimChar(CORRECT_PATH_SEPARATOR);
-	if (packagePath.Length() > 0 && packagePath.Path_Extract_Ext().Length() == 0)
+	fnmPathFixSeparators(outputFileName);
+	const EqString packagePath = fnmPathExtractPath(outputFileName).TrimChar(CORRECT_PATH_SEPARATOR);
+	if (packagePath.Length() > 0 && fnmPathExtractExt(packagePath).Length() == 0)
 		g_fileSystem->MakeDir(packagePath, SP_ROOT);
 
 	if (!fileListBuilder.GetFiles().numElem())
@@ -499,7 +499,7 @@ static void CookPackageTarget(const char* targetName)
 		const int maxFiles = fileListBuilder.GetFiles().numElem();
 		for (const CFileListBuilder::FileInfo& fileInfo : fileListBuilder.GetFiles())
 		{
-			const EqString fileExt = _Es(fileInfo.fileName).Path_Extract_Ext();
+			const EqString fileExt = fnmPathExtractExt(fileInfo.fileName);
 			const bool skipCompression = CheckExtensionList(ignoreCompressionExt, fileExt);
 
 			int targetFileFlags = (skipCompression ? 0 : DPKFILE_FLAG_COMPRESSED) | DPKFILE_FLAG_ENCRYPTED;
@@ -526,7 +526,7 @@ static void CookPackageTarget(const char* targetName)
 			if (loadRawFile)
 			{
 				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
-				if (fileInfo.fileName.Path_Extract_Ext() == EqStringRef("epk"))
+				if (fnmPathExtractExt(fileInfo.fileName) == "epk")
 				{
 					// validate EPK file
 					dpkheader_t hdr;

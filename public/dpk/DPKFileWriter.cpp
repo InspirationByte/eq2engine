@@ -22,7 +22,7 @@ CDPKFileWriter::CDPKFileWriter(const char* mountPath, int compression, const cha
 
 	strncpy(m_mountPath, mountPath, DPK_STRING_SIZE);
 	m_mountPath[DPK_STRING_SIZE - 1] = 0;
-	FixSlashes(m_mountPath);
+	fnmPathFixSeparators(m_mountPath);
 	xstrlwr(m_mountPath);
 
 	m_compressionLevel = compression;

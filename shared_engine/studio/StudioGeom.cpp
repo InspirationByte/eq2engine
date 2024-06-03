@@ -243,8 +243,7 @@ void CEqStudioGeom::DestroyModel()
 
 void CEqStudioGeom::LoadPhysicsData()
 {
-	EqString podFileName = m_name.Path_Strip_Ext();
-	podFileName.Append(".pod");
+	EqString podFileName = fnmPathStripExt(m_name) + ".pod";
 
 	if (Studio_LoadPhysModel(podFileName, &m_physModel))
 	{
@@ -324,7 +323,7 @@ static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int curren
 bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 {
 	m_name = pszPath;
-	m_name.Path_FixSlashes();
+	fnmPathFixSeparators(m_name);
 
 	// first we switch to loading
 	Atomic::Exchange(m_readyState, MODEL_LOAD_IN_PROGRESS);
@@ -351,7 +350,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 		CEqJobManager* jobMng = g_studioModelCache->GetJobMng();
 
 		const int numPackages = m_studio->numMotionPackages
-			+ g_fileSystem->FileExist(m_name.Path_Strip_Ext() + ".mop", SP_MOD);
+			+ g_fileSystem->FileExist(fnmPathStripExt(m_name) + ".mop", SP_MOD);
 
 		FunctionJob* loadGeomJob = PPNew FunctionJob("LoadEGFHWGeom", [this](void*, int) {
 			DevMsg(DEVMSG_CORE, "Loading HW geom for %s, state: %d\n", GetName());
@@ -574,14 +573,14 @@ void CEqStudioGeom::LoadMotionPackages()
 	const studioHdr_t* studio = m_studio;
 
 	// Try load default motion file
-	studioMotionData_t* motionData = Studio_LoadMotionData(m_name.Path_Strip_Ext() + ".mop", studio->numBones);
+	studioMotionData_t* motionData = Studio_LoadMotionData(fnmPathStripExt(m_name) + ".mop", studio->numBones);
 	if (motionData)
 		m_motionData.append(motionData);
 
 	// load motion packages that are additionally specified in EGF model
 	for (int i = 0; i < studio->numMotionPackages; i++)
 	{
-		const EqString mopPath(m_name.Path_Strip_Name() + studio->pPackage(i)->packageName + ".mop");
+		const EqString mopPath(fnmPathStripName(m_name) + studio->pPackage(i)->packageName + ".mop");
 		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
 
 		studioMotionData_t* motionData = Studio_LoadMotionData(mopPath.ToCString(), studio->numBones);
@@ -619,7 +618,7 @@ void CEqStudioGeom::LoadMaterials()
 		for (int i = 0; i < numMaterials; i++)
 		{
 			EqString fpath(studio->pMaterial(i)->materialname);
-			fpath.Path_FixSlashes();
+			fnmPathFixSeparators(fpath);
 
 			if (fpath.ToCString()[0] == CORRECT_PATH_SEPARATOR)
 				fpath = EqString(fpath.ToCString(), fpath.Length() - 1);
@@ -630,7 +629,7 @@ void CEqStudioGeom::LoadMaterials()
 					continue;
 
 				EqString spath(studio->pMaterialSearchPath(j)->searchPath);
-				spath.Path_FixSlashes();
+				fnmPathFixSeparators(spath);
 
 				if (spath.Length() && spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
 					spath = spath.Left(spath.Length() - 1);

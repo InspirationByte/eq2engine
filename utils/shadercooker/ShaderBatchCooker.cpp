@@ -227,7 +227,7 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 
 			SearchFolderForShaders(searchTemplate);
 		}
-		else if (fileName.Path_Extract_Ext().LowerCase() == m_targetProps.sourceShaderDescExt.LowerCase())
+		else if (fnmPathExtractExt(fileName) == m_targetProps.sourceShaderDescExt.LowerCase())
 		{
 			EqString fullShaderPath;
 			CombinePath(fullShaderPath, searchFolder, fileName);

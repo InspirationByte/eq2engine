@@ -122,9 +122,9 @@ int	ShaderAPI_Base::GetProgressiveTextureFrequency() const
 ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 {
 	EqString searchStr(pszName);
-	searchStr.Path_FixSlashes();
+	fnmPathFixSeparators(searchStr);
 
-	const int nameHash = StringToHash(searchStr.ToCString(), true);
+	const int nameHash = StringToHash(searchStr, true);
 
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
@@ -150,9 +150,9 @@ ITexture* ShaderAPI_Base::FindTexturePtr(int nameHash) const
 ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName, bool& justCreated)
 {
 	EqString searchStr(pszName);
-	searchStr.Path_FixSlashes();
+	fnmPathFixSeparators(searchStr);
 
-	const int nameHash = StringToHash(searchStr.ToCString(), true);
+	const int nameHash = StringToHash(searchStr, true);
 
 	CScopedMutex m(g_sapi_TextureMutex);
 	auto it = m_TextureList.find(nameHash);

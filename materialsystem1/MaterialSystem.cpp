@@ -209,7 +209,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 		if(!m_materialsPath.Length())
 			m_materialsPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindSection("MaterialsPath") : nullptr, 0, "materials/");
 
-		m_materialsPath.Path_FixSlashes();
+		fnmPathFixSeparators(m_materialsPath);
 
 		if (m_materialsPath.ToCString()[m_materialsPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
 			m_materialsPath.Append(CORRECT_PATH_SEPARATOR);
@@ -219,7 +219,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 		if(!m_materialsSRCPath.Length())
 			m_materialsSRCPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindSection("MaterialsSRCPath") : nullptr, 0, "materialsSRC/");
 
-		m_materialsSRCPath.Path_FixSlashes();
+		fnmPathFixSeparators(m_materialsSRCPath);
 
 		if (m_materialsSRCPath.ToCString()[m_materialsSRCPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
 			m_materialsSRCPath.Append(CORRECT_PATH_SEPARATOR);
@@ -618,9 +618,8 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName, int instan
 	if(*szMaterialName == 0)
 		return nullptr;
 
-	EqString materialName = szMaterialName;
-	materialName = materialName.LowerCase();
-	materialName.Path_FixSlashes();
+	EqString materialName = EqStringRef(szMaterialName).LowerCase();
+	fnmPathFixSeparators(materialName);
 
 	if (materialName[0] == CORRECT_PATH_SEPARATOR)
 		materialName = materialName.ToCString() + 1;

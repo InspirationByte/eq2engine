@@ -132,7 +132,7 @@ struct ImageDesc
 //
 static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSection* kv)
 {
-	EqString atlas_dir = _Es(atlasPath).Path_Strip_Name();
+	EqString atlas_dir = fnmPathStripName(atlasPath);
 	EqString image_name = KV_GetValueString(kv, 0, nullptr);
 
 	if(image_name.Length() == 0)
@@ -142,7 +142,7 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 	}
 
 	// always strip extension
-	dest.name = image_name.Path_Strip_Ext();
+	dest.name = fnmPathStripExt(image_name);
 
 	if(!kv->IsSection())
 	{
@@ -422,7 +422,7 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	const EqString matFileName = fullMaterialPath + ".mat";
 	const EqString atlasFileName = fullMaterialPath + ".atlas";
 
-	g_fileSystem->MakeDir(matFileName.Path_Strip_Name(), SP_ROOT);
+	g_fileSystem->MakeDir(fnmPathStripName(matFileName), SP_ROOT);
 
 	// save atlas info
 	KeyValues kvs;

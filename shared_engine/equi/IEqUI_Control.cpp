@@ -30,7 +30,7 @@ IUIControl::IUIControl()
 	m_position(0),m_size(25),
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP)
 {
-	m_label = "Control";
+	m_label = L"Control";
 
 	m_transform.rotation = 0.0f;
 	m_transform.translation = 0.0f;
@@ -44,7 +44,9 @@ IUIControl::~IUIControl()
 
 const char*	IUIControl::GetLabel() const
 {
-	return _Es(m_label).ToCString();
+	static EqString _label;
+	AnsiUnicodeConverter(_label, m_label);
+	return _label;
 }
 
 void IUIControl::SetLabel(const char* pszLabel)

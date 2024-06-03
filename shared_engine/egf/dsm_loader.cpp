@@ -90,7 +90,7 @@ int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
 bool LoadSharedModel(DSModel* model, const char* filename)
 {
 	EqString file(filename);
-	EqString ext(file.Path_Extract_Ext());
+	EqString ext(fnmPathExtractExt(file));
 
 	if (!stricmp(ext.GetData(), "esm"))
 		return LoadESM(model, filename);
@@ -107,7 +107,7 @@ bool LoadSharedModel(DSModel* model, const char* filename)
 bool SaveSharedModel(DSModel* model, const char* filename)
 {
 	EqString file(filename);
-	EqString ext(file.Path_Extract_Ext());
+	EqString ext(fnmPathExtractExt(file));
 
 	if(!stricmp(ext.GetData(), "obj"))
 		return SaveOBJ(model, filename);

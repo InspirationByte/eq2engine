@@ -15,7 +15,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	const char* requested_source, shaderc_include_type type,
 	const char* requesting_source, size_t include_depth)
 {
-	const EqString sourcePath = EqString(requesting_source).Path_Extract_Path();
+	const EqString sourcePath = fnmPathExtractPath(requesting_source);
 
 	IncludeResult* result = nullptr;
 	if (m_freeSlots.numElem())

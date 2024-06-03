@@ -8,8 +8,12 @@
 #pragma once
 
 // WARNING: this function declaration is compatible with cmdFilterFn_t
+
+template<typename CH>
+class EqTStr;
+using EqString = EqTStr<char>;
+
 class ConCommandBase;
-class EqString;
 using CommandFilterFn = bool (*)(const ConCommandBase* pCmd, ArrayCRef<EqString> args);
 
 class ICommandLine : public IEqCoreModule

@@ -131,7 +131,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 	EqString modelPath;
 	CombinePath(modelPath, m_refsPath.ToCString(), pszFileName);
 
-	EqString ext(modelPath.Path_Extract_Ext());
+	EqString ext(fnmPathExtractExt(modelPath));
 
 	if (!ext.CompareCaseIns("fbx"))
 	{
@@ -1167,9 +1167,7 @@ bool CEGFGenerator::GeneratePOD()
 		return true;
 
 	MsgWarning("\nWriting physics objects...\n");
-
-	EqString outputPOD(m_outputFilename.Path_Strip_Ext() + _Es(".pod"));
-	m_physModels.SaveToFile( outputPOD.ToCString() );
+	m_physModels.SaveToFile( fnmPathStripExt(m_outputFilename) + ".pod" );
 
 	return true;
 }
@@ -1212,7 +1210,7 @@ bool CEGFGenerator::InitFromKeyValues(const char* filename)
 
 	if(scriptFile.LoadFromFile(filename))
 	{
-		SetRefsPath( _Es(filename).Path_Strip_Name().ToCString() );
+		SetRefsPath(fnmPathStripName(filename));
 
 		// strip filename to set reference models path
 		MsgWarning("\nCompiling script \"%s\"\n", filename);

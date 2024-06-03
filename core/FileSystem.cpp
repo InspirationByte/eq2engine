@@ -316,7 +316,7 @@ void CFileSystem::Shutdown()
 void CFileSystem::SetBasePath(const char* path) 
 { 
 	m_basePath = path;
-	m_basePath.Path_FixSlashes();
+	fnmPathFixSeparators(m_basePath);
 
 	if(m_basePath[m_basePath.Length()-1] != CORRECT_PATH_SEPARATOR)
 		m_basePath.Append(CORRECT_PATH_SEPARATOR);
@@ -563,7 +563,7 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 	else
 		fullPath = dirOrFileName;
 
-	fullPath.Path_FixSlashes();
+	fnmPathFixSeparators(fullPath);
 
 	return fullPath;
 }
@@ -606,7 +606,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		{
 			EqString filePath;
 			CombinePath(filePath, m_basePath, spInfo->path, fileName);
-			filePath.Path_FixSlashes();
+			fnmPathFixSeparators(filePath);
 
 #ifndef _WIN32
 			const int nameHash = FSStringId(filePath);
@@ -628,7 +628,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	{
 		EqString filePath;
 		CombinePath(filePath, m_basePath, m_dataDir, fileName);
-		filePath.Path_FixSlashes();
+		fnmPathFixSeparators(filePath);
 
 		if (func(filePath, SP_DATA, flags, false))
 			return true;
@@ -644,7 +644,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			filePath = fileName;
 		else
 			CombinePath(filePath, m_basePath, fileName);
-		filePath.Path_FixSlashes();
+		fnmPathFixSeparators(filePath);
 
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
 
@@ -942,7 +942,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	DKFINDDATA* newFind = PPNew DKFINDDATA;
 	newFind->searchPaths = searchPath;
 	newFind->wildcard = wildcard;
-	newFind->wildcard.Path_FixSlashes();
+	fnmPathFixSeparators(newFind->wildcard);
 	newFind->dirIndex = max(0, dirIndex);
 	newFind->singleDir = (dirIndex >= 0);
 
@@ -999,7 +999,7 @@ int	CFileSystem::FindGetDirIndex(DKFINDDATA* findData) const
 DKMODULE* CFileSystem::OpenModule(const char* mod_name, EqString* outError)
 {
 	EqString moduleFileName = mod_name;
-	EqString modExt = moduleFileName.Path_Extract_Ext();
+	EqString modExt = fnmPathExtractExt(moduleFileName);
 
 #ifdef _WIN32
 	// make default module extension

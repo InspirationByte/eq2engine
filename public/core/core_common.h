@@ -43,6 +43,7 @@
 
 //---------------
 
+#include "platform/platformdefs.h"
 #include "common_types.h"
 
 #include "InterfaceManager.h"
@@ -81,7 +82,6 @@
 #include "ds/List.h"
 
 #include "ds/eqstring.h"
-#include "ds/eqwstring.h"
 
 #include "platform/eqthread.h"
 #include "ds/future.h"

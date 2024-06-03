@@ -801,14 +801,15 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		if(file && file->ShowModal() == wxID_OK)
 		{
-			EqString model_path(file->GetPath().wchar_str());
+			EqString modelPath;
+			AnsiUnicodeConverter(modelPath, EqWStringRef(file->GetPath().wchar_str()));
 
 			g_model.SetModel(nullptr);
 			FlushCache();
 
-			int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
+			int cache_index = g_studioModelCache->PrecacheModel(modelPath.ToCString() );
 			if(cache_index == CACHE_INVALID_MODEL)
-				wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
+				wxMessageBox(wxString::Format("Can't open %s\n", modelPath.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 
 			g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 		}
@@ -857,8 +858,9 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 				KeyValues script;
 
-				EqString fname( paths[i].wchar_str() );
-				EqString ext = fname.Path_Extract_Ext();
+				EqString fname;
+				AnsiUnicodeConverter(fname, EqWStringRef(paths[i].wchar_str()));
+				const EqString ext = fnmPathExtractExt(fname);
 
 				if(!stricmp(ext.GetData(), "asc"))
 				{
