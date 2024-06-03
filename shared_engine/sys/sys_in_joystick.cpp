@@ -59,7 +59,7 @@ static CEqGameControllerSDL s_controllers[MAX_CONTROLLERS];
 
 void CEqGameControllerSDL::Init()
 {
-	int mappingsSize = 0;
+	VSSize mappingsSize = 0;
 	const char* mappingsBuf = (const char*)g_fileSystem->GetFileBuffer(CONTROLLER_DB_FILENAME, &mappingsSize);
 	if (mappingsBuf)
 	{

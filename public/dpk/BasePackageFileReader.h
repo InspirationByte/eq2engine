@@ -27,6 +27,8 @@ public:
 class CBasePackageReader : public IFilePackageReader
 {
 public:
+	static CBasePackageReader*	CreateReaderByExtension(const char* packageName);
+
 	virtual bool				InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
 	virtual bool				OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
 

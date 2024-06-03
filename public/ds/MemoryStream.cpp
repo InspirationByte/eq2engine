@@ -36,7 +36,7 @@ CMemoryStream::CMemoryStream(PPSourceLine sl) : m_sl(sl)
 {
 }
 
-CMemoryStream::CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize, PPSourceLine sl)
+CMemoryStream::CMemoryStream(ubyte* data, int nOpenFlags, VSSize nDataSize, PPSourceLine sl)
 	: m_sl(sl)
 {
 	Open(data, nOpenFlags, nDataSize);
@@ -49,48 +49,60 @@ CMemoryStream::~CMemoryStream()
 }
 
 // reads data from virtual stream
-size_t CMemoryStream::Read(void *dest, size_t count, size_t size)
+VSSize CMemoryStream::Read(void *dest, VSSize count, VSSize size)
 {
 	ASSERT(m_openFlags & VS_OPEN_READ);
-	const int curPos = Tell();
-	ASSERT_MSG(curPos + size * count <= m_allocatedSize, "Reading more than CMemoryStream has (expected capacity %d, has %d)", curPos + size * count, m_allocatedSize);
 
-	const size_t readBytes = min(static_cast<size_t>(curPos + size * count), static_cast<size_t>(m_allocatedSize)) - curPos;
+	const VSSize numBytesToRead = size * count;
+	if (numBytesToRead <= 0)
+		return 0;
+
+	const int curPos = Tell();
+	ASSERT_MSG(curPos + numBytesToRead <= m_allocatedSize, "Reading more than CMemoryStream has (expected capacity %d, has %d)", curPos + numBytesToRead, m_allocatedSize);
+
+	const VSSize readBytes = min(static_cast<VSSize>(curPos + numBytesToRead), static_cast<VSSize>(m_allocatedSize)) - curPos;
 
 	memcpy(dest, m_currentPtr, readBytes);
 	m_currentPtr += readBytes;
 
-	return readBytes;
+	return readBytes / size;
 }
 
 // writes data to virtual stream
-size_t CMemoryStream::Write(const void *src, size_t count, size_t size)
+VSSize CMemoryStream::Write(const void *src, VSSize count, VSSize size)
 {
 	ASSERT(m_openFlags & VS_OPEN_WRITE);
 
-	const int nAddBytes = size * count;
-	const int nCurrPos = Tell();
+	const VSSize numBytesToWrite = size * count;
+	if (numBytesToWrite <= 0)
+		return 0;
 
-	if(nCurrPos+nAddBytes > m_allocatedSize)
+	const VSSize currentPos = Tell();
+
+	if(currentPos + numBytesToWrite > m_allocatedSize)
 	{
-		const int memDiff = (nCurrPos + nAddBytes) - m_allocatedSize;
-		int newSize = m_allocatedSize + memDiff + VSTREAM_GRANULARITY - 1;
+		const int64 memDiff = (currentPos + numBytesToWrite) - m_allocatedSize;
+		ASSERT(memDiff >= 0);
+
+		VSSize newSize = m_allocatedSize + memDiff + VSTREAM_GRANULARITY - 1;
 		newSize -= newSize % VSTREAM_GRANULARITY;
 
 		ReAllocate( newSize );
 	}
 
 	// copy memory
-	memcpy(m_currentPtr, src, nAddBytes);
+	memcpy(m_currentPtr, src, numBytesToWrite);
+	m_currentPtr += numBytesToWrite;
+	
+	const int64 newSize = m_currentPtr - m_start;
+	ASSERT(newSize >= 0);
 
-	m_currentPtr += nAddBytes;
-	m_writeTop = max(m_writeTop, m_currentPtr - m_start);
-
+	m_writeTop = max(m_writeTop, newSize);
 	return count;
 }
 
 // seeks pointer to position
-int CMemoryStream::Seek(int nOffset, EVirtStreamSeek seekType)
+VSSize CMemoryStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
 {
 	ASSERT(m_openFlags != 0);
 
@@ -113,18 +125,18 @@ int CMemoryStream::Seek(int nOffset, EVirtStreamSeek seekType)
 }
 
 // returns current pointer position
-int CMemoryStream::Tell() const
+VSSize CMemoryStream::Tell() const
 {
 	return m_currentPtr - m_start;
 }
 
-int CMemoryStream::GetSize()
+VSSize CMemoryStream::GetSize()
 {
 	return m_writeTop;
 }
 
 // opens stream, if this is a file, data is filename
-bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
+bool CMemoryStream::Open(ubyte* data, int nOpenFlags, VSSize nDataSize)
 {
 	ASSERT(nDataSize >= 0);
 	ASSERT_MSG(m_openFlags == 0, "Already open");
@@ -193,7 +205,7 @@ void CMemoryStream::ReAllocate(int nNewSize)
 }
 
 // resizes buffer to specified size
-void CMemoryStream::ShrinkBuffer(int size)
+void CMemoryStream::ShrinkBuffer(VSSize size)
 {
 	if(size < m_allocatedSize)
 	{
@@ -205,18 +217,18 @@ void CMemoryStream::ShrinkBuffer(int size)
 }
 
 // writes constents of this stream into the other stream
-void CMemoryStream::WriteToStream(IVirtualStream* pStream, int maxSize)
+void CMemoryStream::WriteToStream(IVirtualStream* pStream, VSSize maxSize)
 {
 	pStream->Write(m_start, 1, min(maxSize > 0 ? maxSize : INT_MAX, m_writeTop));
 }
 
 // reads other stream into this one
-bool CMemoryStream::AppendStream(IVirtualStream* pStream, int maxSize)
+bool CMemoryStream::AppendStream(IVirtualStream* pStream, VSSize maxSize)
 {
 	ASSERT(m_openFlags & VS_OPEN_WRITE);
 
-	const int resetPos = pStream->Tell();
-	const int readSize = min(maxSize > 0 ? maxSize : INT_MAX, pStream->GetSize() - resetPos);
+	const VSSize resetPos = pStream->Tell();
+	const VSSize readSize = min(maxSize > 0 ? maxSize : INT_MAX, pStream->GetSize() - resetPos);
 	
 	m_writeTop = max(Tell() + readSize, m_writeTop);
 	ReAllocate(m_writeTop + 16);

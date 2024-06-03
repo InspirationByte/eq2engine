@@ -169,12 +169,15 @@ bool COSFile::IsOpen() const
 #endif
 }
 
-size_t COSFile::Read(void* buffer, size_t count)
+size_t COSFile::Read(void* buffer, int64 count)
 {
+	if (count <= 0)
+		return 0;
+
 #ifdef _WIN32
 	ubyte* bufferStart = (ubyte*)buffer;
 	DWORD i;
-	while (count > (size_t)INT_MAX)
+	while (count > (int64)INT_MAX)
 	{
 		if (!ReadFile((HANDLE)m_fp, buffer, INT_MAX, &i, nullptr))
 			return -1;
@@ -184,7 +187,7 @@ size_t COSFile::Read(void* buffer, size_t count)
 		count -= INT_MAX;
 	}
 
-	if (!ReadFile((HANDLE)m_fp, buffer, (DWORD)count, &i, nullptr))
+	if (!ReadFile((HANDLE)m_fp, buffer, count, &i, nullptr))
 		return -1;
 
 	buffer = (ubyte*)buffer + i;
@@ -194,14 +197,17 @@ size_t COSFile::Read(void* buffer, size_t count)
 #endif
 }
 
-size_t COSFile::Write(const void* buffer, size_t count)
+size_t COSFile::Write(const void* buffer, int64 count)
 {
+	if (count <= 0)
+		return 0;
+
 	ASSERT_MSG(m_flags & (WRITE | APPEND), "COSFile - file was not open for read/append!");
 
 #ifdef _WIN32
 	const ubyte* bufferStart = (const ubyte*)buffer;
 	DWORD i;
-	while (count > (size_t)INT_MAX)
+	while (count > (int64)INT_MAX)
 	{
 		if (!WriteFile((HANDLE)m_fp, buffer, INT_MAX, &i, nullptr))
 			return -1;
@@ -211,7 +217,7 @@ size_t COSFile::Write(const void* buffer, size_t count)
 		count -= INT_MAX;
 	}
 
-	if (!WriteFile((HANDLE)m_fp, buffer, (DWORD)count, &i, nullptr))
+	if (!WriteFile((HANDLE)m_fp, buffer, count, &i, nullptr))
 		return -1;
 
 	buffer = (const ubyte*)buffer + i;
@@ -221,7 +227,7 @@ size_t COSFile::Write(const void* buffer, size_t count)
 #endif
 }
 
-size_t COSFile::Seek(size_t offset, ESeekPos pos)
+size_t COSFile::Seek(int64 offset, ESeekPos pos)
 {
 #ifdef _WIN32
 	DWORD moveMethod[3] = { 
@@ -239,7 +245,7 @@ size_t COSFile::Seek(size_t offset, ESeekPos pos)
 
 	return li.QuadPart;
 #else
-	return SetFilePointer((HANDLE)m_fp, (LONG)offset, nullptr, moveMethod[static_cast<int>(pos)]);
+	return SetFilePointer((HANDLE)m_fp, offset, nullptr, moveMethod[static_cast<int>(pos)]);
 #endif
 #else
 	int whence[3] = {

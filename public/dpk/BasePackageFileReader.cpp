@@ -9,6 +9,23 @@
 #include "BasePackageFileReader.h"
 #include "DPKUtils.h"
 
+#include "dpk/DPKFileReader.h"
+#include "dpk/ZipFileReader.h"
+
+CBasePackageReader* CBasePackageReader::CreateReaderByExtension(const char* packageName)
+{
+	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
+	CBasePackageReader* reader = nullptr;
+
+	// allow zip files to be loaded
+	if (fileExt == "zip")
+		reader = PPNew CZipFileReader();
+	else
+		reader = PPNew CDPKFileReader();
+
+	return reader;
+}
+
 bool CBasePackageReader::GetInternalFileName(EqString& pkgFileName, const char* fileName) const
 {
 	EqString fullFilename(fileName);

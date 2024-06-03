@@ -26,9 +26,9 @@ public:
 	void	Close();
 	bool	IsOpen() const;
 
-	size_t	Read(void* buffer, size_t count);
-	size_t	Write(const void* buffer, size_t count);
-	size_t	Seek(size_t offset, ESeekPos pos);
+	size_t	Read(void* buffer, int64 count);
+	size_t	Write(const void* buffer, int64 count);
+	size_t	Seek(int64 offset, ESeekPos pos);
 	size_t	Tell() const;
 
 	bool	Flush();

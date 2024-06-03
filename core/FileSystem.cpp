@@ -34,10 +34,8 @@
 #include "utils/KeyValues.h"
 #include "FileSystem.h"
 
-#include "dpk/DPKFileReader.h"
-#include "dpk/ZipFileReader.h"
+#include "dpk/BasePackageFileReader.h"
 
-#ifdef PLAT_LINUX
 static int FSStringId(const char *str)
 {
 	constexpr int MULTIPLIER = 37;
@@ -49,6 +47,9 @@ static int FSStringId(const char *str)
 
 	return hash;
 }
+
+#ifndef _WIN32
+using HMODULE = void*;
 #endif
 
 using namespace Threading;
@@ -61,34 +62,34 @@ EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 //------------------------------------------------------------------------------
 
 CFile::CFile(const char* fileName, COSFile&& file)
-	: m_name(fileName), m_osFile(std::move(file))
+	: m_name(fileName)
+	, m_osFile(std::move(file))
 {
 }
 
-int	CFile::Seek(int pos, EVirtStreamSeek seekType )
+VSSize CFile::Seek(int64 pos, EVirtStreamSeek seekType )
 {
-	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType) );
+	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType));
 }
 
-int CFile::Tell() const
+VSSize CFile::Tell() const
 {
 	return m_osFile.Tell();
 }
 
-size_t CFile::Read( void *dest, size_t count, size_t size)
+VSSize CFile::Read( void *dest, VSSize count, VSSize size)
 {
-	size_t numBytes = count * size;
-	if (!numBytes)
+	VSSize numBytes = count * size;
+	if (numBytes <= 0)
 		return 0;
 	return m_osFile.Read(dest, numBytes) / size;
 }
 
-size_t CFile::Write( const void *src, size_t count, size_t size)
+VSSize CFile::Write( const void *src, VSSize count, VSSize size)
 {
-	size_t numBytes = count * size;
-	if (!numBytes)
+	VSSize numBytes = count * size;
+	if (numBytes <= 0)
 		return 0;
-
 	return m_osFile.Write(src, numBytes) / size;
 }
 
@@ -97,42 +98,35 @@ bool CFile::Flush()
 	return m_osFile.Flush();
 }
 
-int CFile::GetSize()
+VSSize CFile::GetSize()
 {
-	const int pos = Tell();
+	const VSSize currentPos = Tell();
 	Seek(0, VS_SEEK_END);
 
-	const int length = Tell();
-	Seek(pos, VS_SEEK_SET);
+	const VSSize size = Tell();
+	Seek(currentPos, VS_SEEK_SET);
 
-	return length;
+	return size;
 }
 
 uint32 CFile::GetCRC32()
 {
-	int pos = Tell();
-	int fSize = GetSize();
+	const VSSize pos = Tell();
+	const VSSize fileSize = GetSize();
 
-	ubyte* pFileData = (ubyte*)PPAlloc(fSize+16);
-
-	Read(pFileData, 1, fSize);
-
+	ubyte* fileData = (ubyte*)PPAlloc(fileSize + 16);
+	Read(fileData, 1, fileSize);
 	Seek(pos, VS_SEEK_SET);
 
-	uint32 nCRC = CRC32_BlockChecksum( pFileData, fSize );
+	const uint32 crc = CRC32_BlockChecksum(fileData, fileSize);
+	PPFree(fileData);
 
-	PPFree(pFileData);
-
-	return nCRC;
+	return crc;
 }
 
 //------------------------------------------------------------------------------
 // Main filesystem code
 //------------------------------------------------------------------------------
-
-#ifndef _WIN32
-typedef void* HMODULE;
-#endif
 
 struct DKMODULE
 {
@@ -147,6 +141,17 @@ struct DKFINDDATA
 	int			searchPaths{ -1 };
 	int			dirIndex{ 0 };
 	bool		singleDir{ false };
+};
+
+struct SearchPathInfo
+{
+#ifndef _WIN32
+	// name hash to file path mapping (case-insensitive support)
+	Map<int, EqString> pathToFileMapping{ PP_SL };
+#endif
+	EqString	id;
+	EqString	path;
+	bool		mainWritePath;
 };
 
 //--------------------------------------------------
@@ -164,14 +169,13 @@ static ESearchPath GetSearchPathByName(const char* str)
 static bool mkdirRecursive(const char* path, bool includeDotPath)
 {
 	char folder[265];
-	const char* end, * curend;
+	const char* end;
+	const char* curend;
 
 	end = path;
 
 	do
 	{
-		int result;
-
 		// skip any separators in the beginning
 		while (*end == CORRECT_PATH_SEPARATOR)
 			end++;
@@ -191,6 +195,7 @@ static bool mkdirRecursive(const char* path, bool includeDotPath)
 		if (!includeDotPath && strchr(folder, '.'))
 			break;
 
+		int result;
 #ifdef _WIN32
 		result = _mkdir(folder);
 #else
@@ -407,14 +412,14 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 	return fileHandle;
 }
 
-ubyte* CFileSystem::GetFileBuffer(const char* filename, int* filesize/* = 0*/, int searchFlags/* = -1*/)
+ubyte* CFileSystem::GetFileBuffer(const char* filename, VSSize* filesize/* = 0*/, int searchFlags/* = -1*/)
 {
 	IFilePtr pFile = Open(filename, "rb", searchFlags);
 
     if (!pFile)
         return nullptr;
 
-    const int length = pFile->GetSize();
+    const VSSize length = pFile->GetSize();
     ubyte *buffer = (ubyte*)PPAlloc(length + 1);
 
     if (!buffer)
@@ -431,26 +436,22 @@ ubyte* CFileSystem::GetFileBuffer(const char* filename, int* filesize/* = 0*/, i
     return buffer;
 }
 
-int CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
+VSSize CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
 {
     IFilePtr file = Open(filename,"rb",searchFlags);
-
     if (!file)
         return 0;
 
-	int rSize = file->GetSize();
-    return rSize;
+	return file->GetSize();
 }
 
 uint32 CFileSystem::GetFileCRC32(const char* filename, int searchFlags)
 {
     IFilePtr file = Open(filename,"rb",searchFlags);
-
     if (!file)
         return 0;
 
-	uint32 checkSum = file->GetCRC32();
-    return checkSum;
+    return file->GetCRC32();
 }
 
 
@@ -460,25 +461,25 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 	if( FileExist(filename, search) && (overWrite || FileExist(dest_file, search) == false))
 	{
-		IFilePtr fp_write = Open(dest_file, "wb", search);
-		IFilePtr fp_read = Open(filename, "rb", search);
+		IFilePtr fpWrite = Open(dest_file, "wb", search);
+		IFilePtr fpRead = Open(filename, "rb", search);
 
-		if (!fp_read || !fp_write)
+		if (!fpRead || !fpWrite)
 			return false;
 
-		int nread;
-		while (nread = fp_read->Read(buf, sizeof(buf), 1), nread > 0)
+		VSSize nread;
+		while (nread = fpRead->Read(buf, sizeof(buf), 1), nread > 0)
 		{
-			char* out_ptr = buf;
-			size_t nwritten;
+			char* outPtr = buf;
+			VSSize nwritten;
 
 			do {
-				nwritten = fp_write->Write(out_ptr, nread, 1);
+				nwritten = fpWrite->Write(outPtr, nread, 1);
 
 				if (nwritten >= 0)
 				{
 					nread -= nwritten;
-					out_ptr += nwritten;
+					outPtr += nwritten;
 				}
 			} while (nread > 0);
 		}
@@ -501,7 +502,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			CBasePackageReader* fsPacakage = m_fsPackages[j];
+			const CBasePackageReader* fsPacakage = m_fsPackages[j];
 
 			if (!(spFlags & fsPacakage->GetSearchPath()))
 				continue;
@@ -607,8 +608,8 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			CombinePath(filePath, m_basePath, spInfo->path, fileName);
 			filePath.Path_FixSlashes();
 
-#ifdef PLAT_LINUX
-			const int nameHash = FSStringId(filePath.ToCString());
+#ifndef _WIN32
+			const int nameHash = FSStringId(filePath);
 			const auto it = spInfo->pathToFileMapping.find(nameHash);
 			if (!it.atEnd())
 			{
@@ -660,20 +661,6 @@ bool CFileSystem::SetAccessKey(const char* accessKey)
 	return m_accessKey.Length() > 0;
 }
 
-static CBasePackageReader* GetPackageReader(const char* packageName)
-{
-	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
-	CBasePackageReader* reader = nullptr;
-
-	// allow zip files to be loaded
-	if (!fileExt.CompareCaseIns("zip"))
-		reader = PPNew CZipFileReader();
-	else
-		reader = PPNew CDPKFileReader();
-
-	return reader;
-}
-
 bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const char* mountPath /*= nullptr*/)
 {
 	const EqString packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, packageName);
@@ -687,7 +674,7 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 		}
 	}
 
-	CBasePackageReader* reader = GetPackageReader(packageName);
+	CBasePackageReader* reader = CBasePackageReader::CreateReaderByExtension(packageName);
 	if (!reader->InitPackage(packagePath, mountPath))
 	{
 		MsgError("Cannot open package '%s'\n", packagePath.ToCString());
@@ -727,7 +714,7 @@ void CFileSystem::RemovePackage(const char* packageName)
 // opens package for further reading. Does not add package as FS layer
 IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int searchFlags)
 {
-	CBasePackageReader* reader = GetPackageReader(packageName);
+	CBasePackageReader* reader = CBasePackageReader::CreateReaderByExtension(packageName);
 
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
@@ -784,16 +771,66 @@ void CFileSystem::ClosePackage(IFilePackageReader* package)
 		delete package;
 }
 
+void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
+{
+#ifndef _WIN32
+	Array<EqString> openSet(PP_SL);
+	openSet.reserve(5000);
+
+	CombinePath(openSet.append(), m_basePath, pathInfo.path);
+
+	while (openSet.numElem())
+	{
+		EqString path = openSet.popFront();
+
+		DIR* dir = opendir(path);
+		if (!dir)
+			break;
+
+		do
+		{
+			dirent* entry = readdir(dir);
+			if (!entry)
+				break;
+
+			if (*entry->d_name == 0)
+				continue;
+
+			if (*entry->d_name == '.')
+				continue;
+
+			EqString entryName(EqString::Format("%s/%s", path.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name));
+
+			bool isEntryDir = false;
+			struct stat st;
+			if (stat(entryName, &st) == 0 && (st.st_mode & S_IFDIR))
+			{
+				openSet.append(entryName);
+			}
+			else
+			{
+				// add a mapping
+				const int nameHash = FSStringId(entryName);
+				pathInfo.pathToFileMapping.insert(nameHash, entryName);
+			}
+		} while (true);
+	}
+
+	if (pathInfo.pathToFileMapping.size())
+		DevMsg(DEVMSG_FS, "Mapped %d files for '%s'\n", pathInfo.pathToFileMapping.size(), pathInfo.path.ToCString());
+#endif // _WIN32
+}
+
 // sets fallback directory for mod
 void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
-	for (const SearchPathInfo* spInfo : m_directories)
+	const int idx = arrayFindIndexF(m_directories, [=](const SearchPathInfo* spInfo) {
+		return spInfo->id == pathId;
+	});
+	if (idx != -1)
 	{
-		if(spInfo->id == pathId)
-		{
-			ErrorMsg("AddSearchPath Error: pathId %s already added", pathId);
-			return;
-		}
+		ErrorMsg("AddSearchPath Error: pathId %s already added", pathId);
+		return;
 	}
 
 	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
@@ -806,64 +843,13 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 	pathInfo->path = pszDir;
 	pathInfo->mainWritePath = !isReadPriorityPath || isWriteablePath;
 
-	int spIdx = 0;
 	if(isReadPriorityPath)
 		m_directories.insert(pathInfo, 0);
 	else
-		spIdx = m_directories.append(pathInfo);
+		m_directories.append(pathInfo);
 
-#ifdef PLAT_LINUX
 	if(!pathInfo->mainWritePath)
-	{
-		// scan files and map
-		SearchPathInfo& spInfo = *m_directories[spIdx];
-
-		Array<EqString> openSet(PP_SL);
-		openSet.reserve(5000);
-
-		CombinePath(openSet.append(), m_basePath, spInfo.path);
-
-		while(openSet.numElem())
-		{
-			EqString path = openSet.popFront();
-
-			DIR* dir = opendir(path);
-			if(!dir)
-				break;
-
-			do
-			{
-				dirent* entry = readdir(dir);
-				if (!entry)
-					break;
-
-				if (*entry->d_name == 0)
-					continue;
-
-				if (*entry->d_name == '.')
-					continue;
-
-				EqString entryName(EqString::Format("%s/%s", path.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name));
-
-				bool isEntryDir = false;
-				struct stat st;
-				if (stat(entryName, &st) == 0 && (st.st_mode & S_IFDIR))
-				{
-					openSet.append(entryName);
-				}
-				else
-				{
-					// add a mapping
-					const int nameHash = FSStringId(entryName);
-					spInfo.pathToFileMapping.insert(nameHash, entryName);
-				}
-			} while (true);
-		}
-
-		if(spInfo.pathToFileMapping.size())
-			DevMsg(DEVMSG_FS, "Mapped %d files for '%s'\n", spInfo.pathToFileMapping.size(), pszDir);
-	}
-#endif
+		MapFiles(*pathInfo);
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)

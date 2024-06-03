@@ -41,23 +41,26 @@ CBasePackageReader* CZipFileStream::GetHostPackage() const
 }
 
 // reads data from virtual stream
-size_t CZipFileStream::Read(void *dest, size_t count, size_t size)
+VSSize CZipFileStream::Read(void *dest, VSSize count, VSSize size)
 {
-	return unzReadCurrentFile(reinterpret_cast<unzFile>(m_zipHandle), dest, count*size);
+	if (count <= 0 || size <= 0)
+		return 0;
+
+	return unzReadCurrentFile(reinterpret_cast<unzFile>(m_zipHandle), dest, count * size);
 }
 
 // writes data to virtual stream
-size_t CZipFileStream::Write(const void *src, size_t count, size_t size)
+VSSize CZipFileStream::Write(const void *src, VSSize count, VSSize size)
 {
 	ASSERT_FAIL("CZipFileStream does not support WRITE OPS");
 	return 0;
 }
 
 // seeks pointer to position
-int	CZipFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
+VSSize CZipFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
 {
 	int newOfs = 0;
-	char dummy[32*1024];
+	static char dummy[32*1024];
 
 	switch (seekType)
 	{
@@ -90,7 +93,7 @@ int	CZipFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
 		if (len > sizeof(dummy))
 			len = sizeof(dummy);
 
-		int numRead = unzReadCurrentFile(reinterpret_cast<unzFile>(m_zipHandle), dummy, len);
+		const int numRead = unzReadCurrentFile(reinterpret_cast<unzFile>(m_zipHandle), dummy, len);
 		if (numRead <= 0)
 			break;
 
@@ -107,7 +110,7 @@ void CZipFileStream::Print(const char* fmt, ...)
 }
 
 // returns current pointer position
-int CZipFileStream::Tell() const
+VSSize CZipFileStream::Tell() const
 {
 	return unztell(reinterpret_cast<unzFile>(m_zipHandle));
 }
@@ -138,7 +141,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	bool warnAboutCompression = false;
 
 	// hash all file names and positions
-	for (int i = 0; i < ugi.number_entry; i++)
+	for (uLong i = 0; i < ugi.number_entry; ++i)
 	{
 		unz_file_info ufi;
 		unzGetCurrentFileInfo(zip, &ufi, path, sizeof(path), nullptr, 0, nullptr, 0);

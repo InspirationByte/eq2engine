@@ -9,108 +9,106 @@
 #pragma once
 #include "ds/refcounted.h"
 
-enum VirtStreamType_e
+using VSSize = int64;
+
+class IVirtualStream;
+
+enum EStreamType : int
 {
 	VS_TYPE_MEMORY = 0,
 	VS_TYPE_FILE,
 	VS_TYPE_FILE_PACKAGE,
 };
 
-// fancy check
-#define IsFileType(type) ((type) >= VS_TYPE_FILE)
-
-enum EVirtStreamSeek
+enum EVirtStreamSeek : int
 {
 	VS_SEEK_SET = 0,	// set current position
 	VS_SEEK_CUR,		// seek from last position
 	VS_SEEK_END,		// seek to the end
 };
 
-enum EVirtStreamOpenFlags
+enum EVirtStreamOpenFlags : int
 {
 	VS_OPEN_READ	= (1 << 0),
 	VS_OPEN_WRITE	= (1 << 1),
 	VS_OPEN_APPEND	= (1 << 2),
 };
 
-//--------------------------
-// IVirtualStream - Virtual stream interface
-//--------------------------
-
-class IVirtualStream;
-using IVirtualStreamPtr = CRefPtr<IVirtualStream>;
+template<typename T>
+static VSSize VSRead(IVirtualStream* stream, T& obj);
 
 template<typename T>
-static size_t VSRead(IVirtualStream* stream, T& obj);
+static VSSize VSWrite(IVirtualStream* stream, const T& obj);
 
-template<typename T>
-static size_t VSWrite(IVirtualStream* stream, const T& obj);
+//--------------------------
+// IVirtualStream - data stream interface
+//--------------------------
 
 class IVirtualStream : public RefCountedObject<IVirtualStream>
 {
 public:
-	virtual ~IVirtualStream() {}
-
 	// reads data from virtual stream
-	virtual size_t				Read( void *dest, size_t count, size_t size) = 0;
+	virtual VSSize		Read(void *dest, VSSize count, VSSize size) = 0;
 
 	// writes data to virtual stream
-	virtual size_t				Write(const void *src, size_t count, size_t size) = 0;
+	virtual VSSize		Write(const void *src, VSSize count, VSSize size) = 0;
 
 	template <typename T>
-	size_t						Read(T& obj) { return VSRead(this, obj); }
+	VSSize				Read(T& obj) { return VSRead(this, obj); }
 
 	template <typename T>
-	size_t						Read(T* obj, size_t count = 1) { size_t readcnt = 0; while (count--) readcnt += VSRead(this, *obj++); return readcnt; }
+	VSSize				Read(T* obj, VSSize count = 1) { VSSize readcnt = 0; while (count--) readcnt += VSRead(this, *obj++); return readcnt; }
 
 	template <typename T>
-	size_t						Write(const T& obj) { return VSWrite(this, obj); }
+	VSSize				Write(const T& obj) { return VSWrite(this, obj); }
 
 	template <typename T>
-	size_t						Write(const T* obj, size_t count = 1) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
+	VSSize				Write(const T* obj, VSSize count = 1) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
 
 	// seeks pointer to position
-	virtual int					Seek(int offset, EVirtStreamSeek seekType) = 0;
+	virtual VSSize		Seek(int64 offset, EVirtStreamSeek seekType) = 0;
 
 	// fprintf analog
-	virtual	void				Print(const char* fmt, ...);
+	virtual	void		Print(const char* fmt, ...);
 
 	// returns current pointer position
-	virtual int					Tell() const = 0;
+	virtual VSSize		Tell() const = 0;
 
 	// returns memory allocated for this stream
-	virtual int					GetSize() = 0;
+	virtual VSSize		GetSize() = 0;
 
 	// flushes stream from memory
-	virtual bool				Flush() = 0;
+	virtual bool		Flush() = 0;
 
 	// returns stream type
-	virtual VirtStreamType_e	GetType() const = 0;
+	virtual EStreamType	GetType() const = 0;
 
 	// returns CRC32 checksum of stream
-	virtual uint32				GetCRC32() = 0;
+	virtual uint32		GetCRC32() = 0;
 
 	// returns name of stream or file
-	virtual const char*			GetName() const = 0;
+	virtual const char*	GetName() const = 0;
 };
+
+using IVirtualStreamPtr = CRefPtr<IVirtualStream>;
 
 // provide default implementation
 
 template<typename T>
-static size_t VSRead(IVirtualStream* stream, T& obj)
+static VSSize VSRead(IVirtualStream* stream, T& obj)
 {
 	return stream->Read(&obj, 1, sizeof(T));
 }
 
 template<typename T>
-static size_t VSWrite(IVirtualStream* stream, const T& obj)
+static VSSize VSWrite(IVirtualStream* stream, const T& obj)
 {
 	return stream->Write(&obj, 1, sizeof(T));
 }
 
 
-template<typename T, size_t N>
-static size_t VSWrite(IVirtualStream* stream, T(&obj)[N])
+template<typename T, VSSize N>
+static VSSize VSWrite(IVirtualStream* stream, T(&obj)[N])
 {
 	return stream->Write(&obj, N, sizeof(T));
 }

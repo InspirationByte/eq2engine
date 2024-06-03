@@ -20,6 +20,14 @@
 
 static Threading::CEqMutex s_dpkMutex;
 
+struct CDPKFileStream::BlockInfo
+{
+	uint32 offset;
+	uint32 size;
+	uint32 compressedSize;
+	short flags;
+};
+
 CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, COSFile&& osFile)
 	: m_name(filename), m_ice(0), m_osFile(std::move(osFile))
 {
@@ -39,7 +47,7 @@ CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, 
 		dpkblock_t hdr;
 		m_osFile.Read(&hdr, sizeof(dpkblock_t));
 		
-		dpkblock_info_t& block = m_blockInfo.append();
+		BlockInfo& block = m_blockInfo.append();
 		block.flags = hdr.flags;
 		block.offset = (uint32)m_osFile.Tell();
 		block.compressedSize = hdr.compressedSize;
@@ -74,7 +82,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 		return;
 	m_curBlockIdx = blockIdx;
 
-	const dpkblock_info_t& curBlock = m_blockInfo[blockIdx];
+	const BlockInfo& curBlock = m_blockInfo[blockIdx];
 	m_osFile.Seek(curBlock.offset, COSFile::ESeekPos::SET);
 
 	const int readSize = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? curBlock.compressedSize : curBlock.size;
@@ -116,18 +124,18 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 }
 
 // reads data from virtual stream
-size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
+VSSize CDPKFileStream::Read(void* dest, VSSize count, VSSize size)
 {
-	const size_t fileRemainingBytes = m_info.size - m_curPos;
-	const size_t bytesToRead = min(count * size, fileRemainingBytes);
+	const int fileRemainingBytes = m_info.size - m_curPos;
+	const int bytesToRead = min(static_cast<int>(count * size), fileRemainingBytes);
 
-	if (bytesToRead == 0)
+	if (bytesToRead <= 0)
 		return 0;
 
 	// read blocks if any
 	if (m_info.numBlocks)
 	{
-		size_t bytesToReadCnt = bytesToRead;
+		int bytesToReadCnt = bytesToRead;
 		ubyte* destBuf = (ubyte*)dest;
 
 		int curPos = m_curPos;
@@ -154,8 +162,6 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 		} while (bytesToReadCnt);
 
 		m_curPos = curPos;
-
-		return bytesToRead / size;
 	}
 	else
 	{
@@ -163,45 +169,41 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 
 		// read file straight
 		m_osFile.Read(dest, bytesToRead);
-
 		m_curPos += bytesToRead;
-
-		// return number of read elements
-		return bytesToRead / size;
 	}
+
+	return static_cast<VSSize>(bytesToRead / size);
 }
 
 // writes data to virtual stream
-size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
+VSSize CDPKFileStream::Write(const void *src, VSSize count, VSSize size)
 {
 	ASSERT_FAIL("CDPKFileStream does not support WRITE OPS");
 	return 0;
 }
 
 // seeks pointer to position
-int	CDPKFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
+VSSize CDPKFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
 {
-	int newOfs = m_curPos;
-
+	int newOfs = 0;
 	switch (seekType)
 	{
 		case VS_SEEK_SET:
 		{
-			newOfs = nOffset;
+			newOfs = static_cast<int>(nOffset);
 			break;
 		}
 		case VS_SEEK_CUR:
 		{
-			newOfs += nOffset;
+			newOfs += static_cast<int>(nOffset);
 			break;
 		}
 		case VS_SEEK_END:
 		{
-			newOfs = m_info.size + nOffset;
+			newOfs = m_info.size + static_cast<int>(nOffset);
 			break;
 		}
 	}
-
 
 	if (newOfs < 0)
 	{
@@ -209,14 +211,15 @@ int	CDPKFileStream::Seek(int nOffset, EVirtStreamSeek seekType)
 		return -1;
 	}
 
-	if (newOfs > m_info.size)
+	if (static_cast<uint32>(newOfs) > m_info.size)
 	{
 		m_curPos = m_info.size;
 		return -1;
 	}
 
 	m_curPos = newOfs;
-	return 0;
+
+	return static_cast<VSSize>(m_curPos);
 }
 
 // fprintf analog
@@ -226,15 +229,15 @@ void CDPKFileStream::Print(const char* fmt, ...)
 }
 
 // returns current pointer position
-int CDPKFileStream::Tell() const
+VSSize CDPKFileStream::Tell() const
 {
-	return m_curPos;
+	return static_cast<VSSize>(m_curPos);
 }
 
 // returns memory allocated for this stream
-int CDPKFileStream::GetSize()
+VSSize CDPKFileStream::GetSize()
 {
-	return m_info.size;
+	return static_cast<VSSize>(m_info.size);
 }
 
 // flushes stream from memory
@@ -290,7 +293,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 
 bool CDPKFileReader::InitPackage(COSFile& osFile, const char* mountPath /*= nullptr*/)
 {
-	const size_t packageStart = osFile.Tell();
+	const VSSize packageStart = osFile.Tell();
 
 	dpkheader_t header;
 	osFile.Read(&header, sizeof(dpkheader_t));

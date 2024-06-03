@@ -14,9 +14,9 @@
 
 enum ESearchPath : int
 {
-    SP_DATA = (1 << 1),
-    SP_ROOT = (1 << 2),
-    SP_MOD	= (1 << 3),
+    SP_DATA = (1 << 0),
+    SP_ROOT = (1 << 1),
+    SP_MOD	= (1 << 2),
 };
 
 using IFile = IVirtualStream;
@@ -80,8 +80,8 @@ public:
 
 	// The next ones are deprecated and will be removed
 
-    virtual ubyte*			GetFileBuffer(const char* filename, int* filesize = 0, int searchFlags = -1) = 0;
-    virtual int				GetFileSize(const char* filename, int searchFlags = -1) = 0;
+    virtual ubyte*			GetFileBuffer(const char* filename, VSSize* filesize = 0, int searchFlags = -1) = 0;
+    virtual VSSize			GetFileSize(const char* filename, int searchFlags = -1) = 0;
 	virtual uint32			GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 
 	//------------------------------------------------------------

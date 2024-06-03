@@ -9,6 +9,9 @@
 #include "core/IFileSystem.h"
 #include "core/platform/OSFile.h"
 
+class CBasePackageReader;
+struct SearchPathInfo;
+
 //------------------------------------------------------------------------------
 // File stream
 //------------------------------------------------------------------------------
@@ -20,18 +23,17 @@ class CFile : public IFile
 public:
 	CFile(const char* fileName, COSFile&& file);
 
-    int					Seek(int pos, EVirtStreamSeek seekType );
-    int					Tell() const;
-    size_t				Read( void *dest, size_t count, size_t size);
-    size_t				Write( const void *src, size_t count, size_t size);
+	VSSize				Seek(int64 pos, EVirtStreamSeek seekType );
+	VSSize				Tell() const;
+	VSSize				Read(void *dest, VSSize count, VSSize size);
+	VSSize				Write(const void *src, VSSize count, VSSize size);
 
     bool				Flush();
 
 	uint32				GetCRC32();
+	VSSize				GetSize();
 
-	int					GetSize();
-
-	VirtStreamType_e	GetType() const { return VS_TYPE_FILE; }
+	EStreamType	GetType() const { return VS_TYPE_FILE; }
 
 	const char*			GetName() const { return m_name; }
 protected:
@@ -42,8 +44,6 @@ protected:
 //------------------------------------------------------------------------------
 // Filesystem base
 //------------------------------------------------------------------------------
-
-class CBasePackageReader;
 
 class CFileSystem : public IFileSystem
 {
@@ -95,8 +95,8 @@ public:
 
 	// The next ones are deprecated and will be removed
 
-    ubyte*						GetFileBuffer(const char* filename, int* filesize = 0, int searchFlags = -1);
-	int							GetFileSize(const char* filename, int searchFlags = -1);
+    ubyte*						GetFileBuffer(const char* filename, VSSize* filesize = 0, int searchFlags = -1);
+	VSSize						GetFileSize(const char* filename, int searchFlags = -1);
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 
 	//------------------------------------------------------------
@@ -148,6 +148,7 @@ protected:
 	EqString					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
 	EqString					GetSearchPath(ESearchPath search, int directoryId = -1) const;
 
+	void						MapFiles(SearchPathInfo& pathInfo);
 
 	using SPWalkFunc = EqFunction<bool(const EqString& filePath, ESearchPath searchPath, int spFlags, bool writePath)>;
 	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
@@ -155,17 +156,6 @@ protected:
 	EqString					m_basePath;			// base prepended path
     EqString					m_dataDir;			// Used to load engine data
 	EqString					m_accessKey;
-
-	struct SearchPathInfo
-	{
-#ifdef PLAT_LINUX
-		// name hash to file path mapping (case-insensitive support)
-		Map<int, EqString> pathToFileMapping{ PP_SL };
-#endif
-		EqString	id;
-		EqString	path;
-		bool		mainWritePath;
-	};
 
 	Array<SearchPathInfo*>		m_directories{ PP_SL };		// mod data, for fall back
     Array<CBasePackageReader*>	m_fsPackages{ PP_SL };		// package serving as FS layers

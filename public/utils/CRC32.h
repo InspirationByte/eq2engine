@@ -78,11 +78,11 @@ namespace crc32_detail {
 void CRC32_InitChecksum( uint32 &crcvalue );
 
 void CRC32_Update( uint32 &crcvalue, const char data );
-void CRC32_UpdateChecksum( uint32 &crcvalue, const void *data, int length );
+void CRC32_UpdateChecksum( uint32 &crcvalue, const void *data, size_t length );
 
 void CRC32_FinishChecksum( uint32 &crcvalue );
 
-uint32 CRC32_BlockChecksum( const void *data, int length );
+uint32 CRC32_BlockChecksum( const void *data, size_t length );
 
 template<size_t idx>
 constexpr uint32 _CRC32_String(const char* str)

@@ -18,15 +18,15 @@ public:
 	CZipFileStream(const char* fileName, uintptr_t zf, CZipFileReader* host);
 	~CZipFileStream();
 
-	size_t				Read(void *dest, size_t count, size_t size);
-	size_t				Write(const void *src, size_t count, size_t size);
-	int					Seek(int nOffset, EVirtStreamSeek seekType);
+	VSSize				Read(void *dest, VSSize count, VSSize size);
+	VSSize				Write(const void *src, VSSize count, VSSize size);
+	VSSize				Seek(int64 nOffset, EVirtStreamSeek seekType);
 	void				Print(const char* fmt, ...);
-	int					Tell() const;
-	int					GetSize() { return m_uncompressedSize; }
+	VSSize				Tell() const;
+	VSSize				GetSize() { return static_cast<VSSize>(m_uncompressedSize); }
 	bool				Flush() { return false; }
 
-	VirtStreamType_e	GetType() const { return VS_TYPE_FILE_PACKAGE; }
+	EStreamType	GetType() const { return VS_TYPE_FILE_PACKAGE; }
 	uint32				GetCRC32() { return m_crc; }
 
 	const char*			GetName() const { return m_name; }
