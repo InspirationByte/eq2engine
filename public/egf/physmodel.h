@@ -17,10 +17,10 @@ static constexpr const int MAX_PHYS_COMMENT_STRING		= 256;
 static constexpr const int MAX_PHYS_GEOM_PER_OBJECT		= 32;			// maximum shapes allowed to be in one physics object
 static constexpr const float PHYS_DEFAULT_MASS			= (5.0f);
 
-enum EPhysLump
+enum EPhysLump : int
 {
 	PHYSFILE_PROPERTIES		= 0,	// shared model property lump
-	PHYSFILE_GEOMETRYINFO	= 1,	// geometrical info lump
+	PHYSFILE_SHAPEINFO		= 1,	// geometrical info lump
 	PHYSFILE_JOINTDATA		= 2,	// joint data
 	PHYSFILE_OBJECTS		= 3,	// objects in this model
 	PHYSFILE_VERTEXDATA		= 4,	// vertex data, Vector3D format
@@ -30,7 +30,7 @@ enum EPhysLump
 	PHYSFILE_LUMPS,
 };
 
-enum EPhysModelUsage
+enum EPhysModelUsage : int
 {
 	PHYSMODEL_USAGE_NONE = 0,
 
@@ -40,7 +40,7 @@ enum EPhysModelUsage
 };
 
 // NOTE: When you change these constants, change them in engine
-enum EPhysShapeType
+enum EPhysShapeType : int
 {
 	PHYSSHAPE_TYPE_CONCAVE = 0,
 	PHYSSHAPE_TYPE_MOVABLECONCAVE,

@@ -30,7 +30,7 @@ namespace SharedModel {
 
 using namespace SharedModel;
 
-static void FreeAnimationData(studioAnimation_t* anim, int numBones)
+static void FreeAnimationData(StudioAnimData* anim, int numBones)
 {
 	if (anim->bones)
 	{
@@ -58,7 +58,7 @@ CMotionPackageGenerator::~CMotionPackageGenerator()
 void CMotionPackageGenerator::Cleanup()
 {
 	// delete animations
-	for(studioAnimation_t& anim : m_animations)
+	for(StudioAnimData& anim : m_animations)
 		FreeAnimationData(&anim, m_model->numBones);
 
 	m_animations.clear();
@@ -116,7 +116,7 @@ int	CMotionPackageGenerator::GetPoseControllerIndex(const char* name)
 //*******************************************************
 // TODO: use from bonesetup.h
 //*******************************************************
-void CMotionPackageGenerator::TranslateAnimationFrames(studioBoneAnimation_t* bone, Vector3D &offset)
+void CMotionPackageGenerator::TranslateAnimationFrames(StudioBoneFrames* bone, Vector3D &offset)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -128,7 +128,7 @@ void CMotionPackageGenerator::TranslateAnimationFrames(studioBoneAnimation_t* bo
 // Subtracts the animation frames
 // IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
 //******************************************************
-void CMotionPackageGenerator::SubtractAnimationFrames(studioBoneAnimation_t* bone, studioBoneAnimation_t* otherbone)
+void CMotionPackageGenerator::SubtractAnimationFrames(StudioBoneFrames* bone, StudioBoneFrames* otherbone)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -140,7 +140,7 @@ void CMotionPackageGenerator::SubtractAnimationFrames(studioBoneAnimation_t* bon
 //*******************************************************
 // Subtracts root motion from the bone transform
 //*******************************************************
-void CMotionPackageGenerator::VelocityBackTransform(studioBoneAnimation_t* bone, Vector3D &velocity)
+void CMotionPackageGenerator::VelocityBackTransform(StudioBoneFrames* bone, Vector3D &velocity)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -163,7 +163,7 @@ inline bool IsEmptyKeyframe(animframe_t* keyFrame)
 // Fills empty frames of animation
 // and interpolates non-empty to them.
 //*******************************************************
-void CMotionPackageGenerator::InterpolateBoneAnimationFrames(studioBoneAnimation_t* bone)
+void CMotionPackageGenerator::InterpolateBoneAnimationFrames(StudioBoneFrames* bone)
 {
 	float lastKeyframeTime = 0;
 	float nextKeyframeTime = 0;
@@ -252,7 +252,7 @@ inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, 
 //************************************
 // Crops animated bones
 //************************************
-void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneAnimation_t* pBone, int newStart, int newEnd)
+void CMotionPackageGenerator::CropAnimationBoneFrames(StudioBoneFrames* pBone, int newStart, int newEnd)
 {
 	const int newLength = newEnd - newStart + 1;
 
@@ -285,7 +285,7 @@ void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneAnimation_t* pBo
 //************************************
 // Crops animation
 //************************************
-void CMotionPackageGenerator::CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newEnd)
+void CMotionPackageGenerator::CropAnimationDimensions(StudioAnimData* pAnim, int newStart, int newEnd)
 {
 	for(int i = 0; i < m_model->numBones; i++)
 		CropAnimationBoneFrames(&pAnim->bones[i], newStart, newEnd);
@@ -295,7 +295,7 @@ void CMotionPackageGenerator::CropAnimationDimensions(studioAnimation_t* pAnim, 
 // Reverse animation
 //************************************
 
-void CMotionPackageGenerator::ReverseAnimation(studioAnimation_t* pAnim )
+void CMotionPackageGenerator::ReverseAnimation(StudioAnimData* pAnim )
 {
 	for(int i = 0; i < m_model->numBones; i++)
 		arrayReverse(&pAnim->bones[i], 0, pAnim->bones[i].numFrames);
@@ -330,7 +330,7 @@ inline void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *nex
 //************************************
 // Scales bone animation length
 //************************************
-void CMotionPackageGenerator::RemapBoneFrames(studioBoneAnimation_t* pBone, int newLength)
+void CMotionPackageGenerator::RemapBoneFrames(StudioBoneFrames* pBone, int newLength)
 {
 	animframe_t* newFrames = PPAllocStructArray(animframe_t, newLength);
 	BitArray setFrames(PP_SL, max(pBone->numFrames, newLength));
@@ -383,7 +383,7 @@ void CMotionPackageGenerator::RemapBoneFrames(studioBoneAnimation_t* pBone, int 
 //************************************
 // Scales animation length
 //************************************
-void CMotionPackageGenerator::RemapAnimationLength(studioAnimation_t* pAnim, int newLength)
+void CMotionPackageGenerator::RemapAnimationLength(StudioAnimData* pAnim, int newLength)
 {
 	for(int i = 0; i < m_model->numBones; i++)
 		RemapBoneFrames(&pAnim->bones[i], newLength);
@@ -478,7 +478,7 @@ static bool ReadFramesForBone(Tokenizer& tok, Array<animCaBoneFrames_t>& bones)
 	return false;
 }
 
-static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pModel, studioAnimation_t* pAnim)
+static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pModel, StudioAnimData* pAnim)
 {
 	char *str;
 
@@ -577,7 +577,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 
 	// make new model animation
 	const int newAnimIndex = m_animations.numElem();
-	studioAnimation_t& modelAnim = m_animations.append();
+	StudioAnimData& modelAnim = m_animations.append();
 	strcpy(modelAnim.name, filename); // set it externally from file name
 
 	DSModel tempDSM;
@@ -600,7 +600,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 				return -1;
 			}
 
-			modelAnim.bones = PPAllocStructArray(studioBoneAnimation_t, m_model->numBones);
+			modelAnim.bones = PPAllocStructArray(StudioBoneFrames, m_model->numBones);
 
 			if(!ReadFrames(*this, tok, &tempDSM, &modelAnim))
 			{
@@ -619,16 +619,16 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex)
 {
 	ASSERT(animIndex != -1);
-	studioAnimation_t& sourceAnim = m_animations[animIndex];
+	StudioAnimData& sourceAnim = m_animations[animIndex];
 
 	const int newAnimIndex = m_animations.numElem();
-	studioAnimation_t& modelAnim = m_animations.append();
+	StudioAnimData& modelAnim = m_animations.append();
 
 	// some data should work as simple as that
 	// but we have to clone keyframe data
 	modelAnim = sourceAnim;
 
-	modelAnim.bones = PPAllocStructArray(studioBoneAnimation_t, m_model->numBones);
+	modelAnim.bones = PPAllocStructArray(StudioBoneFrames, m_model->numBones);
 	for (int i = 0; i < m_model->numBones; ++i)
 	{
 		const int numFrames = sourceAnim.bones[i].numFrames;
@@ -709,7 +709,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 		return;
 	}
 
-	studioAnimation_t* currentAnim = &m_animations[ animIdx ];
+	StudioAnimData* currentAnim = &m_animations[ animIdx ];
 	for(int i = 0; i < m_model->numBones; i++)
 	{
 		if (m_model->pBone(i)->parent != -1)
@@ -1037,7 +1037,7 @@ void CMotionPackageGenerator::ParseSequences(const KVSection* section)
 //************************************
 void CMotionPackageGenerator::ConvertAnimationsToWrite()
 {
-	for(studioAnimation_t& studioAnim : m_animations)
+	for(StudioAnimData& studioAnim : m_animations)
 	{
 		animationdesc_t& animDesc = m_animationdescs.append();
 		memset(&animDesc, 0, sizeof(animationdesc_t));
@@ -1048,7 +1048,7 @@ void CMotionPackageGenerator::ConvertAnimationsToWrite()
 		// convert bones.
 		for(int i = 0; i < m_model->numBones; i++)
 		{
-			const studioBoneAnimation_t& boneFrame = studioAnim.bones[i];
+			const StudioBoneFrames& boneFrame = studioAnim.bones[i];
 			for(int j = 0; j < boneFrame.numFrames; ++j)
 				m_animframes.append(boneFrame.keyFrames[j]);
 
@@ -1063,16 +1063,16 @@ void CMotionPackageGenerator::ConvertAnimationsToWrite()
 void CMotionPackageGenerator::MakeDefaultPoseAnimation()
 {
 	// make new model animation
-	studioAnimation_t modelAnim;
+	StudioAnimData modelAnim;
 
-	memset(&modelAnim, 0, sizeof(studioAnimation_t));
+	memset(&modelAnim, 0, sizeof(StudioAnimData));
 
 	strcpy(modelAnim.name, "default"); // set it externally from file name
 
-	modelAnim.bones = PPAllocStructArray(studioBoneAnimation_t, m_model->numBones);
+	modelAnim.bones = PPAllocStructArray(StudioBoneFrames, m_model->numBones);
 	for(int i = 0; i < m_model->numBones; i++)
 	{
-		studioBoneAnimation_t& boneFrame = modelAnim.bones[i];
+		StudioBoneFrames& boneFrame = modelAnim.bones[i];
 		boneFrame.numFrames = 1;
 		boneFrame.keyFrames = PPAllocStructArray(animframe_t, 1);
 		boneFrame.keyFrames[0].angBoneAngles = vec3_zero;

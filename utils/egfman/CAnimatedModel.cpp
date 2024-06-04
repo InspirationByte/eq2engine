@@ -56,7 +56,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	// initialize that shit to use it in future
 	InitAnimating(m_pModel);
 
-	const studioPhysData_t& physData = m_pModel->GetPhysData();
+	const StudioPhysData& physData = m_pModel->GetPhysData();
 	if(physData.usageType == PHYSMODEL_USAGE_RAGDOLL)
 	{
 		m_pRagdoll = CreateRagdoll( m_pModel );
@@ -76,7 +76,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	}
 	else
 	{
-		if(physData.numObjects)
+		if(physData.objects.numElem())
 			m_physObj = physics->CreateObject(&physData, 0);
 	}
 }
@@ -244,12 +244,12 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 	if(!m_pModel)
 		return;
 
-	const studioPhysData_t& physData = m_pModel->GetPhysData();
+	const StudioPhysData& physData = m_pModel->GetPhysData();
 
-	if(physData.numObjects == 0)
+	if(physData.objects.numElem() == 0)
 		return;
 
-	if(physData.numShapes == 0)
+	if(physData.shapes.numElem() == 0)
 		return;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
@@ -266,23 +266,21 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 	Matrix4x4 worldPosMatrix;
 	g_matSystem->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
 
-	for(int i = 0; i < physData.numObjects; i++)
+	for (int i = 0; i < physData.objects.numElem(); ++i)
 	{
-		for(int j = 0; j < physData.objects[i].object.numShapes; j++)
+		const StudioPhyObjData& physObj = physData.objects[i];
+		for(int j = 0; j < physObj.object.numShapes; j++)
 		{
-			int nShape = physData.objects[i].object.shapeIndex[j];
-			if(nShape < 0 || nShape > physData.numShapes)
-			{
-				continue;
-			}
+			const int nShape = physObj.object.shapeIndex[j];
+			const StudioPhyShapeData& physShape = physData.shapes[nShape];
 
-			int startIndex = physData.shapes[nShape].shapeInfo.startIndices;
-			int moveToIndex = startIndex + physData.shapes[nShape].shapeInfo.numIndices;
+			const int startIndex = physShape.shapeInfo.startIndices;
+			const int moveToIndex = startIndex + physShape.shapeInfo.numIndices;
 
 			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{
-				int visualMatrixIdx = m_pRagdoll->m_pBoneToVisualIndices[i];
-				Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();
+				const int visualMatrixIdx = m_pRagdoll->m_pBoneToVisualIndices[i];
+				const Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();
 
 				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_boneTransforms[visualMatrixIdx]));
 			}

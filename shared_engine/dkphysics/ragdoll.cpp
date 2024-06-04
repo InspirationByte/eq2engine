@@ -45,23 +45,22 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 	if(!pModel)
 		return nullptr;
 
-	const studioPhysData_t& physModel = pModel->GetPhysData();
+	const StudioPhysData& physModel = pModel->GetPhysData();
 	const studioHdr_t& studio = pModel->GetStudioHdr();
 
 	const int type = physModel.usageType;
 
 	if(type == PHYSMODEL_USAGE_RAGDOLL)
 	{
-		ragdoll_t *newRagdoll = PPNew ragdoll_t;
+		ragdoll_t* newRagdoll = PPNew ragdoll_t;
 		newRagdoll->Init();
 
-		newRagdoll->m_pReferenceModel = pModel;
+		const int numPhysJoints = physModel.joints.numElem();
+		const int numParts = physModel.objects.numElem();
 
-		int numPhysJoints = physModel.numJoints;
 		newRagdoll->m_numBones = numPhysJoints;
-
-		int numParts = physModel.numObjects;
 		newRagdoll->m_numParts = numParts;
+		newRagdoll->m_pReferenceModel = pModel;
 
 		// build joint remap table
 		for(int i = 0; i < numPhysJoints; i++)

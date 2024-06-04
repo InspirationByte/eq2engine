@@ -85,7 +85,7 @@ studioHdr_t* Studio_LoadModel(const char* pszPath)
 	return pHdr;
 }
 
-studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
+StudioMotionData* Studio_LoadMotionData(const char* pszPath, int boneCount)
 {
 	if (!boneCount)
 		return nullptr;
@@ -114,7 +114,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	pData += sizeof(lumpfilehdr_t);
 
-	studioMotionData_t* pMotion = (studioMotionData_t*)PPAlloc(sizeof(studioMotionData_t));
+	StudioMotionData* pMotion = (StudioMotionData*)PPAlloc(sizeof(StudioMotionData));
 
 	int numAnimDescs = 0;
 	int numAnimFrames = 0;
@@ -200,7 +200,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	}
 
 	// first processing done, convert animca animations to EGF format.
-	pMotion->animations = PPAllocStructArray(studioAnimation_t, numAnimDescs);
+	pMotion->animations = PPAllocStructArray(StudioAnimData, numAnimDescs);
 	pMotion->numAnimations = numAnimDescs;
 
 	pMotion->frames = PPAllocStructArray(animframe_t, numAnimFrames);
@@ -208,13 +208,13 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	for(int i = 0; i < pMotion->numAnimations; i++)
 	{
-		studioAnimation_t& anim = pMotion->animations[i];
+		StudioAnimData& anim = pMotion->animations[i];
 		strcpy(anim.name, animationdescs[i].name);
 
 		// determine frame count of animation
 		const int numFrames = animationdescs[i].numFrames / boneCount;
 
-		anim.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
+		anim.bones = PPAllocStructArray(StudioBoneFrames, boneCount);
 		//anim.numFrames = numFrames;
 
 		// since frames are just flat array of each bone, we can simply reference it
@@ -235,7 +235,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	return pMotion;
 }
 
-bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
+bool Studio_LoadPhysModel(const char* pszPath, StudioPhysData* pModel)
 {
 	ubyte* pData = g_fileSystem->GetFileBuffer( pszPath );
 	ubyte* pStart = pData;
@@ -262,7 +262,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 	Array<const char*> objectNames(PP_SL);
 	pData += sizeof(lumpfilehdr_t);
 
-	int nLumps = pHdr->numLumps;
+	const int nLumps = pHdr->numLumps;
 	for(int lump = 0; lump < nLumps; lump++)
 	{
 		lumpfilelump_t* pLump = (lumpfilelump_t*)pData;
@@ -273,24 +273,22 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			case PHYSFILE_PROPERTIES:
 			{
 				physmodelprops_t* props = (physmodelprops_t*)pData;
-				pModel->usageType = props->usageType;
+				pModel->usageType = static_cast<EPhysModelUsage>(props->usageType);
 				break;
 			}
-			case PHYSFILE_GEOMETRYINFO:
+			case PHYSFILE_SHAPEINFO:
 			{
 				const int numGeomInfos = pLump->size / sizeof(physgeominfo_t);
+				ArrayCRef<physgeominfo_t> shapesInfoFile(reinterpret_cast<physgeominfo_t*>(pData), numGeomInfos);
 
-				physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
-
-				pModel->numShapes = numGeomInfos;
-				pModel->shapes = PPAllocStructArray(studioPhysShapeCache_t, numGeomInfos);
+				pModel->shapes = PPNewArrayRef(StudioPhyShapeData, numGeomInfos);
 
 				for(int i = 0; i < numGeomInfos; i++)
 				{
-					pModel->shapes[i].cachedata = nullptr;
+					pModel->shapes[i].cacheRef = nullptr;
 
 					// copy shape info
-					memcpy(&pModel->shapes[i].shapeInfo, &pGeomInfos[i], sizeof(physgeominfo_t));
+					memcpy(&pModel->shapes[i].shapeInfo, &shapesInfoFile[i], sizeof(physgeominfo_t));
 				}
 				break;
 			}
@@ -312,58 +310,48 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			case PHYSFILE_OBJECTS:
 			{
 				const int numObjInfos = pLump->size / sizeof(physobject_t);
-				physobject_t* physObjDataLump = (physobject_t*)pData;
+				ArrayCRef<physobject_t> physObjsFile(reinterpret_cast<physobject_t*>(pData), numObjInfos);
 
-				pModel->numObjects = numObjInfos;
-				pModel->objects = PPAllocStructArray(studioPhysObject_t, numObjInfos);
-
-				for(int i = 0; i < numObjInfos; i++)
+				pModel->objects = PPNewArrayRef(StudioPhyObjData, numObjInfos);
+				for(int i = 0; i < physObjsFile.numElem(); i++)
 				{
-					studioPhysObject_t& objData = pModel->objects[i];
-
+					StudioPhyObjData& objData = pModel->objects[i];
+					memset(objData.shapeCacheRefs, 0, sizeof(objData.shapeCacheRefs));
+					objData.object = physObjsFile[i];
+					
 					if(objectNames.numElem() > 0)
-						strcpy(objData.name, objectNames[i]);
-
-					// copy shape info
-					memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));
-
-					for(int j = 0; j < MAX_PHYS_GEOM_PER_OBJECT; j++)
-						objData.shapeCache[j] = nullptr;
+						objData.name = objectNames[i];
 				}
 				break;
 			}
 			case PHYSFILE_JOINTDATA:
 			{
 				const int numJointInfos = pLump->size / sizeof(physjoint_t);
-				physjoint_t* pJointData = (physjoint_t*)pData;
 
-				pModel->numJoints = numJointInfos;
-
-				if(pModel->numJoints)
+				if(numJointInfos)
 				{
-					pModel->joints = (physjoint_t*)PPAlloc(pLump->size);
-					memcpy(pModel->joints, pJointData, pLump->size );
+					ArrayCRef<physjoint_t> jointInfosFile(reinterpret_cast<physjoint_t*>(pData), numJointInfos);
+					pModel->joints = PPNewArrayRef(physjoint_t, numJointInfos);
+					memcpy(pModel->joints.ptr(), jointInfosFile.ptr(), pLump->size);
 				}
 				break;
 			}
 			case PHYSFILE_VERTEXDATA:
 			{
 				const int numVerts = pLump->size / sizeof(Vector3D);
-				Vector3D* pVertexData = (Vector3D*)pData;
+				ArrayCRef<Vector3D> vertsFile(reinterpret_cast<Vector3D*>(pData), numVerts);
+				pModel->vertices = PPNewArrayRef(Vector3D, numVerts);
 
-				pModel->numVertices = numVerts;
-				pModel->vertices = (Vector3D*)PPAlloc(pLump->size);
-				memcpy(pModel->vertices, pVertexData, pLump->size );
+				memcpy(pModel->vertices.ptr(), vertsFile.ptr(), pLump->size);
 				break;
 			}
 			case PHYSFILE_INDEXDATA:
 			{
 				const int numIndices = pLump->size / sizeof(int);
-				int* pIndexData = (int*)pData;
+				ArrayCRef<int> indicesFile(reinterpret_cast<int*>(pData), numIndices);
+				pModel->indices = PPNewArrayRef(int, numIndices);
 
-				pModel->numIndices = numIndices;
-				pModel->indices = (int*)PPAlloc(pLump->size);
-				memcpy(pModel->indices, pIndexData, pLump->size );
+				memcpy(pModel->indices.ptr(), indicesFile.ptr(), pLump->size);
 				break;
 			}
 			default:
@@ -385,7 +373,7 @@ void Studio_FreeModel(studioHdr_t* pModel)
 	PPFree(pModel);
 }
 
-void Studio_FreeMotionData(studioMotionData_t* data, int numBones)
+void Studio_FreeMotionData(StudioMotionData* data, int numBones)
 {
 	// NOTE: no need to delete bone keyFrames since they are mapped from data->frames.
 	for (int i = 0; i < data->numAnimations; i++)
@@ -398,11 +386,11 @@ void Studio_FreeMotionData(studioMotionData_t* data, int numBones)
 	PPFree(data->animations);
 }
 
-void Studio_FreePhysModel(studioPhysData_t* model)
+void Studio_FreePhysModel(StudioPhysData* model)
 {
-	PPFree(model->indices);
-	PPFree(model->vertices);
-	PPFree(model->shapes);
-	PPFree(model->objects);
-	PPFree(model->joints);
+	PPDeleteArrayRef(model->indices);
+	PPDeleteArrayRef(model->vertices);
+	PPDeleteArrayRef(model->shapes);
+	PPDeleteArrayRef(model->objects);
+	PPDeleteArrayRef(model->joints);
 }

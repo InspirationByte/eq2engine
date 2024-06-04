@@ -118,7 +118,7 @@ CEqJobManager::CEqJobManager(const char* name, int numThreads, int queueSize, in
 	numThreads = min(numThreads, MAX_JOB_MANAGER_THREADS);
 	
 	m_queueSize = queueSize;
-	m_workerThreads = ArrayRef(PPAllocStructArray(WorkerThread, numThreads), numThreads);
+	m_workerThreads = PPAllocStructArrayRef(WorkerThread, numThreads);
 	for (int i = 0; i < numThreads; ++i)
 	{
 		new (&m_workerThreads[i]) WorkerThread(*this);

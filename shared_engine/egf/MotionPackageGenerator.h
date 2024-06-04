@@ -41,34 +41,34 @@ private:
 
 	// Shifts animation start
 	//void ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame);
-	void TranslateAnimationFrames(studioBoneAnimation_t* bone, Vector3D& offset);
+	void TranslateAnimationFrames(StudioBoneFrames* bone, Vector3D& offset);
 
 	// Subtracts the animation frames
 	// IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
-	void SubtractAnimationFrames(studioBoneAnimation_t* bone, studioBoneAnimation_t* otherbone);
+	void SubtractAnimationFrames(StudioBoneFrames* bone, StudioBoneFrames* otherbone);
 
 	// Advances every frame position on reversed velocity
 	// Helps with motion capture issues.
-	void VelocityBackTransform(studioBoneAnimation_t* bone, Vector3D& velocity);
+	void VelocityBackTransform(StudioBoneFrames* bone, Vector3D& velocity);
 
 	// Fills empty frames of animation
 	// and interpolates non-empty to them.
-	void InterpolateBoneAnimationFrames(studioBoneAnimation_t* bone);
+	void InterpolateBoneAnimationFrames(StudioBoneFrames* bone);
 
 	// Crops animated bones
-	void CropAnimationBoneFrames(studioBoneAnimation_t* pBone, int newStart, int newEnd);
+	void CropAnimationBoneFrames(StudioBoneFrames* pBone, int newStart, int newEnd);
 
 	// Crops animation
-	void CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newEnd);
+	void CropAnimationDimensions(StudioAnimData* pAnim, int newStart, int newEnd);
 
 	// Reverse animation
-	void ReverseAnimation(studioAnimation_t* pAnim);
+	void ReverseAnimation(StudioAnimData* pAnim);
 
 	// Scales bone animation length
-	void RemapBoneFrames(studioBoneAnimation_t* pBone, int newLength);
+	void RemapBoneFrames(StudioBoneFrames* pBone, int newLength);
 
 	// Scales animation length
-	void RemapAnimationLength(studioAnimation_t* pAnim, int newLength);
+	void RemapAnimationLength(StudioAnimData* pAnim, int newLength);
 
 	// Loads all animations from FBX
 	void LoadFBXAnimations(const KVSection* section);
@@ -101,7 +101,7 @@ private:
 	void MakeDefaultPoseAnimation();
 
 	studioHdr_t*				m_model{ nullptr };
-	Array<studioAnimation_t>	m_animations{ PP_SL };
+	Array<StudioAnimData>	m_animations{ PP_SL };
 	Array<sequencedesc_t>		m_sequences{ PP_SL };
 	Array<sequenceevent_t>		m_events{ PP_SL };
 	Array<posecontroller_t>		m_posecontrollers{ PP_SL };

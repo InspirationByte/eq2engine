@@ -18,7 +18,7 @@ static constexpr const int MAX_SEQUENCE_BLENDS	= 4;	// blend layers
 
 #define SEQ_DEFAULT_TRANSITION_TIME	(0.15f)
 
-enum EAnimLumps
+enum EAnimLumps : int
 {
 	ANIMFILE_ANIMATIONS				= 0,		// animation headers
 	ANIMFILE_SEQUENCES				= 1,		// sequence headers
@@ -33,7 +33,7 @@ enum EAnimLumps
 
 
 // sequence flags
-enum EAnimSequenceFlags
+enum EAnimSequenceFlags : int
 {
 	SEQFLAG_LOOP					= (1 << 0),	// is played infinitely
 	SEQFLAG_SLOTBLEND				= (1 << 1),	// part blend to slot instead of interpolation

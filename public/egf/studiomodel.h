@@ -266,7 +266,7 @@ struct studioMeshDesc_s
 		return (uint32 *)(((ubyte *)this) + indicesOffset) + i; 
 	};
 
-	int8				primitiveType;		// EEGFPrimType
+	int8				primitiveType;		// EStudioPrimType
 	int8				vertexType;			// EStudioVertexStreamFlag
 
 	int8				unused2[2];

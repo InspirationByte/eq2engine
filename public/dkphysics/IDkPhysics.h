@@ -30,7 +30,7 @@
 #define PHYSPRIM_CAPSULE			2
 
 class IMaterial;
-struct studioPhysData_t;
+struct StudioPhysData;
 
 typedef void (*EACHOBJECTFUNCTION)( IPhysicsObject* pObject, void *data);
 
@@ -207,7 +207,7 @@ public:
 
 	virtual IPhysicsObject*						CreateStaticObject(physmodelcreateinfo_t *info, int nCollisionGroupFlags = 0xFFFFFFFF) = 0;
 
-	virtual IPhysicsObject*						CreateObject(const studioPhysData_t* data, int nObject = 0) = 0; // Creates physics object
+	virtual IPhysicsObject*						CreateObject(const StudioPhysData* data, int nObject = 0) = 0; // Creates physics object
 	virtual IPhysicsObject*						CreateObjectCustom(int numShapes, int* shapeIdxs, const char* surfaceProps, float mass) = 0; // Creates physics object
 
 	virtual IPhysicsJoint*						CreateJoint(IPhysicsObject* pObjectA, IPhysicsObject* pObjectB, const Matrix4x4 &transformA, const Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies) = 0; // creates physics joint

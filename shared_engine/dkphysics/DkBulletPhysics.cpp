@@ -1267,31 +1267,31 @@ int DkPhysics::AddPrimitiveShape(pritimiveinfo_t &info)
 }
 
 // Creates physics object
-IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObject )
+IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject )
 {
 	CScopedMutex m(m_Mutex);
 
-	ASSERT_MSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
+	const StudioPhyObjData& objData = data->objects[nObject];
 
 	DevMsg(DEVMSG_CORE, "Creating physics object\n");
-	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", data->objects[nObject].object.mass, data->objects[nObject].object.mass * METERS_PER_UNIT_INV);
-	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", data->objects[nObject].object.surfaceprops);
-	DevMsg(DEVMSG_CORE, "shapes = %d\n", data->objects[nObject].object.numShapes);
+	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", objData.object.mass, objData.object.mass * METERS_PER_UNIT_INV);
+	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", objData.object.surfaceprops);
+	DevMsg(DEVMSG_CORE, "shapes = %d\n", objData.object.numShapes);
 
 	btCollisionShape* pShape = nullptr;
 
 	// first determine shapes
-	if(data->objects[nObject].object.numShapes > 1)
+	if(objData.object.numShapes > 1)
 	{
 		btCompoundShape* pCompoundShape = new btCompoundShape;
 		pShape = pCompoundShape;
 
-		for(int i = 0; i < data->objects[nObject].object.numShapes; i++)
+		for(int i = 0; i < objData.object.numShapes; i++)
 		{
 			btTransform ident;
 			ident.setIdentity();
 
-			btCollisionShape* shape = (btCollisionShape*)data->objects[nObject].shapeCache[i];
+			btCollisionShape* shape = (btCollisionShape*)objData.shapeCacheRefs[i];
 
 			pCompoundShape->addChildShape(ident, shape);
 		}
@@ -1299,14 +1299,14 @@ IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObje
 	else
 	{
 		// not a compound object, skipping
-		pShape = (btCollisionShape*)data->objects[nObject].shapeCache[0];
+		pShape = (btCollisionShape*)objData.shapeCacheRefs[0];
 	}
 
 	pShape->setMargin(EQ2BULLET(0.05f));
 
 	btVector3 offset, massCenter;
-	ConvertPositionToBullet(offset, data->objects[nObject].object.offset);
-	ConvertPositionToBullet(massCenter, data->objects[nObject].object.massCenter);
+	ConvertPositionToBullet(offset, objData.object.offset);
+	ConvertPositionToBullet(massCenter, objData.object.massCenter);
 
 	// make object offset
 	btTransform object_start_transform;
@@ -1319,11 +1319,11 @@ IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObje
 	masscenter_transform.setOrigin(massCenter);
 
 	btVector3 vLocalInertia(0,0,0);
-	pShape->calculateLocalInertia(data->objects[nObject].object.mass * METERS_PER_UNIT_INV, vLocalInertia);
+	pShape->calculateLocalInertia(objData.object.mass * METERS_PER_UNIT_INV, vLocalInertia);
 
 	//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
 	btDefaultMotionState* pMotionState = new btDefaultMotionState(object_start_transform, masscenter_transform);
-	btRigidBody::btRigidBodyConstructionInfo constructInfo(data->objects[nObject].object.mass * METERS_PER_UNIT_INV, pMotionState, pShape, vLocalInertia);
+	btRigidBody::btRigidBodyConstructionInfo constructInfo(objData.object.mass * METERS_PER_UNIT_INV, pMotionState, pShape, vLocalInertia);
 
 	// if(object->softbody)
 	// else
@@ -1338,7 +1338,7 @@ IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObje
 	// initialize physics materials
 	char pszMatName[64];
 	pszMatName[0] = 0;
-	strcpy(pszMatName, data->objects[nObject].object.surfaceprops);
+	strcpy(pszMatName, objData.object.surfaceprops);
 
 	phySurfaceMaterial_t* pPhysMaterial = FindMaterial( pszMatName );
 	if(!pPhysMaterial)

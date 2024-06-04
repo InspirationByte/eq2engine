@@ -736,7 +736,7 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 		ZoomArray<Vector3D, INTERP_POSITION>(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
 }
 
-void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* scene, const char* meshFilter)
+void CollectFBXAnimations(Array<StudioAnimData>& animations, ofbx::IScene* scene, const char* meshFilter)
 {
 	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
 
@@ -845,11 +845,11 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 
 			const int boneCount = objData.weightData.numElem();
 
-			studioAnimation_t animation;
+			StudioAnimData animation;
 			strncpy(animation.name, stack->name, sizeof(animation.name));
 			animation.name[sizeof(animation.name) - 1] = 0;
-			animation.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
-			memset(animation.bones, 0, sizeof(studioBoneAnimation_t)* boneCount);
+			animation.bones = PPAllocStructArray(StudioBoneFrames, boneCount);
+			memset(animation.bones, 0, sizeof(StudioBoneFrames)* boneCount);
 
 			// convert bone animation
 			for (int j = 0; j < boneCount; ++j)
@@ -894,7 +894,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 				// alloc frames
 				const int numFrames = boneAnimation.translations.numElem();
 			
-				studioBoneAnimation_t& outBoneAnim = animation.bones[j];
+				StudioBoneFrames& outBoneAnim = animation.bones[j];
 				outBoneAnim.numFrames = numFrames;
 				outBoneAnim.keyFrames = PPAllocStructArray(animframe_t, numFrames);
 			
@@ -962,7 +962,7 @@ void CollectFBXAnimations(Array<studioAnimation_t>& animations, ofbx::IScene* sc
 	}
 }
 
-bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename, const char* meshFilter)
+bool LoadFBXAnimations(Array<StudioAnimData>& animations, const char* filename, const char* meshFilter)
 {
 	VSSize fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);

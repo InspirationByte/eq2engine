@@ -174,7 +174,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
 
 	// triangle list by default
-	dstGroup->primitiveType = EGFPRIM_TRIANGLES;
+	dstGroup->primitiveType = STUDIO_PRIM_TRIANGLES;
 	dstGroup->numVertices = 0;
 	dstGroup->numIndices = 0;
 
@@ -380,7 +380,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 		// swap with new index list
 		indexList.swap(optimizedIndices);
 
-		dstGroup->primitiveType = EGFPRIM_TRI_STRIP;
+		dstGroup->primitiveType = STUDIO_PRIM_TRI_STRIP;
 	}
 #endif // USE_ACTC
 
@@ -454,7 +454,7 @@ skipOptimize:
 	for(uint32 i = 0; i < dstGroup->numIndices; i++)
 		*dstGroup->pVertexIdx(i) = indexList[i];
 
-	MsgWarning("   written %d triangles (strip including degenerates)\n", dstGroup->primitiveType == EGFPRIM_TRI_STRIP ? (dstGroup->numIndices - 2) : (dstGroup->numIndices / 3));
+	MsgWarning("   written %d triangles (strip including degenerates)\n", dstGroup->primitiveType == STUDIO_PRIM_TRI_STRIP ? (dstGroup->numIndices - 2) : (dstGroup->numIndices / 3));
 }
 
 //************************************
@@ -852,10 +852,10 @@ bool CEGFGenerator::GenerateEGF()
 			totalVerts += pMesh->numVertices;
 			switch (pMesh->primitiveType)
 			{
-			case EGFPRIM_TRIANGLES:
+			case STUDIO_PRIM_TRIANGLES:
 				totalTris += pMesh->numIndices / 3;
 				break;
-			case EGFPRIM_TRI_STRIP:
+			case STUDIO_PRIM_TRI_STRIP:
 				totalTris += pMesh->numIndices - 2;
 				break;
 			}

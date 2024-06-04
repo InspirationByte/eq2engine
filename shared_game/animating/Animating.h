@@ -15,7 +15,7 @@ static constexpr const int MAX_SEQUENCE_TIMERS = 5;
 //--------------------------------------------------------------------------------------
 
 class CEqStudioGeom;
-struct studioJoint_t;
+struct StudioJoint;
 
 class CAnimatingEGF
 {
@@ -96,7 +96,7 @@ protected:
 	virtual Activity	TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
 	virtual void		HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
-	virtual void		AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData);
+	virtual void		AddMotions(CEqStudioGeom* model, const StudioMotionData& motionData);
 
 	using SequenceTimers = FixedArray<AnimSequenceTimer, MAX_SEQUENCE_TIMERS>;
 
@@ -111,7 +111,7 @@ protected:
 	Matrix4x4*					m_boneTransforms{ nullptr };
 
 	// local bones/base pose
-	ArrayCRef<studioJoint_t>		m_joints{ nullptr };
+	ArrayCRef<StudioJoint>		m_joints{ nullptr };
 	ArrayCRef<studioTransform_t>	m_transforms{ nullptr };
 
 	// different motion packages has different sequience list

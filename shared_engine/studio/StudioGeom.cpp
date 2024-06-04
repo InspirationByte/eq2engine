@@ -227,7 +227,7 @@ void CEqStudioGeom::DestroyModel()
 
 		g_studioShapeCache->DestroyStudioCache(&m_physModel);
 		Studio_FreePhysModel(&m_physModel);
-		m_physModel = studioPhysData_t();
+		m_physModel = StudioPhysData();
 
 		for (int i = 0; i < m_studio->numMeshGroups; i++)
 			delete[] m_hwGeomRefs[i].meshRefs;
@@ -559,7 +559,7 @@ void CEqStudioGeom::LoadMotionPackage(const char* filename)
 		return;
 	}
 
-	studioMotionData_t* motionData = Studio_LoadMotionData(filename, m_studio->numBones);
+	StudioMotionData* motionData = Studio_LoadMotionData(filename, m_studio->numBones);
 	if (motionData)
 		m_motionData.append(motionData);
 	else
@@ -571,7 +571,7 @@ void CEqStudioGeom::LoadMotionPackages()
 	const studioHdr_t* studio = m_studio;
 
 	// Try load default motion file
-	studioMotionData_t* motionData = Studio_LoadMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt), studio->numBones);
+	StudioMotionData* motionData = Studio_LoadMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt), studio->numBones);
 	if (motionData)
 		m_motionData.append(motionData);
 
@@ -583,7 +583,7 @@ void CEqStudioGeom::LoadMotionPackages()
 
 		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
 
-		studioMotionData_t* motionData = Studio_LoadMotionData(mopPath.ToCString(), studio->numBones);
+		StudioMotionData* motionData = Studio_LoadMotionData(mopPath.ToCString(), studio->numBones);
 		if (motionData)
 			m_motionData.append(motionData);
 		else
@@ -593,7 +593,7 @@ void CEqStudioGeom::LoadMotionPackages()
 	// load additional external motion packages requested by user
 	for (int i = 0; i < m_additionalMotionPackages.numElem(); i++)
 	{
-		studioMotionData_t* motionData = Studio_LoadMotionData(m_additionalMotionPackages[i].ToCString(), studio->numBones);
+		StudioMotionData* motionData = Studio_LoadMotionData(m_additionalMotionPackages[i].ToCString(), studio->numBones);
 		if (motionData)
 			m_motionData.append(motionData);
 		else
@@ -718,7 +718,7 @@ void CEqStudioGeom::LoadSetupBones()
 	studioHdr_t* studio = m_studio;
 
 	// Initialize HW data joints
-	m_joints = PPNew studioJoint_t[studio->numBones];
+	m_joints = PPNew StudioJoint[studio->numBones];
 
 	// parse bones
 	for (int i = 0; i < studio->numBones; ++i)
@@ -726,7 +726,7 @@ void CEqStudioGeom::LoadSetupBones()
 		// copy all bone data
 		const studioBoneDesc_t* bone = studio->pBone(i);
 
-		studioJoint_t& joint = m_joints[i];
+		StudioJoint& joint = m_joints[i];
 		joint.bone = bone;
 
 		// setup transformation
@@ -741,7 +741,7 @@ void CEqStudioGeom::LoadSetupBones()
 	// link joints and setup transforms
 	for (int i = 0; i < studio->numBones; ++i)
 	{
-		studioJoint_t& joint = m_joints[i];
+		StudioJoint& joint = m_joints[i];
 		const int parent_index = joint.parent;
 
 		if (parent_index != -1)
@@ -972,7 +972,7 @@ const studioHdr_t& CEqStudioGeom::GetStudioHdr() const
 	return *m_studio; 
 }
 
-const studioPhysData_t& CEqStudioGeom::GetPhysData() const 
+const StudioPhysData& CEqStudioGeom::GetPhysData() const 
 {
 	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
@@ -980,7 +980,7 @@ const studioPhysData_t& CEqStudioGeom::GetPhysData() const
 	return m_physModel;
 }
 
-const studioMotionData_t& CEqStudioGeom::GetMotionData(int index) const
+const StudioMotionData& CEqStudioGeom::GetMotionData(int index) const
 {
 	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
@@ -988,7 +988,7 @@ const studioMotionData_t& CEqStudioGeom::GetMotionData(int index) const
 	return *m_motionData[index];
 }
 
-const studioJoint_t& CEqStudioGeom::GetJoint(int index) const
+const StudioJoint& CEqStudioGeom::GetJoint(int index) const
 {
 	return m_joints[index];
 }
@@ -1183,8 +1183,8 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 			g_indices.reserve(pMesh->numIndices);
 			g_orig_indices.reserve(pMesh->numIndices);
 
-			const int numIndices = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
-			const int indexStep = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+			const int numIndices = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
+			const int indexStep = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? 1 : 3;
 
 			for (int k = 0; k < numIndices; k += indexStep)
 			{
@@ -1192,10 +1192,10 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 				if (pIndices[k] == pIndices[k + 1] || pIndices[k] == pIndices[k + 2] || pIndices[k + 1] == pIndices[k + 2])
 					continue;
 
-				const int even = k % 2;	// handle flipped triangles on EGFPRIM_TRI_STRIP
+				const int even = k % 2;	// handle flipped triangles on STUDIO_PRIM_TRI_STRIP
 				
 				int i0, i1, i2;
-				if (even && pMesh->primitiveType == EGFPRIM_TRI_STRIP)
+				if (even && pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP)
 				{
 					i0 = pIndices[k + 2];
 					i1 = pIndices[k + 1];
@@ -1328,8 +1328,8 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 
 			const uint32* pIndices = pMesh->pVertexIdx(0);
 
-			const int numIndices = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
-			const int indexStep = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+			const int numIndices = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
+			const int indexStep = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? 1 : 3;
 
 			for (int k = 0; k < numIndices; k += indexStep)
 			{
@@ -1337,10 +1337,10 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 				if (pIndices[k] == pIndices[k+1] || pIndices[k] == pIndices[k+2] || pIndices[k+1] == pIndices[k+2])
 					continue;
 
-				const int even = k % 2; // handle flipped triangles on EGFPRIM_TRI_STRIP
+				const int even = k % 2; // handle flipped triangles on STUDIO_PRIM_TRI_STRIP
 
 				Vector3D v0, v1, v2;
-				if (even && pMesh->primitiveType == EGFPRIM_TRI_STRIP)
+				if (even && pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP)
 				{
 					v0 = pMesh->pPosUvs(pIndices[k + 2])->point;
 					v1 = pMesh->pPosUvs(pIndices[k + 1])->point;

@@ -89,53 +89,52 @@ bool CBulletStudioShapeCache::IsInitialized() const
 }
 
 // checks the shape is initialized for the cache
-bool CBulletStudioShapeCache::IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo )
+bool CBulletStudioShapeCache::IsShapeCachePresent( StudioPhyShapeData* shapeInfo )
 {
 	CScopedMutex m(s_shapeCacheMutex);
-
-	for(int i = 0; i < m_collisionShapes.numElem(); i++)
-	{
-		if(shapeInfo->cachedata == m_collisionShapes[i])
-			return true;
-	}
+	if (arrayFindIndex(m_collisionShapes, reinterpret_cast<btCollisionShape*>(shapeInfo->cacheRef)) != -1)
+		return true;
 
 	return false;
 }
 
 // initializes whole studio shape model with all objects
-void CBulletStudioShapeCache::InitStudioCache( studioPhysData_t* studioData )
+void CBulletStudioShapeCache::InitStudioCache( StudioPhysData* studioData )
 {
 	// cache shapes using model info.
-	for(int i = 0; i < studioData->numObjects; i++)
+	for(StudioPhyObjData& obj : studioData->objects)
 	{
-		studioPhysObject_t& obj = studioData->objects[i];
-		for(int j = 0; j < obj.object.numShapes; j++)
+		for(int i = 0; i < obj.object.numShapes; ++i)
 		{
-			const int nShape = obj.object.shapeIndex[j];
+			if (obj.shapeCacheRefs[i])
+				continue;
 
+			const int objShapeId = obj.object.shapeIndex[i];
+
+			StudioPhyShapeData& shapeData = studioData->shapes[objShapeId];
+			const physgeominfo_t& shapeInfo = shapeData.shapeInfo;
+			
 			btCollisionShape* shape = ShapeCache_GenerateBulletShape(
-									ArrayCRef(studioData->vertices, studioData->numVertices),
-									ArrayCRef(studioData->indices + studioData->shapes[nShape].shapeInfo.startIndices, studioData->shapes[nShape].shapeInfo.numIndices),
-									(EPhysShapeType)studioData->shapes[nShape].shapeInfo.type);
-
-			// cast physics POD index to index in physics engine
-			obj.shapeCache[j] = shape;
+										studioData->vertices,
+										ArrayCRef(studioData->indices.ptr() + shapeInfo.startIndices, shapeInfo.numIndices),
+										static_cast<EPhysShapeType>(shapeInfo.type));
 
 			{
 				CScopedMutex m(s_shapeCacheMutex);
 				m_collisionShapes.append(shape);
-			}
 
-			studioData->shapes[nShape].cachedata = shape;
+				obj.shapeCacheRefs[i] = shape;
+				shapeData.cacheRef = shape;
+			}
 		}
 	}
 }
 
-void CBulletStudioShapeCache::DestroyStudioCache( studioPhysData_t* studioData )
+void CBulletStudioShapeCache::DestroyStudioCache( StudioPhysData* studioData )
 {
-	for(int i = 0; i < studioData->numShapes; i++)
+	for(StudioPhyShapeData& shapeData : studioData->shapes)
 	{
-		const int nShape = arrayFindIndex(m_collisionShapes, (btCollisionShape*)studioData->shapes[i].cachedata);
+		const int nShape = arrayFindIndex(m_collisionShapes, reinterpret_cast<btCollisionShape*>(shapeData.cacheRef));
 
 		if( m_collisionShapes[nShape]->getUserPointer() )
 		{

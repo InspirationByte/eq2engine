@@ -775,7 +775,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	CMemoryStream lumpsStream(nullptr, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE, PP_SL);
 
 	WriteLumpToStream(&lumpsStream, PHYSFILE_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
-	WriteLumpToStream(&lumpsStream, PHYSFILE_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
+	WriteLumpToStream(&lumpsStream, PHYSFILE_SHAPEINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
 
 	// write names lump before objects lump
 	// PHYSLUMP_OBJECTNAMES

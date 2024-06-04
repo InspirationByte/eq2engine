@@ -85,18 +85,15 @@ void CEqCollisionObject::InitAABB()
 }
 
 // objects that will be created
-bool CEqCollisionObject::Initialize(const studioPhysData_t* data, int objectIdx)
+bool CEqCollisionObject::Initialize(const StudioPhysData* data, int objectIdx)
 {
 	ASSERT(!m_shape);
 
-	// TODO: make it
-	ASSERT_MSG(objectIdx >= 0 && (objectIdx < data->numObjects), "CEqCollisionObject::Initializet - objectIdx is out of numObjects");
-
-	const studioPhysObject_t& physObject = data->objects[objectIdx];
+	const StudioPhyObjData& physObject = data->objects[objectIdx];
 
 	// as this an actual array of shapes, handle it as array of shapes xD
 	m_numShapes = physObject.object.numShapes;
-	m_shapeList = (btCollisionShape**)physObject.shapeCache;
+	m_shapeList = (btCollisionShape**)physObject.shapeCacheRefs;
 
 	ASSERT_MSG(GetSurfaceParamId != nullptr, "Must set up CEqCollisionObject::GetSurfaceParamId callback for your physics engine");
 	m_surfParam = GetSurfaceParamId(physObject.object.surfaceprops);
@@ -107,7 +104,7 @@ bool CEqCollisionObject::Initialize(const studioPhysData_t* data, int objectIdx)
 		btTransform ident;
 		ident.setIdentity();
 
-		btCollisionShape** shapes = (btCollisionShape**)physObject.shapeCache;
+		btCollisionShape** shapes = (btCollisionShape**)physObject.shapeCacheRefs;
 
 		btCompoundShape* compound = new btCompoundShape(false, m_numShapes);
 		for (int i = 0; i < m_numShapes; i++)

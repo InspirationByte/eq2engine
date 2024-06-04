@@ -17,10 +17,10 @@ constexpr EqStringRef s_egfPhysicsObjectExt = "pod";
 static constexpr const int MAX_MOTIONPACKAGES = 8;		// maximum allowed motion packages to be used in model
 static constexpr const int MAX_STUDIOMATERIALS = 32;	// maximum allowed materials in model
 
-enum EEGFPrimType
+enum EStudioPrimType
 {
-	EGFPRIM_TRIANGLES		= 0,
-	EGFPRIM_TRI_STRIP		= 2,
+	STUDIO_PRIM_TRIANGLES	= 0,
+	STUDIO_PRIM_TRI_STRIP	= 2,
 };
 
 // Base model header
@@ -51,69 +51,60 @@ ALIGNED_TYPE(lumpfilelump_s, 4) lumpfilelump_t;
 
 //----------------------------------------------------------------------------------------------
 
-// shape cache data
-struct studioPhysShapeCache_t
-{
-	physgeominfo_t	shapeInfo;
-	void*			cachedata;
-};
-
-struct studioPhysObject_t
-{
-	char			name[32];
-	physobject_t	object;
-	void*			shapeCache[MAX_PHYS_GEOM_PER_OBJECT];		// indexes of geomdata
-};
-
 // physics model data from POD
-struct studioPhysData_t
+struct StudioPhysData
 {
-	int						usageType{ 0 };
+	using ShapeRefList = void*[MAX_PHYS_GEOM_PER_OBJECT];
+	struct Shape
+	{
+		physgeominfo_t	shapeInfo;
+		void*			cacheRef;
+	};
 
-	studioPhysObject_t*		objects{ nullptr };
-	int						numObjects{ 0 };
+	struct Object
+	{
+		physobject_t	object;
+		EqString		name;
+		ShapeRefList	shapeCacheRefs;
+	};
 
-	physjoint_t*			joints{ nullptr };
-	int						numJoints{ 0 };
+	ArrayRef<Object>		objects{ nullptr };
+	ArrayRef<physjoint_t>	joints{ nullptr };
+	ArrayRef<Shape>			shapes{ nullptr };
+	ArrayRef<Vector3D>		vertices{ nullptr };
+	ArrayRef<int>			indices{ nullptr };
 
-	studioPhysShapeCache_t* shapes{ nullptr };
-	int						numShapes{ 0 };
-
-	Vector3D*				vertices{ nullptr };
-	int						numVertices{ 0 };
-
-	int*					indices{ nullptr };
-	int						numIndices{ 0 };
+	EPhysModelUsage			usageType{ PHYSMODEL_USAGE_NONE };
 };
 
-inline int PhysModel_FindObjectId(const studioPhysData_t* model, const char* name)
-{
-	for (int i = 0; i < model->numObjects; i++)
-	{
-		if (!CString::CompareCaseIns(model->objects[i].name, name))
-			return i;
-	}
+using StudioPhyObjData = StudioPhysData::Object;
+using StudioPhyShapeData = StudioPhysData::Shape;
 
-	return -1;
+inline int PhysModel_FindObjectId(const StudioPhysData& physData, const char* name)
+{
+	const int idx = arrayFindIndexF(physData.objects, [name](const StudioPhyObjData& obj) {
+		return !obj.name.CompareCaseIns(name);
+	});
+	return idx;
 }
 
-struct studioMotionData_t
+struct StudioMotionData
 {
+	struct Animation
+	{
+		struct BoneFrames
+		{
+			animframe_t*	keyFrames{ nullptr };
+			int				numFrames{ 0 };
+		};
+
+		char			name[44]{ 0 };
+		BoneFrames*		bones{ nullptr };
+	};
+
 	// animations
 	int					numAnimations{ 0 };
-
-	struct animation_t
-	{
-		char	name[44]{ 0 };
-		//int		numFrames{ 0 };
-
-		// bones, in count of studiohwdata_t::numJoints
-		struct boneKeyFrames_t
-		{
-			int				numFrames{ 0 };
-			animframe_t*	keyFrames{ nullptr };
-		}*		bones{ nullptr };
-	}*animations{ nullptr };
+	Animation*			animations{ nullptr };
 
 	// sequences
 	int					numsequences{ 0 };
@@ -130,7 +121,10 @@ struct studioMotionData_t
 	animframe_t*		frames{ nullptr };
 };
 
-struct studioJoint_t
+using StudioAnimData = StudioMotionData::Animation;
+using StudioBoneFrames = StudioMotionData::Animation::BoneFrames;
+
+struct StudioJoint
 {
 	Matrix4x4			absTrans;
 	Matrix4x4			invAbsTrans;
@@ -145,6 +139,3 @@ struct studioJoint_t
 	int					ikChainId{ -1 };
 	int					ikLinkId{ -1 };
 };
-
-typedef studioMotionData_t::animation_t						studioAnimation_t;
-typedef studioMotionData_t::animation_t::boneKeyFrames_t	studioBoneAnimation_t;

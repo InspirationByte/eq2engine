@@ -64,9 +64,9 @@ public:
 	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 
 	const studioHdr_t&			GetStudioHdr() const;
-	const studioPhysData_t&		GetPhysData() const;
-	const studioMotionData_t&	GetMotionData(int index) const;
-	const studioJoint_t&		GetJoint(int index) const;
+	const StudioPhysData&		GetPhysData() const;
+	const StudioMotionData&		GetMotionData(int index) const;
+	const StudioJoint&			GetJoint(int index) const;
 	Matrix4x4					GetLocalTransformMatrix(int transformIdx) const;
 
 	const BoundingBox&			GetBoundingBox() const;
@@ -123,18 +123,18 @@ private:
 
 	// array of material index for each group
 	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>		m_materials;
-	FixedArray<studioMotionData_t*, MAX_MOTIONPACKAGES>	m_motionData;
+	FixedArray<StudioMotionData*, MAX_MOTIONPACKAGES>	m_motionData;
 
 	Array<EqString>			m_additionalMotionPackages{ PP_SL };
 	BoundingBox				m_boundingBox; // FIXME: bounding boxes for each groups?
 	EqString				m_name;
 	
-	studioJoint_t*			m_joints{ nullptr };
+	StudioJoint*			m_joints{ nullptr };
 	HWGeomRef*				m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
 
 	CBaseEqGeomInstancer*	m_instancer{ nullptr };
 	studioHdr_t*			m_studio{ nullptr };
-	studioPhysData_t		m_physModel;
+	StudioPhysData			m_physModel;
 
 	IGPUBufferPtr			m_vertexBuffers[EGFHwVertex::VERT_COUNT];
 	IGPUBufferPtr			m_indexBuffer;

@@ -67,7 +67,7 @@ struct AnimSequence
 
 	AnimSequence*				blends[MAX_SEQUENCE_BLENDS]{ nullptr };
 	const sequenceevent_t*		events[MAX_EVENTS_PER_SEQ]{ nullptr };
-	const studioAnimation_t*	animations[MAX_BLEND_WIDTH]{ nullptr };
+	const StudioAnimData*	animations[MAX_BLEND_WIDTH]{ nullptr };
 };
 
 // sequence timer with events

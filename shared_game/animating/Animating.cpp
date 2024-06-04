@@ -79,9 +79,9 @@ static AnimFrame InterpolateFrameTransform(const AnimFrame& frame1, const AnimFr
 	return out;
 }
 
-static AnimFrame GetInterpolatedBoneFrame(const studioAnimation_t& anim, int nBone, int firstframe, int lastframe, float interp)
+static AnimFrame GetInterpolatedBoneFrame(const StudioAnimData& anim, int nBone, int firstframe, int lastframe, float interp)
 {
-	const studioBoneAnimation_t& frame = anim.bones[nBone];
+	const StudioBoneFrames& frame = anim.bones[nBone];
 	ASSERT(firstframe >= 0);
 	ASSERT(lastframe >= 0);
 	ASSERT(firstframe < frame.numFrames);
@@ -90,7 +90,7 @@ static AnimFrame GetInterpolatedBoneFrame(const studioAnimation_t& anim, int nBo
 }
 
 static AnimFrame GetInterpolatedBoneFrameBetweenTwoAnimations(
-	const studioAnimation_t& anim1, const studioAnimation_t& anim2,
+	const StudioAnimData& anim1, const StudioAnimData& anim2,
 	int boneIdx, int firstframe, int lastframe, float interp, float animTransition)
 {
 	AnimFrame frameA = GetInterpolatedBoneFrame(anim1, boneIdx, firstframe, lastframe, interp);
@@ -114,8 +114,8 @@ static AnimFrame GetSequenceLayerBoneFrame(const AnimSequence* seq, int boneIdx)
 		blendAnimation2
 	);
 
-	const studioAnimation_t* anim1 = seq->animations[blendAnimation1];
-	const studioAnimation_t* anim2 = seq->animations[blendAnimation2];
+	const StudioAnimData* anim1 = seq->animations[blendAnimation1];
+	const StudioAnimData* anim2 = seq->animations[blendAnimation2];
 
 	return GetInterpolatedBoneFrameBetweenTwoAnimations(*anim1, *anim2, boneIdx, 0, 0, 0, blendWeight);
 }
@@ -130,7 +130,7 @@ static void CalculateSequenceBoneFrame(const AnimSequenceTimer& timer, int boneI
 		return;
 
 	const AnimSequence* seq = timer.seq;
-	const studioAnimation_t* curAnim = seq->animations[0];
+	const StudioAnimData* curAnim = seq->animations[0];
 	if (!curAnim)
 		return;
 
@@ -161,8 +161,8 @@ static void CalculateSequenceBoneFrame(const AnimSequenceTimer& timer, int boneI
 			playingBlendAnimation2);
 
 		// get frame pointers
-		const studioAnimation_t* playingAnim1 = seq->animations[playingBlendAnimation1];
-		const studioAnimation_t* playingAnim2 = seq->animations[playingBlendAnimation2];
+		const StudioAnimData* playingAnim1 = seq->animations[playingBlendAnimation1];
+		const StudioAnimData* playingAnim2 = seq->animations[playingBlendAnimation2];
 
 		// compute blending frame
 		animationFrame = GetInterpolatedBoneFrameBetweenTwoAnimations(*playingAnim1, *playingAnim2, boneId, timer.currFrame, timer.nextFrame, frameInterp, playingBlendWeight);
@@ -217,7 +217,7 @@ void CAnimatingEGF::DestroyAnimating()
 	m_seqList.clear();
 	m_poseControllers.clear();
 	m_ikChains.clear();
-	m_joints = ArrayCRef<studioJoint_t>(nullptr);
+	m_joints = ArrayCRef<StudioJoint>(nullptr);
 	m_transforms = ArrayCRef<studioTransform_t>(nullptr);;
 
 	SAFE_DELETE_ARRAY(m_boneTransforms);
@@ -266,7 +266,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 			link.l = pStudioChain->pLink(j);
 			link.chain = &chain;
 
-			const studioJoint_t& joint = m_joints[link.l->bone];
+			const StudioJoint& joint = m_joints[link.l->bone];
 
 			const Vector3D& rotation = joint.bone->rotation;
 			link.quat = rotateXYZ(rotation.x, rotation.y, rotation.z);
@@ -303,7 +303,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 		AddMotions(model, model->GetMotionData(i));
 }
 
-void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData)
+void CAnimatingEGF::AddMotions(CEqStudioGeom* model, const StudioMotionData& motionData)
 {
 	const int motionFirstPoseController = m_poseControllers.numElem();
 
@@ -998,7 +998,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 				AnimIkChain::Link& link = chain.links[j];
 
 				const int boneIdx = link.l->bone;
-				const studioJoint_t& joint = m_joints[boneIdx];
+				const StudioJoint& joint = m_joints[boneIdx];
 
 				link.quat = Quaternion(m_boneTransforms[boneIdx].getRotationComponent());
 				link.position = joint.bone->position;
