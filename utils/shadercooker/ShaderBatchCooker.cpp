@@ -328,7 +328,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 						return layout.name == aliasOfStr;
 					});
 					if (aliasLayout == -1)
-						MsgError("%s - vertex layout %s for 'aliasOf' not found\n", shaderInfo.name.ToCString(), aliasOfStr);
+						MsgError("%s - vertex layout %s for 'aliasOf' not found\n", shaderInfo.name.ToCString(), aliasOfStr.ToCString());
 
 					vertLayout.aliasOf = aliasLayout;
 				}
@@ -717,7 +717,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 	// get the target properties
 	{
 		// load target info
-		const KVSection* targets = kvs.FindSection("Targets");
+		const KVSection* targets = kvs["Targets"];
 		if (!targets)
 		{
 			MsgError("Missing 'Targets' section in '%s'\n", confFileName);

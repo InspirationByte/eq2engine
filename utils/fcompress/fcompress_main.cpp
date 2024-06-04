@@ -397,14 +397,14 @@ static void CookPackageTarget(const char* targetName)
 		outputFileName = fnmPathApplyExt(outputFileName, s_dpkPackageDefaultExt);
 
 	// load target info
-	KVSection* packages = kvs.FindSection("Packages");
+	const KVSection* packages = kvs["Packages"];
 	if (!packages)
 	{
 		MsgError("Missing 'Packages' section in 'PackageCooker.CONFIG'\n");
 		return;
 	}
 
-	KVSection* currentTarget = packages->FindSection(targetName);
+	const KVSection* currentTarget = packages->FindSection(targetName);
 	if (!currentTarget)
 	{
 		MsgError("Cannot find package section '%s'\n", targetName);

@@ -258,10 +258,9 @@ void CEqAudioSystemAL::InitEffects()
 	//
 	// Load effect presets from file
 	//
-	KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
+	const KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
 
 	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindSection("EFXScript"), 0, nullptr) : nullptr;
-
 	if (effectFilePath == nullptr)
 	{
 		MsgError("InitEFX: EQCONFIG missing Sound:EFXScript !\n");

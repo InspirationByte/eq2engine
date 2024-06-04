@@ -78,8 +78,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 			KVSection root;
 			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &root))
 			{
-				KVSection* atlasSec = root.FindSection("atlasgroup");
-
+				const KVSection* atlasSec = root["atlasgroup"];
 				if (atlasSec)
 				{
 					if (!m_atlas)

@@ -16,7 +16,7 @@
 #pragma warning(disable: 4267)
 #endif
 
-static const char* s_szkKVValueTypes[KVPAIR_TYPES] =
+constexpr EqStringRef s_szkKVValueTypes[] =
 {
 	"string",
 	"int",
@@ -24,19 +24,18 @@ static const char* s_szkKVValueTypes[KVPAIR_TYPES] =
 	"bool",
 	"section",		// sections
 };
+static_assert(KVPAIR_TYPES == elementsOf(s_szkKVValueTypes), "s_szkKVValueTypes does not match KVPAIR_TYPES");
 
-static EKVPairType KV_ResolvePairType( const char* string )
+static EKVPairType KV_ResolvePairType(const char* name)
 {
-	char* typeName = (char*)string;
-
 	// check types
 	for(int i = 0; i < KVPAIR_TYPES; i++)
 	{
-		if(!CString::CompareCaseIns(typeName, s_szkKVValueTypes[i]))
+		if(s_szkKVValueTypes[i] == name)
 			return (EKVPairType)i;
 	}
 
-	MsgError("invalid kvpair type '%s'\n", typeName);
+	MsgError("invalid kvpair type '%s'\n", name);
 	return KVPAIR_STRING;
 }
 
@@ -45,7 +44,7 @@ static EKVPairType KV_ResolvePairType( const char* string )
 static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength = INT_MAX )
 {
 	// convert some symbols to special ones
-	size_t processLen = min(strlen( pszStr ), maxLength);
+	const size_t processLen = min(strlen( pszStr ), maxLength);
 
 	const char* ptr = pszStr;
 	char* ptrTemp = dest;

@@ -255,7 +255,6 @@ struct KVValueIterator
 	{
 	}
 
-	operator		int() const { return index; }
 	operator		T() const { return KVPairValuesGetter<T>::Get(section, index);  }
 
 	KVPairValue*	operator*() const { return section ? section->values[index] : nullptr; }

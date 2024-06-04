@@ -176,7 +176,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	shaderInfo.shaderPackFile = shaderPackFile;
 	shaderInfo.shaderName = shaderInfoKvs.GetName();
 
-	const KVSection* defines = shaderInfoKvs.FindSection("Defines");
+	const KVSection* defines = shaderInfoKvs["Defines"];
 	if (defines)
 	{
 		shaderInfo.defines.reserve(defines->ValueCount());
@@ -185,7 +185,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	}
 
 	int shaderKinds = 0;
-	for (KVValueIterator<EqStringRef> it(shaderInfoKvs.FindSection("ShaderKinds")); !it.atEnd(); ++it)
+	for (KVValueIterator<EqStringRef> it(shaderInfoKvs["ShaderKinds"]); !it.atEnd(); ++it)
 	{
 		const EqStringRef kindName(it);
 		if (kindName == s_shaderKindVertexName)
@@ -197,7 +197,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	}
 	shaderInfo.shaderKinds = shaderKinds;
 
-	for (KVKeyIterator it(shaderInfoKvs.FindSection("VertexLayouts")); !it.atEnd(); ++it)
+	for (KVKeyIterator it(shaderInfoKvs["VertexLayouts"]); !it.atEnd(); ++it)
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
 		layout.name = EqString(it);
@@ -212,7 +212,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		}
 	}
 
-	const KVSection* fileListSec = shaderInfoKvs.FindSection("FileList");
+	const KVSection* fileListSec = shaderInfoKvs["FileList"];
 
 	int filesFound = 0;
 	for (KVKeyIterator it(fileListSec, "spv"); !it.atEnd(); ++it)

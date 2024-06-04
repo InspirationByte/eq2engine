@@ -499,7 +499,7 @@ bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 	// get the target properties
 	{
 		// load target info
-		const KVSection* targets = kvs.FindSection("Targets");
+		const KVSection* targets = kvs["Targets"];
 		if (!targets)
 		{
 			MsgError("Missing 'Targets' section in '%s'\n", confFileName);
@@ -565,7 +565,7 @@ bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 
 	// load batch configuration
 	{
-		KVSection* batchConfig = kvs.FindSection("BatchConfig");
+		const KVSection* batchConfig = kvs["BatchConfig"];
 		if (!batchConfig)
 		{
 			MsgError("Missing 'BatchConfig' section in '%s'\n", confFileName);
