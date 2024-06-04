@@ -606,7 +606,6 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		{
 			EqString filePath;
 			fnmPathCombine(filePath, m_basePath, spInfo->path, fileName);
-			fnmPathFixSeparators(filePath);
 
 #ifndef _WIN32
 			const int nameHash = FSStringId(filePath);
@@ -641,13 +640,14 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		EqString filePath;
 
 		if(isAbsolutePath)
+		{
 			filePath = fileName;
+			fnmPathFixSeparators(filePath);
+		}
 		else
 			fnmPathCombine(filePath, m_basePath, fileName);
-		fnmPathFixSeparators(filePath);
-
+		
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
-
 		if (func(filePath, SP_ROOT, flags, true))
 			return true;
 	}
