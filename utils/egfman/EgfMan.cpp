@@ -78,8 +78,8 @@ void SetOptimalCameraDistance()
 
 void FlushCache()
 {
-	g_studioModelCache->ReleaseCache();
-	g_studioModelCache->PrecacheModel("models/error.egf");
+	g_studioCache->ReleaseCache();
+	g_studioCache->PrecacheModel("models/error.egf");
 }
 
 class CEGFViewApp: public wxApp
@@ -421,7 +421,7 @@ static void InitMatSystem(void* window)
 		return;
 	}
 
-	g_studioModelCache->PrecacheModel("models/error.egf");
+	g_studioCache->PrecacheModel("models/error.egf");
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
@@ -449,10 +449,10 @@ void CEGFViewFrame::InitializeEq()
 		g_model.SetModel(nullptr);
 		FlushCache();
 
-		int cache_index = g_studioModelCache->PrecacheModel(modelPath);
-		if (cache_index != CACHE_INVALID_MODEL)
+		int cache_index = g_studioCache->PrecacheModel(modelPath);
+		if (cache_index != STUDIOCACHE_INVALID_IDX)
 		{
-			g_model.SetModel(g_studioModelCache->GetModel(cache_index));
+			g_model.SetModel(g_studioCache->GetModel(cache_index));
 			RefreshGUI();
 	}
 }
@@ -807,11 +807,11 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			g_model.SetModel(nullptr);
 			FlushCache();
 
-			int cache_index = g_studioModelCache->PrecacheModel(modelPath.ToCString() );
-			if(cache_index == CACHE_INVALID_MODEL)
+			int cache_index = g_studioCache->PrecacheModel(modelPath.ToCString() );
+			if(cache_index == STUDIOCACHE_INVALID_IDX)
 				wxMessageBox(wxString::Format("Can't open %s\n", modelPath.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 
-			g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
+			g_model.SetModel( g_studioCache->GetModel(cache_index) );
 		}
 
 		SetOptimalCameraDistance();
@@ -831,11 +831,11 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		g_model.SetModel(nullptr);
 		FlushCache();
 
-		int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
-		if(cache_index == CACHE_INVALID_MODEL)
+		int cache_index = g_studioCache->PrecacheModel( model_path.ToCString() );
+		if(cache_index == STUDIOCACHE_INVALID_IDX)
 			wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 
-		g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
+		g_model.SetModel( g_studioCache->GetModel(cache_index) );
 	}
 	else if(event.GetId() == Event_File_CompileModel)
 	{
@@ -905,11 +905,11 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 						g_model.SetModel(nullptr);
 						FlushCache();
 
-						int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
-						if(cache_index == CACHE_INVALID_MODEL)
+						int cache_index = g_studioCache->PrecacheModel( model_path.ToCString() );
+						if(cache_index == STUDIOCACHE_INVALID_IDX)
 							wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 
-						g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
+						g_model.SetModel( g_studioCache->GetModel(cache_index) );
 
 						SetOptimalCameraDistance();
 						g_matSystem->PreloadNewMaterials();

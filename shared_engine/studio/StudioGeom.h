@@ -48,17 +48,17 @@ public:
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
-	int							GetCacheIndex() const { return m_cacheIdx; }
+	int							GetCacheId() const { return m_nameHash; }
 	const char*					GetName() const;
 	EModelLoadingState			GetLoadingState() const;	// EModelLoadingState
 	Future<bool>				GetLoadingFuture() const;
 
-	void						LoadMotionPackage(const char* filename);
+	void						AddMotionPackage(const char* filename);
 
 	const studioHdr_t&			GetStudioHdr() const;
 	const StudioPhysData&		GetPhysData() const;
-	ArrayCRef<StudioJoint>			GetJoints() const;
-	ArrayCRef<StudioMotionData*>	GetMotionDataList() const;
+	ArrayCRef<StudioJoint>		GetJoints() const;
+	ArrayCRef<int>				GetMotionDataIdxs() const;
 
 	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 	ArrayCRef<IMaterialPtr>		GetMaterials(int materialGroupIdx = 0) const;
@@ -108,16 +108,21 @@ private:
 
 	//-----------------------------------------------
 
+	using MaterialList = FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>;
+	using MotionDataList = FixedArray<int, MAX_MOTIONPACKAGES>;
+
 	Future<bool>			m_loadingFuture;
 
 	// array of material index for each group
-	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>		m_materials;
-	FixedArray<StudioMotionData*, MAX_MOTIONPACKAGES>	m_motionData;
+	MaterialList			m_materials;
+	MotionDataList			m_motionData;
 
 	Array<EqString>			m_additionalMotionPackages{ PP_SL };
 	BoundingBox				m_boundingBox; // FIXME: bounding boxes for each groups?
 	EqString				m_name;
-	
+	int						m_nameHash{ 0 };
+	int						m_cacheIdx{ 0 };
+
 	StudioJoint*			m_joints{ nullptr };
 	HWGeomRef*				m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
 
@@ -131,8 +136,6 @@ private:
 
 	int						m_materialCount{ 0 };
 	int						m_materialGroupsCount{ 0 };
-
-	int						m_cacheIdx{ -1 };
 
 	volatile int			m_readyState{ 0 };
 };

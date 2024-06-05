@@ -103,6 +103,7 @@ void CEqStudioGeom::SetInstanceFormatId(int instanceFormatId)
 }
 
 CEqStudioGeom::CEqStudioGeom()
+	: m_cacheIdx(STUDIOCACHE_INVALID_IDX)
 {
 }
 
@@ -113,7 +114,7 @@ CEqStudioGeom::~CEqStudioGeom()
 
 void CEqStudioGeom::Ref_DeleteObject()
 {
-	g_studioModelCache->FreeCachedModel(this);
+	g_studioCache->FreeModel(m_cacheIdx);
 	RefCountedObject::Ref_DeleteObject();
 }
 
@@ -211,32 +212,26 @@ void CEqStudioGeom::DestroyModel()
 		m_vertexBuffers[i] = nullptr;
 	m_indexBuffer = nullptr;
 
+	m_motionData.clear();
 	m_materials.clear(true);
 	m_materialCount = 0;
 	m_materialGroupsCount = 0;
 	m_boundingBox.Reset();
 
+	g_studioShapeCache->DestroyStudioCache(&m_physModel);
+	Studio_FreePhysModel(m_physModel);
+	m_physModel = {};
+
 	if (m_studio)
 	{
-		for (int i = 0; i < m_motionData.numElem(); i++)
-		{
-			Studio_FreeMotionData(*m_motionData[i]);
-			delete m_motionData[i];
-		}
-		m_motionData.clear();
-
-		g_studioShapeCache->DestroyStudioCache(&m_physModel);
-		Studio_FreePhysModel(m_physModel);
-		m_physModel = {};
-
 		for (int i = 0; i < m_studio->numMeshGroups; i++)
 			delete[] m_hwGeomRefs[i].meshRefs;
 
-		SAFE_DELETE_ARRAY(m_hwGeomRefs);
-		SAFE_DELETE_ARRAY(m_joints);
-
 		Studio_FreeModel(m_studio);
 	}
+
+	SAFE_DELETE_ARRAY(m_hwGeomRefs);
+	SAFE_DELETE_ARRAY(m_joints);
 }
 
 void CEqStudioGeom::LoadPhysicsData()
@@ -345,7 +340,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 		loadModelJob->DeleteOnFinish();
 		loadModelJob->InitJob();
 
-		CEqJobManager* jobMng = g_studioModelCache->GetJobMng();
+		CEqJobManager* jobMng = g_studioCache->GetJobMng();
 
 		const int numPackages = m_studio->numMotionPackages
 			+ g_fileSystem->FileExist(fnmPathApplyExt(m_name, s_egfMotionPackageExt), SP_MOD);
@@ -548,7 +543,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	return true;
 }
 
-void CEqStudioGeom::LoadMotionPackage(const char* filename)
+void CEqStudioGeom::AddMotionPackage(const char* filename)
 {
 	if (m_readyState == MODEL_LOAD_ERROR)
 		return;
@@ -559,68 +554,41 @@ void CEqStudioGeom::LoadMotionPackage(const char* filename)
 		return;
 	}
 
-	StudioMotionData* motionData = PPNew StudioMotionData;
-	if (Studio_LoadMotionData(filename, *motionData))
-	{
-		m_motionData.append(motionData);
+	const int motionDataIdx = g_studioCache->PrecacheMotionData(filename);
+	if (motionDataIdx == STUDIOCACHE_INVALID_IDX)
 		return;
-	}
 
-	MsgError("Can't open motion data package '%s'!\n", filename);
-	delete motionData;
+	m_motionData.append(motionDataIdx);
 }
 
 void CEqStudioGeom::LoadMotionPackages()
 {
-	// TODO: packages has to be added from Studio Cache instead
+	// Try load default motion file
+	{
+		const int motionDataIdx = g_studioCache->PrecacheMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt));
+		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
+			m_motionData.append(motionDataIdx);
+	}
 
 	const studioHdr_t* studio = m_studio;
 
-	// Try load default motion file
-	{
-		StudioMotionData* motionData = PPNew StudioMotionData;
-		Studio_LoadMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt), *motionData);
-		if (motionData)
-			m_motionData.append(motionData);
-		else
-			delete motionData;
-	}
-
-	// load motion packages that are additionally specified in EGF model
+	// load motion packages that were specified in EGF file
 	for (int i = 0; i < studio->numMotionPackages; i++)
 	{
 		EqString mopPath;
 		fnmPathCombine(mopPath, fnmPathStripName(m_name), fnmPathApplyExt(studio->pPackage(i)->packageName, s_egfMotionPackageExt));
 
-		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
-
-		StudioMotionData* motionData = PPNew StudioMotionData; 
-		Studio_LoadMotionData(mopPath, *motionData);
-		if (motionData)
-		{
-			m_motionData.append(motionData);
-		}
-		else
-		{
-			MsgError("Can't open motion package '%s' specified in EGF\n", studio->pPackage(i)->packageName);
-			delete motionData;
-		}
+		const int motionDataIdx = g_studioCache->PrecacheMotionData(mopPath, m_name);
+		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
+			m_motionData.append(motionDataIdx);
 	}
 
 	// load additional external motion packages requested by user
-	for (int i = 0; i < m_additionalMotionPackages.numElem(); i++)
+	for (const EqString& extraMotionPackName : m_additionalMotionPackages)
 	{
-		StudioMotionData* motionData = PPNew StudioMotionData; 
-		Studio_LoadMotionData(m_additionalMotionPackages[i], *motionData);
-		if (motionData)
-		{
-			m_motionData.append(motionData);
-		}
-		else
-		{
-			MsgError("Can't open motion data package '%s'!\n", m_additionalMotionPackages[i].ToCString());
-			delete motionData;
-		}
+		const int motionDataIdx = g_studioCache->PrecacheMotionData(extraMotionPackName, m_name);
+		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
+			m_motionData.append(motionDataIdx);
 	}
 	m_additionalMotionPackages.clear(true);
 }
@@ -643,9 +611,6 @@ void CEqStudioGeom::LoadMaterials()
 			EqString fpath(studio->pMaterial(i)->materialname);
 			fnmPathFixSeparators(fpath);
 
-			if (fpath.ToCString()[0] == CORRECT_PATH_SEPARATOR)
-				fpath = EqString(fpath.ToCString(), fpath.Length() - 1);
-
 			for (int j = 0; j < studio->numMaterialSearchPaths; j++)
 			{
 				if (m_materials[i])
@@ -654,7 +619,7 @@ void CEqStudioGeom::LoadMaterials()
 				EqString spath(studio->pMaterialSearchPath(j)->searchPath);
 				fnmPathFixSeparators(spath);
 
-				if (spath.Length() && spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
+				if (spath.Length() && spath[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
 					spath = spath.Left(spath.Length() - 1);
 
 				EqString extend_path;
@@ -679,7 +644,7 @@ void CEqStudioGeom::LoadMaterials()
 			if (m_materials[i])
 				continue;
 
-			m_materials[i] = g_studioModelCache->GetErrorMaterial();
+			m_materials[i] = g_studioCache->GetErrorMaterial();
 
 			const char* materialName = studio->pMaterial(i)->materialname;
 			if (*materialName)
@@ -847,7 +812,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetInstanceFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat())
+	drawCmd.SetInstanceFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioCache->GetGeomVertexFormat())
 		.SetInstanceData(instData)
 		.SetIndexBuffer(m_indexBuffer, static_cast<EIndexFormat>(m_indexFmt));
 
@@ -1003,7 +968,7 @@ const StudioPhysData& CEqStudioGeom::GetPhysData() const
 	return m_physModel;
 }
 
-ArrayCRef<StudioMotionData*> CEqStudioGeom::GetMotionDataList() const
+ArrayCRef<int> CEqStudioGeom::GetMotionDataIdxs() const
 {
 	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);

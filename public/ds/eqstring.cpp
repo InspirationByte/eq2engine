@@ -163,7 +163,7 @@ bool EqTStr<CH>::Resize(int nSize, bool bCopy)
 			if (m_nLength > newSize)
 				m_pszString[newSize] = 0;
 
-			memcpy(pszNewBuffer, m_pszString, newSize * sizeof(CH));
+			memcpy(pszNewBuffer, m_pszString, min(m_nAllocated, newSize) * sizeof(CH));
 		}
 
 		// now it's not needed

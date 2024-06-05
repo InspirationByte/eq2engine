@@ -14,15 +14,16 @@
 
 #include "StudioCache.h"
 #include "StudioGeom.h"
+#include "studiofile/StudioLoader.h"
 
 
 DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
 
-CStaticAutoPtr<CStudioCache> g_studioModelCache;
+CStaticAutoPtr<CStudioCache> g_studioCache;
 
-DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
+DECLARE_CMD(studio_cacheInfo, "Print loaded EGF and motion packages", CV_CHEAT)
 {
-	g_studioModelCache->PrintLoadedModels();
+	g_studioCache->PrintLoaded();
 }
 
 void CStudioCache::Init(CEqJobManager* jobMng)
@@ -43,31 +44,23 @@ CEqJobManager* CStudioCache::GetJobMng() const
 	return m_jobMng; 
 }
 
-IMaterialPtr CStudioCache::GetErrorMaterial()
+IMaterialPtr CStudioCache::GetErrorMaterial() const
 {
-	InitErrorMaterial();
+	if (!m_errorMaterial)
+	{
+		KVSection overdrawParams;
+		overdrawParams.SetName("Skinned"); // set shader
+		overdrawParams.SetKey("BaseTexture", "error");
+
+		m_errorMaterial = g_matSystem->CreateMaterial("_studioErrorMaterial", &overdrawParams);
+		m_errorMaterial->LoadShaderAndTextures();
+	}
+
 	return m_errorMaterial;
 }
 
-void CStudioCache::InitErrorMaterial()
+IVertexFormat* CStudioCache::GetGeomVertexFormat() const
 {
-	if (m_errorMaterial)
-		return;
-
-	KVSection overdrawParams;
-	overdrawParams.SetName("Skinned"); // set shader
-	overdrawParams.SetKey("BaseTexture", "error");
-
-	m_errorMaterial = g_matSystem->CreateMaterial("_studioErrorMaterial", &overdrawParams);
-	m_errorMaterial->LoadShaderAndTextures();
-}
-
-// caches model and returns it's index
-int CStudioCache::PrecacheModel(const char* modelName)
-{
-	if (strlen(modelName) <= 0)
-		return CACHE_INVALID_MODEL;
-
 	if (!m_egfFormat)
 	{
 		FixedArray<VertexLayoutDesc, 4> egfVertexLayout;
@@ -77,57 +70,67 @@ int CStudioCache::PrecacheModel(const char* modelName)
 		egfVertexLayout.append(EGFHwVertex::Color::GetVertexLayoutDesc());
 		m_egfFormat = g_renderAPI->CreateVertexFormat("EGFVertex", egfVertexLayout);
 	}
-	
-	const int idx = GetModelIndex(modelName);
-	if (idx == CACHE_INVALID_MODEL)
+	return m_egfFormat;
+}
+
+// caches model and returns it's index
+int CStudioCache::PrecacheModel(const char* fileName)
+{
+	if(!fileName || *fileName == 0)
+		return STUDIOCACHE_INVALID_IDX;
+
+	EqString nameStr(fileName);
+	fnmPathFixSeparators(nameStr);
+
+	if (!fnmPathHasExt(nameStr))
+		fnmPathApplyExt(nameStr, s_egfGeomExt);
+
+	const int nameHash = StringToHash(nameStr, true);
+	auto foundIt = m_geomCacheIndex.find(nameHash);
+
+	if (!foundIt.atEnd())
+		return *foundIt;
+
+	DevMsg(DEVMSG_CORE, "Loading model '%s'\n", nameStr.ToCString());
+
+	CEqStudioGeom* model = PPNew CEqStudioGeom();
+	if (!model->LoadModel(nameStr, job_modelLoader.GetBool()))
 	{
-		EqString str(modelName);
-		fnmPathFixSeparators(str);
-
-		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", str.ToCString());
-
-		CEqStudioGeom* model = PPNew CEqStudioGeom();
-		if (model->LoadModel(str, job_modelLoader.GetBool()))
-		{
-			if (m_geomFreeCacheSlots.numElem())
-			{
-				const int newIdx = m_geomFreeCacheSlots.popBack();
-				m_geomCachedList[newIdx] = model;
-				model->m_cacheIdx = newIdx;
-			}
-			else
-			{
-				const int newIdx = m_geomCachedList.append(model);
-				model->m_cacheIdx = newIdx;
-			}
-
-			const int nameHash = StringToHash(str, true);
-			m_geomCacheIndex.insert(nameHash, model->m_cacheIdx);
-		}
-		else
-		{
-			SAFE_DELETE(model);
-		}
-
-		return model ? model->m_cacheIdx : 0;
+		SAFE_DELETE(model);
+		return STUDIOCACHE_INVALID_IDX;
 	}
 
-	return idx;
+	int newCacheIdx = STUDIOCACHE_INVALID_IDX;
+	if (m_geomFreeCacheSlots.numElem())
+	{
+		newCacheIdx = m_geomFreeCacheSlots.popBack();
+		m_geomCachedList[newCacheIdx] = model;
+	}
+	else
+	{
+		newCacheIdx = m_geomCachedList.append(model);
+	}
+
+	model->m_nameHash = nameHash;
+	model->m_cacheIdx = newCacheIdx;
+
+	foundIt = m_geomCacheIndex.insert(nameHash, newCacheIdx);
+
+	return newCacheIdx;
 }
 
 // returns count of cached models
-int	CStudioCache::GetCachedModelCount() const
+int	CStudioCache::GetModelCount() const
 {
 	return m_geomCachedList.numElem();
 }
 
 CEqStudioGeom* CStudioCache::GetModel(int index) const
 {
-	if (index <= CACHE_INVALID_MODEL)
+	if (index <= STUDIOCACHE_INVALID_IDX)
 		return m_geomCachedList[0];
 
 	CEqStudioGeom* model = m_geomCachedList[index];
-
 	if (model && model->GetLoadingState() != MODEL_LOAD_ERROR)
 		return model;
 
@@ -135,83 +138,126 @@ CEqStudioGeom* CStudioCache::GetModel(int index) const
 	return m_geomCachedList[0];
 }
 
-const char* CStudioCache::GetModelFilename(CEqStudioGeom* model) const
-{
-	return model->GetName();
-}
-
-int CStudioCache::GetModelIndex(const char* modelName) const
-{
-	EqString str(modelName);
-	fnmPathFixSeparators(str);
-
-	const int nameHash = StringToHash(str, true);
-	auto found = m_geomCacheIndex.find(nameHash);
-	if (!found.atEnd())
-	{
-		return *found;
-	}
-
-	return CACHE_INVALID_MODEL;
-}
-
-int CStudioCache::GetModelIndex(CEqStudioGeom* model) const
-{
-	for (int i = 0; i < m_geomCachedList.numElem(); i++)
-	{
-		if (m_geomCachedList[i] == model)
-			return i;
-	}
-
-	return CACHE_INVALID_MODEL;
-}
-
 // decrements reference count and deletes if it's zero
-void CStudioCache::FreeCachedModel(CEqStudioGeom* model)
+void CStudioCache::FreeModel(int index)
 {
-	const int modelIndex = arrayFindIndex(m_geomCachedList, model);
-	if (modelIndex == -1)
+	CEqStudioGeom* model = m_geomCachedList[index];
+	if (!model)
 		return;
 
-	const int nameHash = StringToHash(model->GetName(), true);
-
-	m_geomCacheIndex.remove(nameHash);
-	m_geomFreeCacheSlots.append(modelIndex);
+	m_geomCacheIndex.remove(model->m_nameHash);
+	m_geomFreeCacheSlots.append(index);
 
 	// wait for loading completion
-	m_geomCachedList[modelIndex]->GetStudioHdr();
+	m_geomCachedList[index]->GetStudioHdr();
 
-	SAFE_DELETE(m_geomCachedList[modelIndex]);
+	// TODO: since it's refcounted, it should not be here
+	SAFE_DELETE(m_geomCachedList[index]);
+}
+
+int	CStudioCache::GetMotionDataCount() const
+{
+	return m_motionCachedList.numElem();
+}
+
+const StudioMotionData* CStudioCache::GetMotionData(int index) const
+{
+	if (index <= STUDIOCACHE_INVALID_IDX)
+		return nullptr;
+
+	return &m_motionCachedList[index];
+}
+
+int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requestedBy /*= nullptr*/)
+{
+	if (!fileName || *fileName == 0)
+		return STUDIOCACHE_INVALID_IDX;
+
+	EqString nameStr(fileName);
+	fnmPathFixSeparators(nameStr);
+
+	if (!fnmPathHasExt(nameStr))
+		fnmPathApplyExt(nameStr, s_egfMotionPackageExt);
+
+	const int nameHash = StringToHash(nameStr, true);
+	auto foundIt = m_motionCacheIndex.find(nameHash);
+
+	if (!foundIt.atEnd())
+		return *foundIt;
+
+	DevMsg(DEVMSG_CORE, "Loading motion package '%s'\n", nameStr.ToCString());
+
+	StudioMotionData motionData;
+	if(!Studio_LoadMotionData(nameStr, motionData))
+	{
+		if(requestedBy)
+			MsgError("Cannot open motion data package '%s' requested by '%s'!\n", nameStr.ToCString(), requestedBy);
+		return STUDIOCACHE_INVALID_IDX;
+	}
+
+	int newCacheIdx = STUDIOCACHE_INVALID_IDX;
+	if (m_motionFreeCacheSlots.numElem())
+	{
+		newCacheIdx = m_motionFreeCacheSlots.popBack();
+		m_motionCachedList[newCacheIdx] = motionData;
+	}
+	else
+	{
+		newCacheIdx = m_motionCachedList.append(motionData);
+	}
+
+	m_motionCachedList[newCacheIdx].nameHash = nameHash;
+	m_motionCachedList[newCacheIdx].cacheIdx = newCacheIdx;
+
+	foundIt = m_motionCacheIndex.insert(nameHash, newCacheIdx);
+
+	return newCacheIdx;
+}
+
+void CStudioCache::FreeMotionData(int index)
+{
+	StudioMotionData& motionData = m_motionCachedList[index];
+	if (motionData.cacheIdx == STUDIOCACHE_INVALID_IDX)
+		return;
+
+	m_motionCacheIndex.remove(motionData.nameHash);
+	m_motionFreeCacheSlots.append(index);
+
+	Studio_FreeMotionData(m_motionCachedList[index]);
+	motionData.cacheIdx = STUDIOCACHE_INVALID_IDX;
 }
 
 void CStudioCache::ReleaseCache()
 {
-	for (int i = 0; i < m_geomCachedList.numElem(); i++)
+	// TODO: since it's refcounted, it should not be here
+	for (CEqStudioGeom* model : m_geomCachedList)
 	{
-		if (m_geomCachedList[i])
-		{
-			// wait for loading completion
-			m_geomCachedList[i]->GetStudioHdr();
-			SAFE_DELETE(m_geomCachedList[i]);
-		}
+		if (!model)
+			continue;
+
+		// wait for loading completion
+		model->GetStudioHdr();
+		delete model;
 	}
+
+	for (StudioMotionData& motionData : m_motionCachedList)
+		Studio_FreeMotionData(motionData);
 
 	m_geomCachedList.clear(true);
 	m_geomCacheIndex.clear(true);
 	m_geomFreeCacheSlots.clear(true);
+
+	m_motionCacheIndex.clear(true);
+	m_motionCachedList.clear(true);
+	m_motionFreeCacheSlots.clear(true);
 
 	g_renderAPI->DestroyVertexFormat(m_egfFormat);
 	m_egfFormat = nullptr;
 	m_errorMaterial = nullptr;
 }
 
-IVertexFormat* CStudioCache::GetEGFVertexFormat() const
-{
-	return m_egfFormat;
-}
-
 // prints loaded models to console
-void CStudioCache::PrintLoadedModels() const
+void CStudioCache::PrintLoaded() const
 {
 	MsgInfo("Cached geom count: %d\n", m_geomCachedList.numElem());
 	for (int i = 0; i < m_geomCachedList.numElem(); ++i)
@@ -219,6 +265,13 @@ void CStudioCache::PrintLoadedModels() const
 		CEqStudioGeom* geom = m_geomCachedList[i];
 		if(geom)
 			Msg("  %d: %s\n", i, geom->GetName());
+	}
+	MsgInfo("Cached motion package count: %d\n", m_motionCachedList.numElem());
+	for (int i = 0; i < m_motionCachedList.numElem(); ++i)
+	{
+		const StudioMotionData& motionData = m_motionCachedList[i];
+		if (motionData.cacheIdx >= 0)
+			Msg("  %d: %s\n", i, motionData.name.ToCString());
 	}
 	MsgInfo("--- end\n");
 }

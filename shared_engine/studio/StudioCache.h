@@ -7,13 +7,13 @@
 
 #pragma once
 #include "materialsystem1/IMaterial.h"
+#include "egf/model.h"
 
 class CEqJobManager;
 class CEqStudioGeom;
 class IVertexFormat;
-struct StudioMotionData;
 
-static constexpr const int CACHE_INVALID_MODEL = -1;
+static constexpr const int STUDIOCACHE_INVALID_IDX = -1;
 
 //-------------------------------------------------------------------------------------
 // Model cache implementation
@@ -21,8 +21,6 @@ static constexpr const int CACHE_INVALID_MODEL = -1;
 
 class CStudioCache
 {
-	friend class			CEqStudioGeom;
-
 public:
 	CStudioCache() = default;
 
@@ -31,26 +29,24 @@ public:
 
 	CEqJobManager*			GetJobMng() const;
 
-	// caches model and returns it's index
-	int						PrecacheModel(const char* modelName);
-	int						GetCachedModelCount() const;
-
+	int						GetModelCount() const;
 	CEqStudioGeom*			GetModel(int index) const;
-	const char*				GetModelFilename(CEqStudioGeom* pModel) const;
-	int						GetModelIndex(const char* modelName) const;
-	int						GetModelIndex(CEqStudioGeom* pModel) const;
+	int						PrecacheModel(const char* modelName);
+	void					FreeModel(int index);
 
-	void					FreeCachedModel(CEqStudioGeom* pModel);
+	int						GetMotionDataCount() const;
+	const StudioMotionData*	GetMotionData(int index) const;
+	int						PrecacheMotionData(const char* fileName, const char* requestedBy = nullptr);
+	void					FreeMotionData(int index);
 
 	void					ReleaseCache();
 
-	IVertexFormat*			GetEGFVertexFormat() const;
-	IMaterialPtr			GetErrorMaterial();
+	IVertexFormat*			GetGeomVertexFormat() const;
+	IMaterialPtr			GetErrorMaterial() const;
 
-	void					PrintLoadedModels() const;
+	void					PrintLoaded() const;
 
 private:
-	void					InitErrorMaterial();
 
 	CEqJobManager*				m_jobMng{ nullptr };
 
@@ -58,15 +54,15 @@ private:
 	Array<CEqStudioGeom*>		m_geomCachedList{ PP_SL };
 	Array<int>					m_geomFreeCacheSlots{ PP_SL };
 
-	//Map<int, int>				m_motionCacheIndex{ PP_SL };
-	//Array<StudioMotionData*>	m_motionCachedList{ PP_SL };
-	//Array<int>					m_motionFreeCacheSlots{ PP_SL };
+	Map<int, int>				m_motionCacheIndex{ PP_SL };
+	Array<StudioMotionData>		m_motionCachedList{ PP_SL };
+	Array<int>					m_motionFreeCacheSlots{ PP_SL };
 
-	IVertexFormat*				m_egfFormat{ nullptr };
-	IMaterialPtr				m_errorMaterial;
+	mutable IVertexFormat*		m_egfFormat{ nullptr };
+	mutable IMaterialPtr		m_errorMaterial;
 };
 
 // model cache manager
-extern CStaticAutoPtr<CStudioCache> g_studioModelCache;
+extern CStaticAutoPtr<CStudioCache> g_studioCache;
 
-#define PrecacheStudioModel(mod) g_studioModelCache->PrecacheModel(mod)
+#define PrecacheStudioModel(mod) g_studioCache->PrecacheModel(mod)

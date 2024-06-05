@@ -10,6 +10,7 @@
 #include "physmodel.h"
 #include "motionpackage.h"
 
+constexpr EqStringRef s_egfGeomExt = "egf";
 constexpr EqStringRef s_egfMotionPackageExt = "mop";
 constexpr EqStringRef s_egfPhysicsObjectExt = "pod";
 
@@ -91,6 +92,8 @@ inline int PhysModel_FindObjectId(const StudioPhysData& physData, const char* na
 struct StudioMotionData
 {
 	EqString					name;
+	int							nameHash{ 0 };
+	int							cacheIdx{ -1 };
 	ArrayRef<animationdesc_t>	animations{ nullptr };
 	ArrayRef<sequencedesc_t>	sequences{ nullptr };
 	ArrayRef<sequenceevent_t>	events{ nullptr };

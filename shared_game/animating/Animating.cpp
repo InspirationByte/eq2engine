@@ -11,6 +11,7 @@
 #include "render/IDebugOverlay.h"
 #include "Animating.h"
 #include "studio/StudioGeom.h"
+#include "studio/StudioCache.h"
 #include "anim_activity.h"
 #include "anim_events.h"
 
@@ -224,11 +225,12 @@ void CAnimatingEGF::DestroyAnimating()
 	m_sequenceTimers.clear();
 	m_transitionTimers.clear();
 
-	m_animData.clear();
-	m_poseControllers.clear();
-	m_ikChains.clear();
+	m_animData.clear(true);
+	m_nameToAnimData.clear(true);
+	m_ikChains.clear(true);
+	m_poseControllers.clear(true);
 	m_joints = ArrayCRef<StudioJoint>(nullptr);
-	m_transforms = ArrayCRef<studioTransform_t>(nullptr);;
+	m_transforms = ArrayCRef<studioTransform_t>(nullptr);
 
 	SAFE_DELETE_ARRAY(m_boneTransforms);
 
@@ -302,109 +304,126 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 		}
 	}
 
-	InitMotionData();
+	for (const int motionDataIdx : m_geomReference->GetMotionDataIdxs())
+		AddMotionData(g_studioCache->GetMotionData(motionDataIdx));
 }
 
-void CAnimatingEGF::InitMotionData()
+void CAnimatingEGF::InitMotionData(const char* name)
 {
-	for (StudioMotionData* motionData : m_geomReference->GetMotionDataList())
+	const int motionDataIdx = g_studioCache->PrecacheMotionData(name);
+	if (motionDataIdx == -1)
+		return;
+
+	const StudioMotionData* motionData = g_studioCache->GetMotionData(motionDataIdx);
+	AddMotionData(motionData);
+}
+
+bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
+{
+	if (!motionData)
+		return false;
+
+	const int animDataId = StringToHash(motionData->name, true);
+
+	if (!m_nameToAnimData.find(animDataId).atEnd())
+		return false;
+
+	m_nameToAnimData.insert(animDataId, m_animData.numElem());
+
+	AnimDataProvider& animData = m_animData.append();
+	animData.motionData = motionData;
+
+	// create pose controllers
+	// they are shared between all motion datas and must be setup equal
+	for (const posecontroller_t& poseCtrl : motionData->poseControllers)
 	{
-		const int animDataId = StringToHash(motionData->name, true);
-		m_nameToAnimData.insert(animDataId, m_animData.numElem());
+		const int existingIdx = arrayFindIndexF(m_poseControllers, [&poseCtrl](const AnimPoseController& ctrl) {
+			return CString::CompareCaseIns(ctrl.desc->name, poseCtrl.name) == 0;
+			});
 
-		AnimDataProvider& animData = m_animData.append();
-		animData.motionData = motionData;
-
-		// create pose controllers
-		// they are shared between all motion datas and must be setup equal
-		for (const posecontroller_t& poseCtrl : motionData->poseControllers)
+		if (existingIdx != -1)
 		{
-			const int existingIdx = arrayFindIndexF(m_poseControllers, [&poseCtrl](const AnimPoseController& ctrl) {
-				return CString::CompareCaseIns(ctrl.desc->name, poseCtrl.name) == 0;
-				});
-
-			if (existingIdx != -1)
+			const posecontroller_t& existingCtrl = *m_poseControllers[existingIdx].desc;
+			if (existingCtrl.blendRange[0] == poseCtrl.blendRange[0]
+				&& existingCtrl.blendRange[1] == poseCtrl.blendRange[1])
 			{
-				const posecontroller_t& existingCtrl = *m_poseControllers[existingIdx].desc;
-				if (existingCtrl.blendRange[0] == poseCtrl.blendRange[0]
-					&& existingCtrl.blendRange[1] == poseCtrl.blendRange[1])
-				{
-					MsgWarning("%s warning: pose controller %s was added from another package but blend ranges are mismatched", m_geomReference->GetName(), poseCtrl.name);
-				}
-				continue;
+				MsgWarning("%s warning: pose controller %s was added from another package but blend ranges are mismatched", m_geomReference->GetName(), poseCtrl.name);
 			}
-
-			// get center in blending range
-			const float defaultValue = lerp(poseCtrl.blendRange[0], poseCtrl.blendRange[1], 0.5f);;
-
-			AnimPoseController& controller = m_poseControllers.append();
-			controller.desc = &poseCtrl;
-			controller.value = defaultValue;
-			controller.interpolatedValue = defaultValue;
+			continue;
 		}
 
-		// create animations
-		const int numBones = m_geomReference->GetStudioHdr().numBones;
-		animData.animations.reserve(motionData->animations.numElem());
-		for (const animationdesc_t& animDesc : motionData->animations)
-		{
-			AnimFrameData& anmData = animData.animations.append();
-			anmData.desc = &animDesc;
-			anmData.numFrames = animDesc.numFrames / numBones;
-			anmData.keyFrames = &motionData->frames[animDesc.firstFrame];
-		}
+		// get center in blending range
+		const float defaultValue = lerp(poseCtrl.blendRange[0], poseCtrl.blendRange[1], 0.5f);;
 
-		// create sequences
-		animData.sequences.reserve(motionData->sequences.numElem());
-		for (const sequencedesc_t& seqDesc : motionData->sequences)
-		{
-			const int sequenceIdx = animData.sequences.numElem();
-			animData.nameToSequence.insert(StringToHash(seqDesc.name, true), sequenceIdx);
-
-			AnimSequence& seqData = animData.sequences.append();
-			seqData.desc = &seqDesc;
-			seqData.motionData = motionData;
-			seqData.activity = GetActivityByName(seqDesc.activity);
-
-			if (seqData.activity == ACT_INVALID)
-			{
-				if(CString::Compare(seqDesc.activity, "ACT_INVALID"))
-					MsgError("Motion Data: Activity '%s' not registered\n", seqDesc.activity);
-			}
-			else
-			{
-				animData.activitySlotSequenceIds.insert(seqData.activity | (static_cast<int>(seqDesc.activityslot) << ANIM_ACTIVITY_ID_BITS), sequenceIdx);
-			}
-
-			// assign pose controller
-			if (seqDesc.posecontroller >= 0)
-			{
-				const posecontroller_t& mopPoseCtrl = motionData->poseControllers[seqDesc.posecontroller];
-				const int poseCtrlIdx = arrayFindIndexF(m_poseControllers, [&](const AnimPoseController& ctrl) {
-					return CString::CompareCaseIns(ctrl.desc->name, mopPoseCtrl.name) == 0;
-				});
-				ASSERT(poseCtrlIdx != -1);
-				seqData.posecontroller = &m_poseControllers[poseCtrlIdx];
-			}
-
-			for (int i = 0; i < seqDesc.numAnimations; i++)
-				seqData.animations[i] = &animData.animations[seqDesc.animations[i]];
-
-			for (int i = 0; i < seqDesc.numEvents; i++)
-				seqData.events[i] = &motionData->events[seqDesc.events[i]];
-
-			for (int i = 0; i < seqDesc.numSequenceBlends; i++)
-				seqData.blends[i] = &animData.sequences[seqDesc.sequenceblends[i]];
-
-			// sort events
-			auto compareEvents = [](const sequenceevent_t* a, const sequenceevent_t* b) -> int
-			{
-				return sortCompare(a->frame, b->frame);
-			};
-
-			arraySort(seqData.events, compareEvents, 0, seqDesc.numEvents - 1);
-		}
+		AnimPoseController& controller = m_poseControllers.append();
+		controller.desc = &poseCtrl;
+		controller.value = defaultValue;
+		controller.interpolatedValue = defaultValue;
 	}
+
+	// create animations
+	const int numBones = m_geomReference->GetStudioHdr().numBones;
+	animData.animations.reserve(motionData->animations.numElem());
+	for (const animationdesc_t& animDesc : motionData->animations)
+	{
+		AnimFrameData& anmData = animData.animations.append();
+		anmData.desc = &animDesc;
+		anmData.numFrames = animDesc.numFrames / numBones;
+		anmData.keyFrames = &motionData->frames[animDesc.firstFrame];
+	}
+
+	// create sequences
+	animData.sequences.reserve(motionData->sequences.numElem());
+	for (const sequencedesc_t& seqDesc : motionData->sequences)
+	{
+		const int sequenceIdx = animData.sequences.numElem();
+		animData.nameToSequence.insert(StringToHash(seqDesc.name, true), sequenceIdx);
+
+		AnimSequence& seqData = animData.sequences.append();
+		seqData.desc = &seqDesc;
+		seqData.motionData = motionData;
+		seqData.activity = GetActivityByName(seqDesc.activity);
+
+		if (seqData.activity == ACT_INVALID)
+		{
+			if(CString::Compare(seqDesc.activity, "ACT_INVALID"))
+				MsgError("Motion Data: Activity '%s' not registered\n", seqDesc.activity);
+		}
+		else
+		{
+			animData.activitySlotSequenceIds.insert(seqData.activity | (static_cast<int>(seqDesc.activityslot) << ANIM_ACTIVITY_ID_BITS), sequenceIdx);
+		}
+
+		// assign pose controller
+		if (seqDesc.posecontroller >= 0)
+		{
+			const posecontroller_t& mopPoseCtrl = motionData->poseControllers[seqDesc.posecontroller];
+			const int poseCtrlIdx = arrayFindIndexF(m_poseControllers, [&](const AnimPoseController& ctrl) {
+				return CString::CompareCaseIns(ctrl.desc->name, mopPoseCtrl.name) == 0;
+			});
+			ASSERT(poseCtrlIdx != -1);
+			seqData.posecontroller = &m_poseControllers[poseCtrlIdx];
+		}
+
+		for (int i = 0; i < seqDesc.numAnimations; i++)
+			seqData.animations[i] = &animData.animations[seqDesc.animations[i]];
+
+		for (int i = 0; i < seqDesc.numEvents; i++)
+			seqData.events[i] = &motionData->events[seqDesc.events[i]];
+
+		for (int i = 0; i < seqDesc.numSequenceBlends; i++)
+			seqData.blends[i] = &animData.sequences[seqDesc.sequenceblends[i]];
+
+		// sort events
+		auto compareEvents = [](const sequenceevent_t* a, const sequenceevent_t* b) -> int
+		{
+			return sortCompare(a->frame, b->frame);
+		};
+
+		arraySort(seqData.events, compareEvents, 0, seqDesc.numEvents - 1);
+	}
+
+	return true;
 }
 
 int CAnimatingEGF::FindSequence(const char* name) const

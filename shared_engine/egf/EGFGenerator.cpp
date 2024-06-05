@@ -668,13 +668,9 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 		MsgInfo("%s ", m_materials[i].materialname);
 	MsgInfo("\n");
 
-	for (int i = 0; i < pSection->keys.numElem(); i++)
+	for (KVKeyIterator it(pSection, "materialGroup"); !it.atEnd(); ++it)
 	{
-		const KVSection* keyBase = pSection->keys[i];
-
-		if (CString::CompareCaseIns(keyBase->name, "materialGroup"))
-			continue;
-		
+		const KVSection* keyBase = *it;
 		if (!keyBase->values.numElem())
 		{
 			MsgError("materialGroup: must have material names as values!\n");

@@ -69,7 +69,7 @@ struct AnimFrameData
 struct AnimSequence
 {
 	const sequencedesc_t*	desc{ nullptr };
-	StudioMotionData*		motionData{ nullptr };
+	const StudioMotionData*	motionData{ nullptr };
 	AnimPoseController*		posecontroller{ nullptr };
 	Activity				activity{ ACT_INVALID };
 	const AnimSequence*		blends[MAX_SEQUENCE_BLENDS]{ nullptr };
@@ -79,7 +79,7 @@ struct AnimSequence
 
 struct AnimDataProvider
 {
-	StudioMotionData*		motionData{ nullptr };
+	const StudioMotionData*	motionData{ nullptr };
 	Array<AnimFrameData>	animations{ PP_SL };
 	Array<AnimSequence>		sequences{ PP_SL };
 	Map<int, int>			nameToSequence{ PP_SL };
