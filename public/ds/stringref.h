@@ -106,6 +106,7 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
 //------------------------------------------------------
 
 // strip operators
+bool		fnmPathHasExt(EqStringRef path);
 EqString	fnmPathApplyExt(EqStringRef path, EqStringRef ext);
 EqString	fnmPathStripExt(EqStringRef path);
 EqString	fnmPathStripName(EqStringRef path);

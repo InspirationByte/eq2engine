@@ -368,6 +368,16 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 // Path utils
 //------------------------------------------------------
 
+bool fnmPathHasExt(EqStringRef path)
+{
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == '.')
+			return true;
+	}
+	return false;
+}
+
 EqString fnmPathApplyExt(EqStringRef path, EqStringRef ext)
 {
 	for (int i = path.Length() - 1; i >= 0; i--)
