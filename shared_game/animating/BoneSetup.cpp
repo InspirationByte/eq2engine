@@ -8,11 +8,17 @@
 #include "core/core_common.h"
 #include "BoneSetup.h"
 
-AnimFrame::AnimFrame(animframe_t& frame)
+AnimFrame::AnimFrame(const animframe_t& frame)
 {
 	angBoneAngles = rotateXYZ(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
 	vecBonePosition = frame.vecBonePosition;
 	pad = 0.0f;
+}
+
+AnimIkChain::~AnimIkChain()
+{
+	if(links.ptr())
+		PPDeleteArrayRef(links);
 }
 
 template <typename T>
@@ -37,7 +43,7 @@ void AnimSequenceTimer::AdvanceFrame(float fDt)
 		return;
 	}
 
-	const sequencedesc_t* seqDesc = seq->s;
+	const sequencedesc_t* seqDesc = seq->desc;
 	const float timeDelta = fDt * playbackSpeedScale * seqDesc->framerate;
 	SetTime(seqTime + timeDelta);
 }
@@ -47,9 +53,9 @@ void AnimSequenceTimer::SetTime(float time)
 	if(!seq)
 		return;
 
-	const sequencedesc_t* seqDesc = seq->s;
+	const sequencedesc_t* seqDesc = seq->desc;
 
-	const int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
+	const int numAnimationFrames = seq->animations[0]->numFrames;
 	const bool loop = (seqDesc->flags & SEQFLAG_LOOP);
 
 	if (loop)
@@ -85,7 +91,7 @@ void AnimSequenceTimer::SetTime(float time)
 void AnimSequenceTimer::Reset()
 {
 	seq = nullptr;
-	seqIdx = -1;
+	seqId = -1;
 
 	active = false;
 	blendWeight = 0.0f;

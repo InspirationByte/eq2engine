@@ -11,6 +11,7 @@
 class CEqJobManager;
 class CEqStudioGeom;
 class IVertexFormat;
+struct StudioMotionData;
 
 static constexpr const int CACHE_INVALID_MODEL = -1;
 
@@ -51,14 +52,18 @@ public:
 private:
 	void					InitErrorMaterial();
 
-	CEqJobManager*			m_jobMng{ nullptr };
+	CEqJobManager*				m_jobMng{ nullptr };
 
-	Map<int, int>			m_cacheIndex{ PP_SL };
-	Array<CEqStudioGeom*>	m_cachedList{ PP_SL };
-	Array<int>				m_freeCacheSlots{ PP_SL };
+	Map<int, int>				m_geomCacheIndex{ PP_SL };
+	Array<CEqStudioGeom*>		m_geomCachedList{ PP_SL };
+	Array<int>					m_geomFreeCacheSlots{ PP_SL };
 
-	IVertexFormat*			m_egfFormat{ nullptr };
-	IMaterialPtr			m_errorMaterial;
+	//Map<int, int>				m_motionCacheIndex{ PP_SL };
+	//Array<StudioMotionData*>	m_motionCachedList{ PP_SL };
+	//Array<int>					m_motionFreeCacheSlots{ PP_SL };
+
+	IVertexFormat*				m_egfFormat{ nullptr };
+	IMaterialPtr				m_errorMaterial;
 };
 
 // model cache manager

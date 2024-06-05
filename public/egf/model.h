@@ -90,39 +90,13 @@ inline int PhysModel_FindObjectId(const StudioPhysData& physData, const char* na
 
 struct StudioMotionData
 {
-	struct Animation
-	{
-		struct BoneFrames
-		{
-			animframe_t*	keyFrames{ nullptr };
-			int				numFrames{ 0 };
-		};
-
-		char			name[44]{ 0 };
-		BoneFrames*		bones{ nullptr };
-	};
-
-	// animations
-	int					numAnimations{ 0 };
-	Animation*			animations{ nullptr };
-
-	// sequences
-	int					numsequences{ 0 };
-	sequencedesc_t*		sequences{ nullptr };
-
-	// events
-	int					numEvents{ 0 };
-	sequenceevent_t*	events{ nullptr };
-
-	// pose controllers
-	int					numPoseControllers{ 0 };
-	posecontroller_t*	poseControllers{ nullptr };
-
-	animframe_t*		frames{ nullptr };
+	EqString					name;
+	ArrayRef<animationdesc_t>	animations{ nullptr };
+	ArrayRef<sequencedesc_t>	sequences{ nullptr };
+	ArrayRef<sequenceevent_t>	events{ nullptr };
+	ArrayRef<posecontroller_t>	poseControllers{ nullptr };
+	ArrayRef<animframe_t>		frames{ nullptr };
 };
-
-using StudioAnimData = StudioMotionData::Animation;
-using StudioBoneFrames = StudioMotionData::Animation::BoneFrames;
 
 struct StudioJoint
 {
@@ -139,3 +113,4 @@ struct StudioJoint
 	int					ikChainId{ -1 };
 	int					ikLinkId{ -1 };
 };
+

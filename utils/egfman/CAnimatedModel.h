@@ -10,7 +10,7 @@
 
 struct AnimSequence;
 struct AnimPoseController;
-struct ragdoll_t;
+struct PhysRagdollData;
 class CEqStudioGeom;
 class IPhysicsObject;
 class IGPURenderPassRecorder;
@@ -28,7 +28,7 @@ enum ViewerRenderFlags
 class CAnimatedModel : public CAnimatingEGF
 {
 public:
-								CAnimatedModel();
+	CAnimatedModel();
 
 	// renders model
 	virtual void				Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt, IGPURenderPassRecorder* rendPassRecorder);
@@ -44,11 +44,8 @@ public:
 	int							GetCurrentAnimationFrame() const;
 	int							GetCurrentAnimationDurationInFrames() const;
 
-	int							GetNumSequences() const;
-	int							GetNumPoseControllers() const;
-
-	const AnimSequence&			GetSequence(int seq) const;
-	const AnimPoseController&	GetPoseController(int seq) const;
+	ArrayCRef<AnimPoseController>	GetPoseControllers() const;
+	ArrayCRef<AnimSequence*>		GetSequencesList() const;
 
 protected:
 
@@ -63,10 +60,12 @@ protected:
 
 public:
 
-	CEqStudioGeom*					m_pModel;
+	CEqStudioGeom*				m_pModel;
 	IPhysicsObject*				m_physObj;
-	ragdoll_t*					m_pRagdoll;
+	PhysRagdollData*			m_pRagdoll;
 	bool						m_bPhysicsEnable;
+
+	Array<AnimSequence*>		m_sequencesList{ PP_SL };
 
 	int							m_bodyGroupFlags;
 };

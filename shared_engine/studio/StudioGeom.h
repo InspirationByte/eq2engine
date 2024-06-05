@@ -41,7 +41,6 @@ class CEqStudioGeom : public RefCountedObject<CEqStudioGeom>
 	friend class CStudioCache;
 	friend class CBaseEqGeomInstancer;
 public:
-
 	struct DrawProps;
 
 	static void					SetInstanceFormatId(int instanceFormatId);
@@ -49,35 +48,21 @@ public:
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
-	void						Ref_DeleteObject() override;
-
 	int							GetCacheIndex() const { return m_cacheIdx; }
-
 	const char*					GetName() const;
 	EModelLoadingState			GetLoadingState() const;	// EModelLoadingState
 	Future<bool>				GetLoadingFuture() const;
 
 	void						LoadMotionPackage(const char* filename);
 
-	int							GetMotionPackageCount() const { return m_motionData.numElem(); }
-	int							GetMaterialCount() const { return m_materialCount; }
-	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
-
 	const studioHdr_t&			GetStudioHdr() const;
 	const StudioPhysData&		GetPhysData() const;
-	const StudioMotionData&		GetMotionData(int index) const;
-	const StudioJoint&			GetJoint(int index) const;
-	Matrix4x4					GetLocalTransformMatrix(int transformIdx) const;
+	ArrayCRef<StudioJoint>			GetJoints() const;
+	ArrayCRef<StudioMotionData*>	GetMotionDataList() const;
 
-	const BoundingBox&			GetBoundingBox() const;
-
-	int							ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const;
-
-	// Makes dynamic temporary decal
-	CRefPtr<DecalData>			MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
-
-	// Checks ray-egf intersection. Ray must be in local space
-	float						CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod = 0) const;
+	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	ArrayCRef<IMaterialPtr>		GetMaterials(int materialGroupIdx = 0) const;
+	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 
 	// instancing
 	void						SetInstancer(CBaseEqGeomInstancer* instancer);
@@ -87,12 +72,14 @@ public:
 	int							SelectLod(float distance) const;
 	int							FindManualLod(float value) const;
 
+	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
+	int							ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const;
+
 	void						Draw(const DrawProps& drawProperties, const MeshInstanceData& instData, const RenderPassContext& passContext) const;
 
-	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
-	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
-	ArrayCRef<IMaterialPtr>		GetMaterials(int materialGroupIdx = 0) const;
-
+	const BoundingBox&			GetBoundingBox() const;
+	CRefPtr<DecalData>			MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
+	float						CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod = 0) const;
 private:
 
 	struct HWGeomRef
@@ -106,6 +93,8 @@ private:
 			bool	supportsSkinning{ false };
 		} *meshRefs{ nullptr };
 	};
+
+	void					Ref_DeleteObject() override;
 
 	bool					LoadModel(const char* pszPath, bool useJob = true);
 	void					DestroyModel();

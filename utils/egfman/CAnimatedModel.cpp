@@ -56,6 +56,16 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	// initialize that shit to use it in future
 	InitAnimating(m_pModel);
 
+	// populate sequences list
+	m_sequencesList.clear();
+	for (AnimDataProvider& animData : m_animData)
+	{
+		for (AnimSequence& animSeq : animData.sequences)
+		{
+			m_sequencesList.append(&animSeq);
+		}
+	}
+
 	const StudioPhysData& physData = m_pModel->GetPhysData();
 	if(physData.usageType == PHYSMODEL_USAGE_RAGDOLL)
 	{
@@ -65,11 +75,11 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 		{
 			for(int i = 0; i < m_pRagdoll->m_numParts; i++)
 			{
-				if(m_pRagdoll->m_pParts[i])
+				if(m_pRagdoll->m_partObjs[i])
 				{
-					m_pRagdoll->m_pParts[i]->SetContents( COLLISION_GROUP_RAGDOLLBONES );
-					m_pRagdoll->m_pParts[i]->SetActivationState( PS_FROZEN );
-					m_pRagdoll->m_pParts[i]->SetCollisionResponseEnabled( false );
+					m_pRagdoll->m_partObjs[i]->SetContents( COLLISION_GROUP_RAGDOLLBONES );
+					m_pRagdoll->m_partObjs[i]->SetActivationState( PS_FROZEN );
+					m_pRagdoll->m_partObjs[i]->SetCollisionResponseEnabled( false );
 				}
 			}
 		}
@@ -97,14 +107,14 @@ void CAnimatedModel::TogglePhysicsState()
 			{
 				for(int i = 0; i < m_pRagdoll->m_numParts; i++)
 				{
-					if(m_pRagdoll->m_pParts[i])
+					if(m_pRagdoll->m_partObjs[i])
 					{
-						m_pRagdoll->m_pParts[i]->SetContents( COLLISION_GROUP_RAGDOLLBONES );
-						m_pRagdoll->m_pParts[i]->SetActivationState( PS_FROZEN );
-						m_pRagdoll->m_pParts[i]->SetCollisionResponseEnabled( false );
-						m_pRagdoll->m_pParts[i]->SetVelocity(vec3_zero);
-						m_pRagdoll->m_pParts[i]->SetAngularVelocity(Vector3D(1,1,1), 0.0);
-						m_pRagdoll->m_pParts[i]->SetFriction(4.0);
+						m_pRagdoll->m_partObjs[i]->SetContents( COLLISION_GROUP_RAGDOLLBONES );
+						m_pRagdoll->m_partObjs[i]->SetActivationState( PS_FROZEN );
+						m_pRagdoll->m_partObjs[i]->SetCollisionResponseEnabled( false );
+						m_pRagdoll->m_partObjs[i]->SetVelocity(vec3_zero);
+						m_pRagdoll->m_partObjs[i]->SetAngularVelocity(Vector3D(1,1,1), 0.0);
+						m_pRagdoll->m_partObjs[i]->SetFriction(4.0);
 
 					}
 				}
@@ -134,15 +144,15 @@ void CAnimatedModel::ResetPhysics()
 
 		for(int i = 0; i< m_pRagdoll->m_numParts; i++)
 		{
-			if(m_pRagdoll->m_pParts[i])
+			if(m_pRagdoll->m_partObjs[i])
 			{
-				m_pRagdoll->m_pParts[i]->SetContents( COLLISION_GROUP_DEBRIS );
-				m_pRagdoll->m_pParts[i]->SetCollisionMask( COLLIDE_DEBRIS );
+				m_pRagdoll->m_partObjs[i]->SetContents( COLLISION_GROUP_DEBRIS );
+				m_pRagdoll->m_partObjs[i]->SetCollisionMask( COLLIDE_DEBRIS );
 
-				m_pRagdoll->m_pParts[i]->SetActivationState(PS_ACTIVE);
-				m_pRagdoll->m_pParts[i]->SetVelocity( vec3_zero );
-				m_pRagdoll->m_pParts[i]->SetAngularVelocity( vec3_zero, 0.0f );
-				m_pRagdoll->m_pParts[i]->SetCollisionResponseEnabled( true );
+				m_pRagdoll->m_partObjs[i]->SetActivationState(PS_ACTIVE);
+				m_pRagdoll->m_partObjs[i]->SetVelocity( vec3_zero );
+				m_pRagdoll->m_partObjs[i]->SetAngularVelocity( vec3_zero, 0.0f );
+				m_pRagdoll->m_partObjs[i]->SetCollisionResponseEnabled( true );
 			}
 		}
 
@@ -279,8 +289,8 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 
 			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{
-				const int visualMatrixIdx = m_pRagdoll->m_pBoneToVisualIndices[i];
-				const Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();
+				const int visualMatrixIdx = m_pRagdoll->m_jointToGeomIds[i];
+				const Matrix4x4 boneFrame = m_pRagdoll->m_physJoints[i]->GetFrameTransformA();
 
 				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_boneTransforms[visualMatrixIdx]));
 			}
@@ -309,27 +319,17 @@ int CAnimatedModel::GetCurrentAnimationDurationInFrames() const
 	if (!m_sequenceTimers[0].seq)
 		return 1;
 
-	return m_sequenceTimers[0].seq->animations[0]->bones[0].numFrames - 1;
+	return m_sequenceTimers[0].seq->animations[0]->numFrames;
 }
 
-int	CAnimatedModel::GetNumSequences() const
+ArrayCRef<AnimPoseController> CAnimatedModel::GetPoseControllers() const
 {
-	return m_seqList.numElem();
+	return m_poseControllers;
 }
 
-int	CAnimatedModel::GetNumPoseControllers() const
+ArrayCRef<AnimSequence*> CAnimatedModel::GetSequencesList() const
 {
-	return m_poseControllers.numElem();
-}
-
-const AnimSequence& CAnimatedModel::GetSequence(int seq) const
-{
-	return m_seqList[seq];
-}
-
-const AnimPoseController& CAnimatedModel::GetPoseController(int pc) const
-{
-	return m_poseControllers[pc];
+	return m_sequencesList;
 }
 
 // renders model
@@ -479,9 +479,7 @@ void CAnimatedModel::AttachIKChain(int chain, int attach_type)
 	if (chain == -1)
 		return;
 
-	int effector_id = m_ikChains[chain].numLinks - 1;
-	AnimIkChain::Link& link = m_ikChains[chain].links[effector_id];
-
+	AnimIkChain::Link& link = m_ikChains[chain].links.back();
 	switch (attach_type)
 	{
 		case IK_ATTACH_WORLD:

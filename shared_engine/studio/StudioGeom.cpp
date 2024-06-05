@@ -220,14 +220,14 @@ void CEqStudioGeom::DestroyModel()
 	{
 		for (int i = 0; i < m_motionData.numElem(); i++)
 		{
-			Studio_FreeMotionData(m_motionData[i], m_studio->numBones);
-			PPFree(m_motionData[i]);
+			Studio_FreeMotionData(*m_motionData[i]);
+			delete m_motionData[i];
 		}
 		m_motionData.clear();
 
 		g_studioShapeCache->DestroyStudioCache(&m_physModel);
-		Studio_FreePhysModel(&m_physModel);
-		m_physModel = StudioPhysData();
+		Studio_FreePhysModel(m_physModel);
+		m_physModel = {};
 
 		for (int i = 0; i < m_studio->numMeshGroups; i++)
 			delete[] m_hwGeomRefs[i].meshRefs;
@@ -243,7 +243,7 @@ void CEqStudioGeom::LoadPhysicsData()
 {
 	const EqString physDataFilename = fnmPathApplyExt(m_name, s_egfPhysicsObjectExt);
 
-	if (!Studio_LoadPhysModel(physDataFilename, &m_physModel))
+	if (!Studio_LoadPhysModel(physDataFilename, m_physModel))
 		return;
 
 	DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", physDataFilename.ToCString());
@@ -559,21 +559,32 @@ void CEqStudioGeom::LoadMotionPackage(const char* filename)
 		return;
 	}
 
-	StudioMotionData* motionData = Studio_LoadMotionData(filename, m_studio->numBones);
-	if (motionData)
+	StudioMotionData* motionData = PPNew StudioMotionData;
+	if (Studio_LoadMotionData(filename, *motionData))
+	{
 		m_motionData.append(motionData);
-	else
-		MsgError("Can't open motion data package '%s'!\n", filename);
+		return;
+	}
+
+	MsgError("Can't open motion data package '%s'!\n", filename);
+	delete motionData;
 }
 
 void CEqStudioGeom::LoadMotionPackages()
 {
+	// TODO: packages has to be added from Studio Cache instead
+
 	const studioHdr_t* studio = m_studio;
 
 	// Try load default motion file
-	StudioMotionData* motionData = Studio_LoadMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt), studio->numBones);
-	if (motionData)
-		m_motionData.append(motionData);
+	{
+		StudioMotionData* motionData = PPNew StudioMotionData;
+		Studio_LoadMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt), *motionData);
+		if (motionData)
+			m_motionData.append(motionData);
+		else
+			delete motionData;
+	}
 
 	// load motion packages that are additionally specified in EGF model
 	for (int i = 0; i < studio->numMotionPackages; i++)
@@ -583,21 +594,33 @@ void CEqStudioGeom::LoadMotionPackages()
 
 		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
 
-		StudioMotionData* motionData = Studio_LoadMotionData(mopPath.ToCString(), studio->numBones);
+		StudioMotionData* motionData = PPNew StudioMotionData; 
+		Studio_LoadMotionData(mopPath, *motionData);
 		if (motionData)
+		{
 			m_motionData.append(motionData);
+		}
 		else
+		{
 			MsgError("Can't open motion package '%s' specified in EGF\n", studio->pPackage(i)->packageName);
+			delete motionData;
+		}
 	}
 
 	// load additional external motion packages requested by user
 	for (int i = 0; i < m_additionalMotionPackages.numElem(); i++)
 	{
-		StudioMotionData* motionData = Studio_LoadMotionData(m_additionalMotionPackages[i].ToCString(), studio->numBones);
+		StudioMotionData* motionData = PPNew StudioMotionData; 
+		Studio_LoadMotionData(m_additionalMotionPackages[i], *motionData);
 		if (motionData)
+		{
 			m_motionData.append(motionData);
+		}
 		else
+		{
 			MsgError("Can't open motion data package '%s'!\n", m_additionalMotionPackages[i].ToCString());
+			delete motionData;
+		}
 	}
 	m_additionalMotionPackages.clear(true);
 }
@@ -980,17 +1003,17 @@ const StudioPhysData& CEqStudioGeom::GetPhysData() const
 	return m_physModel;
 }
 
-const StudioMotionData& CEqStudioGeom::GetMotionData(int index) const
+ArrayCRef<StudioMotionData*> CEqStudioGeom::GetMotionDataList() const
 {
 	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
 
-	return *m_motionData[index];
+	return m_motionData;
 }
 
-const StudioJoint& CEqStudioGeom::GetJoint(int index) const
+ArrayCRef<StudioJoint> CEqStudioGeom::GetJoints() const
 {
-	return m_joints[index];
+	return ArrayCRef(m_joints, m_studio->numBones);
 }
 
 // instancing
@@ -1005,14 +1028,6 @@ void CEqStudioGeom::SetInstancer(CBaseEqGeomInstancer* instancer)
 CBaseEqGeomInstancer* CEqStudioGeom::GetInstancer() const
 {
 	return m_instancer;
-}
-
-Matrix4x4 CEqStudioGeom::GetLocalTransformMatrix(int attachmentIdx) const
-{
-	ASSERT(attachmentIdx >= 0 && attachmentIdx < m_studio->numTransforms);
-
-	const studioTransform_t* attach = m_studio->pTransform(attachmentIdx);
-	return attach->transform;
 }
 
 static void MakeDecalTexCoord(Array<EGFHwVertex>& verts, Array<int>& indices, const DecalMakeInfo& info)

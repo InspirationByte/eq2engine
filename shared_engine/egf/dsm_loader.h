@@ -61,6 +61,24 @@ struct DSModel : public RefCountedObject<DSModel>
 };
 using DSModelPtr = CRefPtr<DSModel>;
 
+struct DSAnimFrame
+{
+	Vector3D		position;
+	Vector3D		angles;
+};
+
+struct DSBoneFrames
+{
+	DSAnimFrame*	keyFrames{ nullptr };
+	int				numFrames{ 0 };
+};
+
+struct DSAnimData
+{
+	EqString		name;
+	DSBoneFrames*	bones{ nullptr };
+};
+
 //------------------------------------------------------------------------------------
 
 int		SortAndBalanceBones(int nCount, int nMaxCount, int* bones, float* weights);

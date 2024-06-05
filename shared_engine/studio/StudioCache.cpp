@@ -22,12 +22,7 @@ CStaticAutoPtr<CStudioCache> g_studioModelCache;
 
 DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
 {
-	MsgInfo("Models loaded: %d\n", g_studioModelCache->GetCachedModelCount());
-	for (int i = 0; i < g_studioModelCache->GetCachedModelCount(); ++i)
-	{
-		CEqStudioGeom* geom = g_studioModelCache->GetModel(i);
-		Msg("  %d: %s\n", i, geom->GetName());
-	}
+	g_studioModelCache->PrintLoadedModels();
 }
 
 void CStudioCache::Init(CEqJobManager* jobMng)
@@ -94,20 +89,20 @@ int CStudioCache::PrecacheModel(const char* modelName)
 		CEqStudioGeom* model = PPNew CEqStudioGeom();
 		if (model->LoadModel(str, job_modelLoader.GetBool()))
 		{
-			if (m_freeCacheSlots.numElem())
+			if (m_geomFreeCacheSlots.numElem())
 			{
-				const int newIdx = m_freeCacheSlots.popBack();
-				m_cachedList[newIdx] = model;
+				const int newIdx = m_geomFreeCacheSlots.popBack();
+				m_geomCachedList[newIdx] = model;
 				model->m_cacheIdx = newIdx;
 			}
 			else
 			{
-				const int newIdx = m_cachedList.append(model);
+				const int newIdx = m_geomCachedList.append(model);
 				model->m_cacheIdx = newIdx;
 			}
 
 			const int nameHash = StringToHash(str, true);
-			m_cacheIndex.insert(nameHash, model->m_cacheIdx);
+			m_geomCacheIndex.insert(nameHash, model->m_cacheIdx);
 		}
 		else
 		{
@@ -123,21 +118,21 @@ int CStudioCache::PrecacheModel(const char* modelName)
 // returns count of cached models
 int	CStudioCache::GetCachedModelCount() const
 {
-	return m_cachedList.numElem();
+	return m_geomCachedList.numElem();
 }
 
 CEqStudioGeom* CStudioCache::GetModel(int index) const
 {
 	if (index <= CACHE_INVALID_MODEL)
-		return m_cachedList[0];
+		return m_geomCachedList[0];
 
-	CEqStudioGeom* model = m_cachedList[index];
+	CEqStudioGeom* model = m_geomCachedList[index];
 
 	if (model && model->GetLoadingState() != MODEL_LOAD_ERROR)
 		return model;
 
 	// return default error model
-	return m_cachedList[0];
+	return m_geomCachedList[0];
 }
 
 const char* CStudioCache::GetModelFilename(CEqStudioGeom* model) const
@@ -151,7 +146,7 @@ int CStudioCache::GetModelIndex(const char* modelName) const
 	fnmPathFixSeparators(str);
 
 	const int nameHash = StringToHash(str, true);
-	auto found = m_cacheIndex.find(nameHash);
+	auto found = m_geomCacheIndex.find(nameHash);
 	if (!found.atEnd())
 	{
 		return *found;
@@ -162,9 +157,9 @@ int CStudioCache::GetModelIndex(const char* modelName) const
 
 int CStudioCache::GetModelIndex(CEqStudioGeom* model) const
 {
-	for (int i = 0; i < m_cachedList.numElem(); i++)
+	for (int i = 0; i < m_geomCachedList.numElem(); i++)
 	{
-		if (m_cachedList[i] == model)
+		if (m_geomCachedList[i] == model)
 			return i;
 	}
 
@@ -174,36 +169,36 @@ int CStudioCache::GetModelIndex(CEqStudioGeom* model) const
 // decrements reference count and deletes if it's zero
 void CStudioCache::FreeCachedModel(CEqStudioGeom* model)
 {
-	const int modelIndex = arrayFindIndex(m_cachedList, model);
+	const int modelIndex = arrayFindIndex(m_geomCachedList, model);
 	if (modelIndex == -1)
 		return;
 
 	const int nameHash = StringToHash(model->GetName(), true);
 
-	m_cacheIndex.remove(nameHash);
-	m_freeCacheSlots.append(modelIndex);
+	m_geomCacheIndex.remove(nameHash);
+	m_geomFreeCacheSlots.append(modelIndex);
 
 	// wait for loading completion
-	m_cachedList[modelIndex]->GetStudioHdr();
+	m_geomCachedList[modelIndex]->GetStudioHdr();
 
-	SAFE_DELETE(m_cachedList[modelIndex]);
+	SAFE_DELETE(m_geomCachedList[modelIndex]);
 }
 
 void CStudioCache::ReleaseCache()
 {
-	for (int i = 0; i < m_cachedList.numElem(); i++)
+	for (int i = 0; i < m_geomCachedList.numElem(); i++)
 	{
-		if (m_cachedList[i])
+		if (m_geomCachedList[i])
 		{
 			// wait for loading completion
-			m_cachedList[i]->GetStudioHdr();
-			SAFE_DELETE(m_cachedList[i]);
+			m_geomCachedList[i]->GetStudioHdr();
+			SAFE_DELETE(m_geomCachedList[i]);
 		}
 	}
 
-	m_cachedList.clear(true);
-	m_cacheIndex.clear(true);
-	m_freeCacheSlots.clear(true);
+	m_geomCachedList.clear(true);
+	m_geomCacheIndex.clear(true);
+	m_geomFreeCacheSlots.clear(true);
 
 	g_renderAPI->DestroyVertexFormat(m_egfFormat);
 	m_egfFormat = nullptr;
@@ -218,11 +213,12 @@ IVertexFormat* CStudioCache::GetEGFVertexFormat() const
 // prints loaded models to console
 void CStudioCache::PrintLoadedModels() const
 {
-	Msg("---MODELS---\n");
-	for (int i = 0; i < m_cachedList.numElem(); i++)
+	MsgInfo("Cached geom count: %d\n", m_geomCachedList.numElem());
+	for (int i = 0; i < m_geomCachedList.numElem(); ++i)
 	{
-		if (m_cachedList[i])
-			Msg("%s\n", m_cachedList[i]->GetName());
+		CEqStudioGeom* geom = m_geomCachedList[i];
+		if(geom)
+			Msg("  %d: %s\n", i, geom->GetName());
 	}
-	Msg("---END MODELS---\n");
+	MsgInfo("--- end\n");
 }

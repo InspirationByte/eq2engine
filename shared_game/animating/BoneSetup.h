@@ -19,7 +19,7 @@ typedef struct studioIkLink_s studioIkLink_t;
 struct AnimFrame
 {
 	AnimFrame() = default;
-	AnimFrame(animframe_t& frame);
+	AnimFrame(const animframe_t& frame);
 
 	Quaternion	angBoneAngles{ qidentity };
 	Vector3D	vecBonePosition{ vec3_zero };
@@ -31,7 +31,7 @@ struct AnimIkChain
 {
 	struct Link
 	{
-		studioIkLink_t* l{ nullptr };
+		studioIkLink_t* desc{ nullptr };
 		Link*			parent{ nullptr };
 		AnimIkChain*	chain{ nullptr };
 
@@ -41,60 +41,77 @@ struct AnimIkChain
 		Vector3D		position{ vec3_zero };
 	};
 
-	~AnimIkChain() { delete[] links; }
+	~AnimIkChain();
 
-	const studioIkChain_t*	c{ nullptr };
+	const studioIkChain_t*	desc{ nullptr };
 	Vector3D				localTarget{ vec3_zero };
-	Link*					links { nullptr };
-	int						numLinks{ 0 };
+	ArrayRef<Link>			links { nullptr };
 	bool					enable{ false }; // if false then it will be updated from FK
 };
 
 // pose controller
 struct AnimPoseController
 {
-	const posecontroller_t*	p{ nullptr };
-	float				value{ 0.0f };
-	float				interpolatedValue{ 0.0f };
+	const posecontroller_t*	desc{ nullptr };
+	float					value{ 0.0f };
+	float					interpolatedValue{ 0.0f };
+};
+
+// translated game animation
+struct AnimFrameData
+{
+	const animationdesc_t*	desc{ nullptr };
+	const animframe_t*		keyFrames{ nullptr };
+	int						numFrames{ 0 };
 };
 
 // translated game sequence
 struct AnimSequence
 {
-	Activity					activity{ ACT_INVALID };
-	AnimPoseController*			posecontroller{ nullptr };
-	const sequencedesc_t*		s{ nullptr };
+	const sequencedesc_t*	desc{ nullptr };
+	StudioMotionData*		motionData{ nullptr };
+	AnimPoseController*		posecontroller{ nullptr };
+	Activity				activity{ ACT_INVALID };
+	const AnimSequence*		blends[MAX_SEQUENCE_BLENDS]{ nullptr };
+	const AnimFrameData*	animations[MAX_BLEND_WIDTH]{ nullptr };
+	const sequenceevent_t*	events[MAX_EVENTS_PER_SEQ]{ nullptr };
+};
 
-	AnimSequence*				blends[MAX_SEQUENCE_BLENDS]{ nullptr };
-	const sequenceevent_t*		events[MAX_EVENTS_PER_SEQ]{ nullptr };
-	const StudioAnimData*	animations[MAX_BLEND_WIDTH]{ nullptr };
+struct AnimDataProvider
+{
+	StudioMotionData*		motionData{ nullptr };
+	Array<AnimFrameData>	animations{ PP_SL };
+	Array<AnimSequence>		sequences{ PP_SL };
+	Map<int, int>			nameToSequence{ PP_SL };
+	Map<int, int>			activitySlotSequenceIds{ PP_SL };	// maps activity+slot to sequence idx
 };
 
 // sequence timer with events
 struct AnimSequenceTimer
 {
-	AnimSequence*	seq{ nullptr };
-	int				seqIdx{ -1 };
-	float			seqTime{ 0.0f };
-	float			transitionRemainingTime{ 0.0f };
-	float			transitionTime{ 0.0f };
+	const AnimSequence*	seq{ nullptr };
+
+	int			seqId{ -1 };
+	float		seqTime{ 0.0f };
+	float		transitionRemainingTime{ 0.0f };
+	float		transitionTime{ 0.0f };
 	
-	int				nextFrame{ 0 };
-	int				currFrame{ 0 };
+	int			nextFrame{ 0 };
+	int			currFrame{ 0 };
 
-	int				eventCounter{ 0 };
+	int			eventCounter{ 0 };
 
-	float			playbackSpeedScale{ 1.0f };
-	float			blendWeight{ 0.0f };
-	bool			active{ false };
+	float		playbackSpeedScale{ 1.0f };
+	float		blendWeight{ 0.0f };
+	bool		active{ false };
 
-	void Reset();
-	void ResetPlayback();
+	void		Reset();
+	void		ResetPlayback();
 
-	void AdvanceFrame(float fDt);
-	void SetTime(float time);
+	void		AdvanceFrame(float fDt);
+	void		SetTime(float time);
 
 #ifdef DECLARE_DATAMAP
 	DECLARE_DATAMAP();
-#endif // NOENGINE
+#endif
 };

@@ -12,6 +12,7 @@
 #include "core/ConVar.h"
 
 #include "egf/MotionPackageGenerator.h"
+#include "egf/model.h"
 
 class IShaderAPI* g_renderAPI = nullptr;
 class IMaterialSystem* g_matSystem = nullptr;

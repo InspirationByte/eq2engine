@@ -14,7 +14,7 @@
 #include "dsm_loader.h"
 #include "dsm_esm_loader.h"
 #include "dsm_fbx_loader.h"
-#include "studiofile/StudioLoader.h"
+#include "egf/model.h"
 
 static constexpr const int MaxFramesPerAnimation = 10000;
 
@@ -736,7 +736,7 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 		ZoomArray<Vector3D, INTERP_POSITION>(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
 }
 
-void CollectFBXAnimations(Array<StudioAnimData>& animations, ofbx::IScene* scene, const char* meshFilter)
+void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, const char* meshFilter)
 {
 	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
 
@@ -845,11 +845,9 @@ void CollectFBXAnimations(Array<StudioAnimData>& animations, ofbx::IScene* scene
 
 			const int boneCount = objData.weightData.numElem();
 
-			StudioAnimData animation;
-			strncpy(animation.name, stack->name, sizeof(animation.name));
-			animation.name[sizeof(animation.name) - 1] = 0;
-			animation.bones = PPAllocStructArray(StudioBoneFrames, boneCount);
-			memset(animation.bones, 0, sizeof(StudioBoneFrames)* boneCount);
+			DSAnimData animation;
+			animation.name = stack->name;
+			animation.bones = PPNew DSBoneFrames[boneCount];
 
 			// convert bone animation
 			for (int j = 0; j < boneCount; ++j)
@@ -894,14 +892,14 @@ void CollectFBXAnimations(Array<StudioAnimData>& animations, ofbx::IScene* scene
 				// alloc frames
 				const int numFrames = boneAnimation.translations.numElem();
 			
-				StudioBoneFrames& outBoneAnim = animation.bones[j];
+				DSBoneFrames& outBoneAnim = animation.bones[j];
 				outBoneAnim.numFrames = numFrames;
-				outBoneAnim.keyFrames = PPAllocStructArray(animframe_t, numFrames);
+				outBoneAnim.keyFrames = PPNew DSAnimFrame[numFrames];
 			
 				// perform conversion of each frame to local space
 				for (int k = 0; k < numFrames; ++k)
 				{
-					animframe_t& outFrame = outBoneAnim.keyFrames[k];
+					DSAnimFrame& outFrame = outBoneAnim.keyFrames[k];
 
 					const Vector3D rotation = boneAnimation.rotations[k];
 					const Vector3D translation = boneAnimation.translations[k];
@@ -926,13 +924,13 @@ void CollectFBXAnimations(Array<StudioAnimData>& animations, ofbx::IScene* scene
 
 					// in Eq each bone transform is strictly related to it's parent
 					{
-						outFrame.vecBonePosition = animBoneMatrix.getTranslationComponent();
-						outFrame.angBoneAngles = EulerMatrixXYZ(animBoneMatrix.getRotationComponent());
+						outFrame.position = animBoneMatrix.getTranslationComponent();
+						outFrame.angles = EulerMatrixXYZ(animBoneMatrix.getRotationComponent());
 
 						if (matDet < 0)
 						{
-							outFrame.angBoneAngles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
-							outFrame.vecBonePosition *= Vector3D(sign(matDet), 1.0f, 1.0f);
+							outFrame.angles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
+							outFrame.position *= Vector3D(sign(matDet), 1.0f, 1.0f);
 						}
 					}
 				}
@@ -962,7 +960,7 @@ void CollectFBXAnimations(Array<StudioAnimData>& animations, ofbx::IScene* scene
 	}
 }
 
-bool LoadFBXAnimations(Array<StudioAnimData>& animations, const char* filename, const char* meshFilter)
+bool LoadFBXAnimations(Array<DSAnimData>& animations, const char* filename, const char* meshFilter)
 {
 	VSSize fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);

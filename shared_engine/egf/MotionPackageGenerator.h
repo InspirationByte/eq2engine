@@ -6,15 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "dsm_loader.h"
 #include "egf/model.h"
-#include "egf/motionpackage.h"
 
 struct KVSection;
 struct animCaBoneFrames_t;
-
-namespace SharedModel {
-	struct DSModel;
-}
 
 class CMotionPackageGenerator
 {
@@ -41,34 +37,34 @@ private:
 
 	// Shifts animation start
 	//void ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame);
-	void TranslateAnimationFrames(StudioBoneFrames* bone, Vector3D& offset);
+	void TranslateAnimationFrames(SharedModel::DSBoneFrames* bone, const Vector3D& offset);
 
 	// Subtracts the animation frames
 	// IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
-	void SubtractAnimationFrames(StudioBoneFrames* bone, StudioBoneFrames* otherbone);
+	void SubtractAnimationFrames(SharedModel::DSBoneFrames* bone, SharedModel::DSBoneFrames* otherbone);
 
 	// Advances every frame position on reversed velocity
 	// Helps with motion capture issues.
-	void VelocityBackTransform(StudioBoneFrames* bone, Vector3D& velocity);
+	void VelocityBackTransform(SharedModel::DSBoneFrames* bone, const Vector3D& velocity);
 
 	// Fills empty frames of animation
 	// and interpolates non-empty to them.
-	void InterpolateBoneAnimationFrames(StudioBoneFrames* bone);
+	void InterpolateBoneAnimationFrames(SharedModel::DSBoneFrames* bone);
 
 	// Crops animated bones
-	void CropAnimationBoneFrames(StudioBoneFrames* pBone, int newStart, int newEnd);
+	void CropAnimationBoneFrames(SharedModel::DSBoneFrames* pBone, int newStart, int newEnd);
 
 	// Crops animation
-	void CropAnimationDimensions(StudioAnimData* pAnim, int newStart, int newEnd);
+	void CropAnimationDimensions(SharedModel::DSAnimData* pAnim, int newStart, int newEnd);
 
 	// Reverse animation
-	void ReverseAnimation(StudioAnimData* pAnim);
+	void ReverseAnimation(SharedModel::DSAnimData* pAnim);
 
 	// Scales bone animation length
-	void RemapBoneFrames(StudioBoneFrames* pBone, int newLength);
+	void RemapBoneFrames(SharedModel::DSBoneFrames* pBone, int newLength);
 
 	// Scales animation length
-	void RemapAnimationLength(StudioAnimData* pAnim, int newLength);
+	void RemapAnimationLength(SharedModel::DSAnimData* pAnim, int newLength);
 
 	// Loads all animations from FBX
 	void LoadFBXAnimations(const KVSection* section);
@@ -100,13 +96,13 @@ private:
 	// Makes standard pose.
 	void MakeDefaultPoseAnimation();
 
-	studioHdr_t*				m_model{ nullptr };
-	Array<StudioAnimData>	m_animations{ PP_SL };
-	Array<sequencedesc_t>		m_sequences{ PP_SL };
-	Array<sequenceevent_t>		m_events{ PP_SL };
-	Array<posecontroller_t>		m_posecontrollers{ PP_SL };
-	Array<animationdesc_t>		m_animationdescs{ PP_SL };
-	Array<animframe_t>			m_animframes{ PP_SL };
+	studioHdr_t*					m_model{ nullptr };
+	Array<SharedModel::DSAnimData>	m_animations{ PP_SL };
+	Array<sequencedesc_t>			m_sequences{ PP_SL };
+	Array<sequenceevent_t>			m_events{ PP_SL };
+	Array<posecontroller_t>			m_posecontrollers{ PP_SL };
+	Array<animationdesc_t>			m_animationdescs{ PP_SL };
+	Array<animframe_t>				m_animframes{ PP_SL };
 
-	EqString					m_animPath{ "./" };
+	EqString						m_animPath{ "./" };
 };

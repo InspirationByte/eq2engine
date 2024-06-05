@@ -326,8 +326,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 				if(!pstr)
 					break;
 
-				int len = strlen( pstr );
-
+				const size_t len = strlen( pstr );
 				if(len == 0)
 					break;
 

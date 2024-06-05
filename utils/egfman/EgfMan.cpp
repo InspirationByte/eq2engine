@@ -1242,13 +1242,12 @@ void CEGFViewFrame::ReDraw()
 		const int selectedSeqIdx = m_pMotionSelection->GetSelection();
 		if(g_model.IsSequencePlaying() && selectedSeqIdx != -1)
 		{
-			const AnimSequence& seq = g_model.GetSequence(selectedSeqIdx);
+			const AnimSequence* seq = g_model.GetSequencesList()[selectedSeqIdx];
 
-			float setFrameRate = atoi(m_pAnimFramerate->GetValue());
-
+			const float setFrameRate = atoi(m_pAnimFramerate->GetValue());
 			if(setFrameRate > 0)
 			{
-				float framerateScale = setFrameRate / seq.s->framerate;
+				const float framerateScale = setFrameRate / seq->desc->framerate;
 				g_model.SetPlaybackSpeedScale(framerateScale, 0);
 			}
 
@@ -1330,9 +1329,16 @@ void CEGFViewFrame::RefreshGUI()
 		// sequences
 		if(m_pAnimMode->GetSelection() == 0)
 		{
-			for(int i = 0; i < g_model.GetNumSequences(); i++)
+			int itemCnt = 0;
+			for(const AnimSequence* seq : g_model.GetSequencesList())
 			{
-				m_pMotionSelection->Append(g_model.GetSequence(i).s->name );
+				EqString fullSeqName = EqString::Format("%s.%s", seq->motionData->name.ToCString(), seq->desc->name);
+				const int sequenceId = g_model.FindSequence(fullSeqName);
+
+				m_pMotionSelection->Append(fullSeqName.ToCString());
+				m_pMotionSelection->SetClientData(itemCnt, reinterpret_cast<void*>(sequenceId));
+
+				++itemCnt;
 			}
 		}
 		else // animations
@@ -1345,10 +1351,8 @@ void CEGFViewFrame::RefreshGUI()
 			}*/
 		}
 
-		for(int i = 0; i < g_model.GetNumPoseControllers(); i++)
-		{
-			m_pPoseController->Append(g_model.GetPoseController(i).p->name );
-		}
+		for(const AnimPoseController& cntr : g_model.GetPoseControllers())
+			m_pPoseController->Append(cntr.desc->name );
 	}
 }
 
@@ -1358,18 +1362,19 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 
 	if(event.GetId() == Event_Sequence_Changed)
 	{
-		int nSeq = m_pMotionSelection->GetSelection();
-
-		if(nSeq != -1)
+		const int motionSelection = m_pMotionSelection->GetSelection();
+		if(motionSelection != -1)
 		{
-			g_model.SetSequence( nSeq, 0 );
+			const int sequenceId = reinterpret_cast<int>(m_pMotionSelection->GetClientData(motionSelection));
+
+			g_model.SetSequence(sequenceId, 0 );
 			g_model.ResetSequenceTime(0);
 			g_model.PlaySequence(0);
 
-			const AnimSequence& seq = g_model.GetSequence(nSeq);
-			m_pAnimFramerate->SetValue(EqString::Format("%g", seq.s->framerate).ToCString() );
+			const AnimSequence* seq = g_model.GetSequencesList()[motionSelection];
+			m_pAnimFramerate->SetValue(EqString::Format("%g", seq->desc->framerate).ToCString() );
 
-			int maxFrames = g_model.GetCurrentAnimationDurationInFrames();
+			const int maxFrames = g_model.GetCurrentAnimationDurationInFrames()-1;
 
 			m_pTimeline->SetMax( maxFrames );
 			g_model.SetPlaybackSpeedScale(1.0f, 0);
@@ -1377,14 +1382,13 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 	}
 	else if(event.GetId() == Event_PoseCont_Changed)
 	{
-		int nPoseContr = m_pPoseController->GetSelection();
-
+		const int nPoseContr = m_pPoseController->GetSelection();
 		if(nPoseContr != -1)
 		{
-			m_pPoseValue->SetMin(g_model.GetPoseController(nPoseContr).p->blendRange[0]*10000 );
-			m_pPoseValue->SetMax(g_model.GetPoseController(nPoseContr).p->blendRange[1]*10000 );
+			m_pPoseValue->SetMin(g_model.GetPoseControllers()[nPoseContr].desc->blendRange[0] * 10000 );
+			m_pPoseValue->SetMax(g_model.GetPoseControllers()[nPoseContr].desc->blendRange[1]*10000 );
 
-			m_pPoseValue->SetValue(g_model.GetPoseControllerValue(nPoseContr)*10000 );
+			m_pPoseValue->SetValue(g_model.GetPoseControllerValue(nPoseContr) * 10000 );
 		}
 	}
 }

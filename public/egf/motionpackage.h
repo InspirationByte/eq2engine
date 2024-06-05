@@ -45,7 +45,7 @@ struct animationdesc_s
 	char	name[44];
 
 	int		firstFrame;	// first frame, first bone in ANIMCA_ANIMATIONFRAMES
-	int		numFrames;	// NOTE: this is not a bone frame count, but you can compute it by multipling it on bone count.
+	int		numFrames;	// NOTE: this is entire animation frame count. Divide this by bone count.
 };
 ALIGNED_TYPE(animationdesc_s, 4) animationdesc_t;
 
