@@ -235,8 +235,8 @@ bool CFileSystem::Init(bool bEditorMode)
 		return false;
 	}
 
-	const char* workDir = KV_GetValueString(fsConfig->FindSection("WorkDir"), 0, nullptr);
-	if (workDir)
+	EqStringRef workDir;
+	if (fsConfig->Get("WorkDir").GetValues(workDir))
 	{
 #ifdef _WIN32
 		SetCurrentDirectoryA(workDir);
@@ -245,46 +245,51 @@ bool CFileSystem::Init(bool bEditorMode)
 #endif // _WIN32
 	}
 
-	const char* basePathStr = KV_GetValueString(fsConfig->FindSection("BasePath"), 0, nullptr);
-	if(basePathStr)
-		SetBasePath(basePathStr);
-
-	if(m_basePath.Length() > 0)
+	EqStringRef basePath;
+	if(fsConfig->Get("BasePath").GetValues(basePath))
 	{
-		MsgInfo("* Base directory: %s\n", m_basePath.GetData());
+		SetBasePath(basePath);
+		if (m_basePath.Length() > 0)
+			MsgInfo("* Base directory: %s\n", m_basePath.GetData());
 	}
 
-	m_dataDir = KV_GetValueString(fsConfig->FindSection("EngineDataDir"), 0, "EngineBase" );
+	m_dataDir = "EngineBase";
+	fsConfig->Get("EngineDataDir").GetValues(m_dataDir);
 	MsgInfo("* Engine Data directory: %s\n", m_dataDir.GetData());
 
 	if(!m_editorMode)
 	{
-		const int iGamePathArg = g_cmdLine->FindArgument("-game");
-		const char* gamePath = g_cmdLine->GetArgumentsOf(iGamePathArg);
+		EqStringRef gamePath = "DefaultGameDir_MISSING";
+		fsConfig->Get("DefaultGameDir").GetValues(gamePath);
 
-		// set or change game path
-		if (gamePath)
-			AddSearchPath("$GAME$", gamePath);
-		else
-			AddSearchPath("$GAME$", (const char*)KV_GetValueString(fsConfig->FindSection("DefaultGameDir"), 0, "DefaultGameDir_MISSING"));
+		const int gamePathArg = g_cmdLine->FindArgument("-game");
+		if(gamePathArg != -1)
+			gamePath = g_cmdLine->GetArgumentsOf(gamePathArg);
 
-		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
+		AddSearchPath("$GAME$", gamePath);
 
-		 // FS dev addon for game tools
-		 const int iDevAddonPathArg = g_cmdLine->FindArgument("-devAddon");
-		 const char* devAddonPath = g_cmdLine->GetArgumentsOf(iDevAddonPathArg);
-		 if (devAddonPath)
-		 {
-			 AddSearchPath("$MOD$_$WRITE$", devAddonPath);
-			 MsgInfo("* Dev addon path: %s\n", devAddonPath);
-		 }
-		 
+		MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
+
+		// FS dev addon for game tools
+		const int iDevAddonPathArg = g_cmdLine->FindArgument("-devAddon");
+		const char* devAddonPath = g_cmdLine->GetArgumentsOf(iDevAddonPathArg);
+		if (devAddonPath)
+		{
+			AddSearchPath("$MOD$_$WRITE$", devAddonPath);
+			MsgInfo("* Dev addon path: %s\n", devAddonPath);
+		}
 	}
 
-	for(KVKeyIterator it(fsConfig, "AddPackage"); !it.atEnd(); ++it)
+	for(const KVSection* pkgSec : fsConfig->Keys("AddPackage"))
 	{
-		const ESearchPath type = GetSearchPathByName(KV_GetValueString(*it, 1, "SP_MOD"));
-		AddPackage(KV_GetValueString(*it), type, KV_GetValueString(*it, 2, nullptr));
+		EqStringRef packageName;
+		EqStringRef pathType = "SP_MOD";
+		EqStringRef mountPath;
+		if (pkgSec->GetValues(packageName, pathType, mountPath) < 1)
+			continue;
+
+		const ESearchPath type = GetSearchPathByName(pathType);
+		AddPackage(packageName, type, mountPath);
 	}
 
 	m_isInit = true;

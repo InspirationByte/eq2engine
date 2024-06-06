@@ -181,13 +181,13 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	{
 		shaderInfo.defines.reserve(defines->ValueCount());
 		for (KVValueIterator<EqString> it(defines); !it.atEnd(); ++it)
-			shaderInfo.defines.append(it);
+			shaderInfo.defines.append(*it);
 	}
 
 	int shaderKinds = 0;
 	for (KVValueIterator<EqStringRef> it(shaderInfoKvs["ShaderKinds"]); !it.atEnd(); ++it)
 	{
-		const EqStringRef kindName(it);
+		const EqStringRef kindName(*it);
 		if (kindName == s_shaderKindVertexName)
 			shaderKinds |= SHADERKIND_VERTEX;
 		else if (kindName == s_shaderKindFragmentName)
@@ -282,10 +282,8 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	// we need to validate references so collect refs in second pass
 	int refIdx = 0;
-	for (KVKeyIterator it(fileListSec, "ref"); !it.atEnd(); ++it)
+	for (const KVSection* itemSec : fileListSec->Keys("ref"))
 	{
-		const KVSection* itemSec = *it;
-
 		EqStringRef kindStr = KV_GetValueString(itemSec, 1);
 		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
 		int kind = 0;

@@ -318,17 +318,19 @@ const KVPairValue* KVSection::operator[](int index) const
 
 //-----------------------------------------------------------------------------------------
 
-KeyValues::KeyValues()
-{
-}
-
-KeyValues::~KeyValues()
-{
-}
-
 void KeyValues::Reset()
 {
 	m_root.Cleanup();
+}
+
+KVKeyIterator::Init KeyValues::Keys(const char* nameFilter , int searchFlags) const
+{
+	return m_root.Keys(nameFilter, searchFlags);
+}
+
+const KVSection& KeyValues::Get(const char* pszName, int nFlags) const
+{
+	return m_root.Get(pszName, nFlags);
 }
 
 // searches for keybase
@@ -364,7 +366,7 @@ bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 	return true;
 }
 
-KVSection* KeyValues::GetRootSection() 
+KVSection* KeyValues::GetRootSection()
 {
 	return &m_root; 
 }
@@ -859,25 +861,35 @@ KVSection& KVSection::AddKey(const char* name, KVSection* pair)
 
 //-------------------------------------------------------------------------------
 
+// searches for section and returns default empty if none found
+const KVSection& KVSection::Get(const char* pszName, int nFlags) const
+{
+	static KVSection emptySec{};
+	KVSection* section = FindSection(pszName, nFlags);
+	if (!section)
+		return emptySec;
+	return *section;
+}
+
 // searches for keybase
 KVSection* KVSection::FindSection(const char* pszName, int nFlags) const
 {
 	const int hash = StringToHash(pszName, true);
 
-	for(int i = 0; i < keys.numElem(); i++)
+	for(KVSection* section : keys)
 	{
-		if((nFlags & KV_FLAG_SECTION) && keys[i]->keys.numElem() == 0)
+		if((nFlags & KV_FLAG_SECTION) && section->keys.numElem() == 0)
 			continue;
 
-		if((nFlags & KV_FLAG_NOVALUE) && keys[i]->values.numElem() > 0)
+		if((nFlags & KV_FLAG_NOVALUE) && section->values.numElem() > 0)
 			continue;
 
-		if((nFlags & KV_FLAG_ARRAY) && keys[i]->values.numElem() <= 1)
+		if((nFlags & KV_FLAG_ARRAY) && section->values.numElem() <= 1)
 			continue;
 
-		if(keys[i]->nameHash == hash)
-		//if(!CString::CompareCaseIns(keys[i]->name, pszName))
-			return keys[i];
+		if(section->nameHash == hash)
+		//if(!CString::CompareCaseIns(section->name, pszName))
+			return section;
 	}
 
 	return nullptr;
@@ -1011,10 +1023,11 @@ int	KVSection::GetType() const
 //---------------------------------------------------------------------------------------------------------
 // Iterators
 
-KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags)
+KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags, int index)
 	: section(section)
 	, nameHashFilter(nameFilter ? StringToHash(nameFilter, true) : 0)
 	, searchFlags(searchFlags)
+	, index(index)
 {
 	Rewind();
 }
@@ -1026,13 +1039,19 @@ KVKeyIterator::operator int() const
 
 KVKeyIterator::operator	const char* () const
 {
-	return section ? section->keys[index]->GetName() : nullptr;
+	return section->keys[index]->GetName();
+}
+
+KVKeyIterator::operator KVSection* () const
+{
+	return section->keys[index];
 }
 
 KVSection* KVKeyIterator::operator*() const
 {
-	return section ? section->keys[index] : nullptr;
+	return section->keys[index];
 }
+
 void KVKeyIterator::operator++()
 {
 	do
@@ -1055,6 +1074,9 @@ void KVKeyIterator::Rewind()
 
 bool KVKeyIterator::IsValidItem()
 {
+	if (!section)
+		return false;
+
 	const KVSection* current = section->keys[index];
 	if ((searchFlags & KV_FLAG_SECTION) && current->keys.numElem() == 0)
 		return false;
@@ -1069,6 +1091,16 @@ bool KVKeyIterator::IsValidItem()
 		return false;
 
 	return true;
+}
+
+KVKeyIterator KVKeyIterator::Init::end() const
+{
+	KVKeyIterator endIt;
+	endIt.section = _initial.section;
+	endIt.nameHashFilter = _initial.nameHashFilter;
+	endIt.searchFlags = _initial.searchFlags;
+	endIt.index = _initial.section->KeyCount();
+	return endIt;
 }
 
 //---------------------------------------------------------------------------------------------------------
@@ -2238,58 +2270,6 @@ void KV_PrintSection(const KVSection* base)
 //-----------------------------------------------------------------------------------------------------
 // KeyValues value helpers
 //-----------------------------------------------------------------------------------------------------
-
-//
-// sscanf-like value getter from pairbase
-//
-int KV_ScanGetValue(const KVSection* pBase, int start, const char* format, ...)
-{
-	int ret = 0;
-
-	va_list args;
-	va_start(args, format);
-	while (format[0] != '\0') 
-	{
-		switch (format[1])
-		{
-			case 'd':
-			case 'i':
-			case 'u':
-			{
-				int* intp = va_arg(args, int*);
-				*intp = KV_GetValueInt(pBase, start + ret, 0);
-				ret++;
-				break;
-			}
-			case 'f':
-			{
-				float* flp = va_arg(args, float*);
-				*flp = KV_GetValueFloat(pBase, start + ret, 0.0f);
-				ret++;
-				break;
-			}
-			case 'b':
-			{
-				bool* boolp = va_arg(args, bool*);
-				*boolp = KV_GetValueBool(pBase, start + ret, false);
-				ret++;
-				break;
-			}
-			case 's':
-			{
-				char* charp = va_arg(args, char*);
-				strcpy(charp, KV_GetValueString(pBase, start + ret, ""));
-				ret++;
-				break;
-			}
-		}
-		++format;
-	}
-
-	va_end(args);
-
-	return ret;
-}
 
 //
 // Returns the string value of pairbase

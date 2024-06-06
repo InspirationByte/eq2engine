@@ -96,9 +96,9 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	}
 
 	int shaderKind = 0;
-	for (KVKeyIterator keysIter(kinds); !keysIter.atEnd(); ++keysIter)
+	for (const KVSection* key : kinds->Keys())
 	{
-		EqStringRef kindStr = keysIter;
+		EqStringRef kindStr(key->name);
 
 		if (!kindStr.CompareCaseIns("Vertex"))
 			shaderKind |= SHADERKIND_VERTEX;
@@ -183,12 +183,12 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 		return false;
 	}
 
-	KVSection* shaderRoot = nullptr;
-	for (KVKeyIterator it(&baseShaderRoot, "shader"); !it.atEnd(); ++it)
+	const KVSection* shaderRoot = nullptr;
+	for (const KVSection* shdKey : baseShaderRoot.Keys("shader"))
 	{
-		if (!CString::CompareCaseIns(KV_GetValueString(*it), KV_GetValueString(shaderSection, 1)))
+		if (!CString::CompareCaseIns(KV_GetValueString(shdKey), KV_GetValueString(shaderSection, 1)))
 		{
-			shaderRoot = *it;
+			shaderRoot = shdKey;
 			break;
 		}
 	}
@@ -239,15 +239,15 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 				continue;
 
 			int shadersFound = 0;
-			for (KVKeyIterator it(&rootSec, "shader"); !it.atEnd(); ++it)
+			for (const KVSection* shdKey : rootSec.Keys("shader"))
 			{
-				if(ParseShaderInfo(fullShaderPath, *it))
+				if(ParseShaderInfo(fullShaderPath, shdKey))
 					++shadersFound;
 			}
 
-			for (KVKeyIterator it(&rootSec, "shaderExt"); !it.atEnd(); ++it)
+			for (const KVSection* shdExtKey : rootSec.Keys("shaderExt"))
 			{
-				if(ParseShaderExtensionInfo(fullShaderPath, *it))
+				if(ParseShaderExtensionInfo(fullShaderPath, shdExtKey))
 					++shadersFound;
 			}
 
@@ -335,7 +335,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 				else if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "excludeDefines"))
 				{
 					for (KVValueIterator<EqString> it(layoutKey, 1); !it.atEnd(); ++it)
-						vertLayout.excludeDefines.append(it);
+						vertLayout.excludeDefines.append(*it);
 				}
 			}
 		}
@@ -345,7 +345,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 			ShaderInfo::SkipCombo& skipCombo = shaderInfo.skipCombos.append();
 			for (KVValueIterator<EqString> it(nestedSec); !it.atEnd(); ++it)
 			{
-				skipCombo.defines.append(it);
+				skipCombo.defines.append(*it);
 			}
 		}
 		else if (!CString::CompareCaseIns(nestedSec->GetName(), "UniformLayout"))
@@ -748,13 +748,13 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 				sourceImageExt = "tga";
 			}
 
-			for (KVKeyIterator it(currentTarget, "includePath"); !it.atEnd(); ++it)
+			for (const KVSection* includePathKey : currentTarget->Keys("includePath"))
 			{
-				EqString includePath = KV_GetValueString(*it);
+				EqString includePath = KV_GetValueString(includePathKey);
 				includePath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
 				includePath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
 
-				m_targetProps.includePaths.append(includePath);
+				m_targetProps.includePaths.append(std::move(includePath));
 			}
 
 			m_targetProps.sourceShaderPath = shadersSrc;

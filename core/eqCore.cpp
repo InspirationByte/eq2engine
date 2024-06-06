@@ -154,6 +154,7 @@ static void SetupBinPath()
 
 }
 
+
 // Definition that we can't see or change throught console
 bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 {
@@ -219,7 +220,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	bool logEnabled = false;
 
-	KVSection* appDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
+	const KVSection* appDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
 	if(appDebug)
 	{
 		if(appDebug->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
@@ -228,27 +229,30 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		if(appDebug->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			g_bPrintLeaksOnShutdown = true;
 
-		Array<EqString> devModeList(PP_SL);
-
-		KVSection* devModesKv = appDebug->FindSection("DeveloperMode");
-		if(devModesKv)
 		{
-			for(int i = 0; i < devModesKv->values.numElem();i++)
-				devModeList.append(KV_GetValueString(devModesKv, i));
+			Array<EqStringRef> devModeList(PP_SL);
+			const KVSection* devModesKv = appDebug->FindSection("DeveloperMode");
+			if (devModesKv)
+			{
+				for (EqStringRef mode : devModesKv->Values<EqStringRef>())
+					devModeList.append(mode);
 
-			if (devModeList.numElem())
-				developer.DispatchFunc(devModeList);
+				if (devModeList.numElem())
+					developer.DispatchFunc(devModeList);
+			}
 		}
 
-		KVSection* pForceLogged = appDebug->FindSection("ForceLogApplications");
-		if(pForceLogged)
 		{
-			for(int i = 0; i < pForceLogged->values.numElem();i++)
+			const KVSection* forceLogApps = appDebug->FindSection("ForceLogApplications");
+			if (forceLogApps)
 			{
-				if(!m_szApplicationName.CompareCaseIns(KV_GetValueString(pForceLogged, i)))
+				for (EqStringRef appName : forceLogApps->Values<EqStringRef>())
 				{
-					logEnabled = true;
-					break;
+					if (!m_szApplicationName.CompareCaseIns(appName))
+					{
+						logEnabled = true;
+						break;
+					}
 				}
 			}
 		}
