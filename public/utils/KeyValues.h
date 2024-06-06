@@ -129,32 +129,101 @@ struct KVValueIterator<T>::Init
 	KVValueIterator	_initial;
 };
 
-inline int KV_GetValuesR(const KVSection* key, int idx, int cntIdx)
+template<typename ...Args>
+struct KVValues
+{
+	using TupleRef = std::tuple<Args&...>;
+	using TupleVal = std::tuple<Args...>;
+
+	KVValues(Args&... outArgs) 
+		: outArgs(std::tie(outArgs...))
+		, newValues(outArgs...)
+		, count(0)
+	{
+	}
+
+	KVValues(KVValues&& other) noexcept
+		: outArgs(other.outArgs)
+		, newValues(std::move(other.newValues))
+		, count(other.count)
+		, cancel(other.cancel)
+	{
+		other.cancel = true;
+	}
+
+	~KVValues()
+	{
+		if (cancel)
+			return;
+		ApplyImpl(std::index_sequence_for<Args...>{});
+	}
+
+	KVValues& operator=(KVValues&& other) noexcept
+	{
+		if (this != &other)
+		{
+			outArgs = other.outArgs;
+			newValues = std::move(other.newValues);
+			count = other.count;
+			cancel = other.cancel;
+			other.cancel = true; // Prevent the moved-from object from applying its changes
+		}
+		return *this;
+	}
+
+	void		Cancel() { cancel = true; }
+	operator	int() const { return count; }
+
+	template<std::size_t... Is>
+	void ApplyImpl(std::index_sequence<Is...>)
+	{
+		((std::get<Is>(outArgs) = std::get<Is>(newValues)), ...);
+	}
+
+	TupleVal	newValues;
+	TupleRef	outArgs;
+	int			count{ 0 };
+	bool		cancel{ false };
+};
+
+namespace kvdetail
+{
+inline int GetValuesR(const KVSection* key, int idx, int cntIdx)
 {
 	return cntIdx; // end of recursion
 }
 
 template<typename T, typename ...Rest>
-inline int KV_GetValuesR(const KVSection* key, int idx, int cntIdx, T& out, Rest&... outArgs)
+inline int GetValuesR(const KVSection* key, int idx, int cntIdx, T& out, Rest&... outArgs)
 {
 	if (idx + KVPairValuesGetter<T>::vcount > key->ValueCount())
 		return cntIdx;
 	out = KVPairValuesGetter<T>::Get(key, idx);
 
-	return KV_GetValuesR(key, idx + KVPairValuesGetter<T>::vcount, cntIdx + 1, outArgs...);
+	return GetValuesR(key, idx + KVPairValuesGetter<T>::vcount, cntIdx + 1, outArgs...);
+}
+
+template<typename ...Args, std::size_t... Is>
+int GetValuesImpl(const KVSection* key, int idx, std::index_sequence<Is...>, std::tuple<Args...>& newValues)
+{
+	return GetValuesR(key, idx, 0, std::get<Is>(newValues)...);
+}
 }
 
 template<typename ...Args>
-inline int KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+inline KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
 {
-	return KV_GetValuesR(key, idx, 0, outArgs...);
+	KVValues<Args...> values(outArgs...);
+	values.count = kvdetail::GetValuesImpl(key, idx, std::index_sequence_for<Args...>{}, values.newValues);
+	return values;
 }
 
 template<typename ...Args>
-inline int KV_GetValues(const KVSection* key, Args&... outArgs)
+inline KVValues<Args...> KV_GetValues(const KVSection* key, Args&... outArgs)
 {
-	const int ret = KV_GetValuesR(key, 0, 0, outArgs...);
-	return ret;
+	KVValues<Args...> values(outArgs...);
+	values.count = kvdetail::GetValuesImpl(key, 0, std::index_sequence_for<Args...>{}, values.newValues);
+	return values;
 }
 
 //
@@ -212,15 +281,15 @@ struct KVSection
 	inline typename KVValueIterator<T>::Init	Values(int startIdx = 0) const { return { KVValueIterator<T>(this, startIdx) }; }
 	
 	// Array keys iterator
-	inline KVKeyIterator::Init					Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(this, nameFilter, searchFlags) }; }
+	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(this, nameFilter, searchFlags) }; }
 
 	// Key values getter
 	template<typename ...Args>
-	inline int			GetValues(Args&... outArgs) const { return KV_GetValues(this, outArgs...); };
+	inline KVValues<Args...>	GetValues(Args&... outArgs) const { return KV_GetValues(this, outArgs...); };
 
 	// Key values getter at specific value idx
 	template<typename ...Args>
-	inline int			GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, 0, outArgs...); };
+	inline KVValues<Args...>	GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, 0, outArgs...); };
 
 	//----------------------------------------------
 	// The section functions

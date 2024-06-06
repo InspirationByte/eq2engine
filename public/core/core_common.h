@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <tuple>
 
 #if defined(_INC_MINMAX)
 #error Please remove minmax from includes

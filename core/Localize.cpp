@@ -154,14 +154,15 @@ void CLocalize::SetLanguageName(const char* name)
 	// try using EqConfig regional settings instead
 	if (m_language.Length() == 0)
 	{
-		const KVSection* pRegional = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
-		if (!pRegional)
+		const KVSection* regionalCfg = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
+		if (!regionalCfg)
 		{
 			Msg("Core config missing RegionalSettings section... force english!\n");
 			return;
 		}
-		const KVSection* defaultLanguage = pRegional ? pRegional->FindSection("DefaultLanguage") : nullptr;
-		m_language = KV_GetValueString(defaultLanguage, 0, "english");
+
+		m_language = "english";
+		regionalCfg->Get("DefaultLanguage").GetValues(m_language);
 	}
 
 	// add localized path
