@@ -243,7 +243,7 @@ bool Studio_LoadPhysModel(const char* pszPath, StudioPhysData& physData)
 				for(int i = 0; i < numGeomInfos; i++)
 				{
 					physData.shapes[i].cacheRef = nullptr;
-					memcpy(&physData.shapes[i].shapeInfo, &shapesInfoFile[i], sizeof(physgeominfo_t));
+					memcpy(&physData.shapes[i].desc, &shapesInfoFile[i], sizeof(physgeominfo_t));
 				}
 				break;
 			}
@@ -272,7 +272,7 @@ bool Studio_LoadPhysModel(const char* pszPath, StudioPhysData& physData)
 				{
 					StudioPhyObjData& objData = physData.objects[i];
 					memset(objData.shapeCacheRefs, 0, sizeof(objData.shapeCacheRefs));
-					objData.object = physObjsFile[i];
+					objData.desc = physObjsFile[i];
 					
 					if(objectNames.numElem() > 0)
 						objData.name = objectNames[i];

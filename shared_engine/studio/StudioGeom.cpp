@@ -218,7 +218,7 @@ void CEqStudioGeom::DestroyModel()
 	m_materialGroupsCount = 0;
 	m_boundingBox.Reset();
 
-	g_studioShapeCache->DestroyStudioCache(&m_physModel);
+	g_studioShapeCache->DestroyStudioCache(m_physModel);
 	Studio_FreePhysModel(m_physModel);
 	m_physModel = {};
 
@@ -244,7 +244,7 @@ void CEqStudioGeom::LoadPhysicsData()
 	DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", physDataFilename.ToCString());
 
 	ASSERT_MSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
-	g_studioShapeCache->InitStudioCache(&m_physModel);
+	g_studioShapeCache->InitStudioCache(m_physModel);
 }
 
 static int CopyGroupVertexDataToHWList(EGFHwVertex::PositionUV* hwVertPosList, EGFHwVertex::TBN* hwVertTbnList, EGFHwVertex::BoneWeights* hwVertWeightList, EGFHwVertex::Color* hwVertColorList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)

@@ -16,6 +16,7 @@ class CEqPhysics;
 class CEqCollisionObject;
 class IEqPhysCallback;
 struct StudioPhysData;
+struct StudioPhyObjData;
 struct eqPhysGridCell;
 
 const int PHYSICS_COLLISION_LIST_MAX = 8;
@@ -64,7 +65,8 @@ public:
 	virtual ~CEqCollisionObject();
 
 	// objects that will be created
-	bool						Initialize(const StudioPhysData* data, int objectIdx = 0);		///< Convex shape or other
+	bool						Initialize(const StudioPhysData& physData, int objIdx);				///< Studio data with physics object id
+	bool						Initialize(const StudioPhyObjData& physObject);						///< Studio physics object
 	bool						Initialize(CEqBulletIndexedMesh* mesh, bool internalEdges);			///< Triangle mesh shape TODO: different container
 	bool						Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs);		///< bounding box
 	bool						Initialize(float radius);											///< sphere

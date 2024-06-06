@@ -123,7 +123,7 @@ PhysRagdollData* CreateRagdoll(CEqStudioGeom* pModel)
 			newRagdoll->m_partObjs[i]->SetDamping(0.01f,0.05f);
 			newRagdoll->m_partObjs[i]->SetActivationState(PS_ACTIVE);
 
-			newRagdoll->m_bodyPartIds[i] = physModel.objects[i].object.bodyPartId;
+			newRagdoll->m_bodyPartIds[i] = physModel.objects[i].desc.bodyPartId;
 
 			newRagdoll->m_partObjs[i]->SetUserData(reinterpret_cast<void*>(newRagdoll->m_bodyPartIds[i]));
 		}

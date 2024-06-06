@@ -72,11 +72,8 @@ void CEqCollisionObject::InitAABB()
 		return;
 
 	// get shape mins/maxs
-	btTransform trans;
-	trans.setIdentity();
-
 	btVector3 mins,maxs;
-	m_shape->getAabb(trans, mins, maxs);
+	m_shape->getAabb(btTransform::getIdentity(), mins, maxs);
 
 	ConvertBulletToDKVectors(m_aabb.minPoint, mins);
 	ConvertBulletToDKVectors(m_aabb.maxPoint, maxs);
@@ -84,31 +81,30 @@ void CEqCollisionObject::InitAABB()
 	m_aabb_transformed = m_aabb;
 }
 
-// objects that will be created
-bool CEqCollisionObject::Initialize(const StudioPhysData* data, int objectIdx)
+bool CEqCollisionObject::Initialize(const StudioPhysData& physData, int objIdx)
+{
+	return Initialize(physData.objects[objIdx]);
+}
+
+bool CEqCollisionObject::Initialize(const StudioPhyObjData& physObject)
 {
 	ASSERT(!m_shape);
 
-	const StudioPhyObjData& physObject = data->objects[objectIdx];
-
 	// as this an actual array of shapes, handle it as array of shapes xD
-	m_numShapes = physObject.object.numShapes;
+	m_numShapes = physObject.desc.numShapes;
 	m_shapeList = (btCollisionShape**)physObject.shapeCacheRefs;
 
 	ASSERT_MSG(GetSurfaceParamId != nullptr, "Must set up CEqCollisionObject::GetSurfaceParamId callback for your physics engine");
-	m_surfParam = GetSurfaceParamId(physObject.object.surfaceprops);
+	m_surfParam = GetSurfaceParamId(physObject.desc.surfaceprops);
 
 	// setup default shape
 	if (m_numShapes > 1)
 	{
-		btTransform ident;
-		ident.setIdentity();
-
 		btCollisionShape** shapes = (btCollisionShape**)physObject.shapeCacheRefs;
 
 		btCompoundShape* compound = new btCompoundShape(false, m_numShapes);
 		for (int i = 0; i < m_numShapes; i++)
-			compound->addChildShape(ident, m_shapeList[i]);
+			compound->addChildShape(btTransform::getIdentity(), m_shapeList[i]);
 
 		m_shape = compound;
 		m_studioShape = false;

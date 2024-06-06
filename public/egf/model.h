@@ -52,22 +52,25 @@ ALIGNED_TYPE(lumpfilelump_s, 4) lumpfilelump_t;
 
 //----------------------------------------------------------------------------------------------
 
-// physics model data from POD
+struct StudioPhyShapeData
+{
+	physgeominfo_t	desc;
+	void*			cacheRef;
+};
+
+struct StudioPhyObjData
+{
+	using ShapeRefList = void* [MAX_PHYS_GEOM_PER_OBJECT];
+
+	physobject_t	desc;
+	EqString		name;
+	ShapeRefList	shapeCacheRefs;
+};
+
 struct StudioPhysData
 {
-	using ShapeRefList = void*[MAX_PHYS_GEOM_PER_OBJECT];
-	struct Shape
-	{
-		physgeominfo_t	shapeInfo;
-		void*			cacheRef;
-	};
-
-	struct Object
-	{
-		physobject_t	object;
-		EqString		name;
-		ShapeRefList	shapeCacheRefs;
-	};
+	using Shape = StudioPhyShapeData;
+	using Object = StudioPhyObjData;
 
 	ArrayRef<Object>		objects{ nullptr };
 	ArrayRef<physjoint_t>	joints{ nullptr };
@@ -77,9 +80,6 @@ struct StudioPhysData
 
 	EPhysModelUsage			usageType{ PHYSMODEL_USAGE_NONE };
 };
-
-using StudioPhyObjData = StudioPhysData::Object;
-using StudioPhyShapeData = StudioPhysData::Shape;
 
 inline int PhysModel_FindObjectId(const StudioPhysData& physData, const char* name)
 {

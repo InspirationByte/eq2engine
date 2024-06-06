@@ -1704,10 +1704,8 @@ bool CEqPhysics::TestLineSingleObject(
 	ConvertPositionToBullet(strt, lineStartLocal);
 	ConvertPositionToBullet(endt, lineEndLocal);
 
-	btMatrix3x3 btident3;
-	btident3.setIdentity();
-	const btTransform startTrans(btident3, strt);
-	const btTransform endTrans(btident3, endt);
+	const btTransform startTrans(btMatrix3x3::getIdentity(), strt);
+	const btTransform endTrans(btMatrix3x3::getIdentity(), endt);
 
 	CEqRayTestCallback hitResultCallback(strt, endt);
 

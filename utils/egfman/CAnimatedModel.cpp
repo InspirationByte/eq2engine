@@ -279,13 +279,13 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 	for (int i = 0; i < physData.objects.numElem(); ++i)
 	{
 		const StudioPhyObjData& physObj = physData.objects[i];
-		for(int j = 0; j < physObj.object.numShapes; j++)
+		for(int j = 0; j < physObj.desc.numShapes; j++)
 		{
-			const int nShape = physObj.object.shapeIndex[j];
+			const int nShape = physObj.desc.shapeIndex[j];
 			const StudioPhyShapeData& physShape = physData.shapes[nShape];
 
-			const int startIndex = physShape.shapeInfo.startIndices;
-			const int moveToIndex = startIndex + physShape.shapeInfo.numIndices;
+			const int startIndex = physShape.desc.startIndices;
+			const int moveToIndex = startIndex + physShape.desc.numIndices;
 
 			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{

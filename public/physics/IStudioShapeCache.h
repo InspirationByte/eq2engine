@@ -14,11 +14,11 @@ public:
 	CORE_INTERFACE("E2_StudioShapeCache_001")
 
 	// checks the shape is initialized for the cache
-	virtual bool	IsShapeCachePresent( StudioPhyShapeData* shapeInfo ) = 0;
+	virtual bool	IsShapeCachePresent( StudioPhyShapeData& shapeInfo ) = 0;
 
 	// initializes whole studio shape model with all objects
-	virtual void	InitStudioCache( StudioPhysData* studioData ) = 0;
-	virtual void	DestroyStudioCache( StudioPhysData* studioData ) = 0;
+	virtual void	InitStudioCache( StudioPhysData& studioData ) = 0;
+	virtual void	DestroyStudioCache( StudioPhysData& studioData ) = 0;
 
 	// does all shape cleanup
 	virtual void	Cleanup_Invalidate() = 0;
@@ -31,10 +31,10 @@ class CEmptyStudioShapeCache : public IStudioShapeCache
 public:
 	bool			IsInitialized() const { return true; }
 
-	bool			IsShapeCachePresent( StudioPhyShapeData* shapeInfo ) {return false;}
+	bool			IsShapeCachePresent( StudioPhyShapeData& shapeInfo ) {return false;}
 
-	void			InitStudioCache( StudioPhysData* studioData )  {}
-	void			DestroyStudioCache( StudioPhysData* studioData )  {}
+	void			InitStudioCache( StudioPhysData& studioData )  {}
+	void			DestroyStudioCache( StudioPhysData& studioData )  {}
 
 	void			Cleanup_Invalidate() {}
 };

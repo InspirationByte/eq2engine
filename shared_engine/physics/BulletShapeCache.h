@@ -19,11 +19,11 @@ public:
 	bool						IsInitialized() const;
 
 	// checks the shape is initialized for the cache
-	bool						IsShapeCachePresent( StudioPhyShapeData* shapeInfo );
+	bool						IsShapeCachePresent( StudioPhyShapeData& shapeInfo );
 
 	// initializes whole studio shape model with all objects
-	void						InitStudioCache( StudioPhysData* studioData );
-	void						DestroyStudioCache( StudioPhysData* studioData );
+	void						InitStudioCache( StudioPhysData& studioData );
+	void						DestroyStudioCache( StudioPhysData& studioData );
 
 	// does all shape cleanup
 	void						Cleanup_Invalidate();

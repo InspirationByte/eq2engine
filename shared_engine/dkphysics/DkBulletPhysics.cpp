@@ -611,9 +611,7 @@ void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &tra
 
 	startTr.setOrigin(strt);
 
-	btTransform endTr;
-	endTr.setIdentity();
-
+	btTransform endTr = btTransform::getIdentity();
 	if(externalBoxTransform)
 		endTr.setFromOpenGLMatrix((float*)externalBoxTransform->rows);
 
@@ -704,9 +702,7 @@ void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &t
 
 	startTr.setOrigin(strt);
 
-	btTransform endTr;
-	endTr.setIdentity();
-
+	btTransform endTr = btTransform::getIdentity();
 	if(transform)
 		endTr.setFromOpenGLMatrix((float*)transform->rows);
 
@@ -1274,26 +1270,22 @@ IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject
 	const StudioPhyObjData& objData = data->objects[nObject];
 
 	DevMsg(DEVMSG_CORE, "Creating physics object\n");
-	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", objData.object.mass, objData.object.mass * METERS_PER_UNIT_INV);
-	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", objData.object.surfaceprops);
-	DevMsg(DEVMSG_CORE, "shapes = %d\n", objData.object.numShapes);
+	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", objData.desc.mass, objData.desc.mass * METERS_PER_UNIT_INV);
+	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", objData.desc.surfaceprops);
+	DevMsg(DEVMSG_CORE, "shapes = %d\n", objData.desc.numShapes);
 
 	btCollisionShape* pShape = nullptr;
 
 	// first determine shapes
-	if(objData.object.numShapes > 1)
+	if(objData.desc.numShapes > 1)
 	{
 		btCompoundShape* pCompoundShape = new btCompoundShape;
 		pShape = pCompoundShape;
 
-		for(int i = 0; i < objData.object.numShapes; i++)
+		for(int i = 0; i < objData.desc.numShapes; i++)
 		{
-			btTransform ident;
-			ident.setIdentity();
-
 			btCollisionShape* shape = (btCollisionShape*)objData.shapeCacheRefs[i];
-
-			pCompoundShape->addChildShape(ident, shape);
+			pCompoundShape->addChildShape(btTransform::getIdentity(), shape);
 		}
 	}
 	else
@@ -1305,8 +1297,8 @@ IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject
 	pShape->setMargin(EQ2BULLET(0.05f));
 
 	btVector3 offset, massCenter;
-	ConvertPositionToBullet(offset, objData.object.offset);
-	ConvertPositionToBullet(massCenter, objData.object.massCenter);
+	ConvertPositionToBullet(offset, objData.desc.offset);
+	ConvertPositionToBullet(massCenter, objData.desc.massCenter);
 
 	// make object offset
 	btTransform object_start_transform;
@@ -1319,11 +1311,11 @@ IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject
 	masscenter_transform.setOrigin(massCenter);
 
 	btVector3 vLocalInertia(0,0,0);
-	pShape->calculateLocalInertia(objData.object.mass * METERS_PER_UNIT_INV, vLocalInertia);
+	pShape->calculateLocalInertia(objData.desc.mass * METERS_PER_UNIT_INV, vLocalInertia);
 
 	//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
 	btDefaultMotionState* pMotionState = new btDefaultMotionState(object_start_transform, masscenter_transform);
-	btRigidBody::btRigidBodyConstructionInfo constructInfo(objData.object.mass * METERS_PER_UNIT_INV, pMotionState, pShape, vLocalInertia);
+	btRigidBody::btRigidBodyConstructionInfo constructInfo(objData.desc.mass * METERS_PER_UNIT_INV, pMotionState, pShape, vLocalInertia);
 
 	// if(object->softbody)
 	// else
@@ -1338,7 +1330,7 @@ IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject
 	// initialize physics materials
 	char pszMatName[64];
 	pszMatName[0] = 0;
-	strcpy(pszMatName, objData.object.surfaceprops);
+	strcpy(pszMatName, objData.desc.surfaceprops);
 
 	phySurfaceMaterial_t* pPhysMaterial = FindMaterial( pszMatName );
 	if(!pPhysMaterial)
@@ -1401,12 +1393,8 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 
 		for(int i = 0; i < numShapes; i++)
 		{
-			btTransform ident;
-			ident.setIdentity();
-
 			btCollisionShape* shape = (btCollisionShape*)m_collisionShapes[shapeIdxs[i]];
-
-			pCompoundShape->addChildShape(ident, shape);
+			pCompoundShape->addChildShape(btTransform::getIdentity(), shape);
 		}
 	}
 	else

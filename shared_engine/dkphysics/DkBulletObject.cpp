@@ -524,8 +524,7 @@ void CPhysicsObject::SetChildShapeTransform(int shapeNum, const Vector3D &localO
 		btVector3 vec;
 		ConvertPositionToBullet(vec, localOrigin);
 
-		btTransform trans;
-		trans.setIdentity();
+		btTransform trans = btTransform::getIdentity();
 		trans.setOrigin(vec);
 
 		btCompoundShape* pShape = (btCompoundShape*)m_pPhyObjectPointer->getCollisionShape();
