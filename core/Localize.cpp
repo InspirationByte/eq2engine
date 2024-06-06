@@ -192,39 +192,71 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 
 void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 {
-	EqString path = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
+	const EqString textFilePath = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
 
-	KVSection kvSec;
-	if (!KV_LoadFromFile(path, -1, &kvSec))
-	{
-		MsgWarning("Cannot load language file '%s'\n", path.ToCString());
+	VSSize fileSize = 0;
+	char* fileData = reinterpret_cast<char*>(g_fileSystem->GetFileBuffer(textFilePath, &fileSize));
+	if (!fileData)
 		return;
-	}
 
-	if(!kvSec.unicode)
-		MsgWarning("Localization warning (%s): file is not unicode\n", path.ToCString());
+	char* fileStart = fileData;
+	defer{
+		PPFree(fileData);
+	};
 
-	for(const KVSection* key : kvSec.keys)
+	// check for BOM and skip if needed
 	{
-		if(!CString::Compare(key->name, "#include"))
+		const ushort byteordermark = *((ushort*)fileStart);
+		if (byteordermark == 0xbbef)
 		{
-			ParseLanguageFile( KV_GetValueString(key), reload);
-			continue;
+			// skip this three byte bom
+			fileStart += 3;
+			fileSize -= 3;
 		}
-
-		// Cannot add same one
-		if(!reload && _FindToken( key->name ))
+		else if (byteordermark == 0xfeff)
 		{
-			MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, key->name );
-			continue;
+			MsgError("%s: Only UTF-8 language files supported", textFilePath.ToCString());
+			return;
 		}
-
-		const char* pszUTF8TokenString = KV_GetValueString(key);
-		LocalizeConvertSymbols((char*)pszUTF8TokenString, true);
-
-		const int hash = StringToHash(key->name, true);
-		m_tokens.insert(hash, CLocToken(key->name, pszUTF8TokenString, false));
 	}
+
+	FixedArray<EqString, 2> currentTokens;
+
+	KV_Tokenizer(fileStart, fileSize, textFilePath, [&](int line, const char* dataPtr, const char* sig, va_list args) {
+		switch (*sig)
+		{
+		case 't':   // text token
+		{
+			const char* text = va_arg(args, char*);
+			currentTokens.append(text);
+
+			break;
+		}
+		case 'b': // break
+		{
+			if (currentTokens.numElem() == 2)
+			{
+				// Cannot add same one
+				if (!reload && _FindToken(currentTokens[0]))
+				{
+					MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, currentTokens[0].ToCString());
+					currentTokens.clear();
+					break;
+				}
+
+				LocalizeConvertSymbols((char*)currentTokens[1].GetData(), true);
+
+				const int hash = StringToHash(currentTokens[0].ToCString(), true);
+				m_tokens.insert(hash, CLocToken(currentTokens[0], currentTokens[1], false));
+			}
+
+			currentTokens.clear();
+			break;
+		}
+		}
+
+		return KV_PARSE_RESUME;
+	});
 }
 
 const ILocToken* CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
