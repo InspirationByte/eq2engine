@@ -99,7 +99,7 @@ public:
 // static
 
 	static void			HostQuitToDesktop();
-	static void 		HostExitCmd(const ConCommand* cmd, ArrayCRef<EqString> args);
+	static void 		HostExitCmd(const ConCommand* cmd, ArrayCRef<EqStringRef> args);
 
 protected:
 

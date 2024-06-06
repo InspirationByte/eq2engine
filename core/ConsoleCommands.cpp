@@ -495,7 +495,12 @@ void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 		if (cmdArgs.numElem() && !cmdArgs.front().CompareCaseIns("exec"))
 		{
 			cmdArgs.removeIndex(0);
-			CC_exec_f(nullptr, cmdArgs);
+
+			Array<EqStringRef> cmdArgsRefs(PP_SL);
+			for (EqStringRef str : cmdArgs)
+				cmdArgsRefs.append(str);
+
+			CC_exec_f(nullptr, cmdArgsRefs);
 			return;
 		}
 
@@ -624,7 +629,12 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 	cmdArgs.removeIndex(0);
 	if (pBase->IsConCommand())
 	{
-		static_cast<const ConCommand*>(pBase)->DispatchFunc(cmdArgs);
+		Array<EqStringRef> cmdArgsRefs(PP_SL);
+		cmdArgsRefs.reserve(cmdArgs.numElem());
+		for (EqStringRef str : cmdArgs)
+			cmdArgsRefs.append(str);
+
+		static_cast<const ConCommand*>(pBase)->DispatchFunc(cmdArgsRefs);
 	}
 	else if(pBase->IsConVar())
 	{

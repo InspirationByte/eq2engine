@@ -100,7 +100,13 @@ static void InputExecInputCommand(void* userData, short value)
 	if (in_keys_debug.GetBool())
 		MsgWarning("dispatch %s\n", conCmd->GetName());
 
-	conCmd->DispatchFunc(args);
+	{
+		Array<EqStringRef> argsRefs(PP_SL);
+		argsRefs.reserve(args.numElem());
+		for (EqStringRef str : args)
+			argsRefs.append(str);
+		conCmd->DispatchFunc(argsRefs);
+	}
 }
 
 DECLARE_CMD_VARIANTS(bind, "Binds action to key", cmd_conKeyList, 0)

@@ -9,7 +9,7 @@
 #include "ConCommandBase.h"
 
 class ConCommand;
-#define CONCOMMAND_ARGUMENTS const ConCommand* cmd, ArrayCRef<EqString> args
+#define CONCOMMAND_ARGUMENTS const ConCommand* cmd, ArrayCRef<EqStringRef> args
 
 // use this to access variables inside callback
 #define CMD_ARGV(index)		args[index]
@@ -31,7 +31,7 @@ public:
 	}
 
 	// Command execution
-	void DispatchFunc(ArrayCRef<EqString> args) const;
+	void DispatchFunc(ArrayCRef<EqStringRef> args) const;
 
 private:
 	CON_COMMAND_CALLBACK m_fnCallback;
