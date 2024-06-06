@@ -120,7 +120,7 @@ void CBulletStudioShapeCache::InitStudioCache(StudioPhysData& studioData)
 	for (StudioPhyObjData& obj : studioData.objects)
 	{
 		for (int i = 0; i < obj.desc.numShapes; ++i)
-			obj.shapeCacheRefs[i] = studioData.shapes[i].cacheRef;
+			obj.shapeCacheRefs[i] = studioData.shapes[obj.desc.shapeIndex[i]].cacheRef;
 	}
 }
 
