@@ -389,7 +389,8 @@ public:
 	void			assureSizeEmplace(int newSize, Args&&... args);
 
 protected:
-	void			ensureCapacity(int newElement);
+	// ensures that the array is allocated to the capacity of numElem() + newElementCount
+	void			ensureCapacity(int newElementCount);
 
 	int				m_nNumElem{ 0 };
 };
@@ -714,9 +715,9 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 }
 
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElements)
+inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElementCount)
 {
-	reserve(m_nNumElem + newElements);
+	reserve(m_nNumElem + newElementCount);
 }
 
 // -----------------------------------------------------------------
@@ -1143,10 +1144,10 @@ template< typename T, typename STORAGE_TYPE >
 template<typename... Args>
 inline void ArrayBase<T, STORAGE_TYPE>::assureSizeEmplace(int newSize, Args&&... args)
 {
-	ensureCapacity(0);
-
 	const int oldSize = m_nNumElem;
 	m_nNumElem = newSize;
+
+	ensureCapacity(0);
 
 	T* listPtr = STORAGE_TYPE::getData();
 	for (int i = oldSize; i < newSize; i++)
