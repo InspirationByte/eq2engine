@@ -254,7 +254,7 @@ bool DkPhysics::Init(int nSceneSize)
 	{
 		KVSection* pSec = pMaterials.GetRootSection()->keys[i];
 
-		if(CString::Compare(pSec->name, "#include"))
+		if(pSec->name.Compare("#include"))
 		{
 			phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
 

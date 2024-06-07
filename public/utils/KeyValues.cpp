@@ -382,7 +382,6 @@ KVSection* KeyValues::operator[](const char* pszName)
 
 KVSection::KVSection()
 {
-	strcpy(name, "unnamed");
 }
 
 KVSection::~KVSection()
@@ -411,9 +410,7 @@ void KVSection::ClearValues()
 // sets keybase name
 void KVSection::SetName(const char* pszName)
 {
-	strncpy( name, pszName, sizeof(name));
-	name[sizeof(name) - 1] = 0;
-
+	name = pszName;
 	nameHash = StringToHash(name, true);
 }
 
@@ -536,7 +533,7 @@ void KVSection::AddValue(KVSection* keybase)
 	KVPairValue* val = CreateValue();
 
 	val->section = keybase;
-	val->section->SetName(EqString::Format("%d", numVal).ToCString());
+	val->section->SetName(EqString::Format("%d", numVal));
 }
 
 void KVSection::AddValue(KVPairValue* value)

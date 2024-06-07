@@ -77,7 +77,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 
 		if( !fontSec->IsSection() )
 		{
-			if(!CString::Compare(fontSec->name, "#include"))
+			if(!fontSec->name.Compare("#include"))
 			{
 				const char* incFileName = KV_GetValueString(fontSec,0, nullptr);
 

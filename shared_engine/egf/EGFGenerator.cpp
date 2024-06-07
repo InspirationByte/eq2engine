@@ -483,21 +483,21 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 	{
 		const KVSection* keyBase = pSection->keys[i];
 
-		if(!CString::CompareCaseIns(keyBase->name, "global_scale"))
+		if(!keyBase->name.CompareCaseIns("global_scale"))
 		{
 			// try apply global scale
 			m_modelScale = KV_GetVector3D(keyBase, 0, Vector3D(1.0f));
 		}
-		if(!CString::CompareCaseIns(keyBase->name, "global_offset"))
+		if(!keyBase->name.CompareCaseIns("global_offset"))
 		{
 			// try apply global offset
 			m_modelOffset = KV_GetVector3D(keyBase, 0, vec3_zero);
 		}
-		else if (!CString::CompareCaseIns(keyBase->name, "FBXSource"))
+		else if (!keyBase->name.CompareCaseIns("FBXSource"))
 		{
 			LoadModelsFromFBX(keyBase);
 		}
-		else if(!CString::CompareCaseIns(keyBase->name, "model"))
+		else if(!keyBase->name.CompareCaseIns("model"))
 		{
 			// parse and load model
 			ParseAndLoadModels( keyBase );
@@ -530,12 +530,8 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 //************************************
 void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 {
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(KVSection* lodModelSec : pSection->Keys("replace"))
 	{
-		KVSection* lodModelSec = pSection->keys[i];
-		if (CString::CompareCaseIns(lodModelSec->name, "replace"))
-			continue;
-
 		const char* replaceModelName = KV_GetValueString(lodModelSec);
 		GenLODList_t* lodgroup = FindModelLodGroupByName(replaceModelName);
 		if (!lodgroup)
@@ -566,16 +562,8 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 	lod.flags = 0;
 	m_lodparams.append(lod);
 
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* lodKey : pSection->Keys("lod", KV_FLAG_SECTION))
 	{
-		const KVSection* lodKey = pSection->keys[i];
-
-		if(!lodKey->IsSection())
-			continue;
-
-		if (CString::CompareCaseIns(lodKey->name, "lod"))
-			continue;
-
 		if (m_lodparams.numElem() + 1 >= MAX_MODEL_LODS)
 		{
 			MsgError("Reached max lod count (MAX_MODEL_LODS = %d)!", MAX_MODEL_LODS);
@@ -607,13 +595,8 @@ void CEGFGenerator::ParseLods(const KVSection* pSection)
 //************************************
 bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 {
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* keyBase : pSection->Keys("bodygroup"))
 	{
-		const KVSection* keyBase = pSection->keys[i];
-
-		if(CString::CompareCaseIns(keyBase->name, "bodygroup"))
-			continue;
-		
 		if(keyBase->values.numElem() < 2 && !keyBase->IsSection())
 		{
 			MsgError("Invalid body group string format\n");
@@ -886,7 +869,7 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 	{
 		const KVSection* keyBase = pSection->keys[i];
 
-		if(!CString::CompareCaseIns(keyBase->name, "materialpath"))
+		if(!keyBase->name.CompareCaseIns("materialpath"))
 		{
 			materialPathDesc_t& desc = m_matpathes.append();
 
@@ -901,8 +884,8 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 			Msg("   '%s'\n", desc.searchPath);			
 		}
 
-		if(	!CString::CompareCaseIns(keyBase->name, "notextures") ||
-			!CString::CompareCaseIns(keyBase->name, "nomaterials"))
+		if(	!keyBase->name.CompareCaseIns("notextures") ||
+			!keyBase->name.CompareCaseIns("nomaterials"))
 		{
 			m_notextures = KV_GetValueBool(keyBase);
 		}
@@ -925,13 +908,8 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 //************************************
 bool CEGFGenerator::ParseMotionPackagePaths(const KVSection* pSection)
 {
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* keyBase : pSection->Keys("addMotionPackage"))
 	{
-		const KVSection* keyBase = pSection->keys[i];
-
-		if (CString::CompareCaseIns(keyBase->name, "addMotionPackage"))
-			continue;
-
 		if(m_lodparams.numElem() + 1 >= MAX_MOTIONPACKAGES)
 		{
 			MsgError("Exceeded motion packages count (MAX_MOTIONPACKAGES = %d)!", MAX_MOTIONPACKAGES);
@@ -994,7 +972,7 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 	{
 		const KVSection* sec = pSection->keys[i];
 
-		if(!CString::CompareCaseIns(sec->name, "damping"))
+		if(!sec->name.CompareCaseIns("damping"))
 		{
 			if(sec->values.numElem() < 2)
 			{
@@ -1019,7 +997,7 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 				}
 			}
 		}
-		else if(!CString::CompareCaseIns(sec->name, "link_limits"))
+		else if(!sec->name.CompareCaseIns("link_limits"))
 		{
 			if(sec->values.numElem() < 7)
 			{
@@ -1066,14 +1044,9 @@ void CEGFGenerator::ParseIKChains(const KVSection* pSection)
 {
 	MsgWarning("\nLoading IK chains\n");
 
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* chainSec : pSection->Keys("ikchain", KV_FLAG_SECTION))
 	{
-		const KVSection* chainSec = pSection->keys[i];
-
-		if(chainSec->IsSection() && !CString::CompareCaseIns(chainSec->name, "ikchain"))
-		{
-			ParseIKChain(chainSec);
-		}
+		ParseIKChain(chainSec);
 	}
 
 	if(m_ikchains.numElem() > 0)
@@ -1101,11 +1074,8 @@ void CEGFGenerator::ParseAttachments(const KVSection* pSection)
 #endif
 	MsgWarning("\nLoading attachments\n");
 
-	for(const KVSection* attachSec : pSection->keys)
+	for(const KVSection* attachSec : pSection->Keys("attachment"))
 	{
-		if (CString::CompareCaseIns(attachSec->name, "attachment"))
-			continue;
-
 		if(attachSec->values.numElem() < 8)
 		{
 			MsgError("Invalid attachment definition\n");
@@ -1223,13 +1193,8 @@ bool CEGFGenerator::InitFromKeyValues(const char* filename)
 
 void CEGFGenerator::ParsePhysModels(const KVSection* mainsection)
 {
-	for(int i = 0; i < mainsection->keys.numElem(); i++)
+	for(const KVSection* physObjectSec : mainsection->Keys("physics"))
 	{
-		const KVSection* physObjectSec = mainsection->keys[i];
-
-		if(CString::CompareCaseIns(physObjectSec->name, "physics"))
-			continue;
-
 		if(!physObjectSec->IsSection())
 		{
 			MsgError("*ERROR* key 'physics' must be a section\n");

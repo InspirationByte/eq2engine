@@ -213,13 +213,25 @@ int GetValuesImpl(const KVSection* key, int idx, std::index_sequence<Is...>, std
 template<typename ...Args>
 inline KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
 {
+	return kvdetail::GetValuesR(key, 0, idx, outArgs...);
+}
+
+template<typename ...Args>
+inline int KV_GetValues(const KVSection* key, Args&... outArgs)
+{
+	return kvdetail::GetValuesR(key, 0, 0, outArgs...);
+}
+
+template<typename ...Args>
+inline KVValues<Args...> KV_TryGetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+{
 	KVValues<Args...> values(outArgs...);
 	values.count = kvdetail::GetValuesImpl(key, idx, std::index_sequence_for<Args...>{}, values.newValues);
 	return values;
 }
 
 template<typename ...Args>
-inline KVValues<Args...> KV_GetValues(const KVSection* key, Args&... outArgs)
+inline KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
 {
 	KVValues<Args...> values(outArgs...);
 	values.count = kvdetail::GetValuesImpl(key, 0, std::index_sequence_for<Args...>{}, values.newValues);
@@ -285,11 +297,19 @@ struct KVSection
 
 	// Key values getter
 	template<typename ...Args>
-	inline KVValues<Args...>	GetValues(Args&... outArgs) const { return KV_GetValues(this, outArgs...); };
+	inline int					GetValues(Args&... outArgs) const { return KV_GetValues(this, outArgs...); };
 
 	// Key values getter at specific value idx
 	template<typename ...Args>
-	inline KVValues<Args...>	GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, 0, outArgs...); };
+	inline int					GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, 0, outArgs...); };
+
+	// Key values getter
+	template<typename ...Args>
+	inline KVValues<Args...>	TryGetValues(Args&... outArgs) const { return KV_TryGetValues(this, outArgs...); };
+
+	// Key values getter at specific value idx
+	template<typename ...Args>
+	inline KVValues<Args...>	TryGetValuesAt(int idx, Args&... outArgs) const { return KV_TryGetValuesAt(this, 0, outArgs...); };
 
 	//----------------------------------------------
 	// The section functions
@@ -400,7 +420,7 @@ struct KVSection
 	int					GetType() const;
 
 	// TODO: private
-	char				name[KV_MAX_NAME_LENGTH]{ 0 };
+	EqString			name;
 	int					nameHash{ 0 };
 	int					line{ 0 };				// the line that the key is on
 

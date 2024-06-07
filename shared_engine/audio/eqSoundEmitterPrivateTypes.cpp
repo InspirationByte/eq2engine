@@ -211,13 +211,8 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 	if (waveKey)
 	{
-		for (int j = 0; j < waveKey->keys.numElem(); j++)
+		for (const KVSection* ent : waveKey->Keys("wave"))
 		{
-			const KVSection* ent = waveKey->keys[j];
-
-			if (CString::CompareCaseIns(ent->name, "wave"))
-				continue;
-
 			scriptDesc.soundFileNames.append(KV_GetValueString(ent));
 		}
 	}
@@ -309,7 +304,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 		if (valKey.IsSection())
 			continue;
 
-		if (!CString::CompareCaseIns(valKey.name, "input"))
+		if (!valKey.name.CompareCaseIns("input"))
 		{
 			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
 
@@ -337,7 +332,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			scriptDesc.inputNodeMap.insert(StringToHash(nodeName), nodeIdx);
 		}
-		else if (!CString::CompareCaseIns(valKey.name, "mixer"))
+		else if (!valKey.name.CompareCaseIns("mixer"))
 		{
 			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
 
@@ -499,10 +494,10 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			} // switch funcType
 		} // input, mixer
 
-		if (!CString::CompareCaseIns(valKey.name, s_soundParamNames[SOUND_PARAM_SAMPLE_VOLUME]))
+		if (!valKey.name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_VOLUME]))
 			makeSampleParameter(valKey, SOUND_PARAM_SAMPLE_VOLUME);
 
-		if (!CString::CompareCaseIns(valKey.name, s_soundParamNames[SOUND_PARAM_SAMPLE_PITCH]))
+		if (!valKey.name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_PITCH]))
 			makeSampleParameter(valKey, SOUND_PARAM_SAMPLE_PITCH);
 
 	} // for kv keys

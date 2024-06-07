@@ -458,40 +458,37 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 		if(thisBoneSec)
 		{
 			// get axis and check limits
-			for(int i = 0; i < thisBoneSec->keys.numElem(); i++)
+			for(const KVSection* pKey : thisBoneSec->Keys())
 			{
 				int axis_idx = -1;
-
-				const KVSection* pKey = thisBoneSec->keys[i];
-
-				if( !CString::CompareCaseIns(pKey->name, "x_axis") )
+				if( !pKey->name.CompareCaseIns("x_axis") )
 					axis_idx = 0;
-				else if( !CString::CompareCaseIns(pKey->name, "y_axis") )
+				else if( !pKey->name.CompareCaseIns("y_axis") )
 					axis_idx = 1;
-				else if( !CString::CompareCaseIns(pKey->name, "z_axis") )
+				else if( !pKey->name.CompareCaseIns("z_axis") )
 					axis_idx = 2;
 
-				if( axis_idx != -1 )
+				if (axis_idx == -1)
+					continue;
+
+				// check the value for arguments
+				for(int j = 0; j < pKey->values.numElem(); j++)
 				{
-					// check the value for arguments
-					for(int j = 0; j < pKey->values.numElem(); j++)
+					if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limit" ))
 					{
-						if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limit" ))
-						{
-							// read limits
-							float lo_limit = KV_GetValueFloat(pKey, j+1);
-							float hi_limit = KV_GetValueFloat(pKey, j+2);
+						// read limits
+						float lo_limit = KV_GetValueFloat(pKey, j+1);
+						float hi_limit = KV_GetValueFloat(pKey, j+2);
 
-							joint.minLimit[axis_idx] = DEG2RAD(lo_limit);
-							joint.maxLimit[axis_idx] = DEG2RAD(hi_limit);
-						}
-						else if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limitoffset" ))
-						{
-							float offs = KV_GetValueFloat(pKey, j+1);
+						joint.minLimit[axis_idx] = DEG2RAD(lo_limit);
+						joint.maxLimit[axis_idx] = DEG2RAD(hi_limit);
+					}
+					else if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limitoffset" ))
+					{
+						float offs = KV_GetValueFloat(pKey, j+1);
 
-							joint.minLimit[axis_idx] += DEG2RAD(offs);
-							joint.maxLimit[axis_idx] += DEG2RAD(offs);
-						}
+						joint.minLimit[axis_idx] += DEG2RAD(offs);
+						joint.maxLimit[axis_idx] += DEG2RAD(offs);
 					}
 				}
 			}

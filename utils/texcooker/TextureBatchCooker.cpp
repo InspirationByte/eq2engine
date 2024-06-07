@@ -168,8 +168,8 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	{
 		const KVSection* sec = batchSec->keys[i];
 
-		if (!CString::CompareCaseIns(sec->name, "compression") 
-		 && !m_targetProps.targetCompression.CompareCaseIns(KV_GetValueString(sec, 0, "INVALID")))
+		if (!sec->name.CompareCaseIns("compression") && 
+			!m_targetProps.targetCompression.CompareCaseIns(KV_GetValueString(sec, 0, "INVALID")))
 		{
 			compressionSec = sec;
 			break;
@@ -190,7 +190,7 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	{
 		const KVSection* usageKey = compressionSec->keys[i];
 
-		if (CString::CompareCaseIns(usageKey->name, "usage"))
+		if (usageKey->name.CompareCaseIns("usage"))
 			continue;
 
 		EqStringRef usageName = KV_GetValueString(usageKey, 0, nullptr);
