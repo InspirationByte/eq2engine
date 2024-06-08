@@ -201,6 +201,13 @@ public:
 		return true;
 	}
 
+	T& prepend()
+	{
+		Node* node = allocNode();
+		insertNodeFirst(node);
+		return node->value;
+	}
+
 	bool append(const T& value)
 	{
 		Node* node = allocNode();
@@ -215,6 +222,13 @@ public:
 		node->value = std::move(value);
 		insertNodeLast(node);
 		return true;
+	}
+
+	T& append()
+	{
+		Node* node = allocNode();
+		insertNodeLast(node);
+		return node->value;
 	}
 
 	template<typename COMPARATOR>
