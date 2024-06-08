@@ -142,6 +142,17 @@ TEST(EQSTRING_TESTS, InsertLast)
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStrTwoParts));
 }
 
+TEST(EQSTRING_TESTS, InsertLastMultipleTimes)
+{
+	EqString testString = s_StringTestStrPart1;
+
+	for(int i = 0; i < 4; ++i)
+		testString.Insert("A", testString.Length());
+
+	EXPECT_EQ(testString, s_StringTestStrPart1 + "AAAA");
+	ASSERT_TRUE(testString.IsValid());
+}
+
 TEST(EQSTRING_TESTS, AppendChars)
 {
 	EqString testString = s_StringTestStrPart1;
