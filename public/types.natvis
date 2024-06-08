@@ -191,9 +191,10 @@
 			</Item>
 		</Expand>
 	</Type>
-	<Type Name="EqString">
-		<DisplayString Condition="m_nLength == 0">String: [empty]</DisplayString>
-		<DisplayString>String: { m_pszString,sb }</DisplayString>
+	<Type Name="EqTStr&lt;*&gt;">
+		<DisplayString Condition="m_nLength == 0">[empty str]</DisplayString>
+		<DisplayString Condition="strcmp(&quot;T1&quot;,&quot;char&quot;)!=0">[string] { m_pszString,sb }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;T1&quot;,&quot;wchar_t&quot;)!=0">[wstring] { m_pszString,su }</DisplayString>
 		<Expand>
 			<Item Name = "Value">
 				m_pszString
@@ -206,9 +207,10 @@
 			</Item>
 		</Expand>
 	</Type>
-	<Type Name="EqWString">
-		<DisplayString Condition="m_nLength == 0">WString: [empty]</DisplayString>
-		<DisplayString>WString: { m_pszString,su }</DisplayString>
+	<Type Name="EqTStrRef&lt;*&gt;">
+		<DisplayString Condition="m_nLength == 0">[empty str ref]</DisplayString>
+		<DisplayString Condition="strcmp(&quot;T1&quot;,&quot;char&quot;)!=0">[string ref] { m_pszString,sb }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;T1&quot;,&quot;wchar_t&quot;)!=0">[wstring ref] { m_pszString,su }</DisplayString>
 		<Expand>
 			<Item Name = "Value">
 				m_pszString
@@ -216,11 +218,9 @@
 			<Item Name = "Length">
 				m_nLength
 			</Item>
-			<Item Name = "Allocated">
-				m_nAllocated
-			</Item>
 		</Expand>
 	</Type>
+
 	<Type Name="KVSection">
 		<DisplayString Condition="keys.m_nNumElem == 0 &amp;&amp; values.m_nNumElem == 0">"{name,sb}"</DisplayString>
 		<DisplayString Condition="keys.m_nNumElem == 0">"{name,sb}" [Values: {values.m_nNumElem}]</DisplayString>
