@@ -213,9 +213,9 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 // Basic type binder
 #define _ESL_BIND_TYPE_BASICS(Class, name, pushType, baseName, baseTypeInfoGetter) \
 	namespace esl { \
-	inline TypeInfoGetter ScriptClass<Class>::baseClassTypeInfoGetter = baseTypeInfoGetter; \
-	inline const char ScriptClass<Class>::className[] = name; \
-	inline const char* ScriptClass<Class>::baseClassName = baseName; \
+	template<> inline TypeInfoGetter ScriptClass<Class>::baseClassTypeInfoGetter = baseTypeInfoGetter; \
+	template<> inline const char ScriptClass<Class>::className[] = name; \
+	template<> inline const char* ScriptClass<Class>::baseClassName = baseName; \
 	template struct esl::ScriptClass<Class>; \
 	_ESL_ALIAS_TYPE(Class, ScriptClass<Class>::className) \
 	_ESL_PUSH_##pushType(Class) \
@@ -223,8 +223,8 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 
 #define _ESL_TYPE_PUSHGET(Class) \
 	namespace esl::runtime { \
-	PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
-	PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
+	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
+	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
 	} \
 
 // Binder for class without parent type that was bound
