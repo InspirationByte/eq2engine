@@ -250,14 +250,6 @@ uint32 CDPKFileStream::GetCRC32()
 // DPK host
 //-----------------------------------------------------------------------------------------------------------------------
 
-CDPKFileReader::CDPKFileReader()
-{
-}
-
-CDPKFileReader::~CDPKFileReader()
-{
-}
-
 bool CDPKFileReader::FileExists(const char* filename) const
 {
 	return FindFileIndex(filename) != -1;

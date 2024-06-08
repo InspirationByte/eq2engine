@@ -125,6 +125,48 @@ uint32 CFile::GetCRC32()
 }
 
 //------------------------------------------------------------------------------
+
+class CFlatFileReader : public CBasePackageReader
+{
+public:
+	EPackageType		GetType() const { return PACKAGE_READER_FLAT; }
+
+	bool				InitPackage(const char* filename, const char* mountPath /*= nullptr*/);
+	IFilePtr			Open(const char* filename, int modeFlags);
+	bool				FileExists(const char* filename) const;
+
+	// stubs
+	bool				OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
+	IFilePtr			Open(int fileIndex, int modeFlags) { return nullptr; }
+	int					FindFileIndex(const char* filename) const { return -1; }
+};
+
+bool CFlatFileReader::InitPackage(const char* filename, const char* mountPath /*= nullptr*/)
+{
+	m_packagePath = filename;
+	return true;
+}
+
+IFilePtr CFlatFileReader::Open(const char* filename, int modeFlags)
+{
+	if (modeFlags != VS_OPEN_READ)
+		return nullptr;
+
+	EqString filePath;
+	fnmPathCombine(filePath, m_packagePath, filename);
+
+	return g_fileSystem->Open(filePath, "r");
+}
+
+bool CFlatFileReader::FileExists(const char* filename) const
+{
+	EqString filePath;
+	fnmPathCombine(filePath, m_packagePath, filename);
+
+	return g_fileSystem->FileExist(filePath);
+}
+
+//------------------------------------------------------------------------------
 // Main filesystem code
 //------------------------------------------------------------------------------
 
@@ -578,6 +620,15 @@ void CFileSystem::FileRemove(const char* filename, ESearchPath search ) const
 	remove(GetAbsolutePath(search, filename));
 }
 
+bool CFileSystem::DirExist(const char* dirname, ESearchPath search) const
+{
+	struct stat info;
+	if (stat(GetAbsolutePath(search, dirname), &info) != 0)
+		return false;
+
+	return info.st_mode & S_IFDIR;
+}
+
 //Directory operations
 void CFileSystem::MakeDir(const char* dirname, ESearchPath search ) const
 {
@@ -726,6 +777,16 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 		if (reader->InitPackage(filePath, nullptr))
 			return true;
 
+		if (g_fileSystem->DirExist(filePath, searchPath))
+		{
+			delete reader;
+
+			// open flat reader
+			reader = PPNew CFlatFileReader();
+			reader->InitPackage(filePath, nullptr);
+			return true;
+		}
+
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
@@ -748,8 +809,9 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 
 	if (!WalkOverSearchPaths(searchFlags, packageName, walkFileFunc))
 	{
-		MsgError("Cannot open package '%s'\n", packageName);
 		delete reader;
+		MsgError("Cannot open package '%s'\n", packageName);
+
 		return nullptr;
 	}
 

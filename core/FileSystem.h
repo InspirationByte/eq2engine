@@ -79,6 +79,7 @@ public:
 	void						Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const;
 
     //Directory operations
+	bool						DirExist(const char* dirname, ESearchPath search) const;
     void						MakeDir(const char* dirname, ESearchPath search ) const;
     void						RemoveDir(const char* dirname, ESearchPath search ) const;
 
