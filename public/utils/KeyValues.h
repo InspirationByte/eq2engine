@@ -61,7 +61,8 @@ struct KVKeyIterator
 	struct Init;
 
 	KVKeyIterator() = default;
-	KVKeyIterator(const KVSection* section, const char* nameFilter = nullptr, int searchFlags = 0, int index = 0);
+	KVKeyIterator(const KVSection* section);
+	KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags = 0, int index = 0);
 
 	operator	int() const;
 	operator	const char* () const;
@@ -81,7 +82,6 @@ private:
 	const KVSection*	section{ nullptr };
 	int					nameHashFilter{ 0 };
 	int					searchFlags{ 0 };
-
 	int					index{ 0 };
 };
 
@@ -98,9 +98,14 @@ struct KVValueIterator
 	struct Init;
 
 	KVValueIterator() = default;
-	KVValueIterator(const KVSection* section, int index = 0)
-		: section(section)
-		, index(index)
+	KVValueIterator(const KVSection* key)
+		: key(key)
+	{
+	}
+
+	KVValueIterator(const KVSection* key, int index)
+		: key(key)
+		, index(min(index, key->ValueCount())) // limit to end()
 	{
 	}
 
@@ -114,7 +119,7 @@ struct KVValueIterator
 	bool		atEnd() const;
 	void		Rewind();
 private:
-	const KVSection*	section{ nullptr };
+	const KVSection*	key{ nullptr };
 	int					index{ 0 };
 };
 
@@ -287,8 +292,11 @@ struct KVSection
 
 	// Array values iterator
 	template<typename T>
-	inline typename KVValueIterator<T>::Init	Values(int startIdx = 0) const { return { KVValueIterator<T>(this, startIdx) }; }
+	inline typename KVValueIterator<T>::Init	Values(int startIdx) const { return { KVValueIterator<T>(this, startIdx) }; }
 	
+	template<typename T>
+	inline typename KVValueIterator<T>::Init	Values() const { return { KVValueIterator<T>(this) }; }
+
 	// Array keys iterator
 	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(this, nameFilter, searchFlags) }; }
 
@@ -515,13 +523,13 @@ Vector4D		KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D&
 template<typename T>
 KVValueIterator<T>::operator KVPairValue* () const
 {
-	return section->values[index];
+	return key->values[index];
 }
 
 template<typename T>
 T KVValueIterator<T>::operator*() const
 {
-	return KVPairValuesGetter<T>::Get(section, index);
+	return KVPairValuesGetter<T>::Get(key, index);
 }
 
 template<typename T>
@@ -533,7 +541,7 @@ void KVValueIterator<T>::operator++()
 template<typename T>
 bool KVValueIterator<T>::atEnd() const
 {
-	return section ? index >= section->ValueCount() : true;
+	return key ? index >= key->ValueCount() : true;
 }
 
 template<typename T>
@@ -546,8 +554,8 @@ template<typename T>
 KVValueIterator<T> KVValueIterator<T>::Init::end() const
 {
 	KVValueIterator<T> endIt;
-	endIt.section = _initial.section;
-	endIt.index = _initial.section->ValueCount();
+	endIt.key = _initial.key;
+	endIt.index = _initial.key->ValueCount();
 	return endIt;
 }
 

@@ -89,7 +89,7 @@ private:
 	using SampleList = Map<int, ISoundSource*>;
 	using EffectsList = Map<int, EffectInfo>;
 
-	bool			CreateALEffect(const char* pszName, KVSection* pSection, EffectInfo& effect);
+	bool			CreateALEffect(const char* pszName, const KVSection* pSection, EffectInfo& effect);
 	void			SuspendSourcesWithSample(ISoundSource* sample);
 
 	void			GetContextParams(ContextParamsList& paramsList) const;

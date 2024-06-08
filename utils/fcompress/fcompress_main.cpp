@@ -263,7 +263,7 @@ static KVSection s_variables;
 
 static void ProcessVariableString(EqString& string)
 {
-	for (const KVSection* key : s_variables.keys)
+	for (const KVSection* key : s_variables.Keys())
 	{
 		int found = 0;
 		do {

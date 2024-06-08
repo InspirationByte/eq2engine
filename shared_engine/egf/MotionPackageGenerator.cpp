@@ -959,7 +959,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 	if(eventList)
 	{
 		int kvSecCount = 0;
-		for(const KVSection* sec : eventList->keys)
+		for(const KVSection* sec : eventList->Keys())
 		{
 			const float eventTime = (float)atof(sec->name);
 			const KVSection* pEventCommand = sec->FindSection("command");

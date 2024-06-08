@@ -64,7 +64,7 @@ void IUIControl::SetLabelText(const wchar_t* pszLabel)
 	m_label = pszLabel;
 }
 
-void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
+void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
 {
 	if (!noClear)
 		ClearChilds(true);
@@ -250,38 +250,35 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 	}
 
 	// walk for childs
-	for(int i = 0; i < sec->keys.numElem(); i++)
+	for (const KVSection* childSec : sec->Keys("child", KV_FLAG_SECTION))
 	{
-		KVSection* csec = sec->keys[i];
+		EqStringRef childClass;
+		EqStringRef childName;
 
-		if (!csec->IsSection())
-			continue;
-	
-		// INIT CHILD CONTROLS
-		if(!CString::CompareCaseIns(csec->GetName(), "child"))
+		if (childSec->GetValues(childClass, childName) < 1)
 		{
-			const char* childClass = KV_GetValueString(csec, 0, "InvalidClass");
-			const char* childName = KV_GetValueString(csec, 1, "Invalid");
-
-			// try find existing child
-			IUIControl* control = FindChild(childName);
-
-			// if nothing, create new one
-			if(!control || control && CString::CompareCaseIns(control->GetClassname(), childClass))
-			{
-				if (control) // replace children if it has different class
-					RemoveChild(control);
-
-				control = equi::Manager->CreateElement( childClass );
-				AddChild( control );
-			}
-
-			// if still no luck (wrong class name), we abort
-			if(!control)
-				continue;
-
-			control->InitFromKeyValues(csec, noClear);
+			MsgError("eqUI error: Can't create child without class name");
+			continue;
 		}
+
+		// try find existing child
+		IUIControl* control = childName ? FindChild(childName) : nullptr;
+
+		// if nothing, create new one
+		if(!control || control && childClass.CompareCaseIns(control->GetClassname()))
+		{
+			if (control) // replace children if it has different class
+				RemoveChild(control);
+
+			control = equi::Manager->CreateElement( childClass );
+			AddChild( control );
+		}
+
+		// if still no luck (wrong class name), we abort
+		if(!control)
+			continue;
+
+		control->InitFromKeyValues(childSec, noClear);
 	}
 }
 

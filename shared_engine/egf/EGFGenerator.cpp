@@ -282,10 +282,8 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 	if (!LoadFBX(fbxModels, modelPath))
 		return;
 
-	for (int i = 0; i < pKeyBase->keys.numElem(); ++i)
+	for (const KVSection* modelSec : pKeyBase->Keys())
 	{
-		const KVSection* modelSec = pKeyBase->keys[i];
-
 		const char* modelName = modelSec->name;
 		const char* refName = KV_GetValueString(modelSec);
 
@@ -371,12 +369,12 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	}
 
 	// go through all keys inside model section
-	for(int i = 0; i < pKeyBase->keys.numElem(); i++)
+	for(const KVSection* sec : pKeyBase->Keys())
 	{
-		modelfilenames.append( pKeyBase->keys[i]->name );
-		shapeByModels.append("");
+		modelfilenames.append(sec->GetName() );
+		shapeByModels.append(EqString::EmptyStr);
 
-		Msg("Adding model '%s'\n", pKeyBase->keys[i]->name);
+		Msg("Adding model '%s'\n", sec->GetName());
 	}
 
 	// load the models
@@ -479,10 +477,8 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 {
 	MsgWarning("\nLoading models\n");
 
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* keyBase : pSection->Keys())
 	{
-		const KVSection* keyBase = pSection->keys[i];
-
 		if(!keyBase->name.CompareCaseIns("global_scale"))
 		{
 			// try apply global scale
@@ -865,10 +861,8 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 {
 	MsgWarning("\nAdding material paths\n");
 
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* keyBase : pSection->Keys())
 	{
-		const KVSection* keyBase = pSection->keys[i];
-
 		if(!keyBase->name.CompareCaseIns("materialpath"))
 		{
 			materialPathDesc_t& desc = m_matpathes.append();
@@ -968,10 +962,8 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 		cparent = cparent->parent;
 	} while(cparent != nullptr/* && cparent->parent != nullptr*/);
 
-	for(int i = 0; i < pSection->keys.numElem(); i++)
+	for(const KVSection* sec : pSection->Keys())
 	{
-		const KVSection* sec = pSection->keys[i];
-
 		if(!sec->name.CompareCaseIns("damping"))
 		{
 			if(sec->values.numElem() < 2)

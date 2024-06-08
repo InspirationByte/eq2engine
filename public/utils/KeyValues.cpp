@@ -1020,6 +1020,12 @@ int	KVSection::GetType() const
 //---------------------------------------------------------------------------------------------------------
 // Iterators
 
+KVKeyIterator::KVKeyIterator(const KVSection* section)
+	: section(section)
+{
+	// no need to rewind
+}
+
 KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags, int index)
 	: section(section)
 	, nameHashFilter(nameFilter ? StringToHash(nameFilter, true) : 0)

@@ -61,7 +61,7 @@ Targets
 }
 */
 
-static const char* s_textureValueIdentifier = "usage:";
+constexpr EqStringRef s_textureValueIdentifier = "usage:";
 
 enum ETexConvStatus
 {
@@ -163,13 +163,9 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	}
 
 	const KVSection* compressionSec = nullptr;
-
-	for (int i = 0; i < batchSec->keys.numElem(); i++)
+	for (const KVSection* sec : batchSec->Keys("compression"))
 	{
-		const KVSection* sec = batchSec->keys[i];
-
-		if (!sec->name.CompareCaseIns("compression") && 
-			!m_targetProps.targetCompression.CompareCaseIns(KV_GetValueString(sec, 0, "INVALID")))
+		if (!m_targetProps.targetCompression.CompareCaseIns(KV_GetValueString(sec, 0, "INVALID")))
 		{
 			compressionSec = sec;
 			break;
@@ -186,16 +182,10 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	m_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindSection("arguments"), 0, "");
 
 	// load usages
-	for (int i = 0; i < compressionSec->keys.numElem(); i++)
+	for (const KVSection* usageKey : compressionSec->Keys("usage"))
 	{
-		const KVSection* usageKey = compressionSec->keys[i];
-
-		if (usageKey->name.CompareCaseIns("usage"))
-			continue;
-
-		EqStringRef usageName = KV_GetValueString(usageKey, 0, nullptr);
-
-		if (!usageName)
+		EqStringRef usageName;
+		if (!usageKey->GetValues(usageName))
 		{
 			MsgWarning("Usage name not specified (in it's value)\n");
 			continue;
@@ -264,19 +254,17 @@ void CTextureCooker::LoadMaterialImages(const char* materialFileName)
 
 	int textures = 0;
 
-	for (int i = 0; i < kvMaterial->keys.numElem(); i++)
+	for (const KVSection* key : kvMaterial->Keys())
 	{
 		bool keyHasUsage = false;
-		const KVSection* key = kvMaterial->keys[i];
-		for (int j = 1; j < key->ValueCount(); j++)
-		{
-			EqString imageUsage(KV_GetValueString(key, j, ""));
-			const int usageIdx = imageUsage.ReplaceSubstr(s_textureValueIdentifier, "");
 
+		for (const EqStringRef usageVal : key->Values<EqStringRef>(1))
+		{
+			EqString imageUsage = usageVal;
+
+			const int usageIdx = imageUsage.ReplaceSubstr(s_textureValueIdentifier, "");
 			if (usageIdx == -1)
-			{
 				continue;
-			}
 
 			if (keyHasUsage)
 			{
@@ -378,9 +366,9 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 
 bool CTextureCooker::HasMatchingCRC(uint32 crc)
 {
-	for (int i = 0; i < m_batchConfig.crcSec.keys.numElem(); i++)
+	for (const KVSection* crcSec : m_batchConfig.crcSec.Keys())
 	{
-		uint32 checkCRC = strtoul(m_batchConfig.crcSec.keys[i]->name, nullptr, 10);
+		uint32 checkCRC = strtoul(crcSec->GetName(), nullptr, 10);
 
 		if (checkCRC == crc)
 			return true;
@@ -466,13 +454,15 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 		}
 		else
 		{
-			MsgInfo("Re-generating '%s'\n", targetFilename.ToCString());
+			MsgInfo("Re-generating %s: %s...\n", textureInfo.usage->usageName.ToCString(), targetFilename.ToCString());
 		}
 	}
+	else
+		MsgInfo("Processing %s: %s...\n", textureInfo.usage->usageName.ToCString(), textureInfo.sourcePath.ToCString());
 
 	textureInfo.status = CONVERTED;
 
-	MsgInfo("Processing %s: %s\n", textureInfo.usage->usageName.ToCString(), textureInfo.sourcePath.ToCString());
+	
 
 	EqString cmdLine(EqString::Format("%s %s", m_batchConfig.applicationName.ToCString(), arguments.ToCString()));
 	fnmPathFixSeparators(cmdLine);
@@ -615,7 +605,7 @@ void CTextureCooker::Execute()
 	for (int i = 0; i < m_textureList.numElem(); i++)
 	{
 		TexInfo& tex = m_textureList[i];
-		Msg("%d / %d...\n", i + 1, m_textureList.numElem());
+		Msg("[%d / %d] ", i + 1, m_textureList.numElem());
 		ProcessTexture(tex);
 	}
 

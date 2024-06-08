@@ -15,7 +15,7 @@ class IMaterialProxy
 public:
 	virtual ~IMaterialProxy() {}
 
-	virtual void InitProxy(IMaterial* material, KVSection* pKeyBase) = 0;
+	virtual void InitProxy(IMaterial* material, const KVSection* pKeyBase) = 0;
 	virtual void UpdateProxy(float dt) = 0;
 };
 

@@ -73,18 +73,15 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialFileExt));
 
 		// load atlas file
-		if (g_fileSystem->FileExist(atlasKVSFileName, materialSearchPath))
+		if (!m_atlas)
 		{
-			KVSection root;
-			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &root))
+			KVSection atlRoot;
+			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &atlRoot))
 			{
-				const KVSection* atlasSec = root["atlasgroup"];
+				const KVSection* atlasSec = atlRoot["AtlasGroup"];
 				if (atlasSec)
 				{
-					if (!m_atlas)
-						m_atlas = PPNew CTextureAtlas(atlasSec);
-
-					root.Cleanup();
+					m_atlas = PPNew CTextureAtlas(atlasSec);
 
 					// atlas can override material name
 					fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_atlas->GetMaterialName(), s_materialFileExt));
@@ -98,6 +95,10 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		if( KV_LoadFromFile(materialKVSFilename.ToCString(), materialSearchPath, &root))
 		{
 			success = true;
+		}
+		else
+		{
+			SAFE_DELETE(m_atlas);
 		}
 	}
 
@@ -155,19 +156,19 @@ void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 		return;
 
 	// try any kind of proxy
-	for(int i = 0; i < proxySec->keys.numElem();i++)
+	for(const KVSection* proxyItemSec : proxySec->Keys())
 	{
-		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName( proxySec->keys[i]->name );
+		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName(proxyItemSec->name );
 
 		if(pProxy)
 		{
 			// initialize proxy
-			pProxy->InitProxy( this, proxySec->keys[i] );
+			pProxy->InitProxy( this, proxyItemSec);
 			m_proxies.append( pProxy );
 		}
 		else
 		{
-			MsgWarning("Unknown proxy '%s' for material %s!\n", proxySec->keys[i]->name, m_szMaterialName.GetData());
+			MsgWarning("Unknown proxy '%s' for material %s!\n", proxyItemSec->GetName(), m_szMaterialName.GetData());
 		}
 	}
 }
@@ -179,9 +180,8 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 {
 	int numMaterialVars = 0;
 
-	for (int i = 0; i < kvs->keys.numElem(); i++)
+	for (const KVSection* materialVarSec : kvs->Keys())
 	{
-		const KVSection* materialVarSec = kvs->keys[i];
 		if (materialVarSec->IsSection())
 			continue;
 
@@ -195,9 +195,8 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 	m_vars.variables.reserve(numMaterialVars);
 
 	// init material vars
-	for(int i = 0; i < kvs->keys.numElem();i++)
+	for(const KVSection* materialVarSec : kvs->Keys())
 	{
-		const KVSection* materialVarSec = kvs->keys[i];
 		if(materialVarSec->IsSection() )
 			continue;
 

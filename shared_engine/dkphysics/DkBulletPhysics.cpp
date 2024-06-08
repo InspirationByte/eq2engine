@@ -241,66 +241,64 @@ bool DkPhysics::Init(int nSceneSize)
 	// Always init the physics when new map is loading
 	m_nSceneSize = nSceneSize;
 
-	KeyValues pMaterials;
-
-	if(!pMaterials.LoadFromFile("scripts/SurfaceParams.def"))
+	KeyValues surfParamsKvs;
+	if(!surfParamsKvs.LoadFromFile("scripts/SurfaceParams.def"))
 	{
 		MsgError("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found\n");
 		CrashMsg("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found, Exiting.\n");
 		return false;
 	}
 
-	for(int i = 0; i < pMaterials.GetRootSection()->keys.numElem(); i++)
+	for(const KVSection* pSec : surfParamsKvs.Keys())
 	{
-		KVSection* pSec = pMaterials.GetRootSection()->keys[i];
-
-		if(pSec->name.Compare("#include"))
+		if (!pSec->name.Compare("#include"))
 		{
-			phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
-
-			DefaultMaterialParams(pMaterial);
-
-			pMaterial->name = pSec->name;
-
-			KVSection* pBaseNamePair = pSec->FindSection("base");
-			if(pBaseNamePair)
-			{
-				phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
-				if(param)
-				{
-					CopyMaterialParams(param, pMaterial);
-				}
-				else
-					DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
-			}
-
-			pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, 1.0f);
-			pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 1.0f);
-			pMaterial->density = KV_GetValueFloat(pSec->FindSection("density"), 0, 100.0f);
-			pMaterial->surfaceword = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
-
-			KVSection* pPair = pSec->FindSection("footsteps");
-			if(pPair)
-				pMaterial->footStepSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("bulletimpact");
-			if(pPair)
-				pMaterial->bulletImpactSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("scrape");
-			if(pPair)
-				pMaterial->scrapeSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("impactlight");
-			if(pPair)
-				pMaterial->lightImpactSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("impactheavy");
-			if(pPair)
-				pMaterial->heavyImpactSound = KV_GetValueString(pPair);
-
-			m_physicsMaterialDesc.append(pMaterial);
+			continue;
 		}
+
+		phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
+		DefaultMaterialParams(pMaterial);
+
+		pMaterial->name = pSec->name;
+
+		KVSection* pBaseNamePair = pSec->FindSection("base");
+		if(pBaseNamePair)
+		{
+			phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
+			if(param)
+			{
+				CopyMaterialParams(param, pMaterial);
+			}
+			else
+				DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
+		}
+
+		pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, 1.0f);
+		pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 1.0f);
+		pMaterial->density = KV_GetValueFloat(pSec->FindSection("density"), 0, 100.0f);
+		pMaterial->surfaceword = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
+
+		KVSection* pPair = pSec->FindSection("footsteps");
+		if(pPair)
+			pMaterial->footStepSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("bulletimpact");
+		if(pPair)
+			pMaterial->bulletImpactSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("scrape");
+		if(pPair)
+			pMaterial->scrapeSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("impactlight");
+		if(pPair)
+			pMaterial->lightImpactSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("impactheavy");
+		if(pPair)
+			pMaterial->heavyImpactSound = KV_GetValueString(pPair);
+
+		m_physicsMaterialDesc.append(pMaterial);
 	}
 
 	return true;

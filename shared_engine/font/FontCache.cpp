@@ -24,7 +24,7 @@ IEqFontCache* g_fontCache = &s_fontCache;
 #define FONT_DEFAULT_LIST_FILENAME "resources/fonts.res"
 
 #define FONT_LOADSTYLE(v, name)		\
-	if(name != nullptr)				\
+	if(name)						\
 	{								\
 		CFont* lfont = PPNew CFont();	\
 		if( lfont->LoadFont( name ) )\
@@ -33,17 +33,13 @@ IEqFontCache* g_fontCache = &s_fontCache;
 			delete lfont;			\
 	}
 
-int compareFontSizes( const eqFontStyleInfo_t &a, const eqFontStyleInfo_t &b )
-{
-	return a.size - b.size;
-}
 
 eqFontStyleInfo_t::~eqFontStyleInfo_t()
 {
-	delete regularFont;
-	delete boldFont;
-	delete italicFont;
-	delete boldItalicFont;
+	SAFE_DELETE(regularFont);
+	SAFE_DELETE(boldFont);
+	SAFE_DELETE(italicFont);
+	SAFE_DELETE(boldItalicFont);
 }
 
 //---------------------------------------------------------------------
@@ -71,10 +67,8 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 	KVSection* sec = kvs.GetRootSection();
 
 	// enum font names
-	for(int i = 0; i < sec->keys.numElem(); i++)
+	for(const KVSection* fontSec : sec->Keys())
 	{
-		KVSection* fontSec = sec->keys[i];
-
 		if( !fontSec->IsSection() )
 		{
 			if(!fontSec->name.Compare("#include"))
@@ -90,10 +84,10 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			continue;
 		}
 
-		const int nameHash = StringToHash(fontSec->name);
+		const int nameHash = StringToHash(fontSec->GetName());
 		if (m_fonts.contains(nameHash))
 		{
-			MsgWarning("Font %s already loaded, skipping\n", fontSec->name);
+			MsgWarning("Font %s already loaded, skipping\n", fontSec->GetName());
 			continue;
 		}
 
@@ -103,23 +97,31 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		int styleErrorCounter = 0;
 
 		// enum font sizes
-		for(int j = 0; j < fontSec->keys.numElem(); j++)
+		for(const KVSection* styleTable : fontSec->Keys())
 		{
-			KVSection* styleTable = fontSec->keys[j];
-			int entrySize = atoi(styleTable->name);
+			const int entrySize = atoi(styleTable->GetName());
 
 			// find a styles, reg, bld, itl, or bolditalic
-			KVSection* regular = styleTable->FindSection("reg");
-			KVSection* bold = styleTable->FindSection("bld");
-			KVSection* italic = styleTable->FindSection("itl");
-			KVSection* bolditalic = styleTable->FindSection("b+i");
+			EqStringRef regularFileName;
+			EqStringRef boldFileName;
+			EqStringRef italicFileName;
+			EqStringRef boldItalicFileName;
+
+			if (!styleTable->Get("reg").GetValues(regularFileName))
+			{
+				MsgError("Font desc '%s' (size %d) missing reg (regular) font entry\n", familyEntry.name.ToCString(), entrySize);
+				continue;
+			}
+			styleTable->Get("bld").GetValues(boldFileName);
+			styleTable->Get("itl").GetValues(italicFileName);
+			styleTable->Get("b+i").GetValues(boldItalicFileName);
 			
 			// first we loading a regular font
 			CFont* regFont = PPNew CFont();
 
-			if( !regFont->LoadFont( KV_GetValueString(regular, 0, "") ) )
+			if( !regFont->LoadFont(regularFileName) )
 			{
-				MsgError("Failed to load font style '%s' (regular entry) in '%s'\n", KV_GetValueString(regular, 0, ""), familyEntry.name.ToCString());
+				MsgError("Failed to load font style '%s' (regular entry) in '%s'\n", regularFileName.ToCString(), familyEntry.name.ToCString());
 
 				delete regFont;
 				styleErrorCounter++;
@@ -131,9 +133,9 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			fontStyleInfo.size = entrySize;
 			fontStyleInfo.regularFont = regFont;
 			
-			FONT_LOADSTYLE(fontStyleInfo.boldFont, KV_GetValueString(bold, 0, nullptr));
-			FONT_LOADSTYLE(fontStyleInfo.italicFont, KV_GetValueString(italic, 0, nullptr));
-			FONT_LOADSTYLE(fontStyleInfo.boldItalicFont, KV_GetValueString(bolditalic, 0, nullptr));
+			FONT_LOADSTYLE(fontStyleInfo.boldFont, boldFileName);
+			FONT_LOADSTYLE(fontStyleInfo.italicFont, italicFileName);
+			FONT_LOADSTYLE(fontStyleInfo.boldItalicFont, boldItalicFileName);
 		}
 
 		if( familyEntry.sizeTable.numElem() == 0 )
@@ -148,7 +150,10 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		else
 		{
 			// sort the fonts by size
-			arraySort(familyEntry.sizeTable, compareFontSizes );
+			arraySort(familyEntry.sizeTable, [](const eqFontStyleInfo_t & a, const eqFontStyleInfo_t & b)
+			{
+				return a.size - b.size;
+			});
 		}
 
 		// any font description file may redefine default font

@@ -25,7 +25,7 @@ public:
 	Panel();
 	~Panel();
 
-	virtual void			InitFromKeyValues( KVSection* sec, bool noClear );
+	virtual void			InitFromKeyValues(const KVSection* sec, bool noClear );
 
 	virtual void			Hide();
 

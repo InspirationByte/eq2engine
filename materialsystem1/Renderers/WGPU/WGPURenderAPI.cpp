@@ -180,14 +180,13 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	if (defines)
 	{
 		shaderInfo.defines.reserve(defines->ValueCount());
-		for (KVValueIterator<EqString> it(defines); !it.atEnd(); ++it)
-			shaderInfo.defines.append(*it);
+		for (const EqStringRef def : defines->Values<EqStringRef>())
+			shaderInfo.defines.append(def);
 	}
 
 	int shaderKinds = 0;
-	for (KVValueIterator<EqStringRef> it(shaderInfoKvs["ShaderKinds"]); !it.atEnd(); ++it)
+	for (const EqStringRef kindName : shaderInfoKvs.Get("ShaderKinds").Values<EqStringRef>())
 	{
-		const EqStringRef kindName(*it);
 		if (kindName == s_shaderKindVertexName)
 			shaderKinds |= SHADERKIND_VERTEX;
 		else if (kindName == s_shaderKindFragmentName)
@@ -197,17 +196,17 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	}
 	shaderInfo.shaderKinds = shaderKinds;
 
-	for (KVKeyIterator it(shaderInfoKvs["VertexLayouts"]); !it.atEnd(); ++it)
+	for (const KVSection* key : shaderInfoKvs.Get("VertexLayouts").Keys())
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
-		layout.name = EqString(it);
+		layout.name = key->GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringToHash(layout.name);
 		
-		if (!CString::CompareCaseIns(KV_GetValueString(*it, 0), "aliasOf"))
+		if (!CString::CompareCaseIns(KV_GetValueString(key, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
-				return layout.name == EqStringRef(KV_GetValueString(*it, 1));
+				return layout.name == EqStringRef(KV_GetValueString(key, 1));
 			});
 		}
 	}
@@ -215,10 +214,8 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
 
 	int filesFound = 0;
-	for (KVKeyIterator it(fileListSec, "spv"); !it.atEnd(); ++it)
+	for (const KVSection* itemSec : fileListSec->Keys("spv"))
 	{
-		const KVSection* itemSec = *it;
-
 		EqString kindExt;
 		EqStringRef kindStr = KV_GetValueString(itemSec, 1);
 		const int vertexLayoutIdx = KV_GetValueInt(itemSec);

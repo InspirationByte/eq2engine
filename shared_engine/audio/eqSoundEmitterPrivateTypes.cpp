@@ -298,19 +298,18 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 	};
 
 	// parse inputs, mixers, outputs
-	for (KVKeyIterator it(scriptSection); !it.atEnd(); ++it)
+	for (const KVSection* valKey : scriptSection->Keys())
 	{
-		const KVSection& valKey = *(*it);
-		if (valKey.IsSection())
+		if (valKey->IsSection())
 			continue;
 
-		if (!valKey.name.CompareCaseIns("input"))
+		if (!valKey->name.CompareCaseIns("input"))
 		{
-			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
+			const char* nodeName = KV_GetValueString(valKey, 0, nullptr);
 
 			if (nodeName == nullptr || !nodeName[0])
 			{
-				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey.name);
+				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey->name);
 				continue;
 			}
 
@@ -327,14 +326,14 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			InitSoundNode(inputDesc, SOUND_NODE_INPUT);
 
 			// TODO: support array index
-			inputDesc.input.rMin = KV_GetValueFloat(&valKey, 1, 0.0f);
-			inputDesc.input.rMax = KV_GetValueFloat(&valKey, 2, 1.0f);
+			inputDesc.input.rMin = KV_GetValueFloat(valKey, 1, 0.0f);
+			inputDesc.input.rMax = KV_GetValueFloat(valKey, 2, 1.0f);
 
 			scriptDesc.inputNodeMap.insert(StringToHash(nodeName), nodeIdx);
 		}
-		else if (!valKey.name.CompareCaseIns("mixer"))
+		else if (!valKey->name.CompareCaseIns("mixer"))
 		{
-			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
+			const char* nodeName = KV_GetValueString(valKey, 0, nullptr);
 
 			if (nodeName == nullptr || !nodeName[0])
 			{
@@ -343,11 +342,11 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			}
 			ASSERT_MSG(scriptDesc.FindVariableIndex(nodeName) == 0xff, "Node %s was already declared", nodeName);
 
-			const char* funcTypeName = KV_GetValueString(&valKey, 1, "");
+			const char* funcTypeName = KV_GetValueString(valKey, 1, "");
 			int funcType = GetSoundFuncTypeByString(funcTypeName);
 			if (funcType == -1)
 			{
-				MsgError("sound script '%s' mixer: %s unknown func type %s\n", scriptDesc.name.ToCString(), valKey.name, funcTypeName);
+				MsgError("sound script '%s' mixer: %s unknown func type %s\n", scriptDesc.name.ToCString(), valKey->name, funcTypeName);
 				continue;
 			}
 
@@ -365,9 +364,9 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				{
 					// N args
 					int nArg = 0;
-					for (int v = 2; v < valKey.ValueCount(); ++v)
+					for (int v = 2; v < valKey->ValueCount(); ++v)
 					{
-						const char* valName = KV_GetValueString(&valKey, v, nullptr);
+						const char* valName = KV_GetValueString(valKey, v, nullptr);
 						ASSERT(valName);
 
 						funcDesc.func.inputIds[nArg++] = findInputVarOrMakeConst(funcDesc, v, valName);
@@ -388,7 +387,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					// 2 args
 					for (int v = 0; v < 2; ++v)
 					{
-						const char* valName = KV_GetValueString(&valKey, v + 2, nullptr);
+						const char* valName = KV_GetValueString(valKey, v + 2, nullptr);
 						if (!valName)
 						{
 							MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), funcDesc.name);
@@ -405,9 +404,9 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				{
 					// N args
 					int nArg = 0;
-					for (int v = 2; v < valKey.ValueCount(); ++v)
+					for (int v = 2; v < valKey->ValueCount(); ++v)
 					{
-						const char* valName = KV_GetValueString(&valKey, v, nullptr);
+						const char* valName = KV_GetValueString(valKey, v, nullptr);
 						ASSERT(valName);
 
 						funcDesc.func.inputIds[nArg++] = findInputVarOrMakeConst(funcDesc, v, valName);
@@ -419,10 +418,10 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				case SOUND_FUNC_SPLINE:
 				{
 					// input x0 y0 x1 y1 ... xN yN
-					const char* inputValName = KV_GetValueString(&valKey, 2, nullptr);
+					const char* inputValName = KV_GetValueString(valKey, 2, nullptr);
 					if (!inputValName)
 					{
-						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), valKey.name);
+						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), valKey->name);
 						continue;
 					}
 
@@ -435,10 +434,10 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					SoundSplineDesc& spline = splineDescs.append();
 
 					int nArg = 0;
-					for (int v = 3; v < valKey.ValueCount(); ++v)
+					for (int v = 3; v < valKey->ValueCount(); ++v)
 					{
 						if(nArg < SoundSplineDesc::MAX_SPLINE_POINTS * 2)
-							spline.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+							spline.values[nArg++] = KV_GetValueFloat(valKey, v, 0.5f);
 					}
 					spline.valueCount = nArg;
 					spline.Fix();
@@ -452,14 +451,14 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				case SOUND_FUNC_FADE:
 				{
 					// outputCount input x0 y0 x1 y1 ... xN yN
-					const int numOutputs = KV_GetValueInt(&valKey, 2, 0);
+					const int numOutputs = KV_GetValueInt(valKey, 2, 0);
 					if (!numOutputs)
 					{
 						MsgError("sound script '%s' mixer %s: no outputs for fade\n", scriptDesc.name.ToCString(), funcDesc.name);
 						continue;
 					}
 
-					const char* inputValName = KV_GetValueString(&valKey, 3, nullptr);
+					const char* inputValName = KV_GetValueString(valKey, 3, nullptr);
 					if (!inputValName)
 					{
 						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), funcDesc.name);
@@ -475,10 +474,10 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					SoundSplineDesc& spline = splineDescs.append();
 
 					int nArg = 0;
-					for (int v = 4; v < valKey.ValueCount(); ++v)
+					for (int v = 4; v < valKey->ValueCount(); ++v)
 					{
 						if (nArg < SoundSplineDesc::MAX_SPLINE_POINTS * 2)
-							spline.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+							spline.values[nArg++] = KV_GetValueFloat(valKey, v, 0.5f);
 					}
 
 					if (nArg < SoundSplineDesc::MAX_SPLINE_POINTS * 2)
@@ -494,11 +493,11 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			} // switch funcType
 		} // input, mixer
 
-		if (!valKey.name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_VOLUME]))
-			makeSampleParameter(valKey, SOUND_PARAM_SAMPLE_VOLUME);
+		if (!valKey->name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_VOLUME]))
+			makeSampleParameter(*valKey, SOUND_PARAM_SAMPLE_VOLUME);
 
-		if (!valKey.name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_PITCH]))
-			makeSampleParameter(valKey, SOUND_PARAM_SAMPLE_PITCH);
+		if (!valKey->name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_PITCH]))
+			makeSampleParameter(*valKey, SOUND_PARAM_SAMPLE_PITCH);
 
 	} // for kv keys
 

@@ -643,26 +643,40 @@ bool CFont::LoadFont( const char* filenamePrefix )
 		m_baseline = KV_GetValueFloat(fontSec->FindSection("baseline")) * m_scale.y;
 		m_lineHeight = KV_GetValueFloat(fontSec->FindSection("lineheight")) * m_scale.y;
 
-		for (const KVSection* k : fontSec->keys)
+		for (const KVSection* charSec : fontSec->Keys())
 		{
-			if (k->values.numElem() < 7)
+			if (charSec->ValueCount() < 7)
 				continue;
-
-			const int charIdx = atoi(k->name);
 
 			// x y w h ox oy advanceX
 			// 0 1 2 3 4  5  6
 
-			FontChar& fontChar = m_charMap[charIdx];
-			fontChar.x0 = KV_GetValueFloat(k, 0);
-			fontChar.y0 = KV_GetValueFloat(k, 1);
+			FontChar fontChar;
+			const int valueCount = charSec->GetValues(
+				fontChar.x0,
+				fontChar.y0,
+				fontChar.x1,
+				fontChar.y1,
+				fontChar.ofsX,
+				fontChar.ofsY,
+				fontChar.advX
+			);
 
-			fontChar.x1 = fontChar.x0 + KV_GetValueFloat(k, 2);
-			fontChar.y1 = fontChar.y0 + KV_GetValueFloat(k, 3);
+			if(valueCount != 7)
+			{
+				ASSERT_FAIL("Invalid font file %s", filenamePrefix);
+				continue;
+			}
 
-			fontChar.ofsX = KV_GetValueFloat(k, 4) * m_scale.x;
-			fontChar.ofsY = KV_GetValueFloat(k, 5) * m_scale.y;
-			fontChar.advX = KV_GetValueFloat(k, 6) * m_scale.x;
+			fontChar.x1 += fontChar.x0;
+			fontChar.y1 += fontChar.y0;
+
+			fontChar.ofsX *= m_scale.x;
+			fontChar.ofsY *= m_scale.y;
+			fontChar.advX *= m_scale.x;
+
+			const int charIdx = atoi(charSec->GetName());
+			m_charMap.insert(charIdx, fontChar);
 		}
 
 		return true;

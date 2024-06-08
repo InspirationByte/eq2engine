@@ -323,7 +323,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 		EXPECT_EQ(typeInfo.isByVal, false);
 
 		// TEST: base class matching
-		EXPECT_EQ(typeInfo.base->className, typeInfo.baseClassName);
+		EXPECT_EQ(typeInfo.baseGetter().className, typeInfo.baseClassName);
 
 		// TEST: derived types must have their destructor too
 		EXPECT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
@@ -1103,7 +1103,7 @@ namespace esl {
 	template<> inline const char ScriptClass<BindTest>::className[] = "BindTest";
 	template<> inline const char* LuaTypeAlias<BindTest, false>::value = ScriptClass<BindTest>::className;
 	template<> inline const char* ScriptClass<BindTest>::baseClassName = nullptr;
-	template<> inline TypeInfo ScriptClass<BindTest>::baseClassTypeInfo = {};
+	template<> inline TypeInfoGetter ScriptClass<BindTest>::baseClassTypeInfoGetter = nullptr;
 }
 // _ESL_TYPE_PUSHGET
 namespace esl::runtime {

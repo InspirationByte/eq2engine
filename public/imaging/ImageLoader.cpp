@@ -1083,15 +1083,15 @@ bool CImage::SaveImage(const char* fileName, int searchFlags) const
 	if (!(file = g_fileSystem->Open(fileName, "wb", searchFlags)))
 		return false;
 
-	if (extension == ".dds") 
+	if (extension == "dds") 
 	{
 		return SaveDDS(file);
 	}
-	else if (extension == ".jpg" || extension == ".jpeg")
+	else if (extension == "jpg" || extension == "jpeg")
 	{
 		return SaveJPEG(file, 75);
 	}
-	else if (extension == ".tga")
+	else if (extension == "tga")
 	{
 		return SaveTGA(file);
 	}

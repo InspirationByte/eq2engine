@@ -84,7 +84,7 @@ public:
 	IUIControl();
 	virtual ~IUIControl();
 
-	virtual void				InitFromKeyValues( KVSection* sec, bool noClear = false );
+	virtual void				InitFromKeyValues(const KVSection* sec, bool noClear = false);
 
 	// name and type
 	const char*					GetName() const						{return m_name.ToCString();}

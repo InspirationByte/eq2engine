@@ -168,12 +168,10 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 		// FORMAT IS:
 		// EBlendMode [optional imageName] [optional transparency] [optional R G B]
 
-		for(int i = 0; i < kv->keys.numElem(); i++)
+		for(const KVSection* kb : kv->Keys())
 		{
-			KVSection* kb = kv->keys[i];
-
 			ImgLayer& layer = dest.layers.append();
-			layer.blendMode = GetBlendmodeByStr( kb->name );
+			layer.blendMode = GetBlendmodeByStr( kb->GetName() );
 			layer.image = nullptr;
 
 			EqString image_path = KV_GetValueString(kb,0, nullptr);

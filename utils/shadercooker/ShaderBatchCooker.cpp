@@ -200,7 +200,7 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	}
 
 	// merge sections softly
-	for (KVSection* section : shaderSection->keys)
+	for (KVSection* section : shaderSection->Keys())
 	{
 		KVSection* baseSec = shaderRoot->FindSection(section->GetName());
 		if (baseSec)
@@ -262,10 +262,9 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 
 bool CShaderCooker::HasMatchingCRC(uint32 crc)
 {
-	for (int i = 0; i < m_batchConfig.crcSec.keys.numElem(); i++)
+	for (KVSection* crcEntry : m_batchConfig.crcSec.Keys())
 	{
-		uint32 checkCRC = strtoul(m_batchConfig.crcSec.keys[i]->name, nullptr, 10);
-
+		uint32 checkCRC = strtoul(crcEntry->GetName(), nullptr, 10);
 		if (checkCRC == crc)
 			return true;
 	}
@@ -276,7 +275,7 @@ bool CShaderCooker::HasMatchingCRC(uint32 crc)
 void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantIdx, const KVSection* section)
 {
 	bool hasVariantsThisLevel = false;
-	for (const KVSection* nestedSec : section->keys)
+	for (const KVSection* nestedSec : section->Keys())
 	{
 		if (!CString::CompareCaseIns(nestedSec->GetName(), "define")
 		 || !CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
@@ -305,7 +304,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 	ShaderInfo::Variant& variant = getVariant(thisVariantIndex);
 
 	// collect all defines and vertex layouts
-	for (const KVSection* nestedSec : section->keys)
+	for (const KVSection* nestedSec : section->Keys())
 	{
 		if (!CString::CompareCaseIns(nestedSec->GetName(), "define"))
 		{
@@ -315,7 +314,7 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 		else if (!CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
 		{
 			// add vertex layouts
-			for (const KVSection* layoutKey : nestedSec->keys)
+			for (const KVSection* layoutKey : nestedSec->Keys())
 			{
 				ShaderInfo::VertLayout& vertLayout = shaderInfo.vertexLayouts.append();
 
