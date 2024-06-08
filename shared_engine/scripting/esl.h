@@ -57,7 +57,7 @@ struct LuaTypeAlias<T, false>
 template <typename T>
 struct LuaTypeAlias<T, true>
 {
-	static constexpr const char* value = "number";
+	inline static const char* value = "number";
 };
 
 // parameter trait 
@@ -155,10 +155,13 @@ struct Member
 	bool			isConst{ false };
 };
 
+struct TypeInfo;
+using TypeInfoGetter = TypeInfo(*)();
+
 // Type info which is could be used for debugging
 struct TypeInfo
 {
-	TypeInfo*			base{ nullptr };
+	TypeInfoGetter		baseGetter;
 
 	const char*			className{ nullptr };
 	const char*			baseClassName{ nullptr };
@@ -170,7 +173,7 @@ struct TypeInfo
 template<typename V>
 struct ResultWithValue
 {
-	operator bool() { return success; }
+	operator	bool() { return success; }
 	V&			operator*() { return value; }
 	const V&	operator*() const { return value; }
 	bool		success{ false };
@@ -200,10 +203,10 @@ class LuaTable;
 template<typename T>
 struct ScriptClass
 {
-	static esl::TypeInfo	GetTypeInfo();
+	static TypeInfo			GetTypeInfo();
 
 	// NOTE: don't access these directly, use typeinfo
-	static esl::TypeInfo	baseClassTypeInfo;
+	static TypeInfoGetter	baseClassTypeInfoGetter;
 	static const char		className[];
 	static const char*		baseClassName;
 };

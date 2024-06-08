@@ -84,11 +84,13 @@ struct ClassBinder
 
 namespace esl
 {
+TypeInfo GetEmptyTypeInfo();
+
 template<typename T>
 TypeInfo ScriptClass<T>::GetTypeInfo()
 {
 	return {
-		&ScriptClass<T>::baseClassTypeInfo,
+		ScriptClass<T>::baseClassTypeInfoGetter,
 		ScriptClass<T>::className,
 		ScriptClass<T>::baseClassName,
 		bindings::ClassBinder<T>::GetMembers(),
@@ -209,19 +211,20 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 	EventName##Caller.Invoke(__VA_ARGS__)
 
 // Basic type binder
-#define _ESL_BIND_TYPE_BASICS(Class, name, pushType, baseName, baseTypeInfo) \
+#define _ESL_BIND_TYPE_BASICS(Class, name, pushType, baseName, baseTypeInfoGetter) \
 	namespace esl { \
-	template<> inline const char ScriptClass<Class>::className[] = name; \
-	template<> inline const char* ScriptClass<Class>::baseClassName = baseName; \
-	template<> inline TypeInfo ScriptClass<Class>::baseClassTypeInfo = baseTypeInfo; \
+	inline TypeInfoGetter ScriptClass<Class>::baseClassTypeInfoGetter = baseTypeInfoGetter; \
+	inline const char ScriptClass<Class>::className[] = name; \
+	inline const char* ScriptClass<Class>::baseClassName = baseName; \
+	template struct esl::ScriptClass<Class>; \
 	_ESL_ALIAS_TYPE(Class, ScriptClass<Class>::className) \
 	_ESL_PUSH_##pushType(Class) \
 	}
 
 #define _ESL_TYPE_PUSHGET(Class) \
 	namespace esl::runtime { \
-	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
-	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
+	PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
+	PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
 	} \
 
 // Binder for class without parent type that was bound
@@ -231,7 +234,7 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 		, name \
 		, pushType \
 		, nullptr \
-		, {} \
+		, &GetEmptyTypeInfo \
 	)
 
 // Binder for class that has bound parent class
@@ -241,7 +244,7 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 		, name \
 		, INHERIT_PARENT \
 		, ScriptClass<ParentClass>::className \
-		, ScriptClass<ParentClass>::GetTypeInfo() \
+		, ScriptClass<ParentClass>::GetTypeInfo \
 	)
 
 // Binder for class that has bound parent class
@@ -251,7 +254,7 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 		, name \
 		, pushType \
 		, ScriptClass<ParentClass>::className \
-		, ScriptClass<ParentClass>::GetTypeInfo() \
+		, ScriptClass<ParentClass>::GetTypeInfo \
 	)
 
 // Constructor([ ArgT1, ArgT2, ...ArgTN ])
