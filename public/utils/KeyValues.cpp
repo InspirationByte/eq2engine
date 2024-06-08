@@ -301,9 +301,9 @@ KVSection* KVSection::operator[](const char* pszName)
 	return FindSection(pszName); 
 }
 
-KVPairValue* KVSection::operator[](int index)
+KVPairValue& KVSection::operator[](int index)
 {
-	return values[index]; 
+	return *values[index]; 
 }
 
 const KVSection* KVSection::operator[](const char* pszName) const
@@ -311,9 +311,9 @@ const KVSection* KVSection::operator[](const char* pszName) const
 	return FindSection(pszName);
 }
 
-const KVPairValue* KVSection::operator[](int index) const
+const KVPairValue& KVSection::operator[](int index) const
 {
-	return values[index];
+	return *values[index];
 }
 
 //-----------------------------------------------------------------------------------------
@@ -2276,7 +2276,7 @@ const char* KV_GetValueString(const KVSection* pBase, int nIndex, const char* ps
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return pszDefault;
 
-	return (*pBase)[nIndex]->GetString();
+	return (*pBase)[nIndex].GetString();
 }
 
 
@@ -2289,7 +2289,7 @@ int	KV_GetValueInt(const KVSection* pBase, int nIndex, int nDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return nDefault;
 
-	return (*pBase)[nIndex]->GetInt();
+	return (*pBase)[nIndex].GetInt();
 }
 
 //
@@ -2301,7 +2301,7 @@ float KV_GetValueFloat(const KVSection* pBase, int nIndex, float fDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return fDefault;
 
-	return (*pBase)[nIndex]->GetFloat();
+	return (*pBase)[nIndex].GetFloat();
 }
 
 //
@@ -2313,7 +2313,7 @@ bool KV_GetValueBool(const KVSection* pBase, int nIndex, bool bDefault)
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return bDefault;
 
-	return (*pBase)[nIndex]->GetBool();
+	return (*pBase)[nIndex].GetBool();
 }
 
 //

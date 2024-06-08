@@ -48,9 +48,6 @@ enum EKVPairType
 	KVPAIR_TYPES,
 };
 
-// tune this (depends on size of used memory)
-#define KV_MAX_NAME_LENGTH		128
-
 enum EKVSearchFlags
 {
 	KV_FLAG_SECTION = (1 << 0),
@@ -301,7 +298,7 @@ struct KVSection
 
 	// Key values getter at specific value idx
 	template<typename ...Args>
-	inline int					GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, 0, outArgs...); };
+	inline int					GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, idx, outArgs...); };
 
 	// Key values getter
 	template<typename ...Args>
@@ -309,7 +306,7 @@ struct KVSection
 
 	// Key values getter at specific value idx
 	template<typename ...Args>
-	inline KVValues<Args...>	TryGetValuesAt(int idx, Args&... outArgs) const { return KV_TryGetValuesAt(this, 0, outArgs...); };
+	inline KVValues<Args...>	TryGetValuesAt(int idx, Args&... outArgs) const { return KV_TryGetValuesAt(this, idx, outArgs...); };
 
 	//----------------------------------------------
 	// The section functions
@@ -394,10 +391,10 @@ struct KVSection
 	void				SetValue(KVPairValue* value, int idxAt = 0);
 
 	KVSection*			operator[](const char* pszName);
-	KVPairValue*		operator[](int index);
+	KVPairValue&		operator[](int index);
 
 	const KVSection*	operator[](const char* pszName) const;
-	const KVPairValue*	operator[](int index) const;
+	const KVPairValue&	operator[](int index) const;
 
 
 	//----------------------------------------------
@@ -536,7 +533,7 @@ void KVValueIterator<T>::operator++()
 template<typename T>
 bool KVValueIterator<T>::atEnd() const
 {
-	return section ? index >= section->values.numElem() : true;
+	return section ? index >= section->ValueCount() : true;
 }
 
 template<typename T>
@@ -556,61 +553,68 @@ KVValueIterator<T> KVValueIterator<T>::Init::end() const
 
 template<> struct KVPairValuesGetter<const char*>
 {
-	static const char* Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
-	static const int vcount = 1;
-};
-
-template<> struct KVPairValuesGetter<EqString>
-{
-	static EqStringRef Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
-	static const int vcount = 1;
-};
-
-template<> struct KVPairValuesGetter<EqStringRef>
-{
-	static EqStringRef Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
+	static const char* Get(const KVSection* section, int index) { return (*section)[index].GetString(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<float>
 {
-	static float Get(const KVSection* section, int index) { return KV_GetValueFloat(section, index); }
+	static float Get(const KVSection* section, int index) { return (*section)[index].GetFloat(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<int>
 {
-	static int Get(const KVSection* section, int index) { return KV_GetValueInt(section, index); }
+	static int Get(const KVSection* section, int index) { return (*section)[index].GetInt(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<bool>
 {
-	static bool Get(const KVSection* section, int index) { return KV_GetValueBool(section, index); }
+	static bool Get(const KVSection* section, int index) { return (*section)[index].GetBool(); }
 	static const int vcount = 1;
 };
 
-template<> struct KVPairValuesGetter<Vector2D>
+// define aliases that use same code
+template<> struct KVPairValuesGetter<EqStringRef> : KVPairValuesGetter<const char*> {};
+template<> struct KVPairValuesGetter<EqString> : KVPairValuesGetter<const char*> {};
+template<> struct KVPairValuesGetter<FReal> : KVPairValuesGetter<float> {};
+template<> struct KVPairValuesGetter<uint> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<int16> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<uint16> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<int8> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<uint8> : KVPairValuesGetter<int> {};
+
+template <typename T>
+struct KVPairValuesGetter<TVec2D<T>>
 {
-	static Vector2D Get(const KVSection* section, int index) { return KV_GetVector2D(section, index); }
+	using CompGetter = KVPairValuesGetter<T>;
+	static TVec2D<T> Get(const KVSection* section, int index)
+	{
+		return TVec2D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index+1));
+	}
 	static const int vcount = 2;
 };
 
-template<> struct KVPairValuesGetter<IVector2D>
+template <typename T>
+struct KVPairValuesGetter<TVec3D<T>>
 {
-	static IVector2D Get(const KVSection* section, int index) { return KV_GetIVector2D(section, index); }
-	static const int vcount = 2;
-};
-
-template<> struct KVPairValuesGetter<Vector3D>
-{
-	static Vector3D Get(const KVSection* section, int index) { return KV_GetVector3D(section, index); }
+	using CompGetter = KVPairValuesGetter<T>;
+	static TVec3D<T> Get(const KVSection* section, int index)
+	{
+		return TVec3D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2));
+	}
 	static const int vcount = 3;
 };
 
-template<> struct KVPairValuesGetter<Vector4D>
+template <typename T>
+struct KVPairValuesGetter<TVec4D<T>>
 {
-	static Vector4D Get(const KVSection* section, int index) { return KV_GetVector4D(section, index); }
+	using CompGetter = KVPairValuesGetter<T>;
+	static TVec4D<T> Get(const KVSection* section, int index)
+	{
+		return TVec4D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2), CompGetter::Get(section, index + 3));
+	}
 	static const int vcount = 4;
 };
 
