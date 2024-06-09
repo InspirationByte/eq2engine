@@ -16,11 +16,12 @@
 #include "StudioGeom.h"
 #include "studiofile/StudioLoader.h"
 
-
-DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
+using namespace Threading;
 
 CStaticAutoPtr<CStudioCache> g_studioCache;
+static CEqReadWriteLock s_studioCacheRWLock;
 
+DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
 DECLARE_CMD(studio_cacheInfo, "Print loaded EGF and motion packages", CV_CHEAT)
 {
 	g_studioCache->PrintLoaded();
@@ -86,10 +87,13 @@ int CStudioCache::PrecacheModel(const char* fileName)
 		fnmPathApplyExt(nameStr, s_egfGeomExt);
 
 	const int nameHash = StringToHash(nameStr, true);
-	auto foundIt = m_geomCacheIndex.find(nameHash);
+	{
+		CScopedReadLocker m(s_studioCacheRWLock);
+		auto foundIt = m_geomCacheIndex.find(nameHash);
 
-	if (!foundIt.atEnd())
-		return *foundIt;
+		if (!foundIt.atEnd())
+			return *foundIt;
+	}
 
 	DevMsg(DEVMSG_CORE, "Loading model '%s'\n", nameStr.ToCString());
 
@@ -101,20 +105,23 @@ int CStudioCache::PrecacheModel(const char* fileName)
 	}
 
 	int newCacheIdx = STUDIOCACHE_INVALID_IDX;
-	if (m_geomFreeCacheSlots.numElem())
 	{
-		newCacheIdx = m_geomFreeCacheSlots.popBack();
-		m_geomCachedList[newCacheIdx] = model;
-	}
-	else
-	{
-		newCacheIdx = m_geomCachedList.append(model);
+		CScopedWriteLocker m(s_studioCacheRWLock);
+		if (m_geomFreeCacheSlots.numElem())
+		{
+			newCacheIdx = m_geomFreeCacheSlots.popBack();
+			m_geomCachedList[newCacheIdx] = model;
+		}
+		else
+		{
+			newCacheIdx = m_geomCachedList.append(model);
+		}
+
+		model->m_nameHash = nameHash;
+		model->m_cacheIdx = newCacheIdx;
 	}
 
-	model->m_nameHash = nameHash;
-	model->m_cacheIdx = newCacheIdx;
-
-	foundIt = m_geomCacheIndex.insert(nameHash, newCacheIdx);
+	m_geomCacheIndex.insert(nameHash, newCacheIdx);
 
 	return newCacheIdx;
 }
@@ -180,10 +187,13 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 		fnmPathApplyExt(nameStr, s_egfMotionPackageExt);
 
 	const int nameHash = StringToHash(nameStr, true);
-	auto foundIt = m_motionCacheIndex.find(nameHash);
+	{
+		CScopedReadLocker m(s_studioCacheRWLock);
+		auto foundIt = m_motionCacheIndex.find(nameHash);
 
-	if (!foundIt.atEnd())
-		return *foundIt;
+		if (!foundIt.atEnd())
+			return *foundIt;
+	}
 
 	DevMsg(DEVMSG_CORE, "Loading motion package '%s'\n", nameStr.ToCString());
 
@@ -196,20 +206,24 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 	}
 
 	int newCacheIdx = STUDIOCACHE_INVALID_IDX;
-	if (m_motionFreeCacheSlots.numElem())
 	{
-		newCacheIdx = m_motionFreeCacheSlots.popBack();
-		m_motionCachedList[newCacheIdx] = motionData;
-	}
-	else
-	{
-		newCacheIdx = m_motionCachedList.append(motionData);
-	}
+		CScopedWriteLocker m(s_studioCacheRWLock);
+		
+		if (m_motionFreeCacheSlots.numElem())
+		{
+			newCacheIdx = m_motionFreeCacheSlots.popBack();
+			m_motionCachedList[newCacheIdx] = std::move(motionData);
+		}
+		else
+		{
+			newCacheIdx = m_motionCachedList.append(std::move(motionData));
+		}
 
-	m_motionCachedList[newCacheIdx].nameHash = nameHash;
-	m_motionCachedList[newCacheIdx].cacheIdx = newCacheIdx;
+		m_motionCachedList[newCacheIdx].nameHash = nameHash;
+		m_motionCachedList[newCacheIdx].cacheIdx = newCacheIdx;
 
-	foundIt = m_motionCacheIndex.insert(nameHash, newCacheIdx);
+		m_motionCacheIndex.insert(nameHash, newCacheIdx);
+	}
 
 	return newCacheIdx;
 }
