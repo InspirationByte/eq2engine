@@ -23,7 +23,7 @@ const EqTStr<CH> EqTStr<CH>::EmptyStr;
 template<typename CH>
 EqTStr<CH>::~EqTStr()
 {
-	Clear();
+	SAFE_DELETE_ARRAY(m_pszString);
 }
 
 template<typename CH>
@@ -53,6 +53,47 @@ EqTStr<CH>::EqTStr(EqTStr<CH>&& str) noexcept
 	str.m_nAllocated = 0;
 	str.m_nLength = 0;
 	str.m_pszString = nullptr;
+}
+
+template<typename CH>
+EqTStr<CH>& EqTStr<CH>::operator=(const EqTStr& other)
+{
+	this->Assign( other );
+	return *this;
+}
+
+template<typename CH>
+EqTStr<CH>& EqTStr<CH>::operator=(const StrRef& other)
+{
+	this->Assign(other);
+	return *this;
+}
+
+template<typename CH>
+EqTStr<CH>& EqTStr<CH>::operator=(EqTStr&& other) noexcept
+{
+	SAFE_DELETE_ARRAY(m_pszString);
+	m_nAllocated = other.m_nAllocated;
+	m_nLength = other.m_nLength;
+	m_pszString = other.m_pszString;
+	other.m_nAllocated = 0;
+	other.m_nLength = 0;
+	other.m_pszString = nullptr;
+	return *this;
+}
+
+template<typename CH>
+EqTStr<CH>& EqTStr<CH>::operator=(const CH* pszStr)
+{
+	this->Assign( pszStr );
+	return *this;
+}
+
+template<typename CH>
+CH EqTStr<CH>::operator[](int idx) const
+{
+	ASSERT(idx >= 0 && idx <= m_nLength);
+	return m_pszString[idx];
 }
 
 template<typename CH>

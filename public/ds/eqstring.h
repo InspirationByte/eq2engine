@@ -21,6 +21,12 @@ public:
 
 	static const EqTStr EmptyStr;
 
+	static size_t	ReadString(IVirtualStream* stream, EqTStr& output);
+	static EqTStr 	FormatF(const CH* pszFormat, ...);
+	static EqTStr 	FormatV(const CH* pszFormat, va_list argptr);
+	template <typename... Args>
+	static EqTStr 	Format(const CH* pszFormat, Args&&... args);
+
 	~EqTStr();
 
 	EqTStr() = default;
@@ -28,13 +34,6 @@ public:
 	EqTStr(StrRef str, int nStart = 0, int len = -1);
 	EqTStr(const EqTStr& str, int nStart = 0, int len = -1);
 	EqTStr(EqTStr&& str) noexcept;
-
-	static EqTStr FormatF(const CH* pszFormat, ...);
-	static EqTStr FormatV(const CH* pszFormat, va_list argptr);
-	template <typename... Args>
-	static EqTStr Format(const CH* pszFormat, Args&&... args);
-
-	static size_t	ReadString(IVirtualStream* stream, EqTStr& output);
 
 	bool		IsValid() const;
 	const CH*	GetData() const { return StrPtr(); }
@@ -94,44 +93,14 @@ public:
 
 	//------------------------------------------------------------------------------------------------
 
-	EqTStr& operator = (const EqTStr& other)
-	{
-		this->Assign( other );
-		return *this;
-	}
+	EqTStr&		operator=(const EqTStr& other);
+	EqTStr&		operator=(const StrRef& other);
+	EqTStr&		operator=(EqTStr&& other) noexcept;
+	EqTStr&		operator=(const CH* pszStr);
+	CH 			operator[](int idx) const;
 
-	EqTStr& operator = (const StrRef& other)
-	{
-		this->Assign(other);
-		return *this;
-	}
-
-	EqTStr& operator = (EqTStr&& other) noexcept
-	{
-		Clear();
-		m_nAllocated = other.m_nAllocated;
-		m_nLength = other.m_nLength;
-		m_pszString = other.m_pszString;
-		other.m_nAllocated = 0;
-		other.m_nLength = 0;
-		other.m_pszString = nullptr;
-		return *this;
-	}
-
-	EqTStr& operator = (const CH* pszStr)
-	{
-		this->Assign( pszStr );
-		return *this;
-	}
-
-	CH operator[](int idx) const
-	{
-		ASSERT(idx >= 0 && idx <= m_nLength);
-		return m_pszString[idx];
-	}
-
-	operator const CH* () const { return ToCString(); }
-	operator StrRef () const { return Ref(); }
+	operator 	const CH* () const { return ToCString(); }
+	operator 	StrRef () const { return Ref(); }
 
 protected:
 
