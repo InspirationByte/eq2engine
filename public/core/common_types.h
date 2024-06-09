@@ -19,8 +19,46 @@
 #define FORCEINLINE		__forceinline
 
 #ifdef __GNUC__
-#define __forceinline __attribute__((always_inline))
+#define __forceinline							__attribute__((always_inline))
+#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos)	__attribute__((format(printf, fmtpos, argspos)))
+#define PRINTF_FMT_CHECK(fmt, ...)
+#else
+#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos)
+#define PRINTF_FMT_CHECK(fmt, ...)				(void)sizeof(printf(fmt, ##__VA_ARGS__)),
 #endif // __GNUC__
+
+#ifdef PLAT_ANDROID
+
+typedef __builtin_va_list	va_list;
+#ifndef va_start
+#	define va_start(v,l)		__builtin_va_start(v,l)
+#endif
+
+#ifndef va_end
+#	define va_end(v)			__builtin_va_end(v)
+#endif
+
+#ifndef va_arg
+#	define va_arg(v,l)			__builtin_va_arg(v,l)
+#endif
+
+#if !defined(__STRICT_ANSI__) || __STDC_VERSION__ + 0 >= 199900L || defined(__GXX_EXPERIMENTAL_CXX0X__)
+
+#	ifndef va_copy
+#		define va_copy(d,s)		__builtin_va_copy(d,s)
+#	endif
+
+#endif
+
+#ifndef __va_copy
+#	define __va_copy(d,s)		__builtin_va_copy(d,s)
+#endif
+
+typedef __builtin_va_list	__gnuc_va_list;
+typedef __gnuc_va_list		va_list;
+typedef va_list				__va_list;
+
+#endif // PLAT_ANDROID
 
 // classname of the main application window
 #define Equilibrium_WINDOW_CLASSNAME "Equilibrium_9826C328_598D_4C2E_85D4_0FF8E0310366"
@@ -74,14 +112,6 @@ static constexpr TR max(T x, T2 y) { return static_cast<TR>((x > y) ? x : y); }
 #define PRIu64   "llu"
 #endif
 #endif
-
-#ifdef __GNUC__
-#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos)	__attribute__((format(printf, fmtpos, argspos)))
-#define PRINTF_FMT_CHECK(fmt, ...)
-#else
-#define ATTRIB_FORMAT_PRINTF(fmtpos, argspos)
-#define PRINTF_FMT_CHECK(fmt, ...)				(void)sizeof(printf(fmt, ##__VA_ARGS__)),
-#endif // __GNUC__
 
 //------------------------------------------------------------------------------------------------
 

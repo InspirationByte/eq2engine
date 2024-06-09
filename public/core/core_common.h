@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <tuple>
 
 #if defined(_INC_MINMAX)
 #error Please remove minmax from includes
@@ -43,6 +44,7 @@
 
 //---------------
 
+#include "platform/platformdefs.h"
 #include "common_types.h"
 
 #include "InterfaceManager.h"
@@ -81,7 +83,6 @@
 #include "ds/List.h"
 
 #include "ds/eqstring.h"
-#include "ds/eqwstring.h"
 
 #include "platform/eqthread.h"
 #include "ds/future.h"

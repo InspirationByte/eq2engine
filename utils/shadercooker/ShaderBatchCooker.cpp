@@ -96,13 +96,15 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	}
 
 	int shaderKind = 0;
-	for (KVKeyIterator keysIter(kinds); !keysIter.atEnd(); ++keysIter)
+	for (const KVSection* key : kinds->Keys())
 	{
-		if (!stricmp(keysIter, "Vertex"))
+		EqStringRef kindStr(key->name);
+
+		if (!kindStr.CompareCaseIns("Vertex"))
 			shaderKind |= SHADERKIND_VERTEX;
-		else if (!stricmp(keysIter, "Fragment"))
+		else if (!kindStr.CompareCaseIns("Fragment"))
 			shaderKind |= SHADERKIND_FRAGMENT;
-		else if (!stricmp(keysIter, "Compute"))
+		else if (!kindStr.CompareCaseIns("Compute"))
 			shaderKind |= SHADERKIND_COMPUTE;
 	}
 
@@ -119,12 +121,12 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	shaderInfo.kind = shaderKind;
 	shaderInfo.isExt = isExt;
 
-	const char* shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
-	if (!stricmp(shaderType, "hlsl"))
+	EqStringRef shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
+	if (!shaderType.CompareCaseIns("hlsl"))
 		shaderInfo.sourceType = SHADERSOURCE_HLSL;
-	else if (!stricmp(shaderType, "glsl"))
+	else if (!shaderType.CompareCaseIns("glsl"))
 		shaderInfo.sourceType = SHADERSOURCE_GLSL;
-	//else if (!stricmp(shaderType, "wgsl"))
+	//else if (!shaderType.CompareCaseIns("wgsl"))
 	//	shaderInfo.sourceType = SHADERSOURCE_WGSL;
 
 	InitShaderVariants(shaderInfo, -1, shaderSection);
@@ -169,7 +171,7 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	EqString extShaderDefFileName;
 	for (const EqString& path : m_targetProps.includePaths)
 	{
-		CombinePath(extShaderDefFileName, path, KV_GetValueString(shaderSection, 0));
+		fnmPathCombine(extShaderDefFileName, path, KV_GetValueString(shaderSection, 0));
 		if (g_fileSystem->FileExist(extShaderDefFileName, SP_ROOT))
 			break;
 	}
@@ -181,12 +183,12 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 		return false;
 	}
 
-	KVSection* shaderRoot = nullptr;
-	for (KVKeyIterator it(&baseShaderRoot, "shader"); !it.atEnd(); ++it)
+	const KVSection* shaderRoot = nullptr;
+	for (const KVSection* shdKey : baseShaderRoot.Keys("shader"))
 	{
-		if (!stricmp(KV_GetValueString(*it), KV_GetValueString(shaderSection, 1)))
+		if (!CString::CompareCaseIns(KV_GetValueString(shdKey), KV_GetValueString(shaderSection, 1)))
 		{
-			shaderRoot = *it;
+			shaderRoot = shdKey;
 			break;
 		}
 	}
@@ -198,7 +200,7 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	}
 
 	// merge sections softly
-	for (KVSection* section : shaderSection->keys)
+	for (KVSection* section : shaderSection->Keys())
 	{
 		KVSection* baseSec = shaderRoot->FindSection(section->GetName());
 		if (baseSec)
@@ -223,29 +225,29 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
 			EqString searchTemplate;
-			CombinePath(searchTemplate, searchFolder, fileName, "*");
+			fnmPathCombine(searchTemplate, searchFolder, fileName, "*");
 
 			SearchFolderForShaders(searchTemplate);
 		}
-		else if (fileName.Path_Extract_Ext().LowerCase() == m_targetProps.sourceShaderDescExt.LowerCase())
+		else if (fnmPathExtractExt(fileName) == m_targetProps.sourceShaderDescExt.LowerCase())
 		{
 			EqString fullShaderPath;
-			CombinePath(fullShaderPath, searchFolder, fileName);
+			fnmPathCombine(fullShaderPath, searchFolder, fileName);
 
 			KVSection rootSec;
 			if (!KV_LoadFromFile(fullShaderPath, SP_ROOT, &rootSec))
 				continue;
 
 			int shadersFound = 0;
-			for (KVKeyIterator it(&rootSec, "shader"); !it.atEnd(); ++it)
+			for (const KVSection* shdKey : rootSec.Keys("shader"))
 			{
-				if(ParseShaderInfo(fullShaderPath, *it))
+				if(ParseShaderInfo(fullShaderPath, shdKey))
 					++shadersFound;
 			}
 
-			for (KVKeyIterator it(&rootSec, "shaderExt"); !it.atEnd(); ++it)
+			for (const KVSection* shdExtKey : rootSec.Keys("shaderExt"))
 			{
-				if(ParseShaderExtensionInfo(fullShaderPath, *it))
+				if(ParseShaderExtensionInfo(fullShaderPath, shdExtKey))
 					++shadersFound;
 			}
 
@@ -260,10 +262,9 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 
 bool CShaderCooker::HasMatchingCRC(uint32 crc)
 {
-	for (int i = 0; i < m_batchConfig.crcSec.keys.numElem(); i++)
+	for (KVSection* crcEntry : m_batchConfig.crcSec.Keys())
 	{
-		uint32 checkCRC = strtoul(m_batchConfig.crcSec.keys[i]->name, nullptr, 10);
-
+		uint32 checkCRC = strtoul(crcEntry->GetName(), nullptr, 10);
 		if (checkCRC == crc)
 			return true;
 	}
@@ -274,10 +275,10 @@ bool CShaderCooker::HasMatchingCRC(uint32 crc)
 void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantIdx, const KVSection* section)
 {
 	bool hasVariantsThisLevel = false;
-	for (const KVSection* nestedSec : section->keys)
+	for (const KVSection* nestedSec : section->Keys())
 	{
-		if (!stricmp(nestedSec->GetName(), "define")
-			|| !stricmp(nestedSec->GetName(), "VertexLayouts"))
+		if (!CString::CompareCaseIns(nestedSec->GetName(), "define")
+		 || !CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
 		{
 			hasVariantsThisLevel = true;
 			break;
@@ -303,50 +304,50 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 	ShaderInfo::Variant& variant = getVariant(thisVariantIndex);
 
 	// collect all defines and vertex layouts
-	for (const KVSection* nestedSec : section->keys)
+	for (const KVSection* nestedSec : section->Keys())
 	{
-		if (!stricmp(nestedSec->GetName(), "define"))
+		if (!CString::CompareCaseIns(nestedSec->GetName(), "define"))
 		{
 			// TODO: define types
 			variant.defines.append(KV_GetValueString(nestedSec));
 		}
-		else if (!stricmp(nestedSec->GetName(), "VertexLayouts"))
+		else if (!CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
 		{
 			// add vertex layouts
-			for (const KVSection* layoutKey : nestedSec->keys)
+			for (const KVSection* layoutKey : nestedSec->Keys())
 			{
 				ShaderInfo::VertLayout& vertLayout = shaderInfo.vertexLayouts.append();
 
 				vertLayout.name = layoutKey->GetName();
 				
-				if (!stricmp(KV_GetValueString(layoutKey, 0), "aliasOf"))
+				if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "aliasOf"))
 				{
 					EqStringRef aliasOfStr = KV_GetValueString(layoutKey, 1);
 					const int aliasLayout = arrayFindIndexF(shaderInfo.vertexLayouts, [aliasOfStr](const ShaderInfo::VertLayout& layout) {
 						return layout.name == aliasOfStr;
 					});
 					if (aliasLayout == -1)
-						MsgError("%s - vertex layout %s for 'aliasOf' not found\n", shaderInfo.name.ToCString(), aliasOfStr);
+						MsgError("%s - vertex layout %s for 'aliasOf' not found\n", shaderInfo.name.ToCString(), aliasOfStr.ToCString());
 
 					vertLayout.aliasOf = aliasLayout;
 				}
-				else if (!stricmp(KV_GetValueString(layoutKey, 0), "excludeDefines"))
+				else if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "excludeDefines"))
 				{
 					for (KVValueIterator<EqString> it(layoutKey, 1); !it.atEnd(); ++it)
-						vertLayout.excludeDefines.append(it);
+						vertLayout.excludeDefines.append(*it);
 				}
 			}
 		}
-		else if(!stricmp(nestedSec->GetName(), "SkipCombo"))
+		else if(!CString::CompareCaseIns(nestedSec->GetName(), "SkipCombo"))
 		{
 			// TODO: expression parser?
 			ShaderInfo::SkipCombo& skipCombo = shaderInfo.skipCombos.append();
 			for (KVValueIterator<EqString> it(nestedSec); !it.atEnd(); ++it)
 			{
-				skipCombo.defines.append(it);
+				skipCombo.defines.append(*it);
 			}
 		}
-		else if (!stricmp(nestedSec->GetName(), "UniformLayout"))
+		else if (!CString::CompareCaseIns(nestedSec->GetName(), "UniformLayout"))
 		{
 			// atm skip
 		}
@@ -362,13 +363,13 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	{
 		for (const EqString& path : m_targetProps.includePaths)
 		{
-			CombinePath(shaderSourceName, path, shaderInfo.sourceFilename);
+			fnmPathCombine(shaderSourceName, path, shaderInfo.sourceFilename);
 			if (g_fileSystem->FileExist(shaderSourceName, SP_ROOT))
 				break;
 		}
 	}
 	else
-		CombinePath(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
+		fnmPathCombine(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
 
 	CMemoryStream shaderSourceString(PP_SL);
 	{
@@ -387,7 +388,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 	CRC32_UpdateChecksum(srcCRC, shaderSourceString.GetBasePointer(), shaderSourceString.GetSize());
 
 	EqString targetFileName;
-	CombinePath(targetFileName, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
+	fnmPathCombine(targetFileName, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
 
 	// now check CRC from loaded file
 	if (HasMatchingCRC(srcCRC))
@@ -715,7 +716,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 	// get the target properties
 	{
 		// load target info
-		const KVSection* targets = kvs.FindSection("Targets");
+		const KVSection* targets = kvs["Targets"];
 		if (!targets)
 		{
 			MsgError("Missing 'Targets' section in '%s'\n", confFileName);
@@ -746,13 +747,13 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 				sourceImageExt = "tga";
 			}
 
-			for (KVKeyIterator it(currentTarget, "includePath"); !it.atEnd(); ++it)
+			for (const KVSection* includePathKey : currentTarget->Keys("includePath"))
 			{
-				EqString includePath = KV_GetValueString(*it);
+				EqString includePath = KV_GetValueString(includePathKey);
 				includePath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
 				includePath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
 
-				m_targetProps.includePaths.append(includePath);
+				m_targetProps.includePaths.append(std::move(includePath));
 			}
 
 			m_targetProps.sourceShaderPath = shadersSrc;
@@ -789,7 +790,7 @@ void CShaderCooker::Execute()
 	Msg("Shader source path: '%s'\n", m_targetProps.sourceShaderPath.ToCString());
 
 	EqString searchTemplate;
-	CombinePath(searchTemplate, m_targetProps.sourceShaderPath, "*");
+	fnmPathCombine(searchTemplate, m_targetProps.sourceShaderPath, "*");
 
 	// walk up shader files
 	SearchFolderForShaders(searchTemplate);

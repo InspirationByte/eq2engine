@@ -29,7 +29,7 @@ public:
 	Image();
 	virtual ~Image();
 
-	void				InitFromKeyValues( KVSection* sec, bool noClear );
+	void				InitFromKeyValues(const KVSection* sec, bool noClear );
 
 	void				SetMaterial(const char* materialName);
 

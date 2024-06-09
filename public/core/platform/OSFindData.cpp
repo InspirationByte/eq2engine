@@ -50,7 +50,7 @@ bool OSFindData::Init(const EqString& searchWildcard)
 	if (m_fileHandle != INVALID_HANDLE_VALUE)
 		return true;
 #elif defined(PLAT_POSIX)
-	m_dirPath = searchWildcard.Path_Extract_Path();
+	m_dirPath = fnmPathExtractPath(searchWildcard);
 	m_dir = opendir(m_dirPath);
 	if (m_dir)
 		return GetNext();

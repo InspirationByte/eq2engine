@@ -8,9 +8,10 @@
 #pragma once
 #include "core/IFilePackageReader.h"
 
-enum EPackageReaderType
+enum EPackageType
 {
-	PACKAGE_READER_DPK = 0,
+	PACKAGE_READER_FLAT = 0,
+	PACKAGE_READER_DPK,
 	PACKAGE_READER_ZIP,
 };
 
@@ -29,17 +30,17 @@ class CBasePackageReader : public IFilePackageReader
 public:
 	static CBasePackageReader*	CreateReaderByExtension(const char* packageName);
 
-	virtual bool				InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
-	virtual bool				OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
+	virtual EPackageType	GetType() const = 0;
 
-	const char*					GetPackageFilename() const	{ return m_packagePath; }
-	int							GetSearchPath() const		{ return m_searchPath; };
-	void						SetSearchPath(int search)	{ m_searchPath = search; };
-	void						SetKey(const char* key)		{ m_key = key; }
+	virtual bool			InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
+	virtual bool			OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
 
-	virtual EPackageReaderType	GetType() const = 0;
+	const char*				GetPackageFilename() const	{ return m_packagePath; }
+	int						GetSearchPath() const		{ return m_searchPath; };
+	void					SetSearchPath(int search)	{ m_searchPath = search; };
+	void					SetKey(const char* key)		{ m_key = key; }
 
-	bool						GetInternalFileName(EqString& packageFilename, const char* fileName) const;
+	bool					GetInternalFileName(EqString& packageFilename, const char* fileName) const;
 
 protected:
 
@@ -48,3 +49,6 @@ protected:
 	EqString		m_key;
 	int				m_searchPath{ -1 };
 };
+
+//--------------------------------------------------
+

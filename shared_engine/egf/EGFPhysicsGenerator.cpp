@@ -207,7 +207,7 @@ int CEGFPhysicsGenerator::FindJointIdx(const char* name)
 {
 	for(int i = 0; i < m_joints.numElem(); i++)
 	{
-		if(!stricmp(m_joints[i].name, name))
+		if(!CString::CompareCaseIns(m_joints[i].name, name))
 		{
 			return i;
 		}
@@ -312,7 +312,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 			bone_index = vertices[firsttri_indx0].weights[0].bone;
 
 		if(bone_index != -1)
-			Msg("Mesh %d uses bone %s\n", i+1, m_srcModel->bones[bone_index]->name);
+			Msg("Mesh %d uses bone %s\n", i+1, m_srcModel->bones[bone_index]->name.ToCString());
 		else
 			Msg("Mesh %d doesn't use bones, it will be static\n", i+1);
 
@@ -458,40 +458,37 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 		if(thisBoneSec)
 		{
 			// get axis and check limits
-			for(int i = 0; i < thisBoneSec->keys.numElem(); i++)
+			for(const KVSection* pKey : thisBoneSec->Keys())
 			{
 				int axis_idx = -1;
-
-				const KVSection* pKey = thisBoneSec->keys[i];
-
-				if( !stricmp(pKey->name, "x_axis") )
+				if( !pKey->name.CompareCaseIns("x_axis") )
 					axis_idx = 0;
-				else if( !stricmp(pKey->name, "y_axis") )
+				else if( !pKey->name.CompareCaseIns("y_axis") )
 					axis_idx = 1;
-				else if( !stricmp(pKey->name, "z_axis") )
+				else if( !pKey->name.CompareCaseIns("z_axis") )
 					axis_idx = 2;
 
-				if( axis_idx != -1 )
+				if (axis_idx == -1)
+					continue;
+
+				// check the value for arguments
+				for(int j = 0; j < pKey->values.numElem(); j++)
 				{
-					// check the value for arguments
-					for(int j = 0; j < pKey->values.numElem(); j++)
+					if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limit" ))
 					{
-						if( !stricmp(KV_GetValueString(pKey, j), "limit" ))
-						{
-							// read limits
-							float lo_limit = KV_GetValueFloat(pKey, j+1);
-							float hi_limit = KV_GetValueFloat(pKey, j+2);
+						// read limits
+						float lo_limit = KV_GetValueFloat(pKey, j+1);
+						float hi_limit = KV_GetValueFloat(pKey, j+2);
 
-							joint.minLimit[axis_idx] = DEG2RAD(lo_limit);
-							joint.maxLimit[axis_idx] = DEG2RAD(hi_limit);
-						}
-						else if( !stricmp(KV_GetValueString(pKey, j), "limitoffset" ))
-						{
-							float offs = KV_GetValueFloat(pKey, j+1);
+						joint.minLimit[axis_idx] = DEG2RAD(lo_limit);
+						joint.maxLimit[axis_idx] = DEG2RAD(hi_limit);
+					}
+					else if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limitoffset" ))
+					{
+						float offs = KV_GetValueFloat(pKey, j+1);
 
-							joint.minLimit[axis_idx] += DEG2RAD(offs);
-							joint.maxLimit[axis_idx] += DEG2RAD(offs);
-						}
+						joint.minLimit[axis_idx] += DEG2RAD(offs);
+						joint.maxLimit[axis_idx] += DEG2RAD(offs);
 					}
 				}
 			}
@@ -775,7 +772,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	CMemoryStream lumpsStream(nullptr, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE, PP_SL);
 
 	WriteLumpToStream(&lumpsStream, PHYSFILE_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
-	WriteLumpToStream(&lumpsStream, PHYSFILE_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
+	WriteLumpToStream(&lumpsStream, PHYSFILE_SHAPEINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
 
 	// write names lump before objects lump
 	// PHYSLUMP_OBJECTNAMES
@@ -806,7 +803,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	WriteLumpToStream(&lumpsStream, PHYSFILE_VERTEXDATA, (ubyte*)m_vertices.ptr(), sizeof(Vector3D) * m_vertices.numElem());
 	WriteLumpToStream(&lumpsStream, PHYSFILE_JOINTDATA,	(ubyte*)m_joints.ptr(), sizeof(physjoint_t) * m_joints.numElem());
 
-	Msg("Total lumps size: %d\n", lumpsStream.GetSize());
+	Msg("Total lumps size: %" PRId64 "\n", lumpsStream.GetSize());
 
 	Msg("Total:\n");
 	Msg("  Vertex count: %d\n", m_vertices.numElem());

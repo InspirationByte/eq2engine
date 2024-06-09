@@ -15,7 +15,7 @@ static constexpr const int MAX_SEQUENCE_TIMERS = 5;
 //--------------------------------------------------------------------------------------
 
 class CEqStudioGeom;
-struct studioJoint_t;
+struct StudioJoint;
 
 class CAnimatingEGF
 {
@@ -24,6 +24,8 @@ public:
 	virtual ~CAnimatingEGF();
 
 	virtual void		InitAnimating(CEqStudioGeom* model);
+	void				InitMotionData(const char* name);
+
 	void				DestroyAnimating();
 
 	int					FindBone(const char* boneName) const;			// finds bone
@@ -51,8 +53,10 @@ public:
 
 	int					FindSequence(const char* name) const;				// finds animation
 	int					FindSequenceByActivity(Activity act, int slot = 0) const;
-	void				SetSequence(int sequenceIndex, int slot = 0);		// sets new sequence
+	void				SetSequence(int sequenceId, int slot = 0);		// sets new sequence
 	void				SetSequenceByName(const char* name, int slot = 0);	// sets new sequence by it's name
+
+	const AnimSequence* GetSequenceById(int sequenceId) const;
 
 	bool				IsSequencePlaying(int slot = 0) const;
 	void				PlaySequence(int slot = 0);							// plays/resumes animation
@@ -90,15 +94,16 @@ public:
 
 protected:
 
+	bool				AddMotionData(const StudioMotionData* motionData);
+
 	void				RaiseSequenceEvents(AnimSequenceTimer& timer);
-	void				UpdateIkChain(AnimIkChain* pIkChain, float fDt);
-	
+	void				UpdateIkChain(AnimIkChain& chain, float fDt);
+
 	virtual Activity	TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
 	virtual void		HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
-	virtual void		AddMotions(CEqStudioGeom* model, const studioMotionData_t& motionData);
-
 	using SequenceTimers = FixedArray<AnimSequenceTimer, MAX_SEQUENCE_TIMERS>;
+	using StudioTransforms = ArrayCRef<studioTransform_t>;
 
 	// transition time from previous
 	// sequence timers. first timer is main, and transitional is last
@@ -111,13 +116,12 @@ protected:
 	Matrix4x4*					m_boneTransforms{ nullptr };
 
 	// local bones/base pose
-	ArrayCRef<studioJoint_t>		m_joints{ nullptr };
-	ArrayCRef<studioTransform_t>	m_transforms{ nullptr };
-
-	// different motion packages has different sequience list
-	Array<AnimSequence>			m_seqList{ PP_SL }; // loaded sequences
-	Array<AnimPoseController>	m_poseControllers{ PP_SL }; // pose controllers
+	ArrayCRef<StudioJoint>		m_joints{ nullptr };
+	StudioTransforms			m_transforms{ nullptr };
+	Array<AnimDataProvider>		m_animData{ PP_SL };
+	Map<int, int>				m_nameToAnimData{ PP_SL };
 	Array<AnimIkChain>			m_ikChains{ PP_SL };
+	Array<AnimPoseController>	m_poseControllers{ PP_SL };
 
 	volatile uint				m_bonesNeedUpdate{ TRUE };
 };

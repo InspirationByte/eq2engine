@@ -295,7 +295,7 @@ CParticleBatch* CParticleRenderer::FindBatch(const char* materialName) const
 {
 	for (CParticleBatch* batch : m_batchs)
 	{
-		if (!stricmp(batch->m_material->GetName(), materialName))
+		if (!CString::CompareCaseIns(batch->m_material->GetName(), materialName))
 			return batch;
 	}
 	return nullptr;

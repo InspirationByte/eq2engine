@@ -21,8 +21,9 @@ TEST(EQSTRING_TESTS, Empty)
 
 	EXPECT_EQ(testString.Length(), 0);
 	ASSERT_TRUE(testString.IsValid());
-	EXPECT_NE(testString.GetData(), nullptr);
-	EXPECT_EQ(*testString.GetData(), 0);
+	EXPECT_EQ(testString.GetData(), nullptr);
+	EXPECT_NE(testString.ToCString(), nullptr);
+	EXPECT_EQ(*testString.ToCString(), 0);
 }
 
 TEST(EQSTRING_TESTS, WithContents)
@@ -141,6 +142,17 @@ TEST(EQSTRING_TESTS, InsertLast)
 	EXPECT_GE(testString.GetSize(), elementsOf(s_StringTestStrTwoParts));
 }
 
+TEST(EQSTRING_TESTS, InsertLastMultipleTimes)
+{
+	EqString testString = s_StringTestStrPart1;
+
+	for(int i = 0; i < 4; ++i)
+		testString.Insert("A", testString.Length());
+
+	EXPECT_EQ(testString, s_StringTestStrPart1 + "AAAA");
+	ASSERT_TRUE(testString.IsValid());
+}
+
 TEST(EQSTRING_TESTS, AppendChars)
 {
 	EqString testString = s_StringTestStrPart1;
@@ -228,8 +240,8 @@ TEST(EQSTRING_TESTS, RemoveChars)
 	// TEST: invalid input
 	{
 		EqString testString(s_StringTestStr1);
-		EXPECT_FATAL_FAILURE([&]() {testString.Remove(-4, 8); }, "nStart");
-		EXPECT_FATAL_FAILURE([&]() {testString.Remove(12, 8); }, "nStart + nCount");
+		EXPECT_FATAL_FAILURE([&]() {testString.Remove(-4, 8); }, "start");
+		EXPECT_FATAL_FAILURE([&]() {testString.Remove(12, 8); }, "start + count");
 
 		ASSERT_TRUE(testString.IsValid());
 	}
@@ -447,3 +459,32 @@ TEST(EQSTRINGREF_TESTS, AppendOperators)
 		EXPECT_EQ(testStr, "Left part and Right part");
 	}
 }
+
+
+TEST(EQSTRINGREF_TESTS, Hash)
+{
+	{
+		const int hashA = StringToHash("Testing String");
+		const int hashB = StringToHashConst("Testing String");
+		EXPECT_EQ(hashA, hashB);
+	}
+
+	{
+		const int hashA = StringToHash("Hashed String 2");
+		const int hashB = StringToHashConst("Hashed String 2");
+		EXPECT_EQ(hashA, hashB);
+	}
+
+	{
+		const int hashA = StringToHash("String 3");
+		const int hashB = StringToHashConst("String 3");
+		EXPECT_EQ(hashA, hashB);
+	}
+
+	{
+		const int hashA = StringToHash(" 3");
+		const int hashB = StringToHashConst(" 2");
+		EXPECT_NE(hashA, hashB);
+	}
+}
+

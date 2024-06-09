@@ -4,31 +4,6 @@
 #include "esl.h"
 #include "esl_event.h"
 
-esl::LuaEvent::Handle::~Handle()
-{
-	if (owner)
-		owner->RemoveHandlerInternal(id);
-}
-
-esl::LuaEvent::Handle::Handle(LuaEvent* event, uint id)
-	: owner(CWeakPtr(event))
-	, id(id)
-{
-}
-
-esl::LuaEvent::Handle::Handle(Handle&& other) noexcept
-	: owner(std::move(other.owner))
-	, id(std::move(other.id)) 
-{
-}
-
-esl::LuaEvent::Handle& esl::LuaEvent::Handle::operator=(Handle&& other) noexcept 
-{
-	owner = std::move(other.owner); 
-	id = std::move(other.id);
-	return *this; 
-}
-
 EQSCRIPT_BIND_TYPE_NO_PARENT(esl::LuaEvent::Handle, "LuaEventHandle", REF_PTR)
 EQSCRIPT_TYPE_BEGIN(esl::LuaEvent::Handle)
 EQSCRIPT_TYPE_END
@@ -42,8 +17,32 @@ EQSCRIPT_TYPE_END
 
 namespace esl
 {
+LuaEvent::Handle::~Handle()
+{
+	if (owner)
+		owner->RemoveHandlerInternal(id);
+}
 
-esl::LuaEvent::HandlePtr LuaEvent::AddHandler(const esl::LuaFunctionRef& func)
+LuaEvent::Handle::Handle(LuaEvent* event, uint id)
+	: owner(CWeakPtr(event))
+	, id(id)
+{
+}
+
+LuaEvent::Handle::Handle(Handle&& other) noexcept
+	: owner(std::move(other.owner))
+	, id(std::move(other.id))
+{
+}
+
+LuaEvent::Handle& LuaEvent::Handle::operator=(Handle&& other) noexcept
+{
+	owner = std::move(other.owner);
+	id = std::move(other.id);
+	return *this;
+}
+
+LuaEvent::HandlePtr LuaEvent::AddHandler(const LuaFunctionRef& func)
 {
 	HandlePtr handle = CRefPtr_new(Handle, CWeakPtr(this), m_handleIdCnt++);
 	m_eventHandlers.insert(handle->id, func);

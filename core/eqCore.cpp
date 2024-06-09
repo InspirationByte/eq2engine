@@ -154,6 +154,7 @@ static void SetupBinPath()
 
 }
 
+
 // Definition that we can't see or change throught console
 bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 {
@@ -219,7 +220,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	bool logEnabled = false;
 
-	KVSection* appDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
+	const KVSection* appDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
 	if(appDebug)
 	{
 		if(appDebug->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
@@ -228,27 +229,30 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		if(appDebug->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			g_bPrintLeaksOnShutdown = true;
 
-		Array<EqString> devModeList(PP_SL);
-
-		KVSection* devModesKv = appDebug->FindSection("DeveloperMode");
-		if(devModesKv)
 		{
-			for(int i = 0; i < devModesKv->values.numElem();i++)
-				devModeList.append(KV_GetValueString(devModesKv, i));
+			Array<EqStringRef> devModeList(PP_SL);
+			const KVSection* devModesKv = appDebug->FindSection("DeveloperMode");
+			if (devModesKv)
+			{
+				for (EqStringRef mode : devModesKv->Values<EqStringRef>())
+					devModeList.append(mode);
 
-			if (devModeList.numElem())
-				developer.DispatchFunc(devModeList);
+				if (devModeList.numElem())
+					developer.DispatchFunc(devModeList);
+			}
 		}
 
-		KVSection* pForceLogged = appDebug->FindSection("ForceLogApplications");
-		if(pForceLogged)
 		{
-			for(int i = 0; i < pForceLogged->values.numElem();i++)
+			const KVSection* forceLogApps = appDebug->FindSection("ForceLogApplications");
+			if (forceLogApps)
 			{
-				if(!stricmp(KV_GetValueString(pForceLogged, i), m_szApplicationName.ToCString()))
+				for (EqStringRef appName : forceLogApps->Values<EqStringRef>())
 				{
-					logEnabled = true;
-					break;
+					if (!m_szApplicationName.CompareCaseIns(appName))
+					{
+						logEnabled = true;
+						break;
+					}
 				}
 			}
 		}
@@ -371,7 +375,7 @@ void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!strcmp(m_interfaces[i].name, pszName))
+		if(!CString::Compare(m_interfaces[i].name, pszName))
 			ASSERT_FAIL("Core interface module \"%s\" is already registered.", pszName);
 	}
 
@@ -394,7 +398,7 @@ IEqCoreModule* CDkCore::GetInterface(const char* pszName) const
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!strcmp(m_interfaces[i].name, pszName))
+		if(!CString::Compare(m_interfaces[i].name, pszName))
 			return m_interfaces[i].ptr;
 	}
 
@@ -405,7 +409,7 @@ void CDkCore::UnregisterInterface(const char* pszName)
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!strcmp(m_interfaces[i].name, pszName))
+		if(!CString::Compare(m_interfaces[i].name, pszName))
 		{
 			m_interfaces.fastRemoveIndex(i);
 			return;

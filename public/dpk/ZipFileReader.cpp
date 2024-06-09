@@ -162,7 +162,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	if (mountPath)
 	{
 		m_mountPath = mountPath;
-		m_mountPath.Path_FixSlashes();
+		fnmPathFixSeparators(m_mountPath);
 	}
 	else if (unzLocateFile(zip, "dpkmount", 2) == UNZ_OK)
 	{
@@ -175,7 +175,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 			mountFile.Read(path, mountFile.GetSize(), 1);
 
 			m_mountPath = path;
-			m_mountPath.Path_FixSlashes();
+			fnmPathFixSeparators(m_mountPath);
 		}
 	}
 

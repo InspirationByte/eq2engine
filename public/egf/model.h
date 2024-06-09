@@ -10,14 +10,18 @@
 #include "physmodel.h"
 #include "motionpackage.h"
 
+constexpr EqStringRef s_egfGeomExt = "egf";
+constexpr EqStringRef s_egfMotionPackageExt = "mop";
+constexpr EqStringRef s_egfPhysicsObjectExt = "pod";
+
 // those are just runtime limits, they don't affect file data.
 static constexpr const int MAX_MOTIONPACKAGES = 8;		// maximum allowed motion packages to be used in model
 static constexpr const int MAX_STUDIOMATERIALS = 32;	// maximum allowed materials in model
 
-enum EEGFPrimType
+enum EStudioPrimType
 {
-	EGFPRIM_TRIANGLES		= 0,
-	EGFPRIM_TRI_STRIP		= 2,
+	STUDIO_PRIM_TRIANGLES	= 0,
+	STUDIO_PRIM_TRI_STRIP	= 2,
 };
 
 // Base model header
@@ -48,86 +52,56 @@ ALIGNED_TYPE(lumpfilelump_s, 4) lumpfilelump_t;
 
 //----------------------------------------------------------------------------------------------
 
-// shape cache data
-struct studioPhysShapeCache_t
+struct StudioPhyShapeData
 {
-	physgeominfo_t	shapeInfo;
-	void*			cachedata;
+	physgeominfo_t	desc;
+	void*			cacheRef;
 };
 
-struct studioPhysObject_t
+struct StudioPhyObjData
 {
-	char			name[32];
-	physobject_t	object;
-	void*			shapeCache[MAX_PHYS_GEOM_PER_OBJECT];		// indexes of geomdata
+	using ShapeRefList = void* [MAX_PHYS_GEOM_PER_OBJECT];
+
+	physobject_t	desc;
+	EqString		name;
+	ShapeRefList	shapeCacheRefs;
 };
 
-// physics model data from POD
-struct studioPhysData_t
+struct StudioPhysData
 {
-	int						usageType{ 0 };
+	using Shape = StudioPhyShapeData;
+	using Object = StudioPhyObjData;
 
-	studioPhysObject_t*		objects{ nullptr };
-	int						numObjects{ 0 };
+	ArrayRef<Object>		objects{ nullptr };
+	ArrayRef<physjoint_t>	joints{ nullptr };
+	ArrayRef<Shape>			shapes{ nullptr };
+	ArrayRef<Vector3D>		vertices{ nullptr };
+	ArrayRef<int>			indices{ nullptr };
 
-	physjoint_t*			joints{ nullptr };
-	int						numJoints{ 0 };
-
-	studioPhysShapeCache_t* shapes{ nullptr };
-	int						numShapes{ 0 };
-
-	Vector3D*				vertices{ nullptr };
-	int						numVertices{ 0 };
-
-	int*					indices{ nullptr };
-	int						numIndices{ 0 };
+	EPhysModelUsage			usageType{ PHYSMODEL_USAGE_NONE };
 };
 
-inline int PhysModel_FindObjectId(const studioPhysData_t* model, const char* name)
+inline int PhysModel_FindObjectId(const StudioPhysData& physData, const char* name)
 {
-	for (int i = 0; i < model->numObjects; i++)
-	{
-		if (!stricmp(model->objects[i].name, name))
-			return i;
-	}
-
-	return -1;
+	const int idx = arrayFindIndexF(physData.objects, [name](const StudioPhyObjData& obj) {
+		return !obj.name.CompareCaseIns(name);
+	});
+	return idx;
 }
 
-struct studioMotionData_t
+struct StudioMotionData
 {
-	// animations
-	int					numAnimations{ 0 };
-
-	struct animation_t
-	{
-		char	name[44]{ 0 };
-		//int		numFrames{ 0 };
-
-		// bones, in count of studiohwdata_t::numJoints
-		struct boneKeyFrames_t
-		{
-			int				numFrames{ 0 };
-			animframe_t*	keyFrames{ nullptr };
-		}*		bones{ nullptr };
-	}*animations{ nullptr };
-
-	// sequences
-	int					numsequences{ 0 };
-	sequencedesc_t*		sequences{ nullptr };
-
-	// events
-	int					numEvents{ 0 };
-	sequenceevent_t*	events{ nullptr };
-
-	// pose controllers
-	int					numPoseControllers{ 0 };
-	posecontroller_t*	poseControllers{ nullptr };
-
-	animframe_t*		frames{ nullptr };
+	EqString					name;
+	int							nameHash{ 0 };
+	int							cacheIdx{ -1 };
+	ArrayRef<animationdesc_t>	animations{ nullptr };
+	ArrayRef<sequencedesc_t>	sequences{ nullptr };
+	ArrayRef<sequenceevent_t>	events{ nullptr };
+	ArrayRef<posecontroller_t>	poseControllers{ nullptr };
+	ArrayRef<animframe_t>		frames{ nullptr };
 };
 
-struct studioJoint_t
+struct StudioJoint
 {
 	Matrix4x4			absTrans;
 	Matrix4x4			invAbsTrans;
@@ -143,5 +117,3 @@ struct studioJoint_t
 	int					ikLinkId{ -1 };
 };
 
-typedef studioMotionData_t::animation_t						studioAnimation_t;
-typedef studioMotionData_t::animation_t::boneKeyFrames_t	studioBoneAnimation_t;

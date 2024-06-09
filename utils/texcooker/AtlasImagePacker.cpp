@@ -11,8 +11,7 @@
 #include "utils/RectanglePacker.h"
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
-
-static const EqString s_outputTag("%OUTPUT%");
+#include "texcooker_defs.h"
 
 unsigned long UpperPowerOfTwo(unsigned long v)
 {
@@ -48,8 +47,9 @@ enum EBlendMode
 	BLEND_MODES,
 };
 
-static const char* s_blendModeStr[] = 
+constexpr EqStringRef s_blendModeStr[] = 
 {
+	"none",
 	"lerp",
 	"add",
 	"sub",
@@ -106,7 +106,7 @@ static EBlendMode GetBlendmodeByStr(const char* mode)
 {
 	for(int i = 0; i < BLEND_MODES; i++)
 	{
-		if(!stricmp(s_blendModeStr[i], mode))
+		if(!s_blendModeStr[i].CompareCaseIns(mode))
 			return (EBlendMode)i;
 	}
 
@@ -132,7 +132,7 @@ struct ImageDesc
 //
 static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSection* kv)
 {
-	EqString atlas_dir = _Es(atlasPath).Path_Strip_Name();
+	EqString atlas_dir = fnmPathStripName(atlasPath);
 	EqString image_name = KV_GetValueString(kv, 0, nullptr);
 
 	if(image_name.Length() == 0)
@@ -142,7 +142,7 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 	}
 
 	// always strip extension
-	dest.name = image_name.Path_Strip_Ext();
+	dest.name = fnmPathStripExt(image_name);
 
 	if(!kv->IsSection())
 	{
@@ -168,12 +168,10 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 		// FORMAT IS:
 		// EBlendMode [optional imageName] [optional transparency] [optional R G B]
 
-		for(int i = 0; i < kv->keys.numElem(); i++)
+		for(const KVSection* kb : kv->Keys())
 		{
-			KVSection* kb = kv->keys[i];
-
 			ImgLayer& layer = dest.layers.append();
-			layer.blendMode = GetBlendmodeByStr( kb->name );
+			layer.blendMode = GetBlendmodeByStr( kb->GetName() );
 			layer.image = nullptr;
 
 			EqString image_path = KV_GetValueString(kb,0, nullptr);
@@ -355,16 +353,16 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	int padding = KV_GetValueInt(pParams->FindSection("padding"), 0, 0);
 	EPaddingMode padMode = PAD_NONE;
 
-	const char* padModeStr = KV_GetValueString(pParams->FindSection("padding"), 1, "none");
-	if(!stricmp(padModeStr, "clamp"))
+	EqStringRef padModeStr = KV_GetValueString(pParams->FindSection("padding"), 1, "none");
+	if(!padModeStr.CompareCaseIns("clamp"))
 	{
 		padMode = PAD_CLAMP;
 	}
-	else if(!stricmp(padModeStr, "repeat"))
+	else if(!padModeStr.CompareCaseIns("repeat"))
 	{
 		padMode = PAD_REPEAT;
 	}
-	else if(!stricmp(padModeStr, "mirror"))
+	else if(!padModeStr.CompareCaseIns("mirror"))
 	{
 		padMode = PAD_MIRROR;
 	}
@@ -417,12 +415,12 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	memset(destData, 0, destImage.GetMipMappedSize(0, destImage.GetMipMapCount()));
 
 	EqString fullMaterialPath;
-	CombinePath(fullMaterialPath, materialsPath, outputMaterialName);
-	const EqString imageFileName = fullMaterialPath + ".tga";
-	const EqString matFileName = fullMaterialPath + ".mat";
-	const EqString atlasFileName = fullMaterialPath + ".atlas";
+	fnmPathCombine(fullMaterialPath, materialsPath, outputMaterialName);
+	const EqString imageFileName = fnmPathApplyExt(fullMaterialPath, s_sourceTextureFileExt);
+	const EqString matFileName = fnmPathApplyExt(fullMaterialPath, s_materialFileExt);
+	const EqString atlasFileName = fnmPathApplyExt(fullMaterialPath, s_materialAtlasFileExt);
 
-	g_fileSystem->MakeDir(matFileName.Path_Strip_Name(), SP_ROOT);
+	g_fileSystem->MakeDir(fnmPathStripName(matFileName), SP_ROOT);
 
 	// save atlas info
 	KeyValues kvs;

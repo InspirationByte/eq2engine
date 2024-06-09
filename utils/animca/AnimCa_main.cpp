@@ -12,6 +12,7 @@
 #include "core/ConVar.h"
 
 #include "egf/MotionPackageGenerator.h"
+#include "egf/model.h"
 
 class IShaderAPI* g_renderAPI = nullptr;
 class IMaterialSystem* g_matSystem = nullptr;
@@ -53,7 +54,7 @@ int main(int argc, char **argv)
 
 	g_cmdLine->ExecuteCommandLine();
 
-	if(!stricmp("none", c_filename.GetString()))
+	if(!CString::CompareCaseIns("none", c_filename.GetString()))
 	{
 		MsgError("example: animca +filename <asc_script.asc>\n");
 	}

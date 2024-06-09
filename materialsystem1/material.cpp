@@ -16,9 +16,6 @@
 
 DECLARE_CVAR(r_allowSourceTextures, "0", "enable materials and textures loading from source paths", CV_CHEAT);
 
-#define MATERIAL_FILE_EXTENSION		".mat"
-#define ATLAS_FILE_EXTENSION		".atlas"
-
 using namespace Threading;
 static CEqMutex s_materialVarMutex;
 
@@ -69,26 +66,25 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		//
 		// loading a material description
 		//
-		EqString atlasKVSFileName(materialsPaths[i] + m_szMaterialName + ATLAS_FILE_EXTENSION);
-		EqString materialKVSFilename(materialsPaths[i] + m_szMaterialName + MATERIAL_FILE_EXTENSION);
+		EqString atlasKVSFileName;
+		fnmPathCombine(atlasKVSFileName, materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialAtlasFileExt));
+
+		EqString materialKVSFilename;
+		fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialFileExt));
 
 		// load atlas file
-		if (g_fileSystem->FileExist(atlasKVSFileName, materialSearchPath))
+		if (!m_atlas)
 		{
-			KVSection root;
-			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &root))
+			KVSection atlRoot;
+			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &atlRoot))
 			{
-				KVSection* atlasSec = root.FindSection("atlasgroup");
-
+				const KVSection* atlasSec = atlRoot["AtlasGroup"];
 				if (atlasSec)
 				{
-					if (!m_atlas)
-						m_atlas = PPNew CTextureAtlas(atlasSec);
-
-					root.Cleanup();
+					m_atlas = PPNew CTextureAtlas(atlasSec);
 
 					// atlas can override material name
-					materialKVSFilename = (materialsPaths[i] + _Es(m_atlas->GetMaterialName()) + MATERIAL_FILE_EXTENSION);
+					fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_atlas->GetMaterialName(), s_materialFileExt));
 				}
 				else
 					MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.ToCString());
@@ -99,6 +95,10 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		if( KV_LoadFromFile(materialKVSFilename.ToCString(), materialSearchPath, &root))
 		{
 			success = true;
+		}
+		else
+		{
+			SAFE_DELETE(m_atlas);
 		}
 	}
 
@@ -156,19 +156,19 @@ void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 		return;
 
 	// try any kind of proxy
-	for(int i = 0; i < proxySec->keys.numElem();i++)
+	for(const KVSection* proxyItemSec : proxySec->Keys())
 	{
-		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName( proxySec->keys[i]->name );
+		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName(proxyItemSec->name );
 
 		if(pProxy)
 		{
 			// initialize proxy
-			pProxy->InitProxy( this, proxySec->keys[i] );
+			pProxy->InitProxy( this, proxyItemSec);
 			m_proxies.append( pProxy );
 		}
 		else
 		{
-			MsgWarning("Unknown proxy '%s' for material %s!\n", proxySec->keys[i]->name, m_szMaterialName.GetData());
+			MsgWarning("Unknown proxy '%s' for material %s!\n", proxyItemSec->GetName(), m_szMaterialName.GetData());
 		}
 	}
 }
@@ -180,14 +180,13 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 {
 	int numMaterialVars = 0;
 
-	for (int i = 0; i < kvs->keys.numElem(); i++)
+	for (const KVSection* materialVarSec : kvs->Keys())
 	{
-		const KVSection* materialVarSec = kvs->keys[i];
 		if (materialVarSec->IsSection())
 			continue;
 
 		// ignore some preserved vars
-		if (!stricmp(materialVarSec->GetName(), "Shader"))
+		if (!CString::CompareCaseIns(materialVarSec->GetName(), "Shader"))
 			continue;
 
 		++numMaterialVars;
@@ -196,14 +195,13 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 	m_vars.variables.reserve(numMaterialVars);
 
 	// init material vars
-	for(int i = 0; i < kvs->keys.numElem();i++)
+	for(const KVSection* materialVarSec : kvs->Keys())
 	{
-		const KVSection* materialVarSec = kvs->keys[i];
 		if(materialVarSec->IsSection() )
 			continue;
 
 		// ignore some preserved vars
-		if( !stricmp(materialVarSec->GetName(), "Shader") )
+		if( !CString::CompareCaseIns(materialVarSec->GetName(), "Shader") )
 			continue;
 
 		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec->GetName()) : _Es(materialVarSec->GetName()));

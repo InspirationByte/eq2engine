@@ -58,7 +58,7 @@ inline const wchar_t* LocalizedString( const char* pszString )
 	if(!pszString || (pszString && pszString[0] == '\0'))
 		return defaultUnicodeString;
 
-	EqStringConv::CUTF8Conv(defaultUnicodeString, pszString);
+	AnsiUnicodeConverter(defaultUnicodeString, pszString);
 
 	if(pszString[0] == L'#')
 	{

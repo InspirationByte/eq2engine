@@ -263,7 +263,7 @@ static KVSection s_variables;
 
 static void ProcessVariableString(EqString& string)
 {
-	for (const KVSection* key : s_variables.keys)
+	for (const KVSection* key : s_variables.Keys())
 	{
 		int found = 0;
 		do {
@@ -356,11 +356,11 @@ int CFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* alia
 				if (!folderFind.IsDirectory())
 					continue;
 
-				const char* name = folderFind.GetCurrentPath();
-				if (!stricmp("..", name) || !stricmp(".", name))
+				EqStringRef name = folderFind.GetCurrentPath();
+				if (name == ".."|| name == ".")
 					continue;
 
-				EqString targetFilename = EqString::Format("%s/%s", aliasPrefixTrimmed.ToCString(), name);
+				EqString targetFilename = EqString::Format("%s/%s", aliasPrefixTrimmed.ToCString(), name.ToCString());
 
 				fileCount += AddDirectory(EqString::Format("%s/%s/%s", nonWildcardFolder.ToCString(), name, wildcard.ToCString()), targetFilename);
 
@@ -375,7 +375,7 @@ static bool CheckExtensionList(Array<EqString>& extList, const char* ext)
 {
 	for (EqString& fromListExt : extList)
 	{
-		if (!stricmp(fromListExt, ext))
+		if (!fromListExt.CompareCaseIns(ext))
 			return true;
 	}
 	return false;
@@ -393,18 +393,18 @@ static void CookPackageTarget(const char* targetName)
 	}
 
 	EqString outputFileName(targetName);
-	if (outputFileName.Path_Extract_Ext().Length() == 0)
-		outputFileName.Append(".epk");
+	if (fnmPathExtractExt(outputFileName).Length() == 0)
+		outputFileName = fnmPathApplyExt(outputFileName, s_dpkPackageDefaultExt);
 
 	// load target info
-	KVSection* packages = kvs.FindSection("Packages");
+	const KVSection* packages = kvs["Packages"];
 	if (!packages)
 	{
 		MsgError("Missing 'Packages' section in 'PackageCooker.CONFIG'\n");
 		return;
 	}
 
-	KVSection* currentTarget = packages->FindSection(targetName);
+	const KVSection* currentTarget = packages->FindSection(targetName);
 	if (!currentTarget)
 	{
 		MsgError("Cannot find package section '%s'\n", targetName);
@@ -445,7 +445,7 @@ static void CookPackageTarget(const char* targetName)
 	for (int i = 0; i < currentTarget->KeyCount(); ++i)
 	{
 		const KVSection* kvSec = currentTarget->KeyAt(i);
-		if (!stricmp(kvSec->GetName(), "add"))
+		if (!CString::CompareCaseIns(kvSec->GetName(), "add"))
 		{
 			EqString wildcard = KV_GetValueString(kvSec);
 			EqString targetNameOrDir = KV_GetValueString(kvSec, 1, wildcard);
@@ -454,7 +454,7 @@ static void CookPackageTarget(const char* targetName)
 			ProcessVariableString(targetNameOrDir);
 
 			const int wildcardStart = wildcard.Find("*");
-			if (wildcardStart == -1 && wildcard.Path_Extract_Name().Length() > 0)
+			if (wildcardStart == -1 && fnmPathExtractName(wildcard).Length() > 0)
 			{
 				// try adding file directly
 				if(fileListBuilder.AddFile(wildcard, targetNameOrDir))
@@ -466,7 +466,7 @@ static void CookPackageTarget(const char* targetName)
 				Msg("Adding %d files in '%s' as '%s' to package\n", fileCount, wildcard.ToCString(), targetNameOrDir.ToCString());
 			}
 		}
-		else if (!stricmp(kvSec->GetName(), "ignoreCompressionExt"))
+		else if (!CString::CompareCaseIns(kvSec->GetName(), "ignoreCompressionExt"))
 		{
 			EqString extName = KV_GetValueString(kvSec);
 			ProcessVariableString(extName);
@@ -477,9 +477,9 @@ static void CookPackageTarget(const char* targetName)
 	}
 	
 	// also make a folder
-	outputFileName.Path_FixSlashes();
-	const EqString packagePath = outputFileName.Path_Extract_Path().TrimChar(CORRECT_PATH_SEPARATOR);
-	if (packagePath.Length() > 0 && packagePath.Path_Extract_Ext().Length() == 0)
+	fnmPathFixSeparators(outputFileName);
+	const EqString packagePath = fnmPathExtractPath(outputFileName).TrimChar(CORRECT_PATH_SEPARATOR);
+	if (packagePath.Length() > 0 && fnmPathExtractExt(packagePath).Length() == 0)
 		g_fileSystem->MakeDir(packagePath, SP_ROOT);
 
 	if (!fileListBuilder.GetFiles().numElem())
@@ -499,7 +499,7 @@ static void CookPackageTarget(const char* targetName)
 		const int maxFiles = fileListBuilder.GetFiles().numElem();
 		for (const CFileListBuilder::FileInfo& fileInfo : fileListBuilder.GetFiles())
 		{
-			const EqString fileExt = _Es(fileInfo.fileName).Path_Extract_Ext();
+			const EqString fileExt = fnmPathExtractExt(fileInfo.fileName);
 			const bool skipCompression = CheckExtensionList(ignoreCompressionExt, fileExt);
 
 			int targetFileFlags = (skipCompression ? 0 : DPKFILE_FLAG_COMPRESSED) | DPKFILE_FLAG_ENCRYPTED;
@@ -525,8 +525,8 @@ static void CookPackageTarget(const char* targetName)
 			IVirtualStreamPtr stream(&fileMemoryStream);
 			if (loadRawFile)
 			{
-				stream = g_fileSystem->Open(fileInfo.fileName.ToCString(), "rb", SP_ROOT);
-				if (fileInfo.fileName.Path_Extract_Ext() == EqStringRef("epk"))
+				stream = g_fileSystem->Open(fileInfo.fileName, "rb", SP_ROOT);
+				if (fnmPathExtractExt(fileInfo.fileName) == s_dpkPackageDefaultExt)
 				{
 					// validate EPK file
 					dpkheader_t hdr;

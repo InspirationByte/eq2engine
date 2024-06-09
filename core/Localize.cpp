@@ -18,7 +18,7 @@ EXPORTED_INTERFACE(ILocalize, CLocalize);
 
 static void languageChangeCb(ConVar* pVar, char const* pszOldValue)
 {
-	if (!stricmp(pVar->GetString(), pszOldValue))
+	if (!CString::CompareCaseIns(pVar->GetString(), pszOldValue))
 		return;
 
 	if (!g_localizer->IsInitialized())
@@ -78,14 +78,18 @@ static void ReplaceStrFmt(EqWString& str)
 }
 
 CLocToken::CLocToken(const char* tok, const wchar_t* text, bool customToken)
-	: m_token(tok), m_text(text), m_customToken(customToken)
+	: m_token(tok)
+	, m_text(text)
+	, m_customToken(customToken)
 {
 	ReplaceStrFmt(m_text);
 }
 
 CLocToken::CLocToken(const char* tok, const char* text, bool customToken)
-	: m_token(tok), m_text(text), m_customToken(customToken)
+	: m_token(tok)
+	, m_customToken(customToken)
 {
+	AnsiUnicodeConverter(m_text, text);
 	ReplaceStrFmt(m_text);
 }
 
@@ -131,7 +135,7 @@ void CLocalize::ReloadLanguageFiles()
 
 		// de-localize token
 		token.m_token.Clear();
-		EqStringConv::CUTF8Conv(token.m_text, token.m_token);
+		AnsiUnicodeConverter(token.m_text, token.m_token);
 	}
 
 	for (EqString& tokenFilePrefix : m_languageFilePrefixes)
@@ -150,14 +154,15 @@ void CLocalize::SetLanguageName(const char* name)
 	// try using EqConfig regional settings instead
 	if (m_language.Length() == 0)
 	{
-		const KVSection* pRegional = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
-		if (!pRegional)
+		const KVSection* regionalCfg = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
+		if (!regionalCfg)
 		{
 			Msg("Core config missing RegionalSettings section... force english!\n");
 			return;
 		}
-		const KVSection* defaultLanguage = pRegional ? pRegional->FindSection("DefaultLanguage") : nullptr;
-		m_language = KV_GetValueString(defaultLanguage, 0, "english");
+
+		m_language = "english";
+		regionalCfg->Get("DefaultLanguage").GetValues(m_language);
 	}
 
 	// add localized path
@@ -188,39 +193,71 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 
 void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 {
-	EqString path = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
+	const EqString textFilePath = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
 
-	KVSection kvSec;
-	if (!KV_LoadFromFile(path, -1, &kvSec))
-	{
-		MsgWarning("Cannot load language file '%s'\n", path.ToCString());
+	VSSize fileSize = 0;
+	char* fileData = reinterpret_cast<char*>(g_fileSystem->GetFileBuffer(textFilePath, &fileSize));
+	if (!fileData)
 		return;
-	}
 
-	if(!kvSec.unicode)
-		MsgWarning("Localization warning (%s): file is not unicode\n", path.ToCString());
+	char* fileStart = fileData;
+	defer{
+		PPFree(fileData);
+	};
 
-	for(const KVSection* key : kvSec.keys)
+	// check for BOM and skip if needed
 	{
-		if(!stricmp(key->name, "#include" ))
+		const ushort byteordermark = *((ushort*)fileStart);
+		if (byteordermark == 0xbbef)
 		{
-			ParseLanguageFile( KV_GetValueString(key), reload);
-			continue;
+			// skip this three byte bom
+			fileStart += 3;
+			fileSize -= 3;
 		}
-
-		// Cannot add same one
-		if(!reload && _FindToken( key->name ))
+		else if (byteordermark == 0xfeff)
 		{
-			MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, key->name );
-			continue;
+			MsgError("%s: Only UTF-8 language files supported", textFilePath.ToCString());
+			return;
 		}
-
-		const char* pszUTF8TokenString = KV_GetValueString(key);
-		LocalizeConvertSymbols((char*)pszUTF8TokenString, true);
-
-		const int hash = StringToHash(key->name, true);
-		m_tokens.insert(hash, CLocToken(key->name, pszUTF8TokenString, false));
 	}
+
+	FixedArray<EqString, 2> currentTokens;
+
+	KV_Tokenizer(fileStart, fileSize, textFilePath, [&](int line, const char* dataPtr, const char* sig, va_list args) {
+		switch (*sig)
+		{
+		case 't':   // text token
+		{
+			const char* text = va_arg(args, char*);
+			currentTokens.append(text);
+
+			break;
+		}
+		case 'b': // break
+		{
+			if (currentTokens.numElem() == 2)
+			{
+				// Cannot add same one
+				if (!reload && _FindToken(currentTokens[0]))
+				{
+					MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, currentTokens[0].ToCString());
+					currentTokens.clear();
+					break;
+				}
+
+				LocalizeConvertSymbols((char*)currentTokens[1].GetData(), true);
+
+				const int hash = StringToHash(currentTokens[0].ToCString(), true);
+				m_tokens.insert(hash, CLocToken(currentTokens[0], currentTokens[1], false));
+			}
+
+			currentTokens.clear();
+			break;
+		}
+		}
+
+		return KV_PARSE_RESUME;
+	});
 }
 
 const ILocToken* CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)

@@ -33,7 +33,7 @@ class IFileSystem : public IEqCoreModule
 {
 	friend class CFileSystemFind;
 public:
-	CORE_INTERFACE("E2_Filesystem_007")
+	CORE_INTERFACE("E2_Filesystem_009")
 
     // Initialization of filesystem
     virtual bool			Init(bool bEditorMode) = 0;
@@ -46,42 +46,43 @@ public:
 	// something like working directory
 	virtual void			SetBasePath(const char* path) = 0;
 	virtual const char*		GetBasePath() const = 0;
-
+	
 	virtual EqString		GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const = 0;
-
-    // Returns current game path
-    virtual const char*		GetCurrentGameDirectory() const = 0;
-
-    // Returns current engine data path
-    virtual const char*		GetCurrentDataDirectory() const = 0;
-
+	
+	// Returns current game path
+	virtual const char*		GetCurrentGameDirectory() const = 0;
+	
+	// Returns current engine data path
+	virtual const char*		GetCurrentDataDirectory() const = 0;
+	
 	// adds data directory for file search
 	virtual void			AddSearchPath(const char* pathId, const char* pszDir) = 0;
 	virtual void			RemoveSearchPath(const char* pathId) = 0;
-
+	
 	// renames file or directory
 	virtual void			Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const = 0;
-
-    // Directory operations
-    virtual void			MakeDir(const char* dirname, ESearchPath search ) const = 0;
-    virtual void			RemoveDir(const char* dirname, ESearchPath search ) const = 0;
-
+	
+	// Directory operations
+	virtual bool			DirExist(const char* dirname, ESearchPath search) const = 0;
+	virtual void			MakeDir(const char* dirname, ESearchPath search ) const = 0;
+	virtual void			RemoveDir(const char* dirname, ESearchPath search ) const = 0;
+	
 	//------------------------------------------------------------
 	// File operations
 	//------------------------------------------------------------
-
-    virtual IFilePtr		Open( const char* filename, const char* mode = "r", int searchFlags = -1) = 0;
-
+	
+	virtual IFilePtr		Open( const char* filename, const char* mode = "r", int searchFlags = -1) = 0;
+	
 	// other operations
 	virtual EqString		FindFilePath(const char* filename, int searchFlags = -1) const = 0;
 	virtual bool			FileExist(const char* filename, int searchFlags = -1) const = 0;
 	virtual void			FileRemove(const char* filename, ESearchPath search ) const = 0;
 	virtual bool			FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search) = 0;
-
+	
 	// The next ones are deprecated and will be removed
-
-    virtual ubyte*			GetFileBuffer(const char* filename, VSSize* filesize = 0, int searchFlags = -1) = 0;
-    virtual VSSize			GetFileSize(const char* filename, int searchFlags = -1) = 0;
+	
+	virtual ubyte*			GetFileBuffer(const char* filename, VSSize* filesize = 0, int searchFlags = -1) = 0;
+	virtual VSSize			GetFileSize(const char* filename, int searchFlags = -1) = 0;
 	virtual uint32			GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 
 	//------------------------------------------------------------

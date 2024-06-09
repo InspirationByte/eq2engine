@@ -9,13 +9,12 @@
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
 #include "core/IFileSystem.h"
+#include "texcooker_defs.h"
 
 void Usage()
 {
 	MsgWarning("USAGE:\n	texcooker -target <target name>\n");
 }
-
-extern void CookTarget(const char* pszTargetName);
 
 int main(int argc, char* argv[])
 {

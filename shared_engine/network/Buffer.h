@@ -8,7 +8,6 @@
 #pragma once
 
 struct KVSection;
-class EqString;
 
 namespace Networking
 {

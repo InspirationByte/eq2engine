@@ -165,15 +165,17 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
 	
-	if (!stricmp(wgpu_backend.GetString(), "D3D11"))
+	EqStringRef backendName = wgpu_backend.GetString();
+
+	if (!backendName.CompareCaseIns("D3D11"))
 		options.backendType = WGPUBackendType_D3D11;
-	else if(!stricmp(wgpu_backend.GetString(), "D3D12"))
+	else if(!backendName.CompareCaseIns("D3D12"))
 		options.backendType = WGPUBackendType_D3D12;
-	else if (!stricmp(wgpu_backend.GetString(), "Vulkan"))
+	else if (!backendName.CompareCaseIns("Vulkan"))
 		options.backendType = WGPUBackendType_Vulkan;
-	else if (!stricmp(wgpu_backend.GetString(), "OpenGL"))
+	else if (!backendName.CompareCaseIns("OpenGL"))
 		options.backendType = WGPUBackendType_OpenGL;
-	else if (!stricmp(wgpu_backend.GetString(), "OpenGLES"))
+	else if (!backendName.CompareCaseIns("OpenGLES"))
 		options.backendType = WGPUBackendType_OpenGLES;
 
 	//options.compatibleSurface = surface;

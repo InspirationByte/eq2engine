@@ -21,7 +21,7 @@ class IVirtualStream;
 class CDPKFileWriter
 {
 public:
-	CDPKFileWriter(const char* mountPath, int compression = 0, const char* encryptKey = nullptr);
+	CDPKFileWriter(const char* mountPath, int compression = 0, const char* encryptKey = nullptr, bool skipPacking = false);
 	~CDPKFileWriter();
 
 	bool					Begin(const char* fileName, ESearchPath searchPath = SP_ROOT);
@@ -55,9 +55,13 @@ protected:
 	dpkheader_t				m_header;
 	COSFile					m_output;
 
+	EqString				m_packFileName;
+	ESearchPath				m_packFilePath;
+
 	Array<CMemoryStream*>	m_openStreams{ PP_SL };
 	Map<int, FileInfo>		m_files{ PP_SL };
 
 	int						m_compressionLevel{ 0 };
 	bool					m_encrypted{ false };
+	bool					m_skipPacking{ false };
 };

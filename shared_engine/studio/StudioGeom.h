@@ -41,7 +41,6 @@ class CEqStudioGeom : public RefCountedObject<CEqStudioGeom>
 	friend class CStudioCache;
 	friend class CBaseEqGeomInstancer;
 public:
-
 	struct DrawProps;
 
 	static void					SetInstanceFormatId(int instanceFormatId);
@@ -49,35 +48,21 @@ public:
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
-	void						Ref_DeleteObject() override;
-
-	int							GetCacheIndex() const { return m_cacheIdx; }
-
+	int							GetCacheId() const { return m_nameHash; }
 	const char*					GetName() const;
 	EModelLoadingState			GetLoadingState() const;	// EModelLoadingState
 	Future<bool>				GetLoadingFuture() const;
 
-	void						LoadMotionPackage(const char* filename);
-
-	int							GetMotionPackageCount() const { return m_motionData.numElem(); }
-	int							GetMaterialCount() const { return m_materialCount; }
-	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
+	void						AddMotionPackage(const char* filename);
 
 	const studioHdr_t&			GetStudioHdr() const;
-	const studioPhysData_t&		GetPhysData() const;
-	const studioMotionData_t&	GetMotionData(int index) const;
-	const studioJoint_t&		GetJoint(int index) const;
-	Matrix4x4					GetLocalTransformMatrix(int transformIdx) const;
+	const StudioPhysData&		GetPhysData() const;
+	ArrayCRef<StudioJoint>		GetJoints() const;
+	ArrayCRef<int>				GetMotionDataIdxs() const;
 
-	const BoundingBox&			GetBoundingBox() const;
-
-	int							ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const;
-
-	// Makes dynamic temporary decal
-	CRefPtr<DecalData>			MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
-
-	// Checks ray-egf intersection. Ray must be in local space
-	float						CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod = 0) const;
+	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	ArrayCRef<IMaterialPtr>		GetMaterials(int materialGroupIdx = 0) const;
+	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 
 	// instancing
 	void						SetInstancer(CBaseEqGeomInstancer* instancer);
@@ -87,12 +72,14 @@ public:
 	int							SelectLod(float distance) const;
 	int							FindManualLod(float value) const;
 
+	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
+	int							ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const;
+
 	void						Draw(const DrawProps& drawProperties, const MeshInstanceData& instData, const RenderPassContext& passContext) const;
 
-	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
-	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
-	ArrayCRef<IMaterialPtr>		GetMaterials(int materialGroupIdx = 0) const;
-
+	const BoundingBox&			GetBoundingBox() const;
+	CRefPtr<DecalData>			MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
+	float						CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod = 0) const;
 private:
 
 	struct HWGeomRef
@@ -107,6 +94,8 @@ private:
 		} *meshRefs{ nullptr };
 	};
 
+	void					Ref_DeleteObject() override;
+
 	bool					LoadModel(const char* pszPath, bool useJob = true);
 	void					DestroyModel();
 	
@@ -119,22 +108,27 @@ private:
 
 	//-----------------------------------------------
 
+	using MaterialList = FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>;
+	using MotionDataList = FixedArray<int, MAX_MOTIONPACKAGES>;
+
 	Future<bool>			m_loadingFuture;
 
 	// array of material index for each group
-	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>		m_materials;
-	FixedArray<studioMotionData_t*, MAX_MOTIONPACKAGES>	m_motionData;
+	MaterialList			m_materials;
+	MotionDataList			m_motionData;
 
 	Array<EqString>			m_additionalMotionPackages{ PP_SL };
 	BoundingBox				m_boundingBox; // FIXME: bounding boxes for each groups?
 	EqString				m_name;
-	
-	studioJoint_t*			m_joints{ nullptr };
+	int						m_nameHash{ 0 };
+	int						m_cacheIdx{ 0 };
+
+	StudioJoint*			m_joints{ nullptr };
 	HWGeomRef*				m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
 
 	CBaseEqGeomInstancer*	m_instancer{ nullptr };
 	studioHdr_t*			m_studio{ nullptr };
-	studioPhysData_t		m_physModel;
+	StudioPhysData			m_physModel;
 
 	IGPUBufferPtr			m_vertexBuffers[EGFHwVertex::VERT_COUNT];
 	IGPUBufferPtr			m_indexBuffer;
@@ -142,8 +136,6 @@ private:
 
 	int						m_materialCount{ 0 };
 	int						m_materialGroupsCount{ 0 };
-
-	int						m_cacheIdx{ -1 };
 
 	volatile int			m_readyState{ 0 };
 };

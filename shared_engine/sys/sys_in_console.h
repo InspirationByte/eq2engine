@@ -38,7 +38,7 @@ using CONSOLE_IMGUI_HANDLER = EqFunction<void(const char* name, EqImGuiHandleTyp
 		if(name) name->SetBool(value); \
 	}
 
-static Array<EqString> cmd_noArgs(PP_SL);
+static Array<EqStringRef> cmd_noArgs(PP_SL);
 #define IMGUI_MENUITEM_CONCMD(label, name, args) { \
 		HOOK_TO_CMD(name); \
 		if(ImGui::MenuItem(label)) \

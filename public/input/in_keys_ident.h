@@ -616,7 +616,7 @@ static int KeyStringToKeyIndex(const char *str)
 	int keyind = 0;
 	for(InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
-		if (!stricmp(str,kn->name))
+		if (!CString::CompareCaseIns(str, kn->name))
 			return keyind;
 
 		keyind++;

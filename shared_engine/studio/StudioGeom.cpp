@@ -30,8 +30,6 @@ DECLARE_CVAR(r_egf_LodScale, "1.0", "Studio model LOD scale", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(r_egf_LodStart, "0", 0, MAX_MODEL_LODS, "Studio LOD start index", CV_ARCHIVE);
 DECLARE_CVAR(r_force_softwareskinning, "0", "Force software skinning", CV_UNREGISTERED);
 
-
-
 namespace {
 
 // MUST BE SAME AS IN SHADER
@@ -105,6 +103,7 @@ void CEqStudioGeom::SetInstanceFormatId(int instanceFormatId)
 }
 
 CEqStudioGeom::CEqStudioGeom()
+	: m_cacheIdx(STUDIOCACHE_INVALID_IDX)
 {
 }
 
@@ -115,7 +114,7 @@ CEqStudioGeom::~CEqStudioGeom()
 
 void CEqStudioGeom::Ref_DeleteObject()
 {
-	g_studioModelCache->FreeCachedModel(this);
+	g_studioCache->FreeModel(m_cacheIdx);
 	RefCountedObject::Ref_DeleteObject();
 }
 
@@ -213,46 +212,39 @@ void CEqStudioGeom::DestroyModel()
 		m_vertexBuffers[i] = nullptr;
 	m_indexBuffer = nullptr;
 
+	m_motionData.clear();
 	m_materials.clear(true);
 	m_materialCount = 0;
 	m_materialGroupsCount = 0;
 	m_boundingBox.Reset();
 
+	g_studioShapeCache->DestroyStudioCache(m_physModel);
+	Studio_FreePhysModel(m_physModel);
+	m_physModel = {};
+
 	if (m_studio)
 	{
-		for (int i = 0; i < m_motionData.numElem(); i++)
-		{
-			Studio_FreeMotionData(m_motionData[i], m_studio->numBones);
-			PPFree(m_motionData[i]);
-		}
-		m_motionData.clear();
-
-		g_studioShapeCache->DestroyStudioCache(&m_physModel);
-		Studio_FreePhysModel(&m_physModel);
-		m_physModel = studioPhysData_t();
-
 		for (int i = 0; i < m_studio->numMeshGroups; i++)
 			delete[] m_hwGeomRefs[i].meshRefs;
 
-		SAFE_DELETE_ARRAY(m_hwGeomRefs);
-		SAFE_DELETE_ARRAY(m_joints);
-
 		Studio_FreeModel(m_studio);
 	}
+
+	SAFE_DELETE_ARRAY(m_hwGeomRefs);
+	SAFE_DELETE_ARRAY(m_joints);
 }
 
 void CEqStudioGeom::LoadPhysicsData()
 {
-	EqString podFileName = m_name.Path_Strip_Ext();
-	podFileName.Append(".pod");
+	const EqString physDataFilename = fnmPathApplyExt(m_name, s_egfPhysicsObjectExt);
 
-	if (Studio_LoadPhysModel(podFileName, &m_physModel))
-	{
-		DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", podFileName.ToCString());
+	if (!Studio_LoadPhysModel(physDataFilename, m_physModel))
+		return;
 
-		ASSERT_MSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
-		g_studioShapeCache->InitStudioCache(&m_physModel);
-	}
+	DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", physDataFilename.ToCString());
+
+	ASSERT_MSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
+	g_studioShapeCache->InitStudioCache(m_physModel);
 }
 
 static int CopyGroupVertexDataToHWList(EGFHwVertex::PositionUV* hwVertPosList, EGFHwVertex::TBN* hwVertTbnList, EGFHwVertex::BoneWeights* hwVertWeightList, EGFHwVertex::Color* hwVertColorList, int currentVertexCount, const studioMeshDesc_t* pMesh, BoundingBox& aabb)
@@ -324,7 +316,7 @@ static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int curren
 bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 {
 	m_name = pszPath;
-	m_name.Path_FixSlashes();
+	fnmPathFixSeparators(m_name);
 
 	// first we switch to loading
 	Atomic::Exchange(m_readyState, MODEL_LOAD_IN_PROGRESS);
@@ -348,10 +340,10 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 		loadModelJob->DeleteOnFinish();
 		loadModelJob->InitJob();
 
-		CEqJobManager* jobMng = g_studioModelCache->GetJobMng();
+		CEqJobManager* jobMng = g_studioCache->GetJobMng();
 
 		const int numPackages = m_studio->numMotionPackages
-			+ g_fileSystem->FileExist(m_name.Path_Strip_Ext() + ".mop", SP_MOD);
+			+ g_fileSystem->FileExist(fnmPathApplyExt(m_name, s_egfMotionPackageExt), SP_MOD);
 
 		FunctionJob* loadGeomJob = PPNew FunctionJob("LoadEGFHWGeom", [this](void*, int) {
 			DevMsg(DEVMSG_CORE, "Loading HW geom for %s, state: %d\n", GetName());
@@ -551,7 +543,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	return true;
 }
 
-void CEqStudioGeom::LoadMotionPackage(const char* filename)
+void CEqStudioGeom::AddMotionPackage(const char* filename)
 {
 	if (m_readyState == MODEL_LOAD_ERROR)
 		return;
@@ -562,43 +554,41 @@ void CEqStudioGeom::LoadMotionPackage(const char* filename)
 		return;
 	}
 
-	studioMotionData_t* motionData = Studio_LoadMotionData(filename, m_studio->numBones);
-	if (motionData)
-		m_motionData.append(motionData);
-	else
-		MsgError("Can't open motion data package '%s'!\n", filename);
+	const int motionDataIdx = g_studioCache->PrecacheMotionData(filename);
+	if (motionDataIdx == STUDIOCACHE_INVALID_IDX)
+		return;
+
+	m_motionData.append(motionDataIdx);
 }
 
 void CEqStudioGeom::LoadMotionPackages()
 {
+	// Try load default motion file
+	{
+		const int motionDataIdx = g_studioCache->PrecacheMotionData(fnmPathApplyExt(m_name, s_egfMotionPackageExt));
+		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
+			m_motionData.append(motionDataIdx);
+	}
+
 	const studioHdr_t* studio = m_studio;
 
-	// Try load default motion file
-	studioMotionData_t* motionData = Studio_LoadMotionData(m_name.Path_Strip_Ext() + ".mop", studio->numBones);
-	if (motionData)
-		m_motionData.append(motionData);
-
-	// load motion packages that are additionally specified in EGF model
+	// load motion packages that were specified in EGF file
 	for (int i = 0; i < studio->numMotionPackages; i++)
 	{
-		const EqString mopPath(m_name.Path_Strip_Name() + studio->pPackage(i)->packageName + ".mop");
-		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
+		EqString mopPath;
+		fnmPathCombine(mopPath, fnmPathStripName(m_name), fnmPathApplyExt(studio->pPackage(i)->packageName, s_egfMotionPackageExt));
 
-		studioMotionData_t* motionData = Studio_LoadMotionData(mopPath.ToCString(), studio->numBones);
-		if (motionData)
-			m_motionData.append(motionData);
-		else
-			MsgError("Can't open motion package '%s' specified in EGF\n", studio->pPackage(i)->packageName);
+		const int motionDataIdx = g_studioCache->PrecacheMotionData(mopPath, m_name);
+		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
+			m_motionData.append(motionDataIdx);
 	}
 
 	// load additional external motion packages requested by user
-	for (int i = 0; i < m_additionalMotionPackages.numElem(); i++)
+	for (const EqString& extraMotionPackName : m_additionalMotionPackages)
 	{
-		studioMotionData_t* motionData = Studio_LoadMotionData(m_additionalMotionPackages[i].ToCString(), studio->numBones);
-		if (motionData)
-			m_motionData.append(motionData);
-		else
-			MsgError("Can't open motion data package '%s'!\n", m_additionalMotionPackages[i].ToCString());
+		const int motionDataIdx = g_studioCache->PrecacheMotionData(extraMotionPackName, m_name);
+		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
+			m_motionData.append(motionDataIdx);
 	}
 	m_additionalMotionPackages.clear(true);
 }
@@ -619,10 +609,7 @@ void CEqStudioGeom::LoadMaterials()
 		for (int i = 0; i < numMaterials; i++)
 		{
 			EqString fpath(studio->pMaterial(i)->materialname);
-			fpath.Path_FixSlashes();
-
-			if (fpath.ToCString()[0] == CORRECT_PATH_SEPARATOR)
-				fpath = EqString(fpath.ToCString(), fpath.Length() - 1);
+			fnmPathFixSeparators(fpath);
 
 			for (int j = 0; j < studio->numMaterialSearchPaths; j++)
 			{
@@ -630,13 +617,13 @@ void CEqStudioGeom::LoadMaterials()
 					continue;
 
 				EqString spath(studio->pMaterialSearchPath(j)->searchPath);
-				spath.Path_FixSlashes();
+				fnmPathFixSeparators(spath);
 
-				if (spath.Length() && spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
+				if (spath.Length() && spath[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
 					spath = spath.Left(spath.Length() - 1);
 
 				EqString extend_path;
-				CombinePath(extend_path, spath.ToCString(), fpath.ToCString());
+				fnmPathCombine(extend_path, spath.ToCString(), fpath.ToCString());
 
 				if (!g_matSystem->IsMaterialExist(extend_path))
 					continue;
@@ -657,7 +644,7 @@ void CEqStudioGeom::LoadMaterials()
 			if (m_materials[i])
 				continue;
 
-			m_materials[i] = g_studioModelCache->GetErrorMaterial();
+			m_materials[i] = g_studioCache->GetErrorMaterial();
 
 			const char* materialName = studio->pMaterial(i)->materialname;
 			if (*materialName)
@@ -719,7 +706,7 @@ void CEqStudioGeom::LoadSetupBones()
 	studioHdr_t* studio = m_studio;
 
 	// Initialize HW data joints
-	m_joints = PPNew studioJoint_t[studio->numBones];
+	m_joints = PPNew StudioJoint[studio->numBones];
 
 	// parse bones
 	for (int i = 0; i < studio->numBones; ++i)
@@ -727,7 +714,7 @@ void CEqStudioGeom::LoadSetupBones()
 		// copy all bone data
 		const studioBoneDesc_t* bone = studio->pBone(i);
 
-		studioJoint_t& joint = m_joints[i];
+		StudioJoint& joint = m_joints[i];
 		joint.bone = bone;
 
 		// setup transformation
@@ -742,7 +729,7 @@ void CEqStudioGeom::LoadSetupBones()
 	// link joints and setup transforms
 	for (int i = 0; i < studio->numBones; ++i)
 	{
-		studioJoint_t& joint = m_joints[i];
+		StudioJoint& joint = m_joints[i];
 		const int parent_index = joint.parent;
 
 		if (parent_index != -1)
@@ -825,7 +812,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		return;
 
 	RenderDrawCmd drawCmd;
-	drawCmd.SetInstanceFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat())
+	drawCmd.SetInstanceFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioCache->GetGeomVertexFormat())
 		.SetInstanceData(instData)
 		.SetIndexBuffer(m_indexBuffer, static_cast<EIndexFormat>(m_indexFmt));
 
@@ -973,7 +960,7 @@ const studioHdr_t& CEqStudioGeom::GetStudioHdr() const
 	return *m_studio; 
 }
 
-const studioPhysData_t& CEqStudioGeom::GetPhysData() const 
+const StudioPhysData& CEqStudioGeom::GetPhysData() const 
 {
 	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
@@ -981,17 +968,17 @@ const studioPhysData_t& CEqStudioGeom::GetPhysData() const
 	return m_physModel;
 }
 
-const studioMotionData_t& CEqStudioGeom::GetMotionData(int index) const
+ArrayCRef<int> CEqStudioGeom::GetMotionDataIdxs() const
 {
 	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
 
-	return *m_motionData[index];
+	return m_motionData;
 }
 
-const studioJoint_t& CEqStudioGeom::GetJoint(int index) const
+ArrayCRef<StudioJoint> CEqStudioGeom::GetJoints() const
 {
-	return m_joints[index];
+	return ArrayCRef(m_joints, m_studio->numBones);
 }
 
 // instancing
@@ -1006,14 +993,6 @@ void CEqStudioGeom::SetInstancer(CBaseEqGeomInstancer* instancer)
 CBaseEqGeomInstancer* CEqStudioGeom::GetInstancer() const
 {
 	return m_instancer;
-}
-
-Matrix4x4 CEqStudioGeom::GetLocalTransformMatrix(int attachmentIdx) const
-{
-	ASSERT(attachmentIdx >= 0 && attachmentIdx < m_studio->numTransforms);
-
-	const studioTransform_t* attach = m_studio->pTransform(attachmentIdx);
-	return attach->transform;
 }
 
 static void MakeDecalTexCoord(Array<EGFHwVertex>& verts, Array<int>& indices, const DecalMakeInfo& info)
@@ -1184,8 +1163,8 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 			g_indices.reserve(pMesh->numIndices);
 			g_orig_indices.reserve(pMesh->numIndices);
 
-			const int numIndices = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
-			const int indexStep = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+			const int numIndices = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
+			const int indexStep = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? 1 : 3;
 
 			for (int k = 0; k < numIndices; k += indexStep)
 			{
@@ -1193,10 +1172,10 @@ CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4
 				if (pIndices[k] == pIndices[k + 1] || pIndices[k] == pIndices[k + 2] || pIndices[k + 1] == pIndices[k + 2])
 					continue;
 
-				const int even = k % 2;	// handle flipped triangles on EGFPRIM_TRI_STRIP
+				const int even = k % 2;	// handle flipped triangles on STUDIO_PRIM_TRI_STRIP
 				
 				int i0, i1, i2;
-				if (even && pMesh->primitiveType == EGFPRIM_TRI_STRIP)
+				if (even && pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP)
 				{
 					i0 = pIndices[k + 2];
 					i1 = pIndices[k + 1];
@@ -1329,8 +1308,8 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 
 			const uint32* pIndices = pMesh->pVertexIdx(0);
 
-			const int numIndices = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
-			const int indexStep = (pMesh->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+			const int numIndices = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? pMesh->numIndices - 2 : pMesh->numIndices;
+			const int indexStep = (pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP) ? 1 : 3;
 
 			for (int k = 0; k < numIndices; k += indexStep)
 			{
@@ -1338,10 +1317,10 @@ float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Ve
 				if (pIndices[k] == pIndices[k+1] || pIndices[k] == pIndices[k+2] || pIndices[k+1] == pIndices[k+2])
 					continue;
 
-				const int even = k % 2; // handle flipped triangles on EGFPRIM_TRI_STRIP
+				const int even = k % 2; // handle flipped triangles on STUDIO_PRIM_TRI_STRIP
 
 				Vector3D v0, v1, v2;
-				if (even && pMesh->primitiveType == EGFPRIM_TRI_STRIP)
+				if (even && pMesh->primitiveType == STUDIO_PRIM_TRI_STRIP)
 				{
 					v0 = pMesh->pPosUvs(pIndices[k + 2])->point;
 					v1 = pMesh->pPosUvs(pIndices[k + 1])->point;

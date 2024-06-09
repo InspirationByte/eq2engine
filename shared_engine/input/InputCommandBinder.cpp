@@ -100,7 +100,13 @@ static void InputExecInputCommand(void* userData, short value)
 	if (in_keys_debug.GetBool())
 		MsgWarning("dispatch %s\n", conCmd->GetName());
 
-	conCmd->DispatchFunc(args);
+	{
+		Array<EqStringRef> argsRefs(PP_SL);
+		argsRefs.reserve(args.numElem());
+		for (EqStringRef str : args)
+			argsRefs.append(str);
+		conCmd->DispatchFunc(argsRefs);
+	}
 }
 
 DECLARE_CMD_VARIANTS(bind, "Binds action to key", cmd_conKeyList, 0)
@@ -357,18 +363,13 @@ void CInputCommandBinder::InitTouchZones()
 		return;
 	}
 
-	for(const KVSection* zoneDef : zones->keys)
+	for(const KVSection* zoneDef : zones->Keys())
 	{
 		InputTouchZone newZone;
-		newZone.name = zoneDef->name;
-
-		KVSection* zoneCmd = zoneDef->FindSection("bind");
-
-		newZone.commandString = KV_GetValueString(zoneCmd, 0, "zone_no_bind");
-		newZone.argumentString = KV_GetValueString(zoneCmd, 1, "");
-
-		newZone.position = KV_GetVector2D(zoneDef->FindSection("position"));
-		newZone.size = KV_GetVector2D(zoneDef->FindSection("size"));
+		newZone.name = zoneDef->GetName();
+		zoneDef->Get("bind").GetValues(newZone.commandString, newZone.argumentString);
+		zoneDef->Get("position").GetValues(newZone.position);
+		zoneDef->Get("size").GetValues(newZone.size);
 
 		// resolve commands
 

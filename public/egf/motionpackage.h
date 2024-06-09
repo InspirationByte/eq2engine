@@ -18,7 +18,7 @@ static constexpr const int MAX_SEQUENCE_BLENDS	= 4;	// blend layers
 
 #define SEQ_DEFAULT_TRANSITION_TIME	(0.15f)
 
-enum EAnimLumps
+enum EAnimLumps : int
 {
 	ANIMFILE_ANIMATIONS				= 0,		// animation headers
 	ANIMFILE_SEQUENCES				= 1,		// sequence headers
@@ -33,7 +33,7 @@ enum EAnimLumps
 
 
 // sequence flags
-enum EAnimSequenceFlags
+enum EAnimSequenceFlags : int
 {
 	SEQFLAG_LOOP					= (1 << 0),	// is played infinitely
 	SEQFLAG_SLOTBLEND				= (1 << 1),	// part blend to slot instead of interpolation
@@ -45,7 +45,7 @@ struct animationdesc_s
 	char	name[44];
 
 	int		firstFrame;	// first frame, first bone in ANIMCA_ANIMATIONFRAMES
-	int		numFrames;	// NOTE: this is not a bone frame count, but you can compute it by multipling it on bone count.
+	int		numFrames;	// NOTE: this is entire animation frame count. Divide this by bone count.
 };
 ALIGNED_TYPE(animationdesc_s, 4) animationdesc_t;
 

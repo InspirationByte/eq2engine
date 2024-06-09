@@ -47,6 +47,13 @@ public:
 	{
 	}
 
+	ArrayRef<T>& operator=(std::nullptr_t)
+	{
+		m_pListPtr = nullptr;
+		m_nNumElem = 0;
+		return *this;
+	}
+
 	template<typename ARRAY_TYPE>
 	ArrayRef<T>& operator=(const ARRAY_TYPE& other)
 	{
@@ -57,7 +64,7 @@ public:
 
 	ArrayRef<T>& operator=(const ArrayRef<T>& other)
 	{
-		m_pListPtr = other.m_pListPtr;
+		m_pListPtr = const_cast<T*>(other.m_pListPtr);
 		m_nNumElem = other.m_nNumElem;
 		return *this;
 	}
@@ -65,7 +72,12 @@ public:
 	T& operator[](int index)
 	{
 		ASSERT_MSG(index >= 0 && index < m_nNumElem, "ArrayRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+		return m_pListPtr[index];
+	}
 
+	const T& operator[](int index) const
+	{
+		ASSERT_MSG(index >= 0 && index < m_nNumElem, "ArrayRef<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 		return m_pListPtr[index];
 	}
 
@@ -77,6 +89,7 @@ public:
 
 	// returns a pointer to the list
 	T*				ptr() { return m_pListPtr; }
+	const T*		ptr() const { return m_pListPtr; }
 
 	// returns true if index is in range
 	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
@@ -140,6 +153,13 @@ public:
 	ArrayCRef(T(&otherArray)[N])
 		: m_pListPtr(otherArray), m_nNumElem(N)
 	{
+	}
+
+	ArrayRef<T>& operator=(std::nullptr_t)
+	{
+		m_pListPtr = nullptr;
+		m_nNumElem = 0;
+		return *this;
 	}
 
 	template<typename ARRAY_TYPE>

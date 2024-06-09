@@ -266,7 +266,7 @@ struct studioMeshDesc_s
 		return (uint32 *)(((ubyte *)this) + indicesOffset) + i; 
 	};
 
-	int8				primitiveType;		// EEGFPrimType
+	int8				primitiveType;		// EStudioPrimType
 	int8				vertexType;			// EStudioVertexStreamFlag
 
 	int8				unused2[2];
@@ -446,7 +446,7 @@ inline int Studio_FindBoneId(const studioHdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numBones; i++)
 	{
-		if(!stricmp(pStudioHdr->pBone(i)->name, pszName))
+		if(!CString::CompareCaseIns(pStudioHdr->pBone(i)->name, pszName))
 			return i;
 	}
 
@@ -472,7 +472,7 @@ inline int Studio_FindBodyGroupId(const studioHdr_t* pStudioHdr, const char* psz
 {
 	for(int i = 0; i < pStudioHdr->numBodyGroups; i++)
 	{
-		if(!stricmp(pStudioHdr->pBodyGroups(i)->name, pszName))
+		if(!CString::CompareCaseIns(pStudioHdr->pBodyGroups(i)->name, pszName))
 			return i;
 	}
 
@@ -499,7 +499,7 @@ inline studioIkChain_t* Studio_FindIkChain(const studioHdr_t* pStudioHdr, const 
 {
 	for(int i = 0; i < pStudioHdr->numIKChains; i++)
 	{
-		if(!stricmp(pStudioHdr->pIkChain(i)->name, pszName))
+		if(!CString::CompareCaseIns(pStudioHdr->pIkChain(i)->name, pszName))
 			return pStudioHdr->pIkChain(i);
 	}
 
@@ -513,7 +513,7 @@ inline int Studio_FindTransformId(const studioHdr_t* pStudioHdr, const char* psz
 {
 	for(int i = 0; i < pStudioHdr->numTransforms; i++)
 	{
-		if(!stricmp(pStudioHdr->pTransform(i)->name, pszName))
+		if(!CString::CompareCaseIns(pStudioHdr->pTransform(i)->name, pszName))
 			return i;
 	}
 

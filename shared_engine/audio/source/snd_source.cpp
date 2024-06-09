@@ -23,7 +23,7 @@
 
 ISoundSourcePtr ISoundSource::CreateSound( const char* szFilename )
 {
-	EqString fileExt = _Es(szFilename).Path_Extract_Ext();
+	EqString fileExt = fnmPathExtractExt(szFilename);
 
 	ISoundSourcePtr pSource = nullptr;
 

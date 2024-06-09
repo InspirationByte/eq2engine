@@ -22,9 +22,9 @@ public:
 	};
 
 	using HandlePtr = CRefPtr<Handle>;
-	using FunctionSet = Map<int, esl::LuaFunctionRef>;
+	using FunctionSet = Map<int, LuaFunctionRef>;
 
-	HandlePtr	AddHandler(const esl::LuaFunctionRef& func);
+	HandlePtr	AddHandler(const LuaFunctionRef& func);
 	void		RemoveHandler(const HandlePtr& handle);
 	int			GetHandlerCount() const { return m_eventHandlers.size(); }
 	void		Clear();
@@ -64,3 +64,4 @@ private:
 };
 
 } // esl
+

@@ -38,8 +38,8 @@ struct InputBinding : public InputCommand
 
 struct InputTouchZone : public InputCommand
 {
-	Vector2D	position;
-	Vector2D	size;
+	Vector2D	position{ vec2_zero };
+	Vector2D	size{ 1.0f };
 
 	EqString	name;
 	int			finger{ -1 };

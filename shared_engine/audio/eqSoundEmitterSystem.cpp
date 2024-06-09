@@ -648,31 +648,24 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	}
 
 	DevMsg(DEVMSG_SOUND, "Loading sound script file '%s'\n", fileName);
-	const KVSection* rootSec = kv.GetRootSection();
-	for(int i = 0; i < rootSec->keys.numElem(); i++)
-	{
-		KVSection* kb = rootSec->keys[i];
-
-		if(!stricmp( kb->GetName(), "include"))
-			LoadScriptSoundFile( KV_GetValueString(kb) );
-	}
 
 	KVSection defaultsSec;
-
-	for(int i = 0; i < rootSec->keys.numElem(); i++)
+	for(const KVSection* sec : kv.Keys())
 	{
-		const KVSection* curSec = rootSec->keys[i];
-
-		if (curSec->IsSection())
+		if (sec->IsSection())
 		{
-			if(!CreateSoundScript(curSec, &defaultsSec))
+			if (!CreateSoundScript(sec, &defaultsSec))
 			{
-				ASSERT_FAIL("Error processing %s: sound '%s' cannot be added (already registered?)", fileName, curSec->GetName());
+				ASSERT_FAIL("Error processing %s: sound '%s' cannot be added (already registered?)", fileName, sec->GetName());
 			}
 		}
-		else if(!stricmp("default", curSec->GetName()))
+		else if (!CString::CompareCaseIns("default", sec->GetName()))
 		{
-			defaultsSec.AddKey(KV_GetValueString(curSec), KV_GetValueString(curSec, 1));
+			defaultsSec.AddKey(KV_GetValueString(sec), KV_GetValueString(sec, 1));
+		}
+		else if(!CString::CompareCaseIns(sec->GetName(), "include"))
+		{
+			LoadScriptSoundFile(KV_GetValueString(sec));
 		}
 	}
 }
@@ -730,7 +723,7 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 {
 	for (int i = 0; i < m_channelTypes.numElem(); i++)
 	{
-		if (!stricmp(str, m_channelTypes[i].name))
+		if (!CString::CompareCaseIns(str, m_channelTypes[i].name))
 			return m_channelTypes[i].id;
 	}
 

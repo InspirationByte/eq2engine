@@ -89,16 +89,15 @@ int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
 
 bool LoadSharedModel(DSModel* model, const char* filename)
 {
-	EqString file(filename);
-	EqString ext(file.Path_Extract_Ext());
+	const EqString ext = fnmPathExtractExt(filename);
 
-	if (!stricmp(ext.GetData(), "esm"))
+	if (ext == "esm")
 		return LoadESM(model, filename);
 
-	if(!stricmp(ext.GetData(), "obj"))
+	if(ext == "obj")
 		return LoadOBJ(model, filename);
 
-	if (!stricmp(ext.GetData(), "fbx"))
+	if (ext == "fbx")
 		return LoadFBXCompound(model, filename);
 
 	return false;
@@ -106,10 +105,9 @@ bool LoadSharedModel(DSModel* model, const char* filename)
 
 bool SaveSharedModel(DSModel* model, const char* filename)
 {
-	EqString file(filename);
-	EqString ext(file.Path_Extract_Ext());
+	const EqString ext = fnmPathExtractExt(filename);
 
-	if(!stricmp(ext.GetData(), "obj"))
+	if(ext == "obj")
 		return SaveOBJ(model, filename);
 
 	return false;
@@ -131,7 +129,7 @@ DSMesh* DSModel::FindMeshByName(const char* pszGroupname)
 {
 	for(int i = 0; i < meshes.numElem(); i++)
 	{
-		if(!stricmp(meshes[i]->texture, pszGroupname))
+		if(!meshes[i]->texture.CompareCaseIns(pszGroupname))
 			return meshes[i];
 	}
 
@@ -142,7 +140,7 @@ DSBone* DSModel::FindBone(const char* pszName)
 {
 	for(int i = 0; i < bones.numElem(); i++)
 	{
-		if(!stricmp(bones[i]->name, pszName))
+		if(!bones[i]->name.CompareCaseIns(pszName))
 			return bones[i];
 	}
 

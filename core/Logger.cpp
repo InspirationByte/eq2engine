@@ -56,7 +56,7 @@ void Log_Init()
 
 #ifndef NO_CORE
 	char tmp_path[2048];
-	sprintf(tmp_path, "logs/%s.log", g_eqCore->GetApplicationName());
+	CString::PrintF(tmp_path, sizeof(tmp_path), "logs/%s.log", g_eqCore->GetApplicationName());
 
 	Log_WriteBOM( tmp_path );
 
@@ -203,7 +203,7 @@ DECLARE_CMD_G(echo, "Displays the entered args", CV_UNREGISTERED)
 	for (int i = 0; i < CMD_ARGC; i++)
 	{
 		char tmp_path[2048];
-		sprintf(tmp_path, "%s ", CMD_ARGV(i).ToCString());
+		CString::PrintF(tmp_path, sizeof(tmp_path), "%s ", CMD_ARGV(i).ToCString());
 
 		outText.Append(tmp_path);
 	}
@@ -278,12 +278,12 @@ IEXPORTS void LogMsgV(ESpewType spewtype, char const* pMsgFormat, va_list args)
 
 	va_list varg;
 	va_copy(varg, args);
-	int len = vsnprintf(pTempBuffer, DEBUGMESSAGE_BUFFER_SIZE-1, pMsgFormat, varg );
+	int len = CString::PrintFV(pTempBuffer, DEBUGMESSAGE_BUFFER_SIZE-1, pMsgFormat, varg );
 
 	if (len >= DEBUGMESSAGE_BUFFER_SIZE-1)
 	{
 		char* tempBufferExt = (char*)malloc(len + 1);
-		len = vsnprintf(tempBufferExt, len, pMsgFormat, args);
+		len = CString::PrintFV(tempBufferExt, len, pMsgFormat, args);
 
 		SpewMessage(spewtype, tempBufferExt);
 		free(tempBufferExt);

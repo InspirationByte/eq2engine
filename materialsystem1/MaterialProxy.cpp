@@ -17,7 +17,7 @@
 class CAddProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
 	{
 		if(pKeyBase->values.numElem() < 3)
 		{
@@ -33,7 +33,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -64,7 +64,7 @@ DECLARE_PROXY(add, CAddProxy)
 class CSubProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
 	{
 		if(pKeyBase->values.numElem() < 3)
 		{
@@ -80,7 +80,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -111,7 +111,7 @@ DECLARE_PROXY(subtract, CSubProxy)
 class CMulProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
 	{
 		if(pKeyBase->values.numElem() < 3)
 		{
@@ -127,7 +127,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -159,7 +159,7 @@ DECLARE_PROXY(multiply, CMulProxy)
 class CDivProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
 	{
 		if(pKeyBase->values.numElem() < 3)
 		{
@@ -175,7 +175,7 @@ public:
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
+			if(!CString::CompareCaseIns(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -206,7 +206,7 @@ DECLARE_PROXY(divide, CDivProxy)
 class CSinProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
 	{
 		if(pKeyBase->values.numElem() < 2)
 		{
@@ -237,7 +237,7 @@ DECLARE_PROXY(sin, CSinProxy)
 class CAbsProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
 	{
 		if(pKeyBase->values.numElem() < 2)
 		{
@@ -268,7 +268,7 @@ DECLARE_PROXY(abs, CAbsProxy)
 class CAnimatedTextureProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* material, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, const KVSection* pKeyBase)
 	{
 		KVSection* pair = nullptr;
 

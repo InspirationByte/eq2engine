@@ -41,11 +41,10 @@ Panel::~Panel()
 
 }
 
-void Panel::InitFromKeyValues( KVSection* sec, bool noClear )
+void Panel::InitFromKeyValues(const KVSection* sec, bool noClear )
 {
 	// initialize from scheme
-	KVSection* mainSec = sec->FindSection("panel");
-
+	const KVSection* mainSec = sec->FindSection("panel");
 	if (mainSec == nullptr)
 		mainSec = sec->FindSection("child");
 
@@ -68,25 +67,18 @@ void Panel::InitFromKeyValues( KVSection* sec, bool noClear )
 		KVSection winRes;
 		KV_LoadFromFile("resources/WindowControls.res", -1, &winRes);
 
-		// create additional controls
-		for(int i = 0; i < winRes.keys.numElem(); i++)
+		// make child controls
+		for(const KVSection* childSec : winRes.Keys("child", KV_FLAG_SECTION))
 		{
-			KVSection* csec = winRes.keys[i];
-			if(!csec->IsSection())
+			EqStringRef controlClass;
+			childSec->GetValues(controlClass);
+
+			IUIControl* control = equi::Manager->CreateElement(controlClass);
+			if(!control)
 				continue;
 
-			if(!stricmp(csec->GetName(), "child"))
-			{
-				const char* controlClass = KV_GetValueString(csec, 0, "");
-
-				IUIControl* control = equi::Manager->CreateElement( controlClass );
-
-				if(!control)
-					continue;
-
-				control->InitFromKeyValues(csec);
-				AddChild( control );
-			}
+			control->InitFromKeyValues(childSec);
+			AddChild( control );
 		}
 
 		m_labelCtrl = (equi::Label*)FindChild("WindowLabel");

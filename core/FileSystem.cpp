@@ -125,6 +125,48 @@ uint32 CFile::GetCRC32()
 }
 
 //------------------------------------------------------------------------------
+
+class CFlatFileReader : public CBasePackageReader
+{
+public:
+	EPackageType		GetType() const { return PACKAGE_READER_FLAT; }
+
+	bool				InitPackage(const char* filename, const char* mountPath /*= nullptr*/);
+	IFilePtr			Open(const char* filename, int modeFlags);
+	bool				FileExists(const char* filename) const;
+
+	// stubs
+	bool				OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
+	IFilePtr			Open(int fileIndex, int modeFlags) { return nullptr; }
+	int					FindFileIndex(const char* filename) const { return -1; }
+};
+
+bool CFlatFileReader::InitPackage(const char* filename, const char* mountPath /*= nullptr*/)
+{
+	m_packagePath = filename;
+	return true;
+}
+
+IFilePtr CFlatFileReader::Open(const char* filename, int modeFlags)
+{
+	if (modeFlags != VS_OPEN_READ)
+		return nullptr;
+
+	EqString filePath;
+	fnmPathCombine(filePath, m_packagePath, filename);
+
+	return g_fileSystem->Open(filePath, "r");
+}
+
+bool CFlatFileReader::FileExists(const char* filename) const
+{
+	EqString filePath;
+	fnmPathCombine(filePath, m_packagePath, filename);
+
+	return g_fileSystem->FileExist(filePath);
+}
+
+//------------------------------------------------------------------------------
 // Main filesystem code
 //------------------------------------------------------------------------------
 
@@ -156,11 +198,11 @@ struct SearchPathInfo
 
 //--------------------------------------------------
 
-static ESearchPath GetSearchPathByName(const char* str)
+static ESearchPath GetSearchPathByName(EqStringRef str)
 {
-	if (!stricmp(str, "SP_MOD"))
+	if (!str.CompareCaseIns("SP_MOD"))
 		return SP_MOD;
-	else if (!stricmp(str, "SP_DATA"))
+	else if (!str.CompareCaseIns("SP_DATA"))
 		return SP_DATA;
 
 	return SP_ROOT;
@@ -235,8 +277,8 @@ bool CFileSystem::Init(bool bEditorMode)
 		return false;
 	}
 
-	const char* workDir = KV_GetValueString(fsConfig->FindSection("WorkDir"), 0, nullptr);
-	if (workDir)
+	EqStringRef workDir;
+	if (fsConfig->Get("WorkDir").GetValues(workDir))
 	{
 #ifdef _WIN32
 		SetCurrentDirectoryA(workDir);
@@ -245,46 +287,51 @@ bool CFileSystem::Init(bool bEditorMode)
 #endif // _WIN32
 	}
 
-	const char* basePathStr = KV_GetValueString(fsConfig->FindSection("BasePath"), 0, nullptr);
-	if(basePathStr)
-		SetBasePath(basePathStr);
-
-	if(m_basePath.Length() > 0)
+	EqStringRef basePath;
+	if(fsConfig->Get("BasePath").GetValues(basePath))
 	{
-		MsgInfo("* Base directory: %s\n", m_basePath.GetData());
+		SetBasePath(basePath);
+		if (m_basePath.Length() > 0)
+			MsgInfo("* Base directory: %s\n", m_basePath.GetData());
 	}
 
-	m_dataDir = KV_GetValueString(fsConfig->FindSection("EngineDataDir"), 0, "EngineBase" );
+	m_dataDir = "EngineBase";
+	fsConfig->Get("EngineDataDir").GetValues(m_dataDir);
 	MsgInfo("* Engine Data directory: %s\n", m_dataDir.GetData());
 
 	if(!m_editorMode)
 	{
-		const int iGamePathArg = g_cmdLine->FindArgument("-game");
-		const char* gamePath = g_cmdLine->GetArgumentsOf(iGamePathArg);
+		EqStringRef gamePath = "DefaultGameDir_MISSING";
+		fsConfig->Get("DefaultGameDir").GetValues(gamePath);
 
-		// set or change game path
-		if (gamePath)
-			AddSearchPath("$GAME$", gamePath);
-		else
-			AddSearchPath("$GAME$", (const char*)KV_GetValueString(fsConfig->FindSection("DefaultGameDir"), 0, "DefaultGameDir_MISSING"));
+		const int gamePathArg = g_cmdLine->FindArgument("-game");
+		if(gamePathArg != -1)
+			gamePath = g_cmdLine->GetArgumentsOf(gamePathArg);
 
-		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
+		AddSearchPath("$GAME$", gamePath);
 
-		 // FS dev addon for game tools
-		 const int iDevAddonPathArg = g_cmdLine->FindArgument("-devAddon");
-		 const char* devAddonPath = g_cmdLine->GetArgumentsOf(iDevAddonPathArg);
-		 if (devAddonPath)
-		 {
-			 AddSearchPath("$MOD$_$WRITE$", devAddonPath);
-			 MsgInfo("* Dev addon path: %s\n", devAddonPath);
-		 }
-		 
+		MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
+
+		// FS dev addon for game tools
+		const int iDevAddonPathArg = g_cmdLine->FindArgument("-devAddon");
+		const char* devAddonPath = g_cmdLine->GetArgumentsOf(iDevAddonPathArg);
+		if (devAddonPath)
+		{
+			AddSearchPath("$MOD$_$WRITE$", devAddonPath);
+			MsgInfo("* Dev addon path: %s\n", devAddonPath);
+		}
 	}
 
-	for(KVKeyIterator it(fsConfig, "AddPackage"); !it.atEnd(); ++it)
+	for(const KVSection* pkgSec : fsConfig->Keys("AddPackage"))
 	{
-		const ESearchPath type = GetSearchPathByName(KV_GetValueString(*it, 1, "SP_MOD"));
-		AddPackage(KV_GetValueString(*it), type, KV_GetValueString(*it, 2, nullptr));
+		EqStringRef packageName;
+		EqStringRef pathType = "SP_MOD";
+		EqStringRef mountPath;
+		if (pkgSec->GetValues(packageName, pathType, mountPath) < 1)
+			continue;
+
+		const ESearchPath type = GetSearchPathByName(pathType);
+		AddPackage(packageName, type, mountPath);
 	}
 
 	m_isInit = true;
@@ -316,7 +363,7 @@ void CFileSystem::Shutdown()
 void CFileSystem::SetBasePath(const char* path) 
 { 
 	m_basePath = path;
-	m_basePath.Path_FixSlashes();
+	fnmPathFixSeparators(m_basePath);
 
 	if(m_basePath[m_basePath.Length()-1] != CORRECT_PATH_SEPARATOR)
 		m_basePath.Append(CORRECT_PATH_SEPARATOR);
@@ -528,13 +575,13 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 	switch (search)
 	{
 		case SP_DATA:
-			CombinePath(searchPath, m_basePath, m_dataDir);
+			fnmPathCombine(searchPath, m_basePath, m_dataDir);
 			break;
 		case SP_MOD:
 			if(directoryId == -1) // default write path
-				CombinePath(searchPath, m_basePath, GetCurrentGameDirectory());
+				fnmPathCombine(searchPath, m_basePath, GetCurrentGameDirectory());
 			else
-				CombinePath(searchPath, m_basePath, m_directories[directoryId]->path);
+				fnmPathCombine(searchPath, m_basePath, m_directories[directoryId]->path);
 			break;
 		case SP_ROOT:
 			searchPath = m_basePath;
@@ -559,11 +606,11 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 	const bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
 
 	if (!isAbsolutePath)
-		CombinePath(fullPath, GetSearchPath(search).ToCString(), dirOrFileName);
+		fnmPathCombine(fullPath, GetSearchPath(search).ToCString(), dirOrFileName);
 	else
 		fullPath = dirOrFileName;
 
-	fullPath.Path_FixSlashes();
+	fnmPathFixSeparators(fullPath);
 
 	return fullPath;
 }
@@ -571,6 +618,15 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 void CFileSystem::FileRemove(const char* filename, ESearchPath search ) const
 {
 	remove(GetAbsolutePath(search, filename));
+}
+
+bool CFileSystem::DirExist(const char* dirname, ESearchPath search) const
+{
+	struct stat info;
+	if (stat(GetAbsolutePath(search, dirname), &info) != 0)
+		return false;
+
+	return info.st_mode & S_IFDIR;
 }
 
 //Directory operations
@@ -605,8 +661,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		for (const SearchPathInfo* spInfo : m_directories)
 		{
 			EqString filePath;
-			CombinePath(filePath, m_basePath, spInfo->path, fileName);
-			filePath.Path_FixSlashes();
+			fnmPathCombine(filePath, m_basePath, spInfo->path, fileName);
 
 #ifndef _WIN32
 			const int nameHash = FSStringId(filePath);
@@ -627,8 +682,8 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	if (flags & SP_DATA)
 	{
 		EqString filePath;
-		CombinePath(filePath, m_basePath, m_dataDir, fileName);
-		filePath.Path_FixSlashes();
+		fnmPathCombine(filePath, m_basePath, m_dataDir, fileName);
+		fnmPathFixSeparators(filePath);
 
 		if (func(filePath, SP_DATA, flags, false))
 			return true;
@@ -641,13 +696,14 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		EqString filePath;
 
 		if(isAbsolutePath)
+		{
 			filePath = fileName;
+			fnmPathFixSeparators(filePath);
+		}
 		else
-			CombinePath(filePath, m_basePath, fileName);
-		filePath.Path_FixSlashes();
-
+			fnmPathCombine(filePath, m_basePath, fileName);
+		
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
-
 		if (func(filePath, SP_ROOT, flags, true))
 			return true;
 	}
@@ -721,6 +777,16 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 		if (reader->InitPackage(filePath, nullptr))
 			return true;
 
+		if (g_fileSystem->DirExist(filePath, searchPath))
+		{
+			delete reader;
+
+			// open flat reader
+			reader = PPNew CFlatFileReader();
+			reader->InitPackage(filePath, nullptr);
+			return true;
+		}
+
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
@@ -743,8 +809,9 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 
 	if (!WalkOverSearchPaths(searchFlags, packageName, walkFileFunc))
 	{
-		MsgError("Cannot open package '%s'\n", packageName);
 		delete reader;
+		MsgError("Cannot open package '%s'\n", packageName);
+
 		return nullptr;
 	}
 
@@ -777,7 +844,7 @@ void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
 	Array<EqString> openSet(PP_SL);
 	openSet.reserve(5000);
 
-	CombinePath(openSet.append(), m_basePath, pathInfo.path);
+	fnmPathCombine(openSet.append(), m_basePath, pathInfo.path);
 
 	while (openSet.numElem())
 	{
@@ -896,7 +963,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 		while (findData->dirIndex < m_directories.numElem())
 		{
 			fsBaseDir = GetSearchPath(SP_MOD, findData->dirIndex++);
-			CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+			fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
 			if (findData->osFind.Init(searchWildcard))
 				return true;
 
@@ -911,7 +978,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 	{
 		findData->searchPaths &= ~SP_DATA;
 		fsBaseDir = GetSearchPath(SP_DATA, -1);
-		CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+		fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
 		if (findData->osFind.Init(searchWildcard))
 			return true;
 	}
@@ -921,7 +988,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 	{
 		findData->searchPaths &= ~SP_ROOT;
 		fsBaseDir = GetSearchPath(SP_ROOT, -1);
-		CombinePath(searchWildcard, fsBaseDir, findData->wildcard);
+		fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
 		if (findData->osFind.Init(searchWildcard))
 			return true;
 	}
@@ -942,7 +1009,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	DKFINDDATA* newFind = PPNew DKFINDDATA;
 	newFind->searchPaths = searchPath;
 	newFind->wildcard = wildcard;
-	newFind->wildcard.Path_FixSlashes();
+	fnmPathFixSeparators(newFind->wildcard);
 	newFind->dirIndex = max(0, dirIndex);
 	newFind->singleDir = (dirIndex >= 0);
 
@@ -999,7 +1066,7 @@ int	CFileSystem::FindGetDirIndex(DKFINDDATA* findData) const
 DKMODULE* CFileSystem::OpenModule(const char* mod_name, EqString* outError)
 {
 	EqString moduleFileName = mod_name;
-	EqString modExt = moduleFileName.Path_Extract_Ext();
+	EqString modExt = fnmPathExtractExt(moduleFileName);
 
 #ifdef _WIN32
 	// make default module extension

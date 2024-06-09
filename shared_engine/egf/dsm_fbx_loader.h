@@ -7,13 +7,12 @@
 
 #pragma once
 
-#include "egf/model.h"
-
 namespace SharedModel
 {
 struct DSModel;
 using DSModelPtr = CRefPtr<DSModel>;
 struct DSShapeData;
+struct DSAnimData;
 
 struct DSModelContainer
 {
@@ -24,7 +23,7 @@ struct DSModelContainer
 
 // loads multiple FBX geometries
 bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename);
-bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filename, const char* meshFilter);
+bool LoadFBXAnimations(Array<DSAnimData>& animations, const char* filename, const char* meshFilter);
 
 // Loads FBX as a single model. For editor use.
 bool LoadFBXCompound(DSModel* model, const char* filename);

@@ -115,7 +115,7 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 		if (fsFind.IsDirectory())
 			continue;
 
-		CombinePath(shaderPackPath, "shaders", fsFind.GetPath());
+		fnmPathCombine(shaderPackPath, "shaders", fsFind.GetPath());
 
 		shaderModCount += LoadShaderPackage(shaderPackPath);
 		++shaderPackCount;
@@ -176,18 +176,17 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	shaderInfo.shaderPackFile = shaderPackFile;
 	shaderInfo.shaderName = shaderInfoKvs.GetName();
 
-	const KVSection* defines = shaderInfoKvs.FindSection("Defines");
+	const KVSection* defines = shaderInfoKvs["Defines"];
 	if (defines)
 	{
 		shaderInfo.defines.reserve(defines->ValueCount());
-		for (KVValueIterator<EqString> it(defines); !it.atEnd(); ++it)
-			shaderInfo.defines.append(it);
+		for (const EqStringRef def : defines->Values<EqStringRef>())
+			shaderInfo.defines.append(def);
 	}
 
 	int shaderKinds = 0;
-	for (KVValueIterator<EqStringRef> it(shaderInfoKvs.FindSection("ShaderKinds")); !it.atEnd(); ++it)
+	for (const EqStringRef kindName : shaderInfoKvs.Get("ShaderKinds").Values<EqStringRef>())
 	{
-		const EqStringRef kindName(it);
 		if (kindName == s_shaderKindVertexName)
 			shaderKinds |= SHADERKIND_VERTEX;
 		else if (kindName == s_shaderKindFragmentName)
@@ -197,44 +196,42 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	}
 	shaderInfo.shaderKinds = shaderKinds;
 
-	for (KVKeyIterator it(shaderInfoKvs.FindSection("VertexLayouts")); !it.atEnd(); ++it)
+	for (const KVSection* key : shaderInfoKvs.Get("VertexLayouts").Keys())
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
-		layout.name = EqString(it);
+		layout.name = key->GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringToHash(layout.name);
 		
-		if (!stricmp(KV_GetValueString(*it, 0), "aliasOf"))
+		if (!CString::CompareCaseIns(KV_GetValueString(key, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
-				return layout.name == EqStringRef(KV_GetValueString(*it, 1));
+				return layout.name == EqStringRef(KV_GetValueString(key, 1));
 			});
 		}
 	}
 
-	const KVSection* fileListSec = shaderInfoKvs.FindSection("FileList");
+	const KVSection* fileListSec = shaderInfoKvs["FileList"];
 
 	int filesFound = 0;
-	for (KVKeyIterator it(fileListSec, "spv"); !it.atEnd(); ++it)
+	for (const KVSection* itemSec : fileListSec->Keys("spv"))
 	{
-		const KVSection* itemSec = *it;
-
 		EqString kindExt;
-		const char* kindStr = KV_GetValueString(itemSec, 1);
+		EqStringRef kindStr = KV_GetValueString(itemSec, 1);
 		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
 		int kind = 0;
 		{
-			if (!stricmp(kindStr, "Vertex"))
+			if (!kindStr.CompareCaseIns("Vertex"))
 			{
 				kind = SHADERKIND_VERTEX;
 				kindExt = ".vert";
 			}
-			else if (!stricmp(kindStr, "Fragment"))
+			else if (!kindStr.CompareCaseIns("Fragment"))
 			{
 				kind = SHADERKIND_FRAGMENT;
 				kindExt = ".frag";
 			}
-			else if (!stricmp(kindStr, "Compute"))
+			else if (!kindStr.CompareCaseIns("Compute"))
 			{
 				kind = SHADERKIND_COMPUTE;
 				kindExt = ".comp";
@@ -282,19 +279,17 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	// we need to validate references so collect refs in second pass
 	int refIdx = 0;
-	for (KVKeyIterator it(fileListSec, "ref"); !it.atEnd(); ++it)
+	for (const KVSection* itemSec : fileListSec->Keys("ref"))
 	{
-		const KVSection* itemSec = *it;
-
-		const char* kindStr = KV_GetValueString(itemSec, 1);
+		EqStringRef kindStr = KV_GetValueString(itemSec, 1);
 		const int vertexLayoutIdx = KV_GetValueInt(itemSec);
 		int kind = 0;
 		{
-			if (!stricmp(kindStr, "Vertex"))
+			if (!kindStr.CompareCaseIns("Vertex"))
 				kind = SHADERKIND_VERTEX;
-			else if (!stricmp(kindStr, "Fragment"))
+			else if (!kindStr.CompareCaseIns("Fragment"))
 				kind = SHADERKIND_FRAGMENT;
-			else if (!stricmp(kindStr, "Compute"))
+			else if (!kindStr.CompareCaseIns("Compute"))
 				kind = SHADERKIND_COMPUTE;
 		}
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");

@@ -28,7 +28,7 @@ Image::~Image()
 {
 }
 
-void Image::InitFromKeyValues( KVSection* sec, bool noClear )
+void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 {
 	BaseClass::InitFromKeyValues(sec, noClear);
 

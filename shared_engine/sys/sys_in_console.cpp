@@ -738,7 +738,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 				// find custom autocompletion
 				for(int j = 0;j < m_customAutocompletion.numElem();j++)
 				{
-					if(!stricmp(cmdBase->GetName(), m_customAutocompletion[j]->cmd_name.GetData()))
+					if(!CString::CompareCaseIns(cmdBase->GetName(), m_customAutocompletion[j]->cmd_name.GetData()))
 					{
 						bHasAutocompletion = true;
 						break;
@@ -1073,7 +1073,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	// Compare the last command with current and add history if needs
 	if(m_commandHistory.numElem() > 0)
 	{
-		if(stricmp(m_commandHistory[m_commandHistory.numElem()-1].GetData(),m_inputText.GetData()))
+		if(m_commandHistory.back().CompareCaseIns(m_inputText))
 			m_commandHistory.append(m_inputText);
 	}
 	else
@@ -1118,7 +1118,7 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 	{
 		ConAutoCompletion_t* item = m_customAutocompletion[i];
 
-		if(stricmp(m_fastfind_cmdbase->GetName(), item->cmd_name))
+		if(item->cmd_name.CompareCaseIns(m_fastfind_cmdbase->GetName()))
 			continue;
 
 		for(int j = 0; j < item->args.numElem(); j++)

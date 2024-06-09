@@ -209,7 +209,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 		if(!m_materialsPath.Length())
 			m_materialsPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindSection("MaterialsPath") : nullptr, 0, "materials/");
 
-		m_materialsPath.Path_FixSlashes();
+		fnmPathFixSeparators(m_materialsPath);
 
 		if (m_materialsPath.ToCString()[m_materialsPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
 			m_materialsPath.Append(CORRECT_PATH_SEPARATOR);
@@ -219,7 +219,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 		if(!m_materialsSRCPath.Length())
 			m_materialsSRCPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindSection("MaterialsSRCPath") : nullptr, 0, "materialsSRC/");
 
-		m_materialsSRCPath.Path_FixSlashes();
+		fnmPathFixSeparators(m_materialsSRCPath);
 
 		if (m_materialsSRCPath.ToCString()[m_materialsSRCPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
 			m_materialsSRCPath.Append(CORRECT_PATH_SEPARATOR);
@@ -618,9 +618,8 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName, int instan
 	if(*szMaterialName == 0)
 		return nullptr;
 
-	EqString materialName = szMaterialName;
-	materialName = materialName.LowerCase();
-	materialName.Path_FixSlashes();
+	EqString materialName = EqStringRef(szMaterialName).LowerCase();
+	fnmPathFixSeparators(materialName);
 
 	if (materialName[0] == CORRECT_PATH_SEPARATOR)
 		materialName = materialName.ToCString() + 1;
@@ -668,7 +667,7 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 		CMaterial* material = (CMaterial*)*it;
 
 		// don't unload default material
-		if(!stricmp(material->GetName(), "Default"))
+		if(!CString::CompareCaseIns(material->GetName(), "Default"))
 			continue;
 
 		const int framesDiff = (material->m_frameBound - m_frame);
@@ -692,7 +691,7 @@ void CMaterialSystem::ReloadAllMaterials()
 		CMaterial* material = (CMaterial*)*it;
 
 		// don't unload default material
-		if(!stricmp(material->GetName(), "Default"))
+		if(!CString::CompareCaseIns(material->GetName(), "Default"))
 			continue;
 
 		const bool loadedFromDisk = material->m_loadFromDisk;
@@ -762,7 +761,7 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 {
 	for(const ShaderProxyFactory& factory : m_proxyFactoryList)
 	{
-		if(!stricmp(factory.name, pszName))
+		if(!factory.name.CompareCaseIns(pszName))
 			return (factory.func)();
 	}
 
@@ -809,7 +808,7 @@ const ShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName,
 	// check the override table
 	for(const ShaderOverride& override : m_shaderOverrideList)
 	{
-		if(!stricmp(szShaderName, override.shaderName))
+		if(!override.shaderName.CompareCaseIns(szShaderName))
 		{
 			const char* overrideShaderName = override.func(instanceFormatId);
 			if(overrideShaderName && *overrideShaderName) // only if we have shader name

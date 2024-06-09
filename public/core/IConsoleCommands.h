@@ -7,8 +7,6 @@
 
 #pragma once
 
-class EqString;
-
 class ConVar;
 class ConCommand;
 class ConCommandBase;

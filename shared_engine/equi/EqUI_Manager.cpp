@@ -100,7 +100,7 @@ void CUIManager::RegisterFactory(const char* name, ControlFactoryFunc factory)
 {
 	for(int i = 0; i < m_controlFactory.numElem(); i++)
 	{
-		if(!stricmp(m_controlFactory[i].name, name))
+		if(!CString::CompareCaseIns(m_controlFactory[i].name, name))
 		{
 			ASSERT_FAIL("UI factory '%s' was already registered!", name);
 			return;
@@ -117,7 +117,7 @@ IUIControl* CUIManager::CreateElement( const char* type )
 {
 	for(int i = 0; i < m_controlFactory.numElem(); i++)
 	{
-		if(!stricmp(m_controlFactory[i].name, type))
+		if(!CString::CompareCaseIns(m_controlFactory[i].name, type))
 			return (*m_controlFactory[i].factory)();
 	}
 
@@ -150,7 +150,7 @@ Panel* CUIManager::FindPanel( const char* pszPanelName ) const
 	{
 		if(strlen(m_panels[i]->GetName()) > 0)
 		{
-			if(!stricmp(pszPanelName, m_panels[i]->GetName()))
+			if(!CString::CompareCaseIns(pszPanelName, m_panels[i]->GetName()))
 				return m_panels[i];
 		}
 	}

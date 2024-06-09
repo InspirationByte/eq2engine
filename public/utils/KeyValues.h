@@ -10,6 +10,10 @@
 
 class IVirtualStream;
 struct KVSection;
+struct KVPairValue;
+
+template<typename T>
+struct KVPairValuesGetter;
 
 /*
 
@@ -44,15 +48,197 @@ enum EKVPairType
 	KVPAIR_TYPES,
 };
 
-// tune this (depends on size of used memory)
-#define KV_MAX_NAME_LENGTH		128
-
 enum EKVSearchFlags
 {
 	KV_FLAG_SECTION = (1 << 0),
 	KV_FLAG_NOVALUE = (1 << 1),
 	KV_FLAG_ARRAY	= (1 << 2)
 };
+
+// easy key iteration
+struct KVKeyIterator
+{
+	struct Init;
+
+	KVKeyIterator() = default;
+	KVKeyIterator(const KVSection* section);
+	KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags = 0, int index = 0);
+
+	operator	int() const;
+	operator	const char* () const;
+
+	operator	KVSection*() const;
+	KVSection*	operator*() const;
+	void		operator++();
+
+	bool		operator==(KVKeyIterator& it) const { return it.index == index; }
+	bool		operator!=(KVKeyIterator& it) const { return it.index != index; }
+
+	bool		atEnd() const;
+	void		Rewind();
+private:
+	bool		IsValidItem();
+
+	const KVSection*	section{ nullptr };
+	int					nameHashFilter{ 0 };
+	int					searchFlags{ 0 };
+	int					index{ 0 };
+};
+
+struct KVKeyIterator::Init
+{
+	KVKeyIterator	begin() const { return _initial; }
+	KVKeyIterator	end() const;
+	KVKeyIterator	_initial;
+};
+
+template<typename T = const char*>
+struct KVValueIterator
+{
+	struct Init;
+
+	KVValueIterator() = default;
+	KVValueIterator(const KVSection* key)
+		: key(key)
+	{
+	}
+
+	KVValueIterator(const KVSection* key, int index)
+		: key(key)
+		, index(min(index, key->ValueCount())) // limit to end()
+	{
+	}
+
+	operator	KVPairValue*() const;
+	T			operator*() const;
+	void		operator++();
+
+	bool		operator==(KVValueIterator& it) const { return it.index == index; }
+	bool		operator!=(KVValueIterator& it) const { return it.index != index; }
+
+	bool		atEnd() const;
+	void		Rewind();
+private:
+	const KVSection*	key{ nullptr };
+	int					index{ 0 };
+};
+
+template<typename T>
+struct KVValueIterator<T>::Init
+{
+	KVValueIterator	begin() const { return _initial; }
+	KVValueIterator	end() const;
+	KVValueIterator	_initial;
+};
+
+template<typename ...Args>
+struct KVValues
+{
+	using TupleRef = std::tuple<Args&...>;
+	using TupleVal = std::tuple<Args...>;
+
+	KVValues(Args&... outArgs) 
+		: outArgs(std::tie(outArgs...))
+		, newValues(outArgs...)
+		, count(0)
+	{
+	}
+
+	KVValues(KVValues&& other) noexcept
+		: outArgs(other.outArgs)
+		, newValues(std::move(other.newValues))
+		, count(other.count)
+		, cancel(other.cancel)
+	{
+		other.cancel = true;
+	}
+
+	~KVValues()
+	{
+		if (cancel)
+			return;
+		ApplyImpl(std::index_sequence_for<Args...>{});
+	}
+
+	KVValues& operator=(KVValues&& other) noexcept
+	{
+		if (this != &other)
+		{
+			outArgs = other.outArgs;
+			newValues = std::move(other.newValues);
+			count = other.count;
+			cancel = other.cancel;
+			other.cancel = true; // Prevent the moved-from object from applying its changes
+		}
+		return *this;
+	}
+
+	void		Cancel() { cancel = true; }
+	operator	int() const { return count; }
+
+	template<std::size_t... Is>
+	void ApplyImpl(std::index_sequence<Is...>)
+	{
+		((std::get<Is>(outArgs) = std::get<Is>(newValues)), ...);
+	}
+
+	TupleVal	newValues;
+	TupleRef	outArgs;
+	int			count{ 0 };
+	bool		cancel{ false };
+};
+
+namespace kvdetail
+{
+inline int GetValuesR(const KVSection* key, int idx, int cntIdx)
+{
+	return cntIdx; // end of recursion
+}
+
+template<typename T, typename ...Rest>
+inline int GetValuesR(const KVSection* key, int idx, int cntIdx, T& out, Rest&... outArgs)
+{
+	if (idx + KVPairValuesGetter<T>::vcount > key->ValueCount())
+		return cntIdx;
+	out = KVPairValuesGetter<T>::Get(key, idx);
+
+	return GetValuesR(key, idx + KVPairValuesGetter<T>::vcount, cntIdx + 1, outArgs...);
+}
+
+template<typename ...Args, std::size_t... Is>
+int GetValuesImpl(const KVSection* key, int idx, std::index_sequence<Is...>, std::tuple<Args...>& newValues)
+{
+	return GetValuesR(key, idx, 0, std::get<Is>(newValues)...);
+}
+}
+
+template<typename ...Args>
+inline KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+{
+	return kvdetail::GetValuesR(key, 0, idx, outArgs...);
+}
+
+template<typename ...Args>
+inline int KV_GetValues(const KVSection* key, Args&... outArgs)
+{
+	return kvdetail::GetValuesR(key, 0, 0, outArgs...);
+}
+
+template<typename ...Args>
+inline KVValues<Args...> KV_TryGetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+{
+	KVValues<Args...> values(outArgs...);
+	values.count = kvdetail::GetValuesImpl(key, idx, std::index_sequence_for<Args...>{}, values.newValues);
+	return values;
+}
+
+template<typename ...Args>
+inline KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
+{
+	KVValues<Args...> values(outArgs...);
+	values.count = kvdetail::GetValuesImpl(key, 0, std::index_sequence_for<Args...>{}, values.newValues);
+	return values;
+}
 
 //
 // KeyValues typed value holder
@@ -104,9 +290,38 @@ struct KVSection
 	void				SetName(const char* pszName);
 	const char*			GetName() const;
 
+	// Array values iterator
+	template<typename T>
+	inline typename KVValueIterator<T>::Init	Values(int startIdx) const { return { KVValueIterator<T>(this, startIdx) }; }
+	
+	template<typename T>
+	inline typename KVValueIterator<T>::Init	Values() const { return { KVValueIterator<T>(this) }; }
+
+	// Array keys iterator
+	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(this, nameFilter, searchFlags) }; }
+
+	// Key values getter
+	template<typename ...Args>
+	inline int					GetValues(Args&... outArgs) const { return KV_GetValues(this, outArgs...); };
+
+	// Key values getter at specific value idx
+	template<typename ...Args>
+	inline int					GetValuesAt(int idx, Args&... outArgs) const { return KV_GetValuesAt(this, idx, outArgs...); };
+
+	// Key values getter
+	template<typename ...Args>
+	inline KVValues<Args...>	TryGetValues(Args&... outArgs) const { return KV_TryGetValues(this, outArgs...); };
+
+	// Key values getter at specific value idx
+	template<typename ...Args>
+	inline KVValues<Args...>	TryGetValuesAt(int idx, Args&... outArgs) const { return KV_TryGetValuesAt(this, idx, outArgs...); };
+
 	//----------------------------------------------
 	// The section functions
 	//----------------------------------------------
+
+	// searches for section and returns default empty if none found
+	const KVSection&	Get(const char* pszName, int nFlags = 0) const;
 
 	// searches for section
 	KVSection*			FindSection(const char* pszName, int nFlags = 0) const;
@@ -124,7 +339,6 @@ struct KVSection
 	void				RemoveSection(KVSection* base);
 
 	//-----------------------------------------------------
-
 
 	KVSection&			SetKey(const char* name, const char* value);
 	KVSection&			SetKey(const char* name, int nValue);
@@ -185,10 +399,10 @@ struct KVSection
 	void				SetValue(KVPairValue* value, int idxAt = 0);
 
 	KVSection*			operator[](const char* pszName);
-	KVPairValue*		operator[](int index);
+	KVPairValue&		operator[](int index);
 
 	const KVSection*	operator[](const char* pszName) const;
-	const KVPairValue*	operator[](int index) const;
+	const KVPairValue&	operator[](int index) const;
 
 
 	//----------------------------------------------
@@ -210,7 +424,8 @@ struct KVSection
 	void				SetType(int newType);
 	int					GetType() const;
 
-	char				name[KV_MAX_NAME_LENGTH]{ 0 };
+	// TODO: private
+	EqString			name;
 	int					nameHash{ 0 };
 	int					line{ 0 };				// the line that the key is on
 
@@ -220,77 +435,29 @@ struct KVSection
 	bool				unicode{ false };
 };
 
-// easy key iteration
-struct KVKeyIterator
-{
-	KVKeyIterator(const KVSection* section, const char* nameFilter = nullptr, int searchFlags = 0);
-
-	operator	int() const;
-	operator	const char* () const;
-
-	KVSection*	operator*() const;
-	void		operator++();
-
-	bool		atEnd() const;
-
-	void		Rewind();
-
-private:
-	bool		IsValidItem();
-
-	const KVSection*	section{ nullptr };
-	int					nameHashFilter;
-	int					index{ 0 };
-	int					searchFlags{ 0 };
-};
-
-template<typename T>
-struct KVPairValuesGetter;
-
-template<typename T = const char*>
-struct KVValueIterator
-{
-	KVValueIterator(const KVSection* section, int start = 0)
-		: section(section), index(start)
-	{
-	}
-
-	operator		int() const { return index; }
-	operator		T() const { return KVPairValuesGetter<T>::Get(section, index);  }
-
-	KVPairValue*	operator*() const { return section ? section->values[index] : nullptr; }
-	void			operator++() { index += KVPairValuesGetter<T>::vcount; }
-
-	bool			atEnd() const { return section ? index >= section->values.numElem() : true; }
-
-	void			Rewind() { index = 0; }
-private:
-	const KVSection*	section{ nullptr };
-	int					index{ 0 };
-};
-
 // special wrapper class
 // for better compatiblity of new class
 class KeyValues
 {
 public:
-	KeyValues();
-	~KeyValues();
+	KeyValues() = default;
+	~KeyValues() = default;
 
 	void			Reset();
 
-	// searches for keybase
-	KVSection*		FindSection(const char* pszName, int nFlags = 0) const;
+	KVKeyIterator::Init		Keys(const char* nameFilter = nullptr, int searchFlags = 0) const;
+	const KVSection&		Get(const char* pszName, int nFlags = 0) const;
+	KVSection*				FindSection(const char* pszName, int nFlags = 0) const;
 
 	// loads from file
-	bool			LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
-	bool			LoadFromStream(IVirtualStream* stream);
+	bool				LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
+	bool				LoadFromStream(IVirtualStream* stream);
 
-	bool			SaveToFile(const char* pszFileName, int nSearchFlags = -1);
+	bool				SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
-	KVSection*		GetRootSection();
+	KVSection*			GetRootSection();
 
-	KVSection*		operator[](const char* pszName);
+	KVSection*			operator[](const char* pszName);
 
 private:
 	KVSection	m_root;
@@ -341,76 +508,121 @@ void			KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base);
 // KeyValues value helpers
 //-----------------------------------------------------------------------------------------------------
 
-int					KV_ScanGetValue(const KVSection* pBase, int start, const char* format, ...);
-
-const char*			KV_GetValueString(const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
-int					KV_GetValueInt(const KVSection* pBase, int nIndex = 0, int nDefault = 0 );
-float				KV_GetValueFloat(const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f );
-bool				KV_GetValueBool(const KVSection* pBase, int nIndex = 0, bool bDefault = false );
-Vector2D			KV_GetVector2D(const KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
-IVector2D			KV_GetIVector2D(const KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
-Vector3D			KV_GetVector3D(const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
-Vector4D			KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
+// DEPRECATED for direct use. Use KVSection::GetValues / KVSection::GetValuesAt
+const char*		KV_GetValueString(const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
+int				KV_GetValueInt(const KVSection* pBase, int nIndex = 0, int nDefault = 0 );
+float			KV_GetValueFloat(const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f );
+bool			KV_GetValueBool(const KVSection* pBase, int nIndex = 0, bool bDefault = false );
+Vector2D		KV_GetVector2D(const KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
+IVector2D		KV_GetIVector2D(const KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
+Vector3D		KV_GetVector3D(const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
+Vector4D		KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
 
 // For KV Value iterator
 
+template<typename T>
+KVValueIterator<T>::operator KVPairValue* () const
+{
+	return key->values[index];
+}
+
+template<typename T>
+T KVValueIterator<T>::operator*() const
+{
+	return KVPairValuesGetter<T>::Get(key, index);
+}
+
+template<typename T>
+void KVValueIterator<T>::operator++()
+{
+	index += KVPairValuesGetter<T>::vcount;
+}
+
+template<typename T>
+bool KVValueIterator<T>::atEnd() const
+{
+	return key ? index >= key->ValueCount() : true;
+}
+
+template<typename T>
+void KVValueIterator<T>::Rewind()
+{
+	index = 0;
+}
+
+template<typename T>
+KVValueIterator<T> KVValueIterator<T>::Init::end() const
+{
+	KVValueIterator<T> endIt;
+	endIt.key = _initial.key;
+	endIt.index = _initial.key->ValueCount();
+	return endIt;
+}
+
 template<> struct KVPairValuesGetter<const char*>
 {
-	static const char* Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
-	static const int vcount = 1;
-};
-
-template<> struct KVPairValuesGetter<EqString>
-{
-	static const char* Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
-	static const int vcount = 1;
-};
-
-template<> struct KVPairValuesGetter<EqStringRef>
-{
-	static const char* Get(const KVSection* section, int index) { return KV_GetValueString(section, index); }
+	static const char* Get(const KVSection* section, int index) { return (*section)[index].GetString(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<float>
 {
-	static float Get(const KVSection* section, int index) { return KV_GetValueFloat(section, index); }
+	static float Get(const KVSection* section, int index) { return (*section)[index].GetFloat(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<int>
 {
-	static int Get(const KVSection* section, int index) { return KV_GetValueInt(section, index); }
+	static int Get(const KVSection* section, int index) { return (*section)[index].GetInt(); }
 	static const int vcount = 1;
 };
 
 template<> struct KVPairValuesGetter<bool>
 {
-	static bool Get(const KVSection* section, int index) { return KV_GetValueBool(section, index); }
+	static bool Get(const KVSection* section, int index) { return (*section)[index].GetBool(); }
 	static const int vcount = 1;
 };
 
-template<> struct KVPairValuesGetter<Vector2D>
+// define aliases that use same code
+template<> struct KVPairValuesGetter<EqStringRef> : KVPairValuesGetter<const char*> {};
+template<> struct KVPairValuesGetter<EqString> : KVPairValuesGetter<const char*> {};
+template<> struct KVPairValuesGetter<FReal> : KVPairValuesGetter<float> {};
+template<> struct KVPairValuesGetter<uint> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<int16> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<uint16> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<int8> : KVPairValuesGetter<int> {};
+template<> struct KVPairValuesGetter<uint8> : KVPairValuesGetter<int> {};
+
+template <typename T>
+struct KVPairValuesGetter<TVec2D<T>>
 {
-	static Vector2D Get(const KVSection* section, int index) { return KV_GetVector2D(section, index); }
+	using CompGetter = KVPairValuesGetter<T>;
+	static TVec2D<T> Get(const KVSection* section, int index)
+	{
+		return TVec2D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index+1));
+	}
 	static const int vcount = 2;
 };
 
-template<> struct KVPairValuesGetter<IVector2D>
+template <typename T>
+struct KVPairValuesGetter<TVec3D<T>>
 {
-	static IVector2D Get(const KVSection* section, int index) { return KV_GetIVector2D(section, index); }
-	static const int vcount = 2;
-};
-
-template<> struct KVPairValuesGetter<Vector3D>
-{
-	static Vector3D Get(const KVSection* section, int index) { return KV_GetVector3D(section, index); }
+	using CompGetter = KVPairValuesGetter<T>;
+	static TVec3D<T> Get(const KVSection* section, int index)
+	{
+		return TVec3D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2));
+	}
 	static const int vcount = 3;
 };
 
-template<> struct KVPairValuesGetter<Vector4D>
+template <typename T>
+struct KVPairValuesGetter<TVec4D<T>>
 {
-	static Vector4D Get(const KVSection* section, int index) { return KV_GetVector4D(section, index); }
+	using CompGetter = KVPairValuesGetter<T>;
+	static TVec4D<T> Get(const KVSection* section, int index)
+	{
+		return TVec4D<T>(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2), CompGetter::Get(section, index + 3));
+	}
 	static const int vcount = 4;
 };
 

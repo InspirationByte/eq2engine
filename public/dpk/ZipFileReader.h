@@ -47,7 +47,7 @@ protected:
 class CZipFileReader : public CBasePackageReader
 {
 public:
-	CZipFileReader() = default;
+	EPackageType		GetType() const { return PACKAGE_READER_ZIP; }
 
 	bool				InitPackage(const char* filename, const char* mountPath = nullptr);
 
@@ -55,8 +55,6 @@ public:
 	IFilePtr			Open(int fileIndex, int modeFlags);
 	bool				FileExists(const char* filename) const;
 	int					FindFileIndex(const char* filename) const;
-
-	EPackageReaderType	GetType() const { return PACKAGE_READER_ZIP; }
 
 protected:
 	uintptr_t			GetZippedFile(int nameHash) const;

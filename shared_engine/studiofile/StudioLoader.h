@@ -8,10 +8,10 @@
 #pragma once
 #include "egf/model.h"
 
-studioHdr_t*		Studio_LoadModel(const char* pszPath);
-studioMotionData_t*	Studio_LoadMotionData(const char* pszPath, int numBones);
-bool				Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel);
+studioHdr_t*	Studio_LoadModel(const char* pszPath);
+bool			Studio_LoadMotionData(const char* pszPath, StudioMotionData& motionData);
+bool			Studio_LoadPhysModel(const char* pszPath, StudioPhysData& pModel);
 
-void				Studio_FreeModel(studioHdr_t* pModel);
-void				Studio_FreeMotionData(studioMotionData_t* pData, int numBones);
-void				Studio_FreePhysModel(studioPhysData_t* pModel);
+void			Studio_FreeModel(studioHdr_t* pModel);
+void			Studio_FreeMotionData(StudioMotionData& pData);
+void			Studio_FreePhysModel(StudioPhysData& pModel);

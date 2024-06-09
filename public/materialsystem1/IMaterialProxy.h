@@ -15,7 +15,7 @@ class IMaterialProxy
 public:
 	virtual ~IMaterialProxy() {}
 
-	virtual void InitProxy(IMaterial* material, KVSection* pKeyBase) = 0;
+	virtual void InitProxy(IMaterial* material, const KVSection* pKeyBase) = 0;
 	virtual void UpdateProxy(float dt) = 0;
 };
 
@@ -138,13 +138,13 @@ inline void CBaseMaterialProxy::ParseVariable(IMaterial* material, proxyvar_t& v
 		var.vec_idx = -1;
 		var.type = PV_CONSTANT;
 	}
-	else if(!stricmp(pairval, CONST_NAME_FRAMETIME))
+	else if(!CString::CompareCaseIns(pairval, CONST_NAME_FRAMETIME))
 	{
 		var.value = 0.0f;
 		var.vec_idx = -1;
 		var.type = PV_FRAMETIME;
 	}
-	else if(!stricmp(pairval, CONST_NAME_GAMETIME))
+	else if(!CString::CompareCaseIns(pairval, CONST_NAME_GAMETIME))
 	{
 		var.value = 0.0f;
 		var.vec_idx = -1;

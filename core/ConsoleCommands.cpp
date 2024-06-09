@@ -45,7 +45,7 @@ static void PrintConCommand(ConCommandBase* pConCommand)
 
 static int alpha_cmd_comp(const ConCommandBase* a, const ConCommandBase* b)
 {
-	return stricmp(a->GetName(), b->GetName());
+	return CString::CompareCaseIns(a->GetName(), b->GetName());
 }
 
 static bool isCvarChar(char c)
@@ -249,7 +249,7 @@ static void fncfgfiles_variants(const ConCommandBase* cmd, Array<EqString>& list
 		if (fsFind.IsDirectory())
 			continue;
 
-		list.append(_Es(fsFind.GetPath()).Path_Strip_Ext());
+		list.append(fnmPathStripExt(fsFind.GetPath()));
 	}
 }
 
@@ -370,7 +370,7 @@ const ConCommandBase* CConsoleCommands::FindBase(const char* name)
 
 	for (int i = 0; i < m_registeredCommands.numElem(); i++)
 	{
-		if (!stricmp(name, m_registeredCommands[i]->GetName()))
+		if (!CString::CompareCaseIns(name, m_registeredCommands[i]->GetName()))
 			return m_registeredCommands[i];
 	}
 
@@ -495,7 +495,12 @@ void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 		if (cmdArgs.numElem() && !cmdArgs.front().CompareCaseIns("exec"))
 		{
 			cmdArgs.removeIndex(0);
-			CC_exec_f(nullptr, cmdArgs);
+
+			Array<EqStringRef> cmdArgsRefs(PP_SL);
+			for (EqStringRef str : cmdArgs)
+				cmdArgsRefs.append(str);
+
+			CC_exec_f(nullptr, cmdArgsRefs);
 			return;
 		}
 
@@ -515,10 +520,10 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 {
 	EqString cfgFileName(pszFilename);
 
-	if (cfgFileName.Path_Extract_Ext() != s_commandsConfigFileExt && !g_fileSystem->FileExist(cfgFileName))
+	if (fnmPathExtractExt(cfgFileName) != s_commandsConfigFileExt && !g_fileSystem->FileExist(cfgFileName))
 	{
 		if (!g_fileSystem->FileExist("cfg/" + cfgFileName))
-			cfgFileName = cfgFileName.Path_Strip_Ext() + ".cfg";
+			cfgFileName = fnmPathStripExt(cfgFileName) + ".cfg";
 		else
 			cfgFileName = "cfg/" + cfgFileName;
 	}
@@ -624,7 +629,12 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 	cmdArgs.removeIndex(0);
 	if (pBase->IsConCommand())
 	{
-		static_cast<const ConCommand*>(pBase)->DispatchFunc(cmdArgs);
+		Array<EqStringRef> cmdArgsRefs(PP_SL);
+		cmdArgsRefs.reserve(cmdArgs.numElem());
+		for (EqStringRef str : cmdArgs)
+			cmdArgsRefs.append(str);
+
+		static_cast<const ConCommand*>(pBase)->DispatchFunc(cmdArgsRefs);
 	}
 	else if(pBase->IsConVar())
 	{
@@ -651,7 +661,7 @@ bool CConsoleCommands::ExecuteCommandBuffer(CommandFilterFn filterFn, bool quiet
 {
 	SortCommands();
 
-	if (!stricmp(m_lastExecutedCommands, m_currentCommands))
+	if (!CString::CompareCaseIns(m_lastExecutedCommands, m_currentCommands))
 		m_sameCommandsExecuted++;
 
 	strcpy(m_lastExecutedCommands, m_currentCommands);

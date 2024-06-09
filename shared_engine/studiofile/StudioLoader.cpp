@@ -85,85 +85,75 @@ studioHdr_t* Studio_LoadModel(const char* pszPath)
 	return pHdr;
 }
 
-studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
+bool Studio_LoadMotionData(const char* pszPath, StudioMotionData& motionData)
 {
-	if (!boneCount)
-		return nullptr;
-
 	ubyte* pData = g_fileSystem->GetFileBuffer(pszPath);
 	ubyte* pStart = pData;
-
 	if(!pData)
-		return nullptr;
+		return false;
 
-	lumpfilehdr_t* pHDR = (lumpfilehdr_t*)pData;
+	defer{
+		PPFree(pStart);
+	};
 
-	if(pHDR->ident != ANIMFILE_IDENT)
+	const lumpfilehdr_t* pHdr = (lumpfilehdr_t*)pData;
+	if(pHdr->ident != ANIMFILE_IDENT)
 	{
 		MsgError("%s: not a motion package file\n", pszPath);
-		PPFree(pData);
-		return nullptr;
+		return false;
 	}
 
-	if(pHDR->version != ANIMFILE_VERSION)
+	if(pHdr->version != ANIMFILE_VERSION)
 	{
 		MsgError("%s: bad motion package version\n", pszPath);
-		PPFree(pData);
-		return nullptr;
+		return false;
 	}
 
 	pData += sizeof(lumpfilehdr_t);
 
-	studioMotionData_t* pMotion = (studioMotionData_t*)PPAlloc(sizeof(studioMotionData_t));
-
-	int numAnimDescs = 0;
-	int numAnimFrames = 0;
-
-	animationdesc_t*	animationdescs = nullptr;
-	animframe_t*		animframes = nullptr;
-
-	bool hasCompressedAnimationFrames	= false;
-	int nUncompressedFramesSize		= 0;
+	int uncomressedFramesSize = 0;
 
 	// parse motion package
-	for(int lump = 0; lump < pHDR->numLumps; lump++)
+	for(int lump = 0; lump < pHdr->numLumps; lump++)
 	{
-		lumpfilelump_t* pLump = (lumpfilelump_t*)pData;
+		const lumpfilelump_t* pLump = (lumpfilelump_t*)pData;
 		pData += sizeof(lumpfilelump_t);
 
 		switch(pLump->type)
 		{
 			case ANIMFILE_ANIMATIONS:
 			{
-				numAnimDescs = pLump->size / sizeof(animationdesc_t);
-				animationdescs = (animationdesc_t*)pData;
+				const int numAnimDescs = pLump->size / sizeof(animationdesc_t);
+				motionData.animations = PPNewArrayRef(animationdesc_t, numAnimDescs);
+				
+				memcpy(motionData.animations.ptr(), pData, pLump->size);
 				break;
 			}
 			case ANIMFILE_ANIMATIONFRAMES:
 			{
-				numAnimFrames = pLump->size / sizeof(animframe_t);
-				animframes = (animframe_t*)pData;
-				hasCompressedAnimationFrames = false;
-
+				const int numAnimFrames = pLump->size / sizeof(animframe_t);
+				motionData.frames = PPNewArrayRef(animframe_t, numAnimFrames);
+					
+				memcpy(motionData.frames.ptr(), pData, pLump->size);
 				break;
 			}
 			case ANIMFILE_UNCOMPRESSEDFRAMESIZE:
 			{
-				nUncompressedFramesSize = *(int*)pData;
+				uncomressedFramesSize = *(int*)pData;
 				break;
 			}
 			case ANIMFILE_COMPRESSEDFRAMES:
 			{
-				animframes = (animframe_t*)PPAlloc(nUncompressedFramesSize + 150);
+				ASSERT(uncomressedFramesSize > 0);
 
-				unsigned long realSize = nUncompressedFramesSize;
+				const int numAnimFrames = uncomressedFramesSize / sizeof(animframe_t);
+				motionData.frames = PPNewArrayRef(animframe_t, numAnimFrames);
 
-				int status = uncompress((ubyte*)animframes,&realSize,pData,pLump->size);
-
+				unsigned long realSize = uncomressedFramesSize;
+				const int status = uncompress((ubyte*)motionData.frames.ptr(), &realSize, pData, pLump->size);
 				if (status == Z_OK)
 				{
-					numAnimFrames = realSize / sizeof(animframe_t);
-					hasCompressedAnimationFrames = true;
+					ASSERT(realSize == uncomressedFramesSize);
 				}
 				else
 					MsgError("ERROR! Cannot decompress animation frames from %s (error %d)!\n", pszPath, status);
@@ -172,26 +162,26 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 			}
 			case ANIMFILE_SEQUENCES:
 			{
-				pMotion->numsequences = pLump->size / sizeof(sequencedesc_t);
+				const int numSequences = pLump->size / sizeof(sequencedesc_t);
 
-				pMotion->sequences = (sequencedesc_t*)PPAlloc(pLump->size);
-				memcpy(pMotion->sequences, pData, pLump->size);
+				motionData.sequences = PPNewArrayRef(sequencedesc_t, numSequences);
+				memcpy(motionData.sequences.ptr(), pData, pLump->size);
 				break;
 			}
 			case ANIMFILE_EVENTS:
 			{
-				pMotion->numEvents = pLump->size / sizeof(sequenceevent_t);
+				const int numEvents = pLump->size / sizeof(sequenceevent_t);
 
-				pMotion->events = (sequenceevent_t*)PPAlloc(pLump->size);
-				memcpy(pMotion->events, pData, pLump->size);
+				motionData.events = PPNewArrayRef(sequenceevent_t, numEvents);
+				memcpy(motionData.events.ptr(), pData, pLump->size);
 				break;
 			}
 			case ANIMFILE_POSECONTROLLERS:
 			{
-				pMotion->numPoseControllers = pLump->size / sizeof(posecontroller_t);
+				const int numPoseControllers = pLump->size / sizeof(posecontroller_t);
 
-				pMotion->poseControllers = (posecontroller_t*)PPAlloc(pLump->size);
-				memcpy(pMotion->poseControllers, pData, pLump->size);
+				motionData.poseControllers = PPNewArrayRef(posecontroller_t, numPoseControllers);
+				memcpy(motionData.poseControllers.ptr(), pData, pLump->size);
 				break;
 			}
 		}
@@ -199,43 +189,11 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 		pData += pLump->size;
 	}
 
-	// first processing done, convert animca animations to EGF format.
-	pMotion->animations = PPAllocStructArray(studioAnimation_t, numAnimDescs);
-	pMotion->numAnimations = numAnimDescs;
-
-	pMotion->frames = PPAllocStructArray(animframe_t, numAnimFrames);
-	memcpy(pMotion->frames, animframes, numAnimFrames * sizeof(animframe_t));
-
-	for(int i = 0; i < pMotion->numAnimations; i++)
-	{
-		studioAnimation_t& anim = pMotion->animations[i];
-		strcpy(anim.name, animationdescs[i].name);
-
-		// determine frame count of animation
-		const int numFrames = animationdescs[i].numFrames / boneCount;
-
-		anim.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
-		//anim.numFrames = numFrames;
-
-		// since frames are just flat array of each bone, we can simply reference it
-		for(int j = 0; j < boneCount; j++)
-		{
-			anim.bones[j].numFrames = numFrames;
-			anim.bones[j].keyFrames = pMotion->frames + (animationdescs[i].firstFrame + j * numFrames);
-		}
-	}
-
-	if(hasCompressedAnimationFrames)
-	{
-		PPFree(animframes);
-	}
-
-	PPFree(pStart);
-
-	return pMotion;
+	motionData.name = fnmPathStripExt(fnmPathExtractName(pszPath));
+	return true;
 }
 
-bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
+bool Studio_LoadPhysModel(const char* pszPath, StudioPhysData& physData)
 {
 	ubyte* pData = g_fileSystem->GetFileBuffer( pszPath );
 	ubyte* pStart = pData;
@@ -243,29 +201,29 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 	if(!pData)
 		return false;
 
-	lumpfilehdr_t *pHdr = (lumpfilehdr_t*)pData;
+	defer{
+		PPFree(pStart);
+	};
 
+	const lumpfilehdr_t *pHdr = (lumpfilehdr_t*)pData;
 	if(pHdr->ident != PHYSFILE_ID)
 	{
 		MsgError("'%s' is not a POD physics model\n", pszPath);
-		PPFree(pData);
 		return false;
 	}
 
 	if(pHdr->version != PHYSFILE_VERSION)
 	{
 		MsgError("POD-File '%s' has physics model version\n", pszPath);
-		PPFree(pData);
 		return false;
 	}
 
 	Array<const char*> objectNames(PP_SL);
 	pData += sizeof(lumpfilehdr_t);
 
-	int nLumps = pHdr->numLumps;
-	for(int lump = 0; lump < nLumps; lump++)
+	for(int lump = 0; lump < pHdr->numLumps; lump++)
 	{
-		lumpfilelump_t* pLump = (lumpfilelump_t*)pData;
+		const lumpfilelump_t* pLump = (lumpfilelump_t*)pData;
 		pData += sizeof(lumpfilelump_t);
 
 		switch(pLump->type)
@@ -273,24 +231,19 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			case PHYSFILE_PROPERTIES:
 			{
 				physmodelprops_t* props = (physmodelprops_t*)pData;
-				pModel->usageType = props->usageType;
+				physData.usageType = static_cast<EPhysModelUsage>(props->usageType);
 				break;
 			}
-			case PHYSFILE_GEOMETRYINFO:
+			case PHYSFILE_SHAPEINFO:
 			{
 				const int numGeomInfos = pLump->size / sizeof(physgeominfo_t);
+				ArrayCRef<physgeominfo_t> shapesInfoFile(reinterpret_cast<physgeominfo_t*>(pData), numGeomInfos);
 
-				physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
-
-				pModel->numShapes = numGeomInfos;
-				pModel->shapes = PPAllocStructArray(studioPhysShapeCache_t, numGeomInfos);
-
+				physData.shapes = PPNewArrayRef(StudioPhyShapeData, numGeomInfos);
 				for(int i = 0; i < numGeomInfos; i++)
 				{
-					pModel->shapes[i].cachedata = nullptr;
-
-					// copy shape info
-					memcpy(&pModel->shapes[i].shapeInfo, &pGeomInfos[i], sizeof(physgeominfo_t));
+					physData.shapes[i].cacheRef = nullptr;
+					memcpy(&physData.shapes[i].desc, &shapesInfoFile[i], sizeof(physgeominfo_t));
 				}
 				break;
 			}
@@ -312,58 +265,44 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			case PHYSFILE_OBJECTS:
 			{
 				const int numObjInfos = pLump->size / sizeof(physobject_t);
-				physobject_t* physObjDataLump = (physobject_t*)pData;
+				ArrayCRef<physobject_t> physObjsFile(reinterpret_cast<physobject_t*>(pData), numObjInfos);
 
-				pModel->numObjects = numObjInfos;
-				pModel->objects = PPAllocStructArray(studioPhysObject_t, numObjInfos);
-
-				for(int i = 0; i < numObjInfos; i++)
+				physData.objects = PPNewArrayRef(StudioPhyObjData, numObjInfos);
+				for(int i = 0; i < physObjsFile.numElem(); i++)
 				{
-					studioPhysObject_t& objData = pModel->objects[i];
-
+					StudioPhyObjData& objData = physData.objects[i];
+					memset(objData.shapeCacheRefs, 0, sizeof(objData.shapeCacheRefs));
+					objData.desc = physObjsFile[i];
+					
 					if(objectNames.numElem() > 0)
-						strcpy(objData.name, objectNames[i]);
-
-					// copy shape info
-					memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));
-
-					for(int j = 0; j < MAX_PHYS_GEOM_PER_OBJECT; j++)
-						objData.shapeCache[j] = nullptr;
+						objData.name = objectNames[i];
 				}
 				break;
 			}
 			case PHYSFILE_JOINTDATA:
 			{
 				const int numJointInfos = pLump->size / sizeof(physjoint_t);
-				physjoint_t* pJointData = (physjoint_t*)pData;
-
-				pModel->numJoints = numJointInfos;
-
-				if(pModel->numJoints)
+				if(numJointInfos)
 				{
-					pModel->joints = (physjoint_t*)PPAlloc(pLump->size);
-					memcpy(pModel->joints, pJointData, pLump->size );
+					physData.joints = PPNewArrayRef(physjoint_t, numJointInfos);
+					memcpy(physData.joints.ptr(), pData, pLump->size);
 				}
 				break;
 			}
 			case PHYSFILE_VERTEXDATA:
 			{
 				const int numVerts = pLump->size / sizeof(Vector3D);
-				Vector3D* pVertexData = (Vector3D*)pData;
+				physData.vertices = PPNewArrayRef(Vector3D, numVerts);
 
-				pModel->numVertices = numVerts;
-				pModel->vertices = (Vector3D*)PPAlloc(pLump->size);
-				memcpy(pModel->vertices, pVertexData, pLump->size );
+				memcpy(physData.vertices.ptr(), pData, pLump->size);
 				break;
 			}
 			case PHYSFILE_INDEXDATA:
 			{
 				const int numIndices = pLump->size / sizeof(int);
-				int* pIndexData = (int*)pData;
+				physData.indices = PPNewArrayRef(int, numIndices);
 
-				pModel->numIndices = numIndices;
-				pModel->indices = (int*)PPAlloc(pLump->size);
-				memcpy(pModel->indices, pIndexData, pLump->size );
+				memcpy(physData.indices.ptr(), pData, pLump->size);
 				break;
 			}
 			default:
@@ -375,8 +314,6 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 
 		pData += pLump->size;
 	}
-
-	PPFree(pStart);
 	return true;
 }
 
@@ -385,24 +322,20 @@ void Studio_FreeModel(studioHdr_t* pModel)
 	PPFree(pModel);
 }
 
-void Studio_FreeMotionData(studioMotionData_t* data, int numBones)
+void Studio_FreeMotionData(StudioMotionData& data)
 {
-	// NOTE: no need to delete bone keyFrames since they are mapped from data->frames.
-	for (int i = 0; i < data->numAnimations; i++)
-		PPFree(data->animations[i].bones);
-
-	PPFree(data->frames);
-	PPFree(data->sequences);
-	PPFree(data->events);
-	PPFree(data->poseControllers);
-	PPFree(data->animations);
+	PPDeleteArrayRef(data.frames);
+	PPDeleteArrayRef(data.sequences);
+	PPDeleteArrayRef(data.events);
+	PPDeleteArrayRef(data.poseControllers);
+	PPDeleteArrayRef(data.animations);
 }
 
-void Studio_FreePhysModel(studioPhysData_t* model)
+void Studio_FreePhysModel(StudioPhysData& model)
 {
-	PPFree(model->indices);
-	PPFree(model->vertices);
-	PPFree(model->shapes);
-	PPFree(model->objects);
-	PPFree(model->joints);
+	PPDeleteArrayRef(model.indices);
+	PPDeleteArrayRef(model.vertices);
+	PPDeleteArrayRef(model.shapes);
+	PPDeleteArrayRef(model.objects);
+	PPDeleteArrayRef(model.joints);
 }

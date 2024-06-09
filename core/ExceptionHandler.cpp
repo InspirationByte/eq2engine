@@ -133,7 +133,7 @@ static void CreateMiniDump( EXCEPTION_POINTERS* pep )
 	GetSystemTime(&t);
 
 	char dumpPath[2048];
-	sprintf(dumpPath, "logs/%s_%4d%02d%02d_%02d%02d%02d.mdmp", g_eqCore->GetApplicationName(), t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+	CString::PrintF(dumpPath, sizeof(dumpPath), "logs/%s_%4d%02d%02d_%02d%02d%02d.mdmp", g_eqCore->GetApplicationName(), t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
 
 	HANDLE dumpFileFd = CreateFileA(dumpPath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 	if (!dumpFileFd || dumpFileFd == INVALID_HANDLE_VALUE)

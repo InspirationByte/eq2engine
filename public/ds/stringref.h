@@ -7,61 +7,28 @@
 
 #pragma once
 
-class EqString;
-class EqWString;
+template<typename CH>
+class EqTStrRef;
+
+template<typename CH>
+class EqTStr;
+
+using EqString = EqTStr<char>;
+using EqWString = EqTStr<wchar_t>;
+
+using EqStringRef = EqTStrRef<char>;
+using EqWStringRef = EqTStrRef<wchar_t>;
 
 #ifdef _WIN32
-#	define CORRECT_PATH_SEPARATOR '\\'
-#	define INCORRECT_PATH_SEPARATOR '/'
+constexpr int CORRECT_PATH_SEPARATOR	= '\\';
+constexpr int INCORRECT_PATH_SEPARATOR	= '/';
 #else
-#	define CORRECT_PATH_SEPARATOR '/'
-#	define INCORRECT_PATH_SEPARATOR '\\'
+constexpr int CORRECT_PATH_SEPARATOR	= '/';
+constexpr int INCORRECT_PATH_SEPARATOR	= '\\';
 #endif // _WIN32
 
 static constexpr const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
 static constexpr const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
-
-#ifdef PLAT_POSIX
-
-#define _vsnwprintf vswprintf
-#define _snprintf snprintf
-
-#define stricmp(a, b)			strcasecmp(a, b)
-
-#endif // PLAT_POSIX
-
-#ifdef PLAT_ANDROID
-
-typedef __builtin_va_list	va_list;
-#ifndef va_start
-#	define va_start(v,l)		__builtin_va_start(v,l)
-#endif
-
-#ifndef va_end
-#	define va_end(v)			__builtin_va_end(v)
-#endif
-
-#ifndef va_arg
-#	define va_arg(v,l)			__builtin_va_arg(v,l)
-#endif
-
-#if !defined(__STRICT_ANSI__) || __STDC_VERSION__ + 0 >= 199900L || defined(__GXX_EXPERIMENTAL_CXX0X__)
-
-#	ifndef va_copy
-#		define va_copy(d,s)		__builtin_va_copy(d,s)
-#	endif
-
-#endif
-
-#ifndef __va_copy
-#	define __va_copy(d,s)		__builtin_va_copy(d,s)
-#endif
-
-typedef __builtin_va_list	__gnuc_va_list;
-typedef __gnuc_va_list		va_list;
-typedef va_list				__va_list;
-
-#endif // PLAT_ANDROID
 
 //------------------------------------------------------
 // String hash
@@ -93,23 +60,7 @@ template <auto V> static constexpr auto force_consteval = V;
 #define StringToHashConst(x) force_consteval<_StringToHashConst(x)>
 
 // generates string hash
-int			StringToHash(const char* str, bool caseIns = false);
-
-//------------------------------------------------------
-// Path utils
-//------------------------------------------------------
-
-// combines paths
-void		CombinePathN(EqString& outPath, int num, ...);
-
-template<typename ...Args> // requires std::same_as<Args, const char*>...
-void		CombinePath(EqString& outPath, const Args&... args)
-{
-	CombinePathN(outPath, sizeof...(Args), static_cast<const char*>(args)...);
-}
-
-// fixes slashes in the directory name
-void		FixSlashes( char* str );
+int			StringToHash(EqStringRef str, bool caseIns = false);
 
 //------------------------------------------------------
 // General string utilities
@@ -151,17 +102,31 @@ wchar_t*	xwcsistr( wchar_t* pStr, wchar_t const* pSearch );
 wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
 
 //------------------------------------------------------
-// string encoding conversion
+// Path utils
 //------------------------------------------------------
 
-namespace EqStringConv
+// strip operators
+bool		fnmPathHasExt(EqStringRef path);
+EqString	fnmPathApplyExt(EqStringRef path, EqStringRef ext);
+EqString	fnmPathStripExt(EqStringRef path);
+EqString	fnmPathStripName(EqStringRef path);
+EqString	fnmPathStripPath(EqStringRef path);
+
+EqString	fnmPathExtractExt(EqStringRef path, bool autoLowerCase = true);
+EqString	fnmPathExtractName(EqStringRef path);
+EqString	fnmPathExtractPath(EqStringRef path);
+
+// changes path separator to correct one for platform
+void		fnmPathFixSeparators(EqString& str);
+void		fnmPathFixSeparators(char* str);
+
+// combines paths
+void		fnmPathCombineF(EqString& outPath, int num, ...);
+
+template<typename ...Args> // requires std::same_as<Args, const char*>...
+void		fnmPathCombine(EqString& outPath, const Args&... args)
 {
-class CUTF8Conv
-{
-public:
-	CUTF8Conv(EqString& outStr, const wchar_t* val, int length = -1);
-	CUTF8Conv(EqWString& outStr, const char* val, int length = -1);
-};
+	fnmPathCombineF(outPath, sizeof...(Args), static_cast<const char*>(args)...);
 }
 
 //------------------------------------------------------
@@ -197,8 +162,12 @@ namespace CString
 {
 template<typename CH> int Length(const CH* str);
 template<typename CH> CH* SubString(CH* str, const CH* search, bool caseSensitive);
+
 template<typename CH> int Compare(const CH* strA, const CH* strB);
 template<typename CH> int CompareCaseIns(const CH* strA, const CH* strB);
+
+template<typename CH> int PrintFV(CH* buffer, int bufferCnt, const CH* fmt, va_list argList);
+template<typename CH> int PrintF(CH* buffer, int bufferCnt, const CH* fmt, ...);
 }
 
 //------------------------------------------------------
@@ -253,9 +222,6 @@ struct EMPTY_BASES StringBaseCombinationOpsMixin
 	}
 };
 
-template<typename CH>
-class EqTStrRef;
-
 template<typename R, typename TStr, typename CH>
 struct EMPTY_BASES StringCombinationOpsMixin
 	: public StringBaseCombinationOpsMixin<R, TStr, CH>
@@ -279,11 +245,13 @@ struct EMPTY_BASES StringCombinationOpsMixin
 
 template<typename CH>
 class EMPTY_BASES EqTStrRef
-	: public StringBaseCombinationOpsMixin<EqString, EqTStrRef<CH>, char>
+	: public StringBaseCombinationOpsMixin<EqTStr<CH>, EqTStrRef<CH>, char>
 	, public CStringComparisonOpsMixin<EqTStrRef<CH>, CH>
 	, public StringComparisonOpsMixin<EqTStrRef<CH>>
 {
 public:
+	using Str = EqTStr<CH>;
+
 	constexpr EqTStrRef()
 		: m_pszString(nullptr)
 		, m_nLength(-1)
@@ -329,6 +297,20 @@ public:
 	// searches for substring, returns value
 	int			Find(EqTStrRef otherStr, bool caseSensitive = false, int start = 0) const;
 
+	// converters
+	Str			LowerCase() const;
+	Str			UpperCase() const;
+
+	// rightmost\leftmost string extractors
+	Str			Left(int nCount) const;
+	Str			Right(int nCount) const;
+	Str			Mid(int nStart, int nCount) const;
+
+	Str			EatWhiteSpaces() const;
+	Str			TrimSpaces(bool left = true, bool right = true) const;
+	Str			TrimChar(const CH* ch, bool left = true, bool right = true) const;
+	Str			TrimChar(CH ch, bool left = true, bool right = true) const;
+
 	CH operator[](int idx) const
 	{
 		ASSERT(idx >= 0 && idx <= Length());
@@ -342,9 +324,6 @@ private:
 	const CH*	m_pszString{ nullptr };
 	mutable int	m_nLength{ 0 };
 };
-
-using EqStringRef = EqTStrRef<char>;
-using EqWStringRef = EqTStrRef<wchar_t>;
 
 template <typename T>
 decltype(auto) StrToFmt(const T& value)
@@ -370,3 +349,10 @@ decltype(auto) StrToFmt(const T& value)
 		return value;
 	}
 }
+
+class AnsiUnicodeConverter
+{
+public:
+	AnsiUnicodeConverter(EqString& outStr, EqWStringRef sourceStr);
+	AnsiUnicodeConverter(EqWString& outStr, EqStringRef sourceStr);
+};

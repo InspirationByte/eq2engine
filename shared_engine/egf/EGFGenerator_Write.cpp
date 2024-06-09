@@ -174,7 +174,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
 
 	// triangle list by default
-	dstGroup->primitiveType = EGFPRIM_TRIANGLES;
+	dstGroup->primitiveType = STUDIO_PRIM_TRIANGLES;
 	dstGroup->numVertices = 0;
 	dstGroup->numIndices = 0;
 
@@ -375,12 +375,12 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 		actcEndOutput( tc );
 		actcDelete(tc);
 
-		MsgWarning("   group optimization complete\n", optimizedIndices.numElem() - 2);
+		MsgWarning("   group optimization complete\n");
 
 		// swap with new index list
 		indexList.swap(optimizedIndices);
 
-		dstGroup->primitiveType = EGFPRIM_TRI_STRIP;
+		dstGroup->primitiveType = STUDIO_PRIM_TRI_STRIP;
 	}
 #endif // USE_ACTC
 
@@ -454,7 +454,7 @@ skipOptimize:
 	for(uint32 i = 0; i < dstGroup->numIndices; i++)
 		*dstGroup->pVertexIdx(i) = indexList[i];
 
-	MsgWarning("   written %d triangles (strip including degenerates)\n", dstGroup->primitiveType == EGFPRIM_TRI_STRIP ? (dstGroup->numIndices - 2) : (dstGroup->numIndices / 3));
+	MsgWarning("   written %d triangles (strip including degenerates)\n", dstGroup->primitiveType == STUDIO_PRIM_TRI_STRIP ? (dstGroup->numIndices - 2) : (dstGroup->numIndices / 3));
 }
 
 //************************************
@@ -534,7 +534,7 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 				Msg(", shape key: %s", key->name.ToCString());
 
 			if(groupDesc->materialIndex != -1)
-				Msg(", material used: %s", modelRef.name.ToCString(), j, m_usedMaterials[groupDesc->materialIndex]->materialname);
+				Msg(", material used: %s", m_usedMaterials[groupDesc->materialIndex]->materialname);
 
 			Msg("\n");
 		}
@@ -663,10 +663,9 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stre
 	for(int i = 0; i < m_usedMaterials.numElem(); i++)
 	{
 		GenMaterialDesc_t* mat = m_usedMaterials[i];
-		EqString mat_no_ext(mat->materialname);
 
 		studioMaterialDesc_t* matDesc = header->pMaterial(i);
-		strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext());
+		strcpy(matDesc->materialname, fnmPathStripExt(mat->materialname));
 	}
 	
 
@@ -688,10 +687,8 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stre
 
 			header->numMaterials++;
 
-			EqString mat_no_ext(mat.materialname);
-
 			studioMaterialDesc_t* matDesc = header->pMaterial(materialGroupStart + j);
-			strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext());
+			strcpy(matDesc->materialname, fnmPathStripExt(mat.materialname));
 
 			WRITE_RESERVE(studioMaterialDesc_t);
 		}
@@ -794,9 +791,8 @@ bool CEGFGenerator::GenerateEGF()
 	header->length = sizeof(studioHdr_t);
 
 	// set model name
-	strcpy( header->modelName, m_outputFilename.ToCString() );
-
-	FixSlashes( header->modelName );
+	fnmPathFixSeparators(m_outputFilename);
+	strncpy(header->modelName, m_outputFilename, elementsOf(header->modelName));
 
 	egfStream.Write(header, 1, sizeof(studioHdr_t));
 
@@ -856,10 +852,10 @@ bool CEGFGenerator::GenerateEGF()
 			totalVerts += pMesh->numVertices;
 			switch (pMesh->primitiveType)
 			{
-			case EGFPRIM_TRIANGLES:
+			case STUDIO_PRIM_TRIANGLES:
 				totalTris += pMesh->numIndices / 3;
 				break;
-			case EGFPRIM_TRI_STRIP:
+			case STUDIO_PRIM_TRI_STRIP:
 				totalTris += pMesh->numIndices - 2;
 				break;
 			}
@@ -877,7 +873,7 @@ bool CEGFGenerator::GenerateEGF()
 	Msg(" search paths: %d\n", header->numMaterialSearchPaths);
 	Msg("   Wrote %d bytes:\n", header->length);
 
-	g_fileSystem->MakeDir(m_outputFilename.Path_Extract_Path().ToCString(), SP_MOD);
+	g_fileSystem->MakeDir(fnmPathExtractPath(m_outputFilename), SP_MOD);
 
 	// open output model file
 	IFilePtr file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb", -1);

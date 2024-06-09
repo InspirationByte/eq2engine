@@ -66,13 +66,10 @@ protected:
 class CDPKFileReader : public CBasePackageReader
 {
 public:
-	CDPKFileReader();
-	~CDPKFileReader();
+	EPackageType			GetType() const { return PACKAGE_READER_DPK; }
 
 	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);
 	bool					OpenEmbeddedPackage(CBasePackageReader* target, const char* filename);
-
-	EPackageReaderType		GetType() const { return PACKAGE_READER_DPK; }
 
 	IFilePtr				Open(const char* filename, int modeFlags);
 	IFilePtr				Open(int fileIndex, int modeFlags);

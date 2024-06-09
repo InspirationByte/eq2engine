@@ -176,12 +176,11 @@ IEXPORTS void ErrorMsg(const char* fmt, ...)
 	va_list		argptr;
 
 	static char	string[4096];
+	memset(string, 0, sizeof(string));
 
-	memset(string, 0, 4096);
-
-	va_start (argptr,fmt);
-	vsnprintf(string, 4096, fmt,argptr);
-	va_end (argptr);
+	va_start(argptr, fmt);
+	CString::PrintFV(string, sizeof(string), fmt, argptr);
+	va_end(argptr);
 
 	g_msgBoxCallback(string, "ERROR", MSGBOX_ERROR);
 }
@@ -191,12 +190,11 @@ IEXPORTS void CrashMsg(const char* fmt, ...)
 	va_list		argptr;
 
 	static char	string[4096];
+	memset(string, 0, sizeof(string));
 
-	memset(string, 0, 4096);
-
-	va_start (argptr,fmt);
-	vsnprintf(string, 4096, fmt,argptr);
-	va_end (argptr);
+	va_start(argptr, fmt);
+	CString::PrintFV(string, sizeof(string), fmt, argptr);
+	va_end(argptr);
 
 	g_msgBoxCallback(string, "OMG IT'S CRASHED", MSGBOX_CRASH);
 }
@@ -206,12 +204,11 @@ IEXPORTS void WarningMsg(const char* fmt, ...)
 	va_list		argptr;
 
 	static char	string[4096];
+	memset(string, 0, sizeof(string));
 
-	memset(string, 0, 4096);
-
-	va_start (argptr,fmt);
-	vsnprintf(string, 4096, fmt,argptr);
-	va_end (argptr);
+	va_start(argptr, fmt);
+	CString::PrintFV(string, sizeof(string), fmt, argptr);
+	va_end(argptr);
 
 	g_msgBoxCallback(string, "WARNING", MSGBOX_WARNING);
 }
@@ -221,11 +218,10 @@ IEXPORTS void InfoMsg(const char* fmt, ...)
 	va_list		argptr;
 
 	static char	string[4096];
-
-	memset(string, 0, 4096);
+	memset(string, 0, sizeof(string));
 
 	va_start (argptr,fmt);
-	vsnprintf(string, 4096, fmt,argptr);
+	CString::PrintFV(string, sizeof(string), fmt,argptr);
 	va_end (argptr);
 
 	g_msgBoxCallback(string, "INFO", MSGBOX_INFO);

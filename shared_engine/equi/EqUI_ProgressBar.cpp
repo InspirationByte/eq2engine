@@ -24,7 +24,7 @@ ProgressBar::ProgressBar()
 	m_color = color_white;
 }
 
-void ProgressBar::InitFromKeyValues(KVSection* sec, bool noClear)
+void ProgressBar::InitFromKeyValues(const KVSection* sec, bool noClear)
 {
 	BaseClass::InitFromKeyValues(sec, noClear);
 

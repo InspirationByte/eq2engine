@@ -22,6 +22,9 @@ IEXPORTS void	PPFree( void* ptr );
 #define	PPAllocStructArray(type, count)		reinterpret_cast<type*>(PPDAlloc(count*sizeof(type), PP_SL))
 #define	PPReAlloc(ptr, size)				PPDReAlloc(ptr, size, PP_SL)
 
+#define	PPAllocStructArrayRef(type, count)	ArrayRef(PPAllocStructArray(type, count), count)
+#define	PPFreeArrayRef(ref)					PPFree(ref.ptr()), ref = nullptr
+
 #ifdef PPMEM_DISABLED
 
 #define	PPNew			new
@@ -33,6 +36,9 @@ IEXPORTS void	PPFree( void* ptr );
 #define	PPNewSL(sl)		new(sl)
 
 #endif // PPMEM_DISABLED
+
+#define	PPNewArrayRef(type, count)	ArrayRef(PPNew type[count], count)
+#define PPDeleteArrayRef(ref)		delete [] ref.ptr(), ref = nullptr
 
 #if defined(__clang__)
 #define PPNOEXCEPT noexcept

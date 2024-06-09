@@ -22,6 +22,11 @@ static locale_t xgetlocale()
 	static locale_t loc = newlocale(LC_CTYPE_MASK, getenv("LANG"), LC_CTYPE);
 	return loc;
 }
+
+#define _vsnwprintf			vswprintf
+#define _snprintf			snprintf
+#define stricmp(a, b)		strcasecmp(a, b)
+
 #endif
 
 char* xstrupr(char* str)
@@ -74,57 +79,25 @@ wchar_t* xwcsupr(wchar_t* str)
     return str;
 }
 
-void CombinePathN(EqString& outPath, int num, ...)
-{
-	outPath.Empty();
-
-	va_list	argptr;
-	va_start (argptr,num);
-
-    for( int i = 0; i < num; i++ )        
-    {
-		EqString pathPart = va_arg( argptr, const char* );
-		pathPart.Path_FixSlashes();
-
-		if (pathPart.Length() <= 0)
-			continue;
-
-		outPath.Append(_Es(pathPart));
-		if(i != num-1 && outPath.Right(1)[0] != CORRECT_PATH_SEPARATOR )
-			outPath.Append(CORRECT_PATH_SEPARATOR);
-    }
-
-	va_end (argptr);
-}
-
-void FixSlashes( char* str )
-{
-	ASSERT(str);
-    while ( *str )
-    {
-        if ( *str == INCORRECT_PATH_SEPARATOR )
-        {
-            *str = CORRECT_PATH_SEPARATOR;
-        }
-        str++;
-    }
-}
-
 //------------------------------------------
 // Converts string to 24-bit integer hash
 //------------------------------------------
-int StringToHash( const char *str, bool caseIns )
+int StringToHash(EqStringRef str, bool caseIns )
 {
 	ASSERT(str);
-	int hash = strlen(str);
-	for (; *str; str++)
+	int len = str.Length();
+	const char* ptr = str.GetData();
+
+	int hash = len;
+	for (; len > 0; --len)
 	{
 		int v1 = hash >> 19;
 		int v0 = hash << 5;
 
-		int chr = caseIns ? tolower(*str) : *str;
+		int chr = caseIns ? CType::LowerChar(*ptr) : *ptr;
 
 		hash = ((v0 | v1) + chr) & StringHashMask;
+		++ptr;
 	}
 
 	return hash;
@@ -392,22 +365,153 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 }
 
 //------------------------------------------------------
+// Path utils
+//------------------------------------------------------
+
+bool fnmPathHasExt(EqStringRef path)
+{
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == '.')
+			return true;
+	}
+	return false;
+}
+
+EqString fnmPathApplyExt(EqStringRef path, EqStringRef ext)
+{
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == '.')
+			return path.Left(i+1) + ext;
+	}
+
+	if (path.Length() > 0 && path[path.Length() - 1] == '.')
+		return path + ext;
+	return path + "." + ext;
+}
+
+EqString fnmPathStripExt(EqStringRef path)
+{
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == '.')
+			return path.Left(i);
+	}
+	return path;
+}
+
+EqString fnmPathStripName(EqStringRef path)
+{
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == CORRECT_PATH_SEPARATOR || path[i] == INCORRECT_PATH_SEPARATOR)
+			return path.Left(i + 1);
+	}
+	return path;
+}
+
+EqString fnmPathStripPath(EqStringRef path)
+{
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == CORRECT_PATH_SEPARATOR || path[i] == INCORRECT_PATH_SEPARATOR)
+			return path.Right(path.Length() - 1 - i);
+	}
+	return path;
+}
+
+		 
+EqString fnmPathExtractExt(EqStringRef path, bool autoLowerCase)
+{
+	EqString result;
+	for (int i = path.Length() - 1; i >= 0; i--)
+	{
+		if (path[i] == '.')
+		{
+			result = path.Right(path.Length() - 1 - i);
+			break;
+		}
+	}
+
+	if (autoLowerCase)
+	{
+		char* data = result.GetData();
+		for (int i = 0; i < result.Length(); ++i)
+			data[i] = CType::LowerChar(data[i]);
+	}
+	return result;
+}
+
+EqString fnmPathExtractName(EqStringRef path)
+{
+	return fnmPathStripPath(path);
+}
+
+EqString fnmPathExtractPath(EqStringRef path)
+{
+	return fnmPathStripName(path);
+}
+
+void fnmPathCombineF(EqString& outPath, int num, ...)
+{
+	outPath.Empty();
+
+	va_list	argptr;
+	va_start(argptr, num);
+
+	int maxLength = 0;
+	FixedArray<EqStringRef, 32> paths;
+	for (int i = 0; i < num; ++i)
+	{
+		EqStringRef pathPart = va_arg(argptr, const char*);
+		const int length = pathPart.Length();
+		if (!length)
+			continue;
+		paths.append(pathPart);
+		maxLength += length + 1;
+	}
+	va_end(argptr);
+
+	outPath.Resize(maxLength);
+	for (int i = 0; i < paths.numElem(); ++i)
+	{
+		outPath.Append(paths[i]);
+		if (i < paths.numElem()-1 && outPath[outPath.Length()-1] != CORRECT_PATH_SEPARATOR)
+			outPath.Append(CORRECT_PATH_SEPARATOR);
+	}
+	fnmPathFixSeparators(outPath);
+}
+
+void fnmPathFixSeparators(EqString& str)
+{
+	const int length = str.Length();
+	char* data = str.GetData();
+	for (int i = 0; i < length; ++i)
+	{
+		if (data[i] == INCORRECT_PATH_SEPARATOR)
+			data[i] = CORRECT_PATH_SEPARATOR;
+	}
+}
+
+void fnmPathFixSeparators(char* str)
+{
+	if (!str)
+		return;
+
+	while (*str)
+	{
+		if (*str == INCORRECT_PATH_SEPARATOR)
+			*str = CORRECT_PATH_SEPARATOR;
+		str++;
+	}
+}
+
+//------------------------------------------------------
 // string conversion
 //------------------------------------------------------
 namespace EqStringConv
 {
-static uint32 GetWideChar(ubyte** utf8);
-
-static int GetUTF8Length(ubyte* utf8)
-{
-	int utfStringLength = 0;
-	ubyte* tmp = utf8;
-	while(GetWideChar(&tmp))
-		++utfStringLength;
-
-	return utfStringLength;
-}
-
 static uint32 GetUTF8NextByte(ubyte** utf8)
 {
 	if (!*(*utf8))
@@ -466,37 +570,46 @@ static uint32 GetWideChar(ubyte** utf8)
 	return '?';
 }
 
+static int GetUTF8Length(ubyte* utf8)
+{
+	int utfStringLength = 0;
+	ubyte* tmp = utf8;
+	while (GetWideChar(&tmp))
+		++utfStringLength;
+
+	return utfStringLength;
+}
+
+}
+
 //--------------------------------------------------------------
 
-CUTF8Conv::CUTF8Conv(EqWString& outStr, const char* val, int len /*= -1*/)
+AnsiUnicodeConverter::AnsiUnicodeConverter(EqWString& outStr, EqStringRef sourceStr)
 {
-	ASSERT(val);
+	ASSERT(sourceStr.IsValid());
 
-	ubyte* utf8 = (ubyte*)val;
-	int length = GetUTF8Length(utf8);
-	if (len == -1)
-		len = length;
+	ubyte* utf8 = (ubyte*)sourceStr.GetData();
+	int length = EqStringConv::GetUTF8Length(utf8);
+
 	outStr.ExtendAlloc(length);
 	do {
-		const uint32 wch = GetWideChar(&utf8);
+		const uint32 wch = EqStringConv::GetWideChar(&utf8);
 		if (!wch)
 			break;
 		outStr.Append(wch);
 	} while (length--);
 }
 
-CUTF8Conv::CUTF8Conv(EqString& outStr, const wchar_t* val, int len/* = -1*/)
+AnsiUnicodeConverter::AnsiUnicodeConverter(EqString& outStr, EqWStringRef sourceStr)
 {
-	ASSERT(val);
+	ASSERT(sourceStr.IsValid());
 
-	if (len == -1)
-		len = wcslen(val) * 4;
-	else
-		len *= 4;
+	int len = sourceStr.Length() * 4;
 
 	// to not call too many allocations
 	outStr.ExtendAlloc(len);
 
+	const wchar_t* val = sourceStr.GetData();
 	uint32 code;
 	do
 	{
@@ -533,8 +646,6 @@ CUTF8Conv::CUTF8Conv(EqString& outStr, const wchar_t* val, int len/* = -1*/)
 		}
 	}
 	while(len--);
-}
-
 }
 
 namespace CType
@@ -576,13 +687,13 @@ namespace CString
 template<> int Length<char>(const char* str)
 {
 	if (!str) return 0;
-	return strlen(str);
+	return static_cast<int>(strlen(str));
 }
 
 template<> int Length<wchar_t>(const wchar_t* str)
 {
 	if (!str) return 0;
-	return wcslen(str);
+	return static_cast<int>(wcslen(str));
 }
 
 template<> char* SubString(char* str, const char* search, bool caseSensitive)
@@ -615,6 +726,34 @@ template<> int CompareCaseIns(const char* strA, const char* strB)
 template<> int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
 {
 	return xwcsicmp(strA, strB);
+}
+
+template<> int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList)
+{
+	return vsnprintf(buffer, bufferCnt, fmt, argList);
+}
+
+template<> int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList)
+{
+	return _vsnwprintf(buffer, bufferCnt, fmt, argList);
+}
+
+template<> int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
+	va_end(argptr);
+	return result;
+}
+
+template<> int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
+	va_end(argptr);
+	return result;
 }
 
 }
@@ -675,6 +814,131 @@ int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
 		return -1;
 
 	return (subStrPtr - m_pszString);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::LowerCase() const
+{
+	EqTStr<CH> str(*this);
+	CH* data = str.GetData();
+	for (int i = 0; i < str.Length(); ++i)
+		data[i] = CType::LowerChar(data[i]);
+
+	return str;
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::UpperCase() const
+{
+	EqTStr<CH> str(*this);
+	CH* data = str.GetData();
+	for (int i = 0; i < str.Length(); ++i)
+		data[i] = CType::UpperChar(data[i]);
+
+	return str;
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::Left(int nCount) const
+{
+	return Mid(0, nCount);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::Right(int nCount) const
+{
+	if (nCount >= m_nLength)
+		return (*this);
+
+	return Mid(m_nLength - nCount, nCount);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
+{
+	if (!m_pszString)
+		return EqTStr<CH>::EmptyStr;
+
+	ASSERT(nStart >= 0);
+	ASSERT(nStart + nCount <= m_nLength);
+	if (nStart < 0 || nStart + nCount > m_nLength)
+		return EqTStr<CH>::EmptyStr;
+
+	return EqTStr<CH>(&m_pszString[nStart], nCount);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::EatWhiteSpaces() const
+{
+	EqTStr<CH> out;
+	const CH* cc = m_pszString;
+	while (cc)
+	{
+		if (!CType::IsSpace(*cc))
+			out.Append(*cc++);
+	}
+
+	return out;
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
+{
+	if (!m_pszString)
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* begin = m_pszString;
+
+	// trim whitespace from left
+	while (*begin && CType::IsSpace(*begin))
+		begin++;
+
+	if (*begin == 0)
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* end = begin + CString::Length(begin) - 1;
+
+	// trim whitespace from right
+	while (end > begin && CType::IsSpace(*end))
+		end--;
+
+	return Mid(begin - m_pszString, end - begin + 1);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
+{
+	if (!m_pszString)
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* begin = m_pszString;
+
+	auto ischr = [](const CH* ch, CH c) -> bool {
+		while (*ch) { if (*ch++ == c) return true; }
+		return false;
+		};
+
+	// trim whitespace from left
+	while (*begin && ischr(ch, *begin))
+		++begin;
+
+	if (*begin == 0)
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* end = begin + CString::Length(begin) - 1;
+
+	// trim whitespace from right
+	while (end > begin && ischr(ch, *end))
+		--end;
+
+	return Mid(begin - m_pszString, end - begin + 1);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::TrimChar(CH ch, bool left, bool right) const
+{
+	CH cch[2] = { ch, 0 };
+	return TrimChar(cch, left, right);
 }
 
 // define implementations below

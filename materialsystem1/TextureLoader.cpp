@@ -23,14 +23,13 @@ DECLARE_CVAR(r_noMip, "0", nullptr, CV_CHEAT);
 static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName)
 {
 	EqString texturePath(pszFileName);
-	texturePath.Path_FixSlashes();
 
 	// build valid texture paths
 	EqString texturePathExt = texturePath + EqString(TEXTURE_DEFAULT_EXTENSION);
 	EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
 
-	texturePathExt.Path_FixSlashes();
-	textureAnimPathExt.Path_FixSlashes();
+	fnmPathFixSeparators(texturePathExt);
+	fnmPathFixSeparators(textureAnimPathExt);
 
 	// has pattern for animated texture?
 	int animCountStart = texturePath.Find("[");
@@ -57,7 +56,7 @@ static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const cha
 	{
 		// try loading older Animated Texture Index file
 		EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
-		textureAnimPathExt.Path_FixSlashes();
+		fnmPathFixSeparators(textureAnimPathExt);
 
 		char* animScriptBuffer = (char*)g_fileSystem->GetFileBuffer(textureAnimPathExt);
 		if (animScriptBuffer)
@@ -85,8 +84,8 @@ void CTextureLoader::Initialize(const char* texturePath, const char* textureSRCP
 	m_texturePath = texturePath;
 	m_textureSRCPath = textureSRCPath;
 
-	m_texturePath.Path_FixSlashes();
-	m_textureSRCPath.Path_FixSlashes();
+	fnmPathFixSeparators(m_texturePath);
+	fnmPathFixSeparators(m_textureSRCPath);
 }
 
 ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags, const char* requestedBy)
@@ -117,9 +116,6 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	Array<EqString> textureNames(PP_SL);
 	AnimGetImagesForTextureName(textureNames, pszFileName);
 
-	EqString texNameStr(pszFileName);
-	texNameStr.Path_FixSlashes();
-
 	Array<CImage::PTR_T> imgList(PP_SL);
 
 	// load frames
@@ -128,12 +124,12 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		CImage::PTR_T img = CRefPtr_new(CImage);
 
 		EqString texturePathExt;
-		CombinePath(texturePathExt, m_texturePath.ToCString(), textureNames[i].ToCString());
+		fnmPathCombine(texturePathExt, m_texturePath.ToCString(), textureNames[i].ToCString());
 		bool isLoaded = img->Load(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
 		if (!isLoaded && r_allowSourceTextures->GetBool())
 		{
-			CombinePath(texturePathExt, m_textureSRCPath.ToCString(), textureNames[i].ToCString());
+			fnmPathCombine(texturePathExt, m_textureSRCPath.ToCString(), textureNames[i].ToCString());
 			isLoaded = img->Load(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 

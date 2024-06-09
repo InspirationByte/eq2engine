@@ -15,14 +15,15 @@
 
 //---------------------------------------------
 
-CDPKFileWriter::CDPKFileWriter(const char* mountPath, int compression, const char* encryptKey)
+CDPKFileWriter::CDPKFileWriter(const char* mountPath, int compression, const char* encryptKey, bool skipPacking)
 	: m_ice(0)
+	, m_skipPacking(skipPacking)
 {
 	memset(m_mountPath, 0, sizeof(m_mountPath));
 
 	strncpy(m_mountPath, mountPath, DPK_STRING_SIZE);
 	m_mountPath[DPK_STRING_SIZE - 1] = 0;
-	FixSlashes(m_mountPath);
+	fnmPathFixSeparators(m_mountPath);
 	xstrlwr(m_mountPath);
 
 	m_compressionLevel = compression;
@@ -46,6 +47,12 @@ CDPKFileWriter::~CDPKFileWriter()
 
 bool CDPKFileWriter::Begin(const char* fileName, ESearchPath searchPath)
 {
+	m_packFileName = fileName;
+	m_packFilePath = searchPath;
+
+	if (m_skipPacking)
+		return true;
+
 	ASSERT(m_output.IsOpen() == false);
 	if (m_output.IsOpen())
 		return false;
@@ -255,7 +262,6 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int pac
 	EqString fileNameString = fileName;
 	DPK_FixSlashes(fileNameString);
 	const int filenameHash = DPK_FilenameHash(fileNameString, DPK_VERSION);
-
 	auto it = m_files.find(filenameHash);
 	if (!it.atEnd())	// already added?
 	{
@@ -267,10 +273,33 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int pac
 		return 0;
 	}
 
-	it = m_files.insert(filenameHash);
-	FileInfo& info = *it;
+	FileInfo& info = *m_files.insert(filenameHash);
 	info.fileName = fileNameString;
 	info.pakInfo.filenameHash = filenameHash;
+
+	if (m_skipPacking)
+	{
+		EqString nonPackedPath;
+		fnmPathCombine(nonPackedPath, m_packFileName, fileName);
+
+		g_fileSystem->MakeDir(fnmPathStripName(nonPackedPath), m_packFilePath);
+		IFilePtr writeFile = g_fileSystem->Open(nonPackedPath, "wb", m_packFilePath);
+
+		// prepare stream to be read
+		CMemoryStream readStream(PP_SL);
+		if (fileData->GetType() == VS_TYPE_MEMORY)
+		{
+			// make a reader from the memory stream to not cause assert
+			// when memory stream is open as VS_OPEN_WRITE only
+			CMemoryStream* readFromFileData = static_cast<CMemoryStream*>(fileData);
+			readStream.Open(readFromFileData->GetBasePointer(), VS_OPEN_READ, readFromFileData->GetSize());
+			fileData = &readStream;
+		}
+		fileData->Seek(0, VS_SEEK_SET);
+
+		readStream.WriteToStream(writeFile);
+		return writeFile->GetSize();
+	}
 
 	return WriteDataToPackFile(fileData, info.pakInfo, packageFlags);
 }

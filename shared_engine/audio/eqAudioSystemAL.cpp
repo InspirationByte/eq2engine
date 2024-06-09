@@ -258,10 +258,9 @@ void CEqAudioSystemAL::InitEffects()
 	//
 	// Load effect presets from file
 	//
-	KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
+	const KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
 
 	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindSection("EFXScript"), 0, nullptr) : nullptr;
-
 	if (effectFilePath == nullptr)
 	{
 		MsgError("InitEFX: EQCONFIG missing Sound:EFXScript !\n");
@@ -275,21 +274,19 @@ void CEqAudioSystemAL::InitEffects()
 		return;
 	}
 
-	for (int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
+	for (const KVSection* effectSec : kv.Keys())
 	{
-		KVSection* pEffectSection = kv.GetRootSection()->keys[i];
-		const int nameHash = StringToHash(pEffectSection->name, true);
+		const int nameHash = StringToHash(effectSec->name, true);
 
 		EffectInfo effect;
-		strcpy(effect.name, pEffectSection->name);
+		strcpy(effect.name, effectSec->name);
 
-		KVSection* pPair = pEffectSection->FindSection("type");
-
-		if (pPair)
+		const KVSection* typeNameKey = effectSec->FindSection("type");
+		if (typeNameKey)
 		{
-			if (!CreateALEffect(KV_GetValueString(pPair), pEffectSection, effect))
+			if (!CreateALEffect(KV_GetValueString(typeNameKey), effectSec, effect))
 			{
-				MsgError("SOUND: Cannot create effect '%s' with type %s!\n", effect.name, KV_GetValueString(pPair));
+				MsgError("SOUND: Cannot create effect '%s' with type %s!\n", effect.name, KV_GetValueString(typeNameKey));
 				continue;
 			}
 		}
@@ -305,12 +302,12 @@ void CEqAudioSystemAL::InitEffects()
 	}
 }
 
-bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, EffectInfo& effect)
+bool CEqAudioSystemAL::CreateALEffect(const char* pszName, const KVSection* pSection, EffectInfo& effect)
 {
 #define PARAM_VALUE(type, name, str_name)  AL_##type##_##name, clamp(KV_GetValueFloat(pSection->FindSection(str_name), 0, AL_##type##_DEFAULT_##name), AL_##type##_MIN_##name, AL_##type##_MAX_##name)
 
 
-	if (!stricmp(pszName, "reverb"))
+	if (!CString::CompareCaseIns(pszName, "reverb"))
 	{
 		GetAlExt().alGenEffects(1, &effect.nAlEffect);
 		if (!ALCheckError("gen buffers"))
@@ -331,7 +328,7 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 
 		return true;
 	}
-	else if (!stricmp(pszName, "echo"))
+	else if (!CString::CompareCaseIns(pszName, "echo"))
 	{
 		GetAlExt().alGenEffects(1, &effect.nAlEffect);
 		if (!ALCheckError("gen buffers"))

@@ -15,7 +15,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	const char* requested_source, shaderc_include_type type,
 	const char* requesting_source, size_t include_depth)
 {
-	const EqString sourcePath = EqString(requesting_source).Path_Extract_Path();
+	const EqString sourcePath = fnmPathExtractPath(requesting_source);
 
 	IncludeResult* result = nullptr;
 	if (m_freeSlots.numElem())
@@ -30,7 +30,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	}
 	else
 	{
-		if (!strcmp(requested_source, "ShaderCooker"))
+		if (!CString::Compare(requested_source, "ShaderCooker"))
 		{
 			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
 			result->includeContent.Print(s_boilerPlateStrGLSL);
@@ -57,10 +57,10 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 
 			result->includeName = requested_source;
 		}
-		else if (!strcmp(requested_source, "VertexLayout"))
+		else if (!CString::Compare(requested_source, "VertexLayout"))
 		{
 			EqString shaderSourceName;
-			CombinePath(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");
+			fnmPathCombine(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");
 
 			if (!TryOpenIncludeFile(sourcePath, shaderSourceName, result))
 				return &result->resultData;
@@ -82,7 +82,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	EqString fullPath;
 	for (const EqString& incPath : m_includePaths)
 	{
-		CombinePath(fullPath, incPath, fileName);
+		fnmPathCombine(fullPath, incPath, fileName);
 		openFile = g_fileSystem->Open(fullPath, "r", SP_ROOT);
 		if (openFile)
 			break;
@@ -90,7 +90,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 
 	if (!openFile)
 	{
-		CombinePath(fullPath, reqSource, fileName);
+		fnmPathCombine(fullPath, reqSource, fileName);
 		openFile = g_fileSystem->Open(fullPath, "r", SP_ROOT);
 	}
 

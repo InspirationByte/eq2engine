@@ -241,66 +241,64 @@ bool DkPhysics::Init(int nSceneSize)
 	// Always init the physics when new map is loading
 	m_nSceneSize = nSceneSize;
 
-	KeyValues pMaterials;
-
-	if(!pMaterials.LoadFromFile("scripts/SurfaceParams.def"))
+	KeyValues surfParamsKvs;
+	if(!surfParamsKvs.LoadFromFile("scripts/SurfaceParams.def"))
 	{
 		MsgError("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found\n");
 		CrashMsg("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found, Exiting.\n");
 		return false;
 	}
 
-	for(int i = 0; i < pMaterials.GetRootSection()->keys.numElem(); i++)
+	for(const KVSection* pSec : surfParamsKvs.Keys())
 	{
-		KVSection* pSec = pMaterials.GetRootSection()->keys[i];
-
-		if(stricmp(pSec->name, "#include"))
+		if (!pSec->name.Compare("#include"))
 		{
-			phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
-
-			DefaultMaterialParams(pMaterial);
-
-			pMaterial->name = pSec->name;
-
-			KVSection* pBaseNamePair = pSec->FindSection("base");
-			if(pBaseNamePair)
-			{
-				phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
-				if(param)
-				{
-					CopyMaterialParams(param, pMaterial);
-				}
-				else
-					DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
-			}
-
-			pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, 1.0f);
-			pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 1.0f);
-			pMaterial->density = KV_GetValueFloat(pSec->FindSection("density"), 0, 100.0f);
-			pMaterial->surfaceword = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
-
-			KVSection* pPair = pSec->FindSection("footsteps");
-			if(pPair)
-				pMaterial->footStepSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("bulletimpact");
-			if(pPair)
-				pMaterial->bulletImpactSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("scrape");
-			if(pPair)
-				pMaterial->scrapeSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("impactlight");
-			if(pPair)
-				pMaterial->lightImpactSound = KV_GetValueString(pPair);
-
-			pPair = pSec->FindSection("impactheavy");
-			if(pPair)
-				pMaterial->heavyImpactSound = KV_GetValueString(pPair);
-
-			m_physicsMaterialDesc.append(pMaterial);
+			continue;
 		}
+
+		phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
+		DefaultMaterialParams(pMaterial);
+
+		pMaterial->name = pSec->name;
+
+		KVSection* pBaseNamePair = pSec->FindSection("base");
+		if(pBaseNamePair)
+		{
+			phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
+			if(param)
+			{
+				CopyMaterialParams(param, pMaterial);
+			}
+			else
+				DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
+		}
+
+		pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, 1.0f);
+		pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 1.0f);
+		pMaterial->density = KV_GetValueFloat(pSec->FindSection("density"), 0, 100.0f);
+		pMaterial->surfaceword = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
+
+		KVSection* pPair = pSec->FindSection("footsteps");
+		if(pPair)
+			pMaterial->footStepSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("bulletimpact");
+		if(pPair)
+			pMaterial->bulletImpactSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("scrape");
+		if(pPair)
+			pMaterial->scrapeSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("impactlight");
+		if(pPair)
+			pMaterial->lightImpactSound = KV_GetValueString(pPair);
+
+		pPair = pSec->FindSection("impactheavy");
+		if(pPair)
+			pMaterial->heavyImpactSound = KV_GetValueString(pPair);
+
+		m_physicsMaterialDesc.append(pMaterial);
 	}
 
 	return true;
@@ -611,9 +609,7 @@ void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &tra
 
 	startTr.setOrigin(strt);
 
-	btTransform endTr;
-	endTr.setIdentity();
-
+	btTransform endTr = btTransform::getIdentity();
 	if(externalBoxTransform)
 		endTr.setFromOpenGLMatrix((float*)externalBoxTransform->rows);
 
@@ -704,9 +700,7 @@ void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &t
 
 	startTr.setOrigin(strt);
 
-	btTransform endTr;
-	endTr.setIdentity();
-
+	btTransform endTr = btTransform::getIdentity();
 	if(transform)
 		endTr.setFromOpenGLMatrix((float*)transform->rows);
 
@@ -748,7 +742,7 @@ phySurfaceMaterial_t* DkPhysics::FindMaterial(const char* pszName)
 {
 	for(int i = 0; i < m_physicsMaterialDesc.numElem(); i++)
 	{
-		if(!stricmp(m_physicsMaterialDesc[i]->name, pszName))
+		if(!m_physicsMaterialDesc[i]->name.CompareCaseIns(pszName))
 			return m_physicsMaterialDesc[i];
 	}
 
@@ -1267,46 +1261,42 @@ int DkPhysics::AddPrimitiveShape(pritimiveinfo_t &info)
 }
 
 // Creates physics object
-IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObject )
+IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject )
 {
 	CScopedMutex m(m_Mutex);
 
-	ASSERT_MSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
+	const StudioPhyObjData& objData = data->objects[nObject];
 
 	DevMsg(DEVMSG_CORE, "Creating physics object\n");
-	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", data->objects[nObject].object.mass, data->objects[nObject].object.mass * METERS_PER_UNIT_INV);
-	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", data->objects[nObject].object.surfaceprops);
-	DevMsg(DEVMSG_CORE, "shapes = %d\n", data->objects[nObject].object.numShapes);
+	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", objData.desc.mass, objData.desc.mass * METERS_PER_UNIT_INV);
+	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", objData.desc.surfaceprops);
+	DevMsg(DEVMSG_CORE, "shapes = %d\n", objData.desc.numShapes);
 
 	btCollisionShape* pShape = nullptr;
 
 	// first determine shapes
-	if(data->objects[nObject].object.numShapes > 1)
+	if(objData.desc.numShapes > 1)
 	{
 		btCompoundShape* pCompoundShape = new btCompoundShape;
 		pShape = pCompoundShape;
 
-		for(int i = 0; i < data->objects[nObject].object.numShapes; i++)
+		for(int i = 0; i < objData.desc.numShapes; i++)
 		{
-			btTransform ident;
-			ident.setIdentity();
-
-			btCollisionShape* shape = (btCollisionShape*)data->objects[nObject].shapeCache[i];
-
-			pCompoundShape->addChildShape(ident, shape);
+			btCollisionShape* shape = (btCollisionShape*)objData.shapeCacheRefs[i];
+			pCompoundShape->addChildShape(btTransform::getIdentity(), shape);
 		}
 	}
 	else
 	{
 		// not a compound object, skipping
-		pShape = (btCollisionShape*)data->objects[nObject].shapeCache[0];
+		pShape = (btCollisionShape*)objData.shapeCacheRefs[0];
 	}
 
 	pShape->setMargin(EQ2BULLET(0.05f));
 
 	btVector3 offset, massCenter;
-	ConvertPositionToBullet(offset, data->objects[nObject].object.offset);
-	ConvertPositionToBullet(massCenter, data->objects[nObject].object.massCenter);
+	ConvertPositionToBullet(offset, objData.desc.offset);
+	ConvertPositionToBullet(massCenter, objData.desc.massCenter);
 
 	// make object offset
 	btTransform object_start_transform;
@@ -1319,11 +1309,11 @@ IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObje
 	masscenter_transform.setOrigin(massCenter);
 
 	btVector3 vLocalInertia(0,0,0);
-	pShape->calculateLocalInertia(data->objects[nObject].object.mass * METERS_PER_UNIT_INV, vLocalInertia);
+	pShape->calculateLocalInertia(objData.desc.mass * METERS_PER_UNIT_INV, vLocalInertia);
 
 	//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
 	btDefaultMotionState* pMotionState = new btDefaultMotionState(object_start_transform, masscenter_transform);
-	btRigidBody::btRigidBodyConstructionInfo constructInfo(data->objects[nObject].object.mass * METERS_PER_UNIT_INV, pMotionState, pShape, vLocalInertia);
+	btRigidBody::btRigidBodyConstructionInfo constructInfo(objData.desc.mass * METERS_PER_UNIT_INV, pMotionState, pShape, vLocalInertia);
 
 	// if(object->softbody)
 	// else
@@ -1338,7 +1328,7 @@ IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObje
 	// initialize physics materials
 	char pszMatName[64];
 	pszMatName[0] = 0;
-	strcpy(pszMatName, data->objects[nObject].object.surfaceprops);
+	strcpy(pszMatName, objData.desc.surfaceprops);
 
 	phySurfaceMaterial_t* pPhysMaterial = FindMaterial( pszMatName );
 	if(!pPhysMaterial)
@@ -1401,12 +1391,8 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 
 		for(int i = 0; i < numShapes; i++)
 		{
-			btTransform ident;
-			ident.setIdentity();
-
 			btCollisionShape* shape = (btCollisionShape*)m_collisionShapes[shapeIdxs[i]];
-
-			pCompoundShape->addChildShape(ident, shape);
+			pCompoundShape->addChildShape(btTransform::getIdentity(), shape);
 		}
 	}
 	else
