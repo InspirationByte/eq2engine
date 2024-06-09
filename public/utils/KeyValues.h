@@ -103,11 +103,7 @@ struct KVValueIterator
 	{
 	}
 
-	KVValueIterator(const KVSection* key, int index)
-		: key(key)
-		, index(min(index, key->ValueCount())) // limit to end()
-	{
-	}
+	KVValueIterator(const KVSection* key, int index);
 
 	operator	KVPairValue*() const;
 	T			operator*() const;
@@ -188,57 +184,17 @@ struct KVValues
 	bool		cancel{ false };
 };
 
-namespace kvdetail
-{
-inline int GetValuesR(const KVSection* key, int idx, int cntIdx)
-{
-	return cntIdx; // end of recursion
-}
-
-template<typename T, typename ...Rest>
-inline int GetValuesR(const KVSection* key, int idx, int cntIdx, T& out, Rest&... outArgs)
-{
-	if (idx + KVPairValuesGetter<T>::vcount > key->ValueCount())
-		return cntIdx;
-	out = KVPairValuesGetter<T>::Get(key, idx);
-
-	return GetValuesR(key, idx + KVPairValuesGetter<T>::vcount, cntIdx + 1, outArgs...);
-}
-
-template<typename ...Args, std::size_t... Is>
-int GetValuesImpl(const KVSection* key, int idx, std::index_sequence<Is...>, std::tuple<Args...>& newValues)
-{
-	return GetValuesR(key, idx, 0, std::get<Is>(newValues)...);
-}
-}
+template<typename ...Args>
+KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs);
 
 template<typename ...Args>
-inline KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
-{
-	return kvdetail::GetValuesR(key, 0, idx, outArgs...);
-}
+int KV_GetValues(const KVSection* key, Args&... outArgs);
 
 template<typename ...Args>
-inline int KV_GetValues(const KVSection* key, Args&... outArgs)
-{
-	return kvdetail::GetValuesR(key, 0, 0, outArgs...);
-}
+KVValues<Args...> KV_TryGetValuesAt(const KVSection* key, int idx, Args&... outArgs);
 
 template<typename ...Args>
-inline KVValues<Args...> KV_TryGetValuesAt(const KVSection* key, int idx, Args&... outArgs)
-{
-	KVValues<Args...> values(outArgs...);
-	values.count = kvdetail::GetValuesImpl(key, idx, std::index_sequence_for<Args...>{}, values.newValues);
-	return values;
-}
-
-template<typename ...Args>
-inline KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
-{
-	KVValues<Args...> values(outArgs...);
-	values.count = kvdetail::GetValuesImpl(key, 0, std::index_sequence_for<Args...>{}, values.newValues);
-	return values;
-}
+KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs);
 
 //
 // KeyValues typed value holder
@@ -521,6 +477,13 @@ Vector4D		KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D&
 // For KV Value iterator
 
 template<typename T>
+KVValueIterator<T>::KVValueIterator(const KVSection* key, int index)
+	: key(key)
+	, index(min(index, key->ValueCount())) // limit to end()
+{
+}
+
+template<typename T>
 KVValueIterator<T>::operator KVPairValue* () const
 {
 	return key->values[index];
@@ -626,3 +589,54 @@ struct KVPairValuesGetter<TVec4D<T>>
 	static const int vcount = 4;
 };
 
+namespace kvdetail
+{
+inline int GetValuesR(const KVSection* key, int idx, int cntIdx)
+{
+	return cntIdx; // end of recursion
+}
+
+template<typename T, typename ...Rest>
+inline int GetValuesR(const KVSection* key, int idx, int cntIdx, T& out, Rest&... outArgs)
+{
+	if (idx + KVPairValuesGetter<T>::vcount > key->ValueCount())
+		return cntIdx;
+	out = KVPairValuesGetter<T>::Get(key, idx);
+
+	return GetValuesR(key, idx + KVPairValuesGetter<T>::vcount, cntIdx + 1, outArgs...);
+}
+
+template<typename ...Args, std::size_t... Is>
+int GetValuesImpl(const KVSection* key, int idx, std::index_sequence<Is...>, std::tuple<Args...>& newValues)
+{
+	return GetValuesR(key, idx, 0, std::get<Is>(newValues)...);
+}
+}
+
+template<typename ...Args>
+KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+{
+	return kvdetail::GetValuesR(key, 0, idx, outArgs...);
+}
+
+template<typename ...Args>
+int KV_GetValues(const KVSection* key, Args&... outArgs)
+{
+	return kvdetail::GetValuesR(key, 0, 0, outArgs...);
+}
+
+template<typename ...Args>
+KVValues<Args...> KV_TryGetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+{
+	KVValues<Args...> values(outArgs...);
+	values.count = kvdetail::GetValuesImpl(key, idx, std::index_sequence_for<Args...>{}, values.newValues);
+	return values;
+}
+
+template<typename ...Args>
+KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
+{
+	KVValues<Args...> values(outArgs...);
+	values.count = kvdetail::GetValuesImpl(key, 0, std::index_sequence_for<Args...>{}, values.newValues);
+	return values;
+}
