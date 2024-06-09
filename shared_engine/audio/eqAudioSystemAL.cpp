@@ -609,13 +609,10 @@ void CEqAudioSystemAL::EndUpdate()
 			src->m_forceStop = false;
 		}
 
-		if (!src->DoUpdate())
+		if (!src->DoUpdate() && src->m_releaseOnStop)
 		{
-			if (src->m_releaseOnStop)
-			{
-				m_sources.fastRemoveIndex(i);
-				i--;
-			}
+			m_sources.fastRemoveIndex(i);
+			i--;
 		}
 	}
 

@@ -96,24 +96,7 @@ public:
 		if (m_nSize < numOfElements)
 			numOfElements = m_nSize;
 
-		if constexpr (std::is_trivially_move_constructible<T>::value)
-		{
-			m_pListPtr = reinterpret_cast<T*>(PPDReAlloc(m_pListPtr, m_nSize * sizeof(T), m_sl));
-		}
-		else
-		{
-			// copy the old m_pListPtr into our new one
-			m_pListPtr = reinterpret_cast<T*>(PPNewSL(m_sl) ubyte[m_nSize * sizeof(T)]);
-
-			if (temp)
-			{
-				for (int i = 0; i < numOfElements; i++)
-					new(&m_pListPtr[i]) T(std::move(temp[i]));
-
-				// delete the old m_pListPtr if it exists
-				PPFree(temp);
-			}
-		}
+		m_pListPtr = reinterpret_cast<T*>(PPDReAlloc(m_pListPtr, m_nSize * sizeof(T), m_sl));
 	}
 
 	int			getSize() const						{ return m_nSize; }
@@ -708,9 +691,11 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 	T* listPtr = STORAGE_TYPE::getData();
 
 	const int lastItemIdx = --m_nNumElem;
-	T item = listPtr[lastItemIdx];
 
-	ArrayStorageBase<T>::destructElements(listPtr + lastItemIdx, 1);
+	// copy item
+	T item = listPtr[lastItemIdx];
+	listPtr[lastItemIdx].~T();
+
 	return item;
 }
 
@@ -859,18 +844,19 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<T2, OTHER_STORAGE_
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 {
+	ASSERT(index >= 0);
+	ASSERT(index <= m_nNumElem);
+	
 	ensureCapacity(1);
-
-	if (index < 0)
-		index = 0;
-	else if (index > m_nNumElem)
-		index = m_nNumElem;
 
 	T* listPtr = STORAGE_TYPE::getData();
 
-	const int oldElems = m_nNumElem++;
-	for (int i = oldElems; i > index; --i)
-		new(&listPtr[i]) T(std::move(listPtr[i - 1]));
+	T* dstPtr = listPtr + index;
+	const int rest = m_nNumElem - index;
+	if(rest > 0)
+		memmove(dstPtr + 1, dstPtr, rest * sizeof(T));
+
+	++m_nNumElem;
 
 	new(&listPtr[index]) T(obj);
 
@@ -884,18 +870,19 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
 {
+	ASSERT(index >= 0);
+	ASSERT(index <= m_nNumElem);
+	
 	ensureCapacity(1);
-
-	if (index < 0)
-		index = 0;
-	else if (index > m_nNumElem)
-		index = m_nNumElem;
 
 	T* listPtr = STORAGE_TYPE::getData();
 
-	const int oldElems = m_nNumElem++;
-	for (int i = oldElems; i > index; --i)
-		new(&listPtr[i]) T(std::move(listPtr[i - 1]));
+	T* dstPtr = listPtr + index;
+	const int rest = m_nNumElem - index;
+	if(rest > 0)
+		memmove(dstPtr + 1, dstPtr, rest * sizeof(T));
+
+	++m_nNumElem;
 
 	new(&listPtr[index]) T(std::move(obj));
 
@@ -909,18 +896,19 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 {
+	ASSERT(index >= 0);
+	ASSERT(index <= m_nNumElem);
+	
 	ensureCapacity(1);
-
-	if (index < 0)
-		index = 0;
-	else if (index > m_nNumElem)
-		index = m_nNumElem;
 
 	T* listPtr = STORAGE_TYPE::getData();
 
-	const int oldElems = m_nNumElem++;
-	for (int i = oldElems; i > index; --i)
-		new(&listPtr[i]) T(std::move(listPtr[i - 1]));
+	T* dstPtr = listPtr + index;
+	const int rest = m_nNumElem - index;
+	if(rest > 0)
+		memmove(dstPtr + 1, dstPtr, rest * sizeof(T));
+
+	++m_nNumElem;
 
 	PPSLPlacementNew<T>(&listPtr[index], STORAGE_TYPE::getSL());
 
@@ -934,10 +922,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj)
 {
-	int index;
-
-	index = arrayFindIndex(*this, obj);
-
+	int index = arrayFindIndex(*this, obj);
 	if (index < 0)
 		index = append(obj);
 
@@ -953,10 +938,7 @@ template< typename T, typename STORAGE_TYPE >
 template< typename PAIRCOMPAREFUNC >
 inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj, PAIRCOMPAREFUNC comparator)
 {
-	int index;
-
-	index = arrayFindIndexF(*this, obj, comparator);
-
+	int index = arrayFindIndexF(*this, obj, comparator);
 	if (index < 0)
 		index = append(obj);
 
@@ -1003,20 +985,7 @@ inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>:
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex(int index)
 {
-	ASSERT(index >= 0);
-	ASSERT(index < m_nNumElem);
-
-	if ((index < 0) || (index >= m_nNumElem))
-		return false;
-
-	T* listPtr = STORAGE_TYPE::getData();
-	ArrayStorageBase<T>::destructElements(listPtr + index, 1);
-
-	--m_nNumElem;
-	for (int i = index; i < m_nNumElem; i++)
-		listPtr[i] = std::move(listPtr[i + 1]);
-
-	return true;
+	return removeRange(index, 1);
 }
 
 // -----------------------------------------------------------------
@@ -1026,20 +995,23 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex(int index)
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 {
-	ASSERT(count >= 0);
 	ASSERT(index >= 0);
+	ASSERT(index + count <= m_nNumElem);
 
 	count = min(index + count, m_nNumElem) - index;
 	if (index >= m_nNumElem || count <= 0)
 		return false;
 
 	T* listPtr = STORAGE_TYPE::getData();
+
 	ArrayStorageBase<T>::destructElements(listPtr + index, count);
 
-	m_nNumElem -= count;
-	for (int i = index; i < m_nNumElem; i++)
-		listPtr[i] = std::move(listPtr[i + count]);
+	const int last = index + count;
+	const int rest = m_nNumElem - last;
+	if(rest > 0)
+		memmove(&listPtr[index], &listPtr[last], rest * sizeof(T));
 
+	m_nNumElem -= count;
 	return true;
 }
 
@@ -1058,11 +1030,11 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex(int index)
 		return false;
 
 	T* listPtr = STORAGE_TYPE::getData();
-	ArrayStorageBase<T>::destructElements(listPtr + index, 1);
+	listPtr[index].~T();
 
-	--m_nNumElem;
-	if (m_nNumElem > 0)
-		new(&listPtr[index]) T(std::move(listPtr[m_nNumElem]));
+	const int lastItemIdx = --m_nNumElem;
+	if (lastItemIdx > 0)
+		memcpy(&listPtr[index], &listPtr[lastItemIdx], sizeof(T));
 
 	return true;
 }
