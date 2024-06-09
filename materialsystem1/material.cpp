@@ -341,7 +341,6 @@ bool CMaterial::DoLoadShaderAndTextures()
 	// try init
 	if(!shader->IsInitialized())
 	{
-		PROF_EVENT("MatSystem Load Material Shader and Textures");
 		shader->InitTextures(renderAPI);
 		shader->InitShader(renderAPI);
 	}

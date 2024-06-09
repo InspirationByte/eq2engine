@@ -56,9 +56,7 @@ void CEqParallelJobManager::AddJob(EQ_JOB_FUNC func, void* args, int count /*= 1
 
 	FunctionJob* job = PPNew FunctionJob("PJob", func, args, count);
 	job->DeleteOnFinish();
-
-	job->InitJob();
-	m_jobMng->StartJob(job);
+	m_jobMng->InitStartJob(job);
 }
 
 bool CEqParallelJobManager::AllJobsCompleted() const

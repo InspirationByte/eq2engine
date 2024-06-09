@@ -135,12 +135,15 @@ public:
 
 		ASSERT(pMaterial->GetState() == MATERIAL_LOAD_INQUEUE);
 
-		if (g_parallelJobs->IsInitialized() && g_renderAPI->GetProgressiveTextureFrequency() == 0)
+		if (g_parallelJobs->IsInitialized())
 		{
 			// Wooohoo Blast Processing!
-			g_parallelJobs->AddJob([pMaterial](void*, int) {
+			FunctionJob* job = PPNew FunctionJob("LoadMaterialJob", [pMaterial](void*, int) {
 				((CMaterial*)pMaterial.Ptr())->DoLoadShaderAndTextures();
 			});
+			job->DeleteOnFinish();
+			g_parallelJobs->GetJobMng()->InitStartJob(job);
+
 			return;
 		}
 
