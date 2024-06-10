@@ -127,6 +127,8 @@ public:
 	TNODE*	getFirst() const { return m_first; }
 	TNODE*	getLast() const { return m_last; }
 
+	int getCount() const { return m_count; }
+
 	void insertNodeFirst(TNODE* node)
 	{
 		if (m_first != nullptr)
@@ -218,6 +220,7 @@ class ListBase
 {
 public:
 	using Node = ListNode<T>;
+	using Impl = LinkedListImpl<Node>;
 
 	struct Iterator
 	{
@@ -237,17 +240,17 @@ public:
 		void		operator--()		{ current = current->prev; }
 	};
 
-	Iterator		first() const { return Iterator(m_first); }
-	Iterator		last() const { return Iterator(m_last); }
+	Iterator		first() const { return Iterator(Impl::m_first); }
+	Iterator		last() const { return Iterator(Impl::m_last); }
 
-	Iterator		begin() const { return Iterator(m_first); }
+	Iterator		begin() const { return Iterator(Impl::m_first); }
 	Iterator		end() const { return Iterator(); }
 
-	const T&		front() const { return m_first->value; }
-	T&				front() { return m_first->value; }
+	const T&		front() const { return Impl::m_first->value; }
+	T&				front() { return Impl::m_first->value; }
 
-	const T&		back() const { return m_last->value; }
-	T&				back() { return m_last->value; }
+	const T&		back() const { return Impl::m_last->value; }
+	T&				back() { return Impl::m_last->value; }
 
 	virtual ~ListBase()
 	{
@@ -267,26 +270,26 @@ public:
 	ListBase(const ListBase& other)
 		: STORAGE_TYPE(other.sl)
 	{
-		m_first = other.m_first;
-		m_last = other.m_last;
-		m_count = other.m_count;
-		other.m_first = nullptr;
-		other.m_last = nullptr;
-		other.m_count = 0;
+		Impl::m_first = other.Impl::m_first;
+		Impl::m_last = other.Impl::m_last;
+		Impl::m_count = other.Impl::m_count;
+		other.Impl::m_first = nullptr;
+		other.Impl::m_last = nullptr;
+		other.Impl::m_count = 0;
 	}
 
 	ListBase(ListBase&& other) noexcept
 		: STORAGE_TYPE(std::move(other))
 	{
-		m_first = other.m_first;
-		m_last = other.m_last;
-		m_count = other.m_count;
-		other.m_first = nullptr;
-		other.m_last = nullptr;
-		other.m_count = 0;
+		Impl::m_first = other.Impl::m_first;
+		Impl::m_last = other.Impl::m_last;
+		Impl::m_count = other.Impl::m_count;
+		other.Impl::m_first = nullptr;
+		other.Impl::m_last = nullptr;
+		other.Impl::m_count = 0;
 	}
 
-	int getCount() const { return m_count; }
+	int getCount() const { return Impl::m_count; }
 
 	bool prepend(const T& value)
 	{
@@ -340,7 +343,7 @@ public:
 		Node* node = allocNode();
 		node->value = value;
 
-		Node* c = m_first;
+		Node* c = Impl::m_first;
 		while (c != nullptr && compareFunc(c->value, value) <= 0)
 		{
 			c = c->m_next;
@@ -356,7 +359,7 @@ public:
 
 	T popFront()
 	{
-		Node* firstNode = m_first;
+		Node* firstNode = Impl::m_first;
 		ASSERT(firstNode);
 		T value = firstNode->value;
 		remove(Iterator(firstNode));
@@ -365,7 +368,7 @@ public:
 
 	T popBack()
 	{
-		Node* lastNode = m_last;
+		Node* lastNode = Impl::m_last;
 		ASSERT(lastNode);
 		T value = lastNode->value;
 		remove(Iterator(lastNode));
@@ -374,7 +377,7 @@ public:
 
 	Iterator findFront(const T& value) const
 	{
-		Node* n = m_first;
+		Node* n = Impl::m_first;
 		while (n != nullptr)
 		{
 			if (value == n->value)
@@ -386,7 +389,7 @@ public:
 
 	Iterator findBack(const T& value) const
 	{
-		Node* n = m_last;
+		Node* n = Impl::m_last;
 		while (n != nullptr)
 		{
 			if (value == n->value)
@@ -398,7 +401,7 @@ public:
 
 	void clear()
 	{
-		Node* n = m_first;
+		Node* n = Impl::m_first;
 		while (n != nullptr)
 		{
 			Node* next = n->next;
@@ -406,8 +409,8 @@ public:
 			n = next;
 		}
 
-		m_first = m_last = nullptr;
-		m_count = 0;
+		Impl::m_first = Impl::m_last = nullptr;
+		Impl::m_count = 0;
 	}
 
 	void remove(Iterator incidentNode)
