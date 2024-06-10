@@ -30,11 +30,11 @@ const float BODY_ANGULAR_VELOCITY_DAMPING = 0.01f;//0.0125f;
 
 const float BODY_FREEZE_TIME		= 0.5f;
 
-const float BODY_MIN_VELOCITY		= 0.08f;
-const float BODY_MIN_VELOCITY_ANG	= 0.08f;
+const float BODY_MIN_VELOCITY		= 0.5f;
+const float BODY_MIN_VELOCITY_ANG	= 0.5f;
 
-const float BODY_MIN_VELOCITY_WAKE		= 0.002f;
-const float BODY_MIN_VELOCITY_WAKE_ANG	= 0.005f;
+const float BODY_MIN_VELOCITY_WAKE		= 0.02f;
+const float BODY_MIN_VELOCITY_WAKE_ANG	= 0.05f;
 
 CEqRigidBody::CEqRigidBody() : CEqCollisionObject()
 {
