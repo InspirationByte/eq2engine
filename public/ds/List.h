@@ -7,10 +7,7 @@
 
 #pragma once
 
-template <typename T, typename STORAGE_TYPE>
-class ListBase;
-
-template <typename T, typename STORAGE_TYPE>
+template <typename T>
 struct ListNode
 {
 public:
@@ -22,8 +19,6 @@ public:
 	T			value;
 	ListNode*	prev{ nullptr };
 	ListNode*	next{ nullptr };
-
-	friend class ListBase<T, STORAGE_TYPE>;
 };
 
 //------------------------------------------------------
@@ -31,7 +26,7 @@ public:
 template <typename T, typename STORAGE_TYPE>
 struct ListAllocatorBase
 {
-	using Node = ListNode<T, STORAGE_TYPE>;
+	using Node = ListNode<T>;
 
 	virtual			~ListAllocatorBase() {}
 
@@ -40,10 +35,11 @@ struct ListAllocatorBase
 };
 
 template<typename T>
-class DynamicListAllocator : public ListAllocatorBase<T, DynamicListAllocator<T>>
+class DynamicListAllocator 
+	: public ListAllocatorBase<T, DynamicListAllocator<T>>
 {
 public:
-	using Node = ListNode<T, DynamicListAllocator<T>>;
+	using Node = ListNode<T>;
 
 	DynamicListAllocator(const PPSourceLine& sl)
 		: m_pool(sl)
@@ -74,10 +70,11 @@ private:
 
 
 template<typename T, int SIZE>
-class FixedListAllocator : public ListAllocatorBase<T, FixedListAllocator<T, SIZE>>
+class FixedListAllocator 
+	: public ListAllocatorBase<T, FixedListAllocator<T, SIZE>>
 {
 public:
-	using Node = ListNode<T, FixedListAllocator<T, SIZE>>;
+	using Node = ListNode<T>;
 
 	FixedListAllocator() = default;
 
@@ -122,15 +119,109 @@ public:
 	Node	m_nodePool[SIZE];
 };
 
-template <typename T, typename STORAGE_TYPE>
-class ListBase : STORAGE_TYPE
+// TNODE is abstract type that has prev & next fields
+template<typename TNODE>
+class LinkedListImpl
 {
 public:
-	using Node = ListNode<T, STORAGE_TYPE>;
+	TNODE*	getFirst() const { return m_first; }
+	TNODE*	getLast() const { return m_last; }
+
+	void insertNodeFirst(TNODE* node)
+	{
+		if (m_first != nullptr)
+			m_first->prev = node;
+		else
+			m_last = node;
+
+		node->next = m_first;
+		node->prev = nullptr;
+
+		m_first = node;
+		m_count++;
+	}
+
+	void insertNodeLast(TNODE* node)
+	{
+		if (m_last != nullptr)
+			m_last->next = node;
+		else
+			m_first = node;
+
+		node->prev = m_last;
+		node->next = nullptr;
+
+		m_last = node;
+		m_count++;
+	}
+
+	void insertNodeBefore(TNODE* at, TNODE* node)
+	{
+		TNODE* prev = at->prev;
+		at->prev = node;
+		if (prev)
+			prev->next = node;
+		else
+			m_first = node;
+
+		node->next = at;
+		node->prev = prev;
+		m_count++;
+	}
+
+	void insertNodeAfter(TNODE* at, TNODE* node)
+	{
+		TNODE* next = at->next;
+		at->next = node;
+		if (next)
+			next->prev = node;
+		else
+			m_last = node;
+
+		node->prev = at;
+		node->next = next;
+		m_count++;
+	}
+
+	void unlinkNode(TNODE* node)
+	{
+		if (m_first != m_last)
+		{
+			ASSERT_MSG(node->next != nullptr || node->prev != nullptr, "unlinkNode - already released node")
+		}
+
+		if (node->prev == nullptr)
+			m_first = node->next;
+		else
+			node->prev->next = node->next;
+
+		if (node->next == nullptr)
+			m_last = node->prev;
+		else
+			node->next->prev = node->prev;
+
+		node->next = nullptr;
+		node->prev = nullptr;
+		m_count--;
+	}
+
+protected:
+	TNODE*	m_first{ nullptr };
+	TNODE*	m_last{ nullptr };
+	int		m_count{ 0 };
+};
+
+template <typename T, typename STORAGE_TYPE>
+class ListBase
+	: LinkedListImpl<ListNode<T>>
+	, STORAGE_TYPE
+{
+public:
+	using Node = ListNode<T>;
 
 	struct Iterator
 	{
-		Node* current{ nullptr };
+		Node*	current{ nullptr };
 		Iterator() = default;
 		Iterator(Node* node)
 			: current(node)
@@ -145,6 +236,18 @@ public:
 		void		operator++()		{ current = current->next; }
 		void		operator--()		{ current = current->prev; }
 	};
+
+	Iterator		first() const { return Iterator(m_first); }
+	Iterator		last() const { return Iterator(m_last); }
+
+	Iterator		begin() const { return Iterator(m_first); }
+	Iterator		end() const { return Iterator(); }
+
+	const T&		front() const { return m_first->value; }
+	T&				front() { return m_first->value; }
+
+	const T&		back() const { return m_last->value; }
+	T&				back() { return m_last->value; }
 
 	virtual ~ListBase()
 	{
@@ -251,18 +354,6 @@ public:
 		return true;
 	}
 
-	Iterator		first() const { return Iterator(m_first); }
-	Iterator		last() const { return Iterator(m_last); }
-
-	Iterator		begin() const { return Iterator(m_first); }
-	Iterator		end() const { return Iterator(); }
-
-	const T&		front() const { return m_first->value; }
-	T&				front() { return m_first->value; }
-
-	const T&		back() const { return m_last->value; }
-	T&				back() { return m_last->value; }
-
 	T popFront()
 	{
 		Node* firstNode = m_first;
@@ -324,7 +415,7 @@ public:
 		if (incidentNode.atEnd())
 			return;
 
-		releaseNode(incidentNode.current);
+		unlinkNode(incidentNode.current);
 		freeNode(incidentNode.current);
 	}
 
@@ -355,7 +446,7 @@ public:
 		if (incidentNode.atEnd())
 			return;
 
-		releaseNode(incidentNode.current);
+		unlinkNode(incidentNode.current);
 		insertNodeFirst(incidentNode.current);
 	}
 
@@ -364,91 +455,8 @@ public:
 		if (incidentNode.atEnd())
 			return;
 
-		releaseNode(incidentNode.current);
+		unlinkNode(incidentNode.current);
 		insertNodeLast(incidentNode.current);
-	}
-
-private:
-	Node*	m_first{ nullptr };
-	Node*	m_last{ nullptr };
-	int		m_count{ 0 };
-
-	void insertNodeFirst(Node* node)
-	{
-		if (m_first != nullptr)
-			m_first->prev = node;
-		else
-			m_last = node;
-
-		node->next = m_first;
-		node->prev = nullptr;
-
-		m_first = node;
-		m_count++;
-	}
-
-	void insertNodeLast(Node* node)
-	{
-		if (m_last != nullptr)
-			m_last->next = node;
-		else
-			m_first = node;
-
-		node->prev = m_last;
-		node->next = nullptr;
-
-		m_last = node;
-		m_count++;
-	}
-
-	void insertNodeBefore(Node* at, Node* node)
-	{
-		Node* prev = at->prev;
-		at->prev = node;
-		if (prev)
-			prev->next = node;
-		else
-			m_first = node;
-
-		node->next = at;
-		node->prev = prev;
-		m_count++;
-	}
-
-	void insertNodeAfter(Node* at, Node* node)
-	{
-		Node* next = at->next;
-		at->next = node;
-		if (next)
-			next->prev = node;
-		else
-			m_last = node;
-
-		node->prev = at;
-		node->next = next;
-		m_count++;
-	}
-
-	void releaseNode(Node* node)
-	{
-		if (m_first != m_last)
-		{
-			ASSERT_MSG(!(node->next == nullptr && node->prev == nullptr), "releaseNode - already released node")
-		}
-
-		if (node->prev == nullptr)
-			m_first = node->next;
-		else
-			node->prev->next = node->next;
-
-		if (node->next == nullptr)
-			m_last = node->prev;
-		else
-			node->next->prev = node->prev;
-
-		node->next = nullptr;
-		node->prev = nullptr;
-		m_count--;
 	}
 
 	Node* allocNode()
