@@ -12,9 +12,12 @@ class CEqPhysics;
 
 struct eqPhysGridCell
 {
-	Array<CEqCollisionObject*>	gridObjects{ PP_SL };
-	Array<CEqCollisionObject*>	dynamicObjs{ PP_SL };
-	float						cellBoundUsed = 0.0f;	// unsigned z of usage by static objects
+	using StaticCollObjList = Array<CEqCollisionObject*>;
+	using DynCollObjList = LinkedListImpl<CEqCollisionObject>;
+
+	StaticCollObjList	gridObjects{ PP_SL };
+	DynCollObjList		dynamicObjList;
+	float				cellBoundUsed = 0.0f;	// unsigned z of usage by static objects
 };
 
 class CEqCollisionBroadphaseGrid

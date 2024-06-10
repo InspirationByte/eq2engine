@@ -94,8 +94,8 @@ public:
 
 	virtual bool				IsDynamic() const {return false;}									///< is dynamic?
 
-	eqPhysGridCell*				GetCell() const					{return m_cell;}					///< returns collision grid cell
-	void						SetCell(eqPhysGridCell* cell)	{m_cell = cell;}					///< sets collision grid cell
+	eqPhysGridCell*				GetCell() const					{ return m_cell; }					///< returns collision grid cell
+	void						SetCell(eqPhysGridCell* cell)	{ m_cell = cell; }					///< sets collision grid cell
 
 	float						GetFriction() const;
 	float						GetRestitution() const;
@@ -119,6 +119,10 @@ public:
 
 	virtual void				ConstructRenderMatrix( Matrix4x4& outMatrix );						///< constructs render matrix
 	void						SetDebugName(const char* name);
+
+	// broadphase linked list requirement
+	CEqCollisionObject*		next{ nullptr };
+	CEqCollisionObject*		prev{ nullptr };
 
 	//--------------------
 	CollisionPairList		m_collisionList;

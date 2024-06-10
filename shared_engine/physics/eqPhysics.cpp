@@ -447,7 +447,7 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 	if (cell)
 	{
 		CScopedMutex m(s_eqPhysMutex);
-		cell->dynamicObjs.fastRemove(body);
+		cell->dynamicObjList.unlinkNode(body);
 	}
 
 	const bool result = m_dynObjects.fastRemove(body);
@@ -512,7 +512,7 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 			if (cell)
 			{
 				CScopedMutex m(s_eqPhysMutex);
-				cell->dynamicObjs.fastRemove(object);
+				cell->dynamicObjList.unlinkNode(object);
 			}
 		}
 	}
@@ -951,10 +951,10 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 	{
 		CScopedMutex m(s_eqPhysMutex);
 		if (oldCell)
-			oldCell->dynamicObjs.fastRemove(body);
+			oldCell->dynamicObjList.unlinkNode(body);
 
 		if (newCell)
-			newCell->dynamicObjs.append(body);
+			newCell->dynamicObjList.insertNodeLast(body);
 
 		body->SetCell(newCell);
 	}
@@ -980,10 +980,10 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 		{
 			CScopedMutex m(s_eqPhysMutex);
 			if (oldCell)
-				oldCell->dynamicObjs.fastRemove(body);
+				oldCell->dynamicObjList.unlinkNode(body);
 
 			if (newCell)
-				newCell->dynamicObjs.append(body);
+				newCell->dynamicObjList.insertNodeLast(body);
 
 			body->SetCell(newCell);
 		}
@@ -1021,10 +1021,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 			const eqPhysGridCell* ncell = m_grid->GetCellAt( x, y );
 			if(!ncell)
 				continue;
-
-			const Array<CEqCollisionObject*>& gridObjects = ncell->gridObjects;
-			const Array<CEqCollisionObject*>& dynamicObjects = ncell->dynamicObjs;
-			
+						
 			// iterate over static objects in cell
 			for (CEqCollisionObject* obj : ncell->gridObjects)
 				DetectStaticVsBodyCollision(obj, body, body->GetLastFrameTime());
@@ -1034,7 +1031,8 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 				continue;
 
 			// iterate over dynamic objects in cell
-			for (CEqCollisionObject* dynObj : ncell->dynamicObjs)
+			CEqCollisionObject* dynObj = ncell->dynamicObjList.getFirst();
+			for (; dynObj; dynObj = dynObj->next)
 			{
 				if (dynObj == body)
 					continue;
@@ -1428,7 +1426,8 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	{
 		CScopedMutex m(s_eqPhysMutex);
 
-		for (CEqCollisionObject* object : cell->dynamicObjs)
+		CEqCollisionObject* object = cell->dynamicObjList.getFirst();
+		for (; object; object = object->next)
 		{
 			if (skipObjects.contains(object))
 				continue;

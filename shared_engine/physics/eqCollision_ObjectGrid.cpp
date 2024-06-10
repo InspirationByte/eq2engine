@@ -15,6 +15,21 @@
 DECLARE_CVAR(ph_debugGridX, "-1", nullptr, 0);
 DECLARE_CVAR(ph_debugGridY, "-1", nullptr, 0);
 
+static void ReleaseGridCellObjs(eqPhysGridCell& cell)
+{
+	CEqCollisionObject* collObj = cell.dynamicObjList.getFirst();
+	while (collObj)
+	{
+		CEqCollisionObject* unlinkObj = collObj;
+
+		collObj->SetCell(nullptr);
+		collObj = collObj->next;
+
+		unlinkObj->next = nullptr;
+		unlinkObj->prev = nullptr;
+	}
+}
+
 CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs)
 {
 	m_physics = physics;
@@ -41,9 +56,7 @@ CEqCollisionBroadphaseGrid::~CEqCollisionBroadphaseGrid()
 				continue;
 
 			eqPhysGridCell& cell = *it;
-
-			for (CEqCollisionObject* collObj: cell.dynamicObjs)
-				collObj->SetCell(nullptr);
+			ReleaseGridCellObjs(cell);
 
 			for (CEqCollisionObject* collObj: cell.gridObjects)
 				collObj->SetCell(nullptr);
@@ -204,18 +217,9 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 		return;
 
 	eqPhysGridCell& cell = *it;
-
-	Array<CEqCollisionObject*>& dynamicObjs = cell.dynamicObjs;
-	int count = dynamicObjs.numElem();
-
-	for(int i = 0; i < count; i++)
-	{
-		CEqCollisionObject* pObj = dynamicObjs[i];
-		pObj->SetCell(nullptr);
-	}
-
-	if(cell.gridObjects.numElem())
-		MsgWarning( "Cell deallocated, but in use (%d)\n", cell.gridObjects.numElem());
+	ReleaseGridCellObjs(cell);
+	
+	ASSERT_MSG(cell.gridObjects.numElem() == 0, "Cell deallocated, but in use (%d)\n", cell.gridObjects.numElem());
 
 	m_gridMap.remove(it);
 }
@@ -368,13 +372,13 @@ void CEqCollisionBroadphaseGrid::DebugRender()
 			if (!cell)
 				continue;
 
-			for (int i = 0; i < cell->dynamicObjs.numElem(); i++)
+			CEqCollisionObject* collObj = cell->dynamicObjList.getFirst();
+			while (collObj)
 			{
-				CEqCollisionObject* obj = cell->dynamicObjs[i];
+				const ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 1.0f);
+				DbgBox().Box(collObj->m_aabb_transformed).Color(bodyCol);
 
-				ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 1.0f);
-
-				debugoverlay->Box3D(obj->m_aabb_transformed.minPoint, obj->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
+				collObj = collObj->next;
 			}
 		}
 	}
