@@ -185,7 +185,7 @@ struct KVValues
 };
 
 template<typename ...Args>
-KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs);
+int KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs);
 
 template<typename ...Args>
 int KV_GetValues(const KVSection* key, Args&... outArgs);
@@ -614,9 +614,9 @@ int GetValuesImpl(const KVSection* key, int idx, std::index_sequence<Is...>, std
 }
 
 template<typename ...Args>
-KVValues<Args...> KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
+int KV_GetValuesAt(const KVSection* key, int idx, Args&... outArgs)
 {
-	return kvdetail::GetValuesR(key, 0, idx, outArgs...);
+	return kvdetail::GetValuesR(key, idx, 0, outArgs...);
 }
 
 template<typename ...Args>
@@ -639,4 +639,120 @@ KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
 	KVValues<Args...> values(outArgs...);
 	values.count = kvdetail::GetValuesImpl(key, 0, std::index_sequence_for<Args...>{}, values.newValues);
 	return values;
+}
+
+//---------------------------------------------------------------------
+// Key-Values Desc parser
+
+template<typename T>
+static bool KV_ParseDesc(T& descData, const KVSection& section);
+
+struct DescFieldInfoBase
+{
+	using ParseFunc = bool (*)(const KVSection& section, const char* name, void* outPtr);
+
+	DescFieldInfoBase(int offset, const char* name, ParseFunc parseFunc)
+		: name(name)
+		, offset(offset)
+		, parseFunc(parseFunc)
+	{
+	}
+
+	EqStringRef		name;
+	ParseFunc		parseFunc;
+	int				offset;
+};
+
+template<typename T>
+struct DescField : public DescFieldInfoBase
+{
+	DescField(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	static bool Parse(const KVSection& section, const char* name, void* outPtr)
+	{
+		return section.Get(name).GetValues(*reinterpret_cast<T*>(outPtr));
+	}
+};
+
+template<typename T>
+struct DescFieldEmbedded : public DescFieldInfoBase
+{
+	DescFieldEmbedded(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	static bool Parse(const KVSection& section, const char* name, void* outPtr)
+	{
+		return KV_ParseDesc<T>(*reinterpret_cast<T*>(outPtr), section.Get(name));
+	}
+};
+
+template<typename T>
+struct DescFieldArray : public DescFieldInfoBase
+{
+	DescFieldArray(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	static bool Parse(const KVSection& section, const char* name, void* outPtr)
+	{
+		using ITEM = typename T::ITEM;
+		Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
+
+		const KVSection& sec = section.Get(name);
+		const int valueCount = sec.ValueCount();
+		arrayRef.reserve(arrayRef.numElem() + valueCount);
+		for(int i = 0; i < valueCount; ++i)
+			KV_GetValuesAt(&sec, i, arrayRef.append());
+
+		return true;
+	}
+};
+
+template<typename T>
+struct DescFieldEmbeddedArray : public DescFieldInfoBase
+{
+	DescFieldEmbeddedArray(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	static bool Parse(const KVSection& section, const char* name, void* outPtr)
+	{
+		using ITEM = typename T::ITEM;
+		Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
+
+		const KVSection& sec = section.Get(name);
+		arrayRef.reserve(arrayRef.numElem() + sec.KeyCount());
+		for (const KVSection* embSec : sec.Keys())
+			KV_ParseDesc(arrayRef.append(), *embSec);
+
+		return true;
+	}
+};
+
+#define DEFINE_KEYVALUES_DESC_TYPE() \
+	struct Desc;
+
+#define BEGIN_KEYVALUES_DESC(classname) \
+	struct classname ## ::Desc { \
+		using DescType = classname; \
+		static ArrayCRef<DescFieldInfoBase> GetFields() { \
+			static DescFieldInfoBase descFields[] = {
+#define END_KEYVALUES_DESC() \
+			}; \
+			return descFields; \
+		}; \
+	};
+
+#define KV_DESC_FIELD(name) \
+	DescField<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+
+#define KV_DESC_EMBEDDED(name) \
+	DescFieldEmbedded<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+
+#define KV_DESC_ARRAY_FIELD(name) \
+	DescFieldArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+
+#define KV_DESC_ARRAY_EMBEDDED(name) \
+	DescFieldEmbeddedArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+
+// TODO: Map support as Dictionary type
+
+template<typename T>
+inline bool KV_ParseDesc(T& descData, const KVSection& section)
+{
+	using Desc = typename T::Desc;
+	for (const DescFieldInfoBase& info : Desc::GetFields())
+		info.parseFunc(section, info.name, reinterpret_cast<ubyte*>(&descData) + info.offset);
+	return true;
 }
