@@ -177,6 +177,7 @@ private:
 	void						InitDefaultMaterial();
 
 	void						FramePrepareInternal();
+	IGPUCommandRecorderPtr		GetTlsProxyCmdRecorder();
 	void						QueueCommitInternalBuffers();
 
 	MatSysRenderSettings		m_config;
@@ -209,8 +210,8 @@ private:
 	mutable Matrix4x4			m_wvpMatrix{ identity4 };
 	mutable Matrix4x4			m_matrices[5]{ identity4 };
 
-	Array<IGPUCommandBufferPtr>	m_pendingCmdBuffers{ PP_SL };
-	IGPUCommandRecorderPtr		m_proxyUpdateCmdRecorder;
+	Array<IGPUCommandBufferPtr>		m_pendingCmdBuffers{ PP_SL };
+	Array<IGPUCommandRecorderPtr*>	m_proxyUpdateCmdRecorders{ PP_SL };
 	IGPUCommandRecorderPtr		m_bufferCmdRecorder;
 
 	struct TransientBufferCollection

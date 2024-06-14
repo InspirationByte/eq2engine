@@ -394,7 +394,12 @@ void CMaterialSystem::Shutdown()
 	m_globalMaterialVars.variableMap.clear(true);
 	m_globalMaterialVars.variables.clear(true);
 
-	m_proxyUpdateCmdRecorder = nullptr;
+	for (int i = 0; i < m_proxyUpdateCmdRecorders.numElem(); ++i)
+	{
+		*m_proxyUpdateCmdRecorders[i] = nullptr;
+		delete m_proxyUpdateCmdRecorders[i];
+	}
+	m_proxyUpdateCmdRecorders.clear();
 	m_bufferCmdRecorder = nullptr;
 	m_transientUniformBuffers = {};
 	m_transientVertexBuffers = {};
@@ -1062,7 +1067,26 @@ void CMaterialSystem::FramePrepareInternal()
 	if (m_frameBegun)
 		return;
 	m_frameBegun = true;
-	m_proxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
+
+	// dismiss buffers if any left
+	for(int i = 0; i < m_proxyUpdateCmdRecorders.numElem(); ++i)
+		*m_proxyUpdateCmdRecorders[i] = nullptr;
+}
+
+IGPUCommandRecorderPtr CMaterialSystem::GetTlsProxyCmdRecorder()
+{
+	static thread_local IGPUCommandRecorderPtr* s_tlsProxyUpdateCmdRecorder = nullptr;
+	if (!s_tlsProxyUpdateCmdRecorder)
+	{
+		CScopedMutex m(s_matSystemBufferMutex);
+		s_tlsProxyUpdateCmdRecorder = PPNew IGPUCommandRecorderPtr(); 
+		m_proxyUpdateCmdRecorders.append(s_tlsProxyUpdateCmdRecorder);
+	}
+
+	if (!(*s_tlsProxyUpdateCmdRecorder))
+		*s_tlsProxyUpdateCmdRecorder = g_renderAPI->CreateCommandRecorder("ProxyUpdate");
+
+	return *s_tlsProxyUpdateCmdRecorder;
 }
 
 // tells 3d device to end and present frame
@@ -1077,8 +1101,13 @@ bool CMaterialSystem::EndFrame()
 	// issue the rendering of anything
 	m_shaderAPI->ResetCounters();
 
-	m_pendingCmdBuffers.append(m_proxyUpdateCmdRecorder->End());
-	m_proxyUpdateCmdRecorder = nullptr;
+	for (int i = 0; i < m_proxyUpdateCmdRecorders.numElem(); ++i)
+	{
+		IGPUCommandRecorderPtr cmdRecorder = *m_proxyUpdateCmdRecorders[i];
+		if(cmdRecorder)
+			m_pendingCmdBuffers.append(cmdRecorder->End());
+		*m_proxyUpdateCmdRecorders[i] = nullptr;
+	}
 
 	SubmitQueuedCommands();
 
@@ -1485,12 +1514,13 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 	if (!matShader)
 		return false;
 
-	UpdateMaterialProxies(material, m_proxyUpdateCmdRecorder);
+	IGPUCommandRecorderPtr proxyCmdRecorder = GetTlsProxyCmdRecorder();
+	UpdateMaterialProxies(material, proxyCmdRecorder);
 
 	const uint proxyFrame = m_frame;
 	if (matSysMaterial->m_frameBound != proxyFrame)
 	{
-		matSysMaterial->UpdateProxy(m_proxyDeltaTime, m_proxyUpdateCmdRecorder);
+		matSysMaterial->UpdateProxy(m_proxyDeltaTime, proxyCmdRecorder);
 		matSysMaterial->m_frameBound = proxyFrame;
 	}
 
