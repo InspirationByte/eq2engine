@@ -295,7 +295,7 @@ public:
 	{
 		Node* node = allocNode();
 		node->value = value;
-		insertNodeFirst(node);
+		Impl::insertNodeFirst(node);
 		return true;
 	}
 
@@ -303,14 +303,14 @@ public:
 	{
 		Node* node = allocNode();
 		node->value = std::move(value);
-		insertNodeFirst(node);
+		Impl::insertNodeFirst(node);
 		return true;
 	}
 
 	T& prepend()
 	{
 		Node* node = allocNode();
-		insertNodeFirst(node);
+		Impl::insertNodeFirst(node);
 		return node->value;
 	}
 
@@ -318,7 +318,7 @@ public:
 	{
 		Node* node = allocNode();
 		node->value = value;
-		insertNodeLast(node);
+		Impl::insertNodeLast(node);
 		return true;
 	}
 
@@ -326,14 +326,14 @@ public:
 	{
 		Node* node = allocNode();
 		node->value = std::move(value);
-		insertNodeLast(node);
+		Impl::insertNodeLast(node);
 		return true;
 	}
 
 	T& append()
 	{
 		Node* node = allocNode();
-		insertNodeLast(node);
+		Impl::insertNodeLast(node);
 		return node->value;
 	}
 
@@ -350,9 +350,9 @@ public:
 		}
 
 		if (c)
-			insertNodeBefore(c, node);
+			Impl::insertNodeBefore(c, node);
 		else
-			insertNodeLast(node);
+			Impl::insertNodeLast(node);
 
 		return true;
 	}
@@ -418,7 +418,7 @@ public:
 		if (incidentNode.atEnd())
 			return;
 
-		unlinkNode(incidentNode.current);
+		Impl::unlinkNode(incidentNode.current);
 		freeNode(incidentNode.current);
 	}
 
@@ -429,7 +429,7 @@ public:
 
 		Node* node = allocNode();
 		node->value = value;
-		insertNodeBefore(incidentNode.current, node);
+		Impl::insertNodeBefore(incidentNode.current, node);
 		return Iterator(node);
 	}
 
@@ -440,7 +440,7 @@ public:
 
 		Node* node = allocNode();
 		node->value = value;
-		insertNodeAfter(incidentNode.current, node);
+		Impl::insertNodeAfter(incidentNode.current, node);
 		return Iterator(node);
 	}
 
@@ -449,8 +449,8 @@ public:
 		if (incidentNode.atEnd())
 			return;
 
-		unlinkNode(incidentNode.current);
-		insertNodeFirst(incidentNode.current);
+		Impl::unlinkNode(incidentNode.current);
+		Impl::insertNodeFirst(incidentNode.current);
 	}
 
 	void moveToBack(Iterator incidentNode)
@@ -458,8 +458,8 @@ public:
 		if (incidentNode.atEnd())
 			return;
 
-		unlinkNode(incidentNode.current);
-		insertNodeLast(incidentNode.current);
+		Impl::unlinkNode(incidentNode.current);
+		Impl::insertNodeLast(incidentNode.current);
 	}
 
 	Node* allocNode()
