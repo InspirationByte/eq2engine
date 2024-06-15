@@ -1349,7 +1349,7 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 		ASSERT(rhiCmdBuffer);
 
 		rhiSubmitBuffers.append(rhiCmdBuffer);
-		wgpuCommandBufferReference(rhiCmdBuffer);
+		wgpuCommandBufferAddRef(rhiCmdBuffer);
 	}
 
 	if (!rhiSubmitBuffers.numElem())

@@ -55,7 +55,7 @@ CWGPUBuffer::CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, con
 
 	if (rhiBufferDesc.mappedAtCreation)
 	{
-		wgpuBufferReference(m_rhiBuffer);
+		wgpuBufferAddRef(m_rhiBuffer);
 
 		if (hasData)
 		{
@@ -140,7 +140,7 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 			context->promise.SetResult(std::move(context->data));
 	};
 
-	wgpuBufferReference(m_rhiBuffer);
+	wgpuBufferAddRef(m_rhiBuffer);
 	wgpuBufferMapAsync(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, callback, context);
 
 	return context->promise.CreateFuture();
