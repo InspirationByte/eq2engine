@@ -43,7 +43,6 @@ protected:
 	RenderWindowInfo	m_winInfo;
 
 	WGPUSurface			m_surface{ nullptr };
-	WGPUSwapChain		m_swapChain{ nullptr };
 	IVector2D			m_backbufferSize{ 0 };
 	int					m_vSync{ -1 };
 };

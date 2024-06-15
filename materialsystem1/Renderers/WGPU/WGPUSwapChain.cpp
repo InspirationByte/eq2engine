@@ -22,11 +22,8 @@ CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& win
 
 CWGPUSwapChain::~CWGPUSwapChain()
 {
-	if (m_swapChain)
-	{
-		wgpuSwapChainRelease(m_swapChain);
+	if(m_surface)
 		wgpuSurfaceRelease(m_surface);
-	}
 }
 
 void* CWGPUSwapChain::GetWindow() const
@@ -41,15 +38,32 @@ ITexturePtr CWGPUSwapChain::GetBackbuffer() const
 
 void CWGPUSwapChain::UpdateBackbufferView() const
 {
-	if (!m_swapChain)
+	WGPUSurfaceTexture rhiSurfTex{};
+	wgpuSurfaceGetCurrentTexture(m_surface, &rhiSurfTex);
+
+	switch (rhiSurfTex.status)
+	{
+    case WGPUSurfaceGetCurrentTextureStatus_Success:
+		// All good, could check for `surfTex.suboptimal` here.
+		break;
+	case WGPUSurfaceGetCurrentTextureStatus_Timeout:
+	case WGPUSurfaceGetCurrentTextureStatus_Outdated:
+	case WGPUSurfaceGetCurrentTextureStatus_Lost:
 		return;
+	case WGPUSurfaceGetCurrentTextureStatus_OutOfMemory:
+	case WGPUSurfaceGetCurrentTextureStatus_DeviceLost:
+	case WGPUSurfaceGetCurrentTextureStatus_Force32:
+		// Fatal error
+		ASSERT_FAIL("wgpuSurfaceGetCurrentTexture status=%#.8x\n", rhiSurfTex.status);
+		return;
+    }
 
 	{
 		if (m_textureRef->m_rhiTextures.numElem())
 			wgpuTextureRelease(m_textureRef->m_rhiTextures[0]);
 		else
 			m_textureRef->m_rhiTextures.setNum(1);
-		m_textureRef->m_rhiTextures[0] = wgpuSwapChainGetCurrentTexture(m_swapChain);
+		m_textureRef->m_rhiTextures[0] = rhiSurfTex.texture;
 	}
 
 	{
@@ -57,7 +71,7 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 			wgpuTextureViewRelease(m_textureRef->m_rhiViews[0]);
 		else
 			m_textureRef->m_rhiViews.setNum(1);
-		m_textureRef->m_rhiViews[0] = wgpuSwapChainGetCurrentTextureView(m_swapChain);
+		m_textureRef->m_rhiViews[0] = wgpuTextureCreateView(rhiSurfTex.texture, nullptr);
 	}
 }
 
@@ -81,11 +95,7 @@ bool CWGPUSwapChain::UpdateResize()
 	m_vSync &= ~TOGGLE_BIT;
 
 	m_textureRef->SetDimensions(m_backbufferSize.x, m_backbufferSize.y);
-	if (m_swapChain)
-	{
-		m_textureRef->Release();
-		wgpuSwapChainRelease(m_swapChain);
-	}
+	m_textureRef->Release();
 
 	if (!m_surface)
 	{
@@ -161,15 +171,17 @@ bool CWGPUSwapChain::UpdateResize()
 		}
 	}
 
-	WGPUSwapChainDescriptor rhiSwapChainDesc = {};
-	rhiSwapChainDesc.width = m_backbufferSize.x;
-	rhiSwapChainDesc.height = m_backbufferSize.y;
-	rhiSwapChainDesc.format = rhiSurfaceFormat;
-	rhiSwapChainDesc.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
-	rhiSwapChainDesc.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
+	WGPUSurfaceConfiguration rhiSurfaceConfig{};
+	rhiSurfaceConfig.device = m_host->m_rhiDevice;
+	rhiSurfaceConfig.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
+	rhiSurfaceConfig.format = rhiSurfaceFormat;
+	rhiSurfaceConfig.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
+	rhiSurfaceConfig.alphaMode = WGPUCompositeAlphaMode_Opaque;	// TODO: get from surface capabilities
+	rhiSurfaceConfig.width = m_backbufferSize.x;
+	rhiSurfaceConfig.height = m_backbufferSize.y;
 
-	m_swapChain = wgpuDeviceCreateSwapChain(m_host->m_rhiDevice, m_surface, &rhiSwapChainDesc);
-	return m_swapChain;
+	wgpuSurfaceConfigure(m_surface, &rhiSurfaceConfig);
+	return m_surface;
 }
 
 bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
@@ -180,9 +192,6 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 	 
 bool CWGPUSwapChain::SwapBuffers()
 {
-	if (!m_swapChain)
-		return false;
-
-	wgpuSwapChainPresent(m_swapChain);
+	wgpuSurfacePresent(m_surface);
 	return true;
 }
