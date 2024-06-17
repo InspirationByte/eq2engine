@@ -14,6 +14,8 @@ enum ETestFlags : int
 	TEST_FLAG4 = (1 << 3),
 };
 
+DECLARE_KEYVALUES_FLAGS_DESC(ETestFlagsDesc)
+
 BEGIN_KEYVALUES_FLAGS_DESC(ETestFlagsDesc)
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG1, "flag1")
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG2, "flag2")

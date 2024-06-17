@@ -647,11 +647,17 @@ KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
 template<typename T>
 static bool KV_ParseDesc(T& descData, const KVSection& section);
 
-struct DescFieldInfoBase
+struct KVDescFieldInfo
 {
+	template<class T>
+	struct CArrayLenGetter;
+
+	template<class T, std::size_t N>
+	struct CArrayLenGetter<T[N]> { inline static int len = N; };
+
 	using ParseFunc = bool (*)(const KVSection& section, const char* name, void* outPtr);
 
-	DescFieldInfoBase(int offset, const char* name, ParseFunc parseFunc)
+	KVDescFieldInfo(int offset, const char* name, ParseFunc parseFunc)
 		: name(name)
 		, offset(offset)
 		, parseFunc(parseFunc)
@@ -663,17 +669,19 @@ struct DescFieldInfoBase
 	int				offset;
 };
 
-struct DescFlagInfo
+struct KVDescFlagInfo
 {
 	EqStringRef		name;
 	int				nameHash;
 	int				value;
 };
 
-template<typename T>
-struct DescField : public DescFieldInfoBase
+namespace kvdetail
 {
-	DescField(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+template<typename T>
+struct DescField : public KVDescFieldInfo
+{
+	DescField(int offset, const char* name) : KVDescFieldInfo(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
 		return section.Get(name).GetValues(*reinterpret_cast<T*>(outPtr));
@@ -681,9 +689,9 @@ struct DescField : public DescFieldInfoBase
 };
 
 template<typename T>
-struct DescFieldEmbedded : public DescFieldInfoBase
+struct DescFieldEmbedded : public KVDescFieldInfo
 {
-	DescFieldEmbedded(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	DescFieldEmbedded(int offset, const char* name) : KVDescFieldInfo(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
 		return KV_ParseDesc<T>(*reinterpret_cast<T*>(outPtr), section.Get(name));
@@ -691,15 +699,9 @@ struct DescFieldEmbedded : public DescFieldInfoBase
 };
 
 template<typename T>
-struct DescFieldArray : public DescFieldInfoBase
+struct DescFieldArray : public KVDescFieldInfo
 {
-	template<class T>
-	struct CArrayLenGetter;
-
-	template<class T, std::size_t N>
-	struct CArrayLenGetter<T[N]> { inline static int len = N; };
-
-	DescFieldArray(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	DescFieldArray(int offset, const char* name) : KVDescFieldInfo(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
 		const KVSection& sec = section.Get(name);
@@ -726,27 +728,35 @@ struct DescFieldArray : public DescFieldInfoBase
 };
 
 template<typename T>
-struct DescFieldEmbeddedArray : public DescFieldInfoBase
+struct DescFieldEmbeddedArray : public KVDescFieldInfo
 {
-	DescFieldEmbeddedArray(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	DescFieldEmbeddedArray(int offset, const char* name) : KVDescFieldInfo(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
-		using ITEM = typename T::ITEM;
-		Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
-
 		const KVSection& sec = section.Get(name);
-		arrayRef.reserve(arrayRef.numElem() + sec.KeyCount());
-		for (const KVSection* embSec : sec.Keys())
-			KV_ParseDesc(arrayRef.append(), *embSec);
+		if constexpr (std::is_array_v<T>)
+		{
+			T& arrayRef = *reinterpret_cast<T*>(outPtr);
+			for (int i = 0; i < min(static_cast<int>(CArrayLenGetter<T>::len), sec.KeyCount()); ++i)
+				KV_ParseDesc(arrayRef[i], *sec.KeyAt(i));
+		}
+		else
+		{
+			using ITEM = typename T::ITEM;
+			Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
 
+			arrayRef.reserve(arrayRef.numElem() + sec.KeyCount());
+			for (const KVSection* embSec : sec.Keys())
+				KV_ParseDesc(arrayRef.append(), *embSec);
+		}
 		return true;
 	}
 };
 
 template<typename T, typename FLAGS_DESC>
-struct DescFieldFlags : public DescFieldInfoBase
+struct DescFieldFlags : public KVDescFieldInfo
 {
-	DescFieldFlags(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	DescFieldFlags(int offset, const char* name) : KVDescFieldInfo(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
 		T& flagsValue = *reinterpret_cast<T*>(outPtr);
@@ -755,7 +765,7 @@ struct DescFieldFlags : public DescFieldInfoBase
 		for (EqStringRef flagName : section.Get(name).Values<EqStringRef>())
 		{
 			const int flagNameHash = StringToHash(flagName, true);
-			for (const DescFlagInfo& flagInfo : FLAGS_DESC::GetFlags())
+			for (const KVDescFlagInfo& flagInfo : FLAGS_DESC::GetFlags())
 			{
 				if (flagInfo.nameHash == flagNameHash)
 				{
@@ -768,19 +778,22 @@ struct DescFieldFlags : public DescFieldInfoBase
 		return true;
 	}
 };
+} // namespace kvdetail
 
 #define DEFINE_KEYVALUES_DESC_TYPE(descName) \
 	struct descName { \
-		static ArrayCRef<DescFieldInfoBase> GetFields(); \
-	}
+		static const char* GetTypeName(); \
+		static ArrayCRef<KVDescFieldInfo> GetFields(); \
+	};
 
 #define DEFINE_KEYVALUES_DESC() \
 	DEFINE_KEYVALUES_DESC_TYPE(Desc)
 
 #define BEGIN_KEYVALUES_DESC_TYPE(classname, descName) \
-	ArrayCRef<DescFieldInfoBase> descName::GetFields() { \
+	const char* descName::GetTypeName() { return #classname; } \
+	ArrayCRef<KVDescFieldInfo> descName::GetFields() { \
 		using DescType = classname; \
-		static DescFieldInfoBase descFields[] = {
+		static KVDescFieldInfo descFields[] = {
 
 #define BEGIN_KEYVALUES_DESC(classname) \
 	BEGIN_KEYVALUES_DESC_TYPE(classname, classname ## ::Desc)
@@ -791,37 +804,37 @@ struct DescFieldFlags : public DescFieldInfoBase
 	};
 
 #define KV_DESC_FIELD(name) \
-	DescField<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+	kvdetail::DescField<decltype(DescType::name)>{offsetOf(DescType, name), #name},
 
 #define KV_DESC_EMBEDDED(name) \
-	DescFieldEmbedded<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+	kvdetail::DescFieldEmbedded<decltype(DescType::name)>{offsetOf(DescType, name), #name},
 
 #define KV_DESC_ARRAY_FIELD(name) \
-	DescFieldArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+	kvdetail::DescFieldArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
 
 #define KV_DESC_ARRAY_EMBEDDED(name) \
-	DescFieldEmbeddedArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
-
-#define KV_DESC_ARRAY_FIELD(name) \
-	DescFieldArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+	kvdetail::DescFieldEmbeddedArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
 
 #define KV_DESC_FLAGS(name, flagsType) \
-	DescFieldFlags<decltype(DescType::name), flagsType>{offsetOf(DescType, name), #name},
+	kvdetail::DescFieldFlags<decltype(DescType::name), flagsType>{offsetOf(DescType, name), #name},
 
 //-----------------------
 
 #define KV_FLAG_DESC(value, name) {name, StringToHashConst(name), static_cast<int>(value)},
 
-#define BEGIN_KEYVALUES_FLAGS_DESC(enumDescName) \
+#define DECLARE_KEYVALUES_FLAGS_DESC(enumDescName) \
 	struct enumDescName { \
-		static ArrayCRef<DescFlagInfo> GetFlags() { \
-			static DescFlagInfo descFlags[] = {
+		static ArrayCRef<KVDescFlagInfo> GetFlags(); \
+	};
+
+#define BEGIN_KEYVALUES_FLAGS_DESC(enumDescName) \
+	ArrayCRef<KVDescFlagInfo> enumDescName::GetFlags() { \
+		static KVDescFlagInfo descFlags[] = {
 
 #define END_KEYVALUES_FLAGS_DESC \
-			}; \
-			return descFlags; \
 		}; \
-	};
+		return descFlags; \
+	}; \
 
 //-----------------------
 
@@ -831,7 +844,7 @@ template<typename T>
 inline bool KV_ParseDesc(T& descData, const KVSection& section)
 {
 	using Desc = typename T::Desc;
-	for (const DescFieldInfoBase& info : Desc::GetFields())
+	for (const KVDescFieldInfo& info : Desc::GetFields())
 		info.parseFunc(section, info.name, reinterpret_cast<ubyte*>(&descData) + info.offset);
 	return true;
 }
