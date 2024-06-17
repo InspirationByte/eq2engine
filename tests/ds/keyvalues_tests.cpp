@@ -4,16 +4,33 @@
 #include "core/core_common.h"
 #include "utils/KeyValues.h"
 
+enum ETestFlags : int
+{
+	TEST_FLAGS_NONE,
+
+	TEST_FLAG1 = (1 << 0),
+	TEST_FLAG2 = (1 << 1),
+	TEST_FLAG3 = (1 << 2),
+	TEST_FLAG4 = (1 << 3),
+};
+
+BEGIN_KEYVALUES_FLAGS_DESC(ETestFlagsDesc)
+	KV_FLAG_DESC(ETestFlags::TEST_FLAG1, "flag1")
+	KV_FLAG_DESC(ETestFlags::TEST_FLAG2, "flag2")
+	KV_FLAG_DESC(ETestFlags::TEST_FLAG3, "flag3")
+	KV_FLAG_DESC(ETestFlags::TEST_FLAG4, "flag4")
+END_KEYVALUES_FLAGS_DESC
+
 struct EmbeddedDef
 {
 	DEFINE_KEYVALUES_DESC_TYPE()
 
-	int embeddedDescValue{ 32777 };
+	int embeddedFlags{ TEST_FLAGS_NONE };
 };
 
-BEGIN_KEYVALUES_DESC(EmbeddedDef)
-	KV_DESC_FIELD(embeddedDescValue)
-END_KEYVALUES_DESC()
+BEGIN_KEYVALUES_DESC_TYPE(EmbeddedDef)
+	KV_DESC_FLAGS(embeddedFlags, ETestFlagsDesc)
+END_KEYVALUES_DESC
 
 struct GeomInstanceDef
 {
@@ -26,14 +43,14 @@ struct GeomInstanceDef
 	bool			castShadow{ true };
 };
 
-BEGIN_KEYVALUES_DESC(GeomInstanceDef)
+BEGIN_KEYVALUES_DESC_TYPE(GeomInstanceDef)
 	KV_DESC_FIELD(model)
 	KV_DESC_FIELD(staticShadowmap)
 	KV_DESC_FIELD(castShadow)
 	KV_DESC_EMBEDDED(embedded)
 	KV_DESC_ARRAY_FIELD(bodyGroups)
 	KV_DESC_ARRAY_EMBEDDED(arrayOfEmbedded)
-END_KEYVALUES_DESC()
+END_KEYVALUES_DESC
 
 //-----------------------------------------------
 
@@ -45,7 +62,11 @@ TEST(KEYVALUES_TESTS, DescParser)
 		.SetKey("staticShadowmap", true);
 
 	KVSection& embeddedSec = *section.CreateSection("embedded");
-	embeddedSec.SetKey("embeddedDescValue", 555888);
+	{
+		KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+		flagsSec.AddValue("flag1");
+		flagsSec.AddValue("flag3");
+	}
 
 	KVSection& bodyGroupsSec = *section.CreateSection("bodyGroups");
 	bodyGroupsSec.AddValue("body1");
@@ -55,11 +76,18 @@ TEST(KEYVALUES_TESTS, DescParser)
 	KVSection& arrayOfEmbeddedSec = *section.CreateSection("arrayOfEmbedded");
 	{
 		KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed1");
-		embeddedSec.SetKey("embeddedDescValue", 111);
+		{
+			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			flagsSec.AddValue("flag1");
+			flagsSec.AddValue("flag4");
+		}
 	}
 	{
 		KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed2");
-		embeddedSec.SetKey("embeddedDescValue", 333);
+		{
+			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			flagsSec.AddValue("flag2");
+		}
 	}
 
 	GeomInstanceDef testDesc;
@@ -72,8 +100,8 @@ TEST(KEYVALUES_TESTS, DescParser)
 	EXPECT_EQ(testDesc.bodyGroups[1], "hat");
 	EXPECT_EQ(testDesc.bodyGroups[2], "case");
 	EXPECT_EQ(testDesc.arrayOfEmbedded.numElem(), 2);
-	EXPECT_EQ(testDesc.arrayOfEmbedded[0].embeddedDescValue, 111);
-	EXPECT_EQ(testDesc.arrayOfEmbedded[1].embeddedDescValue, 333);
+	EXPECT_EQ(testDesc.arrayOfEmbedded[0].embeddedFlags, TEST_FLAG1 | TEST_FLAG4);
+	EXPECT_EQ(testDesc.arrayOfEmbedded[1].embeddedFlags, TEST_FLAG2);
 }
 
 TEST(KEYVALUES_TESTS, SerializeDeserialize)
@@ -87,7 +115,11 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 			.SetKey("staticShadowmap", true);
 
 		KVSection& embeddedSec = *section.CreateSection("embedded");
-		embeddedSec.SetKey("embeddedDescValue", 555888);
+		{
+			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			flagsSec.AddValue("flag1");
+			flagsSec.AddValue("flag3");
+		}
 
 		KVSection& bodyGroupsSec = *section.CreateSection("bodyGroups");
 		bodyGroupsSec.AddValue("body1");
@@ -97,11 +129,18 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 		KVSection& arrayOfEmbeddedSec = *section.CreateSection("arrayOfEmbedded");
 		{
 			KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed1");
-			embeddedSec.SetKey("embeddedDescValue", 111);
+			{
+				KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+				flagsSec.AddValue("flag1");
+				flagsSec.AddValue("flag4");
+			}
 		}
 		{
 			KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed2");
-			embeddedSec.SetKey("embeddedDescValue", 333);
+			{
+				KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+				flagsSec.AddValue("flag2");
+			}
 		}
 
 		KV_WriteToStream(&memStreamText, &section);
@@ -123,8 +162,8 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 		EXPECT_EQ(testDesc.bodyGroups[1], "hat");
 		EXPECT_EQ(testDesc.bodyGroups[2], "case");
 		EXPECT_EQ(testDesc.arrayOfEmbedded.numElem(), 2);
-		EXPECT_EQ(testDesc.arrayOfEmbedded[0].embeddedDescValue, 111);
-		EXPECT_EQ(testDesc.arrayOfEmbedded[1].embeddedDescValue, 333);
+		EXPECT_EQ(testDesc.arrayOfEmbedded[0].embeddedFlags, TEST_FLAG1 | TEST_FLAG4);
+		EXPECT_EQ(testDesc.arrayOfEmbedded[1].embeddedFlags, TEST_FLAG2);
 	}
 
 	// TEST: Deserialize binary stream
@@ -142,8 +181,8 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 		EXPECT_EQ(testDesc.bodyGroups[1], "hat");
 		EXPECT_EQ(testDesc.bodyGroups[2], "case");
 		EXPECT_EQ(testDesc.arrayOfEmbedded.numElem(), 2);
-		EXPECT_EQ(testDesc.arrayOfEmbedded[0].embeddedDescValue, 111);
-		EXPECT_EQ(testDesc.arrayOfEmbedded[1].embeddedDescValue, 333);
+		EXPECT_EQ(testDesc.arrayOfEmbedded[0].embeddedFlags, TEST_FLAG1 | TEST_FLAG4);
+		EXPECT_EQ(testDesc.arrayOfEmbedded[1].embeddedFlags, TEST_FLAG2);
 	}
 
 

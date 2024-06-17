@@ -663,6 +663,13 @@ struct DescFieldInfoBase
 	int				offset;
 };
 
+struct DescFlagInfo
+{
+	EqStringRef		name;
+	int				nameHash;
+	int				value;
+};
+
 template<typename T>
 struct DescField : public DescFieldInfoBase
 {
@@ -720,19 +727,49 @@ struct DescFieldEmbeddedArray : public DescFieldInfoBase
 	}
 };
 
+template<typename T, typename FLAGS_DESC>
+struct DescFieldFlags : public DescFieldInfoBase
+{
+	DescFieldFlags(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
+	static bool Parse(const KVSection& section, const char* name, void* outPtr)
+	{
+		T& flagsValue = *reinterpret_cast<T*>(outPtr);
+		flagsValue = 0;
+
+		for (EqStringRef flagName : section.Get(name).Values<EqStringRef>())
+		{
+			const int flagNameHash = StringToHash(flagName, true);
+			for (const DescFlagInfo& flagInfo : FLAGS_DESC::GetFlags())
+			{
+				if (flagInfo.nameHash == flagNameHash)
+				{
+					flagsValue |= flagInfo.value;
+					break;
+				}
+			}
+		}
+
+		return true;
+	}
+};
+
 #define DEFINE_KEYVALUES_DESC_TYPE() \
 	struct Desc;
 
-#define BEGIN_KEYVALUES_DESC(classname) \
-	struct classname ## ::Desc { \
+#define BEGIN_KEYVALUES_DESC(classname, descClassName) \
+	struct descClassName { \
 		using DescType = classname; \
 		static ArrayCRef<DescFieldInfoBase> GetFields() { \
 			static DescFieldInfoBase descFields[] = {
-#define END_KEYVALUES_DESC() \
+
+#define END_KEYVALUES_DESC \
 			}; \
 			return descFields; \
 		}; \
 	};
+
+#define BEGIN_KEYVALUES_DESC_TYPE(classname) \
+	BEGIN_KEYVALUES_DESC(classname, classname ## ::Desc)
 
 #define KV_DESC_FIELD(name) \
 	DescField<decltype(DescType::name)>{offsetOf(DescType, name), #name},
@@ -745,6 +782,29 @@ struct DescFieldEmbeddedArray : public DescFieldInfoBase
 
 #define KV_DESC_ARRAY_EMBEDDED(name) \
 	DescFieldEmbeddedArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+
+#define KV_DESC_ARRAY_FIELD(name) \
+	DescFieldArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
+
+#define KV_DESC_FLAGS(name, flagsType) \
+	DescFieldFlags<decltype(DescType::name), flagsType>{offsetOf(DescType, name), #name},
+
+//-----------------------
+
+#define KV_FLAG_DESC(value, name) {name, StringToHashConst(name), static_cast<int>(value)},
+
+#define BEGIN_KEYVALUES_FLAGS_DESC(enumDescName) \
+	struct enumDescName { \
+		static ArrayCRef<DescFlagInfo> GetFlags() { \
+			static DescFlagInfo descFlags[] = {
+
+#define END_KEYVALUES_FLAGS_DESC \
+			}; \
+			return descFlags; \
+		}; \
+	};
+
+//-----------------------
 
 // TODO: Map support as Dictionary type
 
