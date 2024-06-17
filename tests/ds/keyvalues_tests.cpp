@@ -23,18 +23,18 @@ END_KEYVALUES_FLAGS_DESC
 
 struct EmbeddedDef
 {
-	DEFINE_KEYVALUES_DESC_TYPE()
+	DEFINE_KEYVALUES_DESC();
 
 	int embeddedFlags{ TEST_FLAGS_NONE };
 };
 
-BEGIN_KEYVALUES_DESC_TYPE(EmbeddedDef)
+BEGIN_KEYVALUES_DESC(EmbeddedDef)
 	KV_DESC_FLAGS(embeddedFlags, ETestFlagsDesc)
 END_KEYVALUES_DESC
 
 struct GeomInstanceDef
 {
-	DEFINE_KEYVALUES_DESC_TYPE()
+	DEFINE_KEYVALUES_DESC();
 	Array<EqString>		bodyGroups{ PP_SL };
 	Array<EmbeddedDef>	arrayOfEmbedded{ PP_SL };
 	EqString		model;
@@ -43,7 +43,7 @@ struct GeomInstanceDef
 	bool			castShadow{ true };
 };
 
-BEGIN_KEYVALUES_DESC_TYPE(GeomInstanceDef)
+BEGIN_KEYVALUES_DESC(GeomInstanceDef)
 	KV_DESC_FIELD(model)
 	KV_DESC_FIELD(staticShadowmap)
 	KV_DESC_FIELD(castShadow)

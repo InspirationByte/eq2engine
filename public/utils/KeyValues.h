@@ -693,18 +693,34 @@ struct DescFieldEmbedded : public DescFieldInfoBase
 template<typename T>
 struct DescFieldArray : public DescFieldInfoBase
 {
+	template<class T>
+	struct CArrayLenGetter;
+
+	template<class T, std::size_t N>
+	struct CArrayLenGetter<T[N]> { inline static int len = N; };
+
 	DescFieldArray(int offset, const char* name) : DescFieldInfoBase(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
-		using ITEM = typename T::ITEM;
-		Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
-
 		const KVSection& sec = section.Get(name);
 		const int valueCount = sec.ValueCount();
-		arrayRef.reserve(arrayRef.numElem() + valueCount);
-		for(int i = 0; i < valueCount; ++i)
-			KV_GetValuesAt(&sec, i, arrayRef.append());
 
+		if constexpr (std::is_array_v<T>)
+		{
+			T& arrayRef = *reinterpret_cast<T*>(outPtr);
+
+			for (int i = 0; i < min(static_cast<int>(CArrayLenGetter<T>::len), valueCount); ++i)
+				KV_GetValuesAt(&sec, i, arrayRef[i]);
+		}
+		else
+		{
+			using ITEM = typename T::ITEM;
+			Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
+
+			arrayRef.reserve(arrayRef.numElem() + valueCount);
+			for (int i = 0; i < valueCount; ++i)
+				KV_GetValuesAt(&sec, i, arrayRef.append());
+		}
 		return true;
 	}
 };
@@ -753,23 +769,26 @@ struct DescFieldFlags : public DescFieldInfoBase
 	}
 };
 
-#define DEFINE_KEYVALUES_DESC_TYPE() \
-	struct Desc;
+#define DEFINE_KEYVALUES_DESC_TYPE(descName) \
+	struct descName { \
+		static ArrayCRef<DescFieldInfoBase> GetFields(); \
+	}
 
-#define BEGIN_KEYVALUES_DESC(classname, descClassName) \
-	struct descClassName { \
+#define DEFINE_KEYVALUES_DESC() \
+	DEFINE_KEYVALUES_DESC_TYPE(Desc)
+
+#define BEGIN_KEYVALUES_DESC_TYPE(classname, descName) \
+	ArrayCRef<DescFieldInfoBase> descName::GetFields() { \
 		using DescType = classname; \
-		static ArrayCRef<DescFieldInfoBase> GetFields() { \
-			static DescFieldInfoBase descFields[] = {
+		static DescFieldInfoBase descFields[] = {
+
+#define BEGIN_KEYVALUES_DESC(classname) \
+	BEGIN_KEYVALUES_DESC_TYPE(classname, classname ## ::Desc)
 
 #define END_KEYVALUES_DESC \
-			}; \
-			return descFields; \
 		}; \
+		return descFields; \
 	};
-
-#define BEGIN_KEYVALUES_DESC_TYPE(classname) \
-	BEGIN_KEYVALUES_DESC(classname, classname ## ::Desc)
 
 #define KV_DESC_FIELD(name) \
 	DescField<decltype(DescType::name)>{offsetOf(DescType, name), #name},
