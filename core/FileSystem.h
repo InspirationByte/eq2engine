@@ -112,8 +112,7 @@ public:
 	void						RemovePackage(const char* packageName);
 
 	// opens package for further reading. Does not add package as FS layer
-	IFilePackageReader*			OpenPackage(const char* packageName, int searchFlags = -1);
-	void						ClosePackage(IFilePackageReader* package);
+	IPackFileReaderPtr			OpenPackage(const char* packageName, int searchFlags = -1);
 
 	//------------------------------------------------------------
 	// Locator
@@ -159,8 +158,7 @@ protected:
 	EqString					m_accessKey;
 
 	Array<SearchPathInfo*>		m_directories{ PP_SL };		// mod data, for fall back
-    Array<CBasePackageReader*>	m_fsPackages{ PP_SL };		// package serving as FS layers
-	Array<IFilePackageReader*>	m_openPackages{ PP_SL };
+    Array<IPackFileReaderPtr>	m_fsPackages{ PP_SL };		// package serving as FS layers
 
 	Array<DKFINDDATA*>			m_findDatas{ PP_SL };
 	Array<DKMODULE*>			m_modules{ PP_SL };

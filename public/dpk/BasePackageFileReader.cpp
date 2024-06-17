@@ -12,16 +12,16 @@
 #include "dpk/DPKFileReader.h"
 #include "dpk/ZipFileReader.h"
 
-CBasePackageReader* CBasePackageReader::CreateReaderByExtension(const char* packageName)
+CBasePackageReaderPtr CBasePackageReader::CreateReaderByExtension(const char* packageName)
 {
 	const EqString fileExt = fnmPathExtractExt(packageName);
-	CBasePackageReader* reader = nullptr;
+	CBasePackageReaderPtr reader = nullptr;
 
 	// allow zip files to be loaded
 	if (fileExt == "zip")
-		reader = PPNew CZipFileReader();
+		reader = CBasePackageReaderPtr(CRefPtr_new(CZipFileReader));
 	else
-		reader = PPNew CDPKFileReader();
+		reader = CBasePackageReaderPtr(CRefPtr_new(CDPKFileReader));
 
 	return reader;
 }

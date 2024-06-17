@@ -348,9 +348,6 @@ void CFileSystem::Shutdown()
 		i--;
 	}
 
-	for(int i = 0; i < m_fsPackages.numElem(); i++)
-		delete m_fsPackages[i];
-
 	m_fsPackages.clear(true);
 	m_findDatas.clear(true);
 
@@ -437,7 +434,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			CBasePackageReader* fsPacakage = m_fsPackages[j];
+			CBasePackageReader* fsPacakage = static_cast<CBasePackageReader*>(m_fsPackages[j].Ptr());
 
 			if (!(spFlags & fsPacakage->GetSearchPath()))
 				continue;
@@ -549,7 +546,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			const CBasePackageReader* fsPacakage = m_fsPackages[j];
+			CBasePackageReader* fsPacakage = static_cast<CBasePackageReader*>(m_fsPackages[j].Ptr());
 
 			if (!(spFlags & fsPacakage->GetSearchPath()))
 				continue;
@@ -721,16 +718,16 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 {
 	const EqString packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, packageName);
 
-	for(CBasePackageReader* package : m_fsPackages)
+	for(IPackFileReaderPtr package : m_fsPackages)
 	{
-		if(!packagePath.CompareCaseIns(package->GetPackageFilename()))
+		if(!packagePath.CompareCaseIns(package->GetName()))
 		{
 			ASSERT_FAIL("Package %s was already added to file system", packageName);
 			return false;
 		}
 	}
 
-	CBasePackageReader* reader = CBasePackageReader::CreateReaderByExtension(packageName);
+	CBasePackageReaderPtr reader = CBasePackageReader::CreateReaderByExtension(packageName);
 	if (!reader->InitPackage(packagePath, mountPath))
 	{
 		MsgError("Cannot open package '%s'\n", packagePath.ToCString());
@@ -746,7 +743,7 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
     reader->SetSearchPath(type);
 	reader->SetKey(m_accessKey);
 
-    m_fsPackages.append(reader);
+    m_fsPackages.append(IPackFileReaderPtr(reader));
     return true;
 }
 
@@ -756,9 +753,8 @@ void CFileSystem::RemovePackage(const char* packageName)
 
 	for (int i = 0; i < m_fsPackages.numElem(); i++)
 	{
-		CBasePackageReader* reader = m_fsPackages[i];
-
-		if (!packagePath.CompareCaseIns(reader->GetPackageFilename()))
+		IPackFileReader* reader = m_fsPackages[i];
+		if (!packagePath.CompareCaseIns(reader->GetName()))
 		{
 			m_fsPackages.fastRemoveIndex(i);
 			delete reader;
@@ -768,9 +764,9 @@ void CFileSystem::RemovePackage(const char* packageName)
 }
 
 // opens package for further reading. Does not add package as FS layer
-IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int searchFlags)
+IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchFlags)
 {
-	CBasePackageReader* reader = CBasePackageReader::CreateReaderByExtension(packageName);
+	CRefPtr<CBasePackageReader> reader = CBasePackageReader::CreateReaderByExtension(packageName);
 
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
@@ -782,7 +778,7 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 			delete reader;
 
 			// open flat reader
-			reader = PPNew CFlatFileReader();
+			reader = CBasePackageReaderPtr(CRefPtr_new(CFlatFileReader));
 			reader->InitPackage(filePath, nullptr);
 			return true;
 		}
@@ -790,8 +786,7 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			CBasePackageReader* fsPacakage = m_fsPackages[j];
-
+			CBasePackageReader* fsPacakage = static_cast<CBasePackageReader*>(m_fsPackages[j].Ptr());
 			if (!(spFlags & fsPacakage->GetSearchPath()))
 				continue;
 
@@ -818,24 +813,7 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName, int search
 	reader->SetSearchPath(SP_ROOT);
 	reader->SetKey(m_accessKey);
 
-	{
-		CScopedMutex m(s_FSMutex);
-		m_openPackages.append(reader);
-	}
-
-	return reader;
-}
-
-void CFileSystem::ClosePackage(IFilePackageReader* package)
-{
-	bool removed = false;
-	{
-		CScopedMutex m(s_FSMutex);
-		removed = m_openPackages.fastRemove(package);
-	}
-
-	if (removed)
-		delete package;
+	return IPackFileReaderPtr(reader);
 }
 
 void CFileSystem::MapFiles(SearchPathInfo& pathInfo)

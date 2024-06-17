@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "IFilePackageReader.h"
+#include "IPackFileReader.h"
 
 //------------------------------------------------------------------------------
 // Definitions
@@ -98,8 +98,7 @@ public:
 	virtual void			RemovePackage(const char* packageName) = 0;
 
 	// opens package for further reading. Does not add package as FS layer.
-	virtual IFilePackageReader* OpenPackage(const char* packageName, int searchFlags = -1) = 0;
-	virtual void			ClosePackage(IFilePackageReader* package) = 0;
+	virtual IPackFileReaderPtr OpenPackage(const char* packageName, int searchFlags = -1) = 0;
 
 	//------------------------------------------------------------
 	// Dynamic library stuff

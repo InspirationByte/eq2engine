@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "core/ConCommand.h"
 #include "core/IFileSystem.h"
-#include "core/IFilePackageReader.h"
+#include "core/IPackFileReader.h"
 #include "core/ConVar.h"
 #include "imaging/ImageLoader.h"
 #include "utils/KeyValues.h"
@@ -39,7 +39,6 @@ static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind)
 
 ShaderInfoWGPUImpl::~ShaderInfoWGPUImpl()
 {
-	g_fileSystem->ClosePackage(shaderPackFile);
 }
 
 ShaderInfoWGPUImpl::ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept
@@ -134,7 +133,7 @@ void CWGPURenderAPI::Shutdown()
 
 int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 {
-	IFilePackageReader* shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
+	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
 	if (!shaderPackFile)
 		return 0;
 
@@ -151,10 +150,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	defer{
 		if (shaderPackFile)
-		{
 			m_shaderCache.remove(StringToHash(shaderInfoKvs.GetName()));
-			g_fileSystem->ClosePackage(shaderPackFile);
-		}
 	};
 
 	if (!strstr(filename, shaderInfoKvs.GetName()))

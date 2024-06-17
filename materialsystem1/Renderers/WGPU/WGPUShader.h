@@ -1,6 +1,7 @@
 #pragma once
 
-class IFilePackageReader;
+class IPackFileReader;
+using IPackFileReaderPtr = CRefPtr<IPackFileReader>;
 
 struct ShaderInfoWGPUImpl
 {
@@ -28,7 +29,7 @@ struct ShaderInfoWGPUImpl
 	};
 
 	EqString			shaderName;
-	IFilePackageReader* shaderPackFile{ nullptr };
+	IPackFileReaderPtr	shaderPackFile{ nullptr };
 	Array<VertLayout>	vertexLayouts{ PP_SL };
 	Array<EqString>		defines{ PP_SL };
 	Array<Module>		modules{ PP_SL };

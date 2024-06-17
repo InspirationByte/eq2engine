@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "core/IFilePackageReader.h"
+#include "core/IPackFileReader.h"
 
 enum EPackageType
 {
@@ -16,6 +16,7 @@ enum EPackageType
 };
 
 class CBasePackageReader;
+using CBasePackageReaderPtr = CRefPtr<CBasePackageReader>;
 
 class IPackFileStream : public IFile
 {
@@ -25,17 +26,18 @@ public:
 
 //--------------------------------------------------
 
-class CBasePackageReader : public IFilePackageReader
+class CBasePackageReader : public IPackFileReader
 {
 public:
-	static CBasePackageReader*	CreateReaderByExtension(const char* packageName);
+	static CBasePackageReaderPtr	CreateReaderByExtension(const char* packageName);
 
 	virtual EPackageType	GetType() const = 0;
+	const char*				GetName() const	{ return m_packagePath; }
 
 	virtual bool			InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
 	virtual bool			OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
 
-	const char*				GetPackageFilename() const	{ return m_packagePath; }
+
 	int						GetSearchPath() const		{ return m_searchPath; };
 	void					SetSearchPath(int search)	{ m_searchPath = search; };
 	void					SetKey(const char* key)		{ m_key = key; }
