@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "KeyValuesDesc.h"
 
 class IVirtualStream;
 struct KVSection;
@@ -641,40 +642,7 @@ KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs)
 	return values;
 }
 
-//---------------------------------------------------------------------
-// Key-Values Desc parser
-
-template<typename T>
-static bool KV_ParseDesc(T& descData, const KVSection& section);
-
-struct KVDescFieldInfo
-{
-	template<class T>
-	struct CArrayLenGetter;
-
-	template<class T, std::size_t N>
-	struct CArrayLenGetter<T[N]> { inline static int len = N; };
-
-	using ParseFunc = bool (*)(const KVSection& section, const char* name, void* outPtr);
-
-	KVDescFieldInfo(int offset, const char* name, ParseFunc parseFunc)
-		: name(name)
-		, offset(offset)
-		, parseFunc(parseFunc)
-	{
-	}
-
-	EqStringRef		name;
-	ParseFunc		parseFunc;
-	int				offset;
-};
-
-struct KVDescFlagInfo
-{
-	EqStringRef		name;
-	int				nameHash;
-	int				value;
-};
+// KeyValues parser desc detail impl
 
 namespace kvdetail
 {
@@ -780,15 +748,6 @@ struct DescFieldFlags : public KVDescFieldInfo
 };
 } // namespace kvdetail
 
-#define DEFINE_KEYVALUES_DESC_TYPE(descName) \
-	struct descName { \
-		static const char* GetTypeName(); \
-		static ArrayCRef<KVDescFieldInfo> GetFields(); \
-	};
-
-#define DEFINE_KEYVALUES_DESC() \
-	DEFINE_KEYVALUES_DESC_TYPE(Desc)
-
 #define BEGIN_KEYVALUES_DESC_TYPE(classname, descName) \
 	const char* descName::GetTypeName() { return #classname; } \
 	ArrayCRef<KVDescFieldInfo> descName::GetFields() { \
@@ -818,14 +777,7 @@ struct DescFieldFlags : public KVDescFieldInfo
 #define KV_DESC_FLAGS(name, flagsType) \
 	kvdetail::DescFieldFlags<decltype(DescType::name), flagsType>{offsetOf(DescType, name), #name},
 
-//-----------------------
-
-#define KV_FLAG_DESC(value, name) {name, StringToHashConst(name), static_cast<int>(value)},
-
-#define DECLARE_KEYVALUES_FLAGS_DESC(enumDescName) \
-	struct enumDescName { \
-		static ArrayCRef<KVDescFlagInfo> GetFlags(); \
-	};
+//------------------
 
 #define BEGIN_KEYVALUES_FLAGS_DESC(enumDescName) \
 	ArrayCRef<KVDescFlagInfo> enumDescName::GetFlags() { \
@@ -834,17 +786,6 @@ struct DescFieldFlags : public KVDescFieldInfo
 #define END_KEYVALUES_FLAGS_DESC \
 		}; \
 		return descFlags; \
-	}; \
+	};
 
-//-----------------------
-
-// TODO: Map support as Dictionary type
-
-template<typename T>
-inline bool KV_ParseDesc(T& descData, const KVSection& section)
-{
-	using Desc = typename T::Desc;
-	for (const KVDescFieldInfo& info : Desc::GetFields())
-		info.parseFunc(section, info.name, reinterpret_cast<ubyte*>(&descData) + info.offset);
-	return true;
-}
+#define KV_FLAG_DESC(value, name) {name, StringToHashConst(name), static_cast<int>(value)},
