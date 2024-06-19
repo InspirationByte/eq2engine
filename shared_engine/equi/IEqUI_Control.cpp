@@ -20,21 +20,45 @@
 #include "EqUI_Manager.h"
 #include "EqUI_Panel.h"
 
-
 namespace equi
 {
+/*
+DECLARE_KEYVALUES_FLAGS_DESC(EBordersFlagsDesc)
+BEGIN_KEYVALUES_FLAGS_DESC(EBordersFlagsDesc)
+	KV_FLAG_DESC(UI_BORDER_LEFT, "left")
+	KV_FLAG_DESC(UI_BORDER_TOP, "top")
+	KV_FLAG_DESC(UI_BORDER_RIGHT, "right")
+	KV_FLAG_DESC(UI_BORDER_BOTTOM, "bottom")
+	KV_FLAG_DESC(UI_BORDER_LEFT | UI_BORDER_TOP | UI_BORDER_RIGHT | UI_BORDER_BOTTOM, "all")
+END_KEYVALUES_FLAGS_DESC
+
+DECLARE_KEYVALUES_FLAGS_DESC(EAlignmentFlagsDesc)
+BEGIN_KEYVALUES_FLAGS_DESC(EAlignmentFlagsDesc)
+	KV_FLAG_DESC(UI_ALIGN_LEFT, "left")
+	KV_FLAG_DESC(UI_ALIGN_TOP, "top")
+	KV_FLAG_DESC(UI_ALIGN_RIGHT, "right")
+	KV_FLAG_DESC(UI_ALIGN_BOTTOM, "bottom")
+	KV_FLAG_DESC(UI_ALIGN_HCENTER, "hcenter")
+	KV_FLAG_DESC(UI_ALIGN_VCENTER, "vcenter")
+END_KEYVALUES_FLAGS_DESC
+
+DECLARE_KEYVALUES_FLAGS_DESC(EScalingModeFlagsDesc)
+BEGIN_KEYVALUES_FLAGS_DESC(EScalingModeFlagsDesc)
+	KV_FLAG_DESC(UI_SCALING_NONE, "none")
+	KV_FLAG_DESC(UI_SCALING_INHERIT, "inherit")
+	KV_FLAG_DESC(UI_SCALING_INHERIT_MIN, "inherit_min")
+	KV_FLAG_DESC(UI_SCALING_INHERIT_MAX, "inherit_max")
+	KV_FLAG_DESC(UI_SCALING_ASPECT_MIN, "aspect_min")
+	KV_FLAG_DESC(UI_SCALING_ASPECT_MAX, "aspect_max")
+	KV_FLAG_DESC(UI_SCALING_ASPECT_W, "aspectw")
+	KV_FLAG_DESC(UI_SCALING_ASPECT_H, "aspecth")
+	KV_FLAG_DESC(UI_SCALING_ASPECT_H, "uniform")
+END_KEYVALUES_FLAGS_DESC
+*/
 
 IUIControl::IUIControl()
-	: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(nullptr),
-	m_sizeDiff(0), m_sizeDiffPerc(1.0f),
-	m_position(0),m_size(25),
-	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP)
 {
 	m_label = L"Control";
-
-	m_transform.rotation = 0.0f;
-	m_transform.translation = 0.0f;
-	m_transform.scale = 1.0f;
 }
 
 IUIControl::~IUIControl()
@@ -74,74 +98,64 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
 	else
 		SetName(KV_GetValueString(sec, 0, ""));
 
-	KVSection* label = sec->FindSection("label");
-	if (label)
-		SetLabel(KV_GetValueString(sec->FindSection("label")));
+	EqStringRef label;
+	if (sec->Get("label").GetValues(label))
+		SetLabel(label);
 
-	m_position = KV_GetIVector2D(sec->FindSection("position"), 0, m_position);
-	m_size = KV_GetIVector2D(sec->FindSection("size"), 0, m_size);
+	sec->Get("position").GetValues(m_position);
+	sec->Get("size").GetValues(m_size);
+	sec->Get("visible").GetValues(m_visible);
+	sec->Get("selfvisible").GetValues(m_selfVisible);
 	m_sizeReal = m_size;
-
-	m_visible = KV_GetValueBool(sec->FindSection("visible"), 0, m_visible);
-	m_selfVisible = KV_GetValueBool(sec->FindSection("selfvisible"), 0, m_selfVisible);
 	
-	m_sizeDiff = 0;
-	m_sizeDiffPerc = 1.0f;
-	m_anchors = 0;
-	m_alignment = (UI_BORDER_LEFT | UI_BORDER_TOP);
+	FontProps& fontProps = m_font;
+	if (m_parent)
+		fontProps = m_parent->m_font;
 
-	m_font.font = nullptr;
-	KVSection* font = sec->FindSection("font");
+	const KVSection* font = sec->FindSection("font");
 	if(font)
 	{
 		int styleFlags = 0;
-
-		for (int i = 1; i < font->values.numElem(); i++)
+		for (EqStringRef fontFlag : font->Values<EqStringRef>(1))
 		{
-			if (!CString::CompareCaseIns(KV_GetValueString(font, i), "bold"))
+			if (!fontFlag.CompareCaseIns("bold"))
 				styleFlags |= TEXT_STYLE_BOLD;
-			else if (!CString::CompareCaseIns(KV_GetValueString(font, i), "italic"))
+			else if (!fontFlag.CompareCaseIns("italic"))
 				styleFlags |= TEXT_STYLE_ITALIC;
 		}
 
 		m_font.font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), styleFlags, false);
 	}
 
-	
+	sec->Get("fontScale").GetValues(fontProps.fontScale);
+	sec->Get("textColor").GetValues(fontProps.textColor);
+	sec->Get("textMonospace").GetValues(fontProps.monoSpace);
+	sec->Get("textWeight").GetValues(fontProps.textWeight);
+	sec->Get("textShadowColor").GetValues(fontProps.shadowColor);
+	sec->Get("textShadowOffset").GetValues(fontProps.shadowOffset);
+	sec->Get("textShadowWeight").GetValues(fontProps.shadowWeight);
 
-	m_font.fontScale = KV_GetVector2D(sec->FindSection("fontScale"), 0, m_parent ? m_parent->m_font.fontScale : m_font.fontScale);
-	m_font.textColor = KV_GetVector4D(sec->FindSection("textColor"), 0, m_parent ? m_parent->m_font.textColor : m_font.textColor);
-	m_font.monoSpace = KV_GetValueBool(sec->FindSection("textMonospace"), 0, m_parent ? m_parent->m_font.monoSpace : m_font.monoSpace);
-	m_font.textWeight = KV_GetValueFloat(sec->FindSection("textWeight"), 0, m_parent ? m_parent->m_font.textWeight : m_font.textWeight);
-
-	m_font.shadowColor = KV_GetVector4D(sec->FindSection("textShadowColor"), 0, m_parent ? m_parent->m_font.shadowColor : m_font.shadowColor);
-	m_font.shadowOffset = KV_GetValueFloat(sec->FindSection("textShadowOffset"), 0, m_parent ? m_parent->m_font.shadowOffset : m_font.shadowOffset);
-	m_font.shadowWeight = KV_GetValueFloat(sec->FindSection("textShadowWeight"), 0, m_parent ? m_parent->m_font.shadowWeight : m_font.shadowWeight);
-
-	KVSection* command = sec->FindSection("command");
-
+	const KVSection* command = sec->FindSection("command");
 	if(command)
 	{
 		// NOTE: command event always have UID == 0
-		ui_event evt("command", CommandCb);
+		EvtHandler& evt = m_eventCallbacks.append();
+		evt.callback = CommandCb;
+		evt.name = "command";
+		evt.uid = 0;
 
-		for(int i = 0; i < command->values.numElem(); i++)
-			evt.args.append( KV_GetValueString(command, i) );
-
-		m_eventCallbacks.append(evt);
+		for (EqStringRef command : command->Values<EqStringRef>())
+			evt.args.append(command);
 	}
 
 	//------------------------------------------------------------------------------
-	KVSection* anchors = sec->FindSection("anchors");
 
+	const KVSection* anchors = sec->FindSection("anchors");
 	if(anchors)
 	{
 		m_anchors = 0;
-
-		for(int i = 0; i < anchors->values.numElem(); i++)
+		for(EqStringRef anchorVal : anchors->Values<EqStringRef>())
 		{
-			EqString anchorVal = KV_GetValueString(anchors, i);
-
 			if(!anchorVal.CompareCaseIns("left"))
 				m_anchors |= UI_BORDER_LEFT;
 			else if(!anchorVal.CompareCaseIns("top"))
@@ -156,16 +170,12 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
-	KVSection* align = sec->FindSection("align");
-
+	const KVSection* align = sec->FindSection("align");
 	if(align)
 	{
 		m_alignment = 0;
-
-		for(int i = 0; i < align->values.numElem(); i++)
+		for (EqStringRef alignVal : align->Values<EqStringRef>())
 		{
-			EqStringRef alignVal = KV_GetValueString(align, i);
-
 			if(!alignVal.CompareCaseIns("left"))
 				m_alignment |= UI_ALIGN_LEFT;
 			else if(!alignVal.CompareCaseIns("top"))
@@ -182,30 +192,24 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
-	KVSection* transform = sec->FindSection("transform");
-
+	const KVSection* transform = sec->FindSection("transform");
 	if (transform)
 	{
-		float rotateVal = KV_GetValueFloat(transform->FindSection("rotate"), 0.0f);
-		rotateVal = rotateVal;
-
-		Vector2D scaleVal = KV_GetVector2D(transform->FindSection("scale"), 0, 1.0f);
-		Vector2D translate = KV_GetVector2D(transform->FindSection("translate"), 0, 0.0f);
+		const float rotateVal = KV_GetValueFloat(transform->FindSection("rotate"), 0.0f);
+		const Vector2D scaleVal = KV_GetVector2D(transform->FindSection("scale"), 0, 1.0f);
+		const Vector2D translate = KV_GetVector2D(transform->FindSection("translate"), 0, 0.0f);
 
 		SetTransform(translate, scaleVal, rotateVal);
 	}
 
 	//------------------------------------------------------------------------------
-	KVSection* textAlign = sec->FindSection("textAlign");
 
+	const KVSection* textAlign = sec->FindSection("textAlign");
 	if (textAlign)
 	{
 		m_font.textAlignment = 0;
-
-		for (int i = 0; i < textAlign->values.numElem(); i++)
+		for (EqStringRef alignVal : textAlign->Values<EqStringRef>())
 		{
-			EqStringRef alignVal = KV_GetValueString(textAlign, i);
-
 			if (!alignVal.CompareCaseIns("left"))
 				m_font.textAlignment |= TEXT_ALIGN_LEFT;
 			else if (!alignVal.CompareCaseIns("top"))
@@ -226,7 +230,7 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
 	//------------------------------------------------------------------------------
 
 
-	KVSection* scaling = sec->FindSection("scaling");
+	const KVSection* scaling = sec->FindSection("scaling");
 	if (scaling)
 	{
 		m_scaling = UI_SCALING_NONE;
@@ -363,62 +367,60 @@ Vector2D IUIControl::CalcScaling() const
 
 	Vector2D scale(m_parent->m_sizeDiffPerc);
 
-	if(Manager->GetRootPanel() != m_parent)
+	if(Manager->GetRootPanel() == m_parent)
+		return Vector2D(1.0f, 1.0f);
+
+	Vector2D parentScaling = m_parent->CalcScaling();
+
+	switch (m_scaling)
 	{
-		Vector2D parentScaling = m_parent->CalcScaling();
-
-		switch (m_scaling)
+		case UI_SCALING_INHERIT_MIN:
 		{
-			case UI_SCALING_INHERIT_MIN:
-			{
-				parentScaling = Vector2D(min(parentScaling.x, parentScaling.y));
-				break;
-			}
-			case UI_SCALING_INHERIT_MAX:
-			{
-				parentScaling = Vector2D(max(parentScaling.x, parentScaling.y));
-				break;
-			}
-			case UI_SCALING_ASPECT_W:
-			{
-				const float aspectCorrection = scale.x / scale.y;
-				scale.y *= aspectCorrection;
-				break;
-			}
-			case UI_SCALING_ASPECT_H:
-			{
-				const float aspectCorrection = scale.y / scale.x;
-				scale.x *= aspectCorrection;
-				break;
-			}
-			case UI_SCALING_ASPECT_MIN:
-			{
-				const float aspectCorrectionW = scale.x / scale.y;
-				const float aspectCorrectionH = scale.y / scale.x;
-
-				if (aspectCorrectionW < aspectCorrectionH)
-					scale.x *= aspectCorrectionH;
-				else
-					scale.y *= aspectCorrectionW;
-				break;
-			}
-			case UI_SCALING_ASPECT_MAX:
-			{
-				const float aspectCorrectionW = scale.x / scale.y;
-				const float aspectCorrectionH = scale.y / scale.x;
-
-				if (aspectCorrectionW > aspectCorrectionH)
-					scale.x *= aspectCorrectionH;
-				else
-					scale.y *= aspectCorrectionW;
-				break;
-			}
+			parentScaling = Vector2D(min(parentScaling.x, parentScaling.y));
+			break;
 		}
+		case UI_SCALING_INHERIT_MAX:
+		{
+			parentScaling = Vector2D(max(parentScaling.x, parentScaling.y));
+			break;
+		}
+		case UI_SCALING_ASPECT_W:
+		{
+			const float aspectCorrection = scale.x / scale.y;
+			scale.y *= aspectCorrection;
+			break;
+		}
+		case UI_SCALING_ASPECT_H:
+		{
+			const float aspectCorrection = scale.y / scale.x;
+			scale.x *= aspectCorrection;
+			break;
+		}
+		case UI_SCALING_ASPECT_MIN:
+		{
+			const float aspectCorrectionW = scale.x / scale.y;
+			const float aspectCorrectionH = scale.y / scale.x;
 
-		return scale * parentScaling;
+			if (aspectCorrectionW < aspectCorrectionH)
+				scale.x *= aspectCorrectionH;
+			else
+				scale.y *= aspectCorrectionW;
+			break;
+		}
+		case UI_SCALING_ASPECT_MAX:
+		{
+			const float aspectCorrectionW = scale.x / scale.y;
+			const float aspectCorrectionH = scale.y / scale.x;
+
+			if (aspectCorrectionW > aspectCorrectionH)
+				scale.x *= aspectCorrectionH;
+			else
+				scale.y *= aspectCorrectionW;
+			break;
+		}
 	}
 
-	return Vector2D(1.0f, 1.0f);
+	return scale * parentScaling;
 }
 
 IAARectangle IUIControl::GetClientRectangle() const
@@ -430,61 +432,61 @@ IAARectangle IUIControl::GetClientRectangle() const
 
 	IAARectangle thisRect(scaledPos, scaledPos + scaledSize);
 
-	if(m_parent)
+	if (!m_parent)
+		return thisRect;
+
+	// move by anchor border
+	if (m_anchors > 0)
 	{
-		// move by anchor border
-		if (m_anchors > 0)
-		{
-			const IVector2D parentSizeDiff = m_parent->m_sizeDiff;
+		const IVector2D parentSizeDiff = m_parent->m_sizeDiff;
 
-			const IVector2D offsetAnchorsLT((m_anchors & UI_BORDER_LEFT) > 0, (m_anchors & UI_BORDER_TOP) > 0);
-			const IVector2D offsetAnchorsRB((m_anchors & UI_BORDER_RIGHT) > 0, (m_anchors & UI_BORDER_BOTTOM) > 0);
+		const IVector2D offsetAnchorsLT((m_anchors & UI_BORDER_LEFT) > 0, (m_anchors & UI_BORDER_TOP) > 0);
+		const IVector2D offsetAnchorsRB((m_anchors & UI_BORDER_RIGHT) > 0, (m_anchors & UI_BORDER_BOTTOM) > 0);
 
-			const Vector2D anchorSizeLT = parentSizeDiff * offsetAnchorsLT;
-			const Vector2D anchorSizeRB = parentSizeDiff * offsetAnchorsRB;
+		const Vector2D anchorSizeLT = parentSizeDiff * offsetAnchorsLT;
+		const Vector2D anchorSizeRB = parentSizeDiff * offsetAnchorsRB;
 
-			// apply offset of each bound based on anchors
-			// all anchors enabled will just stretch elements
-			thisRect.leftTop += anchorSizeRB - anchorSizeLT;
-			thisRect.rightBottom += anchorSizeRB;
-		}
+		// apply offset of each bound based on anchors
+		// all anchors enabled will just stretch elements
+		thisRect.leftTop += anchorSizeRB - anchorSizeLT;
+		thisRect.rightBottom += anchorSizeRB;
+	}
 
-		const IAARectangle parentRect = m_parent->GetClientRectangle();
+	const IAARectangle parentRect = m_parent->GetClientRectangle();
 
-		// compute alignment to the parent client rectangle
-		if(m_alignment & UI_ALIGN_LEFT)
-		{
-			thisRect.leftTop.x += parentRect.leftTop.x;
-			thisRect.rightBottom.x += parentRect.leftTop.x;
-		} 
-		else if(m_alignment & UI_ALIGN_RIGHT)
-		{
-			thisRect.leftTop.x += parentRect.rightBottom.x - scaledSize.x - scaledPos.x * 2;
-			thisRect.rightBottom.x += parentRect.rightBottom.x - scaledSize.x - scaledPos.x * 2;
-		}
-		else if (m_alignment & UI_ALIGN_HCENTER)
-		{
-			const IVector2D center = parentRect.GetCenter();
-			thisRect.leftTop.x += center.x - scaledSize.x / 2;
-			thisRect.rightBottom.x += center.x - scaledSize.x / 2;
-		}
+	// compute alignment to the parent client rectangle
+	if(m_alignment & UI_ALIGN_LEFT)
+	{
+		thisRect.leftTop.x += parentRect.leftTop.x;
+		thisRect.rightBottom.x += parentRect.leftTop.x;
+	} 
+	else if(m_alignment & UI_ALIGN_RIGHT)
+	{
+		thisRect.leftTop.x += parentRect.rightBottom.x - scaledSize.x - scaledPos.x * 2;
+		thisRect.rightBottom.x += parentRect.rightBottom.x - scaledSize.x - scaledPos.x * 2;
+	}
+	else if (m_alignment & UI_ALIGN_HCENTER)
+	{
+		const IVector2D center = parentRect.GetCenter();
+		thisRect.leftTop.x += center.x - scaledSize.x / 2;
+		thisRect.rightBottom.x += center.x - scaledSize.x / 2;
+	}
 
-		if (m_alignment & UI_ALIGN_TOP)
-		{
-			thisRect.leftTop.y += parentRect.leftTop.y;
-			thisRect.rightBottom.y += parentRect.leftTop.y;
-		}
-		else if(m_alignment & UI_ALIGN_BOTTOM)
-		{
-			thisRect.leftTop.y += parentRect.rightBottom.y - scaledSize.y - scaledPos.y * 2;
-			thisRect.rightBottom.y += parentRect.rightBottom.y - scaledSize.y - scaledPos.y * 2;
-		}
-		else if (m_alignment & UI_ALIGN_VCENTER)
-		{
-			const IVector2D center = parentRect.GetCenter();
-			thisRect.leftTop.y += center.y - scaledSize.y / 2;
-			thisRect.rightBottom.y += center.y - scaledSize.y / 2;
-		}
+	if (m_alignment & UI_ALIGN_TOP)
+	{
+		thisRect.leftTop.y += parentRect.leftTop.y;
+		thisRect.rightBottom.y += parentRect.leftTop.y;
+	}
+	else if(m_alignment & UI_ALIGN_BOTTOM)
+	{
+		thisRect.leftTop.y += parentRect.rightBottom.y - scaledSize.y - scaledPos.y * 2;
+		thisRect.rightBottom.y += parentRect.rightBottom.y - scaledSize.y - scaledPos.y * 2;
+	}
+	else if (m_alignment & UI_ALIGN_VCENTER)
+	{
+		const IVector2D center = parentRect.GetCenter();
+		thisRect.leftTop.y += center.y - scaledSize.y / 2;
+		thisRect.rightBottom.y += center.y - scaledSize.y / 2;
 	}
 
 	return thisRect;
@@ -727,8 +729,7 @@ void IUIControl::RemoveChild(IUIControl* pControl, bool destroy)
 
 bool IUIControl::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
 {
-
-	///Msg("ProcessMouseEvents on %s\n", m_name.ToCString());
+	//Msg("ProcessMouseEvents on %s\n", m_name.ToCString());
 	return true;
 }
 
@@ -738,7 +739,7 @@ bool IUIControl::ProcessKeyboardEvents(int nKeyButtons, int flags)
 	return true;
 }
 
-int IUIControl::CommandCb(IUIControl* control, ui_event& event, void* userData)
+int IUIControl::CommandCb(IUIControl* control, const EvtHandler& event, void* userData)
 {
 	if (UICMD_ARGC == 0)
 		return 1;
@@ -773,14 +774,13 @@ int IUIControl::CommandCb(IUIControl* control, ui_event& event, void* userData)
 	return 1;
 }
 
-static int s_uidCounter = 1;
-
-int	IUIControl::AddEventHandler(const char* pszName, uiEventCallback_t cb)
+int	IUIControl::AddEventHandler(const char* pszName, EvtCallback&& cb)
 {
-	ui_event evt(pszName, cb);
-	evt.uid = s_uidCounter++;
+	EvtHandler& evt = m_eventCallbacks.append();
+	evt.uid = StringToHash(pszName, true);
+	evt.name = pszName;
+	evt.callback = std::move(cb);
 
-	m_eventCallbacks.append(evt);
 	return evt.uid;
 }
 
@@ -810,13 +810,13 @@ void IUIControl::RemoveEventHandlers(const char* name)
 int IUIControl::RaiseEvent(const char* name, void* userData)
 {
 	int result = -1;
-	for (int i = 0; i < m_eventCallbacks.numElem(); i++)
+	for (const EvtHandler& handler : m_eventCallbacks)
 	{
-		if (!m_eventCallbacks[i].name.CompareCaseIns(name))
-		{
-			result = m_eventCallbacks[i].callback(this, m_eventCallbacks[i], userData);
-			break;
-		}
+		if (handler.name.CompareCaseIns(name))
+			continue;
+
+		result = handler.callback(this, handler, userData);
+		break;
 	}
 
 	return result;
@@ -825,13 +825,13 @@ int IUIControl::RaiseEvent(const char* name, void* userData)
 int IUIControl::RaiseEventUid(int uid, void* userData)
 {
 	int result = -1;
-	for (int i = 0; i < m_eventCallbacks.numElem(); i++)
+	for (const EvtHandler& handler : m_eventCallbacks)
 	{
-		if (!m_eventCallbacks[i].uid == uid)
-		{
-			result = m_eventCallbacks[i].callback(this, m_eventCallbacks[i], userData);
-			break;
-		}
+		if (handler.uid != uid)
+			continue;
+
+		result = handler.callback(this, handler, userData);
+		break;
 	}
 
 	return result;

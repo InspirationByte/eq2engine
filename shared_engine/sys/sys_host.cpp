@@ -961,7 +961,7 @@ void CGameHost::TrapKey_Event( int key, bool down )
 	if(g_consoleInput->KeyPress( key, down ))
 		return;
 
-	if( equi::Manager->ProcessKeyboardEvents(key, down ? equi::UIEVENT_DOWN : equi::UIEVENT_UP ) )
+	if( equi::Manager->ProcessKeyboardEvents(key, down ? equi::UI_EVENT_DOWN : equi::UI_EVENT_UP ) )
 		return;
 
 	if(EqStateMgr::GetCurrentState())
@@ -984,7 +984,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if( g_consoleInput->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
-	if( equi::Manager->ProcessMouseEvents( x, y, buttons, down ? equi::UIEVENT_DOWN : equi::UIEVENT_UP) )
+	if( equi::Manager->ProcessMouseEvents( x, y, buttons, down ? equi::UI_EVENT_DOWN : equi::UI_EVENT_UP) )
 		return;
 
 	if(m_clicks_to_touch.GetBool())
@@ -1006,7 +1006,7 @@ void CGameHost::TrapMouseMove_Event(int x, int y, int dx, int dy)
 
 	g_consoleInput->MousePos( m_mousePos );
 
-	if( equi::Manager->ProcessMouseEvents(x, y, 0, equi::UIEVENT_MOUSE_MOVE) )
+	if( equi::Manager->ProcessMouseEvents(x, y, 0, equi::UI_EVENT_MOUSE_MOVE) )
 		return;
 
 	Vector2D delta(-dx, -dy);

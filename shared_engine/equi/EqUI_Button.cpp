@@ -41,16 +41,16 @@ void Button::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassR
 // events
 bool Button::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
 {
-	if(flags & UIEVENT_MOUSE_OUT)
+	if(flags & UI_EVENT_MOUSE_OUT)
 		m_state = false;
 
 	if(nMouseButtons & 1)
 	{
-		if(flags & UIEVENT_DOWN)
+		if(flags & UI_EVENT_DOWN)
 		{
 			m_state = true;
 		}
-		else if(flags & UIEVENT_UP)
+		else if(flags & UI_EVENT_UP)
 		{
 			if(m_state)
 				RaiseEvent( "click", nullptr ); // TODO: ButtonClickEventData

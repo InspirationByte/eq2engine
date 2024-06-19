@@ -180,13 +180,13 @@ bool Panel::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouse
 {
 	if(nMouseButtons & 1)
 	{
-		m_grabbed = (flags & UIEVENT_UP) ? false : true;
+		m_grabbed = (flags & UI_EVENT_UP) ? false : true;
 	}
 
-	if((flags & UIEVENT_MOUSE_OUT) && m_grabbed)
+	if((flags & UI_EVENT_MOUSE_OUT) && m_grabbed)
 		m_grabbed = false;
 
-	if(m_grabbed && (flags & UIEVENT_MOUSE_MOVE))
+	if(m_grabbed && (flags & UI_EVENT_MOUSE_MOVE))
 	{
 		m_position += mouseDelta;
 	}

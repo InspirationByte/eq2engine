@@ -29,34 +29,26 @@ struct FontStyleParam;
 
 namespace equi
 {
-
-struct ui_event;
+struct EvtHandler;
 class IUIControl;
-typedef int (*uiEventCallback_t)(IUIControl* control, ui_event& event, void* userData);
+using EvtCallback = EqFunction<int(IUIControl*, const EvtHandler&, void*)>;
 
-struct ui_event
+struct EvtHandler
 {
-	ui_event()
-	{}
-
-	ui_event(const char* pszName, uiEventCallback_t cb)
-		: uid(0), name(pszName), callback(cb)
-	{}
-
-	int					uid;
-	EqString			name;
-	uiEventCallback_t	callback { nullptr };
-	Array<EqString>		args{ PP_SL };
+	EvtCallback		callback;
+	Array<EqString>	args{ PP_SL };
+	EqString		name;
+	int				uid{ 0 };
 };
 
-struct ui_transform
+struct Transform
 {
 	float					rotation { 0.0f };
 	Vector2D				translation { 0.0f };
 	Vector2D				scale { 1.0f };
 };
 
-struct ui_fontprops
+struct FontProps
 {
 	IEqFont*				font { nullptr };
 	Vector2D				fontScale { 1 };
@@ -78,8 +70,6 @@ struct ui_fontprops
 class IUIControl
 {
 	friend class CUIManager;
-	//friend class IEqUIEventHandler;
-
 public:
 	IUIControl();
 	virtual ~IUIControl();
@@ -176,7 +166,7 @@ public:
 	virtual void				Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
 
 	// Events
-	int							AddEventHandler(const char* pszName, uiEventCallback_t cb);
+	int							AddEventHandler(const char* pszName, EvtCallback&& cb);
 	void						RemoveEventHandler(int handlerId);
 	void						RemoveEventHandlers(const char* name);
 
@@ -189,7 +179,7 @@ protected:
 	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
-	static int					CommandCb(IUIControl* control, ui_event& event, void* userData);
+	static int					CommandCb(IUIControl* control, const EvtHandler& event, void* userData);
 
 	virtual IUIControl*			HitTest(const IVector2D& point) const;
 
@@ -198,10 +188,14 @@ protected:
 	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
 
 	IUIControl*					m_parent{ nullptr };
-
 	List<IUIControl*>			m_childs{ PP_SL };		// child panels
+	Array<EvtHandler>			m_eventCallbacks{ PP_SL };
 
-	Array<ui_event>				m_eventCallbacks{ PP_SL };
+	EqString					m_name;
+	EqWString					m_label;
+
+	FontProps					m_font;
+	Transform					m_transform;
 
 	IVector2D					m_position { 0 };
 	IVector2D					m_size { 64 };
@@ -218,12 +212,6 @@ protected:
 	bool						m_visible{ true };
 	bool						m_selfVisible{ true };
 	bool						m_enabled{ true };
-
-	EqString					m_name;
-	EqWString					m_label;
-
-	ui_fontprops				m_font;
-	ui_transform				m_transform;
 };
 
 template <class T> 

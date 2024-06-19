@@ -74,7 +74,7 @@ void CUIManager::Init()
 	EQUI_REGISTER_CONTROL(HudElement);
 	EQUI_REGISTER_CONTROL(Container);
 
-	m_rootPanel = (equi::Panel*)CreateElement("Panel");
+	m_rootPanel = (Panel*)CreateElement("Panel");
 	m_rootPanel->SetName("equi_root");
 	m_rootPanel->Show();
 
@@ -169,7 +169,7 @@ equi::Panel* CUIManager::GetTopPanel() const
 	auto it = m_rootPanel->m_childs.begin();
 	if (it.atEnd())
 		return nullptr;
-	return static_cast<equi::Panel*>(*it);
+	return static_cast<Panel*>(*it);
 }
 
 void CUIManager::DumpPanelsToConsole()
@@ -178,10 +178,8 @@ void CUIManager::DumpPanelsToConsole()
 
 	for(int i = 0; i < m_panels.numElem(); i++)
 	{
-		if(strlen(m_panels[i]->GetName()) > 0)
-		{
-			Msg("%s (%s)\n", m_panels[i]->GetName(), m_panels[i]->IsVisible() ? "visible" : "hidden");
-		}
+		Panel* panel = m_panels[i];
+		Msg("[%d] %s (%s)\n", i, panel->GetName(), panel->IsVisible() ? "visible" : "hidden");
 	}
 }
 
@@ -239,13 +237,12 @@ void CUIManager::Render()
 		.End()
 	);
 
-	for(int i = 0; i < m_panels.numElem(); i++)
+	for(Panel* panel : m_panels)
 	{
-		if(m_panels[i]->m_screenOverlay)
-		{
-			m_panels[i]->SetPosition(0);
-			m_panels[i]->SetSize(m_viewFrameRect.GetSize());
-		}
+		if (!panel->m_screenOverlay)
+			continue;
+		panel->SetPosition(0);
+		panel->SetSize(m_viewFrameRect.GetSize());
 	}
 
 	// begin from the render panel
@@ -259,13 +256,12 @@ void CUIManager::Render()
 equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)
 {
 	IUIControl* firstCtrl = control;
-
-	while(firstCtrl && arrayFindIndex(m_panels, (equi::Panel*)firstCtrl) == -1)
+	while(firstCtrl && arrayFindIndex(m_panels, (Panel*)firstCtrl) == -1)
 	{
 		firstCtrl = firstCtrl->GetParent();
 	}
 
-	return (equi::Panel*)firstCtrl;
+	return (Panel*)firstCtrl;
 }
 
 bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)
@@ -273,33 +269,31 @@ bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int fla
 	if(!IsWindowsVisible())
 		return false;
 
-	IVector2D mousePos(x,y);
-
-	bool changeFocus = !(flags & UIEVENT_MOUSE_MOVE);
+	const IVector2D mousePos(x,y);
 
 	IUIControl* oldMouseOver = m_mouseOver;
-	m_mouseOver = m_rootPanel->HitTest(IVector2D(x,y));
+	m_mouseOver = m_rootPanel->HitTest(mousePos);
 
 	if(nMouseButtons & 1)
 	{
-		if(flags & UIEVENT_UP)
+		if(flags & UI_EVENT_UP)
 			m_keyboardFocus = m_mouseOver;
 
 		// also set panel focus
-		equi::Panel* panel = GetPanelByElement(m_mouseOver);
+		Panel* panel = GetPanelByElement(m_mouseOver);
 		BringToTop( panel );
 	}
-
 
 	if(oldMouseOver != m_mouseOver)
 	{
 		if(oldMouseOver)
-			oldMouseOver->ProcessMouseEvents(x, y, 0, UIEVENT_MOUSE_OUT | UIEVENT_MOUSE_MOVE);
+			oldMouseOver->ProcessMouseEvents(x, y, 0, UI_EVENT_MOUSE_OUT | UI_EVENT_MOUSE_MOVE);
 
 		if(m_mouseOver)
-			m_mouseOver->ProcessMouseEvents(x, y, 0, UIEVENT_MOUSE_IN | UIEVENT_MOUSE_MOVE);
+			m_mouseOver->ProcessMouseEvents(x, y, 0, UI_EVENT_MOUSE_IN | UI_EVENT_MOUSE_MOVE);
 	}
 
+	const bool changeFocus = !(flags & UI_EVENT_MOUSE_MOVE);
 	if( changeFocus ) // focus only when mouse is not moved
 	{
 		if(m_mouseOver == m_rootPanel) // remove focus if we clicked on root panel
@@ -309,9 +303,8 @@ bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int fla
 	}
 
 	bool result = false;
-
 	if( m_mouseOver )
-		result = m_mouseOver->ProcessMouseEvents(mousePos, mousePos-m_mousePos, nMouseButtons, flags);
+		result = m_mouseOver->ProcessMouseEvents(mousePos, mousePos - m_mousePos, nMouseButtons, flags);
 
 	m_mousePos = mousePos;
 
