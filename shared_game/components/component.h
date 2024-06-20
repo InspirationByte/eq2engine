@@ -35,13 +35,9 @@ protected:
 #define DECLARE_COMPONENT_DERIVED(name, baseClass) \
 	using BaseClass = baseClass; \
 	static constexpr const char Name[] = name; \
-	static constexpr int NameHash{ StringToHashConst(baseClass::Name) }; \
+	static constexpr int NameHash{ baseClass::NameHash }; \
 	virtual const char* GetName() const override { return name; } \
 	virtual int GetNameHash() const override { return NameHash; }
-
-// hard-linked component instantiator
-#define	ADD_COMPONENT_GETTER(type)	Type* Get<Type>() const { return &m_inst##Type; }
-#define	ADD_COMPONENT_INST(type)	Type m_inst##Type(this);
 
 template<typename TComponentBase>
 struct COMPONENT_STORAGE
@@ -56,111 +52,126 @@ struct COMPONENT_STORAGE
 	Array<TComponentBase*>	components;
 };
 
-namespace ComponentHostImpl
+
+//-------------------------------------------------
+// Put this in class declaration
+
+template<typename TComponentBase, typename THostType>
+class ComponentContainer : COMPONENT_STORAGE<TComponentBase>
 {
-	template<typename TComponentBase>
-	inline TComponentBase* GetComponent(const COMPONENT_STORAGE<TComponentBase>& storage, int hash)
+public:
+	using WalkFunc = EqFunction<void(TComponentBase* pComponent)>;
+
+	using STORAGE = COMPONENT_STORAGE<TComponentBase>;
+	ComponentContainer() : STORAGE(PP_SL) {}
+	~ComponentContainer() = default;
+
+	void			RemoveAllComponents();
+
+	TComponentBase*	GetComponent(int hash) const;
+	void			AddComponent(int hash, TComponentBase* component);
+	void			RemoveComponent(int hash);
+
+	template<class CType>
+	CType*			Get() const;
+
+	template<class CType>
+	void			Remove();
+	
+	template<class CType>
+	CType*			Add();
+
+	void			ForEachComponent(const WalkFunc& componentWalkFn);
+};
+
+template<typename TComponentBase, typename THostType>
+TComponentBase* ComponentContainer<TComponentBase, THostType>::GetComponent(int hash) const
+{
+	auto it = STORAGE::idToComponent.find(hash);
+	if (it.atEnd())
+		return nullptr;
+	return STORAGE::components[*it];
+}
+
+template<typename TComponentBase, typename THostType>
+void ComponentContainer<TComponentBase, THostType>::AddComponent(int hash, TComponentBase* component)
+{
+	auto existingIt = STORAGE::idToComponent.find(hash);
+	if (existingIt.atEnd())
 	{
-		auto it = storage.idToComponent.find(hash);
-		if (it.atEnd())
-			return nullptr;
-		return storage.components[*it];
+		const int newIndex = STORAGE::components.append(component);
+		STORAGE::idToComponent.insert(hash, newIndex);
 	}
-
-	template<typename TComponentBase>
-	inline void AddComponent(COMPONENT_STORAGE<TComponentBase>& storage, int hash, TComponentBase* component)
+	else
 	{
-		auto existingIt = storage.idToComponent.find(hash);
-		if (existingIt.atEnd())
-		{
-			const int newIndex = storage.components.append(component);
-			storage.idToComponent.insert(hash, newIndex);
-		}
-		else
-		{
-			// add component back to slot
-			storage.components[*existingIt] = component;
-		}
-		component->OnAdded();
+		// add component back to slot
+		STORAGE::components[*existingIt] = component;
 	}
+	component->OnAdded();
+}
 
-	template<typename TComponentBase>
-	inline TComponentBase* GetComponent(const COMPONENT_STORAGE<TComponentBase>& storage, const char* name)
+template<typename TComponentBase, typename THostType>
+void ComponentContainer<TComponentBase, THostType>::RemoveComponent(int hash)
+{
+	auto it = STORAGE::idToComponent.find(hash);
+	if (it.atEnd())
+		return;
+
+	TComponentBase* component = STORAGE::components[*it];
+	if (component)
 	{
-		const int hash = StringToHash(name);
-		return GetComponent(storage, hash);
-	}
-
-	template<typename TComponentBase>
-	inline void ForEachComponent(COMPONENT_STORAGE<TComponentBase>& storage, const EqFunction<void(TComponentBase* pComponent)>& componentWalkFn)
-	{
-		ASSERT(componentWalkFn);
-		for (TComponentBase* component : storage.components)
-		{
-			if (!component)
-				continue;
-			componentWalkFn(component);
-		}
-	}
-
-	template<typename TComponentBase>
-	inline void RemoveComponent(COMPONENT_STORAGE<TComponentBase>& storage, int hash)
-	{
-		auto it = storage.idToComponent.find(hash);
-		if (it.atEnd())
-			return;
-
-		TComponentBase* component = storage.components[*it];
-		if(component)
-		{
-			storage.components[*it] = nullptr;
-			component->OnRemoved();
-			delete component;
-		}
-	}
-
-	template<typename TComponentBase>
-	inline void RemoveComponent(COMPONENT_STORAGE<TComponentBase>& storage, const char* name)
-	{
-		const int hash = StringToHash(name);
-		RemoveComponent(storage, hash);
-	}
-
-	template<typename TComponentBase>
-	inline void RemoveAll(COMPONENT_STORAGE<TComponentBase>& storage)
-	{
-		for (TComponentBase* component : storage.components)
-		{
-			if (!component)
-				continue;
-			component->OnRemoved();
-			delete component;
-		}
-		storage.components.clear(true);
-		storage.idToComponent.clear(true);
+		STORAGE::components[*it] = nullptr;
+		component->OnRemoved();
+		delete component;
 	}
 }
 
-//-------------------------------------------------
+template<typename TComponentBase, typename THostType>
+template<class CType>
+CType* ComponentContainer<TComponentBase, THostType>::Get() const
+{
+	return static_cast<CType*>(GetComponent(CType::NameHash));
+}
 
-// Put this in class declaration
-#define DECLARE_COMPONENT_HOST(hostType, componentBase) \
-	private: \
-		COMPONENT_STORAGE<componentBase>	m_components{ PP_SL }; \
-	public: \
-		inline componentBase*			GetComponent(int hash) const { return ComponentHostImpl::GetComponent(m_components, hash); } \
-		inline void						AddComponent(int hash, componentBase* component) { return ComponentHostImpl::AddComponent(m_components, hash, component); } \
-		inline componentBase*			Get(const char* name) const { return ComponentHostImpl::GetComponent(m_components, name); } \
-		template<class CType> CType*	Get() const { return static_cast<CType*>(ComponentHostImpl::GetComponent<componentBase>(m_components, CType::NameHash)); } \
-		template<class CType> void		Remove() { ComponentHostImpl::RemoveComponent<componentBase>(m_components, CType::NameHash); } \
-		inline void						Remove(const char* name) { return ComponentHostImpl::RemoveComponent(m_components, name); } \
-		inline void						RemoveAllComponents() { ComponentHostImpl::RemoveAll(m_components); } \
-		template<class CType> CType*	Add() { \
-			ASSERT_MSG(GetComponent(CType::NameHash) == nullptr, "Component %s is already added", CType::Name); \
-			CType* component = PPNewSL(PPSourceLine::Make(CType::Name, 0)) CType(this); \
-			ComponentHostImpl::AddComponent<componentBase>(m_components, CType::NameHash, component); \
-			return component; \
-		}\
-		void ForEachComponent(const EqFunction<void(componentBase* pComponent)>& componentWalkFn) {\
-			ComponentHostImpl::ForEachComponent(m_components, componentWalkFn);\
-		}
+template<typename TComponentBase, typename THostType>
+template<class CType>
+void ComponentContainer<TComponentBase, THostType>::Remove()
+{
+	RemoveComponent(CType::NameHash);
+}
+
+template<typename TComponentBase, typename THostType>
+void ComponentContainer<TComponentBase, THostType>::RemoveAllComponents()
+{
+	for (TComponentBase* component : STORAGE::components)
+	{
+		if (!component)
+			continue;
+		component->OnRemoved();
+		delete component;
+	}
+	STORAGE::components.clear(true);
+	STORAGE::idToComponent.clear(true);
+}
+
+template<typename TComponentBase, typename THostType>
+template<class CType> 
+CType* ComponentContainer<TComponentBase, THostType>::Add()
+{
+	ASSERT_MSG(GetComponent(CType::NameHash) == nullptr, "Component %s is already added", CType::Name);
+	CType* component = PPNewSL(PPSourceLine::Make(CType::Name, 0)) CType(static_cast<THostType*>(this));
+	AddComponent(CType::NameHash, component);
+	return component;
+}
+
+template<typename TComponentBase, typename THostType>
+void ComponentContainer<TComponentBase, THostType>::ForEachComponent(const WalkFunc& componentWalkFn)
+{
+	ASSERT(componentWalkFn);
+	for (TComponentBase* component : STORAGE::components)
+	{
+		if (!component)
+			continue;
+		componentWalkFn(component);
+	}
+}
