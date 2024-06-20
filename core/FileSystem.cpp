@@ -804,11 +804,12 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 
 	if (!WalkOverSearchPaths(searchFlags, packageName, walkFileFunc))
 	{
-		delete reader;
 		MsgError("Cannot open package '%s'\n", packageName);
-
 		return nullptr;
 	}
+
+	if (!reader)
+		return nullptr;
 
 	reader->SetSearchPath(SP_ROOT);
 	reader->SetKey(m_accessKey);
