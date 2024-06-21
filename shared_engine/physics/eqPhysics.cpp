@@ -1210,47 +1210,55 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	if(!m_grid)
 		return;
 
-	PROF_EVENT("EqPhysics SimulateStep");
-
 	// save delta
 	m_fDt = deltaTime;
 
-	// prepare all the constraints
-	for (IEqPhysicsConstraint* constr : m_constraints)
 	{
-		if (!constr->IsEnabled())
-			continue;
-		constr->PreApply( m_fDt );
+		PROF_EVENT("Constraints PreApply");
+		// prepare all the constraints
+		for (IEqPhysicsConstraint* constr : m_constraints)
+		{
+			if (!constr->IsEnabled())
+				continue;
+			constr->PreApply(m_fDt);
+		}
 	}
 
-	// update the controllers
-	for (IEqPhysicsController* contr : m_controllers)
 	{
-		if (!contr->IsEnabled())
-			continue;
-		contr->Update( m_fDt );
+		PROF_EVENT("Controllers Update");
+		// update the controllers
+		for (IEqPhysicsController* contr : m_controllers)
+		{
+			if (!contr->IsEnabled())
+				continue;
+			contr->Update(m_fDt);
+		}
 	}
 	
 	Array<CEqRigidBody*> movingMoveables{ PP_SL };
 	movingMoveables.resize(m_moveable.numElem());
 
-	// move all bodies
-	for (CEqRigidBody* body : m_moveable)
 	{
-		// execute pre-simulation callbacks
-		IEqPhysCallback* callbacks = body->m_callbacks;
+		PROF_EVENT("Moving Bodies Integrate");
 
-		if (callbacks) 	// execute pre-simulation callbacks
-			callbacks->PreSimulate(m_fDt);
+		// move all bodies
+		for (CEqRigidBody* body : m_moveable)
+		{
+			// execute pre-simulation callbacks
+			IEqPhysCallback* callbacks = body->m_callbacks;
 
-		// clear contact pairs and results
-		body->ClearContacts();
+			if (callbacks) 	// execute pre-simulation callbacks
+				callbacks->PreSimulate(m_fDt);
 
-		// apply velocities
-		IntegrateSingle(body);
+			// clear contact pairs and results
+			body->ClearContacts();
 
-		if (!body->IsFrozen())
-			movingMoveables.append(body);
+			// apply velocities
+			IntegrateSingle(body);
+
+			if (!body->IsFrozen())
+				movingMoveables.append(body);
+		}
 	}
 
 	m_fDt = deltaTime;
@@ -1258,33 +1266,45 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	if(preIntegrFunc)
 		preIntegrFunc(m_fDt, iteration);
 
-	// calculate collisions
-	for (CEqRigidBody* body : movingMoveables)
-		DetectCollisionsSingle(body);
-
-	// TODO: job barrier
-
-	// solve positions
-	for (CEqRigidBody* body : movingMoveables)
-		body->Update(m_fDt);
-	
-	// process generated contact pairs
-	for (CEqRigidBody* body : movingMoveables)
 	{
-		for (ContactPair_t& pair: body->m_contactPairs)
-			ProcessContactPair(pair);
-
-		IEqPhysCallback* callbacks = body->m_callbacks;
-		if (callbacks) // execute post simulation callbacks
-			callbacks->PostSimulate(m_fDt);
+		PROF_EVENT("Moving Bodies CollDet");
+		// calculate collisions
+		for (CEqRigidBody* body : movingMoveables)
+			DetectCollisionsSingle(body);
 	}
 
-	// update all constraints
-	for (IEqPhysicsConstraint* constr : m_constraints)
 	{
-		if (!constr->IsEnabled())
-			continue;
-		constr->Apply( m_fDt );
+		PROF_EVENT("Moving Bodies Update");
+		// solve positions
+		for (CEqRigidBody* body : movingMoveables)
+			body->Update(m_fDt);
+	}
+	
+	{
+		PROF_EVENT("Moving Bodies Process Contact Pairs");
+
+		// process generated contact pairs
+		for (CEqRigidBody* body : movingMoveables)
+		{
+			for (ContactPair_t& pair : body->m_contactPairs)
+				ProcessContactPair(pair);
+
+			IEqPhysCallback* callbacks = body->m_callbacks;
+			if (callbacks) // execute post simulation callbacks
+				callbacks->PostSimulate(m_fDt);
+		}
+	}
+
+	{
+		PROF_EVENT("Constraits apply");
+
+		// update all constraints
+		for (IEqPhysicsConstraint* constr : m_constraints)
+		{
+			if (!constr->IsEnabled())
+				continue;
+			constr->Apply(m_fDt);
+		}
 	}
 
 	m_numRayQueries = 0;
