@@ -2,10 +2,10 @@
 #include "NetObject.h"
 #include "Buffer.h"
 
-void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList)
+void PackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer, Array<uint>& changeList)
 {
 #ifndef EDITOR
-	if (map->m_numProps == 1 && map->m_props[0].size == 0)
+	if (!map->props.numElem())
 		return;
 
 	int numWrittenProps = 0;
@@ -14,10 +14,8 @@ void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networki
 	const int startPos = stream.Tell();
 	stream.Write(&numWrittenProps, 1, sizeof(numWrittenProps));
 
-	for (int i = 0; i < map->m_numProps; i++)
+	for (const NetProperty& prop : map->props)
 	{
-		const netprop_t& prop = map->m_props[i];
-
 		if (changeList.numElem() && arrayFindIndex(changeList, prop.offset) == -1)
 			continue;
 
@@ -45,22 +43,22 @@ void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networki
 #endif
 }
 
-void UnpackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer)
+void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer)
 {
 #ifndef EDITOR
-	if (map->m_numProps == 1 && map->m_props[0].size == 0)
+	if (!map->props.numElem())
 		return;
 
 	const int numWrittenProps = buffer->ReadInt();
 	for (int i = 0; i < numWrittenProps; i++)
 	{
-		const netprop_t* found = nullptr;
+		const NetProperty* found = nullptr;
 		const int nameHash = buffer->ReadInt();
-		for (int j = 0; j < map->m_numProps; j++)
+		for (int j = 0; j < map->props.numElem(); j++)
 		{
-			if (map->m_props[j].nameHash == nameHash)
+			if (map->props[j].nameHash == nameHash)
 			{
-				found = &map->m_props[j];
+				found = &map->props[j];
 				break;
 			}
 		}

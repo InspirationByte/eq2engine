@@ -9,10 +9,12 @@
 
 namespace Networking { class Buffer; }
 
-template <class TYPE, class CHANGER>
+template <class _TYPE, class CHANGER>
 class CNetworkVarBase
 {
 public:
+	using TYPE = _TYPE;
+
 	CNetworkVarBase() = default;
 	CNetworkVarBase(const TYPE& val) 
 		: m_value(val)
@@ -140,7 +142,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 // Internal macros used in definitions of network vars.
 #define NETWORK_VAR_DECL( type, name, base ) \
 	friend class NetworkVar_##name; \
-	typedef ThisClass NetworkVar_##name##Cntr; \
+	using NetworkVar_##name##Cntr = ThisClass ; \
 	struct NetworkVar_##name { \
 		static inline void OnNetworkStateChanged( void* ptr ) { \
 			DispatchNetworkStateChanged((NetworkVar_##name##Cntr*)(((uintptr_t)ptr) - offsetOf(NetworkVar_##name##Cntr,name)), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
@@ -156,7 +158,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 
 #define CNetworkVarEmbedded( type, name ) \
 	friend class NetworkVar_##name; \
-	typedef ThisClass NetworkVar_##name##Cntr; \
+	using NetworkVar_##name##Cntr = ThisClass ; \
 	struct NetworkVar_##name : public type { \
 		template< class T > NetworkVar_##name& operator=( const T &val ) { *((type*)this) = val; return *this; } \
 		void CopyFrom( const type &src ) { *((type *)this) = src; OnNetworkStateChanged(this); } \
@@ -194,104 +196,107 @@ enum ENetPropTypes
 	NETPROP_NETPROP,		// nesting
 };
 
-struct netvariablemap_t;
+struct NetPropertyMap;
 
 // network property address holder
-struct netprop_t
+struct NetProperty
 {
-	const char*			name;
-	int					nameHash;
+	const char*		name{ nullptr };
+	int				nameHash{ 0 };
 
-	int					flags;		// ENetPropFlags
-	int					type;		// ENetPropTypes
+	int				flags{ 0 };		// ENetPropFlags
+	int				type{ 0 };		// ENetPropTypes
 
-	uint				offset;
-	uint				size;
+	uint			offset{ 0 };
+	uint			size{ 0 };
 
-	netvariablemap_t*	nestedMap;
+	NetPropertyMap* nestedMap{ nullptr };
 };
 
-static inline void HashNetPropNames(netprop_t* props, int numProps)
-{
-	for (int i = 0; i < numProps; i++)
-		props[i].nameHash = props[i].name ? StringToHash(props[i].name) : 0;
-}
-
 // variable map basics
-struct netvariablemap_t
+struct NetPropertyMap
 {
-	const char*			m_mapName;
-	netvariablemap_t*	m_baseMap;
-	int16				m_numProps;
-	netprop_t*			m_props;
+	const char*				mapNam{ nullptr };
+	NetPropertyMap*			baseMap{ nullptr };
+	ArrayCRef<NetProperty>	props{ nullptr };
 };
 
 #define BEGIN_NETWORK_TABLE_GUTS( className ) \
-	template <typename T> netvariablemap_t *NetTableInit(T *); \
-	template <> netvariablemap_t *NetTableInit<className>( className * ); \
+	template <typename T> NetPropertyMap* NetTableInit(T *); \
+	template<> NetPropertyMap* NetTableInit<className>( className * ); \
 	namespace className##_NetTableInit { \
-		netvariablemap_t* g_NetTableHolder = NetTableInit( (className *)NULL );  \
+		NetPropertyMap* g_NetTableHolder = NetTableInit( (className *)nullptr );  \
 	} \
-	template <> netvariablemap_t *NetTableInit<className>( className * ) { \
-		typedef className classNameTypedef; \
-		static netprop_t netTableDesc[] = { \
-			{ nullptr, 0, 0, 0, 0, 0 },
+	template<> NetPropertyMap* NetTableInit<className>( className * ) { \
+		using NetPropertyHostType = className; \
+		static const NetProperty netTableDesc[] = { \
+			{},
 
 #define END_NETWORK_TABLE() \
 		}; \
-		if ( sizeof( netTableDesc ) > sizeof( netTableDesc[0] ) ) { \
-			classNameTypedef::m_NetworkVariableMap.m_numProps = elementsOf( netTableDesc ) - 1; \
-			classNameTypedef::m_NetworkVariableMap.m_props = &netTableDesc[1]; \
-		} else { \
-			classNameTypedef::m_NetworkVariableMap.m_numProps = 1; \
-			classNameTypedef::m_NetworkVariableMap.m_props = netTableDesc; \
-		} \
-		HashNetPropNames(netTableDesc, elementsOf( netTableDesc ));\
-		return &classNameTypedef::m_NetworkVariableMap; \
+		if (sizeof(netTableDesc) > sizeof(netTableDesc[0])) \
+			NetPropertyHostType::netPropertyMap.props = ArrayCRef(netTableDesc, elementsOf(netTableDesc)); \
+		return &NetPropertyHostType::netPropertyMap; \
 	}
 
 #define BEGIN_NETWORK_TABLE( className ) \
-	netvariablemap_t className::m_NetworkVariableMap = { #className, &BaseClass::m_NetworkVariableMap, 0, NULL }; \
-	netvariablemap_t *className::GetNetworkTableMap( void ) { return &m_NetworkVariableMap; } \
+	NetPropertyMap className::netPropertyMap = { #className, &BaseClass::netPropertyMap, nullptr }; \
+	NetPropertyMap* className::GetNetPropertyMap() { return &netPropertyMap; } \
 	BEGIN_NETWORK_TABLE_GUTS( className )
 
 #define BEGIN_NETWORK_TABLE_NO_BASE( className ) \
-	netvariablemap_t className::m_NetworkVariableMap = { #className, NULL, 0, NULL }; \
-	netvariablemap_t* className::GetNetworkTableMap( void ) { return &m_NetworkVariableMap; } \
+	NetPropertyMap className::netPropertyMap = { #className, nullptr, nullptr }; \
+	NetPropertyMap* className::GetNetPropertyMap() { return &netPropertyMap; } \
 	BEGIN_NETWORK_TABLE_GUTS( className )
 
 // creates data description map for structures
 #define DECLARE_SIMPLE_NETWORK_TABLE() \
-	static netvariablemap_t m_NetworkVariableMap; \
-	template <typename T> friend netvariablemap_t* NetTableInit(T *);
+	static NetPropertyMap netPropertyMap; \
+	template <typename T> friend NetPropertyMap* NetTableInit(T *);
 
 // creates data description map for classes
 #define	DECLARE_NETWORK_TABLE() \
 	DECLARE_SIMPLE_NETWORK_TABLE() \
-	virtual netvariablemap_t* GetNetworkTableMap( void );
+	virtual NetPropertyMap* GetNetPropertyMap();
 
 //------------------------------------------------------------------------------------
 
 #define memb(structure,member)			(((structure *)0)->member)
 
+template<typename T, bool _enum = std::is_enum_v<T>>
+struct NetPropType;
+
+template<> struct NetPropType<char, false>		{ static const ENetPropTypes type = NETPROP_BYTE; };
+template<> struct NetPropType<short, false>		{ static const ENetPropTypes type = NETPROP_SHORT; };
+template<> struct NetPropType<int, false>		{ static const ENetPropTypes type = NETPROP_INT; };
+template<> struct NetPropType<float, false>		{ static const ENetPropTypes type = NETPROP_FLOAT; };
+template<> struct NetPropType<FReal, false>		{ static const ENetPropTypes type = NETPROP_FREAL; };
+template<> struct NetPropType<Vector2D, false>	{ static const ENetPropTypes type = NETPROP_VECTOR2D; };
+template<> struct NetPropType<Vector3D, false>	{ static const ENetPropTypes type = NETPROP_VECTOR3D; };
+template<> struct NetPropType<Vector4D, false>	{ static const ENetPropTypes type = NETPROP_VECTOR4D; };
+template<> struct NetPropType<FVector2D, false>	{ static const ENetPropTypes type = NETPROP_FVECTOR2D; };
+template<> struct NetPropType<FVector3D, false>	{ static const ENetPropTypes type = NETPROP_FVECTOR3D; };
+template<> struct NetPropType<FVector4D, false>	{ static const ENetPropTypes type = NETPROP_FVECTOR4D; };
+
+template<> struct NetPropType<bool, false> : NetPropType<char> {};
+template<> struct NetPropType<uint8, false> : NetPropType<char> {};
+template<> struct NetPropType<int8, false> : NetPropType<char> {};
+template<> struct NetPropType<uint16, false> : NetPropType<short> {};
+template<> struct NetPropType<uint32, false> : NetPropType<int> {};
+
+template<typename T>
+struct NetPropType<T, true> : NetPropType<std::underlying_type_t<T>, false> {};
+
 // network variable declarations
-#define DEFINE_SENDPROP_BYTE(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_BYTE, offsetOf(classNameTypedef, name), sizeof(ubyte), nullptr},
-#define DEFINE_SENDPROP_INT(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_INT, offsetOf(classNameTypedef, name), sizeof(int), nullptr},
-#define DEFINE_SENDPROP_FLOAT(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_FLOAT, offsetOf(classNameTypedef, name), sizeof(float), nullptr},
-#define DEFINE_SENDPROP_FREAL(name)		{#name, 0, NETPROP_FLAG_SEND, NETPROP_FREAL, offsetOf(classNameTypedef, name), sizeof(FReal), nullptr},
 
-#define DEFINE_SENDPROP_VECTOR2D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR2D, offsetOf(classNameTypedef, name), sizeof(Vector2D), nullptr},
-#define DEFINE_SENDPROP_VECTOR3D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR3D, offsetOf(classNameTypedef, name), sizeof(Vector3D), nullptr},
-#define DEFINE_SENDPROP_VECTOR4D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_VECTOR4D, offsetOf(classNameTypedef, name), sizeof(Vector4D), nullptr},
+#define DEFINE_SENDPROP(name) \
+	{#name, StringToHashConst(#name), NETPROP_FLAG_SEND, NetPropType<typename decltype(NetPropertyHostType::name)::TYPE>::type, offsetOf(NetPropertyHostType, name), sizeof(NetPropertyHostType::name), nullptr},
 
-#define DEFINE_SENDPROP_FVECTOR2D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR2D, offsetOf(classNameTypedef, name), sizeof(FVector2D), nullptr},
-#define DEFINE_SENDPROP_FVECTOR3D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR3D, offsetOf(classNameTypedef, name), sizeof(FVector3D), nullptr},
-#define DEFINE_SENDPROP_FVECTOR4D(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_FVECTOR4D, offsetOf(classNameTypedef, name), sizeof(FVector4D), nullptr},
-
-#define DEFINE_SENDPROP_EMBEDDED(name)	{#name, 0, NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(classNameTypedef, name), 0, &memb(classNameTypedef, name).m_NetworkVariableMap},
+#define DEFINE_SENDPROP_EMBEDDED(name) \
+	{#name, StringToHashConst(#name), NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(NetPropertyHostType, name), 0, &memb(NetPropertyHostType, name).netPropertyMap },
 
 #define NETWORK_CHANGELIST(name)			m_changeList_##name
 #define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
 
-void PackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer, Array<uint>& changeList);
-void UnpackNetworkVariables(void* objectPtr, const netvariablemap_t* map, Networking::Buffer* buffer);
+void PackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer, Array<uint>& changeList);
+void UnpackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking::Buffer* buffer);
