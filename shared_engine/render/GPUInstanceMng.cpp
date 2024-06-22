@@ -14,10 +14,13 @@ static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE_EXTEND		= 512;
 
 void GPUBaseInstanceManager::Initialize()
 {
+	if (m_updatePipeline)
+		return;
+
 	m_updatePipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName("InstanceUtils")
-		.ShaderLayoutId(StringToHashConst("Root"))
+		.ShaderLayoutId(StringToHashConst("InstRoot"))
 		.End()
 	);
 
@@ -97,7 +100,7 @@ static void instRunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputeP
 		.End()
 	);
 	IGPUBindGroupPtr destPoolDataGroup = g_renderAPI->CreateBindGroup(updatePipeline,
-		Builder<BindGroupDesc>().GroupIndex(0)
+		Builder<BindGroupDesc>().GroupIndex(1)
 		.Buffer(0, targetBuffer)
 		.End()
 	);
@@ -202,4 +205,3 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		instRunUpdatePipeline(cmdRecorder, pool->updatePipeline, idxsBuffer, elementIds.numElem(), dataBuffer, pool->buffer);
 	}
 }
-

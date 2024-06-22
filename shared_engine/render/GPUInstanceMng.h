@@ -53,10 +53,11 @@ struct DrawableInstanceList
 constexpr int GPUINST_MAX_COMPONENTS = 8;
 
 // instance component data
-template<int COMP_ID>
+template<int COMP_ID, int IDENT>
 struct GPUInstComponent
 {
 	static constexpr int COMPONENT_ID = COMP_ID;
+	static constexpr int IDENTIFIER = IDENT;
 };
 
 struct GPUInstPool
@@ -77,6 +78,8 @@ struct GPUInstPool
 template<typename T>
 struct GPUInstDataPool : public GPUInstPool
 {
+	using TYPE = T;
+
 	GPUInstDataPool() : GPUInstPool(sizeof(T)) {}
 
 	const void*		GetDataPtr() const override { return data.ptr(); };
@@ -135,22 +138,32 @@ public:
 	void			Set(int instanceId, const TComp& value);
 protected:
 
+	using POOL_STORAGE = std::tuple<Pool<Components>...>;
+
 	template<typename TComp>
 	Pool<TComp>		GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
 
-	std::tuple<Pool<Components>...> m_componentPoolsStorage;
+	template<std::size_t... Is>
+	void			InitPool(std::index_sequence<Is...>);
+
+	POOL_STORAGE	 m_componentPoolsStorage;
 };
 
 //-------------------------------
 
 template<typename...Ts>
+template<std::size_t... Is>
+void GPUInstanceManager<Ts...>::InitPool(std::index_sequence<Is...>)
+{
+	(
+		m_componentPools.insert(std::tuple_element_t<Is, POOL_STORAGE>::TYPE::COMPONENT_ID, &std::get<Is>(m_componentPoolsStorage))
+	, ...);
+}
+
+template<typename...Ts>
 inline GPUInstanceManager<Ts...>::GPUInstanceManager()
 {
-	([&]
-	{
-		Pool<Ts>& compPool = GetComponentPool<Ts>();
-		m_componentPools.insert(Ts::COMPONENT_ID, &compPool);
-	} (), ...);
+	InitPool(std::index_sequence_for<Ts...>{});
 }
 
 template<typename...Ts>
