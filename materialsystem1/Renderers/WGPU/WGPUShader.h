@@ -28,11 +28,18 @@ struct ShaderInfoWGPUImpl
 		int					fileIndex{ -1 };
 	};
 
-	EqString			shaderName;
-	IPackFileReaderPtr	shaderPackFile{ nullptr };
-	Array<VertLayout>	vertexLayouts{ PP_SL };
-	Array<EqString>		defines{ PP_SL };
-	Array<Module>		modules{ PP_SL };
-	Map<uint, int>		modulesMap{ PP_SL };
-	int					shaderKinds{ 0 };
+	struct EntryPoint
+	{
+		EqString	name;
+		int			kind{ -1 };
+	};
+
+	EqString				shaderName;
+	IPackFileReaderPtr		shaderPackFile{ nullptr };
+	Array<VertLayout>		vertexLayouts{ PP_SL };
+	Array<EqString>			defines{ PP_SL };
+	Array<Module>			modules{ PP_SL };
+	Map<int, EntryPoint>	entryPoints{ PP_SL };
+	Map<uint, int>			modulesMap{ PP_SL };
+	int						shaderKinds{ 0 };
 };

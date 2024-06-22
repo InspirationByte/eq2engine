@@ -64,7 +64,7 @@ public:
 //-------------------------------------------------------------
 // Pipeline management
 
-	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const;
+	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const;
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const;
 	IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const;

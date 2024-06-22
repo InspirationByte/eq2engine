@@ -114,7 +114,7 @@ public:
 // Pipeline management
 
 	// loads shader modules (caches in RHI/Driver)
-	virtual void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const = 0;
+	virtual void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const = 0;
 
 	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
 	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;

@@ -476,7 +476,7 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 	m_shaderQueryId = StringToHash(queryStr, true);
 
 	// cache shader modules
-	renderAPI->LoadShaderModules(GetName(), m_shaderQuery);
+	renderAPI->LoadShaderModules(GetName(), m_shaderQuery, "main");
 
 #if 0 // Dawn allows PSO caching and it is quite fast. This entire code needed for first time init anyway.
 	// TODO: more RT format variants

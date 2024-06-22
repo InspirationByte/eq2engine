@@ -222,7 +222,7 @@ public:
 
 //-------------------------------------------------------------
 // Pipeline management
-	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines) const {}
+	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const {}
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const { return IGPUPipelineLayoutPtr(CRefPtr_new(CEmptyIPipelineLayout)); }
 	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const { return IGPUBindGroupPtr(CRefPtr_new(CEmptyBindGroup)); }

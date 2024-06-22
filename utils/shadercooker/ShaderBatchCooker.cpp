@@ -47,6 +47,7 @@ public:
 
 	bool				Init(const char* confFileName, const char* targetName);
 	void				Execute();
+
 private:
 	void				SearchFolderForShaders(const char* wildcard);
 	bool				HasMatchingCRC(uint32 crc);
@@ -95,31 +96,60 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 		return false;
 	}
 
-	int shaderKind = 0;
-	for (const KVSection* key : kinds->Keys())
 	{
-		EqStringRef kindStr(key->name);
+		int shaderKindsFound = 0;
+		for (const KVSection* key : kinds->Keys())
+		{
+			EqStringRef kindStr(key->name);
 
-		if (!kindStr.CompareCaseIns("Vertex"))
-			shaderKind |= SHADERKIND_VERTEX;
-		else if (!kindStr.CompareCaseIns("Fragment"))
-			shaderKind |= SHADERKIND_FRAGMENT;
-		else if (!kindStr.CompareCaseIns("Compute"))
-			shaderKind |= SHADERKIND_COMPUTE;
-	}
+			if (!kindStr.CompareCaseIns("Vertex"))
+				shaderKindsFound |= SHADERKIND_VERTEX;
+			else if (!kindStr.CompareCaseIns("Fragment"))
+				shaderKindsFound |= SHADERKIND_FRAGMENT;
+			else if (!kindStr.CompareCaseIns("Compute"))
+				shaderKindsFound |= SHADERKIND_COMPUTE;
+		}
 
-	if ((shaderKind & SHADERKIND_COMPUTE) == 0 && (shaderKind & SHADERKIND_VERTEX) == 0)
-	{
-		MsgWarning("%s must have Vertex kind section if it doesn't serve Compute\n", shaderDefFileName);
-		return false;
+		if ((shaderKindsFound & SHADERKIND_COMPUTE) == 0 && (shaderKindsFound & SHADERKIND_VERTEX) == 0)
+		{
+			MsgWarning("%s must have Vertex kind section if it doesn't serve Compute\n", shaderDefFileName);
+			return false;
+		}
 	}
 
 	ShaderInfo& shaderInfo = m_shaderList.append();
 	shaderInfo.crc32 = g_fileSystem->GetFileCRC32(shaderDefFileName, SP_ROOT);
 	shaderInfo.name = KV_GetValueString(shaderSection);
 	shaderInfo.sourceFilename = shaderFileName;
-	shaderInfo.kind = shaderKind;
 	shaderInfo.isExt = isExt;
+
+	for (const KVSection* kindSec : kinds->Keys())
+	{
+		EqStringRef kindName(kindSec->GetName());
+		int kind = 0;
+		if (!kindName.CompareCaseIns("Vertex"))
+			kind = SHADERKIND_VERTEX;
+		else if (!kindName.CompareCaseIns("Fragment"))
+			kind = SHADERKIND_FRAGMENT;
+		else if (!kindName.CompareCaseIns("Compute"))
+			kind = SHADERKIND_COMPUTE;
+
+		// add main entry point as default
+		if (!kindSec->KeyCount())
+		{
+			ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints.append();
+			entryPoint.name = "main";
+			entryPoint.kind = kind;
+			continue;
+		}
+
+		for (const KVSection* entryPointSec : kindSec->Keys("EntryPoint"))
+		{
+			ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints.append();
+			entryPoint.name = KV_GetValueString(entryPointSec);
+			entryPoint.kind = kind;
+		}
+	}
 
 	EqStringRef shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
 	if (!shaderType.CompareCaseIns("hlsl"))
@@ -317,7 +347,6 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 			for (const KVSection* layoutKey : nestedSec->Keys())
 			{
 				ShaderInfo::VertLayout& vertLayout = shaderInfo.vertexLayouts.append();
-
 				vertLayout.name = layoutKey->GetName();
 				
 				if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "aliasOf"))
@@ -493,8 +522,27 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					}
 				};
 
-				auto compileShaderKind = [&](const char* kindStr, int kindFlag, shaderc_shader_kind shaderCKind)
+				auto compileShaderKind = [&](int entryPointId, const ShaderInfo::EntryPoint& entryPoint)
 				{
+					EqStringRef kindMacroStr;
+					shaderc_shader_kind shaderCKind;
+
+					if (entryPoint.kind == SHADERKIND_VERTEX)
+					{
+						kindMacroStr = "VERTEX";
+						shaderCKind = shaderc_vertex_shader;
+					}
+					else if (entryPoint.kind == SHADERKIND_FRAGMENT)
+					{
+						kindMacroStr = "FRAGMENT";
+						shaderCKind = shaderc_fragment_shader;
+					}
+					else if (entryPoint.kind == SHADERKIND_COMPUTE)
+					{
+						kindMacroStr = "COMPUTE";
+						shaderCKind = shaderc_compute_shader;
+					}
+
 					std::unique_ptr<EqShaderIncluder> includer = std::make_unique<EqShaderIncluder>(shaderInfo, includePaths);
 					includer->SetVertexLayout(vertexLayout.name);
 
@@ -502,12 +550,20 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
 					options.SetOptimizationLevel(shaderc_optimization_level_performance);
 					options.SetIncluder(std::move(includer));
-					options.AddMacroDefinition(kindStr);
+					options.AddMacroDefinition(kindMacroStr.ToCString());
 					options.SetForcedVersionProfile(450, shaderc_profile_none);
 					options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
+
 					fillMacros(options);
 
-					shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv((const char*)shaderSourceString.GetBasePointer(), shaderSourceString.GetSize(), shaderCKind, shaderSourceName, options);
+					shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv(
+						(const char*)shaderSourceString.GetBasePointer(),
+						shaderSourceString.GetSize(),
+						shaderCKind,
+						shaderSourceName,
+						entryPoint.name,
+						options
+					);
 					const shaderc_compilation_status compileStatus = compilationResult.GetCompilationStatus();
 
 					if (compileStatus == shaderc_compilation_status_success)
@@ -532,13 +588,14 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 						}
 						else
 						{
-							ASSERT_MSG(kindFlag == shaderInfo.results[refIdx].kindFlag, "Referenced shader kind is invalid");
+							ASSERT_MSG(entryPoint.kind == shaderInfo.results[refIdx].kindFlag, "Referenced shader kind is invalid (checksum collision?)");
 							result.refResult = refIdx;
 						}
 
 						result.queryStr = queryStr;
 						result.vertLayoutIdx = vertLayoutIdx;
-						result.kindFlag = kindFlag;
+						result.entryPointId = entryPointId;
+						result.kindFlag = entryPoint.kind;
 						result.crc32 = resultCRC;
 					}
 					else
@@ -549,14 +606,14 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					}
 				};
 
-				if (!compileErrors && (shaderInfo.kind & SHADERKIND_VERTEX))
-					compileShaderKind("VERTEX", SHADERKIND_VERTEX, shaderc_vertex_shader);
-
-				if (!compileErrors && (shaderInfo.kind & SHADERKIND_FRAGMENT))
-					compileShaderKind("FRAGMENT", SHADERKIND_FRAGMENT, shaderc_fragment_shader);
-
-				if (!compileErrors && (shaderInfo.kind & SHADERKIND_COMPUTE))
-					compileShaderKind("COMPUTE", SHADERKIND_COMPUTE, shaderc_compute_shader);
+				int entryPointIdx = 0;
+				for (const ShaderInfo::EntryPoint& entryPoint : shaderInfo.entryPoints)
+				{
+					if (compileErrors)
+						break;
+					compileShaderKind(entryPointIdx, entryPoint);
+					++entryPointIdx;
+				}
 
 				//if(!stopCompilation)
 				//	Msg("   - compiled variant '%s' (%d)\n", queryStr.ToCString(), nSwitch);
@@ -593,17 +650,21 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 				definesSec->AddValue(defineStr);
 		}
 
-		// store shader kinds
+		// store shader entry points
 		{
-			KVSection* definesSec = shaderInfoKvs.CreateSection("ShaderKinds");
-			if(shaderInfo.kind & SHADERKIND_VERTEX)
-				definesSec->AddValue("Vertex");
+			KVSection* entryPointsSec = shaderInfoKvs.CreateSection("EntryPoints");
+			for (const ShaderInfo::EntryPoint& entryPoint : shaderInfo.entryPoints)
+			{
+				EqStringRef kindNameStr;
+				if (entryPoint.kind == SHADERKIND_VERTEX)
+					kindNameStr = "Vertex";
+				else if (entryPoint.kind == SHADERKIND_FRAGMENT)
+					kindNameStr = "Fragment";
+				else if (entryPoint.kind == SHADERKIND_COMPUTE)
+					kindNameStr = "Compute";
 
-			if (shaderInfo.kind & SHADERKIND_FRAGMENT)
-				definesSec->AddValue("Fragment");
-
-			if (shaderInfo.kind & SHADERKIND_COMPUTE)
-				definesSec->AddValue("Compute");
+				entryPointsSec->AddKey(kindNameStr, entryPoint.name);
+			}
 		}
 
 		// store vertex layout info
@@ -654,9 +715,9 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 				spvSec->AddValue("Compute");
 				shaderFileName.Append(".comp");
 			}
-			
+
+			spvSec->AddValue(shaderInfo.entryPoints[result.entryPointId].name);
 			spvSec->AddValue(result.queryStr);
-			// spvSec->AddValue(shaderFileName);
 
 			// Write shader bytecode file
 			const uint32* shaderData = result.data.begin();
@@ -690,6 +751,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			else if (result.kindFlag == SHADERKIND_COMPUTE)
 				refSec->AddValue("Compute");
 
+			refSec->AddValue(shaderInfo.entryPoints[result.entryPointId].name);
 			refSec->AddValue(result.queryStr);
 			refSec->AddValue(referenceRemap[result.refResult]);
 		}
