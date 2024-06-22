@@ -96,6 +96,7 @@ static const char* s_bindGroupNames[] = {
 	"Constant",
 	"RenderPass",
 	"Transient",
+	"Instances"
 };
 
 IGPUBindGroupPtr CBaseShader::CreatePersistentBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const
@@ -105,13 +106,11 @@ IGPUBindGroupPtr CBaseShader::CreatePersistentBindGroup(BindGroupDesc& bindGroup
 	{
 		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
-		pipelineInfo.isBindGroupPipelineLayout &= ~(1 << bindGroupId);
 	}
 	else
 	{
 		bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
-		pipelineInfo.isBindGroupPipelineLayout |= (1 << bindGroupId);
 	}
 
 	return pipelineInfo.bindGroup[bindGroupId];
@@ -143,7 +142,6 @@ IGPUBindGroupPtr CBaseShader::GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGrou
 		BindGroupDesc emptyBindGroupDesc;
 		emptyBindGroupDesc.groupIdx = bindGroupId;
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, emptyBindGroupDesc);
-		pipelineInfo.isBindGroupPipelineLayout |= (1 << bindGroupId);
 	}
 	return pipelineInfo.bindGroup[bindGroupId];
 }
@@ -317,21 +315,43 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			PipelineLayoutDesc pipelineLayoutDesc;
 			pipelineLayoutDesc.name = GetName();
 
-			FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			{
+				BindGroupLayoutDesc layoutDesc;
+				FillBindGroupLayout_Constant(inputParams.meshInstFormat, layoutDesc);
+				//if (layoutDesc.entries.numElem())
+					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
+			}
+			{
+				BindGroupLayoutDesc layoutDesc;
+				FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, layoutDesc);
+				//if (layoutDesc.entries.numElem())
+					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
+			}
+			{
+				BindGroupLayoutDesc layoutDesc;
+				FillBindGroupLayout_Transient(inputParams.meshInstFormat, layoutDesc);
+				//if (layoutDesc.entries.numElem())
+					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
+			}
 
-			bool userDefinedPipelineLayout = false;
+			{
+				BindGroupLayoutDesc layoutDesc;
+				FillBindGroupLayout_Instances(inputParams.meshInstFormat, layoutDesc);
+				if (layoutDesc.entries.numElem())
+					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
+			}
+
+			int shaderLayoutBindGroup = 0;
+
+			int piplineLayoutIdx = 0;
 			for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
 			{
 				if (layout.entries.numElem() > 0)
-				{
-					userDefinedPipelineLayout = true;
-					break;
-				}
+					shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
+				++piplineLayoutIdx;
 			}
 
-			if (userDefinedPipelineLayout)
+			if (shaderLayoutBindGroup)
 				newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
 		}
 
@@ -409,10 +429,12 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputPara
 	};
 
 	passContext.recorder->SetPipeline(pipelineInfo.pipeline);
-	passContext.recorder->SetBindGroup(BINDGROUP_CONSTANT, GetBindGroup(renderAPI, BINDGROUP_CONSTANT, setupParams));
-	passContext.recorder->SetBindGroup(BINDGROUP_RENDERPASS, GetBindGroup(renderAPI, BINDGROUP_RENDERPASS, setupParams));
-	passContext.recorder->SetBindGroup(BINDGROUP_TRANSIENT, GetBindGroup(renderAPI, BINDGROUP_TRANSIENT, setupParams));
 
+	for (int i = 0; i < BINDGROUP_COUNT; ++i)
+	{
+		EBindGroupId bindGroupId = static_cast<EBindGroupId>(i);
+		passContext.recorder->SetBindGroup(bindGroupId, GetBindGroup(renderAPI, bindGroupId, setupParams));
+	}
 	return true;
 }
 

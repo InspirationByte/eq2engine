@@ -83,7 +83,7 @@ BEGIN_SHADER_CLASS(
 				.End();
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
-		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
+		return setupParams.pipelineInfo.bindGroup[bindGroupId];
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const

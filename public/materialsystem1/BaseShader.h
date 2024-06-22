@@ -104,7 +104,6 @@ protected:
 		IGPURenderPipelinePtr		pipeline;
 		IGPUPipelineLayoutPtr		layout;
 		int							vertexLayoutId{ 0 };
-		mutable uint8				isBindGroupPipelineLayout{ 0 };
 	};
 
 	struct BindGroupSetupParams
@@ -121,6 +120,7 @@ protected:
 	virtual void				FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_RenderPass(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
 	virtual void				FillBindGroupLayout_Transient(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
+	virtual void				FillBindGroupLayout_Instances(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const {}
 
 	void						FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bindGroupLayout) const;
 	void						FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const;

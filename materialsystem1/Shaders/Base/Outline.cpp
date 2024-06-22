@@ -68,7 +68,7 @@ BEGIN_SHADER_CLASS(Outline)
 			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
 
-		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
+		return setupParams.pipelineInfo.bindGroup[bindGroupId];
 	}
 
 	IGPUBufferPtr				m_proxyBuffer;

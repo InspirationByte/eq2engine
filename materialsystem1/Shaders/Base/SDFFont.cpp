@@ -203,7 +203,7 @@ BEGIN_SHADER_CLASS(
 			return materialBindGroup;
 		}
 
-		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
+		return setupParams.pipelineInfo.bindGroup[bindGroupId];
 	}
 
 	mutable GPUBufferView	m_currentCameraBuffer;

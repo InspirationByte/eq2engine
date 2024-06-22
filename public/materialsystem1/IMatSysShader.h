@@ -44,6 +44,11 @@ enum EBindGroupId : int
 	// Unique for each draw call. 
 	//   Use for something that would be unique for drawn object.
 	BINDGROUP_TRANSIENT = 2,
+
+	// GPU Instances buffer bind group
+	BINDGROUP_INSTANCES = 3,
+
+	BINDGROUP_COUNT
 };
 
 struct MatSysShaderPipelineCache

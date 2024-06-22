@@ -852,6 +852,12 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			if (numBitsSet == EGFHwVertex::VERT_COUNT)
 				break;
 
+			if (layoutDescList[i].stepMode == VERTEX_STEPMODE_INSTANCE && drawCmd.instanceInfo.instData.buffer)
+			{
+				setVertStreams |= (1 << i);
+				continue;
+			}
+
 			const EGFHwVertex::VertexStreamId vertStreamId = (EGFHwVertex::VertexStreamId)layoutDescList[i].userId;
 			if (vertStreamId >= EGFHwVertex::VERT_COUNT)
 				continue;

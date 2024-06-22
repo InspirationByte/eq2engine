@@ -65,6 +65,7 @@ struct GPUInstPool
 	GPUInstPool(int stride) : stride(stride) {}
 
 	virtual const void*	GetDataPtr() const = 0;
+	virtual int			GetDataElems() const = 0;
 	virtual void		InitPipeline() = 0;
 
 	Array<int>		freeIndices{ PP_SL };
@@ -83,6 +84,7 @@ struct GPUInstDataPool : public GPUInstPool
 	GPUInstDataPool() : GPUInstPool(sizeof(T)) {}
 
 	const void*		GetDataPtr() const override { return data.ptr(); };
+	int				GetDataElems() const override { return data.numElem(); }
 	void			InitPipeline() { T::InitPipeline(*this); }
 
 	Array<T> 		data{ PP_SL };
@@ -111,12 +113,13 @@ protected:
 		uint32	components[GPUINST_MAX_COMPONENTS]{ UINT_MAX };
 	};
 
+	Threading::CEqMutex			m_mutex;
 	IGPUBufferPtr				m_buffer;
 	IGPUComputePipelinePtr		m_updatePipeline;
 	Array<InstRoot>				m_instances{ PP_SL };
 	Array<int>					m_freeIndices{ PP_SL };
 	Set<int>					m_updated{ PP_SL };
-	Map<uint8, GPUInstPool*>	m_componentPools{ PP_SL };
+	GPUInstPool*				m_componentPools[GPUINST_MAX_COMPONENTS]{ nullptr };
 };
 
 
@@ -141,7 +144,7 @@ protected:
 	using POOL_STORAGE = std::tuple<Pool<Components>...>;
 
 	template<typename TComp>
-	Pool<TComp>		GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
+	Pool<TComp>&	GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
 
 	template<std::size_t... Is>
 	void			InitPool(std::index_sequence<Is...>);
@@ -156,7 +159,7 @@ template<std::size_t... Is>
 void GPUInstanceManager<Ts...>::InitPool(std::index_sequence<Is...>)
 {
 	(
-		m_componentPools.insert(std::tuple_element_t<Is, POOL_STORAGE>::TYPE::COMPONENT_ID, &std::get<Is>(m_componentPoolsStorage))
+		(m_componentPools[std::tuple_element_t<Is, POOL_STORAGE>::TYPE::COMPONENT_ID] = &std::get<Is>(m_componentPoolsStorage))
 	, ...);
 }
 
@@ -170,19 +173,24 @@ template<typename...Ts>
 template<typename TComp>
 inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComp& value)
 {
+	if (instanceId == -1)
+		return;
+
 	InstRoot& inst = m_instances[instanceId];
 
-	// FIXME: might be slowwww
 	const uint32 inPoolIdx = inst.components[TComp::COMPONENT_ID];
 	if (inPoolIdx == UINT_MAX)
-	{
-		ASSERT_FAIL("Instance was not allocated with specified component");
-		return;
-	}
+		return; // Instance was not allocated with specified component, so skipping
 
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
-	compPool.data[inPoolIdx] = value;
-	compPool.updated.insert(inPoolIdx);
+	if (!memcmp(&compPool.data[inPoolIdx], &value, sizeof(TComp)))
+		return;
+
+	{
+		Threading::CScopedMutex m(m_mutex);
+		compPool.data[inPoolIdx] = value;
+		compPool.updated.insert(inPoolIdx);
+	}
 }
 
 // creates new empty instance with allocated components
@@ -191,13 +199,18 @@ template<typename...TComps>
 inline int GPUInstanceManager<Ts...>::AddInstance()
 {
 	const int instanceId = AllocInstance();
+
 	InstRoot& inst = m_instances[instanceId];
-
-	memset(inst.components, UINT_MAX, sizeof(inst.components));
-
-	([&]
 	{
-		Pool<TComps>& compPool = GetComponentPool<TComps>();
-		inst.components[TComps::COMPONENT_ID] = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append({});
-	} (), ...);
+		Threading::CScopedMutex m(m_mutex);
+		([&]
+			{
+				Pool<TComps>& compPool = GetComponentPool<TComps>();
+				const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append({});
+				inst.components[TComps::COMPONENT_ID] = inPoolIdx;
+				compPool.updated.insert(inPoolIdx);
+			} (), ...);
+	}
+
+	return instanceId;
 }

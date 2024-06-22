@@ -116,7 +116,7 @@ typedef struct DbgText3DBuilder
 private:
 	EqString	pszText;
 	Vector3D	origin;
-	float		dist{ 25.0f };
+	float		dist{ -1 };
 	float		lifetime{ 0.0f };
 	uint		color{ color_white.pack() };
 	int			hashId{ 0 };

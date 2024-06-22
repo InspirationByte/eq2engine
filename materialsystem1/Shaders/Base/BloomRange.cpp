@@ -55,11 +55,9 @@ BEGIN_SHADER_CLASS(BloomRange)
 					.End();
 				CreatePersistentBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
-
-			return setupParams.pipelineInfo.bindGroup[bindGroupId];
 		}
 
-		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
+		return setupParams.pipelineInfo.bindGroup[bindGroupId];
 	}
 
 	IGPUBufferPtr				m_proxyBuffer;

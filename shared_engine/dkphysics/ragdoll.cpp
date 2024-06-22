@@ -261,10 +261,9 @@ void PhysRagdollData::RefreshRagdollVisuals()
 	// refresh joint transform
 	for(int i = 0; i < m_numBones; i++)
 	{
-		if(m_physJoints[i])
-		{
-			m_physJoints[i]->UpdateTransform();
-		}
+		if (!m_physJoints[i])
+			continue;
+		m_physJoints[i]->UpdateTransform();
 	}
 }
 

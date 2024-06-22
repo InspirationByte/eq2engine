@@ -6,11 +6,15 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/ConVar.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GPUInstanceMng.h"
 
-static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE				= 1536;
-static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE_EXTEND		= 512;
+DECLARE_CVAR(r_instFlush, "0", nullptr, 0);
+DECLARE_CVAR(r_instCompFlush, "0", nullptr, 0);
+
+static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE			= 1536;
+static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE_EXTEND	= 512;
 
 void GPUBaseInstanceManager::Initialize()
 {
@@ -24,10 +28,17 @@ void GPUBaseInstanceManager::Initialize()
 		.End()
 	);
 
+	m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), GPU_INSTANCE_INITIAL_POOL_SIZE), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
+
 	for (GPUInstPool* pool : m_componentPools)
 	{
+		if (!pool)
+			continue;
 		pool->InitPipeline();
 		ASSERT_MSG(pool->updatePipeline, "Failed to create instance update pipeline");
+
+		// initialize buffer so game won't crash when no instances synced
+		pool->buffer = g_renderAPI->CreateBuffer(BufferInfo(pool->stride, GPU_INSTANCE_INITIAL_POOL_SIZE), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
 	}
 }
 
@@ -37,6 +48,9 @@ void GPUBaseInstanceManager::Shutdown()
 	m_buffer = nullptr;
 	for (GPUInstPool* pool : m_componentPools)
 	{
+		if (!pool)
+			continue;
+
 		pool->buffer = nullptr;
 		pool->updatePipeline = nullptr;
 		pool->freeIndices.clear(true);
@@ -46,8 +60,13 @@ void GPUBaseInstanceManager::Shutdown()
 
 int	GPUBaseInstanceManager::AllocInstance()
 {
-	const int instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
+	int instanceId;
+	{
+		Threading::CScopedMutex m(m_mutex);
+		instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
+	}
 	memset(m_instances[instanceId].components, UINT_MAX, sizeof(InstRoot::components));
+	m_updated.insert(instanceId);
 
 	return instanceId;
 }
@@ -55,32 +74,32 @@ int	GPUBaseInstanceManager::AllocInstance()
 // destroys instance and it's components
 void GPUBaseInstanceManager::FreeInstance(int instanceId)
 {
+	if (instanceId == -1)
+		return;
+
+	{
+		Threading::CScopedMutex m(m_mutex);
+		m_freeIndices.append(instanceId);
+	}
+
 	InstRoot& inst = m_instances[instanceId];
 	for (int i = 0; i < GPUINST_MAX_COMPONENTS; ++i)
 	{
 		if (inst.components[i] == UINT_MAX)
 			continue;
 
-		auto it = m_componentPools.find(i);
-		if (it.atEnd())
-		{
-			ASSERT_FAIL("Component free list map is not initialized properly");
-			return;
-		}
-
 		// add this instance to freed list and invalidate ID
-		(*it)->freeIndices.append(inst.components[i]);
+		{
+			Threading::CScopedMutex m(m_mutex);
+			m_componentPools[i]->freeIndices.append(inst.components[i]);
+		}
 		inst.components[i] = UINT_MAX;
 	}
 }
 
 IGPUBufferPtr GPUBaseInstanceManager::GetDataPoolBuffer(int componentId) const
 {
-	auto it = m_componentPools.find(componentId);
-	if (it.atEnd())
-		return nullptr;
-
-	return (*it)->buffer;
+	return m_componentPools[componentId]->buffer;
 }
 
 static int instGranulatedCapacity(int capacity)
@@ -109,17 +128,22 @@ static void instRunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputeP
 	computePass->SetBindGroup(0, sourceIdxsAndDataGroup);
 	computePass->SetBindGroup(1, destPoolDataGroup);
 
-	const int instacesPerWorkgroup = 64; // TODO: adjustable?
+	const float instacesPerWorkgroup = 64.0f; // TODO: adjustable?
 
-	computePass->DispatchWorkgroups(idxsCount / instacesPerWorkgroup);
+	computePass->DispatchWorkgroups(ceil(idxsCount / instacesPerWorkgroup));
 	computePass->Complete();
 }
 
-static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer)
+static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer)
 {
-	const int updateBufferSize = updated.size() * sourceStride;
-	elementIds.reserve(updated.size());
+	const int updatedCount = updated.size();
+	const int updateBufferSize = updatedCount * sourceStride;
+
+	elementIds.reserve(updatedCount + 1);
 	elementIds.clear();
+
+	// always insert count as first element (sourceCount)
+	elementIds.append(updatedCount);
 
 	ubyte* updateData = reinterpret_cast<ubyte*>(PPAlloc(updateBufferSize));
 	ubyte* updateDataStart = updateData;
@@ -137,25 +161,23 @@ static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, Set<int>& updat
 		memcpy(updateData, updInstPtr, sourceStride);
 		updateData += sourceStride;
 	}
-	updated.clear();
 
 	destIdxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(elementIds[0]), elementIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
-	destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(updateDataStart, 1, updateBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdData");
+	destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, updateBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdData");
 
 	cmdRecorder->WriteBuffer(destIdxsBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
 	cmdRecorder->WriteBuffer(destDataBuffer, updateDataStart, updateBufferSize, 0);
-
 }
 
 void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 {
+	Threading::CScopedMutex m(m_mutex);
+
 	Array<int> elementIds(PP_SL);
 
 	// update instance root buffer
-	if (!m_buffer || m_instances.numElem() > (m_buffer->GetSize() / sizeof(InstRoot)))
+	if (r_instFlush.GetBool() || !m_buffer || m_instances.numElem() > (m_buffer->GetSize() / sizeof(InstRoot)))
 	{
-		m_updated.clear();
-
 		// alloc (or re-create) new buffer and upload entire data
 		const int allocInstBufferElems = max(instGranulatedCapacity(m_instances.numElem()), GPU_INSTANCE_INITIAL_POOL_SIZE);
 		m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
@@ -167,41 +189,39 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		IGPUBufferPtr idxsBuffer;
 		IGPUBufferPtr dataBuffer;
 		instPrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(InstRoot), idxsBuffer, dataBuffer);
-		instRunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, elementIds.numElem(), dataBuffer, m_buffer);
+		instRunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_buffer);
 	}
+	m_updated.clear();
 
 	// update instance components buffers
 	for (GPUInstPool* pool : m_componentPools)
 	{
-		if (pool->updated.size() == 0)
+		if (!pool)
 			continue;
 
 		const int elemSize = pool->stride;
-		const ubyte* dataPtr = reinterpret_cast<const ubyte*>(pool->GetDataPtr());
+		const int poolElems = pool->GetDataElems();
+		const ubyte* poolDataPtr = reinterpret_cast<const ubyte*>(pool->GetDataPtr());
 
-		int maxUpdateIdx = 0;
-		for (auto it = pool->updated.begin(); !it.atEnd(); ++it)
+		if (r_instCompFlush.GetBool() || !pool->buffer || poolElems > (pool->buffer->GetSize() / elemSize))
 		{
-			const int elemIdx = it.key();
-			maxUpdateIdx = max(maxUpdateIdx, elemIdx);
-		}
-
-		if (!pool->buffer || maxUpdateIdx > (pool->buffer->GetSize() / elemSize))
-		{
-			pool->updated.clear();
-
 			// alloc (or re-create) new buffer and upload entire data
-			const int allocInstBufferElems = max(instGranulatedCapacity(maxUpdateIdx), GPU_INSTANCE_INITIAL_POOL_SIZE);
+			const int allocInstBufferElems = max(instGranulatedCapacity(poolElems), GPU_INSTANCE_INITIAL_POOL_SIZE);
 			pool->buffer = g_renderAPI->CreateBuffer(BufferInfo(elemSize, allocInstBufferElems), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
 
-			cmdRecorder->WriteBuffer(pool->buffer, dataPtr, maxUpdateIdx * elemSize, 0);
-			continue;
+			cmdRecorder->WriteBuffer(pool->buffer, poolDataPtr, poolElems * elemSize, 0);
 		}
-
-		// prepare update buffer
-		IGPUBufferPtr idxsBuffer;
-		IGPUBufferPtr dataBuffer;
-		instPrepareBuffers(cmdRecorder, pool->updated, elementIds, dataPtr, elemSize, idxsBuffer, dataBuffer);
-		instRunUpdatePipeline(cmdRecorder, pool->updatePipeline, idxsBuffer, elementIds.numElem(), dataBuffer, pool->buffer);
+		else if (pool->updated.size())
+		{
+			// prepare update buffer
+			IGPUBufferPtr idxsBuffer;
+			IGPUBufferPtr dataBuffer;
+			instPrepareBuffers(cmdRecorder, pool->updated, elementIds, poolDataPtr, elemSize, idxsBuffer, dataBuffer);
+			instRunUpdatePipeline(cmdRecorder, pool->updatePipeline, idxsBuffer, pool->updated.size(), dataBuffer, pool->buffer);
+		}
+		pool->updated.clear();
 	}
+
+	r_instCompFlush.SetBool(false);
+	r_instFlush.SetBool(false);
 }

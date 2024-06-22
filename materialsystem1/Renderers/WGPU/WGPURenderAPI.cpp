@@ -679,6 +679,10 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 	}
 
 	const CWGPUPipelineLayout* pipelineLayout = static_cast<const CWGPUPipelineLayout*>(layoutDesc);
+
+	if (!pipelineLayout->m_rhiBindGroupLayout.inRange(bindGroupDesc.groupIdx))
+		return nullptr;
+
 	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
 	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
 

@@ -109,7 +109,7 @@ BEGIN_SHADER_CLASS(
 		}
 		else if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
-			if (setupParams.pipelineInfo.vertexLayoutId == StringToHashConst("EGFVertexSkinned"))
+			if (setupParams.pipelineInfo.vertexLayoutId == SHADER_VERTEX_ID(EGFVertexSkinned))
 			{
 				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID)
 
@@ -119,7 +119,7 @@ BEGIN_SHADER_CLASS(
 				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 			}
 		}
-		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
+		return setupParams.pipelineInfo.bindGroup[bindGroupId];
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const
