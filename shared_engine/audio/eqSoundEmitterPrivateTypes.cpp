@@ -287,7 +287,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			nodeDesc.func.inputIds[sampleIdx] = findInputVarOrMakeConst(nodeDesc, sampleIdx, valueStr);
 
 			// re-qualify into function
-			if (!nodeDesc.type != SOUND_NODE_FUNC)
+			if (nodeDesc.type != SOUND_NODE_FUNC)
 			{
 				nodeDesc.type = SOUND_NODE_FUNC;
 				nodeDesc.func.type = SOUND_FUNC_COPY;
@@ -309,7 +309,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			if (nodeName == nullptr || !nodeName[0])
 			{
-				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey->name);
+				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey->name.ToCString());
 				continue;
 			}
 
@@ -346,7 +346,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			int funcType = GetSoundFuncTypeByString(funcTypeName);
 			if (funcType == -1)
 			{
-				MsgError("sound script '%s' mixer: %s unknown func type %s\n", scriptDesc.name.ToCString(), valKey->name, funcTypeName);
+				MsgError("sound script '%s' mixer: %s unknown func type %s\n", scriptDesc.name.ToCString(), valKey->name.ToCString(), funcTypeName);
 				continue;
 			}
 
