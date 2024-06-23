@@ -46,6 +46,9 @@ void GPUBaseInstanceManager::Shutdown()
 {
 	m_updatePipeline = nullptr;
 	m_buffer = nullptr;
+	m_updated.clear();
+	m_instances.clear();
+	m_freeIndices.clear();
 	for (GPUInstPool* pool : m_componentPools)
 	{
 		if (!pool)
@@ -53,8 +56,10 @@ void GPUBaseInstanceManager::Shutdown()
 
 		pool->buffer = nullptr;
 		pool->updatePipeline = nullptr;
-		pool->freeIndices.clear(true);
-		pool->updated.clear(true);
+		pool->freeIndices.clear();
+		pool->updated.clear();
+		pool->ResetData();
+		pool->updated.insert(0);
 	}
 }
 
@@ -65,7 +70,7 @@ int	GPUBaseInstanceManager::AllocInstance()
 		Threading::CScopedMutex m(m_mutex);
 		instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 	}
-	memset(m_instances[instanceId].components, UINT_MAX, sizeof(InstRoot::components));
+	memset(m_instances[instanceId].components, 0, sizeof(InstRoot::components));
 	m_updated.insert(instanceId);
 
 	return instanceId;
@@ -74,7 +79,7 @@ int	GPUBaseInstanceManager::AllocInstance()
 // destroys instance and it's components
 void GPUBaseInstanceManager::FreeInstance(int instanceId)
 {
-	if (instanceId == -1)
+	if (!m_instances.inRange(instanceId))
 		return;
 
 	{
@@ -85,10 +90,12 @@ void GPUBaseInstanceManager::FreeInstance(int instanceId)
 	InstRoot& inst = m_instances[instanceId];
 	for (int i = 0; i < GPUINST_MAX_COMPONENTS; ++i)
 	{
+		// skip invalid or defaults
 		if (inst.components[i] == UINT_MAX)
 			continue;
 
 		// add this instance to freed list and invalidate ID
+		if(inst.components[i] > 0)
 		{
 			Threading::CScopedMutex m(m_mutex);
 			m_componentPools[i]->freeIndices.append(inst.components[i]);
@@ -176,6 +183,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 	Array<int> elementIds(PP_SL);
 
 	// update instance root buffer
+	// TODO: instead of re-creating buffer, create new separate buffer with it's instance pools
 	if (r_instFlush.GetBool() || !m_buffer || m_instances.numElem() > (m_buffer->GetSize() / sizeof(InstRoot)))
 	{
 		// alloc (or re-create) new buffer and upload entire data

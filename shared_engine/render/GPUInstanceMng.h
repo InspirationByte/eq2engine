@@ -66,6 +66,7 @@ struct GPUInstPool
 
 	virtual const void*	GetDataPtr() const = 0;
 	virtual int			GetDataElems() const = 0;
+	virtual void		ResetData() = 0;
 	virtual void		InitPipeline() = 0;
 
 	Array<int>		freeIndices{ PP_SL };
@@ -85,6 +86,7 @@ struct GPUInstDataPool : public GPUInstPool
 
 	const void*		GetDataPtr() const override { return data.ptr(); };
 	int				GetDataElems() const override { return data.numElem(); }
+	void			ResetData() override { data.setNum(1); }		// reset data to have default element only
 	void			InitPipeline() { T::InitPipeline(*this); }
 
 	Array<T> 		data{ PP_SL };
@@ -137,9 +139,25 @@ public:
 	template<typename ...TComps>
 	int 			AddInstance();
 
+	// sets component values on instance
+	template<typename...TComps>
+	void			Set(int instanceId, const TComps&... values);
+
+	// adds new component
 	template<typename TComp>
-	void			Set(int instanceId, const TComp& value);
+	void			Add(int instanceId);
+
+	// removes existing component
+	template<typename TComp>
+	void			Remove(int instanceId);
 protected:
+
+	// sets component values on instance
+	template<typename First, typename...Rest>
+	void			SetInternal(InstRoot& inst, const First& firstVal, const Rest&... values);
+
+	// sets component values on instance
+	void			SetInternal(InstRoot& inst) {}
 
 	using POOL_STORAGE = std::tuple<Pool<Components>...>;
 
@@ -158,9 +176,13 @@ template<typename...Ts>
 template<std::size_t... Is>
 void GPUInstanceManager<Ts...>::InitPool(std::index_sequence<Is...>)
 {
-	(
-		(m_componentPools[std::tuple_element_t<Is, POOL_STORAGE>::TYPE::COMPONENT_ID] = &std::get<Is>(m_componentPoolsStorage))
-	, ...);
+	([&] {
+		using POOL_TYPE = std::tuple_element_t<Is, POOL_STORAGE>;
+		POOL_TYPE& pool = std::get<Is>(m_componentPoolsStorage);
+		pool.data.append({}); // add default value
+		pool.updated.insert(0);
+		m_componentPools[POOL_TYPE::TYPE::COMPONENT_ID] = &pool;
+	}(), ...);
 }
 
 template<typename...Ts>
@@ -170,27 +192,42 @@ inline GPUInstanceManager<Ts...>::GPUInstanceManager()
 }
 
 template<typename...Ts>
-template<typename TComp>
-inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComp& value)
+template<typename First, typename...Rest>
+inline void GPUInstanceManager<Ts...>::SetInternal(InstRoot& inst, const First& firstVal, const Rest&... values)
+{
+	const uint32 inPoolIdx = inst.components[First::COMPONENT_ID];
+
+	// don't update invalid or default
+	if (inPoolIdx == UINT_MAX || inPoolIdx == 0)
+	{
+		SetInternal(inst, values...);
+		return; // Instance was not allocated with specified component, so skipping
+	}
+
+	Pool<First>& compPool = GetComponentPool<First>();
+	if (!memcmp(&compPool.data[inPoolIdx], &firstVal, sizeof(First)))
+	{
+		SetInternal(inst, values...);
+		return;
+	}
+
+	{
+		Threading::CScopedMutex m(m_mutex);
+		compPool.data[inPoolIdx] = firstVal;
+		compPool.updated.insert(inPoolIdx);
+	}
+	SetInternal(inst, values...);
+}
+
+template<typename...Ts>
+template<typename...TComps>
+inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComps&... values)
 {
 	if (instanceId == -1)
 		return;
 
 	InstRoot& inst = m_instances[instanceId];
-
-	const uint32 inPoolIdx = inst.components[TComp::COMPONENT_ID];
-	if (inPoolIdx == UINT_MAX)
-		return; // Instance was not allocated with specified component, so skipping
-
-	Pool<TComp>& compPool = GetComponentPool<TComp>();
-	if (!memcmp(&compPool.data[inPoolIdx], &value, sizeof(TComp)))
-		return;
-
-	{
-		Threading::CScopedMutex m(m_mutex);
-		compPool.data[inPoolIdx] = value;
-		compPool.updated.insert(inPoolIdx);
-	}
+	SetInternal(inst, values...);
 }
 
 // creates new empty instance with allocated components
@@ -203,14 +240,55 @@ inline int GPUInstanceManager<Ts...>::AddInstance()
 	InstRoot& inst = m_instances[instanceId];
 	{
 		Threading::CScopedMutex m(m_mutex);
-		([&]
-			{
-				Pool<TComps>& compPool = GetComponentPool<TComps>();
-				const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append({});
-				inst.components[TComps::COMPONENT_ID] = inPoolIdx;
-				compPool.updated.insert(inPoolIdx);
-			} (), ...);
+		([&]{
+			Pool<TComps>& compPool = GetComponentPool<TComps>();
+			const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append({});
+			inst.components[TComps::COMPONENT_ID] = inPoolIdx;
+			compPool.updated.insert(inPoolIdx);
+		} (), ...);
 	}
 
 	return instanceId;
+}
+
+template<typename...Ts>
+template<typename TComp>
+void GPUInstanceManager<Ts...>::Add(int instanceId)
+{
+	if (instanceId == -1)
+		return;
+
+	InstRoot& inst = m_instances[instanceId];
+	if (inst.components[TComp::COMPONENT_ID] > 0 && inst.components[TComp::COMPONENT_ID] != UINT_MAX)
+		return;
+
+	Pool<TComp>& compPool = GetComponentPool<TComp>();
+	{
+		Threading::CScopedMutex m(m_mutex);
+		const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append({});
+		inst.components[TComp::COMPONENT_ID] = inPoolIdx;
+		compPool.updated.insert(inPoolIdx);
+
+		m_updated.insert(instanceId);
+	}
+}
+
+template<typename...Ts>
+template<typename TComp>
+void GPUInstanceManager<Ts...>::Remove(int instanceId)
+{
+	if (instanceId == -1)
+		return;
+
+	InstRoot& inst = m_instances[instanceId];
+	if (inst.components[TComp::COMPONENT_ID] == 0 || inst.components[TComp::COMPONENT_ID] == UINT_MAX)
+		return;
+
+	Pool<TComp>& compPool = GetComponentPool<TComp>();
+	{
+		Threading::CScopedMutex m(m_mutex);
+		compPool.freeIndices.append(inst.components[TComp::COMPONENT_ID]);
+		inst.components[TComp::COMPONENT_ID] = 0; // change to default
+		m_updated.insert(instanceId);
+	}
 }
