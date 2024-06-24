@@ -1438,7 +1438,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 		{
 			if (instData.buffer && instFormatRef.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
 			{
-				bindVertexBuffers.append(GPUBufferView(instData.buffer, instData.offset, instData.stride * instData.count));
+				bindVertexBuffers.append(instData.buffer);
 				usedVertexLayoutBits |= (1 << i);
 			}
 			else if(instInfo.vertexBuffers[i])

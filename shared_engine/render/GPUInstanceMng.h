@@ -98,6 +98,7 @@ public:
 	void				Initialize();
 	void				Shutdown();
 
+	IGPUBufferPtr		GetSingleInstanceIndexBuffer() const { return m_singleInstIndexBuffer; }
 	IGPUBufferPtr		GetRootBuffer() const { return m_buffer; }
 	IGPUBufferPtr		GetDataPoolBuffer(int componentId) const;
 
@@ -117,6 +118,7 @@ protected:
 
 	Threading::CEqMutex			m_mutex;
 	IGPUBufferPtr				m_buffer;
+	IGPUBufferPtr				m_singleInstIndexBuffer;
 	IGPUComputePipelinePtr		m_updatePipeline;
 	Array<InstRoot>				m_instances{ PP_SL };
 	Array<int>					m_freeIndices{ PP_SL };

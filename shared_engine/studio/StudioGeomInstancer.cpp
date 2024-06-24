@@ -203,7 +203,8 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				if (buffer.numInstances == 0)
 					continue;
 
-				drawCmd.SetInstanceData(buffer.instanceVB, m_instanceSize, buffer.numInstances, 0);
+				GPUBufferView instBufferView(buffer.instanceVB, 0, m_instanceSize);
+				drawCmd.SetInstanceData(instBufferView, buffer.numInstances, 0);
 
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numMeshes; i++)

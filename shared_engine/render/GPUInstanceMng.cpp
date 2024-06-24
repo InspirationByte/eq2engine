@@ -29,6 +29,20 @@ void GPUBaseInstanceManager::Initialize()
 	);
 
 	m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), GPU_INSTANCE_INITIAL_POOL_SIZE), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
+	m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), GPU_INSTANCE_INITIAL_POOL_SIZE), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstIndices");
+
+	{
+		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("BufferFill");
+
+		Array<int> elementIds(PP_SL);
+		// TODO: arrayFill(N)
+		for (int i = 0; i < GPU_INSTANCE_INITIAL_POOL_SIZE; ++i)
+			elementIds.append(i);
+
+		cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
+
+		g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
+	}
 
 	for (GPUInstPool* pool : m_componentPools)
 	{
@@ -45,7 +59,9 @@ void GPUBaseInstanceManager::Initialize()
 void GPUBaseInstanceManager::Shutdown()
 {
 	m_updatePipeline = nullptr;
-	m_buffer = nullptr;
+	m_buffer = nullptr;	
+	m_singleInstIndexBuffer = nullptr;
+
 	m_updated.clear();
 	m_instances.clear();
 	m_freeIndices.clear();
@@ -189,8 +205,14 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		// alloc (or re-create) new buffer and upload entire data
 		const int allocInstBufferElems = max(instGranulatedCapacity(m_instances.numElem()), GPU_INSTANCE_INITIAL_POOL_SIZE);
 		m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
+		m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstIndices");
 
 		cmdRecorder->WriteBuffer(m_buffer, m_instances.ptr(), m_instances.numElem() * sizeof(InstRoot), 0);
+
+		// TODO: arrayFill(N)
+		for(int i = 0; i < allocInstBufferElems; ++i)
+			elementIds.append(i);
+		cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
 	}
 	else if(m_updated.size())
 	{

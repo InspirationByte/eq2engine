@@ -171,11 +171,9 @@ struct MeshInstanceFormatRef
 
 struct MeshInstanceData
 {
-	IGPUBufferPtr	buffer;
+	GPUBufferView	buffer;
 	int				first{ 0 };
-	int				count{ 0 };
-	int				stride{ 0 };
-	int				offset{ 0 };
+	int				count{ 1 };
 };
 
 struct RenderInstanceInfo
@@ -262,12 +260,11 @@ struct RenderDrawCmd
 		return *this;
 	}
 
-	RenderDrawCmd& SetInstanceData(IGPUBufferPtr buffer, int instanceSize = 1, int instanceCount = 1, int offset = 0)
+	RenderDrawCmd& SetInstanceData(GPUBufferView buffer, int instanceCount = 1, int firstInstance = 0)
 	{
 		instanceInfo.instData.buffer = buffer;
 		instanceInfo.instData.count = instanceCount;
-		instanceInfo.instData.stride = instanceSize;
-		instanceInfo.instData.offset = offset;
+		instanceInfo.instData.first = firstInstance;
 		return *this;
 	}
 
