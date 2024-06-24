@@ -52,13 +52,16 @@ struct DrawableInstanceList
 
 constexpr int GPUINST_MAX_COMPONENTS = 8;
 
-// instance component data
-template<int COMP_ID, int IDENT>
-struct GPUInstComponent
-{
-	static constexpr int COMPONENT_ID = COMP_ID;
-	static constexpr int IDENTIFIER = IDENT;
-};
+#define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
+	static constexpr int IDENTIFIER = StringToHashConst(#Name); \
+	static constexpr int COMPONENT_ID = ID; \
+	static void InitPipeline(GPUInstPool& pool);
+
+#define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
+	void Name::InitPipeline(GPUInstPool& pool) { \
+	pool.updatePipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
+		.ShaderName(UpdateShaderName).ShaderLayoutId(IDENTIFIER).End()); \
+	}
 
 struct GPUInstPool
 {

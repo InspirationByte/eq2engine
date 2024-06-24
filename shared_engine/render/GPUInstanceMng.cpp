@@ -61,11 +61,8 @@ void GPUBaseInstanceManager::Shutdown()
 
 int	GPUBaseInstanceManager::AllocInstance()
 {
-	int instanceId;
-	{
-		Threading::CScopedMutex m(m_mutex);
-		instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
-	}
+	Threading::CScopedMutex m(m_mutex);
+	const int instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 	memset(m_instances[instanceId].components, 0, sizeof(InstRoot::components));
 	m_updated.insert(instanceId);
 
