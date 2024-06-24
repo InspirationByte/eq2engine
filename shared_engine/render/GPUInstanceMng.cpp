@@ -10,11 +10,10 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GPUInstanceMng.h"
 
-DECLARE_CVAR(r_instFlush, "0", nullptr, 0);
-DECLARE_CVAR(r_instCompFlush, "0", nullptr, 0);
+static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE		= 3072;
+static constexpr int GPU_INSTANCE_POOL_SIZE_EXTEND		= 1024;
 
-static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE			= 1536;
-static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE_EXTEND	= 512;
+static constexpr int GPU_INSTANCE_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
 
 void GPUBaseInstanceManager::Initialize()
 {
@@ -28,31 +27,12 @@ void GPUBaseInstanceManager::Initialize()
 		.End()
 	);
 
-	m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), GPU_INSTANCE_INITIAL_POOL_SIZE), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
-	m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), GPU_INSTANCE_INITIAL_POOL_SIZE), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstIndices");
-
-	{
-		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("BufferFill");
-
-		Array<int> elementIds(PP_SL);
-		// TODO: arrayFill(N)
-		for (int i = 0; i < GPU_INSTANCE_INITIAL_POOL_SIZE; ++i)
-			elementIds.append(i);
-
-		cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
-
-		g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
-	}
-
 	for (GPUInstPool* pool : m_componentPools)
 	{
 		if (!pool)
 			continue;
 		pool->InitPipeline();
 		ASSERT_MSG(pool->updatePipeline, "Failed to create instance update pipeline");
-
-		// initialize buffer so game won't crash when no instances synced
-		pool->buffer = g_renderAPI->CreateBuffer(BufferInfo(pool->stride, GPU_INSTANCE_INITIAL_POOL_SIZE), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
 	}
 }
 
@@ -127,7 +107,7 @@ IGPUBufferPtr GPUBaseInstanceManager::GetDataPoolBuffer(int componentId) const
 
 static int instGranulatedCapacity(int capacity)
 {
-	constexpr int granularity = GPU_INSTANCE_INITIAL_POOL_SIZE_EXTEND;
+	constexpr int granularity = GPU_INSTANCE_POOL_SIZE_EXTEND;
 	return (capacity + granularity - 1) / granularity * granularity;
 }
 
@@ -198,30 +178,39 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 	Array<int> elementIds(PP_SL);
 
-	// update instance root buffer
-	// TODO: instead of re-creating buffer, create new separate buffer with it's instance pools
-	if (r_instFlush.GetBool() || !m_buffer || m_instances.numElem() > (m_buffer->GetSize() / sizeof(InstRoot)))
 	{
-		// alloc (or re-create) new buffer and upload entire data
-		const int allocInstBufferElems = max(instGranulatedCapacity(m_instances.numElem()), GPU_INSTANCE_INITIAL_POOL_SIZE);
-		m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
-		m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstIndices");
+		const int oldBufferElems = m_buffer ? m_buffer->GetSize() / sizeof(InstRoot) : 0;
 
-		cmdRecorder->WriteBuffer(m_buffer, m_instances.ptr(), m_instances.numElem() * sizeof(InstRoot), 0);
+		// update instance root buffer
+		// TODO: instead of re-creating buffer, create new separate buffer with it's instance pools
+		if (!m_buffer || m_instances.numElem() > oldBufferElems)
+		{
+			// alloc (or re-create) new buffer and upload entire data
+			const int allocInstBufferElems = max(instGranulatedCapacity(m_instances.numElem()), GPU_INSTANCE_INITIAL_POOL_SIZE);
 
-		// TODO: arrayFill(N)
-		for(int i = 0; i < allocInstBufferElems; ++i)
-			elementIds.append(i);
-		cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
+			IGPUBufferPtr sourceBuffer = m_buffer;
+			m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
+			
+			// copy old contents of buffer
+			if (oldBufferElems > 0)
+				cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_buffer, 0, oldBufferElems * sizeof(InstRoot));
+
+			m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIndices");
+			// TODO: arrayFill(N)
+			for (int i = 0; i < allocInstBufferElems; ++i)
+				elementIds.append(i);
+			cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
+		}
+
+		if (m_updated.size())
+		{
+			IGPUBufferPtr idxsBuffer;
+			IGPUBufferPtr dataBuffer;
+			instPrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(InstRoot), idxsBuffer, dataBuffer);
+			instRunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_buffer);
+		}
+		m_updated.clear();
 	}
-	else if(m_updated.size())
-	{
-		IGPUBufferPtr idxsBuffer;
-		IGPUBufferPtr dataBuffer;
-		instPrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(InstRoot), idxsBuffer, dataBuffer);
-		instRunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_buffer);
-	}
-	m_updated.clear();
 
 	// update instance components buffers
 	for (GPUInstPool* pool : m_componentPools)
@@ -233,15 +222,22 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		const int poolElems = pool->GetDataElems();
 		const ubyte* poolDataPtr = reinterpret_cast<const ubyte*>(pool->GetDataPtr());
 
-		if (r_instCompFlush.GetBool() || !pool->buffer || poolElems > (pool->buffer->GetSize() / elemSize))
+		const int oldBufferElems = pool->buffer ? pool->buffer->GetSize() / elemSize : 0;
+
+		if (!pool->buffer || poolElems > oldBufferElems)
 		{
 			// alloc (or re-create) new buffer and upload entire data
 			const int allocInstBufferElems = max(instGranulatedCapacity(poolElems), GPU_INSTANCE_INITIAL_POOL_SIZE);
-			pool->buffer = g_renderAPI->CreateBuffer(BufferInfo(elemSize, allocInstBufferElems), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstData");
 
-			cmdRecorder->WriteBuffer(pool->buffer, poolDataPtr, poolElems * elemSize, 0);
+			IGPUBufferPtr sourceBuffer = pool->buffer;
+			pool->buffer = g_renderAPI->CreateBuffer(BufferInfo(elemSize, allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
+
+			// copy old contents of buffer
+			if (oldBufferElems > 0)
+				cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, pool->buffer, 0, oldBufferElems * elemSize);
 		}
-		else if (pool->updated.size())
+		
+		if (pool->updated.size())
 		{
 			// prepare update buffer
 			IGPUBufferPtr idxsBuffer;
@@ -251,7 +247,4 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		}
 		pool->updated.clear();
 	}
-
-	r_instCompFlush.SetBool(false);
-	r_instFlush.SetBool(false);
 }
