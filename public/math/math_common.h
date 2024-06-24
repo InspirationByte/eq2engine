@@ -194,6 +194,7 @@ inline bool fisNan(const T x)
 #include "Matrix.h"
 #include "BoundingBox.h"
 #include "Quaternion.h"
+#include "Transform.h"
 #include "Plane.h"
 #include "Volume.h"
 #include "Rectangle.h"
