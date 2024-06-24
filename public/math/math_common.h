@@ -24,16 +24,6 @@ enum ECubeSide : int
 	CUBESIDE_COUNT,
 };
 
-#ifndef IsNaN
-#	define IsNaN(x)				((x) != (x))
-#endif
-
-#define FLOATSIGNBITSET(f)		((*(const unsigned long *)&(f)) >> 31)
-#define FLOATSIGNBITNOTSET(f)	((~(*(const unsigned long *)&(f))) >> 31)
-#define FLOATNOTZERO(f)			((*(const unsigned long *)&(f)) & ~(1<<31) )
-#define INTSIGNBITSET(i)		(((const unsigned long)(i)) >> 31)
-#define INTSIGNBITNOTSET(i)		((~((const unsigned long)(i))) >> 31)
-
 constexpr const float F_EPS			= 0.00001f;
 constexpr const float F_INFINITY	= 1900000.0f;
 constexpr const float F_UNDEF		= 888.888f;
@@ -185,6 +175,19 @@ inline constexpr T sqr(const T x)
 {
 	return x * x;
 }
+
+template<typename T>
+inline bool fisNan(const T x)
+{
+	static_assert(std::is_same_v<float, T> || std::is_same_v<double, T>, "fIsNaN accepts only float and double types");
+	return x != x;
+}
+
+#define FLOATSIGNBITSET(f)		((*(const unsigned long *)&(f)) >> 31)
+#define FLOATSIGNBITNOTSET(f)	((~(*(const unsigned long *)&(f))) >> 31)
+#define FLOATNOTZERO(f)			((*(const unsigned long *)&(f)) & ~(1<<31) )
+#define INTSIGNBITSET(i)		(((const unsigned long)(i)) >> 31)
+#define INTSIGNBITNOTSET(i)		((~((const unsigned long)(i))) >> 31)
 
 #include "Vector.h"
 #include "FVector.h"

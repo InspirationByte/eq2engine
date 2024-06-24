@@ -123,6 +123,8 @@ int CEqStudioGeom::ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrice
 	const studioHdr_t& studio = GetStudioHdr();
 	const int numBones = studio.numBones;
 
+	ASSERT(!fisNan(boneMatrices[0].rows[0].x));
+
 	for (int i = 0; i < numBones; i++)
 	{
 		const Matrix4x4 transform = m_joints[i].invAbsTrans * boneMatrices[i];

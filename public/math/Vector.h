@@ -859,9 +859,9 @@ static const MColor color_brown		= MColor(0xFFA52A2A, true);
 static const MColor color_gray		= MColor(0xFF808080, true);
 
 #ifndef V3IsNaN
-#define V3IsNaN( v )		(IsNaN(v.x) || IsNaN(v.y) || IsNaN(v.z))
+#define V3IsNaN( v )		(fisNan(v.x) || fisNan(v.y) || fisNan(v.z))
 #endif
 
 #ifndef V4IsNaN
-#define V4IsNaN( v )		(IsNaN(v.x) || IsNaN(v.y) || IsNaN(v.z) || IsNaN(v.w))
+#define V4IsNaN( v )		(fisNan(v.x) || fisNan(v.y) || fisNan(v.z) || fisNan(v.w))
 #endif

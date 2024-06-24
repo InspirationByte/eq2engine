@@ -830,7 +830,7 @@ bool CAnimatingEGF::RecalcBoneTransforms()
 			CalculateSequenceBoneFrame(m_sequenceTimers[i], boneId, timerFrame);
 
 			const AnimSequenceTimer& transitionTimer = m_transitionTimers[i];
-			if (transitionTimer.transitionRemainingTime > 0.0f)
+			if (transitionTimer.transitionRemainingTime > 0.0f && transitionTimer.transitionTime > F_EPS)
 			{
 				// mix in the transition
 				AnimFrame transitionFrame;
@@ -842,6 +842,9 @@ bool CAnimatingEGF::RecalcBoneTransforms()
 
 			finalBoneFrame = AddFrameTransform(finalBoneFrame, timerFrame);
 		}
+
+		ASSERT(!V3IsNaN(finalBoneFrame.vecBonePosition));
+		ASSERT(!V3IsNaN(finalBoneFrame.angBoneAngles));
 
 		// compute transformation
 		const Matrix4x4 calculatedFrameMat = CalculateLocalBonematrix(finalBoneFrame);

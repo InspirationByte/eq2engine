@@ -254,7 +254,7 @@ Quaternion operator ! (const Quaternion &q)
 
 bool Quaternion::isNan() const
 {
-	return (IsNaN(x) || IsNaN(y) || IsNaN(z) || IsNaN(w) );
+	return (fisNan(x) || fisNan(y) || fisNan(z) || fisNan(w) );
 }
 
 Quaternion operator + (const Quaternion &u, const Quaternion &v)

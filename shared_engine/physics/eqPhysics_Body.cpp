@@ -330,7 +330,7 @@ void CEqRigidBody::AccumulateForces(float time)
 			angularVelocity = vec3_zero;
 	}
 
-	ASSERT_MSG(!IsNaN(angularVelocity.x) && !IsNaN(angularVelocity.y) && !IsNaN(angularVelocity.z), "Rigid body angular velocity is NaN");
+	ASSERT_MSG(!V3IsNaN(angularVelocity), "Rigid body angular velocity is NaN");
 
 	// convert angular velocity to spinning
 	// and accumulate
