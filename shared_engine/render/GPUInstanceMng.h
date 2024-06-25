@@ -50,7 +50,7 @@ struct DrawableInstanceList
 };
 */
 
-constexpr int GPUINST_MAX_COMPONENTS = 8;
+constexpr int GPUINST_MAX_COMPONENTS = 7;
 
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
 	static constexpr int IDENTIFIER = StringToHashConst(#Name); \
@@ -112,11 +112,12 @@ public:
 	void				FreeInstance(int instanceId);
 
 protected:
-	int					AllocInstance();
+	int					AllocInstance(int archetype);
 
 	struct InstRoot
 	{
 		uint32	components[GPUINST_MAX_COMPONENTS]{ UINT_MAX };
+		int		archetype{ 0 };	// usually hash of the model name
 	};
 
 	Threading::CEqMutex			m_mutex;
@@ -142,7 +143,7 @@ public:
 
 	// creates new empty instance with allocated components
 	template<typename ...TComps>
-	int 			AddInstance();
+	int 			AddInstance(int archetype);
 
 	// sets component values on instance
 	template<typename...TComps>
@@ -238,9 +239,9 @@ inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComps&... valu
 // creates new empty instance with allocated components
 template<typename...Ts>
 template<typename...TComps>
-inline int GPUInstanceManager<Ts...>::AddInstance()
+inline int GPUInstanceManager<Ts...>::AddInstance(int archetype)
 {
-	const int instanceId = AllocInstance();
+	const int instanceId = AllocInstance(archetype);
 
 	InstRoot& inst = m_instances[instanceId];
 	{

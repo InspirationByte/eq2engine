@@ -59,11 +59,15 @@ void GPUBaseInstanceManager::Shutdown()
 	}
 }
 
-int	GPUBaseInstanceManager::AllocInstance()
+int	GPUBaseInstanceManager::AllocInstance(int archetype)
 {
 	Threading::CScopedMutex m(m_mutex);
 	const int instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
-	memset(m_instances[instanceId].components, 0, sizeof(InstRoot::components));
+
+	InstRoot& inst = m_instances[instanceId];
+	inst.archetype = archetype;
+	memset(&inst.components, 0, sizeof(inst.components));
+
 	m_updated.insert(instanceId);
 
 	return instanceId;
