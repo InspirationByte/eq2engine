@@ -13,28 +13,30 @@ class IShaderAPI;
 struct MatSysCamera;
 
 #define BEGIN_SHADER_CLASS(name, ...)					\
-	namespace C##name##ShaderLocalNamespace {					\
-		class C##name##Shader;									\
-		typedef C##name##Shader ThisShaderClass;				\
-		static const char* ThisClassNameStr = #name;			\
-		static ArrayCRef<int> GetSupportedVertexLayoutIds() {	\
-			static const int supportedFormats[] = {				\
-				0, __VA_ARGS__									\
-			};													\
-			return ArrayCRef(supportedFormats);					\
-		}														\
-		class C##name##Shader : public CBaseShader {			\
-		public:													\
-			ArrayCRef<int> GetSupportedVertexLayoutIds() const override { return C##name##ShaderLocalNamespace::GetSupportedVertexLayoutIds(); } \
-			const char* GetName() const	{ return ThisClassNameStr; } \
-			int GetNameHash() const	{ return StringToHashConst(#name); } \
-			void Init(IShaderAPI* renderAPI, IMaterial* material) override \
-			{ CBaseShader::Init(renderAPI, material); ShaderInitParams(renderAPI); }
+	namespace C##name##ShaderLocalNamespace {				\
+	class C##name##Shader;									\
+	using ThisShaderClass = C##name##Shader;				\
+	static const char ThisClassNameStr[] = #name;			\
+	static ArrayCRef<int> GetSupportedVertexLayoutIds() {	\
+		static const int supportedFormats[] = {	0, __VA_ARGS__	};	\
+		return ArrayCRef(supportedFormats);					\
+	}														\
+	class C##name##Shader : public CBaseShader {			\
+	public:													\
+		ArrayCRef<int> GetSupportedVertexLayoutIds() const override { \
+			return C##name##ShaderLocalNamespace::GetSupportedVertexLayoutIds(); \
+		} \
+		const char* GetName() const override { return ThisClassNameStr; } \
+		int	GetNameHash() const	override { return StringToHashConst(#name); } \
+		void Init(IShaderAPI* renderAPI, IMaterial* material) override { \
+			CBaseShader::Init(renderAPI, material); ShaderInitParams(renderAPI); \
+		}
 
-#define END_SHADER_CLASS }; DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
+#define END_SHADER_CLASS };	\
+	DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
-#define SHADER_INIT_PARAMS()				void ShaderInitParams(IShaderAPI* renderAPI)
-#define SHADER_INIT_TEXTURES()				void InitTextures(IShaderAPI* renderAPI)
+#define SHADER_INIT_PARAMS()	void ShaderInitParams(IShaderAPI* renderAPI)
+#define SHADER_INIT_TEXTURES()	void InitTextures(IShaderAPI* renderAPI)
 
 #define _SHADER_PARAM_OP_EMPTY
 #define _SHADER_PARAM_OP_NOT !

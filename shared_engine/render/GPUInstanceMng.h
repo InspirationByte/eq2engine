@@ -95,6 +95,7 @@ struct GPUInstDataPool : public GPUInstPool
 	Array<T> 		data{ PP_SL };
 };
 
+// The instance manager basic implementation
 class GPUBaseInstanceManager
 {
 public:
@@ -120,14 +121,15 @@ protected:
 		int		archetype{ 0 };	// usually hash of the model name
 	};
 
-	Threading::CEqMutex			m_mutex;
-	IGPUBufferPtr				m_buffer;
-	IGPUBufferPtr				m_singleInstIndexBuffer;
-	IGPUComputePipelinePtr		m_updatePipeline;
-	Array<InstRoot>				m_instances{ PP_SL };
-	Array<int>					m_freeIndices{ PP_SL };
-	Set<int>					m_updated{ PP_SL };
-	GPUInstPool*				m_componentPools[GPUINST_MAX_COMPONENTS]{ nullptr };
+	Threading::CEqMutex		m_mutex;
+	IGPUBufferPtr			m_buffer;
+	IGPUBufferPtr			m_singleInstIndexBuffer;
+	IGPUComputePipelinePtr	m_updatePipeline;
+
+	Array<InstRoot>			m_instances{ PP_SL };
+	Array<int>				m_freeIndices{ PP_SL };
+	Set<int>				m_updated{ PP_SL };
+	GPUInstPool*			m_componentPools[GPUINST_MAX_COMPONENTS]{ nullptr };
 };
 
 
@@ -156,7 +158,9 @@ public:
 	// removes existing component
 	template<typename TComp>
 	void			Remove(int instanceId);
+
 protected:
+	using POOL_STORAGE = std::tuple<Pool<Components>...>;
 
 	// sets component values on instance
 	template<typename First, typename...Rest>
@@ -165,15 +169,13 @@ protected:
 	// sets component values on instance
 	void			SetInternal(InstRoot& inst) {}
 
-	using POOL_STORAGE = std::tuple<Pool<Components>...>;
-
 	template<typename TComp>
 	Pool<TComp>&	GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
 
 	template<std::size_t... Is>
 	void			InitPool(std::index_sequence<Is...>);
 
-	POOL_STORAGE	 m_componentPoolsStorage;
+	POOL_STORAGE	m_componentPoolsStorage;
 };
 
 //-------------------------------
