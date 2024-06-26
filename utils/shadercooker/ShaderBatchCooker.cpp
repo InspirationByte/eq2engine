@@ -31,8 +31,8 @@ Targets
 }
 */
 
-static const EqString s_engineDirTag("%ENGINE_DIR%");
-static const EqString s_gameDirTag("%GAME_DIR%");
+static constexpr EqStringRef s_engineDirTag("%ENGINE_DIR%");
+static constexpr EqStringRef s_gameDirTag("%GAME_DIR%");
 
 
 //-------------------------------------
@@ -198,10 +198,19 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 
 bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, const KVSection* shaderSection)
 {
+	EqStringRef sourceFileName;
+	EqStringRef sourceShaderName;
+	EqStringRef newShaderName;
+	if (shaderSection->GetValues(sourceFileName, sourceShaderName, newShaderName) < 2)
+	{
+		MsgError("shaderExt params are sourceFilename, sourceShaderName, newShaderName (optional)");
+		return false;
+	}
+
 	EqString extShaderDefFileName;
 	for (const EqString& path : m_targetProps.includePaths)
 	{
-		fnmPathCombine(extShaderDefFileName, path, KV_GetValueString(shaderSection, 0));
+		fnmPathCombine(extShaderDefFileName, path, sourceFileName);
 		if (g_fileSystem->FileExist(extShaderDefFileName, SP_ROOT))
 			break;
 	}
@@ -209,14 +218,18 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	KVSection baseShaderRoot;
 	if (!KV_LoadFromFile(extShaderDefFileName, SP_ROOT, &baseShaderRoot))
 	{
-		MsgWarning("%s: unknown shader file '%s', check include paths\n", shaderDefFileName, KV_GetValueString(shaderSection, 0));
+		MsgWarning("%s: unknown shader file '%s', check include paths\n", shaderDefFileName, sourceFileName.ToCString());
 		return false;
 	}
 
-	const KVSection* shaderRoot = nullptr;
-	for (const KVSection* shdKey : baseShaderRoot.Keys("shader"))
+	KVSection* shaderRoot = nullptr;
+	for (KVSection* shdKey : baseShaderRoot.Keys("shader"))
 	{
-		if (!CString::CompareCaseIns(KV_GetValueString(shdKey), KV_GetValueString(shaderSection, 1)))
+		EqStringRef baseShaderName;
+		if (!shdKey->GetValues(baseShaderName))
+			continue;
+		
+		if (baseShaderName == sourceShaderName)
 		{
 			shaderRoot = shdKey;
 			break;
@@ -229,8 +242,11 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 		return false;
 	}
 
+	if(newShaderName)
+		shaderRoot->SetValue(newShaderName.ToCString(), 0);
+
 	// merge sections softly
-	for (KVSection* section : shaderSection->Keys())
+	for (const KVSection* section : shaderSection->Keys())
 	{
 		KVSection* baseSec = shaderRoot->FindSection(section->GetName());
 		if (baseSec)
