@@ -126,6 +126,7 @@ void GPUBaseInstanceManager::FreeInstance(int instanceId)
 
 IGPUBufferPtr GPUBaseInstanceManager::GetDataPoolBuffer(int componentId) const
 {
+	ASSERT_MSG(m_componentPools[componentId], "GPUInstanceManager was not created with component ID = %d", componentId);
 	return m_componentPools[componentId]->buffer;
 }
 
