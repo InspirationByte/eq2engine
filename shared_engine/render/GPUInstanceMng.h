@@ -99,6 +99,8 @@ struct GPUInstDataPool : public GPUInstPool
 class GPUBaseInstanceManager
 {
 public:
+	GPUBaseInstanceManager();
+
 	void				Initialize();
 	void				Shutdown();
 
@@ -114,10 +116,11 @@ public:
 
 protected:
 	int					AllocInstance(int archetype);
+	int					AllocTempInstance(int archetype);
 
 	struct InstRoot
 	{
-		uint32	components[GPUINST_MAX_COMPONENTS]{ UINT_MAX };
+		uint32	components[GPUINST_MAX_COMPONENTS]{ 0 };
 		int		archetype{ 0 };	// usually hash of the model name
 	};
 
@@ -125,6 +128,8 @@ protected:
 	IGPUBufferPtr			m_buffer;
 	IGPUBufferPtr			m_singleInstIndexBuffer;
 	IGPUComputePipelinePtr	m_updatePipeline;
+
+	Array<int>				m_tempInstances{ PP_SL };
 
 	Array<InstRoot>			m_instances{ PP_SL };
 	Array<int>				m_freeIndices{ PP_SL };
@@ -145,7 +150,21 @@ public:
 
 	// creates new empty instance with allocated components
 	template<typename ...TComps>
-	int 			AddInstance(int archetype);
+	int 			AddInstance(int archetype)
+	{
+		const int instanceId = AllocInstance(archetype);
+		AllocInstanceComponents<TComps...>(instanceId);
+		return instanceId;
+	}
+
+	// creates new temporary empty instance with allocated components
+	template<typename ...TComps>
+	int 			AddTempInstance(int archetype)
+	{
+		const int instanceId = AllocTempInstance(archetype);
+		AllocInstanceComponents<TComps...>(instanceId);
+		return instanceId;
+	}
 
 	// sets component values on instance
 	template<typename...TComps>
@@ -161,6 +180,9 @@ public:
 
 protected:
 	using POOL_STORAGE = std::tuple<Pool<Components>...>;
+
+	template<typename ...TComps>
+	void 			AllocInstanceComponents(int instanceId);
 
 	// sets component values on instance
 	template<typename First, typename...Rest>
@@ -241,10 +263,8 @@ inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComps&... valu
 // creates new empty instance with allocated components
 template<typename...Ts>
 template<typename...TComps>
-inline int GPUInstanceManager<Ts...>::AddInstance(int archetype)
+inline void GPUInstanceManager<Ts...>::AllocInstanceComponents(int instanceId)
 {
-	const int instanceId = AllocInstance(archetype);
-
 	InstRoot& inst = m_instances[instanceId];
 	{
 		Threading::CScopedMutex m(m_mutex);
@@ -255,8 +275,6 @@ inline int GPUInstanceManager<Ts...>::AddInstance(int archetype)
 			compPool.updated.insert(inPoolIdx);
 		} (), ...);
 	}
-
-	return instanceId;
 }
 
 template<typename...Ts>

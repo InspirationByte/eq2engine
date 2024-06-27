@@ -12,8 +12,16 @@
 
 static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE		= 3072;
 static constexpr int GPU_INSTANCE_POOL_SIZE_EXTEND		= 1024;
+static constexpr int GPU_INSTANCE_MAX_TEMP_INSTANCES	= 128;
 
 static constexpr int GPU_INSTANCE_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
+
+GPUBaseInstanceManager::GPUBaseInstanceManager()
+{
+	// alloc default (zero) instance
+	m_instances.append({});
+	m_updated.insert(0);
+}
 
 void GPUBaseInstanceManager::Initialize()
 {
@@ -43,8 +51,11 @@ void GPUBaseInstanceManager::Shutdown()
 	m_singleInstIndexBuffer = nullptr;
 
 	m_updated.clear();
-	m_instances.clear();
+	m_instances.setNum(1);
+
 	m_freeIndices.clear();
+	m_tempInstances.clear();
+
 	for (GPUInstPool* pool : m_componentPools)
 	{
 		if (!pool)
@@ -71,6 +82,16 @@ int	GPUBaseInstanceManager::AllocInstance(int archetype)
 	m_updated.insert(instanceId);
 
 	return instanceId;
+}
+
+int GPUBaseInstanceManager::AllocTempInstance(int archetype)
+{
+	if (m_tempInstances.numElem() >= GPU_INSTANCE_MAX_TEMP_INSTANCES)
+		return -1;
+
+	const int instIdx = AllocInstance(archetype);
+	m_tempInstances.append(instIdx);
+	return instIdx;
 }
 
 // destroys instance and it's components
@@ -248,4 +269,9 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		}
 		pool->updated.clear();
 	}
+
+	for (int tempInstIdx : m_tempInstances)
+		FreeInstance(tempInstIdx);
+
+	m_tempInstances.clear();
 }
