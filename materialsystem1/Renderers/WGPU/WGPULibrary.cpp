@@ -28,6 +28,7 @@ DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_backend, "", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
 
 static const char* s_wgpuErrorTypesStr[] = {
+	"(null)"
 	"NoError",
 	"Validation",
 	"OutOfMemory",
@@ -37,6 +38,7 @@ static const char* s_wgpuErrorTypesStr[] = {
 };
 
 static const char* s_wgpuDeviceLostReasonStr[] = {
+	"(null)"
 	"Undefined",
 	"Destroyed",
 };
