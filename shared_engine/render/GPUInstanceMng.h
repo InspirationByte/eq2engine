@@ -100,23 +100,24 @@ class GPUBaseInstanceManager
 {
 public:
 	GPUBaseInstanceManager();
+	~GPUBaseInstanceManager() = default;
 
-	void				Initialize();
-	void				Shutdown();
+	void			Initialize();
+	void			Shutdown();
 
-	IGPUBufferPtr		GetSingleInstanceIndexBuffer() const { return m_singleInstIndexBuffer; }
-	IGPUBufferPtr		GetRootBuffer() const { return m_buffer; }
-	IGPUBufferPtr		GetDataPoolBuffer(int componentId) const;
+	IGPUBufferPtr	GetSingleInstanceIndexBuffer() const { return m_singleInstIndexBuffer; }
+	IGPUBufferPtr	GetRootBuffer() const { return m_buffer; }
+	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
 
 	// syncs instance buffers with GPU and updates roots buffer
-	void				SyncInstances(IGPUCommandRecorder* cmdRecorder);
+	void			SyncInstances(IGPUCommandRecorder* cmdRecorder);
 
 	// destroys instance and it's components
-	void				FreeInstance(int instanceId);
+	void			FreeInstance(int instanceId);
 
 protected:
-	int					AllocInstance(int archetype);
-	int					AllocTempInstance(int archetype);
+	int				AllocInstance(int archetype);
+	int				AllocTempInstance(int archetype);
 
 	struct InstRoot
 	{
@@ -135,6 +136,7 @@ protected:
 	Array<int>				m_freeIndices{ PP_SL };
 	Set<int>				m_updated{ PP_SL };
 	GPUInstPool*			m_componentPools[GPUINST_MAX_COMPONENTS]{ nullptr };
+	uint					m_buffersUpdated{ 0 };
 };
 
 

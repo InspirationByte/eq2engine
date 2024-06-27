@@ -56,6 +56,8 @@ void GPUBaseInstanceManager::Shutdown()
 	m_freeIndices.clear();
 	m_tempInstances.clear();
 
+	m_buffersUpdated = 0;
+
 	for (GPUInstPool* pool : m_componentPools)
 	{
 		if (!pool)
@@ -196,6 +198,8 @@ static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>&
 
 void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 {
+	bool buffersUpdatedThisFrame = false;
+
 	Threading::CScopedMutex m(m_mutex);
 
 	Array<int> elementIds(PP_SL);
@@ -212,7 +216,8 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 			IGPUBufferPtr sourceBuffer = m_buffer;
 			m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
-			
+			buffersUpdatedThisFrame = true;
+
 			// copy old contents of buffer
 			if (oldBufferElems > 0)
 				cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_buffer, 0, oldBufferElems * sizeof(InstRoot));
@@ -222,6 +227,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			for (int i = 0; i < allocInstBufferElems; ++i)
 				elementIds.append(i);
 			cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
+			
 		}
 
 		if (m_updated.size())
@@ -253,6 +259,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 			IGPUBufferPtr sourceBuffer = pool->buffer;
 			pool->buffer = g_renderAPI->CreateBuffer(BufferInfo(elemSize, allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
+			buffersUpdatedThisFrame = true;
 
 			// copy old contents of buffer
 			if (oldBufferElems > 0)
@@ -274,4 +281,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		FreeInstance(tempInstIdx);
 
 	m_tempInstances.clear();
+
+	if(buffersUpdatedThisFrame)
+		++m_buffersUpdated;
 }
