@@ -6,12 +6,18 @@
 
 class IVertexFormat;
 class IMaterial;
+class IShaderMeshInstanceProvider;
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;
 
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
+struct BindGroupLayoutDesc;
+class IGPUPipelineLayout;
+class IGPUBindGroup;
+using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 
 enum EPrimTopology : int;
 
@@ -171,9 +177,10 @@ struct MeshInstanceFormatRef
 
 struct MeshInstanceData
 {
-	GPUBufferView	buffer;
-	int				first{ 0 };
-	int				count{ 1 };
+	IShaderMeshInstanceProvider* instanceProvider{ nullptr };
+	GPUBufferView				buffer;
+	int							first{ 0 };
+	int							count{ 1 };
 };
 
 struct RenderInstanceInfo

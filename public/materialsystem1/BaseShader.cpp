@@ -315,31 +315,12 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			PipelineLayoutDesc pipelineLayoutDesc;
 			pipelineLayoutDesc.name = GetName();
 
-			{
-				BindGroupLayoutDesc layoutDesc;
-				FillBindGroupLayout_Constant(inputParams.meshInstFormat, layoutDesc);
-				//if (layoutDesc.entries.numElem())
-					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
-			}
-			{
-				BindGroupLayoutDesc layoutDesc;
-				FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, layoutDesc);
-				//if (layoutDesc.entries.numElem())
-					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
-			}
-			{
-				BindGroupLayoutDesc layoutDesc;
-				FillBindGroupLayout_Transient(inputParams.meshInstFormat, layoutDesc);
-				//if (layoutDesc.entries.numElem())
-					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
-			}
+			FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+			FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
 
-			{
-				BindGroupLayoutDesc layoutDesc;
-				FillBindGroupLayout_Instances(inputParams.meshInstFormat, layoutDesc);
-				if (layoutDesc.entries.numElem())
-					pipelineLayoutDesc.bindGroups.append(std::move(layoutDesc));
-			}
+			if(inputParams.meshInstProvider)
+				inputParams.meshInstProvider->FillBindGroupLayoutDesc(pipelineLayoutDesc.bindGroups.append());
 
 			int shaderLayoutBindGroup = 0;
 
@@ -425,7 +406,8 @@ bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputPara
 		uniformBuffers,
 		pipelineInfo,
 		passContext,
-		originalMaterial
+		originalMaterial,
+		pipelineParams.meshInstProvider
 	};
 
 	passContext.recorder->SetPipeline(pipelineInfo.pipeline);

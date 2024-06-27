@@ -1453,7 +1453,7 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
 	const RenderDrawBatch& meshInfo = drawCmd.batchInfo;
-	if (!SetupMaterialPipeline(drawCmd.batchInfo.material, drawCmd.instanceInfo.uniformBuffers, meshInfo.primTopology, instFormatRef, passContext))
+	if (!SetupMaterialPipeline(drawCmd.batchInfo.material, drawCmd.instanceInfo.uniformBuffers, meshInfo.primTopology, instFormatRef, passContext, instData.instanceProvider))
 		return;
 
 	if (instFormatRef.layout.numElem())
@@ -1487,7 +1487,7 @@ void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandReco
 	matSysMaterial->m_frameBound = proxyFrame;
 }
 
-bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext)
+bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext, IShaderMeshInstanceProvider* meshInstProvider)
 {
 	IShaderAPI* renderAPI = m_shaderAPI;
 
@@ -1528,6 +1528,7 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 		passContext.recorder->GetRenderTargetFormats(),
 		passContext.recorder->GetDepthTargetFormat(),
 		meshInstFormat,
+		meshInstProvider,
 		primTopology,
 		CULL_BACK,
 		passContext.recorder->GetTargetMultiSamples(),
@@ -1618,6 +1619,7 @@ bool CMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF
 		passContext.recorder->GetRenderTargetFormats(),
 		passContext.recorder->GetDepthTargetFormat(),
 		instFormatRef,
+		nullptr,
 		primTopology,
 		CULL_BACK,
 		1, // TODO: msaa

@@ -19,6 +19,7 @@ enum ECullMode : int;
 
 class IGPURenderPassRecorder;
 struct MeshInstanceFormatRef;
+class IShaderMeshInstanceProvider;
 struct RenderBufferInfo;
 struct RenderPassContext;
 
@@ -57,6 +58,13 @@ struct MatSysShaderPipelineCache
 	Threading::CEqReadWriteLock			rwLock;
 };
 
+class IShaderMeshInstanceProvider
+{
+public:
+	virtual void	FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const = 0;
+	virtual void	GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const = 0;
+};
+
 class IMatSystemShader
 {
 public:
@@ -85,18 +93,19 @@ public:
 
 	struct PipelineInputParams
 	{
-		ArrayCRef<ETextureFormat>		colorTargetFormat;
-		ETextureFormat					depthTargetFormat;
-		const MeshInstanceFormatRef&	meshInstFormat;
-		EPrimTopology					primitiveTopology{ (EPrimTopology)0 };
-		ECullMode						cullMode{ (EPrimTopology)0 };
+		ArrayCRef<ETextureFormat>			colorTargetFormat;
+		ETextureFormat						depthTargetFormat;
+		const MeshInstanceFormatRef&		meshInstFormat;
+		const IShaderMeshInstanceProvider*	meshInstProvider{ nullptr };
+		EPrimTopology						primitiveTopology{ (EPrimTopology)0 };
+		ECullMode							cullMode{ (EPrimTopology)0 };
 
-		int								multiSampleCount{ 1 };
-		uint32							multiSampleMask{ 0xffffffff };
-		bool							multiSampleAlphaToCoverage{ false };
+		int									multiSampleCount{ 1 };
+		uint32								multiSampleMask{ 0xffffffff };
+		bool								multiSampleAlphaToCoverage{ false };
 
-		bool							depthReadOnly{ false };
-		bool							skipFragmentPipeline{ false };
+		bool								depthReadOnly{ false };
+		bool								skipFragmentPipeline{ false };
 	};
 };
 

@@ -164,7 +164,7 @@ public:
 
 	void						UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force = false) const;
 
-	bool						SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext);
+	bool						SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext, IShaderMeshInstanceProvider* meshInstProvider = nullptr);
 	void						SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext);
 	bool						SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext);
 

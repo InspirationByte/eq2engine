@@ -198,7 +198,7 @@ public:
 	virtual Future<bool>			SubmitQueuedCommandsAwaitable() = 0;
 	virtual void					UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force = false) const = 0;
 
-	virtual bool					SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext) = 0;
+	virtual bool					SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext, IShaderMeshInstanceProvider* meshInstProvider = nullptr) = 0;
 	virtual void					SetupDrawCommand(const RenderDrawCmd& drawCmd, const RenderPassContext& passContext) = 0;
 	virtual bool					SetupDrawDefaultUP(EPrimTopology primTopology, int vertFVF, const void* verts, int numVerts, const RenderPassContext& passContext) = 0;
 
