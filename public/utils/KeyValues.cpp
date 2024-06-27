@@ -1102,7 +1102,7 @@ KVKeyIterator KVKeyIterator::Init::end() const
 	endIt.section = _initial.section;
 	endIt.nameHashFilter = _initial.nameHashFilter;
 	endIt.searchFlags = _initial.searchFlags;
-	endIt.index = _initial.section->KeyCount();
+	endIt.index = _initial.section ? _initial.section->KeyCount() : 0;
 	return endIt;
 }
 
