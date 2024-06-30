@@ -1452,8 +1452,8 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	// modify used layout flags
 	instFormatRef.usedLayoutBits &= usedVertexLayoutBits;
 
-	const RenderDrawBatch& meshInfo = drawCmd.batchInfo;
-	if (!SetupMaterialPipeline(drawCmd.batchInfo.material, drawCmd.instanceInfo.uniformBuffers, meshInfo.primTopology, instFormatRef, passContext, instData.instanceProvider))
+	const RenderDrawBatch& batchInfo = drawCmd.batchInfo;
+	if (!SetupMaterialPipeline(drawCmd.batchInfo.material, drawCmd.instanceInfo.uniformBuffers, batchInfo.primTopology, instFormatRef, passContext, instData.instanceProvider))
 		return;
 
 	if (instFormatRef.layout.numElem())
@@ -1466,10 +1466,20 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 		passContext.recorder->SetIndexBufferView(instInfo.indexBuffer, instInfo.indexFormat);
 	}
 
-	if (meshInfo.firstIndex < 0 && meshInfo.numIndices == 0)
-		passContext.recorder->Draw(meshInfo.numVertices, meshInfo.firstVertex, instData.count, instData.first);
+	if (batchInfo.indirectBuffer)
+	{
+		if (batchInfo.firstIndex < 0)
+			passContext.recorder->DrawIndirect(batchInfo.indirectBuffer.buffer, batchInfo.indirectBuffer.offset);
+		else
+			passContext.recorder->DrawIndexedIndirect(batchInfo.indirectBuffer.buffer, batchInfo.indirectBuffer.offset);
+	}
 	else
-		passContext.recorder->DrawIndexed(meshInfo.numIndices, meshInfo.firstIndex, instData.count, meshInfo.baseVertex, instData.first);
+	{
+		if (batchInfo.firstIndex < 0 && batchInfo.numIndices == 0)
+			passContext.recorder->Draw(batchInfo.numVertices, batchInfo.firstVertex, instData.count, instData.first);
+		else
+			passContext.recorder->DrawIndexed(batchInfo.numIndices, batchInfo.firstIndex, instData.count, batchInfo.baseVertex, instData.first);
+	}
 }
 
 void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force) const

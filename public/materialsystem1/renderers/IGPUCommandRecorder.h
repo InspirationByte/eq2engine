@@ -27,6 +27,16 @@ struct TextureCopyInfo
 	TextureOrigin	origin;
 };
 
+// helper structure used for filling buffer data
+// for Draw[Indexed]Indirect
+struct IndirectDrawData
+{
+	uint indexCount;
+	uint instanceCount;
+	uint firstIndex;
+	uint baseVertex;
+	uint firstInstance;
+};
 
 //---------------------------------
 // The command buffer ready to be passed into queue for execution
@@ -79,8 +89,9 @@ public:
 
 	virtual void					Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance = 0) = 0;
 	virtual void					DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex = 0, int firstInstance = 0) = 0;
-	virtual void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
+
 	virtual void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
+	virtual void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
 
 	virtual void*					GetUserData() const = 0;
 

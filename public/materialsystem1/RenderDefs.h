@@ -179,6 +179,8 @@ struct MeshInstanceData
 {
 	IShaderMeshInstanceProvider* instanceProvider{ nullptr };
 	GPUBufferView				buffer;
+
+	// below fields are ignored when indirectBuffer is set
 	int							first{ 0 };
 	int							count{ 1 };
 };
@@ -214,6 +216,8 @@ struct RenderDrawBatch
 {
 	IMaterial*		material{ nullptr };
 	EPrimTopology	primTopology{ (EPrimTopology)0 };
+	GPUBufferView	indirectBuffer;	// when set, everything below is ignored
+
 	int				firstVertex{ 0 };
 	int				firstIndex{ 0 };
 	int				numVertices{ 0 };
@@ -299,6 +303,14 @@ struct RenderDrawCmd
 		return *this;
 	}
 
+	RenderDrawCmd& SetDrawIndexed(EPrimTopology topology, IGPUBuffer* indirectBuffer, int bufferOffset)
+	{
+		batchInfo.primTopology = topology;
+		batchInfo.indirectBuffer = GPUBufferView(indirectBuffer, bufferOffset);
+		batchInfo.firstIndex = 0;
+		return *this;
+	}
+
 	RenderDrawCmd& SetDrawNonIndexed(EPrimTopology topology, int vertCount = -1, int firstVert = 0)
 	{
 		batchInfo.primTopology = topology;
@@ -306,6 +318,14 @@ struct RenderDrawCmd
 		batchInfo.numVertices = vertCount;
 		batchInfo.firstIndex = -1;
 		batchInfo.numIndices = 0;
+		return *this;
+	}
+
+	RenderDrawCmd& SetDrawNonIndexed(EPrimTopology topology, IGPUBuffer* indirectBuffer, int bufferOffset)
+	{
+		batchInfo.primTopology = topology;
+		batchInfo.indirectBuffer = GPUBufferView(indirectBuffer, bufferOffset);
+		batchInfo.firstIndex = -1;
 		return *this;
 	}
 
