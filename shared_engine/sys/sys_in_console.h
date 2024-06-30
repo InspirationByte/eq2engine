@@ -7,10 +7,6 @@
 
 #pragma once
 
-#if !defined(_RETAIL)
-#define IMGUI_ENABLED
-#endif
-
 class IEqFont;
 class ConCommandBase;
 class IGPURenderPassRecorder;

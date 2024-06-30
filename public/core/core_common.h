@@ -42,6 +42,10 @@
 #define PPMEM_DISABLED
 #endif // _RETAIL
 
+#if !defined(_RETAIL)
+#define IMGUI_ENABLED
+#endif
+
 //---------------
 
 #include "platform/platformdefs.h"

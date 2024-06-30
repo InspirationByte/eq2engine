@@ -8,6 +8,10 @@
 #pragma once
 #include "materialsystem1/renderers/IShaderAPI.h"
 
+#ifndef _RETAIL
+#define ENABLE_GPU_INSTANCE_DEBUG
+#endif
+
 /*
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
@@ -50,9 +54,10 @@ struct DrawableInstanceList
 };
 */
 
-constexpr int GPUINST_MAX_COMPONENTS = 7;
+constexpr int GPUINST_MAX_COMPONENTS = 8;
 
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
+	static constexpr const char* NAME = #Name; \
 	static constexpr int IDENTIFIER = StringToHashConst(#Name); \
 	static constexpr int COMPONENT_ID = ID; \
 	static void InitPipeline(GPUInstPool& pool);
@@ -67,6 +72,7 @@ struct GPUInstPool
 {
 	GPUInstPool(int stride) : stride(stride) {}
 
+	virtual const char* GetName() const = 0;
 	virtual const void*	GetDataPtr() const = 0;
 	virtual int			GetDataElems() const = 0;
 	virtual void		ResetData() = 0;
@@ -87,6 +93,7 @@ struct GPUInstDataPool : public GPUInstPool
 
 	GPUInstDataPool() : GPUInstPool(sizeof(T)) {}
 
+	const char*		GetName() const override { return T::NAME; }
 	const void*		GetDataPtr() const override { return data.ptr(); };
 	int				GetDataElems() const override { return data.numElem(); }
 	void			ResetData() override { data.setNum(1); }		// reset data to have default element only
@@ -98,6 +105,7 @@ struct GPUInstDataPool : public GPUInstPool
 // The instance manager basic implementation
 class GPUBaseInstanceManager
 {
+	friend class GPUInstanceManagerDebug;
 public:
 	GPUBaseInstanceManager();
 	~GPUBaseInstanceManager() = default;
@@ -112,8 +120,13 @@ public:
 	// syncs instance buffers with GPU and updates roots buffer
 	void			SyncInstances(IGPUCommandRecorder* cmdRecorder);
 
+	// sets batches that are drrawn with particular instance
+	void			SetBatches(int instanceId, uint batchesFlags);
+
 	// destroys instance and it's components
 	void			FreeInstance(int instanceId);
+
+	void			DbgRegisterArhetypeName(int archetypeId, const char* name);
 
 protected:
 	int				AllocInstance(int archetype);
@@ -122,7 +135,13 @@ protected:
 	struct InstRoot
 	{
 		uint32	components[GPUINST_MAX_COMPONENTS]{ 0 };
-		int		archetype{ 0 };	// usually hash of the model name
+	};
+
+	struct Instance
+	{
+		InstRoot	root;
+		int			archetype{ 0 };			// usually hash of the model name
+		uint		batchesFlags{ 0 };		// bit flags of drawn batches
 	};
 
 	Threading::CEqMutex		m_mutex;
@@ -132,11 +151,16 @@ protected:
 
 	Array<int>				m_tempInstances{ PP_SL };
 
-	Array<InstRoot>			m_instances{ PP_SL };
+	Array<Instance>			m_instances{ PP_SL };
 	Array<int>				m_freeIndices{ PP_SL };
 	Set<int>				m_updated{ PP_SL };
 	GPUInstPool*			m_componentPools[GPUINST_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
+
+	Map<int, int>			m_archetypeInstCounts{ PP_SL };
+#ifdef ENABLE_GPU_INSTANCE_DEBUG
+	Map<int, EqString>		m_archetypeNames{ PP_SL };
+#endif
 };
 
 
@@ -202,6 +226,12 @@ protected:
 	POOL_STORAGE	m_componentPoolsStorage;
 };
 
+class GPUInstanceManagerDebug
+{
+public:
+	static void DrawUI(GPUBaseInstanceManager& instMngBase);
+};
+
 //-------------------------------
 
 template<typename...Ts>
@@ -258,7 +288,7 @@ inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComps&... valu
 	if (instanceId == -1)
 		return;
 
-	InstRoot& inst = m_instances[instanceId];
+	InstRoot& inst = m_instances[instanceId].root;
 	SetInternal(inst, values...);
 }
 
@@ -267,7 +297,7 @@ template<typename...Ts>
 template<typename...TComps>
 inline void GPUInstanceManager<Ts...>::AllocInstanceComponents(int instanceId)
 {
-	InstRoot& inst = m_instances[instanceId];
+	InstRoot& inst = m_instances[instanceId].root;
 	{
 		Threading::CScopedMutex m(m_mutex);
 		([&]{
@@ -286,7 +316,7 @@ void GPUInstanceManager<Ts...>::Add(int instanceId)
 	if (instanceId == -1)
 		return;
 
-	InstRoot& inst = m_instances[instanceId];
+	InstRoot& inst = m_instances[instanceId].root;
 	if (inst.components[TComp::COMPONENT_ID] > 0 && inst.components[TComp::COMPONENT_ID] != UINT_MAX)
 		return;
 
@@ -308,7 +338,7 @@ void GPUInstanceManager<Ts...>::Remove(int instanceId)
 	if (instanceId == -1)
 		return;
 
-	InstRoot& inst = m_instances[instanceId];
+	InstRoot& inst = m_instances[instanceId].root;
 	if (inst.components[TComp::COMPONENT_ID] == 0 || inst.components[TComp::COMPONENT_ID] == UINT_MAX)
 		return;
 

@@ -29,7 +29,8 @@ project "renderUtilLib"
     kind "StaticLib"
 	unitybuild "on"
 	uses {
-		"coreLib", "frameworkLib", "e2Core"
+		"coreLib", "frameworkLib", "e2Core",
+		"imgui"
 	}
     files {
 		Folders.shared_engine.. "render/**.cpp",

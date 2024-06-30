@@ -5,6 +5,7 @@
 // Description: GPU Instances manager
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <imgui.h>
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
@@ -50,11 +51,12 @@ void GPUBaseInstanceManager::Shutdown()
 	m_buffer = nullptr;	
 	m_singleInstIndexBuffer = nullptr;
 
-	m_updated.clear();
+	m_updated.clear(true);
 	m_instances.setNum(1);
 
-	m_freeIndices.clear();
-	m_tempInstances.clear();
+	m_freeIndices.clear(true);
+	m_tempInstances.clear(true);
+	m_archetypeInstCounts.clear(true);
 
 	m_buffersUpdated = 0;
 
@@ -65,11 +67,20 @@ void GPUBaseInstanceManager::Shutdown()
 
 		pool->buffer = nullptr;
 		pool->updatePipeline = nullptr;
-		pool->freeIndices.clear();
-		pool->updated.clear();
+		pool->freeIndices.clear(true);
+		pool->updated.clear(true);
 		pool->ResetData();
 		pool->updated.insert(0);
 	}
+}
+
+void GPUBaseInstanceManager::DbgRegisterArhetypeName(int archetypeId, const char* name)
+{
+#ifdef ENABLE_GPU_INSTANCE_DEBUG
+	Threading::CScopedMutex m(m_mutex);
+	if(m_archetypeNames.find(archetypeId).atEnd())
+		m_archetypeNames.insert(archetypeId, name);
+#endif
 }
 
 int	GPUBaseInstanceManager::AllocInstance(int archetype)
@@ -77,11 +88,14 @@ int	GPUBaseInstanceManager::AllocInstance(int archetype)
 	Threading::CScopedMutex m(m_mutex);
 	const int instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 
-	InstRoot& inst = m_instances[instanceId];
+	Instance& inst = m_instances[instanceId];
+	inst.batchesFlags = 0;
 	inst.archetype = archetype;
-	memset(&inst.components, 0, sizeof(inst.components));
+	memset(&inst.root.components, 0, sizeof(inst.root.components));
 
 	m_updated.insert(instanceId);
+
+	++m_archetypeInstCounts[archetype];
 
 	return instanceId;
 }
@@ -96,31 +110,44 @@ int GPUBaseInstanceManager::AllocTempInstance(int archetype)
 	return instIdx;
 }
 
+// sets batches that are drrawn with particular instance
+void GPUBaseInstanceManager::SetBatches(int instanceId, uint batchesFlags)
+{
+	if (!m_instances.inRange(instanceId))
+		return;
+
+	Instance& inst = m_instances[instanceId];
+	inst.batchesFlags = batchesFlags;
+}
+
 // destroys instance and it's components
 void GPUBaseInstanceManager::FreeInstance(int instanceId)
 {
 	if (!m_instances.inRange(instanceId))
 		return;
 
+	Instance& inst = m_instances[instanceId];
+	InstRoot& root = inst.root;
 	{
 		Threading::CScopedMutex m(m_mutex);
 		m_freeIndices.append(instanceId);
+
+		--m_archetypeInstCounts[inst.archetype];
 	}
 
-	InstRoot& inst = m_instances[instanceId];
 	for (int i = 0; i < GPUINST_MAX_COMPONENTS; ++i)
 	{
 		// skip invalid or defaults
-		if (inst.components[i] == UINT_MAX)
+		if (root.components[i] == UINT_MAX)
 			continue;
 
 		// add this instance to freed list and invalidate ID
-		if(inst.components[i] > 0)
+		if(root.components[i] > 0)
 		{
 			Threading::CScopedMutex m(m_mutex);
-			m_componentPools[i]->freeIndices.append(inst.components[i]);
+			m_componentPools[i]->freeIndices.append(root.components[i]);
 		}
-		inst.components[i] = UINT_MAX;
+		root.components[i] = UINT_MAX;
 	}
 }
 
@@ -162,10 +189,10 @@ static void instRunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputeP
 	computePass->Complete();
 }
 
-static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer)
+static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer)
 {
 	const int updatedCount = updated.size();
-	const int updateBufferSize = updatedCount * sourceStride;
+	const int updateBufferSize = updatedCount * elemSize;
 
 	elementIds.reserve(updatedCount + 1);
 	elementIds.clear();
@@ -179,6 +206,8 @@ static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>&
 		PPFree(updateDataStart);
 	};
 
+	ASSERT(elemSize <= sourceStride);
+
 	// as GPU does not like unaligned access, we put updated elements in separate buffer
 	for (auto it = updated.begin(); !it.atEnd(); ++it)
 	{
@@ -186,8 +215,8 @@ static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>&
 		elementIds.append(elemIdx);
 
 		const ubyte* updInstPtr = sourceData + sourceStride * elemIdx;
-		memcpy(updateData, updInstPtr, sourceStride);
-		updateData += sourceStride;
+		memcpy(updateData, updInstPtr, elemSize);
+		updateData += elemSize;
 	}
 
 	destIdxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(elementIds[0]), elementIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
@@ -235,7 +264,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		{
 			IGPUBufferPtr idxsBuffer;
 			IGPUBufferPtr dataBuffer;
-			instPrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(InstRoot), idxsBuffer, dataBuffer);
+			instPrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);
 			instRunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_buffer);
 		}
 		m_updated.clear();
@@ -272,7 +301,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// prepare update buffer
 			IGPUBufferPtr idxsBuffer;
 			IGPUBufferPtr dataBuffer;
-			instPrepareBuffers(cmdRecorder, pool->updated, elementIds, poolDataPtr, elemSize, idxsBuffer, dataBuffer);
+			instPrepareBuffers(cmdRecorder, pool->updated, elementIds, poolDataPtr, elemSize, elemSize, idxsBuffer, dataBuffer);
 			instRunUpdatePipeline(cmdRecorder, pool->updatePipeline, idxsBuffer, pool->updated.size(), dataBuffer, pool->buffer);
 		}
 		pool->updated.clear();
@@ -285,4 +314,39 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 	if(buffersUpdatedThisFrame)
 		++m_buffersUpdated;
+}
+
+void GPUInstanceManagerDebug::DrawUI(GPUBaseInstanceManager& instMngBase)
+{
+#ifdef IMGUI_ENABLED
+	ImGui::Text("Instances: %d", instMngBase.m_instances.numElem());
+	ImGui::Text("Archetypes: %d", instMngBase.m_archetypeInstCounts.size());
+	ImGui::Text("Buffer ref updates: %u", instMngBase.m_buffersUpdated);
+
+	Array<int> sortedArchetypes(PP_SL);
+	int maxInst = 0;
+	for (auto it = instMngBase.m_archetypeInstCounts.begin(); !it.atEnd(); ++it)
+	{
+		maxInst = max(maxInst, *it);
+		sortedArchetypes.append(it.key());
+	}
+
+	arraySort(sortedArchetypes, [&](const int archA, const int archB) {
+		return instMngBase.m_archetypeInstCounts[archB] - instMngBase.m_archetypeInstCounts[archA];
+	});
+
+	EqString instName;
+	for (const int archetypeId : sortedArchetypes)
+	{
+		const int instCount = instMngBase.m_archetypeInstCounts[archetypeId];
+		const auto nameIt = instMngBase.m_archetypeNames.find(archetypeId);
+		if (!nameIt.atEnd())
+			instName = *nameIt;
+		else
+			instName = EqString::Format("%d", archetypeId);
+
+		EqString str = EqString::Format("%s : %d", instName, instCount);
+		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
+	}
+#endif // IMGUI_ENABLED
 }
