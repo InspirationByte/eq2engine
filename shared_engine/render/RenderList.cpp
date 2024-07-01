@@ -7,7 +7,7 @@
 
 #include "core/core_common.h"
 #include "RenderList.h"
-#include "BaseRenderableObject.h"
+#include "RenderableObject.h"
 
 static constexpr const int MIN_OBJECT_RENDERLIST_SIZE = 64;
 

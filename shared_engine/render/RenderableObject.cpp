@@ -6,16 +6,16 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "BaseRenderableObject.h"
+#include "RenderableObject.h"
 
 // adds a render flags
-void CBaseRenderableObject::SetRenderFlags(int nFlags)
+void IRenderableObject::SetRenderFlags(int nFlags)
 {
 	m_renderFlags = nFlags;
 }
 
 // removes render flags
-int CBaseRenderableObject::GetRenderFlags() const
+int IRenderableObject::GetRenderFlags() const
 {
 	return m_renderFlags;
 }

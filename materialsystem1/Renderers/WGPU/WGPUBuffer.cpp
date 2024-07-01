@@ -89,12 +89,12 @@ void CWGPUBuffer::Update(const void* data, int64 size, int64 offset)
 	});
 }
 
-Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
+Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 {
 	struct LockContext
 	{
-		Promise<BufferLockData> promise;
-		BufferLockData			data;
+		Promise<BufferMapData> promise;
+		BufferMapData			data;
 		WGPUBuffer				buffer;
 		int						flags;
 	};
@@ -102,7 +102,7 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 	if (!m_rhiBuffer || lockOfs < 0 || lockOfs + sizeToLock > m_bufSize)
 	{
 		ASSERT_FAIL("Locking outside range");
-		Promise<BufferLockData> errorPromise;
+		Promise<BufferMapData> errorPromise;
 		errorPromise.SetError(-1, "Lock failure");
 		return errorPromise.CreateFuture();
 	}
@@ -111,7 +111,7 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 	context->buffer = m_rhiBuffer;
 	context->flags = m_usageFlags;
 
-	BufferLockData& lockData = context->data;
+	BufferMapData& lockData = context->data;
 	lockData.flags = flags;
 	lockData.size = sizeToLock;
 	lockData.offset = lockOfs;
@@ -128,7 +128,7 @@ Future<BufferLockData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 			return;
 		}
 
-		BufferLockData& lockData = context->data;
+		BufferMapData& lockData = context->data;
 		if(context->flags & BUFFERUSAGE_WRITE)
 			lockData.data = wgpuBufferGetMappedRange(context->buffer, lockData.offset, lockData.size);
 		else

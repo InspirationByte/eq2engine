@@ -20,7 +20,7 @@ public:
 	int			GetSize() const { return m_bufSize; }
 
 	void		Update(const void* data, int64 size, int64 offset);
-	LockFuture	Lock(int lockOfs, int sizeToLock, int flags);
+	MapFuture	Lock(int lockOfs, int sizeToLock, int flags);
 	void		Unlock();
 
 	WGPUBuffer	GetWGPUBuffer() const { return m_rhiBuffer; }

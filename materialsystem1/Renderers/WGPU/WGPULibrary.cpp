@@ -449,7 +449,7 @@ bool CWGPURenderLib::IsWindowed() const
 
 bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 {
-	ITexturePtr currentTexture = m_swapChains[0]->GetBackbuffer();
+	ITexturePtr currentTexture = m_currentSwapChain->GetBackbuffer();
 
 	const int bytesPerPixel = GetBytesPerPixel(GetTexFormat(currentTexture->GetFormat()));
 	const bool rbSwapped = HasTexFormatFlags(currentTexture->GetFormat(), TEXFORMAT_FLAG_SWAP_RB);
@@ -460,23 +460,23 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 	cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
 	Future<bool> cmdFuture = g_renderAPI->SubmitCommandBufferAwaitable(cmdRecorder->End());
 	
+	// wait until image is copied to the buffer
 	while (!cmdFuture.HasResult()) {
 		WGPU_INSTANCE_SPIN
 	}
 
-	//cmdFuture.AddCallback([](FutureResult<bool>& result) {
-	//
-	//});
-
-	IGPUBuffer::LockFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
-	future.AddCallback([currentTexture, bytesPerPixel, rbSwapped, &img](const FutureResult<BufferLockData>& result) {
+	// map buffer so we can read back pixels to our screenshot image memory
+	IGPUBuffer::MapFuture future = tempBuffer->Lock(0, tempBuffer->GetSize(), 0);
+	future.AddCallback([currentTexture, bytesPerPixel, rbSwapped, &img](const FutureResult<BufferMapData>& result) {
 		ASSERT(result->data);
-		ubyte* dst = img.Create(FORMAT_RGB8, currentTexture->GetWidth(), currentTexture->GetHeight(), 1, 1);
 
-		for (int y = 0; y < currentTexture->GetHeight(); y++)
+		const TextureExtent size = currentTexture->GetSize();
+		ubyte* dst = img.Create(FORMAT_RGB8, size.width, size.height, 1, 1);
+
+		for (int y = 0; y < size.height; y++)
 		{
-			const ubyte* src = (ubyte*)result->data + bytesPerPixel * y * currentTexture->GetWidth();
-			for (int x = 0; x < currentTexture->GetWidth(); ++x)
+			const ubyte* src = (ubyte*)result->data + bytesPerPixel * y * size.width;
+			for (int x = 0; x < size.width; ++x)
 			{
 				if(rbSwapped)
 				{

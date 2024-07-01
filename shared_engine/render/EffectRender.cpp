@@ -16,11 +16,11 @@
 using namespace Threading;
 static CEqMutex s_effectRenderMutex;
 
-CStaticAutoPtr<CEffectRenderer> effectrenderer;
+CStaticAutoPtr<CEffectRenderer> g_effectRenderer;
 
 void IEffect::SetSortOrigin(const Vector3D &origin)
 {
-	m_fDistanceToView = length(origin - effectrenderer->m_viewPos);
+	m_fDistanceToView = length(origin - g_effectRenderer->m_viewPos);
 }
 
 //-------------------------------------------------------------------------------------

@@ -62,7 +62,7 @@ public:
 	CEmptyBuffer(int size, int usageFlags) : m_size(size), m_usageFlags(usageFlags) {}
 
 	void		Update(const void* data, int64 size, int64 offset) {}
-	LockFuture	Lock(int lockOfs, int sizeToLock, int flags) { return LockFuture::Failure(-1, "Unsupported"); }
+	MapFuture	Lock(int lockOfs, int sizeToLock, int flags) { return MapFuture::Failure(-1, "Unsupported"); }
 	void		Unlock() {}
 	int			GetSize() const { return m_size; }
 

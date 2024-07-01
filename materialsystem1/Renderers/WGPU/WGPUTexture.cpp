@@ -269,8 +269,8 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 			g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
 		}
 
-		IGPUBuffer::LockFuture future = tmpBuffer.Lock(0, tmpBuffer.GetSize(), 0);
-		future.AddCallback([this, &data, lockByteCount](const FutureResult<BufferLockData>& result) {
+		IGPUBuffer::MapFuture future = tmpBuffer.Lock(0, tmpBuffer.GetSize(), 0);
+		future.AddCallback([this, &data, lockByteCount](const FutureResult<BufferMapData>& result) {
 			memcpy(data.lockData, result->data, lockByteCount);
 		});
 

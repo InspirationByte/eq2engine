@@ -8,23 +8,19 @@
 #pragma once
 
 struct RenderPassContext;
-class CBaseRenderableObject;
-class IGPURenderPassRecorder;
+class IRenderableObject;
 
-//----------------------------------------------------
-// Base render list interface.
-//----------------------------------------------------
 class CRenderList
 {
 public:
-	using Renderable = CBaseRenderableObject;
+	using Renderable = IRenderableObject;
 
 	CRenderList();
 	virtual ~CRenderList() = default;
 
 	void					Clear();
 
-	void					AddRenderable(Renderable* pObject, void* userData = nullptr);		// adds a single object
+	void					AddRenderable(Renderable* renderable, void* userData = nullptr);		// adds a single object
 	ArrayCRef<Renderable*>	GetRenderables() const { return m_objectList; }
 	void					SortByDistanceFrom(const Vector3D& origin, bool reverse);
 
