@@ -274,13 +274,15 @@ Quaternion operator - (const Quaternion &v)
 
 Quaternion operator * (const Quaternion& u, const Quaternion& v)
 {
-	Quaternion tmp;
+	const Vector4D& q1 = v.asVector4D();
+	const Vector4D& q2 = u.asVector4D();
 
-	tmp.w = (v.w * u.w) - (v.x * u.x) - (v.y * u.y) - (v.z * u.z);
-	tmp.x = (v.w * u.x) + (v.x * u.w) + (v.y * u.z) - (v.z * u.y);
-	tmp.y = (v.w * u.y) + (v.y * u.w) + (v.z * u.x) - (v.x * u.z);
-	tmp.z = (v.w * u.z) + (v.z * u.w) + (v.x * u.y) - (v.y * u.x);
-	return tmp;
+	const Vector3D im = q1.w * q2.xyz()
+					  + q2.w * q1.xyz()
+					  + cross(q1.xyz(), q2.xyz());
+
+	const float re = dot(q1 * q2, Vector4D(-1.0, -1.0, -1.0, 1.0));
+	return Quaternion(re, im.x, im.y, im.z);
 }
 
 Quaternion operator * (const float scalar, const Quaternion &v)
@@ -621,7 +623,7 @@ void axisAngle(const Quaternion& q, Vector3D &axis, float &angle)
 // vector rotation
 Vector3D rotateVector( const Vector3D& v, const Quaternion& q )
 {
-	const Vector3D u = -q.asVector4D().xyz();
+	const Vector3D& u = -q.asVector4D().xyz();
 	const float s = q.w;
 	return 2.0f * dot(u, v) * u
 		   + (sqr(s) - dot(u, u)) * v

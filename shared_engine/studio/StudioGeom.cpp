@@ -30,33 +30,6 @@ DECLARE_CVAR(r_egf_LodScale, "1.0", "Studio model LOD scale", CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(r_egf_LodStart, "0", 0, MAX_MODEL_LODS, "Studio LOD start index", CV_ARCHIVE);
 DECLARE_CVAR(r_force_softwareskinning, "0", "Force software skinning", CV_UNREGISTERED);
 
-namespace {
-
-// MUST BE SAME AS IN SHADER
-
-// multiplies bone
-Vector4D quatMul(Vector4D& q1, Vector4D& q2)
-{
-	Vector3D  im = q1.w * q2.xyz() + q1.xyz() * q2.w + cross(q1.xyz(), q2.xyz());
-	Vector4D  dt = q1 * q2;
-	float re = dot(dt, Vector4D(-1.0, -1.0, -1.0, 1.0));
-
-	return Vector4D(im, re);
-}
-
-// vector rotation
-Vector4D quatRotate(Vector3D& p, Quaternion& q)
-{
-	Quaternion temp = q * Quaternion(0.0f, p.x, p.y, p.z);
-	return (temp * Quaternion(q.w, -q.x, -q.y, -q.z)).asVector4D();
-}
-
-// transforms bone
-Vector3D boneTransf(RenderBoneTransform& bq, Vector3D& pos)
-{
-	return bq.origin.xyz() + quatRotate(pos, bq.quat).xyz();
-}
-}
 
 // Software vertex transformation, only for compatibility
 static bool TransformEGFVertex(EGFHwVertex::PositionUV& vertPos, EGFHwVertex::TBN& tbn, EGFHwVertex::BoneWeights& vertWeight, Matrix4x4* pMatrices)

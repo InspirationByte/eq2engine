@@ -422,7 +422,7 @@ int CMaterial::GetFlags() const
 const char*	CMaterial::GetShaderName() const
 {
 	if(!m_shader)
-		return m_szShaderName.ToCString();
+		return m_szShaderName;
 
 	return m_shader->GetName();
 }
