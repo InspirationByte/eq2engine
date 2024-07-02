@@ -20,15 +20,23 @@ CStaticAutoPtr<CEffectRenderer> g_effectRenderer;
 
 void IEffect::SetSortOrigin(const Vector3D &origin)
 {
-	m_fDistanceToView = length(origin - g_effectRenderer->m_viewPos);
+	m_distToView = lengthSqr(origin - g_effectRenderer->m_viewPos);
+}
+
+void IEffect::InternalInit(const Vector3D& origin, float lifetime, PFXAtlasRef atlasRef)
+{
+	ASSERT(lifetime > F_EPS);
+
+	m_origin = origin;
+	SetSortOrigin(origin);
+
+	m_lifeTimeRcp = 1.0f / lifetime;
+	m_lifeTime = lifetime;
+
+	m_atlasRef = atlasRef;
 }
 
 //-------------------------------------------------------------------------------------
-
-CEffectRenderer::CEffectRenderer()
-{
-	m_effectList.clear();
-}
 
 void CEffectRenderer::AddEffect(IEffect* pEffect)
 {
@@ -39,9 +47,6 @@ void CEffectRenderer::AddEffect(IEffect* pEffect)
 	if(m_effectList.numElem() >= m_effectList.numAllocated())
 	{
 		DevMsg(DEVMSG_CORE, "Effect list overflow!\n");
-
-		// effect list overflow
-		pEffect->DestroyEffect();
 		delete pEffect;
 		return;
 	}
@@ -79,10 +84,8 @@ void CEffectRenderer::RemoveAllEffects()
 	CScopedMutex m(s_effectRenderMutex);
 
 	for(int i = 0; i < m_effectList.numElem(); i++)
-	{
-		m_effectList[i]->DestroyEffect();
 		delete m_effectList[i];
-	}
+
 	m_effectList.clear();
 }
 
@@ -95,10 +98,7 @@ void CEffectRenderer::RemoveEffect(int index)
 
 	IEffect* effect = m_effectList[index];
 	if (m_effectList.fastRemoveIndex(index) && effect)
-	{
-		effect->DestroyEffect();
 		delete effect;
-	}
 }
 
 void CEffectRenderer::SetViewSortPosition(const Vector3D& origin)

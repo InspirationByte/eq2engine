@@ -16,40 +16,27 @@ static constexpr const int MAX_VISIBLE_EFFECTS = 4096;
 class IEffect
 {
 public:
-	virtual			~IEffect() = default;
+	virtual ~IEffect() = default;
 
 	void			SetSortOrigin(const Vector3D &origin);
-	const Vector3D& GetOrigin() const { return m_vOrigin; }
-
-	virtual void	DestroyEffect() {};
+	const Vector3D& GetOrigin() const { return m_origin; }
 
 	// Draws effect. required for overriding
 	virtual bool	DrawEffect(float dTime) = 0;
 
-	float			GetLifetime() const			{ return m_fLifeTime; }
-	float			GetStartLifetime() const	{ return m_fStartLifeTime; }
-	float			GetLifetimePercent() const	{ return m_fLifeTime / m_fStartLifeTime; }
-	float			GetDistanceToCamera() const	{ return m_fDistanceToView; }
+	float			GetLifetimePercent() const	{ return m_lifeTime * m_lifeTimeRcp; }
+	float			GetDistanceToCamera() const	{ return m_distToView; }
 
 protected:
 
-	void InternalInit(const Vector3D &origin, float lifetime, PFXAtlasRef atlasRef)
-	{
-		m_vOrigin = origin;
-		SetSortOrigin(origin);
+	void InternalInit(const Vector3D& origin, float lifetime, PFXAtlasRef atlasRef);
 
-		m_fStartLifeTime = lifetime;
-		m_fLifeTime = lifetime;
-
-		m_atlasRef = atlasRef;
-	}
-
-	Vector3D			m_vOrigin{ vec3_zero };
+	Vector3D			m_origin{ vec3_zero };
 	PFXAtlasRef			m_atlasRef;
 
-	float				m_fStartLifeTime{ 0.0f };
-	float				m_fLifeTime{ 0.0f };
-	float				m_fDistanceToView{ 0.0f };
+	float				m_lifeTimeRcp{ 0.0f };
+	float				m_lifeTime{ 0.0f };
+	float				m_distToView{ 0.0f };
 };
 
 //-------------------------------------------------------------------------------------
@@ -61,8 +48,6 @@ class CEffectRenderer
 {
 	friend class IEffect;
 public:
-				CEffectRenderer();
-
 	void		AddEffect(IEffect* pEffect);
 	void		DrawEffects(float dt);
 
@@ -76,7 +61,7 @@ protected:
 
 private:
 	FixedArray<IEffect*, MAX_VISIBLE_EFFECTS>	m_effectList;
-	Vector3D	m_viewPos;
+	Vector3D	m_viewPos{ vec3_zero };
 };
 
 extern CStaticAutoPtr<CEffectRenderer> g_effectRenderer;
