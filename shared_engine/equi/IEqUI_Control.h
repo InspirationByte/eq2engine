@@ -22,8 +22,8 @@ struct FontStyleParam;
 
 // a helper macro for baseclass defintion
 #define EQUI_CLASS( className, baseClassName )					\
-	typedef className ThisClass;								\
-	typedef baseClassName BaseClass;							\
+	using ThisClass = className;								\
+	using BaseClass = baseClassName;							\
 	const char*	GetClassname() const { return ThisClass::Classname(); }		\
 	static const char* Classname() { return #className; }		\
 

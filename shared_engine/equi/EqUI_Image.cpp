@@ -34,18 +34,21 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 
 	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
 
-	bool flipX = KV_GetValueBool(sec->FindSection("flipx"), 0, (m_imageFlags & FLIP_X) > 0);
-	bool flipY = KV_GetValueBool(sec->FindSection("flipy"), 0, (m_imageFlags & FLIP_Y) > 0);
+	const bool flipX = KV_GetValueBool(sec->FindSection("flipX"), 0, (m_imageFlags & FLIP_X) > 0);
+	const bool flipY = KV_GetValueBool(sec->FindSection("flipY"), 0, (m_imageFlags & FLIP_Y) > 0);
 
 	m_imageFlags = (flipX ? FLIP_X : 0) | (flipY ? FLIP_Y : 0);
 
-	KVSection* pathBase = sec->FindSection("path");
+	const KVSection* pathBase = sec->FindSection("path");
 	if (pathBase)
 	{
 		const char* materialPath = KV_GetValueString(pathBase, 0, "ui/default");
 		SetMaterial(materialPath);
-		m_atlasRegion.leftTop = Vector2D(0.0f);
-		m_atlasRegion.rightBottom = Vector2D(1.0f);
+
+		m_uvRegion = AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
+
+		sec->Get("uvLeftTop").GetValues(m_uvRegion.leftTop);
+		sec->Get("uvRightBottom").GetValues(m_uvRegion.rightBottom);
 	}
 	else
 	{
@@ -60,9 +63,9 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 
 		if (m_material->GetAtlas())
 		{
-			AtlasEntry* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
+			const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
 			if (entry)
-				m_atlasRegion = entry->rect;
+				m_uvRegion = entry->rect;
 		}
 	}
 	else
@@ -87,14 +90,27 @@ const ColorRGBA& Image::GetColor() const
 	return m_color;
 }
 
+AARectangle Image::GetUVRegion() const
+{
+	const TextureExtent texSize = m_material->GetBaseTexture(0) ? m_material->GetBaseTexture(0)->GetSize() : TextureExtent{ 1, 1 };
+	return AARectangle(m_uvRegion.leftTop * texSize.xy(), m_uvRegion.rightBottom * texSize.xy());
+}
+
+void Image::SetUVRegion(const AARectangle& rect)
+{
+	const TextureExtent texSize = m_material->GetBaseTexture(0) ? m_material->GetBaseTexture(0)->GetSize() : TextureExtent{ 1, 1 };
+	const Vector2D invSize = 1.0f / texSize.xy();
+	m_uvRegion = AARectangle(rect.leftTop * invSize, rect.rightBottom * invSize);
+}
+
 void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
 {
-	AARectangle atlasRect = m_atlasRegion;
+	AARectangle uvRect = m_uvRegion;
 	if (m_imageFlags & FLIP_X)
-		atlasRect.FlipX();
+		uvRect.FlipX();
 
 	if (m_imageFlags & FLIP_Y)
-		atlasRect.FlipY();
+		uvRect.FlipY();
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
@@ -109,7 +125,7 @@ void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRe
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		meshBuilder.Color4fv(m_color);
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetLeftTop(), rect.GetRightBottom(), rect.GetRightTop(),
-			atlasRect.GetLeftBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightBottom(), atlasRect.GetRightTop());
+			uvRect.GetLeftBottom(), uvRect.GetLeftTop(), uvRect.GetRightBottom(), uvRect.GetRightTop());
 	if(meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }

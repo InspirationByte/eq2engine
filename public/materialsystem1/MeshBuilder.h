@@ -109,8 +109,8 @@ protected:
 		Vector4D			value{ 0 };
 	};
 
-	void			CopyVertData(VertData& vert, bool isNormal = false);
 	void			AdvanceVertexPtr();
+	void			CopyVertData(VertData& vert, bool isNormal = false);
 
 	VertData		m_position;
 	VertData		m_normal;
@@ -494,13 +494,11 @@ inline void CMeshBuilder::Triangle3(const Vector3D& v1, const Vector3D& v2, cons
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br)
 {
-	EPrimTopology primType = m_mesh->GetPrimitiveType();
+	const EPrimTopology primType = m_mesh->GetPrimitiveType();
 	uint16* indices = nullptr;
 
-	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
-
-	int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
-
+	const int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
+	const int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
 	if(startIndex == -1)
 		return;
 
@@ -545,12 +543,11 @@ inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, cons
 inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br,
 										const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br)
 {
-	EPrimTopology primType = m_mesh->GetPrimitiveType();
+	const EPrimTopology primType = m_mesh->GetPrimitiveType();
 	uint16* indices = nullptr;
 
-	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
-
-	int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
+	const int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
+	const int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
 
 	if(startIndex == -1)
 		return;
@@ -599,12 +596,11 @@ inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Quad3(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3, const Vector3D& v4)
 {
-	EPrimTopology primType = m_mesh->GetPrimitiveType();
+	const EPrimTopology primType = m_mesh->GetPrimitiveType();
 	uint16* indices = nullptr;
 
-	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
-
-	int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
+	const int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
+	const int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
 
 	if (startIndex == -1)
 		return;

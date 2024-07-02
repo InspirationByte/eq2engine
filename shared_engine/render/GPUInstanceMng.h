@@ -12,48 +12,6 @@
 #define ENABLE_GPU_INSTANCE_DEBUG
 #endif
 
-/*
-class IMaterial;
-using IMaterialPtr = CRefPtr<IMaterial>;
-
-// TODO: drawable concept for indirect drawing
-
-struct DrawableDesc
-{
-	struct BatchDesc
-	{
-		IMaterialPtr	material;
-		EPrimTopology	primitiveType{ (EPrimTopology)0 };
-		int				firstIndex{ 0 };
-		int				numIndices{ 0 };
-		int				firstVertex{ 0 };
-		int				numVertices{ 0 };
-	};
-
-	using VertexBufferArray = FixedArray<GPUBufferView, MAX_VERTEXSTREAM>;
-
-	MeshInstanceFormatRef	meshInstFormat;
-	VertexBufferArray		vertexBuffers;
-	GPUBufferView			indexBuffer;
-	Array<BatchDesc>		batches{ PP_SL };
-};
-
-struct DrawableInstanceList
-{
-	using InstanceRef = int;
-	using BufferArray = FixedArray<RenderBufferInfo, 8>;
-
-	DrawableDesc*		drawable;
-	int					batchIndex{ 0 };
-
-	GPUBufferView		indirectBuffer;
-	GPUBufferView		instanceRefsBuffer;
-	BufferArray			storageUniformBuffers;
-
-	Array<InstanceRef>	instanceRefs{ PP_SL };
-};
-*/
-
 constexpr int GPUINST_MAX_COMPONENTS = 8;
 
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
@@ -83,23 +41,6 @@ struct GPUInstPool
 	IGPUBufferPtr	buffer;
 	IGPUComputePipelinePtr	updatePipeline;
 	int				stride{ 0 };
-};
-
-// Instance component data storage
-template<typename T>
-struct GPUInstDataPool : public GPUInstPool
-{
-	using TYPE = T;
-
-	GPUInstDataPool() : GPUInstPool(sizeof(T)) {}
-
-	const char*		GetName() const override { return T::NAME; }
-	const void*		GetDataPtr() const override { return data.ptr(); };
-	int				GetDataElems() const override { return data.numElem(); }
-	void			ResetData() override { data.setNum(1); }		// reset data to have default element only
-	void			InitPipeline() { T::InitPipeline(*this); }
-
-	Array<T> 		data{ PP_SL };
 };
 
 // The instance manager basic implementation
@@ -163,8 +104,27 @@ protected:
 #endif
 };
 
+//-----------------------------------------------------
+// Below is a template part of Instance manager. Use it
 
-// Instance buffers layout:
+// Instance component data storage
+template<typename T>
+struct GPUInstDataPool : public GPUInstPool
+{
+	using TYPE = T;
+
+	GPUInstDataPool() : GPUInstPool(sizeof(T)) {}
+
+	const char* GetName() const override { return T::NAME; }
+	const void* GetDataPtr() const override { return data.ptr(); };
+	int				GetDataElems() const override { return data.numElem(); }
+	void			ResetData() override { data.setNum(1); }		// reset data to have default element only
+	void			InitPipeline() { T::InitPipeline(*this); }
+
+	Array<T> 		data{ PP_SL };
+};
+
+// Component-based instance manager
 template<typename ... Components>
 class GPUInstanceManager : public GPUBaseInstanceManager
 {
@@ -241,7 +201,7 @@ void GPUInstanceManager<Ts...>::InitPool(std::index_sequence<Is...>)
 	([&] {
 		using POOL_TYPE = std::tuple_element_t<Is, POOL_STORAGE>;
 		POOL_TYPE& pool = std::get<Is>(m_componentPoolsStorage);
-		pool.data.append({}); // add default value
+		pool.data.append(typename POOL_TYPE::TYPE{}); // add default value
 		pool.updated.insert(0);
 		m_componentPools[POOL_TYPE::TYPE::COMPONENT_ID] = &pool;
 	}(), ...);

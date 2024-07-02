@@ -37,6 +37,10 @@ public:
 	void				SetColor(const ColorRGBA &color);
 	const ColorRGBA& 	GetColor() const;
 
+	// UV rectangle
+	AARectangle			GetUVRegion() const;
+	void				SetUVRegion(const AARectangle& rect);
+
 	// events
 	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
 	bool				ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
@@ -46,7 +50,7 @@ public:
 public:
 
 	IMaterialPtr		m_material;
-	AARectangle			m_atlasRegion;
+	AARectangle			m_uvRegion;
 
 	ColorRGBA			m_color;
 	int					m_imageFlags;

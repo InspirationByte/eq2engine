@@ -20,7 +20,7 @@ static constexpr int GPU_INSTANCE_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUF
 GPUBaseInstanceManager::GPUBaseInstanceManager()
 {
 	// alloc default (zero) instance
-	m_instances.append({});
+	m_instances.append(Instance{});
 	m_updated.insert(0);
 }
 
