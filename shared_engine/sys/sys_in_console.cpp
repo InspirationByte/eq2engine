@@ -867,7 +867,7 @@ int CEqConsoleInput::GetCurrentInputText(EqString& str)
 		currentStatementStart = nextStatementIdx+1;
 	};
 	
-	str = m_inputText.Mid(currentStatementStart, m_inputText.Length());
+	str = m_inputText.Mid(currentStatementStart, m_inputText.Length() - currentStatementStart);
 
 	return currentStatementStart;
 }
