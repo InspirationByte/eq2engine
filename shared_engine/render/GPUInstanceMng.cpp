@@ -52,13 +52,14 @@ void GPUBaseInstanceManager::Shutdown()
 	m_singleInstIndexBuffer = nullptr;
 
 	m_updated.clear(true);
-	m_instances.setNum(1);
-
 	m_freeIndices.clear(true);
 	m_tempInstances.clear(true);
 	m_archetypeInstCounts.clear(true);
 
 	m_buffersUpdated = 0;
+
+	m_instances.setNum(1);
+	m_updated.insert(0);
 
 	for (GPUInstPool* pool : m_componentPools)
 	{
@@ -67,8 +68,10 @@ void GPUBaseInstanceManager::Shutdown()
 
 		pool->buffer = nullptr;
 		pool->updatePipeline = nullptr;
+
 		pool->freeIndices.clear(true);
 		pool->updated.clear(true);
+
 		pool->ResetData();
 		pool->updated.insert(0);
 	}
