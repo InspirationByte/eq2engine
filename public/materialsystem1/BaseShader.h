@@ -106,6 +106,7 @@ protected:
 		IGPURenderPipelinePtr		pipeline;
 		IGPUPipelineLayoutPtr		layout;
 		int							vertexLayoutId{ 0 };
+		mutable uint				instMngToken{ UINT_MAX };
 	};
 
 	struct BindGroupSetupParams
