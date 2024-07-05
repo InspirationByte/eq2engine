@@ -262,7 +262,7 @@ inline void GPUInstanceManager<Ts...>::AllocInstanceComponents(int instanceId)
 		Threading::CScopedMutex m(m_mutex);
 		([&]{
 			Pool<TComps>& compPool = GetComponentPool<TComps>();
-			const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append({});
+			const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append(TComps{});
 			inst.components[TComps::COMPONENT_ID] = inPoolIdx;
 			compPool.updated.insert(inPoolIdx);
 		} (), ...);
@@ -283,7 +283,7 @@ void GPUInstanceManager<Ts...>::Add(int instanceId)
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(m_mutex);
-		const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append({});
+		const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append(TComp{});
 		inst.components[TComp::COMPONENT_ID] = inPoolIdx;
 		compPool.updated.insert(inPoolIdx);
 
