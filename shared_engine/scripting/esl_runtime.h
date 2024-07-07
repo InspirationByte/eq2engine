@@ -13,16 +13,6 @@ struct PushGet
 	static GetFunc Get;
 };
 
-class StackGuard
-{
-public:
-	StackGuard(lua_State* L);
-	~StackGuard();
-private:
-	lua_State*	m_state;
-	int			m_pos{ 0 };
-};
-
 void* ThisGetterVal(lua_State* L, bool& isConstRef);
 void* ThisGetterPtr(lua_State* L, bool& isConstRef);
 

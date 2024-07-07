@@ -358,9 +358,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<bool>;
 
 		if(!checkType(L, index, LUA_TBOOLEAN))
-			return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index)))};
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index)))};
 
-		return Result{ true, {}, lua_toboolean(L, index) != 0 };
+		return Result{ {}, true, {}, lua_toboolean(L, index) != 0 };
     }
 	else if constexpr (
 		   std::is_same_v<T, long>
@@ -379,9 +379,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (!checkType(L, index, LUA_TNUMBER))
-			return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
 
-		return Result{ true, {}, static_cast<T>(lua_tointeger(L, index)) };
+		return Result{ {}, true, {}, static_cast<T>(lua_tointeger(L, index)) };
 	}
 	else if constexpr (
 		   std::is_same_v<T, float>
@@ -390,25 +390,25 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (!checkType(L, index, LUA_TNUMBER))
-			return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
 
-		return Result{ true, {}, static_cast<T>(lua_tonumber(L, index)) };
+		return Result{ {}, true, {}, static_cast<T>(lua_tonumber(L, index)) };
     } 
 	else if constexpr (std::is_same_v<BaseType<T>, LuaRawRef>)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
 		const int type = lua_type(L, index);
-		return ResultWithValue<BaseType<T>>{ true, {}, LuaRawRef(L, index, type) };
+		return Result{ {}, true, {}, LuaRawRef(L, index, type) };
 	}
 	else if constexpr (std::is_same_v<BaseType<T>, LuaFunctionRef>)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (!isArgNull && !checkType(L, index, LUA_TFUNCTION))
-			return Result{ false, {}, BaseType<T>(L) };
+			return Result{ {}, false, {}, BaseType<T>(L) };
 
-		return Result{ true, {}, BaseType<T>(L, index) };
+		return Result{ {}, true, {}, BaseType<T>(L, index) };
 	}
 	else if constexpr (
 		   std::is_same_v<BaseType<T>, LuaTableRef>
@@ -417,9 +417,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (!isArgNull && !checkType(L, index, LUA_TTABLE))
-			return Result{ false, {}, BaseType<T>(L) };
+			return Result{ {}, false, {}, BaseType<T>(L) };
 
-		return Result{ true, {}, BaseType<T>(L, index) };
+		return Result{ {}, true, {}, BaseType<T>(L, index) };
 
 	}
 	else if constexpr (binder::IsString<T>::value)
@@ -437,17 +437,17 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			using Result = ResultWithValue<BaseStringType>;
 
 			if (typeError)
-				return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), BaseStringType() };
+				return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), BaseStringType() };
 		
-			return Result{ true, {}, BaseStringType(value, len) };
+			return Result{ {}, true, {}, BaseStringType(value, len) };
 		}
 		else
 		{
 			using Result = ResultWithValue<const char*>;
 			if (typeError)
-				return Result{ false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
+				return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
 		
-			return Result{ true, {}, value };
+			return Result{ {}, true, {}, value };
 		}
 	}
 	else if constexpr (binder::IsRefPtr<T>::value)
@@ -466,7 +466,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 					luaL_argerror(L, index, err);
 			}
 
-			return Result{ false, std::move(err), nullptr };
+			return Result{ {}, false, std::move(err), nullptr };
 		}
 
 		if (!CheckUserdataCanBeUpcasted(L, index, LuaBaseTypeAlias<RT>::value))
@@ -479,18 +479,18 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			if constexpr (!SilentTypeCheck)
 				luaL_argerror(L, index, err);
 
-			return Result{ false, std::move(err), nullptr };
+			return Result{ {}, false, std::move(err), nullptr };
 		}
 
 		static_assert(!HasToCppParamTrait<T>::value, "can't use ToCpp trait on CRefPtr");
 		REFPTR objPtr(PushGet<RT>::Get(L, index, false));
 
-		return Result{ true, {}, std::move(objPtr) };
+		return Result{ {}, true, {}, std::move(objPtr) };
 	}
 	else if constexpr (binder::IsObject<T>::value)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
-		return Result{ true, {}, {L, index} };
+		return Result{ {}, true, {}, {L, index} };
 	}
 	else
 	{
@@ -513,9 +513,9 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			}
 
 			if constexpr (std::is_reference_v<T>)
-				return Result{ false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
+				return Result{ {}, false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
 			else
-				return Result{ false, std::move(err), nullptr };
+				return Result{ {}, false, std::move(err), nullptr };
 		}
 
 		// we still won't allow null value to be pushed if upcasting has failed
@@ -530,18 +530,18 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				luaL_argerror(L, index, err);
 
 			if constexpr (std::is_reference_v<T>)
-				return Result{ false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
+				return Result{ {}, false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
 			else
-				return Result{ false, std::move(err), nullptr };
+				return Result{ {}, false, std::move(err), nullptr };
 		}
 
 		const bool toCpp = HasToCppParamTrait<T>::value;
 		BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp));
 
 		if constexpr (std::is_reference_v<UT>)
-			return Result{ true, {}, reinterpret_cast<UT>(*objPtr) };
+			return Result{ {}, true, {}, reinterpret_cast<UT>(*objPtr) };
 		else
-			return Result{ true, {}, reinterpret_cast<UT>(objPtr) };
+			return Result{ {}, true, {}, reinterpret_cast<UT>(objPtr) };
 	}
 }
 
@@ -570,7 +570,7 @@ struct FunctionCall
 	static Result Invoke(const esl::LuaFunctionRef& func, Args... args)
 	{
 		if (!func.IsValid())
-			return Result{ false, "is not callable"};
+			return Result{ {}, false, "is not callable"};
 
 		lua_State* L = func.GetState();
 
@@ -586,7 +586,7 @@ struct FunctionCall
 	static Result Invoke(lua_State* L, int funcIndex, Args... args)
 	{
 		if (lua_type(L, funcIndex) != LUA_TFUNCTION)
-			return Result{ false, "is not callable"};
+			return Result{ {}, false, "is not callable"};
 
 		lua_pushcfunction(L, StackTrace);
 		const int errIdx = lua_gettop(L);
@@ -609,17 +609,18 @@ private:
 
 	static Result InvokeFunc(lua_State* L, int numArgs, int errIdx)
 	{
+		runtime::StackGuard g(L);
 		const int res = lua_pcall(L, numArgs, std::is_void_v<R> ? LUA_MULTRET : 1, errIdx);
 		if (res == 0)
 		{
 			if constexpr (std::is_void_v<R>)
 			{
-				return Result{ true };
+				return Result{ std::move(g), true};
 			}
 			else
 			{
 				auto value = runtime::GetValue<R, true>(L, -1);
-				return Result{ value.success, value.success ? EqString() : EqString::Format("return value: %s", value.errorMessage.ToCString()), *value};
+				return Result{ std::move(g), value.success, value.success ? EqString() : EqString::Format("return value: %s", value.errorMessage.ToCString()), *value};
 			}
 		}
 
@@ -630,7 +631,7 @@ private:
 			errorMessage = GetLastError(L);
 		}
 
-		return Result{ false, errorMessage };
+		return Result{ std::move(g), false, errorMessage };
 	}
 };
 

@@ -55,6 +55,8 @@ bool ScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
 
 bool ScriptState::RunChunk(EqStringRef chunk, const char* name) const
 {
+	esl::runtime::StackGuard g(m_state);
+
 	const int res = luaL_loadbuffer(m_state, chunk.ToCString(), chunk.Length(), name);
 	if (res != 0)
 	{

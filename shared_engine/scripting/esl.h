@@ -170,30 +170,50 @@ struct TypeInfo
 	bool				isByVal{ false };
 };
 
+namespace binder {
+	struct ObjectIndexGetter;
+}
+
+namespace bindings {}
+
+namespace runtime {
+class StackGuard
+{
+public:
+	StackGuard() = default;
+	StackGuard(StackGuard&& other) noexcept;
+	StackGuard(lua_State* L);
+	~StackGuard();
+
+	StackGuard&	operator=(StackGuard&& other) noexcept;
+
+private:
+	lua_State*	m_state{ nullptr };
+	int			m_pos{ 0 };
+};
+}
+
 template<typename V>
 struct ResultWithValue
 {
 	operator	bool() { return success; }
 	V&			operator*() { return value; }
 	const V&	operator*() const { return value; }
-	bool		success{ false };
-	EqString	errorMessage;
-	V			value;
+
+	runtime::StackGuard		guard;
+	bool					success{ false };
+	EqString				errorMessage;
+	V						value;
 };
 
 template<>
 struct ResultWithValue<void>
 {
 	operator bool() { return success; }
-	bool		success{ false };
-	EqString	errorMessage;
+	runtime::StackGuard		guard;
+	bool					success{ false };
+	EqString				errorMessage;
 };
-
-namespace binder {
-	struct ObjectIndexGetter;
-}
-namespace bindings {}
-namespace runtime {}
 
 // declared in esl_luaref.h
 class LuaRawRef;

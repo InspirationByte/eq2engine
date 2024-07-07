@@ -66,6 +66,7 @@ public:
 
 		IPairsIterator(const esl::LuaTable& table);
 		~IPairsIterator();
+
 		bool			AtEnd() const;
 		int				operator*() const;
 		IPairsIterator& operator++();
@@ -86,30 +87,31 @@ public:
 	using Result = ResultWithValue<T>;
 
 	template<typename V, typename K>
-	Result<V> Get(const K& key) const;
+	Result<V>		Get(const K& key) const;
 
 	template<typename V, typename K>
-	V SafeGet(const K& key, const V& defaultValue) const;
+	V				SafeGet(const K& key, const V& defaultValue) const;
 
 	template<typename K>
-	bool HasKey(const K& key) const;
+	bool			HasKey(const K& key) const;
 
 	template<typename V, typename K>
-	void Set(const K & key, const V & value);
+	void			Set(const K & key, const V & value);
 
 	template<typename K>
-	void Remove(K const& key);
+	void			Remove(K const& key);
 
-	int Length() const;
+	int				Length() const;
 
-	IPairsIterator IPairs() const { return IPairsIterator(*this); }
+	IPairsIterator	IPairs() const { return IPairsIterator(*this); }
 };
 
 template<typename V, typename K>
 LuaTable::Result<V> LuaTable::Get(const K& key) const
 {
 	if (!IsValid())
-		return Result<V>{false, {}};
+		return Result<V>{{}, false, {}};
+
 	runtime::StackGuard g(m_state);
 	Push();
 
@@ -132,6 +134,7 @@ bool LuaTable::HasKey(const K& key) const
 {
 	if (!IsValid())
 		return false;
+
 	runtime::StackGuard g(m_state);
 	Push();
 

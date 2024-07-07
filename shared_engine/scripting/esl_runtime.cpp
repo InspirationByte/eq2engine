@@ -121,7 +121,23 @@ int StackTrace(lua_State* vm)
 	return 1;
 }
 
-StackGuard::StackGuard(lua_State* L) : m_state(L)
+StackGuard::StackGuard(StackGuard&& other) noexcept
+	: m_state(other.m_state)
+	, m_pos(other.m_pos)
+{
+	other.m_state = nullptr;
+}
+
+StackGuard& StackGuard::operator=(StackGuard&& other) noexcept
+{
+	m_state = other.m_state;
+	m_pos = other.m_pos;
+	other.m_state = nullptr;
+	return *this;
+}
+
+StackGuard::StackGuard(lua_State* L) 
+	: m_state(L)
 {
 	if (!L)
 		return;
