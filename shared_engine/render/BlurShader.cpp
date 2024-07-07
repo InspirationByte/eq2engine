@@ -101,6 +101,8 @@ void BlurShader::SetDestinationTexture(ITexture* dest)
 
 void BlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int arraySlice)
 {
+	commandRecorder->DbgPushGroup("BlurShader");
+
 	const IVector2D dstSize = m_dstTexture->GetSize();
 
 	IGPUBindGroupPtr bindGroupStg0 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
@@ -179,4 +181,6 @@ void BlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int arraySli
 
 	TextureExtent texExtents{ dstSize };
 	commandRecorder->CopyTextureToTexture(srcTex, dstTex, texExtents);
+
+	commandRecorder->DbgPopGroup();
 }

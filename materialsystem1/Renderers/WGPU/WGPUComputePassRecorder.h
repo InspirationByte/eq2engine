@@ -6,6 +6,10 @@ class CWGPUComputePassRecorder : public IGPUComputePassRecorder
 public:
 	~CWGPUComputePassRecorder();
 
+	void					DbgPopGroup() const;
+	void					DbgPushGroup(const char* groupLabel) const;
+	void					DbgAddMarker(const char* label) const;
+
 	void*					GetUserData() const { return m_userData; }
 
 	void					SetPipeline(IGPUComputePipeline* pipeline);

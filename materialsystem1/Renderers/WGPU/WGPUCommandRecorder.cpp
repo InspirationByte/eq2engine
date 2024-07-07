@@ -132,6 +132,21 @@ void CWGPUCommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, co
 	wgpuCommandEncoderCopyTextureToBuffer(m_rhiCommandEncoder, &rhiImageSrc, &rhiBufferDst, &rhiCopySize);
 }
 
+void CWGPUCommandRecorder::DbgPopGroup() const
+{
+	wgpuCommandEncoderPopDebugGroup(m_rhiCommandEncoder);
+}
+
+void CWGPUCommandRecorder::DbgPushGroup(const char* groupLabel) const
+{
+	wgpuCommandEncoderPushDebugGroup(m_rhiCommandEncoder, groupLabel);
+}
+
+void CWGPUCommandRecorder::DbgAddMarker(const char* label) const
+{
+	wgpuCommandEncoderInsertDebugMarker(m_rhiCommandEncoder, label);
+}
+
 IGPUCommandBufferPtr CWGPUCommandRecorder::End()
 {
 	if (!m_rhiCommandEncoder)

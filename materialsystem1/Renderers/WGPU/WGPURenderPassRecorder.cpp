@@ -17,9 +17,24 @@ CWGPURenderPassRecorder::~CWGPURenderPassRecorder()
 		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
 }
 
+void CWGPURenderPassRecorder::DbgPopGroup() const
+{
+	wgpuRenderPassEncoderPopDebugGroup(m_rhiRenderPassEncoder);
+}
+
+void CWGPURenderPassRecorder::DbgPushGroup(const char* groupLabel) const
+{
+	wgpuRenderPassEncoderPushDebugGroup(m_rhiRenderPassEncoder, groupLabel);
+}
+
+void CWGPURenderPassRecorder::DbgAddMarker(const char* label) const
+{
+	wgpuRenderPassEncoderInsertDebugMarker(m_rhiRenderPassEncoder, label);
+}
+
 void CWGPURenderPassRecorder::AddBundle(IGPURenderBundleRecorder* bundle)
 {
-
+	ASSERT_FAIL("NOT IMPLEMENTED");
 }
 
 void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)

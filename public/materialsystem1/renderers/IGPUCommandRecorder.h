@@ -74,6 +74,10 @@ public:
 			EndBlock(block)
 	*/
 
+	virtual void					DbgPopGroup() const = 0;
+	virtual void					DbgPushGroup(const char* groupLabel) const = 0;
+	virtual void					DbgAddMarker(const char* label) const = 0;
+
 	virtual void					SetPipeline(IGPURenderPipeline* pipeline) = 0;
 	virtual IGPURenderPipelinePtr	GetPipeline() const = 0;
 	virtual void					SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets = nullptr) = 0;
@@ -139,6 +143,10 @@ using IGPURenderPassRecorderPtr = CRefPtr<IGPURenderPassRecorder>;
 class IGPUComputePassRecorder : public RefCountedObject<IGPUComputePassRecorder>
 {
 public:
+	virtual void					DbgPopGroup() const = 0;
+	virtual void					DbgPushGroup(const char* groupLabel) const = 0;
+	virtual void					DbgAddMarker(const char* label) const = 0;
+
 	virtual void					SetPipeline(IGPUComputePipeline* pipeline) = 0;
 	virtual IGPUComputePipelinePtr	GetPipeline() const = 0;
 
@@ -166,6 +174,10 @@ public:
 
 	virtual IGPURenderPassRecorderPtr	BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData = nullptr) const = 0;
 	virtual IGPUComputePassRecorderPtr	BeginComputePass(const char* name, void* userData = nullptr) const = 0;
+
+	virtual void						DbgPopGroup() const = 0;
+	virtual void						DbgPushGroup(const char* groupLabel) const = 0;
+	virtual void						DbgAddMarker(const char* label) const = 0;
 
 	virtual void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const = 0;
 	void								WriteBufferView(const GPUBufferView& bufferView, const void* data, int64 size = -1, int64 offset = 0) const;

@@ -186,9 +186,10 @@ static void instRunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputeP
 	computePass->SetBindGroup(0, sourceIdxsAndDataGroup);
 	computePass->SetBindGroup(1, destPoolDataGroup);
 
-	const float instacesPerWorkgroup = 64.0f; // TODO: adjustable?
+	const int instancesPerWorkgroup = 64; // TODO: adjustable?
+	const float rcpInstacesPerWorkgroup = 1.0f / instancesPerWorkgroup;
 
-	computePass->DispatchWorkgroups(ceil(idxsCount / instacesPerWorkgroup));
+	computePass->DispatchWorkgroups(ceil(idxsCount * rcpInstacesPerWorkgroup));
 	computePass->Complete();
 }
 

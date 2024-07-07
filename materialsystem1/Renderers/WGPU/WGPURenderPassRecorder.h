@@ -14,6 +14,10 @@ public:
 	bool					IsStencilReadOnly() const { return m_stencilReadOnly; }
 	int						GetTargetMultiSamples() const { return m_renderTargetMSAASamples; }
 
+	void					DbgPopGroup() const;
+	void					DbgPushGroup(const char* groupLabel) const;
+	void					DbgAddMarker(const char* label) const;
+
 	void					AddBundle(IGPURenderBundleRecorder* bundle);
 
 	void					SetPipeline(IGPURenderPipeline* pipeline);

@@ -7,6 +7,10 @@ public:
 	~CWGPUCommandRecorder();
 	void*						GetUserData() const { return m_userData; }
 
+	void						DbgPopGroup() const;
+	void						DbgPushGroup(const char* groupLabel) const;
+	void						DbgAddMarker(const char* label) const;
+
 	void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const;
 	void						CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const;
 	void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const;
@@ -17,8 +21,6 @@ public:
 	// TODO:
 	// CopyBufferToTexture(const WGPUImageCopyBuffer& source, const WGPUImageCopyTexture& destination, const WGPUExtent3D& copySize) const;
 	// CopyTextureToBuffer(const WGPUImageCopyTexture& source, const WGPUImageCopyBuffer& destination, const WGPUExtent3D& copySize) const;
-	// PopDebugGroup(WGPUCommandEncoder commandEncoder);
-	// PushDebugGroup(char const* groupLabel);
 
 	// ResolveQuerySet(WGPUQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, WGPUBuffer destination, uint64_t destinationOffset);
 	// WriteTimestamp(WGPUQuerySet querySet, uint32_t queryIndex);

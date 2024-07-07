@@ -14,6 +14,21 @@ CWGPUComputePassRecorder::~CWGPUComputePassRecorder()
 		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
 }
 
+void CWGPUComputePassRecorder::DbgPopGroup() const
+{
+	wgpuComputePassEncoderPopDebugGroup(m_rhiComputePassEncoder);
+}
+
+void CWGPUComputePassRecorder::DbgPushGroup(const char* groupLabel) const
+{
+	wgpuComputePassEncoderPushDebugGroup(m_rhiComputePassEncoder, groupLabel);
+}
+
+void CWGPUComputePassRecorder::DbgAddMarker(const char* label) const
+{
+	wgpuComputePassEncoderInsertDebugMarker(m_rhiComputePassEncoder, label);
+}
+
 void CWGPUComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)
 {
 	m_pipeline.Assign(pipeline);

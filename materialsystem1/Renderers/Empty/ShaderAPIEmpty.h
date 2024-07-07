@@ -83,6 +83,10 @@ public:
 	bool					IsStencilReadOnly() const  { return true; }
 	int						GetTargetMultiSamples() const { return 1; }
 
+	void					DbgPopGroup() const {}
+	void					DbgPushGroup(const char* groupLabel) const {}
+	void					DbgAddMarker(const char* label) const {}
+
 	void					AddBundle(IGPURenderBundleRecorder* bundle) {}
 
 	void					SetPipeline(IGPURenderPipeline* pipeline)  { m_curPipeline.Assign(pipeline); }
@@ -115,6 +119,10 @@ public:
 class CEmptyComputePassRecorder : public IGPUComputePassRecorder
 {
 public:
+	void					DbgPopGroup() const {}
+	void					DbgPushGroup(const char* groupLabel) const {}
+	void					DbgAddMarker(const char* label) const {}
+
 	void					SetPipeline(IGPUComputePipeline* pipeline) { m_curPipeline.Assign(pipeline); }
 	IGPUComputePipelinePtr	GetPipeline() const { return m_curPipeline; }
 
@@ -144,17 +152,21 @@ public:
 		return IGPUComputePassRecorderPtr(CRefPtr_new(CEmptyComputePassRecorder));
 	}
 
-	void						WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const {}
-	void						CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const {}
-	void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const {}
+	void					DbgPopGroup() const {}
+	void					DbgPushGroup(const char* groupLabel) const {}
+	void					DbgAddMarker(const char* label) const {}
 
-	void						CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const  {}
-	void						CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const {}
+	void					WriteBuffer(IGPUBuffer* buffer, const void* data, int64 size, int64 offset) const {}
+	void					CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOffset, IGPUBuffer* destination, int64 destinationOffset, int64 size) const {}
+	void					ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const {}
 
-	void*						GetUserData() const { return m_userData; }
-	IGPUCommandBufferPtr		End() { return IGPUCommandBufferPtr(CRefPtr_new(CEmptyCommandBuffer)); }
+	void					CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const  {}
+	void					CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const {}
 
-	void*						m_userData{ nullptr };
+	void*					GetUserData() const { return m_userData; }
+	IGPUCommandBufferPtr	End() { return IGPUCommandBufferPtr(CRefPtr_new(CEmptyCommandBuffer)); }
+
+	void*					m_userData{ nullptr };
 };
 
 class ShaderAPIEmpty : public ShaderAPI_Base
