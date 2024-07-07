@@ -245,16 +245,6 @@ TMat3<T> transpose(const TMat3<T> &m);
 template <typename T>
 TMat4<T> transpose(const TMat4<T> &m);
 
-// matrix shear - undone
-template <typename T>
-TMat4<T> shearX(const T shear);
-
-template <typename T>
-TMat4<T> shearY(const T shear);
-
-template <typename T>
-TMat4<T> shearZ(const T shear);
-
 //----------------------------------------------------------------------------------
 
 // matrix rotation
@@ -367,42 +357,39 @@ TMat3<T> _identity3();
 template <typename T>
 TMat4<T> _identity4();
 
-// transforms point by matrix3
+// rotates vector by matrix3
 template <typename T>
-TVec3D<T> transformVector(const TVec3D<T> &in, const TMat3<T>& mat);
+TVec3D<T> rotateVector(const TVec3D<T> &in, const TMat3<T>& mat);
 
-template <typename T>
-TVec3D<T> inverseTransformVector(const TVec3D<T>& in, const TMat3<T>& mat);
-
-// transforms point by matrix4
-template <typename T>
-TVec3D<T> transformVector(const TVec3D<T> &in, const TMat4<T>& mat);
-
-// transforms point by matrix4 using all matrix features
-template <typename T>
-TVec3D<T> transformPoint(const TVec3D<T> &in, const TMat4<T>& mat);
-
-// transforms point by matrix4 using all matrix features
-template <typename T>
-TVec3D<T> inverseTransformPoint(const TVec3D<T>& in, const TMat4<T>& mat);
-
-// rotation of vector by matrix4
+// rotates vector by matrix4
 template <typename T>
 TVec3D<T> rotateVector(const TVec3D<T>& in, const TMat4<T>& mat);
 
-// translation of vector by matrix4
+// rotates vector by transposed matrix3
+template <typename T>
+TVec3D<T> rotateVectorTransposed(const TVec3D<T>& in, const TMat3<T>& mat);
+
+// rotates vector by transposed matrix4
+template <typename T>
+TVec3D<T> rotateVectorTransposed(const TVec3D<T>& in, const TMat4<T>& mat);
+
+// transforms point by matrix4
+template <typename T>
+TVec3D<T> transformPoint(const TVec3D<T> &in, const TMat4<T>& mat);
+
+// transforms point by transposed matrix4
+template <typename T>
+TVec3D<T> transformPointTransposed(const TVec3D<T>& in, const TMat4<T>& mat);
+
+// translates vector by matrix4
 template <typename T>
 TVec3D<T> translateVector(const TVec3D<T>& in, const TMat4<T>& mat);
 
-// inverse rotation of vector
+// translate vector by transposed matrix
 template <typename T>
-TVec3D<T> inverseRotateVector(const TVec3D<T>& in, const TMat4<T>& mat);
+TVec3D<T> translateVectorTransposed(const TVec3D<T>& in, const TMat4<T>& mat);
 
-// inverse translation of vector
-template <typename T>
-TVec3D<T> inverseTranslateVector(const TVec3D<T>& in, const TMat4<T>& mat);
-
-// makes matrix inverse
+// inverts matrix
 template <typename T>
 TMat4<T> inverse(const TMat4<T> &m);
 

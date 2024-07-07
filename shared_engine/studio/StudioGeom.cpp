@@ -50,9 +50,9 @@ static bool TransformEGFVertex(EGFHwVertex::PositionUV& vertPos, EGFHwVertex::TB
 		const float weight = vertWeight.boneWeights[i];
 		pos += transformPoint(Vector3D(vertPos.pos.xyz()), pMatrices[boneIdx]) * weight;
 
-		normal += transformVector(Vector3D(tbn.normal), pMatrices[boneIdx]) * weight;
-		tangent += transformVector(Vector3D(tbn.tangent), pMatrices[boneIdx]) * weight;
-		binormal += transformVector(Vector3D(tbn.binormal), pMatrices[boneIdx]) * weight;
+		normal += rotateVector(Vector3D(tbn.normal), pMatrices[boneIdx]) * weight;
+		tangent += rotateVector(Vector3D(tbn.tangent), pMatrices[boneIdx]) * weight;
+		binormal += rotateVector(Vector3D(tbn.binormal), pMatrices[boneIdx]) * weight;
 
 		bAffected = true;
 	}

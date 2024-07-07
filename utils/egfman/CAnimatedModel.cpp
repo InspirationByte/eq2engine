@@ -420,11 +420,11 @@ void CAnimatedModel::VisualizeBones()
 	// setup each bone's transformation
 	for(int i = 0; i < m_joints.numElem(); i++)
 	{
-		const Vector3D pos = inverseTransformPoint(m_boneTransforms[i].rows[3].xyz(), posMatrix);
+		const Vector3D pos = transformPointTransposed(m_boneTransforms[i].rows[3].xyz(), posMatrix);
 
 		if(m_joints[i].parent != -1)
 		{
-			const Vector3D parent_pos = inverseTransformPoint(m_boneTransforms[m_joints[i].parent].rows[3].xyz(), posMatrix);
+			const Vector3D parent_pos = transformPointTransposed(m_boneTransforms[m_joints[i].parent].rows[3].xyz(), posMatrix);
 			debugoverlay->Line3D(pos,parent_pos, color_white, color_white);
 		}
 
@@ -459,7 +459,7 @@ void CAnimatedModel::VisualizeAttachments()
 	{
 		const Matrix4x4 attachTransform = GetLocalStudioTransformMatrix(i);
 
-		const Vector3D pos = inverseTransformPoint(attachTransform.rows[3].xyz(), posMatrix);
+		const Vector3D pos = transformPointTransposed(attachTransform.rows[3].xyz(), posMatrix);
 		const Vector3D dX = posMatrix.getRotationComponent() * attachTransform.rows[0].xyz();
 		const Vector3D dY = posMatrix.getRotationComponent() * attachTransform.rows[1].xyz();
 		const Vector3D dZ = posMatrix.getRotationComponent() * attachTransform.rows[2].xyz();

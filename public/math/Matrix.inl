@@ -411,24 +411,6 @@ inline TMat4<T> transpose(const TMat4<T> &m)
 }
 
 template <typename T>
-inline TMat4<T> shearX(const T shear)
-{
-	return TMat4<T>(1,shear,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
-}
-
-template <typename T>
-inline TMat4<T> shearY(const T shear)
-{
-	return TMat4<T>(1,0,0,0, shear,1,0,0, 0,0,1,0, 0,0,0,1);
-}
-
-template <typename T>
-inline TMat4<T> shearZ(const T shear)
-{
-	return TMat4<T>(1,0,0,0, 0,1,0,0, 0,shear,1,0, 0,0,0,1);
-}
-
-template <typename T>
 inline TMat2<T> rotate2(const T angle)
 {
 	float cosA,sinA;
@@ -826,7 +808,7 @@ inline TMat4<T> _identity4()
 }
 
 template <typename T>
-inline TVec3D<T> transformVector(const TVec3D<T> &in, const TMat3<T>& mat)
+inline TVec3D<T> rotateVector(const TVec3D<T> &in, const TMat3<T>& mat)
 {
 	return TVec3D<T>(
 		in[0] * mat.rows[0][0] +
@@ -843,7 +825,24 @@ inline TVec3D<T> transformVector(const TVec3D<T> &in, const TMat3<T>& mat)
 }
 
 template <typename T>
-inline TVec3D<T> inverseTransformVector(const TVec3D<T> &in, const TMat3<T>& mat)
+inline TVec3D<T> rotateVector(const TVec3D<T>& in, const TMat4<T>& mat)
+{
+	return TVec3D<T>(
+		in[0] * mat.rows[0][0] +
+		in[1] * mat.rows[1][0] +
+		in[2] * mat.rows[2][0],
+
+		in[0] * mat.rows[0][1] +
+		in[1] * mat.rows[1][1] +
+		in[2] * mat.rows[2][1],
+
+		in[0] * mat.rows[0][2] +
+		in[1] * mat.rows[1][2] +
+		in[2] * mat.rows[2][2]);
+}
+
+template <typename T>
+inline TVec3D<T> rotateVectorTransposed(const TVec3D<T> &in, const TMat3<T>& mat)
 {
 	return TVec3D<T>(
 		in[0] * mat.rows[0][0] +
@@ -860,20 +859,20 @@ inline TVec3D<T> inverseTransformVector(const TVec3D<T> &in, const TMat3<T>& mat
 }
 
 template <typename T>
-inline TVec3D<T> transformVector(const TVec3D<T> &in, const TMat4<T>& mat)
+inline TVec3D<T> rotateVectorTransposed(const TVec3D<T>& in, const TMat4<T>& mat)
 {
 	return TVec3D<T>(
 		in[0] * mat.rows[0][0] +
-	    in[1] * mat.rows[1][0] +
-	    in[2] * mat.rows[2][0],
+		in[1] * mat.rows[0][1] +
+		in[2] * mat.rows[0][2],
 
-		in[0] * mat.rows[0][1] +
-	    in[1] * mat.rows[1][1] +
-	    in[2] * mat.rows[2][1],
+		in[0] * mat.rows[1][0] +
+		in[1] * mat.rows[1][1] +
+		in[2] * mat.rows[1][2],
 
-	    in[0] * mat.rows[0][2] +
-	    in[1] * mat.rows[1][2] +
-	    in[2] * mat.rows[2][2]);
+		in[0] * mat.rows[2][0] +
+		in[1] * mat.rows[2][1] +
+		in[2] * mat.rows[2][2]);
 }
 
 template <typename T>
@@ -897,7 +896,7 @@ inline TVec3D<T> transformPoint(const TVec3D<T> &in, const TMat4<T>& mat)
 }
 
 template <typename T>
-inline TVec3D<T> inverseTransformPoint(const TVec3D<T> &in, const TMat4<T>& mat)
+inline TVec3D<T> transformPointTransposed(const TVec3D<T> &in, const TMat4<T>& mat)
 {
 	return TVec3D<T>(
 		in[0] *	mat.rows[0][0] +
@@ -917,23 +916,6 @@ inline TVec3D<T> inverseTransformPoint(const TVec3D<T> &in, const TMat4<T>& mat)
 }
 
 template <typename T>
-inline TVec3D<T> rotateVector(const TVec3D<T> &in, const TMat4<T> &mat)
-{
-	return TVec3D<T>(
-		in[0] * mat.rows[0][0] +
-		in[1] * mat.rows[1][0] +
-		in[2] * mat.rows[2][0],
-
-		in[0] * mat.rows[0][1] +
-		in[1] * mat.rows[1][1] +
-		in[2] * mat.rows[2][1],
-
-		in[0] * mat.rows[0][2] + 
-		in[1] * mat.rows[1][2] + 
-		in[2] * mat.rows[2][2]);
-}
-
-template <typename T>
 inline TVec3D<T> translateVector(const TVec3D<T> & in, const TMat4<T> &mat)
 {
 	return TVec3D<T>(
@@ -943,24 +925,7 @@ inline TVec3D<T> translateVector(const TVec3D<T> & in, const TMat4<T> &mat)
 }
 
 template <typename T>
-inline TVec3D<T> inverseRotateVector(const TVec3D<T> &in, const TMat4<T> &mat)
-{
-	return TVec3D<T>(
-		in[0] * mat.rows[0][0] + 
-		in[1] * mat.rows[0][1] + 
-		in[2] * mat.rows[0][2],
-
-		in[0] * mat.rows[1][0] + 
-		in[1] * mat.rows[1][1] + 
-		in[2] * mat.rows[1][2],
-
-		in[0] * mat.rows[2][0] + 
-		in[1] * mat.rows[2][1] + 
-		in[2] * mat.rows[2][2]);
-}
-
-template <typename T>
-inline TVec3D<T> inverseTranslateVector(const TVec3D<T> & in, const TMat4<T> &mat)
+inline TVec3D<T> translateVectorTransposed(const TVec3D<T> & in, const TMat4<T> &mat)
 {
 	return TVec3D<T>(
 		in[0] + mat.rows[3][0],

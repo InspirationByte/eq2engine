@@ -131,7 +131,7 @@ void TransformModelGeom(DSModel* model, const Matrix4x4& transform)
 		for (DSVertex& vert : group->verts)
 		{
 			vert.position = transformPoint(vert.position, transform);
-			vert.normal = transformVector(vert.normal, normalsRotateVec);
+			vert.normal = rotateVector(vert.normal, normalsRotateVec);
 		}
 	}
 }
@@ -148,7 +148,7 @@ void TransformShapeDataGeom(DSShapeData* shapeData, const Matrix4x4& transform)
 		for (DSShapeVert& vert : shapeKey->verts)
 		{
 			vert.position = transformPoint(vert.position, transform);
-			vert.normal = transformVector(vert.normal, normalsRotateVec);
+			vert.normal = rotateVector(vert.normal, normalsRotateVec);
 		}
 	}
 }
