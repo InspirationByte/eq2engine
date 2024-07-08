@@ -45,8 +45,8 @@ class btCollisionConfiguration;
 class btCollisionDispatcher;
 class btCollisionShape;
 
-struct CollisionData_t;
-struct ContactPair_t;
+struct eqCollisionInfo;
+struct eqContactPair;
 struct KVSection;
 class CEqCollisionObject;
 class CEqRigidBody;
@@ -111,7 +111,7 @@ public:
 	//< Performs a line test in the world
 	bool							TestLineCollision(	const FVector3D& start,
 														const FVector3D& end,
-														CollisionData_t& coll,
+														eqCollisionInfo& coll,
 														int rayMask = COLLISION_MASK_ALL, 
 														const eqPhysCollisionFilter* filterParams = nullptr);
 
@@ -120,7 +120,7 @@ public:
 																const Quaternion& rotation,
 																const FVector3D& start,
 																const FVector3D& end,
-																CollisionData_t& coll,
+																eqCollisionInfo& coll,
 																int rayMask = COLLISION_MASK_ALL, 
 																const eqPhysCollisionFilter* filterParams = nullptr);
 	///< Performs a line test for a single object.
@@ -129,7 +129,7 @@ public:
 															const FVector3D& start,
 															const FVector3D& end,
 															const BoundingBox& raybox,
-															CollisionData_t& coll,
+															eqCollisionInfo& coll,
 															float closestHit,
 															int rayMask,
 															const eqPhysCollisionFilter* filterParams,
@@ -141,7 +141,7 @@ public:
 																const FVector3D& start,
 																const FVector3D& end,
 																const BoundingBox& raybox,
-																CollisionData_t& coll,
+																eqCollisionInfo& coll,
 																float closestHit,
 																int rayMask,
 																const eqPhysCollisionFilter* filterParams,
@@ -164,7 +164,7 @@ public:
 	void							DetectCollisionsSingle(CEqRigidBody* body);
 
 	///< processes contact pairs
-	void							ProcessContactPair(ContactPair_t& pair);
+	void							ProcessContactPair(eqContactPair& pair);
 
 	// checks collision (made especially for rays, but could be used in other situations)
 	bool							CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object);
@@ -182,7 +182,7 @@ protected:
 		const FVector3D& start,
 		const FVector3D& end,
 		const BoundingBox& raybox,
-		CollisionData_t& coll,
+		eqCollisionInfo& coll,
 		float closestHit,
 		int rayMask,
 		const eqPhysCollisionFilter* filterParams,
@@ -193,7 +193,7 @@ protected:
 	bool							TestLineCollisionOnCell(int y, int x,
 															const FVector3D& start, const FVector3D& end,
 															const BoundingBox& rayBox,
-															CollisionData_t& coll,
+															eqCollisionInfo& coll,
 															Set<CEqCollisionObject*>& skipObjects,
 															int rayMask,
 															const eqPhysCollisionFilter* filterParams,
@@ -205,7 +205,7 @@ protected:
 	void							InternalTestLineCollisionCells(	const Vector2D& startCell, const Vector2D& endCell,
 																	const FVector3D& start, const FVector3D& end,
 																	const BoundingBox& rayBox,
-																	CollisionData_t& coll,
+																	eqCollisionInfo& coll,
 																	int rayMask,
 																	const eqPhysCollisionFilter* filterParams,
 																	F func,

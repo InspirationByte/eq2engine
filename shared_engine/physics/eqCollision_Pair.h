@@ -28,7 +28,7 @@ enum ECollPairFlag
 	COLLPAIRFLAG_USER_PROCESSED4 = (1 << 19),		// special flag for user needs
 };
 
-struct CollisionData_t
+struct eqCollisionInfo
 {
 	FVector3D			position{ vec3_undef };		// position in world
 	Vector3D			normal{ vec3_undef };
@@ -40,7 +40,7 @@ struct CollisionData_t
 	int					pad{ 0 };
 };
 
-struct ContactPair_t
+struct eqContactPair
 {
 	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj) const;
 
@@ -62,7 +62,7 @@ struct ContactPair_t
 	int					flags;
 };
 
-struct CollisionPairData_t
+struct eqCollisionPairData
 {
 	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj) const;
 

@@ -7,8 +7,8 @@
 
 #pragma once
 class CEqCollisionObject;
-struct ContactPair_t;
-struct CollisionPairData_t;
+struct eqContactPair;
+struct eqCollisionPairData;
 
 class IEqPhysCallback
 {
@@ -22,10 +22,10 @@ public:
 	virtual void		PostSimulate(float fDt) = 0;
 
 	// called before collision processed
-	virtual void		OnPreCollide(ContactPair_t& pair) = 0;
+	virtual void		OnPreCollide(eqContactPair& pair) = 0;
 
 	// called after collision processed and applied impulses
-	virtual void		OnCollide(const CollisionPairData_t& pair) = 0;
+	virtual void		OnCollide(const eqCollisionPairData& pair) = 0;
 
 protected:
 	void				Attach(CEqCollisionObject* object);

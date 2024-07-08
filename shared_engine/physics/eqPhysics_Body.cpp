@@ -615,7 +615,7 @@ void CEqRigidBody::CopyValues(CEqRigidBody* dest, const CEqRigidBody* src)
 }
 
 
-float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float errorCorrectionFactor)
+float CEqRigidBody::ApplyImpulseResponseTo(eqContactPair& pair, float errorCorrectionFactor)
 {
 	FVector3D contactPoint = pair.position;
 	Vector3D contactNormal = pair.normal;

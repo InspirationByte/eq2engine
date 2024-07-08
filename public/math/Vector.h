@@ -671,9 +671,6 @@ T			lineProjection(const TVec2D<T> &start, const TVec2D<T> &end, const TVec2D<T>
 template <typename T>
 T			lineProjection(const TVec3D<T> &start, const TVec3D<T> &end, const TVec3D<T> &point);
 
-template <typename T>
-bool		fixNormal(TVec3D<T> &vec);
-
 static const TVec2D<float> vec2_zero = TVec2D<float>(0.0f);
 static const TVec3D<float> vec3_zero = TVec3D<float>(0.0f);
 static const TVec4D<float> vec4_zero = TVec4D<float>(0.0f);

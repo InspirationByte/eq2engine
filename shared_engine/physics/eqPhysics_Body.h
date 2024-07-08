@@ -66,7 +66,7 @@ public:
 	static Vector3D		ComputeFrictionVelocity( const Vector3D& collNormal, const Vector3D& collVelocity, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
 
 	/// Simply applies impulse response to single body
-	static float		ApplyImpulseResponseTo(ContactPair_t& pair, float error_correction_factor);
+	static float		ApplyImpulseResponseTo(eqContactPair& pair, float error_correction_factor);
 
 	static void			CopyValues(CEqRigidBody* dest, const CEqRigidBody* src);
 
@@ -152,7 +152,7 @@ protected:
 	void				UpdateInertiaTensor();		///< updates inertia tensor
 	void				AccumulateForces(float time);	///< accumulates forces
 
-	FixedArray<ContactPair_t, 32>			m_contactPairs; // contact pair list in single frame
+	FixedArray<eqContactPair, 32>			m_contactPairs; // contact pair list in single frame
 	FixedArray<IEqPhysicsConstraint*, 8>	m_constraints;
 
 	Matrix3x3			m_invInertiaTensor{ identity3 };

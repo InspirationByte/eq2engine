@@ -57,7 +57,7 @@ class CEqCollisionObject
 
 public:
 	using GetSurfaceParamIdFunc = int(*)(const char*);
-	using CollisionPairList = FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>;
+	using CollisionPairList = FixedArray<eqCollisionPairData, PHYSICS_COLLISION_LIST_MAX>;
 
 	static GetSurfaceParamIdFunc GetSurfaceParamId;
 

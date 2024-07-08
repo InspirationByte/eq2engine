@@ -51,12 +51,12 @@ DECLARE_CVAR(ph_showcontacts, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
 DECLARE_CVAR(ph_carVsCarErp, "0.15", "Car versus car erp", CV_CHEAT);
 
-CEqCollisionObject* ContactPair_t::GetOppositeTo(CEqCollisionObject* obj) const
+CEqCollisionObject* eqContactPair::GetOppositeTo(CEqCollisionObject* obj) const
 {
 	return (obj == bodyA) ? bodyB : bodyA;
 }
 
-CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj) const
+CEqCollisionObject* eqCollisionPairData::GetOppositeTo(CEqCollisionObject* obj) const
 {
 	return (obj == bodyA) ? bodyB : bodyA;
 }
@@ -208,7 +208,7 @@ struct CEqManifoldResult : public btManifoldResult
 		const float distance = cp.getDistance();
 
 #ifdef ENABLE_CONTACT_GROUPING		
-		for(CollisionData_t& coll : m_collisions)
+		for(eqCollisionInfo& coll : m_collisions)
 		{
 			if(	coll.materialIndex == materialIndex &&
 				fsimilar(coll.position.x, position.x, CONTACT_GROUPING_POSITION_TOLERANCE) &&
@@ -232,7 +232,7 @@ struct CEqManifoldResult : public btManifoldResult
 		if (m_collisions.numElem() >= m_collisions.numAllocated())
 			return;
 		
-		CollisionData_t& data = m_collisions.append();
+		eqCollisionInfo& data = m_collisions.append();
 		ConvertBulletToDKVectors(data.normal, cp.m_normalWorldOnB);
 		ConvertBulletToDKVectors(position, cp.m_positionWorldOnA);
 		data.position = position - m_center;
@@ -241,7 +241,7 @@ struct CEqManifoldResult : public btManifoldResult
 		data.pad = 1;
 	}
 
-	FixedArray<CollisionData_t, 64>	m_collisions;
+	FixedArray<eqCollisionInfo, 64>	m_collisions;
 	Vector3D						m_center;
 	bool							m_singleSided;
 };
@@ -659,7 +659,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 
 	// check the contact pairs of bodyB (because it has been already processed by the order)
 	// if we had any contact pair with bodyA we should discard this collision
-	for (const ContactPair_t& pair : bodyB->m_contactPairs)
+	for (const eqContactPair& pair : bodyB->m_contactPairs)
 	{
 		if (pair.bodyA == bodyB && pair.bodyB == bodyA)
 			return;
@@ -729,7 +729,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	const int numCollResults = cbResult.m_collisions.numElem();
 	const float iterDelta = 1.0f / numCollResults;
 
-	for(CollisionData_t& coll : cbResult.m_collisions)
+	for(eqCollisionInfo& coll : cbResult.m_collisions)
 	{
 		if (bodyA->m_contactPairs.numElem() == bodyA->m_contactPairs.numAllocated())
 			break;
@@ -741,7 +741,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		if(hitDepth < 0 && !(bodyA->m_flags & COLLOBJ_ISGHOST))
 			continue;
 
-		ContactPair_t& newPair = bodyA->m_contactPairs.append();
+		eqContactPair& newPair = bodyA->m_contactPairs.append();
 		newPair.normal = hitNormal;
 		newPair.flags = 0;
 		newPair.depth = hitDepth;
@@ -881,7 +881,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	const int numCollResults = cbResult.m_collisions.numElem();
 	const float iterDelta = 1.0f / numCollResults;
 
-	for(CollisionData_t& coll : cbResult.m_collisions)
+	for(eqCollisionInfo& coll : cbResult.m_collisions)
 	{
 		if (bodyB->m_contactPairs.numElem() == bodyB->m_contactPairs.numAllocated())
 			break;
@@ -896,7 +896,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		if(hitDepth > 1.0f)
 			hitDepth = 1.0f;
 
-		ContactPair_t& newPair = bodyB->m_contactPairs.append();
+		eqContactPair& newPair = bodyB->m_contactPairs.append();
 
 		newPair.normal = hitNormal;
 		newPair.flags = COLLPAIRFLAG_OBJECTA_STATIC;
@@ -1046,7 +1046,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	}
 }
 
-void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
+void CEqPhysics::ProcessContactPair(eqContactPair& pair)
 {
 	CEqRigidBody* bodyB = static_cast<CEqRigidBody*>(pair.bodyB);
 	const int bodyAFlags = pair.bodyA->m_flags;
@@ -1136,14 +1136,14 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE);
 	}
 
-	CollisionPairData_t tempPairData;
+	eqCollisionPairData tempPairData;
 
 	//-----------------------------------------------
 	// OBJECT A
 	{
-		FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyA->m_collisionList;
+		FixedArray<eqCollisionPairData, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyA->m_collisionList;
 
-		CollisionPairData_t collData;
+		eqCollisionPairData collData;
 		collData.bodyA = pair.bodyA;
 		collData.bodyB = pair.bodyB;
 		collData.fract = pair.depth;
@@ -1169,9 +1169,9 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	//-----------------------------------------------
 	// OBJECT B
 	{
-		FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyB->m_collisionList;
+		FixedArray<eqCollisionPairData, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyB->m_collisionList;
 
-		CollisionPairData_t collData;
+		eqCollisionPairData collData;
 		collData.bodyA = pair.bodyB;
 		collData.bodyB = pair.bodyA;
 		collData.fract = pair.depth;
@@ -1286,7 +1286,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 		// process generated contact pairs
 		for (CEqRigidBody* body : movingMoveables)
 		{
-			for (ContactPair_t& pair : body->m_contactPairs)
+			for (eqContactPair& pair : body->m_contactPairs)
 				ProcessContactPair(pair);
 
 			IEqPhysCallback* callbacks = body->m_callbacks;
@@ -1320,7 +1320,7 @@ void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const
 	const FVector3D& start,
 	const FVector3D& end,
 	const BoundingBox& rayBox,
-	CollisionData_t& coll,
+	eqCollisionInfo& coll,
 	int rayMask,
 	const eqPhysCollisionFilter* filterParams,
 	F func,
@@ -1366,7 +1366,7 @@ template <typename F>
 bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	const FVector3D& start, const FVector3D& end,
 	const BoundingBox& rayBox,
-	CollisionData_t& coll,
+	eqCollisionInfo& coll,
 	Set<CEqCollisionObject*>& skipObjects,
 	int rayMask, const eqPhysCollisionFilter* filterParams,
 	F func,
@@ -1425,7 +1425,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 			if (skipObjects.contains(object))
 				continue;
 
-			CollisionData_t tempColl;
+			eqCollisionInfo tempColl;
 			if (!(this->*func)(object, start, end, rayBox, tempColl, closest, rayMask, filterParams, args))
 				continue;
 
@@ -1452,7 +1452,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 			if (skipObjects.contains(object))
 				continue;
 
-			CollisionData_t tempColl;
+			eqCollisionInfo tempColl;
 			if (!(this->*func)(object, start, end, rayBox, tempColl, closest, rayMask, filterParams, args))
 				continue;
 
@@ -1484,7 +1484,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 //
 //----------------------------------------------------------------------------------------------------
 bool CEqPhysics::TestLineCollision(	const FVector3D& start, const FVector3D& end,
-									CollisionData_t& coll,
+									eqCollisionInfo& coll,
 									int rayMask, const eqPhysCollisionFilter* filterParams)
 {
 	if (!m_grid) {
@@ -1527,7 +1527,7 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start, const FVector3D& end
 bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
 											const Quaternion& rotation,
 											const FVector3D& start, const FVector3D& end,
-											CollisionData_t& coll,
+											eqCollisionInfo& coll,
 											int rayMask, 
 											const eqPhysCollisionFilter* filterParams)
 {
@@ -1665,7 +1665,7 @@ bool CEqPhysics::TestLineSingleObject(
 	const FVector3D& start,
 	const FVector3D& end,
 	const BoundingBox& rayBox,
-	CollisionData_t& coll,
+	eqCollisionInfo& coll,
 	float closestHit,
 	int rayMask,
 	const eqPhysCollisionFilter* filterParams,
@@ -1821,7 +1821,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 												const FVector3D& start,
 												const FVector3D& end,
 												const BoundingBox& raybox,
-												CollisionData_t& coll,
+												eqCollisionInfo& coll,
 												float closestHit,
 												int rayMask,
 												const eqPhysCollisionFilter* filterParams,
