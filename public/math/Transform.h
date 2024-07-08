@@ -2,9 +2,15 @@
 
 struct Transform3D
 {
-	Quaternion		orientation{ qidentity };
-	Vector3D		origin{ vec3_zero };
-	Vector3D		scale{ 1.0f };
+	Vector3D		t{ vec3_zero };
+	Quaternion		r{ qidentity };
+	Vector3D		s{ 1.0f };
+
+	Transform3D() = default;
+
+	Transform3D(const Vector3D& origin, const Quaternion& orientation = qidentity, const Vector3D& scale = Vector3D(1.0f));
+	Transform3D(const Vector3D& origin, const Vector3D& eulerAnglesXYZ = vec3_zero, const Vector3D& scale = Vector3D(1.0f));
+	Transform3D(const Matrix4x4& matrix);
 
 	Vector3D		forward() const;
 	Vector3D		right() const;
