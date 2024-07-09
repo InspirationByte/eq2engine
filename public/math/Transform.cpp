@@ -61,26 +61,39 @@ Transform3D	Transform3D::operator!() const
 	Transform3D invTrs;
 	invTrs.r = inverse(r);
 	invTrs.t = -t;
-	invTrs.s = 1.0f / invTrs.s;
+	invTrs.s = 1.0f / s;
 	return invTrs;
 }
+
+Transform3D	inverse(const Transform3D& trs)
+{
+	return !trs;
+}
  
-// rotates vector by transform
 template <typename T>
 TVec3D<T> rotateVector(const TVec3D<T>& in, const Transform3D& trs)
 {
 	return rotateVector(Vector3D(in), trs.r);
 }
 
-// transforms point by transform
 template <typename T>
 TVec3D<T> transformPoint(const TVec3D<T>& in, const Transform3D& trs)
 {
-	const Vector3D pointRot = rotateVector(in, trs) * trs.s;
+	const Vector3D pointRot = rotateVector(Vector3D(in), trs.r) * trs.s;
 	return trs.t + pointRot;
 }
 
+template <typename T>
+TVec3D<T> transformPointInverse(const TVec3D<T>& in, const Transform3D& trs)
+{
+	Transform3D invTrs = inverse(trs);
+	const Vector3D pointRot = rotateVector(Vector3D(in) + invTrs.t, invTrs.r) * invTrs.s;
+	return pointRot;
+}
+
 template Vector3D rotateVector(const Vector3D& in, const Transform3D& trs);
-template Vector3D transformPoint(const Vector3D& in, const Transform3D& trs);
 template FVector3D rotateVector(const FVector3D& in, const Transform3D& trs);
+template Vector3D transformPoint(const Vector3D& in, const Transform3D& trs);
 template FVector3D transformPoint(const FVector3D& in, const Transform3D& trs);
+template Vector3D transformPointInverse(const Vector3D& in, const Transform3D& trs);
+template FVector3D transformPointInverse(const FVector3D& in, const Transform3D& trs);
