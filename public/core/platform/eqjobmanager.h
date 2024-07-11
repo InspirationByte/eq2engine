@@ -39,8 +39,6 @@ public:
 	virtual void			Execute() = 0;
 
 protected:
-	virtual void			FillJobGroup() {}
-
 	EqString				m_jobName;
 	Array<IParallelJob*>	m_nextJobs{ PP_SL };
 	Threading::CEqSignal*	m_doneEvent{ nullptr };
