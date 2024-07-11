@@ -93,6 +93,9 @@ Quaternion		scerp(const Quaternion &q0, const Quaternion &q1, const Quaternion &
 // finds inverse of quaternion
 Quaternion		inverse(const Quaternion& q);
 
+// makes look at quaternion
+Quaternion		lookAt(const Vector3D& forward, const Vector3D& up);
+
 // length of quaternion
 float			length(const Quaternion &q);
 

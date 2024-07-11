@@ -402,6 +402,58 @@ Quaternion rotateZXY(float x, float y, float z)
 	return (qz * qy) * qx;
 }
 
+Quaternion lookAt(const Vector3D& forward, const Vector3D& up)
+{
+	const Vector3D& forwardVec = forward;
+	const Vector3D sideVec = normalize(cross(up, forwardVec));
+	const Vector3D upVec = cross(forwardVec, sideVec);
+
+	const double z = 1 + sideVec.x + upVec.y + forwardVec.z;
+	double fd = 2 * sqrt(z);
+
+	Quaternion result;
+	if (z > F_EPS)
+	{
+		const double oneByFd = 1.0 / fd;
+
+		result.w = 0.25 * fd;
+		result.x = (forwardVec.y - upVec.z) * oneByFd;
+		result.y = (sideVec.z - forwardVec.x) * oneByFd;
+		result.z = (upVec.x - sideVec.y) * oneByFd;
+	}
+	else if (sideVec.x > upVec.y && sideVec.x > forwardVec.z)
+	{
+		fd = 2.0 * sqrt(1.0 + sideVec.x - upVec.y - forwardVec.z);
+
+		const double oneByFd = 1.0 / fd;
+		result.w = (forwardVec.y - upVec.z) * oneByFd;
+		result.x = 0.25 * fd;
+		result.y = (upVec.x + sideVec.y) * oneByFd;
+		result.z = (sideVec.z + forwardVec.x) * oneByFd;
+	}
+	else if (upVec.y > forwardVec.z)
+	{
+		fd = 2.0 * sqrt(1.0 + upVec.y - sideVec.x - forwardVec.z);
+
+		const double oneByFd = 1.0 / fd;
+		result.w = (sideVec.z - forwardVec.x) * oneByFd;
+		result.x = (upVec.x + sideVec.y) * oneByFd;
+		result.y = 0.25 * fd;
+		result.z = (forwardVec.y + upVec.z) * oneByFd;
+	}
+	else
+	{
+		fd = 2.0 * sqrt(1.0 + forwardVec.z - sideVec.x - upVec.y);
+		const double oneByFd = 1.0 / fd;
+		result.w = (upVec.x - sideVec.y) * oneByFd;
+		result.x = (sideVec.z + forwardVec.x) * oneByFd;
+		result.y = (forwardVec.y + upVec.z) * oneByFd;
+		result.z = 0.25 * fd;
+	}
+
+	return result;
+}
+
 Quaternion slerp(const Quaternion &x, const Quaternion &y, const float a)
 {
 	double cosTheta = dot(x.asVector4D(), y.asVector4D());
