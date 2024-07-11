@@ -1,10 +1,6 @@
 #pragma once
 #include "materialsystem1/renderers/IShaderAPI.h"
 
-class IGPUCommandRecorder;
-class IGPUComputePipeline;
-using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
-
 // Blur shader on compute pipeline
 class ComputeBlurShader : public RefCountedObject<ComputeBlurShader>
 {
