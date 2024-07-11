@@ -54,11 +54,11 @@ void ComputeBitonicMergeSortShader::Init(IGPUCommandRecorder* cmdRecorder, IGPUB
 	IGPUComputePassRecorderPtr computePassRecorder = cmdRecorder->BeginComputePass("Sort");
 	computePassRecorder->SetPipeline(m_initPipeline);
 	IGPUBindGroupPtr inputBindGroup = g_renderAPI->CreateBindGroup(m_initPipeline, Builder<BindGroupDesc>()
-		.GroupIndex(1)
+		.GroupIndex(0)
 		.Buffer(0, keys)
 		.End()
 	);
-	computePassRecorder->SetBindGroup(1, inputBindGroup);
+	computePassRecorder->SetBindGroup(0, inputBindGroup);
 	computePassRecorder->DispatchWorkgroups(x, y, z);
 	computePassRecorder->Complete();
 }
@@ -82,22 +82,34 @@ void ComputeBitonicMergeSortShader::RunSortPipeline(IGPUComputePipeline* sortPip
 	bitonicCalcWorkSize(keysCount, x, y, z);
 
 	// prepare blocks to process
-	m_blocks.clear();
-	m_blocks.reserve(keysCount);
+	struct BlockDim
+	{
+		int block;
+		int dim;
+	};
+
+	int numBlockDims = 0;
 	for (int dim = 2; dim <= keysCount; dim <<= 1)
 	{
-		for (int block = dim >> 1; block > 0; block >>= 1)
-			m_blocks.append({ block, dim });
-	}
+		for (int block = dim >> 1; block > 0; block >>= 1, ++numBlockDims)
+		{
+			if (numBlockDims < m_blocks.numElem())
+				continue;
 
-	IGPUBufferPtr blockDimBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(m_blocks[0]), m_blocks.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "BlocksAndDims");
-	cmdRecorder->WriteBuffer(blockDimBuffer, m_blocks.ptr(), m_blocks.numElem() * sizeof(m_blocks[0]), 0);
+			BlockDim data{ block, dim };
+
+			IGPUBufferPtr blockDimBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(data), 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "BlockDim");
+			cmdRecorder->WriteBuffer(blockDimBuffer, &data, sizeof(data), 0);
+
+			m_blocks.append(blockDimBuffer);
+		}
+	}
 
 	IGPUComputePassRecorderPtr computePassRecorder = cmdRecorder->BeginComputePass("Sort");
 	computePassRecorder->SetPipeline(sortPipeline);
 	{
 		IGPUBindGroupPtr inputBindGroup = g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
-			.GroupIndex(1)
+			.GroupIndex(0)
 			.Buffer(0, keys)
 			.End()
 		);
@@ -106,19 +118,18 @@ void ComputeBitonicMergeSortShader::RunSortPipeline(IGPUComputePipeline* sortPip
 			.Buffer(0, values)
 			.End()
 		);
-		computePassRecorder->SetBindGroup(1, inputBindGroup);
+		computePassRecorder->SetBindGroup(0, inputBindGroup);
 		computePassRecorder->SetBindGroup(2, outputBindGroup);
 	}
 
-	const int numBlocks = m_blocks.numElem();
-	for (int i = 0; i < numBlocks; ++i)
+	for (int i = 0; i < numBlockDims; ++i)
 	{
 		IGPUBindGroupPtr blockDimBindGroup = g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
-			.GroupIndex(0)
-			.Buffer(0, GPUBufferView(blockDimBuffer, sizeof(BlockDim) * i, sizeof(BlockDim)))
+			.GroupIndex(1)
+			.Buffer(0, m_blocks[i])
 			.End()
 		);
-		computePassRecorder->SetBindGroup(0, blockDimBindGroup);
+		computePassRecorder->SetBindGroup(1, blockDimBindGroup);
 		computePassRecorder->DispatchWorkgroups(x, y, z);
 	}
 	computePassRecorder->Complete();
