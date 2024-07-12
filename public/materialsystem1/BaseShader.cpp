@@ -158,20 +158,20 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 
 	const uint pipelineFlags = 
 		  static_cast<uint>(cullMode)
-		| (depthTestEnable << 2)
-		| (depthWriteEnable << 3)
-		| (polyOffsetEnable << 4)
-		| (onlyZ << 5)
+		| (static_cast<uint>(depthTestEnable) << 2)
+		| (static_cast<uint>(depthWriteEnable) << 3)
+		| (static_cast<uint>(polyOffsetEnable) << 4)
+		| (static_cast<uint>(onlyZ) << 5)
 		| (static_cast<uint>(inputParams.primitiveTopology) << 6)
 		| (m_blendMode << 9);
 
-	uint hash = inputParams.meshInstFormat.formatId | (inputParams.meshInstFormat.usedLayoutBits << 24);
+	uint hash = m_shaderQueryId;
 	hash *= 31;
-	hash += m_shaderQueryId;
+	hash += inputParams.meshInstFormat.formatId | (inputParams.meshInstFormat.usedLayoutBits << 24);
 	hash *= 31;
 	hash += pipelineFlags;
 	hash *= 31;
-	hash += (inputParams.multiSampleCount & 15) | ((uint)inputParams.multiSampleAlphaToCoverage << 5) | (inputParams.multiSampleMask << 16);
+	hash += (inputParams.multiSampleCount & 15) | (static_cast<uint>(inputParams.multiSampleAlphaToCoverage) << 5) | (inputParams.multiSampleMask << 16);
 	for (int i = 0; i < inputParams.colorTargetFormat.numElem(); ++i)
 	{
 		const ETextureFormat format = inputParams.colorTargetFormat[i];
