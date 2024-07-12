@@ -54,9 +54,12 @@ public:
 	void			Initialize();
 	void			Shutdown();
 
-	IGPUBufferPtr	GetSingleInstanceIndexBuffer() const { return m_singleInstIndexBuffer; }
-	IGPUBufferPtr	GetRootBuffer() const { return m_buffer; }
+	GPUBufferView	GetSingleInstanceIndexBuffer() const;
+	IGPUBufferPtr	GetInstanceArchetypesBuffer() const { return m_archetypesBuffer; }
+	IGPUBufferPtr	GetRootBuffer() const { return m_rootBuffer; }
 	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
+
+	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
 
 	// syncs instance buffers with GPU and updates roots buffer
 	void			SyncInstances(IGPUCommandRecorder* cmdRecorder);
@@ -86,9 +89,11 @@ protected:
 	};
 
 	Threading::CEqMutex		m_mutex;
-	IGPUBufferPtr			m_buffer;
+	IGPUBufferPtr			m_rootBuffer;
 	IGPUBufferPtr			m_singleInstIndexBuffer;
-	IGPUComputePipelinePtr	m_updatePipeline;
+	IGPUBufferPtr			m_archetypesBuffer;
+	IGPUComputePipelinePtr	m_updateRootPipeline;
+	IGPUComputePipelinePtr	m_updateIntPipeline;
 
 	Array<int>				m_tempInstances{ PP_SL };
 
@@ -115,13 +120,13 @@ struct GPUInstDataPool : public GPUInstPool
 
 	GPUInstDataPool() : GPUInstPool(sizeof(T)) {}
 
-	const char* GetName() const override { return T::NAME; }
-	const void* GetDataPtr() const override { return data.ptr(); };
-	int				GetDataElems() const override { return data.numElem(); }
-	void			ResetData() override { data.setNum(1); }		// reset data to have default element only
-	void			InitPipeline() { T::InitPipeline(*this); }
+	const char*	GetName() const override { return T::NAME; }
+	const void*	GetDataPtr() const override { return data.ptr(); };
+	int			GetDataElems() const override { return data.numElem(); }
+	void		ResetData() override { data.setNum(1); }		// reset data to have default element only
+	void		InitPipeline() { T::InitPipeline(*this); }
 
-	Array<T> 		data{ PP_SL };
+	Array<T> 	data{ PP_SL };
 };
 
 // Component-based instance manager

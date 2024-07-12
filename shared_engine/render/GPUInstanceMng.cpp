@@ -26,20 +26,31 @@ GPUBaseInstanceManager::GPUBaseInstanceManager()
 
 void GPUBaseInstanceManager::Initialize()
 {
-	if (m_updatePipeline)
-		return;
+	if (!m_updateRootPipeline)
+	{
+		m_updateRootPipeline = g_renderAPI->CreateComputePipeline(
+			Builder<ComputePipelineDesc>()
+			.ShaderName("InstanceUtils")
+			.ShaderLayoutId(StringToHashConst("InstRoot"))
+			.End()
+		);
+	}
 
-	m_updatePipeline = g_renderAPI->CreateComputePipeline(
-		Builder<ComputePipelineDesc>()
-		.ShaderName("InstanceUtils")
-		.ShaderLayoutId(StringToHashConst("InstRoot"))
-		.End()
-	);
+	if (!m_updateIntPipeline)
+	{
+		m_updateIntPipeline = g_renderAPI->CreateComputePipeline(
+			Builder<ComputePipelineDesc>()
+			.ShaderName("InstanceUtils")
+			.ShaderLayoutId(StringToHashConst("InstInt"))
+			.End()
+		);
+	}
 
 	for (GPUInstPool* pool : m_componentPools)
 	{
-		if (!pool)
+		if (!pool || pool->updatePipeline)
 			continue;
+
 		pool->InitPipeline();
 		ASSERT_MSG(pool->updatePipeline, "Failed to create instance update pipeline");
 	}
@@ -47,8 +58,11 @@ void GPUBaseInstanceManager::Initialize()
 
 void GPUBaseInstanceManager::Shutdown()
 {
-	m_updatePipeline = nullptr;
-	m_buffer = nullptr;	
+	m_updateRootPipeline = nullptr;
+	m_updateIntPipeline = nullptr;
+
+	m_rootBuffer = nullptr;
+	m_archetypesBuffer = nullptr;
 	m_singleInstIndexBuffer = nullptr;
 
 	m_updated.clear(true);
@@ -75,6 +89,11 @@ void GPUBaseInstanceManager::Shutdown()
 		pool->ResetData();
 		pool->updated.insert(0);
 	}
+}
+
+GPUBufferView GPUBaseInstanceManager::GetSingleInstanceIndexBuffer() const
+{
+	return GPUBufferView(m_singleInstIndexBuffer, sizeof(int));
 }
 
 void GPUBaseInstanceManager::DbgRegisterArhetypeName(int archetypeId, const char* name)
@@ -138,6 +157,9 @@ void GPUBaseInstanceManager::FreeInstance(int instanceId)
 		--m_archetypeInstCounts[inst.archetype];
 	}
 
+	inst.archetype = 0;
+	inst.batchesFlags = 0;
+
 	for (int i = 0; i < GPUINST_MAX_COMPONENTS; ++i)
 	{
 		// skip invalid or defaults
@@ -152,6 +174,9 @@ void GPUBaseInstanceManager::FreeInstance(int instanceId)
 		}
 		root.components[i] = UINT_MAX;
 	}
+
+	// update roots and archetypes
+	m_updated.insert(instanceId);
 }
 
 IGPUBufferPtr GPUBaseInstanceManager::GetDataPoolBuffer(int componentId) const
@@ -193,8 +218,35 @@ static void instRunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputeP
 	computePass->Complete();
 }
 
+// prepares data buffer
+static void instPrepareDataBuffer(IGPUCommandRecorder* cmdRecorder, ArrayCRef<int> elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destDataBuffer)
+{
+	const int updatedCount = elementIds.numElem();
+	const int updateBufferSize = updatedCount * elemSize;
+
+	ubyte* updateData = reinterpret_cast<ubyte*>(PPAlloc(updateBufferSize));
+	ubyte* updateDataStart = updateData;
+	defer{
+		PPFree(updateDataStart);
+	};
+
+	// as GPU does not like unaligned access, we put updated elements in separate buffer
+	for (const int elemIdx : elementIds)
+	{
+		const ubyte* updInstPtr = sourceData + sourceStride * elemIdx;
+		memcpy(updateData, updInstPtr, elemSize);
+		updateData += elemSize;
+	}
+
+	destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, updateBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdData");
+	cmdRecorder->WriteBuffer(destDataBuffer, updateDataStart, updateBufferSize, 0);
+}
+
+// prepare data and indices
 static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer)
 {
+	ASSERT(elemSize <= sourceStride);
+
 	const int updatedCount = updated.size();
 	const int updateBufferSize = updatedCount * elemSize;
 
@@ -209,8 +261,6 @@ static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>&
 	defer{
 		PPFree(updateDataStart);
 	};
-
-	ASSERT(elemSize <= sourceStride);
 
 	// as GPU does not like unaligned access, we put updated elements in separate buffer
 	for (auto it = updated.begin(); !it.atEnd(); ++it)
@@ -239,29 +289,43 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 	Array<int> elementIds(PP_SL);
 
 	{
-		const int oldBufferElems = m_buffer ? m_buffer->GetSize() / sizeof(InstRoot) : 0;
+		const int oldBufferElems = m_rootBuffer ? m_rootBuffer->GetSize() / sizeof(InstRoot) : 0;
 
 		// update instance root buffer
 		// TODO: instead of re-creating buffer, create new separate buffer with it's instance pools
-		if (!m_buffer || m_instances.numElem() > oldBufferElems)
+		if (!m_rootBuffer || m_instances.numElem() > oldBufferElems)
 		{
 			// alloc (or re-create) new buffer and upload entire data
 			const int allocInstBufferElems = max(instGranulatedCapacity(m_instances.numElem()), GPU_INSTANCE_INITIAL_POOL_SIZE);
 
-			IGPUBufferPtr sourceBuffer = m_buffer;
-			m_buffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
+			// update roots, bloody roots
+			{
+				IGPUBufferPtr sourceBuffer = m_rootBuffer;
+				m_rootBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
+
+				if (oldBufferElems > 0)
+					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_rootBuffer, 0, oldBufferElems * sizeof(InstRoot));
+			}
+
+			// update archetypes
+			{
+				IGPUBufferPtr sourceBuffer = m_archetypesBuffer;
+				m_archetypesBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstArchetypes");
+
+				if (oldBufferElems > 0)
+					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_archetypesBuffer, 0, oldBufferElems * sizeof(int));
+			}
+
+			// update single instances idxs
+			{
+				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems + 1), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIndices");
+
+				elementIds.append(allocInstBufferElems);
+				for (int i = 0; i < allocInstBufferElems; ++i)
+					elementIds.append(i);
+				cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
+			}
 			buffersUpdatedThisFrame = true;
-
-			// copy old contents of buffer
-			if (oldBufferElems > 0)
-				cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_buffer, 0, oldBufferElems * sizeof(InstRoot));
-
-			m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIndices");
-			// TODO: arrayFill(N)
-			for (int i = 0; i < allocInstBufferElems; ++i)
-				elementIds.append(i);
-			cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
-			
 		}
 
 		if (m_updated.size())
@@ -269,7 +333,11 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			IGPUBufferPtr idxsBuffer;
 			IGPUBufferPtr dataBuffer;
 			instPrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);
-			instRunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_buffer);
+			instRunUpdatePipeline(cmdRecorder, m_updateRootPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_rootBuffer);
+
+			// update archetypes data
+			instPrepareDataBuffer(cmdRecorder, ArrayCRef(elementIds.ptr()+1, elementIds.numElem()-1), reinterpret_cast<const ubyte*>(m_instances.ptr()) + offsetOf(Instance, archetype), sizeof(Instance), sizeof(int), dataBuffer);
+			instRunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, elementIds.numElem()-1, dataBuffer, m_archetypesBuffer);
 		}
 		m_updated.clear();
 	}
