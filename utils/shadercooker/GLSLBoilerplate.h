@@ -15,18 +15,34 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #endif
 
 #ifdef FRAGMENT
-#	define clip(x)	if((x) < 0.0) discard
-#	define ddx    	dFdx
-#	define ddy    	dFdy
-#	define gl_VertexIndex 0
-#	define gl_InstanceIndex 0
+#	define clip(x)				if((x) < 0.0) discard
+#	define ddx    				dFdx
+#	define ddy    				dFdy
+#	define gl_VertexIndex		0
+#	define gl_InstanceIndex		0
+#endif
+
+#ifndef BINDGROUP_CONSTANT
+#define BINDGROUP_CONSTANT		0
+#endif
+
+#ifndef BINDGROUP_RENDERPASS
+#define BINDGROUP_RENDERPASS	1
+#endif
+
+#ifndef BINDGROUP_TRANSIENT
+#define BINDGROUP_TRANSIENT		2
+#endif
+
+#ifndef BINDGROUP_INSTANCES
+#define BINDGROUP_INSTANCES		3
 #endif
 
 // See BaseShader and shaders layouts
-#define BIND_CONSTANT( N )		layout(set = 0, binding = N)
-#define BIND_RENDERPASS( N )	layout(set = 1, binding = N)
-#define BIND_TRANSIENT( N )		layout(set = 2, binding = N)
-#define BIND_INSTANCES( N )		layout(set = 3, binding = N)
+#define BIND_CONSTANT( N )		layout(set = BINDGROUP_CONSTANT, binding = N)
+#define BIND_RENDERPASS( N )	layout(set = BINDGROUP_RENDERPASS, binding = N)
+#define BIND_TRANSIENT( N )		layout(set = BINDGROUP_TRANSIENT, binding = N)
+#define BIND_INSTANCES( N )		layout(set = BINDGROUP_INSTANCES, binding = N)
 
 #define VERTEX_ID( name ) (VID_ ## name)
 
