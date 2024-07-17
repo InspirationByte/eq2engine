@@ -59,7 +59,10 @@ int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
 
 	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
 	{
-		return f();
+		const int res = f();
+		if (m_loopFunc)
+			m_loopFunc();
+		return res;
 	}
 
 	// chose free slot
@@ -104,6 +107,8 @@ void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
 	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
 	{
 		f();
+		if (m_loopFunc)
+			m_loopFunc();
 		return;
 	}
 
