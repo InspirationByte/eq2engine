@@ -54,7 +54,7 @@ static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
 		MsgError("[WGPU] after %s: %s - %s\n", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message);
 }
 
-static void OnWGPUDeviceLost(WGPUDeviceLostReason reason, char const* message, void* userdata)
+static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, char const * message, void* userdata)
 {
 	ASSERT_FAIL("WGPU device lost (after %s) reason %s\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], message);
 	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message);
@@ -180,7 +180,6 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	else if (!backendName.CompareCaseIns("OpenGLES"))
 		options.backendType = WGPUBackendType_OpenGLES;
 
-	//options.compatibleSurface = surface;
 	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
 
 	if (!m_rhiAdapter)
@@ -302,7 +301,9 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		reqLimits.limits = requiredLimits;
 
 		rhiDeviceDesc.requiredLimits = &reqLimits;
-		rhiDeviceDesc.deviceLostCallback = OnWGPUDeviceLost;
+		WGPUDeviceLostCallbackInfo& rhiLostCbInfo = rhiDeviceDesc.deviceLostCallbackInfo;
+		rhiLostCbInfo.callback = OnWGPUDeviceLost;
+		rhiLostCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
 
 		m_rhiDevice = wgpuAdapterCreateDevice(m_rhiAdapter, &rhiDeviceDesc);
 

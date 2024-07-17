@@ -49,6 +49,7 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 	case WGPUSurfaceGetCurrentTextureStatus_Timeout:
 	case WGPUSurfaceGetCurrentTextureStatus_Outdated:
 	case WGPUSurfaceGetCurrentTextureStatus_Lost:
+	case WGPUSurfaceGetCurrentTextureStatus_Error:
 		return;
 	case WGPUSurfaceGetCurrentTextureStatus_OutOfMemory:
 	case WGPUSurfaceGetCurrentTextureStatus_DeviceLost:
@@ -57,6 +58,8 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 		ASSERT_FAIL("wgpuSurfaceGetCurrentTexture status=%#.8x\n", rhiSurfTex.status);
 		return;
     }
+
+	ASSERT_MSG(rhiSurfTex.texture != nullptr, "Swapchain texture has not been created");
 
 	{
 		if (m_textureRef->m_rhiTextures.numElem())
@@ -138,7 +141,12 @@ bool CWGPUSwapChain::UpdateResize()
 		m_surface = wgpuInstanceCreateSurface(m_host->m_instance, &surfDesc);
 	}
 
-	WGPUTextureFormat rhiSurfaceFormat = wgpuSurfaceGetPreferredFormat(m_surface, m_host->m_rhiAdapter);
+	WGPUSurfaceCapabilities surfCapabilities;
+	wgpuSurfaceGetCapabilities(m_surface, m_host->m_rhiAdapter, &surfCapabilities);
+
+	ASSERT_MSG(surfCapabilities.formatCount > 0, "Surface capabilities format count is 0");
+
+	WGPUTextureFormat rhiSurfaceFormat = surfCapabilities.formats[0];
 	for(int i = 1; i < FORMAT_COUNT; ++i)
 	{
 		const ETextureFormat format = static_cast<ETextureFormat>(i);
@@ -175,7 +183,7 @@ bool CWGPUSwapChain::UpdateResize()
 	rhiSurfaceConfig.device = m_host->m_rhiDevice;
 	rhiSurfaceConfig.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
 	rhiSurfaceConfig.format = rhiSurfaceFormat;
-	rhiSurfaceConfig.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
+	rhiSurfaceConfig.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Immediate;
 	rhiSurfaceConfig.alphaMode = WGPUCompositeAlphaMode_Opaque;	// TODO: get from surface capabilities
 	rhiSurfaceConfig.width = m_backbufferSize.x;
 	rhiSurfaceConfig.height = m_backbufferSize.y;
