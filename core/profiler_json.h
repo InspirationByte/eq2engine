@@ -33,6 +33,7 @@ struct CVTraceEvent
 
 class EqCVTracerJSON
 {
+	friend class EqCVTracerDumperJob;
 public:
 	bool 			Start(const char* fileName);
 	void			Stop();

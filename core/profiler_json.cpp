@@ -17,6 +17,47 @@ using namespace Threading;
 
 static constexpr const int bufferThreshold = 1000;
 
+class EqCVTracerDumperJob : public IParallelJob
+{
+public:
+	EqCVTracerDumperJob(EqCVTracerJSON& tracer, IVirtualStreamPtr outFile) 
+		: IParallelJob("CVTracerDumperJob")
+		, m_tracer(tracer)
+		, m_outFile(outFile)
+	{}
+	void Execute() override;
+
+	Array<CVTraceEvent> m_writeBuffer{ PP_SL };
+	EqCVTracerJSON&		m_tracer;
+	IVirtualStreamPtr	m_outFile;
+	bool				m_initialStart{ false };
+};
+
+void EqCVTracerDumperJob::Execute()
+{
+	s_jsonTracerWriteCompleted.Wait();	// wait for another if it was started already
+
+	// start new one
+	s_jsonTracerWriteCompleted.Clear();
+
+	bool initialStart = m_initialStart;
+
+	EqString str;
+	for(CVTraceEvent& traceEvt : m_writeBuffer)
+	{
+		if(!initialStart)
+			m_outFile->Write(m_tracer.m_batchPrefix.GetData(), 1, m_tracer.m_batchPrefix.Length());
+		else
+			initialStart = false;
+
+		m_tracer.EventToString(str, traceEvt);
+		m_outFile->Write(str.GetData(), 1, str.Length());
+	}
+
+	// complete write
+	s_jsonTracerWriteCompleted.Raise();
+}
+
 bool EqCVTracerJSON::Start(const char* fileName)
 {
 	if(Atomic::Load(m_captureInProgress) != 0)
@@ -111,40 +152,23 @@ void EqCVTracerJSON::FlushTempBuffer()
 	if(Atomic::Load(m_captureInProgress) == 0)
 		return;
 
-	s_jsonTracerWriteCompleted.Clear();
+	EqCVTracerDumperJob* dumpJob = PPNew EqCVTracerDumperJob(*this, m_outFile);
+	dumpJob->DeleteOnFinish();
 
-	bool initialStart = false;
-	if(m_batchPrefix.Length() == 0)
+	// swap write buffer and start dump job
 	{
-		initialStart = true;
-		m_batchPrefix = ",";
+		CScopedMutex m(s_jsonTracerMutex);
+		dumpJob->m_writeBuffer.swap(m_tmpBuffer);
+
+		if(m_batchPrefix.Length() == 0)
+		{
+			dumpJob->m_initialStart = true;
+			m_batchPrefix = ",";
+		}
+		m_tmpBuffer.reserve(bufferThreshold);
 	}
 
-	Array<CVTraceEvent>* writeBuffer = PPNew Array<CVTraceEvent>(PP_SL);
-	writeBuffer->swap(m_tmpBuffer);
-	g_parallelJobs->AddJob([_initialStart = initialStart, this, writeBuffer](void*, int) {
-		CScopedMutex m(s_jsonTracerMutex);
-
-		bool initialStart = _initialStart;
-
-		EqString str;
-		for(int i = 0; i < writeBuffer->numElem(); ++i)
-		{
-			if(!initialStart)
-				m_outFile->Write(m_batchPrefix.GetData(), 1, m_batchPrefix.Length());
-			else
-				initialStart = false;
-
-			EventToString(str, writeBuffer->ptr()[i]);
-			m_outFile->Write(str.GetData(), 1, str.Length());
-		}
-
-		s_jsonTracerWriteCompleted.Raise();
-
-		delete writeBuffer;
-	});
-
-	m_tmpBuffer.reserve(bufferThreshold);
+	g_parallelJobs->GetJobMng()->InitStartJob(dumpJob);
 }
 
 void EqCVTracerJSON::EventToString(EqString& out, const CVTraceEvent& evt)
