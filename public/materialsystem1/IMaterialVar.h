@@ -46,6 +46,10 @@ inline void MatVarProxy<float>::Set(const float& fValue)
 		return;
 
 	MatVarData& var = m_vars->variables[m_matVarIdx];
+
+	if(m_vars->onChangedCb && memcmp(&var.vector[0], &fValue, sizeof(var.vector[0])))
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
+
 	var.vector[0] = fValue;
 }
 
@@ -56,6 +60,9 @@ inline void MatVarProxy<int>::Set(const int& nValue)
 		return;
 
 	MatVarData& var = m_vars->variables[m_matVarIdx];
+	if(m_vars->onChangedCb && memcmp(&var.intValue, &nValue, sizeof(var.intValue)))
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
+
 	var.intValue = nValue;
 }
 
@@ -76,6 +83,9 @@ inline void MatVarProxy<Vector3D>::Set(const Vector3D& vector)
 		return;
 
 	MatVarData& var = m_vars->variables[m_matVarIdx];
+	if(m_vars->onChangedCb && memcmp(var.vector, &vector, sizeof(Vector3D)))
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
+
 	*(Vector3D*)var.vector = vector;
 }
 
@@ -86,6 +96,9 @@ inline void MatVarProxy<Vector4D>::Set(const Vector4D& vector)
 		return;
 
 	MatVarData& var = m_vars->variables[m_matVarIdx];
+	if(m_vars->onChangedCb && memcmp(var.vector, &vector, sizeof(Vector4D)))
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
+
 	*(Vector4D*)var.vector = vector;
 }
 
@@ -96,6 +109,9 @@ inline void MatVarProxy<Matrix3x3>::Set(const Matrix3x3& matrix)
 		return;
 
 	MatVarData& var = m_vars->variables[m_matVarIdx];
+	if(m_vars->onChangedCb && memcmp(var.vector, &matrix, sizeof(Matrix3x3)))
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
+
 	*(Matrix3x3*)var.vector = matrix;
 }
 
@@ -106,6 +122,9 @@ inline void MatVarProxy<Matrix4x4>::Set(const Matrix4x4& matrix)
 		return;
 
 	MatVarData& var = m_vars->variables[m_matVarIdx];
+	if(m_vars->onChangedCb && memcmp(var.vector, &matrix, sizeof(Matrix4x4)))
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
+
 	*(Matrix4x4*)var.vector = matrix;
 }
 
@@ -226,6 +245,9 @@ inline void MatVarProxy<ITexturePtr>::Set(const ITexturePtr& pTexture)
 		return;
 
 	var.texture = pTexture;
+
+	if(m_vars->onChangedCb)
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
 }
 
 template<>
@@ -252,4 +274,7 @@ inline void MatVarProxy<GPUBufferView>::Set(const GPUBufferView& buffer)
 		return;
 
 	var.buffer = buffer;
+
+	if(m_vars->onChangedCb)
+		m_vars->onChangedCb(m_matVarIdx, m_vars->onChangedUserData);
 }

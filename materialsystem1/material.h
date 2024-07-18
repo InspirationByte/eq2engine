@@ -52,7 +52,7 @@ public:
 	const MaterialVarBlock&	GetMaterialVars() const { return m_vars; }
 
 // render-time operations
-	void					UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder);
+	void					UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder, bool force = false);
 	const ITexturePtr&		GetBaseTexture(int stage = 0);
 private:
 
@@ -65,6 +65,8 @@ private:
 
 protected:
 	bool					DoLoadShaderAndTextures();
+	void					OnVarUpdated();
+	static void 			OnMatVarChanged(int varIdx, void* userData);
 
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
@@ -81,4 +83,5 @@ protected:
 
 	uint					m_frameBound{ 0 };
 	bool					m_loadFromDisk{ false };
+	bool					m_varsUpdated{ true };
 };

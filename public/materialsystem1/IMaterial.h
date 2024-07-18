@@ -14,6 +14,8 @@ constexpr EqStringRef s_materialAtlasFileExt = "atlas";
 
 class CTextureAtlas;
 
+using OnMatVarChanged = void(*)(int varIdx, void* userData);
+
 struct MatVarData
 {
 	float			vector[16]{ 0 }; // TODO: think about memory consumption
@@ -27,6 +29,8 @@ struct MaterialVarBlock : public WeakRefObject<MaterialVarBlock>
 {
 	Map<int, int>		variableMap{ PP_SL };
 	Array<MatVarData>	variables{ PP_SL };
+	OnMatVarChanged		onChangedCb{ nullptr };
+	void*				onChangedUserData{ nullptr };
 };
 
 struct EMPTY_BASES MV_VOID {};

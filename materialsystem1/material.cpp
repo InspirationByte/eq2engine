@@ -25,10 +25,15 @@ CMaterial::CMaterial(const char* materialName, int instanceFormatId, bool loadFr
 	m_szMaterialName = materialName;
 	m_nameHash = StringToHash(m_szMaterialName, true);
 	m_instanceFormatId = instanceFormatId;
+
+	m_vars.onChangedCb = OnMatVarChanged;
+	m_vars.onChangedUserData = this;
 }
 
 CMaterial::~CMaterial()
 {
+	m_vars.onChangedCb = nullptr;
+	m_vars.onChangedUserData = nullptr;
 	Cleanup();
 }
 
@@ -458,13 +463,27 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 }
 
-void CMaterial::UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder)
+void CMaterial::OnMatVarChanged(int varIdx, void* userData)
+{
+	reinterpret_cast<CMaterial*>(userData)->OnVarUpdated();
+}
+
+void CMaterial::OnVarUpdated()
+{
+	m_varsUpdated = true;
+}
+
+void CMaterial::UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder, bool force)
 {
 	if (!m_shader)
 		return;
 
 	for(IMaterialProxy* proxy : m_proxies)
 		proxy->UpdateProxy(fDt);
-
-	m_shader->UpdateProxy(cmdRecorder);
+		
+	const bool varsUpdated = m_varsUpdated || force;
+	if(varsUpdated)
+		m_shader->UpdateProxy(cmdRecorder);
+	
+	m_varsUpdated = false;
 }

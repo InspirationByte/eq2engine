@@ -1493,7 +1493,7 @@ void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandReco
 	if (!force && matSysMaterial->m_frameBound == proxyFrame)
 		return;
 
-	matSysMaterial->UpdateProxy(m_proxyDeltaTime, commandRecorder);
+	matSysMaterial->UpdateProxy(m_proxyDeltaTime, commandRecorder, force);
 	matSysMaterial->m_frameBound = proxyFrame;
 }
 
