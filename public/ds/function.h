@@ -223,7 +223,7 @@ private:
         F f;
     };
 
-    int64 isSmall{ 0 };
+    ubyte isSmall{ 0 };
 
     union
     {
