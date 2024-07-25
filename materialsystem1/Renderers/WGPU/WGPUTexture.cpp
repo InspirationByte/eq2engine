@@ -91,7 +91,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 		const ETextureFormat texFormat = imgFmt;
 
 		WGPUTextureDescriptor rhiTextureDesc{};
-		rhiTextureDesc.label = img->GetName();
+		rhiTextureDesc.label = GetName();
 		rhiTextureDesc.mipLevelCount = mipCount;
 		rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
 		rhiTextureDesc.sampleCount = 1;
