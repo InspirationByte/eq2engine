@@ -757,7 +757,6 @@ void CFileSystem::RemovePackage(const char* packageName)
 		if (!packagePath.CompareCaseIns(reader->GetName()))
 		{
 			m_fsPackages.fastRemoveIndex(i);
-			delete reader;
 			return;
 		}
 	}
