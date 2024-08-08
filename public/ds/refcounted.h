@@ -69,7 +69,12 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 
 //-----------------------------------------------------------------------------
 // smart pointer for ref counted
-// NOTE: CRefPtr<const TYPE> is not allowed.
+
+template<typename T, typename ...Args>
+typename T::PTR_T RefPtr_new(Args&&...args)
+{
+	return typename T::PTR_T(PPNew T(std::forward<Args>(args)...));
+}
 
 #define CRefPtr_new(TYPE, ...) CRefPtr<TYPE>(PPNew TYPE(__VA_ARGS__))
 
