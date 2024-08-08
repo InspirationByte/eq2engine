@@ -1087,6 +1087,29 @@ TEST(EQSCRIPT_TESTS, TestByValue)
 	LUA_GTEST_CHUNK("EXPECT_EQ(testRet.usedCopyConstructor, false)");
 }
 
+TEST(EQSCRIPT_TESTS, ShouldNotGrowStack)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+
+	// Test 1: call function
+	{
+		state.RunChunk("TestFunc = function()  end");
+
+		esl::LuaFunctionRef funcRef = *state.GetGlobal<esl::LuaFunctionRef>("TestFunc");
+
+		using TestFuncCall = esl::runtime::FunctionCall<void>;
+
+		const int top = lua_gettop(state);
+		{
+			for (int i = 0; i < 10000; ++i)
+				TestFuncCall::Invoke(funcRef);
+		}
+
+		ASSERT_EQ(top, lua_gettop(state));
+	}
+}
+
 struct BindTest
 {
 	int value;

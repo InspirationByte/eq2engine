@@ -52,7 +52,6 @@ public:
 		bool allSuccess = true;
 		for (auto it = m_abstract.GetFirstHandler(); !it.atEnd(); ++it)
 		{
-			esl::runtime::StackGuard g(it.value().GetState());
 			if (!EventFuncLuaCall::Invoke(it.value(), args...))
 				allSuccess = false;
 		}

@@ -573,6 +573,7 @@ struct FunctionCall
 			return Result{ {}, false, "is not callable"};
 
 		lua_State* L = func.GetState();
+		runtime::StackGuard g(L);
 
 		lua_pushcfunction(L, StackTrace);
 		const int errIdx = lua_gettop(L);
@@ -580,7 +581,7 @@ struct FunctionCall
 		func.Push();
 		PushArguments(L, std::forward<Args>(args)...);
 
-		return InvokeFunc(L, sizeof...(Args), errIdx);
+		return InvokeFunc(L, std::move(g), sizeof...(Args), errIdx);
 	}
 
 	static Result Invoke(lua_State* L, int funcIndex, Args... args)
@@ -588,13 +589,15 @@ struct FunctionCall
 		if (lua_type(L, funcIndex) != LUA_TFUNCTION)
 			return Result{ {}, false, "is not callable"};
 
+		runtime::StackGuard g(L);
+
 		lua_pushcfunction(L, StackTrace);
 		const int errIdx = lua_gettop(L);
 
 		lua_pushvalue(L, funcIndex);
 		PushArguments(L, std::forward<Args>(args)...);
 
-		return InvokeFunc(L, sizeof...(Args), errIdx);
+		return InvokeFunc(L, std::move(g), sizeof...(Args), errIdx);
 	}
 
 private:
@@ -607,20 +610,19 @@ private:
 		PushArguments(L, rest...);
 	}
 
-	static Result InvokeFunc(lua_State* L, int numArgs, int errIdx)
+	static Result InvokeFunc(lua_State* L, runtime::StackGuard&& guard, int numArgs, int errIdx)
 	{
-		runtime::StackGuard g(L);
 		const int res = lua_pcall(L, numArgs, std::is_void_v<R> ? LUA_MULTRET : 1, errIdx);
 		if (res == 0)
 		{
 			if constexpr (std::is_void_v<R>)
 			{
-				return Result{ std::move(g), true};
+				return Result{ std::move(guard), true};
 			}
 			else
 			{
 				auto value = runtime::GetValue<R, true>(L, -1);
-				return Result{ std::move(g), value.success, value.success ? EqString() : EqString::Format("return value: %s", value.errorMessage.ToCString()), *value};
+				return Result{ std::move(guard), value.success, value.success ? EqString() : EqString::Format("return value: %s", value.errorMessage.ToCString()), *value};
 			}
 		}
 
@@ -631,7 +633,7 @@ private:
 			errorMessage = GetLastError(L);
 		}
 
-		return Result{ std::move(g), false, errorMessage };
+		return Result{ std::move(guard), false, errorMessage };
 	}
 };
 
