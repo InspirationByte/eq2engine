@@ -161,6 +161,7 @@ decltype(auto) ScriptState::GetClassStatic(const K& k) const
 	lua_getglobal(m_state, ScriptClass<T>::className);
 	const int top = GetStackTop();
 	LuaTable metaTable(m_state, top);
+	lua_pop(m_state, 1); // getglobal
 	return metaTable.Get<V>(k);
 }
 
@@ -170,7 +171,7 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 	using FuncSignature = runtime::FunctionCall<R, Args...>;
 	lua_getglobal(m_state, name);
 	const int top = GetStackTop();
-	return FuncSignature::Invoke(m_state, top, std::forward<Args>(args)...);		
+	return FuncSignature::Invoke(m_state, top, 1, std::forward<Args>(args)...);		
 }
 }
 

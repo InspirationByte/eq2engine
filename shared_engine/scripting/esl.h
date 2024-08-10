@@ -182,7 +182,7 @@ class StackGuard
 public:
 	StackGuard() = default;
 	StackGuard(StackGuard&& other) noexcept;
-	StackGuard(lua_State* L);
+	StackGuard(lua_State* L, int offset = 0);
 	~StackGuard();
 
 	StackGuard&	operator=(StackGuard&& other) noexcept;

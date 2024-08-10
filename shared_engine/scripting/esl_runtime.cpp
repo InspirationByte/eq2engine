@@ -136,12 +136,12 @@ StackGuard& StackGuard::operator=(StackGuard&& other) noexcept
 	return *this;
 }
 
-StackGuard::StackGuard(lua_State* L) 
+StackGuard::StackGuard(lua_State* L, int offset)
 	: m_state(L)
 {
 	if (!L)
 		return;
-	m_pos = lua_gettop(L);
+	m_pos = lua_gettop(L) + offset;
 	//PPDCheck(L->stack.p);
 }
 StackGuard::~StackGuard()

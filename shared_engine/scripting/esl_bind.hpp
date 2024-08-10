@@ -584,12 +584,12 @@ struct FunctionCall
 		return InvokeFunc(L, std::move(g), sizeof...(Args), errIdx);
 	}
 
-	static Result Invoke(lua_State* L, int funcIndex, Args... args)
+	static Result Invoke(lua_State* L, int funcIndex, int popCnt, Args... args)
 	{
 		if (lua_type(L, funcIndex) != LUA_TFUNCTION)
 			return Result{ {}, false, "is not callable"};
 
-		runtime::StackGuard g(L);
+		runtime::StackGuard g(L, -popCnt);
 
 		lua_pushcfunction(L, StackTrace);
 		const int errIdx = lua_gettop(L);
