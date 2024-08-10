@@ -20,12 +20,7 @@ struct ConAutoCompletion_t
 typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
 
 #ifdef IMGUI_ENABLED
-enum EqImGuiHandleTypes : int
-{
-	IMGUI_HANDLE_NONE = 0,
-	IMGUI_HANDLE_MENU = (1 << 0)
-};
-using CONSOLE_IMGUI_HANDLER = EqFunction<void(const char* name, EqImGuiHandleTypes type)>;
+using CONSOLE_IMGUI_HANDLER = EqFunction<void(bool& visible)>;
 
 #define IMGUI_MENUITEM_CONVAR_BOOL(label, name) { \
 		HOOK_TO_CVAR(name); \
@@ -88,8 +83,13 @@ public:
 	void			AddAutoCompletion(ConAutoCompletion_t* item);
 
 #ifdef IMGUI_ENABLED
-	void			AddImGuiHandle(const char* name, CONSOLE_IMGUI_HANDLER func);
-	void			RemoveImGuiHandle(const char* name);
+	void			AddDebugHandler(const char* name, CONSOLE_IMGUI_HANDLER func);
+	void			AddDebugMenu(const char* path, CONSOLE_IMGUI_HANDLER func);
+	void			ShowDebugMenu(const char* path, bool enable);
+	void			ToggleDebugMenu(const char* path);
+
+	// removes both menus and handlers
+	void			RemoveDebugHandler(const char* name);
 #endif // IMGUI_ENABLED
 
 protected:
@@ -168,14 +168,15 @@ private:
 	int								m_variantSelection;
 
 #ifdef IMGUI_ENABLED
-	struct EqImGui_Handle
+	struct EqImGui_Menu
 	{
-		EqString name;
-		CONSOLE_IMGUI_HANDLER handleFunc;
-		int flags;
+		EqString				path;
+		CONSOLE_IMGUI_HANDLER	func;
+		int						flags;
+		bool					enabled{ false };
 	};
 
-	Map<int, EqImGui_Handle>		m_imguiHandles{ PP_SL };
+	Map<int, EqImGui_Menu>			m_imguiMenus{ PP_SL };
 	bool							m_imguiDrawStart{ false };
 #endif // IMGUI_ENABLED
 	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;

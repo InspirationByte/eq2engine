@@ -345,10 +345,56 @@ void CEqConsoleInput::Shutdown()
 #endif // IMGUI_ENABLED
 }
 
+static void ImGuiBeginMenuPath(const char* path, bool& selected)
+{
+	char tmpName[128] = { 0 };
+	int depth = 0;
+	const char* tok = path;
+	while (true)
+	{
+		const char* nextTok = strchr(tok, '/');
+
+		if (nextTok)
+		{
+			const int len = nextTok - tok;
+			strncpy(tmpName, tok, len);
+			tmpName[len] = 0;
+
+			if (!ImGui::BeginMenu(tmpName))
+				break;
+			++depth;
+		}
+		else
+		{
+			const int len = strlen(tok);
+			strncpy(tmpName, tok, len);
+			tmpName[len] = 0;
+
+			ImGui::MenuItem(tok, "", &selected);
+		}
+
+		if (!nextTok)
+			break;
+
+		tok = nextTok+1;
+	}
+
+	while(depth--)
+		ImGui::EndMenu();
+}
+
 void CEqConsoleInput::BeginFrame()
 {
 #ifdef IMGUI_ENABLED
-	const bool imGuiVisible = m_imguiHandles.size() || m_visible;
+	bool imGuiVisible = m_visible;
+	for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
+	{
+		if (it.value().enabled)
+		{
+			imGuiVisible = true;
+			break;
+		}
+	}
 
 	if (imGuiVisible)
 	{
@@ -365,11 +411,10 @@ void CEqConsoleInput::BeginFrame()
 			ImGui_ImplEq_UpdateGamepads();
 		}
 
-		for (auto it = m_imguiHandles.begin(); !it.atEnd(); ++it)
+		for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
 		{
-			const EqImGui_Handle& handler = it.value();
-			if(handler.handleFunc)
-				handler.handleFunc(handler.name, IMGUI_HANDLE_NONE);
+			EqImGui_Menu& handler = *it;
+			handler.func(handler.enabled);
 		}
 		m_imguiDrawStart = true;
 	}
@@ -381,52 +426,53 @@ void CEqConsoleInput::BeginFrame()
 
 	if (ImGui::BeginMainMenuBar())
 	{
-		if (ImGui::BeginMenu("CONSOLE"))
-		{
-			ImGui::MenuItem("Display", "", &m_showConsole);
-			ImGui::EndMenu();
-		}
 		if (ImGui::BeginMenu("ENGINE"))
 		{
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW FPS", r_showFPS);
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW FPS GRAPH", r_showFPSGraph);
-			ImGui::Separator();
-			if (ImGui::BeginMenu("EQUI"))
+			ImGui::MenuItem("Show console", "", &m_showConsole);
+			if (ImGui::BeginMenu("FPS"))
 			{
-				IMGUI_MENUITEM_CONVAR_BOOL("UI DEBUG RENDER", equi_debug);
+				IMGUI_MENUITEM_CONVAR_BOOL("Show FPS", r_showFPS);
+				IMGUI_MENUITEM_CONVAR_BOOL("Show Graph", r_showFPSGraph);
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("MATSYSTEM"))
+
+			ImGui::Separator();
+			if (ImGui::BeginMenu("EqUI"))
 			{
-				IMGUI_MENUITEM_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
-				IMGUI_MENUITEM_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
+				IMGUI_MENUITEM_CONVAR_BOOL("Debug Render", equi_debug);
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("MatSystem"))
+			{
+				IMGUI_MENUITEM_CONVAR_BOOL("Overdraw Mode", r_overdraw);
+				IMGUI_MENUITEM_CONVAR_BOOL("Wireframe Mode", r_wireframe);
 				ImGui::Separator();
-				IMGUI_MENUITEM_CONCMD("RELOAD MATERIALS", mat_reload, cmd_noArgs);
+				IMGUI_MENUITEM_CONCMD("Reload All Materials", mat_reload, cmd_noArgs);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("DEBUG OVERLAYS"))
 		{
-			IMGUI_MENUITEM_CONVAR_BOOL("FRAME STATS", r_debugDrawFrameStats);
-			IMGUI_MENUITEM_CONVAR_BOOL("GRAPHS", r_debugDrawGraphs);
-			IMGUI_MENUITEM_CONVAR_BOOL("SHAPES", r_debugDrawShapes);
-			IMGUI_MENUITEM_CONVAR_BOOL("LINES", r_debugDrawLines);
+			IMGUI_MENUITEM_CONVAR_BOOL("Show Frame Stats", r_debugDrawFrameStats);
+			IMGUI_MENUITEM_CONVAR_BOOL("Show Graphs", r_debugDrawGraphs);
+			IMGUI_MENUITEM_CONVAR_BOOL("Show 3D Shapes", r_debugDrawShapes);
+			IMGUI_MENUITEM_CONVAR_BOOL("Show 3D Lines", r_debugDrawLines);
 
 			ImGui::EndMenu();
 		}
 
 		if (ImGui::BeginMenu("IMGUI"))
 		{
-			ImGui::MenuItem("SHOW DEMO", nullptr, &s_showDemoWindow);
+			ImGui::MenuItem("Demo", nullptr, &s_showDemoWindow);
 			ImGui::EndMenu();
 		}
 
-		for (auto it = m_imguiHandles.begin(); !it.atEnd(); ++it)
+		for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
 		{
-			const EqImGui_Handle& handler = it.value();
-			if(handler.handleFunc)
-				handler.handleFunc(handler.name, IMGUI_HANDLE_MENU);
+			EqImGui_Menu& handler = *it;
+			if(handler.path.Length())
+				ImGuiBeginMenuPath(handler.path, handler.enabled);
 		}
 
 		ImGui::EndMainMenuBar();
@@ -498,19 +544,49 @@ void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
 
 #ifdef IMGUI_ENABLED
 
-void CEqConsoleInput::AddImGuiHandle(const char* name, CONSOLE_IMGUI_HANDLER func)
+void CEqConsoleInput::AddDebugHandler(const char* name, CONSOLE_IMGUI_HANDLER func)
 {
+	ASSERT(func);
 	const int nameHash = StringToHash(name);
-	EqImGui_Handle& handler = m_imguiHandles[nameHash];
-	handler.name = name;
-	handler.handleFunc = func;
+	EqImGui_Menu& handler = m_imguiMenus[nameHash];
+	handler.func = func;
+	handler.enabled = true; // non-menu are always enabled
 }
 
-void CEqConsoleInput::RemoveImGuiHandle(const char* name)
+void CEqConsoleInput::RemoveDebugHandler(const char* name)
 {
 	const int nameHash = StringToHash(name);
-	m_imguiHandles.remove(nameHash);
+	m_imguiMenus.remove(nameHash);
 }
+
+void CEqConsoleInput::AddDebugMenu(const char* path, CONSOLE_IMGUI_HANDLER func)
+{
+	ASSERT(func);
+
+	const int nameHash = StringToHash(path);
+	EqImGui_Menu& handler = m_imguiMenus[nameHash];
+	handler.path = path;
+	handler.func = func;
+}
+
+void CEqConsoleInput::ShowDebugMenu(const char* path, bool enable)
+{
+	const int nameHash = StringToHash(path);
+	auto it = m_imguiMenus.find(nameHash);
+	if (it.atEnd())
+		return;
+	(*it).enabled = enable;
+}
+
+void CEqConsoleInput::ToggleDebugMenu(const char* path)
+{
+	const int nameHash = StringToHash(path);
+	auto it = m_imguiMenus.find(nameHash);
+	if (it.atEnd())
+		return;
+	(*it).enabled = !(*it).enabled;
+}
+
 #endif // IMGUI_ENABLED
 
 void CEqConsoleInput::DelText(int start, int len)
