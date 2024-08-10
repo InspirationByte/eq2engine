@@ -16,13 +16,13 @@ class ConCommand;
 class CGameSystemJob;
 class SyncJob;
 
-struct VideoMode_t
+struct SysVideoMode
 {
-	int displayId;
-	uint bitsPerPixel;
-	int width;
-	int height;
-	int refreshRate;
+	int		displayId;
+	uint	bitsPerPixel;
+	int		width;
+	int		height;
+	int		refreshRate;
 };
 
 class CGameHost
@@ -57,7 +57,7 @@ public:
 	void				ApplyVideoMode();
 	void				ToggleFullscreen();
 
-	void				GetVideoModes(Array<VideoMode_t>& displayModes) const;
+	void				GetVideoModes(Array<SysVideoMode>& displayModes) const;
 
 	//---------------------------------
 	// INPUT

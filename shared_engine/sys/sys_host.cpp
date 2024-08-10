@@ -80,7 +80,7 @@ DECLARE_CMD(sys_set_windowed, nullptr, 0)
 
 DECLARE_CMD(sys_vmode_list, nullptr, 0)
 {
-	Array<VideoMode_t> vmodes(PP_SL);
+	Array<SysVideoMode> vmodes(PP_SL);
 	g_pHost->GetVideoModes(vmodes);
 
 	for(int i = 0; i < vmodes.numElem(); i++)
@@ -301,23 +301,21 @@ void CGameHost::ApplyVideoMode()
 #endif
 }
 
-void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes) const
+void CGameHost::GetVideoModes(Array<SysVideoMode>& displayModes) const
 {
 #ifdef PLAT_ANDROID
-	displayModes.append(VideoMode_t{ 0, 16, 1024, 768, 60 });
+	displayModes.append(SysVideoMode{ 0, 16, 1024, 768, 60 });
 #else
-	int display_count = SDL_GetNumVideoDisplays();
-
-	for (int display_index = 0; display_index <= display_count; display_index++)
+	int dispCount = SDL_GetNumVideoDisplays();
+	for (int dispIdx = 0; dispIdx <= dispCount; dispIdx++)
 	{
-		int modes_count = SDL_GetNumDisplayModes(display_index);
-
-		for (int mode_index = 0; mode_index <= modes_count; mode_index++)
+		int modeCount = SDL_GetNumDisplayModes(dispIdx);
+		for (int modeIdx = 0; modeIdx <= modeCount; modeIdx++)
 		{
-			SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+			SDL_DisplayMode dispMode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
 
-			if (SDL_GetDisplayMode(display_index, mode_index, &mode) == 0)
-				displayModes.append(VideoMode_t{display_index, SDL_BITSPERPIXEL(mode.format), mode.w, mode.h, mode.refresh_rate});
+			if (SDL_GetDisplayMode(dispIdx, modeIdx, &dispMode) == 0)
+				displayModes.append(SysVideoMode{dispIdx, SDL_BITSPERPIXEL(dispMode.format), dispMode.w, dispMode.h, dispMode.refresh_rate});
 		}
 	}
 #endif
@@ -390,6 +388,8 @@ static void* Helper_GetWindowInfo(void* userData, RenderWindowInfo::Attribute at
 
 bool CGameHost::InitSystems()
 {
+	SetWindowTitle(eqAppStateMng::GetAppNameTitle());
+
 	s_defaultCursor[dc_none] = nullptr;
 	s_defaultCursor[dc_arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 	s_defaultCursor[dc_ibeam] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
@@ -403,14 +403,12 @@ bool CGameHost::InitSystems()
 	s_defaultCursor[dc_sizeall] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
 	s_defaultCursor[dc_no] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
 	s_defaultCursor[dc_hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-
-	// Set default cursor
 	SDL_SetCursor(s_defaultCursor[dc_arrow]);
 
 	g_parallelJobs->Init();
 
 	// init game states and proceed
-	if (!EqStateMgr::InitRegisterStates())
+	if (!eqAppStateMng::InitAppStates())
 		return false;
 
 	m_window = Sys_CreateWindow();
@@ -629,24 +627,18 @@ void CGameHost::ShutdownSystems()
 {
 	Msg("---------  ShutdownSystems ---------\n");
 
-	// calls OnLeave and unloads state
-	EqStateMgr::ChangeState(nullptr);
-
+	eqAppStateMng::ChangeState(nullptr);
 	g_parallelJobs->Wait();
 
-	// Save configuration before full unload
 	WriteCfgFile( user_cfg.GetString(), true );
+
+	eqAppStateMng::ShutdownAppStates();
 	
 	debugoverlay->Shutdown();
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
-
 	g_inputCommandBinder->Shutdown();
-
-	EqStateMgr::ShutdownStates();
-
 	g_consoleInput->Shutdown();
-
 	g_matSystem->Shutdown();
 	g_fileSystem->CloseModule( g_matsysmodule );
 
@@ -657,16 +649,14 @@ void CGameHost::ShutdownSystems()
 	SDL_DestroyWindow(g_pHost->m_window);
 }
 
-#define GAME_MAX_FRAMERATE (sys_maxfps.GetFloat()) // 60 fps limit
-
-#define MIN_FPS 0.01
-#define MAX_FPS 10000.0
-
-#define MAX_FRAMETIME	0.1
-#define MIN_FRAMETIME	0.001
-
 bool CGameHost::FilterTime( double dTime )
 {
+	constexpr double MIN_FPS = 0.01;
+	constexpr double MAX_FPS = 10000.0;
+
+	constexpr double MAX_FRAMETIME = 0.1;
+	constexpr double MIN_FRAMETIME = 0.001;
+
 	// Accumulate some time
 	double frameTime = m_accumTime + dTime;
 
@@ -674,15 +664,11 @@ bool CGameHost::FilterTime( double dTime )
 	frameTime = min(frameTime, MAX_FRAMETIME);
 	m_accumTime = max(frameTime, MIN_FRAMETIME);
 
-	double fps = GAME_MAX_FRAMERATE;
+	const double fps = sys_maxfps.GetFloat();
 	if ( fps != 0 )
 	{
 		// Limit fps to withing tolerable range
-		fps = max( MIN_FPS, fps );
-		fps = min( MAX_FPS, fps );
-
-		double minframetime = 1.0 / fps;
-
+		const double minframetime = 1.0 / clamp(fps, MIN_FPS, MAX_FPS);
 		if (frameTime < minframetime)
 			return false;
 	}
@@ -694,7 +680,7 @@ void CGameHost::UpdateCursorState()
 {
 	bool cursorVisible = false;
 	bool center = false;
-	EqStateMgr::GetStateMouseCursorProperties(cursorVisible, center);
+	eqAppStateMng::GetStateMouseCursorProperties(cursorVisible, center);
 
 	bool previousCenterState = m_cursorCentered;
 
@@ -767,12 +753,12 @@ bool CGameHost::Frame()
 	if (r_showFPSGraph.GetBool())
 		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
 
-	const double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
+	const double timescale = (eqAppStateMng::GetCurrentState() ? eqAppStateMng::GetCurrentState()->GetTimescale() : 1.0f);
 	
 	const float stateTimeStepDelta = gameFrameTime * timescale * sys_timescale.GetFloat();
 	g_matSystem->SetProxyDeltaTime(stateTimeStepDelta);
 
-	if(!EqStateMgr::UpdateStates(stateTimeStepDelta))
+	if(!eqAppStateMng::UpdateStates(stateTimeStepDelta))
 	{
 		m_quitState = CGameHost::QUIT_TODESKTOP;
 		return false;
@@ -881,12 +867,12 @@ bool CGameHost::Frame()
 
 bool CGameHost::IsInMultiplayerGame() const
 {
-	return EqStateMgr::IsMultiplayerGameState();
+	return eqAppStateMng::IsMultiplayerGameState();
 }
 
 void CGameHost::SignalPause()
 {
-	EqStateMgr::SignalPause();
+	eqAppStateMng::SignalPause();
 }
 
 void CGameHost::OnWindowResize(int width, int height)
@@ -964,8 +950,8 @@ void CGameHost::TrapKey_Event( int key, bool down )
 	if( equi::Manager->ProcessKeyboardEvents(key, down ? equi::UI_EVENT_DOWN : equi::UI_EVENT_UP ) )
 		return;
 
-	if(EqStateMgr::GetCurrentState())
-		EqStateMgr::GetCurrentState()->HandleKeyPress( key, down );
+	if(eqAppStateMng::GetCurrentState())
+		eqAppStateMng::GetCurrentState()->HandleKeyPress( key, down );
 }
 
 void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
@@ -990,8 +976,8 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if(m_clicks_to_touch.GetBool())
 		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
 
-	if(EqStateMgr::GetCurrentState())
-		EqStateMgr::GetCurrentState()->HandleMouseClick( x, y, buttons, down );
+	if(eqAppStateMng::GetCurrentState())
+		eqAppStateMng::GetCurrentState()->HandleMouseClick( x, y, buttons, down );
 }
 
 void CGameHost::TrapMouseMove_Event(int x, int y, int dx, int dy)
@@ -1013,8 +999,8 @@ void CGameHost::TrapMouseMove_Event(int x, int y, int dx, int dy)
 	delta.y *= (m_invert.GetBool() ? 1.0f : -1.0f);
 	delta *= 0.05f * m_sensitivity.GetFloat();
 
-	if(EqStateMgr::GetCurrentState())
-		EqStateMgr::GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
+	if(eqAppStateMng::GetCurrentState())
+		eqAppStateMng::GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
 }
 
 void CGameHost::TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll)
@@ -1022,24 +1008,24 @@ void CGameHost::TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll)
 	if (g_consoleInput->MouseWheel(hscroll, vscroll))
 		return;
 
-	if(EqStateMgr::GetCurrentState())
-		EqStateMgr::GetCurrentState()->HandleMouseWheel(x, y, vscroll);
+	if(eqAppStateMng::GetCurrentState())
+		eqAppStateMng::GetCurrentState()->HandleMouseWheel(x, y, vscroll);
 }
 
 void CGameHost::TrapJoyAxis_Event( short axis, short value )
 {
 	g_inputCommandBinder->OnJoyAxisEvent( axis, value );
 
-	if(EqStateMgr::GetCurrentState())
-		EqStateMgr::GetCurrentState()->HandleJoyAxis( axis, value );
+	if(eqAppStateMng::GetCurrentState())
+		eqAppStateMng::GetCurrentState()->HandleJoyAxis( axis, value );
 }
 
 void CGameHost::TrapJoyButton_Event( short button, bool down)
 {
 	g_inputCommandBinder->OnKeyEvent( JOYSTICK_START_KEYS + button, down );
 
-	if(EqStateMgr::GetCurrentState())
-		EqStateMgr::GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
+	if(eqAppStateMng::GetCurrentState())
+		eqAppStateMng::GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
 }
 
 void CGameHost::TouchMotion_Event( float x, float y, int finger )

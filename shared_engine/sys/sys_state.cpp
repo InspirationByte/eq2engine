@@ -2,16 +2,8 @@
 // Copyright (C) Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: State handlers
+// Description: Application State handlers
 //////////////////////////////////////////////////////////////////////////////////
-
-//
-// TODO:
-//		- General code refactoring from C-style to better C++ style
-//		- Remove junk and unused code
-//		- Better names instead of GAME_STATE_* names
-//		- Lua state
-//
 
 #include "core/core_common.h"
 #include "sys_state.h"
@@ -19,19 +11,19 @@
 #include "input/InputCommandBinder.h"
 #include "render/IDebugOverlay.h"
 
-namespace EqStateMgr
+namespace eqAppStateMng
 {
 StatePreUpdateEvent g_onPreUpdateState(PP_SL);
 StatePostUpdateEvent g_onPostUpdateState(PP_SL);
 StateEnterEvent g_onEnterState(PP_SL);
 StateLeaveEvent g_onLeaveState(PP_SL);
 
-static CBaseStateHandler* s_currentState = nullptr;
-static CBaseStateHandler* s_nextState = nullptr;
+static CAppStateBase* s_currentState = nullptr;
+static CAppStateBase* s_nextState = nullptr;
 static bool s_stateChanging = false;
 
 // forces the current state
-void SetCurrentState( CBaseStateHandler* state, bool force )
+void SetCurrentState( CAppStateBase* state, bool force )
 {
 	if(!force && s_currentState == state)
 		return;
@@ -41,7 +33,7 @@ void SetCurrentState( CBaseStateHandler* state, bool force )
 	s_stateChanging = true;
 }
 
-void ChangeState(CBaseStateHandler* state)
+void ChangeState(CAppStateBase* state)
 {
 	// perform state transition
 	g_onLeaveState(s_currentState, state);
@@ -57,7 +49,7 @@ void ChangeState(CBaseStateHandler* state)
 }
 
 // returns the current state
-CBaseStateHandler* GetCurrentState()
+CAppStateBase* GetCurrentState()
 {
 	return s_nextState ? s_nextState : s_currentState;
 }
@@ -71,20 +63,20 @@ int	GetCurrentStateType()
 	if(s_currentState)
 		return s_currentState->GetType();
 
-	return GAME_STATE_NONE;
+	return APP_STATE_NONE;
 }
 
 void SetCurrentStateType( int stateType )
 {
-	SetCurrentState( g_states[stateType] );
+	SetCurrentState(GetAppStateByType(stateType));
 }
 
 void ChangeStateType(int stateType)
 {
-	ChangeState( g_states[stateType] );
+	ChangeState(GetAppStateByType(stateType));
 }
 
-void ScheduleNextState( CBaseStateHandler* state )
+void ScheduleNextState( CAppStateBase* state )
 {
 	if(GetCurrentState())
 		GetCurrentState()->SetNextState(state);
@@ -94,7 +86,7 @@ void ScheduleNextState( CBaseStateHandler* state )
 
 void ScheduleNextStateType( int stateType )
 {
-	ScheduleNextState( g_states[stateType] );
+	ScheduleNextState(GetAppStateByType(stateType));
 }
 
 // updates and manages the states
@@ -122,7 +114,7 @@ bool UpdateStates( float fDt )
 	if( !s_currentState->Update(fDt) )
 	{
 		bool forced;
-		CBaseStateHandler* nextState = s_currentState->GetNextState( &forced );
+		CAppStateBase* nextState = s_currentState->GetNextState( &forced );
 		s_currentState->SetNextState(nullptr);
 
 		SetCurrentState( nextState, forced );
