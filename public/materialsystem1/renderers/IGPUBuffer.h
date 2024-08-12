@@ -40,6 +40,9 @@ struct GPUBufferView
 
 	operator bool() const { return buffer; }
 
+	friend bool operator==(const GPUBufferView& a, const GPUBufferView& b) { return a.buffer == b.buffer && a.offset == b.offset && a.size == b.size; }
+	friend bool operator!=(const GPUBufferView& a, const GPUBufferView& b) { return !(a == b); }
+
 	IGPUBufferPtr	buffer;
 	int64			offset{ 0 };
 	int64			size{ -1 };
