@@ -54,6 +54,9 @@ public:
 // render-time operations
 	void					UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder, bool force = false);
 	const ITexturePtr&		GetBaseTexture(int stage = 0);
+
+	const MatStoragePtr&	GetStorage(int id) const;
+	void					SetStorage(int id, const MatStoragePtr& ptr);
 private:
 
 	void					InitVars(const KVSection* kvs, const char* renderAPIName);
@@ -73,6 +76,7 @@ protected:
 
 	MaterialVarBlock		m_vars;
 	Array<IMaterialProxy*>	m_proxies{ PP_SL };
+	Map<int, MatStoragePtr>	m_storage{ PP_SL };
 
 	CTextureAtlas*			m_atlas{ nullptr };
 	IMatSystemShader*		m_shader{ nullptr };

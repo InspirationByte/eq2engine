@@ -107,6 +107,11 @@ enum EMaterialLoadingState
 	MATERIAL_LOAD_INQUEUE,			// is loading now
 };
 
+struct MatStorage : public RefCountedObject<MatStorage>
+{
+};
+using MatStoragePtr = CRefPtr<MatStorage>;
+
 //---------------------------------------------------------------------------------
 
 class IMaterial 
@@ -133,6 +138,15 @@ public:
 	virtual void					WaitForLoading() const = 0;
 
 	virtual const ITexturePtr&		GetBaseTexture(int stage = 0) = 0;
+
+	virtual const MatStoragePtr&	GetStorage(int id) const = 0;
+	virtual void					SetStorage(int id, const MatStoragePtr& ptr) = 0;
+
+	template<typename T>
+	CRefPtr<T>						GetStorage() const { return CRefPtr<T>(static_cast<T*>(GetStorage(T::ID).Ptr())); }
+
+	template<typename T>
+	void							SetStorage(const CRefPtr<T>& ptr) { SetStorage(T::ID, MatStoragePtr(ptr)); }
 
 private:
 	virtual MatVarData&				VarAt(int idx) const = 0;

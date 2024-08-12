@@ -432,6 +432,24 @@ const char*	CMaterial::GetShaderName() const
 	return m_shader->GetName();
 }
 
+const MatStoragePtr& CMaterial::GetStorage(int id) const
+{
+	auto it = m_storage.find(id);
+	if (it.atEnd())
+		return MatStoragePtr::Null();
+	return *it;
+}
+
+void CMaterial::SetStorage(int id, const MatStoragePtr& ptr)
+{
+	if (!ptr)
+	{
+		m_storage.remove(id);
+		return;
+	}
+	m_storage[id] = ptr;
+}
+
 CTextureAtlas* CMaterial::GetAtlas() const
 {
 	return m_atlas;
@@ -459,6 +477,7 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	for (int i = 0; i < m_proxies.numElem(); i++)
 		delete m_proxies[i];
 	m_proxies.clear(true);
+	m_storage.clear(true);
 
 	Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 }

@@ -388,7 +388,7 @@ struct MatSysDefaultRenderPass : public RenderPassBaseData
 struct RenderPassContext
 {
 	RenderPassContext() = default;
-	RenderPassContext(IGPURenderPassRecorder* recorder, const RenderPassBaseData* passData) 
+	RenderPassContext(IGPURenderPassRecorder* recorder, RenderPassBaseData* passData) 
 		: recorder(recorder)
 		, data(passData)
 	{}
@@ -398,5 +398,5 @@ struct RenderPassContext
 	BeforeMaterialSetupFunc		beforeMaterialSetup{ nullptr };
 
 	IGPURenderPassRecorderPtr	recorder;			// render pass recorder
-	const RenderPassBaseData*	data{ nullptr };
+	RenderPassBaseData*			data{ nullptr };
 };

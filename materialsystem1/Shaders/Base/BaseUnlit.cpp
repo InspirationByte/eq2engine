@@ -107,6 +107,7 @@ BEGIN_SHADER_CLASS(
 		}
 		else if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
+			// TODO: remove
 			if (setupParams.pipelineInfo.vertexLayoutId == SHADER_VERTEX_ID(EGFVertexSkinned))
 			{
 				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID)
