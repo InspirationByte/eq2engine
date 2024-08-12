@@ -8,11 +8,9 @@
 #pragma once
 #include "ds/event.h"
 
-#define APP_STATE_NONE 0
+constexpr int APP_STATE_NONE = 0;
 
 class CAppStateBase;
-using AppStateList = ArrayRef<CAppStateBase*>;
-
 using StatePreUpdateEvent = Event<void(const float deltaTime)>;
 using StatePostUpdateEvent = Event<void(const float deltaTime)>;
 using StateEnterEvent = Event<void(CAppStateBase* oldState, CAppStateBase* newState)>;
