@@ -582,7 +582,7 @@ struct BindGroupLayoutDesc
 
 FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
-	ThisType& Buffer(const char* name, int binding, int shaderKind, EBufferBindType bindType)
+	ThisType& Buffer(const char* name, int binding, int shaderKind, EBufferBindType bindType, bool hasDynamicOffset = false)
 	{
 		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
 		Entry& entry = ref.entries.append();
@@ -592,6 +592,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 		entry.type = BINDENTRY_BUFFER;
 		entry.buffer = BindBuffer();
 		entry.buffer.bindType = bindType;
+		entry.buffer.hasDynamicOffset = hasDynamicOffset;
 		return *this; 
 	}
 	ThisType& Sampler(const char* name, int binding, int shaderKind, ESamplerBindType bindType)
@@ -662,7 +663,7 @@ struct BindGroupDesc
 	{
 		Entry() {}
 		SamplerStateParams	sampler;
-		GPUBufferView	buffer; // uniform buffer
+		GPUBufferView		buffer; // uniform buffer
 		TextureView			texture;
 		EBindEntryType		type{ static_cast<EBindEntryType>(-1) };
 		int					binding{ 0 };
