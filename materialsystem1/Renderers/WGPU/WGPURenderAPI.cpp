@@ -680,7 +680,8 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 
 	const CWGPUPipelineLayout* pipelineLayout = static_cast<const CWGPUPipelineLayout*>(layoutDesc);
 
-	if (!pipelineLayout->m_rhiBindGroupLayout.inRange(bindGroupDesc.groupIdx))
+	const Array<WGPUBindGroupLayout>& rhiLayout = pipelineLayout->m_rhiBindGroupLayout;
+	if (!rhiLayout.inRange(bindGroupDesc.groupIdx))
 		return nullptr;
 
 	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
@@ -698,7 +699,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 	
 	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
-	rhiBindGroupDesc.layout = pipelineLayout->m_rhiBindGroupLayout[bindGroupDesc.groupIdx];
+	rhiBindGroupDesc.layout = rhiLayout[bindGroupDesc.groupIdx];
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
 

@@ -1685,7 +1685,24 @@ void CMaterialSystem::PrintLoadedMaterials() const
 
 		MsgInfo("%s - %s (%d refs) %s\n", material->GetShaderName(), material->GetName(), material->Ref_Count(), (material->m_state == MATERIAL_LOAD_NEED_LOAD) ? "(not loaded)" : "");
 	}
-	Msg("Total loaded materials: %d\n", m_loadedMaterials.size());
+	Msg("Total loaded materials: %d\n\n", m_loadedMaterials.size());
+
+	Msg("*** Render pipeline list begin ***\n");
+	int totalCached = 0;
+	int totalShaders = 0;
+	for (auto it = m_shaderFactoryList.begin(); !it.atEnd(); ++it)
+	{
+		const ShaderFactory& shaderFactory = *it;
+		auto foundPipelineCacheIt = m_renderPipelineCache.find(StringToHash(shaderFactory.shaderName));
+		if (foundPipelineCacheIt.atEnd())
+			continue;
+		const MatSysShaderPipelineCache& pipelineCache = *foundPipelineCacheIt;
+
+		Msg("shader %s: %d\n", shaderFactory.shaderName, pipelineCache.pipelines.size());
+		totalCached += pipelineCache.pipelines.size();
+		++totalShaders;
+	}
+	Msg("Total render pipelines: %d from %d shaders\n", totalCached, totalShaders);
 }
 
 // removes callbacks from list
