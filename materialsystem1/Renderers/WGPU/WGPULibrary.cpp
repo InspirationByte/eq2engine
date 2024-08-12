@@ -256,14 +256,18 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		FixedArray<const char*, 32> disabledToggles;
 
 		enabledToggles.append("allow_unsafe_apis");
-		enabledToggles.append("enable_immediate_error_handling");
 		disabledToggles.append("lazy_clear_resource_on_first_use");	// this switch requires us to clear buffers and render targets
-
 		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
 		{
+			enabledToggles.append("enable_immediate_error_handling");
 			enabledToggles.append("use_user_defined_labels_in_backend");
 			wgpu_report_errors.SetBool(true);
 			wgpu_break_on_error.SetBool(true);
+		}
+		else
+		{
+			enabledToggles.append("skip_validation");
+			enabledToggles.append("fxc_optimizations");
 		}
 
 		WGPUDawnCacheDeviceDescriptor rhiDawnCache{};
