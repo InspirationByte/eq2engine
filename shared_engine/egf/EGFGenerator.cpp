@@ -46,12 +46,12 @@ CEGFGenerator::GenBone* CEGFGenerator::FindBoneByName(const char* pszName) const
 //************************************
 // Finds lod model
 //************************************
-CEGFGenerator::GenLODList_t* CEGFGenerator::FindModelLodGroupByName(const char* pszName) const
+CEGFGenerator::GenLODList* CEGFGenerator::FindModelLodGroupByName(const char* pszName) const
 {
 	for(int i = 0; i < m_modelLodLists.numElem(); i++)
 	{
 		if(!m_modelLodLists[i].name.CompareCaseIns(pszName))
-			return (GenLODList_t*)&m_modelLodLists[i];
+			return (GenLODList*)&m_modelLodLists[i];
 	}
 	return nullptr;
 }
@@ -104,18 +104,6 @@ int CEGFGenerator::GetMaterialIndex(const char* pszName) const
 	}
 
 	return -1;
-}
-
-void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
-{
-	GenLODList_t& lod = m_modelLodLists[lodModelIndex];
-
-	for (int i = 0; i < lod.lodmodels.numElem(); i++)
-	{
-		const int modelIdx = lod.lodmodels[i];
-		if(modelIdx >= 0) // skip empty
-			++m_modelrefs[modelIdx].used;
-	}
 }
 
 //************************************
@@ -252,7 +240,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 			}
 
 			// create new material
-			GenMaterialDesc_t desc;
+			GenMaterialDesc desc;
 			strcpy(desc.materialname, mod.model->meshes[i]->texture);
 
 			m_materials.append(desc);
@@ -323,7 +311,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		const int newModelIndex = m_modelrefs.append(mod);
 
 		// Start a new LOD. LOD has a name of reference
-		GenLODList_t& lodModel = m_modelLodLists.append();
+		GenLODList& lodModel = m_modelLodLists.append();
 		lodModel.lodmodels.append(newModelIndex);
 		lodModel.name = modelName;
 
@@ -435,7 +423,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 
 		const int modelIdx = m_modelrefs.append(mref);
 
-		GenLODList_t& lod_model = m_modelLodLists.append();
+		GenLODList& lod_model = m_modelLodLists.append();
 		lod_model.lodmodels.append(modelIdx);
 		lod_model.name = mref.name;
 
@@ -453,7 +441,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 	{
 		const int modelIdx = m_modelrefs.append(models[0]);
 
-		GenLODList_t& lod_model = m_modelLodLists.append();
+		GenLODList& lod_model = m_modelLodLists.append();
 		lod_model.lodmodels.append(modelIdx);
 		lod_model.name = models[0].name;
 
@@ -510,12 +498,12 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 	Msg("Added %d model references\n", m_modelrefs.numElem());
 
 	// Add dummy (used for LODs)
-	GenModel mod{ "_dummy", CRefPtr_new(DSModel), nullptr };
+	GenModel mod{ CRefPtr_new(DSModel), nullptr, identity4, "_dummy" };
 	mod.model->name = "_dummy";
-	const int index = m_modelrefs.append(mod);
+	const int modelIdx = m_modelrefs.append(mod);
 
-	GenLODList_t& dummyLodModel = m_modelLodLists.append();
-	dummyLodModel.lodmodels.append(index);
+	GenLODList& dummyLodModel = m_modelLodLists.append();
+	dummyLodModel.lodmodels.append(modelIdx);
 	dummyLodModel.name = mod.name;
 
 	return true;
@@ -528,19 +516,49 @@ void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 {
 	for(KVSection* lodModelSec : pSection->Keys("replace"))
 	{
-		const char* replaceModelName = KV_GetValueString(lodModelSec);
-		GenLODList_t* lodgroup = FindModelLodGroupByName(replaceModelName);
-		if (!lodgroup)
+		EqStringRef target, replaceBy;
+		if (lodModelSec->GetValues(target, replaceBy) < 2)
 		{
-			MsgError("No such reference named %s\n", replaceModelName);
+			MsgError("replace - insufficient args\n  Example: 'replace target_model replace_to'\n");
 			continue;
 		}
 
-		lodModelSec->SetValue(EqString::Format("%s_l%d", replaceModelName, lodIdx));
-		
-		const int replaceByExisting = FindModelIndexByName(KV_GetValueString(lodModelSec, 1));
-		const int replaceByModel = replaceByExisting != -1 ? replaceByExisting : ParseAndLoadModels(lodModelSec);
+		GenLODList* lodgroup = FindModelLodGroupByName(target);
+		if (!lodgroup)
+		{
+			MsgError("No such reference named %s\n", target.ToCString());
+			continue;
+		}
 
+		lodModelSec->SetValue(EqString::Format("%s_l%d", target, lodIdx));
+		
+		const int replaceByExisting = FindModelIndexByName(replaceBy);
+		const int replaceByModel = replaceByExisting != -1 ? replaceByExisting : ParseAndLoadModels(lodModelSec);
+		lodgroup->lodmodels.append(replaceByModel);
+	}
+
+	for (const KVSection* lodModelSec : pSection->Keys("simplify"))
+	{
+		EqStringRef target;
+		float simplifyThreshold = 0.0f;
+		if (lodModelSec->GetValues(target, simplifyThreshold) < 2)
+		{
+			MsgError("simplify - insufficient args\n  Example: 'simplify target_model 0.25'\n");
+			continue;
+		}
+
+		GenLODList* lodgroup = FindModelLodGroupByName(target);
+		if (!lodgroup)
+		{
+			MsgError("No such reference named %s\n", target.ToCString());
+			continue;
+		}
+
+		GenModel newModel = m_modelrefs[lodgroup->lodmodels[0]];
+		newModel.simplifyThreshold = simplifyThreshold;
+		newModel.name.Append(EqString::Format("_lod_%g", simplifyThreshold * 100));
+
+		const int replaceByModel = m_modelrefs.append(newModel);
 		lodgroup->lodmodels.append(replaceByModel);
 	}
 }
@@ -606,7 +624,6 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 		{
 			const char* refName = KV_GetValueString(keyBase, 1);
 			const int lodIndex = FindModelLodIdGroupByName(refName);
-
 			if (lodIndex == -1)
 			{
 				MsgError("reference '%s' not found for bodygroup '%s'\n", refName, bodyGroupName);
@@ -617,10 +634,9 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 			strcpy(bodygroup.name, bodyGroupName);
 			bodygroup.lodModelIndex = lodIndex;
 
-			Msg("Adding body group '%s'\n", bodygroup.name);
+			++m_modelLodLists[lodIndex].used;
 
-			// mark the models
-			AddModelLodUsageReference(lodIndex);
+			Msg("Added body group '%s'\n", bodygroup.name);
 		}
 		else if(keyBase->IsSection())
 		{
@@ -664,7 +680,7 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 			return false;
 		}
 
-		GenMaterialGroup_t* group = PPNew GenMaterialGroup_t();
+		GenMaterialGroup* group = PPNew GenMaterialGroup();
 		m_matGroups.append(group);
 
 		MsgInfo("Added materialGroup: ");
@@ -672,7 +688,7 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 		for (int j = 0; j < keyBase->values.numElem(); j++)
 		{
 			// create new material
-			GenMaterialDesc_t desc;
+			GenMaterialDesc desc;
 			strcpy(desc.materialname, KV_GetValueString(keyBase, j));
 
 			MsgInfo("%s ", desc.materialname);

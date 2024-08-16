@@ -124,14 +124,14 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 	const int matIdx = GetMaterialIndex(pszName);
 	ASSERT(matIdx != -1);
 
-	GenMaterialDesc_t* material = &m_materials[matIdx];
+	GenMaterialDesc* material = &m_materials[matIdx];
 	material->used++;
 
 	return m_usedMaterials.addUnique(material);
 }
 
 // writes group
-void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, studioMeshDesc_t* dstGroup)
+void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup)
 {
 	int vertexStreamsAvailableBits = STUDIO_VERTFLAG_POS_UV | STUDIO_VERTFLAG_TBN;
 
@@ -241,6 +241,27 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 			indexList.swap(outIndices);
 		}
 
+		if (simplifyThreshold > 0.0f)
+		{
+			MsgInfo("Simplifying group '%s' by %.2f threshold...\n", srcGroup->texture.ToCString(), simplifyThreshold);
+
+			constexpr float simplifyTargetError = 0.01f;
+
+			float lodError = 0.0f;
+			outIndices.resize(indexList.numElem());
+			const int indexCount = meshopt_simplify(outIndices.ptr(), indexList.ptr(), indexList.numElem(),
+				usedVertList[0].posUvs.point, usedVertList.numElem(), sizeof(usedVertList[0]),
+				int(indexList.numElem() * simplifyThreshold), simplifyTargetError, 0u, &lodError);
+
+			MsgInfo("   Simplified, %d >>> %d, lod error %g\n", indexList.numElem(), indexCount, lodError);
+
+			outIndices.setNum(indexCount, true);
+			indexList.swap(outIndices);
+
+			// TODO: also need to optimize vertex fetch
+			//meshopt_optimizeVertexFetch();
+		}
+
 		// stripify group
 		{
 			const int stripBreakIdx = 0;	// TODO: fix bug in render
@@ -253,8 +274,6 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 			dstGroup->primitiveType = STUDIO_PRIM_TRI_STRIP;
 		}
 	}
-
-skipOptimize:
 
 	// set index count and now that is triangle strip
 	dstGroup->numIndices = indexList.numElem();
@@ -346,13 +365,13 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 	*/
 
 	Array<GenModel*> writeModels{ PP_SL };
-
-	for (int i = 0; i < m_modelrefs.numElem(); i++)
+	for (const GenLODList& lodList : m_modelLodLists)
 	{
-		GenModel& modelRef = m_modelrefs[i];
-		if (!modelRef.used)
+		if (!lodList.used)
 			continue;
-		writeModels.append(&modelRef);
+
+		for (const int modelIdx : lodList.lodmodels)
+			writeModels.append(&m_modelrefs[modelIdx]);
 	}
 
 	// Write models
@@ -364,9 +383,10 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < writeModels.numElem(); i++)
 	{
-		const GenModel& modelRef = *writeModels[i];
-
+		GenModel& modelRef = *writeModels[i];
 		studioMeshGroupDesc_t* pDesc = header->pMeshGroupDesc(i);
+
+		modelRef.meshGroupIdx = i;
 
 		pDesc->numMeshes = modelRef.model->meshes.numElem();
 		pDesc->meshesOffset = WRITE_RELATIVE_OFS( pDesc );
@@ -388,7 +408,6 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 	for(int i = 0; i < writeModels.numElem(); i++)
 	{
 		const GenModel& modelRef = *writeModels[i];
-
 		studioMeshGroupDesc_t* pDesc = header->pMeshGroupDesc(i);
 
 		// write groups
@@ -398,7 +417,7 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 
 			// shape key modifier (if available)
 			DSShapeKey* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
-			WriteGroup(header, stream, modelRef.model->meshes[j], key, groupDesc);
+			WriteGroup(header, stream, modelRef.model->meshes[j], key, modelRef.simplifyThreshold, groupDesc);
 
 			Msg("Wrote group %s:%d", modelRef.name.ToCString(), j);
 
@@ -418,31 +437,33 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 //************************************
 void CEGFGenerator::WriteLods(studioHdr_t* header, IVirtualStream* stream)
 {
-	Array<GenModel*> writeModels{ PP_SL };
-	Array<GenLODList_t*> writeLods{ PP_SL };
+	int writeModelsCount = 0;
+	Array<GenLODList*> writeLodLists{ PP_SL };
 
-	for (int i = 0; i < m_modelrefs.numElem(); i++)
+	for (GenLODList& lodList : m_modelLodLists)
 	{
-		GenModel& modelRef = m_modelrefs[i];
-		if (!modelRef.used)
+		if (!lodList.used)
 			continue;
-		writeLods.append(&m_modelLodLists[i]);
-		writeModels.append(&modelRef);
+		writeLodLists.append(&lodList);
+		writeModelsCount += lodList.lodmodels.numElem();
 	}
 
 	header->lodsOffset = WRITE_OFS;
-	header->numLods = writeLods.numElem();
-	WRITE_RESERVE_NUM(studioLodModel_t, writeLods.numElem());
+	header->numLods = writeLodLists.numElem();
+	WRITE_RESERVE_NUM(studioLodModel_t, writeLodLists.numElem());
 
-	ASSERT(header->numLods == header->numMeshGroups);
+	ASSERT(writeModelsCount == header->numMeshGroups);
 
-	for(int i = 0; i < writeLods.numElem(); i++)
+	for(int i = 0; i < writeLodLists.numElem(); i++)
 	{
-		const GenLODList_t& lodList = *writeLods[i];
+		GenLODList& lodList = *writeLodLists[i];
 		studioLodModel_t* pLod = header->pLodModel(i);
+
+		lodList.writeIdx = i;
+
 		for(int j = 0; j < MAX_MODEL_LODS; j++)
 		{
-			const int modelIdx = (j < lodList.lodmodels.numElem()) ? max(-1, lodList.lodmodels[j]) : -1;
+			const int modelIdx = (j < lodList.lodmodels.numElem()) ? m_modelrefs[lodList.lodmodels[j]].meshGroupIdx : -1;
 			pLod->modelsIndexes[j] = (modelIdx == -1) ? EGF_INVALID_IDX : modelIdx;
 		}
 	}
@@ -468,7 +489,11 @@ void CEGFGenerator::WriteBodyGroups(studioHdr_t* header, IVirtualStream* stream)
 	WRITE_RESERVE_NUM(studioBodyGroup_t, m_bodygroups.numElem());
 
 	for(int i = 0; i <  m_bodygroups.numElem(); i++)
-		*header->pBodyGroups(i) = m_bodygroups[i];
+	{
+		studioBodyGroup_t& bodyGrp = *header->pBodyGroups(i);
+		bodyGrp = m_bodygroups[i];
+		bodyGrp.lodModelIndex = m_modelLodLists[bodyGrp.lodModelIndex].writeIdx;
+	}
 }
 
 //************************************
@@ -534,7 +559,7 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stre
 	// get used materials
 	for(int i = 0; i < m_usedMaterials.numElem(); i++)
 	{
-		GenMaterialDesc_t* mat = m_usedMaterials[i];
+		GenMaterialDesc* mat = m_usedMaterials[i];
 
 		studioMaterialDesc_t* matDesc = header->pMaterial(i);
 		strcpy(matDesc->materialname, fnmPathStripExt(mat->materialname));
@@ -544,18 +569,18 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stre
 	// write material groups
 	for (int i = 0; i < m_matGroups.numElem(); i++)
 	{
-		GenMaterialGroup_t* grp = m_matGroups[i];
+		GenMaterialGroup* grp = m_matGroups[i];
 		int materialGroupStart = header->numMaterials;
 
 		for (int j = 0; j < grp->materials.numElem(); j++)
 		{
-			GenMaterialDesc_t& baseMat = m_materials[j];
+			GenMaterialDesc& baseMat = m_materials[j];
 
 			if (!baseMat.used)
 				continue;
 
 			int usedMaterialIdx = arrayFindIndex(m_usedMaterials, &baseMat);
-			GenMaterialDesc_t& mat = grp->materials[usedMaterialIdx];
+			GenMaterialDesc& mat = grp->materials[usedMaterialIdx];
 
 			header->numMaterials++;
 
@@ -617,14 +642,14 @@ void CEGFGenerator::WriteBones(studioHdr_t* header, IVirtualStream* stream)
 
 void CEGFGenerator::Validate(studioHdr_t* header, const char* stage)
 {
-	Array<GenModel*> writeModels{ PP_SL };
-
-	for (int i = 0; i < m_modelrefs.numElem(); i++)
+	Array<const GenModel*> writeModels{ PP_SL };
+	for (const GenLODList& lodList : m_modelLodLists)
 	{
-		GenModel& modelRef = m_modelrefs[i];
-		if (!modelRef.used)
+		if (!lodList.used)
 			continue;
-		writeModels.append(&modelRef);
+
+		for (int modelIdx : lodList.lodmodels)
+			writeModels.append(&m_modelrefs[modelIdx]);
 	}
 
 	// perform post-write basic validation
