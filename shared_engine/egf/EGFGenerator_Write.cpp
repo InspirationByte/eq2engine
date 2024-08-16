@@ -5,6 +5,8 @@
 // Description: Eq Geometry Format Writer
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <meshoptimizer.h>
+
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "math/Utility.h"
@@ -14,44 +16,7 @@
 #include "dsm_loader.h"
 #include "dsm_esm_loader.h"
 
-#define USE_ACTC
-
-#ifdef USE_ACTC
-extern "C"{
-#include "actc/tc.h"
-}
-#endif // USE_ACTC
-
 using namespace SharedModel;
-
-const char* GetACTCErrorString(int result)
-{
-	switch(result)
-	{
-		case ACTC_ALLOC_FAILED:
-			return "ACTC_ALLOC_FAILED";
-
-		case ACTC_DURING_INPUT:
-			return "ACTC_DURING_INPUT";
-
-		case ACTC_DURING_OUTPUT:
-			return "ACTC_DURING_OUTPUT";
-
-		case ACTC_IDLE:
-			return "ACTC_IDLE";
-
-		case ACTC_INVALID_VALUE:
-			return "ACTC_INVALID_VALUE";
-
-		case ACTC_DATABASE_EMPTY:
-			return "ACTC_DATABASE_EMPTY";
-
-		case ACTC_DATABASE_CORRUPT:
-			return "ACTC_DATABASE_CORRUPT";
-	}
-
-	return "OTHER ERROR";
-}
 
 // EGF file buffer
 #define FILEBUFFER_EQGF (16 * 1024 * 1024)
@@ -265,124 +230,29 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 		usedVertList[i].tbn.binormal = normalize(usedVertList[i].tbn.binormal);
 	}
 
-#ifdef USE_ACTC
 	{
-		// optimize model using ACTC
-		ACTCData* tc = actcNew();
-		actcMakeEmpty(tc);
+		Array<int> outIndices(PP_SL);
 
-		if(tc == nullptr)
+		// optimize vertex cache
 		{
-			Msg("Model optimization disabled\n");
-			goto skipOptimize;
-		}
-		else
 			MsgInfo("Optimizing group '%s'...\n", srcGroup->texture.ToCString());
-
-		// configure it to make strips
-		actcParami(tc, ACTC_OUT_MIN_FAN_VERTS, INT_MAX);
-		actcParami(tc, ACTC_OUT_HONOR_WINDING, ACTC_FALSE);
-
-		MsgInfo("   phase 1: adding triangles to optimizer (%d tris)\n", indexList.numElem() / 3);
-		actcBeginInput(tc);
-
-		// input all indices
-		for(int i = 0; i < indexList.numElem(); i+=3)
-		{
-			int result = actcAddTriangle(tc, indexList[i], indexList[i+1], indexList[i+2]);
-
-			if(result < 0)
-			{
-				MsgError("   ACTC error: %s (%d)!\n", GetACTCErrorString(result), result);
-				Msg("   optimization disabled\n");
-				goto skipOptimize;
-			}
+			outIndices.setNum(indexList.numElem());
+			meshopt_optimizeVertexCache(outIndices.ptr(), indexList.ptr(), indexList.numElem(), usedVertList.numElem());
+			indexList.swap(outIndices);
 		}
 
-		actcEndInput(tc);
-
-		MsgInfo("   phase 2: generate strips\n");
-
-		actcBeginOutput(tc);
-
-		Array<int32> optimizedIndices(PP_SL);
-		optimizedIndices.reserve(indexList.numElem());
-
-		int prim;
-		uint32 v1;
-		uint32 v2;
-		uint32 v3 = -1;
-		while((prim = actcStartNextPrim(tc, &v1, &v2)) != ACTC_DATABASE_EMPTY)
+		// stripify group
 		{
-			if(prim < 0)
-			{
-				MsgError("   actcStartNextPrim error: %s (%d)!\n", GetACTCErrorString(prim), prim);
-				Msg("   optimization disabled\n");
-				goto skipOptimize;
-			}
+			const int stripBreakIdx = 0;	// TODO: fix bug in render
 
-			if(prim == ACTC_PRIM_FAN)
-			{
-				MsgError("   This should not generate triangle fans! Sorry!\n");
-				Msg("   optimization disabled\n");
-				goto skipOptimize;
-			}
-
-			if (optimizedIndices.numElem() + (optimizedIndices.numElem() > 2 ? 5 : 3) > indexList.numElem())
-			{
-				Msg("   optimization disabled due to no profit\n");
-				goto skipOptimize;
-			}
-
-			if(optimizedIndices.numElem() > 2 && v1 != v3)
-			{
-				optimizedIndices.append( v3 );
-				optimizedIndices.append( v1 );
-			}
-
-			optimizedIndices.append(v1);
-			optimizedIndices.append(v2);
-
-			int stripLength = 2;
-			int result = ACTC_NO_ERROR;
-			// start a primitive of type "prim" with v1 and v2
-			while((result = actcGetNextVert(tc, &v3)) != ACTC_PRIM_COMPLETE)
-			{
-				if(result < 0)
-				{
-					MsgError("   actcGetNextVert error: %s (%d)!\n", GetACTCErrorString(result), result);
-					Msg("   optimization disabled\n");
-					goto skipOptimize;
-				}
-
-				if (optimizedIndices.numElem() + 1 > indexList.numElem())
-				{
-					Msg("   optimization disabled due to no profit\n");
-					goto skipOptimize;
-				}
-
-				optimizedIndices.append( v3 );
-				stripLength++;
-			}
-
-			if(stripLength & 1)
-			{
-				// add degenerate vertex to flip
-				optimizedIndices.append( v3 );
-			}
+			MsgInfo("Generating strips for group '%s'...\n", srcGroup->texture.ToCString());
+			outIndices.resize(indexList.numElem() * 4);
+			const int indexCount = meshopt_stripify(outIndices.ptr(), indexList.ptr(), indexList.numElem(), usedVertList.numElem(), stripBreakIdx);
+			outIndices.setNum(indexCount, true);
+			indexList.swap(outIndices);
+			dstGroup->primitiveType = STUDIO_PRIM_TRI_STRIP;
 		}
-
-		actcEndOutput( tc );
-		actcDelete(tc);
-
-		MsgWarning("   group optimization complete\n");
-
-		// swap with new index list
-		indexList.swap(optimizedIndices);
-
-		dstGroup->primitiveType = STUDIO_PRIM_TRI_STRIP;
 	}
-#endif // USE_ACTC
 
 skipOptimize:
 
@@ -454,7 +324,9 @@ skipOptimize:
 	for(uint32 i = 0; i < dstGroup->numIndices; i++)
 		*dstGroup->pVertexIdx(i) = indexList[i];
 
-	MsgWarning("   written %d triangles (strip including degenerates)\n", dstGroup->primitiveType == STUDIO_PRIM_TRI_STRIP ? (dstGroup->numIndices - 2) : (dstGroup->numIndices / 3));
+	MsgWarning("   written %d %s\n", 
+		dstGroup->primitiveType == STUDIO_PRIM_TRI_STRIP ? (dstGroup->numIndices - 2) : (dstGroup->numIndices / 3),
+		dstGroup->primitiveType == STUDIO_PRIM_TRI_STRIP ? "strip primitives" : "triangles");
 }
 
 //************************************

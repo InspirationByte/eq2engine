@@ -264,20 +264,20 @@ static int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int curren
 {
 	if (indexSize == sizeof(int))
 	{
+		uint32* indices = (uint32*)indexData;
 		for (uint32 i = 0; i < pMesh->numIndices; i++)
 		{
-			const int index = (*pMesh->pVertexIdx(i)) + vertex_add_offset;
-			uint32* indices = (uint32*)indexData;
+			const uint32 index = (*pMesh->pVertexIdx(i)) + vertex_add_offset;
 			indices[currentIndexCount++] = index;
 		}
 	}
 	else if (indexSize == sizeof(short))
 	{
+		uint16* indices = (uint16*)indexData;
 		for (uint32 i = 0; i < pMesh->numIndices; i++)
 		{
-			const int index = (*pMesh->pVertexIdx(i)) + vertex_add_offset;
-			uint16* indices = (uint16*)indexData;
-			indices[currentIndexCount++] = index;
+			const uint32 index = (*pMesh->pVertexIdx(i)) + vertex_add_offset;
+			indices[currentIndexCount++] = index & 0xffff;
 		}
 	}
 	else

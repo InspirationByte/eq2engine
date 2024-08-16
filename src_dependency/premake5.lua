@@ -24,6 +24,7 @@ include("minivorbis/premake5.lua")
 include("ffmpeg/premake5.lua")
 include("lua54/premake5.lua")
 
+include("meshoptimizer/premake5.lua")
 include("recast/premake5.lua")
 include("bullet2/premake5.lua")
 include("OpenFBX/premake5.lua")

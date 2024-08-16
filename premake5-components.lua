@@ -266,7 +266,7 @@ if ENABLE_TOOLS then
 		unitybuild "on"
 		uses {
 			"coreLib", "frameworkLib", "e2Core",
-			"bullet2", "zlib", "openfbx", 
+			"bullet2", "zlib", "openfbx", "meshoptimizer",
 			"studioFileLib"
 		}
 		files {
