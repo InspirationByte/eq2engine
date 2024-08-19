@@ -9,10 +9,10 @@
 
 // generic indexed mesh. File-friendly
 template <typename VERTEX_TYPE, typename INDEX_TYPE>
-struct BatchedIndexedMesh
+struct BatchedMesh
 {
 public:
-	virtual ~BatchedIndexedMesh() = default;
+	virtual ~BatchedMesh() = default;
 
 	struct Batch
 	{
@@ -134,3 +134,12 @@ public:
 		stream->Read(indices.ptr(), hdr.numIndices, sizeof(INDEX_TYPE));
 	}
 };
+
+struct BatchedMeshLodInfo	// maps to batches[firstBatchIdx .. numBatches]
+{
+	int		firstBatchIdx{ -1 };
+	int		numBatches{ -1 };
+	float	simplifyThreshold{ 1.0f };
+};
+
+using BatchedMeshLodTable = Array<BatchedMeshLodInfo>;
