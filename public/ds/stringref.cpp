@@ -763,19 +763,25 @@ template<> int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
 template<typename CH>
 int EqTStrRef<CH>::Compare(EqTStrRef otherStr) const
 {
+	if (!IsValid() || !otherStr.IsValid())
+		return -1;
+
 	return CString::Compare(m_pszString, otherStr.ToCString());
 }
 
 template<typename CH>
 int EqTStrRef<CH>::CompareCaseIns(EqTStrRef otherStr) const
 {
+	if (!IsValid() || !otherStr.IsValid())
+		return -1;
+
 	return CString::CompareCaseIns(m_pszString, otherStr.ToCString());
 }
 
 template<typename CH>
 int EqTStrRef<CH>::GetMathingChars(EqTStrRef otherStr) const
 {
-	if (!IsValid())
+	if (!IsValid() || !otherStr.IsValid())
 		return 0;
 
 	const CH* s1 = m_pszString;
@@ -790,7 +796,7 @@ int EqTStrRef<CH>::GetMathingChars(EqTStrRef otherStr) const
 template<typename CH>
 int EqTStrRef<CH>::GetMathingCharsCaseIns(EqTStrRef otherStr) const
 {
-	if (!IsValid())
+	if (!IsValid() || !otherStr.IsValid())
 		return 0;
 
 	const CH* s1 = m_pszString;
@@ -805,7 +811,7 @@ int EqTStrRef<CH>::GetMathingCharsCaseIns(EqTStrRef otherStr) const
 template<typename CH>
 int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
 {
-	if (!m_pszString || nStart < 0)
+	if (!IsValid() || !subStr.IsValid() || nStart < 0)
 		return -1;
 
 	CH* strStart = const_cast<CH*>(m_pszString) + min(nStart, Length());
@@ -856,7 +862,7 @@ EqTStr<CH> EqTStrRef<CH>::Right(int nCount) const
 template<typename CH>
 EqTStr<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
 {
-	if (!m_pszString)
+	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
 
 	ASSERT(nStart >= 0);
@@ -870,6 +876,9 @@ EqTStr<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
 template<typename CH>
 EqTStr<CH> EqTStrRef<CH>::EatWhiteSpaces() const
 {
+	if (!IsValid())
+		return EqTStr<CH>::EmptyStr;
+
 	EqTStr<CH> out;
 	const CH* cc = m_pszString;
 	while (cc)
@@ -884,7 +893,7 @@ EqTStr<CH> EqTStrRef<CH>::EatWhiteSpaces() const
 template<typename CH>
 EqTStr<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
 {
-	if (!m_pszString)
+	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
 
 	const CH* begin = m_pszString;
@@ -908,7 +917,7 @@ EqTStr<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
 template<typename CH>
 EqTStr<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
 {
-	if (!m_pszString)
+	if (!IsValid())
 		return EqTStr<CH>::EmptyStr;
 
 	const CH* begin = m_pszString;
