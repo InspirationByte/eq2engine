@@ -95,15 +95,15 @@ private:
 		Block*			next{ nullptr };
 	};
 
-	static constexpr const size_t blockSize = max(sizeof(T), sizeof(Block));
+	static constexpr size_t BLOCK_SIZE = max(sizeof(T), sizeof(Block));
 
 	struct Buffer
 	{
-		uint8			data[blockSize * CHUNK_ITEMS];
+		uint8			data[BLOCK_SIZE * CHUNK_ITEMS];
 		Buffer* const	next{ nullptr };
 
 		Buffer(Buffer* next) : next(next) {}
-		T*				getBlock(int index) { return reinterpret_cast<T*>(&data[blockSize * index]); }
+		T*				getBlock(int index) { return reinterpret_cast<T*>(&data[BLOCK_SIZE * index]); }
 	};
 
 	PPSourceLine 	m_sl;
@@ -118,14 +118,13 @@ template <class T, int CHUNK_ITEMS = 1024>
 class PoolAllocator : private MemoryPool<T, CHUNK_ITEMS>
 {
 public:
-
-	typedef size_t size_type;
-	typedef ptrdiff_t difference_type;
-	typedef T* pointer;
-	typedef const T* const_pointer;
-	typedef T& reference;
-	typedef const T& const_reference;
-	typedef T value_type;
+	using size_type = size_t;
+	using difference_type = ptrdiff_t ;
+	using pointer = T*;
+	using const_pointer = const T* ;
+	using reference = T& ;
+	using const_reference = const T& ;
+	using value_type = T;
 
 	template <class U>
 	struct rebind
@@ -133,7 +132,7 @@ public:
 		typedef PoolAllocator<U, CHUNK_ITEMS> other;
 	};
 
-	pointer allocate(size_type n, const void* hint = 0)
+	T* allocate(size_t n, const void* hint = 0)
 	{
 		if (n != 1 || hint)
 			return nullptr;
@@ -141,17 +140,17 @@ public:
 		return MemoryPool<T, CHUNK_ITEMS>::allocate();
 	}
 
-	void deallocate(pointer p, size_type n)
+	void deallocate(T* p, size_t n)
 	{
 		MemoryPool<T, CHUNK_ITEMS>::deallocate(p);
 	}
 
-	void construct(pointer p, const_reference val)
+	void construct(T* p, const T& val)
 	{
 		new (p) T(val);
 	}
 
-	void destroy(pointer p)
+	void destroy(T* p)
 	{
 		p->~T();
 	}
