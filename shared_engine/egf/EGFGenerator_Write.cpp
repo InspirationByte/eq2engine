@@ -130,6 +130,7 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 	return m_usedMaterials.addUnique(material);
 }
 
+
 // writes group
 void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup)
 {
@@ -245,15 +246,16 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 		{
 			MsgInfo("Simplifying group '%s' by %.2f threshold...\n", srcGroup->texture.ToCString(), simplifyThreshold);
 
-			constexpr float simplifyTargetError = 0.01f;
+			constexpr float simplifyTargetError = 0.1f;
 
 			float lodError = 0.0f;
-			outIndices.resize(indexList.numElem());
+			outIndices.setNum(indexList.numElem());
 			const int indexCount = meshopt_simplify(outIndices.ptr(), indexList.ptr(), indexList.numElem(),
 				usedVertList[0].posUvs.point, usedVertList.numElem(), sizeof(usedVertList[0]),
 				int(indexList.numElem() * simplifyThreshold), simplifyTargetError, 0u, &lodError);
 
-			MsgInfo("   Simplified, %d >>> %d, lod error %g\n", indexList.numElem(), indexCount, lodError);
+			if(indexList.numElem() > indexCount)
+				MsgInfo("   Simplified %d >>> %d, lod error %g\n", indexList.numElem(), indexCount, lodError);
 
 			outIndices.setNum(indexCount, true);
 			indexList.swap(outIndices);
@@ -267,8 +269,20 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 			const int stripBreakIdx = 0;	// TODO: fix bug in render
 
 			MsgInfo("Generating strips for group '%s'...\n", srcGroup->texture.ToCString());
-			outIndices.resize(indexList.numElem() * 4);
+			outIndices.setNum(meshopt_stripifyBound(indexList.numElem()));
 			const int indexCount = meshopt_stripify(outIndices.ptr(), indexList.ptr(), indexList.numElem(), usedVertList.numElem(), stripBreakIdx);
+
+#ifdef _DEBUG
+			// debug check with unstripify
+			{
+				Array<int> tmpIndices(PP_SL);
+				tmpIndices.setNum(meshopt_unstripifyBound(outIndices.numElem()));
+				const int unstripifyIndexCount = meshopt_unstripify(tmpIndices.ptr(), outIndices.ptr(), outIndices.numElem(), stripBreakIdx);
+
+				ASSERT_MSG(unstripifyIndexCount >= indexList.numElem(), "debug check failed, stripify produces less triangles (unstrupify results %d indices, %d original)", unstripifyIndexCount, indexList.numElem());
+			}
+#endif
+
 			outIndices.setNum(indexCount, true);
 			indexList.swap(outIndices);
 			dstGroup->primitiveType = STUDIO_PRIM_TRI_STRIP;
