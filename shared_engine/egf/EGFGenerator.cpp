@@ -331,53 +331,54 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 //************************************
 int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 {
-	Array<EqString> modelfilenames(PP_SL);
-	Array<EqString> shapeByModels(PP_SL);
+	Array<EqStringRef> modelNames(PP_SL);
+	Array<EqStringRef> shapeByModels(PP_SL);
 
-	if(pKeyBase->values.numElem() > 1)
+	EqStringRef refName, modelName, cmdName, shapeName;
+	const int argCount = pKeyBase->GetValues(refName, modelName, cmdName, shapeName);
+
+	if (argCount == 0)
 	{
-		// DRVSYN: vertex order for damaged model
-		if(pKeyBase->values.numElem() > 3 && !CString::CompareCaseIns(KV_GetValueString(pKeyBase, 2), "shapeBy"))
-		{
-			const char* shapekeyName = KV_GetValueString(pKeyBase, 3, nullptr);
-
-			if (shapekeyName)
-			{
-				Msg("Model shape key is '%s'\n", shapekeyName);
-				shapeByModels.append(shapekeyName);
-			}
-			else
-				shapeByModels.append("");
-		}
-		else
-			shapeByModels.append("");
-
-		// add model
-		modelfilenames.append( KV_GetValueString(pKeyBase, 1) );
+		MsgError("Error - model ref name was not specified in %s\n", pKeyBase->GetName());
+		return -1;
 	}
 
-	// go through all keys inside model section
-	for(const KVSection* sec : pKeyBase->Keys())
+	if (argCount >= 2)
 	{
-		modelfilenames.append(sec->GetName() );
-		shapeByModels.append(EqString::EmptyStr);
+		modelNames.append(modelName);
 
-		Msg("Adding model '%s'\n", sec->GetName());
+		if(!cmdName.CompareCaseIns("shapeBy"))
+		{
+			Msg("Model shape key is '%s'\n", shapeName.ToCString());
+			shapeByModels.append(shapeName);
+		}
+		else
+			shapeByModels.append(nullptr);
+	}
+	else
+	{
+		// go through all keys inside model section
+		for (const KVSection* sec : pKeyBase->Keys())
+		{
+			modelNames.append(sec->GetName());
+			shapeByModels.append(nullptr);
+
+			Msg("Adding model '%s'\n", sec->GetName());
+		}
 	}
 
 	// load the models
 	Array<GenModel> models(PP_SL);
-
-	for(int i = 0; i < modelfilenames.numElem(); i++)
+	for(int i = 0; i < modelNames.numElem(); i++)
 	{
-		Msg("Loading model '%s'\n", modelfilenames[i].ToCString());
+		Msg("Loading model '%s'\n", modelNames[i].ToCString());
 
 		GenModel mod;
-		if(!LoadModel(modelfilenames[i].ToCString(), mod))
+		if(!LoadModel(modelNames[i], mod))
 			continue;
 
 		// set model to as part name
-		mod.name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
+		mod.name = refName;
 
 		if (shapeByModels[i])
 		{
@@ -385,12 +386,12 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 			if (mod.shapeIndex == -1)
 				MsgError("Error: shapeBy - Can't find shape key %s in model %s (ref %s)\n", shapeByModels[i].ToCString(), mod.model->name.ToCString(), mod.name.ToCString());
 		}
-		else
-			MsgError("Error: shapeBy - no shape key specified for ref %s\n", mod.model->name.ToCString());
 
 		// add finally
 		models.append(mod);
 	}
+
+	int retModelIdx = -1;
 
 	// merge the models
 	if(models.numElem() > 1)
@@ -398,7 +399,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		DSModelPtr merged = CRefPtr_new(DSModel);
 
 		// set model to as part name
-		merged->name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
+		merged->name = refName;
 
 		for(int i = 0; i < models.numElem(); i++)
 		{
@@ -421,41 +422,41 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		mref.shapeData = nullptr;
 		mref.name = merged->name;
 
-		const int modelIdx = m_modelrefs.append(mref);
+		retModelIdx = m_modelrefs.append(mref);
 
-		GenLODList& lod_model = m_modelLodLists.append();
-		lod_model.lodmodels.append(modelIdx);
-		lod_model.name = mref.name;
+		GenLODList& lodList = m_modelLodLists.append();
+		lodList.lodmodels.append(retModelIdx);
+		lodList.name = mref.name;
 
 		const int nVerts = GetTotalVertsOfDSM(mref.model);
 		Msg("Adding reference %s '%s' with %d triangles (in %d meshes), %d bones\n",
-			modelfilenames[0].ToCString(),
+			modelNames[0].ToCString(),
 			mref.name.ToCString(),
 			nVerts / 3,
 			mref.model->meshes.numElem(),
 			mref.model->bones.numElem());
-
-		return modelIdx;
 	}
 	else if(models.numElem() > 0)
 	{
-		const int modelIdx = m_modelrefs.append(models[0]);
+		retModelIdx = m_modelrefs.append(models[0]);
 
-		GenLODList& lod_model = m_modelLodLists.append();
-		lod_model.lodmodels.append(modelIdx);
-		lod_model.name = models[0].name;
+		GenLODList& lodList = m_modelLodLists.append();
+		lodList.lodmodels.append(retModelIdx);
+		lodList.name = models[0].name;
 
 		const int nVerts = GetTotalVertsOfDSM(models[0].model);
 		Msg("Adding reference %s '%s' with %d triangles (in %d meshes), %d bones\n",
-			modelfilenames[0].ToCString(),
+			modelNames[0].ToCString(),
 			models[0].name.ToCString(),
 			nVerts / 3,
 			models[0].model->meshes.numElem(),
 			models[0].model->bones.numElem());
 	}
 
-	MsgError("got model definition '%s', but nothing added\n", KV_GetValueString(pKeyBase));
-	return -1;
+	if(retModelIdx)
+		MsgError("got model definition '%s', but nothing added\n", refName.ToCString());
+
+	return retModelIdx;
 }
 
 //************************************
