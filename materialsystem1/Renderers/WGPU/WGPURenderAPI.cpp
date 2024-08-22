@@ -1240,7 +1240,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 	return IGPURenderPassRecorderPtr(renderPass);
 }
 
-IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc) const
+IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
 {
 	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
@@ -1305,6 +1305,9 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 	rhiComputePipelineDesc.compute.constants = rhiComputePipelineConstants.ptr();
 	rhiComputePipelineDesc.compute.entryPoint = pipelineDesc.shaderEntryPoint;
 	rhiComputePipelineDesc.compute.module = rhiComputeShaderModule;
+
+	if (pipelineLayout)
+		rhiComputePipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
 	rhiComputePipelineDesc.label = pipelineName;
