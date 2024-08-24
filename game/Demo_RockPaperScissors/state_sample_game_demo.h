@@ -6,19 +6,19 @@ class CMoviePlayer;
 class IGPURenderPassRecorder;
 struct RPSObject;
 
-class CState_SampleGameDemo : public CBaseStateHandler
+class CState_SampleGameDemo : public CAppStateBase
 {
 public:
 	CState_SampleGameDemo();
-	int			GetType() const { return GAME_STATE_SAMPLE_GAME_DEMO; }
+	int			GetType() const { return APP_STATE_SAMPLE_GAME_DEMO; }
 
 	// when changed to this state
 	// @from - used to transfer data
-	void		OnEnter(CBaseStateHandler* from);
+	void		OnEnter(CAppStateBase* from);
 
 	// when the state changes to something
 	// @to - used to transfer data
-	void		OnLeave(CBaseStateHandler* to);
+	void		OnLeave(CAppStateBase* to);
 
 	// when 'false' returned the next state goes on
 	bool		Update(float fDt);

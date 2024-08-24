@@ -117,9 +117,9 @@ CState_SampleGameDemo::CState_SampleGameDemo()
 
 // when changed to this state
 // @from - used to transfer data
-void CState_SampleGameDemo::OnEnter(CBaseStateHandler* from)
+void CState_SampleGameDemo::OnEnter(CAppStateBase* from)
 {
-	g_sounds->Init(1000.0f, s_soundChannels, elementsOf(s_soundChannels));
+	g_sounds->Init(1000.0f, s_soundChannels);
 	g_sounds->PrecacheSound("effect.rock");
 	g_sounds->PrecacheSound("effect.paper");
 	g_sounds->PrecacheSound("effect.scissors");
@@ -264,7 +264,7 @@ void CState_SampleGameDemo::ShowMovie(IGPURenderPassRecorder* rendPassRecorder)
 
 // when the state changes to something
 // @to - used to transfer data
-void CState_SampleGameDemo::OnLeave(CBaseStateHandler* to)
+void CState_SampleGameDemo::OnLeave(CAppStateBase* to)
 {
 	m_moviePlayer = nullptr;
 
@@ -424,7 +424,7 @@ bool CState_SampleGameDemo::Update(float fDt)
 	ShowMovie(rendPassRecorder);
 
 	const RenderPassContext rendPassCtx(rendPassRecorder, nullptr);
-	g_pfxRender->Render(0, rendPassCtx, nullptr);
+	g_pfxRender->Render(rendPassCtx);
 
 	rendPassRecorder->Complete();
 

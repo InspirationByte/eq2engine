@@ -40,9 +40,9 @@ EqLua::Lua_func_ref	m_onLeave;
 #endif // EDITOR
 */
 
-enum EGameStateType
+enum EAppStateType
 {
-	GAME_STATE_SAMPLE_GAME_DEMO,
-	GAME_STATE_COUNT,
+	APP_STATE_SAMPLE_GAME_DEMO,
+	APP_STATE_COUNT,
 
 };

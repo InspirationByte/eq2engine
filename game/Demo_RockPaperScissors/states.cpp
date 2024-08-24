@@ -25,48 +25,35 @@
 
 #define GAME_WINDOW_TITLE	"Rock Paper Scissors"
 
-CBaseStateHandler* g_states[GAME_STATE_COUNT] = { nullptr };
-
-namespace EqStateMgr
+namespace eqAppStateMng
 {
 
-bool InitRegisterStates()
+static CAppStateBase* s_appStates[APP_STATE_COUNT] = { nullptr };
+
+const char* GetAppNameTitle()
 {
+	return GAME_WINDOW_TITLE;
+}
+
+CAppStateBase* GetAppStateByType(int stateType)
+{
+	return s_appStates[stateType];
+}
+
+bool InitAppStates()
+{
+	s_appStates[APP_STATE_SAMPLE_GAME_DEMO] = g_State_SampleGameDemo;
+
 	g_audioSystem->Init();
 
 #ifdef ENABLE_MULTIPLAYER
 	Networking::InitNetworking();
 #endif
-
-	// TODO: plugin?
 #ifdef IMGUI_ENABLED
-	g_consoleInput->AddImGuiHandle("soundScriptEditor", [](const char* name, EqImGuiHandleTypes type) {
-		static bool soundScriptMenuVisible = false;
-		if (type == IMGUI_HANDLE_MENU)
-		{
-			if (ImGui::BeginMenu("ENGINE"))
-			{
-				if (ImGui::BeginMenu("SOUND"))
-				{
-					IMGUI_MENUITEM_CONVAR_BOOL("SHOW DEBUG INFO", snd_debug);
-					IMGUI_MENUITEM_CONVAR_BOOL("SHOW SCRIPTED SOUNDS DEBUG", snd_scriptsound_debug);
-					ImGui::Separator();
-					ImGui::MenuItem("SCRIPT EDITOR", nullptr, &soundScriptMenuVisible);
-					ImGui::EndMenu();
-				}
-
-				ImGui::EndMenu();
-			}
-		}
-		else
-			SoundScriptEditorUIDraw(soundScriptMenuVisible);
-	});
+	g_consoleInput->AddDebugMenu("ENGINE/Sound/Script Editor UI", SoundScriptEditorUIDraw);
 #endif
-	g_states[GAME_STATE_SAMPLE_GAME_DEMO] = g_State_SampleGameDemo;
 
-	g_pHost->SetWindowTitle(GAME_WINDOW_TITLE);
-
-	EqStateMgr::SetCurrentStateType(GAME_STATE_SAMPLE_GAME_DEMO);
+	eqAppStateMng::SetCurrentStateType(APP_STATE_SAMPLE_GAME_DEMO);
 
 	return true;
 }
@@ -75,10 +62,10 @@ void PreUpdateState(float fDt)
 {
 }
 
-void ShutdownStates()
+void ShutdownAppStates()
 {
-	for (int i = 0; i < GAME_STATE_COUNT; ++i)
-		g_states[i] = nullptr;
+	for (int i = 0; i < APP_STATE_COUNT; ++i)
+		s_appStates[i] = nullptr;
 
 #ifdef ENABLE_MULTIPLAYER
 	Networking::ShutdownNetworking();
@@ -96,7 +83,7 @@ bool IsMultiplayerGameState()
 
 bool IsInGameState()
 {
-	return GetCurrentStateType() != GAME_STATE_SAMPLE_GAME_DEMO;
+	return GetCurrentStateType() != APP_STATE_SAMPLE_GAME_DEMO;
 }
 
 void SignalPause()

@@ -138,7 +138,7 @@ public:
 struct BatchedMeshLodInfo	// maps to batches[firstBatchIdx .. numBatches]
 {
 	int		firstBatchIdx{ -1 };
-	int		numBatches{ -1 };
+	int		numBatches{ 0 };
 	float	simplifyThreshold{ 1.0f };
 };
 
