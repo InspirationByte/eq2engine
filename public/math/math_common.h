@@ -183,12 +183,6 @@ inline bool fisNan(const T x)
 	return x != x;
 }
 
-#define FLOATSIGNBITSET(f)		((*(const unsigned long *)&(f)) >> 31)
-#define FLOATSIGNBITNOTSET(f)	((~(*(const unsigned long *)&(f))) >> 31)
-#define FLOATNOTZERO(f)			((*(const unsigned long *)&(f)) & ~(1<<31) )
-#define INTSIGNBITSET(i)		(((const unsigned long)(i)) >> 31)
-#define INTSIGNBITNOTSET(i)		((~((const unsigned long)(i))) >> 31)
-
 #include "Vector.h"
 #include "FVector.h"
 #include "Matrix.h"

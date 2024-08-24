@@ -15,6 +15,7 @@ constexpr int getIntExp(int _x = 0) { return getIntExp<p / 2>(_x + 1); }
 template <>
 constexpr int getIntExp<0>(int _x) { return _x - 1; }
 
+// TODO: 64 bit type impl
 static constexpr int numBitsSet(uint x)
 {
 	x = x - ((x >> 1) & 0x55555555);
@@ -24,6 +25,9 @@ static constexpr int numBitsSet(uint x)
 	x = x + (x >> 16);
 	return x & 0x0000003F;
 }
+
+static inline void bitsSet(int& value, int mask, bool on)		{ value = (value & ~mask) | (static_cast<int>(on) * mask); }
+static inline void bitsSet(uint& value, uint mask, bool on)		{ value = (value & ~mask) | (static_cast<uint>(on) * mask); }
 
 template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
 constexpr int bitArray2Dword(int elems)
