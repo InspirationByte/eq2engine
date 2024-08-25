@@ -865,9 +865,9 @@ bool CGameHost::Frame()
 	return true;
 }
 
-bool CGameHost::IsInMultiplayerGame() const
+bool CGameHost::IsPauseAllowed() const
 {
-	return eqAppStateMng::IsMultiplayerGameState();
+	return eqAppStateMng::IsPauseAllowed();
 }
 
 void CGameHost::SignalPause()

@@ -43,7 +43,7 @@ public:
 
 	bool				Frame();
 
-	bool				IsInMultiplayerGame() const;
+	bool				IsPauseAllowed() const;
 	void				SignalPause();
 
 	void				OnWindowResize(int width, int height);

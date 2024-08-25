@@ -58,10 +58,6 @@ bool InitAppStates()
 	return true;
 }
 
-void PreUpdateState(float fDt)
-{
-}
-
 void ShutdownAppStates()
 {
 	for (int i = 0; i < APP_STATE_COUNT; ++i)
@@ -76,14 +72,9 @@ void ShutdownAppStates()
 	g_parallelJobs->Shutdown();
 }
 
-bool IsMultiplayerGameState()
+bool IsPauseAllowed()
 {
 	return false;
-}
-
-bool IsInGameState()
-{
-	return GetCurrentStateType() != APP_STATE_SAMPLE_GAME_DEMO;
 }
 
 void SignalPause()

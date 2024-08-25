@@ -96,7 +96,7 @@ namespace eqAppStateMng
 	bool				UpdateStates(float fDt);
 	void				GetStateMouseCursorProperties(bool& visible, bool& centered);
 
-	bool				IsMultiplayerGameState();
+	bool				IsPauseAllowed();
 
 	void				SignalPause();
 };

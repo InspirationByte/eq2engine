@@ -108,7 +108,6 @@ bool UpdateStates( float fDt )
 		return false;
 	}
 
-	PreUpdateState(fDt);
 	g_onPreUpdateState(fDt);
 
 	if( !s_currentState->Update(fDt) )

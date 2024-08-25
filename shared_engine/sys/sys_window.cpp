@@ -173,7 +173,7 @@ void Host_GameLoop()
 		while(SDL_PollEvent(&event))
 			Host_HandleSDLEvents( &event );
 
-		if (s_bActive || g_pHost->IsInMultiplayerGame())
+		if (s_bActive || g_pHost->IsPauseAllowed())
 		{
 			g_pHost->Frame();
 		}
