@@ -99,6 +99,9 @@ private:
 #define DECLARE_CVAR_G(name, value, desc, flags) \
 	ConVar name(#name, value, flags, ConVar::Desc(desc));
 
+#define DECLARE_CVAR_F(name) \
+	extern ConVar name;
+
 #define DECLARE_CVAR_CLAMP_G(name, value, minclamp, maxclamp, desc, flags) \
 	ConVar name(#name, value, flags, ConVar::Desc(desc), ConVar::Clamp(minclamp, maxclamp));
 

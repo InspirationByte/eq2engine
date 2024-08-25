@@ -45,7 +45,7 @@ static constexpr const int PHYSGRID_WORLD_SIZE			= 24;	// compromised betwen mem
 static constexpr const float PHYSICS_WORLD_MAX_UNITS	= 65535.0f;
 static constexpr const float PHYSGRID_BOX_TOLERANCE		= 0.1f;
 
-extern ConVar ph_margin;
+DECLARE_CVAR_F(ph_margin);
 
 DECLARE_CVAR(ph_showcontacts, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
