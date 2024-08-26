@@ -47,6 +47,16 @@ Folders = {
     game = "./game/",
 }
 
+function prj_name(prj, def)
+	if prj ~= nil then
+		if prj.group ~= nil and string.len(prj.group) > 0 then
+			return prj.group .. '/' .. prj.name
+		end
+		return prj.name
+	end
+	return def
+end
+
 -- Main workspace
 workspace(WORKSPACE_NAME)
     language "C++"
@@ -59,7 +69,7 @@ workspace(WORKSPACE_NAME)
 	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 
 	if _ACTION ~= "vscode" then
-		location "build/%{wks.name}"
+		location "build/%{ prj_name(prj) }"
 	end
 
 	defines {

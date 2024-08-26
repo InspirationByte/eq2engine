@@ -603,7 +603,7 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 	const bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
 
 	if (!isAbsolutePath)
-		fnmPathCombine(fullPath, GetSearchPath(search).ToCString(), dirOrFileName);
+		fnmPathCombine(fullPath, GetSearchPath(search), dirOrFileName);
 	else
 		fullPath = dirOrFileName;
 

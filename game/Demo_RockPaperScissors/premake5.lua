@@ -2,7 +2,7 @@ WORKSPACE_NAME = "Demo_RockPaperScissors"
 
 dofile "premake5-engine.lua"
 
-group "Game"
+group ""
 
 project "Demo_RockPaperScissors"
 	if IS_ANDROID then

@@ -53,4 +53,4 @@ Set-Location -Path $project_folder
 # & .\\premake5 vs2022
 
 # Open solution
-# & .\\project_vs2022\\DriverSyndicate.sln
+# & .\\build\\DriverSyndicate.sln
