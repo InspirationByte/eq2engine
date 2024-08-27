@@ -340,6 +340,44 @@ extern "C"
 	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
+static EqString Sys_GetExecutablePath()
+{
+#ifdef PLAT_LINUX
+	char exePath[PATH_MAX];
+	const int len = readlink("/proc/self/exe", exePath, PATH_MAX);
+	if (len <= 0 || len == PATH_MAX) // memory not sufficient or general error occured
+		return EqString::EmptyStr;
+
+	return EqString(exePath, len);
+
+#elif defined(PLAT_WIN)
+	char exePath[MAX_PATH];
+	unsigned int len = GetModuleFileNameA(GetModuleHandleA(nullptr), exePath, MAX_PATH);
+	return EqString(exePath, len);
+#endif
+	return EqString::EmptyStr;
+}
+
+static EqString sysPathGetApplicationName(EqStringRef exePath)
+{
+	int strStart = 0;
+	for (int i = exePath.Length()-1; i >= 0; --i)
+	{
+		if (exePath[i] == CORRECT_PATH_SEPARATOR || exePath[i] == INCORRECT_PATH_SEPARATOR)
+		{
+			strStart = i + 1;
+			break;
+		}
+	}
+
+	for (int i = strStart; i < exePath.Length(); ++i)
+	{
+		if (exePath[i] == '_' || exePath[i] == '.')
+			return exePath.Mid(strStart, i - strStart);
+	}
+	return exePath;
+}
+
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
 {
 #if defined(CRT_DEBUG_ENABLED)
@@ -355,8 +393,10 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 	CEqConsoleInput::SpewInit();
 
+	EqString appName = sysPathGetApplicationName(Sys_GetExecutablePath());
+
 	// init core
-	if(!g_eqCore->Init("Game", lpszCmdLine))
+	if(!g_eqCore->Init(appName, lpszCmdLine))
 		return -1;
 
 	return Sys_Main();
