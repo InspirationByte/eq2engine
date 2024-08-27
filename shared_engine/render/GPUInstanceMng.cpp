@@ -24,13 +24,13 @@ GPUBaseInstanceManager::GPUBaseInstanceManager()
 	m_updated.insert(0);
 }
 
-void GPUBaseInstanceManager::Initialize()
+void GPUBaseInstanceManager::Initialize(const char* instanceComputeShaderName)
 {
 	if (!m_updateRootPipeline)
 	{
 		m_updateRootPipeline = g_renderAPI->CreateComputePipeline(
 			Builder<ComputePipelineDesc>()
-			.ShaderName("InstanceUtils")
+			.ShaderName(instanceComputeShaderName)
 			.ShaderLayoutId(StringToHashConst("InstRoot"))
 			.End()
 		);
@@ -40,7 +40,7 @@ void GPUBaseInstanceManager::Initialize()
 	{
 		m_updateIntPipeline = g_renderAPI->CreateComputePipeline(
 			Builder<ComputePipelineDesc>()
-			.ShaderName("InstanceUtils")
+			.ShaderName(instanceComputeShaderName)
 			.ShaderLayoutId(StringToHashConst("InstInt"))
 			.End()
 		);
@@ -94,6 +94,15 @@ void GPUBaseInstanceManager::Shutdown()
 GPUBufferView GPUBaseInstanceManager::GetSingleInstanceIndexBuffer() const
 {
 	return GPUBufferView(m_singleInstIndexBuffer, sizeof(int));
+}
+
+int	GPUBaseInstanceManager::GetInstanceCountByArchetype(int archetypeId) const
+{
+	auto it = m_archetypeInstCounts.find(archetypeId);
+	if (it.atEnd())
+		return 0;
+
+	return *it;
 }
 
 void GPUBaseInstanceManager::DbgRegisterArhetypeName(int archetypeId, const char* name)
@@ -157,7 +166,7 @@ void GPUBaseInstanceManager::FreeInstance(int instanceId)
 		--m_archetypeInstCounts[inst.archetype];
 	}
 
-	inst.archetype = 0;
+	inst.archetype = -1;
 	inst.batchesFlags = 0;
 
 	for (int i = 0; i < GPUINST_MAX_COMPONENTS; ++i)

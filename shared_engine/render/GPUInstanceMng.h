@@ -5,6 +5,63 @@
 // Description: GPU Instances manager
 //////////////////////////////////////////////////////////////////////////////////
 
+/*
+Example of use:
+
+	1. Define your instance components:
+		// in header:
+		struct InstTransform {
+			DEFINE_GPU_INSTANCE_COMPONENT(GPUINST_PROP_ID_TRANSFORM, InstTransform);
+
+			Quaternion	orientation{ qidentity };
+			Vector3D	position{ vec3_zero };
+			float		boundingSphere{ 1.0f };
+		};
+
+		struct InstScale {
+			DEFINE_GPU_INSTANCE_COMPONENT(GPUINST_PROP_ID_SCALE, InstScale);
+			...
+		};
+
+		// in source file:
+		INIT_GPU_INSTANCE_COMPONENT(InstTransform, "InstanceShaderName")
+		INIT_GPU_INSTANCE_COMPONENT(InstScale, "InstanceShaderName")
+
+	2. Define instancer type
+		using DemoGPUInstanceManager = GPUInstanceManager<InstTransform>;
+
+	3. Declare instancer and initialize
+		static DemoGPUInstanceManager g_instanceMng;
+		...
+		s_instanceMng.Initialize();
+
+	4. Object management
+		// creates instance
+		int instanceID = g_instanceMng.AddInstance<InstTransform>();
+
+		// updates instance data
+		InstTransform myTransform{...};
+		InstScale myScale{...};
+		g_instanceMng.Set(instanceID, myTransform, myScale);
+
+		// remove instance from manager
+		g_instanceMng.FreeInstance(instanceID);
+
+	5. Drawing objects
+		// before any drawing and after objects are updated
+		s_instanceMng.SyncInstances(cmdBuffer);
+
+		// when performing draw calls
+		BindGroupDesc instBindGroup = Builder<BindGroupDesc>()
+			.GroupIndex(bindGroupIdx)
+			.Buffer(0, g_instanceMng.GetRootBuffer())	// ROOTs are always required
+			.Buffer(1, g_instanceMng.GetDataPoolBuffer(InstTransform::COMPONENT_ID))
+			.Buffer(2, g_instanceMng.GetDataPoolBuffer(InstScale::COMPONENT_ID))
+
+		rendPassRecorder->SetVertexBuffer(instBufferIdx, instancesBuffer);
+		rendPassRecorder->SetBindGroup(bindGroupIdx, instBindGroup);
+*/
+
 #pragma once
 #include "materialsystem1/renderers/IShaderAPI.h"
 
@@ -36,11 +93,11 @@ struct GPUInstPool
 	virtual void		ResetData() = 0;
 	virtual void		InitPipeline() = 0;
 
-	Array<int>		freeIndices{ PP_SL };
-	Set<int>		updated{ PP_SL };
-	IGPUBufferPtr	buffer;
+	Array<int>			freeIndices{ PP_SL };
+	Set<int>			updated{ PP_SL };
+	IGPUBufferPtr		buffer;
 	IGPUComputePipelinePtr	updatePipeline;
-	int				stride{ 0 };
+	int					stride{ 0 };
 };
 
 // The instance manager basic implementation
@@ -51,13 +108,15 @@ public:
 	GPUBaseInstanceManager();
 	~GPUBaseInstanceManager() = default;
 
-	void			Initialize();
+	void			Initialize(const char* instanceComputeShaderName);
 	void			Shutdown();
 
 	GPUBufferView	GetSingleInstanceIndexBuffer() const;
 	IGPUBufferPtr	GetInstanceArchetypesBuffer() const { return m_archetypesBuffer; }
 	IGPUBufferPtr	GetRootBuffer() const { return m_rootBuffer; }
 	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
+	int				GetInstanceCountByArchetype(int archetypeId) const;
+	int				GetInstanceArchetypeId(int instanceIdx) const { return m_instances[instanceIdx].archetype; }
 
 	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
 
@@ -84,14 +143,14 @@ protected:
 	struct Instance
 	{
 		InstRoot	root;
-		int			archetype{ 0 };			// usually hash of the model name
+		int			archetype{ -1 };		// usually hash of the model name
 		uint		batchesFlags{ 0 };		// bit flags of drawn batches
 	};
 
 	Threading::CEqMutex		m_mutex;
 	IGPUBufferPtr			m_rootBuffer;
 	IGPUBufferPtr			m_singleInstIndexBuffer;
-	IGPUBufferPtr			m_archetypesBuffer;
+	IGPUBufferPtr			m_archetypesBuffer;			// per-instance archetype buffer
 	IGPUComputePipelinePtr	m_updateRootPipeline;
 	IGPUComputePipelinePtr	m_updateIntPipeline;
 
