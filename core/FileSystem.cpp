@@ -301,7 +301,7 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	if(!m_editorMode)
 	{
-		EqStringRef gamePath = "DefaultGameDir_MISSING";
+		EqStringRef gamePath = g_eqCore->GetApplicationName();
 		fsConfig->Get("DefaultGameDir").GetValues(gamePath);
 
 		const int gamePathArg = g_cmdLine->FindArgument("-game");
