@@ -124,7 +124,7 @@ DECLARE_CMD_VARIANTS(bind, "Binds action to key", cmd_conKeyList, 0)
 		MsgInfo("Usage: bind <key> <command> [args,...]\n");
 }
 
-DECLARE_CMD(in_listBinding, "Shows bound keys", 0)
+DECLARE_CMD(in_listBindings, "Shows bound keys", 0)
 {
 	MsgInfo("---- List of bound keys to commands ----\n");
 	ArrayCRef<InputBinding*> bindingList = g_inputCommandBinder->GetBindingList();
