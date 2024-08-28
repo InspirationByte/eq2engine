@@ -656,12 +656,7 @@ void CInputCommandBinder::UnbindCommandByName(const char* name, const char* argS
 {
 	InputBinding* binding = nullptr;
 	while (binding = FindBindingByCommandName(name, argStr, binding))
-	{
-		if (binding->custom)
-			continue;
-
 		DeleteBinding(binding);
-	}
 }
 
 // clears and removes all key bindings
