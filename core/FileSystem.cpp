@@ -266,7 +266,7 @@ CFileSystem::~CFileSystem()
 
 bool CFileSystem::Init(bool bEditorMode)
 {
-	Msg("\n-------- Filesystem Init --------\n\n");
+	Msg("\n-------- Filesystem Init --------\n");
 
 	m_editorMode = bEditorMode;
 
@@ -297,7 +297,7 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	m_dataDir = "EngineBase";
 	fsConfig->Get("EngineDataDir").GetValues(m_dataDir);
-	MsgInfo("* Engine Data directory: %s\n", m_dataDir.GetData());
+	MsgInfo("* Engine data directory: %s\n", m_dataDir.GetData());
 
 	if(!m_editorMode)
 	{
@@ -310,7 +310,7 @@ bool CFileSystem::Init(bool bEditorMode)
 
 		AddSearchPath("$GAME$", gamePath);
 
-		MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
+		MsgInfo("* Content data directory: %s\n", GetCurrentGameDirectory());
 
 		// FS dev addon for game tools
 		const int iDevAddonPathArg = g_cmdLine->FindArgument("-devAddon");

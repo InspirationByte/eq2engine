@@ -59,6 +59,10 @@ static CEqGameControllerSDL s_controllers[MAX_CONTROLLERS];
 
 void CEqGameControllerSDL::Init()
 {
+	const int numJoysticks = SDL_NumJoysticks();
+	if (numJoysticks)
+		MsgWarning("* %d joysticks connected\n", numJoysticks);
+
 	VSSize mappingsSize = 0;
 	const char* mappingsBuf = (const char*)g_fileSystem->GetFileBuffer(CONTROLLER_DB_FILENAME, &mappingsSize);
 	if (mappingsBuf)
@@ -73,11 +77,8 @@ void CEqGameControllerSDL::Init()
 		
 		PPFree((void*)mappingsBuf);
 	}
-	else
-		MsgError("Failed to load '" CONTROLLER_DB_FILENAME "'!\n");
-
-	int numJoysticks = SDL_NumJoysticks();
-	MsgWarning("* %d joysticks connected\n", numJoysticks);
+	else if (numJoysticks)
+		MsgInfo("No '" CONTROLLER_DB_FILENAME "' found, skipping\n");
 
 	char guidStr[64];
 

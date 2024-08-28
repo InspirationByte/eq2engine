@@ -217,8 +217,6 @@ void CEqStudioGeom::LoadPhysicsData()
 		return;
 
 	DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", physDataFilename.ToCString());
-
-	ASSERT_MSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
 	g_studioShapeCache->InitStudioCache(m_physModel);
 }
 

@@ -97,7 +97,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	if (!openFile)
 	{
 		result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-		result->includeContent.Print("Could not open %s", reqSource);
+		result->includeContent.Print("Could not open %s", fileName);
 		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
 		result->resultData.content_length = result->includeContent.GetSize();
 		// leave source_name and source_name_length empty

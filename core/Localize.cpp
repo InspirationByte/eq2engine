@@ -171,7 +171,7 @@ void CLocalize::SetLanguageName(const char* name)
 
 	m_language = m_language.LowerCase();
 
-	Msg("Language '%s' set\n", m_language.ToCString());
+	Msg("* Localize language '%s' set\n", m_language.ToCString());
 }
 
 const char* CLocalize::GetLanguageName() const
@@ -183,7 +183,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 {
 	if (arrayFindIndex(m_languageFilePrefixes, EqStringRef(pszFilePrefix)) != -1)
 	{
-		ASSERT_FAIL("CLocalize: %s is already loaded", pszFilePrefix);
+		ASSERT_FAIL("Localize: %s is already loaded", pszFilePrefix);
 		return;
 	}
 

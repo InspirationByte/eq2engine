@@ -125,7 +125,7 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 		++shaderPackCount;
 	}
 
-	Msg("Init shader cache from %d packages, %d shader modules loaded\n", shaderPackCount, shaderModCount);
+	Msg("* Found %d shader packages, %d modules loaded\n", shaderPackCount, shaderModCount);
 }
 
 void CWGPURenderAPI::Shutdown()
@@ -147,7 +147,6 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		IFilePtr file = shaderPackFile->Open("ShaderInfo", VS_OPEN_READ);
 		if (!KV_LoadFromStream(file, &shaderInfoKvs))
 		{
-			
 			Msg("No ShaderInfo in file %s\n", filename);
 			return 0;
 		}

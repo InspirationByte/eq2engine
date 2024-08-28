@@ -192,7 +192,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUAdapterProperties properties = {};
 		wgpuAdapterGetProperties(m_rhiAdapter, &properties);
 
-		Msg("WGPU Adapter Info: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(properties.backendType), properties.name, GetWGPUAdapterTypeStr(properties.adapterType), properties.driverDescription);
+		Msg("* WGPU Adapter: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(properties.backendType), properties.name, GetWGPUAdapterTypeStr(properties.adapterType), properties.driverDescription);
 	}
 
 	{

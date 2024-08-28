@@ -32,7 +32,7 @@ bool CEqParallelJobManager::Init()
 	const int numThreadsToSpawn = max(4, g_cpuCaps->GetCPUCount());
 	m_jobMng = PPNew CEqJobManager("e2CoreJobMng", numThreadsToSpawn, 2048);
 
-	MsgInfo("*Parallel jobs threads: %d\n", m_jobMng->GetJobThreadsCount());
+	MsgInfo("* Job threads: %d\n", m_jobMng->GetJobThreadsCount());
 
 	return true;
 }

@@ -485,7 +485,6 @@ bool CGameHost::InitSystems()
 	g_inputCommandBinder->Init();
 	g_consoleInput->Initialize(m_window);
 
-	MsgInfo("--- EqEngine systems init successfully ---\n");
 	g_beginSceneJob = PPNew SyncJob("BeginSceneJob");
 	g_endSceneJob = PPNew SyncJob("EndSceneJob");
 	m_defaultFont = g_fontCache->GetFont("default",0);
