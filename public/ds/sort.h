@@ -8,12 +8,6 @@
 #pragma once
 
 template< typename T >
-using PairCompareFunc = bool (*)(const T& a, const T& b);
-
-template< typename T >
-using PairSortCompareFunc = int (*)(const T& a, const T& b);
-
-template< typename T >
 static int sortCompare(const T& a, const T& b)
 {
 	return (a > b) - (a < b);
@@ -210,7 +204,7 @@ void arraySort(ITER begin, ITER end, const CMP& comparator)
 }
 
 // array wrapper
-template< typename ARRAY_TYPE, typename CMP >
+template<typename ARRAY_TYPE, typename CMP>
 void arraySort(ARRAY_TYPE& arr, const CMP& comparator)
 {
 	arraySort(arr.ptr(), arr.ptr() + arr.numElem(), comparator);
@@ -221,7 +215,7 @@ void arraySort(ARRAY_TYPE& arr, const CMP& comparator)
 // -----------------------------------------------------------------
 
 // finds the index for the given element
-template< typename ITER, typename K>
+template<typename ITER, typename K>
 int arrayFindIndex(ITER begin, ITER end, const K& key)
 {
 	for (ITER it = begin; it < end; ++it)
@@ -232,7 +226,7 @@ int arrayFindIndex(ITER begin, ITER end, const K& key)
 	return -1;
 }
 
-template< typename ARRAY_TYPE, typename K>
+template<typename ARRAY_TYPE, typename K>
 int arrayFindIndex(const ARRAY_TYPE& arr, const K& key)
 {
 	return arrayFindIndex(arr.ptr(), arr.ptr() + arr.numElem(), key);

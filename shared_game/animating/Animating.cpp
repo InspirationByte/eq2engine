@@ -372,6 +372,10 @@ bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
 		anmData.keyFrames = &motionData->frames[animDesc.firstFrame];
 	}
 
+	auto compareEvents = [](const sequenceevent_t* a, const sequenceevent_t* b) -> int {
+		return sortCompare(a->frame, b->frame);
+	};
+
 	// create sequences
 	animData.sequences.reserve(motionData->sequences.numElem());
 	for (const sequencedesc_t& seqDesc : motionData->sequences)
@@ -414,13 +418,7 @@ bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
 		for (int i = 0; i < seqDesc.numSequenceBlends; i++)
 			seqData.blends[i] = &animData.sequences[seqDesc.sequenceblends[i]];
 
-		// sort events
-		auto compareEvents = [](const sequenceevent_t* a, const sequenceevent_t* b) -> int
-		{
-			return sortCompare(a->frame, b->frame);
-		};
-
-		arraySort(ArrayRef(seqData.events, seqDesc.numEvents - 1), compareEvents);
+		arraySort(seqData.events, seqData.events + seqDesc.numEvents - 1, compareEvents);
 	}
 
 	return true;

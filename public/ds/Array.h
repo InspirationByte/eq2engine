@@ -329,15 +329,15 @@ public:
 	int				addUnique(const T& obj);
 
 	// adds unique element
-	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
-	int				addUnique(const T& obj, PAIRCOMPAREFUNC comparator);
+	template< typename CMP >
+	int				addUnique(const T& obj, CMP comparator);
 
 	// returns iterator for the given element
 	Iterator		find(const T& obj) const;
 
 	// returns iterator for the given element
-	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
-	Iterator		find(const T& obj, PAIRCOMPAREFUNC comparator) const;
+	template< typename CMP >
+	Iterator		find(const T& obj, CMP comparator) const;
 
 	// returns first found element which satisfies to the condition
 	template< typename COMPAREFUNC >
@@ -935,8 +935,8 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj)
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
-template< typename PAIRCOMPAREFUNC >
-inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj, PAIRCOMPAREFUNC comparator)
+template< typename CMP >
+inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj, CMP comparator)
 {
 	int index = arrayFindIndexF(*this, obj, comparator);
 	if (index < 0)
@@ -959,8 +959,8 @@ inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>:
 // Searches for the specified data in the m_pListPtr and returns iterator.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-template< typename PAIRCOMPAREFUNC >
-inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj, PAIRCOMPAREFUNC comparator) const
+template< typename CMP >
+inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj, CMP comparator) const
 {
 	const int index = arrayFindIndexF(*this, obj, comparator);
 	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
