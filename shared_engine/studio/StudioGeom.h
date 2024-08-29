@@ -39,61 +39,52 @@ enum EModelLoadingState
 class CEqStudioGeom : public RefCountedObject<CEqStudioGeom>
 {
 	friend class CStudioCache;
-	friend class CBaseEqGeomInstancer;
 public:
 	struct DrawProps;
+	struct HWGeomRef;
 
 	static void					SetInstanceFormatId(int instanceFormatId);
 
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
-	int							GetCacheId() const { return m_nameHash; }
-	const char*					GetName() const;
-	EModelLoadingState			GetLoadingState() const;	// EModelLoadingState
-	Future<bool>				GetLoadingFuture() const;
+	int						GetCacheId() const { return m_nameHash; }
+	const char*				GetName() const;
+	EModelLoadingState		GetLoadingState() const;	// EModelLoadingState
+	Future<bool>			GetLoadingFuture() const;
 
-	void						AddMotionPackage(const char* filename);
+	void					AddMotionPackage(const char* filename);
 
-	const studioHdr_t&			GetStudioHdr() const;
-	const StudioPhysData&		GetPhysData() const;
-	ArrayCRef<StudioJoint>		GetJoints() const;
-	ArrayCRef<int>				GetMotionDataIdxs() const;
+	const studioHdr_t&		GetStudioHdr() const;
+	const StudioPhysData&	GetPhysData() const;
+	ArrayCRef<StudioJoint>	GetJoints() const;
+	ArrayCRef<int>			GetMotionDataIdxs() const;
+	ArrayCRef<HWGeomRef>	GetHwGeomRefs() const { return m_hwGeomRefs; }
+	
 
-	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
-	ArrayCRef<IMaterialPtr>		GetMaterials(int materialGroupIdx = 0) const;
-	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
+	const IMaterialPtr&		GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	ArrayCRef<IMaterialPtr>	GetMaterials(int materialGroupIdx = 0) const;
+	int						GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 
 	// instancing
-	void						SetInstancer(CBaseEqGeomInstancer* instancer);
-	CBaseEqGeomInstancer*		GetInstancer() const;
+	void					SetInstancer(CBaseEqGeomInstancer* instancer);
+	CBaseEqGeomInstancer*	GetInstancer() const;
 
 	// selects a lod. returns index
-	int							SelectLod(float distance) const;
-	int							FindManualLod(float value) const;
+	int						SelectLod(float distance) const;
+	int						FindManualLod(float value) const;
 
-	IGPUBufferPtr				GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
-	int							ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const;
+	IGPUBufferPtr			GetVertexBuffer(EGFHwVertex::VertexStreamId vertStream) const;
+	IGPUBufferPtr			GetIndexBuffer() const { return m_indexBuffer; }
+	int						GetIndexFormat() const { return m_indexFmt; }
+	int						ConvertBoneMatricesToQuaternions(const Matrix4x4* boneMatrices, RenderBoneTransform* bquats) const;
 
-	void						Draw(const DrawProps& drawProperties, const MeshInstanceData& instData, const RenderPassContext& passContext) const;
+	void					Draw(const DrawProps& drawProperties, const MeshInstanceData& instData, const RenderPassContext& passContext) const;
 
-	const BoundingBox&			GetBoundingBox() const;
-	CRefPtr<DecalData>			MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
-	float						CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod = 0) const;
+	const BoundingBox&		GetBoundingBox() const;
+	CRefPtr<DecalData>		MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
+	float					CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod = 0) const;
 private:
-
-	struct HWGeomRef
-	{
-		// offset in hw index buffer to this lod, for each geometry group
-		struct Mesh
-		{
-			int		firstIndex{ 0 };
-			int		indexCount{ 0 };
-			ushort	primType{ 0 };
-			bool	supportsSkinning{ false };
-		} *meshRefs{ nullptr };
-	};
-
 	void					Ref_DeleteObject() override;
 
 	bool					LoadModel(const char* pszPath, bool useJob = true);
@@ -124,7 +115,7 @@ private:
 	int						m_cacheIdx{ 0 };
 
 	StudioJoint*			m_joints{ nullptr };
-	HWGeomRef*				m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
+	ArrayRef<HWGeomRef>		m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
 
 	CBaseEqGeomInstancer*	m_instancer{ nullptr };
 	studioHdr_t*			m_studio{ nullptr };
@@ -165,4 +156,18 @@ struct CEqStudioGeom::DrawProps
 	int						materialFlags{ -1 };
 	bool					excludeMaterialFlags{ false };
 	bool					skipMaterials{ false };
+};
+
+struct CEqStudioGeom::HWGeomRef
+{
+	// offset in hw index buffer to this lod, for each geometry group
+	struct MeshRef
+	{
+		int		firstIndex{ 0 };
+		int		indexCount{ 0 };
+		uint8	primType{ 0 };
+		uint8	materialIdx{ 0xff };
+		bool	supportsSkinning{ false };
+	};
+	ArrayRef<MeshRef>	meshRefs{ nullptr };
 };

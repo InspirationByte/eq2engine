@@ -144,7 +144,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 	RenderDrawCmd drawCmd;
 	drawCmd.SetInstanceFormat(m_vertFormat)
-		.SetIndexBuffer(model->m_indexBuffer, static_cast<EIndexFormat>(model->m_indexFmt));
+		.SetIndexBuffer(model->GetIndexBuffer(), static_cast<EIndexFormat>(model->GetIndexFormat()));
 
 	// setup vertex buffers
 	{
@@ -162,7 +162,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			}
 			else
 			{
-				drawCmd.SetVertexBuffer(stream, model->m_vertexBuffers[egfVertStreamId]);
+				drawCmd.SetVertexBuffer(stream, model->GetVertexBuffer(egfVertStreamId));
 				setVertStreams |= (1 << int(egfVertStreamId));
 			}
 		}
@@ -170,7 +170,10 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 	ASSERT_MSG(instanceStreamId != -1, "No instance stream has been configured in vertex format!");
 
+	using HWGeomRef = CEqStudioGeom::HWGeomRef;
+
 	const studioHdr_t& studio = model->GetStudioHdr();
+	ArrayCRef<HWGeomRef> geomRefs = model->GetHwGeomRefs();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
 	{
 		for(int bodyGrp = m_bodyGroupBounds[0]; bodyGrp <= m_bodyGroupBounds[1]; bodyGrp++)
@@ -191,6 +194,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 				continue;
 	
 			const studioMeshGroupDesc_t* modDesc = studio.pMeshGroupDesc(modelDescId);
+			const HWGeomRef& geomRef = geomRefs[modelDescId];
 
 			for (int mGrp = m_matGroupBounds[0]; mGrp <= m_matGroupBounds[1]; mGrp++)
 			{
@@ -219,7 +223,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 					//materials->SetSkinningEnabled(true);
 					drawCmd.SetMaterial(material);
 
-					const CEqStudioGeom::HWGeomRef::Mesh& meshRef = model->m_hwGeomRefs[modelDescId].meshRefs[i];
+					const HWGeomRef::MeshRef& meshRef = geomRef.meshRefs[i];
 					drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
 					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(nullptr, nullptr));

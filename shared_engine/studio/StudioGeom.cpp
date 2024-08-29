@@ -199,13 +199,13 @@ void CEqStudioGeom::DestroyModel()
 
 	if (m_studio)
 	{
-		for (int i = 0; i < m_studio->numMeshGroups; i++)
-			delete[] m_hwGeomRefs[i].meshRefs;
+		for (int i = 0; i < m_hwGeomRefs.numElem(); i++)
+			PPDeleteArrayRef(m_hwGeomRefs[i].meshRefs);
 
 		Studio_FreeModel(m_studio);
 	}
 
-	SAFE_DELETE_ARRAY(m_hwGeomRefs);
+	PPDeleteArrayRef(m_hwGeomRefs);
 	SAFE_DELETE_ARRAY(m_joints);
 }
 
@@ -452,22 +452,22 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 		PRIM_TRIANGLE_STRIP,
 	};
 
-	m_hwGeomRefs = PPNew HWGeomRef[studio->numMeshGroups];
+	m_hwGeomRefs = PPNewArrayRef(HWGeomRef, studio->numMeshGroups);
 	for (int i = 0; i < studio->numMeshGroups; i++)
 	{
 		const studioMeshGroupDesc_t* pMeshGroupDesc = studio->pMeshGroupDesc(i);
-		HWGeomRef::Mesh* meshRefs = PPNew HWGeomRef::Mesh[pMeshGroupDesc->numMeshes];
-		m_hwGeomRefs[i].meshRefs = meshRefs;
-
+		ArrayRef<HWGeomRef::MeshRef> meshRefs = PPNewArrayRef(HWGeomRef::MeshRef, pMeshGroupDesc->numMeshes);
+		
 		for (int j = 0; j < pMeshGroupDesc->numMeshes; j++)
 		{
 			// add vertices, add indices
 			const studioMeshDesc_t* pMeshDesc = pMeshGroupDesc->pMesh(j);
-			HWGeomRef::Mesh& meshRef = meshRefs[j];
+			HWGeomRef::MeshRef& meshRef = meshRefs[j];
 
 			meshRef.firstIndex = numIndices;
 			meshRef.indexCount = pMeshDesc->numIndices;
 			meshRef.primType = s_egfPrimTypeMap[pMeshDesc->primitiveType];
+			meshRef.materialIdx = pMeshDesc->materialIndex;
 			meshRef.supportsSkinning = (pMeshDesc->vertexType & STUDIO_VERTFLAG_BONEWEIGHT);
 
 			const int newOffset = numVertices;
@@ -481,6 +481,8 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 				pMeshDesc, m_boundingBox);
 			numIndices += CopyGroupIndexDataToHWList(allIndices, indexSize, numIndices, pMeshDesc, newOffset);
 		}
+
+		m_hwGeomRefs[i].meshRefs = meshRefs;
 	}
 
 	// create hardware buffers
@@ -898,7 +900,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 			if (!drawProperties.skipMaterials)
 				drawCmd.SetMaterial(material);
 
-			const HWGeomRef::Mesh& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
+			const HWGeomRef::MeshRef& meshRef = m_hwGeomRefs[modelDescId].meshRefs[j];
 			drawCmd.SetDrawIndexed(static_cast<EPrimTopology>(meshRef.primType), meshRef.indexCount, meshRef.firstIndex);
 
 			g_matSystem->SetupDrawCommand(drawCmd, passContext);
