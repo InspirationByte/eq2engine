@@ -420,7 +420,7 @@ bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
 			return sortCompare(a->frame, b->frame);
 		};
 
-		arraySort(seqData.events, compareEvents, 0, seqDesc.numEvents - 1);
+		arraySort(ArrayRef(seqData.events, seqDesc.numEvents - 1), compareEvents);
 	}
 
 	return true;

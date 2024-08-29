@@ -23,9 +23,13 @@ static int sortCompare(const T& a, const T& b)
 // IntroSort algorithm (hybrid of QuickSort, HeapSort, InsetionSort)
 // -----------------------------------------------------------------
 
-template< class T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-int heapMoveDown(T* list, int begin, int mid, int end, const COMPAREFUNC& comparator)
+#define SORT_HEAP_AT(INDEX) *(begin + (INDEX))
+
+template<typename ITER, typename CMP>
+int heapMoveDown(ITER begin, ITER mid, ITER end, const CMP& comparator)
 {
+	using ValueType = std::remove_pointer_t<ITER>;
+
 	if (mid < begin || mid >= end)
 	{
 		ASSERT_FAIL("invalid mid index");
@@ -33,91 +37,97 @@ int heapMoveDown(T* list, int begin, int mid, int end, const COMPAREFUNC& compar
 	}
 
 	const int count = end - begin;
-	T x = std::move(list[mid]);
+	ValueType x = std::move(*mid);
 
 	int cur = mid - begin;
 	int next = cur * 2 + 1; // next left child
-	if (next + 1 < count && comparator(list[begin + next], list[begin + next + 1]) < 0)
+	if (next + 1 < count && comparator(SORT_HEAP_AT(next), SORT_HEAP_AT(next + 1)) < 0)
 		++next;
 
-	while (next < count && comparator(x, list[next]) < 0)
+	while (next < count && comparator(x, SORT_HEAP_AT(next)) < 0)
 	{
-		list[begin + cur] = std::move(list[begin + next]);
+		SORT_HEAP_AT(cur) = std::move(SORT_HEAP_AT(next));
 		cur = next;
 		next = next * 2 + 1; // next left child
-		if (next + 1 < count && comparator(list[begin + next], list[begin + next + 1]) < 0)
+		if (next + 1 < count && comparator(SORT_HEAP_AT(next), SORT_HEAP_AT(next + 1)) < 0)
 			++next;
 	}
-	list[begin + cur] = std::move(x);
+	SORT_HEAP_AT(cur) = std::move(x);
 	return cur;
 }
 
-template< class T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-int heapMoveUp(T* list, int begin, int mid, int end, const COMPAREFUNC& comparator)
+template<typename ITER, typename CMP>
+int heapMoveUp(ITER begin, ITER mid, ITER end, const CMP& comparator)
 {
+	using ValueType = std::remove_pointer_t<ITER>;
+
 	if (mid < begin || mid >= end)
 	{
 		ASSERT_FAIL("invalid mid index");
 		return -1;
 	}
 
-	T x = std::move(list[mid]);
+	ValueType x = std::move(*mid);
 
 	int cur = mid - begin;
 	int prev = (cur + 1) / 2 - 1;
 
-	while (prev >= 0 && comparator(x, list[begin + prev]) > 0)
+	while (prev >= 0 && comparator(x, SORT_HEAP_AT(prev)) > 0)
 	{
-		list[cur] = std::move(list[begin + prev]);
+		SORT_HEAP_AT(cur) = std::move(SORT_HEAP_AT(prev));
 		cur = prev;
 		prev = (prev + 1) / 2 - 1;
 	}
-	list[begin + cur] = std::move(x);
+	SORT_HEAP_AT(cur) = std::move(x);
 	return cur;
 }
 
-template< typename T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-void heapMake(T* list, int begin, int end, const COMPAREFUNC& comparator)
+#undef SORT_HEAP_AT
+
+template<typename ITER, typename CMP>
+void heapMake(ITER begin, ITER end, const CMP& comparator)
 {
 	const int count = end - begin;
 	for (int i = count / 2; i >= 0; --i)
-		heapMoveDown(list, begin, begin + i, end, comparator);
+		heapMoveDown(begin, begin + i, end, comparator);
 }
 
-template< typename T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-void heapSort(T* list, int first, int last, const COMPAREFUNC& comparator)
+template<typename ITER, typename CMP>
+void heapSort(ITER first, ITER last, const CMP& comparator)
 {
-	heapMake(list, first, last + 1, comparator);
-	for (int cur = last; cur > first; --cur)
+	heapMake(first, last + 1, comparator);
+	for (ITER cur = last; cur > first; --cur)
 	{
-		QuickSwap(list[first], list[cur]);
-		heapMoveDown(list, first, first, cur, comparator);
+		QuickSwap(*first, *cur);
+		heapMoveDown(first, first, cur, comparator);
 	}
 }
 
-template< typename T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-void insertionSort(T* list, int first, int last, const COMPAREFUNC& comparator)
+template<typename ITER, typename CMP>
+void insertionSort(ITER first, ITER last, const CMP& comparator)
 {
-	for (int cur = first + 1; cur <= last; ++cur)
+	using ValueType = std::remove_pointer_t<ITER>;
+
+	for (ITER cur = first + 1; cur <= last; ++cur)
 	{
-		const int res = comparator(list[cur - 1], list[cur]);
+		const int res = comparator(*(cur - 1), *cur);
 		if (res <= 0)
 			continue;
 		
-		T x = std::move(list[cur]);
-		int prev = cur;
+		ValueType x = std::move(*cur);
+		ITER prev = cur;
 		do
 		{
-			list[prev] = std::move(list[prev - 1]);
+			*prev = std::move(*(prev - 1));
 			--prev;
-		}while (prev > first && comparator(list[prev - 1], x) > 0);
+		} while (prev > first && comparator(*(prev - 1), x) > 0);
 
-		list[prev] = std::move(x);
+		*prev = std::move(x);
 	}
 }
 
-template< typename T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-void introSort(T* list, int first, int last, int depth, const COMPAREFUNC& comparator)
+template<typename ITER, typename CMP >
+void introSort(ITER first, ITER last, int depth, const CMP& comparator)
 {
 	constexpr const int MIN_SORT_RANGE = 10;
 	while (first + MIN_SORT_RANGE < last)
@@ -125,54 +135,54 @@ void introSort(T* list, int first, int last, int depth, const COMPAREFUNC& compa
 		--depth;
 		if (depth == 0)
 		{
-			heapSort(list, first, last, comparator);
+			heapSort(first, last, comparator);
 			return;
 		}
 
-		const int mid = first + (last - first + 1) / 2;
-		if (comparator(list[first], list[mid]) > 0)
-			QuickSwap(list[first], list[mid]);
+		ITER mid = first + (last - first + 1) / 2;
+		if (comparator(*first, *mid) > 0)
+			QuickSwap(*first, *mid);
 
-		if(comparator(list[first], list[last]) > 0)
-			QuickSwap(list[first], list[last]);
+		if(comparator(*first, *last) > 0)
+			QuickSwap(*first, *last);
 
-		if (comparator(list[mid], list[last]) > 0)
-			QuickSwap(list[mid], list[last]);
+		if (comparator(*mid, *last) > 0)
+			QuickSwap(*mid, *last);
 
-		QuickSwap(list[mid], list[last - 1]);
-		const int mi = last - 1;
+		QuickSwap(*mid, *(last - 1));
+		ITER mi = last - 1;
 
-		int lo = first + 1;
-		int hi = last - 2;
+		ITER lo = first + 1;
+		ITER hi = last - 2;
 		for (;;)
 		{
-			while (comparator(list[lo], list[mi]) < 0)
+			while (comparator(*lo, *mi) < 0)
 				++lo;
 
-			while (lo < hi && comparator(list[hi], list[mi]) >= 0)
+			while (lo < hi && comparator(*hi, *mi) >= 0)
 				--hi;
 
 			if (lo >= hi)
 				break;
 
-			QuickSwap(list[lo], list[hi]);
+			QuickSwap(*lo, *hi);
 			++lo;
 			--hi;
 		}
 
-		QuickSwap(list[lo], list[last - 1]);
-		introSort(list, lo + 1, last, depth, comparator);
+		QuickSwap(*lo, * (last - 1));
+		introSort(lo + 1, last, depth, comparator);
 		last = lo - 1;
 	}
-	insertionSort(list, first, last, comparator);
+	insertionSort(first, last, comparator);
 }
 
-template< typename T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-bool arrayIsSorted(T* list, int begin, int end, const COMPAREFUNC& comparator)
+template<typename ITER, typename CMP >
+bool arrayIsSorted(ITER begin, ITER end, const CMP& comparator)
 {
-	for (int i = begin + 1; i < end; ++i)
+	for (ITER it = begin + 1; it < end; ++it)
 	{
-		if (comparator(list[i - 1], list[i]) > 0)
+		if (comparator(*(it - 1), *it) > 0)
 			return false;
 	}
 	return true;
@@ -189,21 +199,21 @@ inline int introSortDepth(int count)
 	return res * 2;
 }
 
-template< typename T, typename COMPAREFUNC = PairSortCompareFunc<T> >
-void arraySort(T* list, const COMPAREFUNC& comparator, int begin, int end)
+template<typename ITER, typename CMP>
+void arraySort(ITER begin, ITER end, const CMP& comparator)
 {
-	if (begin+1 >= end)
+	if (begin + 1 >= end)
 		return;
-	introSort(list, begin, end-1, introSortDepth(end - begin), comparator);
+	introSort(begin, end - 1, introSortDepth(end - begin), comparator);
 
-	//ASSERT(arrayIsSorted(list, begin, end, comparator));
+	ASSERT(arrayIsSorted(begin, end, comparator));
 }
 
 // array wrapper
-template< typename ARRAY_TYPE, typename COMPAREFUNC = PairSortCompareFunc<typename ARRAY_TYPE::ITEM> >
-void arraySort(ARRAY_TYPE& arr, const COMPAREFUNC& comparator)
+template< typename ARRAY_TYPE, typename CMP >
+void arraySort(ARRAY_TYPE& arr, const CMP& comparator)
 {
-	arraySort(arr.ptr(), comparator, 0, arr.numElem());
+	arraySort(arr.ptr(), arr.ptr() + arr.numElem(), comparator);
 }
 
 // -----------------------------------------------------------------
@@ -211,13 +221,13 @@ void arraySort(ARRAY_TYPE& arr, const COMPAREFUNC& comparator)
 // -----------------------------------------------------------------
 
 // finds the index for the given element
-template< typename T, typename K>
-int arrayFindIndex(const T* arr, int length, const K& key)
+template< typename ITER, typename K>
+int arrayFindIndex(ITER begin, ITER end, const K& key)
 {
-	for (int i = 0; i < length; ++i)
+	for (ITER it = begin; it < end; ++it)
 	{
-		if (arr[i] == key)
-			return i;
+		if (*it == key)
+			return int(it - begin);
 	}
 	return -1;
 }
@@ -225,43 +235,43 @@ int arrayFindIndex(const T* arr, int length, const K& key)
 template< typename ARRAY_TYPE, typename K>
 int arrayFindIndex(const ARRAY_TYPE& arr, const K& key)
 {
-	return arrayFindIndex(arr.ptr(), arr.numElem(), key);
+	return arrayFindIndex(arr.ptr(), arr.ptr() + arr.numElem(), key);
 }
 
 // finds the index for the given element
-template< typename T, typename K, typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
-int arrayFindIndexF(const T* arr, int length, const K& key, const PAIRCOMPAREFUNC& comparator)
+template<typename ITER, typename K, typename CMP>
+int arrayFindIndexF(ITER begin, ITER end, const K& key, const CMP& comparator)
 {
-	for (int i = 0; i < length; ++i)
+	for (ITER it = begin; it < end; ++it)
 	{
-		if (comparator(arr[i], key))
-			return i;
+		if (comparator(*it, key))
+			return int(it - begin);
 	}
 	return -1;
 }
 
-template< typename ARRAY_TYPE, typename K, typename PAIRCOMPAREFUNC = PairCompareFunc<typename ARRAY_TYPE::ITEM> >
-int arrayFindIndexF(const ARRAY_TYPE& arr, const K& key, const PAIRCOMPAREFUNC& comparator)
+template< typename ARRAY_TYPE, typename K, typename CMP>
+int arrayFindIndexF(const ARRAY_TYPE& arr, const K& key, const CMP& comparator)
 {
-	return arrayFindIndexF(arr.ptr(), arr.numElem(), key, comparator);
+	return arrayFindIndexF(arr.ptr(), arr.ptr() + arr.numElem(), key, comparator);
 }
 
 // returns first found element which satisfies to the condition
-template< typename T, typename COMPAREFUNC >
-int arrayFindIndexF(const T* arr, int length, const COMPAREFUNC& comparator)
+template<typename ITER, typename CMP >
+int arrayFindIndexF(ITER begin, ITER end, const CMP& comparator)
 {
-	for (int i = 0; i < length; ++i)
+	for (ITER it = begin; it < end; ++it)
 	{
-		if (comparator(arr[i]))
-			return i;
+		if (comparator(*it))
+			return int(it - begin);
 	}
 	return -1;
 }
 
-template< typename ARRAY_TYPE, typename COMPAREFUNC >
-int arrayFindIndexF(const ARRAY_TYPE& arr, const COMPAREFUNC& comparator)
+template<typename ARRAY_TYPE, typename CMP>
+int arrayFindIndexF(const ARRAY_TYPE& arr, const CMP& comparator)
 {
-	return arrayFindIndexF(arr.ptr(), arr.numElem(), comparator);
+	return arrayFindIndexF(arr.ptr(), arr.ptr() + arr.numElem(), comparator);
 }
 
 // reverses the order of array
@@ -289,8 +299,8 @@ enum class SortedFind : int
 	LAST_LEQUAL,
 };
 
-template<SortedFind FIND, typename T, typename K, typename COMPAREFUNC>
-int arraySortedFindIndexExt(const T* arr, int length, const K& key, const COMPAREFUNC& comparator)
+template<SortedFind FIND, typename T, typename K, typename CMP>
+int arraySortedFindIndexExt(const T* arr, int length, const K& key, const CMP& comparator)
 {
 	if (length == 0)
 		return -1;
@@ -357,8 +367,8 @@ int arraySortedFindIndexExt(const T* arr, int length, const K& key, const COMPAR
 	return -1;
 }
 
-template<SortedFind FIND, typename ARRAY_TYPE, typename K, typename COMPAREFUNC>
-int arraySortedFindIndexExt(const ARRAY_TYPE& arr, const K& key, const COMPAREFUNC& comparator)
+template<SortedFind FIND, typename ARRAY_TYPE, typename K, typename CMP>
+int arraySortedFindIndexExt(const ARRAY_TYPE& arr, const K& key, const CMP& comparator)
 {
 	return arraySortedFindIndexExt<FIND>(arr.ptr(), arr.numElem(), key, comparator);
 }
