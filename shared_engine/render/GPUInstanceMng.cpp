@@ -24,8 +24,10 @@ GPUBaseInstanceManager::GPUBaseInstanceManager()
 	m_updated.insert(0);
 }
 
-void GPUBaseInstanceManager::Initialize(const char* instanceComputeShaderName)
+void GPUBaseInstanceManager::Initialize(const char* instanceComputeShaderName, int instancesReserve)
 {
+	m_reservedInsts = instancesReserve;
+
 	if (!m_updateRootPipeline)
 	{
 		m_updateRootPipeline = g_renderAPI->CreateComputePipeline(
@@ -46,34 +48,29 @@ void GPUBaseInstanceManager::Initialize(const char* instanceComputeShaderName)
 		);
 	}
 
+	m_instances.reserve(m_reservedInsts);
+
 	for (GPUInstPool* pool : m_componentPools)
 	{
 		if (!pool || pool->updatePipeline)
 			continue;
 
 		pool->InitPipeline();
+		pool->ReserveData(m_reservedInsts);
 		ASSERT_MSG(pool->updatePipeline, "Failed to create instance update pipeline");
 	}
 }
 
 void GPUBaseInstanceManager::Shutdown()
 {
+	FreeAll(true);
+
 	m_updateRootPipeline = nullptr;
 	m_updateIntPipeline = nullptr;
 
 	m_rootBuffer = nullptr;
 	m_archetypesBuffer = nullptr;
 	m_singleInstIndexBuffer = nullptr;
-
-	m_updated.clear(true);
-	m_freeIndices.clear(true);
-	m_tempInstances.clear(true);
-	m_archetypeInstCounts.clear(true);
-
-	m_buffersUpdated = 0;
-
-	m_instances.setNum(1);
-	m_updated.insert(0);
 
 	for (GPUInstPool* pool : m_componentPools)
 	{
@@ -82,12 +79,37 @@ void GPUBaseInstanceManager::Shutdown()
 
 		pool->buffer = nullptr;
 		pool->updatePipeline = nullptr;
+	}
+}
 
-		pool->freeIndices.clear(true);
-		pool->updated.clear(true);
+void GPUBaseInstanceManager::FreeAll(bool dealloc, bool reserve)
+{
+	m_updated.clear(dealloc);
+	m_freeIndices.clear(dealloc);
+	m_tempInstances.clear(dealloc);
+	m_archetypeInstCounts.clear(dealloc);
+	m_instances.clear(dealloc);
+
+	// alloc default (zero) instance
+	m_instances.setNum(1);
+	m_updated.insert(0);
+
+	if (reserve)
+		m_instances.reserve(m_reservedInsts);
+
+	for (GPUInstPool* pool : m_componentPools)
+	{
+		if (!pool)
+			continue;
+
+		pool->freeIndices.clear(dealloc);
+		pool->updated.clear(dealloc);
+		pool->updated.insert(0);
 
 		pool->ResetData();
-		pool->updated.insert(0);
+
+		if(reserve)
+			pool->ReserveData(m_reservedInsts);
 	}
 }
 

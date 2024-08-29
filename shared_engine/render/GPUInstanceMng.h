@@ -91,6 +91,7 @@ struct GPUInstPool
 	virtual const void*	GetDataPtr() const = 0;
 	virtual int			GetDataElems() const = 0;
 	virtual void		ResetData() = 0;
+	virtual void		ReserveData(int count) = 0;
 	virtual void		InitPipeline() = 0;
 
 	Array<int>			freeIndices{ PP_SL };
@@ -108,8 +109,10 @@ public:
 	GPUBaseInstanceManager();
 	~GPUBaseInstanceManager() = default;
 
-	void			Initialize(const char* instanceComputeShaderName);
+	void			Initialize(const char* instanceComputeShaderName, int instancesReserve = 1000);
 	void			Shutdown();
+
+	void			FreeAll(bool dealloc = false, bool reserve = false);
 
 	GPUBufferView	GetSingleInstanceIndexBuffer() const;
 	IGPUBufferPtr	GetInstanceArchetypesBuffer() const { return m_archetypesBuffer; }
@@ -166,6 +169,8 @@ protected:
 #ifdef ENABLE_GPU_INSTANCE_DEBUG
 	Map<int, EqString>		m_archetypeNames{ PP_SL };
 #endif
+
+	int						m_reservedInsts{ 0 };
 };
 
 //-----------------------------------------------------
@@ -184,6 +189,7 @@ struct GPUInstDataPool : public GPUInstPool
 	int			GetDataElems() const override { return data.numElem(); }
 	void		ResetData() override { data.setNum(1); }		// reset data to have default element only
 	void		InitPipeline() { T::InitPipeline(*this); }
+	void		ReserveData(int count) override { data.reserve(count); }
 
 	Array<T> 	data{ PP_SL };
 };
