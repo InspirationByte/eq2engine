@@ -27,7 +27,13 @@
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update, "1", nullptr, 0);
-DECLARE_CVAR(lod_idx, "0", nullptr, 0);
+
+static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
+{
+	inst_update.SetBool(true);
+}
+
+DECLARE_CVAR_CHANGE(lod_idx, "0", lod_idx_changed, nullptr, 0);
 DECLARE_CVAR(obj_rotate_interval, "100", nullptr, 0);
 DECLARE_CVAR(obj_rotate, "1", nullptr, 0);
 
@@ -96,35 +102,33 @@ struct GPULodInfo
 	float			distance{ 0.0f };
 };
 
-struct GPUDrawArchetype
+struct GPULodList
 {
-	Array<GPUDrawBatch>	batchs{ PP_SL };
-	Array<GPULodInfo>	lods{ PP_SL };
+	int				firstLod{ 0 };
+	int				numLods{ 0 };
 };
 
-static Map<int, int>			s_modelIdToArchetypeId{ PP_SL };
-static Array<GPUDrawArchetype>	s_drawArchetypeSets{ PP_SL };
-//static Array<GPUDrawBatch>		s_drawBatchs{ PP_SL };
-//static Array<GPULodInfo>		s_drawLods{ PP_SL };
-//static Array<int>				s_drawFirstLod{ PP_SL };
-static Array<IMaterialPtr>		s_drawArchetypeMaterials{ PP_SL };
-static IGPUBufferPtr			s_drawInvocationsSrcBuffer;
-static IGPUBufferPtr			s_drawInvocationsBuffer;
-static IGPUBufferPtr			s_instanceIdsBuffer;
+static Map<int, int>		s_modelIdToArchetypeId{ PP_SL };
+static Array<GPUDrawBatch>	s_drawBatchs{ PP_SL };
+static Array<GPULodInfo>	s_drawLods{ PP_SL };
+static Array<GPULodList>	s_drawLodsList{ PP_SL };
+static Array<IMaterialPtr>	s_drawArchetypeMaterials{ PP_SL };
+static IGPUBufferPtr		s_drawInvocationsSrcBuffer;
+static IGPUBufferPtr		s_drawInvocationsBuffer;
+static IGPUBufferPtr		s_instanceIdsBuffer;
 
 static void TermIndirectRenderer()
 {
 	s_modelIdToArchetypeId.clear(true);
-	s_drawArchetypeSets.clear(true);
-	//s_drawBatchs.clear(true);
-	//s_drawLods.clear(true);
-	//s_drawFirstLod.clear(true);
+	s_drawBatchs.clear(true);
+	s_drawLods.clear(true);
+	s_drawLodsList.clear(true);
 	s_drawArchetypeMaterials.clear(true);
 	s_drawInvocationsBuffer = nullptr;
 	s_instanceIdsBuffer = nullptr;
 }
 
-static int InitDrawArchetype(const CEqStudioGeom& geom, uint bodyGroupFlags = 0, int materialGroupIdx = 0)
+static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags = 0, int materialGroupIdx = 0)
 {
 	ASSERT(bodyGroupFlags != 0);
 
@@ -135,7 +139,7 @@ static int InitDrawArchetype(const CEqStudioGeom& geom, uint bodyGroupFlags = 0,
 	IGPUBufferPtr buffer3 = geom.GetVertexBuffer(EGFHwVertex::VERT_COLOR);
 	IGPUBufferPtr indexBuffer = geom.GetIndexBuffer();
 
-	const int setIdx = s_drawArchetypeSets.numElem();
+	const int setIdx = s_drawLodsList.numElem();
 	const int firstMaterialIdx = s_drawArchetypeMaterials.numElem();
 
 	// TODO: multiple material groups require new archetype
@@ -147,12 +151,14 @@ static int InitDrawArchetype(const CEqStudioGeom& geom, uint bodyGroupFlags = 0,
 	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom.GetHwGeomRefs();
 	const studioHdr_t& studio = geom.GetStudioHdr();
 
-	GPUDrawArchetype& drawSet = s_drawArchetypeSets.append();
+	const int firstLodIdx = s_drawLods.numElem();
+	s_drawLodsList.append({ firstLodIdx, studio.numLodParams });
+
 	for (int i = 0; i < studio.numLodParams; i++)
 	{
 		const studioLodParams_t* lodParam = studio.pLodParams(i);
-		GPULodInfo& lodInfo = drawSet.lods.append();
-		lodInfo.firstBatch = drawSet.batchs.numElem();
+		GPULodInfo& lodInfo = s_drawLods.append();
+		lodInfo.firstBatch = s_drawBatchs.numElem();
 		lodInfo.distance = lodParam->distance;
 
 		for (int j = 0; j < studio.numBodyGroups; ++j)
@@ -179,26 +185,26 @@ static int InitDrawArchetype(const CEqStudioGeom& geom, uint bodyGroupFlags = 0,
 			{
 				const CEqStudioGeom::HWGeomRef::MeshRef& meshRef = geomRefs[modelDescId].meshRefs[k];
 	
-				GPUDrawBatch& drawArch = drawSet.batchs.append();
-				drawArch.firstIndex = meshRef.firstIndex;
-				drawArch.indexCount = meshRef.indexCount;
-				drawArch.primTopology = (EPrimTopology)meshRef.primType;
-				drawArch.materialIdx = firstMaterialIdx + meshRef.materialIdx;
-				drawArch.indexFormat = (EIndexFormat)geom.GetIndexFormat();
+				GPUDrawBatch& drawBatch = s_drawBatchs.append();
+				drawBatch.firstIndex = meshRef.firstIndex;
+				drawBatch.indexCount = meshRef.indexCount;
+				drawBatch.primTopology = (EPrimTopology)meshRef.primType;
+				drawBatch.materialIdx = firstMaterialIdx + meshRef.materialIdx;
+				drawBatch.indexFormat = (EIndexFormat)geom.GetIndexFormat();
 
-				drawArch.meshInstFormat.name = vertFormat->GetName();
-				drawArch.meshInstFormat.formatId = vertFormat->GetNameHash();
-				drawArch.meshInstFormat.layout = vertFormat->GetFormatDesc();
+				drawBatch.meshInstFormat.name = vertFormat->GetName();
+				drawBatch.meshInstFormat.formatId = vertFormat->GetNameHash();
+				drawBatch.meshInstFormat.layout = vertFormat->GetFormatDesc();
 
-				drawArch.vertexBuffers[0] = buffer0;
-				drawArch.vertexBuffers[1] = buffer1;
-				drawArch.vertexBuffers[2] = buffer2;
-				drawArch.vertexBuffers[3] = buffer3;
-				drawArch.indexBuffer = indexBuffer;
+				drawBatch.vertexBuffers[0] = buffer0;
+				drawBatch.vertexBuffers[1] = buffer1;
+				drawBatch.vertexBuffers[2] = buffer2;
+				drawBatch.vertexBuffers[3] = buffer3;
+				drawBatch.indexBuffer = indexBuffer;
 			}
 		}
 
-		lodInfo.numBatches = drawSet.batchs.numElem() - lodInfo.firstBatch;
+		lodInfo.numBatches = s_drawBatchs.numElem() - lodInfo.firstBatch;
 	}
 
 	// TODO: body group lookup
@@ -211,10 +217,15 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 	PROF_EVENT_F();
 
 	int numAllDrawInvocations = 0;
-	for (const GPUDrawArchetype& drawSet : s_drawArchetypeSets)
+	for (const GPULodList& lodList : s_drawLodsList)
 	{
-		for (GPUDrawBatch& drawArch : drawSet.batchs)
-			drawArch.cmdIdx = numAllDrawInvocations++;
+		for (int i = lodList.firstLod; i < lodList.firstLod + lodList.numLods; ++i)
+		{
+			const GPULodInfo& lodInfo = s_drawLods[i];
+			const int lastBatch = lodInfo.firstBatch + lodInfo.numBatches;
+			for(int j = lodInfo.firstBatch; j < lastBatch; ++j)
+				s_drawBatchs[j].cmdIdx = numAllDrawInvocations++;
+		}
 	}
 	
 	indirectDrawBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), numAllDrawInvocations), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
@@ -255,12 +266,12 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 		const InstanceInfo& instInfo = instanceInfos[i];
 		if (lastArchetypeId != instInfo.archetypeId && lastArchetypeId != -1)
 		{
-			const GPUDrawArchetype& drawSet = s_drawArchetypeSets[instInfo.archetypeId];
+			const GPULodList& lodList = s_drawLodsList[instInfo.archetypeId];
 
-			const int lodIdx = min(drawSet.lods.numElem() - 1, lod_idx.GetInt());
-			const GPULodInfo& lodInfo = drawSet.lods[lodIdx];
+			const int lodIdx = min(lodList.numLods - 1, lod_idx.GetInt());
+			const GPULodInfo& lodInfo = s_drawLods[lodList.firstLod + lodIdx];
 
-			for (const GPUDrawBatch& drawArch : ArrayCRef(drawSet.batchs.ptr() + lodInfo.firstBatch, lodInfo.numBatches))
+			for (const GPUDrawBatch& drawArch : ArrayCRef(s_drawBatchs.ptr() + lodInfo.firstBatch, lodInfo.numBatches))
 			{
 				GPUDrawIndexedIndirectCmd drawCmd;
 				drawCmd.firstIndex = drawArch.firstIndex;
@@ -287,25 +298,31 @@ static void DrawScene(const RenderPassContext& renderPassCtx)
 	PROF_EVENT_F();
 
 	int numDrawCalls = 0;
-	for (const GPUDrawArchetype& drawSet : s_drawArchetypeSets)
+	int cmdIdx = 0;
+	for (const GPUDrawBatch& drawBatch : s_drawBatchs)
 	{
-		for (const GPUDrawBatch& drawArch : drawSet.batchs)
+		ASSERT(drawBatch.cmdIdx == cmdIdx);
+
+		IMaterial* material = s_drawArchetypeMaterials[drawBatch.materialIdx];
+		if (g_matSystem->SetupMaterialPipeline(material, nullptr, drawBatch.primTopology, drawBatch.meshInstFormat, renderPassCtx, &s_instanceMng))
 		{
-			IMaterial* material = s_drawArchetypeMaterials[drawArch.materialIdx];
-			if (!g_matSystem->SetupMaterialPipeline(material, nullptr, drawArch.primTopology, drawArch.meshInstFormat, renderPassCtx, &s_instanceMng))
-				continue;
-
-			renderPassCtx.recorder->SetVertexBuffer(0, drawArch.vertexBuffers[0]);
+			renderPassCtx.recorder->SetVertexBuffer(0, drawBatch.vertexBuffers[0]);
 			renderPassCtx.recorder->SetVertexBuffer(1, s_instanceIdsBuffer);
-			renderPassCtx.recorder->SetIndexBuffer(drawArch.indexBuffer, drawArch.indexFormat);
+			renderPassCtx.recorder->SetIndexBuffer(drawBatch.indexBuffer, drawBatch.indexFormat);
 
-			renderPassCtx.recorder->DrawIndexedIndirect(s_drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * drawArch.cmdIdx);
+			renderPassCtx.recorder->DrawIndexedIndirect(s_drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * cmdIdx);
 			++numDrawCalls;
 		}
+		++cmdIdx;
 	}
 
 	debugoverlay->Text(color_white, "--- instances summary ---");
-	debugoverlay->Text(color_white, "Archetypes: %d", s_drawArchetypeSets.numElem());
+	debugoverlay->Text(color_white, "Archetypes: %d", s_drawLodsList.numElem());
+
+	debugoverlay->Text(color_white, " total batchs: %d", s_drawBatchs.numElem());
+	debugoverlay->Text(color_white, " total lods: %d", s_drawLods.numElem());
+	debugoverlay->Text(color_white, " total materials: %d", s_drawArchetypeMaterials.numElem());
+
 	debugoverlay->Text(color_white, "Draw calls: %d", numDrawCalls);
 }
 
@@ -385,7 +402,7 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 		while (fsFind.Next())
 		{
 			const int modelIdx = g_studioCache->PrecacheModel(EqString::Format("models/%s", fsFind.GetPath()));
-			InitDrawArchetype(*g_studioCache->GetModel(modelIdx), 1);
+			InitDrawArchetypeEGF(*g_studioCache->GetModel(modelIdx), 1);
 		}
 	}
 
@@ -530,7 +547,7 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 		if (inst_update.GetBool())
 		{
 			UpdateIndirectInstances(cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
-			//inst_update.SetBool(false);
+			inst_update.SetBool(false);
 		}
 
 		{
