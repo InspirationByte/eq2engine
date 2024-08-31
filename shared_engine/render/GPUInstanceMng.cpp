@@ -313,6 +313,8 @@ static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>&
 
 void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 {
+	PROF_EVENT_F();
+
 	bool buffersUpdatedThisFrame = false;
 
 	Threading::CScopedMutex m(m_mutex);

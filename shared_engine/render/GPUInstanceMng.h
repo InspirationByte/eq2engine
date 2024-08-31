@@ -135,6 +135,10 @@ public:
 	void			DbgRegisterArhetypeName(int archetypeId, const char* name);
 
 protected:
+	// TODO: instance refs
+	// in this way we can use data of the referenced intance on new instance with different
+	// archetypes, useful for adding body groups (as they use different archetype id)
+	// int			AllocInstanceRef(int archetype, int refInstanceId);
 	int				AllocInstance(int archetype);
 	int				AllocTempInstance(int archetype);
 
