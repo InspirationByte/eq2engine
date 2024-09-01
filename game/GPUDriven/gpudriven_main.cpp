@@ -1,6 +1,7 @@
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/IFileSystem.h"
+#include "ds/SlottedArray.h"
 #include "math/Random.h"
 #include "math/Utility.h"
 #include "utils/KeyValues.h"
@@ -23,6 +24,8 @@
 #include "studio/StudioGeom.h"
 #include "studio/StudioCache.h"
 #include "instancer.h"
+
+#pragma optimize("", off)
 
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
@@ -110,101 +113,38 @@ struct GPUDrawInfo
 	MeshInstanceFormatRef	meshInstFormat;
 	EPrimTopology			primTopology{ PRIM_TRIANGLES };
 	EIndexFormat			indexFormat{ 0 };
+	int						batchIdx{ -1 };
 };
 
 //-------------------------------------------------
 
 struct GPUIndexedBatch_new
 {
-	int		next{ -1 };
+	int		next{ -1 };		// next index in buffer pointing to GPUIndexedBatch_new
 
 	int		indexCount{ 0 };
 	int		firstIndex{ 0 };
-	int		materialIdx{ -1 };
+	int		cmdIdx{ -1 };
 };
 
 struct GPULodInfo_new
 {
-	int		next;	// next index in buffer pointing to GPULodInfo_new
+	int		next{ -1 };			// next index in buffer pointing to GPULodInfo_new
 
-	int		firstBatch{ 0 };
+	int		firstBatch{ 0 };	//  item index in buffer pointing to GPUIndexedBatch_new
 	float	distance{ 0.0f };
 };
 
 struct GPULodList_new
 {
-	int		firstLod; // item index in buffer pointing to GPULodInfo_new
-};
-
-template<typename T>
-class SlottedArray
-{
-public:
-	SlottedArray(PPSourceLine sl)
-		: m_items(sl)
-		, m_freeList(sl)
-		, m_setItems(sl)
-	{
-	}
-
-	T&			operator[](const int idx) { return m_items[idx]; }
-	const T&	operator[](const int idx) const { return m_items[idx]; }
-
-	bool		operator()(const int idx) { return m_setItems[idx]; }
-
-	T*			ptr() { return m_items.ptr(); }
-	const T*	ptr() const { return m_items.ptr(); }
-
-	void clear(bool deallocate = false)
-	{
-		m_items.clear(deallocate);
-		m_freeList.clear(deallocate);
-		m_setItems.clear();
-		if(deallocate)
-			m_setItems.resize(64);
-	}
-
-	int numElem() const { return m_items.numElem() - m_freeList.numElem(); }
-	int numSlots() const { return m_items.numElem(); }
-
-	int add(T& item)
-	{
-		if (m_freeList.numElem())
-		{
-			const int idx = m_freeList.popBack();
-			return idx;
-		}
-
-		const int idx = m_items.append(item);
-		if(m_setItems.numBits() < m_items.numAllocated() + 1)
-			m_setItems.resize(m_items.numAllocated() + 1);
-		m_setItems.set(idx, true);
-		return idx;
-	}
-
-	void remove(int idx)
-	{
-		ASSERT(idx >= 0);
-		ASSERT(idx < m_items.numElem());
-
-		m_freeList.append(idx);
-		m_setItems.set(idx, false);
-		m_items[idx] = T{};
-	}
-
-private:
-	Array<T>	m_items{ PP_SL };
-	Array<int>	m_freeList{ PP_SL };
-	BitArray	m_setItems{ PP_SL };
+	int		firstLodInfo; // item index in buffer pointing to GPULodInfo_new
 };
 
 static Map<int, int>			s_modelIdToArchetypeId{ PP_SL };
-static Array<GPUDrawInfo>		s_drawInfos{ PP_SL };	// must be in sync with batchs
-
-// TODO: convert to linked list variants, use slot allocations
-static Array<GPUIndexedBatch>	s_drawBatchs{ PP_SL };
-static Array<GPULodInfo>		s_drawLodInfos{ PP_SL };
-static Array<GPULodList>		s_drawLodsList{ PP_SL };
+static SlottedArray<GPUDrawInfo>			s_drawInfos{ PP_SL };	// must be in sync with batchs
+static SlottedArray<GPUIndexedBatch_new>	s_drawBatchs{ PP_SL };
+static SlottedArray<GPULodInfo_new>			s_drawLodInfos{ PP_SL };
+static SlottedArray<GPULodList_new>			s_drawLodsList{ PP_SL };
 
 static IGPUBufferPtr			s_drawInvocationsSrcBuffer;
 static IGPUBufferPtr			s_drawInvocationsBuffer;
@@ -232,22 +172,18 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 	IGPUBufferPtr buffer3 = geom.GetVertexBuffer(EGFHwVertex::VERT_COLOR);
 	IGPUBufferPtr indexBuffer = geom.GetIndexBuffer();
 
-	const int setIdx = s_drawLodsList.numElem();
-
 	// TODO: multiple material groups require new archetype
 	// also body groups are really are different archetypes for EGF
 	ArrayCRef<IMaterialPtr> materials = geom.GetMaterials(materialGroupIdx);
 	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom.GetHwGeomRefs();
 	const studioHdr_t& studio = geom.GetStudioHdr();
 
-	const int firstLodIdx = s_drawLodInfos.numElem();
-	s_drawLodsList.append({ firstLodIdx, studio.numLodParams });
-
+	GPULodList_new lodList;
+	int prevLod = -1;
 	for (int i = 0; i < studio.numLodParams; i++)
 	{
 		const studioLodParams_t* lodParam = studio.pLodParams(i);
-		GPULodInfo& lodInfo = s_drawLodInfos.append();
-		lodInfo.firstBatch = s_drawBatchs.numElem();
+		GPULodInfo_new lodInfo;
 		lodInfo.distance = lodParam->distance;
 
 		for (int j = 0; j < studio.numBodyGroups; ++j)
@@ -269,20 +205,24 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 			if (modelDescId == EGF_INVALID_IDX)
 				continue;
 	
+			int prevBatch = -1;
 			const studioMeshGroupDesc_t* modDesc = studio.pMeshGroupDesc(modelDescId);
 			for (int k = 0; k < modDesc->numMeshes; ++k)
 			{
 				const CEqStudioGeom::HWGeomRef::MeshRef& meshRef = geomRefs[modelDescId].meshRefs[k];
 	
-				const int cmdIdx = s_drawBatchs.numElem();
-
-				GPUIndexedBatch& drawBatch = s_drawBatchs.append();
-				GPUDrawInfo& drawInfo = s_drawInfos.append();
-
+				GPUIndexedBatch_new drawBatch;
 				drawBatch.firstIndex = meshRef.firstIndex;
 				drawBatch.indexCount = meshRef.indexCount;
-				drawBatch.cmdIdx = cmdIdx;
 
+				const int newBatch = s_drawBatchs.add(drawBatch);
+				if (prevBatch != -1)
+					s_drawBatchs[prevBatch].next = newBatch;
+				else
+					lodInfo.firstBatch = newBatch;
+				prevBatch = newBatch;
+
+				GPUDrawInfo drawInfo;
 				drawInfo.primTopology = (EPrimTopology)meshRef.primType;
 				drawInfo.indexFormat = (EIndexFormat)geom.GetIndexFormat();
 				drawInfo.meshInstFormat.name = vertFormat->GetName();
@@ -294,14 +234,24 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 				drawInfo.vertexBuffers[3] = buffer3;
 				drawInfo.indexBuffer = indexBuffer;
 				drawInfo.material = materials[meshRef.materialIdx];
+				drawInfo.batchIdx = newBatch;
+
+				s_drawBatchs[newBatch].cmdIdx = s_drawInfos.add(drawInfo);
 			}
 		}
 
-		lodInfo.numBatches = s_drawBatchs.numElem() - lodInfo.firstBatch;
+		const int newLod = s_drawLodInfos.add(lodInfo);
+		if(prevLod != -1)
+			s_drawLodInfos[prevLod].next = newLod;
+		else
+			lodList.firstLodInfo = newLod;
+		prevLod = newLod;
 	}
 
+	const int archetypeId = s_drawLodsList.add(lodList);
+
 	// TODO: body group lookup
-	s_modelIdToArchetypeId.insert(geom.GetCacheId(), setIdx);
+	s_modelIdToArchetypeId.insert(geom.GetCacheId(), archetypeId);
 
 	// what we are syncing to the GPU:
 	// s_drawBatchs
@@ -309,7 +259,7 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 	// s_drawLodsList
 	// s_drawArchetypeMaterials
 
-	return setIdx;
+	return archetypeId;
 }
 
 static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
@@ -366,22 +316,30 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 		const InstanceInfo& instInfo = instanceInfos[i];
 		if (lastArchetypeId != instInfo.archetypeId && lastArchetypeId != -1)
 		{
-			const GPULodList& lodList = s_drawLodsList[instInfo.archetypeId];
+			const GPULodList_new& lodList = s_drawLodsList[instInfo.archetypeId];
 
-			const int lodIdx = min(lodList.numLods - 1, lod_idx.GetInt());
-			const GPULodInfo& lodInfo = s_drawLodInfos[lodList.firstLod + lodIdx];
+			// fill lod list
+			int numLods = 0;
+			int lodInfos[MAX_MODEL_LODS];
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
+				lodInfos[numLods++] = lodIdx;
 
-			for (const GPUIndexedBatch& drawBatch : ArrayCRef(s_drawBatchs.ptr() + lodInfo.firstBatch, lodInfo.numBatches))
+			// walk over batches
+			const int lodIdx = min(numLods - 1, lod_idx.GetInt());
+			const GPULodInfo_new& lodInfo = s_drawLodInfos[lodInfos[lodIdx]];
+			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = s_drawBatchs[batchIdx].next)
 			{
+				const GPUIndexedBatch_new& drawBatch = s_drawBatchs[batchIdx];
+
 				GPUDrawIndexedIndirectCmd drawCmd;
 				drawCmd.firstIndex = drawBatch.firstIndex;
 				drawCmd.indexCount = drawBatch.indexCount;
 				drawCmd.firstInstance = instanceIds.numElem();
 				drawCmd.instanceCount = instanceIds.numElem() - lastArchetypeIdStart;
-				
+
 				ASSERT(drawCmd.instanceCount > 1);
 
-				cmdRecorder->WriteBuffer(indirectDrawBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
+				cmdRecorder->WriteBuffer(indirectDrawBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd)* drawBatch.cmdIdx);
 			}
 
 			lastArchetypeIdStart = instanceIds.numElem();
@@ -398,10 +356,15 @@ static void DrawScene(const RenderPassContext& renderPassCtx)
 	PROF_EVENT_F();
 
 	int numDrawCalls = 0;
-	int cmdIdx = 0;
-	for (const GPUDrawInfo& drawInfo : s_drawInfos)
+	for (int i = 0; i < s_drawInfos.numSlots(); ++i)
 	{
-		ASSERT(s_drawBatchs[cmdIdx].cmdIdx == cmdIdx);
+		if (!s_drawInfos(i))
+		{
+			debugoverlay->Text(color_white, " draw info %d not drawn", i);
+			continue;
+		}
+
+		const GPUDrawInfo& drawInfo = s_drawInfos[i];
 
 		IMaterial* material = drawInfo.material;
 		if (g_matSystem->SetupMaterialPipeline(material, nullptr, drawInfo.primTopology, drawInfo.meshInstFormat, renderPassCtx, &s_instanceMng))
@@ -410,10 +373,9 @@ static void DrawScene(const RenderPassContext& renderPassCtx)
 			renderPassCtx.recorder->SetVertexBuffer(1, s_instanceIdsBuffer);
 			renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
 
-			renderPassCtx.recorder->DrawIndexedIndirect(s_drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * cmdIdx);
+			renderPassCtx.recorder->DrawIndexedIndirect(s_drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * s_drawBatchs[drawInfo.batchIdx].cmdIdx);
 			++numDrawCalls;
 		}
-		++cmdIdx;
 	}
 
 	debugoverlay->Text(color_white, "--- instances summary ---");

@@ -65,6 +65,7 @@ bool InitAppStates()
 	g_matSystem->RegisterShaderOverride("BaseUnlit", [](int instanceFormatId) -> const char* {
 		if (instanceFormatId == SHADER_VERTEX_ID(EGFVertexGameObj))
 			return "BaseUnlitGame";
+		return nullptr;
 	});
 
 	g_matSystem->RegisterShaderOverride("DrvSynVehicle", [](int instanceFormatId) -> const char* {
