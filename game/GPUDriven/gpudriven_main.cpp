@@ -85,6 +85,8 @@ struct GPUDrawIndexedIndirectCmd
 
 struct GPUIndexedBatch
 {
+	int		next{ -1 };		// next index in buffer pointing to GPUIndexedBatch
+
 	int		indexCount{ 0 };
 	int		firstIndex{ 0 };
 	int		cmdIdx{ -1 };
@@ -92,15 +94,15 @@ struct GPUIndexedBatch
 
 struct GPULodInfo
 {
-	int		firstBatch{ 0 };
-	int		numBatches{ 0 };
+	int		next{ -1 };			// next index in buffer pointing to GPULodInfo
+
+	int		firstBatch{ 0 };	//  item index in buffer pointing to GPUIndexedBatch
 	float	distance{ 0.0f };
 };
 
 struct GPULodList
 {
-	int		firstLod{ 0 };
-	int		numLods{ 0 };
+	int		firstLodInfo; // item index in buffer pointing to GPULodInfo
 };
 
 //-------------------------------------------------
@@ -118,33 +120,11 @@ struct GPUDrawInfo
 
 //-------------------------------------------------
 
-struct GPUIndexedBatch_new
-{
-	int		next{ -1 };		// next index in buffer pointing to GPUIndexedBatch_new
-
-	int		indexCount{ 0 };
-	int		firstIndex{ 0 };
-	int		cmdIdx{ -1 };
-};
-
-struct GPULodInfo_new
-{
-	int		next{ -1 };			// next index in buffer pointing to GPULodInfo_new
-
-	int		firstBatch{ 0 };	//  item index in buffer pointing to GPUIndexedBatch_new
-	float	distance{ 0.0f };
-};
-
-struct GPULodList_new
-{
-	int		firstLodInfo; // item index in buffer pointing to GPULodInfo_new
-};
-
-static Map<int, int>			s_modelIdToArchetypeId{ PP_SL };
-static SlottedArray<GPUDrawInfo>			s_drawInfos{ PP_SL };	// must be in sync with batchs
-static SlottedArray<GPUIndexedBatch_new>	s_drawBatchs{ PP_SL };
-static SlottedArray<GPULodInfo_new>			s_drawLodInfos{ PP_SL };
-static SlottedArray<GPULodList_new>			s_drawLodsList{ PP_SL };
+static Map<int, int>					s_modelIdToArchetypeId{ PP_SL };
+static SlottedArray<GPUDrawInfo>		s_drawInfos{ PP_SL };	// must be in sync with batchs
+static SlottedArray<GPUIndexedBatch>	s_drawBatchs{ PP_SL };
+static SlottedArray<GPULodInfo>			s_drawLodInfos{ PP_SL };
+static SlottedArray<GPULodList>			s_drawLodsList{ PP_SL };
 
 static IGPUBufferPtr			s_drawInvocationsSrcBuffer;
 static IGPUBufferPtr			s_drawInvocationsBuffer;
@@ -178,12 +158,12 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom.GetHwGeomRefs();
 	const studioHdr_t& studio = geom.GetStudioHdr();
 
-	GPULodList_new lodList;
+	GPULodList lodList;
 	int prevLod = -1;
 	for (int i = 0; i < studio.numLodParams; i++)
 	{
 		const studioLodParams_t* lodParam = studio.pLodParams(i);
-		GPULodInfo_new lodInfo;
+		GPULodInfo lodInfo;
 		lodInfo.distance = lodParam->distance;
 
 		for (int j = 0; j < studio.numBodyGroups; ++j)
@@ -211,7 +191,7 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 			{
 				const CEqStudioGeom::HWGeomRef::MeshRef& meshRef = geomRefs[modelDescId].meshRefs[k];
 	
-				GPUIndexedBatch_new drawBatch;
+				GPUIndexedBatch drawBatch;
 				drawBatch.firstIndex = meshRef.firstIndex;
 				drawBatch.indexCount = meshRef.indexCount;
 
@@ -310,13 +290,12 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 	int lastArchetypeId = -1;
 	int lastArchetypeIdStart = 0;
 
-
 	for (int i = 0; i < instanceInfos.numElem(); ++i)
 	{
 		const InstanceInfo& instInfo = instanceInfos[i];
 		if (lastArchetypeId != instInfo.archetypeId && lastArchetypeId != -1)
 		{
-			const GPULodList_new& lodList = s_drawLodsList[instInfo.archetypeId];
+			const GPULodList& lodList = s_drawLodsList[instInfo.archetypeId];
 
 			// fill lod list
 			int numLods = 0;
@@ -326,10 +305,10 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 
 			// walk over batches
 			const int lodIdx = min(numLods - 1, lod_idx.GetInt());
-			const GPULodInfo_new& lodInfo = s_drawLodInfos[lodInfos[lodIdx]];
+			const GPULodInfo& lodInfo = s_drawLodInfos[lodInfos[lodIdx]];
 			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = s_drawBatchs[batchIdx].next)
 			{
-				const GPUIndexedBatch_new& drawBatch = s_drawBatchs[batchIdx];
+				const GPUIndexedBatch& drawBatch = s_drawBatchs[batchIdx];
 
 				GPUDrawIndexedIndirectCmd drawCmd;
 				drawCmd.firstIndex = drawBatch.firstIndex;
@@ -349,6 +328,11 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 	}
 
 	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
+}
+
+static float memBytesToKB(size_t byteCnt)
+{
+	return byteCnt / 1024.0f;
 }
 
 static void DrawScene(const RenderPassContext& renderPassCtx)
@@ -379,9 +363,10 @@ static void DrawScene(const RenderPassContext& renderPassCtx)
 	}
 
 	debugoverlay->Text(color_white, "--- instances summary ---");
-	debugoverlay->Text(color_white, "Archetypes: %d", s_drawLodsList.numElem());
-	debugoverlay->Text(color_white, " total batchs: %d", s_drawBatchs.numElem());
-	debugoverlay->Text(color_white, " total lods: %d", s_drawLodInfos.numElem());
+	debugoverlay->Text(color_white, " %d draw infos: %.2f KB", s_drawInfos.numElem(), memBytesToKB(s_drawInfos.numSlots() * sizeof(s_drawInfos[0])));
+	debugoverlay->Text(color_white, " %d batchs: %.2f KB", s_drawBatchs.numElem(), memBytesToKB(s_drawBatchs.numSlots() * sizeof(s_drawBatchs[0])));
+	debugoverlay->Text(color_white, " %d lod infos: %.2f KB", s_drawLodInfos.numElem(), memBytesToKB(s_drawLodInfos.numSlots() * sizeof(s_drawLodInfos[0])));
+	debugoverlay->Text(color_white, " %d lod lists: %.2f KB", s_drawLodsList.numElem(), memBytesToKB(s_drawLodsList.numSlots() * sizeof(s_drawLodsList[0])));
 
 	debugoverlay->Text(color_white, "Draw calls: %d", numDrawCalls);
 }
