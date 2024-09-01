@@ -31,19 +31,37 @@ ComputeBitonicMergeSortShader::ComputeBitonicMergeSortShader()
 		.ShaderLayoutId(StringToHashConst("InitKeys"))
 		.End()
 	);
-	m_sortFloatsPipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
+
+	// floats
+	AddSortPipeline("BitonicSort");
+
+	// Ints
+	AddSortPipeline("BitonicSortInt");
+
+	m_sortPipelines.insert(COMPUTESORT_FLOAT, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(StringToHashConst("BitonicSort"))
 		.End()
-	);
-	m_sortIntsPipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
+	));
+	m_sortPipelines.insert(COMPUTESORT_INT, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(StringToHashConst("BitonicSortInt"))
 		.End()
-	);
+	));
 }
 
-void ComputeBitonicMergeSortShader::Init(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount)
+int ComputeBitonicMergeSortShader::AddSortPipeline(const char* name, const char* shaderName)
+{
+	const int nameHash = StringToHash(name);
+	m_sortPipelines.insert(nameHash, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
+		.ShaderName(shaderName ? shaderName : BITONIC_MERGE_SORT_SHADERNAME)
+		.ShaderLayoutId(nameHash)
+		.End()
+	));
+	return nameHash;
+}
+
+void ComputeBitonicMergeSortShader::InitKeys(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount)
 {
 	if (keysCount <= 0)
 		return;
@@ -63,14 +81,13 @@ void ComputeBitonicMergeSortShader::Init(IGPUCommandRecorder* cmdRecorder, IGPUB
 	computePassRecorder->Complete();
 }
 
-void ComputeBitonicMergeSortShader::SortFloats(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values)
+void ComputeBitonicMergeSortShader::SortKeys(int dataTypeId, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values)
 {
-	RunSortPipeline(m_sortFloatsPipeline, cmdRecorder, keys, keysCount, values);
-}
-
-void ComputeBitonicMergeSortShader::SortInts(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values)
-{
-	RunSortPipeline(m_sortIntsPipeline, cmdRecorder, keys, keysCount, values);
+	auto it = m_sortPipelines.find(dataTypeId);
+	ASSERT_MSG(!it.atEnd(), "Can't find pipeline for specified data type id");
+	if (it.atEnd())
+		return;
+	RunSortPipeline(*it, cmdRecorder, keys, keysCount, values);
 }
 
 void ComputeBitonicMergeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values)
