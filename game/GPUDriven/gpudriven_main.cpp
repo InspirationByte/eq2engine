@@ -25,8 +25,6 @@
 #include "studio/StudioCache.h"
 #include "instancer.h"
 
-#pragma optimize("", off)
-
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
 DECLARE_CVAR(cam_fov, "90", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
@@ -64,26 +62,6 @@ struct Object
 static Array<Object>	s_objects{ PP_SL };
 
 //--------------------------------------------
-
-// NOTE:	draw archetype != instance archetype
-//			instance archetype == GPUDrawArchetypeSet index
-
-struct GPUDrawIndirectCmd
-{
-	uint	vertexCount{ 0 };
-	uint	instanceCount{ 0 };
-	uint	firstVertex{ 0 };
-	uint	firstInstance{ 0 };
-};
-
-struct GPUDrawIndexedIndirectCmd
-{
-	uint	indexCount{ 0 };
-	uint	instanceCount{ 0 };
-	uint	firstIndex{ 0 };
-	uint	baseVertex{ 0 };
-	uint	firstInstance{ 0 };
-};
 
 struct GPUIndexedBatch
 {
@@ -128,9 +106,9 @@ static SlottedArray<GPUIndexedBatch>	s_drawBatchs{ PP_SL };
 static SlottedArray<GPULodInfo>			s_drawLodInfos{ PP_SL };
 static SlottedArray<GPULodList>			s_drawLodsList{ PP_SL };
 
-static IGPUBufferPtr			s_drawInvocationsSrcBuffer;
-static IGPUBufferPtr			s_drawInvocationsBuffer;
-static IGPUBufferPtr			s_instanceIdsBuffer;
+static IGPUBufferPtr	s_drawInvocationsSrcBuffer;
+static IGPUBufferPtr	s_drawInvocationsBuffer;
+static IGPUBufferPtr	s_instanceIdsBuffer;
 
 static void TermIndirectRenderer()
 {
@@ -143,7 +121,7 @@ static void TermIndirectRenderer()
 	s_instanceIdsBuffer = nullptr;
 }
 
-static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags = 0, int materialGroupIdx = 0)
+static int CreateDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags = 0, int materialGroupIdx = 0)
 {
 	ASSERT(bodyGroupFlags != 0);
 
@@ -210,6 +188,8 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 				drawInfo.meshInstFormat.name = vertFormat->GetName();
 				drawInfo.meshInstFormat.formatId = vertFormat->GetNameHash();
 				drawInfo.meshInstFormat.layout = vertFormat->GetFormatDesc();
+
+				// TODO: load vertex buffers according to layout
 				drawInfo.vertexBuffers[0] = buffer0;
 				drawInfo.vertexBuffers[1] = buffer1;
 				drawInfo.vertexBuffers[2] = buffer2;
@@ -244,25 +224,35 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 	return archetypeId;
 }
 
-static void UpdateIndirectInstances(const Vector3D& camPos, const Volume& frustum, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
+static void UpdateIndirectInstancesCompute(const Vector3D& camPos, const Volume& frustum, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
+{
+
+}
+
+struct GPUInstanceInfo
+{
+	static constexpr int ARCHETYPE_BITS = 24;
+	static constexpr int LOD_BITS = 8;
+
+	static constexpr int ARCHETYPE_MASK = (1 << ARCHETYPE_BITS) - 1;
+	static constexpr int LOD_MASK = (1 << LOD_BITS) - 1;
+
+	int		instanceId;
+	int		packedArchetypeId;
+};
+
+static void VisibilityCullInstancesSoftware(const Vector3D& camPos, const Volume& frustum, Array<GPUInstanceInfo>& instanceInfos)
 {
 	PROF_EVENT_F();
 
-	indirectDrawBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawBatchs.numElem()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
-	instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
-	cmdRecorder->ClearBuffer(indirectDrawBuffer, 0, indirectDrawBuffer->GetSize());
+	// COMPUTE SHADER: VisibilityCullInstances
+	// Input:
+	//		instanceIds		: buffer<int>
+	// Output:
+	//		instanceInfos	: buffer<GPUInstanceInfo>
 
-	// BEGIN COMPUTE IMPL REFERENCE
+	instanceInfos.reserve(s_objects.numElem());
 
-	// sort instances by archetype
-	struct InstanceInfo
-	{
-		int		instanceId;
-		int		packedArchetypeId;
-	};
-
-	// collect visible instances
-	Array<InstanceInfo> instanceInfos(PP_SL);
 	for (const Object& obj : s_objects)
 	{
 		const int archetypeId = s_instanceMng.GetInstanceArchetypeId(obj.instId);
@@ -273,73 +263,111 @@ static void UpdateIndirectInstances(const Vector3D& camPos, const Volume& frustu
 			continue;
 
 		const GPULodList& lodList = s_drawLodsList[archetypeId];
-		const float distFromCamera = distance(camPos, obj.trs.t);
+		const float distFromCamera = distanceSqr(camPos, obj.trs.t);
 
 		// find suitable lod idx
 		int drawLod = -1;
 		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
 		{
-			if (distFromCamera < s_drawLodInfos[lodIdx].distance)
+			if (distFromCamera < sqr(s_drawLodInfos[lodIdx].distance))
 				break;
 			drawLod++;
 		}
 
 		instanceInfos.append({ obj.instId, archetypeId | (drawLod << 24) });
 	}
+}
 
-	// sort instances by archetype id
-	arraySort(instanceInfos, [](const InstanceInfo& a, const InstanceInfo& b) {
+static void SortInstancesSoftware(Array<GPUInstanceInfo>& instanceInfos, Array<int>& archetypeIdStarts)
+{
+	PROF_EVENT_F();
+
+	// COMPUTE SHADER: SortInstanceArchetypes
+	// Input / Output:
+	//		instanceInfos		: buffer<GPUInstanceInfo[]>
+	//		archetypeIdStarts	: buffer<int[]>
+	//
+
+	// sort instances by archetype
+	// as we need them to be linear for each draw call
+	arraySort(instanceInfos, [](const GPUInstanceInfo& a, const GPUInstanceInfo& b) {
 		return a.packedArchetypeId - b.packedArchetypeId;
 	});
 
-	Array<int> instanceIds(PP_SL);
+	const int instanceCount = instanceInfos.numElem();
+
 	int lastArchetypeId = -1;
 	int lastArchetypeIdStart = 0;
-
-	const int archetypeMask = (1 << 24) - 1;
-	const int lodMask = (1 << 8) - 1;
-
-	for (int i = 0; i <= instanceInfos.numElem(); ++i)
+	for (int i = 0; i < instanceCount; ++i)
 	{
-		const bool isLastInstance = i == instanceInfos.numElem();
-		if (lastArchetypeId != -1 && (isLastInstance || lastArchetypeId != instanceInfos[i].packedArchetypeId))
+		if (lastArchetypeId != -1 && lastArchetypeId != instanceInfos[i].packedArchetypeId)
 		{
-			const int firstInstance = lastArchetypeIdStart;
-			const int instanceCount = instanceIds.numElem() - lastArchetypeIdStart;
+			archetypeIdStarts.append(lastArchetypeIdStart);
+			lastArchetypeIdStart = i;
+		}
+		lastArchetypeId = instanceInfos[i].packedArchetypeId;
+	}
 
-			const GPULodList& lodList = s_drawLodsList[lastArchetypeId & archetypeMask];
+	if (lastArchetypeId != -1)
+		archetypeIdStarts.append(lastArchetypeIdStart);
+}
 
-			// fill lod list
-			int numLods = 0;
-			int lodInfos[MAX_MODEL_LODS];
-			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
-				lodInfos[numLods++] = lodIdx;
+static void UpdateIndirectInstancesSoftware(ArrayCRef<GPUInstanceInfo> instanceInfos, ArrayCRef<int> archetypeIdStarts, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr indirectDrawBuffer, IGPUBufferPtr instanceIdsBuffer)
+{
+	PROF_EVENT_F();
 
-			// walk over batches
-			const int lodIdx = min(numLods - 1, lod_idx.GetInt() == -1 ? ((lastArchetypeId >> 24) & lodMask) : lod_idx.GetInt());
+	const int instanceCount = instanceInfos.numElem();
+	Array<int> instanceIds(PP_SL);
 
-			const GPULodInfo& lodInfo = s_drawLodInfos[lodInfos[lodIdx]];
-			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = s_drawBatchs[batchIdx].next)
-			{
-				const GPUIndexedBatch& drawBatch = s_drawBatchs[batchIdx];
+	// COMPUTE SHADER: PrepareDrawIndirectInstances
+	// Input:
+	//		instanceInfos		: buffer<GPUInstanceInfo[]>
+	//		archetypeIdStarts	: buffer<int[]>
+	// Output:
+	//		instanceIds			: buffer<int[]>
+	//		indirectDraws		: buffer<GPUDrawIndexedIndirectCmd[]>
+	//
+	// Notes:
+	//		instanceInfos must be sorted by archetype id prior to executing
 
-				GPUDrawIndexedIndirectCmd drawCmd;
-				drawCmd.firstIndex = drawBatch.firstIndex;
-				drawCmd.indexCount = drawBatch.indexCount;
-				drawCmd.firstInstance = firstInstance;
-				drawCmd.instanceCount = instanceCount;
+	instanceIds.setNum(instanceCount);
 
-				cmdRecorder->WriteBuffer(indirectDrawBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
-			}
+	for (int i = 0; i < archetypeIdStarts.numElem(); ++i)
+	{
+		const int firstInstance = archetypeIdStarts[i];
+		const int lastInstance = (i + 1 < archetypeIdStarts.numElem()) ? archetypeIdStarts[i + 1] : instanceCount;
 
-			lastArchetypeIdStart = instanceIds.numElem();
+		const int archetypeId = instanceInfos[firstInstance].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+		const int archLodIndex = (instanceInfos[firstInstance].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+
+		const GPULodList& lodList = s_drawLodsList[archetypeId];
+
+		// fill lod list
+		int numLods = 0;
+		int lodInfos[MAX_MODEL_LODS];
+		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
+			lodInfos[numLods++] = lodIdx;
+
+		// walk over batches
+		const int lodIdx = min(numLods - 1, lod_idx.GetInt() == -1 ? archLodIndex : lod_idx.GetInt());
+
+		const GPULodInfo& lodInfo = s_drawLodInfos[lodInfos[lodIdx]];
+		for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = s_drawBatchs[batchIdx].next)
+		{
+			const GPUIndexedBatch& drawBatch = s_drawBatchs[batchIdx];
+
+			GPUDrawIndexedIndirectCmd drawCmd;
+			drawCmd.firstIndex = drawBatch.firstIndex;
+			drawCmd.indexCount = drawBatch.indexCount;
+			drawCmd.firstInstance = firstInstance;
+			drawCmd.instanceCount = lastInstance - firstInstance;
+
+			// indirectDrawBuffer[drawBatch.cmdIdx] = drawCmd;
+			cmdRecorder->WriteBuffer(indirectDrawBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
 		}
 
-		if (isLastInstance)
-			break;
-
-		lastArchetypeId = instanceInfos[i].packedArchetypeId;
-		instanceIds.append(instanceInfos[i].instanceId);
+		for (int j = firstInstance; j < lastInstance; ++j)
+			instanceIds[j] = instanceInfos[j].instanceId;
 	}
 
 	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
@@ -462,7 +490,7 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 		while (fsFind.Next())
 		{
 			const int modelIdx = g_studioCache->PrecacheModel(EqString::Format("models/%s", fsFind.GetPath()));
-			InitDrawArchetypeEGF(*g_studioCache->GetModel(modelIdx), 1);
+			CreateDrawArchetypeEGF(*g_studioCache->GetModel(modelIdx), 1);
 		}
 	}
 
@@ -611,7 +639,16 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 			Volume frustum;
 			frustum.LoadAsFrustum(viewProj);
 
-			UpdateIndirectInstances(s_currentView.GetOrigin(), frustum, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+			Array<GPUInstanceInfo> instanceInfos(PP_SL);
+			VisibilityCullInstancesSoftware(s_currentView.GetOrigin(), frustum, instanceInfos);
+
+			Array<int> archetypeIdStarts(PP_SL);
+			SortInstancesSoftware(instanceInfos, archetypeIdStarts);
+
+			s_drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawBatchs.numElem()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
+			s_instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
+			cmdRecorder->ClearBuffer(s_drawInvocationsBuffer, 0, s_drawInvocationsBuffer->GetSize());
+			UpdateIndirectInstancesSoftware(instanceInfos, archetypeIdStarts, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
 
 			if(inst_update_once.GetBool())
 				inst_update.SetBool(false);

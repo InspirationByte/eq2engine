@@ -29,13 +29,22 @@ struct TextureCopyInfo
 
 // helper structure used for filling buffer data
 // for Draw[Indexed]Indirect
-struct IndirectDrawData
+
+struct GPUDrawIndirectCmd
 {
-	uint indexCount;
-	uint instanceCount;
-	uint firstIndex;
-	uint baseVertex;
-	uint firstInstance;
+	uint	vertexCount{ 0 };
+	uint	instanceCount{ 0 };
+	uint	firstVertex{ 0 };
+	uint	firstInstance{ 0 };
+};
+
+struct GPUDrawIndexedIndirectCmd
+{
+	uint	indexCount{ 0 };
+	uint	instanceCount{ 0 };
+	uint	firstIndex{ 0 };
+	uint	baseVertex{ 0 };
+	uint	firstInstance{ 0 };
 };
 
 //---------------------------------
