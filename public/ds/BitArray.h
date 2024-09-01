@@ -288,7 +288,7 @@ inline void BitArray::resize(int newBitCount)
 
 	if (temp)
 	{
-		for (int i = 0; i < oldTypeSize; i++)
+		for (int i = 0; i < min(newTypeSize, oldTypeSize); i++)
 			m_pListPtr[i] = temp[i];
 		delete[] temp;
 	}
