@@ -1,6 +1,9 @@
 #pragma once
 
 static const char s_boilerPlateStrGLSL[] = R"(
+#ifndef _GLSL_BOILERPLATE_INCLUDE
+#define _GLSL_BOILERPLATE_INCLUDE
+
 // functions
 #define     frac        fract
 #define     lerp        mix
@@ -46,4 +49,5 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 
 #define VERTEX_ID( name ) (VID_ ## name)
 
+#endif // _GLSL_BOILERPLATE_INCLUDE
 )";
