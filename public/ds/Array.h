@@ -515,7 +515,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 {
-	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 	return STORAGE_TYPE::getData()[index];
 }
@@ -527,7 +527,7 @@ inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 {
-	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 	return STORAGE_TYPE::getData()[index];
 }
