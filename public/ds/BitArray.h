@@ -293,7 +293,7 @@ inline void BitArray::resize(int newBitCount)
 		delete[] temp;
 	}
 
-	for (int i = max(oldTypeSize-1, 0); i < newTypeSize; ++i)
+	for (int i = max(oldTypeSize, 0); i < newTypeSize; ++i)
 		m_pListPtr[i] = 0;
 }
 
