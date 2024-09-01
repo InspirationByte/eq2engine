@@ -28,6 +28,7 @@
 #pragma optimize("", off)
 
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
+DECLARE_CVAR(cam_fov, "90", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update_once, "1", nullptr, CV_ARCHIVE);
@@ -37,7 +38,7 @@ static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
 	inst_update.SetBool(true);
 }
 
-DECLARE_CVAR_CHANGE(lod_idx, "0", lod_idx_changed, nullptr, 0);
+DECLARE_CVAR_CHANGE(lod_idx, "-1", lod_idx_changed, nullptr, 0);
 DECLARE_CVAR(obj_rotate_interval, "100", nullptr, 0);
 DECLARE_CVAR(obj_rotate, "1", nullptr, 0);
 
@@ -243,21 +244,9 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 	return archetypeId;
 }
 
-static void UpdateIndirectInstances(const Volume& frustum, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
+static void UpdateIndirectInstances(const Vector3D& camPos, const Volume& frustum, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
 {
 	PROF_EVENT_F();
-
-	//int numAllDrawInvocations = 0;
-	//for (const GPULodList& lodList : s_drawLodsList)
-	//{
-	//	for (int i = lodList.firstLod; i < lodList.firstLod + lodList.numLods; ++i)
-	//	{
-	//		const GPULodInfo& lodInfo = s_drawLodInfos[i];
-	//		const int lastBatch = lodInfo.firstBatch + lodInfo.numBatches;
-	//		for(int j = lodInfo.firstBatch; j < lastBatch; ++j)
-	//			s_drawBatchs[j].cmdIdx = numAllDrawInvocations++;
-	//	}
-	//}
 
 	indirectDrawBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawBatchs.numElem()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
 	instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
@@ -268,8 +257,8 @@ static void UpdateIndirectInstances(const Volume& frustum, IGPUCommandRecorder* 
 	// sort instances by archetype
 	struct InstanceInfo
 	{
-		int instanceId;
-		int archetypeId;
+		int		instanceId;
+		int		packedArchetypeId;
 	};
 
 	// collect visible instances
@@ -283,27 +272,42 @@ static void UpdateIndirectInstances(const Volume& frustum, IGPUCommandRecorder* 
 		if (!frustum.IsSphereInside(obj.trs.t, 0.1))
 			continue;
 
-		instanceInfos.append({ obj.instId, archetypeId });
+		const GPULodList& lodList = s_drawLodsList[archetypeId];
+		const float distFromCamera = distance(camPos, obj.trs.t);
+
+		// find suitable lod idx
+		int drawLod = -1;
+		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
+		{
+			if (distFromCamera < s_drawLodInfos[lodIdx].distance)
+				break;
+			drawLod++;
+		}
+
+		instanceInfos.append({ obj.instId, archetypeId | (drawLod << 24) });
 	}
 
 	// sort instances by archetype id
 	arraySort(instanceInfos, [](const InstanceInfo& a, const InstanceInfo& b) {
-		return a.archetypeId - b.archetypeId;
+		return a.packedArchetypeId - b.packedArchetypeId;
 	});
 
 	Array<int> instanceIds(PP_SL);
 	int lastArchetypeId = -1;
 	int lastArchetypeIdStart = 0;
 
+	const int archetypeMask = (1 << 24) - 1;
+	const int lodMask = (1 << 8) - 1;
+
 	for (int i = 0; i <= instanceInfos.numElem(); ++i)
 	{
 		const bool isLastInstance = i == instanceInfos.numElem();
-		if (lastArchetypeId != -1 && (isLastInstance || lastArchetypeId != instanceInfos[i].archetypeId))
+		if (lastArchetypeId != -1 && (isLastInstance || lastArchetypeId != instanceInfos[i].packedArchetypeId))
 		{
 			const int firstInstance = lastArchetypeIdStart;
 			const int instanceCount = instanceIds.numElem() - lastArchetypeIdStart;
 
-			const GPULodList& lodList = s_drawLodsList[lastArchetypeId];
+			const GPULodList& lodList = s_drawLodsList[lastArchetypeId & archetypeMask];
 
 			// fill lod list
 			int numLods = 0;
@@ -312,7 +316,8 @@ static void UpdateIndirectInstances(const Volume& frustum, IGPUCommandRecorder* 
 				lodInfos[numLods++] = lodIdx;
 
 			// walk over batches
-			const int lodIdx = min(numLods - 1, lod_idx.GetInt());
+			const int lodIdx = min(numLods - 1, lod_idx.GetInt() == -1 ? ((lastArchetypeId >> 24) & lodMask) : lod_idx.GetInt());
+
 			const GPULodInfo& lodInfo = s_drawLodInfos[lodInfos[lodIdx]];
 			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = s_drawBatchs[batchIdx].next)
 			{
@@ -333,7 +338,7 @@ static void UpdateIndirectInstances(const Volume& frustum, IGPUCommandRecorder* 
 		if (isLastInstance)
 			break;
 
-		lastArchetypeId = instanceInfos[i].archetypeId;
+		lastArchetypeId = instanceInfos[i].packedArchetypeId;
 		instanceIds.append(instanceInfos[i].instanceId);
 	}
 
@@ -540,6 +545,7 @@ void CState_GpuDrivenDemo::StepGame(float fDt)
 		moveVec = normalize(moveVec);
 
 	s_currentView.SetOrigin(s_currentView.GetOrigin() + moveVec * cam_speed.GetFloat() * fDt);
+	s_currentView.SetFOV(cam_fov.GetFloat());
 
 	debugoverlay->Text(color_white, "Object count: % d", s_objects.numElem());
 	if(obj_rotate.GetBool())
@@ -605,7 +611,7 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 			Volume frustum;
 			frustum.LoadAsFrustum(viewProj);
 
-			UpdateIndirectInstances(frustum, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+			UpdateIndirectInstances(s_currentView.GetOrigin(), frustum, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
 
 			if(inst_update_once.GetBool())
 				inst_update.SetBool(false);
