@@ -29,7 +29,8 @@
 
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(inst_update, "1", nullptr, 0);
+DECLARE_CVAR(inst_update, "1", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(inst_update_once, "1", nullptr, CV_ARCHIVE);
 
 static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
 {
@@ -242,7 +243,7 @@ static int InitDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags =
 	return archetypeId;
 }
 
-static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
+static void UpdateIndirectInstances(const Volume& frustum, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
 {
 	PROF_EVENT_F();
 
@@ -278,6 +279,10 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 		const int archetypeId = s_instanceMng.GetInstanceArchetypeId(obj.instId);
 		if (archetypeId == -1)
 			continue;
+
+		if (!frustum.IsSphereInside(obj.trs.t, 0.1))
+			continue;
+
 		instanceInfos.append({ obj.instId, archetypeId });
 	}
 
@@ -290,12 +295,15 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 	int lastArchetypeId = -1;
 	int lastArchetypeIdStart = 0;
 
-	for (int i = 0; i < instanceInfos.numElem(); ++i)
+	for (int i = 0; i <= instanceInfos.numElem(); ++i)
 	{
-		const InstanceInfo& instInfo = instanceInfos[i];
-		if (lastArchetypeId != instInfo.archetypeId && lastArchetypeId != -1)
+		const bool isLastInstance = i == instanceInfos.numElem();
+		if (lastArchetypeId != -1 && (isLastInstance || lastArchetypeId != instanceInfos[i].archetypeId))
 		{
-			const GPULodList& lodList = s_drawLodsList[instInfo.archetypeId];
+			const int firstInstance = lastArchetypeIdStart;
+			const int instanceCount = instanceIds.numElem() - lastArchetypeIdStart;
+
+			const GPULodList& lodList = s_drawLodsList[lastArchetypeId];
 
 			// fill lod list
 			int numLods = 0;
@@ -313,18 +321,20 @@ static void UpdateIndirectInstances(IGPUCommandRecorder* cmdRecorder, IGPUBuffer
 				GPUDrawIndexedIndirectCmd drawCmd;
 				drawCmd.firstIndex = drawBatch.firstIndex;
 				drawCmd.indexCount = drawBatch.indexCount;
-				drawCmd.firstInstance = instanceIds.numElem();
-				drawCmd.instanceCount = instanceIds.numElem() - lastArchetypeIdStart;
+				drawCmd.firstInstance = firstInstance;
+				drawCmd.instanceCount = instanceCount;
 
-				ASSERT(drawCmd.instanceCount > 1);
-
-				cmdRecorder->WriteBuffer(indirectDrawBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd)* drawBatch.cmdIdx);
+				cmdRecorder->WriteBuffer(indirectDrawBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
 			}
 
 			lastArchetypeIdStart = instanceIds.numElem();
 		}
-		lastArchetypeId = instInfo.archetypeId;
-		instanceIds.append(instInfo.instanceId);
+
+		if (isLastInstance)
+			break;
+
+		lastArchetypeId = instanceInfos[i].archetypeId;
+		instanceIds.append(instanceInfos[i].instanceId);
 	}
 
 	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
@@ -591,8 +601,14 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 		s_instanceMng.SyncInstances(cmdRecorder);
 		if (inst_update.GetBool())
 		{
-			UpdateIndirectInstances(cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
-			inst_update.SetBool(false);
+			const Matrix4x4 viewProj = projMat * viewMat;
+			Volume frustum;
+			frustum.LoadAsFrustum(viewProj);
+
+			UpdateIndirectInstances(frustum, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+
+			if(inst_update_once.GetBool())
+				inst_update.SetBool(false);
 		}
 
 		{
