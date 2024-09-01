@@ -20,16 +20,21 @@
 #include "render/GPUInstanceMng.h"
 #include "render/IDebugOverlay.h"
 #include "render/ViewParams.h"
+#include "render/ComputeBitonicMergeSort.h"
 #include "input/InputCommandBinder.h"
 #include "studio/StudioGeom.h"
 #include "studio/StudioCache.h"
 #include "instancer.h"
+#include "sys/sys_in_console.h"
 
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
 DECLARE_CVAR(cam_fov, "90", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update_once, "1", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(inst_use_compute, "0", nullptr, 0);
+DECLARE_CVAR(inst_use_gpu_sort, "0", nullptr, 0);
+DECLARE_CVAR(inst_use_gpu_starts, "1", nullptr, 0);
 
 static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
 {
@@ -39,6 +44,7 @@ static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
 DECLARE_CVAR_CHANGE(lod_idx, "-1", lod_idx_changed, nullptr, 0);
 DECLARE_CVAR(obj_rotate_interval, "100", nullptr, 0);
 DECLARE_CVAR(obj_rotate, "1", nullptr, 0);
+DECLARE_CVAR(obj_draw, "1", nullptr, 0);
 
 static DemoGPUInstanceManager s_instanceMng;
 static CStaticAutoPtr<CState_GpuDrivenDemo> g_State_Demo;
@@ -100,15 +106,71 @@ struct GPUDrawInfo
 
 //-------------------------------------------------
 
+struct DrawParams
+{
+	int		lodIdxOverride;
+	float	lodDistanceBias;
+};
+
 static Map<int, int>					s_modelIdToArchetypeId{ PP_SL };
 static SlottedArray<GPUDrawInfo>		s_drawInfos{ PP_SL };	// must be in sync with batchs
 static SlottedArray<GPUIndexedBatch>	s_drawBatchs{ PP_SL };
 static SlottedArray<GPULodInfo>			s_drawLodInfos{ PP_SL };
 static SlottedArray<GPULodList>			s_drawLodsList{ PP_SL };
 
-static IGPUBufferPtr	s_drawInvocationsSrcBuffer;
-static IGPUBufferPtr	s_drawInvocationsBuffer;
-static IGPUBufferPtr	s_instanceIdsBuffer;
+static IGPUBufferPtr					s_drawBatchsBuffer;
+static IGPUBufferPtr					s_drawLodInfosBuffer;
+static IGPUBufferPtr					s_drawLodsListBuffer;
+static IGPUBufferPtr					s_drawParamsBuffer;
+
+static IGPUBufferPtr					s_drawInvocationsBuffer;
+static IGPUBufferPtr					s_instanceIdsBuffer;		// sorted ready to draw instances
+static ComputeBitonicMergeSortShaderPtr	s_mergeSortShader;
+static IGPUComputePipelinePtr			s_calcArchetypeIdStartsPipeline;
+static IGPUComputePipelinePtr			s_updateIndirectInstancesPipeline;
+
+static IGPUBindGroupPtr		s_updateBindGroup0;
+
+static constexpr EqStringRef INSTANCE_ARCHETYPE_SORT_SHADERNAME = "ComputeInstanceArchetypeSort";
+static constexpr EqStringRef UPDATE_INDIRECT_INSTANCES_SHADERNAME = "ComputePrepareDrawIndirectInstances";
+
+static void InitIndirectRenderer()
+{
+	s_mergeSortShader = CRefPtr_new(ComputeBitonicMergeSortShader);
+	s_mergeSortShader->AddSortPipeline("SortInstanceInfos", INSTANCE_ARCHETYPE_SORT_SHADERNAME);
+
+	s_drawBatchsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUIndexedBatch), s_drawBatchs.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawBatchs");
+	s_drawLodInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPULodInfo), s_drawLodInfos.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawLodInfos");
+	s_drawLodsListBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(s_drawLodsList), s_drawLodsList.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawLodsList");
+	s_drawParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(DrawParams), 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawParams");
+
+	s_drawBatchsBuffer->Update(s_drawBatchs.ptr(), s_drawBatchs.numSlots() * sizeof(s_drawBatchs[0]), 0);
+	s_drawLodInfosBuffer->Update(s_drawLodInfos.ptr(), s_drawLodInfos.numSlots() * sizeof(s_drawLodInfos[0]), 0);
+	s_drawLodsListBuffer->Update(s_drawLodsList.ptr(), s_drawLodsList.numSlots() * sizeof(s_drawLodsList[0]), 0);
+
+	s_drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
+	s_calcArchetypeIdStartsPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderLayoutId(StringToHashConst("CalcArchetypeIdStarts"))
+		.ShaderName(INSTANCE_ARCHETYPE_SORT_SHADERNAME)
+		.End()
+	);
+
+	s_updateIndirectInstancesPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(UPDATE_INDIRECT_INSTANCES_SHADERNAME)
+		.End()
+	);
+
+	s_updateBindGroup0 = g_renderAPI->CreateBindGroup(s_updateIndirectInstancesPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, s_drawBatchsBuffer)
+		.Buffer(1, s_drawLodInfosBuffer)
+		.Buffer(2, s_drawLodsListBuffer)
+		.Buffer(3, s_drawParamsBuffer)
+		.End());
+}
 
 static void TermIndirectRenderer()
 {
@@ -117,8 +179,17 @@ static void TermIndirectRenderer()
 	s_drawInfos.clear(true);
 	s_drawLodInfos.clear(true);
 	s_drawLodsList.clear(true);
+
+	s_drawBatchsBuffer = nullptr;
+	s_drawLodInfosBuffer = nullptr;
+	s_drawLodsListBuffer = nullptr;
+	s_drawParamsBuffer = nullptr;
 	s_drawInvocationsBuffer = nullptr;
 	s_instanceIdsBuffer = nullptr;
+	s_mergeSortShader = nullptr;
+	s_calcArchetypeIdStartsPipeline = nullptr;
+	s_updateIndirectInstancesPipeline = nullptr;
+	s_updateBindGroup0 = nullptr;
 }
 
 static int CreateDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags = 0, int materialGroupIdx = 0)
@@ -224,11 +295,6 @@ static int CreateDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags
 	return archetypeId;
 }
 
-static void UpdateIndirectInstancesCompute(const Vector3D& camPos, const Volume& frustum, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr& indirectDrawBuffer, IGPUBufferPtr& instanceIdsBuffer)
-{
-
-}
-
 struct GPUInstanceInfo
 {
 	static constexpr int ARCHETYPE_BITS = 24;
@@ -241,11 +307,88 @@ struct GPUInstanceInfo
 	int		packedArchetypeId;
 };
 
-static void VisibilityCullInstancesSoftware(const Vector3D& camPos, const Volume& frustum, Array<GPUInstanceInfo>& instanceInfos)
+//--------------------------------------------------------------------
+
+static void SortInstances_Compute(ArrayCRef<GPUInstanceInfo> instanceInfos, IGPUBufferPtr instanceInfosBuffer, IGPUBufferPtr archetypeIdStartsBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr sortedKeysBuffer)
+{
+	Array<int> sortedKeys(PP_SL);
+
+	const int keysCount = instanceInfos.numElem();
+	if (inst_use_gpu_sort.GetBool())
+	{
+		s_mergeSortShader->InitKeys(cmdRecorder, sortedKeysBuffer, keysCount);
+		s_mergeSortShader->SortKeys(StringToHashConst("SortInstanceInfos"), cmdRecorder, sortedKeysBuffer, keysCount, instanceInfosBuffer);
+	}
+	else
+	{
+		for (int i = 0; i < keysCount; ++i)
+			sortedKeys.append(i);
+
+		arraySort(sortedKeys, [&](const int a, const int b) {
+			return instanceInfos[a].packedArchetypeId - instanceInfos[b].packedArchetypeId;
+		});
+		sortedKeys.insert(keysCount, 0);
+
+		cmdRecorder->WriteBuffer(sortedKeysBuffer, sortedKeys.ptr(), sortedKeys.numElem() * sizeof(sortedKeys[0]), 0);
+	}
+
+	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("CalcArchetypeIdStarts");
+	computeRecorder->SetPipeline(s_calcArchetypeIdStartsPipeline);
+	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(s_calcArchetypeIdStartsPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, instanceInfosBuffer)
+		.Buffer(1, sortedKeysBuffer)
+		.End())
+	);
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_calcArchetypeIdStartsPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(1)
+		.Buffer(0, archetypeIdStartsBuffer)
+		.End())
+	);
+	computeRecorder->DispatchWorkgroups(1);
+	computeRecorder->Complete();
+
+}
+
+static void UpdateIndirectInstances_Compute(IGPUBufferPtr instanceInfosBuffer, IGPUBufferPtr archetypeIdStartsBuffer, IGPUBufferPtr sortedKeysBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr indirectDrawBuffer, IGPUBufferPtr instanceIdsBuffer)
+{
+	DrawParams drawParams{ lod_idx.GetInt(), 1.0f };
+	cmdRecorder->WriteBuffer(s_drawParamsBuffer, &drawParams, sizeof(drawParams), 0);
+
+	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("UpdateIndirectInstances");
+	computeRecorder->SetPipeline(s_updateIndirectInstancesPipeline);
+	computeRecorder->SetBindGroup(0, s_updateBindGroup0);
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_updateIndirectInstancesPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(1)
+		.Buffer(0, sortedKeysBuffer)
+		.Buffer(1, instanceInfosBuffer)
+		.Buffer(2, archetypeIdStartsBuffer)
+		.End())
+	);
+	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(s_updateIndirectInstancesPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(2)
+		.Buffer(0, instanceIdsBuffer)
+		.Buffer(1, indirectDrawBuffer)
+		.End())
+	);
+
+	constexpr int GROUP_SIZE = 32;
+
+	computeRecorder->DispatchWorkgroups(s_drawLodsList.numElem() / GROUP_SIZE + 1);
+	computeRecorder->Complete();
+}
+
+//--------------------------------------------------------------------
+
+static void VisibilityCullInstances_Software(const Vector3D& camPos, const Volume& frustum, Array<GPUInstanceInfo>& instanceInfos)
 {
 	PROF_EVENT_F();
 
-	// COMPUTE SHADER: VisibilityCullInstances
+	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
 	// Input:
 	//		instanceIds		: buffer<int>
 	// Output:
@@ -278,11 +421,11 @@ static void VisibilityCullInstancesSoftware(const Vector3D& camPos, const Volume
 	}
 }
 
-static void SortInstancesSoftware(Array<GPUInstanceInfo>& instanceInfos, Array<int>& archetypeIdStarts)
+static void SortInstances_Software(Array<GPUInstanceInfo>& instanceInfos, Array<int>& archetypeIdStarts)
 {
 	PROF_EVENT_F();
 
-	// COMPUTE SHADER: SortInstanceArchetypes
+	// COMPUTE SHADER REFERENCE: SortInstanceArchetypes
 	// Input / Output:
 	//		instanceInfos		: buffer<GPUInstanceInfo[]>
 	//		archetypeIdStarts	: buffer<int[]>
@@ -312,14 +455,14 @@ static void SortInstancesSoftware(Array<GPUInstanceInfo>& instanceInfos, Array<i
 		archetypeIdStarts.append(lastArchetypeIdStart);
 }
 
-static void UpdateIndirectInstancesSoftware(ArrayCRef<GPUInstanceInfo> instanceInfos, ArrayCRef<int> archetypeIdStarts, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr indirectDrawBuffer, IGPUBufferPtr instanceIdsBuffer)
+static void UpdateIndirectInstances_Software(ArrayCRef<GPUInstanceInfo> instanceInfos, ArrayCRef<int> archetypeIdStarts, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr indirectDrawBuffer, IGPUBufferPtr instanceIdsBuffer)
 {
 	PROF_EVENT_F();
 
 	const int instanceCount = instanceInfos.numElem();
 	Array<int> instanceIds(PP_SL);
 
-	// COMPUTE SHADER: PrepareDrawIndirectInstances
+	// COMPUTE SHADER REFERENCE: PrepareDrawIndirectInstances
 	// Input:
 	//		instanceInfos		: buffer<GPUInstanceInfo[]>
 	//		archetypeIdStarts	: buffer<int[]>
@@ -373,6 +516,8 @@ static void UpdateIndirectInstancesSoftware(ArrayCRef<GPUInstanceInfo> instanceI
 	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
 }
 
+//--------------------------------------------------------------------
+
 static float memBytesToKB(size_t byteCnt)
 {
 	return byteCnt / 1024.0f;
@@ -383,25 +528,29 @@ static void DrawScene(const RenderPassContext& renderPassCtx)
 	PROF_EVENT_F();
 
 	int numDrawCalls = 0;
-	for (int i = 0; i < s_drawInfos.numSlots(); ++i)
+
+	if(obj_draw.GetBool())
 	{
-		if (!s_drawInfos(i))
+		for (int i = 0; i < s_drawInfos.numSlots(); ++i)
 		{
-			debugoverlay->Text(color_white, " draw info %d not drawn", i);
-			continue;
-		}
+			if (!s_drawInfos(i))
+			{
+				debugoverlay->Text(color_white, " draw info %d not drawn", i);
+				continue;
+			}
 
-		const GPUDrawInfo& drawInfo = s_drawInfos[i];
+			const GPUDrawInfo& drawInfo = s_drawInfos[i];
 
-		IMaterial* material = drawInfo.material;
-		if (g_matSystem->SetupMaterialPipeline(material, nullptr, drawInfo.primTopology, drawInfo.meshInstFormat, renderPassCtx, &s_instanceMng))
-		{
-			renderPassCtx.recorder->SetVertexBuffer(0, drawInfo.vertexBuffers[0]);
-			renderPassCtx.recorder->SetVertexBuffer(1, s_instanceIdsBuffer);
-			renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
+			IMaterial* material = drawInfo.material;
+			if (g_matSystem->SetupMaterialPipeline(material, nullptr, drawInfo.primTopology, drawInfo.meshInstFormat, renderPassCtx, &s_instanceMng))
+			{
+				renderPassCtx.recorder->SetVertexBuffer(0, drawInfo.vertexBuffers[0]);
+				renderPassCtx.recorder->SetVertexBuffer(1, s_instanceIdsBuffer);
+				renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
 
-			renderPassCtx.recorder->DrawIndexedIndirect(s_drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * s_drawBatchs[drawInfo.batchIdx].cmdIdx);
-			++numDrawCalls;
+				renderPassCtx.recorder->DrawIndexedIndirect(s_drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * s_drawBatchs[drawInfo.batchIdx].cmdIdx);
+				++numDrawCalls;
+			}
 		}
 	}
 
@@ -494,6 +643,8 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 		}
 	}
 
+	InitIndirectRenderer();
+
 	InitGame();
 }
 
@@ -542,6 +693,8 @@ void CState_GpuDrivenDemo::InitGame()
 		obj.instId = s_instanceMng.AddInstance<InstTransform>(*it);
 		obj.trs.t = Vector3D(RandomFloat(-900, 900), RandomFloat(-100, 100), RandomFloat(-900, 900));
 		obj.trs.r = rotateXYZ(RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F));
+
+		obj.trs.t *= 0.25f;
 
 		// update visual
 		InstTransform transform;
@@ -640,15 +793,30 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 			frustum.LoadAsFrustum(viewProj);
 
 			Array<GPUInstanceInfo> instanceInfos(PP_SL);
-			VisibilityCullInstancesSoftware(s_currentView.GetOrigin(), frustum, instanceInfos);
+			VisibilityCullInstances_Software(s_currentView.GetOrigin(), frustum, instanceInfos);
 
-			Array<int> archetypeIdStarts(PP_SL);
-			SortInstancesSoftware(instanceInfos, archetypeIdStarts);
-
-			s_drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawBatchs.numElem()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
-			s_instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST);
+			s_instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
 			cmdRecorder->ClearBuffer(s_drawInvocationsBuffer, 0, s_drawInvocationsBuffer->GetSize());
-			UpdateIndirectInstancesSoftware(instanceInfos, archetypeIdStarts, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+
+			if (inst_use_compute.GetBool())
+			{
+				const int instanceCount = instanceInfos.numElem();
+				IGPUBufferPtr instanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), s_objects.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
+				cmdRecorder->WriteBuffer(instanceInfosBuffer, instanceInfos.ptr(), instanceCount * sizeof(instanceInfos[0]), 0);
+				
+				IGPUBufferPtr sortedKeysBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
+				cmdRecorder->WriteBuffer(sortedKeysBuffer, &instanceCount, sizeof(int), 0);
+
+				IGPUBufferPtr archetypeIdStartsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_drawLodInfos.numElem() + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "ArchetypeIdStarts");
+				SortInstances_Compute(instanceInfos, instanceInfosBuffer, archetypeIdStartsBuffer, cmdRecorder, sortedKeysBuffer);
+				UpdateIndirectInstances_Compute(instanceInfosBuffer, archetypeIdStartsBuffer, sortedKeysBuffer, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+			}
+			else
+			{
+				Array<int> archetypeIdStarts(PP_SL);
+				SortInstances_Software(instanceInfos, archetypeIdStarts);
+				UpdateIndirectInstances_Software(instanceInfos, archetypeIdStarts, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+			}
 
 			if(inst_update_once.GetBool())
 				inst_update.SetBool(false);
@@ -682,11 +850,15 @@ void CState_GpuDrivenDemo::HandleKeyPress(int key, bool down)
 
 void CState_GpuDrivenDemo::HandleMouseClick(int x, int y, int buttons, bool down)
 {
+	if (g_consoleInput->IsVisible())
+		return;
 	g_inputCommandBinder->OnMouseEvent(buttons, down);
 }
 
 void CState_GpuDrivenDemo::HandleMouseMove(int x, int y, float deltaX, float deltaY)
 {
+	if (g_consoleInput->IsVisible())
+		return;
 	const Vector3D camAngles = s_currentView.GetAngles();
 	s_currentView.SetAngles(camAngles + Vector3D(deltaY, deltaX, 0.0f));
 }
