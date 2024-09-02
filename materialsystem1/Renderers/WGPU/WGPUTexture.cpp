@@ -66,7 +66,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 	m_rhiTextures.reserve(images.numElem());
 	m_rhiViews.reserve(images.numElem());
 
-	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding;
+	WGPUTextureUsage rhiUsageFlags = WGPUTextureUsage_TextureBinding;
 	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
 	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;

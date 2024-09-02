@@ -8,6 +8,6 @@ usage "wgpu-dawn"
 	}
 
 	links {
-		"webgpu",
+		"webgpu_dawn",
 	}
 

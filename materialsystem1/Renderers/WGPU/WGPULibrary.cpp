@@ -257,10 +257,10 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		enabledToggles.append("allow_unsafe_apis");
 		disabledToggles.append("lazy_clear_resource_on_first_use");	// this switch requires us to clear buffers and render targets
+		enabledToggles.append("use_user_defined_labels_in_backend");
 		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
 		{
 			enabledToggles.append("enable_immediate_error_handling");
-			enabledToggles.append("use_user_defined_labels_in_backend");
 			wgpu_report_errors.SetBool(true);
 			wgpu_break_on_error.SetBool(true);
 		}
