@@ -51,7 +51,6 @@ ShaderInfoWGPUImpl::ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept
 	, defines(std::move(other.defines))
 	, modules(std::move(other.modules))
 	, modulesMap(std::move(other.modulesMap))
-	, entryPoints(std::move(other.entryPoints))
 	, shaderKinds(other.shaderKinds)
 
 {
@@ -66,7 +65,6 @@ ShaderInfoWGPUImpl& ShaderInfoWGPUImpl::operator=(ShaderInfoWGPUImpl&& other) no
 	defines = std::move(other.defines);
 	modules = std::move(other.modules);
 	modulesMap = std::move(other.modulesMap);
-	entryPoints = std::move(other.entryPoints);
 	shaderKinds = other.shaderKinds;
 	other.shaderPackFile = nullptr;
 	return *this;
@@ -184,29 +182,6 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			shaderInfo.defines.append(def);
 	}
 
-	for (const KVSection* entryPointKey : shaderInfoKvs.Get("EntryPoints").Keys())
-	{
-		EqStringRef kindStr = entryPointKey->GetName();
-		EqStringRef entryPointName = KV_GetValueString(entryPointKey);
-		int kind = 0;
-
-		if (kindStr == s_shaderKindVertexName)
-			kind = SHADERKIND_VERTEX;
-		else if (kindStr == s_shaderKindFragmentName)
-			kind = SHADERKIND_FRAGMENT;
-		else if (kindStr == s_shaderKindComputeName)
-			kind = SHADERKIND_COMPUTE;
-
-		const int entryPointId = StringToHash(entryPointName) | (kind << 24);
-		ASSERT_MSG(shaderInfo.entryPoints.find(entryPointId).atEnd(), "Shader %s entry point %s with kind %s", shaderInfoKvs.GetName(), entryPointName.ToCString(), kindStr.ToCString());
-
-		ShaderInfoWGPUImpl::EntryPoint& entryPoint = *shaderInfo.entryPoints.insert(entryPointId);
-		entryPoint.name = entryPointName;
-		entryPoint.kind = kind;
-
-		shaderInfo.shaderKinds |= kind;
-	}
-
 	for (const KVSection* key : shaderInfoKvs.Get("VertexLayouts").Keys())
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
@@ -221,7 +196,6 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			});
 		}
 	}
-
 
 	auto getKind = [](const EqStringRef& kindStr) -> int {
 		if (!kindStr.CompareCaseIns(s_shaderKindVertexName))
@@ -245,6 +219,47 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	int filesFound = 0;
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
+	for (const KVSection* itemSec : fileListSec->Keys("wgsl"))
+	{
+		int vertLayoutIdx = -1;
+		EqStringRef kindStr;
+		EqStringRef entryPointName;
+
+		// query string is not available in wgsl due to defines absense
+		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName) < 3)
+		{
+			ASSERT_FAIL("Shader %s 'wgsl' does not have 3 values");
+			break;
+		}
+
+		const int kind = getKind(kindStr);
+		ASSERT_MSG(kind != 0, "Shader kind is not valid");
+
+		shaderInfo.shaderKinds |= kind;
+
+		const int moduleIndex = shaderInfo.modules.numElem();
+		{
+			const EqString shaderFileName = EqString::Format("%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, getKindExt(kind));
+
+			ShaderInfoWGPUImpl::Module& modInfo = shaderInfo.modules.append();
+			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
+			modInfo.type = SHADERMODULE_WGSL;
+			modInfo.kind = static_cast<EShaderKind>(kind);
+		}
+		{
+			const int entryPointStrHash = StringToHash(entryPointName);
+			const uint shaderModuleId = PackShaderModuleId(0, vertLayoutIdx, kind, entryPointStrHash);
+
+			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
+			ASSERT_MSG(exIt.atEnd(), "%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr.ToCString(), exIt.value());
+
+			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
+		}
+		++filesFound;
+
+		if (wgpu_preload_shaders.GetBool())
+			GetOrLoadShaderModule(shaderInfo, moduleIndex);
+	}
 
 	for (const KVSection* itemSec : fileListSec->Keys("spv"))
 	{
@@ -254,12 +269,14 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		EqStringRef queryStr;
 		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
 		{
-			ASSERT_FAIL("Shader %s 'spv' does not have 4 values (old shader version?)");
+			ASSERT_FAIL("Shader %s 'spv' does not have 4 values");
 			break;
 		}
 
 		const int kind = getKind(kindStr);
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");
+
+		shaderInfo.shaderKinds |= kind;
 
 		const int moduleIndex = shaderInfo.modules.numElem();
 		{
@@ -276,7 +293,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
 
 			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
-			ASSERT_MSG(exIt.atEnd(), "%s-%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr, queryStr, exIt.value());
+			ASSERT_MSG(exIt.atEnd(), "%s-%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), queryStr, kindStr.ToCString(), exIt.value());
 
 			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
 		}
@@ -849,7 +866,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl&
 	else if(mod.type == SHADERMODULE_WGSL)
 	{
 		const int _zero = 0;
-		shaderData.Write(_zero, 1, sizeof(_zero));
+		shaderData.Write(&_zero, 1, sizeof(_zero));
 		rhiShaderModule = CreateShaderWGSL(reinterpret_cast<char*>(shaderData.GetBasePointer()), shaderModuleName);
 	}
 	

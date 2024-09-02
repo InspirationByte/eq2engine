@@ -31,6 +31,13 @@ static shaderc_source_language s_sourceLanguage[] = {
 
 struct ShaderInfo
 {
+	enum EType
+	{
+		SHADER_BASE,
+		SHADER_EXT,
+		SHADER_PACKAGE
+	};
+
 	struct VertLayout
 	{
 		EqString name;
@@ -62,11 +69,18 @@ struct ShaderInfo
 		EqString		name;
 		int				kind{ 0 };
 	};
+	struct AddFile
+	{
+		EqString		fileName;
+		Array<EqString>	values{ PP_SL };
+	};
+
 	Array<Result>		results{ PP_SL };
 	Array<EntryPoint>	entryPoints{ PP_SL };
 	Array<VertLayout>	vertexLayouts{ PP_SL };
 	Array<Variant>		variants{ PP_SL };
 	Array<SkipCombo>	skipCombos{ PP_SL };
+	Array<AddFile>		addedFiles{ PP_SL };
 
 	EqString			name;
 	EqString			sourceFilename;
@@ -77,5 +91,5 @@ struct ShaderInfo
 	uint32				crc32{ 0 };
 	int					totalVariationCount{ 0 };
 
-	bool				isExt{ false };
+	EType				type{ SHADER_BASE };
 };

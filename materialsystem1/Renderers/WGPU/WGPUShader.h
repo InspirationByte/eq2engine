@@ -46,7 +46,6 @@ struct ShaderInfoWGPUImpl
 	Array<VertLayout>		vertexLayouts{ PP_SL };
 	Array<EqString>			defines{ PP_SL };
 	Array<Module>			modules{ PP_SL };
-	Map<int, EntryPoint>	entryPoints{ PP_SL };
 	Map<uint, int>			modulesMap{ PP_SL };
 	int						shaderKinds{ 0 };
 };
