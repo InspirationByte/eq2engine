@@ -69,6 +69,8 @@ static Array<Object>	s_objects{ PP_SL };
 
 //--------------------------------------------
 
+static constexpr int MAX_INSTANCE_LODS = 8;
+
 struct GPUIndexedBatch
 {
 	int		next{ -1 };		// next index in buffer pointing to GPUIndexedBatch
@@ -91,6 +93,15 @@ struct GPULodList
 	int		firstLodInfo; // item index in buffer pointing to GPULodInfo
 };
 
+// this is only here for software reference impl
+struct GPUInstanceBound
+{
+	int		first{ 0 };
+	int		last{ 0 };
+	int		archIdx{ -1 };
+	int		lodIndex{ -1 };
+};
+
 //-------------------------------------------------
 
 struct GPUDrawInfo
@@ -106,11 +117,6 @@ struct GPUDrawInfo
 
 //-------------------------------------------------
 
-struct DrawParams
-{
-	int		lodIdxOverride;
-	float	lodDistanceBias;
-};
 
 static Map<int, int>					s_modelIdToArchetypeId{ PP_SL };
 static SlottedArray<GPUDrawInfo>		s_drawInfos{ PP_SL };	// must be in sync with batchs
@@ -121,54 +127,55 @@ static SlottedArray<GPULodList>			s_drawLodsList{ PP_SL };
 static IGPUBufferPtr					s_drawBatchsBuffer;
 static IGPUBufferPtr					s_drawLodInfosBuffer;
 static IGPUBufferPtr					s_drawLodsListBuffer;
-static IGPUBufferPtr					s_drawParamsBuffer;
 
 static IGPUBufferPtr					s_drawInvocationsBuffer;
 static IGPUBufferPtr					s_instanceIdsBuffer;		// sorted ready to draw instances
 static ComputeBitonicMergeSortShaderPtr	s_mergeSortShader;
-static IGPUComputePipelinePtr			s_calcArchetypeIdStartsPipeline;
-static IGPUComputePipelinePtr			s_updateIndirectInstancesPipeline;
+static IGPUComputePipelinePtr			s_instCalcBoundsPipeline;
+static IGPUComputePipelinePtr			s_instPrepareDrawIndirect;
 
-static IGPUBindGroupPtr		s_updateBindGroup0;
+static IGPUBindGroupPtr					s_updateBindGroup0;
 
-static constexpr EqStringRef INSTANCE_ARCHETYPE_SORT_SHADERNAME = "ComputeInstanceArchetypeSort";
-static constexpr EqStringRef UPDATE_INDIRECT_INSTANCES_SHADERNAME = "ComputePrepareDrawIndirectInstances";
+static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
+static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
+static constexpr char SHADERNAME_PREPARE_INDIRECT_INSTANCES[] = "InstancePrepareDrawIndirect";
+
+static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
+
 
 static void InitIndirectRenderer()
 {
 	s_mergeSortShader = CRefPtr_new(ComputeBitonicMergeSortShader);
-	s_mergeSortShader->AddSortPipeline("SortInstanceInfos", INSTANCE_ARCHETYPE_SORT_SHADERNAME);
+	s_mergeSortShader->AddSortPipeline(SHADER_PIPELINE_SORT_INSTANCES, SHADERNAME_SORT_INSTANCES);
 
 	s_drawBatchsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUIndexedBatch), s_drawBatchs.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawBatchs");
 	s_drawLodInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPULodInfo), s_drawLodInfos.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawLodInfos");
 	s_drawLodsListBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(s_drawLodsList), s_drawLodsList.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawLodsList");
-	s_drawParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(DrawParams), 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawParams");
 
 	s_drawBatchsBuffer->Update(s_drawBatchs.ptr(), s_drawBatchs.numSlots() * sizeof(s_drawBatchs[0]), 0);
 	s_drawLodInfosBuffer->Update(s_drawLodInfos.ptr(), s_drawLodInfos.numSlots() * sizeof(s_drawLodInfos[0]), 0);
 	s_drawLodsListBuffer->Update(s_drawLodsList.ptr(), s_drawLodsList.numSlots() * sizeof(s_drawLodsList[0]), 0);
 
 	s_drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
-	s_calcArchetypeIdStartsPipeline = g_renderAPI->CreateComputePipeline(
+
+	s_instCalcBoundsPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
-		.ShaderLayoutId(StringToHashConst("CalcArchetypeIdStarts"))
-		.ShaderName(INSTANCE_ARCHETYPE_SORT_SHADERNAME)
+		.ShaderName(SHADERNAME_CALC_INSTANCE_BOUNDS)
 		.End()
 	);
 
-	s_updateIndirectInstancesPipeline = g_renderAPI->CreateComputePipeline(
+	s_instPrepareDrawIndirect = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
-		.ShaderName(UPDATE_INDIRECT_INSTANCES_SHADERNAME)
+		.ShaderName(SHADERNAME_PREPARE_INDIRECT_INSTANCES)
 		.End()
 	);
 
-	s_updateBindGroup0 = g_renderAPI->CreateBindGroup(s_updateIndirectInstancesPipeline,
+	s_updateBindGroup0 = g_renderAPI->CreateBindGroup(s_instPrepareDrawIndirect,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Buffer(0, s_drawBatchsBuffer)
 		.Buffer(1, s_drawLodInfosBuffer)
 		.Buffer(2, s_drawLodsListBuffer)
-		.Buffer(3, s_drawParamsBuffer)
 		.End());
 }
 
@@ -183,12 +190,11 @@ static void TermIndirectRenderer()
 	s_drawBatchsBuffer = nullptr;
 	s_drawLodInfosBuffer = nullptr;
 	s_drawLodsListBuffer = nullptr;
-	s_drawParamsBuffer = nullptr;
 	s_drawInvocationsBuffer = nullptr;
 	s_instanceIdsBuffer = nullptr;
 	s_mergeSortShader = nullptr;
-	s_calcArchetypeIdStartsPipeline = nullptr;
-	s_updateIndirectInstancesPipeline = nullptr;
+	s_instCalcBoundsPipeline = nullptr;
+	s_instPrepareDrawIndirect = nullptr;
 	s_updateBindGroup0 = nullptr;
 }
 
@@ -309,76 +315,89 @@ struct GPUInstanceInfo
 
 //--------------------------------------------------------------------
 
-static void SortInstances_Compute(ArrayCRef<GPUInstanceInfo> instanceInfos, IGPUBufferPtr instanceInfosBuffer, IGPUBufferPtr archetypeIdStartsBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr sortedKeysBuffer)
+static void SortInstances_Compute(ArrayCRef<GPUInstanceInfo> instanceInfos, IGPUBufferPtr instanceInfosBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr sortedKeysBuffer)
 {
-	Array<int> sortedKeys(PP_SL);
+	PROF_EVENT_F();
 
 	const int keysCount = instanceInfos.numElem();
 	if (inst_use_gpu_sort.GetBool())
 	{
 		s_mergeSortShader->InitKeys(cmdRecorder, sortedKeysBuffer, keysCount);
-		s_mergeSortShader->SortKeys(StringToHashConst("SortInstanceInfos"), cmdRecorder, sortedKeysBuffer, keysCount, instanceInfosBuffer);
+		s_mergeSortShader->SortKeys(StringToHashConst(SHADER_PIPELINE_SORT_INSTANCES), cmdRecorder, sortedKeysBuffer, keysCount, instanceInfosBuffer);
 	}
 	else
 	{
-		for (int i = 0; i < keysCount; ++i)
-			sortedKeys.append(i);
+		Array<int> sortedKeys(PP_SL);
+		{
+			PROF_EVENT("Fill");
+			sortedKeys.setNum(keysCount);
+			for (int i = 0; i < keysCount; ++i)
+				sortedKeys[i] = i;
+		}
 
 		arraySort(sortedKeys, [&](const int a, const int b) {
 			return instanceInfos[a].packedArchetypeId - instanceInfos[b].packedArchetypeId;
 		});
-		sortedKeys.insert(keysCount, 0);
 
-		cmdRecorder->WriteBuffer(sortedKeysBuffer, sortedKeys.ptr(), sortedKeys.numElem() * sizeof(sortedKeys[0]), 0);
+		{
+			PROF_EVENT("Write");
+			cmdRecorder->WriteBuffer(sortedKeysBuffer, &keysCount, sizeof(keysCount), 0);
+			cmdRecorder->WriteBuffer(sortedKeysBuffer, sortedKeys.ptr(), sortedKeys.numElem() * sizeof(sortedKeys[0]), 4);
+		}
 	}
+}
 
-	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("CalcArchetypeIdStarts");
-	computeRecorder->SetPipeline(s_calcArchetypeIdStartsPipeline);
-	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(s_calcArchetypeIdStartsPipeline,
+static void UpdateInstanceBounds_Compute(IGPUBufferPtr sortedKeysBuffer, IGPUBufferPtr instanceInfosBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr instanceIdsBuffer, IGPUBufferPtr instanceBoundsBuffer)
+{
+	PROF_EVENT_F();
+
+	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("CalcInstanceBounds");
+	computeRecorder->SetPipeline(s_instCalcBoundsPipeline);
+	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(s_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Buffer(0, instanceInfosBuffer)
 		.Buffer(1, sortedKeysBuffer)
 		.End())
 	);
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_calcArchetypeIdStartsPipeline,
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, archetypeIdStartsBuffer)
+		.Buffer(0, instanceBoundsBuffer)
+		.Buffer(1, instanceIdsBuffer)
 		.End())
 	);
-	computeRecorder->DispatchWorkgroups(1);
-	computeRecorder->Complete();
 
+	constexpr int GROUP_SIZE = 128;
+
+	// TODO: DispatchWorkgroupsIndirect
+	computeRecorder->DispatchWorkgroups(s_objects.numElem() / GROUP_SIZE + 1);
+	computeRecorder->Complete();
 }
 
-static void UpdateIndirectInstances_Compute(IGPUBufferPtr instanceInfosBuffer, IGPUBufferPtr archetypeIdStartsBuffer, IGPUBufferPtr sortedKeysBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr indirectDrawBuffer, IGPUBufferPtr instanceIdsBuffer)
+static void UpdateIndirectInstances_Compute(IGPUBufferPtr drawInstanceBoundsBuffer, IGPUCommandRecorder* cmdRecorder)
 {
-	DrawParams drawParams{ lod_idx.GetInt(), 1.0f };
-	cmdRecorder->WriteBuffer(s_drawParamsBuffer, &drawParams, sizeof(drawParams), 0);
+	PROF_EVENT_F();
 
 	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("UpdateIndirectInstances");
-	computeRecorder->SetPipeline(s_updateIndirectInstancesPipeline);
+	computeRecorder->SetPipeline(s_instPrepareDrawIndirect);
 	computeRecorder->SetBindGroup(0, s_updateBindGroup0);
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_updateIndirectInstancesPipeline,
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_instPrepareDrawIndirect,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, sortedKeysBuffer)
-		.Buffer(1, instanceInfosBuffer)
-		.Buffer(2, archetypeIdStartsBuffer)
+		.Buffer(0, drawInstanceBoundsBuffer)
 		.End())
 	);
-	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(s_updateIndirectInstancesPipeline,
+	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(s_instPrepareDrawIndirect,
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
-		.Buffer(0, instanceIdsBuffer)
-		.Buffer(1, indirectDrawBuffer)
+		.Buffer(0, s_drawInvocationsBuffer)
 		.End())
 	);
 
 	constexpr int GROUP_SIZE = 32;
-
-	computeRecorder->DispatchWorkgroups(s_drawLodsList.numElem() / GROUP_SIZE + 1);
+	const int numBounds = s_drawLodsList.numSlots() * MAX_INSTANCE_LODS;
+	computeRecorder->DispatchWorkgroups(numBounds / GROUP_SIZE + 1);
 	computeRecorder->Complete();
 }
 
@@ -390,9 +409,9 @@ static void VisibilityCullInstances_Software(const Vector3D& camPos, const Volum
 
 	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
 	// Input:
-	//		instanceIds		: buffer<int>
+	//		instanceIds		: buffer<int[]>
 	// Output:
-	//		instanceInfos	: buffer<GPUInstanceInfo>
+	//		instanceInfos	: buffer<GPUInstanceInfo[]>
 
 	instanceInfos.reserve(s_objects.numElem());
 
@@ -402,97 +421,122 @@ static void VisibilityCullInstances_Software(const Vector3D& camPos, const Volum
 		if (archetypeId == -1)
 			continue;
 
-		if (!frustum.IsSphereInside(obj.trs.t, 0.1))
+		if (!frustum.IsSphereInside(obj.trs.t, 4.0f))
 			continue;
 
 		const GPULodList& lodList = s_drawLodsList[archetypeId];
 		const float distFromCamera = distanceSqr(camPos, obj.trs.t);
 
 		// find suitable lod idx
-		int drawLod = -1;
-		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
+		int drawLod = lod_idx.GetInt();
+		if (drawLod == -1)
 		{
-			if (distFromCamera < sqr(s_drawLodInfos[lodIdx].distance))
-				break;
-			drawLod++;
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
+			{
+				if (distFromCamera < sqr(s_drawLodInfos[lodIdx].distance))
+					break;
+				drawLod++;
+			}
 		}
 
 		instanceInfos.append({ obj.instId, archetypeId | (drawLod << 24) });
 	}
 }
 
-static void SortInstances_Software(Array<GPUInstanceInfo>& instanceInfos, Array<int>& archetypeIdStarts)
+static void SortInstances_Software(Array<GPUInstanceInfo>& instanceInfos)
 {
 	PROF_EVENT_F();
 
 	// COMPUTE SHADER REFERENCE: SortInstanceArchetypes
 	// Input / Output:
 	//		instanceInfos		: buffer<GPUInstanceInfo[]>
-	//		archetypeIdStarts	: buffer<int[]>
-	//
 
 	// sort instances by archetype
 	// as we need them to be linear for each draw call
 	arraySort(instanceInfos, [](const GPUInstanceInfo& a, const GPUInstanceInfo& b) {
 		return a.packedArchetypeId - b.packedArchetypeId;
 	});
-
-	const int instanceCount = instanceInfos.numElem();
-
-	int lastArchetypeId = -1;
-	int lastArchetypeIdStart = 0;
-	for (int i = 0; i < instanceCount; ++i)
-	{
-		if (lastArchetypeId != -1 && lastArchetypeId != instanceInfos[i].packedArchetypeId)
-		{
-			archetypeIdStarts.append(lastArchetypeIdStart);
-			lastArchetypeIdStart = i;
-		}
-		lastArchetypeId = instanceInfos[i].packedArchetypeId;
-	}
-
-	if (lastArchetypeId != -1)
-		archetypeIdStarts.append(lastArchetypeIdStart);
 }
 
-static void UpdateIndirectInstances_Software(ArrayCRef<GPUInstanceInfo> instanceInfos, ArrayCRef<int> archetypeIdStarts, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr indirectDrawBuffer, IGPUBufferPtr instanceIdsBuffer)
+static void UpdateInstanceBounds_Software(ArrayCRef<GPUInstanceInfo> instanceInfos, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr instanceIdsBuffer, Array<GPUInstanceBound>& drawInstanceBounds)
+{
+	const int instanceCount = instanceInfos.numElem();
+
+	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
+	// Input:
+	//		instanceInfos			: buffer<GPUInstanceInfo>
+	// Output:
+	//		instanceIds				: buffer<int[]>
+	//		drawInstanceBounds		: buffer<GPUInstanceBound[]>
+
+	Array<int> instanceIds(PP_SL);
+	instanceIds.setNum(instanceCount);
+
+	drawInstanceBounds.setNum(s_drawLodsList.numElem() * MAX_INSTANCE_LODS);
+	if (instanceCount > 0)
+	{
+		const int lastArchetypeId = instanceInfos[instanceCount - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+		const int lastArchLodIndex = (instanceInfos[instanceCount - 1].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+		const int lastBoundIdx = lastArchetypeId * MAX_INSTANCE_LODS + lastArchLodIndex;
+
+		drawInstanceBounds[lastBoundIdx].last = instanceCount;
+	}
+
+	for (int i = 0; i < instanceCount; ++i)
+	{
+		instanceIds[i] = instanceInfos[i].instanceId;
+
+		if (i == 0 || instanceInfos[i].packedArchetypeId > instanceInfos[i - 1].packedArchetypeId)
+		{
+			const int archetypeId = instanceInfos[i].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+			const int archLodIndex = (instanceInfos[i].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+			const int boundIdx = archetypeId * MAX_INSTANCE_LODS + archLodIndex;
+
+			drawInstanceBounds[boundIdx].first = i;
+			drawInstanceBounds[boundIdx].archIdx = archetypeId;
+			drawInstanceBounds[boundIdx].lodIndex = archLodIndex;
+			if (i > 0)
+			{
+				const int lastArchetypeId = instanceInfos[i - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+				const int lastArchLodIndex = (instanceInfos[i - 1].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+				const int lastBoundIdx = lastArchetypeId * MAX_INSTANCE_LODS + lastArchLodIndex;
+
+				drawInstanceBounds[lastBoundIdx].last = i;
+			}
+		}
+	}
+	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
+}
+
+static void UpdateIndirectInstances_Software(ArrayCRef<GPUInstanceBound> drawInstanceBounds, IGPUCommandRecorder* cmdRecorder)
 {
 	PROF_EVENT_F();
-
-	const int instanceCount = instanceInfos.numElem();
-	Array<int> instanceIds(PP_SL);
 
 	// COMPUTE SHADER REFERENCE: PrepareDrawIndirectInstances
 	// Input:
 	//		instanceInfos		: buffer<GPUInstanceInfo[]>
-	//		archetypeIdStarts	: buffer<int[]>
+	//		drawInstanceBounds	: buffer<GPUInstanceBound[]>
 	// Output:
-	//		instanceIds			: buffer<int[]>
 	//		indirectDraws		: buffer<GPUDrawIndexedIndirectCmd[]>
 	//
 	// Notes:
 	//		instanceInfos must be sorted by archetype id prior to executing
 
-	instanceIds.setNum(instanceCount);
-
-	for (int i = 0; i < archetypeIdStarts.numElem(); ++i)
+	for (const GPUInstanceBound& bound : drawInstanceBounds)
 	{
-		const int firstInstance = archetypeIdStarts[i];
-		const int lastInstance = (i + 1 < archetypeIdStarts.numElem()) ? archetypeIdStarts[i + 1] : instanceCount;
+		if (bound.archIdx == -1)
+			continue;
 
-		const int archetypeId = instanceInfos[firstInstance].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
-		const int archLodIndex = (instanceInfos[firstInstance].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
-
-		const GPULodList& lodList = s_drawLodsList[archetypeId];
+		const GPULodList& lodList = s_drawLodsList[bound.archIdx];
 
 		// fill lod list
 		int numLods = 0;
-		int lodInfos[MAX_MODEL_LODS];
+		int lodInfos[MAX_INSTANCE_LODS];
 		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = s_drawLodInfos[lodIdx].next)
 			lodInfos[numLods++] = lodIdx;
 
 		// walk over batches
-		const int lodIdx = min(numLods - 1, lod_idx.GetInt() == -1 ? archLodIndex : lod_idx.GetInt());
+		const int lodIdx = min(numLods - 1, bound.lodIndex);
 
 		const GPULodInfo& lodInfo = s_drawLodInfos[lodInfos[lodIdx]];
 		for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = s_drawBatchs[batchIdx].next)
@@ -502,18 +546,14 @@ static void UpdateIndirectInstances_Software(ArrayCRef<GPUInstanceInfo> instance
 			GPUDrawIndexedIndirectCmd drawCmd;
 			drawCmd.firstIndex = drawBatch.firstIndex;
 			drawCmd.indexCount = drawBatch.indexCount;
-			drawCmd.firstInstance = firstInstance;
-			drawCmd.instanceCount = lastInstance - firstInstance;
+			drawCmd.firstInstance = bound.first;
+			drawCmd.instanceCount = bound.last - bound.first;
 
-			// indirectDrawBuffer[drawBatch.cmdIdx] = drawCmd;
-			cmdRecorder->WriteBuffer(indirectDrawBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
+			ASSERT(s_drawInfos(drawBatch.cmdIdx));
+
+			cmdRecorder->WriteBuffer(s_drawInvocationsBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
 		}
-
-		for (int j = firstInstance; j < lastInstance; ++j)
-			instanceIds[j] = instanceInfos[j].instanceId;
 	}
-
-	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
 }
 
 //--------------------------------------------------------------------
@@ -639,6 +679,7 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 		while (fsFind.Next())
 		{
 			const int modelIdx = g_studioCache->PrecacheModel(EqString::Format("models/%s", fsFind.GetPath()));
+			Msg("model %d %s\n", modelIdx, fsFind.GetPath());
 			CreateDrawArchetypeEGF(*g_studioCache->GetModel(modelIdx), 1);
 		}
 	}
@@ -804,18 +845,25 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 				IGPUBufferPtr instanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), s_objects.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
 				cmdRecorder->WriteBuffer(instanceInfosBuffer, instanceInfos.ptr(), instanceCount * sizeof(instanceInfos[0]), 0);
 				
-				IGPUBufferPtr sortedKeysBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
+				IGPUBufferPtr sortedKeysBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem() + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
 				cmdRecorder->WriteBuffer(sortedKeysBuffer, &instanceCount, sizeof(int), 0);
+				SortInstances_Compute(instanceInfos, instanceInfosBuffer, cmdRecorder, sortedKeysBuffer);
+				
+				const int numBounds = s_drawLodsList.numSlots() * MAX_INSTANCE_LODS;
+				IGPUBufferPtr drawInstanceBoundsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceBound), numBounds + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceBounds");
+				cmdRecorder->ClearBuffer(drawInstanceBoundsBuffer, 0, drawInstanceBoundsBuffer->GetSize());
+				cmdRecorder->WriteBuffer(drawInstanceBoundsBuffer, &numBounds, sizeof(int), 0);
 
-				IGPUBufferPtr archetypeIdStartsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_drawLodInfos.numElem() + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "ArchetypeIdStarts");
-				SortInstances_Compute(instanceInfos, instanceInfosBuffer, archetypeIdStartsBuffer, cmdRecorder, sortedKeysBuffer);
-				UpdateIndirectInstances_Compute(instanceInfosBuffer, archetypeIdStartsBuffer, sortedKeysBuffer, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+				UpdateInstanceBounds_Compute(sortedKeysBuffer, instanceInfosBuffer, cmdRecorder, s_instanceIdsBuffer, drawInstanceBoundsBuffer);
+				UpdateIndirectInstances_Compute(drawInstanceBoundsBuffer, cmdRecorder);
 			}
 			else
 			{
-				Array<int> archetypeIdStarts(PP_SL);
-				SortInstances_Software(instanceInfos, archetypeIdStarts);
-				UpdateIndirectInstances_Software(instanceInfos, archetypeIdStarts, cmdRecorder, s_drawInvocationsBuffer, s_instanceIdsBuffer);
+				SortInstances_Software(instanceInfos);
+
+				Array<GPUInstanceBound> drawInstanceBounds(PP_SL);
+				UpdateInstanceBounds_Software(instanceInfos, cmdRecorder, s_instanceIdsBuffer, drawInstanceBounds);
+				UpdateIndirectInstances_Software(drawInstanceBounds, cmdRecorder);
 			}
 
 			if(inst_update_once.GetBool())
