@@ -5,6 +5,7 @@
 
 #include "ShaderIncluder.h"
 #include "GLSLBoilerplate.h"
+#include "HLSLBoilerplate.h"
 
 EqShaderIncluder::EqShaderIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
 	: m_shaderInfo(shaderInfo), m_includePaths(includePaths)
@@ -33,7 +34,11 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 		if (!CString::Compare(requested_source, "ShaderCooker"))
 		{
 			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-			result->includeContent.Print(s_boilerPlateStrGLSL);
+
+			if(m_shaderInfo.sourceType == SHADERSOURCE_GLSL)
+				result->includeContent.Print(s_boilerPlateStrGLSL);
+			else if(m_shaderInfo.sourceType == SHADERSOURCE_HLSL)
+				result->includeContent.Print(s_boilerPlateStrHLSL);
 
 			// also add vertex layout defines
 			for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)

@@ -566,20 +566,37 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 					options.SetSourceLanguage(s_sourceLanguage[shaderInfo.sourceType]);
 					options.SetOptimizationLevel(shaderc_optimization_level_performance);
 					options.SetIncluder(std::move(includer));
-					options.AddMacroDefinition(kindMacroStr.ToCString());
-					options.SetForcedVersionProfile(450, shaderc_profile_none);
+					options.AddMacroDefinition(kindMacroStr.ToCString());			
 					options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
 
 					fillMacros(options);
+					shaderc::SpvCompilationResult compilationResult;
 
-					shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv(
-						(const char*)shaderSourceString.GetBasePointer(),
-						shaderSourceString.GetSize(),
-						shaderCKind,
-						shaderSourceName,
-						entryPoint.name,
-						options
-					);
+					if (shaderInfo.sourceType == SHADERSOURCE_GLSL)
+					{
+						options.SetForcedVersionProfile(450, shaderc_profile_none);
+
+						compilationResult = compiler.CompileGlslToSpv(
+							(const char*)shaderSourceString.GetBasePointer(),
+							shaderSourceString.GetSize(),
+							shaderCKind,
+							shaderSourceName,
+							entryPoint.name,
+							options
+						);
+					}
+					else if (shaderInfo.sourceType == SHADERSOURCE_HLSL)
+					{
+						compilationResult = compiler.CompileGlslToSpv(
+							(const char*)shaderSourceString.GetBasePointer(),
+							shaderSourceString.GetSize(),
+							shaderCKind,
+							shaderSourceName,
+							entryPoint.name,
+							options
+						);
+					}
+
 					const shaderc_compilation_status compileStatus = compilationResult.GetCompilationStatus();
 
 					if (compileStatus == shaderc_compilation_status_success)
