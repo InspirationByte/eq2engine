@@ -10,10 +10,10 @@ enum EComputeSortValueType
 
 // Bitonic Merge sort running on GPU
 // NOTE: keys buffer's first element is key count
-class ComputeBitonicMergeSortShader : public RefCountedObject<ComputeBitonicMergeSortShader>
+class ComputeSortShader : public RefCountedObject<ComputeSortShader>
 {
 public:
-	ComputeBitonicMergeSortShader();
+	ComputeSortShader();
 
 	int		AddSortPipeline(const char* name, const char* shaderName = nullptr);
 
@@ -29,4 +29,4 @@ protected:
 	Map<int, IGPUComputePipelinePtr> m_sortPipelines{ PP_SL };
 };
 
-using ComputeBitonicMergeSortShaderPtr = CRefPtr<ComputeBitonicMergeSortShader>;
+using ComputeBitonicMergeSortShaderPtr = CRefPtr<ComputeSortShader>;

@@ -20,7 +20,7 @@
 #include "render/GPUInstanceMng.h"
 #include "render/IDebugOverlay.h"
 #include "render/ViewParams.h"
-#include "render/ComputeBitonicMergeSort.h"
+#include "render/ComputeSort.h"
 #include "input/InputCommandBinder.h"
 #include "studio/StudioGeom.h"
 #include "studio/StudioCache.h"
@@ -32,8 +32,8 @@ DECLARE_CVAR(cam_fov, "90", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update_once, "1", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(inst_use_compute, "0", nullptr, 0);
-DECLARE_CVAR(inst_use_gpu_sort, "0", nullptr, 0);
+DECLARE_CVAR(inst_use_compute, "1", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(inst_use_gpu_sort, "1", nullptr, 0);
 DECLARE_CVAR(inst_use_gpu_starts, "1", nullptr, 0);
 
 static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
@@ -145,7 +145,7 @@ static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
 
 static void InitIndirectRenderer()
 {
-	s_mergeSortShader = CRefPtr_new(ComputeBitonicMergeSortShader);
+	s_mergeSortShader = CRefPtr_new(ComputeSortShader);
 	s_mergeSortShader->AddSortPipeline(SHADER_PIPELINE_SORT_INSTANCES, SHADERNAME_SORT_INSTANCES);
 
 	s_drawBatchsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUIndexedBatch), s_drawBatchs.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawBatchs");

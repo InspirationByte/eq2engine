@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
 using BIT_STORAGE_TYPE = int;
 
 template <int p>
@@ -15,7 +14,6 @@ constexpr int getIntExp(int _x = 0) { return getIntExp<p / 2>(_x + 1); }
 template <>
 constexpr int getIntExp<0>(int _x) { return _x - 1; }
 
-// TODO: 64 bit type impl
 static constexpr int numBitsSet(uint x)
 {
 	x = x - ((x >> 1) & 0x55555555);
@@ -25,6 +23,32 @@ static constexpr int numBitsSet(uint x)
 	x = x + (x >> 16);
 	return x & 0x0000003F;
 }
+
+#ifdef __GNUC__
+#define leadingZeroCnt(x)	__builtin_clz(x)
+#define trailingZeroCnt(x)	__builtin_ctz(x)
+#else
+#pragma warning(push)
+#pragma warning(disable:4146)
+
+inline uint leadingZeroCnt(uint x)
+{
+	x |= (x >> 1);
+	x |= (x >> 2);
+	x |= (x >> 4);
+	x |= (x >> 8);
+	x |= (x >> 16);
+	return 32 - numBitsSet(x);
+}
+
+static uint trailingZeroCnt(uint x)
+{
+	return numBitsSet((x & -x) - 1u);
+}
+
+#pragma warning(pop)
+
+#endif
 
 static inline void bitsSet(int& value, int mask, bool on)		{ value = (value & ~mask) | (static_cast<int>(on) * mask); }
 static inline void bitsSet(uint& value, uint mask, bool on)		{ value = (value & ~mask) | (static_cast<uint>(on) * mask); }
