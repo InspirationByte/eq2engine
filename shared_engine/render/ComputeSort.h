@@ -8,7 +8,7 @@ enum EComputeSortValueType
 	COMPUTESORT_CUSTOM_START
 };
 
-// Bitonic Merge sort running on GPU
+// Merge sort running on GPU
 // NOTE: keys buffer's first element is key count
 class ComputeSortShader : public RefCountedObject<ComputeSortShader>
 {
@@ -25,6 +25,7 @@ protected:
 
 	Array<IGPUBufferPtr>	m_blocks{ PP_SL };
 	IGPUComputePipelinePtr	m_initPipeline;
+	IGPUComputePipelinePtr	m_prepareParamBufferPipeline;
 
 	Map<int, IGPUComputePipelinePtr> m_sortPipelines{ PP_SL };
 };

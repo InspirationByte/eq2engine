@@ -31,7 +31,11 @@ ComputeSortShader::ComputeSortShader()
 		.ShaderLayoutId(StringToHashConst("InitKeys"))
 		.End()
 	);
-
+	m_prepareParamBufferPipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
+		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
+		.ShaderLayoutId(StringToHashConst("PrepareParamBuffer"))
+		.End()
+	);
 	m_sortPipelines.insert(COMPUTESORT_FLOAT, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(StringToHashConst("SortFloat"))
@@ -139,14 +143,36 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 	const ShaderAPICapabilities& rhiCaps = g_renderAPI->GetCaps();
 
 	const int alignedParamSize = max(sizeof(ParamsData), rhiCaps.minStorageBufferOffsetAlignment);
-	IGPUBufferPtr paramBuffer = g_renderAPI->CreateBuffer(BufferInfo(alignedParamSize, paramsDataList.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_INDIRECT | BUFFERUSAGE_COPY_DST, "BlockDim");
+	IGPUBufferPtr paramBuffer = g_renderAPI->CreateBuffer(BufferInfo(alignedParamSize, paramsDataList.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_INDIRECT, "Params");
 	
-	//cmdRecorder->WriteBuffer(paramBuffer, &paramsDataList, sizeof(ParamsData), alignedParamSize);
 
-	// this is bottleneck
-	for (int i = 0; i < paramsDataList.numElem(); ++i)
-		cmdRecorder->WriteBuffer(paramBuffer, &paramsDataList[i], sizeof(ParamsData), i * alignedParamSize);
-	
+	{
+		struct SmolStruct
+		{
+			int steps;
+			int paramCount;
+		} smol;
+		smol.steps = alignedParamSize / sizeof(ParamsData);
+		smol.paramCount = paramsDataList.numElem();
+
+		IGPUBufferPtr tmpParamBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(ParamsData), paramsDataList.numElem() + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "TmpParams");
+		cmdRecorder->WriteBuffer(tmpParamBuffer, &smol, sizeof(smol), 0);
+		cmdRecorder->WriteBuffer(tmpParamBuffer, paramsDataList.ptr(), sizeof(ParamsData) * paramsDataList.numElem(), sizeof(smol));
+
+		IGPUComputePassRecorderPtr computePassRecorder = cmdRecorder->BeginComputePass("PrepareParams");
+		computePassRecorder->SetPipeline(m_prepareParamBufferPipeline);
+		computePassRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_prepareParamBufferPipeline, Builder<BindGroupDesc>()
+			.GroupIndex(0)
+			.Buffer(0, tmpParamBuffer)
+			.Buffer(1, paramBuffer)
+			.End()
+		));
+
+		constexpr int GROUP_SIZE = 16;
+		computePassRecorder->DispatchWorkgroups(paramsDataList.numElem() / GROUP_SIZE + 1);
+		computePassRecorder->Complete();
+	}	
+
 	IGPUComputePassRecorderPtr computePassRecorder = cmdRecorder->BeginComputePass("Sort");
 	computePassRecorder->SetPipeline(sortPipeline);
 	computePassRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
