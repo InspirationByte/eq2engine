@@ -995,6 +995,12 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	Array<WGPUConstantEntry> rhiVertexPipelineConstants(PP_SL);
 	Array<WGPUConstantEntry> rhiFragmentPipelineConstants(PP_SL);
 
+	for (const PipelineConst& constant : pipelineDesc.vertex.constants)
+		rhiVertexPipelineConstants.append({ nullptr, constant.name, constant.value });
+
+	for (const PipelineConst& constant : pipelineDesc.fragment.constants)
+		rhiFragmentPipelineConstants.append({ nullptr, constant.name, constant.value });
+
 	WGPURenderPipelineDescriptor rhiRenderPipelineDesc = {};
 	if (pipelineLayout)
 	{
@@ -1332,6 +1338,9 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 	}
 
 	Array<WGPUConstantEntry> rhiComputePipelineConstants(PP_SL);
+
+	for (const PipelineConst& constant : pipelineDesc.constants)
+		rhiComputePipelineConstants.append({ nullptr, constant.name, constant.value });
 
 	WGPUComputePipelineDescriptor rhiComputePipelineDesc = {};
 	rhiComputePipelineDesc.compute.constantCount = rhiComputePipelineConstants.numElem();
