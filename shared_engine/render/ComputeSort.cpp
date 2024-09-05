@@ -7,8 +7,6 @@ constexpr int GROUP_SIZE		= 256;
 constexpr int MAX_DIM_GROUPS	= 1024;
 constexpr int MAX_DIM_THREADS	= (GROUP_SIZE * MAX_DIM_GROUPS);
 
-constexpr EqStringRef BITONIC_MERGE_SORT_SHADERNAME = "ComputeSort";
-
 static void bitonicCalcWorkSize(int length, int& x, int& y, int& z)
 {
 	if (length <= MAX_DIM_THREADS)
@@ -23,6 +21,8 @@ static void bitonicCalcWorkSize(int length, int& x, int& y, int& z)
 		z = 1;
 	}
 }
+
+constexpr EqStringRef BITONIC_MERGE_SORT_SHADERNAME = "ComputeSort";
 
 ComputeSortShader::ComputeSortShader()
 {

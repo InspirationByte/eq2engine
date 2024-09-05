@@ -188,7 +188,7 @@ void GPUBaseInstanceManager::FreeInstance(int instanceId)
 		--m_archetypeInstCounts[inst.archetype];
 	}
 
-	inst.archetype = -1;
+	inst.archetype = GPUINST_INVALID_ARCHETYPE;
 	inst.batchesFlags = 0;
 
 	for (int i = 0; i < GPUINST_MAX_COMPONENTS; ++i)

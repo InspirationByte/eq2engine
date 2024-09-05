@@ -70,6 +70,9 @@ Example of use:
 #endif
 
 constexpr int GPUINST_MAX_COMPONENTS = 8;
+constexpr int GPUINST_INVALID_ARCHETYPE = -1;
+
+
 
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
 	static constexpr const char* NAME = #Name; \
@@ -150,7 +153,7 @@ protected:
 	struct Instance
 	{
 		InstRoot	root;
-		int			archetype{ -1 };		// usually hash of the model name
+		int			archetype{ GPUINST_INVALID_ARCHETYPE };		// usually hash of the model name
 		uint		batchesFlags{ 0 };		// bit flags of drawn batches
 	};
 

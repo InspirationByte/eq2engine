@@ -22,6 +22,7 @@ class DemoGPUInstanceManager
 	: public GPUInstanceManager<InstTransform>
 	, public IShaderMeshInstanceProvider
 {
+public:
 	void	FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const;
 	void	GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const;
 };
