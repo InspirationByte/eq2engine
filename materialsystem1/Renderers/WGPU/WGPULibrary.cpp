@@ -261,6 +261,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
 		{
 			enabledToggles.append("enable_immediate_error_handling");
+			enabledToggles.append("disable_symbol_renaming");
 			wgpu_report_errors.SetBool(true);
 			wgpu_break_on_error.SetBool(true);
 		}

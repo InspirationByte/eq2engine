@@ -25,6 +25,10 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #	define gl_InstanceIndex		0
 #endif
 
+// WebGPU Dawn hacks
+#define atomicLoad( x )			atomicAdd(x, 0)
+#define atomicStore( x, value )	atomicExchange(x, value)
+
 #ifndef BINDGROUP_CONSTANT
 #define BINDGROUP_CONSTANT		0
 #endif

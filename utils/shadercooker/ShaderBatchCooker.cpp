@@ -636,6 +636,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 						options.SetIncluder(std::move(includer));
 						options.AddMacroDefinition(kindMacroStr.ToCString());			
 						options.SetTargetEnvironment(shaderc_target_env_webgpu, 0);
+						//options.SetGenerateDebugInfo();
 
 						fillMacros(options);
 						shaderc::SpvCompilationResult compilationResult;
