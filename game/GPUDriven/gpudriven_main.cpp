@@ -33,8 +33,6 @@ DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update_once, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_use_compute, "1", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(inst_use_gpu_sort, "1", nullptr, 0);
-DECLARE_CVAR(inst_use_gpu_starts, "1", nullptr, 0);
 
 static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
 {
@@ -320,31 +318,8 @@ static void SortInstances_Compute(ArrayCRef<GPUInstanceInfo> instanceInfos, IGPU
 	PROF_EVENT_F();
 
 	const int keysCount = instanceInfos.numElem();
-	if (inst_use_gpu_sort.GetBool())
-	{
-		s_mergeSortShader->InitKeys(cmdRecorder, sortedKeysBuffer, keysCount);
-		s_mergeSortShader->SortKeys(StringToHashConst(SHADER_PIPELINE_SORT_INSTANCES), cmdRecorder, sortedKeysBuffer, keysCount, instanceInfosBuffer);
-	}
-	else
-	{
-		Array<int> sortedKeys(PP_SL);
-		{
-			PROF_EVENT("Fill");
-			sortedKeys.setNum(keysCount);
-			for (int i = 0; i < keysCount; ++i)
-				sortedKeys[i] = i;
-		}
-
-		arraySort(sortedKeys, [&](const int a, const int b) {
-			return instanceInfos[a].packedArchetypeId - instanceInfos[b].packedArchetypeId;
-		});
-
-		{
-			PROF_EVENT("Write");
-			cmdRecorder->WriteBuffer(sortedKeysBuffer, &keysCount, sizeof(keysCount), 0);
-			cmdRecorder->WriteBuffer(sortedKeysBuffer, sortedKeys.ptr(), sortedKeys.numElem() * sizeof(sortedKeys[0]), 4);
-		}
-	}
+	s_mergeSortShader->InitKeys(cmdRecorder, sortedKeysBuffer, keysCount);
+	s_mergeSortShader->SortKeys(StringToHashConst(SHADER_PIPELINE_SORT_INSTANCES), cmdRecorder, sortedKeysBuffer, keysCount, instanceInfosBuffer);
 }
 
 static void UpdateInstanceBounds_Compute(IGPUBufferPtr sortedKeysBuffer, IGPUBufferPtr instanceInfosBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr instanceIdsBuffer, IGPUBufferPtr instanceBoundsBuffer)
@@ -460,6 +435,8 @@ static void SortInstances_Software(Array<GPUInstanceInfo>& instanceInfos)
 
 static void UpdateInstanceBounds_Software(ArrayCRef<GPUInstanceInfo> instanceInfos, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr instanceIdsBuffer, Array<GPUInstanceBound>& drawInstanceBounds)
 {
+	PROF_EVENT_F();
+
 	const int instanceCount = instanceInfos.numElem();
 
 	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
@@ -732,7 +709,7 @@ void CState_GpuDrivenDemo::InitGame()
 
 		Object& obj = s_objects.append();
 		obj.instId = s_instanceMng.AddInstance<InstTransform>(*it);
-		obj.trs.t = Vector3D(RandomFloat(-900, 900), RandomFloat(-100, 100), RandomFloat(-900, 900));
+		obj.trs.t = Vector3D(RandomFloat(-2900, 2900), RandomFloat(-100, 100), RandomFloat(-2900, 2900));
 		obj.trs.r = rotateXYZ(RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F));
 
 		obj.trs.t *= 0.25f;
