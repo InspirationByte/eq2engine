@@ -222,6 +222,25 @@ void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 	m_sortShader->SortKeys(StringToHashConst(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount, intermediate.instanceInfosBuffer);
 }
 
+constexpr int GPUBOUNDS_GROUP_SIZE = 256;
+constexpr int GPUBOUNDS_MAX_DIM_GROUPS = 1024;
+constexpr int GPUBOUNDS_MAX_DIM_THREADS = (GPUBOUNDS_GROUP_SIZE * GPUBOUNDS_MAX_DIM_GROUPS);
+
+static void CalcBoundsWorkSize(int length, int& x, int& y, int& z)
+{
+	if (length <= GPUBOUNDS_MAX_DIM_THREADS)
+	{
+		x = (length - 1) / GPUBOUNDS_GROUP_SIZE + 1;
+		y = z = 1;
+	}
+	else
+	{
+		x = GPUBOUNDS_MAX_DIM_GROUPS;
+		y = (length - 1) / GPUBOUNDS_MAX_DIM_THREADS + 1;
+		z = 1;
+	}
+}
+
 void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
@@ -243,10 +262,10 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermedi
 		.End())
 	);
 
-	constexpr int GROUP_SIZE = 128;
-
 	// TODO: DispatchWorkgroupsIndirect (use as result from VisibilityCullInstances)
-	computeRecorder->DispatchWorkgroups(intermediate.maxNumberOfObjects / GROUP_SIZE + 1);
+	int x, y, z;
+	CalcBoundsWorkSize(intermediate.maxNumberOfObjects, x, y ,z);
+	computeRecorder->DispatchWorkgroups(x, y, z);
 	computeRecorder->Complete();
 }
 
@@ -430,6 +449,8 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 		return;
 	}
 
+	cmdRecorder->DbgPushGroup("GRIMPrepareDraw");
+
 	const int numBounds = m_drawLodsList.numSlots() * MAX_INSTANCE_LODS;
 	intermediate.sortedInstanceIds = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), intermediate.maxNumberOfObjects + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
 	intermediate.instanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), intermediate.maxNumberOfObjects), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
@@ -438,16 +459,30 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	cmdRecorder->ClearBuffer(intermediate.drawInstanceBoundsBuffer, 0, intermediate.drawInstanceBoundsBuffer->GetSize());
 	cmdRecorder->WriteBuffer(intermediate.drawInstanceBoundsBuffer, &numBounds, sizeof(int), 0);
 
+	cmdRecorder->DbgPushGroup("CullInstances");
 	VisibilityCullInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPushGroup("SortInstances");
 	SortInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPushGroup("CalcBounds");
 	UpdateInstanceBounds_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPushGroup("UpdateIndirect");
 	UpdateIndirectInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPopGroup();
 }
 
 void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)
 {
 	PROF_EVENT_F();
 
+	renderPassCtx.recorder->DbgPushGroup("GRIMDraw");
 	int numDrawCalls = 0;
 	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
 	{
@@ -470,6 +505,7 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 			++numDrawCalls;
 		}
 	}
+	renderPassCtx.recorder->DbgPopGroup();
 
 	if(grim_stats.GetBool())
 	{
