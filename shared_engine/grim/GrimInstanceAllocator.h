@@ -119,6 +119,7 @@ public:
 	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
 	int				GetInstanceCountByArchetype(GRIMArchetype archetypeId) const;
 	GRIMArchetype	GetInstanceArchetypeId(int instanceIdx) const { return m_instances[instanceIdx].archetype; }
+	uint			GetBufferUpdateToken() const { return m_buffersUpdated; }
 
 	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
 

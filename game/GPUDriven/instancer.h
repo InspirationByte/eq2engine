@@ -1,7 +1,7 @@
 #pragma once
 
 #include "grim/GrimInstanceAllocator.h"
-#include "materialsystem1/IMatSysShader.h"
+#include "grim/GrimBaseRenderer.h"
 
 enum EGPUInstanceComponentId : int
 {
@@ -18,13 +18,18 @@ struct InstTransform
 	float		boundingSphere{ 1.0f };
 };
 
-class DemoGRIMInstanceAllocator
-	: public GRIMInstanceAllocator<InstTransform>
-	, public IShaderMeshInstanceProvider
+using DemoGRIMInstanceAllocator = GRIMInstanceAllocator<InstTransform>;
+
+class DemoGRIMRenderer : public GRIMBaseRenderer
 {
 public:
+	DemoGRIMRenderer(DemoGRIMInstanceAllocator& instAlloc);
+
 	void	FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const;
 	void	GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const;
+
+	void	VisibilityCullInstances_Compute(IntermediateState& intermediate);
+	void	VisibilityCullInstances_Software(IntermediateState& intermediate);
 };
 
 const VertexLayoutDesc& GetGPUInstanceVertexLayout();

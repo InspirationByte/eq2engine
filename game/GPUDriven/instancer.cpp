@@ -15,25 +15,29 @@ const VertexLayoutDesc& GetGPUInstanceVertexLayout()
 	return s_gpuInstIdVertexLayoutDesc;
 }
 
+DemoGRIMRenderer::DemoGRIMRenderer(DemoGRIMInstanceAllocator& instAlloc)
+	: GRIMBaseRenderer(instAlloc)
+{
+}
 
-void DemoGRIMInstanceAllocator::FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const
+void DemoGRIMRenderer::FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const
 {
 	Builder<BindGroupLayoutDesc>(bindGroupLayout)
 		.Buffer("InstRoot", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_STORAGE_READONLY)
 		.Buffer("InstTransform", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_STORAGE_READONLY);
 }
 
-void DemoGRIMInstanceAllocator::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const
+void DemoGRIMRenderer::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const
 {
-	if (outBindGroup && lastUpdateToken == m_buffersUpdated)
+	const uint updateToken = m_instAllocator.GetBufferUpdateToken();
+	if (outBindGroup && lastUpdateToken == updateToken)
 		return;
 
+	lastUpdateToken = updateToken;
 	BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 		.GroupIndex(bindGroupIdx)
-		.Buffer(0, GetRootBuffer())
-		.Buffer(1, GetDataPoolBuffer(InstTransform::COMPONENT_ID))
+		.Buffer(0, m_instAllocator.GetRootBuffer())
+		.Buffer(1, m_instAllocator.GetDataPoolBuffer(InstTransform::COMPONENT_ID))
 		.End();
 	outBindGroup = g_renderAPI->CreateBindGroup(pipelineLayout, bindGroupDesc);
-
-	lastUpdateToken = m_buffersUpdated;
 }

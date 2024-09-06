@@ -30,4 +30,4 @@ protected:
 	Map<int, IGPUComputePipelinePtr> m_sortPipelines{ PP_SL };
 };
 
-using ComputeBitonicMergeSortShaderPtr = CRefPtr<ComputeSortShader>;
+using ComputeSortShaderPtr = CRefPtr<ComputeSortShader>;
