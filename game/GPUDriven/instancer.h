@@ -1,6 +1,6 @@
 #pragma once
 
-#include "render/GPUInstanceMng.h"
+#include "grim/GrimInstanceAllocator.h"
 #include "materialsystem1/IMatSysShader.h"
 
 enum EGPUInstanceComponentId : int
@@ -18,8 +18,8 @@ struct InstTransform
 	float		boundingSphere{ 1.0f };
 };
 
-class DemoGPUInstanceManager
-	: public GPUInstanceManager<InstTransform>
+class DemoGRIMInstanceAllocator
+	: public GRIMInstanceAllocator<InstTransform>
 	, public IShaderMeshInstanceProvider
 {
 public:

@@ -17,7 +17,7 @@
 #include "materialsystem1/MeshBuilder.h"
 
 #include "render/EqParticles.h"
-#include "render/GPUInstanceMng.h"
+#include "grim/GrimInstanceAllocator.h"
 #include "render/IDebugOverlay.h"
 #include "render/ViewParams.h"
 #include "render/ComputeSort.h"
@@ -32,7 +32,8 @@ DECLARE_CVAR(cam_fov, "90", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_update_once, "1", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(inst_use_compute, "1", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
 
 static void lod_idx_changed(ConVar* pVar, char const* pszOldValue)
 {
@@ -44,7 +45,7 @@ DECLARE_CVAR(obj_rotate_interval, "100", nullptr, 0);
 DECLARE_CVAR(obj_rotate, "1", nullptr, 0);
 DECLARE_CVAR(obj_draw, "1", nullptr, 0);
 
-static DemoGPUInstanceManager s_instanceMng;
+static DemoGRIMInstanceAllocator s_instanceAlloc;
 static CStaticAutoPtr<CState_GpuDrivenDemo> g_State_Demo;
 static IVertexFormat* s_gameObjectVF = nullptr;
 
@@ -113,6 +114,96 @@ struct GPUDrawInfo
 	int						batchIdx{ -1 };
 };
 
+struct GPUInstanceInfo
+{
+	static constexpr int ARCHETYPE_BITS = 24;
+	static constexpr int LOD_BITS = 8;
+
+	static constexpr int ARCHETYPE_MASK = (1 << ARCHETYPE_BITS) - 1;
+	static constexpr int LOD_MASK = (1 << LOD_BITS) - 1;
+
+	int		instanceId;
+	int		packedArchetypeId;
+};
+
+struct GRIMRenderState
+{
+	Vector3D		viewPos;
+	Volume			frustum;
+
+	IGPUBufferPtr	drawInvocationsBuffer;
+	IGPUBufferPtr	instanceIdsBuffer;
+	
+	// TODO: renderer UID to validate
+};
+
+class GRIMBaseRenderer
+{
+public:
+	GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator);
+
+	void			Init();
+	void			Shutdown();
+
+	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeCreateDesc& desc);
+	void			DestroyDrawArchetype(GRIMArchetype id);
+
+	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState);
+	void			Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
+
+protected:
+
+	struct IntermediateState;
+
+	void			VisibilityCullInstances_Compute(IntermediateState& intermediate);
+	void			SortInstances_Compute(IntermediateState& intermediate);
+	void			UpdateInstanceBounds_Compute(IntermediateState& intermediate);
+	void			UpdateIndirectInstances_Compute(IntermediateState& intermediate);
+
+	void			VisibilityCullInstances_Software(IntermediateState& intermediate);
+	void			SortInstances_Software(IntermediateState& intermediate);
+	void			UpdateInstanceBounds_Software(IntermediateState& intermediate);
+	void			UpdateIndirectInstances_Software(IntermediateState& intermediate);
+
+	GRIMBaseInstanceAllocator&	m_instAllocator;
+};
+
+struct GRIMBaseRenderer::IntermediateState
+{
+	Vector3D				viewPos;
+	Volume					frustum;
+
+	IGPUCommandRecorderPtr	cmdRecorder;
+
+	IGPUBufferPtr			sortedKeysBuffer;
+	IGPUBufferPtr			instanceInfosBuffer;
+	IGPUBufferPtr			drawInstanceBoundsBuffer;
+
+	IGPUBufferPtr			drawInvocationsBuffer;
+	IGPUBufferPtr			instanceIdsBuffer;
+
+	// Software only
+	Array<GPUInstanceInfo>	instanceInfos{ PP_SL };
+	Array<GPUInstanceBound>	drawInstanceBounds{ PP_SL };
+};
+
+GRIMBaseRenderer::GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator)
+	: m_instAllocator(allocator)
+{
+}
+
+GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeCreateDesc& desc)
+{
+	return GRIM_INVALID_ARCHETYPE;
+}
+
+void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
+{
+
+}
+
+static GRIMBaseRenderer s_grimRenderer(s_instanceAlloc);
+
 //-------------------------------------------------
 
 static Map<int, int>					s_modelIdToArchetypeId{ PP_SL };
@@ -125,8 +216,6 @@ static IGPUBufferPtr					s_drawBatchsBuffer;
 static IGPUBufferPtr					s_drawLodInfosBuffer;
 static IGPUBufferPtr					s_drawLodsListBuffer;
 
-static IGPUBufferPtr					s_drawInvocationsBuffer;
-static IGPUBufferPtr					s_instanceIdsBuffer;		// sorted ready to draw instances
 static ComputeBitonicMergeSortShaderPtr	s_mergeSortShader;
 
 static IGPUComputePipelinePtr			s_instCalcBoundsPipeline;
@@ -137,13 +226,14 @@ static IGPUComputePipelinePtr			s_cullInstancesPipeline;
 static IGPUBindGroupPtr					s_cullBindGroup0;
 static IGPUBindGroupPtr					s_updateBindGroup0;
 
+static GRIMRenderState					s_storedRenderState;
+
 static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
 static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
 static constexpr char SHADERNAME_PREPARE_INDIRECT_INSTANCES[] = "InstancePrepareDrawIndirect";
 static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
 
 static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
-
 
 static void InitIndirectRenderer()
 {
@@ -157,8 +247,6 @@ static void InitIndirectRenderer()
 	s_drawBatchsBuffer->Update(s_drawBatchs.ptr(), s_drawBatchs.numSlots() * sizeof(s_drawBatchs[0]), 0);
 	s_drawLodInfosBuffer->Update(s_drawLodInfos.ptr(), s_drawLodInfos.numSlots() * sizeof(s_drawLodInfos[0]), 0);
 	s_drawLodsListBuffer->Update(s_drawLodsList.ptr(), s_drawLodsList.numSlots() * sizeof(s_drawLodsList[0]), 0);
-
-	s_drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
 
 	s_instCalcBoundsPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
@@ -207,8 +295,6 @@ static void TermIndirectRenderer()
 	s_drawBatchsBuffer = nullptr;
 	s_drawLodInfosBuffer = nullptr;
 	s_drawLodsListBuffer = nullptr;
-	s_drawInvocationsBuffer = nullptr;
-	s_instanceIdsBuffer = nullptr;
 	s_mergeSortShader = nullptr;
 	s_instCalcBoundsPipeline = nullptr;
 	s_instPrepareDrawIndirect = nullptr;
@@ -216,6 +302,8 @@ static void TermIndirectRenderer()
 
 	s_cullInstancesPipeline = nullptr;
 	s_cullBindGroup0 = nullptr;
+
+	s_storedRenderState = {};
 }
 
 static int CreateDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags = 0, int materialGroupIdx = 0)
@@ -321,18 +409,6 @@ static int CreateDrawArchetypeEGF(const CEqStudioGeom& geom, uint bodyGroupFlags
 	return archetypeId;
 }
 
-struct GPUInstanceInfo
-{
-	static constexpr int ARCHETYPE_BITS = 24;
-	static constexpr int LOD_BITS = 8;
-
-	static constexpr int ARCHETYPE_MASK = (1 << ARCHETYPE_BITS) - 1;
-	static constexpr int LOD_MASK = (1 << LOD_BITS) - 1;
-
-	int		instanceId;
-	int		packedArchetypeId;
-};
-
 //--------------------------------------------------------------------
 
 constexpr int GPUVIS_GROUP_SIZE = 256;
@@ -354,51 +430,51 @@ static void VisCalcWorkSize(int length, int& x, int& y, int& z)
 	}
 }
 
-static void VisibilityCullInstances_Compute(const Vector3D& camPos, const Volume& frustum, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr sortedKeysBuffer, IGPUBufferPtr instanceInfosBuffer)
+void GRIMBaseRenderer::VisibilityCullInstances_Compute(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
 
 	struct CullViewParams
 	{
 		Vector4D	frustumPlanes[6];
-		Vector3D	cameraPos;
+		Vector3D	viewPos;
 		int			overrideLodIdx;
 		int			maxInstanceIds;
 		float		_padding[3];
 	};
 
 	CullViewParams cullView;
-	memcpy(cullView.frustumPlanes, frustum.GetPlanes().ptr(), sizeof(cullView.frustumPlanes));
-	cullView.cameraPos = camPos;
+	memcpy(cullView.frustumPlanes, intermediate.frustum.GetPlanes().ptr(), sizeof(cullView.frustumPlanes));
+	cullView.viewPos = intermediate.viewPos;
 	cullView.overrideLodIdx = lod_idx.GetInt();
-	cullView.maxInstanceIds = s_instanceMng.GetInstanceSlotsCount();	// TODO: calculate between frames
+	cullView.maxInstanceIds = s_instanceAlloc.GetInstanceSlotsCount();	// TODO: calculate between frames
 
 	IGPUBufferPtr viewParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(CullViewParams), 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "ViewParamsBuffer");
-	cmdRecorder->WriteBuffer(viewParamsBuffer, &cullView, sizeof(cullView), 0);
-	cmdRecorder->ClearBuffer(sortedKeysBuffer, 0, sizeof(int));
+	intermediate.cmdRecorder->WriteBuffer(viewParamsBuffer, &cullView, sizeof(cullView), 0);
+	intermediate.cmdRecorder->ClearBuffer(intermediate.sortedKeysBuffer, 0, sizeof(int));
 
-	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("CullInstances");
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CullInstances");
 	computeRecorder->SetPipeline(s_cullInstancesPipeline);
 	computeRecorder->SetBindGroup(0, s_cullBindGroup0);
 	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_cullInstancesPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, s_instanceMng.GetInstanceArchetypesBuffer())
+		.Buffer(0, s_instanceAlloc.GetInstanceArchetypesBuffer())
 		.Buffer(1, viewParamsBuffer)
 		.End())
 	);
 	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(s_cullInstancesPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
-		.Buffer(0, instanceInfosBuffer)
-		.Buffer(1, sortedKeysBuffer)
+		.Buffer(0, intermediate.instanceInfosBuffer)
+		.Buffer(1, intermediate.sortedKeysBuffer)
 		.End())
 	);
 
 	computeRecorder->SetBindGroup(3, g_renderAPI->CreateBindGroup(s_cullInstancesPipeline, Builder<BindGroupDesc>()
 		.GroupIndex(3)
-		.Buffer(0, s_instanceMng.GetRootBuffer())
-		.Buffer(1, s_instanceMng.GetDataPoolBuffer(InstTransform::COMPONENT_ID))
+		.Buffer(0, s_instanceAlloc.GetRootBuffer())
+		.Buffer(1, s_instanceAlloc.GetDataPoolBuffer(InstTransform::COMPONENT_ID))
 		.End())
 	);
 
@@ -409,32 +485,32 @@ static void VisibilityCullInstances_Compute(const Vector3D& camPos, const Volume
 	computeRecorder->Complete();
 }
 
-static void SortInstances_Compute( IGPUBufferPtr instanceInfosBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr sortedKeysBuffer)
+void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
-	const int maxInstancesCount = s_instanceMng.GetInstanceSlotsCount();
-	s_mergeSortShader->InitKeys(cmdRecorder, sortedKeysBuffer, maxInstancesCount);
-	s_mergeSortShader->SortKeys(StringToHashConst(SHADER_PIPELINE_SORT_INSTANCES), cmdRecorder, sortedKeysBuffer, maxInstancesCount, instanceInfosBuffer);
+	const int maxInstancesCount = s_instanceAlloc.GetInstanceSlotsCount();
+	s_mergeSortShader->InitKeys(intermediate.cmdRecorder, intermediate.sortedKeysBuffer, maxInstancesCount);
+	s_mergeSortShader->SortKeys(StringToHashConst(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, intermediate.sortedKeysBuffer, maxInstancesCount, intermediate.instanceInfosBuffer);
 }
 
-static void UpdateInstanceBounds_Compute(IGPUBufferPtr sortedKeysBuffer, IGPUBufferPtr instanceInfosBuffer, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr instanceIdsBuffer, IGPUBufferPtr instanceBoundsBuffer)
+void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
 
-	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("CalcInstanceBounds");
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CalcInstanceBounds");
 	computeRecorder->SetPipeline(s_instCalcBoundsPipeline);
 	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(s_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, instanceInfosBuffer)
-		.Buffer(1, sortedKeysBuffer)
+		.Buffer(0, intermediate.instanceInfosBuffer)
+		.Buffer(1, intermediate.sortedKeysBuffer)
 		.End())
 	);
 	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, instanceBoundsBuffer)
-		.Buffer(1, instanceIdsBuffer)
+		.Buffer(0, intermediate.drawInstanceBoundsBuffer)
+		.Buffer(1, intermediate.instanceIdsBuffer)
 		.End())
 	);
 
@@ -445,23 +521,23 @@ static void UpdateInstanceBounds_Compute(IGPUBufferPtr sortedKeysBuffer, IGPUBuf
 	computeRecorder->Complete();
 }
 
-static void UpdateIndirectInstances_Compute(IGPUBufferPtr drawInstanceBoundsBuffer, IGPUCommandRecorder* cmdRecorder)
+void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
 
-	IGPUComputePassRecorderPtr computeRecorder = cmdRecorder->BeginComputePass("UpdateIndirectInstances");
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("UpdateIndirectInstances");
 	computeRecorder->SetPipeline(s_instPrepareDrawIndirect);
 	computeRecorder->SetBindGroup(0, s_updateBindGroup0);
 	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(s_instPrepareDrawIndirect,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, drawInstanceBoundsBuffer)
+		.Buffer(0, intermediate.drawInstanceBoundsBuffer)
 		.End())
 	);
 	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(s_instPrepareDrawIndirect,
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
-		.Buffer(0, s_drawInvocationsBuffer)
+		.Buffer(0, intermediate.drawInvocationsBuffer)
 		.End())
 	);
 
@@ -473,7 +549,7 @@ static void UpdateIndirectInstances_Compute(IGPUBufferPtr drawInstanceBoundsBuff
 
 //--------------------------------------------------------------------
 
-static void VisibilityCullInstances_Software(const Vector3D& camPos, const Volume& frustum, Array<GPUInstanceInfo>& instanceInfos)
+void GRIMBaseRenderer::VisibilityCullInstances_Software(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
 
@@ -483,11 +559,15 @@ static void VisibilityCullInstances_Software(const Vector3D& camPos, const Volum
 	// Output:
 	//		instanceInfos	: buffer<GPUInstanceInfo[]>
 
+	const Vector3D& viewPos = intermediate.viewPos;
+	const Volume& frustum = intermediate.frustum;
+	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
+
 	instanceInfos.reserve(s_objects.numElem());
 
 	for (const Object& obj : s_objects)
 	{
-		const int archetypeId = s_instanceMng.GetInstanceArchetypeId(obj.instId);
+		const int archetypeId = s_instanceAlloc.GetInstanceArchetypeId(obj.instId);
 		if (archetypeId == -1)
 			continue;
 
@@ -495,7 +575,7 @@ static void VisibilityCullInstances_Software(const Vector3D& camPos, const Volum
 			continue;
 
 		const GPULodList& lodList = s_drawLodsList[archetypeId];
-		const float distFromCamera = distanceSqr(camPos, obj.trs.t);
+		const float distFromCamera = distanceSqr(viewPos, obj.trs.t);
 
 		// find suitable lod idx
 		int drawLod = lod_idx.GetInt();
@@ -513,9 +593,11 @@ static void VisibilityCullInstances_Software(const Vector3D& camPos, const Volum
 	}
 }
 
-static void SortInstances_Software(Array<GPUInstanceInfo>& instanceInfos)
+void GRIMBaseRenderer::SortInstances_Software(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
+
+	ArrayRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
 
 	// COMPUTE SHADER REFERENCE: SortInstanceArchetypes
 	// Input / Output:
@@ -528,9 +610,14 @@ static void SortInstances_Software(Array<GPUInstanceInfo>& instanceInfos)
 	});
 }
 
-static void UpdateInstanceBounds_Software(ArrayCRef<GPUInstanceInfo> instanceInfos, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr instanceIdsBuffer, Array<GPUInstanceBound>& drawInstanceBounds)
+void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
+
+	ArrayCRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
+	IGPUCommandRecorder* cmdRecorder = intermediate.cmdRecorder;
+	IGPUBufferPtr instanceIdsBuffer = intermediate.instanceIdsBuffer;
+	Array<GPUInstanceBound>& drawInstanceBounds = intermediate.drawInstanceBounds;
 
 	const int instanceCount = instanceInfos.numElem();
 
@@ -580,9 +667,13 @@ static void UpdateInstanceBounds_Software(ArrayCRef<GPUInstanceInfo> instanceInf
 	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
 }
 
-static void UpdateIndirectInstances_Software(ArrayCRef<GPUInstanceBound> drawInstanceBounds, IGPUCommandRecorder* cmdRecorder)
+void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
+
+	ArrayCRef<GPUInstanceBound> drawInstanceBounds = intermediate.drawInstanceBounds;
+	IGPUCommandRecorder* cmdRecorder = intermediate.cmdRecorder;
+	IGPUBufferPtr drawInvocationsBuffer = intermediate.drawInvocationsBuffer;
 
 	// COMPUTE SHADER REFERENCE: PrepareDrawIndirectInstances
 	// Input:
@@ -623,56 +714,91 @@ static void UpdateIndirectInstances_Software(ArrayCRef<GPUInstanceBound> drawIns
 
 			ASSERT(s_drawInfos(drawBatch.cmdIdx));
 
-			cmdRecorder->WriteBuffer(s_drawInvocationsBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
+			cmdRecorder->WriteBuffer(drawInvocationsBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
 		}
 	}
 }
-
-//--------------------------------------------------------------------
 
 static float memBytesToKB(size_t byteCnt)
 {
 	return byteCnt / 1024.0f;
 }
 
-static void DrawScene(const RenderPassContext& renderPassCtx)
+void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState)
+{
+	renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), s_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
+	renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
+
+	IntermediateState intermediate;
+	intermediate.frustum = renderState.frustum;
+	intermediate.viewPos = renderState.viewPos;
+	intermediate.cmdRecorder.Assign(cmdRecorder);	// FIXME: create new and return cmd buffer only?
+	intermediate.instanceIdsBuffer = renderState.instanceIdsBuffer;
+	intermediate.drawInvocationsBuffer = renderState.drawInvocationsBuffer;
+
+	cmdRecorder->ClearBuffer(intermediate.drawInvocationsBuffer, 0, intermediate.drawInvocationsBuffer->GetSize());
+
+	if (grim_force_software.GetBool())
+	{
+		VisibilityCullInstances_Software(intermediate);
+		SortInstances_Software(intermediate);
+		UpdateInstanceBounds_Software(intermediate);
+		UpdateIndirectInstances_Software(intermediate);
+		return;
+	}
+
+	const int numBounds = s_drawLodsList.numSlots() * MAX_INSTANCE_LODS;
+	intermediate.sortedKeysBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem() + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
+	intermediate.instanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), s_objects.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
+	intermediate.drawInstanceBoundsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceBound), numBounds + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceBounds");
+
+	cmdRecorder->ClearBuffer(intermediate.drawInstanceBoundsBuffer, 0, intermediate.drawInstanceBoundsBuffer->GetSize());
+	cmdRecorder->WriteBuffer(intermediate.drawInstanceBoundsBuffer, &numBounds, sizeof(int), 0);
+
+	VisibilityCullInstances_Compute(intermediate);
+	SortInstances_Compute(intermediate);
+	UpdateInstanceBounds_Compute(intermediate);
+	UpdateIndirectInstances_Compute(intermediate);
+}
+
+void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)
 {
 	PROF_EVENT_F();
 
 	int numDrawCalls = 0;
-
-	if(obj_draw.GetBool())
+	for (int i = 0; i < s_drawInfos.numSlots(); ++i)
 	{
-		for (int i = 0; i < s_drawInfos.numSlots(); ++i)
+		if (!s_drawInfos(i))
 		{
-			if (!s_drawInfos(i))
-			{
-				debugoverlay->Text(color_white, " draw info %d not drawn", i);
-				continue;
-			}
+			debugoverlay->Text(color_white, " draw info %d not drawn", i);
+			continue;
+		}
 
-			const GPUDrawInfo& drawInfo = s_drawInfos[i];
+		const GPUDrawInfo& drawInfo = s_drawInfos[i];
 
-			IMaterial* material = drawInfo.material;
-			if (g_matSystem->SetupMaterialPipeline(material, nullptr, drawInfo.primTopology, drawInfo.meshInstFormat, renderPassCtx, &s_instanceMng))
-			{
-				renderPassCtx.recorder->SetVertexBuffer(0, drawInfo.vertexBuffers[0]);
-				renderPassCtx.recorder->SetVertexBuffer(1, s_instanceIdsBuffer);
-				renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
+		IMaterial* material = drawInfo.material;
+		if (g_matSystem->SetupMaterialPipeline(material, nullptr, drawInfo.primTopology, drawInfo.meshInstFormat, renderPassCtx, &s_instanceAlloc))
+		{
+			renderPassCtx.recorder->SetVertexBuffer(0, drawInfo.vertexBuffers[0]);
+			renderPassCtx.recorder->SetVertexBuffer(1, renderState.instanceIdsBuffer);
+			renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
 
-				renderPassCtx.recorder->DrawIndexedIndirect(s_drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * s_drawBatchs[drawInfo.batchIdx].cmdIdx);
-				++numDrawCalls;
-			}
+			renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * s_drawBatchs[drawInfo.batchIdx].cmdIdx);
+			++numDrawCalls;
 		}
 	}
 
-	debugoverlay->Text(color_white, "--- instances summary ---");
-	debugoverlay->Text(color_white, " %d draw infos: %.2f KB", s_drawInfos.numElem(), memBytesToKB(s_drawInfos.numSlots() * sizeof(s_drawInfos[0])));
-	debugoverlay->Text(color_white, " %d batchs: %.2f KB", s_drawBatchs.numElem(), memBytesToKB(s_drawBatchs.numSlots() * sizeof(s_drawBatchs[0])));
-	debugoverlay->Text(color_white, " %d lod infos: %.2f KB", s_drawLodInfos.numElem(), memBytesToKB(s_drawLodInfos.numSlots() * sizeof(s_drawLodInfos[0])));
-	debugoverlay->Text(color_white, " %d lod lists: %.2f KB", s_drawLodsList.numElem(), memBytesToKB(s_drawLodsList.numSlots() * sizeof(s_drawLodsList[0])));
+	if(grim_stats.GetBool())
+	{
+		debugoverlay->Text(color_white, "--- GRIM instances summary ---");
+		debugoverlay->Text(color_white, "Mode: %s", grim_force_software.GetBool() ? "CPU" : "Compute");
+		debugoverlay->Text(color_white, " %d draw infos: %.2f KB", s_drawInfos.numElem(), memBytesToKB(s_drawInfos.numSlots() * sizeof(s_drawInfos[0])));
+		debugoverlay->Text(color_white, " %d batchs: %.2f KB", s_drawBatchs.numElem(), memBytesToKB(s_drawBatchs.numSlots() * sizeof(s_drawBatchs[0])));
+		debugoverlay->Text(color_white, " %d lod infos: %.2f KB", s_drawLodInfos.numElem(), memBytesToKB(s_drawLodInfos.numSlots() * sizeof(s_drawLodInfos[0])));
+		debugoverlay->Text(color_white, " %d lod lists: %.2f KB", s_drawLodsList.numElem(), memBytesToKB(s_drawLodsList.numSlots() * sizeof(s_drawLodsList[0])));
 
-	debugoverlay->Text(color_white, "Draw calls: %d", numDrawCalls);
+		debugoverlay->Text(color_white, "Draw calls: %d", numDrawCalls);
+	}
 }
 
 //--------------------------------------------
@@ -717,7 +843,7 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 	constexpr const int INST_RESERVE = 5000000;
 
 	g_pfxRender->Init();
-	s_instanceMng.Initialize("InstanceUtils", INST_RESERVE);
+	s_instanceAlloc.Initialize("InstanceUtils", INST_RESERVE);
 	s_objects.reserve(INST_RESERVE);
 
 	{
@@ -775,7 +901,7 @@ void CState_GpuDrivenDemo::OnLeave(CAppStateBase* to)
 	g_inputCommandBinder->UnbindCommandByName("strafeleft");
 	g_inputCommandBinder->UnbindCommandByName("straferight");
 
-	s_instanceMng.Shutdown();
+	s_instanceAlloc.Shutdown();
 	g_pfxRender->Shutdown();
 
 	g_studioCache->ReleaseCache();
@@ -788,7 +914,7 @@ void CState_GpuDrivenDemo::InitGame()
 	// distribute instances randomly
 	const int modelCount = g_studioCache->GetModelCount();
 
-	s_instanceMng.FreeAll(false, true);
+	s_instanceAlloc.FreeAll(false, true);
 	s_objects.clear();
 
 	for (int i = 0; i < inst_count.GetInt(); ++i)
@@ -803,7 +929,7 @@ void CState_GpuDrivenDemo::InitGame()
 		}
 
 		Object& obj = s_objects.append();
-		obj.instId = s_instanceMng.AddInstance<InstTransform>(*it);
+		obj.instId = s_instanceAlloc.AddInstance<InstTransform>(*it);
 		obj.trs.t = Vector3D(RandomFloat(-2900, 2900), RandomFloat(-100, 100), RandomFloat(-2900, 2900));
 		obj.trs.r = rotateXYZ(RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F));
 
@@ -813,7 +939,7 @@ void CState_GpuDrivenDemo::InitGame()
 		InstTransform transform;
 		transform.position = obj.trs.t;
 		transform.orientation = obj.trs.r;
-		s_instanceMng.Set(obj.instId, transform);
+		s_instanceAlloc.Set(obj.instId, transform);
 	}
 }
 
@@ -841,7 +967,6 @@ void CState_GpuDrivenDemo::StepGame(float fDt)
 	s_currentView.SetOrigin(s_currentView.GetOrigin() + moveVec * cam_speed.GetFloat() * fDt);
 	s_currentView.SetFOV(cam_fov.GetFloat());
 
-	debugoverlay->Text(color_white, "Mode: %s", inst_use_compute.GetBool() ? "Compute" : "CPU");
 	debugoverlay->Text(color_white, "Object count: %d", s_objects.numElem());
 	if(obj_rotate.GetBool())
 	{
@@ -855,7 +980,7 @@ void CState_GpuDrivenDemo::StepGame(float fDt)
 			InstTransform transform;
 			transform.position = obj.trs.t;
 			transform.orientation = obj.trs.r;
-			s_instanceMng.Set(obj.instId, transform);
+			s_instanceAlloc.Set(obj.instId, transform);
 		}
 	}
 }
@@ -899,42 +1024,18 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder();
 		g_pfxRender->UpdateBuffers(cmdRecorder);
 
-		s_instanceMng.SyncInstances(cmdRecorder);
+		s_instanceAlloc.SyncInstances(cmdRecorder);
 		if (inst_update.GetBool())
 		{
-			const Matrix4x4 viewProj = projMat * viewMat;
-			Volume frustum;
-			frustum.LoadAsFrustum(viewProj);
+			GRIMRenderState	renderState;
+			const Matrix4x4 viewProjMat = projMat * viewMat;
+			renderState.frustum.LoadAsFrustum(viewProjMat);
+			renderState.viewPos = s_currentView.GetOrigin();
 
-			s_instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem()), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
+			s_grimRenderer.PrepareDraw(cmdRecorder, renderState);
+			s_storedRenderState = renderState;
 
-			if (inst_use_compute.GetBool())
-			{
-				const int numBounds = s_drawLodsList.numSlots() * MAX_INSTANCE_LODS;
-				IGPUBufferPtr sortedKeysBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), s_objects.numElem() + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
-				IGPUBufferPtr instanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), s_objects.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
-				IGPUBufferPtr drawInstanceBoundsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceBound), numBounds + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceBounds");
-
-				cmdRecorder->ClearBuffer(drawInstanceBoundsBuffer, 0, drawInstanceBoundsBuffer->GetSize());
-				cmdRecorder->WriteBuffer(drawInstanceBoundsBuffer, &numBounds, sizeof(int), 0);
-
-				VisibilityCullInstances_Compute(s_currentView.GetOrigin(), frustum, cmdRecorder, sortedKeysBuffer, instanceInfosBuffer);
-				SortInstances_Compute(instanceInfosBuffer, cmdRecorder, sortedKeysBuffer);
-				UpdateInstanceBounds_Compute(sortedKeysBuffer, instanceInfosBuffer, cmdRecorder, s_instanceIdsBuffer, drawInstanceBoundsBuffer);
-				UpdateIndirectInstances_Compute(drawInstanceBoundsBuffer, cmdRecorder);
-			}
-			else
-			{
-				Array<GPUInstanceInfo> instanceInfos(PP_SL);
-				VisibilityCullInstances_Software(s_currentView.GetOrigin(), frustum, instanceInfos);
-				SortInstances_Software(instanceInfos);
-
-				Array<GPUInstanceBound> drawInstanceBounds(PP_SL);
-				UpdateInstanceBounds_Software(instanceInfos, cmdRecorder, s_instanceIdsBuffer, drawInstanceBounds);
-				UpdateIndirectInstances_Software(drawInstanceBounds, cmdRecorder);
-			}
-
-			if(inst_update_once.GetBool())
+			if (inst_update_once.GetBool())
 				inst_update.SetBool(false);
 		}
 
@@ -948,7 +1049,12 @@ bool CState_GpuDrivenDemo::Update(float fDt)
 			);
 
 			const RenderPassContext rendPassCtx(rendPassRecorder, nullptr);
-			DrawScene(rendPassCtx);
+
+			if (obj_draw.GetBool())
+			{
+				s_grimRenderer.Draw(s_storedRenderState, rendPassCtx);
+			}
+
 			g_pfxRender->Render(rendPassCtx, nullptr);
 
 			rendPassRecorder->Complete();

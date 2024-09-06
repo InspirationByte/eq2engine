@@ -2,14 +2,14 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: GPU Instances manager
+// Description: GPU Instances allocator
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <imgui.h>
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
-#include "GPUInstanceMng.h"
+#include "GrimInstanceAllocator.h"
 
 static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE		= 3072;
 static constexpr int GPU_INSTANCE_POOL_SIZE_EXTEND		= 1024;
@@ -17,14 +17,14 @@ static constexpr int GPU_INSTANCE_MAX_TEMP_INSTANCES	= 128;
 
 static constexpr int GPU_INSTANCE_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
 
-GPUBaseInstanceManager::GPUBaseInstanceManager()
+GRIMBaseInstanceAllocator::GRIMBaseInstanceAllocator()
 {
 	// alloc default (zero) instance
 	m_instances.append(Instance{});
 	m_updated.insert(0);
 }
 
-void GPUBaseInstanceManager::Initialize(const char* instanceComputeShaderName, int instancesReserve)
+void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName, int instancesReserve)
 {
 	m_reservedInsts = instancesReserve;
 
@@ -50,7 +50,7 @@ void GPUBaseInstanceManager::Initialize(const char* instanceComputeShaderName, i
 
 	m_instances.reserve(m_reservedInsts);
 
-	for (GPUInstPool* pool : m_componentPools)
+	for (GRIMBaseInstPool* pool : m_componentPools)
 	{
 		if (!pool || pool->updatePipeline)
 			continue;
@@ -61,7 +61,7 @@ void GPUBaseInstanceManager::Initialize(const char* instanceComputeShaderName, i
 	}
 }
 
-void GPUBaseInstanceManager::Shutdown()
+void GRIMBaseInstanceAllocator::Shutdown()
 {
 	FreeAll(true);
 
@@ -72,7 +72,7 @@ void GPUBaseInstanceManager::Shutdown()
 	m_archetypesBuffer = nullptr;
 	m_singleInstIndexBuffer = nullptr;
 
-	for (GPUInstPool* pool : m_componentPools)
+	for (GRIMBaseInstPool* pool : m_componentPools)
 	{
 		if (!pool)
 			continue;
@@ -82,7 +82,7 @@ void GPUBaseInstanceManager::Shutdown()
 	}
 }
 
-void GPUBaseInstanceManager::FreeAll(bool dealloc, bool reserve)
+void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 {
 	m_updated.clear(dealloc);
 	m_freeIndices.clear(dealloc);
@@ -97,7 +97,7 @@ void GPUBaseInstanceManager::FreeAll(bool dealloc, bool reserve)
 	if (reserve)
 		m_instances.reserve(m_reservedInsts);
 
-	for (GPUInstPool* pool : m_componentPools)
+	for (GRIMBaseInstPool* pool : m_componentPools)
 	{
 		if (!pool)
 			continue;
@@ -113,12 +113,12 @@ void GPUBaseInstanceManager::FreeAll(bool dealloc, bool reserve)
 	}
 }
 
-GPUBufferView GPUBaseInstanceManager::GetSingleInstanceIndexBuffer() const
+GPUBufferView GRIMBaseInstanceAllocator::GetSingleInstanceIndexBuffer() const
 {
 	return GPUBufferView(m_singleInstIndexBuffer, sizeof(int));
 }
 
-int	GPUBaseInstanceManager::GetInstanceCountByArchetype(int archetypeId) const
+int	GRIMBaseInstanceAllocator::GetInstanceCountByArchetype(GRIMArchetype archetypeId) const
 {
 	auto it = m_archetypeInstCounts.find(archetypeId);
 	if (it.atEnd())
@@ -127,7 +127,7 @@ int	GPUBaseInstanceManager::GetInstanceCountByArchetype(int archetypeId) const
 	return *it;
 }
 
-void GPUBaseInstanceManager::DbgRegisterArhetypeName(int archetypeId, const char* name)
+void GRIMBaseInstanceAllocator::DbgRegisterArhetypeName(GRIMArchetype archetypeId, const char* name)
 {
 #ifdef ENABLE_GPU_INSTANCE_DEBUG
 	Threading::CScopedMutex m(m_mutex);
@@ -136,62 +136,62 @@ void GPUBaseInstanceManager::DbgRegisterArhetypeName(int archetypeId, const char
 #endif
 }
 
-int	GPUBaseInstanceManager::AllocInstance(int archetype)
+GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(int archetype)
 {
 	Threading::CScopedMutex m(m_mutex);
-	const int instanceId = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
+	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 
-	Instance& inst = m_instances[instanceId];
+	Instance& inst = m_instances[instanceRef];
 	inst.batchesFlags = 0;
 	inst.archetype = archetype;
 	memset(&inst.root.components, 0, sizeof(inst.root.components));
 
-	m_updated.insert(instanceId);
+	m_updated.insert(instanceRef);
 
 	++m_archetypeInstCounts[archetype];
 
-	return instanceId;
+	return instanceRef;
 }
 
-int GPUBaseInstanceManager::AllocTempInstance(int archetype)
+int GRIMBaseInstanceAllocator::AllocTempInstance(int archetype)
 {
 	if (m_tempInstances.numElem() >= GPU_INSTANCE_MAX_TEMP_INSTANCES)
 		return -1;
 
-	const int instIdx = AllocInstance(archetype);
-	m_tempInstances.append(instIdx);
-	return instIdx;
+	const GRIMInstanceRef instRef = AllocInstance(archetype);
+	m_tempInstances.append(instRef);
+	return instRef;
 }
 
 // sets batches that are drrawn with particular instance
-void GPUBaseInstanceManager::SetBatches(int instanceId, uint batchesFlags)
+void GRIMBaseInstanceAllocator::SetBatches(GRIMInstanceRef instanceRef, uint batchesFlags)
 {
-	if (!m_instances.inRange(instanceId))
+	if (!m_instances.inRange(instanceRef))
 		return;
 
-	Instance& inst = m_instances[instanceId];
+	Instance& inst = m_instances[instanceRef];
 	inst.batchesFlags = batchesFlags;
 }
 
 // destroys instance and it's components
-void GPUBaseInstanceManager::FreeInstance(int instanceId)
+void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 {
-	if (!m_instances.inRange(instanceId))
+	if (!m_instances.inRange(instanceRef))
 		return;
 
-	Instance& inst = m_instances[instanceId];
+	Instance& inst = m_instances[instanceRef];
 	InstRoot& root = inst.root;
 	{
 		Threading::CScopedMutex m(m_mutex);
-		m_freeIndices.append(instanceId);
+		m_freeIndices.append(instanceRef);
 
 		--m_archetypeInstCounts[inst.archetype];
 	}
 
-	inst.archetype = GPUINST_INVALID_ARCHETYPE;
+	inst.archetype = GRIM_INVALID_ARCHETYPE;
 	inst.batchesFlags = 0;
 
-	for (int i = 0; i < GPUINST_MAX_COMPONENTS; ++i)
+	for (int i = 0; i < GRIM_INSTANCE_MAX_COMPONENTS; ++i)
 	{
 		// skip invalid or defaults
 		if (root.components[i] == UINT_MAX)
@@ -207,10 +207,10 @@ void GPUBaseInstanceManager::FreeInstance(int instanceId)
 	}
 
 	// update roots and archetypes
-	m_updated.insert(instanceId);
+	m_updated.insert(instanceRef);
 }
 
-IGPUBufferPtr GPUBaseInstanceManager::GetDataPoolBuffer(int componentId) const
+IGPUBufferPtr GRIMBaseInstanceAllocator::GetDataPoolBuffer(int componentId) const
 {
 	ASSERT_MSG(m_componentPools[componentId], "GPUInstanceManager was not created with component ID = %d", componentId);
 	return m_componentPools[componentId]->buffer;
@@ -311,7 +311,7 @@ static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>&
 	cmdRecorder->WriteBuffer(destDataBuffer, updateDataStart, updateBufferSize, 0);
 }
 
-void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
+void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 {
 	PROF_EVENT_F();
 
@@ -376,7 +376,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 	}
 
 	// update instance components buffers
-	for (GPUInstPool* pool : m_componentPools)
+	for (GRIMBaseInstPool* pool : m_componentPools)
 	{
 		if (!pool)
 			continue;
@@ -421,7 +421,7 @@ void GPUBaseInstanceManager::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		++m_buffersUpdated;
 }
 
-void GPUInstanceManagerDebug::DrawUI(GPUBaseInstanceManager& instMngBase)
+void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase)
 {
 #ifdef IMGUI_ENABLED
 	ImGui::Text("Instances: %d", instMngBase.m_instances.numElem());
@@ -441,7 +441,7 @@ void GPUInstanceManagerDebug::DrawUI(GPUBaseInstanceManager& instMngBase)
 	});
 
 	EqString instName;
-	for (const int archetypeId : sortedArchetypes)
+	for (const GRIMArchetype archetypeId : sortedArchetypes)
 	{
 		const int instCount = instMngBase.m_archetypeInstCounts[archetypeId];
 		const auto nameIt = instMngBase.m_archetypeNames.find(archetypeId);

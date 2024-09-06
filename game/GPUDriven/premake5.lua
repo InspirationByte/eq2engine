@@ -16,7 +16,7 @@ project "GPUDriven"
     uses {
 		"e2Core", "frameworkLib", "coreLib",
 		"sysLib",
-		"renderUtilLib",
+		"renderUtilLib", "grimLib",
 		"soundSystemLib",
 		"egfLib", "physicsLib", "animatingLib", 
 		"BaseShader",

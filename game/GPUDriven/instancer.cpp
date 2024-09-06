@@ -16,14 +16,14 @@ const VertexLayoutDesc& GetGPUInstanceVertexLayout()
 }
 
 
-void DemoGPUInstanceManager::FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const
+void DemoGRIMInstanceAllocator::FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLayout) const
 {
 	Builder<BindGroupLayoutDesc>(bindGroupLayout)
 		.Buffer("InstRoot", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_STORAGE_READONLY)
 		.Buffer("InstTransform", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_STORAGE_READONLY);
 }
 
-void DemoGPUInstanceManager::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const
+void DemoGRIMInstanceAllocator::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const
 {
 	if (outBindGroup && lastUpdateToken == m_buffersUpdated)
 		return;

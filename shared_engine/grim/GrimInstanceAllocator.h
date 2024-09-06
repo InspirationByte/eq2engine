@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: GPU Instances manager
+// Description: GPU Instances allocator
 //////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -28,12 +28,12 @@ Example of use:
 		INIT_GPU_INSTANCE_COMPONENT(InstScale, "InstanceShaderName")
 
 	2. Define instancer type
-		using DemoGPUInstanceManager = GPUInstanceManager<InstTransform>;
+		using DemoInstanceAllocator = GRIMInstanceAllocator<InstTransform>;
 
 	3. Declare instancer and initialize
-		static DemoGPUInstanceManager g_instanceMng;
+		static DemoInstanceAllocator g_instanceMng;
 		...
-		s_instanceMng.Initialize();
+		s_instanceAlloc.Initialize();
 
 	4. Object management
 		// creates instance
@@ -49,7 +49,7 @@ Example of use:
 
 	5. Drawing objects
 		// before any drawing and after objects are updated
-		s_instanceMng.SyncInstances(cmdBuffer);
+		s_instanceAlloc.SyncInstances(cmdBuffer);
 
 		// when performing draw calls
 		BindGroupDesc instBindGroup = Builder<BindGroupDesc>()
@@ -64,31 +64,27 @@ Example of use:
 
 #pragma once
 #include "materialsystem1/renderers/IShaderAPI.h"
+#include "GrimDefs.h"
 
 #ifndef _RETAIL
 #define ENABLE_GPU_INSTANCE_DEBUG
 #endif
 
-constexpr int GPUINST_MAX_COMPONENTS = 8;
-constexpr int GPUINST_INVALID_ARCHETYPE = -1;
-
-
-
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
 	static constexpr const char* NAME = #Name; \
 	static constexpr int IDENTIFIER = StringToHashConst(#Name); \
 	static constexpr int COMPONENT_ID = ID; \
-	static void InitPipeline(GPUInstPool& pool);
+	static void InitPipeline(GRIMBaseInstPool& pool);
 
 #define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
-	void Name::InitPipeline(GPUInstPool& pool) { \
-	pool.updatePipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
-		.ShaderName(UpdateShaderName).ShaderLayoutId(IDENTIFIER).End()); \
+	void Name::InitPipeline(GRIMBaseInstPool& pool) { \
+		pool.updatePipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
+			.ShaderName(UpdateShaderName).ShaderLayoutId(IDENTIFIER).End()); \
 	}
 
-struct GPUInstPool
+struct GRIMBaseInstPool
 {
-	GPUInstPool(int stride) : stride(stride) {}
+	GRIMBaseInstPool(int stride) : stride(stride) {}
 
 	virtual const char* GetName() const = 0;
 	virtual const void*	GetDataPtr() const = 0;
@@ -105,12 +101,12 @@ struct GPUInstPool
 };
 
 // The instance manager basic implementation
-class GPUBaseInstanceManager
+class GRIMBaseInstanceAllocator
 {
-	friend class GPUInstanceManagerDebug;
+	friend class GRIMInstanceDebug;
 public:
-	GPUBaseInstanceManager();
-	~GPUBaseInstanceManager() = default;
+	GRIMBaseInstanceAllocator();
+	~GRIMBaseInstanceAllocator() = default;
 
 	void			Initialize(const char* instanceComputeShaderName, int instancesReserve = 1000);
 	void			Shutdown();
@@ -121,8 +117,8 @@ public:
 	IGPUBufferPtr	GetInstanceArchetypesBuffer() const { return m_archetypesBuffer; }
 	IGPUBufferPtr	GetRootBuffer() const { return m_rootBuffer; }
 	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
-	int				GetInstanceCountByArchetype(int archetypeId) const;
-	int				GetInstanceArchetypeId(int instanceIdx) const { return m_instances[instanceIdx].archetype; }
+	int				GetInstanceCountByArchetype(GRIMArchetype archetypeId) const;
+	GRIMArchetype	GetInstanceArchetypeId(int instanceIdx) const { return m_instances[instanceIdx].archetype; }
 
 	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
 
@@ -130,31 +126,31 @@ public:
 	void			SyncInstances(IGPUCommandRecorder* cmdRecorder);
 
 	// sets batches that are drrawn with particular instance
-	void			SetBatches(int instanceId, uint batchesFlags);
+	void			SetBatches(GRIMInstanceRef instanceRef, uint batchesFlags);
 
 	// destroys instance and it's components
-	void			FreeInstance(int instanceId);
+	void			FreeInstance(GRIMInstanceRef instanceRef);
 
-	void			DbgRegisterArhetypeName(int archetypeId, const char* name);
+	void			DbgRegisterArhetypeName(GRIMArchetype archetypeId, const char* name);
 
 protected:
 	// TODO: instance refs
 	// in this way we can use data of the referenced intance on new instance with different
 	// archetypes, useful for adding body groups (as they use different archetype id)
 	// int			AllocInstanceRef(int archetype, int refInstanceId);
-	int				AllocInstance(int archetype);
-	int				AllocTempInstance(int archetype);
+	GRIMInstanceRef	AllocInstance(GRIMArchetype archetype);
+	GRIMInstanceRef	AllocTempInstance(GRIMArchetype archetype);
 
 	struct InstRoot
 	{
-		uint32	components[GPUINST_MAX_COMPONENTS]{ 0 };
+		uint32	components[GRIM_INSTANCE_MAX_COMPONENTS]{ 0 };
 	};
 
 	struct Instance
 	{
-		InstRoot	root;
-		int			archetype{ GPUINST_INVALID_ARCHETYPE };		// usually hash of the model name
-		uint		batchesFlags{ 0 };		// bit flags of drawn batches
+		InstRoot		root;
+		GRIMArchetype	archetype{ GRIM_INVALID_ARCHETYPE };		// usually hash of the model name
+		uint			batchesFlags{ 0 };		// bit flags of drawn batches
 	};
 
 	Threading::CEqMutex		m_mutex;
@@ -164,17 +160,17 @@ protected:
 	IGPUComputePipelinePtr	m_updateRootPipeline;
 	IGPUComputePipelinePtr	m_updateIntPipeline;
 
-	Array<int>				m_tempInstances{ PP_SL };
+	Array<GRIMInstanceRef>	m_tempInstances{ PP_SL };
 
 	Array<Instance>			m_instances{ PP_SL };
 	Array<int>				m_freeIndices{ PP_SL };
 	Set<int>				m_updated{ PP_SL };
-	GPUInstPool*			m_componentPools[GPUINST_MAX_COMPONENTS]{ nullptr };
+	GRIMBaseInstPool*		m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
 
-	Map<int, int>			m_archetypeInstCounts{ PP_SL };
+	Map<GRIMArchetype, int>			m_archetypeInstCounts{ PP_SL };
 #ifdef ENABLE_GPU_INSTANCE_DEBUG
-	Map<int, EqString>		m_archetypeNames{ PP_SL };
+	Map<GRIMArchetype, EqString>	m_archetypeNames{ PP_SL };
 #endif
 
 	int						m_reservedInsts{ 0 };
@@ -185,11 +181,11 @@ protected:
 
 // Instance component data storage
 template<typename T>
-struct GPUInstDataPool : public GPUInstPool
+struct GRIMDataPool : public GRIMBaseInstPool
 {
 	using TYPE = T;
 
-	GPUInstDataPool() : GPUInstPool(sizeof(T)) {}
+	GRIMDataPool() : GRIMBaseInstPool(sizeof(T)) {}
 
 	const char*	GetName() const override { return T::NAME; }
 	const void*	GetDataPtr() const override { return data.ptr(); };
@@ -203,13 +199,13 @@ struct GPUInstDataPool : public GPUInstPool
 
 // Component-based instance manager
 template<typename ... Components>
-class GPUInstanceManager : public GPUBaseInstanceManager
+class GRIMInstanceAllocator : public GRIMBaseInstanceAllocator
 {
 public:
 	template<typename TComp>
-	using Pool = GPUInstDataPool<TComp>;
+	using Pool = GRIMDataPool<TComp>;
 
-	GPUInstanceManager();
+	GRIMInstanceAllocator();
 
 	// creates new empty instance with allocated components
 	template<typename ...TComps>
@@ -263,17 +259,17 @@ protected:
 	POOL_STORAGE	m_componentPoolsStorage;
 };
 
-class GPUInstanceManagerDebug
+class GRIMInstanceDebug
 {
 public:
-	static void DrawUI(GPUBaseInstanceManager& instMngBase);
+	static void DrawUI(GRIMBaseInstanceAllocator& instMngBase);
 };
 
 //-------------------------------
 
 template<typename...Ts>
 template<std::size_t... Is>
-void GPUInstanceManager<Ts...>::InitPool(std::index_sequence<Is...>)
+void GRIMInstanceAllocator<Ts...>::InitPool(std::index_sequence<Is...>)
 {
 	([&] {
 		using POOL_TYPE = std::tuple_element_t<Is, POOL_STORAGE>;
@@ -285,14 +281,14 @@ void GPUInstanceManager<Ts...>::InitPool(std::index_sequence<Is...>)
 }
 
 template<typename...Ts>
-inline GPUInstanceManager<Ts...>::GPUInstanceManager()
+inline GRIMInstanceAllocator<Ts...>::GRIMInstanceAllocator()
 {
 	InitPool(std::index_sequence_for<Ts...>{});
 }
 
 template<typename...Ts>
 template<typename First, typename...Rest>
-inline void GPUInstanceManager<Ts...>::SetInternal(InstRoot& inst, const First& firstVal, const Rest&... values)
+inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const First& firstVal, const Rest&... values)
 {
 	const uint32 inPoolIdx = inst.components[First::COMPONENT_ID];
 
@@ -320,7 +316,7 @@ inline void GPUInstanceManager<Ts...>::SetInternal(InstRoot& inst, const First& 
 
 template<typename...Ts>
 template<typename...TComps>
-inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComps&... values)
+inline void GRIMInstanceAllocator<Ts...>::Set(int instanceId, const TComps&... values)
 {
 	if (instanceId == -1)
 		return;
@@ -332,7 +328,7 @@ inline void GPUInstanceManager<Ts...>::Set(int instanceId, const TComps&... valu
 // creates new empty instance with allocated components
 template<typename...Ts>
 template<typename...TComps>
-inline void GPUInstanceManager<Ts...>::AllocInstanceComponents(int instanceId)
+inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId)
 {
 	InstRoot& inst = m_instances[instanceId].root;
 	{
@@ -348,7 +344,7 @@ inline void GPUInstanceManager<Ts...>::AllocInstanceComponents(int instanceId)
 
 template<typename...Ts>
 template<typename TComp>
-void GPUInstanceManager<Ts...>::Add(int instanceId)
+void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 {
 	if (instanceId == -1)
 		return;
@@ -370,7 +366,7 @@ void GPUInstanceManager<Ts...>::Add(int instanceId)
 
 template<typename...Ts>
 template<typename TComp>
-void GPUInstanceManager<Ts...>::Remove(int instanceId)
+void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 {
 	if (instanceId == -1)
 		return;
