@@ -1,20 +1,16 @@
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/IFileSystem.h"
-#include "ds/SlottedArray.h"
 #include "math/Random.h"
-#include "math/Utility.h"
-#include "utils/KeyValues.h"
-#include "utils/TextureAtlas.h"
-#include "utils/SpiralIterator.h"
 
 #include "gpudriven_main.h"
+#include "instancer.h"
 
 #include "sys/sys_host.h"
+#include "sys/sys_in_console.h"
 
 #include "audio/eqSoundEmitterSystem.h"
 #include "materialsystem1/IMaterialSystem.h"
-#include "materialsystem1/MeshBuilder.h"
 
 #include "render/EqParticles.h"
 #include "render/IDebugOverlay.h"
@@ -23,8 +19,7 @@
 #include "input/InputCommandBinder.h"
 #include "studio/StudioGeom.h"
 #include "studio/StudioCache.h"
-#include "instancer.h"
-#include "sys/sys_in_console.h"
+
 
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
 DECLARE_CVAR(cam_fov, "90", nullptr, CV_ARCHIVE);

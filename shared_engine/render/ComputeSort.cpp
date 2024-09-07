@@ -26,6 +26,20 @@ constexpr EqStringRef BITONIC_MERGE_SORT_SHADERNAME = "ComputeSort";
 
 ComputeSortShader::ComputeSortShader()
 {
+	m_sortPipelineLayout = g_renderAPI->CreatePipelineLayout(
+		Builder<PipelineLayoutDesc>()
+		.Group(Builder<BindGroupLayoutDesc>()
+			.Buffer("Keys", 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE)
+			.End())
+		.Group(Builder<BindGroupLayoutDesc>()
+			.Buffer("Values", 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY)
+			.End())
+		.Group(Builder<BindGroupLayoutDesc>()
+			.Buffer("ParamsBuffer", 0, SHADERKIND_COMPUTE, BUFFERBIND_STORAGE_READONLY, true)
+			.End())
+		.End()
+	);
+
 	m_initPipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(StringToHashConst("InitKeys"))
@@ -40,12 +54,12 @@ ComputeSortShader::ComputeSortShader()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(StringToHashConst("SortFloat"))
 		.End()
-	));
+	, m_sortPipelineLayout));
 	m_sortPipelines.insert(COMPUTESORT_INT, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(StringToHashConst("SortInt"))
 		.End()
-	));
+	, m_sortPipelineLayout));
 }
 
 int ComputeSortShader::AddSortPipeline(const char* name, const char* shaderName)
@@ -55,7 +69,7 @@ int ComputeSortShader::AddSortPipeline(const char* name, const char* shaderName)
 		.ShaderName(shaderName ? shaderName : BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(nameHash)
 		.End()
-	));
+	, m_sortPipelineLayout));
 	return nameHash;
 }
 
@@ -114,7 +128,7 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 	};
 
 	Array<ParamsData> paramsDataList(PP_SL);
-	paramsDataList.reserve(512);
+	paramsDataList.reserve(N);
 
 	for (uint mergeGroupSize = 2; mergeGroupSize <= N; mergeGroupSize <<= 1)
 	{
@@ -144,7 +158,6 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 
 	const int alignedParamSize = max(sizeof(ParamsData), rhiCaps.minStorageBufferOffsetAlignment);
 	IGPUBufferPtr paramBuffer = g_renderAPI->CreateBuffer(BufferInfo(alignedParamSize, paramsDataList.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_INDIRECT, "Params");
-	
 
 	{
 		struct SmolStruct
@@ -171,28 +184,30 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 		constexpr int GROUP_SIZE = 16;
 		computePassRecorder->DispatchWorkgroups(paramsDataList.numElem() / GROUP_SIZE + 1);
 		computePassRecorder->Complete();
-	}	
+	}
 
 	IGPUComputePassRecorderPtr computePassRecorder = cmdRecorder->BeginComputePass("Sort");
 	computePassRecorder->SetPipeline(sortPipeline);
-	computePassRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
+	computePassRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_sortPipelineLayout, Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Buffer(0, keys)
 		.End()
 	));
-	computePassRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
+	computePassRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_sortPipelineLayout, Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Buffer(0, values)
 		.End()
 	));
+	IGPUBindGroupPtr paramsBindGroup = g_renderAPI->CreateBindGroup(m_sortPipelineLayout, Builder<BindGroupDesc>()
+		.GroupIndex(2)
+		.Buffer(0, paramBuffer, 0, sizeof(ParamsData))
+		.End()
+	);
 	
 	for (int i = 0; i < paramsDataList.numElem(); ++i)
 	{
-		computePassRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(sortPipeline, Builder<BindGroupDesc>()
-			.GroupIndex(2)
-			.Buffer(0, paramBuffer, alignedParamSize * i)
-			.End()
-		));
+		const uint dynOffset[] = { alignedParamSize * i };
+		computePassRecorder->SetBindGroup(2, paramsBindGroup, ArrayCRef(dynOffset));
 		computePassRecorder->DispatchWorkgroupsIndirect(paramBuffer, alignedParamSize * i + offsetOf(ParamsData, indirectX));
 	}
 
