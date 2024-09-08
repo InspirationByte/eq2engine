@@ -750,7 +750,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::appendEmplace(Args&&... args)
 	T* listPtr = STORAGE_TYPE::getData();
 
 	const int index = m_nNumElem++;
-	new(&listPtr[index]) T(std::forward<Args>(args)...);
+	new(&listPtr[index]) T{ std::forward<Args>(args)... };
 	return index;
 }
 
@@ -1123,7 +1123,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSizeEmplace(int newSize, Args&&...
 
 	T* listPtr = STORAGE_TYPE::getData();
 	for (int i = oldSize; i < newSize; i++)
-		new(&listPtr[i]) T(std::forward<Args>(args)...);
+		new(&listPtr[i]) T{ std::forward<Args>(args)... };
 }
 
 //-------------------------------------------
