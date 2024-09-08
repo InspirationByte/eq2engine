@@ -39,8 +39,10 @@ public:
 	void			Shutdown();
 
 	GRIMArchetype	CreateDrawArchetypeEGF(const CEqStudioGeom& geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0);
-	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeCreateDesc& desc);
+	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeDesc& desc);
 	void			DestroyDrawArchetype(GRIMArchetype id);
+
+	void			SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
 	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects);
 	void			Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
@@ -72,6 +74,7 @@ protected:
 	SlottedArray<GPUIndexedBatch>	m_drawBatchs{ PP_SL };
 	SlottedArray<GPULodInfo>		m_drawLodInfos{ PP_SL };
 	SlottedArray<GPULodList>		m_drawLodsList{ PP_SL };
+	Set<int>						m_updated{ PP_SL };		// updated lod lists
 
 	IGPUBufferPtr					m_drawBatchsBuffer;
 	IGPUBufferPtr					m_drawLodInfosBuffer;
@@ -149,7 +152,7 @@ struct GRIMBaseRenderer::GPUInstanceInfo
 
 struct GRIMBaseRenderer::GPUDrawInfo
 {
-	IGPUBufferPtr			vertexBuffers[MAX_VERTEXSTREAM - 1];
+	IGPUBufferPtr			vertexBuffers[GRIM_INSTANCE_MAX_VERTEX_STREAMS];
 	IGPUBufferPtr			indexBuffer;
 	IMaterialPtr			material;
 	MeshInstanceFormatRef	meshInstFormat;
