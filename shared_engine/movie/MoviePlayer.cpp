@@ -59,6 +59,7 @@ struct MoviePlayerData
 {
 #ifndef MOVIELIB_DISABLE
 	AVPacket			packet;
+	IFilePtr			file;
 	AVFormatContext*	formatCtx{ nullptr };
 
 	// Video
@@ -144,6 +145,75 @@ static int CreateCodec(AVCodecContext** _cc, AVStream* stream, AVBufferRef* hwDe
 	return 0;
 }
 
+static int movAVIORead(void* opaque, uint8_t* buf, int buf_size)
+{
+	IVirtualStream* stream = reinterpret_cast<IVirtualStream*>(opaque);
+	return stream->Read(buf, buf_size);
+}
+
+static int64_t movAVIOSeek(void* opaque, int64_t offset, int whence)
+{
+	IVirtualStream* stream = reinterpret_cast<IVirtualStream*>(opaque);
+	if (whence & AVSEEK_SIZE)
+		return stream->GetSize();
+
+	EVirtStreamSeek nw{};
+	switch (whence)
+	{
+	case SEEK_CUR:
+		nw = VS_SEEK_CUR;
+		break;
+	case SEEK_SET:
+		nw = VS_SEEK_SET;
+		break;
+	case SEEK_END:
+		nw = VS_SEEK_END;
+		break;
+	}
+
+	return stream->Seek(offset, nw);
+}
+
+static void FreePlayerData(MoviePlayerData* player)
+{
+	if (!player)
+		return;
+#ifndef MOVIELIB_DISABLE
+	if (player->formatCtx->pb)
+	{
+		av_free(player->formatCtx->pb->buffer);
+		avio_context_free(&player->formatCtx->pb);
+	}
+	avformat_close_input(&player->formatCtx);
+
+	if (player->videoStream)
+	{
+		avcodec_free_context(&player->videoCodec);
+		sws_freeContext(player->videoSws);
+
+		if (player->videoState.deqPacket)
+			av_packet_free(&player->videoState.deqPacket);
+
+		if (player->videoState.frame)
+			av_frame_free(&player->videoState.frame);
+	}
+
+	if (player->audioStream)
+	{
+		avcodec_free_context(&player->audioCodec);
+		swr_free(&player->audioSwr);
+
+		if (player->audioState.deqPacket)
+			av_packet_free(&player->audioState.deqPacket);
+
+		if (player->audioState.frame)
+			av_frame_free(&player->audioState.frame);
+
+		player->audioStream = nullptr;
+	}
+#endif // MOVIELIB_DISABLE
+}
+
 static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const char* filename)
 {
 	MoviePlayerData* player = PPNew MoviePlayerData;
@@ -153,22 +223,31 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 		if (!failed || !player)
 			return;
 
-		sws_freeContext(player->videoSws);
-
-		if (player->audioCodec)
-			avcodec_free_context(&player->audioCodec);
-
-		if (player->audioSwr)
-			swr_free(&player->audioSwr);
-
-		if (player->videoCodec)
-			avcodec_free_context(&player->videoCodec);
-
-		if (player->formatCtx)
-			avformat_close_input(&player->formatCtx);
-
-		SAFE_DELETE(player);
+		FreePlayerData(player);
 	};
+
+	player->file = g_fileSystem->Open(filename, "r");
+	if (!player->file)
+	{
+		MsgError("Cannot open video file %s\n", filename);
+		failed = true;
+		return nullptr;
+	}
+
+	const int avioStupidBufferSize = 4096;
+	ubyte* avioStupidBuffer = (ubyte*)av_malloc(4096);
+
+	AVIOContext* avioCtx = avio_alloc_context(
+		avioStupidBuffer,
+		avioStupidBufferSize,
+		0,           
+		player->file.Ptr(),
+		movAVIORead,
+		NULL,        
+		movAVIOSeek
+	);
+	player->formatCtx = avformat_alloc_context();
+	player->formatCtx->pb = avioCtx;
 
 	const EqString fsFilePath = g_fileSystem->FindFilePath(filename);
 	if (avformat_open_input(&player->formatCtx, fsFilePath, nullptr, nullptr) != 0)
@@ -257,48 +336,6 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 	}
 #endif // MOVIELIB_DISABLE
 	return player;
-}
-
-static void FreePlayerData(MoviePlayerData** player)
-{
-	if (!player)
-		return;
-
-	MoviePlayerData* p = *player;
-	if (!p)
-		return;
-
-#ifndef MOVIELIB_DISABLE
-	avformat_close_input(&p->formatCtx);
-
-	if (p->videoStream)
-	{
-		avcodec_free_context(&p->videoCodec);
-		sws_freeContext(p->videoSws);
-
-		if (p->videoState.deqPacket)
-			av_packet_free(&p->videoState.deqPacket);
-
-		if (p->videoState.frame)
-			av_frame_free(&p->videoState.frame);
-	}
-
-	if (p->audioStream)
-	{
-		avcodec_free_context(&p->audioCodec);
-		swr_free(&p->audioSwr);
-
-		if (p->audioState.deqPacket)
-			av_packet_free(&p->audioState.deqPacket);
-
-		if (p->audioState.frame)
-			av_frame_free(&p->audioState.frame);
-
-		p->audioStream = nullptr;
-	}
-#endif // MOVIELIB_DISABLE
-
-	SAFE_DELETE(*player);
 }
 
 static bool PlayerDemuxStep(MoviePlayerData* player, MovieCompletedEvent& completedEvent)
@@ -767,7 +804,8 @@ bool CMoviePlayer::Init(const char* pathToVideo)
 void CMoviePlayer::Destroy()
 {
 	Stop();
-	FreePlayerData(&m_player);
+	FreePlayerData(m_player);
+	SAFE_DELETE(m_player);
 	m_audioSrc = nullptr;
 	m_mvTexture.Set(nullptr);
 	m_mvTexture = nullptr;
