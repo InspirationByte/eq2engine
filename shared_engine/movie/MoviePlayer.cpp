@@ -158,7 +158,7 @@ static int64_t movAVIOSeek(void* opaque, int64_t offset, int whence)
 		return stream->GetSize();
 
 	EVirtStreamSeek nw{};
-	switch (whence)
+	switch (whence & 0x7)
 	{
 	case SEEK_CUR:
 		nw = VS_SEEK_CUR;
@@ -179,7 +179,7 @@ static void FreePlayerData(MoviePlayerData* player)
 	if (!player)
 		return;
 #ifndef MOVIELIB_DISABLE
-	if (player->formatCtx->pb)
+	if (player->formatCtx && player->formatCtx->pb)
 	{
 		av_free(player->formatCtx->pb->buffer);
 		avio_context_free(&player->formatCtx->pb);
@@ -235,7 +235,7 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 	}
 
 	const int avioStupidBufferSize = 4096;
-	ubyte* avioStupidBuffer = (ubyte*)av_malloc(4096);
+	ubyte* avioStupidBuffer = (ubyte*)av_malloc(avioStupidBufferSize);
 
 	AVIOContext* avioCtx = avio_alloc_context(
 		avioStupidBuffer,
@@ -249,8 +249,7 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 	player->formatCtx = avformat_alloc_context();
 	player->formatCtx->pb = avioCtx;
 
-	const EqString fsFilePath = g_fileSystem->FindFilePath(filename);
-	if (avformat_open_input(&player->formatCtx, fsFilePath, nullptr, nullptr) != 0)
+	if (avformat_open_input(&player->formatCtx, nullptr, nullptr, nullptr) != 0)
 	{
 		MsgError("Failed to open video file %s\n", filename);
 		failed = true;
