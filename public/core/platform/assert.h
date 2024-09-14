@@ -50,9 +50,7 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* exp
 	}
 
 #define	ASSERT_MSG(x, msgFmt, ...) \
-	if (!(x)) { \
-		_ASSERT_BODY(#x, msgFmt, ##__VA_ARGS__ ) \
-	}
+	{ if (!(x)) _ASSERT_BODY(#x, msgFmt, ##__VA_ARGS__ ) }
 
 #define	ASSERT(x)					ASSERT_MSG(x, nullptr)
 #define ASSERT_FAIL(msgFmt, ...)	_ASSERT_BODY(nullptr, "%s: " msgFmt, __func__, ##__VA_ARGS__ )
