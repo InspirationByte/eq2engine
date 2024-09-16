@@ -66,7 +66,7 @@ int ComputeSortShader::AddSortPipeline(const char* name, const char* shaderName)
 {
 	const int nameHash = StringToHash(name);
 	m_sortPipelines.insert(nameHash, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
-		.ShaderName(shaderName ? shaderName : BITONIC_MERGE_SORT_SHADERNAME)
+		.ShaderName(shaderName ? EqStringRef(shaderName) : BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(nameHash)
 		.End()
 	, m_sortPipelineLayout));

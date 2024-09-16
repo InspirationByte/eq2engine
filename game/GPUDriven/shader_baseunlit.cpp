@@ -132,9 +132,9 @@ BEGIN_SHADER_CLASS(
 			// TODO: remove
 			if (setupParams.pipelineInfo.vertexLayoutId == SHADER_VERTEX_ID(EGFVertexSkinned))
 			{
-				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID)
+				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID);
 
-					BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
+				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 					.Buffer(0, setupParams.uniformBuffers[0].bufferView)
 					.End();
 				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
