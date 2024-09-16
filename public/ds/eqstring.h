@@ -132,5 +132,5 @@ template <typename CH>
 template <typename... Args>
 inline EqTStr<CH> EqTStr<CH>::Format(const CH* pszFormat, Args&&... args)
 {
-	return FormatF(pszFormat, StrToFmt(std::forward<Args>(args))...);
+	return FormatF(pszFormat, ::ToCString(std::forward<Args>(args))...);
 }

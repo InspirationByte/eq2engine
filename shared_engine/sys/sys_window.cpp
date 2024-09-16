@@ -34,7 +34,7 @@ void Sys_GetWindowConfig(bool& fullscreen, int& screen, int& wide, int& tall)
 	const char* str = vid_mode.GetString();
 
 	Array<EqString> args(PP_SL);
-	xstrsplit(str, "x", args);
+	StringSplit(str, "x", args);
 
 	wide = atoi(args[0].GetData());
 	tall = atoi(args[1].GetData());

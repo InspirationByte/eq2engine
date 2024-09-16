@@ -162,7 +162,7 @@ DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 	ConAutoCompletion_t* newItem = PPNew ConAutoCompletion_t;
 	newItem->cmd_name = CMD_ARGV(0);
 
-	xstrsplit(CMD_ARGV(1),",",newItem->args);
+	StringSplit(CMD_ARGV(1),",",newItem->args);
 
 	g_consoleInput->AddAutoCompletion(newItem);
 }
@@ -865,7 +865,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 
 			m_font->SetupRenderText( str, Vector2D(x+5, textYPos),variantsTextParams, rendPassRecorder);
 
-			const char* cstr = xstristr(cmdBase->GetName(), m_inputText.GetData());
+			const char* cstr = CString::SubStringCaseIns(cmdBase->GetName(), m_inputText.ToCString());
 			if (!cstr)
 				continue;
 

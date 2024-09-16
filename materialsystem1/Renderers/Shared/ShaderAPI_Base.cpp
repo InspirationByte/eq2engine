@@ -102,7 +102,7 @@ void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqS
 			break;
 		}
 
-		if(*query == 0 || xstristr(texture->GetName(), query))
+		if(*query == 0 || CString::SubStringCaseIns(texture->GetName(), query))
 			list.append(texture->GetName());
 	}
 }

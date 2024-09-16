@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <string>
+#include "ArrayRef.h"
+
 template<typename CH>
 class EqTStrRef;
 
@@ -63,43 +66,14 @@ template <auto V> static constexpr auto force_consteval = V;
 int			StringToHash(EqStringRef str, bool caseIns = false);
 
 //------------------------------------------------------
-// General string utilities
+// String split helper
 //------------------------------------------------------
 
 // Split string by multiple separators
-void		xstrsplit2(const char* pString, const char** pSeparators, int nSeparators, Array<EqString>& outStrings);
+void		StringSplit(const char* pString, ArrayCRef<const char*> separators, Array<EqString>& outStrings);
 
 // Split string by one separator
-void		xstrsplit(const char* pString, const char* pSeparator, Array<EqString>& outStrings);
-
-char const* xstristr(char const* pStr, char const* pSearch);
-char*		xstristr(char* pStr, char const* pSearch);
-
-// fast duplicate c string
-char*		xstrdup(const char*  s);
-
-// converts string to lower case
-char*		xstrupr(char* s1);
-char*		xstrlwr(char* s1);
-
-wchar_t*	xwcslwr(wchar_t* str);
-wchar_t*	xwcsupr(wchar_t* str);
-
-//------------------------------------------------------
-// wide string
-//------------------------------------------------------
-
-// Compares string
-int			xwcscmp ( const wchar_t *s1, const wchar_t *s2);
-
-// compares two strings case-insensetive
-int			xwcsicmp( const wchar_t* s1, const wchar_t* s2 );
-
-// finds substring in string case insensetive
-wchar_t*	xwcsistr( wchar_t* pStr, wchar_t const* pSearch );
-
-// finds substring in string case insensetive
-wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
+void		StringSplit(const char* pString, const char* separator, Array<EqString>& outStrings);
 
 //------------------------------------------------------
 // Path utils
@@ -161,13 +135,23 @@ template<> wchar_t UpperChar(wchar_t chr);
 namespace CString
 {
 template<typename CH> int Length(const CH* str);
-template<typename CH> CH* SubString(CH* str, const CH* search, bool caseSensitive);
+template<typename CH, typename CCH> CH* SubString(CH* str, const CCH* search);
+template<typename CH, typename CCH> CH* SubStringCaseIns(CH* str, const CCH* search);
+
+template<typename CH> const CH* SubString(const CH* str, const CH* search) { return SubString<CH, CH>(const_cast<CH*>(str), search); }
+template<typename CH> const CH* SubStringCaseIns(const CH* str, const CH* search) { return SubStringCaseIns<CH, CH>(const_cast<CH*>(str), search); }
+
+template<typename CH> CH* LowerCase(CH* str);
+template<typename CH> CH* UpperCase(CH* str);
 
 template<typename CH> int Compare(const CH* strA, const CH* strB);
 template<typename CH> int CompareCaseIns(const CH* strA, const CH* strB);
 
 template<typename CH> int PrintFV(CH* buffer, int bufferCnt, const CH* fmt, va_list argList);
 template<typename CH> int PrintF(CH* buffer, int bufferCnt, const CH* fmt, ...);
+
+char*		DuplicateNew(const char* s);		// duplicates string. Must be freed with SAFE_DELETE_ARRAY
+wchar_t*	DuplicateNew(const wchar_t* s);		// duplicates string. Must be freed with SAFE_DELETE_ARRAY
 }
 
 //------------------------------------------------------
@@ -326,7 +310,7 @@ private:
 };
 
 template <typename T>
-decltype(auto) StrToFmt(const T& value)
+decltype(auto) ToCString(const T& value)
 {
 	if constexpr (
 		std::is_same_v<T, EqStringRef> ||

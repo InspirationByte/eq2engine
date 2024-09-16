@@ -880,8 +880,8 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 
 	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
 
-	const bool isReadPriorityPath = strstr(pathId, "$MOD$") || strstr(pathId, "$LOCALIZE$");
-	const bool isWriteablePath = strstr(pathId, "$WRITE$");
+	const bool isReadPriorityPath = CString::SubString(pathId, "$MOD$") || CString::SubString(pathId, "$LOCALIZE$");
+	const bool isWriteablePath = CString::SubString(pathId, "$WRITE$");
 
 	SearchPathInfo* pathInfo = PPNew SearchPathInfo;
 	pathInfo->id = pathId;

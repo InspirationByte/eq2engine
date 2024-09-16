@@ -132,7 +132,7 @@ void cvar_list_collect(const ConCommandBase* cmd, Array<EqString>& list, const c
 		if (pBase->GetFlags() & CV_INVISIBLE)
 			continue;
 
-		if (*query == 0 || xstristr(pBase->GetName(), query))
+		if (*query == 0 || CString::SubString(pBase->GetName(), query))
 			list.append(pBase->GetName());
 	}
 }
@@ -211,7 +211,7 @@ DECLARE_CONCOMMAND_FN(set)
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i)));
 
 	if (IsAllowedToExecute(pConVar))
 	{
@@ -231,7 +231,7 @@ DECLARE_CONCOMMAND_FN(seti)
 
 	EqString joinArgs;
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i)));
 
 	ConVar* pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0));
 

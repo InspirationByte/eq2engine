@@ -21,7 +21,7 @@ CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 	}
 
 	RIFFhdr_t header;
-	m_stream->Read(header);
+	m_stream->ReadObj(header);
 
 	if (header.Id != RIFF_ID)
 	{
@@ -61,7 +61,7 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	m_riffMem.Open(pChunkData, VS_OPEN_READ, nChunkSize);
 
 	RIFFhdr_t header;
-	m_stream->Read(header);
+	m_stream->ReadObj(header);
 
 	if (header.Id != RIFF_ID)
 	{

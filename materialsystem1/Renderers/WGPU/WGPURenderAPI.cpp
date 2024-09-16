@@ -155,7 +155,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			m_shaderCache.remove(StringToHash(shaderInfoKvs.GetName()));
 	};
 
-	if (!strstr(filename, shaderInfoKvs.GetName()))
+	if (!CString::SubString(filename, shaderInfoKvs.GetName()))
 	{
 		ASSERT_FAIL("Shader package '%s' file name doesn't match it's name '%s' in desc", filename, shaderInfoKvs.GetName());
 		return 0;
