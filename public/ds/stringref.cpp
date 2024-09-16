@@ -57,6 +57,8 @@ int StringToHash(EqStringRef str, bool caseIns )
 // String split helper
 //------------------------------------------
 
+static char const* xstristr(char const* pStr, char const* pSearch);
+
 void StringSplit(const char* pString, ArrayCRef<const char*> separators, Array<EqString>& outStrings)
 {
 	if (!pString || *pString == 0)
