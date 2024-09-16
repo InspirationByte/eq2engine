@@ -288,6 +288,9 @@ public:
 	// removes front item from list
 	T				popFront();
 
+	// removes front item from list unsorted
+	T				fastPopFront();
+
 	// removes back item from list
 	T				popBack();
 
@@ -349,7 +352,7 @@ public:
 	// removes specified count of elements from specified index
 	bool			removeRange(int index, int count);
 
-	// removes the element at the given index (fast)
+	// removes the element at the given index unsorted
 	bool			fastRemoveIndex(int index);
 
 	// removes the element
@@ -678,6 +681,19 @@ inline T ArrayBase<T, STORAGE_TYPE>::popFront()
 
 	T item = STORAGE_TYPE::getData()[0];
 	removeIndex(0);
+	return item;
+}
+
+// -----------------------------------------------------------------
+// Removes front item from list unsorted
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+inline T ArrayBase<T, STORAGE_TYPE>::fastPopFront()
+{
+	ASSERT(m_nNumElem > 0);
+
+	T item = STORAGE_TYPE::getData()[0];
+	fastRemoveIndex(0);
 	return item;
 }
 

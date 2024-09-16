@@ -826,7 +826,7 @@ void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
 
 	while (openSet.numElem())
 	{
-		EqString path = openSet.popFront();
+		EqString path = openSet.fastPopFront();
 
 		DIR* dir = opendir(path);
 		if (!dir)
