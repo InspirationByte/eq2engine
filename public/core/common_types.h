@@ -133,6 +133,7 @@ static constexpr TR max(T x, T2 y) { return static_cast<TR>((x > y) ? x : y); }
 // Define some useful macros
 #define MAKECHAR4(a, b, c, d)			(a | (b << 8) | (c << 16) | (d << 24))
 
+#define _SEMICOLON_REQ( expr )			do expr while(0)
 #define _STR_(x) #x
 #define DEFINE_STR(x)					"#define " #x " " _STR_(x) "\n"
 
@@ -140,8 +141,8 @@ static constexpr TR max(T x, T2 y) { return static_cast<TR>((x > y) ? x : y); }
 #define offsetOf(structure,member)		(uintptr_t)&(((structure *)0)->member)
 #define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
 
-#define SAFE_DELETE(p)			{ if (p) { delete (p); (p) = nullptr; } }
-#define SAFE_DELETE_ARRAY(p)	{ if (p) { delete[] (p); (p) = nullptr; } }
+#define SAFE_DELETE(p)			_SEMICOLON_REQ( if (p) { delete (p); (p) = nullptr; } )
+#define SAFE_DELETE_ARRAY(p)	_SEMICOLON_REQ( if (p) { delete[] (p); (p) = nullptr; } )
 
 //---------------------------------------------------------------------------------------------
 // FIXMEs / TODOs / NOTE macros

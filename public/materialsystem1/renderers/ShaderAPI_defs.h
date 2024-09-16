@@ -608,7 +608,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
 	ThisType& Buffer(const char* name, int binding, int shaderKind, EBufferBindType bindType, bool hasDynamicOffset = false)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -621,7 +621,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& Sampler(const char* name, int binding, int shaderKind, ESamplerBindType bindType)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -633,7 +633,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& Texture(const char* name, int binding, int shaderKind, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -647,7 +647,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& StorageTexture(const char* name, int binding, int shaderKind, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -704,7 +704,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(groupIdx, GroupIndex)
 	ThisType& Buffer(int binding, const GPUBufferView& buffer)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.binding = std::move(binding);
 		entry.type = BINDENTRY_BUFFER;
@@ -717,7 +717,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& Sampler(int binding, const SamplerStateParams& samplerParams)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_SAMPLER;
@@ -726,7 +726,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& Texture(int binding, const TextureView& texView)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 			Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_TEXTURE;
@@ -735,7 +735,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& StorageTexture(int binding, const TextureView& texView)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_STORAGETEXTURE;

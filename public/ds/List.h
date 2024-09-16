@@ -189,7 +189,7 @@ public:
 	{
 		if (m_first != m_last)
 		{
-			ASSERT_MSG(node->next != nullptr || node->prev != nullptr, "unlinkNode - already released node")
+			ASSERT_MSG(node->next != nullptr || node->prev != nullptr, "unlinkNode - already released node");
 		}
 
 		if (node->prev == nullptr)
