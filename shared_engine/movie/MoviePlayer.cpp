@@ -148,7 +148,9 @@ static int CreateCodec(AVCodecContext** _cc, AVStream* stream, AVBufferRef* hwDe
 static int movAVIORead(void* opaque, uint8_t* buf, int buf_size)
 {
 	IVirtualStream* stream = reinterpret_cast<IVirtualStream*>(opaque);
-	return stream->Read(buf, buf_size);
+
+	const int readBytes = stream->Read(buf, buf_size, 1);
+	return readBytes > 0 ? readBytes : AVERROR_EOF;
 }
 
 static int64_t movAVIOSeek(void* opaque, int64_t offset, int whence)
@@ -448,7 +450,8 @@ static void PlayerVideoDecodeStep(MoviePlayerData* player, ITexturePtr texture)
 
 		state = DEC_SEND_PACKET;
 	}
-	else if (state == DEC_SEND_PACKET)
+	
+	if (state == DEC_SEND_PACKET)
 	{
 		const int r = avcodec_send_packet(player->videoCodec, videoState.deqPacket);
 		if (r == 0)
@@ -479,13 +482,21 @@ static void PlayerVideoDecodeStep(MoviePlayerData* player, ITexturePtr texture)
 			return;
 		}
 
-		videoState.frame->pts = videoState.frame->pts / player->clockSpeed;
+		if (videoState.frame->pts != AV_NOPTS_VALUE)
+			videoState.frame->pts = videoState.frame->pts / player->clockSpeed;
+		else if (videoState.frame->pkt_dts != AV_NOPTS_VALUE)
+			videoState.frame->pts = videoState.frame->pkt_dts / player->clockSpeed;
+		else
+		{
+			state = DEC_RECV_FRAME;
+			return;
+		}
 
 		const double clock = clock_seconds(player->clockStartTime);
 		const double pts_secs = pts_seconds(videoState.frame, player->videoStream);
 		const double delta = (pts_secs - clock);
 
-		if (delta < -0.01f)
+		if (delta < 0)
 		{
 			state = DEC_RECV_FRAME;
 			return;
@@ -529,7 +540,8 @@ static void PlayerAudioDecodeStep(MoviePlayerData* player, FrameQueue& frameQueu
 
 		state = DEC_SEND_PACKET;
 	}
-	else if (state == DEC_SEND_PACKET)
+	
+	if (state == DEC_SEND_PACKET)
 	{
 		int r = avcodec_send_packet(player->audioCodec, audioState.deqPacket);
 		if (r == 0)
@@ -567,15 +579,21 @@ static void PlayerAudioDecodeStep(MoviePlayerData* player, FrameQueue& frameQueu
 
 		convFrame->format = AV_SAMPLE_FMT_S16;
 		convFrame->sample_rate = 44100;
-		convFrame->pts = static_cast<double>(audioState.frame->pts) / player->clockSpeed;
+
+		if (audioState.frame->pts != AV_NOPTS_VALUE)
+			convFrame->pts = static_cast<double>(audioState.frame->pts) / player->clockSpeed;
+		else if (audioState.frame->pkt_dts != AV_NOPTS_VALUE)
+			convFrame->pts = static_cast<double>(audioState.frame->pkt_dts) / player->clockSpeed;
+		else
+			convFrame->pts = 0;
+
 		if (swr_convert_frame(player->audioSwr, convFrame, audioState.frame) == 0)
 		{
 			CScopedMutex m(s_audioSourceMutex);
 			if (frameQueue.getCount() == AV_PACKET_AUDIO_CAPACITY)
 			{
-				AVFrame* frame = frameQueue.front();
+				AVFrame* frame = frameQueue.popFront();
 				av_frame_free(&frame);
-				frameQueue.remove(frameQueue.first());
 			}
 
 			frameQueue.append(convFrame);
@@ -734,6 +752,8 @@ int	CMoviePlayer::Run()
 #ifndef MOVIELIB_DISABLE
 	m_player->clockStartTime = av_gettime();
 
+	bool started = false;
+
 	while (m_playerCmd == PLAYER_CMD_PLAYING)
 	{
 		YieldCurrentThread();
@@ -745,6 +765,14 @@ int	CMoviePlayer::Run()
 		{
 			PlayerRewind(m_player);
 			m_playerCmd = PLAYER_CMD_PLAYING;
+		}
+
+		// wait until fully bufferized
+		if (!started)
+		{
+			if (m_player->videoPacketQueue.getCount() >= min(AV_PACKET_VIDEO_CAPACITY, AV_PACKET_AUDIO_CAPACITY) / 2)
+				started = true;
+			continue;
 		}
 
 		if(m_mvTexture.IsValid())
