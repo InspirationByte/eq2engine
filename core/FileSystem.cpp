@@ -731,7 +731,6 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 	if (!reader->InitPackage(packagePath, mountPath))
 	{
 		MsgError("Cannot open package '%s'\n", packagePath.ToCString());
-		delete reader;
 		return false;
 	}
 
@@ -774,8 +773,6 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 
 		if (g_fileSystem->DirExist(filePath, searchPath))
 		{
-			delete reader;
-
 			// open flat reader
 			reader = CBasePackageReaderPtr(CRefPtr_new(CFlatFileReader));
 			reader->InitPackage(filePath, nullptr);
