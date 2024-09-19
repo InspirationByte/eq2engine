@@ -50,7 +50,7 @@ BEGIN_SHADER_CLASS(
 
 	SHADER_INIT_TEXTURES()
 	{
-		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
+		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 	}
 
 	bool SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) override

@@ -7,9 +7,11 @@
 
 #pragma once
 #include "renderers/ShaderAPI_defs.h"
+#include "materialsystem1/IMaterialVar.h"
 
 class IMaterial;
 class IShaderAPI;
+class CBaseShader;
 struct MatSysCamera;
 
 #define BEGIN_SHADER_CLASS(name, ...)					\
@@ -28,8 +30,9 @@ struct MatSysCamera;
 		} \
 		const char* GetName() const override { return ThisClassNameStr; } \
 		int	GetNameHash() const	override { return StringToHashConst(#name); } \
-		void Init(IShaderAPI* renderAPI, IMaterial* material) override { \
-			CBaseShader::Init(renderAPI, material); ShaderInitParams(renderAPI); \
+		C##name##Shader(IMaterial* material) : CBaseShader(material) {} \
+		void Init(IShaderAPI* renderAPI) override { \
+			CBaseShader::Init(renderAPI); ShaderInitParams(renderAPI); \
 		}
 
 #define END_SHADER_CLASS };	\
@@ -38,54 +41,91 @@ struct MatSysCamera;
 #define SHADER_INIT_PARAMS()	void ShaderInitParams(IShaderAPI* renderAPI)
 #define SHADER_INIT_TEXTURES()	void InitTextures(IShaderAPI* renderAPI)
 
-#define _SHADER_PARAM_OP_EMPTY
-#define _SHADER_PARAM_OP_NOT !
+#define SHADER_PARAM_TEXTURE(param, variable, ...)			variable = LoadTextureByVar(#param, true, ##__VA_ARGS__ )
+#define SHADER_PARAM_TEXTURE_NOERROR(param, variable, ...)	variable = LoadTextureByVar(#param, false, ##__VA_ARGS__ )
+#define SHADER_PARAM_TEXTURE_FIND(param, variable, ...)		variable = FindTextureByVar(#param, false, ##__VA_ARGS__ )
 
-#define _SHADER_PARAM_INIT(param, variable, def, type, op) { \
-		Mat##type##Proxy mv_##param = FindMaterialVar(#param, false); \
-		variable = mv_##param.IsValid() ? op mv_##param.Get() : op def; \
-	}
+namespace bufferutil {
+template <typename T>
+constexpr int GetAlignment()
+{
+    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int> || std::is_same_v<T, uint>)
+        return 4;
+    else if constexpr (std::is_same_v<T, Vector2D> || std::is_same_v<T, IVector2D>)
+        return 8;
+    else if constexpr (std::is_same_v<T, Vector3D> || std::is_same_v<T, IVector3D> || std::is_same_v<T, IVector4D> || std::is_same_v<T, Vector4D> || std::is_same_v<T, Matrix4x4>)
+        return 16;
+    else
+        return alignof(T);
+}
 
-#define SHADER_PARAM_FLAG(param, variable, flag, enableByDefault) { \
-		MatIntProxy mv_##param = FindMaterialVar(#param, false); \
-		const bool value = mv_##param.IsValid() ? mv_##param.Get() : enableByDefault; \
-		if( value ) variable |= flag; \
-	}
+template <typename T>
+constexpr int GetSize()
+{
+    return sizeof(T);
+}
 
-#define SHADER_PARAM_FLAG_NEG(param, variable, flag, enableByDefault) { \
-		MatIntProxy mv_##param = FindMaterialVar(#param, false); \
-		const bool value = mv_##param.IsValid() ? !mv_##param.Get() : enableByDefault; \
-		if( value ) variable |= flag; \
-	}
+template<typename T>
+constexpr int AlignOffset(size_t offset)
+{
+	int alignment = GetAlignment<T>();
+    return (offset + alignment - 1) & ~(alignment - 1); // Align the offset to the alignment boundary
+}
 
-#define SHADER_PARAM_ENUM(param, variable, type, enumValue) { \
-		MatIntProxy mv_##param = FindMaterialVar(#param, false); \
-		if(mv_##param.IsValid()) variable = (type)(mv_##param.Get() ? enumValue : 0); \
-	}
+template <typename... Args>
+constexpr int CalculateMaxBufferSize()
+{
+	int offset = 0;
 
-#define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_BOOL_NEG(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_NOT)
-#define SHADER_PARAM_INT(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_FLOAT(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Float, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR2(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec2, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec3, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec4, _SHADER_PARAM_OP_EMPTY)
+    // Helper lambda to calculate total size including alignment
+    ([&]{
+        using T = std::decay_t<Args>;
+        offset = AlignOffset<T>(offset);  // Align the offset to the current type
+        offset += GetSize<T>();           // Add the size of the current type
+    }(), ...);
 
-#define SHADER_PARAM_TEXTURE(param, variable, ...)			{ variable = LoadTextureByVar(renderAPI, #param, true, ##__VA_ARGS__ ); }
-#define SHADER_PARAM_TEXTURE_NOERROR(param, variable, ...)	{ variable = LoadTextureByVar(renderAPI, #param, false, ##__VA_ARGS__ ); }
-#define SHADER_PARAM_TEXTURE_FIND(param, variable, ...)		{ variable = FindTextureByVar(renderAPI, #param, false, ##__VA_ARGS__ ); }
+    return offset;
+}
+}
 
-class CBaseShader;
+template<typename... Args>
+IGPUBufferPtr MakeParameterUniformBuffer(Args... data)
+{
+    // Calculate the maximum buffer size at compile-time using constexpr
+    constexpr int MaxBufferSize = bufferutil::CalculateMaxBufferSize<Args...>();
+
+    // Allocate the buffer on the stack based on MaxBufferSize
+    ubyte buffer[MaxBufferSize];
+    int offset = 0;
+
+    // Helper lambda to pack each argument into the buffer with std430 alignment
+    auto packData = [&](auto& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        offset = bufferutil::AlignOffset<T>(offset);  // Align the offset for this type
+
+        // Copy the data into the buffer
+        int dataSize = bufferutil::GetSize<T>();
+        memcpy(buffer + offset, &arg, dataSize);
+        offset += dataSize;
+    };
+
+    // Expand the argument pack and call packData on each argument
+    (packData(data), ...);
+
+    // Create the buffer on GPU with the packed data
+    return g_matSystem->GetShaderAPI()->CreateBuffer(BufferInfo(buffer, offset), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "materialParams");
+}
+
 
 // base shader class
 class CBaseShader : public IMatSystemShader
 {
 public:
-	CBaseShader();
+	CBaseShader(IMaterial* material);
 
 	void						Unload();
 
-	virtual void				Init(IShaderAPI* renderAPI, IMaterial* material);
+	virtual void				Init(IShaderAPI* renderAPI);
 	void						InitShader(IShaderAPI* renderAPI);
 
 	bool						IsInitialized() const { return m_isInit; }
@@ -138,9 +178,18 @@ protected:
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
 
+
+	template<typename T>
+	T GetMaterialValue(const char* param, T defaultValue) const
+	{
+		using ProxyType = typename MatProxyTypeResolve<T>::ProxyType;
+		ProxyType mvParam = FindMaterialVar(param, false);
+		return mvParam.IsValid() ? mvParam.Get() : defaultValue;
+	}
+	MatVarProxyUnk				GetMaterialVar(const char* paramName, const char* defaultValue = nullptr) const;
 	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
-	MatTextureProxy				FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
-	MatTextureProxy				LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags = 0);
+	MatTextureProxy				FindTextureByVar(const char* paramName, bool errorTextureIfNoVar = true, int texFlags = 0);
+	MatTextureProxy				LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar = true, int texFlags = 0);
 	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
 	// makes a texture atlas rectangle collection buffer

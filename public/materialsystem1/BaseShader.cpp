@@ -48,18 +48,17 @@ static ETexAddressMode ResolveAddressType(const char* string)
 	return TEXADDRESS_CLAMP;
 }
 
-CBaseShader::CBaseShader()
+CBaseShader::CBaseShader(IMaterial* material)
+	: m_material(material)
 {
 }
 
-void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
+void CBaseShader::Init(IShaderAPI* renderAPI)
 {
-	m_material = material;
-
 	// required
-	m_baseTextureTransformVar = m_material->GetMaterialVar("BaseTextureTransform", "[0 0]");
-	m_baseTextureScaleVar = m_material->GetMaterialVar("BaseTextureScale", "[1 1]");
-	m_baseTextureFrame = m_material->GetMaterialVar("BaseTextureFrame", "0");
+	m_baseTextureTransformVar = GetMaterialVar("BaseTextureTransform", "[0 0]");
+	m_baseTextureScaleVar = GetMaterialVar("BaseTextureScale", "[1 1]");
+	m_baseTextureFrame = GetMaterialVar("BaseTextureFrame", "0");
 
 	// resolve address type and filtering mode
 	MatStringProxy addressMode = m_material->FindMaterialVar("Address");
@@ -69,21 +68,44 @@ void CBaseShader::Init(IShaderAPI* renderAPI, IMaterial* material)
 	if(texFilter.IsValid()) m_texFilter = ResolveFilterType(texFilter.Get());
 
 	int materialFlags = 0;
-	SHADER_PARAM_FLAG(NoDraw, materialFlags, MATERIAL_FLAG_INVISIBLE, false)
-	SHADER_PARAM_FLAG(ReceiveShadows, materialFlags, MATERIAL_FLAG_RECEIVESHADOWS, true)
-	SHADER_PARAM_FLAG(CastShadows, materialFlags, MATERIAL_FLAG_CASTSHADOWS, true)
-	SHADER_PARAM_FLAG(Wireframe, materialFlags, MATERIAL_FLAG_WIREFRAME, false)
-	SHADER_PARAM_FLAG(Decal, materialFlags, MATERIAL_FLAG_DECAL, false)
-	SHADER_PARAM_FLAG(NoCull, materialFlags, MATERIAL_FLAG_NO_CULL, false)
-	SHADER_PARAM_FLAG(AlphaTest, materialFlags, MATERIAL_FLAG_ALPHATESTED, false)
-	SHADER_PARAM_FLAG(ZOnly, materialFlags, MATERIAL_FLAG_ONLY_Z, false)
-	SHADER_PARAM_FLAG_NEG(ZTest, materialFlags, MATERIAL_FLAG_NO_Z_TEST, false)
-	SHADER_PARAM_FLAG_NEG(ZWrite, materialFlags, MATERIAL_FLAG_NO_Z_WRITE, false)
+	if (GetMaterialValue("NoDraw", false))
+		materialFlags |= MATERIAL_FLAG_INVISIBLE;
+
+	if (GetMaterialValue("ReceiveShadows", true))
+		materialFlags |= MATERIAL_FLAG_RECEIVESHADOWS;
+
+	if (GetMaterialValue("CastShadows", true))
+		materialFlags |= MATERIAL_FLAG_CASTSHADOWS;
+
+	if (GetMaterialValue("Wireframe", false))
+		materialFlags |= MATERIAL_FLAG_WIREFRAME;
+
+	if (GetMaterialValue("Decal", false))
+		materialFlags |= MATERIAL_FLAG_DECAL;
+
+	if (GetMaterialValue("NoCull", false)) 
+		materialFlags |= MATERIAL_FLAG_NO_CULL;
+
+	if (GetMaterialValue("AlphaTest", false))
+		materialFlags |= MATERIAL_FLAG_ALPHATESTED;
+
+	if (GetMaterialValue("ZOnly", false))
+		materialFlags |= MATERIAL_FLAG_ONLY_Z;
+
+	if (GetMaterialValue("ZTest", true) == false)
+		materialFlags |= MATERIAL_FLAG_NO_Z_TEST;
+
+	if (GetMaterialValue("ZWrite", true) == false)
+		materialFlags |= MATERIAL_FLAG_NO_Z_WRITE;
 
 	EShaderBlendMode blendMode = SHADER_BLEND_NONE;
-	SHADER_PARAM_ENUM(Translucent, blendMode, EShaderBlendMode, SHADER_BLEND_TRANSLUCENT)
-	SHADER_PARAM_ENUM(Additive, blendMode, EShaderBlendMode, SHADER_BLEND_ADDITIVE)
-	SHADER_PARAM_ENUM(Modulate, blendMode, EShaderBlendMode, SHADER_BLEND_MODULATE)
+
+	if (GetMaterialValue("Translucent", false))
+		blendMode = SHADER_BLEND_TRANSLUCENT;
+	else if (GetMaterialValue("Additive", false))
+		blendMode = SHADER_BLEND_ADDITIVE;
+	else if (GetMaterialValue("Modulate", false))
+		blendMode = SHADER_BLEND_MODULATE;
 
 	if (blendMode != SHADER_BLEND_NONE)
 		materialFlags |= MATERIAL_FLAG_TRANSPARENT;
@@ -542,6 +564,11 @@ void CBaseShader::Unload()
 	m_usedTextures.clear(true);
 }
 
+MatVarProxyUnk CBaseShader::GetMaterialVar(const char* paramName, const char* defaultValue) const
+{
+	return m_material->GetMaterialVar(paramName, defaultValue);
+}
+
 MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlobals) const
 {
 	MatStringProxy mv;
@@ -562,12 +589,12 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlo
 	return mv;
 }
 
-MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags)
+MatTextureProxy CBaseShader::FindTextureByVar(const char* paramName, bool errorTextureIfNoVar, int texFlags)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
-		ITexturePtr texture = renderAPI->FindTexture(mv.Get());
+		ITexturePtr texture = g_matSystem->GetShaderAPI()->FindTexture(mv.Get());
 		if (texture)
 		{
 			ASSERT_MSG((texture->GetFlags() & texFlags) == texFlags, "MatVar '%s' texture '%s' doesn't match required flags", paramName, texture->GetName());
@@ -580,7 +607,7 @@ MatTextureProxy CBaseShader::FindTextureByVar(IShaderAPI* renderAPI, const char*
 	return mv;
 }
 
-MatTextureProxy CBaseShader::LoadTextureByVar(IShaderAPI* renderAPI, const char* paramName, bool errorTextureIfNoVar, int texFlags)
+MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar, int texFlags)
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 

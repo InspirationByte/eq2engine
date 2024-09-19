@@ -30,7 +30,7 @@ class IGPUBindGroup;
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 
 using OVERRIDE_SHADER_CB = const char* (*)(int instanceFormatId);
-using CREATE_SHADER_CB = IMatSystemShader * (*)();
+using CREATE_SHADER_CB = IMatSystemShader * (*)(IMaterial* material);
 
 enum EBindGroupId : int
 {
@@ -72,7 +72,7 @@ public:
 
 	virtual ~IMatSystemShader() = default;
 
-	virtual void				Init(IShaderAPI* renderAPI, IMaterial* material) = 0;
+	virtual void				Init(IShaderAPI* renderAPI) = 0;
 	virtual void				Unload() = 0;
 
 	virtual bool				IsInitialized() const = 0;
@@ -130,8 +130,8 @@ extern FactoryList& _InternalShaderList();
 		g_matSystem->RegisterShader( factory );
 
 #define DEFINE_SHADER(stringName, className) \
-	static IMatSystemShader* C##className##Factory() { \
-		IMatSystemShader* pShader = static_cast< IMatSystemShader * >(new className()); \
+	static IMatSystemShader* C##className##Factory(IMaterial* material) { \
+		IMatSystemShader* pShader = static_cast< IMatSystemShader * >(new className(material)); \
 		return pShader;	\
 	} \
 	class C_ShaderClassFactoryFoo {	\

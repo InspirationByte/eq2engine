@@ -258,8 +258,8 @@ void CMaterial::InitShader(IShaderAPI* renderAPI)
 
 	if (shaderFactory)
 	{
-		m_shader = shaderFactory->func();
-		m_shader->Init(renderAPI, this);
+		m_shader = shaderFactory->func(this);
+		m_shader->Init(renderAPI);
 		Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 	}
 	else
