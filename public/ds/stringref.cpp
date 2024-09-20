@@ -357,7 +357,7 @@ EqString fnmPathStripName(EqStringRef path)
 		if (path[i] == CORRECT_PATH_SEPARATOR || path[i] == INCORRECT_PATH_SEPARATOR)
 			return path.Left(i + 1);
 	}
-	return path;
+	return EqString::EmptyStr;
 }
 
 EqString fnmPathStripPath(EqStringRef path)

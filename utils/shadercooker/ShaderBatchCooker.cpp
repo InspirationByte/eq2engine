@@ -163,10 +163,21 @@ bool CShaderCooker::ParsePackage(const char* shaderDefFileName, const KVSection*
 
 bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection, bool isExt)
 {
-	const char* shaderFileName = KV_GetValueString(shaderSection->FindSection("SourceFile"), 0, nullptr);
-	if (!shaderFileName)
+	EqStringRef sourceText;
+	shaderSection->Get("SourceText").GetValues(sourceText);
+
+	EqStringRef sourceFileName;
+	shaderSection->Get("SourceFile").GetValues(sourceFileName);
+
+	if (!sourceFileName.Length() && !sourceText.Length())
 	{
-		MsgWarning("%s missing 'SourceFile'\n", shaderDefFileName);
+		MsgWarning("%s missing 'SourceFile' or 'SourceText'\n", shaderDefFileName);
+		return false;
+	}
+
+	if (sourceFileName.Length() && sourceText.Length())
+	{
+		MsgWarning("%s containts both 'SourceFile' and 'SourceText', please use one\n", shaderDefFileName);
 		return false;
 	}
 
@@ -201,7 +212,8 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	ShaderInfo& shaderInfo = m_shaderList.append();
 	shaderInfo.crc32 = g_fileSystem->GetFileCRC32(shaderDefFileName, SP_ROOT);
 	shaderInfo.name = KV_GetValueString(shaderSection);
-	shaderInfo.sourceFilename = shaderFileName;
+	shaderInfo.sourceFilename = sourceFileName;
+	shaderInfo.sourceText = sourceText;
 	shaderInfo.type = isExt ? ShaderInfo::SHADER_EXT : ShaderInfo::SHADER_BASE;
 
 	for (const KVSection* kindSec : kinds->Keys())
@@ -469,30 +481,168 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 	}
 }
 
+template<typename Processor>
+static void ProcessShaderIncludes(const char* fileName, const char* source, int length, EqShaderIncluder& includer, Processor& processor, int depth = 0)
+{
+	const char* srcBegin = source;
+	const char* srcEnd = source + length;
+
+	const char* nameStart = nullptr;
+	for (const char* sp = srcBegin; sp < srcEnd;)
+	{
+		if (!nameStart)
+		{
+			if (*sp != '#')
+			{
+				++sp;
+				continue;
+			}
+
+			const char* prefix = sp;
+
+			if (strncmp(prefix + 1, "include", 7))
+			{
+				sp = prefix + 1;
+				continue;
+			}
+
+			for (const char* ns = prefix + 8; ns < srcEnd; ++ns)
+			{
+				if (*ns == '"' || *ns == '<')
+				{
+					nameStart = ns + 1;
+					break;
+				}
+			}
+		}
+		else
+		{
+			const char* nameEnd = nullptr;
+			for (const char* ns = nameStart; ns < srcEnd; ++ns)
+			{
+				if (*ns == '"' || *ns == '>')
+				{
+					nameEnd = ns;
+					break;
+				}
+			}
+			if (!nameEnd)
+			{
+				MsgError("%s error: #include directive is not closed", fileName);
+				return;
+			}
+
+			EqString name(nameStart, nameEnd - nameStart);
+
+			processor.Process(fileName, includer, name, *nameEnd == '"', depth);
+			nameStart = nullptr;
+			sp = nameEnd;
+		}
+	}
+}
+
+struct ShaderIncludeCRCProcessor 
+{
+	ShaderInfo&	shaderInfo;
+	Set<uint>	processed{ PP_SL };
+
+	void Process(const char* currentSource, EqShaderIncluder& includer, const EqString& name, bool relative, int depth)
+	{
+		if (name == "VertexLayout")
+		{
+			// add all possible vertex layouts defined by the shader
+			for (ShaderInfo::VertLayout vertLayout : shaderInfo.vertexLayouts)
+			{
+				if (vertLayout.aliasOf != -1)
+					continue;
+
+				includer.SetVertexLayout(vertLayout.name);
+				shaderc_include_result* includeResult = includer.GetInclude(name, relative ? shaderc_include_type_relative : shaderc_include_type_standard, currentSource, depth);
+				if (includeResult->source_name_length)
+				{
+					uint checkCrc;
+					CRC32_InitChecksum(checkCrc);
+					CRC32_UpdateChecksum(checkCrc, includeResult->source_name, includeResult->source_name_length);
+					CRC32_FinishChecksum(checkCrc);
+
+					if (processed.find(checkCrc).atEnd())
+					{
+						EqString sourceNameFull(includeResult->source_name, includeResult->source_name_length);
+
+						processed.insert(checkCrc);
+						CRC32_UpdateChecksum(shaderInfo.crc32, includeResult->content, includeResult->content_length);
+						ProcessShaderIncludes(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
+					}
+					//else
+					//{
+					//	MsgWarning("Skip Include: %.*s\n", (uint)includeResult->source_name_length, includeResult->source_name);
+					//}
+				}
+				else
+				{
+					MsgWarning("%s: dependent file '%s' not found, skipping checksum\n", currentSource, name.ToCString());
+				}
+
+				includer.ReleaseInclude(includeResult);
+			}
+			return;
+		}
+
+		shaderc_include_result* includeResult = includer.GetInclude(name, relative ? shaderc_include_type_relative : shaderc_include_type_standard, currentSource, depth);
+
+		if (includeResult->source_name_length)
+		{
+			uint checkCrc;
+			CRC32_InitChecksum(checkCrc);
+			CRC32_UpdateChecksum(checkCrc, includeResult->source_name, includeResult->source_name_length);
+			CRC32_FinishChecksum(checkCrc);
+
+			if (processed.find(checkCrc).atEnd())
+			{
+				EqString sourceNameFull(includeResult->source_name, includeResult->source_name_length);
+
+				processed.insert(checkCrc);
+				CRC32_UpdateChecksum(shaderInfo.crc32, includeResult->content, includeResult->content_length);
+				ProcessShaderIncludes(sourceNameFull, includeResult->content, static_cast<int>(includeResult->content_length), includer, *this, depth + 1);
+			}
+			//else
+			//{
+			//	MsgWarning("Skip Include: %.*s\n", (uint)includeResult->source_name_length, includeResult->source_name);
+			//}
+		}
+		else
+		{
+			MsgWarning("%s: dependent file '%s' not found, skipping checksum\n", currentSource, name.ToCString());
+		}
+
+		includer.ReleaseInclude(includeResult);
+	}
+};
+
 void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 {
 	EqString targetFileName;
 	fnmPathCombine(targetFileName, m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
 
-	uint32 srcCRC = shaderInfo.crc32;
 	EqString shaderSourceName;
-	CMemoryStream shaderSourceString(PP_SL);
 
+	CMemoryStream shaderSourceString(PP_SL);
 	if (shaderInfo.type != ShaderInfo::SHADER_PACKAGE)
 	{
-		if (shaderInfo.type == ShaderInfo::SHADER_EXT)
+		if (shaderInfo.sourceFilename.Length())
 		{
-			for (const EqString& path : m_targetProps.includePaths)
+			if (shaderInfo.type == ShaderInfo::SHADER_EXT)
 			{
-				fnmPathCombine(shaderSourceName, path, shaderInfo.sourceFilename);
-				if (g_fileSystem->FileExist(shaderSourceName, SP_ROOT))
-					break;
+				for (const EqString& path : m_targetProps.includePaths)
+				{
+					fnmPathCombine(shaderSourceName, path, shaderInfo.sourceFilename);
+					if (g_fileSystem->FileExist(shaderSourceName, SP_ROOT))
+						break;
+				}
 			}
-		}
-		else
-			fnmPathCombine(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
+			else
+				fnmPathCombine(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
 
-		{
 			IFilePtr file = g_fileSystem->Open(shaderSourceName, "r", SP_ROOT);
 			if (!file)
 			{
@@ -501,17 +651,42 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			}
 			shaderSourceString.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
 			shaderSourceString.AppendStream(file);
-		}
 
-		// generate CRC from shader source file and append to the shader desc CRC
-		CRC32_UpdateChecksum(srcCRC, shaderSourceString.GetBasePointer(), shaderSourceString.GetSize());
+			// generate CRC from shader source file and append to the shader desc CRC
+			CRC32_UpdateChecksum(shaderInfo.crc32, shaderSourceString.GetBasePointer(), shaderSourceString.GetSize());
+		}
+		else if (shaderInfo.sourceText.Length())
+		{
+			const int _zero = 0;
+			shaderSourceString.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, shaderInfo.sourceText.Length() + 1);
+			shaderSourceString.Write(shaderInfo.sourceText.GetData(), shaderInfo.sourceText.Length(), 1);
+			// CRC is already computed for source
+		}
+		else
+		{
+			ASSERT_FAIL("SourceFile or SourceText contains zero characters or programmer error");
+			return;
+		}
+	}
+
+	ArrayCRef<EqString> includePaths(m_targetProps.includePaths);
+
+	// process includes CRC
+	{
+		EqShaderIncluder includer(shaderInfo, includePaths);
+		ShaderIncludeCRCProcessor processor{ shaderInfo };
+
+		ProcessShaderIncludes(
+			shaderInfo.sourceFilename.Length() ? shaderInfo.sourceFilename : shaderInfo.name, 
+			(const char*)shaderSourceString.GetBasePointer(), shaderSourceString.GetSize(), 
+			includer, processor);
 	}
 
 	// now check CRC from loaded file
-	if (HasMatchingCRC(srcCRC) && g_fileSystem->FileExist(targetFileName, SP_ROOT))
+	if (HasMatchingCRC(shaderInfo.crc32) && g_fileSystem->FileExist(targetFileName, SP_ROOT))
 	{
 		// store new CRC
-		m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), shaderInfo.sourceFilename);
+		m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", shaderInfo.crc32), shaderInfo.name);
 
 		MsgInfo("Skipping shader '%s' (no changes made)\n", shaderInfo.name.ToCString());
 		return;
@@ -535,8 +710,6 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 		// reserve variant count * (vertex + fragment)
 		shaderInfo.results.reserve(shaderInfo.vertexLayouts.numElem() * totalVariantCount * 2);
-
-		ArrayCRef<EqString> includePaths(m_targetProps.includePaths);
 
 		CEqMutex resultsMutex;
 		for (int vertLayoutIdx = 0; vertLayoutIdx < shaderInfo.vertexLayouts.numElem(); ++vertLayoutIdx)
@@ -742,7 +915,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		}
 
 		// store new CRC
-		m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), shaderInfo.sourceFilename);
+		m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", shaderInfo.crc32), shaderInfo.name);
 
 		// Store shader info
 		KVSection shaderInfoKvs;

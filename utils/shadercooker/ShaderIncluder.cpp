@@ -58,7 +58,8 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 					break;
 				}
 			}
-			result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", StringToHash(m_shaderInfo.vertexLayouts[vertexId].name));
+			if(vertexId != -1)
+				result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", StringToHash(m_shaderInfo.vertexLayouts[vertexId].name));
 
 			result->includeName = requested_source;
 		}

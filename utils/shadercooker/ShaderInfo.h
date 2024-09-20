@@ -83,6 +83,7 @@ struct ShaderInfo
 	Array<AddFile>		addedFiles{ PP_SL };
 
 	EqString			name;
+	EqString			sourceText;
 	EqString			sourceFilename;
 
 	EShaderConvStatus	status{ SHADERCONV_INIT };
