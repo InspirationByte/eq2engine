@@ -1346,6 +1346,7 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 	return (mode == MODE_DEFAULT);
 }
 
+
 //
 // Parses the KeyValues section string buffer to the 'pParseTo'
 //
@@ -1365,16 +1366,64 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 
 	KVSection* currentSection = nullptr;
 
+	enum KV2BParserMode
+	{
+		MODE_DEFAULT = 0,
+
+		MODE_MULTILINE_STRING_QUERY,
+		MODE_MULTILINE_STRING,
+	};
+
+	KV2BParserMode mode = MODE_DEFAULT;
+	const char* multiLineStringStart = nullptr;
+
 	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
 		{
 			case 'c':
 			{
 				// character filtering
+				const char c = *dataPtr;
 
 				// not supporting arrays on KV2
-				if (*dataPtr == KV_ARRAY_SEPARATOR || *dataPtr == KV_ARRAY_BEGIN || *dataPtr == KV_ARRAY_END)
-					return KV_PARSE_ERROR;
+				if (mode == MODE_DEFAULT)
+				{
+					// start parsing multi-line string
+					if (c == '%')
+					{
+						// we use query first because we have to read key name
+						mode = MODE_MULTILINE_STRING_QUERY;
+						return KV_PARSE_SKIP;
+					}
+
+					if (c == KV_ARRAY_SEPARATOR || c == KV_ARRAY_BEGIN || c == KV_ARRAY_END)
+						return KV_PARSE_ERROR;
+				}
+				else if (mode == MODE_MULTILINE_STRING_QUERY)
+				{
+					if (c == KV_SECTION_BEGIN)
+					{
+						mode = MODE_MULTILINE_STRING;
+						multiLineStringStart = dataPtr;
+						return KV_PARSE_SKIP;
+					}
+				}
+				else if (mode == MODE_MULTILINE_STRING)
+				{
+					if (c == KV_SECTION_END)
+					{
+						const int stringLength = dataPtr - multiLineStringStart;
+
+						// copy the value
+						KVPairValue* newValue = currentSection->CreateValue();
+						newValue->SetStringValue(multiLineStringStart + 1, stringLength - 1);
+
+						multiLineStringStart = nullptr;
+						mode = MODE_DEFAULT;
+					}
+
+					return KV_PARSE_SKIP;
+				}
 
 				break;
 			}
