@@ -100,7 +100,7 @@ void		fnmPathCombineF(EqString& outPath, int num, ...);
 template<typename ...Args> // requires std::same_as<Args, const char*>...
 void		fnmPathCombine(EqString& outPath, const Args&... args)
 {
-	fnmPathCombineF(outPath, sizeof...(Args), static_cast<const char*>(args)...);
+	fnmPathCombineF(outPath, sizeof...(Args), ToCString(args)...);
 }
 
 //------------------------------------------------------
