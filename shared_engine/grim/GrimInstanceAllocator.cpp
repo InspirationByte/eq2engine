@@ -84,6 +84,9 @@ void GRIMBaseInstanceAllocator::Shutdown()
 
 void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 {
+#ifdef ENABLE_GPU_INSTANCE_DEBUG
+	m_archetypeNames.clear(dealloc);
+#endif
 	m_updated.clear(dealloc);
 	m_freeIndices.clear(dealloc);
 	m_tempInstances.clear(dealloc);
@@ -111,6 +114,7 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 		if(reserve)
 			pool->ReserveData(m_reservedInsts);
 	}
+
 }
 
 GPUBufferView GRIMBaseInstanceAllocator::GetSingleInstanceIndexBuffer() const
