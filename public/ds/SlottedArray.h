@@ -14,12 +14,12 @@ public:
 	const T*	ptr() const;
 
 	void		clear(bool deallocate = false);
+	void		reserve(int count);
 
 	int			numElem() const;
 	int			numSlots() const;
 
 	int			add(T& item);
-
 	void		remove(const int idx);
 
 private:
@@ -46,6 +46,14 @@ inline void SlottedArray<T>::clear(bool deallocate)
 	m_setItems.clear();
 	if(deallocate)
 		m_setItems.resize(64);
+}
+
+template<typename T>
+inline void SlottedArray<T>::reserve(int count)
+{
+	m_items.reserve(count);
+	if (m_setItems.numBits() < m_items.numAllocated() + 1)
+		m_setItems.resize(m_items.numAllocated() + 1);
 }
 
 template<typename T>
