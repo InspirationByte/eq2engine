@@ -17,11 +17,27 @@ static constexpr int GPU_INSTANCE_MAX_TEMP_INSTANCES	= 128;
 
 static constexpr int GPU_INSTANCE_BUFFER_USAGE_FLAGS = BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
 
-GRIMBaseInstanceAllocator::GRIMBaseInstanceAllocator()
+static int instGranulatedCapacity(int capacity)
+{
+	return GRIMBaseSyncrhronizedPool::GetGranulatedCapacity(capacity, GPU_INSTANCE_POOL_SIZE_EXTEND);
+}
+
+//---------------------------------------------------------------------
+
+void GRIMBaseInstanceAllocator::Construct()
 {
 	// alloc default (zero) instance
-	m_instances.append(Instance{});
+	m_instances.append();
 	m_updated.insert(0);
+
+	for (GRIMBaseComponentPool* pool : m_componentPools)
+	{
+		if (!pool)
+			continue;
+
+		// alloc default (zero) instance
+		pool->AddElem();
+	}
 }
 
 void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName, int instancesReserve)
@@ -50,14 +66,17 @@ void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName
 
 	m_instances.reserve(m_reservedInsts);
 
-	for (GRIMBaseInstPool* pool : m_componentPools)
+	for (GRIMBaseComponentPool* pool : m_componentPools)
 	{
-		if (!pool || pool->updatePipeline)
+		if (!pool || pool->GetData().IsValid())
 			continue;
 
+		GRIMBaseSyncrhronizedPool& data = pool->GetData();
+		data.Init(0, GPU_INSTANCE_INITIAL_POOL_SIZE, GPU_INSTANCE_POOL_SIZE_EXTEND);
+		data.Reserve(m_reservedInsts);
+
 		pool->InitPipeline();
-		pool->ReserveData(m_reservedInsts);
-		ASSERT_MSG(pool->updatePipeline, "Failed to create instance update pipeline");
+		ASSERT_MSG(data.IsValid(), "Failed to create instance update pipeline");
 	}
 }
 
@@ -72,13 +91,11 @@ void GRIMBaseInstanceAllocator::Shutdown()
 	m_archetypesBuffer = nullptr;
 	m_singleInstIndexBuffer = nullptr;
 
-	for (GRIMBaseInstPool* pool : m_componentPools)
+	for (GRIMBaseComponentPool* pool : m_componentPools)
 	{
 		if (!pool)
 			continue;
-
-		pool->buffer = nullptr;
-		pool->updatePipeline = nullptr;
+		pool->GetData().SetPipeline(nullptr);
 	}
 }
 
@@ -93,6 +110,13 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 	m_archetypeInstCounts.clear(dealloc);
 	m_instances.clear(dealloc);
 
+	for (GRIMBaseComponentPool* pool : m_componentPools)
+	{
+		if (!pool)
+			continue;
+		pool->GetData().Clear(dealloc);
+	}
+
 	// alloc default (zero) instance
 	m_instances.setNum(1);
 	m_updated.insert(0);
@@ -100,21 +124,17 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 	if (reserve)
 		m_instances.reserve(m_reservedInsts);
 
-	for (GRIMBaseInstPool* pool : m_componentPools)
+	for (GRIMBaseComponentPool* pool : m_componentPools)
 	{
 		if (!pool)
 			continue;
 
-		pool->freeIndices.clear(dealloc);
-		pool->updated.clear(dealloc);
-		pool->updated.insert(0);
-
-		pool->ResetData();
+		// alloc default (zero) instance
+		pool->AddElem();
 
 		if(reserve)
-			pool->ReserveData(m_reservedInsts);
+			pool->GetData().Reserve(m_reservedInsts);
 	}
-
 }
 
 GPUBufferView GRIMBaseInstanceAllocator::GetSingleInstanceIndexBuffer() const
@@ -205,7 +225,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 		if(root.components[i] > 0)
 		{
 			Threading::CScopedMutex m(m_mutex);
-			m_componentPools[i]->freeIndices.append(root.components[i]);
+			m_componentPools[i]->GetData().Remove(root.components[i]);
 		}
 		root.components[i] = UINT_MAX;
 	}
@@ -217,101 +237,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 IGPUBufferPtr GRIMBaseInstanceAllocator::GetDataPoolBuffer(int componentId) const
 {
 	ASSERT_MSG(m_componentPools[componentId], "GPUInstanceManager was not created with component ID = %d", componentId);
-	return m_componentPools[componentId]->buffer;
-}
-
-static int instGranulatedCapacity(int capacity)
-{
-	constexpr int granularity = GPU_INSTANCE_POOL_SIZE_EXTEND;
-	return (capacity + granularity - 1) / granularity * granularity;
-}
-
-static void instRunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputePipeline* updatePipeline, IGPUBuffer* idxsBuffer, int idxsCount, IGPUBuffer* dataBuffer, IGPUBuffer* targetBuffer)
-{
-	IGPUComputePassRecorderPtr computePass = cmdRecorder->BeginComputePass("UpdateInstances");
-
-	IGPUBindGroupPtr sourceIdxsAndDataGroup = g_renderAPI->CreateBindGroup(updatePipeline,
-		Builder<BindGroupDesc>().GroupIndex(0)
-		.Buffer(0, idxsBuffer)
-		.Buffer(1, dataBuffer)
-		.End()
-	);
-	IGPUBindGroupPtr destPoolDataGroup = g_renderAPI->CreateBindGroup(updatePipeline,
-		Builder<BindGroupDesc>().GroupIndex(1)
-		.Buffer(0, targetBuffer)
-		.End()
-	);
-
-	computePass->SetPipeline(updatePipeline);
-	computePass->SetBindGroup(0, sourceIdxsAndDataGroup);
-	computePass->SetBindGroup(1, destPoolDataGroup);
-
-	const int INSTANCES_PER_WORKGROUP = 256;
-
-	computePass->DispatchWorkgroups(idxsCount / INSTANCES_PER_WORKGROUP + 1);
-	computePass->Complete();
-}
-
-// prepares data buffer
-static void instPrepareDataBuffer(IGPUCommandRecorder* cmdRecorder, ArrayCRef<int> elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destDataBuffer)
-{
-	const int updatedCount = elementIds.numElem();
-	const int updateBufferSize = updatedCount * elemSize;
-
-	ubyte* updateData = reinterpret_cast<ubyte*>(PPAlloc(updateBufferSize));
-	ubyte* updateDataStart = updateData;
-	defer{
-		PPFree(updateDataStart);
-	};
-
-	// as GPU does not like unaligned access, we put updated elements in separate buffer
-	for (const int elemIdx : elementIds)
-	{
-		const ubyte* updInstPtr = sourceData + sourceStride * elemIdx;
-		memcpy(updateData, updInstPtr, elemSize);
-		updateData += elemSize;
-	}
-
-	destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, updateBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdData");
-	cmdRecorder->WriteBuffer(destDataBuffer, updateDataStart, updateBufferSize, 0);
-}
-
-// prepare data and indices
-static void instPrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer)
-{
-	ASSERT(elemSize <= sourceStride);
-
-	const int updatedCount = updated.size();
-	const int updateBufferSize = updatedCount * elemSize;
-
-	elementIds.reserve(updatedCount + 1);
-	elementIds.clear();
-
-	// always insert count as first element (sourceCount)
-	elementIds.append(updatedCount);
-
-	ubyte* updateData = reinterpret_cast<ubyte*>(PPAlloc(updateBufferSize));
-	ubyte* updateDataStart = updateData;
-	defer{
-		PPFree(updateDataStart);
-	};
-
-	// as GPU does not like unaligned access, we put updated elements in separate buffer
-	for (auto it = updated.begin(); !it.atEnd(); ++it)
-	{
-		const int elemIdx = it.key();
-		elementIds.append(elemIdx);
-
-		const ubyte* updInstPtr = sourceData + sourceStride * elemIdx;
-		memcpy(updateData, updInstPtr, elemSize);
-		updateData += elemSize;
-	}
-
-	destIdxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(elementIds[0]), elementIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
-	destDataBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, updateBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdData");
-
-	cmdRecorder->WriteBuffer(destIdxsBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
-	cmdRecorder->WriteBuffer(destDataBuffer, updateDataStart, updateBufferSize, 0);
+	return m_componentPools[componentId]->GetData().GetBuffer();
 }
 
 void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
@@ -368,51 +294,24 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		{
 			IGPUBufferPtr idxsBuffer;
 			IGPUBufferPtr dataBuffer;
-			instPrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);
-			instRunUpdatePipeline(cmdRecorder, m_updateRootPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_rootBuffer);
+			GRIMBaseSyncrhronizedPool::PrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);
+			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateRootPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_rootBuffer);
 
 			// update archetypes data
-			instPrepareDataBuffer(cmdRecorder, ArrayCRef(elementIds.ptr()+1, elementIds.numElem()-1), reinterpret_cast<const ubyte*>(m_instances.ptr()) + offsetOf(Instance, archetype), sizeof(Instance), sizeof(int), dataBuffer);
-			instRunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, elementIds.numElem()-1, dataBuffer, m_archetypesBuffer);
+			GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, ArrayCRef(elementIds.ptr()+1, elementIds.numElem()-1), reinterpret_cast<const ubyte*>(m_instances.ptr()) + offsetOf(Instance, archetype), sizeof(Instance), sizeof(int), dataBuffer);
+			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, elementIds.numElem()-1, dataBuffer, m_archetypesBuffer);
 		}
 		m_updated.clear();
 	}
 
 	// update instance components buffers
-	for (GRIMBaseInstPool* pool : m_componentPools)
+	for (GRIMBaseComponentPool* pool : m_componentPools)
 	{
 		if (!pool)
 			continue;
-
-		const int elemSize = pool->stride;
-		const int poolElems = pool->GetDataElems();
-		const ubyte* poolDataPtr = reinterpret_cast<const ubyte*>(pool->GetDataPtr());
-
-		const int oldBufferElems = pool->buffer ? pool->buffer->GetSize() / elemSize : 0;
-
-		if (!pool->buffer || poolElems > oldBufferElems)
-		{
-			// alloc (or re-create) new buffer and upload entire data
-			const int allocInstBufferElems = max(instGranulatedCapacity(poolElems), GPU_INSTANCE_INITIAL_POOL_SIZE);
-
-			IGPUBufferPtr sourceBuffer = pool->buffer;
-			pool->buffer = g_renderAPI->CreateBuffer(BufferInfo(elemSize, allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
-			buffersUpdatedThisFrame = true;
-
-			// copy old contents of buffer
-			if (oldBufferElems > 0)
-				cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, pool->buffer, 0, oldBufferElems * elemSize);
-		}
 		
-		if (pool->updated.size())
-		{
-			// prepare update buffer
-			IGPUBufferPtr idxsBuffer;
-			IGPUBufferPtr dataBuffer;
-			instPrepareBuffers(cmdRecorder, pool->updated, elementIds, poolDataPtr, elemSize, elemSize, idxsBuffer, dataBuffer);
-			instRunUpdatePipeline(cmdRecorder, pool->updatePipeline, idxsBuffer, pool->updated.size(), dataBuffer, pool->buffer);
-		}
-		pool->updated.clear();
+		if(pool->GetData().Sync(cmdRecorder))
+			buffersUpdatedThisFrame = true;
 	}
 
 	for (int tempInstIdx : m_tempInstances)

@@ -65,6 +65,7 @@ Example of use:
 #pragma once
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimDefs.h"
+#include "GrimSynchronizedPool.h"
 
 #ifndef _RETAIL
 #define ENABLE_GPU_INSTANCE_DEBUG
@@ -74,30 +75,20 @@ Example of use:
 	static constexpr const char* NAME = #Name; \
 	static constexpr int IDENTIFIER = StringToHashConst(#Name); \
 	static constexpr int COMPONENT_ID = ID; \
-	static void InitPipeline(GRIMBaseInstPool& pool);
+	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool);
 
 #define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
-	void Name::InitPipeline(GRIMBaseInstPool& pool) { \
-		pool.updatePipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
-			.ShaderName(UpdateShaderName).ShaderLayoutId(IDENTIFIER).End()); \
+	void Name::InitPipeline(GRIMBaseSyncrhronizedPool& pool) { \
+		pool.SetPipeline(g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
+			.ShaderName(UpdateShaderName).ShaderLayoutId(IDENTIFIER).End())); \
 	}
 
-struct GRIMBaseInstPool
+class GRIMBaseComponentPool
 {
-	GRIMBaseInstPool(int stride) : stride(stride) {}
-
-	virtual const char* GetName() const = 0;
-	virtual const void*	GetDataPtr() const = 0;
-	virtual int			GetDataElems() const = 0;
-	virtual void		ResetData() = 0;
-	virtual void		ReserveData(int count) = 0;
-	virtual void		InitPipeline() = 0;
-
-	Array<int>			freeIndices{ PP_SL };
-	Set<int>			updated{ PP_SL };
-	IGPUBufferPtr		buffer;
-	IGPUComputePipelinePtr	updatePipeline;
-	int					stride{ 0 };
+public:
+	virtual GRIMBaseSyncrhronizedPool& GetData() = 0;
+	virtual void AddElem() = 0;
+	virtual void InitPipeline() = 0;
 };
 
 // The instance manager basic implementation
@@ -105,7 +96,7 @@ class GRIMBaseInstanceAllocator
 {
 	friend class GRIMInstanceDebug;
 public:
-	GRIMBaseInstanceAllocator();
+	GRIMBaseInstanceAllocator() = default;
 	~GRIMBaseInstanceAllocator() = default;
 
 	void			Initialize(const char* instanceComputeShaderName, int instancesReserve = 1000);
@@ -135,6 +126,8 @@ public:
 	void			DbgRegisterArhetypeName(GRIMArchetype archetypeId, const char* name);
 
 protected:
+	void			Construct();
+
 	// TODO: instance refs
 	// in this way we can use data of the referenced intance on new instance with different
 	// archetypes, useful for adding body groups (as they use different archetype id)
@@ -166,7 +159,7 @@ protected:
 	Array<Instance>			m_instances{ PP_SL };
 	Array<int>				m_freeIndices{ PP_SL };
 	Set<int>				m_updated{ PP_SL };
-	GRIMBaseInstPool*		m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
+	GRIMBaseComponentPool*	m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
 
 	Map<GRIMArchetype, int>			m_archetypeInstCounts{ PP_SL };
@@ -177,26 +170,29 @@ protected:
 	int						m_reservedInsts{ 0 };
 };
 
-//-----------------------------------------------------
-// Below is a template part of Instance manager. Use it
-
 // Instance component data storage
 template<typename T>
-struct GRIMDataPool : public GRIMBaseInstPool
+class GRIMInstComponentPool : public GRIMBaseComponentPool
 {
+public:
 	using TYPE = T;
+	GRIMInstComponentPool()
+		: m_dataPool(T::NAME, PP_SL)
+	{
+	}
 
-	GRIMDataPool() : GRIMBaseInstPool(sizeof(T)) {}
+	GRIMSyncrhronizedPool<T>& GetDataPool() { return m_dataPool; }
 
-	const char*	GetName() const override { return T::NAME; }
-	const void*	GetDataPtr() const override { return data.ptr(); };
-	int			GetDataElems() const override { return data.numElem(); }
-	void		ResetData() override { data.setNum(1); }		// reset data to have default element only
-	void		InitPipeline() { T::InitPipeline(*this); }
-	void		ReserveData(int count) override { data.reserve(count); }
+	GRIMBaseSyncrhronizedPool& GetData() override { return m_dataPool; }
+	void AddElem() override { m_dataPool.Add(T{}); }
+	void InitPipeline() override { T::InitPipeline(m_dataPool); }
 
-	Array<T> 	data{ PP_SL };
+protected:
+	GRIMSyncrhronizedPool<T> m_dataPool;
 };
+
+//-----------------------------------------------------
+// Below is a template part of Instance manager. Use it
 
 // Component-based instance manager
 template<typename ... Components>
@@ -204,7 +200,7 @@ class GRIMInstanceAllocator : public GRIMBaseInstanceAllocator
 {
 public:
 	template<typename TComp>
-	using Pool = GRIMDataPool<TComp>;
+	using Pool = GRIMInstComponentPool<TComp>;
 
 	GRIMInstanceAllocator();
 
@@ -255,7 +251,7 @@ protected:
 	Pool<TComp>&	GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
 
 	template<std::size_t... Is>
-	void			InitPool(std::index_sequence<Is...>);
+	void			InitPools(std::index_sequence<Is...>);
 
 	POOL_STORAGE	m_componentPoolsStorage;
 };
@@ -270,21 +266,19 @@ public:
 
 template<typename...Ts>
 template<std::size_t... Is>
-void GRIMInstanceAllocator<Ts...>::InitPool(std::index_sequence<Is...>)
+void GRIMInstanceAllocator<Ts...>::InitPools(std::index_sequence<Is...>)
 {
 	([&] {
 		using POOL_TYPE = std::tuple_element_t<Is, POOL_STORAGE>;
-		POOL_TYPE& pool = std::get<Is>(m_componentPoolsStorage);
-		pool.data.append(typename POOL_TYPE::TYPE{}); // add default value
-		pool.updated.insert(0);
-		m_componentPools[POOL_TYPE::TYPE::COMPONENT_ID] = &pool;
+		m_componentPools[POOL_TYPE::TYPE::COMPONENT_ID] = &std::get<Is>(m_componentPoolsStorage);
 	}(), ...);
 }
 
 template<typename...Ts>
 inline GRIMInstanceAllocator<Ts...>::GRIMInstanceAllocator()
 {
-	InitPool(std::index_sequence_for<Ts...>{});
+	InitPools(std::index_sequence_for<Ts...>{});
+	Construct();
 }
 
 template<typename...Ts>
@@ -301,7 +295,7 @@ inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const Firs
 	}
 
 	Pool<First>& compPool = GetComponentPool<First>();
-	if (!memcmp(&compPool.data[inPoolIdx], &firstVal, sizeof(First)))
+	if (!memcmp(&compPool.GetDataPool().GetData()[inPoolIdx], &firstVal, sizeof(First)))
 	{
 		SetInternal(inst, values...);
 		return;
@@ -309,8 +303,7 @@ inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const Firs
 
 	{
 		Threading::CScopedMutex m(m_mutex);
-		compPool.data[inPoolIdx] = firstVal;
-		compPool.updated.insert(inPoolIdx);
+		compPool.GetDataPool().Update(inPoolIdx, firstVal);
 	}
 	SetInternal(inst, values...);
 }
@@ -336,9 +329,7 @@ inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId
 		Threading::CScopedMutex m(m_mutex);
 		([&]{
 			Pool<TComps>& compPool = GetComponentPool<TComps>();
-			const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append(TComps{});
-			inst.components[TComps::COMPONENT_ID] = inPoolIdx;
-			compPool.updated.insert(inPoolIdx);
+			inst.components[TComps::COMPONENT_ID] = compPool.GetDataPool().Add(TComps{});
 		} (), ...);
 	}
 }
@@ -357,10 +348,7 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(m_mutex);
-		const int inPoolIdx = compPool.freeIndices.numElem() ? compPool.freeIndices.popBack() : compPool.data.append(TComp{});
-		inst.components[TComp::COMPONENT_ID] = inPoolIdx;
-		compPool.updated.insert(inPoolIdx);
-
+		inst.components[TComp::COMPONENT_ID] = compPool.GetDataPool().Add(TComp{});
 		m_updated.insert(instanceId);
 	}
 }
@@ -379,7 +367,7 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(m_mutex);
-		compPool.freeIndices.append(inst.components[TComp::COMPONENT_ID]);
+		compPool.GetDataPool().Remove(inst.components[TComp::COMPONENT_ID]);
 		inst.components[TComp::COMPONENT_ID] = 0; // change to default
 		m_updated.insert(instanceId);
 	}
