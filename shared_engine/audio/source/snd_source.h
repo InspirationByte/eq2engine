@@ -27,6 +27,8 @@ public:
 		int channels{ 0 };
 		int bitwidth{ 0 };
 		int frequency{ 0 };
+
+		inline int GetStride() const { return (bitwidth >> 3) * channels; }
 	};
 
 	virtual ~ISoundSource() = default;

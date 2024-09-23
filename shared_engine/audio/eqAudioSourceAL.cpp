@@ -600,10 +600,7 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 			continue;
 		}
 
-		const ISoundSource::Format& fmt = sample->GetFormat();
-		const int sampleUnit = (fmt.bitwidth >> 3);
-
-		void* streamSamples = stackalloc(numSamplesToRead * sampleUnit * fmt.channels);
+		void* streamSamples = stackalloc(numSamplesToRead * sample->GetFormat().GetStride());
 		const int samplesRead = sample->GetSamples(streamSamples, numSamplesToRead, stream.curPos, looping);
 
 		const int mixedSamples = stream.mixFunc(streamSamples, samplesRead, data, requestedSamples, sampleVolume, samplePitch);

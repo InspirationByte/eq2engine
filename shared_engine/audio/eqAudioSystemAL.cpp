@@ -563,19 +563,15 @@ int	CEqAudioSystemAL::GetEffectSlotCount() const
 
 void CEqAudioSystemAL::SuspendSourcesWithSample(ISoundSource* sample)
 {
-	for (int i = 0; i < m_sources.numElem(); i++)
+	for (CEqAudioSourceAL* src : m_sources)
 	{
-		CEqAudioSourceAL* src = m_sources[i].Ptr();
+		const int idx = arrayFindIndexF(src->m_streams, [&](const CEqAudioSourceAL::SourceStream& stream) {
+			return stream.sample == sample;
+		});
 
-		for (int j = 0; j < src->m_streams.numElem(); ++j)
-		{
-			if (src->m_streams[j].sample == sample)
-			{
-				// sadly, entire sound source has to be stopped
-				src->Release();
-				break;
-			}
-		}
+		// sadly, entire sound source has to be stopped
+		if (idx != -1) 
+			src->Release();
 	}
 }
 
@@ -638,19 +634,12 @@ void CEqAudioSystemAL::EndUpdate()
 			if (sample->IsStreaming())
 				continue;
 
-			const ISoundSource::Format& fmt = sample->GetFormat();
-			const int sampleUnit = (fmt.bitwidth >> 3);
-			const int sampleSize = sampleUnit * fmt.channels;
-
-			sampleMem += sample->GetSampleCount() * sampleSize;
+			sampleMem += sample->GetSampleCount() * sample->GetFormat().GetStride();
 		}
 
 		uint playing = 0;
-		for (int i = 0; i < m_sources.numElem(); i++)
-		{
-			CEqAudioSourceAL* src = m_sources[i].Ptr();
+		for (CEqAudioSourceAL* src : m_sources)
 			playing += (src->GetState() == IEqAudioSource::PLAYING);
-		}
 
 		debugoverlay->Text(color_white, "-----SOUND STATISTICS-----");
 		debugoverlay->Text(color_white, "  sources: %d, (%d allocated)", playing, m_sources.numElem());
