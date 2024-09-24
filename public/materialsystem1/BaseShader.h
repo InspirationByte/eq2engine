@@ -113,7 +113,7 @@ IGPUBufferPtr MakeParameterUniformBuffer(Args... data)
     (packData(data), ...);
 
     // Create the buffer on GPU with the packed data
-    return g_matSystem->GetShaderAPI()->CreateBuffer(BufferInfo(buffer, offset), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "materialParams");
+    return g_matSystem->GetShaderAPI()->CreateBuffer(BufferInfo(buffer, offset), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "materialParams");
 }
 
 

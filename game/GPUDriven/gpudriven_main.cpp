@@ -270,6 +270,8 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 void CState_GpuDrivenDemo::OnLeave(CAppStateBase* to)
 {
 	s_grimRenderer.Shutdown();
+	s_instanceAlloc.Shutdown();
+
 	s_modelIdToArchetypeId.clear(true);
 	s_storedRenderState = {};
 
@@ -281,7 +283,6 @@ void CState_GpuDrivenDemo::OnLeave(CAppStateBase* to)
 	g_inputCommandBinder->UnbindCommandByName("strafeleft");
 	g_inputCommandBinder->UnbindCommandByName("straferight");
 
-	s_instanceAlloc.Shutdown();
 	g_pfxRender->Shutdown();
 
 	g_studioCache->ReleaseCache();
