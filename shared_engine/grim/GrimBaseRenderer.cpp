@@ -24,9 +24,10 @@ DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
 static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
 static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
 static constexpr char SHADERNAME_PREPARE_INDIRECT_INSTANCES[] = "InstancePrepareDrawIndirect";
+static constexpr char SHADERNAME_PREPARE_INSTALCE_POOLS[] = "InstancePreparePools";
 static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
-
 static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
+
 
 static Threading::CEqMutex s_grimRendererMutex;
 
@@ -40,14 +41,6 @@ void GRIMBaseRenderer::Init()
 	m_sortShader = CRefPtr_new(ComputeSortShader);
 	m_sortShader->AddSortPipeline(SHADER_PIPELINE_SORT_INSTANCES, SHADERNAME_SORT_INSTANCES);
 	
-	m_drawBatchsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUIndexedBatch), m_drawBatchs.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawBatchs");
-	m_drawLodInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPULodInfo), m_drawLodInfos.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawLodInfos");
-	m_drawLodsListBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(m_drawLodsList), m_drawLodsList.numSlots()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawLodsList");
-	
-	m_drawBatchsBuffer->Update(m_drawBatchs.ptr(), m_drawBatchs.numSlots() * sizeof(m_drawBatchs[0]), 0);
-	m_drawLodInfosBuffer->Update(m_drawLodInfos.ptr(), m_drawLodInfos.numSlots() * sizeof(m_drawLodInfos[0]), 0);
-	m_drawLodsListBuffer->Update(m_drawLodsList.ptr(), m_drawLodsList.numSlots() * sizeof(m_drawLodsList[0]), 0);
-
 	m_instCalcBoundsPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_CALC_INSTANCE_BOUNDS)
@@ -66,34 +59,38 @@ void GRIMBaseRenderer::Init()
 		.End()
 	);
 
-	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirect,
-		Builder<BindGroupDesc>()
-		.GroupIndex(0)
-		.Buffer(0, m_drawBatchsBuffer)
-		.Buffer(1, m_drawLodInfosBuffer)
-		.Buffer(2, m_drawLodsListBuffer)
+	m_drawBatchs.SetPipeline(g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
+		.ShaderLayoutId(StringToHash(m_drawBatchs.GetName()))
 		.End()
-	);
-
-	m_cullBindGroup0 = g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
-		Builder<BindGroupDesc>()
-		.GroupIndex(0)
-		.Buffer(0, m_drawLodInfosBuffer)
-		.Buffer(1, m_drawLodsListBuffer)
+	));
+	m_drawLodInfos.SetPipeline(g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
+		.ShaderLayoutId(StringToHash(m_drawLodInfos.GetName()))
 		.End()
-	);
+	));
+	m_drawLodsList.SetPipeline(g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
+		.ShaderLayoutId(StringToHash(m_drawLodsList.GetName()))
+		.End()
+	));
 }
 
 void GRIMBaseRenderer::Shutdown()
 {
-	m_drawBatchs.clear(true);
 	m_drawInfos.clear(true);
-	m_drawLodInfos.clear(true);
-	m_drawLodsList.clear(true);
-	
-	m_drawBatchsBuffer = nullptr;
-	m_drawLodInfosBuffer = nullptr;
-	m_drawLodsListBuffer = nullptr;
+
+	m_drawBatchs.Clear(true);
+	m_drawLodInfos.Clear(true);
+	m_drawLodsList.Clear(true);
+
+	m_drawBatchs.SetPipeline(nullptr);
+	m_drawLodInfos.SetPipeline(nullptr);
+	m_drawLodsList.SetPipeline(nullptr);
+
 	m_sortShader = nullptr;
 	m_instCalcBoundsPipeline = nullptr;
 	m_instPrepareDrawIndirect = nullptr;
@@ -156,9 +153,12 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 				drawBatch.firstIndex = meshRef.firstIndex;
 				drawBatch.indexCount = meshRef.indexCount;
 
-				const int newBatch = m_drawBatchs.add(drawBatch);
+				const int newBatch = m_drawBatchs.Add(drawBatch);
 				if (prevBatch != -1)
+				{
 					m_drawBatchs[prevBatch].next = newBatch;
+					m_drawBatchs.SetUpdated(prevBatch);
+				}
 				else
 					drawLodInfo.firstBatch = newBatch;
 				prevBatch = newBatch;
@@ -180,19 +180,22 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 				drawInfo.batchIdx = newBatch;
 
 				m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
+				m_drawBatchs.SetUpdated(newBatch);
 			}
 		}
 
-		const int newLod = m_drawLodInfos.add(drawLodInfo);
+		const int newLod = m_drawLodInfos.Add(drawLodInfo);
 		if(prevLod != -1)
+		{
 			m_drawLodInfos[prevLod].next = newLod;
+			m_drawLodInfos.SetUpdated(prevLod);
+		}
 		else
 			drawLodList.firstLodInfo = newLod;
 		prevLod = newLod;
 	}
 
-	const GRIMArchetype archetypeId = m_drawLodsList.add(drawLodList);
-	m_updated.insert(archetypeId);
+	const GRIMArchetype archetypeId = m_drawLodsList.Add(drawLodList);
 
 	return archetypeId;
 }
@@ -208,7 +211,7 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 
 	ASSERT_MSG(desc.lods.numElem() <= GRIM_MAX_INSTANCE_LODS, "Too many lods (%d), max is %d", desc.lods.numElem(), GRIM_MAX_INSTANCE_LODS);
 
-	GPULodList lodList;
+	GPULodList drawLodList;
 	int prevLod = -1;
 	for (const GRIMArchetypeDesc::LodInfo& lodInfo : desc.lods)
 	{
@@ -224,9 +227,12 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 			drawBatch.firstIndex = batch.firstIndex;
 			drawBatch.indexCount = batch.indexCount;
 
-			const int newBatch = m_drawBatchs.add(drawBatch);
+			const int newBatch = m_drawBatchs.Add(drawBatch);
 			if (prevBatch != -1)
+			{
 				m_drawBatchs[prevBatch].next = newBatch;
+				m_drawBatchs.SetUpdated(prevBatch);
+			}
 			else
 				drawLodInfo.firstBatch = newBatch;
 			prevBatch = newBatch;
@@ -245,12 +251,21 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 			drawInfo.batchIdx = newBatch;
 
 			m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
+			m_drawBatchs.SetUpdated(newBatch);
 		}
+
+		const int newLod = m_drawLodInfos.Add(drawLodInfo);
+		if (prevLod != -1)
+		{
+			m_drawLodInfos[prevLod].next = newLod;
+			m_drawLodInfos.SetUpdated(prevLod);
+		}
+		else
+			drawLodList.firstLodInfo = newLod;
+		prevLod = newLod;
 	}
 
-	const GRIMArchetype archetypeId = m_drawLodsList.add(lodList);
-	m_updated.insert(archetypeId);
-
+	const GRIMArchetype archetypeId = m_drawLodsList.Add(drawLodList);
 	return archetypeId;
 }
 
@@ -294,13 +309,13 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
 			m_drawInfos.remove(item.index);
 			break;
 		case ItemInfo::BATCH:
-			m_drawBatchs.remove(item.index);
+			m_drawBatchs.Remove(item.index);
 			break;
 		case ItemInfo::LODINFO:
-			m_drawLodInfos.remove(item.index);
+			m_drawLodInfos.Remove(item.index);
 			break;
 		case ItemInfo::LODLIST:
-			m_drawLodsList.remove(item.index);
+			m_drawLodsList.Remove(item.index);
 			break;
 		}
 	}
@@ -308,10 +323,36 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
 
 void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 {
-	// what we are syncing to the GPU:
-	// m_drawBatchs
-	// m_drawLods
-	// m_drawLodsList
+	// we have to sync desc buffers first
+	bool buffersUpdated = false;
+	if (m_drawBatchs.Sync(cmdRecorder))
+		buffersUpdated = true;
+
+	if (m_drawLodInfos.Sync(cmdRecorder))
+		buffersUpdated = true;
+
+	if (m_drawLodsList.Sync(cmdRecorder))
+		buffersUpdated = true;
+
+	if (!buffersUpdated)
+		return;
+
+	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirect,
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, m_drawBatchs.GetBuffer())
+		.Buffer(1, m_drawLodInfos.GetBuffer())
+		.Buffer(2, m_drawLodsList.GetBuffer())
+		.End()
+	);
+
+	m_cullBindGroup0 = g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, m_drawLodInfos.GetBuffer())
+		.Buffer(1, m_drawLodsList.GetBuffer())
+		.End()
+	);
 }
 
 //--------------------------------------------------------------------
@@ -392,7 +433,7 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& interm
 	);
 
 	constexpr int GROUP_SIZE = 32;
-	const int numBounds = m_drawLodsList.numSlots() * GRIM_MAX_INSTANCE_LODS;
+	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
 	computeRecorder->DispatchWorkgroups(numBounds / GROUP_SIZE + 1);
 	computeRecorder->Complete();
 }
@@ -437,7 +478,7 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermed
 	Array<int> instanceIds(PP_SL);
 	instanceIds.setNum(instanceCount);
 
-	drawInstanceBounds.setNum(m_drawLodsList.numElem() * GRIM_MAX_INSTANCE_LODS);
+	drawInstanceBounds.setNum(m_drawLodsList.NumElem() * GRIM_MAX_INSTANCE_LODS);
 	if (instanceCount > 0)
 	{
 		const int lastArchetypeId = instanceInfos[instanceCount - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
@@ -534,6 +575,8 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 {
 	PROF_EVENT_F();
 
+	SyncArchetypes(cmdRecorder);
+
 	renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
 	renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), maxNumberOfObjects), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
 
@@ -555,7 +598,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 	cmdRecorder->DbgPushGroup("GRIMPrepareDraw");
 
-	const int numBounds = m_drawLodsList.numSlots() * GRIM_MAX_INSTANCE_LODS;
+	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
 	intermediate.sortedInstanceIds = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), intermediate.maxNumberOfObjects + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
 	intermediate.instanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), intermediate.maxNumberOfObjects), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
 	intermediate.drawInstanceBoundsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceBound), numBounds + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceBounds");
@@ -616,9 +659,9 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		debugoverlay->Text(color_white, "--- GRIM instances summary ---");
 		debugoverlay->Text(color_white, "Mode: %s", grim_force_software.GetBool() ? "CPU" : "Compute");
 		debugoverlay->Text(color_white, " %d draw infos: %.2f KB", m_drawInfos.numElem(), memBytesToKB(m_drawInfos.numSlots() * sizeof(m_drawInfos[0])));
-		debugoverlay->Text(color_white, " %d batchs: %.2f KB", m_drawBatchs.numElem(), memBytesToKB(m_drawBatchs.numSlots() * sizeof(m_drawBatchs[0])));
-		debugoverlay->Text(color_white, " %d lod infos: %.2f KB", m_drawLodInfos.numElem(), memBytesToKB(m_drawLodInfos.numSlots() * sizeof(m_drawLodInfos[0])));
-		debugoverlay->Text(color_white, " %d lod lists: %.2f KB", m_drawLodsList.numElem(), memBytesToKB(m_drawLodsList.numSlots() * sizeof(m_drawLodsList[0])));
+		debugoverlay->Text(color_white, " %d batchs: %.2f KB", m_drawBatchs.NumElem(), memBytesToKB(m_drawBatchs.NumSlots() * sizeof(m_drawBatchs[0])));
+		debugoverlay->Text(color_white, " %d lod infos: %.2f KB", m_drawLodInfos.NumElem(), memBytesToKB(m_drawLodInfos.NumSlots() * sizeof(m_drawLodInfos[0])));
+		debugoverlay->Text(color_white, " %d lod lists: %.2f KB", m_drawLodsList.NumElem(), memBytesToKB(m_drawLodsList.NumSlots() * sizeof(m_drawLodsList[0])));
 
 		debugoverlay->Text(color_white, "Draw calls: %d", numDrawCalls);
 	}

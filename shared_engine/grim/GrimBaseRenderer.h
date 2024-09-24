@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "ds/SlottedArray.h"
 #include "GrimDefs.h"
+#include "GrimSynchronizedPool.h"
 #include "render/ComputeSort.h"
 #include "materialsystem1/IMatSysShader.h"
 #include "materialsystem1/IMaterial.h"
@@ -32,6 +32,9 @@ struct GRIMRenderState
 
 class GRIMBaseRenderer : public IShaderMeshInstanceProvider
 {
+	template<typename T>
+	using Pool = GRIMSyncrhronizedPool<T>;
+
 public:
 	GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator);
 
@@ -69,26 +72,21 @@ protected:
 	void			UpdateIndirectInstances_Compute(IntermediateState& intermediate);
 	void			UpdateIndirectInstances_Software(IntermediateState& intermediate);
 
-	GRIMBaseInstanceAllocator&		m_instAllocator;
-	SlottedArray<GPUDrawInfo>		m_drawInfos{ PP_SL };	// must be in sync with batchs
-	SlottedArray<GPUIndexedBatch>	m_drawBatchs{ PP_SL };
-	SlottedArray<GPULodInfo>		m_drawLodInfos{ PP_SL };
-	SlottedArray<GPULodList>		m_drawLodsList{ PP_SL };
-	Set<int>						m_updated{ PP_SL };		// updated lod lists
+	GRIMBaseInstanceAllocator&	m_instAllocator;
+	SlottedArray<GPUDrawInfo>	m_drawInfos{ PP_SL };
+	Pool<GPUIndexedBatch>		m_drawBatchs{ "GPUIndexedBatch", PP_SL };
+	Pool<GPULodInfo>			m_drawLodInfos{ "GPULodInfo", PP_SL };
+	Pool<GPULodList>			m_drawLodsList{ "GPULodList", PP_SL };
 
-	IGPUBufferPtr					m_drawBatchsBuffer;
-	IGPUBufferPtr					m_drawLodInfosBuffer;
-	IGPUBufferPtr					m_drawLodsListBuffer;
+	ComputeSortShaderPtr		m_sortShader;
 
-	ComputeSortShaderPtr			m_sortShader;
-
-	IGPUComputePipelinePtr			m_instCalcBoundsPipeline;
-	IGPUComputePipelinePtr			m_instPrepareDrawIndirect;
+	IGPUComputePipelinePtr		m_instCalcBoundsPipeline;
+	IGPUComputePipelinePtr		m_instPrepareDrawIndirect;
 	// TODO: culling pipeline must be external
-	IGPUComputePipelinePtr			m_cullInstancesPipeline;
+	IGPUComputePipelinePtr		m_cullInstancesPipeline;
 
-	IGPUBindGroupPtr				m_cullBindGroup0;
-	IGPUBindGroupPtr				m_updateBindGroup0;
+	IGPUBindGroupPtr			m_cullBindGroup0;
+	IGPUBindGroupPtr			m_updateBindGroup0;
 };
 
 struct GRIMBaseRenderer::GPUIndexedBatch
