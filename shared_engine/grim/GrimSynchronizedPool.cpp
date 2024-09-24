@@ -167,3 +167,8 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 
 	return buffersUpdated;
 }
+
+void GRIMBaseSyncrhronizedPool::SetUpdated(int idx)
+{
+	m_updated.insert(idx);
+}

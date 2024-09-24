@@ -34,6 +34,7 @@ public:
 
 	virtual void			Reserve(int count) = 0;
 	virtual void			Remove(const int idx) = 0;
+	void					SetUpdated(int idx);
 
 	virtual bool			Sync(IGPUCommandRecorder* cmdRecorder) = 0;
 	IGPUBufferPtr			GetBuffer() const { return m_buffer; }
@@ -71,16 +72,19 @@ public:
 	{
 	}
 
+	T&				operator[](const int idx) { return DATA::m_items[idx]; }
+	const T&		operator[](const int idx) const { return DATA::m_items[idx]; }
+	bool			operator()(const int idx) { return DATA::m_setItems[idx]; }
+
 	const T*		GetData() const { return DATA::ptr(); }
 	int				Add(T& item);
 	void			Remove(const int idx);
-	void			Update(int idx, const T& item);
+	void			Update(int idx, const T& newData);
 
 	void			Clear(bool deallocate = false) override;
 
 	int				NumElem() const override { return DATA::numElem(); }
 	int				NumSlots() const override { return DATA::numSlots(); }
-
 	void			Reserve(int count) override { DATA::reserve(count); }
 
 	// syncrhonizes data with GPU buffer
@@ -119,7 +123,7 @@ template<typename T>
 void GRIMSyncrhronizedPool<T>::Update(int idx, const T& item)
 {
 	(*this)[idx] = item;
-	m_updated.insert(idx);
+	SetUpdated(idx);
 }
 
 template<typename T>

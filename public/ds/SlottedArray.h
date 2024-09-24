@@ -22,7 +22,7 @@ public:
 	int			add(T& item);
 	void		remove(const int idx);
 
-private:
+protected:
 	Array<T>	m_items{ PP_SL };
 	Array<int>	m_freeList{ PP_SL };
 	BitArray	m_setItems{ PP_SL };
