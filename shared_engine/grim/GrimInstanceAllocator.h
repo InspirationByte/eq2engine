@@ -117,13 +117,13 @@ public:
 	// syncs instance buffers with GPU and updates roots buffer
 	void			SyncInstances(IGPUCommandRecorder* cmdRecorder);
 
-	// sets batches that are drrawn with particular instance
-	void			SetBatches(GRIMInstanceRef instanceRef, uint batchesFlags);
+	// changes instance archetype (in case of body group changes etc)
+	void			SetArchetype(GRIMInstanceRef instanceRef, GRIMArchetype newArchetype);
 
 	// destroys instance and it's components
 	void			FreeInstance(GRIMInstanceRef instanceRef);
 
-	void			DbgRegisterArhetypeName(GRIMArchetype archetypeId, const char* name);
+	void			DbgRegisterArchetypeName(GRIMArchetype archetypeId, const char* name);
 
 protected:
 	void			Construct();
@@ -144,7 +144,6 @@ protected:
 	{
 		InstRoot		root;
 		GRIMArchetype	archetype{ GRIM_INVALID_ARCHETYPE };		// usually hash of the model name
-		uint			batchesFlags{ 0 };		// bit flags of drawn batches
 	};
 
 	Threading::CEqMutex		m_mutex;

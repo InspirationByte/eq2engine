@@ -38,8 +38,8 @@ class GRIMBaseRenderer : public IShaderMeshInstanceProvider
 public:
 	GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator);
 
-	void			Init();
-	void			Shutdown();
+	virtual void	Init();
+	virtual void	Shutdown();
 
 	GRIMArchetype	CreateDrawArchetypeEGF(const CEqStudioGeom& geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0);
 	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeDesc& desc);

@@ -151,7 +151,7 @@ int	GRIMBaseInstanceAllocator::GetInstanceCountByArchetype(GRIMArchetype archety
 	return *it;
 }
 
-void GRIMBaseInstanceAllocator::DbgRegisterArhetypeName(GRIMArchetype archetypeId, const char* name)
+void GRIMBaseInstanceAllocator::DbgRegisterArchetypeName(GRIMArchetype archetypeId, const char* name)
 {
 #ifdef ENABLE_GPU_INSTANCE_DEBUG
 	Threading::CScopedMutex m(m_mutex);
@@ -166,7 +166,6 @@ GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(int archetype)
 	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 
 	Instance& inst = m_instances[instanceRef];
-	inst.batchesFlags = 0;
 	inst.archetype = archetype;
 	memset(&inst.root.components, 0, sizeof(inst.root.components));
 
@@ -188,13 +187,18 @@ int GRIMBaseInstanceAllocator::AllocTempInstance(int archetype)
 }
 
 // sets batches that are drrawn with particular instance
-void GRIMBaseInstanceAllocator::SetBatches(GRIMInstanceRef instanceRef, uint batchesFlags)
+void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMArchetype newArchetype)
 {
 	if (!m_instances.inRange(instanceRef))
 		return;
 
 	Instance& inst = m_instances[instanceRef];
-	inst.batchesFlags = batchesFlags;
+	inst.archetype = newArchetype;
+
+	{
+		Threading::CScopedMutex m(m_mutex);
+		m_updated.insert(instanceRef);
+	}
 }
 
 // destroys instance and it's components
@@ -213,7 +217,6 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	}
 
 	inst.archetype = GRIM_INVALID_ARCHETYPE;
-	inst.batchesFlags = 0;
 
 	for (int i = 0; i < GRIM_INSTANCE_MAX_COMPONENTS; ++i)
 	{
@@ -231,7 +234,10 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	}
 
 	// update roots and archetypes
-	m_updated.insert(instanceRef);
+	{
+		Threading::CScopedMutex m(m_mutex);
+		m_updated.insert(instanceRef);
+	}
 }
 
 IGPUBufferPtr GRIMBaseInstanceAllocator::GetDataPoolBuffer(int componentId) const
@@ -352,7 +358,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase)
 		else
 			instName = EqString::Format("%d", archetypeId);
 
-		EqString str = EqString::Format("%s : %d", instName, instCount);
+		EqString str = EqString::Format("[%d] %s", instCount, instName);
 		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
 	}
 #endif // IMGUI_ENABLED
