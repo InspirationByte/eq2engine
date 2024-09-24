@@ -225,7 +225,7 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 		drawLodInfo.distance = lodInfo.distance;
 
 		int prevBatch = -1;
-		for (int i = lodInfo.firstBatch; i < lodInfo.firstBatch + lodInfo.firstBatch; ++i)
+		for (int i = lodInfo.firstBatch; i < lodInfo.firstBatch + lodInfo.batchCount; ++i)
 		{
 			const GRIMArchetypeDesc::Batch& batch = desc.batches[i];
 
