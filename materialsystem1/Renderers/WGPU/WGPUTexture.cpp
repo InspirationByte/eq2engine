@@ -123,7 +123,12 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 			ASSERT_FAIL("Invalid image type of %s", img->GetName());
 		}
 
-		WGPUTexture rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
+		WGPUTexture rhiTexture = nullptr;
+		g_renderWorker.WaitForExecute("CreateTexture", [&]() {
+			rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
+			return 0;
+		});
+
 		if (!rhiTexture)
 		{
 			MsgError("ERROR: failed to create texture for image %s\n", img->GetName());
