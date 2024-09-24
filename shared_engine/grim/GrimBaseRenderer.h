@@ -102,13 +102,13 @@ struct GRIMBaseRenderer::GPULodInfo
 {
 	int		next{ -1 };			// next index in buffer pointing to GPULodInfo
 
-	int		firstBatch{ 0 };	//  item index in buffer pointing to GPUIndexedBatch
+	int		firstBatch{ -1 };	//  item index in buffer pointing to GPUIndexedBatch
 	float	distance{ 0.0f };
 };
 
 struct GRIMBaseRenderer::GPULodList
 {
-	int		firstLodInfo; // item index in buffer pointing to GPULodInfo
+	int		firstLodInfo = -1; // item index in buffer pointing to GPULodInfo
 };
 
 // this is only here for software reference impl

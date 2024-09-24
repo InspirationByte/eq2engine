@@ -18,6 +18,8 @@
 #include "GrimInstanceAllocator.h"
 #include "materialsystem1/IMaterialSystem.h"
 
+using namespace Threading;
+
 DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
 
@@ -29,7 +31,7 @@ static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
 static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
 
 
-static Threading::CEqMutex s_grimRendererMutex;
+static CEqMutex s_grimRendererMutex;
 
 GRIMBaseRenderer::GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator)
 	: m_instAllocator(allocator)
@@ -102,6 +104,8 @@ void GRIMBaseRenderer::Shutdown()
 
 GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx)
 {
+	CScopedMutex m(s_grimRendererMutex);
+
 	ASSERT(bodyGroupFlags != 0);
 
 	IGPUBufferPtr buffer0 = geom.GetVertexBuffer(EGFHwVertex::VERT_POS_UV);
@@ -202,6 +206,8 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 
 GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& desc)
 {
+	CScopedMutex m(s_grimRendererMutex);
+
 	bool hasVertBuffers = false;
 	for (IGPUBufferPtr vertBuffer : desc.vertexBuffers)
 		hasVertBuffers = hasVertBuffers || vertBuffer;
@@ -274,6 +280,8 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
 	if (!m_drawLodsList(id))
 		return;
 
+	CScopedMutex m(s_grimRendererMutex);
+
 	struct ItemInfo {
 		enum EWhat
 		{
@@ -323,6 +331,8 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
 
 void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 {
+	CScopedMutex m(s_grimRendererMutex);
+
 	// we have to sync desc buffers first
 	bool buffersUpdated = false;
 	if (m_drawBatchs.Sync(cmdRecorder))
