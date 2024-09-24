@@ -36,6 +36,7 @@ public:
 private:
 
 	void		StepGame(float fDt);
+	void		RenderGame();
 };
 
 extern CStaticAutoPtr<CState_GpuDrivenDemo> g_State_Demo;
