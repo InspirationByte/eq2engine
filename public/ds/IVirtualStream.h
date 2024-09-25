@@ -63,7 +63,10 @@ public:
 	VSSize				WriteObj(const T& obj) { return VSWrite(this, obj); }
 
 	template <typename T>
-	VSSize				WriteArray(const T* obj, VSSize count = 1) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
+	VSSize				WriteArray(const T* obj, VSSize count) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
+
+	template <typename TArray>
+	VSSize				WriteArray(const TArray& arr) { return WriteArray(arr.ptr(), arr.numElem()); }
 
 	// seeks pointer to position
 	virtual VSSize		Seek(int64 offset, EVirtStreamSeek seekType) = 0;
