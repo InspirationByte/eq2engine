@@ -35,6 +35,12 @@ DECLARE_CVAR(lod_override, "-1", nullptr, 0);
 static DemoGRIMInstanceAllocator	s_instanceAlloc;
 static DemoGRIMRenderer				s_grimRenderer(s_instanceAlloc);
 
+struct DemoRenderState : public GRIMRenderState
+{
+	Vector3D		viewPos;
+	Volume			frustum;
+};
+
 static CStaticAutoPtr<CState_GpuDrivenDemo> g_State_Demo;
 static IVertexFormat* s_gameObjectVF = nullptr;
 
@@ -82,6 +88,8 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 {
 	PROF_EVENT_F();
 
+	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);
+
 	struct CullViewParams
 	{
 		Vector4D	frustumPlanes[6];
@@ -92,8 +100,8 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	};
 
 	CullViewParams cullView;
-	memcpy(cullView.frustumPlanes, intermediate.renderState.frustum.GetPlanes().ptr(), sizeof(cullView.frustumPlanes));
-	cullView.viewPos = intermediate.renderState.viewPos;
+	memcpy(cullView.frustumPlanes, renderState.frustum.GetPlanes().ptr(), sizeof(cullView.frustumPlanes));
+	cullView.viewPos = renderState.viewPos;
 	cullView.overrideLodIdx = lod_override.GetInt();
 	cullView.maxInstanceIds = m_instAllocator.GetInstanceSlotsCount();	// TODO: calculate between frames
 
@@ -127,7 +135,7 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	);
 
 	int x, y, z;
-	VisCalcWorkSize(cullView.maxInstanceIds, x, y, z);
+	VisCalcWorkSize(m_instAllocator.GetInstanceSlotsCount(), x, y, z);
 
 	computeRecorder->DispatchWorkgroups(x, y , z);
 	computeRecorder->Complete();
@@ -143,8 +151,10 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 	// Output:
 	//		instanceInfos	: buffer<GPUInstanceInfo[]>
 
-	const Vector3D& viewPos = intermediate.renderState.viewPos;
-	const Volume& frustum = intermediate.renderState.frustum;
+	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);
+
+	const Vector3D& viewPos = renderState.viewPos;
+	const Volume& frustum = renderState.frustum;
 	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
 
 	instanceInfos.reserve(s_objects.numElem());
@@ -414,7 +424,7 @@ void CState_GpuDrivenDemo::RenderGame()
 
 	if (inst_update.GetBool())
 	{
-		GRIMRenderState	renderState;
+		DemoRenderState	renderState;
 		const Matrix4x4 viewProjMat = projMat * viewMat;
 		renderState.frustum.LoadAsFrustum(viewProjMat);
 		renderState.viewPos = s_currentView.GetOrigin();

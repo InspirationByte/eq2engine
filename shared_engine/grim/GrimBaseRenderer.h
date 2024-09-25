@@ -21,9 +21,6 @@ struct RenderPassContext;
 
 struct GRIMRenderState
 {
-	Vector3D		viewPos;
-	Volume			frustum;
-
 	IGPUBufferPtr	drawInvocationsBuffer;
 	IGPUBufferPtr	instanceIdsBuffer;
 
@@ -122,7 +119,7 @@ struct GRIMBaseRenderer::GPUInstanceBound
 
 struct GRIMBaseRenderer::IntermediateState
 {
-	GRIMRenderState			renderState;
+	GRIMRenderState&		renderState;
 	int						maxNumberOfObjects{ 0 };
 
 	IGPUCommandRecorderPtr	cmdRecorder;
@@ -157,4 +154,5 @@ struct GRIMBaseRenderer::GPUDrawInfo
 	EPrimTopology			primTopology{ PRIM_TRIANGLES };
 	EIndexFormat			indexFormat{ 0 };
 	int						batchIdx{ -1 };
+	int						instanceStreamId{ 1 };
 };
