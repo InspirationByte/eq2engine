@@ -82,6 +82,7 @@ void GRIMBaseRenderer::Init()
 
 void GRIMBaseRenderer::Shutdown()
 {
+	m_pendingArchetypes.clear(true);
 	m_drawInfos.clear(true);
 
 	m_drawBatchs.Clear(true);
@@ -101,15 +102,49 @@ void GRIMBaseRenderer::Shutdown()
 	m_cullBindGroup0 = nullptr;
 }
 
-GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers)
+GRIMArchetype GRIMBaseRenderer::CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers)
 {
-	CScopedMutex m(s_grimRendererMutex);
-
 	ASSERT(bodyGroupFlags != 0);
 	ASSERT(vertFormat);
 
+	CScopedMutex m(s_grimRendererMutex);
+
+	PendingDesc& pending = m_pendingArchetypes.append();
+	pending.egfDesc.geom = geom;
+	pending.egfDesc.vertFormat = vertFormat;
+	pending.egfDesc.bodyGroupFlags = bodyGroupFlags;
+	pending.extraVertexBuffers.append(extraVertexBuffers.ptr(), extraVertexBuffers.numElem());
+	pending.type = PendingDesc::TYPE_STUDIO;
+	pending.slot = m_drawLodsList.Add(GPULodList{});
+
+	return pending.slot;
+}
+
+GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& desc)
+{
+	bool hasVertBuffers = false;
+	for (IGPUBufferPtr vertBuffer : desc.vertexBuffers)
+		hasVertBuffers = hasVertBuffers || vertBuffer;
+	ASSERT_MSG(hasVertBuffers, "Cannot create archetype when no vertex buffers specified");
+	if (!hasVertBuffers)
+		return GRIM_INVALID_ARCHETYPE;
+
+	ASSERT_MSG(desc.lods.numElem() <= GRIM_MAX_INSTANCE_LODS, "Too many lods (%d), max is %d", desc.lods.numElem(), GRIM_MAX_INSTANCE_LODS);
+
+	CScopedMutex m(s_grimRendererMutex);
+
+	PendingDesc& pending = m_pendingArchetypes.append();
+	pending.desc = desc;
+	pending.type = PendingDesc::TYPE_GRIM;
+	pending.slot = m_drawLodsList.Add(GPULodList{});
+
+	return pending.slot;
+}
+
+void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers)
+{
 	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
-	IGPUBufferPtr indexBuffer = geom.GetIndexBuffer();
+	IGPUBufferPtr indexBuffer = geom->GetIndexBuffer();
 
 	MeshInstanceFormatRef instFormat = vertFormat;
 	instFormat.usedLayoutBits = 0;
@@ -123,7 +158,7 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 		if (layoutDesc.userId & EGFHwVertex::EGF_FLAG)
 		{
 			const EGFHwVertex::VertexStreamId vertStreamId = static_cast<EGFHwVertex::VertexStreamId>(layoutDesc.userId & EGFHwVertex::EGF_MASK);
-			IGPUBufferPtr vertBuffer = geom.GetVertexBuffer(vertStreamId);
+			IGPUBufferPtr vertBuffer = geom->GetVertexBuffer(vertStreamId);
 			if(vertBuffer)
 			{
 				vertexBuffers.append(vertBuffer);
@@ -149,11 +184,9 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 
 	// TODO: multiple material groups require new archetype
 	// also body groups are really are different archetypes for EGF
-	ArrayCRef<IMaterialPtr> materials = geom.GetMaterials(materialGroupIdx);
-	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom.GetHwGeomRefs();
-	const studioHdr_t& studio = geom.GetStudioHdr();
-
-	const GRIMArchetype archetypeId = m_drawLodsList.Add(GPULodList{});
+	ArrayCRef<IMaterialPtr> materials = geom->GetMaterials(materialGroupIdx);
+	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom->GetHwGeomRefs();
+	const studioHdr_t& studio = geom->GetStudioHdr();
 
 	int prevLod = -1;
 	for (int i = 0; i < studio.numLodParams; i++)
@@ -206,13 +239,13 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 
 				GPUDrawInfo drawInfo;
 				drawInfo.primTopology = (EPrimTopology)meshRef.primType;
-				drawInfo.indexFormat = (EIndexFormat)geom.GetIndexFormat();
+				drawInfo.indexFormat = (EIndexFormat)geom->GetIndexFormat();
 				drawInfo.meshInstFormat = instFormat;
 
 				// load vertex buffers according to layout
 				drawInfo.vertexBuffers.append(vertexBuffers);
 				drawInfo.instanceStreamId = instanceStreamId;
-				drawInfo.ownerArchetype = archetypeId;
+				drawInfo.ownerArchetype = slot;
 
 				drawInfo.indexBuffer = indexBuffer;
 				drawInfo.material = material;
@@ -231,30 +264,17 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 			m_drawLodInfos.SetUpdated(prevLod);
 		}
 		else
-			m_drawLodsList[archetypeId].firstLodInfo = newLod;
+			m_drawLodsList[slot].firstLodInfo = newLod;
 		prevLod = newLod;
 	}
-
-	return archetypeId;
 }
 
-GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& desc)
+void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc)
 {
-	CScopedMutex m(s_grimRendererMutex);
-
-	bool hasVertBuffers = false;
-	for (IGPUBufferPtr vertBuffer : desc.vertexBuffers)
-		hasVertBuffers = hasVertBuffers || vertBuffer;
-	ASSERT_MSG(hasVertBuffers, "Cannot create archetype when no vertex buffers specified");
-	if (!hasVertBuffers)
-		return GRIM_INVALID_ARCHETYPE;
-
-	ASSERT_MSG(desc.lods.numElem() <= GRIM_MAX_INSTANCE_LODS, "Too many lods (%d), max is %d", desc.lods.numElem(), GRIM_MAX_INSTANCE_LODS);
-
 	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
 
 	MeshInstanceFormatRef instFormat = desc.meshInstanceFormat;
-		instFormat.usedLayoutBits = 0;
+	instFormat.usedLayoutBits = 0;
 	int instanceStreamId = -1;
 
 	int vbId = 0;
@@ -274,7 +294,6 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 	ASSERT_MSG(instanceStreamId != -1, "Vertex format %s is not configured for instanced rendering", instFormat.name);
 	instFormat.usedLayoutBits |= (1 << instanceStreamId);
 
-	const GRIMArchetype archetypeId = m_drawLodsList.Add(GPULodList{});
 	int prevLod = -1;
 	for (const GRIMArchetypeDesc::LodInfo& lodInfo : desc.lods)
 	{
@@ -306,7 +325,7 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 			drawInfo.primTopology = batch.primTopology;
 			drawInfo.indexFormat = desc.indexFormat;
 			drawInfo.meshInstFormat = instFormat;
-			drawInfo.ownerArchetype = archetypeId;
+			drawInfo.ownerArchetype = slot;
 
 			// load vertex buffers according to layout
 			drawInfo.vertexBuffers.append(vertexBuffers);
@@ -326,19 +345,30 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 			m_drawLodInfos.SetUpdated(prevLod);
 		}
 		else
-			m_drawLodsList[archetypeId].firstLodInfo = newLod;
+			m_drawLodsList[slot].firstLodInfo = newLod;
 		prevLod = newLod;
 	}
-
-	return archetypeId;
 }
 
-void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
+void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
 {
-	if (!m_drawLodsList(id))
+	CScopedMutex m(s_grimRendererMutex);
+	if (!m_drawLodsList(archetype))
 		return;
 
-	CScopedMutex m(s_grimRendererMutex);
+	m_pendingDeletion.append(archetype);
+}
+
+void GRIMBaseRenderer::DestroyPendingArchetypes()
+{
+	if (!m_pendingDeletion.numElem())
+		return;
+
+	Array<GRIMArchetype> pendingDeletion(PP_SL);
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		pendingDeletion.swap(m_pendingDeletion);
+	}
 
 	struct ItemInfo {
 		enum EWhat
@@ -352,20 +382,23 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
 		int what : 8;
 	};
 	Array<ItemInfo> delItems(PP_SL);
-	delItems.reserve(64);
+	delItems.reserve(64 * pendingDeletion.numElem());
 
-	const GPULodList lodList = m_drawLodsList[id];
-	for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
+	for (GRIMArchetype id : pendingDeletion)
 	{
-		const GPULodInfo lodInfo = m_drawLodInfos[lodIdx];
-		for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = m_drawBatchs[batchIdx].next)
+		const GPULodList lodList = m_drawLodsList[id];
+		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
 		{
-			delItems.appendEmplace(m_drawBatchs[batchIdx].cmdIdx, ItemInfo::DRAWINFO);
-			delItems.appendEmplace(batchIdx, ItemInfo::BATCH);
+			const GPULodInfo lodInfo = m_drawLodInfos[lodIdx];
+			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = m_drawBatchs[batchIdx].next)
+			{
+				delItems.appendEmplace(m_drawBatchs[batchIdx].cmdIdx, ItemInfo::DRAWINFO);
+				delItems.appendEmplace(batchIdx, ItemInfo::BATCH);
+			}
+			delItems.appendEmplace(lodIdx, ItemInfo::LODINFO);
 		}
-		delItems.appendEmplace(lodIdx, ItemInfo::LODINFO);
+		delItems.appendEmplace(id, ItemInfo::LODLIST);
 	}
-	delItems.appendEmplace(id, ItemInfo::LODLIST);
 
 	for (ItemInfo& item : delItems)
 	{
@@ -389,7 +422,23 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype id)
 
 void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 {
-	CScopedMutex m(s_grimRendererMutex);
+	Array<PendingDesc> pending(PP_SL);
+	if(m_pendingArchetypes.numElem())
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		m_pendingArchetypes.swap(pending);
+	}
+
+	// before we send anything to GPU, we need to commit new archetypes
+	// destroy pending first so we can place new ones at their slots
+	DestroyPendingArchetypes();
+	for (PendingDesc& pending : pending)
+	{
+		if (pending.type == PendingDesc::TYPE_GRIM)
+			InitDrawArchetype(pending.slot, pending.desc);
+		else if (pending.type == PendingDesc::TYPE_STUDIO)
+			InitDrawArchetype(pending.slot, pending.egfDesc.geom, pending.egfDesc.vertFormat, pending.egfDesc.bodyGroupFlags, pending.egfDesc.materialGroupIdx, pending.extraVertexBuffers);
+	}
 
 	// we have to sync desc buffers first
 	bool buffersUpdated = false;
@@ -692,11 +741,19 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)
 {
-	CScopedMutex m(s_grimRendererMutex);
-
 	PROF_EVENT_F();
 
-	Map<uint64, Array<int>>	drawInfosByMaterial(PP_SL);
+	struct ListItm
+	{
+		uint16 id{ USHRT_MAX };
+		uint16 next{ USHRT_MAX };
+	};
+
+	Array<ListItm> drawInfoLinkList(PP_SL);
+	drawInfoLinkList.reserve(m_drawInfos.numSlots());
+	drawInfoLinkList.append(ListItm{}); // store end element in this array
+
+	Map<uint64, int> drawInfosByMaterial(PP_SL);
 	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
 	{
 		if (!m_drawInfos(i))
@@ -713,31 +770,39 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		//	continue;
 
 		uint64 materialId = reinterpret_cast<uint64>(material);
-		drawInfosByMaterial[materialId].append(i);
+		materialId *= 31;
+		materialId += drawInfo.meshInstFormat.formatId;
+		materialId *= 31;
+		materialId += drawInfo.meshInstFormat.usedLayoutBits;
+		materialId *= 31;
+		materialId += drawInfo.primTopology;
+
+		auto it = drawInfosByMaterial.find(materialId);
+		if (it.atEnd())
+			it = drawInfosByMaterial.insert(materialId, 0); // insert list end
+
+		*it = drawInfoLinkList.append(ListItm{ (uint16)i, (uint16)*it }); // link to last element
 	}
 
 	renderPassCtx.recorder->DbgPushGroup("GRIMDraw");
 	int numDrawCalls = 0;
 	for (auto it = drawInfosByMaterial.begin(); !it.atEnd(); ++it)
 	{
-		ArrayCRef<int> drawInfos = *it;
+		ListItm litem = drawInfoLinkList[*it];
 
-		const GPUDrawInfo& setupDrawInfo = m_drawInfos[drawInfos.front()];
+		const GPUDrawInfo& setupDrawInfo = m_drawInfos[litem.id];
 		if (!g_matSystem->SetupMaterialPipeline(setupDrawInfo.material, nullptr, setupDrawInfo.primTopology, setupDrawInfo.meshInstFormat, renderPassCtx, this))
 			continue;
 
-		for(const int i : drawInfos)
+		for(; litem.id != USHRT_MAX; litem = drawInfoLinkList[litem.next])
 		{
-			const GPUDrawInfo& drawInfo = m_drawInfos[i];
-			int vbId = 0;
-			const uint usedLayoutBits = drawInfo.meshInstFormat.usedLayoutBits;
+			const GPUDrawInfo& drawInfo = m_drawInfos[litem.id];
+			ASSERT(setupDrawInfo.material == drawInfo.material);
+			ASSERT(setupDrawInfo.primTopology == drawInfo.primTopology);
+			ASSERT(setupDrawInfo.meshInstFormat.formatId == drawInfo.meshInstFormat.formatId);
+
 			for (int vsi = 0; vsi < drawInfo.vertexBuffers.numElem(); ++vsi)
-			{
-				if (drawInfo.instanceStreamId == vsi)
-					renderPassCtx.recorder->SetVertexBuffer(vsi, renderState.instanceIdsBuffer);
-				else
-					renderPassCtx.recorder->SetVertexBuffer(vsi, drawInfo.vertexBuffers[vsi]);
-			}
+				renderPassCtx.recorder->SetVertexBuffer(vsi, (drawInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer  : drawInfo.vertexBuffers[vsi]);
 
 			renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
 			renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * m_drawBatchs[drawInfo.batchIdx].cmdIdx);
