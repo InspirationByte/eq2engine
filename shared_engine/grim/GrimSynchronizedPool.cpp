@@ -147,6 +147,17 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 
 		if (oldBufferElems > 0)
 			cmdRecorder->CopyBufferToBuffer(oldBuffer, 0, m_buffer, 0, oldBufferElems * stride);
+		else if (!oldBuffer)
+		{
+			// don't wastó time on running pipeline and upload directly to GPU
+			cmdRecorder->WriteBuffer(m_buffer, dataPtr, currentNumSlots * stride, 0);
+
+			{
+				Threading::CScopedMutex m(m_mutex);
+				m_updated.clear();
+			}
+			return true;
+		}
 
 		buffersUpdated = true;
 	}
