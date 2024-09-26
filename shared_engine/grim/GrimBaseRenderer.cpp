@@ -101,6 +101,7 @@ void GRIMBaseRenderer::Shutdown()
 	m_cullBindGroup0 = nullptr;
 }
 
+#pragma optimize("", off)
 GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx)
 {
 	CScopedMutex m(s_grimRendererMutex);
@@ -108,30 +109,43 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 	ASSERT(bodyGroupFlags != 0);
 	ASSERT(vertFormat);
 
-	IGPUBufferPtr vertexBuffers[MAX_VERTEXSTREAM]{ nullptr };
+	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
 	IGPUBufferPtr indexBuffer = geom.GetIndexBuffer();
 
 	MeshInstanceFormatRef instFormat = vertFormat;
 	instFormat.usedLayoutBits = 0;
 	int instanceStreamId = -1;
 
+	bool skinningSupport = false;
 	for (int i = 0; i < instFormat.layout.numElem(); ++i)
 	{
-		const VertexLayoutDesc& streamLayout = instFormat.layout[i];
+		const VertexLayoutDesc& layoutDesc = instFormat.layout[i];
 
-		if (streamLayout.userId & EGFHwVertex::EGF_FLAG)
+		if (layoutDesc.userId & EGFHwVertex::EGF_FLAG)
 		{
-			const EGFHwVertex::VertexStreamId vertStreamId = static_cast<EGFHwVertex::VertexStreamId>(streamLayout.userId & EGFHwVertex::EGF_MASK);
-			vertexBuffers[i] = geom.GetVertexBuffer(vertStreamId);
-			instFormat.usedLayoutBits |= (1 << i);
+			const EGFHwVertex::VertexStreamId vertStreamId = static_cast<EGFHwVertex::VertexStreamId>(layoutDesc.userId & EGFHwVertex::EGF_MASK);
+			IGPUBufferPtr vertBuffer = geom.GetVertexBuffer(vertStreamId);
+			if(vertBuffer)
+			{
+				vertexBuffers.append(vertBuffer);
+
+				instFormat.usedLayoutBits |= (1 << i);
+				if (vertStreamId == EGFHwVertex::VERT_BONEWEIGHT)
+					skinningSupport = true;
+			}
 		}
 
-		if (instanceStreamId == -1 && streamLayout.stepMode == VERTEX_STEPMODE_INSTANCE)
-			instanceStreamId = i;
+		if (instanceStreamId == -1 && layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
+		{
+			ASSERT_MSG((instFormat.usedLayoutBits & (1 << i)) == 0, "Instance layout id is not valid");
+			instFormat.usedLayoutBits |= (1 << i);
+
+			instanceStreamId = vertexBuffers.numElem();
+			vertexBuffers.append(nullptr);
+		}
 	}
 
 	ASSERT_MSG(instanceStreamId != -1, "Vertex format %s is not configured for instanced rendering", vertFormat->GetName());
-	instFormat.usedLayoutBits |= (1 << instanceStreamId);
 
 	// TODO: multiple material groups require new archetype
 	// also body groups are really are different archetypes for EGF
@@ -191,16 +205,14 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetypeEGF(const CEqStudioGeom& geom
 				drawInfo.indexFormat = (EIndexFormat)geom.GetIndexFormat();
 				drawInfo.meshInstFormat = instFormat;
 
-				// TODO: load vertex buffers according to layout
-				drawInfo.vertexBuffers[0] = vertexBuffers[0];
-				drawInfo.vertexBuffers[1] = vertexBuffers[1];
-				drawInfo.vertexBuffers[2] = vertexBuffers[2];
-				drawInfo.vertexBuffers[3] = vertexBuffers[3];
+				// load vertex buffers according to layout
+				drawInfo.vertexBuffers.append(vertexBuffers);
 				drawInfo.instanceStreamId = instanceStreamId;
 
 				drawInfo.indexBuffer = indexBuffer;
 				drawInfo.material = materials[meshRef.materialIdx];
 				drawInfo.batchIdx = newBatch;
+				drawInfo.skinningSupport = skinningSupport;
 
 				m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
 				m_drawBatchs.SetUpdated(newBatch);
@@ -236,21 +248,25 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 
 	ASSERT_MSG(desc.lods.numElem() <= GRIM_MAX_INSTANCE_LODS, "Too many lods (%d), max is %d", desc.lods.numElem(), GRIM_MAX_INSTANCE_LODS);
 
-	MeshInstanceFormatRef instFormat = desc.meshInstanceFormat;
-	instFormat.usedLayoutBits = 0;
-	for (int i = 0; i < GRIM_INSTANCE_MAX_VERTEX_STREAMS; i++)
-	{
-		if (desc.vertexBuffers[i])
-			instFormat.usedLayoutBits |= (1 << i);
-	}
+	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
 
+	MeshInstanceFormatRef instFormat = desc.meshInstanceFormat;
+		instFormat.usedLayoutBits = 0;
 	int instanceStreamId = -1;
+
+	int vbId = 0;
 	for (int i = 0; i < instFormat.layout.numElem(); ++i)
 	{
-		const VertexLayoutDesc& streamLayout = instFormat.layout[i];
+		const VertexLayoutDesc& layoutDesc = instFormat.layout[i];
+		instFormat.usedLayoutBits |= (1 << i);
 
-		if (instanceStreamId == -1 && streamLayout.stepMode == VERTEX_STEPMODE_INSTANCE)
-			instanceStreamId = i;
+		if (instanceStreamId == -1 && layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
+		{
+			instanceStreamId = vertexBuffers.numElem();
+			vertexBuffers.append(nullptr);
+		}
+		else
+			vertexBuffers.append(desc.vertexBuffers[vbId++]);
 	}
 	ASSERT_MSG(instanceStreamId != -1, "Vertex format %s is not configured for instanced rendering", instFormat.name);
 	instFormat.usedLayoutBits |= (1 << instanceStreamId);
@@ -286,9 +302,8 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 			drawInfo.indexFormat = desc.indexFormat;
 			drawInfo.meshInstFormat = instFormat;
 
-			// TODO: load vertex buffers according to layout
-			for (int j = 0; j < GRIM_INSTANCE_MAX_VERTEX_STREAMS; j++)
-				drawInfo.vertexBuffers[j] = desc.vertexBuffers[j];
+			// load vertex buffers according to layout
+			drawInfo.vertexBuffers.append(vertexBuffers);
 			drawInfo.instanceStreamId = instanceStreamId;
 			drawInfo.indexBuffer = desc.indexBuffer;
 			drawInfo.material = batch.material;
@@ -698,15 +713,17 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 
 		if (g_matSystem->SetupMaterialPipeline(material, nullptr, drawInfo.primTopology, drawInfo.meshInstFormat, renderPassCtx, this))
 		{
-			for(int vi = 0; vi < MAX_VERTEXSTREAM; ++vi)
+			int vbId = 0;
+			const uint usedLayoutBits = drawInfo.meshInstFormat.usedLayoutBits;
+			for (int vsi = 0; vsi < drawInfo.vertexBuffers.numElem(); ++vsi)
 			{
-				if(drawInfo.meshInstFormat.usedLayoutBits & (1 << vi))
-					renderPassCtx.recorder->SetVertexBuffer(vi, drawInfo.vertexBuffers[vi]);
+				if (drawInfo.instanceStreamId == vsi)
+					renderPassCtx.recorder->SetVertexBuffer(vsi, renderState.instanceIdsBuffer);
+				else
+					renderPassCtx.recorder->SetVertexBuffer(vsi, drawInfo.vertexBuffers[vsi]);
 			}
 
-			renderPassCtx.recorder->SetVertexBuffer(drawInfo.instanceStreamId, renderState.instanceIdsBuffer);
 			renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
-
 			renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * m_drawBatchs[drawInfo.batchIdx].cmdIdx);
 			++numDrawCalls;
 		}

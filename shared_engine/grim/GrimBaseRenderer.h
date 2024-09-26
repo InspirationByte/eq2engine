@@ -147,12 +147,14 @@ struct GRIMBaseRenderer::GPUInstanceInfo
 
 struct GRIMBaseRenderer::GPUDrawInfo
 {
-	IGPUBufferPtr			vertexBuffers[GRIM_INSTANCE_MAX_VERTEX_STREAMS];
+	using VertexBufferArray = FixedArray<IGPUBufferPtr, GRIM_INSTANCE_MAX_VERTEX_STREAMS>;
+	VertexBufferArray		vertexBuffers;
 	IGPUBufferPtr			indexBuffer;
 	IMaterialPtr			material;
 	MeshInstanceFormatRef	meshInstFormat;
 	EPrimTopology			primTopology{ PRIM_TRIANGLES };
 	EIndexFormat			indexFormat{ 0 };
 	int						batchIdx{ -1 };
-	int						instanceStreamId{ 1 };
+	int						instanceStreamId{ -1 };
+	bool					skinningSupport{ false };
 };
