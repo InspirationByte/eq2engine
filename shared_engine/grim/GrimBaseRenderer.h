@@ -38,7 +38,7 @@ public:
 	virtual void	Init();
 	virtual void	Shutdown();
 
-	GRIMArchetype	CreateDrawArchetypeEGF(const CEqStudioGeom& geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0);
+	GRIMArchetype	CreateDrawArchetypeEGF(const CEqStudioGeom& geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr);
 	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeDesc& desc);
 	void			DestroyDrawArchetype(GRIMArchetype id);
 
@@ -147,7 +147,7 @@ struct GRIMBaseRenderer::GPUInstanceInfo
 
 struct GRIMBaseRenderer::GPUDrawInfo
 {
-	using VertexBufferArray = FixedArray<IGPUBufferPtr, GRIM_INSTANCE_MAX_VERTEX_STREAMS>;
+	using VertexBufferArray = FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>;
 	VertexBufferArray		vertexBuffers;
 	IGPUBufferPtr			indexBuffer;
 	IMaterialPtr			material;
@@ -156,5 +156,6 @@ struct GRIMBaseRenderer::GPUDrawInfo
 	EIndexFormat			indexFormat{ 0 };
 	int						batchIdx{ -1 };
 	int						instanceStreamId{ -1 };
+	GRIMArchetype			ownerArchetype{ GRIM_INVALID_ARCHETYPE };
 	bool					skinningSupport{ false };
 };

@@ -160,19 +160,21 @@ void GRIMBaseInstanceAllocator::DbgRegisterArchetypeName(GRIMArchetype archetype
 #endif
 }
 
-GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(int archetype)
+GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetypeId)
 {
 	Threading::CScopedMutex m(m_mutex);
 	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 
+	auto it = m_archetypeInstCounts.find(archetypeId);
+	if (it.atEnd())
+		it = m_archetypeInstCounts.insert(archetypeId, 0);
+	++(*it);
+
 	Instance& inst = m_instances[instanceRef];
-	inst.archetype = archetype;
+	inst.archetype = archetypeId;
 	memset(&inst.root.components, 0, sizeof(inst.root.components));
 
 	m_updated.insert(instanceRef);
-
-	++m_archetypeInstCounts[archetype];
-
 	return instanceRef;
 }
 
@@ -211,9 +213,15 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	InstRoot& root = inst.root;
 	{
 		Threading::CScopedMutex m(m_mutex);
-		m_freeIndices.append(instanceRef);
 
-		--m_archetypeInstCounts[inst.archetype];
+		auto it = m_archetypeInstCounts.find(inst.archetype);
+		if (!it.atEnd())
+		{
+			--(*it);
+			ASSERT_MSG(*it >= 0, "Archetype counter is invalid (%d)", *it);
+		}
+
+		m_freeIndices.append(instanceRef);
 	}
 
 	inst.archetype = GRIM_INVALID_ARCHETYPE;
