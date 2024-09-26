@@ -181,6 +181,7 @@ struct GRIMBaseRenderer::GPUDrawInfo
 	EPrimTopology			primTopology{ PRIM_TRIANGLES };
 	EIndexFormat			indexFormat{ 0 };
 	int						batchIdx{ -1 };
+	int						lodNumber{ -1 };
 	int						instanceStreamId{ -1 };
 	GRIMArchetype			ownerArchetype{ GRIM_INVALID_ARCHETYPE };
 	bool					skinningSupport{ false };

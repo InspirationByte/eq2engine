@@ -161,7 +161,7 @@ protected:
 	GRIMBaseComponentPool*	m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
 
-	Map<GRIMArchetype, int>			m_archetypeInstCounts{ PP_SL };
+	Map<GRIMArchetype, int>			m_archetypeInstCounts{ PP_SL };	// TODO: replace with refcount in GRIMBaseRenderer
 #ifdef ENABLE_GPU_INSTANCE_DEBUG
 	Map<GRIMArchetype, EqString>	m_archetypeNames{ PP_SL };
 #endif

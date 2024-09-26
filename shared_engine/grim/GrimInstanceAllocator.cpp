@@ -209,10 +209,12 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	if (!m_instances.inRange(instanceRef))
 		return;
 
+	Threading::CScopedMutex m(m_mutex);
+
 	Instance& inst = m_instances[instanceRef];
 	InstRoot& root = inst.root;
 	{
-		Threading::CScopedMutex m(m_mutex);
+		m_freeIndices.append(instanceRef);
 
 		auto it = m_archetypeInstCounts.find(inst.archetype);
 		if (!it.atEnd())
@@ -220,8 +222,6 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 			--(*it);
 			ASSERT_MSG(*it >= 0, "Archetype counter is invalid (%d)", *it);
 		}
-
-		m_freeIndices.append(instanceRef);
 	}
 
 	inst.archetype = GRIM_INVALID_ARCHETYPE;
@@ -344,7 +344,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase)
 	ImGui::Text("Archetypes: %d", instMngBase.m_archetypeInstCounts.size());
 	ImGui::Text("Buffer ref updates: %u", instMngBase.m_buffersUpdated);
 
-	Array<int> sortedArchetypes(PP_SL);
+	Array<GRIMArchetype> sortedArchetypes(PP_SL);
 	int maxInst = 0;
 	for (auto it = instMngBase.m_archetypeInstCounts.begin(); !it.atEnd(); ++it)
 	{

@@ -263,7 +263,7 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 			CEqStudioGeom* geom = g_studioCache->GetModel(modelIdx);
 
 			Msg("model %d %s\n", modelIdx, fsFind.GetPath());
-			const GRIMArchetype archetypeId = s_grimRenderer.CreateDrawArchetypeEGF(*geom, s_gameObjectVF, 1);
+			const GRIMArchetype archetypeId = s_grimRenderer.CreateStudioDrawArchetype(geom, s_gameObjectVF, 1);
 
 			// TODO: body group lookup
 			s_modelIdToArchetypeId.insert(geom->GetCacheId(), archetypeId);

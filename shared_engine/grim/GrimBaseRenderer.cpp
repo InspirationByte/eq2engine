@@ -22,6 +22,7 @@ using namespace Threading;
 
 DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbg_onlyMaterial, "", nullptr, CV_CHEAT);
 
 static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
 static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
@@ -83,6 +84,7 @@ void GRIMBaseRenderer::Init()
 void GRIMBaseRenderer::Shutdown()
 {
 	m_pendingArchetypes.clear(true);
+	m_pendingDeletion.clear(true);
 	m_drawInfos.clear(true);
 
 	m_drawBatchs.Clear(true);
@@ -251,6 +253,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 				drawInfo.material = material;
 				drawInfo.batchIdx = newBatch;
 				drawInfo.skinningSupport = skinningSupport;
+				drawInfo.lodNumber = i;
 
 				m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
 				m_drawBatchs.SetUpdated(newBatch);
@@ -295,6 +298,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 	instFormat.usedLayoutBits |= (1 << instanceStreamId);
 
 	int prevLod = -1;
+	int numLods = 0;
 	for (const GRIMArchetypeDesc::LodInfo& lodInfo : desc.lods)
 	{
 		GPULodInfo drawLodInfo;
@@ -333,6 +337,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 			drawInfo.indexBuffer = desc.indexBuffer;
 			drawInfo.material = batch.material;
 			drawInfo.batchIdx = newBatch;
+			drawInfo.lodNumber = numLods;
 
 			m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
 			m_drawBatchs.SetUpdated(newBatch);
@@ -347,6 +352,8 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 		else
 			m_drawLodsList[slot].firstLodInfo = newLod;
 		prevLod = newLod;
+
+		++numLods;
 	}
 }
 
@@ -753,6 +760,8 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 	drawInfoLinkList.reserve(m_drawInfos.numSlots());
 	drawInfoLinkList.append(ListItm{}); // store end element in this array
 
+	const bool validationOn = false;// TODO g_renderAPI->IsValidationEnabled();
+
 	Map<uint64, int> drawInfosByMaterial(PP_SL);
 	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
 	{
@@ -769,6 +778,13 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		//if (m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
 		//	continue;
 
+		const char* onlyMaterialName = grim_dbg_onlyMaterial.GetString();
+		if (*onlyMaterialName)
+		{
+			if (CString::CompareCaseIns(material->GetName(), onlyMaterialName))
+				continue;
+		}
+
 		uint64 materialId = reinterpret_cast<uint64>(material);
 		materialId *= 31;
 		materialId += drawInfo.meshInstFormat.formatId;
@@ -784,6 +800,7 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		*it = drawInfoLinkList.append(ListItm{ (uint16)i, (uint16)*it }); // link to last element
 	}
 
+
 	renderPassCtx.recorder->DbgPushGroup("GRIMDraw");
 	int numDrawCalls = 0;
 	for (auto it = drawInfosByMaterial.begin(); !it.atEnd(); ++it)
@@ -797,6 +814,10 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		for(; litem.id != USHRT_MAX; litem = drawInfoLinkList[litem.next])
 		{
 			const GPUDrawInfo& drawInfo = m_drawInfos[litem.id];
+
+			if(validationOn)
+				renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype)));
+
 			ASSERT(setupDrawInfo.material == drawInfo.material);
 			ASSERT(setupDrawInfo.primTopology == drawInfo.primTopology);
 			ASSERT(setupDrawInfo.meshInstFormat.formatId == drawInfo.meshInstFormat.formatId);
