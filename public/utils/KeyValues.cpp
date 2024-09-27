@@ -44,8 +44,6 @@ static EKVPairType KV_ResolvePairType(const char* name)
 static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength = INT_MAX )
 {
 	// convert some symbols to special ones
-	const size_t processLen = min(strlen( pszStr ), maxLength);
-
 	const char* ptr = pszStr;
 	char* ptrTemp = dest;
 	do
@@ -78,7 +76,7 @@ static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength =
 		else
 			*ptrTemp++ = *ptr;
 
-	}while(*ptr++ && (ptr - pszStr) < processLen);
+	}while(*ptr++ && (ptr - pszStr) < maxLength);
 
 	// add nullptr
 	*ptrTemp++ = 0;

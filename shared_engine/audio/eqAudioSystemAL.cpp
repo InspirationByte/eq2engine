@@ -133,7 +133,8 @@ bool CEqAudioSystemAL::InitContext()
 		if (hrtfState)
 		{
 			const ALchar* name = alcGetString(m_dev, ALC_HRTF_SPECIFIER_SOFT);
-			MsgInfo("EqAudio: HRTF enabled, using %s\n", name);
+			if(name)
+				MsgInfo("EqAudio: HRTF enabled, using %s\n", name);
 		}
 	}
 

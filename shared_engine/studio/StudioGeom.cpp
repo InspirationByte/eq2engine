@@ -441,7 +441,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	if (allVertexFeatureFlags & STUDIO_VERTFLAG_COLOR)
 		allColorList = PPNew EGFHwVertex::Color[numVertices];
 
-	ubyte* allIndices = PPNew ubyte[indexSize * numIndices];
+	ubyte* allIndices = PPNew ubyte[indexSize * numIndices + 4];
 
 	numVertices = 0;
 	numIndices = 0;
