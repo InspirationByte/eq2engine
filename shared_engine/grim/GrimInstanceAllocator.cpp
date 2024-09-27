@@ -286,10 +286,10 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// update archetypes
 			{
 				IGPUBufferPtr sourceBuffer = m_archetypesBuffer;
-				m_archetypesBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstArchetypes");
+				m_archetypesBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstArchetypes");
 
 				if (oldBufferElems > 0)
-					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_archetypesBuffer, 0, oldBufferElems * sizeof(int));
+					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_archetypesBuffer, 0, oldBufferElems * sizeof(GRIMArchetype));
 			}
 
 			// update single instances idxs
@@ -312,8 +312,10 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateRootPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_rootBuffer);
 
 			// update archetypes data
-			GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, ArrayCRef(elementIds.ptr()+1, elementIds.numElem()-1), reinterpret_cast<const ubyte*>(m_instances.ptr()) + offsetOf(Instance, archetype), sizeof(Instance), sizeof(int), dataBuffer);
-			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, elementIds.numElem()-1, dataBuffer, m_archetypesBuffer);
+			const int numInstArchetypes = elementIds.numElem()-1;
+			const ubyte* archetypesSrcAddr = reinterpret_cast<const ubyte*>(m_instances.ptr()) + offsetOf(Instance, archetype);
+			GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, ArrayCRef(elementIds.ptr()+1, numInstArchetypes), archetypesSrcAddr, sizeof(Instance), sizeof(GRIMArchetype), dataBuffer);
+			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, numInstArchetypes, dataBuffer, m_archetypesBuffer);
 		}
 		m_updated.clear();
 	}
@@ -366,7 +368,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase)
 		else
 			instName = EqString::Format("%d", archetypeId);
 
-		EqString str = EqString::Format("[%d] %s", instCount, instName);
+		EqString str = EqString::Format("[%d] %d %s", instCount, archetypeId, instName);
 		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
 	}
 #endif // IMGUI_ENABLED

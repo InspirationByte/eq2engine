@@ -23,6 +23,7 @@ using namespace Threading;
 DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbg_onlyMaterial, "", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_opt, "1", nullptr, CV_CHEAT);
 
 static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
 static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
@@ -699,6 +700,9 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 {
 	PROF_EVENT_F();
 
+	if (maxNumberOfObjects < 0)
+		maxNumberOfObjects = m_instAllocator.GetInstanceCount();
+
 	renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
 	renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), maxNumberOfObjects), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
 
@@ -760,7 +764,7 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 	drawInfoLinkList.reserve(m_drawInfos.numSlots());
 	drawInfoLinkList.append(ListItm{}); // store end element in this array
 
-	const bool validationOn = false;// TODO g_renderAPI->IsValidationEnabled();
+	const bool validationOn = true;// TODO g_renderAPI->IsValidationEnabled();
 
 	Map<uint64, int> drawInfosByMaterial(PP_SL);
 	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
@@ -775,8 +779,8 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 			continue;
 
 		// do not draw anything if no instances
-		//if (m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
-		//	continue;
+		if (grim_opt.GetBool() && m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
+			continue;
 
 		const char* onlyMaterialName = grim_dbg_onlyMaterial.GetString();
 		if (*onlyMaterialName)

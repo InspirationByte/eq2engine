@@ -113,6 +113,7 @@ public:
 	uint			GetBufferUpdateToken() const { return m_buffersUpdated; }
 
 	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
+	int				GetInstanceCount() const { return m_instances.numElem() - m_freeIndices.numElem(); }
 
 	// syncs instance buffers with GPU and updates roots buffer
 	void			SyncInstances(IGPUCommandRecorder* cmdRecorder);

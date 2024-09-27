@@ -44,7 +44,7 @@ public:
 
 	void			SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
-	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects);
+	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
 	void			Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
 
 protected:
