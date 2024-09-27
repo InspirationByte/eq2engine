@@ -165,10 +165,13 @@ GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetype
 	Threading::CScopedMutex m(m_mutex);
 	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 
-	auto it = m_archetypeInstCounts.find(archetypeId);
-	if (it.atEnd())
-		it = m_archetypeInstCounts.insert(archetypeId, 0);
-	++(*it);
+	if (archetypeId != GRIM_INVALID_ARCHETYPE)
+	{
+		auto it = m_archetypeInstCounts.find(archetypeId);
+		if (it.atEnd())
+			it = m_archetypeInstCounts.insert(archetypeId, 0);
+		++(*it);
+	}
 
 	Instance& inst = m_instances[instanceRef];
 	inst.archetype = archetypeId;
@@ -194,12 +197,28 @@ void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMAr
 	if (!m_instances.inRange(instanceRef))
 		return;
 
-	Instance& inst = m_instances[instanceRef];
-	inst.archetype = newArchetype;
-
 	{
 		Threading::CScopedMutex m(m_mutex);
+
+		Instance& inst = m_instances[instanceRef];
+		const GRIMArchetype oldArchetype = inst.archetype;
+		inst.archetype = newArchetype;
 		m_updated.insert(instanceRef);
+
+		if(oldArchetype != GRIM_INVALID_ARCHETYPE)
+		{
+			auto oldIt = m_archetypeInstCounts.find(oldArchetype);
+			if (!oldIt.atEnd())
+				--(*oldIt);
+		}
+
+		if (newArchetype != GRIM_INVALID_ARCHETYPE)
+		{
+			auto newIt = m_archetypeInstCounts.find(newArchetype);
+			if (newIt.atEnd())
+				newIt = m_archetypeInstCounts.insert(newArchetype, 0);
+			++(*newIt);
+		}
 	}
 }
 
@@ -216,11 +235,14 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	{
 		m_freeIndices.append(instanceRef);
 
-		auto it = m_archetypeInstCounts.find(inst.archetype);
-		if (!it.atEnd())
+		if (inst.archetype != GRIM_INVALID_ARCHETYPE)
 		{
-			--(*it);
-			ASSERT_MSG(*it >= 0, "Archetype counter is invalid (%d)", *it);
+			auto it = m_archetypeInstCounts.find(inst.archetype);
+			if (!it.atEnd())
+			{
+				--(*it);
+				ASSERT_MSG(*it >= 0, "Archetype counter is invalid (%d)", *it);
+			}
 		}
 	}
 

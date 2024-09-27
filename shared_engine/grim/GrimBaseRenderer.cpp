@@ -23,7 +23,7 @@ using namespace Threading;
 DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbg_onlyMaterial, "", nullptr, CV_CHEAT);
-DECLARE_CVAR(grim_opt, "1", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbg_logArchetypes, "0", nullptr, CV_CHEAT);
 
 static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
 static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
@@ -270,6 +270,11 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 			m_drawLodsList[slot].firstLodInfo = newLod;
 		prevLod = newLod;
 	}
+
+#ifndef _RETAIL
+	if (grim_dbg_logArchetypes.GetBool())
+		MsgInfo("GRIM: created archetype %d (studio)\n", slot);
+#endif
 }
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc)
@@ -354,6 +359,11 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 
 		++numLods;
 	}
+
+#ifndef _RETAIL
+	if (grim_dbg_logArchetypes.GetBool())
+		MsgInfo("GRIM: created archetype %d\n", slot);
+#endif
 }
 
 void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
@@ -421,6 +431,10 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 			break;
 		case ItemInfo::LODLIST:
 			m_drawLodsList.Remove(item.index);
+#ifndef _RETAIL
+			if (grim_dbg_logArchetypes.GetBool())
+				MsgInfo("GRIM: freed archetype %d\n", item.index);
+#endif
 			break;
 		}
 	}
@@ -772,14 +786,13 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		if (!m_drawInfos(i))
 			continue;
 		const DrawInfo& drawInfo = m_drawInfos[i];
-		const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 
-		IMaterial* material = drawInfo.material;
-
-		// do not draw anything if no instances
-		if (grim_opt.GetBool() && m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
+		// do not draw anything if no instances referencing this archetype
+		if (m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
 			continue;
 
+		const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
+		IMaterial* material = drawInfo.material;
 		const char* onlyMaterialName = grim_dbg_onlyMaterial.GetString();
 		if (*onlyMaterialName)
 		{
