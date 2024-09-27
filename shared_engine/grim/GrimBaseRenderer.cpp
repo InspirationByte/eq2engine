@@ -191,6 +191,14 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom->GetHwGeomRefs();
 	const studioHdr_t& studio = geom->GetStudioHdr();
 
+	ArchetypeInfo::PTR_T archetypeInfo = CRefPtr_new(ArchetypeInfo);
+	archetypeInfo->indexFormat = (EIndexFormat)geom->GetIndexFormat();
+	archetypeInfo->meshInstFormat = instFormat;
+	archetypeInfo->vertexBuffers.append(vertexBuffers);
+	archetypeInfo->instanceStreamId = instanceStreamId;
+	archetypeInfo->indexBuffer = indexBuffer;
+	archetypeInfo->skinningSupport = skinningSupport;
+
 	int prevLod = -1;
 	for (int i = 0; i < studio.numLodParams; i++)
 	{
@@ -210,8 +218,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 			uint8 modelDescId = EGF_INVALID_IDX;
 			do
 			{
-				modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
-				bodyGroupLOD--;
+				modelDescId = lodModel->modelsIndexes[bodyGroupLOD--];
 			} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 	
 			if (modelDescId == EGF_INVALID_IDX)
@@ -240,20 +247,12 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 					drawLodInfo.firstBatch = newBatch;
 				prevBatch = newBatch;
 
-				GPUDrawInfo drawInfo;
+				DrawInfo drawInfo;
+				drawInfo.archetypeInfo = archetypeInfo;
 				drawInfo.primTopology = (EPrimTopology)meshRef.primType;
-				drawInfo.indexFormat = (EIndexFormat)geom->GetIndexFormat();
-				drawInfo.meshInstFormat = instFormat;
-
-				// load vertex buffers according to layout
-				drawInfo.vertexBuffers.append(vertexBuffers);
-				drawInfo.instanceStreamId = instanceStreamId;
 				drawInfo.ownerArchetype = slot;
-
-				drawInfo.indexBuffer = indexBuffer;
 				drawInfo.material = material;
 				drawInfo.batchIdx = newBatch;
-				drawInfo.skinningSupport = skinningSupport;
 				drawInfo.lodNumber = i;
 
 				m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
@@ -298,6 +297,13 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 	ASSERT_MSG(instanceStreamId != -1, "Vertex format %s is not configured for instanced rendering", instFormat.name);
 	instFormat.usedLayoutBits |= (1 << instanceStreamId);
 
+	ArchetypeInfo::PTR_T archetypeInfo = CRefPtr_new(ArchetypeInfo);
+	archetypeInfo->indexFormat = desc.indexFormat;
+	archetypeInfo->meshInstFormat = instFormat;
+	archetypeInfo->vertexBuffers.append(vertexBuffers);
+	archetypeInfo->instanceStreamId = instanceStreamId;
+	archetypeInfo->indexBuffer = desc.indexBuffer;
+
 	int prevLod = -1;
 	int numLods = 0;
 	for (const GRIMArchetypeDesc::LodInfo& lodInfo : desc.lods)
@@ -326,16 +332,10 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 				drawLodInfo.firstBatch = newBatch;
 			prevBatch = newBatch;
 
-			GPUDrawInfo drawInfo;
+			DrawInfo drawInfo;
+			drawInfo.archetypeInfo = archetypeInfo;
 			drawInfo.primTopology = batch.primTopology;
-			drawInfo.indexFormat = desc.indexFormat;
-			drawInfo.meshInstFormat = instFormat;
 			drawInfo.ownerArchetype = slot;
-
-			// load vertex buffers according to layout
-			drawInfo.vertexBuffers.append(vertexBuffers);
-			drawInfo.instanceStreamId = instanceStreamId;
-			drawInfo.indexBuffer = desc.indexBuffer;
 			drawInfo.material = batch.material;
 			drawInfo.batchIdx = newBatch;
 			drawInfo.lodNumber = numLods;
@@ -771,12 +771,10 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 	{
 		if (!m_drawInfos(i))
 			continue;
-		const GPUDrawInfo& drawInfo = m_drawInfos[i];
-		IMaterial* material = drawInfo.material;
+		const DrawInfo& drawInfo = m_drawInfos[i];
+		const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 
-		// TODO: render flags
-		if (material->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
-			continue;
+		IMaterial* material = drawInfo.material;
 
 		// do not draw anything if no instances
 		if (grim_opt.GetBool() && m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
@@ -791,9 +789,9 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 
 		uint64 materialId = reinterpret_cast<uint64>(material);
 		materialId *= 31;
-		materialId += drawInfo.meshInstFormat.formatId;
+		materialId += archetypeInfo.meshInstFormat.formatId;
 		materialId *= 31;
-		materialId += drawInfo.meshInstFormat.usedLayoutBits;
+		materialId += archetypeInfo.meshInstFormat.usedLayoutBits;
 		materialId *= 31;
 		materialId += drawInfo.primTopology;
 
@@ -811,26 +809,27 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 	{
 		ListItm litem = drawInfoLinkList[*it];
 
-		const GPUDrawInfo& setupDrawInfo = m_drawInfos[litem.id];
-		if (!g_matSystem->SetupMaterialPipeline(setupDrawInfo.material, nullptr, setupDrawInfo.primTopology, setupDrawInfo.meshInstFormat, renderPassCtx, this))
+		const DrawInfo& setupDrawInfo = m_drawInfos[litem.id];
+		const ArchetypeInfo& setupArchetypeInfo = setupDrawInfo.archetypeInfo.Ref();
+
+		if (!g_matSystem->SetupMaterialPipeline(setupDrawInfo.material, nullptr, setupDrawInfo.primTopology, setupArchetypeInfo.meshInstFormat, renderPassCtx, this))
 			continue;
 
 		for(; litem.id != USHRT_MAX; litem = drawInfoLinkList[litem.next])
 		{
-			const GPUDrawInfo& drawInfo = m_drawInfos[litem.id];
+			const DrawInfo& drawInfo = m_drawInfos[litem.id];
+			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 
 			if(validationOn)
 				renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype)));
 
 			ASSERT(setupDrawInfo.material == drawInfo.material);
-			ASSERT(setupDrawInfo.primTopology == drawInfo.primTopology);
-			ASSERT(setupDrawInfo.meshInstFormat.formatId == drawInfo.meshInstFormat.formatId);
 
-			for (int vsi = 0; vsi < drawInfo.vertexBuffers.numElem(); ++vsi)
-				renderPassCtx.recorder->SetVertexBuffer(vsi, (drawInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer  : drawInfo.vertexBuffers[vsi]);
+			for (int vsi = 0; vsi < archetypeInfo.vertexBuffers.numElem(); ++vsi)
+				renderPassCtx.recorder->SetVertexBuffer(vsi, (archetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : archetypeInfo.vertexBuffers[vsi]);
+			renderPassCtx.recorder->SetIndexBuffer(archetypeInfo.indexBuffer, archetypeInfo.indexFormat);
 
-			renderPassCtx.recorder->SetIndexBuffer(drawInfo.indexBuffer, drawInfo.indexFormat);
-			renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * m_drawBatchs[drawInfo.batchIdx].cmdIdx);
+			renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd)* m_drawBatchs[drawInfo.batchIdx].cmdIdx);
 			++numDrawCalls;
 		}
 	}

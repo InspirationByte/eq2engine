@@ -50,11 +50,13 @@ public:
 protected:
 
 	struct IntermediateState;
+	struct DrawInfo;
+	struct ArchetypeInfo;
+
 	struct GPUIndexedBatch;
 	struct GPULodInfo;
 	struct GPULodList;
 	struct GPUInstanceBound;
-	struct GPUDrawInfo;
 	struct GPUInstanceInfo;
 
 	virtual void	VisibilityCullInstances_Compute(IntermediateState& intermediate) = 0;
@@ -96,7 +98,7 @@ protected:
 	Array<GRIMArchetype>		m_pendingDeletion{ PP_SL };
 
 	GRIMBaseInstanceAllocator&	m_instAllocator;
-	SlottedArray<GPUDrawInfo>	m_drawInfos{ PP_SL };
+	SlottedArray<DrawInfo>		m_drawInfos{ PP_SL };
 	Pool<GPUIndexedBatch>		m_drawBatchs{ "GPUIndexedBatch", PP_SL };
 	Pool<GPULodInfo>			m_drawLodInfos{ "GPULodInfo", PP_SL };
 	Pool<GPULodList>			m_drawLodsList{ "GPULodList", PP_SL };
@@ -171,18 +173,23 @@ struct GRIMBaseRenderer::GPUInstanceInfo
 	int		packedArchetypeId;
 };
 
-struct GRIMBaseRenderer::GPUDrawInfo
+struct GRIMBaseRenderer::ArchetypeInfo : RefCountedObject<ArchetypeInfo>
 {
 	using VertexBufferArray = FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM>;
 	VertexBufferArray		vertexBuffers;
 	IGPUBufferPtr			indexBuffer;
-	IMaterialPtr			material;
 	MeshInstanceFormatRef	meshInstFormat;
-	EPrimTopology			primTopology{ PRIM_TRIANGLES };
 	EIndexFormat			indexFormat{ 0 };
+	int						instanceStreamId{ -1 };
+	bool					skinningSupport{ false };
+};
+
+struct GRIMBaseRenderer::DrawInfo
+{
+	ArchetypeInfo::PTR_T	archetypeInfo;
+	IMaterialPtr			material;
+	EPrimTopology			primTopology{ PRIM_TRIANGLES };
 	int						batchIdx{ -1 };
 	int						lodNumber{ -1 };
-	int						instanceStreamId{ -1 };
 	GRIMArchetype			ownerArchetype{ GRIM_INVALID_ARCHETYPE };
-	bool					skinningSupport{ false };
 };

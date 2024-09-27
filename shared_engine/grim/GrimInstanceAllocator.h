@@ -110,6 +110,7 @@ public:
 	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
 	int				GetInstanceCountByArchetype(GRIMArchetype archetypeId) const;
 	GRIMArchetype	GetInstanceArchetypeId(int instanceIdx) const { return m_instances[instanceIdx].archetype; }
+	int				GetInstanceComponentIdx(int instanceIdx, int componentId) const { return m_instances[instanceIdx].root.components[componentId]; }
 	uint			GetBufferUpdateToken() const { return m_buffersUpdated; }
 
 	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
@@ -234,6 +235,9 @@ public:
 	template<typename TComp>
 	void			Remove(int instanceId);
 
+	template<typename TComp>
+	Pool<TComp>&	GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
+
 protected:
 	using POOL_STORAGE = std::tuple<Pool<Components>...>;
 
@@ -246,9 +250,6 @@ protected:
 
 	// sets component values on instance
 	void			SetInternal(InstRoot& inst) {}
-
-	template<typename TComp>
-	Pool<TComp>&	GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
 
 	template<std::size_t... Is>
 	void			InitPools(std::index_sequence<Is...>);
