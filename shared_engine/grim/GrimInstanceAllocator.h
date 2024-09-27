@@ -302,10 +302,7 @@ inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const Firs
 		return;
 	}
 
-	{
-		Threading::CScopedMutex m(m_mutex);
-		compPool.GetDataPool().Update(inPoolIdx, firstVal);
-	}
+	compPool.GetDataPool().Update(inPoolIdx, firstVal);
 	SetInternal(inst, values...);
 }
 
@@ -315,9 +312,8 @@ inline void GRIMInstanceAllocator<Ts...>::Set(int instanceId, const TComps&... v
 {
 	if (instanceId == -1)
 		return;
-
-	InstRoot& inst = m_instances[instanceId].root;
-	SetInternal(inst, values...);
+	Threading::CScopedMutex m(m_mutex);
+	SetInternal(m_instances[instanceId].root, values...);
 }
 
 // creates new empty instance with allocated components

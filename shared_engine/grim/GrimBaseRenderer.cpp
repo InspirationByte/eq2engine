@@ -206,6 +206,8 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 		GPULodInfo drawLodInfo;
 		drawLodInfo.distance = lodParam->distance;
 
+		bool hasBodyGroups = false;
+		int prevBatch = -1;
 		for (int j = 0; j < studio.numBodyGroups; ++j)
 		{
 			if (!(bodyGroupFlags & (1 << j)))
@@ -224,7 +226,6 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 			if (modelDescId == EGF_INVALID_IDX)
 				continue;
 	
-			int prevBatch = -1;
 			const studioMeshGroupDesc_t* modDesc = studio.pMeshGroupDesc(modelDescId);
 			for (int k = 0; k < modDesc->numMeshes; ++k)
 			{
@@ -239,10 +240,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 
 				const int newBatch = m_drawBatchs.Add(drawBatch);
 				if (prevBatch != -1)
-				{
 					m_drawBatchs[prevBatch].next = newBatch;
-					m_drawBatchs.SetUpdated(prevBatch);
-				}
 				else
 					drawLodInfo.firstBatch = newBatch;
 				prevBatch = newBatch;
@@ -256,15 +254,17 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 				drawInfo.lodNumber = i;
 
 				m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
-				m_drawBatchs.SetUpdated(newBatch);
+				hasBodyGroups = true;
 			}
 		}
+
+		if (!hasBodyGroups)
+			continue;
 
 		const int newLod = m_drawLodInfos.Add(drawLodInfo);
 		if(prevLod != -1)
 		{
 			m_drawLodInfos[prevLod].next = newLod;
-			m_drawLodInfos.SetUpdated(prevLod);
 		}
 		else
 			m_drawLodsList[slot].firstLodInfo = newLod;
@@ -311,6 +311,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 		GPULodInfo drawLodInfo;
 		drawLodInfo.distance = lodInfo.distance;
 
+		bool hasBodyGroups = false;
 		int prevBatch = -1;
 		for (int i = lodInfo.firstBatch; i < lodInfo.firstBatch + lodInfo.batchCount; ++i)
 		{
@@ -324,10 +325,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 
 			const int newBatch = m_drawBatchs.Add(drawBatch);
 			if (prevBatch != -1)
-			{
 				m_drawBatchs[prevBatch].next = newBatch;
-				m_drawBatchs.SetUpdated(prevBatch);
-			}
 			else
 				drawLodInfo.firstBatch = newBatch;
 			prevBatch = newBatch;
@@ -341,15 +339,15 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 			drawInfo.lodNumber = numLods;
 
 			m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
-			m_drawBatchs.SetUpdated(newBatch);
+			hasBodyGroups = true;
 		}
+
+		if (!hasBodyGroups)
+			continue;
 
 		const int newLod = m_drawLodInfos.Add(drawLodInfo);
 		if (prevLod != -1)
-		{
 			m_drawLodInfos[prevLod].next = newLod;
-			m_drawLodInfos.SetUpdated(prevLod);
-		}
 		else
 			m_drawLodsList[slot].firstLodInfo = newLod;
 		prevLod = newLod;
@@ -603,11 +601,12 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermed
 	Array<int> instanceIds(PP_SL);
 	instanceIds.setNum(instanceCount);
 
-	drawInstanceBounds.setNum(m_drawLodsList.NumElem() * GRIM_MAX_INSTANCE_LODS);
+	drawInstanceBounds.setNum(m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS);
 	if (instanceCount > 0)
 	{
 		const int lastArchetypeId = instanceInfos[instanceCount - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
 		const int lastArchLodIndex = (instanceInfos[instanceCount - 1].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+		ASSERT(lastArchLodIndex < GRIM_MAX_INSTANCE_LODS);
 		const int lastBoundIdx = lastArchetypeId * GRIM_MAX_INSTANCE_LODS + lastArchLodIndex;
 
 		drawInstanceBounds[lastBoundIdx].last = instanceCount;
@@ -621,6 +620,7 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermed
 		{
 			const int archetypeId = instanceInfos[i].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
 			const int archLodIndex = (instanceInfos[i].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+			ASSERT(archLodIndex < GRIM_MAX_INSTANCE_LODS);
 			const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + archLodIndex;
 
 			drawInstanceBounds[boundIdx].first = i;

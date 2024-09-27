@@ -165,21 +165,23 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 		if (archetypeId == -1)
 			continue;
 
+		const GPULodList& lodList = m_drawLodsList[archetypeId];
+		if (lodList.firstLodInfo < 0)
+			continue;
+
 		if (!frustum.IsSphereInside(obj.trs.t, 4.0f))
 			continue;
 
-		const GPULodList& lodList = m_drawLodsList[archetypeId];
 		const float distFromCamera = distanceSqr(viewPos, obj.trs.t);
 
 		// find suitable lod idx
 		int drawLod = lod_override.GetInt();
 		if (drawLod == -1)
 		{
-			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next, ++drawLod)
 			{
 				if (distFromCamera < sqr(m_drawLodInfos[lodIdx].distance))
 					break;
-				drawLod++;
 			}
 		}
 
@@ -263,7 +265,7 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 			CEqStudioGeom* geom = g_studioCache->GetModel(modelIdx);
 
 			Msg("model %d %s\n", modelIdx, fsFind.GetPath());
-			const GRIMArchetype archetypeId = s_grimRenderer.CreateStudioDrawArchetype(geom, s_gameObjectVF, 1);
+			const GRIMArchetype archetypeId = s_grimRenderer.CreateStudioDrawArchetype(geom, s_gameObjectVF, 3);
 
 			// TODO: body group lookup
 			s_modelIdToArchetypeId.insert(geom->GetCacheId(), archetypeId);
