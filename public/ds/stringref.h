@@ -22,6 +22,10 @@ using EqWString = EqTStr<wchar_t>;
 using EqStringRef = EqTStrRef<char>;
 using EqWStringRef = EqTStrRef<wchar_t>;
 
+// fwd
+template <typename T>
+decltype(auto) ToCString(const T& value);
+
 #ifdef _WIN32
 constexpr int CORRECT_PATH_SEPARATOR	= '\\';
 constexpr int INCORRECT_PATH_SEPARATOR	= '/';
