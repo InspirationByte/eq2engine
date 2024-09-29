@@ -77,7 +77,7 @@ public:
 	bool			operator()(const int idx) { return DATA::m_setItems[idx]; }
 
 	const T*		GetData() const { return DATA::ptr(); }
-	int				Add(T& item);
+	int				Add(const T& item);
 	void			Remove(const int idx);
 	void			Update(int idx, const T& newData);
 
@@ -106,7 +106,7 @@ void GRIMSyncrhronizedPool<T>::Clear(bool deallocate)
 }
 
 template<typename T>
-int	GRIMSyncrhronizedPool<T>::Add(T& item)
+int	GRIMSyncrhronizedPool<T>::Add(const T& item)
 {
 	const int idx = DATA::add(item);
 	m_updated.insert(idx);

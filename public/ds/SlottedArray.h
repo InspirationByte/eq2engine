@@ -19,7 +19,7 @@ public:
 	int			numElem() const;
 	int			numSlots() const;
 
-	int			add(T& item);
+	int			add(const T& item);
 	void		remove(const int idx);
 
 protected:
@@ -81,7 +81,7 @@ inline const T* SlottedArray<T>::ptr() const
 }
 
 template<typename T>
-inline int SlottedArray<T>::add(T& item)
+inline int SlottedArray<T>::add(const T& item)
 {
 	if (m_freeList.numElem())
 	{
