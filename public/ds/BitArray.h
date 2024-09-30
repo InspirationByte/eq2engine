@@ -77,7 +77,10 @@ public:
 	using STORAGE_TYPE = BIT_STORAGE_TYPE;
 
 	// cleans all bits to zero
-	static void		clear(STORAGE_TYPE* bitArray, int bitCount);
+	static void		clear(STORAGE_TYPE* bitArray, int bitCount) { reset(bitArray, bitCount, false); }
+
+	// resets all bits to specified value
+	static void		reset(STORAGE_TYPE* bitArray, int bitCount, bool value = false);
 
 	static bool		isTrue(const STORAGE_TYPE* bitArray, int bitCount, int index);
 
@@ -97,9 +100,9 @@ public:
 	static void		setFalse(STORAGE_TYPE* bitArray, int bitCount, int index);
 };
 
-inline void BitArrayImpl::clear(STORAGE_TYPE* bitArray, int bitCount)
+inline void	BitArrayImpl::reset(STORAGE_TYPE* bitArray, int bitCount, bool value)
 {
-	memset(bitArray, 0, bitArray2Dword(bitCount));
+	memset(bitArray, value ? UINT_MAX : 0, bitArray2Dword(bitCount));
 }
 
 // returns total number of bits that are set to true
@@ -216,7 +219,10 @@ public:
 	BitArray&				operator=(const BitArray& other);
 
 	// cleans all bits to zero
-	void					clear();
+	void					clear() { reset(false); }
+
+	// resets all bits to specified value
+	void					reset(bool value = false);
 
 	// resizes the list
 	void					resize(int newBitCount);
@@ -282,10 +288,10 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 	return *this;
 }
 
-// cleans all bits to zero
-inline void BitArray::clear()
+// resets all bits to specified value
+inline void BitArray::reset(bool value)
 {
-	memset(m_pListPtr, 0, bitArray2Dword(m_nSize));
+	memset(m_pListPtr, value ? UINT_MAX : 0, bitArray2Dword(m_nSize));
 }
 
 // resizes the list
