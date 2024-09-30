@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: GRIM – GPU-driven Rendering and Instance Manager
+// Description: GRIM ï¿½ GPU-driven Rendering and Instance Manager
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -25,6 +25,7 @@ struct GRIMRenderState
 	IGPUBufferPtr	instanceIdsBuffer;
 
 	// TODO: renderer UID to validate
+	BitArray		visibleArchetypes{PP_SL, 128};
 };
 
 class GRIMBaseRenderer : public IShaderMeshInstanceProvider

@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: GRIM – GPU-driven Rendering and Instance Manager
+// Description: GRIM ï¿½ GPU-driven Rendering and Instance Manager
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
@@ -719,6 +719,8 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 	renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
 	renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), maxNumberOfObjects), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
+	renderState.visibleArchetypes.resize(m_drawLodsList.NumSlots()+1);
+	renderState.visibleArchetypes.reset(true);
 
 	IntermediateState intermediate{ renderState };
 	intermediate.cmdRecorder.Assign(cmdRecorder);	// FIXME: create new and return cmd buffer only?
