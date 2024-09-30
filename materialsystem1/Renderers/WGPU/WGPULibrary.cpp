@@ -189,10 +189,10 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	}
 
 	{
-		WGPUAdapterProperties properties = {};
-		wgpuAdapterGetProperties(m_rhiAdapter, &properties);
+		WGPUAdapterInfo rhiAdapterInfo = {};
+		wgpuAdapterGetInfo(m_rhiAdapter, &rhiAdapterInfo);
 
-		Msg("* WGPU Adapter: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(properties.backendType), properties.name, GetWGPUAdapterTypeStr(properties.adapterType), properties.driverDescription);
+		Msg("* WGPU Adapter: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), rhiAdapterInfo.device, GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType), rhiAdapterInfo.architecture);
 	}
 
 	{
@@ -300,6 +300,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		rhiDeviceDesc.requiredFeatures = requiredFeatures.ptr();
 		rhiDeviceDesc.requiredFeatureCount = requiredFeatures.numElem();
+		rhiDeviceDesc.uncapturedErrorCallbackInfo.callback = OnWGPUDeviceError;
 
 		// setup required limits
 		WGPURequiredLimits reqLimits{};
@@ -328,8 +329,6 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		return 0;
 	}, 96);
 
-	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
-
 	// create default swap chain
 	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
 
@@ -354,10 +353,7 @@ void CWGPURenderLib::ExitAPI()
 		wgpuQueueRelease(m_deviceQueue);
 
 	if(m_rhiDevice)
-	{
-		wgpuDeviceSetDeviceLostCallback(m_rhiDevice, nullptr, nullptr);
 		wgpuDeviceRelease(m_rhiDevice);
-	}
 
 	if(m_instance)
 		wgpuInstanceRelease(m_instance);

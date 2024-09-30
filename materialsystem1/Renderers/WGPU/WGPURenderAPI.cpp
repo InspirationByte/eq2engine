@@ -454,7 +454,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
 
 	WGPUTextureDescriptor rhiTextureDesc = {};
-	rhiTextureDesc.label = texture->GetName();
+	rhiTextureDesc.label = _WSTR(texture->GetName());
 	rhiTextureDesc.mipLevelCount = mipmapCount;
 	rhiTextureDesc.size = WGPUExtent3D{ (uint)newSize.width, (uint)newSize.height, (uint)texDepth };
 	rhiTextureDesc.sampleCount = sampleCount;
@@ -606,7 +606,7 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 	}
 
 	WGPUPipelineLayoutDescriptor rhiPipelineLayoutDesc = {};
-	rhiPipelineLayoutDesc.label = layoutDesc.name.Length() ? layoutDesc.name.ToCString() : nullptr;
+	rhiPipelineLayoutDesc.label = _WSTR(layoutDesc.name.Length() ? layoutDesc.name.ToCString() : nullptr);
 	rhiPipelineLayoutDesc.bindGroupLayoutCount = rhiBindGroupLayout.numElem();
 	rhiPipelineLayoutDesc.bindGroupLayouts = rhiBindGroupLayout.ptr();
 
@@ -698,7 +698,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 	
-	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = rhiLayout[bindGroupDesc.groupIdx];
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
@@ -736,7 +736,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 
-	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CWGPURenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
@@ -774,7 +774,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 
-	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(static_cast<const CWGPUComputePipeline*>(computePipeline)->m_rhiComputePipeline, bindGroupDesc.groupIdx);
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
@@ -797,15 +797,15 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 	rhiDawnShaderModuleDesc.chain.sType = WGPUSType_DawnShaderModuleSPIRVOptionsDescriptor;
 	rhiDawnShaderModuleDesc.allowNonUniformDerivatives = true;
 
-	WGPUShaderModuleSPIRVDescriptor rhiSpirvDesc = {};
-	rhiSpirvDesc.chain.sType = WGPUSType_ShaderModuleSPIRVDescriptor;
+	WGPUShaderSourceSPIRV rhiSpirvDesc = {};
+	rhiSpirvDesc.chain.sType = WGPUSType_ShaderSourceSPIRV;
 	rhiSpirvDesc.chain.next = &rhiDawnShaderModuleDesc.chain;
 	rhiSpirvDesc.codeSize = size / sizeof(uint32_t);
 	rhiSpirvDesc.code = code;
 
 	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
 	rhiShaderModuleDesc.nextInChain = &rhiSpirvDesc.chain;
-	rhiShaderModuleDesc.label = name;
+	rhiShaderModuleDesc.label = _WSTR(name);
 
 	WGPUShaderModule shaderModule = nullptr;
 	g_renderWorker.WaitForExecute(__func__, [this, &shaderModule, &rhiShaderModuleDesc]() {
@@ -820,13 +820,13 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderWGSL(const char* szText, const char
 {
 	PROF_EVENT_F();
 
-	WGPUShaderModuleWGSLDescriptor rhiWgslDesc = {};
-	rhiWgslDesc.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
-	rhiWgslDesc.code = szText;
+	WGPUShaderSourceWGSL rhiWgslDesc = {};
+	rhiWgslDesc.chain.sType = WGPUSType_ShaderSourceWGSL;
+	rhiWgslDesc.code = _WSTR(szText);
 
 	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
 	rhiShaderModuleDesc.nextInChain = &rhiWgslDesc.chain;
-	rhiShaderModuleDesc.label = name;
+	rhiShaderModuleDesc.label = _WSTR(name);
 
 	WGPUShaderModule shaderModule = nullptr;
 	g_renderWorker.WaitForExecute(__func__, [this, &shaderModule, &rhiShaderModuleDesc]() {
@@ -1197,7 +1197,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
-	rhiRenderPipelineDesc.label = pipelineName;
+	rhiRenderPipelineDesc.label = _WSTR(pipelineName);
 
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
@@ -1218,7 +1218,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 IGPUCommandRecorderPtr CWGPURenderAPI::CreateCommandRecorder(const char* name, void* userData) const
 {
 	WGPUCommandEncoderDescriptor rhiEncoderDesc = {};
-	rhiEncoderDesc.label = name;
+	rhiEncoderDesc.label = _WSTR(name);
 	WGPUCommandEncoder rhiCommandEncoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
 	if (!rhiCommandEncoder)
 		return nullptr;
@@ -1352,7 +1352,7 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 		rhiComputePipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
-	rhiComputePipelineDesc.label = pipelineName;
+	rhiComputePipelineDesc.label = _WSTR(pipelineName);
 
 	{
 		PROF_EVENT(EqString::Format("CreateComputePipeline for %s", pipelineName.ToCString()));
@@ -1377,7 +1377,7 @@ IGPUComputePassRecorderPtr CWGPURenderAPI::BeginComputePass(const char* name, vo
 		return nullptr;
 
 	WGPUComputePassDescriptor rhiComputePassDesc = {};
-	rhiComputePassDesc.label = name;
+	rhiComputePassDesc.label = _WSTR(name);
 	//rhiComputePassDesc.timestampWrites TODO
 	WGPUComputePassEncoder rhiComputePassEncoder = wgpuCommandEncoderBeginComputePass(rhiCommandEncoder, &rhiComputePassDesc);
 	if (!rhiComputePassEncoder)
@@ -1486,7 +1486,7 @@ void CWGPURenderAPI::Flush()
 static void CreateQuerySet()
 {
 	WGPUQuerySetDescriptor rhiQuerySetDesc = {};
-	rhiQuerySetDesc.label = "name";
+	rhiQuerySetDesc.label = _WSTR("querySet");
 	rhiQuerySetDesc.type = WGPUQueryType_Occlusion;
 	rhiQuerySetDesc.count = 32;
 	WGPUQuerySet rhiQuerySet = wgpuDeviceCreateQuerySet(nullptr, &rhiQuerySetDesc);
