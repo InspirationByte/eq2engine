@@ -328,11 +328,13 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
 	}
 
+	constexpr int jobQueueSize = 1024;
+
 	g_renderWorker.Init(this, [this]() {
 		// process all internal async events or error callbacks
 		wgpuInstanceProcessEvents(m_instance);
 		return 0;
-	}, 128);
+	}, jobQueueSize);
 
 	// create default swap chain
 	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
@@ -370,15 +372,16 @@ void CWGPURenderLib::ExitAPI()
 
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
-	g_renderWorker.WaitForThread();
-
 	CWGPURenderAPI::Instance.m_deviceLost = false;
-
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
-	m_currentSwapChain->UpdateResize();
 
-	// must obtain valid texture view upon Present
-	m_currentSwapChain->UpdateBackbufferView();
+	g_renderWorker.WaitForExecute(__func__, [this](){
+		m_currentSwapChain->UpdateResize();
+
+		// must obtain valid texture view upon Present
+		m_currentSwapChain->UpdateBackbufferView();
+		return 0; 
+	});
 }
 
 void CWGPURenderLib::EndFrame()
@@ -388,7 +391,7 @@ void CWGPURenderLib::EndFrame()
 	//	g_renderWorker.WaitForThread();
 	//} while (g_renderWorker.HasPendingWork());
 
-	g_renderWorker.Execute(__func__, [this]() {
+	g_renderWorker.WaitForExecute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		return 0;
 	});

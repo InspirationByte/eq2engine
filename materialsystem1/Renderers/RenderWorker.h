@@ -35,13 +35,14 @@ public:
 	void		Execute(const char* name, REND_FUNC_TYPE f);
 
 	void		RunLoop();
+	void		SubmitJobs();
 	void		WaitForThread() const;
 
 	uintptr_t	GetThreadID() const { return m_jobThreadId; }
 
 protected:
 	EqString				m_lastWorkName;
-	uintptr_t				m_jobThreadId;
+	uintptr_t				m_jobThreadId{ -1 };
 	IParallelJob*			m_loopJob{ nullptr };
 	RenderWorkerHandler*	m_workHandler{ nullptr };
 };

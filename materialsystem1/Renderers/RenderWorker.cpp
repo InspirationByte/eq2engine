@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IEqParallelJobs.h"
 #include "RenderWorker.h"
 
 using namespace Threading;
@@ -29,9 +30,40 @@ public:
 	int 			m_result = -1;
 };
 
+class CAsyncStarterJob : public IParallelJob
+{
+public:
+	CAsyncStarterJob(const char* jobName, CRenderJob* job, IParallelJob* waitJob)
+		: IParallelJob(jobName)
+		, m_incidentJob(job)
+		, m_waitJob(waitJob)
+	{
+	}
+
+	void Execute() override;
+
+protected:
+	CRenderJob*		m_incidentJob;
+	IParallelJob*	m_waitJob;
+};
+
 void CRenderJob::Execute()
 {
+	ASSERT_MSG(g_renderWorker.GetThreadID() == Threading::GetCurrentThreadID(), "Invalid thread for %s!", m_jobName.ToCString());
+
+	//Msg("started %s\n", m_jobName.ToCString());
 	m_result = m_jobFunction();
+}
+
+void CAsyncStarterJob::Execute()
+{
+	//Msg("- prep async %s\n", m_incidentJob->GetName());
+
+	m_waitJob->GetSignal()->Wait();
+	m_waitJob->InitJob();
+	m_waitJob->AddWait(m_incidentJob);
+	s_renderJobMng->StartJob(m_waitJob);
+	DeleteOnFinish();
 }
 
 //------------------------------
@@ -39,9 +71,9 @@ void CRenderJob::Execute()
 void CRenderWorker::Init(RenderWorkerHandler* workHandler, REND_FUNC_TYPE loopFunc, int workPoolSize)
 {
 	if(loopFunc)
-		m_loopJob = PPNew CRenderJob("RenderLoopJob", loopFunc);
+		m_loopJob = PPNew CRenderJob("EndWorkLoopJob", loopFunc);
 	else
-		m_loopJob = PPNew SyncJob("RenderSyncJob");
+		m_loopJob = PPNew SyncJob("EndWorkSyncJob");
 
 	m_loopJob->InitSignal(false);
 	m_workHandler = workHandler;
@@ -50,12 +82,12 @@ void CRenderWorker::Init(RenderWorkerHandler* workHandler, REND_FUNC_TYPE loopFu
 
 	FunctionJob funcJob("GetThreadIdJob", [&](void*, int i){
 		m_jobThreadId = Threading::GetCurrentThreadID();
-		return 0;
 	});
 	funcJob.InitSignal();
 	s_renderJobMng->InitStartJob(&funcJob);
 	funcJob.GetSignal()->Wait();
 
+	ASSERT_MSG(m_jobThreadId != (uintptr_t)-1, "RenderWorker thread ID was not initialized");
 	ASSERT_MSG(Threading::GetCurrentThreadID() != m_jobThreadId, "Please make sure RenderWorker is not at main thread!");
 }
 
@@ -112,28 +144,16 @@ int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 
 void CRenderWorker::Execute(const char* name, REND_FUNC_TYPE f)
 {
-	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
-
-	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
-	{
-		f();
-		m_loopJob->Execute();
-		return;
-	}
-
 	// start async job
 	CRenderJob* job = PPNew CRenderJob(name, std::move(f));
-	job->InitJob();
 	job->DeleteOnFinish();
 
-	// wait for previous device spin to complete
-	m_loopJob->GetSignal()->Wait();
-
-	m_loopJob->InitJob();
-	m_loopJob->AddWait(job);
-
+	CAsyncStarterJob* starterJob = PPNew CAsyncStarterJob(name, job, m_loopJob);
+	starterJob->InitJob();
+	job->AddWait(starterJob);
 	s_renderJobMng->StartJob(job);
-	s_renderJobMng->StartJob(m_loopJob);
+	
+	g_parallelJobs->GetJobMng()->InitStartJob(starterJob);
 }
 
 void CRenderWorker::WaitForThread() const
@@ -148,4 +168,10 @@ void CRenderWorker::RunLoop()
 	m_loopJob->GetSignal()->Wait();
 	m_loopJob->InitJob();
 	s_renderJobMng->StartJob(m_loopJob);
+}
+
+void CRenderWorker::SubmitJobs()
+{
+	if(!s_renderJobMng->AllJobsCompleted())
+		s_renderJobMng->Submit(1);
 }
