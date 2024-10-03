@@ -36,11 +36,11 @@ void IParallelJob::InitJob()
 	m_primeJobs = 1;
 }
 
-void IParallelJob::InitSignal()
+void IParallelJob::InitSignal(bool manualReset)
 {
 	if (!m_doneEvent)
 	{
-		m_doneEvent = PPNew Threading::CEqSignal(true);
+		m_doneEvent = PPNew Threading::CEqSignal(manualReset);
 		m_doneEvent->Raise();
 	}
 }

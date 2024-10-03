@@ -32,7 +32,7 @@ public:
 
 	void					AddWait(IParallelJob* jobToWait);
 
-	void					InitSignal();
+	void					InitSignal(bool manualReset = true);
 	Threading::CEqSignal*	GetSignal() const { return m_doneEvent; }
 	EPhase					GetPhase() const { return m_phase; }
 
