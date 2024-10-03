@@ -28,7 +28,7 @@ public:
 	const char*				GetName() const { return m_jobName; }
 
 	void					InitJob();
-	void					DeleteOnFinish() { m_deleteJob = true; }
+	void					DeleteOnFinish(bool del = true) { m_deleteJob = del; }
 
 	void					AddWait(IParallelJob* jobToWait);
 
