@@ -10,181 +10,142 @@
 
 using namespace Threading;
 
-CRenderWorkThread g_renderWorker;
+static CEqJobManager* s_renderJobMng = nullptr;
+CRenderWorker g_renderWorker;
 
-void CRenderWorkThread::Init(RenderWorkerHandler* workHandler, int workPoolSize)
+class CRenderJob : public IParallelJob
 {
-	m_workHandler = workHandler;
-	StartWorkerThread(m_workHandler->GetAsyncThreadName(), TP_ABOVE_NORMAL, 3072 * 1024);
-
-	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
-	m_workRingPool.setNum(poolSize);
-
-	// by default every work in pool is free (see .Wait call after getting one from ring pool)
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
+public:
+	template<typename F>
+	CRenderJob(const char* jobName, F func)
+		: IParallelJob(jobName)
+		, m_jobFunction(std::move(func))
 	{
-		m_completionSignal.appendEmplace(true);
-		m_completionSignal[i].Raise();
 	}
+
+	void Execute() override;
+
+	REND_FUNC_TYPE	m_jobFunction;
+	int 			m_result = -1;
+};
+
+void CRenderJob::Execute()
+{
+	m_result = m_jobFunction();
 }
 
-void CRenderWorkThread::InitLoop(RenderWorkerHandler* workHandler, FUNC_TYPE loopFunc, int workPoolSize)
+//------------------------------
+
+void CRenderWorker::Init(RenderWorkerHandler* workHandler, REND_FUNC_TYPE loopFunc, int workPoolSize)
 {
-	m_loopFunc = loopFunc;
+	if(loopFunc)
+		m_loopJob = PPNew CRenderJob("RenderLoopJob", loopFunc);
+	else
+		m_loopJob = PPNew SyncJob("RenderSyncJob");
+
+	m_loopJob->InitSignal(false);
 	m_workHandler = workHandler;
-	StartWorkerThread(m_workHandler->GetAsyncThreadName(), TP_ABOVE_NORMAL, 3072 * 1024);
+	
+	s_renderJobMng = PPNew CEqJobManager("RenderWorkerJobMng", 1, workPoolSize);
 
-	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
-	m_workRingPool.setNum(poolSize);
+	FunctionJob funcJob("GetThreadIdJob", [&](void*, int i){
+		m_jobThreadId = Threading::GetCurrentThreadID();
+		return 0;
+	});
+	funcJob.InitSignal();
+	s_renderJobMng->InitStartJob(&funcJob);
+	funcJob.GetSignal()->Wait();
 
-	// by default every work in pool is free (see .Wait call after getting one from ring pool)
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
-	{
-		m_completionSignal.appendEmplace(true);
-		m_completionSignal[i].Raise();
-	}
+	ASSERT_MSG(Threading::GetCurrentThreadID() != m_jobThreadId, "Please make sure RenderWorker is not at main thread!");
 }
 
-void CRenderWorkThread::Shutdown()
+void CRenderWorker::Shutdown()
 {
-	SignalWork();
-	StopThread();
-
-	m_workRingPool.clear(true);
+	m_loopJob->GetSignal()->Wait();
+	s_renderJobMng->Wait();
+	
+	SAFE_DELETE(m_loopJob);
+	SAFE_DELETE(s_renderJobMng);
 }
 
-int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
+int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 {
 	const uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
 	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
 	{
 		const int res = f();
-		if (m_loopFunc)
-			m_loopFunc();
+		m_loopJob->Execute();
 		return res;
 	}
 
-	// chose free slot
-	Work* work = nullptr;
-	CEqSignal* completionSignal = nullptr;
-	do {
-		for(int slot = 0; slot < m_workRingPool.numElem(); ++slot)
-		{
-			if(m_completionSignal[slot].Wait(0) && Atomic::CompareExchange(m_workRingPool[slot].result, WORK_NOT_STARTED, WORK_TAKEN_SLOT) == WORK_NOT_STARTED)
-			{
-				work = &m_workRingPool[slot];
-				completionSignal = &m_completionSignal[slot];
-				completionSignal->Clear();
-				break;
-			}
-		}
-		Threading::YieldCurrentThread();
-	} while(!work);
+	CRenderJob* job = PPNew CRenderJob(name, std::move(f));
+	job->InitJob();
 
-	work->workIdx = Atomic::Increment(m_workIdx);
-	work->name = name;
-	work->func = std::move(f);
-	work->sync = true;
-	Atomic::Exchange(work->result, WORK_PENDING);
+	SyncJob waitForLoop("WaitLoop");
+	waitForLoop.InitSignal();
+	waitForLoop.InitJob();
+	
+	// wait for previous device spin to complete
+	m_loopJob->GetSignal()->Wait();
 
-	SignalWork();
+	m_loopJob->InitJob();
+	m_loopJob->AddWait(job);
 
-	const bool isSignalled = completionSignal->Wait();
-	const int workResult = Atomic::Exchange(work->result, WORK_NOT_STARTED);
+	waitForLoop.AddWait(job);
+	waitForLoop.AddWait(m_loopJob);
 
-	ASSERT_MSG(isSignalled && workResult != WORK_PENDING, "Failed to wait for render worker task - WORK_PENDING");
-	ASSERT_MSG(isSignalled && workResult != WORK_EXECUTING, "Failed to wait for render worker task - WORK_EXECUTING");
-	ASSERT_MSG(isSignalled && workResult != WORK_NOT_STARTED, "Empty slot was working on render task - WORK_NOT_STARTED");
+	m_lastWorkName = name;
 
-	return workResult;
+	s_renderJobMng->StartJob(job);
+	s_renderJobMng->StartJob(m_loopJob);
+	s_renderJobMng->StartJob(&waitForLoop);
+
+	// wait for job and device spin
+	waitForLoop.GetSignal()->Wait();
+
+	const int res = job->m_result;
+	delete job;
+
+	return res;
 }
 
-void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
+void CRenderWorker::Execute(const char* name, REND_FUNC_TYPE f)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
 	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
 	{
 		f();
-		if (m_loopFunc)
-			m_loopFunc();
+		m_loopJob->Execute();
 		return;
 	}
 
-	// chose free slot
-	Work* work = nullptr;
-	CEqSignal* completionSignal = nullptr;
-	do
-	{
-		for(int slot = 0; slot < m_workRingPool.numElem(); ++slot)
-		{
-			if(m_completionSignal[slot].Wait(0) && Atomic::CompareExchange(m_workRingPool[slot].result, WORK_NOT_STARTED, WORK_TAKEN_SLOT) == WORK_NOT_STARTED)
-			{
-				work = &m_workRingPool[slot];
-				completionSignal = &m_completionSignal[slot];
-				completionSignal->Clear();
-				break;
-			}
-		}
-	}while(!work);
+	// start async job
+	CRenderJob* job = PPNew CRenderJob(name, std::move(f));
+	job->InitJob();
+	job->DeleteOnFinish();
 
-	work->workIdx = Atomic::Increment(m_workIdx);
-	work->name = name;
-	work->func = std::move(f);
-	work->sync = false;
-	Atomic::Exchange(work->result, WORK_PENDING);
+	// wait for previous device spin to complete
+	m_loopJob->GetSignal()->Wait();
 
-	SignalWork();
+	m_loopJob->InitJob();
+	m_loopJob->AddWait(job);
+
+	s_renderJobMng->StartJob(job);
+	s_renderJobMng->StartJob(m_loopJob);
 }
 
-bool CRenderWorkThread::HasPendingWork() const
+void CRenderWorker::WaitForThread() const
 {
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
-	{
-		const Work& work = m_workRingPool[i];
-		if (Atomic::Load(work.result) != WORK_NOT_STARTED)
-		{
-			return true;
-		}
-	}
-	return false;
+	m_loopJob->GetSignal()->Wait();
+	m_loopJob->GetSignal()->Raise();
 }
 
-int CRenderWorkThread::Run()
+void CRenderWorker::RunLoop()
 {
-	bool begun = false;
-
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
-	{
-		Work& work = m_workRingPool[i];
-		if (Atomic::CompareExchange(work.result, WORK_PENDING, WORK_EXECUTING) == WORK_PENDING)
-		{
-			if (!begun)
-				m_workHandler->BeginAsyncOperation(GetThreadID());
-			begun = true;
-
-			PROF_EVENT(work.name);
-			const int result = work.func();
-			work.func = nullptr;
-			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
-
-			m_lastWorkName = work.name;
-			m_lastWorkIdx = work.workIdx;
-			m_completionSignal[i].Raise();
-
-			if (m_loopFunc)
-				m_loopFunc();
-		}
-	}
-
-	if (begun)
-		m_workHandler->EndAsyncOperation();
-
-	if (m_loopFunc)
-		m_loopFunc();
-
-	YieldCurrentThread();
-
-	return 0;
+	// wait for previous device loop to complete
+	m_loopJob->GetSignal()->Wait();
+	m_loopJob->InitJob();
+	s_renderJobMng->StartJob(m_loopJob);
 }

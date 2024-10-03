@@ -38,9 +38,11 @@ static const char* s_wgpuErrorTypesStr[] = {
 };
 
 static const char* s_wgpuDeviceLostReasonStr[] = {
-	"(null)"
-	"Undefined",
-	"Destroyed",
+	"(null)",
+    "Unknown",
+    "Destroyed",
+    "InstanceDropped",
+    "FailedCreation",
 };
 
 static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
@@ -56,7 +58,10 @@ static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
 
 static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, char const * message, void* userdata)
 {
-	ASSERT_FAIL("WGPU device lost (after %s) reason %s\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], message);
+	if(reason == WGPUDeviceLostReason_Destroyed)
+		return;
+
+	ASSERT_FAIL("WGPU device lost (after %s) reason %s (%d)\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], reason, message);
 	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message);
 }
 
@@ -323,11 +328,11 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
 	}
 
-	g_renderWorker.InitLoop(this, [this]() {
+	g_renderWorker.Init(this, [this]() {
 		// process all internal async events or error callbacks
 		wgpuInstanceProcessEvents(m_instance);
 		return 0;
-	}, 96);
+	}, 128);
 
 	// create default swap chain
 	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
@@ -365,9 +370,7 @@ void CWGPURenderLib::ExitAPI()
 
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
-	do{
-		g_renderWorker.WaitForThread();
-	} while (g_renderWorker.HasPendingWork());
+	g_renderWorker.WaitForThread();
 
 	CWGPURenderAPI::Instance.m_deviceLost = false;
 
