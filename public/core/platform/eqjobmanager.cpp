@@ -132,7 +132,7 @@ void CEqJobManager::InitStartJob(IParallelJob* job)
 	StartJob(job);
 }
 
-void CEqJobManager::StartJob(IParallelJob* job)
+void CEqJobManager::StartJob(IParallelJob* job, bool submit = true)
 {
 	ASSERT(job->m_phase == IParallelJob::JOB_INIT);
 	ASSERT(job->m_primeJobs > 0);
@@ -144,7 +144,9 @@ void CEqJobManager::StartJob(IParallelJob* job)
 	if (canBeStarted)
 	{
 		DoStartJob(job);
-		Submit(1);
+
+		if(submit)
+			Submit(1);
 	}
 }
 

@@ -100,7 +100,7 @@ public:
 	CEqJobManager(const char* name, int numThreads, int queueSize, int stackSize = Threading::DEFAULT_THREAD_STACK_SIZE);
 
 	void			InitStartJob(IParallelJob* job);
-	void			StartJob(IParallelJob* job);
+	void			StartJob(IParallelJob* job, bool submit = true);
 	
 	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
 
