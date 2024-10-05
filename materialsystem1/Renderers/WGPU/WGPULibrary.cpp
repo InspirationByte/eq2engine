@@ -375,22 +375,15 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 	CWGPURenderAPI::Instance.m_deviceLost = false;
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 
-	g_renderWorker.WaitForExecute(__func__, [this](){
-		m_currentSwapChain->UpdateResize();
+	g_renderWorker.WaitForThread();
 
-		// must obtain valid texture view upon Present
-		m_currentSwapChain->UpdateBackbufferView();
-		return 0; 
-	});
+	// must obtain valid texture view upon Present
+	m_currentSwapChain->UpdateResize();
+	m_currentSwapChain->UpdateBackbufferView();
 }
 
 void CWGPURenderLib::EndFrame()
 {
-	// Wait until all tasks get finished before all gets fucked by swap chain
-	//do {
-	//	g_renderWorker.WaitForThread();
-	//} while (g_renderWorker.HasPendingWork());
-
 	g_renderWorker.WaitForExecute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		return 0;
