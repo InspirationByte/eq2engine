@@ -67,10 +67,6 @@ Example of use:
 #include "GrimDefs.h"
 #include "GrimSynchronizedPool.h"
 
-#ifndef _RETAIL
-#define ENABLE_GPU_INSTANCE_DEBUG
-#endif
-
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
 	static constexpr const char* NAME = #Name; \
 	static constexpr int IDENTIFIER = StringToHashConst(#Name); \
@@ -96,6 +92,8 @@ class GRIMBaseInstanceAllocator
 {
 	friend class GRIMInstanceDebug;
 public:
+	static Threading::CEqMutex& GetMutex();
+
 	GRIMBaseInstanceAllocator() = default;
 	~GRIMBaseInstanceAllocator() = default;
 
@@ -125,8 +123,6 @@ public:
 	// destroys instance and it's components
 	void			FreeInstance(GRIMInstanceRef instanceRef);
 
-	void			DbgRegisterArchetypeName(GRIMArchetype archetypeId, const char* name);
-
 protected:
 	void			Construct();
 
@@ -148,7 +144,6 @@ protected:
 		GRIMArchetype	archetype{ GRIM_INVALID_ARCHETYPE };		// usually hash of the model name
 	};
 
-	Threading::CEqMutex		m_mutex;
 	IGPUBufferPtr			m_rootBuffer;
 	IGPUBufferPtr			m_singleInstIndexBuffer;
 	IGPUBufferPtr			m_archetypesBuffer;			// per-instance archetype buffer
@@ -163,10 +158,7 @@ protected:
 	GRIMBaseComponentPool*	m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
 
-	Map<GRIMArchetype, int>			m_archetypeInstCounts{ PP_SL };	// TODO: replace with refcount in GRIMBaseRenderer
-#ifdef ENABLE_GPU_INSTANCE_DEBUG
-	Map<GRIMArchetype, EqString>	m_archetypeNames{ PP_SL };
-#endif
+	Map<GRIMArchetype, int>	m_archetypeInstCounts{ PP_SL };	// TODO: replace with refcount in GRIMBaseRenderer
 
 	int						m_reservedInsts{ 0 };
 };
@@ -260,7 +252,7 @@ protected:
 class GRIMInstanceDebug
 {
 public:
-	static void DrawUI(GRIMBaseInstanceAllocator& instMngBase);
+	static void DrawUI(GRIMBaseInstanceAllocator& instMngBase, ArrayCRef<EqStringRef> archetypeNames);
 };
 
 //-------------------------------
@@ -312,7 +304,7 @@ inline void GRIMInstanceAllocator<Ts...>::Set(int instanceId, const TComps&... v
 {
 	if (instanceId == -1)
 		return;
-	Threading::CScopedMutex m(m_mutex);
+	Threading::CScopedMutex m(GetMutex());
 	SetInternal(m_instances[instanceId].root, values...);
 }
 
@@ -323,7 +315,7 @@ inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId
 {
 	InstRoot& inst = m_instances[instanceId].root;
 	{
-		Threading::CScopedMutex m(m_mutex);
+		Threading::CScopedMutex m(GetMutex());
 		([&]{
 			Pool<TComps>& compPool = GetComponentPool<TComps>();
 			inst.components[TComps::COMPONENT_ID] = compPool.GetDataPool().Add(TComps{});
@@ -344,7 +336,7 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
 	{
-		Threading::CScopedMutex m(m_mutex);
+		Threading::CScopedMutex m(GetMutex());
 		inst.components[TComp::COMPONENT_ID] = compPool.GetDataPool().Add(TComp{});
 		m_updated.insert(instanceId);
 	}
@@ -363,7 +355,7 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
 	{
-		Threading::CScopedMutex m(m_mutex);
+		Threading::CScopedMutex m(GetMutex());
 		compPool.GetDataPool().Remove(inst.components[TComp::COMPONENT_ID]);
 		inst.components[TComp::COMPONENT_ID] = 0; // change to default
 		m_updated.insert(instanceId);

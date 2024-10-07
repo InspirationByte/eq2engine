@@ -11,6 +11,9 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimInstanceAllocator.h"
 
+using namespace Threading;
+
+
 static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE		= 3072;
 static constexpr int GPU_INSTANCE_POOL_SIZE_EXTEND		= 1024;
 static constexpr int GPU_INSTANCE_MAX_TEMP_INSTANCES	= 128;
@@ -23,6 +26,12 @@ static int instGranulatedCapacity(int capacity)
 }
 
 //---------------------------------------------------------------------
+
+Threading::CEqMutex& GRIMBaseInstanceAllocator::GetMutex()
+{
+	static CEqMutex s_grimAllocMutex;
+	return s_grimAllocMutex;
+}
 
 void GRIMBaseInstanceAllocator::Construct()
 {
@@ -151,18 +160,9 @@ int	GRIMBaseInstanceAllocator::GetInstanceCountByArchetype(GRIMArchetype archety
 	return *it;
 }
 
-void GRIMBaseInstanceAllocator::DbgRegisterArchetypeName(GRIMArchetype archetypeId, const char* name)
-{
-#ifdef ENABLE_GPU_INSTANCE_DEBUG
-	Threading::CScopedMutex m(m_mutex);
-	if(m_archetypeNames.find(archetypeId).atEnd())
-		m_archetypeNames.insert(archetypeId, name);
-#endif
-}
-
 GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetypeId)
 {
-	Threading::CScopedMutex m(m_mutex);
+	CScopedMutex m(GetMutex());
 	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 
 	if (archetypeId != GRIM_INVALID_ARCHETYPE)
@@ -198,7 +198,7 @@ void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMAr
 		return;
 
 	{
-		Threading::CScopedMutex m(m_mutex);
+		CScopedMutex m(GetMutex());
 
 		Instance& inst = m_instances[instanceRef];
 		const GRIMArchetype oldArchetype = inst.archetype;
@@ -228,7 +228,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	if (!m_instances.inRange(instanceRef))
 		return;
 
-	Threading::CScopedMutex m(m_mutex);
+	CScopedMutex m(GetMutex());
 
 	Instance& inst = m_instances[instanceRef];
 	InstRoot& root = inst.root;
@@ -257,7 +257,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 		// add this instance to freed list and invalidate ID
 		if(root.components[i] > 0)
 		{
-			Threading::CScopedMutex m(m_mutex);
+			CScopedMutex m(GetMutex());
 			m_componentPools[i]->GetData().Remove(root.components[i]);
 		}
 		root.components[i] = UINT_MAX;
@@ -265,7 +265,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 
 	// update roots and archetypes
 	{
-		Threading::CScopedMutex m(m_mutex);
+		CScopedMutex m(GetMutex());
 		m_updated.insert(instanceRef);
 	}
 }
@@ -282,7 +282,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 	bool buffersUpdatedThisFrame = false;
 
-	Threading::CScopedMutex m(m_mutex);
+	CScopedMutex m(GetMutex());
 
 	Array<int> elementIds(PP_SL);
 
@@ -361,9 +361,11 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		++m_buffersUpdated;
 }
 
-void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase)
+void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase, ArrayCRef<EqStringRef> archetypeNames)
 {
 #ifdef IMGUI_ENABLED
+	CScopedMutex m(GRIMBaseInstanceAllocator::GetMutex());
+
 	ImGui::Text("Instances: %d", instMngBase.m_instances.numElem());
 	ImGui::Text("Archetypes: %d", instMngBase.m_archetypeInstCounts.size());
 	ImGui::Text("Buffer ref updates: %u", instMngBase.m_buffersUpdated);
@@ -384,13 +386,10 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase)
 	for (const GRIMArchetype archetypeId : sortedArchetypes)
 	{
 		const int instCount = instMngBase.m_archetypeInstCounts[archetypeId];
-		const auto nameIt = instMngBase.m_archetypeNames.find(archetypeId);
-		if (!nameIt.atEnd())
-			instName = *nameIt;
-		else
-			instName = EqString::Format("%d", archetypeId);
-
-		EqString str = EqString::Format("[%d] %d %s", instCount, archetypeId, instName);
+		if(instCount == 0)
+			continue;
+		
+		EqString str = EqString::Format("[%d] %d %s", instCount, archetypeId, archetypeId != -1 ? archetypeNames[archetypeId] : "<invalid>");
 		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
 	}
 #endif // IMGUI_ENABLED

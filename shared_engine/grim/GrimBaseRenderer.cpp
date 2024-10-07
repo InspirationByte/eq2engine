@@ -146,6 +146,8 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers)
 {
+	ASSERT_MSG(m_drawLodsList(slot), "Archetype slot %d is not reserved", slot);
+
 	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
 	IGPUBufferPtr indexBuffer = geom->GetIndexBuffer();
 
@@ -192,12 +194,16 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 	const studioHdr_t& studio = geom->GetStudioHdr();
 
 	ArchetypeInfo::PTR_T archetypeInfo = CRefPtr_new(ArchetypeInfo);
+	archetypeInfo->name = EqString::Format("%s_b%d_m%d", geom->GetName(), bodyGroupFlags, materialGroupIdx);
 	archetypeInfo->indexFormat = (EIndexFormat)geom->GetIndexFormat();
 	archetypeInfo->meshInstFormat = instFormat;
 	archetypeInfo->vertexBuffers.append(vertexBuffers);
 	archetypeInfo->instanceStreamId = instanceStreamId;
 	archetypeInfo->indexBuffer = indexBuffer;
 	archetypeInfo->skinningSupport = skinningSupport;
+
+	if (grim_dbg_logArchetypes.GetBool())
+		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
 
 	int prevLod = -1;
 	for (int i = 0; i < studio.numLodParams; i++)
@@ -270,15 +276,12 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 			m_drawLodsList[slot].firstLodInfo = newLod;
 		prevLod = newLod;
 	}
-
-#ifndef _RETAIL
-	if (grim_dbg_logArchetypes.GetBool())
-		MsgInfo("GRIM: created archetype %d (studio)\n", slot);
-#endif
 }
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc)
 {
+	ASSERT_MSG(m_drawLodsList(slot), "Archetype slot %d is not reserved", slot);
+
 	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
 
 	MeshInstanceFormatRef instFormat = desc.meshInstanceFormat;
@@ -303,11 +306,15 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 	instFormat.usedLayoutBits |= (1 << instanceStreamId);
 
 	ArchetypeInfo::PTR_T archetypeInfo = CRefPtr_new(ArchetypeInfo);
+	archetypeInfo->name = desc.name;
 	archetypeInfo->indexFormat = desc.indexFormat;
 	archetypeInfo->meshInstFormat = instFormat;
 	archetypeInfo->vertexBuffers.append(vertexBuffers);
 	archetypeInfo->instanceStreamId = instanceStreamId;
 	archetypeInfo->indexBuffer = desc.indexBuffer;
+
+	if (grim_dbg_logArchetypes.GetBool())
+		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
 
 	int prevLod = -1;
 	int numLods = 0;
@@ -359,11 +366,6 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 
 		++numLods;
 	}
-
-#ifndef _RETAIL
-	if (grim_dbg_logArchetypes.GetBool())
-		MsgInfo("GRIM: created archetype %d\n", slot);
-#endif
 }
 
 void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
@@ -373,6 +375,46 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
 		return;
 
 	m_pendingDeletion.append(archetype);
+}
+
+void GRIMBaseRenderer::DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) const
+{
+	CScopedMutex m(s_grimRendererMutex);
+	archetypeNames.setNum(m_drawLodsList.NumSlots());
+	for(int i = 0; i < m_drawLodsList.NumSlots(); ++i)
+	{
+		if(!m_drawLodsList(i))
+			continue;
+
+		const int firstLodInfo = m_drawLodsList[i].firstLodInfo;
+		if(firstLodInfo == -1)
+		{
+			//ASSERT_FAIL("No lods for archetype %d\n", i);
+			continue;
+		}
+
+		const int firstBatch = m_drawLodInfos[firstLodInfo].firstBatch;
+		if(firstBatch == -1)
+		{
+			ASSERT_FAIL("No batchs for archetype %d\n", i);
+			continue;
+		}
+
+		const int cmdIdx = m_drawBatchs[firstBatch].cmdIdx;
+		if(cmdIdx == -1)
+		{
+			ASSERT_FAIL("No cmd for lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
+			continue;
+		}
+
+		if(!m_drawInfos[cmdIdx].archetypeInfo)
+		{
+			ASSERT_FAIL("Missing archetypeInfo lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
+			continue;
+		}
+
+		archetypeNames[i] = m_drawInfos[cmdIdx].archetypeInfo->name;
+	}
 }
 
 void GRIMBaseRenderer::DestroyPendingArchetypes()

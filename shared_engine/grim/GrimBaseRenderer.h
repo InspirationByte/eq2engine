@@ -43,6 +43,8 @@ public:
 	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeDesc& desc);
 	void			DestroyDrawArchetype(GRIMArchetype id);
 
+	void			DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) const;
+
 	void			SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
 	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
@@ -181,6 +183,7 @@ struct GRIMBaseRenderer::ArchetypeInfo : RefCountedObject<ArchetypeInfo>
 	IGPUBufferPtr			indexBuffer;
 	MeshInstanceFormatRef	meshInstFormat;
 	EIndexFormat			indexFormat{ 0 };
+	EqString				name;
 	int						instanceStreamId{ -1 };
 	bool					skinningSupport{ false };
 };

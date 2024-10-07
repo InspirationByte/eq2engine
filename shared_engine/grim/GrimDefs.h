@@ -42,6 +42,7 @@ struct GRIMArchetypeDesc
 	MeshInstanceFormatRef	meshInstanceFormat;
 	Array<Batch>			batches{ PP_SL };
 	Array<LodInfo>			lods{ PP_SL };
+	EqString				name;
 
 	EIndexFormat			indexFormat;
 };

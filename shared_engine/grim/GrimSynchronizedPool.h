@@ -72,9 +72,9 @@ public:
 	{
 	}
 
-	T&				operator[](const int idx) { return DATA::m_items[idx]; }
-	const T&		operator[](const int idx) const { return DATA::m_items[idx]; }
-	bool			operator()(const int idx) { return DATA::m_setItems[idx]; }
+	T&				operator[](const int idx) { return static_cast<DATA&>(*this)[idx]; }
+	const T&		operator[](const int idx) const { return static_cast<const DATA&>(*this)[idx]; }
+	bool			operator()(const int idx) const { return static_cast<const DATA&>(*this)(idx); }
 
 	const T*		GetData() const { return DATA::ptr(); }
 	int				Add(const T& item);
