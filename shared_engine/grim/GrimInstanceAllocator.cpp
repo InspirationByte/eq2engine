@@ -304,7 +304,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// update roots, bloody roots
 			{
 				IGPUBufferPtr sourceBuffer = m_rootBuffer;
-				m_rootBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstData");
+				m_rootBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(InstRoot), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstRoot");
 
 				if (oldBufferElems > 0)
 					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_rootBuffer, 0, oldBufferElems * sizeof(InstRoot));
@@ -313,7 +313,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			// update archetypes
 			{
 				IGPUBufferPtr sourceBuffer = m_archetypesBuffer;
-				m_archetypesBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstArchetypes");
+				m_archetypesBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "GRIMArchetype");
 
 				if (oldBufferElems > 0)
 					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_archetypesBuffer, 0, oldBufferElems * sizeof(GRIMArchetype));
@@ -321,8 +321,8 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 			// update single instances idxs
 			{
-				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems + 1), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIndices");
-
+				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems + 1), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIds");
+				elementIds.reserve(allocInstBufferElems + 1);
 				elementIds.append(allocInstBufferElems);
 				for (int i = 0; i < allocInstBufferElems; ++i)
 					elementIds.append(i);
@@ -338,14 +338,18 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 			IGPUBufferPtr idxsBuffer;
 			IGPUBufferPtr dataBuffer;
-			GRIMBaseSyncrhronizedPool::PrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);
+
+			const ubyte* srcAddr = reinterpret_cast<const ubyte*>(m_instances.ptr());
+			const ubyte* rootSrcAddr = srcAddr + offsetOf(Instance, root);
+
+			// update roots
+			GRIMBaseSyncrhronizedPool::PrepareBuffers(cmdRecorder, m_updated, elementIds, rootSrcAddr, sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);
 			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateRootPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_rootBuffer);
 
 			// update archetypes data
-			const int numInstArchetypes = elementIds.numElem()-1;
-			const ubyte* archetypesSrcAddr = reinterpret_cast<const ubyte*>(m_instances.ptr()) + offsetOf(Instance, archetype);
-			GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, ArrayCRef(elementIds.ptr()+1, numInstArchetypes), archetypesSrcAddr, sizeof(Instance), sizeof(GRIMArchetype), dataBuffer);
-			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, numInstArchetypes, dataBuffer, m_archetypesBuffer);
+			const ubyte* archetypesSrcAddr = srcAddr + offsetOf(Instance, archetype);
+			GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, elementIds, archetypesSrcAddr, sizeof(Instance), sizeof(GRIMArchetype), dataBuffer);
+			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_archetypesBuffer);
 		}
 		m_updated.clear();
 	}

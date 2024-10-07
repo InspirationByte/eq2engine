@@ -39,8 +39,8 @@ void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecord
 // prepares data buffer
 void GRIMBaseSyncrhronizedPool::PrepareDataBuffer(IGPUCommandRecorder* cmdRecorder, ArrayCRef<int> elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destDataBuffer)
 {
-	const int updatedCount = elementIds.numElem();
-	const int updateBufferSize = updatedCount * elemSize;
+	ArrayCRef<int> elementIdArray = ArrayCRef(elementIds.ptr()+1, elementIds.numElem()-1);
+	const int updateBufferSize = elementIdArray.numElem() * elemSize;
 
 	ubyte* updateData = reinterpret_cast<ubyte*>(PPAlloc(updateBufferSize));
 	ubyte* updateDataStart = updateData;
@@ -49,7 +49,7 @@ void GRIMBaseSyncrhronizedPool::PrepareDataBuffer(IGPUCommandRecorder* cmdRecord
 	};
 
 	// as GPU does not like unaligned access, we put updated elements in separate buffer
-	for (const int elemIdx : elementIds)
+	for (const int elemIdx : elementIdArray)
 	{
 		const ubyte* updInstPtr = sourceData + sourceStride * elemIdx;
 		memcpy(updateData, updInstPtr, elemSize);
@@ -149,7 +149,7 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 			cmdRecorder->CopyBufferToBuffer(oldBuffer, 0, m_buffer, 0, oldBufferElems * stride);
 		else if (!oldBuffer)
 		{
-			// don't wastó time on running pipeline and upload directly to GPU
+			// don't wastï¿½ time on running pipeline and upload directly to GPU
 			cmdRecorder->WriteBuffer(m_buffer, dataPtr, currentNumSlots * stride, 0);
 
 			{
