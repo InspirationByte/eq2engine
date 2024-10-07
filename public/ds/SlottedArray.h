@@ -6,9 +6,9 @@ class SlottedArray
 public:
 	SlottedArray(PPSourceLine sl);
 
-	T&			operator[](const int idx) { return m_items[idx]; }
-	const T&	operator[](const int idx) const { return m_items[idx]; }
-	bool		operator()(const int idx) { return m_setItems[idx]; }
+	T&			operator[](const int idx);
+	const T&	operator[](const int idx) const;
+	bool		operator()(const int idx) const;
 
 	T*			ptr();
 	const T*	ptr() const;
@@ -36,6 +36,27 @@ inline SlottedArray<T>::SlottedArray(PPSourceLine sl)
 	, m_freeList(sl)
 	, m_setItems(sl)
 {
+}
+
+template<typename T>
+inline T& SlottedArray<T>::operator[](const int idx)
+{
+	ASSERT_MSG(m_setItems[idx], "invalid slot %d", idx);
+	return m_items[idx];
+}
+
+template<typename T>
+inline const T& SlottedArray<T>::operator[](const int idx) const
+{
+	ASSERT_MSG(m_setItems[idx], "invalid slot %d", idx);
+	return m_items[idx];
+}
+
+template<typename T>
+inline bool SlottedArray<T>::operator()(const int idx) const
+{
+	ASSERT_MSG(m_items.inRange(idx), "invalid index %d (numElem=%d)", idx, m_items.numElem());
+	return m_setItems[idx];
 }
 
 template<typename T>
@@ -83,15 +104,18 @@ inline const T* SlottedArray<T>::ptr() const
 template<typename T>
 inline int SlottedArray<T>::add(const T& item)
 {
+	int idx = -1;
 	if (m_freeList.numElem())
 	{
-		const int idx = m_freeList.popBack();
-		return idx;
+		idx = m_freeList.popBack();
+		m_items[idx] = item;
 	}
-
-	const int idx = m_items.append(item);
-	if(m_setItems.numBits() < m_items.numAllocated() + 1)
-		m_setItems.resize(m_items.numAllocated() + 1);
+	else
+	{
+		idx = m_items.append(item);
+		if(m_setItems.numBits() < m_items.numAllocated() + 1)
+			m_setItems.resize(m_items.numAllocated() + 1);
+	}
 
 	m_setItems.set(idx, true);
 	return idx;
@@ -100,10 +124,13 @@ inline int SlottedArray<T>::add(const T& item)
 template<typename T>
 inline void SlottedArray<T>::remove(const int idx)
 {
-	ASSERT(idx >= 0);
-	ASSERT(idx < m_items.numElem());
+	if(!m_setItems[idx])
+	{
+		ASSERT_FAIL("Trying to remove invalid slot %d", idx);
+		return;
+	}
 
-	m_freeList.append(idx);
-	m_setItems.set(idx, false);
 	m_items[idx] = T{};
+	m_setItems.set(idx, false);
+	m_freeList.append(idx);
 }
