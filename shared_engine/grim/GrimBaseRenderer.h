@@ -62,6 +62,9 @@ protected:
 	struct GPUInstanceBound;
 	struct GPUInstanceInfo;
 
+	bool			IsSync() const;
+	void			Validate() const;
+
 	virtual void	VisibilityCullInstances_Compute(IntermediateState& intermediate) = 0;
 	virtual void	VisibilityCullInstances_Software(IntermediateState& intermediate) = 0;
 

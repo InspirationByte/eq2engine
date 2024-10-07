@@ -24,6 +24,7 @@ DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbg_onlyMaterial, "", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbg_logArchetypes, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbg_validate, "0", nullptr, CV_CHEAT);
 
 static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
 static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
@@ -388,10 +389,7 @@ void GRIMBaseRenderer::DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) 
 
 		const int firstLodInfo = m_drawLodsList[i].firstLodInfo;
 		if(firstLodInfo == -1)
-		{
-			//ASSERT_FAIL("No lods for archetype %d\n", i);
 			continue;
-		}
 
 		const int firstBatch = m_drawLodInfos[firstLodInfo].firstBatch;
 		if(firstBatch == -1)
@@ -484,6 +482,9 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 
 void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 {
+	if(IsSync())
+		return;
+
 	Array<PendingDesc> pending(PP_SL);
 	if(m_pendingArchetypes.numElem())
 	{
@@ -756,6 +757,8 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 {
 	PROF_EVENT_F();
 
+	Validate();
+
 	if (maxNumberOfObjects < 0)
 		maxNumberOfObjects = m_instAllocator.GetInstanceCount();
 
@@ -806,6 +809,81 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	cmdRecorder->DbgPopGroup();
 
 	cmdRecorder->DbgPopGroup();
+}
+
+bool GRIMBaseRenderer::IsSync() const
+{
+	return m_pendingDeletion.numElem() == 0 && m_pendingArchetypes.numElem() == 0;
+}
+
+void GRIMBaseRenderer::Validate() const
+{
+#if !defined(_RETAIL) && !defined(_PROFILE)
+	if(!grim_dbg_validate.GetBool())
+		return;
+
+	// Check archetypes
+	// this ensures that archetypes are correctly set up
+	for(int i = 0; i < m_drawLodsList.NumSlots(); ++i)
+	{
+		if(!m_drawLodsList(i))
+			continue;
+		
+		const int firstLodInfo = m_drawLodsList[i].firstLodInfo;
+		if(firstLodInfo == -1)
+			continue;
+
+		const int firstBatch = m_drawLodInfos[firstLodInfo].firstBatch;
+		if(firstBatch == -1)
+		{
+			ASSERT_FAIL("No batchs for archetype %d\n", i);
+			continue;
+		}
+
+		const int cmdIdx = m_drawBatchs[firstBatch].cmdIdx;
+		if(cmdIdx == -1)
+		{
+			ASSERT_FAIL("No cmd for lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
+			continue;
+		}
+
+		if(!m_drawInfos[cmdIdx].archetypeInfo)
+		{
+			ASSERT_FAIL("Missing archetypeInfo lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
+			continue;
+		}
+	}
+
+	// Check instances
+	// this insures that instances are in sync with archetypes
+	for (int i = 0; i < m_instAllocator.GetInstanceSlotsCount(); ++i)
+	{
+		const GRIMArchetype archetypeId = m_instAllocator.GetInstanceArchetypeId(i);
+		if (archetypeId == GRIM_INVALID_ARCHETYPE)
+			continue;
+
+		// skip non-initialized instances
+		if(!m_instAllocator.GetInstanceIsSync(i))
+			continue;
+
+		// check below indicates that instance hasn't been freed but archetype was destroyed
+		if(!m_drawLodsList(archetypeId))
+		{
+			ASSERT_FAIL("Invalid instance %d - Archetype %d is was destroyed", i, archetypeId);
+			continue;
+		}
+		
+		// anything that fails below is indication that archetypes hasn't been synchronized.
+		if(arrayFindIndex(m_pendingDeletion, archetypeId) != -1)
+		{
+			ASSERT_FAIL("Invalid instance %d - Archetype %d is pending deletion (IsSync = %d)", i, archetypeId, IsSync());
+		}
+		else if(arrayFindIndexF(m_pendingArchetypes, [&](const PendingDesc& pending){ return pending.slot == archetypeId; }) != -1)
+		{
+			ASSERT_FAIL("Invalid instance %d - Archetype %d hasn't been created yet (IsSync = %d)", i, archetypeId, IsSync());
+		}
+	}
+#endif // !_RETAIL
 }
 
 void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)

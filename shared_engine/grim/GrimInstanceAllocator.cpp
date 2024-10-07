@@ -178,6 +178,11 @@ GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetype
 	memset(&inst.root.components, 0, sizeof(inst.root.components));
 
 	m_updated.insert(instanceRef);
+
+	if(m_instances.numElem() + 1 > m_syncInstances.numBits())
+		m_syncInstances.resize(m_instances.numElem() + 1);
+	m_syncInstances.setFalse(instanceRef);
+
 	return instanceRef;
 }
 
@@ -328,6 +333,9 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 		if (m_updated.size())
 		{
+			for (auto it = m_updated.begin(); !it.atEnd(); ++it)
+				m_syncInstances.setTrue(it.key());
+
 			IGPUBufferPtr idxsBuffer;
 			IGPUBufferPtr dataBuffer;
 			GRIMBaseSyncrhronizedPool::PrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(m_instances.ptr()), sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);

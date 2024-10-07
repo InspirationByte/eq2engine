@@ -108,6 +108,7 @@ public:
 	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
 	int				GetInstanceCountByArchetype(GRIMArchetype archetypeId) const;
 	GRIMArchetype	GetInstanceArchetypeId(int instanceIdx) const { return m_instances[instanceIdx].archetype; }
+	bool			GetInstanceIsSync(int instanceIdx) const { return m_syncInstances[instanceIdx]; }
 	int				GetInstanceComponentIdx(int instanceIdx, int componentId) const { return m_instances[instanceIdx].root.components[componentId]; }
 	uint			GetBufferUpdateToken() const { return m_buffersUpdated; }
 
@@ -155,6 +156,7 @@ protected:
 	Array<Instance>			m_instances{ PP_SL };
 	Array<int>				m_freeIndices{ PP_SL };
 	Set<int>				m_updated{ PP_SL };
+	BitArray				m_syncInstances{ PP_SL };
 	GRIMBaseComponentPool*	m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
 
