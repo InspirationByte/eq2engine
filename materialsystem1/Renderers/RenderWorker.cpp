@@ -114,27 +114,20 @@ int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 	CRenderJob* job = PPNew CRenderJob(name, std::move(f));
 	job->InitJob();
 
-	SyncJob waitForLoop("WaitLoop");
-	waitForLoop.InitSignal();
-	waitForLoop.InitJob();
-	
 	// wait for previous device spin to complete
 	m_loopJob->GetSignal()->Wait();
 
 	m_loopJob->InitJob();
 	m_loopJob->AddWait(job);
 
-	waitForLoop.AddWait(job);
-	waitForLoop.AddWait(m_loopJob);
-
 	m_lastWorkName = name;
 
 	s_renderJobMng->StartJob(job);
 	s_renderJobMng->StartJob(m_loopJob);
-	s_renderJobMng->StartJob(&waitForLoop);
 
 	// wait for job and device spin
-	waitForLoop.GetSignal()->Wait();
+	m_loopJob->GetSignal()->Wait();
+	m_loopJob->GetSignal()->Raise();
 
 	const int res = job->m_result;
 	delete job;
