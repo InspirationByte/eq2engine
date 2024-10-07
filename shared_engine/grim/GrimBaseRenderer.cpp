@@ -137,6 +137,8 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 
 	CScopedMutex m(s_grimRendererMutex);
 
+	// TODO: resurrect archetypes from m_pendingDeletion
+
 	PendingDesc& pending = m_pendingArchetypes.append();
 	pending.desc = desc;
 	pending.type = PendingDesc::TYPE_GRIM;
@@ -383,36 +385,39 @@ void GRIMBaseRenderer::DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) 
 	CScopedMutex m(s_grimRendererMutex);
 	archetypeNames.setNum(m_drawLodsList.NumSlots());
 	for(int i = 0; i < m_drawLodsList.NumSlots(); ++i)
+		archetypeNames[i] = DbgGetArchetypeName(i);
+}
+
+EqStringRef GRIMBaseRenderer::DbgGetArchetypeName(GRIMArchetype archetypeId) const
+{
+	if(!m_drawLodsList(archetypeId))
+		return nullptr;
+
+	const int firstLodInfo = m_drawLodsList[archetypeId].firstLodInfo;
+	if(firstLodInfo == -1)
+		return nullptr;
+
+	const int firstBatch = m_drawLodInfos[firstLodInfo].firstBatch;
+	if(firstBatch == -1)
 	{
-		if(!m_drawLodsList(i))
-			continue;
-
-		const int firstLodInfo = m_drawLodsList[i].firstLodInfo;
-		if(firstLodInfo == -1)
-			continue;
-
-		const int firstBatch = m_drawLodInfos[firstLodInfo].firstBatch;
-		if(firstBatch == -1)
-		{
-			ASSERT_FAIL("No batchs for archetype %d\n", i);
-			continue;
-		}
-
-		const int cmdIdx = m_drawBatchs[firstBatch].cmdIdx;
-		if(cmdIdx == -1)
-		{
-			ASSERT_FAIL("No cmd for lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
-			continue;
-		}
-
-		if(!m_drawInfos[cmdIdx].archetypeInfo)
-		{
-			ASSERT_FAIL("Missing archetypeInfo lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
-			continue;
-		}
-
-		archetypeNames[i] = m_drawInfos[cmdIdx].archetypeInfo->name;
+		ASSERT_FAIL("No batchs for archetype %d\n", archetypeId);
+		return nullptr;
 	}
+
+	const int cmdIdx = m_drawBatchs[firstBatch].cmdIdx;
+	if(cmdIdx == -1)
+	{
+		ASSERT_FAIL("No cmd for lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, archetypeId);
+		return nullptr;
+	}
+
+	if(!m_drawInfos[cmdIdx].archetypeInfo)
+	{
+		ASSERT_FAIL("Missing archetypeInfo lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, archetypeId);
+		return nullptr;
+	}
+
+	return m_drawInfos[cmdIdx].archetypeInfo->name;
 }
 
 void GRIMBaseRenderer::DestroyPendingArchetypes()
@@ -454,6 +459,9 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 			delItems.appendEmplace(lodIdx, ItemInfo::LODINFO);
 		}
 		delItems.appendEmplace(id, ItemInfo::LODLIST);
+
+		if (grim_dbg_logArchetypes.GetBool())
+			MsgInfo("GRIM: freed archetype %d (%s)\n", id, DbgGetArchetypeName(id).ToCString());
 	}
 
 	for (ItemInfo& item : delItems)
@@ -471,10 +479,6 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 			break;
 		case ItemInfo::LODLIST:
 			m_drawLodsList.Remove(item.index);
-#ifndef _RETAIL
-			if (grim_dbg_logArchetypes.GetBool())
-				MsgInfo("GRIM: freed archetype %d\n", item.index);
-#endif
 			break;
 		}
 	}
@@ -757,7 +761,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 {
 	PROF_EVENT_F();
 
-	Validate();
+	DbgValidate();
 
 	if (maxNumberOfObjects < 0)
 		maxNumberOfObjects = m_instAllocator.GetInstanceCount();
@@ -816,7 +820,7 @@ bool GRIMBaseRenderer::IsSync() const
 	return m_pendingDeletion.numElem() == 0 && m_pendingArchetypes.numElem() == 0;
 }
 
-void GRIMBaseRenderer::Validate() const
+void GRIMBaseRenderer::DbgValidate() const
 {
 #if !defined(_RETAIL) && !defined(_PROFILE)
 	if(!grim_dbg_validate.GetBool())

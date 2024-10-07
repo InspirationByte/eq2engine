@@ -43,12 +43,12 @@ public:
 	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeDesc& desc);
 	void			DestroyDrawArchetype(GRIMArchetype id);
 
-	void			DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) const;
-
 	void			SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
 	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
 	void			Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
+
+	void			DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) const;
 
 protected:
 
@@ -63,7 +63,8 @@ protected:
 	struct GPUInstanceInfo;
 
 	bool			IsSync() const;
-	void			Validate() const;
+	void			DbgValidate() const;
+	EqStringRef		DbgGetArchetypeName(GRIMArchetype archetypeId) const;
 
 	virtual void	VisibilityCullInstances_Compute(IntermediateState& intermediate) = 0;
 	virtual void	VisibilityCullInstances_Software(IntermediateState& intermediate) = 0;
