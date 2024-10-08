@@ -1173,7 +1173,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		{
 			ImGui::Text("Archetype %d '%s'", s_highlightArchetype, archetypeInfo->name.ToCString());
 			ImGui::Text("Vertex buffers: %d", archetypeInfo->vertexBuffers.numElem());
-			ImGui::Text("FVF: %d", archetypeInfo->meshInstFormat.name);
+			ImGui::Text("FVF: %s (%d)", archetypeInfo->meshInstFormat.name, archetypeInfo->meshInstFormat.formatId);
 			ImGui::Text("Skinning supported: %d", archetypeInfo->skinningSupport);
 			ImGui::Text("LOD count: %d", totalLods);
 			ImGui::Text("Max batches per lod: %d", maxBatchesPerLod);
