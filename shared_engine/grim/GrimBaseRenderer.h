@@ -39,7 +39,7 @@ public:
 	virtual void	Init();
 	virtual void	Shutdown();
 
-	GRIMArchetype	CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr);
+	GRIMArchetype	CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr, uint extraLayoutBits = 0);
 	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeDesc& desc);
 	void			DestroyDrawArchetype(GRIMArchetype id);
 
@@ -78,7 +78,7 @@ protected:
 	void			UpdateIndirectInstances_Compute(IntermediateState& intermediate);
 	void			UpdateIndirectInstances_Software(IntermediateState& intermediate);
 
-	void			InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers);
+	void			InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits);
 	void			InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc);
 	void			DestroyPendingArchetypes();
 
@@ -98,6 +98,7 @@ protected:
 		} egfDesc;
 
 		Array<IGPUBufferPtr>	extraVertexBuffers{ PP_SL };
+		uint					extraLayoutBits{ 0 };
 		GRIMArchetype			slot{GRIM_INVALID_ARCHETYPE};
 		Type					type{};
 	};
