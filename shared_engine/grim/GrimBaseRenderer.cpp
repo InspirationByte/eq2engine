@@ -377,6 +377,9 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 
 void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
 {
+	if(archetype == GRIM_INVALID_ARCHETYPE)
+		return;
+
 	CScopedMutex m(s_grimRendererMutex);
 	if (!m_drawLodsList(archetype))
 		return;
