@@ -77,15 +77,30 @@ typedef unsigned char	ubyte;
 typedef unsigned short	ushort;
 typedef unsigned int	uint;
 
-typedef ptrdiff_t intptr;
+typedef ptrdiff_t 		intptr;
 
 #ifdef _WIN32
-typedef   signed __int64  int64;
-typedef unsigned __int64 uint64;
+typedef   signed __int64  	int64;
+typedef unsigned __int64 	uint64;
 #else
 typedef   signed long long  int64;
-typedef unsigned long long uint64;
+typedef unsigned long long 	uint64;
 #endif
+
+#define COM_CHAR_MIN	(-COM_CHAR_MAX - 1)
+#define COM_CHAR_MAX 	0x7f
+#define COM_UCHAR_MAX 	0xff
+
+#define COM_SHRT_MIN	(-COM_SHRT_MAX - 1)
+#define COM_SHRT_MAX 	0x7fff
+#define COM_USHRT_MAX 	0xffff
+
+#define COM_INT_MIN		(-INT_MAX - 1)
+#define COM_INT_MAX 	0x7fffffff
+#define COM_UINT_MAX 	0xffffffff
+
+#define COM_FLT_MIN		FLT_MIN
+#define COM_FLT_MAX		FLT_MAX
 
 // quick swap function
 template< class T >

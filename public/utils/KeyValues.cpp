@@ -41,7 +41,7 @@ static EKVPairType KV_ResolvePairType(const char* name)
 
 // converts escape symbols to the characters
 // returns new string length
-static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength = INT_MAX )
+static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength = COM_INT_MAX )
 {
 	// convert some symbols to special ones
 	const char* ptr = pszStr;

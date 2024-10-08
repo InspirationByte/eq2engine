@@ -735,7 +735,7 @@ int CMovieAudioSource::GetSamples(void* out, int samplesToRead, int startOffset,
 
 int	CMovieAudioSource::GetSampleCount() const
 {
-	return INT_MAX;
+	return COM_INT_MAX;
 }
 
 //---------------------------------------------------

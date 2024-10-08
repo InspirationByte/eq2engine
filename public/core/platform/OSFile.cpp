@@ -177,14 +177,14 @@ size_t COSFile::Read(void* buffer, int64 count)
 #ifdef _WIN32
 	ubyte* bufferStart = (ubyte*)buffer;
 	DWORD i;
-	while (count > (int64)INT_MAX)
+	while (count > (int64)COM_INT_MAX)
 	{
-		if (!ReadFile((HANDLE)m_fp, buffer, INT_MAX, &i, nullptr))
+		if (!ReadFile((HANDLE)m_fp, buffer, COM_INT_MAX, &i, nullptr))
 			return -1;
 		buffer = (ubyte*)buffer + i;
-		if (i != INT_MAX)
+		if (i != COM_INT_MAX)
 			return (ubyte*)buffer - bufferStart;
-		count -= INT_MAX;
+		count -= COM_INT_MAX;
 	}
 
 	if (!ReadFile((HANDLE)m_fp, buffer, count, &i, nullptr))
@@ -207,14 +207,14 @@ size_t COSFile::Write(const void* buffer, int64 count)
 #ifdef _WIN32
 	const ubyte* bufferStart = (const ubyte*)buffer;
 	DWORD i;
-	while (count > (int64)INT_MAX)
+	while (count > (int64)COM_INT_MAX)
 	{
-		if (!WriteFile((HANDLE)m_fp, buffer, INT_MAX, &i, nullptr))
+		if (!WriteFile((HANDLE)m_fp, buffer, COM_INT_MAX, &i, nullptr))
 			return -1;
 		buffer = (const ubyte*)buffer + i;
-		if (i != INT_MAX)
+		if (i != COM_INT_MAX)
 			return (const ubyte*)buffer - bufferStart;
-		count -= INT_MAX;
+		count -= COM_INT_MAX;
 	}
 
 	if (!WriteFile((HANDLE)m_fp, buffer, count, &i, nullptr))
