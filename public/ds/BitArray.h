@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-using BIT_STORAGE_TYPE = int;
+using BIT_STORAGE_TYPE = uint;
 
 template <int p>
 constexpr int getIntExp(int _x = 0) { return getIntExp<p / 2>(_x + 1); }
@@ -54,9 +54,10 @@ static inline void bitsSet(int& value, int mask, bool on)		{ value = (value & ~m
 static inline void bitsSet(uint& value, uint mask, bool on)		{ value = (value & ~mask) | (static_cast<uint>(on) * mask); }
 
 template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
-constexpr int bitArray2Dword(int elems)
+constexpr int bitArray2Dword(const int numBits)
 {
-	return elems / (bitStorageSize * 8) + 1;
+	constexpr int storageBits = bitStorageSize * 8;
+	return (numBits + storageBits - 1) / storageBits;
 }
 
 template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
@@ -102,7 +103,9 @@ public:
 
 inline void	BitArrayImpl::reset(STORAGE_TYPE* bitArray, int bitCount, bool value)
 {
-	memset(bitArray, value ? UINT_MAX : 0, bitArray2Dword(bitCount));
+	const int listSize = bitArray2Dword(bitCount);
+	for(int i = 0; i < listSize; ++i)
+		bitArray[i] = value ? COM_UINT_MAX : 0;
 }
 
 // returns total number of bits that are set to true
@@ -225,7 +228,7 @@ public:
 	void					reset(bool value = false);
 
 	// resizes the list
-	void					resize(int newBitCount);
+	void					resize(int newBitCount, bool newBitsValue = false);
 
 	// returns total number of bits
 	int						numBits() const { return m_nSize; }
@@ -291,11 +294,13 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 // resets all bits to specified value
 inline void BitArray::reset(bool value)
 {
-	memset(m_pListPtr, value ? UINT_MAX : 0, bitArray2Dword(m_nSize));
+	const int listSize = bitArray2Dword(m_nSize);
+	for(int i = 0; i < listSize; ++i)
+		m_pListPtr[i] = value ? COM_UINT_MAX : 0;
 }
 
 // resizes the list
-inline void BitArray::resize(int newBitCount)
+inline void BitArray::resize(int newBitCount, bool newBitsValue)
 {
 	// not changing the elemCount, so just exit
 	if (newBitCount == m_nSize)
@@ -307,24 +312,34 @@ inline void BitArray::resize(int newBitCount)
 		return;
 	}
 
+	ASSERT_MSG(newBitCount >= 0, "newBitCount (%d) must be positive", newBitCount);
+
 	const int oldTypeSize = bitArray2Dword(m_nSize);
 	const int newTypeSize = bitArray2Dword(newBitCount);
-
-	STORAGE_TYPE* temp = m_pListPtr;
-
-	// copy the old m_pListPtr into our new one
-	m_pListPtr = PPNewSL(m_sl) STORAGE_TYPE[newTypeSize];
-	m_nSize = newBitCount;
-
-	if (temp)
+	if(oldTypeSize != newTypeSize)
 	{
-		for (int i = 0; i < min(newTypeSize, oldTypeSize); i++)
-			m_pListPtr[i] = temp[i];
-		delete[] temp;
-	}
+		if(newTypeSize)
+		{
+			STORAGE_TYPE* temp = m_pListPtr;
+			m_pListPtr = PPNewSL(m_sl) STORAGE_TYPE[newTypeSize];
+			if (temp)
+			{
+				for (int i = 0; i < min(newTypeSize, oldTypeSize); ++i)
+					m_pListPtr[i] = temp[i];
+				delete[] temp;
+			}
 
-	for (int i = max(oldTypeSize, 0); i < newTypeSize; ++i)
-		m_pListPtr[i] = 0;
+			// new data must be reset to zero
+			for (int i = oldTypeSize; i < newTypeSize; ++i)
+				m_pListPtr[i] = newBitsValue ? COM_UINT_MAX : 0;
+		}
+		else
+		{
+			delete[] m_pListPtr;
+			m_pListPtr = nullptr;
+		}
+	}
+	m_nSize = newBitCount;
 }
 
 // returns total number of bits that are set to true
