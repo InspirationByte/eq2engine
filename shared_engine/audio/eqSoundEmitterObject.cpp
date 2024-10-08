@@ -412,12 +412,14 @@ SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 
 void CSoundingObject::AddEmitter(int uniqueId, SoundEmitterData* emitter)
 {
-	CScopedMutex m(m_mutex);
 	auto itOld = m_emitters.find(uniqueId);
 	if(!itOld.atEnd())
 		StopEmitter(*itOld, true);
 
-	m_emitters.insert(uniqueId, emitter);
+	{
+		CScopedMutex m(m_mutex);
+		m_emitters.insert(uniqueId, emitter);
+	}
 }
 
 void CSoundingObject::SetEmitterState(SoundEmitterData* emitter, IEqAudioSource::State state, bool rewindOnPlay)
