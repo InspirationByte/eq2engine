@@ -126,6 +126,7 @@ public:
 
 protected:
 	void			Construct();
+	void			DbgInvalidateAllData();
 
 	// TODO: instance refs
 	// in this way we can use data of the referenced intance on new instance with different
@@ -251,12 +252,6 @@ protected:
 	POOL_STORAGE	m_componentPoolsStorage;
 };
 
-class GRIMInstanceDebug
-{
-public:
-	static void DrawUI(GRIMBaseInstanceAllocator& instMngBase, ArrayCRef<EqStringRef> archetypeNames);
-};
-
 //-------------------------------
 
 template<typename...Ts>
@@ -283,7 +278,7 @@ inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const Firs
 	const uint32 inPoolIdx = inst.components[First::COMPONENT_ID];
 
 	// don't update invalid or default
-	if (inPoolIdx == UINT_MAX || inPoolIdx == 0)
+	if (inPoolIdx == COM_UINT_MAX || inPoolIdx == 0)
 	{
 		SetInternal(inst, values...);
 		return; // Instance was not allocated with specified component, so skipping
@@ -333,7 +328,7 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 		return;
 
 	InstRoot& inst = m_instances[instanceId].root;
-	if (inst.components[TComp::COMPONENT_ID] > 0 && inst.components[TComp::COMPONENT_ID] != UINT_MAX)
+	if (inst.components[TComp::COMPONENT_ID] > 0 && inst.components[TComp::COMPONENT_ID] != COM_UINT_MAX)
 		return;
 
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
@@ -352,7 +347,7 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 		return;
 
 	InstRoot& inst = m_instances[instanceId].root;
-	if (inst.components[TComp::COMPONENT_ID] == 0 || inst.components[TComp::COMPONENT_ID] == UINT_MAX)
+	if (inst.components[TComp::COMPONENT_ID] == 0 || inst.components[TComp::COMPONENT_ID] == COM_UINT_MAX)
 		return;
 
 	Pool<TComp>& compPool = GetComponentPool<TComp>();

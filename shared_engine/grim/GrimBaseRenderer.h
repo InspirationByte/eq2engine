@@ -33,6 +33,8 @@ class GRIMBaseRenderer : public IShaderMeshInstanceProvider
 	template<typename T>
 	using Pool = GRIMSyncrhronizedPool<T>;
 
+	friend class GRIMInstanceDebug;
+
 public:
 	GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator);
 
@@ -47,8 +49,6 @@ public:
 
 	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
 	void			Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
-
-	void			DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) const;
 
 protected:
 
@@ -110,6 +110,13 @@ protected:
 	Pool<GPUIndexedBatch>		m_drawBatchs{ "GPUIndexedBatch", PP_SL };
 	Pool<GPULodInfo>			m_drawLodInfos{ "GPULodInfo", PP_SL };
 	Pool<GPULodList>			m_drawLodsList{ "GPULodList", PP_SL };
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	BitArray					m_dbgHiddenArchetypes{ PP_SL };
+	BitArray					m_dbgLastVisibleArchetypes{ PP_SL };
+	int							m_dbgStatsDrawCalls{ 0 };
+	int							m_dbgStatsDrawInfos{ 0 };
+#endif
 
 	ComputeSortShaderPtr		m_sortShader;
 
@@ -201,4 +208,11 @@ struct GRIMBaseRenderer::DrawInfo
 	int						batchIdx{ -1 };
 	int						lodNumber{ -1 };
 	GRIMArchetype			ownerArchetype{ GRIM_INVALID_ARCHETYPE };
+};
+
+class GRIMInstanceDebug
+{
+public:
+	static void 			DrawUI(GRIMBaseRenderer& renderer);
+	static GRIMArchetype	GetHighlightArchetype();
 };

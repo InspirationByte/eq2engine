@@ -5,7 +5,6 @@
 // Description: GPU Instances allocator
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <imgui.h>
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
@@ -146,6 +145,22 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 	}
 }
 
+void GRIMBaseInstanceAllocator::DbgInvalidateAllData()
+{
+	CScopedMutex m(GetMutex());
+	for(int i = 0; i < m_instances.numElem(); ++i)
+		m_updated.insert(i);
+	
+	for (GRIMBaseComponentPool* pool : m_componentPools)
+	{
+		if(!pool)
+			continue;
+		for(int i = 0; i < pool->GetData().NumSlots(); ++i)
+			pool->GetData().SetUpdated(i);
+	}
+	m_buffersUpdated = 0;
+}
+
 GPUBufferView GRIMBaseInstanceAllocator::GetSingleInstanceIndexBuffer() const
 {
 	return GPUBufferView(m_singleInstIndexBuffer, sizeof(int));
@@ -256,7 +271,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	for (int i = 0; i < GRIM_INSTANCE_MAX_COMPONENTS; ++i)
 	{
 		// skip invalid or defaults
-		if (root.components[i] == UINT_MAX)
+		if (root.components[i] == COM_UINT_MAX)
 			continue;
 
 		// add this instance to freed list and invalidate ID
@@ -265,7 +280,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 			CScopedMutex m(GetMutex());
 			m_componentPools[i]->GetData().Remove(root.components[i]);
 		}
-		root.components[i] = UINT_MAX;
+		root.components[i] = COM_UINT_MAX;
 	}
 
 	// update roots and archetypes
@@ -371,38 +386,4 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 	if(buffersUpdatedThisFrame)
 		++m_buffersUpdated;
-}
-
-void GRIMInstanceDebug::DrawUI(GRIMBaseInstanceAllocator& instMngBase, ArrayCRef<EqStringRef> archetypeNames)
-{
-#ifdef IMGUI_ENABLED
-	CScopedMutex m(GRIMBaseInstanceAllocator::GetMutex());
-
-	ImGui::Text("Instances: %d", instMngBase.m_instances.numElem());
-	ImGui::Text("Archetypes: %d", instMngBase.m_archetypeInstCounts.size());
-	ImGui::Text("Buffer ref updates: %u", instMngBase.m_buffersUpdated);
-
-	Array<GRIMArchetype> sortedArchetypes(PP_SL);
-	int maxInst = 0;
-	for (auto it = instMngBase.m_archetypeInstCounts.begin(); !it.atEnd(); ++it)
-	{
-		maxInst = max(maxInst, *it);
-		sortedArchetypes.append(it.key());
-	}
-
-	arraySort(sortedArchetypes, [&](const int archA, const int archB) {
-		return instMngBase.m_archetypeInstCounts[archB] - instMngBase.m_archetypeInstCounts[archA];
-	});
-
-	EqString instName;
-	for (const GRIMArchetype archetypeId : sortedArchetypes)
-	{
-		const int instCount = instMngBase.m_archetypeInstCounts[archetypeId];
-		if(instCount == 0)
-			continue;
-		
-		EqString str = EqString::Format("[%d] %d %s", instCount, archetypeId, archetypeId != -1 ? archetypeNames[archetypeId] : "<invalid>");
-		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
-	}
-#endif // IMGUI_ENABLED
 }

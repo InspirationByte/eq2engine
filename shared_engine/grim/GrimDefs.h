@@ -2,6 +2,10 @@
 #include "materialsystem1/renderers/ShaderAPICaps.h"
 #include "materialsystem1/RenderDefs.h"
 
+#if !defined(_PROFILE) && !defined(_RETAIL)
+#define GRIM_INSTANCES_DEBUG_ENABLED
+#endif
+
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
 

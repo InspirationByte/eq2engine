@@ -5,6 +5,7 @@
 // Description: GRIM � GPU-driven Rendering and Instance Manager
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <imgui.h>
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/IFileSystem.h"
@@ -21,7 +22,6 @@
 using namespace Threading;
 
 DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(grim_stats, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbg_onlyMaterial, "", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbg_logArchetypes, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbg_validate, "0", nullptr, CV_CHEAT);
@@ -85,6 +85,9 @@ void GRIMBaseRenderer::Init()
 
 void GRIMBaseRenderer::Shutdown()
 {
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	m_dbgHiddenArchetypes.clear();
+#endif
 	m_pendingArchetypes.clear(true);
 	m_pendingDeletion.clear(true);
 	m_drawInfos.clear(true);
@@ -122,6 +125,12 @@ GRIMArchetype GRIMBaseRenderer::CreateStudioDrawArchetype(const CEqStudioGeom* g
 	pending.type = PendingDesc::TYPE_STUDIO;
 	pending.slot = m_drawLodsList.Add(GPULodList{});
 
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	if(m_drawLodsList.NumSlots() + 1 > m_dbgHiddenArchetypes.numBits())
+		m_dbgHiddenArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+	m_dbgHiddenArchetypes.setFalse(pending.slot);
+#endif
+
 	return pending.slot;
 }
 
@@ -144,6 +153,12 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 	pending.desc = desc;
 	pending.type = PendingDesc::TYPE_GRIM;
 	pending.slot = m_drawLodsList.Add(GPULodList{});
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	if(m_drawLodsList.NumSlots() + 1 > m_dbgHiddenArchetypes.numBits())
+		m_dbgHiddenArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+	m_dbgHiddenArchetypes.setFalse(pending.slot);
+#endif
 
 	return pending.slot;
 }
@@ -335,8 +350,8 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 		for (int i = lodInfo.firstBatch; i < lodInfo.firstBatch + lodInfo.batchCount; ++i)
 		{
 			const GRIMArchetypeDesc::Batch& batch = desc.batches[i];
-			if (batch.material->GetFlags() & MATERIAL_FLAG_INVISIBLE)
-				continue;
+			//if (batch.material->GetFlags() & MATERIAL_FLAG_INVISIBLE)
+			//	continue;
 
 			GPUIndexedBatch drawBatch;
 			drawBatch.firstIndex = batch.firstIndex;
@@ -385,14 +400,6 @@ void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
 		return;
 
 	m_pendingDeletion.append(archetype);
-}
-
-void GRIMBaseRenderer::DbgGetArchetypeNames(Array<EqStringRef>& archetypeNames) const
-{
-	CScopedMutex m(s_grimRendererMutex);
-	archetypeNames.setNum(m_drawLodsList.NumSlots());
-	for(int i = 0; i < m_drawLodsList.NumSlots(); ++i)
-		archetypeNames[i] = DbgGetArchetypeName(i);
 }
 
 EqStringRef GRIMBaseRenderer::DbgGetArchetypeName(GRIMArchetype archetypeId) const
@@ -927,6 +934,11 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		if (m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
 			continue;
 
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+		if(m_dbgHiddenArchetypes[drawInfo.ownerArchetype])
+			continue;
+#endif
+
 		const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 
 		IMaterial* material = drawInfo.material;
@@ -992,16 +1004,189 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 	}
 	renderPassCtx.recorder->DbgPopGroup();
 
-	if(grim_stats.GetBool())
-	{
-		debugoverlay->Text(color_white, "--- GRIM instances summary ---");
-		debugoverlay->Text(color_white, "Mode: %s", grim_force_software.GetBool() ? "CPU" : "Compute");
-		debugoverlay->Text(color_white, " %d draw infos: %.2f KB", m_drawInfos.numElem(), memBytesToKB(m_drawInfos.numSlots() * sizeof(m_drawInfos[0])));
-		debugoverlay->Text(color_white, " %d batchs: %.2f KB", m_drawBatchs.NumElem(), memBytesToKB(m_drawBatchs.NumSlots() * sizeof(m_drawBatchs[0])));
-		debugoverlay->Text(color_white, " %d lod infos: %.2f KB", m_drawLodInfos.NumElem(), memBytesToKB(m_drawLodInfos.NumSlots() * sizeof(m_drawLodInfos[0])));
-		debugoverlay->Text(color_white, " %d lod lists: %.2f KB", m_drawLodsList.NumElem(), memBytesToKB(m_drawLodsList.NumSlots() * sizeof(m_drawLodsList[0])));
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	m_dbgLastVisibleArchetypes = renderState.visibleArchetypes;
+	m_dbgStatsDrawCalls = numDrawCalls;
+	m_dbgStatsDrawInfos = drawInfosByMaterial.size();
+#endif
+}
 
-		debugoverlay->Text(color_white, "Draw materials: %d", drawInfosByMaterial.size());
-		debugoverlay->Text(color_white, "Draw calls: %d", numDrawCalls);
+
+static GRIMArchetype s_highlightArchetype = -1;
+
+GRIMArchetype GRIMInstanceDebug::GetHighlightArchetype()
+{
+	return s_highlightArchetype;
+}
+
+void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
+{
+#if defined(IMGUI_ENABLED) && defined(GRIM_INSTANCES_DEBUG_ENABLED)
+	CScopedMutex m(s_grimRendererMutex);
+
+	GRIMBaseInstanceAllocator& instances = renderer.m_instAllocator;
+	BitArray& hiddenArchetypes = renderer.m_dbgHiddenArchetypes;
+	Array<EqStringRef> archetypeNames(PP_SL);
+	Array<GRIMArchetype> sortedArchetypes(PP_SL);
+
+	sortedArchetypes.reserve(renderer.m_drawLodsList.NumElem());
+	archetypeNames.setNum(renderer.m_drawLodsList.NumSlots());
+	for(int i = 0; i < renderer.m_drawLodsList.NumSlots(); ++i)
+	{
+		if(renderer.m_drawLodsList(i))
+			sortedArchetypes.append(i);
+		archetypeNames[i] = renderer.DbgGetArchetypeName(i);
 	}
+
+	int usedArchetypes = 0;
+	int maxInst = 0;
+	for (auto it = instances.m_archetypeInstCounts.begin(); !it.atEnd(); ++it)
+	{
+		usedArchetypes += it.value() > 0;
+		maxInst = max(maxInst, *it);
+	}
+
+	bool softwareMode = grim_force_software.GetBool();
+	if(ImGui::Checkbox("Software mode", &softwareMode))
+		grim_force_software.SetBool(softwareMode);
+	ImGui::SameLine();
+	if(ImGui::Button("Invalidate all data"))
+		instances.DbgInvalidateAllData();
+
+	if(ImGui::CollapsingHeader("Statistics"))
+	{
+		ImGui::Text("Archetypes: %d (in use %d)", renderer.m_drawLodsList.NumElem(), usedArchetypes);
+		ImGui::Text("Instances: %d", instances.m_instances.numElem());
+		ImGui::Text("Buffer ref updates: %u", instances.m_buffersUpdated);
+
+		ImGui::Text("Draw materials: %d", renderer.m_dbgStatsDrawInfos);
+		ImGui::Text("Draw calls: %d", renderer.m_dbgStatsDrawCalls);
+
+		ImGui::Text(" %d draw infos: %.2f KB", renderer.m_drawInfos.numElem(), memBytesToKB(renderer.m_drawInfos.numSlots() * sizeof(renderer.m_drawInfos[0])));
+		ImGui::Text(" %d batchs: %.2f KB", renderer.m_drawBatchs.NumElem(), memBytesToKB(renderer.m_drawBatchs.NumSlots() * sizeof(renderer.m_drawBatchs[0])));
+		ImGui::Text(" %d lod infos: %.2f KB", renderer.m_drawLodInfos.NumElem(), memBytesToKB(renderer.m_drawLodInfos.NumSlots() * sizeof(renderer.m_drawLodInfos[0])));
+		ImGui::Text(" %d lod lists: %.2f KB", renderer.m_drawLodsList.NumElem(), memBytesToKB(renderer.m_drawLodsList.NumSlots() * sizeof(renderer.m_drawLodsList[0])));
+	}
+
+	static char archetypeFilter[128] = {0};
+	ImGui::SetNextItemWidth(170);
+	ImGui::InputText("Filter", archetypeFilter, sizeof(archetypeFilter));
+	ImGui::SameLine();
+
+	if(ImGui::Button("Hide all"))
+		hiddenArchetypes.reset(true);
+	ImGui::SameLine();
+	if(ImGui::Button("Show all"))
+		hiddenArchetypes.reset(false);
+
+	static bool sortByCount = true;
+	ImGui::Checkbox("Sort by count", &sortByCount);
+	ImGui::SameLine();
+	if(sortByCount)
+	{
+		arraySort(sortedArchetypes, [&](const int archA, const int archB) {
+			return instances.m_archetypeInstCounts[archB] - instances.m_archetypeInstCounts[archA];
+		});
+	}
+
+	static bool showAllArchetypes = false;
+	ImGui::Checkbox("Show all archetypes", &showAllArchetypes);
+	ImGui::SameLine();
+
+	static bool showOnScreen = false;
+	ImGui::Checkbox("Show on screen", &showOnScreen);
+
+	static bool detailsOpen = false;
+	if(!detailsOpen)
+		s_highlightArchetype = -1;
+
+	EqString instName;
+	for (const GRIMArchetype archetypeId : sortedArchetypes)
+	{
+		const int instCount = instances.m_archetypeInstCounts[archetypeId];
+		if(instCount == 0 && !showAllArchetypes)
+			continue;
+
+		const bool archetypeVisibleOnScreen = renderer.m_dbgLastVisibleArchetypes[archetypeId];
+		if(!archetypeVisibleOnScreen && showOnScreen)
+			continue;
+		
+		EqString str = EqString::Format("[%d] %d %s", instCount, archetypeId, archetypeId != -1 ? archetypeNames[archetypeId] : "<invalid>");
+		if(*archetypeFilter != 0)
+		{
+			if(str.Find(archetypeFilter) == -1)
+				continue;
+		}
+		
+		if(!archetypeVisibleOnScreen)
+			ImGui::PushStyleColor(ImGuiCol_PlotHistogram, (ImVec4)ImColor::HSV(0, 0.9f, 0.9f));
+
+		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
+		ImGui::SameLine();
+
+		if(!archetypeVisibleOnScreen)
+			ImGui::PopStyleColor();
+
+		if(!detailsOpen && ImGui::IsItemHovered())
+			s_highlightArchetype = archetypeId;
+		
+		bool visible = !hiddenArchetypes[archetypeId];
+		if(ImGui::Checkbox(EqString::Format("##ar_vis_%d", archetypeId), &visible))
+		{
+			hiddenArchetypes.set(archetypeId, !visible);
+		}
+		ImGui::SameLine();
+		
+		if(ImGui::Button("Details"))
+		{
+			detailsOpen = true;
+			s_highlightArchetype = archetypeId;
+			// TODO: show batch count, materials, buffers etc
+		}
+	}
+
+	if(detailsOpen && ImGui::Begin("GRIM Archetype details", &detailsOpen))
+	{
+		Set<IMaterial*> materials(PP_SL);
+		int maxBatchesPerLod = 0;
+		int totalLods = 0;
+
+		GRIMBaseRenderer::ArchetypeInfo::PTR_T archetypeInfo;
+		const GRIMBaseRenderer::GPULodList& lodList = renderer.m_drawLodsList[s_highlightArchetype];
+		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
+		{
+			int numBatches = 0;
+			const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
+			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+			{
+				const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[renderer.m_drawBatchs[batchIdx].cmdIdx];
+				materials.insert(drawInfo.material);
+				++numBatches;
+				if(!archetypeInfo)
+					archetypeInfo = drawInfo.archetypeInfo;
+			}
+			maxBatchesPerLod = max(maxBatchesPerLod, numBatches);
+			++totalLods;
+		}
+		
+		if(archetypeInfo)
+		{
+			ImGui::Text("Archetype %d '%s'", s_highlightArchetype, archetypeInfo->name.ToCString());
+			ImGui::Text("Vertex buffers: %d", archetypeInfo->vertexBuffers.numElem());
+			ImGui::Text("FVF: %d", archetypeInfo->meshInstFormat.name);
+			ImGui::Text("Skinning supported: %d", archetypeInfo->skinningSupport);
+			ImGui::Text("LOD count: %d", totalLods);
+			ImGui::Text("Max batches per lod: %d", maxBatchesPerLod);
+			ImGui::Text("Materials used:");
+			for(auto it = materials.begin(); !it.atEnd(); ++it)
+				ImGui::Text(" - %s", it.key()->GetName());
+		}
+		else
+		{
+			ImGui::Text("Invalid archetype %d", s_highlightArchetype);
+		}
+
+		ImGui::End();
+	}
+#endif // IMGUI_ENABLED
 }
