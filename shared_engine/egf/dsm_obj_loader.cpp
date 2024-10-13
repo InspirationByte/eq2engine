@@ -518,7 +518,7 @@ bool SaveOBJ(DSModel* model, const char* filename)
 
 		if (group->indices.numElem())
 		{
-			const int nameHash = StringToHash(group->texture);
+			const int nameHash = StringId24(group->texture);
 			if (addedMaterials.find(nameHash).atEnd())
 			{
 				mtlFile->Print("newmtl %s\r\n", group->texture.ToCString());

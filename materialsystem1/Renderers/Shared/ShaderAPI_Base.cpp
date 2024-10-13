@@ -124,7 +124,7 @@ ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 	EqString searchStr(pszName);
 	fnmPathFixSeparators(searchStr);
 
-	const int nameHash = StringToHash(searchStr, true);
+	const int nameHash = StringId24(searchStr, true);
 
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
@@ -152,7 +152,7 @@ ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName, bool& justC
 	EqString searchStr(pszName);
 	fnmPathFixSeparators(searchStr);
 
-	const int nameHash = StringToHash(searchStr, true);
+	const int nameHash = StringId24(searchStr, true);
 
 	CScopedMutex m(g_sapi_TextureMutex);
 	auto it = m_TextureList.find(nameHash);

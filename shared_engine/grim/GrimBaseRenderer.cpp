@@ -66,19 +66,19 @@ void GRIMBaseRenderer::Init()
 	m_drawBatchs.SetPipeline(g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
-		.ShaderLayoutId(StringToHash(m_drawBatchs.GetName()))
+		.ShaderLayoutId(StringId24(m_drawBatchs.GetName()))
 		.End()
 	));
 	m_drawLodInfos.SetPipeline(g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
-		.ShaderLayoutId(StringToHash(m_drawLodInfos.GetName()))
+		.ShaderLayoutId(StringId24(m_drawLodInfos.GetName()))
 		.End()
 	));
 	m_drawLodsList.SetPipeline(g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
-		.ShaderLayoutId(StringToHash(m_drawLodsList.GetName()))
+		.ShaderLayoutId(StringId24(m_drawLodsList.GetName()))
 		.End()
 	));
 }
@@ -573,7 +573,7 @@ void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 	PROF_EVENT_F();
 	const int maxInstancesCount = m_instAllocator.GetInstanceSlotsCount();
 	m_sortShader->InitKeys(intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount);
-	m_sortShader->SortKeys(StringToHashConst(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount, intermediate.instanceInfosBuffer);
+	m_sortShader->SortKeys(StringIdConst24(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount, intermediate.instanceInfosBuffer);
 }
 
 constexpr int GPUBOUNDS_GROUP_SIZE = 256;

@@ -547,7 +547,7 @@ void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
 void CEqConsoleInput::AddDebugHandler(const char* name, CONSOLE_IMGUI_HANDLER func)
 {
 	ASSERT(func);
-	const int nameHash = StringToHash(name);
+	const int nameHash = StringId24(name);
 	EqImGui_Menu& handler = m_imguiMenus[nameHash];
 	handler.func = func;
 	handler.enabled = true; // non-menu are always enabled
@@ -555,7 +555,7 @@ void CEqConsoleInput::AddDebugHandler(const char* name, CONSOLE_IMGUI_HANDLER fu
 
 void CEqConsoleInput::RemoveDebugHandler(const char* name)
 {
-	const int nameHash = StringToHash(name);
+	const int nameHash = StringId24(name);
 	m_imguiMenus.remove(nameHash);
 }
 
@@ -563,7 +563,7 @@ void CEqConsoleInput::AddDebugMenu(const char* path, CONSOLE_IMGUI_HANDLER func)
 {
 	ASSERT(func);
 
-	const int nameHash = StringToHash(path);
+	const int nameHash = StringId24(path);
 	EqImGui_Menu& handler = m_imguiMenus[nameHash];
 	handler.path = path;
 	handler.func = func;
@@ -571,7 +571,7 @@ void CEqConsoleInput::AddDebugMenu(const char* path, CONSOLE_IMGUI_HANDLER func)
 
 void CEqConsoleInput::ShowDebugMenu(const char* path, bool enable)
 {
-	const int nameHash = StringToHash(path);
+	const int nameHash = StringId24(path);
 	auto it = m_imguiMenus.find(nameHash);
 	if (it.atEnd())
 		return;
@@ -580,7 +580,7 @@ void CEqConsoleInput::ShowDebugMenu(const char* path, bool enable)
 
 void CEqConsoleInput::ToggleDebugMenu(const char* path)
 {
-	const int nameHash = StringToHash(path);
+	const int nameHash = StringId24(path);
 	auto it = m_imguiMenus.find(nameHash);
 	if (it.atEnd())
 		return;

@@ -8,7 +8,7 @@ const VertexLayoutDesc& GetGPUInstanceVertexLayout()
 	static const VertexLayoutDesc s_gpuInstIdVertexLayoutDesc = Builder<VertexLayoutDesc>()
 		.Stride(sizeof(int))
 		.StepMode(VERTEX_STEPMODE_INSTANCE)
-		.UserId(StringToHashConst("GPUInstanceID"))
+		.UserId(StringIdConst24("GPUInstanceID"))
 		.Attribute(VERTEXATTRIB_TEXCOORD, "id", 8, 0, ATTRIBUTEFORMAT_UINT8, 4)
 		.End();
 

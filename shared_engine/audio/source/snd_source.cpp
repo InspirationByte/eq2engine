@@ -72,5 +72,5 @@ const char* ISoundSource::GetFilename() const
 void ISoundSource::SetFilename(const char* filename)
 {
 	m_fileName = filename;
-	m_nameHash = StringToHash(filename, true);
+	m_nameHash = StringId24(filename, true);
 }

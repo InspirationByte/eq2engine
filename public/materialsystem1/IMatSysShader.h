@@ -119,7 +119,7 @@ using FactoryList = Array<ShaderFactory>;
 
 extern FactoryList& _InternalShaderList();
 
-#define SHADER_VERTEX_ID(name)	StringToHashConst(#name)
+#define SHADER_VERTEX_ID(name)	StringIdConst24(#name)
 
 #define DECLARE_INTERNAL_SHADERS()  \
 	FactoryList* s_internalShaderReg = nullptr; \

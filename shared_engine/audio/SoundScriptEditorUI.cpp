@@ -1530,7 +1530,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 										if (desc.type != SOUND_NODE_INPUT)
 											continue;
 
-										const int nameHash = StringToHash(desc.name);
+										const int nameHash = StringId24(desc.name);
 										currentInputs[nameHash] = emitter->inputs[nodeId];
 									}
 								}
@@ -1624,7 +1624,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 										continue;
 
 									ImGui::PushID(nodeId);
-									const int nameHash = StringToHash(desc.name);
+									const int nameHash = StringId24(desc.name);
 
 									for (int i = 0; i < desc.input.valueCount; ++i)
 									{

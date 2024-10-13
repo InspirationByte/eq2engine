@@ -45,7 +45,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 			{
 				const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
 				const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
-				result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), StringToHash(m_shaderInfo.vertexLayouts[vertexId].name));
+				result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
 			}
 
 			int vertexId = -1;
@@ -59,7 +59,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 				}
 			}
 			if(vertexId != -1)
-				result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", StringToHash(m_shaderInfo.vertexLayouts[vertexId].name));
+				result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
 
 			result->includeName = requested_source;
 		}

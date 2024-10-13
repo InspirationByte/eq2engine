@@ -69,7 +69,7 @@ Example of use:
 
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
 	static constexpr const char* NAME = #Name; \
-	static constexpr int IDENTIFIER = StringToHashConst(#Name); \
+	static constexpr int IDENTIFIER = StringIdConst24(#Name); \
 	static constexpr int COMPONENT_ID = ID; \
 	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool);
 

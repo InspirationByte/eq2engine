@@ -958,7 +958,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 	ThisType& Name(const char* str)
 	{
 		ref.name = str;
-		ref.nameHash = StringToHash(str);
+		ref.nameHash = StringId24(str);
 		return *this; 
 	}
 	ThisType& ColorTarget(const TextureView& colorTarget, bool clear = false, const MColor& clearColor = color_black, bool discard = false, int depthSlice = -1, const TextureView& resolveTarget = nullptr)

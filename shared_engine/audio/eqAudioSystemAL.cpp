@@ -277,7 +277,7 @@ void CEqAudioSystemAL::InitEffects()
 
 	for (const KVSection* effectSec : kv.Keys())
 	{
-		const int nameHash = StringToHash(effectSec->name, true);
+		const int nameHash = StringId24(effectSec->name, true);
 
 		EffectInfo effect;
 		strcpy(effect.name, effectSec->name);
@@ -465,7 +465,7 @@ void CEqAudioSystemAL::SetChannelPitch(int chanType, float value)
 ISoundSourcePtr CEqAudioSystemAL::GetSample(const char* filename)
 {
 	{
-		const int nameHash = StringToHash(filename, true);
+		const int nameHash = StringId24(filename, true);
 		CScopedMutex m(s_audioSysMutex);
 		auto it = m_samples.find(nameHash);
 		if (!it.atEnd())
@@ -539,7 +539,7 @@ void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)
 // finds the effect. May return EFFECTID_INVALID
 AudioEffectId CEqAudioSystemAL::FindEffect(const char* name) const
 {
-	const int nameHash = StringToHash(name, true);
+	const int nameHash = StringId24(name, true);
 	auto it = m_effects.find(nameHash);
 
 	if (!it.atEnd())

@@ -57,7 +57,7 @@ void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName
 		m_updateRootPipeline = g_renderAPI->CreateComputePipeline(
 			Builder<ComputePipelineDesc>()
 			.ShaderName(instanceComputeShaderName)
-			.ShaderLayoutId(StringToHashConst("InstRoot"))
+			.ShaderLayoutId(StringIdConst24("InstRoot"))
 			.End()
 		);
 	}
@@ -67,7 +67,7 @@ void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName
 		m_updateIntPipeline = g_renderAPI->CreateComputePipeline(
 			Builder<ComputePipelineDesc>()
 			.ShaderName(instanceComputeShaderName)
-			.ShaderLayoutId(StringToHashConst("InstInt"))
+			.ShaderLayoutId(StringIdConst24("InstInt"))
 			.End()
 		);
 	}

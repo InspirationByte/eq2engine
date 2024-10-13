@@ -146,7 +146,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 
 		EqString zipFilePath = path;
 		DPK_FixSlashes(zipFilePath);
-		const int nameHash = StringToHash(zipFilePath, true);
+		const int nameHash = StringId24(zipFilePath, true);
 
 		ZFileInfo& zf = *m_files.insert(nameHash);
 		zf.fileName = zipFilePath;
@@ -192,7 +192,7 @@ IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	const int nameHash = StringToHash(filename, true);
+	const int nameHash = StringId24(filename, true);
 	unzFile zipFileHandle = reinterpret_cast<unzFile>(GetZippedFile(nameHash));
 	if (!zipFileHandle)
 		return nullptr;
@@ -232,7 +232,7 @@ IFilePtr CZipFileReader::Open(int fileIndex, int modeFlags)
 
 bool CZipFileReader::FileExists(const char* filename) const
 {
-	const int nameHash = StringToHash(filename, true);
+	const int nameHash = StringId24(filename, true);
 	unzFile test = reinterpret_cast<unzFile>(GetZippedFile(nameHash));
 	if(test)
 		unzClose(test);
@@ -242,7 +242,7 @@ bool CZipFileReader::FileExists(const char* filename) const
 
 int CZipFileReader::FindFileIndex(const char* filename) const
 {
-	const int nameHash = StringToHash(filename, true);
+	const int nameHash = StringId24(filename, true);
 	auto it = m_files.find(nameHash);
 	if (!it.atEnd())
 		return it.key();

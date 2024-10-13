@@ -499,7 +499,7 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 			queryStr.Append("|");
 		queryStr.Append(define);
 	}
-	m_shaderQueryId = StringToHash(queryStr, true);
+	m_shaderQueryId = StringId24(queryStr, true);
 
 	// cache shader modules
 	renderAPI->LoadShaderModules(GetName(), m_shaderQuery, "main");

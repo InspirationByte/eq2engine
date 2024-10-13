@@ -42,29 +42,29 @@ ComputeSortShader::ComputeSortShader()
 
 	m_initPipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
-		.ShaderLayoutId(StringToHashConst("InitKeys"))
+		.ShaderLayoutId(StringIdConst24("InitKeys"))
 		.End()
 	);
 	m_prepareParamBufferPipeline = g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
-		.ShaderLayoutId(StringToHashConst("PrepareParamBuffer"))
+		.ShaderLayoutId(StringIdConst24("PrepareParamBuffer"))
 		.End()
 	);
 	m_sortPipelines.insert(COMPUTESORT_FLOAT, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
-		.ShaderLayoutId(StringToHashConst("SortFloat"))
+		.ShaderLayoutId(StringIdConst24("SortFloat"))
 		.End()
 	, m_sortPipelineLayout));
 	m_sortPipelines.insert(COMPUTESORT_INT, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(BITONIC_MERGE_SORT_SHADERNAME)
-		.ShaderLayoutId(StringToHashConst("SortInt"))
+		.ShaderLayoutId(StringIdConst24("SortInt"))
 		.End()
 	, m_sortPipelineLayout));
 }
 
 int ComputeSortShader::AddSortPipeline(const char* name, const char* shaderName)
 {
-	const int nameHash = StringToHash(name);
+	const int nameHash = StringId24(name);
 	m_sortPipelines.insert(nameHash, g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>()
 		.ShaderName(shaderName ? EqStringRef(shaderName) : BITONIC_MERGE_SORT_SHADERNAME)
 		.ShaderLayoutId(nameHash)

@@ -29,7 +29,7 @@ struct MatSysCamera;
 			return C##name##ShaderLocalNamespace::GetSupportedVertexLayoutIds(); \
 		} \
 		const char* GetName() const override { return ThisClassNameStr; } \
-		int	GetNameHash() const	override { return StringToHashConst(#name); } \
+		int	GetNameHash() const	override { return StringIdConst24(#name); } \
 		C##name##Shader(IMaterial* material) : CBaseShader(material) {} \
 		void Init(IShaderAPI* renderAPI) override { \
 			CBaseShader::Init(renderAPI); ShaderInitParams(renderAPI); \

@@ -60,7 +60,7 @@ void CTextureAtlas::InitAtlas( const KVSection* kvs )
 	char* namesPtr = m_names;
 	for(const KVSection* entrySec : kvs->keys)
 	{
-		const int nameHash = StringToHash(entrySec->GetName(), true);
+		const int nameHash = StringId24(entrySec->GetName(), true);
 		m_entryMap.insert(nameHash, m_entries.numElem());
 
 		AARectangle rect {
@@ -94,7 +94,7 @@ AtlasEntry* CTextureAtlas::FindEntry(const char* pszName) const
 
 int CTextureAtlas::FindEntryIndex(const char* pszName) const
 {
-	const int nameHash = StringToHash(pszName, true);
+	const int nameHash = StringId24(pszName, true);
 	auto it = m_entryMap.find(nameHash);
 	if (it.atEnd())
 		return -1;

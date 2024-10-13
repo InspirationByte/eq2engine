@@ -391,7 +391,7 @@ void CConsoleCommands::RegisterCommand(ConCommandBase* pCmd)
 	// pull initial value of ConVar if any
 	if (pCmd->IsConVar())
 	{
-		const int nameHash = StringToHash(pCmd->GetName(), true);
+		const int nameHash = StringId24(pCmd->GetName(), true);
 		auto it = m_cvarValueStore.find(nameHash);
 		if (!it.atEnd())
 		{
@@ -511,7 +511,7 @@ void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 
 void CConsoleCommands::PushConVarInitialValue(const char* name, const char* value)
 {
-	const int nameHash = StringToHash(name, true);
+	const int nameHash = StringId24(name, true);
 	m_cvarValueStore.insert(nameHash, value);
 }
 

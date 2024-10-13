@@ -41,36 +41,35 @@ static constexpr const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SE
 // String hash
 //------------------------------------------------------
 
-static constexpr const int StringHashBits = 24;
-static constexpr const int StringHashMask = ((1 << StringHashBits) - 1);
+static constexpr const int StringId24Bits = 24;
+static constexpr const int StringId24Mask = ((1 << StringId24Bits) - 1);
 
 template<int idx, std::size_t N>
-struct StringToHashHelper {
+struct StringId24_Cexpr_Helper {
 	static constexpr int compute(const char(&str)[N], int hash) {
 		const int v1 = hash >> 19;
 		const int v0 = hash << 5;
 		const int chr = str[N - idx - 1];
-		hash = ((v0 | v1) + chr) & StringHashMask;
-		return StringToHashHelper<idx - 1, N>::compute(str, hash);
+		hash = ((v0 | v1) + chr) & StringId24Mask;
+		return StringId24_Cexpr_Helper<idx - 1, N>::compute(str, hash);
 	}
 };
 
 template<std::size_t N>
-struct StringToHashHelper<0, N> {
+struct StringId24_Cexpr_Helper<0, N> {
 	static constexpr int compute(const char(&)[N], int hash) {
 		return hash;
 	}
 };
 
 template <auto V> static constexpr auto force_consteval = V;
-#define _StringToHashConst(x) StringToHashHelper<sizeof(x) - 1, sizeof(x)>::compute(x, sizeof(x) - 1)
-#define StringToHashConst(x) force_consteval<_StringToHashConst(x)>
+#define _StringId_Cexpr_24(x) StringId24_Cexpr_Helper<sizeof(x) - 1, sizeof(x)>::compute(x, sizeof(x) - 1)
+#define StringIdConst24(x) force_consteval<_StringId_Cexpr_24(x)>
 
-// generates string hash
-// TODO: rename to StringId24 or deprecate
-int			StringToHash(EqStringRef str, bool caseIns = false);
+// generates string hash 24 bit
+int			StringId24(EqStringRef str, bool caseIns = false);
 
-// generates string hash
+// generates string hash 32 bit
 uint 		StringId(EqStringRef str, bool caseIns = false);
 
 //------------------------------------------------------
@@ -348,3 +347,4 @@ public:
 	AnsiUnicodeConverter(EqString& outStr, EqWStringRef sourceStr);
 	AnsiUnicodeConverter(EqWString& outStr, EqStringRef sourceStr);
 };
+

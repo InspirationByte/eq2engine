@@ -34,7 +34,7 @@ IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
 
 static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash)
 {
-	uint hash = queryStrHash | (static_cast<uint>(vertexLayoutIdx) << StringHashBits) | (static_cast<uint>(kind) << (StringHashBits + 4));
+	uint hash = queryStrHash | (static_cast<uint>(vertexLayoutIdx) << StringId24Bits) | (static_cast<uint>(kind) << (StringId24Bits + 4));
 	hash *= 31;
 	hash += entryPointStrHash;
 	return hash;
@@ -98,7 +98,7 @@ bool ShaderInfoWGPUImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int
 			queryStr.Append("|");
 		queryStr.Append(defines[id]);
 	}
-	outHash = StringToHash(queryStr, true);
+	outHash = StringId24(queryStr, true);
 	return true;
 }
 
@@ -152,7 +152,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	defer{
 		if (shaderPackFile)
-			m_shaderCache.remove(StringToHash(shaderInfoKvs.GetName()));
+			m_shaderCache.remove(StringId24(shaderInfoKvs.GetName()));
 	};
 
 	if (!CString::SubString(filename, shaderInfoKvs.GetName()))
@@ -161,14 +161,14 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		return 0;
 	}
 
-	auto it = m_shaderCache.find(StringToHash(shaderInfoKvs.GetName()));
+	auto it = m_shaderCache.find(StringId24(shaderInfoKvs.GetName()));
 	if (!it.atEnd())
 	{
 		ASSERT_FAIL("Shader '%s' has been already loaded from different package", shaderInfoKvs.GetName());
 		return 0;
 	}
 
-	it = m_shaderCache.insert(StringToHash(shaderInfoKvs.GetName()));
+	it = m_shaderCache.insert(StringId24(shaderInfoKvs.GetName()));
 
 	ShaderInfoWGPUImpl& shaderInfo = *it;
 	shaderInfo.shaderPackFile = shaderPackFile;
@@ -187,7 +187,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
 		layout.name = key->GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
-			layout.nameHash = StringToHash(layout.name);
+			layout.nameHash = StringId24(layout.name);
 		
 		if (!CString::CompareCaseIns(KV_GetValueString(key, 0), "aliasOf"))
 		{
@@ -247,7 +247,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			modInfo.kind = static_cast<EShaderKind>(kind);
 		}
 		{
-			const int entryPointStrHash = StringToHash(entryPointName);
+			const int entryPointStrHash = StringId24(entryPointName);
 			const uint shaderModuleId = PackShaderModuleId(0, vertLayoutIdx, kind, entryPointStrHash);
 
 			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
@@ -288,8 +288,8 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			modInfo.kind = static_cast<EShaderKind>(kind);
 		}
 		{
-			const int queryStrHash = StringToHash(queryStr, true);
-			const int entryPointStrHash = StringToHash(entryPointName);
+			const int queryStrHash = StringId24(queryStr, true);
+			const int entryPointStrHash = StringId24(entryPointName);
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
 
 			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
@@ -321,8 +321,8 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		const int kind = getKind(kindStr);
 
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");
-		const int queryStrHash = StringToHash(queryStr, true);
-		const int entryPointStrHash = StringToHash(entryPointName);
+		const int queryStrHash = StringId24(queryStr, true);
+		const int entryPointStrHash = StringId24(entryPointName);
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
 		ASSERT_MSG(shaderInfo.modules[refSpvIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", shaderInfo.shaderName.ToCString(), refSpvIndex, kindStr, queryStr);
 
@@ -882,7 +882,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl&
 
 void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const
 {
-	const int shaderNameHash = StringToHash(shaderName);
+	const int shaderNameHash = StringId24(shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
 	if (shaderIt.atEnd())
 	{
@@ -898,7 +898,7 @@ void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStrin
 		return;
 	}
 
-	const int entryPointStrHash = StringToHash(entryPointName);
+	const int entryPointStrHash = StringId24(entryPointName);
 
 	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
 	{
@@ -934,7 +934,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 {
 	PROF_EVENT("CWGPURenderAPI::CreateRenderPipeline");
 
-	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
+	const int shaderNameHash = StringId24(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
 	if (shaderIt.atEnd())
 	{
@@ -1039,7 +1039,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 
 		WGPUShaderModule rhiVertexShaderModule = nullptr;
 		{
-			const int entryPointStrHash = StringToHash(pipelineDesc.vertex.shaderEntryPoint);
+			const int entryPointStrHash = StringId24(pipelineDesc.vertex.shaderEntryPoint);
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
@@ -1137,7 +1137,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 
 		WGPUShaderModule rhiFragmentShaderModule = nullptr; // TODO: fetch from cache of fragment modules?
 		{
-			const int entryPointStrHash = StringToHash(pipelineDesc.fragment.shaderEntryPoint);
+			const int entryPointStrHash = StringId24(pipelineDesc.fragment.shaderEntryPoint);
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
@@ -1281,7 +1281,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 
 IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
 {
-	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
+	const int shaderNameHash = StringId24(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
 	if (shaderIt.atEnd())
 	{
@@ -1319,7 +1319,7 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 
 	WGPUShaderModule rhiComputeShaderModule = nullptr;
 	{
-		const int entryPointStrHash = StringToHash(pipelineDesc.shaderEntryPoint);
+		const int entryPointStrHash = StringId24(pipelineDesc.shaderEntryPoint);
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, layoutIdx, SHADERKIND_COMPUTE, entryPointStrHash);
 		auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 

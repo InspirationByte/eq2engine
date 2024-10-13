@@ -32,7 +32,7 @@ static locale_t xgetlocale()
 //------------------------------------------
 // Converts string to 24-bit integer hash
 //------------------------------------------
-int StringToHash(EqStringRef str, bool caseIns )
+int StringId24(EqStringRef str, bool caseIns )
 {
 	ASSERT(str);
 	int len = str.Length();
@@ -46,7 +46,7 @@ int StringToHash(EqStringRef str, bool caseIns )
 
 		const int chr = caseIns ? CType::LowerChar(*ptr) : *ptr;
 
-		hash = ((v0 | v1) + chr) & StringHashMask;
+		hash = ((v0 | v1) + chr) & StringId24Mask;
 		++ptr;
 	}
 

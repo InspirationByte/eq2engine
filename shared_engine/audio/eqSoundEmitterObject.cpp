@@ -43,13 +43,13 @@ int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
 		CScopedMutex m(m_mutex);
 		// ensure that no collisions happen
 		do {
-			uniqueId = RandomInt(0, StringHashMask);
+			uniqueId = RandomInt(0, StringId24Mask);
 		} while (m_emitters.contains(uniqueId));
 	}
 
 	ep->flags |= isRandom ? EMITSOUND_FLAG_RELEASE_ON_STOP : 0;
 
-	return g_sounds->EmitSoundInternal(ep, uniqueId & StringHashMask, this);
+	return g_sounds->EmitSoundInternal(ep, uniqueId & StringId24Mask, this);
 }
 
 bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
@@ -379,7 +379,7 @@ void CSoundingObject::SetParams(int uniqueId, const IEqAudioSource::Params& para
 
 void CSoundingObject::SetInputValue(int uniqueId, const char* name, float value)
 {
-	const int inputNameHash = StringToHash(name);
+	const int inputNameHash = StringId24(name);
 	SetInputValue(uniqueId, inputNameHash, value);
 }
 
@@ -799,7 +799,7 @@ void CEmitterObjectSound::SetParams(const IEqAudioSource::Params& params)
 
 void CEmitterObjectSound::SetInputValue(const char* name, float value)
 {
-	const int inputNameHash = StringToHash(name);
+	const int inputNameHash = StringId24(name);
 	SetInputValue(inputNameHash, value);
 }
 

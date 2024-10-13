@@ -409,7 +409,7 @@ void KVSection::ClearValues()
 void KVSection::SetName(const char* pszName)
 {
 	name = pszName;
-	nameHash = StringToHash(name, true);
+	nameHash = StringId24(name, true);
 }
 
 const char*	KVSection::GetName() const
@@ -869,7 +869,7 @@ const KVSection& KVSection::Get(const char* pszName, int nFlags) const
 // searches for keybase
 KVSection* KVSection::FindSection(const char* pszName, int nFlags) const
 {
-	const int hash = StringToHash(pszName, true);
+	const int hash = StringId24(pszName, true);
 
 	for(KVSection* section : keys)
 	{
@@ -918,7 +918,7 @@ void KVSection::AddSection(KVSection* keyBase)
 // removes key base by name
 void KVSection::RemoveSectionByName( const char* name, bool removeAll )
 {
-	const int strHash = StringToHash(name, true);
+	const int strHash = StringId24(name, true);
 
 	for(int i = 0; i < keys.numElem(); i++)
 	{
@@ -1026,7 +1026,7 @@ KVKeyIterator::KVKeyIterator(const KVSection* section)
 
 KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags, int index)
 	: section(section)
-	, nameHashFilter(nameFilter ? StringToHash(nameFilter, true) : 0)
+	, nameHashFilter(nameFilter ? StringId24(nameFilter, true) : 0)
 	, searchFlags(searchFlags)
 	, index(index)
 {

@@ -84,7 +84,7 @@ static const char* s_loopingSoundNames[] = {
 	"test.sample",
 };
 
-static constexpr const int s_musicNameId = StringToHashConst("music");
+static constexpr const int s_musicNameId = StringIdConst24("music");
 static CSoundingObject* g_musicObject = nullptr;
 static CSoundingObject* g_testSoundObject = nullptr;
 
