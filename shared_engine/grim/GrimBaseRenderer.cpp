@@ -434,6 +434,19 @@ EqStringRef GRIMBaseRenderer::DbgGetArchetypeName(GRIMArchetype archetypeId) con
 	return m_drawInfos[cmdIdx].archetypeInfo->name;
 }
 
+void GRIMBaseRenderer::DbgInvalidateAllData()
+{
+	CScopedMutex m(s_grimRendererMutex);
+	for(int i = 0; i < m_drawBatchs.NumElem(); ++i)
+		m_drawBatchs.SetUpdated(i);
+
+	for(int i = 0; i < m_drawLodInfos.NumElem(); ++i)
+		m_drawLodInfos.SetUpdated(i);
+
+	for(int i = 0; i < m_drawLodsList.NumElem(); ++i)
+		m_drawLodsList.SetUpdated(i);
+}
+
 void GRIMBaseRenderer::DestroyPendingArchetypes()
 {
 	if (!m_pendingDeletion.numElem())
@@ -1051,7 +1064,10 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		grim_force_software.SetBool(softwareMode);
 	ImGui::SameLine();
 	if(ImGui::Button("Invalidate all data"))
+	{
 		instances.DbgInvalidateAllData();
+		renderer.DbgInvalidateAllData();
+	}
 
 	if(ImGui::CollapsingHeader("Statistics"))
 	{

@@ -65,6 +65,7 @@ protected:
 	bool			IsSync() const;
 	void			DbgValidate() const;
 	EqStringRef		DbgGetArchetypeName(GRIMArchetype archetypeId) const;
+	void			DbgInvalidateAllData();
 
 	virtual void	VisibilityCullInstances_Compute(IntermediateState& intermediate) = 0;
 	virtual void	VisibilityCullInstances_Software(IntermediateState& intermediate) = 0;
