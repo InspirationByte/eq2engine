@@ -67,7 +67,11 @@ template <auto V> static constexpr auto force_consteval = V;
 #define StringToHashConst(x) force_consteval<_StringToHashConst(x)>
 
 // generates string hash
+// TODO: rename to StringId24 or deprecate
 int			StringToHash(EqStringRef str, bool caseIns = false);
+
+// generates string hash
+uint 		StringId(EqStringRef str, bool caseIns = false);
 
 //------------------------------------------------------
 // String split helper

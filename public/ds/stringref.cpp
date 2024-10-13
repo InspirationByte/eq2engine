@@ -41,15 +41,42 @@ int StringToHash(EqStringRef str, bool caseIns )
 	int hash = len;
 	for (; len > 0; --len)
 	{
-		int v1 = hash >> 19;
-		int v0 = hash << 5;
+		const int v1 = hash >> 19;
+		const int v0 = hash << 5;
 
-		int chr = caseIns ? CType::LowerChar(*ptr) : *ptr;
+		const int chr = caseIns ? CType::LowerChar(*ptr) : *ptr;
 
 		hash = ((v0 | v1) + chr) & StringHashMask;
 		++ptr;
 	}
 
+	return hash;
+}
+
+// hashes string. Returns value in 32 bits range
+uint StringId(EqStringRef str, bool caseIns = false)
+{
+	// uses FNV1a 32 as a base but rather than hashing string
+	// by each character value, it performs hashing as integer blocks
+	constexpr uint prime = 0x1000193;
+
+	ASSERT(str);
+	const int len = str.Length();
+	const char* data = str.GetData();
+
+	uint hash = 0x811C9DC5;
+	for (int i = 0; i < len; i += 4)
+	{
+		uint value = 0;
+		const int ii = min(i + 4, len);
+		for(int j = i; j < ii; ++j)
+		{
+			const uint chr = caseIns ? CType::LowerChar(*(data + j)) : *(data + j);
+			value |= chr << (j * 8);
+		}
+
+		hash = (hash ^ value) * prime;
+	}
 	return hash;
 }
 
