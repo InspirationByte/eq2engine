@@ -56,6 +56,7 @@ bool InitAppStates()
 	// TODO: plugin?
 #ifdef IMGUI_ENABLED
 	g_consoleInput->AddDebugMenu("ENGINE/Sound/Script Editor UI", SoundScriptEditorUIDraw);
+	//g_consoleInput->AddDebugMenu("ENGINE/Render/Instance Manager Debug UI", DemoInstManagerDebugDrawUI);
 #endif
 
 	g_pHost->SetWindowTitle(GAME_WINDOW_TITLE);

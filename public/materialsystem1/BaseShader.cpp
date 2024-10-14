@@ -126,12 +126,12 @@ IGPUBindGroupPtr CBaseShader::CreatePersistentBindGroup(BindGroupDesc& bindGroup
 	bindGroupDesc.groupIdx = bindGroupId;
 	if (pipelineInfo.layout)
 	{
-		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
 	}
 	else
 	{
-		bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		pipelineInfo.bindGroup[bindGroupId] = renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
 	}
 
@@ -143,12 +143,12 @@ IGPUBindGroupPtr CBaseShader::CreateBindGroup(BindGroupDesc& bindGroupDesc, EBin
 	bindGroupDesc.groupIdx = bindGroupId;
 	if(pipelineInfo.layout)
 	{
-		bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-ShaderLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		return renderAPI->CreateBindGroup(pipelineInfo.layout, bindGroupDesc);
 	}
 	else
 	{
-		bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
+		//bindGroupDesc.name = EqString::Format("%s-%s-PipelineLayout", GetName(), s_bindGroupNames[bindGroupId]);
 		return renderAPI->CreateBindGroup(pipelineInfo.pipeline, bindGroupDesc);
 	}
 }

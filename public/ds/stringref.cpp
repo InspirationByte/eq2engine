@@ -54,7 +54,7 @@ int StringId24(EqStringRef str, bool caseIns )
 }
 
 // hashes string. Returns value in 32 bits range
-uint StringId(EqStringRef str, bool caseIns = false)
+uint StringId(EqStringRef str, bool caseIns)
 {
 	// uses FNV1a 32 as a base but rather than hashing string
 	// by each character value, it performs hashing as integer blocks

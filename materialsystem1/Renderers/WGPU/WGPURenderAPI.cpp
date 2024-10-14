@@ -996,10 +996,10 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	Array<WGPUConstantEntry> rhiFragmentPipelineConstants(PP_SL);
 
 	for (const PipelineConst& constant : pipelineDesc.vertex.constants)
-		rhiVertexPipelineConstants.append({ nullptr, constant.name, constant.value });
+		rhiVertexPipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value});
 
 	for (const PipelineConst& constant : pipelineDesc.fragment.constants)
-		rhiFragmentPipelineConstants.append({ nullptr, constant.name, constant.value });
+		rhiFragmentPipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value });
 
 	WGPURenderPipelineDescriptor rhiRenderPipelineDesc = {};
 	if (pipelineLayout)
@@ -1059,7 +1059,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 
 		WGPUVertexState& rhiVertexState = rhiRenderPipelineDesc.vertex;
 		rhiVertexState.module = rhiVertexShaderModule;
-		rhiVertexState.entryPoint = pipelineDesc.vertex.shaderEntryPoint;
+		rhiVertexState.entryPoint = _WSTR(pipelineDesc.vertex.shaderEntryPoint);
 		rhiVertexState.bufferCount = rhiVertexBufferLayoutList.numElem();
 		rhiVertexState.buffers = rhiVertexBufferLayoutList.ptr();
 		rhiVertexState.constants = rhiVertexPipelineConstants.ptr();
@@ -1156,7 +1156,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 		}
 
 		rhiFragmentState.module = rhiFragmentShaderModule;
-		rhiFragmentState.entryPoint = pipelineDesc.fragment.shaderEntryPoint;
+		rhiFragmentState.entryPoint = _WSTR(pipelineDesc.fragment.shaderEntryPoint);
 		rhiFragmentState.targetCount = rhiColorTargets.numElem();
 		rhiFragmentState.targets = rhiColorTargets.ptr();
 		rhiFragmentState.constants = rhiFragmentPipelineConstants.ptr();
@@ -1340,12 +1340,12 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 	Array<WGPUConstantEntry> rhiComputePipelineConstants(PP_SL);
 
 	for (const PipelineConst& constant : pipelineDesc.constants)
-		rhiComputePipelineConstants.append({ nullptr, constant.name, constant.value });
+		rhiComputePipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value});
 
 	WGPUComputePipelineDescriptor rhiComputePipelineDesc = {};
 	rhiComputePipelineDesc.compute.constantCount = rhiComputePipelineConstants.numElem();
 	rhiComputePipelineDesc.compute.constants = rhiComputePipelineConstants.ptr();
-	rhiComputePipelineDesc.compute.entryPoint = pipelineDesc.shaderEntryPoint;
+	rhiComputePipelineDesc.compute.entryPoint = _WSTR(pipelineDesc.shaderEntryPoint);
 	rhiComputePipelineDesc.compute.module = rhiComputeShaderModule;
 
 	if (pipelineLayout)

@@ -45,32 +45,32 @@ static const char* s_wgpuDeviceLostReasonStr[] = {
     "FailedCreation",
 };
 
-static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
+static void OnWGPUDeviceError(WGPUErrorType type, struct WGPUStringView message, void* userdata)
 {
 	if (wgpu_break_on_error.GetBool())
 	{
-		ASSERT_FAIL("WGPU device %s error (after %s):\n\n%s", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message);
+		ASSERT_FAIL("WGPU device %s error (after %s):\n\n%s", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message.data);
 	}
 
 	if (wgpu_report_errors.GetBool())
-		MsgError("[WGPU] after %s: %s - %s\n", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message);
+		MsgError("[WGPU] after %s: %s - %s\n", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message.data);
 }
 
-static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, char const * message, void* userdata)
+static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, struct WGPUStringView message, void* userdata)
 {
 	if(reason == WGPUDeviceLostReason_Destroyed)
 		return;
 
-	ASSERT_FAIL("WGPU device lost (after %s) reason %s (%d)\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], reason, message);
-	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message);
+	ASSERT_FAIL("WGPU device lost (after %s) reason %s (%d)\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], reason, message.data);
+	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
 }
 
-static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata)
+static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata)
 {
 	if (status != WGPURequestAdapterStatus_Success)
 	{
 		// cannot find adapter?
-		ErrorMsg("%s", message);
+		ErrorMsg("%s", message.data);
 	}
 	else
 	{
@@ -278,7 +278,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		WGPUDawnCacheDeviceDescriptor rhiDawnCache{};
 		rhiDawnCache.chain.sType = WGPUSType_DawnCacheDeviceDescriptor;
-		rhiDawnCache.isolationKey = "E2Render";
+		rhiDawnCache.isolationKey = _WSTR("E2Render");
 		rhiDawnCache.loadDataFunction = wgpuLoadCacheDataFunction;
 		rhiDawnCache.storeDataFunction = wgpuStoreCacheDataFunction;
 
@@ -296,7 +296,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
 		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
-		requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
+		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
 		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
 		// TODO: android
 		//requiredFeatures.append(WGPUFeatureName_TextureCompressionETC2),
