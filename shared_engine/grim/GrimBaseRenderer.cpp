@@ -793,6 +793,9 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	if (maxNumberOfObjects < 0)
 		maxNumberOfObjects = m_instAllocator.GetInstanceCount();
 
+	if (maxNumberOfObjects == 0)
+		return;
+
 	renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numSlots()), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
 	renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), maxNumberOfObjects), BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
 	renderState.visibleArchetypes.resize(m_drawLodsList.NumSlots()+1);
@@ -803,6 +806,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	intermediate.maxNumberOfObjects = maxNumberOfObjects;
 
 	cmdRecorder->ClearBuffer(intermediate.renderState.drawInvocationsBuffer, 0, intermediate.renderState.drawInvocationsBuffer->GetSize());
+
 
 	if (grim_force_software.GetBool())
 	{
