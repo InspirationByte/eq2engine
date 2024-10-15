@@ -153,19 +153,24 @@ void CRenderWorker::Execute(const char* name, REND_FUNC_TYPE f)
 
 void CRenderWorker::WaitForThread() const
 {
+    SubmitJobs();
     m_loopJob->GetSignal()->Wait();
     m_loopJob->GetSignal()->Raise();
 }
 
 void CRenderWorker::RunLoop()
 {
+    SubmitJobs();
+
     // wait for previous device loop to complete
-    m_loopJob->GetSignal()->Wait();
-    m_loopJob->InitJob();
-    s_renderJobMng->StartJob(m_loopJob);
+    if (m_loopJob->GetSignal()->Wait(0))
+    {
+        m_loopJob->InitJob();
+        s_renderJobMng->StartJob(m_loopJob);
+    }
 }
 
-void CRenderWorker::SubmitJobs()
+void CRenderWorker::SubmitJobs() const
 {
     if (!s_renderJobMng->AllJobsCompleted())
         s_renderJobMng->Submit(1);

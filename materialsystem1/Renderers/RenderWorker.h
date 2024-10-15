@@ -35,7 +35,7 @@ public:
     void		Execute(const char* name, REND_FUNC_TYPE f);
 
     void		RunLoop();
-    void		SubmitJobs();
+    void		SubmitJobs() const;
     void		WaitForThread() const;
 
     uintptr_t	             GetThreadID() const { return m_jobThreadId; }
