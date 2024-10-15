@@ -49,11 +49,11 @@ static void OnWGPUDeviceError(WGPUErrorType type, struct WGPUStringView message,
 {
 	if (wgpu_break_on_error.GetBool())
 	{
-		ASSERT_FAIL("WGPU device %s error (after %s):\n\n%s", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message.data);
+		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message.data);
 	}
 
 	if (wgpu_report_errors.GetBool())
-		MsgError("[WGPU] after %s: %s - %s\n", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message.data);
+		MsgError("[WGPU]: %s - %s\n", s_wgpuErrorTypesStr[type], message.data);
 }
 
 static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, struct WGPUStringView message, void* userdata)
@@ -61,7 +61,7 @@ static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reas
 	if(reason == WGPUDeviceLostReason_Destroyed)
 		return;
 
-	ASSERT_FAIL("WGPU device lost (after %s) reason %s (%d)\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], reason, message.data);
+	ASSERT_FAIL("WGPU device lost reason %s (%d)\n\n%s", s_wgpuDeviceLostReasonStr[reason], reason, message.data);
 	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
 }
 
@@ -197,7 +197,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUAdapterInfo rhiAdapterInfo = {};
 		wgpuAdapterGetInfo(m_rhiAdapter, &rhiAdapterInfo);
 
-		Msg("* WGPU Adapter: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), rhiAdapterInfo.device, GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType), rhiAdapterInfo.architecture);
+		Msg("* WGPU Adapter: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), rhiAdapterInfo.device.data, GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType), rhiAdapterInfo.architecture.data);
 	}
 
 	{
