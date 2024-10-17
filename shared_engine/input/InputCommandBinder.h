@@ -117,7 +117,7 @@ protected:
 
 	InputAxisAction*		FindAxisAction(const char* name) const;
 
-	int						m_currentButtonBits[bitArray2Dword(250)]{0};	// current keyboard buttons
+	BIT_STORAGE_TYPE		m_currentButtonBits[bitArray2Dword(256)]{0};	// current keyboard buttons
 	Array<InputBinding*>	m_bindings{ PP_SL };
 	Array<InputTouchZone>	m_touchZones{ PP_SL };
 	Array<InputAxisAction>	m_axisActs{ PP_SL };

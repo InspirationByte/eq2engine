@@ -29,7 +29,7 @@ void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendCompon
 
 void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, WGPURenderPassDescriptor& rhiRenderPassDesc, FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS>& rhiColorAttachmentList, WGPURenderPassDepthStencilAttachment& rhiDepthStencilAttachment)
 {
-	rhiRenderPassDesc.label = renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr;
+	rhiRenderPassDesc.label = _WSTR(renderPassDesc.name.Length() ? renderPassDesc.name.ToCString() : nullptr);
 	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
 	{
 		const CWGPUTexture* targetTexture = static_cast<CWGPUTexture*>(colorTarget.target.texture.Ptr());

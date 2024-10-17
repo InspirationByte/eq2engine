@@ -8,16 +8,25 @@
 #pragma once
 #include "IMaterial.h"
 
-using MatBufferProxy = MatVarProxy<GPUBufferView>;
-using MatTextureProxy = MatVarProxy<ITexturePtr>;
-using MatStringProxy = MatVarProxy<EqString>;
-using MatIntProxy = MatVarProxy<int>;
-using MatFloatProxy = MatVarProxy<float>;
-using MatVec2Proxy = MatVarProxy<Vector2D>;
-using MatVec3Proxy = MatVarProxy<Vector3D>;
-using MatVec4Proxy = MatVarProxy<Vector4D>;
-using MatM3x3Proxy = MatVarProxy<Matrix3x3>;
-using MatM4x4Proxy = MatVarProxy<Matrix4x4>;
+template<typename T> struct MatProxyTypeResolve;
+
+#define DEFINE_MATVARPROXY(Name, Type) \
+	using Name = MatVarProxy<Type>;	\
+	template<> struct MatProxyTypeResolve<Type> { using ProxyType = Name; }
+
+DEFINE_MATVARPROXY(MatBufferProxy, GPUBufferView);
+DEFINE_MATVARPROXY(MatTextureProxy, ITexturePtr);
+DEFINE_MATVARPROXY(MatStringProxy, EqString);
+DEFINE_MATVARPROXY(MatIntProxy, int);
+DEFINE_MATVARPROXY(MatFloatProxy, float);
+DEFINE_MATVARPROXY(MatVec2Proxy, Vector2D);
+DEFINE_MATVARPROXY(MatVec3Proxy, Vector3D);
+DEFINE_MATVARPROXY(MatVec4Proxy, Vector4D);
+DEFINE_MATVARPROXY(MatM3x3Proxy, Matrix3x3);
+DEFINE_MATVARPROXY(MatM4x4Proxy, Matrix4x4);
+
+template<> struct MatProxyTypeResolve<bool> { using ProxyType = MatIntProxy; };
+
 
 template<typename T>
 inline MatVarProxy<T>::MatVarProxy(int varIdx, MaterialVarBlock& owner)

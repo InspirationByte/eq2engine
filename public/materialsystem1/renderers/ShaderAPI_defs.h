@@ -241,6 +241,12 @@ FLUENT_END_TYPE
 //------------------------------------------------------------
 // Pipeline builders
 
+struct PipelineConst
+{
+	EqString	name;
+	double		value{ 0.0f };
+};
+
 enum EVertAttribType : int // used for hinting
 {
 	VERTEXATTRIB_UNKNOWN = 0,
@@ -295,6 +301,7 @@ struct VertexLayoutDesc
 	int						stride{ 0 };
 	EVertexStepMode			stepMode{ VERTEX_STEPMODE_VERTEX };
 	int						userId{ 0 };
+	
 };
 
 FLUENT_BEGIN_TYPE(VertexLayoutDesc)
@@ -314,6 +321,7 @@ struct VertexPipelineDesc
 {
 	using VertexLayoutDescList = Array<VertexLayoutDesc>;
 	VertexLayoutDescList	vertexLayout{ PP_SL };
+	Array<PipelineConst>	constants{ PP_SL };
 	EqString				shaderEntryPoint{ "main" };
 };
 
@@ -321,6 +329,13 @@ FLUENT_BEGIN_TYPE(VertexPipelineDesc)
 	FLUENT_SET_VALUE(shaderEntryPoint, ShaderEntry)
 	ThisType& VertexLayout(VertexLayoutDesc&& x) { ref.vertexLayout.append(std::move(x)); return *this; }
 	ThisType& VertexLayout(const VertexLayoutDesc& x) { ref.vertexLayout.append(x); return *this; }
+	ThisType& Constant(const char* name, double value)
+	{
+		PipelineConst& entry = constants.append();
+		entry.name = name;
+		entry.value = value;
+		return *this;
+	}
 FLUENT_END_TYPE
 
 // structure to hold vertex layout
@@ -410,6 +425,7 @@ struct FragmentPipelineDesc
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 
 	ColorTargetList			targets;
+	Array<PipelineConst>	constants{ PP_SL };
 	EqString				shaderEntryPoint{ "main" };
 };
 
@@ -428,6 +444,14 @@ FLUENT_BEGIN_TYPE(FragmentPipelineDesc);
 	ThisType& ColorTarget(const char* name, ETextureFormat format, const BlendStateParams& colorBlend, const BlendStateParams& alphaBlend) 
 	{
 		ref.targets.append({ name, format, true, COLORMASK_ALL, colorBlend, alphaBlend }); return *this;
+	}
+
+	ThisType& Constant(const char* name, double value)
+	{
+		PipelineConst& entry = constants.append();
+		entry.name = name;
+		entry.value = value;
+		return *this;
 	}
 FLUENT_END_TYPE
 
@@ -584,7 +608,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	FLUENT_SET_VALUE(name, Name)
 	ThisType& Buffer(const char* name, int binding, int shaderKind, EBufferBindType bindType, bool hasDynamicOffset = false)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -597,7 +621,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& Sampler(const char* name, int binding, int shaderKind, ESamplerBindType bindType)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -609,7 +633,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& Texture(const char* name, int binding, int shaderKind, ETextureSampleType sampleType, ETextureDimension dimension, bool multisample = false)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -623,7 +647,7 @@ FLUENT_BEGIN_TYPE(BindGroupLayoutDesc)
 	}
 	ThisType& StorageTexture(const char* name, int binding, int shaderKind, ETextureFormat format, EStorageTextureAccess access, ETextureDimension dimension)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.name = name;
 		entry.visibility = shaderKind;
@@ -680,7 +704,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	FLUENT_SET_VALUE(groupIdx, GroupIndex)
 	ThisType& Buffer(int binding, const GPUBufferView& buffer)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.binding = std::move(binding);
 		entry.type = BINDENTRY_BUFFER;
@@ -693,7 +717,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& Sampler(int binding, const SamplerStateParams& samplerParams)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_SAMPLER;
@@ -702,7 +726,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& Texture(int binding, const TextureView& texView)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 			Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_TEXTURE;
@@ -711,7 +735,7 @@ FLUENT_BEGIN_TYPE(BindGroupDesc)
 	}
 	ThisType& StorageTexture(int binding, const TextureView& texView)
 	{
-		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding)
+		ASSERT_MSG(arrayFindIndexF(entries, [binding](const Entry& entry) { return entry.binding == binding; }) == -1, "Already taken binding index %d", binding);
 		Entry& entry = ref.entries.append();
 		entry.binding = binding;
 		entry.type = BINDENTRY_STORAGETEXTURE;
@@ -934,7 +958,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 	ThisType& Name(const char* str)
 	{
 		ref.name = str;
-		ref.nameHash = StringToHash(str);
+		ref.nameHash = StringId24(str);
 		return *this; 
 	}
 	ThisType& ColorTarget(const TextureView& colorTarget, bool clear = false, const MColor& clearColor = color_black, bool discard = false, int depthSlice = -1, const TextureView& resolveTarget = nullptr)
@@ -975,10 +999,11 @@ FLUENT_END_TYPE
 // Compute pipeline descs
 struct ComputePipelineDesc
 {
-	EqString			shaderName;
-	int					shaderLayoutId{ 0 };
-	ArrayCRef<EqString>	shaderQuery{ nullptr };
-	EqString			shaderEntryPoint{ "main" };
+	EqString				shaderName;
+	int						shaderLayoutId{ 0 };
+	ArrayCRef<EqString>		shaderQuery{ nullptr };
+	EqString				shaderEntryPoint{ "main" };
+	Array<PipelineConst>	constants{ PP_SL };
 };
 
 FLUENT_BEGIN_TYPE(ComputePipelineDesc);
@@ -986,4 +1011,11 @@ FLUENT_BEGIN_TYPE(ComputePipelineDesc);
 	FLUENT_SET_VALUE(shaderName, ShaderName)
 	FLUENT_SET_VALUE(shaderQuery, ShaderQuery)
 	FLUENT_SET_VALUE(shaderLayoutId, ShaderLayoutId)
+	ThisType& Constant(const char* name, double value)
+	{
+		PipelineConst& entry = constants.append();
+		entry.name = name;
+		entry.value = value;
+		return *this;
+	}
 FLUENT_END_TYPE

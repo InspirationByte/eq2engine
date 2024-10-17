@@ -189,7 +189,7 @@ public:
 	{
 		if (m_first != m_last)
 		{
-			ASSERT_MSG(node->next != nullptr || node->prev != nullptr, "unlinkNode - already released node")
+			ASSERT_MSG(node->next != nullptr || node->prev != nullptr, "unlinkNode - already released node");
 		}
 
 		if (node->prev == nullptr)
@@ -291,20 +291,20 @@ public:
 
 	int getCount() const { return Impl::m_count; }
 
-	bool prepend(const T& value)
+	Iterator prepend(const T& value)
 	{
 		Node* node = allocNode();
 		node->value = value;
 		Impl::insertNodeFirst(node);
-		return true;
+		return Iterator(node);
 	}
 
-	bool prepend(T&& value)
+	Iterator prepend(T&& value)
 	{
 		Node* node = allocNode();
 		node->value = std::move(value);
 		Impl::insertNodeFirst(node);
-		return true;
+		return Iterator(node);
 	}
 
 	T& prepend()
@@ -314,20 +314,20 @@ public:
 		return node->value;
 	}
 
-	bool append(const T& value)
+	Iterator append(const T& value)
 	{
 		Node* node = allocNode();
 		node->value = value;
 		Impl::insertNodeLast(node);
-		return true;
+		return Iterator(node);
 	}
 
-	bool append(T&& value)
+	Iterator append(T&& value)
 	{
 		Node* node = allocNode();
 		node->value = std::move(value);
 		Impl::insertNodeLast(node);
-		return true;
+		return Iterator(node);
 	}
 
 	T& append()
@@ -338,7 +338,7 @@ public:
 	}
 
 	template<typename COMPARATOR>
-	bool insertSorted(const T& value, COMPARATOR compareFunc)
+	Iterator insertSorted(const T& value, COMPARATOR compareFunc)
 	{
 		Node* node = allocNode();
 		node->value = value;
@@ -354,7 +354,7 @@ public:
 		else
 			Impl::insertNodeLast(node);
 
-		return true;
+		return Iterator(node);
 	}
 
 	T popFront()

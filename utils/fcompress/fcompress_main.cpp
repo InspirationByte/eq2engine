@@ -530,7 +530,7 @@ static void CookPackageTarget(const char* targetName)
 				{
 					// validate EPK file
 					dpkheader_t hdr;
-					stream->Read(hdr);
+					stream->ReadObj(hdr);
 					if (hdr.signature == DPK_SIGNATURE && hdr.version == DPK_VERSION)
 					{
 						MsgInfo("Embedded package file %s\n", fileInfo.fileName.ToCString());

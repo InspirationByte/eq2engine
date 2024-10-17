@@ -24,7 +24,7 @@ CDPKFileWriter::CDPKFileWriter(const char* mountPath, int compression, const cha
 	strncpy(m_mountPath, mountPath, DPK_STRING_SIZE);
 	m_mountPath[DPK_STRING_SIZE - 1] = 0;
 	fnmPathFixSeparators(m_mountPath);
-	xstrlwr(m_mountPath);
+	CString::LowerCase(m_mountPath);
 
 	m_compressionLevel = compression;
 	if(encryptKey && *encryptKey)

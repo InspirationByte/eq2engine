@@ -38,34 +38,39 @@ static const char* s_wgpuErrorTypesStr[] = {
 };
 
 static const char* s_wgpuDeviceLostReasonStr[] = {
-	"(null)"
-	"Undefined",
-	"Destroyed",
+	"(null)",
+    "Unknown",
+    "Destroyed",
+    "InstanceDropped",
+    "FailedCreation",
 };
 
-static void OnWGPUDeviceError(WGPUErrorType type, const char* message, void*)
+static void OnWGPUDeviceError(WGPUErrorType type, struct WGPUStringView message, void* userdata)
 {
 	if (wgpu_break_on_error.GetBool())
 	{
-		ASSERT_FAIL("WGPU device %s error (after %s):\n\n%s", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message);
+		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message.data);
 	}
 
 	if (wgpu_report_errors.GetBool())
-		MsgError("[WGPU] after %s: %s - %s\n", s_wgpuErrorTypesStr[type], g_renderWorker.GetLastWorkName(), message);
+		MsgError("[WGPU]: %s - %s\n", s_wgpuErrorTypesStr[type], message.data);
 }
 
-static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, char const * message, void* userdata)
+static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, struct WGPUStringView message, void* userdata)
 {
-	ASSERT_FAIL("WGPU device lost (after %s) reason %s\n\n%s", g_renderWorker.GetLastWorkName(), s_wgpuDeviceLostReasonStr[reason], message);
-	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message);
+	if(reason == WGPUDeviceLostReason_Destroyed)
+		return;
+
+	ASSERT_FAIL("WGPU device lost reason %s (%d)\n\n%s", s_wgpuDeviceLostReasonStr[reason], reason, message.data);
+	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
 }
 
-static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata)
+static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata)
 {
 	if (status != WGPURequestAdapterStatus_Success)
 	{
 		// cannot find adapter?
-		ErrorMsg("%s", message);
+		ErrorMsg("%s", message.data);
 	}
 	else
 	{
@@ -189,10 +194,10 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	}
 
 	{
-		WGPUAdapterProperties properties = {};
-		wgpuAdapterGetProperties(m_rhiAdapter, &properties);
+		WGPUAdapterInfo rhiAdapterInfo = {};
+		wgpuAdapterGetInfo(m_rhiAdapter, &rhiAdapterInfo);
 
-		Msg("* WGPU Adapter: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(properties.backendType), properties.name, GetWGPUAdapterTypeStr(properties.adapterType), properties.driverDescription);
+		Msg("* WGPU Adapter: %s on %s (%s) %s\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), rhiAdapterInfo.device.data, GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType), rhiAdapterInfo.architecture.data);
 	}
 
 	{
@@ -257,10 +262,11 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		enabledToggles.append("allow_unsafe_apis");
 		disabledToggles.append("lazy_clear_resource_on_first_use");	// this switch requires us to clear buffers and render targets
+		enabledToggles.append("use_user_defined_labels_in_backend");
 		if(g_cmdLine->FindArgument("-debugwgpu") != -1)
 		{
 			enabledToggles.append("enable_immediate_error_handling");
-			enabledToggles.append("use_user_defined_labels_in_backend");
+			enabledToggles.append("disable_symbol_renaming");
 			wgpu_report_errors.SetBool(true);
 			wgpu_break_on_error.SetBool(true);
 		}
@@ -272,7 +278,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		WGPUDawnCacheDeviceDescriptor rhiDawnCache{};
 		rhiDawnCache.chain.sType = WGPUSType_DawnCacheDeviceDescriptor;
-		rhiDawnCache.isolationKey = "E2Render";
+		rhiDawnCache.isolationKey = _WSTR("E2Render");
 		rhiDawnCache.loadDataFunction = wgpuLoadCacheDataFunction;
 		rhiDawnCache.storeDataFunction = wgpuStoreCacheDataFunction;
 
@@ -290,7 +296,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
 		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
-		requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
+		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
 		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
 		// TODO: android
 		//requiredFeatures.append(WGPUFeatureName_TextureCompressionETC2),
@@ -299,6 +305,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		rhiDeviceDesc.requiredFeatures = requiredFeatures.ptr();
 		rhiDeviceDesc.requiredFeatureCount = requiredFeatures.numElem();
+		rhiDeviceDesc.uncapturedErrorCallbackInfo.callback = OnWGPUDeviceError;
 
 		// setup required limits
 		WGPURequiredLimits reqLimits{};
@@ -321,13 +328,13 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		m_deviceQueue = wgpuDeviceGetQueue(m_rhiDevice);
 	}
 
-	g_renderWorker.InitLoop(this, [this]() {
+	constexpr int jobQueueSize = 1024;
+
+	g_renderWorker.Init(this, [this]() {
 		// process all internal async events or error callbacks
 		wgpuInstanceProcessEvents(m_instance);
 		return 0;
-	}, 96);
-
-	wgpuDeviceSetUncapturedErrorCallback(m_rhiDevice, &OnWGPUDeviceError, nullptr);
+	}, jobQueueSize);
 
 	// create default swap chain
 	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
@@ -353,10 +360,7 @@ void CWGPURenderLib::ExitAPI()
 		wgpuQueueRelease(m_deviceQueue);
 
 	if(m_rhiDevice)
-	{
-		wgpuDeviceSetDeviceLostCallback(m_rhiDevice, nullptr, nullptr);
 		wgpuDeviceRelease(m_rhiDevice);
-	}
 
 	if(m_instance)
 		wgpuInstanceRelease(m_instance);
@@ -368,26 +372,18 @@ void CWGPURenderLib::ExitAPI()
 
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
-	do{
-		g_renderWorker.WaitForThread();
-	} while (g_renderWorker.HasPendingWork());
-
 	CWGPURenderAPI::Instance.m_deviceLost = false;
-
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
-	m_currentSwapChain->UpdateResize();
+
+	g_renderWorker.WaitForThread();
 
 	// must obtain valid texture view upon Present
+	m_currentSwapChain->UpdateResize();
 	m_currentSwapChain->UpdateBackbufferView();
 }
 
 void CWGPURenderLib::EndFrame()
 {
-	// Wait until all tasks get finished before all gets fucked by swap chain
-	//do {
-	//	g_renderWorker.WaitForThread();
-	//} while (g_renderWorker.HasPendingWork());
-
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		return 0;

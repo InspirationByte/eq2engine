@@ -731,7 +731,6 @@ bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const ch
 	if (!reader->InitPackage(packagePath, mountPath))
 	{
 		MsgError("Cannot open package '%s'\n", packagePath.ToCString());
-		delete reader;
 		return false;
 	}
 
@@ -774,8 +773,6 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 
 		if (g_fileSystem->DirExist(filePath, searchPath))
 		{
-			delete reader;
-
 			// open flat reader
 			reader = CBasePackageReaderPtr(CRefPtr_new(CFlatFileReader));
 			reader->InitPackage(filePath, nullptr);
@@ -826,7 +823,7 @@ void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
 
 	while (openSet.numElem())
 	{
-		EqString path = openSet.popFront();
+		EqString path = openSet.fastPopFront();
 
 		DIR* dir = opendir(path);
 		if (!dir)
@@ -880,8 +877,8 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 
 	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
 
-	const bool isReadPriorityPath = strstr(pathId, "$MOD$") || strstr(pathId, "$LOCALIZE$");
-	const bool isWriteablePath = strstr(pathId, "$WRITE$");
+	const bool isReadPriorityPath = CString::SubString(pathId, "$MOD$") || CString::SubString(pathId, "$LOCALIZE$");
+	const bool isWriteablePath = CString::SubString(pathId, "$WRITE$");
 
 	SearchPathInfo* pathInfo = PPNew SearchPathInfo;
 	pathInfo->id = pathId;

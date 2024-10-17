@@ -13,16 +13,16 @@ BEGIN_SHADER_CLASS(BloomRange)
 	SHADER_INIT_PARAMS()
 	{
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
-		m_rangeProps = m_material->GetMaterialVar("RangeProps", "[0.6 40 100 100]");
+		m_rangeProps = GetMaterialVar("RangeProps", "[0.6 40 100 100]");
 
-		FixedArray<Vector4D, 4> bufferData;
-		bufferData.append(m_rangeProps.Get());
-		m_proxyBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "materialParams");
+		m_proxyBuffer = MakeParameterUniformBuffer(
+			m_rangeProps.Get()
+		);
 	}
 
 	SHADER_INIT_TEXTURES()
 	{
-		m_bloomSource = m_material->GetMaterialVar("BloomSource", "");
+		m_bloomSource = GetMaterialVar("BloomSource", "");
 	}
 
 	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const

@@ -86,7 +86,7 @@ int CStudioCache::PrecacheModel(const char* fileName)
 	if (!fnmPathHasExt(nameStr))
 		fnmPathApplyExt(nameStr, s_egfGeomExt);
 
-	const int nameHash = StringToHash(nameStr, true);
+	const int nameHash = StringId24(nameStr, true);
 	{
 		CScopedReadLocker m(s_studioCacheRWLock);
 		auto foundIt = m_geomCacheIndex.find(nameHash);
@@ -186,7 +186,7 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 	if (!fnmPathHasExt(nameStr))
 		fnmPathApplyExt(nameStr, s_egfMotionPackageExt);
 
-	const int nameHash = StringToHash(nameStr, true);
+	const int nameHash = StringId24(nameStr, true);
 	{
 		CScopedReadLocker m(s_studioCacheRWLock);
 		auto foundIt = m_motionCacheIndex.find(nameHash);

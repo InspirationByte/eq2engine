@@ -51,7 +51,7 @@ public:
 	}
 	~Event<SIGNATURE>();
 
-	void								Clear();
+	void					Clear();
 
 	const SubscriptionPtr	Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce = false);
 	const SubscriptionPtr	operator+=(const EqFunction<SIGNATURE>& func) { return Subscribe(func); }
@@ -59,7 +59,12 @@ public:
 	template<typename... Params>
 	void					operator()(Params&&... args);
 
+	void					GetSubscriptionsFlat(Array<SubscriptionObject*>& list);
+
 private:
+	template<typename FUNC>
+	void					ForEach(FUNC func);
+
 	SubscriptionObject*		m_subs{ nullptr };
 	const PPSourceLine		m_sl;
 };

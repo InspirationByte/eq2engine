@@ -288,6 +288,9 @@ public:
 	// removes front item from list
 	T				popFront();
 
+	// removes front item from list unsorted
+	T				fastPopFront();
+
 	// removes back item from list
 	T				popBack();
 
@@ -349,7 +352,7 @@ public:
 	// removes specified count of elements from specified index
 	bool			removeRange(int index, int count);
 
-	// removes the element at the given index (fast)
+	// removes the element at the given index unsorted
 	bool			fastRemoveIndex(int index);
 
 	// removes the element
@@ -515,7 +518,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 {
-	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 	return STORAGE_TYPE::getData()[index];
 }
@@ -527,7 +530,7 @@ inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 {
-	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
+	ASSERT_MSG(inRange(index), "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 	return STORAGE_TYPE::getData()[index];
 }
@@ -682,6 +685,19 @@ inline T ArrayBase<T, STORAGE_TYPE>::popFront()
 }
 
 // -----------------------------------------------------------------
+// Removes front item from list unsorted
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+inline T ArrayBase<T, STORAGE_TYPE>::fastPopFront()
+{
+	ASSERT(m_nNumElem > 0);
+
+	T item = STORAGE_TYPE::getData()[0];
+	fastRemoveIndex(0);
+	return item;
+}
+
+// -----------------------------------------------------------------
 // Removes back item from list
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
@@ -750,7 +766,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::appendEmplace(Args&&... args)
 	T* listPtr = STORAGE_TYPE::getData();
 
 	const int index = m_nNumElem++;
-	new(&listPtr[index]) T(std::forward<Args>(args)...);
+	new(&listPtr[index]) T{ std::forward<Args>(args)... };
 	return index;
 }
 
@@ -1123,7 +1139,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSizeEmplace(int newSize, Args&&...
 
 	T* listPtr = STORAGE_TYPE::getData();
 	for (int i = oldSize; i < newSize; i++)
-		new(&listPtr[i]) T(std::forward<Args>(args)...);
+		new(&listPtr[i]) T{ std::forward<Args>(args)... };
 }
 
 //-------------------------------------------

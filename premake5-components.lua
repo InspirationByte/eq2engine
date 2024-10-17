@@ -47,6 +47,27 @@ usage "renderUtilLib"
 		Folders.shared_engine
 	}
 	
+project "grimLib"
+    kind "StaticLib"
+	unitybuild "on"
+	uses {
+		"coreLib", "frameworkLib", "e2Core",
+		"imgui", "renderUtilLib"
+	}
+    files {
+		Folders.shared_engine.. "grim/**.cpp",
+		Folders.shared_engine.. "grim/**.h",
+	}
+    includedirs {
+		Folders.shared_engine
+	}
+	
+usage "grimLib"
+	links "renderUtilLib"
+	includedirs {
+		Folders.shared_engine
+	}
+	
 -- Studio model lib
 project "studioFileLib"
     kind "StaticLib"

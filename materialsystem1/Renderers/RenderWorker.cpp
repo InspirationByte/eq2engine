@@ -6,54 +6,32 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IEqParallelJobs.h"
 #include "RenderWorker.h"
+
+#pragma optimize("", off)
 
 using namespace Threading;
 
-CRenderWorkThread g_renderWorker;
+static CEqMutex s_renderWorkerMutex;
+CRenderWorker g_renderWorker;
 
-void CRenderWorkThread::Init(RenderWorkerHandler* workHandler, int workPoolSize)
+//------------------------------
+
+void CRenderWorker::Init(RenderWorkerHandler* workHandler, REND_FUNC_TYPE loopFunc, int workPoolSize)
 {
 	m_workHandler = workHandler;
-	StartWorkerThread(m_workHandler->GetAsyncThreadName(), TP_ABOVE_NORMAL, 3072 * 1024);
+	m_loopFunc = std::move(loopFunc);
 
-	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
-	m_workRingPool.setNum(poolSize);
-
-	// by default every work in pool is free (see .Wait call after getting one from ring pool)
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
-	{
-		m_completionSignal.appendEmplace(true);
-		m_completionSignal[i].Raise();
-	}
+	StartWorkerThread("RenderWorkerThread");
 }
 
-void CRenderWorkThread::InitLoop(RenderWorkerHandler* workHandler, FUNC_TYPE loopFunc, int workPoolSize)
+void CRenderWorker::Shutdown()
 {
-	m_loopFunc = loopFunc;
-	m_workHandler = workHandler;
-	StartWorkerThread(m_workHandler->GetAsyncThreadName(), TP_ABOVE_NORMAL, 3072 * 1024);
-
-	const int poolSize = min(workPoolSize, m_workRingPool.numAllocated());
-	m_workRingPool.setNum(poolSize);
-
-	// by default every work in pool is free (see .Wait call after getting one from ring pool)
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
-	{
-		m_completionSignal.appendEmplace(true);
-		m_completionSignal[i].Raise();
-	}
-}
-
-void CRenderWorkThread::Shutdown()
-{
-	SignalWork();
 	StopThread();
-
-	m_workRingPool.clear(true);
 }
 
-int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
+int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 {
 	const uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
@@ -65,126 +43,75 @@ int CRenderWorkThread::WaitForExecute(const char* name, FUNC_TYPE f)
 		return res;
 	}
 
-	// chose free slot
-	Work* work = nullptr;
-	CEqSignal* completionSignal = nullptr;
-	do {
-		for(int slot = 0; slot < m_workRingPool.numElem(); ++slot)
-		{
-			if(m_completionSignal[slot].Wait(0) && Atomic::CompareExchange(m_workRingPool[slot].result, WORK_NOT_STARTED, WORK_TAKEN_SLOT) == WORK_NOT_STARTED)
-			{
-				work = &m_workRingPool[slot];
-				completionSignal = &m_completionSignal[slot];
-				completionSignal->Clear();
-				break;
-			}
-		}
-		Threading::YieldCurrentThread();
-	} while(!work);
+	WaitForThread();
 
-	work->workIdx = Atomic::Increment(m_workIdx);
-	work->name = name;
-	work->func = std::move(f);
-	work->sync = true;
-	Atomic::Exchange(work->result, WORK_PENDING);
-
-	SignalWork();
-
-	const bool isSignalled = completionSignal->Wait();
-	const int workResult = Atomic::Exchange(work->result, WORK_NOT_STARTED);
-
-	ASSERT_MSG(isSignalled && workResult != WORK_PENDING, "Failed to wait for render worker task - WORK_PENDING");
-	ASSERT_MSG(isSignalled && workResult != WORK_EXECUTING, "Failed to wait for render worker task - WORK_EXECUTING");
-	ASSERT_MSG(isSignalled && workResult != WORK_NOT_STARTED, "Empty slot was working on render task - WORK_NOT_STARTED");
-
-	return workResult;
-}
-
-void CRenderWorkThread::Execute(const char* name, FUNC_TYPE f)
-{
-	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
-
-	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
+	List<Work>::Iterator workIt;
 	{
-		f();
-		if (m_loopFunc)
-			m_loopFunc();
-		return;
+		CScopedMutex m(s_renderWorkerMutex);
+		workIt = m_asyncJobList.append(Work{ std::move(f), -5000 });
 	}
 
-	// chose free slot
-	Work* work = nullptr;
-	CEqSignal* completionSignal = nullptr;
-	do
-	{
-		for(int slot = 0; slot < m_workRingPool.numElem(); ++slot)
-		{
-			if(m_completionSignal[slot].Wait(0) && Atomic::CompareExchange(m_workRingPool[slot].result, WORK_NOT_STARTED, WORK_TAKEN_SLOT) == WORK_NOT_STARTED)
-			{
-				work = &m_workRingPool[slot];
-				completionSignal = &m_completionSignal[slot];
-				completionSignal->Clear();
-				break;
-			}
-		}
-	}while(!work);
+	ASSERT(!workIt.atEnd());
 
-	work->workIdx = Atomic::Increment(m_workIdx);
-	work->name = name;
-	work->func = std::move(f);
-	work->sync = false;
-	Atomic::Exchange(work->result, WORK_PENDING);
+	SignalWork();
+	while ((*workIt).result == -5000) {
+		Platform_Sleep(0);
+	}
+
+	const int result = (*workIt).result;
+	ASSERT(result != -5000);
+
+	return result;
+}
+
+void CRenderWorker::Execute(const char* name, REND_FUNC_TYPE f)
+{
+	{
+		CScopedMutex m(s_renderWorkerMutex);
+		m_asyncJobList.append(Work{ std::move(f) });
+	}
 
 	SignalWork();
 }
 
-bool CRenderWorkThread::HasPendingWork() const
+int CRenderWorker::Run()
 {
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
+	List<Work>::Iterator workIt;
 	{
-		const Work& work = m_workRingPool[i];
-		if (Atomic::Load(work.result) != WORK_NOT_STARTED)
+		CScopedMutex m(s_renderWorkerMutex);
+		while (m_asyncJobList.getCount())
 		{
-			return true;
-		}
-	}
-	return false;
-}
-
-int CRenderWorkThread::Run()
-{
-	bool begun = false;
-
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
-	{
-		Work& work = m_workRingPool[i];
-		if (Atomic::CompareExchange(work.result, WORK_PENDING, WORK_EXECUTING) == WORK_PENDING)
-		{
-			if (!begun)
-				m_workHandler->BeginAsyncOperation(GetThreadID());
-			begun = true;
-
-			PROF_EVENT(work.name);
-			const int result = work.func();
-			work.func = nullptr;
-			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
-
-			m_lastWorkName = work.name;
-			m_lastWorkIdx = work.workIdx;
-			m_completionSignal[i].Raise();
-
-			if (m_loopFunc)
-				m_loopFunc();
+			workIt = m_asyncJobList.first();
+			if ((*workIt).result >= -1000)
+			{
+				m_asyncJobList.remove(workIt);
+				workIt = {};
+			}
+			else
+				break;
 		}
 	}
 
-	if (begun)
-		m_workHandler->EndAsyncOperation();
+	if (workIt.atEnd())
+		return 0;
 
+	const int result = (*workIt).func();
 	if (m_loopFunc)
 		m_loopFunc();
 
-	YieldCurrentThread();
+	if ((*workIt).result == -10000)
+	{
+		CScopedMutex m(s_renderWorkerMutex);
+		m_asyncJobList.remove(workIt);
+	}
+	else
+	{
+		(*workIt).result = result;
+	}
+
+	// more work available
+	if (m_asyncJobList.getCount())
+		SignalWork();
 
 	return 0;
 }

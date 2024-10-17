@@ -777,7 +777,7 @@ int IUIControl::CommandCb(IUIControl* control, const EvtHandler& event, void* us
 int	IUIControl::AddEventHandler(const char* pszName, EvtCallback&& cb)
 {
 	EvtHandler& evt = m_eventCallbacks.append();
-	evt.uid = StringToHash(pszName, true);
+	evt.uid = StringId24(pszName, true);
 	evt.name = pszName;
 	evt.callback = std::move(cb);
 

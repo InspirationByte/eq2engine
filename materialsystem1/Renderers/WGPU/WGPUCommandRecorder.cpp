@@ -217,7 +217,7 @@ IGPURenderPassRecorderPtr CWGPUCommandRecorder::BeginRenderPass(const RenderPass
 IGPUComputePassRecorderPtr CWGPUCommandRecorder::BeginComputePass(const char* name, void* userData) const
 {
 	WGPUComputePassDescriptor rhiComputePassDesc = {};
-	rhiComputePassDesc.label = name;
+	rhiComputePassDesc.label = _WSTR(name);
 	//rhiComputePassDesc.timestampWrites TODO
 	WGPUComputePassEncoder rhiComputePassEncoder = wgpuCommandEncoderBeginComputePass(m_rhiCommandEncoder, &rhiComputePassDesc);
 	if (!rhiComputePassEncoder)

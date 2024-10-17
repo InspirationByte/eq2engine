@@ -60,7 +60,7 @@ BEGIN_SHADER_CLASS(
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 		SetupDefaultParameter(SHADERPARAM_FOG);
 
-		//renderAPI->SetTexture(StringToHashConst("Base"), m_cubemapTexture.Get());
+		//renderAPI->SetTexture(StringIdConst24("Base"), m_cubemapTexture.Get());
 	}
 
 	MatTextureProxy m_cubemapTexture;

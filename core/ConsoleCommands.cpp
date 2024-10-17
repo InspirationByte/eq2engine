@@ -132,7 +132,7 @@ void cvar_list_collect(const ConCommandBase* cmd, Array<EqString>& list, const c
 		if (pBase->GetFlags() & CV_INVISIBLE)
 			continue;
 
-		if (*query == 0 || xstristr(pBase->GetName(), query))
+		if (*query == 0 || CString::SubString(pBase->GetName(), query))
 			list.append(pBase->GetName());
 	}
 }
@@ -211,7 +211,7 @@ DECLARE_CONCOMMAND_FN(set)
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i)));
 
 	if (IsAllowedToExecute(pConVar))
 	{
@@ -231,7 +231,7 @@ DECLARE_CONCOMMAND_FN(seti)
 
 	EqString joinArgs;
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*)"%s " : (char*)"%s", CMD_ARGV(i)));
 
 	ConVar* pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0));
 
@@ -391,7 +391,7 @@ void CConsoleCommands::RegisterCommand(ConCommandBase* pCmd)
 	// pull initial value of ConVar if any
 	if (pCmd->IsConVar())
 	{
-		const int nameHash = StringToHash(pCmd->GetName(), true);
+		const int nameHash = StringId24(pCmd->GetName(), true);
 		auto it = m_cvarValueStore.find(nameHash);
 		if (!it.atEnd())
 		{
@@ -511,7 +511,7 @@ void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 
 void CConsoleCommands::PushConVarInitialValue(const char* name, const char* value)
 {
-	const int nameHash = StringToHash(name, true);
+	const int nameHash = StringId24(name, true);
 	m_cvarValueStore.insert(nameHash, value);
 }
 
