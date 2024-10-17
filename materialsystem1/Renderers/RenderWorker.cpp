@@ -61,12 +61,6 @@ int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 	const int result = (*workIt).result;
 	ASSERT(result != -5000);
 
-	//{
-	//	CScopedMutex m(s_renderWorkerMutex);
-	//	m_asyncJobList.remove(workIt);
-	//}
-
-
 	return result;
 }
 

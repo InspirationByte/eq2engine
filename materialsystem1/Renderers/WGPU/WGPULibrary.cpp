@@ -384,7 +384,7 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 
 void CWGPURenderLib::EndFrame()
 {
-	g_renderWorker.WaitForExecute(__func__, [this]() {
+	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
 		return 0;
 	});
