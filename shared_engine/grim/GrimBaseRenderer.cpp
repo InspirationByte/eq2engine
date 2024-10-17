@@ -571,7 +571,9 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
-	const int maxInstancesCount = m_instAllocator.GetInstanceSlotsCount();
+
+	// Visibility culling stage should supply with at least the number of instances
+	const int maxInstancesCount = m_instAllocator.GetInstanceCount();
 	m_sortShader->InitKeys(intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount);
 	m_sortShader->SortKeys(StringIdConst24(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount, intermediate.instanceInfosBuffer);
 }
@@ -948,7 +950,7 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		const DrawInfo& drawInfo = m_drawInfos[i];
 
 		// do not draw anything if no instances referencing this archetype
-		if (m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype) == 0)
+		if (m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype) == 0)
 			continue;
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
@@ -1007,10 +1009,10 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		{
 			const DrawInfo& drawInfo = m_drawInfos[litem.id];
 			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
-
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
 			if(validationOn)
-				renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCountByArchetype(drawInfo.ownerArchetype)));
-
+				renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
+#endif
 			for (int vsi = 0; vsi < archetypeInfo.vertexBuffers.numElem(); ++vsi)
 				renderPassCtx.recorder->SetVertexBuffer(vsi, (archetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : archetypeInfo.vertexBuffers[vsi]);
 			renderPassCtx.recorder->SetIndexBuffer(archetypeInfo.indexBuffer, archetypeInfo.indexFormat);
@@ -1057,7 +1059,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 
 	int usedArchetypes = 0;
 	int maxInst = 0;
-	for (auto it = instances.m_archetypeInstCounts.begin(); !it.atEnd(); ++it)
+	for (auto it = instances.m_archetypeRefCount.begin(); !it.atEnd(); ++it)
 	{
 		usedArchetypes += it.value() > 0;
 		maxInst = max(maxInst, *it);
@@ -1105,7 +1107,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 	if(sortByCount)
 	{
 		arraySort(sortedArchetypes, [&](const int archA, const int archB) {
-			return instances.m_archetypeInstCounts[archB] - instances.m_archetypeInstCounts[archA];
+			return instances.m_archetypeRefCount[archB] - instances.m_archetypeRefCount[archA];
 		});
 	}
 
@@ -1123,7 +1125,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 	EqString instName;
 	for (const GRIMArchetype archetypeId : sortedArchetypes)
 	{
-		const int instCount = instances.m_archetypeInstCounts[archetypeId];
+		const int instCount = instances.m_archetypeRefCount[archetypeId];
 		if(instCount == 0 && !showAllArchetypes)
 			continue;
 

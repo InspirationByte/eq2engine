@@ -97,6 +97,7 @@ void GRIMBaseInstanceAllocator::Shutdown()
 
 	m_rootBuffer = nullptr;
 	m_archetypesBuffer = nullptr;
+	m_groupMaskBuffer = nullptr;
 	m_singleInstIndexBuffer = nullptr;
 
 	for (GRIMBaseComponentPool* pool : m_componentPools)
@@ -115,7 +116,7 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 	m_updated.clear(dealloc);
 	m_freeIndices.clear(dealloc);
 	m_tempInstances.clear(dealloc);
-	m_archetypeInstCounts.clear(dealloc);
+	m_archetypeRefCount.clear(dealloc);
 	m_instances.clear(dealloc);
 
 	for (GRIMBaseComponentPool* pool : m_componentPools)
@@ -149,7 +150,10 @@ void GRIMBaseInstanceAllocator::DbgInvalidateAllData()
 {
 	CScopedMutex m(GetMutex());
 	for(int i = 0; i < m_instances.numElem(); ++i)
+	{
+		m_instances[i].updateFlags |= Instance::UPD_ALL;
 		m_updated.insert(i);
+	}
 	
 	for (GRIMBaseComponentPool* pool : m_componentPools)
 	{
@@ -166,13 +170,27 @@ GPUBufferView GRIMBaseInstanceAllocator::GetSingleInstanceIndexBuffer() const
 	return GPUBufferView(m_singleInstIndexBuffer, sizeof(int));
 }
 
-int	GRIMBaseInstanceAllocator::GetInstanceCountByArchetype(GRIMArchetype archetypeId) const
+int	GRIMBaseInstanceAllocator::GetInstanceCount(GRIMArchetype archetypeId) const
 {
-	auto it = m_archetypeInstCounts.find(archetypeId);
+	auto it = m_archetypeRefCount.find(archetypeId);
 	if (it.atEnd())
 		return 0;
-
 	return *it;
+}
+
+GRIMArchetype GRIMBaseInstanceAllocator::GetInstanceArchetypeId(int instanceIdx) const
+{
+	return m_instances[instanceIdx].archetype;
+}
+
+bool GRIMBaseInstanceAllocator::GetInstanceIsSync(int instanceIdx) const
+{
+	return m_syncInstances[instanceIdx];
+}
+
+int GRIMBaseInstanceAllocator::GetInstanceComponentIdx(int instanceIdx, int componentId) const
+{
+	return m_instances[instanceIdx].root.components[componentId];
 }
 
 GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetypeId)
@@ -182,20 +200,21 @@ GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetype
 
 	if (archetypeId != GRIM_INVALID_ARCHETYPE)
 	{
-		auto it = m_archetypeInstCounts.find(archetypeId);
+		auto it = m_archetypeRefCount.find(archetypeId);
 		if (it.atEnd())
-			it = m_archetypeInstCounts.insert(archetypeId, 0);
+			it = m_archetypeRefCount.insert(archetypeId, 0);
 		++(*it);
 	}
 
+	if (m_instances.numElem() + 1 > m_syncInstances.numBits())
+		m_syncInstances.resize(m_instances.numElem() + 1);
+
 	Instance& inst = m_instances[instanceRef];
 	inst.archetype = archetypeId;
+	inst.updateFlags |= Instance::UPD_ALL;
 	memset(&inst.root.components, 0, sizeof(inst.root.components));
 
 	m_updated.insert(instanceRef);
-
-	if(m_instances.numElem() + 1 > m_syncInstances.numBits())
-		m_syncInstances.resize(m_instances.numElem() + 1);
 	m_syncInstances.setFalse(instanceRef);
 
 	return instanceRef;
@@ -223,22 +242,43 @@ void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMAr
 		Instance& inst = m_instances[instanceRef];
 		const GRIMArchetype oldArchetype = inst.archetype;
 		inst.archetype = newArchetype;
+		inst.updateFlags |= Instance::UPD_ARCHETYPE;
+
 		m_updated.insert(instanceRef);
+		m_syncInstances.setFalse(instanceRef);
 
 		if(oldArchetype != GRIM_INVALID_ARCHETYPE)
 		{
-			auto oldIt = m_archetypeInstCounts.find(oldArchetype);
+			auto oldIt = m_archetypeRefCount.find(oldArchetype);
 			if (!oldIt.atEnd())
 				--(*oldIt);
 		}
 
 		if (newArchetype != GRIM_INVALID_ARCHETYPE)
 		{
-			auto newIt = m_archetypeInstCounts.find(newArchetype);
+			auto newIt = m_archetypeRefCount.find(newArchetype);
 			if (newIt.atEnd())
-				newIt = m_archetypeInstCounts.insert(newArchetype, 0);
+				newIt = m_archetypeRefCount.insert(newArchetype, 0);
 			++(*newIt);
 		}
+	}
+}
+
+void GRIMBaseInstanceAllocator::SetGroupMask(GRIMInstanceRef instanceRef, int groupMask)
+{
+	if (!m_instances.inRange(instanceRef))
+		return;
+
+	{
+		CScopedMutex m(GetMutex());
+
+		Instance& inst = m_instances[instanceRef];
+		const GRIMArchetype oldArchetype = inst.archetype;
+		inst.groupMask = groupMask;
+		inst.updateFlags |= Instance::UPD_GROUPMASK;
+
+		m_updated.insert(instanceRef);
+		m_syncInstances.setFalse(instanceRef);
 	}
 }
 
@@ -257,7 +297,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 
 		if (inst.archetype != GRIM_INVALID_ARCHETYPE)
 		{
-			auto it = m_archetypeInstCounts.find(inst.archetype);
+			auto it = m_archetypeRefCount.find(inst.archetype);
 			if (!it.atEnd())
 			{
 				--(*it);
@@ -303,9 +343,6 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 	bool buffersUpdatedThisFrame = false;
 
 	CScopedMutex m(GetMutex());
-
-	Array<int> elementIds(PP_SL);
-
 	{
 		const int oldBufferElems = m_rootBuffer ? m_rootBuffer->GetSize() / sizeof(InstRoot) : 0;
 
@@ -334,13 +371,24 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_archetypesBuffer, 0, oldBufferElems * sizeof(GRIMArchetype));
 			}
 
+			// update groupMask
+			{
+				IGPUBufferPtr sourceBuffer = m_groupMaskBuffer;
+				m_groupMaskBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GRIMArchetype), allocInstBufferElems), GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstGroupMask");
+
+				if (oldBufferElems > 0)
+					cmdRecorder->CopyBufferToBuffer(sourceBuffer, 0, m_groupMaskBuffer, 0, oldBufferElems * sizeof(GRIMArchetype));
+			}
+
 			// update single instances idxs
 			{
-				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems + 1), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIds");
+				Array<int> elementIds(PP_SL);
 				elementIds.reserve(allocInstBufferElems + 1);
 				elementIds.append(allocInstBufferElems);
 				for (int i = 0; i < allocInstBufferElems; ++i)
 					elementIds.append(i);
+
+				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems + 1), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIds");
 				cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
 			}
 			buffersUpdatedThisFrame = true;
@@ -348,23 +396,58 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 		if (m_updated.size())
 		{
-			for (auto it = m_updated.begin(); !it.atEnd(); ++it)
-				m_syncInstances.setTrue(it.key());
+			Array<int> instUpdateArchetypes(PP_SL);
+			Array<int> instUpdateRoots(PP_SL);
+			Array<int> instUpdateGroupMask(PP_SL);
+			instUpdateArchetypes.reserve(m_updated.size() + 1);
+			instUpdateRoots.reserve(m_updated.size() + 1);
+			instUpdateGroupMask.reserve(m_updated.size() + 1);
 
-			IGPUBufferPtr idxsBuffer;
-			IGPUBufferPtr dataBuffer;
+			for (auto it = m_updated.begin(); !it.atEnd(); ++it)
+			{
+				const int instanceIdx = it.key();
+				const int updateFlags = m_instances[instanceIdx].updateFlags;
+
+				if(updateFlags & Instance::UPD_ARCHETYPE)
+					instUpdateArchetypes.append(instanceIdx);
+
+				if (updateFlags & Instance::UPD_ROOT)
+					instUpdateRoots.append(instanceIdx);
+
+				if (updateFlags & Instance::UPD_GROUPMASK)
+					instUpdateGroupMask.append(instanceIdx);
+
+				m_instances[instanceIdx].updateFlags = 0;
+				m_syncInstances.setTrue(instanceIdx);
+			}
 
 			const ubyte* srcAddr = reinterpret_cast<const ubyte*>(m_instances.ptr());
 			const ubyte* rootSrcAddr = srcAddr + offsetOf(Instance, root);
+			const ubyte* archetypesSrcAddr = srcAddr + offsetOf(Instance, archetype);
+			const ubyte* groupMaskSrcAddr = srcAddr + offsetOf(Instance, groupMask);
+
+			auto UpdateInstanceItems = [cmdRecorder](IGPUComputePipeline* pipeline, IGPUBuffer* targetBuffer, Array<int>& itemIds, const ubyte* items, int itemSize) {
+				const int idxsCount = itemIds.numElem();
+				if (!idxsCount)
+					return;
+
+				itemIds.insert(idxsCount, 0);
+				IGPUBufferPtr idxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(itemIds[0]), itemIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
+				cmdRecorder->WriteBuffer(idxsBuffer, itemIds.ptr(), sizeof(itemIds[0]) * itemIds.numElem(), 0);
+
+				IGPUBufferPtr dataBuffer;
+				GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, itemIds, items, sizeof(Instance), itemSize, dataBuffer);
+				GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, pipeline, idxsBuffer, idxsCount, dataBuffer, targetBuffer);
+			};
 
 			// update roots
-			GRIMBaseSyncrhronizedPool::PrepareBuffers(cmdRecorder, m_updated, elementIds, rootSrcAddr, sizeof(Instance), sizeof(InstRoot), idxsBuffer, dataBuffer);
-			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateRootPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_rootBuffer);
+			UpdateInstanceItems(m_updateRootPipeline, m_rootBuffer, instUpdateRoots, rootSrcAddr, sizeof(InstRoot));
 
 			// update archetypes data
-			const ubyte* archetypesSrcAddr = srcAddr + offsetOf(Instance, archetype);
-			GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, elementIds, archetypesSrcAddr, sizeof(Instance), sizeof(GRIMArchetype), dataBuffer);
-			GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, m_updateIntPipeline, idxsBuffer, m_updated.size(), dataBuffer, m_archetypesBuffer);
+			UpdateInstanceItems(m_updateIntPipeline, m_archetypesBuffer, instUpdateArchetypes, archetypesSrcAddr, sizeof(GRIMArchetype));
+
+			// update groupMask
+			UpdateInstanceItems(m_updateIntPipeline, m_groupMaskBuffer, instUpdateGroupMask, groupMaskSrcAddr, sizeof(int));
 		}
 		m_updated.clear();
 	}

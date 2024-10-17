@@ -103,23 +103,28 @@ public:
 	void			FreeAll(bool dealloc = false, bool reserve = false);
 
 	GPUBufferView	GetSingleInstanceIndexBuffer() const;
-	IGPUBufferPtr	GetInstanceArchetypesBuffer() const { return m_archetypesBuffer; }
+
 	IGPUBufferPtr	GetRootBuffer() const { return m_rootBuffer; }
+	IGPUBufferPtr	GetInstanceArchetypesBuffer() const { return m_archetypesBuffer; }
+	IGPUBufferPtr	GetInstanceGroupMaskBuffer() const { return m_groupMaskBuffer; }
+
 	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
-	int				GetInstanceCountByArchetype(GRIMArchetype archetypeId) const;
-	GRIMArchetype	GetInstanceArchetypeId(int instanceIdx) const { return m_instances[instanceIdx].archetype; }
-	bool			GetInstanceIsSync(int instanceIdx) const { return m_syncInstances[instanceIdx]; }
-	int				GetInstanceComponentIdx(int instanceIdx, int componentId) const { return m_instances[instanceIdx].root.components[componentId]; }
 	uint			GetBufferUpdateToken() const { return m_buffersUpdated; }
 
 	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
 	int				GetInstanceCount() const { return m_instances.numElem() - m_freeIndices.numElem() - 1; }
+	int				GetInstanceCount(GRIMArchetype archetypeId) const;
+
+	GRIMArchetype	GetInstanceArchetypeId(int instanceIdx) const;
+	bool			GetInstanceIsSync(int instanceIdx) const;
+	int				GetInstanceComponentIdx(int instanceIdx, int componentId) const;
 
 	// syncs instance buffers with GPU and updates roots buffer
 	void			SyncInstances(IGPUCommandRecorder* cmdRecorder);
 
 	// changes instance archetype (in case of body group changes etc)
 	void			SetArchetype(GRIMInstanceRef instanceRef, GRIMArchetype newArchetype);
+	void			SetGroupMask(GRIMInstanceRef instanceRef, int groupMask);
 
 	// destroys instance and it's components
 	void			FreeInstance(GRIMInstanceRef instanceRef);
@@ -142,13 +147,26 @@ protected:
 
 	struct Instance
 	{
+		enum EUpdateFlags
+		{
+			UPD_ROOT		= (1 << 0),
+			UPD_ARCHETYPE	= (1 << 1),
+			UPD_GROUPMASK	= (1 << 2),
+			UPD_ALL			= 0xff
+		};
+
 		InstRoot		root;
 		GRIMArchetype	archetype{ GRIM_INVALID_ARCHETYPE };		// usually hash of the model name
+		uint			groupMask{ COM_UINT_MAX };
+		int				updateFlags{ UPD_ALL };
 	};
 
 	IGPUBufferPtr			m_rootBuffer;
+	IGPUBufferPtr			m_archetypesBuffer;
+	IGPUBufferPtr			m_groupMaskBuffer;
+
 	IGPUBufferPtr			m_singleInstIndexBuffer;
-	IGPUBufferPtr			m_archetypesBuffer;			// per-instance archetype buffer
+
 	IGPUComputePipelinePtr	m_updateRootPipeline;
 	IGPUComputePipelinePtr	m_updateIntPipeline;
 
@@ -158,10 +176,11 @@ protected:
 	Array<int>				m_freeIndices{ PP_SL };
 	Set<int>				m_updated{ PP_SL };
 	BitArray				m_syncInstances{ PP_SL };
+
 	GRIMBaseComponentPool*	m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
 
-	Map<GRIMArchetype, int>	m_archetypeInstCounts{ PP_SL };	// TODO: replace with refcount in GRIMBaseRenderer
+	Map<GRIMArchetype, int>	m_archetypeRefCount{ PP_SL };
 
 	int						m_reservedInsts{ 0 };
 };
@@ -317,6 +336,7 @@ inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId
 			Pool<TComps>& compPool = GetComponentPool<TComps>();
 			inst.components[TComps::COMPONENT_ID] = compPool.GetDataPool().Add(TComps{});
 		} (), ...);
+		// UPD_ROOT is already set
 	}
 }
 
@@ -327,14 +347,17 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 	if (instanceId == -1)
 		return;
 
-	InstRoot& inst = m_instances[instanceId].root;
-	if (inst.components[TComp::COMPONENT_ID] > 0 && inst.components[TComp::COMPONENT_ID] != COM_UINT_MAX)
+	Instance& inst = m_instances[instanceId];
+	InstRoot& root = inst.root;
+	if (root.components[TComp::COMPONENT_ID] > 0 && root.components[TComp::COMPONENT_ID] != COM_UINT_MAX)
 		return;
 
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(GetMutex());
-		inst.components[TComp::COMPONENT_ID] = compPool.GetDataPool().Add(TComp{});
+		root.components[TComp::COMPONENT_ID] = compPool.GetDataPool().Add(TComp{});
+
+		inst.updateFlags |= Instance::UPD_ROOT;
 		m_updated.insert(instanceId);
 	}
 }
@@ -346,15 +369,18 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 	if (instanceId == -1)
 		return;
 
-	InstRoot& inst = m_instances[instanceId].root;
-	if (inst.components[TComp::COMPONENT_ID] == 0 || inst.components[TComp::COMPONENT_ID] == COM_UINT_MAX)
+	Instance& inst = m_instances[instanceId];
+	InstRoot& root = inst.root;
+	if (root.components[TComp::COMPONENT_ID] == 0 || root.components[TComp::COMPONENT_ID] == COM_UINT_MAX)
 		return;
 
 	Pool<TComp>& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(GetMutex());
-		compPool.GetDataPool().Remove(inst.components[TComp::COMPONENT_ID]);
-		inst.components[TComp::COMPONENT_ID] = 0; // change to default
+		compPool.GetDataPool().Remove(root.components[TComp::COMPONENT_ID]);
+		root.components[TComp::COMPONENT_ID] = 0; // change to default
+
+		inst.updateFlags |= Instance::UPD_ROOT;
 		m_updated.insert(instanceId);
 	}
 }
