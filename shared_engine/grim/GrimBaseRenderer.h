@@ -23,6 +23,7 @@ struct GRIMRenderState
 {
 	IGPUBufferPtr	drawInvocationsBuffer;
 	IGPUBufferPtr	instanceIdsBuffer;
+	int				groupMaskExclude{ 0 };
 
 	// TODO: renderer UID to validate
 	BitArray		visibleArchetypes{PP_SL, 128};

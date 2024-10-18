@@ -183,6 +183,11 @@ GRIMArchetype GRIMBaseInstanceAllocator::GetInstanceArchetypeId(int instanceIdx)
 	return m_instances[instanceIdx].archetype;
 }
 
+int GRIMBaseInstanceAllocator::GetInstanceGroupMask(int instanceIdx) const
+{
+	return m_instances[instanceIdx].groupMask;
+}
+
 bool GRIMBaseInstanceAllocator::GetInstanceIsSync(int instanceIdx) const
 {
 	return m_syncInstances[instanceIdx];

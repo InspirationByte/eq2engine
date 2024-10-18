@@ -116,6 +116,7 @@ public:
 	int				GetInstanceCount(GRIMArchetype archetypeId) const;
 
 	GRIMArchetype	GetInstanceArchetypeId(int instanceIdx) const;
+	int				GetInstanceGroupMask(int instanceIdx) const;
 	bool			GetInstanceIsSync(int instanceIdx) const;
 	int				GetInstanceComponentIdx(int instanceIdx, int componentId) const;
 
