@@ -28,11 +28,11 @@ public:
 	const char*				GetName() const { return m_jobName; }
 
 	void					InitJob();
-	void					DeleteOnFinish() { m_deleteJob = true; }
+	void					DeleteOnFinish(bool del = true) { m_deleteJob = del; }
 
 	void					AddWait(IParallelJob* jobToWait);
 
-	void					InitSignal();
+	void					InitSignal(bool manualReset = true);
 	Threading::CEqSignal*	GetSignal() const { return m_doneEvent; }
 	EPhase					GetPhase() const { return m_phase; }
 
@@ -100,7 +100,7 @@ public:
 	CEqJobManager(const char* name, int numThreads, int queueSize, int stackSize = Threading::DEFAULT_THREAD_STACK_SIZE);
 
 	void			InitStartJob(IParallelJob* job);
-	void			StartJob(IParallelJob* job);
+	void			StartJob(IParallelJob* job, bool submit = true);
 	
 	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
 

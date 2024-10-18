@@ -129,7 +129,7 @@ void CState_SampleGameDemo::OnEnter(CAppStateBase* from)
 	InitMovie();
 
 	{
-		static constexpr const int particlesGroupId = StringToHashConst("particles/translucent");
+		static constexpr const int particlesGroupId = StringIdConst24("particles/translucent");
 
 		m_pfxGroup = g_pfxRender->CreateBatch("particles/translucent");
 	}
@@ -208,7 +208,7 @@ void CState_SampleGameDemo::ShowMovie(IGPURenderPassRecorder* rendPassRecorder)
 	/*
 	// Test code for math stuff
 	{
-		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
+		MatTextureProxy(materials->FindGlobalMaterialVar(StringIdConst24("basetexture"))).Set(nullptr);
 		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
 		materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 		materials->SetDepthStates(false, false);

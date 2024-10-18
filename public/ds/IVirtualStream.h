@@ -54,16 +54,19 @@ public:
 	virtual VSSize		Write(const void *src, VSSize count, VSSize size) = 0;
 
 	template <typename T>
-	VSSize				Read(T& obj) { return VSRead(this, obj); }
+	VSSize				ReadObj(T& obj) { return VSRead(this, obj); }
 
 	template <typename T>
-	VSSize				Read(T* obj, VSSize count = 1) { VSSize readcnt = 0; while (count--) readcnt += VSRead(this, *obj++); return readcnt; }
+	VSSize				ReadArray(T* obj, VSSize count = 1) { VSSize readcnt = 0; while (count--) readcnt += VSRead(this, *obj++); return readcnt; }
 
 	template <typename T>
-	VSSize				Write(const T& obj) { return VSWrite(this, obj); }
+	VSSize				WriteObj(const T& obj) { return VSWrite(this, obj); }
 
 	template <typename T>
-	VSSize				Write(const T* obj, VSSize count = 1) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
+	VSSize				WriteArray(const T* obj, VSSize count) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
+
+	template <typename TArray>
+	VSSize				WriteArray(const TArray& arr) { return WriteArray(arr.ptr(), arr.numElem()); }
 
 	// seeks pointer to position
 	virtual VSSize		Seek(int64 offset, EVirtStreamSeek seekType) = 0;
@@ -119,5 +122,5 @@ static VSSize VSWrite(IVirtualStream* stream, T(&obj)[N])
 template <typename... Args>
 inline void IVirtualStream::Print(const char* pszFormat, Args&&... args)
 {
-	return PrintF(pszFormat, StrToFmt(std::forward<Args>(args))...);
+	return PrintF(pszFormat, ToCString(std::forward<Args>(args))...);
 }

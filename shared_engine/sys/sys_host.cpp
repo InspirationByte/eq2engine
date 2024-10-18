@@ -766,7 +766,7 @@ bool CGameHost::Frame()
 	// submit all command buffers queued inside UpdateStates
 	// this is made to display Debug Overlays and, console input 
 	// and ImGui in case of some command buffers were invalid
-	g_matSystem->SubmitQueuedCommands();
+	g_matSystem->SubmitQueuedCommandsAwaitable();
 
 	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
 

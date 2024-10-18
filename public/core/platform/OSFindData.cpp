@@ -81,7 +81,7 @@ bool OSFindData::GetNext()
 			if (*wildcardFile == 0)
 				break;
 
-			const char* found = xstristr(m_entry->d_name, wildcardFile);
+			const char* found = CString::SubStringCaseIns(m_entry->d_name, wildcardFile);
 			if (found && strlen(found) == strlen(wildcardFile))
 				break;
 		}

@@ -9,6 +9,12 @@
 #include <webgpu/webgpu.h>
 #include "renderers/ShaderAPI_defs.h"
 
+#ifdef WGPU_BREAKING_CHANGE_STRING_VIEW_LABELS
+#define _WSTR(x) {(x), WGPU_STRLEN}
+#else
+#define _WSTR(x) (x)
+#endif
+
 // ETextureFormat
 static WGPUTextureFormat g_wgpuTexFormats[] = {
 	WGPUTextureFormat_Undefined,
@@ -180,14 +186,14 @@ static WGPUStorageTextureAccess g_wgpuStorageTexAccess[] = {
 // EVertAttribFormat
 static WGPUVertexFormat g_wgpuVertexFormats[][4] = {
 	{
-		WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined
+		(WGPUVertexFormat)0, (WGPUVertexFormat)0, (WGPUVertexFormat)0, (WGPUVertexFormat)0
 	},
 	{
 		// HACK: GLSL does not support vector of Uint8 so we use WGPUVertexFormat_Uint32 instead of Uint8x4
-		WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Undefined, WGPUVertexFormat_Uint32
+		(WGPUVertexFormat)0, (WGPUVertexFormat)0, (WGPUVertexFormat)0, WGPUVertexFormat_Uint32
 	},
 	{
-		WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x2, WGPUVertexFormat_Undefined, WGPUVertexFormat_Float16x4
+		(WGPUVertexFormat)0, WGPUVertexFormat_Float16x2, (WGPUVertexFormat)0, WGPUVertexFormat_Float16x4
 	},
 	{
 		WGPUVertexFormat_Float32, WGPUVertexFormat_Float32x2, WGPUVertexFormat_Float32x3, WGPUVertexFormat_Float32x4

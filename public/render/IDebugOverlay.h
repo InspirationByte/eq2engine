@@ -111,7 +111,7 @@ typedef struct DbgText3DBuilder
 	DbgText3DBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgText3DBuilder& Distance(float v) { dist = v; return *this; }
 	DbgText3DBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgText3DBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgText3DBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	EqString	pszText;
@@ -144,7 +144,7 @@ typedef struct DbgBoxBuilder
 	DbgBoxBuilder& Maxs(const Vector3D& v) { maxs = v; return *this; }
 	DbgBoxBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgBoxBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgBoxBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgBoxBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	Vector3D	mins;
@@ -178,7 +178,7 @@ typedef struct DbgOriBoxBuilder
 	DbgOriBoxBuilder& Rotation(const Quaternion& r) { rotation = r; return *this; }
 	DbgOriBoxBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgOriBoxBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgOriBoxBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgOriBoxBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	Vector3D	mins, maxs;
@@ -209,7 +209,7 @@ typedef struct DbgSphereBuilder
 	DbgSphereBuilder& Radius(float v) { radius = v; return *this; }
 	DbgSphereBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgSphereBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgSphereBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgSphereBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	Vector3D	origin;
@@ -240,7 +240,7 @@ typedef struct DbgCylinderBuilder
 	DbgCylinderBuilder& Height(float v) { height = v; return *this; }
 	DbgCylinderBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgCylinderBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgCylinderBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgCylinderBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	Vector3D	origin;
@@ -273,7 +273,7 @@ typedef struct DbgLineBuilder
 	DbgLineBuilder& ColorStart(const MColor& v) { color1 = v.pack(); return *this; }
 	DbgLineBuilder& ColorEnd(const MColor& v) { color2 = v.pack(); return *this; }
 	DbgLineBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgLineBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgLineBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	Vector3D	start;
@@ -304,7 +304,7 @@ typedef struct DbgPolyBuilder
 	DbgPolyBuilder& Points(const ArrayCRef<Vector3D> _verts) { verts.append(_verts.ptr(), _verts.numElem()); return *this; }
 	DbgPolyBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgPolyBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgPolyBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgPolyBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	FixedArray<Vector3D, 20> verts;
@@ -334,7 +334,7 @@ typedef struct DbgVolumeBuilder
 	DbgVolumeBuilder& Volume(const Volume& volume) { planes.append(volume.GetPlanes().ptr(), volume.GetPlanes().numElem()); return *this; }
 	DbgVolumeBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgVolumeBuilder& Time(float t) { lifetime = t; return *this; }
-	DbgVolumeBuilder& Name(const char* name) { hashId = StringToHash(name); return *this; }
+	DbgVolumeBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
 	FixedArray<Plane, 20> planes;

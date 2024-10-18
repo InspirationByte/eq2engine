@@ -760,7 +760,7 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 	}
 
 	// that's all
-	if(m_time > UINT_MAX - timeMs)
+	if(m_time > COM_UINT_MAX - timeMs)
 		m_time = 0;
 
 	// increment the time

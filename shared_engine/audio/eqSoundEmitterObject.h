@@ -18,7 +18,7 @@ class ConCommandBase;
 class CEmitterObjectSound;
 class CSoundScriptEditor;
 
-static constexpr const int s_loopRemainTimeFactorNameHash = StringToHashConst("loopRemainTimeFactor");
+static constexpr const int s_loopRemainTimeFactorNameHash = StringIdConst24("loopRemainTimeFactor");
 
 // Sound channel entity that controls it's sound sources
 class CSoundingObject : public WeakRefObject<CSoundingObject>

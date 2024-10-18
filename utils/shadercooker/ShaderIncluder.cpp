@@ -5,6 +5,7 @@
 
 #include "ShaderIncluder.h"
 #include "GLSLBoilerplate.h"
+#include "HLSLBoilerplate.h"
 
 EqShaderIncluder::EqShaderIncluder(ShaderInfo& shaderInfo, ArrayCRef<EqString> includePaths)
 	: m_shaderInfo(shaderInfo), m_includePaths(includePaths)
@@ -33,14 +34,18 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 		if (!CString::Compare(requested_source, "ShaderCooker"))
 		{
 			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
-			result->includeContent.Print(s_boilerPlateStrGLSL);
+
+			if(m_shaderInfo.sourceType == SHADERSOURCE_GLSL)
+				result->includeContent.Print(s_boilerPlateStrGLSL);
+			else if(m_shaderInfo.sourceType == SHADERSOURCE_HLSL)
+				result->includeContent.Print(s_boilerPlateStrHLSL);
 
 			// also add vertex layout defines
 			for (int i = 0; i < m_shaderInfo.vertexLayouts.numElem(); ++i)
 			{
 				const ShaderInfo::VertLayout& layout = m_shaderInfo.vertexLayouts[i];
 				const int vertexId = layout.aliasOf != -1 ? layout.aliasOf : i;
-				result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), StringToHash(m_shaderInfo.vertexLayouts[vertexId].name));
+				result->includeContent.Print("\n#define VID_%s %d\n", layout.name.ToCString(), StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
 			}
 
 			int vertexId = -1;
@@ -53,7 +58,8 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 					break;
 				}
 			}
-			result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", StringToHash(m_shaderInfo.vertexLayouts[vertexId].name));
+			if(vertexId != -1)
+				result->includeContent.Print("\n#define CURRENT_VERTEX_ID %d\n", StringId24(m_shaderInfo.vertexLayouts[vertexId].name));
 
 			result->includeName = requested_source;
 		}

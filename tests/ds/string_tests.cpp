@@ -464,26 +464,26 @@ TEST(EQSTRINGREF_TESTS, AppendOperators)
 TEST(EQSTRINGREF_TESTS, Hash)
 {
 	{
-		const int hashA = StringToHash("Testing String");
-		const int hashB = StringToHashConst("Testing String");
+		const int hashA = StringId24("Testing String");
+		const int hashB = StringIdConst24("Testing String");
 		EXPECT_EQ(hashA, hashB);
 	}
 
 	{
-		const int hashA = StringToHash("Hashed String 2");
-		const int hashB = StringToHashConst("Hashed String 2");
+		const int hashA = StringId24("Hashed String 2");
+		const int hashB = StringIdConst24("Hashed String 2");
 		EXPECT_EQ(hashA, hashB);
 	}
 
 	{
-		const int hashA = StringToHash("String 3");
-		const int hashB = StringToHashConst("String 3");
+		const int hashA = StringId24("String 3");
+		const int hashB = StringIdConst24("String 3");
 		EXPECT_EQ(hashA, hashB);
 	}
 
 	{
-		const int hashA = StringToHash(" 3");
-		const int hashB = StringToHashConst(" 2");
+		const int hashA = StringId24(" 3");
+		const int hashB = StringIdConst24(" 2");
 		EXPECT_NE(hashA, hashB);
 	}
 }

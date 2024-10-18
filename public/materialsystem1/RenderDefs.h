@@ -169,6 +169,16 @@ struct MeshInstanceFormatRef
 {
 	using LayoutList = ArrayCRef<VertexLayoutDesc>;
 
+	MeshInstanceFormatRef() = default;
+	MeshInstanceFormatRef(const IVertexFormat* vertFormat)
+	{
+		ASSERT(vertFormat);
+
+		name = vertFormat->GetName();
+		formatId = vertFormat->GetNameHash();
+		layout = vertFormat->GetFormatDesc();
+	}
+
 	const char*		name{ nullptr };
 	LayoutList		layout{ nullptr };
 	int				formatId{ 0 };
@@ -253,9 +263,7 @@ struct RenderDrawCmd
 	// DEPRECATED
 	RenderDrawCmd& SetInstanceFormat(const IVertexFormat* vertFormat)
 	{
-		instanceInfo.instFormat.name = vertFormat->GetName();
-		instanceInfo.instFormat.formatId = vertFormat->GetNameHash();
-		instanceInfo.instFormat.layout = vertFormat->GetFormatDesc();
+		instanceInfo.instFormat = vertFormat;
 		return *this;
 	}
 

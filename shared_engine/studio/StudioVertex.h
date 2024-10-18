@@ -16,6 +16,9 @@ struct EGFHwVertex
 		// TODO: more UVs ?
 
 		VERT_COUNT,
+
+		EGF_MASK = (1 << VERT_COUNT)-1,
+		EGF_FLAG = (1 << 31)
 	};
 
 	struct PositionUV

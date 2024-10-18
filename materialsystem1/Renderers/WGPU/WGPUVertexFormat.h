@@ -7,7 +7,7 @@ public:
 	CWGPUVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> desc)
 	{
 		m_name = name;
-		m_nameHash = StringToHash(name);
+		m_nameHash = StringId24(name);
 
 		m_vertexDesc.setNum(desc.numElem());
 		for (int i = 0; i < desc.numElem(); i++)

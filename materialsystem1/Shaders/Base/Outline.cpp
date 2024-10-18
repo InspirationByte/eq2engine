@@ -21,19 +21,19 @@ BEGIN_SHADER_CLASS(Outline)
 		m_flags |= MATERIAL_FLAG_NO_Z_WRITE;
 		m_blendMode = SHADER_BLEND_ADDITIVE;
 
-		m_outlineColor = m_material->GetMaterialVar("OutlineColor", "[0.0 0.5 0.0 1.0]");
-		m_outlineWidth = m_material->GetMaterialVar("OutlineWidth", "16");
+		m_outlineColor = GetMaterialVar("OutlineColor", "[0.0 0.5 0.0 1.0]");
+		m_outlineWidth = GetMaterialVar("OutlineWidth", "16");
 
 		OutlineParams materialParams;
 		materialParams.outlineColor = m_outlineColor.Get();
 		materialParams.outlineWidth = m_outlineWidth.Get();
 
-		m_proxyBuffer = renderAPI->CreateBuffer(BufferInfo(&materialParams, 1), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "materialParams");
+		m_proxyBuffer = MakeParameterUniformBuffer(materialParams);
 	}
 
 	SHADER_INIT_TEXTURES()
 	{
-		SHADER_PARAM_TEXTURE_FIND(SourceDepth, m_sourceTex)
+		SHADER_PARAM_TEXTURE_FIND(SourceDepth, m_sourceTex);
 	}
 
 	/*void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const

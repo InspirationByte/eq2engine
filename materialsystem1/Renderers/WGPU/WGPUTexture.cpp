@@ -66,7 +66,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 	m_rhiTextures.reserve(images.numElem());
 	m_rhiViews.reserve(images.numElem());
 
-	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding;
+	WGPUTextureUsage rhiUsageFlags = WGPUTextureUsage_TextureBinding;
 	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
 	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
@@ -91,7 +91,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 		const ETextureFormat texFormat = imgFmt;
 
 		WGPUTextureDescriptor rhiTextureDesc{};
-		rhiTextureDesc.label = GetName();
+		rhiTextureDesc.label = _WSTR(m_name);
 		rhiTextureDesc.mipLevelCount = mipCount;
 		rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)texDepth };
 		rhiTextureDesc.sampleCount = 1;
@@ -123,7 +123,12 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 			ASSERT_FAIL("Invalid image type of %s", img->GetName());
 		}
 
-		WGPUTexture rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
+		WGPUTexture rhiTexture = nullptr;
+		g_renderWorker.WaitForExecute("CreateTexture", [&]() {
+			rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
+			return 0;
+		});
+
 		if (!rhiTexture)
 		{
 			MsgError("ERROR: failed to create texture for image %s\n", img->GetName());

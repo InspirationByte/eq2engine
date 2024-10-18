@@ -1,6 +1,9 @@
 #pragma once
 
 static const char s_boilerPlateStrGLSL[] = R"(
+#ifndef _GLSL_BOILERPLATE_INCLUDE
+#define _GLSL_BOILERPLATE_INCLUDE
+
 // functions
 #define     frac        fract
 #define     lerp        mix
@@ -21,6 +24,10 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 #	define gl_VertexIndex		0
 #	define gl_InstanceIndex		0
 #endif
+
+// WebGPU Dawn hacks
+#define atomicLoad( x )			atomicAdd(x, 0)
+#define atomicStore( x, value )	atomicExchange(x, value)
 
 #ifndef BINDGROUP_CONSTANT
 #define BINDGROUP_CONSTANT		0
@@ -46,4 +53,5 @@ float fmod(float x, float y) { return x - y * floor(x / y); }
 
 #define VERTEX_ID( name ) (VID_ ## name)
 
+#endif // _GLSL_BOILERPLATE_INCLUDE
 )";

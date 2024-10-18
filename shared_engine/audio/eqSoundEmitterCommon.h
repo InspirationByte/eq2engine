@@ -68,7 +68,7 @@ struct EmitParams
 		InputValue() = default;
 
 		InputValue(const char* name, float value)
-			: nameHash(StringToHash(name)), value(value) {}
+			: nameHash(StringId24(name)), value(value) {}
 
 		InputValue(int nameHash, float value)
 			: nameHash(nameHash), value(value) {}

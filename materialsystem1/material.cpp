@@ -23,7 +23,7 @@ CMaterial::CMaterial(const char* materialName, int instanceFormatId, bool loadFr
 	: m_loadFromDisk(loadFromDisk)
 {
 	m_szMaterialName = materialName;
-	m_nameHash = StringToHash(m_szMaterialName, true);
+	m_nameHash = StringId24(m_szMaterialName, true);
 	m_instanceFormatId = instanceFormatId;
 
 	m_vars.onChangedCb = OnMatVarChanged;
@@ -212,7 +212,7 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec->GetName()) : _Es(materialVarSec->GetName()));
 
 		// initialize material var by this
-		const int nameHash = StringToHash(matVarName, true);
+		const int nameHash = StringId24(matVarName, true);
 
 		{
 			CScopedMutex m(s_materialVarMutex);
@@ -258,8 +258,8 @@ void CMaterial::InitShader(IShaderAPI* renderAPI)
 
 	if (shaderFactory)
 	{
-		m_shader = shaderFactory->func();
-		m_shader->Init(renderAPI, this);
+		m_shader = shaderFactory->func(this);
+		m_shader->Init(renderAPI);
 		Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 	}
 	else
@@ -370,7 +370,7 @@ MatVarProxyUnk CMaterial::GetMaterialVar(const char* pszVarName, const char* def
 {
 	CScopedMutex m(s_materialVarMutex);
 
-	const int nameHash = StringToHash(pszVarName, true);
+	const int nameHash = StringId24(pszVarName, true);
 
 	auto it = m_vars.variableMap.find(nameHash);
 	if (!it.atEnd())
@@ -387,7 +387,7 @@ MatVarProxyUnk CMaterial::GetMaterialVar(const char* pszVarName, const char* def
 
 MatVarProxyUnk CMaterial::FindMaterialVar(const char* pszVarName) const
 {
-	const int nameHash = StringToHash(pszVarName, true);
+	const int nameHash = StringId24(pszVarName, true);
 
 	CScopedMutex m(s_materialVarMutex);
 	auto it = m_vars.variableMap.find(nameHash);

@@ -102,7 +102,7 @@ void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqS
 			break;
 		}
 
-		if(*query == 0 || xstristr(texture->GetName(), query))
+		if(*query == 0 || CString::SubStringCaseIns(texture->GetName(), query))
 			list.append(texture->GetName());
 	}
 }
@@ -124,7 +124,7 @@ ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 	EqString searchStr(pszName);
 	fnmPathFixSeparators(searchStr);
 
-	const int nameHash = StringToHash(searchStr, true);
+	const int nameHash = StringId24(searchStr, true);
 
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
@@ -152,7 +152,7 @@ ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName, bool& justC
 	EqString searchStr(pszName);
 	fnmPathFixSeparators(searchStr);
 
-	const int nameHash = StringToHash(searchStr, true);
+	const int nameHash = StringId24(searchStr, true);
 
 	CScopedMutex m(g_sapi_TextureMutex);
 	auto it = m_TextureList.find(nameHash);

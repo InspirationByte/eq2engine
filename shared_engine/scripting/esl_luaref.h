@@ -61,8 +61,8 @@ public:
 	struct IPairsIterator
 	{
 		lua_State* L{ nullptr };
-		int tableIndex{ INT_MAX };
-		int arrayIndex{ INT_MAX };
+		int tableIndex{ COM_INT_MAX };
+		int arrayIndex{ COM_INT_MAX };
 
 		IPairsIterator(const esl::LuaTable& table);
 		~IPairsIterator();

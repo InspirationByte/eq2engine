@@ -17,16 +17,17 @@ BEGIN_SHADER_CLASS(
 )
 	SHADER_INIT_PARAMS()
 	{
-		m_lineWidth = m_material->GetMaterialVar("lineWidth", "1");
-		m_lineSpacing = m_material->GetMaterialVar("lineSpacing", "1");
+		m_lineWidth = GetMaterialVar("lineWidth", "1");
+		m_lineSpacing = GetMaterialVar("lineSpacing", "1");
 		m_blendMode = SHADER_BLEND_TRANSLUCENT;
 		m_flags |= MATERIAL_FLAG_NO_Z_WRITE;
 
-		Vector4D bufferData[1];
-		bufferData[0].x = m_lineWidth.Get();
-		bufferData[0].y = m_lineSpacing.Get();
-
-		m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(&bufferData, 1), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "materialParams");
+		m_materialParamsBuffer = MakeParameterUniformBuffer(
+			m_lineWidth.Get(), 
+			m_lineSpacing.Get(),
+			0.0f,
+			0.0f
+		);
 	}
 
 	SHADER_INIT_TEXTURES()

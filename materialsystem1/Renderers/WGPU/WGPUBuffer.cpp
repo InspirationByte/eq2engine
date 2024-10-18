@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "renderers/ShaderAPI_defs.h"
 #include "../RenderWorker.h"
 #include "WGPUBuffer.h"
 #include "WGPURenderAPI.h"
@@ -44,7 +43,7 @@ CWGPUBuffer::CWGPUBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, con
 	rhiBufferDesc.usage = wgpuUsageFlags;
 	rhiBufferDesc.size = m_bufSize;
 	rhiBufferDesc.mappedAtCreation = hasData;
-	rhiBufferDesc.label = label;
+	rhiBufferDesc.label = _WSTR(label);
 
 	m_rhiBuffer = wgpuDeviceCreateBuffer(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiBufferDesc);
 

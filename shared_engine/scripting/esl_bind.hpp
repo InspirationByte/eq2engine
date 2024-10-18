@@ -1096,7 +1096,7 @@ Member ClassBinder<T>::MakeOperator(F f, const char* name)
 template<typename T>
 void BaseClassStorage::Add()
 {
-	const int nameHash = StringToHash(ScriptClass<T>::className);
+	const int nameHash = StringId24(ScriptClass<T>::className);
 	if (!ScriptClass<T>::baseClassName)
 		return;
 	GetBaseClassNames().insert(nameHash, ScriptClass<T>::baseClassName);

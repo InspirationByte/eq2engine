@@ -296,7 +296,7 @@ inline const EqString& Future<T>::GetErrorMessage() const
 template<typename T>
 inline void Future<T>::Wait(int timeout)
 {
-	ASSERT(m_data)
+	ASSERT(m_data);
 	m_data->m_waitSignal.Wait(timeout);
 }
 

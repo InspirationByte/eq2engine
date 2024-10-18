@@ -63,7 +63,7 @@ int DPK_FilenameHash(const char* filename, int version)
 	// TODO: hash function that could be used with root path concatenation
 
 	if (version == 7)
-		return StringToHash(filename, true);
+		return StringId24(filename, true);
 
 	return HashDJB2(filename);
 }

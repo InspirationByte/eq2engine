@@ -7,7 +7,7 @@
 
 #pragma once
 #include "core/InterfaceManager.h"
-#include "core/profiler.h"				// PPSourceLine
+#include "core/ppsourceline.h"
 
 #ifndef _WIN32
 
@@ -33,26 +33,26 @@ enum EEqAssertType {
 
 #if defined(_RETAIL) || defined(_PROFILE)
 
-#define	ASSERT_MSG(x, msgFmt, ...)	{ }
-#define	ASSERT(x)					{ }
-#define ASSERT_FAIL(msgFmt, ...)	{ }
+#define	ASSERT_MSG(x, msgFmt, ...)	do{}while(0)
+#define	ASSERT(x)					do{}while(0)
+#define ASSERT_FAIL(msgFmt, ...)	do{}while(0)
 
 #else
+
+#define _ASSERT_PP_SL PPSourceLine::Make(__FILE__, __LINE__)
 
 IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char* statement, ...);
 
 #define _ASSERT_BODY(expression, msgFmt, ...) \
 	{ \
 		static bool _ignoreAssert = false; \
-		const int _assertResult = _InternalAssertMsg(PP_SL, _ignoreAssert, expression, msgFmt, ##__VA_ARGS__ ); \
+		const int _assertResult = _InternalAssertMsg(_ASSERT_PP_SL, _ignoreAssert, expression, msgFmt, ##__VA_ARGS__ ); \
 		if (_assertResult == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
 		else if (_assertResult == _EQASSERT_IGNORE_ALWAYS) { _ignoreAssert = true; } \
 	}
 
 #define	ASSERT_MSG(x, msgFmt, ...) \
-	if (!(x)) { \
-		_ASSERT_BODY(#x, msgFmt, ##__VA_ARGS__ ) \
-	}
+	_SEMICOLON_REQ( if (!(x)) _ASSERT_BODY(#x, msgFmt, ##__VA_ARGS__ ) )
 
 #define	ASSERT(x)					ASSERT_MSG(x, nullptr)
 #define ASSERT_FAIL(msgFmt, ...)	_ASSERT_BODY(nullptr, "%s: " msgFmt, __func__, ##__VA_ARGS__ )
