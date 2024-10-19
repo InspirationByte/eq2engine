@@ -246,25 +246,28 @@ void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMAr
 
 		Instance& inst = m_instances[instanceRef];
 		const GRIMArchetype oldArchetype = inst.archetype;
-		inst.archetype = newArchetype;
-		inst.updateFlags |= Instance::UPD_ARCHETYPE;
-
-		m_updated.insert(instanceRef);
-		m_syncInstances.setFalse(instanceRef);
-
-		if(oldArchetype != GRIM_INVALID_ARCHETYPE)
+		if (oldArchetype != newArchetype)
 		{
-			auto oldIt = m_archetypeRefCount.find(oldArchetype);
-			if (!oldIt.atEnd())
-				--(*oldIt);
-		}
+			inst.archetype = newArchetype;
+			inst.updateFlags |= Instance::UPD_ARCHETYPE;
 
-		if (newArchetype != GRIM_INVALID_ARCHETYPE)
-		{
-			auto newIt = m_archetypeRefCount.find(newArchetype);
-			if (newIt.atEnd())
-				newIt = m_archetypeRefCount.insert(newArchetype, 0);
-			++(*newIt);
+			m_updated.insert(instanceRef);
+			m_syncInstances.setFalse(instanceRef);
+
+			if (oldArchetype != GRIM_INVALID_ARCHETYPE)
+			{
+				auto oldIt = m_archetypeRefCount.find(oldArchetype);
+				if (!oldIt.atEnd())
+					--(*oldIt);
+			}
+
+			if (newArchetype != GRIM_INVALID_ARCHETYPE)
+			{
+				auto newIt = m_archetypeRefCount.find(newArchetype);
+				if (newIt.atEnd())
+					newIt = m_archetypeRefCount.insert(newArchetype, 0);
+				++(*newIt);
+			}
 		}
 	}
 }
@@ -278,12 +281,14 @@ void GRIMBaseInstanceAllocator::SetGroupMask(GRIMInstanceRef instanceRef, int gr
 		CScopedMutex m(GetMutex());
 
 		Instance& inst = m_instances[instanceRef];
-		const GRIMArchetype oldArchetype = inst.archetype;
-		inst.groupMask = groupMask;
-		inst.updateFlags |= Instance::UPD_GROUPMASK;
+		if(inst.groupMask != groupMask)
+		{
+			inst.groupMask = groupMask;
+			inst.updateFlags |= Instance::UPD_GROUPMASK;
 
-		m_updated.insert(instanceRef);
-		m_syncInstances.setFalse(instanceRef);
+			m_updated.insert(instanceRef);
+			m_syncInstances.setFalse(instanceRef);
+		}
 	}
 }
 
