@@ -217,4 +217,5 @@ class GRIMInstanceDebug
 public:
 	static void 			DrawUI(GRIMBaseRenderer& renderer);
 	static GRIMArchetype	GetHighlightArchetype();
+	static EqString			GetInstanceDebugText(GRIMBaseRenderer& renderer, int instanceId);
 };

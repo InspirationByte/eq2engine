@@ -1038,6 +1038,22 @@ GRIMArchetype GRIMInstanceDebug::GetHighlightArchetype()
 	return s_highlightArchetype;
 }
 
+EqString GRIMInstanceDebug::GetInstanceDebugText(GRIMBaseRenderer& renderer, int instanceId)
+{
+	const GRIMBaseInstanceAllocator::Instance& inst = renderer.m_instAllocator.m_instances[instanceId];
+	return EqString::Format(
+		"Inst %d\n"
+		"Arch %d\n"
+		"GrpMask %d\n" 
+		"CompIds %d %d %d %d %d %d %d %d\n",
+		instanceId, 
+		inst.archetype,
+		inst.groupMask,
+		inst.root.components[0], inst.root.components[1], inst.root.components[2], inst.root.components[3],
+		inst.root.components[4], inst.root.components[5], inst.root.components[6], inst.root.components[7]
+	);
+}
+
 void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 {
 #if defined(IMGUI_ENABLED) && defined(GRIM_INSTANCES_DEBUG_ENABLED)
