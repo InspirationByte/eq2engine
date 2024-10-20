@@ -30,9 +30,8 @@ void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecord
 	computePass->SetBindGroup(0, sourceIdxsAndDataGroup);
 	computePass->SetBindGroup(1, destPoolDataGroup);
 
-	const int INSTANCES_PER_WORKGROUP = 256;
-
-	computePass->DispatchWorkgroups(idxsCount / INSTANCES_PER_WORKGROUP + 1);
+	IVector2D workGroups = CalcWorkSize(idxsCount);
+	computePass->DispatchWorkgroups(workGroups.x, workGroups.y);
 	computePass->Complete();
 }
 
@@ -101,6 +100,27 @@ void GRIMBaseSyncrhronizedPool::PrepareBuffers(IGPUCommandRecorder* cmdRecorder,
 int GRIMBaseSyncrhronizedPool::GetGranulatedCapacity(int capacity, int granularity)
 {
 	return (capacity + granularity - 1) / granularity * granularity;
+}
+
+IVector2D GRIMBaseSyncrhronizedPool::CalcWorkSize(int length)
+{
+	constexpr int GPUSYNC_GROUP_SIZE = 256;
+	constexpr int GPUSYNC_MAX_DIM_GROUPS = 1024;
+	constexpr int GPUSYNC_MAX_DIM_THREADS = (GPUSYNC_GROUP_SIZE * GPUSYNC_MAX_DIM_GROUPS);
+
+	IVector2D result;
+	if (length <= GPUSYNC_MAX_DIM_THREADS)
+	{
+		result.x = (length - 1) / GPUSYNC_GROUP_SIZE + 1;
+		result.y = 1;
+	}
+	else
+	{
+		result.x = GPUSYNC_MAX_DIM_GROUPS;
+		result.y = (length - 1) / GPUSYNC_MAX_DIM_THREADS + 1;
+	}
+
+	return result;
 }
 
 GRIMBaseSyncrhronizedPool::GRIMBaseSyncrhronizedPool(const char* name)

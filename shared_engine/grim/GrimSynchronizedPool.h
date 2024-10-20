@@ -44,6 +44,8 @@ public:
 	static void				PrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer);
 	static int				GetGranulatedCapacity(int capacity, int granularity);
 
+	static IVector2D		CalcWorkSize(int length);
+
 protected:
 	bool					SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride);
 
