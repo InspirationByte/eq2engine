@@ -23,7 +23,9 @@ struct GRIMRenderState
 {
 	IGPUBufferPtr	drawInvocationsBuffer;
 	IGPUBufferPtr	instanceIdsBuffer;
+	int				groupMaskInclude{ (int)COM_UINT_MAX };
 	int				groupMaskExclude{ 0 };
+	int				overrideLodIdx{ -1 };
 
 	// TODO: renderer UID to validate
 	BitArray		visibleArchetypes{PP_SL, 128};
@@ -63,10 +65,15 @@ protected:
 	struct GPUInstanceBound;
 	struct GPUInstanceInfo;
 
+	IVector2D		VisCalcWorkSize(int length) const;
+
 	bool			IsSync() const;
 	void			DbgValidate() const;
 	EqStringRef		DbgGetArchetypeName(GRIMArchetype archetypeId) const;
 	void			DbgInvalidateAllData();
+
+	void			FilterInstances_Compute(IntermediateState& intermediate);
+	void			FilterInstances_Software(IntermediateState& intermediate);
 
 	virtual void	VisibilityCullInstances_Compute(IntermediateState& intermediate) = 0;
 	virtual void	VisibilityCullInstances_Software(IntermediateState& intermediate) = 0;
@@ -123,8 +130,9 @@ protected:
 	ComputeSortShaderPtr		m_sortShader;
 
 	IGPUComputePipelinePtr		m_instCalcBoundsPipeline;
-	IGPUComputePipelinePtr		m_instPrepareDrawIndirect;
-	// TODO: culling pipeline must be external
+	IGPUComputePipelinePtr		m_instPrepareDrawIndirectPipeline;
+	IGPUComputePipelinePtr		m_filterInstancesPipeline;
+	IGPUComputePipelinePtr		m_filterCalcWorkGroupsPipeline;
 	IGPUComputePipelinePtr		m_cullInstancesPipeline;
 
 	IGPUBindGroupPtr			m_cullBindGroup0;
@@ -170,7 +178,9 @@ struct GRIMBaseRenderer::IntermediateState
 	IGPUCommandRecorderPtr	cmdRecorder;
 
 	IGPUBufferPtr			sortedInstanceIds;
-	IGPUBufferPtr			instanceInfosBuffer;
+	GPUBufferView			filteredInstanceInfosBuffer;
+	GPUBufferView			filteredInstanceCountBuffer;
+	IGPUBufferPtr			culledInstanceInfosBuffer;
 	IGPUBufferPtr			drawInstanceBoundsBuffer;
 
 	// Software only

@@ -93,17 +93,15 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	struct CullViewParams
 	{
 		Vector4D	frustumPlanes[6];
-		Vector3D	viewPos;
+		Vector4D	viewPos;
 		int			overrideLodIdx;
-		int			maxInstanceIds;
-		float		_padding[3];
+		int			_padding[3];
 	};
 
 	CullViewParams cullView;
 	memcpy(cullView.frustumPlanes, renderState.frustum.GetPlanes().ptr(), sizeof(cullView.frustumPlanes));
-	cullView.viewPos = renderState.viewPos;
+	cullView.viewPos = Vector4D(renderState.viewPos, 1.0f);
 	cullView.overrideLodIdx = lod_override.GetInt();
-	cullView.maxInstanceIds = m_instAllocator.GetInstanceSlotsCount();	// TODO: calculate between frames
 
 	IGPUBufferPtr viewParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(CullViewParams), 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "ViewParamsBuffer");
 	intermediate.cmdRecorder->WriteBuffer(viewParamsBuffer, &cullView, sizeof(cullView), 0);
@@ -115,14 +113,15 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
-		.Buffer(0, m_instAllocator.GetInstanceArchetypesBuffer())
-		.Buffer(1, viewParamsBuffer)
+		.Buffer(0, viewParamsBuffer)
+		.Buffer(1, intermediate.filteredInstanceInfosBuffer)
+		.Buffer(2, intermediate.filteredInstanceCountBuffer)
 		.End())
 	);
 	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
-		.Buffer(0, intermediate.instanceInfosBuffer)
+		.Buffer(0, intermediate.culledInstanceInfosBuffer)
 		.Buffer(1, intermediate.sortedInstanceIds)
 		.End())
 	);
@@ -134,10 +133,9 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 		.End())
 	);
 
-	int x, y, z;
-	VisCalcWorkSize(m_instAllocator.GetInstanceSlotsCount(), x, y, z);
+	IVector2D workGroups = VisCalcWorkSize(intermediate.maxNumberOfObjects);
 
-	computeRecorder->DispatchWorkgroups(x, y , z);
+	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
 	computeRecorder->Complete();
 }
 
@@ -157,7 +155,46 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 	const Volume& frustum = renderState.frustum;
 	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
 
-	instanceInfos.reserve(s_objects.numElem());
+	for (int i = 0; i < instanceInfos.numElem(); ++i)
+	{
+		GPUInstanceInfo& instInfo = instanceInfos[i];
+
+		const GRIMArchetype archetypeId = instInfo.packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+		const int lodIndex = (instInfo.packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+
+		const GPULodList& lodList = m_drawLodsList[archetypeId];
+		if (lodList.firstLodInfo < 0)
+		{
+			instanceInfos.fastRemoveIndex(i--);
+			continue;
+		}
+
+		const int trsIdx = s_instanceAlloc.GetInstanceComponentIdx(instInfo.instanceId, InstTransform::COMPONENT_ID);
+		const InstTransform& trs = s_instanceAlloc.GetComponentPool<InstTransform>().GetDataPool()[trsIdx];
+
+		if (!frustum.IsSphereInside(trs.position, trs.boundingSphere))
+		{
+			instanceInfos.fastRemoveIndex(i--);
+			continue;
+		}
+
+		const float distFromCamera = distanceSqr(viewPos, trs.position);
+
+		// find suitable lod idx
+		int drawLod = lodIndex;
+		if (drawLod == GPUInstanceInfo::LOD_MASK)
+		{
+			drawLod = -1;
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next, ++drawLod)
+			{
+				if (distFromCamera < sqr(m_drawLodInfos[lodIdx].distance))
+					break;
+			}
+		}
+
+		// update instance
+		instInfo.packedArchetypeId = archetypeId | (drawLod << GPUInstanceInfo::ARCHETYPE_BITS);
+	}
 
 	for (const Object& obj : s_objects)
 	{

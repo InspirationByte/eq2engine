@@ -31,6 +31,7 @@ static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
 static constexpr char SHADERNAME_PREPARE_INDIRECT_INSTANCES[] = "InstancePrepareDrawIndirect";
 static constexpr char SHADERNAME_PREPARE_INSTALCE_POOLS[] = "InstancePreparePools";
 static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
+static constexpr char SHADERNAME_FILTER_INSTANCES[] = "InstanceFilter";
 static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
 
 static CEqMutex s_grimRendererMutex;
@@ -51,7 +52,7 @@ void GRIMBaseRenderer::Init()
 		.End()
 	);
 
-	m_instPrepareDrawIndirect = g_renderAPI->CreateComputePipeline(
+	m_instPrepareDrawIndirectPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_PREPARE_INDIRECT_INSTANCES)
 		.End()
@@ -60,6 +61,20 @@ void GRIMBaseRenderer::Init()
 	m_cullInstancesPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_CULL_INSTANCES)
+		.End()
+	);
+
+	m_filterInstancesPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_FILTER_INSTANCES)
+		.ShaderLayoutId(StringIdConst24("Filter"))
+		.End()
+	);
+
+	m_filterCalcWorkGroupsPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_FILTER_INSTANCES)
+		.ShaderLayoutId(StringIdConst24("CalcWorkGroups"))
 		.End()
 	);
 
@@ -102,7 +117,9 @@ void GRIMBaseRenderer::Shutdown()
 
 	m_sortShader = nullptr;
 	m_instCalcBoundsPipeline = nullptr;
-	m_instPrepareDrawIndirect = nullptr;
+	m_filterInstancesPipeline = nullptr;
+	m_filterCalcWorkGroupsPipeline = nullptr;
+	m_instPrepareDrawIndirectPipeline = nullptr;
 	m_updateBindGroup0 = nullptr;
 	
 	m_cullInstancesPipeline = nullptr;
@@ -548,7 +565,7 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	if (!buffersUpdated)
 		return;
 
-	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirect,
+	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
 		.Buffer(0, m_drawBatchs.GetBuffer())
@@ -568,6 +585,129 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 
 //--------------------------------------------------------------------
 
+IVector2D GRIMBaseRenderer::VisCalcWorkSize(int length) const
+{
+	constexpr int GPUVIS_GROUP_SIZE = 256;
+	constexpr int GPUVIS_MAX_DIM_GROUPS = 1024;
+	constexpr int GPUVIS_MAX_DIM_THREADS = (GPUVIS_GROUP_SIZE * GPUVIS_MAX_DIM_GROUPS);
+
+	IVector2D result;
+	if (length <= GPUVIS_MAX_DIM_THREADS)
+	{
+		result.x = (length - 1) / GPUVIS_GROUP_SIZE + 1;
+		result.y = 1;
+	}
+	else
+	{
+		result.x = GPUVIS_MAX_DIM_GROUPS;
+		result.y = (length - 1) / GPUVIS_MAX_DIM_THREADS + 1;
+	}
+
+	return result;
+}
+
+void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
+{
+	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
+	struct Params {
+		int maxInstanceIds;
+		int groupMaskInclude;
+		int groupMaskExclude;
+		int overrideLodIdx;
+	};
+
+	Params params;
+	params.maxInstanceIds = m_instAllocator.GetInstanceSlotsCount();
+	params.groupMaskInclude = intermediate.renderState.groupMaskInclude;
+	params.groupMaskExclude = intermediate.renderState.groupMaskExclude;
+	params.overrideLodIdx = intermediate.renderState.overrideLodIdx;
+
+	// Params			params;
+	// int				instanceInfosCount;	// atomic
+	// ivec2			indirectWorkGroups;
+	// GPUInstanceInfo	instanceInfos[];
+
+	const int bufferSize = 
+		+ max(sizeof(IVector4D) * 2, caps.minStorageBufferOffsetAlignment)		// atomic
+		+ sizeof(GPUInstanceInfo) * intermediate.maxNumberOfObjects;
+
+	IGPUBufferPtr paramsBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, sizeof(params)), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "FilterParams");
+	intermediate.cmdRecorder->WriteBuffer(paramsBuffer, &params, sizeof(params), 0);
+
+	IGPUBufferPtr resultInstanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, bufferSize), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfosFiltered");
+	intermediate.cmdRecorder->ClearBuffer(resultInstanceInfosBuffer, 0, bufferSize);
+
+	GPUBufferView filteredInstanceCountBuffer{ resultInstanceInfosBuffer, 0, sizeof(IVector4D) * 2 };
+	GPUBufferView filteredInstanceInfosBuffer{ resultInstanceInfosBuffer, max((int)sizeof(IVector4D) * 2, caps.minStorageBufferOffsetAlignment), (int)sizeof(GPUInstanceInfo) * intermediate.maxNumberOfObjects };
+
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("FilterInstances");
+
+	IVector2D workGroups = VisCalcWorkSize(params.maxInstanceIds);
+
+	// filter instances by group mask
+	computeRecorder->SetPipeline(m_filterInstancesPipeline);
+	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline, 
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, m_instAllocator.GetInstanceArchetypesBuffer())
+		.Buffer(1, m_instAllocator.GetInstanceGroupMaskBuffer())
+		.Buffer(2, paramsBuffer, 0, sizeof(params))
+		.End()
+	));
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(1)
+		.Buffer(0, filteredInstanceInfosBuffer)
+		.Buffer(1, filteredInstanceCountBuffer)
+		.End()
+	));
+	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
+
+#if 0
+	// TODO calc workgroups for culling pipeline
+	computeRecorder->SetPipeline(m_filterCalcWorkGroupsPipeline);
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterCalcWorkGroupsPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(1)
+		.Buffer(1, filteredInstanceCountBuffer)
+		.End()
+	));
+	computeRecorder->DispatchWorkgroups(1);
+#endif
+	computeRecorder->Complete();
+
+	intermediate.filteredInstanceInfosBuffer = filteredInstanceInfosBuffer;
+	intermediate.filteredInstanceCountBuffer = filteredInstanceCountBuffer;
+}
+
+void GRIMBaseRenderer::FilterInstances_Software(IntermediateState& intermediate)
+{
+	const int groupMaskInclude = intermediate.renderState.groupMaskInclude;
+	const int groupMaskExclude = intermediate.renderState.groupMaskExclude;
+	const int overrideLodIdx = intermediate.renderState.overrideLodIdx;
+	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
+
+	instanceInfos.reserve(intermediate.maxNumberOfObjects);
+	for (int i = 0; i < m_instAllocator.GetInstanceSlotsCount(); ++i)
+	{
+		const GRIMArchetype archetypeId = m_instAllocator.GetInstanceArchetypeId(i);
+		if (archetypeId == GRIM_INVALID_ARCHETYPE)
+			continue;
+
+		// skip non-initialized instances
+		if (!m_instAllocator.GetInstanceIsSync(i))
+			continue;
+
+		const int instGroupMask = m_instAllocator.GetInstanceGroupMask(i);
+		if (instGroupMask && ((instGroupMask & groupMaskInclude) == 0 || (instGroupMask & groupMaskExclude) != 0))
+			continue;
+
+		GPUInstanceInfo& instInfo = instanceInfos.append();
+		instInfo.instanceId = i;
+		instInfo.packedArchetypeId = archetypeId | (overrideLodIdx << GPUInstanceInfo::ARCHETYPE_BITS);
+	}
+}
+
 void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 {
 	PROF_EVENT_F();
@@ -575,26 +715,7 @@ void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
 	// Visibility culling stage should supply with at least the number of instances
 	const int maxInstancesCount = m_instAllocator.GetInstanceCount();
 	m_sortShader->InitKeys(intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount);
-	m_sortShader->SortKeys(StringIdConst24(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount, intermediate.instanceInfosBuffer);
-}
-
-constexpr int GPUBOUNDS_GROUP_SIZE = 256;
-constexpr int GPUBOUNDS_MAX_DIM_GROUPS = 1024;
-constexpr int GPUBOUNDS_MAX_DIM_THREADS = (GPUBOUNDS_GROUP_SIZE * GPUBOUNDS_MAX_DIM_GROUPS);
-
-static void CalcBoundsWorkSize(int length, int& x, int& y, int& z)
-{
-	if (length <= GPUBOUNDS_MAX_DIM_THREADS)
-	{
-		x = (length - 1) / GPUBOUNDS_GROUP_SIZE + 1;
-		y = z = 1;
-	}
-	else
-	{
-		x = GPUBOUNDS_MAX_DIM_GROUPS;
-		y = (length - 1) / GPUBOUNDS_MAX_DIM_THREADS + 1;
-		z = 1;
-	}
+	m_sortShader->SortKeys(StringIdConst24(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, intermediate.sortedInstanceIds, maxInstancesCount, intermediate.culledInstanceInfosBuffer);
 }
 
 void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermediate)
@@ -606,7 +727,7 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermedi
 	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, intermediate.instanceInfosBuffer)
+		.Buffer(0, intermediate.culledInstanceInfosBuffer)
 		.Buffer(1, intermediate.sortedInstanceIds)
 		.End())
 	);
@@ -619,9 +740,8 @@ void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermedi
 	);
 
 	// TODO: DispatchWorkgroupsIndirect (use as result from VisibilityCullInstances)
-	int x, y, z;
-	CalcBoundsWorkSize(intermediate.maxNumberOfObjects, x, y ,z);
-	computeRecorder->DispatchWorkgroups(x, y, z);
+	IVector2D workGroups = VisCalcWorkSize(intermediate.maxNumberOfObjects);
+	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
 	computeRecorder->Complete();
 }
 
@@ -630,15 +750,15 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& interm
 	PROF_EVENT_F();
 
 	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("UpdateIndirectInstances");
-	computeRecorder->SetPipeline(m_instPrepareDrawIndirect);
+	computeRecorder->SetPipeline(m_instPrepareDrawIndirectPipeline);
 	computeRecorder->SetBindGroup(0, m_updateBindGroup0);
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirect,
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Buffer(0, intermediate.drawInstanceBoundsBuffer)
 		.End())
 	);
-	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirect,
+	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
 		.Buffer(0, intermediate.renderState.drawInvocationsBuffer)
@@ -812,6 +932,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 	if (grim_force_software.GetBool())
 	{
+		FilterInstances_Software(intermediate);
 		VisibilityCullInstances_Software(intermediate);
 		SortInstances_Software(intermediate);
 		UpdateInstanceBounds_Software(intermediate);
@@ -823,11 +944,15 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
 	intermediate.sortedInstanceIds = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), intermediate.maxNumberOfObjects + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
-	intermediate.instanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), intermediate.maxNumberOfObjects), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
+	intermediate.culledInstanceInfosBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceInfo), intermediate.maxNumberOfObjects), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
 	intermediate.drawInstanceBoundsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(GPUInstanceBound), numBounds + 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceBounds");
 
 	cmdRecorder->ClearBuffer(intermediate.drawInstanceBoundsBuffer, 0, intermediate.drawInstanceBoundsBuffer->GetSize());
 	cmdRecorder->WriteBuffer(intermediate.drawInstanceBoundsBuffer, &numBounds, sizeof(int), 0);
+
+	cmdRecorder->DbgPushGroup("FilterInstances");
+	FilterInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
 
 	cmdRecorder->DbgPushGroup("CullInstances");
 	VisibilityCullInstances_Compute(intermediate);
@@ -900,7 +1025,7 @@ void GRIMBaseRenderer::DbgValidate() const
 			continue;
 
 		// skip non-initialized instances
-		if(!m_instAllocator.GetInstanceIsSync(i))
+		if (!m_instAllocator.GetInstanceIsSync(i))
 			continue;
 
 		// check below indicates that instance hasn't been freed but archetype was destroyed
@@ -1094,7 +1219,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 	if(ImGui::CollapsingHeader("Statistics"))
 	{
 		ImGui::Text("Archetypes: %d (in use %d)", renderer.m_drawLodsList.NumElem(), usedArchetypes);
-		ImGui::Text("Instances: %d", instances.m_instances.numElem());
+		ImGui::Text("Instances: %d (%d slots)", instances.m_instances.numElem() - instances.m_freeIndices.numElem() - 1, instances.m_instances.numElem());
 		ImGui::Text("Buffer ref updates: %u", instances.m_buffersUpdated);
 
 		ImGui::Text("Draw materials: %d", renderer.m_dbgStatsDrawInfos);

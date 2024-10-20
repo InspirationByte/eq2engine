@@ -317,6 +317,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	}
 
 	inst.archetype = GRIM_INVALID_ARCHETYPE;
+	inst.updateFlags |= Instance::UPD_ARCHETYPE;
 
 	for (int i = 0; i < GRIM_INSTANCE_MAX_COMPONENTS; ++i)
 	{
