@@ -68,8 +68,8 @@ Example of use:
 #include "GrimSynchronizedPool.h"
 
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
-	static constexpr const char* NAME = #Name; \
-	static constexpr int IDENTIFIER = StringIdConst24(#Name); \
+	static constexpr const char NAME[] = #Name; \
+	static constexpr int IDENTIFIER = StringIdConst24(NAME); \
 	static constexpr int COMPONENT_ID = ID; \
 	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool);
 
@@ -157,7 +157,7 @@ protected:
 		};
 
 		InstRoot		root;
-		GRIMArchetype	archetype{ GRIM_INVALID_ARCHETYPE };		// usually hash of the model name
+		GRIMArchetype	archetype{ GRIM_INVALID_ARCHETYPE };
 		uint			groupMask{ COM_UINT_MAX };
 		int				updateFlags{ UPD_ALL };
 	};
