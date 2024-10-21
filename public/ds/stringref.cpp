@@ -29,60 +29,10 @@ static locale_t xgetlocale()
 
 #endif
 
-char* xstrupr(char* str)
-{
-	ASSERT(str);
-    char* it = str;
-
-    while (*it != 0) { *it = toupper(*it); ++it; }
-
-    return str;
-}
-
-char* xstrlwr(char* str)
-{
-	ASSERT(str);
-    char* it = str;
-
-    while (*it != 0) { *it = tolower(*it); ++it; }
-
-    return str;
-}
-
-wchar_t* xwcslwr(wchar_t* str)
-{
-	ASSERT(str);
-
-    wchar_t* it = str;
-
-#ifdef _WIN32
-    while (*it != 0) { *it = *CharLowerW(&(*it)); ++it; }
-#else
-    while (*it != 0) { *it = towlower_l(*it, xgetlocale()); ++it; }
-#endif // _WIN32
-
-    return str;
-}
-
-wchar_t* xwcsupr(wchar_t* str)
-{
-	ASSERT(str);
-
-    wchar_t* it = str;
-
-#ifdef _WIN32
-    while (*it != 0) { *it = *CharUpperW(&(*it)); ++it; }
-#else
-    while (*it != 0) { *it = towupper_l(*it, xgetlocale()); ++it; }
-#endif // _WIN32
-
-    return str;
-}
-
 //------------------------------------------
 // Converts string to 24-bit integer hash
 //------------------------------------------
-int StringToHash(EqStringRef str, bool caseIns )
+int StringId24(EqStringRef str, bool caseIns )
 {
 	ASSERT(str);
 	int len = str.Length();
@@ -91,50 +41,79 @@ int StringToHash(EqStringRef str, bool caseIns )
 	int hash = len;
 	for (; len > 0; --len)
 	{
-		int v1 = hash >> 19;
-		int v0 = hash << 5;
+		const int v1 = hash >> 19;
+		const int v0 = hash << 5;
 
-		int chr = caseIns ? CType::LowerChar(*ptr) : *ptr;
+		const int chr = caseIns ? CType::LowerChar(*ptr) : *ptr;
 
-		hash = ((v0 | v1) + chr) & StringHashMask;
+		hash = ((v0 | v1) + chr) & StringId24Mask;
 		++ptr;
 	}
 
 	return hash;
 }
 
+// hashes string. Returns value in 32 bits range
+uint StringId(EqStringRef str, bool caseIns)
+{
+	// uses FNV1a 32 as a base but rather than hashing string
+	// by each character value, it performs hashing as integer blocks
+	constexpr uint prime = 0x1000193;
+
+	ASSERT(str);
+	const int len = str.Length();
+	const char* data = str.GetData();
+
+	uint hash = 0x811C9DC5;
+	for (int i = 0; i < len; i += 4)
+	{
+		uint value = 0;
+		const int ii = min(i + 4, len);
+		for(int j = i; j < ii; ++j)
+		{
+			const uint chr = caseIns ? CType::LowerChar(*(data + j)) : *(data + j);
+			value |= chr << (j * 8);
+		}
+
+		hash = (hash ^ value) * prime;
+	}
+	return hash;
+}
+
 //------------------------------------------
-// Splits string into array
+// String split helper
 //------------------------------------------
 
-void xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, Array<EqString> &outStrings )
+static char const* xstristr(char const* pStr, char const* pSearch);
+
+void StringSplit(const char* pString, ArrayCRef<const char*> separators, Array<EqString>& outStrings)
 {
-	ASSERT(pString);
-	ASSERT(pSeparators);
+	if (!pString || *pString == 0)
+		return;
 
 	outStrings.clear();
 	const char* pCurPos = pString;
-	while ( 1 )
+	while (1)
 	{
 		int iFirstSeparator = -1;
-		const char* pFirstSeparator = 0;
-		for ( int i=0; i < nSeparators; i++ )
+		const char* pFirstSeparator = nullptr;
+		for (int i = 0; i < separators.numElem(); i++)
 		{
-			const char* pTest = xstristr( pCurPos, pSeparators[i] );
-			if ( pTest && (!pFirstSeparator || pTest < pFirstSeparator) )
+			const char* pTest = xstristr(pCurPos, separators[i]);
+			if (pTest && (!pFirstSeparator || pTest < pFirstSeparator))
 			{
 				iFirstSeparator = i;
 				pFirstSeparator = pTest;
 			}
 		}
 
-		if ( pFirstSeparator )
+		if (pFirstSeparator)
 		{
 			// Split on this separator and continue on.
-			int separatorLen = strlen( pSeparators[iFirstSeparator] );
-			if ( pFirstSeparator > pCurPos )
+			const int separatorLen = strlen(separators[iFirstSeparator]);
+			if (pFirstSeparator > pCurPos)
 			{
-				outStrings.append(_Es( pCurPos, pFirstSeparator-pCurPos ));
+				outStrings.append(_Es(pCurPos, pFirstSeparator - pCurPos));
 			}
 
 			pCurPos = pFirstSeparator + separatorLen;
@@ -142,48 +121,73 @@ void xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators,
 		else
 		{
 			// Copy the rest of the string
-			if ( strlen( pCurPos ) )
+			if (strlen(pCurPos))
 			{
-				outStrings.append( _Es( pCurPos ) );
+				outStrings.append(_Es(pCurPos));
 			}
 			return;
 		}
 	}
 }
 
-void xstrsplit( const char* pString, const char* pSeparator, Array<EqString> &outStrings )
+void StringSplit(const char* pString, const char* separator, Array<EqString>& outStrings)
 {
-	xstrsplit2( pString, &pSeparator, 1, outStrings );
+	StringSplit(pString, ArrayCRef(&separator, 1), outStrings);
 }
 
 //------------------------------------------
-// Duplicates string
-//------------------------------------------
-char* xstrdup(const char*  s)
+
+static char* xstrupr(char* str)
 {
-	ASSERT( s );
+	ASSERT(str);
+	char* it = str;
 
-	char*  t;
-	int len = strlen(s)+1;
+	while (*it != 0) { *it = toupper(*it); ++it; }
 
-    t = PPNew char[len];
-
-    if (t)
-	{
-        strncpy(t,s,len);
-    }
-    return t;
+	return str;
 }
 
-// is space?
-//------------------------------------------
-bool xisspace(int c)
+static char* xstrlwr(char* str)
 {
-	// P.S. Don't look for the code in Windows documentation, it has BUG
-	return (c == 0x20) || (c >= 0x09 && c <= 0x0d);
+	ASSERT(str);
+	char* it = str;
+
+	while (*it != 0) { *it = tolower(*it); ++it; }
+
+	return str;
 }
 
-char* xstrstr(  const char* s1, const char* search )
+static wchar_t* xwcslwr(wchar_t* str)
+{
+	ASSERT(str);
+
+	wchar_t* it = str;
+
+#ifdef _WIN32
+	while (*it != 0) { *it = *CharLowerW(&(*it)); ++it; }
+#else
+	while (*it != 0) { *it = towlower_l(*it, xgetlocale()); ++it; }
+#endif // _WIN32
+
+	return str;
+}
+
+static wchar_t* xwcsupr(wchar_t* str)
+{
+	ASSERT(str);
+
+	wchar_t* it = str;
+
+#ifdef _WIN32
+	while (*it != 0) { *it = *CharUpperW(&(*it)); ++it; }
+#else
+	while (*it != 0) { *it = towupper_l(*it, xgetlocale()); ++it; }
+#endif // _WIN32
+
+	return str;
+}
+
+static char* xstrstr(  const char* s1, const char* search )
 {
 	ASSERT( s1 );
 	ASSERT( search );
@@ -191,36 +195,8 @@ char* xstrstr(  const char* s1, const char* search )
 	return strstr( (char* )s1, search );
 }
 
-int xstrfind(char* str, char* search)
-{
-	ASSERT(str);
-	ASSERT(search);
-
-	int len = strlen(str);
-	int len2 = strlen(search); // search len
-
-	for(int i = 0; i < len; i++)
-	{
-		if(str[i] == search[0])
-		{
-			bool ichk = true;
-
-			for(int z = 0; z < len2; z++)
-			{
-				if(str[i+z] != search[z])
-					ichk = false;
-			}
-
-			if(ichk)
-				return i;
-		}
-	}
-
-	return -1; // failure
-}
-
 // Finds a string in another string with a case insensitive test
-char const* xstristr( char const* pStr, char const* pSearch )
+static char const* xstristr( char const* pStr, char const* pSearch )
 {
 	ASSERT(pStr);
 	ASSERT(pSearch);
@@ -263,7 +239,7 @@ char const* xstristr( char const* pStr, char const* pSearch )
 	return 0;
 }
 
-char* xstristr( char* pStr, char const* pSearch )
+static char* xstristr( char* pStr, char const* pSearch )
 {
 	return (char*)xstristr( (char const*)pStr, pSearch );
 }
@@ -273,7 +249,7 @@ char* xstristr( char* pStr, char const* pSearch )
 //------------------------------------------------------
 
 // compares two strings
-int xwcscmp( const wchar_t *s1, const wchar_t *s2)
+static int xwcscmp( const wchar_t *s1, const wchar_t *s2)
 {
 	ASSERT( s1 );
 	ASSERT( s2 );
@@ -292,7 +268,7 @@ int xwcscmp( const wchar_t *s1, const wchar_t *s2)
 }
 
 // compares two strings case-insensetive
-int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
+static int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
 {
 	ASSERT( s1 );
 	ASSERT( s2 );
@@ -312,16 +288,7 @@ int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
 }
 
 // finds substring in string case insensetive
-wchar_t* xwcsistr( wchar_t* pStr, wchar_t const* pSearch )
-{
-	ASSERT( pStr );
-	ASSERT( pSearch );
-
-	return (wchar_t*)xwcsistr( (wchar_t const*)pStr, pSearch );
-}
-
-// finds substring in string case insensetive
-wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
+static wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 {
 	ASSERT(pStr);
 	ASSERT(pSearch);
@@ -362,6 +329,15 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 	}
 
 	return 0;
+}
+
+// finds substring in string case insensetive
+static wchar_t* xwcsistr(wchar_t* pStr, wchar_t const* pSearch)
+{
+	ASSERT(pStr);
+	ASSERT(pSearch);
+
+	return (wchar_t*)xwcsistr((wchar_t const*)pStr, pSearch);
 }
 
 //------------------------------------------------------
@@ -408,7 +384,7 @@ EqString fnmPathStripName(EqStringRef path)
 		if (path[i] == CORRECT_PATH_SEPARATOR || path[i] == INCORRECT_PATH_SEPARATOR)
 			return path.Left(i + 1);
 	}
-	return path;
+	return EqString::EmptyStr;
 }
 
 EqString fnmPathStripPath(EqStringRef path)
@@ -696,16 +672,48 @@ template<> int Length<wchar_t>(const wchar_t* str)
 	return static_cast<int>(wcslen(str));
 }
 
-template<> char* SubString(char* str, const char* search, bool caseSensitive)
+template<> char* SubString(char* str, const char* search)
 {
 	if (!str || !search) return nullptr;
-	return caseSensitive ? strstr(str, search) : xstristr(str, search);
+	return strstr(str, search);
 }
 
-template<> wchar_t* SubString(wchar_t* str, const wchar_t* search, bool caseSensitive)
+template<> char* SubStringCaseIns(char* str, const char* search)
 {
 	if (!str || !search) return nullptr;
-	return caseSensitive ? wcsstr(str, search) : xwcsistr(str, search);
+	return xstristr(str, search);
+}
+
+template<> wchar_t* SubString(wchar_t* str, const wchar_t* search)
+{
+	if (!str || !search) return nullptr;
+	return wcsstr(str, search);
+}
+
+template<> wchar_t* SubStringCaseIns(wchar_t* str, const wchar_t* search)
+{
+	if (!str || !search) return nullptr;
+	return xwcsistr(str, search);
+}
+
+template<> char* LowerCase(char* str)
+{
+	return xstrlwr(str);
+}
+
+template<> wchar_t* LowerCase(wchar_t* str)
+{
+	return xwcslwr(str);
+}
+
+template<> char* UpperCase(char* str)
+{
+	return xstrupr(str);
+}
+
+template<> wchar_t* UpperCase(wchar_t* str)
+{
+	return xwcsupr(str);
 }
 
 template<> int Compare(const char* strA, const char* strB)
@@ -754,6 +762,31 @@ template<> int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
 	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
 	va_end(argptr);
 	return result;
+}
+
+//------------------------------------------
+// Duplicates string
+//------------------------------------------
+char* DuplicateNew(const char* s)
+{
+	if (!s)
+		return nullptr;
+
+	const int len = strlen(s) + 1;
+	char* t = PPNew char[len];
+	strncpy(t, s, len);
+	return t;
+}
+
+wchar_t* DuplicateNew(const wchar_t* s)
+{
+	if (!s)
+		return nullptr;
+
+	const int len = wcslen(s) + 1;
+	wchar_t* t = PPNew wchar_t[len];
+	wcsncpy(t, s, len);
+	return t;
 }
 
 }
@@ -814,8 +847,8 @@ int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
 	if (!IsValid() || !subStr.IsValid() || nStart < 0)
 		return -1;
 
-	CH* strStart = const_cast<CH*>(m_pszString) + min(nStart, Length());
-	const CH* subStrPtr = CString::SubString<CH>(strStart, subStr, bCaseSensetive);
+	const CH* strStart = const_cast<CH*>(m_pszString) + min(nStart, Length());
+	const CH* subStrPtr = bCaseSensetive ? CString::SubString(strStart, subStr.ToCString()) : CString::SubStringCaseIns(strStart, subStr.ToCString());
 	if (!subStrPtr)
 		return -1;
 

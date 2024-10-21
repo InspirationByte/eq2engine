@@ -632,7 +632,7 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName, int instan
 	if (materialName[0] == CORRECT_PATH_SEPARATOR)
 		materialName = materialName.ToCString() + 1;
 
-	const int nameHash = StringToHash(materialName, true);
+	const int nameHash = StringId24(materialName, true);
 
 	CRefPtr<CMaterial> newMaterial;
 
@@ -778,7 +778,7 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 
 void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
 {
-	const int nameHash = StringToHash(factory.shaderName, true);
+	const int nameHash = StringId24(factory.shaderName, true);
 	auto it = m_shaderFactoryList.find(nameHash);
 	if (!it.atEnd())
 	{
@@ -828,7 +828,7 @@ const ShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName,
 	}
 
 	// now find the factory and dispatch
-	const int nameHash = StringToHash(shaderName, true);
+	const int nameHash = StringId24(shaderName, true);
 	auto it = m_shaderFactoryList.find(nameHash);
 	if (it.atEnd())
 		return nullptr;
@@ -879,7 +879,7 @@ MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVar(int nameHash) const
 
 MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVarByName(const char* pszVarName) const
 {
-	const int nameHash = StringToHash(pszVarName);
+	const int nameHash = StringId24(pszVarName);
 	return FindGlobalMaterialVar(nameHash);
 }
 
@@ -887,7 +887,7 @@ MatVarProxyUnk CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarNam
 {
 	CScopedMutex m(s_matSystemMutex);
 
-	const int nameHash = StringToHash(pszVarName);
+	const int nameHash = StringId24(pszVarName);
 
 	auto it = m_globalMaterialVars.variableMap.find(nameHash);
 	if (!it.atEnd())
@@ -1109,7 +1109,7 @@ bool CMaterialSystem::EndFrame()
 		*m_proxyUpdateCmdRecorders[i] = nullptr;
 	}
 
-	SubmitQueuedCommands();
+	SubmitQueuedCommandsAwaitable();
 
 	m_renderLibrary->EndFrame();
 
@@ -1693,7 +1693,7 @@ void CMaterialSystem::PrintLoadedMaterials() const
 	for (auto it = m_shaderFactoryList.begin(); !it.atEnd(); ++it)
 	{
 		const ShaderFactory& shaderFactory = *it;
-		auto foundPipelineCacheIt = m_renderPipelineCache.find(StringToHash(shaderFactory.shaderName));
+		auto foundPipelineCacheIt = m_renderPipelineCache.find(StringId24(shaderFactory.shaderName));
 		if (foundPipelineCacheIt.atEnd())
 			continue;
 		const MatSysShaderPipelineCache& pipelineCache = *foundPipelineCacheIt;

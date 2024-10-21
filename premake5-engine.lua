@@ -47,7 +47,10 @@ Folders = {
     game = "./game/",
 }
 
-function prj_name(prj, def)
+function prj_name(prj, wks, def)
+	if _ACTION == "gmake2" and def == nil then
+		def = wks.name..".solution"
+	end
 	if prj ~= nil then
 		if prj.group ~= nil and string.len(prj.group) > 0 then
 			return prj.group .. '/' .. prj.name
@@ -69,12 +72,17 @@ workspace(WORKSPACE_NAME)
 	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 
 	if _ACTION ~= "vscode" then
-		location "build/%{ prj_name(prj) }"
+		location "build/%{ prj_name(prj, wks) }"
 	end
 
 	defines {
 		"PROJECT_COMPILE_CONFIGURATION=%{cfg.buildcfg}",
 		"PROJECT_COMPILE_PLATFORM=%{cfg.platform}"
+	}
+	
+	-- for MSVC to be faster
+	flags {
+		"MultiProcessorCompile"
 	}
 
 	if IS_ANDROID then
@@ -135,7 +143,7 @@ workspace(WORKSPACE_NAME)
 		platforms { 
 			"x86", "x64" -- maybe add ARM & ARM64 for RPi?
 		}
-		vscode_makefile "build/%{wks.name}"
+		vscode_makefile "build/%{wks.name}.solution"
 		vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build/bin64linux")
 		vscode_launch_environment {
 			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../%{wks.name}/build/bin64linux"

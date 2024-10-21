@@ -84,7 +84,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			continue;
 		}
 
-		const int nameHash = StringToHash(fontSec->GetName());
+		const int nameHash = StringId24(fontSec->GetName());
 		if (m_fonts.contains(nameHash))
 		{
 			MsgWarning("Font %s already loaded, skipping\n", fontSec->GetName());
@@ -259,7 +259,7 @@ IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, b
 
 eqFontFamily_t* CEqFontCache::GetFamily(const char* name) const
 {
-	const int nameHash = StringToHash(name);
+	const int nameHash = StringId24(name);
 	auto it = m_fonts.find(nameHash);
 	if (it.atEnd())
 		return m_defaultFont;

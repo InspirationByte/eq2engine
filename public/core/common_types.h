@@ -77,15 +77,30 @@ typedef unsigned char	ubyte;
 typedef unsigned short	ushort;
 typedef unsigned int	uint;
 
-typedef ptrdiff_t intptr;
+typedef ptrdiff_t 		intptr;
 
 #ifdef _WIN32
-typedef   signed __int64  int64;
-typedef unsigned __int64 uint64;
+typedef   signed __int64  	int64;
+typedef unsigned __int64 	uint64;
 #else
 typedef   signed long long  int64;
-typedef unsigned long long uint64;
+typedef unsigned long long 	uint64;
 #endif
+
+#define COM_CHAR_MIN	(-COM_CHAR_MAX - 1)
+#define COM_CHAR_MAX 	0x7f
+#define COM_UCHAR_MAX 	0xff
+
+#define COM_SHRT_MIN	(-COM_SHRT_MAX - 1)
+#define COM_SHRT_MAX 	0x7fff
+#define COM_USHRT_MAX 	0xffff
+
+#define COM_INT_MIN		(-INT_MAX - 1)
+#define COM_INT_MAX 	0x7fffffff
+#define COM_UINT_MAX 	0xffffffff
+
+#define COM_FLT_MIN		FLT_MIN
+#define COM_FLT_MAX		FLT_MAX
 
 // quick swap function
 template< class T >
@@ -133,6 +148,7 @@ static constexpr TR max(T x, T2 y) { return static_cast<TR>((x > y) ? x : y); }
 // Define some useful macros
 #define MAKECHAR4(a, b, c, d)			(a | (b << 8) | (c << 16) | (d << 24))
 
+#define _SEMICOLON_REQ( expr )			do expr while(0)
 #define _STR_(x) #x
 #define DEFINE_STR(x)					"#define " #x " " _STR_(x) "\n"
 
@@ -140,8 +156,8 @@ static constexpr TR max(T x, T2 y) { return static_cast<TR>((x > y) ? x : y); }
 #define offsetOf(structure,member)		(uintptr_t)&(((structure *)0)->member)
 #define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
 
-#define SAFE_DELETE(p)			{ if (p) { delete (p); (p) = nullptr; } }
-#define SAFE_DELETE_ARRAY(p)	{ if (p) { delete[] (p); (p) = nullptr; } }
+#define SAFE_DELETE(p)			_SEMICOLON_REQ( if (p) { delete (p); (p) = nullptr; } )
+#define SAFE_DELETE_ARRAY(p)	_SEMICOLON_REQ( if (p) { delete[] (p); (p) = nullptr; } )
 
 //---------------------------------------------------------------------------------------------
 // FIXMEs / TODOs / NOTE macros

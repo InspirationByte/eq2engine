@@ -62,7 +62,7 @@ static bool g_bPrintLeaksOnShutdown = false;
 IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 {
 	void* iface = g_eqCore->GetInterface(pszName);
-	ASSERT_MSG(iface, "Interface %s is not registered", pszName)
+	ASSERT_MSG(iface, "Interface %s is not registered", pszName);
 	return iface;
 }
 

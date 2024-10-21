@@ -170,7 +170,7 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) const
 {
-	const int namehash = StringToHash(soundName, true );
+	const int namehash = StringId24(soundName, true );
 
 	auto it = m_allSounds.find(namehash);
 	if (it.atEnd())
@@ -677,7 +677,7 @@ bool CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 
 	EqString soundName(_Es(scriptSection->name).LowerCase());
 
-	const int namehash = StringToHash(soundName, true);
+	const int namehash = StringId24(soundName, true);
 	if (m_allSounds.contains(namehash))
 		return false;
 

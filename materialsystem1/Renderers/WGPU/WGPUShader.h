@@ -3,6 +3,12 @@
 class IPackFileReader;
 using IPackFileReaderPtr = CRefPtr<IPackFileReader>;
 
+enum EShaderModuleType
+{
+	SHADERMODULE_SPIRV,
+	SHADERMODULE_WGSL,
+};
+
 struct ShaderInfoWGPUImpl
 {
 	~ShaderInfoWGPUImpl();
@@ -26,6 +32,7 @@ struct ShaderInfoWGPUImpl
 		WGPUShaderModule	rhiModule{ nullptr };
 		EShaderKind			kind;
 		int					fileIndex{ -1 };
+		EShaderModuleType	type{};
 	};
 
 	struct EntryPoint
@@ -39,7 +46,6 @@ struct ShaderInfoWGPUImpl
 	Array<VertLayout>		vertexLayouts{ PP_SL };
 	Array<EqString>			defines{ PP_SL };
 	Array<Module>			modules{ PP_SL };
-	Map<int, EntryPoint>	entryPoints{ PP_SL };
 	Map<uint, int>			modulesMap{ PP_SL };
 	int						shaderKinds{ 0 };
 };

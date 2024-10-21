@@ -330,7 +330,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			inputDesc.input.rMin = KV_GetValueFloat(valKey, 1, 0.0f);
 			inputDesc.input.rMax = KV_GetValueFloat(valKey, 2, 1.0f);
 
-			scriptDesc.inputNodeMap.insert(StringToHash(nodeName), nodeIdx);
+			scriptDesc.inputNodeMap.insert(StringId24(nodeName), nodeIdx);
 		}
 		else if (!valKey->name.CompareCaseIns("mixer"))
 		{

@@ -247,7 +247,7 @@ void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 
 				LocalizeConvertSymbols((char*)currentTokens[1].GetData(), true);
 
-				const int hash = StringToHash(currentTokens[0].ToCString(), true);
+				const int hash = StringId24(currentTokens[0].ToCString(), true);
 				m_tokens.insert(hash, CLocToken(currentTokens[0], currentTokens[1], false));
 			}
 
@@ -267,7 +267,7 @@ const ILocToken* CLocalize::AddToken(const char* token, const wchar_t* pszTokenS
 
 	LocalizeConvertSymbols( (char*)pszTokenString, true );
 
-	const int hash = StringToHash(token, true);
+	const int hash = StringId24(token, true);
 	auto newIt = m_tokens.insert(hash, CLocToken(token, pszTokenString, true));
 	return &newIt.value();
 }
@@ -279,7 +279,7 @@ const ILocToken* CLocalize::AddToken(const char* token, const char* pszUTF8Token
 
 	LocalizeConvertSymbols( (char*)pszUTF8TokenString, true );
 
-	const int hash = StringToHash(token, true);
+	const int hash = StringId24(token, true);
 	auto newIt = m_tokens.insert(hash, CLocToken(token, pszUTF8TokenString, true));
 	return &newIt.value();
 }
@@ -310,7 +310,7 @@ const ILocToken* CLocalize::GetToken( const char* pszToken ) const
 
 const ILocToken* CLocalize::_FindToken( const char* pszToken ) const
 {
-	const int tokHash = StringToHash(pszToken, true);
+	const int tokHash = StringId24(pszToken, true);
 
 	auto it = m_tokens.find(tokHash);
 

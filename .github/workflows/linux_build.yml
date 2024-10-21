@@ -26,7 +26,7 @@ on:
       - '**/premake*.lua'
       - 'premake*.lua'
 env:
-  MAKEFILE_PATH: ./build
+  MAKEFILE_PATH: ./build/DriverSyndicate.solution
   BUILD_CONFIGURATION: release
   BUILD_CONFIGURATION_U: Release
   BUILD_PLATFORM: x64

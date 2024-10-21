@@ -29,8 +29,10 @@ CEqParallelJobManager::~CEqParallelJobManager()
 // creates new job thread
 bool CEqParallelJobManager::Init()
 {
+	constexpr int jobQueueSize = 8192;
+
 	const int numThreadsToSpawn = max(4, g_cpuCaps->GetCPUCount());
-	m_jobMng = PPNew CEqJobManager("e2CoreJobMng", numThreadsToSpawn, 2048);
+	m_jobMng = PPNew CEqJobManager("e2CoreJobMng", numThreadsToSpawn, jobQueueSize);
 
 	MsgInfo("* Job threads: %d\n", m_jobMng->GetJobThreadsCount());
 

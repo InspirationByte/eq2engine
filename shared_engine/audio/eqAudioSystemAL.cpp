@@ -133,7 +133,8 @@ bool CEqAudioSystemAL::InitContext()
 		if (hrtfState)
 		{
 			const ALchar* name = alcGetString(m_dev, ALC_HRTF_SPECIFIER_SOFT);
-			MsgInfo("EqAudio: HRTF enabled, using %s\n", name);
+			if(name)
+				MsgInfo("EqAudio: HRTF enabled, using %s\n", name);
 		}
 	}
 
@@ -276,7 +277,7 @@ void CEqAudioSystemAL::InitEffects()
 
 	for (const KVSection* effectSec : kv.Keys())
 	{
-		const int nameHash = StringToHash(effectSec->name, true);
+		const int nameHash = StringId24(effectSec->name, true);
 
 		EffectInfo effect;
 		strcpy(effect.name, effectSec->name);
@@ -464,7 +465,7 @@ void CEqAudioSystemAL::SetChannelPitch(int chanType, float value)
 ISoundSourcePtr CEqAudioSystemAL::GetSample(const char* filename)
 {
 	{
-		const int nameHash = StringToHash(filename, true);
+		const int nameHash = StringId24(filename, true);
 		CScopedMutex m(s_audioSysMutex);
 		auto it = m_samples.find(nameHash);
 		if (!it.atEnd())
@@ -538,7 +539,7 @@ void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)
 // finds the effect. May return EFFECTID_INVALID
 AudioEffectId CEqAudioSystemAL::FindEffect(const char* name) const
 {
-	const int nameHash = StringToHash(name, true);
+	const int nameHash = StringId24(name, true);
 	auto it = m_effects.find(nameHash);
 
 	if (!it.atEnd())
@@ -563,19 +564,15 @@ int	CEqAudioSystemAL::GetEffectSlotCount() const
 
 void CEqAudioSystemAL::SuspendSourcesWithSample(ISoundSource* sample)
 {
-	for (int i = 0; i < m_sources.numElem(); i++)
+	for (CEqAudioSourceAL* src : m_sources)
 	{
-		CEqAudioSourceAL* src = m_sources[i].Ptr();
+		const int idx = arrayFindIndexF(src->m_streams, [&](const CEqAudioSourceAL::SourceStream& stream) {
+			return stream.sample == sample;
+		});
 
-		for (int j = 0; j < src->m_streams.numElem(); ++j)
-		{
-			if (src->m_streams[j].sample == sample)
-			{
-				// sadly, entire sound source has to be stopped
-				src->Release();
-				break;
-			}
-		}
+		// sadly, entire sound source has to be stopped
+		if (idx != -1) 
+			src->Release();
 	}
 }
 
@@ -638,19 +635,12 @@ void CEqAudioSystemAL::EndUpdate()
 			if (sample->IsStreaming())
 				continue;
 
-			const ISoundSource::Format& fmt = sample->GetFormat();
-			const int sampleUnit = (fmt.bitwidth >> 3);
-			const int sampleSize = sampleUnit * fmt.channels;
-
-			sampleMem += sample->GetSampleCount() * sampleSize;
+			sampleMem += sample->GetSampleCount() * sample->GetFormat().GetStride();
 		}
 
 		uint playing = 0;
-		for (int i = 0; i < m_sources.numElem(); i++)
-		{
-			CEqAudioSourceAL* src = m_sources[i].Ptr();
+		for (CEqAudioSourceAL* src : m_sources)
 			playing += (src->GetState() == IEqAudioSource::PLAYING);
-		}
 
 		debugoverlay->Text(color_white, "-----SOUND STATISTICS-----");
 		debugoverlay->Text(color_white, "  sources: %d, (%d allocated)", playing, m_sources.numElem());

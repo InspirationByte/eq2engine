@@ -76,13 +76,54 @@ p.api.register {
     tokens = true,
 }
 
+local function splitStr(instr, separator)
+    if separator == nil then
+        separator = "%s"
+    end
+    local t = {}
+    for str in string.gmatch(instr, "([^".. separator .. "]+)") do
+        table.insert(t, str)
+    end
+    return t
+end
+
+local function longestCommonPath(prj)
+    local files = {}
+    for _, f in ipairs(prj.files) do
+        table.insert(files, f)
+    end
+    if #files == 0 then return './' end
+
+    local commonParts = splitStr(files[1], "/")
+    for i = 2, #files do
+        local parts = splitStr(files[i], "/")
+        for j = #commonParts, 1, -1 do
+            if parts[j] ~= commonParts[j] then
+                commonParts[j] = nil
+            end
+        end
+    end
+    local commonPartsClean = {}
+    for _, v in ipairs(commonParts) do
+        if v ~= nil then
+            table.insert(commonPartsClean, v)
+        end
+    end
+
+    local result = table.concat(commonPartsClean, "/")
+    if files[1]:sub(1, 1) == "/" then
+        result = "/" .. result
+    end
+
+    return result
+end
+
 function vscode.generateWorkspace(wks)
     -- Only create workspace file if it doesnt already exist
-    if not os.isfile(wks.location .. "/" .. wks.name .. ".code-workspace") then
-        local codeWorkspaceFile = io.open(wks.location .. "/" .. wks.name .. ".code-workspace", "w")
-        codeWorkspaceFile:write('{\n\t"folders":\n\t[\n\t\t{\n\t\t\t"path": ".",\n\t\t},\n\t],\n}\n')
-        codeWorkspaceFile:close()
-    end
+
+    local codeWorkspaceFile = io.open(wks.location .. "/" .. wks.name .. ".code-workspace", "w")
+    codeWorkspaceFile:write('{\n\t"folders":\n\t[')
+    codeWorkspaceFile:write('\n\t\t{\n\t\t\t"path": ".",\n\t\t},')
 
     local startString = '{\n\t"version": "%s",\n\t"%s":\n\t[\n'
 
@@ -111,6 +152,9 @@ function vscode.generateWorkspace(wks)
             vscode.project.vscode_tasks(prj, tasksFile)
             vscode.project.vscode_launch(prj, launchFile)
             vscode.project.vscode_c_cpp_properties(prj, propsFile)
+
+            --local sourcePath = path.getrelative(prj.workspace.location, longestCommonPath(prj))
+            --codeWorkspaceFile:write(string.format('\n\t\t{\n\t\t\t"name": "%s",\n\t\t\t"path": "%s",\n\t\t},', prj.name, sourcePath))
         end
     end
 
@@ -122,6 +166,9 @@ function vscode.generateWorkspace(wks)
 
     tasksFile:write('\t]\n}\n')
     tasksFile:close()
+
+    codeWorkspaceFile:write('\n\t],\n}\n')
+    codeWorkspaceFile:close()
 end
 
 include("vscode_project.lua")

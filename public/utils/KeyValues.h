@@ -732,7 +732,7 @@ struct DescFieldFlags : public KVDescFieldInfo
 
 		for (EqStringRef flagName : section.Get(name).Values<EqStringRef>())
 		{
-			const int flagNameHash = StringToHash(flagName, true);
+			const int flagNameHash = StringId24(flagName, true);
 			for (const KVDescFlagInfo& flagInfo : FLAGS_DESC::GetFlags())
 			{
 				if (flagInfo.nameHash == flagNameHash)
@@ -788,4 +788,4 @@ struct DescFieldFlags : public KVDescFieldInfo
 		return descFlags; \
 	};
 
-#define KV_FLAG_DESC(value, name) {name, StringToHashConst(name), static_cast<int>(value)},
+#define KV_FLAG_DESC(value, name) {name, StringIdConst24(name), static_cast<int>(value)},

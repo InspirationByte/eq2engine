@@ -441,7 +441,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 	if (allVertexFeatureFlags & STUDIO_VERTFLAG_COLOR)
 		allColorList = PPNew EGFHwVertex::Color[numVertices];
 
-	ubyte* allIndices = PPNew ubyte[indexSize * numIndices];
+	ubyte* allIndices = PPNew ubyte[indexSize * numIndices + 4];
 
 	numVertices = 0;
 	numIndices = 0;
@@ -814,7 +814,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 
 		// HACK: This is a temporary hack until we get proper identification
 		// or maybe hardware skinning using Compute shaders
-		meshInstFormat.formatId = StringToHash(EqString(meshInstFormat.name) + "Skinned");
+		meshInstFormat.formatId = StringId24(EqString(meshInstFormat.name) + "Skinned");
 	}
 
 	// setup vertex buffers
@@ -825,28 +825,29 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		ArrayCRef<VertexLayoutDesc> layoutDescList = meshInstFormat.layout;
 		for (int i = 0; i < layoutDescList.numElem(); ++i)
 		{
+			const VertexLayoutDesc& streamLayout = layoutDescList[i];
 			if (numBitsSet == EGFHwVertex::VERT_COUNT)
 				break;
 
-			if (layoutDescList[i].stepMode == VERTEX_STEPMODE_INSTANCE && drawCmd.instanceInfo.instData.buffer)
+			if (streamLayout.stepMode == VERTEX_STEPMODE_INSTANCE && drawCmd.instanceInfo.instData.buffer)
 			{
 				setVertStreams |= (1 << i);
 				continue;
 			}
 
-			const EGFHwVertex::VertexStreamId vertStreamId = (EGFHwVertex::VertexStreamId)layoutDescList[i].userId;
-			if (vertStreamId >= EGFHwVertex::VERT_COUNT)
-				continue;
+			if (streamLayout.userId & EGFHwVertex::EGF_FLAG)
+			{
+				const EGFHwVertex::VertexStreamId vertStreamId = static_cast<EGFHwVertex::VertexStreamId>(streamLayout.userId & EGFHwVertex::EGF_MASK);
+				if (!m_vertexBuffers[vertStreamId])
+					continue;
 
-			if (!m_vertexBuffers[vertStreamId])
-				continue;
+				if (setVertStreams & (1 << vertStreamId))
+					continue;
 
-			if (setVertStreams & (1 << int(vertStreamId)))
-				continue;
-
-			drawCmd.SetVertexBuffer(i, m_vertexBuffers[vertStreamId]);
-			setVertStreams |= (1 << int(vertStreamId));
-			++numBitsSet;
+				drawCmd.SetVertexBuffer(i, m_vertexBuffers[vertStreamId]);
+				setVertStreams |= (1 << int(vertStreamId));
+				++numBitsSet;
+			}
 		}
 
 		meshInstFormat.usedLayoutBits &= ~7;

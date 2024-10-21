@@ -56,7 +56,7 @@ IEXPORTS bool Platform_IsDebuggerPresent()
     buf[numRead] = '\0';
 
     constexpr char tracerPidString[] = "TracerPid:";
-    const char* tracerPidPtr = strstr(buf, tracerPidString);
+    const char* tracerPidPtr = CString::SubString(buf, tracerPidString);
     if (!tracerPidPtr)
         return false;
 

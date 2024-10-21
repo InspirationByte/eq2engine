@@ -6,8 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
-using BIT_STORAGE_TYPE = int;
+using BIT_STORAGE_TYPE = uint;
 
 template <int p>
 constexpr int getIntExp(int _x = 0) { return getIntExp<p / 2>(_x + 1); }
@@ -15,7 +14,6 @@ constexpr int getIntExp(int _x = 0) { return getIntExp<p / 2>(_x + 1); }
 template <>
 constexpr int getIntExp<0>(int _x) { return _x - 1; }
 
-// TODO: 64 bit type impl
 static constexpr int numBitsSet(uint x)
 {
 	x = x - ((x >> 1) & 0x55555555);
@@ -26,13 +24,40 @@ static constexpr int numBitsSet(uint x)
 	return x & 0x0000003F;
 }
 
+#ifdef __GNUC__
+#define leadingZeroCnt(x)	__builtin_clz(x)
+#define trailingZeroCnt(x)	__builtin_ctz(x)
+#else
+#pragma warning(push)
+#pragma warning(disable:4146)
+
+inline uint leadingZeroCnt(uint x)
+{
+	x |= (x >> 1);
+	x |= (x >> 2);
+	x |= (x >> 4);
+	x |= (x >> 8);
+	x |= (x >> 16);
+	return 32 - numBitsSet(x);
+}
+
+static uint trailingZeroCnt(uint x)
+{
+	return numBitsSet((x & -x) - 1u);
+}
+
+#pragma warning(pop)
+
+#endif
+
 static inline void bitsSet(int& value, int mask, bool on)		{ value = (value & ~mask) | (static_cast<int>(on) * mask); }
 static inline void bitsSet(uint& value, uint mask, bool on)		{ value = (value & ~mask) | (static_cast<uint>(on) * mask); }
 
 template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
-constexpr int bitArray2Dword(int elems)
+constexpr int bitArray2Dword(const int numBits)
 {
-	return elems / (bitStorageSize * 8) + 1;
+	constexpr int storageBits = bitStorageSize * 8;
+	return (numBits + storageBits - 1) / storageBits;
 }
 
 template <int bitStorageSize = sizeof(BIT_STORAGE_TYPE)>
@@ -53,7 +78,10 @@ public:
 	using STORAGE_TYPE = BIT_STORAGE_TYPE;
 
 	// cleans all bits to zero
-	static void		clear(STORAGE_TYPE* bitArray, int bitCount);
+	static void		clear(STORAGE_TYPE* bitArray, int bitCount) { reset(bitArray, bitCount, false); }
+
+	// resets all bits to specified value
+	static void		reset(STORAGE_TYPE* bitArray, int bitCount, bool value = false);
 
 	static bool		isTrue(const STORAGE_TYPE* bitArray, int bitCount, int index);
 
@@ -73,34 +101,66 @@ public:
 	static void		setFalse(STORAGE_TYPE* bitArray, int bitCount, int index);
 };
 
-inline void BitArrayImpl::clear(STORAGE_TYPE* bitArray, int bitCount)
+inline void	BitArrayImpl::reset(STORAGE_TYPE* bitArray, int bitCount, bool value)
 {
-	memset(bitArray, 0, bitArray2Dword(bitCount));
+	const int listSize = bitArray2Dword(bitCount);
+	for(int i = 0; i < listSize; ++i)
+		bitArray[i] = value ? COM_UINT_MAX : 0;
 }
 
 // returns total number of bits that are set to true
 inline int BitArrayImpl::numTrue(const STORAGE_TYPE* bitArray, int bitCount)
 {
+	if (!bitCount)
+		return 0;
+
 	int count = 0;
 	const int typeSize = bitArray2Dword(bitCount);
-	if (typeSize)
+
+	constexpr int storageMask = sizeof(STORAGE_TYPE) * 8 - 1;
+	const int remainder = bitCount & storageMask;
+	if (remainder)
+	{
+		for (int i = 0; i < typeSize - 1; i++)
+			count += numBitsSet(static_cast<uint>(bitArray[i]));
+
+		const STORAGE_TYPE lastChunkMask = (static_cast<STORAGE_TYPE>(1) << remainder) - 1;
+		count += numBitsSet(static_cast<uint>(bitArray[typeSize-1] & lastChunkMask));
+	}
+	else
 	{
 		for (int i = 0; i < typeSize; i++)
 			count += numBitsSet(static_cast<uint>(bitArray[i]));
 	}
+
 	return count;
 }
 
 // returns total number of bits that are set to false
 inline int BitArrayImpl::numFalse(const STORAGE_TYPE* bitArray, int bitCount)
 {
+	if (!bitCount)
+		return 0;
+
 	int count = 0;
 	const int typeSize = bitArray2Dword(bitCount);
-	if (typeSize)
+
+	constexpr int storageMask = sizeof(STORAGE_TYPE) * 8 - 1;
+	const int remainder = bitCount & storageMask;
+	if (remainder)
+	{
+		for (int i = 0; i < typeSize - 1; i++)
+			count += numBitsSet(static_cast<uint>(~bitArray[i]));
+
+		const STORAGE_TYPE lastChunkMask = (static_cast<STORAGE_TYPE>(1) << remainder) - 1;
+		count += numBitsSet(static_cast<uint>(~bitArray[typeSize - 1] & lastChunkMask));
+	}
+	else
 	{
 		for (int i = 0; i < typeSize; i++)
-			count += numBitsSet(~static_cast<uint>(bitArray[i]));
+			count += numBitsSet(static_cast<uint>(~bitArray[i]));
 	}
+
 	return count;
 }
 
@@ -192,10 +252,13 @@ public:
 	BitArray&				operator=(const BitArray& other);
 
 	// cleans all bits to zero
-	void					clear();
+	void					clear() { reset(false); }
+
+	// resets all bits to specified value
+	void					reset(bool value = false);
 
 	// resizes the list
-	void					resize(int newBitCount);
+	void					resize(int newBitCount, bool newBitsValue = false);
 
 	// returns total number of bits
 	int						numBits() const { return m_nSize; }
@@ -258,14 +321,16 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 	return *this;
 }
 
-// cleans all bits to zero
-inline void BitArray::clear()
+// resets all bits to specified value
+inline void BitArray::reset(bool value)
 {
-	memset(m_pListPtr, 0, bitArray2Dword(m_nSize));
+	const int listSize = bitArray2Dword(m_nSize);
+	for(int i = 0; i < listSize; ++i)
+		m_pListPtr[i] = value ? COM_UINT_MAX : 0;
 }
 
 // resizes the list
-inline void BitArray::resize(int newBitCount)
+inline void BitArray::resize(int newBitCount, bool newBitsValue)
 {
 	// not changing the elemCount, so just exit
 	if (newBitCount == m_nSize)
@@ -277,24 +342,34 @@ inline void BitArray::resize(int newBitCount)
 		return;
 	}
 
+	ASSERT_MSG(newBitCount >= 0, "newBitCount (%d) must be positive", newBitCount);
+
 	const int oldTypeSize = bitArray2Dword(m_nSize);
 	const int newTypeSize = bitArray2Dword(newBitCount);
-
-	STORAGE_TYPE* temp = m_pListPtr;
-
-	// copy the old m_pListPtr into our new one
-	m_pListPtr = PPNewSL(m_sl) STORAGE_TYPE[newTypeSize];
-	m_nSize = newBitCount;
-
-	if (temp)
+	if(oldTypeSize != newTypeSize)
 	{
-		for (int i = 0; i < oldTypeSize; i++)
-			m_pListPtr[i] = temp[i];
-		delete[] temp;
-	}
+		if(newTypeSize)
+		{
+			STORAGE_TYPE* temp = m_pListPtr;
+			m_pListPtr = PPNewSL(m_sl) STORAGE_TYPE[newTypeSize];
+			if (temp)
+			{
+				for (int i = 0; i < min(newTypeSize, oldTypeSize); ++i)
+					m_pListPtr[i] = temp[i];
+				delete[] temp;
+			}
 
-	for (int i = max(oldTypeSize-1, 0); i < newTypeSize; ++i)
-		m_pListPtr[i] = 0;
+			// new data must be reset to zero
+			for (int i = oldTypeSize; i < newTypeSize; ++i)
+				m_pListPtr[i] = newBitsValue ? COM_UINT_MAX : 0;
+		}
+		else
+		{
+			delete[] m_pListPtr;
+			m_pListPtr = nullptr;
+		}
+	}
+	m_nSize = newBitCount;
 }
 
 // returns total number of bits that are set to true

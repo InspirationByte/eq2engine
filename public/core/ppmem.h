@@ -6,8 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
-struct PPSourceLine;
+#include "ppsourceline.h"
 
 IEXPORTS void	PPMemInfo( bool fullStats = true );
 IEXPORTS size_t	PPMemGetUsage();
@@ -25,15 +24,27 @@ IEXPORTS void	PPFree( void* ptr );
 #define	PPAllocStructArrayRef(type, count)	ArrayRef(PPAllocStructArray(type, count), count)
 #define	PPFreeArrayRef(ref)					PPFree(ref.ptr()), ref = nullptr
 
+// Source-line value constructor helper
+template<typename T> struct PPSLValueCtor
+{
+	T x;
+	PPSLValueCtor<T>(const PPSourceLine& sl) : x() {}
+};
+
+// Source-line placement new wrapper for default constructor
+template<typename T> void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueCtor<T>(sl); }
+
 #ifdef PPMEM_DISABLED
 
-#define	PPNew			new
-#define	PPNewSL(sl)		new
+#define PP_SL			PPSourceLine::Empty()
+#define PPNew			new
+#define PPNewSL(sl)		new
 
 #else
 
-#define	PPNew			new(PP_SL)
-#define	PPNewSL(sl)		new(sl)
+#define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
+#define PPNew			new(PP_SL)
+#define PPNewSL(sl)		new(sl)
 
 #endif // PPMEM_DISABLED
 

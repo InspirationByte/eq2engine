@@ -34,7 +34,7 @@ IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
 
 static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash)
 {
-	uint hash = queryStrHash | (static_cast<uint>(vertexLayoutIdx) << StringHashBits) | (static_cast<uint>(kind) << (StringHashBits + 4));
+	uint hash = queryStrHash | (static_cast<uint>(vertexLayoutIdx) << StringId24Bits) | (static_cast<uint>(kind) << (StringId24Bits + 4));
 	hash *= 31;
 	hash += entryPointStrHash;
 	return hash;
@@ -51,7 +51,6 @@ ShaderInfoWGPUImpl::ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept
 	, defines(std::move(other.defines))
 	, modules(std::move(other.modules))
 	, modulesMap(std::move(other.modulesMap))
-	, entryPoints(std::move(other.entryPoints))
 	, shaderKinds(other.shaderKinds)
 
 {
@@ -66,8 +65,7 @@ ShaderInfoWGPUImpl& ShaderInfoWGPUImpl::operator=(ShaderInfoWGPUImpl&& other) no
 	defines = std::move(other.defines);
 	modules = std::move(other.modules);
 	modulesMap = std::move(other.modulesMap);
-	entryPoints = std::move(other.entryPoints);
-	shaderKinds == other.shaderKinds;
+	shaderKinds = other.shaderKinds;
 	other.shaderPackFile = nullptr;
 	return *this;
 }
@@ -100,7 +98,7 @@ bool ShaderInfoWGPUImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int
 			queryStr.Append("|");
 		queryStr.Append(defines[id]);
 	}
-	outHash = StringToHash(queryStr, true);
+	outHash = StringId24(queryStr, true);
 	return true;
 }
 
@@ -154,23 +152,23 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	defer{
 		if (shaderPackFile)
-			m_shaderCache.remove(StringToHash(shaderInfoKvs.GetName()));
+			m_shaderCache.remove(StringId24(shaderInfoKvs.GetName()));
 	};
 
-	if (!strstr(filename, shaderInfoKvs.GetName()))
+	if (!CString::SubString(filename, shaderInfoKvs.GetName()))
 	{
 		ASSERT_FAIL("Shader package '%s' file name doesn't match it's name '%s' in desc", filename, shaderInfoKvs.GetName());
 		return 0;
 	}
 
-	auto it = m_shaderCache.find(StringToHash(shaderInfoKvs.GetName()));
+	auto it = m_shaderCache.find(StringId24(shaderInfoKvs.GetName()));
 	if (!it.atEnd())
 	{
 		ASSERT_FAIL("Shader '%s' has been already loaded from different package", shaderInfoKvs.GetName());
 		return 0;
 	}
 
-	it = m_shaderCache.insert(StringToHash(shaderInfoKvs.GetName()));
+	it = m_shaderCache.insert(StringId24(shaderInfoKvs.GetName()));
 
 	ShaderInfoWGPUImpl& shaderInfo = *it;
 	shaderInfo.shaderPackFile = shaderPackFile;
@@ -184,35 +182,12 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			shaderInfo.defines.append(def);
 	}
 
-	for (const KVSection* entryPointKey : shaderInfoKvs.Get("EntryPoints").Keys())
-	{
-		EqStringRef kindStr = entryPointKey->GetName();
-		EqStringRef entryPointName = KV_GetValueString(entryPointKey);
-		int kind = 0;
-
-		if (kindStr == s_shaderKindVertexName)
-			kind = SHADERKIND_VERTEX;
-		else if (kindStr == s_shaderKindFragmentName)
-			kind = SHADERKIND_FRAGMENT;
-		else if (kindStr == s_shaderKindComputeName)
-			kind = SHADERKIND_COMPUTE;
-
-		const int entryPointId = StringToHash(entryPointName) | (kind << 24);
-		ASSERT_MSG(shaderInfo.entryPoints.find(entryPointId).atEnd(), "Shader %s entry point %s with kind %s", shaderInfoKvs.GetName(), entryPointName.ToCString(), kindStr.ToCString());
-
-		ShaderInfoWGPUImpl::EntryPoint& entryPoint = *shaderInfo.entryPoints.insert(entryPointId);
-		entryPoint.name = entryPointName;
-		entryPoint.kind = kind;
-
-		shaderInfo.shaderKinds |= kind;
-	}
-
 	for (const KVSection* key : shaderInfoKvs.Get("VertexLayouts").Keys())
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
 		layout.name = key->GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
-			layout.nameHash = StringToHash(layout.name);
+			layout.nameHash = StringId24(layout.name);
 		
 		if (!CString::CompareCaseIns(KV_GetValueString(key, 0), "aliasOf"))
 		{
@@ -222,9 +197,70 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		}
 	}
 
-	const KVSection* fileListSec = shaderInfoKvs["FileList"];
+	auto getKind = [](const EqStringRef& kindStr) -> int {
+		if (!kindStr.CompareCaseIns(s_shaderKindVertexName))
+			return SHADERKIND_VERTEX;
+		else if (!kindStr.CompareCaseIns(s_shaderKindFragmentName))
+			return SHADERKIND_FRAGMENT;
+		else if (!kindStr.CompareCaseIns(s_shaderKindComputeName))
+			return SHADERKIND_COMPUTE;
+		return 0;
+	};
+
+	auto getKindExt = [](int kind) -> char* {
+		if (kind == SHADERKIND_VERTEX)
+			return ".vert";
+		if (kind == SHADERKIND_FRAGMENT)
+			return ".frag";
+		if (kind == SHADERKIND_COMPUTE)
+			return ".comp";
+		return nullptr;
+	};
 
 	int filesFound = 0;
+	const KVSection* fileListSec = shaderInfoKvs["FileList"];
+	for (const KVSection* itemSec : fileListSec->Keys("wgsl"))
+	{
+		int vertLayoutIdx = -1;
+		EqStringRef kindStr;
+		EqStringRef entryPointName;
+
+		// query string is not available in wgsl due to defines absense
+		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName) < 3)
+		{
+			ASSERT_FAIL("Shader %s 'wgsl' does not have 3 values");
+			break;
+		}
+
+		const int kind = getKind(kindStr);
+		ASSERT_MSG(kind != 0, "Shader kind is not valid");
+
+		shaderInfo.shaderKinds |= kind;
+
+		const int moduleIndex = shaderInfo.modules.numElem();
+		{
+			const EqString shaderFileName = EqString::Format("%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, getKindExt(kind));
+
+			ShaderInfoWGPUImpl::Module& modInfo = shaderInfo.modules.append();
+			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
+			modInfo.type = SHADERMODULE_WGSL;
+			modInfo.kind = static_cast<EShaderKind>(kind);
+		}
+		{
+			const int entryPointStrHash = StringId24(entryPointName);
+			const uint shaderModuleId = PackShaderModuleId(0, vertLayoutIdx, kind, entryPointStrHash);
+
+			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
+			ASSERT_MSG(exIt.atEnd(), "%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr.ToCString(), exIt.value());
+
+			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
+		}
+		++filesFound;
+
+		if (wgpu_preload_shaders.GetBool())
+			GetOrLoadShaderModule(shaderInfo, moduleIndex);
+	}
+
 	for (const KVSection* itemSec : fileListSec->Keys("spv"))
 	{
 		int vertLayoutIdx = -1;
@@ -233,66 +269,38 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		EqStringRef queryStr;
 		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
 		{
-			ASSERT_FAIL("Shader %s 'spv' does not have 4 values (old shader version?)");
+			ASSERT_FAIL("Shader %s 'spv' does not have 4 values");
 			break;
 		}
 
-		EqString kindExt;
-		int kind = 0;
-		{
-			if (!kindStr.CompareCaseIns("Vertex"))
-			{
-				kind = SHADERKIND_VERTEX;
-				kindExt = ".vert";
-			}
-			else if (!kindStr.CompareCaseIns("Fragment"))
-			{
-				kind = SHADERKIND_FRAGMENT;
-				kindExt = ".frag";
-			}
-			else if (!kindStr.CompareCaseIns("Compute"))
-			{
-				kind = SHADERKIND_COMPUTE;
-				kindExt = ".comp";
-			}
-		}
+		const int kind = getKind(kindStr);
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");
-		const int queryStrHash = StringToHash(queryStr, true);
-		const int entryPointStrHash = StringToHash(entryPointName);
-		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
-		const EqString shaderFileName = EqString::Format("%s-%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name.ToCString(), queryStr, kindExt.ToCString());
-		const int shaderModuleFileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
-		WGPUShaderModule rhiShaderModule = nullptr;
-		if (wgpu_preload_shaders.GetBool())
-		{
-			CMemoryStream shaderData(PP_SL);
-			{
-				IFilePtr shaderFile = shaderInfo.shaderPackFile->Open(shaderModuleFileIndex, VS_OPEN_READ);
-				if (!shaderFile)
-				{
-					MsgError("Can't open shader %s in shader package!\n", shaderFileName.ToCString());
-					return 0;
-				}
-				shaderData.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, shaderFile->GetSize());
-				shaderData.AppendStream(shaderFile);
-			}
 
-			rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), EqString::Format("%s-%s", shaderInfoKvs.GetName(), shaderFileName.ToCString()));
-			if (!rhiShaderModule)
-			{
-				MsgError("Can't create shader module %s!\n", shaderFileName.ToCString());
-				return 0;
-			}
-		}
+		shaderInfo.shaderKinds |= kind;
 
-		const int moduleIndex = shaderInfo.modules.append({ rhiShaderModule, static_cast<EShaderKind>(kind), shaderModuleFileIndex });
-		auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
-		if (!exIt.atEnd())
+		const int moduleIndex = shaderInfo.modules.numElem();
 		{
-			ASSERT_FAIL("%s-%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr, queryStr, exIt.value());
+			const EqString shaderFileName = EqString::Format("%s-%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, queryStr, getKindExt(kind));
+			
+			ShaderInfoWGPUImpl::Module& modInfo = shaderInfo.modules.append();
+			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
+			modInfo.type = SHADERMODULE_SPIRV;
+			modInfo.kind = static_cast<EShaderKind>(kind);
 		}
-		shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
+		{
+			const int queryStrHash = StringId24(queryStr, true);
+			const int entryPointStrHash = StringId24(entryPointName);
+			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
+
+			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
+			ASSERT_MSG(exIt.atEnd(), "%s-%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), queryStr, kindStr.ToCString(), exIt.value());
+
+			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
+		}
 		++filesFound;
+
+		if (wgpu_preload_shaders.GetBool())
+			GetOrLoadShaderModule(shaderInfo, moduleIndex);
 	}
 
 	// we need to validate references so collect refs in second pass
@@ -310,18 +318,11 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			break;
 		}
 
-		int kind = 0;
-		{
-			if (!kindStr.CompareCaseIns("Vertex"))
-				kind = SHADERKIND_VERTEX;
-			else if (!kindStr.CompareCaseIns("Fragment"))
-				kind = SHADERKIND_FRAGMENT;
-			else if (!kindStr.CompareCaseIns("Compute"))
-				kind = SHADERKIND_COMPUTE;
-		}
+		const int kind = getKind(kindStr);
+
 		ASSERT_MSG(kind != 0, "Shader kind is not valid");
-		const int queryStrHash = StringToHash(queryStr, true);
-		const int entryPointStrHash = StringToHash(entryPointName);
+		const int queryStrHash = StringId24(queryStr, true);
+		const int entryPointStrHash = StringId24(entryPointName);
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertLayoutIdx, kind, entryPointStrHash);
 		ASSERT_MSG(shaderInfo.modules[refSpvIndex].kind == static_cast<EShaderKind>(kind), "%s ref %d (%s-%s) points to invalid shader kind", shaderInfo.shaderName.ToCString(), refSpvIndex, kindStr, queryStr);
 
@@ -447,13 +448,13 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	if (isCubeMap)
 		texDepth = 6; // TODO: CubeArray, WGPU supports it
 
-	WGPUTextureUsageFlags rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
+	WGPUTextureUsage rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
 	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
 	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
 
 	WGPUTextureDescriptor rhiTextureDesc = {};
-	rhiTextureDesc.label = texture->GetName();
+	rhiTextureDesc.label = _WSTR(texture->GetName());
 	rhiTextureDesc.mipLevelCount = mipmapCount;
 	rhiTextureDesc.size = WGPUExtent3D{ (uint)newSize.width, (uint)newSize.height, (uint)texDepth };
 	rhiTextureDesc.sampleCount = sampleCount;
@@ -605,7 +606,7 @@ IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutD
 	}
 
 	WGPUPipelineLayoutDescriptor rhiPipelineLayoutDesc = {};
-	rhiPipelineLayoutDesc.label = layoutDesc.name.Length() ? layoutDesc.name.ToCString() : nullptr;
+	rhiPipelineLayoutDesc.label = _WSTR(layoutDesc.name.Length() ? layoutDesc.name.ToCString() : nullptr);
 	rhiPipelineLayoutDesc.bindGroupLayoutCount = rhiBindGroupLayout.numElem();
 	rhiPipelineLayoutDesc.bindGroupLayouts = rhiBindGroupLayout.ptr();
 
@@ -697,7 +698,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 	
-	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = rhiLayout[bindGroupDesc.groupIdx];
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
@@ -735,7 +736,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 
-	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CWGPURenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
@@ -773,7 +774,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 
-	rhiBindGroupDesc.label = bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr;
+	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
 	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(static_cast<const CWGPUComputePipeline*>(computePipeline)->m_rhiComputePipeline, bindGroupDesc.groupIdx);
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
@@ -796,15 +797,36 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 	rhiDawnShaderModuleDesc.chain.sType = WGPUSType_DawnShaderModuleSPIRVOptionsDescriptor;
 	rhiDawnShaderModuleDesc.allowNonUniformDerivatives = true;
 
-	WGPUShaderModuleSPIRVDescriptor rhiSpirvDesc = {};
-	rhiSpirvDesc.chain.sType = WGPUSType_ShaderModuleSPIRVDescriptor;
+	WGPUShaderSourceSPIRV rhiSpirvDesc = {};
+	rhiSpirvDesc.chain.sType = WGPUSType_ShaderSourceSPIRV;
 	rhiSpirvDesc.chain.next = &rhiDawnShaderModuleDesc.chain;
 	rhiSpirvDesc.codeSize = size / sizeof(uint32_t);
 	rhiSpirvDesc.code = code;
 
 	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
 	rhiShaderModuleDesc.nextInChain = &rhiSpirvDesc.chain;
-	rhiShaderModuleDesc.label = name;
+	rhiShaderModuleDesc.label = _WSTR(name);
+
+	WGPUShaderModule shaderModule = nullptr;
+	g_renderWorker.WaitForExecute(__func__, [this, &shaderModule, &rhiShaderModuleDesc]() {
+		shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
+		return 0;
+	});
+
+	return shaderModule;
+}
+
+WGPUShaderModule CWGPURenderAPI::CreateShaderWGSL(const char* szText, const char* name) const
+{
+	PROF_EVENT_F();
+
+	WGPUShaderSourceWGSL rhiWgslDesc = {};
+	rhiWgslDesc.chain.sType = WGPUSType_ShaderSourceWGSL;
+	rhiWgslDesc.code = _WSTR(szText);
+
+	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
+	rhiShaderModuleDesc.nextInChain = &rhiWgslDesc.chain;
+	rhiShaderModuleDesc.label = _WSTR(name);
 
 	WGPUShaderModule shaderModule = nullptr;
 	g_renderWorker.WaitForExecute(__func__, [this, &shaderModule, &rhiShaderModuleDesc]() {
@@ -835,7 +857,19 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl&
 	}
 
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
-	WGPUShaderModule rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), shaderModuleName);
+
+	WGPUShaderModule rhiShaderModule = nullptr;
+	if (mod.type == SHADERMODULE_SPIRV)
+	{
+		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), shaderModuleName);
+	}
+	else if(mod.type == SHADERMODULE_WGSL)
+	{
+		const int _zero = 0;
+		shaderData.Write(&_zero, 1, sizeof(_zero));
+		rhiShaderModule = CreateShaderWGSL(reinterpret_cast<char*>(shaderData.GetBasePointer()), shaderModuleName);
+	}
+	
 	if (!rhiShaderModule)
 	{
 		MsgError("Can't create shader module %s!\n", shaderModuleName.ToCString());
@@ -848,7 +882,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl&
 
 void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const
 {
-	const int shaderNameHash = StringToHash(shaderName);
+	const int shaderNameHash = StringId24(shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
 	if (shaderIt.atEnd())
 	{
@@ -864,7 +898,7 @@ void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStrin
 		return;
 	}
 
-	const int entryPointStrHash = StringToHash(entryPointName);
+	const int entryPointStrHash = StringId24(entryPointName);
 
 	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
 	{
@@ -900,7 +934,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 {
 	PROF_EVENT("CWGPURenderAPI::CreateRenderPipeline");
 
-	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
+	const int shaderNameHash = StringId24(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
 	if (shaderIt.atEnd())
 	{
@@ -961,6 +995,12 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	Array<WGPUConstantEntry> rhiVertexPipelineConstants(PP_SL);
 	Array<WGPUConstantEntry> rhiFragmentPipelineConstants(PP_SL);
 
+	for (const PipelineConst& constant : pipelineDesc.vertex.constants)
+		rhiVertexPipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value});
+
+	for (const PipelineConst& constant : pipelineDesc.fragment.constants)
+		rhiFragmentPipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value });
+
 	WGPURenderPipelineDescriptor rhiRenderPipelineDesc = {};
 	if (pipelineLayout)
 	{
@@ -999,7 +1039,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 
 		WGPUShaderModule rhiVertexShaderModule = nullptr;
 		{
-			const int entryPointStrHash = StringToHash(pipelineDesc.vertex.shaderEntryPoint);
+			const int entryPointStrHash = StringId24(pipelineDesc.vertex.shaderEntryPoint);
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
@@ -1019,7 +1059,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 
 		WGPUVertexState& rhiVertexState = rhiRenderPipelineDesc.vertex;
 		rhiVertexState.module = rhiVertexShaderModule;
-		rhiVertexState.entryPoint = pipelineDesc.vertex.shaderEntryPoint;
+		rhiVertexState.entryPoint = _WSTR(pipelineDesc.vertex.shaderEntryPoint);
 		rhiVertexState.bufferCount = rhiVertexBufferLayoutList.numElem();
 		rhiVertexState.buffers = rhiVertexBufferLayoutList.ptr();
 		rhiVertexState.constants = rhiVertexPipelineConstants.ptr();
@@ -1046,7 +1086,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	if (pipelineDesc.depthStencil.format != FORMAT_NONE)
 	{
 		rhiDepthStencil.format = GetWGPUTextureFormat(pipelineDesc.depthStencil.format);
-		rhiDepthStencil.depthWriteEnabled = pipelineDesc.depthStencil.depthWrite;
+		rhiDepthStencil.depthWriteEnabled = (WGPUOptionalBool)pipelineDesc.depthStencil.depthWrite;
 		rhiDepthStencil.depthCompare = pipelineDesc.depthStencil.depthTest ? g_wgpuCompareFunc[pipelineDesc.depthStencil.depthFunc] : WGPUCompareFunction_Always;
 		rhiDepthStencil.stencilReadMask = pipelineDesc.depthStencil.stencilMask;
 		rhiDepthStencil.stencilWriteMask = pipelineDesc.depthStencil.stencilWriteMask;
@@ -1097,7 +1137,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 
 		WGPUShaderModule rhiFragmentShaderModule = nullptr; // TODO: fetch from cache of fragment modules?
 		{
-			const int entryPointStrHash = StringToHash(pipelineDesc.fragment.shaderEntryPoint);
+			const int entryPointStrHash = StringId24(pipelineDesc.fragment.shaderEntryPoint);
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT, entryPointStrHash);
 			auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
@@ -1116,7 +1156,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 		}
 
 		rhiFragmentState.module = rhiFragmentShaderModule;
-		rhiFragmentState.entryPoint = pipelineDesc.fragment.shaderEntryPoint;
+		rhiFragmentState.entryPoint = _WSTR(pipelineDesc.fragment.shaderEntryPoint);
 		rhiFragmentState.targetCount = rhiColorTargets.numElem();
 		rhiFragmentState.targets = rhiColorTargets.ptr();
 		rhiFragmentState.constants = rhiFragmentPipelineConstants.ptr();
@@ -1157,7 +1197,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
-	rhiRenderPipelineDesc.label = pipelineName;
+	rhiRenderPipelineDesc.label = _WSTR(pipelineName);
 
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
@@ -1178,7 +1218,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 IGPUCommandRecorderPtr CWGPURenderAPI::CreateCommandRecorder(const char* name, void* userData) const
 {
 	WGPUCommandEncoderDescriptor rhiEncoderDesc = {};
-	rhiEncoderDesc.label = name;
+	rhiEncoderDesc.label = _WSTR(name);
 	WGPUCommandEncoder rhiCommandEncoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
 	if (!rhiCommandEncoder)
 		return nullptr;
@@ -1241,7 +1281,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 
 IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
 {
-	const int shaderNameHash = StringToHash(pipelineDesc.shaderName);
+	const int shaderNameHash = StringId24(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
 	if (shaderIt.atEnd())
 	{
@@ -1271,7 +1311,7 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 
 	if (layoutIdx == -1)
 	{
-		ASSERT_FAIL("Compute pipeline %s has unknown layout id", pipelineDesc.shaderName.ToCString());
+		ASSERT_FAIL("Compute pipeline %s has unknown layout id %d", pipelineDesc.shaderName.ToCString(), pipelineDesc.shaderLayoutId);
 		return nullptr;
 	}
 	if (shaderInfo.vertexLayouts[layoutIdx].aliasOf != -1)
@@ -1279,7 +1319,7 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 
 	WGPUShaderModule rhiComputeShaderModule = nullptr;
 	{
-		const int entryPointStrHash = StringToHash(pipelineDesc.shaderEntryPoint);
+		const int entryPointStrHash = StringId24(pipelineDesc.shaderEntryPoint);
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, layoutIdx, SHADERKIND_COMPUTE, entryPointStrHash);
 		auto itShaderModuleId = shaderInfo.modulesMap.find(shaderModuleId);
 
@@ -1299,17 +1339,20 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 
 	Array<WGPUConstantEntry> rhiComputePipelineConstants(PP_SL);
 
+	for (const PipelineConst& constant : pipelineDesc.constants)
+		rhiComputePipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value});
+
 	WGPUComputePipelineDescriptor rhiComputePipelineDesc = {};
 	rhiComputePipelineDesc.compute.constantCount = rhiComputePipelineConstants.numElem();
 	rhiComputePipelineDesc.compute.constants = rhiComputePipelineConstants.ptr();
-	rhiComputePipelineDesc.compute.entryPoint = pipelineDesc.shaderEntryPoint;
+	rhiComputePipelineDesc.compute.entryPoint = _WSTR(pipelineDesc.shaderEntryPoint);
 	rhiComputePipelineDesc.compute.module = rhiComputeShaderModule;
 
 	if (pipelineLayout)
 		rhiComputePipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
-	rhiComputePipelineDesc.label = pipelineName;
+	rhiComputePipelineDesc.label = _WSTR(pipelineName);
 
 	{
 		PROF_EVENT(EqString::Format("CreateComputePipeline for %s", pipelineName.ToCString()));
@@ -1334,7 +1377,7 @@ IGPUComputePassRecorderPtr CWGPURenderAPI::BeginComputePass(const char* name, vo
 		return nullptr;
 
 	WGPUComputePassDescriptor rhiComputePassDesc = {};
-	rhiComputePassDesc.label = name;
+	rhiComputePassDesc.label = _WSTR(name);
 	//rhiComputePassDesc.timestampWrites TODO
 	WGPUComputePassEncoder rhiComputePassEncoder = wgpuCommandEncoderBeginComputePass(rhiCommandEncoder, &rhiComputePassDesc);
 	if (!rhiComputePassEncoder)
@@ -1443,7 +1486,7 @@ void CWGPURenderAPI::Flush()
 static void CreateQuerySet()
 {
 	WGPUQuerySetDescriptor rhiQuerySetDesc = {};
-	rhiQuerySetDesc.label = "name";
+	rhiQuerySetDesc.label = _WSTR("querySet");
 	rhiQuerySetDesc.type = WGPUQueryType_Occlusion;
 	rhiQuerySetDesc.count = 32;
 	WGPUQuerySet rhiQuerySet = wgpuDeviceCreateQuerySet(nullptr, &rhiQuerySetDesc);

@@ -52,7 +52,7 @@ static void cmd_conKeyList(const ConCommandBase* base, Array<EqString>& list, co
 			break;
 		}
 
-		if (*query == 0 || xstristr(name.name, query))
+		if (*query == 0 || CString::SubStringCaseIns(name.name, query))
 			list.append(name.name);
 
 	} while (names++);
@@ -91,7 +91,7 @@ static void InputExecInputCommand(void* userData, short value)
 	const InputCommand& cmd = *reinterpret_cast<const InputBinding*>(userData);
 
 	Array<EqString> args(PP_SL);
-	xstrsplit(cmd.argumentString, " ", args);
+	StringSplit(cmd.argumentString, " ", args);
 
 	const ConCommand* conCmd = (abs(value) > 16384) ? cmd.activateCmd : cmd.deactivateCmd;
 	if (!conCmd)
@@ -212,7 +212,7 @@ static bool InputGetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 
 	for (int i = 0; i < 2; i++)
 	{
-		const char* subStart = xstristr(keyStr, "+");
+		const char* subStart = CString::SubStringCaseIns(keyStr, "+");
 		if (!subStart)
 			continue;
 
@@ -314,7 +314,7 @@ void CInputCommandBinder::Init()
 	for (InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (!kn->hrname)
-			kn->hrname = xstrdup(SDL_GetKeyName(SDL_SCANCODE_TO_KEYCODE(kn->keynum)));
+			kn->hrname = CString::DuplicateNew(SDL_GetKeyName(SDL_SCANCODE_TO_KEYCODE(kn->keynum)));
 	}
 #endif // PLAT_SDL
 

@@ -45,17 +45,17 @@ BEGIN_SHADER_CLASS(
 	SHADER_INIT_PARAMS()
 	{
 		m_flags |= MATERIAL_FLAG_NO_Z_TEST;
-		m_fontParamsVar = m_material->GetMaterialVar("FontParams", "[0.94 0.95 0, 1]");
-		m_fontBaseColor = m_material->GetMaterialVar("FontBaseColor", "[1 1 0 1]");
+		m_fontParamsVar = GetMaterialVar("FontParams", "[0.94 0.95 0, 1]");
+		m_fontBaseColor = GetMaterialVar("FontBaseColor", "[1 1 0 1]");
 
-		m_shadowParamsVar = m_material->GetMaterialVar("ShadowParams", "[0.94 0.95 0, 1]");
-		m_shadowColor = m_material->GetMaterialVar("ShadowColor", "[0 0 0 1]");
-		m_shadowOffset = m_material->GetMaterialVar("ShadowOffset", "[0 0]");
+		m_shadowParamsVar = GetMaterialVar("ShadowParams", "[0.94 0.95 0, 1]");
+		m_shadowColor = GetMaterialVar("ShadowColor", "[0 0 0 1]");
+		m_shadowOffset = GetMaterialVar("ShadowOffset", "[0 0]");
 	}
 
 	SHADER_INIT_TEXTURES()
 	{
-		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
+		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 	}
 
 	bool SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial) override

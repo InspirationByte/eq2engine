@@ -63,23 +63,28 @@ const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(c
 }
 
 template<typename SIGNATURE>
-template<typename... Params>
-void Event<SIGNATURE>::operator()(Params&&... args)
+template<typename FUNC>
+void Event<SIGNATURE>::ForEach(FUNC func)
 {
 	SubscriptionObject* sub = Atomic::Load(m_subs);
 	SubscriptionObject* prevSub = nullptr;
 	while (sub)
 	{
-		if (sub->unsubscribe || sub->runOnce)
+		if(sub->runOnce)
 		{
-			if(sub->runOnce)
-			{
-				sub->runOnce = false;
-				sub->unsubscribe = true;
-				
-				sub->func(std::forward<Params>(args)...);
-			}
+			sub->runOnce = false;
+			sub->unsubscribe = true;
+			
+			func(sub);
 
+			// goto next
+			prevSub = sub;
+			sub = sub->next;
+			continue;
+		}
+
+		if (sub->unsubscribe)
+		{
 			// if(sub == m_subs)
 			//		m_subs = sub->next;
 			// else
@@ -108,11 +113,29 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 		}
 		else
 		{
-			sub->func(std::forward<Params>(args)...);
+			func(sub);
 
 			// goto next
 			prevSub = sub;
 			sub = sub->next;
 		}
 	}
+}
+
+template<typename SIGNATURE>
+template<typename... Params>
+void Event<SIGNATURE>::operator()(Params&&... args)
+{
+	ForEach([&](SubscriptionObject* sub){
+		sub->func(std::forward<Params>(args)...);
+	});
+}
+
+template<typename SIGNATURE>
+void Event<SIGNATURE>::GetSubscriptionsFlat(Array<SubscriptionObject*>& list)
+{
+	list.clear();
+	ForEach([&](SubscriptionObject* sub){
+		list.append(sub);
+	});
 }

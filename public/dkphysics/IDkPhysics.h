@@ -78,11 +78,11 @@ inline void CopyMaterialParams(phySurfaceMaterial_t* pFrom, phySurfaceMaterial_t
 
 	pTo->surfaceword = pFrom->surfaceword;
 
-	pTo->footStepSound = xstrdup(pFrom->footStepSound);
-	pTo->lightImpactSound = xstrdup(pFrom->lightImpactSound);
-	pTo->heavyImpactSound = xstrdup(pFrom->heavyImpactSound);
-	pTo->bulletImpactSound = xstrdup(pFrom->bulletImpactSound);
-	pTo->scrapeSound = xstrdup(pFrom->scrapeSound);
+	pTo->footStepSound = pFrom->footStepSound;
+	pTo->lightImpactSound = pFrom->lightImpactSound;
+	pTo->heavyImpactSound = pFrom->heavyImpactSound;
+	pTo->bulletImpactSound = pFrom->bulletImpactSound;
+	pTo->scrapeSound = pFrom->scrapeSound;
 	pTo->nFlags = pFrom->nFlags;
 }
 
@@ -94,11 +94,11 @@ inline void DefaultMaterialParams(phySurfaceMaterial_t* pMaterial)
 
 	pMaterial->surfaceword = 'C';
 
-	pMaterial->footStepSound = xstrdup("physics.footstep");
-	pMaterial->lightImpactSound = xstrdup("physics.lightimpact");
-	pMaterial->heavyImpactSound = xstrdup("physics.heavyimpact");
-	pMaterial->bulletImpactSound = xstrdup("physics.bulletimpact");
-	pMaterial->scrapeSound = xstrdup("physics.bulletimpact");
+	pMaterial->footStepSound = "physics.footstep";
+	pMaterial->lightImpactSound = "physics.lightimpact";
+	pMaterial->heavyImpactSound = "physics.heavyimpact";
+	pMaterial->bulletImpactSound = "physics.bulletimpact";
+	pMaterial->scrapeSound = "physics.bulletimpact";
 	pMaterial->nFlags = 0;
 }
 

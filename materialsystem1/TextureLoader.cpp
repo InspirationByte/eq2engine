@@ -62,7 +62,7 @@ static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const cha
 		if (animScriptBuffer)
 		{
 			Array<EqString> frameFilenames(PP_SL);
-			xstrsplit(animScriptBuffer, "\n", frameFilenames);
+			StringSplit(animScriptBuffer, "\n", frameFilenames);
 			for (int i = 0; i < frameFilenames.numElem(); i++)
 			{
 				// delete carriage return character if any

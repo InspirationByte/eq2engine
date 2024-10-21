@@ -11,6 +11,7 @@
 #include "IDynamicMesh.h"
 #include "render/StudioRenderDefs.h"
 
+
 BEGIN_SHADER_CLASS(
 	BaseUnlit,
 	SHADER_VERTEX_ID(DynMeshVertex),
@@ -20,13 +21,11 @@ BEGIN_SHADER_CLASS(
 )
 	SHADER_INIT_PARAMS()
 	{
-		m_colorVar = m_material->GetMaterialVar("color", "[1 1 1 1]");
-
-		FixedArray<Vector4D, 2> bufferData;
-		bufferData.append(m_colorVar.Get());
-		bufferData.append(Vector4D(1, 1, 0, 0));
-
-		m_materialParamsBuffer = renderAPI->CreateBuffer(BufferInfo(bufferData.ptr(), bufferData.numElem()), BUFFERUSAGE_UNIFORM | BUFFERUSAGE_COPY_DST, "materialParams");
+		m_colorVar = GetMaterialVar("color", "[1 1 1 1]");
+		m_materialParamsBuffer = MakeParameterUniformBuffer(
+			m_colorVar.Get(),
+			Vector4D(1, 1, 0, 0)
+		);
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -37,13 +36,10 @@ BEGIN_SHADER_CLASS(
 	void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const
 	{
 		bool fogEnable = true;
-		SHADER_PARAM_BOOL_NEG(NoFog, fogEnable, false);
-		if (fogEnable)
+		if (GetMaterialValue("NoFog", false) == false)
 			shaderQuery.append("DOFOG");
 
-		bool vertexColor = false;
-		SHADER_PARAM_BOOL(VertexColor, vertexColor, false);
-		if (vertexColor)
+		if (GetMaterialValue("VertexColor", false))
 			shaderQuery.append("VERTEXCOLOR");
 
 		if (m_flags & MATERIAL_FLAG_ALPHATESTED)
@@ -110,7 +106,7 @@ BEGIN_SHADER_CLASS(
 			// TODO: remove
 			if (setupParams.pipelineInfo.vertexLayoutId == SHADER_VERTEX_ID(EGFVertexSkinned))
 			{
-				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID)
+				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID);
 
 				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 					.Buffer(0, setupParams.uniformBuffers[0].bufferView)

@@ -123,7 +123,7 @@ const char* CCommandLine::GetArgumentString(int index) const
 	if(!m_args.inRange(index))
 		return nullptr;
 
-	return m_args[index].ToCString();
+	return m_args[index];
 }
 
 int CCommandLine::FindArgument(const char* arg, int startfrom /* = 0 */) const
@@ -151,7 +151,7 @@ const char* CCommandLine::GetArgumentsOf(int paramIndex) const
 
 	for (int i = paramIndex+1; i < m_args.numElem(); i++ )
 	{
-		const char* argStr = m_args[i].ToCString();
+		const char* argStr = m_args[i];
 
 		if (*argStr == '+' || *argStr == '-')
 			break;
@@ -166,7 +166,7 @@ const char* CCommandLine::GetArgumentsOf(int paramIndex) const
 			_tmpArguments.Append(argStr);
 	}
 
-	return _tmpArguments.ToCString();
+	return _tmpArguments;
 }
 
 

@@ -11,30 +11,6 @@
 #define PROFILE_ENABLE
 #endif
 
-// source-line contailer
-struct PPSourceLine
-{
-	uint64 data{ 0 };
-
-	static PPSourceLine Empty();
-	static PPSourceLine Make(const char* filename, int line);
-
-	const char* GetFileName() const;
-	int			GetLine() const;
-};
-
-// Source-line value constructor helper
-template<typename T>
-struct PPSLValueCtor
-{
-	T x;
-	PPSLValueCtor<T>(const PPSourceLine& sl) : x() {}
-};
-
-// Source-line placement new wrapper for default constructor
-template<typename T>
-void PPSLPlacementNew(void* item, const PPSourceLine& sl) { new(item) PPSLValueCtor<T>(sl); }
-
 struct ProfEventWrp
 {
 public:
@@ -45,8 +21,6 @@ private:
 };
 
 #ifdef PROFILE_ENABLE
-
-#define PP_SL PPSourceLine::Make(__FILE__, __LINE__)
 
 IEXPORTS void ProfAddMarker(const char* text);
 IEXPORTS int ProfBeginMarker(const char* text);
@@ -62,8 +36,6 @@ inline ProfEventWrp::ProfEventWrp(const char* name)	{ eventId = ProfBeginMarker(
 inline ProfEventWrp::~ProfEventWrp()				{ ProfEndMarker(eventId); }
 
 #else
-
-#define PP_SL PPSourceLine::Empty()
 
 #define PROF_EVENT(name)
 #define PROF_EVENT_F()

@@ -50,7 +50,7 @@ Map<int, EqStringRef>& esl::bindings::BaseClassStorage::GetBaseClassNames()
 
 const char* esl::bindings::BaseClassStorage::Get(const char* className)
 {
-	const int nameHash = StringToHash(className);
+	const int nameHash = StringId24(className);
 	auto it = GetBaseClassNames().find(nameHash);
 	if (it.atEnd())
 		return nullptr;

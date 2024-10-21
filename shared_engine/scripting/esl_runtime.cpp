@@ -211,7 +211,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 			esl::TypeInfo typeInfoEnumerator = typeInfo;
 			while (typeInfoEnumerator.className)
 			{
-				const int classNameHash = StringToHash(typeInfoEnumerator.className);
+				const int classNameHash = StringId24(typeInfoEnumerator.className);
 				lua_pushinteger(L, classNameHash);
 
 				typeInfoEnumerator = typeInfoEnumerator.baseGetter();
@@ -258,7 +258,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		lua_rawset(L, mt);
 	}
 
-	const int classNameHash = StringToHash(typeInfo.className);
+	const int classNameHash = StringId24(typeInfo.className);
 	for (const esl::Member& mem : typeInfo.members)
 	{
 		{

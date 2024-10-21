@@ -36,11 +36,11 @@ void IParallelJob::InitJob()
 	m_primeJobs = 1;
 }
 
-void IParallelJob::InitSignal()
+void IParallelJob::InitSignal(bool manualReset)
 {
 	if (!m_doneEvent)
 	{
-		m_doneEvent = PPNew Threading::CEqSignal(true);
+		m_doneEvent = PPNew Threading::CEqSignal(manualReset);
 		m_doneEvent->Raise();
 	}
 }
@@ -132,7 +132,7 @@ void CEqJobManager::InitStartJob(IParallelJob* job)
 	StartJob(job);
 }
 
-void CEqJobManager::StartJob(IParallelJob* job)
+void CEqJobManager::StartJob(IParallelJob* job, bool submit)
 {
 	ASSERT(job->m_phase == IParallelJob::JOB_INIT);
 	ASSERT(job->m_primeJobs > 0);
@@ -144,7 +144,9 @@ void CEqJobManager::StartJob(IParallelJob* job)
 	if (canBeStarted)
 	{
 		DoStartJob(job);
-		Submit(1);
+
+		if(submit)
+			Submit(1);
 	}
 }
 

@@ -323,7 +323,7 @@ bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
 	if (!motionData)
 		return false;
 
-	const int animDataId = StringToHash(motionData->name, true);
+	const int animDataId = StringId24(motionData->name, true);
 
 	if (!m_nameToAnimData.find(animDataId).atEnd())
 		return false;
@@ -381,7 +381,7 @@ bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
 	for (const sequencedesc_t& seqDesc : motionData->sequences)
 	{
 		const int sequenceIdx = animData.sequences.numElem();
-		animData.nameToSequence.insert(StringToHash(seqDesc.name, true), sequenceIdx);
+		animData.nameToSequence.insert(StringId24(seqDesc.name, true), sequenceIdx);
 
 		AnimSequence& seqData = animData.sequences.append();
 		seqData.desc = &seqDesc;
@@ -437,7 +437,7 @@ int CAnimatingEGF::FindSequence(const char* name) const
 	const EqString motionDataName = seqName.Left(dotIdx);
 	const EqString sequenceName = seqName.Right(seqName.Length() - dotIdx - 1);
 
-	const auto animDataIdxIt = m_nameToAnimData.find(StringToHash(motionDataName, true));
+	const auto animDataIdxIt = m_nameToAnimData.find(StringId24(motionDataName, true));
 	if (animDataIdxIt.atEnd())
 	{
 		MsgWarning("Warning: '%s' - motion package '%s' is not referenced by '%s'!\n", name, motionDataName.ToCString(), m_geomReference->GetName());
@@ -445,7 +445,7 @@ int CAnimatingEGF::FindSequence(const char* name) const
 	}
 
 	const AnimDataProvider& animData = m_animData[*animDataIdxIt];
-	const auto sequenceIdxIt = animData.nameToSequence.find(StringToHash(sequenceName, true));
+	const auto sequenceIdxIt = animData.nameToSequence.find(StringId24(sequenceName, true));
 	if (sequenceIdxIt.atEnd())
 	{
 		MsgWarning("Warning: '%s' - Sequence '%s' not found in motion package '%s' referenced by '%s'!\n", name, sequenceName.ToCString(), motionDataName.ToCString(), m_geomReference->GetName());

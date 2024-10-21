@@ -179,7 +179,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 
 		if (srcVertex.weights.numElem())
 			vertexStreamsAvailableBits |= STUDIO_VERTFLAG_BONEWEIGHT;
-		else if (srcVertex.color.pack() != UINT_MAX)
+		else if (srcVertex.color.pack() != COM_UINT_MAX)
 			vertexStreamsAvailableBits |= STUDIO_VERTFLAG_COLOR;
 	}
 

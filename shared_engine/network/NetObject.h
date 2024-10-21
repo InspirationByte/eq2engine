@@ -290,10 +290,10 @@ struct NetPropType<T, true> : NetPropType<std::underlying_type_t<T>, false> {};
 // network variable declarations
 
 #define DEFINE_SENDPROP(name) \
-	{#name, StringToHashConst(#name), NETPROP_FLAG_SEND, NetPropType<typename decltype(NetPropertyHostType::name)::TYPE>::type, offsetOf(NetPropertyHostType, name), sizeof(NetPropertyHostType::name), nullptr},
+	{#name, StringIdConst24(#name), NETPROP_FLAG_SEND, NetPropType<typename decltype(NetPropertyHostType::name)::TYPE>::type, offsetOf(NetPropertyHostType, name), sizeof(NetPropertyHostType::name), nullptr},
 
 #define DEFINE_SENDPROP_EMBEDDED(name) \
-	{#name, StringToHashConst(#name), NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(NetPropertyHostType, name), 0, &memb(NetPropertyHostType, name).netPropertyMap },
+	{#name, StringIdConst24(#name), NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(NetPropertyHostType, name), 0, &memb(NetPropertyHostType, name).netPropertyMap },
 
 #define NETWORK_CHANGELIST(name)			m_changeList_##name
 #define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }

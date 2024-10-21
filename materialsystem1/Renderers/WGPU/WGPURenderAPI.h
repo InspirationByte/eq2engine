@@ -106,6 +106,7 @@ public:
 protected:
 
 	WGPUShaderModule			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
+	WGPUShaderModule			CreateShaderWGSL(const char* szText, const char* name = nullptr) const;
 
 	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
 	int							LoadShaderPackage(const char* filename);
