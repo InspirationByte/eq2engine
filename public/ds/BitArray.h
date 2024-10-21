@@ -111,26 +111,56 @@ inline void	BitArrayImpl::reset(STORAGE_TYPE* bitArray, int bitCount, bool value
 // returns total number of bits that are set to true
 inline int BitArrayImpl::numTrue(const STORAGE_TYPE* bitArray, int bitCount)
 {
+	if (!bitCount)
+		return 0;
+
 	int count = 0;
 	const int typeSize = bitArray2Dword(bitCount);
-	if (typeSize)
+
+	constexpr int storageMask = sizeof(STORAGE_TYPE) * 8 - 1;
+	const int remainder = bitCount & storageMask;
+	if (remainder)
+	{
+		for (int i = 0; i < typeSize - 1; i++)
+			count += numBitsSet(static_cast<uint>(bitArray[i]));
+
+		const STORAGE_TYPE lastChunkMask = (static_cast<STORAGE_TYPE>(1) << remainder) - 1;
+		count += numBitsSet(static_cast<uint>(bitArray[typeSize-1] & lastChunkMask));
+	}
+	else
 	{
 		for (int i = 0; i < typeSize; i++)
 			count += numBitsSet(static_cast<uint>(bitArray[i]));
 	}
+
 	return count;
 }
 
 // returns total number of bits that are set to false
 inline int BitArrayImpl::numFalse(const STORAGE_TYPE* bitArray, int bitCount)
 {
+	if (!bitCount)
+		return 0;
+
 	int count = 0;
 	const int typeSize = bitArray2Dword(bitCount);
-	if (typeSize)
+
+	constexpr int storageMask = sizeof(STORAGE_TYPE) * 8 - 1;
+	const int remainder = bitCount & storageMask;
+	if (remainder)
+	{
+		for (int i = 0; i < typeSize - 1; i++)
+			count += numBitsSet(static_cast<uint>(~bitArray[i]));
+
+		const STORAGE_TYPE lastChunkMask = (static_cast<STORAGE_TYPE>(1) << remainder) - 1;
+		count += numBitsSet(static_cast<uint>(~bitArray[typeSize - 1] & lastChunkMask));
+	}
+	else
 	{
 		for (int i = 0; i < typeSize; i++)
-			count += numBitsSet(~static_cast<uint>(bitArray[i]));
+			count += numBitsSet(static_cast<uint>(~bitArray[i]));
 	}
+
 	return count;
 }
 
