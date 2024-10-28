@@ -1218,17 +1218,28 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 
 	if(ImGui::CollapsingHeader("Statistics"))
 	{
-		ImGui::Text("Archetypes: %d (in use %d)", renderer.m_drawLodsList.NumElem(), usedArchetypes);
-		ImGui::Text("Instances: %d (%d slots)", instances.m_instances.numElem() - instances.m_freeIndices.numElem() - 1, instances.m_instances.numElem());
-		ImGui::Text("Buffer ref updates: %u", instances.m_buffersUpdated);
+		ImGui::TextDisabled("Archetypes: %d (in use %d)", renderer.m_drawLodsList.NumElem(), usedArchetypes);
+		ImGui::TextDisabled("Instances: %d (%d slots)", instances.m_instances.numElem() - instances.m_freeIndices.numElem() - 1, instances.m_instances.numElem());
+		ImGui::TextDisabled("Buffer ref updates: %u", instances.m_buffersUpdated);
 
-		ImGui::Text("Draw materials: %d", renderer.m_dbgStatsDrawInfos);
-		ImGui::Text("Draw calls: %d", renderer.m_dbgStatsDrawCalls);
+		ImGui::TextDisabled("Draw materials: %d", renderer.m_dbgStatsDrawInfos);
+		ImGui::TextDisabled("Draw calls: %d", renderer.m_dbgStatsDrawCalls);
 
-		ImGui::Text(" %d draw infos: %.2f KB", renderer.m_drawInfos.numElem(), memBytesToKB(renderer.m_drawInfos.numSlots() * sizeof(renderer.m_drawInfos[0])));
-		ImGui::Text(" %d batchs: %.2f KB", renderer.m_drawBatchs.NumElem(), memBytesToKB(renderer.m_drawBatchs.NumSlots() * sizeof(renderer.m_drawBatchs[0])));
-		ImGui::Text(" %d lod infos: %.2f KB", renderer.m_drawLodInfos.NumElem(), memBytesToKB(renderer.m_drawLodInfos.NumSlots() * sizeof(renderer.m_drawLodInfos[0])));
-		ImGui::Text(" %d lod lists: %.2f KB", renderer.m_drawLodsList.NumElem(), memBytesToKB(renderer.m_drawLodsList.NumSlots() * sizeof(renderer.m_drawLodsList[0])));
+		ImGui::TextDisabled(" %d draw infos: %.2f KB", renderer.m_drawInfos.numElem(), memBytesToKB(renderer.m_drawInfos.numSlots() * sizeof(renderer.m_drawInfos[0])));
+		ImGui::TextDisabled(" %d batchs: %.2f KB", renderer.m_drawBatchs.NumElem(), memBytesToKB(renderer.m_drawBatchs.NumSlots() * sizeof(renderer.m_drawBatchs[0])));
+		ImGui::TextDisabled(" %d lod infos: %.2f KB", renderer.m_drawLodInfos.NumElem(), memBytesToKB(renderer.m_drawLodInfos.NumSlots() * sizeof(renderer.m_drawLodInfos[0])));
+		ImGui::TextDisabled(" %d lod lists: %.2f KB", renderer.m_drawLodsList.NumElem(), memBytesToKB(renderer.m_drawLodsList.NumSlots() * sizeof(renderer.m_drawLodsList[0])));
+	}
+
+	if (ImGui::CollapsingHeader("Components"))
+	{
+		for (int i = 0; i < GRIM_INSTANCE_MAX_COMPONENTS; ++i)
+		{
+			GRIMBaseComponentPool* compPool = instances.m_componentPools[i];
+			if (!compPool)
+				continue;
+			ImGui::TextDisabled(" %s: %d/%d : %.2f KB", compPool->GetData().GetName(), compPool->GetData().NumElem(), compPool->GetData().NumSlots(), memBytesToKB(compPool->GetData().GetBuffer()->GetSize()));
+		}
 	}
 
 	static char archetypeFilter[128] = {0};
