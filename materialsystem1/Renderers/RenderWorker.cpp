@@ -93,7 +93,11 @@ int CRenderWorker::Run()
 	}
 
 	if (workIt.atEnd())
+	{
+		if (m_loopFunc)
+			m_loopFunc();
 		return 0;
+	}
 
 	const int result = (*workIt).func();
 	if (m_loopFunc)
