@@ -109,40 +109,47 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 	LockContext* context = PPNew LockContext;
 	context->buffer = m_rhiBuffer;
 	context->flags = m_usageFlags;
+	MapFuture retFuture = context->promise.CreateFuture();
 
 	BufferMapData& lockData = context->data;
 	lockData.flags = flags;
 	lockData.size = sizeToLock;
 	lockData.offset = lockOfs;
 
-	auto callback = [](WGPUBufferMapAsyncStatus status, void* userdata) {
-		LockContext* context = reinterpret_cast<LockContext*>(userdata);
+	wgpuBufferAddRef(m_rhiBuffer);
+	WGPUBufferMapCallbackInfo2 rhiMapCbInfo{};
+	rhiMapCbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
+		LockContext* context = reinterpret_cast<LockContext*>(userdata1);
 		defer{
 			delete context;
 		};
+		Msg("Mapped\n");
 
 		if (status != WGPUBufferMapAsyncStatus_Success)
 		{
-			context->promise.SetError(status, "Failed to map buffer");
+			context->promise.SetError(status, message.data);
 			return;
 		}
 
 		BufferMapData& lockData = context->data;
-		if(context->flags & BUFFERUSAGE_WRITE)
+		if (context->flags & BUFFERUSAGE_WRITE)
 			lockData.data = wgpuBufferGetMappedRange(context->buffer, lockData.offset, lockData.size);
 		else
 			lockData.data = const_cast<void*>(wgpuBufferGetConstMappedRange(context->buffer, lockData.offset, lockData.size));
 
-		if(!lockData.data)
+		if (!lockData.data)
 			context->promise.SetError(-1, "Failed to lock buffer, wrong usage?");
 		else
 			context->promise.SetResult(std::move(context->data));
 	};
 
-	wgpuBufferAddRef(m_rhiBuffer);
-	wgpuBufferMapAsync(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, callback, context);
+	Msg("Before map\n");
 
-	return context->promise.CreateFuture();
+	rhiMapCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+	rhiMapCbInfo.userdata1 = context;
+	wgpuBufferMapAsync2(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, rhiMapCbInfo);
+
+	return retFuture;
 }
 
 void CWGPUBuffer::Unlock()

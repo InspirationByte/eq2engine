@@ -462,7 +462,7 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 	Future<bool> cmdFuture = g_renderAPI->SubmitCommandBufferAwaitable(cmdRecorder->End());
 	
 	// wait until image is copied to the buffer
-	while (!cmdFuture.HasResult()) {
+	while (!cmdFuture.Wait(0)) {
 		WGPU_INSTANCE_SPIN
 	}
 
@@ -498,7 +498,7 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 	});
 
 	// force WebGPU to process everything it has queued
-	while (!future.HasResult()) {
+	while (!future.Wait(0)) {
 		WGPU_INSTANCE_SPIN
 	}
 
