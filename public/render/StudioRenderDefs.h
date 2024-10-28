@@ -2,8 +2,8 @@
 
 struct RenderBoneTransform
 {
-	Quaternion	quat;
-	Vector4D	origin;
+	Quaternion	quat{ qidentity };
+	Vector4D	origin{0.0f, 0.0f, 0.0f, 1.0f};
 };
 
 // must be exactly two regs

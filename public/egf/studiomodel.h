@@ -14,7 +14,7 @@ static constexpr const int MAX_MODEL_LODS				= 8;
 static constexpr const int MAX_MODEL_PATH_LENGTH		= 256;
 static constexpr const int MAX_MODEL_PART_PATH_LENGTH	= 128;
 static constexpr const int MAX_MODEL_PART_NAME_LENGTH	= 44;
-static constexpr const int MAX_MODEL_VERTEX_WEIGHTS		= 4;
+static constexpr const int MAX_MODEL_VERTEX_WEIGHTS		= 4;	// TODO: raise this limit significantly
 
 static constexpr const uint8 EGF_INVALID_IDX = 0xff;
 
