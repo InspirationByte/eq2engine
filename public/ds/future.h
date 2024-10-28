@@ -93,7 +93,7 @@ protected:
 	Array<ResultCb>			m_resultCb{ PP_SL };
 	EFutureStatus			m_status{ FUTURE_NONE };
 	Threading::CEqMutex		m_condMutex;
-	Threading::CEqSignal	m_waitSignal;
+	Threading::CEqSignal	m_waitSignal{ true };
 };
 }
 
@@ -142,7 +142,7 @@ public:
 	int					GetErrorCode() const;
 	const EqString&		GetErrorMessage() const;
 
-	void				Wait(int timeout = Threading::WAIT_INFINITE);
+	bool				Wait(int timeout = Threading::WAIT_INFINITE);
 	void				AddCallback(FutureCb callback);
 
 	void				operator=(std::nullptr_t) { m_data = nullptr; }
@@ -294,10 +294,10 @@ inline const EqString& Future<T>::GetErrorMessage() const
 }
 
 template<typename T>
-inline void Future<T>::Wait(int timeout)
+inline bool Future<T>::Wait(int timeout)
 {
 	ASSERT(m_data);
-	m_data->m_waitSignal.Wait(timeout);
+	return m_data->m_waitSignal.Wait(timeout);
 }
 
 template<typename T>
