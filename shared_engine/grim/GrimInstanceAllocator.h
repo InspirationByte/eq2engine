@@ -67,17 +67,27 @@ Example of use:
 #include "GrimDefs.h"
 #include "GrimSynchronizedPool.h"
 
+static constexpr int GRIM_DEFAULT_INST_INITIAL_POOL_SIZE = 3072;
+static constexpr int GRIM_DEFAULT_INST_POOL_SIZE_EXTEND = 1024;
+
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
 	static constexpr const char NAME[] = #Name; \
-	static constexpr int IDENTIFIER = StringIdConst24(NAME); \
 	static constexpr int COMPONENT_ID = ID; \
-	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool);
+	static int INITIAL_POOL_SIZE; \
+	static int POOL_SIZE_EXTEND; \
+	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool)
 
-#define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
+#define INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, InitialPoolSize, PoolSizeExtend ) \
+	int Name::INITIAL_POOL_SIZE = InitialPoolSize; \
+	int Name::POOL_SIZE_EXTEND = PoolSizeExtend; \
 	void Name::InitPipeline(GRIMBaseSyncrhronizedPool& pool) { \
 		pool.SetPipeline(g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
-			.ShaderName(UpdateShaderName).ShaderLayoutId(IDENTIFIER).End())); \
+			.ShaderName(UpdateShaderName).ShaderLayoutId(StringIdConst24(NAME)).End())); \
 	}
+
+#define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
+	INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, GRIM_DEFAULT_INST_INITIAL_POOL_SIZE, GRIM_DEFAULT_INST_POOL_SIZE_EXTEND)
+
 
 class GRIMBaseComponentPool
 {
@@ -85,6 +95,8 @@ public:
 	virtual GRIMBaseSyncrhronizedPool& GetData() = 0;
 	virtual void AddElem() = 0;
 	virtual void InitPipeline() = 0;
+	virtual int GetInitialSize() const = 0;
+	virtual int GetSizeGranularity() const = 0;
 };
 
 // The instance manager basic implementation
@@ -202,6 +214,8 @@ public:
 	GRIMBaseSyncrhronizedPool& GetData() override { return m_dataPool; }
 	void AddElem() override { m_dataPool.Add(T{}); }
 	void InitPipeline() override { T::InitPipeline(m_dataPool); }
+	int GetInitialSize() const override { return T::INITIAL_POOL_SIZE; }
+	int GetSizeGranularity() const override { return T::POOL_SIZE_EXTEND; }
 
 protected:
 	GRIMSyncrhronizedPool<T> m_dataPool;
@@ -249,6 +263,9 @@ public:
 	// removes existing component
 	template<typename TComp>
 	void			Remove(int instanceId);
+
+	template<typename TComp>
+	bool			Has(int instanceId) const;
 
 	template<typename TComp>
 	Pool<TComp>&	GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
@@ -384,4 +401,18 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 		inst.updateFlags |= Instance::UPD_ROOT;
 		m_updated.insert(instanceId);
 	}
+}
+
+template<typename...Ts>
+template<typename TComp>
+bool GRIMInstanceAllocator<Ts...>::Has(int instanceId) const
+{
+	if (instanceId == -1)
+		return false;
+
+	const Instance& inst = m_instances[instanceId];
+	const InstRoot& root = inst.root;
+	if (root.components[TComp::COMPONENT_ID] == 0 || root.components[TComp::COMPONENT_ID] == COM_UINT_MAX)
+		return false;
+	return true;
 }

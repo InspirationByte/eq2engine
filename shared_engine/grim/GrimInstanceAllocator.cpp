@@ -80,8 +80,8 @@ void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName
 			continue;
 
 		GRIMBaseSyncrhronizedPool& data = pool->GetData();
-		data.Init(0, GPU_INSTANCE_INITIAL_POOL_SIZE, GPU_INSTANCE_POOL_SIZE_EXTEND);
-		data.Reserve(m_reservedInsts);
+		data.Init(0, pool->GetInitialSize(), pool->GetSizeGranularity());
+		//data.Reserve(m_reservedInsts);
 
 		pool->InitPipeline();
 		ASSERT_MSG(data.IsValid(), "Failed to create instance update pipeline");
@@ -141,8 +141,8 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 		// alloc default (zero) instance
 		pool->AddElem();
 
-		if(reserve)
-			pool->GetData().Reserve(m_reservedInsts);
+		//if(reserve)
+		//	pool->GetData().Reserve(m_reservedInsts);
 	}
 }
 
