@@ -1078,6 +1078,9 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		if (m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype) == 0)
 			continue;
 
+		if (!renderState.visibleArchetypes[drawInfo.ownerArchetype])
+			continue;
+
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
 		if(m_dbgHiddenArchetypes[drawInfo.ownerArchetype])
 			continue;
