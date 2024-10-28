@@ -139,12 +139,12 @@ void CWGPUCommandRecorder::DbgPopGroup() const
 
 void CWGPUCommandRecorder::DbgPushGroup(const char* groupLabel) const
 {
-	wgpuCommandEncoderPushDebugGroup(m_rhiCommandEncoder, groupLabel);
+	wgpuCommandEncoderPushDebugGroup(m_rhiCommandEncoder, _WSTR(groupLabel));
 }
 
 void CWGPUCommandRecorder::DbgAddMarker(const char* label) const
 {
-	wgpuCommandEncoderInsertDebugMarker(m_rhiCommandEncoder, label);
+	wgpuCommandEncoderInsertDebugMarker(m_rhiCommandEncoder, _WSTR(label));
 }
 
 IGPUCommandBufferPtr CWGPUCommandRecorder::End()

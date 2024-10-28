@@ -24,12 +24,12 @@ void CWGPURenderPassRecorder::DbgPopGroup() const
 
 void CWGPURenderPassRecorder::DbgPushGroup(const char* groupLabel) const
 {
-	wgpuRenderPassEncoderPushDebugGroup(m_rhiRenderPassEncoder, groupLabel);
+	wgpuRenderPassEncoderPushDebugGroup(m_rhiRenderPassEncoder, _WSTR(groupLabel));
 }
 
 void CWGPURenderPassRecorder::DbgAddMarker(const char* label) const
 {
-	wgpuRenderPassEncoderInsertDebugMarker(m_rhiRenderPassEncoder, label);
+	wgpuRenderPassEncoderInsertDebugMarker(m_rhiRenderPassEncoder, _WSTR(label));
 }
 
 void CWGPURenderPassRecorder::AddBundle(IGPURenderBundleRecorder* bundle)
