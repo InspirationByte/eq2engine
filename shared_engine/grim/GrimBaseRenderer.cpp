@@ -21,10 +21,10 @@
 
 using namespace Threading;
 
-DECLARE_CVAR(grim_force_software, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(grim_dbg_onlyMaterial, "", nullptr, CV_CHEAT);
-DECLARE_CVAR(grim_dbg_logArchetypes, "0", nullptr, CV_CHEAT);
-DECLARE_CVAR(grim_dbg_validate, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_softwareMode, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(grim_dbgOnlyMaterial, "", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbgLogArchetypes, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbgValidate, "0", nullptr, CV_CHEAT);
 
 static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
 static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
@@ -241,7 +241,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 	archetypeInfo->indexBuffer = indexBuffer;
 	archetypeInfo->skinningSupport = skinningSupport;
 
-	if (grim_dbg_logArchetypes.GetBool())
+	if (grim_dbgLogArchetypes.GetBool())
 		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
 
 	int prevLod = -1;
@@ -352,7 +352,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 	archetypeInfo->instanceStreamId = instanceStreamId;
 	archetypeInfo->indexBuffer = desc.indexBuffer;
 
-	if (grim_dbg_logArchetypes.GetBool())
+	if (grim_dbgLogArchetypes.GetBool())
 		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
 
 	int prevLod = -1;
@@ -504,7 +504,7 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 		}
 		delItems.appendEmplace(id, ItemInfo::LODLIST);
 
-		if (grim_dbg_logArchetypes.GetBool())
+		if (grim_dbgLogArchetypes.GetBool())
 			MsgInfo("GRIM: freed archetype %d (%s)\n", id, DbgGetArchetypeName(id).ToCString());
 	}
 
@@ -929,8 +929,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 	cmdRecorder->ClearBuffer(intermediate.renderState.drawInvocationsBuffer, 0, intermediate.renderState.drawInvocationsBuffer->GetSize());
 
-
-	if (grim_force_software.GetBool())
+	if (m_drawSettings.forceSoftware || grim_softwareMode.GetBool())
 	{
 		FilterInstances_Software(intermediate);
 		VisibilityCullInstances_Software(intermediate);
@@ -981,7 +980,7 @@ bool GRIMBaseRenderer::IsSync() const
 void GRIMBaseRenderer::DbgValidate() const
 {
 #if !defined(_RETAIL) && !defined(_PROFILE)
-	if(!grim_dbg_validate.GetBool())
+	if(!grim_dbgValidate.GetBool())
 		return;
 
 	// Check archetypes
@@ -1097,7 +1096,7 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 			continue;
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
-		const char* onlyMaterialName = grim_dbg_onlyMaterial.GetString();
+		const char* onlyMaterialName = grim_dbgOnlyMaterial.GetString();
 		if (*onlyMaterialName)
 		{
 			if (CString::CompareCaseIns(originalMaterial->GetName(), onlyMaterialName))
@@ -1215,9 +1214,9 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		maxInst = max(maxInst, *it);
 	}
 
-	bool softwareMode = grim_force_software.GetBool();
-	if(ImGui::Checkbox("Software mode", &softwareMode))
-		grim_force_software.SetBool(softwareMode);
+	bool softwareMode = grim_softwareMode.GetBool();
+	if(ImGui::Checkbox("Software mode override", &softwareMode))
+		grim_softwareMode.SetBool(softwareMode);
 	ImGui::SameLine();
 	if(ImGui::Button("Invalidate all data"))
 	{

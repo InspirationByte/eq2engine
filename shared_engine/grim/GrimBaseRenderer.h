@@ -25,6 +25,7 @@ struct GRIMDrawSettings
 	int				groupMaskExclude{ 0 };
 	int				overrideLodIdx{ -1 };
 	bool			skipOcclusionCulling{ false };
+	bool			forceSoftware{ false };
 };
 
 struct GRIMRenderState
