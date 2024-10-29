@@ -39,7 +39,7 @@
 
 using namespace EqBulletUtils;
 using namespace Threading;
-static CEqMutex s_eqPhysMutex;
+static CEqReadWriteLock s_eqPhysDynamicRWLock;
 
 static constexpr const int PHYSGRID_WORLD_SIZE			= 24;	// compromised betwen memory usage and performance
 static constexpr const float PHYSICS_WORLD_MAX_UNITS	= 65535.0f;
@@ -446,7 +446,7 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 
 	if (cell)
 	{
-		CScopedMutex m(s_eqPhysMutex);
+		CScopedWriteLocker m(s_eqPhysDynamicRWLock);
 		cell->dynamicObjList.unlinkNode(body);
 	}
 
@@ -511,7 +511,7 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 
 			if (cell)
 			{
-				CScopedMutex m(s_eqPhysMutex);
+				CScopedWriteLocker m(s_eqPhysDynamicRWLock);
 				cell->dynamicObjList.unlinkNode(object);
 			}
 		}
@@ -949,7 +949,7 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 	// move object in grid
 	if (newCell != oldCell)
 	{
-		CScopedMutex m(s_eqPhysMutex);
+		CScopedWriteLocker m(s_eqPhysDynamicRWLock);
 		if (oldCell)
 			oldCell->dynamicObjList.unlinkNode(body);
 
@@ -978,7 +978,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 		// move object in grid if it's a really new cell
 		if (newCell != oldCell)
 		{
-			CScopedMutex m(s_eqPhysMutex);
+			CScopedWriteLocker m(s_eqPhysDynamicRWLock);
 			if (oldCell)
 				oldCell->dynamicObjList.unlinkNode(body);
 
@@ -1418,8 +1418,6 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & EQPHYS_FILTER_FLAG_STATICOBJECTS))
 	{
-		CScopedMutex m(s_eqPhysMutex);
-
 		for (CEqCollisionObject* object : cell->gridObjects)
 		{
 			if (skipObjects.contains(object))
@@ -1444,7 +1442,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 
 	if(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS)
 	{
-		CScopedMutex m(s_eqPhysMutex);
+		CScopedReadLocker m(s_eqPhysDynamicRWLock);
 
 		CEqCollisionObject* object = cell->dynamicObjList.getFirst();
 		for (; object; object = object->next)
