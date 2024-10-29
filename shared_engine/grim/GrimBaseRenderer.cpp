@@ -62,7 +62,7 @@ void GRIMBaseRenderer::Init()
 		Builder<ComputePipelineDesc>()
 		.ShaderName(SHADERNAME_CULL_INSTANCES)
 		.End()
-	);
+	, m_cullInstancesPipelineLayout);
 
 	m_filterInstancesPipeline = g_renderAPI->CreateComputePipeline(
 		Builder<ComputePipelineDesc>()
@@ -123,6 +123,7 @@ void GRIMBaseRenderer::Shutdown()
 	m_updateBindGroup0 = nullptr;
 	
 	m_cullInstancesPipeline = nullptr;
+	m_cullInstancesPipelineLayout = nullptr;
 	m_cullBindGroup0 = nullptr;
 }
 
@@ -1246,7 +1247,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 			GRIMBaseComponentPool* compPool = instances.m_componentPools[i];
 			if (!compPool)
 				continue;
-			ImGui::TextDisabled(" %s: %d/%d : %.2f KB", compPool->GetData().GetName(), compPool->GetData().NumElem(), compPool->GetData().NumSlots(), memBytesToKB(compPool->GetData().GetBuffer()->GetSize()));
+			ImGui::TextDisabled(" %s: %d/%d : %.2f KB", compPool->GetName(), compPool->NumElem(), compPool->NumSlots(), memBytesToKB(compPool->GetItemSize() * compPool->NumSlots()));
 		}
 	}
 

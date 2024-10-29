@@ -66,20 +66,11 @@ Example of use:
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimDefs.h"
 #include "GrimSynchronizedPool.h"
+#include "GrimComponentPool.h"
 
 static constexpr int GRIM_DEFAULT_INST_INITIAL_POOL_SIZE = 3072;
 static constexpr int GRIM_DEFAULT_INST_POOL_SIZE_EXTEND = 1024;
 
-class GRIMBaseComponentPool
-{
-public:
-	virtual GRIMBaseSyncrhronizedPool& GetData() = 0;
-
-	virtual void	InitEmptyItem() = 0;
-	virtual void	InitPipeline() = 0;
-	virtual int		GetInitialSize() const = 0;
-	virtual int		GetSizeGranularity() const = 0;
-};
 
 // The instance manager basic implementation
 class GRIMBaseInstanceAllocator
@@ -102,7 +93,6 @@ public:
 	IGPUBufferPtr	GetInstanceArchetypesBuffer() const { return m_archetypesBuffer; }
 	IGPUBufferPtr	GetInstanceGroupMaskBuffer() const { return m_groupMaskBuffer; }
 
-	IGPUBufferPtr	GetDataPoolBuffer(int componentId) const;
 	uint			GetBufferUpdateToken() const { return m_buffersUpdated; }
 
 	int				GetInstanceSlotsCount() const { return m_instances.numElem(); }
@@ -178,29 +168,6 @@ protected:
 	Map<GRIMArchetype, int>	m_archetypeRefCount{ PP_SL };
 
 	int						m_reservedInsts{ 0 };
-};
-
-// Instance component data storage
-template<typename T>
-class GRIMInstComponentPool : public GRIMBaseComponentPool
-{
-public:
-	using TYPE = T;
-	GRIMInstComponentPool()
-		: m_dataPool(T::NAME, PP_SL)
-	{
-	}
-
-	GRIMSyncrhronizedPool<T>& GetDataPool() { return m_dataPool; }
-
-	GRIMBaseSyncrhronizedPool& GetData() override { return m_dataPool; }
-	void	InitEmptyItem() override { m_dataPool.Add(T{}); }
-	void	InitPipeline() override { T::InitPipeline(m_dataPool); }
-	int		GetInitialSize() const override { return T::INITIAL_POOL_SIZE; }
-	int		GetSizeGranularity() const override { return T::POOL_SIZE_EXTEND; }
-
-protected:
-	GRIMSyncrhronizedPool<T> m_dataPool;
 };
 
 //-----------------------------------------------------
@@ -403,7 +370,7 @@ bool GRIMInstanceAllocator<Ts...>::Has(int instanceId) const
 }
 
 #define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
-	using POOL_T = GRIMInstComponentPool<Name>; \
+	using POOL_T = GRIMBufferComponentPool<Name>; \
 	static constexpr const char NAME[] = #Name; \
 	static constexpr int COMPONENT_ID = ID; \
 	static int INITIAL_POOL_SIZE; \

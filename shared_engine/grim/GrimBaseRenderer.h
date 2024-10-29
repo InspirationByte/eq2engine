@@ -145,6 +145,7 @@ protected:
 	IGPUComputePipelinePtr		m_filterInstancesPipeline;
 	IGPUComputePipelinePtr		m_filterCalcWorkGroupsPipeline;
 	IGPUComputePipelinePtr		m_cullInstancesPipeline;
+	IGPUPipelineLayoutPtr		m_cullInstancesPipelineLayout;
 
 	IGPUBindGroupPtr			m_cullBindGroup0;
 	IGPUBindGroupPtr			m_updateBindGroup0;

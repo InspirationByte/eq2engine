@@ -76,15 +76,14 @@ void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName
 
 	for (GRIMBaseComponentPool* pool : m_componentPools)
 	{
-		if (!pool || pool->GetData().IsValid())
+		if (!pool || pool->IsValid())
 			continue;
 
-		GRIMBaseSyncrhronizedPool& data = pool->GetData();
-		data.Init(0, pool->GetInitialSize(), pool->GetSizeGranularity());
+		pool->Init(0, pool->GetInitialSize(), pool->GetSizeGranularity());
 		//data.Reserve(m_reservedInsts);
 
 		pool->InitPipeline();
-		ASSERT_MSG(data.IsValid(), "Failed to create instance update pipeline");
+		ASSERT_MSG(pool->IsValid(), "Failed to create instance update pipeline");
 	}
 }
 
@@ -104,7 +103,7 @@ void GRIMBaseInstanceAllocator::Shutdown()
 	{
 		if (!pool)
 			continue;
-		pool->GetData().SetPipeline(nullptr);
+		pool->TermPipeline();
 	}
 }
 
@@ -123,7 +122,7 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 	{
 		if (!pool)
 			continue;
-		pool->GetData().Clear(dealloc);
+		pool->Clear(dealloc);
 	}
 
 	// alloc default (zero) instance
@@ -159,8 +158,9 @@ void GRIMBaseInstanceAllocator::DbgInvalidateAllData()
 	{
 		if(!pool)
 			continue;
-		for(int i = 0; i < pool->GetData().NumSlots(); ++i)
-			pool->GetData().SetUpdated(i);
+		const int numSlots = pool->NumSlots();
+		for(int i = 0; i < numSlots; ++i)
+			pool->SetUpdated(i);
 	}
 	m_buffersUpdated = 0;
 }
@@ -329,7 +329,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 		if(root.components[i] > 0)
 		{
 			CScopedMutex m(GetMutex());
-			m_componentPools[i]->GetData().Remove(root.components[i]);
+			m_componentPools[i]->Remove(root.components[i]);
 		}
 		root.components[i] = COM_UINT_MAX;
 	}
@@ -339,12 +339,6 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 		CScopedMutex m(GetMutex());
 		m_updated.insert(instanceRef);
 	}
-}
-
-IGPUBufferPtr GRIMBaseInstanceAllocator::GetDataPoolBuffer(int componentId) const
-{
-	ASSERT_MSG(m_componentPools[componentId], "GPUInstanceManager was not created with component ID = %d", componentId);
-	return m_componentPools[componentId]->GetData().GetBuffer();
 }
 
 void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
@@ -469,7 +463,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 		if (!pool)
 			continue;
 		
-		if(pool->GetData().Sync(cmdRecorder))
+		if(pool->Sync(cmdRecorder))
 			buffersUpdatedThisFrame = true;
 	}
 
