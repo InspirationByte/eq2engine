@@ -68,3 +68,5 @@ public:
 	int				GetInitialSize() const override { return T::INITIAL_POOL_SIZE; }
 	int				GetSizeGranularity() const override { return T::POOL_SIZE_EXTEND; }
 };
+
+// TODO GRIMTextureComponentPool
