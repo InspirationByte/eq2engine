@@ -1074,11 +1074,11 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 			continue;
 		const DrawInfo& drawInfo = m_drawInfos[i];
 
-		// do not draw anything if no instances referencing this archetype
-		if (m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype) == 0)
+		if (!renderState.visibleArchetypes[drawInfo.ownerArchetype])
 			continue;
 
-		if (!renderState.visibleArchetypes[drawInfo.ownerArchetype])
+		// do not draw anything if no instances referencing this archetype
+		if (m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype) == 0)
 			continue;
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
@@ -1096,15 +1096,22 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		if (!material)
 			continue;
 
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
 		const char* onlyMaterialName = grim_dbg_onlyMaterial.GetString();
 		if (*onlyMaterialName)
 		{
 			if (CString::CompareCaseIns(originalMaterial->GetName(), onlyMaterialName))
 				continue;
 		}
+#endif
 
-		uint64 materialId = reinterpret_cast<uint64>(material);
+		uint64 materialId = 0;
 		materialId *= 31;
+		if (renderState.drawCallMaterialGroupByFlags == 0 || (renderState.drawCallMaterialGroupByFlags & originalMaterial->GetFlags()))
+		{
+			materialId *= 31;
+			materialId += reinterpret_cast<uint64>(originalMaterial);
+		}
 		materialId += archetypeInfo.meshInstFormat.formatId;
 		materialId *= 31;
 		materialId += archetypeInfo.meshInstFormat.usedLayoutBits;
@@ -1117,7 +1124,6 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 
 		*it = drawInfoLinkList.append(ListItm{ (uint16)i, (uint16)*it }); // link to last element
 	}
-
 
 	renderPassCtx.recorder->DbgPushGroup("GRIMDraw");
 	int numDrawCalls = 0;

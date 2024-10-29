@@ -26,6 +26,7 @@ struct GRIMRenderState
 	int				groupMaskInclude{ (int)COM_UINT_MAX };
 	int				groupMaskExclude{ 0 };
 	int				overrideLodIdx{ -1 };
+	int				drawCallMaterialGroupByFlags{ 0 };
 
 	// TODO: renderer UID to validate
 	BitArray		visibleArchetypes{PP_SL, 128};
