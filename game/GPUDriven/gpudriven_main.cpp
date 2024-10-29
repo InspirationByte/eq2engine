@@ -129,7 +129,7 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	computeRecorder->SetBindGroup(3, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline, Builder<BindGroupDesc>()
 		.GroupIndex(3)
 		.Buffer(0, m_instAllocator.GetRootBuffer())
-		.Buffer(1, m_instAllocator.GetDataPoolBuffer(InstTransform::COMPONENT_ID))
+		.Buffer(1, s_instanceAlloc.GetComponentPool<InstTransform>().GetBuffer())
 		.End())
 	);
 

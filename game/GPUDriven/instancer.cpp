@@ -37,7 +37,7 @@ void DemoGRIMRenderer::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayou
 	BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
 		.GroupIndex(bindGroupIdx)
 		.Buffer(0, m_instAllocator.GetRootBuffer())
-		.Buffer(1, m_instAllocator.GetDataPoolBuffer(InstTransform::COMPONENT_ID))
+		.Buffer(1, static_cast<DemoGRIMInstanceAllocator&>(m_instAllocator).GetComponentPool<InstTransform>().GetBuffer())
 		.End();
 	outBindGroup = g_renderAPI->CreateBindGroup(pipelineLayout, bindGroupDesc);
 }
