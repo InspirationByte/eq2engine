@@ -44,7 +44,7 @@ void GRIMBaseInstanceAllocator::Construct()
 			continue;
 
 		// alloc default (zero) instance
-		pool->AddElem();
+		pool->InitEmptyItem();
 	}
 }
 
@@ -139,7 +139,7 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 			continue;
 
 		// alloc default (zero) instance
-		pool->AddElem();
+		pool->InitEmptyItem();
 
 		//if(reserve)
 		//	pool->GetData().Reserve(m_reservedInsts);

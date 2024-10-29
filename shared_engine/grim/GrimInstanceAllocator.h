@@ -70,33 +70,15 @@ Example of use:
 static constexpr int GRIM_DEFAULT_INST_INITIAL_POOL_SIZE = 3072;
 static constexpr int GRIM_DEFAULT_INST_POOL_SIZE_EXTEND = 1024;
 
-#define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
-	static constexpr const char NAME[] = #Name; \
-	static constexpr int COMPONENT_ID = ID; \
-	static int INITIAL_POOL_SIZE; \
-	static int POOL_SIZE_EXTEND; \
-	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool)
-
-#define INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, InitialPoolSize, PoolSizeExtend ) \
-	int Name::INITIAL_POOL_SIZE = InitialPoolSize; \
-	int Name::POOL_SIZE_EXTEND = PoolSizeExtend; \
-	void Name::InitPipeline(GRIMBaseSyncrhronizedPool& pool) { \
-		pool.SetPipeline(g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
-			.ShaderName(UpdateShaderName).ShaderLayoutId(StringIdConst24(NAME)).End())); \
-	}
-
-#define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
-	INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, GRIM_DEFAULT_INST_INITIAL_POOL_SIZE, GRIM_DEFAULT_INST_POOL_SIZE_EXTEND)
-
-
 class GRIMBaseComponentPool
 {
 public:
 	virtual GRIMBaseSyncrhronizedPool& GetData() = 0;
-	virtual void AddElem() = 0;
-	virtual void InitPipeline() = 0;
-	virtual int GetInitialSize() const = 0;
-	virtual int GetSizeGranularity() const = 0;
+
+	virtual void	InitEmptyItem() = 0;
+	virtual void	InitPipeline() = 0;
+	virtual int		GetInitialSize() const = 0;
+	virtual int		GetSizeGranularity() const = 0;
 };
 
 // The instance manager basic implementation
@@ -212,10 +194,10 @@ public:
 	GRIMSyncrhronizedPool<T>& GetDataPool() { return m_dataPool; }
 
 	GRIMBaseSyncrhronizedPool& GetData() override { return m_dataPool; }
-	void AddElem() override { m_dataPool.Add(T{}); }
-	void InitPipeline() override { T::InitPipeline(m_dataPool); }
-	int GetInitialSize() const override { return T::INITIAL_POOL_SIZE; }
-	int GetSizeGranularity() const override { return T::POOL_SIZE_EXTEND; }
+	void	InitEmptyItem() override { m_dataPool.Add(T{}); }
+	void	InitPipeline() override { T::InitPipeline(m_dataPool); }
+	int		GetInitialSize() const override { return T::INITIAL_POOL_SIZE; }
+	int		GetSizeGranularity() const override { return T::POOL_SIZE_EXTEND; }
 
 protected:
 	GRIMSyncrhronizedPool<T> m_dataPool;
@@ -229,9 +211,6 @@ template<typename ... Components>
 class GRIMInstanceAllocator : public GRIMBaseInstanceAllocator
 {
 public:
-	template<typename TComp>
-	using Pool = GRIMInstComponentPool<TComp>;
-
 	GRIMInstanceAllocator();
 
 	// creates new empty instance with allocated components
@@ -268,10 +247,10 @@ public:
 	bool			Has(int instanceId) const;
 
 	template<typename TComp>
-	Pool<TComp>&	GetComponentPool() { return std::get<Pool<TComp>>(m_componentPoolsStorage); }
+	auto&			GetComponentPool() { return std::get<typename TComp::POOL_T>(m_componentPoolsStorage); }
 
 protected:
-	using POOL_STORAGE = std::tuple<Pool<Components>...>;
+	using POOL_STORAGE = std::tuple<typename Components::POOL_T...>;
 
 	template<typename ...TComps>
 	void 			AllocInstanceComponents(int instanceId);
@@ -312,6 +291,7 @@ template<typename...Ts>
 template<typename First, typename...Rest>
 inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const First& firstVal, const Rest&... values)
 {
+	using Pool = typename First::POOL_T;
 	const uint32 inPoolIdx = inst.components[First::COMPONENT_ID];
 
 	// don't update invalid or default
@@ -321,7 +301,7 @@ inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const Firs
 		return; // Instance was not allocated with specified component, so skipping
 	}
 
-	Pool<First>& compPool = GetComponentPool<First>();
+	Pool& compPool = GetComponentPool<First>();
 	if (!memcmp(&compPool.GetDataPool().GetData()[inPoolIdx], &firstVal, sizeof(First)))
 	{
 		SetInternal(inst, values...);
@@ -351,7 +331,8 @@ inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId
 	{
 		Threading::CScopedMutex m(GetMutex());
 		([&]{
-			Pool<TComps>& compPool = GetComponentPool<TComps>();
+			using Pool = typename TComps::POOL_T;
+			Pool& compPool = GetComponentPool<TComps>();
 			inst.components[TComps::COMPONENT_ID] = compPool.GetDataPool().Add(TComps{});
 		} (), ...);
 		// UPD_ROOT is already set
@@ -362,6 +343,8 @@ template<typename...Ts>
 template<typename TComp>
 void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 {
+	using Pool = typename TComp::POOL_T;
+
 	if (instanceId == -1)
 		return;
 
@@ -370,7 +353,7 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 	if (root.components[TComp::COMPONENT_ID] > 0 && root.components[TComp::COMPONENT_ID] != COM_UINT_MAX)
 		return;
 
-	Pool<TComp>& compPool = GetComponentPool<TComp>();
+	Pool& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(GetMutex());
 		root.components[TComp::COMPONENT_ID] = compPool.GetDataPool().Add(TComp{});
@@ -384,6 +367,8 @@ template<typename...Ts>
 template<typename TComp>
 void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 {
+	using Pool = typename TComp::POOL_T;
+
 	if (instanceId == -1)
 		return;
 
@@ -392,7 +377,7 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 	if (root.components[TComp::COMPONENT_ID] == 0 || root.components[TComp::COMPONENT_ID] == COM_UINT_MAX)
 		return;
 
-	Pool<TComp>& compPool = GetComponentPool<TComp>();
+	Pool& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(GetMutex());
 		compPool.GetDataPool().Remove(root.components[TComp::COMPONENT_ID]);
@@ -416,3 +401,22 @@ bool GRIMInstanceAllocator<Ts...>::Has(int instanceId) const
 		return false;
 	return true;
 }
+
+#define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
+	using POOL_T = GRIMInstComponentPool<Name>; \
+	static constexpr const char NAME[] = #Name; \
+	static constexpr int COMPONENT_ID = ID; \
+	static int INITIAL_POOL_SIZE; \
+	static int POOL_SIZE_EXTEND; \
+	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool)
+
+#define INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, InitialPoolSize, PoolSizeExtend ) \
+	int Name::INITIAL_POOL_SIZE = InitialPoolSize; \
+	int Name::POOL_SIZE_EXTEND = PoolSizeExtend; \
+	void Name::InitPipeline(GRIMBaseSyncrhronizedPool& pool) { \
+		pool.SetPipeline(g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
+			.ShaderName(UpdateShaderName).ShaderLayoutId(StringIdConst24(NAME)).End())); \
+	}
+
+#define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
+	INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, GRIM_DEFAULT_INST_INITIAL_POOL_SIZE, GRIM_DEFAULT_INST_POOL_SIZE_EXTEND)
