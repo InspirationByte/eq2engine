@@ -200,6 +200,7 @@ bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
 	 
 bool CWGPUSwapChain::SwapBuffers()
 {
-	wgpuSurfacePresent(m_surface);
+	if (m_surface)
+		wgpuSurfacePresent(m_surface);
 	return true;
 }
