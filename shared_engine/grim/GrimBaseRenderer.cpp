@@ -618,9 +618,9 @@ void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 
 	Params params;
 	params.maxInstanceIds = m_instAllocator.GetInstanceSlotsCount();
-	params.groupMaskInclude = intermediate.renderState.groupMaskInclude;
-	params.groupMaskExclude = intermediate.renderState.groupMaskExclude;
-	params.overrideLodIdx = intermediate.renderState.overrideLodIdx;
+	params.groupMaskInclude = intermediate.renderState.groupMaskInclude ? (m_drawSettings.groupMaskInclude & intermediate.renderState.groupMaskInclude) : m_drawSettings.groupMaskInclude;
+	params.groupMaskExclude = m_drawSettings.groupMaskExclude | intermediate.renderState.groupMaskExclude;
+	params.overrideLodIdx = m_drawSettings.overrideLodIdx;
 
 	// Params			params;
 	// int				instanceInfosCount;	// atomic
@@ -682,9 +682,9 @@ void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 
 void GRIMBaseRenderer::FilterInstances_Software(IntermediateState& intermediate)
 {
-	const int groupMaskInclude = intermediate.renderState.groupMaskInclude;
-	const int groupMaskExclude = intermediate.renderState.groupMaskExclude;
-	const int overrideLodIdx = intermediate.renderState.overrideLodIdx;
+	const int groupMaskInclude = intermediate.renderState.groupMaskInclude ? (m_drawSettings.groupMaskInclude & intermediate.renderState.groupMaskInclude) : m_drawSettings.groupMaskInclude;
+	const int groupMaskExclude = m_drawSettings.groupMaskExclude | intermediate.renderState.groupMaskExclude;
+	const int overrideLodIdx = m_drawSettings.overrideLodIdx;
 	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
 
 	instanceInfos.reserve(intermediate.maxNumberOfObjects);

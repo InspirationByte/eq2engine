@@ -19,13 +19,20 @@ class ComputeSortShader;
 using ComputeSortShaderPtr = CRefPtr<ComputeSortShader>;
 struct RenderPassContext;
 
+struct GRIMDrawSettings
+{
+	int				groupMaskInclude{ (int)COM_UINT_MAX };
+	int				groupMaskExclude{ 0 };
+	int				overrideLodIdx{ -1 };
+	bool			skipOcclusionCulling{ false };
+};
+
 struct GRIMRenderState
 {
 	IGPUBufferPtr	drawInvocationsBuffer;
 	IGPUBufferPtr	instanceIdsBuffer;
 	int				groupMaskInclude{ (int)COM_UINT_MAX };
 	int				groupMaskExclude{ 0 };
-	int				overrideLodIdx{ -1 };
 	int				drawCallMaterialGroupByFlags{ 0 };
 
 	// TODO: renderer UID to validate
@@ -42,17 +49,19 @@ class GRIMBaseRenderer : public IShaderMeshInstanceProvider
 public:
 	GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator);
 
-	virtual void	Init();
-	virtual void	Shutdown();
+	virtual void		Init();
+	virtual void		Shutdown();
 
-	GRIMArchetype	CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr, uint extraLayoutBits = 0);
-	GRIMArchetype	CreateDrawArchetype(const GRIMArchetypeDesc& desc);
-	void			DestroyDrawArchetype(GRIMArchetype id);
+	GRIMArchetype		CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr, uint extraLayoutBits = 0);
+	GRIMArchetype		CreateDrawArchetype(const GRIMArchetypeDesc& desc);
+	void				DestroyDrawArchetype(GRIMArchetype id);
 
-	void			SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
+	void				SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
-	void			PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
-	void			Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
+	GRIMDrawSettings	GetDrawSettings() const { return m_drawSettings; }
+	void				SetDrawSettings(const GRIMDrawSettings& settings) { m_drawSettings = settings; }
+	void				PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
+	void				Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
 
 protected:
 
@@ -138,6 +147,8 @@ protected:
 
 	IGPUBindGroupPtr			m_cullBindGroup0;
 	IGPUBindGroupPtr			m_updateBindGroup0;
+
+	GRIMDrawSettings			m_drawSettings;
 };
 
 struct GRIMBaseRenderer::GPUIndexedBatch
