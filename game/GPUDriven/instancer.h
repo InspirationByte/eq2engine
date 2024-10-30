@@ -11,7 +11,7 @@ enum EGPUInstanceComponentId : int
 
 struct InstTransform
 {
-	DEFINE_GPU_INSTANCE_COMPONENT(GPUINST_PROP_ID_TRANSFORM, InstTransform);
+	DEFINE_GPU_INSTANCE_COMPONENT(Buffer, GPUINST_PROP_ID_TRANSFORM, InstTransform);
 
 	Quaternion	orientation{ qidentity };
 	Vector3D	position{ vec3_zero };

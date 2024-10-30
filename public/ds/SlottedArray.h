@@ -4,7 +4,7 @@ template<typename T>
 class SlottedArray
 {
 public:
-	SlottedArray(PPSourceLine sl);
+	SlottedArray(PPSourceLine sl, int granularity = 16);
 
 	T&			operator[](const int idx);
 	const T&	operator[](const int idx) const;
@@ -31,8 +31,8 @@ protected:
 //---------------------------------------------
 
 template<typename T>
-inline SlottedArray<T>::SlottedArray(PPSourceLine sl)
-	: m_items(sl)
+inline SlottedArray<T>::SlottedArray(PPSourceLine sl, int granularity)
+	: m_items(sl, granularity)
 	, m_freeList(sl)
 	, m_setItems(sl)
 {

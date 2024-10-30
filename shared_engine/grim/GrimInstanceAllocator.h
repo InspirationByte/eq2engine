@@ -65,8 +65,9 @@ Example of use:
 #pragma once
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimDefs.h"
-#include "GrimSynchronizedPool.h"
 #include "GrimComponentPool.h"
+
+class GRIMBaseComponentPool;
 
 static constexpr int GRIM_DEFAULT_INST_INITIAL_POOL_SIZE = 3072;
 static constexpr int GRIM_DEFAULT_INST_POOL_SIZE_EXTEND = 1024;
@@ -269,13 +270,13 @@ inline void GRIMInstanceAllocator<Ts...>::SetInternal(InstRoot& inst, const Firs
 	}
 
 	Pool& compPool = GetComponentPool<First>();
-	if (!memcmp(&compPool.GetDataPool().GetData()[inPoolIdx], &firstVal, sizeof(First)))
+	if (!memcmp(&compPool.Get(inPoolIdx), &firstVal, sizeof(First)))
 	{
 		SetInternal(inst, values...);
 		return;
 	}
 
-	compPool.GetDataPool().Update(inPoolIdx, firstVal);
+	compPool.Update(inPoolIdx, firstVal);
 	SetInternal(inst, values...);
 }
 
@@ -300,7 +301,7 @@ inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId
 		([&]{
 			using Pool = typename TComps::POOL_T;
 			Pool& compPool = GetComponentPool<TComps>();
-			inst.components[TComps::COMPONENT_ID] = compPool.GetDataPool().Add(TComps{});
+			inst.components[TComps::COMPONENT_ID] = compPool.Add(TComps{});
 		} (), ...);
 		// UPD_ROOT is already set
 	}
@@ -323,7 +324,7 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 	Pool& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(GetMutex());
-		root.components[TComp::COMPONENT_ID] = compPool.GetDataPool().Add(TComp{});
+		root.components[TComp::COMPONENT_ID] = compPool.Add(TComp{});
 
 		inst.updateFlags |= Instance::UPD_ROOT;
 		m_updated.insert(instanceId);
@@ -347,7 +348,7 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 	Pool& compPool = GetComponentPool<TComp>();
 	{
 		Threading::CScopedMutex m(GetMutex());
-		compPool.GetDataPool().Remove(root.components[TComp::COMPONENT_ID]);
+		compPool.Remove(root.components[TComp::COMPONENT_ID]);
 		root.components[TComp::COMPONENT_ID] = 0; // change to default
 
 		inst.updateFlags |= Instance::UPD_ROOT;
@@ -369,21 +370,3 @@ bool GRIMInstanceAllocator<Ts...>::Has(int instanceId) const
 	return true;
 }
 
-#define DEFINE_GPU_INSTANCE_COMPONENT(ID, Name) \
-	using POOL_T = GRIMBufferComponentPool<Name>; \
-	static constexpr const char NAME[] = #Name; \
-	static constexpr int COMPONENT_ID = ID; \
-	static int INITIAL_POOL_SIZE; \
-	static int POOL_SIZE_EXTEND; \
-	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool)
-
-#define INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, InitialPoolSize, PoolSizeExtend ) \
-	int Name::INITIAL_POOL_SIZE = InitialPoolSize; \
-	int Name::POOL_SIZE_EXTEND = PoolSizeExtend; \
-	void Name::InitPipeline(GRIMBaseSyncrhronizedPool& pool) { \
-		pool.SetPipeline(g_renderAPI->CreateComputePipeline(Builder<ComputePipelineDesc>() \
-			.ShaderName(UpdateShaderName).ShaderLayoutId(StringIdConst24(NAME)).End())); \
-	}
-
-#define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
-	INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, GRIM_DEFAULT_INST_INITIAL_POOL_SIZE, GRIM_DEFAULT_INST_POOL_SIZE_EXTEND)

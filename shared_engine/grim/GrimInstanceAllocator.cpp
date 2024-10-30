@@ -79,10 +79,9 @@ void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName
 		if (!pool || pool->IsValid())
 			continue;
 
-		pool->Init(0, pool->GetInitialSize(), pool->GetSizeGranularity());
+		pool->Init();
 		//data.Reserve(m_reservedInsts);
 
-		pool->InitPipeline();
 		ASSERT_MSG(pool->IsValid(), "Failed to create instance update pipeline");
 	}
 }
@@ -103,7 +102,7 @@ void GRIMBaseInstanceAllocator::Shutdown()
 	{
 		if (!pool)
 			continue;
-		pool->TermPipeline();
+		pool->Term();
 	}
 }
 

@@ -68,8 +68,8 @@ class GRIMSyncrhronizedPool
 	using DATA = SlottedArray<T>;
 public:
 
-	GRIMSyncrhronizedPool(const char* name, PPSourceLine sl)
-		: SlottedArray<T>(sl)
+	GRIMSyncrhronizedPool(const char* name, PPSourceLine sl, int granularity = 16)
+		: SlottedArray<T>(sl, granularity)
 		, GRIMBaseSyncrhronizedPool(name)
 	{
 	}
