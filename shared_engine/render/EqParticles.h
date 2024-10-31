@@ -51,9 +51,10 @@ class CParticleBatch : public CSpriteBuilder<PFXVertex>
 public:
 	virtual	~CParticleBatch();
 
-	// renders this buffer
 	void				UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds);
-	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr, bool flushBuffers = true);
+	void				UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds, IGPUBufferPtr& vertBuffer, IGPUBufferPtr& indexBuffer);
+	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr);
+	void				Render(const RenderPassContext& passContext, IGPUBufferPtr& vertBuffer, IGPUBufferPtr& indexBuffer, IGPUCommandRecorder* bufferUpdateCmds = nullptr);
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
@@ -76,7 +77,6 @@ protected:
 	IMaterialPtr		m_material;
 	IGPUBufferPtr		m_vertexBuffer;
 	IGPUBufferPtr		m_indexBuffer;
-	bool				m_bufferDirty{ true };
 };
 
 //------------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ public:
 	// prepares render buffers and sends renderables to ViewRenderer
 	void				UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds);
 
-	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr, bool flushBuffer = true);
+	void				Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds = nullptr);
 	void				ClearBuffers();
 
 protected:

@@ -90,11 +90,7 @@ int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex** verts
 		return -1;
 
 	Threading::CScopedMutex m(s_particleRenderMutex);
-
-	const int result = _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
-	if (result != -1) 
-		m_bufferDirty = true;
-	return result;
+	return _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);;
 }
 
 void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
@@ -105,43 +101,46 @@ void CParticleBatch::AddParticleStrip(PFXVertex* verts, int nVertices)
 	Threading::CScopedMutex m(s_particleRenderMutex);
 
 	_AddParticleStrip(verts, nVertices);
-	m_bufferDirty = true;
 }
 
 void CParticleBatch::UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds)
 {
-	if (!m_bufferDirty)
-		return;
+	UpdateVBO(bufferUpdateCmds, m_vertexBuffer, m_indexBuffer);
+}
 
+void CParticleBatch::UpdateVBO(IGPUCommandRecorder* bufferUpdateCmds, IGPUBufferPtr& vertBuffer, IGPUBufferPtr& indexBuffer)
+{
 	if (m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	if (!m_vertexBuffer)
-		m_vertexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "PFXVertexBuffer");
-	if (!m_indexBuffer)
-		m_indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX | BUFFERUSAGE_COPY_DST, "PFXIndexBuffer");
+	if (!vertBuffer)
+		vertBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SVBO_MAX_SIZE(m_maxQuads, PFXVertex)), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "PFXVertexBuffer");
+	if (!indexBuffer)
+		indexBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, SIBO_MAX_SIZE(m_maxQuads)), BUFFERUSAGE_INDEX | BUFFERUSAGE_COPY_DST, "PFXIndexBuffer");
 
 	if (bufferUpdateCmds)
 	{
-		bufferUpdateCmds->WriteBuffer(m_vertexBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
-		bufferUpdateCmds->WriteBuffer(m_indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+		bufferUpdateCmds->WriteBuffer(vertBuffer, m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+		bufferUpdateCmds->WriteBuffer(indexBuffer, m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
 	}
 	else
 	{
-		m_vertexBuffer->Update(m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
-		m_indexBuffer->Update(m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
+		vertBuffer->Update(m_pVerts, AlignBufferSize((int)m_numVertices * sizeof(PFXVertex)), 0);
+		indexBuffer->Update(m_pIndices, AlignBufferSize((int)m_numIndices * sizeof(uint16)), 0);
 	}
+}
 
-	m_bufferDirty = false;
+void CParticleBatch::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
+{
+	Render(passContext, m_vertexBuffer, m_indexBuffer, bufferUpdateCmds);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleBatch::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds, bool flushBuffers)
+void CParticleBatch::Render(const RenderPassContext& passContext, IGPUBufferPtr& vertBuffer, IGPUBufferPtr& indexBuffer, IGPUCommandRecorder* bufferUpdateCmds)
 {
 	if (!m_initialized || !r_drawParticles.GetBool())
 	{
-		m_numIndices = 0;
-		m_numVertices = 0;
+		ClearBuffers();
 		return;
 	}
 
@@ -149,30 +148,26 @@ void CParticleBatch::Render(const RenderPassContext& passContext, IGPUCommandRec
 		return;
 
 	if (bufferUpdateCmds)
-		UpdateVBO(bufferUpdateCmds);
+		UpdateVBO(bufferUpdateCmds, vertBuffer, indexBuffer);
+	else if (!vertBuffer || !indexBuffer && m_numIndices && !m_triangleListMode)
+		return;
 
 	RenderDrawCmd drawCmd;
 	drawCmd
 		.SetMaterial(m_material)
 		.SetInstanceFormat(g_pfxRender->m_vertexFormat)
-		.SetVertexBuffer(0, m_vertexBuffer);
+		.SetVertexBuffer(0, vertBuffer);
 		
 	if (m_numIndices)
 	{
 		drawCmd
-			.SetIndexBuffer(m_indexBuffer, INDEXFMT_UINT16)
+			.SetIndexBuffer(indexBuffer, INDEXFMT_UINT16)
 			.SetDrawIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numIndices, 0, m_numVertices);
 	}
 	else
 		drawCmd.SetDrawNonIndexed(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, m_numVertices);
 
 	g_matSystem->SetupDrawCommand(drawCmd, passContext);
-
-	if(flushBuffers)
-	{
-		m_numVertices = 0;
-		m_numIndices = 0;
-	}
 }
 
 const AtlasEntry* CParticleBatch::GetEntry(int idx) const
@@ -369,10 +364,10 @@ void CParticleRenderer::UpdateBuffers(IGPUCommandRecorder* bufferUpdateCmds)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleRenderer::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds, bool flushBuffers)
+void CParticleRenderer::Render(const RenderPassContext& passContext, IGPUCommandRecorder* bufferUpdateCmds)
 {
 	for(CParticleBatch* batch : m_batchs)
-		batch->Render(passContext, bufferUpdateCmds, flushBuffers);
+		batch->Render(passContext, bufferUpdateCmds);
 }
 
 void CParticleRenderer::ClearBuffers()
