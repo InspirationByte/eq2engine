@@ -183,6 +183,9 @@ workspace(WORKSPACE_NAME)
 			"NOMINMAX", 
 			"_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE"
 		}
+		linkoptions {
+			"/NOEXP"
+		}
 
     filter "configurations:Debug"
         defines { 
@@ -229,6 +232,9 @@ workspace(WORKSPACE_NAME)
 		defines { 
 			"EQ_USE_SDL"
 		}
+		
+	filter "kind:StaticLib"
+		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
 
 group "Core"
 
