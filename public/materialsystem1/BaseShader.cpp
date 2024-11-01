@@ -474,9 +474,10 @@ IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
 	const CTextureAtlas* atlas = m_material->GetAtlas();
 	if (atlas)
 	{
-		for (int i = 0; i < atlas->GetEntryCount(); ++i)
+		for (const AtlasEntry& entry : atlas->GetEntries())
 		{
-			const AtlasEntry& entry = *atlas->GetEntry(i);
+			if (atlasBufferData.entryCount + 1 >= 64)
+				break;
 			atlasBufferData.entries[1 + atlasBufferData.entryCount++] = Vector4D(entry.rect.GetSize(), entry.rect.leftTop);
 		}
 	}

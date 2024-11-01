@@ -24,20 +24,22 @@ public:
 	CTextureAtlas(const KVSection* kvs);
 	virtual ~CTextureAtlas();
 
-	bool				Load(const char* pszFileName);
+	bool					Load(const char* pszFileName);
 
-	void				InitAtlas(const KVSection* kvs);
-	void				Cleanup();
+	void					InitAtlas(const KVSection* kvs);
+	void					Cleanup();
 
-	AtlasEntry*			GetEntry(int idx) const;
-	AtlasEntry*			FindEntry(const char* pszName) const;
-	int					FindEntryIndex(const char* pszName) const;
+	ArrayCRef<AtlasEntry>	GetEntries() const { return m_entries; }
+	int						GetEntryCount() const { return m_entries.numElem(); }
 
-	int					GetEntryCount() const		{ return m_entries.numElem(); }
-	const char*			GetMaterialName() const		{ return m_material.ToCString(); }
+	const AtlasEntry*		GetEntry(int idx) const;
+	const AtlasEntry*		FindEntry(const char* pszName) const;
+	int						FindEntryIndex(const char* pszName) const;
+
+	const char*				GetMaterialName() const	{ return m_material.ToCString(); }
 protected:
-	EqString			m_material;
-	char*				m_names{ nullptr };
-	Map<int, int>		m_entryMap{ PP_SL };
-	Array<AtlasEntry>	m_entries{ PP_SL };
+	EqString				m_material;
+	char*					m_names{ nullptr };
+	Map<int, int>			m_entryMap{ PP_SL };
+	Array<AtlasEntry>		m_entries{ PP_SL };
 };
