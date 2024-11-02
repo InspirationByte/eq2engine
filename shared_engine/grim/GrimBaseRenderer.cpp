@@ -286,7 +286,10 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 
 				const int newBatch = m_drawBatchs.Add(drawBatch);
 				if (prevBatch != -1)
+				{
 					m_drawBatchs[prevBatch].next = newBatch;
+					m_drawBatchs.SetUpdated(prevBatch);
+				}
 				else
 					drawLodInfo.firstBatch = newBatch;
 				prevBatch = newBatch;
@@ -311,9 +314,13 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 		if(prevLod != -1)
 		{
 			m_drawLodInfos[prevLod].next = newLod;
+			m_drawLodInfos.SetUpdated(prevLod);
 		}
 		else
+		{
 			m_drawLodsList[slot].firstLodInfo = newLod;
+			m_drawLodsList.SetUpdated(slot);
+		}
 		prevLod = newLod;
 	}
 }
@@ -377,7 +384,10 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 
 			const int newBatch = m_drawBatchs.Add(drawBatch);
 			if (prevBatch != -1)
+			{
 				m_drawBatchs[prevBatch].next = newBatch;
+				m_drawBatchs.SetUpdated(prevBatch);
+			}
 			else
 				drawLodInfo.firstBatch = newBatch;
 			prevBatch = newBatch;
@@ -399,9 +409,15 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 
 		const int newLod = m_drawLodInfos.Add(drawLodInfo);
 		if (prevLod != -1)
+		{
 			m_drawLodInfos[prevLod].next = newLod;
+			m_drawLodInfos.SetUpdated(prevLod);
+		}
 		else
+		{
 			m_drawLodsList[slot].firstLodInfo = newLod;
+			m_drawLodsList.SetUpdated(slot);
+		}
 		prevLod = newLod;
 
 		++numLods;
@@ -455,14 +471,24 @@ EqStringRef GRIMBaseRenderer::DbgGetArchetypeName(GRIMArchetype archetypeId) con
 void GRIMBaseRenderer::DbgInvalidateAllData()
 {
 	CScopedMutex m(s_grimRendererMutex);
-	for(int i = 0; i < m_drawBatchs.NumElem(); ++i)
-		m_drawBatchs.SetUpdated(i);
+	for(int i = 0; i < m_drawBatchs.NumSlots(); ++i)
+	{
+		if(m_drawBatchs(i))
+			m_drawBatchs.SetUpdated(i);
+	}
 
-	for(int i = 0; i < m_drawLodInfos.NumElem(); ++i)
-		m_drawLodInfos.SetUpdated(i);
+	for(int i = 0; i < m_drawLodInfos.NumSlots(); ++i)
+	{
+		if (m_drawLodInfos(i))
+			m_drawLodInfos.SetUpdated(i);
+	}
 
-	for(int i = 0; i < m_drawLodsList.NumElem(); ++i)
-		m_drawLodsList.SetUpdated(i);
+	for(int i = 0; i < m_drawLodsList.NumSlots(); ++i)
+	{
+		if(m_drawLodsList(i))
+			m_drawLodsList.SetUpdated(i);
+	}
+	m_dbgInvalidated = true;
 }
 
 void GRIMBaseRenderer::DestroyPendingArchetypes()
@@ -554,17 +580,18 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 
 	// we have to sync desc buffers first
 	bool buffersUpdated = false;
-	if (m_drawBatchs.Sync(cmdRecorder))
+	if (m_drawLodsList.Sync(cmdRecorder))
 		buffersUpdated = true;
 
 	if (m_drawLodInfos.Sync(cmdRecorder))
 		buffersUpdated = true;
 
-	if (m_drawLodsList.Sync(cmdRecorder))
+	if (m_drawBatchs.Sync(cmdRecorder))
 		buffersUpdated = true;
 	
 	if (!buffersUpdated)
 		return;
+	m_dbgInvalidated = false;
 
 	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
@@ -975,7 +1002,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 bool GRIMBaseRenderer::IsSync() const
 {
-	return m_pendingDeletion.numElem() == 0 && m_pendingArchetypes.numElem() == 0;
+	return m_pendingDeletion.numElem() == 0 && m_pendingArchetypes.numElem() == 0 && m_dbgInvalidated == false;
 }
 
 void GRIMBaseRenderer::DbgValidate() const
@@ -1215,6 +1242,9 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		maxInst = max(maxInst, *it);
 	}
 
+	ImGui::Checkbox("Show Instance Ids", &renderer.m_drawSettings.dbgDrawIndices);
+	ImGui::SameLine();
+
 	bool softwareMode = grim_softwareMode.GetBool();
 	if(ImGui::Checkbox("Software mode override", &softwareMode))
 		grim_softwareMode.SetBool(softwareMode);
@@ -1320,53 +1350,96 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		}
 		ImGui::SameLine();
 		
+		ImGui::PushID(archetypeId);
 		if(ImGui::Button("Details"))
 		{
 			detailsOpen = true;
 			s_highlightArchetype = archetypeId;
 			// TODO: show batch count, materials, buffers etc
 		}
+		ImGui::PopID();
 	}
 
 	if(detailsOpen && ImGui::Begin("GRIM Archetype details", &detailsOpen))
 	{
 		Set<IMaterial*> materials(PP_SL);
-		int maxBatchesPerLod = 0;
-		int totalLods = 0;
 
-		GRIMBaseRenderer::ArchetypeInfo::PTR_T archetypeInfo;
+		static const char* s_primTopologyNames[] = {
+			"PRIM_POINTS",
+			"PRIM_LINES",
+			"PRIM_LINE_STRIP",
+			"PRIM_TRIANGLES",
+			"PRIM_TRIANGLE_STRIP",
+		};
+
+		ImGui::Text("Archetype llid=%d", s_highlightArchetype);
 		const GRIMBaseRenderer::GPULodList& lodList = renderer.m_drawLodsList[s_highlightArchetype];
-		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
 		{
-			int numBatches = 0;
-			const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
-			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+			int nLod = 0;
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
 			{
-				const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[renderer.m_drawBatchs[batchIdx].cmdIdx];
-				materials.insert(drawInfo.material);
-				++numBatches;
-				if(!archetypeInfo)
-					archetypeInfo = drawInfo.archetypeInfo;
+				const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
+				if (ImGui::TreeNode(&lodInfo, "Lod %d (llid=%d)", nLod, lodIdx))
+				{
+					int nBatch = 0;
+					for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+					{
+						const GRIMBaseRenderer::GPUIndexedBatch& batch = renderer.m_drawBatchs[batchIdx];
+						if (ImGui::TreeNode(&batch, "Batch %d (llid=%d)", nBatch, batchIdx))
+						{
+							const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[batch.cmdIdx];
+							ImGui::TextDisabled("Indices Start: %d Count: %d", batch.firstIndex, batch.indexCount);
+							ImGui::TextDisabled("Indirect Draw Idx %d", batch.cmdIdx);
+							ImGui::TextDisabled("Prim Topology %s", s_primTopologyNames[drawInfo.primTopology]);
+							ImGui::TextDisabled("Material %s", drawInfo.material->GetName());
+							ImGui::TreePop();
+						}
+						++nBatch;
+					}
+					ImGui::TreePop();
+				}
+				++nLod;
 			}
-			maxBatchesPerLod = max(maxBatchesPerLod, numBatches);
-			++totalLods;
 		}
 		
-		if(archetypeInfo)
+		if (ImGui::CollapsingHeader("Information"))
 		{
-			ImGui::Text("Archetype %d '%s'", s_highlightArchetype, archetypeInfo->name.ToCString());
-			ImGui::Text("Vertex buffers: %d", archetypeInfo->vertexBuffers.numElem());
-			ImGui::Text("FVF: %s (%d)", archetypeInfo->meshInstFormat.name, archetypeInfo->meshInstFormat.formatId);
-			ImGui::Text("Skinning supported: %d", archetypeInfo->skinningSupport);
-			ImGui::Text("LOD count: %d", totalLods);
-			ImGui::Text("Max batches per lod: %d", maxBatchesPerLod);
-			ImGui::Text("Materials used:");
-			for(auto it = materials.begin(); !it.atEnd(); ++it)
-				ImGui::Text(" - %s", it.key()->GetName());
-		}
-		else
-		{
-			ImGui::Text("Invalid archetype %d", s_highlightArchetype);
+			GRIMBaseRenderer::ArchetypeInfo::PTR_T archetypeInfo;
+			int maxBatchesPerLod = 0;
+			int totalLods = 0;
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
+			{
+				int numBatches = 0;
+				const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
+				for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+				{
+					const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[renderer.m_drawBatchs[batchIdx].cmdIdx];
+
+					materials.insert(drawInfo.material);
+					++numBatches;
+					if (!archetypeInfo)
+						archetypeInfo = drawInfo.archetypeInfo;
+				}
+				maxBatchesPerLod = max(maxBatchesPerLod, numBatches);
+				++totalLods;
+			}
+
+			if (archetypeInfo)
+			{
+				ImGui::Text("Archetype %d '%s'", s_highlightArchetype, archetypeInfo->name.ToCString());
+				ImGui::Text("Vertex buffers: %d", archetypeInfo->vertexBuffers.numElem());
+				ImGui::Text("FVF: %s (%d)", archetypeInfo->meshInstFormat.name, archetypeInfo->meshInstFormat.formatId);
+				ImGui::Text("Skinning supported: %d", archetypeInfo->skinningSupport);
+				ImGui::Text("LOD count: %d", totalLods);
+				ImGui::Text("Max batches per lod: %d", maxBatchesPerLod);
+				ImGui::Text("Materials used:");
+				for (auto it = materials.begin(); !it.atEnd(); ++it)
+					ImGui::Text(" - %s", it.key()->GetName());
+			}
+			else
+			{
+				ImGui::Text("Invalid archetype %d", s_highlightArchetype);
+			}
 		}
 
 		ImGui::End();

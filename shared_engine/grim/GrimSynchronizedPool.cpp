@@ -165,13 +165,17 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 		IGPUBufferPtr oldBuffer = m_buffer;
 		m_buffer = g_renderAPI->CreateBuffer(BufferInfo(stride, allocInstBufferElems), bufferFlags, m_name);
 
-		if (oldBufferElems > 0)
-			cmdRecorder->CopyBufferToBuffer(oldBuffer, 0, m_buffer, 0, oldBufferElems * stride);
-		else if (!oldBuffer)
+		if (oldBufferElems > 0 && oldBuffer)
 		{
-			// don't wast� time on running pipeline and upload directly to GPU
+			// copy old buffer data to new one, and still run update pipeline later below
+			// effectively updating old data and adding new data
+			cmdRecorder->CopyBufferToBuffer(oldBuffer, 0, m_buffer, 0, oldBufferElems * stride);
+		}
+		else
+		{
+			// don't waste time on running pipeline and upload everything directly to GPU
+			// since buffer is brand new
 			cmdRecorder->WriteBuffer(m_buffer, dataPtr, currentNumSlots * stride, 0);
-
 			{
 				Threading::CScopedMutex m(m_mutex);
 				m_updated.clear();

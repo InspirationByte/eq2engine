@@ -26,6 +26,8 @@ struct GRIMDrawSettings
 	int				overrideLodIdx{ -1 };
 	bool			skipOcclusionCulling{ false };
 	bool			forceSoftware{ false };
+
+	bool			dbgDrawIndices{ false };
 };
 
 struct GRIMRenderState
@@ -151,6 +153,7 @@ protected:
 	IGPUBindGroupPtr			m_updateBindGroup0;
 
 	GRIMDrawSettings			m_drawSettings;
+	bool						m_dbgInvalidated{ false };
 };
 
 struct GRIMBaseRenderer::GPUIndexedBatch

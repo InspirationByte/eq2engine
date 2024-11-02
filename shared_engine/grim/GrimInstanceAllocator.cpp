@@ -157,8 +157,7 @@ void GRIMBaseInstanceAllocator::DbgInvalidateAllData()
 	{
 		if(!pool)
 			continue;
-		const int numSlots = pool->NumSlots();
-		for(int i = 0; i < numSlots; ++i)
+		for(int i = 0; i < pool->NumSlots(); ++i)
 			pool->SetUpdated(i);
 	}
 	m_buffersUpdated = 0;
