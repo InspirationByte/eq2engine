@@ -1109,7 +1109,7 @@ bool CMaterialSystem::EndFrame()
 		*m_proxyUpdateCmdRecorders[i] = nullptr;
 	}
 
-	SubmitQueuedCommandsAwaitable();
+	SubmitQueuedCommands();
 
 	m_renderLibrary->EndFrame();
 

@@ -24,7 +24,7 @@ void CTexture::SetName(const char* pszNewName)
 // sets current animated texture frames
 void CTexture::SetAnimationFrame(int frame)
 {
-	m_animFrame = clamp(frame, 0, m_animFrameCount-1);
+	m_animFrame = m_animFrameCount > 0 ? frame % m_animFrameCount : 0;
 }
 
 // initializes procedural (lockable) texture
