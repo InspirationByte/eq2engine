@@ -11,8 +11,9 @@
 constexpr int APP_STATE_NONE = 0;
 
 class CAppStateBase;
-using StatePreUpdateEvent = Event<void(const float deltaTime)>;
-using StatePostUpdateEvent = Event<void(const float deltaTime)>;
+using StateFrameEvent = Event<void(const float deltaTime)>;
+using StatePreUpdateEvent = StateFrameEvent;
+using StatePostUpdateEvent = StateFrameEvent;
 using StateEnterEvent = Event<void(CAppStateBase* oldState, CAppStateBase* newState)>;
 using StateLeaveEvent = Event<void(CAppStateBase* oldState, CAppStateBase* newState)>;
 
@@ -60,10 +61,15 @@ private:
 
 namespace eqAppStateMng
 {
+	extern StateFrameEvent		g_onBeginFrame;
+	extern StateFrameEvent		g_onEndFrame;
+
 	extern StatePreUpdateEvent	g_onPreUpdateState;
 	extern StatePostUpdateEvent	g_onPostUpdateState;
 	extern StateEnterEvent		g_onEnterState;
 	extern StateLeaveEvent		g_onLeaveState;
+
+	
 
 	const char*			GetAppNameTitle();
 

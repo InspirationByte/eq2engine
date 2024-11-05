@@ -13,6 +13,8 @@
 
 namespace eqAppStateMng
 {
+StateFrameEvent g_onBeginFrame(PP_SL);
+StateFrameEvent g_onEndFrame(PP_SL);
 StatePreUpdateEvent g_onPreUpdateState(PP_SL);
 StatePostUpdateEvent g_onPostUpdateState(PP_SL);
 StateEnterEvent g_onEnterState(PP_SL);

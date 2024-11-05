@@ -715,7 +715,7 @@ void CGameHost::SetCursorShow(bool bShow)
 
 bool CGameHost::Frame()
 {
-	double elapsedTime = m_timer.GetTime(true);
+	m_prevMousePos = m_mousePos;
 
 	// Engine frames status
 	static float accTime = 0.1f;
@@ -729,10 +729,11 @@ bool CGameHost::Frame()
 		accTime = 0;
 	}
 
+	const double elapsedTime = m_timer.GetTime(true);
 	accTime += elapsedTime;
 	nFrames++;
 
-	m_prevMousePos = m_mousePos;
+	eqAppStateMng::g_onBeginFrame(elapsedTime);
 
 	if (!FilterTime(elapsedTime))
 		return false;
@@ -859,6 +860,7 @@ bool CGameHost::Frame()
 			g_pHost->SetWindowedMode();
 	}
 
+	eqAppStateMng::g_onEndFrame(gameFrameTime);
 	m_accumTime = 0.0f;
 
 	return true;
