@@ -853,6 +853,8 @@ struct BufferInfo
 	{
 	}
 
+	int					GetBufferSize() const { return elementCapacity * elementSize; }
+
 	int					elementCapacity{ 0 };
 	int					elementSize{ 0 };
 

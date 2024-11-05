@@ -32,14 +32,22 @@ struct GRIMDrawSettings
 
 struct GRIMRenderState
 {
+	// TODO: renderer UID to validate
+	BitArray		visibleArchetypes{ PP_SL, 128 };
+
 	IGPUBufferPtr	drawInvocationsBuffer;
 	IGPUBufferPtr	instanceIdsBuffer;
+
+	IGPUBufferPtr	sortedInstanceIdsBuffer;
+	IGPUBufferPtr	filteredInstancesBuffer;
+	IGPUBufferPtr	culledInstanceInfosBuffer;
+	IGPUBufferPtr	drawInstanceBoundsBuffer;
+	IGPUBufferPtr	filterParamsBuffer;
+
 	int				groupMaskInclude{ (int)COM_UINT_MAX };
 	int				groupMaskExclude{ 0 };
 	int				drawCallMaterialGroupByFlags{ 0 };
-
-	// TODO: renderer UID to validate
-	BitArray		visibleArchetypes{PP_SL, 128};
+	uint			bufferUpdateToken{ COM_UINT_MAX };
 };
 
 class GRIMBaseRenderer : public IShaderMeshInstanceProvider
@@ -193,12 +201,8 @@ struct GRIMBaseRenderer::IntermediateState
 	int						maxNumberOfObjects{ 0 };
 
 	IGPUCommandRecorderPtr	cmdRecorder;
-
-	IGPUBufferPtr			sortedInstanceIds;
 	GPUBufferView			filteredInstanceInfosBuffer;
 	GPUBufferView			filteredInstanceCountBuffer;
-	IGPUBufferPtr			culledInstanceInfosBuffer;
-	IGPUBufferPtr			drawInstanceBoundsBuffer;
 
 	// Software only
 	Array<GPUInstanceInfo>	instanceInfos{ PP_SL };

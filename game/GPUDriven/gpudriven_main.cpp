@@ -105,7 +105,7 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 
 	IGPUBufferPtr viewParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(CullViewParams), 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "ViewParamsBuffer");
 	intermediate.cmdRecorder->WriteBuffer(viewParamsBuffer, &cullView, sizeof(cullView), 0);
-	intermediate.cmdRecorder->ClearBuffer(intermediate.sortedInstanceIds, 0, sizeof(int));
+	intermediate.cmdRecorder->ClearBuffer(renderState.sortedInstanceIdsBuffer, 0, sizeof(int));
 
 	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CullInstances");
 	computeRecorder->SetPipeline(m_cullInstancesPipeline);
@@ -121,8 +121,8 @@ void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& interm
 	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(2)
-		.Buffer(0, intermediate.culledInstanceInfosBuffer)
-		.Buffer(1, intermediate.sortedInstanceIds)
+		.Buffer(0, renderState.culledInstanceInfosBuffer)
+		.Buffer(1, renderState.sortedInstanceIdsBuffer)
 		.End())
 	);
 
