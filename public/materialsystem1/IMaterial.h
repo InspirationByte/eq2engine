@@ -74,7 +74,7 @@ protected:
 	int							m_matVarIdx{ -1 };
 };
 
-enum EMaterialFlags
+enum EMaterialFlags : int
 {
 	MATERIAL_FLAG_NO_CULL			= (1 << 0),		// no culling (two sided)
 	MATERIAL_FLAG_WIREFRAME			= (1 << 1),
@@ -99,7 +99,7 @@ enum EMaterialFlags
 	MATERIAL_FLAG_TEXTRANSITION		= (1 << 15),	// transits textures to create painting effect (vertex transition)
 };
 
-enum EMaterialLoadingState
+enum EMaterialLoadingState : int
 {
 	MATERIAL_LOAD_ERROR		= -1,	// has error
 	MATERIAL_LOAD_NEED_LOAD	= 0,	// needs loading
@@ -126,7 +126,7 @@ public:
 	virtual CTextureAtlas*			GetAtlas() const = 0;		
 	virtual int						GetFlags() const = 0;
 
-	virtual int						GetState() const = 0;
+	virtual EMaterialLoadingState	GetState() const = 0;	// EMaterialLoadingState
 	virtual bool					IsError() const = 0;
 
 	// material var operations

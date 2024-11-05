@@ -29,7 +29,7 @@ public:
 	const char*				GetShaderName() const;
 	CTextureAtlas*			GetAtlas() const;
 
-	int						GetState() const {return m_state;}
+	EMaterialLoadingState	GetState() const {return (EMaterialLoadingState)m_state;}
 	bool					IsError() const {return (m_state == MATERIAL_LOAD_ERROR);}
 	int						GetFlags() const;
 
@@ -81,7 +81,7 @@ protected:
 	CTextureAtlas*			m_atlas{ nullptr };
 	IMatSystemShader*		m_shader{ nullptr };
 
-	int						m_state{ MATERIAL_LOAD_ERROR };	// FIXME: may be interlocked?
+	volatile int			m_state{ MATERIAL_LOAD_ERROR };	// FIXME: may be interlocked?
 	int						m_nameHash{ 0 };
 	int						m_instanceFormatId{ 0 };
 

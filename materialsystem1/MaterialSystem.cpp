@@ -135,7 +135,7 @@ public:
 
 		ASSERT(pMaterial->GetState() == MATERIAL_LOAD_INQUEUE);
 
-		if (g_parallelJobs->IsInitialized())
+		if (g_parallelJobs->IsInitialized() && g_renderAPI->GetProgressiveTextureFrequency() == 0)
 		{
 			// Wooohoo Blast Processing!
 			FunctionJob* job = PPNew FunctionJob("LoadMaterialJob", [pMaterial](void*, int) {
@@ -1499,6 +1499,10 @@ void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandReco
 
 bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext, IShaderMeshInstanceProvider* meshInstProvider)
 {
+	const EMaterialLoadingState matState = material->GetState();
+	if (matState != MATERIAL_LOAD_OK && matState != MATERIAL_LOAD_ERROR)
+		return false;
+
 	IShaderAPI* renderAPI = m_shaderAPI;
 
 	// TODO: overdraw material. Or maybe debug property in shader?
