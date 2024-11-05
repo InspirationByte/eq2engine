@@ -245,6 +245,18 @@ public:
 
 	void			ThrowError(const char* fmt, ...) const;
 
+	// stops the garbage collector. 
+	void			GCStop();
+
+	// restarts the garbage collector.
+	void			GCRestart();
+
+	// performs an incremental step of garbage collection.
+	void			GCStep(int stepSize);
+
+	// perform full garbage collection cycle
+	void			GCCollect();
+
 	bool			RunBuffer(IVirtualStream* virtStream, const char* name) const;
 	bool			RunChunk(EqStringRef chunk, const char* name = "userChunk") const;
 

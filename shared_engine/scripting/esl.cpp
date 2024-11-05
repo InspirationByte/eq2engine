@@ -8,6 +8,25 @@
 
 namespace esl
 {
+void ScriptState::GCStop()
+{
+	lua_gc(m_state, LUA_GCRESTART);
+}
+
+void ScriptState::GCRestart()
+{
+	lua_gc(m_state, LUA_GCRESTART);
+}
+
+void ScriptState::GCStep(int stepSize)
+{
+	lua_gc(m_state, LUA_GCSTEP, stepSize);
+}
+
+void ScriptState::GCCollect()
+{
+	lua_gc(m_state, LUA_GCCOLLECT);
+}
 
 bool ScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
 {
