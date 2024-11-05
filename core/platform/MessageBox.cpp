@@ -7,9 +7,8 @@
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
+#include "utils/KeyValues.h"
 #include "core/platform/messagebox.h"
-
-#define ASSERT_DEBUGGER_PROMPT 1
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -271,19 +270,30 @@ static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const c
 			return _EQASSERT_IGNORE_ALWAYS;
 	}
 
-#if ASSERT_DEBUGGER_PROMPT
-	const int res = g_msgBoxCallback(assertMessage + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
-	if (res == MSGBOX_BUTTON_RETRY)
-		return _EQASSERT_SKIP;
-	else if (res == MSGBOX_BUTTON_IGNORE)
-		return _EQASSERT_IGNORE_ALWAYS;
-	else if (res == MSGBOX_BUTTON_ABORT)
-		return _EQASSERT_BREAK;
+	auto InitAssertPrompt = []() -> bool {
+		const KVSection* appDebugSettings = g_eqCore->GetConfig()->FindSection("ApplicationDebug");
+		if (appDebugSettings)
+		{
+			if (appDebugSettings->FindSection("AssertPromptInDebugger", KV_FLAG_NOVALUE))
+				return true;
+		}
+		return false;
+	};
 
-	return _EQASSERT_SKIP;
-#else
+	static bool gAssertPromptInDebugger = InitAssertPrompt();
+	if (gAssertPromptInDebugger)
+	{
+		const int res = g_msgBoxCallback(assertMessage + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
+		if (res == MSGBOX_BUTTON_RETRY)
+			return _EQASSERT_SKIP;
+		else if (res == MSGBOX_BUTTON_IGNORE)
+			return _EQASSERT_IGNORE_ALWAYS;
+		else if (res == MSGBOX_BUTTON_ABORT)
+			return _EQASSERT_BREAK;
+
+		return _EQASSERT_SKIP;
+	}
 	return _EQASSERT_BREAK;
-#endif
 }
 
 
