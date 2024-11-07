@@ -174,8 +174,6 @@ enum CursorCode
 static EQCURSOR s_defaultCursor[20];
 
 CStaticAutoPtr<CGameHost> g_pHost;
-SyncJob*			g_beginSceneJob = nullptr;
-SyncJob*			g_endSceneJob = nullptr;
 
 static DKMODULE*	g_matsysmodule = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
@@ -485,8 +483,6 @@ bool CGameHost::InitSystems()
 	g_inputCommandBinder->Init();
 	g_consoleInput->Initialize(m_window);
 
-	g_beginSceneJob = PPNew SyncJob("BeginSceneJob");
-	g_endSceneJob = PPNew SyncJob("EndSceneJob");
 	m_defaultFont = g_fontCache->GetFont("default",0);
 
 	if (m_window)
@@ -642,8 +638,6 @@ void CGameHost::ShutdownSystems()
 	g_fileSystem->CloseModule( g_matsysmodule );
 
 	g_parallelJobs->Shutdown();
-	SAFE_DELETE(g_beginSceneJob);
-	SAFE_DELETE(g_endSceneJob);
 
 	SDL_DestroyWindow(g_pHost->m_window);
 }
@@ -902,14 +896,10 @@ void CGameHost::BeginScene()
 	const bool cursorVisible = SDL_ShowCursor(SDL_QUERY);
 	const bool cursorIsActive = cursorVisible && !m_cursorCentered;
 	g_consoleInput->SetHostCursorActive(cursorIsActive);
-
-	//g_parallelJobs->AddJob(g_beginSceneJob);
 }
 
 void CGameHost::EndScene()
 {
-	//g_parallelJobs->AddJob(g_endSceneJob);
-
 	// save screenshots without ImGui/Console visible
 	Sys_SaveScreenshot();
 
