@@ -65,13 +65,16 @@ void GRIMBaseSyncrhronizedPool::PrepareBuffers(IGPUCommandRecorder* cmdRecorder,
 	ASSERT(elemSize <= sourceStride);
 
 	const int updatedCount = updated.size();
-	const int updateBufferSize = updatedCount * elemSize;
-
 	elementIds.reserve(updatedCount + 1);
 	elementIds.clear();
 
 	// always insert count as first element (sourceCount)
 	elementIds.append(updatedCount);
+
+	for (auto it = updated.begin(); !it.atEnd(); ++it)
+		elementIds.append(it.key());
+
+	const int updateBufferSize = elementIds.numElem() * elemSize;
 
 	ubyte* updateData = reinterpret_cast<ubyte*>(PPAlloc(updateBufferSize));
 	ubyte* updateDataStart = updateData;
@@ -80,11 +83,8 @@ void GRIMBaseSyncrhronizedPool::PrepareBuffers(IGPUCommandRecorder* cmdRecorder,
 	};
 
 	// as GPU does not like unaligned access, we put updated elements in separate buffer
-	for (auto it = updated.begin(); !it.atEnd(); ++it)
+	for (const int elemIdx : ArrayCRef(elementIds.ptr() + 1, elementIds.numElem() - 1))
 	{
-		const int elemIdx = it.key();
-		elementIds.append(elemIdx);
-
 		const ubyte* updInstPtr = sourceData + sourceStride * elemIdx;
 		memcpy(updateData, updInstPtr, elemSize);
 		updateData += elemSize;
