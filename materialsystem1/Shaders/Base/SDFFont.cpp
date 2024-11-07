@@ -199,8 +199,7 @@ BEGIN_SHADER_CLASS(
 				.Sampler(2, baseTexture.texture->GetSamplerState())
 				.Texture(3, baseTexture)
 				.End();
-			IGPUBindGroupPtr materialBindGroup = CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
-			return materialBindGroup;
+			CreatePersistentBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
 
 		return setupParams.pipelineInfo.bindGroup[bindGroupId];
