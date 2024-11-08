@@ -39,7 +39,7 @@ BEGIN_SHADER_CLASS(
 		if (GetMaterialValue("NoFog", false) == false)
 			shaderQuery.append("DOFOG");
 
-		if (GetMaterialValue("VertexColor", false))
+		if (GetMaterialValue("VertexColor", true))
 			shaderQuery.append("VERTEXCOLOR");
 
 		if (m_flags & MATERIAL_FLAG_ALPHATESTED)
