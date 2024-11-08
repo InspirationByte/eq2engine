@@ -113,7 +113,7 @@ void CLocalize::Init()
 	m_language = m_language.LowerCase();
 
 	// add the copyright
-	AddToken("INSCOPYRIGHT", L"\xa9 Inspiration Byte 2009-2023");
+	AddToken("INSCOPYRIGHT", L"\xa9 Inspiration Byte 2009-2025");
 	AddTokensFile("core");
 }
 
