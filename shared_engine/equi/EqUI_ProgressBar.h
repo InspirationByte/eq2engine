@@ -18,7 +18,7 @@ namespace equi
 		ProgressBar();
 		~ProgressBar() {}
 
-		void				InitFromKeyValues(const KVSection* sec, bool noClear);
+		void				InitFromKeyValues(const KVSection* sec, bool noClear) override;
 
 		// events
 		bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }

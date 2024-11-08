@@ -174,7 +174,7 @@ public:
 	int							RaiseEventUid(int uid, void* userData);
 
 protected:
-
+	void						InitChildItems(const KVSection* sec, bool noClear = false);
 
 	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) = 0;

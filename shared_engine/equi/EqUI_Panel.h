@@ -25,7 +25,7 @@ public:
 	Panel();
 	~Panel();
 
-	virtual void			InitFromKeyValues(const KVSection* sec, bool noClear );
+	virtual void			InitFromKeyValues(const KVSection* sec, bool noClear) override;
 
 	virtual void			Hide();
 
@@ -55,6 +55,23 @@ protected:
 
 	equi::Label*			m_labelCtrl;
 	equi::Button*			m_closeButton;
+};
+
+class Container : public IUIControl
+{
+public:
+	EQUI_CLASS(Container, IUIControl)
+
+	Container() : IUIControl() {}
+	~Container() {}
+
+	void			InitFromKeyValues(const KVSection* sec, bool noClear) override;
+
+	// events
+	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
+	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
+
+	void			DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
 };
 
 };

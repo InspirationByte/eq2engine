@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "utils/KeyValues.h"
 #include "EqUI_Panel.h"
 
@@ -209,20 +210,19 @@ public:
 	void			DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
 };
 
-class Container : public IUIControl
+void Container::InitFromKeyValues(const KVSection* sec, bool noClear)
 {
-public:
-	EQUI_CLASS(Container, IUIControl)
+	BaseClass::InitFromKeyValues(sec, noClear);
 
-	Container() : IUIControl() {}
-	~Container() {}
+	EqStringRef fileName;
+	if (sec->Get("file").GetValues(fileName))
+	{
+		KVSection kvExtFile;
+		KV_LoadFromFile("resources/" + fileName, SP_MOD | SP_DATA, &kvExtFile);
 
-	// events
-	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
-	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
-
-	void			DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
-};
+		InitChildItems(&kvExtFile, noClear);
+	}
+}
 
 };
 

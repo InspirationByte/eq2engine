@@ -88,7 +88,7 @@ void IUIControl::SetLabelText(const wchar_t* pszLabel)
 	m_label = pszLabel;
 }
 
-void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
+void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 {
 	if (!noClear)
 		ClearChilds(true);
@@ -253,6 +253,11 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
 			m_scaling = UI_SCALING_ASPECT_MAX;
 	}
 
+	InitChildItems(sec, noClear);
+}
+
+void IUIControl::InitChildItems(const KVSection* sec, bool noClear)
+{
 	// walk for childs
 	for (const KVSection* childSec : sec->Keys("child", KV_FLAG_SECTION))
 	{
@@ -269,17 +274,17 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear )
 		IUIControl* control = childName ? FindChild(childName) : nullptr;
 
 		// if nothing, create new one
-		if(!control || control && childClass.CompareCaseIns(control->GetClassname()))
+		if (!control || control && childClass.CompareCaseIns(control->GetClassname()))
 		{
 			if (control) // replace children if it has different class
 				RemoveChild(control);
 
-			control = equi::Manager->CreateElement( childClass );
-			AddChild( control );
+			control = equi::Manager->CreateElement(childClass);
+			AddChild(control);
 		}
 
 		// if still no luck (wrong class name), we abort
-		if(!control)
+		if (!control)
 			continue;
 
 		control->InitFromKeyValues(childSec, noClear);
