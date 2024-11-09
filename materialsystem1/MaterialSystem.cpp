@@ -440,14 +440,14 @@ void CMaterialSystem::Shutdown()
 
 void CMaterialSystem::CreateWhiteTexture()
 {
-	CImagePtr img = CRefPtr_new(CImage);
 	const int nWidth = 4;
 	const int nHeight = 4;
 
-	FixedArray<CImagePtr, 1> images;
-	images.append(img);
-
 	{
+		CImagePtr img = CRefPtr_new(CImage);
+		FixedArray<CImagePtr, 1> images;
+		images.append(img);
+
 		ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, IMAGE_DEPTH_CUBEMAP, 1);
 		const int dataSize = img->GetMipMappedSize(0, 1) * img->GetArraySize();
 		memset(texData, 0xffffffff, dataSize);
@@ -459,6 +459,10 @@ void CMaterialSystem::CreateWhiteTexture()
 	}
 
 	{
+		CImagePtr img = CRefPtr_new(CImage);
+		FixedArray<CImagePtr, 1> images;
+		images.append(img);
+
 		ubyte* texData = img->Create(FORMAT_RGBA8, nWidth, nHeight, 1, 1);
 		const int dataSize = img->GetMipMappedSize(0, 1) * img->GetArraySize();
 		memset(texData, 0xffffffff, dataSize);
@@ -468,8 +472,6 @@ void CMaterialSystem::CreateWhiteTexture()
 		ASSERT(img->GetImageType() == IMAGE_TYPE_2D);
 		m_whiteTexture[TEXDIMENSION_2D] = m_shaderAPI->CreateTexture(images, SamplerStateParams(TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP), TEXFLAG_IGNORE_QUALITY);
 	}
-
-	images.clear();
 }
 
 void CMaterialSystem::CreateErrorTexture()
