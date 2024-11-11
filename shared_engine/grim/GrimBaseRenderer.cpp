@@ -207,7 +207,13 @@ void GRIMBaseRenderer::UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetype
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
 {
-	if (m_drawLodsList(slot))
+	bool isSlotTaken = false;
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		isSlotTaken = m_drawLodsList(slot);
+	}
+
+	if (isSlotTaken)
 	{
 		// first we need to drop data of this archetype
 		DestroyArchetypeData(slot);
@@ -346,6 +352,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 		}
 		else
 		{
+			CScopedMutex m(s_grimRendererMutex);
 			m_drawLodsList[slot].firstLodInfo = newLod;
 			m_drawLodsList.SetUpdated(slot);
 		}
@@ -355,7 +362,13 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc)
 {
-	if (m_drawLodsList(slot))
+	bool isSlotTaken = false;
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		isSlotTaken = m_drawLodsList(slot);
+	}
+
+	if (isSlotTaken)
 	{
 		// first we need to drop data of this archetype
 		DestroyArchetypeData(slot);
@@ -447,6 +460,7 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetype
 		}
 		else
 		{
+			CScopedMutex m(s_grimRendererMutex);
 			m_drawLodsList[slot].firstLodInfo = newLod;
 			m_drawLodsList.SetUpdated(slot);
 		}
@@ -570,7 +584,10 @@ void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
 	}
 
 	// reset to defaults
-	m_drawLodsList.Update(slot, GPULodList{});
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		m_drawLodsList.Update(slot, GPULodList{});
+	}
 }
 
 void GRIMBaseRenderer::DestroyPendingArchetypes()
@@ -587,7 +604,11 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 	for (GRIMArchetype slot : pendingDeletion)
 	{
 		DestroyArchetypeData(slot);
-		m_drawLodsList.Remove(slot);
+
+		{
+			CScopedMutex m(s_grimRendererMutex);
+			m_drawLodsList.Remove(slot);
+		}
 	}
 }
 
@@ -621,8 +642,11 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 
 	// we have to sync desc buffers first
 	bool buffersUpdated = false;
-	if (m_drawLodsList.Sync(cmdRecorder))
-		buffersUpdated = true;
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		if (m_drawLodsList.Sync(cmdRecorder))
+			buffersUpdated = true;
+	}
 
 	if (m_drawLodInfos.Sync(cmdRecorder))
 		buffersUpdated = true;
