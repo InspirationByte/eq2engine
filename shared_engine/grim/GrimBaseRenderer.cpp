@@ -165,8 +165,6 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 
 	CScopedMutex m(s_grimRendererMutex);
 
-	// TODO: resurrect archetypes from m_pendingDeletion
-
 	PendingDesc& pending = m_pendingArchetypes.append();
 	pending.desc = desc;
 	pending.type = PendingDesc::TYPE_GRIM;
@@ -181,9 +179,39 @@ GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& des
 	return pending.slot;
 }
 
+void GRIMBaseRenderer::UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetypeDesc& desc)
+{
+	bool hasVertBuffers = false;
+	for (IGPUBufferPtr vertBuffer : desc.vertexBuffers)
+		hasVertBuffers = hasVertBuffers || vertBuffer;
+	ASSERT_MSG(hasVertBuffers, "Cannot create archetype when no vertex buffers specified");
+	if (!hasVertBuffers)
+		return;
+
+	ASSERT_MSG(desc.lods.numElem() <= GRIM_MAX_INSTANCE_LODS, "Too many lods (%d), max is %d", desc.lods.numElem(), GRIM_MAX_INSTANCE_LODS);
+
+	CScopedMutex m(s_grimRendererMutex);
+
+	PendingDesc& pending = m_pendingArchetypes.append();
+	pending.desc = desc;
+	pending.type = PendingDesc::TYPE_GRIM;
+	pending.slot = id;
+	pending.isUpdate = true;
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	if (m_drawLodsList.NumSlots() + 1 > m_dbgHiddenArchetypes.numBits())
+		m_dbgHiddenArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+	m_dbgHiddenArchetypes.setFalse(pending.slot);
+#endif
+}
+
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
 {
-	ASSERT_MSG(m_drawLodsList(slot), "Archetype slot %d is not reserved", slot);
+	if (m_drawLodsList(slot))
+	{
+		// first we need to drop data of this archetype
+		DestroyArchetypeData(slot);
+	}
 
 	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
 	IGPUBufferPtr indexBuffer = geom->GetIndexBuffer();
@@ -327,7 +355,11 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc)
 {
-	ASSERT_MSG(m_drawLodsList(slot), "Archetype slot %d is not reserved", slot);
+	if (m_drawLodsList(slot))
+	{
+		// first we need to drop data of this archetype
+		DestroyArchetypeData(slot);
+	}
 
 	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
 
@@ -491,49 +523,35 @@ void GRIMBaseRenderer::DbgInvalidateAllData()
 	m_dbgInvalidated = true;
 }
 
-void GRIMBaseRenderer::DestroyPendingArchetypes()
+void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
 {
-	if (!m_pendingDeletion.numElem())
-		return;
-
-	Array<GRIMArchetype> pendingDeletion(PP_SL);
-	{
-		CScopedMutex m(s_grimRendererMutex);
-		pendingDeletion.swap(m_pendingDeletion);
-	}
-
 	struct ItemInfo {
 		enum EWhat
 		{
 			DRAWINFO,
 			BATCH,
-			LODINFO,
-			LODLIST
+			LODINFO
 		};
 		int index : 24;
 		int what : 8;
 	};
 	Array<ItemInfo> delItems(PP_SL);
-	delItems.reserve(64 * pendingDeletion.numElem());
+	delItems.reserve(64);
 
-	for (GRIMArchetype id : pendingDeletion)
+	const GPULodList lodList = m_drawLodsList[slot];
+	for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
 	{
-		const GPULodList lodList = m_drawLodsList[id];
-		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
+		const GPULodInfo lodInfo = m_drawLodInfos[lodIdx];
+		for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = m_drawBatchs[batchIdx].next)
 		{
-			const GPULodInfo lodInfo = m_drawLodInfos[lodIdx];
-			for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = m_drawBatchs[batchIdx].next)
-			{
-				delItems.appendEmplace(m_drawBatchs[batchIdx].cmdIdx, ItemInfo::DRAWINFO);
-				delItems.appendEmplace(batchIdx, ItemInfo::BATCH);
-			}
-			delItems.appendEmplace(lodIdx, ItemInfo::LODINFO);
+			delItems.appendEmplace(m_drawBatchs[batchIdx].cmdIdx, ItemInfo::DRAWINFO);
+			delItems.appendEmplace(batchIdx, ItemInfo::BATCH);
 		}
-		delItems.appendEmplace(id, ItemInfo::LODLIST);
-
-		if (grim_dbgLogArchetypes.GetBool())
-			MsgInfo("GRIM: freed archetype %d (%s)\n", id, DbgGetArchetypeName(id).ToCString());
+		delItems.appendEmplace(lodIdx, ItemInfo::LODINFO);
 	}
+
+	if (grim_dbgLogArchetypes.GetBool())
+		MsgInfo("GRIM: freed archetype %d (%s)\n", slot, DbgGetArchetypeName(slot).ToCString());
 
 	for (ItemInfo& item : delItems)
 	{
@@ -547,11 +565,29 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 			break;
 		case ItemInfo::LODINFO:
 			m_drawLodInfos.Remove(item.index);
-			break;
-		case ItemInfo::LODLIST:
-			m_drawLodsList.Remove(item.index);
-			break;
+			break;;
 		}
+	}
+
+	// reset to defaults
+	m_drawLodsList.Update(slot, GPULodList{});
+}
+
+void GRIMBaseRenderer::DestroyPendingArchetypes()
+{
+	if (!m_pendingDeletion.numElem())
+		return;
+
+	Array<GRIMArchetype> pendingDeletion(PP_SL);
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		pendingDeletion.swap(m_pendingDeletion);
+	}
+
+	for (GRIMArchetype slot : pendingDeletion)
+	{
+		DestroyArchetypeData(slot);
+		m_drawLodsList.Remove(slot);
 	}
 }
 
@@ -572,6 +608,11 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	DestroyPendingArchetypes();
 	for (PendingDesc& pending : pending)
 	{
+		if(!pending.isUpdate)
+		{
+			ASSERT_MSG(m_drawLodsList(pending.slot), "Archetype slot %d is not reserved", pending.slot);
+		}
+
 		if (pending.type == PendingDesc::TYPE_GRIM)
 			InitDrawArchetype(pending.slot, pending.desc);
 		else if (pending.type == PendingDesc::TYPE_STUDIO)

@@ -66,6 +66,7 @@ public:
 	GRIMArchetype		CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr, uint extraLayoutBits = 0);
 	GRIMArchetype		CreateDrawArchetype(const GRIMArchetypeDesc& desc);
 	void				DestroyDrawArchetype(GRIMArchetype id);
+	void				UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetypeDesc& desc);
 
 	void				SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
@@ -111,6 +112,7 @@ protected:
 	void			InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits);
 	void			InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc);
 	void			DestroyPendingArchetypes();
+	void			DestroyArchetypeData(GRIMArchetype slot);
 
 	struct PendingDesc
 	{
@@ -131,6 +133,7 @@ protected:
 		uint					extraLayoutBits{ 0 };
 		GRIMArchetype			slot{GRIM_INVALID_ARCHETYPE};
 		Type					type{};
+		bool					isUpdate{ false };
 	};
 	Array<PendingDesc>			m_pendingArchetypes{ PP_SL };
 	Array<GRIMArchetype>		m_pendingDeletion{ PP_SL };
