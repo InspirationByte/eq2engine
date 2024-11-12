@@ -31,14 +31,6 @@ TODO:
 #pragma once
 #include "eqPhysics_Defs.h"
 
-// max world size is +/-32768, limited by FReal
-static constexpr const float EQPHYS_MAX_WORLDSIZE = 32767.0f;
-
-static constexpr const float PHYSICS_DEFAULT_FRICTION = 0.5f;
-static constexpr const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
-static constexpr const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
-static constexpr const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;
-
 struct btDispatcherInfo;
 class btCollisionWorld;
 class btCollisionConfiguration;

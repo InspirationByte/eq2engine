@@ -346,12 +346,13 @@ void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSect
 	eqPhysSurfParam* surfParam = PPNew eqPhysSurfParam;
 	surfParam->id = m_physSurfaceParams.append(surfParam);
 	surfParam->name = name;
-	surfParam->contentsMask = KV_GetValueInt(kvSection->FindSection("contentsMask"), 0, -1);
-	surfParam->friction = KV_GetValueFloat(kvSection->FindSection("friction"), 0, PHYSICS_DEFAULT_FRICTION);
-	surfParam->restitution = KV_GetValueFloat(kvSection->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
-	surfParam->tirefriction = KV_GetValueFloat(kvSection->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
-	surfParam->tirefriction_traction = KV_GetValueFloat(kvSection->FindSection("tirefriction_traction"), 0, PHYSICS_DEFAULT_TIRE_TRACTION);
-	surfParam->word = KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C")[0];
+	kvSection->Get("collideMask").GetValues(surfParam->collideMask);
+	kvSection->Get("contents").GetValues(surfParam->contents);
+	kvSection->Get("friction").GetValues(surfParam->friction);
+	kvSection->Get("restitution").GetValues(surfParam->restitution);
+	kvSection->Get("tirefriction").GetValues(surfParam->tirefriction);
+	kvSection->Get("tirefriction_traction").GetValues(surfParam->tirefriction_traction);
+	surfParam->word = *KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C");
 }
 
 const int CEqPhysics::FindSurfaceParamID(const char* name) const
@@ -841,6 +842,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		btCollisionAlgorithm* algorithm = nullptr;
 
 		const int bodyContents = bodyB->GetContents();
+		const int bodyCollMask = bodyB->GetCollideMask();
 
 		const CEqBulletIndexedMesh* staticIndexedMesh = staticObj->GetMesh();
 		ArrayCRef<btCollisionShape*> staticShapes = staticObj->GetBulletCollisionShapes();
@@ -857,7 +859,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 					const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 					// skip the shape if collide mask not meeting expectation
-					if (surfParam && (surfParam->contentsMask & bodyContents) != bodyContents)
+					if (surfParam && !(bodyContents & surfParam->collideMask) && !(bodyCollMask & surfParam->contents))
 						continue;
 				}
 
@@ -1736,7 +1738,7 @@ bool CEqPhysics::TestLineSingleObject(
 			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 			// skip the shape if collide mask not meeting expectation
-			if (surfParam && (surfParam->contentsMask & rayMask) != rayMask)
+			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
 				continue;
 		}
 
@@ -1879,7 +1881,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 			const eqPhysSurfParam* surfParam = GetSurfaceParamByID(surfMaterialIdx);
 
 			// skip the shape if collide mask not meeting expectation
-			if (surfParam && (surfParam->contentsMask & rayMask) != rayMask)
+			if (surfParam && (surfParam->collideMask & rayMask) != rayMask)
 				continue;
 		}
 

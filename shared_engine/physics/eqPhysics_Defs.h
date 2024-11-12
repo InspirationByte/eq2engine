@@ -9,6 +9,14 @@
 
 class CEqRigidBody;
 
+// max world size is +/-32768, limited by FReal
+static constexpr const float EQPHYS_MAX_WORLDSIZE = 32767.0f;
+
+static constexpr const float PHYSICS_DEFAULT_FRICTION = 0.5f;
+static constexpr const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
+static constexpr const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
+static constexpr const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;
+
 static constexpr const int COLLISION_MASK_ALL = 0xFFFFFFFF;
 static constexpr const int MAX_COLLISION_FILTER_OBJECTS = 8;
 
@@ -48,13 +56,14 @@ struct eqPhysSurfParam
 	EqString	name;
 
 	int			id{ -1 };
-	int			contentsMask{ -1 };	// this mask is applied on top of the object contents and collision mask
+	int			collideMask{ -1 };
+	int			contents{ 0 };
 
-	float		restitution{ 0.0f };
-	float		friction{ 0.0f };
+	float		friction{ PHYSICS_DEFAULT_FRICTION };
+	float		restitution{ PHYSICS_DEFAULT_RESTITUTION };
 
-	float		tirefriction{ 1.0f };
-	float		tirefriction_traction{ 1.0f };
+	float		tirefriction{ PHYSICS_DEFAULT_TIRE_FRICTION };
+	float		tirefriction_traction{ PHYSICS_DEFAULT_TIRE_TRACTION };
 
-	char		word{ 0 };
+	char		word{ 'C' };
 };
