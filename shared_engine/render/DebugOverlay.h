@@ -27,9 +27,10 @@ struct DebugFadingTextNode_t
 
 struct DebugNodeBase
 {
-	int		nameHash;
-	uint	frameindex;
-	float	lifetime{ 0.0f };
+	PPSourceLine	sl;
+	int				nameHash;
+	uint			frameindex;
+	float			lifetime{ 0.0f };
 };
 
 struct DebugText3DNode_t : public DebugNodeBase
@@ -106,15 +107,15 @@ public:
 	void							Text(const MColor& color, char const* fmt, ...);
 	void							TextFadeOut(int position, const MColor& color, float fFadeTime, char const* fmt, ...);
 
-	void							Text3D(const Vector3D& origin, float dist, const MColor& color, const char* text, float fTime = 0.0f, int hashId = 0);
-	void							Line3D(const Vector3D& start, const Vector3D& end, const MColor& color1, const MColor& color2, float fTime = 0.0f, int hashId = 0);
-	void							Box3D(const Vector3D& mins, const Vector3D& maxs, const MColor& color1, float fTime = 0.0f, int hashId = 0);
-	void							Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime = 0.0f, int hashId = 0);
-	void							OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0);
-	void							Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0);
-	void							Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0);
-	void							Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0);
-	void							Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0);
+	void							Text3D(const Vector3D& origin, float dist, const MColor& color, const char* text, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Line3D(const Vector3D& start, const Vector3D& end, const MColor& color1, const MColor& color2, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Box3D(const Vector3D& mins, const Vector3D& maxs, const MColor& color1, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
 
 	void							Draw2DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);
 	void							Draw3DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);

@@ -62,15 +62,15 @@ public:
 	virtual void		Text(const MColor& color, char const* fmt, ...) = 0;
 	virtual void		TextFadeOut(int position, const MColor& color, float fFadeTime, char const* fmt, ...) = 0;
 
-	virtual void		Text3D(const Vector3D& origin, float distance, const MColor& color, const char* text, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		Line3D(const Vector3D& start, const Vector3D& end, const MColor& color1, const MColor& color2, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		Box3D(const Vector3D& mins, const Vector3D& maxs, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
-	virtual void		Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0) = 0;
+	virtual void		Text3D(const Vector3D& origin, float distance, const MColor& color, const char* text, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Line3D(const Vector3D& start, const Vector3D& end, const MColor& color1, const MColor& color2, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Box3D(const Vector3D& mins, const Vector3D& maxs, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
 
 	virtual void		Draw2DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void		Draw3DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
@@ -84,7 +84,7 @@ public:
 
 extern IDebugOverlay *debugoverlay;
 
-typedef struct DbgText3DBuilder
+struct DbgText3DBuilder
 {
 	~DbgText3DBuilder() 
 	{
@@ -92,10 +92,12 @@ typedef struct DbgText3DBuilder
 			Dispatch();
 	}
 
+	DbgText3DBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Text3D(origin, dist, MColor(color), pszText, lifetime, hashId);
+		debugoverlay->Text3D(origin, dist, MColor(color), pszText, lifetime, hashId, sl);
 	}
 
 	DbgText3DBuilder& Text(const char* fmt, ...) 
@@ -114,17 +116,18 @@ typedef struct DbgText3DBuilder
 	DbgText3DBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
-	EqString	pszText;
-	Vector3D	origin;
-	float		dist{ -1 };
-	float		lifetime{ 0.0f };
-	uint		color{ color_white.pack() };
-	int			hashId{ 0 };
+	PPSourceLine	sl;
+	EqString		pszText;
+	Vector3D		origin;
+	float			dist{ -1 };
+	float			lifetime{ 0.0f };
+	uint			color{ color_white.pack() };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgText3D;
+	bool			dispatch{ false };
+};
 
-typedef struct DbgBoxBuilder
+struct DbgBoxBuilder
 {
 	~DbgBoxBuilder()
 	{
@@ -132,10 +135,12 @@ typedef struct DbgBoxBuilder
 			Dispatch();
 	}
 
+	DbgBoxBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Box3D(mins, maxs, MColor(color), lifetime, hashId);
+		debugoverlay->Box3D(mins, maxs, MColor(color), lifetime, hashId, sl);
 	}
 
 	DbgBoxBuilder& Box(const BoundingBox& bbox) { mins = bbox.minPoint; maxs = bbox.maxPoint; return *this; }
@@ -147,16 +152,17 @@ typedef struct DbgBoxBuilder
 	DbgBoxBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
-	Vector3D	mins;
-	Vector3D	maxs;
-	uint		color{ color_white.pack() };
-	float		lifetime{ 0.0f };
-	int			hashId{ 0 };
+	PPSourceLine	sl;
+	Vector3D		mins;
+	Vector3D		maxs;
+	uint			color{ color_white.pack() };
+	float			lifetime{ 0.0f };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgBox;
+	bool			dispatch{ false };
+};
 
-typedef struct DbgOriBoxBuilder
+struct DbgOriBoxBuilder
 {
 	~DbgOriBoxBuilder()
 	{
@@ -164,10 +170,12 @@ typedef struct DbgOriBoxBuilder
 			Dispatch();
 	}
 
+	DbgOriBoxBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->OrientedBox3D(mins, maxs, position, rotation, MColor(color), lifetime, hashId);
+		debugoverlay->OrientedBox3D(mins, maxs, position, rotation, MColor(color), lifetime, hashId, sl);
 	}	
 	
 	DbgOriBoxBuilder& Mins(const Vector3D& v) { mins = v; return *this; }
@@ -181,17 +189,18 @@ typedef struct DbgOriBoxBuilder
 	DbgOriBoxBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
-	Vector3D	mins, maxs;
-	Quaternion	rotation{ qidentity };
-	Vector3D	position;
-	uint		color{ color_white.pack() };
-	float		lifetime{ 0.0f };
-	int			hashId{ 0 };
+	PPSourceLine	sl;
+	Vector3D		mins, maxs;
+	Quaternion		rotation{ qidentity };
+	Vector3D		position;
+	uint			color{ color_white.pack() };
+	float			lifetime{ 0.0f };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgOriBox;
+	bool			dispatch{ false };
+};
 
-typedef struct DbgSphereBuilder
+struct DbgSphereBuilder
 {
 	~DbgSphereBuilder()
 	{
@@ -199,10 +208,12 @@ typedef struct DbgSphereBuilder
 			Dispatch();
 	}
 
+	DbgSphereBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Sphere3D(origin, radius, MColor(color), lifetime, hashId);
+		debugoverlay->Sphere3D(origin, radius, MColor(color), lifetime, hashId, sl);
 	}
 
 	DbgSphereBuilder& Position(const Vector3D& v) { origin = v; return *this; }
@@ -212,16 +223,17 @@ typedef struct DbgSphereBuilder
 	DbgSphereBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
-	Vector3D	origin;
-	float		radius{ 1.0f };
-	uint		color{ color_white.pack() };
-	float		lifetime{ 0.0f };
-	int			hashId{ 0 };
+	Vector3D		origin;
+	PPSourceLine	sl;
+	float			radius{ 1.0f };
+	uint			color{ color_white.pack() };
+	float			lifetime{ 0.0f };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgSphere;
+	bool			dispatch{ false };
+};
 
-typedef struct DbgCylinderBuilder
+struct DbgCylinderBuilder
 {
 	~DbgCylinderBuilder()
 	{
@@ -229,10 +241,12 @@ typedef struct DbgCylinderBuilder
 			Dispatch();
 	}
 
+	DbgCylinderBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Cylinder3D(origin, radius, height, MColor(color), lifetime, hashId);
+		debugoverlay->Cylinder3D(origin, radius, height, MColor(color), lifetime, hashId, sl);
 	}
 
 	DbgCylinderBuilder& Position(const Vector3D& v) { origin = v; return *this; }
@@ -243,17 +257,18 @@ typedef struct DbgCylinderBuilder
 	DbgCylinderBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
-	Vector3D	origin;
-	float		radius{ 1.0f };
-	float		height{ 1.0f };
-	uint		color{ color_white.pack() };
-	float		lifetime{ 0.0f };
-	int			hashId{ 0 };
+	Vector3D		origin;
+	PPSourceLine	sl;
+	float			radius{ 1.0f };
+	float			height{ 1.0f };
+	uint			color{ color_white.pack() };
+	float			lifetime{ 0.0f };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgCylinder;
+	bool			dispatch{ false };
+};
 
-typedef struct DbgLineBuilder
+struct DbgLineBuilder
 {
 	~DbgLineBuilder()
 	{
@@ -261,10 +276,12 @@ typedef struct DbgLineBuilder
 			Dispatch();
 	}
 
+	DbgLineBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Line3D(start, end, MColor(color1), MColor(color2), lifetime, hashId);
+		debugoverlay->Line3D(start, end, MColor(color1), MColor(color2), lifetime, hashId, sl);
 	}
 
 	DbgLineBuilder& Start(const Vector3D& v) { start = v; return *this; }
@@ -276,17 +293,18 @@ typedef struct DbgLineBuilder
 	DbgLineBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
-	Vector3D	start;
-	Vector3D	end;
-	uint		color1{ color_white.pack() };
-	uint		color2{ color_white.pack() };
-	float		lifetime{ 0.0f };
-	int			hashId{ 0 };
+	Vector3D		start;
+	Vector3D		end;
+	PPSourceLine	sl;
+	uint			color1{ color_white.pack() };
+	uint			color2{ color_white.pack() };
+	float			lifetime{ 0.0f };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgLine;
+	bool			dispatch{ false };
+};
 
-typedef struct DbgPolyBuilder
+struct DbgPolyBuilder
 {
 	~DbgPolyBuilder()
 	{
@@ -294,10 +312,12 @@ typedef struct DbgPolyBuilder
 			Dispatch();
 	}
 
+	DbgPolyBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Polygon3D(verts, MColor(color), lifetime, hashId);
+		debugoverlay->Polygon3D(verts, MColor(color), lifetime, hashId, sl);
 	}
 
 	DbgPolyBuilder& Point(const Vector3D& v) { verts.append(v); return *this; }
@@ -308,15 +328,15 @@ typedef struct DbgPolyBuilder
 
 private:
 	FixedArray<Vector3D, 20> verts;
-	uint		color{ color_white.pack() };
-	float		lifetime{ 0.0f };
-	int			hashId{ 0 };
+	PPSourceLine	sl;
+	uint			color{ color_white.pack() };
+	float			lifetime{ 0.0f };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgPoly;
+	bool			dispatch{ false };
+};
 
-
-typedef struct DbgVolumeBuilder
+struct DbgVolumeBuilder
 {
 	~DbgVolumeBuilder()
 	{
@@ -324,10 +344,12 @@ typedef struct DbgVolumeBuilder
 			Dispatch();
 	}
 
+	DbgVolumeBuilder(PPSourceLine sl) : sl(sl) {}
+
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Volume3D(planes, MColor(color), lifetime, hashId);
+		debugoverlay->Volume3D(planes, MColor(color), lifetime, hashId, sl);
 	}
 
 	DbgVolumeBuilder& Planes(const ArrayCRef<Plane> _planes) { planes.append(_planes.ptr(), _planes.numElem()); return *this; }
@@ -338,9 +360,19 @@ typedef struct DbgVolumeBuilder
 
 private:
 	FixedArray<Plane, 20> planes;
-	uint		color{ color_white.pack() };
-	float		lifetime{ 0.0f };
-	int			hashId{ 0 };
+	PPSourceLine	sl;
+	uint			color{ color_white.pack() };
+	float			lifetime{ 0.0f };
+	int				hashId{ 0 };
 
-	bool		dispatch{ false };
-} DbgVolume;
+	bool			dispatch{ false };
+};
+
+#define DbgText3D()		DbgText3DBuilder(PP_SL)
+#define DbgBox()		DbgBoxBuilder(PP_SL)
+#define DbgOriBox()		DbgOriBoxBuilder(PP_SL)
+#define DbgSphere()		DbgSphereBuilder(PP_SL)
+#define DbgCylinder()	DbgCylinderBuilder(PP_SL)
+#define DbgLine()		DbgLineBuilder(PP_SL)
+#define DbgPoly()		DbgPolyBuilder(PP_SL)
+#define DbgVolume()		DbgVolumeBuilder(PP_SL)

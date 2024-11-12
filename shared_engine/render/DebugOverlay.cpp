@@ -179,7 +179,7 @@ void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& color, const char* text, float fTime, int hashId)
+void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& color, const char* text, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(hashId == 0 && !m_frustum.IsSphereInside(origin, 1.0f))
@@ -193,6 +193,7 @@ void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& col
 	textNode.dist = dist;
 	textNode.lifetime = fTime;
 	textNode.pszText = text;
+	textNode.sl;
 
 	textNode.frameindex = m_frameId;
 	textNode.nameHash = hashId;
@@ -236,7 +237,7 @@ void CDebugOverlay::TextFadeOut(int position, const MColor& color,float fFadeTim
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MColor& color, float fTime, int hashId)
+void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(!r_debugDrawShapes.GetBool())
@@ -256,13 +257,14 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MCol
 
 	box.frameindex = m_frameId;
 	box.nameHash = hashId;
+	box.sl = sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime, int hashId)
+void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if (!r_debugDrawShapes.GetBool())
@@ -283,13 +285,14 @@ void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float hei
 
 	cyl.frameindex = m_frameId;
 	cyl.nameHash = hashId;
+	cyl.sl = sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MColor& color1, const MColor& color2, float fTime, int hashId)
+void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MColor& color1, const MColor& color2, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(!r_debugDrawLines.GetBool())
@@ -309,13 +312,14 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MCo
 
 	line.frameindex = m_frameId;
 	line.nameHash = hashId;
+	line.sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime, int hashId)
+void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(!r_debugDrawShapes.GetBool())
@@ -336,13 +340,14 @@ void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, co
 
 	box.frameindex = m_frameId;
 	box.nameHash = hashId;
+	box.sl = sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime, int hashId)
+void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(!r_debugDrawShapes.GetBool())
@@ -361,13 +366,14 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColo
 
 	sphere.frameindex = m_frameId;
 	sphere.nameHash = hashId;
+	sphere.sl = sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, float fTime, int hashId)
+void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(hashId == 0 && !m_frustum.IsTriangleInside(v0,v1,v2))
@@ -383,15 +389,17 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 	poly.color = color.pack();
 	poly.lifetime = fTime;
 
+
 	poly.frameindex = m_frameId;
 	poly.nameHash = hashId;
+	poly.sl = sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime, int hashId)
+void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if (hashId == 0)
@@ -420,13 +428,14 @@ void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, fl
 
 	poly.frameindex = m_frameId;
 	poly.nameHash = hashId;
+	poly.sl = sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime, int hashId)
+void CDebugOverlay::Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	// if (hashId == 0)
@@ -455,6 +464,7 @@ void CDebugOverlay::Volume3D(ArrayCRef<Plane> planes, const MColor& color, float
 
 	volume.frameindex = m_frameId;
 	volume.nameHash = hashId;
+	volume.sl = sl;
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
@@ -1053,11 +1063,11 @@ const void DebugDrawVolume(const ArrayCRef<Plane>& volume, const MColor& color)
 		if (wnd.indices.numElem() < 3)
 			continue;
 
-		DbgPoly builder;
-		builder.Color(color);
+		DbgPolyBuilder poly(PP_SL);
+		poly.Color(color);
 
 		for (int i = 0; i < wnd.indices.numElem(); ++i)
-			builder.Point(windingVerts[wnd.indices[i]]);
+			poly.Point(windingVerts[wnd.indices[i]]);
 	}
 }
 
