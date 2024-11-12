@@ -59,6 +59,8 @@ public:
 	virtual void		Init(bool hidden = true) = 0;
 	virtual void		Shutdown() = 0;
 
+	virtual void		Clear() = 0;
+
 	virtual void		Text(const MColor& color, char const* fmt, ...) = 0;
 	virtual void		TextFadeOut(int position, const MColor& color, float fFadeTime, char const* fmt, ...) = 0;
 

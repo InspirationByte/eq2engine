@@ -149,7 +149,7 @@ public:
 	// Helper rendering operations
 
 	// returns the dynamic mesh
-	IDynamicMeshPtr				GetDynamicMesh();
+	IDynamicMeshPtr				GetDynamicMesh(int vertexCount = 1024);
 	void						ReleaseDynamicMesh(int id);
 
 	// returns temp buffer with data written. SubmitQueuedCommands uploads it to GPU

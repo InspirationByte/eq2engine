@@ -182,7 +182,7 @@ public:
 
 	//-----------------------------
 	// Drawing
-	virtual IDynamicMeshPtr			GetDynamicMesh() = 0;
+	virtual IDynamicMeshPtr			GetDynamicMesh(int vertexCount = 1024) = 0;
 	virtual void					ReleaseDynamicMesh(int id) = 0;
 
 	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU

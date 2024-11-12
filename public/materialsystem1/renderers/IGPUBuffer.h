@@ -63,6 +63,7 @@ static T NextBufferOffset(T writeSize, T& offset, T bufferSize, int alignment = 
 	if (offset + writeSize > bufferSize)
 	{
 		ASSERT_FAIL("Exceeded buffer size %d, needed %d", bufferSize, offset + writeSize);
+		return std::numeric_limits<T>::min();
 	}
 
 	offset = (offset + (alignment - 1)) & ~(alignment - 1);

@@ -133,6 +133,11 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 	return startVertex;
 }
 
+bool CDynamicMesh::HasEnoughSpace(int vertexCount) const
+{
+	return m_vtxBufferOffset + m_vertexStride * vertexCount < m_vertexBuffer->GetSize();
+}
+
 bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices)
 {
 	if (m_numVertices == 0)
@@ -144,6 +149,9 @@ bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIn
 	{
 		const int writeSize = m_vertexStride * m_numVertices;
 		const int writeOffset = NextBufferOffset(writeSize, m_vtxBufferOffset, m_vertexStride * MAX_DYNAMIC_VERTICES);
+
+		if (writeOffset < 0)
+			return false;
 
 		m_cmdRecorder->WriteBuffer(m_vertexBuffer, m_vertices, AlignBufferSize(writeSize), writeOffset);
 		drawCmd.SetVertexBuffer(0, m_vertexBuffer, writeOffset, writeSize);

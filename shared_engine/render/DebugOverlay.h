@@ -104,6 +104,8 @@ public:
 	void							Init(bool hidden = true);
 	void							Shutdown();
 
+	void							Clear();
+
 	void							Text(const MColor& color, char const* fmt, ...);
 	void							TextFadeOut(int position, const MColor& color, float fFadeTime, char const* fmt, ...);
 

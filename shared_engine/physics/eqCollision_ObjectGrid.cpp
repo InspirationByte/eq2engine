@@ -363,7 +363,7 @@ void CEqCollisionBroadphaseGrid::DebugRender()
 			if(!GetCellBounds(x,y, mins, maxs))
 				continue;
 
-			debugoverlay->Box3D(mins, maxs, ColorRGBA(1,0,1,0.25f));
+			DbgBox().Mins(mins).Maxs(maxs).Color(ColorRGBA(1, 0, 1, 0.25f));
 
 			if (ph_debugGridX.GetInt() != x || ph_debugGridY.GetInt() != y)
 				continue;

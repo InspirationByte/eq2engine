@@ -1292,10 +1292,20 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 // Helper rendering operations
 //-----------------------------
 
-IDynamicMeshPtr CMaterialSystem::GetDynamicMesh()
+IDynamicMeshPtr CMaterialSystem::GetDynamicMesh(int vertexCount)
 {
 	if (m_freeDynamicMeshes.numElem())
-		return IDynamicMeshPtr(&m_dynamicMeshes[m_freeDynamicMeshes.popBack()]);
+	{
+		for (int i = 0; i < m_freeDynamicMeshes.numElem(); ++i)
+		{
+			CDynamicMesh& dynMesh = m_dynamicMeshes[m_freeDynamicMeshes[i]];
+			if (dynMesh.HasEnoughSpace(vertexCount))
+			{
+				m_freeDynamicMeshes.fastRemoveIndex(i);
+				return IDynamicMeshPtr(&dynMesh);
+			}
+		}
+	}
 
 	const int id = m_dynamicMeshes.numElem();
 	CDynamicMesh& dynMesh = m_dynamicMeshes.append();

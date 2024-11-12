@@ -16,6 +16,8 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 
+static constexpr const int DRAW_MAX_VERTS = 8192;
+
 static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 16;
 static constexpr const int LINES_DRAW_SUBDIV = 4096;
 static constexpr const int POLYS_DRAW_SUBDIV = 256;
@@ -53,7 +55,7 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	RenderDrawCmd drawCmd;
 	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
 
@@ -158,6 +160,7 @@ void CDebugOverlay::Shutdown()
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	m_dbgTexture = nullptr;
+	Clear();
 #endif // ENABLE_DEBUG_DRAWING
 }
 
@@ -519,7 +522,7 @@ static void DrawLineArray(ArrayRef<DebugLineNode_t> lines, float frametime, IGPU
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = false;
 
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_LINES);
 
 		for(int i = 0; i < lines.numElem(); i++)
@@ -556,7 +559,7 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = false;
 
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i < boxes.numElem(); i++)
@@ -567,7 +570,7 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 
 			// start with new mesh
-			meshBuilder.Init(g_matSystem->GetDynamicMesh());
+			meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 			meshBuilder.Begin(PRIM_LINES);
 		}
 
@@ -631,7 +634,7 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 	defaultRenderPass.depthTest = true;
 	defaultRenderPass.depthWrite = false;
 
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_LINES);
 
 		for(int i = 0; i < boxes.numElem(); i++)
@@ -642,7 +645,7 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 
 				// start with new mesh
-				meshBuilder.Init(g_matSystem->GetDynamicMesh());
+				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 				meshBuilder.Begin(PRIM_LINES);
 			}
 
@@ -743,7 +746,7 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinde
 
 static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float frametime, IGPURenderPassRecorder* rendPassRecorder)
 {
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 
 	RenderDrawCmd drawCmd;
 	drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
@@ -763,7 +766,7 @@ static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float fram
 				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 
 			// start with new mesh
-			meshBuilder.Init(g_matSystem->GetDynamicMesh());
+			meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 			meshBuilder.Begin(PRIM_LINES);
 		}
 
@@ -894,7 +897,7 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 
 	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_TRIANGLES);
 
 		for(int i = 0; i < polygons.numElem(); i++)
@@ -905,7 +908,7 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 
 				// start with new mesh
-				meshBuilder.Init(g_matSystem->GetDynamicMesh());
+				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
 
@@ -931,7 +934,7 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 					g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 
 				// start with new mesh
-				meshBuilder.Init(g_matSystem->GetDynamicMesh());
+				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 				meshBuilder.Begin(PRIM_LINES);
 			}
 
@@ -1247,7 +1250,7 @@ static void DrawSphereArray(ArrayRef<DebugSphereNode_t> spheres, float frameTime
 
 	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 
-	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
+	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_LINES);
 
 	for (int i = 0; i < spheres.numElem(); i++)
@@ -1552,6 +1555,33 @@ bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
 
 	// check node time stamp, we allow to put different objects under similar name in one frame
 	return found.value() == node.frameindex;
+}
+
+void CDebugOverlay::Clear()
+{
+#ifdef ENABLE_DEBUG_DRAWING
+	Threading::CScopedMutex m(s_debugOverlayMutex);
+	m_TextArray.clear();
+	m_Text3DArray.clear();
+
+	m_LeftTextFadeArray.clear();
+	m_RightTextFadeArray.clear();
+
+	m_LineList.clear();
+	m_BoxList.clear();
+	m_CylinderList.clear();
+	m_OrientedBoxList.clear();
+	m_SphereList.clear();
+
+	m_graphbuckets.clear();
+	m_polygons.clear();
+	m_volumes.clear();
+
+	m_draw2DFuncs.clear();
+	m_draw3DFuncs.clear();
+
+	m_newNames.clear();
+#endif
 }
 
 void CDebugOverlay::CleanOverlays()
