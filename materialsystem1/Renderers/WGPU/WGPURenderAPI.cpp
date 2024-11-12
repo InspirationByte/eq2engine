@@ -648,6 +648,7 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 			ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
 
 			rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(rhiDevice, &rhiSamplerDesc);
+			wgpuSamplerAddRef(rhiBindGroupEntryDesc.sampler);
 			break;
 		}
 		case BINDENTRY_STORAGETEXTURE:
