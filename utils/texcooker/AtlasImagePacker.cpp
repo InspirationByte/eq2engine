@@ -10,7 +10,6 @@
 #include "utils/KeyValues.h"
 #include "utils/RectanglePacker.h"
 #include "imaging/ImageLoader.h"
-#include "imaging/PixWriter.h"
 #include "texcooker_defs.h"
 
 unsigned long UpperPowerOfTwo(unsigned long v)

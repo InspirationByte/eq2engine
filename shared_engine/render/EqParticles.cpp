@@ -291,9 +291,11 @@ CParticleBatch*	CParticleRenderer::CreateBatch(const char* materialName, bool cr
 
 CParticleBatch* CParticleRenderer::FindBatch(const char* materialName) const
 {
+	EqString matName = materialName;
+	fnmPathFixSeparators(matName);
 	for (CParticleBatch* batch : m_batchs)
 	{
-		if (!CString::CompareCaseIns(batch->m_material->GetName(), materialName))
+		if (!matName.CompareCaseIns(batch->m_material->GetName()))
 			return batch;
 	}
 	return nullptr;
