@@ -7,7 +7,7 @@
 
 #pragma once
 
-enum Activity
+enum Activity : int
 {
 	ACT_INVALID = -1,
 
