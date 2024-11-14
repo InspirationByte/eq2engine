@@ -1387,7 +1387,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 				if (mode == MODE_DEFAULT)
 				{
 					// start parsing multi-line string
-					if (c == '%')
+					if (!currentSection && c == '%')
 					{
 						// we use query first because we have to read key name
 						mode = MODE_MULTILINE_STRING_QUERY;
@@ -1522,7 +1522,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 				if (mode == MODE_DEFAULT)
 				{
 					// start parsing multi-line string
-					if (c == '%')
+					if (!currentSection && c == '%')
 					{
 						// we use query first because we have to read key name
 						mode = MODE_MULTILINE_STRING_QUERY;
