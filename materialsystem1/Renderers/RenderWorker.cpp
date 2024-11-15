@@ -9,8 +9,6 @@
 #include "core/IEqParallelJobs.h"
 #include "RenderWorker.h"
 
-#pragma optimize("", off)
-
 using namespace Threading;
 
 static CEqMutex s_renderWorkerMutex;
