@@ -428,43 +428,43 @@ void CEqConsoleInput::BeginFrame()
 	{
 		if (ImGui::BeginMenu("ENGINE"))
 		{
-			ImGui::MenuItem("Show console", "", &m_showConsole);
+			ImGui::MenuItem("SHOW CONSOLE", "", &m_showConsole);
 			if (ImGui::BeginMenu("FPS"))
 			{
-				IMGUI_MENUITEM_CONVAR_BOOL("Show FPS", r_showFPS);
-				IMGUI_MENUITEM_CONVAR_BOOL("Show Graph", r_showFPSGraph);
+				IMGUI_MENUITEM_CONVAR_BOOL("SHOW FPS", r_showFPS);
+				IMGUI_MENUITEM_CONVAR_BOOL("SHOW GRAPH", r_showFPSGraph);
 				ImGui::EndMenu();
 			}
 
 			ImGui::Separator();
-			if (ImGui::BeginMenu("EqUI"))
+			if (ImGui::BeginMenu("EQUI"))
 			{
-				IMGUI_MENUITEM_CONVAR_BOOL("Debug Render", equi_debug);
+				IMGUI_MENUITEM_CONVAR_BOOL("DEBUG RENDER", equi_debug);
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("MatSystem"))
+			if (ImGui::BeginMenu("MATSYSTEM"))
 			{
-				IMGUI_MENUITEM_CONVAR_BOOL("Overdraw Mode", r_overdraw);
-				IMGUI_MENUITEM_CONVAR_BOOL("Wireframe Mode", r_wireframe);
+				IMGUI_MENUITEM_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
+				IMGUI_MENUITEM_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
 				ImGui::Separator();
-				IMGUI_MENUITEM_CONCMD("Reload All Materials", mat_reload, cmd_noArgs);
+				IMGUI_MENUITEM_CONCMD("RELOAD ALL MATERIALS", mat_reload, cmd_noArgs);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("DEBUG OVERLAYS"))
 		{
-			IMGUI_MENUITEM_CONVAR_BOOL("Show Frame Stats", r_debugDrawFrameStats);
-			IMGUI_MENUITEM_CONVAR_BOOL("Show Graphs", r_debugDrawGraphs);
-			IMGUI_MENUITEM_CONVAR_BOOL("Show 3D Shapes", r_debugDrawShapes);
-			IMGUI_MENUITEM_CONVAR_BOOL("Show 3D Lines", r_debugDrawLines);
+			IMGUI_MENUITEM_CONVAR_BOOL("SHOW FRAME STATS", r_debugDrawFrameStats);
+			IMGUI_MENUITEM_CONVAR_BOOL("SHOW GRAPHS", r_debugDrawGraphs);
+			IMGUI_MENUITEM_CONVAR_BOOL("SHOW 3D SHAPES", r_debugDrawShapes);
+			IMGUI_MENUITEM_CONVAR_BOOL("SHOW 3D LINES", r_debugDrawLines);
 
 			ImGui::EndMenu();
 		}
 
 		if (ImGui::BeginMenu("IMGUI"))
 		{
-			ImGui::MenuItem("Demo", nullptr, &s_showDemoWindow);
+			ImGui::MenuItem("DEMO", nullptr, &s_showDemoWindow);
 			ImGui::EndMenu();
 		}
 

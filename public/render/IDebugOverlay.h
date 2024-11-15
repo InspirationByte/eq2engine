@@ -106,7 +106,7 @@ struct DbgText3DBuilder
 	{
 		va_list argptr;
 		va_start(argptr, fmt);
-		pszText = EqString::FormatV(fmt, argptr);
+		pszText.Append(EqString::FormatV(fmt, argptr));
 		va_end(argptr);
 
 		return *this;
