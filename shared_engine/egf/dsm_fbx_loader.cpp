@@ -164,17 +164,19 @@ struct VertexWeightData
 
 struct ObjectData
 {
+	Array<DSBone>			bones{ PP_SL };
+	Array<VertexWeightData> weightData{ PP_SL };
+
+	Matrix4x4				transform{ identity4 };
+
 	const ofbx::Mesh*		mesh{ nullptr };
 	const ofbx::Geometry*	geom{ nullptr };
 
 	const ofbx::Skin*		skin{ nullptr };
-	Array<DSBone*>			bones{PP_SL};
-	Array<VertexWeightData> weightData{PP_SL};
 
-	Matrix4x4				transform{ identity4 };
 };
 
-void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<VertexWeightData>& weightData, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
+void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<VertexWeightData>& weightData, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
 	const ofbx::Geometry& geom = *mesh.getGeometry();
 	const ofbx::Skin* skin = geom.getSkin();
@@ -243,9 +245,9 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 		const ofbx::Cluster& fbxCluster = *wd.sourceCluster;
 		const ofbx::Object* fbxBoneLink = wd.sourceBone;
 
-		DSBone* pBone = PPNew DSBone();
-		pBone->name = fbxCluster.name;
-		pBone->boneIdx = i;
+		DSBone& dsBone = bones.append();
+		dsBone.name = fbxCluster.name;
+		dsBone.boneIdx = i;
 
 		// find parent bone link
 		for (int j = 0; j < thisWeightData.numElem(); ++j)
@@ -255,8 +257,8 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 
 			if (fbxBoneLinkJ == fbxBoneLink->getParent())
 			{
-				pBone->parentName = fbxBoneLinkJ->name;
-				pBone->parentIdx = j;
+				dsBone.parentName = fbxBoneLinkJ->name;
+				dsBone.parentIdx = j;
 				break;
 			}
 		}
@@ -265,31 +267,29 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone*>& bones, Array<Verte
 		// to convert animation
 		{
 			Matrix4x4 boneMatrix = boneMatries[i];
-			if (pBone->parentIdx != -1)
-				boneMatrix = boneMatrix * !boneMatries[pBone->parentIdx];
+			if (dsBone.parentIdx != -1)
+				boneMatrix = boneMatrix * !boneMatries[dsBone.parentIdx];
 			wd.boneMatrix = boneMatrix;
 		}
 
 		// FIXME: WTF m8, this does seem to work
 		Matrix4x4 boneMatrix = boneMatries[i] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix;
-		if (pBone->parentIdx != -1)
-			boneMatrix = boneMatrix * !(boneMatries[pBone->parentIdx] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix);
+		if (dsBone.parentIdx != -1)
+			boneMatrix = boneMatrix * !(boneMatries[dsBone.parentIdx] * Matrix4x4(normalizedConvertMatrix) * !poseMatrix);
 		else
 			boneMatrix = boneMatrix * transform;
 
 		// in Eq each bone transform is strictly related to it's parent
 		{
-			pBone->position = boneMatrix.getTranslationComponent();
-			pBone->angles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
+			dsBone.position = boneMatrix.getTranslationComponent();
+			dsBone.angles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
 
 			if(matDet < 0)
 			{
-				pBone->angles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
-				pBone->position *= Vector3D(sign(matDet), 1.0f, 1.0f);
+				dsBone.angles *= -Vector3D(sign(matDet), 1.0f, 1.0f);
+				dsBone.position *= Vector3D(sign(matDet), 1.0f, 1.0f);
 			}
-		}
-
-		bones.append(pBone);
+		}		
 	}
 }
 
@@ -852,14 +852,14 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 			// convert bone animation
 			for (int j = 0; j < boneCount; ++j)
 			{
-				const DSBone* bone = objData.bones[j];
+				const DSBone& bone = objData.bones[j];
 				const VertexWeightData& wd = objData.weightData[j];
 
 				// root animation
 				// FBX does not apply armature transform animation to the root bone
 				// so we have to do it ourselves
 				Matrix4x4 invBoneMatrix = wd.boneMatrix;
-				if (bone->parentIdx == -1)
+				if (bone.parentIdx == -1)
 				{
 					// don't forget to calc correct rest bone matrix
 					invBoneMatrix = wd.boneMatrix * meshTransform;
@@ -908,7 +908,7 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 					const ofbx::Vec3 rotationFrame{rotation.x, rotation.y, rotation.z};
 
 					Matrix4x4 meshAnimTransform = identity4;
-					if (bone->parentIdx == -1)
+					if (bone.parentIdx == -1)
 					{
 						const Vector3D rotation = rootAnimation.rotations[k];
 						const Vector3D translation = rootAnimation.translations[k];
@@ -951,12 +951,6 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 				animation.bones = nullptr;
 			}
 		}
-	}
-
-	for (ObjectData& objData : objectDatas)
-	{
-		for (int i = 0; i < objData.bones.numElem(); ++i)
-			delete objData.bones[i];
 	}
 }
 

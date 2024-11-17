@@ -115,9 +115,6 @@ bool SaveSharedModel(DSModel* model, const char* filename)
 
 DSModel::~DSModel()
 {
-	for (int i = 0; i < bones.numElem(); i++)
-		delete bones[i];
-
 	for (int i = 0; i < meshes.numElem(); i++)
 		delete meshes[i];
 
@@ -138,13 +135,12 @@ DSMesh* DSModel::FindMeshByName(const char* pszGroupname)
 
 DSBone* DSModel::FindBone(const char* pszName)
 {
-	for(int i = 0; i < bones.numElem(); i++)
-	{
-		if(!bones[i]->name.CompareCaseIns(pszName))
-			return bones[i];
-	}
-
-	return nullptr;
+	const int idx = arrayFindIndexF(bones, [pszName](const DSBone& bone) {
+		return bone.name.CompareCaseIns(pszName) == 0;
+	});
+	if(idx == -1)
+		return nullptr;
+	return &bones[idx];
 }
 
 int GetTotalVertsOfDSM(DSModel* model)

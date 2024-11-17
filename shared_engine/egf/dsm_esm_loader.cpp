@@ -42,8 +42,6 @@ bool ReadBones(Tokenizer& tok, DSModel* pModel)
 
 	bool bCouldRead = false;
 
-	DSBone* pBone = nullptr;
-
 	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
@@ -57,23 +55,21 @@ bool ReadBones(Tokenizer& tok, DSModel* pModel)
 		else if(bCouldRead)
 		{
 			// read bone definition
-			pBone = PPNew DSBone;
+			DSBone& bone = pModel->bones.append();
 
-			pBone->name = tok.next(isQuotes);
+			bone.name = tok.next(isQuotes);
 			tok.next(); // skip quote
 
-			pBone->boneIdx = readInt(tok);
-			pBone->parentIdx = readInt(tok);
+			bone.boneIdx = readInt(tok);
+			bone.parentIdx = readInt(tok);
 
-			pBone->position.x = readFloat(tok);
-			pBone->position.y = readFloat(tok);
-			pBone->position.z = readFloat(tok);
+			bone.position.x = readFloat(tok);
+			bone.position.y = readFloat(tok);
+			bone.position.z = readFloat(tok);
 
-			pBone->angles.x = readFloat(tok);
-			pBone->angles.y = readFloat(tok);
-			pBone->angles.z = readFloat(tok);
-
-			pModel->bones.append(pBone);
+			bone.angles.x = readFloat(tok);
+			bone.angles.y = readFloat(tok);
+			bone.angles.z = readFloat(tok);
 		}
 		else
 			tok.goToNextLine();

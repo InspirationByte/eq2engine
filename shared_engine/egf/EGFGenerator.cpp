@@ -209,12 +209,12 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 	// scale bones
 	for (int i = 0; i < mod.model->bones.numElem(); i++)
 	{
-		DSBone* bone = mod.model->bones[i];
+		DSBone& bone = mod.model->bones[i];
 
-		bone->position *= m_modelScale;
+		bone.position *= m_modelScale;
 
-		if (bone->parentIdx == -1)
-			bone->position += m_modelOffset;
+		if (bone.parentIdx == -1)
+			bone.position += m_modelOffset;
 	}
 
 	// check material list and move/scale verts
@@ -704,50 +704,36 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 }
 
 //************************************
-// Checks bone for availablity in list
+// returns bone index for availablity in list
 //************************************
-bool BoneListCheckForBone(const char* pszName, const Array<DSBone*> &pBones)
+static int BoneListGetBoneIndex(const char* pszName, const ArrayCRef<DSBone> bones)
 {
-	for(int i = 0; i < pBones.numElem(); i++)
-	{
-		if(!pBones[i]->name.CompareCaseIns(pszName))
-			return true;
-	}
-
-	return false;
+	return arrayFindIndexF(bones, [&](const DSBone& bone) {
+		return bone.name.CompareCaseIns(pszName) == 0;
+	});
 }
 
 //************************************
-// returns bone index for availablity in list
+// Checks bone for availablity in list
 //************************************
-int BoneListGetBoneIndex(const char* pszName, const Array<DSBone*> &pBones)
+static bool BoneListCheckForBone(const char* pszName, const ArrayCRef<DSBone> bones)
 {
-	for(int i = 0; i < pBones.numElem(); i++)
-	{
-		if(!pBones[i]->name.CompareCaseIns(pszName))
-			return i;
-	}
-
-	return -1;
+	return BoneListGetBoneIndex(pszName, bones) != -1;
 }
 
 
 //************************************
 // Remaps vertex bone indices new_bones
 //************************************
-void BoneRemapDSMGroup(DSMesh* pMesh, const Array<DSBone*> &old_bones, Array<DSBone*> &new_bones)
+static void BoneRemapDSMGroup(DSMesh& mesh, const ArrayRef<DSBone> oldBones, ArrayCRef<DSBone> newBones)
 {
-	for(int i = 0; i < pMesh->verts.numElem(); i++)
+	for(DSVertex& vertex : mesh.verts)
 	{
-		for(int j = 0; j < pMesh->verts[i].weights.numElem(); j++)
+		for(DSWeight& weight : vertex.weights)
 		{
-			int boneIdx = pMesh->verts[i].weights[j].bone;
-
 			// find bone in new list by bone name in old list
-			int new_bone_id = BoneListGetBoneIndex(old_bones[boneIdx]->name, new_bones);
-
-			// point to bone in new list
-			pMesh->verts[i].weights[j].bone = new_bone_id;
+			// and point to bone in new list
+			weight.bone = BoneListGetBoneIndex(oldBones[weight.bone].name, newBones);
 		}
 	}
 }
@@ -755,29 +741,15 @@ void BoneRemapDSMGroup(DSMesh* pMesh, const Array<DSBone*> &old_bones, Array<DSB
 //************************************
 // Remaps vertex bone indices and merges skeleton
 //************************************
-void BoneMergeRemapDSM(DSModel* pDSM, Array<DSBone*> &new_bones)
+static void BoneMergeRemapDSM(DSModel& model, ArrayCRef<DSBone> newBones)
 {
 	// remap meshes
-	for(int i = 0; i < pDSM->meshes.numElem(); i++)
-	{
-		BoneRemapDSMGroup(pDSM->meshes[i], pDSM->bones, new_bones);
-	}
+	for(DSMesh* mesh : model.meshes)
+		BoneRemapDSMGroup(*mesh, model.bones, newBones);
 
-	// reset skeleton
-	for (int i = 0; i < pDSM->bones.numElem(); ++i)
-		delete pDSM->bones[i];
-	pDSM->bones.clear(true);
-
-	// and copy it
-	for(int i = 0; i < new_bones.numElem(); i++)
-	{
-		// copy bone
-		DSBone* pBone = PPNew DSBone;
-		*pBone = *new_bones[i];
-
-		// add
-		pDSM->bones.append(pBone);
-	}
+	// copy new skeleton
+	model.bones.clear();
+	model.bones.append(newBones.ptr(), newBones.numElem());
 }
 
 //************************************
@@ -793,42 +765,32 @@ void CEGFGenerator::MergeBones()
 	// dissolve bones that has 0 vertex refs
 
 	// first, load all bones into the single list, as unique
-	Array<DSBone*> allBones(PP_SL);
+	Array<DSBone> allBones(PP_SL);
 
 	for(const GenModel& gm : m_modelrefs)
 	{
-		for(DSBone* bone : gm.model->bones)
+		for(DSBone& bone : gm.model->bones)
 		{
 			// not found in new list? add
-			if(!BoneListCheckForBone(bone->name, allBones))
+			if(!BoneListCheckForBone(bone.name, allBones))
 			{
 				// copy bone
-				DSBone* cloneBone = PPNew DSBone;
-				*cloneBone = *bone;
+				const int boneIdx = allBones.numElem();
 
-				// set new bone id
-				cloneBone->boneIdx = allBones.numElem();
-
-				allBones.append(cloneBone);
+				DSBone& cloneBone = allBones.append();
+				cloneBone = bone;
+				cloneBone.boneIdx = boneIdx;
 			}
 		}
 	}
 
 	// relink parent bones
-	for(int i = 0; i < allBones.numElem(); i++)
-	{
-		allBones[i]->parentIdx = BoneListGetBoneIndex(allBones[i]->parentName, allBones);
-	}
+	for(DSBone& bone : allBones)
+		bone.parentIdx = BoneListGetBoneIndex(bone.parentName, allBones);
 
 	// All DSM vertices must be remapped now...
-	for(int i = 0; i < m_modelrefs.numElem(); i++)
-	{
-		BoneMergeRemapDSM( m_modelrefs[i].model, allBones );
-	}
-	
-	for(int i = 0; i < allBones.numElem(); i++)
-		delete allBones[i];
-	allBones.clear();
+	for(GenModel& gm : m_modelrefs)
+		BoneMergeRemapDSM(*gm.model, allBones);
 }
 
 //************************************
@@ -842,10 +804,10 @@ void CEGFGenerator::BuildBoneChains()
 	DSModel* model = m_modelrefs[0].model;
 
 	// make bone list first
-	for(int i = 0; i < model->bones.numElem(); i++)
+	for(DSBone& bone : model->bones)
 	{
 		GenBone& cbone = m_bones.append();
-		cbone.refBone = model->bones[i];
+		cbone.refBone = &bone;
 
 		Msg(" %s\n", cbone.refBone->name.ToCString());
 	}
@@ -855,7 +817,7 @@ void CEGFGenerator::BuildBoneChains()
 	// set parents
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
-		const int parentIdx = model->bones[i]->parentIdx;
+		const int parentIdx = model->bones[i].parentIdx;
 
 		if(parentIdx == -1)
 			m_bones[i].parent = nullptr;
@@ -864,10 +826,10 @@ void CEGFGenerator::BuildBoneChains()
 	}
 
 	// build child lists
-	for(int i = 0; i < m_bones.numElem(); i++)
+	for(GenBone& gb : m_bones)
 	{
-		if(m_bones[i].parent)
-			m_bones[i].parent->childs.append(&m_bones[i]);
+		if(gb.parent)
+			gb.parent->childs.append(&gb);
 	}
 }
 

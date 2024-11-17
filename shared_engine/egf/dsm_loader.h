@@ -54,7 +54,7 @@ struct DSModel : public RefCountedObject<DSModel>
 	EqString		name;
 
 	Array<DSMesh*>	meshes{ PP_SL };
-	Array<DSBone*>	bones{ PP_SL };
+	Array<DSBone>	bones{ PP_SL };
 
 	DSBone*			FindBone(const char* name);
 	DSMesh*			FindMeshByName(const char* name);

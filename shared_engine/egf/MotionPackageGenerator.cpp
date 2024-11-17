@@ -115,36 +115,32 @@ int	CMotionPackageGenerator::GetPoseControllerIndex(const char* name)
 //*******************************************************
 // TODO: use from bonesetup.h
 //*******************************************************
-void CMotionPackageGenerator::TranslateAnimationFrames(DSBoneFrames* bone, const Vector3D &offset)
+void CMotionPackageGenerator::TranslateAnimationFrames(DSBoneFrames& bone, const Vector3D &offset)
 {
-	for(int i = 0; i < bone->numFrames; i++)
-	{
-		bone->keyFrames[i].position += offset;
-	}
+	for(int i = 0; i < bone.numFrames; i++)
+		bone.keyFrames[i].position += offset;
 }
 
 //******************************************************
 // Subtracts the animation frames
 // IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
 //******************************************************
-void CMotionPackageGenerator::SubtractAnimationFrames(DSBoneFrames* bone, DSBoneFrames* otherbone)
+void CMotionPackageGenerator::SubtractAnimationFrames(DSBoneFrames& bone, const DSBoneFrames& otherbone)
 {
-	for(int i = 0; i < bone->numFrames; i++)
+	for(int i = 0; i < bone.numFrames; i++)
 	{
-		bone->keyFrames[i].position -= otherbone->keyFrames[0].position;
-		bone->keyFrames[i].angles -= otherbone->keyFrames[0].angles;
+		bone.keyFrames[i].position -= otherbone.keyFrames[0].position;
+		bone.keyFrames[i].angles -= otherbone.keyFrames[0].angles;
 	}
 }
 
 //*******************************************************
 // Subtracts root motion from the bone transform
 //*******************************************************
-void CMotionPackageGenerator::VelocityBackTransform(DSBoneFrames* bone, const Vector3D &velocity)
+void CMotionPackageGenerator::VelocityBackTransform(DSBoneFrames& bone, const Vector3D &velocity)
 {
-	for(int i = 0; i < bone->numFrames; i++)
-	{
-		bone->keyFrames[i].position -= velocity * float(i);
-	}
+	for(int i = 0; i < bone.numFrames; i++)
+		bone.keyFrames[i].position -= velocity * float(i);
 }
 
 //*******************************************************
@@ -162,7 +158,7 @@ inline bool IsEmptyKeyframe(const DSAnimFrame& keyFrame)
 // Fills empty frames of animation
 // and interpolates non-empty to them.
 //*******************************************************
-void CMotionPackageGenerator::InterpolateBoneAnimationFrames(DSBoneFrames* bone)
+void CMotionPackageGenerator::InterpolateBoneAnimationFrames(DSBoneFrames& bone)
 {
 	float lastKeyframeTime = 0;
 	float nextKeyframeTime = 0;
@@ -171,21 +167,21 @@ void CMotionPackageGenerator::InterpolateBoneAnimationFrames(DSBoneFrames* bone)
 	DSAnimFrame* nextInterpKeyFrame = nullptr;
 
 	// TODO: interpolate bone at the missing animation frames
-	for(int i = 0; i < bone->numFrames; i++)
+	for(int i = 0; i < bone.numFrames; i++)
 	{
 		if(!lastKeyFrame)
 		{
 			lastKeyframeTime = i;
-			lastKeyFrame = &bone->keyFrames[i]; // set last key frame
+			lastKeyFrame = &bone.keyFrames[i]; // set last key frame
 			continue;
 		}
 
-		for(int j = i; j < bone->numFrames; j++)
+		for(int j = i; j < bone.numFrames; j++)
 		{
-			if(!nextInterpKeyFrame && !IsEmptyKeyframe(bone->keyFrames[j]))
+			if(!nextInterpKeyFrame && !IsEmptyKeyframe(bone.keyFrames[j]))
 			{
 				//Msg("Interpolation destination key set to %d\n", j);
-				nextInterpKeyFrame = &bone->keyFrames[j];
+				nextInterpKeyFrame = &bone.keyFrames[j];
 				nextKeyframeTime = j;
 				break;
 			}
@@ -193,7 +189,7 @@ void CMotionPackageGenerator::InterpolateBoneAnimationFrames(DSBoneFrames* bone)
 
 		if(lastKeyFrame && nextInterpKeyFrame)
 		{
-			if(!IsEmptyKeyframe(bone->keyFrames[i]))
+			if(!IsEmptyKeyframe(bone.keyFrames[i]))
 			{
 				//Msg("Interp ends\n");
 				lastKeyFrame = nullptr;
@@ -208,30 +204,30 @@ void CMotionPackageGenerator::InterpolateBoneAnimationFrames(DSBoneFrames* bone)
 					MsgError("Can't interpolate when end frame is NULL\n");
 
 				// do basic interpolation
-				bone->keyFrames[i].position = lerp(lastKeyFrame->position, nextInterpKeyFrame->position, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
-				bone->keyFrames[i].angles = lerp(lastKeyFrame->angles, nextInterpKeyFrame->angles, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
+				bone.keyFrames[i].position = lerp(lastKeyFrame->position, nextInterpKeyFrame->position, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
+				bone.keyFrames[i].angles = lerp(lastKeyFrame->angles, nextInterpKeyFrame->angles, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
 			}
 		}
 		else if(lastKeyFrame && !nextInterpKeyFrame)
 		{
 			// if there is no next frame, don't do interpolation, simple copy
-			bone->keyFrames[i].position = lastKeyFrame->position;
-			bone->keyFrames[i].angles = lastKeyFrame->angles;
+			bone.keyFrames[i].position = lastKeyFrame->position;
+			bone.keyFrames[i].angles = lastKeyFrame->angles;
 		}
 
 		if(!lastKeyFrame)
 		{
 			lastKeyframeTime = i;
-			lastKeyFrame = &bone->keyFrames[i]; // set last key frame
+			lastKeyFrame = &bone.keyFrames[i]; // set last key frame
 			continue;
 		}
 
-		for(int j = i; j < bone->numFrames; j++)
+		for(int j = i; j < bone.numFrames; j++)
 		{
-			if(!nextInterpKeyFrame && !IsEmptyKeyframe(bone->keyFrames[j]))
+			if(!nextInterpKeyFrame && !IsEmptyKeyframe(bone.keyFrames[j]))
 			{
 				//Msg("Interpolation destination key set to %d\n", j);
-				nextInterpKeyFrame = &bone->keyFrames[j];
+				nextInterpKeyFrame = &bone.keyFrames[j];
 				nextKeyframeTime = j;
 				break;
 			}
@@ -251,60 +247,60 @@ inline void InterpolateFrameTransform(DSAnimFrame& frame1, DSAnimFrame& frame2, 
 //************************************
 // Crops animated bones
 //************************************
-void CMotionPackageGenerator::CropAnimationBoneFrames(DSBoneFrames* pBone, int newStart, int newEnd)
+void CMotionPackageGenerator::CropAnimationBoneFrames(DSBoneFrames& bone, int newStart, int newEnd)
 {
 	const int newLength = newEnd - newStart + 1;
 
-	if(newStart >= pBone->numFrames)
+	if(newStart >= bone.numFrames)
 	{
-		MsgError("Crop error: newStart (%d) >= numFrames (%d)\n", newStart, pBone->numFrames);
+		MsgError("Crop error: newStart (%d) >= numFrames (%d)\n", newStart, bone.numFrames);
 		return;
 	}
 
 	// crop start
 	if (newEnd == -1)
-		newEnd = pBone->numFrames - 1;
+		newEnd = bone.numFrames - 1;
 
-	if (newEnd >= pBone->numFrames)
+	if (newEnd >= bone.numFrames)
 	{
-		MsgError("Crop error: newEnd (%d) >= numFrames (%d)\n", newStart, pBone->numFrames);
+		MsgError("Crop error: newEnd (%d) >= numFrames (%d)\n", newStart, bone.numFrames);
 		return;
 	}
 
 	DSAnimFrame* newFrames = PPNew DSAnimFrame[newLength];
 
 	for(int i = 0; i < newLength; i++)
-		newFrames[i] = pBone->keyFrames[i + newStart];
+		newFrames[i] = bone.keyFrames[i + newStart];
 
-	delete [] pBone->keyFrames;
-	pBone->keyFrames = newFrames;
-	pBone->numFrames = newLength;
+	delete [] bone.keyFrames;
+	bone.keyFrames = newFrames;
+	bone.numFrames = newLength;
 }
 
 //************************************
 // Crops animation
 //************************************
-void CMotionPackageGenerator::CropAnimationDimensions(DSAnimData* pAnim, int newStart, int newEnd)
+void CMotionPackageGenerator::CropAnimationDimensions(DSAnimData& animData, int newStart, int newEnd)
 {
 	for(int i = 0; i < m_model->numBones; i++)
-		CropAnimationBoneFrames(&pAnim->bones[i], newStart, newEnd);
+		CropAnimationBoneFrames(animData.bones[i], newStart, newEnd);
 }
 
 //************************************
 // Reverse animation
 //************************************
 
-void CMotionPackageGenerator::ReverseAnimation(DSAnimData* pAnim )
+void CMotionPackageGenerator::ReverseAnimation(DSAnimData& animData)
 {
 	for(int i = 0; i < m_model->numBones; i++)
-		arrayReverse(&pAnim->bones[i], 0, pAnim->bones[i].numFrames);
+		arrayReverse(animData.bones[i].keyFrames, 0, animData.bones[i].numFrames);
 }
 
 //************************************
 // computes time from frame time
 // TODO: move to bonesetup.h
 //************************************
-inline void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *next)
+static void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *next)
 {
 	// compute frame numbers
 	*curr = floor(time+1)-1;
@@ -329,9 +325,9 @@ inline void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *nex
 //************************************
 // Scales bone animation length
 //************************************
-void CMotionPackageGenerator::RemapBoneFrames(DSBoneFrames* pBone, int newLength)
+void CMotionPackageGenerator::RemapBoneFrames(DSBoneFrames& bone, int newLength)
 {
-	BitArray setFrames(PP_SL, max(pBone->numFrames, newLength));
+	BitArray setFrames(PP_SL, max(bone.numFrames, newLength));
 
 	DSAnimFrame* newFrames = PPNew DSAnimFrame[newLength];
 	for(int i = 0; i < newLength; i++)
@@ -340,16 +336,16 @@ void CMotionPackageGenerator::RemapBoneFrames(DSBoneFrames* pBone, int newLength
 		newFrames[i].angles.x = BONE_NOT_SET;
 	}
 
-	const float frameFactor = (float)newLength / (float)pBone->numFrames;
-	const float frameFactorToOld = (float)pBone->numFrames / (float)newLength;
+	const float frameFactor = (float)newLength / (float)bone.numFrames;
+	const float frameFactorToOld = (float)bone.numFrames / (float)newLength;
 
 	setFrames.setTrue(0);
 	setFrames.setTrue(newLength-1);
 
-	newFrames[0] = pBone->keyFrames[0];
-	newFrames[newLength-1] = pBone->keyFrames[pBone->numFrames-1];
+	newFrames[0] = bone.keyFrames[0];
+	newFrames[newLength-1] = bone.keyFrames[bone.numFrames-1];
 
-	for(int i = 0; i < pBone->numFrames; i++)
+	for(int i = 0; i < bone.numFrames; i++)
 	{
 		if (setFrames[i])
 			continue;
@@ -363,41 +359,41 @@ void CMotionPackageGenerator::RemapBoneFrames(DSBoneFrames* pBone, int newLength
 		int oldFrameA = 0;
 		int oldFrameB = 0;
 		const float timeFactorToOld = frameFactorToOld * (float)newFrameA;
-		GetCurrAndNextFrameFromTime(timeFactorToOld, pBone->numFrames, &oldFrameA, &oldFrameB);
+		GetCurrAndNextFrameFromTime(timeFactorToOld, bone.numFrames, &oldFrameA, &oldFrameB);
 
 		const float timeInterp = timeFactorToOld - (int)oldFrameA;
-		InterpolateFrameTransform(pBone->keyFrames[oldFrameA], pBone->keyFrames[oldFrameB], timeInterp, newFrames[newFrameA]);
+		InterpolateFrameTransform(bone.keyFrames[oldFrameA], bone.keyFrames[oldFrameB], timeInterp, newFrames[newFrameA]);
 		setFrames.setTrue(i);
 	}
 
 	// finally, replace bones
-	delete[] pBone->keyFrames;
+	delete[] bone.keyFrames;
 
-	pBone->keyFrames = newFrames;
-	pBone->numFrames = newLength;
+	bone.keyFrames = newFrames;
+	bone.numFrames = newLength;
 
-	InterpolateBoneAnimationFrames(pBone);
+	InterpolateBoneAnimationFrames(bone);
 }
 
 //************************************
 // Scales animation length
 //************************************
-void CMotionPackageGenerator::RemapAnimationLength(DSAnimData* pAnim, int newLength)
+void CMotionPackageGenerator::RemapAnimationLength(DSAnimData& animData, int newLength)
 {
 	for(int i = 0; i < m_model->numBones; i++)
-		RemapBoneFrames(&pAnim->bones[i], newLength);
+		RemapBoneFrames(animData.bones[i], newLength);
 }
 
 //************************************
 // Setups ESA bones for conversion
 //************************************
 
-void CMotionPackageGenerator::SetupESABones(DSModel* pModel, animCaBoneFrames_t* bones)
+void CMotionPackageGenerator::SetupESABones(DSModel& model, ArrayRef<animCaBoneFrames_t> bones)
 {/*
 	// setup each bone's transformation
-	for(int8 i = 0; i < pModel->bones.numElem(); i++)
+	for(int8 i = 0; i < model.bones.numElem(); i++)
 	{
-		DSBone* bone = pModel->bones[i];
+		DSBone* bone = model.bones[i];
 
 		// setup transformation
 		Matrix4x4 localTrans = identity4;
@@ -477,7 +473,7 @@ static bool ReadFramesForBone(Tokenizer& tok, Array<animCaBoneFrames_t>& bones)
 	return false;
 }
 
-static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel* pModel, DSAnimData* pAnim)
+static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSModel& model, DSAnimData& animData)
 {
 	char *str;
 
@@ -486,10 +482,10 @@ static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSMod
 	int nFrameIndex = 0;
 
 	Array<animCaBoneFrames_t> bones(PP_SL);
-	bones.setNum( pModel->bones.numElem() );
+	bones.setNum(model.bones.numElem() );
 
 	// FIXME: do it after ReadBones, not here
-	generator.SetupESABones(pModel, bones.ptr());
+	generator.SetupESABones(model, bones);
 
 	while ((str = tok.next()) != nullptr)
 	{
@@ -522,11 +518,11 @@ static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSMod
 	for(int i = 0; i < bones.numElem(); i++)
 	{
 		const int numFrames = bones[i].frames.numElem();
-		pAnim->bones[i].numFrames = numFrames;
-		pAnim->bones[i].keyFrames = PPNew DSAnimFrame[numFrames];
+		animData.bones[i].numFrames = numFrames;
+		animData.bones[i].keyFrames = PPNew DSAnimFrame[numFrames];
 
 		// copy frames
-		memcpy(pAnim->bones[i].keyFrames, bones[i].frames.ptr(), numFrames * sizeof(DSAnimFrame));
+		memcpy(animData.bones[i].keyFrames, bones[i].frames.ptr(), numFrames * sizeof(DSAnimFrame));
 
 		// try fix and iterpolate
 		//InterpolateBoneAnimationFrames( &currentAnim->bones[i] );
@@ -601,7 +597,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 
 			modelAnim.bones = PPNew DSBoneFrames[m_model->numBones];
 
-			if(!ReadFrames(*this, tok, &tempDSM, &modelAnim))
+			if(!ReadFrames(*this, tok, tempDSM, modelAnim))
 			{
 				FreeAnimationData(&modelAnim, m_model->numBones);
 				m_animations.removeIndex(newAnimIndex);
@@ -641,6 +637,8 @@ int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex)
 	return newAnimIndex;
 }
 
+#pragma optimize("", off)
+
 //************************************
 // Loads animation from key-values parameters and applies.
 //************************************
@@ -662,39 +660,6 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 
 	Msg(" loading animation '%s' as '%s'\n", animName, KV_GetValueString(section));
 
-	KVSection* offsetPos = section->FindSection("offset");
-
-	Vector3D animOffsetPos = KV_GetVector3D(offsetPos, 0, vec3_zero);
-	Vector3D animRootVelocity = vec3_zero;
-
-	KVSection* moveVelocityKey = section->FindSection("moveVelocity");
-	if(moveVelocityKey)
-	{
-		animRootVelocity = KV_GetVector3D(moveVelocityKey, 0, vec3_zero);
-		const float frameRate = KV_GetValueFloat(moveVelocityKey, 3, 1.0f);
-
-		animRootVelocity /= frameRate;
-	}
-
-	bool doCut = false;
-	int cropFrom = 0;
-	int cropTo = -1;
-
-	const KVSection* cropAnimKey = section->FindSection("crop");
-	if(cropAnimKey)
-	{
-		cropFrom = KV_GetValueInt(cropAnimKey, 0, -1);
-		cropTo = KV_GetValueInt(cropAnimKey, 0, -1);
-
-		if(cropFrom == -1)
-		{
-			MsgError("Key error: crop must have at least one value (min)\n");
-			MsgWarning("Usage: crop (min frame) (max frame)\n");
-		}
-		else
-			doCut = true;
-	}
-
 	int animIdx = GetAnimationIndex(animName);
 	if(animIdx != -1)
 		animIdx = DuplicateAnimationByIndex(animIdx);
@@ -708,20 +673,25 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 		return;
 	}
 
-	DSAnimData* currentAnim = &m_animations[ animIdx ];
+	Vector3D animRootOffset = vec3_zero;
+	Vector3D animRootVelocity = vec3_zero;
+	float velocityRate = 1.0f;
+
+	section->Get("offset").GetValues(animRootOffset);
+	if (length(animRootOffset) > 0)
+		Msg("Animation offset: %f %f %f\n", animRootOffset.x, animRootOffset.y, animRootOffset.z);
+
+	if (section->Get("moveVelocity").GetValues(animRootVelocity, velocityRate) == 2)
+		animRootVelocity /= velocityRate;
+
+	DSAnimData& currentAnim = m_animations[ animIdx ];
 	for(int i = 0; i < m_model->numBones; i++)
 	{
 		if (m_model->pBone(i)->parent != -1)
 			continue;
 
-		if(length(animOffsetPos) > 0)
-			Msg("Animation offset: %f %f %f\n", animOffsetPos.x, animOffsetPos.y, animOffsetPos.z);
-
-		// move bones to user-defined position
-		TranslateAnimationFrames(&currentAnim->bones[i], animOffsetPos);
-
-		// transform model back using linear moveVelocityKey
-		VelocityBackTransform(&currentAnim->bones[i], animRootVelocity);
+		TranslateAnimationFrames(currentAnim.bones[i], animRootOffset);
+		VelocityBackTransform(currentAnim.bones[i], animRootVelocity);
 	}
 
 	const KVSection* subtractKey = section->FindSection("subtract");
@@ -731,7 +701,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 		if(subtractByAnimIdx != -1)
 		{
 			for(int i = 0; i < m_model->numBones; i++)
-				SubtractAnimationFrames(&currentAnim->bones[i], &m_animations[subtractByAnimIdx].bones[i]);
+				SubtractAnimationFrames(currentAnim.bones[i], m_animations[subtractByAnimIdx].bones[i]);
 		}
 		else
 		{
@@ -739,23 +709,41 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 		}
 	}
 
-	if(doCut)
+	int cropFrom = -1;
+	int cropTo = -1;
+	if (section->Get("crop").GetValues(cropFrom, cropTo))
 	{
-		Msg("  Cropping from [0 %d] to [%d %d]\n", currentAnim->bones[0].numFrames, cropFrom, cropTo);
-		CropAnimationDimensions( currentAnim, cropFrom, cropTo );
+		if (cropFrom >= 0)
+		{
+			Msg("  Cropping from [0 %d] to [%d %d]\n", currentAnim.bones[0].numFrames, cropFrom, cropTo);
+			CropAnimationDimensions(currentAnim, cropFrom, cropTo);
 
-		if(cropFrom == cropTo)
-			RemapAnimationLength(currentAnim, 2);
+			if (cropFrom == cropTo)
+				RemapAnimationLength(currentAnim, 2);
+		}
+		else
+		{
+			MsgError("Key error: crop must have at least one value (min)\n");
+			MsgWarning("Usage: crop (min frame) (max frame)\n");
+		}
 	}
 
-	const int customLength = KV_GetValueInt(section->FindSection("customLength"), 0, -1);
-	if(customLength != -1)
+	int customLength = -1;
+	if(section->Get("customLength").GetValues(customLength))
 	{
-		Msg("Changing length to %d\n", customLength);
-		RemapAnimationLength( currentAnim, customLength );
+		if (customLength > 0)
+		{
+			Msg("Changing length to %d\n", customLength);
+			RemapAnimationLength(currentAnim, customLength);
+		}
+		else
+		{
+			MsgError("Custom length should be >= 0");
+		}
 	}
 
-	const bool reverse = KV_GetValueBool(section->FindSection("reverse"), 0, false);
+	bool reverse = false;
+	section->Get("reverse").GetValues(reverse);
 	if(reverse)
 	{
 		Msg("Reverse\n");
@@ -763,7 +751,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	}
 
 	// make final name
-	currentAnim->name = KV_GetValueString(section);
+	currentAnim.name = KV_GetValueString(section);
 }
 
 //************************************
@@ -904,7 +892,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection* section, const char*
 						MsgWarning("WARNING! Animation quality reduction.\n");
 					}
 
-					RemapAnimationLength(&m_animations[desc.animations[i]], checkFrameCount);
+					RemapAnimationLength(m_animations[desc.animations[i]], checkFrameCount);
 				}
 				else
 					MsgWarning("WARNING! All blending animations must use same frame count! Re-export them or use parameter 'alignlengths'\n");

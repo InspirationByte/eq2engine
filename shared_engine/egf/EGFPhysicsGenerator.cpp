@@ -66,16 +66,16 @@ void CEGFPhysicsGenerator::SetupRagdollJoints(Array<RagdollJoint>& boneArray)
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
 		RagdollJoint& joint = boneArray[i];
-		DSBone* bone = m_srcModel->bones[i];
+		const DSBone& bone = m_srcModel->bones[i];
 
 		// setup transformation
 		joint.localTrans = identity4;
 
-		joint.localTrans.setRotation(bone->angles);
-		joint.localTrans.setTranslation(bone->position);
+		joint.localTrans.setRotation(bone.angles);
+		joint.localTrans.setTranslation(bone.position);
 
-		if(bone->parentIdx != -1)
-			joint.absTrans = joint.localTrans * boneArray[bone->parentIdx].absTrans;
+		if(bone.parentIdx != -1)
+			joint.absTrans = joint.localTrans * boneArray[bone.parentIdx].absTrans;
 		else
 			joint.absTrans = joint.localTrans;
 	}
@@ -205,34 +205,26 @@ int CEGFPhysicsGenerator::AddShape(Array<DSVertex> &vertices, Array<int> &indice
 
 int CEGFPhysicsGenerator::FindJointIdx(const char* name)
 {
-	for(int i = 0; i < m_joints.numElem(); i++)
-	{
-		if(!CString::CompareCaseIns(m_joints[i].name, name))
-		{
-			return i;
-		}
-	}
-
-	return -1;
+	return arrayFindIndexF(m_joints, [=](const physjoint_t& joint) {
+		return CString::CompareCaseIns(joint.name, name) == 0;
+	});
 }
 
 int CEGFPhysicsGenerator::MakeBoneValidParent(int boneId)
 {
-	int parent = m_srcModel->bones[boneId]->parentIdx;
-
-	int joint_index = -1;
+	int parent = m_srcModel->bones[boneId].parentIdx;
+	int jointIdx = -1;
 
 	if(parent != -1)
 	{
-		joint_index = FindJointIdx(m_srcModel->bones[parent]->name);
-
-		if(joint_index == -1)
-			joint_index = MakeBoneValidParent(parent);
+		jointIdx = FindJointIdx(m_srcModel->bones[parent].name);
+		if(jointIdx == -1)
+			jointIdx = MakeBoneValidParent(parent);
 		else
-			return joint_index;
+			return jointIdx;
 	}
 
-	return joint_index;
+	return jointIdx;
 }
 
 // this procedure useful for ragdolls
@@ -312,7 +304,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 			bone_index = vertices[firsttri_indx0].weights[0].bone;
 
 		if(bone_index != -1)
-			Msg("Mesh %d uses bone %s\n", i+1, m_srcModel->bones[bone_index]->name.ToCString());
+			Msg("Mesh %d uses bone %s\n", i+1, m_srcModel->bones[bone_index].name.ToCString());
 		else
 			Msg("Mesh %d doesn't use bones, it will be static\n", i+1);
 
@@ -340,6 +332,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
+		const DSBone& bone = m_srcModel->bones[i];
 		Array<int> bone_geom_indices(PP_SL);
 
 		BoundingBox localBox;
@@ -392,7 +385,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 
 		memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
 
-		const KVSection* thisBoneSec = bonesSect->FindSection(m_srcModel->bones[i]->name, KV_FLAG_SECTION);
+		const KVSection* thisBoneSec = bonesSect->FindSection(bone.name, KV_FLAG_SECTION);
 
 		object.bodyPartId = 0;
 		object.numShapes = 1;
@@ -418,11 +411,11 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 		physjoint_t joint;
 
 		memset(joint.name, 0, sizeof(joint.name));
-		strcpy(joint.name, m_srcModel->bones[i]->name);
+		strcpy(joint.name, bone.name);
 
 		PhyNamedObject obj;
 		memset(obj.name, 0, sizeof(obj.name));
-		strcpy(obj.name, m_srcModel->bones[i]->name);
+		strcpy(obj.name, bone.name);
 		obj.object = object;
 
 		// add object after building
@@ -438,7 +431,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 
 		joint.objA = m_objects.numElem() - 1;
 
-		int parent = m_srcModel->bones[i]->parentIdx;
+		int parent = bone.parentIdx;
 
 		if(parent == -1)
 		{

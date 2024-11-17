@@ -20,7 +20,7 @@ public:
 	void WriteAnimationPackage(const char* packageOutputFilename);
 
 	// Setups ESA bones for conversion
-	void SetupESABones(SharedModel::DSModel* pModel, animCaBoneFrames_t* bones);
+	void SetupESABones(SharedModel::DSModel& model, ArrayRef<animCaBoneFrames_t> bones);
 
 private:
 
@@ -34,37 +34,6 @@ private:
 
 	// Finds and returns pose controller index by name
 	int	GetPoseControllerIndex(const char* name);
-
-	// Shifts animation start
-	//void ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame);
-	void TranslateAnimationFrames(SharedModel::DSBoneFrames* bone, const Vector3D& offset);
-
-	// Subtracts the animation frames
-	// IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
-	void SubtractAnimationFrames(SharedModel::DSBoneFrames* bone, SharedModel::DSBoneFrames* otherbone);
-
-	// Advances every frame position on reversed velocity
-	// Helps with motion capture issues.
-	void VelocityBackTransform(SharedModel::DSBoneFrames* bone, const Vector3D& velocity);
-
-	// Fills empty frames of animation
-	// and interpolates non-empty to them.
-	void InterpolateBoneAnimationFrames(SharedModel::DSBoneFrames* bone);
-
-	// Crops animated bones
-	void CropAnimationBoneFrames(SharedModel::DSBoneFrames* pBone, int newStart, int newEnd);
-
-	// Crops animation
-	void CropAnimationDimensions(SharedModel::DSAnimData* pAnim, int newStart, int newEnd);
-
-	// Reverse animation
-	void ReverseAnimation(SharedModel::DSAnimData* pAnim);
-
-	// Scales bone animation length
-	void RemapBoneFrames(SharedModel::DSBoneFrames* pBone, int newLength);
-
-	// Scales animation length
-	void RemapAnimationLength(SharedModel::DSAnimData* pAnim, int newLength);
 
 	// Loads all animations from FBX
 	void LoadFBXAnimations(const KVSection* section);
@@ -95,6 +64,37 @@ private:
 
 	// Makes standard pose.
 	void MakeDefaultPoseAnimation();
+
+	// Shifts animation start
+	//void ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame);
+	void TranslateAnimationFrames(SharedModel::DSBoneFrames& bone, const Vector3D& offset);
+
+	// Subtracts the animation frames
+	// IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
+	void SubtractAnimationFrames(SharedModel::DSBoneFrames& bone, const SharedModel::DSBoneFrames& otherbone);
+
+	// Advances every frame position on reversed velocity
+	// Helps with motion capture issues.
+	void VelocityBackTransform(SharedModel::DSBoneFrames& bone, const Vector3D& velocity);
+
+	// Fills empty frames of animation
+	// and interpolates non-empty to them.
+	void InterpolateBoneAnimationFrames(SharedModel::DSBoneFrames& bone);
+
+	// Crops animated bones
+	void CropAnimationBoneFrames(SharedModel::DSBoneFrames& bone, int newStart, int newEnd);
+
+	// Crops animation
+	void CropAnimationDimensions(SharedModel::DSAnimData& animData, int newStart, int newEnd);
+
+	// Reverse animation
+	void ReverseAnimation(SharedModel::DSAnimData& animData);
+
+	// Scales bone animation length
+	void RemapBoneFrames(SharedModel::DSBoneFrames& bone, int newLength);
+
+	// Scales animation length
+	void RemapAnimationLength(SharedModel::DSAnimData& animData, int newLength);
 
 	studioHdr_t*					m_model{ nullptr };
 	Array<SharedModel::DSAnimData>	m_animations{ PP_SL };
