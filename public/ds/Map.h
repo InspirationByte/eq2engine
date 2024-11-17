@@ -47,38 +47,40 @@ public:
 
 public:
 	Map(const PPSourceLine& sl)
-		: m_pool(sl), m_end(&m_endItem), m_begin(&m_endItem)
+		: m_pool(sl)
 	{
 	}
 
 	Map(const Map& other)
-		: m_pool(other.m_pool.getSL()), m_end(&m_endItem), m_begin(&m_endItem)
+		: m_pool(other.m_pool.getSL())
 	{
-		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
+		for (const Item* i = other.m_begin.item, *end = other.m_endItem; i != end; i = i->next)
 			insert(i->key, *i->value);
 	}
 
 	Map(Map&& other) noexcept
-		: m_pool(std::move(other.m_pool)), m_end(&m_endItem), m_begin(&m_endItem)
-		, m_endItem(std::move(other.m_endItem))
+		: m_pool(std::move(other.m_pool))
+		, m_end(other.m_end.item)
+		, m_begin(other.m_end.item)
+		, m_endItem(other.m_endItem)
 		, m_root(other.m_root)
 		, m_size(other.m_size)
 
 	{
-		if(other.m_begin.item != &other.m_endItem)
+		if(other.m_begin.item != other.m_endItem)
 			m_begin = Iterator(other.m_begin.item);
 
 		// fix up references
-		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+		for (Item* i = m_begin.item, *end = m_endItem; i != end; i = i->next)
 		{
-			if(&other.m_endItem == i->parent)
-				i->parent = &m_endItem;
+			if(other.m_endItem == i->parent)
+				i->parent = m_endItem;
 
-			if(&other.m_endItem == i->right)
-				i->right = &m_endItem;
+			if(other.m_endItem == i->right)
+				i->right = m_endItem;
 
-			if(&other.m_endItem == i->next)
-				i->next = &m_endItem;
+			if(other.m_endItem == i->next)
+				i->next = m_endItem;
 		}
 
 		other.m_root = nullptr;
@@ -87,7 +89,7 @@ public:
 
 	~Map()
 	{
-		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+		for (Item* i = m_begin.item, *end = m_endItem; i != end; i = i->next)
 		{
 			(*i->value).~V();
 			i->~Item();
@@ -97,7 +99,7 @@ public:
 	Map& operator=(const Map& other)
 	{
 		clear();
-		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
+		for (const Item* i = other.m_begin.item, *end = other.m_endItem; i != end; i = i->next)
 			insert(i->key, *i->value);
 		return *this;
 	}
@@ -127,38 +129,38 @@ public:
 		QuickSwap(m_endItem, other.m_endItem);
 
 		// Fix up references to m_endItem
-		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+		for (Item* i = m_begin.item, *end = m_endItem; i != end; i = i->next)
 		{
-			if (i->parent == &other.m_endItem)
-				i->parent = &m_endItem;
-			if (i->left == &other.m_endItem)
-				i->left = &m_endItem;
-			if (i->right == &other.m_endItem)
-				i->right = &m_endItem;
-			if (i->next == &other.m_endItem)
-				i->next = &m_endItem;
-			if (i->prev == &other.m_endItem)
-				i->prev = &m_endItem;
+			if (i->parent == other.m_endItem)
+				i->parent = m_endItem;
+			if (i->left == other.m_endItem)
+				i->left = m_endItem;
+			if (i->right == other.m_endItem)
+				i->right = m_endItem;
+			if (i->next == other.m_endItem)
+				i->next = m_endItem;
+			if (i->prev == other.m_endItem)
+				i->prev = m_endItem;
 		}
 
-		for (Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
+		for (Item* i = other.m_begin.item, *end = other.m_endItem; i != end; i = i->next)
 		{
-			if (i->parent == &m_endItem)
-				i->parent = &other.m_endItem;
-			if (i->left == &m_endItem)
-				i->left = &other.m_endItem;
-			if (i->right == &m_endItem)
-				i->right = &other.m_endItem;
-			if (i->next == &m_endItem)
-				i->next = &other.m_endItem;
-			if (i->prev == &m_endItem)
-				i->prev = &other.m_endItem;
+			if (i->parent == m_endItem)
+				i->parent = other.m_endItem;
+			if (i->left == m_endItem)
+				i->left = other.m_endItem;
+			if (i->right == m_endItem)
+				i->right = other.m_endItem;
+			if (i->next == m_endItem)
+				i->next = other.m_endItem;
+			if (i->prev == m_endItem)
+				i->prev = other.m_endItem;
 		}
 	}
 
 	void clear(bool deallocate = false)
 	{
-		for (Item* i = m_begin.item, *end = &m_endItem; i != end;)
+		for (Item* i = m_begin.item, *end = m_endItem; i != end;)
 		{
 			(*i->value).~V();
 			i->~Item();
@@ -168,10 +170,19 @@ public:
 		}
 
 		if (deallocate)
+		{
 			m_pool.clear();
+			m_endItem = nullptr;
+			m_begin.item = nullptr;
+			m_end.item = nullptr;
+		}
+		else
+		{
+			m_begin.item = m_endItem;
+			if (m_endItem)
+				m_endItem->prev = nullptr;
+		}
 
-		m_begin.item = &m_endItem;
-		m_endItem.prev = nullptr;
 		m_size = 0;
 		m_root = nullptr;
 	}
@@ -224,7 +235,7 @@ public:
 	Iterator insert(const Iterator& position, const K& key)
 	{
 		Item* insertPos = position.item;
-		if (insertPos == &m_endItem)
+		if (insertPos == m_endItem)
 		{
 			Item* prev = insertPos->prev;
 			if (prev && key > prev->key)
@@ -232,39 +243,21 @@ public:
 		}
 		else
 		{
-			//if constexpr (MULTIMAP)
-			//{
-			//	if (key < insertPos->key)
-			//	{
-			//		Item* prev = insertPos->prev;
-			//		if (!prev || key >= prev->key)
-			//			return insert(&insertPos->left, insertPos, key);
-			//	}
-			//	else
-			//	{
-			//		Item* next = insertPos->next;
-			//		if (next == &m_endItem || key <= next->key)
-			//			return insert(&insertPos->right, insertPos, key);
-			//	}
-			//}
-			//else
+			if (key < insertPos->key)
 			{
-				if (key < insertPos->key)
-				{
-					Item* prev = insertPos->prev;
-					if (!prev || key > prev->key)
-						return insert(&insertPos->left, insertPos, key);
-				}
-				else if (key > insertPos->key)
-				{
-					Item* next = insertPos->next;
-					if (next == &m_endItem || key < next->key)
-						return insert(&insertPos->right, insertPos, key);
-				}
-				else
-				{
-					return insertPos;
-				}
+				Item* prev = insertPos->prev;
+				if (!prev || key > prev->key)
+					return insert(&insertPos->left, insertPos, key);
+			}
+			else if (key > insertPos->key)
+			{
+				Item* next = insertPos->next;
+				if (next == m_endItem || key < next->key)
+					return insert(&insertPos->right, insertPos, key);
+			}
+			else
+			{
+				return insertPos;
 			}
 		}
 		return insert(&m_root, nullptr, key);
@@ -299,23 +292,6 @@ public:
 				it = insert(it, i.item->key, *i.item->value);
 		}
 	}
-
-	//void checkTree(Item* item, Item* parent)
-	//{
-	//  ASSERT(item->parent == parent);
-	//  int height = item->height;
-	//  int slope = item->slope;
-	//  if(item->left)
-	//    checkTree(item->left, item);
-	//  if(item->right)
-	//    checkTree(item->right, item);
-	//  int leftHeight = item->left ? item->left->height : 0;
-	//  int rightHeight = item->right ? item->right->height : 0;
-	//  ASSERT(height == (leftHeight > rightHeight ? leftHeight : rightHeight) + 1);
-	//  ASSERT(slope == leftHeight - rightHeight);
-	//  ASSERT(slope <= 1);
-	//  ASSERT(slope >= -1);
-	//}
 
 	void remove(const K& key)
 	{
@@ -512,14 +488,29 @@ private:
 	};
 
 private:
-	MemoryPool<Item, 32>	m_pool;
-	Iterator 			m_end;
-	Iterator 			m_begin;
-	Item 				m_endItem;
-	Item* 				m_root{ nullptr };
-	int 				m_size{ 0 };
+	static constexpr int MAP_POOL_ITEMS_PER_CHUNK = 32;
+	using ItemPool = MemoryPool<Item, MAP_POOL_ITEMS_PER_CHUNK>;
+
+	ItemPool	m_pool;
+	Iterator 	m_end;
+	Iterator 	m_begin;
+	Item*		m_endItem{ nullptr };
+	Item* 		m_root{ nullptr };
+	int 		m_size{ 0 };
 
 private:
+	void initEndItem()
+	{
+		if (m_endItem)
+			return;
+
+		m_endItem = m_pool.allocate();
+		new (m_endItem) Item();
+
+		m_begin.item = m_endItem;
+		m_end.item = m_endItem;
+	}
+
 	Iterator insert(Item** cell, Item* parent, const K& key)
 	{
 	begin:
@@ -536,12 +527,16 @@ private:
 			++m_size;
 			if (!parent)
 			{
+				// alloc end item
+				initEndItem();
+
+				ASSERT(m_begin.item == m_endItem);
+
 				// first item
-				ASSERT(m_begin.item == &m_endItem);
 				item->prev = nullptr;
 				item->next = m_begin.item;
 				m_begin.item = item;
-				m_endItem.prev = item;
+				m_endItem->prev = item;
 			}
 			else
 			{
@@ -579,26 +574,6 @@ private:
 			goto begin;
 		}
 	}
-
-	//template<bool MULTI>
-	//bool nextCell(const K& key, Item* position, Item*** cell, Item** parent);
-
-	// multi-map
-	//template<>
-	//bool nextCell<true>(const K& key, Item* position, Item*** cell, Item** parent)
-	//{
-	//	if (key < position->key)
-	//	{
-	//		*cell = &position->left;
-	//		*parent = position;
-	//	}
-	//	else
-	//	{
-	//		*cell = &position->right;
-	//		*parent = position;
-	//	}
-	//	return false;
-	//}
 
 	// map
 	bool nextCell(const K& key, Item* position, Item*** cell, Item** parent)
@@ -695,10 +670,6 @@ struct _EMPTY_VALUE{}; // GCC doesn't like using = struct {}, produces linkage e
 
 template<typename K>
 using Set = Map<K, _EMPTY_VALUE>;
-
-//template<typename K, typename V>
-//using MultiMap = Map<K, V>;
-
 
 // nesting Source-line constructor helper
 template<typename K, typename V>

@@ -81,6 +81,11 @@ public:
 
 	void deallocate(T* pointer)
 	{
+		if (!pointer)
+			return;
+
+		dbgValidatePtr(pointer);
+
 		Block* block = reinterpret_cast<Block*>(pointer);
 		block->next = m_firstFreeBlock;
 		m_firstFreeBlock = block;
@@ -89,6 +94,24 @@ public:
 	const PPSourceLine getSL() const { return m_sl; }
 
 private:
+	void dbgValidatePtr(T* pointer)
+	{
+#if !defined(_RETAIL) && !defined(_PROFILE)
+		Buffer* buffer = m_firstBuffer;
+		bool matchBuffers = false;
+		while (buffer)
+		{
+			if (pointer >= reinterpret_cast<T*>(&buffer->data[0]) && pointer - reinterpret_cast<T*>(&buffer->data[0]) < CHUNK_ITEMS)
+			{
+				matchBuffers = true;
+				break;
+			}
+			buffer = buffer->next;
+		}
+		ASSERT_MSG(matchBuffers, "pointer does not belong to this MemoryPool");
+#endif
+	}
+
 	// internal structure to link free item data
 	struct Block
 	{
