@@ -42,7 +42,7 @@ private:
 	int LoadAnimationFromESA(const char* filename);
 
 	// duplicates the animation for further processing. Returns new index
-	int DuplicateAnimationByIndex(int animIndex);
+	int DuplicateAnimationByIndex(int animIndex, const char* newName);
 
 	// Loads animation from key-values parameters and applies.
 	void LoadAnimation(const KVSection* section);

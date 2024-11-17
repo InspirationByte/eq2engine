@@ -89,13 +89,9 @@ int	CMotionPackageGenerator::GetSequenceIndex(const char* name)
 //************************************
 int	CMotionPackageGenerator::GetAnimationIndex(const char* name)
 {
-	for(int i = 0; i < m_animations.numElem(); i++)
-	{
-		if(!m_animations[i].name.CompareCaseIns(name))
-			return i;
-	}
-
-	return -1;
+	return arrayFindIndexF(m_animations, [=](const DSAnimData& animData) {
+		return animData.name.CompareCaseIns(name) == 0;
+	});
 }
 
 //************************************
@@ -103,13 +99,9 @@ int	CMotionPackageGenerator::GetAnimationIndex(const char* name)
 //************************************
 int	CMotionPackageGenerator::GetPoseControllerIndex(const char* name)
 {
-	for(int i = 0; i < m_posecontrollers.numElem(); i++)
-	{
-		if(!CString::CompareCaseIns(m_posecontrollers[i].name, name))
-			return i;
-	}
-
-	return -1;
+	return arrayFindIndexF(m_posecontrollers, [=](const posecontroller_t& ctrl) {
+		return CString::CompareCaseIns(ctrl.name, name) == 0;
+	});
 }
 
 //*******************************************************
@@ -539,13 +531,12 @@ void CMotionPackageGenerator::LoadFBXAnimations(const KVSection* section)
 {
 	const char* fbxFileName = KV_GetValueString(section);
 
-	EqString finalFileName = fbxFileName;
+	EqString finalFileName;
+	fnmPathCombine(finalFileName, m_animPath, "anims", fbxFileName);
 
 	// load from exporter-supported path
-	if (g_fileSystem->FileExist((m_animPath + "/anims/" + fbxFileName).GetData()))
-		finalFileName = m_animPath + "/anims/" + fbxFileName;
-	else
-		finalFileName = m_animPath + "/" + fbxFileName;
+	if (!g_fileSystem->FileExist(finalFileName))
+		fnmPathCombine(finalFileName, m_animPath, fbxFileName);
 
 	SharedModel::LoadFBXAnimations(m_animations, finalFileName, KV_GetValueString(section->FindSection("meshFilter"), 0, nullptr));
 }
@@ -553,27 +544,34 @@ void CMotionPackageGenerator::LoadFBXAnimations(const KVSection* section)
 //************************************
 // Loads animation from file
 //************************************
-int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
+int CMotionPackageGenerator::LoadAnimationFromESA(const char* animName)
 {
-	EqString finalFileName = filename;
+	if (GetAnimationIndex(animName) != -1)
+	{
+		MsgError("LoadAnimationFromESA: animation was %s already loaded\n", animName);
+		return -1;
+	}
+
+	EqString finalFileName;
+	fnmPathCombine(finalFileName, m_animPath, "anims", animName);
 
 	// load from exporter-supported path
-	if(g_fileSystem->FileExist( (m_animPath + "/anims/" + filename + ".esa").GetData() ))
-		finalFileName = m_animPath + "/anims/" + filename + ".esa";
-	else
-		finalFileName = m_animPath + "/" + filename + ".esa";
+	if(!g_fileSystem->FileExist(finalFileName))
+		fnmPathCombine(finalFileName, m_animPath, animName);
+
+	fnmPathApplyExt(finalFileName, ".esa");
 
 	Tokenizer tok;
-	if (!tok.setFile( finalFileName.GetData() ))
+	if (!tok.setFile( finalFileName ))
 	{
-		MsgError("Couldn't open ESA file '%s'\n", finalFileName.GetData());
+		MsgError("Couldn't open ESA file '%s'\n", finalFileName.ToCString());
 		return -1;
 	}
 
 	// make new model animation
 	const int newAnimIndex = m_animations.numElem();
 	DSAnimData& modelAnim = m_animations.append();
-	modelAnim.name = filename;
+	modelAnim.name = animName;
 
 	DSModel tempDSM;
 
@@ -611,10 +609,16 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 }
 
 // duplicates the animation for further processing. Returns new index
-int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex)
+int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex, const char* newName)
 {
 	ASSERT(animIndex != -1);
 	DSAnimData& sourceAnim = m_animations[animIndex];
+
+	if(GetAnimationIndex(newName) != -1)
+	{
+		MsgError("DuplicateAnimation: animation was %s already created\n", newName);
+		return -1;
+	}
 
 	const int newAnimIndex = m_animations.numElem();
 	DSAnimData& modelAnim = m_animations.append();
@@ -634,10 +638,10 @@ int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex)
 		memcpy(modelAnim.bones[i].keyFrames, sourceAnim.bones[i].keyFrames, numFrames * sizeof(DSAnimFrame));
 	}
 
+	modelAnim.name = newName;
+
 	return newAnimIndex;
 }
-
-#pragma optimize("", off)
 
 //************************************
 // Loads animation from key-values parameters and applies.
@@ -658,11 +662,11 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	if(externalpath)
 		animName = KV_GetValueString(externalpath);
 
-	Msg(" loading animation '%s' as '%s'\n", animName, KV_GetValueString(section));
+	Msg("LoadAnimation '%s' as '%s'\n", animName, KV_GetValueString(section));
 
 	int animIdx = GetAnimationIndex(animName);
 	if(animIdx != -1)
-		animIdx = DuplicateAnimationByIndex(animIdx);
+		animIdx = DuplicateAnimationByIndex(animIdx, KV_GetValueString(section));
 
 	if (animIdx == -1) // try to load new one if not found
 		animIdx = LoadAnimationFromESA(animName);
@@ -673,13 +677,15 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 		return;
 	}
 
+	// TODO: validate animation bone count
+
 	Vector3D animRootOffset = vec3_zero;
 	Vector3D animRootVelocity = vec3_zero;
 	float velocityRate = 1.0f;
 
 	section->Get("offset").GetValues(animRootOffset);
 	if (length(animRootOffset) > 0)
-		Msg("Animation offset: %f %f %f\n", animRootOffset.x, animRootOffset.y, animRootOffset.z);
+		Msg("...animation offset: %f %f %f\n", animRootOffset.x, animRootOffset.y, animRootOffset.z);
 
 	if (section->Get("moveVelocity").GetValues(animRootVelocity, velocityRate) == 2)
 		animRootVelocity /= velocityRate;
@@ -715,7 +721,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	{
 		if (cropFrom >= 0)
 		{
-			Msg("  Cropping from [0 %d] to [%d %d]\n", currentAnim.bones[0].numFrames, cropFrom, cropTo);
+			Msg("...cropping from [0 %d] to [%d %d]\n", currentAnim.bones[0].numFrames, cropFrom, cropTo);
 			CropAnimationDimensions(currentAnim, cropFrom, cropTo);
 
 			if (cropFrom == cropTo)
@@ -733,7 +739,7 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	{
 		if (customLength > 0)
 		{
-			Msg("Changing length to %d\n", customLength);
+			Msg("...change length to %d\n", customLength);
 			RemapAnimationLength(currentAnim, customLength);
 		}
 		else
@@ -746,12 +752,9 @@ void CMotionPackageGenerator::LoadAnimation(const KVSection* section)
 	section->Get("reverse").GetValues(reverse);
 	if(reverse)
 	{
-		Msg("Reverse\n");
+		Msg("...reverse\n");
 		ReverseAnimation( currentAnim );
 	}
-
-	// make final name
-	currentAnim.name = KV_GetValueString(section);
 }
 
 //************************************
