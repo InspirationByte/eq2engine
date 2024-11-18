@@ -393,7 +393,7 @@ bool CAnimatingEGF::AddMotionData(const StudioMotionData* motionData)
 			if(CString::Compare(seqDesc.activity, "ACT_INVALID"))
 				MsgError("Motion Data: Activity '%s' not registered\n", seqDesc.activity);
 		}
-		else
+		else if(seqData.activity != ACT_SCRIPTED_SEQUENCE)
 		{
 			animData.activitySlotSequenceIds.insert(seqData.activity | (static_cast<int>(seqDesc.activityslot) << ANIM_ACTIVITY_ID_BITS), sequenceIdx);
 		}
