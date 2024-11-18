@@ -30,8 +30,8 @@ struct RagdollJoint
 
 struct PhyNamedObject
 {
-	char name[32]{ 0 };
-	physobject_t object;
+	char			name[32]{ 0 };
+	physobject_t	object;
 };
 
 //---------------------------------------------------------------------------------------------------
@@ -82,38 +82,34 @@ void CEGFPhysicsGenerator::SetupRagdollJoints(Array<RagdollJoint>& boneArray)
 }
 
 // adds shape to datas
-int CEGFPhysicsGenerator::AddShape(Array<DSVertex> &vertices, Array<int> &indices, int shapeType, bool assumedAsConvex)
+int CEGFPhysicsGenerator::AddShape(ArrayCRef<DSVertex> vertices, ArrayCRef<int> indices, EPhysShapeType shapeType, bool assumedAsConvex)
 {
-	physgeominfo_t geom_info;
-	geom_info.type = shapeType;
+	physgeominfo_t geomInfo;
+	geomInfo.type = shapeType;
 
-	geom_info.startIndices = m_indices.numElem();
+	geomInfo.startIndices = m_indices.numElem();
 
 	// make hull
-	if( geom_info.type == PHYSSHAPE_TYPE_CONVEX)
+	if( geomInfo.type == PHYSSHAPE_TYPE_CONVEX)
 	{
 		if(assumedAsConvex)
 		{
-			int startIndex = m_vertices.numElem();
+			const int startIndex = m_vertices.numElem();
 
 			for(int i = 0; i < indices.numElem(); i+=3)
 			{
-				Vector3D pos1 = vertices[indices[i]].position;
-				Vector3D pos2 = vertices[indices[i+1]].position;
-				Vector3D pos3 = vertices[indices[i+2]].position;
+				m_vertices.append(vertices[indices[i]].position);
+				m_vertices.append(vertices[indices[i + 1]].position);
+				m_vertices.append(vertices[indices[i + 2]].position);
 
-				m_vertices.append(pos1);
-				m_vertices.append(pos2);
-				m_vertices.append(pos3);
-
-				m_indices.append(i+startIndex);
-				m_indices.append(i+1+startIndex);
-				m_indices.append(i+2+startIndex);
+				m_indices.append(i + startIndex);
+				m_indices.append(i + 1 + startIndex);
+				m_indices.append(i + 2 + startIndex);
 			}
 
-			geom_info.numIndices = indices.numElem();
+			geomInfo.numIndices = indices.numElem();
 
-			Msg("Adding convex shape, %d verts %d indices\n", vertices.numElem(), geom_info.numIndices);
+			Msg("Adding convex shape, %d verts %d indices\n", vertices.numElem(), geomInfo.numIndices);
 		}
 		else
 		{
@@ -145,21 +141,17 @@ int CEGFPhysicsGenerator::AddShape(Array<DSVertex> &vertices, Array<int> &indice
 			shape_hull.buildHull( 0.0 /*this even not work*/ );
 
 			// finally, add indices and vertices:
-
-			int startIndex = m_vertices.numElem();
-
+			const int startIndex = m_vertices.numElem();
 			for(int i = 0; i < shape_hull.numVertices(); i++)
 			{
-				btVector3 vertex = shape_hull.getVertexPointer()[i];
-				m_vertices.append(Vector3D(vertex.x(),vertex.y(),vertex.z()));
+				const btVector3& vertex = shape_hull.getVertexPointer()[i];
+				m_vertices.append(Vector3D(vertex[0], vertex[1], vertex[2]));
 			}
 
 			for(int i = 0; i < shape_hull.numIndices(); i++)
-			{
 				m_indices.append(shape_hull.getIndexPointer()[i] + startIndex);
-			}
 
-			geom_info.numIndices = shape_hull.numIndices();
+			geomInfo.numIndices = shape_hull.numIndices();
 
 			Msg("Adding generated convex shape, %d verts %d indices\n", shape_hull.numVertices(), shape_hull.numIndices());
 		}
@@ -186,7 +178,7 @@ int CEGFPhysicsGenerator::AddShape(Array<DSVertex> &vertices, Array<int> &indice
 				m_indices.append(found_idx + start_vertex);
 		}
 
-		geom_info.numIndices = m_indices.numElem() - geom_info.startIndices;
+		geomInfo.numIndices = m_indices.numElem() - geomInfo.startIndices;
 
 		Msg("Adding trimesh shape, %d verts\n", indices.numElem());
 
@@ -196,7 +188,7 @@ int CEGFPhysicsGenerator::AddShape(Array<DSVertex> &vertices, Array<int> &indice
 		}
 	}
 
-	return m_shapes.append(geom_info);
+	return m_shapes.append(geomInfo);
 }
 
 //
@@ -268,7 +260,7 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<DSVertex>& vertices, Array
 	MsgInfo("Detected %d groups out of %d triangles\n", indexGroups.numElem(), triangles.numElem());
 }
 
-bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups )
+void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups )
 {
 	// setup pose bones
 	Array<RagdollJoint> ragJoints(PP_SL);
@@ -322,7 +314,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 			{
 				MsgError("Invalid bone id. Mesh part must use single bone index.\n");
 				MsgError("Please separate model parts for bones.\n");
-				return false;
+				return;
 			}
 						
 		}
@@ -378,7 +370,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 		}
 				
 		// generate physics shape
-		int shapeID = AddShape(vertices, bone_geom_indices);
+		const int shapeID = AddShape(vertices, bone_geom_indices);
 
 		// build object data
 		physobject_t object;
@@ -490,181 +482,134 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<DSVertex>& vertices, Arra
 		// add new joint
 		m_joints.append(joint);
 	}
-
-	return true;
 }
 
-bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups, bool bCompound )
+void CEGFPhysicsGenerator::CreateCompoundObject(ArrayCRef<DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups)
 {
-	m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
+	EqString objName = EqString::Format("obj_%d", m_objects.numElem());
+	m_physicsParams->GetValues(objName);
 
-	if(indexGroups.numElem() == 1)
+	PhyNamedObject& obj = m_objects.append();
+	strncpy(obj.name, objName, sizeof(obj.name));
+	obj.name[sizeof(obj.name) - 1] = 0;
+
+	physobject_t& object = obj.object;
+	memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
+	object.bodyPartId = 0;
+	object.numShapes = 0;
+	object.offset = vec3_zero;
+	object.massCenter = m_bbox.GetCenter();
+
+	m_physicsParams->Get("MassCenter").GetValues(object.massCenter);
+	m_physicsParams->Get("Mass").GetValues(object.mass);
+
+	EqStringRef surfaceProps = "default";
+	m_physicsParams->Get("SurfaceProps").GetValues(surfaceProps);
+	strcpy(object.surfaceprops, surfaceProps);
+
+	for (const IdxIsland& tris : indexGroups)
+	{
+		if (object.numShapes >= MAX_PHYS_GEOM_PER_OBJECT)
+		{
+			MsgWarning("Exceeded physics shape count (%d)\n", object.numShapes);
+			break;
+		}
+
+		object.shapeIndex[object.numShapes++] = AddShape(vertices, ArrayCRef(&tris[0].x, tris.numElem() * 3), PHYSSHAPE_TYPE_CONVEX);
+	}
+}
+
+
+void CEGFPhysicsGenerator::CreateMultipleObjects(ArrayCRef<DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups)
+{
+	if (indexGroups.numElem() == 1)
 		Msg("  Model is single\n");
 	else
 		Msg("  Model is compound\n");
 
-	// shape types ignored on compound
-	bool isConcave = KV_GetValueBool( m_physicsParams->FindSection("concave"), 0, false );
-	bool isStatic = KV_GetValueBool( m_physicsParams->FindSection("static"), 0, false );
+	bool isConcave = false;
+	bool isStatic = false;
+	m_physicsParams->Get("static").GetValues(isStatic);
+	m_physicsParams->Get("concave").GetValues(isStatic);
 
-	int nShapeType = PHYSSHAPE_TYPE_CONVEX;
-
-	if( isConcave )
+	EPhysShapeType shapeType = PHYSSHAPE_TYPE_CONVEX;
+	if (isConcave)
 	{
-		nShapeType = PHYSSHAPE_TYPE_CONCAVE;
-
-		if(!isStatic)
-			nShapeType = PHYSSHAPE_TYPE_MOVABLECONCAVE;
+		shapeType = PHYSSHAPE_TYPE_CONCAVE;
+		if (!isStatic)
+			shapeType = PHYSSHAPE_TYPE_MOVABLECONCAVE;
 	}
 
-	// do compoound
-	if( bCompound )
+	EqStringRef surfaceProps = "default";
+	m_physicsParams->Get("SurfaceProps").GetValues(surfaceProps);
+
+	float objectMass = PHYS_DEFAULT_MASS;
+	m_physicsParams->Get("Mass").GetValues(objectMass);
+
+	int islandIdx = 0;
+	for (const IdxIsland& tris : indexGroups)
 	{
-		Array<int> shape_ids(PP_SL);
+		EqString objName;
+		if (m_physicsParams->values.numElem() > 0)
+			objName = EqString::Format("%s_part%d", KV_GetValueString(m_physicsParams), islandIdx);
+		else
+			objName = EqString::Format("obj_%d", m_objects.numElem());
 
-		for(int i = 0; i < indexGroups.numElem(); i++)
-		{
-			IdxIsland& list = indexGroups[i];
-			Array<int> tmpIndices(PP_SL);
+		PhyNamedObject& obj = m_objects.append();
+		strncpy(obj.name, objName, sizeof(obj.name));
+		obj.name[sizeof(obj.name) - 1] = 0;
 
-			for(int j = 0; j < list.numElem(); j++)
-			{
-				tmpIndices.append( list[j][0] );
-				tmpIndices.append( list[j][1] );
-				tmpIndices.append( list[j][2] );
-			}
-
-			int shapeID = AddShape(vertices, tmpIndices);
-			shape_ids.append(shapeID);
-		}
-
-		physobject_t object;
-		object.bodyPartId = 0;
-
-		const KVSection* surfPropsPair = m_physicsParams->FindSection("SurfaceProps");
-				
-		memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
-		strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair, 0, "default"));
-
-		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
-
-		object.numShapes = shape_ids.numElem();
-
-		if(object.numShapes > MAX_PHYS_GEOM_PER_OBJECT)
-		{
-			MsgWarning("Exceeded physics shape count (%d)\n", object.numShapes);
-			object.numShapes = MAX_PHYS_GEOM_PER_OBJECT;
-		}
-
+		physobject_t& object = obj.object;
 		memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
-
-		for(int i = 0; i < object.numShapes; i++)
-			object.shapeIndex[i] = shape_ids[i];
-
+		object.shapeIndex[0] = AddShape(vertices, ArrayCRef(&tris[0].x, tris.numElem() * 3), shapeType);
+		object.numShapes = 1;
+		object.bodyPartId = islandIdx;
 		object.offset = vec3_zero;
-		object.massCenter = KV_GetVector3D( m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter() );
+		object.massCenter = vec3_zero;
+		object.mass = objectMass;
+		strncpy(object.surfaceprops, surfaceProps, sizeof(object.surfaceprops));
+		object.surfaceprops[sizeof(object.surfaceprops) - 1] = 0;
 
-		PhyNamedObject obj;
-		memset(obj.name, 0, sizeof(obj.name));
-		strcpy(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
-
-		obj.object = object;
-
-		m_objects.append(obj);
+		++islandIdx;
 	}
-	else
-	{
-		physobject_t object;
-		object.bodyPartId = 0;
-
-		memset(object.surfaceprops, 0, 0);
-		strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
-
-		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
-
-		for(int i = 0; i < indexGroups.numElem(); i++)
-		{
-			IdxIsland& list = indexGroups[i];
-
-			Array<int> tmpIndices(PP_SL);
-
-			for(int j = 0; j < list.numElem(); j++)
-			{
-				tmpIndices.append( list[j][0] );
-				tmpIndices.append( list[j][1] );
-				tmpIndices.append( list[j][2] );
-			}
-
-			int shapeID = AddShape( vertices, tmpIndices, nShapeType );
-
-			object.numShapes = 1;
-			memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
-
-			object.shapeIndex[0] = shapeID;
-			object.offset = vec3_zero;
-			object.massCenter = vec3_zero;
-
-			PhyNamedObject obj;
-			obj.object = object;
-
-			memset(obj.name, 0, sizeof(obj.name));
-
-			if(m_physicsParams->values.numElem() > 0)
-				strcpy(obj.name, EqString::Format("%s_part%d", KV_GetValueString(m_physicsParams), i).ToCString());
-			else
-				strcpy(obj.name, EqString::Format("obj_%d", m_objects.numElem()).ToCString());
-
-			m_objects.append(obj);
-		}
-	}
-
-	return true;
 }
 
-bool CEGFPhysicsGenerator::CreateSingleObject( Array<DSVertex>& vertices, Array<int>& indices )
+void CEGFPhysicsGenerator::CreateSingleObject(ArrayCRef<DSVertex> vertices, ArrayCRef<int> indices )
 {
-	// shape types ignored on compound
-	bool isConcave = KV_GetValueBool( m_physicsParams->FindSection("concave"), 0, false );
-	bool isStatic = KV_GetValueBool( m_physicsParams->FindSection("static"), 0, false );
-	bool isAssumedAsConvex = KV_GetValueBool( m_physicsParams->FindSection("dont_simplify"), 0, false );
+	EqString objName = EqString::Format("obj_%d", m_objects.numElem());
+	m_physicsParams->GetValues(objName);
 
-	int nShapeType = PHYSSHAPE_TYPE_CONVEX;
+	bool isAssumedAsConvex = false;
+	m_physicsParams->Get("dont_simplify").GetValues(isAssumedAsConvex);
 
-	if( isConcave )
+	bool isConcave = false;
+	bool isStatic = false;
+	m_physicsParams->Get("static").GetValues(isStatic);
+	m_physicsParams->Get("concave").GetValues(isStatic);
+
+	EPhysShapeType shapeType = PHYSSHAPE_TYPE_CONVEX;
+	if (isConcave)
 	{
-		nShapeType = PHYSSHAPE_TYPE_CONCAVE;
-
-		if(!isStatic)
-			nShapeType = PHYSSHAPE_TYPE_MOVABLECONCAVE;
+		shapeType = PHYSSHAPE_TYPE_CONCAVE;
+		if (!isStatic)
+			shapeType = PHYSSHAPE_TYPE_MOVABLECONCAVE;
 	}
 
-	// generate big shape in this case
-	int shapeID = AddShape(vertices, indices, nShapeType, isAssumedAsConvex);
+	PhyNamedObject& obj = m_objects.append();
+	strncpy(obj.name, objName, sizeof(obj.name));
+	obj.name[sizeof(obj.name) - 1] = 0;
 
-	physobject_t object;
-
-	object.bodyPartId = 0;
-
+	physobject_t& object = obj.object;
 	memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
 	strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
 
+	memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
+	object.shapeIndex[0] = AddShape(vertices, indices, shapeType, isAssumedAsConvex);
+	object.numShapes = 1;
+	object.offset = vec3_zero;
 	object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
 	object.massCenter = KV_GetVector3D(m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter());
-
-	object.numShapes = 1;
-	memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
-	object.shapeIndex[0] = shapeID;
-	object.offset = vec3_zero;
-
-	PhyNamedObject obj;
-	memset(obj.name, 0, sizeof(obj.name));
-	strcpy(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
-
-	obj.object = object;
-
-	m_objects.append(obj);
-
-	return true;
+	object.bodyPartId = 0;
 }
 
 bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* physInfo, bool forceGroupSubdivision)
@@ -678,25 +623,21 @@ bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* 
 
 	MsgInfo("Generating physics geometry...\n");
 
-	bool bCompound = false;
-
 	if(m_srcModel->bones.numElem() > 0)
 		m_forceGroupSubdivision = true;
+	m_physicsParams->Get("groupdivision").GetValues(m_forceGroupSubdivision);
 
-	m_forceGroupSubdivision = KV_GetValueBool(m_physicsParams->FindSection("groupdivision"), 0, m_forceGroupSubdivision);
-
-	const KVSection* compoundkey = m_physicsParams->FindSection("compound");
-	if(compoundkey)
-	{
-		bCompound = KV_GetValueBool(compoundkey);
+	bool bCompound = false;
+	if(m_physicsParams->Get("compound").GetValues(bCompound))
 		m_forceGroupSubdivision = bCompound;
-	}
 
 	memset(m_props.commentStr, 0, sizeof(m_props.commentStr));
 	strcpy(m_props.commentStr, KV_GetValueString(m_physicsParams->FindSection("comments"), 0, ""));
 
-	Array<DSVertex>		vertices(PP_SL);
-	Array<int>				indices(PP_SL);
+	Array<DSVertex> vertices(PP_SL);
+	Array<int> indices(PP_SL);
+
+	m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
 
 	// if we've got ragdoll
 	if( m_forceGroupSubdivision || (m_srcModel->bones.numElem() > 1)  )
@@ -705,35 +646,31 @@ bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* 
 		Array<IdxIsland> indexGroups(PP_SL);
 		SubdivideModelParts(vertices, indices, indexGroups);
 
+		Msg("Processed %d verts and %d indices\n", vertices.numElem(), indices.numElem());
+
 		// generate ragdoll
 		if( m_srcModel->bones.numElem() > 1 )
-		{
-			CreateRagdollObjects( vertices, indices, indexGroups );
-		}
-		else // make compound model
-		{
-			CreateCompoundOrSeparateObjects( vertices, indices, indexGroups, bCompound);
-		}
+			CreateRagdollObjects(vertices, indices, indexGroups);
+		else if(bCompound)
+			CreateCompoundObject(vertices, indices, indexGroups);
+		else
+			CreateMultipleObjects(vertices, indices, indexGroups);
 	}
 	else
 	{
-		m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
-
 		// move all vertices and indices from groups to shared buffer (no multiple shapes)
-		for(int i = 0 ; i < m_srcModel->meshes.numElem(); i++)
+		for(const DSMesh* group : m_srcModel->meshes)
 		{
-			DSMesh* group = m_srcModel->meshes[i];
-
-			for(int j = 0; j < group->verts.numElem(); j++)
+			for(DSVertex& vert : group->verts)
 			{
 				indices.append(vertices.numElem());
-				vertices.append(group->verts[j]);
-				m_bbox.AddVertex(vertices[i].position);
+				vertices.append(vert);
+
+				m_bbox.AddVertex(vert.position);
 			}
 		}
 
 		Msg("Processed %d verts and %d indices\n", vertices.numElem(), indices.numElem());
-
 		CreateSingleObject( vertices, indices );
 	}
 
@@ -748,7 +685,6 @@ bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* 
 
 ubyte* pData = nullptr;
 ubyte* pStart = nullptr;
-
 
 void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint dataSize)
 {

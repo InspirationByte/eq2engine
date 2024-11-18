@@ -41,13 +41,14 @@ protected:
 	int			FindJointIdx(const char* name);
 	int			MakeBoneValidParent(int boneId);
 
-	int			AddShape(Array<SharedModel::DSVertex> &vertices, Array<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
+	int			AddShape(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, EPhysShapeType shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
 
 	void		SubdivideModelParts( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups);
 
-	bool		CreateRagdollObjects( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups );
-	bool		CreateCompoundOrSeparateObjects( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups, bool bCompound );
-	bool		CreateSingleObject( Array<SharedModel::DSVertex>& vertices, Array<int>& indices );
+	void		CreateRagdollObjects(ArrayRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups );
+	void		CreateCompoundObject(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups);
+	void		CreateMultipleObjects(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups);
+	void		CreateSingleObject(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices );
 
 	// data
 	SharedModel::DSModel*	m_srcModel;

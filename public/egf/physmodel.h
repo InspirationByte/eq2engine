@@ -49,44 +49,44 @@ enum EPhysShapeType : int
 
 struct physjoint_s
 {
-	char		name[MAX_PHYS_NAME_LENGTH]; // joint name
+	char		name[MAX_PHYS_NAME_LENGTH]{ 0 };	// joint name
 
-	int			objA;						// physobject_t indices
-	int			objB;
+	int			objA{ -1 };							// physobject_t indices
+	int			objB{ -1 };
 
-	Vector3D	position;
+	Vector3D	position{ 0 };
 
-	Vector3D	minLimit;
-	Vector3D	maxLimit;
+	Vector3D	minLimit{ 0 };
+	Vector3D	maxLimit{ 0 };
 };
 ALIGNED_TYPE(physjoint_s, 4) physjoint_t;
 
 struct physmodelprops_s
 {
-	int		usageType;
-	char	commentStr[MAX_PHYS_COMMENT_STRING];
+	int		usageType{ 0 };
+	char	commentStr[MAX_PHYS_COMMENT_STRING]{ 0 };
 };
 ALIGNED_TYPE(physmodelprops_s, 4) physmodelprops_t;
 
 struct physgeominfo_s
 {
-	int		startIndices;
-	int		numIndices;
+	int		startIndices{ 0 };
+	int		numIndices{ 0 };
 
-	int		type;
+	int		type{ 0 };			// EPhysShapeType
 };
 ALIGNED_TYPE(physgeominfo_s, 4) physgeominfo_t;
 
 struct physobject_s
 {
-	char		surfaceprops[MAX_PHYS_SURF_NAME_LENGTH];// flesh, brick, etc.
-	float		mass;									// mass of local object
+	char		surfaceprops[MAX_PHYS_SURF_NAME_LENGTH]{ 0 };	// flesh, brick, etc.
+	float		mass{ PHYS_DEFAULT_MASS };				// mass of local object
 
-	int			numShapes;								// shape count
+	int			numShapes{ 0 };							// shape count
 	int			shapeIndex[MAX_PHYS_GEOM_PER_OBJECT];	// indexes of geomdata
 
-	Vector3D	offset;									// object initial offset
-	Vector3D	massCenter;								// mass center of object
-	int			bodyPartId;								// body part index set in script
+	Vector3D	offset{ vec3_zero };					// object initial offset
+	Vector3D	massCenter{ vec3_zero };				// mass center of object
+	int			bodyPartId{ 0 };						// body part index set in script
 };
 ALIGNED_TYPE(physobject_s, 4) physobject_t;
