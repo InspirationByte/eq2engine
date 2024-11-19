@@ -138,6 +138,7 @@ GRIMArchetype GRIMBaseRenderer::CreateStudioDrawArchetype(const CEqStudioGeom* g
 	pending.egfDesc.geom = geom;
 	pending.egfDesc.vertFormat = vertFormat;
 	pending.egfDesc.bodyGroupFlags = bodyGroupFlags;
+	pending.egfDesc.materialGroupIdx = materialGroupIdx;
 	pending.extraVertexBuffers.append(extraVertexBuffers.ptr(), extraVertexBuffers.numElem());
 	pending.extraLayoutBits = extraLayoutBits;	
 	pending.type = PendingDesc::TYPE_STUDIO;
