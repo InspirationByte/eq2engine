@@ -21,7 +21,7 @@ enum ETextureFlags : int
 {
 	// texture creation flags
 	TEXFLAG_PROGRESSIVE_LODS	= (1 << 0),		// progressive LOD uploading, might improve performance
-	TEXFLAG_NULL_ON_ERROR		= (1 << 1),
+	TEXFLAG_LOAD_NULL_ON_ERROR	= (1 << 0),
 	TEXFLAG_CUBEMAP				= (1 << 2),		// should create cubemap
 	TEXFLAG_IGNORE_QUALITY		= (1 << 3),		// not affected by "r_loadmiplevel", always all mip levels are loaded
 	TEXFLAG_STORAGE				= (1 << 4),		// allows storage access (compute)

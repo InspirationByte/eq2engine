@@ -88,7 +88,7 @@ void CTextureLoader::Initialize(const char* texturePath, const char* textureSRCP
 	fnmPathFixSeparators(m_textureSRCPath);
 }
 
-ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags, const char* requestedBy)
+ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int flags, const char* requestedBy)
 {
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
@@ -96,17 +96,17 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	ITexturePtr texture = g_renderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
 
 	if (!texture)
-		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_matSystem->GetErrorCheckerboardTexture((nFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D);
+		return (flags & TEXFLAG_LOAD_NULL_ON_ERROR) ? nullptr : g_matSystem->GetErrorCheckerboardTexture((flags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D);
 
 	if (!isJustCreated)
 		return texture;
 
 	if (r_skipTextureLoading.GetBool())
 	{
-		if (nFlags & TEXFLAG_NULL_ON_ERROR)
+		if (flags & TEXFLAG_LOAD_NULL_ON_ERROR)
 			texture = nullptr;
 		else
-			texture->GenerateErrorTexture(nFlags);
+			texture->GenerateErrorTexture(flags);
 
 		return texture;
 	}
@@ -160,12 +160,12 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	}
 
 	// initialize texture
-	if (!imgList.numElem() || !texture->Init(imgList, samplerParams, nFlags | TEXFLAG_PROGRESSIVE_LODS))
+	if (!imgList.numElem() || !texture->Init(imgList, samplerParams, flags | TEXFLAG_PROGRESSIVE_LODS))
 	{
-		if (nFlags & TEXFLAG_NULL_ON_ERROR)
+		if (flags & TEXFLAG_LOAD_NULL_ON_ERROR)
 			texture = nullptr;
 		else
-			texture->GenerateErrorTexture(nFlags);
+			texture->GenerateErrorTexture(flags);
 	}
 
 	return texture;

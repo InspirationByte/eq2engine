@@ -21,8 +21,8 @@ class ITextureLoader : public IEqCoreModule
 public:
 	CORE_INTERFACE("E2_TexLoader_002")
 
-	virtual ITexturePtr			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0, const char* requestedBy = nullptr) = 0;
-	virtual Future<ITexturePtr>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0, const char* requestedBy = nullptr) = 0;
+	virtual ITexturePtr			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int flags = 0, const char* requestedBy = nullptr) = 0;
+	virtual Future<ITexturePtr>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int flags = 0, const char* requestedBy = nullptr) = 0;
 
 	virtual const char*			GetTexturePath() const = 0;
 	virtual const char*			GetTextureSRCPath() const = 0;

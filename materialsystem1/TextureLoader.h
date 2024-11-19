@@ -17,8 +17,8 @@ public:
 
 	void				Initialize(const char* texturePath, const char* textureSRCPath);
 
-	ITexturePtr			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0, const char* requestedBy = nullptr);
-	Future<ITexturePtr>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int nFlags = 0, const char* requestedBy = nullptr);
+	ITexturePtr			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int flags = 0, const char* requestedBy = nullptr);
+	Future<ITexturePtr>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParams& samplerParams, int flags = 0, const char* requestedBy = nullptr);
 
 	const char*			GetTexturePath() const { return m_texturePath; }
 	const char*			GetTextureSRCPath() const { return m_textureSRCPath; }
