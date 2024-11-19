@@ -590,6 +590,17 @@ struct KVPairValuesGetter<TVec4D<T>>
 	static const int vcount = 4;
 };
 
+template <>
+struct KVPairValuesGetter<MColor>
+{
+	using CompGetter = KVPairValuesGetter<float>;
+	static MColor Get(const KVSection* section, int index)
+	{
+		return MColor(CompGetter::Get(section, index), CompGetter::Get(section, index + 1), CompGetter::Get(section, index + 2), CompGetter::Get(section, index + 3));
+	}
+	static const int vcount = 4;
+};
+
 namespace kvdetail
 {
 inline int GetValuesR(const KVSection* key, int idx, int cntIdx)
