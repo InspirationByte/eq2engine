@@ -27,6 +27,7 @@ enum ViewerRenderFlags
 // for ragdoll use baseragdollanimating
 class CAnimatedModel : public CAnimatingEGF
 {
+	friend class CEGFViewFrame;
 public:
 	CAnimatedModel();
 
@@ -43,9 +44,6 @@ public:
 
 	int							GetCurrentAnimationFrame() const;
 	int							GetCurrentAnimationDurationInFrames() const;
-
-	ArrayCRef<AnimPoseController>	GetPoseControllers() const;
-	ArrayCRef<AnimSequence*>		GetSequencesList() const;
 
 protected:
 

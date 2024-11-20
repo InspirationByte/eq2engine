@@ -1242,7 +1242,7 @@ void CEGFViewFrame::ReDraw()
 		const int selectedSeqIdx = m_pMotionSelection->GetSelection();
 		if(g_model.IsSequencePlaying() && selectedSeqIdx != -1)
 		{
-			const AnimSequence* seq = g_model.GetSequencesList()[selectedSeqIdx];
+			const AnimSequence* seq = g_model.m_sequencesList[selectedSeqIdx];
 
 			const float setFrameRate = atoi(m_pAnimFramerate->GetValue());
 			if(setFrameRate > 0)
@@ -1330,9 +1330,9 @@ void CEGFViewFrame::RefreshGUI()
 		if(m_pAnimMode->GetSelection() == 0)
 		{
 			int itemCnt = 0;
-			for(const AnimSequence* seq : g_model.GetSequencesList())
+			for(const AnimSequence* seq : g_model.m_sequencesList)
 			{
-				EqString fullSeqName = EqString::Format("%s.%s", seq->motionData->name.ToCString(), seq->desc->name);
+				EqString fullSeqName = EqString::Format("%s.%s", seq->motionData->name, seq->desc->name);
 				const int sequenceId = g_model.FindSequence(fullSeqName);
 
 				m_pMotionSelection->Append(fullSeqName.ToCString());
@@ -1351,7 +1351,7 @@ void CEGFViewFrame::RefreshGUI()
 			}*/
 		}
 
-		for(const AnimPoseController& cntr : g_model.GetPoseControllers())
+		for(const AnimPoseController& cntr : g_model.m_poseControllers)
 			m_pPoseController->Append(cntr.desc->name );
 	}
 }
@@ -1371,7 +1371,7 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 			g_model.ResetSequenceTime(0);
 			g_model.PlaySequence(0);
 
-			const AnimSequence* seq = g_model.GetSequencesList()[motionSelection];
+			const AnimSequence* seq = g_model.m_sequencesList[motionSelection];
 			m_pAnimFramerate->SetValue(EqString::Format("%g", seq->desc->framerate).ToCString() );
 
 			const int maxFrames = g_model.GetCurrentAnimationDurationInFrames()-1;
@@ -1385,8 +1385,8 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 		const int nPoseContr = m_pPoseController->GetSelection();
 		if(nPoseContr != -1)
 		{
-			m_pPoseValue->SetMin(g_model.GetPoseControllers()[nPoseContr].desc->blendRange[0] * 10000 );
-			m_pPoseValue->SetMax(g_model.GetPoseControllers()[nPoseContr].desc->blendRange[1]*10000 );
+			m_pPoseValue->SetMin(g_model.m_poseControllers[nPoseContr].desc->blendRange[0] * 10000 );
+			m_pPoseValue->SetMax(g_model.m_poseControllers[nPoseContr].desc->blendRange[1]*10000 );
 
 			m_pPoseValue->SetValue(g_model.GetPoseControllerValue(nPoseContr) * 10000 );
 		}

@@ -322,16 +322,6 @@ int CAnimatedModel::GetCurrentAnimationDurationInFrames() const
 	return m_sequenceTimers[0].seq->animations[0]->numFrames;
 }
 
-ArrayCRef<AnimPoseController> CAnimatedModel::GetPoseControllers() const
-{
-	return m_poseControllers;
-}
-
-ArrayCRef<AnimSequence*> CAnimatedModel::GetSequencesList() const
-{
-	return m_sequencesList;
-}
-
 // renders model
 void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod, float dt, IGPURenderPassRecorder* rendPassRecorder)
 {
