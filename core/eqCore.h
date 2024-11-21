@@ -11,9 +11,9 @@
 // interface pointer keeper
 struct coreInterface_t
 {
-	const char*				name;		// module name
-	struct DKMODULE*		module;		// module which loads this interface
-	IEqCoreModule*	ptr;		// the interface pointer itself
+	const char*			name;		// module name
+	struct DKMODULE*	module;		// module which loads this interface
+	IEqCoreModule*		ptr;		// the interface pointer itself
 };
 
 // Equilibrium core interface
@@ -31,6 +31,7 @@ public:
 
 	// now configuration is global for all applications
 	KeyValues*				GetConfig()  const;
+	const CoreDebugSettings&	GetDebugSettings() const { return m_debugSettings; }
 
 	bool					IsInitialized()  const;
 
@@ -49,6 +50,7 @@ private:
 	EqString						m_szCurrentSessionUserName;
 	bool							m_isInit;
 
+	CoreDebugSettings				m_debugSettings;
 	KeyValues*						m_coreConfiguration;
 
 	Array<coreInterface_t>			m_interfaces{ PP_SL };

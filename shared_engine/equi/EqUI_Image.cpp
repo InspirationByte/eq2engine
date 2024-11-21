@@ -60,7 +60,6 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 		const char* atlasPath = KV_GetValueString(pathBase, 0, "");
 
 		SetMaterial(atlasPath);
-
 		if (m_material->GetAtlas())
 		{
 			const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
@@ -77,7 +76,7 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 void Image::SetMaterial(const char* materialName)
 {
 	m_material = g_matSystem->GetMaterial(materialName);
-	m_material->LoadShaderAndTextures();
+	g_matSystem->QueueLoading(m_material);
 }
 
 void Image::SetColor(const ColorRGBA &color)

@@ -129,11 +129,22 @@ static void GetExceptionStrings( DWORD code, const char* *pName, const char* *pD
 
 static void CreateMiniDump( EXCEPTION_POINTERS* pep )
 {
+	const bool fullCrashDumps = g_eqCore->GetDebugSettings().fullCrashDumps;
+
 	SYSTEMTIME t;
 	GetSystemTime(&t);
 
 	char dumpPath[2048];
-	CString::PrintF(dumpPath, sizeof(dumpPath), "logs/%s_%4d%02d%02d_%02d%02d%02d.mdmp", g_eqCore->GetApplicationName(), t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+	CString::PrintF(dumpPath, sizeof(dumpPath), "logs/%s_%4d%02d%02d_%02d%02d%02d.dmp", g_eqCore->GetApplicationName(), t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+
+	MINIDUMP_TYPE dumpType = MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory | MiniDumpScanMemory);
+	if (fullCrashDumps)
+	{
+		// Configure to save full application dump
+		dumpType = MINIDUMP_TYPE(MiniDumpWithFullMemory | MiniDumpWithDataSegs | MiniDumpWithHandleData |
+			MiniDumpWithUnloadedModules | MiniDumpWithIndirectlyReferencedMemory |
+			MiniDumpWithFullMemoryInfo | MiniDumpWithThreadInfo | MiniDumpWithTokenInformation);
+	}
 
 	HANDLE dumpFileFd = CreateFileA(dumpPath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 	if (!dumpFileFd || dumpFileFd == INVALID_HANDLE_VALUE)
@@ -142,21 +153,18 @@ static void CreateMiniDump( EXCEPTION_POINTERS* pep )
 		return;
 	}
 
-	const MINIDUMP_TYPE dumpType = MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory | MiniDumpScanMemory);
-
 	MINIDUMP_EXCEPTION_INFORMATION dumpExceptionInfo;
 	dumpExceptionInfo.ThreadId = GetCurrentThreadId();
 	dumpExceptionInfo.ExceptionPointers = pep;
 	dumpExceptionInfo.ClientPointers = FALSE;
 
-	const bool result = MiniDumpWriteDump( GetCurrentProcess(), GetCurrentProcessId(), dumpFileFd, dumpType, (pep != 0) ? &dumpExceptionInfo : 0, 0, 0 );
-	if( !result )
-		ErrorMsg("Minidump write error\n");
-	else
-		WarningMsg("Minidump saved to:\n%s\n", dumpPath);
+	const BOOL result = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), dumpFileFd, dumpType, (pep != nullptr) ? &dumpExceptionInfo : nullptr, nullptr, nullptr);
+	CloseHandle(dumpFileFd);
 
-	// Close the file
-	CloseHandle( dumpFileFd );
+	if (!result)
+		ErrorMsg("%s write error\n", fullCrashDumps ? "Crash dump" : "Mini dump");
+	else
+		WarningMsg("%s saved to:\n%s\n", fullCrashDumps ? "Crash dump" : "Mini dump", dumpPath);
 }
 
 static void PrintCurrentProcessModules()
@@ -230,12 +238,15 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	const char* pDescription;
 	GetExceptionStrings(pRecord->ExceptionCode, &pName, &pDescription);
 
-	CrashMsg("We've got an fatal error\nMinidump will be saved in logs folder.\n\n"
-		"Exception code: %s (0x%x)\n"
-		"Address: %p\n\n\n"
-		"See application log for details.", 
-		pName, pRecord->ExceptionCode,
-		pRecord->ExceptionAddress);
+	if (!g_eqCore->GetDebugSettings().crashOnAssert)
+	{
+		CrashMsg("We've got an fatal error\nMinidump will be saved in logs folder.\n\n"
+			"Exception code: %s (0x%x)\n"
+			"Address: %p\n\n\n"
+			"See application log for details.",
+			pName, pRecord->ExceptionCode,
+			pRecord->ExceptionAddress);
+	}
 
 	CreateMiniDump(ExceptionInfo);
 

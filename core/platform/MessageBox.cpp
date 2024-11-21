@@ -265,23 +265,28 @@ static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const c
 
 	if (skipOnly)
 	{
+		if (g_eqCore->GetDebugSettings().crashOnAssert)
+		{
+			assertMessage.Append(" - CrashOnAssert mode enabled\n");
+			
+			if (g_eqCore->GetDebugSettings().fullCrashDumps)
+				assertMessage.Append(" - Full Crash dump will be saved\n");
+			else
+				assertMessage.Append(" - Mini dump will be saved\n");
+
+			const int res = g_msgBoxCallback(assertMessage + " - Application will be terminated", "Crash", MSGBOX_CRASH);
+			int* _badptr = nullptr;
+			*_badptr = 0;
+
+			return _EQASSERT_SKIP;
+		}
+
 		const int res = g_msgBoxCallback(assertMessage + " - Display more asserts?", "Assertion failed", MSGBOX_YESNO);
 		if (res != MSGBOX_BUTTON_YES)
 			return _EQASSERT_IGNORE_ALWAYS;
 	}
 
-	auto InitAssertPrompt = []() -> bool {
-		const KVSection* appDebugSettings = g_eqCore->GetConfig()->FindSection("ApplicationDebug");
-		if (appDebugSettings)
-		{
-			if (appDebugSettings->FindSection("AssertPromptInDebugger", KV_FLAG_NOVALUE))
-				return true;
-		}
-		return false;
-	};
-
-	static bool gAssertPromptInDebugger = InitAssertPrompt();
-	if (gAssertPromptInDebugger)
+	if (g_eqCore->GetDebugSettings().assertPromptInDebugger)
 	{
 		const int res = g_msgBoxCallback(assertMessage + "\n -Press 'Abort' to Break the execution\n -Press 'Retry' to skip this assert\n -Press 'Ignore' to suppress this message", "Assertion failed", MSGBOX_ABORTRETRYINGORE);
 		if (res == MSGBOX_BUTTON_RETRY)

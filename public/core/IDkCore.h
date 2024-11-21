@@ -12,6 +12,14 @@ class ICommandLine;
 
 using CoreExceptionCallback = void(*)();
 
+struct CoreDebugSettings
+{
+	bool fullCrashDumps = false;
+	bool crashOnAssert = false;
+	bool assertPromptInDebugger = false;
+	bool printMemLeaksAtExit = false;
+};
+
 // DarkTech core interface
 class IDkCore
 {
@@ -32,7 +40,8 @@ public:
 	virtual void					RemoveExceptionCallback(CoreExceptionCallback callback) = 0;
 
 	// now configuration is global for all applications
-	virtual KeyValues*				GetConfig() const = 0;
+	virtual KeyValues*					GetConfig() const = 0;
+	virtual const CoreDebugSettings&	GetDebugSettings() const = 0;
 
 // Interface management for engine
 

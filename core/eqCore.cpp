@@ -57,8 +57,6 @@ BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reser
 
 //------------------------------------------------------------------------------------------
 
-static bool g_bPrintLeaksOnShutdown = false;
-
 IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 {
 	void* iface = g_eqCore->GetInterface(pszName);
@@ -227,7 +225,16 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 			logEnabled = true;
 
 		if(appDebug->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
-			g_bPrintLeaksOnShutdown = true;
+			m_debugSettings.printMemLeaksAtExit = true;
+
+		if (appDebug->FindSection("AssertPromptInDebugger", KV_FLAG_NOVALUE))
+			m_debugSettings.assertPromptInDebugger = true;
+
+		if (appDebug->FindSection("CrashOnAssert", KV_FLAG_NOVALUE))
+			m_debugSettings.crashOnAssert = true;
+
+		if (appDebug->FindSection("FullCrashDumps", KV_FLAG_NOVALUE))
+			m_debugSettings.fullCrashDumps = true;
 
 		{
 			Array<EqStringRef> devModeList(PP_SL);
@@ -350,7 +357,7 @@ void CDkCore::Shutdown()
     g_cmdLine->DeInit();
 
 #if !defined(_RETAIL)
-	if(g_bPrintLeaksOnShutdown)
+	if(m_debugSettings.printMemLeaksAtExit)
 		PPMemInfo(false);
 #endif
 
