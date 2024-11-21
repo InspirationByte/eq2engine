@@ -126,6 +126,7 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 		WGPUTexture rhiTexture = nullptr;
 		g_renderWorker.WaitForExecute("CreateTexture", [&]() {
 			rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
+			wgpuTextureAddRef(rhiTexture);
 			return 0;
 		});
 
@@ -210,6 +211,11 @@ bool CWGPUTexture::Init(const ArrayCRef<CImagePtr> images, const SamplerStatePar
 			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
 			m_rhiViews.append(rhiView);
 		}
+
+		g_renderWorker.Execute("TextureUnref", [=]() {
+			wgpuTextureRelease(rhiTexture);
+			return 0;
+		});
 
 		// FIXME: check for differences?
 		m_mipCount = max(m_mipCount, mipCount);
