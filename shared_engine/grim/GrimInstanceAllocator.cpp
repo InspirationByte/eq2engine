@@ -336,6 +336,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 	{
 		CScopedMutex m(GetMutex());
 		m_updated.insert(instanceRef);
+		m_syncInstances.setFalse(instanceRef);
 	}
 }
 
