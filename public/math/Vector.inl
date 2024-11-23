@@ -592,6 +592,42 @@ inline bool vecSimilar(const TVec4D<T> &u, const TVec4D<T> &v, const T eps)
 }
 
 template <typename T>
+inline bool vecIsValid(const TVec2D<T>& vec)
+{
+	return fisNan(vec.x) && fisNan(vec.y);
+}
+
+template <typename T>
+inline bool vecIsValid(const TVec3D<T>& vec)
+{
+	return fisNan(vec.x) && fisNan(vec.y) && fisNan(vec.z);
+}
+
+template <typename T>
+inline bool vecIsValid(const TVec4D<T>& vec)
+{
+	return fisNan(vec.x) && fisNan(vec.y) && fisNan(vec.z) && fisNan(vec.w);
+}
+
+template <typename T>
+inline bool vecIsFinite(const TVec2D<T>& vec)
+{
+	return fisFinite(vec.x) && fisFinite(vec.y);
+}
+
+template <typename T>
+inline bool vecIsFinite(const TVec3D<T>& vec)
+{
+	return fisFinite(vec.x) && fisFinite(vec.y) && ffisFiniteisNan(vec.z);
+}
+
+template <typename T>
+inline bool vecIsFinite(const TVec4D<T>& vec)
+{
+	return fisFinite(vec.x) && fisFinite(vec.y) && fisFinite(vec.z) && fisFinite(vec.w);
+}
+
+template <typename T>
 inline T dot(const TVec2D<T> &u, const TVec2D<T> &v)
 {
 	return u.x * v.x + u.y * v.y;

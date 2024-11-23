@@ -183,6 +183,13 @@ inline bool fisNan(const T x)
 	return x != x;
 }
 
+template<typename T>
+inline bool fisFinite(const T x)
+{
+	static_assert(std::is_same_v<float, T> || std::is_same_v<double, T>, "fisFinite accepts only float and double types");
+	return fpclassify(x) != FP_INFINITE;
+}
+
 #include "Vector.h"
 #include "FVector.h"
 #include "Matrix.h"

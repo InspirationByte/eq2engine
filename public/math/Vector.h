@@ -411,6 +411,24 @@ bool		vecSimilar(const TVec3D<T> &u, const TVec3D<T> &v, const T eps);
 template <typename T>
 bool		vecSimilar(const TVec4D<T> &u, const TVec4D<T> &v, const T eps);
 
+template <typename T>
+bool		vecIsValid(const TVec2D<T>& vec);
+
+template <typename T>
+bool		vecIsValid(const TVec3D<T>& vec);
+
+template <typename T>
+bool		vecIsValid(const TVec4D<T>& vec);
+
+template <typename T>
+bool		vecIsFinite(const TVec2D<T>& vec);
+
+template <typename T>
+bool		vecIsFinite(const TVec3D<T>& vec);
+
+template <typename T>
+bool		vecIsFinite(const TVec4D<T>& vec);
+
 // vector2 dot product
 template <typename T>
 T			dot(const TVec2D<T> &u, const TVec2D<T> &v);
@@ -674,6 +692,10 @@ T			lineProjection(const TVec3D<T> &start, const TVec3D<T> &end, const TVec3D<T>
 static const TVec2D<float> vec2_zero = TVec2D<float>(0.0f);
 static const TVec3D<float> vec3_zero = TVec3D<float>(0.0f);
 static const TVec4D<float> vec4_zero = TVec4D<float>(0.0f);
+
+static const TVec2D<float> vec2_unit = TVec2D<float>(1.0f);
+static const TVec3D<float> vec3_unit = TVec3D<float>(1.0f);
+static const TVec4D<float> vec4_unit = TVec4D<float>(1.0f);
 
 static const TVec3D<float> vec3_undef = TVec3D<float>(F_UNDEF);
 static const TVec3D<float> vec3_infinity = TVec3D<float>(F_INFINITY);
