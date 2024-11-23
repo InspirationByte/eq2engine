@@ -710,10 +710,10 @@ struct CheckLuaStateArg<First, Rest...> : std::is_same<First, ScriptState> {};
 //---------------------------------------------------------------
 // Member function binder
 
-template<typename T, auto FuncPtr, typename Traits>
+template<auto FuncPtr, typename Traits>
 struct MemberFunctionBinder {};
 
-template <typename T, auto FuncPtr, typename Traits, typename R, typename ... Args>
+template <auto FuncPtr, typename T, typename Traits, typename R, typename ... Args>
 struct MemberFunction
 {
 	// first argument is Lua state?
@@ -749,40 +749,40 @@ struct MemberFunction
 
 // Non-const binder
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...), typename Traits>
-struct MemberFunctionBinder<T, FuncPtr, Traits> : public esl::ScriptBind
+struct MemberFunctionBinder<FuncPtr, Traits> : public esl::ScriptBind
 {
-	int Func(lua_State* L) { return MemberFunction<T, FuncPtr, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
+	int Func(lua_State* L) { return MemberFunction<FuncPtr, T, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
 	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
 	static int GetFuncArgsCount() { return sizeof...(Args); }
 };
 
 // Const binder, only has const below
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...) const, typename Traits>
-struct MemberFunctionBinder<T, FuncPtr, Traits> : public esl::ScriptBind
+struct MemberFunctionBinder<FuncPtr, Traits> : public esl::ScriptBind
 {
-	int Func(lua_State* L) { return MemberFunction<T, FuncPtr, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
+	int Func(lua_State* L) { return MemberFunction<FuncPtr, T, Traits, R, Args...>::FuncImpl(static_cast<T*>(this->thisPtr), L); }
 	static auto GetFuncArgsSignature() { return runtime::ArgsSignature<Args...>::Get(); }
 	static int GetFuncArgsCount() { return sizeof...(Args); }
 };
 
-template<typename T, auto FuncPtr>
+template<auto FuncPtr>
 struct MemberFunctionBinderNoTraits;
 
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...)>
-struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, FuncSignature<R, Args...>> {};
+struct MemberFunctionBinderNoTraits<FuncPtr> : public MemberFunctionBinder<FuncPtr, FuncSignature<R, Args...>> {};
 
 template<typename T, typename R, typename ... Args, R(T::* FuncPtr)(Args...) const>
-struct MemberFunctionBinderNoTraits<T, FuncPtr> : public MemberFunctionBinder<T, FuncPtr, FuncSignature<R, Args...>> {};
+struct MemberFunctionBinderNoTraits<FuncPtr> : public MemberFunctionBinder<FuncPtr, FuncSignature<R, Args...>> {};
 
-template<typename T, auto FuncPtr, typename Traits>
+template<auto FuncPtr, typename Traits>
 static auto BindMemberFunction() 
 { 
 	using BindFunc = esl::ScriptBind::BindFunc;
 
 	if constexpr (std::is_void_v<typename Traits::TR> && std::tuple_size_v<typename Traits::TArgs> == 0)
-		return static_cast<BindFunc>(&MemberFunctionBinderNoTraits<T, FuncPtr>::Func);
+		return static_cast<BindFunc>(&MemberFunctionBinderNoTraits<FuncPtr>::Func);
 	else
-		return static_cast<BindFunc>(&MemberFunctionBinder<T, FuncPtr, Traits>::Func);
+		return static_cast<BindFunc>(&MemberFunctionBinder<FuncPtr, Traits>::Func);
 }
 
 //---------------------------------------------------------------
@@ -1025,9 +1025,9 @@ Member ClassBinder<T>::MakeFunction(const char* name)
 	Member m;
 	m.type = MEMB_FUNC;
 	m.name = name;
-	m.signature = binder::MemberFunctionBinder<T, F, Traits>::GetFuncArgsSignature();
-	m.numArgs = binder::MemberFunctionBinder<T, F, Traits>::GetFuncArgsCount();
-	m.func = binder::BindMemberFunction<T, F, Traits>();
+	m.signature = binder::MemberFunctionBinder<F, Traits>::GetFuncArgsSignature();
+	m.numArgs = binder::MemberFunctionBinder<F, Traits>::GetFuncArgsCount();
+	m.func = binder::BindMemberFunction<F, Traits>();
 	m.isConst = false;
 	return m;
 }
@@ -1053,7 +1053,7 @@ Member ClassBinder<T>::MakeVariableWithSetter(const char* name)
 	m.type = MEMB_VAR;
 	m.name = name;
 	m.signature = GetVariableTypeName<T, V>();
-	m.func = binder::BindMemberFunction<T, F, binder::FuncSignatureDefault>();
+	m.func = binder::BindMemberFunction<F, binder::FuncSignatureDefault>();
 	m.getFunc = binder::BindVariableGetter<T, V>();
 	return m;
 }
