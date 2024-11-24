@@ -161,7 +161,7 @@ struct PushGetImpl
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
 			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
-			new(ud) BaseUType(obj); // FIXME: use move?
+			new(ud) BaseUType(obj);
 		}
 		else
 		{
