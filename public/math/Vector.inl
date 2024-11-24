@@ -594,19 +594,19 @@ inline bool vecSimilar(const TVec4D<T> &u, const TVec4D<T> &v, const T eps)
 template <typename T>
 inline bool vecIsValid(const TVec2D<T>& vec)
 {
-	return fisNan(vec.x) && fisNan(vec.y);
+	return !fisNan(vec.x) && !fisNan(vec.y);
 }
 
 template <typename T>
 inline bool vecIsValid(const TVec3D<T>& vec)
 {
-	return fisNan(vec.x) && fisNan(vec.y) && fisNan(vec.z);
+	return !fisNan(vec.x) && !fisNan(vec.y) && !fisNan(vec.z);
 }
 
 template <typename T>
 inline bool vecIsValid(const TVec4D<T>& vec)
 {
-	return fisNan(vec.x) && fisNan(vec.y) && fisNan(vec.z) && fisNan(vec.w);
+	return !fisNan(vec.x) && !fisNan(vec.y) && !fisNan(vec.z) && !fisNan(vec.w);
 }
 
 template <typename T>
