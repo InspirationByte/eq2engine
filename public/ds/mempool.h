@@ -96,7 +96,7 @@ public:
 private:
 	void dbgValidatePtr(T* pointer)
 	{
-#if !defined(_RETAIL) && !defined(_PROFILE)
+#if defined(_DEBUG)
 		Buffer* buffer = m_firstBuffer;
 		bool matchBuffers = false;
 		while (buffer)
