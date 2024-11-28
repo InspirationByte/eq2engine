@@ -34,8 +34,10 @@ public:
 
 protected:
 	AARectangle		m_rectangle;
-	bool			m_newWord;
 	int				m_linesProduced;
+	void*			m_wordStartPtr{ nullptr };
+	float			m_wordWidth{ 0.0f };
+	bool			m_newWord;
 	bool			m_hasNotdrawnLines;
 
 	bool			m_wrappedWord;

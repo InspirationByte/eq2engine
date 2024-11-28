@@ -57,32 +57,41 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 	{
 		m_wrappedWord = false;
 		m_wordWrapMode = true;
+		m_wordStartPtr = strCurPos;
+		if (isWideChar)
+			m_wordWidth = font->GetStringWidth((wchar_t*)strCurPos, params, -1, ' ');
+		else
+			m_wordWidth = font->GetStringWidth((char*)strCurPos, params, -1, ' ');
 	}
+
+	float charWidth;
+	if (isWideChar)
+		charWidth = font->GetStringWidth((wchar_t*)strCurPos, params, 1);
+	else
+		charWidth = font->GetStringWidth((char*)strCurPos, params, 1);
 
 	{
 		const bool wordWrap = m_wordWrapMode && m_newWord;
-		float wordSize;
-		if( wordWrap ) // per-word wrapping
+		bool wrapChar = false;
+		if (params.align == TEXT_ALIGN_LEFT)
 		{
-			if(isWideChar)
-				wordSize = font->GetStringWidth( (wchar_t*)strCurPos, params, -1, ' ' );
-			else
-				wordSize = font->GetStringWidth( (char*)strCurPos, params, -1, ' ' );
+			const float remainingWidth = m_rectangle.rightBottom.x - m_wordWidth - curTextPos.x;
+			wrapChar = remainingWidth < 0;
 		}
 		else
 		{
-			wordSize = font->GetStringWidth((char*)strCurPos, params, 1);
+			wrapChar = curTextPos.x > m_rectangle.rightBottom.x;
 		}
 
 		// if word can't be wrapped, we switch to character wrapping
-		if( m_wrappedWord && curTextPos.x+wordSize > m_rectangle.rightBottom.x )
+		if( m_wrappedWord && wrapChar)
 		{
 			m_wordWrapMode = false;
-			wordSize = cSize.x; // per-char wrapping
+			m_wordWidth = cSize.x; // per-char wrapping
 		}
 
 		// check character/word right bound is outside the rectangle right bound
-		if( curTextPos.x + wordSize > m_rectangle.rightBottom.x && !m_newWord)
+		if (wrapChar && !m_newWord)
 		{
 			float xPos = m_rectangle.leftTop.x;
 
@@ -126,10 +135,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 		}
 	}
 
-	if (isWideChar)
-		curTextPos.x += font->GetStringWidth((wchar_t*)strCurPos, params, 1);
-	else
-		curTextPos.x += font->GetStringWidth((char*)strCurPos, params, 1);
+	curTextPos.x += charWidth;
 
 	if( isWideChar )
 		m_newWord = CType::IsSpace(*((wchar_t*)strCurPos));
