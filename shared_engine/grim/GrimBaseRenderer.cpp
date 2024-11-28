@@ -1244,6 +1244,11 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 			materialId *= 31;
 			materialId += reinterpret_cast<uint64>(originalMaterial);
 		}
+		else
+		{
+			materialId *= 31;
+			materialId += reinterpret_cast<uint64>(material);
+		}
 		materialId += archetypeInfo.meshInstFormat.formatId;
 		materialId *= 31;
 		materialId += archetypeInfo.meshInstFormat.usedLayoutBits;
