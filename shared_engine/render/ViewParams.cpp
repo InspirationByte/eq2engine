@@ -72,7 +72,7 @@ float CViewParams::GetLodScale() const
 
 float CViewParams::GetLODScaledDistFrom( const Vector3D& position ) const
 {
-	return length(position - m_vecOrigin) * GetLodScale();
+	return distance(position, m_vecOrigin) * GetLodScale();
 }
 
 void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic) const
