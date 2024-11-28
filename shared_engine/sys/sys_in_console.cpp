@@ -1332,45 +1332,45 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 #ifdef EXTENDED_DEVELOPER_CONSOLE
 	if (m_logVisible)
 	{
-		FontStyleParam fontStyle;
-		fontStyle.scale = m_fontScale;
-
 		AARectangle outputRectangle(64.0f, inputTextEntryRect.rightBottom.y + 26, width - 64.0f, height - inputTextEntryRect.leftTop.y);
-		DrawAlphaFilledRectangle(outputRectangle, s_conBackColor, s_conBorderColor, rendPassRecorder);
-
-		m_maxLines = floor(height / m_font->GetLineHeight(fontStyle)) - 2;
-		if (m_maxLines < -4)
-			return;
-		m_maxLines = (outputRectangle.GetSize().y / m_font->GetLineHeight(fontStyle)) - 1;
-
-		int numDrawn = 0;
-
-		FontStyleParam hasLinesStyle;
-		hasLinesStyle.textColor = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
-		hasLinesStyle.scale = m_fontScale;
-
-		outputRectangle.leftTop.x += 5.0f;
-		outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle);
-
-		static CRectangleTextLayoutBuilder rectLayout;
-		rectLayout.SetRectangle(outputRectangle);
 
 		FontStyleParam outputTextStyle;
 		outputTextStyle.scale = m_fontScale;
+
+		DrawAlphaFilledRectangle(outputRectangle, s_conBackColor, s_conBorderColor, rendPassRecorder);
+
+		const float outputLineHeight = m_font->GetLineHeight(outputTextStyle);
+
+		m_maxLines = floor(height / outputLineHeight) - 1;
+		if (m_maxLines < -4)
+			return;
+		m_maxLines = (outputRectangle.GetSize().y / outputLineHeight) - 2;
+
+		int numDrawn = 0;
+
+		outputRectangle.leftTop.x += 5.0f;
+		outputRectangle.leftTop.y += outputLineHeight;
+
+		CRectangleTextLayoutBuilder rectLayout;
+		rectLayout.SetRectangle(outputRectangle);
 		outputTextStyle.layoutBuilder = &rectLayout;
 
 		const int firstLine = m_logScrollPosition;
-		const int maxLinesToRender = s_spewMessages.numElem();
+		const int maxLinesToRender = min(s_spewMessages.numElem(), firstLine + m_maxLines);
 
-		for (int i = firstLine; i < maxLinesToRender; i++, numDrawn++)
+		for (int i = firstLine; i < maxLinesToRender; ++i)
 		{
 			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
 			m_font->SetupRenderText(s_spewMessages[i]->text, outputRectangle.leftTop, outputTextStyle, rendPassRecorder);
 
-			outputRectangle.leftTop.y += m_font->GetLineHeight(fontStyle) * rectLayout.GetProducedLines();//cnumLines;
-			if (rectLayout.HasNotDrawnLines() || i - firstLine >= m_maxLines)
+			outputRectangle.leftTop.y += outputLineHeight * rectLayout.GetProducedLines();
+			if (rectLayout.HasNotDrawnLines() || i == maxLinesToRender-1 && i < s_spewMessages.numElem()-1)
 			{
-				m_font->SetupRenderText("^ ^ ^ ^ ^ ^", Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y), hasLinesStyle, rendPassRecorder);
+				FontStyleParam hasLinesStyle = outputTextStyle;
+				hasLinesStyle.textColor = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
+				hasLinesStyle.styleFlag = TEXT_STYLE_FROM_CAP;
+
+				m_font->SetupRenderText(EqString::Format("-------- %d more lines below --------", s_spewMessages.numElem() - i - 1), Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y - outputLineHeight), hasLinesStyle, rendPassRecorder);
 				break;
 			}
 		}
