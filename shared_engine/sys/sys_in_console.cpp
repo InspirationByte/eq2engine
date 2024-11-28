@@ -119,12 +119,6 @@ DECLARE_CMD(clear, nullptr,0)
 static int CON_SUGGESTIONS_MAX	= 40;
 static float CON_MINICON_TIME	= 5.0f;
 
-const float LOG_SCROLL_DELAY_START	= 0.15f;
-const float LOG_SCROLL_DELAY_END	= 0.0f;
-
-const float LOG_SCROLL_DELAY_STEP	= 0.01f;
-const float LOG_SCROLL_POWER_INC	= 0.05f;
-
 CStaticAutoPtr<CEqConsoleInput> g_consoleInput;
 
 static ColorRGBA s_conBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
@@ -287,9 +281,7 @@ CEqConsoleInput::CEqConsoleInput()
 	m_startCursorPos = 0;
 
 	m_logScrollPosition = 0;
-	m_logScrollDelay = LOG_SCROLL_DELAY_START;
 	m_logScrollDir = 0;
-	m_logScrollPower = 1.0f;
 
 	m_histIndex = 0;
 	m_fastfind_cmdbase = nullptr;
@@ -889,9 +881,8 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 
 void CEqConsoleInput::ResetLogScroll()
 {
-	m_logScrollDelay = LOG_SCROLL_DELAY_START;
-	m_logScrollPower = 1.0f;
-	m_logScrollNextTime = 0.0f;
+	m_logScrollAccumTime = 0.0f;
+	m_logScrollTime = 0.0f;
 	m_logScrollDir = 0;
 }
 
@@ -1269,17 +1260,21 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 #ifdef EXTENDED_DEVELOPER_CONSOLE
 	if(m_logScrollDir != 0)
 	{
-		int maxScroll = s_spewMessages.numElem()-1;
+		const int maxScroll = s_spewMessages.numElem() - 1;
+		m_logScrollAccumTime += frameTime;
+		m_logScrollTime += frameTime;
 
-		m_logScrollNextTime -= frameTime;
-		if(m_logScrollNextTime <= 0.0f)
+		const float timeToReachMaxSpeed = 3.0f;
+		const float scrollTimeStep = 0.005f;
+		const float scrollTimeFactor = min(m_logScrollTime, timeToReachMaxSpeed) / timeToReachMaxSpeed;
+		const float timeToScroll = (pow(1.0f - scrollTimeFactor, 2.0f) * 16.0f) * scrollTimeStep;
+
+		if(m_logScrollAccumTime > timeToScroll)
 		{
-			m_logScrollNextTime = m_logScrollDelay;
-
-			m_logScrollPosition += m_logScrollDir*floor(m_logScrollPower);
-
-			m_logScrollPosition = min(m_logScrollPosition, maxScroll);
-			m_logScrollPosition = max(m_logScrollPosition, 0);
+			const float deltaMultiplier = 1.0f + pow(scrollTimeFactor, 8.0f) * 8.0f;
+			const int scrollDelta = m_logScrollDir * floor(deltaMultiplier);
+			m_logScrollPosition = clamp(m_logScrollPosition + scrollDelta, 0, maxScroll);
+			m_logScrollAccumTime = 0.0f;
 		}
 	}
 #endif // #ifdef EXTENDED_DEVELOPER_CONSOLE
@@ -1370,7 +1365,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 				hasLinesStyle.textColor = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
 				hasLinesStyle.styleFlag = TEXT_STYLE_FROM_CAP;
 
-				m_font->SetupRenderText(EqString::Format("-------- %d more lines below --------", s_spewMessages.numElem() - i - 1), Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y - outputLineHeight), hasLinesStyle, rendPassRecorder);
+				m_font->SetupRenderText(EqString::Format("-------- %d more messages below --------", s_spewMessages.numElem() - i - 1), Vector2D(outputRectangle.leftTop.x, outputRectangle.rightBottom.y - outputLineHeight), hasLinesStyle, rendPassRecorder);
 				break;
 			}
 		}
@@ -1693,19 +1688,9 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 #ifdef EXTENDED_DEVELOPER_CONSOLE
 			case KEY_PGUP:
 				m_logScrollDir = -1;
-
-				m_logScrollDelay -= LOG_SCROLL_DELAY_STEP;
-				m_logScrollPower += LOG_SCROLL_POWER_INC;
-				m_logScrollDelay = max(m_logScrollDelay, LOG_SCROLL_DELAY_END);
-
 				break;
 			case KEY_PGDN:
 				m_logScrollDir = 1;
-
-				m_logScrollDelay -= LOG_SCROLL_DELAY_STEP;
-				m_logScrollPower += LOG_SCROLL_POWER_INC;
-				m_logScrollDelay = max(m_logScrollDelay, LOG_SCROLL_DELAY_END);
-
 				break;
 #endif // EXTENDED_DEVELOPER_CONSOLE
 			case KEY_DOWNARROW: // FIXME: invalid indices

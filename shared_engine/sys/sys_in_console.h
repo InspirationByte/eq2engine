@@ -150,11 +150,9 @@ private:
 
 	int								m_logScrollPosition;
 
-	float							m_logScrollDelay;
-	float							m_logScrollPower;
+	float							m_logScrollAccumTime;
+	float							m_logScrollTime;
 	int								m_logScrollDir;
-
-	float							m_logScrollNextTime;
 
 	// Input history
 	Array<EqString>					m_commandHistory{ PP_SL };
