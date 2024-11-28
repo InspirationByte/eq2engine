@@ -1100,6 +1100,9 @@ bool CMaterialSystem::EndFrame()
 	if (!m_frameBegun)
 		return false;
 
+	for (CDynamicMesh& dynMesh : m_dynamicMeshes)
+		dynMesh.OnEndFrame();
+
 	// issue the rendering of anything
 	m_shaderAPI->ResetCounters();
 
@@ -1323,6 +1326,7 @@ IDynamicMeshPtr CMaterialSystem::GetDynamicMesh(int vertexCount)
 void CMaterialSystem::ReleaseDynamicMesh(int id)
 {
 	ASSERT_MSG(arrayFindIndex(m_freeDynamicMeshes, id), "DynamicMesh already released");
+	ASSERT_MSG(m_dynamicMeshes.inRange(id), "Dynamic mesh ID is not valid");
 	m_freeDynamicMeshes.append(id);
 }
 
@@ -1407,6 +1411,7 @@ void CMaterialSystem::QueueCommitInternalBuffers()
 			continue;
 		buffers.append(submitBuf);
 	}
+
 
 	if (m_bufferCmdRecorder)
 	{

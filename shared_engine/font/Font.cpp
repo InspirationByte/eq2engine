@@ -367,8 +367,7 @@ DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
 // renders text (wide char)
 void CFont::SetupRenderText(const wchar_t* pszText, const Vector2D& start, const FontStyleParam& params, IGPURenderPassRecorder* rendPassRecorder)
 {
-	int vertCount = GetTextQuadsCount(pszText, params) * 6;
-	if (vertCount == 0)
+	if (GetTextQuadsCount(pszText, params) == 0)
 		return;
 
 	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
@@ -403,8 +402,7 @@ void CFont::SetupRenderText(const wchar_t* pszText, const Vector2D& start, const
 // renders text (ASCII)
 void CFont::SetupRenderText(const char* pszText, const Vector2D& start, const FontStyleParam& params, IGPURenderPassRecorder* rendPassRecorder)
 {
-	int vertCount = GetTextQuadsCount(pszText, params) * 6;
-	if (vertCount == 0)
+	if (GetTextQuadsCount(pszText, params) == 0)
 		return;
 
 	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();

@@ -46,6 +46,7 @@ public:
 	void					AddStripBreak();
 
 	IGPUCommandBufferPtr	GetSubmitBuffer();
+	void					OnEndFrame();
 	bool					HasEnoughSpace(int vertexCount = 1024) const;
 
 protected:

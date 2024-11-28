@@ -186,9 +186,14 @@ IGPUCommandBufferPtr CDynamicMesh::GetSubmitBuffer()
 
 	IGPUCommandBufferPtr cmdBuffer = m_cmdRecorder->End();
 	m_cmdRecorder = nullptr;
+
+	return cmdBuffer;
+}
+
+void CDynamicMesh::OnEndFrame()
+{
 	m_vtxBufferOffset = 0;
 	m_idxBufferOffset = 0;
-	return cmdBuffer;
 }
 
 void CDynamicMesh::Reset()
