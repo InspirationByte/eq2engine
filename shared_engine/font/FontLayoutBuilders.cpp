@@ -8,6 +8,8 @@
 #include "core/core_common.h"
 #include "FontLayoutBuilders.h"
 
+#pragma optimize("", off)
+
 void CRectangleTextLayoutBuilder::OnNewLine(const FontStyleParam& params,
 										void* strCurPos, bool isWideChar,
 										int lineNumber,
@@ -72,16 +74,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 
 	{
 		const bool wordWrap = m_wordWrapMode && m_newWord;
-		bool wrapChar = false;
-		if (params.align == TEXT_ALIGN_LEFT)
-		{
-			const float remainingWidth = m_rectangle.rightBottom.x - m_wordWidth - curTextPos.x;
-			wrapChar = remainingWidth < 0;
-		}
-		else
-		{
-			wrapChar = curTextPos.x > m_rectangle.rightBottom.x;
-		}
+		bool wrapChar = curTextPos.x > m_rectangle.rightBottom.x;
 
 		// if word can't be wrapped, we switch to character wrapping
 		if( m_wrappedWord && wrapChar)
