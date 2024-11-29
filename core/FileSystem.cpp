@@ -1087,6 +1087,8 @@ DKMODULE* CFileSystem::OpenModule(const char* mod_name, EqString* outError)
 		return nullptr;
 	}
 
+	g_eqCore->OnModuleLoaded(moduleFileName);
+
 	MsgInfo("Loaded module '%s'\n", moduleFileName.ToCString());
 
 	DKMODULE* pModule = PPNew DKMODULE;
@@ -1101,6 +1103,8 @@ void CFileSystem::CloseModule( DKMODULE* pModule )
 {
 	if(!pModule)
 		return;
+
+	g_eqCore->OnModuleUnloaded(pModule->name);
 
 	// don't unload any modules if we prining a leaklog
 #ifdef _WIN32

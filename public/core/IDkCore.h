@@ -27,7 +27,6 @@ public:
 	virtual ~IDkCore() {}
 	
 	virtual bool					Init(const char* pszApplicationName, const char* pszCommandLine) = 0;	// Initializes core
-
 	virtual bool					Init(const char* pszApplicationName, int argc, char **argv) = 0;	// Initializes core for tools
 
 	virtual void					Shutdown() = 0;	// Shutdowns core
@@ -52,6 +51,9 @@ public:
 	template<typename T> void		RegisterInterface(T* iface) { RegisterInterface(T::CoreInterfaceName(), iface); }
 	template<typename T> void		UnregisterInterface() 		{ UnregisterInterface(T::CoreInterfaceName()); }
 	template<typename T> T*			GetInterface() const 		{ return static_cast<T*>(GetInterface(T::CoreInterfaceName())); }
+
+	virtual void					OnModuleLoaded(const char* pszName) = 0;
+	virtual void					OnModuleUnloaded(const char* pszName) = 0;
 };
 
 ENTRYPOINT_INTERFACE_SINGLETON(IDkCore, CDkCore, g_eqCore)

@@ -15,6 +15,7 @@ end
 
 include("lz4/premake5.lua")
 include("cv_sdk/premake5.lua")
+include("LivePP/premake5.lua")
 
 include("imgui/premake5.lua")
 include("imgui_lua/premake5.lua")

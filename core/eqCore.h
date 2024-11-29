@@ -8,6 +8,8 @@
 #pragma once
 #include "core/IDkCore.h"
 
+class IEqCoreModule;
+
 // interface pointer keeper
 struct coreInterface_t
 {
@@ -41,18 +43,25 @@ public:
 	const Array<CoreExceptionCallback>&	GetExceptionHandlers() const { return m_exceptionCb; }
 // Interface management for engine
 
+	void					OnModuleLoaded(const char* pszName);
+	void					OnModuleUnloaded(const char* pszName);
+
 	void					RegisterInterface(const char* pszName, IEqCoreModule* iface);			// registers interface for faster access
 	IEqCoreModule*			GetInterface(const char* pszName) const;								// returns registered interface
 	void					UnregisterInterface(const char* pszName);								// unregisters interface
 
 private:
-	EqString						m_szApplicationName;
-	EqString						m_szCurrentSessionUserName;
-	bool							m_isInit;
+	Array<coreInterface_t>			m_interfaces{ PP_SL };
+	Array<CoreExceptionCallback>	m_exceptionCb{ PP_SL };
 
 	CoreDebugSettings				m_debugSettings;
 	KeyValues*						m_coreConfiguration;
 
-	Array<coreInterface_t>			m_interfaces{ PP_SL };
-	Array<CoreExceptionCallback>	m_exceptionCb{ PP_SL };
+	EqString						m_szApplicationName;
+	EqString						m_szCurrentSessionUserName;
+	bool							m_isInit{ false };
+
+#ifdef HAS_LIVEPP_SUPPORT
+	bool							m_livePPEnabled{ false };
+#endif
 };

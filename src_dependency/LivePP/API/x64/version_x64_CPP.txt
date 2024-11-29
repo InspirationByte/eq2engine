@@ -1,0 +1,2 @@
+Live++ for Windows C++, 2.7.2
+Released on September 20, 2024

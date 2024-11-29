@@ -35,6 +35,13 @@
 #include "ExceptionHandler.h"
 #include "ConsoleCommands.h"
 
+#ifdef HAS_LIVEPP_SUPPORT
+#include "LPP_API_x64_CPP.h"
+static lpp::LppDefaultAgent s_lppAgent;
+#endif // HAS_LIVEPP_SUPPORT
+
+#pragma optimize("", off)
+
 EXPORTED_INTERFACE(IDkCore, CDkCore)
 
 #ifdef PLAT_WIN
@@ -218,27 +225,27 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	bool logEnabled = false;
 
-	const KVSection* appDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
-	if(appDebug)
+	const KVSection* appDebugSec = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
+	if(appDebugSec)
 	{
-		if(appDebug->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
+		if(appDebugSec->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
 			logEnabled = true;
 
-		if(appDebug->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
+		if(appDebugSec->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			m_debugSettings.printMemLeaksAtExit = true;
 
-		if (appDebug->FindSection("AssertPromptInDebugger", KV_FLAG_NOVALUE))
+		if (appDebugSec->FindSection("AssertPromptInDebugger", KV_FLAG_NOVALUE))
 			m_debugSettings.assertPromptInDebugger = true;
 
-		if (appDebug->FindSection("CrashOnAssert", KV_FLAG_NOVALUE))
+		if (appDebugSec->FindSection("CrashOnAssert", KV_FLAG_NOVALUE))
 			m_debugSettings.crashOnAssert = true;
 
-		if (appDebug->FindSection("FullCrashDumps", KV_FLAG_NOVALUE))
+		if (appDebugSec->FindSection("FullCrashDumps", KV_FLAG_NOVALUE))
 			m_debugSettings.fullCrashDumps = true;
 
 		{
 			Array<EqStringRef> devModeList(PP_SL);
-			const KVSection* devModesKv = appDebug->FindSection("DeveloperMode");
+			const KVSection* devModesKv = appDebugSec->FindSection("DeveloperMode");
 			if (devModesKv)
 			{
 				for (EqStringRef mode : devModesKv->Values<EqStringRef>())
@@ -250,7 +257,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		}
 
 		{
-			const KVSection* forceLogApps = appDebug->FindSection("ForceLogApplications");
+			const KVSection* forceLogApps = appDebugSec->FindSection("ForceLogApplications");
 			if (forceLogApps)
 			{
 				for (EqStringRef appName : forceLogApps->Values<EqStringRef>())
@@ -264,6 +271,39 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 			}
 		}
 	}
+
+#ifdef HAS_LIVEPP_SUPPORT
+	{
+		EqString livePPPath = "Tools/LivePP";
+		const KVSection* livePPSec = coreConfigRoot->FindSection("LivePP", KV_FLAG_SECTION);
+		if (livePPSec)
+		{
+			livePPSec->Get("Enable").GetValues(m_livePPEnabled);
+			livePPSec->Get("Path").GetValues(livePPPath);
+		}
+
+		if (m_livePPEnabled)
+		{
+			livePPPath = g_fileSystem->GetAbsolutePath(SP_ROOT, livePPPath);
+
+			EqWString livePPPathWstr;
+			AnsiUnicodeConverter(livePPPathWstr, livePPPath);
+
+			s_lppAgent = lpp::LppCreateDefaultAgent(nullptr, livePPPathWstr);
+			if (lpp::LppIsValidDefaultAgent(&s_lppAgent))
+			{
+				const wchar_t* appModuleName = lpp::LppGetCurrentModulePath();
+				s_lppAgent.EnableModule(appModuleName, lpp::LPP_MODULES_OPTION_ALL_IMPORT_MODULES, nullptr, nullptr);
+				MsgInfo("LivePlusPlus Agent is initialized, live code editing is enabled");
+			}
+			else
+			{
+				MsgWarning("Unable to initialize LivePlusPlus Agent, continuing without it...");
+				m_livePPEnabled = false;
+			}
+		}
+	}
+#endif
 
 	if(g_cmdLine->FindArgument("-nolog") != -1)
 		logEnabled = false;
@@ -427,4 +467,30 @@ void CDkCore::UnregisterInterface(const char* pszName)
 bool CDkCore::IsInitialized() const
 {
 	return m_isInit;
+}
+
+void CDkCore::OnModuleLoaded(const char* pszName)
+{
+#ifdef HAS_LIVEPP_SUPPORT
+	if(m_livePPEnabled)
+	{
+		EqWString modulePathStr;
+		AnsiUnicodeConverter(modulePathStr, pszName);
+
+		s_lppAgent.EnableModule(modulePathStr, lpp::LPP_MODULES_OPTION_ALL_IMPORT_MODULES, nullptr, nullptr);
+	}
+#endif
+}
+
+void CDkCore::OnModuleUnloaded(const char* pszName)
+{
+#ifdef HAS_LIVEPP_SUPPORT
+	if (m_livePPEnabled)
+	{
+		EqWString modulePathStr;
+		AnsiUnicodeConverter(modulePathStr, pszName);
+
+		s_lppAgent.DisableModule(modulePathStr, lpp::LPP_MODULES_OPTION_ALL_IMPORT_MODULES, nullptr, nullptr);
+	}
+#endif
 }

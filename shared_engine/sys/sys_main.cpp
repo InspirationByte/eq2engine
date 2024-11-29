@@ -399,7 +399,13 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	if(!g_eqCore->Init(appName, lpszCmdLine))
 		return -1;
 
-	return Sys_Main();
+	g_eqCore->OnModuleLoaded(Sys_GetExecutablePath());
+
+	const int status = Sys_Main();
+
+	g_eqCore->OnModuleUnloaded(Sys_GetExecutablePath());
+
+	return status;
 }
 
 #else
@@ -423,7 +429,13 @@ int main(int argc, char** argv)
 		return -1;
 #endif // PLAT_ANDROID
 
-	return Sys_Main();
+	g_eqCore->OnModuleLoaded(Sys_GetExecutablePath());
+
+	const int status = Sys_Main();
+
+	g_eqCore->OnModuleUnloaded(Sys_GetExecutablePath());
+
+	return status;
 }
 
 #endif

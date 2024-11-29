@@ -14,6 +14,7 @@ ENABLE_TOOLS = iif(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
 ENABLE_GUI_TOOLS = iif(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
 ENABLE_MATSYSTEM = iif(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
 ENABLE_TESTS = iif(ENABLE_TESTS == nil, false, ENABLE_TESTS)
+ENABLE_LIVEPP = iif(ENABLE_LIVEPP == nil, false, ENABLE_LIVEPP)
 WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 
 -- you can redefine dependencies
@@ -174,9 +175,7 @@ workspace(WORKSPACE_NAME)
 		links { "pthread" }
 
 	filter "system:Windows"
-		platforms { 
-			"x86", "x64" -- maybe add ARM64?
-		}
+		platforms { "x86", "x64" }
 		disablewarnings { "4996", "4554", "4244", "4101", "4838", "4309" }
 		enablewarnings { "26433" }
 		defines { 
@@ -241,7 +240,7 @@ group "Core"
 -- eqCore essentials
 project "coreLib"
     kind "StaticLib"
-	uses "concurrency_vis"
+	uses { "concurrency_vis" }
 	
 	--unitybuild "on"
     files {
@@ -309,7 +308,8 @@ project "e2Core"
 	defines { "CORE_INTERFACE_EXPORT", "COREDLL_EXPORT" }
 	
     uses {
-		"coreLib", "frameworkLib", "dpkLib"
+		"coreLib", "frameworkLib", "dpkLib",
+		"live_pp"
 	}
 
 	filter "system:Windows"
