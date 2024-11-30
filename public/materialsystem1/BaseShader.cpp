@@ -448,7 +448,8 @@ void CBaseShader::FillBindGroupLayout_Constant_Samplers(BindGroupLayoutDesc& bin
 		.Sampler("MaterialSampler", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
 		.Sampler("LinearMirrorWrapSampler", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
 		.Sampler("LinearClampSampler", 2, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-		.Sampler("NearestSampler", 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING);
+		.Sampler("NearestSampler", 3, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+		.Sampler("NoSampler", 4, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, SAMPLERBIND_NONFILTERING);
 }
 
 void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) const
@@ -457,7 +458,8 @@ void CBaseShader::FillBindGroup_Constant_Samplers(BindGroupDesc& bindGroupDesc) 
 		.Sampler(0, SamplerStateParams(m_texFilter, m_texAddressMode))
 		.Sampler(1, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_MIRROR))
 		.Sampler(2, SamplerStateParams(TEXFILTER_LINEAR, TEXADDRESS_CLAMP))
-		.Sampler(3, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP));
+		.Sampler(3, SamplerStateParams(TEXFILTER_NEAREST, TEXADDRESS_CLAMP))
+		.Sampler(4, SamplerStateParams());
 }
 
 IGPUBufferPtr CBaseShader::CreateAtlasBuffer(IShaderAPI* renderAPI) const
