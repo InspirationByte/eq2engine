@@ -1113,7 +1113,7 @@ KVSection* KV_ParseSectionV3(const char* pszBuffer, int bufferSize, const char* 
 
 KVSection* KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine)
 {
-	if (bufferSize <= 0)
+	if (bufferSize < 0)
 		bufferSize = strlen(pszBuffer);
 	
 	int version = 2;
