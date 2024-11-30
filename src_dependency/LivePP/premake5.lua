@@ -1,3 +1,5 @@
+if ENABLE_LIVEPP then
+
 usage "live_pp"	
 	-- Windows x64 only and Release configuration
 	filter {"system:Windows", "platforms:x64", "configurations:Release"}
@@ -14,3 +16,7 @@ usage "live_pp"
 		includedirs {
 			"./API/x64"
 		}
+else
+	usage "live_pp"	
+		-- leave empty usage
+end
