@@ -12,7 +12,6 @@
 
 using namespace Threading;
 
-
 static constexpr int GPU_INSTANCE_INITIAL_POOL_SIZE		= 3072;
 static constexpr int GPU_INSTANCE_POOL_SIZE_EXTEND		= 1024;
 static constexpr int GPU_INSTANCE_MAX_TEMP_INSTANCES	= 128;
@@ -198,7 +197,6 @@ int GRIMBaseInstanceAllocator::GetInstanceComponentIdx(int instanceIdx, int comp
 
 GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetypeId)
 {
-	CScopedMutex m(GetMutex());
 	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
 
 	if (archetypeId != GRIM_INVALID_ARCHETYPE)

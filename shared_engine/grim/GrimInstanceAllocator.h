@@ -185,6 +185,7 @@ public:
 	template<typename ...TComps>
 	int 			AddInstance(int archetype)
 	{
+		Threading::CScopedMutex m(GetMutex());
 		const int instanceId = AllocInstance(archetype);
 		AllocInstanceComponents<TComps...>(instanceId);
 		return instanceId;
@@ -194,6 +195,7 @@ public:
 	template<typename ...TComps>
 	int 			AddTempInstance(int archetype)
 	{
+		Threading::CScopedMutex m(GetMutex());
 		const int instanceId = AllocTempInstance(archetype);
 		AllocInstanceComponents<TComps...>(instanceId);
 		return instanceId;
@@ -296,15 +298,13 @@ template<typename...TComps>
 inline void GRIMInstanceAllocator<Ts...>::AllocInstanceComponents(int instanceId)
 {
 	InstRoot& inst = m_instances[instanceId].root;
-	{
-		Threading::CScopedMutex m(GetMutex());
-		([&]{
-			using Pool = typename TComps::POOL_T;
-			Pool& compPool = GetComponentPool<TComps>();
-			inst.components[TComps::COMPONENT_ID] = compPool.Add(TComps{});
-		} (), ...);
-		// UPD_ROOT is already set
-	}
+	([&]{
+		using Pool = typename TComps::POOL_T;
+		Pool& compPool = GetComponentPool<TComps>();
+		inst.components[TComps::COMPONENT_ID] = compPool.Add(TComps{});
+	} (), ...);
+
+	// UPD_ROOT is already set
 }
 
 template<typename...Ts>
@@ -316,6 +316,8 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 	if (instanceId == -1)
 		return;
 
+	Threading::CScopedMutex m(GetMutex());
+
 	Instance& inst = m_instances[instanceId];
 	InstRoot& root = inst.root;
 	if (root.components[TComp::COMPONENT_ID] > 0 && root.components[TComp::COMPONENT_ID] != COM_UINT_MAX)
@@ -323,7 +325,6 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 
 	Pool& compPool = GetComponentPool<TComp>();
 	{
-		Threading::CScopedMutex m(GetMutex());
 		root.components[TComp::COMPONENT_ID] = compPool.Add(TComp{});
 
 		inst.updateFlags |= Instance::UPD_ROOT;
