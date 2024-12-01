@@ -68,6 +68,48 @@ public:
 };
 
 // Instance component data storage
+// Represented as texture (used as storage or sampled)
+template<typename T>
+class GRIMTextureComponentPool
+	: public GRIMBaseComponentPool
+	, GRIMSyncrhronizedPool<T>
+{
+	using DataPool = GRIMSyncrhronizedPool<T>;
+public:
+	using TYPE = T;
+	GRIMTextureComponentPool()
+		: DataPool(GRIMResource::TEXTURE, T::NAME, PP_SL, T::POOL_SIZE_EXTEND)
+	{
+	}
+
+	int				Add(const T& item) { return DataPool::Add(item); }
+	const T&		Get(int idx) const { return DataPool::GetData()[idx]; }
+	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
+
+	DataPool&		GetDataPool() { return *this; }
+	ITexturePtr		GetTexture() const { return ITexturePtr(DataPool::GetGPUData().Get<ITexture>()); }
+
+	EqStringRef		GetName() const override { return T::NAME; }
+
+	void			Clear(bool dealloc) override { DataPool::Clear(dealloc); }
+	void			SetUpdated(int idx) override { DataPool::SetUpdated(idx); }
+	void			Remove(int idx) override { DataPool::Remove(idx); }
+
+	int				NumSlots() const override { return DataPool::NumSlots(); }
+	int				NumElem() const override { return DataPool::NumElem(); }
+	int				GetItemSize() const override { return sizeof(T); }
+
+	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder); }
+
+	void			Init() override { DataPool::InitTexture(T::POOL_TEXTURE_FORMAT, T::POOL_TEXTURE_SIZE, 0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this); }
+	void			Term() override { DataPool::SetPipeline(nullptr); }
+
+	void			InitEmptyItem() override { DataPool::Add(T{}); }
+
+	int				IsValid() const override { return DataPool::IsValid(); }
+};
+
+// Instance component data storage
 // Represented as storage buffer
 template<typename T>
 class GRIMComponentPool
@@ -107,8 +149,6 @@ public:
 	int				IsValid() const override { return true; }
 };
 
-// TODO GRIMTextureComponentPool
-
 #define DEFINE_INSTANCE_COMPONENT_GUTS(PoolType, ID, Name) \
 	using POOL_T = PoolType<Name>; \
 	static constexpr const char NAME[] = #Name; \
@@ -121,9 +161,16 @@ public:
 	DEFINE_INSTANCE_COMPONENT_GUTS(GRIMComponentPool, ID, Name) \
 	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool)
 
-// defines instance component that is synced with GPU
-#define DEFINE_GPU_INSTANCE_COMPONENT(Type, ID, Name) \
-	DEFINE_INSTANCE_COMPONENT_GUTS(GRIM ## Type ## ComponentPool, ID, Name) \
+// defines buffer instance component that is synced with GPU
+#define DEFINE_GPU_BUFFER_INSTANCE_COMPONENT(ID, Name) \
+	DEFINE_INSTANCE_COMPONENT_GUTS(GRIMBufferComponentPool, ID, Name) \
+	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool)
+
+// defines texture instance component that is synced with GPU
+#define DEFINE_GPU_TEXTURE_INSTANCE_COMPONENT(ID, Name, Format, SizeX, SizeY) \
+	static constexpr ETextureFormat POOL_TEXTURE_FORMAT = Format; \
+	static constexpr IVector2D POOL_TEXTURE_SIZE = IVector2D(SizeX, SizeY); \
+	DEFINE_INSTANCE_COMPONENT_GUTS(GRIMTextureComponentPool, ID, Name) \
 	static void InitPipeline(GRIMBaseSyncrhronizedPool& pool)
 
 // initializes instance component
