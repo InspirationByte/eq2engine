@@ -37,11 +37,11 @@ struct TVec2D
 	TVec2D(const TVec2D<T2>& other) 
 		: x((T)other.x), y((T)other.y) {}
 
-	TVec2D<T>(const T ixy) 
+	constexpr TVec2D<T>(const T ixy)
 		: x(ixy), y(ixy)
 	{}
 
-	TVec2D<T>(const T ix, const T iy)
+	constexpr TVec2D<T>(const T ix, const T iy)
 		: x(ix), y(iy)
 	{}
 
@@ -144,11 +144,11 @@ struct TVec3D
 		: x((T)other.x), y((T)other.y), z((T)other.z)
 	{}
 
-	TVec3D<T>(const T ixyz)
+	constexpr TVec3D<T>(const T ixyz)
 		: x(ixyz), y(ixyz), z(ixyz)
 	{}
 
-	TVec3D<T>(const T ix, const T iy, const T iz)
+	constexpr TVec3D<T>(const T ix, const T iy, const T iz)
 		: x(ix), y(iy), z(iz)
 	{}
 
@@ -270,11 +270,11 @@ struct TVec4D
 		: x((T)other.x), y((T)other.y), z((T)other.z), w((T)other.w) 
 	{}
 
-	TVec4D<T>(const T ixyzw)
+	constexpr TVec4D<T>(const T ixyzw)
 		: x(ixyzw), y(ixyzw), z(ixyzw), w(ixyzw)
 	{}
 
-	TVec4D<T>(const T ix, const T iy, const T iz, const T iw)
+	constexpr TVec4D<T>(const T ix, const T iy, const T iz, const T iw)
 		: x(ix), y(iy), z(iz), w(iw)
 	{}
 
