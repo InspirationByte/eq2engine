@@ -17,8 +17,8 @@ class CLocToken : public ILocToken
 
 public:
 	CLocToken() = default;
-	CLocToken(const char* tok, const wchar_t* text, bool customToken);
-	CLocToken(const char* tok, const char* text, bool customToken);
+	CLocToken(int fileIdx, const char* tok, const wchar_t* text);
+	CLocToken(int fileIdx, const char* tok, const char* text);
 
 	const char*		GetToken() const	{return m_token.ToCString();}
 	const wchar_t*	GetText() const		{return m_text.ToCString();}
@@ -26,7 +26,7 @@ public:
 private:
 	EqString		m_token;
 	EqWString		m_text;
-	bool			m_customToken{ false };
+	int				m_fileIdx{ -1 };
 };
 
 //--------------------------------------------------------------
@@ -47,6 +47,8 @@ public:
 	const char*			GetLanguageName() const;
 
 	void				AddTokensFile(const char* pszFilePrefix);
+	void				RemoveTokensFile(const char* pszFilePrefix);
+
 	const ILocToken* 	AddToken(const char* token, const wchar_t* pszTokenString);
 	const ILocToken* 	AddToken(const char* token, const char* pszUTF8TokenString);
 
@@ -56,11 +58,12 @@ public:
 	bool				IsInitialized() const {return m_languageFilePrefixes.numElem() > 0;}
 
 private:
-	void				ParseLanguageFile(const char* pszFilePrefix, bool reload = false);
+	void				ParseLanguageFile(int langFileIdx, bool reload = false);
 
 	const ILocToken*	_FindToken( const char* pszToken ) const;
 
-	Map<int,CLocToken>	m_tokens{ PP_SL };
+	Map<int, CLocToken>	m_tokens{ PP_SL };
 	Array<EqString>		m_languageFilePrefixes{ PP_SL };
+	Array<int>			m_freeSlots{ PP_SL };
 	EqString			m_language;
 };

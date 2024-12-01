@@ -25,7 +25,7 @@ public:
 class ILocalize : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E2_Localizer_003")
+	CORE_INTERFACE("E2_Localizer_004")
 
 	virtual void				Init() = 0;
 	virtual void				Shutdown() = 0;
@@ -36,6 +36,8 @@ public:
 	virtual const char*			GetLanguageName() const = 0;
 
 	virtual void				AddTokensFile(const char* pszFilePrefix) = 0;
+	virtual void				RemoveTokensFile(const char* pszFilePrefix) = 0;
+
 	virtual const ILocToken* 	AddToken(const char* token, const wchar_t* pszTokenString) = 0;
 	virtual const ILocToken* 	AddToken(const char* token, const char* pszTokenString) = 0;
 

@@ -77,17 +77,17 @@ static void ReplaceStrFmt(EqWString& str)
 	} while (found != -1);
 }
 
-CLocToken::CLocToken(const char* tok, const wchar_t* text, bool customToken)
+CLocToken::CLocToken(int fileIdx, const char* tok, const wchar_t* text)
 	: m_token(tok)
 	, m_text(text)
-	, m_customToken(customToken)
+	, m_fileIdx(fileIdx)
 {
 	ReplaceStrFmt(m_text);
 }
 
-CLocToken::CLocToken(const char* tok, const char* text, bool customToken)
+CLocToken::CLocToken(int fileIdx, const char* tok, const char* text)
 	: m_token(tok)
-	, m_customToken(customToken)
+	, m_fileIdx(fileIdx)
 {
 	AnsiUnicodeConverter(m_text, text);
 	ReplaceStrFmt(m_text);
@@ -130,7 +130,7 @@ void CLocalize::ReloadLanguageFiles()
 	for (auto it = m_tokens.begin(); !it.atEnd(); ++it)
 	{
 		CLocToken& token = *it;
-		if (token.m_customToken)
+		if (token.m_fileIdx == -1)
 			continue;
 
 		// de-localize token
@@ -138,9 +138,9 @@ void CLocalize::ReloadLanguageFiles()
 		AnsiUnicodeConverter(token.m_text, token.m_token);
 	}
 
-	for (EqString& tokenFilePrefix : m_languageFilePrefixes)
-		ParseLanguageFile(tokenFilePrefix, true);
-
+	for (int i = 0; i < m_languageFilePrefixes.numElem(); ++i)
+		ParseLanguageFile(i, true);
+	
 	Msg("Language files reloaded: %d\n", m_languageFilePrefixes.numElem());
 }
 
@@ -187,13 +187,42 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 		return;
 	}
 
-	m_languageFilePrefixes.append(pszFilePrefix);
-	ParseLanguageFile(pszFilePrefix);
+	int langFileIdx = -1;
+	if (m_freeSlots.numElem())
+	{
+		langFileIdx = m_freeSlots.popBack();
+		m_languageFilePrefixes[langFileIdx] = pszFilePrefix;
+	}
+	else
+		langFileIdx = m_languageFilePrefixes.append(pszFilePrefix);
+
+	ParseLanguageFile(langFileIdx);
 }
 
-void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
+
+void CLocalize::RemoveTokensFile(const char* pszFilePrefix)
 {
-	const EqString textFilePath = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
+	const int fileIdx = arrayFindIndex(m_languageFilePrefixes, EqStringRef(pszFilePrefix));
+	if (fileIdx == -1)
+		return;
+
+	// remove tokens assigned to the file
+	for (auto it = m_tokens.begin(); !it.atEnd(); ++it)
+	{
+		if(it.value().m_fileIdx == fileIdx)
+			m_tokens.remove(it);
+	}
+
+	m_languageFilePrefixes[fileIdx].Empty();
+	m_freeSlots.append(fileIdx);
+}
+
+void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
+{
+	if (arrayFindIndex(m_freeSlots, langFileIdx) != -1)
+		return;
+
+	const EqString textFilePath = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), m_languageFilePrefixes[langFileIdx]);
 
 	VSSize fileSize = 0;
 	char* fileData = reinterpret_cast<char*>(g_fileSystem->GetFileBuffer(textFilePath, &fileSize));
@@ -240,7 +269,7 @@ void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 				// Cannot add same one
 				if (!reload && _FindToken(currentTokens[0]))
 				{
-					MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, currentTokens[0].ToCString());
+					MsgWarning("Localization warning (%s): Token '%s' already registered\n", m_languageFilePrefixes[langFileIdx].ToCString(), currentTokens[0].ToCString());
 					currentTokens.clear();
 					break;
 				}
@@ -248,7 +277,7 @@ void CLocalize::ParseLanguageFile(const char* pszFilePrefix, bool reload)
 				LocalizeConvertSymbols((char*)currentTokens[1].GetData(), true);
 
 				const int hash = StringId24(currentTokens[0].ToCString(), true);
-				m_tokens.insert(hash, CLocToken(currentTokens[0], currentTokens[1], false));
+				m_tokens.insert(hash, CLocToken(langFileIdx, currentTokens[0], currentTokens[1]));
 			}
 
 			currentTokens.clear();
@@ -268,7 +297,7 @@ const ILocToken* CLocalize::AddToken(const char* token, const wchar_t* pszTokenS
 	LocalizeConvertSymbols( (char*)pszTokenString, true );
 
 	const int hash = StringId24(token, true);
-	auto newIt = m_tokens.insert(hash, CLocToken(token, pszTokenString, true));
+	auto newIt = m_tokens.insert(hash, CLocToken(-1, token, pszTokenString));
 	return &newIt.value();
 }
 
@@ -280,7 +309,7 @@ const ILocToken* CLocalize::AddToken(const char* token, const char* pszUTF8Token
 	LocalizeConvertSymbols( (char*)pszUTF8TokenString, true );
 
 	const int hash = StringId24(token, true);
-	auto newIt = m_tokens.insert(hash, CLocToken(token, pszUTF8TokenString, true));
+	auto newIt = m_tokens.insert(hash, CLocToken(-1, token, pszUTF8TokenString));
 	return &newIt.value();
 }
 
@@ -311,7 +340,6 @@ const ILocToken* CLocalize::GetToken( const char* pszToken ) const
 const ILocToken* CLocalize::_FindToken( const char* pszToken ) const
 {
 	const int tokHash = StringId24(pszToken, true);
-
 	auto it = m_tokens.find(tokHash);
 
 	if (!it.atEnd())
