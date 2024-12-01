@@ -57,7 +57,6 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 
 	if(m_newWord) // new word always enables the word wrapping again
 	{
-		m_wrappedWord = false;
 		m_wordWrapMode = true;
 		m_wordStartPtr = strCurPos;
 		if (isWideChar)
@@ -73,18 +72,18 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 		charWidth = font->GetStringWidth((char*)strCurPos, params, 1);
 
 	{
-		const bool wordWrap = m_wordWrapMode && m_newWord;
+		const bool wrapWord = m_wordWrapMode && m_newWord && curTextPos.x + m_wordWidth > m_rectangle.rightBottom.x;
 		bool wrapChar = curTextPos.x > m_rectangle.rightBottom.x;
 
 		// if word can't be wrapped, we switch to character wrapping
-		if( m_wrappedWord && wrapChar)
+		if( !wrapWord && wrapChar)
 		{
 			m_wordWrapMode = false;
 			m_wordWidth = cSize.x; // per-char wrapping
 		}
 
 		// check character/word right bound is outside the rectangle right bound
-		if (wrapChar && !m_newWord)
+		if (wrapChar || wrapWord)
 		{
 			float xPos = m_rectangle.leftTop.x;
 
@@ -113,10 +112,6 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
 			cPos.y += font->GetLineHeight(params);
 
 			m_linesProduced++;
-
-			if( wordWrap )
-				m_wrappedWord = true;
-
 			m_newWord = false;
 		}
 

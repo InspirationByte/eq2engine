@@ -12,7 +12,7 @@ class CRectangleTextLayoutBuilder : public ITextLayoutBuilder
 {
 public:
 	void	SetRectangle( const AARectangle& rectangle ) { m_rectangle = rectangle;}
-	void	Reset( IEqFont* font ) { m_font = font; m_linesProduced = 0; m_newWord = true; m_hasNotdrawnLines = false; m_wrappedWord = false; m_wordWrapMode = true;}
+	void	Reset( IEqFont* font ) { m_font = font; m_linesProduced = 0; m_newWord = true; m_hasNotdrawnLines = false; m_wordWrapMode = true;}
 
 	int		GetProducedLines() const {return m_linesProduced;}
 	bool	HasNotDrawnLines() const {return m_hasNotdrawnLines;}
@@ -39,7 +39,5 @@ protected:
 	float			m_wordWidth{ 0.0f };
 	bool			m_newWord;
 	bool			m_hasNotdrawnLines;
-
-	bool			m_wrappedWord;
 	bool			m_wordWrapMode;
 };
