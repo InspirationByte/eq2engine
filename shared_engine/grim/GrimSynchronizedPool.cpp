@@ -5,12 +5,74 @@
 // Description: Synchronized slotted buffer
 //////////////////////////////////////////////////////////////////////////////////
 
-
 #include "core/core_common.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimSynchronizedPool.h"
 
-void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputePipeline* updatePipeline, IGPUBuffer* idxsBuffer, int idxsCount, IGPUBuffer* dataBuffer, IGPUBuffer* targetBuffer)
+
+GRIMResource::GRIMResource(Type type)
+	: type(type)
+	, buffer(nullptr)
+{
+}
+
+GRIMResource::GRIMResource(const GRIMResource& other)
+	: type(other.type)
+	, buffer(nullptr)
+{
+	if (type == BUFFER)
+		buffer = other.buffer;
+	else if (type == TEXTURE)
+		texture = other.texture;
+}
+
+GRIMResource::GRIMResource(ITexture* texture)
+	: type(TEXTURE)
+	, texture(texture)
+{
+}
+
+GRIMResource::GRIMResource(IGPUBuffer* buffer)
+	: type(BUFFER)
+	, buffer(buffer)
+{
+}
+
+GRIMResource::~GRIMResource()
+{
+	Reset();
+}
+
+void GRIMResource::Reset()
+{
+	if (type == BUFFER)
+		buffer = nullptr;
+	else if (type == TEXTURE)
+		texture = nullptr;
+}
+
+int	GRIMResource::GetSize() const
+{
+	if (type == BUFFER)
+		return buffer->GetSize();
+	else if (type == TEXTURE)
+		return texture->GetArraySize();
+
+	ASSERT_FAIL("Invalid type %d", type);
+	return 0;
+}
+
+GRIMResource::operator bool() const
+{
+	if (type == BUFFER)
+		return buffer;
+	else if (type == TEXTURE)
+		return texture;
+	ASSERT_FAIL("Invalid type %d", type);
+	return false;
+}
+
+void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputePipeline* updatePipeline, IGPUBuffer* idxsBuffer, int idxsCount, IGPUBuffer* dataBuffer, const GRIMResource& targetData)
 {
 	IGPUComputePassRecorderPtr computePass = cmdRecorder->BeginComputePass("UpdateInstances");
 
@@ -20,11 +82,13 @@ void GRIMBaseSyncrhronizedPool::RunUpdatePipeline(IGPUCommandRecorder* cmdRecord
 		.Buffer(1, dataBuffer)
 		.End()
 	);
-	IGPUBindGroupPtr destPoolDataGroup = g_renderAPI->CreateBindGroup(updatePipeline,
-		Builder<BindGroupDesc>().GroupIndex(1)
-		.Buffer(0, targetBuffer)
-		.End()
-	);
+	Builder<BindGroupDesc> targetBindGroupBuilder;
+	if (targetData.GetType() == GRIMResource::BUFFER)
+		targetBindGroupBuilder.Buffer(0, targetData.Get<IGPUBuffer>());
+	else if (targetData.GetType() == GRIMResource::TEXTURE)
+		targetBindGroupBuilder.StorageTexture(0, targetData.Get<ITexture>());
+
+	IGPUBindGroupPtr destPoolDataGroup = g_renderAPI->CreateBindGroup(updatePipeline, targetBindGroupBuilder.GroupIndex(1).End());
 
 	computePass->SetPipeline(updatePipeline);
 	computePass->SetBindGroup(0, sourceIdxsAndDataGroup);
@@ -123,15 +187,30 @@ IVector2D GRIMBaseSyncrhronizedPool::CalcWorkSize(int length)
 	return result;
 }
 
-GRIMBaseSyncrhronizedPool::GRIMBaseSyncrhronizedPool(const char* name)
+GRIMBaseSyncrhronizedPool::GRIMBaseSyncrhronizedPool(GRIMResource::Type type, const char* name)
 	: m_name(name)
+	, m_gpuData(type)
 {
 }
 
-void GRIMBaseSyncrhronizedPool::Init(int extraBufferFlags, int initialSize, int gpuItemsGranularity)
+void GRIMBaseSyncrhronizedPool::InitBuffer(int extraBufferFlags, int initialSize, int gpuItemsGranularity)
 {
-	m_extraBufferFlags = extraBufferFlags;
+	ASSERT_MSG(GetType() == GRIMResource::BUFFER, "Trying to inititialize BUFFER resource while it's not");
+
+	m_extraResourceFlags = extraBufferFlags;
 	m_initialSize = initialSize;
+	m_gpuItemsGranularity = gpuItemsGranularity;
+}
+
+void GRIMBaseSyncrhronizedPool::InitTexture(ETextureFormat format, IVector2D textureSize, int extraTextureFlags, int initialArraySize, int gpuItemsGranularity)
+{
+	ASSERT_MSG(GetType() == GRIMResource::TEXTURE, "Trying to inititialize TEXTURE resource while it's not");
+
+	m_texFormat = format;
+	m_texSize = textureSize;
+
+	m_extraResourceFlags = extraTextureFlags;
+	m_initialSize = initialArraySize;
 	m_gpuItemsGranularity = gpuItemsGranularity;
 }
 
@@ -149,40 +228,52 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 	}
 
 	const int currentNumSlots = NumSlots();
-	const int oldBufferElems = m_buffer ? m_buffer->GetSize() / stride : 0;
+	const int oldInstElems = m_gpuData ? m_gpuData.GetSize() / stride : 0;
 
 	bool buffersUpdated = false;
 
 	// update instance root buffer
 	// TODO: instead of re-creating buffer, create new separate buffer with it's instance pools
-	if (!m_buffer || currentNumSlots > oldBufferElems)
+	if (!m_gpuData || currentNumSlots > oldInstElems)
 	{
 		// alloc (or re-create) new buffer and upload entire data
-		const int allocInstBufferElems = max(GetGranulatedCapacity(currentNumSlots, m_gpuItemsGranularity), m_initialSize);
+		const int allocInstElems = max(GetGranulatedCapacity(currentNumSlots, m_gpuItemsGranularity), m_initialSize);
 
-		const int bufferFlags = m_extraBufferFlags | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
-
-		IGPUBufferPtr oldBuffer = m_buffer;
-		m_buffer = g_renderAPI->CreateBuffer(BufferInfo(stride, allocInstBufferElems), bufferFlags, m_name);
-
-		if (oldBufferElems > 0 && oldBuffer)
+		if (m_gpuData.GetType() == GRIMResource::BUFFER)
 		{
-			// copy old buffer data to new one, and still run update pipeline later below
-			// effectively updating old data and adding new data
-			cmdRecorder->CopyBufferToBuffer(oldBuffer, 0, m_buffer, 0, oldBufferElems * stride);
-		}
-		else
-		{
-			// don't waste time on running pipeline and upload everything directly to GPU
-			// since buffer is brand new
-			cmdRecorder->WriteBuffer(m_buffer, dataPtr, currentNumSlots * stride, 0);
+			IGPUBufferPtr oldBuffer(m_gpuData.Get<IGPUBuffer>());
+
+			const int bufferFlags = m_extraResourceFlags | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC;
+			IGPUBufferPtr newBuffer = g_renderAPI->CreateBuffer(BufferInfo(stride, allocInstElems), bufferFlags, m_name);
+			m_gpuData.Set(newBuffer.Ptr());
+
+			if (oldInstElems > 0 && oldBuffer)
 			{
-				Threading::CScopedMutex m(m_mutex);
-				m_updated.clear();
+				// copy old buffer data to new one, and still run update pipeline later below
+				// effectively updating old data and adding new data
+				cmdRecorder->CopyBufferToBuffer(oldBuffer, 0, newBuffer, 0, oldInstElems * stride);
 			}
-			return true;
+			else
+			{
+				// don't waste time on running pipeline and upload everything directly to GPU
+				// since buffer is brand new
+				cmdRecorder->WriteBuffer(newBuffer, dataPtr, currentNumSlots * stride, 0);
+				{
+					Threading::CScopedMutex m(m_mutex);
+					m_updated.clear();
+				}
+				return true;
+			}
 		}
+		else if (m_gpuData.GetType() == GRIMResource::TEXTURE)
+		{
+			const int textureFlags = m_extraResourceFlags | TEXFLAG_STORAGE | TEXFLAG_COPY_DST | TEXFLAG_COPY_DST;
+			ITexturePtr newTexture = g_renderAPI->CreateRenderTarget(TextureDesc(m_name, textureFlags, m_texFormat, m_texSize.x, m_texSize.y, allocInstElems));
+			m_gpuData.Set(newTexture.Ptr());
 
+			ASSERT_FAIL("Texture Resize: Not implemented yet!");
+		}
+		
 		buffersUpdated = true;
 	}
 
@@ -195,7 +286,7 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 			IGPUBufferPtr idxsBuffer;
 			IGPUBufferPtr dataBuffer;
 			PrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(dataPtr), stride, stride, idxsBuffer, dataBuffer);
-			RunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_buffer);
+			RunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_gpuData);
 		}
 		m_updated.clear();
 	}

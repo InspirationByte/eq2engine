@@ -140,9 +140,9 @@ protected:
 
 	GRIMBaseInstanceAllocator&	m_instAllocator;
 	SlottedArray<DrawInfo>		m_drawInfos{ PP_SL };
-	Pool<GPUIndexedBatch>		m_drawBatchs{ "GPUIndexedBatch", PP_SL };
-	Pool<GPULodInfo>			m_drawLodInfos{ "GPULodInfo", PP_SL };
-	Pool<GPULodList>			m_drawLodsList{ "GPULodList", PP_SL };
+	Pool<GPUIndexedBatch>		m_drawBatchs{ GRIMResource::BUFFER, "GPUIndexedBatch", PP_SL };
+	Pool<GPULodInfo>			m_drawLodInfos{ GRIMResource::BUFFER, "GPULodInfo", PP_SL };
+	Pool<GPULodList>			m_drawLodsList{ GRIMResource::BUFFER, "GPULodList", PP_SL };
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
 	BitArray					m_dbgHiddenArchetypes{ PP_SL };

@@ -11,21 +11,93 @@
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
+class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
 class IGPUComputePipeline;
 using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
 
 class IGPUCommandRecorder;
 
+struct GRIMResource
+{
+	enum Type
+	{
+		BUFFER,
+		TEXTURE
+	};
+
+	GRIMResource(Type type);
+	GRIMResource(const GRIMResource& other);
+	GRIMResource(ITexture* texture);
+	GRIMResource(IGPUBuffer* buffer);
+	~GRIMResource();
+
+	operator			bool() const;
+	Type				GetType() const { return type; }
+	int					GetSize() const;
+	void				Reset();
+
+	template<typename T>
+	T*					Get() const;
+
+	template<typename T>
+	void				Set(T* ptr);
+
+private:
+	union {
+		IGPUBufferPtr	buffer;
+		ITexturePtr		texture;
+	};
+	Type	type;
+};
+
+template<typename T>
+T* GRIMResource::Get() const
+{
+	static_assert(std::is_same_v<T, IGPUBuffer> || std::is_same_v<T, ITexture>, "Get<T> - T is not Buffer or Texture");
+	if constexpr (std::is_same_v<T, IGPUBuffer>)
+	{
+		ASSERT(type == BUFFER);
+		return buffer;
+	}
+	else if constexpr (std::is_same_v<T, ITexture>)
+	{
+		ASSERT(type == TEXTURE);
+		return texture;
+	}
+}
+
+template<typename T>
+void GRIMResource::Set(T* ptr)
+{
+	static_assert(std::is_same_v<T, IGPUBuffer> || std::is_same_v<T, ITexture>, "Set<T> - T is not Buffer or Texture");
+	if constexpr (std::is_same_v<T, IGPUBuffer>)
+	{
+		ASSERT(type == BUFFER);
+		buffer.Assign(ptr);
+	}
+	else if constexpr (std::is_same_v<T, ITexture>)
+	{
+		ASSERT(type == TEXTURE);
+		texture.Assign(ptr);
+	}
+}
+
+//-----------------------------------------------------
+
 class GRIMBaseSyncrhronizedPool
 {
 public:
 	virtual ~GRIMBaseSyncrhronizedPool() = default;
-	GRIMBaseSyncrhronizedPool(const char* name);
+	GRIMBaseSyncrhronizedPool(GRIMResource::Type type, const char* name);
 
 	const char*				GetName() const { return m_name; }
 	bool					IsValid() const { return m_updatePipeline != nullptr; }
 
-	void					Init(int extraBufferFlags = 0, int initialSize = 3072, int gpuItemsGranularity = 1024);
+	void					InitBuffer(int extraBufferFlags = 0, int initialSize = 3072, int gpuItemsGranularity = 1024);
+	void					InitTexture(ETextureFormat format, IVector2D textureSize, int extraTextureFlags = 0, int initialArraySize = 3072, int gpuItemsGranularity = 1024);
+
 	void					SetPipeline(IGPUComputePipelinePtr updatePipeline);
 	virtual void			Clear(bool deallocate = false) = 0;
 
@@ -37,9 +109,10 @@ public:
 	void					SetUpdated(int idx);
 
 	virtual bool			Sync(IGPUCommandRecorder* cmdRecorder) = 0;
-	IGPUBufferPtr			GetBuffer() const { return m_buffer; }
+	GRIMResource			GetGPUData() const { return m_gpuData; }
+	GRIMResource::Type		GetType() const { return m_gpuData.GetType(); }
 
-	static void				RunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputePipeline* updatePipeline, IGPUBuffer* idxsBuffer, int idxsCount, IGPUBuffer* dataBuffer, IGPUBuffer* targetBuffer);
+	static void				RunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputePipeline* updatePipeline, IGPUBuffer* idxsBuffer, int idxsCount, IGPUBuffer* dataBuffer, const GRIMResource& targetData);
 	static void				PrepareDataBuffer(IGPUCommandRecorder* cmdRecorder, ArrayCRef<int> elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destDataBuffer);
 	static void				PrepareBuffers(IGPUCommandRecorder* cmdRecorder, const Set<int>& updated, Array<int>& elementIds, const ubyte* sourceData, int sourceStride, int elemSize, IGPUBufferPtr& destIdxsBuffer, IGPUBufferPtr& destDataBuffer);
 	static int				GetGranulatedCapacity(int capacity, int granularity);
@@ -51,11 +124,14 @@ protected:
 
 	Threading::CEqMutex		m_mutex;
 	Set<int>				m_updated{ PP_SL };
-	IGPUBufferPtr			m_buffer;
+	GRIMResource			m_gpuData;
 	IGPUComputePipelinePtr	m_updatePipeline;
 	EqString				m_name;
 
-	int						m_extraBufferFlags{ 0 };
+	ETextureFormat			m_texFormat{ FORMAT_NONE };
+	IVector2D				m_texSize{ 0 };
+
+	int						m_extraResourceFlags{ 0 };
 	int						m_initialSize{ 3072 };
 	int						m_gpuItemsGranularity{ 1024 };
 };
@@ -68,9 +144,9 @@ class GRIMSyncrhronizedPool
 	using DATA = SlottedArray<T>;
 public:
 
-	GRIMSyncrhronizedPool(const char* name, PPSourceLine sl, int granularity = 16)
+	GRIMSyncrhronizedPool(GRIMResource::Type type, const char* name, PPSourceLine sl, int granularity = 16)
 		: SlottedArray<T>(sl, granularity)
-		, GRIMBaseSyncrhronizedPool(name)
+		, GRIMBaseSyncrhronizedPool(type, name)
 	{
 	}
 
@@ -104,7 +180,7 @@ void GRIMSyncrhronizedPool<T>::Clear(bool deallocate)
 	DATA::clear(deallocate);
 
 	if(deallocate)
-		m_buffer = nullptr;
+		m_gpuData.Reset();
 }
 
 template<typename T>

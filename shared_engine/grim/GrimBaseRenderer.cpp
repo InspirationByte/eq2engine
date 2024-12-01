@@ -662,17 +662,17 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, m_drawBatchs.GetBuffer())
-		.Buffer(1, m_drawLodInfos.GetBuffer())
-		.Buffer(2, m_drawLodsList.GetBuffer())
+		.Buffer(0, m_drawBatchs.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(1, m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(2, m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
 		.End()
 	);
 
 	m_cullBindGroup0 = g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
 		Builder<BindGroupDesc>()
 		.GroupIndex(0)
-		.Buffer(0, m_drawLodInfos.GetBuffer())
-		.Buffer(1, m_drawLodsList.GetBuffer())
+		.Buffer(0, m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(1, m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
 		.End()
 	);
 }

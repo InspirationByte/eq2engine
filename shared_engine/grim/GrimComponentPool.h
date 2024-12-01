@@ -36,7 +36,7 @@ class GRIMBufferComponentPool
 public:
 	using TYPE = T;
 	GRIMBufferComponentPool()
-		: DataPool(T::NAME, PP_SL, T::POOL_SIZE_EXTEND)
+		: DataPool(GRIMResource::BUFFER, T::NAME, PP_SL, T::POOL_SIZE_EXTEND)
 	{
 	}
 
@@ -45,7 +45,7 @@ public:
 	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
-	IGPUBufferPtr	GetBuffer() const { return DataPool::GetBuffer(); }
+	IGPUBufferPtr	GetBuffer() const { return IGPUBufferPtr(DataPool::GetGPUData().Get<IGPUBuffer>()); }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
@@ -59,7 +59,7 @@ public:
 
 	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder); }
 
-	void			Init() override { DataPool::Init(0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this);}
+	void			Init() override { DataPool::InitBuffer(0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this);}
 	void			Term() override { DataPool::SetPipeline(nullptr); }
 
 	void			InitEmptyItem() override { DataPool::Add(T{}); }
