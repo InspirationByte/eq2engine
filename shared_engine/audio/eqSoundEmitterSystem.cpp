@@ -620,7 +620,7 @@ void CSoundEmitterSystem::Execute()
 void CSoundEmitterSystem::Update()
 {
 	CEqJobManager* jobMng = g_parallelJobs->GetJobMng();
-	if(GetSignal()->Wait(0))
+	if(!GetSignal() || GetSignal()->Wait(0))
 	{
 		InitJob();
 		jobMng->StartJob(this);
