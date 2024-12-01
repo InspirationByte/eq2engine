@@ -107,6 +107,8 @@ static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength =
 
 #define KV_ESCAPE_SYMBOL			'\\'
 
+#define KV_MULTILINE_PREFIX			'%'
+
 #define KV_IDENT_BINARY				MAKECHAR4('B','K','V','S')
 
 #define IsKVBufferEOF()				((pData - pszBuffer) > bufferSize-1)
@@ -1344,7 +1346,6 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 	return (mode == MODE_DEFAULT);
 }
 
-
 //
 // Parses the KeyValues section string buffer to the 'pParseTo'
 //
@@ -1374,6 +1375,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 
 	KV2BParserMode mode = MODE_DEFAULT;
 	const char* multiLineStringStart = nullptr;
+	int multiLineSectionDepth = 0;
 
 	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
@@ -1387,10 +1389,11 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 				if (mode == MODE_DEFAULT)
 				{
 					// start parsing multi-line string
-					if (!currentSection && c == '%')
+					if (!currentSection && c == KV_MULTILINE_PREFIX)
 					{
 						// we use query first because we have to read key name
 						mode = MODE_MULTILINE_STRING_QUERY;
+						multiLineSectionDepth = 0;
 						return KV_PARSE_SKIP;
 					}
 
@@ -1403,23 +1406,31 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 					{
 						mode = MODE_MULTILINE_STRING;
 						multiLineStringStart = dataPtr;
+						++multiLineSectionDepth;
 						return KV_PARSE_SKIP;
 					}
 				}
 				else if (mode == MODE_MULTILINE_STRING)
 				{
+					if (c == KV_SECTION_BEGIN)
+					{
+						++multiLineSectionDepth;
+					}
 					if (c == KV_SECTION_END)
 					{
-						const int stringLength = dataPtr - multiLineStringStart;
+						--multiLineSectionDepth;
+						if (multiLineSectionDepth == 0)
+						{
+							const int stringLength = dataPtr - multiLineStringStart;
 
-						// copy the value
-						KVPairValue* newValue = currentSection->CreateValue();
-						newValue->SetStringValue(multiLineStringStart + 1, stringLength - 1);
+							// copy the value
+							KVPairValue* newValue = currentSection->CreateValue();
+							newValue->SetStringValue(multiLineStringStart + 1, stringLength - 1);
 
-						multiLineStringStart = nullptr;
-						mode = MODE_DEFAULT;
+							multiLineStringStart = nullptr;
+							mode = MODE_DEFAULT;
+						}
 					}
-
 					return KV_PARSE_SKIP;
 				}
 
@@ -1441,7 +1452,6 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 					sectionStack.popBack();
 					currentSection = nullptr;
 				}
-
 				break;
 			}
 			case 't':
@@ -1509,6 +1519,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 
 	KV3ParserMode mode = MODE_DEFAULT;
 	const char* multiLineStringStart = nullptr;
+	int multiLineSectionDepth = 0;
 
 	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
@@ -1522,7 +1533,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 				if (mode == MODE_DEFAULT)
 				{
 					// start parsing multi-line string
-					if (!currentSection && c == '%')
+					if (!currentSection && c == KV_MULTILINE_PREFIX)
 					{
 						// we use query first because we have to read key name
 						mode = MODE_MULTILINE_STRING_QUERY;
@@ -1547,21 +1558,30 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 					{
 						mode = MODE_MULTILINE_STRING;
 						multiLineStringStart = dataPtr;
+						++multiLineSectionDepth;
 						return KV_PARSE_SKIP;
 					}
 				}
 				else if (mode == MODE_MULTILINE_STRING)
 				{
+					if (c == KV_SECTION_BEGIN)
+					{
+						++multiLineSectionDepth;
+					}
 					if (c == KV_SECTION_END)
 					{
-						const int stringLength = dataPtr - multiLineStringStart;
+						--multiLineSectionDepth;
+						if (multiLineSectionDepth == 0)
+						{
+							const int stringLength = dataPtr - multiLineStringStart;
 
-						// copy the value
-						KVPairValue* newValue = currentSection->CreateValue();
-						newValue->SetStringValue(multiLineStringStart + 1, stringLength - 1);
+							// copy the value
+							KVPairValue* newValue = currentSection->CreateValue();
+							newValue->SetStringValue(multiLineStringStart + 1, stringLength - 1);
 
-						multiLineStringStart = nullptr;
-						mode = MODE_DEFAULT;
+							multiLineStringStart = nullptr;
+							mode = MODE_DEFAULT;
+						}
 					}
 
 					return KV_PARSE_SKIP;
@@ -1615,7 +1635,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 				{
 					ASSERT(currentSection);
 
-					if(arrayDepth > 0 && currentSection)
+					if (arrayDepth > 0 && currentSection)
 					{
 						currentSection->type = KVPAIR_SECTION;
 						sectionStack.append(currentSection->CreateSectionValue());
@@ -1635,7 +1655,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 						currentSection = nullptr;
 					}
 					else
-						currentSection = sectionStack.popBack(); 
+						currentSection = sectionStack.popBack();
 				}
 
 				break;
