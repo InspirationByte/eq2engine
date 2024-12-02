@@ -16,28 +16,6 @@ GRIMResource::GRIMResource(Type type)
 {
 }
 
-GRIMResource::GRIMResource(const GRIMResource& other)
-	: type(other.type)
-	, buffer(nullptr)
-{
-	if (type == BUFFER)
-		buffer = other.buffer;
-	else if (type == TEXTURE)
-		texture = other.texture;
-}
-
-GRIMResource::GRIMResource(ITexture* texture)
-	: type(TEXTURE)
-	, texture(texture)
-{
-}
-
-GRIMResource::GRIMResource(IGPUBuffer* buffer)
-	: type(BUFFER)
-	, buffer(buffer)
-{
-}
-
 GRIMResource::~GRIMResource()
 {
 	Reset();

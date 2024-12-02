@@ -437,9 +437,12 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 				IGPUBufferPtr idxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(itemIds[0]), itemIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
 				cmdRecorder->WriteBuffer(idxsBuffer, itemIds.ptr(), sizeof(itemIds[0]) * itemIds.numElem(), 0);
 
+				GRIMResource targetBufferResource(GRIMResource::BUFFER);
+				targetBufferResource.Set(targetBuffer);
+
 				IGPUBufferPtr dataBuffer;
 				GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, itemIds, items, sizeof(Instance), itemSize, dataBuffer);
-				GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, pipeline, idxsBuffer, idxsCount, dataBuffer, targetBuffer);
+				GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, pipeline, idxsBuffer, idxsCount, dataBuffer, targetBufferResource);
 			};
 
 			// update roots

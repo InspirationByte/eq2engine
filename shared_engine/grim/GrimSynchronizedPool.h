@@ -8,6 +8,8 @@
 #pragma once
 #include "ds/SlottedArray.h"
 
+enum ETextureFormat : int;
+
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
 
@@ -28,9 +30,7 @@ struct GRIMResource
 	};
 
 	GRIMResource(Type type);
-	GRIMResource(const GRIMResource& other);
-	GRIMResource(ITexture* texture);
-	GRIMResource(IGPUBuffer* buffer);
+	GRIMResource(const GRIMResource& other) = delete;
 	~GRIMResource();
 
 	operator			bool() const;
@@ -109,7 +109,7 @@ public:
 	void					SetUpdated(int idx);
 
 	virtual bool			Sync(IGPUCommandRecorder* cmdRecorder) = 0;
-	GRIMResource			GetGPUData() const { return m_gpuData; }
+	const GRIMResource&		GetGPUData() const { return m_gpuData; }
 	GRIMResource::Type		GetType() const { return m_gpuData.GetType(); }
 
 	static void				RunUpdatePipeline(IGPUCommandRecorder* cmdRecorder, IGPUComputePipeline* updatePipeline, IGPUBuffer* idxsBuffer, int idxsCount, IGPUBuffer* dataBuffer, const GRIMResource& targetData);
@@ -128,7 +128,7 @@ protected:
 	IGPUComputePipelinePtr	m_updatePipeline;
 	EqString				m_name;
 
-	ETextureFormat			m_texFormat{ FORMAT_NONE };
+	ETextureFormat			m_texFormat{ (ETextureFormat)0 };
 	IVector2D				m_texSize{ 0 };
 
 	int						m_extraResourceFlags{ 0 };
