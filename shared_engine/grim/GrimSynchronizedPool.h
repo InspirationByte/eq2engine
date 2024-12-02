@@ -39,7 +39,7 @@ struct GRIMResource
 	void				Reset();
 
 	template<typename T>
-	T*					Get() const;
+	CRefPtr<T>			Get() const;
 
 	template<typename T>
 	void				Set(T* ptr);
@@ -53,7 +53,7 @@ private:
 };
 
 template<typename T>
-T* GRIMResource::Get() const
+CRefPtr<T> GRIMResource::Get() const
 {
 	static_assert(std::is_same_v<T, IGPUBuffer> || std::is_same_v<T, ITexture>, "Get<T> - T is not Buffer or Texture");
 	if constexpr (std::is_same_v<T, IGPUBuffer>)

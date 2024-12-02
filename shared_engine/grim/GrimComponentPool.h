@@ -45,7 +45,7 @@ public:
 	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
-	IGPUBufferPtr	GetBuffer() const { return IGPUBufferPtr(DataPool::GetGPUData().Get<IGPUBuffer>()); }
+	IGPUBufferPtr	GetBuffer() const { return DataPool::GetGPUData().Get<IGPUBuffer>(); }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
@@ -87,7 +87,7 @@ public:
 	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
-	ITexturePtr		GetTexture() const { return ITexturePtr(DataPool::GetGPUData().Get<ITexture>()); }
+	ITexturePtr		GetTexture() const { return DataPool::GetGPUData().Get<ITexture>(); }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
@@ -192,3 +192,4 @@ public:
 // initializes GPU instance component
 #define INIT_GPU_INSTANCE_COMPONENT(Name, UpdateShaderName) \
 	INIT_GPU_INSTANCE_COMPONENT_EX(Name, UpdateShaderName, GRIM_DEFAULT_INST_INITIAL_POOL_SIZE, GRIM_DEFAULT_INST_POOL_SIZE_EXTEND)
+

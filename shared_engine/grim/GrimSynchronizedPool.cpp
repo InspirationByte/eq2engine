@@ -228,7 +228,9 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 	}
 
 	const int currentNumSlots = NumSlots();
-	const int oldInstElems = m_gpuData ? m_gpuData.GetSize() / stride : 0;
+	int oldInstElems = m_gpuData ? m_gpuData.GetSize() : 0;
+	if (m_gpuData.GetType() == GRIMResource::BUFFER)
+		oldInstElems /= stride;
 
 	bool buffersUpdated = false;
 
@@ -267,11 +269,17 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 		}
 		else if (m_gpuData.GetType() == GRIMResource::TEXTURE)
 		{
+			ITexturePtr oldTexture(m_gpuData.Get<ITexture>());
+
 			const int textureFlags = m_extraResourceFlags | TEXFLAG_STORAGE | TEXFLAG_COPY_DST | TEXFLAG_COPY_DST;
-			ITexturePtr newTexture = g_renderAPI->CreateRenderTarget(TextureDesc(m_name, textureFlags, m_texFormat, m_texSize.x, m_texSize.y, allocInstElems));
+			ITexturePtr newTexture = g_renderAPI->CreateRenderTarget(TextureDesc(EqString::Format("%s_%d", m_name, allocInstElems), textureFlags, m_texFormat, m_texSize.x, m_texSize.y, allocInstElems));
 			m_gpuData.Set(newTexture.Ptr());
 
-			ASSERT_FAIL("Texture Resize: Not implemented yet!");
+			if (oldInstElems > 0 && oldTexture)
+			{
+				// copy previous texture data and then run pipeline to update items in it
+				cmdRecorder->CopyTextureToTexture(TextureCopyInfo{ oldTexture }, TextureCopyInfo{ newTexture }, oldTexture->GetSize());
+			}
 		}
 		
 		buffersUpdated = true;

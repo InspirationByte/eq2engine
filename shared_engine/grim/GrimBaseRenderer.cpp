@@ -1387,7 +1387,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 			GRIMBaseComponentPool* compPool = instances.m_componentPools[i];
 			if (!compPool)
 				continue;
-			ImGui::TextDisabled(" %s: %d/%d : %.2f KB", compPool->GetName(), compPool->NumElem(), compPool->NumSlots(), memBytesToKB(compPool->GetItemSize() * compPool->NumSlots()));
+			ImGui::TextDisabled(" %s: %d/%d : %.2f KB", compPool->GetName().ToCString(), compPool->NumElem(), compPool->NumSlots(), memBytesToKB(compPool->GetItemSize() * compPool->NumSlots()));
 		}
 	}
 
