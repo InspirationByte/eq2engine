@@ -32,6 +32,7 @@ public:
 	void				InitFromKeyValues(const KVSection* sec, bool noClear ) override;
 
 	void				SetMaterial(const char* materialName);
+	void				SetAtlasImage(const char* materialAtlasName, const char* imageName);
 
 	// apperance
 	void				SetColor(const ColorRGBA &color);

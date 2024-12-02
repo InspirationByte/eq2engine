@@ -38,14 +38,14 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 	const bool flipY = KV_GetValueBool(sec->FindSection("flipY"), 0, (m_imageFlags & FLIP_Y) > 0);
 
 	m_imageFlags = (flipX ? FLIP_X : 0) | (flipY ? FLIP_Y : 0);
+	m_uvRegion = AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
 
 	const KVSection* pathBase = sec->FindSection("path");
 	if (pathBase)
 	{
-		const char* materialPath = KV_GetValueString(pathBase, 0, "ui/default");
-		SetMaterial(materialPath);
-
-		m_uvRegion = AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
+		EqStringRef materialName = "ui/default";
+		pathBase->GetValues(materialName);
+		SetMaterial(materialName);
 
 		sec->Get("uvLeftTop").GetValues(m_uvRegion.leftTop);
 		sec->Get("uvRightBottom").GetValues(m_uvRegion.rightBottom);
@@ -57,15 +57,10 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 
 	if (pathBase)
 	{
-		const char* atlasPath = KV_GetValueString(pathBase, 0, "");
+		EqStringRef materialName, imageName;
+		pathBase->GetValues(materialName, imageName);
 
-		SetMaterial(atlasPath);
-		if (m_material->GetAtlas())
-		{
-			const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
-			if (entry)
-				m_uvRegion = entry->rect;
-		}
+		SetAtlasImage(materialName, imageName);
 	}
 	else
 	{
@@ -75,8 +70,23 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 
 void Image::SetMaterial(const char* materialName)
 {
+	m_uvRegion = AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
+
 	m_material = g_matSystem->GetMaterial(materialName);
 	g_matSystem->QueueLoading(m_material);
+}
+
+void Image::SetAtlasImage(const char* materialAtlasName, const char* imageName)
+{
+	SetMaterial(materialAtlasName);
+	if (!m_material->GetAtlas())
+		return;
+
+	const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(imageName);
+	if (entry)
+		m_uvRegion = entry->rect;
+	else
+		MsgError("EqUI error: image %s - no atlas entry '%s' in '%s'\n", m_name.ToCString(), imageName, materialAtlasName);
 }
 
 void Image::SetColor(const ColorRGBA &color)
