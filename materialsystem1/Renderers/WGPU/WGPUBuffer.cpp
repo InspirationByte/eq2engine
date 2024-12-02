@@ -125,7 +125,7 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		};
 		Msg("Mapped\n");
 
-		if (status != WGPUBufferMapAsyncStatus_Success)
+		if (status != WGPUMapAsyncStatus_Success)
 		{
 			context->promise.SetError(status, message.data);
 			return;
