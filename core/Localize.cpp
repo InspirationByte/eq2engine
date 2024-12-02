@@ -257,6 +257,11 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 		{
 		case 't':   // text token
 		{
+			if (currentTokens.numElem() >= currentTokens.numAllocated())
+			{
+				MsgError("%s:%d: token %s has extra text after it", textFilePath.ToCString(), line, currentTokens[0].ToCString());
+				break;
+			}
 			const char* text = va_arg(args, char*);
 			currentTokens.append(text);
 
