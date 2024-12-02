@@ -15,6 +15,7 @@ public:
 	virtual int			NumSlots() const = 0;
 	virtual int			NumElem() const = 0;
 	virtual int			GetItemSize() const = 0;
+	virtual int			GetPoolSize() const = 0;
 
 	virtual bool		Sync(IGPUCommandRecorder* cmdRecorder) = 0;
 
@@ -56,6 +57,7 @@ public:
 	int				NumSlots() const override { return DataPool::NumSlots(); }
 	int				NumElem() const override { return DataPool::NumElem(); }
 	int				GetItemSize() const override { return sizeof(T); }
+	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize() / sizeof(T); }
 
 	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder); }
 
@@ -98,6 +100,7 @@ public:
 	int				NumSlots() const override { return DataPool::NumSlots(); }
 	int				NumElem() const override { return DataPool::NumElem(); }
 	int				GetItemSize() const override { return sizeof(T); }
+	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize(); }
 
 	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder); }
 
@@ -139,6 +142,7 @@ public:
 	int				NumSlots() const override { return DataPool::numSlots(); }
 	int				NumElem() const override { return DataPool::numElem(); }
 	int				GetItemSize() const override { return sizeof(T); }
+	int				GetPoolSize() const override { return DataPool::numSlots(); }
 
 	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return true; }
 
