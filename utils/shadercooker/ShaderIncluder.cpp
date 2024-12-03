@@ -89,7 +89,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	for (const EqString& incPath : m_includePaths)
 	{
 		fnmPathCombine(fullPath, incPath, fileName);
-		openFile = g_fileSystem->Open(fullPath, "r", SP_ROOT);
+		openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
 		if (openFile)
 			break;
 	}
@@ -97,7 +97,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	if (!openFile)
 	{
 		fnmPathCombine(fullPath, reqSource, fileName);
-		openFile = g_fileSystem->Open(fullPath, "r", SP_ROOT);
+		openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
 	}
 
 	if (!openFile)

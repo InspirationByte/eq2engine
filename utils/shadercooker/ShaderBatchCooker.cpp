@@ -643,7 +643,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			else
 				fnmPathCombine(shaderSourceName, m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
 
-			IFilePtr file = g_fileSystem->Open(shaderSourceName, "r", SP_ROOT);
+			IFilePtr file = g_fileSystem->Open(shaderSourceName, FS_OPEN_READ, SP_ROOT);
 			if (!file)
 			{
 				MsgError("Unable to open source file for %s\n", shaderInfo.name.ToCString());
@@ -1017,7 +1017,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		// put added files
 		for (const ShaderInfo::AddFile& addFile : shaderInfo.addedFiles)
 		{
-			IFilePtr filePtr = g_fileSystem->Open(addFile.fileName, "r", SP_ROOT);
+			IFilePtr filePtr = g_fileSystem->Open(addFile.fileName, FS_OPEN_READ, SP_ROOT);
 			shaderPackFile.Add(filePtr, addFile.values.back());
 
 			KVSection* fileSec = fileListSec->CreateSection(addFile.values[0]);

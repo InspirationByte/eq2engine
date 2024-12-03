@@ -65,7 +65,7 @@ bool EqCVTracerJSON::Start(const char* fileName)
 
 	CScopedMutex m(s_jsonTracerMutex);
 
-    IFilePtr file = g_fileSystem->Open(fileName, "wb", SP_ROOT);
+    IFilePtr file = g_fileSystem->Open(fileName, FS_OPEN_WRITE, SP_ROOT);
 
 	if(!file)
 		return false;

@@ -19,6 +19,10 @@ enum ESearchPath : int
     SP_MOD	= (1 << 2),
 };
 
+#define FS_OPEN_READ	"r"
+#define FS_OPEN_WRITE	"w"
+#define FS_OPEN_APPEND	"a"
+
 using IFile = IVirtualStream;
 using IFilePtr = IVirtualStreamPtr;
 
@@ -71,7 +75,7 @@ public:
 	// File operations
 	//------------------------------------------------------------
 	
-	virtual IFilePtr		Open( const char* filename, const char* mode = "r", int searchFlags = -1) = 0;
+	virtual IFilePtr		Open( const char* filename, const char* mode = FS_OPEN_READ, int searchFlags = -1) = 0;
 	
 	// other operations
 	virtual EqString		FindFilePath(const char* filename, int searchFlags = -1) const = 0;

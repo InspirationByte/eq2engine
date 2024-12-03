@@ -129,7 +129,7 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
 
     static const char* fontFileName = "resources/imgui/Inter-Regular.ttf";
 
-    IFilePtr fontFile = g_fileSystem->Open(fontFileName, "rb", SP_DATA);
+    IFilePtr fontFile = g_fileSystem->Open(fontFileName, FS_OPEN_READ, SP_DATA);
 
     if (fontFile)
     {

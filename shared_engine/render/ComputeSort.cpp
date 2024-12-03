@@ -95,6 +95,10 @@ void ComputeSortShader::InitKeys(IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr
 
 void ComputeSortShader::SortKeys(int dataTypeId, IGPUCommandRecorder* cmdRecorder, IGPUBufferPtr keys, int keysCount, IGPUBufferPtr values)
 {
+	// no point to sort
+	if (keysCount <= 1)
+		return;
+
 	auto it = m_sortPipelines.find(dataTypeId);
 	ASSERT_MSG(!it.atEnd(), "Can't find pipeline for specified data type id");
 	if (it.atEnd())

@@ -11,7 +11,7 @@
 
 CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 {
-	m_stream = g_fileSystem->Open(szFilename, "rb");
+	m_stream = g_fileSystem->Open(szFilename, FS_OPEN_READ);
 
 	if (!m_stream)
 	{

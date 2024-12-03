@@ -133,7 +133,7 @@ static void Sys_SaveScreenshot()
 	if (!g_matSystem->CaptureScreenshot(img))
 		return;
 
-	IFilePtr saveJpegFile = g_fileSystem->Open(requestScreenshotName, "wb", SP_ROOT);
+	IFilePtr saveJpegFile = g_fileSystem->Open(requestScreenshotName, FS_OPEN_WRITE, SP_ROOT);
 	if (!saveJpegFile)
 	{
 		requestScreenshotName.Empty();

@@ -1774,7 +1774,7 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 {
 	CMemoryStream buffer(PPSourceLine::Make(pszFileName, 0));
 	{
-		IFilePtr file = g_fileSystem->Open(pszFileName, "rb", nSearchFlags);
+		IFilePtr file = g_fileSystem->Open(pszFileName, FS_OPEN_READ, nSearchFlags);
 		if (!file)
 		{
 			DevMsg(1, "Can't open key-values file '%s'\n", pszFileName);

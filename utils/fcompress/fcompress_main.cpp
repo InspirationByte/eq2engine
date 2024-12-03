@@ -57,7 +57,7 @@ ALIGNED_TYPE(dpkfile_v6_info_s, 2) dpkfile_v6_info_t;
 
 static bool UpdatePackage(const char* targetName)
 {
-	FILE* dpkFile = fopen(targetName, "rb");
+	FILE* dpkFile = fopen(targetName, FS_OPEN_READ);
 
 	// Now fill the header data and create object table
 	if (!dpkFile)
@@ -109,7 +109,7 @@ static bool UpdatePackage(const char* targetName)
 
 			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not repackageable atm");
 
-			IFilePtr file = g_fileSystem->Open(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
+			IFilePtr file = g_fileSystem->Open(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), FS_OPEN_WRITE, SP_ROOT);
 			if (!file)
 				continue;
 
@@ -176,7 +176,7 @@ static bool UpdatePackage(const char* targetName)
 
 static bool DevUnpackPackage(const char* targetName)
 {
-	FILE* dpkFile = fopen(targetName, "rb");
+	FILE* dpkFile = fopen(targetName, FS_OPEN_READ);
 
 	// Now fill the header data and create object table
 	if (!dpkFile)
@@ -228,7 +228,7 @@ static bool DevUnpackPackage(const char* targetName)
 
 			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not unpackable atm");
 
-			IFilePtr file = g_fileSystem->Open(EqString::Format("unpack/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
+			IFilePtr file = g_fileSystem->Open(EqString::Format("unpack/%u.epk_blob", finfo.filenameHash), FS_OPEN_WRITE, SP_ROOT);
 			if (!file)
 				continue;
 
@@ -525,7 +525,7 @@ static void CookPackageTarget(const char* targetName)
 			IVirtualStreamPtr stream(&fileMemoryStream);
 			if (loadRawFile)
 			{
-				stream = g_fileSystem->Open(fileInfo.fileName, "rb", SP_ROOT);
+				stream = g_fileSystem->Open(fileInfo.fileName, FS_OPEN_READ, SP_ROOT);
 				if (fnmPathExtractExt(fileInfo.fileName) == s_dpkPackageDefaultExt)
 				{
 					// validate EPK file

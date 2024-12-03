@@ -228,7 +228,7 @@ static MoviePlayerData* CreatePlayerData(AVBufferRef* hw_device_context, const c
 		FreePlayerData(player);
 	};
 
-	player->file = g_fileSystem->Open(filename, "r");
+	player->file = g_fileSystem->Open(filename, FS_OPEN_READ);
 	if (!player->file)
 	{
 		MsgError("Cannot open video file %s\n", filename);

@@ -13,7 +13,7 @@
 bool CSoundSource_OggStream::Load()
 {
 	// Open for binary reading
-	m_oggFile = g_fileSystem->Open(GetFilename(), "rb");
+	m_oggFile = g_fileSystem->Open(GetFilename(), FS_OPEN_READ);
 	if(!m_oggFile)
 		return false;
 

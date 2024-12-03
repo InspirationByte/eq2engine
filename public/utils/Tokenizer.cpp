@@ -75,7 +75,7 @@ bool Tokenizer::setFile(const char* fileName)
 	delete[] str;
 	str = nullptr;
 
-	IFilePtr file = g_fileSystem->Open(fileName, "rb");
+	IFilePtr file = g_fileSystem->Open(fileName, FS_OPEN_READ);
 	if (file)
 	{
 		length = file->GetSize();

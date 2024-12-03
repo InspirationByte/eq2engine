@@ -283,7 +283,7 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int pac
 		fnmPathCombine(nonPackedPath, m_packFileName, fileName);
 
 		g_fileSystem->MakeDir(fnmPathStripName(nonPackedPath), m_packFilePath);
-		IFilePtr writeFile = g_fileSystem->Open(nonPackedPath, "wb", m_packFilePath);
+		IFilePtr writeFile = g_fileSystem->Open(nonPackedPath, FS_OPEN_WRITE, m_packFilePath);
 
 		// prepare stream to be read
 		CMemoryStream readStream(PP_SL);

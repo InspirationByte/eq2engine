@@ -15,7 +15,7 @@
 
 void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*/)
 {
-	IFilePtr cfgfile = g_fileSystem->Open(pszFilename,"w");
+	IFilePtr cfgfile = g_fileSystem->Open(pszFilename, FS_OPEN_WRITE);
 	if(!cfgfile)
 	{
 		MsgError("Failed to write configuraton file '%s'\n", pszFilename);

@@ -793,7 +793,7 @@ bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 	SetName(fileName);
 
 	IFilePtr file;
-	if (!(file = g_fileSystem->Open(fileName, "rb", searchFlags)))
+	if (!(file = g_fileSystem->Open(fileName, FS_OPEN_READ, searchFlags)))
 		return false;
 
 	if (extension == "dds")
@@ -1080,7 +1080,7 @@ bool CImage::SaveImage(const char* fileName, int searchFlags) const
 		return false;
 
 	IFilePtr file;
-	if (!(file = g_fileSystem->Open(fileName, "wb", searchFlags)))
+	if (!(file = g_fileSystem->Open(fileName, FS_OPEN_WRITE, searchFlags)))
 		return false;
 
 	if (extension == "dds") 

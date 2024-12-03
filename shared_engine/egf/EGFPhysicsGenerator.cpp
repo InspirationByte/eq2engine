@@ -741,7 +741,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	Msg("  Object count: %d\n", m_objects.numElem());
 	Msg("  Joints count: %d\n", m_joints.numElem());
 	
-	IFilePtr outputFile = g_fileSystem->Open(filename, "wb");
+	IFilePtr outputFile = g_fileSystem->Open(filename, FS_OPEN_WRITE);
 	if(!outputFile)
 	{
 		MsgError("Failed to create file '%s' for writing!\n", filename);

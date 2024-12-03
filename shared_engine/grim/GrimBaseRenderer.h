@@ -32,22 +32,21 @@ struct GRIMDrawSettings
 
 struct GRIMRenderState
 {
-	// TODO: renderer UID to validate
-	BitArray		visibleArchetypes{ PP_SL, 128 };
+	BitArray		visibleArchetypes{ PP_SL, 128 };	/// archetypes which are visible in this state.
+	IGPUBufferPtr	drawInvocationsBuffer;				/// indirect draw invocations buffer which is pointing to instanceIdsBuffer
+	IGPUBufferPtr	instanceIdsBuffer;					/// visible instance Ids
 
-	IGPUBufferPtr	drawInvocationsBuffer;
-	IGPUBufferPtr	instanceIdsBuffer;
+	int				groupMaskInclude{ (int)COM_UINT_MAX };
+	int				groupMaskExclude{ 0 };
+	int				drawCallMaterialGroupByFlags{ 0 };
 
+	// these buffers are intermediate ones
+	// and cached there for performance.
 	IGPUBufferPtr	sortedInstanceIdsBuffer;
 	IGPUBufferPtr	filteredInstancesBuffer;
 	IGPUBufferPtr	culledInstanceInfosBuffer;
 	IGPUBufferPtr	drawInstanceBoundsBuffer;
 	IGPUBufferPtr	filterParamsBuffer;
-
-	int				groupMaskInclude{ (int)COM_UINT_MAX };
-	int				groupMaskExclude{ 0 };
-	int				drawCallMaterialGroupByFlags{ 0 };
-	uint			bufferUpdateToken{ COM_UINT_MAX };
 };
 
 class GRIMBaseRenderer : public IShaderMeshInstanceProvider

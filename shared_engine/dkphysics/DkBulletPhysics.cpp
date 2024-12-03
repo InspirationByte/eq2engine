@@ -784,7 +784,7 @@ void DkPhysics::Simulate(float dt, int substeps)
 
 			m_dynamicsWorld->serialize(serializer);
 
-			IFilePtr file = g_fileSystem->Open("testFile.bullet", "wb", SP_ROOT);
+			IFilePtr file = g_fileSystem->Open("testFile.bullet", FS_OPEN_WRITE, SP_ROOT);
 			file->Write(serializer->getBufferPointer(),serializer->getCurrentBufferSize(),1);
 
 			delete serializer;

@@ -787,7 +787,7 @@ bool CEGFGenerator::GenerateEGF()
 	g_fileSystem->MakeDir(fnmPathExtractPath(m_outputFilename), SP_MOD);
 
 	// open output model file
-	IFilePtr file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb", -1);
+	IFilePtr file = g_fileSystem->Open(m_outputFilename, FS_OPEN_WRITE, -1);
 	if(file)
 	{
 		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.ToCString());

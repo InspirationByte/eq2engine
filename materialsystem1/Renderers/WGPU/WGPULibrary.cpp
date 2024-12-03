@@ -146,16 +146,24 @@ static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
 static size_t wgpuLoadCacheDataFunction(void const* key, size_t keySize, void* value, size_t valueSize, void* userdata)
 {
 	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
+	static thread_local IFilePtr file;
+	
+	if (!value)
+	{
+		file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_READ, SP_ROOT);
+		if (!file)
+			return 0;
 
-	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), "r", SP_ROOT);
+		return file->GetSize();
+	}
 
 	if (!file)
 		return 0;
 
-	if (!value)
-		return file->GetSize();
+	size_t readSize = file->Read(value, 1, valueSize);
+	file = nullptr;
 
-	return file->Read(value, 1, valueSize);
+	return readSize;
 }
 
 static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void const* value, size_t valueSize, void* userdata)
@@ -163,7 +171,7 @@ static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void con
 	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
 
 	g_fileSystem->MakeDir("PSOCache", SP_ROOT);
-	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), "w", SP_ROOT);
+	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_WRITE, SP_ROOT);
 	file->Write(value, 1, valueSize);
 }
 

@@ -1207,7 +1207,7 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 	CopyLumpToFile(&lumpDataStream, ANIMFILE_POSECONTROLLERS, (ubyte*)m_posecontrollers.ptr(), m_posecontrollers.numElem() * sizeof(posecontroller_t));
 	header.numLumps += 3;
 
-	IFilePtr file = g_fileSystem->Open(packageOutputFilename, "wb", SP_MOD);
+	IFilePtr file = g_fileSystem->Open(packageOutputFilename, FS_OPEN_WRITE, SP_MOD);
 	if(!file)
 	{
 		MsgError("Can't create file for writing!\n");

@@ -155,7 +155,7 @@ IFilePtr CFlatFileReader::Open(const char* filename, int modeFlags)
 	EqString filePath;
 	fnmPathCombine(filePath, m_packagePath, filename);
 
-	return g_fileSystem->Open(filePath, "r");
+	return g_fileSystem->Open(filePath, FS_OPEN_READ);
 }
 
 bool CFlatFileReader::FileExists(const char* filename) const
@@ -482,7 +482,7 @@ ubyte* CFileSystem::GetFileBuffer(const char* filename, VSSize* filesize/* = 0*/
 
 VSSize CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
 {
-    IFilePtr file = Open(filename,"rb",searchFlags);
+    IFilePtr file = Open(filename, FS_OPEN_READ, searchFlags);
     if (!file)
         return 0;
 
@@ -491,7 +491,7 @@ VSSize CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
 
 uint32 CFileSystem::GetFileCRC32(const char* filename, int searchFlags)
 {
-    IFilePtr file = Open(filename,"rb",searchFlags);
+    IFilePtr file = Open(filename, FS_OPEN_READ, searchFlags);
     if (!file)
         return 0;
 
@@ -505,8 +505,8 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 	if( FileExist(filename, search) && (overWrite || FileExist(dest_file, search) == false))
 	{
-		IFilePtr fpWrite = Open(dest_file, "wb", search);
-		IFilePtr fpRead = Open(filename, "rb", search);
+		IFilePtr fpWrite = Open(dest_file, FS_OPEN_WRITE, search);
+		IFilePtr fpRead = Open(filename, FS_OPEN_READ, search);
 
 		if (!fpRead || !fpWrite)
 			return false;

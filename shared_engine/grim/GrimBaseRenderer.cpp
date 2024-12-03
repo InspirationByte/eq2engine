@@ -1100,9 +1100,6 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	cmdRecorder->DbgPopGroup();
 
 	cmdRecorder->DbgPopGroup();
-
-	// update instance allocator buffer update token
-	renderState.bufferUpdateToken = m_instAllocator.GetBufferUpdateToken();
 }
 
 bool GRIMBaseRenderer::IsSync() const
