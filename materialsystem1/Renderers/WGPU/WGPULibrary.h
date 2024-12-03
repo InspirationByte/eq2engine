@@ -56,6 +56,8 @@ protected:
 	WGPUDevice				m_rhiDevice{ nullptr };
 	WGPUQueue				m_deviceQueue{ nullptr };
 
+	Threading::CEqSignal	m_endFrameWait;
+
 	Array<CWGPUSwapChain*>	m_swapChains{ PP_SL };
 	int						m_swapChainCounter{ 0 };
 	CWGPUSwapChain*			m_currentSwapChain{ nullptr };

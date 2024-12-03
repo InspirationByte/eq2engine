@@ -84,6 +84,7 @@ static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapt
 CWGPURenderLib::CWGPURenderLib()
 {
 	m_windowed = true;
+	m_endFrameWait.Raise();
 }
 
 CWGPURenderLib::~CWGPURenderLib()
@@ -380,20 +381,24 @@ void CWGPURenderLib::ExitAPI()
 
 void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 {
+	m_endFrameWait.Wait();
+
 	CWGPURenderAPI::Instance.m_deviceLost = false;
 	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
 
-	g_renderWorker.WaitForThread();
-
 	// must obtain valid texture view upon Present
-	m_currentSwapChain->UpdateResize();
-	m_currentSwapChain->UpdateBackbufferView();
+	g_renderWorker.WaitForExecute(__func__, [this]() {
+		m_currentSwapChain->UpdateResize();
+		m_currentSwapChain->UpdateBackbufferView();
+		return 0;
+	});
 }
 
 void CWGPURenderLib::EndFrame()
 {
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
+		m_endFrameWait.Raise();
 		return 0;
 	});
 }
