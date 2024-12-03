@@ -26,6 +26,9 @@ struct RenderPassContext;
 class IGPURenderPipeline;
 using IGPURenderPipelinePtr = CRefPtr<IGPURenderPipeline>;
 
+class IGPUPipelineLayout;
+using IGPUPipelineLayoutPtr = CRefPtr<IGPUPipelineLayout>;
+
 class IGPUBindGroup;
 using IGPUBindGroupPtr = CRefPtr<IGPUBindGroup>;
 
@@ -54,8 +57,13 @@ enum EBindGroupId : int
 
 struct MatSysShaderPipelineCache
 {
-	Map<uint, IGPURenderPipelinePtr>	pipelines{ PP_SL };
-	Threading::CEqReadWriteLock			rwLock;
+	struct Pipeline
+	{
+		IGPUPipelineLayoutPtr layout;
+		IGPURenderPipelinePtr pipeline;
+	};
+	Map<uint, Pipeline>			pipelines{ PP_SL };
+	Threading::CEqReadWriteLock	rwLock;
 };
 
 class IShaderMeshInstanceProvider

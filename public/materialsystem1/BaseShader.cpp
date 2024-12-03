@@ -176,6 +176,7 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 	const bool depthTestEnable = (m_flags & MATERIAL_FLAG_NO_Z_TEST) == 0;
 	const bool depthWriteEnable = translucentZWrite && (m_flags & MATERIAL_FLAG_NO_Z_WRITE) == 0;
 	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
+	const bool withMeshInstProvider = inputParams.meshInstProvider ? true : false;
 	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
 	const uint pipelineFlags = 
@@ -184,8 +185,9 @@ uint CBaseShader::GetRenderPipelineId(const PipelineInputParams& inputParams) co
 		| (static_cast<uint>(depthWriteEnable) << 3)
 		| (static_cast<uint>(polyOffsetEnable) << 4)
 		| (static_cast<uint>(onlyZ) << 5)
-		| (static_cast<uint>(inputParams.primitiveTopology) << 6)
-		| (m_blendMode << 9);
+		| (static_cast<uint>(withMeshInstProvider) << 6)
+		| (static_cast<uint>(inputParams.primitiveTopology) << 7)
+		| (m_blendMode << 10);
 
 	uint hash = m_shaderQueryId;
 	hash *= 31;
@@ -314,57 +316,67 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 
 	const uint pipelineId = GetRenderPipelineId(inputParams);
 
+	if(!m_pipelineCache)
+		m_pipelineCache = &g_matSystem->GetRenderPipelineCache(GetNameHash());
+
+	m_pipelineCache->rwLock.LockRead();
 	auto it = m_renderPipelines.find(pipelineId);
+	m_pipelineCache->rwLock.UnlockRead();
+
 	if (it.atEnd())
 	{
-		it = m_renderPipelines.insert(pipelineId);
+		{
+			Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
+			it = m_renderPipelines.insert(pipelineId);
+		}
+
 		PipelineInfo& newPipelineInfo = *it;
 		newPipelineInfo.vertexLayoutId = inputParams.meshInstFormat.formatId;
 
-		// Create pipeline layout
-		{
-			// MatSystem shader by default defines three bind groups, which differ by the lifetime:
-			// 
-			//	BINDGROUP_CONSTANT
-			//		- Bind group data is never going to be changed during the life time of the material
-			//	BINDGROUP_RENDERPASS
-			//		- Bind group persists across single render pass
-			//	BINDGROUP_TRANSIENT
-			//		- Bind group is unique for each draw call
-			//
-			// you're not obligated to use all of them
-
-			PipelineLayoutDesc pipelineLayoutDesc;
-			pipelineLayoutDesc.name = GetName();
-
-			FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-			FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-
-			if(inputParams.meshInstProvider)
-				inputParams.meshInstProvider->FillBindGroupLayoutDesc(pipelineLayoutDesc.bindGroups.append());
-
-			int shaderLayoutBindGroup = 0;
-
-			int piplineLayoutIdx = 0;
-			for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
-			{
-				if (layout.entries.numElem() > 0)
-					shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
-				++piplineLayoutIdx;
-			}
-
-			if (shaderLayoutBindGroup)
-				newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-		}
-
-		MatSysShaderPipelineCache& shaderPipelineCache = g_matSystem->GetRenderPipelineCache(GetNameHash());
-		shaderPipelineCache.rwLock.LockRead();
-		auto cacheIt = shaderPipelineCache.pipelines.find(pipelineId);
-		shaderPipelineCache.rwLock.UnlockRead();
-
+		m_pipelineCache->rwLock.LockRead();
+		auto cacheIt = m_pipelineCache->pipelines.find(pipelineId);
+		m_pipelineCache->rwLock.UnlockRead();
 		if (cacheIt.atEnd())
 		{
+			// Create pipeline layout
+			{
+				// MatSystem shader by default defines three bind groups, which differ by the lifetime:
+				// 
+				//	BINDGROUP_CONSTANT
+				//		- Bind group data is never going to be changed during the life time of the material
+				//	BINDGROUP_RENDERPASS
+				//		- Bind group persists across single render pass
+				//	BINDGROUP_TRANSIENT
+				//		- Bind group is unique for each draw call
+				//
+				// you're not obligated to use all of them
+
+				PipelineLayoutDesc pipelineLayoutDesc;
+				pipelineLayoutDesc.name = GetName();
+
+				FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+				FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+				FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+
+				if (inputParams.meshInstProvider)
+					inputParams.meshInstProvider->FillBindGroupLayoutDesc(pipelineLayoutDesc.bindGroups.append());
+
+				int shaderLayoutBindGroup = 0;
+
+				int piplineLayoutIdx = 0;
+				for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
+				{
+					if (layout.entries.numElem() > 0)
+						shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
+					++piplineLayoutIdx;
+				}
+
+				if (shaderLayoutBindGroup)
+				{
+					newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+				}
+			}
+
 			RenderPipelineDesc renderPipelineDesc;
 			FillRenderPipelineDesc(inputParams, renderPipelineDesc);
 
@@ -375,8 +387,11 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 			}
 
 			{
-				Threading::CScopedWriteLocker lock(shaderPipelineCache.rwLock);
-				cacheIt = shaderPipelineCache.pipelines.insert(pipelineId, renderPipeline);
+				Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
+				MatSysShaderPipelineCache::Pipeline cachePipeline;
+				cachePipeline.pipeline = renderPipeline;
+				cachePipeline.layout = newPipelineInfo.layout;
+				cacheIt = m_pipelineCache->pipelines.insert(pipelineId, cachePipeline);
 			}
 
 #ifndef _RETAIL
@@ -412,7 +427,8 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 #endif // !_RETAIL
 		}
 
-		newPipelineInfo.pipeline = *cacheIt;
+		newPipelineInfo.pipeline = (*cacheIt).pipeline;
+		newPipelineInfo.layout = (*cacheIt).layout;
 	}
 
 	return *it;
@@ -558,6 +574,7 @@ void CBaseShader::InitShader(IShaderAPI* renderAPI)
 // Unload shaders, textures
 void CBaseShader::Unload()
 {
+	m_pipelineCache = nullptr;
 	m_renderPipelines.clear(true);
 	for (int i = 0; i < m_usedTextures.numElem(); ++i)
 	{

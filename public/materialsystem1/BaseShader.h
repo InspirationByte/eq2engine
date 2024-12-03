@@ -178,7 +178,6 @@ protected:
 	IGPUBindGroupPtr			CreateBindGroup(BindGroupDesc& bindGroupDesc, EBindGroupId bindGroupId, IShaderAPI* renderAPI, const PipelineInfo& pipelineInfo) const;
 	IGPUBindGroupPtr			GetEmptyBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const PipelineInfo& pipelineInfo) const;
 
-
 	template<typename T>
 	T GetMaterialValue(const char* param, T defaultValue) const
 	{
@@ -198,23 +197,25 @@ protected:
 	// makes a texture transform (scale + offset)
 	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;
 
-	IMaterial*					m_material{ nullptr };
-
-	MatVec2Proxy				m_baseTextureTransformVar;
-	MatVec2Proxy				m_baseTextureScaleVar;
-	MatIntProxy					m_baseTextureFrame;
-
-	Array<MatTextureProxy>		m_usedTextures{ PP_SL };
-
 	mutable Map<uint, PipelineInfo>	m_renderPipelines{ PP_SL };
-	ETexAddressMode				m_texAddressMode{ TEXADDRESS_WRAP };
-	ETexFilterMode				m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
-	EShaderBlendMode			m_blendMode{ SHADER_BLEND_NONE };
+	MatSysShaderPipelineCache*		m_pipelineCache{ nullptr };
 
-	Array<EqString>				m_shaderQuery{ PP_SL };
-	int							m_shaderQueryId{ 0 };
-	int							m_flags{ 0 };
-	bool						m_isInit{ false };
+	IMaterial*						m_material{ nullptr };
+
+	MatVec2Proxy					m_baseTextureTransformVar;
+	MatVec2Proxy					m_baseTextureScaleVar;
+	MatIntProxy						m_baseTextureFrame;
+
+	Array<MatTextureProxy>			m_usedTextures{ PP_SL };
+
+	ETexAddressMode					m_texAddressMode{ TEXADDRESS_WRAP };
+	ETexFilterMode					m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
+	EShaderBlendMode				m_blendMode{ SHADER_BLEND_NONE };
+
+	Array<EqString>					m_shaderQuery{ PP_SL };
+	int								m_shaderQueryId{ 0 };
+	int								m_flags{ 0 };
+	bool							m_isInit{ false };
 };
 
 // DEPRECATED
