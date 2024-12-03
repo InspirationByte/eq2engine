@@ -38,6 +38,7 @@ void Event<SIGNATURE>::Clear()
 		sub = nextSub;
 	}
 	m_subs = nullptr;
+	m_count = 0;
 }
 
 template<typename SIGNATURE>
@@ -58,7 +59,7 @@ const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(c
 		if(Atomic::CompareExchange(m_subs, oldHead, newSub) == oldHead)
 			break;
 	}
-	
+	Atomic::Increment(m_count);
 	return CWeakPtr(newSub);
 }
 
@@ -107,7 +108,7 @@ void Event<SIGNATURE>::ForEach(FUNC func)
 					break;
 				}
 			}
-
+			Atomic::Decrement(m_count);
 			delete del;
 			continue;
 		}
@@ -123,11 +124,11 @@ void Event<SIGNATURE>::ForEach(FUNC func)
 }
 
 template<typename SIGNATURE>
-template<typename... Params>
-void Event<SIGNATURE>::operator()(Params&&... args)
+template<typename... Args>
+void Event<SIGNATURE>::operator()(Args&&... args)
 {
 	ForEach([&](SubscriptionObject* sub){
-		sub->func(std::forward<Params>(args)...);
+		sub->func(std::forward<Args>(args)...);
 	});
 }
 

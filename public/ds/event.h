@@ -54,18 +54,21 @@ public:
 	void					Clear();
 
 	const SubscriptionPtr	Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce = false);
-	const SubscriptionPtr	operator+=(const EqFunction<SIGNATURE>& func) { return Subscribe(func); }
-
-	template<typename... Params>
-	void					operator()(Params&&... args);
 
 	void					GetSubscriptionsFlat(Array<SubscriptionObject*>& list);
+	int						GetSubscriptionCount() const { return m_count; }
+
+	const SubscriptionPtr	operator+=(const EqFunction<SIGNATURE>& func) { return Subscribe(func); }
+
+	template<typename... Args>
+	void					operator()(Args&&... args);
 
 private:
 	template<typename FUNC>
 	void					ForEach(FUNC func);
 
 	SubscriptionObject*		m_subs{ nullptr };
+	volatile int			m_count{ 0 };
 	const PPSourceLine		m_sl;
 };
 
