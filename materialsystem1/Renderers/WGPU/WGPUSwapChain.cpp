@@ -181,7 +181,7 @@ bool CWGPUSwapChain::UpdateResize()
 
 	WGPUSurfaceConfiguration rhiSurfaceConfig{};
 	rhiSurfaceConfig.device = m_host->m_rhiDevice;
-	rhiSurfaceConfig.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
+	rhiSurfaceConfig.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;	// requires SurfaceCapabilities feature
 	rhiSurfaceConfig.format = rhiSurfaceFormat;
 	rhiSurfaceConfig.presentMode = m_vSync ? WGPUPresentMode_Fifo : WGPUPresentMode_Mailbox;
 	rhiSurfaceConfig.alphaMode = WGPUCompositeAlphaMode_Opaque;	// TODO: get from surface capabilities

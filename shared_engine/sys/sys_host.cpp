@@ -23,6 +23,7 @@
 #include "imaging/ImageLoader.h"
 
 #include "render/IDebugOverlay.h"
+#include "render/EdgeAA.h"
 
 #include "sys_host.h"
 #include "sys_state.h"
@@ -37,6 +38,7 @@
 #include "input/InputCommandBinder.h"
 
 #include "materialsystem1/IMaterialSystem.h"
+
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
@@ -174,6 +176,7 @@ enum CursorCode
 static EQCURSOR s_defaultCursor[20];
 
 CStaticAutoPtr<CGameHost> g_pHost;
+CStaticAutoPtr<CRenderFullScreenEdgeAA> g_fullScreenEdgeAA;
 
 static DKMODULE*	g_matsysmodule = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
@@ -478,6 +481,7 @@ bool CGameHost::InitSystems()
 	if( !g_fontCache->Init() )
 		return false;
 
+	g_fullScreenEdgeAA->Init();
 	debugoverlay->Init();
 	equi::Manager->Init();
 	g_inputCommandBinder->Init();
@@ -629,6 +633,7 @@ void CGameHost::ShutdownSystems()
 
 	eqAppStateMng::ShutdownAppStates();
 	
+	g_fullScreenEdgeAA->Shutdown();
 	debugoverlay->Shutdown();
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
@@ -758,16 +763,43 @@ bool CGameHost::Frame()
 		return false;
 	}
 
+	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
+	// this also resets matsystem from overdraw
+	g_matSystem->GetConfiguration().overdrawMode = false;
+
+	equi::Manager->SetViewFrame(IAARectangle(0, 0, m_winSize.x, m_winSize.y));
+	equi::Manager->Render();
+
+	// DO AA after we done scene and UI
+	if(g_fullScreenEdgeAA->IsEnabled())
+	{
+		g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
+
+		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("FullScreenEdgeAA");
+		cmdRecorder->DbgPushGroup("FullScreenEdgeAA");
+		g_fullScreenEdgeAA->PreRender(cmdRecorder);
+
+		{
+			IGPURenderPassRecorderPtr rendPassRecorder = cmdRecorder->BeginRenderPass(
+				Builder<RenderPassDesc>()
+				.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+				.End()
+			);
+			g_fullScreenEdgeAA->Render(rendPassRecorder);
+			rendPassRecorder->Complete();
+		}
+
+		cmdRecorder->DbgPopGroup();
+
+		g_matSystem->QueueCommandBuffer(cmdRecorder->End());
+	}
+
 	// submit all command buffers queued inside UpdateStates
 	// this is made to display Debug Overlays and, console input 
 	// and ImGui in case of some command buffers were invalid
 	g_matSystem->SubmitQueuedCommandsAwaitable();
 
 	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
-
-	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
-	// this also resets matsystem from overdraw
-	g_matSystem->GetConfiguration().overdrawMode = false;
 
 	// Engine frames status
 	static float gameAccTime = 0.1f;
@@ -803,44 +835,46 @@ bool CGameHost::Frame()
 	debugoverlay->Text(color_white, "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
 	debugoverlay->Text(color_white, "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(color_white, "primitives: %i", g_renderAPI->GetTrianglesCount());
-	
+
 	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
 
 	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
 
-	equi::Manager->SetViewFrame(IAARectangle(0,0,m_winSize.x,m_winSize.y));
-	equi::Manager->Render();
-
-	IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
-		Builder<RenderPassDesc>()
-		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-		.End()
-	);
-
-	if (r_showFPS.GetBool())
 	{
-		FontStyleParam params;
-		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-		params.textColor = ColorRGBA(1, 1, 1, 1);
+		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+			Builder<RenderPassDesc>()
+			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+			.End()
+		);
+		rendPassRecorder->DbgPushGroup("Extra Overlays");
 
-		if (fps < 30)
-			params.textColor = ColorRGBA(1, 0, 0, 1);
-		else if (fps < 60)
-			params.textColor = ColorRGBA(1, 0.8f, 0, 1);
-
-		m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
-
-		size_t totalMem = PPMemGetUsage();
-		if (totalMem)
+		if (r_showFPS.GetBool())
 		{
-			FontStyleParam memParams;
-			memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-			m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
-		}
-	}
+			FontStyleParam params;
+			params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+			params.textColor = ColorRGBA(1, 1, 1, 1);
 
-	g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
-	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
+			if (fps < 30)
+				params.textColor = ColorRGBA(1, 0, 0, 1);
+			else if (fps < 60)
+				params.textColor = ColorRGBA(1, 0.8f, 0, 1);
+
+			m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
+
+			size_t totalMem = PPMemGetUsage();
+			if (totalMem)
+			{
+				FontStyleParam memParams;
+				memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+				m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
+			}
+		}
+
+		g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
+		rendPassRecorder->DbgPopGroup();
+
+		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
+	}
 
 	// End frame from render lib
 	EndScene();

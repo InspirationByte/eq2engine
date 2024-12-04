@@ -236,6 +236,7 @@ void CUIManager::Render()
 		.ColorTarget(g_matSystem->GetCurrentBackbuffer())
 		.End()
 	);
+	rendPassRecorder->DbgPushGroup("EqUI");
 
 	for(Panel* panel : m_panels)
 	{
@@ -249,6 +250,7 @@ void CUIManager::Render()
 	m_rootPanel->SetRectangle( m_viewFrameRect );
 	m_rootPanel->ResetSizeDiffs();
 	m_rootPanel->Render(1, rendPassRecorder);
+	rendPassRecorder->DbgPopGroup();
 
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 }

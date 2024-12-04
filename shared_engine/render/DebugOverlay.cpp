@@ -1286,6 +1286,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		.End()
 	);
 
+	rendPassRecorder->DbgPushGroup("Debug Overlays");
+
 	g_matSystem->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	g_matSystem->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
@@ -1531,6 +1533,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 	++m_frameId;
 
+	rendPassRecorder->DbgPopGroup();
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 #endif
 }
