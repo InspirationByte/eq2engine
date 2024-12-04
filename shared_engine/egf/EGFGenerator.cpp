@@ -16,6 +16,8 @@
 #include "dsm_loader.h"
 #include "egf/dsm_fbx_loader.h"
 
+#pragma optimize("", off)
+
 using namespace SharedModel;
 
 //------------------------------------------------------------
@@ -429,7 +431,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		lodList.name = mref.name;
 
 		const int nVerts = GetTotalVertsOfDSM(mref.model);
-		Msg("Adding reference %s '%s' with %d triangles (in %d meshes), %d bones\n",
+		Msg("Adding reference %s as '%s' with %d triangles (in %d meshes), %d bones\n",
 			modelNames[0].ToCString(),
 			mref.name.ToCString(),
 			nVerts / 3,
@@ -445,7 +447,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		lodList.name = models[0].name;
 
 		const int nVerts = GetTotalVertsOfDSM(models[0].model);
-		Msg("Adding reference %s '%s' with %d triangles (in %d meshes), %d bones\n",
+		Msg("Adding reference %s as '%s' with %d triangles (in %d meshes), %d bones\n",
 			modelNames[0].ToCString(),
 			models[0].name.ToCString(),
 			nVerts / 3,
@@ -453,7 +455,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 			models[0].model->bones.numElem());
 	}
 
-	if(retModelIdx)
+	if(retModelIdx >= 0)
 		MsgError("got model definition '%s', but nothing added\n", refName.ToCString());
 
 	return retModelIdx;
@@ -527,14 +529,24 @@ void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 		GenLODList* lodgroup = FindModelLodGroupByName(target);
 		if (!lodgroup)
 		{
-			MsgError("No such reference named %s\n", target.ToCString());
+			MsgError("replace - no such reference named %s\n", target.ToCString());
 			continue;
 		}
 
-		lodModelSec->SetValue(EqString::Format("%s_l%d", target, lodIdx));
-		
-		const int replaceByExisting = FindModelIndexByName(replaceBy);
-		const int replaceByModel = replaceByExisting != -1 ? replaceByExisting : ParseAndLoadModels(lodModelSec);
+		int replaceByModel = FindModelIndexByName(replaceBy);
+		if(replaceByModel == -1)
+		{
+			// try load from file
+			lodModelSec->SetValue(EqString::Format("%s_l%d", target, lodIdx));
+			replaceByModel = ParseAndLoadModels(lodModelSec);
+		}
+
+		if (replaceByModel == -1)
+		{
+			MsgError("replace - can't replace '%s' - missing model %s\n", target.ToCString(), replaceBy.ToCString());
+			continue;
+		}
+
 		lodgroup->lodmodels.append(replaceByModel);
 	}
 
@@ -551,7 +563,7 @@ void CEGFGenerator::ParseLodData(const KVSection* pSection, int lodIdx)
 		GenLODList* lodgroup = FindModelLodGroupByName(target);
 		if (!lodgroup)
 		{
-			MsgError("No such reference named %s\n", target.ToCString());
+			MsgError("simplify - no such reference named %s\n", target.ToCString());
 			continue;
 		}
 

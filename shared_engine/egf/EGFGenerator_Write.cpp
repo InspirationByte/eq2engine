@@ -797,7 +797,8 @@ bool CEGFGenerator::GenerateEGF()
 	}
 	else
 	{
-		MsgError("File creation denined, can't save compiled model\n");
+		MsgError("\nFailed to create file '%s' for writing\n", m_outputFilename.ToCString());
+		return false;
 	}
 
 	return true;

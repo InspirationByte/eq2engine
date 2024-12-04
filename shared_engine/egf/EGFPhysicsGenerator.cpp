@@ -527,18 +527,17 @@ void CEGFPhysicsGenerator::CreateMultipleObjects(ArrayCRef<DSVertex> vertices, A
 	else
 		Msg("  Model is compound\n");
 
+	bool isAssumedAsConvex = false;
+	m_physicsParams->Get("dont_simplify").GetValues(isAssumedAsConvex);
+
 	bool isConcave = false;
 	bool isStatic = false;
 	m_physicsParams->Get("static").GetValues(isStatic);
-	m_physicsParams->Get("concave").GetValues(isStatic);
+	m_physicsParams->Get("concave").GetValues(isConcave);
 
-	EPhysShapeType shapeType = PHYSSHAPE_TYPE_CONVEX;
-	if (isConcave)
-	{
+	EPhysShapeType shapeType = isConcave ? PHYSSHAPE_TYPE_MOVABLECONCAVE : PHYSSHAPE_TYPE_CONVEX;
+	if (isStatic && isConcave)
 		shapeType = PHYSSHAPE_TYPE_CONCAVE;
-		if (!isStatic)
-			shapeType = PHYSSHAPE_TYPE_MOVABLECONCAVE;
-	}
 
 	EqStringRef surfaceProps = "default";
 	m_physicsParams->Get("SurfaceProps").GetValues(surfaceProps);
@@ -561,12 +560,13 @@ void CEGFPhysicsGenerator::CreateMultipleObjects(ArrayCRef<DSVertex> vertices, A
 
 		physobject_t& object = obj.object;
 		memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
-		object.shapeIndex[0] = AddShape(vertices, ArrayCRef(&tris[0].x, tris.numElem() * 3), shapeType);
+		object.shapeIndex[0] = AddShape(vertices, ArrayCRef(&tris[0].x, tris.numElem() * 3), shapeType, isAssumedAsConvex);
 		object.numShapes = 1;
 		object.bodyPartId = islandIdx;
 		object.offset = vec3_zero;
 		object.massCenter = vec3_zero;
 		object.mass = objectMass;
+
 		strncpy(object.surfaceprops, surfaceProps, sizeof(object.surfaceprops));
 		object.surfaceprops[sizeof(object.surfaceprops) - 1] = 0;
 
@@ -585,24 +585,20 @@ void CEGFPhysicsGenerator::CreateSingleObject(ArrayCRef<DSVertex> vertices, Arra
 	bool isConcave = false;
 	bool isStatic = false;
 	m_physicsParams->Get("static").GetValues(isStatic);
-	m_physicsParams->Get("concave").GetValues(isStatic);
+	m_physicsParams->Get("concave").GetValues(isConcave);
 
-	EPhysShapeType shapeType = PHYSSHAPE_TYPE_CONVEX;
-	if (isConcave)
-	{
+	EPhysShapeType shapeType = isConcave ? PHYSSHAPE_TYPE_MOVABLECONCAVE : PHYSSHAPE_TYPE_CONVEX;
+	if (isStatic && isConcave)
 		shapeType = PHYSSHAPE_TYPE_CONCAVE;
-		if (!isStatic)
-			shapeType = PHYSSHAPE_TYPE_MOVABLECONCAVE;
-	}
+
+	EqStringRef surfaceProps = "default";
+	m_physicsParams->Get("SurfaceProps").GetValues(surfaceProps);
 
 	PhyNamedObject& obj = m_objects.append();
 	strncpy(obj.name, objName, sizeof(obj.name));
 	obj.name[sizeof(obj.name) - 1] = 0;
 
 	physobject_t& object = obj.object;
-	memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
-	strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
-
 	memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
 	object.shapeIndex[0] = AddShape(vertices, indices, shapeType, isAssumedAsConvex);
 	object.numShapes = 1;
@@ -610,6 +606,9 @@ void CEGFPhysicsGenerator::CreateSingleObject(ArrayCRef<DSVertex> vertices, Arra
 	object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
 	object.massCenter = KV_GetVector3D(m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter());
 	object.bodyPartId = 0;
+
+	strncpy(object.surfaceprops, surfaceProps, sizeof(object.surfaceprops));
+	object.surfaceprops[sizeof(object.surfaceprops) - 1] = 0;
 }
 
 bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* physInfo, bool forceGroupSubdivision)
