@@ -8,6 +8,7 @@
 #pragma once
 #include "materialsystem1/IMaterialVar.h"
 
+class ConVar;
 class IGPURenderPassRecorder;
 class IGPUComputePipeline;
 using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
@@ -24,6 +25,7 @@ public:
 	void			Render(IGPURenderPassRecorder* rendPassRecorder);
 protected:
 	IMaterialPtr			m_edgeAAMat;
+	MatVec4Proxy			m_edgeAASettings;
 	ITexturePtr				m_lumaFramebuffer;
 	IGPUComputePipelinePtr	m_edgeAALumaPipeline;
 };

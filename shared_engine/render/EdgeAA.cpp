@@ -13,7 +13,11 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 
+
 DECLARE_CVAR(r_fxaa, "1", "Fast Approximate Anti-aliasing", CV_ARCHIVE);
+DECLARE_CVAR_CLAMP(r_fxaaQualitySubpix, "0.25", 0.25f, 1.0f, nullptr, CV_ARCHIVE);
+DECLARE_CVAR_CLAMP(r_fxaaQualityEdgeThreshold, "0.11", 0.063f, 0.5f, nullptr, CV_ARCHIVE);
+DECLARE_CVAR_CLAMP(r_fxaaQualityEdgeThresholdMin, "0.063", 0.0f, 1.0f, nullptr, CV_ARCHIVE);
 
 static ETextureFormat fsaaGetTextureFormat()
 {
@@ -57,6 +61,8 @@ bool CRenderFullScreenEdgeAA::Init()
 		lumaMat.SetKey("BaseTexture", "_rt_AAFramebuffer");
 		m_edgeAAMat = g_matSystem->CreateMaterial("_edgeAA", &lumaMat);
 		m_edgeAAMat->LoadShaderAndTextures();
+
+		m_edgeAASettings = m_edgeAAMat->GetMaterialVar("Settings");
 	}
 	return true;
 }
@@ -105,6 +111,13 @@ void CRenderFullScreenEdgeAA::PreRender(IGPUCommandRecorder* cmdRecorder)
 
 void CRenderFullScreenEdgeAA::Render(IGPURenderPassRecorder* rendPassRecorder)
 {
+	Vector4D settings;
+	settings.x = r_fxaaQualitySubpix.GetFloat();
+	settings.y = r_fxaaQualityEdgeThreshold.GetFloat();
+	settings.z = r_fxaaQualityEdgeThresholdMin.GetFloat();
+	settings.w = 0;
+	m_edgeAASettings.Set(settings);
+
 	RenderDrawCmd drawCmd;
 	drawCmd.SetMaterial(m_edgeAAMat);
 	drawCmd.SetDrawNonIndexed(PRIM_TRIANGLES, 3, 0);
