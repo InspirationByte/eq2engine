@@ -33,7 +33,7 @@ function shellout(str)
 	local out_includes = {}
 
 	ret = {}
-	cmd_result = os.outputof(str)
+	local cmd_result = os.outputof(str) or ""
 	for i in (cmd_result:match'^%s*(.*%S)' or ''):gmatch('%S+') do
 		if string.sub(i, 1, 2) == "-l" then
 			table.insert(out_links, string.sub(i, 3))

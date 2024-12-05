@@ -46,7 +46,7 @@ public:
 	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
-	IGPUBufferPtr	GetBuffer() const { return DataPool::GetGPUData().Get<IGPUBuffer>(); }
+	IGPUBufferPtr	GetBuffer() const { return DataPool::GetGPUData().template Get<IGPUBuffer>(); }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
@@ -89,7 +89,7 @@ public:
 	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
-	ITexturePtr		GetTexture() const { return DataPool::GetGPUData().Get<ITexture>(); }
+	ITexturePtr		GetTexture() const { return DataPool::GetGPUData().template Get<ITexture>(); }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
