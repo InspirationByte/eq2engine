@@ -58,6 +58,7 @@ EQWNDHANDLE Sys_CreateWindow()
 	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
 
 	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+	sdlFlags |= SDL_WINDOW_VULKAN; // fucking SDL or Wayland... can't decide which is worse
 	if (fullscreen)
 		sdlFlags |= SDL_WINDOW_FULLSCREEN;
 
