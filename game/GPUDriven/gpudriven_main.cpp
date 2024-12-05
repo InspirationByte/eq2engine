@@ -63,7 +63,7 @@ struct Object
 };
 static Array<Object>			s_objects{ PP_SL };
 static Map<int, GRIMArchetype>	s_modelIdToArchetypeId{ PP_SL };
-static GRIMRenderState			s_storedRenderState;
+static DemoRenderState			s_storedRenderState;
 
 constexpr int GPUVIS_GROUP_SIZE = 256;
 constexpr int GPUVIS_MAX_DIM_GROUPS = 1024;
@@ -265,7 +265,6 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 	// go heavy.
 	constexpr const int INST_RESERVE = 5000000;
 
-	g_pfxRender->Init();
 	s_objects.reserve(INST_RESERVE);
 
 	{
@@ -331,8 +330,6 @@ void CState_GpuDrivenDemo::OnLeave(CAppStateBase* to)
 	g_inputCommandBinder->UnbindCommandByName("backward");
 	g_inputCommandBinder->UnbindCommandByName("strafeleft");
 	g_inputCommandBinder->UnbindCommandByName("straferight");
-
-	g_pfxRender->Shutdown();
 
 	g_studioCache->ReleaseCache();
 }
@@ -455,47 +452,56 @@ void CState_GpuDrivenDemo::RenderGame()
 		.Radius(7000.0f)
 		.Color(color_white);
 
-	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder();
-	g_pfxRender->UpdateBuffers(cmdRecorder);
-
-	s_instanceAlloc.SyncInstances(cmdRecorder);
-	s_grimRenderer.SyncArchetypes(cmdRecorder);
-
-	if (inst_update.GetBool())
 	{
-		DemoRenderState	renderState;
-		const Matrix4x4 viewProjMat = projMat * viewMat;
-		renderState.frustum.LoadAsFrustum(viewProjMat);
-		renderState.viewPos = s_currentView.GetOrigin();
+		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder();
+		s_instanceAlloc.SyncInstances(cmdRecorder);
+		s_grimRenderer.SyncArchetypes(cmdRecorder);
 
-		s_grimRenderer.PrepareDraw(cmdRecorder, renderState, s_objects.numElem());
-		s_storedRenderState = renderState;
-
-		if (inst_update_once.GetBool())
-			inst_update.SetBool(false);
-	}
-
-	{
-		IGPURenderPassRecorderPtr rendPassRecorder = cmdRecorder->BeginRenderPass(
-			Builder<RenderPassDesc>()
-			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-			.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
-			.DepthClear()
-			.End()
-		);
-
-		const RenderPassContext rendPassCtx(rendPassRecorder, nullptr);
-
-		if (obj_draw.GetBool())
+		if (inst_update.GetBool())
 		{
-			s_grimRenderer.Draw(s_storedRenderState, rendPassCtx);
+			const Matrix4x4 viewProjMat = projMat * viewMat;
+			s_storedRenderState.frustum.LoadAsFrustum(viewProjMat);
+			s_storedRenderState.viewPos = s_currentView.GetOrigin();
+
+			s_grimRenderer.PrepareDraw(cmdRecorder, s_storedRenderState, s_objects.numElem());
+
+			if (inst_update_once.GetBool())
+				inst_update.SetBool(false);
+
+			g_matSystem->QueueCommandBuffer(cmdRecorder->End());
+			Future<bool> future = g_matSystem->SubmitQueuedCommandsAwaitable();
+			future.AddCallback([&](const FutureResult<bool>& result) {
+				s_grimRenderer.PostPrepareDraw(s_storedRenderState);
+			});
 		}
-
-		g_pfxRender->Render(rendPassCtx, nullptr);
-
-		rendPassRecorder->Complete();
+		else
+		{
+			g_matSystem->QueueCommandBuffer(cmdRecorder->End());
+		}
 	}
-	g_matSystem->QueueCommandBuffer(cmdRecorder->End());
+
+	{
+		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder();
+		{
+			IGPURenderPassRecorderPtr rendPassRecorder = cmdRecorder->BeginRenderPass(
+				Builder<RenderPassDesc>()
+				.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+				.DepthStencilTarget(g_matSystem->GetDefaultDepthBuffer())
+				.DepthClear()
+				.End()
+			);
+
+			const RenderPassContext rendPassCtx(rendPassRecorder, nullptr);
+
+			if (obj_draw.GetBool())
+			{
+				s_grimRenderer.Draw(s_storedRenderState, rendPassCtx);
+			}
+
+			rendPassRecorder->Complete();
+		}
+		g_matSystem->QueueCommandBuffer(cmdRecorder->End());
+	}
 }
 
 void CState_GpuDrivenDemo::HandleKeyPress(int key, bool down)
