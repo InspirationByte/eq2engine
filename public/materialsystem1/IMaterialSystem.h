@@ -187,7 +187,6 @@ public:
 
 	// returns temp buffer with data written. SubmitCommandBuffers uploads it to GPU
 	virtual GPUBufferView			GetTransientUniformBuffer(const void* data, int64 size) = 0;
-	virtual GPUBufferView			GetTransientVertexBuffer(const void* data, int64 size) = 0;
 
 	// queues command buffer. Execution order is guaranteed
 	virtual void					QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) = 0;

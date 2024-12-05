@@ -154,7 +154,6 @@ public:
 
 	// returns temp buffer with data written. SubmitQueuedCommands uploads it to GPU
 	GPUBufferView				GetTransientUniformBuffer(const void* data, int64 size);
-	GPUBufferView				GetTransientVertexBuffer(const void* data, int64 size);
 
 	void						QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers);
 	void						QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer);
@@ -222,7 +221,6 @@ private:
 	};
 
 	TransientBufferCollection	m_transientUniformBuffers;
-	TransientBufferCollection	m_transientVertexBuffers;
 
 	IMaterialPtr				m_defaultMaterial;
 	IMaterialPtr				m_gridMaterial;

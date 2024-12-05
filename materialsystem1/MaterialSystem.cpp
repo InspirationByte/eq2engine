@@ -32,7 +32,6 @@ using namespace Threading;
 static CEqMutex s_matSystemMutex;
 static CEqMutex s_matSystemPipelineMutex;
 static CEqMutex s_matSystemBufferMutex;
-static CEqMutex s_matSystemCommandsMutex;
 
 DECLARE_INTERNAL_SHADERS()
 
@@ -403,7 +402,6 @@ void CMaterialSystem::Shutdown()
 	m_proxyUpdateCmdRecorders.clear();
 	m_bufferCmdRecorder = nullptr;
 	m_transientUniformBuffers = {};
-	m_transientVertexBuffers = {};
 
 	m_defaultMaterial = nullptr;
 	m_gridMaterial = nullptr;
@@ -1129,14 +1127,12 @@ bool CMaterialSystem::EndFrame()
 
 void CMaterialSystem::SubmitQueuedCommands()
 {
-	CScopedMutex m(s_matSystemCommandsMutex);
 	m_shaderAPI->SubmitCommandBuffers(m_pendingCmdBuffers);
 	m_pendingCmdBuffers.clear();
 }
 
 Future<bool> CMaterialSystem::SubmitQueuedCommandsAwaitable()
 {
-	CScopedMutex m(s_matSystemCommandsMutex);
 	Future<bool> future = m_shaderAPI->SubmitCommandBuffersAwaitable(m_pendingCmdBuffers);
 	m_pendingCmdBuffers.clear();
 
@@ -1362,37 +1358,8 @@ GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64
 	return GPUBufferView(buffer, collection.bufferOffsets[bufferIndex]);
 }
 
-GPUBufferView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 size)
-{
-	CScopedMutex m(s_matSystemBufferMutex);
-
-	const int bufferAlignment = 4; // vertex buffers are aligned always 4 bytes
-	constexpr int64 maxTransientBufferSize = 128 * 1024;
-
-	TransientBufferCollection& collection = m_transientVertexBuffers;
-
-	const int bufferIndex = collection.bufferIdx;
-	IGPUBufferPtr& buffer = collection.buffers[bufferIndex];
-	if (!buffer)
-		buffer = m_shaderAPI->CreateBuffer(BufferInfo(1, maxTransientBufferSize), BUFFERUSAGE_VERTEX | BUFFERUSAGE_COPY_DST, "TransientVertexBuffer");
-
-	if (data && size > 0)
-	{
-		if (!m_bufferCmdRecorder)
-			m_bufferCmdRecorder = g_renderAPI->CreateCommandRecorder("BufferSubmit");
-
-		const int64 writeOffset = NextBufferOffset(size, collection.bufferOffsets[bufferIndex], maxTransientBufferSize, bufferAlignment);
-		m_bufferCmdRecorder->WriteBuffer(buffer, data, size, writeOffset);
-
-		return GPUBufferView(buffer, writeOffset, size);
-	}
-
-	return GPUBufferView(buffer, collection.bufferOffsets[bufferIndex]);
-}
-
 void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
 {
-	CScopedMutex m(s_matSystemCommandsMutex);
 	QueueCommitInternalBuffers();
 	for (const IGPUCommandBufferPtr& buffer : cmdBuffers)
 		m_pendingCmdBuffers.append(buffer);
@@ -1400,7 +1367,6 @@ void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 
 void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 {
-	CScopedMutex m(s_matSystemCommandsMutex);
 	QueueCommitInternalBuffers();
 	m_pendingCmdBuffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
 }
@@ -1425,12 +1391,6 @@ void CMaterialSystem::QueueCommitInternalBuffers()
 
 		{
 			TransientBufferCollection& collection = m_transientUniformBuffers;
-			collection.bufferOffsets[collection.bufferIdx] = 0;
-			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
-		}
-
-		{
-			TransientBufferCollection& collection = m_transientVertexBuffers;
 			collection.bufferOffsets[collection.bufferIdx] = 0;
 			collection.bufferIdx = (collection.bufferIdx + 1) % elementsOf(collection.buffers);
 		}
