@@ -32,21 +32,26 @@ struct GRIMDrawSettings
 
 struct GRIMRenderState
 {
-	BitArray		visibleArchetypes{ PP_SL, 128 };	/// archetypes which are visible in this state.
-	IGPUBufferPtr	drawInvocationsBuffer;				/// indirect draw invocations buffer which is pointing to instanceIdsBuffer
-	IGPUBufferPtr	instanceIdsBuffer;					/// visible instance Ids
+	BitArray				visibleArchetypes{ PP_SL, 128 };		/// archetypes which are visible in this state.
+	BitArray				activeDrawInvocations{ PP_SL, 128 };	/// draw invocations that are active
+	IGPUBufferPtr			drawInvocationsBuffer;					/// indirect draw invocations buffer which is pointing to instanceIdsBuffer
+	IGPUBufferPtr			instanceIdsBuffer;						/// visible instance Ids
 
-	int				groupMaskInclude{ (int)COM_UINT_MAX };
-	int				groupMaskExclude{ 0 };
-	int				drawCallMaterialGroupByFlags{ 0 };
+	IGPUBufferPtr			drawInvocationsReadbackBuffer;
+	IGPUBuffer::MapFuture	drawInvocationsReadbackFuture;
+
+	int						groupMaskInclude{ (int)COM_UINT_MAX };
+	int						groupMaskExclude{ 0 };
+	int						drawCallMaterialGroupByFlags{ 0 };
+	uint					drawFrame{ COM_UINT_MAX };
 
 	// these buffers are intermediate ones
 	// and cached there for performance.
-	IGPUBufferPtr	sortedInstanceIdsBuffer;
-	IGPUBufferPtr	filteredInstancesBuffer;
-	IGPUBufferPtr	culledInstanceInfosBuffer;
-	IGPUBufferPtr	drawInstanceBoundsBuffer;
-	IGPUBufferPtr	filterParamsBuffer;
+	IGPUBufferPtr			sortedInstanceIdsBuffer;
+	IGPUBufferPtr			filteredInstancesBuffer;
+	IGPUBufferPtr			culledInstanceInfosBuffer;
+	IGPUBufferPtr			drawInstanceBoundsBuffer;
+	IGPUBufferPtr			filterParamsBuffer;
 };
 
 class GRIMBaseRenderer : public IShaderMeshInstanceProvider
@@ -59,20 +64,21 @@ class GRIMBaseRenderer : public IShaderMeshInstanceProvider
 public:
 	GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator);
 
-	virtual void		Init();
-	virtual void		Shutdown();
+	virtual void			Init();
+	virtual void			Shutdown();
 
-	GRIMArchetype		CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr, uint extraLayoutBits = 0);
-	GRIMArchetype		CreateDrawArchetype(const GRIMArchetypeDesc& desc);
-	void				DestroyDrawArchetype(GRIMArchetype id);
-	void				UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetypeDesc& desc);
+	GRIMArchetype			CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags = 0, int materialGroupIdx = 0, ArrayCRef<IGPUBufferPtr> extraVertexBuffers = nullptr, uint extraLayoutBits = 0);
+	GRIMArchetype			CreateDrawArchetype(const GRIMArchetypeDesc& desc);
+	void					DestroyDrawArchetype(GRIMArchetype id);
+	void					UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetypeDesc& desc);
 
-	void				SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
+	void					SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
-	GRIMDrawSettings	GetDrawSettings() const { return m_drawSettings; }
-	void				SetDrawSettings(const GRIMDrawSettings& settings) { m_drawSettings = settings; }
-	void				PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
-	void				Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
+	GRIMDrawSettings		GetDrawSettings() const { return m_drawSettings; }
+	void					SetDrawSettings(const GRIMDrawSettings& settings) { m_drawSettings = settings; }
+	void					PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
+	void					PostPrepareDraw(GRIMRenderState& renderState);
+	void					Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
 
 protected:
 
@@ -148,6 +154,7 @@ protected:
 	BitArray					m_dbgLastVisibleArchetypes{ PP_SL };
 	int							m_dbgStatsDrawCalls{ 0 };
 	int							m_dbgStatsDrawInfos{ 0 };
+	int							m_dbgStatsDrawnInstances{ 0 };
 #endif
 
 	ComputeSortShaderPtr		m_sortShader;
@@ -163,6 +170,7 @@ protected:
 	IGPUBindGroupPtr			m_updateBindGroup0;
 
 	GRIMDrawSettings			m_drawSettings;
+	uint						m_drawFrame{ 0 };
 	bool						m_dbgInvalidated{ false };
 };
 

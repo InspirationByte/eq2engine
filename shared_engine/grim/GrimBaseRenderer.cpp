@@ -615,6 +615,8 @@ void GRIMBaseRenderer::DestroyPendingArchetypes()
 
 void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 {
+	++m_drawFrame;
+
 	if(IsSync())
 		return;
 
@@ -880,6 +882,9 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& interm
 	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
 	computeRecorder->DispatchWorkgroups(numBounds / GROUP_SIZE + 1);
 	computeRecorder->Complete();
+
+	// copy draw invocations to readback buffer
+	intermediate.cmdRecorder->CopyBufferToBuffer(rendState.drawInvocationsBuffer, 0, rendState.drawInvocationsReadbackBuffer, 0, rendState.drawInvocationsBuffer->GetSize());
 }
 
 //--------------------------------------------------------------------
@@ -1023,6 +1028,8 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 	DbgValidate();
 
+	renderState.drawFrame = m_drawFrame;
+
 	if (maxNumberOfObjects < 0)
 		maxNumberOfObjects = m_instAllocator.GetInstanceCount();
 
@@ -1032,7 +1039,8 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	const BufferInfo drawInvocationsBufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numSlots());
 	if(!renderState.drawInvocationsBuffer || renderState.drawInvocationsBuffer->GetSize() < drawInvocationsBufferInfo.GetBufferSize())
 	{
-		renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(drawInvocationsBufferInfo, BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "DrawInvocations");
+		renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(drawInvocationsBufferInfo, BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC, "DrawInvocations");
+		renderState.drawInvocationsReadbackBuffer = g_renderAPI->CreateBuffer(drawInvocationsBufferInfo, BUFFERUSAGE_COPY_DST | BUFFERUSAGE_READ, "DrawInvocationsReadback");
 	}
 
 	const BufferInfo instanceIdsBufferInfo(sizeof(int), maxNumberOfObjects);
@@ -1041,8 +1049,12 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 		renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(instanceIdsBufferInfo, BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
 	}
 
-	renderState.visibleArchetypes.resize(m_drawLodsList.NumSlots()+1);
+	renderState.activeDrawInvocations.resize(m_drawInfos.numSlots() + 1);
+	renderState.visibleArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+
+	// everything is drawn by default
 	renderState.visibleArchetypes.reset(true);
+	renderState.activeDrawInvocations.reset(true);
 
 	IntermediateState intermediate{ renderState };
 	intermediate.cmdRecorder.Assign(cmdRecorder);	// FIXME: create new and return cmd buffer only?
@@ -1100,6 +1112,45 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	cmdRecorder->DbgPopGroup();
 
 	cmdRecorder->DbgPopGroup();
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	m_dbgStatsDrawnInstances = 0;
+#endif
+}
+
+void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
+{
+	IGPUBufferPtr& drawInvocationsReadbackBuffer = renderState.drawInvocationsReadbackBuffer;
+	if (renderState.drawFrame != m_drawFrame || !drawInvocationsReadbackBuffer)
+		return;
+
+	if (m_drawSettings.forceSoftware || grim_softwareMode.GetBool())
+		return;
+
+	BitArray& activeDrawInvocations = renderState.activeDrawInvocations;
+
+	// read draw invocations
+	renderState.drawInvocationsReadbackFuture = drawInvocationsReadbackBuffer->Lock(0, drawInvocationsReadbackBuffer->GetSize(), 0);
+	renderState.drawInvocationsReadbackFuture.AddCallback([this, &activeDrawInvocations, drawInvocationsReadbackBuffer](const FutureResult<BufferMapData>& result) {
+		if (result.IsError())
+			return;
+
+		ASSERT(result->data);
+		const int numIndirectCmds = result->size / sizeof(GPUDrawIndexedIndirectCmd);
+
+		GPUDrawIndexedIndirectCmd* drawIndexedCmd = reinterpret_cast<GPUDrawIndexedIndirectCmd*>(result->data);
+		int drawnInstances = 0;
+		for (int i = 0; i < numIndirectCmds; ++i)
+		{
+			activeDrawInvocations.set(i, drawIndexedCmd[i].instanceCount > 0);
+			drawnInstances += drawIndexedCmd[i].instanceCount;
+		}
+		drawInvocationsReadbackBuffer->Unlock();
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+		m_dbgStatsDrawnInstances += drawnInstances;
+#endif
+	});
 }
 
 bool GRIMBaseRenderer::IsSync() const
@@ -1190,6 +1241,13 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		uint16 next{ USHRT_MAX };
 	};
 
+	// last chance to wait for draw
+	while (renderState.drawInvocationsReadbackFuture.IsValid() && !renderState.drawInvocationsReadbackFuture.Wait(0))
+	{
+		g_renderAPI->Flush();
+		Threading::YieldCurrentThread();
+	}
+
 	Array<ListItm> drawInfoLinkList(PP_SL);
 	drawInfoLinkList.reserve(m_drawInfos.numSlots());
 	drawInfoLinkList.append(ListItm{}); // store end element in this array
@@ -1201,8 +1259,11 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 	{
 		if (!m_drawInfos(i))
 			continue;
-		const DrawInfo& drawInfo = m_drawInfos[i];
 
+		if (!renderState.activeDrawInvocations[i])
+			continue;
+
+		const DrawInfo& drawInfo = m_drawInfos[i];
 		if (!renderState.visibleArchetypes[drawInfo.ownerArchetype])
 			continue;
 

@@ -142,7 +142,7 @@ public:
 	int					GetErrorCode() const;
 	const EqString&		GetErrorMessage() const;
 
-	bool				Wait(int timeout = Threading::WAIT_INFINITE);
+	bool				Wait(int timeout = Threading::WAIT_INFINITE) const;
 	void				AddCallback(FutureCb callback);
 
 	void				operator=(std::nullptr_t) { m_data = nullptr; }
@@ -294,7 +294,7 @@ inline const EqString& Future<T>::GetErrorMessage() const
 }
 
 template<typename T>
-inline bool Future<T>::Wait(int timeout)
+inline bool Future<T>::Wait(int timeout) const
 {
 	ASSERT(m_data);
 	return m_data->m_waitSignal.Wait(timeout);

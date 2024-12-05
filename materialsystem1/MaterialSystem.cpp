@@ -32,6 +32,7 @@ using namespace Threading;
 static CEqMutex s_matSystemMutex;
 static CEqMutex s_matSystemPipelineMutex;
 static CEqMutex s_matSystemBufferMutex;
+static CEqMutex s_matSystemCommandsMutex;
 
 DECLARE_INTERNAL_SHADERS()
 
@@ -1128,12 +1129,14 @@ bool CMaterialSystem::EndFrame()
 
 void CMaterialSystem::SubmitQueuedCommands()
 {
+	CScopedMutex m(s_matSystemCommandsMutex);
 	m_shaderAPI->SubmitCommandBuffers(m_pendingCmdBuffers);
 	m_pendingCmdBuffers.clear();
 }
 
 Future<bool> CMaterialSystem::SubmitQueuedCommandsAwaitable()
 {
+	CScopedMutex m(s_matSystemCommandsMutex);
 	Future<bool> future = m_shaderAPI->SubmitCommandBuffersAwaitable(m_pendingCmdBuffers);
 	m_pendingCmdBuffers.clear();
 
@@ -1389,6 +1392,7 @@ GPUBufferView CMaterialSystem::GetTransientVertexBuffer(const void* data, int64 
 
 void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers)
 {
+	CScopedMutex m(s_matSystemCommandsMutex);
 	QueueCommitInternalBuffers();
 	for (const IGPUCommandBufferPtr& buffer : cmdBuffers)
 		m_pendingCmdBuffers.append(buffer);
@@ -1396,6 +1400,7 @@ void CMaterialSystem::QueueCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 
 void CMaterialSystem::QueueCommandBuffer(const IGPUCommandBuffer* cmdBuffer)
 {
+	CScopedMutex m(s_matSystemCommandsMutex);
 	QueueCommitInternalBuffers();
 	m_pendingCmdBuffers.append(IGPUCommandBufferPtr(const_cast<IGPUCommandBuffer*>(cmdBuffer)));
 }
