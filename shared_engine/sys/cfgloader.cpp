@@ -31,23 +31,20 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 
 	const ConCommandListRef cmdList = g_consoleCommands->GetAllCommands();
 
-	for(int i = 0; i < cmdList.numElem();i++)
+	for(ConCommandBase* cmdBase : cmdList)
 	{
-		if(cmdList[i]->IsConVar())
-		{
-			ConVar *cv = (ConVar*)cmdList[i];
-			if(cv->GetFlags() & CV_ARCHIVE)
-				cfgfile->Print("seti %s %s\n",cv->GetName(),cv->GetString());
-		}
+		if (!cmdBase->IsConVar() || !(cmdBase->GetFlags() & CV_ARCHIVE))
+			continue;
+
+		const ConVar *cv = static_cast<ConVar*>(cmdBase);
+		if (!CString::Compare(cv->GetDefaultValue(), cv->GetString()))
+			continue;
+
+		cfgfile->Print("seti %s %s\n", cv->GetName(), cv->GetString());
 	}
 }
 
 DECLARE_CMD(writecfg,"Saves the confirugation file", 0)
 {
-	if(CMD_ARGC > 0)
-	{
-		WriteCfgFile(CMD_ARGV(0).ToCString(),true);
-	}
-	else
-		WriteCfgFile("user.cfg",true);
+	WriteCfgFile(CMD_ARGC > 0 ? CMD_ARGV(0) : "user.cfg",true);
 }
