@@ -128,21 +128,22 @@ static ColorRGBA s_conListItemSelectedBackground = ColorRGBA(1.0f, 1.0f, 1.0f, 0
 
 static ColorRGBA s_conBackFastFind = ColorRGBA(s_conBackColor.xyz(), 0.8f);
 
-static ColorRGBA s_conTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
+static ColorRGBA s_conTextColor = ColorRGBA(0.9f,0.9f,0.8f,1);
 static ColorRGBA s_conSelectedTextColor = ColorRGBA(0.2f,0.2f,0.2f,1);
-static ColorRGBA s_conInputTextColor = ColorRGBA(0.7f,0.7f,0.6f,1);
-static ColorRGBA s_conHelpTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
+static ColorRGBA s_conInputTextColor = ColorRGBA(0.9f,0.9f,0.6f,1);
+static ColorRGBA s_conHelpTextColor = ColorRGBA(0.9f,0.9f,0.8f,1);
 
-static ColorRGBA s_conListItemColor = ColorRGBA(0.7f, 0.7f, 0, 1);
+static ColorRGBA s_conListItemColor = ColorRGBA(0.9f, 0.9f, 0, 1);
+static ColorRGBA s_conListItem2Color = ColorRGBA(0.9f, 0.9f, 1.0f, 1);
 static ColorRGBA s_conListItemSelectedColor = Vector4D(0.1f, 0.1f, 0, 1);
 
 static ColorRGBA s_spewColors[] =
 {
-	Vector4D(1,1,1,1),				// SPEW_NORM
-	Vector4D(0.8f,0.8f,0.8f,1),		// SPEW_INFO
-	Vector4D(1,1,0,1),				// SPEW_WARNING
-	Vector4D(0.8f,0,0,1),			// SPEW_ERROR
-	Vector4D(0.2f,1,0.2f,1)			// SPEW_SUCCESS
+	Vector4D(1,1,1,1),					// SPEW_NORM
+	Vector4D(0.8f,0.8f,0.8f,1.0f),		// SPEW_INFO
+	Vector4D(1.0f,0.8f,0.1f,1.0f),		// SPEW_WARNING
+	Vector4D(1.0f,0.05f,0.05f,1.0f),		// SPEW_ERROR
+	Vector4D(0.4f,1.0f,0.3f,1.0f)		// SPEW_SUCCESS
 };
 
 DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
@@ -716,8 +717,13 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 {
 	FontStyleParam helpTextParams;
 	helpTextParams.textColor = s_conHelpTextColor;
-	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
+	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP | TEXT_STYLE_USE_TAGS;
 	helpTextParams.scale = m_fontScale;
+
+	FontStyleParam defaultValueTextParams;
+	defaultValueTextParams.textColor = s_conInputTextColor;
+	defaultValueTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
+	defaultValueTextParams.scale = m_fontScale;
 
 	// draw history box
 	if(m_histIndex != -1 && m_commandHistory.numElem())
@@ -752,22 +758,32 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 			} while (c = *descStr++);
 		}
 
-		EqString displayString(_Es(m_fastfind_cmdbase->GetName()) + _Es(" - ") + m_fastfind_cmdbase->GetDesc());
-		if(m_fastfind_cmdbase->IsConVar())
-		{
-			const ConVar* pVar = static_cast<const ConVar*>(m_fastfind_cmdbase);
-			if(pVar->HasClamp())
-			{
-				displayString.Append(EqString::Format(" \n\nValue in range [%g..%g]\n", pVar->GetMinClamp(), pVar->GetMaxClamp()));
-				numLines += 2;
-			}
-		}
+		const int cmdFlags = m_fastfind_cmdbase->GetFlags();
+		const ConVar* conVar = m_fastfind_cmdbase->IsConVar() ? static_cast<const ConVar*>(m_fastfind_cmdbase) : nullptr;
+		if(conVar)
+			numLines += 2 + (conVar->HasClamp() ? 1 : 0);
+
+		const float lineHeight = m_font->GetLineHeight(helpTextParams);
 
 		// draw as autocompletion
 		AARectangle rect(x,y,w,y + numLines * m_font->GetLineHeight(helpTextParams) + 2);
 		DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor, rendPassRecorder);
 
-		m_font->SetupRenderText(displayString.GetData(), rect.GetLeftTop() + Vector2D(5,4), helpTextParams, rendPassRecorder);
+		EqString displayText;
+		if (cmdFlags & CV_ARCHIVE) displayText.Append(" &#FFFE20;[ARCHIVE]&;");
+		if (cmdFlags & CV_PROTECTED) displayText.Append(" &#FFFE20;[PROTECTED]&;");
+		if (cmdFlags & CV_CHEAT) displayText.Append(" &#FFFE20;[CHEAT]&;");
+		if (cmdFlags & CV_CLIENTCONTROLS) displayText.Append(" &#FFFE20;[CONTROLS]&;");
+		displayText.Append(' ');
+		displayText.Append(m_fastfind_cmdbase->GetDesc());
+
+		m_font->SetupRenderText(displayText, rect.GetLeftTop() + Vector2D(5, 4), helpTextParams, rendPassRecorder);
+		if(conVar)
+		{
+			m_font->SetupRenderText(EqString::Format(" Current: %s\n Default: %s", conVar->GetString(), conVar->GetDefaultValue()), rect.GetLeftTop() + Vector2D(5, 4 + lineHeight), defaultValueTextParams, rendPassRecorder);
+			if(conVar->HasClamp())
+				m_font->SetupRenderText(EqString::Format(" Value in range [%g..%g]", conVar->GetMinClamp(), conVar->GetMaxClamp()), rect.GetLeftTop() + Vector2D(5, 4 + lineHeight * 3), defaultValueTextParams, rendPassRecorder);
+		}
 
 		// draw autocompletion if available
 		DrawAutoCompletion(x, rect.rightBottom.y, w, rendPassRecorder);
@@ -831,9 +847,9 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 				bSelected = true;
 			}
 
-			ColorRGBA textColor = Vector4D(0.7f,0.7f,0,1);
+			ColorRGBA textColor = s_conListItemColor;
 			if(cmdBase->IsConCommand())
-				textColor = Vector4D(0.7f,0.7f,0.8f,1);
+				textColor = s_conListItem2Color;
 
 			variantsTextParams.textColor = bSelected ? Vector4D(0.1f, 0.1f, 0, 1) : textColor;;
 
