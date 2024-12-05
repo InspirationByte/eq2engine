@@ -37,8 +37,10 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 			continue;
 
 		const ConVar *cv = static_cast<ConVar*>(cmdBase);
-		if (!CString::Compare(cv->GetDefaultValue(), cv->GetString()))
-			continue;
+
+		// NOTE: commented out because config_default. Need support for it.
+		// if (CString::Compare(cv->GetDefaultValue(), cv->GetString()) == 0)
+		// 	continue;
 
 		cfgfile->Print("seti %s %s\n", cv->GetName(), cv->GetString());
 	}
