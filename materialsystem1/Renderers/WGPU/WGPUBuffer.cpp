@@ -123,7 +123,6 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		defer{
 			delete context;
 		};
-		Msg("Mapped\n");
 
 		if (status != WGPUMapAsyncStatus_Success)
 		{
@@ -142,8 +141,6 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		else
 			context->promise.SetResult(std::move(context->data));
 	};
-
-	Msg("Before map\n");
 
 	rhiMapCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
 	rhiMapCbInfo.userdata1 = context;
