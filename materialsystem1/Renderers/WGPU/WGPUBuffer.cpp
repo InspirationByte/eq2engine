@@ -98,6 +98,9 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		int						flags;
 	};
 
+	if (m_isLocked)
+		return Future<BufferMapData>::Failure(-1, "Buffer is already locked");
+
 	if (!m_rhiBuffer || lockOfs < 0 || lockOfs + sizeToLock > m_bufSize)
 	{
 		ASSERT_FAIL("Locking outside range");
@@ -145,12 +148,17 @@ Future<BufferMapData> CWGPUBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 	rhiMapCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
 	rhiMapCbInfo.userdata1 = context;
 	wgpuBufferMapAsync2(m_rhiBuffer, WGPUMapMode_Read, lockOfs, sizeToLock, rhiMapCbInfo);
+	m_isLocked = true;
 
 	return retFuture;
 }
 
 void CWGPUBuffer::Unlock()
 {
+	if (!m_isLocked)
+		return;
+
 	wgpuBufferUnmap(m_rhiBuffer);
 	wgpuBufferRelease(m_rhiBuffer);
+	m_isLocked = false;
 }

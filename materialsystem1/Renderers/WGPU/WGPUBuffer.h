@@ -30,4 +30,5 @@ private:
 	WGPUBuffer	m_rhiBuffer{ nullptr };
 	int			m_bufSize{ 0 };
 	int			m_usageFlags{ 0 };
+	bool		m_isLocked{ false };
 };

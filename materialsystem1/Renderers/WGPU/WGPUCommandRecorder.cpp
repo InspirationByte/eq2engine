@@ -26,7 +26,8 @@ void CWGPUCommandRecorder::WriteBuffer(IGPUBuffer* buffer, const void* data, int
 	if (!bufferImpl)
 		return;
 
-	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer doesn't have Copy_Dst usage bit");
+	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer must have BUFFERUSAGE_COPY_DST usage bit");
+	ASSERT_MSG(offset >= 0 && offset + writeDataSize <= bufferImpl->GetSize(), "Offset and/or Size outside buffer range");
 
 	wgpuCommandEncoderWriteBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, reinterpret_cast<const uint8_t*>(data), writeDataSize);
 }
@@ -46,6 +47,12 @@ void CWGPUCommandRecorder::CopyBufferToBuffer(IGPUBuffer* source, int64 sourceOf
 	if (!destinationImpl)
 		return;
 
+	ASSERT_MSG(sourceImpl->GetUsageFlags() & BUFFERUSAGE_COPY_SRC, "SRC buffer must have BUFFERUSAGE_COPY_SRC usage bit");
+	ASSERT_MSG(destinationImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "DST buffer must have BUFFERUSAGE_COPY_DST usage bit");
+
+	ASSERT_MSG(sourceOffset >= 0 && sourceOffset + copyDataSize <= sourceImpl->GetSize(), "Offset and/or Size outside source buffer range");
+	ASSERT_MSG(destinationOffset >= 0 && destinationOffset + copyDataSize <= destinationImpl->GetSize(), "Offset and/or Size outside destination buffer range");
+
 	wgpuCommandEncoderCopyBufferToBuffer(m_rhiCommandEncoder, sourceImpl->GetWGPUBuffer(), sourceOffset, destinationImpl->GetWGPUBuffer(), destinationOffset, copyDataSize);
 }
 
@@ -58,6 +65,9 @@ void CWGPUCommandRecorder::ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 s
 	CWGPUBuffer* bufferImpl = static_cast<CWGPUBuffer*>(buffer);
 	if (!bufferImpl)
 		return;
+
+	ASSERT_MSG(bufferImpl->GetUsageFlags() & BUFFERUSAGE_COPY_DST, "buffer must have BUFFERUSAGE_COPY_DST usage bit");
+	ASSERT_MSG(offset >= 0 && offset + clearDataSize <= bufferImpl->GetSize(), "Offset and/or Size outside buffer range");
 
 	wgpuCommandEncoderClearBuffer(m_rhiCommandEncoder, bufferImpl->GetWGPUBuffer(), offset, clearDataSize);
 }
@@ -75,6 +85,11 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 
 	if (!dstTexture)
 		return;
+
+	ASSERT_MSG(source.origin.x + copySize.width <= srcTexture->GetWidth() && source.origin.y + copySize.height >= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArraySize(), 
+		"source texture origin and size outside of source texture size range");
+	ASSERT_MSG(destination.origin.x + copySize.width <= dstTexture->GetWidth() && destination.origin.y + copySize.height >= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArraySize(),
+		"dest texture origin and size outside of dest texture size range");
 
 	WGPUImageCopyTexture rhiImageSrc{};
 	rhiImageSrc.texture = srcTexture->GetWGPUTexture();
