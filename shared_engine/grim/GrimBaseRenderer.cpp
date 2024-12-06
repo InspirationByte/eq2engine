@@ -1044,7 +1044,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	}
 
 	const BufferInfo instanceIdsBufferInfo(sizeof(int), maxNumberOfObjects);
-	if (!renderState.instanceIdsBuffer || renderState.instanceIdsBuffer->GetSize() < instanceIdsBufferInfo.GetBufferSize())
+	if (!renderState.instanceIdsBuffer || instanceIdsBufferInfo.GetBufferSize() > renderState.instanceIdsBuffer->GetSize())
 	{
 		renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(instanceIdsBufferInfo, BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
 	}
@@ -1133,7 +1133,10 @@ void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
 	renderState.drawInvocationsReadbackFuture = drawInvocationsReadbackBuffer->Lock(0, drawInvocationsReadbackBuffer->GetSize(), 0);
 	renderState.drawInvocationsReadbackFuture.AddCallback([this, &activeDrawInvocations, drawInvocationsReadbackBuffer](const FutureResult<BufferMapData>& result) {
 		if (result.IsError())
+		{
+			ASSERT_FAIL("Readback failure: %s", result.GetErrorMessage());
 			return;
+		}
 
 		ASSERT(result->data);
 		const int numIndirectCmds = result->size / sizeof(GPUDrawIndexedIndirectCmd);
