@@ -435,23 +435,22 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 		return;
 	}
 
+	const int flags = texture->GetFlags();
+
+	const bool isArray = newSize.arraySize > 1;
+	const bool isCubeMap = (flags & TEXFLAG_CUBEMAP);
+
 	texture->SetDimensions(newSize.width, newSize.height, newSize.arraySize);
 	texture->SetMipCount(mipmapCount);
 	texture->SetSampleCount(sampleCount);
 	texture->Release();
 
-	const int flags = texture->GetFlags();
-
-	const bool isCubeMap = (flags & TEXFLAG_CUBEMAP);
-
-	int texDepth = newSize.arraySize;
-	if (isCubeMap)
-		texDepth = 6; // TODO: CubeArray, WGPU supports it
-
 	WGPUTextureUsage rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
 	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
 	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
+
+	const int texDepth = isCubeMap ? ITexture::CubeArraySlice(0, newSize.arraySize) : newSize.arraySize;
 
 	WGPUTextureDescriptor rhiTextureDesc = {};
 	rhiTextureDesc.label = _WSTR(texture->GetName());
@@ -485,38 +484,45 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 		rhiTexViewDesc.label = rhiTextureDesc.label;
 		rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
 		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-		rhiTexViewDesc.arrayLayerCount = isCubeMap ? 6 : newSize.arraySize;
+		rhiTexViewDesc.arrayLayerCount = texDepth;
 		rhiTexViewDesc.baseArrayLayer = 0;
 		rhiTexViewDesc.baseMipLevel = 0;
 		rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
 
-		// TODO: CubeArray
-		rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_Cube : (newSize.arraySize > 1 ? WGPUTextureViewDimension_2DArray : WGPUTextureViewDimension_2D);
+		if (isArray)
+			rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_CubeArray : WGPUTextureViewDimension_2DArray;
+		else
+			rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_Cube : WGPUTextureViewDimension_2D;
 
 		WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
 		texture->m_rhiViews.append(rhiView);
 	}
 
-	// add individual cubemap views
+	// FIXME: need some kind of better table and only by request 
+	// or it is going to be ridiculously large
 	if (isCubeMap)
 	{
-		for (int i = 0; i < 6; ++i)
+		// add individual cubemap views
+		for (int slice = 0; slice < newSize.arraySize; ++slice)
 		{
-			WGPUTextureViewDescriptor rhiTexViewDesc = {};
-			rhiTexViewDesc.label = rhiTextureDesc.label;
-			rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
-			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-			rhiTexViewDesc.arrayLayerCount = 1;
-			rhiTexViewDesc.baseArrayLayer = i;
-			rhiTexViewDesc.baseMipLevel = 0;
-			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
-			rhiTexViewDesc.dimension = WGPUTextureViewDimension_2D;
+			for (int i = 0; i < 6; ++i)
+			{
+				WGPUTextureViewDescriptor rhiTexViewDesc = {};
+				rhiTexViewDesc.label = rhiTextureDesc.label;
+				rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
+				rhiTexViewDesc.aspect = WGPUTextureAspect_All;
+				rhiTexViewDesc.arrayLayerCount = 1;
+				rhiTexViewDesc.baseArrayLayer = ITexture::CubeArraySlice(i, slice);
+				rhiTexViewDesc.baseMipLevel = 0;
+				rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
+				rhiTexViewDesc.dimension = WGPUTextureViewDimension_2D;
 
-			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
-			texture->m_rhiViews.append(rhiView);
+				WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
+				texture->m_rhiViews.append(rhiView);
+			}
 		}
 	}
-	else if(newSize.arraySize > 1)
+	else if(isArray)
 	{
 		// add array views
 		for (int i = 0; i < newSize.arraySize; ++i)

@@ -86,9 +86,9 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	if (!dstTexture)
 		return;
 
-	ASSERT_MSG(source.origin.x + copySize.width <= srcTexture->GetWidth() && source.origin.y + copySize.height >= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArraySize(), 
+	ASSERT_MSG(source.origin.x + copySize.width <= srcTexture->GetWidth() && source.origin.y + copySize.height >= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArrayLayersSize(),
 		"source texture origin and size outside of source texture size range");
-	ASSERT_MSG(destination.origin.x + copySize.width <= dstTexture->GetWidth() && destination.origin.y + copySize.height >= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArraySize(),
+	ASSERT_MSG(destination.origin.x + copySize.width <= dstTexture->GetWidth() && destination.origin.y + copySize.height >= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArrayLayersSize(),
 		"dest texture origin and size outside of dest texture size range");
 
 	WGPUImageCopyTexture rhiImageSrc{};

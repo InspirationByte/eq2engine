@@ -81,6 +81,11 @@ public:
 		return 1 + static_cast<int>(index);
 	}
 
+	inline static int CubeArraySlice(int idx, int arraySlice = 0)
+	{
+		return arraySlice * 6 + idx;
+	}
+
 	struct LockInOutData;
 
 	// initializes procedural (lockable) texture
@@ -100,7 +105,11 @@ public:
 
 	virtual int				GetWidth() const = 0;
 	virtual int				GetHeight() const = 0;
+
 	virtual int				GetArraySize() const = 0;
+
+	// returns texture layers count, accounting both array layers x cubemap faces
+	int						GetArrayLayersSize() const { return GetArraySize() * ((GetFlags() & TEXFLAG_CUBEMAP) ? 6 : 1); }
 
 	virtual int				GetMipCount() const = 0;
 	virtual int				GetSampleCount() const = 0;
