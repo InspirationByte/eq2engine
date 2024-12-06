@@ -195,35 +195,6 @@ void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& inter
 		// update instance
 		instInfo.packedArchetypeId = archetypeId | (drawLod << GPUInstanceInfo::ARCHETYPE_BITS);
 	}
-
-	for (const Object& obj : s_objects)
-	{
-		const int archetypeId = m_instAllocator.GetInstanceArchetypeId(obj.instId);
-		if (archetypeId == -1)
-			continue;
-
-		const GPULodList& lodList = m_drawLodsList[archetypeId];
-		if (lodList.firstLodInfo < 0)
-			continue;
-
-		if (!frustum.IsSphereInside(obj.trs.t, 4.0f))
-			continue;
-
-		const float distFromCamera = distanceSqr(viewPos, obj.trs.t);
-
-		// find suitable lod idx
-		int drawLod = lod_override.GetInt();
-		if (drawLod == -1)
-		{
-			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next, ++drawLod)
-			{
-				if (distFromCamera < sqr(m_drawLodInfos[lodIdx].distance))
-					break;
-			}
-		}
-
-		instanceInfos.append({ obj.instId, archetypeId | (drawLod << GPUInstanceInfo::ARCHETYPE_BITS) });
-	}
 }
 
 CState_GpuDrivenDemo::CState_GpuDrivenDemo()
@@ -473,6 +444,9 @@ void CState_GpuDrivenDemo::RenderGame()
 			future.AddCallback([&](const FutureResult<bool>& result) {
 				s_grimRenderer.PostPrepareDraw(s_storedRenderState);
 			});
+
+			while (!future.Wait(0))
+				g_renderAPI->Flush();
 		}
 		else
 		{
