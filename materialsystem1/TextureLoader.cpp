@@ -175,7 +175,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	{
 		if (IsCompressedFormat(textureImg->GetFormat()))
 		{
-			MsgWarning("%s: animated texture definition %s could not use compressed textures. Consider using TexAssemble to make texture array.", requestedBy, pszFileName);
+			MsgWarning("%s: animated texture definition %s could not use compressed textures. Consider using TexAssemble to make texture array.\n", requestedBy, pszFileName);
 		}
 		else
 		{
