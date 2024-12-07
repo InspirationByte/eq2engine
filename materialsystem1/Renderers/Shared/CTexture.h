@@ -43,12 +43,7 @@ public:
 	int					GetFlags() const { return m_flags; }
 
 	// FIXME: remove?
-	const SamplerStateParams&	GetSamplerState() const {return m_samplerState;}
-
-	// DEPRECATED
-	int					GetAnimationFrameCount() const { return m_animFrameCount; }
-	int					GetAnimationFrame() const { return m_animFrame; }
-	void				SetAnimationFrame(int frame);
+	const SamplerStateParams&	GetSamplerState() const { return m_samplerState; }
 
 protected:
 	void				SetFlags(int flags) { m_flags = flags; }
@@ -57,7 +52,6 @@ protected:
 	void				SetSampleCount(int count) { m_sampleCount = count; }
 	void				SetFormat(ETextureFormat newformat) { m_format = newformat; }
 	void				SetSamplerState(const SamplerStateParams& newSamplerState) { m_samplerState = newSamplerState; }
-
 
 	EqString			m_name;
 	int					m_nameHash{ 0 };
@@ -82,9 +76,6 @@ protected:
 	ushort				m_arraySize{ 0 };
 	ushort				m_mipCount{ 1 };
 	ushort				m_sampleCount{ 1 };
-
-	ushort				m_animFrame{ 0 };
-	ushort				m_animFrameCount{ 1 };
 
 	ushort				m_progressiveFrameDelay{ 1 };
 };

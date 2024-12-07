@@ -403,7 +403,7 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 
 	ResizeRenderTarget(texture, targetDesc.size, targetDesc.mipmapCount, targetDesc.sampleCount);
 
-	if (!texture->m_rhiTextures.numElem()) 
+	if (!texture->m_rhiTexture) 
 		return nullptr;
 
 	if (!(targetDesc.flags & TEXFLAG_TRANSIENT))
@@ -450,12 +450,12 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
 	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
 
-	const int texDepth = isCubeMap ? ITexture::CubeArraySlice(0, newSize.arraySize) : newSize.arraySize;
+	const int arrayLayerCount = isCubeMap ? ITexture::CubeArraySlice(0, newSize.arraySize) : newSize.arraySize;
 
 	WGPUTextureDescriptor rhiTextureDesc = {};
 	rhiTextureDesc.label = _WSTR(texture->GetName());
 	rhiTextureDesc.mipLevelCount = mipmapCount;
-	rhiTextureDesc.size = WGPUExtent3D{ (uint)newSize.width, (uint)newSize.height, (uint)texDepth };
+	rhiTextureDesc.size = WGPUExtent3D{ (uint)newSize.width, (uint)newSize.height, (uint)arrayLayerCount };
 	rhiTextureDesc.sampleCount = sampleCount;
 	rhiTextureDesc.usage = rhiUsageFlags;
 	rhiTextureDesc.format = GetWGPUTextureFormat(texture->GetFormat());
@@ -476,7 +476,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 		return;
 	}
 
-	texture->m_rhiTextures.append(rhiTexture);
+	texture->m_rhiTexture = rhiTexture;
 
 	// add default view
 	{
@@ -484,7 +484,7 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 		rhiTexViewDesc.label = rhiTextureDesc.label;
 		rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
 		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-		rhiTexViewDesc.arrayLayerCount = texDepth;
+		rhiTexViewDesc.arrayLayerCount = arrayLayerCount;
 		rhiTexViewDesc.baseArrayLayer = 0;
 		rhiTexViewDesc.baseMipLevel = 0;
 		rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;

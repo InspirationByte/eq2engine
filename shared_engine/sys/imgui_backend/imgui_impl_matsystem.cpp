@@ -153,11 +153,8 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	ubyte* pImage = image->Create(FORMAT_RGBA8, width, height, 1, 1);
 	memcpy(pImage, pixels, GetBytesPerPixel(FORMAT_RGBA8) * width * height);
 
-	FixedArray<CRefPtr<CImage>, 1> imgs;
-	imgs.append(image);
-	
 	SamplerStateParams params(TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
-	bd->FontTexture = g_renderAPI->CreateTexture(imgs, params);
+	bd->FontTexture = g_renderAPI->CreateTexture(image, params);
 
 	ASSERT(bd->FontTexture);
 	if (!bd->FontTexture)

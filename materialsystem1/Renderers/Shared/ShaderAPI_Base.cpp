@@ -187,19 +187,19 @@ void ShaderAPI_Base::FreeTexture(ITexture* pTexture)
 // Textures
 //-------------------------------------------------------------
 
-ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CImagePtr>& images, const SamplerStateParams& sampler, int nFlags)
+ITexturePtr ShaderAPI_Base::CreateTexture(const CImagePtr image, const SamplerStateParams& sampler, int nFlags)
 {
-	if(!images.numElem())
+	if(!image)
 		return nullptr;
 
 	// create texture
 	ITexturePtr texture = nullptr;
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
-		texture = CreateTextureResource(images[0]->GetName());
+		texture = CreateTextureResource(image->GetName());
 	}
 	
-	texture->Init(images, sampler, nFlags);
+	texture->Init(image, sampler, nFlags);
 
 	// the created texture is automatically added to list
 	return texture;
@@ -238,10 +238,7 @@ ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 		return nullptr;	// don't generate error
 	}
 
-	FixedArray<CImagePtr, 1> imgs;
-	imgs.append(genTex);
-
-	return CreateTexture(imgs, sampler, flags);
+	return CreateTexture(genTex, sampler, flags);
 }
 
 // returns vertex format

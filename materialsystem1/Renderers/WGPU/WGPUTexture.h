@@ -16,20 +16,20 @@ class CWGPUTexture : public CTexture
 public:
 	~CWGPUTexture();
 
-	bool			Init(const ArrayCRef<CImagePtr> images, const SamplerStateParams& sampler, int flags = 0);
+	bool			Init(const CRefPtr<CImage> image, const SamplerStateParams& sampler, int flags = 0);
 	void			Release();
 
 	bool			Lock(LockInOutData& data);
 	void			Unlock(IGPUCommandRecorder* writeCmdRecorder = nullptr);
 
-	WGPUTexture		GetWGPUTexture() const { return m_rhiTextures[0]; }
-	WGPUTextureView	GetWGPUTextureView(int viewIdx = -1) const { return m_rhiViews[viewIdx >= 0 ? viewIdx : m_animFrame]; }
+	WGPUTexture		GetWGPUTexture() const { return m_rhiTexture; }
+	WGPUTextureView	GetWGPUTextureView(int viewIdx = 0) const { return m_rhiViews[viewIdx]; }
 	int				GetWGPUTextureViewCount() const { return m_rhiViews.numElem(); }
 
 protected:
 	void			Ref_DeleteObject();
 
-	Array<WGPUTexture>		m_rhiTextures{ PP_SL };
+	WGPUTexture				m_rhiTexture{ nullptr };
 	Array<WGPUTextureView>	m_rhiViews{ PP_SL };
 	EImageType				m_imgType{ IMAGE_TYPE_INVALID };
 	int						m_texSize{ 0 };

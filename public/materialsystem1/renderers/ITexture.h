@@ -92,7 +92,7 @@ public:
 	virtual bool			InitProcedural(const TextureDesc& textureDesc) = 0;
 
 	// initializes texture from image array of images
-	virtual	bool			Init(const ArrayCRef<CRefPtr<CImage>> images, const SamplerStateParams& sampler, int flags = 0) = 0;
+	virtual	bool			Init(const CRefPtr<CImage> image, const SamplerStateParams& sampler, int flags = 0) = 0;
 
 	// generates a checkerboard texture
 	virtual bool			GenerateErrorTexture(int flags = 0) = 0;
@@ -120,14 +120,8 @@ public:
 
 	// FIXME: remove?
 	virtual const SamplerStateParams& GetSamplerState() const = 0;
-
-	// DEPRECATED
-	virtual int				GetAnimationFrameCount() const = 0;
-	virtual int				GetAnimationFrame() const = 0;
-	virtual void			SetAnimationFrame(int frame) = 0;
-
-
 };
+
 using ITexturePtr = CRefPtr<ITexture>;
 
 struct TextureView

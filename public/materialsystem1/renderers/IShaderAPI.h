@@ -158,7 +158,7 @@ public:
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
 
 	// creates static texture from image (array for animated textures)
-	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& images, const SamplerStateParams& sampler, int flags = 0) = 0;
+	virtual	ITexturePtr			CreateTexture(const CRefPtr<CImage> image, const SamplerStateParams& sampler, int flags = 0) = 0;
 	
 	// creates texture that will be render target or storage target
 	virtual ITexturePtr			CreateRenderTarget(const TextureDesc& targetDesc) = 0;

@@ -21,12 +21,6 @@ void CTexture::SetName(const char* pszNewName)
 	m_nameHash = StringId24(m_name.ToCString(), true);
 }
 
-// sets current animated texture frames
-void CTexture::SetAnimationFrame(int frame)
-{
-	m_animFrame = m_animFrameCount > 0 ? frame % m_animFrameCount : 0;
-}
-
 // initializes procedural (lockable) texture
 bool CTexture::InitProcedural(const TextureDesc& textureDesc)
 {
@@ -48,10 +42,7 @@ bool CTexture::InitProcedural(const TextureDesc& textureDesc)
 		return false;	// don't generate error
 	}
 
-	FixedArray<CImagePtr, 1> imgs;
-	imgs.append(genTex);
-
-	return Init(imgs, textureDesc.sampler, textureDesc.flags);
+	return Init(genTex, textureDesc.sampler, textureDesc.flags);
 }
 
 static void MakeCheckerBoxImage(ubyte* dest, int width, int height, int checkerSize, const MColor& color1, const MColor& color2)
@@ -102,9 +93,5 @@ bool CTexture::GenerateErrorTexture(int flags)
 	}
 
 	image->CreateMipMaps();
-
-	FixedArray<CImagePtr, 1> images;
-	images.append(image);
-
-	return Init(images, texSamplerParams, flags);
+	return Init(image, texSamplerParams, flags);
 }

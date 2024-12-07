@@ -1527,7 +1527,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		FontStyleParam textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-		EqString str = EqString::Format("%dx%d (frame %d)\n%s\nrefcnt %d", m_dbgTexture->GetWidth(), m_dbgTexture->GetHeight(), m_dbgTexture->GetAnimationFrame(), m_dbgTexture->GetName(), m_dbgTexture->Ref_Count());
+		EqString str = EqString::Format("%dx%d (array size %d)\n%s\nrefcnt %d", m_dbgTexture->GetWidth(), m_dbgTexture->GetHeight(), m_dbgTexture->GetArraySize(), m_dbgTexture->GetName(), m_dbgTexture->Ref_Count());
 		m_debugFont2->SetupRenderText(str, Vector2D(10, 10), textStl, rendPassRecorder);
 	}
 

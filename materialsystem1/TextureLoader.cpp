@@ -22,6 +22,8 @@ DECLARE_CVAR(r_noMip, "0", nullptr, CV_CHEAT);
 
 static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName)
 {
+	textureNames.clear();
+
 	EqString texturePath(pszFileName);
 
 	// build valid texture paths
@@ -41,14 +43,14 @@ static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const cha
 		// trying to load animated texture
 		EqString textureWildcard = texturePath.Left(animCountStart);
 		EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
-		int numFrames = atoi(textureFrameCount.ToCString());
+		int numFrames = atoi(textureFrameCount);
 
 		if (r_reportTextureLoading.GetBool())
 			Msg("Loading animated %d animated textures (%s)\n", numFrames, textureWildcard.ToCString());
 
 		for (int i = 0; i < numFrames; i++)
 		{
-			EqString textureNameFrame = EqString::Format(textureWildcard.ToCString(), i);
+			EqString textureNameFrame = EqString::Format(textureWildcard, i);
 			textureNames.append(textureNameFrame);
 		}
 	}
@@ -94,46 +96,50 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 	bool isJustCreated = false;
 	ITexturePtr texture = g_renderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
-
 	if (!texture)
+	{
 		return (flags & TEXFLAG_LOAD_NULL_ON_ERROR) ? nullptr : g_matSystem->GetErrorCheckerboardTexture((flags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D);
+	}
 
 	if (!isJustCreated)
 		return texture;
 
-	if (r_skipTextureLoading.GetBool())
-	{
+	auto HandleError = [&texture, flags]() {
 		if (flags & TEXFLAG_LOAD_NULL_ON_ERROR)
 			texture = nullptr;
 		else
 			texture->GenerateErrorTexture(flags);
+	};
 
+	if (r_skipTextureLoading.GetBool())
+	{
+		HandleError();
 		return texture;
 	}
 
 	PROF_EVENT("Load Texture from file");
 
-	Array<EqString> textureNames(PP_SL);
+	thread_local Array<EqString> textureNames(PP_SL);
 	AnimGetImagesForTextureName(textureNames, pszFileName);
 
-	Array<CImage::PTR_T> imgList(PP_SL);
+	Array<CImage::PTR_T> imgFrames(PP_SL);
 
 	// load frames
-	for (int i = 0; i < textureNames.numElem(); i++)
+	for (const EqString& texName : textureNames)
 	{
 		CImage::PTR_T img = CRefPtr_new(CImage);
 
 		EqString texturePathExt;
-		fnmPathCombine(texturePathExt, m_texturePath.ToCString(), textureNames[i].ToCString());
+		fnmPathCombine(texturePathExt, m_texturePath, texName);
 		bool isLoaded = img->Load(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
 		if (!isLoaded && r_allowSourceTextures->GetBool())
 		{
-			fnmPathCombine(texturePathExt, m_textureSRCPath.ToCString(), textureNames[i].ToCString());
+			fnmPathCombine(texturePathExt, m_textureSRCPath, texName);
 			isLoaded = img->Load(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 
-		img->SetName(textureNames[i].ToCString());
+		img->SetName(texName);
 
 		if (r_noMip.GetBool())
 			img->RemoveMipMaps(0, 1);
@@ -141,14 +147,13 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		if (isLoaded)
 		{
 			const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
-
 			if (!caps.IsSupportedTextureFormat(img->GetFormat()))
 			{
 				MsgWarning("%s: Texture %s unsupported format %d\n", requestedBy, texturePathExt.ToCString(), img->GetFormat());
 				continue;
 			}
 
-			imgList.append(img);
+			imgFrames.append(img);
 
 			if (r_reportTextureLoading.GetBool())
 				MsgInfo("%s: Texture loaded: %s\n", requestedBy, texturePathExt.ToCString());
@@ -159,8 +164,50 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		}
 	}
 
+	if (!imgFrames.numElem())
+	{
+		HandleError();
+		return texture;
+	}
+
+	CImage::PTR_T textureImg = imgFrames.front();
+	if (imgFrames.numElem() > 1)
+	{
+		if (IsCompressedFormat(textureImg->GetFormat()))
+		{
+			MsgWarning("%s: animated texture definition %s could not use compressed textures. Consider using TexAssemble to make texture array.", requestedBy, pszFileName);
+		}
+		else
+		{
+			CImage::PTR_T firstImg = textureImg;
+			ASSERT_MSG(firstImg->GetArraySize() == 1, "Texture arrays are not supported when animation table is used.");
+
+			textureImg = CRefPtr_new(CImage);
+			ubyte* textureData = textureImg->Create(
+				firstImg->GetFormat(), 
+				firstImg->GetWidth(), 
+				firstImg->GetHeight(),
+				firstImg->GetDepth(), 
+				firstImg->GetMipMapCount(),
+				imgFrames.numElem()
+			);
+
+			const int stride = firstImg->GetMipMappedSize(0, firstImg->GetMipMapCount());
+			for (CImage* frameImg : imgFrames)
+			{
+				ASSERT_MSG(	firstImg->GetFormat() == frameImg->GetFormat() &&
+							firstImg->GetWidth() == frameImg->GetWidth() &&
+							firstImg->GetHeight() == frameImg->GetHeight() &&
+							firstImg->GetMipMapCount() == frameImg->GetMipMapCount(), "%s: animated textures must share same format, size and mipmap count", requestedBy);
+
+				memcpy(textureData, frameImg->GetPixels(), stride);
+				textureData += stride;
+			}
+		}
+	}
+
 	// initialize texture
-	if (!imgList.numElem() || !texture->Init(imgList, samplerParams, flags | TEXFLAG_PROGRESSIVE_LODS))
+	if (!texture->Init(textureImg, samplerParams, flags | TEXFLAG_PROGRESSIVE_LODS))
 	{
 		if (flags & TEXFLAG_LOAD_NULL_ON_ERROR)
 			texture = nullptr;

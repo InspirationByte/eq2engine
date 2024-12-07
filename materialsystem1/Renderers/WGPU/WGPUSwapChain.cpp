@@ -62,11 +62,13 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 	ASSERT_MSG(rhiSurfTex.texture != nullptr, "Swapchain texture has not been created");
 
 	{
-		if (m_textureRef->m_rhiTextures.numElem())
-			wgpuTextureRelease(m_textureRef->m_rhiTextures[0]);
-		else
-			m_textureRef->m_rhiTextures.setNum(1);
-		m_textureRef->m_rhiTextures[0] = rhiSurfTex.texture;
+		if (m_textureRef->m_rhiTexture)
+		{
+			wgpuTextureRelease(m_textureRef->m_rhiTexture);
+			m_textureRef->m_rhiTexture = nullptr;
+		}
+
+		m_textureRef->m_rhiTexture = rhiSurfTex.texture;
 	}
 
 	{
