@@ -112,16 +112,16 @@ bool UpdateStates( float fDt )
 
 	g_onPreUpdateState(fDt);
 
-	if( !s_currentState->Update(fDt) )
+	const bool continuedState = s_currentState->Update(fDt);
+	g_onPostUpdateState(fDt);
+
+	if( !continuedState)
 	{
 		bool forced;
 		CAppStateBase* nextState = s_currentState->GetNextState( &forced );
 		s_currentState->SetNextState(nullptr);
-
 		SetCurrentState( nextState, forced );
 	}
-
-	g_onPostUpdateState(fDt);
 
 	return true;
 }
