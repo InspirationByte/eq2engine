@@ -442,25 +442,21 @@ bool CImage::LoadDDS(IFilePtr fileHandle, uint flags)
 		{
 		case 61: m_nFormat = FORMAT_R8; break;
 		case 49: m_nFormat = FORMAT_RG8; break;
+		case 88: // DXGI_FORMAT_B8G8R8X8_UNORM
 		case 28: m_nFormat = FORMAT_RGBA8; break;
-
 		case 56: m_nFormat = FORMAT_R16; break;
 		case 35: m_nFormat = FORMAT_RG16; break;
 		case 11: m_nFormat = FORMAT_RGBA16; break;
-
 		case 54: m_nFormat = FORMAT_R16F; break;
 		case 34: m_nFormat = FORMAT_RG16F; break;
 		case 10: m_nFormat = FORMAT_RGBA16F; break;
-
 		case 41: m_nFormat = FORMAT_R32F; break;
 		case 16: m_nFormat = FORMAT_RG32F; break;
 		case 6:  m_nFormat = FORMAT_RGB32F; break;
 		case 2:  m_nFormat = FORMAT_RGBA32F; break;
-
 		case 67: m_nFormat = FORMAT_RGB9E5; break;
 		case 26: m_nFormat = FORMAT_RG11B10F; break;
 		case 24: m_nFormat = FORMAT_RGB10A2; break;
-
 		case 71: m_nFormat = FORMAT_DXT1; break;
 		case 74: m_nFormat = FORMAT_DXT3; break;
 		case 77: m_nFormat = FORMAT_DXT5; break;
@@ -469,76 +465,88 @@ bool CImage::LoadDDS(IFilePtr fileHandle, uint flags)
 		case 0:
 			m_nFormat = FORMAT_ETC2;
 			MsgError("Invalid DDS file %s\n", GetName());
-			//g_fileSystem->Close(file);
-			//return false;
 			break;
 		default:
 			MsgError("Image %s has unknown or invalid DXGI format %d\n", GetName(), dxt10Header.dxgiFormat);
 			return false;
 		}
-	}
-	else
-	{
 
-		switch (header.ddpfPixelFormat.dwFourCC) {
-		case 34:  m_nFormat = FORMAT_RG16; break;
-		case 36:  m_nFormat = FORMAT_RGBA16; break;
-		case 111: m_nFormat = FORMAT_R16F; break;
-		case 112: m_nFormat = FORMAT_RG16F; break;
-		case 113: m_nFormat = FORMAT_RGBA16F; break;
-		case 114: m_nFormat = FORMAT_R32F; break;
-		case 115: m_nFormat = FORMAT_RG32F; break;
-		case 116: m_nFormat = FORMAT_RGBA32F; break;
-		case MAKECHAR4('D', 'X', 'T', '1'): m_nFormat = FORMAT_DXT1; break;
-		case MAKECHAR4('D', 'X', 'T', '3'): m_nFormat = FORMAT_DXT3; break;
-		case MAKECHAR4('D', 'X', 'T', '5'): m_nFormat = FORMAT_DXT5; break;
-		case MAKECHAR4('A', 'T', 'I', '1'): m_nFormat = FORMAT_ATI1N; break;
-		case MAKECHAR4('A', 'T', 'I', '2'): m_nFormat = FORMAT_ATI2N; break;
-		case MAKECHAR4('E', 'T', 'C', '1'): m_nFormat = FORMAT_ETC1; break;
-		case MAKECHAR4('E', 'T', 'C', '2'): m_nFormat = FORMAT_ETC2; break;
-		case MAKECHAR4('E', 'T', 'C', 'P'): m_nFormat = FORMAT_ETC2A1; break;
-		case MAKECHAR4('E', 'T', 'C', 'A'): m_nFormat = FORMAT_ETC2A8; break;
-		default:
-			switch (header.ddpfPixelFormat.dwRGBBitCount)
-			{
-			case 8: m_nFormat = FORMAT_I8; break;
-			case 16:
-				m_nFormat = (header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xF000) ? FORMAT_RGBA4 :
-					(header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xFF00) ? FORMAT_IA8 :
-					(header.ddpfPixelFormat.dwBBitMask == 0x1F) ? FORMAT_RGB565 : FORMAT_I16;
-				break;
-			case 24: m_nFormat = FORMAT_RGB8; break;
-			case 32:
-				m_nFormat = (header.ddpfPixelFormat.dwRBitMask == 0x3FF00000) ? FORMAT_RGB10A2 : FORMAT_RGBA8;
-				break;
-			default:
-				MsgError("Image %s has unknown format.\n", GetName());
-				return false;
-			}
-		}
-	}
-
-	int size = GetMipMappedSize(0, m_nMipMaps);
-	m_pPixels = PPNew ubyte[size];
-	if (IsCube())
-	{
-		for (int face = 0; face < 6; face++)
+		m_nArraySize = dxt10Header.arraySize;
+		if (dxt10Header.miscFlag & D3D10_RESOURCE_MISC_TEXTURECUBE)
 		{
-			for (int mipMapLevel = 0; mipMapLevel < m_nMipMaps; mipMapLevel++)
-			{
-				int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
-				ubyte* src = GetPixels(mipMapLevel) + face * faceSize;
-
-				fileHandle->Read(src, 1, faceSize);
-			}
-			if ((flags & DONT_LOAD_MIPMAPS) && header.dwMipMapCount > 1)
-			{
-				fileHandle->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, VS_SEEK_CUR);
-			}
+			ASSERT(IsCube());
+		}
+		if (dxt10Header.resourceDimension == D3D10_RESOURCE_DIMENSION_TEXTURE1D)
+		{
+			ASSERT(m_nDepth == 1 && m_nHeight == 1);
 		}
 	}
 	else
-		fileHandle->Read(m_pPixels, 1, size);
+	{
+		switch (header.ddpfPixelFormat.dwFourCC) {
+			case 34:  m_nFormat = FORMAT_RG16; break;
+			case 36:  m_nFormat = FORMAT_RGBA16; break;
+			case 111: m_nFormat = FORMAT_R16F; break;
+			case 112: m_nFormat = FORMAT_RG16F; break;
+			case 113: m_nFormat = FORMAT_RGBA16F; break;
+			case 114: m_nFormat = FORMAT_R32F; break;
+			case 115: m_nFormat = FORMAT_RG32F; break;
+			case 116: m_nFormat = FORMAT_RGBA32F; break;
+			case MAKECHAR4('D', 'X', 'T', '1'): m_nFormat = FORMAT_DXT1; break;
+			case MAKECHAR4('D', 'X', 'T', '3'): m_nFormat = FORMAT_DXT3; break;
+			case MAKECHAR4('D', 'X', 'T', '5'): m_nFormat = FORMAT_DXT5; break;
+			case MAKECHAR4('A', 'T', 'I', '1'): m_nFormat = FORMAT_ATI1N; break;
+			case MAKECHAR4('A', 'T', 'I', '2'): m_nFormat = FORMAT_ATI2N; break;
+			case MAKECHAR4('E', 'T', 'C', '1'): m_nFormat = FORMAT_ETC1; break;
+			case MAKECHAR4('E', 'T', 'C', '2'): m_nFormat = FORMAT_ETC2; break;
+			case MAKECHAR4('E', 'T', 'C', 'P'): m_nFormat = FORMAT_ETC2A1; break;
+			case MAKECHAR4('E', 'T', 'C', 'A'): m_nFormat = FORMAT_ETC2A8; break;
+			default:
+				switch (header.ddpfPixelFormat.dwRGBBitCount)
+				{
+				case 8: m_nFormat = FORMAT_I8; break;
+				case 16:
+					m_nFormat = (header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xF000) ? FORMAT_RGBA4 :
+						(header.ddpfPixelFormat.dwRGBAlphaBitMask == 0xFF00) ? FORMAT_IA8 :
+						(header.ddpfPixelFormat.dwBBitMask == 0x1F) ? FORMAT_RGB565 : FORMAT_I16;
+					break;
+				case 24: m_nFormat = FORMAT_RGB8; break;
+				case 32:
+					m_nFormat = (header.ddpfPixelFormat.dwRBitMask == 0x3FF00000) ? FORMAT_RGB10A2 : FORMAT_RGBA8;
+					break;
+				default:
+					MsgError("Image %s has unknown format.\n", GetName());
+					return false;
+				}
+		}
+	}
+
+	const int size = GetMipMappedSize(0, m_nMipMaps) * m_nArraySize;
+	m_pPixels = PPNew ubyte[size];
+
+	for (int arrIdx = 0; arrIdx < m_nArraySize; ++arrIdx)
+	{
+		if (IsCube())
+		{
+			for (int face = 0; face < 6; face++)
+			{
+				for (int mipMapLevel = 0; mipMapLevel < m_nMipMaps; mipMapLevel++)
+				{
+					const int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
+					ubyte* src = GetPixels(mipMapLevel, arrIdx) + face * faceSize;
+
+					fileHandle->Read(src, 1, faceSize);
+				}
+
+				if ((flags & DONT_LOAD_MIPMAPS) && header.dwMipMapCount > 1)
+				{
+					fileHandle->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, VS_SEEK_CUR);
+				}
+			}
+		}
+		else
+			fileHandle->Read(m_pPixels, 1, size);
+	}
 
 	if ((m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8) && header.ddpfPixelFormat.dwBBitMask == 0xFF)
 	{
@@ -838,7 +846,7 @@ bool CImage::SaveDDS(IVirtualStreamPtr fileHandle) const
 	const int nChannels = GetChannelCount(m_nFormat);
 
 	header.ddpfPixelFormat.dwSize = 32;
-	if (m_nFormat <= FORMAT_I16 || m_nFormat == FORMAT_RGB10A2)
+	if (m_nArraySize == 1 && (m_nFormat <= FORMAT_I16 || m_nFormat == FORMAT_RGB10A2))
 	{
 		header.ddpfPixelFormat.dwFlags = ((nChannels < 3) ? 0x00020000 : DDPF_RGB) | ((nChannels & 1) ? 0 : DDPF_ALPHAPIXELS);
 		if (m_nFormat <= FORMAT_RGBA8)
@@ -867,32 +875,72 @@ bool CImage::SaveDDS(IVirtualStreamPtr fileHandle) const
 	{
 		header.ddpfPixelFormat.dwFlags = DDPF_FOURCC;
 
-		switch (m_nFormat)
+		if (m_nFormat <= FORMAT_RGBA8)
 		{
-		case FORMAT_RG16:    header.ddpfPixelFormat.dwFourCC = 34; break;
-		case FORMAT_RGBA16:  header.ddpfPixelFormat.dwFourCC = 36; break;
-		case FORMAT_R16F:    header.ddpfPixelFormat.dwFourCC = 111; break;
-		case FORMAT_RG16F:   header.ddpfPixelFormat.dwFourCC = 112; break;
-		case FORMAT_RGBA16F: header.ddpfPixelFormat.dwFourCC = 113; break;
-		case FORMAT_R32F:    header.ddpfPixelFormat.dwFourCC = 114; break;
-		case FORMAT_RG32F:   header.ddpfPixelFormat.dwFourCC = 115; break;
-		case FORMAT_RGBA32F: header.ddpfPixelFormat.dwFourCC = 116; break;
-		case FORMAT_DXT1:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '1'); break;
-		case FORMAT_DXT3:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '3'); break;
-		case FORMAT_DXT5:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '5'); break;
-		case FORMAT_ATI1N:   header.ddpfPixelFormat.dwFourCC = MAKECHAR4('A', 'T', 'I', '1'); break;
-		case FORMAT_ATI2N:   header.ddpfPixelFormat.dwFourCC = MAKECHAR4('A', 'T', 'I', '2'); break;
-		default:
+			header.ddpfPixelFormat.dwRGBBitCount = 8 * nChannels;
+			header.ddpfPixelFormat.dwRBitMask = (nChannels > 2) ? 0x00FF0000 : 0xFF;
+			header.ddpfPixelFormat.dwGBitMask = (nChannels > 1) ? 0x0000FF00 : 0;
+			header.ddpfPixelFormat.dwBBitMask = (nChannels > 1) ? 0x000000FF : 0;
+			header.ddpfPixelFormat.dwRGBAlphaBitMask = (nChannels == 4) ? 0xFF000000 : (nChannels == 2) ? 0xFF00 : 0;
+		}
+		else if (m_nFormat == FORMAT_I16)
+		{
+			header.ddpfPixelFormat.dwRGBBitCount = 16;
+			header.ddpfPixelFormat.dwRBitMask = 0xFFFF;
+		}
+
+		bool dx10Format = m_nArraySize > 1;
+		if (!dx10Format)
+		{
+			switch (m_nFormat)
+			{
+			case FORMAT_RG16:    header.ddpfPixelFormat.dwFourCC = 34; break;
+			case FORMAT_RGBA16:  header.ddpfPixelFormat.dwFourCC = 36; break;
+			case FORMAT_R16F:    header.ddpfPixelFormat.dwFourCC = 111; break;
+			case FORMAT_RG16F:   header.ddpfPixelFormat.dwFourCC = 112; break;
+			case FORMAT_RGBA16F: header.ddpfPixelFormat.dwFourCC = 113; break;
+			case FORMAT_R32F:    header.ddpfPixelFormat.dwFourCC = 114; break;
+			case FORMAT_RG32F:   header.ddpfPixelFormat.dwFourCC = 115; break;
+			case FORMAT_RGBA32F: header.ddpfPixelFormat.dwFourCC = 116; break;
+			case FORMAT_DXT1:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '1'); break;
+			case FORMAT_DXT3:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '3'); break;
+			case FORMAT_DXT5:    header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', 'T', '5'); break;
+			case FORMAT_ATI1N:   header.ddpfPixelFormat.dwFourCC = MAKECHAR4('A', 'T', 'I', '1'); break;
+			case FORMAT_ATI2N:   header.ddpfPixelFormat.dwFourCC = MAKECHAR4('A', 'T', 'I', '2'); break;
+			default:
+				dx10Format = true;
+			}
+		}
+
+		if (dx10Format)
+		{
 			header.ddpfPixelFormat.dwFourCC = MAKECHAR4('D', 'X', '1', '0');
-			headerDXT10.arraySize = 1;
+			headerDXT10.arraySize = m_nArraySize;
 			headerDXT10.miscFlag = (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
 			headerDXT10.resourceDimension = Is1D() ? D3D10_RESOURCE_DIMENSION_TEXTURE1D : Is3D() ? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
 			switch (m_nFormat)
 			{
-				//case FORMAT_RGBA8:    headerDXT10.dxgiFormat = 28; break;
-			case FORMAT_RGB32F:   headerDXT10.dxgiFormat = 6; break;
-			case FORMAT_RGB9E5:   headerDXT10.dxgiFormat = 67; break;
-			case FORMAT_RG11B10F: headerDXT10.dxgiFormat = 26; break;
+			case FORMAT_R8:			headerDXT10.dxgiFormat = 61; break;
+			case FORMAT_RG8:		headerDXT10.dxgiFormat = 49; break;
+			case FORMAT_RGBA8:		headerDXT10.dxgiFormat = 28; break;
+			case FORMAT_R16:		headerDXT10.dxgiFormat = 56; break;
+			case FORMAT_RG16:		headerDXT10.dxgiFormat = 35; break;
+			case FORMAT_RGBA16:		headerDXT10.dxgiFormat = 11; break;
+			case FORMAT_R16F:		headerDXT10.dxgiFormat = 54; break;
+			case FORMAT_RG16F:		headerDXT10.dxgiFormat = 34; break;
+			case FORMAT_RGBA16F:	headerDXT10.dxgiFormat = 10; break;
+			case FORMAT_R32F:		headerDXT10.dxgiFormat = 41; break;
+			case FORMAT_RG32F:		headerDXT10.dxgiFormat = 16; break;
+			case FORMAT_RGB32F:		headerDXT10.dxgiFormat = 6; break;
+			case FORMAT_RGBA32F:	headerDXT10.dxgiFormat = 2; break;
+			case FORMAT_RGB9E5:		headerDXT10.dxgiFormat = 67; break;
+			case FORMAT_RG11B10F:	headerDXT10.dxgiFormat = 26; break;
+			case FORMAT_RGB10A2:	headerDXT10.dxgiFormat = 24; break;
+			case FORMAT_DXT1:		headerDXT10.dxgiFormat = 71; break;
+			case FORMAT_DXT3:		headerDXT10.dxgiFormat = 74; break;
+			case FORMAT_DXT5:		headerDXT10.dxgiFormat = 77; break;
+			case FORMAT_ATI1N:		headerDXT10.dxgiFormat = 80; break;
+			case FORMAT_ATI2N:		headerDXT10.dxgiFormat = 83; break;
 			default:
 				return false;
 			}
@@ -909,29 +957,37 @@ bool CImage::SaveDDS(IVirtualStreamPtr fileHandle) const
 	if (headerDXT10.dxgiFormat)
 		fileHandle->Write(&headerDXT10, sizeof(headerDXT10), 1);
 
-	int size = GetMipMappedSize(0, m_nMipMaps);
+	const int size = GetMipMappedSize(0, m_nMipMaps);
+
+	const bool flipChannels = m_nArraySize == 1 && (m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8);
 
 	// RGB to BGR
-	if (m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8)
+	if (flipChannels)
 		_SwapChannels(m_pPixels, size / nChannels, nChannels, 0, 2);
 
-	if (IsCube())
+	for (int arrIdx = 0; arrIdx < m_nArraySize; ++arrIdx)
 	{
-		for (int face = 0; face < 6; face++) 
+		if (IsCube())
 		{
-			for (int mipMapLevel = 0; mipMapLevel < m_nMipMaps; mipMapLevel++)
+			for (int face = 0; face < 6; face++)
 			{
-				int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
-				ubyte* src = GetPixels(mipMapLevel) + face * faceSize;
-				fileHandle->Write(src, 1, faceSize);
+				for (int mipMapLevel = 0; mipMapLevel < m_nMipMaps; mipMapLevel++)
+				{
+					const int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
+					const ubyte* src = GetPixels(mipMapLevel, arrIdx) + face * faceSize;
+
+					fileHandle->Write(src, 1, faceSize);
+				}
 			}
 		}
+		else
+		{
+			fileHandle->Write(m_pPixels + size * arrIdx, size, 1);
+		}
 	}
-	else
-		fileHandle->Write(m_pPixels, size, 1);
 
 	// Restore to RGB
-	if (m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8)
+	if (flipChannels)
 		_SwapChannels(m_pPixels, size / nChannels, nChannels, 0, 2);
 
 	return true;
