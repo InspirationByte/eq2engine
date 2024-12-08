@@ -7,9 +7,9 @@
 
 #pragma once
 
-static constexpr const char* TEXTURE_DEFAULT_EXTENSION = ".dds";
-static constexpr const char* TEXTURE_SECONDARY_EXTENSION = ".tga";
-static constexpr const char* TEXTURE_ANIMATED_EXTENSION = ".ati";			// ATI - Animated Texture Index file
+static constexpr const char* TEXTURE_DEFAULT_EXTENSION = "dds";
+static constexpr const char* TEXTURE_SECONDARY_EXTENSION = "tga";
+static constexpr const char* TEXTURE_ANIMATED_EXTENSION = "ati";			// ATI - Animated Texture Index file
 
 class ITexture;
 using ITexturePtr = CRefPtr<ITexture>;

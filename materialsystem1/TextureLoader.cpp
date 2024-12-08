@@ -25,51 +25,38 @@ static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const cha
 	textureNames.clear();
 
 	EqString texturePath(pszFileName);
-
-	// build valid texture paths
-	EqString texturePathExt = texturePath + EqString(TEXTURE_DEFAULT_EXTENSION);
-	EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
-
-	fnmPathFixSeparators(texturePathExt);
-	fnmPathFixSeparators(textureAnimPathExt);
+	fnmPathFixSeparators(texturePath);
 
 	// has pattern for animated texture?
 	int animCountStart = texturePath.Find("[");
 	int animCountEnd = -1;
 
-	if (animCountStart != -1 &&
-		(animCountEnd = texturePath.Find("]", false, animCountStart)) != -1)
+	if (animCountStart != -1 && (animCountEnd = texturePath.Find("]", false, animCountStart)) != -1)
 	{
 		// trying to load animated texture
 		EqString textureWildcard = texturePath.Left(animCountStart);
 		EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
-		int numFrames = atoi(textureFrameCount);
+		const int numFrames = atoi(textureFrameCount);
 
 		if (r_reportTextureLoading.GetBool())
 			Msg("Loading animated %d animated textures (%s)\n", numFrames, textureWildcard.ToCString());
 
+		textureNames.reserve(numFrames);
 		for (int i = 0; i < numFrames; i++)
-		{
-			EqString textureNameFrame = EqString::Format(textureWildcard, i);
-			textureNames.append(textureNameFrame);
-		}
+			textureNames.append(EqString::Format(textureWildcard, i));
 	}
 	else
 	{
 		// try loading older Animated Texture Index file
-		EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
-		fnmPathFixSeparators(textureAnimPathExt);
-
-		char* animScriptBuffer = (char*)g_fileSystem->GetFileBuffer(textureAnimPathExt);
+		char* animScriptBuffer = (char*)g_fileSystem->GetFileBuffer(fnmPathApplyExt(texturePath, TEXTURE_ANIMATED_EXTENSION));
 		if (animScriptBuffer)
 		{
 			Array<EqString> frameFilenames(PP_SL);
 			StringSplit(animScriptBuffer, "\n", frameFilenames);
-			for (int i = 0; i < frameFilenames.numElem(); i++)
+			for (const EqString& name : frameFilenames)
 			{
 				// delete carriage return character if any
-				EqString animFrameFilename = frameFilenames[i].TrimChar('\r', true, true);
-				textureNames.append(animFrameFilename);
+				textureNames.append(name.TrimChar('\r', true, true));
 			}
 
 			PPFree(animScriptBuffer);
@@ -119,6 +106,8 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 	PROF_EVENT("Load Texture from file");
 
+	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
+
 	thread_local Array<EqString> textureNames(PP_SL);
 	AnimGetImagesForTextureName(textureNames, pszFileName);
 
@@ -131,12 +120,11 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 		EqString texturePathExt;
 		fnmPathCombine(texturePathExt, m_texturePath, texName);
-		bool isLoaded = img->Load(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
-
+		bool isLoaded = img->Load(fnmPathApplyExt(texturePathExt, TEXTURE_DEFAULT_EXTENSION), 0);
 		if (!isLoaded && r_allowSourceTextures->GetBool())
 		{
 			fnmPathCombine(texturePathExt, m_textureSRCPath, texName);
-			isLoaded = img->Load(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
+			isLoaded = img->Load(fnmPathApplyExt(texturePathExt, TEXTURE_SECONDARY_EXTENSION));
 		}
 
 		img->SetName(texName);
@@ -146,7 +134,6 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 		if (isLoaded)
 		{
-			const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
 			if (!caps.IsSupportedTextureFormat(img->GetFormat()))
 			{
 				MsgWarning("%s: Texture %s unsupported format %d\n", requestedBy, texturePathExt.ToCString(), img->GetFormat());
@@ -173,36 +160,31 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	CImage::PTR_T textureImg = imgFrames.front();
 	if (imgFrames.numElem() > 1)
 	{
-		if (IsCompressedFormat(textureImg->GetFormat()))
+		MsgWarning("%s: animated texture definitions are deprecated, consider using texture array for faster loading.\n", requestedBy);
+
+		CImage::PTR_T firstImg = textureImg;
+		ASSERT_MSG(firstImg->GetArraySize() == 1, "Texture arrays are not supported when animation table is used.");
+
+		textureImg = CRefPtr_new(CImage);
+		ubyte* textureData = textureImg->Create(
+			firstImg->GetFormat(), 
+			firstImg->GetWidth(), 
+			firstImg->GetHeight(),
+			firstImg->GetDepth(), 
+			firstImg->GetMipMapCount(),
+			imgFrames.numElem()
+		);
+
+		const int stride = firstImg->GetMipMappedSize(0, firstImg->GetMipMapCount());
+		for (CImage* frameImg : imgFrames)
 		{
-			MsgWarning("%s: animated texture definition %s could not use compressed textures. Consider using TexAssemble to make texture array.\n", requestedBy, pszFileName);
-		}
-		else
-		{
-			CImage::PTR_T firstImg = textureImg;
-			ASSERT_MSG(firstImg->GetArraySize() == 1, "Texture arrays are not supported when animation table is used.");
+			ASSERT_MSG(	firstImg->GetFormat() == frameImg->GetFormat() &&
+						firstImg->GetWidth() == frameImg->GetWidth() &&
+						firstImg->GetHeight() == frameImg->GetHeight() &&
+						firstImg->GetMipMapCount() == frameImg->GetMipMapCount(), "%s: animated textures must share same format, size and mipmap count", requestedBy);
 
-			textureImg = CRefPtr_new(CImage);
-			ubyte* textureData = textureImg->Create(
-				firstImg->GetFormat(), 
-				firstImg->GetWidth(), 
-				firstImg->GetHeight(),
-				firstImg->GetDepth(), 
-				firstImg->GetMipMapCount(),
-				imgFrames.numElem()
-			);
-
-			const int stride = firstImg->GetMipMappedSize(0, firstImg->GetMipMapCount());
-			for (CImage* frameImg : imgFrames)
-			{
-				ASSERT_MSG(	firstImg->GetFormat() == frameImg->GetFormat() &&
-							firstImg->GetWidth() == frameImg->GetWidth() &&
-							firstImg->GetHeight() == frameImg->GetHeight() &&
-							firstImg->GetMipMapCount() == frameImg->GetMipMapCount(), "%s: animated textures must share same format, size and mipmap count", requestedBy);
-
-				memcpy(textureData, frameImg->GetPixels(), stride);
-				textureData += stride;
-			}
+			memcpy(textureData, frameImg->GetPixels(), stride);
+			textureData += stride;
 		}
 	}
 
