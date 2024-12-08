@@ -481,8 +481,8 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 
 	EqString arguments(m_batchConfig.applicationArgumentsTemplate);
 	arguments.ReplaceSubstr(s_argumentsTag, (m_batchConfig.compressionApplicationArguments + " " + textureInfo.usage->applicationArguments));
-	arguments.ReplaceSubstr(s_inputFileNameTag, sourceFilename);
-	arguments.ReplaceSubstr(s_outputFilePathTag, targetFilePath);
+	arguments.ReplaceSubstr(s_inputFileNameTag, g_fileSystem->GetAbsolutePath(SP_ROOT, sourceFilename));
+	arguments.ReplaceSubstr(s_outputFilePathTag, g_fileSystem->GetAbsolutePath(SP_ROOT, targetFilePath));
 
 	// generate CRC from image file content and arguments it's going to be built
 	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename, SP_ROOT);
@@ -510,7 +510,7 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 
 	textureInfo.status = CONVERTED;
 
-	EqString cmdLine(EqString::Format("%s %s", m_batchConfig.applicationName.ToCString(), arguments.ToCString()));
+	EqString cmdLine(EqString::Format("%s %s", g_fileSystem->GetAbsolutePath(SP_ROOT, m_batchConfig.applicationName), arguments));
 	fnmPathFixSeparators(cmdLine);
 
 	DevMsg(DEVMSG_CORE, "*RUN '%s'\n", cmdLine.GetData());
