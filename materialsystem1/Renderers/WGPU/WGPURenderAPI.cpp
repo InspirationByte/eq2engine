@@ -401,6 +401,8 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 	texture->SetSamplerState(targetDesc.sampler);
 	texture->m_imgType = (targetDesc.flags & TEXFLAG_CUBEMAP) ? IMAGE_TYPE_CUBE : IMAGE_TYPE_2D;
 
+	DevMsg(DEVMSG_RENDER, "Creating render target %s\n", targetDesc.name.ToCString());
+
 	ResizeRenderTarget(texture, targetDesc.size, targetDesc.mipmapCount, targetDesc.sampleCount);
 
 	if (!texture->m_rhiTexture) 
@@ -434,6 +436,8 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 		ASSERT_FAIL("Must be a rendertarget");
 		return;
 	}
+
+	DevMsg(DEVMSG_RENDER, "Resize render target %s (%dx%d -> %dx%d)\n", texture->GetName(), texture->GetWidth(), texture->GetHeight(), newSize.width, newSize.height);
 
 	const int flags = texture->GetFlags();
 

@@ -91,6 +91,8 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	if (!isJustCreated)
 		return texture;
 
+	DevMsg(DEVMSG_RENDER, "Loading texture file %s\n", pszFileName);
+
 	auto HandleError = [&texture, flags]() {
 		if (flags & TEXFLAG_LOAD_NULL_ON_ERROR)
 			texture = nullptr;

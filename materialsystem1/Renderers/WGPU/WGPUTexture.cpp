@@ -26,11 +26,11 @@ void CWGPUTexture::Release()
 {
 	for (WGPUTextureView view : m_rhiViews)
 		wgpuTextureViewRelease(view);
+	m_rhiViews.clear();
 
-	if(m_rhiTexture)
+	if (m_rhiTexture)
 		wgpuTextureRelease(m_rhiTexture);
 	m_rhiTexture = nullptr;
-	m_rhiViews.clear();
 }
 
 void CWGPUTexture::Ref_DeleteObject()
@@ -45,191 +45,191 @@ bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& s
 {
 	HOOK_TO_CVAR(r_loadmiplevel);
 
-	// FIXME: only release if pool, flags, format and size is different
+	DevMsg(DEVMSG_RENDER, "Creating texture from image %s\n", image->GetName());
+
 	Release();
 
-	// since texture is initialized from image buffer, it neeeds copy destination flag
-	flags |= TEXFLAG_COPY_DST;
+	const int quality = (m_flags & TEXFLAG_IGNORE_QUALITY) ? 0 : r_loadmiplevel->GetInt();
 
+	const EImageType imgType = image->GetImageType();
+	const ETextureFormat imgFmt = image->GetFormat();
+	const int imgMipCount = image->GetMipMapCount();
+	const bool imgHasMipMaps = (imgMipCount > 1);
+	const int mipStart = imgHasMipMaps ? min(quality, imgMipCount - 1) : 0;
+	const int mipCount = max(imgMipCount - quality, 1);
+	const int texWidth = image->GetWidth(mipStart);
+	const int texHeight = image->GetHeight(mipStart);
+
+	if (IsCompressedFormat(imgFmt) && !((texWidth % 4) == 0 && (texHeight % 4) == 0))
+	{
+		MsgError("Error: Compressed texture %s size %dx%d (mipStart %d) is not a multiple of 4", image->GetName(), texWidth, texHeight, mipStart);
+		return false;
+	}
+
+	const int arraySize = image->GetArraySize();
+	const int arrayLayerCount = (imgType == IMAGE_TYPE_CUBE) ? ITexture::CubeArraySlice(0, arraySize) : arraySize;
+
+	//m_rhiViews.reserve(arraySize);
+
+	m_texSize = image->GetMipMappedSize(mipStart);
+	m_arraySize = arraySize;
+	m_mipCount = mipCount;
+	m_width = texWidth;
+	m_height = texHeight;
+	m_arraySize = arraySize;
+	m_format = imgFmt;
+	m_imgType = imgType;
+
+	// since texture is initialized from image buffer, it neeeds copy destination flag
 	m_samplerState = sampler;
 	m_samplerState.maxAnisotropy = max(CWGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.maxAnisotropy);
-	m_flags = flags;
-
-	if (image->IsCube())
-		m_flags |= TEXFLAG_CUBEMAP;
-
+	
 	WGPUTextureUsage rhiUsageFlags = WGPUTextureUsage_TextureBinding;
 	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
 	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
 	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
+	rhiUsageFlags |= WGPUTextureUsage_CopyDst;
 
-	const int quality = (m_flags & TEXFLAG_IGNORE_QUALITY) ? 0 : r_loadmiplevel->GetInt();
+	m_flags = flags;
+	if (image->IsCube())
+		m_flags |= TEXFLAG_CUBEMAP;
+
+	WGPUTextureDescriptor rhiTextureDesc{};
+	rhiTextureDesc.label = _WSTR(m_name);
+	rhiTextureDesc.mipLevelCount = mipCount;
+	rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)arrayLayerCount };
+	rhiTextureDesc.sampleCount = 1;
+	rhiTextureDesc.usage = rhiUsageFlags;
+	rhiTextureDesc.format = GetWGPUTextureFormat(imgFmt);
+	rhiTextureDesc.viewFormatCount = 0;
+	rhiTextureDesc.viewFormats = nullptr;
+
+	WGPUTextureViewDimension rhiTexViewDimension = WGPUTextureViewDimension_Undefined;
+	WGPUTextureViewDimension rhiTexViewDimensionMain = WGPUTextureViewDimension_Undefined;
+	switch (imgType)
 	{
-		const EImageType imgType = image->GetImageType();
-		const ETextureFormat imgFmt = image->GetFormat();
-		const int imgMipCount = image->GetMipMapCount();
-		const bool imgHasMipMaps = (imgMipCount > 1);
-
-		const int mipStart = imgHasMipMaps ? min(quality, imgMipCount - 1) : 0;
-		const int mipCount = max(imgMipCount - quality, 1);
-
-		const int texWidth = image->GetWidth(mipStart);
-		const int texHeight = image->GetHeight(mipStart);
-
-		const int arraySize = image->GetArraySize();
-		const int arrayLayerCount = (imgType == IMAGE_TYPE_CUBE) ? ITexture::CubeArraySlice(0, arraySize) : arraySize;
-
-		m_rhiViews.reserve(arraySize);
-		m_arraySize = arraySize;
-
-		const ETextureFormat texFormat = imgFmt;
-
-		WGPUTextureDescriptor rhiTextureDesc{};
-		rhiTextureDesc.label = _WSTR(m_name);
-		rhiTextureDesc.mipLevelCount = mipCount;
-		rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)arrayLayerCount };
-		rhiTextureDesc.sampleCount = 1;
-		rhiTextureDesc.usage = rhiUsageFlags;
-		rhiTextureDesc.format = GetWGPUTextureFormat(texFormat);
-		rhiTextureDesc.viewFormatCount = 0;
-		rhiTextureDesc.viewFormats = nullptr;
-
-		WGPUTextureViewDimension rhiTexViewDimension = WGPUTextureViewDimension_Undefined;
-		WGPUTextureViewDimension rhiTexViewDimensionMain = WGPUTextureViewDimension_Undefined;
-		switch (imgType)
-		{
-		case IMAGE_TYPE_1D:
-			rhiTextureDesc.dimension = WGPUTextureDimension_1D;
-			rhiTexViewDimension = WGPUTextureViewDimension_1D;
-			rhiTexViewDimensionMain = WGPUTextureViewDimension_1D; // TODO
-			break;
-		case IMAGE_TYPE_2D:
-			rhiTextureDesc.dimension = WGPUTextureDimension_2D;
-			rhiTexViewDimension = WGPUTextureViewDimension_2D;
-			rhiTexViewDimensionMain = (arraySize > 1) ? WGPUTextureViewDimension_2DArray : rhiTexViewDimension;
-			break;
-		case IMAGE_TYPE_3D:
-			rhiTextureDesc.dimension = WGPUTextureDimension_3D;
-			rhiTexViewDimension = WGPUTextureViewDimension_3D;
-			rhiTexViewDimensionMain = (arraySize > 1) ? WGPUTextureViewDimension_2DArray : rhiTexViewDimension; // is that correct?
-			break;
-		case IMAGE_TYPE_CUBE:
-			rhiTextureDesc.dimension = WGPUTextureDimension_2D;
-			rhiTexViewDimension = WGPUTextureViewDimension_Cube;
-			rhiTexViewDimensionMain = (arraySize > 1) ? WGPUTextureViewDimension_CubeArray : rhiTexViewDimension;
-			break;
-		default:
-			ASSERT_FAIL("Invalid image type of %s", image->GetName());
-		}
-
-		WGPUTexture rhiTexture = nullptr;
-		g_renderWorker.WaitForExecute("CreateTexture", [&]() {
-			rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
-			wgpuTextureAddRef(rhiTexture);
-			return 0;
-		});
-
-		if (!rhiTexture)
-		{
-			ErrorMsg("Failed to create texture from image %s\n", image->GetName());
-			return false;
-		}
-
-		m_rhiTexture = rhiTexture;
-
-		// create main texture view
-		{
-			WGPUTextureViewDescriptor rhiTexViewDesc = {};
-			rhiTexViewDesc.format = GetWGPUTextureFormat(texFormat);
-			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-			rhiTexViewDesc.arrayLayerCount = arrayLayerCount;
-			rhiTexViewDesc.baseArrayLayer = 0;
-			rhiTexViewDesc.baseMipLevel = 0;
-			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
-			rhiTexViewDesc.dimension = rhiTexViewDimensionMain;
-			rhiTexViewDesc.label = rhiTextureDesc.label;
-
-			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
-			m_rhiViews.append(rhiView);
-		}
-
-		// TODO: create individual array views
-
-		for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
-		{
-			int mipMapLevel = image->GetMipMapCount() - 1;
-			while (mipMapLevel >= mipStart)
-			{
-				g_renderWorker.Execute("UploadMipLevel", [=]() {
-					int mipWidth = image->GetWidth(mipMapLevel);
-					int mipHeight = image->GetHeight(mipMapLevel);
-					const int mipDepth = image->GetDepth(mipMapLevel);
-					const int lockBoxLevel = mipMapLevel - mipStart;
-
-					if (IsCompressedFormat(imgFmt))
-					{
-						mipWidth = max(4, mipWidth & ~3);
-						mipHeight = max(4, mipHeight & ~3);
-					}
-
-					const WGPUExtent3D rhiTexSize{ (uint)mipWidth, (uint)mipHeight, (uint)mipDepth };
-
-					WGPUImageCopyTexture rhImageCopy{};
-					rhImageCopy.texture = rhiTexture;
-					rhImageCopy.aspect = WGPUTextureAspect_All;
-					rhImageCopy.mipLevel = lockBoxLevel;
-					rhImageCopy.origin = WGPUOrigin3D{ 0, 0, (uint)arrIdx };
-
-					WGPUTextureDataLayout rhiTexDataLayout{};
-					rhiTexDataLayout.offset = 0;
-					if (IsCompressedFormat(imgFmt))
-					{
-						rhiTexDataLayout.bytesPerRow = ((mipWidth + 3) >> 2) * GetBytesPerBlock(imgFmt);
-						rhiTexDataLayout.rowsPerImage = ((mipHeight + 3) >> 2);
-					}
-					else
-					{
-						rhiTexDataLayout.bytesPerRow = mipWidth * GetBytesPerPixel(imgFmt);
-						rhiTexDataLayout.rowsPerImage = mipHeight;
-					}
-
-					const ubyte* src = image->GetPixels(mipMapLevel, arrIdx);
-					const int size = image->GetMipMappedSize(mipMapLevel, 1);
-
-					if (imgType == IMAGE_TYPE_CUBE)
-					{
-						const int cubeFaceSize = size / 6;
-						for (int i = 0; i < CUBESIDE_COUNT; ++i)
-						{
-							rhImageCopy.origin.z = (uint32)i;
-							wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhImageCopy, src, size, &rhiTexDataLayout, &rhiTexSize);
-							src += cubeFaceSize;
-						}
-					}
-					else
-					{
-						wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhImageCopy, src, size, &rhiTexDataLayout, &rhiTexSize);
-					}
-					return 0;
-				});
-				--mipMapLevel;
-			}
-		}
-
-		g_renderWorker.Execute("TextureUnref", [=]() {
-			wgpuTextureRelease(rhiTexture);
-			return 0;
-		});
-
-		m_mipCount = mipCount;
-		m_width = texWidth;
-		m_height = texHeight;
-		m_arraySize = arraySize;
-		m_format = imgFmt;
-		m_imgType = imgType;
-
-		m_texSize = image->GetMipMappedSize(mipStart);
+	case IMAGE_TYPE_1D:
+		rhiTextureDesc.dimension = WGPUTextureDimension_1D;
+		rhiTexViewDimension = WGPUTextureViewDimension_1D;
+		rhiTexViewDimensionMain = WGPUTextureViewDimension_1D; // TODO
+		break;
+	case IMAGE_TYPE_2D:
+		rhiTextureDesc.dimension = WGPUTextureDimension_2D;
+		rhiTexViewDimension = WGPUTextureViewDimension_2D;
+		rhiTexViewDimensionMain = (arraySize > 1) ? WGPUTextureViewDimension_2DArray : rhiTexViewDimension;
+		break;
+	case IMAGE_TYPE_3D:
+		rhiTextureDesc.dimension = WGPUTextureDimension_3D;
+		rhiTexViewDimension = WGPUTextureViewDimension_3D;
+		rhiTexViewDimensionMain = (arraySize > 1) ? WGPUTextureViewDimension_2DArray : rhiTexViewDimension; // is that correct?
+		break;
+	case IMAGE_TYPE_CUBE:
+		rhiTextureDesc.dimension = WGPUTextureDimension_2D;
+		rhiTexViewDimension = WGPUTextureViewDimension_Cube;
+		rhiTexViewDimensionMain = (arraySize > 1) ? WGPUTextureViewDimension_CubeArray : rhiTexViewDimension;
+		break;
+	default:
+		ASSERT_FAIL("Invalid image type of %s", image->GetName());
 	}
+
+	WGPUTexture rhiTexture = nullptr;
+	g_renderWorker.WaitForExecute("CreateTexture", [&]() {
+		rhiTexture = wgpuDeviceCreateTexture(CWGPURenderAPI::Instance.GetWGPUDevice(), &rhiTextureDesc);
+		return 0;
+	});
+
+	if (!rhiTexture)
+	{
+		ErrorMsg("Failed to create texture from image %s\n", image->GetName());
+		return false;
+	}
+
+	wgpuTextureAddRef(rhiTexture);
+	m_rhiTexture = rhiTexture;
+
+	// create main texture view
+	WGPUTextureViewDescriptor rhiTexViewDesc = {};
+	rhiTexViewDesc.format = GetWGPUTextureFormat(imgFmt);
+	rhiTexViewDesc.aspect = WGPUTextureAspect_All;
+	rhiTexViewDesc.arrayLayerCount = arrayLayerCount;
+	rhiTexViewDesc.baseArrayLayer = 0;
+	rhiTexViewDesc.baseMipLevel = 0;
+	rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
+	rhiTexViewDesc.dimension = rhiTexViewDimensionMain;
+	rhiTexViewDesc.label = rhiTextureDesc.label;
+
+	WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
+	m_rhiViews.append(rhiView);
+
+	// TODO: create individual array views
+
+	for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
+	{
+		int mipMapLevel = image->GetMipMapCount() - 1;
+		while (mipMapLevel >= mipStart)
+		{
+			g_renderWorker.Execute("UploadMipLevel", [=, captureTex = ITexturePtr(this)]() {
+
+				int mipWidth = image->GetWidth(mipMapLevel);
+				int mipHeight = image->GetHeight(mipMapLevel);
+				const int mipDepth = image->GetDepth(mipMapLevel);
+				const int lockBoxLevel = mipMapLevel - mipStart;
+
+				if (IsCompressedFormat(imgFmt))
+				{
+					mipWidth = max(4, mipWidth & ~3);
+					mipHeight = max(4, mipHeight & ~3);
+				}
+
+				const WGPUExtent3D rhiTexSize{ (uint)mipWidth, (uint)mipHeight, (uint)mipDepth };
+
+				WGPUImageCopyTexture rhImageCopy{};
+				rhImageCopy.texture = rhiTexture;
+				rhImageCopy.aspect = WGPUTextureAspect_All;
+				rhImageCopy.mipLevel = lockBoxLevel;
+				rhImageCopy.origin = WGPUOrigin3D{ 0, 0, (uint)arrIdx };
+
+				WGPUTextureDataLayout rhiTexDataLayout{};
+				rhiTexDataLayout.offset = 0;
+				if (IsCompressedFormat(imgFmt))
+				{
+					rhiTexDataLayout.bytesPerRow = ((mipWidth + 3) >> 2) * GetBytesPerBlock(imgFmt);
+					rhiTexDataLayout.rowsPerImage = ((mipHeight + 3) >> 2);
+				}
+				else
+				{
+					rhiTexDataLayout.bytesPerRow = mipWidth * GetBytesPerPixel(imgFmt);
+					rhiTexDataLayout.rowsPerImage = mipHeight;
+				}
+
+				const ubyte* src = image->GetPixels(mipMapLevel, arrIdx);
+				const int size = image->GetMipMappedSize(mipMapLevel, 1);
+
+				if (imgType == IMAGE_TYPE_CUBE)
+				{
+					const int cubeFaceSize = size / 6;
+					for (int i = 0; i < CUBESIDE_COUNT; ++i)
+					{
+						rhImageCopy.origin.z = (uint32)i;
+						wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhImageCopy, src, size, &rhiTexDataLayout, &rhiTexSize);
+						src += cubeFaceSize;
+					}
+				}
+				else
+				{
+					wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhImageCopy, src, size, &rhiTexDataLayout, &rhiTexSize);
+				}
+
+				return 0;
+			});
+			--mipMapLevel;
+		}
+	}
+
+	g_renderWorker.Execute("TextureUnref", [=]() {
+		wgpuTextureRelease(rhiTexture);
+		return 0;
+	});
 
 	return true;
 }
