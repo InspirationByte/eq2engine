@@ -559,7 +559,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* animName)
 	if(!g_fileSystem->FileExist(finalFileName))
 		fnmPathCombine(finalFileName, m_animPath, animName);
 
-	fnmPathApplyExt(finalFileName, ".esa");
+	finalFileName = fnmPathApplyExt(finalFileName, ".esa");
 
 	Tokenizer tok;
 	if (!tok.setFile( finalFileName ))

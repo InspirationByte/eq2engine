@@ -84,7 +84,7 @@ int CStudioCache::PrecacheModel(const char* fileName)
 	fnmPathFixSeparators(nameStr);
 
 	if (!fnmPathHasExt(nameStr))
-		fnmPathApplyExt(nameStr, s_egfGeomExt);
+		nameStr = fnmPathApplyExt(nameStr, s_egfGeomExt);
 
 	const int nameHash = StringId24(nameStr, true);
 	{
@@ -184,7 +184,7 @@ int	CStudioCache::PrecacheMotionData(const char* fileName, const char* requested
 	fnmPathFixSeparators(nameStr);
 
 	if (!fnmPathHasExt(nameStr))
-		fnmPathApplyExt(nameStr, s_egfMotionPackageExt);
+		nameStr = fnmPathApplyExt(nameStr, s_egfMotionPackageExt);
 
 	const int nameHash = StringId24(nameStr, true);
 	{
