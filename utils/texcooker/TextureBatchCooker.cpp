@@ -108,6 +108,7 @@ struct TexInfo
 	UsageProperties*	usage{ nullptr };
 	uint32				crc32{ 0 };
 	ETexConvStatus		status{ INIT_STATE };
+	bool				isArray{ false };
 };
 
 class CTextureCooker
@@ -118,8 +119,9 @@ public:
 
 private:
 	void				LoadBatchConfig(const KVSection* batchSec);
-	bool				AddTexture(const EqString& texturePath, const EqString& imageUsage);
-	void				LoadMaterialImages(const char* materialFileName);
+	bool				AddTexture(const EqString& texturePath, const EqString& imageUsage, bool isArray = false);
+	bool				CreateArrayImageFile(const Array<EqString>& textureNames, const char* outputFileName, const char* imageUsage);
+	void				LoadMaterialImages(const KVSection& kvMaterial);
 
 	void				SearchFolderForMaterialsAndGetTextures(const char* wildcard);
 	void				SearchFolderForAtlasesAndConvert(const char* wildcard);
@@ -133,7 +135,6 @@ private:
 	TargetProperties	m_targetProps;
 
 	Array<TexInfo>		m_textureList{ PP_SL };
-	Array<EqString>		m_materialList{ PP_SL };
 };
 
 //-----------------------------------------------------------------------
@@ -203,10 +204,12 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	}
 }
 
-bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& imageUsage)
+bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& imageUsage, bool isArray)
 {
 	EqString filename;
-	fnmPathCombine(filename, m_targetProps.sourceMaterialPath, EqString::Format("%s.%s", texturePath.ToCString(), m_targetProps.sourceImageExt.ToCString()));
+	fnmPathCombine(filename, m_targetProps.sourceMaterialPath, texturePath);
+	if (!fnmPathHasExt(filename))
+		filename = fnmPathApplyExt(filename, m_targetProps.sourceImageExt);
 
 	if (!g_fileSystem->FileExist(filename))
 	{
@@ -215,9 +218,9 @@ bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& ima
 	}
 
 	TexInfo& newInfo = m_textureList.append();
-	
 	newInfo.sourcePath = texturePath;
 	newInfo.usage = FindUsage(imageUsage);
+	newInfo.isArray = isArray;
 
 	if (newInfo.usage == &m_batchConfig.defaultUsage)
 	{
@@ -227,79 +230,109 @@ bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& ima
 	return true;
 }
 
-void CTextureCooker::LoadMaterialImages(const char* materialFileName)
+bool CTextureCooker::CreateArrayImageFile(const Array<EqString>& textureNames, const char* outputFileName, const char* imageUsage)
 {
-	KeyValues kvs;
-	if (!kvs.LoadFromFile(materialFileName, SP_ROOT))
-		return;
+	Array<CImage::PTR_T> imgFrames(PP_SL);
 
-	EqString localMaterialFileName = materialFileName + m_targetProps.sourceMaterialPath.Length();
-	localMaterialFileName = localMaterialFileName.TrimChar(CORRECT_PATH_SEPARATOR).TrimChar(INCORRECT_PATH_SEPARATOR);
-
-	if (kvs.GetRootSection()->KeyCount() == 0)
+	// load frames
+	for (const EqString& texName : textureNames)
 	{
-		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
-		return;
-	}
+		CImage::PTR_T img = CRefPtr_new(CImage);
 
-	const KVSection* kvMaterial = kvs.GetRootSection()->keys[0];
-	if (!kvMaterial->IsSection())
-	{
-		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
-		return;
-	}
-
-	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString());
-	m_materialList.append(localMaterialFileName);
-
-	int textures = 0;
-
-	for (const KVSection* key : kvMaterial->Keys())
-	{
-		bool keyHasUsage = false;
-
-		for (const EqStringRef usageVal : key->Values<EqStringRef>(1))
+		EqString texturePathExt;
+		fnmPathCombine(texturePathExt, m_targetProps.sourceMaterialPath, texName);
+		if (img->Load(fnmPathApplyExt(texturePathExt, m_targetProps.sourceImageExt), 0))
 		{
-			EqString imageUsage = usageVal;
+			imgFrames.append(img);
+		}
+		else
+		{
+			MsgError("Can't open texture \"%s\"\n", texturePathExt.ToCString());
+		}
+	}
 
-			const int usageIdx = imageUsage.ReplaceSubstr(s_textureValueIdentifier, "");
-			if (usageIdx == -1)
-				continue;
+	if (!imgFrames.numElem())
+		return false;
 
-			if (keyHasUsage)
-			{
-				MsgWarning("  - material %s texture '%s' has multiple usages! Only one is supported", localMaterialFileName.ToCString(), key->GetName());
-				continue;
-			}
+	const CImage::PTR_T firstImg = imgFrames.front();
+	ASSERT_MSG(firstImg->GetArraySize() == 1, "Texture arrays are not supported when animation table is used.");
 
-			keyHasUsage = true;
+	CImage::PTR_T textureImg = CRefPtr_new(CImage);
+	ubyte* textureData = textureImg->Create(
+		firstImg->GetFormat(),
+		firstImg->GetWidth(),
+		firstImg->GetHeight(),
+		firstImg->GetDepth(),
+		firstImg->GetMipMapCount(),
+		imgFrames.numElem()
+	);
 
-			EqString texturePath = KV_GetValueString(key, 0, "");
+	const int stride = firstImg->GetMipMappedSize(0, firstImg->GetMipMapCount());
+	for (CImage* frameImg : imgFrames)
+	{
+		ASSERT_MSG(firstImg->GetFormat() == frameImg->GetFormat() &&
+			firstImg->GetWidth() == frameImg->GetWidth() &&
+			firstImg->GetHeight() == frameImg->GetHeight(), "Animated textures must share same format and size");
 
-			// has pattern for animated texture?
-			int animCountStart = texturePath.Find("[");
-			int animCountEnd = -1;
+		memcpy(textureData, frameImg->GetPixels(), stride);
+		textureData += stride;
+	}
 
-			if (animCountStart != -1 &&
-				(animCountEnd = texturePath.Find("]", false, animCountStart)) != -1)
-			{
-				// trying to load animated texture
-				EqString textureWildcard = texturePath.Left(animCountStart);
-				EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
-				int numFrames = atoi(textureFrameCount);
+	// We need to save to DDS file with DX10 header
+	EqString outFileName;
+	fnmPathCombine(outFileName, m_targetProps.sourceMaterialPath, outputFileName);
+	outFileName = fnmPathApplyExt(outFileName, "dds");
 
-				for (int i = 0; i < numFrames; i++)
-				{
-					EqString textureNameFrame = EqString::Format(textureWildcard.ToCString(), i);
-					if(AddTexture(textureNameFrame, imageUsage))
-						textures++;
-				}
-			}
-			else
-			{
-				if(AddTexture(texturePath, imageUsage))
-					textures++;
-			}
+	IFilePtr file = g_fileSystem->Open(outFileName, FS_OPEN_WRITE, SP_ROOT);
+	if (!textureImg->SaveDDS(file))
+	{
+		MsgError("Error while saving '%s'\n", outFileName.ToCString());
+		return false;
+	}
+
+	AddTexture(fnmPathApplyExt(outputFileName, "dds"), imageUsage, true);
+	return true;
+}
+
+void CTextureCooker::LoadMaterialImages(const KVSection& kvMaterial)
+{
+	int textures = 0;
+	for (KVSection* key : kvMaterial.Keys())
+	{
+		EqStringRef texturePath, usageVal;
+		if (key->GetValues(texturePath, usageVal) < 2)
+			continue;
+
+		EqString imageUsage = usageVal;
+		const int usageIdx = imageUsage.ReplaceSubstr(s_textureValueIdentifier, "");
+		if (usageIdx == -1)
+			continue;
+
+		// has pattern for animated texture?
+		int animCountStart = texturePath.Find("[");
+		int animCountEnd = -1;
+		if (animCountStart != -1 && (animCountEnd = texturePath.Find("]", false, animCountStart)) != -1)
+		{
+			// load texture array
+			EqString textureWildcard = texturePath.Left(animCountStart);
+			EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
+			int numFrames = atoi(textureFrameCount);
+
+			Array<EqString> textureNames(PP_SL);
+			for (int i = 0; i < numFrames; i++)
+				textureNames.append(EqString::Format(textureWildcard, i));
+
+			EqString newTextureName = EqString::Format(textureWildcard, numFrames);
+			if (CreateArrayImageFile(textureNames, newTextureName, imageUsage))
+				textures++;
+
+			// change wildcard to the generated array image
+			key->SetValue(newTextureName, 0);
+		}
+		else
+		{
+			if(AddTexture(texturePath, imageUsage))
+				textures++;
 		}
 	}
 
@@ -310,7 +343,6 @@ void CTextureCooker::LoadMaterialImages(const char* materialFileName)
 	}
 		
 	// make folder structure and clone material file
-
 }
 
 void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
@@ -359,7 +391,8 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 		{
 			EqString fullMaterialPath;
 			fnmPathCombine(fullMaterialPath, searchFolder, fileName);
-			LoadMaterialImages(fullMaterialPath);
+
+			ProcessMaterial(fullMaterialPath);
 		}
 	}
 }
@@ -379,16 +412,36 @@ bool CTextureCooker::HasMatchingCRC(uint32 crc)
 
 void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 {
-	const EqString atlasFileName = fnmPathApplyExt(materialFileName, s_materialAtlasFileExt);
+	// try to load source material file
+	KeyValues kvs;
+	if (!kvs.LoadFromFile(materialFileName, SP_ROOT))
+		return;
 
-	EqString sourceMaterialFileName;
-	fnmPathCombine(sourceMaterialFileName, m_targetProps.sourceMaterialPath, materialFileName);
+	EqString localMaterialFileName = materialFileName + m_targetProps.sourceMaterialPath.Length();
+	localMaterialFileName = localMaterialFileName.TrimChar(CORRECT_PATH_SEPARATOR).TrimChar(INCORRECT_PATH_SEPARATOR);
+	if (kvs.GetRootSection()->KeyCount() == 0)
+	{
+		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
+		return;
+	}
 
+	const KVSection* kvMaterial = kvs.GetRootSection()->keys[0];
+	if (!kvMaterial->IsSection())
+	{
+		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
+		return;
+	}
+
+	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString());
+
+	LoadMaterialImages(*kvMaterial);
+
+	const EqString atlasFileName = fnmPathApplyExt(localMaterialFileName, s_materialAtlasFileExt);
 	EqString sourceAtlasFileName;
 	fnmPathCombine(sourceAtlasFileName, m_targetProps.sourceMaterialPath, atlasFileName);
 
 	EqString targetMaterialFileName;
-	fnmPathCombine(targetMaterialFileName, m_targetProps.targetFolder, materialFileName);
+	fnmPathCombine(targetMaterialFileName, m_targetProps.targetFolder, localMaterialFileName);
 
 	EqString targetAtlasFileName;
 	fnmPathCombine(targetAtlasFileName, m_targetProps.targetFolder, atlasFileName);
@@ -396,19 +449,11 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	// make target material file path
 	g_fileSystem->MakeDir(fnmPathStripName(targetMaterialFileName), SP_ROOT);
 
-	// copy material file
-	if (!g_fileSystem->FileExist(targetMaterialFileName, SP_ROOT))
-	{
-		// save material file
-		if (!g_fileSystem->FileCopy(sourceMaterialFileName, targetMaterialFileName, true, SP_ROOT))
-		{
-			MsgWarning("  - cannot copy material file!\n");
-		}
-	}
+	// save material file
+	kvs.SaveToFile(targetMaterialFileName, SP_ROOT);
 
 	// also copy atlas file
-	if (!g_fileSystem->FileExist(targetAtlasFileName, SP_ROOT) &&
-		g_fileSystem->FileExist(sourceAtlasFileName, SP_ROOT))
+	if (g_fileSystem->FileExist(sourceAtlasFileName, SP_ROOT))
 	{
 		if (!g_fileSystem->FileCopy(sourceAtlasFileName, targetAtlasFileName, true, SP_ROOT))
 		{
@@ -421,10 +466,13 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 {
 	// before this, create folders...
 	EqString sourceFilename;
-	fnmPathCombine(sourceFilename, m_targetProps.sourceMaterialPath, EqString::Format("%s.%s", textureInfo.sourcePath.ToCString(), m_targetProps.sourceImageExt.ToCString()));
+	fnmPathCombine(sourceFilename, m_targetProps.sourceMaterialPath, textureInfo.sourcePath);
 	
+	if (!fnmPathHasExt(sourceFilename))
+		sourceFilename = fnmPathApplyExt(sourceFilename, m_targetProps.sourceImageExt);
+
 	EqString targetFilename;
-	fnmPathCombine(targetFilename, m_targetProps.targetFolder, fnmPathStripExt(textureInfo.sourcePath) + ".dds");
+	fnmPathCombine(targetFilename, m_targetProps.targetFolder, fnmPathApplyExt(textureInfo.sourcePath, "dds"));
 	
 	const EqString targetFilePath = fnmPathStripName(targetFilename).TrimChar(CORRECT_PATH_SEPARATOR);
 
@@ -438,7 +486,7 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 
 	// generate CRC from image file content and arguments it's going to be built
 	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename, SP_ROOT);
-	CRC32_UpdateChecksum(srcCRC, arguments.ToCString(), arguments.Length());
+	CRC32_UpdateChecksum(srcCRC, arguments, arguments.Length());
 
 	// store new CRC
 	m_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC), sourceFilename);
@@ -461,8 +509,6 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 		MsgInfo("Processing %s: %s...\n", textureInfo.usage->usageName.ToCString(), textureInfo.sourcePath.ToCString());
 
 	textureInfo.status = CONVERTED;
-
-	
 
 	EqString cmdLine(EqString::Format("%s %s", m_batchConfig.applicationName.ToCString(), arguments.ToCString()));
 	fnmPathFixSeparators(cmdLine);
@@ -593,13 +639,6 @@ void CTextureCooker::Execute()
 
 	// load CRC list, check for existing DDS files, and skip if necessary
 	KV_LoadFromFile(crcFileName, SP_ROOT, &m_batchConfig.crcSec);
-
-	// process material files
-	// this makes target folders and copies materials
-	for (int i = 0; i < m_materialList.numElem(); i++)
-	{
-		ProcessMaterial(m_materialList[i]);
-	}
 
 	// do conversion
 	for (int i = 0; i < m_textureList.numElem(); i++)
