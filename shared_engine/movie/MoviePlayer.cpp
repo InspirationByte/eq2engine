@@ -894,6 +894,8 @@ void CMoviePlayer::Present()
 		return;
 
 	ITexture* texture = m_mvTexture.Get();
+	if (!texture)
+		return;
 
 	MoviePlayerData* player = m_player;
 	MoviePlayerData::VideoState& videoState = m_player->videoState;
