@@ -818,11 +818,8 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 	rhiShaderModuleDesc.nextInChain = &rhiSpirvDesc.chain;
 	rhiShaderModuleDesc.label = _WSTR(name);
 
-	WGPUShaderModule shaderModule = nullptr;
-	g_renderWorker.WaitForExecute(__func__, [this, &shaderModule, &rhiShaderModuleDesc]() {
-		shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
-		return 0;
-	});
+	WGPUShaderModule shaderModule = shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
+	ASSERT_MSG(shaderModule, "Failed to create SPIRV source shader module %s", name);
 
 	return shaderModule;
 }
@@ -839,12 +836,8 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderWGSL(const char* szText, const char
 	rhiShaderModuleDesc.nextInChain = &rhiWgslDesc.chain;
 	rhiShaderModuleDesc.label = _WSTR(name);
 
-	WGPUShaderModule shaderModule = nullptr;
-	g_renderWorker.WaitForExecute(__func__, [this, &shaderModule, &rhiShaderModuleDesc]() {
-		shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
-		return 0;
-	});
-
+	WGPUShaderModule shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
+	ASSERT_MSG(shaderModule, "Failed to create WGSL source shader module %s", name);
 	return shaderModule;
 }
 
@@ -1263,7 +1256,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
 		if (colorTarget.target.texture)
 		{
-			renderTargetDims = IVector2D(colorTarget.target.texture->GetWidth(), colorTarget.target.texture->GetHeight());
+			renderTargetDims = colorTarget.target.texture->GetSize().xy();
 			renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
 
 			if (colorTarget.target)
@@ -1273,7 +1266,7 @@ IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& 
 
 	if (renderPassDesc.depthStencil)
 	{
-		renderTargetDims = IVector2D(renderPassDesc.depthStencil.texture->GetWidth(), renderPassDesc.depthStencil.texture->GetHeight());
+		renderTargetDims = renderPassDesc.depthStencil.texture->GetSize().xy();
 		renderPass->m_depthTargetFormat = renderPassDesc.depthStencil.texture->GetFormat();
 	}
 	else

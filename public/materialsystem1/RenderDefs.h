@@ -396,9 +396,10 @@ struct MatSysDefaultRenderPass : public RenderPassBaseData
 struct RenderPassContext
 {
 	RenderPassContext() = default;
-	RenderPassContext(IGPURenderPassRecorder* recorder, RenderPassBaseData* passData) 
+	RenderPassContext(IGPURenderPassRecorder* recorder, RenderPassBaseData* passData, bool waitForPipelines = false) 
 		: recorder(recorder)
 		, data(passData)
+		, waitForPipelines(waitForPipelines)
 	{}
 
 	using BeforeMaterialSetupFunc = EqFunction<IMaterial* (IMaterial* material)>;
@@ -407,4 +408,5 @@ struct RenderPassContext
 
 	IGPURenderPassRecorderPtr	recorder;			// render pass recorder
 	RenderPassBaseData*			data{ nullptr };
+	bool						waitForPipelines{ false };
 };

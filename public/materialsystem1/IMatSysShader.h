@@ -59,11 +59,14 @@ struct MatSysShaderPipelineCache
 {
 	struct Pipeline
 	{
-		IGPUPipelineLayoutPtr layout;
-		IGPURenderPipelinePtr pipeline;
+		Future<IGPURenderPipelinePtr>	future;
+		IGPUPipelineLayoutPtr			layout;
+		IGPURenderPipelinePtr			pipeline;
 	};
-	Map<uint, Pipeline>			pipelines{ PP_SL };
-	Threading::CEqReadWriteLock	rwLock;
+	using PipelineMap = Map<uint, Pipeline>;
+
+	PipelineMap						pipelines{ PP_SL };
+	Threading::CEqReadWriteLock		rwLock;
 };
 
 class IShaderMeshInstanceProvider

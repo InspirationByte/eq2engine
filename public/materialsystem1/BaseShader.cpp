@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/IConsoleCommands.h"
+#include "core/IEqParallelJobs.h"
 #include "utils/TextureAtlas.h"
 
 #include "IMaterialSystem.h"
@@ -310,104 +311,179 @@ void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams,
 	pipelineBuilder.End();
 }
 
+class CBaseShader::PipelineCreatorJob : public IParallelJob
+{
+public:
+	using CachePipelineIterator = MatSysShaderPipelineCache::PipelineMap::Iterator;
+
+	PipelineCreatorJob(IShaderAPI* renderAPI, const RenderPipelineDesc& pipelineDesc, PipelineInfo& pipelineInfo)
+		: IParallelJob(EqString::Format("PipelineCreator_%s", pipelineDesc.shaderName.ToCString()))
+		, m_renderAPI(renderAPI)
+		, m_pipelineDesc(pipelineDesc)
+		, m_pipelineInfo(pipelineInfo)
+	{}
+
+	void Execute() override;
+
+	Promise<IGPURenderPipelinePtr>	m_pipelinePromise;
+
+protected:
+	RenderPipelineDesc				m_pipelineDesc;
+	PipelineInfo&					m_pipelineInfo;
+	IShaderAPI*						m_renderAPI;
+};
+
+void CBaseShader::PipelineCreatorJob::Execute()
+{
+	IGPURenderPipelinePtr renderPipeline = m_renderAPI->CreateRenderPipeline(m_pipelineDesc, m_pipelineInfo.layout);
+	if (!renderPipeline)
+	{
+		m_pipelinePromise.SetError(-1, EqString::Format("%s is unable to create pipeline", GetName()));
+		return;
+	}
+	m_pipelinePromise.SetResult(std::move(renderPipeline));
+}
+
 const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* renderAPI, const PipelineInputParams& inputParams, bool onInit)
 {
+	static PipelineInfo noPipeline;
+	noPipeline.pipeline = nullptr;
+
 	HOOK_TO_CVAR(r_showPipelineCacheMisses);
 
 	const uint pipelineId = GetRenderPipelineId(inputParams);
 
-	if(!m_pipelineCache)
+	if (!m_pipelineCache)
 		m_pipelineCache = &g_matSystem->GetRenderPipelineCache(GetNameHash());
 
 	m_pipelineCache->rwLock.LockRead();
 	auto it = m_renderPipelines.find(pipelineId);
 	m_pipelineCache->rwLock.UnlockRead();
 
-	if (it.atEnd())
+	if (!it.atEnd())
+		return *it;
+
 	{
+		Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
+		it = m_renderPipelines.insert(pipelineId);
+	}
+
+	PipelineInfo& newPipelineInfo = *it;
+	newPipelineInfo.vertexLayoutId = inputParams.meshInstFormat.formatId;
+
+	m_pipelineCache->rwLock.LockRead();
+	auto cacheIt = m_pipelineCache->pipelines.find(pipelineId);
+	m_pipelineCache->rwLock.UnlockRead();
+	if (!cacheIt.atEnd())
+	{
+		if ((*cacheIt).future.IsValid())
 		{
-			Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
-			it = m_renderPipelines.insert(pipelineId);
+			(*cacheIt).future.AddCallback([&cache = *cacheIt, &newPipelineInfo](const FutureResult<IGPURenderPipelinePtr>& result) {
+				cache.pipeline = *result;
+				newPipelineInfo.pipeline = *result;
+				});
 		}
 
-		PipelineInfo& newPipelineInfo = *it;
-		newPipelineInfo.vertexLayoutId = inputParams.meshInstFormat.formatId;
+		newPipelineInfo.pipeline = (*cacheIt).pipeline;
+		newPipelineInfo.layout = (*cacheIt).layout;
+		return newPipelineInfo;
+	}
 
-		m_pipelineCache->rwLock.LockRead();
-		auto cacheIt = m_pipelineCache->pipelines.find(pipelineId);
-		m_pipelineCache->rwLock.UnlockRead();
-		if (cacheIt.atEnd())
+	// Create pipeline layout
+	{
+		// MatSystem shader by default defines three bind groups, which differ by the lifetime:
+		// 
+		//	BINDGROUP_CONSTANT
+		//		- Bind group data is never going to be changed during the life time of the material
+		//	BINDGROUP_RENDERPASS
+		//		- Bind group persists across single render pass
+		//	BINDGROUP_TRANSIENT
+		//		- Bind group is unique for each draw call
+		//
+		// you're not obligated to use all of them
+
+		PipelineLayoutDesc pipelineLayoutDesc;
+		pipelineLayoutDesc.name = GetName();
+
+		FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+		FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
+
+		if (inputParams.meshInstProvider)
+			inputParams.meshInstProvider->FillBindGroupLayoutDesc(pipelineLayoutDesc.bindGroups.append());
+
+		int shaderLayoutBindGroup = 0;
+
+		int piplineLayoutIdx = 0;
+		for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
 		{
-			// Create pipeline layout
+			if (layout.entries.numElem() > 0)
+				shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
+			++piplineLayoutIdx;
+		}
+
+		if (shaderLayoutBindGroup)
+		{
+			newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
+		}
+	}
+
+	RenderPipelineDesc renderPipelineDesc;
+	FillRenderPipelineDesc(inputParams, renderPipelineDesc);
+
+	if (onInit)
+	{
+		IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
+		if (!renderPipeline)
+		{
+			MsgError("Failed to create render pipeline for shader %s", GetName());
+			return newPipelineInfo;
+		}
+
+		MatSysShaderPipelineCache::Pipeline cachePipeline;
+		cachePipeline.layout = newPipelineInfo.layout;
+		cachePipeline.pipeline = renderPipeline;
+		{
+			Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
+			m_pipelineCache->pipelines.insert(pipelineId, cachePipeline);
+		}
+		newPipelineInfo.pipeline = renderPipeline;
+	}
+	else
+	{
+
+		PipelineCreatorJob* pipelineJob = PPNew PipelineCreatorJob(renderAPI, renderPipelineDesc, newPipelineInfo);
+		pipelineJob->InitJob();
+		pipelineJob->DeleteOnFinish();
+
+		MatSysShaderPipelineCache::Pipeline cachePipeline;
+		cachePipeline.layout = newPipelineInfo.layout;
+		cachePipeline.future = pipelineJob->m_pipelinePromise.CreateFuture();
+		{
+			Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
+			cacheIt = m_pipelineCache->pipelines.insert(pipelineId, cachePipeline);
+		}
+		cachePipeline.future.AddCallback([&cache = *cacheIt, &newPipelineInfo, onInit, inputParams, this](const FutureResult<IGPURenderPipelinePtr>& result) {
+			if (result.IsError())
 			{
-				// MatSystem shader by default defines three bind groups, which differ by the lifetime:
-				// 
-				//	BINDGROUP_CONSTANT
-				//		- Bind group data is never going to be changed during the life time of the material
-				//	BINDGROUP_RENDERPASS
-				//		- Bind group persists across single render pass
-				//	BINDGROUP_TRANSIENT
-				//		- Bind group is unique for each draw call
-				//
-				// you're not obligated to use all of them
-
-				PipelineLayoutDesc pipelineLayoutDesc;
-				pipelineLayoutDesc.name = GetName();
-
-				FillBindGroupLayout_Constant(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-				FillBindGroupLayout_RenderPass(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-				FillBindGroupLayout_Transient(inputParams.meshInstFormat, pipelineLayoutDesc.bindGroups.append());
-
-				if (inputParams.meshInstProvider)
-					inputParams.meshInstProvider->FillBindGroupLayoutDesc(pipelineLayoutDesc.bindGroups.append());
-
-				int shaderLayoutBindGroup = 0;
-
-				int piplineLayoutIdx = 0;
-				for (const BindGroupLayoutDesc& layout : pipelineLayoutDesc.bindGroups)
-				{
-					if (layout.entries.numElem() > 0)
-						shaderLayoutBindGroup |= (1 << piplineLayoutIdx);
-					++piplineLayoutIdx;
-				}
-
-				if (shaderLayoutBindGroup)
-				{
-					newPipelineInfo.layout = renderAPI->CreatePipelineLayout(pipelineLayoutDesc);
-				}
-			}
-
-			RenderPipelineDesc renderPipelineDesc;
-			FillRenderPipelineDesc(inputParams, renderPipelineDesc);
-
-			IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
-			if (!renderPipeline)
-			{
-				MsgError("Shader %s is unable to create pipeline\n", GetName());
-			}
-
-			{
-				Threading::CScopedWriteLocker lock(m_pipelineCache->rwLock);
-				MatSysShaderPipelineCache::Pipeline cachePipeline;
-				cachePipeline.pipeline = renderPipeline;
-				cachePipeline.layout = newPipelineInfo.layout;
-				cacheIt = m_pipelineCache->pipelines.insert(pipelineId, cachePipeline);
+				MsgError("%s\n", result.GetErrorMessage());
+				return;
 			}
 
 #ifndef _RETAIL
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
-  ((byte) & 0x80 ? '1' : '0'), \
-  ((byte) & 0x40 ? '1' : '0'), \
-  ((byte) & 0x20 ? '1' : '0'), \
-  ((byte) & 0x10 ? '1' : '0'), \
-  ((byte) & 0x08 ? '1' : '0'), \
-  ((byte) & 0x04 ? '1' : '0'), \
-  ((byte) & 0x02 ? '1' : '0'), \
-  ((byte) & 0x01 ? '1' : '0') 
+((byte) & 0x80 ? '1' : '0'), \
+((byte) & 0x40 ? '1' : '0'), \
+((byte) & 0x20 ? '1' : '0'), \
+((byte) & 0x10 ? '1' : '0'), \
+((byte) & 0x08 ? '1' : '0'), \
+((byte) & 0x04 ? '1' : '0'), \
+((byte) & 0x02 ? '1' : '0'), \
+((byte) & 0x01 ? '1' : '0') 
 
-			if (renderPipeline && r_showPipelineCacheMisses->GetBool())
+			if (*result && r_showPipelineCacheMisses->GetBool())
 			{
 				if (onInit)
 				{
@@ -425,18 +501,20 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 				}
 			}
 #endif // !_RETAIL
-		}
 
-		newPipelineInfo.pipeline = (*cacheIt).pipeline;
-		newPipelineInfo.layout = (*cacheIt).layout;
+			cache.pipeline = *result;
+			newPipelineInfo.pipeline = *result;
+			cache.future = nullptr;
+		});
+		g_parallelJobs->GetJobMng()->StartJob(pipelineJob);
 	}
 
-	return *it;
+	return newPipelineInfo;
 }
 
 bool CBaseShader::SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial)
 {
-	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineParams, false);
+	const PipelineInfo& pipelineInfo = EnsureRenderPipeline(renderAPI, pipelineParams, passContext.waitForPipelines);
 	if (!pipelineInfo.pipeline)
 		return false;
 

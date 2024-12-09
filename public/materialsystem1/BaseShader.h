@@ -140,6 +140,7 @@ public:
 	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial);
 
 protected:
+	class PipelineCreatorJob;
 	struct PipelineInfo
 	{
 		mutable IGPUBindGroupPtr	bindGroup[MAX_BINDGROUPS];
