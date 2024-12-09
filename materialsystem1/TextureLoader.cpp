@@ -79,13 +79,16 @@ void CTextureLoader::Initialize(const char* texturePath, const char* textureSRCP
 
 ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParams& samplerParams, int flags, const char* requestedBy)
 {
+	const bool nullOnError = (flags & TEXFLAG_LOAD_NULL_ON_ERROR);
+	flags &= ~TEXFLAG_LOAD_NULL_ON_ERROR;
+
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
 	bool isJustCreated = false;
 	ITexturePtr texture = g_renderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
 	if (!texture)
 	{
-		return (flags & TEXFLAG_LOAD_NULL_ON_ERROR) ? nullptr : g_matSystem->GetErrorCheckerboardTexture((flags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D);
+		return nullOnError ? nullptr : g_matSystem->GetErrorCheckerboardTexture((flags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D);
 	}
 
 	if (!isJustCreated)
@@ -93,8 +96,8 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 	DevMsg(DEVMSG_RENDER, "Loading texture file %s\n", pszFileName);
 
-	auto HandleError = [&texture, flags]() {
-		if (flags & TEXFLAG_LOAD_NULL_ON_ERROR)
+	auto HandleError = [&texture, flags, nullOnError]() {
+		if (nullOnError)
 			texture = nullptr;
 		else
 			texture->GenerateErrorTexture(flags);
@@ -191,13 +194,8 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	}
 
 	// initialize texture
-	if (!texture->Init(textureImg, samplerParams, flags | TEXFLAG_PROGRESSIVE_LODS))
-	{
-		if (flags & TEXFLAG_LOAD_NULL_ON_ERROR)
-			texture = nullptr;
-		else
-			texture->GenerateErrorTexture(flags);
-	}
+	if (!texture->Init(textureImg, samplerParams, (flags & ~TEXFLAG_LOAD_NULL_ON_ERROR) | TEXFLAG_PROGRESSIVE_LODS))
+		HandleError();
 
 	return texture;
 }

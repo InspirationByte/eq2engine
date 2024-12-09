@@ -709,21 +709,19 @@ MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorT
 {
 	MatStringProxy mv = FindMaterialVar(paramName);
 
-	if(mv.IsValid()) 
+	ITexturePtr errorTexture = errorTextureIfNoVar ? g_matSystem->GetErrorCheckerboardTexture((texFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D) : nullptr;
+	ITexturePtr texture = errorTexture;
+	if(mv.IsValid() && mv.Get().Length())
 	{
-		if(mv.Get().Length())
+		const int loadFlags = texFlags | TEXFLAG_LOAD_NULL_ON_ERROR;
+		texture = g_texLoader->LoadTextureFromFileSync(mv.Get(), SamplerStateParams(m_texFilter, m_texAddressMode), loadFlags, EqString::Format("Material %s var '%s'", m_material->GetName(), paramName));
+		if (texture)
 		{
-			ITexturePtr texture = g_texLoader->LoadTextureFromFileSync(mv.Get(), SamplerStateParams(m_texFilter, m_texAddressMode), texFlags, EqString::Format("Material %s var '%s'", m_material->GetName(), paramName));
-			if (texture)
-			{
-				ASSERT_MSG((texture->GetFlags() & texFlags) == texFlags, "MatVar '%s' texture '%s' doesn't match required flags", paramName, texture->GetName());
-			}
-			AddManagedTexture(MatTextureProxy(mv), texture);
+			ASSERT_MSG((texture->GetFlags() & texFlags) == texFlags, "MatVar '%s' texture '%s' doesn't match required flags (%d != %d)", paramName, texture->GetName(), texture->GetFlags(), texFlags);
 		}
 	}
-	else if(errorTextureIfNoVar)
-		AddManagedTexture(MatTextureProxy(mv), g_matSystem->GetErrorCheckerboardTexture((texFlags & TEXFLAG_CUBEMAP) ? TEXDIMENSION_CUBE : TEXDIMENSION_2D));
 
+	AddManagedTexture(MatTextureProxy(mv), texture);
 	return mv;
 }
 
