@@ -49,12 +49,10 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 
 		sec->Get("uvLeftTop").GetValues(m_uvRegion.leftTop);
 		sec->Get("uvRightBottom").GetValues(m_uvRegion.rightBottom);
-	}
-	else
-	{
-		pathBase = sec->FindSection("atlas");
+		return;
 	}
 
+	pathBase = sec->FindSection("atlas");
 	if (pathBase)
 	{
 		EqStringRef materialName, imageName;
@@ -80,7 +78,10 @@ void Image::SetAtlasImage(const char* materialAtlasName, const char* imageName)
 {
 	SetMaterial(materialAtlasName);
 	if (!m_material->GetAtlas())
+	{
+		MsgError("EqUI error: material %s has no atlas\n", materialAtlasName);
 		return;
+	}
 
 	const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(imageName);
 	if (entry)
