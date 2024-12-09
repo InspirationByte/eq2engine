@@ -435,9 +435,10 @@ static void CookPackageTarget(const char* targetName)
 	Array<EqString>	ignoreCompressionExt(PP_SL);
 	Array<EqString>	keyValueFileExt(PP_SL);
 	keyValueFileExt.append("mat");
+	keyValueFileExt.append("atlas");
+	keyValueFileExt.append("ati");
 	keyValueFileExt.append("res");
 	keyValueFileExt.append("def");
-	keyValueFileExt.append("txt");
 
 	CDPKFileWriter dpkWriter(mountPath, targetCompression, encryption);
 	CFileListBuilder fileListBuilder;
