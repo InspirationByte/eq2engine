@@ -45,16 +45,13 @@ BEGIN_SHADER_CLASS(BloomRange)
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
-			if (!setupParams.pipelineInfo.bindGroup[bindGroupId])
-			{
-				const ITexturePtr& baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
-				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, m_proxyBuffer)
-					.Sampler(1, baseTexture->GetSamplerState())
-					.Texture(2, baseTexture)
-					.End();
-				CreatePersistentBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
-			}
+			const ITexturePtr& baseTexture = m_bloomSource.Get() ? m_bloomSource.Get() : g_matSystem->GetErrorCheckerboardTexture();
+			BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
+				.Buffer(0, m_proxyBuffer)
+				.Sampler(1, baseTexture->GetSamplerState())
+				.Texture(2, baseTexture)
+				.End();
+			return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
 		}
 
 		return setupParams.pipelineInfo.bindGroup[bindGroupId];
