@@ -20,6 +20,7 @@ include("LivePP/premake5.lua")
 include("imgui/premake5.lua")
 include("imgui_lua/premake5.lua")
 
+include("nvrhi/premake5.lua")
 include("wgpu-dawn/premake5.lua")
 include("minivorbis/premake5.lua")
 include("ffmpeg/premake5.lua")

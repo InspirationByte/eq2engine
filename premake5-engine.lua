@@ -423,8 +423,25 @@ project "eqNullRHI"
 		Folders.matsystem1.. "Renderers/Empty/**.cpp",
 		Folders.matsystem1.."Renderers/Empty/**.h"
 	}
+	
+-- D3D11/D3D12/Vulkan renderer
+project "eqRHI"
+	kind "SharedLib"
+	unitybuild "on"
+	uses {
+		"coreLib", "frameworkLib", "e2Core",
+		"eqRHIBaseLib", "wgpu-dawn"
+	}
+	defines{
+		"EQRHI_NVRHI",
+		"RENDERER_TYPE=1"
+	}
+	files {
+		Folders.matsystem1.. "Renderers/NVRHI/**.cpp",
+		Folders.matsystem1.."Renderers/NVRHI/**.h"
+	}
 
--- WebGPU renderer (atm Windows-only)
+-- WebGPU renderer
 project "eqWGPURHI"
 	kind "SharedLib"
 	unitybuild "on"
@@ -434,7 +451,7 @@ project "eqWGPURHI"
 	}
 	defines{
 		"EQRHI_WGPU",
-		"RENDERER_TYPE=4"
+		"RENDERER_TYPE=2"
 	}
 	files {
 		Folders.matsystem1.. "Renderers/WGPU/**.cpp",

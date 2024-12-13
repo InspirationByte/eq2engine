@@ -7,7 +7,8 @@
 #include "renderers/IShaderAPI.h"
 
 #define RHI_NULL      0
-#define RHI_WGPU      4
+#define RHI_NVRHI     1
+#define RHI_WGPU      2
 
 #if RENDERER_TYPE == RHI_NULL
 
@@ -24,7 +25,7 @@ static IRenderLibrary* s_currentRenderLib = nullptr;
 
 CEqRenderManager::CEqRenderManager()
 {
-    g_eqCore->RegisterInterface(this);
+	g_eqCore->RegisterInterface(this);
 }
 
 CEqRenderManager::~CEqRenderManager()
@@ -32,19 +33,19 @@ CEqRenderManager::~CEqRenderManager()
 	g_eqCore->UnregisterInterface<CEqRenderManager>();
 }
 
-IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams &params) const
+IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) const
 {
 #if RENDERER_TYPE == RHI_NULL
-    s_currentRenderLib = &s_EmptyRenderLib;
-    return s_currentRenderLib;
+	s_currentRenderLib = &s_EmptyRenderLib;
+	return s_currentRenderLib;
 #elif RENDERER_TYPE == RHI_WGPU
-    s_currentRenderLib = &s_WGPURenderLib;
-    return s_currentRenderLib;
+	s_currentRenderLib = &s_WGPURenderLib;
+	return s_currentRenderLib;
 #endif
-    return s_currentRenderLib;
+	return s_currentRenderLib;
 }
 
 IRenderLibrary* CEqRenderManager::GetRenderer() const
 {
-    return s_currentRenderLib;
+	return s_currentRenderLib;
 }
