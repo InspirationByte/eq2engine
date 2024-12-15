@@ -11,6 +11,7 @@
 
 #include "core/core_common.h"
 #include "core/ConVar.h"
+#include "core/ICommandLine.h"
 #include "core/IDkCore.h"
 #include "utils/KeyValues.h"
 
@@ -61,6 +62,9 @@ CEqAudioSystemAL::~CEqAudioSystemAL()
 // init AL context
 bool CEqAudioSystemAL::InitContext()
 {
+	if (g_cmdLine->FindArgument("-noaudio") != -1)
+		return false;
+
 	Msg(" \n--------- AudioSystem Init --------- \n");
 
 	// Init openAL
@@ -350,7 +354,8 @@ void CEqAudioSystemAL::DestroyEffects()
 	for (auto it = m_effects.begin(); !it.atEnd(); ++it)
 		GetAlExt().alDeleteEffects(1, &it.value().nAlEffect);
 
-	GetAlExt().alDeleteAuxiliaryEffectSlots(m_effectSlots.numElem(), m_effectSlots.ptr());
+	if(m_effectSlots.numElem())
+		GetAlExt().alDeleteAuxiliaryEffectSlots(m_effectSlots.numElem(), m_effectSlots.ptr());
 	m_effectSlots.clear(true);
 	m_effects.clear(true);
 }
@@ -551,6 +556,9 @@ AudioEffectId CEqAudioSystemAL::FindEffect(const char* name) const
 // sets the new effect
 void CEqAudioSystemAL::SetEffect(int slot, AudioEffectId effect)
 {
+	if (!m_effectSlots.inRange(slot))
+		return;
+
 	// used directly
 	GetAlExt().alAuxiliaryEffectSloti(m_effectSlots[slot], AL_EFFECTSLOT_EFFECT, effect);
 }
