@@ -159,8 +159,9 @@ private:
 	IEqFont*						m_debugFont{ nullptr };
 	IEqFont*						m_debugFont2{ nullptr };
 
-	Matrix4x4						m_projMat;
-	Matrix4x4						m_viewMat;
+	Matrix4x4						m_projMat{ identity4 };
+	Matrix4x4						m_viewMat{ identity4 };
+	Vector3D						m_viewPos{ vec3_zero };
 
 	Volume							m_frustum;
 	float							m_frameTime{ 0.0f };

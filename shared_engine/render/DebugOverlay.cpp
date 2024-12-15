@@ -1267,11 +1267,15 @@ static void DrawSphereArray(ArrayRef<DebugSphereNode_t> spheres, float frameTime
 
 void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 {
+#ifdef ENABLE_DEBUG_DRAWING
 	m_projMat = proj;
 	m_viewMat = view;
 
+	m_viewPos = inverse(m_viewMat).getTranslationComponentTransposed();
+
 	Matrix4x4 viewProj = m_projMat*m_viewMat;
 	m_frustum.LoadAsFrustum(viewProj);
+#endif // ENABLE_DEBUG_DRAWING
 }
 
 void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
@@ -1407,7 +1411,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			if (behind)
 				continue;
 
-			if (current.dist > 0 && screen.z > current.dist)
+			if (current.dist > 0 && distanceSqr(current.origin, m_viewPos) > sqr(current.dist))
 				continue;
 
 			textStl.textColor = current.color;
