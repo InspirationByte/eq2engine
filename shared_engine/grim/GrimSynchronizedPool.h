@@ -21,6 +21,14 @@ using IGPUComputePipelinePtr = CRefPtr<IGPUComputePipeline>;
 
 class IGPUCommandRecorder;
 
+struct GRIMLock
+{
+	virtual void LockRead() {}
+	virtual void LockWrite() {}
+	virtual void UnlockRead() {}
+	virtual void UnlockWrite() {}
+};
+
 struct GRIMResource
 {
 	enum Type
@@ -108,7 +116,7 @@ public:
 	virtual void			Remove(const int idx) = 0;
 	void					SetUpdated(int idx);
 
-	virtual bool			Sync(IGPUCommandRecorder* cmdRecorder) = 0;
+	virtual bool			Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock) = 0;
 	const GRIMResource&		GetGPUData() const { return m_gpuData; }
 	GRIMResource::Type		GetType() const { return m_gpuData.GetType(); }
 
@@ -120,9 +128,8 @@ public:
 	static IVector2D		CalcWorkSize(int length);
 
 protected:
-	bool					SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride);
+	bool					SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride, GRIMLock& lock);
 
-	Threading::CEqMutex		m_mutex;
 	Set<int>				m_updated{ PP_SL };
 	GRIMResource			m_gpuData;
 	IGPUComputePipelinePtr	m_updatePipeline;
@@ -167,7 +174,7 @@ public:
 
 	// syncrhonizes data with GPU buffer
 	// returns true if buffer has been changed
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override;
+	bool			Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock) override;
 };
 
 
@@ -205,7 +212,7 @@ void GRIMSyncrhronizedPool<T>::Update(int idx, const T& item)
 }
 
 template<typename T>
-bool GRIMSyncrhronizedPool<T>::Sync(IGPUCommandRecorder* cmdRecorder)
+bool GRIMSyncrhronizedPool<T>::Sync(IGPUCommandRecorder* cmdRecorder, GRIMLock& lock)
 {
-	return SyncImpl(cmdRecorder, GetData(), sizeof(T));
+	return SyncImpl(cmdRecorder, GetData(), sizeof(T), lock);
 }

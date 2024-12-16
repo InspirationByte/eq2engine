@@ -78,8 +78,6 @@ class GRIMBaseInstanceAllocator
 {
 	friend class GRIMInstanceDebug;
 public:
-	static Threading::CEqMutex& GetMutex();
-
 	GRIMBaseInstanceAllocator() = default;
 	~GRIMBaseInstanceAllocator() = default;
 
@@ -147,6 +145,7 @@ protected:
 		int				updateFlags{ UPD_ALL };
 	};
 
+	Threading::CEqReadWriteLock		m_rwLock;
 	IGPUBufferPtr			m_rootBuffer;
 	IGPUBufferPtr			m_archetypesBuffer;
 	IGPUBufferPtr			m_groupMaskBuffer;
@@ -185,7 +184,7 @@ public:
 	template<typename ...TComps>
 	int 			AddInstance(int archetype)
 	{
-		Threading::CScopedMutex m(GetMutex());
+		Threading::CScopedWriteLocker m(m_rwLock);
 		const int instanceId = AllocInstance(archetype);
 		AllocInstanceComponents<TComps...>(instanceId);
 		return instanceId;
@@ -195,7 +194,7 @@ public:
 	template<typename ...TComps>
 	int 			AddTempInstance(int archetype)
 	{
-		Threading::CScopedMutex m(GetMutex());
+		Threading::CScopedWriteLocker m(m_rwLock);
 		const int instanceId = AllocTempInstance(archetype);
 		AllocInstanceComponents<TComps...>(instanceId);
 		return instanceId;
@@ -288,7 +287,7 @@ inline void GRIMInstanceAllocator<Ts...>::Set(int instanceId, const TComps&... v
 {
 	if (instanceId == -1)
 		return;
-	Threading::CScopedMutex m(GetMutex());
+	Threading::CScopedReadLocker m(m_rwLock);
 	SetInternal(m_instances[instanceId].root, values...);
 }
 
@@ -316,15 +315,17 @@ void GRIMInstanceAllocator<Ts...>::Add(int instanceId)
 	if (instanceId == -1)
 		return;
 
-	Threading::CScopedMutex m(GetMutex());
-
 	Instance& inst = m_instances[instanceId];
 	InstRoot& root = inst.root;
-	if (root.components[TComp::COMPONENT_ID] > 0 && root.components[TComp::COMPONENT_ID] != COM_UINT_MAX)
-		return;
+	{
+		Threading::CScopedReadLocker m(m_rwLock);
+		if (root.components[TComp::COMPONENT_ID] > 0 && root.components[TComp::COMPONENT_ID] != COM_UINT_MAX)
+			return;
+	}
 
 	Pool& compPool = GetComponentPool<TComp>();
 	{
+		Threading::CScopedWriteLocker m(m_rwLock);
 		root.components[TComp::COMPONENT_ID] = compPool.Add(TComp{});
 
 		inst.updateFlags |= Instance::UPD_ROOT;
@@ -343,12 +344,15 @@ void GRIMInstanceAllocator<Ts...>::Remove(int instanceId)
 
 	Instance& inst = m_instances[instanceId];
 	InstRoot& root = inst.root;
-	if (root.components[TComp::COMPONENT_ID] == 0 || root.components[TComp::COMPONENT_ID] == COM_UINT_MAX)
-		return;
+	{
+		Threading::CScopedReadLocker m(m_rwLock);
+		if (root.components[TComp::COMPONENT_ID] == 0 || root.components[TComp::COMPONENT_ID] == COM_UINT_MAX)
+			return;
+	}
 
 	Pool& compPool = GetComponentPool<TComp>();
 	{
-		Threading::CScopedMutex m(GetMutex());
+		Threading::CScopedWriteLocker m(m_rwLock);
 		compPool.Remove(root.components[TComp::COMPONENT_ID]);
 		root.components[TComp::COMPONENT_ID] = 0; // change to default
 
@@ -364,6 +368,7 @@ bool GRIMInstanceAllocator<Ts...>::Has(int instanceId) const
 	if (instanceId == -1)
 		return false;
 
+	Threading::CScopedReadLocker m(m_rwLock);
 	const Instance& inst = m_instances[instanceId];
 	const InstRoot& root = inst.root;
 	if (root.components[TComp::COMPONENT_ID] == 0 || root.components[TComp::COMPONENT_ID] == COM_UINT_MAX)

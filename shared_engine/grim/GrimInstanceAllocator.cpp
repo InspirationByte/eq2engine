@@ -25,12 +25,6 @@ static int instGranulatedCapacity(int capacity)
 
 //---------------------------------------------------------------------
 
-Threading::CEqMutex& GRIMBaseInstanceAllocator::GetMutex()
-{
-	static CEqMutex s_grimAllocMutex;
-	return s_grimAllocMutex;
-}
-
 void GRIMBaseInstanceAllocator::Construct()
 {
 	// alloc default (zero) instance
@@ -145,7 +139,7 @@ void GRIMBaseInstanceAllocator::FreeAll(bool dealloc, bool reserve)
 
 void GRIMBaseInstanceAllocator::DbgInvalidateAllData()
 {
-	CScopedMutex m(GetMutex());
+	CScopedWriteLocker m(m_rwLock);
 	for(int i = 0; i < m_instances.numElem(); ++i)
 	{
 		m_instances[i].updateFlags |= Instance::UPD_ALL;
@@ -238,7 +232,7 @@ void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMAr
 		return;
 
 	{
-		CScopedMutex m(GetMutex());
+		CScopedWriteLocker m(m_rwLock);
 
 		Instance& inst = m_instances[instanceRef];
 		const GRIMArchetype oldArchetype = inst.archetype;
@@ -274,7 +268,7 @@ void GRIMBaseInstanceAllocator::SetGroupMask(GRIMInstanceRef instanceRef, int gr
 		return;
 
 	{
-		CScopedMutex m(GetMutex());
+		CScopedWriteLocker m(m_rwLock);
 
 		Instance& inst = m_instances[instanceRef];
 		if(inst.groupMask != groupMask)
@@ -293,8 +287,8 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 {
 	if (!m_instances.inRange(instanceRef))
 		return;
-
-	CScopedMutex m(GetMutex());
+	
+	CScopedWriteLocker m(m_rwLock);
 
 	Instance& inst = m_instances[instanceRef];
 	InstRoot& root = inst.root;
@@ -323,16 +317,13 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 
 		// add this instance to freed list and invalidate ID
 		if(root.components[i] > 0)
-		{
-			CScopedMutex m(GetMutex());
 			m_componentPools[i]->Remove(root.components[i]);
-		}
+
 		root.components[i] = COM_UINT_MAX;
 	}
 
 	// update roots and archetypes
 	{
-		CScopedMutex m(GetMutex());
 		m_updated.insert(instanceRef);
 		m_syncInstances.setFalse(instanceRef);
 	}
@@ -344,8 +335,8 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 	bool buffersUpdatedThisFrame = false;
 
-	CScopedMutex m(GetMutex());
 	{
+		CScopedWriteLocker m(m_rwLock);
 		const int oldBufferElems = m_rootBuffer ? m_rootBuffer->GetSize() / sizeof(InstRoot) : 0;
 
 		// update instance root buffer
