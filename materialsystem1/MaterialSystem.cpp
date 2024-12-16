@@ -1406,24 +1406,27 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 	const MeshInstanceData& instData = instInfo.instData;
 
 	FixedArray<GPUBufferView, MAX_VERTEXSTREAM> bindVertexBuffers;
-
+	
 	uint usedVertexLayoutBits = 0;
 	MeshInstanceFormatRef instFormatRef = instInfo.instFormat;
 	if (instFormatRef.layout.numElem())
 	{
-		int bufferSlot = 0;
 		for (int i = 0; i < instFormatRef.layout.numElem(); ++i)
 		{
-			if (instData.buffer && instFormatRef.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE)
+			GPUBufferView bufferView = instInfo.vertexBuffers[i] ? instInfo.vertexBuffers[i] : ((instFormatRef.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE) ? instData.buffer : GPUBufferView{});
+
+			const bool isInstanceSlot = (instFormatRef.layout[i].stepMode == VERTEX_STEPMODE_INSTANCE);
+			if (isInstanceSlot && !bufferView)
 			{
-				bindVertexBuffers.append(instData.buffer);
-				usedVertexLayoutBits |= (1 << i);
+				ASSERT_FAIL("instance buffer must be bound for %s, layout %d", instFormatRef.name, i);
+				return;
 			}
-			else if(instInfo.vertexBuffers[i])
-			{
-				bindVertexBuffers.append(instInfo.vertexBuffers[i]);
-				usedVertexLayoutBits |= (1 << i);
-			}
+
+			if (!bufferView)
+				continue;
+
+			bindVertexBuffers.append(bufferView);
+			usedVertexLayoutBits |= (1 << i);
 		}
 	}
 
