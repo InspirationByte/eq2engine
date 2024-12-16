@@ -62,8 +62,7 @@ bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& s
 
 	if (IsCompressedFormat(imgFmt) && !((texWidth % 4) == 0 && (texHeight % 4) == 0))
 	{
-		MsgError("Error: Compressed texture %s size %dx%d (mipStart %d) is not a multiple of 4", image->GetName(), texWidth, texHeight, mipStart);
-		return false;
+		MsgWarning("Error: Compressed texture %s size %dx%d (mipStart %d) is not a multiple of 4\n", image->GetName(), texWidth, texHeight, mipStart);
 	}
 
 	const int arraySize = image->GetArraySize();
@@ -97,12 +96,16 @@ bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& s
 	WGPUTextureDescriptor rhiTextureDesc{};
 	rhiTextureDesc.label = _WSTR(m_name);
 	rhiTextureDesc.mipLevelCount = mipCount;
-	rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)arrayLayerCount };
 	rhiTextureDesc.sampleCount = 1;
 	rhiTextureDesc.usage = rhiUsageFlags;
 	rhiTextureDesc.format = GetWGPUTextureFormat(imgFmt);
 	rhiTextureDesc.viewFormatCount = 0;
 	rhiTextureDesc.viewFormats = nullptr;
+
+	if (IsCompressedFormat(imgFmt))
+		rhiTextureDesc.size = WGPUExtent3D{ (texWidth + 3u) & ~3u, (texHeight + 3u) & ~3u, (uint)arrayLayerCount };
+	else
+		rhiTextureDesc.size = WGPUExtent3D{ (uint)texWidth, (uint)texHeight, (uint)arrayLayerCount};
 
 	WGPUTextureViewDimension rhiTexViewDimension = WGPUTextureViewDimension_Undefined;
 	WGPUTextureViewDimension rhiTexViewDimensionMain = WGPUTextureViewDimension_Undefined;
