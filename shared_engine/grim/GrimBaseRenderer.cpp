@@ -21,7 +21,7 @@
 
 using namespace Threading;
 
-DECLARE_CVAR(grim_softwareMode, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(grim_softwareMode, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR(grim_dbgOnlyMaterial, "", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgLogArchetypes, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgValidate, "0", nullptr, CV_CHEAT);
