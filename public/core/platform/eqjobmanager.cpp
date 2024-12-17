@@ -173,6 +173,8 @@ void CEqJobManager::ExecuteJob(IParallelJob& job)
 	job.m_deleteMutex.Lock();
 	job.m_phase = IParallelJob::JOB_DONE;
 
+	const bool deleteOnDone = job.m_deleteJob;
+
 	IParallelJob** unblockedJobs = reinterpret_cast<IParallelJob**>(stackalloc(m_queueSize * sizeof(IParallelJob*)));
 	int numUnblocked = 0;
 	for (int i = 0; i < job.m_nextJobs.numElem(); ++i)
@@ -231,7 +233,7 @@ void CEqJobManager::ExecuteJob(IParallelJob& job)
 			batchs[i].mng->Submit(batchs[i].count);
 	}
 
-	if (job.m_deleteJob)
+	if (deleteOnDone)
 		delete& job;
 }
 
