@@ -40,8 +40,6 @@
 static lpp::LppDefaultAgent s_lppAgent;
 #endif // HAS_LIVEPP_SUPPORT
 
-#pragma optimize("", off)
-
 EXPORTED_INTERFACE(IDkCore, CDkCore)
 
 #ifdef PLAT_WIN

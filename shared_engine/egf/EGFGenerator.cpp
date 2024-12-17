@@ -16,8 +16,6 @@
 #include "dsm_loader.h"
 #include "egf/dsm_fbx_loader.h"
 
-#pragma optimize("", off)
-
 using namespace SharedModel;
 
 //------------------------------------------------------------

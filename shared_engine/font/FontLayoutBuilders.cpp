@@ -8,8 +8,6 @@
 #include "core/core_common.h"
 #include "FontLayoutBuilders.h"
 
-#pragma optimize("", off)
-
 void CRectangleTextLayoutBuilder::OnNewLine(const FontStyleParam& params,
 										void* strCurPos, bool isWideChar,
 										int lineNumber,
