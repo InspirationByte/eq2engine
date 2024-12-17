@@ -190,6 +190,21 @@ void SetCurrentThreadName(const char* name)
 	SetThreadName(GetCurrentThreadID(), name);
 }
 
+void SetCurrentThreadAffinity(uintptr_t affinityMask)
+{
+	SetThreadAffinityMask(GetCurrentThread(), affinityMask);
+}
+
+void GetCurrentProcessAffinity(uintptr_t& processAffinityMask, uintptr_t& systemAffinityMask)
+{
+	GetProcessAffinityMask(GetCurrentProcess(), &processAffinityMask, &systemAffinityMask);
+}
+
+void SetCurrentProcessAffinity(uintptr_t processAffinityMask)
+{
+	SetProcessAffinityMask(GetCurrentProcess(), processAffinityMask);
+}
+
 uintptr_t ThreadGetID(uintptr_t handle)
 {
 	return (uintptr_t)GetThreadId((HANDLE)handle);
@@ -385,6 +400,19 @@ uintptr_t GetCurrentThreadID()
 void SetCurrentThreadName(const char* name)
 {
 	SetThreadName(GetCurrentThreadID(), name);
+}
+
+void SetCurrentThreadAffinity(uintptr_t affinityMask)
+{
+}
+
+void GetCurrentProcessAffinity(uintptr_t& processAffinityMask, uintptr_t& systemAffinityMask)
+{
+}
+
+void SetCurrentProcessAffinity(uintptr_t processAffinityMask)
+{
+	// TODO: sched_setaffinity
 }
 
 uintptr_t ThreadGetID(uintptr_t threadHandle)
