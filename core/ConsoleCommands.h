@@ -24,7 +24,7 @@ class CConsoleCommands : public IConsoleCommands
 public:
 	CConsoleCommands();
 
-	void					RegisterCommands();
+	void					Init();
 
 	// Unregister all
 	void					DeInit();

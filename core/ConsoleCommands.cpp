@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "core/ICommandLine.h"
 #include "core/IFileSystem.h"
 #include "core/IDkCore.h"
 #include "ConsoleCommands.h"
@@ -333,7 +334,7 @@ CConsoleCommands::CConsoleCommands()
 	g_eqCore->RegisterInterface(this);
 }
 
-void CConsoleCommands::RegisterCommands()
+void CConsoleCommands::Init()
 {
 	ConCommandBase::Register(&cvarlist);
 	ConCommandBase::Register(&cmdlist);
@@ -342,6 +343,11 @@ void CConsoleCommands::RegisterCommands()
 	ConCommandBase::Register(&set);
 	ConCommandBase::Register(&seti);
 	ConCommandBase::Register(&revertvar);
+
+	// execute seti commands
+	g_cmdLine->ExecuteCommandLine([](const ConCommandBase* pCmd, ArrayCRef<EqString> args) -> bool {
+		return pCmd == &seti;
+	});
 }
 
 const ConVar* CConsoleCommands::FindCvar(const char* name)
