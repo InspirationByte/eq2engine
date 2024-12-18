@@ -9,23 +9,33 @@
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-
-#include <SDL.h>
-
 #include "sys_host.h"
 #include "sys_in_joystick.h"
 
 #include "input/in_keys_ident.h"
 
+#pragma optimize("", off)
+
 DECLARE_CVAR(in_joy_debug, "0", "Joystick debug messages", 0);
 DECLARE_CVAR(in_joy_repeatDelayInit, "1", "Joystick input repeat delay initial", CV_ARCHIVE);
 DECLARE_CVAR(in_joy_repeatDelay, "0.2", "Joystick input repeat delay", CV_ARCHIVE);
 DECLARE_CVAR(in_joy_rumble, "1", "Rumble", CV_ARCHIVE);
-DECLARE_CVAR(in_joy_id, "-1", "Joystick to use. -1 is for all", CV_ARCHIVE);
+DECLARE_CVAR(in_joy_id, "0", "Joystick to use. -1 means unconnected or unselected", CV_ARCHIVE);
+DECLARE_CMD(in_joy_list, "List connected gamepads", 0)
+{
+	GameControllerList controllers = CEqGameControllerSDL::GetControllers();
+	for (CEqGameControllerSDL* ctrl : controllers)
+	{
+		const int idx = CEqGameControllerSDL::GetControllerIndex(ctrl);
+		Msg("%d %s %s\n", idx, in_joy_id.GetInt() == idx ? "***" : "   ", ctrl->GetName());
+	}
+	Msg("--- %d connected gamepads ---\n", controllers.numElem());
+}
 
 #define CONTROLLER_DB_FILENAME "cfg/controllers.db"
 
 #ifdef PLAT_SDL
+#include <SDL.h>
 
 DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 {
@@ -35,8 +45,7 @@ DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 		return;
 	}
 
-	int result = SDL_GameControllerAddMapping(CMD_ARGV(0).ToCString());
-
+	const int result = SDL_GameControllerAddMapping(CMD_ARGV(0));
 	if (result <= 0)
 	{
 		if (result == -1)
@@ -47,15 +56,36 @@ DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 		return;
 	}
 	
-	IFilePtr dbFile = g_fileSystem->Open(CONTROLLER_DB_FILENAME, "wt+", SP_DATA);
+	IFilePtr dbFile = g_fileSystem->Open(CONTROLLER_DB_FILENAME, FS_OPEN_APPEND, SP_DATA);
 	if(!dbFile)
 		return;
 
-	dbFile->Print(CMD_ARGV(0).ToCString());
-	dbFile->Print("\n");
+	dbFile->Print("%s\n", CMD_ARGV(0));
 }
 
 static CEqGameControllerSDL s_controllers[MAX_CONTROLLERS];
+
+static void JoySetValidControllerId()
+{
+	bool getNewController = in_joy_id.GetInt() == -1;
+	for (int i = 0; i < MAX_CONTROLLERS; i++)
+	{
+		CEqGameControllerSDL& jc = s_controllers[i];
+		if (!jc.IsConnected())
+		{
+			if (in_joy_id.GetInt() == i)
+			{
+				getNewController = true;
+				in_joy_id.SetInt(-1);
+			}
+		}
+		else if (getNewController)
+		{
+			in_joy_id.SetInt(i);
+			getNewController = false;
+		}
+	}
+}
 
 void CEqGameControllerSDL::Init()
 {
@@ -80,35 +110,7 @@ void CEqGameControllerSDL::Init()
 	else if (numJoysticks)
 		MsgInfo("No '" CONTROLLER_DB_FILENAME "' found, skipping\n");
 
-	char guidStr[64];
-
-	for (int i = 0; i < numJoysticks; i++)
-	{
-		char* mapping = SDL_GameControllerMappingForDeviceIndex(i);
-
-		if (mapping)
-		{
-			int cIndex = GetControllerIndex(i);
-
-			// perform adding event
-			if (cIndex == -1)
-			{
-				SDL_Event deviceevent;
-				deviceevent.type = SDL_CONTROLLERDEVICEADDED;
-				deviceevent.cdevice.which = i;
-				SDL_PushEvent(&deviceevent);
-			}
-		}
-		else
-		{
-			SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
-
-			SDL_JoystickGetGUIDString(guid, guidStr, 64);
-			MsgWarning("   '%s':%s - no controller mapping available!\n", SDL_JoystickNameForIndex(i), guidStr);
-		}
-
-		SDL_free(mapping);
-	}
+	JoySetValidControllerId();
 }
 
 void CEqGameControllerSDL::Shutdown()
@@ -117,7 +119,7 @@ void CEqGameControllerSDL::Shutdown()
 	{
 		CEqGameControllerSDL& jc = s_controllers[i];
 
-		if (!jc.m_connected)
+		if (!jc.IsConnected())
 			continue;
 
 		jc.Close();
@@ -129,17 +131,28 @@ CEqGameControllerSDL* CEqGameControllerSDL::GetFreeController()
 	for (int i = 0; i < MAX_CONTROLLERS; i++)
 	{
 		CEqGameControllerSDL& jc = s_controllers[i];
-
-		if (!jc.m_connected)
+		if (!jc.IsConnected())
 			return &jc;
 	}
 
 	return nullptr;
 }
 
+GameControllerList CEqGameControllerSDL::GetControllers()
+{
+	GameControllerList list;
+	for (int i = 0; i < MAX_CONTROLLERS; i++)
+	{
+		CEqGameControllerSDL& jc = s_controllers[i];
+		if (jc.IsConnected())
+			list.append(&jc);
+	}
+	return list;
+}
+
 const char* CEqGameControllerSDL::GetName() const
 {
-	if (!m_connected)
+	if (!IsConnected())
 		return "disconnected";
 
 	return SDL_GameControllerName(m_gameCont);
@@ -148,25 +161,40 @@ const char* CEqGameControllerSDL::GetName() const
 // Opens the joystick controller
 void CEqGameControllerSDL::Open(int device)
 {
+	char guidStr[64];
+	char* mapping = SDL_GameControllerMappingForDeviceIndex(device);
+	if (!mapping)
+	{
+		SDL_Joystick* j = SDL_GameControllerGetJoystick(m_gameCont);
+		const int joyDevId = SDL_JoystickInstanceID(j);
+		SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(device);
+		SDL_JoystickGetGUIDString(guid, guidStr, 64);
+		MsgWarning("   '%s':%s - no controller mapping available!\n", SDL_JoystickNameForIndex(joyDevId), guidStr);
+		return;
+	}
+
+	SDL_free(mapping);
+
 	m_gameCont = SDL_GameControllerOpen(device);
+	if (!m_gameCont)
+	{
+		MsgError("Can't open game controller: %s\n", SDL_GetError());
+		return;
+	}
 
 	SDL_Joystick *j = SDL_GameControllerGetJoystick(m_gameCont);
 	m_instanceId = SDL_JoystickInstanceID(j);
-
-	m_connected = true;
 
 	if (SDL_JoystickIsHaptic(j)) 
 	{
 		m_haptic = SDL_HapticOpenFromJoystick(j);
 
 		MsgInfo("Haptic - effects: %d, query: %d\n", SDL_HapticNumEffects(m_haptic), SDL_HapticQuery(m_haptic));
-
 		if (SDL_HapticRumbleSupported(m_haptic)) 
 		{
 			if (SDL_HapticRumbleInit(m_haptic) != 0)
 			{
 				MsgError("Haptic Rumble Init: %s\n", SDL_GetError());
-
 				SDL_HapticClose(m_haptic);
 				m_haptic = nullptr;
 			}
@@ -177,31 +205,46 @@ void CEqGameControllerSDL::Open(int device)
 			m_haptic = nullptr;
 		}
 	}
+
+	JoySetValidControllerId();
+
+	Msg("* Controller connected: '%s' dev=%d inst=%d\n", GetName(), device, m_instanceId);
 }
 
 void CEqGameControllerSDL::Close()
 {
-	if (!m_connected)
+	if (m_instanceId == -1)
 		return;
 
-	m_connected = false;
-
 	if (m_haptic)
-	{
 		SDL_HapticClose(m_haptic);
-		m_haptic = nullptr;
-	}
 
 	SDL_GameControllerClose(m_gameCont);
 	m_gameCont = nullptr;
+	m_haptic = nullptr;
+	m_instanceId = -1;
+
+	JoySetValidControllerId();
+
+	Msg("* Controller disconnected: '%s'\n", GetName());
+}
+
+int CEqGameControllerSDL::GetControllerIndex(CEqGameControllerSDL* controller)
+{
+	for (int i = 0; i < MAX_CONTROLLERS; ++i)
+	{
+		if (&s_controllers[i] == controller)
+			return i;
+	}
+
+	return -1;
 }
 
 int CEqGameControllerSDL::GetControllerIndex(SDL_JoystickID instance)
 {
 	for (int i = 0; i < MAX_CONTROLLERS; ++i)
 	{
-		if (s_controllers[i].m_connected &&
-			s_controllers[i].m_instanceId == instance)
+		if (s_controllers[i].m_instanceId == instance)
 			return i;
 	}
 
@@ -213,12 +256,11 @@ void CEqGameControllerSDL::RepeatEvents(float fDt)
 	for (int i = 0; i < MAX_CONTROLLERS; ++i)
 	{
 		CEqGameControllerSDL& jc = s_controllers[i];
-
-		if (!jc.m_connected)
+		if (!jc.IsConnected())
 			continue;
 
-		for (auto it = jc.m_pressed.begin(); !it.atEnd(); ++it) {
-
+		for (auto it = jc.m_pressed.begin(); !it.atEnd(); ++it) 
+		{
 			float val = *it - fDt;
 			val -= fDt;
 
@@ -247,7 +289,6 @@ void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
 			if (jc)
 			{
 				jc->Open(event->cdevice.which);
-				Msg("* Controller connected: '%s'\n", jc->GetName());
 			}
 			break;
 		}
@@ -259,7 +300,7 @@ void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
 			{
 				CEqGameControllerSDL& jc = s_controllers[cIndex];
 
-				Msg("* Controller disconnected: '%s'\n", jc.GetName());
+				
 				jc.Close();
 			}
 
@@ -286,7 +327,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 			const int cIndex = GetControllerIndex(event->cdevice.which);
 			if (cIndex >= 0)
 			{
-				if (in_joy_id.GetInt() == -1 || in_joy_id.GetInt() == cIndex)
+				if (in_joy_id.GetInt() == cIndex)
 				{
 					CEqGameControllerSDL& jc = s_controllers[cIndex];
 
@@ -302,19 +343,17 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 		{
 			SDL_GameControllerButton button = (SDL_GameControllerButton)event->cbutton.button;
 
-			bool down = (event->cbutton.state == SDL_PRESSED);
-
+			const bool down = (event->cbutton.state == SDL_PRESSED);
 			if (in_joy_debug.GetBool())
 			{
 				Msg("Gamepad %d button %s %s\n",
 					event->cbutton.which, KeyIndexToString(JOYSTICK_START_KEYS + button), down ? "down" : "up");
 			}
 
-			int cIndex = GetControllerIndex(event->cdevice.which);
-
+			const int cIndex = GetControllerIndex(event->cdevice.which);
 			if (cIndex >= 0)
 			{
-				if (in_joy_id.GetInt() == -1 || in_joy_id.GetInt() == cIndex)
+				if (in_joy_id.GetInt() == cIndex)
 				{
 					CEqGameControllerSDL& jc = s_controllers[cIndex];
 
