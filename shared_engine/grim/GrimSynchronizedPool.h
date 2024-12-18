@@ -27,6 +27,7 @@ struct GRIMLock
 	virtual void LockWrite() {}
 	virtual void UnlockRead() {}
 	virtual void UnlockWrite() {}
+	static GRIMLock EmptyLock;
 };
 
 struct GRIMResource

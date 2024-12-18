@@ -647,14 +647,14 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	bool buffersUpdated = false;
 	{
 		CScopedMutex m(s_grimRendererMutex);
-		if (m_drawLodsList.Sync(cmdRecorder, GRIMLock{}))
+		if (m_drawLodsList.Sync(cmdRecorder, GRIMLock::EmptyLock))
 			buffersUpdated = true;
 	}
 
-	if (m_drawLodInfos.Sync(cmdRecorder, GRIMLock{}))
+	if (m_drawLodInfos.Sync(cmdRecorder, GRIMLock::EmptyLock))
 		buffersUpdated = true;
 
-	if (m_drawBatchs.Sync(cmdRecorder, GRIMLock{}))
+	if (m_drawBatchs.Sync(cmdRecorder, GRIMLock::EmptyLock))
 		buffersUpdated = true;
 	
 	if (!buffersUpdated)

@@ -9,6 +9,7 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimSynchronizedPool.h"
 
+GRIMLock GRIMLock::EmptyLock = {};
 
 GRIMResource::GRIMResource(Type type)
 	: type(type)
