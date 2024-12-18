@@ -3,7 +3,7 @@
 
 class IGPUCommandRecorder;
 
-#define POOL_WRITE	Threading::CScopedWriteLocker locker(m_rwLock)
+#define POOL_WRITE	Threading::CScopedWriteLocker locker(m_lock)
 #define POOL_READ	auto LockRead()
 
 class GRIMBaseComponentPool
@@ -28,22 +28,21 @@ public:
 	virtual void		InitEmptyItem() = 0;
 	virtual int			IsValid() const = 0;
 
-	auto				LockWrite() const { return Threading::CScopedWriteLocker(m_rwLock); }
-	auto				LockRead() const { return Threading::CScopedReadLocker(m_rwLock); }
+	auto				LockWrite() const { return Threading::CScopedWriteLocker(m_lock); }
+	auto				LockRead() const { return Threading::CScopedReadLocker(m_lock); }
 protected:
 
-	struct PoolLock : public GRIMLock
+	struct PoolLock 
+		: public GRIMLock
+		, Threading::CEqReadWriteLock
 	{
-		PoolLock(Threading::CEqReadWriteLock& rwLock) : rwLock(rwLock) {}
-		Threading::CEqReadWriteLock& rwLock;
-
-		void LockRead() override { rwLock.LockRead(); }
-		void LockWrite() override { rwLock.LockWrite(); }
-		void UnlockRead() override { rwLock.UnlockRead(); }
-		void UnlockWrite() override { rwLock.UnlockWrite(); }
+		void LockRead() override { Threading::CEqReadWriteLock::LockRead(); }
+		void LockWrite() override { Threading::CEqReadWriteLock::LockWrite(); }
+		void UnlockRead() override { Threading::CEqReadWriteLock::UnlockRead(); }
+		void UnlockWrite() override { Threading::CEqReadWriteLock::UnlockWrite(); }
 	};
 
-	mutable Threading::CEqReadWriteLock	m_rwLock;
+	mutable PoolLock m_lock;
 };
 
 // Instance component data storage
@@ -79,7 +78,7 @@ public:
 	int				GetItemSize() const override { return sizeof(T); }
 	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize() / sizeof(T); }
 
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, PoolLock(m_rwLock)); }
+	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, m_lock); }
 
 	void			Init() override { DataPool::InitBuffer(0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this);}
 	void			Term() override { DataPool::SetPipeline(nullptr); }
@@ -122,7 +121,7 @@ public:
 	int				GetItemSize() const override { return sizeof(T); }
 	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize(); }
 
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, PoolLock(m_rwLock)); }
+	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, m_lock); }
 
 	void			Init() override { DataPool::InitTexture(T::POOL_TEXTURE_FORMAT, T::POOL_TEXTURE_SIZE, 0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this); }
 	void			Term() override { DataPool::SetPipeline(nullptr); }
