@@ -118,10 +118,12 @@ BEGIN_SHADER_CLASS(
 				pipelineBuilder.End();
 			}
 
+			const bool isStripIdx = pipelineParams.primitiveTopology == PRIM_TRIANGLE_STRIP || pipelineParams.primitiveTopology == PRIM_LINE_STRIP;
+
 			Builder<PrimitiveDesc>(renderPipelineDesc.primitive)
 				.Topology(pipelineParams.primitiveTopology)
 				.Cull(rendPassInfo->cullMode)
-				.StripIndex(pipelineParams.primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
+				.StripIndex(isStripIdx ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 				.End();
 
 			it = m_renderPipelines.insert(pipelineId);
