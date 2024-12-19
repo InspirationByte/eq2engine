@@ -55,6 +55,7 @@ template <typename T>
 struct ClassBinder
 {
 	using BindClass = T;
+
 	static ArrayCRef<Member>	GetMembers();
 
 	static Member	MakeDestructor();
@@ -84,8 +85,6 @@ struct ClassBinder
 
 namespace esl
 {
-TypeInfo GetEmptyTypeInfo();
-
 template<typename T>
 TypeInfo ScriptClass<T>::GetTypeInfo()
 {
@@ -212,50 +211,54 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 	EventName##Caller.Invoke(__VA_ARGS__)
 
 // Basic type binder
-#define _ESL_BIND_TYPE_BASICS(Class, name, pushType, baseName, baseTypeInfoGetter) \
+#define _ESL_BIND_TYPE_BASICS(Class, name, pushType) \
 	namespace esl { \
-	template<> inline TypeInfoGetter ScriptClass<Class>::baseClassTypeInfoGetter = baseTypeInfoGetter; \
 	template<> inline const char ScriptClass<Class>::className[] = name; \
-	template<> inline const char* ScriptClass<Class>::baseClassName = baseName; \
-	template struct esl::ScriptClass<Class>; \
 	_ESL_ALIAS_TYPE(Class, ScriptClass<Class>::className) \
 	_ESL_PUSH_##pushType(Class) \
+	}
+
+#define _ESL_BIND_TYPE_BASECLASS(Class, ParentClass) \
+	namespace esl { \
+		template<> struct BaseScriptClass<Class> : ScriptClass<ParentClass> {}; \
+	}
+
+#define _ESL_BIND_TYPE_NO_BASECLASS(Class) \
+	namespace esl { \
+		template<> struct BaseScriptClass<Class> : ScriptClass<void> {}; \
 	}
 
 #define _ESL_TYPE_PUSHGET(Class) \
 	namespace esl::runtime { \
 	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
 	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
-	} \
+	}
 
 // Binder for class without parent type that was bound
 #define EQSCRIPT_BIND_TYPE_NO_PARENT(Class, name, pushType) \
+	_ESL_BIND_TYPE_NO_BASECLASS(Class) \
 	_ESL_BIND_TYPE_BASICS(\
 		  Class \
 		, name \
 		, pushType \
-		, nullptr \
-		, &GetEmptyTypeInfo \
 	)
 
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT(Class, ParentClass, name) \
+	_ESL_BIND_TYPE_BASECLASS(Class, ParentClass) \
 	_ESL_BIND_TYPE_BASICS(\
 		  Class \
 		, name \
 		, INHERIT_PARENT \
-		, ScriptClass<ParentClass>::className \
-		, ScriptClass<ParentClass>::GetTypeInfo \
 	)
 
 // Binder for class that has bound parent class
 #define EQSCRIPT_BIND_TYPE_WITH_PARENT_EX(Class, ParentClass, name, pushType) \
+	_ESL_BIND_TYPE_BASECLASS(Class, ParentClass) \
 	_ESL_BIND_TYPE_BASICS(\
 		  Class \
 		, name \
 		, pushType \
-		, ScriptClass<ParentClass>::className \
-		, ScriptClass<ParentClass>::GetTypeInfo \
 	)
 
 // Constructor([ ArgT1, ArgT2, ...ArgTN ])
@@ -316,6 +319,11 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 // Begin binding of members
 #define EQSCRIPT_TYPE_BEGIN(Class) \
 	_ESL_TYPE_PUSHGET(Class) \
+	namespace esl { \
+		template<> const char* ScriptClass<Class>::baseClassName = BaseScriptClass<Class>::className; \
+		template<> TypeInfoGetter ScriptClass<Class>::baseClassTypeInfoGetter = BaseScriptClass<Class>::GetTypeInfo; \
+		template struct ScriptClass<Class>; \
+	} \
 	namespace esl::bindings { \
 	template<> ArrayCRef<Member> ClassBinder<Class>::GetMembers() { \
 		BaseClassStorage::Add<BindClass>();\

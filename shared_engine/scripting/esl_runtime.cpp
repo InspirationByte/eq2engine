@@ -449,7 +449,6 @@ void* ThisGetterPtr(lua_State* L, bool& isConstRef)
 	return userData ? userData->objPtr : nullptr;
 }
 
-// TODO: const member caller
 int CallMemberFunc(lua_State* L)
 {
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(1)));

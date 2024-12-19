@@ -58,9 +58,4 @@ const char* esl::bindings::BaseClassStorage::Get(const char* className)
 	return *it;
 }
 
-esl::TypeInfo esl::GetEmptyTypeInfo()
-{
-	return {};
-}
-
 // TODO: event registrator
