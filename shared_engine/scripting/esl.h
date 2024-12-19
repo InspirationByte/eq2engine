@@ -351,6 +351,12 @@ private:
 
 namespace esl::runtime
 {
+struct BaseClassInfo
+{
+	EqStringRef name;
+	intptr_t	offset{ 0 };	// offset bytes for upcasting
+};
+
 void					SetLuaErrorFromTopOfStack(lua_State* L);
 void					ResetErrorValue(lua_State* L);
 const char*				GetLastError(lua_State* L);

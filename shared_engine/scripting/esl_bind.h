@@ -40,15 +40,17 @@ struct LuaCFunction
 
 struct BaseClassStorage
 {
-	static Map<int, EqStringRef>& GetBaseClassNames();
+	using Info = runtime::BaseClassInfo;
+	static Map<int, Info>&	GetBaseClassNames();
+
+	static Info				GetUpcastingBaseClassInfo(const char* className, const char* targetClassName);
 
 	template<typename T>
-	static void			Add();
+	static void				Add(intptr_t baseOffset);
 
 	template<typename T>
-	static const char*	Get();
-
-	static const char*	Get(const char* className);
+	static Info				Get();
+	static Info				Get(const char* className);
 };
 
 template <typename T>
@@ -85,6 +87,13 @@ struct ClassBinder
 
 namespace esl
 {
+template <typename Base, typename Derived>
+constexpr intptr_t ComputeBaseClassOffset()
+{
+	Derived* v = reinterpret_cast<Derived*>(0x1000);
+	return reinterpret_cast<intptr_t>(static_cast<Base*>(v)) - 0x1000;
+}
+
 template<typename T>
 TypeInfo ScriptClass<T>::GetTypeInfo()
 {
@@ -326,7 +335,13 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 	} \
 	namespace esl::bindings { \
 	template<> ArrayCRef<Member> ClassBinder<Class>::GetMembers() { \
-		BaseClassStorage::Add<BindClass>();\
+		if constexpr (!std::is_void_v<BaseScriptClass<BindClass>::BindType>) { \
+			using BaseClass = typename BaseScriptClass<BindClass>::BindType; \
+			const intptr_t baseOffset = ComputeBaseClassOffset<BaseClass, BindClass>(); \
+			BaseClassStorage::Add<BindClass>(baseOffset); \
+		} else { \
+			BaseClassStorage::Add<BindClass>(0); \
+		} \
 		static Member members[] = { \
 			MakeDestructor(),
 
