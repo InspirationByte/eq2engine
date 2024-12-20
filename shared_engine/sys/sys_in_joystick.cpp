@@ -14,8 +14,6 @@
 
 #include "input/in_keys_ident.h"
 
-#pragma optimize("", off)
-
 DECLARE_CVAR(in_joy_debug, "0", "Joystick debug messages", 0);
 DECLARE_CVAR(in_joy_repeatDelayInit, "1", "Joystick input repeat delay initial", CV_ARCHIVE);
 DECLARE_CVAR(in_joy_repeatDelay, "0.2", "Joystick input repeat delay", CV_ARCHIVE);
