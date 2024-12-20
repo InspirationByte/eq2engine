@@ -185,7 +185,7 @@ VSSize CDPKFileStream::Write(const void *src, VSSize count, VSSize size)
 // seeks pointer to position
 VSSize CDPKFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
 {
-	int newOfs = 0;
+	int newOfs = m_curPos;
 	switch (seekType)
 	{
 		case VS_SEEK_SET:
