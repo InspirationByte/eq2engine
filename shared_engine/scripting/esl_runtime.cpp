@@ -480,11 +480,7 @@ int CallMemberFunc(lua_State* L)
 	// apply offset for base class
 	runtime::BaseClassInfo baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(thisClassName, className);
 	if (baseInfo.name.IsValid())
-	{
-		if (baseInfo.offset > 0)
-			Msg("this offset %d\n", (int)baseInfo.offset);
 		thisPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(thisPtr) + baseInfo.offset);
-	}
 
 	esl::ScriptBind bindObj{ thisPtr };
 	return (bindObj.*(mem->func))(L);
