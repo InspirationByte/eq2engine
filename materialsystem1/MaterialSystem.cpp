@@ -1332,7 +1332,7 @@ GPUBufferView CMaterialSystem::GetTransientUniformBuffer(const void* data, int64
 
 	const ShaderAPICapabilities& caps = m_shaderAPI->GetCaps();
 	const int bufferAlignment = max(caps.minUniformBufferOffsetAlignment, caps.minStorageBufferOffsetAlignment);
-	constexpr int64 maxTransientBufferSize = 128 * 1024;
+	constexpr int64 maxTransientBufferSize = 512 * 1024;
 
 	TransientBufferCollection& collection = m_transientUniformBuffers;
 
