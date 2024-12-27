@@ -255,7 +255,6 @@ int CEqGameControllerSDL::GetControllerIndex(SDL_JoystickID instance)
 	return -1;
 }
 
-#pragma optimize("", off)
 void CEqGameControllerSDL::RepeatEvents(float fDt)
 {
 	for (int i = 0; i < MAX_CONTROLLERS; ++i)
