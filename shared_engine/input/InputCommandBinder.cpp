@@ -345,7 +345,7 @@ void CInputCommandBinder::Shutdown()
 	m_axisActs.clear(true);
 	m_touchZones.clear(true);
 	m_init = false;
-	BitArrayImpl::clear(m_currentButtonBits, elementsOf(m_currentButtonBits));
+	BitArrayImpl::clear(m_currentButtonBits, BITS_BUTTONS);
 }
 
 void CInputCommandBinder::InitTouchZones()
@@ -672,7 +672,7 @@ void CInputCommandBinder::UnbindAll()
 	}
 
 	m_axisActs.clear(true);
-	BitArrayImpl::clear(m_currentButtonBits, elementsOf(m_currentButtonBits));
+	BitArrayImpl::clear(m_currentButtonBits, BITS_BUTTONS);
 }
 
 void CInputCommandBinder::UnbindAll_Joystick()
@@ -714,7 +714,7 @@ bool CInputCommandBinder::CheckModifiersAndDepress(InputBinding& binding, int cu
 		if (!currentPressed && currentKeyIdent == keyIdent)
 			ExecuteBinding(binding, 0);
 
-		const bool modifierIsPressed = BitArrayImpl::isTrue(m_currentButtonBits, elementsOf(m_currentButtonBits), keyIdent);
+		const bool modifierIsPressed = BitArrayImpl::isTrue(m_currentButtonBits, BITS_BUTTONS, keyIdent);
 		if (modifierIsPressed)
 			++numModifiers;
 
@@ -733,10 +733,10 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool pressed)
 	if(in_keys_debug.GetBool())
 		MsgWarning("-- KeyPress: %s (%d)\n", KeyIndexToString(keyIdent), pressed);
 
-	BitArrayImpl::set(m_currentButtonBits, elementsOf(m_currentButtonBits), keyIdent, pressed);
+	BitArrayImpl::set(m_currentButtonBits, BITS_BUTTONS, keyIdent, pressed);
 
-	Array<InputBinding*> complexExecuteList(PP_SL);
-	Array<InputBinding*> executeList(PP_SL);
+	FixedArray<InputBinding*, 32> complexExecuteList;
+	FixedArray<InputBinding*, 32> executeList;
 
 	const short pressure = pressed ? SHRT_MAX : 0;
 
