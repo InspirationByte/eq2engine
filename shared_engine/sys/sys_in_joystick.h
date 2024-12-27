@@ -40,7 +40,8 @@ private:
 	_SDL_Haptic*		m_haptic{ nullptr };
 	SDL_JoystickID		m_instanceId{ -1 };
 
-	Map<short, float>	m_pressed{ PP_SL };
+	BitArray			m_stateChanged{ PP_SL };
+	Array<float>		m_pressed{ PP_SL };
 
 	static int			GetControllerIndex(SDL_JoystickID instance);
 

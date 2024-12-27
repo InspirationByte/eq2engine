@@ -15,8 +15,8 @@
 #include "input/in_keys_ident.h"
 
 DECLARE_CVAR(in_joy_debug, "0", "Joystick debug messages", 0);
-DECLARE_CVAR(in_joy_repeatDelayInit, "1", "Joystick input repeat delay initial", CV_ARCHIVE);
-DECLARE_CVAR(in_joy_repeatDelay, "0.2", "Joystick input repeat delay", CV_ARCHIVE);
+DECLARE_CVAR(in_joy_repeatDelayInit, "0.5", "Joystick input repeat delay initial", CV_ARCHIVE);
+DECLARE_CVAR(in_joy_repeatDelay, "0.1", "Joystick input repeat delay", CV_ARCHIVE);
 DECLARE_CVAR(in_joy_rumble, "1", "Rumble", CV_ARCHIVE);
 DECLARE_CVAR(in_joy_id, "0", "Joystick to use. -1 means unconnected or unselected", CV_ARCHIVE);
 DECLARE_CMD(in_joy_list, "List connected gamepads", 0)
@@ -206,6 +206,12 @@ void CEqGameControllerSDL::Open(int device)
 
 	JoySetValidControllerId();
 
+	m_pressed.setNum(SDL_CONTROLLER_BUTTON_MAX);
+	m_stateChanged.resize(SDL_CONTROLLER_BUTTON_MAX);
+
+	for (int i = 0; i < m_pressed.numElem(); ++i)
+		m_pressed[i] = -1.0f;
+
 	Msg("* Controller connected: '%s' dev=%d inst=%d\n", GetName(), device, m_instanceId);
 }
 
@@ -217,14 +223,14 @@ void CEqGameControllerSDL::Close()
 	if (m_haptic)
 		SDL_HapticClose(m_haptic);
 
+	Msg("* Controller disconnected: '%s'\n", GetName());
+
 	SDL_GameControllerClose(m_gameCont);
 	m_gameCont = nullptr;
 	m_haptic = nullptr;
 	m_instanceId = -1;
 
 	JoySetValidControllerId();
-
-	Msg("* Controller disconnected: '%s'\n", GetName());
 }
 
 int CEqGameControllerSDL::GetControllerIndex(CEqGameControllerSDL* controller)
@@ -249,6 +255,7 @@ int CEqGameControllerSDL::GetControllerIndex(SDL_JoystickID instance)
 	return -1;
 }
 
+#pragma optimize("", off)
 void CEqGameControllerSDL::RepeatEvents(float fDt)
 {
 	for (int i = 0; i < MAX_CONTROLLERS; ++i)
@@ -257,52 +264,24 @@ void CEqGameControllerSDL::RepeatEvents(float fDt)
 		if (!jc.IsConnected())
 			continue;
 
-		for (auto it = jc.m_pressed.begin(); !it.atEnd(); ++it) 
+		for(int button = 0; button < jc.m_pressed.numElem(); ++button)
 		{
-			float val = *it - fDt;
-			val -= fDt;
+			if (jc.m_stateChanged[button])
+				g_pHost->TrapJoyButton_Event(button, jc.m_pressed[button] >= 0);
 
-			if (val > 0.0f)
+			jc.m_stateChanged.setFalse(button);
+
+			if(jc.m_pressed[button] < 0)
+				continue; // repeater inactive
+
+			// repeater active
+			float timeLeft = jc.m_pressed[button] - fDt;
+			if (timeLeft < 0)
 			{
-				jc.m_pressed[it.key()] = val;
-				continue;
+				g_pHost->TrapJoyButton_Event(button, true);
+				timeLeft = in_joy_repeatDelay.GetFloat();
 			}
-
-			*it = in_joy_repeatDelay.GetFloat();
-			g_pHost->TrapJoyButton_Event(it.key(), true);
-
-			//SDL_HapticRumblePlay(jc.m_haptic, 1.0, 50);
-		}
-	}
-}
-
-void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
-{
-	switch (event->type)
-	{
-		case SDL_CONTROLLERDEVICEADDED:
-		{
-			CEqGameControllerSDL* jc = GetFreeController();
-
-			if (jc)
-			{
-				jc->Open(event->cdevice.which);
-			}
-			break;
-		}
-		case SDL_CONTROLLERDEVICEREMOVED:
-		{
-			int cIndex = GetControllerIndex(event->cdevice.which);
-
-			if (cIndex >= 0)
-			{
-				CEqGameControllerSDL& jc = s_controllers[cIndex];
-
-				
-				jc.Close();
-			}
-
-			break;
+			jc.m_pressed[button] = timeLeft;
 		}
 	}
 }
@@ -349,22 +328,52 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 			}
 
 			const int cIndex = GetControllerIndex(event->cdevice.which);
-			if (cIndex >= 0)
+			if (cIndex >= 0 && in_joy_id.GetInt() == cIndex)
 			{
-				if (in_joy_id.GetInt() == cIndex)
+				CEqGameControllerSDL& jc = s_controllers[cIndex];
+				if (down)
 				{
-					CEqGameControllerSDL& jc = s_controllers[cIndex];
-
-					if (down)
+					if(jc.m_pressed[button] < 0)
+					{
 						jc.m_pressed[button] = in_joy_repeatDelayInit.GetFloat();
-					else
-						jc.m_pressed.remove(button);
-
-					// handle button up/down
-					g_pHost->TrapJoyButton_Event((short)button, down);
+						jc.m_stateChanged.setTrue(button);
+;					}
+				}
+				else
+				{
+					if(jc.m_pressed[button] >= 0)
+					{
+						jc.m_pressed[button] = -1.0f;
+						jc.m_stateChanged.setTrue(button);
+					}
 				}
 			}
 			
+			break;
+		}
+	}
+}
+
+void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
+{
+	switch (event->type)
+	{
+		case SDL_CONTROLLERDEVICEADDED:
+		{
+			CEqGameControllerSDL* jc = GetFreeController();
+			if (jc)
+				jc->Open(event->cdevice.which);
+
+			break;
+		}
+		case SDL_CONTROLLERDEVICEREMOVED:
+		{
+			const int cIndex = GetControllerIndex(event->cdevice.which);
+			if (cIndex >= 0)
+			{
+				CEqGameControllerSDL& jc = s_controllers[cIndex];
+				jc.Close();
+			}
 			break;
 		}
 	}
