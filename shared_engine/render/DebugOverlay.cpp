@@ -16,6 +16,12 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 
+DECLARE_CVAR(r_debugDrawFrameStats, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugDrawGraphs, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugDrawShapes, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugDrawLines, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
+
 static constexpr const int DRAW_MAX_VERTS = 8192;
 
 static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 16;
@@ -29,11 +35,6 @@ IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
 #ifdef ENABLE_DEBUG_DRAWING
 static Threading::CEqMutex	s_debugOverlayMutex;
 
-DECLARE_CVAR(r_debugDrawFrameStats, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(r_debugDrawGraphs, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(r_debugDrawShapes, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(r_debugDrawLines, "0", nullptr, CV_ARCHIVE);
-
 void CDebugOverlay::OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 {
 	if (!g_renderAPI)
@@ -43,7 +44,6 @@ void CDebugOverlay::OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 }
 
 DECLARE_CVAR_CHANGE(r_debugShowTexture, "", &CDebugOverlay::OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
-DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 
 static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURenderPassRecorder* rendPassRecorder)
 {
