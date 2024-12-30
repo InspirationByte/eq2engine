@@ -40,8 +40,6 @@
 static lpp::LppDefaultAgent s_lppAgent;
 #endif // HAS_LIVEPP_SUPPORT
 
-#pragma optimize("", off)
-
 EXPORTED_INTERFACE(IDkCore, CDkCore)
 
 #ifdef PLAT_WIN
@@ -333,7 +331,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	ConCommandBase::Register(&developer);
 	ConCommandBase::Register(&echo);
 
-	((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->RegisterCommands();
+	((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->Init();
 
 	c_log_enable = PPNew ConCommand("log_enable",CONCOMMAND_FN(log_enable));
 	c_log_disable = PPNew ConCommand("log_disable",CONCOMMAND_FN(log_disable));

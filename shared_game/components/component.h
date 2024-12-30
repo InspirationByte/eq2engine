@@ -78,8 +78,8 @@ public:
 	template<class CType>
 	void			Remove();
 	
-	template<class CType>
-	CType*			Add();
+	template<class CType, typename...TArgs>
+	CType*			Add(TArgs&&... args);
 
 	void			ForEachComponent(const WalkFunc& componentWalkFn);
 };
@@ -155,11 +155,11 @@ void ComponentContainer<TComponentBase, THostType>::RemoveAllComponents()
 }
 
 template<typename TComponentBase, typename THostType>
-template<class CType> 
-CType* ComponentContainer<TComponentBase, THostType>::Add()
+template<class CType, typename...TArgs>
+CType* ComponentContainer<TComponentBase, THostType>::Add(TArgs&&... args)
 {
 	ASSERT_MSG(GetComponent(CType::NameHash) == nullptr, "Component %s is already added", CType::Name);
-	CType* component = PPNewSL(PPSourceLine::Make(CType::Name, 0)) CType(static_cast<THostType*>(this));
+	CType* component = PPNewSL(PPSourceLine::Make(CType::Name, 0)) CType(static_cast<THostType*>(this), std::forward<TArgs>(args)...);
 	AddComponent(CType::NameHash, component);
 	return component;
 }

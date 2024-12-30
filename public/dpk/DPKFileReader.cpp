@@ -185,7 +185,7 @@ VSSize CDPKFileStream::Write(const void *src, VSSize count, VSSize size)
 // seeks pointer to position
 VSSize CDPKFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
 {
-	int newOfs = 0;
+	int newOfs = m_curPos;
 	switch (seekType)
 	{
 		case VS_SEEK_SET:
@@ -250,7 +250,7 @@ uint32 CDPKFileStream::GetCRC32()
 // DPK host
 //-----------------------------------------------------------------------------------------------------------------------
 
-bool CDPKFileReader::FileExists(const char* filename) const
+bool CDPKFileReader::FileExist(const char* filename) const
 {
 	return FindFileIndex(filename) != -1;
 }

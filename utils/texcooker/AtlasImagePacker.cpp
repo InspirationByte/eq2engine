@@ -48,7 +48,7 @@ enum EBlendMode
 
 constexpr EqStringRef s_blendModeStr[] = 
 {
-	"none",
+	// none is lerp
 	"lerp",
 	"add",
 	"sub",
@@ -236,31 +236,28 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 
 static void BlendPixel(ubyte* destPixels, int destStride, const ImgLayer& layer, int srcStride)
 {
+	const ETextureFormat format = layer.image->GetFormat();
+	const int channelCnt = GetChannelCount(format);
+
 	// initial source color is layer color
 	Vector4D srcPixel(layer.color, 1.0f);
 
 	if( layer.image ) // apply source pixel color if we have image
 	{
 		ubyte* srcPixels = layer.image->GetPixels(0,0);
-		srcPixel *= Vector4D((float)srcPixels[srcStride] / 255.0f, 
-							(float)srcPixels[srcStride+1] / 255.0f,
-							(float)srcPixels[srcStride+2] / 255.0f, 
-							(float)srcPixels[srcStride+3] / 255.0f);
+		for (int i = 0; i < channelCnt; ++i)
+			srcPixel[i] = (float)srcPixels[srcStride+i] / 255.0f;
 	}
 
 	ASSERT(layer.blendMode >= 0 && layer.blendMode < BLEND_MODES);
 
-	Vector4D destSrcPixel(	(float)destPixels[destStride] / 255.0f, 
-							(float)destPixels[destStride+1] / 255.0f,
-							(float)destPixels[destStride+2] / 255.0f, 
-							(float)destPixels[destStride+3] / 255.0f);
+	Vector4D destSrcPixel;
+	for (int i = 0; i < channelCnt; ++i)
+		destSrcPixel[i] = (float)destPixels[destStride + i] / 255.0f;
 
 	Vector4D result = s_BlendFuncs[layer.blendMode](destSrcPixel, srcPixel, layer.transparency);
-
-	destPixels[destStride] = result[0] * 255.0f;
-	destPixels[destStride+1] = result[1] * 255.0f;
-	destPixels[destStride+2] = result[2] * 255.0f;
-	destPixels[destStride+3] = result[3] * 255.0f;
+	for (int i = 0; i < channelCnt; ++i)
+		destPixels[destStride+i] = result[i] * 255.0f;
 }
 
 #define ROLLING_VALUE(x, limit)		((x + limit) % limit)
@@ -270,9 +267,9 @@ static void BlendAtlasTo(ubyte* pDst, const ImageDesc* srcImage, int dst_x, int 
 	for(int i = 0; i < srcImage->layers.numElem(); i++)
 	{
 		const ImgLayer& layer = srcImage->layers[i];
+		const ETextureFormat format = layer.image->GetFormat();
 
 		int src_w, src_h;
-
 		if(layer.image)
 		{
 			src_w = layer.image->GetWidth(0);
@@ -288,7 +285,7 @@ static void BlendAtlasTo(ubyte* pDst, const ImageDesc* srcImage, int dst_x, int 
 		{
 			for(int y = -padding; y < src_h + padding; y++)
 			{
-				int nDestStride = ((dst_x+x) + (dst_y+y)*dst_wide) * GetChannelCount(FORMAT_RGBA8);
+				int nDestStride = ((dst_x+x) + (dst_y+y)*dst_wide) * GetChannelCount(format);
 				int nSrcStride = 0;
 
 				if(x < 0 || y < 0 || x >= src_w || y >= src_h)
@@ -299,14 +296,14 @@ static void BlendAtlasTo(ubyte* pDst, const ImageDesc* srcImage, int dst_x, int 
 						{
 							int nx = clamp(x, 0, src_w-1);
 							int ny = clamp(y, 0, src_h-1);
-							nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
+							nSrcStride = (nx + ny*src_w) * GetChannelCount(format);
 							break;
 						}
 						case PAD_REPEAT:
 						{
 							int nx = ROLLING_VALUE(x, src_w);
 							int ny = ROLLING_VALUE(y, src_h);
-							nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
+							nSrcStride = (nx + ny*src_w) * GetChannelCount(format);
 							break;
 						}
 						case PAD_MIRROR:
@@ -320,7 +317,7 @@ static void BlendAtlasTo(ubyte* pDst, const ImageDesc* srcImage, int dst_x, int 
 							if(ny >= src_h)
 								ny = ny-src_h;
 
-							nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
+							nSrcStride = (nx + ny*src_w) * GetChannelCount(format);
 							break;
 						}
 						default:
@@ -328,7 +325,7 @@ static void BlendAtlasTo(ubyte* pDst, const ImageDesc* srcImage, int dst_x, int 
 					}
 				}
 				else
-					nSrcStride = (x + y*src_w) * GetChannelCount(FORMAT_RGBA8);
+					nSrcStride = (x + y*src_w) * GetChannelCount(format);
 
 				ASSERT(nDestStride >= 0);
 				ASSERT(nSrcStride >= 0);

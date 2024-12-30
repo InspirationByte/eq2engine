@@ -230,7 +230,7 @@ IFilePtr CZipFileReader::Open(int fileIndex, int modeFlags)
 	return IFilePtr(newStream);
 }
 
-bool CZipFileReader::FileExists(const char* filename) const
+bool CZipFileReader::FileExist(const char* filename) const
 {
 	const int nameHash = StringId24(filename, true);
 	unzFile test = reinterpret_cast<unzFile>(GetZippedFile(nameHash));

@@ -3,6 +3,9 @@
 
 class IGPUCommandRecorder;
 
+#define POOL_WRITE	Threading::CScopedWriteLocker locker(m_lock)
+#define POOL_READ	auto LockRead()
+
 class GRIMBaseComponentPool
 {
 public:
@@ -24,6 +27,22 @@ public:
 
 	virtual void		InitEmptyItem() = 0;
 	virtual int			IsValid() const = 0;
+
+	auto				LockWrite() const { return Threading::CScopedWriteLocker(m_lock); }
+	auto				LockRead() const { return Threading::CScopedReadLocker(m_lock); }
+protected:
+
+	struct PoolLock 
+		: public GRIMLock
+		, Threading::CEqReadWriteLock
+	{
+		void LockRead() override { Threading::CEqReadWriteLock::LockRead(); }
+		void LockWrite() override { Threading::CEqReadWriteLock::LockWrite(); }
+		void UnlockRead() override { Threading::CEqReadWriteLock::UnlockRead(); }
+		void UnlockWrite() override { Threading::CEqReadWriteLock::UnlockWrite(); }
+	};
+
+	mutable PoolLock m_lock;
 };
 
 // Instance component data storage
@@ -41,25 +60,25 @@ public:
 	{
 	}
 
-	int				Add(const T& item) { return DataPool::Add(item); }
+	int				Add(const T& item) { POOL_WRITE; return DataPool::Add(item); }
 	const T&		Get(int idx) const { return DataPool::GetData()[idx]; }
-	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
+	void			Update(int idx, const T& data) { POOL_WRITE; return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
 	IGPUBufferPtr	GetBuffer() const { return DataPool::GetGPUData().template Get<IGPUBuffer>(); }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
-	void			Clear(bool dealloc) override { DataPool::Clear(dealloc); }
-	void			SetUpdated(int idx) override { DataPool::SetUpdated(idx); }
-	void			Remove(int idx) override { DataPool::Remove(idx); }
+	void			Clear(bool dealloc) override { POOL_WRITE; DataPool::Clear(dealloc); }
+	void			SetUpdated(int idx) override { POOL_WRITE; DataPool::SetUpdated(idx); }
+	void			Remove(int idx) override { POOL_WRITE; DataPool::Remove(idx); }
 
 	int				NumSlots() const override { return DataPool::NumSlots(); }
 	int				NumElem() const override { return DataPool::NumElem(); }
 	int				GetItemSize() const override { return sizeof(T); }
 	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize() / sizeof(T); }
 
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder); }
+	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, m_lock); }
 
 	void			Init() override { DataPool::InitBuffer(0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this);}
 	void			Term() override { DataPool::SetPipeline(nullptr); }
@@ -84,25 +103,25 @@ public:
 	{
 	}
 
-	int				Add(const T& item) { return DataPool::Add(item); }
+	int				Add(const T& item) { POOL_WRITE; return DataPool::Add(item); }
 	const T&		Get(int idx) const { return DataPool::GetData()[idx]; }
-	void			Update(int idx, const T& data) { return DataPool::Update(idx, data); }
+	void			Update(int idx, const T& data) { POOL_WRITE; return DataPool::Update(idx, data); }
 
 	DataPool&		GetDataPool() { return *this; }
 	ITexturePtr		GetTexture() const { return DataPool::GetGPUData().template Get<ITexture>(); }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
-	void			Clear(bool dealloc) override { DataPool::Clear(dealloc); }
-	void			SetUpdated(int idx) override { DataPool::SetUpdated(idx); }
-	void			Remove(int idx) override { DataPool::Remove(idx); }
+	void			Clear(bool dealloc) override { POOL_WRITE; DataPool::Clear(dealloc); }
+	void			SetUpdated(int idx) override { POOL_WRITE; DataPool::SetUpdated(idx); }
+	void			Remove(int idx) override { POOL_WRITE; DataPool::Remove(idx); }
 
 	int				NumSlots() const override { return DataPool::NumSlots(); }
 	int				NumElem() const override { return DataPool::NumElem(); }
 	int				GetItemSize() const override { return sizeof(T); }
 	int				GetPoolSize() const override { return DataPool::GetGPUData().GetSize(); }
 
-	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder); }
+	bool			Sync(IGPUCommandRecorder* cmdRecorder) override { return DataPool::Sync(cmdRecorder, m_lock); }
 
 	void			Init() override { DataPool::InitTexture(T::POOL_TEXTURE_FORMAT, T::POOL_TEXTURE_SIZE, 0, T::INITIAL_POOL_SIZE, T::POOL_SIZE_EXTEND); T::InitPipeline(*this); }
 	void			Term() override { DataPool::SetPipeline(nullptr); }
@@ -127,17 +146,17 @@ public:
 	{
 	}
 
-	int				Add(const T& item) { return DataPool::add(item); }
-	const T&		Get(int idx) const {return DataPool::ptr()[idx]; }
-	void			Update(int idx, const T& data) { static_cast<DataPool&>(*this)[idx] = data; }
+	int				Add(const T& item) { POOL_WRITE; return DataPool::add(item); }
+	const T&		Get(int idx) const { return DataPool::ptr()[idx]; }
+	void			Update(int idx, const T& data) { POOL_WRITE; static_cast<DataPool&>(*this)[idx] = data; }
 
 	DataPool&		GetDataPool() { return *this; }
 
 	EqStringRef		GetName() const override { return T::NAME; }
 
-	void			Clear(bool dealloc) override { DataPool::clear(dealloc); }
+	void			Clear(bool dealloc) override { POOL_WRITE; DataPool::clear(dealloc); }
 	void			SetUpdated(int idx) override {}
-	void			Remove(int idx) override { DataPool::remove(idx); }
+	void			Remove(int idx) override { POOL_WRITE; DataPool::remove(idx); }
 
 	int				NumSlots() const override { return DataPool::numSlots(); }
 	int				NumElem() const override { return DataPool::numElem(); }
@@ -152,6 +171,9 @@ public:
 	void			InitEmptyItem() override { DataPool::add(T{}); }
 	int				IsValid() const override { return true; }
 };
+
+#undef POOL_WRITE
+#undef POOL_READ 
 
 #define DEFINE_INSTANCE_COMPONENT_GUTS(PoolType, ID, Name) \
 	using POOL_T = PoolType<Name>; \

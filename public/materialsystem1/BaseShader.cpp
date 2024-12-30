@@ -222,13 +222,16 @@ void CBaseShader::FillRenderPipelineDesc(const PipelineInputParams& inputParams,
 	const bool polyOffsetEnable = (m_flags & MATERIAL_FLAG_DECAL);
 	const ECullMode cullMode = (m_flags & MATERIAL_FLAG_NO_CULL) ? CULL_NONE : inputParams.cullMode;
 
+	// TODO: variant
+	const bool isStripIdx = inputParams.primitiveTopology == PRIM_TRIANGLE_STRIP || inputParams.primitiveTopology == PRIM_LINE_STRIP;
+
 	Builder<RenderPipelineDesc>(renderPipelineDesc)
 		.ShaderName(GetName())
 		.ShaderQuery(m_shaderQuery)
 		.PrimitiveState(Builder<PrimitiveDesc>()
 			.Topology(inputParams.primitiveTopology)
 			.Cull(cullMode)
-			.StripIndex(inputParams.primitiveTopology == PRIM_TRIANGLE_STRIP ? STRIPINDEX_UINT16 : STRIPINDEX_NONE) // TODO: variant
+			.StripIndex(isStripIdx ? STRIPINDEX_UINT16 : STRIPINDEX_NONE)
 			.End())
 		.End();
 

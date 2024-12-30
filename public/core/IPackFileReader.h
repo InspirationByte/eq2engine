@@ -16,7 +16,7 @@ public:
 	virtual IFilePtr	Open(const char* filename, int openFlags) = 0;
 	virtual IFilePtr	Open(int fileIndex, int openFlags) = 0;
 
-	virtual bool		FileExists(const char* filename) const = 0;
+	virtual bool		FileExist(const char* filename) const = 0;
 	virtual int			FindFileIndex(const char* filename) const = 0;
 };
 

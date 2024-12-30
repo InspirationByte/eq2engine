@@ -221,18 +221,21 @@ inline void BitArrayImpl::setRange(STORAGE_TYPE* bitArray, int bitCount, int sta
 
 inline bool	BitArrayImpl::isTrue(const STORAGE_TYPE* bitArray, int bitCount, int index)
 {
+	ASSERT(index >= 0 && index < bitCount);
 	const int bitIndex = index & bitArrayRemainder();
 	return bitArray[index >> bitArrayShift()] & (1 << bitIndex);
 }
 
 inline void BitArrayImpl::setTrue(STORAGE_TYPE* bitArray, int bitCount, int index)
 {
+	ASSERT(index >= 0 && index < bitCount);
 	const int bitIndex = index & bitArrayRemainder();
 	bitArray[index >> bitArrayShift()] |= (1 << bitIndex);
 }
 
 inline void BitArrayImpl::setFalse(STORAGE_TYPE* bitArray, int bitCount, int index)
 {
+	ASSERT(index >= 0 && index < bitCount);
 	const int bitIndex = index & bitArrayRemainder();
 	bitArray[index >> bitArrayShift()] &= ~(1 << bitIndex);
 }

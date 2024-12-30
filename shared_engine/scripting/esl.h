@@ -223,13 +223,24 @@ class LuaTable;
 template<typename T>
 struct ScriptClass
 {
+	using BindType = T;
+
 	static TypeInfo			GetTypeInfo();
 
 	// NOTE: don't access these directly, use typeinfo
-	static TypeInfoGetter	baseClassTypeInfoGetter;
 	static const char		className[];
+
+	static TypeInfoGetter	baseClassTypeInfoGetter;
 	static const char*		baseClassName;
 };
+
+template<typename T>
+struct BaseScriptClass; // Type
+
+template<> inline TypeInfo ScriptClass<void>::GetTypeInfo() { return {}; }
+template<> inline const char ScriptClass<void>::className[] = "null";
+template<> inline TypeInfoGetter ScriptClass<void>::baseClassTypeInfoGetter = nullptr;
+template<> inline const char* ScriptClass<void>::baseClassName = nullptr;
 
 /// script state wrapper
 class ScriptState
@@ -340,6 +351,12 @@ private:
 
 namespace esl::runtime
 {
+struct BaseClassInfo
+{
+	EqStringRef name;
+	intptr_t	offset{ 0 };	// offset bytes for upcasting
+};
+
 void					SetLuaErrorFromTopOfStack(lua_State* L);
 void					ResetErrorValue(lua_State* L);
 const char*				GetLastError(lua_State* L);

@@ -73,7 +73,7 @@ public:
 
 	IFilePtr				Open(const char* filename, int modeFlags);
 	IFilePtr				Open(int fileIndex, int modeFlags);
-	bool					FileExists(const char* filename) const;
+	bool					FileExist(const char* filename) const;
 	int						FindFileIndex(const char* filename) const;
 
 protected:

@@ -9,6 +9,7 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "GrimSynchronizedPool.h"
 
+GRIMLock GRIMLock::EmptyLock = {};
 
 GRIMResource::GRIMResource(Type type)
 	: type(type)
@@ -197,7 +198,7 @@ void GRIMBaseSyncrhronizedPool::SetPipeline(IGPUComputePipelinePtr updatePipelin
 	m_updatePipeline = updatePipeline;
 }
 
-bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride)
+bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride, GRIMLock& lock)
 {
 	if (!m_updatePipeline)
 	{
@@ -238,10 +239,11 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 				// don't waste time on running pipeline and upload everything directly to GPU
 				// since buffer is brand new
 				cmdRecorder->WriteBuffer(newBuffer, dataPtr, currentNumSlots * stride, 0);
-				{
-					Threading::CScopedMutex m(m_mutex);
-					m_updated.clear();
-				}
+
+				lock.LockWrite();
+				m_updated.clear();
+				lock.UnlockWrite();
+
 				return true;
 			}
 		}
@@ -263,19 +265,21 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 		buffersUpdated = true;
 	}
 
+	lock.LockRead();
+	if (m_updated.size())
 	{
-		Threading::CScopedMutex m(m_mutex);
-		if (m_updated.size())
-		{
-			Array<int> elementIds(PP_SL);
+		Array<int> elementIds(PP_SL);
 
-			IGPUBufferPtr idxsBuffer;
-			IGPUBufferPtr dataBuffer;
-			PrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(dataPtr), stride, stride, idxsBuffer, dataBuffer);
-			RunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_gpuData);
-		}
-		m_updated.clear();
+		IGPUBufferPtr idxsBuffer;
+		IGPUBufferPtr dataBuffer;
+		PrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(dataPtr), stride, stride, idxsBuffer, dataBuffer);
+		RunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_gpuData);
 	}
+	lock.UnlockRead();
+
+	lock.LockWrite();
+	m_updated.clear();
+	lock.UnlockWrite();
 
 	return buffersUpdated;
 }

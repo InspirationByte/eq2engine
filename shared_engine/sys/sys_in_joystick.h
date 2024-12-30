@@ -7,39 +7,41 @@
 
 #pragma once
 
-#define MAX_CONTROLLERS 4
+static constexpr int MAX_CONTROLLERS = 4;
 
 union SDL_Event;
-struct _SDL_Haptic;
+typedef struct _SDL_Haptic SDL_Haptic;
+typedef struct _SDL_GameController SDL_GameController;
+typedef signed int SDL_JoystickID;
+
+class CEqGameControllerSDL;
+
+using GameControllerList = FixedArray<CEqGameControllerSDL*, MAX_CONTROLLERS>;
 
 class CEqGameControllerSDL
 {
 public:
-	CEqGameControllerSDL() 
-		: m_connected(false), m_gameCont(0), m_instanceId(-1), m_haptic(0)
-	{
-	}
+	const char*		GetName() const;
+	bool			IsConnected() const { return m_instanceId >= 0; }
 
-	static void Init();
-	static void Shutdown();
+	static void		Init();
+	static void		Shutdown();
+	static void		ProcessConnectionEvent(SDL_Event* event);
+	static void		ProcessInputEvent(SDL_Event* event);
+	static void		RepeatEvents(float fDt);
 
-	static CEqGameControllerSDL* GetFreeController();
-
-	static void ProcessConnectionEvent(SDL_Event* event);
-	static void ProcessInputEvent(SDL_Event* event);
-
-	static void RepeatEvents(float fDt);
-
-	const char* GetName() const;
+	static CEqGameControllerSDL*	GetFreeController();
+	static GameControllerList		GetControllers();
+	static int						GetControllerIndex(CEqGameControllerSDL* controller);
 
 private:
 
-	SDL_GameController*	m_gameCont;
-	_SDL_Haptic*		m_haptic;
-	SDL_JoystickID		m_instanceId;
-	bool				m_connected;
+	SDL_GameController* m_gameCont{ nullptr };
+	_SDL_Haptic*		m_haptic{ nullptr };
+	SDL_JoystickID		m_instanceId{ -1 };
 
-	Map<short, float>	m_pressed{ PP_SL };
+	BitArray			m_stateChanged{ PP_SL };
+	Array<float>		m_pressed{ PP_SL };
 
 	static int			GetControllerIndex(SDL_JoystickID instance);
 

@@ -21,7 +21,7 @@
 
 using namespace Threading;
 
-DECLARE_CVAR(grim_softwareMode, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(grim_softwareMode, "0", nullptr, CV_UNREGISTERED);
 DECLARE_CVAR(grim_dbgOnlyMaterial, "", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgLogArchetypes, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgValidate, "0", nullptr, CV_CHEAT);
@@ -647,14 +647,14 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 	bool buffersUpdated = false;
 	{
 		CScopedMutex m(s_grimRendererMutex);
-		if (m_drawLodsList.Sync(cmdRecorder))
+		if (m_drawLodsList.Sync(cmdRecorder, GRIMLock::EmptyLock))
 			buffersUpdated = true;
 	}
 
-	if (m_drawLodInfos.Sync(cmdRecorder))
+	if (m_drawLodInfos.Sync(cmdRecorder, GRIMLock::EmptyLock))
 		buffersUpdated = true;
 
-	if (m_drawBatchs.Sync(cmdRecorder))
+	if (m_drawBatchs.Sync(cmdRecorder, GRIMLock::EmptyLock))
 		buffersUpdated = true;
 	
 	if (!buffersUpdated)

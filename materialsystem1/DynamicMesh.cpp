@@ -84,7 +84,7 @@ EPrimTopology CDynamicMesh::GetPrimitiveType() const
 
 void CDynamicMesh::AddStripBreak()
 {
-	if(m_primType != PRIM_TRIANGLE_STRIP)
+	if(m_primType != PRIM_TRIANGLE_STRIP && m_primType != PRIM_LINE_STRIP)
 		return;
 
 	if(m_numIndices == 0)

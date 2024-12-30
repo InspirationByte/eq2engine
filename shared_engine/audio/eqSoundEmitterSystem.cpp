@@ -126,6 +126,19 @@ void CSoundEmitterSystem::Shutdown()
 	m_isInit = false;
 }
 
+bool CSoundEmitterSystem::IsValidSound(const char* pszName)
+{
+	if (*pszName == 0)
+		return false;
+
+	// find the present sound file
+	SoundScriptDesc* script = FindSoundScript(pszName);
+	if (!script)
+		return false;
+
+	return script->samples.numElem() > 0;
+}
+
 bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 {
 	if (*pszName == 0)

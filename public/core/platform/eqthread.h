@@ -59,6 +59,10 @@ static constexpr const int DEFAULT_THREAD_STACK_SIZE = 3072 * 1024;
 void			YieldCurrentThread();
 uintptr_t		GetCurrentThreadID();
 void			SetCurrentThreadName(const char* name);
+void			SetCurrentThreadAffinity(uintptr_t affinityMask);
+void			GetCurrentProcessAffinity(uintptr_t& processAffinityMask, uintptr_t& systemAffinityMask);
+void			SetCurrentProcessAffinity(uintptr_t processAffinityMask);
+
 
 // for profiler needs
 void			GetThreadName(uintptr_t threadID, char* name, int maxLength);

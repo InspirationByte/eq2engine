@@ -175,13 +175,15 @@ struct PushGetImpl
 		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 	}
 
-	static T* GetObject(lua_State* L, int index, bool toCpp)
+	static T* GetObject(lua_State* L, int index, bool toCpp, const bindings::BaseClassStorage::Info& upcastBaseInfo)
 	{
 		static_assert(std::is_fundamental_v<BaseUType> == false, "GetObject used for fundamental type");
 
+		ASSERT(upcastBaseInfo.offset == 0);
+
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
-			BaseUType* objPtr = static_cast<UT*>(lua_touserdata(L, index));
+			BaseUType* objPtr = reinterpret_cast<UT*>(reinterpret_cast<uintptr_t>(lua_touserdata(L, index)) + upcastBaseInfo.offset);
 			return objPtr;
 		}
 		else
@@ -195,7 +197,7 @@ struct PushGetImpl
 			if(toCpp)
 				userData->flags &= ~UD_FLAG_OWNED;
 
-			return static_cast<BaseUType*>(userData ? userData->objPtr : nullptr);
+			return reinterpret_cast<BaseUType*>(userData ? (reinterpret_cast<uintptr_t>(userData->objPtr) + upcastBaseInfo.offset) : reinterpret_cast<uintptr_t>(nullptr));
 		}
 	}
 
@@ -424,10 +426,40 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (binder::IsString<T>::value)
 	{
-		const bool typeError = (!checkType(L, index, LUA_TSTRING));
+		const int type = lua_type(L, index);
+		if (type != LUA_TSTRING)
+		{
+			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, type));
+			if constexpr (!SilentTypeCheck)
+			{
+				if (isArgNull)
+				{
+					if constexpr (!std::is_pointer_v<T>)
+						luaL_argerror(L, index, err);
+				}
+				else
+					luaL_argerror(L, index, err);
+			}
+
+			if constexpr (binder::IsEqString<T>::value)
+			{
+				// TODO: make EqStringRef support optional values
+				static_assert(!std::is_pointer_v<T>, "passing EqString[Ref] by pointer is not supported yet");
+
+				using BaseStringType = BaseType<T>;
+				using Result = ResultWithValue<BaseStringType>;
+
+				return Result{ {}, false, std::move(err), BaseStringType() };
+			}
+			else
+			{
+				using Result = ResultWithValue<const char*>;
+				return Result{ {}, true, {}, nullptr};
+			}
+		}
 
 		size_t len = 0;
-		const char* value = typeError ? nullptr : lua_tolstring(L, index, &len);
+		const char* value = lua_tolstring(L, index, &len);
 
 		if constexpr (binder::IsEqString<T>::value)
 		{
@@ -435,26 +467,27 @@ static decltype(auto) GetValue(lua_State* L, int index)
 
 			using BaseStringType = BaseType<T>;
 			using Result = ResultWithValue<BaseStringType>;
-
-			if (typeError)
-				return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), BaseStringType() };
-		
 			return Result{ {}, true, {}, BaseStringType(value, len) };
 		}
 		else
 		{
 			using Result = ResultWithValue<const char*>;
-			if (typeError)
-				return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
-		
 			return Result{ {}, true, {}, value };
 		}
+	}
+	else if constexpr (binder::IsObject<T>::value)
+	{
+		using Result = ResultWithValue<BaseType<T>>;
+		return Result{ {}, true, {}, {L, index} };
 	}
 	else if constexpr (binder::IsRefPtr<T>::value)
 	{
 		using RT = StripRefPtrT<BaseType<T>>;
 		using REFPTR = CRefPtr<RT>;
 		using Result = ResultWithValue<REFPTR>;
+
+		// simple return without conversion
+		static_assert(!HasToCppParamTrait<T>::value, "can't use ToCpp trait on CRefPtr");
 
 		const int type = lua_type(L, index);
 		if (type != LUA_TUSERDATA)
@@ -469,28 +502,29 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			return Result{ {}, false, std::move(err), nullptr };
 		}
 
-		if (!CheckUserdataCanBeUpcasted(L, index, LuaBaseTypeAlias<RT>::value))
+		// retrieve userdata name which is class name
+		const char* className = nullptr;
 		{
 			const int type = luaL_getmetafield(L, index, "__name");
-			const char* className = lua_tostring(L, -1);
+			className = lua_tostring(L, -1);
 			lua_pop(L, 1);
-
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, className);
-			if constexpr (!SilentTypeCheck)
-				luaL_argerror(L, index, err);
-
-			return Result{ {}, false, std::move(err), nullptr };
 		}
 
-		static_assert(!HasToCppParamTrait<T>::value, "can't use ToCpp trait on CRefPtr");
-		REFPTR objPtr(PushGet<RT>::Get(L, index, false));
+		// perform type compatibility check
+		const bool performUpcasting = CString::Compare(className, LuaBaseTypeAlias<RT>::value) != 0;
+		runtime::BaseClassInfo baseInfo = performUpcasting ? bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<RT>::value) : runtime::BaseClassInfo();
+		if (!performUpcasting || baseInfo.name.IsValid())
+		{
+			REFPTR objPtr(PushGet<RT>::Get(L, index, false, baseInfo));
+			return Result{ {}, true, {}, std::move(objPtr) };
+		}
 
-		return Result{ {}, true, {}, std::move(objPtr) };
-	}
-	else if constexpr (binder::IsObject<T>::value)
-	{
-		using Result = ResultWithValue<BaseType<T>>;
-		return Result{ {}, true, {}, {L, index} };
+		// we have incompatible types
+		EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, className);
+		if constexpr (!SilentTypeCheck)
+			luaL_argerror(L, index, err);
+
+		return Result{ {}, false, std::move(err), nullptr };
 	}
 	else
 	{
@@ -518,30 +552,38 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				return Result{ {}, false, std::move(err), nullptr };
 		}
 
-		// we still won't allow null value to be pushed if upcasting has failed
-		if (!CheckUserdataCanBeUpcasted(L, index, LuaBaseTypeAlias<T>::value))
+		// retrieve userdata name which is class name
+		const char* className = nullptr;
 		{
 			const int type = luaL_getmetafield(L, index, "__name");
-			const char* className = lua_tostring(L, -1);
+			className = lua_tostring(L, -1);
 			lua_pop(L, 1);
-
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, className);
-			if constexpr (!SilentTypeCheck)
-				luaL_argerror(L, index, err);
-
-			if constexpr (std::is_reference_v<T>)
-				return Result{ {}, false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
-			else
-				return Result{ {}, false, std::move(err), nullptr };
 		}
 
-		const bool toCpp = HasToCppParamTrait<T>::value;
-		BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp));
+		// perform type compatibility check
+		const bool performUpcasting = CString::Compare(className, LuaBaseTypeAlias<T>::value) != 0;
+		runtime::BaseClassInfo baseInfo = performUpcasting ? bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<T>::value) : runtime::BaseClassInfo();
+		if (!performUpcasting || baseInfo.name.IsValid())
+		{
+			const bool toCpp = HasToCppParamTrait<T>::value;
+			BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp, baseInfo));
 
-		if constexpr (std::is_reference_v<UT>)
-			return Result{ {}, true, {}, reinterpret_cast<UT>(*objPtr) };
+			if constexpr (std::is_reference_v<UT>)
+				return Result{ {}, true, {}, reinterpret_cast<UT>(*objPtr) };
+			else
+				return Result{ {}, true, {}, reinterpret_cast<UT>(objPtr) };
+		}
+
+		// we have incompatible types
+		// on pointer types return nullptr, on reference push runtime error
+		EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, className);
+		if constexpr (!SilentTypeCheck)
+			luaL_argerror(L, index, err);
+
+		if constexpr (std::is_reference_v<T>)
+			return Result{ {}, false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
 		else
-			return Result{ {}, true, {}, reinterpret_cast<UT>(objPtr) };
+			return Result{ {}, false, std::move(err), nullptr };
 	}
 }
 
@@ -1094,16 +1136,18 @@ Member ClassBinder<T>::MakeOperator(F f, const char* name)
 }
 
 template<typename T>
-void BaseClassStorage::Add()
+void BaseClassStorage::Add(intptr_t offset)
 {
 	const int nameHash = StringId24(ScriptClass<T>::className);
 	if (!ScriptClass<T>::baseClassName)
 		return;
-	GetBaseClassNames().insert(nameHash, ScriptClass<T>::baseClassName);
+	Info& info = *GetBaseClassNames().insert(nameHash);
+	info.name = ScriptClass<T>::baseClassName;
+	info.offset = offset;
 }
 
 template<typename T>
-const char* BaseClassStorage::Get()
+BaseClassStorage::Info BaseClassStorage::Get()
 {
 	return Get(ScriptClass<T>::className);
 }

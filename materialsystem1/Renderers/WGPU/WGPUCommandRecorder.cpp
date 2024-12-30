@@ -86,6 +86,9 @@ void CWGPUCommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, c
 	if (!dstTexture)
 		return;
 
+	ASSERT_MSG(srcTexture->GetFlags() & TEXFLAG_COPY_SRC, "%s don't have TEXFLAG_COPY_SRC flag", srcTexture->GetName());
+	ASSERT_MSG(dstTexture->GetFlags() & TEXFLAG_COPY_DST, "%s don't have TEXFLAG_COPY_DST flag", dstTexture->GetName());
+
 	ASSERT_MSG(source.origin.x + copySize.width <= srcTexture->GetWidth() && source.origin.y + copySize.height >= srcTexture->GetHeight() && source.origin.arraySlice + copySize.arraySize <= srcTexture->GetArrayLayersSize(),
 		"source texture origin and size outside of source texture size range");
 	ASSERT_MSG(destination.origin.x + copySize.width <= dstTexture->GetWidth() && destination.origin.y + copySize.height >= dstTexture->GetHeight() && destination.origin.arraySlice + copySize.arraySize <= dstTexture->GetArrayLayersSize(),

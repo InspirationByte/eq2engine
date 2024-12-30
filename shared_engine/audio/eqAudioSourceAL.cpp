@@ -141,27 +141,30 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 
 	if (mask & UPDATE_EFFECTSLOT)
 	{
-		if (params.effectSlot < 0)
-			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
-		else
+		if (m_owner->m_effectSlots.inRange(params.effectSlot))
 			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, m_owner->m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);
+		else
+			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
 	}
 
-	if (mask & UPDATE_BANDPASS)
+	if (GetAlExt().alGenFilters)
 	{
-		if (!m_filter)
+		if (mask & UPDATE_BANDPASS)
 		{
-			GetAlExt().alGenFilters(1, &m_filter);
-			ALCheckError("gen buffers");
+			if (!m_filter)
+			{
+				GetAlExt().alGenFilters(1, &m_filter);
+				ALCheckError("gen buffers");
 
-			GetAlExt().alFilteri(m_filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
-			GetAlExt().alFilterf(m_filter, AL_BANDPASS_GAIN, 1.0f);
+				GetAlExt().alFilteri(m_filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+				GetAlExt().alFilterf(m_filter, AL_BANDPASS_GAIN, 1.0f);
+			}
+
+			GetAlExt().alFilterf(m_filter, AL_BANDPASS_GAINLF, params.bandPass.x);
+			GetAlExt().alFilterf(m_filter, AL_BANDPASS_GAINHF, params.bandPass.y);
+
+			alSourcei(thisSource, AL_DIRECT_FILTER, m_filter);
 		}
-
-		GetAlExt().alFilterf(m_filter, AL_BANDPASS_GAINLF, params.bandPass.x);
-		GetAlExt().alFilterf(m_filter, AL_BANDPASS_GAINHF, params.bandPass.y);
-
-		alSourcei(thisSource, AL_DIRECT_FILTER, m_filter);
 	}
 
 	if (mask & UPDATE_RELATIVE)

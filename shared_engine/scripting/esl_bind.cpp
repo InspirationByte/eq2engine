@@ -36,31 +36,50 @@ _BUILTIN_ALIAS_TYPE(int64, s_luaTNumber)
 _BUILTIN_ALIAS_TYPE(uint64, s_luaTNumber)
 _BUILTIN_ALIAS_TYPE(float, s_luaTNumber)
 
-_BUILTIN_ALIAS_TYPE(esl::LuaTable, s_luaTTable)
-_BUILTIN_ALIAS_TYPE(esl::LuaTableRef, s_luaTTable)
-_BUILTIN_ALIAS_TYPE(esl::LuaFunctionRef, s_luaTFunction)
-_BUILTIN_ALIAS_TYPE(esl::LuaRawRef, s_eslTAny)
-}
+_BUILTIN_ALIAS_TYPE(LuaTable, s_luaTTable)
+_BUILTIN_ALIAS_TYPE(LuaTableRef, s_luaTTable)
+_BUILTIN_ALIAS_TYPE(LuaFunctionRef, s_luaTFunction)
+_BUILTIN_ALIAS_TYPE(LuaRawRef, s_eslTAny)
 
-Map<int, EqStringRef>& esl::bindings::BaseClassStorage::GetBaseClassNames()
+namespace bindings
 {
-	static Map<int, EqStringRef> baseClassNames{ PP_SL };
+
+Map<int, runtime::BaseClassInfo>& BaseClassStorage::GetBaseClassNames()
+{
+	static Map<int, runtime::BaseClassInfo> baseClassNames{ PP_SL };
 	return baseClassNames;
 }
 
-const char* esl::bindings::BaseClassStorage::Get(const char* className)
+runtime::BaseClassInfo BaseClassStorage::Get(const char* className)
 {
 	const int nameHash = StringId24(className);
 	auto it = GetBaseClassNames().find(nameHash);
 	if (it.atEnd())
-		return nullptr;
+		return runtime::BaseClassInfo{};
 
 	return *it;
 }
 
-esl::TypeInfo esl::GetEmptyTypeInfo()
+runtime::BaseClassInfo BaseClassStorage::GetUpcastingBaseClassInfo(const char* className, const char* targetClassName)
 {
+	runtime::BaseClassInfo info;
+	info.name = className;
+	do
+	{
+		info = bindings::BaseClassStorage::Get(info.name);
+		if (!info.name.IsValid())
+			return {};
+
+		if (!info.name.Compare(targetClassName))
+			return info;
+
+	} while (true);
 	return {};
 }
+
+}
+}
+
+
 
 // TODO: event registrator

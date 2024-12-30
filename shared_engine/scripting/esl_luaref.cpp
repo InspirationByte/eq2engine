@@ -90,7 +90,7 @@ bool LuaRawRef::operator==(LuaRawRef const& rhs) const
 	{
 		lua_rawgeti(m_state, LUA_REGISTRYINDEX, m_ref);
 		lua_rawgeti(m_state, LUA_REGISTRYINDEX, rhs.m_ref);
-		const bool result = !!lua_rawequal(m_state, -1, -2);
+		const bool result = lua_rawequal(m_state, -1, -2);
 		lua_pop(m_state, 2);
 
 		return result;
@@ -132,8 +132,8 @@ int LuaTable::Length() const
 	esl::runtime::StackGuard g(m_state);
 	Push();
 	lua_len(m_state, -1);
-	const int top = lua_gettop(m_state);
-	return lua_tointeger(m_state, top);
+	const int len = lua_tointeger(m_state, -1);
+	return len;
 }
 
 LuaTable::IPairsIterator::IPairsIterator(const esl::LuaTable& table)

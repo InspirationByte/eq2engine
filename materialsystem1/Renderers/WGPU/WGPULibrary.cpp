@@ -356,10 +356,12 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 void CWGPURenderLib::ExitAPI()
 {
+	m_endFrameWait.Wait(500);
 	g_renderWorker.Shutdown();
 
 	for (CWGPUSwapChain* swapChain : m_swapChains)
 		delete swapChain;
+
 	m_swapChains.clear();
 	m_currentSwapChain = nullptr;
 

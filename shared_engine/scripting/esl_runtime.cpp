@@ -319,7 +319,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	lua_pop(L, 2);
 }
 
-bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName)
+bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* targetClassName)
 {
 	const int type = luaL_getmetafield(L, index, "__name");
 	defer{
@@ -328,18 +328,14 @@ bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName)
 	if (type != LUA_TSTRING)
 		return false;
 
-	bool found = false;
 	const char* className = lua_tostring(L, -1);
-	while (className)
-	{
-		if (!CString::Compare(typeName, className))
-		{
-			found = true;
-			break;
-		}
-		className = bindings::BaseClassStorage::Get(className);
-	}
-	return found;
+
+	// check if no upcasting required
+	if (!CString::Compare(targetClassName, className))
+		return true;
+
+	bindings::BaseClassStorage::Info baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, targetClassName);
+	return baseInfo.name.IsValid();
 }
 
 static EqString GetCallSignatureString(lua_State* L)
@@ -438,18 +434,21 @@ int CallConstructor(lua_State* L)
 void* ThisGetterVal(lua_State* L, bool& isConstRef)
 {
 	isConstRef = false;
-	void* userData = lua_touserdata(L, 1);
-	return userData;
+	void* objPtr = lua_touserdata(L, 1);
+	return objPtr;
 }
 
 void* ThisGetterPtr(lua_State* L, bool& isConstRef)
 {
 	esl::BoxUD* userData = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
 	isConstRef = userData ? (userData->flags & UD_FLAG_CONST) : 0;
-	return userData ? userData->objPtr : nullptr;
+
+	if(!userData)
+		return nullptr;
+
+	return userData->objPtr;
 }
 
-// TODO: const member caller
 int CallMemberFunc(lua_State* L)
 {
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(1)));
@@ -457,8 +456,8 @@ int CallMemberFunc(lua_State* L)
 	esl::Member* mem = static_cast<esl::Member*>(lua_touserdata(L, lua_upvalueindex(3)));
 
 	bool isConstRef = false;
-	void* userData = thisGetter(L, isConstRef);
-	if (!userData)
+	void* thisPtr = thisGetter(L, isConstRef);
+	if (!thisPtr)
 	{
 		// TODO: ctx.ThrowError
 		luaL_error(L, "Error calling %s::%s - self is nil", className, mem->name);
@@ -471,7 +470,19 @@ int CallMemberFunc(lua_State* L)
 		return -1;
 	}
 
-	esl::ScriptBind bindObj{ userData };
+	const char* thisClassName = nullptr;
+	{
+		const int type = luaL_getmetafield(L, 1, "__name");
+		thisClassName = lua_tostring(L, -1);
+		lua_pop(L, 1);
+	}
+
+	// apply offset for base class
+	runtime::BaseClassInfo baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(thisClassName, className);
+	if (baseInfo.name.IsValid())
+		thisPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(thisPtr) + baseInfo.offset);
+
+	esl::ScriptBind bindObj{ thisPtr };
 	return (bindObj.*(mem->func))(L);
 }
 
@@ -490,7 +501,7 @@ int CompareBoxedPointers(lua_State* L)
 	return 1;
 }
 
-static int IndexImplBasic(lua_State* L, EqFunction<int(const Member*)> onVariableIndexed)
+static int IndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(void* thisPtr, const Member*)> onVariableIndexed)
 {
 	// lookup in class metatable first
 	{
@@ -505,7 +516,7 @@ static int IndexImplBasic(lua_State* L, EqFunction<int(const Member*)> onVariabl
 		{
 			const Member* memberVar = static_cast<const Member*>(lua_touserdata(L, -1));
 			lua_pop(L, 1);
-			return onVariableIndexed(memberVar);
+			return onVariableIndexed(thisPtr, memberVar);
 		}
 		lua_pop(L, 1);
 	}
@@ -513,10 +524,10 @@ static int IndexImplBasic(lua_State* L, EqFunction<int(const Member*)> onVariabl
 	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 
 	// lookup in base classes
-	const char* classNameLookup = bindings::BaseClassStorage::Get(className);
-	while (classNameLookup)
+	runtime::BaseClassInfo baseInfo = bindings::BaseClassStorage::Get(className);
+	while (baseInfo.name.IsValid())
 	{
-		lua_getglobal(L, classNameLookup); // _G[className]
+		lua_getglobal(L, baseInfo.name); // _G[className]
 		if (lua_isnil(L, -1))
 		{
 			lua_pop(L, 1);
@@ -536,11 +547,15 @@ static int IndexImplBasic(lua_State* L, EqFunction<int(const Member*)> onVariabl
 		{
 			const Member* memberVar = static_cast<const Member*>(lua_touserdata(L, -1));
 			lua_pop(L, 2);
-			return onVariableIndexed(memberVar);
+
+			// apply offset for base class
+			thisPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(thisPtr) + baseInfo.offset);
+
+			return onVariableIndexed(thisPtr, memberVar);
 		}
 		lua_pop(L, 2);
 
-		classNameLookup = bindings::BaseClassStorage::Get(classNameLookup);
+		baseInfo = bindings::BaseClassStorage::Get(baseInfo.name);
 	}
 
 	return 0;
@@ -556,32 +571,31 @@ int IndexImpl(lua_State* L)
 	// 5: ...N classNameHash[numClasses]
 
 	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
-
+	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
 
 	bool isConstRef = false;
-	void* userData = thisGetter(L, isConstRef);
+	void* thisPtr = thisGetter(L, isConstRef);
 
-	auto onVariableIndexed = [&](const esl::Member* mem) {
+	auto onVariableIndexed = [&](void* thisPtr, const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
-		if (!userData)
+		if (!thisPtr)
 		{
 			// TODO: ThrowError
-			const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
 			return 0;
 		}
 
 		lua_settop(L, 1);
-		esl::ScriptBind bindObj{ userData };
+		esl::ScriptBind bindObj{ thisPtr };
 		return (bindObj.*(mem->getFunc))(L);
 	};
 
-	const int ret = IndexImplBasic(L, onVariableIndexed);
+	const int ret = IndexImplBasic(L, thisPtr, onVariableIndexed);
 	if (ret > 0)
 		return ret;
 
-	if (userData)
+	if (thisPtr)
 	{
 		const char* key = luaL_checkstring(L, 2);
 		luaL_error(L, "cannot index variable '%s'", key);
@@ -601,36 +615,35 @@ int NewIndexImpl(lua_State* L)
 	// 5: ...N classNameHash[numClasses]
 
 	ESL_VERBOSE_LOG("__newindex %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
+	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(3)));
 
 	bool isConstRef = false;
-	void* userData = thisGetter(L, isConstRef);
+	void* thisPtr = thisGetter(L, isConstRef);
 
-	auto onVariableIndexed = [&](const esl::Member* mem) {
+	auto onVariableIndexed = [&](void* thisPtr, const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
-		if (!userData)
+		if (!thisPtr)
 		{
 			// TODO: ThrowError
-			const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
 			return 0;
 		}
 
 		if (isConstRef)
 		{
-			const char* className = luaL_checkstring(L, lua_upvalueindex(2));
 			luaL_error(L, "trying to set %s.%s on constant reference", className, mem->name);
 			return 0;
 		}
 
 		// ensure that value is at index 2.
 		lua_replace(L, 2);
-		esl::ScriptBind bindObj{ userData };
+		esl::ScriptBind bindObj{ thisPtr };
 		return (bindObj.*(mem->func))(L);
 	};
 
-	const int ret = IndexImplBasic(L, onVariableIndexed);
+	const int ret = IndexImplBasic(L, thisPtr, onVariableIndexed);
 	if (ret > 0)
 		return ret;
 
