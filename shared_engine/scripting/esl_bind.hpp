@@ -426,10 +426,40 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (binder::IsString<T>::value)
 	{
-		const bool typeError = (!checkType(L, index, LUA_TSTRING));
+		const int type = lua_type(L, index);
+		if (type != LUA_TSTRING)
+		{
+			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, type));
+			if constexpr (!SilentTypeCheck)
+			{
+				if (isArgNull)
+				{
+					if constexpr (!std::is_pointer_v<T>)
+						luaL_argerror(L, index, err);
+				}
+				else
+					luaL_argerror(L, index, err);
+			}
+
+			if constexpr (binder::IsEqString<T>::value)
+			{
+				// TODO: make EqStringRef support optional values
+				static_assert(!std::is_pointer_v<T>, "passing EqString[Ref] by pointer is not supported yet");
+
+				using BaseStringType = BaseType<T>;
+				using Result = ResultWithValue<BaseStringType>;
+
+				return Result{ {}, false, std::move(err), BaseStringType() };
+			}
+			else
+			{
+				using Result = ResultWithValue<const char*>;
+				return Result{ {}, true, {}, nullptr};
+			}
+		}
 
 		size_t len = 0;
-		const char* value = typeError ? nullptr : lua_tolstring(L, index, &len);
+		const char* value = lua_tolstring(L, index, &len);
 
 		if constexpr (binder::IsEqString<T>::value)
 		{
@@ -437,18 +467,11 @@ static decltype(auto) GetValue(lua_State* L, int index)
 
 			using BaseStringType = BaseType<T>;
 			using Result = ResultWithValue<BaseStringType>;
-
-			if (typeError)
-				return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), BaseStringType() };
-		
 			return Result{ {}, true, {}, BaseStringType(value, len) };
 		}
 		else
 		{
 			using Result = ResultWithValue<const char*>;
-			if (typeError)
-				return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
-		
 			return Result{ {}, true, {}, value };
 		}
 	}
