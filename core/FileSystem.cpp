@@ -133,7 +133,7 @@ public:
 
 	bool				InitPackage(const char* filename, const char* mountPath /*= nullptr*/);
 	IFilePtr			Open(const char* filename, int modeFlags);
-	bool				FileExists(const char* filename) const;
+	bool				FileExist(const char* filename) const;
 
 	// stubs
 	bool				OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
@@ -158,7 +158,7 @@ IFilePtr CFlatFileReader::Open(const char* filename, int modeFlags)
 	return g_fileSystem->Open(filePath, FS_OPEN_READ);
 }
 
-bool CFlatFileReader::FileExists(const char* filename) const
+bool CFlatFileReader::FileExist(const char* filename) const
 {
 	EqString filePath;
 	fnmPathCombine(filePath, m_packagePath, filename);
@@ -556,7 +556,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 				continue;
 
 			// package readers do not support base path, get rid of it
-			if (fsPacakage->FileExists(pkgFileName))
+			if (fsPacakage->FileExist(pkgFileName))
 				return true;
 		}
 
