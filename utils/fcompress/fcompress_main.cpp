@@ -335,7 +335,8 @@ int CFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* alia
 
 				const char* name = fileFind.GetCurrentPath();
 
-				EqString targetFilename = EqString::Format("%s/%s", aliasPrefixTrimmed.ToCString(), name);
+				EqString targetFilename;
+				fnmPathCombine(targetFilename, aliasPrefixTrimmed, name);
 				if (!fileFind.IsDirectory())
 				{
 					if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), name), targetFilename))
