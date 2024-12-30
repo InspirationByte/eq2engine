@@ -14,6 +14,10 @@
 
 #include "Empty/emptyLibrary.h"
 static CEmptyRenderLib  s_EmptyRenderLib;
+#elif RENDERER_TYPE == RHI_NVRHI
+
+#include "NVRHI/NVRHILibrary.h"
+static CWGPURenderLib  s_NVRHIRenderLib;
 #elif RENDERER_TYPE == RHI_WGPU
 
 #include "WGPU/WGPULibrary.h"
@@ -37,6 +41,9 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const ShaderAPIParams& params) 
 {
 #if RENDERER_TYPE == RHI_NULL
 	s_currentRenderLib = &s_EmptyRenderLib;
+	return s_currentRenderLib;
+#elif RENDERER_TYPE == RHI_NVRHI
+	s_currentRenderLib = &s_NVRHIRenderLib;
 	return s_currentRenderLib;
 #elif RENDERER_TYPE == RHI_WGPU
 	s_currentRenderLib = &s_WGPURenderLib;

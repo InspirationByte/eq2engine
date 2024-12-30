@@ -425,12 +425,12 @@ project "eqNullRHI"
 	}
 	
 -- D3D11/D3D12/Vulkan renderer
-project "eqRHI"
+project "eqNVRHI"
 	kind "SharedLib"
 	unitybuild "on"
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
-		"eqRHIBaseLib", "wgpu-dawn"
+		"eqRHIBaseLib", "nvrhi"
 	}
 	defines{
 		"EQRHI_NVRHI",
