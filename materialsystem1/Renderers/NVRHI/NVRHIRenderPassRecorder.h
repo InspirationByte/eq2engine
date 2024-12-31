@@ -1,10 +1,10 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
 
-class CWGPURenderPassRecorder : public IGPURenderPassRecorder
+class CNVRHIRenderPassRecorder : public IGPURenderPassRecorder
 {
 public:
-	~CWGPURenderPassRecorder();
+	~CNVRHIRenderPassRecorder();
 
 	IVector2D				GetRenderTargetDimensions() const { return m_renderTargetDims; }
 	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return ArrayCRef(m_renderTargetsFormat); }
@@ -65,7 +65,6 @@ public:
 
 	IGPURenderPipelinePtr	m_pipeline;
 
-	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
-	WGPURenderPassEncoder	m_rhiRenderPassEncoder{ nullptr };
-	void*					m_userData{ nullptr };
+	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
+	void*						m_userData{ nullptr };
 };

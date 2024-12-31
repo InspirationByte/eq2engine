@@ -22,16 +22,14 @@ extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
 
-#define WGPU_INSTANCE_SPIN { g_renderWorker.SignalWork(); Threading::YieldCurrentThread(); }
-
-class CWGPURenderAPI : public ShaderAPI_Base
+class CNVRHIRenderAPI : public ShaderAPI_Base
 {
 	friend class CWGPURenderLib;
 public:
-	static CWGPURenderAPI Instance;
+	static CNVRHIRenderAPI Instance;
 
-	CWGPURenderAPI() {}
-	~CWGPURenderAPI() {}
+	CNVRHIRenderAPI() {}
+	~CNVRHIRenderAPI() {}
 
 	// Init + Shurdown
 	void						Init(const ShaderAPIParams& params);
@@ -104,13 +102,13 @@ public:
 
 protected:
 
-	WGPUShaderModule			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
-	WGPUShaderModule			CreateShaderWGSL(const char* szText, const char* name = nullptr) const;
+	nvrhi::ShaderHandle			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
+	nvrhi::ShaderHandle			CreateShaderWGSL(const char* szText, const char* name = nullptr) const;
 
-	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
+	nvrhi::ShaderHandle			GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const;
 	int							LoadShaderPackage(const char* filename);
 
-	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
+	Map<int, ShaderInfoNVRHIImpl>	m_shaderCache{ PP_SL };
 	nvrhi::DeviceHandle			m_rhiDevice{ nullptr };
 	bool						m_deviceLost{ false };
 };

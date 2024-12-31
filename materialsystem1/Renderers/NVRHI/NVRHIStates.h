@@ -1,47 +1,32 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
 
-class CWGPUPipelineLayout : public IGPUPipelineLayout
+class CNVRHIPipelineLayout : public IGPUPipelineLayout
 {
 public:
-	~CWGPUPipelineLayout();
-
-	// TODO: name
-	Array<WGPUBindGroupLayout>	m_rhiBindGroupLayout{ PP_SL };
-	WGPUPipelineLayout			m_rhiPipelineLayout{ nullptr };
+	nvrhi::BindingLayoutHandle		m_rhiPipelineLayout;
 };
 
-class CWGPURenderPipeline : public IGPURenderPipeline
+class CNVRHIRenderPipeline : public IGPURenderPipeline
 {
 public:
-	~CWGPURenderPipeline();
-
-	// TODO: name
-	WGPURenderPipeline		m_rhiRenderPipeline{ nullptr };
+	nvrhi::GraphicsPipelineHandle	m_rhiRenderPipeline;
 };
 
-class CWGPUComputePipeline : public IGPUComputePipeline
+class CNVRHIComputePipeline : public IGPUComputePipeline
 {
 public:
-	~CWGPUComputePipeline();
-
-	// TODO: name
-	WGPUComputePipeline		m_rhiComputePipeline{ nullptr };
+	nvrhi::ComputePipelineHandle	m_rhiComputePipeline;
 };
 
-class CWGPUBindGroup : public IGPUBindGroup
+class CNVRHIBindGroup : public IGPUBindGroup
 {
 public:
-	~CWGPUBindGroup();
-
-	// TODO: name
-	WGPUBindGroup		m_rhiBindGroup{ nullptr };
+	nvrhi::BindingSetHandle			m_rhiBindingSet;
 };
 
-class CWGPUCommandBuffer : public IGPUCommandBuffer
+class CNVRHICommandBuffer : public IGPUCommandBuffer
 {
 public:
-	~CWGPUCommandBuffer();
-
-	WGPUCommandBuffer	m_rhiCommandBuffer{ nullptr };
+	nvrhi::CommandListHandle		m_rhiCommandList;
 };

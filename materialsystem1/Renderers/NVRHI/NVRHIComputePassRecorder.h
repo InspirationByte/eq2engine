@@ -1,10 +1,10 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
 
-class CWGPUComputePassRecorder : public IGPUComputePassRecorder
+class CNVRHIComputePassRecorder : public IGPUComputePassRecorder
 {
 public:
-	~CWGPUComputePassRecorder();
+	~CNVRHIComputePassRecorder();
 
 	void					DbgPopGroup() const;
 	void					DbgPushGroup(const char* groupLabel) const;
@@ -31,8 +31,7 @@ public:
 	void					Complete();
 	IGPUCommandBufferPtr	End();
 
-	IGPUComputePipelinePtr	m_pipeline;
-	WGPUCommandEncoder		m_rhiCommandEncoder{ nullptr };
-	WGPUComputePassEncoder	m_rhiComputePassEncoder{ nullptr };
-	void*					m_userData{ nullptr };
+	IGPUComputePipelinePtr		m_pipeline;
+	nvrhi::CommandListHandle	m_rhiCommandLIst{ nullptr };
+	void*						m_userData{ nullptr };
 };

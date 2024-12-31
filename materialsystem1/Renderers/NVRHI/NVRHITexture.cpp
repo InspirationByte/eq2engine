@@ -31,7 +31,7 @@ void CNVRHITexture::Release()
 void CNVRHITexture::Ref_DeleteObject()
 {
 	if (!(m_flags & TEXFLAG_TRANSIENT))
-		CWGPURenderAPI::Instance.FreeTexture(this);
+		CNVRHIRenderAPI::Instance.FreeTexture(this);
 
 	RefCountedObject::Ref_DeleteObject();
 }
@@ -76,13 +76,13 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 
 	// since texture is initialized from image buffer, it neeeds copy destination flag
 	m_samplerState = sampler;
-	m_samplerState.maxAnisotropy = max(CWGPURenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.maxAnisotropy);
+	m_samplerState.maxAnisotropy = max(CNVRHIRenderAPI::Instance.GetCaps().maxTextureAnisotropicLevel, sampler.maxAnisotropy);
 	
 	m_flags = flags;
 	if (image->IsCube())
 		m_flags |= TEXFLAG_CUBEMAP;
 
-	nvrhi::IDevice* rhiDevice = CWGPURenderAPI::Instance.GetNVRHIDevice();
+	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 	nvrhi::TextureDesc rhiTextureDesc{};
 	rhiTextureDesc.debugName = m_name;
 	rhiTextureDesc.mipLevels = mipCount;
@@ -142,15 +142,6 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	// TODO: create individual array views
 
 	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
-
-	// DO WE NEED THIS? create staging texture for uploading data
-	nvrhi::StagingTextureHandle rhiStagingTexture = rhiDevice->createStagingTexture(rhiTextureDesc, nvrhi::CpuAccessMode::Write);
-	if (!rhiStagingTexture)
-	{
-		ErrorMsg("Failed to create staging texture for %s\n", image->GetName());
-		return false;
-	}
-
 	for (int arrIdx = 0; arrIdx < arraySize; ++arrIdx)
 	{
 		int mipMapLevel = image->GetMipMapCount() - 1;
@@ -220,23 +211,88 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 
 	if (!(data.flags & TEXLOCK_DISCARD) && (m_flags & TEXFLAG_COPY_SRC))
 	{
-		CWGPUBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "TexLockReadBuffer");
+		//CNVRHIBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "TexLockReadBuffer");
+		//
+		//{
+		//	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("TexLockReadCmd");
+		//	cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ this }, &tmpBuffer, data.lockSize);
+		//	g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
+		//}
+		//
+		//IGPUBuffer::MapFuture future = tmpBuffer.Lock(0, tmpBuffer.GetSize(), 0);
+		//future.AddCallback([this, &data, lockByteCount](const FutureResult<BufferMapData>& result) {
+		//	memcpy(data.lockData, result->data, lockByteCount);
+		//});
 
+		nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+
+		// create staging texture
+		nvrhi::TextureDesc rhiTextureDesc{};
+		rhiTextureDesc.debugName = m_name;
+		rhiTextureDesc.mipLevels = 1;
+		rhiTextureDesc.sampleCount = 1;
+		rhiTextureDesc.arraySize = 1;
+		rhiTextureDesc.format = GetNVRHITextureFormat(m_format);
+		if (IsCompressedFormat(m_format))
 		{
-			IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("TexLockReadCmd");
-			cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ this }, &tmpBuffer, data.lockSize);
-			g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
+			rhiTextureDesc.width = (m_width + 3u) & ~3u;
+			rhiTextureDesc.height = (m_width + 3u) & ~3u;
+		}
+		else
+		{
+			rhiTextureDesc.width = (uint)m_width;
+			rhiTextureDesc.height = (uint)m_width;
 		}
 
-		IGPUBuffer::MapFuture future = tmpBuffer.Lock(0, tmpBuffer.GetSize(), 0);
-		future.AddCallback([this, &data, lockByteCount](const FutureResult<BufferMapData>& result) {
-			memcpy(data.lockData, result->data, lockByteCount);
-		});
-
-		// force WebGPU to process everything it has queued
-		while (!future.HasResult()) {
-			WGPU_INSTANCE_SPIN;
+		switch (m_imgType)
+		{
+		case IMAGE_TYPE_1D:
+			rhiTextureDesc.dimension = nvrhi::TextureDimension::Texture1D;
+			break;
+		case IMAGE_TYPE_2D:
+			rhiTextureDesc.dimension = nvrhi::TextureDimension::Texture2D;
+			break;
+		case IMAGE_TYPE_3D:
+			rhiTextureDesc.dimension = nvrhi::TextureDimension::Texture3D;
+			break;
+		case IMAGE_TYPE_CUBE:
+			rhiTextureDesc.dimension = nvrhi::TextureDimension::TextureCube;
+			break;
+		default:
+			ASSERT_FAIL("Invalid image type of %s", m_name.ToCString());
 		}
+
+		// Need Staging texture to read into CPU memory
+		nvrhi::StagingTextureHandle rhiStagingTexture = rhiDevice->createStagingTexture(rhiTextureDesc, nvrhi::CpuAccessMode::Write);
+		if (!rhiStagingTexture)
+		{
+			ErrorMsg("Failed to create staging texture when locking %s\n", m_name.ToCString());
+			PPFree(data.lockData);
+			data.lockData = nullptr;
+			return false;
+		}
+
+		nvrhi::TextureSlice rhiSrcSlice = {};
+		rhiSrcSlice.arraySlice = data.lockOrigin.arraySlice;
+		rhiSrcSlice.mipLevel = data.lockOrigin.mipLevel;
+		//rhiSrcSlice.depth = data.lockSize.depth;
+		rhiSrcSlice.width = data.lockSize.width;
+		rhiSrcSlice.height = data.lockSize.height;
+
+		nvrhi::TextureSlice rhiDstSlice = {};
+		rhiSrcSlice.width = data.lockSize.width;
+		rhiSrcSlice.height = data.lockSize.height;
+
+		nvrhi::CommandListHandle copyCmd = rhiDevice->createCommandList();
+		copyCmd->copyTexture(rhiStagingTexture, rhiDstSlice, m_rhiTexture, rhiSrcSlice);
+		rhiDevice->executeCommandList(copyCmd);
+
+		size_t rowPitch = 0;
+		void* mapData = rhiDevice->mapStagingTexture(rhiStagingTexture, rhiDstSlice, nvrhi::CpuAccessMode::Read, &rowPitch);
+		ASSERT_MSG(mapData, "Failed to lock staging texture for reading %s\n", m_name.ToCString());
+
+		memcpy(data.lockData, mapData, lockByteCount);
+		rhiDevice->unmapStagingTexture(rhiStagingTexture);
 	}
 
 	m_lockData = &data;
@@ -255,39 +311,17 @@ void CNVRHITexture::Unlock(IGPUCommandRecorder* writeCmdRecorder)
 
 	if (!(data.flags & TEXLOCK_READONLY))
 	{
-		WGPUTextureDataLayout rhiTexLayout{};
-		rhiTexLayout.offset = 0;
-		rhiTexLayout.bytesPerRow = data.lockPitch;
-		rhiTexLayout.rowsPerImage = data.lockSize.height;
-
-		WGPUImageCopyTexture rhiTexDestination{};
-		rhiTexDestination.texture = m_rhiTexture;
-		rhiTexDestination.aspect = WGPUTextureAspect_All;
-		rhiTexDestination.mipLevel = data.lockOrigin.mipLevel;
-		rhiTexDestination.origin = WGPUOrigin3D{ (uint)data.lockOrigin.x, (uint)data.lockOrigin.y, (uint)data.lockOrigin.arraySlice };
-
-		const WGPUExtent3D rhiTexSize{ (uint)data.lockSize.width, (uint)data.lockSize.height, (uint)data.lockSize.arraySize };
-
+		nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 		if (writeCmdRecorder)
 		{
-			CWGPUCommandRecorder* recorder = static_cast<CWGPUCommandRecorder*>(writeCmdRecorder);
-			// TODO: all of this must be CWGPUCommandRecorder::WriteTexture();
-
-			CWGPUBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "TexLockWriteBuffer");
-			writeCmdRecorder->WriteBuffer(&tmpBuffer, data.lockData, data.lockByteCount, 0);
-
-			WGPUImageCopyBuffer rhiTexBuffer{};
-			rhiTexBuffer.layout = rhiTexLayout;
-			rhiTexBuffer.buffer = tmpBuffer.GetWGPUBuffer();
-
-			wgpuCommandEncoderCopyBufferToTexture(recorder->m_rhiCommandEncoder, &rhiTexBuffer, &rhiTexDestination, &rhiTexSize);
+			CNVRHICommandRecorder* recorder = static_cast<CNVRHICommandRecorder*>(writeCmdRecorder);
+			recorder->m_rhiCommandList->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
 		}
 		else
 		{
-			g_renderWorker.WaitForExecute("UnlockTex", [&]() {
-				wgpuQueueWriteTexture(CWGPURenderAPI::Instance.GetWGPUQueue(), &rhiTexDestination, data.lockData, data.lockByteCount, &rhiTexLayout, &rhiTexSize);
-				return 0;
-			});
+			nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
+			writeCmd->writeTexture(m_rhiTexture, data.lockOrigin.arraySlice, data.lockOrigin.mipLevel, data.lockData, data.lockPitch);
+			rhiDevice->executeCommandList(writeCmd);
 		}
 	}
 

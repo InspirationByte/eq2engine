@@ -1,10 +1,9 @@
 #pragma once
 #include "renderers/IGPUCommandRecorder.h"
 
-class CWGPUCommandRecorder : public IGPUCommandRecorder
+class CNVRHICommandRecorder : public IGPUCommandRecorder
 {
 public:
-	~CWGPUCommandRecorder();
 	void*						GetUserData() const { return m_userData; }
 
 	void						DbgPopGroup() const;
@@ -18,10 +17,6 @@ public:
 	void						CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const;
 	void						CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const;
 
-	// TODO:
-	// CopyBufferToTexture(const WGPUImageCopyBuffer& source, const WGPUImageCopyTexture& destination, const WGPUExtent3D& copySize) const;
-	// CopyTextureToBuffer(const WGPUImageCopyTexture& source, const WGPUImageCopyBuffer& destination, const WGPUExtent3D& copySize) const;
-
 	// ResolveQuerySet(WGPUQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, WGPUBuffer destination, uint64_t destinationOffset);
 	// WriteTimestamp(WGPUQuerySet querySet, uint32_t queryIndex);
 
@@ -30,6 +25,6 @@ public:
 
 	IGPUCommandBufferPtr		End();
 
-	WGPUCommandEncoder			m_rhiCommandEncoder{ nullptr };
+	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
 	void*						m_userData{ nullptr };
 };

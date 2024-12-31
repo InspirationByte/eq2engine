@@ -1,10 +1,10 @@
 #pragma once
 #include "renderers/IVertexFormat.h"
 
-class CWGPUVertexFormat : public IVertexFormat
+class CNVRHIVertexFormat : public IVertexFormat
 {
 public:
-	CWGPUVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> desc)
+	CNVRHIVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> desc)
 	{
 		m_name = name;
 		m_nameHash = StringId24(name);

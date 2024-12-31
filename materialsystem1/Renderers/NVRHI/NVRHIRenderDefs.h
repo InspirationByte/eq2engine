@@ -128,10 +128,10 @@ static nvrhi::Format GetNVRHITextureFormat(ETextureFormat formatWithFlags)
 {
 	nvrhi::Format format = g_nvrhiTexFormats[GetTexFormat(formatWithFlags)];
 	if (HasTexFormatFlags(formatWithFlags, TEXFORMAT_FLAG_SWAP_RB))
-		format = GetWGPUSwappedChannelsFormat(format);
+		format = GetNVRHISwappedChannelsFormat(format);
 
 	if (HasTexFormatFlags(formatWithFlags, TEXFORMAT_FLAG_SRGB))
-		format = GetWGPUFormatSRGB(format);
+		format = GetNVRHIFormatSRGB(format);
 
 	return format;
 }

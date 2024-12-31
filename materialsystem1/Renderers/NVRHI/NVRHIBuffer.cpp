@@ -47,7 +47,7 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)rhiBufferDesc.isDrawIndirectArgs = true;
 	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	rhiBufferDesc.canHaveUAVs = true;
 
-	nvrhi::IDevice* rhiDevice = CWGPURenderAPI::Instance.GetNVRHIDevice();
+	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
 	m_rhiBuffer = rhiDevice->createBuffer(rhiBufferDesc);
 	ASSERT_MSG(m_rhiBuffer, "Failed to create buffer %s", label);
@@ -73,11 +73,11 @@ void CNVRHIBuffer::Update(const void* data, int64 size, int64 offset)
 		return;
 
 	const int64 writeDataSize = (size + 3) & ~3;
-	nvrhi::IDevice* rhiDevice = CWGPURenderAPI::Instance.GetNVRHIDevice();
+	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
 	nvrhi::CommandListHandle writeCmd = rhiDevice->createCommandList();
 	writeCmd->writeBuffer(m_rhiBuffer, data, writeDataSize, offset);
-	rhiDevice->executeCommandList(writeCmd); // FIXME: need to execute in specific queue?
+	rhiDevice->executeCommandList(writeCmd);
 }
 
 Future<BufferMapData> CNVRHIBuffer::Lock(int lockOfs, int sizeToLock, int flags)
@@ -93,7 +93,7 @@ Future<BufferMapData> CNVRHIBuffer::Lock(int lockOfs, int sizeToLock, int flags)
 		return errorPromise.CreateFuture();
 	}
 
-	nvrhi::IDevice* rhiDevice = CWGPURenderAPI::Instance.GetNVRHIDevice();
+	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
 	Promise<BufferMapData> promise;
 
@@ -119,7 +119,7 @@ void CNVRHIBuffer::Unlock()
 	if (!m_isLocked)
 		return;
 
-	nvrhi::IDevice* rhiDevice = CWGPURenderAPI::Instance.GetNVRHIDevice();
+	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 	rhiDevice->unmapBuffer(m_rhiBuffer);
 	m_isLocked = false;
 }

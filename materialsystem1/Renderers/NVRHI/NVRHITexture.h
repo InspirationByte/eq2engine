@@ -22,7 +22,7 @@ public:
 	bool			Lock(LockInOutData& data);
 	void			Unlock(IGPUCommandRecorder* writeCmdRecorder = nullptr);
 
-	nvrhi::TextureHandle		GetNVRHITexture() const { return m_rhiTexture; }
+	nvrhi::TextureHandle		GetNVRHITextureHandle() const { return m_rhiTexture; }
 	int				GetNVRHITextureViewCount() const { return m_rhiViews.numElem(); }
 
 protected:

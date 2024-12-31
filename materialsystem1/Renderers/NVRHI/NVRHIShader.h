@@ -6,16 +6,15 @@ using IPackFileReaderPtr = CRefPtr<IPackFileReader>;
 enum EShaderModuleType
 {
 	SHADERMODULE_SPIRV,
-	SHADERMODULE_WGSL,
 };
 
-struct ShaderInfoWGPUImpl
+struct ShaderInfoNVRHIImpl
 {
-	~ShaderInfoWGPUImpl();
+	~ShaderInfoNVRHIImpl();
 
-	ShaderInfoWGPUImpl() = default;
-	ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept;
-	ShaderInfoWGPUImpl& operator=(ShaderInfoWGPUImpl&& other) noexcept;
+	ShaderInfoNVRHIImpl() = default;
+	ShaderInfoNVRHIImpl(ShaderInfoNVRHIImpl&& other) noexcept;
+	ShaderInfoNVRHIImpl& operator=(ShaderInfoNVRHIImpl&& other) noexcept;
 
 	void Release();
 	bool GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const;
@@ -29,7 +28,7 @@ struct ShaderInfoWGPUImpl
 
 	struct Module
 	{
-		WGPUShaderModule	rhiModule{ nullptr };
+		nvrhi::ShaderHandle	rhiModule{ nullptr };
 		EShaderKind			kind;
 		int					fileIndex{ -1 };
 		EShaderModuleType	type{};
