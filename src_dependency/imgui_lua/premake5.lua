@@ -1,6 +1,6 @@
 project "imgui_lua"
 	kind "StaticLib"
-	language "C"
+	properties	{ "thirdpartylib" }
 
 	uses {"imgui", "lua"}
 

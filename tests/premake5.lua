@@ -2,7 +2,7 @@ group "Components"
 
 project "testsCommonLib"
     kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core", "gtest",
 	}
@@ -21,7 +21,7 @@ group ""
 
 project "ds_tests"
     kind "ConsoleApp"
-	unitybuild "on"
+	properties { "unitybuild" }
     uses {
 		"corelib", "frameworkLib", 
 		"e2Core", 
@@ -34,7 +34,7 @@ project "ds_tests"
 
 project "scripting_tests"
     kind "ConsoleApp"
-	unitybuild "on"
+	properties { "unitybuild" }
     uses {
 		"corelib", "frameworkLib", 
 		"e2Core", 

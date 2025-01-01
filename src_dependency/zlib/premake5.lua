@@ -1,6 +1,7 @@
 project "zlib"
-	language    "C"
 	kind        "StaticLib"
+	language    "C"
+	properties	{ "thirdpartylib" }
 	defines     { "N_FSEEKO" }
 	warnings    "off"
 

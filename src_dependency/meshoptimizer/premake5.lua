@@ -1,5 +1,6 @@
 project "meshoptimizer"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	language "C"
 	includedirs {
 		"./src"

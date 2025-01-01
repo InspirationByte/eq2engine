@@ -1,6 +1,7 @@
 project "gtest_main"
 	language "C++"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 
 	includedirs { "./", "include" }
 

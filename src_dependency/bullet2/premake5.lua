@@ -1,6 +1,6 @@
 project "bullet2"
 	kind "StaticLib"
-	language "C"
+	properties	{ "thirdpartylib" }
 
 	includedirs
 	{

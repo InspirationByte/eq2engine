@@ -86,7 +86,7 @@ p.api.register {
 --
 
 	-- TODO: maybe lock down what can be specified in usage further?
-	p.usage = p.api.container("usage", p.workspace, { "config" })
+	p.usage = p.api.container("usage", p.workspace, { "config", "project" })
 
 	function p.usage.new(mode)
 		return p.container.new(p.usage, mode)

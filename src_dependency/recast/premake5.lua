@@ -1,6 +1,7 @@
 project "RecastDebugUtils"
 	language "C++"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	includedirs { 
 		"DebugUtils/Include",
 		"Detour/Include",
@@ -15,6 +16,7 @@ project "RecastDebugUtils"
 project "RecastDetour"
 	language "C++"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	includedirs { 
 		"Detour/Include" 
 	}
@@ -23,7 +25,7 @@ project "RecastDetour"
 		"Detour/Source/*.cpp" 
 	}
 	-- linux library cflags and libs
-	configuration { "linux", "gmake" }
+	filter "system:linux"
 		buildoptions { 
 			"-Wno-class-memaccess"
 		}
@@ -32,6 +34,7 @@ project "RecastDetour"
 project "RecastDetourCrowd"
 	language "C++"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	includedirs {
 		"DetourCrowd/Include",
 		"Detour/Include",
@@ -45,6 +48,7 @@ project "RecastDetourCrowd"
 project "RecastDetourTileCache"
 	language "C++"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	includedirs {
 		"DetourTileCache/Include",
 		"Detour/Include",
@@ -62,6 +66,7 @@ project "RecastDetourTileCache"
 project "Recast"
 	language "C++"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	includedirs { 
 		"Recast/Include" 
 	}
@@ -99,6 +104,7 @@ if false and not IS_ANDROID then
 project "RecastDemo"
 	language "C++"
 	kind "WindowedApp"
+	properties	{ "thirdpartylib" }
 	uses { "SDL2", "SDL2_main", "lz4" }
 	includedirs { 
 		"RecastDemo/Include",
@@ -124,7 +130,7 @@ project "RecastDemo"
 	}
 
 	-- windows library cflags and libs
-	configuration { "windows" }
+	filter "system:windows"
 		links { 
 			"glu32",
 			"opengl32"
@@ -133,6 +139,7 @@ project "RecastDemo"
 project "RecastTests"
 	language "C++"
 	kind "ConsoleApp"
+	properties	{ "thirdpartylib" }
 	uses { "SDL2", "SDL2_main" }
 
 	includedirs { 
@@ -165,7 +172,7 @@ project "RecastTests"
 	}
 
 	-- windows library cflags and libs
-	configuration { "windows" }
+	filter "system:windows"
 		links { 
 			"glu32",
 			"opengl32",

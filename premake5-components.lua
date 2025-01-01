@@ -1,4 +1,19 @@
-usage "shared_engine"
+-- DarkTech Package
+project "dpkLib"
+	kind "StaticLib"
+	properties { "unitybuild" }
+	uses { 
+		"public", 
+		"lz4", "zlib"
+	}
+    files {
+		Folders.public.. "dpk/**.c",
+		Folders.public.. "dpk/**.cpp",
+		Folders.public.. "dpk/**.h",
+	}
+	
+usage "dpkLib"
+	links "dpkLib"
 	includedirs {
 		Folders.shared_engine
 	}
@@ -6,98 +21,74 @@ usage "shared_engine"
 -- fonts
 project "fontLib"
     kind "StaticLib"
-	unitybuild "on"
-	uses {
-		"coreLib", "frameworkLib", "e2Core"
-	}
+	properties { "unitybuild" }
+	uses { "public" }
     files {
 		Folders.shared_engine.. "font/**.cpp",
 		Folders.public.. "font/**.h"
 	}
-    includedirs {
-		Folders.shared_engine
-	}
 	
 usage "fontLib"
 	links "fontLib"
-	includedirs {
-		Folders.shared_engine
-	}
+	includedirs { Folders.shared_engine }
 
 -- render utility
 project "renderUtilLib"
     kind "StaticLib"
-	unitybuild "on"
-	uses {
-		"coreLib", "frameworkLib", "e2Core",
-		"imgui"
-	}
+	properties { "unitybuild" }
+	uses { "public" }
     files {
 		Folders.shared_engine.. "render/**.cpp",
 		Folders.shared_engine.. "render/**.h",
 		Folders.public.. "render/**.h"
 	}
-    includedirs {
-		Folders.shared_engine
-	}
 	
 usage "renderUtilLib"
 	links "renderUtilLib"
-	includedirs {
-		Folders.shared_engine
-	}
+	includedirs { Folders.shared_engine }
 	
+-- GPU Rendering Instance Manager (GRIM)
 project "grimLib"
     kind "StaticLib"
-	unitybuild "on"
-	uses {
-		"coreLib", "frameworkLib", "e2Core",
-		"imgui", "renderUtilLib"
+	properties { "unitybuild" }
+	uses { 
+		"public",
+		"renderUtilLib",
+		"imgui"
 	}
     files {
 		Folders.shared_engine.. "grim/**.cpp",
 		Folders.shared_engine.. "grim/**.h",
 	}
-    includedirs {
-		Folders.shared_engine
-	}
 	
 usage "grimLib"
-	links "renderUtilLib"
-	includedirs {
-		Folders.shared_engine
-	}
+	links "grimLib"
+	includedirs { Folders.shared_engine }
 	
--- Studio model lib
+-- EGF file loadder
 project "studioFileLib"
     kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
-		"coreLib", "frameworkLib", "e2Core",
-		"renderUtilLib", "bullet2", "zlib"
+		"public", "shared_engine",
+		"bullet2", "zlib"
 	}
     files {
 		Folders.shared_engine.. "studiofile/**.cpp",
 		Folders.shared_engine.. "studiofile/**.h",
 		Folders.public.. "egf/**.h"
 	}
-    includedirs {
-		Folders.shared_engine
-	}
 	
 usage "studioFileLib"
 	links "studioFileLib"
-	includedirs {
-		Folders.shared_engine
-	}
+	includedirs { Folders.shared_engine }
 	
--- Studio model lib
+-- Studio EGF geometry
 project "studioLib"
     kind "StaticLib"
-	unitybuild "on"
-	uses {
-		"coreLib", "frameworkLib", "e2Core",
-		"renderUtilLib", "bullet2", "zlib",
+	properties { "unitybuild" }
+	uses { 
+		"public", "shared_engine",
 		"studioFileLib"
 	}
     files {
@@ -106,61 +97,52 @@ project "studioLib"
 		Folders.shared_engine.. "studio/**.h",
 		Folders.public.. "egf/**.h"
 	}
-    includedirs {
-		Folders.shared_engine
-	}
 	
 usage "studioLib"
 	links "studioLib"
-	includedirs {
-		Folders.shared_engine
-	}
+	includedirs { Folders.shared_engine }
 
--- Animating game library
+-- Animating Game Library
 project "animatingLib"
     kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
-		"coreLib", "frameworkLib", "e2Core",
-		"studioLib", "bullet2"
+		"public",
+		"studioLib"
 	}
     files {
 		Folders.shared_game.. "animating/**.cpp",
 		Folders.shared_game.. "animating/**.h"
 	}
-    includedirs {
-		Folders.shared_game
-	}
 	
 usage "animatingLib"
 	links "animatingLib"
-	includedirs {
-		Folders.shared_game
-	}
-
-group "Components"
-
-project "dpkLib"
+	includedirs { Folders.shared_game }
+	
+-- Equilibrium User Interface (EqUI) library
+project "equiLib"
 	kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses { 
-		"lz4", "zlib"
+		"public",
+		"fontLib",
 	}
     files {
-		Folders.public.. "dpk/**.c",
-		Folders.public.. "dpk/**.cpp",
-		Folders.public.. "dpk/**.h",
+		Folders.shared_engine.. "equi/**.cpp",
+		Folders.shared_engine.. "equi/**.h"
 	}
-    includedirs {
-		Folders.public
-	}
-
+	
+usage "equiLib"
+	links "equiLib"
+    includedirs { Folders.shared_engine }
+	
+-- Engine System Library
 project "sysLib"
 	kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses { 
-		"coreLib", "frameworkLib",
-		"equiLib",
+		"public", "shared_engine",
+		"renderUtilLib", "equiLib",
 		"SDL2", "imgui"
 	}
     files {
@@ -170,30 +152,13 @@ project "sysLib"
 		Folders.shared_engine.. "input/**.h",
 		Folders.public.. "input/**.h"
 	}
-    includedirs {
-		Folders.shared_engine
-	}
-
-project "equiLib"
-	kind "StaticLib"
-	unitybuild "on"
-	uses { 
-		"coreLib", "frameworkLib",
-		"fontLib",
-	}
-    files {
-		Folders.shared_engine.. "equi/**.cpp",
-		Folders.shared_engine.. "equi/**.h"
-	}
-    includedirs {
-		Folders.shared_engine
-	}
 	
+-- Eq Script Library (ESL)
 project "scriptLib"
 	kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses { 
-		"coreLib", "frameworkLib",
+		"public", "shared_engine",
 		"lua",
 	}
     files {
@@ -201,15 +166,17 @@ project "scriptLib"
 		Folders.shared_engine.. "scripting/**.h",
 		Folders.shared_engine.. "scripting/**.hpp"
 	}
-    includedirs {
-		Folders.shared_engine
-	}	
-	
+
+usage "scriptLib"
+	links "scriptLib"
+	includedirs { Folders.shared_engine }
+
+-- Network lib
 project "networkLib"
 	kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
-		"coreLib", "frameworkLib",
+		"public", "shared_engine",
 		"zlib" 
 	}
     files {
@@ -219,36 +186,37 @@ project "networkLib"
 	-- this one is temporary. Once rewrite done it will be removed
 	excludes {
 		Folders.shared_engine.. "network/NETThread.cpp",
-	}
-    includedirs {
-		Folders.shared_engine
-	}
-	
+	}	
+
+usage "networkLib"
+	links "networkLib"
+	includedirs { Folders.shared_engine }
 	filter "system:Windows"
 		links { "wsock32" }
 
+-- Sound System
 project "soundSystemLib"
 	kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses { 
-		"coreLib", "frameworkLib",
-		"minivorbis", "openal-soft",
-		"imgui"
+		"public",
+		"minivorbis", "openal-soft", "imgui"
 	}
     files {
 		Folders.shared_engine.. "audio/**.cpp",
 		Folders.shared_engine.. "audio/**.h",
 		Folders.public.. "audio/**.h"
 	}
-    includedirs {
-		Folders.public
-	}
+	
+usage "soundSystemLib"
+	links "soundSystemLib"
+    includedirs { Folders.shared_engine }
 
 project "physicsLib"
 	kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses { 
-		"coreLib", "frameworkLib",
+		"public", "shared_engine",
 		"bullet2"
 	}
     files {
@@ -256,27 +224,31 @@ project "physicsLib"
 		Folders.shared_engine.. "physics/**.h",
 		Folders.public.. "physics/**.h"
 	}
-    includedirs {
-		Folders.shared_engine
-	}
 	
+usage "physicsLib"
+	links "physicsLib"
+    includedirs { Folders.public, Folders.shared_engine }
+	
+-- Movie Player library
 project "movieLib"
 	kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses { 
-		"coreLib", "frameworkLib", "ffmpeg"
+		"public", "shared_engine",
+		"ffmpeg"
 	}
     files {
 		Folders.shared_engine.. "movie/**.cpp",
 		Folders.shared_engine.. "movie/**.h",
 	}
-    includedirs {
-		Folders.shared_engine
-	}
 	filter "system:android"
 		defines {
 			"MOVIELIB_DISABLE"
 		}
+		
+usage "movieLib"
+	links "movieLib"
+    includedirs { Folders.shared_engine }
 
 -- only build tools for big machines
 if ENABLE_TOOLS then
@@ -284,11 +256,11 @@ if ENABLE_TOOLS then
 	-- EGF generator
 	project "egfLib"
 		kind "StaticLib"
-		unitybuild "on"
+		properties { "unitybuild" }
 		uses {
-			"coreLib", "frameworkLib", "e2Core",
+			"public", "shared_engine",
+			"studioFileLib",
 			"bullet2", "zlib", "openfbx", "meshoptimizer",
-			"studioFileLib"
 		}
 		files {
 			Folders.shared_engine.. "egf/**.cpp",
@@ -296,38 +268,29 @@ if ENABLE_TOOLS then
 			Folders.shared_engine.. "egf/**.h",
 			Folders.public.. "egf/**.h"
 		}
-		includedirs {
-			Folders.shared_engine
-		}
 		
 	usage "egfLib"
 		links "egfLib"
-		includedirs {
-			Folders.shared_engine
-		}
+		includedirs { Folders.shared_engine }
 
 	-- Equilibrium 1 Darktech Physics (Deprecated but kept for egfMan)
 	project "dkPhysicsLib"
 		kind "StaticLib"
-		unitybuild "on"
+		properties { "unitybuild" }
 		uses {
-			"coreLib", "frameworkLib", "e2Core",
-			"studioLib", "animatingLib", "bullet2"
+			"public", "shared_engine",
+			"studioLib", "animatingLib", 
+			"bullet2"
 		}
 		files {
 			Folders.shared_engine.. "dkphysics/**.cpp",
 			Folders.shared_engine.. "dkphysics/**.h",
 			Folders.public.. "dkphysics/**.h"
 		}
-		includedirs {
-			Folders.shared_engine
-		}
 
 	usage "dkPhysicsLib"
 		links "dkPhysicsLib"
-		includedirs {
-			Folders.shared_engine
-		}
+		includedirs { Folders.shared_engine }
 end
 
 

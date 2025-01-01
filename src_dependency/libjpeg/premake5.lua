@@ -1,6 +1,7 @@
 project "libjpeg"
     kind "StaticLib"
     language "C"
+	properties	{ "thirdpartylib" }
 
     files { 
 		"./jaricom.c",

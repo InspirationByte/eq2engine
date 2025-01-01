@@ -1,6 +1,6 @@
 project "imgui"
 	kind "StaticLib"
-	language "C"
+	properties	{ "thirdpartylib" }
 
 	includedirs {
 		"./",
