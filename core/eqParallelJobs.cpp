@@ -41,7 +41,7 @@ bool CEqParallelJobManager::Init()
 #ifdef _WIN32
 	if (job_debugProcessAffinity.GetInt() != -1)
 	{
-		SetCurrentProcessAffinity(1 << job_debugProcessAffinity.GetInt());
+		SetCurrentProcessAffinity(1i64 << job_debugProcessAffinity.GetInt());
 	}
 #endif
 
