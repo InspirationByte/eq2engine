@@ -1,29 +1,110 @@
+property "e2_ws_settings"
+    language 'C++'
+	cppdialect 'C++17'
+	flags 'MultiProcessorCompile'
+	shortcommands 'On'
+	linkgroups 'On'
+	pic 'On'
+	floatingpointexceptions  'On'
+	unsignedchar  'On'
+	
+	objdir "build/obj"
+	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
+	implibdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
+	
+	filter "kind:StaticLib"
+		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
 
+property "e2_ws_configurations"
+    filter "configurations:Debug"
+        defines { 
+            "DEBUG"
+        }
+        symbols "On"
 
-property "unitybuild"
-	unitybuild "on"
-	maxfilesinunity "30"
-	
-property "sharedlib"
-	kind "SharedLib"
-	
-property "staticlib"
-	kind "StaticLib"
-	
-property "tools"
-	filter "configurations:Retail or configurations:Profile"
-		kind "None"
+    filter "configurations:Release"
+        defines {
+            "NDEBUG",
+        }
+		optimize "On"
+		symbols "On"
+		
+	filter "configurations:ReleaseAsan"
+        defines {
+            "NDEBUG",
+        }
+		optimize "On"
+		symbols "On"
+		sanitize "address"
 
-property "thirdpartylib"
-	configmap {
-		["Debug"] = "Debug",
-		["Release"] = "Release",
-		["ReleaseAsan"] = "Release",
-		["Profile"] = "Retail",
-		["Retail"] = "Retail",
-	}
-	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
+	filter "configurations:Profile"
+        defines {
+			"NDEBUG",
+			"_PROFILE"
+        }
+		optimize "On"
+		symbols "On"
+		rtti "Off"
+
+	filter "configurations:Retail"
+        defines {
+			"NDEBUG",
+			"_RETAIL"
+        }
+		optimize "On"
+		rtti "Off"
+
+	filter "system:Linux"
+		defines {
+			"__LINUX__"
+		}
+		
+	----
 	
+	filter "system:android"
+		platforms {
+			"android-arm",
+			"android-arm64"
+			--"android-x86_64"
+		}
+		
+		buildoptions {
+			"-pthread"
+		}
+		
+		linkoptions {
+			"--no-undefined",
+			"-pthread",
+			"-mfloat-abi=softfp",	-- force NEON to be used
+			"-mfpu=neon"
+		}
+
+		filter "platforms:*-x86"
+			architecture "x86"
+
+		filter "platforms:*-x86_64"
+			architecture "x86_64"
+
+		filter "platforms:*-arm"
+			architecture "arm"
+
+		filter "platforms:*-arm64"
+			architecture "arm64"
+
+    filter "system:linux"
+		platforms { 
+			--"x86", 
+			"x64"
+			-- TODO: arm
+		}
+
+	filter "system:Windows"
+		platforms { 
+			--"x86", 
+			"x64"
+			-- TODO: arm
+		}
+		
 property "windows_msvc"
 	filter "system:Windows"
 		linkoptions {
@@ -66,6 +147,30 @@ property "gcc_clang"
 			"write-strings",		-- TODO: fix this
 			"subobject-linkage"		-- TODO: fix this
 		}
+
+property "unitybuild"
+	unitybuild "on"
+	maxfilesinunity "30"
+	
+property "sharedlib"
+	kind "SharedLib"
+	
+property "staticlib"
+	kind "StaticLib"
+	
+property "tools"
+	filter "configurations:Retail or configurations:Profile"
+		kind "None"
+		
+property "thirdpartylib"
+	configmap {
+		["Debug"] = "Debug",
+		["Release"] = "Release",
+		["ReleaseAsan"] = "Release",
+		["Profile"] = "Retail",
+		["Retail"] = "Retail",
+	}
+	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
 		
 function prj_name(prj, wks, def)
 	if _ACTION == "gmake2" and def == nil then

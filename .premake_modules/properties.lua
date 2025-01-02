@@ -36,14 +36,11 @@ local m = p.validation
 --
 
 	local function applyProperty( targetProject, targetBlock, property )		
-
 		verbosef("\nProject %s is using property %s\n",
 				 targetProject.name, property.name)
 
-
 		-- Clone each block in the property and insert it into the target project
 		for _,propertyBlock in ipairs(property.blocks) do
-		
 			-- detach fat references before deepcopy
 			propertyOrigin = propertyBlock._origin
 			propertyBlock._origin = nil
@@ -53,12 +50,8 @@ local m = p.validation
 			-- attach fat references after deepcopy
 			newBlock._origin   = propertyOrigin
 			propertyBlock._origin = propertyOrigin
-			
 
-			newBlock._criteria.patterns = table.join(
-			newBlock._criteria.patterns,
-			targetBlock._criteria.patterns )
-
+			newBlock._criteria.patterns = table.join( newBlock._criteria.patterns, targetBlock._criteria.patterns )
 			newBlock._criteria.data = p.criteria._compile(newBlock._criteria.patterns)
 
 			-- todo: would be nice not to do this.
@@ -76,10 +69,9 @@ local m = p.validation
 			table.insert( targetProject.blocks, newBlock )
 
 			-- Recursion in property is to fuzzy
-			if newBlock.useproperties then
+			if newBlock.properties then
 				error("Property '" .. property.name .. "': Properties in property is forbidden, move 'property' to project.")
 			end
-
 		end
 	end 
 
@@ -87,31 +79,28 @@ local m = p.validation
 -- Resolve a single 'property' into a target block of a target project
 --
 
-	local function resolveProperty(targetProject, targetBlock, propName)
-		local targetWorkspace = targetProject.solution
+	local function resolveProperty(projectOrWorkspace, targetBlock, propName)
 		local property = p.global.getProperty(propName)
 
 		if property == nil then
 			error("Property "
 				  .. "'" .. propName.. "'"
-				  .. ", is not defined as a property or project in workspace "
-				  .. "'" .. targetWorkspace.name .. "'")
+				  .. " is not defined as a property")
 		end
 
 		if property ~= nil then
-			applyProperty( targetProject, targetBlock, property )
+			applyProperty( projectOrWorkspace, targetBlock, property )
 		end
-
 	end
 
 --
 -- Resolve all properties from a target block in a target project
 --
 
-	local function resolveAllPropsInBlock( targetProject, targetBlock )
+	local function resolveAllPropsInBlock( projectOrWorkspace, targetBlock )
 		if targetBlock.properties then
 			for _, propKey in ipairs(targetBlock.properties) do
-				resolveProperty( targetProject, targetBlock, propKey )
+				resolveProperty( projectOrWorkspace, targetBlock, propKey )
 			end
 		end
 	end

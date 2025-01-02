@@ -32,10 +32,8 @@ DependencyPath = {
 -- default configuration capabilities
 Groups = {
     core = "Framework",
-    
     engine2 = "Equilibrium 2",
     tools = "Tools",
-
     game = "Game",
 }
 
@@ -49,20 +47,13 @@ Folders = {
     game = "./game/",
 }
 
-dofile "premake5-properties.lua"
-
+include "premake5-properties.lua"
+	
 -- Main workspace
 workspace(WORKSPACE_NAME)
-    language 'C++'
-	cppdialect 'C++17'
-	flags 'MultiProcessorCompile'
-	shortcommands 'On'
-	linkgroups 'On'
-	pic 'On'
-	floatingpointexceptions  'On'
-	unsignedchar  'On'
-	
 	properties {
+		"e2_ws_settings",
+		"e2_ws_configurations",
 		"gcc_clang",
 		"windows_msvc"
 	}
@@ -74,120 +65,42 @@ workspace(WORKSPACE_NAME)
 		"Retail" 		-- optimized build without all of the debug stuff
 	}
 	
-	objdir "build/obj"
-	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
-	implibdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
-	
-	filter "kind:StaticLib"
-		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
-	
-    filter "configurations:Debug"
-        defines { 
-            "DEBUG"
-        }
-        symbols "On"
-
-    filter "configurations:Release"
-        defines {
-            "NDEBUG",
-        }
-		optimize "On"
-		symbols "On"
-		
-	filter "configurations:ReleaseAsan"
-        defines {
-            "NDEBUG",
-        }
-		optimize "On"
-		symbols "On"
-		sanitize "address"
-
-	filter "configurations:Profile"
-        defines {
-			"NDEBUG",
-			"_PROFILE"
-        }
-		optimize "On"
-		symbols "On"
-		rtti "Off"
-
-	filter "configurations:Retail"
-        defines {
-			"NDEBUG",
-			"_RETAIL"
-        }
-		optimize "On"
-		rtti "Off"
-
-	filter "system:Linux"
-		defines {
-			"__LINUX__"
-		}
-	
-	filter {}
-	
 	defines {
 		"PROJECT_COMPILE_CONFIGURATION=%{cfg.buildcfg}",
 		"PROJECT_COMPILE_PLATFORM=%{cfg.platform}"
 	}
+	
+	filter "platforms:*64"
+		debugdir "%{wks.location}../../%{wks.name}/build/Bin64"
+		debugenvs "PATH=%{wks.location}../../%{wks.name}/build/Bin64"
+
+	filter "platforms:*86"
+		debugdir "%{wks.location}../../%{wks.name}/build/Bin32"
+		debugenvs "PATH=%{wks.location}../../%{wks.name}/build/Bin64"
+		
+	filter {}
+	
+	-- setup VSCode generator settings
+	vscode_makefile "build/%{wks.name}.solution"
+	vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build/bin64linux")
+	vscode_launch_environment {
+		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../%{wks.name}/build/bin64linux"
+	}
+	vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
 
 	if _ACTION ~= "vscode" then
 		location "build/%{ prj_name(prj, wks) }"
 	end
 
-	if IS_ANDROID then
-		system "android"
-	end
+group "Dependencies"
 
-	filter "system:android"
-		platforms {
-			"android-arm",
-			"android-arm64"
-			--"android-x86_64"
-		}
-		
-		buildoptions {
-			"-pthread"
-		}
-		
-		linkoptions {
-			"--no-undefined",
-			"-pthread",
-			"-mfloat-abi=softfp",	-- force NEON to be used
-			"-mfpu=neon"
-		}
+-- dependencies are in separate configuration
+include "src_dependency/premake5.lua"
 
-		filter "platforms:*-x86"
-			architecture "x86"
+if IS_ANDROID then
+include "src_dependency_android/premake5.lua"
+end
 
-		filter "platforms:*-x86_64"
-			architecture "x86_64"
-
-		filter "platforms:*-arm"
-			architecture "arm"
-
-		filter "platforms:*-arm64"
-			architecture "arm64"
-
-    filter "system:linux"
-		platforms { 
-			--"x86", 
-			"x64"
-			-- TODO: arm
-		}
-		vscode_makefile "build/%{wks.name}.solution"
-		vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build/bin64linux")
-		vscode_launch_environment {
-			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../%{wks.name}/build/bin64linux"
-		}
-		vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
-
-	filter "system:Windows"
-		platforms { 
-			--"x86", 
-			"x64"
-			-- TODO: arm
-		}
 
 -- properties
 usage "public"
@@ -210,11 +123,8 @@ group "Core"
 -- eqCore essentials
 project "coreLib"
     kind "StaticLib"
-	properties { "unitybuild" }
-	uses { 
-		"public",
-		"concurrency_vis"
-	}
+	properties { "unitybuild", "concurrency_vis" }
+	uses { "public" }
     files {
 		Folders.public.. "/core/**.cpp",
 		Folders.public.. "/core/**.h"
@@ -230,10 +140,7 @@ usage "coreLib"
 project "frameworkLib"
     kind "StaticLib"
 	properties { "unitybuild" }
-	uses {
-		"public", 
-		"libjpeg" 
-	}
+	uses { "public", "libjpeg" }
 
     files {
 		Folders.public.. "ds/*.cpp",
@@ -260,7 +167,7 @@ usage "frameworkLib"
 
 project "e2Core"
     kind "SharedLib"
-	properties { "unitybuild", "live_pp" }
+	properties { "unitybuild", "live_pp", "concurrency_vis" }
     uses {
 		"coreLib", "frameworkLib", "dpkLib"
 	}
@@ -286,15 +193,6 @@ project "e2Core"
 		
 usage "e2Core"
 	links "e2Core"
-
-group "Dependencies"
-		
--- dependencies are in separate configuration
-include "src_dependency/premake5.lua"
-
-if IS_ANDROID then
-include "src_dependency_android/premake5.lua"
-end
 
 group "Components"
 
@@ -395,7 +293,8 @@ project "eqWGPURHI"
 	properties { "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
-		"eqRHIBaseLib", "wgpu-dawn"
+		"eqRHIBaseLib", 
+		"wgpu-dawn"
 	}
 	defines{
 		"EQRHI_WGPU",

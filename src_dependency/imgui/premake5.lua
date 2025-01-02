@@ -13,6 +13,7 @@ project "imgui"
 	}
 
 usage "imgui"
+	links { "imgui" }
 	includedirs {
 		"./",
 	}

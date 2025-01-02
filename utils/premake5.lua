@@ -9,7 +9,9 @@ project "fcompress"
     uses {
 		"corelib", "frameworkLib", 
 		"e2Core", 
-		"dpkLib"
+		"dpkLib",
+		"lz4",
+		"zlib"
 	}
     files {
 		"fcompress/*.cpp",
@@ -93,7 +95,8 @@ project "egfman"
     kind "WindowedApp"
 	properties { "unitybuild", "tools" }
     uses {
-		"corelib", "frameworkLib", "e2Core", "fontLib", "physicsLib", "dkPhysicsLib", "renderUtilLib",
+		"corelib", "frameworkLib", "e2Core",
+		"fontLib", "physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",
 		"wxWidgets"
 	}
     files {

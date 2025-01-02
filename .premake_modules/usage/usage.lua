@@ -238,11 +238,8 @@ p.api.register {
 -- Resolve usage of targetProject.targetBlock
 --
 	local function resolveUsage( targetProject, targetBlock, usage )		
-
-
 		verbosef("\nProject %s is using usage %s\n",
 				 targetProject.name, usage.name)
-
 
 		-- Clone each block in the usage and insert it into the target project
 		for _,usageBlock in ipairs(usage.blocks) do
@@ -259,7 +256,6 @@ p.api.register {
 			newBlock._origin   = usageOrigin
 			usageBlock._origin = usageOrigin
 			
-
 			newBlock._criteria.patterns = table.join(
 			newBlock._criteria.patterns,
 			targetBlock._criteria.patterns )
@@ -280,7 +276,6 @@ p.api.register {
 			--  	 and it need to deal with with 'removes'
 			--  	 merging between the two blocks.
 			table.insert( targetProject.blocks, newBlock )
-
 
 			-- Recursion in usage is to fuzzy
 			if newBlock.uses then
@@ -440,8 +435,13 @@ p.api.register {
 			local sourceProject = p.workspace.findproject( targetWorkspace, usageName )
 			local usage 		= p.workspace.findusage(   targetWorkspace, usageName )
 
-			if sourceProject ~= nil and sourceProject.name ~= targetProject.name then
-
+			-- if we have usage, apply it.
+			-- if no usage has found, use project as usage instead
+			if usage ~= nil then
+				resolveUsage( targetProject, targetBlock, usage )
+				usageType       = "usage"
+				usageScriptPath = usage.script
+			elseif sourceProject ~= nil and sourceProject.name ~= targetProject.name then
 				verbosef("\nProject %s is using project %s\n",
 						 targetProject.name, sourceProject.name )
 
@@ -460,10 +460,6 @@ p.api.register {
 				table.insert(targetBlock.resolvedUsesLinks, usageName )
 				usageType 	    = "project"
 				usageScriptPath = sourceProject.script
-			elseif usage ~= nil then
-				resolveUsage( targetProject, targetBlock, usage )
-				usageType       = "usage"
-				usageScriptPath = usage.script
 			elseif sourceProject ~= nil then
 				error( "Project " .. sourceProject.name
 					   .. " used itself but declares no usage")

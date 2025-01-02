@@ -1,5 +1,4 @@
 project "openfbx"
-	language    "C"
 	kind        "StaticLib"
 	properties	{ "thirdpartylib" }
 
