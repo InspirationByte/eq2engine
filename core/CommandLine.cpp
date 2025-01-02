@@ -21,10 +21,20 @@ CCommandLine::~CCommandLine()
 {
 }
 
-void CCommandLine::Init(const char* pszCommandLine)
+void CCommandLine::Init(ArrayCRef<const char*> args)
 {
 	m_args.clear();
-	Parse(pszCommandLine);
+	if (args.numElem() == 1)
+	{
+		if(args.front())
+			Parse(args.front());
+	}
+	else
+	{
+		m_args.reserve(args.numElem());
+		for (int i = 0; i < args.numElem(); ++i)
+			m_args.append(args[i]);
+	}
 }
 
 void CCommandLine::DeInit()

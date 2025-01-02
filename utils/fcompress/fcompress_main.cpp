@@ -582,7 +582,10 @@ int main(int argc, char **argv)
 
 	Install_SpewFunction();
 
-	g_eqCore->Init("fcompress",argc,argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "fcompress";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	g_eqCore->Init(appInitParams);
 
 	Msg("FCompress - Equilibrium PakFile generator\n");
 	Msg(" Version 2.0\n");

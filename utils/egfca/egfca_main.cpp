@@ -56,7 +56,10 @@ int main(int argc, char **argv)
 	Install_SpewFunction();
 #endif
 
-	g_eqCore->Init("egfCa", argc, argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "egfCa";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	g_eqCore->Init(appInitParams);
 
 	MsgWarning("EGFCA, a command-line utility to compile  model scripts (esc)\n");
 	MsgWarning("Copyright © Inspiration Byte 2009-2014\n");

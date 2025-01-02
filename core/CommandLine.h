@@ -14,7 +14,7 @@ public:
 	CCommandLine();
 	~CCommandLine();
 
-	void				Init(const char* pszCommandLine);
+	void				Init(ArrayCRef<const char*> args);
 	void				DeInit();
 
 	void				ExecuteCommandLine(CommandFilterFn func = nullptr) const;

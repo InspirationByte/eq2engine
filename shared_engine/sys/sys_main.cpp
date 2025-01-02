@@ -298,8 +298,10 @@ bool Sys_Android_InitCore(int argc, char** argv)
 
 	g_jni.obbPath = storageObbPath;
 
-	// init core
-	bool result = g_eqCore->Init("Game", argc, argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "Game";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	bool result = g_eqCore->Init(appInitParams);
 
 	Msg("bestStoragePath: %s\n", bestStoragePath);
 	Msg("dataPath: %s\n", dataPath.ToCString());
@@ -395,8 +397,12 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 	EqString appName = sysPathGetApplicationName(Sys_GetExecutablePath());
 
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = appName;
+	appInitParams.commandLine = ArrayCRef(&lpszCmdLine, 1);
+
 	// init core
-	if(!g_eqCore->Init(appName, lpszCmdLine))
+	if(!g_eqCore->Init(appInitParams))
 		return -1;
 
 	// NOTE: this is only needed for Live++ on Windows
@@ -425,8 +431,11 @@ int main(int argc, char** argv)
 	// mount OBB filesystem
 	Sys_Android_MountFileSystem();
 #else
-	// init core
-	if (!g_eqCore->Init("Game", argc, argv))
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "Game";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+
+	if (!g_eqCore->Init(appInitParams))
 		return -1;
 #endif // PLAT_ANDROID
 

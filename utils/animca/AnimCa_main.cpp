@@ -37,7 +37,10 @@ int main(int argc, char **argv)
 	Install_SpewFunction();
 #endif
 
-	g_eqCore->Init("animCa",argc,argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "animCa";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	g_eqCore->Init(appInitParams);
 
 	MsgWarning("ANIMCA, a command-line utility to compile motion packages for EGF models\n");
 	MsgWarning("Copyright © Inspiration Byte 2009-2014\n");

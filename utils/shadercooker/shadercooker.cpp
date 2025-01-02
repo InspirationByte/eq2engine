@@ -21,7 +21,10 @@ extern void CookTarget(const char* pszTargetName, CEqJobManager& jobMng);
 
 int main(int argc, char* argv[])
 {
-	g_eqCore->Init("shadercooker", argc, argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "shaderCooker";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	g_eqCore->Init(appInitParams);
 
 	Install_SpewFunction();
 
