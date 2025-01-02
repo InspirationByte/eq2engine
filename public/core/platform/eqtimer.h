@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #endif // _WIN32
 
-class CLASS_EXPORTS CEqTimer
+class CEqTimer
 {
 public:
 			CEqTimer();
