@@ -40,6 +40,8 @@ property "windows_msvc"
 		enablewarnings { 
 			"26433"
 		}
+	filter "configurations:Retail or configurations:Profile"
+		buildoptions { "/GR-" }
 
 property "gcc_clang"
 	filter "system:Linux or system:Android"
