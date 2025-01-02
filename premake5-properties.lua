@@ -5,7 +5,7 @@ property "e2_ws_settings"
 	shortcommands 'On'
 	linkgroups 'On'
 	pic 'On'
-	floatingpointexceptions  'On'
+	floatingpointexceptions  'Off'
 	unsignedchar  'On'
 	
 	objdir "build/obj"
@@ -62,6 +62,7 @@ property "e2_ws_configurations"
 	----
 	
 	filter "system:android"
+		floatingpointexceptions  'On'	-- can't remember, probably for NEON
 		platforms {
 			"android-arm",
 			"android-arm64"
