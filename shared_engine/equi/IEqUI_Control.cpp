@@ -196,7 +196,7 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 	if (transform)
 	{
 		const float rotateVal = KV_GetValueFloat(transform->FindSection("rotate"), 0.0f);
-		const Vector2D scaleVal = KV_GetVector2D(transform->FindSection("scale"), 0, 1.0f);
+		const Vector2D scaleVal = KV_GetVector2D(transform->FindSection("elementScale"), 0, 1.0f);
 		const Vector2D translate = KV_GetVector2D(transform->FindSection("translate"), 0, 0.0f);
 
 		SetTransform(translate, scaleVal, rotateVal);
@@ -566,9 +566,8 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	if(!m_visible)
 		return;
 
-	bool scissorOn = true;
+	static const IAARectangle defaultScissorRect(IVector2D(COM_INT_MIN), IVector2D(COM_INT_MAX));
 
-	const IAARectangle clientRectRender = GetClientRectangle();
 	g_matSystem->SetFogInfo(FogInfo());			// disable fog
 
 	// calculate absolute transformation using previous matrix
@@ -576,73 +575,71 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	g_matSystem->GetMatrix(MATRIXMODE_WORLD2, prevTransform);
 
 	// we apply scaling to our transform to match the units of the elements
-	const Vector2D scale = CalcScaling();
+	const Vector2D elementScale = CalcScaling();
 
-	const Matrix4x4 clientPosMat = translate((float)clientRectRender.GetCenter().x, (float)clientRectRender.GetCenter().y, 0.0f);
+	const IAARectangle clientRectRender = GetClientRectangle();
+	const Vector2D clientRectCenter = clientRectRender.GetCenter();
+
+	const Matrix4x4 clientPosMat = translate(clientRectCenter.x, clientRectCenter.y, 0.0f);
 	Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
 	rotationScale = rotationScale * !clientPosMat;
 
-	const Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * scale.x, m_transform.translation.y * scale.y, 0.0f);
+	const Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * elementScale.x, m_transform.translation.y * elementScale.y, 0.0f);
 	const Matrix4x4 newTransform = (prevTransform * localTransform);
 
-	// load new absolulte transformation
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-
-	if( m_parent && m_selfVisible )
+	IAARectangle scissorRect = GetClientScissorRectangle();
+	// transform scissor rectangle accordingly
 	{
-		// set scissor rect before childs are rendered
-		// only if no transformation applied
-		if (newTransform.rows[0].x != 1.0f)
+		IAARectangle tmpRect;
+		for (int i = 0; i < 4; ++i)
 		{
-			IAARectangle scissorRect(IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
-			rendPassRecorder->SetScissorRectangle(scissorRect);
-			scissorOn = false;
+			Vector2D vertex = scissorRect.GetVertex(i);
+			tmpRect.AddVertex(transformPointTransposed(Vector3D(vertex, 0.0f), newTransform).xy());
 		}
-		else
-		{
-			IAARectangle scissorRect = GetClientScissorRectangle();
-			scissorRect.leftTop += m_transform.translation * scale;
-			scissorRect.rightBottom += m_transform.translation * scale;
-			scissorRect.leftTop = clamp(scissorRect.leftTop, IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
-			scissorRect.rightBottom = clamp(scissorRect.rightBottom, IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
-
-			rendPassRecorder->SetScissorRectangle(scissorRect);
-		}
-
-		// paint control itself
-		DrawSelf( clientRectRender, scissorOn, rendPassRecorder);
+		scissorRect = tmpRect;
 	}
 
 #ifdef ENABLE_DEBUG_DRAWING
 	HOOK_TO_CVAR(equi_debug);
-	if (equi_debug->GetInt() > 0 && equi_debug->GetInt() <= depth)
+	if (equi_debug->GetInt() == -1 || equi_debug->GetInt() == depth)
 	{
-		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8), rendPassRecorder);
+		rendPassRecorder->SetScissorRectangle(defaultScissorRect);
+		g_matSystem->SetMatrix(MATRIXMODE_WORLD2, identity4);
+
+		DebugDrawRectangle(scissorRect, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8), rendPassRecorder);
 
 		FontStyleParam params;
 		debugoverlay->GetFont()->SetupRenderText(
-			EqString::Format("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible).ToCString(), 
+			EqString::Format("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible).ToCString(),
 			clientRectRender.GetLeftBottom(), params, rendPassRecorder);
 	}
 #endif
 
-	// render from last
-	for (auto it = m_childs.last(); !it.atEnd(); --it)
-	{
-		// load new absolulte transformation
-		g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-		(*it)->Render(depth + 1, rendPassRecorder);
-	}
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
 
-	// always reset previous absolute transformation
+	// FIXME: currently scissor is only needed for text
+	// should we instead contain elements inside of parent scissor rectangle?
+	rendPassRecorder->SetScissorRectangle(scissorRect);
+
+	if( m_parent && m_selfVisible )
+	{
+		// paint control itself
+		DrawSelf(clientRectRender, rendPassRecorder);
+	}
+	RenderChilds(depth + 1, rendPassRecorder);
+
 	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
 
 	// reset scissor after drawing equi
 	if (depth <= 1)
-	{
-		IAARectangle scissorRect(IVector2D(0, 0), rendPassRecorder->GetRenderTargetDimensions());
-		rendPassRecorder->SetScissorRectangle(scissorRect);
-	}
+		rendPassRecorder->SetScissorRectangle(defaultScissorRect);
+}
+
+void IUIControl::RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder)
+{
+	// render all childs from last to first
+	for (auto it = m_childs.last(); !it.atEnd(); --it)
+		(*it)->Render(depth, rendPassRecorder);
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point) const
@@ -730,18 +727,6 @@ void IUIControl::RemoveChild(IUIControl* pControl, bool destroy)
 		delete (*it);
 
 	m_childs.remove(it);
-}
-
-bool IUIControl::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
-{
-	//Msg("ProcessMouseEvents on %s\n", m_name.ToCString());
-	return true;
-}
-
-bool IUIControl::ProcessKeyboardEvents(int nKeyButtons, int flags)
-{
-	//Msg("ProcessKeyboardEvents on %s\n", m_name.ToCString());
-	return true;
 }
 
 int IUIControl::CommandCb(IUIControl* control, const EvtHandler& event, void* userData)

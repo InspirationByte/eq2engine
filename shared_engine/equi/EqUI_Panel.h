@@ -42,7 +42,7 @@ public:
 	virtual void			Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
 protected:
 
-	virtual void			DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
+	virtual void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder);
 
 	bool					ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 
@@ -66,12 +66,7 @@ public:
 	~Container() {}
 
 	void			InitFromKeyValues(const KVSection* sec, bool noClear) override;
-
-	// events
-	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
-	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
-
-	void			DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
+	void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override {}
 };
 
 };

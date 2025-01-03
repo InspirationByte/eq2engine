@@ -13,7 +13,7 @@
 #undef GetParent
 #endif //GetParent
 
-class IGPURenderPassRecorder;
+class IGPUCommandRecorder;
 struct KVSection;
 struct FontStyleParam;
 
@@ -24,7 +24,7 @@ struct FontStyleParam;
 #define EQUI_CLASS( className, baseClassName )					\
 	using ThisClass = className;								\
 	using BaseClass = baseClassName;							\
-	const char*	GetClassname() const { return ThisClass::Classname(); }		\
+	virtual const char*	GetClassname() const override { return ThisClass::Classname(); }		\
 	static const char* Classname() { return #className; }		\
 
 namespace equi
@@ -174,18 +174,22 @@ public:
 	int							RaiseEventUid(int uid, void* userData);
 
 protected:
+
+	// rendering
+	virtual void				RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder);
+
 	void						InitChildItems(const KVSection* sec, bool noClear = false);
 
 	void						ResetSizeDiffs();
-	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
 	static int					CommandCb(IUIControl* control, const EvtHandler& event, void* userData);
 
 	virtual IUIControl*			HitTest(const IVector2D& point) const;
 
 	// events
-	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
-	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
+	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags) { return true; }
+	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
 
 	IUIControl*					m_parent{ nullptr };
 	List<IUIControl*>			m_childs{ PP_SL };		// child panels

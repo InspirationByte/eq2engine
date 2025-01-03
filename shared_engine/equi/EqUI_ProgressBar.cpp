@@ -32,7 +32,7 @@ void ProgressBar::InitFromKeyValues(const KVSection* sec, bool noClear)
 	m_value = KV_GetValueFloat(sec->FindSection("value"), 0, m_value);
 }
 
-void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void ProgressBar::DrawSelf(const IAARectangle& _rect, IGPURenderPassRecorder* rendPassRecorder)
 {
 	AARectangle rect(_rect);
 

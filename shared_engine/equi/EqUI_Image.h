@@ -13,12 +13,11 @@ using IMaterialPtr = CRefPtr<IMaterial>;
 
 namespace equi
 {
-
-	enum EImageFlags
-	{
-		FLIP_X = (1 << 0),
-		FLIP_Y = (1 << 1),
-	};
+enum EImageFlags
+{
+	FLIP_X = (1 << 0),
+	FLIP_Y = (1 << 1),
+};
 
 // eq label class
 class Image : public IUIControl
@@ -42,13 +41,10 @@ public:
 	AARectangle			GetUVRegion() const;
 	void				SetUVRegion(const AARectangle& rect);
 
-	// events
-	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
-	bool				ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
+	virtual void		DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 
-	void				DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
-
-public:
+protected:
+	void				SetMaterialInternal(IMaterialPtr material);
 
 	IMaterialPtr		m_material;
 	AARectangle			m_uvRegion;

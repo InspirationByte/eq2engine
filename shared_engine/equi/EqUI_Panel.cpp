@@ -172,7 +172,7 @@ void Panel::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	BaseClass::Render(depth, rendPassRecorder);
 }
 
-void Panel::DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void Panel::DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)
 {
 	DrawWindowRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f), rendPassRecorder);
 }
@@ -203,11 +203,7 @@ public:
 	HudElement() : IUIControl() {}
 	~HudElement() {}
 
-	// events
-	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)	{return true;}
-	bool			ProcessKeyboardEvents(int nKeyButtons, int flags)					{return true;}
-
-	void			DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
+	void			DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override {}
 };
 
 void Container::InitFromKeyValues(const KVSection* sec, bool noClear)

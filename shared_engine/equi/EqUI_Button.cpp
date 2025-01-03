@@ -20,7 +20,7 @@ Button::Button() : m_state(false)
 
 }
 
-void Button::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void Button::DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)
 {
 	ColorRGBA btnColor(0.8f);
 

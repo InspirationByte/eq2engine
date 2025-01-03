@@ -19,12 +19,7 @@ namespace equi
 		~ProgressBar() {}
 
 		void				InitFromKeyValues(const KVSection* sec, bool noClear) override;
-
-		// events
-		bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
-		bool				ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
-
-		void				DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
+		void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 
 		void				SetValue(float value)				{ m_value = value; }
 		void				SetColor(const ColorRGBA& color)	{ m_color = color; }

@@ -69,8 +69,12 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 void Image::SetMaterial(const char* materialName)
 {
 	m_uvRegion = AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
+	SetMaterialInternal(g_matSystem->GetMaterial(materialName));
+}
 
-	m_material = g_matSystem->GetMaterial(materialName);
+void Image::SetMaterialInternal(IMaterialPtr material)
+{
+	m_material = material;
 	g_matSystem->QueueLoading(m_material);
 }
 
@@ -113,7 +117,7 @@ void Image::SetUVRegion(const AARectangle& rect)
 	m_uvRegion = AARectangle(rect.leftTop * invSize, rect.rightBottom * invSize);
 }
 
-void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void Image::DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)
 {
 	AARectangle uvRect = m_uvRegion;
 	if (m_imageFlags & FLIP_X)

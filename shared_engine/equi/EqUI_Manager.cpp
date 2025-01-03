@@ -69,6 +69,7 @@ void CUIManager::Init()
 	EQUI_REGISTER_CONTROL(label);
 	EQUI_REGISTER_CONTROL(button);
 	EQUI_REGISTER_CONTROL(image);
+	EQUI_REGISTER_CONTROL(mask);
 	EQUI_REGISTER_CONTROL(progressBar);
 
 	EQUI_REGISTER_CONTROL(HudElement);
@@ -121,7 +122,7 @@ IUIControl* CUIManager::CreateElement( const char* type )
 			return (*m_controlFactory[i].factory)();
 	}
 
-	MsgError("EqUI: unknown element type '%s'!!!\n", type);
+	ASSERT_FAIL("Unknown UI element type '%s'", type);
 
 	return nullptr;
 }
