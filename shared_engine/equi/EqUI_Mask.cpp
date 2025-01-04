@@ -102,7 +102,7 @@ void Mask::RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	// render childs into texture first
 	IGPURenderPassRecorderPtr maskRenderPass = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
-		.ColorTarget(m_maskedChilds, true, color_white)
+		.ColorTarget(m_maskedChilds)  // , true, color_white)
 		.End()
 	);
 	
