@@ -43,6 +43,8 @@ void GRIMBaseInstanceAllocator::Construct()
 
 void GRIMBaseInstanceAllocator::Initialize(const char* instanceComputeShaderName, int instancesReserve)
 {
+	PROF_EVENT("GRIM InstanceAllocator Init");
+
 	m_reservedInsts = instancesReserve;
 
 	if (!m_updateRootPipeline)

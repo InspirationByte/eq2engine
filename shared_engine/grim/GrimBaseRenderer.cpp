@@ -43,6 +43,8 @@ GRIMBaseRenderer::GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator)
 
 void GRIMBaseRenderer::Init()
 {
+	PROF_EVENT("GRIM Init");
+
 	m_sortShader = CRefPtr_new(ComputeSortShader);
 	m_sortShader->AddSortPipeline(SHADER_PIPELINE_SORT_INSTANCES, SHADERNAME_SORT_INSTANCES);
 	
