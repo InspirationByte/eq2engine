@@ -88,15 +88,20 @@ void IUIControl::SetLabelText(const wchar_t* pszLabel)
 	m_label = pszLabel;
 }
 
-void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
+void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 {
-	if (!noClear)
+	if (!keepElements)
 		ClearChilds(true);
 
-	if(!CString::CompareCaseIns(sec->GetName(), "child"))
-		SetName(KV_GetValueString(sec, 1, ""));
+	EqStringRef elementName;
+
+	if (!CString::CompareCaseIns(sec->GetName(), "child"))
+		sec->GetValuesAt(1, elementName);
 	else
-		SetName(KV_GetValueString(sec, 0, ""));
+		sec->GetValuesAt(0, elementName);
+
+	if(elementName)
+		SetName(elementName);
 
 	EqStringRef label;
 	if (sec->Get("label").GetValues(label))
@@ -107,36 +112,68 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 	sec->Get("visible").GetValues(m_visible);
 	sec->Get("selfvisible").GetValues(m_selfVisible);
 	m_sizeReal = m_size;
+
+	auto ParseFontDef = [this](FontProps& fontProps, const KVSection* fontSec, const KVSection* textParamsSec) {
+		if (fontSec)
+		{
+			EqStringRef fontName;
+			int fontSize = 20;
+			const int valueCnt = fontSec->GetValues(fontName, fontSize);
+
+			const FontProps* foundFontProps = (valueCnt == 1) ? FindFont(fontName, m_name) : nullptr;
+
+			if (foundFontProps)
+			{
+				fontProps = *foundFontProps;
+			}
+			else
+			{
+				int styleFlags = 0;
+				for (EqStringRef fontFlag : fontSec->Values<EqStringRef>(1))
+				{
+					if (!fontFlag.CompareCaseIns("bold"))
+						styleFlags |= TEXT_STYLE_BOLD;
+					else if (!fontFlag.CompareCaseIns("italic"))
+						styleFlags |= TEXT_STYLE_ITALIC;
+				}
+
+				fontProps.font = g_fontCache->GetFont(fontName, fontSize, styleFlags, false);
+			}
+		}
+
+		if (textParamsSec)
+		{
+			textParamsSec->Get("fontScale").GetValues(fontProps.fontScale);
+			textParamsSec->Get("textColor").GetValues(fontProps.textColor);
+			textParamsSec->Get("textMonospace").GetValues(fontProps.monoSpace);
+			textParamsSec->Get("textWeight").GetValues(fontProps.textWeight);
+			textParamsSec->Get("textShadowColor").GetValues(fontProps.shadowColor);
+			textParamsSec->Get("textShadowOffset").GetValues(fontProps.shadowOffset);
+			textParamsSec->Get("textShadowWeight").GetValues(fontProps.shadowWeight);
+		}
+	};
+
+	// parse fonts if any
+	const KVSection* fontsSec = sec->FindSection("fonts");
+	if (fontsSec)
+	{
+		for (const KVSection* fontSec : fontsSec->Keys())
+		{
+			FontProps fontProps;
+			ParseFontDef(fontProps, fontSec, fontSec);
+
+			const uint fontId = StringId(fontSec->GetName(), true);
+			m_fontCollection.insert(fontId, fontProps);
+		}
+	}
 	
 	FontProps& fontProps = m_font;
 	if (m_parent)
 		fontProps = m_parent->m_font;
+	ParseFontDef(fontProps, sec->FindSection("font"), sec);
 
-	const KVSection* font = sec->FindSection("font");
-	if(font)
-	{
-		int styleFlags = 0;
-		for (EqStringRef fontFlag : font->Values<EqStringRef>(1))
-		{
-			if (!fontFlag.CompareCaseIns("bold"))
-				styleFlags |= TEXT_STYLE_BOLD;
-			else if (!fontFlag.CompareCaseIns("italic"))
-				styleFlags |= TEXT_STYLE_ITALIC;
-		}
-
-		m_font.font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), styleFlags, false);
-	}
-
-	sec->Get("fontScale").GetValues(fontProps.fontScale);
-	sec->Get("textColor").GetValues(fontProps.textColor);
-	sec->Get("textMonospace").GetValues(fontProps.monoSpace);
-	sec->Get("textWeight").GetValues(fontProps.textWeight);
-	sec->Get("textShadowColor").GetValues(fontProps.shadowColor);
-	sec->Get("textShadowOffset").GetValues(fontProps.shadowOffset);
-	sec->Get("textShadowWeight").GetValues(fontProps.shadowWeight);
-
-	const KVSection* command = sec->FindSection("command");
-	if(command)
+	const KVSection* commandSec = sec->FindSection("command");
+	if(commandSec)
 	{
 		// NOTE: command event always have UID == 0
 		EvtHandler& evt = m_eventCallbacks.append();
@@ -144,17 +181,17 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 		evt.name = "command";
 		evt.uid = 0;
 
-		for (EqStringRef command : command->Values<EqStringRef>())
+		for (EqStringRef command : commandSec->Values<EqStringRef>())
 			evt.args.append(command);
 	}
 
 	//------------------------------------------------------------------------------
 
-	const KVSection* anchors = sec->FindSection("anchors");
-	if(anchors)
+	const KVSection* anchorsSec = sec->FindSection("anchors");
+	if(anchorsSec)
 	{
 		m_anchors = 0;
-		for(EqStringRef anchorVal : anchors->Values<EqStringRef>())
+		for(EqStringRef anchorVal : anchorsSec->Values<EqStringRef>())
 		{
 			if(!anchorVal.CompareCaseIns("left"))
 				m_anchors |= UI_BORDER_LEFT;
@@ -170,11 +207,11 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 	}
 
 	//------------------------------------------------------------------------------
-	const KVSection* align = sec->FindSection("align");
-	if(align)
+	const KVSection* alignSec = sec->FindSection("align");
+	if(alignSec)
 	{
 		m_alignment = 0;
-		for (EqStringRef alignVal : align->Values<EqStringRef>())
+		for (EqStringRef alignVal : alignSec->Values<EqStringRef>())
 		{
 			if(!alignVal.CompareCaseIns("left"))
 				m_alignment |= UI_ALIGN_LEFT;
@@ -192,23 +229,23 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 	}
 
 	//------------------------------------------------------------------------------
-	const KVSection* transform = sec->FindSection("transform");
-	if (transform)
+	const KVSection* transformSec = sec->FindSection("transform");
+	if (transformSec)
 	{
-		const float rotateVal = KV_GetValueFloat(transform->FindSection("rotate"), 0.0f);
-		const Vector2D scaleVal = KV_GetVector2D(transform->FindSection("elementScale"), 0, 1.0f);
-		const Vector2D translate = KV_GetVector2D(transform->FindSection("translate"), 0, 0.0f);
+		const float rotateVal = KV_GetValueFloat(transformSec->FindSection("rotate"), 0.0f);
+		const Vector2D scaleVal = KV_GetVector2D(transformSec->FindSection("elementScale"), 0, 1.0f);
+		const Vector2D translate = KV_GetVector2D(transformSec->FindSection("translate"), 0, 0.0f);
 
 		SetTransform(translate, scaleVal, rotateVal);
 	}
 
 	//------------------------------------------------------------------------------
 
-	const KVSection* textAlign = sec->FindSection("textAlign");
-	if (textAlign)
+	const KVSection* textAlignSec = sec->FindSection("textAlign");
+	if (textAlignSec)
 	{
 		m_font.textAlignment = 0;
-		for (EqStringRef alignVal : textAlign->Values<EqStringRef>())
+		for (EqStringRef alignVal : textAlignSec->Values<EqStringRef>())
 		{
 			if (!alignVal.CompareCaseIns("left"))
 				m_font.textAlignment |= TEXT_ALIGN_LEFT;
@@ -230,12 +267,12 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 	//------------------------------------------------------------------------------
 
 
-	const KVSection* scaling = sec->FindSection("scaling");
-	if (scaling)
+	const KVSection* scalingSec = sec->FindSection("scaling");
+	if (scalingSec)
 	{
 		m_scaling = UI_SCALING_NONE;
 
-		EqStringRef scalingValue = KV_GetValueString(scaling, 0, "none");
+		EqStringRef scalingValue = KV_GetValueString(scalingSec, 0, "none");
 
 		if (!scalingValue.CompareCaseIns("aspectw"))
 			m_scaling = UI_SCALING_ASPECT_W;
@@ -245,7 +282,7 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 			m_scaling = UI_SCALING_INHERIT;
 		else if (!scalingValue.CompareCaseIns("inherit_min"))
 			m_scaling = UI_SCALING_INHERIT_MIN;
-		else if (!scalingValue.CompareCaseIns("inheri_tmax"))
+		else if (!scalingValue.CompareCaseIns("inherit_max"))
 			m_scaling = UI_SCALING_INHERIT_MAX;
 		else if (!scalingValue.CompareCaseIns("aspect_min"))
 			m_scaling = UI_SCALING_ASPECT_MIN;
@@ -253,10 +290,10 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool noClear)
 			m_scaling = UI_SCALING_ASPECT_MAX;
 	}
 
-	InitChildItems(sec, noClear);
+	InitChildItems(sec, keepElements);
 }
 
-void IUIControl::InitChildItems(const KVSection* sec, bool noClear)
+void IUIControl::InitChildItems(const KVSection* sec, bool keepElements)
 {
 	// walk for childs
 	for (const KVSection* childSec : sec->Keys("child", KV_FLAG_SECTION))
@@ -287,8 +324,23 @@ void IUIControl::InitChildItems(const KVSection* sec, bool noClear)
 		if (!control)
 			continue;
 
-		control->InitFromKeyValues(childSec, noClear);
+		control->InitFromKeyValues(childSec, keepElements);
 	}
+}
+
+const IUIControl::FontProps* IUIControl::FindFont(const char* name, const char* requestedBy) const
+{
+	const uint fontId = StringId(name, true);
+	auto fontIt = m_fontCollection.find(fontId);
+	if (!fontIt.atEnd())
+		return &(*fontIt);
+
+	if (m_parent)
+		return m_parent->FindFont(name, requestedBy);
+
+	MsgWarning("EqUI warning: Font %s requested by element %s not found", name, requestedBy);
+
+	return nullptr;
 }
 
 void IUIControl::SetSize(const IVector2D &size)
@@ -694,6 +746,27 @@ IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 	}
 
 	return nullptr;
+}
+
+IUIControl* IUIControl::Get(const char* pathToElem)
+{
+	IUIControl* currentElement = this;
+
+	EqString path = pathToElem;
+	char* iter = path.GetData();
+	while (iter && *iter)
+	{
+		char* nextStart = (char*)strchr(iter, '.');
+		if(nextStart)
+			*nextStart = '\0';
+
+		currentElement = currentElement->FindChild(iter);
+		if (!currentElement)
+			return nullptr;
+
+		iter = nextStart ? nextStart + 1 : nullptr;
+	}
+	return currentElement == this ? nullptr : currentElement;
 }
 
 void IUIControl::ClearChilds(bool destroy)

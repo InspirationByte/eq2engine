@@ -41,27 +41,6 @@ struct EvtHandler
 	int				uid{ 0 };
 };
 
-struct Transform
-{
-	float					rotation { 0.0f };
-	Vector2D				translation { 0.0f };
-	Vector2D				scale { 1.0f };
-};
-
-struct FontProps
-{
-	IEqFont*				font { nullptr };
-	Vector2D				fontScale { 1 };
-	ColorRGBA				textColor { 1.0f };
-	float					textWeight { 0.0f };
-	int						textAlignment { TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP };
-
-	ColorRGBA				shadowColor { 0.0f, 0.0f, 0.0f, 0.7f };
-	float					shadowOffset { 1.0f };
-	float					shadowWeight { 0.01f };
-
-	bool					monoSpace { false };
-};
 
 //-------------------------------------------------------------
 // EqUI control interface
@@ -74,7 +53,7 @@ public:
 	IUIControl();
 	virtual ~IUIControl();
 
-	virtual void				InitFromKeyValues(const KVSection* sec, bool noClear = false);
+	virtual void				InitFromKeyValues(const KVSection* sec, bool keepElements = false);
 
 	// name and type
 	const char*					GetName() const						{return m_name.ToCString();}
@@ -141,6 +120,7 @@ public:
 	void						RemoveChild(IUIControl* pControl, bool destroy = true);
 	IUIControl*					FindChild( const char* pszName );
 	IUIControl*					FindChildRecursive( const char* pszName );
+	IUIControl*					Get( const char* pathToElem);
 	void						ClearChilds( bool destroy = true );
 
 	IUIControl*					GetParent() const						{ return m_parent; }
@@ -174,11 +154,36 @@ public:
 	int							RaiseEventUid(int uid, void* userData);
 
 protected:
+	struct Transform
+	{
+		float		rotation{ 0.0f };
+		Vector2D	translation{ 0.0f };
+		Vector2D	scale{ 1.0f };
+	};
+
+	struct FontProps
+	{
+		IEqFont*	font{ nullptr };
+		Vector2D	fontScale{ 1 };
+		ColorRGBA	textColor{ 1.0f };
+		float		textWeight{ 0.0f };
+		int			textAlignment{ TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP };
+
+		ColorRGBA	shadowColor{ 0.0f, 0.0f, 0.0f, 0.7f };
+		float		shadowOffset{ 1.0f };
+		float		shadowWeight{ 0.01f };
+
+		bool		monoSpace{ false };
+	};
+
+	using FontCollection = Map<uint, FontProps>;
+
+	const FontProps*			FindFont(const char* name, const char* requestedBy) const;
 
 	// rendering
 	virtual void				RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder);
 
-	void						InitChildItems(const KVSection* sec, bool noClear = false);
+	void						InitChildItems(const KVSection* sec, bool keepElements = false);
 
 	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) = 0;
@@ -194,20 +199,21 @@ protected:
 	IUIControl*					m_parent{ nullptr };
 	List<IUIControl*>			m_childs{ PP_SL };		// child panels
 	Array<EvtHandler>			m_eventCallbacks{ PP_SL };
+	FontCollection				m_fontCollection{ PP_SL };
+	FontProps					m_font;
+
+	Transform					m_transform;
+
+	IVector2D					m_position{ 0 };
+	IVector2D					m_size{ 64 };
+	IVector2D					m_sizeReal{ 64 };
+	// for anchors
+	Vector2D					m_sizeDiff{ 0.0f };
+	Vector2D					m_sizeDiffPerc{ 1.0f };
 
 	EqString					m_name;
 	EqWString					m_label;
 
-	FontProps					m_font;
-	Transform					m_transform;
-
-	IVector2D					m_position { 0 };
-	IVector2D					m_size { 64 };
-	IVector2D					m_sizeReal { 64 };
-
-	// for anchors
-	Vector2D					m_sizeDiff { 0.0f };
-	Vector2D					m_sizeDiffPerc { 1.0f };
 
 	int							m_alignment { UI_ALIGN_LEFT | UI_ALIGN_TOP };
 	int							m_anchors { 0 };
