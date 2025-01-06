@@ -421,6 +421,7 @@ static void InitMatSystem(void* window)
 		return;
 	}
 
+	g_studioCache->Init(g_parallelJobs->GetJobMng());
 	g_studioCache->PrecacheModel("models/error.egf");
 
 	// register all shaders

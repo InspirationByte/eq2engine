@@ -36,6 +36,8 @@ CAnimatedModel::CAnimatedModel()
 // sets model for this entity
 void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 {
+	EGF_LOADING_CRITICAL_SECTION(pModel);
+
 	m_bPhysicsEnable = false;
 
 	if(m_physObj)
