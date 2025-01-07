@@ -345,6 +345,8 @@ const IUIControl::FontProps* IUIControl::FindFont(const char* name, const char* 
 
 void IUIControl::SetSize(const IVector2D &size)
 {
+	if (m_size == size)
+		return;
 	m_size = size;
 
 	m_sizeDiff = m_size - m_sizeReal;
