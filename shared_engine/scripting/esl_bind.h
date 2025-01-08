@@ -274,6 +274,9 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
 #define EQSCRIPT_BIND_CONSTRUCTOR(...) \
 	MakeConstructor<__VA_ARGS__>(),
 
+#define EQSCRIPT_CLONE_FUNC() \
+	MakeStaticFunction<ToLua<BindClass*>, const BindClass&>(+[](const BindClass& self) -> BindClass* { return PPNew BindClass(self); }, "Clone"),
+
 #define EQSCRIPT_BIND_STATIC_FUNC(FuncName, Func, ...) \
 	MakeStaticFunction<__VA_ARGS__>(Func, FuncName),
 
