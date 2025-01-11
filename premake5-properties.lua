@@ -164,13 +164,13 @@ property "tools"
 		kind "None"
 		
 property "thirdpartylib"
-	configmap {
+	--[[configmap {
 		["Debug"] = "Debug",
 		["Release"] = "Release",
 		["ReleaseAsan"] = "Release",
 		["Profile"] = "Retail",
 		["Retail"] = "Retail",
-	}
+	}]] -- fookin std annotate_string & annotate_vector
 	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
 		
 function prj_name(prj, wks, def)
