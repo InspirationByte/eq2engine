@@ -338,7 +338,7 @@ const IUIControl::FontProps* IUIControl::FindFont(const char* name, const char* 
 	if (m_parent)
 		return m_parent->FindFont(name, requestedBy);
 
-	MsgWarning("EqUI warning: Font %s requested by element %s not found", name, requestedBy);
+	MsgWarning("EqUI warning: Font %s requested by element %s not found\n", name, requestedBy);
 
 	return nullptr;
 }
