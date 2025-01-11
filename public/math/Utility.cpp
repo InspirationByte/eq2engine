@@ -190,47 +190,56 @@ bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vec
 	return true;
 }
 
-bool LineIntersectsLine2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint)
+bool LineIntersectsLine2D(const Vector2D& v1, const Vector2D& v2, const Vector2D& lB, const Vector2D& lE, Vector2D& isectPoint)
 {
-	const Vector2D A = lAE - lAB;
-	const Vector2D B = lBE - lBB;
+	const float a = v2.x - v1.x;
+	const float b = v2.y - v1.y;
+	const float A = lE.x - lB.x;
+	const float B = lE.y - lB.y;
 
-	const float det = A.x * B.y - A.y * B.x;
-
-	if (det < F_EPS && det > -F_EPS)
+	const float d = A * b - B * a;
+	if (d < F_EPS && d > -F_EPS)
 		return false;
 
-	const Vector2D D = lBB - lAB;
-
-	const float oneByDet = 1.0f / det;
-	const float s = (A.x * D.y - A.y * D.x) * oneByDet;
-
-	isectPoint.x = lBB.x + s * B.x;
-	isectPoint.y = lBB.y + s * B.y;
-
+	const float s = ((lB.y - v1.y) * a - (lB.x - v1.x) * b) / d;
+	isectPoint.x = lB.x + s * A;
+	isectPoint.y = lB.y + s * B;
 	return true;
 }
 
 bool LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint)
 {
-	const Vector2D A = lAE - lAB;
-	const Vector2D B = lBE - lBB;
+	constexpr float accuracy = 100.0f * F_EPS;
 
-	const float det = A.x * B.y - A.y * B.x;
+	const float a = lAE.x - lAB.x;
+	const float b = lAE.y - lAB.y;
+	const float A = lBE.x - lBB.x;
+	const float B = lBE.y - lBB.y;
 
-	if (det < F_EPS && det > -F_EPS)
+	const float d = A * b - B * a;
+	if (d < F_EPS && d > -F_EPS)
 		return false;
 
-	const Vector2D D = lBB - lAB;
+	const float s = ((lBB.y - lAB.y) * a - (lBB.x - lAB.x) * b) / d;
 
-	const float oneByDet = 1.0f / det;
-	const float r = (B.y * D.x - B.x * D.y) * oneByDet;
-	const float s = (A.x * D.y - A.y * D.x) * oneByDet;
+	// check that the point of intersection belongs to [lb2,le2]
+	const float maxDiff = max(abs(A), abs(B));
+	if (s * maxDiff < -accuracy || (s - 1.0f) * maxDiff > accuracy) 
+		return false;
 
-	isectPoint.x = lBB.x + s * B.x;
-	isectPoint.y = lBB.y + s * B.y;
+	isectPoint.x = lBB.x + s * A;
+	isectPoint.y = lBB.y + s * B;
 
-	return !(r < 0.0f || r > 1.0f || s < 0.0f || s > 1.0f);
+	// check that the point of intersection belongs to [lb1,le1]
+	if (   isectPoint.x < min(lAB.x, lAE.x) - accuracy
+		|| isectPoint.x > max(lAB.x, lAE.x) + accuracy
+		|| isectPoint.y < min(lAB.y, lAE.y) - accuracy
+		|| isectPoint.y > max(lAB.y, lAE.y) + accuracy)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 static float orient2D(const Vector2D& O, const Vector2D& A, const Vector2D& B)
