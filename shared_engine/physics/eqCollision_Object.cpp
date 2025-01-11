@@ -349,6 +349,11 @@ float CEqCollisionObject::GetRestitution() const
 	return m_restitution;
 }
 
+float CEqCollisionObject::GetErp() const
+{
+	return m_erp;
+}
+
 void CEqCollisionObject::SetFriction(float value)
 {
 	m_friction = value;
@@ -357,6 +362,11 @@ void CEqCollisionObject::SetFriction(float value)
 void CEqCollisionObject::SetRestitution(float value)
 {
 	m_restitution = value;
+}
+
+void CEqCollisionObject::SetErp(float value)
+{
+	m_erp = value;
 }
 
 //-----------------------------
