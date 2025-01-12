@@ -3,6 +3,8 @@
 #include <typeinfo>	// required for ASSERT messages
 #include "core/platform/assert.h"
 
+template< typename T > class ArrayCRef;
+
 // non-const array ref
 template< typename T >
 class ArrayRef
@@ -145,8 +147,10 @@ public:
 
 	template<typename ARRAY_TYPE>
 	ArrayCRef(const ARRAY_TYPE& otherArray)
-		: m_pListPtr(otherArray.ptr()), m_nNumElem(otherArray.numElem())
+		: m_pListPtr(otherArray.ptr())
+		, m_nNumElem(otherArray.numElem())
 	{
+		static_assert(IsArray<ARRAY_TYPE>::value, "Not Array or ArrayCRef");
 	}
 
 	template<int N>
