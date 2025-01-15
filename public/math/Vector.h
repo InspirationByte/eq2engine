@@ -674,7 +674,7 @@ T			planeDistance(const TVec4D<T> &plane, const TVec3D<T> &point);
 template <typename T>
 T			sCurve(const T t);
 
-// computes fractal of value
+// computes fractional of value
 float		fract(float value);
 
 // crossproduct of two vectors
