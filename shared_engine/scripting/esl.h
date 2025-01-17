@@ -268,8 +268,10 @@ public:
 	// perform full garbage collection cycle
 	void			GCCollect();
 
-	bool			RunBuffer(IVirtualStream* virtStream, const char* name) const;
 	bool			RunChunk(EqStringRef chunk, const char* name = "userChunk") const;
+
+	bool			RunFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode = nullptr) const;
+	int				LoadFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode = nullptr) const;
 
 	int				GetStackTop() const;
 	int				GetStackType(int index) const;

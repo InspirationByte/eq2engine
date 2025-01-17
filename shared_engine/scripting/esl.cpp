@@ -28,20 +28,18 @@ void ScriptState::GCCollect()
 	lua_gc(m_state, LUA_GCCOLLECT);
 }
 
-bool ScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
+int ScriptState::LoadFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode) const
 {
 	if (!virtStream)
 	{
-		esl::runtime::ResetErrorValue(m_state);
-		lua_pushfstring(m_state, "Couldn't open '%s'", name);
-		esl::runtime::SetLuaErrorFromTopOfStack(m_state);
-		return false;
+		lua_pushfstring(m_state, "Cannot load script %s", name);
+		return LUA_ERRMEM;
 	}
 
 	CMemoryStream memStream(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 0, PPSourceLine::Make(name, 0));
 	CMemoryStream* useStream = &memStream;
 	if (virtStream->GetType() == VS_TYPE_MEMORY)
-		useStream = reinterpret_cast<CMemoryStream*>(virtStream);
+		useStream = static_cast<CMemoryStream*>(virtStream);
 	else
 		memStream.AppendStream(virtStream);
 
@@ -56,15 +54,20 @@ bool ScriptState::RunBuffer(IVirtualStream* virtStream, const char* name) const
 		}
 	}
 
-	const int bufStatus = luaL_loadbuffer(m_state, luaSrc, fileSize, useStream->GetName());
-	if (bufStatus != 0)
+	return luaL_loadbufferx(m_state, luaSrc, fileSize, useStream->GetName(), mode);
+}
+
+bool ScriptState::RunFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode) const
+{
+	const int loadStatus = LoadFileBuffer(virtStream, name, mode);
+	if (loadStatus != LUA_OK)
 	{
 		esl::runtime::SetLuaErrorFromTopOfStack(m_state);
 		return false;
 	}
 
 	const int result = lua_pcall(m_state, 0, LUA_MULTRET, 0);
-	if (result != 0)
+	if (result != LUA_OK)
 	{
 		esl::runtime::SetLuaErrorFromTopOfStack(m_state);
 		return false;
@@ -77,14 +80,14 @@ bool ScriptState::RunChunk(EqStringRef chunk, const char* name) const
 	esl::runtime::StackGuard g(m_state);
 
 	const int res = luaL_loadbuffer(m_state, chunk.ToCString(), chunk.Length(), name);
-	if (res != 0)
+	if (res != LUA_OK)
 	{
 		esl::runtime::SetLuaErrorFromTopOfStack(m_state);
 		return false;
 	}
 
 	const int result = lua_pcall(m_state, 0, LUA_MULTRET, 0);
-	if (result != 0)
+	if (result != LUA_OK)
 	{
 		esl::runtime::SetLuaErrorFromTopOfStack(m_state);
 		return false;
