@@ -441,11 +441,10 @@ void fnmPathCombineF(EqString& outPath, int num, ...)
 	for (int i = 0; i < num; ++i)
 	{
 		EqStringRef pathPart = va_arg(argptr, const char*);
-		const int length = pathPart.Length();
-		if (!length)
+		if (!pathPart.Length())
 			continue;
 		paths.append(pathPart);
-		maxLength += length + 1;
+		maxLength += pathPart.Length() + 1;
 	}
 	va_end(argptr);
 
@@ -453,7 +452,7 @@ void fnmPathCombineF(EqString& outPath, int num, ...)
 	for (int i = 0; i < paths.numElem(); ++i)
 	{
 		outPath.Append(paths[i]);
-		if (i < paths.numElem()-1 && outPath[outPath.Length()-1] != CORRECT_PATH_SEPARATOR)
+		if (i < paths.numElem() - 1 && outPath[outPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
 			outPath.Append(CORRECT_PATH_SEPARATOR);
 	}
 	fnmPathFixSeparators(outPath);
