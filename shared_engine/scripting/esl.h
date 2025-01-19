@@ -238,7 +238,7 @@ template<typename T>
 struct BaseScriptClass; // Type
 
 template<> inline TypeInfo ScriptClass<void>::GetTypeInfo() { return {}; }
-template<> inline const char ScriptClass<void>::className[] = "null";
+template<> inline const char ScriptClass<void>::className[] = "";
 template<> inline TypeInfoGetter ScriptClass<void>::baseClassTypeInfoGetter = nullptr;
 template<> inline const char* ScriptClass<void>::baseClassName = nullptr;
 
@@ -357,6 +357,8 @@ struct BaseClassInfo
 {
 	EqStringRef name;
 	intptr_t	offset{ 0 };	// offset bytes for upcasting
+
+	bool		IsValid() const { return name.IsValid() && name.Length() > 0; }
 };
 
 void					SetLuaErrorFromTopOfStack(lua_State* L);
