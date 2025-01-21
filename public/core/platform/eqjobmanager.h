@@ -92,13 +92,28 @@ public:
 //--------------------------------------------
 // Batched Job
 
+class CEqJobManager;
+
 template<typename ITEM>
 class BatchedJob : public SyncJob
 {
 public:
-	class Worker;
 	using BatchItemList = Array<ITEM>;
 	using BatchItemSpan = ArrayRef<ITEM>;
+	
+	class Worker : public IParallelJob
+	{
+		friend class BatchedJob;
+	public:
+		Worker(const char* name, BatchedJob& ownerJob) : IParallelJob(name), m_owner(ownerJob) {}
+	private:
+		void 			Execute() override;
+
+		BatchedJob&		m_owner;
+		BatchItemSpan 	m_batchItems{ nullptr };
+		int				m_threadCount{ 0 };
+		int				m_firstTask{ 0 };
+	};
 
 	BatchedJob(const char* name) : SyncJob(name) { InitSignal(); }
 	void StartJobs(CEqJobManager& jobMng);
@@ -108,21 +123,48 @@ private:
 	virtual void OnInitWorker(Worker& workerJob) = 0;
 	virtual void Process(ITEM jobItem) = 0;
 
-	class Worker : public IParallelJob
-	{
-	public:
-		Worker(const char* name, BatchedJob& ownerJob) : IParallelJob(name), m_owner(ownerJob) {}
-		void 			Execute() override;
-
-		BatchedJob&		m_owner;
-		BatchItemSpan 	m_batchItems{ nullptr };
-		int				m_threadCount{ 0 };
-		int				m_firstTask{ 0 };
-	};
-
 	BatchItemList 	m_batchItems{ PP_SL };
 	Array<Worker>	m_workerJobs{ PP_SL };
 };
+
+//----------------------------------------------------------
+
+// Job manager 
+// Provides job queue with worker threads
+class CEqJobManager
+{
+public:
+	class WorkerThread;
+
+	~CEqJobManager();
+	CEqJobManager(const char* name, int numThreads, int queueSize, int stackSize = Threading::DEFAULT_THREAD_STACK_SIZE);
+
+	void			InitStartJob(IParallelJob* job);
+	void			StartJob(IParallelJob* job, bool submit = true);
+	
+	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
+
+	bool			AllJobsCompleted() const;
+	int				GetJobThreadsCount() const { return m_workerThreads.numElem(); }
+
+	bool			Submit(int numWorkers);
+private:
+
+	void			DoStartJob(IParallelJob* job);
+	void			ExecuteJob(IParallelJob& job);
+
+	IParallelJob*	ExtractJobFromQueue();
+
+	using JobQueue = BoundedQueue<IParallelJob*>;
+
+	ArrayRef<WorkerThread>	m_workerThreads{ nullptr };
+	mutable JobQueue		m_jobQueue;
+	int						m_queueSize{ 0 };
+	volatile int			m_jobAvailability{ 0 };
+};
+
+
+// TODO: hpp
 
 template<typename ITEM>
 void BatchedJob<ITEM>::StartJobs(CEqJobManager& jobMng)
@@ -160,37 +202,3 @@ void BatchedJob<ITEM>::Worker::Execute()
 	for (int i = m_firstTask; i < m_batchItems.numElem(); i += m_threadCount)
 		m_owner.Process(m_batchItems[i]);
 }
-
-//----------------------------------------------------------
-
-class CEqJobManager
-{
-public:
-	class WorkerThread;
-
-	~CEqJobManager();
-	CEqJobManager(const char* name, int numThreads, int queueSize, int stackSize = Threading::DEFAULT_THREAD_STACK_SIZE);
-
-	void			InitStartJob(IParallelJob* job);
-	void			StartJob(IParallelJob* job, bool submit = true);
-	
-	void			Wait(int waitTimeout = Threading::WAIT_INFINITE);
-
-	bool			AllJobsCompleted() const;
-	int				GetJobThreadsCount() const { return m_workerThreads.numElem(); }
-
-	bool			Submit(int numWorkers);
-private:
-
-	void			DoStartJob(IParallelJob* job);
-	void			ExecuteJob(IParallelJob& job);
-
-	IParallelJob*	ExtractJobFromQueue();
-
-	using JobQueue = BoundedQueue<IParallelJob*>;
-
-	ArrayRef<WorkerThread>	m_workerThreads{ nullptr };
-	mutable JobQueue		m_jobQueue;
-	int						m_queueSize{ 0 };
-	volatile int			m_jobAvailability{ 0 };
-};

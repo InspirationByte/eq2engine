@@ -3,7 +3,23 @@
 #include <typeinfo>	// required for ASSERT messages
 #include "core/platform/assert.h"
 
+template<typename T, typename STORAGE_TYPE>
+class ArrayBase;
+
+template< typename T >
+struct IsArray : std::false_type {};
+
+template<typename T, typename T2>
+struct IsArray<ArrayBase<T, T2>> : std::true_type {};
+
+template< typename T > class ArrayRef;
 template< typename T > class ArrayCRef;
+
+template<typename T>
+struct IsArray<ArrayRef<T>> : std::true_type {};
+
+template<typename T>
+struct IsArray<ArrayCRef<T>> : std::true_type {};
 
 // non-const array ref
 template< typename T >

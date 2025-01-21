@@ -1150,21 +1150,6 @@ using Array = ArrayBase<T, DynamicArrayStorage<T>>;
 template< typename T, int SIZE >
 using FixedArray = ArrayBase<T, FixedArrayStorage<T, SIZE>>;
 
-template< typename T >
-struct IsArray : std::false_type {};
-
-template<typename T, typename T2>
-struct IsArray<ArrayBase<T, T2>> : std::true_type {};
-
-template< typename T > class ArrayRef;
-template< typename T > class ArrayCRef;
-
-template<typename T>
-struct IsArray<ArrayRef<T>> : std::true_type {};
-
-template<typename T>
-struct IsArray<ArrayCRef<T>> : std::true_type {};
-
 //-------------------------------------------
 
 template<typename T>

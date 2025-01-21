@@ -75,13 +75,13 @@
 #include "ds/function.h"
 
 #include "ds/Array.h"
+#include "ds/ArrayRef.h"
 #include "ds/stringref.h"
 
 #include "ds/IVirtualStream.h"
 #include "ds/MemoryStream.h"
 
 #include "ds/mempool.h"
-#include "ds/ArrayRef.h"
 #include "ds/BitArray.h"
 #include "ds/Map.h"
 #include "ds/List.h"

@@ -10,10 +10,17 @@ property "e2_ws_settings"
 	
 	objdir "build/obj"
 	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
-	implibdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
+	libdirs {
+		 "build/thirdpartylib/",
+		 "build/lib/"
+ 	}
 	
 	filter "kind:StaticLib"
 		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
+
+	-- MSVC thing only
+	filter "system:Windows"
+		implibdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
 
 property "e2_ws_configurations"
     filter "configurations:Debug"

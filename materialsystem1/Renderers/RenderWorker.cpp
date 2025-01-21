@@ -50,9 +50,9 @@ int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 	}
 
 	ASSERT(!workIt.atEnd());
-
-	SignalWork();
+	
 	while ((*workIt).result == -5000) {
+		SignalWork();
 		Platform_Sleep(0);
 	}
 
