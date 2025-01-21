@@ -110,6 +110,7 @@ bool UpdateStates( float fDt )
 		return false;
 	}
 
+	s_currentState->PreUpdate(fDt);
 	g_onPreUpdateState(fDt);
 
 	const bool continuedState = s_currentState->Update(fDt);

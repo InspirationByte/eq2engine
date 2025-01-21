@@ -36,6 +36,9 @@ public:
 	// @to - used to transfer data
 	virtual void	OnLeave( CAppStateBase* to ) {}
 
+	// called before update and update events
+	virtual void	PreUpdate(float fDt) {};
+
 	// when 'false' returned the next state goes on
 	virtual bool	Update( float fDt ) = 0;
 
