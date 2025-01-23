@@ -573,7 +573,7 @@ void CEqStudioGeom::LoadMaterials()
 {
 	studioHdr_t* studio = m_studio;
 
-	bool bError = false;
+	bool hasErrors = false;
 	{
 		// init materials
 		const int numMaterials = studio->numMaterials;
@@ -585,27 +585,19 @@ void CEqStudioGeom::LoadMaterials()
 		// this is a source engine - like material loading using material paths
 		for (int i = 0; i < numMaterials; i++)
 		{
-			EqString fpath(studio->pMaterial(i)->materialname);
-			fnmPathFixSeparators(fpath);
-
+			const EqStringRef materialName(studio->pMaterial(i)->materialname);
 			for (int j = 0; j < studio->numMaterialSearchPaths; j++)
 			{
 				if (m_materials[i])
-					continue;
+					break;
 
-				EqString spath(studio->pMaterialSearchPath(j)->searchPath);
-				fnmPathFixSeparators(spath);
+				const EqStringRef searchPath(studio->pMaterialSearchPath(j)->searchPath);
 
-				if (spath.Length() && spath[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
-					spath = spath.Left(spath.Length() - 1);
-
-				extendPath = fnmPathCombine(spath, fpath);
+				extendPath = fnmPathCombine(searchPath, materialName);
 				if (!g_matSystem->IsMaterialExist(extendPath))
 					continue;
 
 				IMaterialPtr material = g_matSystem->GetMaterial(extendPath, s_studioInstanceFormatId);
-				g_matSystem->QueueLoading(material);
-
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
 					MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", material->GetName(), material->GetShaderName(), m_name.ToCString());
 
@@ -617,9 +609,13 @@ void CEqStudioGeom::LoadMaterials()
 		for (int i = 0; i < numMaterials; i++)
 		{
 			if (m_materials[i])
+			{
+				g_matSystem->QueueLoading(m_materials[i]);
 				continue;
+			}
 
 			m_materials[i] = g_studioCache->GetErrorMaterial();
+			hasErrors = true;
 
 			const char* materialName = studio->pMaterial(i)->materialname;
 			if (*materialName)
@@ -627,7 +623,6 @@ void CEqStudioGeom::LoadMaterials()
 			else
 				MsgError("Model %s has empty material name\n", m_name.ToCString());
 
-			bError = true;
 		}
 	}
 
@@ -652,10 +647,9 @@ void CEqStudioGeom::LoadMaterials()
 	m_materialCount = numUsedMaterials;
 	m_materialGroupsCount = numUsedMaterials ? m_materials.numElem() / numUsedMaterials : 0;
 
-	if (bError)
+	if (hasErrors)
 	{
 		MsgError("  In following search paths:");
-
 		for (int i = 0; i < studio->numMaterialSearchPaths; i++)
 			MsgError("   '%s'\n", studio->pMaterialSearchPath(i)->searchPath);
 	}
