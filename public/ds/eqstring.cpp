@@ -441,7 +441,7 @@ void EqTStr<CH>::ReplaceChar(CH whichChar, CH to)
 		return;
 
 	CH* str = m_pszString;
-	for(uint i = 0; i < m_nLength; i++)
+	for(int i = 0; i < m_nLength; i++)
 	{
 		if(*str == 0)
 			break;
@@ -482,16 +482,21 @@ int EqTStr<CH>::ReplaceSubstr(StrRef find, StrRef replaceTo, bool caseSensivite 
 }
 
 template<typename CH>
-size_t EqTStr<CH>::ReadString(IVirtualStream* stream, EqTStr<CH>& output)
+VSSize EqTStr<CH>::ReadString(IVirtualStream* stream, int length, EqTStr& output)
 {
-	uint16 length = 0;
-	stream->Read(&length, 1, sizeof(length));
 	output.Resize(length, false);
-
 	stream->Read(output.m_pszString, sizeof(CH), length);
 	output.m_pszString[length] = 0;
 	output.m_nLength = length;
 	return 1;
+}
+
+template<typename CH>
+VSSize EqTStr<CH>::ReadString(IVirtualStream* stream, EqTStr<CH>& output)
+{
+	int length = 0;
+	stream->Read(&length, 1, sizeof(length));
+	return ReadString(stream, length, output);
 }
 
 template class EqTStr<char>;
