@@ -429,20 +429,6 @@ EqString fnmPathExtractPath(EqStringRef path)
 	return fnmPathStripName(path);
 }
 
-static bool fnmHasCorrectPathSeparatorAtEnd(EqStringRef path)
-{
-	if (!path.Length())
-		return true;
-	return path[path.Length() - 1] == CORRECT_PATH_SEPARATOR;
-}
-
-static bool fnmHasIncorrectPathSeparatorAtEnd(EqStringRef path)
-{
-	if (!path.Length())
-		return false;
-	return path[path.Length() - 1] == INCORRECT_PATH_SEPARATOR;
-}
-
 EqString fnmPathCombineF(int num, ...)
 {
 	EqString outPath;
@@ -465,14 +451,9 @@ EqString fnmPathCombineF(int num, ...)
 	outPath.Resize(maxLength);
 	for (int i = 0; i < paths.numElem(); ++i)
 	{
-		outPath.Append(paths[i]);
+		outPath.Append(paths[i].TrimChar(_CORRECT_PATH_SEPARATOR_STR _INCORRECT_PATH_SEPARATOR_STR, true, true));
 		if (i < paths.numElem() - 1)
-		{
-			if (fnmHasIncorrectPathSeparatorAtEnd(outPath))
-				outPath.GetData()[outPath.Length() - 1] = CORRECT_PATH_SEPARATOR;
-			else if (!fnmHasCorrectPathSeparatorAtEnd(outPath))
-				outPath.Append(CORRECT_PATH_SEPARATOR);
-		}
+			outPath.Append(CORRECT_PATH_SEPARATOR);
 	}
 
 	fnmPathFixSeparators(outPath);

@@ -27,15 +27,20 @@ template <typename T>
 decltype(auto) ToCString(const T& value);
 
 #ifdef _WIN32
+
+#define _CORRECT_PATH_SEPARATOR_STR		"\\"
+#define _INCORRECT_PATH_SEPARATOR_STR	"/"
+
 constexpr int CORRECT_PATH_SEPARATOR	= '\\';
 constexpr int INCORRECT_PATH_SEPARATOR	= '/';
 #else
+
+#define _CORRECT_PATH_SEPARATOR_STR		"/"
+#define _INCORRECT_PATH_SEPARATOR_STR	"\\"
+
 constexpr int CORRECT_PATH_SEPARATOR	= '/';
 constexpr int INCORRECT_PATH_SEPARATOR	= '\\';
 #endif // _WIN32
-
-static constexpr const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
-static constexpr const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
 
 //------------------------------------------------------
 // String hash
