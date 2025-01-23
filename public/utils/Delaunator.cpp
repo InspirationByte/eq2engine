@@ -237,8 +237,10 @@ Delaunator::Delaunator(ArrayCRef<Vector2D> in_coords)
 		}
 	}
 
-	if (!(min_radius < DBL_MAX)) {
+	if (i2 == INVALID_INDEX)
+	{
 		ASSERT_FAIL("not triangulation");
+		return;
 	}
 
 	double i2x = m_coords[i2].x;
