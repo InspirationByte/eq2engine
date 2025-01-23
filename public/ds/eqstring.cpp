@@ -47,12 +47,27 @@ EqTStr<CH>::EqTStr(StrRef str, int start, int len)
 template<typename CH>
 EqTStr<CH>::EqTStr(EqTStr<CH>&& str) noexcept
 {
-	m_nAllocated = str.m_nAllocated;
-	m_nLength = str.m_nLength;
-	m_pszString = str.m_pszString;
+	if (str.m_nLength == 0 && m_nLength == 0)
+		return;
+
+	if (str.m_nAllocated > m_nAllocated)
+	{
+		// move string with pointer as it has larger capacity
+		m_nAllocated = str.m_nAllocated;
+		m_nLength = str.m_nLength;
+		m_pszString = str.m_pszString;
+
+		str.m_pszString = nullptr;
+	}
+	else
+	{
+		// copy to the current buffer as it's large enough
+		Assign(str);
+		SAFE_DELETE_ARRAY(str.m_pszString);
+	}
+
 	str.m_nAllocated = 0;
 	str.m_nLength = 0;
-	str.m_pszString = nullptr;
 }
 
 template<typename CH>
@@ -72,10 +87,26 @@ EqTStr<CH>& EqTStr<CH>::operator=(const StrRef& other)
 template<typename CH>
 EqTStr<CH>& EqTStr<CH>::operator=(EqTStr&& other) noexcept
 {
-	SAFE_DELETE_ARRAY(m_pszString);
-	m_nAllocated = other.m_nAllocated;
-	m_nLength = other.m_nLength;
-	m_pszString = other.m_pszString;
+	if (other.m_nLength == 0 && m_nLength == 0)
+		return *this;
+
+	if (other.m_nAllocated > m_nAllocated)
+	{
+		// move string with pointer as it has larger capacity
+		SAFE_DELETE_ARRAY(m_pszString);
+		m_nAllocated = other.m_nAllocated;
+		m_nLength = other.m_nLength;
+		m_pszString = other.m_pszString;
+
+		other.m_pszString = nullptr;
+	}
+	else
+	{
+		// copy to the current buffer as it's large enough
+		Assign(other);
+		SAFE_DELETE_ARRAY(other.m_pszString);
+	}
+
 	other.m_nAllocated = 0;
 	other.m_nLength = 0;
 	other.m_pszString = nullptr;
