@@ -548,12 +548,12 @@ void CEqStudioGeom::LoadMotionPackages()
 	const studioHdr_t* studio = m_studio;
 
 	// load motion packages that were specified in EGF file
+	EqString packagePath;
 	for (int i = 0; i < studio->numMotionPackages; i++)
 	{
-		EqString mopPath;
-		fnmPathCombine(mopPath, fnmPathStripName(m_name), fnmPathApplyExt(studio->pPackage(i)->packageName, s_egfMotionPackageExt));
+		packagePath = fnmPathCombine(fnmPathStripName(m_name), fnmPathApplyExt(studio->pPackage(i)->packageName, s_egfMotionPackageExt));
 
-		const int motionDataIdx = g_studioCache->PrecacheMotionData(mopPath, m_name);
+		const int motionDataIdx = g_studioCache->PrecacheMotionData(packagePath, m_name);
 		if (motionDataIdx != STUDIOCACHE_INVALID_IDX)
 			m_motionData.append(motionDataIdx);
 	}
@@ -579,6 +579,8 @@ void CEqStudioGeom::LoadMaterials()
 		const int numMaterials = studio->numMaterials;
 		m_materials.setNum(numMaterials);
 
+		EqString extendPath;
+
 		// try load materials properly
 		// this is a source engine - like material loading using material paths
 		for (int i = 0; i < numMaterials; i++)
@@ -597,13 +599,11 @@ void CEqStudioGeom::LoadMaterials()
 				if (spath.Length() && spath[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
 					spath = spath.Left(spath.Length() - 1);
 
-				EqString extend_path;
-				fnmPathCombine(extend_path, spath.ToCString(), fpath.ToCString());
-
-				if (!g_matSystem->IsMaterialExist(extend_path))
+				extendPath = fnmPathCombine(spath, fpath);
+				if (!g_matSystem->IsMaterialExist(extendPath))
 					continue;
 
-				IMaterialPtr material = g_matSystem->GetMaterial(extend_path, s_studioInstanceFormatId);
+				IMaterialPtr material = g_matSystem->GetMaterial(extendPath, s_studioInstanceFormatId);
 				g_matSystem->QueueLoading(material);
 
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))

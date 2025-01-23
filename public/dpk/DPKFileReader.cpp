@@ -347,7 +347,7 @@ bool CDPKFileReader::OpenEmbeddedPackage(CBasePackageReader* target, const char*
 		return false;
 
 	COSFile osFile;
-	if (!osFile.Open(m_packagePath.ToCString(), COSFile::OPEN_EXIST | COSFile::READ))
+	if (!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
 	{
 		ASSERT_FAIL("CDPKFileReader::OpenEmbeddedPackage FATAL ERROR - failed to open package file");
 		return false;
@@ -378,14 +378,13 @@ IFilePtr CDPKFileReader::Open(const char* filename, int modeFlags)
 
 	// find file in DPK filename list
 	const int dpkFileIndex = FindFileIndex(filename);
-
 	if (dpkFileIndex == -1)
 		return nullptr;
 
 	const dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
 
 	COSFile osFile;
-	if (!osFile.Open(m_packagePath.ToCString(), COSFile::OPEN_EXIST | COSFile::READ))
+	if (!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
 	{
 		ASSERT_FAIL("CDPKFileReader::Open FATAL ERROR - failed to open package file");
 		return nullptr;
@@ -412,7 +411,7 @@ IFilePtr CDPKFileReader::Open(int fileIndex, int modeFlags)
 	const dpkfileinfo_t& fileInfo = m_dpkFiles[fileIndex];
 
 	COSFile osFile;
-	if (!osFile.Open(m_packagePath.ToCString(), COSFile::OPEN_EXIST | COSFile::READ))
+	if (!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
 	{
 		ASSERT_FAIL("CDPKFileReader::Open FATAL ERROR - failed to open package file");
 		return nullptr;

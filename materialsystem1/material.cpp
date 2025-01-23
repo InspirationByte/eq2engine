@@ -65,17 +65,15 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 	KVSection root;
 
 	const int numSteps = r_allowSourceTextures.GetBool() ? 2 : 1;
-
+	EqString atlasKVSFileName;
+	EqString materialKVSFilename;
 	for (int i = 0; i < numSteps && !success; ++i)
 	{
 		//
 		// loading a material description
 		//
-		EqString atlasKVSFileName;
-		fnmPathCombine(atlasKVSFileName, materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialAtlasFileExt));
-
-		EqString materialKVSFilename;
-		fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialFileExt));
+		atlasKVSFileName = fnmPathCombine(materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialAtlasFileExt));
+		materialKVSFilename = fnmPathCombine(materialsPaths[i], fnmPathApplyExt(m_szMaterialName, s_materialFileExt));
 
 		// load atlas file
 		if (!m_atlas)
@@ -89,7 +87,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 					m_atlas = PPNew CTextureAtlas(atlasSec);
 
 					// atlas can override material name
-					fnmPathCombine(materialKVSFilename, materialsPaths[i], fnmPathApplyExt(m_atlas->GetMaterialName(), s_materialFileExt));
+					materialKVSFilename = fnmPathCombine(materialsPaths[i], fnmPathApplyExt(m_atlas->GetMaterialName(), s_materialFileExt));
 				}
 				else
 					MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.ToCString());
@@ -97,7 +95,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		}
 
 		// load material file
-		if( KV_LoadFromFile(materialKVSFilename.ToCString(), materialSearchPath, &root))
+		if( KV_LoadFromFile(materialKVSFilename, materialSearchPath, &root))
 		{
 			success = true;
 		}

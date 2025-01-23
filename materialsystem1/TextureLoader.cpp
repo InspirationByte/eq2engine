@@ -119,16 +119,16 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	Array<CImage::PTR_T> imgFrames(PP_SL);
 
 	// load frames
+	EqString texturePathExt;
 	for (const EqString& texName : textureNames)
 	{
 		CImage::PTR_T img = CRefPtr_new(CImage);
 
-		EqString texturePathExt;
-		fnmPathCombine(texturePathExt, m_texturePath, texName);
+		texturePathExt = fnmPathCombine(m_texturePath, texName);
 		bool isLoaded = img->Load(fnmPathApplyExt(texturePathExt, TEXTURE_DEFAULT_EXTENSION), 0);
 		if (!isLoaded && r_allowSourceTextures->GetBool())
 		{
-			fnmPathCombine(texturePathExt, m_textureSRCPath, texName);
+			texturePathExt = fnmPathCombine(m_textureSRCPath, texName);
 			isLoaded = img->Load(fnmPathApplyExt(texturePathExt, TEXTURE_SECONDARY_EXTENSION));
 		}
 

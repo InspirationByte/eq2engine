@@ -117,8 +117,7 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 		if (fsFind.IsDirectory())
 			continue;
 
-		fnmPathCombine(shaderPackPath, "shaders", fsFind.GetPath());
-
+		shaderPackPath = fnmPathCombine("shaders", fsFind.GetPath());
 		shaderModCount += LoadShaderPackage(shaderPackPath);
 		++shaderPackCount;
 	}

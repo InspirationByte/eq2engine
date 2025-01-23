@@ -530,13 +530,11 @@ static bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, DSMod
 void CMotionPackageGenerator::LoadFBXAnimations(const KVSection* section)
 {
 	const char* fbxFileName = KV_GetValueString(section);
-
-	EqString finalFileName;
-	fnmPathCombine(finalFileName, m_animPath, "anims", fbxFileName);
+	EqString finalFileName = fnmPathCombine(m_animPath, "anims", fbxFileName);
 
 	// load from exporter-supported path
 	if (!g_fileSystem->FileExist(finalFileName))
-		fnmPathCombine(finalFileName, m_animPath, fbxFileName);
+		finalFileName = fnmPathCombine(m_animPath, fbxFileName);
 
 	SharedModel::LoadFBXAnimations(m_animations, finalFileName, KV_GetValueString(section->FindSection("meshFilter"), 0, nullptr));
 }
@@ -552,12 +550,11 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* animName)
 		return -1;
 	}
 
-	EqString finalFileName;
-	fnmPathCombine(finalFileName, m_animPath, "anims", animName);
+	EqString finalFileName = fnmPathCombine(m_animPath, "anims", animName);
 
 	// load from exporter-supported path
 	if(!g_fileSystem->FileExist(finalFileName))
-		fnmPathCombine(finalFileName, m_animPath, animName);
+		finalFileName = fnmPathCombine(m_animPath, animName);
 
 	finalFileName = fnmPathApplyExt(finalFileName, ".esa");
 

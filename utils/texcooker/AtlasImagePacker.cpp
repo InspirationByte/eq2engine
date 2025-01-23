@@ -410,8 +410,7 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 
 	memset(destData, 0, destImage.GetMipMappedSize(0, destImage.GetMipMapCount()));
 
-	EqString fullMaterialPath;
-	fnmPathCombine(fullMaterialPath, materialsPath, outputMaterialName);
+	const EqString fullMaterialPath = fnmPathCombine(materialsPath, outputMaterialName);
 	const EqString imageFileName = fnmPathApplyExt(fullMaterialPath, s_sourceTextureFileExt);
 	const EqString matFileName = fnmPathApplyExt(fullMaterialPath, s_materialFileExt);
 	const EqString atlasFileName = fnmPathApplyExt(fullMaterialPath, s_materialAtlasFileExt);

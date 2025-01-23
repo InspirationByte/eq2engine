@@ -102,12 +102,12 @@ void		fnmPathFixSeparators(EqString& str);
 void		fnmPathFixSeparators(char* str);
 
 // combines paths
-void		fnmPathCombineF(EqString& outPath, int num, ...);
+EqString	fnmPathCombineF(int num, ...);
 
 template<typename ...Args> // requires std::same_as<Args, const char*>...
-void		fnmPathCombine(EqString& outPath, const Args&... args)
+EqString	fnmPathCombine(const Args&... args)
 {
-	fnmPathCombineF(outPath, sizeof...(Args), ToCString(args)...);
+	return fnmPathCombineF(sizeof...(Args), ToCString(args)...);
 }
 
 //------------------------------------------------------

@@ -65,9 +65,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 		}
 		else if (!CString::Compare(requested_source, "VertexLayout"))
 		{
-			EqString shaderSourceName;
-			fnmPathCombine(shaderSourceName, "VertexLayouts", m_vertexLayoutName + ".h");
-
+			const EqString shaderSourceName = fnmPathCombine("VertexLayouts", m_vertexLayoutName + ".h");
 			if (!TryOpenIncludeFile(sourcePath, shaderSourceName, result))
 				return &result->resultData;
 
@@ -88,7 +86,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	EqString fullPath;
 	for (const EqString& incPath : m_includePaths)
 	{
-		fnmPathCombine(fullPath, incPath, fileName);
+		fullPath = fnmPathCombine(incPath, fileName);
 		openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
 		if (openFile)
 			break;
@@ -96,7 +94,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 
 	if (!openFile)
 	{
-		fnmPathCombine(fullPath, reqSource, fileName);
+		fullPath = fnmPathCombine(reqSource, fileName);
 		openFile = g_fileSystem->Open(fullPath, FS_OPEN_READ, SP_ROOT);
 	}
 
