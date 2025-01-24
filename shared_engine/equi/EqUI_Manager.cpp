@@ -129,6 +129,26 @@ IUIControl* CUIManager::CreateElement( const char* type )
 
 void CUIManager::AddPanel(Panel* panel)
 {
+	{
+		const int idx = arrayFindIndexF(m_panels, [panel](const Panel* addedPanel) {
+			return CString::CompareCaseIns(addedPanel->GetName(), panel->GetName());
+			});
+		if (idx != -1)
+		{
+			ASSERT_FAIL("Panel with name %s is already added to UI manager", panel->GetName());
+			return;
+		}
+	}
+
+	{
+		const int idx = arrayFindIndex(m_panels, panel);
+		if (idx != -1)
+		{
+			ASSERT_FAIL("Panel name %s was already added to root of UI manager", panel->GetName());
+			return;
+		}
+	}
+
 	m_panels.append( panel );
 	m_rootPanel->AddChild(panel);
 }

@@ -47,9 +47,6 @@ void Panel::InitFromKeyValues(const KVSection* sec, bool noClear )
 	// initialize from scheme
 	const KVSection* mainSec = sec->FindSection("panel");
 	if (mainSec == nullptr)
-		mainSec = sec->FindSection("child");
-
-	if (mainSec == nullptr)
 		mainSec = sec;
 
 	BaseClass::InitFromKeyValues(mainSec, noClear);
