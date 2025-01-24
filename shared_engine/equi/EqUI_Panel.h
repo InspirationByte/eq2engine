@@ -25,7 +25,7 @@ public:
 	Panel();
 	~Panel();
 
-	virtual void			InitFromKeyValues(const KVSection* sec, bool noClear) override;
+	virtual void			InitFromKeyValues(const KVSection* sec, bool keepElements = false) override;
 
 	virtual void			Hide();
 

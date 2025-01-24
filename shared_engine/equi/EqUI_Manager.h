@@ -40,6 +40,9 @@ public:
 	// the element loader
 	void				RegisterFactory(const char* name, ControlFactoryFunc factory);
 
+	template<typename T>
+	T*					Create();
+
 	IUIControl*			CreateElement( const char* pszTypeName );
 
 	void				AddPanel( equi::Panel* panel);
@@ -89,6 +92,14 @@ private:
 
 	Array<ControlFactory>	m_controlFactory{ PP_SL };
 };
+
+template<typename T>
+inline T* CUIManager::Create()
+{
+	IUIControl* control = CreateElement(T::Classname());
+	ASSERT_MSG(control, "Failed to create %s, check if that was registered using EQUI_REGISTER_CONTROL", T::Classname());
+	return control->As<T>();
+}
 
 extern CStaticAutoPtr<CUIManager> Manager;
 };
