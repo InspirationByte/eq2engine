@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/ConVar.h"
 #include "utils/KeyValues.h"
 #include "utils/TextureAtlas.h"
 
@@ -14,6 +15,8 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
+
+DECLARE_CVAR(equi_debugMaskClear, "0", nullptr, 0);
 
 namespace equi
 {
@@ -102,7 +105,7 @@ void Mask::RenderChilds(int depth, RenderContextAbstract& context)
 	// render childs into texture first
 	IGPURenderPassRecorderPtr maskRenderPass = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
-		.ColorTarget(m_maskedChilds, true, color_red)
+		.ColorTarget(m_maskedChilds, equi_debugMaskClear.GetBool(), color_red)
 		.End()
 	);
 	
