@@ -69,6 +69,9 @@ struct ControlRenderContext : public RenderContextAbstract
 	TransformStack transformStackStorage;
 };
 
+template <class T>
+inline T* DynamicCast(IUIControl* control);
+
 //-------------------------------------------------------------
 // EqUI control interface
 // use equi::DynamicCast to convert type
@@ -79,6 +82,12 @@ class IUIControl
 public:
 	IUIControl();
 	virtual ~IUIControl();
+
+	template<typename T>
+	const T*					As() const {return equi::DynamicCast<T>(this); }
+
+	template<typename T>
+	T*							As() { return equi::DynamicCast<T>(this); }
 
 	virtual void				InitFromKeyValues(const KVSection* sec, bool keepElements = false);
 
@@ -152,6 +161,7 @@ public:
 	IUIControl*					FindChildRecursive( const char* pszName );
 	IUIControl*					Get( const char* pathToElem);
 	void						ClearChilds( bool destroy = true );
+	void						ClearAll( bool destroyChilds = true );
 
 	IUIControl*					GetParent() const						{ return m_parent; }
 
@@ -261,7 +271,7 @@ protected:
 };
 
 template <class T> 
-T* DynamicCast(IUIControl* control)
+inline T* DynamicCast(IUIControl* control)
 {
 	if(control == nullptr)
 		return nullptr;

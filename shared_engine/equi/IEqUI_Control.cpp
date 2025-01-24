@@ -843,6 +843,13 @@ IUIControl* IUIControl::Get(const char* pathToElem)
 	return currentElement == this ? nullptr : currentElement;
 }
 
+void IUIControl::ClearAll(bool destroy)
+{
+	ClearChilds(destroy);
+	m_fontCollection.clear(destroy);
+	m_eventCallbacks.clear(destroy);
+}
+
 void IUIControl::ClearChilds(bool destroy)
 {
 	for (IUIControl* child : m_childs)
