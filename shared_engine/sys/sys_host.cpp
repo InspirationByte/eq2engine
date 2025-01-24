@@ -995,7 +995,8 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if( g_consoleInput->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
-	if( equi::Manager->ProcessMouseEvents( x, y, buttons, down ? equi::UI_EVENT_DOWN : equi::UI_EVENT_UP) )
+	const int equiMouseButtons = (buttons - MOU_B1) + 1;
+	if( equi::Manager->ProcessMouseEvents( x, y, equiMouseButtons, down ? equi::UI_EVENT_DOWN : equi::UI_EVENT_UP) )
 		return;
 
 	if(m_clicks_to_touch.GetBool())
