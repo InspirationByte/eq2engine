@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "core/ILocalize.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
@@ -88,31 +89,8 @@ void IUIControl::SetLabelText(const wchar_t* pszLabel)
 	m_label = pszLabel;
 }
 
-void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
+void IUIControl::InitFonts(const KVSection* sec)
 {
-	if (!keepElements)
-		ClearChilds(true);
-
-	EqStringRef elementName;
-
-	if (!CString::CompareCaseIns(sec->GetName(), "child"))
-		sec->GetValuesAt(1, elementName);
-	else
-		sec->GetValuesAt(0, elementName);
-
-	if(elementName)
-		SetName(elementName);
-
-	EqStringRef label;
-	if (sec->Get("label").GetValues(label))
-		SetLabel(label);
-
-	sec->Get("position").GetValues(m_position);
-	sec->Get("size").GetValues(m_size);
-	sec->Get("visible").GetValues(m_visible);
-	sec->Get("selfvisible").GetValues(m_selfVisible);
-	m_sizeReal = m_size;
-
 	auto ParseFontDef = [this](FontProps& fontProps, const KVSection* fontSec, const KVSection* textParamsSec) {
 		if (fontSec)
 		{
@@ -151,7 +129,7 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 			textParamsSec->Get("textShadowOffset").GetValues(fontProps.shadowOffset);
 			textParamsSec->Get("textShadowWeight").GetValues(fontProps.shadowWeight);
 		}
-	};
+		};
 
 	// parse fonts if any
 	const KVSection* fontsSec = sec->FindSection("fonts");
@@ -166,11 +144,66 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 			m_fontCollection.insert(fontId, fontProps);
 		}
 	}
-	
+
 	FontProps& fontProps = m_font;
 	if (m_parent)
 		fontProps = m_parent->m_font;
 	ParseFontDef(fontProps, sec->FindSection("font"), sec);
+
+	const KVSection* textAlignSec = sec->FindSection("textAlign");
+	if (textAlignSec)
+	{
+		m_font.textAlignment = 0;
+		for (EqStringRef alignVal : textAlignSec->Values<EqStringRef>())
+		{
+			if (!alignVal.CompareCaseIns("left"))
+				m_font.textAlignment |= TEXT_ALIGN_LEFT;
+			else if (!alignVal.CompareCaseIns("top"))
+				m_font.textAlignment |= TEXT_ALIGN_TOP;
+			else if (!alignVal.CompareCaseIns("right"))
+				m_font.textAlignment |= TEXT_ALIGN_RIGHT;
+			else if (!alignVal.CompareCaseIns("bottom"))
+				m_font.textAlignment |= TEXT_ALIGN_BOTTOM;
+			else if (!alignVal.CompareCaseIns("vcenter"))
+				m_font.textAlignment |= TEXT_ALIGN_VCENTER;
+			else if (!alignVal.CompareCaseIns("hcenter"))
+				m_font.textAlignment |= TEXT_ALIGN_HCENTER;
+			else if (!alignVal.CompareCaseIns("center"))
+				m_font.textAlignment |= TEXT_ALIGN_HCENTER | TEXT_ALIGN_VCENTER;
+		}
+	}
+}
+
+void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
+{
+	if (!keepElements)
+		ClearChilds(true);
+
+	EqStringRef elementName;
+
+	if (!CString::CompareCaseIns(sec->GetName(), "child"))
+		sec->GetValuesAt(1, elementName);
+	else
+		sec->GetValuesAt(0, elementName);
+
+	if(elementName)
+		SetName(elementName);
+
+	EqStringRef label;
+	if (sec->Get("label").GetValues(label))
+		SetLabel(label);
+
+	m_clipChilds = m_parent ? m_parent->m_clipChilds : m_clipChilds;
+	m_clipTransform = m_parent ? m_parent->m_clipTransform : m_clipTransform;
+
+	sec->Get("position").GetValues(m_position);
+	sec->Get("size").GetValues(m_size);
+	sec->Get("visible").GetValues(m_visible);
+	sec->Get("selfvisible").GetValues(m_selfVisible);
+	sec->Get("clipChilds").GetValues(m_clipChilds);
+	sec->Get("clipTransform").GetValues(m_clipTransform);
+	
+	m_sizeReal = m_size;
 
 	const KVSection* commandSec = sec->FindSection("command");
 	if(commandSec)
@@ -241,28 +274,7 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 
 	//------------------------------------------------------------------------------
 
-	const KVSection* textAlignSec = sec->FindSection("textAlign");
-	if (textAlignSec)
-	{
-		m_font.textAlignment = 0;
-		for (EqStringRef alignVal : textAlignSec->Values<EqStringRef>())
-		{
-			if (!alignVal.CompareCaseIns("left"))
-				m_font.textAlignment |= TEXT_ALIGN_LEFT;
-			else if (!alignVal.CompareCaseIns("top"))
-				m_font.textAlignment |= TEXT_ALIGN_TOP;
-			else if (!alignVal.CompareCaseIns("right"))
-				m_font.textAlignment |= TEXT_ALIGN_RIGHT;
-			else if (!alignVal.CompareCaseIns("bottom"))
-				m_font.textAlignment |= TEXT_ALIGN_BOTTOM;
-			else if (!alignVal.CompareCaseIns("vcenter"))
-				m_font.textAlignment |= TEXT_ALIGN_VCENTER;
-			else if (!alignVal.CompareCaseIns("hcenter"))
-				m_font.textAlignment |= TEXT_ALIGN_HCENTER;
-			else if (!alignVal.CompareCaseIns("center"))
-				m_font.textAlignment |= TEXT_ALIGN_HCENTER | TEXT_ALIGN_VCENTER;
-		}
-	}
+	InitFonts(sec);
 
 	//------------------------------------------------------------------------------
 
@@ -296,33 +308,60 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 void IUIControl::InitChildItems(const KVSection* sec, bool keepElements)
 {
 	// walk for childs
-	for (const KVSection* childSec : sec->Keys("child", KV_FLAG_SECTION))
+	for (const KVSection* childSec : sec->Keys("child"))
 	{
 		EqStringRef childClass;
 		EqStringRef childName;
-
 		if (childSec->GetValues(childClass, childName) < 1)
 		{
 			MsgError("eqUI error: Can't create child without class name");
 			continue;
 		}
 
-		// try find existing child
-		IUIControl* control = childName ? FindChild(childName) : nullptr;
-
-		// if nothing, create new one
-		if (!control || control && childClass.CompareCaseIns(control->GetClassname()))
+		// add childs from file
+		if (!childClass.CompareCaseIns("file"))
 		{
-			if (control) // replace children if it has different class
-				RemoveChild(control);
+			KVSection section;
+			if (!KV_LoadFromFile(childName, SP_MOD, &section))
+			{
+				MsgWarning("EqUI warning: file %s requested by element %s not found\n", childName.ToCString(), m_name.ToCString());
+				continue;
+			}
 
-			control = equi::Manager->CreateElement(childClass);
-			AddChild(control);
+			InitFonts(&section);
+			InitChildItems(&section, true);
+			continue;
 		}
 
-		// if still no luck (wrong class name), we abort
+		bool isNewControl = false;
+		IUIControl* control = nullptr;
+		if (childName)
+		{
+			// try find existing child and override it
+			control = FindChild(childName);
+
+			// replace is class is not matching
+			if (control && childClass.CompareCaseIns(control->GetClassname()))
+			{
+				if (control) // replace children if it has different class
+					RemoveChild(control);
+
+				control = equi::Manager->CreateElement(childClass);
+				isNewControl = true;
+			}
+		}
+		
+		if(!control)
+		{
+			control = equi::Manager->CreateElement(childClass);
+			isNewControl = true;
+		}
+
 		if (!control)
 			continue;
+
+		if(isNewControl)
+			AddChild(control);
 
 		control->InitFromKeyValues(childSec, keepElements);
 	}
@@ -551,6 +590,45 @@ IAARectangle IUIControl::GetClientRectangle() const
 	return thisRect;
 }
 
+IAARectangle IUIControl::TransformScissorRectangle(const IAARectangle& rect, const Matrix4x4& transform)
+{
+	// transform scissor rectangle accordingly
+	IAARectangle ret;
+	for (int i = 0; i < 4; ++i)
+	{
+		const Vector2D vertex = rect.GetVertex(i);
+		ret.AddVertex(transformPointTransposed(Vector3D(vertex, 0.0f), transform).xy());
+	}
+	return ret;
+}
+
+IAARectangle IUIControl::ClipScissorRectangle(const IAARectangle& rect, const IAARectangle& parentRect)
+{
+	IAARectangle newRect;
+	newRect.Reset();
+	for (int i = 0; i < 4; ++i)
+	{
+		const IVector2D clippedVertex = parentRect.ClampPointInRectangle(rect.GetVertex(i));
+		newRect.AddVertex(clippedVertex);
+	}
+	return newRect;
+}
+
+IAARectangle IUIControl::GetClientScissorRectangle(int depth, const RenderContextAbstract& context) const
+{
+	IAARectangle clientRect = GetClientRectangle();
+	if (m_clipTransform)
+		clientRect = TransformScissorRectangle(clientRect, context.transformStack[depth]);
+
+	if (!m_parent || !m_parent->m_clipChilds)
+	{
+		return clientRect;
+	}
+
+	const IAARectangle parentRect = m_parent->GetClientScissorRectangle(depth - 1, context);
+	return ClipScissorRectangle(clientRect, parentRect);
+}
+
 IEqFont* IUIControl::GetFont() const
 {
 	if(!m_font.font)
@@ -615,43 +693,36 @@ inline void DebugDrawRectangle(const AARectangle &rect, const ColorRGBA &color1,
 #endif // ENABLE_DEBUG_DRAWING
 
 // rendering function
-void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
+void IUIControl::Render(int depth, RenderContextAbstract& context)
 {
 	if(!m_visible)
 		return;
+
+	IGPURenderPassRecorder* rendPassRecorder = context.rendPassRecorder;
 
 	static const IAARectangle defaultScissorRect(IVector2D(COM_INT_MIN), IVector2D(COM_INT_MAX));
 
 	g_matSystem->SetFogInfo(FogInfo());			// disable fog
 
 	// calculate absolute transformation using previous matrix
-	Matrix4x4 prevTransform;
-	g_matSystem->GetMatrix(MATRIXMODE_WORLD2, prevTransform);
+	Matrix4x4 prevTransform = context.transformStack.back();
 
 	// we apply scaling to our transform to match the units of the elements
 	const Vector2D elementScale = CalcScaling();
 
 	const IAARectangle clientRectRender = GetClientRectangle();
-	const Vector2D clientRectCenter = clientRectRender.GetCenter();
-
-	const Matrix4x4 clientPosMat = translate(clientRectCenter.x, clientRectCenter.y, 0.0f);
-	Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
-	rotationScale = rotationScale * !clientPosMat;
-
-	const Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * elementScale.x, m_transform.translation.y * elementScale.y, 0.0f);
-	const Matrix4x4 newTransform = (prevTransform * localTransform);
-
-	IAARectangle scissorRect = GetClientScissorRectangle();
-	// transform scissor rectangle accordingly
 	{
-		IAARectangle tmpRect;
-		for (int i = 0; i < 4; ++i)
-		{
-			Vector2D vertex = scissorRect.GetVertex(i);
-			tmpRect.AddVertex(transformPointTransposed(Vector3D(vertex, 0.0f), newTransform).xy());
-		}
-		scissorRect = tmpRect;
+		const Vector2D clientRectCenter = clientRectRender.GetCenter();
+		const Matrix4x4 clientPosMat = translate(clientRectCenter.x, clientRectCenter.y, 0.0f);
+		Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
+		rotationScale = rotationScale * !clientPosMat;
+
+		const Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * elementScale.x, m_transform.translation.y * elementScale.y, 0.0f);
+		const Matrix4x4 newTransform = (prevTransform * localTransform);
+		context.transformStack.append(newTransform);
 	}
+
+	IAARectangle scissorRect = GetClientScissorRectangle(depth, context);
 
 #ifdef ENABLE_DEBUG_DRAWING
 	HOOK_TO_CVAR(equi_debug);
@@ -669,7 +740,7 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	}
 #endif
 
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, newTransform);
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, context.transformStack.back());
 
 	// FIXME: currently scissor is only needed for text
 	// should we instead contain elements inside of parent scissor rectangle?
@@ -680,20 +751,21 @@ void IUIControl::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 		// paint control itself
 		DrawSelf(clientRectRender, rendPassRecorder);
 	}
-	RenderChilds(depth + 1, rendPassRecorder);
+	RenderChilds(depth + 1, context);
 
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
+	context.transformStack.popBack();
+	g_matSystem->SetMatrix(MATRIXMODE_WORLD2, context.transformStack.back());
 
 	// reset scissor after drawing equi
 	if (depth <= 1)
 		rendPassRecorder->SetScissorRectangle(defaultScissorRect);
 }
 
-void IUIControl::RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder)
+void IUIControl::RenderChilds(int depth, RenderContextAbstract& context)
 {
 	// render all childs from last to first
 	for (auto it = m_childs.last(); !it.atEnd(); --it)
-		(*it)->Render(depth, rendPassRecorder);
+		(*it)->Render(depth, context);
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point) const

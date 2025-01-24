@@ -19,17 +19,29 @@ namespace equi
 {
 
 // drawn rectangle
-IAARectangle Label::GetClientScissorRectangle() const
+IAARectangle Label::GetClientScissorRectangle(int depth, const RenderContextAbstract& context) const
 {
-	FontStyleParam style;
-	GetCalcFontStyle(style);
+	IAARectangle clientRect = GetClientRectangle();
 
-	float lineHeight = GetFont()->GetLineHeight(style);
+	// apply line height offset
+	{
+		FontStyleParam style;
+		GetCalcFontStyle(style);
 
-	IAARectangle rect = BaseClass::GetClientRectangle();
-	rect.leftTop.y -= lineHeight * 0.5f;
+		const float lineHeight = GetFont()->GetLineHeight(style);
+		clientRect.leftTop.y -= lineHeight * 0.5f;
+	}
 
-	return rect;
+	if (m_clipTransform)
+		clientRect = TransformScissorRectangle(clientRect, context.transformStack[depth]);
+
+	if (!m_parent || !m_parent->IsClipsChilds())
+	{
+		return clientRect;
+	}
+
+	const IAARectangle parentRect = m_parent->GetClientScissorRectangle(depth - 1, context);
+	return ClipScissorRectangle(clientRect, parentRect);
 }
 
 void Label::DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)

@@ -156,7 +156,7 @@ void DrawWindowRectangle(const AARectangle& rect, const ColorRGBA& color1, const
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-void Panel::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
+void Panel::Render(int depth, RenderContextAbstract& context)
 {
 	// move window controls
 	if(m_closeButton)
@@ -166,7 +166,7 @@ void Panel::Render(int depth, IGPURenderPassRecorder* rendPassRecorder)
 		m_closeButton->SetPosition(closePos);
 	}
 
-	BaseClass::Render(depth, rendPassRecorder);
+	BaseClass::Render(depth, context);
 }
 
 void Panel::DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)

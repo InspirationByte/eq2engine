@@ -270,7 +270,9 @@ void CUIManager::Render()
 	// begin from the render panel
 	m_rootPanel->SetRectangle( m_viewFrameRect );
 	m_rootPanel->ResetSizeDiffs();
-	m_rootPanel->Render(1, rendPassRecorder);
+
+	equi::ControlRenderContext ctrlRenderContext{ rendPassRecorder };
+	m_rootPanel->Render(1, ctrlRenderContext);
 	rendPassRecorder->DbgPopGroup();
 
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());

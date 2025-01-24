@@ -39,11 +39,10 @@ public:
 	void					CenterOnScreen();
 
 	// rendering
-	virtual void			Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
+	virtual void			Render(int depth, RenderContextAbstract& context) override;
 protected:
 
-	virtual void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder);
-
+	virtual void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 	bool					ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 
 	ColorRGBA				m_color;

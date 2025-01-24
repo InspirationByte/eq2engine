@@ -13,7 +13,7 @@
 #undef GetParent
 #endif //GetParent
 
-class IGPUCommandRecorder;
+class IGPURenderPassRecorder;
 struct KVSection;
 struct FontStyleParam;
 
@@ -29,6 +29,8 @@ struct FontStyleParam;
 
 namespace equi
 {
+static constexpr int MAX_CONTROL_DEPTH = 48;
+
 struct EvtHandler;
 class IUIControl;
 using EvtCallback = EqFunction<int(IUIControl*, const EvtHandler&, void*)>;
@@ -41,6 +43,31 @@ struct EvtHandler
 	int				uid{ 0 };
 };
 
+// TODO: rewrite to make it more compact
+using TransformStack = FixedArray<Matrix4x4, MAX_CONTROL_DEPTH>;
+
+struct RenderContextAbstract
+{
+	RenderContextAbstract(IGPURenderPassRecorder* recorder, TransformStack& transformStack)
+		: rendPassRecorder(recorder)
+		, transformStack(transformStack)
+	{
+	}
+	
+	TransformStack&			transformStack;
+	IGPURenderPassRecorder* rendPassRecorder{ nullptr };
+};
+
+struct ControlRenderContext : public RenderContextAbstract
+{
+	ControlRenderContext(IGPURenderPassRecorder* recorder)
+		: RenderContextAbstract(recorder, transformStackStorage)
+	{
+		transformStack.append(identity4);
+	}
+
+	TransformStack transformStackStorage;
+};
 
 //-------------------------------------------------------------
 // EqUI control interface
@@ -76,6 +103,12 @@ public:
 	virtual void				SetSelfVisible(bool bVisible)		{m_selfVisible = bVisible;}
 	virtual bool				IsSelfVisible() const				{return m_selfVisible;}
 
+	virtual void				SetClipsChilds(bool bEnable)		{ m_clipChilds = bEnable; }
+	virtual bool				IsClipsChilds() const				{return m_clipChilds;}
+
+	virtual void				SetClipTransform(bool bEnable)		{ m_clipTransform = bEnable; }
+	virtual bool				HasClipTransform() const			{return m_clipTransform;}
+
 	// activation
 	virtual void				Enable(bool value)					{m_enabled = value;}
 	virtual bool				IsEnabled() const;
@@ -105,9 +138,6 @@ public:
 
 	// drawn rectangle
 	virtual IAARectangle		GetClientRectangle() const;
-
-	// for text only
-	virtual IAARectangle		GetClientScissorRectangle() const { return GetClientRectangle(); }
 
 	// returns the scaling of element
 	Vector2D					CalcScaling() const;
@@ -143,7 +173,7 @@ public:
 	virtual const char*			GetClassname() const = 0;
 
 	// rendering
-	virtual void				Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
+	virtual void				Render(int depth, RenderContextAbstract& context);
 
 	// Events
 	int							AddEventHandler(const char* pszName, EvtCallback&& cb);
@@ -152,6 +182,10 @@ public:
 
 	int							RaiseEvent(const char* name, void* userData);
 	int							RaiseEventUid(int uid, void* userData);
+
+	virtual IAARectangle		GetClientScissorRectangle(int depth, const RenderContextAbstract& context) const;
+	static IAARectangle			TransformScissorRectangle(const IAARectangle& rect, const Matrix4x4& transform);
+	static IAARectangle			ClipScissorRectangle(const IAARectangle& rect, const IAARectangle& parentRect);
 
 protected:
 	struct Transform
@@ -181,8 +215,9 @@ protected:
 	const FontProps*			FindFont(const char* name, const char* requestedBy) const;
 
 	// rendering
-	virtual void				RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder);
+	virtual void				RenderChilds(int depth, RenderContextAbstract& context);
 
+	void						InitFonts(const KVSection* sec);
 	void						InitChildItems(const KVSection* sec, bool keepElements = false);
 
 	void						ResetSizeDiffs();
@@ -214,7 +249,6 @@ protected:
 	EqString					m_name;
 	EqWString					m_label;
 
-
 	int							m_alignment { UI_ALIGN_LEFT | UI_ALIGN_TOP };
 	int							m_anchors { 0 };
 	int							m_scaling { UI_SCALING_NONE };
@@ -222,6 +256,8 @@ protected:
 	bool						m_visible{ true };
 	bool						m_selfVisible{ true };
 	bool						m_enabled{ true };
+	bool						m_clipChilds{ true };
+	bool						m_clipTransform{ true };
 };
 
 template <class T> 

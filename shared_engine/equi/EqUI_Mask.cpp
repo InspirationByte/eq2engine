@@ -80,19 +80,19 @@ void Mask::DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassR
 	g_renderAPI->ResizeRenderTarget(m_maskedChilds, texSize);
 }
 
-void Mask::RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder)
+void Mask::RenderChilds(int depth, RenderContextAbstract& context)
 {
 	ASSERT_MSG(m_selfVisible, "Mask %s must be selfVisible", m_name.ToCString());
 	if (!m_selfVisible)
 	{
-		BaseClass::RenderChilds(depth, rendPassRecorder);
+		BaseClass::RenderChilds(depth, context);
 		return;
 	}
-	
-	Matrix4x4 actualProj, actualTransform;
+
+	Matrix4x4 actualProj;
 	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, actualProj);
-	g_matSystem->GetMatrix(MATRIXMODE_WORLD2, actualTransform);
-	
+
+	const Matrix4x4& actualTransform = context.transformStack.back();
 	const Vector2D projSize = m_renderRect.GetSize();
 	
 	Matrix4x4 offsetTransform = actualTransform * translate(-(float)m_renderRect.leftTop.x, -(float)m_renderRect.leftTop.y, 0.0f);
@@ -102,11 +102,17 @@ void Mask::RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder)
 	// render childs into texture first
 	IGPURenderPassRecorderPtr maskRenderPass = g_renderAPI->BeginRenderPass(
 		Builder<RenderPassDesc>()
-		.ColorTarget(m_maskedChilds)  // , true, color_white)
+		.ColorTarget(m_maskedChilds, true, color_red)
 		.End()
 	);
 	
-	BaseClass::RenderChilds(depth, maskRenderPass);
+	{
+		RenderContextAbstract maskContext(maskRenderPass, context.transformStack);
+		maskContext.transformStack.append(offsetTransform);
+		BaseClass::RenderChilds(depth, maskContext);
+		context.transformStack.popBack();
+	}
+
 	g_matSystem->QueueCommandBuffer(maskRenderPass->End());
 	
 	// restore
@@ -133,7 +139,7 @@ void Mask::RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder)
 			m_renderRect.GetLeftBottom(), m_renderRect.GetLeftTop(), m_renderRect.GetRightBottom(), m_renderRect.GetRightTop(),
 			uvRect.GetLeftBottom(), uvRect.GetLeftTop(), uvRect.GetRightBottom(), uvRect.GetRightTop());
 		if (meshBuilder.End(drawCmd))
-			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(context.rendPassRecorder, &defaultRenderPass));
 	}
 }
 

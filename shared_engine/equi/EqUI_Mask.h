@@ -24,7 +24,7 @@ public:
 
 	void				InitFromKeyValues(const KVSection* sec, bool noClear ) override;
 	void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
-	void				RenderChilds(int depth, IGPURenderPassRecorder* rendPassRecorder) override;
+	void				RenderChilds(int depth, RenderContextAbstract& context) override;
 
 	// UV rectangle
 	AARectangle			GetUVRegion() const;

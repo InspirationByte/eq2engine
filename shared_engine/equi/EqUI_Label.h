@@ -21,7 +21,7 @@ public:
 	~Label(){}
 
 	// drawn rectangle
-	IAARectangle	GetClientScissorRectangle() const override;
+	IAARectangle	GetClientScissorRectangle(int depth, const RenderContextAbstract& context) const override;
 	void			DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 };
 
