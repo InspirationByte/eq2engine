@@ -607,6 +607,8 @@ static void SetGlobal(lua_State* L, const char* fieldName, const T& value)
 template<typename R, typename ... Args>
 struct FunctionCall
 {
+	static constexpr int ReturnCount = IsAny<R>::value ? LUA_MULTRET : (std::is_void_v<R> ? 0 : 1);
+
 	using Result = ResultWithValue<R>;
 
 	static Result Invoke(const esl::LuaFunctionRef& func, Args... args)
@@ -654,15 +656,19 @@ private:
 
 	static Result InvokeFunc(lua_State* L, runtime::StackGuard&& guard, int numArgs, int errIdx)
 	{
-		const int res = lua_pcall(L, numArgs, std::is_void_v<R> ? LUA_MULTRET : 1, errIdx);
+		const int res = lua_pcall(L, numArgs, ReturnCount, errIdx);
 		if (res == 0)
 		{
-			if constexpr (std::is_void_v<R>)
+			if constexpr (ReturnCount <= 0)
 			{
 				return Result{ std::move(guard), true};
 			}
 			else
 			{
+				const int retValues = lua_gettop(L);
+				if (retValues < ReturnCount)
+					return Result{ std::move(guard), false, EqString::Format("insufficient return value count (got %d, required %d)", retValues, ReturnCount) };
+
 				auto value = runtime::GetValue<R, true>(L, -1);
 				return Result{ std::move(guard), value.success, value.success ? EqString() : EqString::Format("return value: %s", value.errorMessage.ToCString()), *value};
 			}

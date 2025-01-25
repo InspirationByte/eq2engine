@@ -22,7 +22,15 @@ using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
 using LuaTableRef = LuaRef<LUA_TTABLE>;
 using LuaUserRef = LuaRef<LUA_TUSERDATA>;
 
+struct Any {};
+
 using StaticFunc = lua_CFunction;
+
+template <typename T>
+struct IsAny : std::false_type {};
+
+template <>
+struct IsAny<Any> : std::true_type {};
 
 template <typename T>
 struct IsConstMemberFunc : std::false_type {};
