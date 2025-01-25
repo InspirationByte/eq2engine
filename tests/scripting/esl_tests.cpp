@@ -908,7 +908,7 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 		}));
 
 		// TEST: event handlers added
-		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(function() end)");
+		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(function(msg) EXPECT_EQ(msg, 'Event Called') end)");
 		EXPECT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
 
 		// TEST: call event from native code
@@ -1094,16 +1094,19 @@ TEST(EQSCRIPT_TESTS, ShouldNotGrowStack)
 
 	// Test 1: call function
 	{
-		state.RunChunk("TestFunc = function()  end");
+		state.RunChunk("TestFunc = function() return 0x4444 end");
 
 		esl::LuaFunctionRef funcRef = *state.GetGlobal<esl::LuaFunctionRef>("TestFunc");
 
-		using TestFuncCall = esl::runtime::FunctionCall<void>;
+		using TestFuncCall = esl::runtime::FunctionCall<int>;
 
 		const int top = lua_gettop(state);
 		{
 			for (int i = 0; i < 10000; ++i)
-				TestFuncCall::Invoke(funcRef);
+			{
+				const int value = *TestFuncCall::Invoke(funcRef);
+				ASSERT_EQ(value, 0x4444);
+			}
 		}
 
 		ASSERT_EQ(top, lua_gettop(state));
@@ -1115,35 +1118,7 @@ struct BindTest
 	int value;
 };
 
-//EQSCRIPT_BIND_TYPE_NO_PARENT(BindTest, "BindTest", BY_VALUE)
-//EQSCRIPT_TYPE_BEGIN(BindTest)
-//	EQSCRIPT_BIND_VAR(value)
-//EQSCRIPT_TYPE_END
-
-// _ESL_BIND_TYPE_BASICS
-namespace esl {
-	template<> struct LuaTypeByVal<BindTest> : std::true_type {}; 
-	template<> inline const char ScriptClass<BindTest>::className[] = "BindTest";
-	template<> inline const char* LuaTypeAlias<BindTest, false>::value = ScriptClass<BindTest>::className;
-	template<> inline const char* ScriptClass<BindTest>::baseClassName = nullptr;
-	template<> inline TypeInfoGetter ScriptClass<BindTest>::baseClassTypeInfoGetter = nullptr;
-}
-// _ESL_TYPE_PUSHGET
-namespace esl::runtime {
-	template<> PushGet<BindTest>::PushFunc PushGet<BindTest>::Push = &PushGetImpl<BindTest>::PushObject; 
-	template<> PushGet<BindTest>::GetFunc PushGet<BindTest>::Get = &PushGetImpl<BindTest>::GetObject;
-}
-
-// EQSCRIPT_TYPE_BEGIN / END
-namespace esl::bindings 
-{
-template<> ArrayCRef<Member> ClassBinder<BindTest>::GetMembers() 
-{
-	BaseClassStorage::Add<BindClass>();
-	static Member members[] = {
-		MakeDestructor(),
-		MakeVariable<(&BindClass::value)>("value"),
-	};
-	return members;
-}
-}
+EQSCRIPT_BIND_TYPE_NO_PARENT(BindTest, "BindTest", BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(BindTest)
+	EQSCRIPT_BIND_VAR(value)
+EQSCRIPT_TYPE_END

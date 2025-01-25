@@ -4,7 +4,7 @@ project "testsCommonLib"
     kind "StaticLib"
 	properties { "unitybuild" }
 	uses {
-		"coreLib", "frameworkLib", "e2Core", "gtest",
+		"coreLib", "frameworkLib", "e2Core", "gtest"
 	}
     files {
 		"tests_common.cpp",
@@ -26,6 +26,7 @@ project "ds_tests"
 		"corelib", "frameworkLib", 
 		"e2Core", 
 		"testsCommonLib",
+		"gtest"
 	}
     files {
 		"ds/*.cpp",
@@ -40,7 +41,9 @@ project "scripting_tests"
 		"e2Core", 
 		"testsCommonLib",
 		"scriptLib",
-		"shared_engine"
+		"shared_engine",
+		"gtest",
+		"lua"
 	}
     files {		
 		"scripting/*.cpp",
