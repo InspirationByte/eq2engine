@@ -8,22 +8,22 @@
 
 namespace esl
 {
-void ScriptState::GCStop()
+void ScriptState::GCStop() const
 {
 	lua_gc(m_state, LUA_GCRESTART);
 }
 
-void ScriptState::GCRestart()
+void ScriptState::GCRestart() const
 {
 	lua_gc(m_state, LUA_GCRESTART);
 }
 
-void ScriptState::GCStep(int stepSize)
+void ScriptState::GCStep(int stepSize) const
 {
 	lua_gc(m_state, LUA_GCSTEP, stepSize);
 }
 
-void ScriptState::GCCollect()
+void ScriptState::GCCollect() const
 {
 	lua_gc(m_state, LUA_GCCOLLECT);
 }

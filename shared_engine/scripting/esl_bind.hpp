@@ -105,11 +105,13 @@ struct ArgsSignature<>
 template <typename First, typename... Rest>
 struct ArgsSignature<First, Rest...>
 {
+	using IsScriptState = std::is_same<BaseRefType<First>, ScriptState>;
+
 	static const char* Get()
 	{
 		static EqString result = []() {
 			const char* restStr = ArgsSignature<Rest...>::Get();
-			if constexpr (std::is_same_v<First, ScriptState>)
+			if constexpr (IsScriptState::value)
 				return EqString(*restStr ? "," : "") + restStr;
 			else
 				return EqString(LuaBaseTypeAlias<First>::value) + (*restStr ? "," : "") + restStr;
@@ -117,6 +119,7 @@ struct ArgsSignature<First, Rest...>
 		return result;
 	}
 };
+
 
 template<typename T, typename... Args>
 T& New(lua_State* L, Args&&... args)
@@ -194,7 +197,7 @@ struct PushGetImpl
 
 			// drop ownership flag when ToCpp is specified
 			// so Lua can no longer delete object (C++ now has to)
-			if(toCpp)
+			if (toCpp)
 				userData->flags &= ~UD_FLAG_OWNED;
 
 			return reinterpret_cast<BaseUType*>(userData ? (reinterpret_cast<uintptr_t>(userData->objPtr) + upcastBaseInfo.offset) : reinterpret_cast<uintptr_t>(nullptr));
@@ -332,7 +335,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	const int top = lua_gettop(L);
 
 	// TODO: ThrowError
-	if(index > top)
+	if (index > top)
 	{
 		if constexpr (!SilentTypeCheck)
 			luaL_error(L, "insufficient number of arguments");
@@ -359,7 +362,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<bool>;
 
-		if(!checkType(L, index, LUA_TBOOLEAN))
+		if (!checkType(L, index, LUA_TBOOLEAN))
 			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index)))};
 
 		return Result{ {}, true, {}, lua_toboolean(L, index) != 0 };
@@ -607,8 +610,6 @@ static void SetGlobal(lua_State* L, const char* fieldName, const T& value)
 template<typename R, typename ... Args>
 struct FunctionCall
 {
-	static constexpr int ReturnCount = IsAny<R>::value ? LUA_MULTRET : (std::is_void_v<R> ? 0 : 1);
-
 	using Result = ResultWithValue<R>;
 
 	static Result Invoke(const esl::LuaFunctionRef& func, Args... args)
@@ -656,6 +657,7 @@ private:
 
 	static Result InvokeFunc(lua_State* L, runtime::StackGuard&& guard, int numArgs, int errIdx)
 	{
+		constexpr int ReturnCount = IsAny<R>::value ? LUA_MULTRET : (std::is_void_v<R> ? 0 : 1);
 		const int res = lua_pcall(L, numArgs, ReturnCount, errIdx);
 		if (res == 0)
 		{
@@ -753,7 +755,7 @@ template<typename ... Args>
 struct CheckLuaStateArg : std::false_type {};
 
 template<typename First, typename ... Rest>
-struct CheckLuaStateArg<First, Rest...> : std::is_same<First, ScriptState> {};
+struct CheckLuaStateArg<First, Rest...> : std::is_same<BaseRefType<First>, ScriptState> {};
 
 //---------------------------------------------------------------
 // Member function binder
@@ -773,22 +775,27 @@ struct MemberFunction
 		// NOTES: Member functions start with IDX = 2
 		// this is now unsafe, CallMemberFunc must have been taken care for us
 		if constexpr (HasLuaStateArg::value)
-			return (thisPtr->*FuncPtr)(L, *runtime::GetValue<std::tuple_element_t<IDX+1, typename Traits::TArgs>, false>(L, IDX + 2)...);
+		{
+			esl::ScriptState state(L);
+			return (thisPtr->*FuncPtr)(state, *runtime::GetValue<std::tuple_element_t<IDX + 1, typename Traits::TArgs>, false>(L, IDX + 2)...);
+		}
 		else
 			return (thisPtr->*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 2)...);
 	}
 
 	static int FuncImpl(T* thisPtr, lua_State* L)
 	{
+		constexpr int ArgCount = sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0);
+
 		ESL_VERBOSE_LOG("call member %s:%x", ScriptClass<T>::className, FuncPtr);
 		if constexpr (std::is_void_v<R>)
 		{
-			Invoke(thisPtr, L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
+			Invoke(thisPtr, L, std::make_index_sequence<ArgCount>{});
 			return 0;
 		}
 		else
 		{
-			R ret = Invoke(thisPtr, L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
+			R ret = Invoke(thisPtr, L, std::make_index_sequence<ArgCount>{});
 			runtime::PushValue<R, typename Traits::TR>(L, ret);
 			return 1;
 		}
@@ -850,21 +857,26 @@ struct FunctionBinder<R(*)(Args...), Traits>
 	{
 		const auto FuncPtr = reinterpret_cast<R(*)(Args...)>(lua_touserdata(L, lua_upvalueindex(1)));
 		if constexpr(HasLuaStateArg::value)
-			return (*FuncPtr)(L, *runtime::GetValue<std::tuple_element_t<IDX+1, typename Traits::TArgs>, false>(L, IDX + 1)...);
+		{
+			esl::ScriptState state(L);
+			return (*FuncPtr)(state, *runtime::GetValue<std::tuple_element_t<IDX + 1, typename Traits::TArgs>, false>(L, IDX + 1)...);
+		}
 		else
 			return (*FuncPtr)(*runtime::GetValue<std::tuple_element_t<IDX, typename Traits::TArgs>, false>(L, IDX + 1)...);
 	}
 
 	static int Func(lua_State* L)
 	{
+		constexpr int ArgCount = sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0);
+
 		if constexpr (std::is_void_v<R>)
 		{
-			Invoke(L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
+			Invoke(L, std::make_index_sequence<ArgCount>{});
 			return 0;
 		}
 		else
 		{
-			R ret = Invoke(L, std::make_index_sequence<sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0)>{});
+			R ret = Invoke(L, std::make_index_sequence<ArgCount>{});
 			runtime::PushValue<R, typename Traits::TR>(L, ret);
 			return 1;
 		}

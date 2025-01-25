@@ -265,16 +265,16 @@ public:
 	void			ThrowError(const char* fmt, ...) const;
 
 	// stops the garbage collector. 
-	void			GCStop();
+	void			GCStop() const;
 
 	// restarts the garbage collector.
-	void			GCRestart();
+	void			GCRestart() const;
 
 	// performs an incremental step of garbage collection.
-	void			GCStep(int stepSize);
+	void			GCStep(int stepSize) const;
 
 	// perform full garbage collection cycle
-	void			GCCollect();
+	void			GCCollect() const;
 
 	bool			RunChunk(EqStringRef chunk, const char* name = "userChunk") const;
 
@@ -317,7 +317,8 @@ public:
 	decltype(auto)	GetClassStatic(const K& k) const;
 
 	template<typename R, typename ... Args>
-	decltype(auto)	CallFunction(const char* name, Args...);
+	decltype(auto)	CallFunction(const char* name, Args...) const;
+
 protected:
 	lua_State*	m_state{ nullptr };
 };

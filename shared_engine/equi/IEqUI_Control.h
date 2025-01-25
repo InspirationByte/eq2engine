@@ -76,7 +76,7 @@ inline T* DynamicCast(IUIControl* control);
 // EqUI control interface
 // use equi::DynamicCast to convert type
 //-------------------------------------------------------------
-class IUIControl
+class IUIControl // TODO: RefCounted
 {
 	friend class CUIManager;
 public:

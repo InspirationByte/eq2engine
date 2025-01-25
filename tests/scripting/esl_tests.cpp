@@ -97,7 +97,7 @@ struct TerrainSpline : public Spline
 		vehicleZoneNameHash = value;
 	}
 
-	Vector2D GetPoint(int index, const Vector2D& from, const EqString& str)
+	Vector2D GetPoint(const esl::ScriptState& scriptState, int index, const Vector2D& from, const EqString& str)
 	{ 
 		ASSERT(str.Length() > 0);
 		//MsgWarning("TerrainSpline::GetPoint called, arg %d, vehicleZoneNameHash = %d, from = %.2f, %.2f, %s\n", index, vehicleZoneNameHash, from.x, from.y, str.ToCString());
@@ -993,12 +993,12 @@ EQSCRIPT_TYPE_BEGIN(ByValueTests)
 	EQSCRIPT_BIND_VAR(isMoved)
 EQSCRIPT_TYPE_END
 
-ByValueTests& ByValueBypassFunc(esl::ScriptState scriptState, ByValueTests& ref)
+ByValueTests& ByValueBypassFunc(const esl::ScriptState& scriptState, ByValueTests& ref)
 {
 	return ref;
 }
 
-esl::Object<ByValueTests> ByValueBypassFuncObj(esl::ScriptState scriptState, const esl::Object<ByValueTests>& ref)
+esl::Object<ByValueTests> ByValueBypassFuncObj(const esl::ScriptState& scriptState, const esl::Object<ByValueTests>& ref)
 {
 	if (ref)
 	{

@@ -174,7 +174,7 @@ decltype(auto) ScriptState::GetClassStatic(const K& k) const
 }
 
 template<typename R, typename ... Args>
-decltype(auto) ScriptState::CallFunction(const char* name, Args...args)
+decltype(auto) ScriptState::CallFunction(const char* name, Args...args) const
 {
 	using FuncSignature = runtime::FunctionCall<R, Args...>;
 	lua_getglobal(m_state, name);
