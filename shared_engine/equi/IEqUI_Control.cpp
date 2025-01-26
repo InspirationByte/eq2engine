@@ -59,7 +59,6 @@ END_KEYVALUES_FLAGS_DESC
 
 IUIControl::IUIControl()
 {
-	m_label = L"Control";
 }
 
 IUIControl::~IUIControl()
@@ -69,24 +68,27 @@ IUIControl::~IUIControl()
 
 const char*	IUIControl::GetLabel() const
 {
-	static EqString _label;
-	AnsiUnicodeConverter(_label, m_label);
-	return _label;
+	return m_label;
 }
 
 void IUIControl::SetLabel(const char* pszLabel)
 {
-	m_label = LocalizedString(pszLabel);
+	if (!m_label.Compare(pszLabel))
+		return;
+
+	m_label = pszLabel;
+	m_labelText = LocalizedString(pszLabel);
 }
 
 const wchar_t* IUIControl::GetLabelText() const
 {
-	return m_label;
+	return m_labelText;
 }
 
 void IUIControl::SetLabelText(const wchar_t* pszLabel)
 {
-	m_label = pszLabel;
+	m_labelText = pszLabel;
+	AnsiUnicodeConverter(m_label, m_labelText);
 }
 
 void IUIControl::InitFonts(const KVSection* sec)
@@ -260,6 +262,8 @@ void IUIControl::Parse(const KVSection* sec)
 				m_alignment |= UI_ALIGN_HCENTER;
 			else if (!alignVal.CompareCaseIns("vcenter"))
 				m_alignment |= UI_ALIGN_VCENTER;
+			else if (!alignVal.CompareCaseIns("center"))
+				m_alignment = UI_ALIGN_HCENTER | UI_ALIGN_VCENTER;
 		}
 	}
 

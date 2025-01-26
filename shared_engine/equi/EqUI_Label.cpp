@@ -58,7 +58,7 @@ void Label::DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPass
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0, font->GetLineHeight(style)*0.5f);
 
 	// draw label
-	font->SetupRenderText(m_label.ToCString(), pos, style, rendPassRecorder);
+	font->SetupRenderText(m_labelText, pos, style, rendPassRecorder);
 }
 
 };

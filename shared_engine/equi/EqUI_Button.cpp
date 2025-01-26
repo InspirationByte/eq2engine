@@ -35,7 +35,7 @@ void Button::DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPass
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);
 
 	// draw label
-	GetFont()->SetupRenderText(m_label.ToCString(), pos, style, rendPassRecorder);
+	GetFont()->SetupRenderText(m_labelText, pos, style, rendPassRecorder);
 }
 
 // events

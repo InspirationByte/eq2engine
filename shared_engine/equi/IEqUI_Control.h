@@ -259,7 +259,8 @@ protected:
 	Vector2D					m_sizeDiffPerc{ 1.0f };
 
 	EqString					m_name;
-	EqWString					m_label;
+	EqString					m_label;
+	EqWString					m_labelText;
 
 	int							m_alignment { UI_ALIGN_LEFT | UI_ALIGN_TOP };
 	int							m_anchors { 0 };
