@@ -59,6 +59,7 @@ CAppStateBase* GetCurrentState()
 // returns the current state type
 int	GetCurrentStateType()
 {
+	// NOTE: remove carefully
 	if(s_nextState)
 		return s_nextState->GetType();
 
@@ -89,6 +90,19 @@ void ScheduleNextState( CAppStateBase* state )
 void ScheduleNextStateType( int stateType )
 {
 	ScheduleNextState(GetAppStateByType(stateType));
+}
+
+int	GetNextStateType()
+{
+	if (s_nextState)
+		return s_nextState->GetType();
+
+	return APP_STATE_NONE;
+}
+
+CAppStateBase* GetNextState()
+{
+	return s_nextState;
 }
 
 // updates and manages the states

@@ -93,6 +93,9 @@ namespace eqAppStateMng
 	int					GetCurrentStateType();
 	void				SetCurrentStateType(int stateType);
 
+	int					GetNextStateType();
+	CAppStateBase*		GetNextState();
+
 	void				ChangeStateType(int stateType);
 
 	void				ScheduleNextState(CAppStateBase* state);
