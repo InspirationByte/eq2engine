@@ -28,9 +28,9 @@ Image::~Image()
 {
 }
 
-void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
+void Image::Parse(const KVSection* sec )
 {
-	BaseClass::InitFromKeyValues(sec, noClear);
+	BaseClass::Parse(sec);
 
 	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
 

@@ -23,9 +23,9 @@ public:
 	EQUI_CLASS(Panel, IUIControl)
 
 	Panel();
-	~Panel();
 
 	virtual void			InitFromKeyValues(const KVSection* sec, bool keepElements = false) override;
+	virtual void			Parse(const KVSection* sec) override;
 
 	virtual void			Hide();
 
@@ -64,7 +64,7 @@ public:
 	Container() : IUIControl() {}
 	~Container() {}
 
-	void			InitFromKeyValues(const KVSection* sec, bool noClear) override;
+	void			Parse(const KVSection* sec) override;
 	void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override {}
 };
 

@@ -28,7 +28,12 @@ namespace equi
 // Panels
 //-------------------------------------------------------------------
 
-Panel::Panel() : m_windowControls(false), m_labelCtrl(nullptr), m_closeButton(nullptr), m_grabbed(false), m_screenOverlay(false)
+Panel::Panel() 
+	: m_windowControls(false)
+	, m_labelCtrl(nullptr)
+	, m_closeButton(nullptr)
+	, m_grabbed(false)
+	, m_screenOverlay(false)
 {
 	m_position = IVector2D(0);
 	m_size = IVector2D(32,32);
@@ -37,25 +42,25 @@ Panel::Panel() : m_windowControls(false), m_labelCtrl(nullptr), m_closeButton(nu
 	m_selColor = ColorRGBA(0.25f);
 }
 
-Panel::~Panel()
-{
-
-}
-
-void Panel::InitFromKeyValues(const KVSection* sec, bool noClear )
+void Panel::InitFromKeyValues(const KVSection* sec, bool keepElements)
 {
 	// initialize from scheme
 	const KVSection* mainSec = sec->FindSection("panel");
 	if (mainSec == nullptr)
 		mainSec = sec;
 
-	BaseClass::InitFromKeyValues(mainSec, noClear);
+	BaseClass::InitFromKeyValues(mainSec, keepElements);
+}
 
-	m_windowControls = KV_GetValueBool(mainSec->FindSection("window"), 0, m_windowControls);
+void Panel::Parse(const KVSection* sec )
+{
+	BaseClass::Parse(sec);
+
+	m_windowControls = KV_GetValueBool(sec->FindSection("window"), 0, m_windowControls);
 	m_visible = !m_windowControls;
-	m_visible = KV_GetValueBool(mainSec->FindSection("visible"), 0, m_visible);
-	m_screenOverlay = KV_GetValueBool(mainSec->FindSection("screenoverlay"), 0, m_screenOverlay);
-	m_color = KV_GetVector4D(mainSec->FindSection("color"), 0, m_color);
+	m_visible = KV_GetValueBool(sec->FindSection("visible"), 0, m_visible);
+	m_screenOverlay = KV_GetValueBool(sec->FindSection("screenoverlay"), 0, m_screenOverlay);
+	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
 	m_grabbed = false;
 	m_closeButton = nullptr;
 	m_labelCtrl = nullptr;
@@ -203,9 +208,9 @@ public:
 	void			DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override {}
 };
 
-void Container::InitFromKeyValues(const KVSection* sec, bool noClear)
+void Container::Parse(const KVSection* sec)
 {
-	BaseClass::InitFromKeyValues(sec, noClear);
+	BaseClass::Parse(sec);
 
 	EqStringRef fileName;
 	if (sec->Get("file").GetValues(fileName))
@@ -213,7 +218,7 @@ void Container::InitFromKeyValues(const KVSection* sec, bool noClear)
 		KVSection kvExtFile;
 		KV_LoadFromFile("resources/" + fileName, SP_MOD | SP_DATA, &kvExtFile);
 
-		InitChildItems(&kvExtFile, noClear);
+		InitChildItems(&kvExtFile);
 	}
 }
 

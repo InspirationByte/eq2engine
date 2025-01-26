@@ -18,7 +18,7 @@ namespace equi
 		ProgressBar();
 		~ProgressBar() {}
 
-		void				InitFromKeyValues(const KVSection* sec, bool noClear) override;
+		void				Parse(const KVSection* sec) override;
 		void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 
 		void				SetValue(float value)				{ m_value = value; }

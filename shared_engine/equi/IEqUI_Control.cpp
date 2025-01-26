@@ -145,10 +145,7 @@ void IUIControl::InitFonts(const KVSection* sec)
 		}
 	}
 
-	FontProps& fontProps = m_font;
-	if (m_parent)
-		fontProps = m_parent->m_font;
-	ParseFontDef(fontProps, sec->FindSection("font"), sec);
+	ParseFontDef(m_font, sec->FindSection("font"), sec);
 
 	const KVSection* textAlignSec = sec->FindSection("textAlign");
 	if (textAlignSec)
@@ -179,14 +176,19 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 	if (!keepElements)
 		ClearChilds(true);
 
-	EqStringRef elementName;
+	Parse(sec);
+	InitChildItems(sec, keepElements);
+}
 
+void IUIControl::Parse(const KVSection* sec)
+{
+	EqStringRef elementName;
 	if (!CString::CompareCaseIns(sec->GetName(), "child"))
 		sec->GetValuesAt(1, elementName);
 	else
 		sec->GetValuesAt(0, elementName);
 
-	if(elementName)
+	if (elementName)
 		SetName(elementName);
 
 	EqStringRef label;
@@ -202,11 +204,11 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 	sec->Get("selfvisible").GetValues(m_selfVisible);
 	sec->Get("clipChilds").GetValues(m_clipChilds);
 	sec->Get("clipTransform").GetValues(m_clipTransform);
-	
+
 	m_sizeReal = m_size;
 
 	const KVSection* commandSec = sec->FindSection("command");
-	if(commandSec)
+	if (commandSec)
 	{
 		// NOTE: command event always have UID == 0
 		EvtHandler& evt = m_eventCallbacks.append();
@@ -221,18 +223,18 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 	//------------------------------------------------------------------------------
 
 	const KVSection* anchorsSec = sec->FindSection("anchors");
-	if(anchorsSec)
+	if (anchorsSec)
 	{
 		m_anchors = 0;
-		for(EqStringRef anchorVal : anchorsSec->Values<EqStringRef>())
+		for (EqStringRef anchorVal : anchorsSec->Values<EqStringRef>())
 		{
-			if(!anchorVal.CompareCaseIns("left"))
+			if (!anchorVal.CompareCaseIns("left"))
 				m_anchors |= UI_BORDER_LEFT;
-			else if(!anchorVal.CompareCaseIns("top"))
+			else if (!anchorVal.CompareCaseIns("top"))
 				m_anchors |= UI_BORDER_TOP;
-			else if(!anchorVal.CompareCaseIns("right"))
+			else if (!anchorVal.CompareCaseIns("right"))
 				m_anchors |= UI_BORDER_RIGHT;
-			else if(!anchorVal.CompareCaseIns("bottom"))
+			else if (!anchorVal.CompareCaseIns("bottom"))
 				m_anchors |= UI_BORDER_BOTTOM;
 			else if (!anchorVal.CompareCaseIns("all"))
 				m_anchors = (UI_BORDER_LEFT | UI_BORDER_TOP | UI_BORDER_RIGHT | UI_BORDER_BOTTOM);
@@ -241,18 +243,18 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 
 	//------------------------------------------------------------------------------
 	const KVSection* alignSec = sec->FindSection("align");
-	if(alignSec)
+	if (alignSec)
 	{
 		m_alignment = 0;
 		for (EqStringRef alignVal : alignSec->Values<EqStringRef>())
 		{
-			if(!alignVal.CompareCaseIns("left"))
+			if (!alignVal.CompareCaseIns("left"))
 				m_alignment |= UI_ALIGN_LEFT;
-			else if(!alignVal.CompareCaseIns("top"))
+			else if (!alignVal.CompareCaseIns("top"))
 				m_alignment |= UI_ALIGN_TOP;
-			else if(!alignVal.CompareCaseIns("right"))
+			else if (!alignVal.CompareCaseIns("right"))
 				m_alignment |= UI_ALIGN_RIGHT;
-			else if(!alignVal.CompareCaseIns("bottom"))
+			else if (!alignVal.CompareCaseIns("bottom"))
 				m_alignment |= UI_ALIGN_BOTTOM;
 			else if (!alignVal.CompareCaseIns("hcenter"))
 				m_alignment |= UI_ALIGN_HCENTER;
@@ -278,7 +280,6 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 
 	//------------------------------------------------------------------------------
 
-
 	const KVSection* scalingSec = sec->FindSection("scaling");
 	if (scalingSec)
 	{
@@ -302,7 +303,6 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 			m_scaling = UI_SCALING_ASPECT_MAX;
 	}
 
-	InitChildItems(sec, keepElements);
 }
 
 void IUIControl::InitChildItems(const KVSection* sec, bool keepElements)
@@ -361,7 +361,9 @@ void IUIControl::InitChildItems(const KVSection* sec, bool keepElements)
 			continue;
 
 		if(isNewControl)
+		{
 			AddChild(control);
+		}
 
 		control->InitFromKeyValues(childSec, keepElements);
 	}
@@ -865,6 +867,9 @@ void IUIControl::ClearChilds(bool destroy)
 
 void IUIControl::AddChild(IUIControl* pControl)
 {
+	if(!pControl->m_childs.getCount())
+		pControl->m_font = m_font;
+
 	m_childs.prepend(pControl);
 	pControl->m_parent = this;
 }

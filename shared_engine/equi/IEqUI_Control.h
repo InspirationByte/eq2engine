@@ -91,6 +91,8 @@ public:
 
 	virtual void				InitFromKeyValues(const KVSection* sec, bool keepElements = false);
 
+	virtual void				Parse(const KVSection* sec);
+
 	// name and type
 	const char*					GetName() const						{return m_name.ToCString();}
 	void						SetName(const char* pszName)		{m_name = pszName;}
@@ -185,6 +187,8 @@ public:
 	// rendering
 	virtual void				Render(int depth, RenderContextAbstract& context);
 
+	virtual IUIControl*			HitTest(const IVector2D& point) const;
+
 	// Events
 	int							AddEventHandler(const char* pszName, EvtCallback&& cb);
 	void						RemoveEventHandler(int handlerId);
@@ -234,8 +238,6 @@ protected:
 	virtual void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
 	static int					CommandCb(IUIControl* control, const EvtHandler& event, void* userData);
-
-	virtual IUIControl*			HitTest(const IVector2D& point) const;
 
 	// events
 	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags) { return true; }
