@@ -541,7 +541,7 @@ void InputCommands_SDL(SDL_Event* event)
 			else if (nKey == SDL_SCANCODE_AC_BACK)
 				nKey = SDL_SCANCODE_ESCAPE;
 
-			g_pHost->TrapKey_Event(nKey, (event->type == SDL_KEYUP) ? false : true);
+			g_pHost->Key_Event(nKey, (event->type == SDL_KEYUP) ? false : true);
 			break;
 		}
 		case SDL_TEXTINPUT:
@@ -557,7 +557,7 @@ void InputCommands_SDL(SDL_Event* event)
 			const int dx = event->motion.xrel;
 			const int dy = event->motion.yrel;
 
-			g_pHost->TrapMouseMove_Event(x, y, dx, dy);
+			g_pHost->MouseMove_Event(x, y, dx, dy);
 
 			lastX = x;
 			lastY = y;
@@ -584,7 +584,7 @@ void InputCommands_SDL(SDL_Event* event)
 			else if(event->button.button == 5)
 				mouseButton = MOU_B5;
 
-			g_pHost->TrapMouse_Event(x, y, mouseButton, (event->type == SDL_MOUSEBUTTONUP) ? false : true);
+			g_pHost->Mouse_Event(x, y, mouseButton, (event->type == SDL_MOUSEBUTTONUP) ? false : true);
 
 			break;
 		}
@@ -605,7 +605,7 @@ void InputCommands_SDL(SDL_Event* event)
 			x = event->wheel.x;
 			y = event->wheel.y;
 
-			g_pHost->TrapMouseWheel_Event(lastX, lastY, x, y);
+			g_pHost->MouseWheel_Event(lastX, lastY, x, y);
 
 			break;
 		}
@@ -956,19 +956,8 @@ bool CGameHost::IsTextInputShown() const
 	return SDL_IsTextInputActive();
 }
 
-void CGameHost::TrapKey_Event( int key, bool down )
+void CGameHost::Key_Event( int key, bool down )
 {
-	// Only key down events are trapped
-	if ( m_keyTrapMode && down )
-	{
-		m_keyTrapMode			= false;
-		m_keyDoneTrapping		= true;
-
-		m_trapKey			= key;
-		m_trapButtons		= 0;
-		return;
-	}
-
 	if(g_consoleInput->KeyPress( key, down ))
 		return;
 
@@ -979,19 +968,8 @@ void CGameHost::TrapKey_Event( int key, bool down )
 		eqAppStateMng::GetCurrentState()->HandleKeyPress( key, down );
 }
 
-void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
+void CGameHost::Mouse_Event( float x, float y, int buttons, bool down )
 {
-	// buttons == 0 for mouse move events
-	if ( m_keyTrapMode && buttons && !down )
-	{
-		m_keyTrapMode			= false;
-		m_keyDoneTrapping		= true;
-
-		m_trapKey			= 0;
-		m_trapButtons		= buttons;
-		return;
-	}
-
 	if( g_consoleInput->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
@@ -1006,7 +984,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 		eqAppStateMng::GetCurrentState()->HandleMouseClick( x, y, buttons, down );
 }
 
-void CGameHost::TrapMouseMove_Event(int x, int y, int dx, int dy)
+void CGameHost::MouseMove_Event(int x, int y, int dx, int dy)
 {
 	if(m_skipMouseMove)
 	{
@@ -1029,7 +1007,7 @@ void CGameHost::TrapMouseMove_Event(int x, int y, int dx, int dy)
 		eqAppStateMng::GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
 }
 
-void CGameHost::TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll)
+void CGameHost::MouseWheel_Event(int x, int y, int hscroll, int vscroll)
 {
 	if (g_consoleInput->MouseWheel(hscroll, vscroll))
 		return;
@@ -1038,7 +1016,7 @@ void CGameHost::TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll)
 		eqAppStateMng::GetCurrentState()->HandleMouseWheel(x, y, vscroll);
 }
 
-void CGameHost::TrapJoyAxis_Event( short axis, short value )
+void CGameHost::JoyAxis_Event( short axis, short value )
 {
 	g_inputCommandBinder->OnJoyAxisEvent( axis, value );
 
@@ -1046,7 +1024,7 @@ void CGameHost::TrapJoyAxis_Event( short axis, short value )
 		eqAppStateMng::GetCurrentState()->HandleJoyAxis( axis, value );
 }
 
-void CGameHost::TrapJoyButton_Event( short button, bool down)
+void CGameHost::JoyButton_Event( short button, bool down)
 {
 	g_inputCommandBinder->OnKeyEvent( JOYSTICK_START_KEYS + button, down );
 
@@ -1070,35 +1048,4 @@ void CGameHost::ProcessKeyChar(const char* utfChar)
 		return;
 
 	// TODO: EqUI text input processing
-}
-
-void CGameHost::StartTrapMode()
-{
-	if ( m_keyTrapMode )
-		return;
-
-	m_keyDoneTrapping = false;
-	m_keyTrapMode = true;
-}
-
-// Returns true on success, false on failure.
-bool CGameHost::IsTrapping()
-{
-	return m_keyTrapMode;
-}
-
-bool CGameHost::CheckDoneTrapping( int& buttons, int& key )
-{
-	if ( m_keyTrapMode )
-		return false;
-
-	if ( !m_keyDoneTrapping )
-		return false;
-
-	key			= m_trapKey;
-	buttons		= m_trapButtons;
-
-	// Reset since we retrieved the results
-	m_keyDoneTrapping = false;
-	return true;
 }
