@@ -32,8 +32,17 @@ enum EOpType : int
 // The binder itself.
 namespace esl::bindings
 {
-struct LuaCFunction
+struct LuaCFunctionProto { };
+
+template<typename...UpVals>
+struct LuaCFunction : LuaCFunctionProto
 {
+	// Since this binder is a little bit fucked up and I tremendously suck at templates,
+	// callable (which is engine's EqFunction) is not supported 
+	// but there are upvalues built into C function binds.
+	using TupleVal = std::tuple<UpVals...>;
+	TupleVal		upValues;
+
 	void*			funcPtr;
 	lua_CFunction	luaFuncImpl;
 };

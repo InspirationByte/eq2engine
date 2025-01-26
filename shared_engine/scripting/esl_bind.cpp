@@ -13,6 +13,7 @@ constexpr EqStringRef s_luaTNumber = "number";
 constexpr EqStringRef s_luaTTable = "table";
 constexpr EqStringRef s_luaTFunction = "function";
 constexpr EqStringRef s_eslTAny = "any";
+constexpr EqStringRef s_luaTLightUserdata = "lightuserdata";
 
 #define _BUILTIN_ALIAS_TYPE(x, n) \
 	template<> const char* LuaTypeAlias<x, false>::value = n;
@@ -35,6 +36,7 @@ _BUILTIN_ALIAS_TYPE(uint, s_luaTNumber)
 _BUILTIN_ALIAS_TYPE(int64, s_luaTNumber)
 _BUILTIN_ALIAS_TYPE(uint64, s_luaTNumber)
 _BUILTIN_ALIAS_TYPE(float, s_luaTNumber)
+_BUILTIN_ALIAS_TYPE(void, s_luaTLightUserdata)
 
 _BUILTIN_ALIAS_TYPE(LuaTable, s_luaTTable)
 _BUILTIN_ALIAS_TYPE(LuaTableRef, s_luaTTable)

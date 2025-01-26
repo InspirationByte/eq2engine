@@ -246,6 +246,10 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		lua_pushnil(L);
 	}
+	else if constexpr (std::is_same_v<T, void*> || std::is_same_v<T, const void*>)
+	{
+		lua_pushlightuserdata(L, value);
+	}
 	else if constexpr (std::is_same_v<T, bool>)
 	{
 		lua_pushboolean(L, value);
@@ -280,10 +284,15 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		lua_pushcfunction(L, value);
 	}
-	else if constexpr (std::is_same_v<BaseRefType<T>, bindings::LuaCFunction>)
+	else if constexpr (std::is_base_of_v<bindings::LuaCFunctionProto, BaseRefType<T>>)
 	{
 		lua_pushlightuserdata(L, value.funcPtr);
-		lua_pushcclosure(L, value.luaFuncImpl, 1);
+
+		constexpr int tupleSize = std::tuple_size<BaseRefType<T>::TupleVal>::value;
+		std::apply([&](auto&&... args) {
+			((PushValue(L, args)), ...);
+		}, value.upValues);
+		lua_pushcclosure(L, value.luaFuncImpl, tupleSize + 1);
 	}
 	else if constexpr (
 		   std::is_same_v<T, LuaRawRef>
@@ -398,7 +407,20 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
 
 		return Result{ {}, true, {}, static_cast<T>(lua_tonumber(L, index)) };
-    } 
+    }
+	else if constexpr (
+		std::is_same_v<T, void*>
+		|| std::is_same_v<T, const void*>)
+	{
+		using Result = ResultWithValue<T>;
+
+		const int type = lua_type(L, index);
+		if (!checkType(L, index, LUA_TLIGHTUSERDATA))
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
+
+		void* udPtr = lua_touserdata(L, index);
+		return Result{ {}, true, {}, udPtr };
+	}
 	else if constexpr (std::is_same_v<BaseType<T>, LuaRawRef>)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
@@ -892,10 +914,11 @@ struct FunctionBinderNoTraits;
 template<typename R, typename ... Args>
 struct FunctionBinderNoTraits<R(*)(Args...)> : public FunctionBinder<R(*)(Args...), FuncSignature<R, Args...>> {};
 
-template<typename UR = void, typename ... UArgs, typename Func>
-static bindings::LuaCFunction BindCFunction(Func f)
+template<typename UR = void, typename ... UArgs, typename Func, typename... UpVals>
+static bindings::LuaCFunction<UpVals...> BindCFunction(Func f, UpVals... upVals)
 {
-	bindings::LuaCFunction funcInfo;
+	bindings::LuaCFunction<UpVals...> funcInfo;
+	funcInfo.upValues = std::tie(upVals...);
 	funcInfo.funcPtr = reinterpret_cast<void*>(f);
 
 	if constexpr (std::is_void_v<UR> && sizeof...(UArgs) == 0)
