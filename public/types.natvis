@@ -193,8 +193,8 @@
 	</Type>
 	<Type Name="EqTStr&lt;*&gt;">
 		<DisplayString Condition="m_nLength == 0">[empty str]</DisplayString>
-		<DisplayString Condition="strcmp(&quot;T1&quot;,&quot;char&quot;)!=0">[string] { m_pszString,sb }</DisplayString>
 		<DisplayString Condition="strcmp(&quot;T1&quot;,&quot;wchar_t&quot;)!=0">[wstring] { m_pszString,su }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;T1&quot;,&quot;char&quot;)!=0">[string] { m_pszString,sb }</DisplayString>
 		<Expand>
 			<Item Name = "Value">
 				m_pszString

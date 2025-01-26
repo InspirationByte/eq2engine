@@ -87,6 +87,9 @@ const wchar_t* IUIControl::GetLabelText() const
 
 void IUIControl::SetLabelText(const wchar_t* pszLabel)
 {
+	if (!m_labelText.Compare(pszLabel))
+		return;
+
 	m_labelText = pszLabel;
 	AnsiUnicodeConverter(m_label, m_labelText);
 }

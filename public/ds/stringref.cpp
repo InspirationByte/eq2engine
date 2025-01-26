@@ -567,7 +567,7 @@ AnsiUnicodeConverter::AnsiUnicodeConverter(EqWString& outStr, EqStringRef source
 
 	ubyte* utf8 = (ubyte*)sourceStr.GetData();
 	int length = EqStringConv::GetUTF8Length(utf8);
-
+	outStr.Empty();
 	outStr.ExtendAlloc(length);
 	do {
 		const uint32 wch = EqStringConv::GetWideChar(&utf8);
@@ -582,8 +582,7 @@ AnsiUnicodeConverter::AnsiUnicodeConverter(EqString& outStr, EqWStringRef source
 	ASSERT(sourceStr.IsValid());
 
 	int len = sourceStr.Length() * 4;
-
-	// to not call too many allocations
+	outStr.Empty();
 	outStr.ExtendAlloc(len);
 
 	const wchar_t* val = sourceStr.GetData();
