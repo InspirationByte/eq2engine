@@ -73,11 +73,23 @@ const char*	IUIControl::GetLabel() const
 
 void IUIControl::SetLabel(const char* pszLabel)
 {
+	if (!pszLabel)
+		return;
+
 	if (!m_label.Compare(pszLabel))
 		return;
 
+	if (*pszLabel == '#')
+	{
+		AnsiUnicodeConverter(m_labelTextValue, pszLabel + 1);
+		m_labelText = g_localizer->GetTokenString(pszLabel + 1, m_labelTextValue);
+	}
+	else
+	{
+		AnsiUnicodeConverter(m_labelTextValue, pszLabel);
+		m_labelText = m_labelTextValue;
+	}
 	m_label = pszLabel;
-	m_labelText = LocalizedString(pszLabel);
 }
 
 const wchar_t* IUIControl::GetLabelText() const
@@ -90,7 +102,8 @@ void IUIControl::SetLabelText(const wchar_t* pszLabel)
 	if (!m_labelText.Compare(pszLabel))
 		return;
 
-	m_labelText = pszLabel;
+	m_labelTextValue = pszLabel;
+	m_labelText = m_labelTextValue;
 	AnsiUnicodeConverter(m_label, m_labelText);
 }
 
