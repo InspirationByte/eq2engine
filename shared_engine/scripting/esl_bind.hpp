@@ -640,6 +640,7 @@ struct FunctionCall
 			return Result{ {}, false, "is not callable"};
 
 		lua_State* L = func.GetState();
+
 		runtime::StackGuard g(L);
 
 		lua_pushcfunction(L, StackTrace);
@@ -651,6 +652,7 @@ struct FunctionCall
 		return InvokeFunc(L, std::move(g), sizeof...(Args), errIdx);
 	}
 
+	// NOTE: this variant used in ScriptState::CallFunction
 	static Result Invoke(lua_State* L, int funcIndex, int popCnt, Args... args)
 	{
 		if (lua_type(L, funcIndex) != LUA_TFUNCTION)
@@ -681,15 +683,27 @@ private:
 	{
 		constexpr int ReturnCount = IsAny<R>::value ? LUA_MULTRET : (std::is_void_v<R> ? 0 : 1);
 		const int res = lua_pcall(L, numArgs, ReturnCount, errIdx);
+
+		const int retValues = lua_gettop(L) - guard.Pos() - (errIdx != 0 ? 1 : 0);
+
 		if (res == 0)
 		{
-			if constexpr (ReturnCount <= 0)
+			if constexpr (ReturnCount == 0)
 			{
+				return Result{ std::move(guard), true };
+			}
+			else if constexpr (ReturnCount == LUA_MULTRET)
+			{
+				// Any
+				if constexpr (R::COUNT > 0)
+				{
+					if (retValues < R::COUNT)
+						return Result{ std::move(guard), false, EqString::Format("insufficient return value count (got %d, required %d)", retValues, R::COUNT) };
+				}
 				return Result{ std::move(guard), true};
 			}
 			else
 			{
-				const int retValues = lua_gettop(L);
 				if (retValues < ReturnCount)
 					return Result{ std::move(guard), false, EqString::Format("insufficient return value count (got %d, required %d)", retValues, ReturnCount) };
 

@@ -22,15 +22,18 @@ using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
 using LuaTableRef = LuaRef<LUA_TTABLE>;
 using LuaUserRef = LuaRef<LUA_TUSERDATA>;
 
-struct Any {};
+template<int NUM_VALUES = -1>
+struct Any {
+	static constexpr int COUNT = NUM_VALUES;
+};
 
 using StaticFunc = lua_CFunction;
 
 template <typename T>
 struct IsAny : std::false_type {};
 
-template <>
-struct IsAny<Any> : std::true_type {};
+template <int NUM_VALUES>
+struct IsAny<Any<NUM_VALUES>> : std::true_type {};
 
 template <typename T>
 struct IsConstMemberFunc : std::false_type {};
@@ -194,6 +197,7 @@ public:
 	~StackGuard();
 
 	StackGuard&	operator=(StackGuard&& other) noexcept;
+	int			Pos() const { return m_pos; }
 
 private:
 	lua_State*	m_state{ nullptr };
