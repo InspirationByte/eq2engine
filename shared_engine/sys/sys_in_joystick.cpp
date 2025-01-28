@@ -297,7 +297,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 			{
 				Msg("Gamepad %d axis %s value: %d\n",
 					event->caxis.which,
-					KeyIndexToString(JOYSTICK_START_AXES + axis), event->caxis.value);
+					KeyCodeToString(JOYSTICK_START_AXES + axis), event->caxis.value);
 			}
 
 			const int cIndex = GetControllerIndex(event->cdevice.which);
@@ -323,7 +323,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 			if (in_joy_debug.GetBool())
 			{
 				Msg("Gamepad %d button %s %s\n",
-					event->cbutton.which, KeyIndexToString(JOYSTICK_START_KEYS + button), down ? "down" : "up");
+					event->cbutton.which, KeyCodeToString(JOYSTICK_START_KEYS + button), down ? "down" : "up");
 			}
 
 			const int cIndex = GetControllerIndex(event->cdevice.which);

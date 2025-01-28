@@ -217,7 +217,7 @@ static bool InputGetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 			continue;
 
 		EqString modifier(keyStr, subStart - keyStr);
-		outKeys[i] = KeyStringToKeyIndex(modifier);
+		outKeys[i] = KeyMapIndex(modifier);
 		if (outKeys[i] == -1)
 		{
 			MsgError("Unknown key/mapping '%s'\n", modifier.ToCString());
@@ -229,7 +229,7 @@ static bool InputGetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 	}
 
 	// Find the final key matching the *keychar
-	outKeys[2] = KeyStringToKeyIndex(keyStr);
+	outKeys[2] = KeyMapIndex(keyStr);
 
 	if (outKeys[2] == -1)
 	{
@@ -731,7 +731,7 @@ bool CInputCommandBinder::CheckModifiersAndDepress(InputBinding& binding, int cu
 void CInputCommandBinder::OnKeyEvent(int keyIdent, bool pressed)
 {
 	if(in_keys_debug.GetBool())
-		MsgWarning("-- KeyPress: %s (%d)\n", KeyIndexToString(keyIdent), pressed);
+		MsgWarning("-- KeyPress: %s (%d)\n", KeyCodeToString(keyIdent), pressed);
 
 	BitArrayImpl::set(m_currentButtonBits, BITS_BUTTONS, keyIdent, pressed);
 
