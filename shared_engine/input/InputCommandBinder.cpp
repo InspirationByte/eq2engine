@@ -251,6 +251,20 @@ static void ResolveInputCommand(InputCommand& cmd)
 		cmd.activateCmd = g_consoleCommands->FindCommand(cmd.commandString);
 }
 
+int UTIL_GetBindingKeyIds(int keyIds[3], const InputBinding* binding)
+{
+	if (!binding)
+		return 0;
+
+	int count = 0;
+	const int validModifiers = InputBindingGetModifierCount(*binding);
+	for (int i = 0; i < validModifiers; i++)
+		keyIds[count++] = s_keyMapList[binding->modifierIds[i]].keynum;
+
+	keyIds[count++] = s_keyMapList[binding->keyIdx].keynum;
+	return count;
+}
+
 void UTIL_GetBindingKeyString(EqString& outStr, const InputBinding* binding, bool humanReadable /*= false*/)
 {
 	if (!binding)

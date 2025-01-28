@@ -126,6 +126,7 @@ protected:
 	bool					m_init{ false };
 };
 
+int UTIL_GetBindingKeyIds(int keyIds[3], const InputBinding* binding);
 void UTIL_GetBindingKeyString(EqString& outStr, const InputBinding* binding, bool humanReadable = false);
 void UTIL_GetBindingKeyStringLocalized(EqWString& outStr, const InputBinding* binding, bool humanReadable = false);
 
