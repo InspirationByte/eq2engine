@@ -125,30 +125,21 @@ KVPairValue::~KVPairValue()
 	delete section;
 }
 
-void KVPairValue::SetFrom(KVPairValue* from)
+void KVPairValue::SetFrom(const KVPairValue& from)
 {
-	ASSERT(from != nullptr);
+	type = from.type;
 
-	type = from->type;
-
-	SetStringValue( from->value );
+	SetStringValue( from.value );
 
 	if(type == KVPAIR_INT)
-	{
-		nValue = from->nValue;
-	}
+		nValue = from.nValue;
 	else if(type == KVPAIR_FLOAT)
-	{
-		fValue = from->fValue;
-	}
+		fValue = from.fValue;
 	else if(type == KVPAIR_BOOL)
-	{
-		bValue = from->bValue;
-	}
-	else if(type == KVPAIR_SECTION)
-	{
-		#pragma todo("clone the section")
-	}
+		bValue = from.bValue;
+
+	//else if(type == KVPAIR_SECTION)
+	#pragma todo("clone the section")
 }
 
 // sets string value
@@ -177,17 +168,11 @@ void KVPairValue::SetFromString( const char* pszValue )
 	SAFE_DELETE(section);
 
 	if(type == KVPAIR_INT)
-	{
 		nValue = atoi( pszValue );
-	}
 	else if(type == KVPAIR_FLOAT)
-	{
 		fValue = (float)atof( pszValue );
-	}
 	else if(type == KVPAIR_BOOL)
-	{
 		bValue = atoi( pszValue ) > 0;
-	}
 }
 
 void KVPairValue::SetString(const char* value)
@@ -303,7 +288,7 @@ KVSection* KVSection::operator[](const char* pszName)
 
 KVPairValue& KVSection::operator[](int index)
 {
-	return *values[index]; 
+	return values[index]; 
 }
 
 const KVSection* KVSection::operator[](const char* pszName) const
@@ -313,7 +298,7 @@ const KVSection* KVSection::operator[](const char* pszName) const
 
 const KVPairValue& KVSection::operator[](int index) const
 {
-	return *values[index];
+	return values[index];
 }
 
 //-----------------------------------------------------------------------------------------
@@ -401,9 +386,6 @@ void KVSection::Cleanup()
 
 void KVSection::ClearValues()
 {
-	for(int i = 0; i < values.numElem(); i++)
-		delete values[i];
-
 	values.clear();
 }
 
@@ -421,14 +403,10 @@ const char*	KVSection::GetName() const
 
 //-----------------------------------------------------------------------------------------
 
-KVPairValue* KVSection::CreateValue()
+KVPairValue& KVSection::CreateValue()
 {
-	// TODO: pool
-	KVPairValue* val = PPNew KVPairValue();
-
-	val->type = type;
-
-	values.append(val);
+	KVPairValue& val = values.append();
+	val.type = type;
 
 	return val;
 }
@@ -439,14 +417,11 @@ KVSection* KVSection::CreateSectionValue()
 		return nullptr;
 
 	// TODO: pool
-	KVPairValue* val = PPNew KVPairValue();
+	KVPairValue& val = values.append();
 
-	val->type = type;
-
-	values.append(val);
-
-	val->section = PPNew KVSection();
-	return val->section;
+	val.type = type;
+	val.section = PPNew KVSection();
+	return val.section;
 }
 
 KVSection* KVSection::Clone() const
@@ -470,8 +445,8 @@ void KVSection::CopyValuesTo(KVSection* dest) const
 {
 	dest->ClearValues();
 
-	for(int i = 0; i < values.numElem(); i++)
-		dest->AddValue(values[i]);
+	for(KVPairValue& val : values)
+		dest->AddValue(val);
 }
 
 void KVSection::SetValueFrom(KVSection* pOther)
@@ -483,26 +458,26 @@ void KVSection::SetValueFrom(KVSection* pOther)
 // adds value to key
 void KVSection::AddValue(const char* value)
 {
-	KVPairValue* val = CreateValue();
-	val->SetString(value);
+	KVPairValue& val = CreateValue();
+	val.SetString(value);
 }
 
 void KVSection::AddValue(int nValue)
 {
-	KVPairValue* val = CreateValue();
-	val->SetInt(nValue);
+	KVPairValue& val = CreateValue();
+	val.SetInt(nValue);
 }
 
 void KVSection::AddValue(float fValue)
 {
-	KVPairValue* val = CreateValue();
-	val->SetFloat(fValue);
+	KVPairValue& val = CreateValue();
+	val.SetFloat(fValue);
 }
 
 void KVSection::AddValue(bool bValue)
 {
-	KVPairValue* val = CreateValue();
-	val->SetBool(bValue);
+	KVPairValue& val = CreateValue();
+	val.SetBool(bValue);
 }
 
 void KVSection::AddValue(const Vector2D& vecValue)
@@ -530,16 +505,15 @@ void KVSection::AddValue(KVSection* keybase)
 {
 	int numVal = values.numElem();
 
-	KVPairValue* val = CreateValue();
-
-	val->section = keybase;
-	val->section->SetName(EqString::Format("%d", numVal));
+	KVPairValue& val = CreateValue();
+	val.section = keybase;
+	val.section->SetName(EqString::Format("%d", numVal));
 }
 
-void KVSection::AddValue(KVPairValue* value)
+void KVSection::AddValue(KVPairValue& value)
 {
-	KVPairValue* val = CreateValue();
-	val->SetFrom(value);
+	KVPairValue& val = CreateValue();
+	val.SetFrom(value);
 }
 
 //-------------------------
@@ -607,7 +581,7 @@ void KVSection::SetValue(const char* value, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetString(value);
+	values[idxAt].SetString(value);
 }
 
 void KVSection::SetValue(int nValue, int idxAt)
@@ -618,7 +592,7 @@ void KVSection::SetValue(int nValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetInt(nValue);
+	values[idxAt].SetInt(nValue);
 }
 
 void KVSection::SetValue(float fValue, int idxAt)
@@ -629,7 +603,7 @@ void KVSection::SetValue(float fValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetFloat(fValue);
+	values[idxAt].SetFloat(fValue);
 }
 
 void KVSection::SetValue(bool bValue, int idxAt)
@@ -640,7 +614,7 @@ void KVSection::SetValue(bool bValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetBool(bValue);
+	values[idxAt].SetBool(bValue);
 }
 
 void KVSection::SetValue(const Vector2D& value, int idxAt)
@@ -664,7 +638,7 @@ void KVSection::SetValue(const Vector4D& value, int idxAt)
 	SetValue(value.w, idxAt++);
 }
 
-void KVSection::SetValue(KVPairValue* value, int idxAt)
+void KVSection::SetValue(const KVPairValue& value, int idxAt)
 {
 	if(values.numElem() == 0)
 		CreateValue();
@@ -672,12 +646,12 @@ void KVSection::SetValue(KVPairValue* value, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetFrom(value);
+	values[idxAt].SetFrom(value);
 }
 
 KVSection& KVSection::SetKey(const char* name, const char* value)
 {
-	KVSection* pPair = (KVSection*)FindSection( name );
+	KVSection* pPair = FindSection( name );
 	if(!pPair)
 		return AddKey(name, value);
 
@@ -690,7 +664,7 @@ KVSection& KVSection::SetKey(const char* name, const char* value)
 
 KVSection& KVSection::SetKey(const char* name, int nValue)
 {
-	KVSection* pPair = (KVSection*)FindSection( name );
+	KVSection* pPair = FindSection( name );
 	if(!pPair)
 		return AddKey(name, nValue);
 
@@ -704,7 +678,7 @@ KVSection& KVSection::SetKey(const char* name, int nValue)
 
 KVSection& KVSection::SetKey(const char* name, float fValue)
 {
-	KVSection* pPair = (KVSection*)FindSection( name );
+	KVSection* pPair = FindSection( name );
 	if(!pPair)
 		return AddKey(name, fValue);
 
@@ -718,7 +692,7 @@ KVSection& KVSection::SetKey(const char* name, float fValue)
 
 KVSection& KVSection::SetKey(const char* name, bool bValue)
 {
-	KVSection* pPair = (KVSection*)FindSection( name );
+	KVSection* pPair = FindSection( name );
 	if(!pPair)
 		return AddKey(name, bValue);
 
@@ -732,7 +706,7 @@ KVSection& KVSection::SetKey(const char* name, bool bValue)
 
 KVSection& KVSection::SetKey(const char* name, const Vector2D& value)
 {
-	KVSection* pPair = (KVSection*)FindSection(name);
+	KVSection* pPair = FindSection(name);
 	if (!pPair)
 		return AddKey(name, value);
 
@@ -746,7 +720,7 @@ KVSection& KVSection::SetKey(const char* name, const Vector2D& value)
 
 KVSection& KVSection::SetKey(const char* name, const Vector3D& value)
 {
-	KVSection* pPair = (KVSection*)FindSection(name);
+	KVSection* pPair = FindSection(name);
 	if (!pPair)
 		return AddKey(name, value);
 
@@ -760,7 +734,7 @@ KVSection& KVSection::SetKey(const char* name, const Vector3D& value)
 
 KVSection& KVSection::SetKey(const char* name, const Vector4D& value)
 {
-	KVSection* pPair = (KVSection*)FindSection(name);
+	KVSection* pPair = FindSection(name);
 	if (!pPair)
 		return AddKey(name, value);
 
@@ -777,7 +751,7 @@ KVSection& KVSection::SetKey(const char* name, KVSection* pair)
 	if(!pair)
 		return *this;
 
-	KVSection* pPair = (KVSection*)FindSection( name );
+	KVSection* pPair = FindSection( name );
 	if(!pPair)
 		return AddKey(name, pair);
 
@@ -1002,9 +976,9 @@ int	KVSection::ValueCount() const
 	return values.numElem();
 }
 
-KVPairValue* KVSection::ValueAt(int idx)  const
+KVPairValue& KVSection::ValueAt(int idx) const
 {
-	return values[idx];
+	return const_cast<KVPairValue&>(values[idx]);
 }
 
 void KVSection::SetType(int newType)
@@ -1424,8 +1398,8 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 							const int stringLength = dataPtr - multiLineStringStart;
 
 							// copy the value
-							KVPairValue* newValue = currentSection->CreateValue();
-							newValue->SetStringValue(multiLineStringStart + 1, stringLength - 1);
+							KVPairValue& newValue = currentSection->CreateValue();
+							newValue.SetStringValue(multiLineStringStart + 1, stringLength - 1);
 
 							multiLineStringStart = nullptr;
 							mode = MODE_DEFAULT;
@@ -1576,8 +1550,8 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 							const int stringLength = dataPtr - multiLineStringStart;
 
 							// copy the value
-							KVPairValue* newValue = currentSection->CreateValue();
-							newValue->SetStringValue(multiLineStringStart + 1, stringLength - 1);
+							KVPairValue& newValue = currentSection->CreateValue();
+							newValue.SetStringValue(multiLineStringStart + 1, stringLength - 1);
 
 							multiLineStringStart = nullptr;
 							mode = MODE_DEFAULT;
@@ -1683,8 +1657,8 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 					}
 					else
 					{
-						KVPairValue* value = currentSection->CreateValue();
-						value->SetFromString(text);
+						KVPairValue& value = currentSection->CreateValue();
+						value.SetFromString(text);
 					}
 				}
 
@@ -1914,27 +1888,19 @@ KVSection* KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo)
 void KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base);
 
 // writes KV value to the binary stream
-void KV_WriteValueBinary(IVirtualStream* outStream, const KVPairValue* value)
+void KV_WriteValueBinary(IVirtualStream* outStream, const KVPairValue& value)
 {
 	kvbinvalue_t binValue;
-	binValue.type = value->type;
+	binValue.type = value.type;
 
 	if(binValue.type == KVPAIR_STRING)
-	{
-		binValue.nValue = strlen(value->value); // store string length
-	}
+		binValue.nValue = strlen(value.value); // store string length
 	else if(binValue.type == KVPAIR_INT)
-	{
-		binValue.nValue = value->nValue;
-	}
+		binValue.nValue = value.nValue;
 	else if(binValue.type == KVPAIR_FLOAT)
-	{
-		binValue.fValue = value->fValue;
-	}
+		binValue.fValue = value.fValue;
 	else if(binValue.type == KVPAIR_BOOL)
-	{
-		binValue.bValue = value->bValue;
-	}
+		binValue.bValue = value.bValue;
 
 	// store header
 	outStream->Write(&binValue, 1, sizeof(binValue));
@@ -1942,12 +1908,12 @@ void KV_WriteValueBinary(IVirtualStream* outStream, const KVPairValue* value)
 	if(binValue.type == KVPAIR_STRING)
 	{
 		// store the string
-		outStream->Write(value->value, 1, binValue.nValue);
+		outStream->Write(value.value, 1, binValue.nValue);
 	}
 	else if(binValue.type == KVPAIR_SECTION)
 	{
 		// store section after the binary
-		KV_WriteToStreamBinary(outStream, value->section);
+		KV_WriteToStreamBinary(outStream, value.section);
 	}
 }
 
@@ -2122,42 +2088,42 @@ void KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int
 //
 // Writes the pair value
 //
-void KV_WritePairValue(IVirtualStream* out, const KVPairValue* val, int depth)
+void KV_WritePairValue(IVirtualStream* out, const KVPairValue& val, int depth)
 {
 	// write typed data
-	if(val->type == KVPAIR_STRING)
+	if(val.type == KVPAIR_STRING)
 	{
-		if(val->value == nullptr)
+		if(val.value == nullptr)
 		{
 			out->Print("\"%s\"", "VALUE_MISSING");
 			return;
 		}
 
-		int numSpecial = KV_CountSpecialSymbols(val->value);
+		int numSpecial = KV_CountSpecialSymbols(val.value);
 
-		char* outValueString = (char*)PPAlloc(strlen(val->value) + numSpecial + 1);
-		KV_PreProcessStringValue( outValueString, val->value );
+		char* outValueString = (char*)PPAlloc(strlen(val.value) + numSpecial + 1);
+		KV_PreProcessStringValue( outValueString, val.value );
 		KV_WriteSelectQuotedString( out, outValueString );
 		//out->Print("\"%s\"", outValueString);
 
 		PPFree( outValueString );
 	}
-	else if(val->type == KVPAIR_INT)
+	else if(val.type == KVPAIR_INT)
 	{
-		out->Print("%d", val->nValue);
+		out->Print("%d", val.nValue);
 	}
-	else if(val->type == KVPAIR_FLOAT)
+	else if(val.type == KVPAIR_FLOAT)
 	{
-		out->Print("%g", val->fValue);
+		out->Print("%g", val.fValue);
 	}
-	else if(val->type == KVPAIR_BOOL)
+	else if(val.type == KVPAIR_BOOL)
 	{
-		out->Print("%d", val->bValue);
+		out->Print("%d", val.bValue);
 	}
-	else if(val->type == KVPAIR_SECTION)
+	else if(val.type == KVPAIR_SECTION)
 	{
 		out->Print("%c", KV_SECTION_BEGIN);
-		KV_WriteToStreamV3(out, val->section, depth+1, false);
+		KV_WriteToStreamV3(out, val.section, depth+1, false);
 		out->Print("%c", KV_SECTION_END);
 	}
 }

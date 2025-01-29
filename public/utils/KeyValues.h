@@ -106,7 +106,7 @@ struct KVValueIterator
 
 	KVValueIterator(const KVSection* key, int index);
 
-	operator	KVPairValue*() const;
+	operator	KVPairValue&() const;
 	T			operator*() const;
 	void		operator++();
 
@@ -218,7 +218,7 @@ struct KVPairValue
 	// sets string value
 	void				SetStringValue(const char* pszValue, int len = -1);
 	void				SetFromString(const char* pszValue);
-	void				SetFrom(KVPairValue* from);
+	void				SetFrom(const KVPairValue& from);
 
 	// get/set
 	const char*			GetString() const;
@@ -321,7 +321,7 @@ struct KVSection
 
 	void				SetValueFrom( KVSection* pOther );
 
-	KVPairValue*		CreateValue();
+	KVPairValue&		CreateValue();
 	KVSection*			CreateSectionValue();
 
 	KVSection*			Clone() const;
@@ -337,7 +337,7 @@ struct KVSection
 	void				AddValue(const Vector3D& vecValue);
 	void				AddValue(const Vector4D& vecValue);
 	void				AddValue(KVSection* keybase);
-	void				AddValue(KVPairValue* value);
+	void				AddValue(KVPairValue& value);
 
 	// adds unique value to key
 	void				AddUniqueValue(const char* value);
@@ -353,7 +353,7 @@ struct KVSection
 	void				SetValue(const Vector2D& value, int idxAt = 0);
 	void				SetValue(const Vector3D& value, int idxAt = 0);
 	void				SetValue(const Vector4D& value, int idxAt = 0);
-	void				SetValue(KVPairValue* value, int idxAt = 0);
+	void				SetValue(const KVPairValue& value, int idxAt = 0);
 
 	KVSection*			operator[](const char* pszName);
 	KVPairValue&		operator[](int index);
@@ -376,7 +376,7 @@ struct KVSection
 	KVSection*			KeyAt(int idx) const;
 
 	int					ValueCount() const;
-	KVPairValue*		ValueAt(int idx) const;
+	KVPairValue&		ValueAt(int idx) const;
 
 	void				SetType(int newType);
 	int					GetType() const;
@@ -387,7 +387,7 @@ struct KVSection
 	int					line{ 0 };				// the line that the key is on
 
 	Array<KVSection*>	keys{ PP_SL };			// the nested keys
-	Array<KVPairValue*>	values{ PP_SL };
+	Array<KVPairValue>	values{ PP_SL };
 	EKVPairType			type{ KVPAIR_STRING };
 	bool				unicode{ false };
 };
@@ -485,7 +485,7 @@ KVValueIterator<T>::KVValueIterator(const KVSection* key, int index)
 }
 
 template<typename T>
-KVValueIterator<T>::operator KVPairValue* () const
+KVValueIterator<T>::operator KVPairValue& () const
 {
 	return key->values[index];
 }
