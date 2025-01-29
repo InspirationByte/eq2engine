@@ -380,7 +380,7 @@ void CDkCore::Shutdown()
 
 #if !defined(_RETAIL)
 	if (m_debugSettings.printMemLeaksAtExit)
-		PPMemInfo(false);
+		PPMemInfo(true);
 #endif
 
 	Msg("\n*Destroying core...\n");

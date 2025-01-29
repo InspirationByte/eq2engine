@@ -268,7 +268,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	MsgError("==========================================================\n\n");
 
 	// dump memory allocator
-	PPMemInfo(false);
+	PPMemInfo(true);
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -360,7 +360,7 @@ static void SignalExtended(int signum, siginfo_t* info, void* arg)
 
 	Msg("---------------------\n");
 
-	PPMemInfo(false);
+	PPMemInfo(true);
 
 	abort();
 }
@@ -406,7 +406,7 @@ static void OnSTDExceptionThrown()
 
 	Msg("---------------------\n");
 
-	PPMemInfo(false);
+	PPMemInfo(true);
 
 	abort();
 }

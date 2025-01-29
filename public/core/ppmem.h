@@ -8,7 +8,7 @@
 #pragma once
 #include "ppsourceline.h"
 
-IEXPORTS void	PPMemInfo( bool fullStats = true );
+IEXPORTS void	PPMemInfo( bool saveStatFile );
 IEXPORTS size_t	PPMemGetUsage();
 
 IEXPORTS void*	PPDAlloc( size_t size, const PPSourceLine& sl );

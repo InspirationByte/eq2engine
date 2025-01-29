@@ -20,6 +20,7 @@
 #include "core/ppmem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "core/IFileSystem.h"
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
@@ -29,7 +30,6 @@
 
 using namespace Threading;
 
-#define PPMEM_EXTRA_DEBUGINFO
 constexpr const uint PPMEM_CHECKMARK	   = MAKECHAR4('P','P','M','E');
 constexpr const uint PPMEM_CHECKMARK_FREED = MAKECHAR4('E','M','T','Y');
 constexpr const uint PPMEM_EXTRA_MARKS = 20;
@@ -40,10 +40,7 @@ struct ppallocinfo_t
 	ppallocinfo_t*	prev{nullptr};
 
 	size_t			size;
-
-#ifdef PPMEM_EXTRA_DEBUGINFO
 	PPSourceLine	sl;
-#endif // PPMEM_EXTRA_DEBUGINFO
 
 	uint			id;
 	uint			checkMark;
@@ -53,18 +50,16 @@ struct ppallocinfo_t
 struct ppsrc_counter_t
 {
 	uint64 count{ 0 };
-	uint64 lastTime{ 0 };
+	uint64 lastTimeStamp{ 0 };
 };
 using source_counter_map = Map<uint64, ppsrc_counter_t>;
 using source_map = Map<const char*, const char*>;
 
 struct ppmem_state_t
 {
-#ifdef PPMEM_EXTRA_DEBUGINFO
 	source_map sourceFileNameMap{PPSourceLine::Empty()};
 	source_counter_map sourceCounterMap{ PPSourceLine::Empty() };
 	CEqTimer timer;
-#endif
 
 	ppallocinfo_t* first{ nullptr };
 	ppallocinfo_t* last{ nullptr };
@@ -152,125 +147,83 @@ void PPMemShutdown()
 #endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 }
 
-// Printing the statistics and tracked memory usage
-void PPMemInfo(bool fullStats)
+struct SLStat
 {
-	ppmem_state_t& st = PPGetState();
+	uint64 totalMem{ 0 };
+	uint64 numAllocated{ 0 };
+	uint64 allocCounter{ 0 };
+	uint64 lastTimeStamp{ 0 };
+	uint64 checkFailed{ 0 };
+};
 
-	CScopedMutex m(st.allocMemMutex);
+using PPMemSLStat = Map<uint64, SLStat>;
 
-	size_t totalUsage = 0;
-	int64 numErrors = 0;
-
-	struct SLStat_t
+static void PPMemPlotAllocStatsCSV()
+{
+	FILE* statFile = fopen("logs/ppmemstat.csv", "w");
+	if (!statFile)
 	{
-		size_t totalMem{ 0 };
-		uint numAlloc{ 0 };
-	};
+		MsgError("Failed to write ppmemstat.csv");
+		return;
+	}
 
-	Map<uint64, SLStat_t> allocCounter{ PPSourceLine::Empty() };
+	PPMemSLStat allocCounter{ PPSourceLine::Empty() };
+	ppmem_state_t& st = PPGetState();
+	CScopedMutex m(st.allocMemMutex);
+	for (ppallocinfo_t* alloc = st.first; alloc != nullptr; alloc = alloc->next)
+	{
+		SLStat& slStat = allocCounter[alloc->sl.data];
+		ppsrc_counter_t& srcCounter = st.sourceCounterMap[alloc->sl.data];
 
-	if (fullStats)
-		MsgInfo("--- currently allocated memory ---\n");
+		slStat.allocCounter = srcCounter.count;
+		slStat.lastTimeStamp = srcCounter.lastTimeStamp;
+		slStat.totalMem += alloc->size;
+		slStat.numAllocated++;
+
+		const void* curPtr = alloc + 1;
+		uint* checkMark = (uint*)((ubyte*)curPtr + alloc->size);
+		if (alloc->checkMark != PPMEM_CHECKMARK || *checkMark != PPMEM_CHECKMARK)
+			++slStat.checkFailed;
+	}
+
+	fprintf(statFile, "Source,Allocated,Alloc_Counter,Alloc_Last_Timestamp,Alloc_Check_Fail,Total_Mem\n");
+	for (auto it = allocCounter.begin(); !it.atEnd(); ++it)
+	{
+		const SLStat& stat = *it;
+		const PPSourceLine sl = *(PPSourceLine*)&it.key();
+
+		const char* filename = st.sourceFileNameMap[sl.GetFileName()];
+		const int fileLine = sl.GetLine();
+
+		fprintf(statFile, "\"%s:%d\",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n", filename, fileLine, stat.numAllocated, stat.allocCounter, stat.lastTimeStamp, stat.checkFailed, stat.totalMem);
+	}
+
+	fclose(statFile);
+}
+
+// Printing the statistics and tracked memory usage
+void PPMemInfo(bool saveStatFile)
+{
+#if !defined(PPMEM_DISABLED)
+	if (saveStatFile)
+	{
+		PPMemPlotAllocStatsCSV();
+		return;
+	}
+
+	ppmem_state_t& st = PPGetState();
+	size_t totalUsage = 0;
 
 	// currently allocated items
+	CScopedMutex m(st.allocMemMutex);
 	for(ppallocinfo_t* alloc = st.first; alloc != nullptr; alloc = alloc->next)
 	{
 		const void* curPtr = alloc + 1;
-
 		totalUsage += alloc->size;
-	
-		if(fullStats)
-		{
-#ifdef PPMEM_EXTRA_DEBUGINFO
-			const char* filename = st.sourceFileNameMap[alloc->sl.GetFileName()];
-			const int fileLine = alloc->sl.GetLine();
-			MsgInfo("alloc id=%u, src='%s:%d', ptr=%p, size=%" PRIu64 "\n", alloc->id, filename, fileLine, curPtr, alloc->size);
-#else
-			MsgInfo("alloc id=%u, ptr=%p, size=%" PRIu64 "\n", alloc->id, curPtr, alloc->size);
-#endif
-
-			uint* checkMark = (uint*)((ubyte*)curPtr + alloc->size);
-
-			if(alloc->checkMark != PPMEM_CHECKMARK || *checkMark != PPMEM_CHECKMARK)
-			{
-				MsgInfo(" ^^^ outranged ^^^\n");
-				numErrors++;
-			}
-		}
-		else
-		{
-			uint* checkMark = (uint*)((ubyte*)curPtr + alloc->size);
-
-			if(alloc->checkMark != PPMEM_CHECKMARK || *checkMark != PPMEM_CHECKMARK)
-				numErrors++;
-		}
-
-#ifdef PPMEM_EXTRA_DEBUGINFO
-		SLStat_t& slStat = allocCounter[alloc->sl.data];
-		slStat.totalMem += alloc->size;
-		slStat.numAlloc++;
-#endif // PPMEM_EXTRA_DEBUGINFO
 	}
-
-#if !defined(PPMEM_DISABLED) && defined(PPMEM_EXTRA_DEBUGINFO)
-	// currently allocated items groupped by file:line
-	{
-		MsgInfo("--- allocations groupped by file-line ---\n");
-
-		Array<uint64> sortedList{ PPSourceLine::Empty() };
-		sortedList.resize(allocCounter.size());
-		for (auto it = allocCounter.begin(); !it.atEnd(); ++it)
-			sortedList.append(it.key());
-
-		arraySort(sortedList, [&allocCounter](uint64 a, uint64 b) {
-			return (int64)allocCounter[b].numAlloc - (int64)allocCounter[a].numAlloc;
-		});
-
-		for (int i = 0; i < sortedList.numElem(); ++i)
-		{
-			const uint64 key = sortedList[i];
-			const SLStat_t& stat = allocCounter[key];
-			const PPSourceLine sl = *(PPSourceLine*)&key;
-
-			const char* filename = st.sourceFileNameMap[sl.GetFileName()];
-			const int fileLine = sl.GetLine();
-
-			MsgInfo("'%s:%d' count: %d, size: %.2f KB\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), stat.numAlloc, (stat.totalMem / 1024.0f));
-		}
-	}
-
-	// (re)allocation rate stats
-	if(ppmem_stats_rate.GetBool())
-	{
-		MsgInfo("--- allocation rate statistics ---\n");
-
-		Array<uint64> sortedList{ PPSourceLine::Empty() };
-		sortedList.resize(st.sourceCounterMap.size());
-		for (auto it = st.sourceCounterMap.begin(); !it.atEnd(); ++it)
-			sortedList.append(it.key());
-
-		arraySort(sortedList, [&st](uint64 a, uint64 b) {
-			return (int64)st.sourceCounterMap[b].lastTime - (int64)st.sourceCounterMap[a].lastTime;
-		});
-
-		for (int i = 0; i < sortedList.numElem(); ++i)
-		{
-			const uint64 key = sortedList[i];
-			const PPSourceLine sl = *(PPSourceLine*)&key;
-
-			const char* filename = st.sourceFileNameMap[sl.GetFileName()];
-			const int fileLine = sl.GetLine();
-
-			MsgInfo("'%s:%d' counter: %" PRIu64 "\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), st.sourceCounterMap[key].count);
-		}
-	}
-#endif // PPMEM_EXTRA_DEBUGINFO
 
 	MsgInfo("Total %" PRIu64 " allocactions, mem usage: %.2f MB\n", st.numAllocs, (totalUsage / 1024.0f) / 1024.0f);
-
-	if(numErrors > 0)
-		MsgWarning("%" PRIu64 " allocations has overflow/underflow happened in runtime. Please print full stats to console\n", numErrors);
+#endif // !PPMEM_DISABLED
 }
 
 IEXPORTS size_t	PPMemGetUsage()
@@ -336,14 +289,12 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		alloc->next = nullptr;
 		st.last = alloc;
 
-#ifdef PPMEM_EXTRA_DEBUGINFO
 		if (!st.sourceFileNameMap.count(sl.GetFileName()))
 			st.sourceFileNameMap[sl.GetFileName()] = strdup(sl.GetFileName());
 
 		ppsrc_counter_t& cnt = st.sourceCounterMap[sl.data];
 		++cnt.count;
-		cnt.lastTime = st.timer.GetTimeMS();
-#endif
+		cnt.lastTimeStamp = st.timer.GetTimeMS();
 	}
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
@@ -435,11 +386,9 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 		alloc->next = nullptr;
 		st.last = alloc;
 
-#ifdef PPMEM_EXTRA_DEBUGINFO
 		ppsrc_counter_t& cnt = st.sourceCounterMap[sl.data];
 		++cnt.count;
-		cnt.lastTime = st.timer.GetTimeMS();
-#endif
+		cnt.lastTimeStamp = st.timer.GetTimeMS();
 	}
 
 	return actualPtr;
