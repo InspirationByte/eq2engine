@@ -28,16 +28,16 @@ public:
 	struct Sub
 	{
 		Sub() = default;
-		Sub(const SubscriptionPtr sub) : m_sub(sub) {};
+		Sub(SubscriptionObject& sub) : m_sub(sub) {};
 		~Sub();
 
 		void		Unsubscribe();
 
 		operator	bool() const { return m_sub; }
-		Sub&		operator=(SubscriptionPtr sub)
+		Sub&		operator=(SubscriptionObject& sub)
 		{
 			Unsubscribe();
-			m_sub = sub;
+			m_sub.Assign(&sub);
 			return *this;
 		}
 
@@ -51,17 +51,17 @@ public:
 	}
 	~Event<SIGNATURE>();
 
-	void					Clear();
+	void				Clear();
 
-	const SubscriptionPtr	Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce = false);
+	SubscriptionObject&	Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce = false);
 
-	void					GetSubscriptionsFlat(Array<SubscriptionObject*>& list);
-	int						GetSubscriptionCount() const { return m_count; }
+	void				GetSubscriptionsFlat(Array<SubscriptionObject*>& list);
+	int					GetSubscriptionCount() const { return m_count; }
 
-	const SubscriptionPtr	operator+=(const EqFunction<SIGNATURE>& func) { return Subscribe(func); }
+	SubscriptionObject&	operator+=(const EqFunction<SIGNATURE>& func) { return Subscribe(func); }
 
 	template<typename... Args>
-	void					operator()(Args&&... args);
+	void				operator()(Args&&... args);
 
 private:
 	template<typename FUNC>

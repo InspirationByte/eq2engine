@@ -42,7 +42,7 @@ void Event<SIGNATURE>::Clear()
 }
 
 template<typename SIGNATURE>
-const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce /*= false*/)
+EventSubscriptionObject<SIGNATURE>& Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce /*= false*/)
 {
 	SubscriptionObject* newSub = PPNewSL(m_sl) SubscriptionObject();
 	newSub->func = func;
@@ -60,7 +60,7 @@ const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(c
 			break;
 	}
 	Atomic::Increment(m_count);
-	return CWeakPtr(newSub);
+	return *newSub;
 }
 
 template<typename SIGNATURE>
