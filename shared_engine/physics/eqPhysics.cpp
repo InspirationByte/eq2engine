@@ -1328,16 +1328,14 @@ void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const
 	F func,
 	void* args)
 {
-	static constexpr const int s_maxClosestTestTries = 2;
+	const IVector2D startCellInt(floor(startCell.x), floor(startCell.y));
+	const IVector2D endCellInt(floor(endCell.x), floor(endCell.y));
 
 	Set<CEqCollisionObject*> skipObjects(PP_SL);
+	if (startCellInt == endCellInt)
 	{
-		const IVector2D cell(floor(startCell.x), floor(startCell.y));
-		if (cell == IVector2D(floor(endCell.x), floor(endCell.y)))
-		{
-			TestLineCollisionOnCell(cell.y, cell.x, start, end, rayBox, coll, skipObjects, rayMask, filterParams, func, args);
-			return;
-		}
+		TestLineCollisionOnCell(startCellInt.y, startCellInt.x, start, end, rayBox, coll, skipObjects, rayMask, filterParams, func, args);
+		return;
 	}
 
 	const float difX = endCell.x - startCell.x;
@@ -1348,6 +1346,7 @@ void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const
 	const float dx = difX * oneByDist;
 	const float dy = difY * oneByDist;
 
+	static constexpr const int s_maxClosestTestTries = 2;
 	int closestTries = 0;
 	for (int i = 0; i <= ceil(dist) && closestTries < s_maxClosestTestTries; ++i)
 	{
@@ -1356,9 +1355,10 @@ void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const
 
 		// if can't traverse further - stop.
 		if (!TestLineCollisionOnCell(y, x, start, end, rayBox, coll, skipObjects, rayMask, filterParams, func, args))
-		{
 			++closestTries;
-		}
+
+		if (endCellInt.x == x && endCellInt.y == y)
+			break;
 	}
 }
 
