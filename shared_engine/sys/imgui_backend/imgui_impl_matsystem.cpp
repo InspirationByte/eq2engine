@@ -41,15 +41,14 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 	if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
 		return;
 
-	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
-	CMeshBuilder mb(dynMesh);
-
 	// Copy vertices to matsystem mesh
 	ImVec2 clip_off = draw_data->DisplayPos;
 	for (int n = 0; n < draw_data->CmdListsCount; n++)
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
 
+		IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
+		CMeshBuilder mb(dynMesh);
 		mb.Begin(PRIM_TRIANGLES);
 
 		for (int i = 0; i < cmd_list->VtxBuffer.Size; i++)
