@@ -21,7 +21,7 @@ void CRenderWorker::Init(RenderWorkerHandler* workHandler, REND_FUNC_TYPE loopFu
 	m_workHandler = workHandler;
 	m_loopFunc = std::move(loopFunc);
 
-	StartWorkerThread("RenderWorkerThread");
+	StartWorkerThread("RenderWorkerThread", TP_ABOVE_NORMAL);
 }
 
 void CRenderWorker::Shutdown()
