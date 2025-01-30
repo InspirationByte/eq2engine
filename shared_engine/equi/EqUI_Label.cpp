@@ -46,6 +46,9 @@ IAARectangle Label::GetClientScissorRectangle(int depth, const RenderContextAbst
 
 void Label::DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)
 {
+	if (!m_labelText.IsValid() || m_labelText.Length() == 0)
+		return;
+
 	CRectangleTextLayoutBuilder rectLayout;
 	rectLayout.SetRectangle(AARectangle(rect));
 
