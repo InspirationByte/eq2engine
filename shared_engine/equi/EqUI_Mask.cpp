@@ -95,7 +95,7 @@ void Mask::RenderChilds(int depth, RenderContextAbstract& context)
 	Matrix4x4 actualProj;
 	g_matSystem->GetMatrix(MATRIXMODE_PROJECTION, actualProj);
 
-	const Matrix4x4& actualTransform = context.transformStack.back();
+	const Matrix4x4 actualTransform = context.transformStack.back();
 	const Vector2D projSize = m_renderRect.GetSize();
 	
 	Matrix4x4 offsetTransform = actualTransform * translate(-(float)m_renderRect.leftTop.x, -(float)m_renderRect.leftTop.y, 0.0f);
@@ -111,9 +111,9 @@ void Mask::RenderChilds(int depth, RenderContextAbstract& context)
 	
 	{
 		RenderContextAbstract maskContext(maskRenderPass, context.transformStack);
-		maskContext.transformStack.append(offsetTransform);
+		maskContext.transformStack.back() = offsetTransform;
 		BaseClass::RenderChilds(depth, maskContext);
-		context.transformStack.popBack();
+		context.transformStack.back() = actualTransform;
 	}
 
 	g_matSystem->QueueCommandBuffer(maskRenderPass->End());

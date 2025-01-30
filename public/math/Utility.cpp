@@ -360,8 +360,6 @@ float VecAngleDiffCos(const Vector2D& v1, const Vector2D& v2)
 float VecAngleDiff(const Vector2D& v1, const Vector2D& v2)
 {
 	return AngleDiffRad(atan2f(v1.x, v1.y), atan2f(v2.x, v2.y));
-
-	//return atan2f(v1.x * v2.y - v1.y * v2.x, v1.x * v2.x + v1.y * v2.y);
 }
 
 // computes angles difference (degrees)
