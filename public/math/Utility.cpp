@@ -348,9 +348,20 @@ float AngleDiffRad(float a, float b)
 	return ConstrainAnglePI(b - a);
 }
 
-float VecAngleDiff(const Vector2D& dirA, const Vector2D& dirB)
+float VecAngleDiffCos(const Vector2D& v1, const Vector2D& v2)
 {
-	return RAD2DEG(atan2f(dirA.x * dirB.y - dirA.y * dirB.x, dirA.x * dirB.x + dirA.y * dirB.y));
+	const float len2 = (v1.x * v1.x + v1.y * v1.y) * (v2.x * v2.x + v2.y * v2.y);
+	if (len2 < F_EPS)
+		return 1.0f;
+
+	return clamp((v1.x * v2.x + v1.y * v2.y) / sqrtf(len2), -1.0f, 1.0f);
+}
+
+float VecAngleDiff(const Vector2D& v1, const Vector2D& v2)
+{
+	return AngleDiffRad(atan2f(v1.x, v1.y), atan2f(v2.x, v2.y));
+
+	//return atan2f(v1.x * v2.y - v1.y * v2.x, v1.x * v2.x + v1.y * v2.y);
 }
 
 // computes angles difference (degrees)
