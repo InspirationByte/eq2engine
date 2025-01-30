@@ -289,6 +289,9 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args) const
 #define EQSCRIPT_BIND_STATIC_FUNC(FuncName, Func, ...) \
 	MakeStaticFunction<__VA_ARGS__>(Func, FuncName),
 
+#define EQSCRIPT_BIND_STATIC_FUNC_OVERLOAD(FuncName, Func, R, Signature, ...) \
+	MakeStaticFunction<__VA_ARGS__>(ESL_CFUNC_OVERLOAD(R, Signature)(Func), FuncName),
+
 // Func(Name, [ ESL_APPLY_TRAITS(rgT1, ArgT2, ...ArgTN) ])
 #define EQSCRIPT_BIND_FUNC(Name, ...) \
 	MakeFunction<ESL_CLASS_MEMBER(Name)__VA_ARGS__>(#Name),
