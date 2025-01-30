@@ -338,7 +338,7 @@ static void PushValue(lua_State* L, const T& value)
 }
 
 // Lua type getters
-template<typename T, bool SilentTypeCheck>
+template<typename T, bool SilentTypeCheck, bool AllowUpcasting>
 static decltype(auto) GetValue(lua_State* L, int index)
 {
 	const int top = lua_gettop(L);
@@ -535,10 +535,19 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			lua_pop(L, 1);
 		}
 
-		// perform type compatibility check
-		const bool performUpcasting = CString::Compare(className, LuaBaseTypeAlias<RT>::value) != 0;
-		runtime::BaseClassInfo baseInfo = performUpcasting ? bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<RT>::value) : runtime::BaseClassInfo();
-		if (!performUpcasting || baseInfo.name.IsValid())
+		bool isValidUdType = CString::Compare(className, LuaBaseTypeAlias<RT>::value) == 0;
+		runtime::BaseClassInfo baseInfo;
+		if constexpr (AllowUpcasting)
+		{
+			// perform type compatibility check
+			if(!isValidUdType)
+			{
+				baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<RT>::value);
+				isValidUdType = baseInfo.name.IsValid();
+			}
+		}
+
+		if (isValidUdType)
 		{
 			REFPTR objPtr(PushGet<RT>::Get(L, index, false, baseInfo));
 			return Result{ {}, true, {}, std::move(objPtr) };
@@ -585,10 +594,19 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			lua_pop(L, 1);
 		}
 
-		// perform type compatibility check
-		const bool performUpcasting = CString::Compare(className, LuaBaseTypeAlias<T>::value) != 0;
-		runtime::BaseClassInfo baseInfo = performUpcasting ? bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<T>::value) : runtime::BaseClassInfo();
-		if (!performUpcasting || baseInfo.name.IsValid())
+		bool isValidUdType = CString::Compare(className, LuaBaseTypeAlias<T>::value) == 0;
+		runtime::BaseClassInfo baseInfo;
+		if constexpr (AllowUpcasting)
+		{
+			// perform type compatibility check
+			if (!isValidUdType)
+			{
+				baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<T>::value);
+				isValidUdType = baseInfo.name.IsValid();
+			}
+		}
+
+		if (isValidUdType)
 		{
 			const bool toCpp = HasToCppParamTrait<T>::value;
 			BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp, baseInfo));

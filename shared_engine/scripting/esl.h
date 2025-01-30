@@ -352,10 +352,14 @@ public:
 
 	LuaUserRef	ToRef() const;
 
+	bool		IsValid() const { return m_state != nullptr; }
+	bool		IsNull() const { return m_state == nullptr || lua_type(m_state, m_index) == LUA_TNIL; }
+	int			GetLuaType() const { return lua_type(m_state, m_index); }
+
 	T&			operator*() const { return Get(); }
 	T*			operator->() const { return GetPtr(); }
 
-	operator bool() const { return m_state != nullptr; }
+	operator bool() const { return !IsNull(); }
 
 private:
 	lua_State*	m_state{ nullptr };
@@ -391,7 +395,7 @@ template<typename T, typename WT = T>
 static void				PushValue(lua_State* L, const T& value);
 
 // Returns a T value from stack by index. Allows to specify pointer/reference in T type
-template<typename T, bool SilentTypeCheck>
+template<typename T, bool SilentTypeCheck, bool AllowUpcasting = true>
 static decltype(auto)	GetValue(lua_State* L, int index);
 
 // Pushes user object or fundamental value to global table (_G) by name
