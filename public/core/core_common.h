@@ -38,7 +38,7 @@
 #define PPMEM_DISABLED
 #endif
 
-#if (defined(_RETAIL) || defined(__ANDROID__)) && !defined(PPMEM_DISABLED)
+#if (defined(_RETAIL) || defined(_PROFILE) || defined(__ANDROID__)) && !defined(PPMEM_DISABLED)
 #define PPMEM_DISABLED
 #endif // _RETAIL
 
