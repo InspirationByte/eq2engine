@@ -7,8 +7,6 @@
 
 #pragma once
 
-#define _Es EqTStr
-
 template<typename CH>
 class EMPTY_BASES EqTStr
 	: public StringCombinationOpsMixin<EqTStr<CH>, EqTStr<CH>, char>

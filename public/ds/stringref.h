@@ -239,6 +239,8 @@ struct EMPTY_BASES StringCombinationOpsMixin
 //------------------------------------------------------
 // String ref itself
 
+#define _Es EqTStrRef
+
 template<typename CH>
 class EMPTY_BASES EqTStrRef
 	: public StringBaseCombinationOpsMixin<EqTStr<CH>, EqTStrRef<CH>, char>
