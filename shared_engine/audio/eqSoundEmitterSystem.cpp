@@ -85,39 +85,25 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ArrayCRef<ChannelDef> c
 		m_channelTypes.append(channelDefs[i]);
 		g_audioSystem->ResetMixer(channelDefs[i].id);
 	}
-
-	KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
-
-	const char* baseScriptFilePath = soundSettings ? KV_GetValueString(soundSettings->FindSection("EmitterScripts"), 0, nullptr) : nullptr;
-
-	if(baseScriptFilePath == nullptr)
-	{
-		MsgError("InitEFX: EQCONFIG missing Sound:EmitterScripts !\n");
-		return;
-	}
-
-	LoadScriptSoundFile(baseScriptFilePath);
-
 	m_isInit = true;
 }
 
 void CSoundEmitterSystem::Shutdown()
 {
+	FreeAllBanks();
+
 	CScopedMutex m(s_soundEmitterSystemMutex);
-
-	// remove pending sounds
-	m_pendingStartSounds.clear(true);
-
-	for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
-	{
-		CSoundingObject* obj = it.key();
-		obj->StopEmitter(CSoundingObject::ID_ALL, true);
-	}
-
-	m_soundingObjects.clear(true);
-	m_allSounds.clear(true);
 	m_channelTypes.clear(true);
+
 	m_isInit = false;
+}
+
+void CSoundEmitterSystem::FreeAllBanks()
+{
+	StopAllSounds();
+
+	CScopedMutex m(s_soundEmitterSystemMutex);
+	m_allSounds.clear(true);
 }
 
 bool CSoundEmitterSystem::IsValidSound(const char* pszName)
@@ -140,24 +126,23 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 	// find the present sound file
 	SoundScriptDesc* script = FindSoundScript(pszName);
-
 	if (!script)
 	{
-		if(snd_scriptsound_showWarnings.GetBool())
-			MsgWarning("PrecacheSound: No sound found with name '%s'\n", pszName);
+		if (snd_scriptsound_showWarnings.GetBool())
+			MsgError("PrecacheSound: script '%s' not loaded\n", pszName);
 		return false;
 	}
 
 	if(script->samples.numElem() > 0)
 		return true;
 
-	for(int i = 0; i < script->soundFileNames.numElem(); i++)
+	EqString soundName;
+	for(EqStringRef name : script->soundFileNames)
 	{
-		EqString soundName;
-		if (script->soundFileNames[i][0] != '$')
-			soundName = SOUND_DEFAULT_PATH + script->soundFileNames[i];
+		if (name[0] != '$')
+			soundName = SOUND_DEFAULT_PATH + name;
 		else
-			soundName = script->soundFileNames[i].ToCString() + 1;
+			soundName = name.ToCString() + 1;
 
 		ISoundSourcePtr sample = g_audioSystem->GetSample(soundName);
 
@@ -177,13 +162,17 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) const
 {
-	const uint namehash = StringId(soundName, true );
+	const uint nameHash = StringId(soundName, true );
+	for (auto bankIt = m_allSounds.begin(); !bankIt.atEnd(); ++bankIt)
+	{
+		auto it = bankIt.value().sounds.find(nameHash);
+		if (!it.atEnd())
+		{
+			return &(*it);
+		}
+	}
 
-	auto it = m_allSounds.find(namehash);
-	if (it.atEnd())
-		return nullptr;
-
-	return &(*it);
+	return nullptr;
 }
 
 // simple sound emitter
@@ -211,7 +200,6 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	}
 
 	SoundScriptDesc* script = FindSoundScript(ep->name.ToCString());
-
 	if (!script)
 	{
 		if (snd_scriptsound_showWarnings.GetBool())
@@ -280,7 +268,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	}
 
 	// fill in start params
-	edata->script = script;
+	edata->script.Assign(script);
 	edata->soundingObj = soundingObj;
 	edata->channelType = channelType;
 
@@ -460,8 +448,9 @@ void CSoundEmitterSystem::StopAllSounds()
 	for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
 	{
 		CSoundingObject* obj = it.key();
-		obj->StopEmitter(CSoundingObject::ID_ALL);
+		obj->StopEmitter(CSoundingObject::ID_ALL, true);
 	}
+	m_soundingObjects.clear(true);
 }
 
 int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqAudioSource::Params& params, CWeakPtr<SoundEmitterData> emitter)
@@ -645,48 +634,63 @@ void CSoundEmitterSystem::OnRemoveSoundingObject(CSoundingObject* obj)
 //
 // Loads sound scripts
 //
-void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
+void CSoundEmitterSystem::LoadScriptBank(const char* scriptFileName)
 {
+	const uint nameHash = StringId(scriptFileName, true);
+
 	KeyValues kv;
-	if(!kv.LoadFromFile(fileName))
+	if(!kv.LoadFromFile(scriptFileName))
 	{
-		MsgError("*** Error! Failed to open script sound file '%s'!\n", fileName);
+		MsgError("*** Error! Failed to open sound script bank file '%s'!\n", scriptFileName);
 		return;
 	}
 
-	DevMsg(DEVMSG_SOUND, "Loading sound script file '%s'\n", fileName);
+	if (!m_allSounds.find(nameHash).atEnd())
+		return;
+
+	ScriptBank& scriptBank = *m_allSounds.insert(nameHash);
+
+	DevMsg(DEVMSG_SOUND, "Loading sound script bank file '%s'\n", scriptFileName);
 
 	KVSection defaultsSec;
 	for(const KVSection* sec : kv.Keys())
 	{
 		if (sec->IsSection())
 		{
-			if (!CreateSoundScript(*sec, &defaultsSec))
-			{
-				ASSERT_FAIL("Error processing %s: sound '%s' cannot be added (already registered?)", fileName, sec->GetName());
-			}
+			CreateSoundScript(scriptBank, *sec, &defaultsSec);
 		}
 		else if (!CString::CompareCaseIns("default", sec->GetName()))
 		{
 			defaultsSec.AddKey(KV_GetValueString(sec), KV_GetValueString(sec, 1));
 		}
-		else if(!CString::CompareCaseIns(sec->GetName(), "include"))
-		{
-			LoadScriptSoundFile(KV_GetValueString(sec));
-		}
 	}
 }
 
-bool CSoundEmitterSystem::CreateSoundScript(const KVSection& scriptSection, const KVSection* defaultsSec)
+void CSoundEmitterSystem::FreeScriptBank(const char* scriptFileName)
 {
-	EqString soundName(_Es(scriptSection.GetName()).LowerCase());
+	CScopedMutex m(s_soundEmitterSystemMutex);
+	const uint nameHash = StringId(scriptFileName, true);
+	m_allSounds.remove(nameHash);
+}
 
-	const uint namehash = StringId(soundName, true);
-	if (m_allSounds.contains(namehash))
-		return false;
+bool CSoundEmitterSystem::CreateSoundScript(ScriptBank& scriptBank, const KVSection& scriptSection, const KVSection* defaultsSec)
+{
+	const EqStringRef soundName = scriptSection.GetName();
+	const uint nameHash = StringId(soundName, true);
 
-	SoundScriptDesc& newSound = *m_allSounds.insert(namehash);
-	newSound.name = scriptSection.GetName();
+	// try finding this sound in loaded banks
+	for (auto bankIt = m_allSounds.begin(); !bankIt.atEnd(); ++bankIt)
+	{
+		auto it = bankIt.value().sounds.find(nameHash);
+		if (!it.atEnd())
+		{
+			ASSERT_FAIL("Bank %s: sound '%s' already exist in bank %s", scriptBank.name.ToCString(), soundName.ToCString(), (*bankIt).name.ToCString());
+			return false;
+		}
+	}
+
+	SoundScriptDesc& newSound = *scriptBank.sounds.insert(nameHash);
+	newSound.name = soundName;
 
 	SoundScriptDesc::ParseDesc(newSound, scriptSection, defaultsSec);
 
@@ -737,8 +741,11 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 
 void CSoundEmitterSystem::GetAllSoundsList(Array<SoundScriptDesc*>& list) const
 {
-	for (auto it = m_allSounds.begin(); !it.atEnd(); ++it)
-		list.append(&(*it));
+	for (auto bankIt = m_allSounds.begin(); !bankIt.atEnd(); ++bankIt)
+	{
+		for (auto it = bankIt.value().sounds.begin(); !it.atEnd(); ++it)
+			list.append(&(*it));
+	}
 }
 
 const char* CSoundEmitterSystem::GetScriptName(SoundScriptDesc* desc)

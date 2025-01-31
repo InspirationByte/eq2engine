@@ -28,8 +28,10 @@ SoundEmitterData::SoundEmitterData()
 void SoundEmitterData::CreateNodeRuntime()
 {
 	inputs.clear();
-	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
+	if (!script)
+		return;
 
+	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 	for (int i = 0; i < nodeDescs.numElem(); ++i)
 	{
 		const SoundNodeDesc& nodeDesc = nodeDescs[i];
@@ -44,6 +46,9 @@ void SoundEmitterData::CreateNodeRuntime()
 
 void SoundEmitterData::SetInputValue(int inputNameHash, int arrayIdx, float value)
 {
+	if (!script)
+		return;
+
 	const int inputNodeId = script->GetInputNodeId(inputNameHash);
 	if (inputNodeId < 0)
 		return;
@@ -73,8 +78,10 @@ void SoundEmitterData::SetInputValue(uint8 inputId, float value)
 
 float SoundEmitterData::GetInputValue(int nodeId, int arrayIdx)
 {
-	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
+	if (!script)
+		return -1.0f;
 
+	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 	if(nodeDescs[nodeId].type == SOUND_NODE_CONST)
 		return nodeDescs[nodeId].inputConst[arrayIdx];
 
@@ -272,6 +279,9 @@ static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncT
 void SoundEmitterData::UpdateNodes()
 {
 	if (Atomic::CompareExchange(nodesNeedUpdate, TRUE, FALSE) != TRUE)
+		return;
+
+	if (!script)
 		return;
 
 	PROF_EVENT("Emitter Data Nodes Eval");

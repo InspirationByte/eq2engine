@@ -49,7 +49,7 @@ struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 	SoundEmitterData*			delNext{ nullptr };
 
 	CRefPtr<IEqAudioSource>		soundSource;				// NULL when virtual 
-	SoundScriptDesc*			script{ nullptr };			// sound script which used to start this sound
+	CWeakPtr<SoundScriptDesc>	script{ nullptr };			// sound script which used to start this sound
 	CSoundingObject*			soundingObj{ nullptr };
 	int							channelType{ CHAN_INVALID };
 

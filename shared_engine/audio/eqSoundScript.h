@@ -156,10 +156,8 @@ struct SoundNodeDesc
 	static uint8 PackInputIdArrIdx(uint id, uint arrayIdx);
 };
 
-struct SoundScriptDesc
+struct SoundScriptDesc : public WeakRefObject<SoundScriptDesc>
 {
-	SoundScriptDesc() = default;
-
 	EqString				name;
 	Array<ISoundSourcePtr>	samples{ PP_SL };
 	Array<EqString>			soundFileNames{ PP_SL };

@@ -33,7 +33,9 @@ public:
 	void				Init(float defaultMaxDistance, ArrayCRef<ChannelDef> channelDefs);
 	void				Shutdown();
 
-	void				LoadScriptSoundFile(const char* fileName);
+	void				FreeAllBanks();
+	void				LoadScriptBank(const char* scriptFileName);
+	void				FreeScriptBank(const char* scriptFileName);
 
 	bool				IsValidSound(const char* pszName);
 	bool				PrecacheSound(const char* pszName);
@@ -46,7 +48,13 @@ public:
 	static const char*	GetScriptName(SoundScriptDesc* desc);
 
 private:
-	bool				CreateSoundScript(const KVSection& scriptSection, const KVSection* defaultsSec = nullptr);
+	struct ScriptBank
+	{
+		EqString					name;
+		Map<uint, SoundScriptDesc>	sounds{ PP_SL };
+	};
+
+	bool				CreateSoundScript(ScriptBank& scriptBank, const KVSection& scriptSection, const KVSection* defaultsSec = nullptr);
 
 	int					EmitSoundInternal(EmitParams* emit, int objUniqueId, CSoundingObject* soundingObj);
 
@@ -74,7 +82,8 @@ private:
 
 	CEqTimer				m_updateTimer;
 	ChannelTypes			m_channelTypes;
-	Map<uint, SoundScriptDesc>	m_allSounds{ PP_SL };
+
+	Map<uint, ScriptBank>	m_allSounds{ PP_SL };
 
 	Set<CSoundingObject*>	m_soundingObjects{ PP_SL };
 	Array<PendingSound>		m_pendingStartSounds{ PP_SL };
