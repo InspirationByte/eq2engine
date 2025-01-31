@@ -1683,7 +1683,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					SerializeScriptParamsToKeyValues(*selectedScript, relSec);
 					SerializeNodesToKeyValues(relSec);
 
-					SoundScriptDesc::ReloadDesc(*selectedScript, &relSec);
+					SoundScriptDesc::ReloadDesc(*selectedScript, relSec);
 					g_sounds->PrecacheSound(selectedScript->name);
 					g_sounds->RestartEmittersByScript(selectedScript);
 

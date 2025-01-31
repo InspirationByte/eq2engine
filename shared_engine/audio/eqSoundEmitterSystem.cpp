@@ -115,12 +115,6 @@ void CSoundEmitterSystem::Shutdown()
 	}
 
 	m_soundingObjects.clear(true);
-
-	for (auto it = m_allSounds.begin(); !it.atEnd(); ++it)
-	{
-		SoundScriptDesc* script = *it;
-		delete script;
-	}
 	m_allSounds.clear(true);
 	m_channelTypes.clear(true);
 	m_isInit = false;
@@ -183,13 +177,13 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) const
 {
-	const int namehash = StringId24(soundName, true );
+	const uint namehash = StringId(soundName, true );
 
 	auto it = m_allSounds.find(namehash);
 	if (it.atEnd())
 		return nullptr;
 
-	return *it;
+	return &(*it);
 }
 
 // simple sound emitter
@@ -667,7 +661,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	{
 		if (sec->IsSection())
 		{
-			if (!CreateSoundScript(sec, &defaultsSec))
+			if (!CreateSoundScript(*sec, &defaultsSec))
 			{
 				ASSERT_FAIL("Error processing %s: sound '%s' cannot be added (already registered?)", fileName, sec->GetName());
 			}
@@ -683,32 +677,31 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	}
 }
 
-bool CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec)
+bool CSoundEmitterSystem::CreateSoundScript(const KVSection& scriptSection, const KVSection* defaultsSec)
 {
-	if (!scriptSection)
-		return false;
+	EqString soundName(_Es(scriptSection.GetName()).LowerCase());
 
-	EqString soundName(_Es(scriptSection->name).LowerCase());
-
-	const int namehash = StringId24(soundName, true);
+	const uint namehash = StringId(soundName, true);
 	if (m_allSounds.contains(namehash))
 		return false;
 
-	SoundScriptDesc* newSound = PPNew SoundScriptDesc(soundName);
-	SoundScriptDesc::ParseDesc(*newSound, scriptSection, defaultsSec);
+	SoundScriptDesc& newSound = *m_allSounds.insert(namehash);
+	newSound.name = scriptSection.GetName();
 
-	auto sectionGetOrDefault = [scriptSection, defaultsSec](const char* name) {
-		const KVSection* sec = scriptSection->FindSection(name);
+	SoundScriptDesc::ParseDesc(newSound, scriptSection, defaultsSec);
+
+	auto sectionGetOrDefault = [&, defaultsSec](const char* name) {
+		const KVSection* sec = scriptSection.FindSection(name);
 		if (!sec && defaultsSec)
 			sec = defaultsSec->FindSection(name);
 		return sec;
 	};
 
-	newSound->maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
-	newSound->startLoopTime = KV_GetValueFloat(sectionGetOrDefault("startLoopTime"), 0, 0.0f);
-	newSound->stopLoopTime = KV_GetValueFloat(sectionGetOrDefault("stopLoopTime"), 0, 0.0f);
-	newSound->loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
-	newSound->is2d = KV_GetValueBool(sectionGetOrDefault("is2d"), 0, false);
+	newSound.maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
+	newSound.startLoopTime = KV_GetValueFloat(sectionGetOrDefault("startLoopTime"), 0, 0.0f);
+	newSound.stopLoopTime = KV_GetValueFloat(sectionGetOrDefault("stopLoopTime"), 0, 0.0f);
+	newSound.loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
+	newSound.is2d = KV_GetValueBool(sectionGetOrDefault("is2d"), 0, false);
 
 	{
 		const KVSection* chanKey = sectionGetOrDefault("channel");
@@ -716,19 +709,18 @@ bool CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 		if (chanKey)
 		{
 			const char* chanName = KV_GetValueString(chanKey);
-			newSound->channelType = ChannelTypeByName(chanName);
+			newSound.channelType = ChannelTypeByName(chanName);
 
-			if (newSound->channelType == CHAN_INVALID)
+			if (newSound.channelType == CHAN_INVALID)
 			{
-				Msg("Invalid channel '%s' for sound %s\n", chanName, newSound->name.ToCString());
-				newSound->channelType = 0;
+				Msg("Invalid channel '%s' for sound %s\n", chanName, newSound.name.ToCString());
+				newSound.channelType = 0;
 			}
 		}
 		else
-			newSound->channelType = 0;
+			newSound.channelType = 0;
 	}
-
-	m_allSounds.insert(namehash, newSound);
+	
 	return true;
 }
 
@@ -746,7 +738,7 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 void CSoundEmitterSystem::GetAllSoundsList(Array<SoundScriptDesc*>& list) const
 {
 	for (auto it = m_allSounds.begin(); !it.atEnd(); ++it)
-		list.append(it.value());
+		list.append(&(*it));
 }
 
 const char* CSoundEmitterSystem::GetScriptName(SoundScriptDesc* desc)

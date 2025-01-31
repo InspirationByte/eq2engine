@@ -9,6 +9,7 @@
 #include "core/IEqParallelJobs.h"
 #include "audio/IEqAudioSystem.h"
 #include "eqSoundEmitterCommon.h"
+#include "eqSoundScript.h"
 
 struct SoundScriptDesc;
 struct SoundEmitterData;
@@ -33,7 +34,6 @@ public:
 	void				Shutdown();
 
 	void				LoadScriptSoundFile(const char* fileName);
-	bool				CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec = nullptr);
 
 	bool				IsValidSound(const char* pszName);
 	bool				PrecacheSound(const char* pszName);
@@ -46,6 +46,8 @@ public:
 	static const char*	GetScriptName(SoundScriptDesc* desc);
 
 private:
+	bool				CreateSoundScript(const KVSection& scriptSection, const KVSection* defaultsSec = nullptr);
+
 	int					EmitSoundInternal(EmitParams* emit, int objUniqueId, CSoundingObject* soundingObj);
 
 	SoundScriptDesc*	FindSoundScript(const char* soundName) const;
@@ -61,6 +63,8 @@ private:
 
 	void				Execute() override;
 
+	using ChannelTypes = FixedArray<ChannelDef, CHAN_MAX>;
+
 	struct PendingSound
 	{
 		EmitParams					params;
@@ -68,17 +72,17 @@ private:
 		CWeakPtr<CSoundingObject>	soundingObj;
 	};
 
-	CEqTimer							m_updateTimer;
+	CEqTimer				m_updateTimer;
+	ChannelTypes			m_channelTypes;
+	Map<uint, SoundScriptDesc>	m_allSounds{ PP_SL };
 
-	FixedArray<ChannelDef, CHAN_MAX>	m_channelTypes;
-	Map<int, SoundScriptDesc*>			m_allSounds{ PP_SL };
-	Set<CSoundingObject*>				m_soundingObjects{ PP_SL };
-	Array<PendingSound>					m_pendingStartSounds{ PP_SL };
-	SoundScriptDesc*					m_isolateSound{ nullptr };
+	Set<CSoundingObject*>	m_soundingObjects{ PP_SL };
+	Array<PendingSound>		m_pendingStartSounds{ PP_SL };
+	SoundScriptDesc*		m_isolateSound{ nullptr };
 	
-	float								m_defaultMaxDistance{ 100.0f };
-	float								m_deltaTime{ 0.0f };
-	bool								m_isInit{ false };
+	float					m_defaultMaxDistance{ 100.0f };
+	float					m_deltaTime{ 0.0f };
+	bool					m_isInit{ false };
 };
 
 extern CStaticAutoPtr<CSoundEmitterSystem> g_sounds;
