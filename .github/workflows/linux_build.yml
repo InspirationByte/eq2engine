@@ -64,7 +64,7 @@ jobs:
       run: .github/make_appimage.sh $PWD/game/DriverSyndicate/DrvSyn.AppDir DrvSyn_${{env.BUILD_CONFIGURATION_U}}
       
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4.6.0
       with:
         name: DrvSyn_linux_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
         path: |
