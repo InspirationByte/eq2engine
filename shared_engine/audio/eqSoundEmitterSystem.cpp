@@ -649,6 +649,7 @@ void CSoundEmitterSystem::LoadScriptBank(const char* scriptFileName)
 		return;
 
 	ScriptBank& scriptBank = *m_allSounds.insert(nameHash);
+	scriptBank.name = scriptFileName;
 
 	DevMsg(DEVMSG_SOUND, "Loading sound script bank file '%s'\n", scriptFileName);
 
@@ -681,10 +682,11 @@ bool CSoundEmitterSystem::CreateSoundScript(ScriptBank& scriptBank, const KVSect
 	// try finding this sound in loaded banks
 	for (auto bankIt = m_allSounds.begin(); !bankIt.atEnd(); ++bankIt)
 	{
-		auto it = bankIt.value().sounds.find(nameHash);
+		const ScriptBank& otherBank = bankIt.value();
+		auto it = otherBank.sounds.find(nameHash);
 		if (!it.atEnd())
 		{
-			ASSERT_FAIL("Bank %s: sound '%s' already exist in bank %s", scriptBank.name.ToCString(), soundName.ToCString(), (*bankIt).name.ToCString());
+			ASSERT_FAIL("Bank %s: sound '%s' already exist in bank %s", scriptBank.name.ToCString(), soundName.ToCString(), otherBank.name.ToCString());
 			return false;
 		}
 	}
