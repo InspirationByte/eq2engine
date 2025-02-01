@@ -132,7 +132,7 @@ void Host_HandleSDLEvents(SDL_Event* event)
 		{
 			CEqGameControllerSDL::ProcessConnectionEvent(event);
 
-			if(s_bActive && s_bProcessInput)
+			if(s_bProcessInput)
 				InputCommands_SDL(event);
 		}
 	}
@@ -170,6 +170,7 @@ void Host_GameLoop()
 {
 	SDL_Event event;
 
+	CEqTimer inputProcessingTimer;
 	do
 	{
 		while(SDL_PollEvent(&event))
@@ -181,6 +182,9 @@ void Host_GameLoop()
 		}
 		else
 		{
+			s_bProcessInput = false;
+			inputProcessingTimer.GetTime(true);
+
 			g_pHost->SignalPause();
 			Platform_Sleep( 1 );
 			Threading::YieldCurrentThread();
@@ -189,6 +193,12 @@ void Host_GameLoop()
 		// or yield
 		if(sys_sleep.GetInt() > 0)
             Platform_Sleep( sys_sleep.GetInt() );
+
+		if (!s_bProcessInput && s_bActive)
+		{
+			if(inputProcessingTimer.GetTime() > 0.25f)
+				s_bProcessInput = true;
+		}
 	}
 	while(g_pHost->GetQuitState() != CGameHost::QUIT_TODESKTOP);
 }
