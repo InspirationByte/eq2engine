@@ -58,7 +58,8 @@ protected:
 	void			BuildCharVertexBuffer(	CMeshBuilder& builder, 
 											const CHAR_T* str, 
 											const Vector2D& startPos, 
-											const FontStyleParam& params);
+											const FontStyleParam& params, 
+											IGPURenderPassRecorder* rendPassRecorder);
 
 	template <typename CHAR_T>
 	float			_GetStringWidth(const CHAR_T* str, const FontStyleParam& params, int charCount = 0, int breakOnChar = -1) const;
