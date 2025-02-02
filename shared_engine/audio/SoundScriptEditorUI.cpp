@@ -23,6 +23,25 @@
 
 #include "render/IDebugOverlay.h"
 
+static const char* s_nodeTypeNameStr[] = {
+	"const",
+	"input",
+	"mixer"
+};
+
+static float s_soundParamLimits[] = {
+	1.0f,
+	8.0f,
+	1.0f,
+	1.0f,
+	10.0f,
+	8.0f,
+	10.0f,
+	1.0f,
+	100.0f,
+};
+static_assert(elementsOf(s_soundParamLimits) == SOUND_PARAM_COUNT, "s_soundParamLimits and SOUND_PARAM_COUNT needs to be in sync");
+
 struct UISoundNodeDesc
 {
 	enum Side : int

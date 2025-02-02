@@ -108,6 +108,54 @@ enum ESoundFuncArgCount
 	SOUND_FUNC_ARG_VARIADIC = 0x80
 };
 
+static const char* s_soundParamNames[] = {
+	"volume",
+	"pitch",
+	"hpf",
+	"lpf",
+	"airAbsorption",
+	"rollOff",
+	"distance",
+	"svolume",
+	"spitch",
+};
+static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamNames and SOUND_PARAM_COUNT needs to be in sync");
+
+static float s_soundParamDefaults[] = {
+	1.0f,
+	1.0f,
+	1.0f,
+	1.0f,
+	0.0f,
+	2.0f,
+	1.0f,
+	1.0f,
+	1.0f,
+};
+static_assert(elementsOf(s_soundParamDefaults) == SOUND_PARAM_COUNT, "s_soundParamDefaults and SOUND_PARAM_COUNT needs to be in sync");
+
+struct SoundFuncDesc
+{
+	EqStringRef name;
+	uint8 argCount;
+	uint8 retCount;
+};
+
+static SoundFuncDesc s_soundFuncTypeDesc[] = {
+	{ "copy", SOUND_FUNC_ARG_VARIADIC, SOUND_FUNC_ARG_VARIADIC },
+	{ "add", 2, 1 },
+	{ "sub", 2, 1 },
+	{ "mul", 2, 1 },
+	{ "div", 2, 1 },
+	{ "min", 2, 1 },
+	{ "max", 2, 1 },
+	{ "abs", SOUND_FUNC_ARG_VARIADIC, SOUND_FUNC_ARG_VARIADIC },
+	{ "average", SOUND_FUNC_ARG_VARIADIC, 1 },
+	{ "spline", 1, 1 },
+	{ "fade", 1, SOUND_FUNC_ARG_VARIADIC },
+};
+static_assert(elementsOf(s_soundFuncTypeDesc) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
+
 struct SoundSplineDesc
 {
 	static constexpr const int MAX_SPLINE_POINTS = 10;
