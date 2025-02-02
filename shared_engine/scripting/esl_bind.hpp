@@ -4,14 +4,15 @@ namespace esl
 {
 enum EUserDataFlags : int
 {
-	UD_FLAG_CONST	= (1 << 0),	// a 'const' qualified object
-	UD_FLAG_OWNED	= (1 << 1),	// was created by Lua and should be destroyed
+	UD_FLAG_CONST	= (1 << 0),		// a 'const' qualified object
+	UD_FLAG_OWNED	= (1 << 1),		// was created by Lua and should be destroyed
 };
 
 // boxed userdata
 struct BoxUD
 {
 	void*	objPtr{ nullptr };
+	void*	weakRefHandle{ nullptr };
 	uint	flags{ 0 };
 };
 
@@ -136,7 +137,7 @@ T& New(lua_State* L, Args&&... args)
 	{
 		T* newObj = PPNew T{ std::forward<Args>(args)... };
 
-		BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
+		BoxUD* ud = new(lua_newuserdata(L, sizeof(BoxUD))) BoxUD();
 		ud->objPtr = newObj;
 		ud->flags = UD_FLAG_OWNED;
 
@@ -159,6 +160,8 @@ struct PushGetImpl
 
 	static void PushObject(lua_State* L, const T& obj, int flags)
 	{
+		ASSERT_MSG(&obj, "NULL object passed as Ref or Box, use pushnil");
+
 		static_assert(std::is_fundamental_v<BaseUType> == false, "PushObject used for fundamental type");
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
@@ -168,12 +171,20 @@ struct PushGetImpl
 		}
 		else
 		{
-			BoxUD* ud = static_cast<BoxUD*>(lua_newuserdata(L, sizeof(BoxUD)));
+			BoxUD* ud = new(lua_newuserdata(L, sizeof(BoxUD))) BoxUD();
 			ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
 			ud->flags = flags;
 
 			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
 				const_cast<BaseUType*>(&obj)->Ref_Grab();
+
+			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+			{
+				auto* weakHandle = obj.GetWeakHandle();
+				weakHandle->Ref_Grab();
+
+				ud->weakRefHandle = weakHandle;
+			}
 		}
 		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
 	}
@@ -191,16 +202,20 @@ struct PushGetImpl
 		}
 		else
 		{
-			BoxUD* userData = static_cast<BoxUD*>(lua_touserdata(L, index));
-			if (!userData)
+			BoxUD* ud = static_cast<BoxUD*>(lua_touserdata(L, index));
+			if (!ud)
+				return static_cast<BaseUType*>(nullptr);
+
+			WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
+			if (weakHandle && !weakHandle->ptr)
 				return static_cast<BaseUType*>(nullptr);
 
 			// drop ownership flag when ToCpp is specified
 			// so Lua can no longer delete object (C++ now has to)
 			if (toCpp)
-				userData->flags &= ~UD_FLAG_OWNED;
+				ud->flags &= ~UD_FLAG_OWNED;
 
-			return reinterpret_cast<BaseUType*>(userData ? (reinterpret_cast<uintptr_t>(userData->objPtr) + upcastBaseInfo.offset) : reinterpret_cast<uintptr_t>(nullptr));
+			return reinterpret_cast<BaseUType*>(reinterpret_cast<uintptr_t>(ud->objPtr) + upcastBaseInfo.offset);
 		}
 	}
 
@@ -213,25 +228,34 @@ struct PushGetImpl
 		if constexpr (LuaTypeByVal<T>::value)
 		{
 			ESL_VERBOSE_LOG("destruct val %s", LuaBaseTypeAlias<T>::value);
-			T* userData = static_cast<T*>(lua_touserdata(L, 1));
-			userData->~T();
+			T* ud = static_cast<T*>(lua_touserdata(L, 1));
+			ud->~T();
 		}
 		else
 		{
-			BoxUD* userData = static_cast<BoxUD*>(lua_touserdata(L, 1));
+			BoxUD* ud = static_cast<BoxUD*>(lua_touserdata(L, 1));
+			ASSERT(ud);
+
+			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+			{
+				WeakRefObject<BaseUType>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<BaseUType>::WeakHandle*>(ud->weakRefHandle);
+				if (weakHandle)
+					weakHandle->Ref_Drop();
+			}
+
 			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
 			{
 				ESL_VERBOSE_LOG("deref obj %s", LuaBaseTypeAlias<T>::value);
-				static_cast<T*>(userData->objPtr)->Ref_Drop();
+				static_cast<T*>(ud->objPtr)->Ref_Drop();
 			}
 			else
 			{
-				if (userData->flags & UD_FLAG_OWNED)
+				if (ud->flags & UD_FLAG_OWNED)
 				{
 					ESL_VERBOSE_LOG("destruct owned obj %s", LuaBaseTypeAlias<T>::value);
-					delete static_cast<T*>(userData->objPtr);
-					userData->flags &= ~UD_FLAG_OWNED;
-					userData->objPtr = nullptr;
+					delete static_cast<T*>(ud->objPtr);
+					ud->flags &= ~UD_FLAG_OWNED;
+					ud->objPtr = nullptr;
 				}
 			}
 		}
@@ -350,14 +374,12 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			luaL_error(L, "insufficient number of arguments");
 	}
 
-	// TODO: Nullable trait instead of checks for table, function and ptr userdata
-	const bool isArgNull = lua_type(L, index) == LUA_TNIL;
-
-	auto checkType = [](lua_State* L, int index, int type) -> bool
+	const int argType = lua_type(L, index);
+	auto CheckType = [argType](lua_State* L, int index, int type) -> bool
 	{
 		if constexpr (SilentTypeCheck)
 		{
-			if (lua_type(L, index) != type)
+			if (argType != type)
 				return false;
 		}
 		else
@@ -371,8 +393,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<bool>;
 
-		if (!checkType(L, index, LUA_TBOOLEAN))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index)))};
+		if (!CheckType(L, index, LUA_TBOOLEAN))
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType))};
 
 		return Result{ {}, true, {}, lua_toboolean(L, index) != 0 };
     }
@@ -392,8 +414,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (!checkType(L, index, LUA_TNUMBER))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
+		if (!CheckType(L, index, LUA_TNUMBER))
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)) };
 
 		return Result{ {}, true, {}, static_cast<T>(lua_tointeger(L, index)) };
 	}
@@ -403,8 +425,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (!checkType(L, index, LUA_TNUMBER))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))) };
+		if (!CheckType(L, index, LUA_TNUMBER))
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)) };
 
 		return Result{ {}, true, {}, static_cast<T>(lua_tonumber(L, index)) };
     }
@@ -414,9 +436,8 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<T>;
 
-		const int type = lua_type(L, index);
-		if (!checkType(L, index, LUA_TLIGHTUSERDATA))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, lua_type(L, index))), nullptr };
+		if (!CheckType(L, index, LUA_TLIGHTUSERDATA))
+			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)), nullptr };
 
 		void* udPtr = lua_touserdata(L, index);
 		return Result{ {}, true, {}, udPtr };
@@ -424,15 +445,13 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	else if constexpr (std::is_same_v<BaseType<T>, LuaRawRef>)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
-
-		const int type = lua_type(L, index);
-		return Result{ {}, true, {}, LuaRawRef(L, index, type) };
+		return Result{ {}, true, {}, LuaRawRef(L, index, argType) };
 	}
 	else if constexpr (std::is_same_v<BaseType<T>, LuaFunctionRef>)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (!isArgNull && !checkType(L, index, LUA_TFUNCTION))
+		if (argType != LUA_TNIL && !CheckType(L, index, LUA_TFUNCTION))
 			return Result{ {}, false, {}, BaseType<T>(L) };
 
 		return Result{ {}, true, {}, BaseType<T>(L, index) };
@@ -443,7 +462,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	{
 		using Result = ResultWithValue<BaseType<T>>;
 
-		if (!isArgNull && !checkType(L, index, LUA_TTABLE))
+		if (argType != LUA_TNIL && !CheckType(L, index, LUA_TTABLE))
 			return Result{ {}, false, {}, BaseType<T>(L) };
 
 		return Result{ {}, true, {}, BaseType<T>(L, index) };
@@ -451,13 +470,12 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (binder::IsString<T>::value)
 	{
-		const int type = lua_type(L, index);
-		if (type != LUA_TSTRING)
+		if (argType != LUA_TSTRING)
 		{
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, type));
+			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType));
 			if constexpr (!SilentTypeCheck)
 			{
-				if (isArgNull)
+				if (argType == LUA_TNIL)
 				{
 					if constexpr (!std::is_pointer_v<T>)
 						luaL_argerror(L, index, err);
@@ -514,13 +532,12 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		// simple return without conversion
 		static_assert(!HasToCppParamTrait<T>::value, "can't use ToCpp trait on CRefPtr");
 
-		const int type = lua_type(L, index);
-		if (type != LUA_TUSERDATA)
+		if (argType != LUA_TUSERDATA)
 		{
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, lua_typename(L, type));
+			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, lua_typename(L, argType));
 			if constexpr (!SilentTypeCheck)
 			{
-				if (!isArgNull)
+				if (argType != LUA_TNIL)
 					luaL_argerror(L, index, err);
 			}
 
@@ -565,13 +582,10 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using UT = std::remove_const_t<StripTraitsT<StripObjectT<T>>>;
 		using Result = ResultWithValue<UT>;
 
-		const int type = lua_type(L, index);
-		if (type != LUA_TUSERDATA)
-		{
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, type));
+		auto EmitArgError = [L, index, argType](const EqString& err) {
 			if constexpr (!SilentTypeCheck)
 			{
-				if (isArgNull)
+				if (argType == LUA_TNIL)
 				{
 					if constexpr (!std::is_pointer_v<T>)
 						luaL_argerror(L, index, err);
@@ -584,7 +598,10 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				return Result{ {}, false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
 			else
 				return Result{ {}, false, std::move(err), nullptr };
-		}
+		};
+
+		if (argType != LUA_TUSERDATA)
+			return EmitArgError(EqString::Format("%s expected, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		// retrieve userdata name which is class name
 		const char* className = nullptr;
@@ -612,7 +629,12 @@ static decltype(auto) GetValue(lua_State* L, int index)
 			BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp, baseInfo));
 
 			if constexpr (std::is_reference_v<UT>)
+			{
+				if(!objPtr)
+					return EmitArgError(EqString::Format("%s weak pointer is nil", LuaBaseTypeAlias<T>::value));
+
 				return Result{ {}, true, {}, reinterpret_cast<UT>(*objPtr) };
+			}
 			else
 				return Result{ {}, true, {}, reinterpret_cast<UT>(objPtr) };
 		}

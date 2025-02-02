@@ -242,7 +242,7 @@ LuaStateTest::~LuaStateTest()
   if (const ::testing::AssertionResult gtest_ar_ =              \
 	::testing::AssertionResult(!state.RunChunk(expression)));    \
   else                                                          \
-	GTEST_NONFATAL_FAILURE_(expression) << esl::runtime::GetLastError(state)
+	GTEST_NONFATAL_FAILURE_(expression) << "Lua chunk succeeded when it should have been failed"
 
 //-------------------------------------------------------
 
@@ -834,6 +834,7 @@ TEST(EQSCRIPT_TESTS, RefPtrDereference)
 			CRefPtr<TestRefPtr> testPush = CRefPtr_new(TestRefPtr, controlValue);
 			state.SetGlobal("testRefPtr", testPush);
 
+			EXPECT_EQ(testPush->Ref_Count(), 2);
 			EXPECT_EQ(controlValue, 0xDEADBEEF);
 		}
 
@@ -879,6 +880,133 @@ TEST(EQSCRIPT_TESTS, RefPtrFromLua)
 
 	EXPECT_EQ(testGet->value, 555);
 	EXPECT_EQ(testGet->strValue, EqStringRef("Hi from Lua"));
+}
+
+struct TestInheritRefPtr : public TestRefPtr
+{
+	TestInheritRefPtr() = default;
+	TestInheritRefPtr(int& controlValue)
+		: TestRefPtr(controlValue)
+	{
+	}
+
+	bool extraValue{ false };
+};
+
+EQSCRIPT_BIND_TYPE_WITH_PARENT(TestInheritRefPtr, TestRefPtr, "TestInheritRefPtr")
+EQSCRIPT_TYPE_BEGIN(TestInheritRefPtr)
+	EQSCRIPT_BIND_VAR(extraValue)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, RefPtrInheritanceTest)
+{
+	int controlValue = 0xDEADBEEF;
+
+	{
+		LuaStateTest stateTest;
+		esl::ScriptState state(stateTest);
+		state.RegisterClass<TestRefPtr>();
+		state.RegisterClass<TestInheritRefPtr>();
+
+		// TEST: refptr owned by lua, dereferenced by C++
+		{
+			CRefPtr<TestInheritRefPtr> testPush = CRefPtr_new(TestInheritRefPtr, controlValue);
+			state.SetGlobal("testRefPtr", testPush);
+
+			EXPECT_EQ(testPush->Ref_Count(), 2);
+			EXPECT_EQ(controlValue, 0xDEADBEEF);
+		}
+
+		// TEST: refptr still owns pointer
+		EXPECT_NE(controlValue, 0xFEDABEEF);
+	}
+
+	// TEST: refptr deferenced by Lua GC destructor call
+	EXPECT_EQ(controlValue, 0xFEDABEEF);
+}
+
+struct TestWeakPtr : public WeakRefObject<TestWeakPtr>
+{
+	int				value{ 555 };
+};
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(TestWeakPtr, "TestRefPtr", WEAK_REF)
+EQSCRIPT_TYPE_BEGIN(TestWeakPtr)
+	EQSCRIPT_BIND_VAR(value)
+EQSCRIPT_TYPE_END
+
+static void RuntimeErrorWithWeakPtrArg(TestWeakPtr& weakObj)
+{
+	ASSERT_FAIL("should be unreachable due to Lua error");
+}
+
+// arguments as pointers are optional
+static void PassWithWeakPtrArg(TestWeakPtr* weakObj)
+{
+	ASSERT_EQ(weakObj, nullptr);
+}
+
+TEST(EQSCRIPT_TESTS, WeakPtrTest)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+	state.RegisterClass<TestWeakPtr>();
+
+	// TEST: weakptr owned by C++ (they are only owned by C++) grabbed by Lua
+	{
+		TestWeakPtr testPush;
+		state.SetGlobal("testWeakPtr", testPush);
+
+		ASSERT_EQ(testPush.GetWeakHandle()->Ref_Count(), 1);
+
+		LUA_GTEST_CHUNK("EXPECT_EQ(testWeakPtr.value, 555)");
+	}
+
+	// TEST: pass argument and get runtime error
+	{
+		state.SetGlobal("TestFuncRef", EQSCRIPT_CFUNC(RuntimeErrorWithWeakPtrArg));
+		LUA_GTEST_CHUNK_FAIL("TestFuncRef(testWeakPtr)");
+	}
+
+	// TEST: pass argument
+	{
+		state.SetGlobal("TestFuncPtr", EQSCRIPT_CFUNC(PassWithWeakPtrArg));
+		LUA_GTEST_CHUNK("TestFuncPtr(testWeakPtr)");
+	}
+
+	// TEST: weakptr is nil
+	LUA_GTEST_CHUNK_FAIL("testWeakPtr.value = 111");
+}
+
+struct TestInheritWeakPtr : public TestWeakPtr
+{
+	int				otherValue{ 9999 };
+};
+
+EQSCRIPT_BIND_TYPE_WITH_PARENT(TestInheritWeakPtr, TestWeakPtr, "TestInheritWeakPtr")
+	EQSCRIPT_TYPE_BEGIN(TestInheritWeakPtr)
+	EQSCRIPT_BIND_VAR(otherValue)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, WeakPtrBinderInheritanceTest)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+	state.RegisterClass<TestWeakPtr>();
+	state.RegisterClass<TestInheritWeakPtr>();
+
+	// TEST: weakptr owned by C++ (they are only owned by C++) grabbed by Lua
+	{
+		TestInheritWeakPtr testPush;
+		state.SetGlobal("testWeakPtr", testPush);
+
+		ASSERT_EQ(testPush.GetWeakHandle()->Ref_Count(), 1);
+
+		LUA_GTEST_CHUNK("EXPECT_EQ(testWeakPtr.value, 555)");
+	}
+
+	// TEST: weakptr is nil
+	LUA_GTEST_CHUNK_FAIL("testWeakPtr.value = 111");
 }
 
 struct TestEvent

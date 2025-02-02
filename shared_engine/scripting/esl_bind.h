@@ -196,13 +196,20 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args) const
 
 #include "esl_bind.hpp"
 
-#define _ESL_PUSH_INHERIT_PARENT(x)
-#define _ESL_PUSH_BY_REF(x)			/* usage: BY_REF */
-#define _ESL_PUSH_BY_VALUE(x)		/* usage: BY_VALUE */ \
+#define _ESL_PUSH_INHERIT_PARENT(x, parentClass) \
+	template<> struct LuaTypeByVal<x> : LuaTypeByVal<parentClass> {}; \
+	template<> struct LuaTypeRefCountedObj<x> : LuaTypeRefCountedObj<parentClass> {}; \
+	template<> struct LuaTypeWeakRefObj<x> : LuaTypeWeakRefObj<parentClass> {};
+
+#define _ESL_PUSH_BY_REF(x, _)			/* usage: BY_REF */
+#define _ESL_PUSH_BY_VALUE(x, _)		/* usage: BY_VALUE */ \
 	template<> struct LuaTypeByVal<x> : std::true_type {};
 
-#define _ESL_PUSH_REF_PTR(x)			/* usage: REF_PTR */ \
+#define _ESL_PUSH_REF_PTR(x, _)		/* usage: REF_PTR */ \
 	template<> struct LuaTypeRefCountedObj<x> : std::true_type {};
+
+#define _ESL_PUSH_WEAK_REF(x, _)		/* usage: WEAK_REF */ \
+	template<> struct LuaTypeWeakRefObj<x> : std::true_type {};
 
 #define ESL_CLASS_MEMBER(Name) 		(&BindClass::Name)
 #define ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
@@ -229,11 +236,11 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args) const
 	EventName##Caller.Invoke(__VA_ARGS__)
 
 // Basic type binder
-#define _ESL_BIND_TYPE_BASICS(Class, name, pushType) \
+#define _ESL_BIND_TYPE_BASICS(Class, name, pushType, ...) \
 	namespace esl { \
 	template<> inline const char ScriptClass<Class>::className[] = name; \
 	_ESL_ALIAS_TYPE(Class, ScriptClass<Class>::className) \
-	_ESL_PUSH_##pushType(Class) \
+	_ESL_PUSH_##pushType(Class, __VA_ARGS__) \
 	}
 
 #define _ESL_BIND_TYPE_BASECLASS(Class, ParentClass) \
@@ -267,7 +274,7 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args) const
 	_ESL_BIND_TYPE_BASICS(\
 		  Class \
 		, name \
-		, INHERIT_PARENT \
+		, INHERIT_PARENT, ParentClass \
 	)
 
 // Binder for class that has bound parent class

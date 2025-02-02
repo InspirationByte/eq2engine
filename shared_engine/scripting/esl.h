@@ -56,6 +56,9 @@ struct LuaTypeByVal : std::false_type {};
 template <typename T>
 struct LuaTypeRefCountedObj : std::false_type {};
 
+template <typename T>
+struct LuaTypeWeakRefObj : std::false_type {};
+
 template <typename T, bool isEnum>
 struct LuaTypeAlias;
 

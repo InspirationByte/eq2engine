@@ -278,13 +278,20 @@ static void* UserTypeThisGetterVal(lua_State* L, bool& isConstRef)
 
 static void* UserTypeThisGetterPtr(lua_State* L, bool& isConstRef)
 {
-	esl::BoxUD* userData = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
-	isConstRef = userData ? (userData->flags & UD_FLAG_CONST) : 0;
+	esl::BoxUD* ud = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
+	if (!ud)
+	{
+		isConstRef = false;
+		return nullptr;
+	}
 
-	if(!userData)
+	isConstRef = ud->flags & UD_FLAG_CONST;
+
+	WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
+	if (weakHandle && !weakHandle->ptr)
 		return nullptr;
 
-	return userData->objPtr;
+	return ud->objPtr;
 }
 
 static int UserTypeCallMemberFunc(lua_State* L)

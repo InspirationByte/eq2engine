@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 	testing::InitGoogleTest(&argc, argv);
 
 	// you can specify flags before running
-	//::testing::FLAGS_gtest_filter = "";
+	//::testing::FLAGS_gtest_filter = "EQSCRIPT_TESTS.WeakPtrTest";
 
 	return RUN_ALL_TESTS();
 }
