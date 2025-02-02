@@ -212,8 +212,14 @@ LuaStateTest::LuaStateTest()
 	state.RunChunk(R"(
 
 function EXPECT_EQ(val, exp)
-	if val ~= exp then
+	if not (val == exp) then
 		error("expected: " .. tostring(exp) .. ", got " .. tostring(val))
+	end
+end
+
+function EXPECT_TRUE(val)
+	if not val then
+		error("expected: true, got " .. tostring(val))
 	end
 end
 
@@ -946,11 +952,18 @@ static void PassWithWeakPtrArg(TestWeakPtr* weakObj)
 	ASSERT_EQ(weakObj, nullptr);
 }
 
+static bool IsWeakNil(const TestWeakPtr* weakObj)
+{
+	return weakObj == nullptr;
+}
+
 TEST(EQSCRIPT_TESTS, WeakPtrTest)
 {
 	LuaStateTest stateTest;
 	esl::ScriptState state(stateTest);
 	state.RegisterClass<TestWeakPtr>();
+
+	state.SetGlobal("isweaknil", EQSCRIPT_CFUNC(IsWeakNil));
 
 	// TEST: weakptr owned by C++ (they are only owned by C++) grabbed by Lua
 	{
@@ -975,6 +988,7 @@ TEST(EQSCRIPT_TESTS, WeakPtrTest)
 	}
 
 	// TEST: weakptr is nil
+	LUA_GTEST_CHUNK("EXPECT_TRUE(isweaknil(testWeakPtr))");
 	LUA_GTEST_CHUNK_FAIL("testWeakPtr.value = 111");
 }
 

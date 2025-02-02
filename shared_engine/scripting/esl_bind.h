@@ -194,6 +194,20 @@ decltype(auto) ScriptState::CallFunction(const char* name, Args...args) const
 
 //---------------------------------------------------
 
+/*
+
+NOTE on weak pointers:
+	Since Lua does not invoke userdata's __eq operator when comparing userdata to nil or other things,
+	It is required (when necessary) for programmer to bind special funciton that could check weak pointer for it's validty:
+
+		class TestWeakPtr : WeakRefObject<TestWeakPtr> { ... }
+
+		static bool IsObjectDestroyed(const TestWeakPtr* weakObj) { return weakObj == nullptr; }
+		state.SetGlobal("isweaknil", EQSCRIPT_CFUNC(IsObjectDestroyed));
+
+	 Since ESL itself itself pushes NULL to the C++ code when object is destroyed, it goes with simple nullptr check;
+*/
+
 #include "esl_bind.hpp"
 
 #define _ESL_PUSH_INHERIT_PARENT(x, parentClass) \
