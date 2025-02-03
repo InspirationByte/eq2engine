@@ -76,6 +76,9 @@ public:
 
 	GRIMDrawSettings		GetDrawSettings() const { return m_drawSettings; }
 	void					SetDrawSettings(const GRIMDrawSettings& settings) { m_drawSettings = settings; }
+
+	bool					IsSoftwareMode() const;
+
 	void					PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
 	void					PostPrepareDraw(GRIMRenderState& renderState);
 	void					Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);

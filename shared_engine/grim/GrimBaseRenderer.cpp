@@ -1064,7 +1064,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 	cmdRecorder->ClearBuffer(intermediate.renderState.drawInvocationsBuffer, 0, intermediate.renderState.drawInvocationsBuffer->GetSize());
 
-	if (m_drawSettings.forceSoftware || grim_softwareMode.GetBool())
+	if (IsSoftwareMode())
 	{
 		FilterInstances_Software(intermediate);
 		VisibilityCullInstances_Software(intermediate);
@@ -1120,14 +1120,19 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 #endif
 }
 
+bool GRIMBaseRenderer::IsSoftwareMode() const
+{
+	return m_drawSettings.forceSoftware || grim_softwareMode.GetBool();
+}
+
 void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
 {
 	IGPUBufferPtr& drawInvocationsReadbackBuffer = renderState.drawInvocationsReadbackBuffer;
-	if (renderState.drawFrame != m_drawFrame || !drawInvocationsReadbackBuffer)
+	if (IsSoftwareMode() || renderState.drawFrame != m_drawFrame || !drawInvocationsReadbackBuffer)
+	{
+		renderState.drawInvocationsReadbackFuture = nullptr;
 		return;
-
-	if (m_drawSettings.forceSoftware || grim_softwareMode.GetBool())
-		return;
+	}
 
 	BitArray& activeDrawInvocations = renderState.activeDrawInvocations;
 
