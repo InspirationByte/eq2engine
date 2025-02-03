@@ -48,7 +48,6 @@ EQWNDHANDLE Sys_CreateWindow()
 	EQWNDHANDLE handle = nullptr;
 
 #ifdef PLAT_SDL
-
 	int adjustedPosX = SDL_WINDOWPOS_CENTERED;
 	int adjustedPosY = SDL_WINDOWPOS_CENTERED;
 	int adjustedWide = 800;
@@ -58,7 +57,9 @@ EQWNDHANDLE Sys_CreateWindow()
 	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
 
 	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+#ifndef PLAT_WIN
 	sdlFlags |= SDL_WINDOW_VULKAN; // fucking SDL or Wayland... can't decide which is worse
+#endif
 	if (fullscreen)
 		sdlFlags |= SDL_WINDOW_FULLSCREEN;
 
@@ -146,7 +147,7 @@ bool Host_Init()
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitor");
 
-	if( SDL_Init(SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
+	if( SDL_Init(SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
 	{
 		ASSERT_MSG( "Failed to init SDL system: %s\n", SDL_GetError());
 		return false;
