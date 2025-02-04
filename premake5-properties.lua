@@ -49,7 +49,7 @@ property "e2_ws_configurations"
 			"NDEBUG",
 			"_PROFILE"
         }
-		optimize "On"
+		optimize "Speed"
 		symbols "On"
 		rtti "Off"
 
@@ -58,7 +58,7 @@ property "e2_ws_configurations"
 			"NDEBUG",
 			"_RETAIL"
         }
-		optimize "On"
+		optimize "Speed"
 		rtti "Off"
 
 	filter "system:Linux"
