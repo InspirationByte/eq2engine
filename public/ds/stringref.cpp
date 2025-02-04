@@ -886,10 +886,10 @@ EqTStr<CH> EqTStrRef<CH>::Left(int nCount) const
 template<typename CH>
 EqTStr<CH> EqTStrRef<CH>::Right(int nCount) const
 {
-	if (nCount >= m_nLength)
+	if (nCount >= Length())
 		return (*this);
 
-	return Mid(m_nLength - nCount, nCount);
+	return Mid(Length() - nCount, nCount);
 }
 
 template<typename CH>
@@ -899,8 +899,8 @@ EqTStr<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
 		return EqTStr<CH>::EmptyStr;
 
 	ASSERT(nStart >= 0);
-	ASSERT(nStart + nCount <= m_nLength);
-	if (nStart < 0 || nStart + nCount > m_nLength)
+	ASSERT(nStart + nCount <= Length());
+	if (nStart < 0 || nStart + nCount > Length())
 		return EqTStr<CH>::EmptyStr;
 
 	return EqTStr<CH>(&m_pszString[nStart], nCount);
