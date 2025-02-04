@@ -45,7 +45,7 @@ static const char* s_wgpuDeviceLostReasonStr[] = {
     "FailedCreation",
 };
 
-static void OnWGPUDeviceError(WGPUErrorType type, struct WGPUStringView message, void* userdata)
+static void OnWGPUDeviceError(WGPUDevice const* device, WGPUErrorType type, struct WGPUStringView message, void* userdata1, void* userdata2)
 {
 	if (wgpu_break_on_error.GetBool())
 	{
@@ -56,7 +56,7 @@ static void OnWGPUDeviceError(WGPUErrorType type, struct WGPUStringView message,
 		MsgError("[WGPU]: %s - %s\n", s_wgpuErrorTypesStr[type], message.data);
 }
 
-static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, struct WGPUStringView message, void* userdata)
+static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reason, struct WGPUStringView message, void* userdata1, void* userdata2)
 {
 	if(reason == WGPUDeviceLostReason_Destroyed)
 		return;
@@ -65,7 +65,7 @@ static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reas
 	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
 }
 
-static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata)
+static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata1, void* userdata2)
 {
 	if (status != WGPURequestAdapterStatus_Success)
 	{
@@ -74,10 +74,17 @@ static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapt
 	}
 	else
 	{
-		// use first adapter provided
-		WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata);
-		if (*result == nullptr)
-			*result = adapter;
+		WGPUAdapterInfo rhiAdapterInfo = {};
+		wgpuAdapterGetInfo(adapter, &rhiAdapterInfo);
+
+		// do not chose CPU adapters
+		if (rhiAdapterInfo.adapterType != WGPUAdapterType_CPU)
+		{
+			// use first adapter provided
+			WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata1);
+			if (*result == nullptr)
+				*result = adapter;
+		}
 	}
 }
 
@@ -180,6 +187,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
+	options.featureLevel = WGPUFeatureLevel_Core;
 	
 	EqStringRef backendName = wgpu_backend.GetString();
 
@@ -194,11 +202,15 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	else if (!backendName.CompareCaseIns("OpenGLES"))
 		options.backendType = WGPUBackendType_OpenGLES;
 
-	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
+	WGPURequestAdapterCallbackInfo rhiCbInfo{};
+	rhiCbInfo.callback = &OnWGPUAdapterRequestEnded;
+	rhiCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+	rhiCbInfo.userdata1 = &m_rhiAdapter;
+	wgpuInstanceRequestAdapter(m_instance, &options, rhiCbInfo);
 
 	if (!m_rhiAdapter)
 	{
-		MsgError("No WGPU supported adapter found\n");
+		MsgError("No hardware adapters found\n");
 		return false;
 	}
 
@@ -304,7 +316,8 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
-		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
+		requiredFeatures.append(WGPUFeatureName_FlexibleTextureViews);
+		//requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
 		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
 		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
 		// TODO: android

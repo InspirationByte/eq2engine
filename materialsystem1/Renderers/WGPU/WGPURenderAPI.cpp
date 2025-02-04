@@ -1442,7 +1442,7 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 	Promise<bool> promise;
 	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers), promiseData = promise.GrabDataPtr()]() {
 		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
-		WGPUQueueWorkDoneCallbackInfo2 rhiCbInfo{};
+		WGPUQueueWorkDoneCallbackInfo rhiCbInfo{};
 		rhiCbInfo.callback = [](WGPUQueueWorkDoneStatus status, void* userdata1, void* userdata2) {
 			Promise<bool> promise(reinterpret_cast<Promise<bool>::Data*>(userdata1));
 
@@ -1454,11 +1454,8 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 				case WGPUQueueWorkDoneStatus_Error:
 					str = "Error";
 					break;
-				case WGPUQueueWorkDoneStatus_Unknown:
-					str = "UnknownStatus";
-					break;
-				case WGPUQueueWorkDoneStatus_DeviceLost:
-					str = "DeviceLost";
+				case WGPUQueueWorkDoneStatus_InstanceDropped:
+					str = "InstanceDropped";
 					break;
 				}
 				promise.SetError(-1, str);
@@ -1471,7 +1468,7 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 
 		rhiCbInfo.userdata1 = promiseData;
 		rhiCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
-		wgpuQueueOnSubmittedWorkDone2(m_rhiQueue, rhiCbInfo);
+		wgpuQueueOnSubmittedWorkDone(m_rhiQueue, rhiCbInfo);
 
 		for (WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
 			wgpuCommandBufferRelease(rhiCmdBuffer);
