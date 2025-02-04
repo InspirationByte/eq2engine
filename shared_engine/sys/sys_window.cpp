@@ -185,13 +185,13 @@ void Host_GameLoop()
 
 		if (s_bActive || !g_pHost->IsPauseAllowed())
 		{
-			g_pHost->Frame();
+			if(g_pHost->Frame())
+				g_pHost->RenderFrame();
 		}
 		else
 		{
 			g_pHost->SignalPause();
 			Platform_Sleep( 1 );
-			Threading::YieldCurrentThread();
 		}
 
 		// or yield
@@ -203,6 +203,8 @@ void Host_GameLoop()
 			if(inputProcessingTimer.GetTime() > 0.25f)
 				s_bProcessInput = true;
 		}
+
+		Threading::YieldCurrentThread();
 	}
 	while(g_pHost->GetQuitState() != CGameHost::QUIT_TODESKTOP);
 }

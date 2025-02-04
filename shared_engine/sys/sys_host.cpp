@@ -39,7 +39,7 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-
+#pragma optimize("", off)
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
 DECLARE_CVAR_G(user_cfg, DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_PROTECTED);
@@ -50,7 +50,7 @@ DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_use
 	g_consoleCommands->ParseFileToCommandBuffer( user_cfg.GetString() );
 }
 
-DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Cl`oses current instance of engine", 0);
+DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
 DECLARE_CMD_FN_RENAME(cmd_quti, "quti", CGameHost::HostExitCmd, "This made for keyboard writing errors", 0);
 
@@ -702,8 +702,11 @@ void CGameHost::SetCursorPosition(int x, int y)
 
 void CGameHost::SetCursorShow(bool bShow)
 {
-	const bool state = SDL_ShowCursor(SDL_QUERY);
-	if(state == bShow)
+	const bool cursorVisible = SDL_ShowCursor(SDL_QUERY);
+	const bool cursorIsActive = cursorVisible && !m_cursorCentered;
+	g_consoleInput->SetHostCursorActive(cursorIsActive);
+
+	if(cursorVisible == bShow)
 		return;
 
 	if(bShow)
@@ -738,15 +741,9 @@ bool CGameHost::Frame()
 
 	PROF_EVENT("Host Frame");
 
-	double gameFrameTime = m_accumTime;
-
+	const double gameFrameTime = m_accumTime;
 	CEqGameControllerSDL::RepeatEvents(gameFrameTime);
-
 	UpdateCursorState();
-
-	//--------------------------------------------
-
-	BeginScene();
 
 	const double timescale = (eqAppStateMng::GetCurrentState() ? eqAppStateMng::GetCurrentState()->GetTimescale() : 1.0f);
 	
@@ -756,44 +753,6 @@ bool CGameHost::Frame()
 		m_quitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
-
-	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
-	// this also resets matsystem from overdraw
-	g_matSystem->GetConfiguration().overdrawMode = false;
-
-	equi::Manager->SetViewFrame(IAARectangle(0, 0, m_winSize.x, m_winSize.y));
-	equi::Manager->Render();
-
-	// DO AA after we done scene and UI
-	if(g_fullScreenEdgeAA->IsEnabled())
-	{
-		g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
-
-		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("FullScreenEdgeAA");
-		cmdRecorder->DbgPushGroup("FullScreenEdgeAA");
-		g_fullScreenEdgeAA->PreRender(cmdRecorder);
-
-		{
-			IGPURenderPassRecorderPtr rendPassRecorder = cmdRecorder->BeginRenderPass(
-				Builder<RenderPassDesc>()
-				.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-				.End()
-			);
-			g_fullScreenEdgeAA->Render(rendPassRecorder);
-			rendPassRecorder->Complete();
-		}
-
-		cmdRecorder->DbgPopGroup();
-
-		g_matSystem->QueueCommandBuffer(cmdRecorder->End());
-	}
-
-	// submit all command buffers queued inside UpdateStates
-	// this is made to display Debug Overlays and, console input 
-	// and ImGui in case of some command buffers were invalid
-	g_matSystem->SubmitQueuedCommandsAwaitable();
-
-	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
 
 	// Engine frames status
 	static float gameAccTime = 0.1f;
@@ -826,51 +785,9 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_AddValue(&s_fpsGraph, gamefps);
 	}
 
+	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
 	debugoverlay->Text(color_white, "System framerate: %i", fps);
 	debugoverlay->Text(color_white, "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
-	debugoverlay->Text(color_white, "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
-	debugoverlay->Text(color_white, "primitives: %i", g_renderAPI->GetTrianglesCount());
-	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
-	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
-
-	{
-		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
-			Builder<RenderPassDesc>()
-			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
-			.End()
-		);
-		rendPassRecorder->DbgPushGroup("Extra Overlays");
-
-		if (r_showFPS.GetBool())
-		{
-			FontStyleParam params;
-			params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-			params.textColor = ColorRGBA(1, 1, 1, 1);
-
-			if (fps < 30)
-				params.textColor = ColorRGBA(1, 0, 0, 1);
-			else if (fps < 60)
-				params.textColor = ColorRGBA(1, 0.8f, 0, 1);
-
-			m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
-
-			size_t totalMem = PPMemGetUsage();
-			if (totalMem)
-			{
-				FontStyleParam memParams;
-				memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-				m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
-			}
-		}
-
-		g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
-		rendPassRecorder->DbgPopGroup();
-
-		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
-	}
-
-	// End frame from render lib
-	EndScene();
 
 	if (m_wantsToggleFullscreen)
 	{
@@ -885,6 +802,105 @@ bool CGameHost::Frame()
 	m_accumTime = 0.0f;
 
 	return true;
+}
+
+void CGameHost::RenderFrame()
+{
+	PROF_EVENT("Host Frame");
+
+	if (!g_matSystem->BeginFrame(nullptr))
+		return;
+
+	g_consoleInput->BeginFrame();
+
+	MatSysRenderSettings& rendSettings = g_matSystem->GetConfiguration();
+	rendSettings.wireframeMode = r_wireframe.GetBool();
+	rendSettings.overdrawMode = r_overdraw.GetBool();
+
+	eqAppStateMng::Render();
+
+	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
+	// this also resets matsystem from overdraw
+	rendSettings.overdrawMode = false;
+
+	equi::Manager->SetViewFrame(IAARectangle(0, 0, m_winSize.x, m_winSize.y));
+	equi::Manager->Render();
+
+	// DO AA after we done scene and UI
+	if(g_fullScreenEdgeAA->IsEnabled())
+	{
+		g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
+
+		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("FullScreenEdgeAA");
+		cmdRecorder->DbgPushGroup("FullScreenEdgeAA");
+		g_fullScreenEdgeAA->PreRender(cmdRecorder);
+		{
+			IGPURenderPassRecorderPtr rendPassRecorder = cmdRecorder->BeginRenderPass(
+				Builder<RenderPassDesc>()
+				.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+				.End()
+			);
+			g_fullScreenEdgeAA->Render(rendPassRecorder);
+			rendPassRecorder->Complete();
+		}
+		cmdRecorder->DbgPopGroup();
+		g_matSystem->QueueCommandBuffer(cmdRecorder->End());
+	}
+
+	// submit all command buffers queued inside UpdateStates
+	// this is made to display Debug Overlays and, console input 
+	// and ImGui in case of some command buffers were invalid
+	g_matSystem->SubmitQueuedCommandsAwaitable();
+
+	const double timescale = (eqAppStateMng::GetCurrentState() ? eqAppStateMng::GetCurrentState()->GetTimescale() : 1.0f);
+
+	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----RENDER STATISTICS-----");
+	debugoverlay->Text(color_white, "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
+	debugoverlay->Text(color_white, "primitives: %i", g_renderAPI->GetTrianglesCount());
+	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
+	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
+
+	{
+		IGPURenderPassRecorderPtr rendPassRecorder = g_renderAPI->BeginRenderPass(
+			Builder<RenderPassDesc>()
+			.ColorTarget(g_matSystem->GetCurrentBackbuffer())
+			.End()
+		);
+		rendPassRecorder->DbgPushGroup("Extra Overlays");
+
+		//if (r_showFPS.GetBool())
+		//{
+		//	FontStyleParam params;
+		//	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		//	params.textColor = ColorRGBA(1, 1, 1, 1);
+		//
+		//	if (fps < 30)
+		//		params.textColor = ColorRGBA(1, 0, 0, 1);
+		//	else if (fps < 60)
+		//		params.textColor = ColorRGBA(1, 0.8f, 0, 1);
+		//
+		//	m_defaultFont->SetupRenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params, rendPassRecorder);
+		//
+		//	size_t totalMem = PPMemGetUsage();
+		//	if (totalMem)
+		//	{
+		//		FontStyleParam memParams;
+		//		memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		//		m_defaultFont->SetupRenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams, rendPassRecorder);
+		//	}
+		//}
+
+		g_inputCommandBinder->DebugDraw(m_winSize, rendPassRecorder);
+		rendPassRecorder->DbgPopGroup();
+
+		g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
+	}
+
+	// save screenshots without ImGui/Console visible
+	Sys_SaveScreenshot();
+
+	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
+	g_matSystem->EndFrame();
 }
 
 bool CGameHost::IsPauseAllowed() const
@@ -908,30 +924,6 @@ void CGameHost::OnWindowResize(int width, int height)
 void CGameHost::OnFocusChanged(bool inFocus)
 {
 	g_matSystem->SetDeviceFocused(inFocus);
-}
-
-void CGameHost::BeginScene()
-{
-	g_matSystem->BeginFrame(nullptr);
-
-	MatSysRenderSettings& rendSettings = g_matSystem->GetConfiguration();
-	rendSettings.wireframeMode = r_wireframe.GetBool();
-	rendSettings.overdrawMode = r_overdraw.GetBool();
-
-	g_consoleInput->BeginFrame();
-
-	const bool cursorVisible = SDL_ShowCursor(SDL_QUERY);
-	const bool cursorIsActive = cursorVisible && !m_cursorCentered;
-	g_consoleInput->SetHostCursorActive(cursorIsActive);
-}
-
-void CGameHost::EndScene()
-{
-	// save screenshots without ImGui/Console visible
-	Sys_SaveScreenshot();
-
-	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, GetFrameTime());
-	g_matSystem->EndFrame();
 }
 
 void CGameHost::RequestTextInput()

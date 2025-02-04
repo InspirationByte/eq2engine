@@ -42,6 +42,7 @@ public:
 	void				ShutdownSystems();
 
 	bool				Frame();
+	void				RenderFrame();
 
 	bool				IsPauseAllowed() const;
 	void				SignalPause();
@@ -101,9 +102,6 @@ protected:
 
 	void				UpdateCursorState();
 	void				SetCursorShow(bool bShow);
-
-	void				BeginScene();
-	void				EndScene();
 
 	bool				FilterTime( double fDt );
 

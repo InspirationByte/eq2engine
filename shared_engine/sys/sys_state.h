@@ -41,6 +41,7 @@ public:
 
 	// when 'false' returned the next state goes on
 	virtual bool	Update( float fDt ) = 0;
+	virtual void	Render() {}
 
 	virtual void	HandleKeyPress( int key, bool down ) {}
 	virtual void	HandleMouseClick( int x, int y, int buttons, bool down ) {}
@@ -103,6 +104,7 @@ namespace eqAppStateMng
 
 	// updates and manages the states
 	bool				UpdateStates(float fDt);
+	void				Render();
 	void				GetStateMouseCursorProperties(bool& visible, bool& centered);
 
 	bool				IsPauseAllowed();

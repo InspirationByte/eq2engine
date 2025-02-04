@@ -141,6 +141,18 @@ bool UpdateStates( float fDt )
 	return true;
 }
 
+void Render()
+{
+	if (!s_currentState)
+		return;
+
+	if (s_stateChanging)
+		return;
+
+	PROF_EVENT("Host Render States");
+	s_currentState->Render();
+}
+
 void GetStateMouseCursorProperties(bool& visible, bool& centered)
 {
 	if(!s_currentState)
