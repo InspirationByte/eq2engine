@@ -720,7 +720,6 @@ bool CGameHost::Frame()
 	static float accTime = 0.1f;
 	static int fps = 0;
 	static int nFrames = 0;
-
 	if (accTime > 0.1f)
 	{
 		fps = (int) (nFrames / accTime + 0.5f);
@@ -749,14 +748,9 @@ bool CGameHost::Frame()
 
 	BeginScene();
 
-	if (r_showFPSGraph.GetBool())
-		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
-
 	const double timescale = (eqAppStateMng::GetCurrentState() ? eqAppStateMng::GetCurrentState()->GetTimescale() : 1.0f);
 	
 	const float stateTimeStepDelta = gameFrameTime * timescale * sys_timescale.GetFloat();
-	g_matSystem->SetProxyDeltaTime(stateTimeStepDelta);
-
 	if(!eqAppStateMng::UpdateStates(stateTimeStepDelta))
 	{
 		m_quitState = CGameHost::QUIT_TODESKTOP;
@@ -819,6 +813,7 @@ bool CGameHost::Frame()
 	// game fps graph
 	if (r_showFPSGraph.GetBool())
 	{
+		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
 		if (gamefps > 40)
 			s_fpsGraph.color = ColorRGB(0, 1, 0);
 		else if (gamefps > 25)
