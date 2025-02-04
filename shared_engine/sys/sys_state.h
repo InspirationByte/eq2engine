@@ -102,9 +102,6 @@ namespace eqAppStateMng
 	void				ScheduleNextStateType(int stateType);
 
 	// updates and manages the states
-	void				PreUpdateState(float fDt);
-	void				PostUpdateState(float fDt);
-
 	bool				UpdateStates(float fDt);
 	void				GetStateMouseCursorProperties(bool& visible, bool& centered);
 

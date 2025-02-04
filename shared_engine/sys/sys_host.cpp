@@ -835,9 +835,7 @@ bool CGameHost::Frame()
 	debugoverlay->Text(color_white, "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
 	debugoverlay->Text(color_white, "DPS/DIPS: %i/%i", g_renderAPI->GetDrawCallsCount(), g_renderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(color_white, "primitives: %i", g_renderAPI->GetTrianglesCount());
-
 	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
-
 	g_matSystem->Setup2D(m_winSize.x, m_winSize.y);
 
 	{

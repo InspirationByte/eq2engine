@@ -177,15 +177,18 @@ void Host_GameLoop()
 		while(SDL_PollEvent(&event))
 			Host_HandleSDLEvents( &event );
 
-		if (s_bActive || g_pHost->IsPauseAllowed())
+		if (!s_bActive)
+		{
+			s_bProcessInput = false;
+			inputProcessingTimer.GetTime(true);
+		}
+
+		if (s_bActive || !g_pHost->IsPauseAllowed())
 		{
 			g_pHost->Frame();
 		}
 		else
 		{
-			s_bProcessInput = false;
-			inputProcessingTimer.GetTime(true);
-
 			g_pHost->SignalPause();
 			Platform_Sleep( 1 );
 			Threading::YieldCurrentThread();
