@@ -105,7 +105,11 @@ bool CWGPURenderLib::InitCaps()
 	// optionally use WGPUInstanceDescriptor::nextInChain for WGPUDawnTogglesDescriptor
 	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
 
-	m_instance = wgpuCreateInstance(nullptr);
+	WGPUInstanceDescriptor rhiInstanceDesc{};
+	WGPUInstanceCapabilities& rhiInstanceCapabilities = rhiInstanceDesc.capabilities;
+	rhiInstanceCapabilities.timedWaitAnyEnable = true;
+
+	m_instance = wgpuCreateInstance(&rhiInstanceDesc);
 	if (!m_instance)
 		return false;
 
@@ -361,6 +365,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	// create default swap chain
 	m_currentSwapChain = static_cast<CWGPUSwapChain*>(CreateSwapChain(params.windowInfo));
 
+	CWGPURenderAPI::Instance.m_rhiInstance = m_instance;
 	CWGPURenderAPI::Instance.m_rhiDevice = m_rhiDevice;
 	CWGPURenderAPI::Instance.m_rhiQueue = m_deviceQueue;
 

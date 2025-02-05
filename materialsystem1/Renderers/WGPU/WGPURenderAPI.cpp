@@ -1413,10 +1413,18 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 			rhiSubmitBuffers.append(rhiCmdBuffer);
 		}
 		wgpuQueueSubmit(m_rhiQueue, rhiSubmitBuffers.numElem(), rhiSubmitBuffers.ptr());
+#if 0
+		WGPUQueueWorkDoneCallbackInfo rhiCbInfo{};
+		rhiCbInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+		WGPUFuture rhiFuture = wgpuQueueOnSubmittedWorkDone(m_rhiQueue, rhiCbInfo);
+
+		WGPUFutureWaitInfo rhiWaitInfo{};
+		rhiWaitInfo.future = rhiFuture;
+		wgpuInstanceWaitAny(m_rhiInstance, 1, &rhiWaitInfo, UINT64_MAX);
+#endif
 		return 0;
 	});
 }
-
 
 Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
 {
@@ -1469,7 +1477,6 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 		rhiCbInfo.userdata1 = promiseData;
 		rhiCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
 		wgpuQueueOnSubmittedWorkDone(m_rhiQueue, rhiCbInfo);
-
 		for (WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
 			wgpuCommandBufferRelease(rhiCmdBuffer);
 
