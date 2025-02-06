@@ -753,6 +753,8 @@ bool CGameHost::Frame()
 	const float stateTimeStepDelta = gameFrameTime * timescale * sys_timescale.GetFloat();
 	if(!eqAppStateMng::UpdateStates(stateTimeStepDelta))
 	{
+		EndScene();
+
 		m_quitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
