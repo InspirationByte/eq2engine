@@ -92,24 +92,26 @@ void Event<SIGNATURE>::ForEach(FUNC func)
 			//		prevSub->next = sub->next;
 
 			SubscriptionObject* del = sub;
+			sub = sub->next;
 
-			while (true)
+			int attempts = 1000;
+			while (attempts > 0)
 			{
-				SubscriptionObject* next = del->next;
-				if (Atomic::CompareExchange(m_subs, del, next) == del)
-				{
-					sub = next;
+				if (Atomic::CompareExchange(m_subs, del, sub) == del)
 					break;
-				}
 				else if(prevSub)
 				{
-					sub = next;
-					prevSub->next = next;
+					prevSub->next = sub;
 					break;
 				}
+				--attempts;
 			}
-			Atomic::Decrement(m_count);
-			delete del;
+
+			if (attempts > 0)
+			{
+				Atomic::Decrement(m_count);
+				delete del;
+			}
 			continue;
 		}
 		else

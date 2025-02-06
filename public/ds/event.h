@@ -67,9 +67,9 @@ private:
 	template<typename FUNC>
 	void					ForEach(FUNC func);
 
-	SubscriptionObject*		m_subs{ nullptr };
-	volatile int			m_count{ 0 };
-	const PPSourceLine		m_sl;
+	SubscriptionObject*	m_subs{ nullptr };
+	volatile int		m_count{ 0 };
+	const PPSourceLine	m_sl;
 };
 
 #include "event.inl"
