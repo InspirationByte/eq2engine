@@ -872,6 +872,15 @@ void IUIControl::ClearAll(bool destroy)
 	m_eventCallbacks.clear(destroy);
 }
 
+void IUIControl::ForEachChild(const EqFunction<bool(IUIControl* child)>& childFunc)
+{
+	for (IUIControl* child : m_childs)
+	{
+		if (!childFunc(child))
+			break;
+	}
+}
+
 void IUIControl::ClearChilds(bool destroy)
 {
 	for (IUIControl* child : m_childs)

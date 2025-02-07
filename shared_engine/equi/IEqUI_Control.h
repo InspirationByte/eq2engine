@@ -164,6 +164,7 @@ public:
 	IUIControl*					Get( const char* pathToElem);
 	void						ClearChilds( bool destroy = true );
 	void						ClearAll( bool destroyChilds = true );
+	void						ForEachChild(const EqFunction<bool(IUIControl* child)>& childFunc);
 
 	IUIControl*					GetParent() const						{ return m_parent; }
 
