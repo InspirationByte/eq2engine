@@ -80,6 +80,8 @@ void Image::SetMaterialInternal(IMaterialPtr material)
 
 void Image::SetAtlasImage(const char* materialAtlasName, const char* imageName)
 {
+	const EqStringRef atlasImg = imageName ? imageName : m_atlasImageName;
+
 	SetMaterial(materialAtlasName);
 	if (!m_material->GetAtlas())
 	{
@@ -87,11 +89,23 @@ void Image::SetAtlasImage(const char* materialAtlasName, const char* imageName)
 		return;
 	}
 
-	const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(imageName);
+	const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(atlasImg);
 	if (entry)
 		m_uvRegion = entry->rect;
 	else
-		MsgError("EqUI error: image %s - no atlas entry '%s' in '%s'\n", m_name.ToCString(), imageName, materialAtlasName);
+		MsgError("EqUI error: image %s - no atlas entry '%s' in '%s'\n", m_name.ToCString(), atlasImg.ToCString(), materialAtlasName);
+
+	m_atlasImageName = atlasImg;
+}
+
+const char* Image::GetMaterialName() const
+{
+	return m_material->GetName();
+}
+
+const char* Image::GetAtlasImageName() const
+{
+	return m_atlasImageName;
 }
 
 void Image::SetColor(const ColorRGBA &color)

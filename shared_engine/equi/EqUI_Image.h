@@ -33,6 +33,9 @@ public:
 	void				SetMaterial(const char* materialName);
 	void				SetAtlasImage(const char* materialAtlasName, const char* imageName);
 
+	const char*			GetMaterialName() const;
+	const char*			GetAtlasImageName() const;
+
 	// apperance
 	void				SetColor(const ColorRGBA &color);
 	const ColorRGBA& 	GetColor() const;
@@ -47,6 +50,7 @@ protected:
 	void				SetMaterialInternal(IMaterialPtr material);
 
 	IMaterialPtr		m_material;
+	EqString			m_atlasImageName;
 	AARectangle			m_uvRegion;
 
 	ColorRGBA			m_color;
