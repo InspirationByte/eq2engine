@@ -129,23 +129,30 @@ struct ImageDesc
 //
 // Parses image description keybase
 //
-static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSection* kv)
+static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSection& kv)
 {
-	EqString atlas_dir = fnmPathStripName(atlasPath);
-	EqString image_name = KV_GetValueString(kv, 0, nullptr);
-
-	if(image_name.Length() == 0)
+	EqStringRef imageName;
+	if (kv.GetValues(imageName) < 1)
 	{
-		MsgError("No valid image name in atlas '%s' line %d\n", atlasPath, kv->line);
+		MsgError("No valid image name in atlas '%s' line %d\n", atlasPath, kv.line);
+		return false;
+	}
+
+	if(imageName.Length() == 0)
+	{
+		MsgError("No valid image name in atlas '%s' line %d\n", atlasPath, kv.line);
 		return false;
 	}
 
 	// always strip extension
-	dest.name = fnmPathStripExt(image_name);
+	dest.name = fnmPathStripExt(imageName);
 
-	if(!kv->IsSection())
+	if(!kv.IsSection())
 	{
-		EqString imgName(atlas_dir + image_name);
+		EqStringRef imageFileName = imageName;
+		kv.GetValuesAt(1, imageFileName);
+
+		const EqString imgName = fnmPathCombine(atlasPath, imageFileName);
 
 		CRefPtr<CImage> pImg = CRefPtr_new(CImage);
 		bool isOk = pImg->Load(imgName.ToCString());
@@ -167,18 +174,20 @@ static bool ParseImageDesc(const char* atlasPath, ImageDesc& dest, const KVSecti
 		// FORMAT IS:
 		// EBlendMode [optional imageName] [optional transparency] [optional R G B]
 
-		for(const KVSection* kb : kv->Keys())
+		for(const KVSection* kb : kv.Keys())
 		{
 			ImgLayer& layer = dest.layers.append();
 			layer.blendMode = GetBlendmodeByStr( kb->GetName() );
 			layer.image = nullptr;
 
-			EqString image_path = KV_GetValueString(kb,0, nullptr);
+			EqStringRef imageFileName;
+			kb->GetValues(imageFileName);
 
-			const bool hasImagePath = image_path.Length() > 0 && (CType::IsAlphabetic(*image_path.ToCString()) || *image_path.ToCString() == '_');
+			const bool hasImagePath = imageFileName.Length() > 0 && (CType::IsAlphabetic(*imageFileName.ToCString()) || *imageFileName.ToCString() == '_');
 			if(hasImagePath)
 			{
-				EqString imgName(atlas_dir + image_path);
+				const EqString imgName = fnmPathCombine(atlasPath, imageFileName);
+
 				CRefPtr<CImage> pImg = CRefPtr_new(CImage);
 				bool isOk = pImg->Load(imgName.ToCString());
 
@@ -346,57 +355,45 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 						const char* materialsPath, const char* outputMaterialName, 
 						KVSection* pParams)
 {
-	int padding = KV_GetValueInt(pParams->FindSection("padding"), 0, 0);
+	int padding = 0;
+	pParams->Get("padding").GetValues(padding);
+
 	EPaddingMode padMode = PAD_NONE;
 
-	EqStringRef padModeStr = KV_GetValueString(pParams->FindSection("padding"), 1, "none");
+	EqStringRef padModeStr;
+	pParams->Get("padding").GetValues(padModeStr);
 	if(!padModeStr.CompareCaseIns("clamp"))
-	{
 		padMode = PAD_CLAMP;
-	}
 	else if(!padModeStr.CompareCaseIns("repeat"))
-	{
 		padMode = PAD_REPEAT;
-	}
 	else if(!padModeStr.CompareCaseIns("mirror"))
-	{
 		padMode = PAD_MIRROR;
-	}
 
 	CRectanglePacker packer;
 	packer.SetPackPadding( padding );	// we set double padding here
 
 	// add
-	for(int i = 0; i < images_list.numElem(); i++)
+	for(ImageDesc& imgDesc : images_list)
 	{
-		CRefPtr<CImage> pImg = images_list[i].layers[0].image;
+		CRefPtr<CImage> pImg = imgDesc.layers[0].image;
 
-		Msg("Adding image set '%s' (%d %d)\n", images_list[i].name.ToCString(), pImg->GetWidth(), pImg->GetHeight());
-		packer.AddRectangle( pImg->GetWidth(), pImg->GetHeight(), (void*)&images_list[i]);
+		Msg("Adding image set '%s' (%d %d)\n", imgDesc.name.ToCString(), pImg->GetWidth(), pImg->GetHeight());
+		packer.AddRectangle( pImg->GetWidth(), pImg->GetHeight(), (void*)&imgDesc);
 	}
 
-	float	wide = 512,
-			tall = 512;
-
-	EqString shaderName = "Base";
-
-	KVSection* pSizeKey = pParams->FindSection("size");
-
-	if(pSizeKey)
-	{
-		wide = KV_GetValueInt(pSizeKey, 0, 512);
-		tall = KV_GetValueInt(pSizeKey, 1, 512);
-	}
-
-	KVSection* shaderBase = pParams->FindSection("shader");
-	shaderName = KV_GetValueString(shaderBase, 0, "Base");
-
-	// pack
-	if(!packer.AssignCoords(wide, tall))//, AtlasPackComparison))
+	float wide = 512;
+	float tall = 512;
+	pParams->Get("size").GetValues(wide, tall);
+	if(!packer.AssignCoords(wide, tall))
 	{
 		MsgError("Couldn't assign coordinates, too small primary size!!!\n");
 		return false;
 	}
+
+	const KVSection& shaderBase = pParams->Get("shader");
+
+	EqStringRef shaderName = "Base";
+	shaderBase.GetValues(shaderName);
 
 	Msg("Trying to generate atlas for '%s' (%g %g)...\n", outputMaterialName, wide, tall);
 
@@ -426,11 +423,10 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	pShaderEntry->MergeFrom(shaderBase, true);
 
 	// process setting up
-	for (int i = 0; i < pShaderEntry->keys.numElem(); i++)
+	for (KVSection* key : pShaderEntry->keys)
 	{
-		KVSection* key = pShaderEntry->keys[i];
-
-		EqString value = KV_GetValueString(key, 0, "");
+		EqString value;
+		key->GetValues(value);
 		if (!value.Length())
 			continue;
 
@@ -497,11 +493,13 @@ void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 		return;
 	}
 
+	const EqString atlasDir = fnmPathStripName(atlasSrcFileName);
+
 	// try loading images
 	for(KVKeyIterator iter(root, "image"); !iter.atEnd(); ++iter)
 	{
 		const int idx = imageList.numElem();
-		if (!ParseImageDesc(atlasSrcFileName, imageList.append(), *iter))
+		if (!ParseImageDesc(atlasDir, imageList.append(), *(*iter)))
 			imageList.fastRemoveIndex(idx);
 	}
 

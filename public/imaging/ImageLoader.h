@@ -76,7 +76,7 @@ public:
 	bool			LoadDDS(IVirtualStreamPtr fileHandle, uint flags = 0);
 	bool			SaveDDS(IVirtualStreamPtr fileHandle) const;
 
-	bool			LoadJPEG(IVirtualStreamPtr fileHandle);
+	bool			Load(IVirtualStreamPtr fileHandle);
 	bool			SaveJPEG(IVirtualStreamPtr fileHandle, const int quality) const;
 
 	bool			LoadTGA(IVirtualStreamPtr fileHandle);

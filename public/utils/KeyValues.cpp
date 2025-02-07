@@ -925,22 +925,16 @@ void KVSection::RemoveSection(KVSection* base)
 	}
 }
 
-void KVSection::MergeFrom(const KVSection* base, bool recursive)
+void KVSection::MergeFrom(const KVSection& base, bool recursive)
 {
-	if(base == nullptr)
-		return;
-
-	for(int i = 0; i < base->keys.numElem(); i++)
+	for(const KVSection* src : base.keys)
 	{
-		KVSection* src = base->keys[i];
-
 		KVSection* dst = CreateSection(src->name);
-
 		src->CopyValuesTo(dst);
 
 		// go to next in hierarchy
 		if(recursive)
-			dst->MergeFrom(src, recursive);
+			dst->MergeFrom(*src, recursive);
 	}
 }
 

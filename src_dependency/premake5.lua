@@ -1,5 +1,4 @@
 include(DependencyPath.zlib.."/premake5.lua")
-include(DependencyPath.libjpeg.."/premake5.lua")
 
 -- android dependencies are separate
 if not IS_ANDROID then
@@ -13,6 +12,7 @@ if ENABLE_TESTS then
 include("gtest/premake5.lua")
 end
 
+include("stb/premake5.lua")
 include("lz4/premake5.lua")
 include("cv_sdk/premake5.lua")
 include("LivePP/premake5.lua")

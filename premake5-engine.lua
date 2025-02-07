@@ -21,7 +21,6 @@ WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 -- you can redefine dependencies
 DependencyPath = {
 	["zlib"] = os.getenv("ZLIB_DIR") or "src_dependency/zlib", 
-	["libjpeg"] = os.getenv("JPEG_DIR") or "src_dependency/libjpeg",
 	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
 	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
 	
@@ -140,7 +139,7 @@ usage "coreLib"
 project "frameworkLib"
     kind "StaticLib"
 	properties { "unitybuild" }
-	uses { "public", "libjpeg" }
+	uses { "public", "stb" }
 
     files {
 		Folders.public.. "ds/*.cpp",

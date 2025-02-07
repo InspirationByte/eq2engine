@@ -365,7 +365,7 @@ struct KVSection
 	//----------------------------------------------
 
 	// copy all values recursively
-	void				MergeFrom(const KVSection* base, bool recursive);
+	void				MergeFrom(const KVSection& base, bool recursive);
 
 	// checkers
 	bool				IsSection() const;
