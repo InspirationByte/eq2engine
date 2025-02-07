@@ -747,6 +747,11 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool pressed)
 	if(in_keys_debug.GetBool())
 		MsgWarning("-- KeyPress: %s (%d)\n", KeyCodeToString(keyIdent), pressed);
 
+	if (keyIdent >= JOYSTICK_START_KEYS)
+		m_lastInputDev = INPUTDEV_CONTROLLER;
+	else
+		m_lastInputDev = INPUTDEV_KEYBOARD;
+
 	BitArrayImpl::set(m_currentButtonBits, BITS_BUTTONS, keyIdent, pressed);
 
 	FixedArray<InputBinding*, 32> complexExecuteList;
@@ -786,6 +791,8 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool pressed)
 
 void CInputCommandBinder::OnMouseEvent( int button, bool pressed )
 {
+	m_lastInputDev = INPUTDEV_MOUSE;
+
 	const short pressure = pressed ? SHRT_MAX : 0;
 
 	for(InputBinding* binding : m_bindings)
@@ -800,6 +807,8 @@ void CInputCommandBinder::OnMouseEvent( int button, bool pressed )
 
 void CInputCommandBinder::OnMouseWheel( int scroll )
 {
+	m_lastInputDev = INPUTDEV_MOUSE;
+
 	const short pressure = (scroll > 0) ? SHRT_MAX : 0;
 
 	const int button = (scroll > 0) ?  MOU_WHUP : MOU_WHDN;
@@ -815,6 +824,8 @@ void CInputCommandBinder::OnMouseWheel( int scroll )
 
 void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool down )
 {
+	m_lastInputDev = INPUTDEV_TOUCHPAD;
+
 	if(in_touchzones_debug.GetInt() == 2)
 		MsgWarning("-- Touch [%g %g] (%d)\n", pos.x, pos.y, down);
 
@@ -843,6 +854,8 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 
 void CInputCommandBinder::OnJoyAxisEvent( short axis, short value )
 {
+	m_lastInputDev = INPUTDEV_CONTROLLER;
+
 	const int joyAxisCode = axis + JOYSTICK_START_AXES;
 
 	for (InputBinding* binding : m_bindings)

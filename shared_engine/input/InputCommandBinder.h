@@ -14,6 +14,14 @@ class ConCommandBase;
 class IGPURenderPassRecorder;
 struct InputAxisAction;
 
+enum EInputDeviceType : int
+{
+	INPUTDEV_KEYBOARD	= (1 << 0),
+	INPUTDEV_MOUSE		= (1 << 1),
+	INPUTDEV_CONTROLLER = (1 << 2),
+	INPUTDEV_TOUCHPAD	= (1 << 3)
+};
+
 struct InputCommand
 {
 	using Func = void(*)(void* userData, short value);
@@ -62,6 +70,8 @@ public:
 	void					Shutdown();
 
 	void					InitTouchZones();
+
+	EInputDeviceType		GetLastInputDeviceUsed() const { return m_lastInputDev; }
 
 	// saves binding using file handle
 	void					WriteBindings(IVirtualStream* stream);
@@ -122,6 +132,8 @@ protected:
 	Array<InputBinding*>	m_bindings{ PP_SL };
 	Array<InputTouchZone>	m_touchZones{ PP_SL };
 	Array<InputAxisAction>	m_axisActs{ PP_SL };
+
+	EInputDeviceType		m_lastInputDev{ INPUTDEV_KEYBOARD };
 
 	bool					m_init{ false };
 };
