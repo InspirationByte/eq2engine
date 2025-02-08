@@ -88,6 +88,7 @@ private:
 	Set<CSoundingObject*>	m_soundingObjects{ PP_SL };
 	Array<PendingSound>		m_pendingStartSounds{ PP_SL };
 	SoundScriptDesc*		m_isolateSound{ nullptr };
+	SoundScriptDesc*		m_dbgFilterSound{ nullptr };
 	
 	float					m_defaultMaxDistance{ 100.0f };
 	float					m_deltaTime{ 0.0f };

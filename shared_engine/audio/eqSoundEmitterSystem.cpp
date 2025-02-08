@@ -215,7 +215,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	if(script->samples.numElem() == 0 && (ep->flags & EMITSOUND_FLAG_FORCE_CACHED))
 	{
 		if(snd_scriptsound_showWarnings.GetBool())
-			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
+			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag on %s!\n", ep->name.ToCString());
 		PrecacheSound(ep->name.ToCString());
 	}
 
@@ -253,6 +253,9 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	SoundEmitterData* edata = &tmpEmit;
 	if(soundingObj)
 	{
+		if (objUniqueId != CSoundingObject::ID_RANDOM)
+			soundingObj->StopEmitter(objUniqueId, true);
+
 		const int usedSounds = soundingObj->GetChannelSoundCount(channelType);
 
 		// if entity reached the maximum sound count for self
@@ -391,7 +394,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		source->UpdateParams(startParams);
 
 #ifdef ENABLE_DEBUG_DRAWING
-		if (snd_scriptsound_debug.GetBool())
+		if (snd_scriptsound_debug.GetBool() && (!m_dbgFilterSound || m_dbgFilterSound == script))
 		{
 			DbgSphere()
 				.Position(startParams.position).Radius(startParams.referenceDistance)
@@ -420,10 +423,23 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		return true;
 	}
 	
-	
 	if (soundSource)
 	{
 		PROF_EVENT("Emitter Switch Source - Destroy");
+
+#ifdef ENABLE_DEBUG_DRAWING
+		if (snd_scriptsound_debug.GetBool() && (!m_dbgFilterSound || m_dbgFilterSound == script))
+		{
+			DbgText3D()
+				.Position(emit->virtualParams.position)
+				.Distance(50.0f)
+				.Time(30.0f)
+				.Name(EqString::Format("emit %x", emit))
+				.Color(color_red)
+				.Text("stop/destroy %s", script->name.ToCString());
+
+		}
+#endif
 
 		// stop and drop the sound
 		if (isVirtual || soundSource->GetState() == IEqAudioSource::STOPPED)
@@ -506,11 +522,12 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
 
 #ifdef ENABLE_DEBUG_DRAWING
-	if (snd_scriptsound_debug.GetBool() && !script->is2d)
+	if (snd_scriptsound_debug.GetBool() && (!g_sounds->m_dbgFilterSound || g_sounds->m_dbgFilterSound == script))
 	{
 		DbgSphere()
 			.Position(params.position).Radius(params.referenceDistance)
 			.Name(EqString::Format("strt emit %x", emitter))
+			.Time(10.0f)
 			.Color(color_white);
 
 		EqString inputParams;
@@ -525,6 +542,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 		DbgText3D()
 			.Position(params.position)
 			.Distance(50.0f)
+			.Time(10.0f)
 			.Name(EqString::Format("strt emit %x", emitter))
 			.Text("update %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), params.volume[0], params.pitch, inputParams.ToCString());
 	}

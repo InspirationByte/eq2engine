@@ -1396,6 +1396,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				}
 			}
 
+			g_sounds->m_dbgFilterSound = selectedScript;
 			g_sounds->m_isolateSound = isolateSound ? selectedScript : nullptr;
 
 			ImGui::Separator();
