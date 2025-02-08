@@ -683,7 +683,7 @@ struct FunctionCall
 
 		runtime::StackGuard g(L);
 
-		lua_pushcfunction(L, StackTrace);
+		lua_pushcfunction(L, HandleRuntimeError);
 		const int errIdx = lua_gettop(L);
 
 		func.Push();
@@ -700,7 +700,7 @@ struct FunctionCall
 
 		runtime::StackGuard g(L, -popCnt);
 
-		lua_pushcfunction(L, StackTrace);
+		lua_pushcfunction(L, HandleRuntimeError);
 		const int errIdx = lua_gettop(L);
 
 		lua_pushvalue(L, funcIndex);

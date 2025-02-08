@@ -384,7 +384,9 @@ struct BaseClassInfo
 void					SetLuaErrorFromTopOfStack(lua_State* L);
 void					ResetErrorValue(lua_State* L);
 const char*				GetLastError(lua_State* L);
-int						StackTrace(lua_State* L);
+int						HandleRuntimeError(lua_State* L);
+
+lua_CFunction			SetErrorHandler(lua_CFunction handler);
 
 // Registers type in the specific lua state
 void					RegisterType(lua_State* L, esl::TypeInfo typeInfo);

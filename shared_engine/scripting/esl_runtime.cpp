@@ -62,7 +62,7 @@ static lua_State* getthread(lua_State* vm, int* arg)
 	}
 }
 
-int StackTrace(lua_State* vm)
+static int StackTracePrintHandler(lua_State* vm)
 {
 	static constexpr const int LEVELS1 = 10;
 	static constexpr const int LEVELS2 = 20;
@@ -70,17 +70,17 @@ int StackTrace(lua_State* vm)
 	int level;
 	int firstpart = 1;  /* still before eventual `...' */
 	int arg;
-	lua_State *L1 = getthread(vm, &arg);
+	lua_State* L1 = getthread(vm, &arg);
 	lua_Debug ar;
-	if (lua_isnumber(vm, arg+2)) {
-		level = (int)lua_tointeger(vm, arg+2);//NOLINT
+	if (lua_isnumber(vm, arg + 2)) {
+		level = (int)lua_tointeger(vm, arg + 2);//NOLINT
 		lua_pop(vm, 1);
 	}
 	else
 		level = (vm == L1) ? 1 : 0;  /* level 0 may be this own function */
 	if (lua_gettop(vm) == arg)
 		lua_pushliteral(vm, "");
-	else if (!lua_isstring(vm, arg+1)) return 1;  /* message is not a string */
+	else if (!lua_isstring(vm, arg + 1)) return 1;  /* message is not a string */
 	else lua_pushliteral(vm, "\n");
 	lua_pushliteral(vm, "stack traceback:");
 	while (lua_getstack(L1, level++, &ar))
@@ -88,12 +88,12 @@ int StackTrace(lua_State* vm)
 		if (level > LEVELS1 && firstpart)
 		{
 			/* no more than `LEVELS2' more levels? */
-			if (!lua_getstack(L1, level+LEVELS2, &ar))
+			if (!lua_getstack(L1, level + LEVELS2, &ar))
 				level--;  /* keep going */
 			else
 			{
 				lua_pushliteral(vm, "\n\t...");  /* too many levels */
-				while (lua_getstack(L1, level+LEVELS2, &ar))  /* find last levels */
+				while (lua_getstack(L1, level + LEVELS2, &ar))  /* find last levels */
 					level++;
 			}
 			firstpart = 0;
@@ -102,24 +102,38 @@ int StackTrace(lua_State* vm)
 		lua_pushliteral(vm, "\n\t");
 		lua_getinfo(L1, "Snl", &ar);
 		lua_pushfstring(vm, "%s:", ar.short_src);
-		if(ar.currentline > 0)
+		if (ar.currentline > 0)
 			lua_pushfstring(vm, "%d:", ar.currentline);
-		if(*ar.namewhat != '\0')  /* is there a name? */
+		if (*ar.namewhat != '\0')  /* is there a name? */
 			lua_pushfstring(vm, " in function '%s'", ar.name);
 		else
 		{
-			if(*ar.what == 'm')  /* main? */
+			if (*ar.what == 'm')  /* main? */
 				lua_pushfstring(vm, " in main chunk");
 			else if (*ar.what == 'C' || *ar.what == 't')
 				lua_pushliteral(vm, " ?");  /* C function or tail call */
 			else
 				lua_pushfstring(vm, " in function <%s:%d>",
-								ar.short_src, ar.linedefined);
+					ar.short_src, ar.linedefined);
 		}
 		lua_concat(vm, lua_gettop(vm) - arg);
 	}
 	lua_concat(vm, lua_gettop(vm) - arg);
 	return 1;
+}
+
+static lua_CFunction RuntimeErrorHandlerFunc = StackTracePrintHandler;
+
+lua_CFunction SetErrorHandler(lua_CFunction handler)
+{
+	lua_CFunction oldFunc = RuntimeErrorHandlerFunc;
+	RuntimeErrorHandlerFunc = handler;
+	return oldFunc;
+}
+
+int HandleRuntimeError(lua_State* L)
+{
+	return RuntimeErrorHandlerFunc(L);
 }
 
 StackGuard::StackGuard(StackGuard&& other) noexcept
@@ -427,7 +441,7 @@ static int UserTypeIndexImpl(lua_State* L)
 		if (!thisPtr)
 		{
 			// TODO: ThrowError
-			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
+			luaL_error(L, "self is nil while accessing %s.%s", className, mem->name);
 			return 0;
 		}
 
@@ -443,7 +457,7 @@ static int UserTypeIndexImpl(lua_State* L)
 	if (thisPtr)
 	{
 		const char* key = luaL_checkstring(L, 2);
-		luaL_error(L, "cannot index variable '%s'", key);
+		luaL_error(L, "cannot index '%s'", key);
 	}
 
 	lua_pushnil(L);
