@@ -192,23 +192,26 @@ struct PushGetImpl
 	static T* GetObject(lua_State* L, int index, bool toCpp, const bindings::BaseClassStorage::Info& upcastBaseInfo)
 	{
 		static_assert(std::is_fundamental_v<BaseUType> == false, "GetObject used for fundamental type");
-
 		ASSERT(upcastBaseInfo.offset == 0);
+
+		void* objPtr = lua_touserdata(L, index);
 
 		if constexpr (LuaTypeByVal<BaseUType>::value)
 		{
-			BaseUType* objPtr = reinterpret_cast<UT*>(reinterpret_cast<uintptr_t>(lua_touserdata(L, index)) + upcastBaseInfo.offset);
-			return objPtr;
+			return reinterpret_cast<UT*>(reinterpret_cast<uintptr_t>(objPtr) + upcastBaseInfo.offset);
 		}
 		else
 		{
-			BoxUD* ud = static_cast<BoxUD*>(lua_touserdata(L, index));
+			BoxUD* ud = static_cast<BoxUD*>(objPtr);
 			if (!ud)
 				return static_cast<BaseUType*>(nullptr);
 
-			WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
-			if (weakHandle && !weakHandle->ptr)
-				return static_cast<BaseUType*>(nullptr);
+			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+			{
+				WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
+				if (weakHandle && !weakHandle->ptr)
+					return static_cast<BaseUType*>(nullptr);
+			}
 
 			// drop ownership flag when ToCpp is specified
 			// so Lua can no longer delete object (C++ now has to)
@@ -216,6 +219,34 @@ struct PushGetImpl
 				ud->flags &= ~UD_FLAG_OWNED;
 
 			return reinterpret_cast<BaseUType*>(reinterpret_cast<uintptr_t>(ud->objPtr) + upcastBaseInfo.offset);
+		}
+	}
+
+	static void* ThisGetter(lua_State* L, bool& isConstRef)
+	{
+		static_assert(std::is_fundamental_v<BaseUType> == false, "ThisGetter used for fundamental type");
+
+		void* objPtr = lua_touserdata(L, 1);
+
+		if constexpr (LuaTypeByVal<BaseUType>::value)
+		{
+			return objPtr;
+		}
+		else
+		{
+			esl::BoxUD* ud = static_cast<esl::BoxUD*>(objPtr);
+			if (!ud)
+				return nullptr;
+
+			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+			{
+				WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
+				if (weakHandle && !weakHandle->ptr)
+					return nullptr;
+			}
+
+			isConstRef = (ud->flags & UD_FLAG_CONST);
+			return ud->objPtr;
 		}
 	}
 

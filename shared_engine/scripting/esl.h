@@ -171,6 +171,7 @@ struct Member
 
 struct TypeInfo;
 using TypeInfoGetter = TypeInfo(*)();
+using ThisGetterFunc = void* (*)(lua_State* L, bool& isConstRef);
 
 // Type info which is could be used for debugging
 struct TypeInfo
@@ -181,7 +182,9 @@ struct TypeInfo
 	const char*			baseClassName{ nullptr };
 
 	ArrayCRef<Member>	members{ nullptr };
+	ThisGetterFunc		thisGetter{ nullptr };
 	bool				isByVal{ false };
+	
 };
 
 namespace binder {

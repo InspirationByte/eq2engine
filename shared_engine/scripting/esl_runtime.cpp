@@ -8,9 +8,6 @@
 
 namespace esl::runtime 
 {
-
-using ThisGetterFunc = void* (*)(lua_State* L, bool& isConstRef);
-
 static void PushErrorIdStr(lua_State* vm)
 {
 	char const lastErrStr[] = { "EqScriptLib_LastError" };
@@ -281,31 +278,6 @@ static int UserTypeCallConstructor(lua_State* L)
 	luaL_error(L, "Can't construct %s with [%s]", className, GetCallSignatureString(L).ToCString());
 	lua_pushnil(L);
 	return 1;
-}
-
-static void* UserTypeThisGetterVal(lua_State* L, bool& isConstRef)
-{
-	isConstRef = false;
-	void* objPtr = lua_touserdata(L, 1);
-	return objPtr;
-}
-
-static void* UserTypeThisGetterPtr(lua_State* L, bool& isConstRef)
-{
-	esl::BoxUD* ud = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
-	if (!ud)
-	{
-		isConstRef = false;
-		return nullptr;
-	}
-
-	isConstRef = ud->flags & UD_FLAG_CONST;
-
-	WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
-	if (weakHandle && !weakHandle->ptr)
-		return nullptr;
-
-	return ud->objPtr;
 }
 
 static int UserTypeCallMemberFunc(lua_State* L)
@@ -640,7 +612,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		// 3: thisGetter
 		lua_pushvalue(L, fields);
 		lua_pushstring(L, typeInfo.className);
-		lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::UserTypeThisGetterVal : &runtime::UserTypeThisGetterPtr));
+		lua_pushlightuserdata(L, typeInfo.thisGetter);
 
 		// mt[name] = func
 		lua_pushcclosure(L, func, 3);
@@ -724,8 +696,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		{
 			// fields[name] = function [thisGetter, className, typeInfoMember] ()
 			lua_pushstring(L, mem.name);
-			void* funcPtr = reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::UserTypeThisGetterVal : &runtime::UserTypeThisGetterPtr);
-			lua_pushlightuserdata(L, funcPtr);
+			lua_pushlightuserdata(L, typeInfo.thisGetter);
 			lua_pushstring(L, typeInfo.className);
 			lua_pushlightuserdata(L, const_cast<esl::Member*>(&mem));
 			lua_pushcclosure(L, &esl::runtime::UserTypeCallMemberFunc, 3);

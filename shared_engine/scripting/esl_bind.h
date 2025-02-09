@@ -111,6 +111,7 @@ TypeInfo ScriptClass<T>::GetTypeInfo()
 		ScriptClass<T>::className,
 		ScriptClass<T>::baseClassName,
 		bindings::ClassBinder<T>::GetMembers(),
+		&runtime::PushGetImpl<T>::ThisGetter,
 		LuaTypeByVal<T>::value
 	};
 };
