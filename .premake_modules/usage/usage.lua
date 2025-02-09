@@ -437,11 +437,7 @@ p.api.register {
 
 			-- if we have usage, apply it.
 			-- if no usage has found, use project as usage instead
-			if usage ~= nil then
-				resolveUsage( targetProject, targetBlock, usage )
-				usageType       = "usage"
-				usageScriptPath = usage.script
-			elseif sourceProject ~= nil and sourceProject.name ~= targetProject.name then
+			if sourceProject ~= nil and sourceProject.name ~= targetProject.name then
 				verbosef("\nProject %s is using project %s\n",
 						 targetProject.name, sourceProject.name )
 
@@ -460,6 +456,10 @@ p.api.register {
 				table.insert(targetBlock.resolvedUsesLinks, usageName )
 				usageType 	    = "project"
 				usageScriptPath = sourceProject.script
+			elseif usage ~= nil then
+				resolveUsage( targetProject, targetBlock, usage )
+				usageType       = "usage"
+				usageScriptPath = usage.script
 			elseif sourceProject ~= nil then
 				error( "Project " .. sourceProject.name
 					   .. " used itself but declares no usage")
