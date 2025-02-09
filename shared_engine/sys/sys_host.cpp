@@ -93,7 +93,7 @@ DECLARE_CMD(sys_vmode_list, nullptr, 0)
 	}
 }
 
-DECLARE_CVAR(screenshotJpegQuality, "100", "JPEG Quality", CV_ARCHIVE);
+DECLARE_CVAR(screenshot_JpegQuality, "92", "JPEG Quality", CV_ARCHIVE);
 
 static EqString requestScreenshotName;
 
@@ -124,6 +124,30 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 	}
 }
 
+class ScreenshotSaveJob : public IParallelJob
+{
+public:
+	ScreenshotSaveJob(CImagePtr image, IFilePtr filePtr)
+		: IParallelJob("ScreenshotSaveJob")
+		, m_image(image)
+		, m_filePtr(filePtr)
+	{
+	}
+private:
+	void Execute() override;
+
+	CImagePtr	m_image;
+	IFilePtr	m_filePtr;
+};
+
+void ScreenshotSaveJob::Execute()
+{
+	if (m_image->SaveJPEG(m_filePtr, screenshot_JpegQuality.GetInt()))
+		MsgInfo("Saved screenshot to '%s'\n", m_filePtr->GetName());
+	else
+		MsgError("Failed to save screenshot\n");
+}
+
 static void Sys_SaveScreenshot()
 {
 	if (!requestScreenshotName.Length())
@@ -131,24 +155,21 @@ static void Sys_SaveScreenshot()
 
 	g_matSystem->SubmitQueuedCommands();
 
-	CImage img;
-	if (!g_matSystem->CaptureScreenshot(img))
+	CImagePtr img = CRefPtr_new(CImage);
+	if (!g_matSystem->CaptureScreenshot(img.Ref()))
 		return;
 
 	IFilePtr saveJpegFile = g_fileSystem->Open(requestScreenshotName, FS_OPEN_WRITE, SP_ROOT);
+	requestScreenshotName.Empty();
 	if (!saveJpegFile)
 	{
-		requestScreenshotName.Empty();
 		MsgError("Failed to create screenshot file\n");
 		return;
 	}
 
-	if (img.SaveJPEG(saveJpegFile, screenshotJpegQuality.GetInt()))
-		MsgInfo("Saved screenshot to '%s'\n", requestScreenshotName.ToCString());
-	else
-		MsgError("Failed to save screenshot\n");
-
-	requestScreenshotName.Empty();
+	ScreenshotSaveJob* screenshotJob = PPNew ScreenshotSaveJob(img, saveJpegFile);
+	screenshotJob->DeleteOnFinish();
+	g_parallelJobs->GetJobMng()->InitStartJob(screenshotJob);
 }
 
 DECLARE_INTERNAL_SHADERS();
