@@ -11,6 +11,7 @@
 #include "core/platform/eqjobmanager.h"
 #include "ds/MemoryStream.h"
 #include "utils/KeyValues.h"
+#include "utils/CRC32.h"
 #include "dpk/DPKFileWriter.h"
 
 #include "ShaderInfo.h"

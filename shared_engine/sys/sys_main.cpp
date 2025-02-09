@@ -22,6 +22,14 @@
 #include <SDL_messagebox.h>
 #include <SDL_system.h>
 
+#if defined(PLAT_WIN)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#ifdef CRT_DEBUG_ENABLED
+#include <crtdbg.h>
+#endif
+#endif
+
 #define DEFAULT_CONFIG_PATH "cfg/config_default.cfg"
 
 #ifdef _RETAIL
@@ -367,12 +375,6 @@ void Sys_Android_MountFileSystem()
 #endif // PLAT_ANDROID
 
 #if defined(PLAT_WIN)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#ifdef CRT_DEBUG_ENABLED
-#include <crtdbg.h>
-#endif
-
 extern "C"
 {
 	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
