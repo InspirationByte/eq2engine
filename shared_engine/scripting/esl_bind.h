@@ -111,7 +111,7 @@ TypeInfo ScriptClass<T>::GetTypeInfo()
 		ScriptClass<T>::className,
 		ScriptClass<T>::baseClassName,
 		bindings::ClassBinder<T>::GetMembers(),
-		&runtime::PushGetImpl<T>::ThisGetter,
+		runtime::PushGet<T>::GetThis,
 		LuaTypeByVal<T>::value
 	};
 };
@@ -272,6 +272,7 @@ NOTE on weak pointers:
 	namespace esl::runtime { \
 	template<> PushGet<Class>::PushFunc PushGet<Class>::Push = &PushGetImpl<Class>::PushObject; \
 	template<> PushGet<Class>::GetFunc PushGet<Class>::Get = &PushGetImpl<Class>::GetObject; \
+	template<> PushGet<Class>::GetThisFunc PushGet<Class>::GetThis = &runtime::PushGetImpl<Class>::GetThis; \
 	}
 
 // Binder for class without parent type that was bound

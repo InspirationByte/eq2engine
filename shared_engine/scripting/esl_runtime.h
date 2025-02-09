@@ -10,9 +10,11 @@ struct PushGet
 {
 	using PushFunc = void(*)(lua_State* L, const BaseType<T>& obj, int flags);
 	using GetFunc = BaseType<T>* (*)(lua_State* L, int index, bool toCpp, const runtime::BaseClassInfo& upcastBaseInfo);
+	using GetThisFunc = ThisGetterFunc;
 
 	static PushFunc Push;
 	static GetFunc Get;
+	static ThisGetterFunc GetThis;
 };
 
 bool	CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* typeName);

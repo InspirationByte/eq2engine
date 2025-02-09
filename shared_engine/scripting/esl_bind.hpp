@@ -222,7 +222,7 @@ struct PushGetImpl
 		}
 	}
 
-	static void* ThisGetter(lua_State* L, bool& isConstRef)
+	static void* GetThis(lua_State* L, bool& isConstRef)
 	{
 		static_assert(std::is_fundamental_v<BaseUType> == false, "ThisGetter used for fundamental type");
 
@@ -269,7 +269,9 @@ struct PushGetImpl
 
 			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
 			{
-				WeakRefObject<BaseUType>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<BaseUType>::WeakHandle*>(ud->weakRefHandle);
+				using WeakHandle = typename WeakRefObject<BaseUType>::WeakHandle;
+
+				WeakHandle* weakHandle = reinterpret_cast<WeakHandle*>(ud->weakRefHandle);
 				if (weakHandle)
 					weakHandle->Ref_Drop();
 			}
@@ -343,7 +345,7 @@ static void PushValue(lua_State* L, const T& value)
 	{
 		lua_pushlightuserdata(L, value.funcPtr);
 
-		constexpr int tupleSize = std::tuple_size<BaseRefType<T>::TupleVal>::value;
+		constexpr int tupleSize = std::tuple_size<typename BaseRefType<T>::TupleVal>::value;
 		std::apply([&](auto&&... args) {
 			((PushValue(L, args)), ...);
 		}, value.upValues);

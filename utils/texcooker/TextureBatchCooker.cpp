@@ -10,6 +10,7 @@
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 #include "utils/KeyValues.h"
+#include "utils/CRC32.h"
 #include "texcooker_defs.h"
 
 /*

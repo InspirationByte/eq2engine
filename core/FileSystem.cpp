@@ -30,6 +30,7 @@
 #include "core/ICommandLine.h"
 #include "core/ILocalize.h"
 #include "core/platform/OSFindData.h"
+#include "utils/CRC32.h"
 
 #include "utils/KeyValues.h"
 #include "FileSystem.h"

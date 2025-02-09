@@ -80,7 +80,7 @@ void Image::SetMaterialInternal(IMaterialPtr material)
 
 void Image::SetAtlasImage(const char* materialAtlasName, const char* imageName)
 {
-	const EqStringRef atlasImg = imageName ? imageName : m_atlasImageName;
+	const EqStringRef atlasImg = imageName ? EqStringRef(imageName) : EqStringRef(m_atlasImageName);
 
 	SetMaterial(materialAtlasName);
 	if (!m_material->GetAtlas())

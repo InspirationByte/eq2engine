@@ -487,7 +487,7 @@ KVValueIterator<T>::KVValueIterator(const KVSection* key, int index)
 template<typename T>
 KVValueIterator<T>::operator KVPairValue& () const
 {
-	return key->values[index];
+	return const_cast<KVPairValue&>(key->values[index]);
 }
 
 template<typename T>

@@ -612,7 +612,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		// 3: thisGetter
 		lua_pushvalue(L, fields);
 		lua_pushstring(L, typeInfo.className);
-		lua_pushlightuserdata(L, typeInfo.thisGetter);
+		lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.thisGetter));
 
 		// mt[name] = func
 		lua_pushcclosure(L, func, 3);
@@ -696,7 +696,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		{
 			// fields[name] = function [thisGetter, className, typeInfoMember] ()
 			lua_pushstring(L, mem.name);
-			lua_pushlightuserdata(L, typeInfo.thisGetter);
+			lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.thisGetter));
 			lua_pushstring(L, typeInfo.className);
 			lua_pushlightuserdata(L, const_cast<esl::Member*>(&mem));
 			lua_pushcclosure(L, &esl::runtime::UserTypeCallMemberFunc, 3);

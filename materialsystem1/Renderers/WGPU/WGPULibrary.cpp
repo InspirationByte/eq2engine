@@ -14,6 +14,7 @@
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "utils/CRC32.h"
 
 #include "imaging/ImageLoader.h"
 

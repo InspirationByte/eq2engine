@@ -184,7 +184,6 @@ struct TypeInfo
 	ArrayCRef<Member>	members{ nullptr };
 	ThisGetterFunc		thisGetter{ nullptr };
 	bool				isByVal{ false };
-	
 };
 
 namespace binder {

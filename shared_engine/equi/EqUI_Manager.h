@@ -7,6 +7,7 @@
 
 #pragma once
 #include "equi_defs.h"
+#include "IEqUI_Control.h"
 
 class IEqFont;
 class IMaterial;
@@ -14,8 +15,6 @@ class IGPURenderPassRecorder;
 
 namespace equi
 {
-
-class IUIControl;
 class Panel;
 
 using ControlFactoryFunc = IUIControl* (*)();
