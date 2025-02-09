@@ -60,6 +60,10 @@ property "e2_ws_configurations"
         }
 		optimize "Speed"
 		rtti "Off"
+		
+	filter { "configurations:Retail", "system:Windows" }
+		buildoptions { "/GL", "/Ot" }
+		linkoptions { "/LTCG:incremental" }
 
 	filter "system:Linux"
 		defines {
