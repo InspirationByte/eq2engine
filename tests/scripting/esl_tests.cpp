@@ -201,8 +201,7 @@ LuaStateTest::LuaStateTest()
 
 	// TODO: move this to esl::InitState()
 	esl::ScriptState state(m_instance);
-	state.RegisterClass<esl::LuaEvent>();
-	state.RegisterClass<esl::LuaEvent::Handle>();
+	esl::LuaEvent::Bind(state);
 
 	state.RegisterClass<Vector2D>();
 	state.RegisterClass<Vector3D>();
@@ -292,7 +291,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<Spline>::GetTypeInfo();
 
-		EXPECT_EQ(typeInfo.isByVal, false);
+		EXPECT_NE(typeInfo.pushType, esl::BY_VALUE);
 
 		EXPECT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
 
@@ -326,7 +325,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<TerrainSpline>::GetTypeInfo();
 
-		EXPECT_EQ(typeInfo.isByVal, false);
+		EXPECT_NE(typeInfo.pushType, esl::BY_VALUE);
 
 		// TEST: base class matching
 		EXPECT_EQ(typeInfo.baseGetter().className, typeInfo.baseClassName);
@@ -344,7 +343,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<Vector2D>::GetTypeInfo();
 
-		EXPECT_EQ(typeInfo.isByVal, true);
+		EXPECT_EQ(typeInfo.pushType, esl::BY_VALUE);
 	}
 }
 

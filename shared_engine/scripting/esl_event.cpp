@@ -5,10 +5,11 @@
 #include "esl_event.h"
 
 EQSCRIPT_BIND_TYPE_NO_PARENT(esl::LuaEvent::Handle, "LuaEventHandle", REF_PTR)
+EQSCRIPT_BIND_TYPE_NO_PARENT(esl::LuaEvent, "LuaEvent", BY_REF)
+
 EQSCRIPT_TYPE_BEGIN(esl::LuaEvent::Handle)
 EQSCRIPT_TYPE_END
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(esl::LuaEvent, "LuaEvent", BY_REF)
 EQSCRIPT_TYPE_BEGIN(esl::LuaEvent)
 	EQSCRIPT_BIND_FUNC(AddHandler)
 	EQSCRIPT_BIND_FUNC(RemoveHandler)
@@ -17,6 +18,12 @@ EQSCRIPT_TYPE_END
 
 namespace esl
 {
+void LuaEvent::Bind(esl::ScriptState& state)
+{
+	state.RegisterClass<esl::LuaEvent>();
+	state.RegisterClass<esl::LuaEvent::Handle>();
+}
+
 LuaEvent::Handle::~Handle()
 {
 	if (owner)

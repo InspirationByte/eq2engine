@@ -50,15 +50,6 @@ using BasePtrType = typename std::remove_cv<typename std::remove_pointer<T>::typ
 template<typename T>
 using BaseRefType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
-template <typename T>
-struct LuaTypeByVal : std::false_type {};
-
-template <typename T>
-struct LuaTypeRefCountedObj : std::false_type {};
-
-template <typename T>
-struct LuaTypeWeakRefObj : std::false_type {};
-
 template <typename T, bool isEnum>
 struct LuaTypeAlias;
 
@@ -138,6 +129,14 @@ enum EMemberType : int
 	MEMB_OPERATOR,
 };
 
+enum EPushType
+{
+	BY_REF = 0,
+	BY_VALUE,
+	REF_PTR,
+	WEAK_REF
+};
+
 struct Member;
 
 // The base proxy class that binds script runtime
@@ -183,7 +182,7 @@ struct TypeInfo
 
 	ArrayCRef<Member>	members{ nullptr };
 	ThisGetterFunc		thisGetter{ nullptr };
-	bool				isByVal{ false };
+	EPushType			pushType{ BY_REF };
 };
 
 namespace binder {
@@ -247,10 +246,13 @@ struct ScriptClass
 	// NOTE: don't access these directly, use typeinfo
 	static const char		className[];
 
-	static TypeInfoGetter	baseClassTypeInfoGetter;
-	static const char*		baseClassName;
-	static uint				classId;
+	static TypeInfoGetter		baseClassTypeInfoGetter;
+	static const char*			baseClassName;
+	static uint					classId;
 };
+
+template<typename T>
+struct PushType;
 
 template<typename T>
 struct BaseScriptClass; // Type

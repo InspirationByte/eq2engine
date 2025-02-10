@@ -105,7 +105,7 @@ TypeInfo ScriptClass<T>::GetTypeInfo()
 		ScriptClass<T>::baseClassName,
 		bindings::ClassBinder<T>::GetMembers(),
 		runtime::PushGet<T>::GetThis,
-		LuaTypeByVal<T>::value
+		PushType<T>::value
 	};
 };
 
@@ -225,37 +225,15 @@ NOTE on weak pointers:
 
 #define ESL_ENUM(x) // it was LuaTypeAlias before but now left as placeholder macro for future use only
 
-// usage: INHERIT_PARENT
-#define _ESL_PUSH_INHERIT_PARENT(x, parentClass) \
-	template<> struct LuaTypeByVal<x> : LuaTypeByVal<parentClass> {}; \
-	template<> struct LuaTypeRefCountedObj<x> : LuaTypeRefCountedObj<parentClass> {}; \
-	template<> struct LuaTypeWeakRefObj<x> : LuaTypeWeakRefObj<parentClass> {};
-
-// usage: BY_REF
-#define _ESL_PUSH_BY_REF(x, _)
-	// no traits applied
-
-// usage: BY_VALUE
-#define _ESL_PUSH_BY_VALUE(x, _) \
-	template<> struct LuaTypeByVal<x> : std::true_type {};
-
-// usage: REF_PTR
-#define _ESL_PUSH_REF_PTR(x, _)	\
-	template<> struct LuaTypeRefCountedObj<x> : std::true_type {};
-
-// usage: WEAK_REF
-#define _ESL_PUSH_WEAK_REF(x, _) \
-	template<> struct LuaTypeWeakRefObj<x> : std::true_type {};
-
 // Basic type binder
-#define _ESL_BIND_TYPE_BASICS(Class, ParentClass, name, pushType, ...) \
+#define _ESL_BIND_TYPE_BASICS(Class, ParentClass, name, push, ...) \
 	namespace esl { \
 	template<> struct BaseScriptClass<Class> : ScriptClass<ParentClass> {}; \
 	template<> inline const char ScriptClass<Class>::className[] = name; \
 	template<> inline uint ScriptClass<Class>::classId = StringIdConst24(name); \
 	template<> inline const char* ScriptClass<Class>::baseClassName = BaseScriptClass<Class>::className; \
 	template<> inline const char* LuaTypeAlias<Class, false>::value = ScriptClass<Class>::className; \
-	_ESL_PUSH_##pushType(Class, __VA_ARGS__) \
+	template<> struct PushType<Class> { static constexpr EPushType value = push; }; \
 	}
 
 // Bind class without parent type that was bound
@@ -273,7 +251,7 @@ NOTE on weak pointers:
 		  Class \
 		, ParentClass \
 		, name \
-		, INHERIT_PARENT, ParentClass \
+		, PushType<ParentClass>::value  \
 	)
 
 // Bind class that has bound parent class with specifying alternate push type

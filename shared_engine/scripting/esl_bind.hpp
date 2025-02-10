@@ -125,7 +125,7 @@ struct ArgsSignature<First, Rest...>
 template<typename T, typename... Args>
 T& New(lua_State* L, Args&&... args)
 {
-	if constexpr (LuaTypeByVal<T>::value)
+	if constexpr (PushType<T>::value == BY_VALUE)
 	{
 		T* ud = static_cast<T*>(lua_newuserdata(L, sizeof(T)));
 		new(ud) T{ std::forward<Args>(args)... };
@@ -141,7 +141,7 @@ T& New(lua_State* L, Args&&... args)
 		ud->objPtr = newObj;
 		ud->flags = UD_FLAG_OWNED;
 
-		if constexpr (LuaTypeRefCountedObj<T>::value)
+		if constexpr (PushType<T>::value == REF_PTR)
 			newObj->Ref_Grab();
 
 		luaL_setmetatable(L, LuaBaseTypeAlias<T>::value);
@@ -156,7 +156,7 @@ static int DestroyImpl(lua_State* L)
 	using BaseUType = BaseType<UT>;
 
 	// destructor is safe to use statically-compiled ByVal
-	if constexpr (LuaTypeByVal<T>::value)
+	if constexpr (PushType<T>::value == BY_VALUE)
 	{
 		ESL_VERBOSE_LOG("destroy val %s", LuaBaseTypeAlias<T>::value);
 		T* ud = static_cast<T*>(lua_touserdata(L, 1));
@@ -167,7 +167,7 @@ static int DestroyImpl(lua_State* L)
 		BoxUD* ud = static_cast<BoxUD*>(lua_touserdata(L, 1));
 		ASSERT(ud);
 
-		if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+		if constexpr (PushType<BaseUType>::value == WEAK_REF)
 		{
 			using WeakHandle = typename WeakRefObject<BaseUType>::WeakHandle;
 
@@ -176,7 +176,7 @@ static int DestroyImpl(lua_State* L)
 				weakHandle->Ref_Drop();
 		}
 
-		if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
+		if constexpr (PushType<BaseUType>::value == REF_PTR)
 		{
 			ESL_VERBOSE_LOG("deref obj %s", LuaBaseTypeAlias<T>::value);
 			static_cast<T*>(ud->objPtr)->Ref_Drop();
@@ -210,7 +210,7 @@ struct PushGetImpl
 
 		static_assert(std::is_fundamental_v<BaseUType> == false, "PushObject used for fundamental type");
 
-		if constexpr (LuaTypeByVal<BaseUType>::value)
+		if constexpr (PushType<BaseUType>::value == BY_VALUE)
 		{
 			BaseUType* ud = static_cast<BaseUType*>(lua_newuserdata(L, sizeof(BaseUType)));
 			new(ud) BaseUType(obj);
@@ -221,10 +221,10 @@ struct PushGetImpl
 			ud->objPtr = const_cast<void*>(reinterpret_cast<const void*>(&obj));
 			ud->flags = flags;
 
-			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
+			if constexpr (PushType<BaseUType>::value == REF_PTR)
 				const_cast<BaseUType*>(&obj)->Ref_Grab();
 
-			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
 				auto* weakHandle = obj.GetWeakHandle();
 				weakHandle->Ref_Grab();
@@ -242,7 +242,7 @@ struct PushGetImpl
 
 		void* objPtr = lua_touserdata(L, index);
 
-		if constexpr (LuaTypeByVal<BaseUType>::value)
+		if constexpr (PushType<BaseUType>::value == BY_VALUE)
 		{
 			return reinterpret_cast<UT*>(reinterpret_cast<uintptr_t>(objPtr) + upcastBaseInfo.offset);
 		}
@@ -252,7 +252,7 @@ struct PushGetImpl
 			if (!ud)
 				return static_cast<BaseUType*>(nullptr);
 
-			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
 				WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
 				if (weakHandle && !weakHandle->ptr)
@@ -274,7 +274,7 @@ struct PushGetImpl
 
 		void* objPtr = lua_touserdata(L, 1);
 
-		if constexpr (LuaTypeByVal<BaseUType>::value)
+		if constexpr (PushType<BaseUType>::value == BY_VALUE)
 		{
 			return objPtr;
 		}
@@ -284,7 +284,7 @@ struct PushGetImpl
 			if (!ud)
 				return nullptr;
 
-			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+			if constexpr (PushType<BaseUType>::value == WEAK_REF)
 			{
 				WeakRefObject<void>::WeakHandle* weakHandle = reinterpret_cast<WeakRefObject<void>::WeakHandle*>(ud->weakRefHandle);
 				if (weakHandle && !weakHandle->ptr)
@@ -830,7 +830,7 @@ struct ConstructorBinder<T>
 
 	static int Func(lua_State* L)
 	{
-		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", ScriptClass<T>::className, LuaTypeByVal<T>::value);
+		ESL_VERBOSE_LOG("ctor(default) %s, byval %d", ScriptClass<T>::className, PushType<T>::value == BY_VALUE);
 		runtime::New<BaseUType>(L);
 		return 1;
 	}
@@ -846,7 +846,7 @@ struct ConstructorBinder
 	template<size_t... IDX>
 	static void Invoke(lua_State* L, std::index_sequence<IDX...>)
 	{
-		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", ScriptClass<T>::className, LuaTypeByVal<T>::value);
+		ESL_VERBOSE_LOG("ctor(...) %s, byval %d", ScriptClass<T>::className, PushType<T>::value == BY_VALUE);
 		runtime::New<BaseUType>(L, *runtime::GetValue<Args, true>(L, IDX + 1)...);
 	}
 
