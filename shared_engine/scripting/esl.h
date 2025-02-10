@@ -249,6 +249,7 @@ struct ScriptClass
 
 	static TypeInfoGetter	baseClassTypeInfoGetter;
 	static const char*		baseClassName;
+	static uint				classId;
 };
 
 template<typename T>
@@ -258,6 +259,7 @@ template<> inline TypeInfo ScriptClass<void>::GetTypeInfo() { return {}; }
 template<> inline const char ScriptClass<void>::className[] = "";
 template<> inline TypeInfoGetter ScriptClass<void>::baseClassTypeInfoGetter = nullptr;
 template<> inline const char* ScriptClass<void>::baseClassName = nullptr;
+template<> inline uint ScriptClass<void>::classId = 0;
 
 /// script state wrapper
 class ScriptState

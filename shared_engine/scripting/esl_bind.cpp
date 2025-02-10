@@ -46,15 +46,15 @@ _BUILTIN_ALIAS_TYPE(LuaRawRef, s_eslTAny)
 namespace bindings
 {
 
-Map<int, runtime::BaseClassInfo>& BaseClassStorage::GetBaseClassNames()
+Map<uint, runtime::BaseClassInfo>& BaseClassStorage::GetBaseClassNames()
 {
-	static Map<int, runtime::BaseClassInfo> baseClassNames{ PP_SL };
+	static Map<uint, runtime::BaseClassInfo> baseClassNames{ PP_SL };
 	return baseClassNames;
 }
 
 runtime::BaseClassInfo BaseClassStorage::Get(const char* className)
 {
-	const int nameHash = StringId24(className);
+	const uint nameHash = StringId24(className);
 	auto it = GetBaseClassNames().find(nameHash);
 	if (it.atEnd())
 		return runtime::BaseClassInfo{};

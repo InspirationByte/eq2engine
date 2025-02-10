@@ -149,6 +149,52 @@ T& New(lua_State* L, Args&&... args)
 	}
 }
 
+template<typename T>
+static int DestroyImpl(lua_State* L)
+{
+	using UT = StripTraitsT<T>;
+	using BaseUType = BaseType<UT>;
+
+	// destructor is safe to use statically-compiled ByVal
+	if constexpr (LuaTypeByVal<T>::value)
+	{
+		ESL_VERBOSE_LOG("destroy val %s", LuaBaseTypeAlias<T>::value);
+		T* ud = static_cast<T*>(lua_touserdata(L, 1));
+		ud->~T();
+	}
+	else
+	{
+		BoxUD* ud = static_cast<BoxUD*>(lua_touserdata(L, 1));
+		ASSERT(ud);
+
+		if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
+		{
+			using WeakHandle = typename WeakRefObject<BaseUType>::WeakHandle;
+
+			WeakHandle* weakHandle = reinterpret_cast<WeakHandle*>(ud->weakRefHandle);
+			if (weakHandle)
+				weakHandle->Ref_Drop();
+		}
+
+		if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
+		{
+			ESL_VERBOSE_LOG("deref obj %s", LuaBaseTypeAlias<T>::value);
+			static_cast<T*>(ud->objPtr)->Ref_Drop();
+		}
+		else
+		{
+			if (ud->flags & UD_FLAG_OWNED)
+			{
+				ESL_VERBOSE_LOG("destroy owned obj %s", LuaBaseTypeAlias<T>::value);
+				delete static_cast<T*>(ud->objPtr);
+				ud->flags &= ~UD_FLAG_OWNED;
+				ud->objPtr = nullptr;
+			}
+		}
+	}
+	return 0;
+}
+
 // Push pull is essential when you want to send or get values from Lua
 template<typename T>
 struct PushGetImpl
@@ -249,51 +295,6 @@ struct PushGetImpl
 			return ud->objPtr;
 		}
 	}
-
-	static int ObjectDestructor(lua_State* L)
-	{
-		using UT = StripTraitsT<T>;
-		using BaseUType = BaseType<UT>;
-
-		// destructor is safe to use statically-compiled ByVal
-		if constexpr (LuaTypeByVal<T>::value)
-		{
-			ESL_VERBOSE_LOG("destruct val %s", LuaBaseTypeAlias<T>::value);
-			T* ud = static_cast<T*>(lua_touserdata(L, 1));
-			ud->~T();
-		}
-		else
-		{
-			BoxUD* ud = static_cast<BoxUD*>(lua_touserdata(L, 1));
-			ASSERT(ud);
-
-			if constexpr (LuaTypeWeakRefObj<BaseUType>::value)
-			{
-				using WeakHandle = typename WeakRefObject<BaseUType>::WeakHandle;
-
-				WeakHandle* weakHandle = reinterpret_cast<WeakHandle*>(ud->weakRefHandle);
-				if (weakHandle)
-					weakHandle->Ref_Drop();
-			}
-
-			if constexpr (LuaTypeRefCountedObj<BaseUType>::value)
-			{
-				ESL_VERBOSE_LOG("deref obj %s", LuaBaseTypeAlias<T>::value);
-				static_cast<T*>(ud->objPtr)->Ref_Drop();
-			}
-			else
-			{
-				if (ud->flags & UD_FLAG_OWNED)
-				{
-					ESL_VERBOSE_LOG("destruct owned obj %s", LuaBaseTypeAlias<T>::value);
-					delete static_cast<T*>(ud->objPtr);
-					ud->flags &= ~UD_FLAG_OWNED;
-					ud->objPtr = nullptr;
-				}
-			}
-		}
-		return 0;
-	}
 };
 
 template<typename T, typename WT>
@@ -368,7 +369,7 @@ static void PushValue(lua_State* L, const T& value)
 
 		// really does not matter since deleter will still Ref_Drop() 
 		// object but we'll keep it anyway
-		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
+		constexpr int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
 		if (value)
 			PushGet<UT>::Push(L, value.Ref(), (std::is_const_v<UT> ? UD_FLAG_CONST : 0) | retTraitFlag);
 		else
@@ -381,16 +382,18 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else
 	{
-		const int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
+		using UT = BaseType<BaseType<T>>;
+
+		constexpr int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
 		if constexpr (std::is_pointer_v<T>)
 		{
 			if (value != nullptr)
-				PushGet<BaseType<T>>::Push(L, *value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
+				PushGet<UT>::Push(L, *value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
 			else
 				lua_pushnil(L);
 		}
 		else
-			PushGet<BaseType<T>>::Push(L, value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
+			PushGet<UT>::Push(L, value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
 	}
 }
 
@@ -854,12 +857,6 @@ struct ConstructorBinder
 	}
 };
 
-template<typename T>
-static auto BindDestructor()
-{
-	return &runtime::PushGetImpl<T>::ObjectDestructor;
-}
-
 template<typename ... Args>
 struct CheckLuaStateArg : std::false_type {};
 
@@ -1147,7 +1144,7 @@ Member ClassBinder<T>::MakeDestructor()
 	Member m;
 	m.type = MEMB_DTOR;
 	m.name = "__gc";
-	m.staticFunc = binder::BindDestructor<T>();
+	m.staticFunc = &runtime::DestroyImpl<T>;
 	return m;
 }
 
@@ -1263,15 +1260,33 @@ Member ClassBinder<T>::MakeOperator(F f, const char* name)
 	return m;
 }
 
-template<typename T>
-void BaseClassStorage::Add(intptr_t offset)
+template <typename Base, typename Derived>
+constexpr intptr_t ComputeBaseClassOffset()
 {
-	const int nameHash = StringId24(ScriptClass<T>::className);
+	// HACK: using 0 will make offset 0 regardless of what type it is (nullptr optimization)
+	constexpr intptr_t HACK_OFFSET = 0x1000;
+	Derived* v = reinterpret_cast<Derived*>(HACK_OFFSET);
+	return reinterpret_cast<intptr_t>(static_cast<Base*>(v)) - HACK_OFFSET;
+}
+
+template<typename T>
+void BaseClassStorage::Add()
+{
 	if (!ScriptClass<T>::baseClassName)
 		return;
-	Info& info = *GetBaseClassNames().insert(nameHash);
+
+	Info& info = *GetBaseClassNames().insert(ScriptClass<T>::classId);
 	info.name = ScriptClass<T>::baseClassName;
-	info.offset = offset;
+
+	if constexpr (!std::is_void_v<BaseScriptClass<T>::BindType>)
+	{
+		using BaseClass = typename BaseScriptClass<T>::BindType;
+		info.offset = ComputeBaseClassOffset<BaseClass, T>();
+	}
+	else
+	{
+		info.offset = 0;
+	}
 }
 
 template<typename T>
