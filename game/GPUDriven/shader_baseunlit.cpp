@@ -71,15 +71,6 @@ BEGIN_SHADER_CLASS(
 			.Buffer("CameraBuffer", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM);
 	}
 
-	void FillBindGroupLayout_Transient(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		if (meshInstFormat.formatId == SHADER_VERTEX_ID(EGFVertexSkinned))
-		{
-			Builder<BindGroupLayoutDesc>(bindGroupLayout)
-				.Buffer("Bones", 0, SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY);
-		}
-	}
-
 	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
@@ -126,16 +117,6 @@ BEGIN_SHADER_CLASS(
 		}
 		else if (bindGroupId == BINDGROUP_TRANSIENT)
 		{
-			// TODO: remove
-			if (setupParams.pipelineInfo.vertexLayoutId == SHADER_VERTEX_ID(EGFVertexSkinned))
-			{
-				ASSERT(setupParams.uniformBuffers[0].signature == RenderBoneTransformID);
-
-				BindGroupDesc bindGroupDesc = Builder<BindGroupDesc>()
-					.Buffer(0, setupParams.uniformBuffers[0].bufferView)
-					.End();
-				return CreateBindGroup(bindGroupDesc, bindGroupId, renderAPI, setupParams.pipelineInfo);
-			}
 			return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 		}
 		else if (bindGroupId == BINDGROUP_INSTANCES)

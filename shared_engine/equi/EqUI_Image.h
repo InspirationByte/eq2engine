@@ -13,12 +13,11 @@ using IMaterialPtr = CRefPtr<IMaterial>;
 
 namespace equi
 {
-
-	enum EImageFlags
-	{
-		FLIP_X = (1 << 0),
-		FLIP_Y = (1 << 1),
-	};
+enum EImageFlags
+{
+	FLIP_X = (1 << 0),
+	FLIP_Y = (1 << 1),
+};
 
 // eq label class
 class Image : public IUIControl
@@ -29,10 +28,13 @@ public:
 	Image();
 	virtual ~Image();
 
-	void				InitFromKeyValues(const KVSection* sec, bool noClear ) override;
+	void				Parse(const KVSection* sec) override;
 
 	void				SetMaterial(const char* materialName);
 	void				SetAtlasImage(const char* materialAtlasName, const char* imageName);
+
+	const char*			GetMaterialName() const;
+	const char*			GetAtlasImageName() const;
 
 	// apperance
 	void				SetColor(const ColorRGBA &color);
@@ -42,15 +44,13 @@ public:
 	AARectangle			GetUVRegion() const;
 	void				SetUVRegion(const AARectangle& rect);
 
-	// events
-	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
-	bool				ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
+	virtual void		DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 
-	void				DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
-
-public:
+protected:
+	void				SetMaterialInternal(IMaterialPtr material);
 
 	IMaterialPtr		m_material;
+	EqString			m_atlasImageName;
 	AARectangle			m_uvRegion;
 
 	ColorRGBA			m_color;

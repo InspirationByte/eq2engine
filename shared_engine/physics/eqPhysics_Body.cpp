@@ -313,6 +313,8 @@ void CEqRigidBody::AccumulateForces(float time)
 		angularVelocity = clamp(angularVelocity, (-16384.0f), (16384.0f));
 	}
 
+	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
+
 	// apply torque
 	angularVelocity += (m_invInertiaTensor * m_totalTorque) * time;
 
@@ -387,6 +389,9 @@ void CEqRigidBody::ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impuls
 {
 	m_linearVelocity += impulse * m_invMass;
 	m_angularVelocity += m_invInertiaTensor * cross(Vector3D(rel_pos + m_centerOfMassTrans), impulse);
+
+	ASSERT_MSG(!V3IsNaN(m_linearVelocity), "Rigid body linearVelocity is NaN");
+	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
 }
 
 
@@ -395,6 +400,9 @@ void CEqRigidBody::ApplyWorldImpulse(const FVector3D& position, const Vector3D& 
 {
 	m_linearVelocity += impulse * m_invMass;
 	m_angularVelocity += m_invInertiaTensor * cross(Vector3D((m_position - position) + m_centerOfMassTrans), impulse);
+
+	ASSERT_MSG(!V3IsNaN(m_linearVelocity), "Rigid body linearVelocity is NaN");
+	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
 }
 
 // applies local force
@@ -403,6 +411,9 @@ void CEqRigidBody::ApplyForce(const FVector3D& rel_pos, const Vector3D& force)
 	m_totalForce += force;
 	Vector3D torqueAdd = cross(Vector3D(rel_pos + m_centerOfMassTrans), force);
 	m_totalTorque += torqueAdd;
+
+	ASSERT_MSG(!V3IsNaN(m_totalForce), "Rigid body totalForce is NaN");
+	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
 }
 
 // applies world impulse
@@ -411,36 +422,51 @@ void CEqRigidBody::ApplyWorldForce(const FVector3D& position, const Vector3D& fo
 	m_totalForce += force;
 	Vector3D torqueAdd = cross(Vector3D((m_position - position) + m_centerOfMassTrans), force);
 	m_totalTorque += torqueAdd;
+
+	ASSERT_MSG(!V3IsNaN(m_totalForce), "Rigid body totalForce is NaN");
+	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
 }
 
 void CEqRigidBody::ApplyAngularImpulse(const Vector3D& impulse)
 {
 	m_angularVelocity += m_invInertiaTensor*impulse;
+
+	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
 }
 
 void CEqRigidBody::ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse)
 {
 	m_angularVelocity += m_invInertiaTensor * cross(Vector3D(rel_pos), impulse);
+
+	ASSERT_MSG(!V3IsNaN(m_angularVelocity), "Rigid body angularVelocity is NaN");
 }
 
 void CEqRigidBody::ApplyLinearImpulse(const Vector3D& impulse)
 {
 	m_linearVelocity += impulse * m_invMass;
+
+	ASSERT_MSG(!V3IsNaN(m_linearVelocity), "Rigid body linearVelocity is NaN");
 }
 
 void CEqRigidBody::ApplyAngularForce(const Vector3D& force)
 {
 	m_totalTorque += force;
+
+	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
 }
 
 void CEqRigidBody::ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force)
 {
 	m_totalTorque += cross(Vector3D(rel_pos), force);
+
+	ASSERT_MSG(!V3IsNaN(m_totalTorque), "Rigid body totalTorque is NaN");
 }
 
 void CEqRigidBody::ApplyLinearForce(const Vector3D& force)
 {
 	m_totalForce += force;
+
+	ASSERT_MSG(!V3IsNaN(m_totalForce), "Rigid body totalForce is NaN");
 }
 
 //--------------------

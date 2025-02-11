@@ -117,8 +117,7 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 		if (fsFind.IsDirectory())
 			continue;
 
-		fnmPathCombine(shaderPackPath, "shaders", fsFind.GetPath());
-
+		shaderPackPath = fnmPathCombine("shaders", fsFind.GetPath());
 		shaderModCount += LoadShaderPackage(shaderPackPath);
 		++shaderPackCount;
 	}
@@ -1414,10 +1413,18 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 			rhiSubmitBuffers.append(rhiCmdBuffer);
 		}
 		wgpuQueueSubmit(m_rhiQueue, rhiSubmitBuffers.numElem(), rhiSubmitBuffers.ptr());
+#if 0
+		WGPUQueueWorkDoneCallbackInfo rhiCbInfo{};
+		rhiCbInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+		WGPUFuture rhiFuture = wgpuQueueOnSubmittedWorkDone(m_rhiQueue, rhiCbInfo);
+
+		WGPUFutureWaitInfo rhiWaitInfo{};
+		rhiWaitInfo.future = rhiFuture;
+		wgpuInstanceWaitAny(m_rhiInstance, 1, &rhiWaitInfo, UINT64_MAX);
+#endif
 		return 0;
 	});
 }
-
 
 Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
 {
@@ -1443,7 +1450,7 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 	Promise<bool> promise;
 	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers), promiseData = promise.GrabDataPtr()]() {
 		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
-		WGPUQueueWorkDoneCallbackInfo2 rhiCbInfo{};
+		WGPUQueueWorkDoneCallbackInfo rhiCbInfo{};
 		rhiCbInfo.callback = [](WGPUQueueWorkDoneStatus status, void* userdata1, void* userdata2) {
 			Promise<bool> promise(reinterpret_cast<Promise<bool>::Data*>(userdata1));
 
@@ -1455,11 +1462,8 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 				case WGPUQueueWorkDoneStatus_Error:
 					str = "Error";
 					break;
-				case WGPUQueueWorkDoneStatus_Unknown:
-					str = "UnknownStatus";
-					break;
-				case WGPUQueueWorkDoneStatus_DeviceLost:
-					str = "DeviceLost";
+				case WGPUQueueWorkDoneStatus_InstanceDropped:
+					str = "InstanceDropped";
 					break;
 				}
 				promise.SetError(-1, str);
@@ -1472,8 +1476,7 @@ Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommand
 
 		rhiCbInfo.userdata1 = promiseData;
 		rhiCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
-		wgpuQueueOnSubmittedWorkDone2(m_rhiQueue, rhiCbInfo);
-
+		wgpuQueueOnSubmittedWorkDone(m_rhiQueue, rhiCbInfo);
 		for (WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
 			wgpuCommandBufferRelease(rhiCmdBuffer);
 

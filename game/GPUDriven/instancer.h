@@ -18,7 +18,14 @@ struct InstTransform
 	float		boundingSphere{ 1.0f };
 };
 
-using DemoGRIMInstanceAllocator = GRIMInstanceAllocator<InstTransform>;
+struct InstScale
+{
+	DEFINE_GPU_BUFFER_INSTANCE_COMPONENT(GPUINST_PROP_ID_SCALE, InstScale);
+	Vector3D	scale{ 1.0f };
+	float		pad{ 0.0f };
+};
+
+using DemoGRIMInstanceAllocator = GRIMInstanceAllocator<InstTransform, InstScale>;
 
 class DemoGRIMRenderer : public GRIMBaseRenderer
 {

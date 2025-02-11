@@ -1,5 +1,6 @@
 project "minivorbis"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	language "C"
 	includedirs {
 		"./"

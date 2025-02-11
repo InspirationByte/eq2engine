@@ -12,7 +12,7 @@ project "GPUDriven"
 		targetname "GPUDriven_%{cfg.buildcfg}"
 	end
 	
-	unitybuild "on"
+	properties { "unitybuild" }
     uses {
 		"e2Core", "frameworkLib", "coreLib",
 		"sysLib",

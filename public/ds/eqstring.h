@@ -7,8 +7,6 @@
 
 #pragma once
 
-#define _Es EqTStr
-
 template<typename CH>
 class EMPTY_BASES EqTStr
 	: public StringCombinationOpsMixin<EqTStr<CH>, EqTStr<CH>, char>
@@ -21,7 +19,8 @@ public:
 
 	static const EqTStr EmptyStr;
 
-	static size_t	ReadString(IVirtualStream* stream, EqTStr& output);
+	static VSSize	ReadString(IVirtualStream* stream, int length, EqTStr& output);
+	static VSSize	ReadString(IVirtualStream* stream, EqTStr& output);
 	static EqTStr 	FormatF(const CH* pszFormat, ...);
 	static EqTStr 	FormatV(const CH* pszFormat, va_list argptr);
 	template <typename... Args>
@@ -109,21 +108,21 @@ protected:
 	const CH*	StrPtr() const;
 	CH*			m_pszString{ nullptr };
 
-	uint16		m_nLength{ 0 };			// length of string
-	uint16		m_nAllocated{ 0 };		// allocation size
+	int			m_nLength{ 0 };			// length of string
+	int			m_nAllocated{ 0 };		// allocation size
 };
 
 template<typename CH>
-static size_t VSRead(IVirtualStream* stream, EqTStr<CH>& str)
+static VSSize VSRead(IVirtualStream* stream, EqTStr<CH>& str)
 {
 	return EqTStr<CH>::ReadString(stream, str);
 }
 
 template<typename CH>
-static size_t VSWrite(IVirtualStream* stream, const EqTStr<CH>& str)
+static VSSize VSWrite(IVirtualStream* stream, const EqTStr<CH>& str)
 {
-	const uint16 length = str.Length();
-	stream->Write(&length, 1, sizeof(uint16));
+	const uint length = str.Length();
+	stream->Write(&length, 1, sizeof(uint));
 	stream->Write(str.GetData(), sizeof(CH), length);
 	return 1;
 }

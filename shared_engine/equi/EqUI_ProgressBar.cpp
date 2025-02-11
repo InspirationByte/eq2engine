@@ -24,15 +24,15 @@ ProgressBar::ProgressBar()
 	m_color = color_white;
 }
 
-void ProgressBar::InitFromKeyValues(const KVSection* sec, bool noClear)
+void ProgressBar::Parse(const KVSection* sec)
 {
-	BaseClass::InitFromKeyValues(sec, noClear);
+	BaseClass::Parse(sec);
 
 	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
 	m_value = KV_GetValueFloat(sec->FindSection("value"), 0, m_value);
 }
 
-void ProgressBar::DrawSelf(const IAARectangle& _rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void ProgressBar::DrawSelf(const IAARectangle& _rect, IGPURenderPassRecorder* rendPassRecorder)
 {
 	AARectangle rect(_rect);
 

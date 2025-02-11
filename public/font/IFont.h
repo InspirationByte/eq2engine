@@ -62,6 +62,7 @@ struct FontChar
 
 class IGPURenderPassRecorder;
 class IEqFont;
+class CMeshBuilder;
 struct FontStyleParam;
 
 //-------------------------------------------------------------------------
@@ -88,6 +89,8 @@ public:
 								const FontChar& chr,
 								Vector2D& curTextPos,
 								Vector2D& cPos, Vector2D& cSize ) = 0;
+
+	virtual void	DebugDraw(CMeshBuilder& meshBuilder) {}
 
 protected:
 	IEqFont*	m_font{ nullptr };

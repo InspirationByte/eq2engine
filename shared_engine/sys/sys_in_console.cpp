@@ -338,6 +338,7 @@ void CEqConsoleInput::Shutdown()
 #endif // IMGUI_ENABLED
 }
 
+#ifdef IMGUI_ENABLED
 static void ImGuiBeginMenuPath(const char* path, bool& selected)
 {
 	char tmpName[128] = { 0 };
@@ -375,6 +376,7 @@ static void ImGuiBeginMenuPath(const char* path, bool& selected)
 	while(depth--)
 		ImGui::EndMenu();
 }
+#endif // IMGUI_ENABLED
 
 void CEqConsoleInput::BeginFrame()
 {

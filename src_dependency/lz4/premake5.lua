@@ -1,5 +1,6 @@
 project "lz4"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 	language "C"
 	includedirs {
 		"./"

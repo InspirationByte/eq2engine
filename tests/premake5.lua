@@ -2,9 +2,9 @@ group "Components"
 
 project "testsCommonLib"
     kind "StaticLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
-		"coreLib", "frameworkLib", "e2Core", "gtest",
+		"coreLib", "frameworkLib", "e2Core", "gtest"
 	}
     files {
 		"tests_common.cpp",
@@ -21,11 +21,12 @@ group ""
 
 project "ds_tests"
     kind "ConsoleApp"
-	unitybuild "on"
+	properties { "unitybuild" }
     uses {
 		"corelib", "frameworkLib", 
 		"e2Core", 
 		"testsCommonLib",
+		"gtest"
 	}
     files {
 		"ds/*.cpp",
@@ -34,13 +35,15 @@ project "ds_tests"
 
 project "scripting_tests"
     kind "ConsoleApp"
-	unitybuild "on"
+	properties { "unitybuild" }
     uses {
 		"corelib", "frameworkLib", 
 		"e2Core", 
 		"testsCommonLib",
 		"scriptLib",
-		"shared_engine"
+		"shared_engine",
+		"gtest",
+		"lua"
 	}
     files {		
 		"scripting/*.cpp",

@@ -21,7 +21,7 @@ void CRenderWorker::Init(RenderWorkerHandler* workHandler, REND_FUNC_TYPE loopFu
 	m_workHandler = workHandler;
 	m_loopFunc = std::move(loopFunc);
 
-	StartWorkerThread("RenderWorkerThread");
+	StartWorkerThread("RenderWorkerThread", TP_ABOVE_NORMAL);
 }
 
 void CRenderWorker::Shutdown()
@@ -50,9 +50,9 @@ int CRenderWorker::WaitForExecute(const char* name, REND_FUNC_TYPE f)
 	}
 
 	ASSERT(!workIt.atEnd());
-
-	SignalWork();
+	
 	while ((*workIt).result == -5000) {
+		SignalWork();
 		Platform_Sleep(0);
 	}
 

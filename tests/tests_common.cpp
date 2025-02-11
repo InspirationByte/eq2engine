@@ -22,7 +22,12 @@ TestAppWrapper::TestAppWrapper(bool enableCore, const char* name, int argc, char
 	: m_enableCore(enableCore)
 {
 	if(m_enableCore)
-		GetCDkCore()->Init(name, argc, argv);
+	{
+		CoreAppInitParameters coreParams;
+		coreParams.appName = name;
+		coreParams.commandLine = ArrayCRef(argv, argc);
+		GetCDkCore()->Init(coreParams);
+	}
 
 	Install_SpewFunction();
 	m_oldAssertHandler = SetAssertHandler(TestsAssertHandler);

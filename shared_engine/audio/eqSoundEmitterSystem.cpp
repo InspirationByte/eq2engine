@@ -85,45 +85,25 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ArrayCRef<ChannelDef> c
 		m_channelTypes.append(channelDefs[i]);
 		g_audioSystem->ResetMixer(channelDefs[i].id);
 	}
-
-	KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
-
-	const char* baseScriptFilePath = soundSettings ? KV_GetValueString(soundSettings->FindSection("EmitterScripts"), 0, nullptr) : nullptr;
-
-	if(baseScriptFilePath == nullptr)
-	{
-		MsgError("InitEFX: EQCONFIG missing Sound:EmitterScripts !\n");
-		return;
-	}
-
-	LoadScriptSoundFile(baseScriptFilePath);
-
 	m_isInit = true;
 }
 
 void CSoundEmitterSystem::Shutdown()
 {
+	FreeAllBanks();
+
 	CScopedMutex m(s_soundEmitterSystemMutex);
-
-	// remove pending sounds
-	m_pendingStartSounds.clear(true);
-
-	for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
-	{
-		CSoundingObject* obj = it.key();
-		obj->StopEmitter(CSoundingObject::ID_ALL, true);
-	}
-
-	m_soundingObjects.clear(true);
-
-	for (auto it = m_allSounds.begin(); !it.atEnd(); ++it)
-	{
-		SoundScriptDesc* script = *it;
-		delete script;
-	}
-	m_allSounds.clear(true);
 	m_channelTypes.clear(true);
+
 	m_isInit = false;
+}
+
+void CSoundEmitterSystem::FreeAllBanks()
+{
+	StopAllSounds();
+
+	CScopedMutex m(s_soundEmitterSystemMutex);
+	m_allSounds.clear(true);
 }
 
 bool CSoundEmitterSystem::IsValidSound(const char* pszName)
@@ -146,24 +126,23 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 	// find the present sound file
 	SoundScriptDesc* script = FindSoundScript(pszName);
-
 	if (!script)
 	{
-		if(snd_scriptsound_showWarnings.GetBool())
-			MsgWarning("PrecacheSound: No sound found with name '%s'\n", pszName);
+		if (snd_scriptsound_showWarnings.GetBool())
+			MsgError("PrecacheSound: script '%s' not loaded\n", pszName);
 		return false;
 	}
 
 	if(script->samples.numElem() > 0)
 		return true;
 
-	for(int i = 0; i < script->soundFileNames.numElem(); i++)
+	EqString soundName;
+	for(EqStringRef name : script->soundFileNames)
 	{
-		EqString soundName;
-		if (script->soundFileNames[i][0] != '$')
-			soundName = SOUND_DEFAULT_PATH + script->soundFileNames[i];
+		if (name[0] != '$')
+			soundName = SOUND_DEFAULT_PATH + name;
 		else
-			soundName = script->soundFileNames[i].ToCString() + 1;
+			soundName = name.ToCString() + 1;
 
 		ISoundSourcePtr sample = g_audioSystem->GetSample(soundName);
 
@@ -183,13 +162,17 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) const
 {
-	const int namehash = StringId24(soundName, true );
+	const uint nameHash = StringId(soundName, true );
+	for (auto bankIt = m_allSounds.begin(); !bankIt.atEnd(); ++bankIt)
+	{
+		auto it = bankIt.value().sounds.find(nameHash);
+		if (!it.atEnd())
+		{
+			return &(*it);
+		}
+	}
 
-	auto it = m_allSounds.find(namehash);
-	if (it.atEnd())
-		return nullptr;
-
-	return *it;
+	return nullptr;
 }
 
 // simple sound emitter
@@ -217,7 +200,6 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	}
 
 	SoundScriptDesc* script = FindSoundScript(ep->name.ToCString());
-
 	if (!script)
 	{
 		if (snd_scriptsound_showWarnings.GetBool())
@@ -233,7 +215,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	if(script->samples.numElem() == 0 && (ep->flags & EMITSOUND_FLAG_FORCE_CACHED))
 	{
 		if(snd_scriptsound_showWarnings.GetBool())
-			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
+			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag on %s!\n", ep->name.ToCString());
 		PrecacheSound(ep->name.ToCString());
 	}
 
@@ -271,6 +253,9 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	SoundEmitterData* edata = &tmpEmit;
 	if(soundingObj)
 	{
+		if (objUniqueId != CSoundingObject::ID_RANDOM)
+			soundingObj->StopEmitter(objUniqueId, true);
+
 		const int usedSounds = soundingObj->GetChannelSoundCount(channelType);
 
 		// if entity reached the maximum sound count for self
@@ -286,7 +271,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	}
 
 	// fill in start params
-	edata->script = script;
+	edata->script.Assign(script);
 	edata->soundingObj = soundingObj;
 	edata->channelType = channelType;
 
@@ -409,7 +394,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		source->UpdateParams(startParams);
 
 #ifdef ENABLE_DEBUG_DRAWING
-		if (snd_scriptsound_debug.GetBool())
+		if (snd_scriptsound_debug.GetBool() && (!m_dbgFilterSound || m_dbgFilterSound == script))
 		{
 			DbgSphere()
 				.Position(startParams.position).Radius(startParams.referenceDistance)
@@ -438,10 +423,23 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		return true;
 	}
 	
-	
 	if (soundSource)
 	{
 		PROF_EVENT("Emitter Switch Source - Destroy");
+
+#ifdef ENABLE_DEBUG_DRAWING
+		if (snd_scriptsound_debug.GetBool() && (!m_dbgFilterSound || m_dbgFilterSound == script))
+		{
+			DbgText3D()
+				.Position(emit->virtualParams.position)
+				.Distance(50.0f)
+				.Time(30.0f)
+				.Name(EqString::Format("emit %x", emit))
+				.Color(color_red)
+				.Text("stop/destroy %s", script->name.ToCString());
+
+		}
+#endif
 
 		// stop and drop the sound
 		if (isVirtual || soundSource->GetState() == IEqAudioSource::STOPPED)
@@ -466,8 +464,9 @@ void CSoundEmitterSystem::StopAllSounds()
 	for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
 	{
 		CSoundingObject* obj = it.key();
-		obj->StopEmitter(CSoundingObject::ID_ALL);
+		obj->StopEmitter(CSoundingObject::ID_ALL, true);
 	}
+	m_soundingObjects.clear(true);
 }
 
 int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqAudioSource::Params& params, CWeakPtr<SoundEmitterData> emitter)
@@ -523,11 +522,12 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
 
 #ifdef ENABLE_DEBUG_DRAWING
-	if (snd_scriptsound_debug.GetBool() && !script->is2d)
+	if (snd_scriptsound_debug.GetBool() && (!g_sounds->m_dbgFilterSound || g_sounds->m_dbgFilterSound == script))
 	{
 		DbgSphere()
 			.Position(params.position).Radius(params.referenceDistance)
 			.Name(EqString::Format("strt emit %x", emitter))
+			.Time(10.0f)
 			.Color(color_white);
 
 		EqString inputParams;
@@ -542,6 +542,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 		DbgText3D()
 			.Position(params.position)
 			.Distance(50.0f)
+			.Time(10.0f)
 			.Name(EqString::Format("strt emit %x", emitter))
 			.Text("update %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), params.volume[0], params.pitch, inputParams.ToCString());
 	}
@@ -651,64 +652,80 @@ void CSoundEmitterSystem::OnRemoveSoundingObject(CSoundingObject* obj)
 //
 // Loads sound scripts
 //
-void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
+void CSoundEmitterSystem::LoadScriptBank(const char* scriptFileName)
 {
+	const uint nameHash = StringId(scriptFileName, true);
+
 	KeyValues kv;
-	if(!kv.LoadFromFile(fileName))
+	if(!kv.LoadFromFile(scriptFileName))
 	{
-		MsgError("*** Error! Failed to open script sound file '%s'!\n", fileName);
+		MsgError("*** Error! Failed to open sound script bank file '%s'!\n", scriptFileName);
 		return;
 	}
 
-	DevMsg(DEVMSG_SOUND, "Loading sound script file '%s'\n", fileName);
+	if (!m_allSounds.find(nameHash).atEnd())
+		return;
+
+	ScriptBank& scriptBank = *m_allSounds.insert(nameHash);
+	scriptBank.name = scriptFileName;
+
+	DevMsg(DEVMSG_SOUND, "Loading sound script bank file '%s'\n", scriptFileName);
 
 	KVSection defaultsSec;
 	for(const KVSection* sec : kv.Keys())
 	{
 		if (sec->IsSection())
 		{
-			if (!CreateSoundScript(sec, &defaultsSec))
-			{
-				ASSERT_FAIL("Error processing %s: sound '%s' cannot be added (already registered?)", fileName, sec->GetName());
-			}
+			CreateSoundScript(scriptBank, *sec, &defaultsSec);
 		}
 		else if (!CString::CompareCaseIns("default", sec->GetName()))
 		{
 			defaultsSec.AddKey(KV_GetValueString(sec), KV_GetValueString(sec, 1));
 		}
-		else if(!CString::CompareCaseIns(sec->GetName(), "include"))
-		{
-			LoadScriptSoundFile(KV_GetValueString(sec));
-		}
 	}
 }
 
-bool CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec)
+void CSoundEmitterSystem::FreeScriptBank(const char* scriptFileName)
 {
-	if (!scriptSection)
-		return false;
+	CScopedMutex m(s_soundEmitterSystemMutex);
+	const uint nameHash = StringId(scriptFileName, true);
+	m_allSounds.remove(nameHash);
+}
 
-	EqString soundName(_Es(scriptSection->name).LowerCase());
+bool CSoundEmitterSystem::CreateSoundScript(ScriptBank& scriptBank, const KVSection& scriptSection, const KVSection* defaultsSec)
+{
+	const EqStringRef soundName = scriptSection.GetName();
+	const uint nameHash = StringId(soundName, true);
 
-	const int namehash = StringId24(soundName, true);
-	if (m_allSounds.contains(namehash))
-		return false;
+	// try finding this sound in loaded banks
+	for (auto bankIt = m_allSounds.begin(); !bankIt.atEnd(); ++bankIt)
+	{
+		const ScriptBank& otherBank = bankIt.value();
+		auto it = otherBank.sounds.find(nameHash);
+		if (!it.atEnd())
+		{
+			ASSERT_FAIL("Bank %s: sound '%s' already exist in bank %s", scriptBank.name.ToCString(), soundName.ToCString(), otherBank.name.ToCString());
+			return false;
+		}
+	}
 
-	SoundScriptDesc* newSound = PPNew SoundScriptDesc(soundName);
-	SoundScriptDesc::ParseDesc(*newSound, scriptSection, defaultsSec);
+	SoundScriptDesc& newSound = *scriptBank.sounds.insert(nameHash);
+	newSound.name = soundName;
 
-	auto sectionGetOrDefault = [scriptSection, defaultsSec](const char* name) {
-		const KVSection* sec = scriptSection->FindSection(name);
+	SoundScriptDesc::ParseDesc(newSound, scriptSection, defaultsSec);
+
+	auto sectionGetOrDefault = [&, defaultsSec](const char* name) {
+		const KVSection* sec = scriptSection.FindSection(name);
 		if (!sec && defaultsSec)
 			sec = defaultsSec->FindSection(name);
 		return sec;
 	};
 
-	newSound->maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
-	newSound->startLoopTime = KV_GetValueFloat(sectionGetOrDefault("startLoopTime"), 0, 0.0f);
-	newSound->stopLoopTime = KV_GetValueFloat(sectionGetOrDefault("stopLoopTime"), 0, 0.0f);
-	newSound->loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
-	newSound->is2d = KV_GetValueBool(sectionGetOrDefault("is2d"), 0, false);
+	newSound.maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
+	newSound.startLoopTime = KV_GetValueFloat(sectionGetOrDefault("startLoopTime"), 0, 0.0f);
+	newSound.stopLoopTime = KV_GetValueFloat(sectionGetOrDefault("stopLoopTime"), 0, 0.0f);
+	newSound.loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
+	newSound.is2d = KV_GetValueBool(sectionGetOrDefault("is2d"), 0, false);
 
 	{
 		const KVSection* chanKey = sectionGetOrDefault("channel");
@@ -716,19 +733,18 @@ bool CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 		if (chanKey)
 		{
 			const char* chanName = KV_GetValueString(chanKey);
-			newSound->channelType = ChannelTypeByName(chanName);
+			newSound.channelType = ChannelTypeByName(chanName);
 
-			if (newSound->channelType == CHAN_INVALID)
+			if (newSound.channelType == CHAN_INVALID)
 			{
-				Msg("Invalid channel '%s' for sound %s\n", chanName, newSound->name.ToCString());
-				newSound->channelType = 0;
+				Msg("Invalid channel '%s' for sound %s\n", chanName, newSound.name.ToCString());
+				newSound.channelType = 0;
 			}
 		}
 		else
-			newSound->channelType = 0;
+			newSound.channelType = 0;
 	}
-
-	m_allSounds.insert(namehash, newSound);
+	
 	return true;
 }
 
@@ -745,8 +761,11 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 
 void CSoundEmitterSystem::GetAllSoundsList(Array<SoundScriptDesc*>& list) const
 {
-	for (auto it = m_allSounds.begin(); !it.atEnd(); ++it)
-		list.append(it.value());
+	for (auto bankIt = m_allSounds.begin(); !bankIt.atEnd(); ++bankIt)
+	{
+		for (auto it = bankIt.value().sounds.begin(); !it.atEnd(); ++it)
+			list.append(&(*it));
+	}
 }
 
 const char* CSoundEmitterSystem::GetScriptName(SoundScriptDesc* desc)

@@ -5,6 +5,10 @@
 // Description: Equilibrium physics powered by Bullet
 //////////////////////////////////////////////////////////////////////////////////
 
+// Bullet headers
+#include <btBulletDynamicsCommon.h>
+#include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
+#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
@@ -216,7 +220,8 @@ struct IWClosestRayResultCB : public btCollisionWorld::ClosestRayResultCallback
 	int m_nNumIgnored;
 };
 
-DkPhysics::DkPhysics() : hBox(btVector3(1,1,1)), hSphere(1), m_WorkDoneSignal(true)
+DkPhysics::DkPhysics() 
+	: m_WorkDoneSignal(true)
 {
 	// 32, yet
 	m_nSceneSize = 32;
@@ -437,23 +442,21 @@ bool DkPhysics::CreateScene()
 	m_solver = sol;
 
 	m_dynamicsWorld = new btSoftRigidDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration);
-
-	m_softBodyWorldInfo.m_sparsesdf.Reset();
-
-	m_softBodyWorldInfo.m_dispatcher = m_dispatcher;
-	m_softBodyWorldInfo.m_broadphase = m_broadphase;
-
-	m_softBodyWorldInfo.air_density		=	(btScalar)1.2;
-	m_softBodyWorldInfo.water_density	=	0;
-	m_softBodyWorldInfo.water_offset	=	0;
-	m_softBodyWorldInfo.water_normal	=	btVector3(0,1,0);
-	m_softBodyWorldInfo.m_gravity.setValue(0,-ph_gravity.GetFloat(),0);
+	m_softBodyWorldInfo = new btSoftBodyWorldInfo;
+	m_softBodyWorldInfo->m_sparsesdf.Reset();
+	m_softBodyWorldInfo->m_dispatcher = m_dispatcher;
+	m_softBodyWorldInfo->m_broadphase = m_broadphase;
+	m_softBodyWorldInfo->air_density		=	(btScalar)1.2;
+	m_softBodyWorldInfo->water_density	=	0;
+	m_softBodyWorldInfo->water_offset	=	0;
+	m_softBodyWorldInfo->water_normal	=	btVector3(0,1,0);
+	m_softBodyWorldInfo->m_gravity.setValue(0,-ph_gravity.GetFloat(),0);
+	m_softBodyWorldInfo->m_sparsesdf.Initialize();
 
 	m_dynamicsWorld->setGravity(btVector3(0,-ph_gravity.GetFloat(),0));
 
 	//m_dynamicsWorld->setDebugDrawer(&s_PhysicsDebugDrawer);
 
-	m_softBodyWorldInfo.m_sparsesdf.Initialize();
 
 	m_dynamicsWorld->getSolverInfo().m_splitImpulse = true;
 	//m_dynamicsWorld->getSolverInfo().m_splitImpulsePenetrationThreshold = -1.0f;
@@ -513,26 +516,12 @@ void DkPhysics::DestroyScene()
 
 	m_triangleMeshes.clear();
 
-	if(m_dynamicsWorld)
-		delete m_dynamicsWorld;
-
-	if(m_solver)
-		delete m_solver;
-	
-	if(m_broadphase)
-		delete m_broadphase;
-
-	if(m_dispatcher)
-		delete m_dispatcher;
-
-	if(m_collisionConfiguration)
-		delete m_collisionConfiguration;
-
-	m_collisionConfiguration = nullptr;
-	m_dispatcher = nullptr;
-	m_broadphase = nullptr;
-	m_solver = nullptr;
-	m_dynamicsWorld = nullptr;
+	SAFE_DELETE(m_dynamicsWorld);
+	SAFE_DELETE(m_solver);
+	SAFE_DELETE(m_broadphase);
+	SAFE_DELETE(m_dispatcher);
+	SAFE_DELETE(m_collisionConfiguration);
+	SAFE_DELETE(m_softBodyWorldInfo);
 }
 
 // Returns true if hardware acceleration is available
@@ -599,7 +588,7 @@ void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &tra
 	btVector3 scaling;
 	ConvertPositionToBullet(scaling, boxSize);
 
-	hBox.setLocalScaling(scaling);
+	btBoxShape hBox(scaling);
 
 	btTransform startTr;
 	startTr.setIdentity();
@@ -649,7 +638,7 @@ void DkPhysics::InternalTraceSphere(const Vector3D &tracestart, const Vector3D &
 
 	IWClosestConvexSweepResultCB convexCallback( strt, end, groupmask, pIgnoreList, numIgnored);
 
-	hSphere.setLocalScaling(btVector3(EQ2BULLET(sphereRadius),EQ2BULLET(sphereRadius),EQ2BULLET(sphereRadius)));
+	btSphereShape hSphere(sphereRadius);
 
 	btTransform startTr;
 	startTr.setOrigin(strt);
@@ -793,7 +782,7 @@ void DkPhysics::Simulate(float dt, int substeps)
 		m_dynamicsWorld->getSolverInfo().m_erp  = ph_erp1.GetFloat();
 
 		m_dynamicsWorld->setGravity(btVector3(0,-ph_gravity.GetFloat(),0));
-		m_softBodyWorldInfo.m_gravity.setValue(0,-ph_gravity.GetFloat(),0);
+		m_softBodyWorldInfo->m_gravity.setValue(0,-ph_gravity.GetFloat(),0);
 		
 		float dt_div = dt/substeps;
 
@@ -830,7 +819,7 @@ void DkPhysics::Simulate(float dt, int substeps)
 		}
 
 
-		m_softBodyWorldInfo.m_sparsesdf.GarbageCollect();
+		m_softBodyWorldInfo->m_sparsesdf.GarbageCollect();
 	}
 #endif
 }
@@ -1244,7 +1233,7 @@ IPhysicsRope* DkPhysics::CreateRope(const Vector3D &pointA, const Vector3D &poin
 
 	DkPhysicsRope* pRope = PPNew DkPhysicsRope;
 
-	pRope->m_pRopeBody = btSoftBodyHelpers::CreateRope(m_softBodyWorldInfo, pA, pB, numSegments, 0);
+	pRope->m_pRopeBody = btSoftBodyHelpers::CreateRope(*m_softBodyWorldInfo, pA, pB, numSegments, 0);
 
 	m_dynamicsWorld->addSoftBody(pRope->m_pRopeBody);
 

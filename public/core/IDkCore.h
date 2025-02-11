@@ -20,15 +20,21 @@ struct CoreDebugSettings
 	bool printMemLeaksAtExit = false;
 };
 
+struct CoreAppInitParameters
+{
+	using CommandLine = ArrayCRef<const char*>;
+	const char*		appConfigName = nullptr;		// config name. if null, defaults to E2.CONFIG
+	const char*		appName = nullptr;
+	CommandLine		commandLine = nullptr;
+};
+
 // DarkTech core interface
 class IDkCore
 {
 public:
 	virtual ~IDkCore() {}
 	
-	virtual bool					Init(const char* pszApplicationName, const char* pszCommandLine) = 0;	// Initializes core
-	virtual bool					Init(const char* pszApplicationName, int argc, char **argv) = 0;	// Initializes core for tools
-
+	virtual bool					Init(const CoreAppInitParameters& initParams) = 0;
 	virtual void					Shutdown() = 0;	// Shutdowns core
 
 	virtual char*					GetApplicationName() const = 0; // returns current application name string

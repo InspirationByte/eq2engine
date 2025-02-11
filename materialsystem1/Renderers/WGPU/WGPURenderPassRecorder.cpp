@@ -90,8 +90,14 @@ void CWGPURenderPassRecorder::SetViewport(const AARectangle& rectangle, float mi
 
 void CWGPURenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle)
 {
-	const IVector2D rectPos = rectangle.GetLeftTop();
-	const IVector2D rectSize = rectangle.GetSize();
+	// clamp scissor to screen size
+	const IAARectangle screenRect(IVector2D(0, 0), GetRenderTargetDimensions());
+	IAARectangle rect;
+	rect.leftTop = clamp(rectangle.leftTop, screenRect.leftTop, screenRect.rightBottom);
+	rect.rightBottom = clamp(rectangle.rightBottom, screenRect.leftTop, screenRect.rightBottom);
+
+	const IVector2D rectPos = rect.GetLeftTop();
+	const IVector2D rectSize = rect.GetSize();
 	wgpuRenderPassEncoderSetScissorRect(m_rhiRenderPassEncoder, rectPos.x, rectPos.y, rectSize.x, rectSize.y);
 }
 

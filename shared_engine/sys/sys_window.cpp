@@ -48,7 +48,6 @@ EQWNDHANDLE Sys_CreateWindow()
 	EQWNDHANDLE handle = nullptr;
 
 #ifdef PLAT_SDL
-
 	int adjustedPosX = SDL_WINDOWPOS_CENTERED;
 	int adjustedPosY = SDL_WINDOWPOS_CENTERED;
 	int adjustedWide = 800;
@@ -58,7 +57,9 @@ EQWNDHANDLE Sys_CreateWindow()
 	Sys_GetWindowConfig(fullscreen, screen, adjustedWide, adjustedTall);
 
 	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+#ifndef PLAT_WIN
 	sdlFlags |= SDL_WINDOW_VULKAN; // fucking SDL or Wayland... can't decide which is worse
+#endif
 	if (fullscreen)
 		sdlFlags |= SDL_WINDOW_FULLSCREEN;
 
@@ -132,7 +133,7 @@ void Host_HandleSDLEvents(SDL_Event* event)
 		{
 			CEqGameControllerSDL::ProcessConnectionEvent(event);
 
-			if(s_bActive && s_bProcessInput)
+			if(s_bProcessInput)
 				InputCommands_SDL(event);
 		}
 	}
@@ -146,7 +147,7 @@ bool Host_Init()
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitor");
 
-	if( SDL_Init(SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
+	if( SDL_Init(SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
 	{
 		ASSERT_MSG( "Failed to init SDL system: %s\n", SDL_GetError());
 		return false;
@@ -170,12 +171,19 @@ void Host_GameLoop()
 {
 	SDL_Event event;
 
+	CEqTimer inputProcessingTimer;
 	do
 	{
 		while(SDL_PollEvent(&event))
 			Host_HandleSDLEvents( &event );
 
-		if (s_bActive || g_pHost->IsPauseAllowed())
+		if (!s_bActive)
+		{
+			s_bProcessInput = false;
+			inputProcessingTimer.GetTime(true);
+		}
+
+		if (s_bActive || !g_pHost->IsPauseAllowed())
 		{
 			g_pHost->Frame();
 		}
@@ -189,6 +197,12 @@ void Host_GameLoop()
 		// or yield
 		if(sys_sleep.GetInt() > 0)
             Platform_Sleep( sys_sleep.GetInt() );
+
+		if (!s_bProcessInput && s_bActive)
+		{
+			if(inputProcessingTimer.GetTime() > 0.25f)
+				s_bProcessInput = true;
+		}
 	}
 	while(g_pHost->GetQuitState() != CGameHost::QUIT_TODESKTOP);
 }

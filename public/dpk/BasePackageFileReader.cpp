@@ -28,18 +28,16 @@ CBasePackageReaderPtr CBasePackageReader::CreateReaderByExtension(const char* pa
 
 bool CBasePackageReader::GetInternalFileName(EqString& pkgFileName, const char* fileName) const
 {
-	EqString fullFilename = EqStringRef(fileName).LowerCase();
-	fnmPathFixSeparators(fullFilename);
-
 	if (m_mountPath.Length())
 	{
-		const int mountPathPos = fullFilename.Find(m_mountPath.ToCString());
+		const int mountPathPos = EqStringRef(fileName).Find(m_mountPath, false);
 		if (mountPathPos > 0 || mountPathPos == -1)
 			return false;
 	}
 
+	const EqStringRef fullFilename(fileName);
+
 	// replace
-	pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
-	DPK_FixSlashes(pkgFileName);
+	pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1).LowerCase();
 	return true;
 }

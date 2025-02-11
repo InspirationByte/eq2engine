@@ -23,9 +23,9 @@ public:
 	EQUI_CLASS(Panel, IUIControl)
 
 	Panel();
-	~Panel();
 
-	virtual void			InitFromKeyValues(const KVSection* sec, bool noClear) override;
+	virtual void			InitFromKeyValues(const KVSection* sec, bool keepElements = false) override;
+	virtual void			Parse(const KVSection* sec) override;
 
 	virtual void			Hide();
 
@@ -39,11 +39,10 @@ public:
 	void					CenterOnScreen();
 
 	// rendering
-	virtual void			Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
+	virtual void			Render(int depth, RenderContextAbstract& context) override;
 protected:
 
-	virtual void			DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
-
+	virtual void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 	bool					ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 
 	ColorRGBA				m_color;
@@ -65,13 +64,8 @@ public:
 	Container() : IUIControl() {}
 	~Container() {}
 
-	void			InitFromKeyValues(const KVSection* sec, bool noClear) override;
-
-	// events
-	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
-	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
-
-	void			DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) {}
+	void			Parse(const KVSection* sec) override;
+	void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override {}
 };
 
 };

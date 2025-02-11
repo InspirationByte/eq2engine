@@ -21,7 +21,7 @@ using namespace Threading;
 CStaticAutoPtr<CStudioCache> g_studioCache;
 static CEqReadWriteLock s_studioCacheRWLock;
 
-DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
+DECLARE_CVAR(job_modelLoader, "1", "Load models in parallel threads", 0);
 DECLARE_CMD(studio_cacheInfo, "Print loaded EGF and motion packages", CV_CHEAT)
 {
 	g_studioCache->PrintLoaded();

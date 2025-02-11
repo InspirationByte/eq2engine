@@ -21,13 +21,8 @@ public:
 	~Label(){}
 
 	// drawn rectangle
-	IAARectangle		GetClientScissorRectangle() const;
-
-	// events
-	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
-	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
-
-	void			DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder);
+	IAARectangle	GetClientScissorRectangle(int depth, const RenderContextAbstract& context) const override;
+	void			DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override;
 };
 
 };

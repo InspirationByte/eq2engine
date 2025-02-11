@@ -10,6 +10,7 @@
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 #include "utils/KeyValues.h"
+#include "utils/CRC32.h"
 #include "texcooker_defs.h"
 
 /*
@@ -206,8 +207,7 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 
 bool CTextureCooker::AddTexture(const EqString& texturePath, const EqString& imageUsage, bool isArray)
 {
-	EqString filename;
-	fnmPathCombine(filename, m_targetProps.sourceMaterialPath, texturePath);
+	EqString filename = fnmPathCombine(m_targetProps.sourceMaterialPath, texturePath);
 	if (!fnmPathHasExt(filename))
 		filename = fnmPathApplyExt(filename, m_targetProps.sourceImageExt);
 
@@ -235,12 +235,12 @@ bool CTextureCooker::CreateArrayImageFile(const Array<EqString>& textureNames, c
 	Array<CImage::PTR_T> imgFrames(PP_SL);
 
 	// load frames
+	EqString texturePathExt;
 	for (const EqString& texName : textureNames)
 	{
 		CImage::PTR_T img = CRefPtr_new(CImage);
 
-		EqString texturePathExt;
-		fnmPathCombine(texturePathExt, m_targetProps.sourceMaterialPath, texName);
+		texturePathExt = fnmPathCombine(m_targetProps.sourceMaterialPath, texName);
 		if (img->Load(fnmPathApplyExt(texturePathExt, m_targetProps.sourceImageExt), 0))
 		{
 			imgFrames.append(img);
@@ -279,8 +279,7 @@ bool CTextureCooker::CreateArrayImageFile(const Array<EqString>& textureNames, c
 	}
 
 	// We need to save to DDS file with DX10 header
-	EqString outFileName;
-	fnmPathCombine(outFileName, m_targetProps.sourceMaterialPath, outputFileName);
+	EqString outFileName = fnmPathCombine(m_targetProps.sourceMaterialPath, outputFileName);
 	outFileName = fnmPathApplyExt(outFileName, "dds");
 
 	IFilePtr file = g_fileSystem->Open(outFileName, FS_OPEN_WRITE, SP_ROOT);
@@ -353,19 +352,15 @@ void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
 	CFileSystemFind fsFind(wildcard, SP_ROOT);
 	while (fsFind.Next())
 	{
-		EqString fileName = fsFind.GetPath();
+		EqStringRef fileName = fsFind.GetPath();
 		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
-			EqString searchTemplate;
-			fnmPathCombine(searchTemplate, searchFolder, fileName, "*");
-
+			const EqString searchTemplate = fnmPathCombine(searchFolder, fileName, "*");
 			SearchFolderForAtlasesAndConvert(searchTemplate);
 		}
 		else if(fnmPathExtractExt(fileName) == s_atlasFileExt)
 		{
-			EqString fullAtlPath;
-			fnmPathCombine(fullAtlPath, searchFolder, fileName);
-			
+			const EqString fullAtlPath = fnmPathCombine(fullAtlPath, searchFolder, fileName);
 			ProcessAtlasFile(fullAtlPath, m_targetProps.sourceMaterialPath);
 		}
 	}
@@ -379,19 +374,15 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 	CFileSystemFind fsFind(wildcard, SP_ROOT);
 	while (fsFind.Next())
 	{
-		EqString fileName = fsFind.GetPath();
+		EqStringRef fileName = fsFind.GetPath();
 		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
-			EqString searchTemplate;
-			fnmPathCombine(searchTemplate, searchFolder, fileName, "*");
-
+			const EqString searchTemplate = fnmPathCombine(searchFolder, fileName, "*");
 			SearchFolderForMaterialsAndGetTextures(searchTemplate);
 		}
 		else if(fnmPathExtractExt(fileName) == s_materialFileExt)
 		{
-			EqString fullMaterialPath;
-			fnmPathCombine(fullMaterialPath, searchFolder, fileName);
-
+			const EqString fullMaterialPath = fnmPathCombine(fullMaterialPath, searchFolder, fileName);
 			ProcessMaterial(fullMaterialPath);
 		}
 	}
@@ -437,14 +428,9 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	LoadMaterialImages(*kvMaterial);
 
 	const EqString atlasFileName = fnmPathApplyExt(localMaterialFileName, s_materialAtlasFileExt);
-	EqString sourceAtlasFileName;
-	fnmPathCombine(sourceAtlasFileName, m_targetProps.sourceMaterialPath, atlasFileName);
-
-	EqString targetMaterialFileName;
-	fnmPathCombine(targetMaterialFileName, m_targetProps.targetFolder, localMaterialFileName);
-
-	EqString targetAtlasFileName;
-	fnmPathCombine(targetAtlasFileName, m_targetProps.targetFolder, atlasFileName);
+	const EqString sourceAtlasFileName = fnmPathCombine(m_targetProps.sourceMaterialPath, atlasFileName);
+	const EqString targetMaterialFileName = fnmPathCombine(m_targetProps.targetFolder, localMaterialFileName);
+	const EqString targetAtlasFileName = fnmPathCombine(m_targetProps.targetFolder, atlasFileName);
 
 	// make target material file path
 	g_fileSystem->MakeDir(fnmPathStripName(targetMaterialFileName), SP_ROOT);
@@ -465,15 +451,12 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 {
 	// before this, create folders...
-	EqString sourceFilename;
-	fnmPathCombine(sourceFilename, m_targetProps.sourceMaterialPath, textureInfo.sourcePath);
+	EqString sourceFilename = fnmPathCombine(m_targetProps.sourceMaterialPath, textureInfo.sourcePath);
 	
 	if (!fnmPathHasExt(sourceFilename))
 		sourceFilename = fnmPathApplyExt(sourceFilename, m_targetProps.sourceImageExt);
 
-	EqString targetFilename;
-	fnmPathCombine(targetFilename, m_targetProps.targetFolder, fnmPathApplyExt(textureInfo.sourcePath, "dds"));
-	
+	const EqString targetFilename = fnmPathCombine(m_targetProps.targetFolder, fnmPathApplyExt(textureInfo.sourcePath, "dds"));
 	const EqString targetFilePath = fnmPathStripName(targetFilename).TrimChar(CORRECT_PATH_SEPARATOR);
 
 	// make image folder
@@ -624,8 +607,7 @@ void CTextureCooker::Execute()
 	// perform batch conversion
 	Msg("Material source path: '%s'\n", m_targetProps.sourceMaterialPath.ToCString());
 
-	EqString searchTemplate;
-	fnmPathCombine(searchTemplate, m_targetProps.sourceMaterialPath, "*");
+	const EqString searchTemplate = fnmPathCombine(m_targetProps.sourceMaterialPath, "*");
 
 	// convert atlas sources first
 	SearchFolderForAtlasesAndConvert(searchTemplate);

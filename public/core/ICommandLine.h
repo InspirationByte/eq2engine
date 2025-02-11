@@ -19,9 +19,9 @@ using CommandFilterFn = bool (*)(const ConCommandBase* pCmd, ArrayCRef<EqString>
 class ICommandLine : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("CORE_CommandLine_003")
+	CORE_INTERFACE("CORE_CommandLine_004")
 
-	virtual void			Init(const char* pszCommandLine) = 0;
+	virtual void			Init(ArrayCRef<const char*> commandLine) = 0;
 	virtual void			DeInit() = 0;
 
 	virtual void			ExecuteCommandLine(CommandFilterFn func = nullptr) const = 0;

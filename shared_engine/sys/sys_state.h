@@ -36,6 +36,9 @@ public:
 	// @to - used to transfer data
 	virtual void	OnLeave( CAppStateBase* to ) {}
 
+	// called before update and update events
+	virtual void	PreUpdate(float fDt) {};
+
 	// when 'false' returned the next state goes on
 	virtual bool	Update( float fDt ) = 0;
 
@@ -90,15 +93,15 @@ namespace eqAppStateMng
 	int					GetCurrentStateType();
 	void				SetCurrentStateType(int stateType);
 
+	int					GetNextStateType();
+	CAppStateBase*		GetNextState();
+
 	void				ChangeStateType(int stateType);
 
 	void				ScheduleNextState(CAppStateBase* state);
 	void				ScheduleNextStateType(int stateType);
 
 	// updates and manages the states
-	void				PreUpdateState(float fDt);
-	void				PostUpdateState(float fDt);
-
 	bool				UpdateStates(float fDt);
 	void				GetStateMouseCursorProperties(bool& visible, bool& centered);
 

@@ -259,8 +259,8 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 
 uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int packageFlags)
 {
-	EqString fileNameString = fileName;
-	DPK_FixSlashes(fileNameString);
+	const EqStringRef fileNameString = fileName;
+
 	const int filenameHash = DPK_FilenameHash(fileNameString, DPK_VERSION);
 	auto it = m_files.find(filenameHash);
 	if (!it.atEnd())	// already added?
@@ -279,8 +279,7 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int pac
 
 	if (m_skipPacking)
 	{
-		EqString nonPackedPath;
-		fnmPathCombine(nonPackedPath, m_packFileName, fileName);
+		const EqString nonPackedPath = fnmPathCombine(m_packFileName, fileName);
 
 		g_fileSystem->MakeDir(fnmPathStripName(nonPackedPath), m_packFilePath);
 		IFilePtr writeFile = g_fileSystem->Open(nonPackedPath, FS_OPEN_WRITE, m_packFilePath);
@@ -307,8 +306,7 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int pac
 #if 0
 IVirtualStream* CDPKFileWriter::Create(const char* fileName, bool skipCompression = false)
 {
-	EqString fileNameString = fileName;
-	DPK_FixSlashes(fileNameString);
+	EqStringRef fileNameString = fileName;
 	const int filenameHash = DPK_FilenameHash(fileNameString, DPK_VERSION);
 
 	auto it = m_files.find(filenameHash);

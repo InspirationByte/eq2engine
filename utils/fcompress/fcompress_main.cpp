@@ -324,6 +324,8 @@ int CFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* alia
 	int fileCount = 0;
 
 	{
+		EqString targetFilename;
+
 		// first walk files
 		OSFindData fileFind;
 		if (fileFind.Init(nonWildcardFolder + "/" + (isRecursiveWildcard ? (wildcard.ToCString() + 1) : wildcard.ToCString())))
@@ -335,8 +337,7 @@ int CFileListBuilder::AddDirectory(const char* pathAndWildcard, const char* alia
 
 				const char* name = fileFind.GetCurrentPath();
 
-				EqString targetFilename;
-				fnmPathCombine(targetFilename, aliasPrefixTrimmed, name);
+				targetFilename = fnmPathCombine(aliasPrefixTrimmed, name);
 				if (!fileFind.IsDirectory())
 				{
 					if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), name), targetFilename))
@@ -582,7 +583,10 @@ int main(int argc, char **argv)
 
 	Install_SpewFunction();
 
-	g_eqCore->Init("fcompress",argc,argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "fcompress";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	g_eqCore->Init(appInitParams);
 
 	Msg("FCompress - Equilibrium PakFile generator\n");
 	Msg(" Version 2.0\n");

@@ -22,7 +22,7 @@ extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
 
-#define WGPU_INSTANCE_SPIN { g_renderWorker.SignalWork(); Threading::YieldCurrentThread(); }
+#define WGPU_INSTANCE_SPIN { g_renderWorker.SignalWork(); Platform_Sleep(0); }
 
 class CWGPURenderAPI : public ShaderAPI_Base
 {
@@ -112,6 +112,7 @@ protected:
 	int							LoadShaderPackage(const char* filename);
 
 	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
+	WGPUInstance				m_rhiInstance{ nullptr };
 	WGPUDevice					m_rhiDevice{ nullptr };
 	WGPUQueue					m_rhiQueue{ nullptr };
 	bool						m_deviceLost{ false };

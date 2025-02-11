@@ -1,6 +1,7 @@
-project "gtest_main"
+project "gtest"
 	language "C++"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 
 	includedirs { "./", "include" }
 
@@ -8,5 +9,5 @@ project "gtest_main"
 	removefiles  { "src/gtest_main.cc", "src/gtest-all.cc" }
 	
 usage "gtest"
-	includedirs { "include" }
-	links { "gtest_main" }
+	includedirs { "./", "include" }
+	links { "gtest" }

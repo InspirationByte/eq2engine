@@ -24,11 +24,13 @@ struct FontStyleParam;
 #define EQUI_CLASS( className, baseClassName )					\
 	using ThisClass = className;								\
 	using BaseClass = baseClassName;							\
-	const char*	GetClassname() const { return ThisClass::Classname(); }		\
+	virtual const char*	GetClassname() const override { return ThisClass::Classname(); }		\
 	static const char* Classname() { return #className; }		\
 
 namespace equi
 {
+static constexpr int MAX_CONTROL_DEPTH = 48;
+
 struct EvtHandler;
 class IUIControl;
 using EvtCallback = EqFunction<int(IUIControl*, const EvtHandler&, void*)>;
@@ -41,40 +43,55 @@ struct EvtHandler
 	int				uid{ 0 };
 };
 
-struct Transform
+// TODO: rewrite to make it more compact
+using TransformStack = FixedArray<Matrix4x4, MAX_CONTROL_DEPTH>;
+
+struct RenderContextAbstract
 {
-	float					rotation { 0.0f };
-	Vector2D				translation { 0.0f };
-	Vector2D				scale { 1.0f };
+	RenderContextAbstract(IGPURenderPassRecorder* recorder, TransformStack& transformStack)
+		: rendPassRecorder(recorder)
+		, transformStack(transformStack)
+	{
+	}
+	
+	TransformStack&			transformStack;
+	IGPURenderPassRecorder* rendPassRecorder{ nullptr };
 };
 
-struct FontProps
+struct ControlRenderContext : public RenderContextAbstract
 {
-	IEqFont*				font { nullptr };
-	Vector2D				fontScale { 1 };
-	ColorRGBA				textColor { 1.0f };
-	float					textWeight { 0.0f };
-	int						textAlignment { TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP };
+	ControlRenderContext(IGPURenderPassRecorder* recorder)
+		: RenderContextAbstract(recorder, transformStackStorage)
+	{
+		transformStack.append(identity4);
+	}
 
-	ColorRGBA				shadowColor { 0.0f, 0.0f, 0.0f, 0.7f };
-	float					shadowOffset { 1.0f };
-	float					shadowWeight { 0.01f };
-
-	bool					monoSpace { false };
+	TransformStack transformStackStorage;
 };
+
+template <class T>
+inline T* DynamicCast(IUIControl* control);
 
 //-------------------------------------------------------------
 // EqUI control interface
 // use equi::DynamicCast to convert type
 //-------------------------------------------------------------
-class IUIControl
+class IUIControl : public WeakRefObject<IUIControl>
 {
 	friend class CUIManager;
 public:
 	IUIControl();
 	virtual ~IUIControl();
 
-	virtual void				InitFromKeyValues(const KVSection* sec, bool noClear = false);
+	template<typename T>
+	const T*					As() const {return equi::DynamicCast<T>(this); }
+
+	template<typename T>
+	T*							As() { return equi::DynamicCast<T>(this); }
+
+	virtual void				InitFromKeyValues(const KVSection* sec, bool keepElements = false);
+
+	virtual void				Parse(const KVSection* sec);
 
 	// name and type
 	const char*					GetName() const						{return m_name.ToCString();}
@@ -96,6 +113,12 @@ public:
 
 	virtual void				SetSelfVisible(bool bVisible)		{m_selfVisible = bVisible;}
 	virtual bool				IsSelfVisible() const				{return m_selfVisible;}
+
+	virtual void				SetClipsChilds(bool bEnable)		{ m_clipChilds = bEnable; }
+	virtual bool				IsClipsChilds() const				{return m_clipChilds;}
+
+	virtual void				SetClipTransform(bool bEnable)		{ m_clipTransform = bEnable; }
+	virtual bool				HasClipTransform() const			{return m_clipTransform;}
 
 	// activation
 	virtual void				Enable(bool value)					{m_enabled = value;}
@@ -127,9 +150,6 @@ public:
 	// drawn rectangle
 	virtual IAARectangle		GetClientRectangle() const;
 
-	// for text only
-	virtual IAARectangle		GetClientScissorRectangle() const { return GetClientRectangle(); }
-
 	// returns the scaling of element
 	Vector2D					CalcScaling() const;
 
@@ -141,7 +161,10 @@ public:
 	void						RemoveChild(IUIControl* pControl, bool destroy = true);
 	IUIControl*					FindChild( const char* pszName );
 	IUIControl*					FindChildRecursive( const char* pszName );
+	IUIControl*					Get( const char* pathToElem);
 	void						ClearChilds( bool destroy = true );
+	void						ClearAll( bool destroyChilds = true );
+	void						ForEachChild(const EqFunction<bool(IUIControl* child)>& childFunc);
 
 	IUIControl*					GetParent() const						{ return m_parent; }
 
@@ -163,7 +186,9 @@ public:
 	virtual const char*			GetClassname() const = 0;
 
 	// rendering
-	virtual void				Render(int depth, IGPURenderPassRecorder* rendPassRecorder);
+	virtual void				Render(int depth, RenderContextAbstract& context);
+
+	virtual IUIControl*			HitTest(const IVector2D& point) const;
 
 	// Events
 	int							AddEventHandler(const char* pszName, EvtCallback&& cb);
@@ -173,37 +198,71 @@ public:
 	int							RaiseEvent(const char* name, void* userData);
 	int							RaiseEventUid(int uid, void* userData);
 
+	virtual IAARectangle		GetClientScissorRectangle(int depth, const RenderContextAbstract& context) const;
+	static IAARectangle			TransformScissorRectangle(const IAARectangle& rect, const Matrix4x4& transform);
+	static IAARectangle			ClipScissorRectangle(const IAARectangle& rect, const IAARectangle& parentRect);
+
 protected:
-	void						InitChildItems(const KVSection* sec, bool noClear = false);
+	struct Transform
+	{
+		float		rotation{ 0.0f };
+		Vector2D	translation{ 0.0f };
+		Vector2D	scale{ 1.0f };
+	};
+
+	struct FontProps
+	{
+		IEqFont*	font{ nullptr };
+		Vector2D	fontScale{ 1 };
+		ColorRGBA	textColor{ 1.0f };
+		float		textWeight{ 0.0f };
+		int			textAlignment{ TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP };
+
+		ColorRGBA	shadowColor{ 0.0f, 0.0f, 0.0f, 0.7f };
+		float		shadowOffset{ 1.0f };
+		float		shadowWeight{ 0.01f };
+
+		bool		monoSpace{ false };
+	};
+
+	using FontCollection = Map<uint, FontProps>;
+
+	const FontProps*			FindFont(const char* name, const char* requestedBy) const;
+
+	// rendering
+	virtual void				RenderChilds(int depth, RenderContextAbstract& context);
+
+	void						InitFonts(const KVSection* sec);
+	void						InitChildItems(const KVSection* sec, bool keepElements = false);
 
 	void						ResetSizeDiffs();
-	virtual void				DrawSelf(const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder) = 0;
+	virtual void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) = 0;
 
 	static int					CommandCb(IUIControl* control, const EvtHandler& event, void* userData);
 
-	virtual IUIControl*			HitTest(const IVector2D& point) const;
-
 	// events
-	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
-	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
+	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags) { return true; }
+	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
 
 	IUIControl*					m_parent{ nullptr };
 	List<IUIControl*>			m_childs{ PP_SL };		// child panels
 	Array<EvtHandler>			m_eventCallbacks{ PP_SL };
-
-	EqString					m_name;
-	EqWString					m_label;
-
+	FontCollection				m_fontCollection{ PP_SL };
 	FontProps					m_font;
+
 	Transform					m_transform;
 
-	IVector2D					m_position { 0 };
-	IVector2D					m_size { 64 };
-	IVector2D					m_sizeReal { 64 };
-
+	IVector2D					m_position{ 0 };
+	IVector2D					m_size{ 64 };
+	IVector2D					m_sizeReal{ 64 };
 	// for anchors
-	Vector2D					m_sizeDiff { 0.0f };
-	Vector2D					m_sizeDiffPerc { 1.0f };
+	Vector2D					m_sizeDiff{ 0.0f };
+	Vector2D					m_sizeDiffPerc{ 1.0f };
+
+	EqString					m_name;
+	EqString					m_label;
+	EqWString					m_labelTextValue;
+	EqWStringRef				m_labelText;
 
 	int							m_alignment { UI_ALIGN_LEFT | UI_ALIGN_TOP };
 	int							m_anchors { 0 };
@@ -212,10 +271,12 @@ protected:
 	bool						m_visible{ true };
 	bool						m_selfVisible{ true };
 	bool						m_enabled{ true };
+	bool						m_clipChilds{ true };
+	bool						m_clipTransform{ true };
 };
 
 template <class T> 
-T* DynamicCast(IUIControl* control)
+inline T* DynamicCast(IUIControl* control)
 {
 	if(control == nullptr)
 		return nullptr;

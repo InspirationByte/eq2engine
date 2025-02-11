@@ -608,7 +608,7 @@ static InputKeyMap s_keyMapList[] =
 };
 
 // Convert string to key
-static int KeyStringToKeyIndex(const char *str)
+static int KeyMapIndex(const char *str)
 {
 	if (!str)
 		return -1;
@@ -618,14 +618,27 @@ static int KeyStringToKeyIndex(const char *str)
 	{
 		if (!CString::CompareCaseIns(str, kn->name))
 			return keyind;
-
 		keyind++;
 	}
 
 	return -1;
 }
 
-static const char* KeyIndexToString(int key)
+static int KeyStringToKeyCode(const char* str)
+{
+	if (!str)
+		return -1;
+
+	for (InputKeyMap* kn = s_keyMapList; kn->name; kn++)
+	{
+		if (!CString::CompareCaseIns(str, kn->name))
+			return kn->keynum;
+	}
+
+	return -1;
+}
+
+static const char* KeyCodeToString(int key)
 {
 	for(InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
@@ -636,12 +649,12 @@ static const char* KeyIndexToString(int key)
 	return "UNKNOWN";
 }
 
-static const char* KeyIndexToHumanReadableString(int key)
+static const char* KeyCodeToHumanReadableString(int key)
 {
 	for (InputKeyMap* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (kn->keynum == key)
-			return kn->hrname;
+			return kn->hrname ? kn->hrname : kn->name;
 	}
 
 	return "UNKNOWN";

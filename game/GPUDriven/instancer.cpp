@@ -2,6 +2,7 @@
 #include "instancer.h"
 
 INIT_GPU_INSTANCE_COMPONENT(InstTransform, "InstanceUtils")
+INIT_GPU_INSTANCE_COMPONENT(InstScale, "InstanceUtils")
 
 const VertexLayoutDesc& GetGPUInstanceVertexLayout()
 {
@@ -24,7 +25,8 @@ void DemoGRIMRenderer::FillBindGroupLayoutDesc(BindGroupLayoutDesc& bindGroupLay
 {
 	Builder<BindGroupLayoutDesc>(bindGroupLayout)
 		.Buffer("InstRoot", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_STORAGE_READONLY)
-		.Buffer("InstTransform", 1, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_STORAGE_READONLY);
+		.Buffer("InstTransform", 1, SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY)
+		.Buffer("InstScale", 2, SHADERKIND_VERTEX, BUFFERBIND_STORAGE_READONLY);
 }
 
 void DemoGRIMRenderer::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayout* pipelineLayout, IGPUBindGroupPtr& outBindGroup, uint& lastUpdateToken) const
@@ -38,6 +40,7 @@ void DemoGRIMRenderer::GetInstancesBindGroup(int bindGroupIdx, IGPUPipelineLayou
 		.GroupIndex(bindGroupIdx)
 		.Buffer(0, m_instAllocator.GetRootBuffer())
 		.Buffer(1, static_cast<DemoGRIMInstanceAllocator&>(m_instAllocator).GetComponentPool<InstTransform>().GetBuffer())
+		.Buffer(2, static_cast<DemoGRIMInstanceAllocator&>(m_instAllocator).GetComponentPool<InstScale>().GetBuffer())
 		.End();
 	outBindGroup = g_renderAPI->CreateBindGroup(pipelineLayout, bindGroupDesc);
 }

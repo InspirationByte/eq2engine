@@ -28,9 +28,9 @@ Image::~Image()
 {
 }
 
-void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
+void Image::Parse(const KVSection* sec )
 {
-	BaseClass::InitFromKeyValues(sec, noClear);
+	BaseClass::Parse(sec);
 
 	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
 
@@ -69,13 +69,19 @@ void Image::InitFromKeyValues(const KVSection* sec, bool noClear )
 void Image::SetMaterial(const char* materialName)
 {
 	m_uvRegion = AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
+	SetMaterialInternal(g_matSystem->GetMaterial(materialName));
+}
 
-	m_material = g_matSystem->GetMaterial(materialName);
+void Image::SetMaterialInternal(IMaterialPtr material)
+{
+	m_material = material;
 	g_matSystem->QueueLoading(m_material);
 }
 
 void Image::SetAtlasImage(const char* materialAtlasName, const char* imageName)
 {
+	const EqStringRef atlasImg = imageName ? EqStringRef(imageName) : EqStringRef(m_atlasImageName);
+
 	SetMaterial(materialAtlasName);
 	if (!m_material->GetAtlas())
 	{
@@ -83,11 +89,23 @@ void Image::SetAtlasImage(const char* materialAtlasName, const char* imageName)
 		return;
 	}
 
-	const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(imageName);
+	const AtlasEntry* entry = m_material->GetAtlas()->FindEntry(atlasImg);
 	if (entry)
 		m_uvRegion = entry->rect;
 	else
-		MsgError("EqUI error: image %s - no atlas entry '%s' in '%s'\n", m_name.ToCString(), imageName, materialAtlasName);
+		MsgError("EqUI error: image %s - no atlas entry '%s' in '%s'\n", m_name.ToCString(), atlasImg.ToCString(), materialAtlasName);
+
+	m_atlasImageName = atlasImg;
+}
+
+const char* Image::GetMaterialName() const
+{
+	return m_material->GetName();
+}
+
+const char* Image::GetAtlasImageName() const
+{
+	return m_atlasImageName;
 }
 
 void Image::SetColor(const ColorRGBA &color)
@@ -113,7 +131,7 @@ void Image::SetUVRegion(const AARectangle& rect)
 	m_uvRegion = AARectangle(rect.leftTop * invSize, rect.rightBottom * invSize);
 }
 
-void Image::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void Image::DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)
 {
 	AARectangle uvRect = m_uvRegion;
 	if (m_imageFlags & FLIP_X)

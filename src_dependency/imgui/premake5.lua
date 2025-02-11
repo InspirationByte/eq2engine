@@ -1,5 +1,6 @@
 project "imgui"
 	kind "StaticLib"
+	properties	{ "thirdpartylib" }
 
 	includedirs {
 		"./",
@@ -12,6 +13,7 @@ project "imgui"
 	}
 
 usage "imgui"
+	links { "imgui" }
 	includedirs {
 		"./",
 	}

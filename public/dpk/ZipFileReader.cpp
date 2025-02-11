@@ -144,12 +144,10 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 			warnAboutCompression = true;
 		}
 
-		EqString zipFilePath = path;
-		DPK_FixSlashes(zipFilePath);
-		const int nameHash = StringId24(zipFilePath, true);
+		const int nameHash = DPK_FilenameHash(path, true);
 
 		ZFileInfo& zf = *m_files.insert(nameHash);
-		zf.fileName = zipFilePath;
+		zf.fileName = path;
 		unzGetFilePos(zip, (unz_file_pos*)&zf.filePos);
 
 		unzGoToNextFile(zip);

@@ -64,9 +64,9 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 		IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 		const SoundScriptDesc* script = emitter->script;
 
-		if (emitter->soundSource != nullptr)
+		if (!script || emitter->soundSource != nullptr)
 		{
-			needDelete = virtualParams.releaseOnStop && (emitter->soundSource->GetState() == IEqAudioSource::STOPPED);
+			needDelete = !script || virtualParams.releaseOnStop && (emitter->soundSource->GetState() == IEqAudioSource::STOPPED);
 		}
 		else
 		{

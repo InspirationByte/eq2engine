@@ -30,6 +30,7 @@
 #include "core/ICommandLine.h"
 #include "core/ILocalize.h"
 #include "core/platform/OSFindData.h"
+#include "utils/CRC32.h"
 
 #include "utils/KeyValues.h"
 #include "FileSystem.h"
@@ -152,17 +153,13 @@ IFilePtr CFlatFileReader::Open(const char* filename, int modeFlags)
 	if (modeFlags != VS_OPEN_READ)
 		return nullptr;
 
-	EqString filePath;
-	fnmPathCombine(filePath, m_packagePath, filename);
-
+	EqString filePath = fnmPathCombine(m_packagePath, filename);
 	return g_fileSystem->Open(filePath, FS_OPEN_READ);
 }
 
 bool CFlatFileReader::FileExist(const char* filename) const
 {
-	EqString filePath;
-	fnmPathCombine(filePath, m_packagePath, filename);
-
+	EqString filePath = fnmPathCombine(m_packagePath, filename);
 	return g_fileSystem->FileExist(filePath);
 }
 
@@ -431,6 +428,8 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 		if (isWrite)
 			return false;
 
+		const EqStringRef filePathNoBase = filePath.ToCString() + m_basePath.Length();
+
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
@@ -440,7 +439,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 				continue;
 
 			EqString pkgFileName;
-			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + m_basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePathNoBase))
 				continue;
 
 			// package readers do not support base path, get rid of it
@@ -543,6 +542,8 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		if (access(filePath, F_OK) != -1)
 			return true;
 
+		const EqStringRef filePathNoBase = filePath.ToCString() + m_basePath.Length();
+
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
@@ -552,7 +553,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 				continue;
 
 			EqString pkgFileName;
-			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + m_basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePathNoBase))
 				continue;
 
 			// package readers do not support base path, get rid of it
@@ -572,13 +573,13 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 	switch (search)
 	{
 		case SP_DATA:
-			fnmPathCombine(searchPath, m_basePath, m_dataDir);
+			searchPath = fnmPathCombine(m_basePath, m_dataDir);
 			break;
 		case SP_MOD:
 			if(directoryId == -1) // default write path
-				fnmPathCombine(searchPath, m_basePath, GetCurrentGameDirectory());
+				searchPath = fnmPathCombine(m_basePath, GetCurrentGameDirectory());
 			else
-				fnmPathCombine(searchPath, m_basePath, m_directories[directoryId]->path);
+				searchPath = fnmPathCombine(m_basePath, m_directories[directoryId]->path);
 			break;
 		case SP_ROOT:
 			searchPath = m_basePath;
@@ -599,15 +600,16 @@ static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
 EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const
 {
 	EqString fullPath;
-
 	const bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
-
-	if (!isAbsolutePath)
-		fnmPathCombine(fullPath, GetSearchPath(search), dirOrFileName);
-	else
+	if (isAbsolutePath)
+	{
 		fullPath = dirOrFileName;
-
-	fnmPathFixSeparators(fullPath);
+		fnmPathFixSeparators(fullPath);
+	}
+	else
+	{
+		fullPath = fnmPathCombine(GetSearchPath(search), dirOrFileName);
+	}
 
 	return fullPath;
 }
@@ -652,14 +654,14 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	if (isAbsolutePath)
 		flags = SP_ROOT;
 
+	EqString filePath;
+
 	// First we checking mod directory
 	if (flags & SP_MOD)
 	{
 		for (const SearchPathInfo* spInfo : m_directories)
 		{
-			EqString filePath;
-			fnmPathCombine(filePath, m_basePath, spInfo->path, fileName);
-
+			filePath = fnmPathCombine(m_basePath, spInfo->path, fileName);
 #ifndef _WIN32
 			const int nameHash = FSStringId(filePath);
 			const auto it = spInfo->pathToFileMapping.find(nameHash);
@@ -678,10 +680,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	//Then we checking data directory
 	if (flags & SP_DATA)
 	{
-		EqString filePath;
-		fnmPathCombine(filePath, m_basePath, m_dataDir, fileName);
-		fnmPathFixSeparators(filePath);
-
+		filePath = fnmPathCombine(m_basePath, m_dataDir, fileName);
 		if (func(filePath, SP_DATA, flags, false))
 			return true;
 	}
@@ -690,15 +689,13 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	// not adding basepath to this
 	if (flags & SP_ROOT)
 	{
-		EqString filePath;
-
 		if(isAbsolutePath)
 		{
 			filePath = fileName;
 			fnmPathFixSeparators(filePath);
 		}
 		else
-			fnmPathCombine(filePath, m_basePath, fileName);
+			filePath = fnmPathCombine(m_basePath, fileName);
 		
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
 		if (func(filePath, SP_ROOT, flags, true))
@@ -779,6 +776,8 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 			return true;
 		}
 
+		const EqStringRef filePathNoBase = filePath.ToCString() + m_basePath.Length();
+
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
@@ -787,7 +786,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 				continue;
 
 			EqString pkgFileName;
-			if (!fsPacakage->GetInternalFileName(pkgFileName, filePath.ToCString() + m_basePath.Length()))
+			if (!fsPacakage->GetInternalFileName(pkgFileName, filePathNoBase))
 				continue;
 
 			// trying to open package file inside package (embedded DPK)
@@ -819,7 +818,7 @@ void CFileSystem::MapFiles(SearchPathInfo& pathInfo)
 	Array<EqString> openSet(PP_SL);
 	openSet.reserve(5000);
 
-	fnmPathCombine(openSet.append(), m_basePath, pathInfo.path);
+	openSet.append(fnmPathCombine(m_basePath, pathInfo.path));
 
 	while (openSet.numElem())
 	{
@@ -938,7 +937,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 		while (findData->dirIndex < m_directories.numElem())
 		{
 			fsBaseDir = GetSearchPath(SP_MOD, findData->dirIndex++);
-			fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
+			searchWildcard = fnmPathCombine(fsBaseDir, findData->wildcard);
 			if (findData->osFind.Init(searchWildcard))
 				return true;
 
@@ -953,7 +952,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 	{
 		findData->searchPaths &= ~SP_DATA;
 		fsBaseDir = GetSearchPath(SP_DATA, -1);
-		fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
+		searchWildcard = fnmPathCombine(fsBaseDir, findData->wildcard);
 		if (findData->osFind.Init(searchWildcard))
 			return true;
 	}
@@ -963,7 +962,7 @@ bool CFileSystem::InitNextPath(DKFINDDATA* findData) const
 	{
 		findData->searchPaths &= ~SP_ROOT;
 		fsBaseDir = GetSearchPath(SP_ROOT, -1);
-		fnmPathCombine(searchWildcard, fsBaseDir, findData->wildcard);
+		searchWildcard = fnmPathCombine(fsBaseDir, findData->wildcard);
 		if (findData->osFind.Init(searchWildcard))
 			return true;
 	}

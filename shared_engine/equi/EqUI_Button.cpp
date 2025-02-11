@@ -20,7 +20,7 @@ Button::Button() : m_state(false)
 
 }
 
-void Button::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void Button::DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)
 {
 	ColorRGBA btnColor(0.8f);
 
@@ -35,7 +35,7 @@ void Button::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassR
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);
 
 	// draw label
-	GetFont()->SetupRenderText(m_label.ToCString(), pos, style, rendPassRecorder);
+	GetFont()->SetupRenderText(m_labelText, pos, style, rendPassRecorder);
 }
 
 // events

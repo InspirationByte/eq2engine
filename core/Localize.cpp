@@ -134,7 +134,7 @@ void CLocalize::ReloadLanguageFiles()
 			continue;
 
 		// de-localize token
-		token.m_token.Clear();
+		token.m_text.Empty();
 		AnsiUnicodeConverter(token.m_text, token.m_token);
 	}
 

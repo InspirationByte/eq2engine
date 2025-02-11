@@ -97,7 +97,7 @@ struct TerrainSpline : public Spline
 		vehicleZoneNameHash = value;
 	}
 
-	Vector2D GetPoint(int index, const Vector2D& from, const EqString& str)
+	Vector2D GetPoint(const esl::ScriptState& scriptState, int index, const Vector2D& from, const EqString& str)
 	{ 
 		ASSERT(str.Length() > 0);
 		//MsgWarning("TerrainSpline::GetPoint called, arg %d, vehicleZoneNameHash = %d, from = %.2f, %.2f, %s\n", index, vehicleZoneNameHash, from.x, from.y, str.ToCString());
@@ -201,8 +201,7 @@ LuaStateTest::LuaStateTest()
 
 	// TODO: move this to esl::InitState()
 	esl::ScriptState state(m_instance);
-	state.RegisterClass<esl::LuaEvent>();
-	state.RegisterClass<esl::LuaEvent::Handle>();
+	esl::LuaEvent::Bind(state);
 
 	state.RegisterClass<Vector2D>();
 	state.RegisterClass<Vector3D>();
@@ -212,8 +211,14 @@ LuaStateTest::LuaStateTest()
 	state.RunChunk(R"(
 
 function EXPECT_EQ(val, exp)
-	if val ~= exp then
+	if not (val == exp) then
 		error("expected: " .. tostring(exp) .. ", got " .. tostring(val))
+	end
+end
+
+function EXPECT_TRUE(val)
+	if not val then
+		error("expected: true, got " .. tostring(val))
 	end
 end
 
@@ -242,7 +247,7 @@ LuaStateTest::~LuaStateTest()
   if (const ::testing::AssertionResult gtest_ar_ =              \
 	::testing::AssertionResult(!state.RunChunk(expression)));    \
   else                                                          \
-	GTEST_NONFATAL_FAILURE_(expression) << esl::runtime::GetLastError(state)
+	GTEST_NONFATAL_FAILURE_(expression) << "Lua chunk succeeded when it should have been failed"
 
 //-------------------------------------------------------
 
@@ -286,7 +291,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<Spline>::GetTypeInfo();
 
-		EXPECT_EQ(typeInfo.isByVal, false);
+		EXPECT_NE(typeInfo.pushType, esl::BY_VALUE);
 
 		EXPECT_EQ(typeInfo.members[0].type, esl::MEMB_DTOR) << "Destructor must be included and be first";
 
@@ -320,7 +325,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<TerrainSpline>::GetTypeInfo();
 
-		EXPECT_EQ(typeInfo.isByVal, false);
+		EXPECT_NE(typeInfo.pushType, esl::BY_VALUE);
 
 		// TEST: base class matching
 		EXPECT_EQ(typeInfo.baseGetter().className, typeInfo.baseClassName);
@@ -338,7 +343,7 @@ TEST(EQSCRIPT_TESTS, TestBinder)
 	{
 		esl::TypeInfo typeInfo = esl::ScriptClass<Vector2D>::GetTypeInfo();
 
-		EXPECT_EQ(typeInfo.isByVal, true);
+		EXPECT_EQ(typeInfo.pushType, esl::BY_VALUE);
 	}
 }
 
@@ -834,6 +839,7 @@ TEST(EQSCRIPT_TESTS, RefPtrDereference)
 			CRefPtr<TestRefPtr> testPush = CRefPtr_new(TestRefPtr, controlValue);
 			state.SetGlobal("testRefPtr", testPush);
 
+			EXPECT_EQ(testPush->Ref_Count(), 2);
 			EXPECT_EQ(controlValue, 0xDEADBEEF);
 		}
 
@@ -881,6 +887,141 @@ TEST(EQSCRIPT_TESTS, RefPtrFromLua)
 	EXPECT_EQ(testGet->strValue, EqStringRef("Hi from Lua"));
 }
 
+struct TestInheritRefPtr : public TestRefPtr
+{
+	TestInheritRefPtr() = default;
+	TestInheritRefPtr(int& controlValue)
+		: TestRefPtr(controlValue)
+	{
+	}
+
+	bool extraValue{ false };
+};
+
+EQSCRIPT_BIND_TYPE_WITH_PARENT(TestInheritRefPtr, TestRefPtr, "TestInheritRefPtr")
+EQSCRIPT_TYPE_BEGIN(TestInheritRefPtr)
+	EQSCRIPT_BIND_VAR(extraValue)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, RefPtrInheritanceTest)
+{
+	int controlValue = 0xDEADBEEF;
+
+	{
+		LuaStateTest stateTest;
+		esl::ScriptState state(stateTest);
+		state.RegisterClass<TestRefPtr>();
+		state.RegisterClass<TestInheritRefPtr>();
+
+		// TEST: refptr owned by lua, dereferenced by C++
+		{
+			CRefPtr<TestInheritRefPtr> testPush = CRefPtr_new(TestInheritRefPtr, controlValue);
+			state.SetGlobal("testRefPtr", testPush);
+
+			EXPECT_EQ(testPush->Ref_Count(), 2);
+			EXPECT_EQ(controlValue, 0xDEADBEEF);
+		}
+
+		// TEST: refptr still owns pointer
+		EXPECT_NE(controlValue, 0xFEDABEEF);
+	}
+
+	// TEST: refptr deferenced by Lua GC destructor call
+	EXPECT_EQ(controlValue, 0xFEDABEEF);
+}
+
+struct TestWeakPtr : public WeakRefObject<TestWeakPtr>
+{
+	int				value{ 555 };
+};
+
+EQSCRIPT_BIND_TYPE_NO_PARENT(TestWeakPtr, "TestRefPtr", WEAK_REF)
+EQSCRIPT_TYPE_BEGIN(TestWeakPtr)
+	EQSCRIPT_BIND_VAR(value)
+EQSCRIPT_TYPE_END
+
+static void RuntimeErrorWithWeakPtrArg(TestWeakPtr& weakObj)
+{
+	ASSERT_FAIL("should be unreachable due to Lua error");
+}
+
+// arguments as pointers are optional
+static void PassWithWeakPtrArg(TestWeakPtr* weakObj)
+{
+	ASSERT_EQ(weakObj, nullptr);
+}
+
+static bool IsWeakNil(const TestWeakPtr* weakObj)
+{
+	return weakObj == nullptr;
+}
+
+TEST(EQSCRIPT_TESTS, WeakPtrTest)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+	state.RegisterClass<TestWeakPtr>();
+
+	state.SetGlobal("isweaknil", EQSCRIPT_CFUNC(IsWeakNil));
+
+	// TEST: weakptr owned by C++ (they are only owned by C++) grabbed by Lua
+	{
+		TestWeakPtr testPush;
+		state.SetGlobal("testWeakPtr", testPush);
+
+		ASSERT_EQ(testPush.GetWeakHandle()->Ref_Count(), 1);
+
+		LUA_GTEST_CHUNK("EXPECT_EQ(testWeakPtr.value, 555)");
+	}
+
+	// TEST: pass argument and get runtime error
+	{
+		state.SetGlobal("TestFuncRef", EQSCRIPT_CFUNC(RuntimeErrorWithWeakPtrArg));
+		LUA_GTEST_CHUNK_FAIL("TestFuncRef(testWeakPtr)");
+	}
+
+	// TEST: pass argument
+	{
+		state.SetGlobal("TestFuncPtr", EQSCRIPT_CFUNC(PassWithWeakPtrArg));
+		LUA_GTEST_CHUNK("TestFuncPtr(testWeakPtr)");
+	}
+
+	// TEST: weakptr is nil
+	LUA_GTEST_CHUNK("EXPECT_TRUE(isweaknil(testWeakPtr))");
+	LUA_GTEST_CHUNK_FAIL("testWeakPtr.value = 111");
+}
+
+struct TestInheritWeakPtr : public TestWeakPtr
+{
+	int				otherValue{ 9999 };
+};
+
+EQSCRIPT_BIND_TYPE_WITH_PARENT(TestInheritWeakPtr, TestWeakPtr, "TestInheritWeakPtr")
+	EQSCRIPT_TYPE_BEGIN(TestInheritWeakPtr)
+	EQSCRIPT_BIND_VAR(otherValue)
+EQSCRIPT_TYPE_END
+
+TEST(EQSCRIPT_TESTS, WeakPtrBinderInheritanceTest)
+{
+	LuaStateTest stateTest;
+	esl::ScriptState state(stateTest);
+	state.RegisterClass<TestWeakPtr>();
+	state.RegisterClass<TestInheritWeakPtr>();
+
+	// TEST: weakptr owned by C++ (they are only owned by C++) grabbed by Lua
+	{
+		TestInheritWeakPtr testPush;
+		state.SetGlobal("testWeakPtr", testPush);
+
+		ASSERT_EQ(testPush.GetWeakHandle()->Ref_Count(), 1);
+
+		LUA_GTEST_CHUNK("EXPECT_EQ(testWeakPtr.value, 555)");
+	}
+
+	// TEST: weakptr is nil
+	LUA_GTEST_CHUNK_FAIL("testWeakPtr.value = 111");
+}
+
 struct TestEvent
 {
 	ESL_DECLARE_EVENT(Event);
@@ -908,7 +1049,7 @@ TEST(EQSCRIPT_TESTS, TestNativeEvent)
 		}));
 
 		// TEST: event handlers added
-		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(function() end)");
+		LUA_GTEST_CHUNK("testHandle = evtTest.Event:AddHandler(function(msg) EXPECT_EQ(msg, 'Event Called') end)");
 		EXPECT_EQ(evtTestObj->m_eslEventEvent.GetHandlerCount(), 1);
 
 		// TEST: call event from native code
@@ -993,12 +1134,12 @@ EQSCRIPT_TYPE_BEGIN(ByValueTests)
 	EQSCRIPT_BIND_VAR(isMoved)
 EQSCRIPT_TYPE_END
 
-ByValueTests& ByValueBypassFunc(esl::ScriptState scriptState, ByValueTests& ref)
+ByValueTests& ByValueBypassFunc(const esl::ScriptState& scriptState, ByValueTests& ref)
 {
 	return ref;
 }
 
-esl::Object<ByValueTests> ByValueBypassFuncObj(esl::ScriptState scriptState, const esl::Object<ByValueTests>& ref)
+esl::Object<ByValueTests> ByValueBypassFuncObj(const esl::ScriptState& scriptState, const esl::Object<ByValueTests>& ref)
 {
 	if (ref)
 	{
@@ -1094,16 +1235,19 @@ TEST(EQSCRIPT_TESTS, ShouldNotGrowStack)
 
 	// Test 1: call function
 	{
-		state.RunChunk("TestFunc = function()  end");
+		state.RunChunk("TestFunc = function() return 0x4444 end");
 
 		esl::LuaFunctionRef funcRef = *state.GetGlobal<esl::LuaFunctionRef>("TestFunc");
 
-		using TestFuncCall = esl::runtime::FunctionCall<void>;
+		using TestFuncCall = esl::runtime::FunctionCall<int>;
 
 		const int top = lua_gettop(state);
 		{
 			for (int i = 0; i < 10000; ++i)
-				TestFuncCall::Invoke(funcRef);
+			{
+				const int value = *TestFuncCall::Invoke(funcRef);
+				ASSERT_EQ(value, 0x4444);
+			}
 		}
 
 		ASSERT_EQ(top, lua_gettop(state));
@@ -1115,35 +1259,7 @@ struct BindTest
 	int value;
 };
 
-//EQSCRIPT_BIND_TYPE_NO_PARENT(BindTest, "BindTest", BY_VALUE)
-//EQSCRIPT_TYPE_BEGIN(BindTest)
-//	EQSCRIPT_BIND_VAR(value)
-//EQSCRIPT_TYPE_END
-
-// _ESL_BIND_TYPE_BASICS
-namespace esl {
-	template<> struct LuaTypeByVal<BindTest> : std::true_type {}; 
-	template<> inline const char ScriptClass<BindTest>::className[] = "BindTest";
-	template<> inline const char* LuaTypeAlias<BindTest, false>::value = ScriptClass<BindTest>::className;
-	template<> inline const char* ScriptClass<BindTest>::baseClassName = nullptr;
-	template<> inline TypeInfoGetter ScriptClass<BindTest>::baseClassTypeInfoGetter = nullptr;
-}
-// _ESL_TYPE_PUSHGET
-namespace esl::runtime {
-	template<> PushGet<BindTest>::PushFunc PushGet<BindTest>::Push = &PushGetImpl<BindTest>::PushObject; 
-	template<> PushGet<BindTest>::GetFunc PushGet<BindTest>::Get = &PushGetImpl<BindTest>::GetObject;
-}
-
-// EQSCRIPT_TYPE_BEGIN / END
-namespace esl::bindings 
-{
-template<> ArrayCRef<Member> ClassBinder<BindTest>::GetMembers() 
-{
-	BaseClassStorage::Add<BindClass>();
-	static Member members[] = {
-		MakeDestructor(),
-		MakeVariable<(&BindClass::value)>("value"),
-	};
-	return members;
-}
-}
+EQSCRIPT_BIND_TYPE_NO_PARENT(BindTest, "BindTest", BY_VALUE)
+EQSCRIPT_TYPE_BEGIN(BindTest)
+	EQSCRIPT_BIND_VAR(value)
+EQSCRIPT_TYPE_END

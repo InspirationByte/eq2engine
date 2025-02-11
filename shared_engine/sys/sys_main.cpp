@@ -22,6 +22,14 @@
 #include <SDL_messagebox.h>
 #include <SDL_system.h>
 
+#if defined(PLAT_WIN)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#ifdef CRT_DEBUG_ENABLED
+#include <crtdbg.h>
+#endif
+#endif
+
 #define DEFAULT_CONFIG_PATH "cfg/config_default.cfg"
 
 #ifdef _RETAIL
@@ -155,6 +163,44 @@ int Sys_Main()
 	g_eqCore->Shutdown();
 
 	return 0;
+}
+
+static EqString Sys_GetExecutablePath()
+{
+#ifdef PLAT_LINUX
+	char exePath[PATH_MAX];
+	const int len = readlink("/proc/self/exe", exePath, PATH_MAX);
+	if (len <= 0 || len == PATH_MAX) // memory not sufficient or general error occured
+		return EqString::EmptyStr;
+
+	return EqString(exePath, len);
+
+#elif defined(PLAT_WIN)
+	char exePath[MAX_PATH];
+	unsigned int len = GetModuleFileNameA(GetModuleHandleA(nullptr), exePath, MAX_PATH);
+	return EqString(exePath, len);
+#endif
+	return EqString::EmptyStr;
+}
+
+static EqString sysPathGetApplicationName(EqStringRef exePath)
+{
+	int strStart = 0;
+	for (int i = exePath.Length()-1; i >= 0; --i)
+	{
+		if (exePath[i] == CORRECT_PATH_SEPARATOR || exePath[i] == INCORRECT_PATH_SEPARATOR)
+		{
+			strStart = i + 1;
+			break;
+		}
+	}
+
+	for (int i = strStart; i < exePath.Length(); ++i)
+	{
+		if (exePath[i] == '_' || exePath[i] == '.')
+			return exePath.Mid(strStart, i - strStart);
+	}
+	return exePath;
 }
 
 #if defined(PLAT_ANDROID)
@@ -298,8 +344,10 @@ bool Sys_Android_InitCore(int argc, char** argv)
 
 	g_jni.obbPath = storageObbPath;
 
-	// init core
-	bool result = g_eqCore->Init("Game", argc, argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "Game";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	bool result = g_eqCore->Init(appInitParams);
 
 	Msg("bestStoragePath: %s\n", bestStoragePath);
 	Msg("dataPath: %s\n", dataPath.ToCString());
@@ -319,63 +367,18 @@ void Sys_Android_MountFileSystem()
 
 	if (obbPackageName)
 	{
-		EqString packageFullPath;
-		fnmPathCombine(packageFullPath, g_jni.obbPath.ToCString(), KV_GetValueString(obbPackageName));
-		g_fileSystem->AddPackage(packageFullPath.ToCString(), SP_MOD);
+		const EqString packageFullPath = fnmPathCombine(g_jni.obbPath, KV_GetValueString(obbPackageName));
+		g_fileSystem->AddPackage(packageFullPath, SP_MOD);
 	}
 }
 
 #endif // PLAT_ANDROID
 
 #if defined(PLAT_WIN)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#ifdef CRT_DEBUG_ENABLED
-#include <crtdbg.h>
-#endif
-
 extern "C"
 {
 	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-}
-
-static EqString Sys_GetExecutablePath()
-{
-#ifdef PLAT_LINUX
-	char exePath[PATH_MAX];
-	const int len = readlink("/proc/self/exe", exePath, PATH_MAX);
-	if (len <= 0 || len == PATH_MAX) // memory not sufficient or general error occured
-		return EqString::EmptyStr;
-
-	return EqString(exePath, len);
-
-#elif defined(PLAT_WIN)
-	char exePath[MAX_PATH];
-	unsigned int len = GetModuleFileNameA(GetModuleHandleA(nullptr), exePath, MAX_PATH);
-	return EqString(exePath, len);
-#endif
-	return EqString::EmptyStr;
-}
-
-static EqString sysPathGetApplicationName(EqStringRef exePath)
-{
-	int strStart = 0;
-	for (int i = exePath.Length()-1; i >= 0; --i)
-	{
-		if (exePath[i] == CORRECT_PATH_SEPARATOR || exePath[i] == INCORRECT_PATH_SEPARATOR)
-		{
-			strStart = i + 1;
-			break;
-		}
-	}
-
-	for (int i = strStart; i < exePath.Length(); ++i)
-	{
-		if (exePath[i] == '_' || exePath[i] == '.')
-			return exePath.Mid(strStart, i - strStart);
-	}
-	return exePath;
 }
 
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
@@ -395,8 +398,12 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 	EqString appName = sysPathGetApplicationName(Sys_GetExecutablePath());
 
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = appName;
+	appInitParams.commandLine = ArrayCRef(&lpszCmdLine, 1);
+
 	// init core
-	if(!g_eqCore->Init(appName, lpszCmdLine))
+	if(!g_eqCore->Init(appInitParams))
 		return -1;
 
 	// NOTE: this is only needed for Live++ on Windows
@@ -425,8 +432,13 @@ int main(int argc, char** argv)
 	// mount OBB filesystem
 	Sys_Android_MountFileSystem();
 #else
-	// init core
-	if (!g_eqCore->Init("Game", argc, argv))
+	EqString appName = sysPathGetApplicationName(Sys_GetExecutablePath());
+
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = appName;
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+
+	if (!g_eqCore->Init(appInitParams))
 		return -1;
 #endif // PLAT_ANDROID
 

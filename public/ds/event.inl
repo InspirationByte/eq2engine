@@ -42,7 +42,7 @@ void Event<SIGNATURE>::Clear()
 }
 
 template<typename SIGNATURE>
-const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce /*= false*/)
+EventSubscriptionObject<SIGNATURE>& Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func, bool runOnce /*= false*/)
 {
 	SubscriptionObject* newSub = PPNewSL(m_sl) SubscriptionObject();
 	newSub->func = func;
@@ -60,7 +60,7 @@ const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(c
 			break;
 	}
 	Atomic::Increment(m_count);
-	return CWeakPtr(newSub);
+	return *newSub;
 }
 
 template<typename SIGNATURE>
@@ -92,24 +92,26 @@ void Event<SIGNATURE>::ForEach(FUNC func)
 			//		prevSub->next = sub->next;
 
 			SubscriptionObject* del = sub;
+			sub = sub->next;
 
-			while (true)
+			int attempts = 1000;
+			while (attempts > 0)
 			{
-				SubscriptionObject* next = del->next;
-				if (Atomic::CompareExchange(m_subs, del, next) == del)
-				{
-					sub = next;
+				if (Atomic::CompareExchange(m_subs, del, sub) == del)
 					break;
-				}
 				else if(prevSub)
 				{
-					sub = next;
-					prevSub->next = next;
+					prevSub->next = sub;
 					break;
 				}
+				--attempts;
 			}
-			Atomic::Decrement(m_count);
-			delete del;
+
+			if (attempts > 0)
+			{
+				Atomic::Decrement(m_count);
+				delete del;
+			}
 			continue;
 		}
 		else

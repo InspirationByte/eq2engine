@@ -7,6 +7,7 @@
 
 #pragma once
 #include "equi_defs.h"
+#include "IEqUI_Control.h"
 
 class IEqFont;
 class IMaterial;
@@ -14,8 +15,6 @@ class IGPURenderPassRecorder;
 
 namespace equi
 {
-
-class IUIControl;
 class Panel;
 
 using ControlFactoryFunc = IUIControl* (*)();
@@ -39,6 +38,9 @@ public:
 
 	// the element loader
 	void				RegisterFactory(const char* name, ControlFactoryFunc factory);
+
+	template<typename T>
+	T*					Create();
 
 	IUIControl*			CreateElement( const char* pszTypeName );
 
@@ -89,6 +91,14 @@ private:
 
 	Array<ControlFactory>	m_controlFactory{ PP_SL };
 };
+
+template<typename T>
+inline T* CUIManager::Create()
+{
+	IUIControl* control = CreateElement(T::Classname());
+	ASSERT_MSG(control, "Failed to create %s, check if that was registered using EQUI_REGISTER_CONTROL", T::Classname());
+	return control->As<T>();
+}
 
 extern CStaticAutoPtr<CUIManager> Manager;
 };

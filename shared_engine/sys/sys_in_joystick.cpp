@@ -266,7 +266,7 @@ void CEqGameControllerSDL::RepeatEvents(float fDt)
 		for(int button = 0; button < jc.m_pressed.numElem(); ++button)
 		{
 			if (jc.m_stateChanged[button])
-				g_pHost->TrapJoyButton_Event(button, jc.m_pressed[button] >= 0);
+				g_pHost->JoyButton_Event(button, jc.m_pressed[button] >= 0);
 
 			jc.m_stateChanged.setFalse(button);
 
@@ -277,7 +277,7 @@ void CEqGameControllerSDL::RepeatEvents(float fDt)
 			float timeLeft = jc.m_pressed[button] - fDt;
 			if (timeLeft < 0)
 			{
-				g_pHost->TrapJoyButton_Event(button, true);
+				g_pHost->JoyButton_Event(button, true);
 				timeLeft = in_joy_repeatDelay.GetFloat();
 			}
 			jc.m_pressed[button] = timeLeft;
@@ -297,7 +297,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 			{
 				Msg("Gamepad %d axis %s value: %d\n",
 					event->caxis.which,
-					KeyIndexToString(JOYSTICK_START_AXES + axis), event->caxis.value);
+					KeyCodeToString(JOYSTICK_START_AXES + axis), event->caxis.value);
 			}
 
 			const int cIndex = GetControllerIndex(event->cdevice.which);
@@ -308,7 +308,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 					CEqGameControllerSDL& jc = s_controllers[cIndex];
 
 					// handle axis motion
-					g_pHost->TrapJoyAxis_Event((short)axis, event->caxis.value);
+					g_pHost->JoyAxis_Event((short)axis, event->caxis.value);
 				}
 			}
 
@@ -323,7 +323,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 			if (in_joy_debug.GetBool())
 			{
 				Msg("Gamepad %d button %s %s\n",
-					event->cbutton.which, KeyIndexToString(JOYSTICK_START_KEYS + button), down ? "down" : "up");
+					event->cbutton.which, KeyCodeToString(JOYSTICK_START_KEYS + button), down ? "down" : "up");
 			}
 
 			const int cIndex = GetControllerIndex(event->cdevice.which);

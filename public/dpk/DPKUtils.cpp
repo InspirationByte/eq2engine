@@ -9,51 +9,23 @@
 #include "DPKUtils.h"
 #include "dpk_defs.h"
 
-// Fixes slashes in the directory name
-void DPK_RebuildFilePath(const char* str, char* newstr)
+static int DPK_FixCharSeparator(const int chr)
 {
-	char* pnewstr = newstr;
-	char cprev = 0;
+	constexpr int DPK_PATH_SEPARATOR = '/';
 
-	while (*str)
-	{
-		while (cprev == *str && (cprev == CORRECT_PATH_SEPARATOR || cprev == INCORRECT_PATH_SEPARATOR))
-			str++;
-
-		*pnewstr = *str;
-		pnewstr++;
-
-		cprev = *str;
-		str++;
-	}
-
-	*pnewstr = 0;
+	if(chr == CORRECT_PATH_SEPARATOR || chr == INCORRECT_PATH_SEPARATOR)
+		return DPK_PATH_SEPARATOR;
+	return chr;
 }
 
-void DPK_FixSlashes(EqString& str)
-{
-	char* tempStr = (char*)stackalloc(str.Length() + 1);
-	memset(tempStr, 0, str.Length());
-
-	DPK_RebuildFilePath(str.ToCString(), tempStr);
-
-	char* ptr = tempStr;
-	while (*ptr)
-	{
-		if (*ptr == '\\')
-			*ptr = '/';
-
-		ptr++;
-	}
-
-	str.Assign(tempStr);
-}
-
-static int HashDJB2(const char* str, int hash = 5381)
+static int DPK_HashDJB2(const char* str, int hash = 5381)
 {
 	// http://www.cse.yorku.ca/~oz/hash.html
 	while (int c = *str++)
-		hash = ((hash << 5) + hash) + (int)CType::LowerChar<char>(c); /* hash * 33 + c */
+	{
+		// hash * 33 + c
+		hash = ((hash << 5) + hash) + DPK_FixCharSeparator((int)CType::LowerChar<char>(c));
+	}
 
 	return hash;
 }
@@ -63,14 +35,30 @@ int DPK_FilenameHash(const char* filename, int version)
 	// TODO: hash function that could be used with root path concatenation
 
 	if (version == 7)
-		return StringId24(filename, true);
+	{
+		int len = CString::Length(filename);
+		const char* ptr = filename;
 
-	return HashDJB2(filename);
+		int hash = len;
+		for (; len > 0; --len)
+		{
+			const int v1 = hash >> 19;
+			const int v0 = hash << 5;
+
+			const int chr = CType::LowerChar(*ptr);
+
+			hash = ((v0 | v1) + DPK_FixCharSeparator(chr)) & StringId24Mask;
+			++ptr;
+		}
+		return hash;
+	}
+
+	return DPK_HashDJB2(filename);
 }
 
 int	DPK_FilenameHashAppend(const char* filename, int startHash)
 {
 	if(!startHash)
-		return HashDJB2(filename);
-	return HashDJB2(filename, startHash);
+		return DPK_HashDJB2(filename);
+	return DPK_HashDJB2(filename, startHash);
 }

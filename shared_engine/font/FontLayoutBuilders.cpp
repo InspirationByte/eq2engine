@@ -7,6 +7,7 @@
 
 #include "core/core_common.h"
 #include "FontLayoutBuilders.h"
+#include "materialsystem1/MeshBuilder.h"
 
 void CRectangleTextLayoutBuilder::OnNewLine(const FontStyleParam& params,
 										void* strCurPos, bool isWideChar,
@@ -29,9 +30,9 @@ void CRectangleTextLayoutBuilder::OnNewLine(const FontStyleParam& params,
 		if (xPos + newlineStringWidth < m_rectangle.rightBottom.x)
 		{
 			if (params.align & TEXT_ALIGN_HCENTER)
-				xPos = m_rectangle.GetCenter().x - newlineStringWidth * 0.5f;
+				xPos = m_rectangle.GetCenter().x - newlineStringWidth * 0.5f - 0.5f;
 			else if (params.align & TEXT_ALIGN_RIGHT)
-				xPos = m_rectangle.rightBottom.x - newlineStringWidth;
+				xPos = m_rectangle.rightBottom.x - newlineStringWidth - 1.0f;
 		}
 	}
 
@@ -45,11 +46,21 @@ void CRectangleTextLayoutBuilder::OnNewLine(const FontStyleParam& params,
 	m_newWord = true;
 }
 
-bool CRectangleTextLayoutBuilder::LayoutChar(const FontStyleParam& params,
-											void* strCurPos, bool isWideChar,
-											const FontChar& chr,
-											Vector2D& curTextPos,
-											Vector2D& cPos, Vector2D& cSize )
+void CRectangleTextLayoutBuilder::DebugDraw(CMeshBuilder& meshBuilder)
+{
+	meshBuilder.Color4f(1.0f, 1.0f, 0.0f, 0.5f);
+	meshBuilder.Line2fv(m_rectangle.GetLeftTop(), m_rectangle.GetRightTop());
+	meshBuilder.Line2fv(m_rectangle.GetRightTop(), m_rectangle.GetRightBottom());
+	meshBuilder.Line2fv(m_rectangle.GetRightBottom(), m_rectangle.GetLeftBottom());
+	meshBuilder.Line2fv(m_rectangle.GetLeftBottom(), m_rectangle.GetLeftTop());
+}
+
+bool CRectangleTextLayoutBuilder::LayoutChar(
+	const FontStyleParam& params,
+	void* strCurPos, bool isWideChar,
+	const FontChar& chr,
+	Vector2D& curTextPos,
+	Vector2D& cPos, Vector2D& cSize )
 {
 	IEqFont* font = m_font;
 

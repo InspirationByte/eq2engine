@@ -69,6 +69,7 @@ void CUIManager::Init()
 	EQUI_REGISTER_CONTROL(label);
 	EQUI_REGISTER_CONTROL(button);
 	EQUI_REGISTER_CONTROL(image);
+	EQUI_REGISTER_CONTROL(mask);
 	EQUI_REGISTER_CONTROL(progressBar);
 
 	EQUI_REGISTER_CONTROL(HudElement);
@@ -121,13 +122,33 @@ IUIControl* CUIManager::CreateElement( const char* type )
 			return (*m_controlFactory[i].factory)();
 	}
 
-	MsgError("EqUI: unknown element type '%s'!!!\n", type);
+	ASSERT_FAIL("Unknown UI element type '%s'", type);
 
 	return nullptr;
 }
 
 void CUIManager::AddPanel(Panel* panel)
 {
+	{
+		const int idx = arrayFindIndexF(m_panels, [panel](const Panel* addedPanel) {
+			return CString::CompareCaseIns(addedPanel->GetName(), panel->GetName());
+			});
+		if (idx != -1)
+		{
+			ASSERT_FAIL("Panel with name %s is already added to UI manager", panel->GetName());
+			return;
+		}
+	}
+
+	{
+		const int idx = arrayFindIndex(m_panels, panel);
+		if (idx != -1)
+		{
+			ASSERT_FAIL("Panel name %s was already added to root of UI manager", panel->GetName());
+			return;
+		}
+	}
+
 	m_panels.append( panel );
 	m_rootPanel->AddChild(panel);
 }
@@ -249,7 +270,9 @@ void CUIManager::Render()
 	// begin from the render panel
 	m_rootPanel->SetRectangle( m_viewFrameRect );
 	m_rootPanel->ResetSizeDiffs();
-	m_rootPanel->Render(1, rendPassRecorder);
+
+	equi::ControlRenderContext ctrlRenderContext{ rendPassRecorder };
+	m_rootPanel->Render(1, ctrlRenderContext);
 	rendPassRecorder->DbgPopGroup();
 
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());

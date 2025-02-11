@@ -13,13 +13,21 @@ class CCharacterController;
 class DkPhysicsJoint;
 class DkPhysicsRope;
 
+class btRigidBody;
+class btTransform;
+class btCollisionShape;
+class btBroadphaseInterface;
+class btCollisionDispatcher;
+class btConstraintSolver;
+class btSoftRigidDynamicsWorld;
+class btSoftBodyRigidBodyCollisionConfiguration;
+class btTriangleIndexVertexArray;
+struct btSoftBodyWorldInfo;
+
+struct phySurfaceMaterial_t;
+
 
 #define __BT_SKIP_UINT64_H	// SDL2 support
-
-// Bullet headers
-#include <btBulletDynamicsCommon.h>
-#include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
-#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 
 class DkPhysics : public IPhysics
 {
@@ -128,19 +136,11 @@ protected:
 
 private:
 	btBroadphaseInterface*						m_broadphase;
-
 	btCollisionDispatcher*						m_dispatcher;
-
 	btConstraintSolver*							m_solver;
-
 	btSoftRigidDynamicsWorld*					m_dynamicsWorld;
 
-	btSoftBodyWorldInfo							m_softBodyWorldInfo;
-
-	// for tracing
-	btBoxShape									hBox;
-	btSphereShape								hSphere;
-
+	btSoftBodyWorldInfo*						m_softBodyWorldInfo;
 	btSoftBodyRigidBodyCollisionConfiguration*	m_collisionConfiguration;
 
 	Array <IPhysicsObject*>						m_pPhysicsObjectList{ PP_SL };

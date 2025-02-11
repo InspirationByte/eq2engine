@@ -421,6 +421,7 @@ static void InitMatSystem(void* window)
 		return;
 	}
 
+	g_studioCache->Init(g_parallelJobs->GetJobMng());
 	g_studioCache->PrecacheModel("models/error.egf");
 
 	// register all shaders
@@ -1441,8 +1442,10 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 
 bool InitCore(char *pCmdLine)
 {
-	// initialize core
-	g_eqCore->Init("EGFMan", pCmdLine);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "egfMan";
+	appInitParams.commandLine = ArrayCRef(&pCmdLine, 1);
+	g_eqCore->Init(appInitParams);
 
 	if(!g_fileSystem->Init(false))
 		return false;

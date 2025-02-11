@@ -246,7 +246,6 @@ static void AssertLogMsg(ESpewType _dummy, const char* fmt, ...)
 static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const char* message, bool skipOnly)
 {
 	const bool eqCoreInit = g_eqCore->IsInitialized();
-	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n*Message \"%s\"\n", sl.GetFileName(), sl.GetLine(), expression, message);
 
 	EqString assertMessage;
 	if (expression)
@@ -261,8 +260,11 @@ static int DefaultAssertHandler(PPSourceLine sl, const char* expression, const c
 		assertMessage.Append("\n\n");
 	}
 
-	assertMessage.Append(EqString::Format("file: %s\nline: %d\n\n", sl.GetFileName(), sl.GetLine()));
+	assertMessage.Append(EqString::Format("file: %s\nline: %d", sl.GetFileName(), sl.GetLine()));
 
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n***ASSERTION FAILED***\n%s\n******\n", assertMessage.ToCString());
+
+	assertMessage.Append("\n\n");
 	if (skipOnly)
 	{
 		if (g_eqCore->GetDebugSettings().crashOnAssert)

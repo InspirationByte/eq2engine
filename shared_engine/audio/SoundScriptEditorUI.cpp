@@ -23,6 +23,25 @@
 
 #include "render/IDebugOverlay.h"
 
+static const char* s_nodeTypeNameStr[] = {
+	"const",
+	"input",
+	"mixer"
+};
+
+static float s_soundParamLimits[] = {
+	1.0f,
+	8.0f,
+	1.0f,
+	1.0f,
+	10.0f,
+	8.0f,
+	10.0f,
+	1.0f,
+	100.0f,
+};
+static_assert(elementsOf(s_soundParamLimits) == SOUND_PARAM_COUNT, "s_soundParamLimits and SOUND_PARAM_COUNT needs to be in sync");
+
 struct UISoundNodeDesc
 {
 	enum Side : int
@@ -1377,6 +1396,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				}
 			}
 
+			g_sounds->m_dbgFilterSound = selectedScript;
 			g_sounds->m_isolateSound = isolateSound ? selectedScript : nullptr;
 
 			ImGui::Separator();
@@ -1683,7 +1703,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					SerializeScriptParamsToKeyValues(*selectedScript, relSec);
 					SerializeNodesToKeyValues(relSec);
 
-					SoundScriptDesc::ReloadDesc(*selectedScript, &relSec);
+					SoundScriptDesc::ReloadDesc(*selectedScript, relSec);
 					g_sounds->PrecacheSound(selectedScript->name);
 					g_sounds->RestartEmittersByScript(selectedScript);
 

@@ -4,9 +4,7 @@
 #define EQ_DEBUG
 #endif
 
-#ifdef EQ_USE_SDL
-#	define PLAT_SDL 1
-#endif // EQ_USE_SDL
+#define PLAT_SDL 1
 
 #ifdef _WIN32
 

@@ -1,5 +1,7 @@
 project "lua"
 	kind "StaticLib"
+	language "C"
+	properties	{ "thirdpartylib" }
 	files {
 		"./src/*.c"
 	}

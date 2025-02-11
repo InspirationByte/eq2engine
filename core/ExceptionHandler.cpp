@@ -127,7 +127,7 @@ static void GetExceptionStrings( DWORD code, const char* *pName, const char* *pD
 	*pDescription = "n/a";
 }
 
-static void CreateMiniDump( EXCEPTION_POINTERS* pep )
+static bool CreateMiniDump( EXCEPTION_POINTERS* pep )
 {
 	const bool fullCrashDumps = g_eqCore->GetDebugSettings().fullCrashDumps;
 
@@ -150,7 +150,7 @@ static void CreateMiniDump( EXCEPTION_POINTERS* pep )
 	if (!dumpFileFd || dumpFileFd == INVALID_HANDLE_VALUE)
 	{
 		MsgError("Unable to create crash dump");
-		return;
+		return false;
 	}
 
 	MINIDUMP_EXCEPTION_INFORMATION dumpExceptionInfo;
@@ -162,9 +162,11 @@ static void CreateMiniDump( EXCEPTION_POINTERS* pep )
 	CloseHandle(dumpFileFd);
 
 	if (!result)
-		ErrorMsg("%s write error\n", fullCrashDumps ? "Crash dump" : "Mini dump");
+		MsgError("%s write error\n", fullCrashDumps ? "Crash dump" : "Mini dump");
 	else
-		WarningMsg("%s saved to:\n%s\n", fullCrashDumps ? "Crash dump" : "Mini dump", dumpPath);
+		MsgInfo("%s saved to:\n%s\n", fullCrashDumps ? "Crash dump" : "Mini dump", dumpPath);
+
+	return result;
 }
 
 static void PrintCurrentProcessModules()
@@ -238,19 +240,30 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	const char* pDescription;
 	GetExceptionStrings(pRecord->ExceptionCode, &pName, &pDescription);
 
+	const bool miniDumpCreated = CreateMiniDump(ExceptionInfo);
+	DoCoreExceptionCallbacks();
+
 	if (!g_eqCore->GetDebugSettings().crashOnAssert)
 	{
-		CrashMsg("We've got an fatal error\nMinidump will be saved in logs folder.\n\n"
-			"Exception code: %s (0x%x)\n"
-			"Address: %p\n\n\n"
-			"See application log for details.",
-			pName, pRecord->ExceptionCode,
-			pRecord->ExceptionAddress);
+		if (miniDumpCreated)
+		{
+			CrashMsg("We've got an fatal error\nMinidump is created logs folder.\n\n"
+				"Exception code: %s (0x%x)\n"
+				"Address: %p\n\n\n"
+				"See application log for details.",
+				pName, pRecord->ExceptionCode,
+				pRecord->ExceptionAddress);
+		}
+		else
+		{
+			CrashMsg("We've got an fatal error\nMinidump creation was failed.\n\n"
+				"Exception code: %s (0x%x)\n"
+				"Address: %p\n\n\n"
+				"See application log for details.",
+				pName, pRecord->ExceptionCode,
+				pRecord->ExceptionAddress);
+		}
 	}
-
-	CreateMiniDump(ExceptionInfo);
-
-	DoCoreExceptionCallbacks();
 
 	if (pRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
 	{
@@ -268,7 +281,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	MsgError("==========================================================\n\n");
 
 	// dump memory allocator
-	PPMemInfo(false);
+	PPMemInfo(true);
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -360,7 +373,7 @@ static void SignalExtended(int signum, siginfo_t* info, void* arg)
 
 	Msg("---------------------\n");
 
-	PPMemInfo(false);
+	PPMemInfo(true);
 
 	abort();
 }
@@ -406,7 +419,7 @@ static void OnSTDExceptionThrown()
 
 	Msg("---------------------\n");
 
-	PPMemInfo(false);
+	PPMemInfo(true);
 
 	abort();
 }

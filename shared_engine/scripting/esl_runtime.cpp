@@ -8,8 +8,6 @@
 
 namespace esl::runtime 
 {
-using ThisGetterFunc = void* (*)(lua_State* L, bool& isConstRef);
-
 static void PushErrorIdStr(lua_State* vm)
 {
 	char const lastErrStr[] = { "EqScriptLib_LastError" };
@@ -61,7 +59,7 @@ static lua_State* getthread(lua_State* vm, int* arg)
 	}
 }
 
-int StackTrace(lua_State* vm)
+static int StackTracePrintHandler(lua_State* vm)
 {
 	static constexpr const int LEVELS1 = 10;
 	static constexpr const int LEVELS2 = 20;
@@ -69,17 +67,17 @@ int StackTrace(lua_State* vm)
 	int level;
 	int firstpart = 1;  /* still before eventual `...' */
 	int arg;
-	lua_State *L1 = getthread(vm, &arg);
+	lua_State* L1 = getthread(vm, &arg);
 	lua_Debug ar;
-	if (lua_isnumber(vm, arg+2)) {
-		level = (int)lua_tointeger(vm, arg+2);//NOLINT
+	if (lua_isnumber(vm, arg + 2)) {
+		level = (int)lua_tointeger(vm, arg + 2);//NOLINT
 		lua_pop(vm, 1);
 	}
 	else
 		level = (vm == L1) ? 1 : 0;  /* level 0 may be this own function */
 	if (lua_gettop(vm) == arg)
 		lua_pushliteral(vm, "");
-	else if (!lua_isstring(vm, arg+1)) return 1;  /* message is not a string */
+	else if (!lua_isstring(vm, arg + 1)) return 1;  /* message is not a string */
 	else lua_pushliteral(vm, "\n");
 	lua_pushliteral(vm, "stack traceback:");
 	while (lua_getstack(L1, level++, &ar))
@@ -87,12 +85,12 @@ int StackTrace(lua_State* vm)
 		if (level > LEVELS1 && firstpart)
 		{
 			/* no more than `LEVELS2' more levels? */
-			if (!lua_getstack(L1, level+LEVELS2, &ar))
+			if (!lua_getstack(L1, level + LEVELS2, &ar))
 				level--;  /* keep going */
 			else
 			{
 				lua_pushliteral(vm, "\n\t...");  /* too many levels */
-				while (lua_getstack(L1, level+LEVELS2, &ar))  /* find last levels */
+				while (lua_getstack(L1, level + LEVELS2, &ar))  /* find last levels */
 					level++;
 			}
 			firstpart = 0;
@@ -101,24 +99,38 @@ int StackTrace(lua_State* vm)
 		lua_pushliteral(vm, "\n\t");
 		lua_getinfo(L1, "Snl", &ar);
 		lua_pushfstring(vm, "%s:", ar.short_src);
-		if(ar.currentline > 0)
+		if (ar.currentline > 0)
 			lua_pushfstring(vm, "%d:", ar.currentline);
-		if(*ar.namewhat != '\0')  /* is there a name? */
+		if (*ar.namewhat != '\0')  /* is there a name? */
 			lua_pushfstring(vm, " in function '%s'", ar.name);
 		else
 		{
-			if(*ar.what == 'm')  /* main? */
+			if (*ar.what == 'm')  /* main? */
 				lua_pushfstring(vm, " in main chunk");
 			else if (*ar.what == 'C' || *ar.what == 't')
 				lua_pushliteral(vm, " ?");  /* C function or tail call */
 			else
 				lua_pushfstring(vm, " in function <%s:%d>",
-								ar.short_src, ar.linedefined);
+					ar.short_src, ar.linedefined);
 		}
 		lua_concat(vm, lua_gettop(vm) - arg);
 	}
 	lua_concat(vm, lua_gettop(vm) - arg);
 	return 1;
+}
+
+static lua_CFunction RuntimeErrorHandlerFunc = StackTracePrintHandler;
+
+lua_CFunction SetErrorHandler(lua_CFunction handler)
+{
+	lua_CFunction oldFunc = RuntimeErrorHandlerFunc;
+	RuntimeErrorHandlerFunc = handler;
+	return oldFunc;
+}
+
+int HandleRuntimeError(lua_State* L)
+{
+	return RuntimeErrorHandlerFunc(L);
 }
 
 StackGuard::StackGuard(StackGuard&& other) noexcept
@@ -156,169 +168,6 @@ StackGuard::~StackGuard()
 	lua_settop(m_state, m_pos);
 }
 
-void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
-{
-	{
-		lua_getfield(L, LUA_REGISTRYINDEX, typeInfo.className);
-		defer{
-			lua_pop(L, 1);
-		};
-		if (!lua_isnil(L, -1))
-		{
-			ASSERT_FAIL("Type %s already registered", typeInfo.className);
-			return;
-		}
-	}
-
-	lua_newtable(L);
-	const int methods = lua_gettop(L); // methods
-
-	luaL_newmetatable(L, typeInfo.className);
-	const int mt = lua_gettop(L); // mt
-
-	// store method table in globals so that scripts can add functions written in Lua.
-	lua_pushvalue(L, methods);
-	lua_setglobal(L, typeInfo.className); // _G[className] = methods
-
-	// __index for property features
-	auto setIndexFunction = [&](const char* name, lua_CFunction func) {
-		// upvalues:
-		// 1: methods
-		// 2: call className
-		// 3: thisGetter
-		// 4: numClasses
-		// 5: ...N classNameHash[numClasses]
-
-		// mt[__index] = function (...)
-		lua_pushstring(L, name);
-
-		lua_pushvalue(L, methods);
-		lua_pushstring(L, typeInfo.className);
-		lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::ThisGetterVal : &runtime::ThisGetterPtr));
-		
-		int numTypeInfos = 0;
-		{
-			esl::TypeInfo typeInfoEnumerator = typeInfo;
-			while (typeInfoEnumerator.className)
-			{
-				typeInfoEnumerator = typeInfoEnumerator.baseGetter();
-				++numTypeInfos;
-			}
-			lua_pushnumber(L, numTypeInfos);
-		}
-
-		{
-			esl::TypeInfo typeInfoEnumerator = typeInfo;
-			while (typeInfoEnumerator.className)
-			{
-				const int classNameHash = StringId24(typeInfoEnumerator.className);
-				lua_pushinteger(L, classNameHash);
-
-				typeInfoEnumerator = typeInfoEnumerator.baseGetter();
-			}
-		}
-
-		// mt[name] = func
-		lua_pushcclosure(L, func, numTypeInfos + 4);
-		lua_rawset(L, mt);
-	};
-
-	setIndexFunction("__index", runtime::IndexImpl);
-	setIndexFunction("__newindex", runtime::NewIndexImpl);
-	
-	// constructors function
-	// if null - abstract
-	bool hasConstructors = false;
-	for (const esl::Member& mem : typeInfo.members)
-	{
-		if(mem.type == MEMB_CTOR)
-		{
-			hasConstructors = true;
-			break;
-		}
-	}
-
-	if(hasConstructors)
-	{
-		// methods["new"] = function [className, typeInfoMembers] (...)
-		lua_pushstring(L, "new");
-		lua_pushstring(L, typeInfo.className);
-		lua_pushlightuserdata(L, const_cast<esl::Member*>(typeInfo.members.ptr()));
-
-		lua_pushcclosure(L, &esl::runtime::CallConstructor, 2);
-		lua_rawset(L, methods);
-	}
-
-	// push especial eq operator that compares userdata
-	if (!typeInfo.isByVal)
-	{
-		// methods[__eq] = function ()
-		lua_pushstring(L, "__eq");
-		lua_pushcclosure(L, &esl::runtime::CompareBoxedPointers, 0);
-		lua_rawset(L, mt);
-	}
-
-	const int classNameHash = StringId24(typeInfo.className);
-	for (const esl::Member& mem : typeInfo.members)
-	{
-		{
-			defer{
-				lua_pop(L, 1);
-			};
-			lua_pushstring(L, mem.name);
-			lua_rawget(L, methods);
-			if (lua_type(L, -1) != LUA_TNIL)
-			{
-				ASSERT_FAIL("Class can't have same multiple functions with same name (%s:%s)", typeInfo.className, mem.name);
-				continue;
-			}
-		}
-
-		if (mem.type == esl::MEMB_C_FUNC)
-		{
-			// methods[name] = function [funcPtr] ()
-			lua_pushstring(L, mem.name);
-			lua_pushlightuserdata(L, mem.data);
-			lua_pushcclosure(L, mem.staticFunc, 1);
-			lua_rawset(L, methods);
-		}
-		else if (mem.type == esl::MEMB_FUNC)
-		{
-			// methods[name] = function [thisGetter, className, typeInfoMember] ()
-			lua_pushstring(L, mem.name);
-			void* funcPtr = reinterpret_cast<void*>(typeInfo.isByVal ? &runtime::ThisGetterVal : &runtime::ThisGetterPtr);
-			lua_pushlightuserdata(L, funcPtr);
-			lua_pushstring(L, typeInfo.className);
-			lua_pushlightuserdata(L, const_cast<esl::Member*>(&mem));
-			lua_pushcclosure(L, &esl::runtime::CallMemberFunc, 3);
-			lua_rawset(L, methods);
-		}
-		else if (mem.type == esl::MEMB_OPERATOR)
-		{
-			// methods[name] = function ()
-			lua_pushstring(L, mem.name);
-			lua_pushcclosure(L, mem.staticFunc, 0);
-			lua_rawset(L, mt);
-		}
-		else if (mem.type == esl::MEMB_DTOR)
-		{
-			lua_pushstring(L, mem.name);
-			lua_pushcclosure(L, mem.staticFunc, 0);
-			lua_rawset(L, mt);
-		}
-		else if (mem.type == esl::MEMB_VAR)
-		{
-			lua_pushstring(L, mem.name);
-			lua_pushlightuserdata(L, const_cast<Member*>(&mem));
-			lua_rawset(L, methods);
-		}
-	}
-
-	lua_pushvalue(L, methods);
-	lua_setmetatable(L, methods); // set methods as it's own metatable
-	lua_pop(L, 2);
-}
-
 bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* targetClassName)
 {
 	const int type = luaL_getmetafield(L, index, "__name");
@@ -335,7 +184,7 @@ bool CheckUserdataCanBeUpcasted(lua_State* L, int index, const char* targetClass
 		return true;
 
 	bindings::BaseClassStorage::Info baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, targetClassName);
-	return baseInfo.name.IsValid();
+	return baseInfo.IsValid();
 }
 
 static EqString GetCallSignatureString(lua_State* L)
@@ -406,7 +255,7 @@ static bool CheckCallSignatureMatching(lua_State* L, const esl::Member* member)
 	return CheckCallSignature(L, member->signature);
 }
 
-int CallConstructor(lua_State* L)
+static int UserTypeCallConstructor(lua_State* L)
 {
 	const int numArgs = lua_gettop(L);
 
@@ -431,25 +280,7 @@ int CallConstructor(lua_State* L)
 	return 1;
 }
 
-void* ThisGetterVal(lua_State* L, bool& isConstRef)
-{
-	isConstRef = false;
-	void* objPtr = lua_touserdata(L, 1);
-	return objPtr;
-}
-
-void* ThisGetterPtr(lua_State* L, bool& isConstRef)
-{
-	esl::BoxUD* userData = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
-	isConstRef = userData ? (userData->flags & UD_FLAG_CONST) : 0;
-
-	if(!userData)
-		return nullptr;
-
-	return userData->objPtr;
-}
-
-int CallMemberFunc(lua_State* L)
+static int UserTypeCallMemberFunc(lua_State* L)
 {
 	ThisGetterFunc thisGetter = reinterpret_cast<ThisGetterFunc>(lua_touserdata(L, lua_upvalueindex(1)));
 	const char* className = lua_tostring(L, lua_upvalueindex(2));
@@ -479,14 +310,14 @@ int CallMemberFunc(lua_State* L)
 
 	// apply offset for base class
 	runtime::BaseClassInfo baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(thisClassName, className);
-	if (baseInfo.name.IsValid())
+	if (baseInfo.IsValid())
 		thisPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(thisPtr) + baseInfo.offset);
 
 	esl::ScriptBind bindObj{ thisPtr };
 	return (bindObj.*(mem->func))(L);
 }
 
-int CompareBoxedPointers(lua_State* L)
+static int UserTypeCompareBoxedPointers(lua_State* L)
 {
 	esl::BoxUD* lhs = static_cast<esl::BoxUD*>(lua_touserdata(L, 1));
 	esl::BoxUD* rhs = static_cast<esl::BoxUD*>(lua_touserdata(L, 2));
@@ -501,12 +332,12 @@ int CompareBoxedPointers(lua_State* L)
 	return 1;
 }
 
-static int IndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(void* thisPtr, const Member*)> onVariableIndexed)
+static int UserTypeIndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(void* thisPtr, const Member*)> onVariableIndexed)
 {
 	// lookup in class metatable first
 	{
 		lua_pushvalue(L, 2);
-		lua_rawget(L, lua_upvalueindex(1)); // methods[key]
+		lua_rawget(L, lua_upvalueindex(1)); // fields[key]
 		const int type = lua_type(L, -1);
 		if (type == LUA_TFUNCTION)
 		{
@@ -525,7 +356,7 @@ static int IndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(void* this
 
 	// lookup in base classes
 	runtime::BaseClassInfo baseInfo = bindings::BaseClassStorage::Get(className);
-	while (baseInfo.name.IsValid())
+	while (baseInfo.IsValid())
 	{
 		lua_getglobal(L, baseInfo.name); // _G[className]
 		if (lua_isnil(L, -1))
@@ -535,7 +366,7 @@ static int IndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(void* this
 		}
 
 		lua_pushvalue(L, 2);
-		lua_rawget(L, -2); // parentMethods[key]
+		lua_rawget(L, -2); // parentFields[key]
 
 		const int type = lua_type(L, -1);
 		if (type == LUA_TFUNCTION)
@@ -561,10 +392,10 @@ static int IndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(void* this
 	return 0;
 }
 
-int IndexImpl(lua_State* L)
+static int UserTypeIndexImpl(lua_State* L)
 {
 	// upvalues:
-	// 1: methods
+	// 1: fields
 	// 2: call className
 	// 3: thisGetter
 	// 4: numClasses
@@ -582,7 +413,7 @@ int IndexImpl(lua_State* L)
 		if (!thisPtr)
 		{
 			// TODO: ThrowError
-			luaL_error(L, "self is nil while accessing property %s.%s", className, mem->name);
+			luaL_error(L, "self is nil while accessing %s.%s", className, mem->name);
 			return 0;
 		}
 
@@ -591,24 +422,24 @@ int IndexImpl(lua_State* L)
 		return (bindObj.*(mem->getFunc))(L);
 	};
 
-	const int ret = IndexImplBasic(L, thisPtr, onVariableIndexed);
+	const int ret = UserTypeIndexImplBasic(L, thisPtr, onVariableIndexed);
 	if (ret > 0)
 		return ret;
 
 	if (thisPtr)
 	{
 		const char* key = luaL_checkstring(L, 2);
-		luaL_error(L, "cannot index variable '%s'", key);
+		luaL_error(L, "cannot index '%s'", key);
 	}
 
 	lua_pushnil(L);
 	return 1;
 }
 
-int NewIndexImpl(lua_State* L)
+static int UserTypeNewIndexImpl(lua_State* L)
 {
 	// upvalues:
-	// 1: methods
+	// 1: fields
 	// 2: call className
 	// 3: thisGetter
 	// 4: numClasses
@@ -643,11 +474,258 @@ int NewIndexImpl(lua_State* L)
 		return (bindObj.*(mem->func))(L);
 	};
 
-	const int ret = IndexImplBasic(L, thisPtr, onVariableIndexed);
+	const int ret = UserTypeIndexImplBasic(L, thisPtr, onVariableIndexed);
 	if (ret > 0)
 		return ret;
 
 	lua_pushnil(L);
 	return 1;
 }
+
+// iterator for type info
+struct UserTypeIterator
+{
+	runtime::BaseClassInfo baseInfo;
+	bool iterateOverBases{ false };
+	bool restart{ false };
+};
+
+static int UserTypeNext(lua_State* L)
+{
+	UserTypeIterator* iterator = reinterpret_cast<UserTypeIterator*>(lua_touserdata(L, lua_upvalueindex(1)));
+
+	// iterate class metatable first
+	if (!iterator->iterateOverBases)
+	{
+		// iterate over fields
+		if (lua_next(L, lua_upvalueindex(2)))
+		{
+			lua_pop(L, 1);
+			lua_pushvalue(L, 1);
+			lua_pushvalue(L, -2);
+			lua_gettable(L, -2);
+			lua_replace(L, -2);
+			return 2;
+		}
+
+		iterator->iterateOverBases = true;
+		iterator->restart = true;
+
+		// init base class info
+		const char* className = luaL_checkstring(L, lua_upvalueindex(3));
+		iterator->baseInfo = bindings::BaseClassStorage::Get(className);
+	}
+
+	// lookup in base classes
+	while (iterator->baseInfo.IsValid())
+	{
+		if (iterator->restart)
+		{
+			lua_pushnil(L);
+			iterator->restart = false;
+		}
+
+		lua_getglobal(L, iterator->baseInfo.name); // _G[className]
+		if (lua_isnil(L, -1))
+		{
+			lua_pop(L, 1);
+			break;
+		}
+
+		lua_replace(L, -1);
+
+		// iterate over fields
+		if (lua_next(L, 0))
+		{
+			lua_pop(L, 1);
+			lua_pushvalue(L, 1);
+			lua_pushvalue(L, -2);
+			lua_gettable(L, -2);
+			lua_replace(L, -2);
+
+			return 2;
+		}
+		lua_pop(L, 1);
+
+		iterator->baseInfo = bindings::BaseClassStorage::Get(iterator->baseInfo.name);
+		iterator->restart = true;
+	}
+
+	return 0; // End of iteration
+}
+
+static int UserTypePairsImpl(lua_State* L)
+{
+	// upvalues:
+	// 1: fields
+	// 2: className
+
+	// Create and initialize the iterator userdata
+	UserTypeIterator* iterator = reinterpret_cast<UserTypeIterator*>(lua_newuserdata(L, sizeof(UserTypeIterator)));
+	*iterator = {};
+
+	// Set up iterator function with upvalues
+	lua_pushvalue(L, lua_upvalueindex(1)); // fields table
+	lua_pushvalue(L, lua_upvalueindex(2)); // className
+
+	lua_pushcclosure(L, UserTypeNext, 2 + 1); // +1 for iterator userdata
+	lua_pushvalue(L, 1); // Push the userdata to be iterated
+	lua_pushnil(L); // Initial key for iteration
+
+	return 3; // Return iterator function, userdata, and initial key
+}
+
+//----------------------------------------------------------------
+
+void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
+{
+	{
+		lua_getfield(L, LUA_REGISTRYINDEX, typeInfo.className);
+		defer{
+			lua_pop(L, 1);
+		};
+		if (!lua_isnil(L, -1))
+		{
+			ASSERT_FAIL("Type %s already registered", typeInfo.className);
+			return;
+		}
+	}
+
+	lua_newtable(L);
+	const int fields = lua_gettop(L); // fields
+
+	luaL_newmetatable(L, typeInfo.className);
+	const int mt = lua_gettop(L); // mt
+
+	// store method table in globals so that scripts can add functions written in Lua.
+	lua_pushvalue(L, fields);
+	lua_setglobal(L, typeInfo.className); // _G[className] = fields
+
+	// __index for property features
+	auto setIndexFunction = [&](const char* name, lua_CFunction func) {
+		// mt[__index] = function (...)
+		lua_pushstring(L, name);
+
+		// upvalues:
+		// 1: fields
+		// 2: className
+		// 3: thisGetter
+		lua_pushvalue(L, fields);
+		lua_pushstring(L, typeInfo.className);
+		lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.thisGetter));
+
+		// mt[name] = func
+		lua_pushcclosure(L, func, 3);
+		lua_rawset(L, mt);
+	};
+
+	setIndexFunction("__index", runtime::UserTypeIndexImpl);
+	setIndexFunction("__newindex", runtime::UserTypeNewIndexImpl);
+
+	// __pairs to view variables and function names
+	{
+		lua_pushstring(L, "__pairs");
+
+		// upvalues:
+		// 1: fields
+		// 2: className
+		lua_pushvalue(L, fields);
+		lua_pushstring(L, typeInfo.className);
+	
+		// mt[__index] = function (...)
+		lua_pushcclosure(L, runtime::UserTypePairsImpl, 2);
+		lua_rawset(L, mt);
+	}
+	
+	// constructors function
+	// if null - abstract
+	bool hasConstructors = false;
+	for (const esl::Member& mem : typeInfo.members)
+	{
+		if(mem.type == MEMB_CTOR)
+		{
+			hasConstructors = true;
+			break;
+		}
+	}
+
+	if(hasConstructors)
+	{
+		// fields["new"] = function [className, typeInfoMembers] (...)
+		lua_pushstring(L, "new");
+		lua_pushstring(L, typeInfo.className);
+		lua_pushlightuserdata(L, const_cast<esl::Member*>(typeInfo.members.ptr()));
+
+		lua_pushcclosure(L, &esl::runtime::UserTypeCallConstructor, 2);
+		lua_rawset(L, fields);
+	}
+
+	// push especial eq operator that compares userdata
+	if (typeInfo.pushType != esl::BY_REF)
+	{
+		// fields[__eq] = function ()
+		lua_pushstring(L, "__eq");
+		lua_pushcclosure(L, &esl::runtime::UserTypeCompareBoxedPointers, 0);
+		lua_rawset(L, mt);
+	}
+
+	for (const esl::Member& mem : typeInfo.members)
+	{
+		{
+			defer{
+				lua_pop(L, 1);
+			};
+			lua_pushstring(L, mem.name);
+			lua_rawget(L, fields);
+			if (lua_type(L, -1) != LUA_TNIL)
+			{
+				ASSERT_FAIL("Class can't have same multiple functions with same name (%s:%s)", typeInfo.className, mem.name);
+				continue;
+			}
+		}
+
+		if (mem.type == esl::MEMB_C_FUNC)
+		{
+			// fields[name] = function [funcPtr] ()
+			lua_pushstring(L, mem.name);
+			lua_pushlightuserdata(L, mem.data);
+			lua_pushcclosure(L, mem.staticFunc, 1);
+			lua_rawset(L, fields);
+		}
+		else if (mem.type == esl::MEMB_FUNC)
+		{
+			// fields[name] = function [thisGetter, className, typeInfoMember] ()
+			lua_pushstring(L, mem.name);
+			lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.thisGetter));
+			lua_pushstring(L, typeInfo.className);
+			lua_pushlightuserdata(L, const_cast<esl::Member*>(&mem));
+			lua_pushcclosure(L, &esl::runtime::UserTypeCallMemberFunc, 3);
+			lua_rawset(L, fields);
+		}
+		else if (mem.type == esl::MEMB_OPERATOR)
+		{
+			// fields[name] = function ()
+			lua_pushstring(L, mem.name);
+			lua_pushcclosure(L, mem.staticFunc, 0);
+			lua_rawset(L, mt);
+		}
+		else if (mem.type == esl::MEMB_DTOR)
+		{
+			lua_pushstring(L, mem.name);
+			lua_pushcclosure(L, mem.staticFunc, 0);
+			lua_rawset(L, mt);
+		}
+		else if (mem.type == esl::MEMB_VAR)
+		{
+			lua_pushstring(L, mem.name);
+			lua_pushlightuserdata(L, const_cast<Member*>(&mem));
+			lua_rawset(L, fields);
+		}
+	}
+
+	lua_pushvalue(L, fields);
+	lua_setmetatable(L, fields); // set fields as it's own metatable
+	lua_pop(L, 2);
+}
+
 }

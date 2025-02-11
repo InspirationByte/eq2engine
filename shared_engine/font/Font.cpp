@@ -23,6 +23,15 @@ TODO:
 
 #define FONT_DEFAULT_PATH "resources/fonts/"
 
+#if !defined(_RETAIL) || !defined(_PROFILE)
+#define ENABLE_FONT_DEBUG_DRAWING
+DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
+#endif
+
+// TODO: really a font parameters!!!
+DECLARE_CVAR(r_font_sdf_start, "0.94", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_font_sdf_range, "0.06", nullptr, CV_CHEAT);
+
 enum ECharMode
 {
 	CHARMODE_NORMAL = 0,
@@ -191,7 +200,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 		if( params.styleFlag & TEXT_STYLE_MONOSPACE)
 			totalWidth += (chr.x1 - chr.x0) + m_spacing;
 		else
-			totalWidth += chr.advX + m_spacing; // chr.x1-chr.x0;
+			totalWidth += chr.advX + m_spacing;
 	}
 
     return totalWidth;
@@ -201,25 +210,13 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 // Fills text buffer and processes tags
 //
 template <typename CHAR_T>
-void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, const Vector2D& textPos, const FontStyleParam& params)
+void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, const Vector2D& textPos, const FontStyleParam& params, IGPURenderPassRecorder* rendPassRecorder)
 {
 	const bool isWideChar = std::is_same<CHAR_T,wchar_t>::value;
 
-	ITextLayoutBuilder* layoutBuilder = &s_defaultTextLayout;
+	ITextLayoutBuilder* layoutBuilder = params.layoutBuilder ? params.layoutBuilder : &s_defaultTextLayout;
 
-	if(params.layoutBuilder)
-		layoutBuilder = params.layoutBuilder;
-
-	layoutBuilder->Reset( this );
-
-	Vector2D startPos = textPos;
-
-	bool hasNewLine = true;
-	int lineNumber = 0;
-
-	FixedList<FontStyleParam, 8> states;
-	states.append( params );	// push this param
-
+	FixedList<FontStyleParam, 16> styleStack;
 	int charMode = CHARMODE_NORMAL;
 	int tagType = TEXT_TAG_NONE;
 	int prevChar = 0;
@@ -227,19 +224,48 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 	FontStyleParam parsedParams;
 
+#ifdef ENABLE_FONT_DEBUG_DRAWING
+	CMeshBuilder dbgMeshBuilder;
+	if (r_font_debug.GetBool())
+	{
+		rendPassRecorder->SetScissorRectangle(IAARectangle(0, 0, COM_INT_MAX, COM_INT_MAX));
+
+		dbgMeshBuilder.Init(g_matSystem->GetDynamicMesh());
+		dbgMeshBuilder.Begin(PRIM_LINES);
+
+		layoutBuilder->DebugDraw(dbgMeshBuilder);
+
+		Vector2D startTemp = textPos;
+		layoutBuilder->Reset(this);
+		layoutBuilder->OnNewLine(params, (void*)str, sizeof(CHAR_T) == sizeof(wchar_t), 0, textPos, startTemp);
+
+		const float width = GetStringWidth(str, params);
+		float offset = 0.0f;
+
+		dbgMeshBuilder.Color4f(1.0f, 0.5f, 0.0f, 1.0f);
+		dbgMeshBuilder.Line2fv(startTemp, startTemp + Vector2D(width, 0.0f));
+	}
+#endif
+
+	layoutBuilder->Reset(this);
+	Vector2D curStartPos = textPos;
+	bool hasNewLine = true;
+	int lineNumber = 0;
+
     while( *str )
 	{
 		prevChar = charIdx;
 		charIdx = *str;
 
-		const FontStyleParam& stateParams = states.back();
+		if (styleStack.getCount() == 0)
+			styleStack.append(params);
+
+		const FontStyleParam& stateParams = styleStack.back();
 
 		//
 		// Preprocessing part - text color and mode
 		//
-		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) && 
-			charMode == CHARMODE_NORMAL &&
-			charIdx == '&')
+		if((params.styleFlag & TEXT_STYLE_USE_TAGS) && charMode == CHARMODE_NORMAL && charIdx == '&')
 		{
 			charMode = CHARMODE_TAG;
 			str++;
@@ -268,12 +294,12 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 			{
 				if (tagType == TEXT_TAG_NONE)
 				{
-					if(states.getCount())
-						states.popBack();
+					if(styleStack.getCount())
+						styleStack.popBack();
 				}
 				else
 				{
-					states.append(parsedParams);
+					styleStack.append(parsedParams);
 				}
 
 				tagType = TEXT_TAG_NONE;
@@ -284,23 +310,16 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 			}			
 		}
 
-		if(states.getCount() == 0)
-		{
-			states.append( params ); // restore style
-			continue;
-		}
-
 		//
 		// reset startpos
 		//
 		if(hasNewLine)
 		{
-			layoutBuilder->OnNewLine(stateParams, (void*)str, isWideChar, lineNumber, textPos, startPos);
-
+			layoutBuilder->OnNewLine(stateParams, (void*)str, isWideChar, lineNumber, textPos, curStartPos);
 			hasNewLine = false;
 		}
 
-		if (charIdx == '\n')	// NEWLINE
+		if (charIdx == '\n')
 		{
 			lineNumber++;
 			hasNewLine = true;
@@ -315,7 +334,6 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 			continue;
 		}
 
-		float baseLine = GetBaselineOffs(stateParams);
 
 		//
 		// Render part - text filling
@@ -324,31 +342,51 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 		GetScaledCharacter( chr, charIdx, stateParams.scale );
 
 		// build default character pos and size
-		Vector2D cPos(
-			startPos.x + chr.ofsX, 
-			startPos.y - baseLine + chr.ofsY);
-
-		Vector2D cSize(
-			chr.x1-chr.x0,
-			chr.y1-chr.y0);
+		const float baseLine = GetBaselineOffs(stateParams);
+		Vector2D cPos(curStartPos.x + chr.ofsX, curStartPos.y - baseLine + chr.ofsY);
+		Vector2D cSize(chr.x1 - chr.x0, chr.y1 - chr.y0);
 
 		if(m_flags.sdf) // only scale SDF characters
 			cSize *= m_scale * stateParams.scale;
 
-		//if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
-		//	cPos.y = startPos.y - (cSize.y-baseLine) + chr.ofsY;
-
-		if(!layoutBuilder->LayoutChar(stateParams, (void*)str, isWideChar, chr, startPos, cPos, cSize))
+		if(!layoutBuilder->LayoutChar(stateParams, (void*)str, isWideChar, chr, curStartPos, cPos, cSize))
+		{
+#ifdef ENABLE_FONT_DEBUG_DRAWING
+			if (r_font_debug.GetBool())
+			{
+				AARectangle charRect(cPos, cPos + cSize);
+				dbgMeshBuilder.Color4f(1.0f, 0.0f, 0.0f, 1.0f);
+				dbgMeshBuilder.Line2fv(charRect.GetLeftTop(), charRect.GetRightTop());
+				dbgMeshBuilder.Line2fv(charRect.GetRightTop(), charRect.GetRightBottom());
+				dbgMeshBuilder.Line2fv(charRect.GetRightBottom(), charRect.GetLeftBottom());
+				dbgMeshBuilder.Line2fv(charRect.GetLeftBottom(), charRect.GetLeftTop());
+			}
+#endif
 			break;
+		}
 
 		if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
-			cPos.y = startPos.y - (cSize.y-baseLine) + chr.ofsY;
-
-		AARectangle charRect(cPos, cPos+cSize);
-		AARectangle charTexCoord(chr.x0*m_invTexSize.x, chr.y0*m_invTexSize.y,chr.x1*m_invTexSize.x, chr.y1*m_invTexSize.y);
+			cPos.y = curStartPos.y - (cSize.y-baseLine) + chr.ofsY;
 
 		// set character color
 		builder.Color4fv(stateParams.textColor);
+
+		AARectangle charRect(cPos, cPos + cSize);
+
+#ifdef ENABLE_FONT_DEBUG_DRAWING
+		if (r_font_debug.GetBool())
+		{
+			builder.Color4fv(stateParams.textColor.v * Vector4D(color_white.v.xyz(), 0.75f));
+
+			dbgMeshBuilder.Color4f(1.0f, 1.0f, 1.0f, 0.5f);
+			dbgMeshBuilder.Line2fv(charRect.GetLeftTop(), charRect.GetRightTop());
+			dbgMeshBuilder.Line2fv(charRect.GetRightTop(), charRect.GetRightBottom());
+			dbgMeshBuilder.Line2fv(charRect.GetRightBottom(), charRect.GetLeftBottom());
+			dbgMeshBuilder.Line2fv(charRect.GetLeftBottom(), charRect.GetLeftTop());
+		}
+#endif
+
+		const AARectangle charTexCoord(chr.x0 * m_invTexSize.x, chr.y0 * m_invTexSize.y, chr.x1 * m_invTexSize.x, chr.y1 * m_invTexSize.y);
 
 		// use meshbuilder's index buffer optimization feature
 		builder.TexturedQuad2(	charRect.GetLeftTop(), charRect.GetRightTop(), charRect.GetLeftBottom(), charRect.GetRightBottom(),
@@ -357,12 +395,22 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 		str++;
 	
     } //while
-}
 
-// TODO: really a font parameters!!!
-DECLARE_CVAR(r_font_sdf_start, "0.94", nullptr, CV_CHEAT);
-DECLARE_CVAR(r_font_sdf_range, "0.06", nullptr, CV_CHEAT);
-DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
+#ifdef ENABLE_FONT_DEBUG_DRAWING
+	if (r_font_debug.GetBool())
+	{
+		RenderDrawCmd drawCmd;
+		drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
+
+		MatSysDefaultRenderPass defaultRenderPass;
+		defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+		RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
+
+		if (dbgMeshBuilder.End(drawCmd))
+			g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
+	}
+#endif
+}
 
 // renders text (wide char)
 void CFont::SetupRenderText(const wchar_t* pszText, const Vector2D& start, const FontStyleParam& params, IGPURenderPassRecorder* rendPassRecorder)
@@ -373,28 +421,10 @@ void CFont::SetupRenderText(const wchar_t* pszText, const Vector2D& start, const
 	IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
 
-	if (r_font_debug.GetBool())
-	{
-		RenderDrawCmd drawCmd;
-		drawCmd.SetMaterial(g_matSystem->GetDefaultMaterial());
-
-		MatSysDefaultRenderPass defaultRenderPass;
-		defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-		RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
-
-		// set character color
-		meshBuilder.Begin(PRIM_LINES);
-		meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
-		meshBuilder.Line2fv(start, start + IVector2D(512, 0));
-
-		if (meshBuilder.End(drawCmd))
-			g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
-	}
-
 	RenderDrawCmd drawCmd;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
+	BuildCharVertexBuffer(meshBuilder, pszText, start, params, rendPassRecorder);
 	if (meshBuilder.End(drawCmd))
 		SetupDrawTextMeshBuffer(drawCmd, params, rendPassRecorder);
 }
@@ -410,29 +440,21 @@ void CFont::SetupRenderText(const char* pszText, const Vector2D& start, const Fo
 
 	RenderDrawCmd drawCmd;
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
+	BuildCharVertexBuffer(meshBuilder, pszText, start, params, rendPassRecorder);
 	if (meshBuilder.End(drawCmd))
 		SetupDrawTextMeshBuffer(drawCmd, params, rendPassRecorder);
 }
 
 void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const FontStyleParam& params, IGPURenderPassRecorder* rendPassRecorder)
 {
-	MatSysDefaultRenderPass defaultRenderPass;
-	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.texture = m_fontTexture;
-
-	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
-
-	// TODO: defaultRenderPass.scissor (params.styleFlag & TEXT_STYLE_SCISSOR)
-
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 
 	drawCmd.SetMaterial(fontCache->m_sdfMaterial);
-	MatVec3Proxy sdfRange = fontCache->m_fontParams;
-	MatVec4Proxy baseColor = fontCache->m_fontBaseColor;
-	MatVec4Proxy shadowColor = fontCache->m_shadowColor;
-	MatVec3Proxy shadowSdfRange = fontCache->m_shadowParams;
-	MatVec2Proxy shadowOffset = fontCache->m_shadowOffset;
+	MatVec4Proxy& sdfRange = fontCache->m_fontParams;
+	MatVec4Proxy& baseColor = fontCache->m_fontBaseColor;
+	MatVec4Proxy& shadowColor = fontCache->m_shadowColor;
+	MatVec4Proxy& shadowSdfRange = fontCache->m_shadowParams;
+	MatVec2Proxy& shadowOffset = fontCache->m_shadowOffset;
 
 	baseColor.Set(color_white);
 
@@ -447,10 +469,10 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const FontStyleParam
 		{
 			// shadow width
 			const float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.shadowWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-			shadowSdfRange.Set(Vector3D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f));
+			shadowSdfRange.Set(Vector4D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f, 0.0f));
 		}
 		else
-			shadowSdfRange.Set(Vector3D(0.0f, 1.0f, 0.0f));
+			shadowSdfRange.Set(Vector4D(0.0f, 1.0f, 0.0f, 1.0f));
 	}
 	else
 		shadowColor.Set(vec4_zero);
@@ -458,12 +480,16 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const FontStyleParam
 	if (m_flags.sdf)
 	{
 		const float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-		sdfRange.Set(Vector3D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped, 1.0f));
+		sdfRange.Set(Vector4D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped, 1.0f, 0.0f));
 	}
 	else
-		sdfRange.Set(Vector3D(0.0f, 1.0f, 1.0f));
+		sdfRange.Set(Vector4D(0.0f, 1.0f, 1.0f, 1.0f));
 
-	g_matSystem->SetMatrix(MATRIXMODE_WORLD, identity4);
+	MatSysDefaultRenderPass defaultRenderPass;
+	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
+	defaultRenderPass.texture = m_fontTexture;
+
+	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 	g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
 }
 

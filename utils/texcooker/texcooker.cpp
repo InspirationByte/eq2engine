@@ -18,7 +18,10 @@ void Usage()
 
 int main(int argc, char* argv[])
 {
-	g_eqCore->Init("texcooker", argc, argv);
+	CoreAppInitParameters appInitParams;
+	appInitParams.appName = "texCooker";
+	appInitParams.commandLine = ArrayCRef(argv, argc);
+	g_eqCore->Init(appInitParams);
 
 	Install_SpewFunction();
 

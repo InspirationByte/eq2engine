@@ -22,7 +22,18 @@ using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
 using LuaTableRef = LuaRef<LUA_TTABLE>;
 using LuaUserRef = LuaRef<LUA_TUSERDATA>;
 
+template<int NUM_VALUES = -1>
+struct Any {
+	static constexpr int COUNT = NUM_VALUES;
+};
+
 using StaticFunc = lua_CFunction;
+
+template <typename T>
+struct IsAny : std::false_type {};
+
+template <int NUM_VALUES>
+struct IsAny<Any<NUM_VALUES>> : std::true_type {};
 
 template <typename T>
 struct IsConstMemberFunc : std::false_type {};
@@ -38,12 +49,6 @@ using BasePtrType = typename std::remove_cv<typename std::remove_pointer<T>::typ
 
 template<typename T>
 using BaseRefType = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
-
-template <typename T>
-struct LuaTypeByVal : std::false_type {};
-
-template <typename T>
-struct LuaTypeRefCountedObj : std::false_type {};
 
 template <typename T, bool isEnum>
 struct LuaTypeAlias;
@@ -124,6 +129,14 @@ enum EMemberType : int
 	MEMB_OPERATOR,
 };
 
+enum EPushType
+{
+	BY_REF = 0,
+	BY_VALUE,
+	REF_PTR,
+	WEAK_REF
+};
+
 struct Member;
 
 // The base proxy class that binds script runtime
@@ -157,6 +170,7 @@ struct Member
 
 struct TypeInfo;
 using TypeInfoGetter = TypeInfo(*)();
+using ThisGetterFunc = void* (*)(lua_State* L, bool& isConstRef);
 
 // Type info which is could be used for debugging
 struct TypeInfo
@@ -167,7 +181,8 @@ struct TypeInfo
 	const char*			baseClassName{ nullptr };
 
 	ArrayCRef<Member>	members{ nullptr };
-	bool				isByVal{ false };
+	ThisGetterFunc		thisGetter{ nullptr };
+	EPushType			pushType{ BY_REF };
 };
 
 namespace binder {
@@ -186,6 +201,7 @@ public:
 	~StackGuard();
 
 	StackGuard&	operator=(StackGuard&& other) noexcept;
+	int			Pos() const { return m_pos; }
 
 private:
 	lua_State*	m_state{ nullptr };
@@ -230,17 +246,22 @@ struct ScriptClass
 	// NOTE: don't access these directly, use typeinfo
 	static const char		className[];
 
-	static TypeInfoGetter	baseClassTypeInfoGetter;
-	static const char*		baseClassName;
+	static TypeInfoGetter		baseClassTypeInfoGetter;
+	static const char*			baseClassName;
+	static uint					classId;
 };
+
+template<typename T>
+struct PushType;
 
 template<typename T>
 struct BaseScriptClass; // Type
 
 template<> inline TypeInfo ScriptClass<void>::GetTypeInfo() { return {}; }
-template<> inline const char ScriptClass<void>::className[] = "null";
+template<> inline const char ScriptClass<void>::className[] = "";
 template<> inline TypeInfoGetter ScriptClass<void>::baseClassTypeInfoGetter = nullptr;
 template<> inline const char* ScriptClass<void>::baseClassName = nullptr;
+template<> inline uint ScriptClass<void>::classId = 0;
 
 /// script state wrapper
 class ScriptState
@@ -257,19 +278,21 @@ public:
 	void			ThrowError(const char* fmt, ...) const;
 
 	// stops the garbage collector. 
-	void			GCStop();
+	void			GCStop() const;
 
 	// restarts the garbage collector.
-	void			GCRestart();
+	void			GCRestart() const;
 
 	// performs an incremental step of garbage collection.
-	void			GCStep(int stepSize);
+	void			GCStep(int stepSize) const;
 
 	// perform full garbage collection cycle
-	void			GCCollect();
+	void			GCCollect() const;
 
-	bool			RunBuffer(IVirtualStream* virtStream, const char* name) const;
 	bool			RunChunk(EqStringRef chunk, const char* name = "userChunk") const;
+
+	bool			RunFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode = nullptr) const;
+	int				LoadFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode = nullptr) const;
 
 	int				GetStackTop() const;
 	int				GetStackType(int index) const;
@@ -307,7 +330,8 @@ public:
 	decltype(auto)	GetClassStatic(const K& k) const;
 
 	template<typename R, typename ... Args>
-	decltype(auto)	CallFunction(const char* name, Args...);
+	decltype(auto)	CallFunction(const char* name, Args...) const;
+
 protected:
 	lua_State*	m_state{ nullptr };
 };
@@ -337,10 +361,14 @@ public:
 
 	LuaUserRef	ToRef() const;
 
+	bool		IsValid() const { return m_state != nullptr; }
+	bool		IsNull() const { return m_state == nullptr || lua_type(m_state, m_index) == LUA_TNIL; }
+	int			GetLuaType() const { return lua_type(m_state, m_index); }
+
 	T&			operator*() const { return Get(); }
 	T*			operator->() const { return GetPtr(); }
 
-	operator bool() const { return m_state != nullptr; }
+	operator bool() const { return !IsNull(); }
 
 private:
 	lua_State*	m_state{ nullptr };
@@ -355,12 +383,16 @@ struct BaseClassInfo
 {
 	EqStringRef name;
 	intptr_t	offset{ 0 };	// offset bytes for upcasting
+
+	bool		IsValid() const { return name.IsValid() && name.Length() > 0; }
 };
 
 void					SetLuaErrorFromTopOfStack(lua_State* L);
 void					ResetErrorValue(lua_State* L);
 const char*				GetLastError(lua_State* L);
-int						StackTrace(lua_State* L);
+int						HandleRuntimeError(lua_State* L);
+
+lua_CFunction			SetErrorHandler(lua_CFunction handler);
 
 // Registers type in the specific lua state
 void					RegisterType(lua_State* L, esl::TypeInfo typeInfo);
@@ -374,7 +406,7 @@ template<typename T, typename WT = T>
 static void				PushValue(lua_State* L, const T& value);
 
 // Returns a T value from stack by index. Allows to specify pointer/reference in T type
-template<typename T, bool SilentTypeCheck>
+template<typename T, bool SilentTypeCheck, bool AllowUpcasting = true>
 static decltype(auto)	GetValue(lua_State* L, int index);
 
 // Pushes user object or fundamental value to global table (_G) by name

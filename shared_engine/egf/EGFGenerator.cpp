@@ -116,9 +116,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 
 	mod.model = CRefPtr_new(DSModel);
 
-	EqString modelPath;
-	fnmPathCombine(modelPath, m_refsPath.ToCString(), pszFileName);
-
+	EqString modelPath = fnmPathCombine(m_refsPath, pszFileName);
 	EqString ext(fnmPathExtractExt(modelPath));
 
 	if (!ext.CompareCaseIns("fbx"))
@@ -147,24 +145,24 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 
 		Msg("Loading shape file '%s'\n", modelPath.ToCString());
 
-		if( LoadESXShapes( mod.shapeData, modelPath.ToCString() ))
+		if( LoadESXShapes( mod.shapeData, modelPath))
 		{
 			// use referenced filename by the shape file
-			fnmPathCombine(modelPath, m_refsPath.ToCString(), mod.shapeData->reference.ToCString());
+			modelPath = fnmPathCombine(m_refsPath, mod.shapeData->reference);
 		}
 		else
 		{
 			mod.shapeData = nullptr;
 		}
 
-		if (!LoadSharedModel(mod.model, modelPath.ToCString()))
+		if (!LoadSharedModel(mod.model, modelPath))
 		{
 			MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 			FreeModel(mod);
 			return false;
 		}
 	}
-	else if(!LoadSharedModel(mod.model, modelPath.ToCString()))
+	else if(!LoadSharedModel(mod.model, modelPath))
 	{
 		MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 		FreeModel(mod);
@@ -261,8 +259,7 @@ void CEGFGenerator::FreeModel(GenModel& mod )
 
 void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 {
-	EqString modelPath;
-	fnmPathCombine(modelPath, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
+	const EqString modelPath = fnmPathCombine(m_refsPath, KV_GetValueString(pKeyBase));
 
 	Msg("Using FBX Source '%s'\n", KV_GetValueString(pKeyBase));
 
@@ -1236,7 +1233,7 @@ bool CEGFGenerator::InitFromKeyValues(const KVSection* mainsection)
 
 	// set source path if defined by script
 	if(pSourcePath)
-		fnmPathCombine(m_refsPath, m_refsPath.ToCString(), KV_GetValueString(pSourcePath, 0, ""));
+		m_refsPath = fnmPathCombine(m_refsPath, KV_GetValueString(pSourcePath, 0, ""));
 
 	// get new model filename
 	SetOutputFilename(KV_GetValueString(mainsection->FindSection("modelfilename")));

@@ -9,6 +9,8 @@ class LuaEvent : public WeakRefObject<LuaEvent>
 {
 	friend struct Handle;
 public:
+	static void	Bind(esl::ScriptState& state);
+
 	struct Handle : public RefCountedObject<Handle>
 	{
 		~Handle();

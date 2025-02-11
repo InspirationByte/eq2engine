@@ -99,9 +99,12 @@ public:
 
 	float						GetFriction() const;
 	float						GetRestitution() const;
+	float						GetErp() const;
 
 	void						SetFriction(float value);
 	void						SetRestitution(float value);
+	void						SetErp(float mass);
+
 
 	void						UpdateBoundingBoxTransform();
 

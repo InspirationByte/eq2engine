@@ -33,7 +33,7 @@ enum EModelLoadingState
 };
 
 #define EGF_LOADING_CRITICAL_SECTION(m)	\
-	m->GetLoadingFuture().Wait();
+	if(m) { m->GetLoadingFuture().Wait(); }
 
 // streams in studio models used exclusively in interpolation
 class CEqStudioGeom : public RefCountedObject<CEqStudioGeom>

@@ -9,18 +9,46 @@
 #include "core/IFileSystem.h"
 #include "math/Vector.h"
 
+#define STBI_NO_STDIO
+#define STBI_ASSERT ASSERT
+#define STBI_MALLOC PPAlloc
+#define STBI_REALLOC PPReAlloc
+#define STBI_FREE PPFree
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_TGA		// we have our okay-ish TGA reader and writer
+#define STBI_NO_PSD
+#define STBI_NO_GIF
+#define STBI_NO_PNM
+#define STBI_NO_PIC
+#define STBI_NO_HDR
+#include <stb_image.h>
+
+#define STBI_WRITE_NO_STDIO
+#define STBIW_ASSERT ASSERT
+#define STBIW_MALLOC PPAlloc
+#define STBIW_REALLOC PPReAlloc
+#define STBIW_FREE PPFree
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "ImageLoader.h"
 
-#ifndef NO_JPEG
-#ifdef _WIN32
-#include <basetsd.h>
-#endif
-extern "C"
-{
-#include <jpeglib.h>
-}
+static stbi_io_callbacks STBImageCallbacks = {
+	[](void* user,char* data,int size)->int {
+		return reinterpret_cast<IFile*>(user)->Read(data, size, 1);
+	},
+	[](void* user,int n) {
+		reinterpret_cast<IFile*>(user)->Seek(n, VS_SEEK_CUR); 
+	},
+	[](void* user)->int {
+		return reinterpret_cast<IFile*>(user)->Tell() >= reinterpret_cast<IFile*>(user)->GetSize(); 
+	}
+};
 
-#endif // NO_JPEG
+static void STBWriteFunc(void* context, void* data, int size)
+{
+	reinterpret_cast<IFile*>(context)->Write(data, 1, size);
+};
 
 #pragma pack (push, 1)
 
@@ -58,7 +86,8 @@ extern "C"
 #define D3D10_RESOURCE_DIMENSION_TEXTURE2D 3
 #define D3D10_RESOURCE_DIMENSION_TEXTURE3D 4
 
-typedef enum D3D10_DXGI_FORMAT {
+enum D3D10_DXGI_FORMAT 
+{
 	DXGI_FORMAT_UNKNOWN = 0,
 	DXGI_FORMAT_R32G32B32A32_TYPELESS = 1,
 	DXGI_FORMAT_R32G32B32A32_FLOAT = 2,
@@ -682,27 +711,17 @@ bool CImage::LoadDDS(IFilePtr fileHandle, uint flags)
 	return true;
 }
 
-bool CImage::LoadJPEG(IFilePtr fileHandle)
+bool CImage::Load(IFilePtr fileHandle)
 {
-#ifdef NO_JPEG
-	return false
-#else
-	jpeg_decompress_struct cinfo;
-	jpeg_error_mgr jerr;
+	int numComponents;
+	stbi_uc* imgData = stbi_load_from_callbacks(&STBImageCallbacks, fileHandle.Ptr(), &m_nWidth, &m_nHeight, &numComponents, 0);
+	if (!imgData)
+	{
+		MsgError("%s\n", stbi_failure_reason());
+		return false;
+	}
 
-	cinfo.err = jpeg_std_error(&jerr);
-	jpeg_create_decompress(&cinfo);
-
-	const int fileSize = fileHandle->GetSize();
-	ubyte* jpegFileBuff = (ubyte*)PPAlloc(fileSize);
-	fileHandle->Read(jpegFileBuff, 1, fileSize);
-	fileHandle = nullptr;
-
-	jpeg_mem_src(&cinfo, (ubyte*)jpegFileBuff, fileSize);
-	jpeg_read_header(&cinfo, TRUE);
-	jpeg_start_decompress(&cinfo);
-
-	switch (cinfo.num_components)
+	switch (numComponents)
 	{
 	case 1:
 		m_nFormat = FORMAT_I8;
@@ -715,33 +734,16 @@ bool CImage::LoadJPEG(IFilePtr fileHandle)
 		break;
 	}
 
-	m_nWidth = cinfo.output_width;
-	m_nHeight = cinfo.output_height;
 	m_nDepth = 1;
 	m_nMipMaps = 1;
 	m_nArraySize = 1;
 
-	m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * cinfo.num_components];
+	m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * numComponents];
+	memcpy(m_pPixels, imgData, m_nWidth * m_nHeight * numComponents);
 
-	for (ubyte* curr_scanline = m_pPixels; cinfo.output_scanline < cinfo.output_height; curr_scanline += m_nWidth * cinfo.num_components)
-		jpeg_read_scanlines(&cinfo, &curr_scanline, 1);
-
-	/*
-	ubyte *curr_scanline = m_pPixels;
-	while(cinfo.output_scanline < cinfo.output_height)
-	{
-		jpeg_read_scanlines(&cinfo, &curr_scanline, 1);
-		curr_scanline += width * cinfo.num_components;
-	}
-	*/
-
-	jpeg_finish_decompress(&cinfo);
-	jpeg_destroy_decompress(&cinfo);
-
-	PPFree(jpegFileBuff);
+	stbi_image_free(imgData);
 
 	return true;
-#endif
 }
 
 bool CImage::LoadTGA(IFilePtr fileHandle)
@@ -913,8 +915,8 @@ bool CImage::LoadTGA(IFilePtr fileHandle)
 	delete[] tempBuffer;
 	delete[] fBuffer;
 #endif
-	return true;
-}
+ 	return true;
+ }
 
 bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 {
@@ -931,21 +933,12 @@ bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 		return false;
 
 	if (extension == "dds")
-	{
-		if (!LoadDDS(file, flags)) return false;
-	}
-	else if (extension == "jpg" || extension == "jpeg")
-	{
-		if (!LoadJPEG(file)) return false;
-	}
-	else if (extension == "tga")
-	{
-		if (!LoadTGA(file)) return false;
-	}
+		return LoadDDS(file, flags);
+	if (extension == "tga")
+		return LoadTGA(file);
 	else
-	{
-		return false;
-	}
+		return Load(file);
+
 	return true;
 }
 
@@ -1121,55 +1114,13 @@ bool CImage::SaveDDS(IVirtualStreamPtr fileHandle) const
 
 bool CImage::SaveJPEG(IVirtualStreamPtr fileHandle, const int quality) const
 {
-#ifdef NO_JPEG
-	return false;
-#else
 	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8)
 		return false;
 
-	jpeg_compress_struct cinfo;
-	jpeg_error_mgr jerr;
-
-	cinfo.err = jpeg_std_error(&jerr);
-	jpeg_create_compress(&cinfo);
-
 	const int nChannels = GetChannelCount(m_nFormat);
-
-	cinfo.in_color_space = (nChannels == 1) ? JCS_GRAYSCALE : JCS_RGB;
-	jpeg_set_defaults(&cinfo);
-
-	cinfo.input_components = nChannels;
-	cinfo.num_components = nChannels;
-	cinfo.image_width = m_nWidth;
-	cinfo.image_height = m_nHeight;
-	cinfo.data_precision = 8;
-	cinfo.input_gamma = 1.0;
-
-	jpeg_set_quality(&cinfo, quality, FALSE);
-
-	ubyte* mem = nullptr;
-	unsigned long memSize = 0;
-	jpeg_mem_dest(&cinfo, &mem, &memSize);
-
-	jpeg_start_compress(&cinfo, TRUE);
-
-	ubyte* curr_scanline = m_pPixels;
-
-	for (int y = 0; y < m_nHeight; y++)
-	{
-		jpeg_write_scanlines(&cinfo, &curr_scanline, 1);
-		curr_scanline += nChannels * m_nWidth;
-	}
-
-	jpeg_finish_compress(&cinfo);
-	jpeg_destroy_compress(&cinfo);
-
-	fileHandle->Write(mem, memSize, 1);
-
-	free(mem);
+	stbi_write_jpg_to_func(STBWriteFunc, fileHandle.Ptr(), m_nWidth, m_nHeight, nChannels, m_pPixels, quality);
 
 	return true;
-#endif // NO_JPEG
 }
 
 bool CImage::SaveTGA(IVirtualStreamPtr fileHandle) const
@@ -1250,7 +1201,6 @@ bool CImage::SaveTGA(IVirtualStreamPtr fileHandle) const
 		fileHandle->Write(buffer, m_nHeight * lineLength, 1);
 		delete[] buffer;
 	}
-
 	return true;
 #endif // NO_TGA
 }

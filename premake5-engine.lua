@@ -1,15 +1,16 @@
 -- premake5.lua
-
 require ".premake_modules/usage"
+require ".premake_modules/properties"
 require ".premake_modules/androidndk"
 require ".premake_modules/unitybuild"
 require ".premake_modules/wxwidgets"
 require ".premake_modules/vscode"
 
+IS_ANDROID = (_ACTION == "androidndk")
+
 local CAN_BUILD_TOOLS = (os.target() == "linux" or os.target() == "windows") and not IS_ANDROID
 local CAN_BUILD_GUI_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
 
-IS_ANDROID = (_ACTION == "androidndk")
 ENABLE_TOOLS = iif(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
 ENABLE_GUI_TOOLS = iif(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
 ENABLE_MATSYSTEM = iif(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
@@ -20,7 +21,6 @@ WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 -- you can redefine dependencies
 DependencyPath = {
 	["zlib"] = os.getenv("ZLIB_DIR") or "src_dependency/zlib", 
-	["libjpeg"] = os.getenv("JPEG_DIR") or "src_dependency/libjpeg",
 	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
 	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
 	
@@ -31,10 +31,8 @@ DependencyPath = {
 -- default configuration capabilities
 Groups = {
     core = "Framework",
-    
     engine2 = "Equilibrium 2",
     tools = "Tools",
-
     game = "Game",
 }
 
@@ -48,224 +46,100 @@ Folders = {
     game = "./game/",
 }
 
-function prj_name(prj, wks, def)
-	if _ACTION == "gmake2" and def == nil then
-		def = wks.name..".solution"
-	end
-	if prj ~= nil then
-		if prj.group ~= nil and string.len(prj.group) > 0 then
-			return prj.group .. '/' .. prj.name
-		end
-		return prj.name
-	end
-	return def
-end
-
+include "premake5-properties.lua"
+	
 -- Main workspace
 workspace(WORKSPACE_NAME)
-    language "C++"
-	cppdialect "C++17"	-- required for sol2
-    configurations { "Debug", "Release", "ReleaseAsan", "Profile", "Retail" }
-	linkgroups 'On'
+	properties {
+		"e2_ws_settings",
+		"e2_ws_configurations",
+		"gcc_clang",
+		"windows_msvc"
+	}
+	configurations {
+		"Debug", 		-- full debug, no optimization
+		"Release", 		-- optimized build with asserts and debug drawing and UI on
+		"ReleaseAsan", 	-- same as Release except ASAN is enabled
+		"Profile", 		-- optimized build without asserts and debug drawing, debug UI present
+		"Retail" 		-- optimized build without all of the debug stuff
+	}
 	
-	--characterset "ASCII"
-	objdir "build/obj"
-	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
-
-	if _ACTION ~= "vscode" then
-		location "build/%{ prj_name(prj, wks) }"
-	end
-
 	defines {
 		"PROJECT_COMPILE_CONFIGURATION=%{cfg.buildcfg}",
 		"PROJECT_COMPILE_PLATFORM=%{cfg.platform}"
 	}
 	
-	-- for MSVC to be faster
-	flags {
-		"MultiProcessorCompile"
-	}
+	filter "platforms:*64"
+		debugdir "%{wks.location}../../%{wks.name}/build/Bin64"
+		debugenvs "PATH=%{wks.location}../../%{wks.name}/build/Bin64"
 
-	if IS_ANDROID then
-		system "android"
+	filter "platforms:*86"
+		debugdir "%{wks.location}../../%{wks.name}/build/Bin32"
+		debugenvs "PATH=%{wks.location}../../%{wks.name}/build/Bin64"
+		
+	filter {}
+	
+	-- setup VSCode generator settings
+	vscode_makefile "build/%{wks.name}.solution"
+	vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build/bin64linux")
+	vscode_launch_environment {
+		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../%{wks.name}/build/bin64linux"
+	}
+	vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
+
+	if _ACTION ~= "vscode" then
+		location "build/%{ prj_name(prj, wks) }"
 	end
 
-	filter "system:android"
-		shortcommands "On"
-		
-		platforms {
-			"android-arm", --TEMPORARILY DISABLED FOR COMPILE TIME SPEED
-			"android-arm64"
-			--"android-x86_64"
-		}
-		
-		disablewarnings {
-			-- disable warnings which are emitted by my stupid (and not so) code
-			"c++11-narrowing",
-			"writable-strings",
-			"logical-op-parentheses",
-			"parentheses",
-			"register",
-			"unused-local-typedef",
-			"nonportable-include-path",
-			"format-security",
-			"unused-parameter",
-			"sign-compare",
-		}
-		
-		buildoptions {
-			"-fpermissive",
-			"-fexceptions",
-			"-pthread"
-		}
-		
-		linkoptions {
-			"--no-undefined",
-			"-fexceptions",
-			"-pthread",
-			
-			"-mfloat-abi=softfp",	-- force NEON to be used
-			"-mfpu=neon"
-		}
+group "Dependencies"
 
-		filter "platforms:*-x86"
-			architecture "x86"
+-- dependencies are in separate configuration
+include "src_dependency/premake5.lua"
 
-		filter "platforms:*-x86_64"
-			architecture "x86_64"
+if IS_ANDROID then
+include "src_dependency_android/premake5.lua"
+end
 
-		filter "platforms:*-arm"
-			architecture "arm"
 
-		filter "platforms:*-arm64"
-			architecture "arm64"
-
-    filter "system:linux"
-		platforms { 
-			"x86", "x64" -- maybe add ARM & ARM64 for RPi?
-		}
-		vscode_makefile "build/%{wks.name}.solution"
-		vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build/bin64linux")
-		vscode_launch_environment {
-			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../%{wks.name}/build/bin64linux"
-		}
-		vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
-        buildoptions {
-            "-fpermissive",
-			"-fexceptions",
-			"-fpic",
-        }
-		disablewarnings {
-			-- disable warnings which are emitted by my stupid (and not so) code
-			"narrowing",
-			"c++11-narrowing",
-			"writable-strings",
-			"logical-op-parentheses",
-			"parentheses",
-			"register",
-			"unused-local-typedef",
-			"nonportable-include-path",
-			"format-security",
-			"unused-parameter",
-			"sign-compare",
-			"ignored-attributes",	-- annyoing, don't re-enable
-			"write-strings",		-- TODO: fix this
-			"subobject-linkage"		-- TODO: fix this
-		}
-		links { "pthread" }
-
-	filter "system:Windows"
-		platforms { "x86", "x64" }
-		disablewarnings { "4996", "4554", "4244", "4101", "4838", "4309" }
-		enablewarnings { "26433" }
-		defines { 
-			"NOMINMAX", 
-			"_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE"
-		}
-		linkoptions {
-			"/NOEXP"
-		}
-
-    filter "configurations:Debug"
-        defines { 
-            "DEBUG"
-        }
-        symbols "On"
-
-    filter "configurations:Release"
-        defines {
-            "NDEBUG",
-        }
-		optimize "On"
-		symbols "On"
-		
-	filter "configurations:ReleaseAsan"
-        defines {
-            "NDEBUG",
-        }
-		optimize "On"
-		symbols "On"
-		sanitize "address"
-
-	filter "configurations:Profile"
-        defines {
-			"NDEBUG",
-			"_PROFILE"
-        }
-		optimize "On"
-		symbols "On"
-
-	filter "configurations:Retail"
-        defines {
-			"NDEBUG",
-			"_RETAIL"
-        }
-		optimize "On"
-
-	filter "system:Linux"
-		defines {
-			"__LINUX__"
-		}
-
-	filter "system:Windows or system:Linux or system:Android"
-		defines { 
-			"EQ_USE_SDL"
-		}
-		
-	filter "kind:StaticLib"
-		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
+-- properties
+usage "public"
+	includedirs {
+		Folders.public
+	}
+	
+usage "shared_engine"
+	includedirs {
+		Folders.shared_engine
+	}
+	
+usage "shared_game"
+	includedirs {
+		Folders.shared_engine
+	}
 
 group "Core"
 
 -- eqCore essentials
 project "coreLib"
     kind "StaticLib"
-	uses { "concurrency_vis" }
-	
-	--unitybuild "on"
+	properties { "unitybuild", "concurrency_vis" }
+	uses { "public" }
     files {
 		Folders.public.. "/core/**.cpp",
 		Folders.public.. "/core/**.h"
 	}
-	includedirs {
-		Folders.public
-	}
 	
 usage "coreLib"
-    includedirs {
-		Folders.public
-	}
+    includedirs { Folders.public }
 	links { "coreLib" }
-
 	filter "system:Linux"
 		links { "pthread" }
 	
 -- little framework
 project "frameworkLib"
     kind "StaticLib"
-
-	unitybuild "on"
-	uses { "coreLib", "libjpeg" }
+	properties { "unitybuild" }
+	uses { "public", "stb" }
 
     files {
 		Folders.public.. "ds/*.cpp",
@@ -282,35 +156,27 @@ project "frameworkLib"
 
 usage "frameworkLib"
     includedirs { Folders.public }
-	
 	links { "frameworkLib" }
 
 	filter "system:Android"
 		links { "log" }
-	
-	filter "system:Windows"
-		links { "User32" }
 	
 ----------------------------------------------
 -- e2Core
 
 project "e2Core"
     kind "SharedLib"
-	
-	unitybuild "on"
+	properties { "unitybuild", "live_pp", "concurrency_vis" }
+    uses {
+		"coreLib", "frameworkLib", "dpkLib"
+	}
     files {
         "core/**.cpp",
         "core/minizip/**.c",
         "core/**.h",
-        Folders.public.. "/core/**.h"
 	}
 	
 	defines { "CORE_INTERFACE_EXPORT", "COREDLL_EXPORT" }
-	
-    uses {
-		"coreLib", "frameworkLib", "dpkLib",
-		"live_pp"
-	}
 
 	filter "system:Windows"
 		linkoptions { "-IGNORE:4217,4286" }	-- disable few linker warnings
@@ -322,16 +188,10 @@ project "e2Core"
 		}
 
     filter "system:Windows"
-        links {"User32", "DbgHelp", "Advapi32"}
+        links { "User32", "DbgHelp", "Advapi32" }
 		
 usage "e2Core"
 	links "e2Core"
-
-group "Dependencies"
-		
--- dependencies are in separate configuration
-include "src_dependency/premake5.lua"
-include "src_dependency_android/premake5.lua"
 
 group "Components"
 
@@ -347,17 +207,18 @@ group "MatSystem"
 
 project "BaseShader"
     kind "StaticLib"
-	uses {
-		"coreLib", "frameworkLib"
-	}
+	uses { "public" }
     files {
 		Folders.public.."materialsystem1/*.cpp",
 		Folders.public.."materialsystem1/*.h"
 	}
+	
+usage "BaseShader"
+	links "BaseShader"
 
 project "eqMatSystem"
     kind "SharedLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
 		"BaseShader"
@@ -369,13 +230,10 @@ project "eqMatSystem"
 		Folders.public.."materialsystem1/**.h"
 	}
 
-usage "BaseShader"
-	links "BaseShader"
-
 -- base shader library
 project "eqBaseShaders"
     kind "SharedLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
 		"BaseShader"
@@ -406,11 +264,15 @@ usage "eqRHIBaseLib"
 		Folders.public.."materialsystem1/",
 		Folders.matsystem1.."Renderers/Shared"
 	}
+	vpaths {
+		["*"] = Folders.matsystem1.."Renderers/*",
+		["Public Headers"] = Folders.public.."materialsystem1/renderers/**.h",
+	}
 
 -- empty renderer
 project "eqNullRHI"
     kind "SharedLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
@@ -421,7 +283,7 @@ project "eqNullRHI"
 	}
     files {
 		Folders.matsystem1.. "Renderers/Empty/**.cpp",
-		Folders.matsystem1.."Renderers/Empty/**.h"
+		Folders.matsystem1.."Renderers/Empty/**.h",
 	}
 	
 -- D3D11/D3D12/Vulkan renderer
@@ -444,10 +306,11 @@ project "eqNVRHI"
 -- WebGPU renderer
 project "eqWGPURHI"
 	kind "SharedLib"
-	unitybuild "on"
+	properties { "unitybuild" }
 	uses {
 		"coreLib", "frameworkLib", "e2Core",
-		"eqRHIBaseLib", "wgpu-dawn"
+		"eqRHIBaseLib", 
+		"wgpu-dawn"
 	}
 	defines{
 		"EQRHI_WGPU",

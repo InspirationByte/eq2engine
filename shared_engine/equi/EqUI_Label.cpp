@@ -19,21 +19,36 @@ namespace equi
 {
 
 // drawn rectangle
-IAARectangle Label::GetClientScissorRectangle() const
+IAARectangle Label::GetClientScissorRectangle(int depth, const RenderContextAbstract& context) const
 {
-	FontStyleParam style;
-	GetCalcFontStyle(style);
+	IAARectangle clientRect = GetClientRectangle();
 
-	float lineHeight = GetFont()->GetLineHeight(style);
+	// apply line height offset
+	{
+		FontStyleParam style;
+		GetCalcFontStyle(style);
 
-	IAARectangle rect = BaseClass::GetClientRectangle();
-	rect.leftTop.y -= lineHeight * 0.5f;
+		const float lineHeight = GetFont()->GetLineHeight(style);
+		clientRect.leftTop.y -= lineHeight * 0.5f;
+	}
 
-	return rect;
+	if (m_clipTransform)
+		clientRect = TransformScissorRectangle(clientRect, context.transformStack[depth]);
+
+	if (!m_parent || !m_parent->IsClipsChilds())
+	{
+		return clientRect;
+	}
+
+	const IAARectangle parentRect = m_parent->GetClientScissorRectangle(depth - 1, context);
+	return ClipScissorRectangle(clientRect, parentRect);
 }
 
-void Label::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRecorder* rendPassRecorder)
+void Label::DrawSelf( const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder)
 {
+	if (!m_labelText.IsValid() || m_labelText.Length() == 0)
+		return;
+
 	CRectangleTextLayoutBuilder rectLayout;
 	rectLayout.SetRectangle(AARectangle(rect));
 
@@ -43,13 +58,10 @@ void Label::DrawSelf( const IAARectangle& rect, bool scissorOn, IGPURenderPassRe
 
 	style.layoutBuilder = &rectLayout;
 
-	if(!scissorOn)
-		style.styleFlag &= ~TEXT_STYLE_SCISSOR;
-
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0, font->GetLineHeight(style)*0.5f);
 
 	// draw label
-	font->SetupRenderText(m_label.ToCString(), pos, style, rendPassRecorder);
+	font->SetupRenderText(m_labelText, pos, style, rendPassRecorder);
 }
 
 };

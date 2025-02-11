@@ -13,9 +13,9 @@ class WeakRefObject;
 namespace WeakPtr {
 
 template< class TYPE >
-struct WeakRefBlock
+struct WeakRefHandle
 {
-	WeakRefBlock(WeakRefObject<TYPE>* obj) : ptr(obj) {}
+	WeakRefHandle(WeakRefObject<TYPE>* obj) : ptr(obj) {}
 
 	WeakRefObject<TYPE>*	ptr{ nullptr };
 	mutable int				numRefs{ 0 };
@@ -26,18 +26,18 @@ struct WeakRefBlock
 };
 
 template< class TYPE>
-inline void	WeakRefBlock<TYPE>::Ref_Grab()
+inline void	WeakRefHandle<TYPE>::Ref_Grab()
 {
 	Atomic::Increment(numRefs);
 }
 
 template< class TYPE>
-inline bool	WeakRefBlock<TYPE>::Ref_Drop()
+inline bool	WeakRefHandle<TYPE>::Ref_Drop()
 {
 	if (Atomic::Decrement(numRefs) == 0)
 	{
 		if(ptr)
-			ptr->m_block = nullptr;
+			ptr->m_handle = nullptr;
 
 		delete this;
 		return true;
@@ -58,23 +58,25 @@ template< class TYPE >
 class WeakRefObject
 {
 	friend class CWeakPtr<TYPE>;
-	friend struct WeakPtr::WeakRefBlock<TYPE>;
+	friend struct WeakPtr::WeakRefHandle<TYPE>;
 public:
-	using Block = WeakPtr::WeakRefBlock<TYPE>;
+
+	using WeakHandle = WeakPtr::WeakRefHandle<TYPE>;
 	virtual ~WeakRefObject()
 	{
-		if (m_block)
-			m_block->ptr = nullptr;
+		if (m_handle)
+			m_handle->ptr = nullptr;
+	}
+
+	WeakHandle*	GetWeakHandle() const
+	{
+		if (!Atomic::Load(m_handle))
+			Atomic::Exchange(m_handle, PPNew WeakHandle(const_cast<WeakRefObject<TYPE>*>(this)));
+		return (WeakHandle*)Atomic::Load(m_handle);
 	}
 
 private:
-	Block*	GetBlock()
-	{
-		if (!Atomic::Load(m_block))
-			Atomic::Exchange(m_block, PPNew Block(this));
-		return (Block*)Atomic::Load(m_block);
-	}
-	mutable Block*	m_block{ nullptr };
+	mutable WeakHandle*	m_handle{ nullptr };
 };
 
 //-----------------------------------------------------------------------------
@@ -116,8 +118,8 @@ public:
 	friend bool		operator==(const CWeakPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() == b; }
 
 private:
-	using Block = WeakPtr::WeakRefBlock<TYPE>;
-	Block*			m_weakRefPtr{ nullptr };
+	using Handle = WeakPtr::WeakRefHandle<TYPE>;
+	Handle*			m_weakRefPtr{ nullptr };
 };
 
 //---------------------------------------------------------
@@ -130,28 +132,28 @@ inline CWeakPtr<TYPE>::CWeakPtr(std::nullptr_t)
 template< class TYPE >
 inline CWeakPtr<TYPE>::CWeakPtr( PTR_TYPE pObject )
 {
-	Block* block = nullptr;
+	Handle* handle = nullptr;
 	if (pObject)
-		m_weakRefPtr = block = pObject->GetBlock();
+		m_weakRefPtr = handle = pObject->GetWeakHandle();
 	
-	if(block)
-		block->Ref_Grab();
+	if(handle)
+		handle->Ref_Grab();
 }
 
 template< class TYPE >
 inline CWeakPtr<TYPE>::CWeakPtr( const CWeakPtr<TYPE>& other )
 {
-	Block* block = other.m_weakRefPtr;
-	m_weakRefPtr = block;
+	Handle* handle = other.m_weakRefPtr;
+	m_weakRefPtr = handle;
 
-	if (block)
-		block->Ref_Grab();
+	if (handle)
+		handle->Ref_Grab();
 }
 
 template< class TYPE >
 inline CWeakPtr<TYPE>::CWeakPtr(CWeakPtr<TYPE>&& other)
 {
-	Atomic::Exchange(m_weakRefPtr, Atomic::Exchange(other.m_weakRefPtr, (Block*)nullptr));
+	Atomic::Exchange(m_weakRefPtr, Atomic::Exchange(other.m_weakRefPtr, (Handle*)nullptr));
 }
 
 template< class TYPE >
@@ -167,22 +169,22 @@ inline void CWeakPtr<TYPE>::Assign(PTR_TYPE obj)
 		Release();
 		return;
 	}
-	Block* block = obj->GetBlock();
-	Block* oldBlock = (Block*)Atomic::Exchange(m_weakRefPtr, (Block*)block);
+	Handle* handle = obj->GetWeakHandle();
+	Handle* oldHandle = (Handle*)Atomic::Exchange(m_weakRefPtr, (Handle*)handle);
 
-	if(block)
-		block->Ref_Grab();
+	if(handle)
+		handle->Ref_Grab();
 
-	if(oldBlock)
-		oldBlock->Ref_Drop();
+	if(oldHandle)
+		oldHandle->Ref_Drop();
 }
 
 template< class TYPE >
 inline void CWeakPtr<TYPE>::Release()
 {
-	Block* block = (Block*)Atomic::Exchange(m_weakRefPtr, (Block*)nullptr);
-	if (block != nullptr)
-		block->Ref_Drop();
+	Handle* handle = (Handle*)Atomic::Exchange(m_weakRefPtr, (Handle*)nullptr);
+	if (handle != nullptr)
+		handle->Ref_Drop();
 }
 
 template< class TYPE >
@@ -194,10 +196,10 @@ inline void CWeakPtr<TYPE>::operator=(std::nullptr_t)
 template< class TYPE >
 inline void CWeakPtr<TYPE>::operator=(CWeakPtr<TYPE>&& other)
 {
-	Block* oldBlock = Atomic::Exchange(m_weakRefPtr, Atomic::Exchange(other.m_weakRefPtr, (Block*)nullptr));
+	Handle* oldHandle = Atomic::Exchange(m_weakRefPtr, Atomic::Exchange(other.m_weakRefPtr, (Handle*)nullptr));
 
-	if (oldBlock)
-		oldBlock->Ref_Drop();
+	if (oldHandle)
+		oldHandle->Ref_Drop();
 }
 
 template< class TYPE >

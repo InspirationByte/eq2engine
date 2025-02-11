@@ -47,12 +47,27 @@ EqTStr<CH>::EqTStr(StrRef str, int start, int len)
 template<typename CH>
 EqTStr<CH>::EqTStr(EqTStr<CH>&& str) noexcept
 {
-	m_nAllocated = str.m_nAllocated;
-	m_nLength = str.m_nLength;
-	m_pszString = str.m_pszString;
+	if (str.m_nLength == 0 && m_nLength == 0)
+		return;
+
+	if (str.m_nAllocated > m_nAllocated)
+	{
+		// move string with pointer as it has larger capacity
+		m_nAllocated = str.m_nAllocated;
+		m_nLength = str.m_nLength;
+		m_pszString = str.m_pszString;
+
+		str.m_pszString = nullptr;
+	}
+	else
+	{
+		// copy to the current buffer as it's large enough
+		Assign(str);
+		SAFE_DELETE_ARRAY(str.m_pszString);
+	}
+
 	str.m_nAllocated = 0;
 	str.m_nLength = 0;
-	str.m_pszString = nullptr;
 }
 
 template<typename CH>
@@ -72,10 +87,26 @@ EqTStr<CH>& EqTStr<CH>::operator=(const StrRef& other)
 template<typename CH>
 EqTStr<CH>& EqTStr<CH>::operator=(EqTStr&& other) noexcept
 {
-	SAFE_DELETE_ARRAY(m_pszString);
-	m_nAllocated = other.m_nAllocated;
-	m_nLength = other.m_nLength;
-	m_pszString = other.m_pszString;
+	if (other.m_nLength == 0 && m_nLength == 0)
+		return *this;
+
+	if (other.m_nAllocated > m_nAllocated)
+	{
+		// move string with pointer as it has larger capacity
+		SAFE_DELETE_ARRAY(m_pszString);
+		m_nAllocated = other.m_nAllocated;
+		m_nLength = other.m_nLength;
+		m_pszString = other.m_pszString;
+
+		other.m_pszString = nullptr;
+	}
+	else
+	{
+		// copy to the current buffer as it's large enough
+		Assign(other);
+		SAFE_DELETE_ARRAY(other.m_pszString);
+	}
+
 	other.m_nAllocated = 0;
 	other.m_nLength = 0;
 	other.m_pszString = nullptr;
@@ -410,7 +441,7 @@ void EqTStr<CH>::ReplaceChar(CH whichChar, CH to)
 		return;
 
 	CH* str = m_pszString;
-	for(uint i = 0; i < m_nLength; i++)
+	for(int i = 0; i < m_nLength; i++)
 	{
 		if(*str == 0)
 			break;
@@ -451,16 +482,21 @@ int EqTStr<CH>::ReplaceSubstr(StrRef find, StrRef replaceTo, bool caseSensivite 
 }
 
 template<typename CH>
-size_t EqTStr<CH>::ReadString(IVirtualStream* stream, EqTStr<CH>& output)
+VSSize EqTStr<CH>::ReadString(IVirtualStream* stream, int length, EqTStr& output)
 {
-	uint16 length = 0;
-	stream->Read(&length, 1, sizeof(length));
 	output.Resize(length, false);
-
 	stream->Read(output.m_pszString, sizeof(CH), length);
 	output.m_pszString[length] = 0;
 	output.m_nLength = length;
 	return 1;
+}
+
+template<typename CH>
+VSSize EqTStr<CH>::ReadString(IVirtualStream* stream, EqTStr<CH>& output)
+{
+	int length = 0;
+	stream->Read(&length, 1, sizeof(length));
+	return ReadString(stream, length, output);
 }
 
 template class EqTStr<char>;

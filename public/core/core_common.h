@@ -38,7 +38,7 @@
 #define PPMEM_DISABLED
 #endif
 
-#if (defined(_RETAIL) || defined(__ANDROID__)) && !defined(PPMEM_DISABLED)
+#if (defined(_RETAIL) || defined(_PROFILE) || defined(__ANDROID__)) && !defined(PPMEM_DISABLED)
 #define PPMEM_DISABLED
 #endif // _RETAIL
 
@@ -73,25 +73,23 @@
 #include "ds/range_for.h"
 #include "ds/fluent.h"
 #include "ds/function.h"
-
-#include "ds/Array.h"
-#include "ds/stringref.h"
-
 #include "ds/IVirtualStream.h"
 #include "ds/MemoryStream.h"
 
-#include "ds/mempool.h"
+#include "ds/Array.h"
 #include "ds/ArrayRef.h"
+
+#include "ds/stringref.h"
+#include "ds/eqstring.h"
+#include "ds/string_utils.h"
+
+#include "ds/mempool.h"
 #include "ds/BitArray.h"
 #include "ds/Map.h"
 #include "ds/List.h"
 
-#include "ds/eqstring.h"
-
 #include "platform/eqthread.h"
 #include "ds/future.h"
-
-#include "utils/CRC32.h"
 
 #include "Logger.h"
 

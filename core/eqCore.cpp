@@ -45,24 +45,24 @@ EXPORTED_INTERFACE(IDkCore, CDkCore)
 #ifdef PLAT_WIN
 BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reserved)
 {
-    //Only set debug info when connecting dll
+	//Only set debug info when connecting dll
 #ifdef CRT_DEBUG_ENABLED
-    int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
-    flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
-    flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
-    flag |= _CRTDBG_ALLOC_MEM_DF;
-    _CrtSetDbgFlag(flag); // Set flag to the new value
-    _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
+	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
+	flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
+	flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
+	flag |= _CRTDBG_ALLOC_MEM_DF;
+	_CrtSetDbgFlag(flag); // Set flag to the new value
+	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
 #endif
 
-    return TRUE;
+	return TRUE;
 }
 
 #endif // PLAT_POSIX
 
 //------------------------------------------------------------------------------------------
 
-IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
+IEXPORTS void* _GetDkCoreInterface(const char* pszName)
 {
 	void* iface = g_eqCore->GetInterface(pszName);
 	ASSERT_MSG(iface, "Interface %s is not registered", pszName);
@@ -154,18 +154,17 @@ static void SetupBinPath()
 #else
 	// TODO: POSIX implementation
 #endif
-
 }
 
 
 // Definition that we can't see or change throught console
-bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
+bool CDkCore::Init(const CoreAppInitParameters& initParams)
 {
-	ASSERT_MSG(pszApplicationName != nullptr && strlen(pszApplicationName) > 0, "DkCore init: application name must be not null!");
+	ASSERT_MSG(initParams.appName != nullptr && strlen(initParams.appName) > 0, "DkCore init: application name must be not null!");
 	PPMemInit();
 
 #ifdef _WIN32
-	setlocale(LC_ALL,"C");
+	setlocale(LC_ALL, "C");
 #endif // _WIN32
 
 	// Assume the core is always init from first thread
@@ -173,12 +172,12 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	SetupBinPath();
 
-    if (pszCommandLine && strlen(pszCommandLine) > 0)
-        g_cmdLine->Init(pszCommandLine);
+	if (initParams.commandLine.ptr())
+		g_cmdLine->Init(initParams.commandLine);
 
 	const int nWorkdirIndex = g_cmdLine->FindArgument("-workdir");
 	const char* newWorkDir = g_cmdLine->GetArgumentsOf(nWorkdirIndex);
-	if(newWorkDir)
+	if (newWorkDir)
 	{
 		Msg("Setting working directory to %s\n", newWorkDir);
 #ifdef _WIN32
@@ -190,25 +189,28 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 #endif // _WIN32
 	}
 
-	m_szApplicationName = pszApplicationName;
+	m_szApplicationName = initParams.appName;
 
 	m_coreConfiguration = PPNew KeyValues();
 	KVSection* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
+	EqString appConfigName = initParams.appConfigName ? initParams.appConfigName : "E2.CONFIG";
+
 	// try different locations of E2.CONFIG
-	bool eqConfigFound = m_coreConfiguration->LoadFromFile("E2.CONFIG", SP_ROOT);
+	bool eqConfigFound = m_coreConfiguration->LoadFromFile(appConfigName, SP_ROOT);
 	if (!eqConfigFound)
 	{
-		eqConfigFound = m_coreConfiguration->LoadFromFile("../E2.CONFIG", SP_ROOT);
+		appConfigName = "../" + appConfigName;
+		eqConfigFound = m_coreConfiguration->LoadFromFile(appConfigName, SP_ROOT);
 		g_fileSystem->SetBasePath(".."); // little hack
 	}
 
-	if(!eqConfigFound)
+	if (!eqConfigFound)
 	{
 		// try create default settings
 		KVSection& appDebug = *coreConfigRoot->CreateSection("ApplicationDebug");
 		appDebug
-			.SetKey("ForceLogApplications", pszApplicationName);
+			.SetKey("ForceLogApplications", initParams.appName);
 
 		KVSection& fsSection = *coreConfigRoot->CreateSection("FileSystem");
 
@@ -224,12 +226,12 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	bool logEnabled = false;
 
 	const KVSection* appDebugSec = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
-	if(appDebugSec)
+	if (appDebugSec)
 	{
-		if(appDebugSec->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
+		if (appDebugSec->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
 			logEnabled = true;
 
-		if(appDebugSec->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
+		if (appDebugSec->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			m_debugSettings.printMemLeaksAtExit = true;
 
 		if (appDebugSec->FindSection("AssertPromptInDebugger", KV_FLAG_NOVALUE))
@@ -303,10 +305,10 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	}
 #endif
 
-	if(g_cmdLine->FindArgument("-nolog") != -1)
+	if (g_cmdLine->FindArgument("-nolog") != -1)
 		logEnabled = false;
 
-	if(g_cmdLine->FindArgument("-log") != -1)
+	if (g_cmdLine->FindArgument("-log") != -1)
 		logEnabled = true;
 
 	{
@@ -333,39 +335,21 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->Init();
 
-	c_log_enable = PPNew ConCommand("log_enable",CONCOMMAND_FN(log_enable));
-	c_log_disable = PPNew ConCommand("log_disable",CONCOMMAND_FN(log_disable));
-	c_log_flush = PPNew ConCommand("log_flush",CONCOMMAND_FN(log_flush));
+	c_log_enable = PPNew ConCommand("log_enable", CONCOMMAND_FN(log_enable));
+	c_log_disable = PPNew ConCommand("log_disable", CONCOMMAND_FN(log_disable));
+	c_log_flush = PPNew ConCommand("log_flush", CONCOMMAND_FN(log_flush));
 
 	// Install exception handler
 	if (g_cmdLine->FindArgument("-nocrashdump") == -1)
 		InstallExceptionHandler();
 
-	if(logEnabled)
+	if (logEnabled)
 		MsgAccept("\nCore: Logging console output to file is enabled.\n");
 	else
 		MsgError("\nCore: Logging console output to file is disabled.\n");
 
 	m_isInit = true;
 	return true;
-}
-
-bool CDkCore::Init(const char* pszApplicationName,int argc, char **argv)
-{
-	static EqString strCmdLine;
-	strCmdLine.Empty();
-
-    // Append arguments
-    for (int i = 0; i < argc; i++)
-    {
-		const bool hasSpaces = strchr(argv[i], ' ') || strchr(argv[i], '\t');
-		if (hasSpaces)
-			strCmdLine.Append(EqString::Format("\"%s\" ", argv[i]));
-		else
-			strCmdLine.Append(EqString::Format("%s ", argv[i]));
-    }
-
-    return Init(pszApplicationName, strCmdLine);
 }
 
 KeyValues* CDkCore::GetConfig() const
@@ -375,8 +359,8 @@ KeyValues* CDkCore::GetConfig() const
 
 void CDkCore::Shutdown()
 {
-    if (!m_isInit)
-        return;
+	if (!m_isInit)
+		return;
 
 	m_isInit = false;
 
@@ -389,17 +373,17 @@ void CDkCore::Shutdown()
 	SAFE_DELETE(c_log_disable);
 	SAFE_DELETE(c_log_flush);
 
-    SetSpewFunction(nullptr);
+	SetSpewFunction(nullptr);
 
-    ((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->DeInit();
-    g_cmdLine->DeInit();
+	((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->DeInit();
+	g_cmdLine->DeInit();
 
 #if !defined(_RETAIL)
-	if(m_debugSettings.printMemLeaksAtExit)
-		PPMemInfo(false);
+	if (m_debugSettings.printMemLeaksAtExit)
+		PPMemInfo(true);
 #endif
 
-    Msg("\n*Destroying core...\n");
+	Msg("\n*Destroying core...\n");
 
 	// shutdown memory
 	PPMemShutdown();
@@ -409,7 +393,7 @@ void CDkCore::Shutdown()
 
 char* CDkCore::GetApplicationName() const
 {
-    return (char*)m_szApplicationName.GetData();
+	return (char*)m_szApplicationName.GetData();
 }
 
 // Interface management for engine
@@ -418,9 +402,9 @@ void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 {
 	//MsgInfo("Registering interface '%s'...\n", pszName);
 
-	for(int i = 0; i < m_interfaces.numElem(); i++)
+	for (int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!CString::Compare(m_interfaces[i].name, pszName))
+		if (!CString::Compare(m_interfaces[i].name, pszName))
 			ASSERT_FAIL("Core interface module \"%s\" is already registered.", pszName);
 	}
 
@@ -441,9 +425,9 @@ void CDkCore::RemoveExceptionCallback(CoreExceptionCallback callback)
 
 IEqCoreModule* CDkCore::GetInterface(const char* pszName) const
 {
-	for(int i = 0; i < m_interfaces.numElem(); i++)
+	for (int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!CString::Compare(m_interfaces[i].name, pszName))
+		if (!CString::Compare(m_interfaces[i].name, pszName))
 			return m_interfaces[i].ptr;
 	}
 
@@ -452,9 +436,9 @@ IEqCoreModule* CDkCore::GetInterface(const char* pszName) const
 
 void CDkCore::UnregisterInterface(const char* pszName)
 {
-	for(int i = 0; i < m_interfaces.numElem(); i++)
+	for (int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!CString::Compare(m_interfaces[i].name, pszName))
+		if (!CString::Compare(m_interfaces[i].name, pszName))
 		{
 			m_interfaces.fastRemoveIndex(i);
 			return;
@@ -470,7 +454,7 @@ bool CDkCore::IsInitialized() const
 void CDkCore::OnModuleLoaded(const char* pszName)
 {
 #ifdef HAS_LIVEPP_SUPPORT
-	if(m_livePPEnabled)
+	if (m_livePPEnabled)
 	{
 		EqWString modulePathStr;
 		AnsiUnicodeConverter(modulePathStr, pszName);

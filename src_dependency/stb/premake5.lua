@@ -1,20 +1,6 @@
-
-project "stb"
-	kind "StaticLib"
-
-	files 
-	{ 
-		"*.h", 
-		"*.c" 
-	}
-	includedirs 
-	{
-		"./",
-	} 
-					
+-- stb as a usage
 usage "stb"
-    includedirs {
-		"./",
+	includedirs {
+		"./"
 	}
-	links "stb"
 

@@ -34,7 +34,7 @@ inline MatVarProxy<T>::MatVarProxy(int varIdx, MaterialVarBlock& owner)
 	ASSERT(varIdx != -1);
 
 	m_matVarIdx = varIdx;
-	m_vars = CWeakPtr(&owner);
+	m_vars.Assign(&owner);
 }
 
 template<typename T>
