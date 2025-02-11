@@ -123,6 +123,7 @@ void CNVRHICommandRecorder::CopyTextureToTexture(const TextureCopyInfo& source, 
 
 void CNVRHICommandRecorder::CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const
 {
+	ASSERT_FAIL("Unimplemented");
 	/*
 	ASSERT(source.origin.x >= 0 && source.origin.y >= 0 && source.origin.arraySlice >= 0);
 	CWGPUTexture* srcTexture = static_cast<CWGPUTexture*>(source.texture);
@@ -195,45 +196,8 @@ IGPUCommandBufferPtr CNVRHICommandRecorder::End()
 
 IGPURenderPassRecorderPtr CNVRHICommandRecorder::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
 {
-	WGPURenderPassDescriptor rhiRenderPassDesc = {};
-	FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS> rhiColorAttachmentList;
-	WGPURenderPassDepthStencilAttachment rhiDepthStencilAttachment = {};
-	FillWGPURenderPassDescriptor(renderPassDesc, rhiRenderPassDesc, rhiColorAttachmentList, rhiDepthStencilAttachment);
-
-	WGPURenderPassEncoder rhiRenderPassEncoder = wgpuCommandEncoderBeginRenderPass(m_rhiCommandEncoder, &rhiRenderPassDesc);
-	if (!rhiRenderPassEncoder)
-		return nullptr;
-
-	IVector2D renderTargetDims = 0;
-	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
-	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
-	{
-		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
-		if (colorTarget.target.texture)
-		{
-			renderTargetDims = IVector2D(colorTarget.target.texture->GetWidth(), colorTarget.target.texture->GetHeight());
-			renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
-
-			if(colorTarget.target)
-				renderPass->m_renderTargetMSAASamples = colorTarget.target.texture->GetSampleCount();
-		}
-	}
-
-	if (renderPassDesc.depthStencil)
-	{
-		renderTargetDims = IVector2D(renderPassDesc.depthStencil.texture->GetWidth(), renderPassDesc.depthStencil.texture->GetHeight());
-		renderPass->m_depthTargetFormat = renderPassDesc.depthStencil.texture->GetFormat();
-	}
-	else
-		renderPass->m_depthTargetFormat = FORMAT_NONE;
-
-	renderPass->m_depthReadOnly = renderPassDesc.depthReadOnly;
-	renderPass->m_stencilReadOnly = renderPassDesc.stencilReadOnly;
-
-	//renderPass->m_rhiCommandEncoder = m_rhiCommandEncoder;
-	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
-	renderPass->m_renderTargetDims = renderTargetDims;
-	renderPass->m_userData = userData;
+	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CRefPtr_new(CNVRHIRenderPassRecorder, m_rhiCommandList, userData);
+	renderPass->InternalBeginRenderPass(renderPassDesc);
 
 	return IGPURenderPassRecorderPtr(renderPass);
 }
@@ -242,18 +206,7 @@ IGPURenderPassRecorderPtr CNVRHICommandRecorder::BeginRenderPass(const RenderPas
 
 IGPUComputePassRecorderPtr CNVRHICommandRecorder::BeginComputePass(const char* name, void* userData) const
 {
-	WGPUComputePassDescriptor rhiComputePassDesc = {};
-	rhiComputePassDesc.label = _WSTR(name);
-	//rhiComputePassDesc.timestampWrites TODO
-	WGPUComputePassEncoder rhiComputePassEncoder = wgpuCommandEncoderBeginComputePass(m_rhiCommandEncoder, &rhiComputePassDesc);
-	if (!rhiComputePassEncoder)
-		return nullptr;
-
-	CRefPtr<CWGPUComputePassRecorder> renderPass = CRefPtr_new(CWGPUComputePassRecorder);
-
-	//renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
-	renderPass->m_rhiComputePassEncoder = rhiComputePassEncoder;
-	renderPass->m_userData = userData;
+	CRefPtr<CNVRHIComputePassRecorder> renderPass = CRefPtr_new(CNVRHIComputePassRecorder, m_rhiCommandList, userData, name);
 
 	return IGPUComputePassRecorderPtr(renderPass);
 }

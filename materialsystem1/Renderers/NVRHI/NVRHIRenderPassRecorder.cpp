@@ -1,166 +1,312 @@
-#include <webgpu/webgpu.h>
+#include <nvrhi/nvrhi.h>
 #include "core/core_common.h"
 
-#include "WGPUBuffer.h"
-#include "WGPUStates.h"
-#include "WGPURenderPassRecorder.h"
-#include "WGPURenderDefs.h"
+#include "NVRHIBuffer.h"
+#include "NVRHIStates.h"
+#include "NVRHIRenderPassRecorder.h"
+#include "NVRHIRenderDefs.h"
+#include "NVRHITexture.h"
+#include "NVRHIRenderAPI.h"
 
 //-------------------------------------------
 
-CWGPURenderPassRecorder::~CWGPURenderPassRecorder()
+void CNVRHIRenderPassRecorder::DbgPopGroup() const
 {
-	if (m_rhiRenderPassEncoder)
-		wgpuRenderPassEncoderRelease(m_rhiRenderPassEncoder);
-
-	if(m_rhiCommandEncoder)
-		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
+	m_rhiCommandList->endMarker();
 }
 
-void CWGPURenderPassRecorder::DbgPopGroup() const
+void CNVRHIRenderPassRecorder::DbgPushGroup(const char* groupLabel) const
 {
-	wgpuRenderPassEncoderPopDebugGroup(m_rhiRenderPassEncoder);
+	m_rhiCommandList->beginMarker(groupLabel);
 }
 
-void CWGPURenderPassRecorder::DbgPushGroup(const char* groupLabel) const
+void CNVRHIRenderPassRecorder::DbgAddMarker(const char* label) const
 {
-	wgpuRenderPassEncoderPushDebugGroup(m_rhiRenderPassEncoder, _WSTR(groupLabel));
+	m_rhiCommandList->beginMarker(label);
+	m_rhiCommandList->endMarker();
 }
 
-void CWGPURenderPassRecorder::DbgAddMarker(const char* label) const
-{
-	wgpuRenderPassEncoderInsertDebugMarker(m_rhiRenderPassEncoder, _WSTR(label));
-}
-
-void CWGPURenderPassRecorder::AddBundle(IGPURenderBundleRecorder* bundle)
+void CNVRHIRenderPassRecorder::AddBundle(IGPURenderBundleRecorder* bundle)
 {
 	ASSERT_FAIL("NOT IMPLEMENTED");
 }
 
-void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
+void CNVRHIRenderPassRecorder::CommitGraphicsState(nvrhi::IBuffer* indirectBuffer)
 {
-	m_pipeline.Assign(pipeline);
-
-	ASSERT(pipeline);
-	CWGPURenderPipeline* pipelineImpl = static_cast<CWGPURenderPipeline*>(pipeline);
-	if (!pipelineImpl)
+	if (!m_graphicsStateDirty)
 		return;
-	wgpuRenderPassEncoderSetPipeline(m_rhiRenderPassEncoder, pipelineImpl->m_rhiRenderPipeline);
-}
+	m_graphicsStateDirty = false;
 
-void CWGPURenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) // TODO: dynamic offsets
-{
-	CWGPUBindGroup* bindGroupImpl = static_cast<CWGPUBindGroup*>(bindGroup);
-	if(bindGroupImpl)
-		wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, dynamicOffsets.numElem(), dynamicOffsets.ptr());
-	else
-		wgpuRenderPassEncoderSetBindGroup(m_rhiRenderPassEncoder, groupIndex, nullptr, 0, nullptr);
-}
+	auto rhiViewportState = nvrhi::ViewportState()
+		.addViewport(m_rhiViewport)
+		.addScissorRect(m_rhiScissor);
 
-void CWGPURenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset, int64 size)
-{
-	CWGPUBuffer* vertexBufferImpl = static_cast<CWGPUBuffer*>(vertexBuffer);
-	if (vertexBufferImpl)
-	{
-		if (size < 0) size = WGPU_WHOLE_SIZE;
-		ASSERT_MSG(vertexBufferImpl->GetUsageFlags() & BUFFERUSAGE_VERTEX, "buffer doesn't have Vertex buffer usage bit");
-		wgpuRenderPassEncoderSetVertexBuffer(m_rhiRenderPassEncoder, slot, vertexBufferImpl->GetWGPUBuffer(), offset, size);
-	}
-	else
-		wgpuRenderPassEncoderSetVertexBuffer(m_rhiRenderPassEncoder, slot, nullptr, 0, 0);
-}
+	CNVRHIRenderPipeline* pipelineImpl = static_cast<CNVRHIRenderPipeline*>(m_pipeline.Ptr());
+	ASSERT(pipelineImpl);
 
-void CWGPURenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset, int64 size)
-{
-	CWGPUBuffer* indexBufferImpl = static_cast<CWGPUBuffer*>(indexBuf);
+	auto rhiGraphicsState = nvrhi::GraphicsState()
+		.setPipeline(pipelineImpl->m_rhiRenderPipeline)
+		.setFramebuffer(m_rhiFramebuffer)
+		.setViewport(rhiViewportState)
+		.setIndirectParams(indirectBuffer);
+
+	CNVRHIBuffer* indexBufferImpl = static_cast<CNVRHIBuffer*>(m_indexBuffer.buffer.Ptr());
 	if (indexBufferImpl)
 	{
-		if (size < 0) size = WGPU_WHOLE_SIZE;
 		ASSERT_MSG(indexBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDEX, "buffer doesn't have Index buffer usage bit");
-		wgpuRenderPassEncoderSetIndexBuffer(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), g_wgpuIndexFormat[indexFormat], offset, size);
+		auto rhiIndexBuffer = nvrhi::IndexBufferBinding()
+			.setBuffer(indexBufferImpl->GetNVRHIBufferHandle())
+			.setOffset(m_indexBuffer.offset)
+			.setFormat(s_nvrhiVertexBufferFormats[m_indexFormat]);
+		rhiGraphicsState.setIndexBuffer(rhiIndexBuffer);
 	}
+
+	int slotId = 0;
+	for (const GPUBufferView& vertexBindings : m_rhiVertexBuffers)
+	{
+		if (vertexBindings.buffer)
+		{
+			CNVRHIBuffer* vertexBufferImpl = static_cast<CNVRHIBuffer*>(vertexBindings.buffer.Ptr());
+			ASSERT_MSG(vertexBufferImpl->GetUsageFlags() & BUFFERUSAGE_VERTEX, "buffer at slot %d doesn't have Vertex buffer usage bit", slotId);
+
+			auto rhiVertexBuffer = nvrhi::VertexBufferBinding()
+				.setBuffer(vertexBufferImpl->GetNVRHIBufferHandle())
+				.setOffset(vertexBindings.offset)
+				.setSlot(slotId);
+
+			rhiGraphicsState.addVertexBuffer(rhiVertexBuffer);
+		}
+		++slotId;
+	}
+
+	for (IGPUBindGroup* bindGroup : m_bindings)
+	{
+		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
+		if(bindGroupImpl)
+			rhiGraphicsState.addBindingSet(bindGroupImpl->m_rhiBindingSet);
+		else
+			rhiGraphicsState.addBindingSet(nullptr);
+	}
+	m_rhiCommandList->setGraphicsState(rhiGraphicsState);
 }
 
-void CWGPURenderPassRecorder::SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth)
+void CNVRHIRenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
-	const Vector2D rectPos = rectangle.GetLeftTop();
-	const Vector2D rectSize = rectangle.GetSize();
-	wgpuRenderPassEncoderSetViewport(m_rhiRenderPassEncoder, rectPos.x, rectPos.y, rectSize.x, rectSize.y, minDepth, maxDepth);
+	m_pipeline.Assign(pipeline);
+	m_graphicsStateDirty = true;
 }
 
-void CWGPURenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle)
+void CNVRHIRenderPassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets) // TODO: dynamic offsets
 {
-	const IVector2D rectPos = rectangle.GetLeftTop();
-	const IVector2D rectSize = rectangle.GetSize();
-	wgpuRenderPassEncoderSetScissorRect(m_rhiRenderPassEncoder, rectPos.x, rectPos.y, rectSize.x, rectSize.y);
+	m_bindings[groupIndex].Assign(bindGroup);
+	m_graphicsStateDirty = true;
 }
 
-void CWGPURenderPassRecorder::Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance)
+void CNVRHIRenderPassRecorder::SetVertexBuffer(int slot, IGPUBuffer* vertexBuffer, int64 offset, int64 size)
 {
-	wgpuRenderPassEncoderDraw(m_rhiRenderPassEncoder, vertexCount, instanceCount, firstVertex, firstInstance);
+	m_rhiVertexBuffers[slot] = GPUBufferView(vertexBuffer, offset, size);
+	m_graphicsStateDirty = true;
 }
 
-void CWGPURenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex, int firstInstance)
+void CNVRHIRenderPassRecorder::SetIndexBuffer(IGPUBuffer* indexBuf, EIndexFormat indexFormat, int64 offset, int64 size)
 {
-	wgpuRenderPassEncoderDrawIndexed(m_rhiRenderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+	m_indexBuffer = GPUBufferView(indexBuf, offset, size);
+	m_indexFormat = indexFormat;
+	m_graphicsStateDirty = true;
 }
 
-void CWGPURenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
+void CNVRHIRenderPassRecorder::SetViewport(const AARectangle& rectangle, float minDepth, float maxDepth)
 {
-	CWGPUBuffer* indexBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
-	wgpuRenderPassEncoderDrawIndexedIndirect(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), indirectOffset);
+	const Vector2D rectLT = rectangle.GetLeftTop();
+	const Vector2D rectRB = rectangle.GetRightBottom();
+	m_rhiViewport = nvrhi::Viewport(rectLT.x, rectRB.y, rectLT.y, rectRB.y, minDepth, maxDepth);
+	m_graphicsStateDirty = true;
 }
 
-void CWGPURenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
+void CNVRHIRenderPassRecorder::SetScissorRectangle(const IAARectangle& rectangle)
 {
-	CWGPUBuffer* indexBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
-	wgpuRenderPassEncoderDrawIndirect(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), indirectOffset);
+	// clamp scissor to screen size
+	const IAARectangle screenRect(IVector2D(0, 0), GetRenderTargetDimensions());
+	IAARectangle rect;
+	rect.leftTop = clamp(rectangle.leftTop, screenRect.leftTop, screenRect.rightBottom);
+	rect.rightBottom = clamp(rectangle.rightBottom, screenRect.leftTop, screenRect.rightBottom);
+
+	const Vector2D rectLT = screenRect.GetLeftTop();
+	const Vector2D rectRB = screenRect.GetRightBottom();
+	m_rhiScissor = nvrhi::Rect(rectLT.x, rectRB.y, rectLT.y, rectRB.y);
+	m_graphicsStateDirty = true;
+}
+
+void CNVRHIRenderPassRecorder::Draw(int vertexCount, int firstVertex, int instanceCount, int firstInstance)
+{
+	CommitGraphicsState();
+
+	m_rhiCommandList->draw(nvrhi::DrawArguments()
+		.setVertexCount(vertexCount)
+		.setStartVertexLocation(firstVertex)
+		.setInstanceCount(instanceCount)
+		.setStartInstanceLocation(firstInstance)
+	);
+}
+
+void CNVRHIRenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int instanceCount, int baseVertex, int firstInstance)
+{
+	CommitGraphicsState();
+
+	m_rhiCommandList->drawIndexed(nvrhi::DrawArguments()
+		.setVertexCount(indexCount)
+		.setStartIndexLocation(firstIndex)
+		.setStartVertexLocation(baseVertex)
+		.setInstanceCount(instanceCount)
+		.setStartInstanceLocation(firstInstance)
+	);
+}
+
+void CNVRHIRenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
+{
+	CNVRHIBuffer* indirectBufferImpl = static_cast<CNVRHIBuffer*>(indirectBuffer);
+	ASSERT(indirectBufferImpl);
+	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+
+	// since indirect buffer is part of state, we need to update it
+	m_graphicsStateDirty = true;
+
+	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
+
+	m_rhiCommandList->drawIndexedIndirect(indirectOffset);
+}
+
+void CNVRHIRenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
+{
+	CNVRHIBuffer* indirectBufferImpl = static_cast<CNVRHIBuffer*>(indirectBuffer);
+	ASSERT(indirectBufferImpl);
+	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+	CommitGraphicsState(indirectBufferImpl->GetNVRHIBufferHandle());
+
+	m_rhiCommandList->drawIndirect(indirectOffset);
+}
+
+static void NVRHIBeginRenderPass(const RenderPassDesc& renderPassDesc, nvrhi::CommandListHandle rhiCmdList)
+{
+	auto rhiFramebufferDesc = nvrhi::FramebufferDesc();
+	for (const RenderPassDesc::ColorTargetDesc& colorTarget : renderPassDesc.colorTargets)
+	{
+		const CNVRHITexture* targetTexture = static_cast<CNVRHITexture*>(colorTarget.target.texture.Ptr());
+		const CNVRHITexture* resolveTargetTexture = static_cast<CNVRHITexture*>(colorTarget.resolveTarget.texture.Ptr());
+
+		rhiFramebufferDesc.addColorAttachment(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHiTextureView(colorTarget.target.arraySlice));
+		if (colorTarget.loadOp == LOADFUNC_CLEAR)
+		{
+			rhiCmdList->clearTextureFloat(targetTexture->GetNVRHITextureHandle(), targetTexture->GetNVRHiTextureView(colorTarget.target.arraySlice),
+				nvrhi::Color{ colorTarget.clearColor.r, colorTarget.clearColor.g, colorTarget.clearColor.b, colorTarget.clearColor.a });
+		}
+
+		// TODO: on Complete()
+		//if (resolveTargetTexture)
+		//	rhiCmdList->resolveTexture();
+	}
+
+	if (renderPassDesc.depthStencil)
+	{
+		const CNVRHITexture* depthTexture = static_cast<CNVRHITexture*>(renderPassDesc.depthStencil.texture.Ptr());
+
+		auto rhiDepthAttachment = nvrhi::FramebufferAttachment()
+			.setSubresources(depthTexture->GetNVRHiTextureView(renderPassDesc.depthStencil.arraySlice))
+			.setTexture(depthTexture->GetNVRHITextureHandle())
+			.setReadOnly(renderPassDesc.depthReadOnly);
+
+		rhiFramebufferDesc.setDepthAttachment(depthTexture->GetNVRHITextureHandle());
+
+		const bool clearDepth = !renderPassDesc.depthReadOnly && renderPassDesc.depthLoadOp == LOADFUNC_CLEAR;
+		const bool clearStencil = !renderPassDesc.stencilReadOnly && IsStencilFormat(renderPassDesc.depthStencil.texture->GetFormat()) && renderPassDesc.stencilLoadOp == LOADFUNC_CLEAR;
+		rhiCmdList->clearDepthStencilTexture(depthTexture->GetNVRHITextureHandle(), depthTexture->GetNVRHiTextureView(renderPassDesc.depthStencil.arraySlice),
+			clearDepth, renderPassDesc.depthClearValue, clearStencil, (uint8)renderPassDesc.stencilClearValue);
+
+		// TODO
+		// stencilStoreOp
+	}
+
+	nvrhi::FramebufferHandle rhiFramebuffer = CNVRHIRenderAPI::Instance.GetNVRHIDevice()->createFramebuffer(rhiFramebufferDesc);
+	rhiCmdList->setResourceStatesForFramebuffer(rhiFramebuffer);
+}
+
+void CNVRHIRenderPassRecorder::InternalBeginRenderPass(const RenderPassDesc& renderPassDesc)
+{
+	auto rhiFramebufferDesc = nvrhi::FramebufferDesc();
+	NVRHIBeginRenderPass(renderPassDesc, m_rhiCommandList);
+
+	IVector2D renderTargetDims = 0;
+	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
+	{
+		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
+		if (colorTarget.target.texture)
+		{
+			renderTargetDims = IVector2D(colorTarget.target.texture->GetWidth(), colorTarget.target.texture->GetHeight());
+			m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
+
+			if (colorTarget.target)
+				m_renderTargetMSAASamples = colorTarget.target.texture->GetSampleCount();
+		}
+	}
+
+	if (renderPassDesc.depthStencil)
+	{
+		renderTargetDims = IVector2D(renderPassDesc.depthStencil.texture->GetWidth(), renderPassDesc.depthStencil.texture->GetHeight());
+		m_depthTargetFormat = renderPassDesc.depthStencil.texture->GetFormat();
+	}
+	else
+		m_depthTargetFormat = FORMAT_NONE;
+
+	m_depthReadOnly = renderPassDesc.depthReadOnly;
+	m_stencilReadOnly = renderPassDesc.stencilReadOnly;
+	m_renderTargetDims = renderTargetDims;
+	m_dbgLabel = renderPassDesc.name;
+
+	const AARectangle defaultViewportRectangle(vec2_zero, Vector2D(renderTargetDims));
+	SetViewport(defaultViewportRectangle, 0.0f, 1.0f);
+	SetScissorRectangle(defaultViewportRectangle);
 }
 
 // TODO:
 
-// CWGPURenderPassRecorder::BeginOcclusionQuery(uint32_t queryIndex);
-// CWGPURenderPassRecorder::EndOcclusionQuery();
+// CNVRHIRenderPassRecorder::BeginOcclusionQuery(uint32_t queryIndex);
+// CNVRHIRenderPassRecorder::EndOcclusionQuery();
 
-// CWGPURenderPassRecorder::ExecuteBundles(size_t bundleCount, WGPURenderBundle const* bundles);
-// CWGPURenderPassRecorder::PixelLocalStorageBarrier();
+// CNVRHIRenderPassRecorder::ExecuteBundles(size_t bundleCount, WGPURenderBundle const* bundles);
+// CNVRHIRenderPassRecorder::PixelLocalStorageBarrier();
 
-// CWGPURenderPassRecorder::InsertDebugMarker(char const* markerLabel);
-// CWGPURenderPassRecorder::PopDebugGroup();
-// CWGPURenderPassRecorder::PushDebugGroup(char const* groupLabel);
+// CNVRHIRenderPassRecorder::InsertDebugMarker(char const* markerLabel);
+// CNVRHIRenderPassRecorder::PopDebugGroup();
+// CNVRHIRenderPassRecorder::PushDebugGroup(char const* groupLabel);
 
-// CWGPURenderPassRecorder::SetBlendConstant(WGPUColor const* color);
-// CWGPURenderPassRecorder::SetStencilReference(uint32_t reference);
+// CNVRHIRenderPassRecorder::SetBlendConstant(WGPUColor const* color);
+// CNVRHIRenderPassRecorder::SetStencilReference(uint32_t reference);
 
-void CWGPURenderPassRecorder::Complete()
+void CNVRHIRenderPassRecorder::Complete()
 {
-	if (!m_rhiRenderPassEncoder)
+	if (!m_rhiCommandList)
 	{
 		ASSERT_FAIL("Render pass recorder was already ended");
 		return;
 	}
-	wgpuRenderPassEncoderEnd(m_rhiRenderPassEncoder);
-	wgpuRenderPassEncoderRelease(m_rhiRenderPassEncoder);
-	m_rhiRenderPassEncoder = nullptr;
+	m_rhiCommandList = nullptr;
 }
 
-IGPUCommandBufferPtr CWGPURenderPassRecorder::End()
+IGPUCommandBufferPtr CNVRHIRenderPassRecorder::End()
 {
 	Complete();
 
-	if (!m_rhiCommandEncoder)
+	if (!m_rhiCommandList)
 	{
 		ASSERT_FAIL("Render pass recorder was already ended or is owned by GPUCommandRecorder, use Complete in this case");
 		return nullptr;
 	}
 
-	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
+	m_rhiCommandList->close();
 
-	WGPUCommandBuffer rhiCommandBuffer = wgpuCommandEncoderFinish(m_rhiCommandEncoder, nullptr);
-	wgpuCommandEncoderRelease(m_rhiCommandEncoder);
-
-	commandBuffer->m_rhiCommandBuffer = rhiCommandBuffer;
-	m_rhiCommandEncoder = nullptr;
+	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
+	commandBuffer->m_rhiCommandList = m_rhiCommandList;
+	m_rhiCommandList = nullptr;
 
 	return IGPUCommandBufferPtr(commandBuffer);
 }

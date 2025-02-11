@@ -4,7 +4,11 @@
 class CNVRHIRenderPassRecorder : public IGPURenderPassRecorder
 {
 public:
-	~CNVRHIRenderPassRecorder();
+	CNVRHIRenderPassRecorder(nvrhi::ICommandList* cmdList, void* userData)
+		: m_rhiCommandList(cmdList)
+		, m_userData(userData)
+	{
+	}
 
 	IVector2D				GetRenderTargetDimensions() const { return m_renderTargetDims; }
 	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return ArrayCRef(m_renderTargetsFormat); }
@@ -43,28 +47,36 @@ public:
 	// ExecuteBundles(size_t bundleCount, WGPURenderBundle const* bundles);
 	// PixelLocalStorageBarrier();
 
-	// InsertDebugMarker(char const* markerLabel);
-	// PopDebugGroup();
-	// PushDebugGroup(char const* groupLabel);
-
 	// SetBlendConstant(WGPUColor const* color);
 	// SetStencilReference(uint32_t reference);
 
 	void					Complete();
-
 	IGPUCommandBufferPtr	End();
-
 	void*					GetUserData() const { return m_userData; }
+	void					InternalBeginRenderPass(const RenderPassDesc& renderPassDesc);
 
-	ETextureFormat			m_renderTargetsFormat[MAX_RENDERTARGETS]{ FORMAT_NONE };
-	ETextureFormat			m_depthTargetFormat{ FORMAT_NONE };
-	IVector2D				m_renderTargetDims{ 0 };
-	int						m_renderTargetMSAASamples{ 1 };
-	bool					m_depthReadOnly{ false };
-	bool					m_stencilReadOnly{ false };
+	void					CommitGraphicsState(nvrhi::IBuffer* indirectBuffer = nullptr);
 
-	IGPURenderPipelinePtr	m_pipeline;
+	GPUBufferView				m_rhiVertexBuffers[MAX_VERTEXSTREAM];
+	IGPUBindGroupPtr			m_bindings[MAX_BINDGROUPS];
+	GPUBufferView				m_indexBuffer;
+    nvrhi::FramebufferHandle	m_rhiFramebuffer;
+    nvrhi::Viewport				m_rhiViewport;
+	nvrhi::Rect					m_rhiScissor;
+	EIndexFormat				m_indexFormat;
 
+	ETextureFormat				m_renderTargetsFormat[MAX_RENDERTARGETS]{ FORMAT_NONE };
+	ETextureFormat				m_depthTargetFormat{ FORMAT_NONE };
+	IVector2D					m_renderTargetDims{ 0 };
+	int							m_renderTargetMSAASamples{ 1 };
+	bool						m_depthReadOnly{ false };
+	bool						m_stencilReadOnly{ false };
+
+	IGPURenderPipelinePtr		m_pipeline;
 	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
+
+	EqString					m_dbgLabel;
 	void*						m_userData{ nullptr };
+
+	bool						m_graphicsStateDirty{ true };
 };

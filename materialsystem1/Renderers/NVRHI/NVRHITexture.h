@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU texture
+// Description: NVRHI texture
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -11,8 +11,8 @@
 
 class CNVRHITexture : public CTexture
 {
-	friend class CWGPURenderAPI;
-	friend class CWGPUSwapChain;
+	friend class CNVRHIRenderAPI;
+	friend class CNVRHISwapChain;
 public:
 	~CNVRHITexture();
 
@@ -22,8 +22,9 @@ public:
 	bool			Lock(LockInOutData& data);
 	void			Unlock(IGPUCommandRecorder* writeCmdRecorder = nullptr);
 
-	nvrhi::TextureHandle		GetNVRHITextureHandle() const { return m_rhiTexture; }
-	int				GetNVRHITextureViewCount() const { return m_rhiViews.numElem(); }
+	nvrhi::TextureHandle				GetNVRHITextureHandle() const { return m_rhiTexture; }
+	int									GetNVRHITextureViewCount() const { return m_rhiViews.numElem(); }
+	const nvrhi::TextureSubresourceSet&	GetNVRHiTextureView(int idx) const { return m_rhiViews[idx]; }
 
 protected:
 	void			Ref_DeleteObject();

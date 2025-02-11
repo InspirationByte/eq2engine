@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU renderer
+// Description: NVRHI renderer
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
@@ -13,14 +13,14 @@
 #include "imaging/ImageLoader.h"
 #include "utils/KeyValues.h"
 
-#include "WGPURenderAPI.h"
-#include "WGPURenderDefs.h"
-#include "WGPUStates.h"
-#include "WGPUCommandRecorder.h"
-#include "WGPURenderPassRecorder.h"
+#include "NVRHIRenderAPI.h"
+#include "NVRHIRenderDefs.h"
+#include "NVRHIStates.h"
+#include "NVRHICommandRecorder.h"
+#include "NVRHIRenderPassRecorder.h"
 
 #include "../RenderWorker.h"
-#include "WGPUComputePassRecorder.h"
+#include "NVRHIComputePassRecorder.h"
 
 constexpr EqStringRef s_shaderKindVertexName = "Vertex";
 constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
@@ -29,8 +29,8 @@ constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 
 DECLARE_CVAR(wgpu_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 
-CWGPURenderAPI CWGPURenderAPI::Instance;
-IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
+CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
+IShaderAPI* g_renderAPI = &CNVRHIRenderAPI::Instance;
 
 static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash)
 {
@@ -40,11 +40,11 @@ static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, 
 	return hash;
 }
 
-ShaderInfoWGPUImpl::~ShaderInfoWGPUImpl()
+ShaderInfoNVRHIImpl::~ShaderInfoNVRHIImpl()
 {
 }
 
-ShaderInfoWGPUImpl::ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept
+ShaderInfoNVRHIImpl::ShaderInfoNVRHIImpl(ShaderInfoNVRHIImpl&& other) noexcept
 	: shaderName(std::move(other.shaderName))
 	, shaderPackFile(std::move(other.shaderPackFile))
 	, vertexLayouts(std::move(other.vertexLayouts))
@@ -57,7 +57,7 @@ ShaderInfoWGPUImpl::ShaderInfoWGPUImpl(ShaderInfoWGPUImpl&& other) noexcept
 	other.shaderPackFile = nullptr;
 }
 
-ShaderInfoWGPUImpl& ShaderInfoWGPUImpl::operator=(ShaderInfoWGPUImpl&& other) noexcept
+ShaderInfoNVRHIImpl& ShaderInfoNVRHIImpl::operator=(ShaderInfoNVRHIImpl&& other) noexcept
 {
 	shaderName = std::move(other.shaderName);
 	shaderPackFile = std::move(other.shaderPackFile);
@@ -70,13 +70,13 @@ ShaderInfoWGPUImpl& ShaderInfoWGPUImpl::operator=(ShaderInfoWGPUImpl&& other) no
 	return *this;
 }
 
-void ShaderInfoWGPUImpl::Release()
+void ShaderInfoNVRHIImpl::Release()
 {
-	for (ShaderInfoWGPUImpl::Module module : modules)
-		wgpuShaderModuleRelease(module.rhiModule);
+	for (Module& module : modules)
+		module.rhiModule = nullptr;
 }
 
-bool ShaderInfoWGPUImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
+bool ShaderInfoNVRHIImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int& outHash) const
 {
 	Array<int> defineIds(PP_SL);
 	for (const EqString& define : findDefines)
@@ -104,7 +104,7 @@ bool ShaderInfoWGPUImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int
 
 //------------------------------------------
 
-void CWGPURenderAPI::Init(const ShaderAPIParams& params)
+void CNVRHIRenderAPI::Init(const ShaderAPIParams& params)
 {
 	ShaderAPI_Base::Init(params);
 
@@ -126,15 +126,14 @@ void CWGPURenderAPI::Init(const ShaderAPIParams& params)
 	Msg("* Found %d shader packages, %d modules loaded\n", shaderPackCount, shaderModCount);
 }
 
-void CWGPURenderAPI::Shutdown()
+void CNVRHIRenderAPI::Shutdown()
 {
 	ShaderAPI_Base::Shutdown();
 	m_shaderCache.clear(true);
 	m_rhiDevice = nullptr;
-	m_rhiQueue = nullptr;
 }
 
-int CWGPURenderAPI::LoadShaderPackage(const char* filename)
+int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 {
 	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
 	if (!shaderPackFile)
@@ -170,7 +169,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	it = m_shaderCache.insert(StringId24(shaderInfoKvs.GetName()));
 
-	ShaderInfoWGPUImpl& shaderInfo = *it;
+	ShaderInfoNVRHIImpl& shaderInfo = *it;
 	shaderInfo.shaderPackFile = shaderPackFile;
 	shaderInfo.shaderName = shaderInfoKvs.GetName();
 
@@ -184,14 +183,14 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	for (const KVSection* key : shaderInfoKvs.Get("VertexLayouts").Keys())
 	{
-		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
+		ShaderInfoNVRHIImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
 		layout.name = key->GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringId24(layout.name);
 		
 		if (!CString::CompareCaseIns(KV_GetValueString(key, 0), "aliasOf"))
 		{
-			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
+			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
 				return layout.name == EqStringRef(KV_GetValueString(key, 1));
 			});
 		}
@@ -219,48 +218,6 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	int filesFound = 0;
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
-	for (const KVSection* itemSec : fileListSec->Keys("wgsl"))
-	{
-		int vertLayoutIdx = -1;
-		EqStringRef kindStr;
-		EqStringRef entryPointName;
-
-		// query string is not available in wgsl due to defines absense
-		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName) < 3)
-		{
-			ASSERT_FAIL("Shader %s 'wgsl' does not have 3 values");
-			break;
-		}
-
-		const int kind = getKind(kindStr);
-		ASSERT_MSG(kind != 0, "Shader kind is not valid");
-
-		shaderInfo.shaderKinds |= kind;
-
-		const int moduleIndex = shaderInfo.modules.numElem();
-		{
-			const EqString shaderFileName = EqString::Format("%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, getKindExt(kind));
-
-			ShaderInfoWGPUImpl::Module& modInfo = shaderInfo.modules.append();
-			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
-			modInfo.type = SHADERMODULE_WGSL;
-			modInfo.kind = static_cast<EShaderKind>(kind);
-		}
-		{
-			const int entryPointStrHash = StringId24(entryPointName);
-			const uint shaderModuleId = PackShaderModuleId(0, vertLayoutIdx, kind, entryPointStrHash);
-
-			auto exIt = shaderInfo.modulesMap.find(shaderModuleId);
-			ASSERT_MSG(exIt.atEnd(), "%s%s module already added at idx %d (check for hash collisions)", shaderInfo.shaderName.ToCString(), kindStr.ToCString(), exIt.value());
-
-			shaderInfo.modulesMap.insert(shaderModuleId, moduleIndex);
-		}
-		++filesFound;
-
-		if (wgpu_preload_shaders.GetBool())
-			GetOrLoadShaderModule(shaderInfo, moduleIndex);
-	}
-
 	for (const KVSection* itemSec : fileListSec->Keys("spv"))
 	{
 		int vertLayoutIdx = -1;
@@ -282,7 +239,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		{
 			const EqString shaderFileName = EqString::Format("%s-%s%s", shaderInfo.vertexLayouts[vertLayoutIdx].name, queryStr, getKindExt(kind));
 			
-			ShaderInfoWGPUImpl::Module& modInfo = shaderInfo.modules.append();
+			ShaderInfoNVRHIImpl::Module& modInfo = shaderInfo.modules.append();
 			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
 			modInfo.type = SHADERMODULE_SPIRV;
 			modInfo.kind = static_cast<EShaderKind>(kind);
@@ -341,7 +298,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	return filesFound;
 }
 
-void CWGPURenderAPI::PrintAPIInfo() const
+void CNVRHIRenderAPI::PrintAPIInfo() const
 {
 	Msg("ShaderAPI: WGPURenderAPI\n");
 
@@ -355,25 +312,25 @@ void CWGPURenderAPI::PrintAPIInfo() const
 	CScopedMutex scoped(g_sapi_TextureMutex);
 	for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
-		CWGPUTexture* pTexture = static_cast<CWGPUTexture*>(*it);
+		CNVRHITexture* pTexture = static_cast<CNVRHITexture*>(*it);
 		MsgInfo("     %s (%d) - %dx%d\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(), pTexture->GetHeight());
 	}
 }
 
-bool CWGPURenderAPI::IsDeviceActive() const
+bool CNVRHIRenderAPI::IsDeviceActive() const
 {
 	return !m_deviceLost;
 }
 
-IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
+IVertexFormat* CNVRHIRenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
 {
-	IVertexFormat* pVF = PPNew CWGPUVertexFormat(name, formatDesc);
+	IVertexFormat* pVF = PPNew CNVRHIVertexFormat(name, formatDesc);
 	m_VFList.append(pVF);
 	return pVF;
 }
 
 // Destroy vertex format
-void CWGPURenderAPI::DestroyVertexFormat(IVertexFormat* pFormat)
+void CNVRHIRenderAPI::DestroyVertexFormat(IVertexFormat* pFormat)
 {
 	if (m_VFList.fastRemove(pFormat))
 		delete pFormat;
@@ -382,9 +339,9 @@ void CWGPURenderAPI::DestroyVertexFormat(IVertexFormat* pFormat)
 //-------------------------------------------------------------
 // Textures
 
-ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
+ITexturePtr CNVRHIRenderAPI::CreateTextureResource(const char* pszName)
 {
-	CRefPtr<CWGPUTexture> texture = CRefPtr_new(CWGPUTexture);
+	CRefPtr<CNVRHITexture> texture = CRefPtr_new(CNVRHITexture);
 	texture->SetName(pszName);
 
 	m_TextureList.insert(texture->m_nameHash, texture);
@@ -392,9 +349,9 @@ ITexturePtr CWGPURenderAPI::CreateTextureResource(const char* pszName)
 }
 
 // It will add new rendertarget
-ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
+ITexturePtr	CNVRHIRenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 {
-	CRefPtr<CWGPUTexture> texture = CRefPtr_new(CWGPUTexture);
+	CRefPtr<CNVRHITexture> texture = CRefPtr_new(CNVRHITexture);
 	texture->SetName(targetDesc.name);
 	texture->SetFlags(targetDesc.flags | TEXFLAG_RENDERTARGET);
 	texture->SetFormat(targetDesc.format);
@@ -418,9 +375,9 @@ ITexturePtr	CWGPURenderAPI::CreateRenderTarget(const TextureDesc& targetDesc)
 	return ITexturePtr(texture);
 }
 
-void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount, int sampleCount)
+void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExtent& newSize, int mipmapCount, int sampleCount)
 {
-	CWGPUTexture* texture = static_cast<CWGPUTexture*>(renderTarget);
+	CNVRHITexture* texture = static_cast<CNVRHITexture*>(renderTarget);
 	if (!texture)
 		return;
 
@@ -550,15 +507,15 @@ void CWGPURenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureExt
 //-------------------------------------------------------------
 // Pipeline management
 
-IGPUBufferPtr CWGPURenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name) const
+IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name) const
 {
-	CRefPtr<CWGPUBuffer> buffer = CRefPtr_new(CWGPUBuffer, bufferInfo, bufferUsageFlags, name);
+	CRefPtr<CNVRHIBuffer> buffer = CRefPtr_new(CNVRHIBuffer, bufferInfo, bufferUsageFlags, name);
 	//TODO: buffer->IsValid();
 
 	return IGPUBufferPtr(buffer);
 }
 
-IGPUPipelineLayoutPtr CWGPURenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
+IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
 {
 	// Pipeline layout and bind group layout
 	// are also objects of IGPURenderPipeline
@@ -681,7 +638,7 @@ static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& 
 
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!layoutDesc)
 	{
@@ -724,7 +681,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUPipelineLayout* layou
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!renderPipeline)
 	{
@@ -762,7 +719,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPURenderPipeline* rende
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!computePipeline)
 	{
@@ -800,7 +757,7 @@ IGPUBindGroupPtr CWGPURenderAPI::CreateBindGroup(const IGPUComputePipeline* comp
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 size, const char* name) const
+nvrhi::ShaderHandle CNVRHIRenderAPI::CreateShaderSPIRV(const uint32* code, uint32 size, const char* name) const
 {
 	PROF_EVENT_F();
 
@@ -824,24 +781,7 @@ WGPUShaderModule CWGPURenderAPI::CreateShaderSPIRV(const uint32* code, uint32 si
 	return shaderModule;
 }
 
-WGPUShaderModule CWGPURenderAPI::CreateShaderWGSL(const char* szText, const char* name) const
-{
-	PROF_EVENT_F();
-
-	WGPUShaderSourceWGSL rhiWgslDesc = {};
-	rhiWgslDesc.chain.sType = WGPUSType_ShaderSourceWGSL;
-	rhiWgslDesc.code = _WSTR(szText);
-
-	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
-	rhiShaderModuleDesc.nextInChain = &rhiWgslDesc.chain;
-	rhiShaderModuleDesc.label = _WSTR(name);
-
-	WGPUShaderModule shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
-	ASSERT_MSG(shaderModule, "Failed to create WGSL source shader module %s", name);
-	return shaderModule;
-}
-
-WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const
+nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const
 {
 	ShaderInfoWGPUImpl::Module& mod = const_cast<ShaderInfoWGPUImpl::Module&>(shaderInfo.modules[shaderModuleIdx]);
 	if (mod.rhiModule)
@@ -884,7 +824,7 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl&
 	return rhiShaderModule;
 }
 
-void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const
+void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const
 {
 	const int shaderNameHash = StringId24(shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
@@ -934,7 +874,7 @@ void CWGPURenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStrin
 	}
 }
 
-IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
+IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
 {
 	PROF_EVENT("CWGPURenderAPI::CreateRenderPipeline");
 
@@ -1219,71 +1159,7 @@ IGPURenderPipelinePtr CWGPURenderAPI::CreateRenderPipeline(const RenderPipelineD
 	}
 }
 
-IGPUCommandRecorderPtr CWGPURenderAPI::CreateCommandRecorder(const char* name, void* userData) const
-{
-	WGPUCommandEncoderDescriptor rhiEncoderDesc = {};
-	rhiEncoderDesc.label = _WSTR(name);
-	WGPUCommandEncoder rhiCommandEncoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
-	if (!rhiCommandEncoder)
-		return nullptr;
-
-	CRefPtr<CWGPUCommandRecorder> commandRecorder = CRefPtr_new(CWGPUCommandRecorder);
-	commandRecorder->m_rhiCommandEncoder = rhiCommandEncoder;
-	commandRecorder->m_userData = userData;
-
-	return IGPUCommandRecorderPtr(commandRecorder);
-}
-
-IGPURenderPassRecorderPtr CWGPURenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
-{
-	WGPURenderPassDescriptor rhiRenderPassDesc = {};
-	FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS> rhiColorAttachmentList;
-	WGPURenderPassDepthStencilAttachment rhiDepthStencilAttachment = {};
-	FillWGPURenderPassDescriptor(renderPassDesc, rhiRenderPassDesc, rhiColorAttachmentList, rhiDepthStencilAttachment);
-
-	WGPUCommandEncoder rhiCommandEncoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
-	if (!rhiCommandEncoder)
-		return nullptr;
-
-	WGPURenderPassEncoder rhiRenderPassEncoder = wgpuCommandEncoderBeginRenderPass(rhiCommandEncoder, &rhiRenderPassDesc);
-	if (!rhiRenderPassEncoder)
-		return nullptr;
-
-	IVector2D renderTargetDims = 0;
-	CRefPtr<CWGPURenderPassRecorder> renderPass = CRefPtr_new(CWGPURenderPassRecorder);
-	for (int i = 0; i < renderPassDesc.colorTargets.numElem(); ++i)
-	{
-		const RenderPassDesc::ColorTargetDesc& colorTarget = renderPassDesc.colorTargets[i];
-		if (colorTarget.target.texture)
-		{
-			renderTargetDims = colorTarget.target.texture->GetSize().xy();
-			renderPass->m_renderTargetsFormat[i] = colorTarget.target ? colorTarget.target.texture->GetFormat() : FORMAT_NONE;
-
-			if (colorTarget.target)
-				renderPass->m_renderTargetMSAASamples = colorTarget.target.texture->GetSampleCount();
-		}
-	}
-
-	if (renderPassDesc.depthStencil)
-	{
-		renderTargetDims = renderPassDesc.depthStencil.texture->GetSize().xy();
-		renderPass->m_depthTargetFormat = renderPassDesc.depthStencil.texture->GetFormat();
-	}
-	else
-		renderPass->m_depthTargetFormat = FORMAT_NONE;
-
-	renderPass->m_depthReadOnly = renderPassDesc.depthReadOnly;
-	renderPass->m_stencilReadOnly = renderPassDesc.stencilReadOnly;
-
-	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
-	renderPass->m_rhiRenderPassEncoder = rhiRenderPassEncoder;
-	renderPass->m_renderTargetDims = renderTargetDims;
-	renderPass->m_userData = userData;
-
-	return IGPURenderPassRecorderPtr(renderPass);
-}
-
-IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
+IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout) const
 {
 	const int shaderNameHash = StringId24(pipelineDesc.shaderName);
 	auto shaderIt = m_shaderCache.find(shaderNameHash);
@@ -1374,125 +1250,88 @@ IGPUComputePipelinePtr CWGPURenderAPI::CreateComputePipeline(const ComputePipeli
 	}
 }
 
-IGPUComputePassRecorderPtr CWGPURenderAPI::BeginComputePass(const char* name, void* userData) const
+IGPUCommandRecorderPtr CNVRHIRenderAPI::CreateCommandRecorder(const char* name, void* userData) const
 {
-	WGPUCommandEncoder rhiCommandEncoder = wgpuDeviceCreateCommandEncoder(m_rhiDevice, nullptr);
-	if (!rhiCommandEncoder)
-		return nullptr;
+	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList();
+	rhiCommandList->open();
 
-	WGPUComputePassDescriptor rhiComputePassDesc = {};
-	rhiComputePassDesc.label = _WSTR(name);
-	//rhiComputePassDesc.timestampWrites TODO
-	WGPUComputePassEncoder rhiComputePassEncoder = wgpuCommandEncoderBeginComputePass(rhiCommandEncoder, &rhiComputePassDesc);
-	if (!rhiComputePassEncoder)
-		return nullptr;
+	CRefPtr<CNVRHICommandRecorder> commandRecorder = CRefPtr_new(CNVRHICommandRecorder);
+	commandRecorder->m_dbgLabel = name;
+	commandRecorder->m_rhiCommandList = rhiCommandList;
+	commandRecorder->m_userData = userData;
 
-	CRefPtr<CWGPUComputePassRecorder> renderPass = CRefPtr_new(CWGPUComputePassRecorder);
-	renderPass->m_rhiCommandEncoder = rhiCommandEncoder;
-	renderPass->m_rhiComputePassEncoder = rhiComputePassEncoder;
-	renderPass->m_userData = userData;
+	return IGPUCommandRecorderPtr(commandRecorder);
+}
 
+IGPURenderPassRecorderPtr CNVRHIRenderAPI::BeginRenderPass(const RenderPassDesc& renderPassDesc, void* userData) const
+{
+	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList();
+	rhiCommandList->open();
+
+	CRefPtr<CNVRHIRenderPassRecorder> renderPass = CRefPtr_new(CNVRHIRenderPassRecorder, rhiCommandList, userData);
+	renderPass->InternalBeginRenderPass(renderPassDesc);
+
+	return IGPURenderPassRecorderPtr(renderPass);
+}
+
+IGPUComputePassRecorderPtr CNVRHIRenderAPI::BeginComputePass(const char* name, void* userData) const
+{
+	nvrhi::CommandListHandle rhiCommandList = m_rhiDevice->createCommandList();
+	rhiCommandList->open();
+
+	CRefPtr<CNVRHIComputePassRecorder> renderPass = CRefPtr_new(CNVRHIComputePassRecorder, rhiCommandList, userData, name);
 	return IGPUComputePassRecorderPtr(renderPass);
 }
 
-void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
+void CNVRHIRenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
 {
 	PROF_EVENT_F();
-	g_renderWorker.WaitForExecute(__func__, [this, cmdBuffers]() {
-		Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
-		rhiSubmitBuffers.reserve(cmdBuffers.numElem());
 
-		for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
-		{
-			if (!cmdBuffer)
-				continue;
-
-			const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(cmdBuffer);
-			WGPUCommandBuffer rhiCmdBuffer = bufferImpl->m_rhiCommandBuffer;
-			ASSERT(rhiCmdBuffer);
-
-			rhiSubmitBuffers.append(rhiCmdBuffer);
-		}
-		wgpuQueueSubmit(m_rhiQueue, rhiSubmitBuffers.numElem(), rhiSubmitBuffers.ptr());
-		return 0;
-	});
-}
-
-
-Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
-{
-	Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
+	Array<nvrhi::ICommandList*> rhiSubmitBuffers(PP_SL);
 	rhiSubmitBuffers.reserve(cmdBuffers.numElem());
 	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
 	{
 		if (!cmdBuffer)
 			continue;
-		const CWGPUCommandBuffer* bufferImpl = static_cast<const CWGPUCommandBuffer*>(cmdBuffer);
-		WGPUCommandBuffer rhiCmdBuffer = bufferImpl->m_rhiCommandBuffer;
-		ASSERT(rhiCmdBuffer);
 
-		rhiSubmitBuffers.append(rhiCmdBuffer);
-		wgpuCommandBufferAddRef(rhiCmdBuffer);
+		const CNVRHICommandBuffer* bufferImpl = static_cast<const CNVRHICommandBuffer*>(cmdBuffer);
+		ASSERT(bufferImpl->m_rhiCommandList);
+		rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
+	}
+
+	uint64_t cmdListInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
+}
+
+
+Future<bool> CNVRHIRenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
+{
+	Array<nvrhi::ICommandList*> rhiSubmitBuffers(PP_SL);
+	rhiSubmitBuffers.reserve(cmdBuffers.numElem());
+	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
+	{
+		if (!cmdBuffer)
+			continue;
+
+		const CNVRHICommandBuffer* bufferImpl = static_cast<const CNVRHICommandBuffer*>(cmdBuffer);
+		ASSERT(bufferImpl->m_rhiCommandList);
+		rhiSubmitBuffers.append(bufferImpl->m_rhiCommandList);
 	}
 
 	if (!rhiSubmitBuffers.numElem())
-	{
 		return Future<bool>::Succeed(true);
-	}
+
+	const uint64_t lastSubmitInstance = m_rhiDevice->executeCommandLists(rhiSubmitBuffers.ptr(), rhiSubmitBuffers.numElem());
 
 	Promise<bool> promise;
-	g_renderWorker.Execute(__func__, [this, submitBuffers = std::move(rhiSubmitBuffers), promiseData = promise.GrabDataPtr()]() {
-		wgpuQueueSubmit(m_rhiQueue, submitBuffers.numElem(), submitBuffers.ptr());
-		WGPUQueueWorkDoneCallbackInfo2 rhiCbInfo{};
-		rhiCbInfo.callback = [](WGPUQueueWorkDoneStatus status, void* userdata1, void* userdata2) {
-			Promise<bool> promise(reinterpret_cast<Promise<bool>::Data*>(userdata1));
 
-			if(status != WGPUQueueWorkDoneStatus_Success)
-			{
-				const char* str = "Invalid";
-				switch (status)
-				{
-				case WGPUQueueWorkDoneStatus_Error:
-					str = "Error";
-					break;
-				case WGPUQueueWorkDoneStatus_Unknown:
-					str = "UnknownStatus";
-					break;
-				case WGPUQueueWorkDoneStatus_DeviceLost:
-					str = "DeviceLost";
-					break;
-				}
-				promise.SetError(-1, str);
-			}
-			else
-			{
-				promise.SetResult(true);
-			}
-		};
-
-		rhiCbInfo.userdata1 = promiseData;
-		rhiCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
-		wgpuQueueOnSubmittedWorkDone2(m_rhiQueue, rhiCbInfo);
-
-		for (WGPUCommandBuffer rhiCmdBuffer : submitBuffers)
-			wgpuCommandBufferRelease(rhiCmdBuffer);
-
-		return 0;
-	});
+	// TODO: proper wait
+	m_rhiDevice->queueWaitForCommandList(nvrhi::CommandQueue::Graphics, nvrhi::CommandQueue::Graphics, lastSubmitInstance);
+	promise.SetResult(true);
 
 	return promise.CreateFuture();
 }
 
-void CWGPURenderAPI::Flush()
+void CNVRHIRenderAPI::Flush()
 {
-	WGPU_INSTANCE_SPIN;
-}
-
-static void CreateQuerySet()
-{
-	WGPUQuerySetDescriptor rhiQuerySetDesc = {};
-	rhiQuerySetDesc.label = _WSTR("querySet");
-	rhiQuerySetDesc.type = WGPUQueryType_Occlusion;
-	rhiQuerySetDesc.count = 32;
-	WGPUQuerySet rhiQuerySet = wgpuDeviceCreateQuerySet(nullptr, &rhiQuerySetDesc);
+	m_rhiDevice->runGarbageCollection();
 }

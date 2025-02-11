@@ -2,10 +2,10 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU renderer
+// Description: NVRHI renderer
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <webgpu/webgpu.h>
+#include <nvrhi/nvrhi.h>
 
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
@@ -17,11 +17,10 @@
 
 #include "imaging/ImageLoader.h"
 
-#include "WGPUBackend.h"
-
-#include "WGPULibrary.h"
-#include "WGPURenderAPI.h"
-#include "WGPUSwapChain.h"
+#include "NVRHIBackend.h"
+#include "NVRHILibrary.h"
+#include "NVRHIRenderAPI.h"
+#include "NVRHISwapChain.h"
 
 DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
@@ -81,17 +80,17 @@ static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapt
 	}
 }
 
-CWGPURenderLib::CWGPURenderLib()
+CNVRHIRenderLib::CNVRHIRenderLib()
 {
 	m_windowed = true;
 	m_endFrameWait.Raise();
 }
 
-CWGPURenderLib::~CWGPURenderLib()
+CNVRHIRenderLib::~CNVRHIRenderLib()
 {
 }
 
-bool CWGPURenderLib::InitCaps()
+bool CNVRHIRenderLib::InitCaps()
 {
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
@@ -105,9 +104,9 @@ bool CWGPURenderLib::InitCaps()
 	return true;
 }
 
-IShaderAPI* CWGPURenderLib::GetRenderer() const
+IShaderAPI* CNVRHIRenderLib::GetRenderer() const
 {
-	return &CWGPURenderAPI::Instance;
+	return &CNVRHIRenderAPI::Instance;
 }
 
 static const char* GetWGPUBackendTypeStr(WGPUBackendType backendType)
@@ -176,7 +175,7 @@ static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void con
 	file->Write(value, 1, valueSize);
 }
 
-bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
+bool CNVRHIRenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
@@ -354,12 +353,12 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	return true;
 }
 
-void CWGPURenderLib::ExitAPI()
+void CNVRHIRenderLib::ExitAPI()
 {
 	m_endFrameWait.Wait(500);
 	g_renderWorker.Shutdown();
 
-	for (CWGPUSwapChain* swapChain : m_swapChains)
+	for (CNVRHISwapChain* swapChain : m_swapChains)
 		delete swapChain;
 
 	m_swapChains.clear();
@@ -381,12 +380,12 @@ void CWGPURenderLib::ExitAPI()
 	m_deviceQueue = nullptr;
 }
 
-void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
+void CNVRHIRenderLib::BeginFrame(ISwapChain* swapChain)
 {
 	m_endFrameWait.Wait();
 
-	CWGPURenderAPI::Instance.m_deviceLost = false;
-	m_currentSwapChain = swapChain ? static_cast<CWGPUSwapChain*>(swapChain) : m_swapChains[0];
+	CNVRHIRenderAPI::Instance.m_deviceLost = false;
+	m_currentSwapChain = swapChain ? static_cast<CNVRHISwapChain*>(swapChain) : m_swapChains[0];
 
 	// must obtain valid texture view upon Present
 	g_renderWorker.WaitForExecute(__func__, [this]() {
@@ -396,7 +395,7 @@ void CWGPURenderLib::BeginFrame(ISwapChain* swapChain)
 	});
 }
 
-void CWGPURenderLib::EndFrame()
+void CNVRHIRenderLib::EndFrame()
 {
 	g_renderWorker.Execute(__func__, [this]() {
 		m_currentSwapChain->SwapBuffers();
@@ -405,12 +404,12 @@ void CWGPURenderLib::EndFrame()
 	});
 }
 
-ITexturePtr	CWGPURenderLib::GetCurrentBackbuffer() const
+ITexturePtr	CNVRHIRenderLib::GetCurrentBackbuffer() const
 {
 	return m_currentSwapChain->GetBackbuffer();
 }
 
-ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
+ISwapChain* CNVRHIRenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 {
 	bool justCreated = false;
 
@@ -420,36 +419,36 @@ ISwapChain* CWGPURenderLib::CreateSwapChain(const RenderWindowInfo& windowInfo)
 
 	ASSERT_MSG(justCreated, "%s texture already has been created", texName.ToCString());
 
-	CWGPUSwapChain* swapChain = PPNew CWGPUSwapChain(this, windowInfo, swapChainTexture);
+	CNVRHISwapChain* swapChain = PPNew CNVRHISwapChain(this, windowInfo, swapChainTexture);
 
 	m_swapChains.append(swapChain);
 	return swapChain;
 }
 
-void CWGPURenderLib::DestroySwapChain(ISwapChain* swapChain)
+void CNVRHIRenderLib::DestroySwapChain(ISwapChain* swapChain)
 {
-	if (m_swapChains.fastRemove(static_cast<CWGPUSwapChain*>(swapChain)))
+	if (m_swapChains.fastRemove(static_cast<CNVRHISwapChain*>(swapChain)))
 		delete swapChain;
 }
 
-void CWGPURenderLib::SetVSync(bool enable)
+void CNVRHIRenderLib::SetVSync(bool enable)
 {
 	m_swapChains[0]->SetVSync(enable);
 }
 
-void CWGPURenderLib::SetBackbufferSize(const int w, const int h)
+void CNVRHIRenderLib::SetBackbufferSize(const int w, const int h)
 {
 	int oldW, oldH;
 	m_swapChains[0]->GetBackbufferSize(oldW, oldH);
 
 	if(w != oldW || h != oldH)
-		CWGPURenderAPI::Instance.m_deviceLost = true;
+		CNVRHIRenderAPI::Instance.m_deviceLost = true;
 
 	m_swapChains[0]->SetBackbufferSize(w, h);
 }
 
 // changes fullscreen mode
-bool CWGPURenderLib::SetWindowed(bool enabled)
+bool CNVRHIRenderLib::SetWindowed(bool enabled)
 {
 	// FIXME: currently switching to exclusive fullscreen will guarantee device lost
 	// need to handle it somehow...
@@ -458,12 +457,12 @@ bool CWGPURenderLib::SetWindowed(bool enabled)
 }
 
 // speaks for itself
-bool CWGPURenderLib::IsWindowed() const
+bool CNVRHIRenderLib::IsWindowed() const
 {
 	return m_windowed;
 }
 
-bool CWGPURenderLib::CaptureScreenshot(CImage &img)
+bool CNVRHIRenderLib::CaptureScreenshot(CImage &img)
 {
 	ITexturePtr currentTexture = m_currentSwapChain->GetBackbuffer();
 
@@ -520,7 +519,7 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 	return true;
 }
 
-bool CWGPURenderLib::IsMainThread(uintptr_t threadId) const
+bool CNVRHIRenderLib::IsMainThread(uintptr_t threadId) const
 {
 	return g_renderWorker.GetThreadID() == threadId; // always run in separate thread
 }

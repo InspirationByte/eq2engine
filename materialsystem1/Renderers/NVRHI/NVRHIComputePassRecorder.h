@@ -4,7 +4,12 @@
 class CNVRHIComputePassRecorder : public IGPUComputePassRecorder
 {
 public:
-	~CNVRHIComputePassRecorder();
+	CNVRHIComputePassRecorder(nvrhi::ICommandList* cmdList, void* userData, const char* label)
+		: m_rhiCommandList(cmdList)
+		, m_userData(userData)
+		, m_dbgName(label)
+	{
+	}
 
 	void					DbgPopGroup() const;
 	void					DbgPushGroup(const char* groupLabel) const;
@@ -22,16 +27,19 @@ public:
 
 	// TODO:
 	// 
-	// InsertDebugMarker(char const* markerLabel);
-	// PopDebugGroup(WGPUComputePassEncoder computePassEncoder);
-	// PushDebugGroup(char const* groupLabel);
-
 	// WriteTimestamp(WGPUQuerySet querySet, uint32_t queryIndex);
 
 	void					Complete();
 	IGPUCommandBufferPtr	End();
 
+	void					CommitComputeState(nvrhi::IBuffer* indirectBuffer = nullptr);
+
+	IGPUBindGroupPtr			m_bindings[MAX_BINDGROUPS];
 	IGPUComputePipelinePtr		m_pipeline;
-	nvrhi::CommandListHandle	m_rhiCommandLIst{ nullptr };
+
+	nvrhi::CommandListHandle	m_rhiCommandList{ nullptr };
+	EqString					m_dbgName;
 	void*						m_userData{ nullptr };
+
+	bool						m_computeStateDirty{ true };
 };

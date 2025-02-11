@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU renderer constants
+// Description: NVRHI renderer constants
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -91,6 +91,11 @@ static nvrhi::Format g_nvrhiTexFormats[] = {
 	nvrhi::Format::UNKNOWN,
 	nvrhi::Format::UNKNOWN,
 	nvrhi::Format::UNKNOWN,
+};
+
+static nvrhi::Format s_nvrhiVertexBufferFormats[] = {
+	nvrhi::Format::R16_UINT,
+	nvrhi::Format::R32_UINT
 };
 
 static nvrhi::Format GetNVRHIFormatSRGB(nvrhi::Format baseFormat)

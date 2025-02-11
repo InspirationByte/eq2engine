@@ -2,41 +2,41 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU window surface swap chain
+// Description: NVRHI window surface swap chain
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "WGPUBackend.h"
-#include "WGPUSwapChain.h"
-#include "WGPULibrary.h"
-#include "WGPURenderDefs.h"
+#include "NVRHIBackend.h"
+#include "NVRHISwapChain.h"
+#include "NVRHILibrary.h"
+#include "NVRHIRenderDefs.h"
 
 constexpr int TOGGLE_BIT = 0x80000000;
 
-CWGPUSwapChain::CWGPUSwapChain(CWGPURenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
+CNVRHISwapChain::CNVRHISwapChain(CNVRHIRenderLib* host, const RenderWindowInfo& windowInfo, ITexturePtr swapChainTexture)
 	: m_host(host)
 	, m_winInfo(windowInfo)
 {
-	m_textureRef = CRefPtr<CWGPUTexture>(static_cast<CWGPUTexture*>(swapChainTexture.Ptr()));
+	m_textureRef = CRefPtr<CNVRHITexture>(static_cast<CNVRHITexture*>(swapChainTexture.Ptr()));
 }
 
-CWGPUSwapChain::~CWGPUSwapChain()
+CNVRHISwapChain::~CNVRHISwapChain()
 {
 	if(m_surface)
-		wgpuSurfaceRelease(m_surface);
+		NVRHISurfaceRelease(m_surface);
 }
 
-void* CWGPUSwapChain::GetWindow() const
+void* CNVRHISwapChain::GetWindow() const
 {
 	return m_winInfo.get(m_winInfo.userData, RenderWindowInfo::WINDOW);
 }
 
-ITexturePtr CWGPUSwapChain::GetBackbuffer() const
+ITexturePtr CNVRHISwapChain::GetBackbuffer() const
 {
 	return ITexturePtr(m_textureRef);
 }
 
-void CWGPUSwapChain::UpdateBackbufferView() const
+void CNVRHISwapChain::UpdateBackbufferView() const
 {
 	WGPUSurfaceTexture rhiSurfTex{};
 	wgpuSurfaceGetCurrentTexture(m_surface, &rhiSurfTex);
@@ -80,19 +80,19 @@ void CWGPUSwapChain::UpdateBackbufferView() const
 	}
 }
 
-void CWGPUSwapChain::GetBackbufferSize(int& wide, int& tall) const
+void CNVRHISwapChain::GetBackbufferSize(int& wide, int& tall) const
 {	 
 	wide = m_backbufferSize.x;
 	tall = m_backbufferSize.y;
 }
 
-void CWGPUSwapChain::SetVSync(bool enable)
+void CNVRHISwapChain::SetVSync(bool enable)
 {
 	if((m_vSync > 0) != enable)
 		m_vSync = TOGGLE_BIT | (int)enable;
 }
 
-bool CWGPUSwapChain::UpdateResize()
+bool CNVRHISwapChain::UpdateResize()
 {
 	if ((m_vSync & TOGGLE_BIT) == 0 && m_textureRef->GetWidth() == m_backbufferSize.x && m_textureRef->GetHeight() == m_backbufferSize.y)
 		return true;
@@ -194,13 +194,13 @@ bool CWGPUSwapChain::UpdateResize()
 	return m_surface;
 }
 
-bool CWGPUSwapChain::SetBackbufferSize(int wide, int tall)
+bool CNVRHISwapChain::SetBackbufferSize(int wide, int tall)
 {	 
 	m_backbufferSize = IVector2D(wide, tall);
 	return true;
 }
 	 
-bool CWGPUSwapChain::SwapBuffers()
+bool CNVRHISwapChain::SwapBuffers()
 {
 	if (m_surface)
 		wgpuSurfacePresent(m_surface);

@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU renderer
+// Description: NVRHI renderer
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -24,12 +24,9 @@ extern CEqMutex	g_sapi_Mutex;
 
 class CNVRHIRenderAPI : public ShaderAPI_Base
 {
-	friend class CWGPURenderLib;
+	friend class CNVRHIRenderLib;
 public:
 	static CNVRHIRenderAPI Instance;
-
-	CNVRHIRenderAPI() {}
-	~CNVRHIRenderAPI() {}
 
 	// Init + Shurdown
 	void						Init(const ShaderAPIParams& params);
@@ -103,7 +100,6 @@ public:
 protected:
 
 	nvrhi::ShaderHandle			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
-	nvrhi::ShaderHandle			CreateShaderWGSL(const char* szText, const char* name = nullptr) const;
 
 	nvrhi::ShaderHandle			GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const;
 	int							LoadShaderPackage(const char* filename);

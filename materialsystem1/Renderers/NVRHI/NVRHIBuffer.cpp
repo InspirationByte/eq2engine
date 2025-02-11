@@ -37,16 +37,17 @@ CNVRHIBuffer::CNVRHIBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, c
 		cpuAccessMode = nvrhi::CpuAccessMode::Write;
 	}
 
-	nvrhi::BufferDesc rhiBufferDesc = {};
-	rhiBufferDesc.cpuAccess = cpuAccessMode;
-	rhiBufferDesc.byteSize = m_bufSize;
+	auto rhiBufferDesc = nvrhi::BufferDesc()
+		.setCpuAccess(cpuAccessMode)
+		.setByteSize(m_bufSize)
+		.setDebugName(label);
+
+	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	rhiBufferDesc.setIsVertexBuffer(true);
+	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	rhiBufferDesc.setIsIndexBuffer(true);
+	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)rhiBufferDesc.setIsDrawIndirectArgs(true);
+	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	rhiBufferDesc.setCanHaveUAVs(true);
+
 	rhiBufferDesc.debugName = label;
-
-	if (bufferUsageFlags & BUFFERUSAGE_VERTEX)	rhiBufferDesc.isVertexBuffer = true;
-	if (bufferUsageFlags & BUFFERUSAGE_INDEX)	rhiBufferDesc.isIndexBuffer = true;
-	if (bufferUsageFlags & BUFFERUSAGE_INDIRECT)rhiBufferDesc.isDrawIndirectArgs = true;
-	if (bufferUsageFlags & BUFFERUSAGE_STORAGE)	rhiBufferDesc.canHaveUAVs = true;
-
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
 	m_rhiBuffer = rhiDevice->createBuffer(rhiBufferDesc);

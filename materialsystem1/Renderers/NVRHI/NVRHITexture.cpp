@@ -2,7 +2,7 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU texture
+// Description: NVRHI texture
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
@@ -83,28 +83,25 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 		m_flags |= TEXFLAG_CUBEMAP;
 
 	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
-	nvrhi::TextureDesc rhiTextureDesc{};
-	rhiTextureDesc.debugName = m_name;
-	rhiTextureDesc.mipLevels = mipCount;
-	rhiTextureDesc.sampleCount = 1;
-	rhiTextureDesc.isShaderResource = true;
-
-	if (flags & TEXFLAG_STORAGE)
-		rhiTextureDesc.isUAV = true;
-
-	rhiTextureDesc.format = GetNVRHITextureFormat(imgFmt);
+	auto rhiTextureDesc = nvrhi::TextureDesc()
+		.setMipLevels(mipCount)
+		.setSampleCount(mipCount)
+		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
+		.setFormat(GetNVRHITextureFormat(imgFmt));
 
 	if (IsCompressedFormat(imgFmt))
 	{
-		rhiTextureDesc.width = (texWidth + 3u) & ~3u;
-		rhiTextureDesc.height = (texHeight + 3u) & ~3u;
-		rhiTextureDesc.arraySize = (uint)arraySize;
+		rhiTextureDesc
+			.setWidth((texWidth + 3u) & ~3u)
+			.setHeight((texHeight + 3u) & ~3u)
+			.setArraySize((uint)arraySize);
 	}
 	else
 	{
-		rhiTextureDesc.width = (uint)texWidth;
-		rhiTextureDesc.height = (uint)texHeight;
-		rhiTextureDesc.arraySize = (uint)arraySize;
+		rhiTextureDesc
+			.setWidth((uint)texWidth)
+			.setHeight((uint)texHeight)
+			.setArraySize((uint)arraySize);
 	}
 
 	switch (imgType)
@@ -125,6 +122,7 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 		ASSERT_FAIL("Invalid image type of %s", image->GetName());
 	}
 
+	rhiTextureDesc.debugName = m_name.ToCString();
 	nvrhi::TextureHandle rhiTexture = rhiDevice->createTexture(rhiTextureDesc);
 	if (!rhiTexture)
 	{
@@ -211,37 +209,25 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 
 	if (!(data.flags & TEXLOCK_DISCARD) && (m_flags & TEXFLAG_COPY_SRC))
 	{
-		//CNVRHIBuffer tmpBuffer(BufferInfo(1, data.lockByteCount), BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "TexLockReadBuffer");
-		//
-		//{
-		//	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("TexLockReadCmd");
-		//	cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ this }, &tmpBuffer, data.lockSize);
-		//	g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
-		//}
-		//
-		//IGPUBuffer::MapFuture future = tmpBuffer.Lock(0, tmpBuffer.GetSize(), 0);
-		//future.AddCallback([this, &data, lockByteCount](const FutureResult<BufferMapData>& result) {
-		//	memcpy(data.lockData, result->data, lockByteCount);
-		//});
-
 		nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 
 		// create staging texture
-		nvrhi::TextureDesc rhiTextureDesc{};
-		rhiTextureDesc.debugName = m_name;
-		rhiTextureDesc.mipLevels = 1;
-		rhiTextureDesc.sampleCount = 1;
-		rhiTextureDesc.arraySize = 1;
-		rhiTextureDesc.format = GetNVRHITextureFormat(m_format);
+		auto rhiTextureDesc = nvrhi::TextureDesc()
+			.setMipLevels(1)
+			.setSampleCount(1)
+			.setArraySize(1)
+			.setFormat(GetNVRHITextureFormat(m_format));
+
 		if (IsCompressedFormat(m_format))
 		{
-			rhiTextureDesc.width = (m_width + 3u) & ~3u;
-			rhiTextureDesc.height = (m_width + 3u) & ~3u;
+			rhiTextureDesc
+				.setWidth((data.lockSize.width + 3u) & ~3u)
+				.setHeight((data.lockSize.height + 3u) & ~3u);
 		}
 		else
 		{
-			rhiTextureDesc.width = (uint)m_width;
-			rhiTextureDesc.height = (uint)m_width;
+			rhiTextureDesc.setWidth((uint)data.lockSize.width);
+			rhiTextureDesc.setHeight((uint)data.lockSize.height);
 		}
 
 		switch (m_imgType)
@@ -263,6 +249,7 @@ bool CNVRHITexture::Lock(LockInOutData& data)
 		}
 
 		// Need Staging texture to read into CPU memory
+		rhiTextureDesc.debugName = m_name.ToCString();
 		nvrhi::StagingTextureHandle rhiStagingTexture = rhiDevice->createStagingTexture(rhiTextureDesc, nvrhi::CpuAccessMode::Write);
 		if (!rhiStagingTexture)
 		{

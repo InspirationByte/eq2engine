@@ -1,94 +1,106 @@
-#include <webgpu/webgpu.h>
+#include <nvrhi/nvrhi.h>
 #include "core/core_common.h"
-#include "WGPUComputePassRecorder.h"
-#include "WGPUStates.h"
-#include "WGPUBuffer.h"
+#include "NVRHIComputePassRecorder.h"
+#include "NVRHIStates.h"
+#include "NVRHIBuffer.h"
 
-CWGPUComputePassRecorder::~CWGPUComputePassRecorder()
+void CNVRHIComputePassRecorder::DbgPopGroup() const
 {
-	if(m_rhiComputePassEncoder)
-		wgpuComputePassEncoderRelease(m_rhiComputePassEncoder);
-	m_rhiComputePassEncoder = nullptr;
-
-	if (m_rhiCommandEncoder)
-		wgpuCommandEncoderRelease(m_rhiCommandEncoder);
+	m_rhiCommandList->endMarker();
 }
 
-void CWGPUComputePassRecorder::DbgPopGroup() const
+void CNVRHIComputePassRecorder::DbgPushGroup(const char* groupLabel) const
 {
-	wgpuComputePassEncoderPopDebugGroup(m_rhiComputePassEncoder);
+	m_rhiCommandList->beginMarker(groupLabel);
 }
 
-void CWGPUComputePassRecorder::DbgPushGroup(const char* groupLabel) const
+void CNVRHIComputePassRecorder::DbgAddMarker(const char* label) const
 {
-	wgpuComputePassEncoderPushDebugGroup(m_rhiComputePassEncoder, _WSTR(groupLabel));
+	m_rhiCommandList->beginMarker(label);
+	m_rhiCommandList->endMarker();
 }
 
-void CWGPUComputePassRecorder::DbgAddMarker(const char* label) const
+void CNVRHIComputePassRecorder::CommitComputeState(nvrhi::IBuffer* indirectBuffer)
 {
-	wgpuComputePassEncoderInsertDebugMarker(m_rhiComputePassEncoder, _WSTR(label));
+	if (!m_computeStateDirty)
+		return;
+	m_computeStateDirty = false;
+
+	CNVRHIComputePipeline* pipelineImpl = static_cast<CNVRHIComputePipeline*>(m_pipeline.Ptr());
+	ASSERT(pipelineImpl);
+
+	auto rhiComputeState = nvrhi::ComputeState()
+		.setPipeline(pipelineImpl->m_rhiComputePipeline)
+		.setIndirectParams(indirectBuffer);
+
+	for (IGPUBindGroup* bindGroup : m_bindings)
+	{
+		CNVRHIBindGroup* bindGroupImpl = static_cast<CNVRHIBindGroup*>(bindGroup);
+		if (bindGroupImpl)
+			rhiComputeState.addBindingSet(bindGroupImpl->m_rhiBindingSet);
+		else
+			rhiComputeState.addBindingSet(nullptr);
+	}
+
+	m_rhiCommandList->setComputeState(rhiComputeState);
 }
 
-void CWGPUComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)
+void CNVRHIComputePassRecorder::SetPipeline(IGPUComputePipeline* pipeline)
 {
 	m_pipeline.Assign(pipeline);
-
-	ASSERT(pipeline);
-	CWGPUComputePipeline* pipelineImpl = static_cast<CWGPUComputePipeline*>(pipeline);
-	if (!pipelineImpl)
-		return;
-	wgpuComputePassEncoderSetPipeline(m_rhiComputePassEncoder, pipelineImpl->m_rhiComputePipeline);
+	m_computeStateDirty = true;
 }
 
-void CWGPUComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets)
+void CNVRHIComputePassRecorder::SetBindGroup(int groupIndex, IGPUBindGroup* bindGroup, ArrayCRef<uint32> dynamicOffsets)
 {
-	CWGPUBindGroup* bindGroupImpl = static_cast<CWGPUBindGroup*>(bindGroup);
-	if (bindGroupImpl)
-		wgpuComputePassEncoderSetBindGroup(m_rhiComputePassEncoder, groupIndex, bindGroupImpl->m_rhiBindGroup, dynamicOffsets.numElem(), dynamicOffsets.ptr());
-	else
-		wgpuComputePassEncoderSetBindGroup(m_rhiComputePassEncoder, groupIndex, nullptr, 0, nullptr);
+	m_bindings[groupIndex].Assign(bindGroup);
+	m_computeStateDirty = true;
 }
 
-void CWGPUComputePassRecorder::DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ)
+void CNVRHIComputePassRecorder::DispatchWorkgroups(int32 workgroupCountX, int32 workgroupCountY, int32 workgroupCountZ)
 {
-	wgpuComputePassEncoderDispatchWorkgroups(m_rhiComputePassEncoder, workgroupCountX, workgroupCountY, workgroupCountZ);
+	CommitComputeState();
+	m_rhiCommandList->dispatch(workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
-void CWGPUComputePassRecorder::DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset)
+void CNVRHIComputePassRecorder::DispatchWorkgroupsIndirect(IGPUBuffer* indirectBuffer, int64 indirectOffset)
 {
-	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
-	wgpuComputePassEncoderDispatchWorkgroupsIndirect(m_rhiComputePassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset);
+	CNVRHIBuffer* indirectBufferImpl = static_cast<CNVRHIBuffer*>(indirectBuffer);
+	ASSERT(indirectBufferImpl);
+	ASSERT_MSG(indirectBufferImpl->GetUsageFlags() & BUFFERUSAGE_INDIRECT, "buffer doesn't have Indirect buffer usage bit");
+
+	// since indirect buffer is part of state, we need to update it
+	m_computeStateDirty = true;
+
+	CommitComputeState(indirectBufferImpl->GetNVRHIBufferHandle());
+	m_rhiCommandList->dispatchIndirect(indirectOffset);
 }
 
-void CWGPUComputePassRecorder::Complete()
+void CNVRHIComputePassRecorder::Complete()
 {
-	if (!m_rhiComputePassEncoder)
+	if (!m_rhiCommandList)
 	{
 		ASSERT_FAIL("Render pass recorder was already ended");
 		return;
 	}
-	wgpuComputePassEncoderEnd(m_rhiComputePassEncoder);
-	wgpuComputePassEncoderRelease(m_rhiComputePassEncoder);
-	m_rhiComputePassEncoder = nullptr;
+	m_rhiCommandList = nullptr;
 }
 
-IGPUCommandBufferPtr CWGPUComputePassRecorder::End()
+IGPUCommandBufferPtr CNVRHIComputePassRecorder::End()
 {
 	Complete();
 
-	if (!m_rhiCommandEncoder)
+	if (!m_rhiCommandList)
 	{
 		ASSERT_FAIL("Compute pass recorder was already ended or is owned by GPUCommandRecorder, use Complete in this case");
 		return nullptr;
 	}
 
-	CRefPtr<CWGPUCommandBuffer> commandBuffer = CRefPtr_new(CWGPUCommandBuffer);
+	m_rhiCommandList->close();
 
-	WGPUCommandBuffer rhiCommandBuffer = wgpuCommandEncoderFinish(m_rhiCommandEncoder, nullptr);
-	wgpuCommandEncoderRelease(m_rhiCommandEncoder);
-
-	commandBuffer->m_rhiCommandBuffer = rhiCommandBuffer;
-	m_rhiCommandEncoder = nullptr;
+	CRefPtr<CNVRHICommandBuffer> commandBuffer = CRefPtr_new(CNVRHICommandBuffer);
+	commandBuffer->m_rhiCommandList = m_rhiCommandList;
+	m_rhiCommandList = nullptr;
 
 	return IGPUCommandBufferPtr(commandBuffer);
 }

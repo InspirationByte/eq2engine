@@ -2,22 +2,22 @@
 // Copyright (C) Inspiration Byte
 // 2009-2024
 //////////////////////////////////////////////////////////////////////////////////
-// Description: WebGPU renderer
+// Description: NVRHI renderer
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <webgpu/webgpu.h>
+#include <nvrhi/nvrhi.h>
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
 
-class CWGPUSwapChain;
+class CNVRHISwapChain;
 
-class CWGPURenderLib : public IRenderLibrary, public RenderWorkerHandler
+class CNVRHIRenderLib : public IRenderLibrary, public RenderWorkerHandler
 {
-	friend class CWGPUSwapChain;
+	friend class CNVRHISwapChain;
 public:
-	CWGPURenderLib();
-	~CWGPURenderLib();
+	CNVRHIRenderLib();
+	~CNVRHIRenderLib();
 
 	bool			InitCaps();
 
@@ -58,9 +58,9 @@ protected:
 
 	Threading::CEqSignal	m_endFrameWait;
 
-	Array<CWGPUSwapChain*>	m_swapChains{ PP_SL };
+	Array<CNVRHISwapChain*>	m_swapChains{ PP_SL };
 	int						m_swapChainCounter{ 0 };
-	CWGPUSwapChain*			m_currentSwapChain{ nullptr };
+	CNVRHISwapChain*		m_currentSwapChain{ nullptr };
 	bool					m_windowed{ false };
 };
 
