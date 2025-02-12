@@ -496,72 +496,60 @@ IGPUBufferPtr CNVRHIRenderAPI::CreateBuffer(const BufferInfo& bufferInfo, int bu
 
 IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const
 {
+	CRefPtr<CNVRHIPipelineLayout> pipelineLayout = CRefPtr_new(CNVRHIPipelineLayout);
+	pipelineLayout->m_dbgName = layoutDesc.name;
+
 	// Pipeline layout and bind group layout
 	// are also objects of IGPURenderPipeline
 	// There are 3 distinctive bind groups or buffers as our MatSystem design defines:
 	//		- Material Constant Properties (static buffer)
 	//		- Material Proxy Properties (buffers of these group updated every frame)
 	//		- Scene Properties (camera, transform, fog, clip planes)
-	Array<WGPUBindGroupLayout> rhiBindGroupLayout(PP_SL);
-	Array<WGPUBindGroupLayoutEntry> rhiBindGroupLayoutEntry(PP_SL);
+
+	int bindGroupIndex = 0;
 	for(const BindGroupLayoutDesc& bindGroupDesc : layoutDesc.bindGroups)
 	{
-		rhiBindGroupLayoutEntry.clear();
+		auto rhiBindingLayoutDesc = nvrhi::BindingLayoutDesc()
+			.setRegisterSpace(bindGroupIndex);
 
+		int rhiShaderTypeVisbility = 0;
 		for(const BindGroupLayoutDesc::Entry& entry : bindGroupDesc.entries)
 		{
-			WGPUBindGroupLayoutEntry bglEntry = {};
-			bglEntry.binding = entry.binding;
+			const bool isSRV = (entry.visibility & (SHADERKIND_VERTEX | SHADERKIND_FRAGMENT));
+			const bool isUAV = (entry.visibility & (SHADERKIND_COMPUTE));
 
-			if (entry.visibility & SHADERKIND_VERTEX)	bglEntry.visibility |= WGPUShaderStage_Vertex;
-			if (entry.visibility & SHADERKIND_FRAGMENT) bglEntry.visibility |= WGPUShaderStage_Fragment;
-			if (entry.visibility & SHADERKIND_COMPUTE)	bglEntry.visibility |= WGPUShaderStage_Compute;
+			if (entry.visibility & SHADERKIND_VERTEX)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Vertex);
+			if (entry.visibility & SHADERKIND_FRAGMENT) rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Pixel);
+			if (entry.visibility & SHADERKIND_COMPUTE)	rhiShaderTypeVisbility |= static_cast<int>(nvrhi::ShaderType::Compute);
 
 			switch (entry.type)
 			{
 				case BINDENTRY_BUFFER:
-					bglEntry.buffer.hasDynamicOffset = entry.buffer.hasDynamicOffset;
-					bglEntry.buffer.type = g_wgpuBufferBindingType[entry.buffer.bindType];
+					if (isSRV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_SRV(entry.binding));
+					if (isUAV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::RawBuffer_UAV(entry.binding));
 					break;
 				case BINDENTRY_SAMPLER:
-					bglEntry.sampler.type = g_wgpuSamplerBindingType[entry.sampler.bindType];
+					rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Sampler(entry.binding));
 					break;
 				case BINDENTRY_TEXTURE:
-					bglEntry.texture.sampleType = g_wgpuTexSampleType[entry.texture.sampleType];
-					bglEntry.texture.viewDimension = g_wgpuTexViewDimensions[entry.texture.dimension];
-					bglEntry.texture.multisampled = entry.texture.multisampled;
+					if (isSRV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_SRV(entry.binding));
+					if (isUAV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(entry.binding));
 					break;
 				case BINDENTRY_STORAGETEXTURE:
-					bglEntry.storageTexture.access = g_wgpuStorageTexAccess[entry.storageTexture.access];
-					bglEntry.storageTexture.viewDimension = g_wgpuTexViewDimensions[entry.storageTexture.dimension];
-					bglEntry.storageTexture.format = GetWGPUTextureFormat(entry.storageTexture.format);
+					if (isUAV) rhiBindingLayoutDesc.addItem(nvrhi::BindingLayoutItem::Texture_UAV(entry.binding));
 					break;
 			}
-			rhiBindGroupLayoutEntry.append(bglEntry);
 		}
+		rhiBindingLayoutDesc.setVisibility(static_cast<nvrhi::ShaderType>(rhiShaderTypeVisbility));
 
-		WGPUBindGroupLayoutDescriptor bindGroupLayoutDesc = {};
-		bindGroupLayoutDesc.entryCount = rhiBindGroupLayoutEntry.numElem();
-		bindGroupLayoutDesc.entries = rhiBindGroupLayoutEntry.ptr();
-
-		WGPUBindGroupLayout bindGroupLayout = wgpuDeviceCreateBindGroupLayout(m_rhiDevice, &bindGroupLayoutDesc);
-		if (!bindGroupLayout)
+		nvrhi::BindingLayoutHandle rhiBindingLayout = m_rhiDevice->createBindingLayout(rhiBindingLayoutDesc);
+		if (!rhiBindingLayout)
 			return nullptr;
 
-		rhiBindGroupLayout.append(bindGroupLayout);
+		pipelineLayout->m_rhiBindingLayout[pipelineLayout] = rhiBindingLayout;
+		++bindGroupIndex;
 	}
 
-	WGPUPipelineLayoutDescriptor rhiPipelineLayoutDesc = {};
-	rhiPipelineLayoutDesc.label = _WSTR(layoutDesc.name.Length() ? layoutDesc.name.ToCString() : nullptr);
-	rhiPipelineLayoutDesc.bindGroupLayoutCount = rhiBindGroupLayout.numElem();
-	rhiPipelineLayoutDesc.bindGroupLayouts = rhiBindGroupLayout.ptr();
-
-	WGPUPipelineLayout rhiPipelineLayout = wgpuDeviceCreatePipelineLayout(m_rhiDevice, &rhiPipelineLayoutDesc);
-	if (!rhiPipelineLayout)
-		return nullptr;
-
-	CRefPtr<CNVRHIPipelineLayout> pipelineLayout = CRefPtr_new(CNVRHIPipelineLayout);
-	pipelineLayout->m_rhiPipelineLayout = rhiPipelineLayout;
 	return IGPUPipelineLayoutPtr(pipelineLayout);
 }
 
