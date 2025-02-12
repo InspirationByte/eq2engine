@@ -27,7 +27,7 @@ constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
 constexpr EqStringRef s_shaderKindComputeName = "Compute";
 constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 
-DECLARE_CVAR(wgpu_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
+DECLARE_CVAR(nvrhi_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 
 CNVRHIRenderAPI CNVRHIRenderAPI::Instance;
 IShaderAPI* g_renderAPI = &CNVRHIRenderAPI::Instance;
@@ -257,7 +257,7 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 		}
 		++filesFound;
 
-		if (wgpu_preload_shaders.GetBool())
+		if (nvrhi_preload_shaders.GetBool())
 			GetOrLoadShaderModule(shaderInfo, moduleIndex);
 	}
 
@@ -1155,7 +1155,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	if (shaderInfo.vertexLayouts[layoutIdx].aliasOf != -1)
 		layoutIdx = shaderInfo.vertexLayouts[layoutIdx].aliasOf;
 
-	WGPUShaderModule rhiComputeShaderModule = nullptr;
+	nvrhi::ShaderHandle rhiComputeShaderModule = nullptr;
 	{
 		const int entryPointStrHash = StringId24(pipelineDesc.shaderEntryPoint);
 		const uint shaderModuleId = PackShaderModuleId(queryStrHash, layoutIdx, SHADERKIND_COMPUTE, entryPointStrHash);
@@ -1175,26 +1175,19 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		}
 	}
 
-	Array<WGPUConstantEntry> rhiComputePipelineConstants(PP_SL);
+	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
 
-	for (const PipelineConst& constant : pipelineDesc.constants)
-		rhiComputePipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value});
+	auto rhiComputePipelineDesc = nvrhi::ComputePipelineDesc()
+		.setComputeShader(rhiComputeShaderModule);
 
-	WGPUComputePipelineDescriptor rhiComputePipelineDesc = {};
-	rhiComputePipelineDesc.compute.constantCount = rhiComputePipelineConstants.numElem();
-	rhiComputePipelineDesc.compute.constants = rhiComputePipelineConstants.ptr();
-	rhiComputePipelineDesc.compute.entryPoint = _WSTR(pipelineDesc.shaderEntryPoint);
-	rhiComputePipelineDesc.compute.module = rhiComputeShaderModule;
-
-	if (pipelineLayout)
-		rhiComputePipelineDesc.layout = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
+	for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
+		rhiComputePipelineDesc.addBindingLayout(rhiLayout);
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
-	rhiComputePipelineDesc.label = _WSTR(pipelineName);
 
 	{
 		PROF_EVENT(EqString::Format("CreateComputePipeline for %s", pipelineName.ToCString()));
-		WGPUComputePipeline rhiComputePipeline = wgpuDeviceCreateComputePipeline(m_rhiDevice, &rhiComputePipelineDesc);
+		nvrhi::ComputePipelineHandle rhiComputePipeline = m_rhiDevice->createComputePipeline(rhiComputePipelineDesc);
 		if (!rhiComputePipeline)
 		{
 			ASSERT_FAIL("Compute pipeline creation failed");
@@ -1203,6 +1196,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 
 		CRefPtr<CNVRHIComputePipeline> renderPipeline = CRefPtr_new(CNVRHIComputePipeline);
 		renderPipeline->m_rhiComputePipeline = rhiComputePipeline;
+		renderPipeline->m_dbgName = pipelineName;
 
 		return IGPUComputePipelinePtr(renderPipeline);
 	}
