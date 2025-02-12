@@ -50,7 +50,7 @@ jobs:
         submodules: recursive
         
     - name: PowerShell Module Cache
-      uses: potatoqualitee/psmodulecache@v5.2
+      uses: potatoqualitee/psmodulecache@v6.2.1
       with:
         modules-to-cache: 7Zip4PowerShell
         
