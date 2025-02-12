@@ -893,53 +893,40 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	//    - primitiveTopology
 	//
 
-	// pipeline-overridable constants
-	Array<WGPUConstantEntry> rhiVertexPipelineConstants(PP_SL);
-	Array<WGPUConstantEntry> rhiFragmentPipelineConstants(PP_SL);
+	auto rhiGraphicsPipelineDesc = nvrhi::GraphicsPipelineDesc();
 
-	for (const PipelineConst& constant : pipelineDesc.vertex.constants)
-		rhiVertexPipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value});
-
-	for (const PipelineConst& constant : pipelineDesc.fragment.constants)
-		rhiFragmentPipelineConstants.append({ nullptr, _WSTR(constant.name), constant.value });
-
-	WGPURenderPipelineDescriptor rhiRenderPipelineDesc = {};
-	if (pipelineLayout)
+	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
+	if (pipelineLayoutImpl)
 	{
-		rhiRenderPipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
+		for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
+			rhiGraphicsPipelineDesc.addBindingLayout(rhiLayout);
 	}
 
 	// Setup vertex pipeline
 	// Required
-	Array<WGPUVertexAttribute> rhiVertexAttribList(PP_SL);
-	Array<WGPUVertexBufferLayout> rhiVertexBufferLayoutList(PP_SL);
+	nvrhi::InputLayoutHandle rhiInputLayout;
 	{
 		ASSERT_MSG(pipelineDesc.vertex.shaderEntryPoint.Length(), "No vertex shader entrypoint set");
 
+		Array<nvrhi::VertexAttributeDesc> rhiVertexAttribList(PP_SL);
 		for(const VertexLayoutDesc& vertexLayout : pipelineDesc.vertex.vertexLayout)
 		{
-			const int firstVertexAttrib = rhiVertexAttribList.numElem();
 			for(const VertexLayoutDesc::AttribDesc& attrib : vertexLayout.attributes)
 			{
 				if (attrib.format == ATTRIBUTEFORMAT_NONE)
 					continue;
 
-				WGPUVertexAttribute vertAttr = {};
-				vertAttr.format = g_wgpuVertexFormats[attrib.format][attrib.count-1];
-				vertAttr.offset = attrib.offset;
-				vertAttr.shaderLocation = attrib.location;
-				rhiVertexAttribList.append(vertAttr);
+				auto rhiVertAttr = rhiVertexAttribList.append()
+					.setFormat(g_nvrhiVertexFormats[attrib.format][attrib.count - 1])
+					.setOffset(attrib.offset)
+					.setBufferIndex(attrib.location)
+					.setIsInstanced(vertexLayout.stepMode == VERTEX_STEPMODE_INSTANCE)
+					.setElementStride(vertexLayout.stride);
+				rhiVertAttr.name = attrib.name.ToCString();
 			}
-
-			WGPUVertexBufferLayout rhiVertexBufferLayout = {};
-			rhiVertexBufferLayout.arrayStride = vertexLayout.stride;
-			rhiVertexBufferLayout.attributeCount = rhiVertexAttribList.numElem() - firstVertexAttrib;
-			rhiVertexBufferLayout.attributes = &rhiVertexAttribList[firstVertexAttrib];
-			rhiVertexBufferLayout.stepMode = g_wgpuVertexStepMode[vertexLayout.stepMode];
-			rhiVertexBufferLayoutList.append(rhiVertexBufferLayout);
 		}
 
-		WGPUShaderModule rhiVertexShaderModule = nullptr;
+		nvrhi::ShaderHandle rhiVertexShaderModule = nullptr;
 		{
 			const int entryPointStrHash = StringId24(pipelineDesc.vertex.shaderEntryPoint);
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_VERTEX, entryPointStrHash);
@@ -959,15 +946,10 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			}
 		}
 
-		WGPUVertexState& rhiVertexState = rhiRenderPipelineDesc.vertex;
-		rhiVertexState.module = rhiVertexShaderModule;
-		rhiVertexState.entryPoint = _WSTR(pipelineDesc.vertex.shaderEntryPoint);
-		rhiVertexState.bufferCount = rhiVertexBufferLayoutList.numElem();
-		rhiVertexState.buffers = rhiVertexBufferLayoutList.ptr();
-		rhiVertexState.constants = rhiVertexPipelineConstants.ptr();
-		rhiVertexState.constantCount = rhiVertexPipelineConstants.numElem();
+		rhiInputLayout = m_rhiDevice->createInputLayout(rhiVertexAttribList.ptr(), rhiVertexAttribList.numElem(), rhiVertexShaderModule);
+		rhiGraphicsPipelineDesc.setVertexShader(rhiVertexShaderModule);
 
-		if (!rhiVertexState.module)
+		if (!rhiVertexShaderModule)
 		{
 			EqString queryStr;
 			for (const EqString& str : pipelineDesc.shaderQuery)
@@ -984,60 +966,58 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	
 	// Depth state
 	// Optional when depth read = false
-	WGPUDepthStencilState rhiDepthStencil = {};
 	if (pipelineDesc.depthStencil.format != FORMAT_NONE)
 	{
-		rhiDepthStencil.format = GetWGPUTextureFormat(pipelineDesc.depthStencil.format);
-		rhiDepthStencil.depthWriteEnabled = (WGPUOptionalBool)pipelineDesc.depthStencil.depthWrite;
-		rhiDepthStencil.depthCompare = pipelineDesc.depthStencil.depthTest ? g_wgpuCompareFunc[pipelineDesc.depthStencil.depthFunc] : WGPUCompareFunction_Always;
+		auto& rhiDepthStencil = rhiGraphicsPipelineDesc.renderState.depthStencilState;
+		rhiDepthStencil.depthWriteEnable = pipelineDesc.depthStencil.depthWrite;
+		rhiDepthStencil.depthFunc = pipelineDesc.depthStencil.depthTest ? g_nvrhiCompareFunc[pipelineDesc.depthStencil.depthFunc] : nvrhi::ComparisonFunc::Always;
 		rhiDepthStencil.stencilReadMask = pipelineDesc.depthStencil.stencilMask;
 		rhiDepthStencil.stencilWriteMask = pipelineDesc.depthStencil.stencilWriteMask;
-		rhiDepthStencil.depthBias = pipelineDesc.depthStencil.depthBias;
-		rhiDepthStencil.depthBiasSlopeScale = pipelineDesc.depthStencil.depthBiasSlopeScale;
-		rhiDepthStencil.depthBiasClamp = 0; // TODO
+
+		auto& rhiRasterState = rhiGraphicsPipelineDesc.renderState.rasterState;
+		rhiRasterState.depthBias = pipelineDesc.depthStencil.depthBias;
+		rhiRasterState.slopeScaledDepthBias = pipelineDesc.depthStencil.depthBiasSlopeScale;
+		rhiRasterState.depthBiasClamp = 0; // TODO
+
+		rhiDepthStencil.stencilRefValue = pipelineDesc.depthStencil.stencilRef;
+		rhiDepthStencil.stencilEnable = pipelineDesc.depthStencil.stencilTest;
 
 		// back
-		rhiDepthStencil.stencilBack.compare = g_wgpuCompareFunc[pipelineDesc.depthStencil.stencilBack.compareFunc];
-		rhiDepthStencil.stencilBack.failOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.failOp];
-		rhiDepthStencil.stencilBack.depthFailOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.depthFailOp];
-		rhiDepthStencil.stencilBack.passOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilBack.passOp];
+		rhiDepthStencil.backFaceStencil.stencilFunc = g_nvrhiCompareFunc[pipelineDesc.depthStencil.stencilBack.compareFunc];
+		rhiDepthStencil.backFaceStencil.failOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilBack.failOp];
+		rhiDepthStencil.backFaceStencil.depthFailOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilBack.depthFailOp];
+		rhiDepthStencil.backFaceStencil.passOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilBack.passOp];
 
 		// front
-		rhiDepthStencil.stencilFront.compare = g_wgpuCompareFunc[pipelineDesc.depthStencil.stencilFront.compareFunc];
-		rhiDepthStencil.stencilFront.failOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.failOp];
-		rhiDepthStencil.stencilFront.depthFailOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.depthFailOp];
-		rhiDepthStencil.stencilFront.passOp = g_wgpuStencilOp[pipelineDesc.depthStencil.stencilFront.passOp];
-		rhiRenderPipelineDesc.depthStencil = &rhiDepthStencil;
+		rhiDepthStencil.frontFaceStencil.stencilFunc = g_nvrhiCompareFunc[pipelineDesc.depthStencil.stencilFront.compareFunc];
+		rhiDepthStencil.frontFaceStencil.failOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilFront.failOp];
+		rhiDepthStencil.frontFaceStencil.depthFailOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilFront.depthFailOp];
+		rhiDepthStencil.frontFaceStencil.passOp = g_nvrhiStencilOp[pipelineDesc.depthStencil.stencilFront.passOp];
 	}
 
 	// Setup fragment pipeline
 	// Fragment state
 	// When opted out, requires rhiDepthStencil state
-	WGPUFragmentState rhiFragmentState = {};
-	FixedArray<WGPUColorTargetState, MAX_RENDERTARGETS> rhiColorTargets;
-	FixedArray<WGPUBlendState, MAX_RENDERTARGETS> rhiColorTargetBlends;
 	if(pipelineDesc.fragment.shaderEntryPoint.Length())
 	{
+		auto& rhiBlendState = rhiGraphicsPipelineDesc.renderState.blendState;
+		int targetNum = 0;
 		for(const FragmentPipelineDesc::ColorTargetDesc& target : pipelineDesc.fragment.targets)
 		{
-			WGPUColorTargetState rhiColorTarget = {};
+			rhiBlendState.targets[targetNum]
+				.setBlendEnable(target.blendEnable)
+				.setBlendOp(g_nvrhiBlendOp[target.colorBlend.blendFunc])
+				.setSrcBlend(g_nvrhiBlendFactor[target.colorBlend.srcFactor])
+				.setDestBlend(g_nvrhiBlendFactor[target.colorBlend.dstFactor])
+				.setBlendOpAlpha(g_nvrhiBlendOp[target.alphaBlend.blendFunc])
+				.setSrcBlendAlpha(g_nvrhiBlendFactor[target.alphaBlend.srcFactor])
+				.setDestBlendAlpha(g_nvrhiBlendFactor[target.alphaBlend.dstFactor])
+				.setColorWriteMask((nvrhi::ColorMask)target.writeMask);
 
-			if(target.blendEnable)
-			{
-				WGPUBlendState rhiBlend = {};
-				FillWGPUBlendComponent(target.colorBlend, rhiBlend.color);
-				FillWGPUBlendComponent(target.alphaBlend, rhiBlend.alpha);
-				rhiColorTargetBlends.append(rhiBlend);
-
-				rhiColorTarget.blend = &rhiColorTargetBlends.back();
-			}
-
-			rhiColorTarget.format = GetWGPUTextureFormat(target.format);
-			rhiColorTarget.writeMask = target.writeMask;
-			rhiColorTargets.append(rhiColorTarget);
+			targetNum++;
 		}
 
-		WGPUShaderModule rhiFragmentShaderModule = nullptr; // TODO: fetch from cache of fragment modules?
+		nvrhi::ShaderHandle rhiFragmentShaderModule = nullptr; // TODO: fetch from cache of fragment modules?
 		{
 			const int entryPointStrHash = StringId24(pipelineDesc.fragment.shaderEntryPoint);
 			const uint shaderModuleId = PackShaderModuleId(queryStrHash, vertexLayoutIdx, SHADERKIND_FRAGMENT, entryPointStrHash);
@@ -1057,14 +1037,9 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			}
 		}
 
-		rhiFragmentState.module = rhiFragmentShaderModule;
-		rhiFragmentState.entryPoint = _WSTR(pipelineDesc.fragment.shaderEntryPoint);
-		rhiFragmentState.targetCount = rhiColorTargets.numElem();
-		rhiFragmentState.targets = rhiColorTargets.ptr();
-		rhiFragmentState.constants = rhiFragmentPipelineConstants.ptr();
-		rhiFragmentState.constantCount = rhiFragmentPipelineConstants.numElem();
+		rhiGraphicsPipelineDesc.setPixelShader(rhiFragmentShaderModule);
 
-		if(!rhiFragmentState.module)
+		if(!rhiFragmentShaderModule)
 		{
 			EqString queryStr;
 			for (const EqString& str : pipelineDesc.shaderQuery)
@@ -1077,33 +1052,28 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			ASSERT_FAIL("No fragment shader module found for %s %s in shader package %s", shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString(), queryStr.ToCString(), pipelineDesc.shaderName.ToCString());
 			return nullptr;
 		}
-
-		rhiRenderPipelineDesc.fragment = &rhiFragmentState;
 	}
 
-	if (!rhiRenderPipelineDesc.depthStencil && !rhiRenderPipelineDesc.fragment)
+	if (pipelineDesc.depthStencil.format == FORMAT_NONE && pipelineDesc.fragment.shaderEntryPoint.Length() == 0)
 	{
 		ASSERT_FAIL("Render pipeline requires either depthStencil or fragment states (or both)");
 		return nullptr;
 	}
 
 	// Multisampling
-	rhiRenderPipelineDesc.multisample.count = pipelineDesc.multiSample.count;
-	rhiRenderPipelineDesc.multisample.mask = pipelineDesc.multiSample.mask;
-	rhiRenderPipelineDesc.multisample.alphaToCoverageEnabled = pipelineDesc.multiSample.alphaToCoverage;
+	rhiGraphicsPipelineDesc.renderState.rasterState.multisampleEnable = pipelineDesc.multiSample.count > 1;
 
 	// Primitive toplogy
-	rhiRenderPipelineDesc.primitive.frontFace = WGPUFrontFace_CW; // for now always, TODO
-	rhiRenderPipelineDesc.primitive.cullMode = g_wgpuCullMode[pipelineDesc.primitive.cullMode];
-	rhiRenderPipelineDesc.primitive.topology = g_wgpuPrimTopology[pipelineDesc.primitive.topology];
-	rhiRenderPipelineDesc.primitive.stripIndexFormat = g_wgpuStripIndexFormat[pipelineDesc.primitive.stripIndex];
+	rhiGraphicsPipelineDesc.renderState.rasterState.cullMode = g_nvrhiCullMode[pipelineDesc.primitive.cullMode];
+	rhiGraphicsPipelineDesc.setPrimType(g_nvrhiPrimitiveType[pipelineDesc.primitive.topology]);
+	rhiGraphicsPipelineDesc.setInputLayout(rhiInputLayout);
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[vertexLayoutIdx].name.ToCString());
-	rhiRenderPipelineDesc.label = _WSTR(pipelineName);
 
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
-		WGPURenderPipeline rhiRenderPipeline = wgpuDeviceCreateRenderPipeline(m_rhiDevice, &rhiRenderPipelineDesc);
+		ASSERT_FAIL("NEEDS FAKE FRAMEBUFFER INFO");
+		nvrhi::GraphicsPipelineHandle rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, nullptr);
 		if (!rhiRenderPipeline)
 		{
 			ASSERT_FAIL("Render pipeline creation failed");
@@ -1112,6 +1082,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 		CRefPtr<CNVRHIRenderPipeline> renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
 		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
+		renderPipeline->m_dbgName = std::move(pipelineName);
 
 		return IGPURenderPipelinePtr(renderPipeline);
 	}
@@ -1175,13 +1146,16 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		}
 	}
 
-	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
-
 	auto rhiComputePipelineDesc = nvrhi::ComputePipelineDesc()
 		.setComputeShader(rhiComputeShaderModule);
 
-	for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
-		rhiComputePipelineDesc.addBindingLayout(rhiLayout);
+	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
+	if (pipelineLayoutImpl)
+	{
+		for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
+			rhiComputePipelineDesc.addBindingLayout(rhiLayout);
+	}
+	// FIXME: should be required?
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
 
@@ -1196,7 +1170,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 
 		CRefPtr<CNVRHIComputePipeline> renderPipeline = CRefPtr_new(CNVRHIComputePipeline);
 		renderPipeline->m_rhiComputePipeline = rhiComputePipeline;
-		renderPipeline->m_dbgName = pipelineName;
+		renderPipeline->m_dbgName = std::move(pipelineName);
 
 		return IGPUComputePipelinePtr(renderPipeline);
 	}

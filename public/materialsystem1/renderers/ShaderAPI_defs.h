@@ -221,7 +221,7 @@ struct DepthStencilStateParams
 	uint32			stencilWriteMask{ 0xFFFFFFFF };
 
 	uint8			stencilRef{ 0xFF }; // TODO: remove
-	bool			stencilTest{ false }; // TODO: remove
+	bool			stencilTest{ false };
 	bool			useDepthBias{ false }; // TODO: remove
 
 };
