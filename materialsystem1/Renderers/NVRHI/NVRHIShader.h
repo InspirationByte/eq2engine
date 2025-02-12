@@ -30,6 +30,7 @@ struct ShaderInfoNVRHIImpl
 	{
 		nvrhi::ShaderHandle	rhiModule{ nullptr };
 		EShaderKind			kind;
+		EqString			entryPoint;
 		int					fileIndex{ -1 };
 		EShaderModuleType	type{};
 	};

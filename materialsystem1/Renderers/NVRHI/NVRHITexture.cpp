@@ -24,7 +24,7 @@ CNVRHITexture::~CNVRHITexture()
 
 void CNVRHITexture::Release()
 {
-	//m_rhiViews.clear();
+	m_rhiViews.clear();
 	m_rhiTexture = nullptr;
 }
 
@@ -82,10 +82,8 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	if (image->IsCube())
 		m_flags |= TEXFLAG_CUBEMAP;
 
-	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
 	auto rhiTextureDesc = nvrhi::TextureDesc()
 		.setMipLevels(mipCount)
-		.setSampleCount(mipCount)
 		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
 		.setFormat(GetNVRHITextureFormat(imgFmt));
 
@@ -122,6 +120,8 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 		ASSERT_FAIL("Invalid image type of %s", image->GetName());
 	}
 
+	nvrhi::IDevice* rhiDevice = CNVRHIRenderAPI::Instance.GetNVRHIDevice();
+
 	rhiTextureDesc.debugName = m_name.ToCString();
 	nvrhi::TextureHandle rhiTexture = rhiDevice->createTexture(rhiTextureDesc);
 	if (!rhiTexture)
@@ -131,11 +131,13 @@ bool CNVRHITexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& 
 	}
 	m_rhiTexture = rhiTexture;
 
-	// create main texture view
-	nvrhi::TextureSubresourceSet rhiTexViewDesc = {};
-	rhiTexViewDesc.numArraySlices = nvrhi::TextureSubresourceSet::AllArraySlices;
-	rhiTexViewDesc.numMipLevels = nvrhi::TextureSubresourceSet::AllMipLevels;
-	m_rhiViews.append(rhiTexViewDesc);
+	// create default texture view
+	{
+		auto rhiDefaultTexViewDesc = nvrhi::TextureSubresourceSet()
+			.setNumMipLevels(nvrhi::TextureSubresourceSet::AllMipLevels)
+			.setNumArraySlices(nvrhi::TextureSubresourceSet::AllArraySlices);
+		m_rhiViews.append(rhiDefaultTexViewDesc);
+	}
 
 	// TODO: create individual array views
 

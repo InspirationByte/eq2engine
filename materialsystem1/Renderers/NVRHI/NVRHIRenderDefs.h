@@ -93,11 +93,6 @@ static nvrhi::Format g_nvrhiTexFormats[] = {
 	nvrhi::Format::UNKNOWN,
 };
 
-static nvrhi::Format s_nvrhiVertexBufferFormats[] = {
-	nvrhi::Format::R16_UINT,
-	nvrhi::Format::R32_UINT
-};
-
 static nvrhi::Format GetNVRHIFormatSRGB(nvrhi::Format baseFormat)
 {
 	switch (baseFormat)
@@ -140,6 +135,11 @@ static nvrhi::Format GetNVRHITextureFormat(ETextureFormat formatWithFlags)
 
 	return format;
 }
+
+static nvrhi::Format s_nvrhiVertexBufferFormats[] = {
+	nvrhi::Format::R16_UINT,
+	nvrhi::Format::R32_UINT
+};
 
 // EBufferBindType
 //static WGPUBufferBindingType g_wgpuBufferBindingType[] = {

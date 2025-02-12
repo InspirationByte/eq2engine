@@ -243,6 +243,7 @@ int CNVRHIRenderAPI::LoadShaderPackage(const char* filename)
 			modInfo.fileIndex = shaderInfo.shaderPackFile->FindFileIndex(shaderFileName);
 			modInfo.type = SHADERMODULE_SPIRV;
 			modInfo.kind = static_cast<EShaderKind>(kind);
+			modInfo.entryPoint = entryPointName;
 		}
 		{
 			const int queryStrHash = StringId24(queryStr, true);
@@ -406,31 +407,36 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 	texture->SetSampleCount(sampleCount);
 	texture->Release();
 
-	WGPUTextureUsage rhiUsageFlags = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
-	if (flags & TEXFLAG_STORAGE) rhiUsageFlags |= WGPUTextureUsage_StorageBinding;
-	if (flags & TEXFLAG_COPY_SRC) rhiUsageFlags |= WGPUTextureUsage_CopySrc;
-	if (flags & TEXFLAG_COPY_DST) rhiUsageFlags |= WGPUTextureUsage_CopyDst;
+	auto rhiTextureDesc = nvrhi::TextureDesc()
+		.setMipLevels(mipmapCount)
+		.setSampleCount(sampleCount)
+		.setIsUAV((flags & TEXFLAG_STORAGE) != 0)
+		.setFormat(GetNVRHITextureFormat(texture->GetFormat()));
 
 	const int arrayLayerCount = isCubeMap ? ITexture::CubeArraySlice(0, newSize.arraySize) : newSize.arraySize;
+	rhiTextureDesc
+		.setWidth((uint)newSize.width)
+		.setHeight((uint)newSize.height)
+		.setArraySize((uint)newSize.arraySize);
 
-	WGPUTextureDescriptor rhiTextureDesc = {};
-	rhiTextureDesc.label = _WSTR(texture->GetName());
-	rhiTextureDesc.mipLevelCount = mipmapCount;
-	rhiTextureDesc.size = WGPUExtent3D{ (uint)newSize.width, (uint)newSize.height, (uint)arrayLayerCount };
-	rhiTextureDesc.sampleCount = sampleCount;
-	rhiTextureDesc.usage = rhiUsageFlags;
-	rhiTextureDesc.format = GetWGPUTextureFormat(texture->GetFormat());
-	rhiTextureDesc.dimension = WGPUTextureDimension_2D;
-	rhiTextureDesc.viewFormatCount = 0;
-	rhiTextureDesc.viewFormats = nullptr;
+	if (flags & TEXFLAG_CUBEMAP)
+	{
+		rhiTextureDesc.dimension = (newSize.arraySize > 1) ? nvrhi::TextureDimension::TextureCubeArray : nvrhi::TextureDimension::TextureCube;
+	}
+	else
+	{
+		rhiTextureDesc.dimension = (newSize.arraySize > 1) ? nvrhi::TextureDimension::Texture2DArray : nvrhi::TextureDimension::Texture2D;
 
-	if (rhiTextureDesc.format == WGPUTextureFormat_Undefined)
+		// TODO: depth and nvrhi::TextureDimension::Texture3D
+	}
+
+	if (rhiTextureDesc.format == nvrhi::Format::UNKNOWN)
 	{
 		MsgError("Invalid or unsupported texture format %d\n", texture->GetFormat());
 		return;
 	}
 
-	WGPUTexture rhiTexture = wgpuDeviceCreateTexture(m_rhiDevice, &rhiTextureDesc);
+	nvrhi::TextureHandle rhiTexture = m_rhiDevice->createTexture(rhiTextureDesc);
 	if (!rhiTexture)
 	{
 		ErrorMsg("Failed to create render target %s\n", texture->GetName());
@@ -440,23 +446,12 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 	texture->m_rhiTexture = rhiTexture;
 
 	// add default view
+	// create default texture view
 	{
-		WGPUTextureViewDescriptor rhiTexViewDesc = {};
-		rhiTexViewDesc.label = rhiTextureDesc.label;
-		rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
-		rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-		rhiTexViewDesc.arrayLayerCount = arrayLayerCount;
-		rhiTexViewDesc.baseArrayLayer = 0;
-		rhiTexViewDesc.baseMipLevel = 0;
-		rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
-
-		if (isArray)
-			rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_CubeArray : WGPUTextureViewDimension_2DArray;
-		else
-			rhiTexViewDesc.dimension = isCubeMap ? WGPUTextureViewDimension_Cube : WGPUTextureViewDimension_2D;
-
-		WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
-		texture->m_rhiViews.append(rhiView);
+		auto rhiDefaultTexViewDesc = nvrhi::TextureSubresourceSet()
+			.setNumMipLevels(nvrhi::TextureSubresourceSet::AllMipLevels)
+			.setNumArraySlices(nvrhi::TextureSubresourceSet::AllArraySlices);
+		texture->m_rhiViews.append(rhiDefaultTexViewDesc);
 	}
 
 	// FIXME: need some kind of better table and only by request 
@@ -468,18 +463,10 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		{
 			for (int i = 0; i < 6; ++i)
 			{
-				WGPUTextureViewDescriptor rhiTexViewDesc = {};
-				rhiTexViewDesc.label = rhiTextureDesc.label;
-				rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
-				rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-				rhiTexViewDesc.arrayLayerCount = 1;
-				rhiTexViewDesc.baseArrayLayer = ITexture::CubeArraySlice(i, slice);
-				rhiTexViewDesc.baseMipLevel = 0;
-				rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
-				rhiTexViewDesc.dimension = WGPUTextureViewDimension_2D;
-
-				WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
-				texture->m_rhiViews.append(rhiView);
+				auto rhiTexViewDesc = nvrhi::TextureSubresourceSet()
+					.setNumMipLevels(nvrhi::TextureSubresourceSet::AllMipLevels)
+					.setArraySlices(ITexture::CubeArraySlice(i, slice), 1);
+				texture->m_rhiViews.append(rhiTexViewDesc);
 			}
 		}
 	}
@@ -488,18 +475,10 @@ void CNVRHIRenderAPI::ResizeRenderTarget(ITexture* renderTarget, const TextureEx
 		// add array views
 		for (int i = 0; i < newSize.arraySize; ++i)
 		{
-			WGPUTextureViewDescriptor rhiTexViewDesc = {};
-			rhiTexViewDesc.label = rhiTextureDesc.label;
-			rhiTexViewDesc.format = GetWGPUTextureFormat(texture->GetFormat());
-			rhiTexViewDesc.aspect = WGPUTextureAspect_All;
-			rhiTexViewDesc.arrayLayerCount = 1;
-			rhiTexViewDesc.baseArrayLayer = i;
-			rhiTexViewDesc.baseMipLevel = 0;
-			rhiTexViewDesc.mipLevelCount = rhiTextureDesc.mipLevelCount;
-			rhiTexViewDesc.dimension = WGPUTextureViewDimension_2D;
-
-			WGPUTextureView rhiView = wgpuTextureCreateView(rhiTexture, &rhiTexViewDesc);
-			texture->m_rhiViews.append(rhiView);
+			auto rhiTexViewDesc = nvrhi::TextureSubresourceSet()
+				.setNumMipLevels(nvrhi::TextureSubresourceSet::AllMipLevels)
+				.setArraySlices(i, 1);
+			texture->m_rhiViews.append(rhiTexViewDesc);
 		}
 	}
 }
@@ -581,8 +560,7 @@ IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayout
 	if (!rhiPipelineLayout)
 		return nullptr;
 
-	CRefPtr<CWGPUPipelineLayout> pipelineLayout = CRefPtr_new(CWGPUPipelineLayout);
-	pipelineLayout->m_rhiBindGroupLayout = std::move(rhiBindGroupLayout);
+	CRefPtr<CNVRHIPipelineLayout> pipelineLayout = CRefPtr_new(CNVRHIPipelineLayout);
 	pipelineLayout->m_rhiPipelineLayout = rhiPipelineLayout;
 	return IGPUPipelineLayoutPtr(pipelineLayout);
 }
@@ -646,7 +624,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUPipelineLayout* layo
 		return nullptr;
 	}
 
-	const CWGPUPipelineLayout* pipelineLayout = static_cast<const CWGPUPipelineLayout*>(layoutDesc);
+	const CNVRHIPipelineLayout* pipelineLayout = static_cast<const CNVRHIPipelineLayout*>(layoutDesc);
 
 	const Array<WGPUBindGroupLayout>& rhiLayout = pipelineLayout->m_rhiBindGroupLayout;
 	if (!rhiLayout.inRange(bindGroupDesc.groupIdx))
@@ -675,8 +653,8 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUPipelineLayout* layo
 	if (!rhiBindGroup)
 		return nullptr;
 	
-	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
-	bindGroup->m_rhiBindGroup = rhiBindGroup;
+	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
+	bindGroup->m_rhiBindingSet = rhiBindGroup;
 
 	return IGPUBindGroupPtr(bindGroup);
 }
@@ -705,7 +683,7 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* rend
 	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
 
 	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
-	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CWGPURenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
+	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CNVRHIRenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
 	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
 	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
 
@@ -713,8 +691,8 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* rend
 	if (!rhiBindGroup)
 		return nullptr;
 
-	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
-	bindGroup->m_rhiBindGroup = rhiBindGroup;
+	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
+	bindGroup->m_rhiBindingSet = rhiBindGroup;
 
 	return IGPUBindGroupPtr(bindGroup);
 }
@@ -751,39 +729,15 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* com
 	if (!rhiBindGroup)
 		return nullptr;
 
-	CRefPtr<CWGPUBindGroup> bindGroup = CRefPtr_new(CWGPUBindGroup);
-	bindGroup->m_rhiBindGroup = rhiBindGroup;
+	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
+	bindGroup->m_rhiBindingSet = rhiBindGroup;
 
 	return IGPUBindGroupPtr(bindGroup);
 }
 
-nvrhi::ShaderHandle CNVRHIRenderAPI::CreateShaderSPIRV(const uint32* code, uint32 size, const char* name) const
-{
-	PROF_EVENT_F();
-
-	WGPUDawnShaderModuleSPIRVOptionsDescriptor rhiDawnShaderModuleDesc = {};
-	rhiDawnShaderModuleDesc.chain.sType = WGPUSType_DawnShaderModuleSPIRVOptionsDescriptor;
-	rhiDawnShaderModuleDesc.allowNonUniformDerivatives = true;
-
-	WGPUShaderSourceSPIRV rhiSpirvDesc = {};
-	rhiSpirvDesc.chain.sType = WGPUSType_ShaderSourceSPIRV;
-	rhiSpirvDesc.chain.next = &rhiDawnShaderModuleDesc.chain;
-	rhiSpirvDesc.codeSize = size / sizeof(uint32_t);
-	rhiSpirvDesc.code = code;
-
-	WGPUShaderModuleDescriptor rhiShaderModuleDesc = {};
-	rhiShaderModuleDesc.nextInChain = &rhiSpirvDesc.chain;
-	rhiShaderModuleDesc.label = _WSTR(name);
-
-	WGPUShaderModule shaderModule = shaderModule = wgpuDeviceCreateShaderModule(m_rhiDevice, &rhiShaderModuleDesc);
-	ASSERT_MSG(shaderModule, "Failed to create SPIRV source shader module %s", name);
-
-	return shaderModule;
-}
-
 nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const
 {
-	ShaderInfoWGPUImpl::Module& mod = const_cast<ShaderInfoWGPUImpl::Module&>(shaderInfo.modules[shaderModuleIdx]);
+	ShaderInfoNVRHIImpl::Module& mod = const_cast<ShaderInfoNVRHIImpl::Module&>(shaderInfo.modules[shaderModuleIdx]);
 	if (mod.rhiModule)
 		return mod.rhiModule;
 
@@ -802,16 +756,32 @@ nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfoNVRHI
 
 	const EqString shaderModuleName = EqString::Format("%s-%d", shaderInfo.shaderName.ToCString(), shaderModuleIdx);
 
-	WGPUShaderModule rhiShaderModule = nullptr;
+	nvrhi::ShaderHandle rhiShaderModule = nullptr;
 	if (mod.type == SHADERMODULE_SPIRV)
 	{
-		rhiShaderModule = CreateShaderSPIRV(reinterpret_cast<uint32*>(shaderData.GetBasePointer()), shaderData.GetSize(), shaderModuleName);
+		nvrhi::ShaderDesc rhiShaderDesc{};
+		rhiShaderDesc.debugName = shaderModuleName;
+		rhiShaderDesc.entryName = mod.entryPoint.ToCString();
+
+		switch (mod.kind)
+		{
+		case SHADERKIND_VERTEX:
+			rhiShaderDesc.shaderType = nvrhi::ShaderType::Vertex;
+			break;
+		case SHADERKIND_FRAGMENT:
+			rhiShaderDesc.shaderType = nvrhi::ShaderType::Pixel;
+			break;
+		case SHADERKIND_COMPUTE:
+			rhiShaderDesc.shaderType = nvrhi::ShaderType::Compute;
+			break;
+		}
+
+		rhiShaderModule = m_rhiDevice->createShader(rhiShaderDesc, shaderData.GetBasePointer(), shaderData.GetSize());
 	}
-	else if(mod.type == SHADERMODULE_WGSL)
+	else
 	{
-		const int _zero = 0;
-		shaderData.Write(&_zero, 1, sizeof(_zero));
-		rhiShaderModule = CreateShaderWGSL(reinterpret_cast<char*>(shaderData.GetBasePointer()), shaderModuleName);
+		ASSERT_FAIL("Shader module type %d (found in package %s) not supported", mod.type, shaderInfo.shaderName.ToCString());
+		return nullptr;
 	}
 	
 	if (!rhiShaderModule)
@@ -834,7 +804,7 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 		return;
 	}
 
-	const ShaderInfoWGPUImpl& shaderInfo = *shaderIt;
+	const ShaderInfoNVRHIImpl& shaderInfo = *shaderIt;
 	int queryStrHash = 0;
 	if (!shaderInfo.GetShaderQueryHash(defines, queryStrHash))
 	{
@@ -846,7 +816,7 @@ void CNVRHIRenderAPI::LoadShaderModules(const char* shaderName, ArrayCRef<EqStri
 
 	for (int i = 0; i < shaderInfo.vertexLayouts.numElem(); ++i)
 	{
-		const ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts[i];
+		const ShaderInfoNVRHIImpl::VertLayout& layout = shaderInfo.vertexLayouts[i];
 		if (layout.aliasOf != -1)
 			continue;
 
@@ -886,7 +856,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		return nullptr;
 	}
 
-	const ShaderInfoWGPUImpl& shaderInfo = *shaderIt;
+	const ShaderInfoNVRHIImpl& shaderInfo = *shaderIt;
 	ASSERT_MSG(shaderInfo.shaderName == pipelineDesc.shaderName, "Shader name mismatch, requested '%s' got '%s' (hash collision?)", pipelineDesc.shaderName.ToCString(), shaderInfo.shaderName.ToCString());
 
 	if (!(shaderInfo.shaderKinds & (SHADERKIND_VERTEX | SHADERKIND_FRAGMENT)))
@@ -902,7 +872,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		return nullptr;
 	}
 
-	int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
+	int vertexLayoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
 		return layout.nameHash == pipelineDesc.shaderVertexLayoutId;
 	});
 
@@ -1152,7 +1122,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			return nullptr;
 		}
 
-		CRefPtr<CWGPURenderPipeline> renderPipeline = CRefPtr_new(CWGPURenderPipeline);
+		CRefPtr<CNVRHIRenderPipeline> renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
 		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
 
 		return IGPURenderPipelinePtr(renderPipeline);
@@ -1169,7 +1139,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		return nullptr;
 	}
 
-	const ShaderInfoWGPUImpl& shaderInfo = *shaderIt;
+	const ShaderInfoNVRHIImpl& shaderInfo = *shaderIt;
 	ASSERT_MSG(shaderInfo.shaderName == pipelineDesc.shaderName, "Shader name mismatch, requested '%s' got '%s' (hash collision?)", pipelineDesc.shaderName.ToCString(), shaderInfo.shaderName.ToCString());
 
 	if (!(shaderInfo.shaderKinds & SHADERKIND_COMPUTE))
@@ -1185,7 +1155,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		return nullptr;
 	}
 
-	int layoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
+	int layoutIdx = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoNVRHIImpl::VertLayout& layout) {
 		return layout.nameHash == pipelineDesc.shaderLayoutId;
 	});
 
@@ -1229,7 +1199,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 	rhiComputePipelineDesc.compute.module = rhiComputeShaderModule;
 
 	if (pipelineLayout)
-		rhiComputePipelineDesc.layout = static_cast<const CWGPUPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
+		rhiComputePipelineDesc.layout = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout)->m_rhiPipelineLayout;
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
 	rhiComputePipelineDesc.label = _WSTR(pipelineName);
@@ -1243,7 +1213,7 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 			return nullptr;
 		}
 
-		CRefPtr<CWGPUComputePipeline> renderPipeline = CRefPtr_new(CWGPUComputePipeline);
+		CRefPtr<CNVRHIComputePipeline> renderPipeline = CRefPtr_new(CNVRHIComputePipeline);
 		renderPipeline->m_rhiComputePipeline = rhiComputePipeline;
 
 		return IGPUComputePipelinePtr(renderPipeline);

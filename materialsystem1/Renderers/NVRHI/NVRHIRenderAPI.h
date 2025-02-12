@@ -98,9 +98,6 @@ public:
 	nvrhi::DeviceHandle			GetNVRHIDevice() const { return m_rhiDevice; }
 
 protected:
-
-	nvrhi::ShaderHandle			CreateShaderSPIRV(const uint32* code, uint32 size, const char* name = nullptr) const;
-
 	nvrhi::ShaderHandle			GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const;
 	int							LoadShaderPackage(const char* filename);
 
