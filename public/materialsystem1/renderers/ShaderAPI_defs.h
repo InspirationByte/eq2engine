@@ -934,9 +934,8 @@ struct RenderPassDesc
 		TextureView	target;
 		TextureView	resolveTarget;
 		ELoadFunc	loadOp{ LOADFUNC_LOAD };
-		EStoreFunc	storeOp{ STOREFUNC_STORE };
+		EStoreFunc	storeOp{ STOREFUNC_STORE };	// DEPRECATED
 		MColor		clearColor{ color_black };
-		int			depthSlice{ -1 };
 	};
 	using ColorTargetList = FixedArray<ColorTargetDesc, MAX_RENDERTARGETS>;
 	ColorTargetList	colorTargets;
@@ -944,7 +943,7 @@ struct RenderPassDesc
 	TextureView		depthStencil;
 	float			depthClearValue{ 0.0f };
 	ELoadFunc		depthLoadOp{ LOADFUNC_LOAD };
-	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };
+	EStoreFunc		depthStoreOp{ STOREFUNC_STORE };	// DEPRECATED
 	bool			depthReadOnly{ false };
 
 	int				stencilClearValue{ 0 };
@@ -963,7 +962,7 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		ref.nameHash = StringId24(str);
 		return *this; 
 	}
-	ThisType& ColorTarget(const TextureView& colorTarget, bool clear = false, const MColor& clearColor = color_black, bool discard = false, int depthSlice = -1, const TextureView& resolveTarget = nullptr)
+	ThisType& ColorTarget(const TextureView& colorTarget, bool clear = false, const MColor& clearColor = color_black, bool discard = false, const TextureView& resolveTarget = nullptr)
 	{
 		ColorTargetDesc& entry = ref.colorTargets.append();
 		entry.target = colorTarget;
@@ -971,7 +970,6 @@ FLUENT_BEGIN_TYPE(RenderPassDesc)
 		entry.loadOp = clear ? LOADFUNC_CLEAR : LOADFUNC_LOAD;
 		entry.storeOp = discard ? STOREFUNC_DISCARD : STOREFUNC_STORE;
 		entry.clearColor = clearColor;
-		entry.depthSlice = depthSlice;
 		return *this;
 	}
 	ThisType& DepthStencilTarget(ITexture* depthTarget, int arraySlice = 0)

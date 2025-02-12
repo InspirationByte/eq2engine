@@ -140,6 +140,7 @@ struct TextureView
 
 	ITexturePtr	texture;
 	int			arraySlice{ 0 };
+	// TODO: mipLevel
 };
 
 struct ITexture::LockInOutData
