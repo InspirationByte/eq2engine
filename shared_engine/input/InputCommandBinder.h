@@ -55,10 +55,11 @@ struct InputTouchZone : public InputCommand
 
 struct InputAxisAction
 {
-	using Func = void (*)(short value);
+	using Func = void (*)(void* userData, short value);
 
 	EqString	name;
 	Func		func;
+	void*		userData{ nullptr };
 };
 
 class CInputCommandBinder
@@ -97,7 +98,8 @@ public:
 
 	// registers axis action
 	// they will be prefixed as "j_" + name
-	void					RegisterJoyAxisAction( const char* name, InputAxisAction::Func axisFunc );
+	void					CreateAxisAction( const char* name, InputAxisAction::Func axisFunc, void* userData = nullptr);
+	void					RemoveAxisAction(const char* name);
 
 	// binding list
 	ArrayCRef<InputBinding*>	GetBindingList() const { return m_bindings; }

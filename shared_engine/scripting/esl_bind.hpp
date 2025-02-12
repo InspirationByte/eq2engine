@@ -1278,7 +1278,7 @@ void BaseClassStorage::Add()
 	Info& info = *GetBaseClassNames().insert(ScriptClass<T>::classId);
 	info.name = ScriptClass<T>::baseClassName;
 
-	if constexpr (!std::is_void_v<BaseScriptClass<T>::BindType>)
+	if constexpr (!std::is_void_v<typename BaseScriptClass<T>::BindType>)
 	{
 		using BaseClass = typename BaseScriptClass<T>::BindType;
 		info.offset = ComputeBaseClassOffset<BaseClass, T>();
