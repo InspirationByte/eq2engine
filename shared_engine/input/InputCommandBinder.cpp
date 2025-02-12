@@ -83,7 +83,7 @@ static void cmd_boundKeysList(const ConCommandBase* base, Array<EqString>& list,
 static void InputExecAxisActionCommand(void* userData, short value)
 {
 	const InputBinding& binding = *reinterpret_cast<const InputBinding*>(userData);
-	binding.boundAxisAction->func(value);
+	binding.boundAxisAction->func(binding.boundAxisAction->userData, value);
 }
 
 static void InputExecInputCommand(void* userData, short value)
@@ -685,7 +685,6 @@ void CInputCommandBinder::UnbindAll()
 		m_bindings.fastRemoveIndex(i--);
 	}
 
-	m_axisActs.clear(true);
 	BitArrayImpl::clear(m_currentButtonBits, BITS_BUTTONS);
 }
 
@@ -704,13 +703,30 @@ void CInputCommandBinder::UnbindAll_Joystick()
 }
 
 // registers axis action
-void CInputCommandBinder::RegisterJoyAxisAction( const char* name, InputAxisAction::Func axisFunc )
+void CInputCommandBinder::CreateAxisAction( const char* name, InputAxisAction::Func axisFunc, void* userData)
 {
+	const int foundIdx = arrayFindIndexF(m_axisActs, [name](const InputAxisAction& axisAction) {
+		return axisAction.name.CompareCaseIns(name) == 0;
+	});
+
+
 	InputAxisAction act;
 	act.name = "ax_" + _Es(name);
 	act.func = axisFunc;
+	act.userData = userData;
 
 	m_axisActs.append( act );
+}
+
+void CInputCommandBinder::RemoveAxisAction(const char* name)
+{
+	const int foundIdx = arrayFindIndexF(m_axisActs, [name](const InputAxisAction& axisAction) {
+		return axisAction.name.CompareCaseIns(name) == 0;
+	});
+
+	if (foundIdx == -1)
+		return;
+	m_axisActs.fastRemoveIndex(foundIdx);
 }
 
 bool CInputCommandBinder::CheckModifiersAndDepress(InputBinding& binding, int currentKeyIdent, bool currentPressed)
