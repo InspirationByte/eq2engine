@@ -360,7 +360,7 @@ void CTextureCooker::SearchFolderForAtlasesAndConvert(const char* wildcard)
 		}
 		else if(fnmPathExtractExt(fileName) == s_atlasFileExt)
 		{
-			const EqString fullAtlPath = fnmPathCombine(fullAtlPath, searchFolder, fileName);
+			const EqString fullAtlPath = fnmPathCombine(searchFolder, fileName);
 			ProcessAtlasFile(fullAtlPath, m_targetProps.sourceMaterialPath);
 		}
 	}
@@ -370,6 +370,8 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 {
 	EqString searchFolder(wildcard);
 	searchFolder.ReplaceSubstr("*", "");
+
+	Msg("Search MAT wildcard: %s\n", wildcard);
 
 	CFileSystemFind fsFind(wildcard, SP_ROOT);
 	while (fsFind.Next())
@@ -382,7 +384,7 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 		}
 		else if(fnmPathExtractExt(fileName) == s_materialFileExt)
 		{
-			const EqString fullMaterialPath = fnmPathCombine(fullMaterialPath, searchFolder, fileName);
+			const EqString fullMaterialPath = fnmPathCombine(searchFolder, fileName);
 			ProcessMaterial(fullMaterialPath);
 		}
 	}
