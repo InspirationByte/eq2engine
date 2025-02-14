@@ -553,55 +553,85 @@ IGPUPipelineLayoutPtr CNVRHIRenderAPI::CreatePipelineLayout(const PipelineLayout
 	return IGPUPipelineLayoutPtr(pipelineLayout);
 }
 
-static void FillWGPUBindGroupEntries(WGPUDevice rhiDevice, const BindGroupDesc& bindGroupDesc, Array<WGPUBindGroupEntry>& rhiBindGroupEntryList)
+static void FillNVRHIBindGroupEntries(nvrhi::IDevice* rhiDevice, const BindGroupDesc& bindGroupDesc, Array<nvrhi::SamplerHandle>& rhiSamplers, nvrhi::BindingSetDesc& rhiBindingSetDesc)
 {
 	for (const BindGroupDesc::Entry& bindGroupEntry : bindGroupDesc.entries)
 	{
-		WGPUBindGroupEntry rhiBindGroupEntryDesc = {};
-		rhiBindGroupEntryDesc.binding = bindGroupEntry.binding;
+		//const bool isSRV = (entry.visibility & (SHADERKIND_VERTEX | SHADERKIND_FRAGMENT));
+		//const bool isUAV = (entry.visibility & (SHADERKIND_COMPUTE));
+
 		switch (bindGroupEntry.type)
 		{
 		case BINDENTRY_BUFFER:
 		{
-			CWGPUBuffer* buffer = static_cast<CWGPUBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
+			CNVRHIBuffer* buffer = static_cast<CNVRHIBuffer*>(bindGroupEntry.buffer.buffer.Ptr());
 			if (buffer)
-				rhiBindGroupEntryDesc.buffer = buffer->GetWGPUBuffer();
+			{
+				const uint64 bufferSize = bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer.byteSize : bindGroupEntry.buffer.size;
+				rhiBindingSetDesc.addItem(nvrhi::BindingSetItem()
+					.RawBuffer_SRV(bindGroupEntry.binding, buffer->GetNVRHIBufferHandle(), bindGroupEntry.buffer.size < 0 ? nvrhi::EntireBuffer : nvrhi::BufferRange(bindGroupEntry.buffer.offset, bufferSize))
+				);
+			}
 			else
 				ASSERT_FAIL("NULL buffer for bindGroup %d binding %d", bindGroupDesc.groupIdx, bindGroupEntry.binding);
 
-			rhiBindGroupEntryDesc.size = bindGroupEntry.buffer.size < 0 ? WGPU_WHOLE_SIZE : bindGroupEntry.buffer.size;
-			rhiBindGroupEntryDesc.offset = bindGroupEntry.buffer.offset;
 			break;
 		}
 		case BINDENTRY_SAMPLER:
 		{
-			WGPUSamplerDescriptor rhiSamplerDesc = {};
-			FillWGPUSamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
+			auto rhiSamplerDesc = nvrhi::SamplerDesc();
+			FillNVRHISamplerDescriptor(bindGroupEntry.sampler, rhiSamplerDesc);
 
+			nvrhi::SamplerHandle rhiSampler = rhiDevice->createSampler(rhiSamplerDesc);
 			ASSERT(bindGroupEntry.sampler.maxAnisotropy > 0);
 
-			rhiBindGroupEntryDesc.sampler = wgpuDeviceCreateSampler(rhiDevice, &rhiSamplerDesc);
-			wgpuSamplerAddRef(rhiBindGroupEntryDesc.sampler);
+			rhiBindingSetDesc.addItem(nvrhi::BindingSetItem()
+				.Sampler(bindGroupEntry.binding, rhiSampler)
+			);
+			rhiSamplers.append(rhiSampler);
 			break;
 		}
 		case BINDENTRY_STORAGETEXTURE:
 		case BINDENTRY_TEXTURE:
-			CWGPUTexture* texture = static_cast<CWGPUTexture*>(bindGroupEntry.texture.texture.Ptr());
+			CNVRHITexture* texture = static_cast<CNVRHITexture*>(bindGroupEntry.texture.texture.Ptr());
 
 			// NOTE: animated textures aren't that supported, so it would need array lookup through the shader
 			if (texture)
 			{
-				ASSERT_MSG(texture->GetWGPUTextureViewCount(), "Texture '%s' has no views", texture->GetName());
-				rhiBindGroupEntryDesc.textureView = texture->GetWGPUTextureView(bindGroupEntry.texture.arraySlice);
+				ASSERT_MSG(texture->GetNVRHITextureViewCount(), "Texture '%s' has no views", texture->GetName());
+				rhiBindingSetDesc.addItem(nvrhi::BindingSetItem()
+					.Texture_SRV(bindGroupEntry.binding, texture->GetNVRHITextureHandle(), nvrhi::Format::UNKNOWN, texture->GetNVRHiTextureView(bindGroupEntry.texture.arraySlice))
+				);
 			}
 			else
 				ASSERT_FAIL("NULL texture for bindGroup %d binding %d", bindGroupDesc.groupIdx, bindGroupEntry.binding);
 			break;
 		}
+	}
+}
 
-		rhiBindGroupEntryList.append(rhiBindGroupEntryDesc);
+IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroupImpl(const NVRHIBindingLayoutList& rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const
+{
+	if (!rhiBindingLayouts.inRange(bindGroupDesc.groupIdx))
+	{
+		ASSERT_FAIL("invalid binding group index %d", bindGroupDesc.groupIdx);
+		return nullptr;
 	}
 
+	Array<nvrhi::SamplerHandle> rhiSamplers(PP_SL);
+
+	auto rhiBindingSetDesc = nvrhi::BindingSetDesc();
+	FillNVRHIBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiSamplers, rhiBindingSetDesc);
+
+	nvrhi::BindingSetHandle rhiBindSet = m_rhiDevice->createBindingSet(rhiBindingSetDesc, rhiBindingLayouts[bindGroupDesc.groupIdx]);
+	if (!rhiBindSet)
+		return nullptr;
+
+	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
+	bindGroup->m_rhiBindingSet = rhiBindSet;
+	bindGroup->m_dbgName = bindGroupDesc.name;
+
+	return IGPUBindGroupPtr(bindGroup);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUPipelineLayout* layoutDesc, const BindGroupDesc& bindGroupDesc) const
@@ -612,77 +642,20 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUPipelineLayout* layo
 		return nullptr;
 	}
 
-	const CNVRHIPipelineLayout* pipelineLayout = static_cast<const CNVRHIPipelineLayout*>(layoutDesc);
-
-	const Array<WGPUBindGroupLayout>& rhiLayout = pipelineLayout->m_rhiBindGroupLayout;
-	if (!rhiLayout.inRange(bindGroupDesc.groupIdx))
-		return nullptr;
-
-	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
-	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
-
-	// samplers are created in FillWGPUBindGroupEntries
-	defer{
-		for (WGPUBindGroupEntry& entry : rhiBindGroupEntryList)
-		{
-			if (entry.sampler)
-				wgpuSamplerRelease(entry.sampler);
-		}
-	};
-
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
-	
-	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
-	rhiBindGroupDesc.layout = rhiLayout[bindGroupDesc.groupIdx];
-	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
-	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
-
-	WGPUBindGroup rhiBindGroup = wgpuDeviceCreateBindGroup(m_rhiDevice, &rhiBindGroupDesc);
-	if (!rhiBindGroup)
-		return nullptr;
-	
-	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
-	bindGroup->m_rhiBindingSet = rhiBindGroup;
-
-	return IGPUBindGroupPtr(bindGroup);
+	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(layoutDesc);
+	return CreateBindGroupImpl(pipelineLayoutImpl->m_rhiBindingLayout, bindGroupDesc);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPURenderPipeline* renderPipeline, const BindGroupDesc& bindGroupDesc) const
 {
 	if (!renderPipeline)
 	{
-		ASSERT_FAIL("renderPipeline is null");
+		ASSERT_FAIL("computePipeline is null");
 		return nullptr;
 	}
 
-	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
-	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
-
-	// samplers are created in FillWGPUBindGroupEntries
-	defer{
-		for (WGPUBindGroupEntry& entry : rhiBindGroupEntryList)
-		{
-			if (entry.sampler)
-				wgpuSamplerRelease(entry.sampler);
-		}
-		wgpuBindGroupLayoutRelease(rhiBindGroupDesc.layout);
-	};
-
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
-
-	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
-	rhiBindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(static_cast<const CNVRHIRenderPipeline*>(renderPipeline)->m_rhiRenderPipeline, bindGroupDesc.groupIdx);
-	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
-	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
-
-	WGPUBindGroup rhiBindGroup = wgpuDeviceCreateBindGroup(m_rhiDevice, &rhiBindGroupDesc);
-	if (!rhiBindGroup)
-		return nullptr;
-
-	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
-	bindGroup->m_rhiBindingSet = rhiBindGroup;
-
-	return IGPUBindGroupPtr(bindGroup);
+	const CNVRHIRenderPipeline* renderPipelineImpl = static_cast<const CNVRHIRenderPipeline*>(renderPipeline);
+	return CreateBindGroupImpl(renderPipelineImpl->m_rhiBindingLayout, bindGroupDesc);
 }
 
 IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* computePipeline, const BindGroupDesc& bindGroupDesc) const
@@ -693,34 +666,8 @@ IGPUBindGroupPtr CNVRHIRenderAPI::CreateBindGroup(const IGPUComputePipeline* com
 		return nullptr;
 	}
 
-	Array<WGPUBindGroupEntry> rhiBindGroupEntryList(PP_SL);
-	WGPUBindGroupDescriptor rhiBindGroupDesc = {};
-
-	// samplers are created in FillWGPUBindGroupEntries
-	defer{
-		for (WGPUBindGroupEntry& entry : rhiBindGroupEntryList)
-		{
-			if (entry.sampler)
-				wgpuSamplerRelease(entry.sampler);
-		}
-		wgpuBindGroupLayoutRelease(rhiBindGroupDesc.layout);
-	};
-
-	FillWGPUBindGroupEntries(m_rhiDevice, bindGroupDesc, rhiBindGroupEntryList);
-
-	rhiBindGroupDesc.label = _WSTR(bindGroupDesc.name.Length() ? bindGroupDesc.name.ToCString() : nullptr);
-	rhiBindGroupDesc.layout = wgpuComputePipelineGetBindGroupLayout(static_cast<const CWGPUComputePipeline*>(computePipeline)->m_rhiComputePipeline, bindGroupDesc.groupIdx);
-	rhiBindGroupDesc.entryCount = rhiBindGroupEntryList.numElem();
-	rhiBindGroupDesc.entries = rhiBindGroupEntryList.ptr();
-
-	WGPUBindGroup rhiBindGroup = wgpuDeviceCreateBindGroup(m_rhiDevice, &rhiBindGroupDesc);
-	if (!rhiBindGroup)
-		return nullptr;
-
-	CRefPtr<CNVRHIBindGroup> bindGroup = CRefPtr_new(CNVRHIBindGroup);
-	bindGroup->m_rhiBindingSet = rhiBindGroup;
-
-	return IGPUBindGroupPtr(bindGroup);
+	const CNVRHIComputePipeline* computePipelineImpl = static_cast<const CNVRHIComputePipeline*>(computePipeline);
+	return CreateBindGroupImpl(computePipelineImpl->m_rhiBindingLayout, bindGroupDesc);
 }
 
 nvrhi::ShaderHandle CNVRHIRenderAPI::GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const
@@ -896,11 +843,10 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 	auto rhiGraphicsPipelineDesc = nvrhi::GraphicsPipelineDesc();
 
 	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
-	if (pipelineLayoutImpl)
-	{
-		for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
-			rhiGraphicsPipelineDesc.addBindingLayout(rhiLayout);
-	}
+	ASSERT(pipelineLayoutImpl);
+
+	for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
+		rhiGraphicsPipelineDesc.addBindingLayout(rhiLayout);
 
 	// Setup vertex pipeline
 	// Required
@@ -1089,6 +1035,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 		CRefPtr<CNVRHIRenderPipeline> renderPipeline = CRefPtr_new(CNVRHIRenderPipeline);
 		renderPipeline->m_rhiRenderPipeline = rhiRenderPipeline;
 		renderPipeline->m_dbgName = std::move(pipelineName);
+		renderPipeline->m_rhiBindingLayout = pipelineLayoutImpl->m_rhiBindingLayout;
 
 		return IGPURenderPipelinePtr(renderPipeline);
 	}
@@ -1156,12 +1103,10 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 		.setComputeShader(rhiComputeShaderModule);
 
 	const CNVRHIPipelineLayout* pipelineLayoutImpl = static_cast<const CNVRHIPipelineLayout*>(pipelineLayout);
-	if (pipelineLayoutImpl)
-	{
-		for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
-			rhiComputePipelineDesc.addBindingLayout(rhiLayout);
-	}
-	// FIXME: should be required?
+	ASSERT(pipelineLayoutImpl);
+
+	for (nvrhi::BindingLayoutHandle& rhiLayout : pipelineLayoutImpl->m_rhiBindingLayout)
+		rhiComputePipelineDesc.addBindingLayout(rhiLayout);
 
 	EqString pipelineName = EqString::Format("%s-%s", pipelineDesc.shaderName.ToCString(), shaderInfo.vertexLayouts[layoutIdx].name.ToCString());
 
@@ -1174,11 +1119,12 @@ IGPUComputePipelinePtr CNVRHIRenderAPI::CreateComputePipeline(const ComputePipel
 			return nullptr;
 		}
 
-		CRefPtr<CNVRHIComputePipeline> renderPipeline = CRefPtr_new(CNVRHIComputePipeline);
-		renderPipeline->m_rhiComputePipeline = rhiComputePipeline;
-		renderPipeline->m_dbgName = std::move(pipelineName);
+		CRefPtr<CNVRHIComputePipeline> computePipeline = CRefPtr_new(CNVRHIComputePipeline);
+		computePipeline->m_rhiComputePipeline = rhiComputePipeline;
+		computePipeline->m_dbgName = std::move(pipelineName);
+		computePipeline->m_rhiBindingLayout = pipelineLayoutImpl->m_rhiBindingLayout;
 
-		return IGPUComputePipelinePtr(renderPipeline);
+		return IGPUComputePipelinePtr(computePipeline);
 	}
 }
 

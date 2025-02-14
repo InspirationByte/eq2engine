@@ -1,18 +1,20 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
 
+using NVRHIBindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, MAX_BINDGROUPS>;
+
 class CNVRHIPipelineLayout : public IGPUPipelineLayout
 {
 public:
-	using BindingLayoutList = FixedArray<nvrhi::BindingLayoutHandle, MAX_BINDGROUPS>;
 
-	BindingLayoutList		m_rhiBindingLayout;
+	NVRHIBindingLayoutList	m_rhiBindingLayout;
 	EqString				m_dbgName;
 };
 
 class CNVRHIRenderPipeline : public IGPURenderPipeline
 {
 public:
+	NVRHIBindingLayoutList			m_rhiBindingLayout;
 	nvrhi::GraphicsPipelineHandle	m_rhiRenderPipeline;
 	EqString						m_dbgName;
 };
@@ -20,6 +22,7 @@ public:
 class CNVRHIComputePipeline : public IGPUComputePipeline
 {
 public:
+	NVRHIBindingLayoutList			m_rhiBindingLayout;
 	nvrhi::ComputePipelineHandle	m_rhiComputePipeline;
 	EqString						m_dbgName;
 };

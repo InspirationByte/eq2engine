@@ -284,37 +284,6 @@ static nvrhi::SamplerAddressMode g_nvrhiAddressMode[] = {
 	nvrhi::SamplerAddressMode::MirroredRepeat
 };
 
-//  ETexFilterMode
-//static WGPUFilterMode g_wgpuFilterMode[] = {
-//	WGPUFilterMode_Nearest,
-//	WGPUFilterMode_Linear,
-//	WGPUFilterMode_Linear, // everything else is anisotropic I guess...
-//	WGPUFilterMode_Linear,
-//	WGPUFilterMode_Linear,
-//	WGPUFilterMode_Linear,
-//};
-
-// ETexFilterMode
-//static WGPUMipmapFilterMode g_wgpuMipmapFilterMode[] = {
-//	WGPUMipmapFilterMode_Nearest,
-//	WGPUMipmapFilterMode_Linear,
-//	WGPUMipmapFilterMode_Linear,
-//	WGPUMipmapFilterMode_Linear,
-//	WGPUMipmapFilterMode_Linear,
-//	WGPUMipmapFilterMode_Linear,
-//};
-
-// ELoadFunc
-//static WGPULoadOp g_wgpuLoadOp[] = {
-//	WGPULoadOp_Load,
-//	WGPULoadOp_Clear
-//};
-
-// EStoreFunc
-//static WGPUStoreOp g_wgpuStoreOp[] = {
-//	WGPUStoreOp_Store,
-//	WGPUStoreOp_Discard,
-//};
 
 // EIndexFormat
 static nvrhi::Format g_nvrhiIndexFormat[] = {
@@ -322,6 +291,4 @@ static nvrhi::Format g_nvrhiIndexFormat[] = {
 	nvrhi::Format::R32_UINT,
 };
 
-//void FillWGPUSamplerDescriptor(const SamplerStateParams& samplerParams, WGPUSamplerDescriptor& rhiSamplerDesc);
-//void FillWGPUBlendComponent(const BlendStateParams& blendParams, WGPUBlendComponent& rhiBlendComponent);
-//void FillWGPURenderPassDescriptor(const RenderPassDesc& renderPassDesc, WGPURenderPassDescriptor& rhiRenderPassDesc, FixedArray<WGPURenderPassColorAttachment, MAX_RENDERTARGETS>& rhiColorAttachmentList, WGPURenderPassDepthStencilAttachment& rhiDepthStencilAttachment);
+void FillNVRHISamplerDescriptor(const SamplerStateParams& samplerParams, nvrhi::SamplerDesc& rhiSamplerDesc);

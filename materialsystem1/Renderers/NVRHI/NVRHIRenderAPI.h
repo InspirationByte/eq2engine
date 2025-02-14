@@ -13,6 +13,7 @@
 #include "NVRHIBuffer.h"
 #include "NVRHIVertexFormat.h"
 #include "NVRHIShader.h"
+#include "NVRHIStates.h"
 
 using namespace Threading;
 
@@ -98,6 +99,8 @@ public:
 	nvrhi::DeviceHandle			GetNVRHIDevice() const { return m_rhiDevice; }
 
 protected:
+	IGPUBindGroupPtr			CreateBindGroupImpl(const NVRHIBindingLayoutList& rhiBindingLayouts, const BindGroupDesc& bindGroupDesc) const;
+
 	nvrhi::ShaderHandle			GetOrLoadShaderModule(const ShaderInfoNVRHIImpl& shaderInfo, int shaderModuleIdx) const;
 	int							LoadShaderPackage(const char* filename);
 
