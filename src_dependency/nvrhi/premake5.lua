@@ -1,5 +1,8 @@
 project "nvrhi"
-	kind "StaticLib"
+	properties {
+		"staticlib",
+		"thirdpartylib"
+	}
 	
 	defines { 
 		"NVRHI_WITH_VULKAN"
