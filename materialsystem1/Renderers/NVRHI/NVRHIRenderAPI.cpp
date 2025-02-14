@@ -963,11 +963,16 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 			return nullptr;
 		}
 	}
+
+	auto rhiFramebufferInfo = nvrhi::FramebufferInfo();
+	rhiFramebufferInfo.sampleCount = pipelineDesc.multiSample.count;
 	
 	// Depth state
 	// Optional when depth read = false
 	if (pipelineDesc.depthStencil.format != FORMAT_NONE)
 	{
+		rhiFramebufferInfo.depthFormat = GetNVRHITextureFormat(pipelineDesc.depthStencil.format);
+
 		auto& rhiDepthStencil = rhiGraphicsPipelineDesc.renderState.depthStencilState;
 		rhiDepthStencil.depthWriteEnable = pipelineDesc.depthStencil.depthWrite;
 		rhiDepthStencil.depthFunc = pipelineDesc.depthStencil.depthTest ? g_nvrhiCompareFunc[pipelineDesc.depthStencil.depthFunc] : nvrhi::ComparisonFunc::Always;
@@ -1013,6 +1018,8 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 				.setSrcBlendAlpha(g_nvrhiBlendFactor[target.alphaBlend.srcFactor])
 				.setDestBlendAlpha(g_nvrhiBlendFactor[target.alphaBlend.dstFactor])
 				.setColorWriteMask((nvrhi::ColorMask)target.writeMask);
+
+			rhiFramebufferInfo.colorFormats.push_back(GetNVRHITextureFormat(target.format));
 
 			targetNum++;
 		}
@@ -1072,8 +1079,7 @@ IGPURenderPipelinePtr CNVRHIRenderAPI::CreateRenderPipeline(const RenderPipeline
 
 	{
 		PROF_EVENT(EqString::Format("CreateRenderPipeline for %s", pipelineName.ToCString()));
-		ASSERT_FAIL("NEEDS FAKE FRAMEBUFFER INFO");
-		nvrhi::GraphicsPipelineHandle rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, nullptr);
+		nvrhi::GraphicsPipelineHandle rhiRenderPipeline = m_rhiDevice->createGraphicsPipeline(rhiGraphicsPipelineDesc, rhiFramebufferInfo);
 		if (!rhiRenderPipeline)
 		{
 			ASSERT_FAIL("Render pipeline creation failed");
