@@ -25,11 +25,17 @@ on:
       - '**.yml'
       - '**/premake*.lua'
       - 'premake*.lua'
+
 env:
-  MAKEFILE_PATH: ./build/DriverSyndicate.solution
-  BUILD_CONFIGURATION: release
-  BUILD_CONFIGURATION_U: Release
+  PROJECT_NAME: DriverSyndicate
+  APP_NAME: DrvSyn
+  BUILD_CONFIGURATION: Retail
   BUILD_PLATFORM: x64
+  
+  EXE_SUFFIX:
+  BUILD_CONFIGURATION_LOWER: retail
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -54,26 +60,18 @@ jobs:
 
     - name: Generate Makefile
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: ./premake5 --file=game/DriverSyndicate/premake5.lua gmake2
+      run: ./premake5 --file=game/${{env.PROJECT_NAME}}/premake5.lua gmake2
       
     - name: make
-      working-directory: ${{env.MAKEFILE_PATH}}
-      run: make config=${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}} -j10
-      
+      working-directory: ./build/${{env.PROJECT_NAME}}.solution
+      run: make config=${{env.BUILD_CONFIGURATION_LOWER}}_${{env.BUILD_PLATFORM}} -j10
+            
     - name: Create appimage
-      run: .github/make_appimage.sh $PWD/game/DriverSyndicate/DrvSyn.AppDir DrvSyn_${{env.BUILD_CONFIGURATION_U}}
+      run: .github/make_appimage.sh $PWD/game/${{env.PROJECT_NAME}}/${{env.APP_NAME}}.AppDir
       
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.6.0
       with:
-        name: DrvSyn_linux_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
+        name: ${{env.APP_NAME}}_Linux_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
         path: |
           *.AppImage
-
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/*.so
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/DrvSyn_${{env.BUILD_CONFIGURATION_U}}
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/fcompress
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/animca
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/egfca
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/atlasgen
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/texcooker

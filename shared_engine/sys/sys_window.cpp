@@ -145,7 +145,9 @@ void Host_HandleSDLEvents(SDL_Event* event)
 bool Host_Init()
 {
 	SDL_SetHint(SDL_HINT_VIDEO_EXTERNAL_CONTEXT, "1");
+#ifdef SDL_HINT_WINDOWS_DPI_AWARENESS
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitor");
+#endif
 
 	if( SDL_Init(SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
 	{
