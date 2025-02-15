@@ -151,7 +151,7 @@ static WGPUBufferBindingType g_wgpuBufferBindingType[] = {
 
 // ESamplerBindType
 static WGPUSamplerBindingType g_wgpuSamplerBindingType[] = {
-	WGPUSamplerBindingType_Undefined,
+	WGPUSamplerBindingType_BindingNotUsed,
 	WGPUSamplerBindingType_Filtering,
 	WGPUSamplerBindingType_NonFiltering,
 	WGPUSamplerBindingType_Comparison,

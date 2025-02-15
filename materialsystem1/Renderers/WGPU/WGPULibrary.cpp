@@ -66,7 +66,7 @@ static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reas
 	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
 }
 
-static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata1, void* userdata2)
+static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata)
 {
 	if (status != WGPURequestAdapterStatus_Success)
 	{
@@ -75,17 +75,10 @@ static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapt
 	}
 	else
 	{
-		WGPUAdapterInfo rhiAdapterInfo = {};
-		wgpuAdapterGetInfo(adapter, &rhiAdapterInfo);
-
-		// do not chose CPU adapters
-		if (rhiAdapterInfo.adapterType != WGPUAdapterType_CPU)
-		{
-			// use first adapter provided
-			WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata1);
-			if (*result == nullptr)
-				*result = adapter;
-		}
+		// use first adapter provided
+		WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata);
+		if (*result == nullptr)
+			*result = adapter;
 	}
 }
 
@@ -107,7 +100,7 @@ bool CWGPURenderLib::InitCaps()
 	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
 
 	WGPUInstanceDescriptor rhiInstanceDesc{};
-	WGPUInstanceCapabilities& rhiInstanceCapabilities = rhiInstanceDesc.capabilities;
+	WGPUInstanceFeatures& rhiInstanceCapabilities = rhiInstanceDesc.features;
 	rhiInstanceCapabilities.timedWaitAnyEnable = true;
 
 	m_instance = wgpuCreateInstance(&rhiInstanceDesc);
@@ -192,7 +185,6 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
-	options.featureLevel = WGPUFeatureLevel_Core;
 	
 	EqStringRef backendName = wgpu_backend.GetString();
 
@@ -207,15 +199,11 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	else if (!backendName.CompareCaseIns("OpenGLES"))
 		options.backendType = WGPUBackendType_OpenGLES;
 
-	WGPURequestAdapterCallbackInfo rhiCbInfo{};
-	rhiCbInfo.callback = &OnWGPUAdapterRequestEnded;
-	rhiCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
-	rhiCbInfo.userdata1 = &m_rhiAdapter;
-	wgpuInstanceRequestAdapter(m_instance, &options, rhiCbInfo);
+	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
 
 	if (!m_rhiAdapter)
 	{
-		MsgError("No hardware adapters found\n");
+		MsgError("No WGPU supported adapter found\n");
 		return false;
 	}
 
@@ -321,8 +309,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
-		requiredFeatures.append(WGPUFeatureName_FlexibleTextureViews);
-		//requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
+		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
 		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
 		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
 		// TODO: android
@@ -332,14 +319,14 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		rhiDeviceDesc.requiredFeatures = requiredFeatures.ptr();
 		rhiDeviceDesc.requiredFeatureCount = requiredFeatures.numElem();
-		rhiDeviceDesc.uncapturedErrorCallbackInfo.callback = OnWGPUDeviceError;
+		rhiDeviceDesc.uncapturedErrorCallbackInfo2.callback = OnWGPUDeviceError;
 
 		// setup required limits
 		WGPURequiredLimits reqLimits{};
 		reqLimits.limits = requiredLimits;
 
 		rhiDeviceDesc.requiredLimits = &reqLimits;
-		WGPUDeviceLostCallbackInfo& rhiLostCbInfo = rhiDeviceDesc.deviceLostCallbackInfo;
+		WGPUDeviceLostCallbackInfo2& rhiLostCbInfo = rhiDeviceDesc.deviceLostCallbackInfo2;
 		rhiLostCbInfo.callback = OnWGPUDeviceLost;
 		rhiLostCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
 
