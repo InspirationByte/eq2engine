@@ -115,21 +115,6 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
 
-    static const char* fontFileName = "resources/imgui/Inter-Regular.ttf";
-
-    IFilePtr fontFile = g_fileSystem->Open(fontFileName, FS_OPEN_READ, SP_DATA);
-
-    if (fontFile)
-    {
-        const int length = fontFile->GetSize();
-        char* buffer = (char*)IM_ALLOC(length);
-        fontFile->Read(buffer, 1, length);
-        fontFile = nullptr;
-
-        ImFontConfig font_cfg;
-        io.Fonts->AddFontFromMemoryTTF(buffer, length, 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
-    }
-
     // Check and store if we are on a SDL backend that supports global mouse position
     // ("wayland" and "rpi" don't support it, but we chose to use a white-list instead of a black-list)
     bool mouse_can_use_global_state = false;
@@ -375,4 +360,16 @@ void ImGui_ImplEq_NewFrame()
     Uint64 current_time = SDL_GetPerformanceCounter();
     io.DeltaTime = bd->Time > 0 ? (float)((double)(current_time - bd->Time) / frequency) : (float)(1.0f / 60.0f);
     bd->Time = current_time;
+}
+
+bool ImGui_ImplEq_AnyItemShown()
+{
+    ImGuiContext& ctx = *ImGui::GetCurrentContext();
+    return ctx.WindowsActiveCount > 1 || ctx.BeginMenuCount > 0 || ctx.BeginPopupStack.size() || ctx.OpenPopupStack.size();
+}
+
+bool ImGui_ImplEq_AnyWindowInFocus()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantCaptureMouse || io.WantCaptureKeyboard;
 }

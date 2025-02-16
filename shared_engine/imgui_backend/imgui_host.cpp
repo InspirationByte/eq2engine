@@ -1,6 +1,5 @@
 #include "core/core_common.h"
-#include "imgui_host.h"
-
+#include "core/IFileSystem.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
@@ -12,6 +11,8 @@
 #include "imgui_backend/imgui_impl_matsystem.h"
 #include "imgui_internal.h"
 #endif // IMGUI_ENABLED
+
+#include "imgui_host.h"
 
 static CEqImGuiHost s_imGuiHost;
 CEqImGuiHost* g_imGuiHost = &s_imGuiHost;
@@ -72,6 +73,22 @@ void CEqImGuiHost::Initialize()
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplMatSystem_Init();
+
+	static const char* fontFileName = "resources/imgui/Inter-Regular.ttf";
+	IFilePtr fontFile = g_fileSystem->Open(fontFileName, FS_OPEN_READ, SP_DATA);
+
+	if (fontFile)
+	{
+		const int length = fontFile->GetSize();
+		char* buffer = (char*)IM_ALLOC(length);
+		fontFile->Read(buffer, 1, length);
+		fontFile = nullptr;
+
+		ImGuiIO& io = ImGui::GetIO();
+
+		ImFontConfig font_cfg;
+		io.Fonts->AddFontFromMemoryTTF(buffer, length, 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
+	}
 #endif // IMGUI_ENABLED
 }
 
@@ -101,16 +118,17 @@ bool CEqImGuiHost::IsShown() const
 void CEqImGuiHost::BeginFrame(bool menuVisible)
 {
 #ifdef IMGUI_ENABLED
+	ImGui_ImplMatSystem_NewFrame();
+	ImGui::NewFrame();
+	m_imguiDrawStart = true;
+
 	if (menuVisible || IsShown())
 	{
-		ImGui_ImplMatSystem_NewFrame();
-		ImGui::NewFrame();
 		for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
 		{
 			Menu& handler = *it;
 			handler.func(handler.enabled);
 		}
-		m_imguiDrawStart = true;
 	}
 
 	if (!menuVisible)
@@ -199,25 +217,11 @@ void CEqImGuiHost::EndFrame(int width, int height, IGPURenderPassRecorder* rendP
 #endif // IMGUI_ENABLED
 }
 
-#ifdef IMGUI_ENABLED
-bool ImGui_ImplEq_AnyItemShown()
-{
-	ImGuiContext& ctx = *ImGui::GetCurrentContext();
-	return ctx.WindowsActiveCount > 1 || ctx.BeginMenuCount > 0 || ctx.BeginPopupStack.size() || ctx.OpenPopupStack.size();
-}
-
-bool ImGui_ImplEq_AnyWindowInFocus()
-{
-
-	ImGuiIO& io = ImGui::GetIO();
-	return io.WantCaptureMouse || io.WantCaptureKeyboard;
-}
-#endif
-
 bool CEqImGuiHost::IsImGuiItemsInFocus() const
 {
 #ifdef IMGUI_ENABLED
-	return ImGui::IsAnyItemHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused() || ImGui_ImplEq_AnyWindowInFocus();
+	ImGuiIO& io = ImGui::GetIO();
+	return ImGui::IsAnyItemHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused() || (io.WantCaptureMouse || io.WantCaptureKeyboard);
 #endif
 	return false;
 }
