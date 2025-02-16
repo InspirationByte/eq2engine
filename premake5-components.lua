@@ -136,6 +136,19 @@ usage "equiLib"
 	links "equiLib"
     includedirs { Folders.shared_engine }
 	
+-- ImGui backend library
+project "imguiBackendLib"
+	kind "StaticLib"
+	properties { "unitybuild" }
+	uses { 
+		"public", "shared_engine",
+		"imgui"
+	}
+    files {
+		Folders.shared_engine.. "imgui_backend/**.cpp",
+		Folders.shared_engine.. "imgui_backend/**.h",
+	}
+	
 -- Engine System Library
 project "sysLib"
 	kind "StaticLib"
@@ -143,7 +156,7 @@ project "sysLib"
 	uses { 
 		"public", "shared_engine",
 		"renderUtilLib", "equiLib",
-		"SDL2", "imgui"
+		"SDL2", "imguiBackendLib"
 	}
     files {
 		Folders.shared_engine.. "sys/**.cpp",

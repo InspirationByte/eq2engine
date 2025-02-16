@@ -34,17 +34,11 @@
 #include "sys_version.h"
 #include "sys_in_console.h"
 
-#ifdef IMGUI_ENABLED
-#include <imgui.h>
-#include <imnodes.h>
-
-#include "imgui_backend/imgui_impl_matsystem.h"
-#include "imgui_backend/imgui_impl_sys.h"
-#endif // IMGUI_ENABLED
-
 #if !defined(_RETAIL)
 #define EXTENDED_DEVELOPER_CONSOLE
 #endif
+#include "imgui/imgui_impl_sys.h"
+#include "imgui_backend/imgui_host.h"
 
 using namespace Threading;
 static CEqMutex s_conInputMutex;
@@ -63,7 +57,6 @@ const float CMDLIST_SYMBOL_SIZE = 15.0f;
 DECLARE_CMD(toggleconsole, nullptr, CV_INVISIBLE)	// dummy console command
 {
 }
-
 
 DECLARE_CONCOMMAND_FN(con_toggle)
 {
@@ -294,21 +287,9 @@ CEqConsoleInput::CEqConsoleInput()
 void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 {
 #ifdef IMGUI_ENABLED
-	// ImGui
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImNodes::CreateContext();
-
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-
-	// Setup Platform/Renderer backends
+	g_imGuiHost->Initialize();
 	ImGui_ImplEq_InitForSDL(window);
-	ImGui_ImplMatSystem_Init();
-#endif // IMGUI_ENABLED
+#endif
 
 	// TODO: ImGui networked console port (for Android)
 	KVSection* consoleSettings = g_eqCore->GetConfig()->FindSection("Console");
@@ -320,164 +301,31 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindSection("FontScale") : nullptr);
 }
 
-#ifdef IMGUI_ENABLED
-static bool IsImGuiItemsInFocus()
-{
-	return ImGui::IsAnyItemHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused() || ImGui_ImplEq_AnyWindowInFocus();
-}
-#endif
-
 void CEqConsoleInput::Shutdown()
 {
 #ifdef IMGUI_ENABLED
-	ImGui_ImplMatSystem_Shutdown();
 	ImGui_ImplEq_Shutdown();
-
-	ImNodes::DestroyContext();
-	ImGui::DestroyContext();
-#endif // IMGUI_ENABLED
+	g_imGuiHost->Shutdown();
+#endif
 }
-
-#ifdef IMGUI_ENABLED
-static void ImGuiBeginMenuPath(const char* path, bool& selected)
-{
-	char tmpName[128] = { 0 };
-	int depth = 0;
-	const char* tok = path;
-	while (true)
-	{
-		const char* nextTok = strchr(tok, '/');
-
-		if (nextTok)
-		{
-			const int len = nextTok - tok;
-			strncpy(tmpName, tok, len);
-			tmpName[len] = 0;
-
-			if (!ImGui::BeginMenu(tmpName))
-				break;
-			++depth;
-		}
-		else
-		{
-			const int len = strlen(tok);
-			strncpy(tmpName, tok, len);
-			tmpName[len] = 0;
-
-			ImGui::MenuItem(tok, "", &selected);
-		}
-
-		if (!nextTok)
-			break;
-
-		tok = nextTok+1;
-	}
-
-	while(depth--)
-		ImGui::EndMenu();
-}
-#endif // IMGUI_ENABLED
 
 void CEqConsoleInput::BeginFrame()
 {
 #ifdef IMGUI_ENABLED
-	bool imGuiVisible = m_visible;
-	for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
-	{
-		if (it.value().enabled)
-		{
-			imGuiVisible = true;
-			break;
-		}
-	}
-
-	if (imGuiVisible)
+	if (m_visible || g_imGuiHost->IsShown())
 	{
 		const bool anyItemShown = ImGui_ImplEq_AnyItemShown();
 
 		// Start the Dear ImGui frame
-		ImGui_ImplMatSystem_NewFrame();
 		ImGui_ImplEq_NewFrame();
-		ImGui::NewFrame();
-
 		if (anyItemShown)
 		{
 			ImGui_ImplEq_UpdateMousePosAndButtons();
 			ImGui_ImplEq_UpdateGamepads();
 		}
-
-		for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
-		{
-			EqImGui_Menu& handler = *it;
-			handler.func(handler.enabled);
-		}
-		m_imguiDrawStart = true;
 	}
-
-	if (!m_visible)
-		return;
-
-	static bool s_showDemoWindow = false;
-
-	if (ImGui::BeginMainMenuBar())
-	{
-		if (ImGui::BeginMenu("ENGINE"))
-		{
-			ImGui::MenuItem("SHOW CONSOLE", "", &m_showConsole);
-			if (ImGui::BeginMenu("FPS"))
-			{
-				IMGUI_MENUITEM_CONVAR_BOOL("SHOW FPS", r_showFPS);
-				IMGUI_MENUITEM_CONVAR_BOOL("SHOW GRAPH", r_showFPSGraph);
-				ImGui::EndMenu();
-			}
-
-			ImGui::Separator();
-			if (ImGui::BeginMenu("EQUI"))
-			{
-				IMGUI_MENUITEM_CONVAR_BOOL("DEBUG RENDER", equi_debug);
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("MATSYSTEM"))
-			{
-				IMGUI_MENUITEM_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
-				IMGUI_MENUITEM_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
-				ImGui::Separator();
-				IMGUI_MENUITEM_CONCMD("RELOAD ALL MATERIALS", mat_reload, cmd_noArgs);
-				ImGui::EndMenu();
-			}
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("DEBUG OVERLAYS"))
-		{
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW FRAME STATS", r_debugDrawFrameStats);
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW GRAPHS", r_debugDrawGraphs);
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW 3D SHAPES", r_debugDrawShapes);
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW 3D LINES", r_debugDrawLines);
-
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("IMGUI"))
-		{
-			ImGui::MenuItem("DEMO", nullptr, &s_showDemoWindow);
-			ImGui::EndMenu();
-		}
-
-		for (auto it = m_imguiMenus.begin(); !it.atEnd(); ++it)
-		{
-			EqImGui_Menu& handler = *it;
-			if(handler.path.Length())
-				ImGuiBeginMenuPath(handler.path, handler.enabled);
-		}
-
-		ImGui::EndMainMenuBar();
-	}
-
-	if (s_showDemoWindow)
-		ImGui::ShowDemoWindow(&s_showDemoWindow);
-
-#undef IMGUI_CONVAR_BOOL
-#endif // IMGUI_ENABLED
+	g_imGuiHost->BeginFrame(m_visible);
+#endif
 }
 
 void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
@@ -502,23 +350,7 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 		m_font->SetupRenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl, rendPassRecorder);
 	}
 
-#ifdef IMGUI_ENABLED
-	if (m_imguiDrawStart)
-	{
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.DisplaySize = ImVec2((float)width, (float)height);
-
-		//static bool show_demo_window = true;
-		//ImGui::ShowDemoWindow(&show_demo_window);
-
-		// Rendering
-		ImGui::EndFrame();
-
-		ImGui::Render();
-		ImGui_ImplMatSystem_RenderDrawData(ImGui::GetDrawData(), rendPassRecorder);
-		m_imguiDrawStart = false;
-	}
-#endif // IMGUI_ENABLED
+	g_imGuiHost->EndFrame(width, height, rendPassRecorder);
 
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 }
@@ -536,53 +368,6 @@ void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
 
 	m_customAutocompletion.append(newItem);
 }
-
-#ifdef IMGUI_ENABLED
-
-void CEqConsoleInput::AddDebugHandler(const char* name, CONSOLE_IMGUI_HANDLER func)
-{
-	ASSERT(func);
-	const int nameHash = StringId24(name);
-	EqImGui_Menu& handler = m_imguiMenus[nameHash];
-	handler.func = func;
-	handler.enabled = true; // non-menu are always enabled
-}
-
-void CEqConsoleInput::RemoveDebugHandler(const char* name)
-{
-	const int nameHash = StringId24(name);
-	m_imguiMenus.remove(nameHash);
-}
-
-void CEqConsoleInput::AddDebugMenu(const char* path, CONSOLE_IMGUI_HANDLER func)
-{
-	ASSERT(func);
-
-	const int nameHash = StringId24(path);
-	EqImGui_Menu& handler = m_imguiMenus[nameHash];
-	handler.path = path;
-	handler.func = func;
-}
-
-void CEqConsoleInput::ShowDebugMenu(const char* path, bool enable)
-{
-	const int nameHash = StringId24(path);
-	auto it = m_imguiMenus.find(nameHash);
-	if (it.atEnd())
-		return;
-	(*it).enabled = enable;
-}
-
-void CEqConsoleInput::ToggleDebugMenu(const char* path)
-{
-	const int nameHash = StringId24(path);
-	auto it = m_imguiMenus.find(nameHash);
-	if (it.atEnd())
-		return;
-	(*it).enabled = !(*it).enabled;
-}
-
-#endif // IMGUI_ENABLED
 
 void CEqConsoleInput::DelText(int start, int len)
 {
@@ -1268,7 +1053,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 	}
 
 #ifdef IMGUI_ENABLED
-	if (IsImGuiItemsInFocus())
+	if (g_imGuiHost->IsImGuiItemsInFocus())
 		m_cursorVisible = false;
 #endif
 
@@ -1405,7 +1190,7 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputText(utfChar);
-	if (IsImGuiItemsInFocus())
+	if (g_imGuiHost->IsImGuiItemsInFocus())
 		return true;
 #endif
 
@@ -1439,7 +1224,7 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMousePress(Button, pressed);
-	if (IsImGuiItemsInFocus())
+	if (g_imGuiHost->IsImGuiItemsInFocus())
 		return true;
 #endif
 
@@ -1467,7 +1252,7 @@ bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
-	if (IsImGuiItemsInFocus())
+	if (g_imGuiHost->IsImGuiItemsInFocus())
 		return true;
 #endif
 
@@ -1525,7 +1310,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputKeyPress(key, pressed);
-	if (IsImGuiItemsInFocus())
+	if (g_imGuiHost->IsImGuiItemsInFocus())
 		return true;
 #endif
 

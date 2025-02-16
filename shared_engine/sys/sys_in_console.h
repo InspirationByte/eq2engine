@@ -19,25 +19,6 @@ struct ConAutoCompletion_t
 
 typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
 
-#ifdef IMGUI_ENABLED
-using CONSOLE_IMGUI_HANDLER = EqFunction<void(bool& visible)>;
-
-#define IMGUI_MENUITEM_CONVAR_BOOL(label, name) { \
-		HOOK_TO_CVAR(name); \
-		bool value = name ? name->GetBool() : false; \
-		ImGui::MenuItem(label, "", &value); \
-		if(name) name->SetBool(value); \
-	}
-
-static Array<EqStringRef> cmd_noArgs(PP_SL);
-#define IMGUI_MENUITEM_CONCMD(label, name, args) { \
-		HOOK_TO_CMD(name); \
-		if(ImGui::MenuItem(label)) \
-			name->DispatchFunc(args); \
-	}
-
-#endif // IMGUI_ENABLED
-
 class CEqConsoleInput
 {
 public:
@@ -81,16 +62,6 @@ public:
 	void			MousePos(const Vector2D &pos);
 
 	void			AddAutoCompletion(ConAutoCompletion_t* item);
-
-#ifdef IMGUI_ENABLED
-	void			AddDebugHandler(const char* name, CONSOLE_IMGUI_HANDLER func);
-	void			AddDebugMenu(const char* path, CONSOLE_IMGUI_HANDLER func);
-	void			ShowDebugMenu(const char* path, bool enable);
-	void			ToggleDebugMenu(const char* path);
-
-	// removes both menus and handlers
-	void			RemoveDebugHandler(const char* name);
-#endif // IMGUI_ENABLED
 
 protected:
 
@@ -165,18 +136,6 @@ private:
 	Array<EqString>					m_variantList{ PP_SL };
 	int								m_variantSelection;
 
-#ifdef IMGUI_ENABLED
-	struct EqImGui_Menu
-	{
-		EqString				path;
-		CONSOLE_IMGUI_HANDLER	func;
-		int						flags;
-		bool					enabled{ false };
-	};
-
-	Map<int, EqImGui_Menu>			m_imguiMenus{ PP_SL };
-	bool							m_imguiDrawStart{ false };
-#endif // IMGUI_ENABLED
 	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
 
 	// Current input text

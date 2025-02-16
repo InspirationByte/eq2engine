@@ -94,18 +94,6 @@ void ImGui_ImplEq_InputMousePress(int Button, bool pressed)
     }
 }
 
-bool ImGui_ImplEq_AnyItemShown()
-{
-    ImGuiContext& ctx = *ImGui::GetCurrentContext();
-    return ctx.WindowsActiveCount > 1 || ctx.BeginMenuCount > 0 || ctx.BeginPopupStack.size() || ctx.OpenPopupStack.size();
-}
-
-bool ImGui_ImplEq_AnyWindowInFocus()
-{
-    ImGuiIO& io = ImGui::GetIO();
-    return io.WantCaptureMouse || io.WantCaptureKeyboard;
-}
-
 void ImGui_ImplEq_InputMouseWheel(int h, int v)
 {
     ImGuiIO& io = ImGui::GetIO();
