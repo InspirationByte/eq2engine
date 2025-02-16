@@ -19,8 +19,9 @@ struct TAABBox3D
 	TAABBox3D(T minX, T minY, T minZ, T maxX, T maxY, T maxZ);
 	TAABBox3D(const TVec3D<T>& v1, const TVec3D<T>& v2);
 
-	void				Reset();
+	bool				IsValid() const;
 
+	void				Reset();
 	void				AddVertex(const TVec3D<T>& v);
 	void				AddVertices(const TVec3D<T>* v, int numVertices);
 	void				AddVertices(const void* v, int numVertices, int posDataOffset, int stride);
@@ -30,7 +31,6 @@ struct TAABBox3D
 	void				Expand(T value);
 	void				Expand(const TVec3D<T>& value);
 
-	bool				IsEmpty() const;
 	bool				Contains(const TVec3D<T>& pos, T tolerance = 0) const;
 
 	bool				FullyInside(const TAABBox3D<T>& box, T tolerance = 0) const;
@@ -170,9 +170,9 @@ void TAABBox3D<T>::AddVertices(const void* v, int numVertices, int posDataOffset
 }
 
 template <class T>
-bool TAABBox3D<T>::IsEmpty() const
+bool TAABBox3D<T>::IsValid() const
 {
-	return minPoint.x > maxPoint.x || minPoint.y > maxPoint.y || minPoint.z > maxPoint.z;
+	return minPoint.x <= maxPoint.x || minPoint.y <= maxPoint.y || minPoint.z <= maxPoint.z;
 }
 
 template <class T>

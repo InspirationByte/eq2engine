@@ -24,10 +24,12 @@ struct TAARectangle
 	template <class T2>
 	TAARectangle(const TVec2D<T2>& leftTop, const TVec2D<T2>& rightBottom);
 
+	bool				IsValid() const;
+
+	void				Reset();
 	void				AddVertex(const TVec2D<T>& p);
 	void				AddVertices(const TVec2D<T>* v, int numVertices);
 
-	void				Reset();
 	void				Fix();
 	void				Expand(T value);
 	void				Expand(const TVec2D<T>& value);
@@ -117,6 +119,12 @@ void TAARectangle<T>::AddVertices(const TVec2D<T>* v, int numVertices)
 {
 	for (int i = 0; i < numVertices; i++)
 		AddVertex(v[i]);
+}
+
+template <class T>
+bool TAARectangle<T>::IsValid() const
+{
+	return leftTop.x <= rightBottom.x || leftTop.y <= rightBottom.y;
 }
 
 template <class T>
