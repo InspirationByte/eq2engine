@@ -45,7 +45,7 @@ public:
 	bool				IsBoxInside(const BoundingBox& box, const float eps = 0.0f) const;
 	bool				IsTriangleInside(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2) const;
 
-	bool				IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D &intersectionPos, float eps = 0.0f) const;
+	bool				IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D &intersectionPos, float eps = 0.0f, int* planeId = nullptr) const;
 
 	const Plane&		GetPlane(const int plane) const { return m_planes[plane]; }
 	ArrayCRef<Plane>	GetPlanes() const { return ArrayCRef(m_planes, VOLUME_PLANE_COUNT); }
@@ -63,7 +63,7 @@ public:
 	static bool			IsBoxInside(ArrayCRef<Plane> planes, const Vector3D& mins, const Vector3D& maxs, const float eps = 0.0f);
 	static bool			IsBoxInside(ArrayCRef<Plane> planes, const BoundingBox& box, const float eps = 0.0f);
 	static bool			IsTriangleInside(ArrayCRef<Plane> planes, const Vector3D& v0, const Vector3D& v1, const Vector3D& v2);
-	static bool			IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, const Vector3D& dir, Vector3D& intersectionPos, float eps = 0.0f);
+	static bool			IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, const Vector3D& dir, Vector3D& intersectionPos, float eps = 0.0f, int* planeId = nullptr);
 
 protected:
 	Plane			m_planes[6];

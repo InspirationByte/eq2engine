@@ -99,9 +99,9 @@ bool Volume::IsBoxInside(const float minX, const float maxX, const float minY, c
 
 }
 
-bool Volume::IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D& intersectionPos, float eps) const
+bool Volume::IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D& intersectionPos, float eps, int* planeId) const
 {
-	return IsIntersectsRay(GetPlanes(), start, dir, intersectionPos, eps);
+	return IsIntersectsRay(GetPlanes(), start, dir, intersectionPos, eps, planeId);
 }
 
 Vector3D Volume::GetFarLeftUp() const
@@ -206,10 +206,11 @@ bool Volume::IsBoxInside(ArrayCRef<Plane> planes, const BoundingBox& box, const 
 	return IsBoxInside(planes, box.minPoint, box.maxPoint, eps);
 }
 
-bool Volume::IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, const Vector3D& dir, Vector3D& intersectionPos, float eps)
+bool Volume::IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, const Vector3D& dir, Vector3D& intersectionPos, float eps, int* _planeId)
 {
 	Vector3D isectPos;
 	float bestDist = F_INFINITY;
+	int planeId = -1;
 
 	for (int i = 0; i < planes.numElem(); i++)
 	{
@@ -224,8 +225,13 @@ bool Volume::IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, con
 		{
 			intersectionPos = isectPos;
 			bestDist = dist;
+			planeId = i;
 		}
 	}
 
+	if (_planeId)
+		*_planeId = planeId;
+
 	return bestDist < F_INFINITY * 0.999f;
 }
+
