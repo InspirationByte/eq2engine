@@ -72,6 +72,16 @@ TAARectangle<T>::TAARectangle()
 	Reset();
 }
 
+#define SET_MINMAX(vmin, vmax, v1, v2) \
+	if (v1 < v2) {				\
+		vmin = v1; vmax = v2;	\
+	} else {					\
+		vmin = v2; vmax = v1;	\
+	}
+
+#define _MIN(a, b) ((a < b) ? a : b)
+#define _MAX(a, b) ((a > b) ? a : b)
+
 template <class T>
 template <class T2>
 TAARectangle<T>::TAARectangle(const TAARectangle<T2>& rect)
@@ -86,10 +96,8 @@ template <class T>
 template <class T2>
 TAARectangle<T>::TAARectangle(T2 fX1, T2 fY1, T2 fX2, T2 fY2)
 {
-	leftTop.x = (T)fX1;
-	leftTop.y = (T)fY1;
-	rightBottom.x = (T)fX2;
-	rightBottom.y = (T)fY2;
+	SET_MINMAX(leftTop.x, rightBottom.x, (T2)fX1, (T2)fX2);
+	SET_MINMAX(leftTop.y, rightBottom.y, (T2)fY1, (T2)fY2);
 }
 
 template <class T>
@@ -103,16 +111,15 @@ TAARectangle<T>::TAARectangle(const TVec2D<T2>& leftTop, const TVec2D<T2>& right
 template <class T>
 void TAARectangle<T>::AddVertex(const TVec2D<T>& p)
 {
-	if (p.x < leftTop.x)
-		leftTop.x = p.x;
-	if (p.x > rightBottom.x)
-		rightBottom.x = p.x;
-
-	if (p.y < leftTop.y)
-		leftTop.y = p.y;
-	if (p.y > rightBottom.y)
-		rightBottom.y = p.y;
+	leftTop.x = _MIN(leftTop.x, p.x);
+	leftTop.y = _MIN(leftTop.y, p.y);
+	rightBottom.x = _MAX(rightBottom.x, p.x);
+	rightBottom.y = _MAX(rightBottom.y, p.y);
 }
+
+#undef SET_MINMAX
+#undef _MIN
+#undef _MAX
 
 template <class T>
 void TAARectangle<T>::AddVertices(const TVec2D<T>* v, int numVertices)

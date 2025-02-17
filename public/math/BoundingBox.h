@@ -54,101 +54,47 @@ TAABBox3D<T>::TAABBox3D()
 	Reset();
 }
 
+#define SET_MINMAX(vmin, vmax, v1, v2) \
+	if (v1 < v2) {				\
+		vmin = v1; vmax = v2;	\
+	} else {					\
+		vmin = v2; vmax = v1;	\
+	}
+
+#define _MIN(a, b) ((a < b) ? a : b)
+#define _MAX(a, b) ((a > b) ? a : b)
+
 template <class T>
 TAABBox3D<T>::TAABBox3D(T minX, T minY, T minZ, T maxX, T maxY, T maxZ)
 {
-	if (minX < maxX)
-	{
-		minPoint.x = minX;
-		maxPoint.x = maxX;
-	}
-	else
-	{
-		minPoint.x = maxX;
-		maxPoint.x = minX;
-	}
-
-	if (minY < maxY)
-	{
-		minPoint.y = minY;
-		maxPoint.y = maxY;
-	}
-	else
-	{
-		minPoint.y = maxY;
-		maxPoint.y = minY;
-	}
-
-	if (minZ < maxZ)
-	{
-		minPoint.z = minZ;
-		maxPoint.z = maxZ;
-	}
-	else
-	{
-		minPoint.z = maxZ;
-		maxPoint.z = minZ;
-	}
+	SET_MINMAX(minPoint.x, maxPoint.x, minX, maxX);
+	SET_MINMAX(minPoint.y, maxPoint.y, minY, maxY);
+	SET_MINMAX(minPoint.z, maxPoint.z, minZ, maxZ);
 }
 
 template <class T>
 TAABBox3D<T>::TAABBox3D(const TVec3D<T>& v1, const TVec3D<T>& v2)
 {
-	if (v1.x < v2.x)
-	{
-		minPoint.x = v1.x;
-		maxPoint.x = v2.x;
-	}
-	else
-	{
-		minPoint.x = v2.x;
-		maxPoint.x = v1.x;
-	}
-
-	if (v1.y < v2.y)
-	{
-		minPoint.y = v1.y;
-		maxPoint.y = v2.y;
-	}
-	else
-	{
-		minPoint.y = v2.y;
-		maxPoint.y = v1.y;
-	}
-
-	if (v1.z < v2.z)
-	{
-		minPoint.z = v1.z;
-		maxPoint.z = v2.z;
-	}
-	else
-	{
-		minPoint.z = v2.z;
-		maxPoint.z = v1.z;
-	}
+	SET_MINMAX(minPoint.x, maxPoint.x, v1.x, v2.x);
+	SET_MINMAX(minPoint.y, maxPoint.y, v1.y, v2.y);
+	SET_MINMAX(minPoint.z, maxPoint.z, v1.z, v2.z);
 }
 
 template <class T>
 void TAABBox3D<T>::AddVertex(const TVec3D<T>& v)
 {
-	if (v.x < minPoint.x)
-		minPoint.x = v.x;
+	minPoint.x = _MIN(minPoint.x, v.x);
+	minPoint.y = _MIN(minPoint.y, v.y);
+	minPoint.z = _MIN(minPoint.z, v.z);
 
-	if (v.x > maxPoint.x)
-		maxPoint.x = v.x;
-
-	if (v.y < minPoint.y)
-		minPoint.y = v.y;
-
-	if (v.y > maxPoint.y)
-		maxPoint.y = v.y;
-
-	if (v.z < minPoint.z)
-		minPoint.z = v.z;
-
-	if (v.z > maxPoint.z)
-		maxPoint.z = v.z;
+	maxPoint.x = _MAX(maxPoint.x, v.x);
+	maxPoint.y = _MAX(maxPoint.y, v.y);
+	maxPoint.z = _MAX(maxPoint.z, v.z);
 }
+
+#undef SET_MINMAX
+#undef _MIN
+#undef _MAX
 
 template <class T>
 void TAABBox3D<T>::AddVertices(const TVec3D<T>* v, int numVertices)
@@ -178,9 +124,9 @@ bool TAABBox3D<T>::IsValid() const
 template <class T>
 bool TAABBox3D<T>::Contains(const TVec3D<T>& pos, T tolerance) const
 {
-	return pos.x >= minPoint.x - tolerance && pos.x <= maxPoint.x + tolerance &&
-		pos.y >= minPoint.y - tolerance && pos.y <= maxPoint.y + tolerance &&
-		pos.z >= minPoint.z - tolerance && pos.z <= maxPoint.z + tolerance;
+	return  pos.x >= minPoint.x - tolerance && pos.x <= maxPoint.x + tolerance &&
+			pos.y >= minPoint.y - tolerance && pos.y <= maxPoint.y + tolerance &&
+			pos.z >= minPoint.z - tolerance && pos.z <= maxPoint.z + tolerance;
 }
 
 template <class T>
@@ -281,30 +227,15 @@ template <class T>
 TVec3D<T> TAABBox3D<T>::GetVertex(int index) const
 {
 	return TVec3D<T>(index & 1 ? maxPoint.x : minPoint.x,
-		index & 2 ? maxPoint.y : minPoint.y,
-		index & 4 ? maxPoint.z : minPoint.z);
+					 index & 2 ? maxPoint.y : minPoint.y,
+					 index & 4 ? maxPoint.z : minPoint.z);
 }
 
 template <class T>
 void TAABBox3D<T>::Merge(const TAABBox3D<T>& box)
 {
-	if (box.minPoint.x < minPoint.x)
-		minPoint.x = box.minPoint.x;
-
-	if (box.minPoint.y < minPoint.y)
-		minPoint.y = box.minPoint.y;
-
-	if (box.minPoint.z < minPoint.z)
-		minPoint.z = box.minPoint.z;
-
-	if (box.maxPoint.x > maxPoint.x)
-		maxPoint.x = box.maxPoint.x;
-
-	if (box.maxPoint.y > maxPoint.y)
-		maxPoint.y = box.maxPoint.y;
-
-	if (box.maxPoint.z > maxPoint.z)
-		maxPoint.z = box.maxPoint.z;
+	AddVertex(box.minPoint);
+	AddVertex(box.maxPoint);
 }
 
 template <class T>
