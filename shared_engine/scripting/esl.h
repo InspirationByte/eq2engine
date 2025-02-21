@@ -22,6 +22,24 @@ using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
 using LuaTableRef = LuaRef<LUA_TTABLE>;
 using LuaUserRef = LuaRef<LUA_TUSERDATA>;
 
+/// Any - special function return value that allows to send multiple return values to Lua (of any type) and also recieve multiple return values when using runtime::FunctionCall
+/// 
+/// Example use in C and Member function:
+///		esl::Any<3> FunctionReturnsThreeValues(const esl::ScriptState& state)
+///		{
+///			state.PushValue(125); 
+///			state.PushValue(true); 
+///			state.PushValue("string") 
+///		}
+/// 
+/// Example use in FunctionCall
+/// 	using Call = esl::runtime::FunctionCall<esl::Any<2>, int>;
+///		auto result = Call::Invoke(myFunctionRef, 555);
+///		if (result) {
+///		   retValue1 = *state.GetValue<bool>(-2);
+///		   retValue2 = *state.GetValue<bool>(-1);
+///		}
+/// 
 template<int NUM_VALUES = -1>
 struct Any {
 	static constexpr int COUNT = NUM_VALUES;
