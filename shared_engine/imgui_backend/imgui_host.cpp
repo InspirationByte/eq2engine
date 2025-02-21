@@ -118,6 +118,9 @@ bool CEqImGuiHost::IsShown() const
 void CEqImGuiHost::BeginFrame(bool menuVisible)
 {
 #ifdef IMGUI_ENABLED
+	if (!GImGui)
+		return;
+
 	ImGui_ImplMatSystem_NewFrame();
 	ImGui::NewFrame();
 	m_imguiDrawStart = true;
@@ -220,6 +223,8 @@ void CEqImGuiHost::EndFrame(int width, int height, IGPURenderPassRecorder* rendP
 bool CEqImGuiHost::IsImGuiItemsInFocus() const
 {
 #ifdef IMGUI_ENABLED
+	if (!GImGui)
+		return false;
 	ImGuiIO& io = ImGui::GetIO();
 	return ImGui::IsAnyItemHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemFocused() || (io.WantCaptureMouse || io.WantCaptureKeyboard);
 #endif
