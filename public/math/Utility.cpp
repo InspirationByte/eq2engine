@@ -61,18 +61,47 @@ void ScreenToDirection(const Vector3D& cameraPosition, const Vector2D& pointOnSc
 	frs.LoadAsFrustum(wwp);
 
 	const Vector3D farLeftUp = frs.GetFarLeftUp();
-	const Vector3D leftToRight = frs.GetFarRightUp() - farLeftUp;
-	const Vector3D upToDown = frs.GetFarLeftDown() - farLeftUp;
+
+	const Vector3D leftToRightVec = frs.GetFarRightUp() - farLeftUp;
+	const Vector3D upToDownVec = frs.GetFarLeftDown() - farLeftUp;
 
 	const float dx = pointOnScreen.x / screenSize.x;
 	const float dy = pointOnScreen.y / screenSize.y;
 
 	if (isOrthogonal)
-		start = cameraPosition + (leftToRight * (dx - 0.5f)) + (upToDown * (dy - 0.5f));
+		start = cameraPosition + (leftToRightVec * (dx - 0.5f)) + (upToDownVec * (dy - 0.5f));
 	else
 		start = cameraPosition;
 
-	dir = (farLeftUp + (leftToRight * dx) + (upToDown * dy)) - start;
+	dir = farLeftUp + leftToRightVec * dx + upToDownVec * dy - cameraPosition;
+}
+
+void ScreenFrustum(const Vector3D& cameraPosition, const AARectangle& rect, const Vector2D& screenSize, const Matrix4x4& wwp, bool isOrthogonal, Volume& frustum)
+{
+	Volume frs;
+	frs.LoadAsFrustum(wwp);
+
+	const Vector3D farLeftUp = frs.GetFarLeftUp();
+
+	const Vector3D leftToRightVec = frs.GetFarRightUp() - farLeftUp;
+	const Vector3D upToDownVec = frs.GetFarLeftDown() - farLeftUp;
+
+	// WTF
+	const float dl = 1.0f - rect.rightBottom.x / screenSize.x;
+	const float dr = 1.0f - rect.leftTop.x / screenSize.x;
+	const float dt = rect.leftTop.y / screenSize.y;
+	const float db = rect.rightBottom.y / screenSize.y;
+
+	const Vector3D nl = normalize(lerp(frs.GetPlane(VOLUME_PLANE_LEFT).normal, -frs.GetPlane(VOLUME_PLANE_RIGHT).normal, dl));
+	const Vector3D nr = normalize(lerp(-frs.GetPlane(VOLUME_PLANE_LEFT).normal, frs.GetPlane(VOLUME_PLANE_RIGHT).normal, dr));
+	const Vector3D nt = normalize(lerp(frs.GetPlane(VOLUME_PLANE_TOP).normal, -frs.GetPlane(VOLUME_PLANE_BOTTOM).normal, dt));
+	const Vector3D nb = normalize(lerp(-frs.GetPlane(VOLUME_PLANE_TOP).normal, frs.GetPlane(VOLUME_PLANE_BOTTOM).normal, db));
+
+	frustum = frs;
+	frustum.SetupPlane(Plane(nl, -dot(nl, farLeftUp + leftToRightVec * dl)), VOLUME_PLANE_LEFT);
+	frustum.SetupPlane(Plane(nr, -dot(nr, farLeftUp + leftToRightVec * dr)), VOLUME_PLANE_RIGHT);
+	frustum.SetupPlane(Plane(nt, -dot(nt, farLeftUp + upToDownVec * dt)), VOLUME_PLANE_TOP);
+	frustum.SetupPlane(Plane(nb, -dot(nb, farLeftUp + upToDownVec * db)), VOLUME_PLANE_BOTTOM);
 }
 
 Vector2D UVFromPointOnTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,

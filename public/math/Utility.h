@@ -18,6 +18,8 @@ bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& wor
 void ScreenToDirection(	const Vector3D& cam_pos, const Vector2D& point, const Vector2D& screensize,
 										Vector3D& start, Vector3D& dir, const Matrix4x4& wwp, bool bIsOrthogonal = false);
 
+void ScreenFrustum(const Vector3D& cameraPosition, const AARectangle& rect, const Vector2D& screenSize, const Matrix4x4& wwp, bool isOrthogonal, Volume& frustum);
+
 //---------------------------------------------------------------------------------
 
 // uv point from triangle and 3d position
