@@ -86,7 +86,7 @@ public:
 								const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br);
 
 	// advances vertex, no indexing issued
-	void		AdvanceVertex();
+	int			AdvanceVertex();
 
 	// advances index with current index
 	int			AdvanceVertexIndex();
@@ -323,23 +323,26 @@ inline void CMeshBuilder::Color4(const MColor& rgba)
 
 
 // advances vertex
-inline void CMeshBuilder::AdvanceVertex()
+inline int CMeshBuilder::AdvanceVertex()
 {
 	if(!m_begun)
-		return;
+		return -1;
 
 	if(!m_pushedVert)
-		return;
+		return -1;
 
 	m_pushedVert = false;
 
-	if(m_mesh->AllocateGeom(1, 0, &m_curVertex, nullptr, false) == -1)
-		return;
+	const int curVertex = m_mesh->AllocateGeom(1, 0, &m_curVertex, nullptr, false);
+	if(curVertex == -1)
+		return -1;
 
 	CopyVertData(m_position);
 	CopyVertData(m_texcoord);
 	CopyVertData(m_normal, true);
 	CopyVertData(m_color);
+
+	return curVertex;
 }
 
 // advances index with current index
