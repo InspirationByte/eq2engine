@@ -894,7 +894,12 @@ struct MemberFunction
 		constexpr int ArgCount = sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0);
 
 		ESL_VERBOSE_LOG("call member %s:%x", ScriptClass<T>::className, FuncPtr);
-		if constexpr (std::is_void_v<R>)
+		if constexpr (IsAny<R>::value)
+		{
+			Invoke(thisPtr, L, std::make_index_sequence<ArgCount>{});
+			return R::COUNT;
+		}
+		else if constexpr (std::is_void_v<R>)
 		{
 			Invoke(thisPtr, L, std::make_index_sequence<ArgCount>{});
 			return 0;
@@ -975,7 +980,12 @@ struct FunctionBinder<R(*)(Args...), Traits>
 	{
 		constexpr int ArgCount = sizeof...(Args) - (HasLuaStateArg::value ? 1 : 0);
 
-		if constexpr (std::is_void_v<R>)
+		if constexpr (IsAny<R>::value)
+		{
+			Invoke(L, std::make_index_sequence<ArgCount>{});
+			return R::COUNT;
+		}
+		else if constexpr (std::is_void_v<R>)
 		{
 			Invoke(L, std::make_index_sequence<ArgCount>{});
 			return 0;
