@@ -356,12 +356,10 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 						KVSection* pParams)
 {
 	int padding = 0;
-	pParams->Get("padding").GetValues(padding);
+	EqStringRef padModeStr;
+	pParams->Get("padding").GetValues(padding, padModeStr);
 
 	EPaddingMode padMode = PAD_NONE;
-
-	EqStringRef padModeStr;
-	pParams->Get("padding").GetValues(padModeStr);
 	if(!padModeStr.CompareCaseIns("clamp"))
 		padMode = PAD_CLAMP;
 	else if(!padModeStr.CompareCaseIns("repeat"))
