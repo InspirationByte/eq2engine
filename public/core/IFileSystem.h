@@ -154,7 +154,7 @@ public:
 protected:
 	int			m_searchPaths{ SP_ROOT };
 	int			m_startDirIndex{ -1 };
-	char*		m_wildcard{ nullptr };
+	EqString	m_wildcard{ nullptr };
 	char*		m_curPath{ nullptr };
 	DKFINDDATA*	m_fd{ nullptr };
 };
@@ -163,7 +163,7 @@ protected:
 
 inline void CFileSystemFind::Init(const char* wildcard, int searchPaths, int dirIndex)
 {
-	m_wildcard = (char*)wildcard;
+	m_wildcard = wildcard;
 	m_searchPaths = searchPaths;
 	m_startDirIndex = dirIndex;
 }
