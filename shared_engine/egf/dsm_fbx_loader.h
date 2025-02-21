@@ -12,6 +12,7 @@ namespace SharedModel
 struct DSModel;
 using DSModelPtr = CRefPtr<DSModel>;
 struct DSShapeData;
+using DSShapeDataPtr = CRefPtr<DSShapeData>;
 struct DSAnimData;
 
 struct DSModelContainer
