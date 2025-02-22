@@ -15,10 +15,13 @@ Vector3D SnapVector(float grid_spacing, const Vector3D& vector);
 
 bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4& worldToScreen, const Vector2D &screenDims);
 bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& worldToScreen, const Vector2D &screenDims);
-void ScreenToDirection(	const Vector3D& cam_pos, const Vector2D& point, const Vector2D& screensize,
-										Vector3D& start, Vector3D& dir, const Matrix4x4& wwp, bool bIsOrthogonal = false);
+void ScreenToDirection(const Vector2D& pointOnScreen, const Vector2D& screenSize, 
+					   const Vector3D& cameraPosition, const Matrix4x4& proj, const Matrix4x4& view, bool isOrthogonal, 
+	                   Vector3D& start, Vector3D& dir);
 
-void ScreenFrustum(const Vector3D& cameraPosition, const AARectangle& rect, const Vector2D& screenSize, const Matrix4x4& wwp, bool isOrthogonal, Volume& frustum);
+void ScreenFrustum(const AARectangle& rect, const Vector2D& screenSize,
+				   const Matrix4x4& proj, const Matrix4x4& view,
+				   Volume& frustum);
 
 //---------------------------------------------------------------------------------
 

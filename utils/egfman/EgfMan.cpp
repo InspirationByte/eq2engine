@@ -1038,8 +1038,8 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			Vector3D last_ray_start, last_ray_dir;
 
 			// set object
-			ScreenToDirection(g_pCameraParams.GetOrigin(), Vector2D(w-event.GetX(),event.GetY()), Vector2D(w,h), ray_start, ray_dir, g_mProjMat*g_mViewMat, false);
-			ScreenToDirection(g_pCameraParams.GetOrigin(), Vector2D(w-g_vLastMousePosition.x,g_vLastMousePosition.y), Vector2D(w,h), last_ray_start, last_ray_dir, g_mProjMat*g_mViewMat, false);
+			ScreenToDirection(Vector2D(w-event.GetX(),event.GetY()), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, ray_start, ray_dir);
+			ScreenToDirection(Vector2D(w-g_vLastMousePosition.x,g_vLastMousePosition.y), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, last_ray_start, last_ray_dir);
 	
 			// we found ray, find object
 
