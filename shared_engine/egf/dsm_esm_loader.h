@@ -36,12 +36,12 @@ struct DSShapeData : RefCountedObject<DSShapeData>
 };
 using DSShapeDataPtr = CRefPtr<DSShapeData>;
 
-bool	ReadBones(Tokenizer& tok, DSModel* pModel);
+bool	ReadBones(Tokenizer& tok, DSModel& pModel);
 
-int		FindShapeKeyIndex( DSShapeData* data, const char* shapeKeyName );
-void	AssignShapeKeyVertexIndexes(DSModel* mod, DSShapeData* shapeData);
+int		FindShapeKeyIndex(const DSShapeData& data, const char* shapeKeyName );
+void	AssignShapeKeyVertexIndexes(DSModel& mod, const DSShapeData* shapeData);
 
-bool	LoadESM(DSModel* model, const char* filename);
-bool	LoadESXShapes(DSShapeData* data, const char* filename);
+bool	LoadESM(DSModel& model, const char* filename);
+bool	LoadESXShapes(DSShapeData& data, const char* filename);
 
 } // namespace

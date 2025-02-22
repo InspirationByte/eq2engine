@@ -87,7 +87,7 @@ int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
 	return nCount;
 }
 
-bool LoadSharedModel(DSModel* model, const char* filename)
+bool LoadSharedModel(DSModel& model, const char* filename)
 {
 	const EqString ext = fnmPathExtractExt(filename);
 
@@ -103,7 +103,7 @@ bool LoadSharedModel(DSModel* model, const char* filename)
 	return false;
 }
 
-bool SaveSharedModel(DSModel* model, const char* filename)
+bool SaveSharedModel(const DSModel& model, const char* filename)
 {
 	const EqString ext = fnmPathExtractExt(filename);
 
@@ -143,12 +143,11 @@ DSBone* DSModel::FindBone(const char* pszName)
 	return &bones[idx];
 }
 
-int GetTotalVertsOfDSM(DSModel* model)
+int GetTotalVertsOfDSM(const DSModel& model)
 {
 	int numVerts = 0;
-
-	for(int i = 0; i < model->meshes.numElem(); i++)
-		numVerts +=  model->meshes[i]->verts.numElem();
+	for(const DSMesh* mesh : model.meshes)
+		numVerts += mesh->verts.numElem();
 
 	return numVerts;
 }

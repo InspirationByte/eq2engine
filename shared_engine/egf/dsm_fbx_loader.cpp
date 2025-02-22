@@ -119,14 +119,14 @@ void GetFBXConvertMatrix(const ofbx::GlobalSettings& settings, Matrix3x3& conver
 	convertMatrix = scale3(scale.x, scale.y, scale.z);
 }
 
-void TransformModelGeom(DSModel* model, const Matrix4x4& transform)
+void TransformModelGeom(DSModel& model, const Matrix4x4& transform)
 {
 	Matrix3x3 normalsRotateVec = transform.getRotationComponent();
 	normalsRotateVec.rows[0] = normalize(normalsRotateVec.rows[0]);
 	normalsRotateVec.rows[1] = normalize(normalsRotateVec.rows[1]);
 	normalsRotateVec.rows[2] = normalize(normalsRotateVec.rows[2]);
 
-	for (DSMesh* group : model->meshes)
+	for (DSMesh* group : model.meshes)
 	{
 		for (DSVertex& vert : group->verts)
 		{
@@ -293,10 +293,10 @@ void GetFBXBonesAsDSM(const ofbx::Mesh& mesh, Array<DSBone>& bones, Array<Vertex
 	}
 }
 
-void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map<int, DSMesh*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
+void ConvertFBXMeshToDSM(int meshId, DSModel& model, DSShapeData* shapeData, Map<int, DSMesh*>& materialGroups, const ofbx::Mesh& mesh, const ofbx::GlobalSettings& settings, bool invertFaces, const Matrix4x4& transform, const Matrix3x3& convertMatrix)
 {
 	Array<VertexWeightData> weightData(PP_SL);
-	GetFBXBonesAsDSM(mesh, model->bones, weightData, transform, convertMatrix);
+	GetFBXBonesAsDSM(mesh, model.bones, weightData, transform, convertMatrix);
 
 	const ofbx::Geometry& geom = *mesh.getGeometry();
 	const ofbx::Vec3* vertices = geom.getVertices();
@@ -369,7 +369,7 @@ void ConvertFBXMeshToDSM(int meshId, DSModel* model, DSShapeData* shapeData, Map
 				dsmGrp->texture = material->name;
 
 			materialGroups.insert(materialGroupIdx, dsmGrp);
-			model->meshes.append(dsmGrp);
+			model.meshes.append(dsmGrp);
 		}
 		else
 		{
@@ -468,7 +468,7 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
 			Map<int, DSMesh*> materialGroups(PP_SL);
-			ConvertFBXMeshToDSM(i, container.model, container.shapeData, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
+			ConvertFBXMeshToDSM(i, *container.model, container.shapeData, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
 
 			container.model->name = mesh.name;
 			container.shapeData->reference = mesh.name;
@@ -484,10 +484,8 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 }
 
 // Editor variant
-bool LoadFBXCompound( DSModel* model, const char* filename )
+bool LoadFBXCompound( DSModel& model, const char* filename )
 {
-	ASSERT(model);
-
 	VSSize fileSize = 0;
 	char* fileBuffer = (char*)g_fileSystem->GetFileBuffer(filename, &fileSize);
 
@@ -577,7 +575,7 @@ bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename)
 			const Matrix4x4 geomMatrix = FromFBXMatrix(mesh.getGeometricMatrix());
 			const Matrix4x4 transform = globalTransform * geomMatrix * Matrix4x4(convertMatrix);
 
-			ConvertFBXMeshToDSM(i, modelContainer.model, modelContainer.shapeData, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
+			ConvertFBXMeshToDSM(i, *modelContainer.model, modelContainer.shapeData, materialGroups, mesh, settings, invertFaces, transform, convertMatrix);
 		}
 	}
 

@@ -145,7 +145,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 
 		Msg("Loading shape file '%s'\n", modelPath.ToCString());
 
-		if( LoadESXShapes( mod.shapeData, modelPath))
+		if( LoadESXShapes( *mod.shapeData, modelPath))
 		{
 			// use referenced filename by the shape file
 			modelPath = fnmPathCombine(m_refsPath, mod.shapeData->reference);
@@ -155,14 +155,14 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 			mod.shapeData = nullptr;
 		}
 
-		if (!LoadSharedModel(mod.model, modelPath))
+		if (!LoadSharedModel(*mod.model, modelPath))
 		{
 			MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 			FreeModel(mod);
 			return false;
 		}
 	}
-	else if(!LoadSharedModel(mod.model, modelPath))
+	else if(!LoadSharedModel(*mod.model, modelPath))
 	{
 		MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 		FreeModel(mod);
@@ -180,7 +180,7 @@ bool CEGFGenerator::LoadModel(const char* pszFileName, GenModel& mod)
 
 bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 {
-	const int nVerts = GetTotalVertsOfDSM(mod.model);
+	const int nVerts = GetTotalVertsOfDSM(*mod.model);
 
 	if ((float)nVerts / 3.0f != nVerts / 3)
 	{
@@ -191,7 +191,7 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 	// assign shape indexes
 	if (mod.shapeData)
 	{
-		AssignShapeKeyVertexIndexes(mod.model, mod.shapeData);
+		AssignShapeKeyVertexIndexes(*mod.model, mod.shapeData);
 
 		for (int i = 0; i < mod.shapeData->shapes.numElem(); ++i)
 		{
@@ -205,10 +205,8 @@ bool CEGFGenerator::PostProcessDSM(GenModel& mod)
 	}
 
 	// scale bones
-	for (int i = 0; i < mod.model->bones.numElem(); i++)
+	for (DSBone& bone : mod.model->bones)
 	{
-		DSBone& bone = mod.model->bones[i];
-
 		bone.position *= m_modelScale;
 
 		if (bone.parentIdx == -1)
@@ -294,7 +292,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 
 			if (shapeKeyName)
 			{
-				mod.shapeIndex = FindShapeKeyIndex(mod.shapeData, shapeKeyName);
+				mod.shapeIndex = FindShapeKeyIndex(*mod.shapeData, shapeKeyName);
 				if (mod.shapeIndex == -1)
 					MsgError("Error: shapeBy - Can't find shape key %s in model %s (ref %s)\n", shapeKeyName, mod.model->name.ToCString(), mod.name.ToCString());
 			}
@@ -312,7 +310,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection* pKeyBase)
 		lodModel.lodmodels.append(newModelIndex);
 		lodModel.name = modelName;
 
-		const int nVerts = GetTotalVertsOfDSM(mod.model);
+		const int nVerts = GetTotalVertsOfDSM(*mod.model);
 
 		Msg("Adding reference %s as '%s' with %d triangles (in %d meshes), %d bones\n",
 			mod.model->name.ToCString(),
@@ -379,7 +377,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 
 		if (shapeByModels[i])
 		{
-			mod.shapeIndex = FindShapeKeyIndex(mod.shapeData, shapeByModels[i]);
+			mod.shapeIndex = FindShapeKeyIndex(*mod.shapeData, shapeByModels[i]);
 			if (mod.shapeIndex == -1)
 				MsgError("Error: shapeBy - Can't find shape key %s in model %s (ref %s)\n", shapeByModels[i].ToCString(), mod.model->name.ToCString(), mod.name.ToCString());
 		}
@@ -425,7 +423,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		lodList.lodmodels.append(retModelIdx);
 		lodList.name = mref.name;
 
-		const int nVerts = GetTotalVertsOfDSM(mref.model);
+		const int nVerts = GetTotalVertsOfDSM(*mref.model);
 		Msg("Adding reference %s as '%s' with %d triangles (in %d meshes), %d bones\n",
 			modelNames[0].ToCString(),
 			mref.name.ToCString(),
@@ -441,7 +439,7 @@ int CEGFGenerator::ParseAndLoadModels(const KVSection* pKeyBase)
 		lodList.lodmodels.append(retModelIdx);
 		lodList.name = models[0].name;
 
-		const int nVerts = GetTotalVertsOfDSM(models[0].model);
+		const int nVerts = GetTotalVertsOfDSM(*models[0].model);
 		Msg("Adding reference %s as '%s' with %d triangles (in %d meshes), %d bones\n",
 			modelNames[0].ToCString(),
 			models[0].name.ToCString(),

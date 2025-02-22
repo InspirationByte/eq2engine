@@ -7,6 +7,9 @@
 
 #pragma once
 
+class IVirtualStream;
+using IVirtualStreamPtr = CRefPtr<IVirtualStream>;
+
 class Tokenizer
 {
 public:
@@ -22,7 +25,7 @@ public:
 	~Tokenizer();
 
 	void	setString(const char* string);
-	bool	setFile(const char* fileName);
+	bool	setFile(IVirtualStreamPtr file);
 	void	reset();
 
 	bool	goToNext(BOOLFUNC isAlpha = isAlphabetical);

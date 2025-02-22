@@ -559,10 +559,14 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* animName)
 	finalFileName = fnmPathApplyExt(finalFileName, ".esa");
 
 	Tokenizer tok;
-	if (!tok.setFile( finalFileName ))
 	{
-		MsgError("Couldn't open ESA file '%s'\n", finalFileName.ToCString());
-		return -1;
+		IFilePtr pFile = g_fileSystem->Open(finalFileName, FS_OPEN_READ);
+		if (!pFile)
+		{
+			MsgError("Failed to open '%s'\n", finalFileName.ToCString());
+			return -1;
+		}
+		tok.setFile(pFile);
 	}
 
 	// make new model animation
@@ -577,7 +581,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* animName)
 	{
 		if(!CString::CompareCaseIns(str, "bones"))
 		{
-			if(!ReadBones(tok, &tempDSM))
+			if(!ReadBones(tok, tempDSM))
 				return -1;
 		}
 		else if(!CString::CompareCaseIns(str, "frames"))

@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
 #include "dsm_esm_loader.h"
 #include "dsm_loader.h"
@@ -36,7 +37,7 @@ bool isQuotes(const char ch)
 	return (ch != '\"');
 }
 
-bool ReadBones(Tokenizer& tok, DSModel* pModel)
+bool ReadBones(Tokenizer& tok, DSModel& pModel)
 {
 	char *str;
 
@@ -55,7 +56,7 @@ bool ReadBones(Tokenizer& tok, DSModel* pModel)
 		else if(bCouldRead)
 		{
 			// read bone definition
-			DSBone& bone = pModel->bones.append();
+			DSBone& bone = pModel.bones.append();
 
 			bone.name = tok.next(isQuotes);
 			tok.next(); // skip quote
@@ -79,7 +80,7 @@ bool ReadBones(Tokenizer& tok, DSModel* pModel)
 }
 
 
-bool ReadFaces(Tokenizer& tok, DSModel* pModel)
+bool ReadFaces(Tokenizer& tok, DSModel& pModel)
 {
 	char *str;
 
@@ -107,7 +108,7 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 					matName = tok.next(isQuotes); 
 
 				// find or create group
-				pCurrentGroup = pModel->FindMeshByName(matName);
+				pCurrentGroup = pModel.FindMeshByName(matName);
 
 				if(!pCurrentGroup)
 				{
@@ -116,7 +117,7 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 					pCurrentGroup->texture = matName;
 					pCurrentGroup->verts.resize(1024);
 
-					pModel->meshes.append( pCurrentGroup );
+					pModel.meshes.append( pCurrentGroup );
 				}
 			}
 			else if(!CString::CompareCaseIns(str, "vtx"))
@@ -201,7 +202,7 @@ bool ReadFaces(Tokenizer& tok, DSModel* pModel)
 	return false;
 }
 
-bool ReadShapes(Tokenizer& tok, DSShapeData* data)
+bool ReadShapes(Tokenizer& tok, DSShapeData& data)
 {
 	char *str;
 
@@ -233,7 +234,7 @@ bool ReadShapes(Tokenizer& tok, DSShapeData* data)
 				curShapeKey->name = key_name;
 				curShapeKey->verts.resize(1024);
 
-				data->shapes.append( curShapeKey );
+				data.shapes.append( curShapeKey );
 			}
 			else if(!CString::CompareCaseIns(str, "vtx"))
 			{
@@ -267,16 +268,17 @@ bool ReadShapes(Tokenizer& tok, DSShapeData* data)
 	return false;
 }
 
-bool LoadESM(DSModel* model, const char* filename)
+bool LoadESM(DSModel& model, const char* filename)
 {
-	ASSERT(model);
-
 	Tokenizer tok;
-
-	if (!tok.setFile(filename))
 	{
-		MsgError("Couldn't open ESM file '%s'\n", filename);
-		return false;
+		IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
+		if (!pFile)
+		{
+			MsgError("Failed to open ESM '%s'\n", filename);
+			return false;
+		}
+		tok.setFile(pFile);
 	}
 
 	char* str;
@@ -301,16 +303,17 @@ bool LoadESM(DSModel* model, const char* filename)
 	return true;
 }
 
-bool LoadESXShapes( DSShapeData* data, const char* filename )
+bool LoadESXShapes( DSShapeData& data, const char* filename )
 {
-	ASSERT(data);
-
 	Tokenizer tok;
-
-	if (!tok.setFile(filename))
 	{
-		MsgError("Couldn't open ESX file '%s'\n", filename);
-		return false;
+		IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
+		if (!pFile)
+		{
+			MsgError("Failed to open ESX '%s'\n", filename);
+			return false;
+		}
+		tok.setFile(pFile);
 	}
 
 	char *str;
@@ -320,7 +323,7 @@ bool LoadESXShapes( DSShapeData* data, const char* filename )
 	{
 		if(!CString::CompareCaseIns(str, "reference"))
 		{
-			data->reference = tok.next(isNotWhiteSpace);
+			data.reference = tok.next(isNotWhiteSpace);
 		}
 		else if(!CString::CompareCaseIns(str, "verts"))
 		{
@@ -340,45 +343,33 @@ DSShapeData::~DSShapeData()
 		delete shapes[i];
 }
 
-int FindShapeKeyIndex( DSShapeData* data, const char* shapeKeyName )
+int FindShapeKeyIndex(const DSShapeData& data, const char* shapeKeyName )
 {
-	if(!data)
-		return -1;
-
-	for(int i = 0; i < data->shapes.numElem(); i++)
+	for(int i = 0; i < data.shapes.numElem(); i++)
 	{
-		if(!CString::CompareCaseIns(data->shapes[i]->name.ToCString(), shapeKeyName))
+		if(!CString::CompareCaseIns(data.shapes[i]->name.ToCString(), shapeKeyName))
 			return i;
 	}
 
 	return -1;
 }
 
-void AssignShapeKeyVertexIndexes(DSModel* mod, DSShapeData* shapeData)
+void AssignShapeKeyVertexIndexes(DSModel& mod, const DSShapeData* shapeData)
 {
-	if (shapeData->shapes.numElem() <= 1)
+	if (!shapeData || shapeData->shapes.numElem() <= 1)
 		return;
 
 	Msg("Assigning vertex indiexes to shape keys\n");
 
-	DSShapeKey* basis = shapeData->shapes[0];
-
-	for(int i = 0; i < mod->meshes.numElem(); i++)
+	const DSShapeKey& basis = *shapeData->shapes[0];
+	for(DSMesh* grp : mod.meshes)
 	{
-		DSMesh* grp = mod->meshes[i];
-
-		for(int j = 0; j < grp->verts.numElem(); j++)
+		for(DSVertex& grpVert : grp->verts)
 		{
-			DSVertex& grpVert = grp->verts[j];
-			for(int k = 0; k < basis->verts.numElem(); k++)
+			for(const DSShapeVert& basisVert : basis.verts)
 			{
-				const DSShapeVert& basisVert = basis->verts[k];
-
-				if(grpVert.position == basisVert.position &&
-					grpVert.normal == basisVert.normal)
-				{
+				if(grpVert.position == basisVert.position && grpVert.normal == basisVert.normal)
 					grpVert.vertexId = basisVert.vertexId;
-				}
 			}
 		}
 	}

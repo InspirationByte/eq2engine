@@ -34,7 +34,6 @@ bool Tokenizer::isNewLine(const char ch)
 	return (ch == '\r' || ch == '\n');
 }
 
-
 Tokenizer::Tokenizer(int nBuffers)
 {
 	buffers.setNum(nBuffers);
@@ -70,27 +69,25 @@ void Tokenizer::setString(const char* string)
 	reset();
 }
 
-bool Tokenizer::setFile(const char* fileName)
+bool Tokenizer::setFile(IVirtualStreamPtr file)
 {
 	delete[] str;
 	str = nullptr;
 
-	IFilePtr file = g_fileSystem->Open(fileName, FS_OPEN_READ);
-	if (file)
+	if (!file)
 	{
-		length = file->GetSize();
-
-		str = PPNew char[(length + 1) * sizeof(char)];
-		file->Read(str, length, 1);
-		str[length] = '\0';
-
-		reset();
-		return true;
+		currentBuffer = 0;
+		return false;
 	}
 
-	currentBuffer = 0;
+	length = file->GetSize();
 
-	return false;
+	str = PPNew char[(length + 1) * sizeof(char)];
+	file->Read(str, length, 1);
+	str[length] = '\0';
+
+	reset();
+	return true;
 }
 
 void Tokenizer::reset()

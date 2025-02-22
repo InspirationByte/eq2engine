@@ -27,7 +27,7 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename);
 bool LoadFBXAnimations(Array<DSAnimData>& animations, const char* filename, const char* meshFilter);
 
 // Loads FBX as a single model. For editor use.
-bool LoadFBXCompound(DSModel* model, const char* filename);
+bool LoadFBXCompound(DSModel& model, const char* filename);
 
 // DEPRECATED
 bool LoadFBXShapes(DSModelContainer& modelContainer, const char* filename);

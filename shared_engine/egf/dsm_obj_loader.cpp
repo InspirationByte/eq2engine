@@ -17,9 +17,9 @@
 
 namespace SharedModel
 {
-
 extern float readFloat(Tokenizer& tok);
-int xstrsplitws(char* str, char** pointer_array)
+
+static int xstrsplitws(char* str, char** pointer_array)
 {
 	char c = *str;
 
@@ -50,7 +50,7 @@ int xstrsplitws(char* str, char** pointer_array)
 	return num_indices;
 }
 
-int strchcount( char *str, char ch )
+static int strchcount( char *str, char ch )
 {
 	int count = 0;
 	while (*str++)
@@ -62,29 +62,31 @@ int strchcount( char *str, char ch )
 	return count;
 }
 
-bool isNotNewLine(const char ch)
+static bool isNotNewLine(const char ch)
 {
 	return (ch != '\r' && ch != '\n');
 }
 
-
-struct obj_material_t
+struct ObjMtlMaterial
 {
 	char name[1024];
 	char texture[1024];
 };
 
-bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
+static bool LoadMTL(const char* filename, Array<ObjMtlMaterial> &material_list)
 {
 	Tokenizer tok;
-
-	if (!tok.setFile(filename))
 	{
-		MsgError("Couldn't open MTL file '%s'", filename);
-		return false;
+		IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
+		if (!pFile)
+		{
+			MsgError("Failed to open '%s'\n", filename);
+			return false;
+		}
+		tok.setFile(pFile);
 	}
 
-	obj_material_t* current = nullptr;
+	ObjMtlMaterial* current = nullptr;
 
 	char *str;
 
@@ -97,7 +99,7 @@ bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
 		}
 		else if(!CString::CompareCaseIns(str, "newmtl"))
 		{
-			obj_material_t mat;
+			ObjMtlMaterial mat;
 			strcpy(mat.name, tok.next(isNotNewLine));
 			strcpy(mat.texture, mat.name);
 
@@ -117,12 +119,10 @@ bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
 	return true;
 }
 
-const char* GetMTLTexture(const char* pszMaterial, Array<obj_material_t> &material_list)
+static const char* GetMTLTexture(const char* pszMaterial, Array<ObjMtlMaterial> &material_list)
 {
-	//Msg("search for: %s\n", pszMaterial);
 	for(int i = 0; i < material_list.numElem(); i++)
 	{
-		//Msg("search id: %d\n", i);
 		if(!CString::Compare(material_list[i].name, pszMaterial))
 			return material_list[i].texture;
 	}
@@ -130,27 +130,38 @@ const char* GetMTLTexture(const char* pszMaterial, Array<obj_material_t> &materi
 	return pszMaterial;
 }
 
-bool LoadOBJ(DSModel* model, const char* filename)
+bool LoadOBJ(DSModel& model, const char* filename, int searchPatch)
 {
-	Array<obj_material_t> material_list(PP_SL);
-
-	Tokenizer tok;
-
-	char* pBuffer = (char*)g_fileSystem->GetFileBuffer(filename);
-
-	if (!pBuffer)
+	IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ, searchPatch);
+	if (!pFile)
 	{
-		MsgError("Couldn't open OBJ file '%s'", filename);
+		MsgError("Failed to open '%s'\n", filename);
 		return false;
 	}
 
-	tok.setString(pBuffer);
+	return LoadOBJ(model, pFile);
+}
 
-	// done with it
-	PPFree(pBuffer);
+bool SaveOBJ(const DSModel& model, const char* filename, int searchPatch)
+{
+	IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_WRITE, searchPatch);
+	if (!pFile)
+	{
+		MsgError("Failed to open '%s' for write\n", filename);
+		return false;
+	}
+
+	return SaveOBJ(model, pFile);
+}
+
+bool LoadOBJ(DSModel& model, IVirtualStreamPtr pFile)
+{
+	Array<ObjMtlMaterial> material_list(PP_SL);
+
+	Tokenizer tok;
+	tok.setFile(pFile);
 
 	char *str;
-
 	int nVerts = 0;
 	int nTexCoords = 0;
 	int nNormals = 0;
@@ -193,7 +204,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 	//if(LoadMTL((char*)mtl_file_name.GetData(), material_list))
 	///	bUseMTL = true;
 
-	model->name = "temp";
+	model.name = "temp";
 	EqString materialName = "error";
 
 	bool bLoaded = false;
@@ -293,7 +304,7 @@ bool LoadOBJ(DSModel* model, const char* filename)
 			{
 				curgroup = PPNew DSMesh;
 
-				model->meshes.append(curgroup);
+				model.meshes.append(curgroup);
 
 				if(bUseMTL)
 					curgroup->texture = GetMTLTexture(materialName, material_list);
@@ -461,13 +472,12 @@ bool LoadOBJ(DSModel* model, const char* filename)
 		tok.goToNextLine();
 	}
 
-
 	if(normals.numElem() == 0)
 	{
-		MsgWarning("WARNING: No normals found in %s. Did you forget to export it?\n", filename);
+		MsgWarning("WARNING: No normals found in %s. Did you forget to export it?\n", pFile->GetName());
 	}
 
-	if(model->meshes.numElem() > 0)
+	if(model.meshes.numElem() > 0)
 	{
 		bLoaded = true;
 	}
@@ -475,83 +485,130 @@ bool LoadOBJ(DSModel* model, const char* filename)
 	return bLoaded;
 }
 
-bool SaveOBJ(DSModel* model, const char* filename)
+template<typename V>
+struct ObjCompareHash
 {
-	IFilePtr pFile = g_fileSystem->Open(filename, "wt", SP_ROOT);
-	if(!pFile)
+	bool operator() (const std::pair<int, V>& a, const std::pair<int, V>& b) const
 	{
-		MsgError("Failed to open for write '%s'!\n", filename);
-		return false;
+		return a.first == b.first;
 	}
+};
 
-	// NOTE: we always invert X axis on import and export
-
-	EqString mtlFileName = fnmPathStripExt(filename) + ".mtl";
+bool SaveOBJ(const DSModel& model, IVirtualStreamPtr pFile)
+{
+	const EqString mtlFileName = fnmPathStripExt(pFile->GetName()) + ".mtl";
 
 	pFile->Print("# OBJ generated by E2 dsm_obj_loader.cpp\n\n");
 	pFile->Print("mtllib %s\r\n", mtlFileName.ToCString());
-	pFile->Print("o %s\n", model->name.Length() ? model->name.ToCString() : fnmPathStripExt(fnmPathStripPath(filename)).ToCString());
+	pFile->Print("o %s\n", model.name.Length() ? model.name.ToCString() : fnmPathStripExt(fnmPathStripPath(pFile->GetName())).ToCString());
 
-	IFilePtr mtlFile = g_fileSystem->Open(mtlFileName, "wt", SP_ROOT);
+	IFilePtr mtlFile = g_fileSystem->Open(mtlFileName, FS_OPEN_WRITE);
+
+	Array<int> objIndexRemapV(PP_SL);
+	Array<int> objIndexRemapVT(PP_SL);
+	Array<int> objIndexRemapVN(PP_SL);
+	{
+		Array<std::pair<int, Vector3D>> objV(PP_SL);
+		Array<std::pair<int, Vector2D>> objVT(PP_SL);
+		Array<std::pair<int, Vector3D>> objVN(PP_SL);
+
+		const int totalVertCount = GetTotalVertsOfDSM(model);
+		objIndexRemapV.reserve(totalVertCount);
+		objIndexRemapVT.reserve(totalVertCount);
+		objIndexRemapVN.reserve(totalVertCount);
+		objV.reserve(totalVertCount);
+		objVT.reserve(totalVertCount);
+		objVN.reserve(totalVertCount);
+
+		// merge vertex components
+		for (SharedModel::DSMesh* group : model.meshes)
+		{
+			for (const DSVertex& vert : group->verts)
+			{
+				Vector3D v = vert.position;
+				Vector2D t = vert.texcoord;
+				Vector3D n = vert.normal;
+
+				v = { -v.x, v.y, v.z };
+				t = { t.x, 1.0f - t.y };
+				n = { -n.x, n.y, n.z };
+
+				// calc hash
+				const int hv = HashVector3D(v, 0.001f);
+				const int ht = HashVector2D(t, 0.001f);
+				const int hn = HashVector3D(n, 0.001f);
+
+				const int idxV = objV.addUnique(std::make_pair(hv, v), ObjCompareHash<Vector3D>{});
+				const int idxVT = objVT.addUnique(std::make_pair(ht, t), ObjCompareHash<Vector2D>{});
+				const int idxVN = objVN.addUnique(std::make_pair(hn, n), ObjCompareHash<Vector3D>{});
+
+				objIndexRemapV.append(idxV);
+				objIndexRemapVT.append(idxVT);
+				objIndexRemapVN.append(idxVN);
+			}
+		}
+
+		// print unique vertex compoents
+		for (const auto& v : objV)
+			pFile->Print("v %f %f %f\n", v.second.x, v.second.y, v.second.z);
+
+		for (const auto& v : objVT)
+			pFile->Print("vt %f %f\n", v.second.x, v.second.y);
+
+		for (const auto& v : objVN)
+			pFile->Print("vn %f %f %f\n", v.second.x, v.second.y, v.second.z);
+	}
 
 	Set<int> addedMaterials(PP_SL);
-
-	for(SharedModel::DSMesh* group : model->meshes)
+	for(SharedModel::DSMesh* group : model.meshes)
 	{
-		for(const DSVertex& vert : group->verts)
-		{
-			const Vector3D v = vert.position;
-			pFile->Print("v %f %f %f\n", -v.x, v.y, v.z);
-		}
+		if (!group->indices.numElem())
+			continue;
 
-		for (const DSVertex& vert : group->verts)
+		const int nameHash = StringId24(group->texture);
+		if (addedMaterials.find(nameHash).atEnd())
 		{
-			const Vector2D t = vert.texcoord;
-			pFile->Print("vt %f %f\n", t.x, 1.0f - t.y);
-		}
-
-		for (const DSVertex& vert : group->verts)
-		{
-			const Vector3D n = vert.normal;
-			pFile->Print("vn %f %f %f\n", -n.x, n.y, n.z);
-		}
-
-		if (group->indices.numElem())
-		{
-			const int nameHash = StringId24(group->texture);
-			if (addedMaterials.find(nameHash).atEnd())
+			mtlFile->Print("newmtl %s\r\n", group->texture.ToCString());
+			KVSection matSection;
+			if (KV_LoadFromFile("materials/" + group->texture + ".mat", SP_MOD, &matSection))
 			{
-				mtlFile->Print("newmtl %s\r\n", group->texture.ToCString());
-				KVSection matSection;
-				if (KV_LoadFromFile("materials/" + group->texture + ".mat", SP_MOD, &matSection))
-				{
-					EqString textureName = KV_GetValueString(matSection["basetexture"], 0, group->texture) + _Es(".dds");
-					mtlFile->Print("map_Kd %s\r\n", g_fileSystem->GetAbsolutePath(SP_MOD, "materials/" + textureName).ToCString());
-				}
-				else
-				{
-					// NOTE: guessed, could be different path.
-					mtlFile->Print("map_Kd %s\r\n", g_fileSystem->GetAbsolutePath(SP_MOD, (group->texture + ".dds")).ToCString());
-				}
-
-				addedMaterials.insert(nameHash);
+				EqString textureName = KV_GetValueString(matSection["basetexture"], 0, group->texture) + _Es(".dds");
+				mtlFile->Print("map_Kd %s\r\n", g_fileSystem->GetAbsolutePath(SP_MOD, "materials/" + textureName).ToCString());
+			}
+			else
+			{
+				// NOTE: guessed, could be different path.
+				mtlFile->Print("map_Kd %s\r\n", g_fileSystem->GetAbsolutePath(SP_MOD, (group->texture + ".dds")).ToCString());
 			}
 
-			pFile->Print("usemtl %s\n", group->texture.ToCString());
-
+			addedMaterials.insert(nameHash);
 		}
+
+		pFile->Print("usemtl %s\n", group->texture.ToCString());
 
 		for (int j = 0; j < group->indices.numElem(); j += 3)
 		{
-			const int indices[] = {
-				group->indices[j+2] + 1,
-				group->indices[j+1] + 1,
-				group->indices[j+0] + 1
+			const int indicesV[] = {
+				objIndexRemapV[group->indices[j+2]] + 1,
+				objIndexRemapV[group->indices[j+1]] + 1,
+				objIndexRemapV[group->indices[j+0]] + 1
 			};
 
-			pFile->Print("f %d/%d/%d %d/%d/%d %d/%d/%d\n",	indices[0], indices[0], indices[0],
-															indices[1], indices[1], indices[1],
-															indices[2], indices[2], indices[2]);
+			const int indicesVT[] = {
+				objIndexRemapVT[group->indices[j+2]] + 1,
+				objIndexRemapVT[group->indices[j+1]] + 1,
+				objIndexRemapVT[group->indices[j+0]] + 1
+			};
+
+			const int indicesVN[] = {
+				objIndexRemapVN[group->indices[j+2]] + 1,
+				objIndexRemapVN[group->indices[j+1]] + 1,
+				objIndexRemapVN[group->indices[j+0]] + 1
+			};
+
+			pFile->Print("f %d/%d/%d %d/%d/%d %d/%d/%d\n",	indicesV[0], indicesVT[0], indicesVN[0],
+															indicesV[1], indicesVT[1], indicesVN[1],
+															indicesV[2], indicesVT[2], indicesVN[2]);
 		}
 	}
 
