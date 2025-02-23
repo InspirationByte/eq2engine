@@ -1,5 +1,6 @@
 #include "core/core_common.h"
 #include "string_utils.h"
+#include "utils/CRC32.h"
 
 //------------------------------------------
 // Converts string to 24-bit integer hash
@@ -28,28 +29,18 @@ int StringId24(EqStringRef str, bool caseIns )
 // hashes string. Returns value in 32 bits range
 uint StringId(EqStringRef str, bool caseIns)
 {
-	// uses FNV1a 32 as a base but rather than hashing string
-	// by each character value, it performs hashing as integer blocks
-	constexpr uint prime = 0x1000193;
+	uint strCrc = 0;
+	CRC32_InitChecksum(strCrc);
 
-	ASSERT(str);
-	const int len = str.Length();
 	const char* data = str.GetData();
-
-	uint hash = 0x811C9DC5;
-	for (int i = 0; i < len; i += 4)
+	int len = str.Length();
+	while (len--)
 	{
-		uint value = 0;
-		const int ii = min(i + 4, len);
-		for(int j = i; j < ii; ++j)
-		{
-			const uint chr = caseIns ? CType::LowerChar(*(data + j)) : *(data + j);
-			value |= chr << (j * 8);
-		}
-
-		hash = (hash ^ value) * prime;
+		const uint chr = caseIns ? CType::LowerChar(*data++) : *data++;
+		CRC32_Update(strCrc, chr);
 	}
-	return hash;
+
+	return strCrc;
 }
 
 void StringSplit(const char* pString, ArrayCRef<const char*> separators, Array<EqString>& outStrings)
