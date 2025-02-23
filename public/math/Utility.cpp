@@ -274,6 +274,39 @@ bool LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const 
 	return true;
 }
 
+bool LineSegIntersectsCircle2D(const Vector2D& lB, const Vector2D& lE, const Vector2D& center, float radius, FixedArray<Vector2D, 2>& isectPoints)
+{
+	const Vector2D lineVec = lE - lB;
+	const Vector2D f = lB - center;
+
+	const float a = dot(lineVec, lineVec);
+	const float b = 2.0f * dot(f, lineVec);
+	const float c = dot(f, f) - radius * radius;
+
+	float d = b * b - 4.0f * a * c;
+	if (d < 0)
+		return false;
+
+	d = sqrtf(d);
+	const float t1 = (-b - d) / (2.0f * a);
+	const float t2 = (-b + d) / (2.0f * a);
+
+	bool result = false;
+	if (t1 >= 0.0f && t1 <= 1.0f)
+	{
+		result = true;
+		isectPoints.append(lB + lineVec * t1);
+	}
+
+	if (t2 >= 0.0f && t2 <= 1.0f)
+	{
+		result = true;
+		isectPoints.append(lB + lineVec * t2);
+	}
+
+	return result;
+}
+
 static float orient2D(const Vector2D& O, const Vector2D& A, const Vector2D& B)
 {
 	return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
