@@ -56,26 +56,30 @@ static constexpr const int StringId24Bits = 24;
 static constexpr const int StringId24Mask = ((1 << StringId24Bits) - 1);
 
 template<int idx, std::size_t N>
-struct StringId24_Cexpr_Helper {
-	static constexpr int compute(const char(&str)[N], int hash) {
+static constexpr int StringId24_Cexpr_Helper(const char(&str)[N], int hash)
+{
+	if constexpr (idx == 0)
+	{
+		return hash;
+	}
+	else
+	{
 		const int v1 = hash >> 19;
 		const int v0 = hash << 5;
 		const int chr = str[N - idx - 1];
 		hash = ((v0 | v1) + chr) & StringId24Mask;
-		return StringId24_Cexpr_Helper<idx - 1, N>::compute(str, hash);
+		return StringId24_Cexpr_Helper<idx - 1, N>(str, hash);
 	}
-};
+}
 
 template<std::size_t N>
-struct StringId24_Cexpr_Helper<0, N> {
-	static constexpr int compute(const char(&)[N], int hash) {
-		return hash;
-	}
-};
+static constexpr int StringId24_Cexpr(const char(&str)[N])
+{
+	return StringId24_Cexpr_Helper<N - 1, N>(str, N - 1);
+}
 
 template <auto V> static constexpr auto force_consteval = V;
-#define _StringId_Cexpr_24(x) StringId24_Cexpr_Helper<sizeof(x) - 1, sizeof(x)>::compute(x, sizeof(x) - 1)
-#define StringIdConst24(x) force_consteval<_StringId_Cexpr_24(x)>
+#define StringIdConst24(x) force_consteval<StringId24_Cexpr(x)>
 
 // generates string hash 24 bit
 int			StringId24(EqStringRef str, bool caseIns = false);
