@@ -307,9 +307,9 @@ bool LineSegIntersectsCircle2D(const Vector2D& lB, const Vector2D& lE, const Vec
 	return result;
 }
 
-static float orient2D(const Vector2D& O, const Vector2D& A, const Vector2D& B)
+static float orient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
 {
-	return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
+	return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
 }
 
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
@@ -317,6 +317,7 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	const int n = points.numElem();
 	if (n <= 3)
 		return;
+	int k = 0;
 
 	hull.assureSize(2 * n);
 
@@ -327,22 +328,19 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	});
 
 	// lower hull
-	int k = 0;
 	for (int i = 0; i < n; ++i)
 	{
-		while (k >= 2 && orient2D(hull[k - 2], hull[k - 1], points[i]) < F_EPS)
-			k--;
+		while (k >= 2 && orient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
+			--k;
 		hull[k++] = points[i];
 	}
-
 	// upper hull
-	for (int i = n - 1, t = k + 1; i > 0; --i)
+	for (int i = n - 2, t = k + 1; i >= 0; --i)
 	{
-		while (k >= t && orient2D(hull[k - 2], hull[k - 1], points[i - 1]) < F_EPS)
-			k--;
-		hull[k++] = points[i - 1];
+		while (k >= t && orient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
+			--k;
+		hull[k++] = points[i];
 	}
-
 	hull.setNum(k - 1);
 }
 
