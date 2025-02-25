@@ -83,6 +83,7 @@ struct DebugPolyNode_t : public DebugNodeBase
 {
 	FixedArray<Vector3D, 20> verts;
 	uint color{ color_white.pack()};
+	bool outline{ false };
 };
 
 struct DebugVolumeNode_t : public DebugNodeBase
@@ -115,8 +116,8 @@ public:
 	void							Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
 	void							OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
 	void							Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
-	void							Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
-	void							Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, bool outline = false, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
+	void							Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, bool outline = false, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
 	void							Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty());
 
 	void							Draw2DFunc(const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0);

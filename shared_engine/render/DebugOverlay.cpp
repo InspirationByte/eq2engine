@@ -25,7 +25,7 @@ DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 static constexpr const int DRAW_MAX_VERTS = 8192;
 
 static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 16;
-static constexpr const int LINES_DRAW_SUBDIV = 4096;
+static constexpr const int LINES_DRAW_SUBDIV = 2048;
 static constexpr const int POLYS_DRAW_SUBDIV = 256;
 static constexpr const int GRAPH_MAX_VALUES = 400;
 
@@ -376,7 +376,7 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColo
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, bool outline, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(hashId == 0 && !m_frustum.IsTriangleInside(v0,v1,v2))
@@ -388,7 +388,7 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 	poly.verts.append(v0);
 	poly.verts.append(v1);
 	poly.verts.append(v2);
-
+	poly.outline = outline;
 	poly.color = color.pack();
 	poly.lifetime = fTime;
 
@@ -402,7 +402,7 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, bool outline, float fTime, int hashId, PPSourceLine sl)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if (hashId == 0)
@@ -425,7 +425,7 @@ void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, fl
 
 	DebugPolyNode_t& poly = m_polygons.append();
 	poly.verts.append(verts.ptr(), verts.numElem());
-
+	poly.outline = outline;
 	poly.color = color.pack();
 	poly.lifetime = fTime;
 
@@ -928,6 +928,9 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < polygons.numElem(); i++)
 		{
+			if (!polygons[i].outline)
+				continue;
+
 			if (i > 0 && (i % LINES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
@@ -1068,6 +1071,7 @@ const void DebugDrawVolume(const ArrayCRef<Plane>& volume, const MColor& color)
 
 		DbgPolyBuilder poly(PP_SL);
 		poly.Color(color);
+		poly.Outline();
 
 		for (int i = 0; i < wnd.indices.numElem(); ++i)
 			poly.Point(windingVerts[wnd.indices[i]]);

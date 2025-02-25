@@ -70,8 +70,8 @@ public:
 	virtual void		Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
 	virtual void		OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
 	virtual void		Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
-	virtual void		Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
-	virtual void		Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Polygon3D(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2, const MColor& color, bool outline = false, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
+	virtual void		Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, bool outline = false, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
 	virtual void		Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime = 0.0f, int hashId = 0, PPSourceLine sl = PPSourceLine::Empty()) = 0;
 
 	virtual void		Draw2DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
@@ -319,13 +319,14 @@ struct DbgPolyBuilder
 	void Dispatch()
 	{
 		dispatch = true;
-		debugoverlay->Polygon3D(verts, MColor(color), lifetime, hashId, sl);
+		debugoverlay->Polygon3D(verts, MColor(color), outline, lifetime, hashId, sl);
 	}
 
 	DbgPolyBuilder& Point(const Vector3D& v) { verts.append(v); return *this; }
 	DbgPolyBuilder& Points(const ArrayCRef<Vector3D> _verts) { verts.append(_verts.ptr(), _verts.numElem()); return *this; }
 	DbgPolyBuilder& Color(const MColor& v) { color = v.pack(); return *this; }
 	DbgPolyBuilder& Time(float t) { lifetime = t; return *this; }
+	DbgPolyBuilder& Outline(bool v = true) { outline = v; return *this; }
 	DbgPolyBuilder& Name(const char* name) { hashId = StringId24(name); return *this; }
 
 private:
@@ -334,7 +335,7 @@ private:
 	uint			color{ color_white.pack() };
 	float			lifetime{ 0.0f };
 	int				hashId{ 0 };
-
+	bool			outline{ false };
 	bool			dispatch{ false };
 };
 
