@@ -307,7 +307,42 @@ bool LineSegIntersectsCircle2D(const Vector2D& lB, const Vector2D& lE, const Vec
 	return result;
 }
 
-static float orient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
+float DistancePointPoly2D(const Vector2D& point, ArrayCRef<Vector2D> edgeVerts, Vector2D& normal)
+{
+	const Vector2D dv = point - edgeVerts[0];
+	float d = lengthSqr(dv);
+
+	normal.x = dv.x;
+	normal.y = dv.y;
+
+	float s = 1.0;
+	for (int i = 0, j = edgeVerts.numElem() - 1; i < edgeVerts.numElem(); j = i, i++)
+	{
+		const Vector2D e = edgeVerts[j] - edgeVerts[i];
+		const Vector2D w = point - edgeVerts[i];
+		const Vector2D b = w - e * clamp(dot(w, e) / dot(e, e), 0.0f, 1.0f);
+
+		const float db = lengthSqr(b);
+		if (db < d)
+		{
+			d = db;
+
+			normal.x = b.x;
+			normal.y = b.y;
+		}
+
+		const IVector3D c(point.y >= edgeVerts[i].y, point.y < edgeVerts[j].y, e.x * w.y > e.y * w.x);
+		if (c.x && c.y && c.z || (!c.x && !c.y && !c.z))
+			s *= -1;
+	}
+	d = sqrtf(d);
+
+	normal *= 1.0f / d;
+	normal *= s;
+	return d * s;
+}
+
+static float ConvexOrient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
 {
 	return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
 }
@@ -330,14 +365,14 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	// lower hull
 	for (int i = 0; i < n; ++i)
 	{
-		while (k >= 2 && orient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
+		while (k >= 2 && ConvexOrient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
 			--k;
 		hull[k++] = points[i];
 	}
 	// upper hull
 	for (int i = n - 2, t = k + 1; i >= 0; --i)
 	{
-		while (k >= t && orient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
+		while (k >= t && ConvexOrient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
 			--k;
 		hull[k++] = points[i];
 	}

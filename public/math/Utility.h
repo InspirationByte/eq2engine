@@ -47,6 +47,7 @@ bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vec
 bool LineIntersectsLine2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint);
 bool LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint);
 bool LineSegIntersectsCircle2D(const Vector2D& lB, const Vector2D& lE, const Vector2D& center, float radius, FixedArray<Vector2D, 2>& isectPoints);
+float DistancePointPoly2D(const Vector2D& point, ArrayCRef<Vector2D> edgeVerts, Vector2D& normal);
 
 //---------------------------------------------------------------------------------
 
