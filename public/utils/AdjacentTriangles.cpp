@@ -322,4 +322,186 @@ void CAdjacentTriangleGraph::BuildWithVertices(	const ubyte* input_verts, int ve
 	// all done
 }
 
+#if 0
+// TODO: adjacency edges outline
+
+struct Triangle
+{
+	Vector3D v1;
+	Vector3D v2;
+	Vector3D v3;
+
+	const Vector3D& operator[](int index) const 
+	{
+		ASSERT(index >= 0 && index <= 2);
+		return (&v1)[index];
+	}
+
+	Vector3D& operator[](int index)
+	{
+		ASSERT(index >= 0 && index <= 2);
+		return (&v1)[index];
+	}
+};
+
+struct EdgeSpan
+{
+	int first = 0;
+	int count = 0;
+	float direction = 1.0f;
+};
+
+static void EdgeListToStripXZ(Array<Vector3D>& edgeVerts, Array<EdgeSpan>& edgeSpans)
+{
+	// make edgeVerts unique and sort them by connection
+	using VertHash = std::pair<uint, int>;
+	struct Edge
+	{
+		VertHash vertA;
+		VertHash vertB;
+	};
+
+	Array<Edge> edges(PP_SL);
+	edges.reserve(edgeVerts.numElem() / 2);
+
+	// identify unique vertices and hash edges
+	{
+		Array<VertHash> edgeVertsUniqueMap(PP_SL);
+		edgeVertsUniqueMap.reserve(edgeVerts.numElem());
+		for (int i = 0; i < edgeVerts.numElem(); ++i)
+		{
+			const UINT fixedHash = HashVector2D(edgeVerts[i].xz(), 0.1f);
+			int vertIdx = arrayFindIndexF(edgeVertsUniqueMap, [=](const VertHash& vertId) {
+				return vertId.first == fixedHash;
+			});
+
+			if (vertIdx == -1)
+				vertIdx = edgeVertsUniqueMap.numElem();
+			edgeVertsUniqueMap.appendEmplace(fixedHash, vertIdx);
+		}
+
+		for (int i = 0; i < edgeVertsUniqueMap.numElem(); i += 2)
+		{
+			if (edgeVertsUniqueMap[i] != edgeVertsUniqueMap[i + 1])
+				edges.append(Edge{ edgeVertsUniqueMap[i], edgeVertsUniqueMap[i + 1] });
+		}
+	}
+
+	const int numOldVerts = edgeVerts.numElem();
+	edgeVerts.reserve(numOldVerts + edges.numElem());
+
+	EdgeSpan* curEdgeSpan = &edgeSpans.append();
+
+	// sorted insert by shared edges and remap edgeVerts
+	int nextEdge = 0;
+	while (edges.numElem())
+	{
+		const Edge edge = edges[nextEdge];
+		edges.fastRemoveIndex(nextEdge);
+
+		// add first vertex of edge
+		edgeVerts.append(edgeVerts[edge.vertA.second]);
+		++curEdgeSpan->count;
+
+		// find next edge and proceed
+		nextEdge = arrayFindIndexF(edges, [&](const Edge& otherEdge) {
+			return edge.vertB.first == otherEdge.vertA.first;
+		});
+
+		if (nextEdge != -1)
+			continue;
+
+		// skip them and restart
+		if (curEdgeSpan->count <= 2)
+		{
+			curEdgeSpan->first = edgeVerts.numElem() - numOldVerts;
+			curEdgeSpan->count = 0;
+			nextEdge = 0;
+		}
+		else
+		{
+			// if any vertex of current edge set lies inside of any previous edge span, invert current span
+			ArrayCRef<Vector3D> currentEdgeVerts(edgeVerts.ptr() + curEdgeSpan->first + numOldVerts, curEdgeSpan->count);
+			bool anyInside = false;
+			for (int i = 0; i < edgeSpans.numElem() - 1; ++i)
+			{
+				ArrayCRef<Vector3D> otherEdgeVerts(edgeVerts.ptr() + edgeSpans[i].first, edgeSpans[i].count);
+				for (const Vector3D vert : currentEdgeVerts)
+				{
+					Vector3D tmp;
+					if (DistancePointPoly2D(vert, otherEdgeVerts, tmp) > 0.0f)
+					{
+						curEdgeSpan->direction *= -1;
+						anyInside = true;
+						break;
+					}
+				}
+
+				if (anyInside)
+					break;
+			}
+
+			// start over
+			if (edges.numElem()) {
+				curEdgeSpan = &edgeSpans.append();
+				curEdgeSpan->first = edgeVerts.numElem() - numOldVerts;
+				nextEdge = 0;
+			}
+		}
+	}
+
+	edgeVerts.removeRange(0, numOldVerts);
+	edgeVerts.resize(edgeVerts.numElem());
+}
+
+static bool MeshEdgeIsExternalXZ(int indPolyCheck, ArrayCRef<Triangle> triList, const Vector2D& p1, const Vector2D& p2)
+{
+	static float tolerance = sqr(0.1f);
+
+	for (int i = 0; i < triList.numElem(); i++) 
+	{
+		if (i == indPolyCheck)
+			continue;
+
+		const Triangle& tri = triList[i];
+		for (int j = 0; j < 3; j++)
+		{
+			Vector2D edge[2];
+			edge[0] = tri[j].xz();
+			edge[1] = tri[(j + 1) % 3].xz();
+
+			if (distanceSqr(p1, edge[0]) < tolerance && distanceSqr(p2, edge[1]) < tolerance)
+				return false;
+			if (distanceSqr(p1, edge[1]) < tolerance && distanceSqr(p2, edge[0]) < tolerance)
+				return false;
+		}
+	}
+	return true;
+}
+
+static void MeshGetOutermostEdgesXZ(ArrayCRef<Triangle> triList, Array<Vector3D>& edgeVerts, Array<EdgeSpan>& edgeSpans)
+{
+	edgeVerts.reserve(triList.numElem() * 3);
+
+	for (int i = 0; i < triList.numElem(); i++)
+	{
+		const Triangle& tri = triList[i];
+		for (int j = 0; j < 3; j++)
+		{
+			Vector3D edge[2];
+			edge[0] = tri[j];
+			edge[1] = tri[(j + 1) % 3];
+
+			if (!MeshEdgeIsExternalXZ(i, triList, edge[0].xz(), edge[1].xz()))
+				continue;
+
+			edgeVerts.append(edge[0]);
+			edgeVerts.append(edge[1]);
+		}
+	}
+
+	EdgeListToStripXZ(edgeVerts, edgeSpans);
+}
+#endif
+
 }; // namespace AdjacentTriangles
