@@ -185,7 +185,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
-	options.compatibilityMode = true;	// NOTE: this is replaced with enum in later versions
+	options.compatibilityMode = false;	// NOTE: this is replaced with enum in later versions
 	
 	EqStringRef backendName = wgpu_backend.GetString();
 
@@ -310,7 +310,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
-		requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
+		//requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
 		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
 		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
 		// TODO: android
