@@ -14,7 +14,7 @@
 #include "core/IConsoleCommands.h"
 
 #include "sys/sys_host.h"
-#include "sys/sys_in_console.h"
+#include "imgui_backend/imgui_host.h"
 #include "audio/eqSoundEmitterSystem.h"
 #include "studio/StudioCache.h"
 #include "materialsystem1/IMaterialSystem.h"
@@ -55,8 +55,8 @@ bool InitAppStates()
 
 	// TODO: plugin?
 #ifdef IMGUI_ENABLED
-	g_consoleInput->AddDebugMenu("ENGINE/Sound/Script Editor UI", SoundScriptEditorUIDraw);
-	//g_consoleInput->AddDebugMenu("ENGINE/Render/Instance Manager Debug UI", DemoInstManagerDebugDrawUI);
+	g_imGuiHost->AddDebugMenu("ENGINE/Sound/Script Editor UI", SoundScriptEditorUIDraw);
+	//g_imGuiHost->AddDebugMenu("ENGINE/Render/Instance Manager Debug UI", DemoInstManagerDebugDrawUI);
 #endif
 
 	g_pHost->SetWindowTitle(GAME_WINDOW_TITLE);

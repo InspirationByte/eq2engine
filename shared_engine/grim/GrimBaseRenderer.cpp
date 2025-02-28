@@ -729,59 +729,68 @@ void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
 	// ivec2			indirectWorkGroups;
 	// GPUInstanceInfo	instanceInfos[];
 
-	const int bufferSize = max(sizeof(IVector4D) * 2, caps.minStorageBufferOffsetAlignment)		// atomic
+	const int countBufferSize = sizeof(IVector4D) * 2;
+	const int bufferSize = max(countBufferSize, caps.minStorageBufferOffsetAlignment)		// atomic
 						+ sizeof(GPUInstanceInfo) * intermediate.maxNumberOfObjects;
 
 	const BufferInfo filterParamsBufferInfo(1, sizeof(params));
 	if (!rendState.filterParamsBuffer)
 		rendState.filterParamsBuffer = g_renderAPI->CreateBuffer(filterParamsBufferInfo, BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "FilterParams");
+	intermediate.cmdRecorder->WriteBuffer(rendState.filterParamsBuffer, &params, sizeof(params), 0);
 
+	// D3D11 HACK
+	if (!rendState.filteredInstancesCountBuffer)
+		rendState.filteredInstancesCountBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, countBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "InstanceInfosFilteredCount");
+	intermediate.cmdRecorder->ClearBuffer(rendState.filteredInstancesCountBuffer, 0, countBufferSize);
 
 	if (!rendState.filteredInstancesBuffer || rendState.filteredInstancesBuffer->GetSize() < bufferSize)
 		rendState.filteredInstancesBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, bufferSize), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfosFiltered");
-
-	intermediate.cmdRecorder->WriteBuffer(rendState.filterParamsBuffer, &params, sizeof(params), 0);
 	intermediate.cmdRecorder->ClearBuffer(rendState.filteredInstancesBuffer, 0, bufferSize);
 
-	GPUBufferView filteredInstanceInfosBuffer{ rendState.filteredInstancesBuffer, max((int)sizeof(IVector4D) * 2, caps.minStorageBufferOffsetAlignment), (int)sizeof(GPUInstanceInfo) * intermediate.maxNumberOfObjects };
-	GPUBufferView filteredInstanceCountBuffer{ rendState.filteredInstancesBuffer, 0, sizeof(IVector4D) * 2 };
+	GPUBufferView filteredInstanceInfosBuffer{ rendState.filteredInstancesBuffer, max((int)countBufferSize, caps.minStorageBufferOffsetAlignment), (int)sizeof(GPUInstanceInfo) * intermediate.maxNumberOfObjects };
+	GPUBufferView filteredInstanceCountBuffer{ rendState.filteredInstancesCountBuffer, 0, countBufferSize };
 
-	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("FilterInstances");
+	{
+		IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("FilterInstances");
 
-	// filter instances by group mask
-	computeRecorder->SetPipeline(m_filterInstancesPipeline);
-	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline, 
-		Builder<BindGroupDesc>()
-		.GroupIndex(0)
-		.Buffer(0, m_instAllocator.GetInstanceArchetypesBuffer())
-		.Buffer(1, m_instAllocator.GetInstanceGroupMaskBuffer())
-		.Buffer(2, rendState.filterParamsBuffer, 0, sizeof(params))
-		.End()
-	));
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
-		Builder<BindGroupDesc>()
-		.GroupIndex(1)
-		.Buffer(0, filteredInstanceInfosBuffer)
-		.Buffer(1, filteredInstanceCountBuffer)
-		.End()
-	));
+		// filter instances by group mask
+		computeRecorder->SetPipeline(m_filterInstancesPipeline);
+		computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
+			Builder<BindGroupDesc>()
+			.GroupIndex(0)
+			.Buffer(0, m_instAllocator.GetInstanceArchetypesBuffer())
+			.Buffer(1, m_instAllocator.GetInstanceGroupMaskBuffer())
+			.Buffer(2, rendState.filterParamsBuffer, 0, sizeof(params))
+			.End()
+		));
+		computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
+			Builder<BindGroupDesc>()
+			.GroupIndex(1)
+			.Buffer(0, filteredInstanceInfosBuffer)
+			.Buffer(1, filteredInstanceCountBuffer)
+			.End()
+		));
 
-
-	IVector2D workGroups = VisCalcWorkSize(params.maxInstanceIds);
-	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
+		const IVector2D workGroups = VisCalcWorkSize(params.maxInstanceIds);
+		computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
 
 #if 0
-	// TODO calc workgroups for culling pipeline
-	computeRecorder->SetPipeline(m_filterCalcWorkGroupsPipeline);
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterCalcWorkGroupsPipeline,
-		Builder<BindGroupDesc>()
-		.GroupIndex(1)
-		.Buffer(1, filteredInstanceCountBuffer)
-		.End()
-	));
-	computeRecorder->DispatchWorkgroups(1);
+		// TODO calc workgroups for culling pipeline
+		computeRecorder->SetPipeline(m_filterCalcWorkGroupsPipeline);
+		computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterCalcWorkGroupsPipeline,
+			Builder<BindGroupDesc>()
+			.GroupIndex(1)
+			.Buffer(1, filteredInstanceCountBuffer)
+			.End()
+		));
+		computeRecorder->DispatchWorkgroups(1);
 #endif
-	computeRecorder->Complete();
+		computeRecorder->Complete();
+	}
+
+	// D3D11 HACK
+	intermediate.cmdRecorder->CopyBufferToBuffer(rendState.filteredInstancesCountBuffer, 0, rendState.filteredInstancesBuffer, 0, countBufferSize);
+	filteredInstanceCountBuffer = GPUBufferView{ rendState.filteredInstancesBuffer, 0, countBufferSize };
 
 	intermediate.filteredInstanceInfosBuffer = filteredInstanceInfosBuffer;
 	intermediate.filteredInstanceCountBuffer = filteredInstanceCountBuffer;

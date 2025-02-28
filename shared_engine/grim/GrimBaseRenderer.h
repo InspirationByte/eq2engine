@@ -49,6 +49,7 @@ struct GRIMRenderState
 	// and cached there for performance.
 	IGPUBufferPtr			sortedInstanceIdsBuffer;
 	IGPUBufferPtr			filteredInstancesBuffer;
+	IGPUBufferPtr			filteredInstancesCountBuffer;	// D3D11 HACK
 	IGPUBufferPtr			culledInstanceInfosBuffer;
 	IGPUBufferPtr			drawInstanceBoundsBuffer;
 	IGPUBufferPtr			filterParamsBuffer;
