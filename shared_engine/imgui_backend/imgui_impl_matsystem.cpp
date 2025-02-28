@@ -47,7 +47,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data, IGPURenderPassRec
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
 
-		IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh(cmd_list->VtxBuffer.Size);
+		IDynamicMeshPtr dynMesh = g_matSystem->GetDynamicMesh(max(cmd_list->VtxBuffer.Size, cmd_list->IdxBuffer.Size));
 		CMeshBuilder mb(dynMesh);
 		mb.Begin(PRIM_TRIANGLES);
 

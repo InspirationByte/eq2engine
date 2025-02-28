@@ -135,7 +135,8 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 
 bool CDynamicMesh::HasEnoughSpace(int vertexCount) const
 {
-	return m_vtxBufferOffset + m_vertexStride * vertexCount < m_vertexBuffer->GetSize();
+	return m_vtxBufferOffset + m_vertexStride * vertexCount < m_vertexBuffer->GetSize() 
+		&& m_idxBufferOffset + sizeof(uint16) * vertexCount < m_indexBuffer->GetSize();
 }
 
 bool CDynamicMesh::FillDrawCmd(RenderDrawCmd& drawCmd, int firstIndex, int numIndices)
