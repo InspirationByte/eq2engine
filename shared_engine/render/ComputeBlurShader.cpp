@@ -70,11 +70,20 @@ void ComputeBlurShader::SetDestinationTexture(ITexture* dest)
 
 	const IVector2D dstSize = m_dstTexture->GetSize();
 
-	m_blurTemp = g_renderAPI->CreateRenderTarget(
+	m_blurTemp1 = g_renderAPI->CreateRenderTarget(
 		Builder<TextureDesc>()
-		.Name("_blurTemp")
+		.Name("_blurTemp1")
 		.Format(FORMAT_RGBA8)
-		.Size(dstSize, 2)
+		.Size(dstSize)
+		.Flags(TEXFLAG_STORAGE | TEXFLAG_COPY_SRC | TEXFLAG_TRANSIENT)
+		.End()
+	);
+
+	m_blurTemp2 = g_renderAPI->CreateRenderTarget(
+		Builder<TextureDesc>()
+		.Name("_blurTemp2")
+		.Format(FORMAT_RGBA8)
+		.Size(dstSize)
 		.Flags(TEXFLAG_STORAGE | TEXFLAG_COPY_SRC | TEXFLAG_TRANSIENT)
 		.End()
 	);
@@ -82,16 +91,16 @@ void ComputeBlurShader::SetDestinationTexture(ITexture* dest)
 	m_bindGroupStg1 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Name("BlurParams1")
-		.Texture(0, m_blurTemp, ITexture::ViewArraySlice(0))
-		.StorageTexture(1, m_blurTemp, ITexture::ViewArraySlice(1))
+		.Texture(0, m_blurTemp1)
+		.StorageTexture(1, m_blurTemp2)
 		.Buffer(2, m_switchBuffer1)
 		.End());
 
 	m_bindGroupStg2 = g_renderAPI->CreateBindGroup(m_pipeline, Builder<BindGroupDesc>()
 		.GroupIndex(1)
 		.Name("BlurParams2")
-		.Texture(0, m_blurTemp, ITexture::ViewArraySlice(1))
-		.StorageTexture(1, m_blurTemp, ITexture::ViewArraySlice(0))
+		.Texture(0, m_blurTemp2)
+		.StorageTexture(1, m_blurTemp1)
 		.Buffer(2, m_switchBuffer0)
 		.End());
 }
@@ -106,7 +115,7 @@ void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int a
 		.GroupIndex(1)
 		.Name("BlurParams")
 		.Texture(0, m_srcTexture, arraySlice == -1 ? ITexture::DEFAULT_VIEW : ITexture::ViewArraySlice(arraySlice))
-		.StorageTexture(1, m_blurTemp, ITexture::ViewArraySlice(0))
+		.StorageTexture(1, m_blurTemp1)
 		.Buffer(2, m_switchBuffer0)
 		.End());
 
@@ -131,9 +140,7 @@ void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int a
 
 	blurPassRecorder->Complete();
 
-	TextureCopyInfo srcTex{ m_blurTemp };
-	srcTex.origin.arraySlice = 1;
-
+	TextureCopyInfo srcTex{ m_blurTemp2 };
 	TextureCopyInfo dstTex{ m_dstTexture };
 	dstTex.origin.arraySlice = arraySlice < 0 ? 0 : arraySlice;
 

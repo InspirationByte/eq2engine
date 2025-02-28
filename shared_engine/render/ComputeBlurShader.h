@@ -25,7 +25,8 @@ protected:
 	IGPUBufferPtr		m_switchBuffer1;
 	IGPUBindGroupPtr	m_bindGroupConst;
 
-	ITexturePtr			m_blurTemp;
+	ITexturePtr			m_blurTemp1;
+	ITexturePtr			m_blurTemp2;	// D3D11 HACK
 	IGPUBindGroupPtr	m_bindGroupStg1;
 	IGPUBindGroupPtr	m_bindGroupStg2;
 
