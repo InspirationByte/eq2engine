@@ -139,6 +139,14 @@ void IUIControl::InitFonts(const KVSection* sec)
 
 		if (textParamsSec)
 		{
+			EqStringRef textCase;
+			textParamsSec->Get("textCase").GetValues(textCase);
+
+			if (!textCase.CompareCaseIns("upper") || !textCase.CompareCaseIns("upperCase"))
+				fontProps.textCase = FontProps::UPPER_CASE;
+			else if (!textCase.CompareCaseIns("lower") || !textCase.CompareCaseIns("lowerCase"))
+				fontProps.textCase = FontProps::LOWER_CASE;
+
 			textParamsSec->Get("fontScale").GetValues(fontProps.fontScale);
 			textParamsSec->Get("textColor").GetValues(fontProps.textColor);
 			textParamsSec->Get("textMonospace").GetValues(fontProps.monoSpace);
@@ -147,7 +155,7 @@ void IUIControl::InitFonts(const KVSection* sec)
 			textParamsSec->Get("textShadowOffset").GetValues(fontProps.shadowOffset);
 			textParamsSec->Get("textShadowWeight").GetValues(fontProps.shadowWeight);
 		}
-		};
+	};
 
 	// parse fonts if any
 	const KVSection* fontsSec = sec->FindSection("fonts");
@@ -667,6 +675,17 @@ IEqFont* IUIControl::GetFont() const
 void IUIControl::GetCalcFontStyle(FontStyleParam& style) const
 {
 	style.styleFlag |= TEXT_STYLE_SCISSOR | TEXT_STYLE_USE_TAGS | (m_font.monoSpace ? TEXT_STYLE_MONOSPACE : 0);
+
+	switch (m_font.textCase)
+	{
+	case FontProps::UPPER_CASE:
+		style.styleFlag |= TEXT_STYLE_UPPERCASE;
+		break;
+	case FontProps::LOWER_CASE:
+		style.styleFlag |= TEXT_STYLE_LOWERCASE;
+		break;
+	}
+
 	style.align = m_font.textAlignment;
 	style.scale = m_font.fontScale * CalcScaling();
 	style.textWeight = m_font.textWeight;

@@ -212,11 +212,18 @@ protected:
 
 	struct FontProps
 	{
+		enum TextCase 
+		{
+			DEFAULT,
+			UPPER_CASE,
+			LOWER_CASE,
+		};
 		IEqFont*	font{ nullptr };
 		Vector2D	fontScale{ 1 };
 		ColorRGBA	textColor{ 1.0f };
 		float		textWeight{ 0.0f };
 		int			textAlignment{ TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP };
+		int			textCase{ DEFAULT };
 
 		ColorRGBA	shadowColor{ 0.0f, 0.0f, 0.0f, 0.7f };
 		float		shadowOffset{ 1.0f };
