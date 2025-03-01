@@ -35,6 +35,7 @@ struct InputCommand
 	EqString			argumentString;
 	EqString			commandString;				// safe for writing
 	bool				custom{ false };
+	bool				isError{ false };
 };
 
 struct InputBinding : public InputCommand

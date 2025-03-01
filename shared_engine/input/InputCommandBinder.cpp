@@ -545,7 +545,9 @@ bool CInputCommandBinder::ResolveCommandBinding(InputBinding& binding, bool quie
 	
 	if(!quiet && !binding.func)
 	{
-		MsgError("Cannot bind command '%s' to '%s'\n", binding.commandString.ToCString(), s_keyMapList[binding.keyIdx].name);
+		if(!binding.isError)
+			MsgError("Unknown command '%s' bound to '%s'\n", binding.commandString.ToCString(), s_keyMapList[binding.keyIdx].name);
+		binding.isError = true;
 		return false;
 	}
 
