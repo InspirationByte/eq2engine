@@ -51,7 +51,7 @@ protected:
 	const FontChar&	GetFontCharById( const int chrId ) const;
 
 	// returns the scaled character
-	void			GetScaledCharacter( FontChar& chr, const int chrId, const Vector2D& scale = 1.0f ) const;
+	void			GetScaledCharacter( FontChar& chr, const int chrId, const FontStyleParam& params) const;
 
 	// builds vertex buffer for characters
 	template <typename CHAR_T>

@@ -27,6 +27,8 @@ enum ETextStyleFlag : int
 	TEXT_STYLE_FROM_CAP		= (1 << 2),	// offset from cap height instead of baseline
 	TEXT_STYLE_USE_TAGS		= (1 << 3),	// use additional styling tags defined in the translated text
 	TEXT_STYLE_SCISSOR		= (1 << 4), // render using scissor
+	TEXT_STYLE_UPPERCASE	= (1 << 5),	// upper case
+	TEXT_STYLE_LOWERCASE	= (1 << 6),	// lower case
 
 	//
 	// font cache only flags
@@ -34,6 +36,7 @@ enum ETextStyleFlag : int
 	TEXT_STYLE_REGULAR		= 0,
 	TEXT_STYLE_BOLD			= (1 << 8),
 	TEXT_STYLE_ITALIC		= (1 << 9),
+
 };
 
 // alignment types
@@ -141,7 +144,7 @@ public:
 	virtual const FontChar&		GetFontCharById( const int chrId ) const = 0;
 
 	// returns the scaled character
-	virtual void				GetScaledCharacter( FontChar& chr, const int chrId, const Vector2D& scale = 1.0f ) const = 0;
+	virtual void				GetScaledCharacter( FontChar& chr, const int chrId, const FontStyleParam& params) const = 0;
 
 
 	// renders text

@@ -42,6 +42,7 @@ enum ETextTagType
 {
 	TEXT_TAG_NONE = 0,
 	TEXT_TAG_COLOR,
+	TEXT_TAG_STYLE_FLAG,
 };
 
 static bool IsVisibleChar( int ch )
@@ -163,29 +164,88 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
     float totalWidth = 0.0f;
 
 	// parse
+	FixedList<FontStyleParam, 16> styleStack;
+	FontStyleParam parsedParams;
+
 	int charMode = CHARMODE_NORMAL;
+	int tagType = TEXT_TAG_NONE;
 	int prevChar = 0;
 	int charIdx = 0;
+
     for(int i = 0; i < charCount; i++)
 	{
 		prevChar = charIdx;
 		charIdx = str[i];
 
-		// skip fasttags
-		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) &&
-			charMode == CHARMODE_NORMAL &&
-			charIdx == '&')
+		if (styleStack.getCount() == 0)
+			styleStack.append(params);
+
+		const FontStyleParam& stateParams = styleStack.back();
+
+		//
+		// Preprocessing part - text color and mode
+		//
+		if ((params.styleFlag & TEXT_STYLE_USE_TAGS) && charMode == CHARMODE_NORMAL && charIdx == '&')
 		{
 			charMode = CHARMODE_TAG;
+			str++;
 			continue;
 		}
 
-		if(charMode == CHARMODE_TAG)
+		if (charMode == CHARMODE_TAG)
 		{
-			if(charIdx == ';' || prevChar == '&' && charIdx == '&')
+			if (prevChar == '&' && charIdx == '&')
+			{
+				// escape
 				charMode = CHARMODE_NORMAL;
+			}
+			else if (charIdx == '#')
+			{
+				parsedParams = stateParams;
+				tagType = TEXT_TAG_COLOR;
 
-			continue;
+				str++;
+				parsedParams.textColor = ColorRGBA(hexToColor3(str), stateParams.textColor.a);
+				str += 6;
+
+				continue;
+			}
+			else if (charIdx == '^')
+			{
+				// begin upper-case text
+				str++;
+				tagType = TEXT_TAG_STYLE_FLAG;
+				parsedParams = stateParams;
+				parsedParams.styleFlag |= TEXT_STYLE_UPPERCASE;
+				continue;
+			}
+			else if (charIdx == '_')
+			{
+				// begin lower-case text
+				str++;
+				tagType = TEXT_TAG_STYLE_FLAG;
+				parsedParams = stateParams;
+				parsedParams.styleFlag |= TEXT_STYLE_LOWERCASE;
+				continue;
+			}
+			else if (charIdx == ';')
+			{
+				if (tagType == TEXT_TAG_NONE)
+				{
+					if (styleStack.getCount())
+						styleStack.popBack();
+				}
+				else
+				{
+					styleStack.append(parsedParams);
+				}
+
+				tagType = TEXT_TAG_NONE;
+				charMode = CHARMODE_NORMAL;
+				prevChar = charIdx;
+				str++;
+				continue;
+			}
 		}
 
 		if(breakOnChar != -1 && charIdx == breakOnChar)
@@ -195,7 +255,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 			continue;
 
 		FontChar chr;
-		GetScaledCharacter( chr, charIdx, params.scale );
+		GetScaledCharacter( chr, charIdx, params );
 
 		if( params.styleFlag & TEXT_STYLE_MONOSPACE)
 			totalWidth += (chr.x1 - chr.x0) + m_spacing;
@@ -290,6 +350,24 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 				continue;
 			}
+			else if (charIdx == '^')
+			{
+				// begin upper-case text
+				str++;
+				tagType = TEXT_TAG_STYLE_FLAG;
+				parsedParams = stateParams;
+				parsedParams.styleFlag |= TEXT_STYLE_UPPERCASE;
+				continue;
+			}
+			else if (charIdx == '_')
+			{
+				// begin lower-case text
+				str++;
+				tagType = TEXT_TAG_STYLE_FLAG;
+				parsedParams = stateParams;
+				parsedParams.styleFlag |= TEXT_STYLE_LOWERCASE;
+				continue;
+			}
 			else if (charIdx == ';')
 			{
 				if (tagType == TEXT_TAG_NONE)
@@ -307,7 +385,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 				prevChar = charIdx;
 				str++;
 				continue;
-			}			
+			}		
 		}
 
 		//
@@ -339,7 +417,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 		// Render part - text filling
 		//
 		FontChar chr;
-		GetScaledCharacter( chr, charIdx, stateParams.scale );
+		GetScaledCharacter( chr, charIdx, stateParams );
 
 		// build default character pos and size
 		const float baseLine = GetBaselineOffs(stateParams);
@@ -511,15 +589,21 @@ const FontChar&	CFont::GetFontCharById( const int chrId ) const
 //
 // returns the scaled character
 //
-void CFont::GetScaledCharacter( FontChar& chr, const int chrId, const Vector2D& scale) const
+void CFont::GetScaledCharacter( FontChar& chr, const int chrId, const FontStyleParam& params) const
 {
-	chr = GetFontCharById(chrId);
+	int charId = chrId;
+	if (params.styleFlag & TEXT_STYLE_UPPERCASE)
+		charId = CType::UpperChar<wchar_t>(chrId);
+	else if (params.styleFlag & TEXT_STYLE_LOWERCASE)
+		charId = CType::LowerChar<wchar_t>(chrId);
+
+	chr = GetFontCharById(charId);
 
 	if(m_flags.sdf) // only scale SDF characters
 	{
-		chr.advX = chr.advX * scale.x;
-		chr.ofsX = chr.ofsX * scale.x;
-		chr.ofsY = chr.ofsY * scale.y;
+		chr.advX = chr.advX * params.scale.x;
+		chr.ofsX = chr.ofsX * params.scale.x;
+		chr.ofsY = chr.ofsY * params.scale.y;
 	}
 }
 
