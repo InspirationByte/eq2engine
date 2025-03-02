@@ -32,25 +32,28 @@ ComputeBlurShader::ComputeBlurShader(int iterations, int filterSize, int blurFla
 		int _padding[3];
 	} flipData0, flipData1;
 
-	m_oneByBlockDim = 1.0f / blurParams.blockDim;
-	m_oneByBatchSizeY = 1.0f / batchY;
-
 	if (m_blurFlags == BLUR_BOTH)
 	{
 		flipData0.flipValue = 0;	// X
 		flipData1.flipValue = 1;	// Y
+		m_oneByBlockDim = 1.0f / blurParams.blockDim;
+		m_oneByBatchSizeY = 1.0f / batchY;
 	}
 	else if (m_blurFlags == BLUR_VERTICAL)
 	{
 		flipData0.flipValue = 1;	// Y
 		flipData1.flipValue = 1;	// Y
-		m_oneByBatchSizeY *= 2;
+
+		m_oneByBlockDim = 1.0f / blurParams.blockDim;
+		m_oneByBatchSizeY = 1.0f / batchY;			// TODO: ples fix, it's a bugged shit that wastes Compute performance
 	}
 	else if (m_blurFlags == BLUR_HORIZONTAL)
 	{
 		flipData0.flipValue = 0;	// X
 		flipData1.flipValue = 0;	// X
-		m_oneByBatchSizeY *= 2;
+
+		m_oneByBlockDim = 1.0f / blurParams.blockDim;
+		m_oneByBatchSizeY = 1.0f / batchY;
 	}
 
 	m_switchBuffer0 = g_renderAPI->CreateBuffer(BufferInfo(&flipData0, 1), BUFFERUSAGE_UNIFORM, "SwitchBuffer0");
@@ -123,19 +126,27 @@ void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int a
 	blurPassRecorder->SetPipeline(m_pipeline);
 	blurPassRecorder->SetBindGroup(0, m_bindGroupConst);
 
+	IVector2D invocations1(ceil(dstSize.x * m_oneByBlockDim), ceil(dstSize.y * m_oneByBatchSizeY));
+	IVector2D invocations2(ceil(dstSize.y * m_oneByBlockDim), ceil(dstSize.x * m_oneByBatchSizeY));
+
+	if (m_blurFlags == BLUR_VERTICAL)
+		invocations1 = invocations2;
+	else if (m_blurFlags == BLUR_HORIZONTAL)
+		invocations2 = invocations1;		// FIXME: is that correct?
+
 	blurPassRecorder->SetBindGroup(1, bindGroupStg0);
-	blurPassRecorder->DispatchWorkgroups(ceil(dstSize.x * m_oneByBlockDim), ceil(dstSize.y * m_oneByBatchSizeY), 1);
+	blurPassRecorder->DispatchWorkgroups(invocations1.x, invocations1.y, 1);
 
 	blurPassRecorder->SetBindGroup(1, m_bindGroupStg1);
-	blurPassRecorder->DispatchWorkgroups(ceil(dstSize.y * m_oneByBlockDim), ceil(dstSize.x * m_oneByBatchSizeY), 1);
+	blurPassRecorder->DispatchWorkgroups(invocations2.x, invocations2.y, 1);
 
 	for (int i = 0; i < m_iterations - 1; ++i)
 	{
 		blurPassRecorder->SetBindGroup(1, m_bindGroupStg2);
-		blurPassRecorder->DispatchWorkgroups(ceil(dstSize.x * m_oneByBlockDim), ceil(dstSize.y * m_oneByBatchSizeY), 1);
+		blurPassRecorder->DispatchWorkgroups(invocations1.x, invocations1.y, 1);
 
 		blurPassRecorder->SetBindGroup(1, m_bindGroupStg1);
-		blurPassRecorder->DispatchWorkgroups(ceil(dstSize.y * m_oneByBlockDim), ceil(dstSize.x * m_oneByBatchSizeY), 1);
+		blurPassRecorder->DispatchWorkgroups(invocations2.x, invocations2.y, 1);
 	}
 
 	blurPassRecorder->Complete();
