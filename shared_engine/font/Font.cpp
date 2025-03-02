@@ -32,19 +32,6 @@ DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_font_sdf_start, "0.94", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_font_sdf_range, "0.06", nullptr, CV_CHEAT);
 
-enum ECharMode
-{
-	CHARMODE_NORMAL = 0,
-	CHARMODE_TAG,
-};
-
-enum ETextTagType
-{
-	TEXT_TAG_NONE = 0,
-	TEXT_TAG_COLOR,
-	TEXT_TAG_STYLE_FLAG,
-};
-
 static bool IsVisibleChar( int ch )
 {
 	return	(ch != '\n') && 
@@ -158,17 +145,155 @@ float CFont::GetBaselineOffs( const FontStyleParam& params ) const
 	return m_baseline;
 }
 
+enum class ECharMode
+{
+	NORMAL = 0,
+	TAG,
+};
+
+enum class ETextTag
+{
+	NONE = 0,
+	COLOR,
+	STYLE_FLAG,
+};
+
+struct TagProcessorState
+{
+	FixedList<FontStyleParam, 16>	styleStack;
+	FontStyleParam					curStyle;
+
+	ECharMode	mode = ECharMode::NORMAL;
+	ETextTag	tagType = ETextTag::NONE;
+	int			prevChar = 0;
+	int			charIdx = 0;
+};
+
+// using CHAR_FUNC = bool(const CHAR_T* str, const FontStyleParam& fontStyle)
+
+template <typename CHAR_T, typename CHAR_FUNC>
+void ProcessTaggedText(const CHAR_T* str, const FontStyleParam& initialStyle, const CHAR_FUNC& processCharFunc)
+{
+	TagProcessorState tagState;
+	for (; *str; ++str)
+	{
+		tagState.prevChar = tagState.charIdx;
+		tagState.charIdx = *str;
+
+		if (tagState.styleStack.getCount() == 0)
+			tagState.styleStack.append(initialStyle);
+
+		if (tagState.mode == ECharMode::NORMAL)
+		{
+			if (tagState.charIdx == '&')
+			{
+				tagState.curStyle = tagState.styleStack.back();
+				tagState.mode = ECharMode::TAG;
+			}
+		}
+		else if (tagState.mode == ECharMode::TAG)
+		{
+			if (tagState.prevChar == '&' && tagState.charIdx == '&')
+			{
+				// escape
+				tagState.mode = ECharMode::NORMAL;
+			}
+			else if (tagState.charIdx == '#')
+			{
+				tagState.tagType = ETextTag::COLOR;
+				tagState.curStyle.textColor = ColorRGBA(hexToColor3(str + 1), tagState.curStyle.textColor.a);
+				str += 6;
+			}
+			else if (tagState.charIdx == '^')
+			{
+				// begin upper-case text
+				tagState.tagType = ETextTag::STYLE_FLAG;
+				tagState.curStyle.styleFlag |= TEXT_STYLE_UPPERCASE;
+			}
+			else if (tagState.charIdx == '_')
+			{
+				// begin lower-case text
+				tagState.tagType = ETextTag::STYLE_FLAG;
+				tagState.curStyle.styleFlag |= TEXT_STYLE_LOWERCASE;
+			}
+			else if (tagState.charIdx == ';')
+			{
+				if (tagState.tagType == ETextTag::NONE)
+				{
+					if (tagState.styleStack.getCount())
+						tagState.styleStack.popBack();
+				}
+				else
+				{
+					tagState.styleStack.append(tagState.curStyle);
+				}
+
+				tagState.tagType = ETextTag::NONE;
+				tagState.mode = ECharMode::NORMAL;
+				tagState.prevChar = tagState.charIdx;
+				continue;
+			}
+		}
+
+		// skip characters in tag mode
+		if (tagState.mode == ECharMode::TAG)
+			continue;
+
+		if (!processCharFunc(str, tagState.styleStack.back()))
+			break;
+	}
+}
+
 template <typename CHAR_T>
 float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, int charCount, int breakOnChar) const
 {
-    float totalWidth = 0.0f;
+	float totalWidth = 0.0f;
 
+	int count = 0;
+	auto AddCharWidth = [&](const CHAR_T* str, const FontStyleParam& fontStyle) -> bool {
+		if (count >= charCount)
+			return false;
+
+		if (breakOnChar != -1 && *str == breakOnChar)
+			return false;
+
+		if (!IsVisibleChar(*str))
+			return true;
+
+		FontChar chr;
+		GetScaledCharacter(chr, *str, fontStyle);
+
+		if (params.styleFlag & TEXT_STYLE_MONOSPACE)
+			totalWidth += (chr.x1 - chr.x0) + m_spacing;
+		else
+			totalWidth += chr.advX + m_spacing;
+
+		++count;
+
+		return true;
+	};
+
+	if (params.styleFlag & TEXT_STYLE_USE_TAGS)
+	{
+		ProcessTaggedText(str, params, AddCharWidth);
+	}
+	else
+	{
+		for (; *str; ++str)
+		{
+			if (!AddCharWidth(str, params))
+				break;
+		}
+	}
+
+	return totalWidth;
+	/*
 	// parse
 	FixedList<FontStyleParam, 16> styleStack;
 	FontStyleParam parsedParams;
 
-	int charMode = CHARMODE_NORMAL;
-	int tagType = TEXT_TAG_NONE;
+	ECharMode charMode = ECharMode::NORMAL;
+	ETextTag tagType = ETextTag::NONE;
 	int prevChar = 0;
 	int charIdx = 0;
 
@@ -185,36 +310,35 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 		//
 		// Preprocessing part - text color and mode
 		//
-		if ((params.styleFlag & TEXT_STYLE_USE_TAGS) && charMode == CHARMODE_NORMAL && charIdx == '&')
+		if ((params.styleFlag & TEXT_STYLE_USE_TAGS) && charMode == ECharMode::NORMAL && charIdx == '&')
 		{
-			charMode = CHARMODE_TAG;
-			str++;
+			charMode = ECharMode::TAG;
+			i++;
 			continue;
 		}
 
-		if (charMode == CHARMODE_TAG)
+		if (charMode == ECharMode::TAG)
 		{
 			if (prevChar == '&' && charIdx == '&')
 			{
 				// escape
-				charMode = CHARMODE_NORMAL;
+				charMode = ECharMode::NORMAL;
 			}
 			else if (charIdx == '#')
 			{
 				parsedParams = stateParams;
-				tagType = TEXT_TAG_COLOR;
+				tagType = ETextTag::COLOR;
 
-				str++;
-				parsedParams.textColor = ColorRGBA(hexToColor3(str), stateParams.textColor.a);
-				str += 6;
+				i++;
+				i += 6;
 
 				continue;
 			}
 			else if (charIdx == '^')
 			{
 				// begin upper-case text
-				str++;
-				tagType = TEXT_TAG_STYLE_FLAG;
+				i++;
+				tagType = ETextTag::STYLE_FLAG;
 				parsedParams = stateParams;
 				parsedParams.styleFlag |= TEXT_STYLE_UPPERCASE;
 				continue;
@@ -222,15 +346,15 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 			else if (charIdx == '_')
 			{
 				// begin lower-case text
-				str++;
-				tagType = TEXT_TAG_STYLE_FLAG;
+				i++;
+				tagType = ETextTag::STYLE_FLAG;
 				parsedParams = stateParams;
 				parsedParams.styleFlag |= TEXT_STYLE_LOWERCASE;
 				continue;
 			}
 			else if (charIdx == ';')
 			{
-				if (tagType == TEXT_TAG_NONE)
+				if (tagType == ETextTag::NONE)
 				{
 					if (styleStack.getCount())
 						styleStack.popBack();
@@ -240,10 +364,10 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 					styleStack.append(parsedParams);
 				}
 
-				tagType = TEXT_TAG_NONE;
-				charMode = CHARMODE_NORMAL;
+				tagType = ETextTag::NONE;
+				charMode = ECharMode::NORMAL;
 				prevChar = charIdx;
-				str++;
+				i++;
 				continue;
 			}
 		}
@@ -255,7 +379,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 			continue;
 
 		FontChar chr;
-		GetScaledCharacter( chr, charIdx, params );
+		GetScaledCharacter(chr, charIdx, params);
 
 		if( params.styleFlag & TEXT_STYLE_MONOSPACE)
 			totalWidth += (chr.x1 - chr.x0) + m_spacing;
@@ -263,7 +387,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, const FontStyleParam& params, i
 			totalWidth += chr.advX + m_spacing;
 	}
 
-    return totalWidth;
+    return totalWidth;*/
 }
 
 //
@@ -275,14 +399,6 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 	const bool isWideChar = std::is_same<CHAR_T,wchar_t>::value;
 
 	ITextLayoutBuilder* layoutBuilder = params.layoutBuilder ? params.layoutBuilder : &s_defaultTextLayout;
-
-	FixedList<FontStyleParam, 16> styleStack;
-	int charMode = CHARMODE_NORMAL;
-	int tagType = TEXT_TAG_NONE;
-	int prevChar = 0;
-	int charIdx = 0;
-
-	FontStyleParam parsedParams;
 
 #ifdef ENABLE_FONT_DEBUG_DRAWING
 	CMeshBuilder dbgMeshBuilder;
@@ -312,122 +428,41 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 	bool hasNewLine = true;
 	int lineNumber = 0;
 
-    while( *str )
-	{
-		prevChar = charIdx;
-		charIdx = *str;
-
-		if (styleStack.getCount() == 0)
-			styleStack.append(params);
-
-		const FontStyleParam& stateParams = styleStack.back();
-
-		//
-		// Preprocessing part - text color and mode
-		//
-		if((params.styleFlag & TEXT_STYLE_USE_TAGS) && charMode == CHARMODE_NORMAL && charIdx == '&')
-		{
-			charMode = CHARMODE_TAG;
-			str++;
-			continue;
-		}
-
-		if(charMode == CHARMODE_TAG)
-		{
-			if (prevChar == '&' && charIdx == '&')
-			{
-				// escape
-				charMode = CHARMODE_NORMAL;
-			}
-			else if (charIdx == '#')
-			{
-				parsedParams = stateParams;
-				tagType = TEXT_TAG_COLOR;
-
-				str++;
-				parsedParams.textColor = ColorRGBA(hexToColor3(str), stateParams.textColor.a);
-				str += 6;
-
-				continue;
-			}
-			else if (charIdx == '^')
-			{
-				// begin upper-case text
-				str++;
-				tagType = TEXT_TAG_STYLE_FLAG;
-				parsedParams = stateParams;
-				parsedParams.styleFlag |= TEXT_STYLE_UPPERCASE;
-				continue;
-			}
-			else if (charIdx == '_')
-			{
-				// begin lower-case text
-				str++;
-				tagType = TEXT_TAG_STYLE_FLAG;
-				parsedParams = stateParams;
-				parsedParams.styleFlag |= TEXT_STYLE_LOWERCASE;
-				continue;
-			}
-			else if (charIdx == ';')
-			{
-				if (tagType == TEXT_TAG_NONE)
-				{
-					if(styleStack.getCount())
-						styleStack.popBack();
-				}
-				else
-				{
-					styleStack.append(parsedParams);
-				}
-
-				tagType = TEXT_TAG_NONE;
-				charMode = CHARMODE_NORMAL;
-				prevChar = charIdx;
-				str++;
-				continue;
-			}		
-		}
-
+	auto DrawFontCharacter = [&](const CHAR_T* str, const FontStyleParam& fontStyle) -> bool {
 		//
 		// reset startpos
 		//
-		if(hasNewLine)
+		if (hasNewLine)
 		{
-			layoutBuilder->OnNewLine(stateParams, (void*)str, isWideChar, lineNumber, textPos, curStartPos);
+			layoutBuilder->OnNewLine(fontStyle, (void*)str, isWideChar, lineNumber, textPos, curStartPos);
 			hasNewLine = false;
 		}
 
-		if (charIdx == '\n')
+		if (*str == '\n')
 		{
 			lineNumber++;
 			hasNewLine = true;
-			str++;
-
-			continue;
+			return true;
 		}
 
-		if(!IsVisibleChar(charIdx))
-		{
-			str++;
-			continue;
-		}
-
+		if (!IsVisibleChar(*str))
+			return true;
 
 		//
 		// Render part - text filling
 		//
 		FontChar chr;
-		GetScaledCharacter( chr, charIdx, stateParams );
+		GetScaledCharacter(chr, *str, fontStyle);
 
 		// build default character pos and size
-		const float baseLine = GetBaselineOffs(stateParams);
+		const float baseLine = GetBaselineOffs(fontStyle);
 		Vector2D cPos(curStartPos.x + chr.ofsX, curStartPos.y - baseLine + chr.ofsY);
 		Vector2D cSize(chr.x1 - chr.x0, chr.y1 - chr.y0);
 
-		if(m_flags.sdf) // only scale SDF characters
-			cSize *= m_scale * stateParams.scale;
+		if (m_flags.sdf) // only scale SDF characters
+			cSize *= m_scale * fontStyle.scale;
 
-		if(!layoutBuilder->LayoutChar(stateParams, (void*)str, isWideChar, chr, curStartPos, cPos, cSize))
+		if (!layoutBuilder->LayoutChar(fontStyle, (void*)str, isWideChar, chr, curStartPos, cPos, cSize))
 		{
 #ifdef ENABLE_FONT_DEBUG_DRAWING
 			if (r_font_debug.GetBool())
@@ -440,21 +475,21 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 				dbgMeshBuilder.Line2fv(charRect.GetLeftBottom(), charRect.GetLeftTop());
 			}
 #endif
-			break;
+			return false;
 		}
 
-		if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
-			cPos.y = curStartPos.y - (cSize.y-baseLine) + chr.ofsY;
+		if (fontStyle.styleFlag & TEXT_STYLE_FROM_CAP)
+			cPos.y = curStartPos.y - (cSize.y - baseLine) + chr.ofsY;
 
 		// set character color
-		builder.Color4fv(stateParams.textColor);
+		builder.Color4fv(fontStyle.textColor);
 
 		AARectangle charRect(cPos, cPos + cSize);
 
 #ifdef ENABLE_FONT_DEBUG_DRAWING
 		if (r_font_debug.GetBool())
 		{
-			builder.Color4fv(stateParams.textColor.v * Vector4D(color_white.v.xyz(), 0.75f));
+			builder.Color4fv(fontStyle.textColor.v * Vector4D(color_white.v.xyz(), 0.75f));
 
 			dbgMeshBuilder.Color4f(1.0f, 1.0f, 1.0f, 0.5f);
 			dbgMeshBuilder.Line2fv(charRect.GetLeftTop(), charRect.GetRightTop());
@@ -467,12 +502,24 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 		const AARectangle charTexCoord(chr.x0 * m_invTexSize.x, chr.y0 * m_invTexSize.y, chr.x1 * m_invTexSize.x, chr.y1 * m_invTexSize.y);
 
 		// use meshbuilder's index buffer optimization feature
-		builder.TexturedQuad2(	charRect.GetLeftTop(), charRect.GetRightTop(), charRect.GetLeftBottom(), charRect.GetRightBottom(),
-								charTexCoord.GetLeftTop(), charTexCoord.GetRightTop(), charTexCoord.GetLeftBottom(), charTexCoord.GetRightBottom());
+		builder.TexturedQuad2(charRect.GetLeftTop(), charRect.GetRightTop(), charRect.GetLeftBottom(), charRect.GetRightBottom(),
+			charTexCoord.GetLeftTop(), charTexCoord.GetRightTop(), charTexCoord.GetLeftBottom(), charTexCoord.GetRightBottom());
 
-		str++;
-	
-    } //while
+		return true;
+	};
+
+	if (params.styleFlag & TEXT_STYLE_USE_TAGS)
+	{
+		ProcessTaggedText(str, params, DrawFontCharacter);
+	}
+	else
+	{
+		for (; *str; ++str)
+		{
+			if (!DrawFontCharacter(str, params))
+				break;
+		}
+	}
 
 #ifdef ENABLE_FONT_DEBUG_DRAWING
 	if (r_font_debug.GetBool())
@@ -615,7 +662,7 @@ int CFont::GetTextQuadsCount(const CHAR_T* str, const FontStyleParam& params) co
 {
 	int n = 0;
 
-	int charMode = CHARMODE_NORMAL;
+	ECharMode charMode = ECharMode::NORMAL;
 	int prevChar = 0;
 	int charIdx = 0;
 
@@ -626,18 +673,18 @@ int CFont::GetTextQuadsCount(const CHAR_T* str, const FontStyleParam& params) co
 
 		// skip fasttags
 		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) &&
-			charMode == CHARMODE_NORMAL &&
+			charMode == ECharMode::NORMAL &&
 			charIdx == '&')
 		{
-			charMode = CHARMODE_TAG;
+			charMode = ECharMode::TAG;
 			str++;
 			continue;
 		}
 
-		if(charMode == CHARMODE_TAG)
+		if(charMode == ECharMode::TAG)
 		{
 			if(charIdx == ';' || prevChar == '&' && charIdx == '&')
-				charMode = CHARMODE_NORMAL;
+				charMode = ECharMode::NORMAL;
 
 			str++;
 
