@@ -185,7 +185,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
-	options.compatibilityMode = false;	// NOTE: this is replaced with enum in later versions
+	options.compatibilityMode = true;	// NOTE: this is replaced with enum in later versions
 	
 	EqStringRef backendName = wgpu_backend.GetString();
 
