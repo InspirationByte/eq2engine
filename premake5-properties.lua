@@ -189,7 +189,7 @@ property "thirdpartylib"
 	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
 
 function prj_location(prj, wks, def)
-	if _ACTION == "gmake2" and def == nil then
+	if _ACTION == "gmake2" and wks ~= nil and def == nil then
 		def = _MAIN_SCRIPT_DIR.."/build/"..wks.name..".solution"
 	else
 		def = _MAIN_SCRIPT_DIR .. "/build/"
