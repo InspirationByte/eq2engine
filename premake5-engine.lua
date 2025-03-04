@@ -311,5 +311,5 @@ group ""
 
 -- only build tools for big machines
 if ENABLE_TOOLS then
-	include "utils/premake5.lua"
+	include "tools/premake5.lua"
 end
