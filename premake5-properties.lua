@@ -191,6 +191,8 @@ property "thirdpartylib"
 function prj_location(prj, wks, def)
 	if _ACTION == "gmake2" and def == nil then
 		def = _MAIN_SCRIPT_DIR.."/build/"..wks.name..".solution"
+	else
+		def = _MAIN_SCRIPT_DIR .. "/build/"
 	end
 	if prj ~= nil then
 		if prj.group ~= nil and string.len(prj.group) > 0 then
@@ -198,5 +200,5 @@ function prj_location(prj, wks, def)
 		end
 		return "build/" .. prj.name
 	end
-	return _MAIN_SCRIPT_DIR .. "/build/"
+	return def
 end
