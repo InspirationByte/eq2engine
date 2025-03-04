@@ -9,11 +9,15 @@ property "e2_ws_settings"
 	unsignedchar  'On'
 	
 	objdir "build/obj"
-	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
+	targetdir "%{_MAIN_SCRIPT_DIR}/build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 	libdirs {
 		 "build/thirdpartylib/",
 		 "build/lib/"
  	}
+	
+	if _ACTION ~= "vscode" then
+		location "%{ prj_location(prj, wks) }"
+	end
 	
 	filter "kind:StaticLib"
 		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
@@ -183,16 +187,16 @@ property "thirdpartylib"
 		["Retail"] = "Retail",
 	}]] -- fookin std annotate_string & annotate_vector
 	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
-		
-function prj_name(prj, wks, def)
+
+function prj_location(prj, wks, def)
 	if _ACTION == "gmake2" and def == nil then
-		def = wks.name..".solution"
+		def = _MAIN_SCRIPT_DIR.."/build/"..wks.name..".solution"
 	end
 	if prj ~= nil then
 		if prj.group ~= nil and string.len(prj.group) > 0 then
-			return prj.group .. '/' .. prj.name
+			return "build/" .. prj.group .. '/' .. prj.name
 		end
-		return prj.name
+		return "build/" .. prj.name
 	end
-	return def
+	return _MAIN_SCRIPT_DIR .. "/build/"
 end

@@ -1,3 +1,5 @@
+print("_MAIN_SCRIPT_DIR", _MAIN_SCRIPT_DIR)
+
 -- premake5.lua
 require ".premake_modules/usage"
 require ".premake_modules/properties"
@@ -11,21 +13,32 @@ IS_ANDROID = (_ACTION == "androidndk")
 local CAN_BUILD_TOOLS = (os.target() == "linux" or os.target() == "windows") and not IS_ANDROID
 local CAN_BUILD_GUI_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
 
+WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
+ENGINE_DIR = ENGINE_DIR or _WORKING_DIR
 ENABLE_TOOLS = iif(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
 ENABLE_GUI_TOOLS = iif(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
 ENABLE_MATSYSTEM = iif(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
 ENABLE_TESTS = iif(ENABLE_TESTS == nil, false, ENABLE_TESTS)
 ENABLE_LIVEPP = iif(ENABLE_LIVEPP == nil, false, ENABLE_LIVEPP)
-WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
+
+print("Workspace", WORKSPACE_NAME)
+print("Target OS", _TARGET_OS)
+print("Target Arch", _TARGET_ARCH or "Not defined")
+print("\n")
+print("Build details:")
+print("ENABLE_TOOLS =", ENABLE_TOOLS)
+print("ENABLE_MATSYSTEM =", ENABLE_MATSYSTEM)
+print("ENABLE_TESTS =", ENABLE_TESTS)
+print("ENABLE_LIVEPP =", ENABLE_LIVEPP)
+print("\n")
 
 -- you can redefine dependencies
 DependencyPath = {
-	["zlib"] = os.getenv("ZLIB_DIR") or "src_dependency/zlib", 
-	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
-	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
+	["libsdl"] = os.getenv("SDL2_DIR") or "SDL2",
+	["openal"] = os.getenv("OPENAL_DIR") or "openal-soft",
 	
-	["Android_libsdl"] = os.getenv("SDL2_DIR") or "src_dependency_android/SDL2",
-	["Android_openal"] = os.getenv("OPENAL_DIR") or "src_dependency_android/openal-soft",
+	["Android_libsdl"] = os.getenv("SDL2_DIR") or "SDL2",
+	["Android_openal"] = os.getenv("OPENAL_DIR") or "openal-soft",
 }
 
 -- default configuration capabilities
@@ -42,8 +55,6 @@ Folders = {
     matsystem1 = "./materialsystem1/",
     shared_engine = "./shared_engine/",
     shared_game = "./shared_game/",
-    dependency = "./src_dependency/",
-    game = "./game/",
 }
 
 include "premake5-properties.lua"
@@ -87,17 +98,13 @@ workspace(WORKSPACE_NAME)
 	}
 	vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
 
-	if _ACTION ~= "vscode" then
-		location "build/%{ prj_name(prj, wks) }"
-	end
-
 group "Dependencies"
 
 -- dependencies are in separate configuration
-include "src_dependency/premake5.lua"
+include(ENGINE_DIR.."/src_dependency")
 
 if IS_ANDROID then
-include "src_dependency_android/premake5.lua"
+include(ENGINE_DIR.."/src_dependency_android")
 end
 
 
@@ -311,5 +318,5 @@ group ""
 
 -- only build tools for big machines
 if ENABLE_TOOLS then
-	include "tools/premake5.lua"
+	include(ENGINE_DIR.."/tools")
 end

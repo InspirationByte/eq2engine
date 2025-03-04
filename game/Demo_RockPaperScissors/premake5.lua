@@ -1,6 +1,11 @@
 WORKSPACE_NAME = "Demo_RockPaperScissors"
 
-dofile "premake5-engine.lua"
+include "../.."
+
+property "gameapp"
+	if _ACTION ~= "vscode" then
+		location "%{ prj_location(prj) }"
+	end
 
 group ""
 
@@ -9,25 +14,18 @@ project "Demo_RockPaperScissors"
 		kind "SharedLib"
 	else
     	kind "WindowedApp"
-
 		targetname "Demo_RockPaperScissors_%{cfg.buildcfg}"
 	end
 
-	unitybuild "on"
+	properties { "unitybuild", "gameapp" }
     uses {
 		"e2Core", "frameworkLib", "coreLib",
 		"sysLib",
 		"renderUtilLib",
 		"soundSystemLib",
 		"movieLib",
-		--"egfLib", "physicsLib", "animatingLib", 
-		--"networkLib",
 		"BaseShader",
-		--"bullet2",
 		"imgui",
-		--"sol2",
-		--"oolua", "lua",
-		--"Recast", "lz4"
 	}
     files {
 		"./**",
