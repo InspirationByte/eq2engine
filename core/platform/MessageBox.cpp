@@ -17,10 +17,6 @@
 #	undef near
 #endif
 
-#include "core/IDkCore.h"
-#include "utils/KeyValues.h"
-#include "core/platform/messagebox.h"
-
 #elif defined(USE_GTK)
 
 void InitMessageBoxPlatform()
@@ -47,6 +43,10 @@ static void MessageBox(const char *string, const GtkMessageType msgType)
 }
 
 #endif // !_WIN32 && USE_GTK
+
+#include "core/IDkCore.h"
+#include "utils/KeyValues.h"
+#include "core/platform/messagebox.h"
 
 static int DefaultPlatformMessageBoxCallback(const char* messageStr, const char* titleStr, EMessageBoxType type)
 {
