@@ -5,21 +5,13 @@
 // Description: 
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/core_common.h"
-#include "core/IFileSystem.h"
-#include "core/IConsoleCommands.h"
-#include "core/ICommandLine.h"
-#include "core/ConVar.h"
-#include "core/ConCommand.h"
-
 #include <SDL.h>
 
-#include "sys_version.h"
-#include "sys_host.h"
-#include "sys_in_console.h"
-#include "sys_in_joystick.h"
+#include "core/core_common.h"
+#include "core/ConVar.h"
 
-#include "materialsystem1/IMaterialSystem.h"
+#include "sys_host.h"
+#include "sys_in_joystick.h"
 
 // Renderer
 DECLARE_CVAR(sys_sleep, "1", "Sleep time for every frame", CV_ARCHIVE);

@@ -5,6 +5,8 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -12,7 +14,6 @@
 #undef near
 #endif
 
-#include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
@@ -1452,7 +1453,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 					}
 
 					InsText(clipBoardText, selStart);
-					m_cursorPos = selStart + strlen(clipBoardText);
+					m_cursorPos = selStart + CString::Length(clipBoardText);
 					m_startCursorPos = m_cursorPos;
 
 					SDL_free(clipBoardText);

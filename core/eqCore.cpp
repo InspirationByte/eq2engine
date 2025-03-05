@@ -5,6 +5,8 @@
 // NOTENOTE: Linux does not showing russian language that was written in VC
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <locale.h>
@@ -20,12 +22,10 @@
 #endif
 #endif
 
-#include "core/core_common.h"
-
 #include "core/IFileSystem.h"
-#include "core/InterfaceManager.h"
 #include "core/ILocalize.h"
-#include "core/ICommandLine.h"
+#include "CommandLine.h"
+#include "ConsoleCommands.h"
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
 #include "utils/KeyValues.h"
@@ -33,7 +33,6 @@
 #include "eqCore.h"
 #include "eqCPUServices.h"
 #include "ExceptionHandler.h"
-#include "ConsoleCommands.h"
 
 #ifdef HAS_LIVEPP_SUPPORT
 #include "LPP_API_x64_CPP.h"
@@ -124,7 +123,7 @@ static char* GetBaseDir(const char* pszBuffer)
 
 	strcpy(basedir, szBuffer);
 
-	int j = strlen(basedir);
+	int j = CString::Length(basedir);
 	if (j > 0)
 	{
 		if (basedir[j - 1] == CORRECT_PATH_SEPARATOR || basedir[j - 1] == INCORRECT_PATH_SEPARATOR)

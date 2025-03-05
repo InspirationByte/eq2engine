@@ -6,11 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/IDkCore.h"
-#include "utils/KeyValues.h"
-#include "core/platform/messagebox.h"
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #ifdef far
 #	undef far
@@ -18,6 +16,10 @@
 #ifdef near
 #	undef near
 #endif
+
+#include "core/IDkCore.h"
+#include "utils/KeyValues.h"
+#include "core/platform/messagebox.h"
 
 #elif defined(USE_GTK)
 

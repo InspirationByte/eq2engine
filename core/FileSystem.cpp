@@ -5,6 +5,8 @@
 // Description: Equilibrium Filesystem
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -23,8 +25,6 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "core/core_common.h"
 
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"

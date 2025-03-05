@@ -16,19 +16,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-
 #include "core/ppmem.h"
+
+#ifndef PPMEM_DISABLED
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "core/IFileSystem.h"
-
-#if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
-#define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
-#else
-#define pp_internal_malloc(s)	malloc(s)
-#endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
-
-using namespace Threading;
+#endif
 
 constexpr const uint PPMEM_CHECKMARK	   = MAKECHAR4('P','P','M','E');
 constexpr const uint PPMEM_CHECKMARK_FREED = MAKECHAR4('E','M','T','Y');
@@ -57,17 +51,16 @@ using source_map = Map<const char*, const char*>;
 
 struct ppmem_state_t
 {
-	source_map sourceFileNameMap{PPSourceLine::Empty()};
-	source_counter_map sourceCounterMap{ PPSourceLine::Empty() };
-	CEqTimer timer;
+	source_map				sourceFileNameMap{PPSourceLine::Empty()};
+	source_counter_map		sourceCounterMap{ PPSourceLine::Empty() };
+	CEqTimer				timer;
+	Threading::CEqMutex		allocMemMutex;
 
-	ppallocinfo_t* first{ nullptr };
-	ppallocinfo_t* last{ nullptr };
-	uint64 numAllocs{ 0 };
-
-	uint allocIdCounter = 0;
-	uint64 allocMemCounter = 0;
-	CEqMutex allocMemMutex;
+	ppallocinfo_t*			first{ nullptr };
+	ppallocinfo_t*			last{ nullptr };
+	uint64					numAllocs{ 0 };
+	uint64					allocMemCounter = 0;
+	uint					allocIdCounter = 0;
 };
 
 static ppmem_state_t& PPGetState()
@@ -169,7 +162,7 @@ static void PPMemPlotAllocStatsCSV()
 
 	PPMemSLStat allocCounter{ PPSourceLine::Empty() };
 	ppmem_state_t& st = PPGetState();
-	CScopedMutex m(st.allocMemMutex);
+	Threading::CScopedMutex m(st.allocMemMutex);
 	for (ppallocinfo_t* alloc = st.first; alloc != nullptr; alloc = alloc->next)
 	{
 		SLStat& slStat = allocCounter[alloc->sl.data];
@@ -215,7 +208,7 @@ void PPMemInfo(bool saveStatFile)
 	size_t totalUsage = 0;
 
 	// currently allocated items
-	CScopedMutex m(st.allocMemMutex);
+	Threading::CScopedMutex m(st.allocMemMutex);
 	for(ppallocinfo_t* alloc = st.first; alloc != nullptr; alloc = alloc->next)
 	{
 		const void* curPtr = alloc + 1;
@@ -235,6 +228,12 @@ IEXPORTS size_t	PPMemGetUsage()
 	return st.allocMemCounter;
 #endif
 }
+
+#if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
+#define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
+#else
+#define pp_internal_malloc(s)	malloc(s)
+#endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 
 // allocated debuggable memory block
 void* PPDAlloc(size_t size, const PPSourceLine& sl)
@@ -276,7 +275,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 
 	// insert to linked list tail
 	{
-		CScopedMutex m(st.allocMemMutex);
+		Threading::CScopedMutex m(st.allocMemMutex);
 		++st.numAllocs;
 		st.allocMemCounter += alloc->size;
 
@@ -346,7 +345,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	// remove from linked list first
 	// as realloc might change the pointer
 	{
-		CScopedMutex m(st.allocMemMutex);
+		Threading::CScopedMutex m(st.allocMemMutex);
 		st.allocMemCounter -= r_alloc->size;
 
 		if (r_alloc->prev == nullptr)
@@ -374,7 +373,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 
 	// insert to linked list tail
 	{
-		CScopedMutex m(st.allocMemMutex);
+		Threading::CScopedMutex m(st.allocMemMutex);
 		st.allocMemCounter += alloc->size;
 
 		if (st.last != nullptr)
@@ -454,7 +453,7 @@ void PPFree(void* ptr)
 
 	// remove from linked list
 	{
-		CScopedMutex m(st.allocMemMutex);
+		Threading::CScopedMutex m(st.allocMemMutex);
 		--st.numAllocs;
 		st.allocMemCounter -= alloc->size;
 

@@ -48,7 +48,7 @@
 
 //---------------
 
-#include "platform/platformdefs.h"
+#include "platform/platform_defs.h"
 #include "common_types.h"
 
 #include "InterfaceManager.h"

@@ -5,6 +5,8 @@
 // Description: Equilibrium Engine threads
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -15,8 +17,6 @@
 #	undef near
 #endif
 #endif // _WIN32
-
-#include "core/core_common.h"
 
 #ifndef _Requires_lock_held_
 // GCC stub

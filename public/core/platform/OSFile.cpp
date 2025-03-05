@@ -1,3 +1,5 @@
+#include "core/core_common.h"
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -8,7 +10,6 @@
 #include <errno.h>
 #endif
 
-#include "core/core_common.h"
 #include "OSFile.h"
 
 COSFile::COSFile()
