@@ -123,6 +123,9 @@ property "e2_ws_configurations"
 		
 property "windows_msvc"
 	filter "system:Windows"
+		-- use specific windows SDK
+		systemversion(WINSDK_VER)
+		
 		linkoptions {
 			"/NOEXP"
 		}
@@ -137,6 +140,7 @@ property "windows_msvc"
 		enablewarnings { 
 			"26433"
 		}
+		
 	filter {"system:Windows", "configurations:Retail or configurations:Profile" }
 		buildoptions { "/GR-" }
 

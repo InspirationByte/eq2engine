@@ -10,11 +10,15 @@ require ".premake_modules/vscode"
 
 IS_ANDROID = (_ACTION == "androidndk")
 
-local CAN_BUILD_TOOLS = (os.target() == "linux" or os.target() == "windows") and not IS_ANDROID
-local CAN_BUILD_GUI_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
+local CAN_BUILD_TOOLS = (_TARGET_OS == "linux" or _TARGET_OS == "windows")
+local CAN_BUILD_GUI_TOOLS = (--[[os.target() == "linux" or]] _TARGET_OS == "windows")
 
 WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 ENGINE_DIR = ENGINE_DIR or _WORKING_DIR
+
+-- project can define own Windows SDK version
+WINSDK_VER = WINSDK_VER or os.getenv("WINSDK_VER") or "latest"
+
 ENABLE_TOOLS = iif(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
 ENABLE_GUI_TOOLS = iif(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
 ENABLE_MATSYSTEM = iif(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
@@ -24,6 +28,9 @@ ENABLE_LIVEPP = iif(ENABLE_LIVEPP == nil, false, ENABLE_LIVEPP)
 print("Workspace", WORKSPACE_NAME)
 print("Target OS", _TARGET_OS)
 print("Target Arch", _TARGET_ARCH or "Not defined")
+if _TARGET_OS == "windows" then
+	print("Windows SDK =", WINSDK_VER)
+end
 print("\n")
 print("Build details:")
 print("ENABLE_TOOLS =", ENABLE_TOOLS)

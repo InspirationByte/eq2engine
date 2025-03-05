@@ -30,6 +30,7 @@ env:
   PROJECT_NAME: auto_tests
   BUILD_CONFIGURATION: Release
   BUILD_PLATFORM: x64
+  WINSDK_VER: "10.0.19041.0"
 
 permissions:
   contents: read
@@ -48,6 +49,11 @@ jobs:
       uses: potatoqualitee/psmodulecache@v6.2.1
       with:
         modules-to-cache: 7Zip4PowerShell
+
+    - name: Setup Windows 10 SDK Action
+      uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
+      with:
+        sdk-version: 19041 # TODO: env
 
     - name: Run PS commands
       shell: pwsh
