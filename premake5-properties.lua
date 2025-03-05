@@ -169,8 +169,10 @@ property "gcc_clang"
 		}
 
 property "unitybuild"
-	unitybuild "on"
-	maxfilesinunity "30"
+	if not BUILD_SINGLE_FILE then
+		unitybuild "on"
+		maxfilesinunity "30"
+	end
 	
 property "sharedlib"
 	kind "SharedLib"

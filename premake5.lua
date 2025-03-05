@@ -19,6 +19,8 @@ ENGINE_DIR = ENGINE_DIR or _WORKING_DIR
 -- project can define own Windows SDK version
 WINSDK_VER = WINSDK_VER or os.getenv("WINSDK_VER") or "latest"
 
+BUILD_SINGLE_FILE = iif(BUILD_SINGLE_FILE == nil, false, BUILD_SINGLE_FILE)
+
 ENABLE_TOOLS = iif(ENABLE_TOOLS == nil, CAN_BUILD_TOOLS, ENABLE_TOOLS)
 ENABLE_GUI_TOOLS = iif(ENABLE_GUI_TOOLS == nil, CAN_BUILD_GUI_TOOLS, ENABLE_GUI_TOOLS)
 ENABLE_MATSYSTEM = iif(ENABLE_MATSYSTEM == nil, true, ENABLE_MATSYSTEM)
@@ -33,6 +35,7 @@ if _TARGET_OS == "windows" then
 end
 print("\n")
 print("Build details:")
+print("Single File Compilation =", BUILD_SINGLE_FILE)
 print("ENABLE_TOOLS =", ENABLE_TOOLS)
 print("ENABLE_MATSYSTEM =", ENABLE_MATSYSTEM)
 print("ENABLE_TESTS =", ENABLE_TESTS)
