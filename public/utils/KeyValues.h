@@ -766,7 +766,7 @@ struct DescFieldFlags : public KVDescFieldInfo
 		static KVDescFieldInfo descFields[] = {
 
 #define BEGIN_KEYVALUES_DESC(classname) \
-	BEGIN_KEYVALUES_DESC_TYPE(classname, classname ## ::Desc)
+	BEGIN_KEYVALUES_DESC_TYPE(classname, classname::Desc)
 
 #define END_KEYVALUES_DESC \
 		}; \

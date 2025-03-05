@@ -6,13 +6,17 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "core/IFileSystem.h"
+
 #include "sys_host.h"
 #include "sys_in_joystick.h"
 
 #include "input/in_keys_ident.h"
+
+#include <SDL_haptic.h>
+#include <SDL_events.h>
 
 DECLARE_CVAR(in_joy_debug, "0", "Joystick debug messages", 0);
 DECLARE_CVAR(in_joy_repeatDelayInit, "0.5", "Joystick input repeat delay initial", CV_ARCHIVE);
@@ -31,9 +35,6 @@ DECLARE_CMD(in_joy_list, "List connected gamepads", 0)
 }
 
 #define CONTROLLER_DB_FILENAME "cfg/controllers.db"
-
-#ifdef PLAT_SDL
-#include <SDL.h>
 
 DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 {
@@ -377,5 +378,3 @@ void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
 		}
 	}
 }
-
-#endif // PLAT_SDL

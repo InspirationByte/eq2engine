@@ -265,7 +265,7 @@ static void PrintTypeInfo()
 		"operator",
 	};
 
-	esl::TypeInfo typeInfo = ScriptClass<T>::GetTypeInfo();
+	esl::TypeInfo typeInfo = esl::ScriptClass<T>::GetTypeInfo();
 
 	Msg("type %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
 	for (const esl::Member& mem : typeInfo.members)

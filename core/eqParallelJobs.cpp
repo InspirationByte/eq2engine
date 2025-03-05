@@ -6,11 +6,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IDkCore.h"
+#include "core/IEqCPUServices.h"
 #include "core/ConVar.h"
 #include "core/IConsoleCommands.h"
 #include "eqParallelJobs.h"
-#include "core/IDkCore.h"
-#include "core/IEqCPUServices.h"
+
 
 using namespace Threading;
 

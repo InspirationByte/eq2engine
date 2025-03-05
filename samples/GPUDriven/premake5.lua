@@ -1,6 +1,11 @@
 WORKSPACE_NAME = "GPUDriven"
 
-dofile "premake5-engine.lua"
+include "../.."
+
+property "gameapp"
+	if _ACTION ~= "vscode" then
+		location "%{ prj_location(prj) }"
+	end
 
 group ""
 
@@ -12,7 +17,7 @@ project "GPUDriven"
 		targetname "GPUDriven_%{cfg.buildcfg}"
 	end
 	
-	properties { "unitybuild" }
+	properties { "unitybuild", "gameapp" }
     uses {
 		"e2Core", "frameworkLib", "coreLib",
 		"sysLib",

@@ -6,11 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/IDkCore.h"
-#include "utils/KeyValues.h"
-#include "core/platform/messagebox.h"
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #ifdef far
 #	undef far
@@ -45,6 +43,10 @@ static void MessageBox(const char *string, const GtkMessageType msgType)
 }
 
 #endif // !_WIN32 && USE_GTK
+
+#include "core/IDkCore.h"
+#include "utils/KeyValues.h"
+#include "core/platform/messagebox.h"
 
 static int DefaultPlatformMessageBoxCallback(const char* messageStr, const char* titleStr, EMessageBoxType type)
 {

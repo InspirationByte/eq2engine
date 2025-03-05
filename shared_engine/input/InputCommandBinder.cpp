@@ -11,13 +11,9 @@
 #include "core/ConCommand.h"
 #include "core/ILocalize.h"
 #include "utils/KeyValues.h"
-
-#include <SDL.h>
-
 #include "InputCommandBinder.h"
-#include "materialsystem1/IMaterialSystem.h"
-#include "materialsystem1/MeshBuilder.h"
-#include "font/IFontCache.h"
+
+#include <SDL_keyboard.h>
 
 
 static constexpr const char INPUT_CMD_ACTIVATE_PREFIX		= '+';

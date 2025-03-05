@@ -5,18 +5,17 @@
 // Description: Core profiling utilities
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifdef _WIN32
-#if (WINVER < _WIN32_WINNT_VISTA)
-#error "WTF"
-#endif
-#include <cvmarkersobj.h>
-#endif
 #include "core/core_common.h"
-
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
 
 #ifdef _WIN32
+
+#if (WINVER < _WIN32_WINNT_VISTA)
+#error "WINVER is less than Vista for CV markers, please check if platform.h included correctly"
+#endif
+
+#include <cvmarkersobj.h>
 
 using namespace Concurrency::diagnostic;
 

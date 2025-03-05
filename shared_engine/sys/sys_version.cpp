@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/ConCommand.h"
 #include "sys_version.h"
 
 // date i've stated development		"Feb 28 2009"
