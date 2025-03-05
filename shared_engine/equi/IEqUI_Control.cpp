@@ -758,7 +758,7 @@ void IUIControl::Render(int depth, RenderContextAbstract& context)
 		Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
 		rotationScale = rotationScale * !clientPosMat;
 
-		const Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * elementScale.x, m_transform.translation.y * elementScale.y, 0.0f);
+		const Matrix4x4 localTransform = translate(m_transform.translation.x * elementScale.x, m_transform.translation.y * elementScale.y, 0.0f) * rotationScale;
 		const Matrix4x4 newTransform = (prevTransform * localTransform);
 		context.transformStack.append(newTransform);
 	}

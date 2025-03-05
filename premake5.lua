@@ -91,20 +91,20 @@ workspace(WORKSPACE_NAME)
 	}
 	
 	filter "platforms:*64"
-		debugdir "%{wks.location}../../%{wks.name}/build/Bin64"
-		debugenvs "PATH=%{wks.location}../../%{wks.name}/build/Bin64"
+		debugdir "%{wks.location}../../build/Bin64"
+		debugenvs "PATH=%{wks.location}../../build/Bin64"
 
 	filter "platforms:*86"
-		debugdir "%{wks.location}../../%{wks.name}/build/Bin32"
-		debugenvs "PATH=%{wks.location}../../%{wks.name}/build/Bin64"
+		debugdir "%{wks.location}../../build/Bin32"
+		debugenvs "PATH=%{wks.location}../../build/Bin64"
 		
 	filter {}
 	
 	-- setup VSCode generator settings
 	vscode_makefile "build/%{wks.name}.solution"
-	vscode_launch_cwd ("${workspaceRoot}/../%{wks.name}/build/bin64linux")
+	vscode_launch_cwd ("${workspaceRoot}/../build/bin64linux")
 	vscode_launch_environment {
-		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../%{wks.name}/build/bin64linux"
+		LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}%{cfg.targetdir}:${workspaceRoot}/../build/bin64linux"
 	}
 	vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
 
