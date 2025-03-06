@@ -180,6 +180,15 @@ property "sharedlib"
 property "staticlib"
 	kind "StaticLib"
 	
+property "app"
+	filter "platforms:*64"
+		debugdir "%{wks.location}../../build/Bin64"
+		debugenvs "PATH=%{wks.location}../../build/Bin64"
+
+	filter "platforms:*86"
+		debugdir "%{wks.location}../../build/Bin32"
+		debugenvs "PATH=%{wks.location}../../build/Bin64"
+	
 property "tools"
 	filter "configurations:Retail or configurations:Profile"
 		kind "None"

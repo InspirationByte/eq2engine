@@ -1,15 +1,19 @@
+group "Dependencies"
+
 include "zlib"
 
 -- android dependencies are separate
-if not IS_ANDROID then
-include(DependencyPath.openal)
-include(DependencyPath.libsdl)
-include "shaderc"
-include "wxWidgets"
+if IS_ANDROID then
+	include "android"
+else
+	include(DependencyPath.openal)
+	include(DependencyPath.libsdl)
+	include "shaderc"
+	include "wxWidgets"
 end
 
 if ENABLE_TESTS then
-include "gtest"
+	include "gtest"
 end
 
 include "stb"

@@ -5,7 +5,7 @@
 // Description: Core profiling utilities
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/common_types.h"
+#include "ds/common_types.h"
 #include "ppsourceline.h"
 
 constexpr int PPSL_ADDR_BITS = 48;		// 64 bit arch only use 48 bits of pointers

@@ -5,7 +5,7 @@ group "Tools"
 
 project "fcompress"
     kind "ConsoleApp"
-	properties { "unitybuild", "tools" }
+	properties { "unitybuild", "tools", "app" }
     uses {
 		"corelib", "frameworkLib", 
 		"e2Core", 
@@ -24,7 +24,7 @@ project "fcompress"
 
 project "egfca"
     kind "ConsoleApp"
-	properties { "unitybuild", "tools" }
+	properties { "unitybuild", "tools", "app" }
     uses {
 		"corelib", "frameworkLib",
 		"e2Core",
@@ -55,7 +55,7 @@ project "animca"
 
 project "texcooker"
     kind "ConsoleApp"
-	properties { "unitybuild", "tools" }
+	properties { "unitybuild", "tools", "app" }
     uses {
 		"corelib", "frameworkLib",
 		"e2Core"
@@ -73,7 +73,7 @@ local VULKAN_SDK_LOCATION = os.getenv("VULKAN_SDK")
 if VULKAN_SDK_LOCATION ~= nil and VULKAN_SDK_LOCATION ~= "" then
 	project "shadercooker"
 		kind "ConsoleApp"
-		properties { "unitybuild", "tools" }
+		properties { "unitybuild", "tools", "app" }
 		uses {
 			"corelib", "frameworkLib",
 			"e2Core",
@@ -93,7 +93,7 @@ if ENABLE_GUI_TOOLS then
 -- Equilibrium Graphics File manager (EGFMan)
 project "egfman"
     kind "WindowedApp"
-	properties { "unitybuild", "tools" }
+	properties { "unitybuild", "tools", "app" }
     uses {
 		"corelib", "frameworkLib", "e2Core",
 		"fontLib", "physicsLib", "dkPhysicsLib", "renderUtilLib", "animatingLib",

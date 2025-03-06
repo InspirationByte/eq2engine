@@ -49,9 +49,10 @@
 //---------------
 
 #include "platform/platform_defs.h"
-#include "common_types.h"
 
-#include "InterfaceManager.h"
+#include "ds/common_types.h"
+#include "core/InterfaceManager.h"
+#include "core/Logger.h"
 
 #include "profiler.h"
 #include "ppmem.h"
@@ -90,8 +91,6 @@
 
 #include "platform/eqthread.h"
 #include "ds/future.h"
-
-#include "Logger.h"
 
 // TODO: include individually when needed
 #include "math/math_common.h"

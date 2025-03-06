@@ -6,10 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core_common.h"
-
+#include "core/IConsoleCommands.h"
 #include "ConCommand.h"
 #include "ConVar.h"
-#include "IConsoleCommands.h"
 
 ConCommand::ConCommand(const char* name, CON_COMMAND_CALLBACK callback, int flags /*= 0*/)
 	: ConCommandBase(name, flags | CMDBASE_CONCOMMAND)

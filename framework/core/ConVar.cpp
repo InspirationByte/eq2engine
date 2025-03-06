@@ -7,7 +7,7 @@
 
 #include "core_common.h"
 #include "ConVar.h"
-#include "ICommandLine.h"
+#include "core/ICommandLine.h"
 
 #pragma warning(disable: 4267)
 

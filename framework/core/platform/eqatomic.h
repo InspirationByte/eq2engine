@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "core/common_types.h"
+#include "ds/common_types.h"
 
 class Atomic
 {

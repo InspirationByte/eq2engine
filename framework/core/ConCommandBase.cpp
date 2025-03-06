@@ -7,7 +7,7 @@
 
 #include "core_common.h"
 #include "ConCommandBase.h"
-#include "IConsoleCommands.h"
+#include "core/IConsoleCommands.h"
 
 ConCommandBase::ConCommandBase(char const *name, int flags)
 	: m_szName(name)
