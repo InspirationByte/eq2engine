@@ -24,7 +24,6 @@ struct GRIMDrawSettings
 	int				groupMaskInclude{ (int)COM_UINT_MAX };
 	int				groupMaskExclude{ 0 };
 	int				overrideLodIdx{ -1 };
-	bool			skipOcclusionCulling{ false };
 	bool			forceSoftware{ false };
 
 	bool			dbgDrawIndices{ false };

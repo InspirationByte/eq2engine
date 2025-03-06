@@ -1,5 +1,8 @@
+#include <imgui.h>
+
 #include "core/core_common.h"
 #include "core/ConVar.h"
+#include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 #include "math/Random.h"
 
@@ -21,6 +24,7 @@
 #include "studio/StudioCache.h"
 
 
+DECLARE_CVAR(lod_override, "-1", nullptr, 0);
 DECLARE_CVAR(cam_speed, "100", nullptr, 0);
 DECLARE_CVAR(cam_fov, "90", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(inst_count, "10000", nullptr, CV_ARCHIVE);
@@ -29,17 +33,6 @@ DECLARE_CVAR(inst_update_once, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR_CLAMP(obj_rotate_interval, "100", 1.0, 1000, nullptr, 0);
 DECLARE_CVAR(obj_rotate, "1", nullptr, 0);
 DECLARE_CVAR(obj_draw, "1", nullptr, 0);
-
-DECLARE_CVAR(lod_override, "-1", nullptr, 0);
-
-static DemoGRIMInstanceAllocator	s_instanceAlloc;
-static DemoGRIMRenderer				s_grimRenderer(s_instanceAlloc);
-
-struct DemoRenderState : public GRIMRenderState
-{
-	Vector3D		viewPos;
-	Volume			frustum;
-};
 
 static CStaticAutoPtr<CState_GpuDrivenDemo> g_State_Demo;
 static IVertexFormat* s_gameObjectVF = nullptr;
@@ -64,138 +57,6 @@ struct Object
 static Array<Object>			s_objects{ PP_SL };
 static Map<int, GRIMArchetype>	s_modelIdToArchetypeId{ PP_SL };
 static DemoRenderState			s_storedRenderState;
-
-constexpr int GPUVIS_GROUP_SIZE = 256;
-constexpr int GPUVIS_MAX_DIM_GROUPS = 1024;
-constexpr int GPUVIS_MAX_DIM_THREADS = (GPUVIS_GROUP_SIZE * GPUVIS_MAX_DIM_GROUPS);
-
-static void VisCalcWorkSize(int length, int& x, int& y, int& z)
-{
-	if (length <= GPUVIS_MAX_DIM_THREADS)
-	{
-		x = (length - 1) / GPUVIS_GROUP_SIZE + 1;
-		y = z = 1;
-	}
-	else
-	{
-		x = GPUVIS_MAX_DIM_GROUPS;
-		y = (length - 1) / GPUVIS_MAX_DIM_THREADS + 1;
-		z = 1;
-	}
-}
-
-void DemoGRIMRenderer::VisibilityCullInstances_Compute(IntermediateState& intermediate)
-{
-	PROF_EVENT_F();
-
-	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);
-
-	struct CullViewParams
-	{
-		Vector4D	frustumPlanes[6];
-		Vector4D	viewPos;
-		int			overrideLodIdx;
-		int			_padding[3];
-	};
-
-	CullViewParams cullView;
-	memcpy(cullView.frustumPlanes, renderState.frustum.GetPlanes().ptr(), sizeof(cullView.frustumPlanes));
-	cullView.viewPos = Vector4D(renderState.viewPos, 1.0f);
-	cullView.overrideLodIdx = lod_override.GetInt();
-
-	IGPUBufferPtr viewParamsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(CullViewParams), 1), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "ViewParamsBuffer");
-	intermediate.cmdRecorder->WriteBuffer(viewParamsBuffer, &cullView, sizeof(cullView), 0);
-	intermediate.cmdRecorder->ClearBuffer(renderState.sortedInstanceIdsBuffer, 0, sizeof(int));
-
-	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CullInstances");
-	computeRecorder->SetPipeline(m_cullInstancesPipeline);
-	computeRecorder->SetBindGroup(0, m_cullBindGroup0);
-	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
-		Builder<BindGroupDesc>()
-		.GroupIndex(1)
-		.Buffer(0, viewParamsBuffer)
-		.Buffer(1, intermediate.filteredInstanceInfosBuffer)
-		.Buffer(2, intermediate.filteredInstanceCountBuffer)
-		.End())
-	);
-	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
-		Builder<BindGroupDesc>()
-		.GroupIndex(2)
-		.Buffer(0, renderState.culledInstanceInfosBuffer)
-		.Buffer(1, renderState.sortedInstanceIdsBuffer)
-		.End())
-	);
-
-	computeRecorder->SetBindGroup(3, g_renderAPI->CreateBindGroup(m_cullInstancesPipeline, Builder<BindGroupDesc>()
-		.GroupIndex(3)
-		.Buffer(0, m_instAllocator.GetRootBuffer())
-		.Buffer(1, s_instanceAlloc.GetComponentPool<InstTransform>().GetBuffer())
-		.End())
-	);
-
-	IVector2D workGroups = VisCalcWorkSize(intermediate.maxNumberOfObjects);
-
-	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
-	computeRecorder->Complete();
-}
-
-void DemoGRIMRenderer::VisibilityCullInstances_Software(IntermediateState& intermediate)
-{
-	PROF_EVENT_F();
-
-	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
-	// Input:
-	//		instanceIds		: buffer<int[]>
-	// Output:
-	//		instanceInfos	: buffer<GPUInstanceInfo[]>
-
-	DemoRenderState& renderState = static_cast<DemoRenderState&>(intermediate.renderState);
-
-	const Vector3D& viewPos = renderState.viewPos;
-	const Volume& frustum = renderState.frustum;
-	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
-
-	for (int i = 0; i < instanceInfos.numElem(); ++i)
-	{
-		GPUInstanceInfo& instInfo = instanceInfos[i];
-
-		const GRIMArchetype archetypeId = instInfo.packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
-		const int lodIndex = (instInfo.packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
-
-		const GPULodList& lodList = m_drawLodsList[archetypeId];
-		if (lodList.firstLodInfo < 0)
-		{
-			instanceInfos.fastRemoveIndex(i--);
-			continue;
-		}
-
-		const int trsIdx = s_instanceAlloc.GetInstanceComponentIdx(instInfo.instanceId, InstTransform::COMPONENT_ID);
-		const InstTransform& trs = s_instanceAlloc.GetComponentPool<InstTransform>().GetDataPool()[trsIdx];
-
-		if (!frustum.IsSphereInside(trs.position, trs.boundingSphere))
-		{
-			instanceInfos.fastRemoveIndex(i--);
-			continue;
-		}
-
-		const float distFromCamera = distanceSqr(viewPos, trs.position);
-
-		// find suitable lod idx
-		int drawLod = lodIndex;
-		if (drawLod == GPUInstanceInfo::LOD_MASK)
-		{
-			drawLod = -1;
-			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next, ++drawLod)
-			{
-				if (distFromCamera < sqr(m_drawLodInfos[lodIdx].distance))
-					break;
-			}
-		}
-
-		// update instance
-		instInfo.packedArchetypeId = archetypeId | (drawLod << GPUInstanceInfo::ARCHETYPE_BITS);
-	}
-}
 
 CState_GpuDrivenDemo::CState_GpuDrivenDemo()
 {
@@ -272,15 +133,15 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 			CEqStudioGeom* geom = g_studioCache->GetModel(modelIdx);
 
 			Msg("model %d %s\n", modelIdx, fsFind.GetPath());
-			const GRIMArchetype archetypeId = s_grimRenderer.CreateStudioDrawArchetype(geom, s_gameObjectVF, 3);
+			const GRIMArchetype archetypeId = DemoGRIMRenderer::Get().CreateStudioDrawArchetype(geom, s_gameObjectVF, 3);
 
 			// TODO: body group lookup
 			s_modelIdToArchetypeId.insert(geom->GetCacheId(), archetypeId);
 		}
 	}
 
-	s_instanceAlloc.Initialize("InstanceUtils", INST_RESERVE);
-	s_grimRenderer.Init();
+	DemoGRIMRenderer::GetAllocator().Initialize("InstanceUtils", INST_RESERVE);
+	DemoGRIMRenderer::Get().Init();
 	InitGame();
 }
 
@@ -288,8 +149,8 @@ void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 // @to - used to transfer data
 void CState_GpuDrivenDemo::OnLeave(CAppStateBase* to)
 {
-	s_grimRenderer.Shutdown();
-	s_instanceAlloc.Shutdown();
+	DemoGRIMRenderer::Get().Shutdown();
+	DemoGRIMRenderer::GetAllocator().Shutdown();
 
 	s_modelIdToArchetypeId.clear(true);
 	s_storedRenderState = {};
@@ -312,7 +173,7 @@ void CState_GpuDrivenDemo::InitGame()
 	// distribute instances randomly
 	const int modelCount = g_studioCache->GetModelCount();
 
-	s_instanceAlloc.FreeAll(false, true);
+	DemoGRIMRenderer::GetAllocator().FreeAll(false, true);
 	s_objects.clear();
 
 	for (int i = 0; i < inst_count.GetInt(); ++i)
@@ -327,7 +188,7 @@ void CState_GpuDrivenDemo::InitGame()
 		}
 
 		Object& obj = s_objects.append();
-		obj.instId = s_instanceAlloc.AddInstance<InstTransform>(*it);
+		obj.instId = DemoGRIMRenderer::GetAllocator().AddInstance<InstTransform>(*it);
 		obj.trs.t = Vector3D(RandomFloat(-2900, 2900), RandomFloat(-100, 100), RandomFloat(-2900, 2900));
 		obj.trs.r = rotateXYZ(RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F), RandomFloat(-M_PI_2_F, M_PI_2_F));
 
@@ -337,7 +198,7 @@ void CState_GpuDrivenDemo::InitGame()
 		InstTransform transform;
 		transform.position = obj.trs.t;
 		transform.orientation = obj.trs.r;
-		s_instanceAlloc.Set(obj.instId, transform);
+		DemoGRIMRenderer::GetAllocator().Set(obj.instId, transform);
 	}
 }
 
@@ -378,9 +239,44 @@ void CState_GpuDrivenDemo::StepGame(float fDt)
 			InstTransform transform;
 			transform.position = obj.trs.t;
 			transform.orientation = obj.trs.r;
-			s_instanceAlloc.Set(obj.instId, transform);
+			DemoGRIMRenderer::GetAllocator().Set(obj.instId, transform);
 		}
 	}
+
+#ifdef IMGUI_ENABLED
+	if (ImGui::Begin("GPUDriven Demo"))
+	{
+		if (ImGui::Button("Respawn Objects"))
+			InitGame();
+
+		{
+			int newCount = inst_count.GetInt();
+			if (ImGui::SliderInt("Object count", &newCount, 10, 1000000))
+				inst_count.SetInt(newCount);
+		}
+
+		{
+			int rotatingInterval = obj_rotate_interval.GetInt();
+			if (ImGui::SliderInt("Rotation Objects interval", &rotatingInterval, 1, 10000))
+				obj_rotate_interval.SetInt(rotatingInterval);
+		}
+
+		{
+			HOOK_TO_CVAR(lod_override);
+			int lodOverride = lod_override->GetInt();
+			if (ImGui::SliderInt("LOD override", &lodOverride, -1, GRIM_MAX_INSTANCE_LODS-1))
+			{
+				lod_override->SetInt(lodOverride);
+			}
+		}
+
+		ImGui::End();
+	}
+#endif
+
+	GRIMDrawSettings drawSettings = DemoGRIMRenderer::Get().GetDrawSettings();
+	drawSettings.overrideLodIdx = lod_override.GetInt();
+	DemoGRIMRenderer::Get().SetDrawSettings(drawSettings);
 }
 
 // when 'false' returned the next state goes on
@@ -425,8 +321,8 @@ void CState_GpuDrivenDemo::RenderGame()
 
 	{
 		IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder();
-		s_instanceAlloc.SyncInstances(cmdRecorder);
-		s_grimRenderer.SyncArchetypes(cmdRecorder);
+		DemoGRIMRenderer::GetAllocator().SyncInstances(cmdRecorder);
+		DemoGRIMRenderer::Get().SyncArchetypes(cmdRecorder);
 
 		if (inst_update.GetBool())
 		{
@@ -434,7 +330,7 @@ void CState_GpuDrivenDemo::RenderGame()
 			s_storedRenderState.frustum.LoadAsFrustum(viewProjMat);
 			s_storedRenderState.viewPos = s_currentView.GetOrigin();
 
-			s_grimRenderer.PrepareDraw(cmdRecorder, s_storedRenderState, s_objects.numElem());
+			DemoGRIMRenderer::Get().PrepareDraw(cmdRecorder, s_storedRenderState, s_objects.numElem());
 
 			if (inst_update_once.GetBool())
 				inst_update.SetBool(false);
@@ -442,7 +338,7 @@ void CState_GpuDrivenDemo::RenderGame()
 			g_matSystem->QueueCommandBuffer(cmdRecorder->End());
 			Future<bool> future = g_matSystem->SubmitQueuedCommandsAwaitable();
 			future.AddCallback([&](const FutureResult<bool>& result) {
-				s_grimRenderer.PostPrepareDraw(s_storedRenderState);
+				DemoGRIMRenderer::Get().PostPrepareDraw(s_storedRenderState);
 			});
 
 			while (!future.Wait(0))
@@ -469,7 +365,7 @@ void CState_GpuDrivenDemo::RenderGame()
 
 			if (obj_draw.GetBool())
 			{
-				s_grimRenderer.Draw(s_storedRenderState, rendPassCtx);
+				DemoGRIMRenderer::Get().Draw(s_storedRenderState, rendPassCtx);
 			}
 
 			rendPassRecorder->Complete();

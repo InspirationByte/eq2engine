@@ -22,6 +22,7 @@
 #ifdef IMGUI_ENABLED
 #include <imgui.h>
 #include "audio/SoundScriptEditorUI.h"
+#include "instancer.h"
 #endif
 
 #include "gpudriven_main.h"
@@ -44,6 +45,7 @@ CAppStateBase* GetAppStateByType(int stateType)
 {
 	return s_appStates[stateType];
 }
+
 
 bool InitAppStates()
 {
@@ -74,6 +76,10 @@ bool InitAppStates()
 	g_matSystem->RegisterShaderOverride("BaseParticle", [](int instanceFormatId) -> const char* {
 		return "BaseUnlit";
 	});
+
+#ifdef IMGUI_ENABLED
+	g_imGuiHost->AddDebugMenu("ENGINE/RENDER/INSTANCE MANAGER DEBUG UI", DemoInstManagerDebugDrawUI);
+#endif
 
 	eqAppStateMng::SetCurrentStateType(APP_STATE_MAIN_GAMELOOP);
 

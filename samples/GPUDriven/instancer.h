@@ -25,6 +25,12 @@ struct InstScale
 	float		pad{ 0.0f };
 };
 
+struct DemoRenderState : public GRIMRenderState
+{
+	Vector3D		viewPos;
+	Volume			frustum;
+};
+
 using DemoGRIMInstanceAllocator = GRIMInstanceAllocator<InstTransform, InstScale>;
 
 class DemoGRIMRenderer : public GRIMBaseRenderer
@@ -37,6 +43,12 @@ public:
 
 	void	VisibilityCullInstances_Compute(IntermediateState& intermediate);
 	void	VisibilityCullInstances_Software(IntermediateState& intermediate);
+
+	static DemoGRIMInstanceAllocator&	GetAllocator();
+	static DemoGRIMRenderer&			Get();
 };
 
 const VertexLayoutDesc& GetGPUInstanceVertexLayout();
+
+void DemoInstManagerDebugDrawUI(bool& open);
+
