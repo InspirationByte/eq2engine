@@ -53,12 +53,6 @@ bool InitAppStates()
 	Networking::InitNetworking();
 #endif
 
-	// TODO: plugin?
-#ifdef IMGUI_ENABLED
-	g_imGuiHost->AddDebugMenu("ENGINE/Sound/Script Editor UI", SoundScriptEditorUIDraw);
-	//g_imGuiHost->AddDebugMenu("ENGINE/Render/Instance Manager Debug UI", DemoInstManagerDebugDrawUI);
-#endif
-
 	g_pHost->SetWindowTitle(GAME_WINDOW_TITLE);
 	g_eqCore->RegisterInterface(&s_shapeCache);
 	g_studioCache->Init(g_parallelJobs->GetJobMng());
