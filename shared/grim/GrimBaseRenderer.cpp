@@ -210,6 +210,8 @@ void GRIMBaseRenderer::UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetype
 
 void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
 {
+	EGF_LOADING_CRITICAL_SECTION(geom);
+
 	bool isSlotTaken = false;
 	{
 		CScopedMutex m(s_grimRendererMutex);
@@ -1021,6 +1023,10 @@ void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& inter
 			drawCmd.firstInstance = bound.first;
 			drawCmd.instanceCount = bound.last - bound.first;
 
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+			m_dbgStatsDrawnInstances += drawCmd.instanceCount;
+#endif
+
 			ASSERT(m_drawInfos(drawBatch.cmdIdx));
 
 			cmdRecorder->WriteBuffer(drawInvocationsBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
@@ -1040,6 +1046,9 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	DbgValidate();
 
 	renderState.drawFrame = m_drawFrame;
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	m_dbgStatsDrawnInstances = 0;
+#endif
 
 	if (maxNumberOfObjects < 0)
 		maxNumberOfObjects = m_instAllocator.GetInstanceCount();
@@ -1123,10 +1132,6 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 	cmdRecorder->DbgPopGroup();
 
 	cmdRecorder->DbgPopGroup();
-
-#ifdef GRIM_INSTANCES_DEBUG_ENABLED
-	m_dbgStatsDrawnInstances = 0;
-#endif
 }
 
 bool GRIMBaseRenderer::IsSoftwareMode() const
@@ -1450,6 +1455,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 
 		ImGui::TextDisabled("Draw materials: %d", renderer.m_dbgStatsDrawInfos);
 		ImGui::TextDisabled("Draw calls: %d", renderer.m_dbgStatsDrawCalls);
+		ImGui::TextDisabled("Drawn instances (Lods x Archetypes): %d", renderer.m_dbgStatsDrawnInstances);		
 
 		ImGui::TextDisabled(" %d draw infos: %.2f KB", renderer.m_drawInfos.numElem(), memBytesToKB(renderer.m_drawInfos.numSlots() * sizeof(renderer.m_drawInfos[0])));
 		ImGui::TextDisabled(" %d batchs: %.2f KB", renderer.m_drawBatchs.NumElem(), memBytesToKB(renderer.m_drawBatchs.NumSlots() * sizeof(renderer.m_drawBatchs[0])));
