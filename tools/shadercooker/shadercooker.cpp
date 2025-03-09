@@ -17,7 +17,7 @@ void Usage()
 	MsgWarning("USAGE:\n	shadercooker -target <target name>\n");
 }
 
-extern void CookTarget(const char* pszTargetName, CEqJobManager& jobMng);
+extern void CookTarget(CEqJobManager& jobMng, const char* pszTargetName, const char* shaderNameFilter);
 
 int main(int argc, char* argv[])
 {
@@ -39,14 +39,21 @@ int main(int argc, char* argv[])
 	}
 
 	{
+		FixedArray<EqString, 16> targets;
+		EqString shaderFilter;
+
 		CEqJobManager jobMng("shadersJobs", max(4, g_cpuCaps->GetCPUCount()), 16384);
 		for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 		{
-			EqString argStr = g_cmdLine->GetArgumentString(i);
-
+			EqStringRef argStr = g_cmdLine->GetArgumentString(i);
 			if (!argStr.CompareCaseIns("-target"))
-				CookTarget(g_cmdLine->GetArgumentsOf(i), jobMng);
+				targets.append(g_cmdLine->GetArgumentsOf(i));
+			else if (!argStr.CompareCaseIns("-filter"))
+				shaderFilter = g_cmdLine->GetArgumentsOf(i);
 		}
+
+		for(EqStringRef targetName : targets)
+			CookTarget(jobMng, targetName, shaderFilter);
 	}
 
 	g_eqCore->Shutdown();

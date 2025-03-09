@@ -49,6 +49,8 @@ public:
 	bool				Init(const char* confFileName, const char* targetName);
 	void				Execute();
 
+	void				SetFilter(const char* filter) { m_filter = filter; }
+
 private:
 	void				SearchFolderForShaders(const char* wildcard);
 	bool				HasMatchingCRC(uint32 crc);
@@ -79,6 +81,8 @@ private:
 	CEqJobManager&		m_jobMng;
 	BatchConfig			m_batchConfig;
 	TargetProperties	m_targetProps;
+
+	EqString			m_filter;
 
 	Array<ShaderInfo>	m_shaderList{ PP_SL };
 };
@@ -366,7 +370,11 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 	EqString searchTemplate;
 	while (fsFind.Next())
 	{
-		EqString fileName = fsFind.GetPath();
+		const EqStringRef fileName = fsFind.GetPath();
+
+		if (m_filter.Length() && fileName.Find(m_filter) == -1)
+			continue;
+
 		if (fsFind.IsDirectory() && fileName != EqStringRef(".") && fileName != EqStringRef(".."))
 		{
 			searchTemplate = fnmPathCombine(searchFolder, fileName, "*");
@@ -1147,11 +1155,11 @@ void CShaderCooker::Execute()
 		KV_WriteToStream(pStream, &m_batchConfig.newCRCSec, 0, true);
 }
 
-void CookTarget(const char* pszTargetName, CEqJobManager& jobMng)
+void CookTarget(CEqJobManager& jobMng, const char* pszTargetName, const char* shaderNameFilter)
 {
 	CShaderCooker cooker(jobMng);
 	if (!cooker.Init("ShaderCooker.CONFIG", pszTargetName))
 		return;
-
+	cooker.SetFilter(shaderNameFilter);
 	cooker.Execute();
 }
