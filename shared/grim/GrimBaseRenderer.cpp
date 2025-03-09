@@ -34,6 +34,13 @@ static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
 static constexpr char SHADERNAME_FILTER_INSTANCES[] = "InstanceFilter";
 static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
 
+DEFINE_SHADER_NOFACTORY(InstanceArchetypeSort)
+DEFINE_SHADER_NOFACTORY(InstanceCalcBounds)
+DEFINE_SHADER_NOFACTORY(InstancePrepareDrawIndirect)
+DEFINE_SHADER_NOFACTORY(InstancePreparePools)
+DEFINE_SHADER_NOFACTORY(InstancesCull)
+DEFINE_SHADER_NOFACTORY(InstanceFilter)
+
 static CEqMutex s_grimRendererMutex;
 
 GRIMBaseRenderer::GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator)

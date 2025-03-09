@@ -240,7 +240,7 @@ void CMaterial::InitShader(IShaderAPI* renderAPI)
 
 	PROF_EVENT_F();
 
-	const ShaderFactory* shaderFactory = g_matSystem->GetShaderFactory(m_szShaderName.GetData(), m_instanceFormatId);
+	const MatSysShaderFactory* shaderFactory = g_matSystem->GetShaderFactory(m_szShaderName.GetData(), m_instanceFormatId);
 	if (!shaderFactory)
 	{
 		MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.GetData(), m_szMaterialName.GetData());

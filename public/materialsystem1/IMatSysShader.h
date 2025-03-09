@@ -120,24 +120,27 @@ public:
 	};
 };
 
-struct ShaderFactory
+struct MatSysShaderFactory;
+using MatSysShaderFactoryList = Array<MatSysShaderFactory>;
+
+struct MatSysShaderFactory
 {
+	static MatSysShaderFactoryList&	Get();
+
 	ArrayCRef<int>		vertexLayoutIds{ nullptr };
 	CREATE_SHADER_CB	func;
 	const char*			shaderName;
 };
-using FactoryList = Array<ShaderFactory>;
-
-extern FactoryList& _InternalShaderList();
 
 #define SHADER_VERTEX_ID(name)	StringIdConst24(#name)
 
-#define DECLARE_INTERNAL_SHADERS()  \
-	FactoryList* s_internalShaderReg = nullptr; \
-	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(PP_SL); return *s_internalShaderReg; }
+#define DECLARE_INTERNAL_SHADERS() \
+	MatSysShaderFactoryList& MatSysShaderFactory::Get() { \
+		static MatSysShaderFactoryList s_shaderFactoryList(PP_SL); return s_shaderFactoryList; \
+	}
 
 #define REGISTER_INTERNAL_SHADERS()	\
-	for(const ShaderFactory& factory : _InternalShaderList())	\
+	for(const MatSysShaderFactory& factory : MatSysShaderFactory::Get())	\
 		g_matSystem->RegisterShader( factory );
 
 #define DEFINE_SHADER(stringName, className) \
@@ -148,10 +151,21 @@ extern FactoryList& _InternalShaderList();
 	class C_ShaderClassFactoryFoo {	\
 	public: \
 		C_ShaderClassFactoryFoo() { \
-			ShaderFactory& factory = _InternalShaderList().append(); \
+			MatSysShaderFactory& factory = MatSysShaderFactory::Get().append(); \
 			factory.vertexLayoutIds = GetSupportedVertexLayoutIds(); \
 			factory.func = &C##className##Factory; \
 			factory.shaderName = stringName; \
 		} \
 	}; \
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;
+
+#define DEFINE_SHADER_NOFACTORY( Name ) \
+	class C_Shader ## Name ## FactoryFoo {	\
+	public: \
+		C_Shader ## Name ## FactoryFoo() { \
+			MatSysShaderFactory& factory = MatSysShaderFactory::Get().append(); \
+			factory.func = nullptr; \
+			factory.shaderName = #Name; \
+		} \
+	}; \
+	static C_Shader ## Name ## FactoryFoo g_CShader ## Name ## FactoryFoo;

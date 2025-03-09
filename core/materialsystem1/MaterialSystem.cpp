@@ -363,6 +363,13 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 
 #endif // PLAT_ANDROID
 
+	// load known shader packages by factory name
+	for (const MatSysShaderFactory& factory : m_shaderFactoryList)
+	{
+		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
+		m_shaderAPI->LoadShaderPackage(shaderPackPath);
+	}
+
 	m_renderLibrary->SetBackbufferSize(m_backbufferSize.x, m_backbufferSize.y);
 	g_renderAPI = m_shaderAPI;
 
@@ -708,6 +715,8 @@ void CMaterialSystem::ReloadAllMaterials()
 		else
 			material->Init(m_shaderAPI);
 
+		material->m_varsUpdated = true;
+
 		const int framesDiff = (material->m_frameBound - m_frame);
 
 		// preload material if it was ever used before
@@ -773,7 +782,7 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 	return nullptr;
 }
 
-void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
+void CMaterialSystem::RegisterShader(const MatSysShaderFactory& factory)
 {
 	const int nameHash = StringId24(factory.shaderName, true);
 	auto it = m_shaderFactoryList.find(nameHash);
@@ -785,6 +794,12 @@ void CMaterialSystem::RegisterShader(const ShaderFactory& factory)
 
 	DevMsg(DEVMSG_MATSYSTEM, "Registering shader '%s'\n", factory.shaderName);
 	m_shaderFactoryList.insert(nameHash, factory);
+
+	if (m_shaderAPI)
+	{
+		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
+		m_shaderAPI->LoadShaderPackage(shaderPackPath);
+	}
 }
 
 // registers overrider for shaders
@@ -806,7 +821,7 @@ MatSysShaderPipelineCache& CMaterialSystem::GetRenderPipelineCache(int shaderNam
 	return m_renderPipelineCache[shaderNameHash];
 }
 
-const ShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName, int instanceFormatId)
+const MatSysShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShaderName, int instanceFormatId)
 {
 	EqString shaderName( szShaderName );
 
@@ -1677,7 +1692,7 @@ void CMaterialSystem::PrintLoadedMaterials() const
 	int totalShaders = 0;
 	for (auto it = m_shaderFactoryList.begin(); !it.atEnd(); ++it)
 	{
-		const ShaderFactory& shaderFactory = *it;
+		const MatSysShaderFactory& shaderFactory = *it;
 		auto foundPipelineCacheIt = m_renderPipelineCache.find(StringId24(shaderFactory.shaderName));
 		if (foundPipelineCacheIt.atEnd())
 			continue;

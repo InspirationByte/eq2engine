@@ -1,5 +1,8 @@
 #include "core/core_common.h"
 #include "ComputeSort.h"
+#include "materialsystem1/IMatSysShader.h"
+
+DEFINE_SHADER_NOFACTORY(ComputeSort)
 
 // Based on https://github.com/magnickolas/odd-even-mergesort
 

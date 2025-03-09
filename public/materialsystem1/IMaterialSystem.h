@@ -93,7 +93,7 @@ public:
 	virtual void					RegisterProxy(PROXY_FACTORY_CB dispfunc, const char* pszName) = 0;
 	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
 
-	virtual void					RegisterShader(const ShaderFactory& factory) = 0;
+	virtual void					RegisterShader(const MatSysShaderFactory& factory) = 0;
 	virtual void					RegisterShaderOverride(const char* shaderName, OVERRIDE_SHADER_CB func) = 0;
 
 	virtual void					AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;
@@ -131,7 +131,7 @@ public:
 	virtual IMaterialPtr			GetMaterial(const char* szMaterialName, int instanceFormatId = 0) = 0;
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
-	virtual const ShaderFactory*	GetShaderFactory(const char* szShaderName, int instanceFormatId) = 0;
+	virtual const MatSysShaderFactory*	GetShaderFactory(const char* szShaderName, int instanceFormatId) = 0;
 	virtual MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash) = 0;
 
 	virtual void					QueueLoading(const IMaterialPtr& pMaterial) = 0;

@@ -53,7 +53,7 @@ public:
 	void						RegisterProxy(PROXY_FACTORY_CB dispfunc, const char* pszName);
 	IMaterialProxy*				CreateProxyByName(const char* pszName);
 
-	void						RegisterShader(const ShaderFactory& factory);
+	void						RegisterShader(const MatSysShaderFactory& factory);
 	void						RegisterShaderOverride(const char* shaderName, OVERRIDE_SHADER_CB func);
 
 	void						AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore);
@@ -96,7 +96,7 @@ public:
 	IMaterialPtr				GetMaterial(const char* szMaterialName, int instanceFormatId = 0);
 	bool						IsMaterialExist(const char* szMaterialName) const;
 								
-	const ShaderFactory*		GetShaderFactory(const char* szShaderName, int instanceFormatId);
+	const MatSysShaderFactory*		GetShaderFactory(const char* szShaderName, int instanceFormatId);
 	MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash);
 								
 	void						PreloadNewMaterials();
@@ -191,7 +191,7 @@ private:
 	MaterialVarBlock			m_globalMaterialVars;
 
 	Array<DKMODULE*>			m_shaderLibs{ PP_SL };				// loaded shader libraries
-	Map<int, ShaderFactory>		m_shaderFactoryList{ PP_SL };		// registered shaders
+	Map<int, MatSysShaderFactory>		m_shaderFactoryList{ PP_SL };		// registered shaders
 	Array<ShaderOverride>		m_shaderOverrideList{ PP_SL };		// shader override functors
 	Array<ShaderProxyFactory>	m_proxyFactoryList{ PP_SL };
 

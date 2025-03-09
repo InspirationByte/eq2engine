@@ -1,5 +1,8 @@
 #include "core/core_common.h"
 #include "ComputeBlurShader.h"
+#include "materialsystem1/IMatSysShader.h"
+
+DEFINE_SHADER_NOFACTORY(ComputeBlur)
 
 ComputeBlurShader::ComputeBlurShader(int iterations, int filterSize, int blurFlags)
 	: m_iterations(iterations)
@@ -160,3 +163,4 @@ void ComputeBlurShader::SetupExecute(IGPUCommandRecorder* commandRecorder, int a
 
 	commandRecorder->DbgPopGroup();
 }
+
