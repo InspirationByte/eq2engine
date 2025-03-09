@@ -68,8 +68,9 @@ void ShaderAPI_Base::Shutdown()
 		i--;
 	}
 	m_VFList.clear(true);
-}
 
+	ClearShaderPackages();
+}
 
 void ShaderAPI_Base::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const
 {

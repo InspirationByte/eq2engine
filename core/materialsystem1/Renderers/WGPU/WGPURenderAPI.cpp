@@ -104,40 +104,39 @@ bool ShaderInfoWGPUImpl::GetShaderQueryHash(ArrayCRef<EqString> findDefines, int
 
 //------------------------------------------
 
-void CWGPURenderAPI::Init(const ShaderAPIParams& params)
-{
-	ShaderAPI_Base::Init(params);
-
-	int shaderPackCount = 0;
-	int shaderModCount = 0;
-	EqString shaderPackPath;
-	CFileSystemFind fsFind("shaders/*.shd", SP_MOD | SP_DATA);
-	while (fsFind.Next())
-	{
-		if (fsFind.IsDirectory())
-			continue;
-
-		shaderPackPath = fnmPathCombine("shaders", fsFind.GetPath());
-		shaderModCount += LoadShaderPackage(shaderPackPath);
-		++shaderPackCount;
-	}
-
-	Msg("* Found %d shader packages, %d modules loaded\n", shaderPackCount, shaderModCount);
-}
-
 void CWGPURenderAPI::Shutdown()
 {
 	ShaderAPI_Base::Shutdown();
-	m_shaderCache.clear(true);
 	m_rhiDevice = nullptr;
 	m_rhiQueue = nullptr;
+}
+
+void CWGPURenderAPI::FreeShaderPackage(int id)
+{
+	if (id == 0)
+		return;
+
+	auto it = m_shaderCache.find(id);
+	if (it.atEnd())
+		return;
+
+	DevMsg(DEVMSG_RENDER, "Freed shader package %s\n", it->shaderName.ToCString());
+	m_shaderCache.remove(it);
+}
+
+void CWGPURenderAPI::ClearShaderPackages()
+{
+	m_shaderCache.clear(true);
 }
 
 int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 {
 	IPackFileReaderPtr shaderPackFile = g_fileSystem->OpenPackage(filename, SP_MOD | SP_DATA);
 	if (!shaderPackFile)
+	{
+		MsgError("Cannot open shader package '%s'\n", filename);
 		return 0;
+	}
 
 	KVSection shaderInfoKvs;
 	{
@@ -149,9 +148,11 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		}
 	}
 
+	const int shaderNameId = StringId24(shaderInfoKvs.GetName());
+
 	defer{
 		if (shaderPackFile)
-			m_shaderCache.remove(StringId24(shaderInfoKvs.GetName()));
+			m_shaderCache.remove(shaderNameId);
 	};
 
 	if (!CString::SubString(filename, shaderInfoKvs.GetName()))
@@ -160,14 +161,14 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		return 0;
 	}
 
-	auto it = m_shaderCache.find(StringId24(shaderInfoKvs.GetName()));
+	auto it = m_shaderCache.find(shaderNameId);
 	if (!it.atEnd())
 	{
 		ASSERT_FAIL("Shader '%s' has been already loaded from different package", shaderInfoKvs.GetName());
 		return 0;
 	}
 
-	it = m_shaderCache.insert(StringId24(shaderInfoKvs.GetName()));
+	it = m_shaderCache.insert(shaderNameId);
 
 	ShaderInfoWGPUImpl& shaderInfo = *it;
 	shaderInfo.shaderPackFile = shaderPackFile;
@@ -337,7 +338,9 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	shaderPackFile = nullptr;
 
-	return filesFound;
+	DevMsg(DEVMSG_RENDER, "Loaded %d shader modules from %s package\n", filesFound, shaderInfoKvs.GetName());
+
+	return shaderNameId;
 }
 
 void CWGPURenderAPI::PrintAPIInfo() const

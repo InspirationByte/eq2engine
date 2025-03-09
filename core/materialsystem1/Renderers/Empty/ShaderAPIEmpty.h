@@ -193,14 +193,19 @@ public:
 
 //-------------------------------------------------------------
 // MT Synchronization
-//-------------------------------------------------------------
 
 	// Synchronization
 	void			Flush() {}
 
 //-------------------------------------------------------------
-// Textures
+// Shaders
+	int				LoadShaderPackage(const char* filename) { return 0; }
+	void			FreeShaderPackage(int id) {}
+	void			ClearShaderPackages() {}
+	void			LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const {}
+
 //-------------------------------------------------------------
+// Textures
 
 	// It will add new rendertarget
 	ITexturePtr		CreateRenderTarget(const TextureDesc& targetDesc)
@@ -234,7 +239,6 @@ public:
 
 //-------------------------------------------------------------
 // Pipeline management
-	void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const {}
 
 	IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const { return IGPUPipelineLayoutPtr(CRefPtr_new(CEmptyIPipelineLayout)); }
 	IGPUBindGroupPtr			CreateBindGroup(const IGPUPipelineLayout* pipelineLayout, const BindGroupDesc& bindGroupDesc) const { return IGPUBindGroupPtr(CRefPtr_new(CEmptyBindGroup)); }

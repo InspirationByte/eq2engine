@@ -34,7 +34,6 @@ public:
 	~CWGPURenderAPI() {}
 
 	// Init + Shurdown
-	void						Init(const ShaderAPIParams& params);
 	void						Shutdown();
 
 //-------------------------------------------------------------
@@ -53,6 +52,12 @@ public:
 
 	// Synchronization
 	void						Flush();
+
+//-------------------------------------------------------------
+// Shaders
+	int							LoadShaderPackage(const char* filename);
+	void						FreeShaderPackage(int id);
+	void						ClearShaderPackages();
 
 //-------------------------------------------------------------
 // Textures
@@ -109,7 +114,6 @@ protected:
 	WGPUShaderModule			CreateShaderWGSL(const char* szText, const char* name = nullptr) const;
 
 	WGPUShaderModule			GetOrLoadShaderModule(const ShaderInfoWGPUImpl& shaderInfo, int shaderModuleIdx) const;
-	int							LoadShaderPackage(const char* filename);
 
 	Map<int, ShaderInfoWGPUImpl>	m_shaderCache{ PP_SL };
 	WGPUInstance				m_rhiInstance{ nullptr };
