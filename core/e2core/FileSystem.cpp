@@ -798,10 +798,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 	};
 
 	if (!WalkOverSearchPaths(searchFlags, packageName, walkFileFunc))
-	{
-		MsgError("Cannot open package '%s'\n", packageName);
 		return nullptr;
-	}
 
 	if (!reader)
 		return nullptr;
