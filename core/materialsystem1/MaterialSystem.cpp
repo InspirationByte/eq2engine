@@ -362,13 +362,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	}
 
 #endif // PLAT_ANDROID
-
-	// load known shader packages by factory name
-	for (const MatSysShaderFactory& factory : m_shaderFactoryList)
-	{
-		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
-		m_shaderAPI->LoadShaderPackage(shaderPackPath);
-	}
+	LoadShaderPackages();
 
 	m_renderLibrary->SetBackbufferSize(m_backbufferSize.x, m_backbufferSize.y);
 	g_renderAPI = m_shaderAPI;
@@ -387,6 +381,18 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 	return true;
 }
 
+void CMaterialSystem::LoadShaderPackages()
+{
+	// load known shader packages by factory name
+	for (MatSysShaderFactory& factory : m_shaderFactoryList)
+	{
+		if (factory.shaderPackageId != 0)
+			m_shaderAPI->FreeShaderPackage(factory.shaderPackageId);
+
+		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
+		factory.shaderPackageId = m_shaderAPI->LoadShaderPackage(shaderPackPath);
+	}
+}
 
 void CMaterialSystem::Shutdown()
 {
@@ -695,16 +701,19 @@ void CMaterialSystem::ReloadAllMaterials()
 {
 	CScopedMutex m(s_matSystemMutex);
 
-	MsgInfo("Reloading all materials...\n");
+	MsgInfo("Reloading all materials and shaders...\n");
 	Array<IMaterialPtr> loadingList(PP_SL);
+
+	// drop pipeline cache
+	m_renderPipelineCache.clear(true);
+
+	const int oldFreq = m_shaderAPI->GetProgressiveTextureFrequency();
+	m_shaderAPI->SetProgressiveTextureFrequency(0);
+	LoadShaderPackages();
 
 	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
-		CMaterial* material = (CMaterial*)*it;
-
-		// don't unload default material
-		if(!CString::CompareCaseIns(material->GetName(), "Default"))
-			continue;
+		CMaterial* material = static_cast<CMaterial*>(*it);
 
 		const bool loadedFromDisk = material->m_loadFromDisk;
 		material->Cleanup(loadedFromDisk, true);
@@ -717,10 +726,8 @@ void CMaterialSystem::ReloadAllMaterials()
 
 		material->m_varsUpdated = true;
 
-		const int framesDiff = (material->m_frameBound - m_frame);
-
 		// preload material if it was ever used before
-		if(framesDiff >= -1)
+		if(material->m_frameBound > 0)
 			loadingList.append(IMaterialPtr(material));
 	}
 
@@ -728,6 +735,8 @@ void CMaterialSystem::ReloadAllMaterials()
 	// - this is a guarantee to shader recompilation
 	for(int i = 0; i < loadingList.numElem(); i++)
 		QueueLoading( loadingList[i] );
+
+	m_shaderAPI->SetProgressiveTextureFrequency(oldFreq);
 }
 
 // frees all materials
@@ -793,12 +802,12 @@ void CMaterialSystem::RegisterShader(const MatSysShaderFactory& factory)
 	}
 
 	DevMsg(DEVMSG_MATSYSTEM, "Registering shader '%s'\n", factory.shaderName);
-	m_shaderFactoryList.insert(nameHash, factory);
+	it = m_shaderFactoryList.insert(nameHash, factory);
 
 	if (m_shaderAPI)
 	{
 		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
-		m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		(*it).shaderPackageId = m_shaderAPI->LoadShaderPackage(shaderPackPath);
 	}
 }
 

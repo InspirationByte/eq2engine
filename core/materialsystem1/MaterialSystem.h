@@ -169,6 +169,8 @@ public:
 
 private:
 
+	void						LoadShaderPackages();
+
 	void						CreateMaterialInternal(CRefPtr<CMaterial> material, const KVSection* params);
 	void						CreateWhiteTexture();
 	void						CreateErrorTexture();
@@ -191,7 +193,7 @@ private:
 	MaterialVarBlock			m_globalMaterialVars;
 
 	Array<DKMODULE*>			m_shaderLibs{ PP_SL };				// loaded shader libraries
-	Map<int, MatSysShaderFactory>		m_shaderFactoryList{ PP_SL };		// registered shaders
+	Map<int, MatSysShaderFactory>	m_shaderFactoryList{ PP_SL };		// registered shaders
 	Array<ShaderOverride>		m_shaderOverrideList{ PP_SL };		// shader override functors
 	Array<ShaderProxyFactory>	m_proxyFactoryList{ PP_SL };
 
