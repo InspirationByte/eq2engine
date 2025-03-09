@@ -64,18 +64,27 @@ DECLARE_CVAR_CLAMP(r_anisotropic, "4", 1, 16, "Mipmap anisotropic filtering qual
 DECLARE_CVAR(r_depthBias, "-0.000001", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_slopeDepthBias, "-1.5", nullptr, CV_CHEAT);
 
-DECLARE_CMD(mat_reload, "Reloads all materials",0)
+DECLARE_CMD(mat_reload_all, "Reloads all materials", CV_CHEAT)
 {
 	s_matsystem.ReloadAllMaterials();
 	s_matsystem.WaitAllMaterialsLoaded();
 }
 
-DECLARE_CMD(mat_print, "Print MatSystem info and loaded material list",0)
+DECLARE_CMD(mat_reload_shader, "Reloads specific shader", CV_CHEAT)
+{
+	if(CMD_ARGC > 0)
+	{
+		s_matsystem.ReloadShader(CMD_ARGV(0));
+		s_matsystem.WaitAllMaterialsLoaded();
+	}
+}
+
+DECLARE_CMD(mat_print, "Print MatSystem info and loaded material list", 0)
 {
 	s_matsystem.PrintLoadedMaterials();
 }
 
-DECLARE_CMD(mat_releaseUnused, "Releases unused materials",0)
+DECLARE_CMD(mat_releaseUnused, "Releases unused materials", 0)
 {
 	s_matsystem.ReleaseUnusedMaterials();
 }
@@ -384,13 +393,13 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 void CMaterialSystem::LoadShaderPackages()
 {
 	// load known shader packages by factory name
-	for (MatSysShaderFactory& factory : m_shaderFactoryList)
+	for (auto it = m_shaderFactoryList.begin(); !it.atEnd(); ++it)
 	{
-		if (factory.shaderPackageId != 0)
-			m_shaderAPI->FreeShaderPackage(factory.shaderPackageId);
+		MatSysShaderFactory& factory = *it;
+		m_shaderAPI->FreeShaderPackage(it.key());
 
 		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
-		factory.shaderPackageId = m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		m_shaderAPI->LoadShaderPackage(shaderPackPath);
 	}
 }
 
@@ -739,6 +748,70 @@ void CMaterialSystem::ReloadAllMaterials()
 	m_shaderAPI->SetProgressiveTextureFrequency(oldFreq);
 }
 
+void CMaterialSystem::ReloadShader(const char* name)
+{
+	CScopedMutex m(s_matSystemMutex);
+
+	const int shaderNameHash = StringId24(name);
+
+	// load known shader packages by factory name
+	{
+		auto it = m_shaderFactoryList.find(shaderNameHash);
+		if (it.atEnd())
+			return;
+
+		MsgInfo("Reloading shader %s and associate materials\n", name);
+
+		MatSysShaderFactory& factory = *it;
+		m_shaderAPI->FreeShaderPackage(it.key());
+
+		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
+		m_shaderAPI->LoadShaderPackage(shaderPackPath);
+	}
+
+	// clear pipeline cache first
+	{
+		CScopedMutex m(s_matSystemPipelineMutex);
+		m_renderPipelineCache.remove(shaderNameHash);
+	}
+
+	Array<IMaterialPtr> loadingList(PP_SL);
+
+	const int oldFreq = m_shaderAPI->GetProgressiveTextureFrequency();
+	m_shaderAPI->SetProgressiveTextureFrequency(0);
+	LoadShaderPackages();
+
+	// reload materials which have that shader
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
+	{
+		CMaterial* material = static_cast<CMaterial*>(*it);
+		if (CString::Compare(material->m_shader->GetName(), name) != 0)
+			continue;
+
+		const bool loadedFromDisk = material->m_loadFromDisk;
+		material->Cleanup(loadedFromDisk, true);
+
+		// don't reload materials which are not from disk
+		if (!loadedFromDisk)
+			material->Init(m_shaderAPI, nullptr);
+		else
+			material->Init(m_shaderAPI);
+
+		material->m_varsUpdated = true;
+
+		// preload material if it was ever used before
+		if (material->m_frameBound > 0)
+			loadingList.append(IMaterialPtr(material));
+	}
+
+	// issue loading after all materials were freed
+	// - this is a guarantee to shader recompilation
+	for (int i = 0; i < loadingList.numElem(); i++)
+		QueueLoading(loadingList[i]);
+
+	m_shaderAPI->SetProgressiveTextureFrequency(oldFreq);
+}
+
 // frees all materials
 void CMaterialSystem::FreeMaterials()
 {
@@ -793,7 +866,7 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 
 void CMaterialSystem::RegisterShader(const MatSysShaderFactory& factory)
 {
-	const int nameHash = StringId24(factory.shaderName, true);
+	const int nameHash = StringId24(factory.shaderName);
 	auto it = m_shaderFactoryList.find(nameHash);
 	if (!it.atEnd())
 	{
@@ -807,7 +880,7 @@ void CMaterialSystem::RegisterShader(const MatSysShaderFactory& factory)
 	if (m_shaderAPI)
 	{
 		EqString shaderPackPath = fnmPathCombine("shaders", fnmPathApplyExt(factory.shaderName, "shd"));
-		(*it).shaderPackageId = m_shaderAPI->LoadShaderPackage(shaderPackPath);
+		m_shaderAPI->LoadShaderPackage(shaderPackPath);
 	}
 }
 
@@ -849,7 +922,7 @@ const MatSysShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShade
 	}
 
 	// now find the factory and dispatch
-	const int nameHash = StringId24(shaderName, true);
+	const int nameHash = StringId24(shaderName);
 	auto it = m_shaderFactoryList.find(nameHash);
 	if (it.atEnd())
 		return nullptr;

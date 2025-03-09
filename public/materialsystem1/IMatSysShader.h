@@ -130,7 +130,6 @@ struct MatSysShaderFactory
 	ArrayCRef<int>		vertexLayoutIds{ nullptr };
 	CREATE_SHADER_CB	func{ nullptr };
 	const char*			shaderName{ nullptr };
-	int					shaderPackageId{ 0 };
 };
 
 #define SHADER_VERTEX_ID(name)	StringIdConst24(#name)

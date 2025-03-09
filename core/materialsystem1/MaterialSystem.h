@@ -106,6 +106,7 @@ public:
 	int							GetLoadingQueue() const;
 								
 	void						ReloadAllMaterials();
+	void						ReloadShader(const char* name);
 	void						ReleaseUnusedMaterials();
 								
 	void						FreeMaterial(IMaterial *pMaterial);
