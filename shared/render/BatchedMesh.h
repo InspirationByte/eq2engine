@@ -61,11 +61,11 @@ public:
 	}
 
 	// deletes all data
-	void Clear()
+	void Clear(bool deallocate = false)
 	{
-		batches.clear();
-		vertices.clear();
-		indices.clear();
+		batches.clear(deallocate);
+		vertices.clear(deallocate);
+		indices.clear(deallocate);
 	}
 
 	template <typename DEST_VERTEX, typename SOURCE_VERTEX>
