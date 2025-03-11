@@ -62,9 +62,21 @@ static EqString GetTextStrArgs(lua_State* L, int startArg = 0)
 	return out;
 }
 
-static DbgText3DBuilder& S_DbgText3DBuilder_Text(const esl::ScriptState& state, DbgText3DBuilder& builder)
+static DDText3D& S_DDText3D_Text(const esl::ScriptState& state, DDText3D& builder)
 {
 	return builder.Text(GetTextStrArgs(state, 1));
+}
+
+template<typename T>
+static T& S_DDNode_Name(const esl::ScriptState& state, T& builder)
+{
+	return static_cast<T&>(builder.Name(GetTextStrArgs(state, 1)));
+}
+
+template<typename T>
+static T& S_DDNode_Time(const esl::ScriptState& state, T& builder, float time)
+{
+	return static_cast<T&>(builder.Time(time));
 }
 
 EQSCRIPT_TYPE_BEGIN( IDebugOverlay )
@@ -73,20 +85,20 @@ EQSCRIPT_TYPE_BEGIN( IDebugOverlay )
 	EQSCRIPT_BIND_STATIC_FUNC("Text3D", S_IDebugOverlay_Text3D)
 EQSCRIPT_TYPE_END
 
-EQSCRIPT_TYPE_BEGIN(DbgText3DBuilder)
+EQSCRIPT_TYPE_BEGIN(DDText3D)
 	EQSCRIPT_BIND_FUNC(Dispatch)
 
-	EQSCRIPT_BIND_STATIC_FUNC("Text", S_DbgText3DBuilder_Text)
+	EQSCRIPT_BIND_STATIC_FUNC("Text", S_DDText3D_Text)
 	EQSCRIPT_BIND_FUNC(Position)
 	EQSCRIPT_BIND_FUNC(Color)
 	EQSCRIPT_BIND_FUNC(Distance)
-	EQSCRIPT_BIND_FUNC(Time)
-	EQSCRIPT_BIND_FUNC(Name)
+	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Name<DDText3D>)
+	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Time<DDText3D>)
 EQSCRIPT_TYPE_END
 
-static DbgText3DBuilder* S_DbgText3D() { return PPNew DbgText3DBuilder(PP_SL); }
+static DDText3D* S_DbgText3D() { return PPNew DDText3D(PP_SL); }
 
-EQSCRIPT_TYPE_BEGIN(DbgBoxBuilder)
+EQSCRIPT_TYPE_BEGIN(DDBox)
 	EQSCRIPT_BIND_FUNC(Dispatch)
 
 	EQSCRIPT_BIND_FUNC(Box)
@@ -94,13 +106,13 @@ EQSCRIPT_TYPE_BEGIN(DbgBoxBuilder)
 	EQSCRIPT_BIND_FUNC(Mins)
 	EQSCRIPT_BIND_FUNC(Maxs)
 	EQSCRIPT_BIND_FUNC(Color)
-	EQSCRIPT_BIND_FUNC(Time)
-	EQSCRIPT_BIND_FUNC(Name)
+	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Name<DDBox>)
+	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Time<DDBox>)
 EQSCRIPT_TYPE_END
 
-static DbgBoxBuilder* S_DbgBox() { return PPNew DbgBoxBuilder(PP_SL); }
+static DDBox* S_DbgBox() { return PPNew DDBox(PP_SL); }
 
-EQSCRIPT_TYPE_BEGIN(DbgOriBoxBuilder)
+EQSCRIPT_TYPE_BEGIN(DDOrientedBox)
 	EQSCRIPT_BIND_FUNC(Dispatch)
 
 	EQSCRIPT_BIND_FUNC(Mins)
@@ -108,38 +120,39 @@ EQSCRIPT_TYPE_BEGIN(DbgOriBoxBuilder)
 	EQSCRIPT_BIND_FUNC(Position)
 	EQSCRIPT_BIND_FUNC(Rotation)
 	EQSCRIPT_BIND_FUNC(Color)
-	EQSCRIPT_BIND_FUNC(Time)
-	EQSCRIPT_BIND_FUNC(Name)
+	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Name<DDOrientedBox>)
+	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Time<DDOrientedBox>)
 EQSCRIPT_TYPE_END
 
-static DbgOriBoxBuilder* S_DbgOriBox() { return PPNew DbgOriBoxBuilder(PP_SL); }
+static DDOrientedBox* S_DbgOriBox() { return PPNew DDOrientedBox(PP_SL); }
 
-EQSCRIPT_TYPE_BEGIN(DbgSphereBuilder)
+EQSCRIPT_TYPE_BEGIN(DDSphere)
 	EQSCRIPT_BIND_FUNC(Dispatch)
 
 	EQSCRIPT_BIND_FUNC(Position)
 	EQSCRIPT_BIND_FUNC(Radius)
 	EQSCRIPT_BIND_FUNC(Color)
-	EQSCRIPT_BIND_FUNC(Time)
-	EQSCRIPT_BIND_FUNC(Name)
+	EQSCRIPT_BIND_FUNC(Fill)
+	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Name<DDSphere>)
+	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Time<DDSphere>)
 EQSCRIPT_TYPE_END
 
-static DbgSphereBuilder* S_DbgSphere() { return PPNew DbgSphereBuilder(PP_SL); }
+static DDSphere* S_DbgSphere() { return PPNew DDSphere(PP_SL); }
 
-EQSCRIPT_TYPE_BEGIN(DbgCylinderBuilder)
+EQSCRIPT_TYPE_BEGIN(DDCylinder)
 	EQSCRIPT_BIND_FUNC(Dispatch)
 
 	EQSCRIPT_BIND_FUNC(Position)
 	EQSCRIPT_BIND_FUNC(Radius)
 	EQSCRIPT_BIND_FUNC(Height)
 	EQSCRIPT_BIND_FUNC(Color)
-	EQSCRIPT_BIND_FUNC(Time)
-	EQSCRIPT_BIND_FUNC(Name)
+	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Name<DDCylinder>)
+	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Time<DDCylinder>)
 EQSCRIPT_TYPE_END
 
-static DbgCylinderBuilder* S_DbgCylinder() { return PPNew DbgCylinderBuilder(PP_SL); }
+static DDCylinder* S_DbgCylinder() { return PPNew DDCylinder(PP_SL); }
 
-EQSCRIPT_TYPE_BEGIN(DbgLineBuilder)
+EQSCRIPT_TYPE_BEGIN(DDLine)
 	EQSCRIPT_BIND_FUNC(Dispatch)
 
 	EQSCRIPT_BIND_FUNC(Start)
@@ -147,22 +160,22 @@ EQSCRIPT_TYPE_BEGIN(DbgLineBuilder)
 	EQSCRIPT_BIND_FUNC(Color)
 	EQSCRIPT_BIND_FUNC(ColorStart)
 	EQSCRIPT_BIND_FUNC(ColorEnd)
-	EQSCRIPT_BIND_FUNC(Time)
-	EQSCRIPT_BIND_FUNC(Name)
+	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Name<DDLine>)
+	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Time<DDLine>)
 EQSCRIPT_TYPE_END
 
-static DbgLineBuilder* S_DbgLine() { return PPNew DbgLineBuilder(PP_SL); }
+static DDLine* S_DbgLine() { return PPNew DDLine(PP_SL); }
 
-EQSCRIPT_TYPE_BEGIN(DbgPolyBuilder)
+EQSCRIPT_TYPE_BEGIN(DDPoly)
 	EQSCRIPT_BIND_FUNC(Dispatch)
 
 	EQSCRIPT_BIND_FUNC(Point)
 	EQSCRIPT_BIND_FUNC(Color)
-	EQSCRIPT_BIND_FUNC(Time)
-	EQSCRIPT_BIND_FUNC(Name)
+	EQSCRIPT_BIND_STATIC_FUNC("Time", S_DDNode_Name<DDPoly>)
+	EQSCRIPT_BIND_STATIC_FUNC("Name", S_DDNode_Time<DDPoly>)
 EQSCRIPT_TYPE_END
 
-static DbgPolyBuilder* S_DbgPoly() { return PPNew DbgPolyBuilder(PP_SL); }
+static DDPoly* S_DbgPoly() { return PPNew DDPoly(PP_SL); }
 
 //---------------------------------------------------------------------------------------
 // Sound Emitter System
@@ -669,21 +682,21 @@ bool eslSysDebugDrawingInit(const esl::ScriptState& state)
 	state.RegisterClass<IDebugOverlay>();
 	state.SetGlobal("debugoverlay", debugoverlay);
 
-	state.RegisterClass<DbgText3DBuilder>();
-	state.RegisterClass<DbgBoxBuilder>();
-	state.RegisterClass<DbgOriBoxBuilder>();
-	state.RegisterClass<DbgSphereBuilder>();
-	state.RegisterClass<DbgCylinderBuilder>();
-	state.RegisterClass<DbgLineBuilder>();
-	state.RegisterClass<DbgPolyBuilder>();
+	state.RegisterClass<DDText3D>();
+	state.RegisterClass<DDBox>();
+	state.RegisterClass<DDOrientedBox>();
+	state.RegisterClass<DDSphere>();
+	state.RegisterClass<DDCylinder>();
+	state.RegisterClass<DDLine>();
+	state.RegisterClass<DDPoly>();
 
-	state.SetGlobal("DbgText3D", EQSCRIPT_CFUNC(S_DbgText3D, esl::ToLua<DbgText3DBuilder>, void));
-	state.SetGlobal("DbgBox", EQSCRIPT_CFUNC(S_DbgBox, esl::ToLua<DbgBoxBuilder>, void));
-	state.SetGlobal("DbgOriBox", EQSCRIPT_CFUNC(S_DbgOriBox, esl::ToLua<DbgOriBoxBuilder>, void));
-	state.SetGlobal("DbgSphere", EQSCRIPT_CFUNC(S_DbgSphere, esl::ToLua<DbgSphereBuilder>, void));
-	state.SetGlobal("DbgCylinder", EQSCRIPT_CFUNC(S_DbgCylinder, esl::ToLua<DbgCylinderBuilder>, void));
-	state.SetGlobal("DbgLine", EQSCRIPT_CFUNC(S_DbgLine, esl::ToLua<DbgLineBuilder>, void));
-	state.SetGlobal("DbgPoly", EQSCRIPT_CFUNC(S_DbgPoly, esl::ToLua<DbgPolyBuilder>, void));
+	state.SetGlobal("DbgText3D", EQSCRIPT_CFUNC(S_DbgText3D, esl::ToLua<DDText3D>, void));
+	state.SetGlobal("DbgBox", EQSCRIPT_CFUNC(S_DbgBox, esl::ToLua<DDBox>, void));
+	state.SetGlobal("DbgOriBox", EQSCRIPT_CFUNC(S_DbgOriBox, esl::ToLua<DDOrientedBox>, void));
+	state.SetGlobal("DbgSphere", EQSCRIPT_CFUNC(S_DbgSphere, esl::ToLua<DDSphere>, void));
+	state.SetGlobal("DbgCylinder", EQSCRIPT_CFUNC(S_DbgCylinder, esl::ToLua<DDCylinder>, void));
+	state.SetGlobal("DbgLine", EQSCRIPT_CFUNC(S_DbgLine, esl::ToLua<DDLine>, void));
+	state.SetGlobal("DbgPoly", EQSCRIPT_CFUNC(S_DbgPoly, esl::ToLua<DDPoly>, void));
 
 #ifdef IMGUI_ENABLED
 	imGuilState = state;

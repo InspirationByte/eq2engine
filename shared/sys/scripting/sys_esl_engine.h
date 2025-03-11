@@ -13,26 +13,26 @@ class CSoundEmitterSystem;
 class CSoundingObject;
 struct EmitParams;
 
-struct DbgText3DBuilder;
-struct DbgBoxBuilder;
-struct DbgOriBoxBuilder;
-struct DbgSphereBuilder;
-struct DbgCylinderBuilder;
-struct DbgLineBuilder;
-struct DbgPolyBuilder;
+struct DDText3D;
+struct DDBox;
+struct DDOrientedBox;
+struct DDSphere;
+struct DDCylinder;
+struct DDLine;
+struct DDPoly;
 
 EQSCRIPT_BIND_TYPE_NO_PARENT(IDebugOverlay, "IDebugOverlay", BY_REF)
 EQSCRIPT_BIND_TYPE_NO_PARENT(EmitParams, "EmitParams", BY_VALUE)
 EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundEmitterSystem, "CSoundEmitterSystem", BY_REF)
 EQSCRIPT_BIND_TYPE_NO_PARENT(CSoundingObject, "CSoundingObject", BY_REF)
 
-EQSCRIPT_BIND_TYPE_NO_PARENT(DbgText3DBuilder, "DbgText3DBuilder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DbgBoxBuilder, "DbgBoxBuilder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DbgOriBoxBuilder, "DbgOriBoxBuilder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DbgSphereBuilder, "DbgSphereBuilder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DbgCylinderBuilder, "DbgCylinderBuilder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DbgLineBuilder, "DbgLineBuilder", BY_REF)
-EQSCRIPT_BIND_TYPE_NO_PARENT(DbgPolyBuilder, "DbgPolyBuilder", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDText3D, "DbgText3D", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDBox, "DbgBox", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDOrientedBox, "DDOrientedBox", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDSphere, "DbgSphere", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDCylinder, "DbgCylinder", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDLine, "DbgLine", BY_REF)
+EQSCRIPT_BIND_TYPE_NO_PARENT(DDPoly, "DbgPoly", BY_REF)
 
 bool eslSysHostInit(const esl::ScriptState& state);
 bool eslSysStateManagerInit(const esl::ScriptState& state);

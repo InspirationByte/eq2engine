@@ -637,7 +637,7 @@ void InputCommands_SDL(SDL_Event* event)
 	}
 }
 
-static DbgGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
+static DDGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
 
 CGameHost::CGameHost()
 {

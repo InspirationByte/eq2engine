@@ -18,8 +18,6 @@
 
 DECLARE_CVAR(r_debugDrawFrameStats, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(r_debugDrawGraphs, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(r_debugDrawShapes, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(r_debugDrawLines, "0", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 
 static constexpr const int DRAW_MAX_VERTS = 8192;
@@ -28,6 +26,8 @@ static constexpr const int BOXES_DRAW_SUBDIV = 4096 / 16;
 static constexpr const int LINES_DRAW_SUBDIV = 2048;
 static constexpr const int POLYS_DRAW_SUBDIV = 256;
 static constexpr const int GRAPH_MAX_VALUES = 400;
+
+static constexpr const int MAX_MINICON_MESSAGES = 32;
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
@@ -147,8 +147,6 @@ void CDebugOverlay::Init(bool hidden)
 	{
 		r_debugDrawFrameStats.SetBool(true);
 		r_debugDrawGraphs.SetBool(true);
-		r_debugDrawShapes.SetBool(true);
-		r_debugDrawLines.SetBool(true);
 	}
 #endif // ENABLE_DEBUG_DRAWING
 
@@ -177,43 +175,17 @@ void CDebugOverlay::Text(const MColor& color, char const *fmt,...)
 
 	va_list		argptr;
 	va_start (argptr,fmt);
-	textNode.pszText = EqString::FormatV(fmt, argptr);
+	textNode.text = EqString::FormatV(fmt, argptr);
 	va_end (argptr);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const MColor& color, const char* text, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::TextFadeOut(int position, const MColor& color, float fFadeTime, char const* fmt, ...)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if(hashId == 0 && !m_frustum.IsSphereInside(origin, 1.0f))
-		return;
-
-	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugText3DNode_t& textNode = m_Text3DArray.append();
-	textNode.color = color.pack();
-	textNode.origin = origin;
-	textNode.dist = dist;
-	textNode.lifetime = fTime;
-	textNode.pszText = text;
-	textNode.sl;
-
-	textNode.frameindex = m_frameId;
-	textNode.nameHash = hashId;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
-}
-
-#define MAX_MINICON_MESSAGES 32
-
-void CDebugOverlay::TextFadeOut(int position, const MColor& color,float fFadeTime, char const *fmt, ...)
-{
-#ifdef ENABLE_DEBUG_DRAWING
-	if(position == 1)
+	if (position == 1)
 	{
-		if(!r_debugDrawFrameStats.GetBool())
+		if (!r_debugDrawFrameStats.GetBool())
 			return;
 	}
 
@@ -225,14 +197,14 @@ void CDebugOverlay::TextFadeOut(int position, const MColor& color,float fFadeTim
 	textNode.initialLifetime = fFadeTime;
 
 	va_list		argptr;
-	va_start (argptr,fmt);
-	textNode.pszText = EqString::FormatV(fmt, argptr);
-	va_end (argptr);
-	if(position == 0)
+	va_start(argptr, fmt);
+	textNode.text = EqString::FormatV(fmt, argptr);
+	va_end(argptr);
+	if (position == 0)
 	{
 		m_LeftTextFadeArray.append(std::move(textNode));
 
-		if(m_LeftTextFadeArray.getCount() > MAX_MINICON_MESSAGES)
+		if (m_LeftTextFadeArray.getCount() > MAX_MINICON_MESSAGES)
 			m_LeftTextFadeArray.popFront();
 	}
 	else
@@ -240,238 +212,92 @@ void CDebugOverlay::TextFadeOut(int position, const MColor& color,float fFadeTim
 #endif // ENABLE_DEBUG_DRAWING
 }
 
-void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const MColor& color, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDText3D& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if(!r_debugDrawShapes.GetBool())
-		return;
-
-	if(hashId == 0 && !m_frustum.IsBoxInside(mins,maxs))
-		return;
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugBoxNode_t& box = m_BoxList.append();
-
-	box.mins = mins;
-	box.maxs = maxs;
-	box.color = color.pack();
-	box.lifetime = fTime;
-
-	box.frameindex = m_frameId;
-	box.nameHash = hashId;
-	box.sl = sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_Text3DArray.append(prim);
+#endif
 }
 
-void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const MColor& color, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDLine& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if (!r_debugDrawShapes.GetBool())
-		return;
-
-	Vector3D boxSize(radius, height * 0.5f, radius);
-	if(hashId == 0 && !m_frustum.IsSphereInside(position, max(radius, height)))
-		return;
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugCylinderNode_t& cyl = m_CylinderList.append();
-	cyl.origin = position;
-	cyl.radius = radius;
-	cyl.height = height;
-	cyl.color = color.pack();
-	cyl.lifetime = fTime;
-
-	cyl.frameindex = m_frameId;
-	cyl.nameHash = hashId;
-	cyl.sl = sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_LineList.append(prim);
+#endif
 }
 
-void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const MColor& color1, const MColor& color2, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDBox& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if(!r_debugDrawLines.GetBool())
-		return;
-
-	if(hashId == 0 && !m_frustum.IsBoxInside(start,end))
-		return;
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugLineNode_t& line = m_LineList.append();
-	line.start = start;
-	line.end = end;
-	line.color1 = color1.pack();
-	line.color2 = color2.pack();
-	line.lifetime = fTime;
-
-	line.frameindex = m_frameId;
-	line.nameHash = hashId;
-	line.sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_BoxList.append(prim);
+#endif
 }
 
-void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const MColor& color, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDCylinder& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if(!r_debugDrawShapes.GetBool())
-		return;
-
-	if(hashId == 0 && !m_frustum.IsBoxInside(position+mins, position+maxs))
-		return;
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugOriBoxNode_t& box = m_OrientedBoxList.append();
-	box.mins = mins;
-	box.maxs = maxs;
-	box.position = position;
-	box.rotation = rotation;
-	box.color = color.pack();
-	box.lifetime = fTime;
-
-	box.frameindex = m_frameId;
-	box.nameHash = hashId;
-	box.sl = sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_CylinderList.append(prim);
+#endif
 }
 
-void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const MColor& color, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDOrientedBox& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if(!r_debugDrawShapes.GetBool())
-		return;
-
-	if(hashId == 0 && !m_frustum.IsSphereInside(position, radius))
-		return;
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugSphereNode_t& sphere = m_SphereList.append();
-	sphere.origin = position;
-	sphere.radius = radius;
-	sphere.color = color.pack();
-	sphere.lifetime = fTime;
-
-	sphere.frameindex = m_frameId;
-	sphere.nameHash = hashId;
-	sphere.sl = sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_OrientedBoxList.append(prim);
+#endif
 }
 
-void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const MColor& color, bool outline, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDSphere& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if(hashId == 0 && !m_frustum.IsTriangleInside(v0,v1,v2))
-		return;
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugPolyNode_t& poly = m_polygons.append();
-	poly.verts.append(v0);
-	poly.verts.append(v1);
-	poly.verts.append(v2);
-	poly.outline = outline;
-	poly.color = color.pack();
-	poly.lifetime = fTime;
-
-
-	poly.frameindex = m_frameId;
-	poly.nameHash = hashId;
-	poly.sl = sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_SphereList.append(prim);
+#endif
 }
 
-void CDebugOverlay::Polygon3D(ArrayCRef<Vector3D> verts, const MColor& color, bool outline, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDPoly& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if (hashId == 0)
-	{
-		bool anyVisible = false;
-		for (int i = 0; i < verts.numElem() - 2; ++i)
-		{
-			if (m_frustum.IsTriangleInside(verts[0], verts[i + 1], verts[i + 2]))
-			{
-				anyVisible = true;
-				break;
-			}
-		}
-
-		if (!anyVisible)
-			return;
-	}
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugPolyNode_t& poly = m_polygons.append();
-	poly.verts.append(verts.ptr(), verts.numElem());
-	poly.outline = outline;
-	poly.color = color.pack();
-	poly.lifetime = fTime;
-
-	poly.frameindex = m_frameId;
-	poly.nameHash = hashId;
-	poly.sl = sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_polygons.append(prim);
+#endif
 }
 
-void CDebugOverlay::Volume3D(ArrayCRef<Plane> planes, const MColor& color, float fTime, int hashId, PPSourceLine sl)
+void CDebugOverlay::Add(DDVolume& prim)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	// if (hashId == 0)
-	// {
-	// 	bool anyVisible = false;
-	// 	for (int i = 0; i < verts.numElem() - 2; ++i)
-	// 	{
-	// 		if (m_frustum.IsTriangleInside(verts[0], verts[i + 1], verts[i + 2]))
-	// 		{
-	// 			anyVisible = true;
-	// 			break;
-	// 		}
-	// 	}
-	// 
-	// 	if (!anyVisible)
-	// 		return;
-	// }
-
 	Threading::CScopedMutex m(s_debugOverlayMutex);
-
-	DebugVolumeNode_t& volume = m_volumes.append();
-	volume.planes.append(planes.ptr(), planes.numElem());
-
-	volume.color = color.pack();
-	volume.lifetime = fTime;
-
-	volume.frameindex = m_frameId;
-	volume.nameHash = hashId;
-	volume.sl = sl;
-
-	if (hashId != 0)
-		m_newNames.insert(hashId, m_frameId);
-#endif // ENABLE_DEBUG_DRAWING
+	if (prim.nameHash != 0)
+		m_newNames.insert(prim.nameHash, m_frameId);
+	prim.frameindex = m_frameId;
+	m_volumes.append(prim);
+#endif
 }
 
 void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
@@ -479,7 +305,7 @@ void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 #ifdef ENABLE_DEBUG_DRAWING
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
-	DebugDrawFunc_t& fn = m_draw2DFuncs.append();
+	DebugDrawFunc_t fn(PP_SL);
 	fn.func = func;
 	fn.lifetime = fTime;
 
@@ -488,6 +314,8 @@ void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+
+	m_draw2DFuncs.appendEmplace(fn);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
@@ -496,7 +324,7 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 #ifdef ENABLE_DEBUG_DRAWING
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
-	DebugDrawFunc_t& fn = m_draw3DFuncs.append();
+	DebugDrawFunc_t fn(PP_SL);
 	fn.func = func;
 	fn.lifetime = fTime;
 
@@ -505,11 +333,13 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+
+	m_draw3DFuncs.append(fn);
 #endif // ENABLE_DEBUG_DRAWING
 }
 
 #ifdef ENABLE_DEBUG_DRAWING
-static void DrawLineArray(ArrayRef<DebugLineNode_t> lines, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!lines.numElem())
 		return;
@@ -524,10 +354,11 @@ static void DrawLineArray(ArrayRef<DebugLineNode_t> lines, float frametime, IGPU
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 	meshBuilder.Begin(PRIM_LINES);
-
-		for(int i = 0; i < lines.numElem(); i++)
+		for(DDLine& line : lines)
 		{
-			DebugLineNode_t& line = lines[i];
+			line.lifetime -= frametime;
+			if (!frustum.IsBoxInside(line.start, line.end))
+				continue;
 
 			meshBuilder.Color4(line.color1);
 			meshBuilder.Position3fv(line.start);
@@ -538,15 +369,13 @@ static void DrawLineArray(ArrayRef<DebugLineNode_t> lines, float frametime, IGPU
 			meshBuilder.Position3fv(line.end);
 
 			meshBuilder.AdvanceVertex();
-
-			line.lifetime -= frametime;
 		}
 
 	if(meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawOrientedBoxArray(ArrayRef<DDOrientedBox> boxes, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if (!boxes.numElem())
 		return;
@@ -564,6 +393,12 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 
 	for (int i = 0; i < boxes.numElem(); i++)
 	{
+		DDOrientedBox& node = boxes[i];
+		node.lifetime -= frametime;
+
+		if (!frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
+			continue;
+
 		if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
@@ -573,8 +408,6 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 			meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 			meshBuilder.Begin(PRIM_LINES);
 		}
-
-		DebugOriBoxNode_t& node = boxes[i];
 
 		meshBuilder.Color4(node.color);
 
@@ -614,14 +447,13 @@ static void DrawOrientedBoxArray(ArrayRef<DebugOriBoxNode_t> boxes, float framet
 		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.maxs.z), node.rotation),
 			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation));
 
-		node.lifetime -= frametime;
 	}
 
 	if (meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawBoxArray(ArrayRef<DDBox> boxes, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!boxes.numElem())
 		return;
@@ -639,6 +471,12 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 
 		for(int i = 0; i < boxes.numElem(); i++)
 		{
+			DDBox& node = boxes[i];
+			node.lifetime -= frametime;
+
+			if (!frustum.IsBoxInside(node.mins, node.maxs, 1.0f))
+				continue;
+
 			if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
@@ -649,7 +487,6 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 				meshBuilder.Begin(PRIM_LINES);
 			}
 
-			DebugBoxNode_t& node = boxes[i];
 
 			meshBuilder.Color4(node.color);
 
@@ -689,14 +526,13 @@ static void DrawBoxArray(ArrayRef<DebugBoxNode_t> boxes, float frametime, IGPURe
 			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
 								Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
 
-			node.lifetime -= frametime;
 		}
 
 	if (meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinder, float frametime)
+static void DrawCylinder(CMeshBuilder& meshBuilder, DDCylinder& cylinder, float frametime)
 {
 	static const int NUM_SEG = 8;
 	static float dir[NUM_SEG * 2];
@@ -740,12 +576,13 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinde
 			Vector3D(cx + dir[i * 2 + 0] * rx, min.y, cz + dir[i * 2 + 1] * rz),
 			Vector3D(cx + dir[i * 2 + 0] * rx, max.y, cz + dir[i * 2 + 1] * rz));
 	}
-
-	cylinder.lifetime -= frametime;
 }
 
-static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float frametime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawCylinderArray(ArrayRef<DDCylinder> cylArray, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
+	if (cylArray.numElem())
+		return;
+
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
 
 	RenderDrawCmd drawCmd;
@@ -760,6 +597,12 @@ static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float fram
 
 	for (int i = 0; i < cylArray.numElem(); ++i)
 	{
+		DDCylinder& node = cylArray[i];
+		node.lifetime -= frametime;
+
+		if (!frustum.IsSphereInside(node.origin, max(node.radius, node.height)))
+			continue;
+
 		if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
 		{
 			if (meshBuilder.End(drawCmd))
@@ -777,7 +620,7 @@ static void DrawCylinderArray(ArrayRef<DebugCylinderNode_t> cylArray, float fram
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
-static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float frame_time, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawGraph(DDGraphBucket* graph, int position, IEqFont* pFont, float frame_time, IGPURenderPassRecorder* rendPassRecorder)
 {
 	const float GRAPH_HEIGHT = 100;
 	const float GRAPH_Y_OFFSET = 50;
@@ -836,7 +679,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 		//	graph->fMaxValue = graph->points.getCurrent();
 
 		const int graphIdx = (graph->cursor + length) % graph->values.numElem();
-		DbgGraphBucket::DbgGraphValue& graphVal = graph->values[graphIdx];
+		DDGraphBucket::DbgGraphValue& graphVal = graph->values[graphIdx];
 
 		// get a value of it.
 		float value = clamp(graphVal.value, 0.0f, graph->maxValue);
@@ -881,7 +724,7 @@ static void DrawGraph(DbgGraphBucket* graph, int position, IEqFont* pFont, float
 
 }
 
-static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!polygons.numElem())
 		return;
@@ -902,6 +745,9 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 
 		for(int i = 0; i < polygons.numElem(); i++)
 		{
+			DDPoly& node = polygons[i];
+			node.lifetime -= frameTime;
+
 			if (i > 0 && (i % POLYS_DRAW_SUBDIV) == 0)
 			{
 				if (meshBuilder.End(drawCmd))
@@ -912,14 +758,12 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 				meshBuilder.Begin(PRIM_TRIANGLES);
 			}
 
-			meshBuilder.Color4(polygons[i].color);
+			meshBuilder.Color4(node.color);
 
-			for(int j = 0; j < polygons[i].verts.numElem()-2; ++j)
+			for(int j = 0; j < node.verts.numElem()-2; ++j)
 			{
-				meshBuilder.Triangle3(polygons[i].verts[0], polygons[i].verts[j+1], polygons[i].verts[j+2]);
+				meshBuilder.Triangle3(node.verts[0], node.verts[j+1], node.verts[j+2]);
 			}
-
-			polygons[i].lifetime -= frameTime;
 		}
 
 	if (meshBuilder.End(drawCmd))
@@ -928,7 +772,8 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < polygons.numElem(); i++)
 		{
-			if (!polygons[i].outline)
+			const DDPoly& node = polygons[i];
+			if (!node.outline)
 				continue;
 
 			if (i > 0 && (i % LINES_DRAW_SUBDIV) == 0)
@@ -941,11 +786,11 @@ static void DrawPolygons(ArrayRef<DebugPolyNode_t> polygons, float frameTime, IG
 				meshBuilder.Begin(PRIM_LINES);
 			}
 
-			meshBuilder.Color4(polygons[i].color);
+			meshBuilder.Color4(node.color);
 
-			for (int j = 0; j < polygons[i].verts.numElem(); ++j)
+			for (int j = 0; j < node.verts.numElem(); ++j)
 			{
-				meshBuilder.Line3fv(polygons[i].verts[j], polygons[i].verts[(j+1) % polygons[i].verts.numElem()]);
+				meshBuilder.Line3fv(node.verts[j], node.verts[(j+1) % node.verts.numElem()]);
 			}
 		}
 	if (meshBuilder.End(drawCmd))
@@ -1069,7 +914,7 @@ const void DebugDrawVolume(const ArrayCRef<Plane>& volume, const MColor& color)
 		if (wnd.indices.numElem() < 3)
 			continue;
 
-		DbgPolyBuilder poly(PP_SL);
+		DDPoly poly(PP_SL);
 		poly.Color(color);
 		poly.Outline();
 
@@ -1078,8 +923,11 @@ const void DebugDrawVolume(const ArrayCRef<Plane>& volume, const MColor& color)
 	}
 }
 
-static void DrawVolumes(ArrayRef<DebugVolumeNode_t> volumes, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawVolumes(ArrayRef<DDVolume> volumes, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
+	if (volumes.numElem())
+		return;
+
 	for (int i = 0; i < volumes.numElem(); i++)
 	{
 		DebugDrawVolume(volumes[i].planes, volumes[i].color);
@@ -1096,7 +944,7 @@ static Vector3D v3sphere(float theta, float phi)
 }
 
 // use PRIM_LINES
-static void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
+static void DrawSphereWireframe(CMeshBuilder& meshBuilder, DDSphere& sphere, int sides)
 {
 	if (sphere.radius <= 0)
 		return;
@@ -1157,7 +1005,7 @@ static void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sp
 }
 
 // use PRIM_TRIANGLES
-static void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawSphereFilled(CMeshBuilder& meshBuilder, DDSphere& sphere, int sides)
 {
 	if (sphere.radius <= 0)
 		return;
@@ -1239,7 +1087,7 @@ static void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& spher
 	}
 }
 
-static void DrawSphereArray(ArrayRef<DebugSphereNode_t> spheres, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
+static void DrawSphereArray(ArrayRef<DDSphere> spheres, float frameTime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if(!spheres.numElem())
 		return;
@@ -1259,8 +1107,36 @@ static void DrawSphereArray(ArrayRef<DebugSphereNode_t> spheres, float frameTime
 
 	for (int i = 0; i < spheres.numElem(); i++)
 	{
+		DDSphere& sphere = spheres[i];
+		if (sphere.fill)
+			continue;
+
+		sphere.lifetime -= frameTime;
+
+		if (!frustum.IsSphereInside(sphere.origin, sphere.radius))
+			continue;
+
 		DrawSphereWireframe(meshBuilder, spheres[i], 20);
-		spheres[i].lifetime -= frameTime;
+	}
+
+	if (meshBuilder.End(drawCmd))
+		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
+
+	meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+	meshBuilder.Begin(PRIM_TRIANGLES);
+
+	for (int i = 0; i < spheres.numElem(); i++)
+	{
+		DDSphere& sphere = spheres[i];
+		if (!sphere.fill)
+			continue;
+
+		sphere.lifetime -= frameTime;
+
+		if (!frustum.IsSphereInside(sphere.origin, sphere.radius))
+			continue;
+
+		DrawSphereFilled(meshBuilder, spheres[i], 20);
 	}
 
 	if (meshBuilder.End(drawCmd))
@@ -1326,17 +1202,17 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	// draw all of 3d stuff
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawBoxArray(m_BoxList, m_frameTime, rendPassRecorder);
+		DrawBoxArray(m_BoxList, m_frameTime, m_frustum, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawCylinderArray(m_CylinderList, m_frameTime, rendPassRecorder);
+		DrawCylinderArray(m_CylinderList, m_frameTime, m_frustum, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime, rendPassRecorder);
+		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime, m_frustum, rendPassRecorder);
 	}
 
 	{
@@ -1346,12 +1222,12 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawSphereArray(m_SphereList, m_frameTime, rendPassRecorder);
+		DrawSphereArray(m_SphereList, m_frameTime, m_frustum, rendPassRecorder);
 	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
-		DrawLineArray(m_LineList, m_frameTime, rendPassRecorder);
+		DrawLineArray(m_LineList, m_frameTime, m_frustum, rendPassRecorder);
 	}
 
 	{
@@ -1394,7 +1270,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			textStl.textColor = curColor;
 
 			const Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (n * m_debugFont->GetLineHeight(textStl)));
-			m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, textStl, rendPassRecorder);
+			m_debugFont->SetupRenderText(current.text, textPos, textStl, rendPassRecorder);
 
 			++n;
 		}
@@ -1406,9 +1282,12 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
-		for (DebugText3DNode_t& current : m_Text3DArray)
+		for (DDText3D& current : m_Text3DArray)
 		{
 			current.lifetime -= m_frameTime;
+
+			if (!m_frustum.IsSphereInside(current.origin, 1.0f))
+				continue;
 
 			Vector3D screen(0);
 			const bool behind = PointToScreen(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
@@ -1419,7 +1298,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 				continue;
 
 			textStl.textColor = current.color;
-			m_debugFont2->SetupRenderText(current.pszText.GetData(), screen.xy(), textStl, rendPassRecorder);
+			m_debugFont2->SetupRenderText(current.text, screen.xy(), textStl, rendPassRecorder);
 		}
 	}
 
@@ -1437,7 +1316,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 					const Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (n * m_debugFont->GetLineHeight(textStl)));
 
 					textStl.textColor = current.color;
-					m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, textStl, rendPassRecorder);
+					m_debugFont->SetupRenderText(current.text, textPos, textStl, rendPassRecorder);
 					++n;
 				}
 			}
@@ -1463,10 +1342,10 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 				rTextFadeStyle.textColor = curColor;
 
-				const float textLen = m_debugFont->GetStringWidth(current.pszText.ToCString(), textStl);
+				const float textLen = m_debugFont->GetStringWidth(current.text, textStl);
 				const Vector2D textPos(winWide - (textLen * m_debugFont->GetLineHeight(textStl)), 45 + (n * m_debugFont->GetLineHeight(textStl)));
 
-				m_debugFont->SetupRenderText(current.pszText.GetData(), textPos, rTextFadeStyle, rendPassRecorder);
+				m_debugFont->SetupRenderText(current.text, textPos, rTextFadeStyle, rendPassRecorder);
 				++n;
 			}
 		}
@@ -1545,15 +1424,15 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 #endif
 }
-
-bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
+#pragma optimize("", off)
+bool CDebugOverlay::CheckNodeLifetime(DDNodeBase& node)
 {
 	// don't touch newly added nodes
 	if (node.frameindex == m_frameId)
 		return true;
 
 	// expired.
-	if (node.lifetime < 0.0f)
+	if (node.lifetime <= 0.0f)
 		return false;
 
 	if (node.nameHash == 0)
@@ -1603,106 +1482,72 @@ void CDebugOverlay::CleanOverlays()
 	for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
 	{
 		if (!CheckNodeLifetime(m_draw2DFuncs[i]))
-		{
-			m_draw2DFuncs.fastRemoveIndex(i);
-			i--;
-		}
+			m_draw2DFuncs.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_draw3DFuncs.numElem(); i++)
 	{
 		if (!CheckNodeLifetime(m_draw3DFuncs[i]))
-		{
-			m_draw3DFuncs.fastRemoveIndex(i);
-			i--;
-		}
+			m_draw3DFuncs.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_RightTextFadeArray.numElem(); i++)
 	{
 		if (m_RightTextFadeArray[i].lifetime <= 0)
-		{
-			m_RightTextFadeArray.fastRemoveIndex(i);
-			i--;
-		}
+			m_RightTextFadeArray.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_Text3DArray.numElem(); i++)
 	{
 		if(!CheckNodeLifetime(m_Text3DArray[i]))
-		{
-			m_Text3DArray.fastRemoveIndex(i);
-			i--;
-		}
+			m_Text3DArray.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_LineList.numElem(); i++)
 	{
 		if(!CheckNodeLifetime(m_LineList[i]))
-		{
-			m_LineList.fastRemoveIndex(i);
-			i--;
-		}
+			m_LineList.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_BoxList.numElem(); i++)
 	{
 		if(!CheckNodeLifetime(m_BoxList[i]))
-		{
-			m_BoxList.fastRemoveIndex(i);
-			i--;
-		}
+			m_BoxList.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_CylinderList.numElem(); i++)
 	{
 		if (!CheckNodeLifetime(m_CylinderList[i]))
-		{
-			m_CylinderList.fastRemoveIndex(i);
-			i--;
-		}
+			m_CylinderList.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_OrientedBoxList.numElem(); i++)
 	{
 		if (!CheckNodeLifetime(m_OrientedBoxList[i]))
-		{
-			m_OrientedBoxList.fastRemoveIndex(i);
-			i--;
-		}
+			m_OrientedBoxList.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_SphereList.numElem(); i++)
 	{
 		if(!CheckNodeLifetime(m_SphereList[i]))
-		{
-			m_SphereList.fastRemoveIndex(i);
-			i--;
-		}
+			m_SphereList.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_polygons.numElem(); i++)
 	{
 		if(!CheckNodeLifetime(m_polygons[i]))
-		{
-			m_polygons.fastRemoveIndex(i);
-			i--;
-		}
+			m_polygons.fastRemoveIndex(i--);
 	}
 
 	for (int i = 0; i < m_volumes.numElem(); i++)
 	{
 		if (!CheckNodeLifetime(m_volumes[i]))
-		{
-			m_volumes.fastRemoveIndex(i);
-			i--;
-		}
+			m_volumes.fastRemoveIndex(i--);
 	}
-
 #endif
 }
 
-void CDebugOverlay::Graph_DrawBucket(DbgGraphBucket* pBucket)
+void CDebugOverlay::Graph_DrawBucket(DDGraphBucket* pBucket)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if (!r_debugDrawGraphs.GetBool())
@@ -1714,7 +1559,7 @@ void CDebugOverlay::Graph_DrawBucket(DbgGraphBucket* pBucket)
 #endif
 }
 
-void CDebugOverlay::Graph_AddValue(DbgGraphBucket* bucket, float value)
+void CDebugOverlay::Graph_AddValue(DDGraphBucket* bucket, float value)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if(!r_debugDrawGraphs.GetBool())
@@ -1727,12 +1572,12 @@ void CDebugOverlay::Graph_AddValue(DbgGraphBucket* bucket, float value)
 		int index;
 		if (bucket->values.numElem() < GRAPH_MAX_VALUES)
 		{
-			index = bucket->values.append(DbgGraphBucket::DbgGraphValue{ value, MColor(bucket->color).pack() });
+			index = bucket->values.append(DDGraphBucket::DbgGraphValue{ value, MColor(bucket->color).pack() });
 		}
 		else
 		{
 			index = bucket->cursor;
-			bucket->values[index] = DbgGraphBucket::DbgGraphValue{ value, MColor(bucket->color).pack() };
+			bucket->values[index] = DDGraphBucket::DbgGraphValue{ value, MColor(bucket->color).pack() };
 		}
 		index++;
 		bucket->cursor = index % GRAPH_MAX_VALUES;

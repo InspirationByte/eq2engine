@@ -414,9 +414,9 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 			DbgText3D()
 				.Position(startParams.position)
 				.Distance(50.0f)
+				.Text("start %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), startParams.volume[0], startParams.pitch, inputParams.ToCString())
 				.Time(30.0f)
-				.Name(EqString::Format("emit %x", emit))
-				.Text("start %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), startParams.volume[0], startParams.pitch, inputParams.ToCString());
+				.Name(EqString::Format("emit %x", emit));
 		
 		}
 #endif
@@ -433,10 +433,10 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 			DbgText3D()
 				.Position(emit->virtualParams.position)
 				.Distance(50.0f)
-				.Time(30.0f)
-				.Name(EqString::Format("emit %x", emit))
 				.Color(color_red)
-				.Text("stop/destroy %s", script->name.ToCString());
+				.Text("stop/destroy %s", script->name.ToCString())
+				.Time(30.0f)
+				.Name(EqString::Format("emit %x", emit));
 
 		}
 #endif
@@ -526,9 +526,9 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	{
 		DbgSphere()
 			.Position(params.position).Radius(params.referenceDistance)
+			.Color(color_white)
 			.Name(EqString::Format("strt emit %x", emitter))
-			.Time(10.0f)
-			.Color(color_white);
+			.Time(10.0f);
 
 		EqString inputParams;
 		for (int i = 0; i < script->nodeDescs.numElem(); ++i)
@@ -542,9 +542,9 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 		DbgText3D()
 			.Position(params.position)
 			.Distance(50.0f)
+			.Text("update %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), params.volume[0], params.pitch, inputParams.ToCString())
 			.Time(10.0f)
-			.Name(EqString::Format("strt emit %x", emitter))
-			.Text("update %s\nv=%.2f\np=%.2f\n\n%s", script->name.ToCString(), params.volume[0], params.pitch, inputParams.ToCString());
+			.Name(EqString::Format("strt emit %x", emitter));
 	}
 #endif
 

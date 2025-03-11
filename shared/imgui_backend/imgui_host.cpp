@@ -170,8 +170,6 @@ void CEqImGuiHost::BeginFrame(bool menuVisible)
 		{
 			IMGUI_MENUITEM_CONVAR_BOOL("SHOW FRAME STATS", r_debugDrawFrameStats);
 			IMGUI_MENUITEM_CONVAR_BOOL("SHOW GRAPHS", r_debugDrawGraphs);
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW 3D SHAPES", r_debugDrawShapes);
-			IMGUI_MENUITEM_CONVAR_BOOL("SHOW 3D LINES", r_debugDrawLines);
 
 			ImGui::EndMenu();
 		}
