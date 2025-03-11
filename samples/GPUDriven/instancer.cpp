@@ -3,6 +3,7 @@
 #include "core/core_common.h"
 #include "instancer.h"
 
+DEFINE_SHADER_NOFACTORY(InstanceUtils)
 INIT_GPU_INSTANCE_COMPONENT(InstTransform, "InstanceUtils")
 INIT_GPU_INSTANCE_COMPONENT(InstScale, "InstanceUtils")
 
