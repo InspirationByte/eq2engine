@@ -52,7 +52,7 @@ public:
 	const MaterialVarBlock&	GetMaterialVars() const { return m_vars; }
 
 // render-time operations
-	void					UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder, bool force = false);
+	void					UpdateProxy(float fDt);
 	const ITexturePtr&		GetBaseTexture(int stage = 0);
 
 	const MatStoragePtr&	GetStorage(int id) const;
@@ -74,18 +74,19 @@ protected:
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
 
+	// TODO: multiple shaders using same material
+	// for compatibility between vertex formats using same material
+	IMatSystemShader*		m_shader{ nullptr };
 	MaterialVarBlock		m_vars;
 	Array<IMaterialProxy*>	m_proxies{ PP_SL };
 	Map<int, MatStoragePtr>	m_storage{ PP_SL };
 
 	CTextureAtlas*			m_atlas{ nullptr };
-	IMatSystemShader*		m_shader{ nullptr };
 
 	volatile int			m_state{ MATERIAL_LOAD_ERROR };	// FIXME: may be interlocked?
-	int						m_nameHash{ 0 };
-	int						m_instanceFormatId{ 0 };
-
 	uint					m_frameBound{ 0 };
+	int						m_instanceFormatId{ 0 };
+	int						m_nameHash{ 0 };
 	bool					m_loadFromDisk{ false };
-	bool					m_varsUpdated{ true };
+	bool					m_needUpdateGPUProxies{ true };
 };

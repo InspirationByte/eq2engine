@@ -487,20 +487,11 @@ void CMaterial::OnMatVarChanged(int varIdx, void* userData)
 
 void CMaterial::OnVarUpdated()
 {
-	m_varsUpdated = true;
+	m_needUpdateGPUProxies = true;
 }
 
-void CMaterial::UpdateProxy(float fDt, IGPUCommandRecorder* cmdRecorder, bool force)
+void CMaterial::UpdateProxy(float fDt)
 {
-	if (!m_shader)
-		return;
-
 	for(IMaterialProxy* proxy : m_proxies)
 		proxy->UpdateProxy(fDt);
-		
-	const bool varsUpdated = m_varsUpdated || force;
-	if(varsUpdated)
-		m_shader->UpdateProxy(cmdRecorder);
-	
-	m_varsUpdated = false;
 }

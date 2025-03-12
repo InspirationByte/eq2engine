@@ -733,7 +733,7 @@ void CMaterialSystem::ReloadAllMaterials()
 		else
 			material->Init(m_shaderAPI);
 
-		material->m_varsUpdated = true;
+		material->m_needUpdateGPUProxies = true;
 
 		// preload material if it was ever used before
 		if(material->m_frameBound > 0)
@@ -797,7 +797,7 @@ void CMaterialSystem::ReloadShader(const char* name)
 		else
 			material->Init(m_shaderAPI);
 
-		material->m_varsUpdated = true;
+		material->m_needUpdateGPUProxies = true;
 
 		// preload material if it was ever used before
 		if (material->m_frameBound > 0)
@@ -1536,7 +1536,6 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 
 	if (instFormatRef.layout.numElem())
 	{
-		IMatSystemShader* matShader = static_cast<CMaterial*>(drawCmd.batchInfo.material)->m_shader;
 		int bufferSlot = 0;
 		for (const GPUBufferView& bindBufferView : bindVertexBuffers)
 			passContext.recorder->SetVertexBufferView(bufferSlot++, bindBufferView);
@@ -1562,17 +1561,26 @@ void CMaterialSystem::SetupDrawCommand(const RenderDrawCmd& drawCmd, const Rende
 
 void CMaterialSystem::UpdateMaterialProxies(IMaterial* material, IGPUCommandRecorder* commandRecorder, bool force) const
 {
-	if (!material)
-		return;
-
 	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
-
-	const uint proxyFrame = m_frame;
-	if (!force && matSysMaterial->m_frameBound == proxyFrame)
+	if (!matSysMaterial)
 		return;
 
-	matSysMaterial->UpdateProxy(m_proxyDeltaTime, commandRecorder, force);
-	matSysMaterial->m_frameBound = proxyFrame;
+	IMatSystemShader* matShader = matSysMaterial->m_shader;
+	if (!matShader)
+		return;
+
+	// step material proxies
+	const uint proxyFrame = m_frame;
+	if (m_proxyDeltaTime > 0.0f && matSysMaterial->m_frameBound != proxyFrame)
+	{
+		matSysMaterial->UpdateProxy(m_proxyDeltaTime);
+		matSysMaterial->m_frameBound = proxyFrame;
+	}
+
+	// update proxy GPU buffers
+	if (force || matSysMaterial->m_needUpdateGPUProxies)
+		matShader->UpdateProxy(commandRecorder);
+	matSysMaterial->m_needUpdateGPUProxies = false;
 }
 
 bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<RenderBufferInfo> uniformBuffers, EPrimTopology primTopology, const MeshInstanceFormatRef& meshInstFormat, const RenderPassContext& passContext, IShaderMeshInstanceProvider* meshInstProvider)
@@ -1601,20 +1609,23 @@ bool CMaterialSystem::SetupMaterialPipeline(IMaterial* material, ArrayCRef<Rende
 	material->LoadShaderAndTextures();
 
 	CMaterial* matSysMaterial = static_cast<CMaterial*>(material);
-	IMatSystemShader* matShader = matSysMaterial->m_shader;
 
+	// step material proxies
+	const uint proxyFrame = m_frame;
+	if (m_proxyDeltaTime > 0.0f && matSysMaterial->m_frameBound != proxyFrame)
+	{
+		matSysMaterial->UpdateProxy(m_proxyDeltaTime);
+		matSysMaterial->m_frameBound = proxyFrame;
+	}
+
+	IMatSystemShader* matShader = matSysMaterial->m_shader;
 	if (!matShader)
 		return false;
 
-	IGPUCommandRecorderPtr proxyCmdRecorder = GetTlsProxyCmdRecorder();
-	UpdateMaterialProxies(material, proxyCmdRecorder);
-
-	const uint proxyFrame = m_frame;
-	if (matSysMaterial->m_frameBound != proxyFrame)
-	{
-		matSysMaterial->UpdateProxy(m_proxyDeltaTime, proxyCmdRecorder);
-		matSysMaterial->m_frameBound = proxyFrame;
-	}
+	// update proxy GPU buffers
+	if (matSysMaterial->m_needUpdateGPUProxies)
+		matShader->UpdateProxy(GetTlsProxyCmdRecorder());
+	matSysMaterial->m_needUpdateGPUProxies = false;
 
 	const IMatSystemShader::PipelineInputParams pipelineInputParams {
 		passContext.recorder->GetRenderTargetFormats(),
