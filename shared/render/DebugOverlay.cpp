@@ -78,66 +78,6 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 	if(meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
-
-
-// NOTE: unused, kept for reference and further use
-static void DrawOrientedBoxFilled(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const MColor& color, float fTime = 0.0f)
-{
-	Vector3D verts[18] = { 
-		Vector3D(mins.x, maxs.y, maxs.z),
-		Vector3D(maxs.x, maxs.y, maxs.z),
-		Vector3D(mins.x, maxs.y, mins.z),
-		Vector3D(maxs.x, maxs.y, mins.z),
-		Vector3D(mins.x, mins.y, mins.z),
-		Vector3D(maxs.x, mins.y, mins.z),
-		Vector3D(mins.x, mins.y, maxs.z),
-		Vector3D(maxs.x, mins.y, maxs.z),
-		Vector3D(maxs.x, mins.y, maxs.z),
-		Vector3D(maxs.x, mins.y, mins.z),
-		Vector3D(maxs.x, mins.y, mins.z),
-		Vector3D(maxs.x, maxs.y, mins.z),
-		Vector3D(maxs.x, mins.y, maxs.z),
-		Vector3D(maxs.x, maxs.y, maxs.z),
-		Vector3D(mins.x, mins.y, maxs.z),
-		Vector3D(mins.x, maxs.y, maxs.z),
-		Vector3D(mins.x, mins.y, mins.z),
-		Vector3D(mins.x, maxs.y, mins.z)
-	};
-
-	// transform them
-	for (int i = 0; i < elementsOf(verts); i++)
-		verts[i] = position + rotateVector(verts[i], quat);
-
-	Vector3D r, u, f;
-	r = rotateVector(vec3_right, quat);
-	u = rotateVector(vec3_up, quat);
-	f = rotateVector(vec3_forward, quat);
-
-	debugoverlay->Line3D(position + r * mins.x, position + r * maxs.x, MColor(1, 0, 0, 1), MColor(1, 0, 0, 1));
-	debugoverlay->Line3D(position + u * mins.y, position + u * maxs.y, MColor(0, 1, 0, 1), MColor(0, 1, 0, 1));
-	debugoverlay->Line3D(position + f * mins.z, position + f * maxs.z, MColor(0, 0, 1, 1), MColor(0, 0, 1, 1));
-
-	MColor polyColor(color);
-	polyColor.a *= 0.65f;
-
-	debugoverlay->Polygon3D(verts[0], verts[1], verts[2], polyColor);
-	debugoverlay->Polygon3D(verts[2], verts[1], verts[3], polyColor);
-
-	debugoverlay->Polygon3D(verts[2], verts[3], verts[4], polyColor);
-	debugoverlay->Polygon3D(verts[4], verts[3], verts[5], polyColor);
-
-	debugoverlay->Polygon3D(verts[4], verts[5], verts[6], polyColor);
-	debugoverlay->Polygon3D(verts[6], verts[5], verts[7], polyColor);
-
-	debugoverlay->Polygon3D(verts[10], verts[11], verts[12], polyColor);
-	debugoverlay->Polygon3D(verts[12], verts[11], verts[13], polyColor);
-
-	debugoverlay->Polygon3D(verts[12], verts[13], verts[14], polyColor);
-	debugoverlay->Polygon3D(verts[14], verts[13], verts[15], polyColor);
-
-	debugoverlay->Polygon3D(verts[14], verts[15], verts[16], polyColor);
-	debugoverlay->Polygon3D(verts[16], verts[15], verts[17], polyColor);
-}
 #endif // ENABLE_DEBUG_DRAWING
 
 void CDebugOverlay::Init(bool hidden)
@@ -375,6 +315,99 @@ static void DrawLineArray(ArrayRef<DDLine> lines, float frametime, const Volume&
 		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 }
 
+static void DrawBoxWire(CMeshBuilder& meshBuilder, const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const MColor& color, const Quaternion& orientation)
+{
+	const Vector3D verts[] = {
+		Vector3D(mins.x, maxs.y, mins.z),
+		Vector3D(mins.x, maxs.y, maxs.z),
+		Vector3D(maxs.x, maxs.y, maxs.z),
+		Vector3D(maxs.x, maxs.y, mins.z),
+		Vector3D(maxs.x, mins.y, mins.z),
+		Vector3D(maxs.x, mins.y, maxs.z),
+		Vector3D(mins.x, mins.y, maxs.z),
+		Vector3D(mins.x, mins.y, mins.z),
+	};
+
+	static const int boxWireIdxs[] = {
+		0, 1,
+		2, 3,
+		4, 5,
+		6, 7,
+		6, 1,
+		5, 2,
+		7, 0,
+		4, 3,
+		0, 3,
+		1, 2,
+		7, 4,
+		6, 5
+	};
+
+	meshBuilder.Color4(color);
+
+	int firstVert = -1;
+	for (const Vector3D& v : verts)
+	{
+		meshBuilder.Position3fv(position + rotateVector(v, orientation));
+		const int vIdx = meshBuilder.AdvanceVertex();
+		if (firstVert < 0)
+			firstVert = vIdx;
+	}
+
+	for (int idx : boxWireIdxs)
+		meshBuilder.AdvanceVertexIndex(firstVert + idx);
+}
+
+// use PRIM_TRIANGLES
+static void DrawBoxFilled(CMeshBuilder& meshBuilder, const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const MColor& color, const Quaternion& orientation)
+{
+	const Vector3D verts[] = {
+		Vector3D(mins.x, maxs.y, mins.z),
+		Vector3D(mins.x, maxs.y, maxs.z),
+		Vector3D(maxs.x, maxs.y, maxs.z),
+		Vector3D(maxs.x, maxs.y, mins.z),
+		Vector3D(maxs.x, mins.y, mins.z),
+		Vector3D(maxs.x, mins.y, maxs.z),
+		Vector3D(mins.x, mins.y, maxs.z),
+		Vector3D(mins.x, mins.y, mins.z),
+	};
+
+	static const int boxTriIndices[] = {
+		// Top face
+		1, 2, 0,
+		0, 2, 3,
+		// Front face
+		0, 3, 7,
+		7, 3, 4,
+		// Right face
+		7, 4, 6,
+		6, 4, 5,
+		// Back face
+		4, 3, 5,
+		5, 3, 2,
+		// Left face
+		5, 2, 6,
+		6, 2, 1,
+		// Bottom face
+		6, 1, 7,
+		7, 1, 0
+	};
+
+	meshBuilder.Color4(color);
+
+	int firstVert = -1;
+	for (const Vector3D& v : verts)
+	{
+		meshBuilder.Position3fv(position + rotateVector(v, orientation));
+		const int vIdx = meshBuilder.AdvanceVertex();
+		if (firstVert < 0)
+			firstVert = vIdx;
+	}
+
+	for (int idx : boxTriIndices)
+		meshBuilder.AdvanceVertexIndex(firstVert + idx);
+}
+
 static void DrawOrientedBoxArray(ArrayRef<DDOrientedBox> boxes, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
 	if (!boxes.numElem())
@@ -389,68 +422,58 @@ static void DrawOrientedBoxArray(ArrayRef<DDOrientedBox> boxes, float frametime,
 	defaultRenderPass.depthWrite = false;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
-	meshBuilder.Begin(PRIM_LINES);
-
-	for (int i = 0; i < boxes.numElem(); i++)
 	{
-		DDOrientedBox& node = boxes[i];
-		node.lifetime -= frametime;
+		meshBuilder.Begin(PRIM_LINES);
 
-		if (!frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
-			continue;
-
-		if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
+		for (int i = 0; i < boxes.numElem(); i++)
 		{
-			if (meshBuilder.End(drawCmd))
-				g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+			DDOrientedBox& node = boxes[i];
+			if (node.fill)
+				continue;
 
-			// start with new mesh
-			meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
-			meshBuilder.Begin(PRIM_LINES);
+			node.lifetime -= frametime;
+
+			if (!frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
+				continue;
+
+			if (i > 0 && (i % BOXES_DRAW_SUBDIV) == 0)
+			{
+				if (meshBuilder.End(drawCmd))
+					g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+
+				// start with new mesh
+				meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+				meshBuilder.Begin(PRIM_LINES);
+			}
+
+			DrawBoxWire(meshBuilder, node.position, node.mins, node.maxs, node.color, node.rotation);
 		}
 
-		meshBuilder.Color4(node.color);
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.mins.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.maxs.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.mins.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.mins.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.maxs.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.mins.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.maxs.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.maxs.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.mins.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.mins.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.mins.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.mins.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.mins.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.mins.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.maxs.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.mins.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.mins.z), node.rotation));
-
-		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.maxs.z), node.rotation),
-			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation));
-
+		if (meshBuilder.End(drawCmd))
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
 	}
 
-	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+	meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+	{
+		meshBuilder.Begin(PRIM_TRIANGLES);
+
+		for (int i = 0; i < boxes.numElem(); i++)
+		{
+			DDOrientedBox& node = boxes[i];
+			if (!node.fill)
+				continue;
+
+			node.lifetime -= frametime;
+
+			if (!frustum.IsBoxInside(node.position + node.mins, node.position + node.maxs, 1.0f))
+				continue;
+
+			DrawBoxFilled(meshBuilder, node.position, node.mins, node.maxs, node.color, node.rotation);
+		}
+
+		if (meshBuilder.End(drawCmd))
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+	}
 }
 
 static void DrawBoxArray(ArrayRef<DDBox> boxes, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
@@ -467,11 +490,15 @@ static void DrawBoxArray(ArrayRef<DDBox> boxes, float frametime, const Volume& f
 	defaultRenderPass.depthWrite = false;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
-	meshBuilder.Begin(PRIM_LINES);
+	{
+		meshBuilder.Begin(PRIM_LINES);
 
-		for(int i = 0; i < boxes.numElem(); i++)
+		for (int i = 0; i < boxes.numElem(); i++)
 		{
 			DDBox& node = boxes[i];
+			if (node.fill)
+				continue;
+
 			node.lifetime -= frametime;
 
 			if (!frustum.IsBoxInside(node.mins, node.maxs, 1.0f))
@@ -487,49 +514,34 @@ static void DrawBoxArray(ArrayRef<DDBox> boxes, float frametime, const Volume& f
 				meshBuilder.Begin(PRIM_LINES);
 			}
 
-
-			meshBuilder.Color4(node.color);
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
-								Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
-
-			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z),
-								Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
-
-			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
-								Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-								Vector3D(node.mins.x, node.mins.y, node.mins.z));
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-								Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
-
-			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.maxs.z),
-								Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
-								Vector3D(node.mins.x, node.maxs.y, node.mins.z));
-
-			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
-								Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
-								Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.maxs.z),
-								Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
-								Vector3D(node.maxs.x, node.mins.y, node.mins.z));
-
-			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-								Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
-
+			DrawBoxWire(meshBuilder, vec3_zero, node.mins, node.maxs, node.color, qidentity);
 		}
 
-	if (meshBuilder.End(drawCmd))
-		g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+		if (meshBuilder.End(drawCmd))
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+	}
+
+	meshBuilder.Init(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
+	{
+		meshBuilder.Begin(PRIM_TRIANGLES);
+
+		for (int i = 0; i < boxes.numElem(); i++)
+		{
+			DDBox& node = boxes[i];
+			if (!node.fill)
+				continue;
+
+			node.lifetime -= frametime;
+
+			if (!frustum.IsBoxInside(node.mins, node.maxs, 1.0f))
+				continue;
+
+			DrawBoxFilled(meshBuilder, vec3_zero, node.mins, node.maxs, node.color, qidentity);
+		}
+
+		if (meshBuilder.End(drawCmd))
+			g_matSystem->SetupDrawCommand(drawCmd, RenderPassContext(rendPassRecorder, &defaultRenderPass));
+	}
 }
 
 static void DrawCylinder(CMeshBuilder& meshBuilder, DDCylinder& cylinder, float frametime)
@@ -1186,8 +1198,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		{
 			if (!m_draw3DFuncs[i].func(rendPassRecorder))
 			{
-				m_draw3DFuncs.fastRemoveIndex(i);
-				--i;
+				m_draw3DFuncs.fastRemoveIndex(i--);
 				continue;
 			}
 			m_draw3DFuncs[i].lifetime -= m_frameTime;
@@ -1370,8 +1381,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			DebugDrawFunc_t& drawFunc = m_draw2DFuncs[i];
 			if (!drawFunc.func(rendPassRecorder))
 			{
-				m_draw2DFuncs.fastRemoveIndex(i);
-				--i;
+				m_draw2DFuncs.fastRemoveIndex(i--);
 				continue;
 			}
 			drawFunc.lifetime -= m_frameTime;
@@ -1424,7 +1434,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	g_matSystem->QueueCommandBuffer(rendPassRecorder->End());
 #endif
 }
-#pragma optimize("", off)
+
 bool CDebugOverlay::CheckNodeLifetime(DDNodeBase& node)
 {
 	// don't touch newly added nodes

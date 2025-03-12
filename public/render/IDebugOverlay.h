@@ -112,10 +112,12 @@ struct DDBox : DDNodeBase
 	DDBox& Mins(const Vector3D& v) { mins = v; return *this; }
 	DDBox& Maxs(const Vector3D& v) { maxs = v; return *this; }
 	DDBox& Color(const MColor& v) { color = v.pack(); return *this; }
+	DDBox& Fill(bool value) { fill = value; return *this; }
 
 	Vector3D		mins;
 	Vector3D		maxs;
 	uint			color{ color_white.pack() };
+	bool			fill{ false };
 };
 
 struct DDOrientedBox : DDNodeBase
@@ -137,11 +139,13 @@ struct DDOrientedBox : DDNodeBase
 	DDOrientedBox& Position(const Vector3D& v) { position = v; return *this; }
 	DDOrientedBox& Rotation(const Quaternion& r) { rotation = r; return *this; }
 	DDOrientedBox& Color(const MColor& v) { color = v.pack(); return *this; }
+	DDOrientedBox& Fill(bool value) { fill = value; return *this; }
 
 	Vector3D		mins, maxs;
 	Quaternion		rotation{ qidentity };
 	Vector3D		position;
 	uint			color{ color_white.pack() };
+	bool			fill{ false };
 };
 
 struct DDSphere : DDNodeBase
