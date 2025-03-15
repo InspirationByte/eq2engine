@@ -9,6 +9,7 @@
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
 #include "sys_esl.h"
+#include "scripting/esl_event.h"
 
 #include "sys_esl_math.h"
 #include "sys_esl_keyvalues.h"

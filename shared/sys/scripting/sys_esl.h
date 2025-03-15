@@ -7,7 +7,7 @@
 
 #pragma once
 #include "scripting/esl.h"
-#include "scripting/esl_bind.h"
+#include "scripting/esl_luaref.h"
 
 namespace esl { class ScriptState; }
 

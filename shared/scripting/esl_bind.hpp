@@ -1224,7 +1224,7 @@ Member ClassBinder<T>::MakeVariable(const char* name)
 
 template<typename T>
 template<auto V, auto F>
-Member ClassBinder<T>::MakeVariableWithSetter(const char* name)
+Member ClassBinder<T>::MakeVariableExSet(const char* name)
 {
 	Member m;
 	m.type = MEMB_VAR;
@@ -1232,6 +1232,21 @@ Member ClassBinder<T>::MakeVariableWithSetter(const char* name)
 	m.signature = GetVariableTypeName<T, V>();
 	m.func = binder::BindMemberFunction<F, binder::FuncSignatureDefault>();
 	m.getFunc = binder::BindVariableGetter<T, V>();
+	return m;
+}
+
+template<typename T>
+template<auto FGET, auto FSET>
+Member ClassBinder<T>::MakeVariableExGetSet(const char* name)
+{
+	Member m;
+	m.type = MEMB_VAR;
+	m.name = name;
+	// only setter needs valid signature
+	// TODO: check setter if it has multiple or no arguments
+	m.signature = binder::MemberFunctionBinder<FSET, binder::FuncSignatureDefault>::GetFuncArgsSignature();
+	m.func = binder::BindMemberFunction<FSET, binder::FuncSignatureDefault>();
+	m.getFunc = binder::BindMemberFunction<FGET, binder::FuncSignatureDefault>();
 	return m;
 }
 

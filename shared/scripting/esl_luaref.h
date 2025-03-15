@@ -1,5 +1,4 @@
 #pragma once
-
 #include "esl_runtime.h"
 
 // Lua Reference
@@ -83,11 +82,8 @@ public:
 	LuaTable& operator=(std::nullptr_t)				{ *(static_cast<LuaRawRef*>(this)) = nullptr; return *this;}
 	bool operator==(LuaTable const& rhs) const		{ return *(static_cast<const LuaRawRef*>(this)) == *(static_cast<const LuaRawRef*>(&rhs)); }
 
-	template<typename T>
-	using Result = ResultWithValue<T>;
-
 	template<typename V, typename K>
-	Result<V>		Get(const K& key) const;
+	ResultWithValue<V>	Get(const K& key) const;
 
 	template<typename V, typename K>
 	V				SafeGet(const K& key, const V& defaultValue) const;
@@ -107,10 +103,10 @@ public:
 };
 
 template<typename V, typename K>
-LuaTable::Result<V> LuaTable::Get(const K& key) const
+ResultWithValue<V> LuaTable::Get(const K& key) const
 {
 	if (!IsValid())
-		return Result<V>{{}, false, {}};
+		return ResultWithValue<V>{{}, false, {}};
 
 	runtime::StackGuard g(m_state);
 	Push();
@@ -123,7 +119,7 @@ LuaTable::Result<V> LuaTable::Get(const K& key) const
 template<typename V, typename K>
 V LuaTable::SafeGet(const K& key, const V& defaultValue) const
 {
-	Result<V> res = Get<V>(key);
+	ResultWithValue<V> res = Get<V>(key);
 	if (res)
 		return *res;
 	return defaultValue;

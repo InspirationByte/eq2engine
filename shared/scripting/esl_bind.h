@@ -1,6 +1,4 @@
 #pragma once
-
-#include "esl_event.h"
 #include "esl_runtime.h"
 
 namespace esl::binder
@@ -81,7 +79,10 @@ struct ClassBinder
 	static Member	MakeVariable(const char* name);
 
 	template<auto V, auto F>
-	static Member	MakeVariableWithSetter(const char* name);
+	static Member	MakeVariableExSet(const char* name);
+
+	template<auto FGET, auto FSET>
+	static Member	MakeVariableExGetSet(const char* name);
 
 	template<typename ...Args>
 	static Member	MakeConstructor();
@@ -314,10 +315,16 @@ NOTE on weak pointers:
 	MakeVariable<_ESL_CLASS_MEMBER(Var)>(Name),
 
 #define EQSCRIPT_BIND_VAR_EX_SET(Name, SetterName) \
-	MakeVariableWithSetter<_ESL_CLASS_MEMBER(Name), _ESL_CLASS_MEMBER(SetterName)>(#Name),
+	MakeVariableExSet<_ESL_CLASS_MEMBER(Name), _ESL_CLASS_MEMBER(SetterName)>(#Name),
+
+#define EQSCRIPT_BIND_VAR_EX_GET_SET(Name, GetterName, SetterName) \
+	MakeVariableExGetSet<_ESL_CLASS_MEMBER(GetterName), _ESL_CLASS_MEMBER(SetterName)>(#Name),
 
 #define EQSCRIPT_BIND_VAR_EX_SET_NAMED(Name, Ver, SetterName) \
-	MakeVariableWithSetter<_ESL_CLASS_MEMBER(Ver), _ESL_CLASS_MEMBER(SetterName)>(Name),
+	MakeVariableExSet<_ESL_CLASS_MEMBER(Ver), _ESL_CLASS_MEMBER(SetterName)>(Name),
+
+#define EQSCRIPT_BIND_VAR_EX_SET_NAMED(Name, Ver, SetterName) \
+	MakeVariableExSet<_ESL_CLASS_MEMBER(Ver), _ESL_CLASS_MEMBER(SetterName)>(Name),
 
 #define EQSCRIPT_BIND_EVENT(Name) \
 	MakeVariable<_ESL_CLASS_MEMBER(_ESL_EVENT_NAME(Name))>(#Name),

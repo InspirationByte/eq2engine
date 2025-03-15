@@ -13,6 +13,7 @@
 #include "scripting/esl.h"
 #include "scripting/esl_luaref.h"
 #include "scripting/esl_bind.h"
+#include "scripting/esl_event.h"
 
 class LuaStateTest
 {
@@ -65,6 +66,18 @@ struct Spline
 	{
 		nonVirtualCalled = true;
 		return valueB;
+	}
+
+	void SetFlags(int16 newFlags)
+	{
+		Msg("Setter SetFlags\n");
+		flags = newFlags;
+	}
+
+	int16 GetFlags() const
+	{
+		Msg("Getter GetFlags\n");
+		return flags;
 	}
 
 	EqString		name;
@@ -180,7 +193,8 @@ EQSCRIPT_TYPE_BEGIN(Spline)
 	EQSCRIPT_BIND_VAR(numLanes)
 	EQSCRIPT_BIND_VAR(laneDirs)
 	EQSCRIPT_BIND_VAR(laneDisabled)
-	EQSCRIPT_BIND_VAR(flags)
+
+	EQSCRIPT_BIND_VAR_EX_GET_SET(flags, GetFlags, SetFlags)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_BIND_TYPE_WITH_PARENT(TerrainSpline, Spline, "TerrainSpline")
@@ -409,6 +423,10 @@ TEST(EQSCRIPT_TESTS, TestVariables)
 	// TEST: property newindex (setter) and index (getter)
 	LUA_GTEST_CHUNK("spl.vehicleZoneNameHash = checkValueNumber");
 	LUA_GTEST_CHUNK("EXPECT_EQ(spl.vehicleZoneNameHash, checkValueNumber)");
+
+	// TEST: custom property getter and setter
+	LUA_GTEST_CHUNK("spl.flags = 12345");
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl.flags, 12345)");
 }
 
 TEST(EQSCRIPT_TESTS, TestAddingToMetatable)
