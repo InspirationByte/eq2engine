@@ -308,11 +308,11 @@ EQSCRIPT_TYPE_BEGIN(Matrix3x3)
 	EQSCRIPT_CLONE_FUNC()
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_CONSTRUCTOR(
-		const float&, const float&, const float&,
-		const float&, const float&, const float&,
-		const float&, const float&, const float&)
+		float, float, float,
+		float, float, float,
+		float, float, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const Vector3D&, const Vector3D&)
-	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const float&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Quaternion&)
 
 	// matrix - matrix ops
@@ -362,12 +362,12 @@ EQSCRIPT_TYPE_BEGIN(Matrix4x4)
 	EQSCRIPT_CLONE_FUNC()
 	EQSCRIPT_BIND_CONSTRUCTOR()
 	EQSCRIPT_BIND_CONSTRUCTOR(
-		const float&, const float&, const float&, const float&,
-		const float&, const float&, const float&, const float&,
-		const float&, const float&, const float&, const float&,
-		const float&, const float&, const float&, const float&)
+		float, float, float, float,
+		float, float, float, float,
+		float, float, float, float,
+		float, float, float, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector4D&, const Vector4D&, const Vector4D&, const Vector4D&)
-	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const float&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Quaternion&)
 	EQSCRIPT_BIND_CONSTRUCTOR(const Matrix3x3&)
 
