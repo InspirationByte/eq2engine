@@ -12,7 +12,22 @@ struct Quaternion;
 template <class T>
 struct TMat2 // Matrix2x2
 {
-	TVec2D<T> rows[2];
+	union
+	{
+		struct {
+			TVec2D<T> rows[2];
+		};
+		struct {
+			TVec2D<T> r1;
+			TVec2D<T> r2;
+		};
+		struct {
+			float m11;
+			float m12;
+			float m21;
+			float m22;
+		};
+	};
 
 	TMat2<T>(){}
 
@@ -60,7 +75,28 @@ TMat2<T> operator ! (const TMat2<T> &m);
 template <class T>
 struct TMat3 // Matrix3x3
 {
-	TVec3D<T> rows[3];
+	union
+	{
+		struct {
+			TVec3D<T> rows[3];
+		};
+		struct {
+			TVec3D<T> r1;
+			TVec3D<T> r2;
+			TVec3D<T> r3;
+		};
+		struct {
+			float m11;
+			float m12;
+			float m13;
+			float m21;
+			float m22;
+			float m23;
+			float m31;
+			float m32;
+			float m33;
+		};
+	};
 
 	TMat3<T>() {}
 
@@ -79,6 +115,24 @@ struct TMat3 // Matrix3x3
 	{}
 
 	TMat3<T>(const Quaternion &q);
+
+	TMat3<T>(const TVec3D<T>& axis, const float angle)
+	{
+		float sinA, cosA;
+		SinCos(angle, &sinA, &cosA);
+
+		rows[0] = TVec3D<T>(axis.x * axis.x * (1 - cosA) + cosA,
+			axis.x * axis.y * (cosA - 1) + axis.z * sinA,
+			axis.x * axis.z * (1 - cosA) + axis.y * sinA);
+
+		rows[1] = TVec3D<T>(axis.x * axis.y * (cosA - 1) - axis.z * sinA,
+			axis.y * axis.y * (1 - cosA) + cosA,
+			axis.y * axis.z * (cosA - 1) + axis.x * sinA);
+
+		rows[2] = TVec3D<T>(axis.x * axis.z * (1 - cosA) - axis.y * sinA,
+			axis.y * axis.z * (cosA - 1) - axis.x * sinA,
+			axis.z * axis.z * (1 - cosA) + cosA);
+	}
 
 	T* toRaw() {return (T *) rows;}
 
@@ -113,7 +167,36 @@ TMat3<T> operator ! (const TMat3<T> &m);
 template <class T>
 struct TMat4 // Matrix4x4
 {
-	TVec4D<T> rows[4];
+	union
+	{
+		struct {
+			TVec4D<T> rows[4];
+		};
+		struct {
+			TVec4D<T> r1;
+			TVec4D<T> r2;
+			TVec4D<T> r3;
+			TVec4D<T> r4;
+		};
+		struct {
+			float m11;
+			float m12;
+			float m13;
+			float m14;
+			float m21;
+			float m22;
+			float m23;
+			float m24;
+			float m31;
+			float m32;
+			float m33;
+			float m34;
+			float m41;
+			float m42;
+			float m43;
+			float m44;
+		};
+	};
 
 	TMat4<T>(){}
 
