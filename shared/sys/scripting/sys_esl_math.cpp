@@ -299,9 +299,130 @@ EQSCRIPT_TYPE_BEGIN(Quaternion)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(Matrix3x3)
+	EQSCRIPT_CLONE_FUNC()
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_CONSTRUCTOR(
+		const float&, const float&, const float&,
+		const float&, const float&, const float&,
+		const float&, const float&, const float&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const Vector3D&, const Vector3D&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const float&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Quaternion&)
+
+	// matrix - matrix ops
+	EQSCRIPT_BIND_OP(add)
+	EQSCRIPT_BIND_OP(sub)
+	EQSCRIPT_BIND_OP(mul)
+
+	// negate
+	EQSCRIPT_BIND_OP(unm)
+
+	// inverse
+	EQSCRIPT_BIND_OP(not)
+
+	// members - row access
+	EQSCRIPT_BIND_VAR(r1)
+	EQSCRIPT_BIND_VAR(r2)
+	EQSCRIPT_BIND_VAR(r3)
+
+	// members - component access
+	EQSCRIPT_BIND_VAR(m11)
+	EQSCRIPT_BIND_VAR(m12)
+	EQSCRIPT_BIND_VAR(m13)
+	EQSCRIPT_BIND_VAR(m21)
+	EQSCRIPT_BIND_VAR(m22)
+	EQSCRIPT_BIND_VAR(m23)
+	EQSCRIPT_BIND_VAR(m31)
+	EQSCRIPT_BIND_VAR(m32)
+	EQSCRIPT_BIND_VAR(m33)
+
+	// operations
+	EQSCRIPT_BIND_STATIC_FUNC("transformVec", +[](const Matrix3x3& self, const Vector3D& vec) { return rotateVector(vec, self); })
+	EQSCRIPT_BIND_STATIC_FUNC("transformVecInv", +[](const Matrix3x3& self, const Vector3D& vec) { return rotateVector(vec, self); })
+	EQSCRIPT_BIND_STATIC_FUNC("transposed", +[](const Matrix3x3& self) { return transpose(self); })
+	EQSCRIPT_BIND_STATIC_FUNC("eulersXYZ", EulerMatrixXYZ)
+	EQSCRIPT_BIND_STATIC_FUNC("eulersZXY", EulerMatrixZXY)
+
+	// common matrix generators
+	EQSCRIPT_BIND_STATIC_FUNC("identity", +[]() {return identity3; })
+	EQSCRIPT_BIND_STATIC_FUNC("rotationX", rotateX3<float>)
+	EQSCRIPT_BIND_STATIC_FUNC("rotationY", rotateY3<float>)
+	EQSCRIPT_BIND_STATIC_FUNC("rotationZ", rotateZ3<float>)
+	EQSCRIPT_BIND_STATIC_FUNC("rotationXYZ", +[](const Vector3D& val) {return rotateXYZ3(val.x, val.y, val.z); })
+	EQSCRIPT_BIND_STATIC_FUNC("rotationZXY", +[](const Vector3D& val) {return rotateZXY3(val.x, val.y, val.z); })
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(Matrix4x4)
+	EQSCRIPT_CLONE_FUNC()
+	EQSCRIPT_BIND_CONSTRUCTOR()
+	EQSCRIPT_BIND_CONSTRUCTOR(
+		const float&, const float&, const float&, const float&,
+		const float&, const float&, const float&, const float&,
+		const float&, const float&, const float&, const float&,
+		const float&, const float&, const float&, const float&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector4D&, const Vector4D&, const Vector4D&, const Vector4D&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&, const float&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Quaternion&)
+	EQSCRIPT_BIND_CONSTRUCTOR(const Matrix3x3&)
+
+	// matrix - matrix ops
+	EQSCRIPT_BIND_OP(add)
+	EQSCRIPT_BIND_OP(sub)
+	EQSCRIPT_BIND_OP(mul)
+
+	// negate
+	EQSCRIPT_BIND_OP(unm)
+
+	// inverse
+	EQSCRIPT_BIND_OP(not)
+
+	// members - row access
+	EQSCRIPT_BIND_VAR(r1)
+	EQSCRIPT_BIND_VAR(r2)
+	EQSCRIPT_BIND_VAR(r3)
+	EQSCRIPT_BIND_VAR(r4)
+
+	// members - component access
+	EQSCRIPT_BIND_VAR(m11)
+	EQSCRIPT_BIND_VAR(m12)
+	EQSCRIPT_BIND_VAR(m13)
+	EQSCRIPT_BIND_VAR(m14)
+	EQSCRIPT_BIND_VAR(m21)
+	EQSCRIPT_BIND_VAR(m22)
+	EQSCRIPT_BIND_VAR(m23)
+	EQSCRIPT_BIND_VAR(m24)
+	EQSCRIPT_BIND_VAR(m31)
+	EQSCRIPT_BIND_VAR(m32)
+	EQSCRIPT_BIND_VAR(m33)
+	EQSCRIPT_BIND_VAR(m34)
+	EQSCRIPT_BIND_VAR(m41)
+	EQSCRIPT_BIND_VAR(m42)
+	EQSCRIPT_BIND_VAR(m43)
+	EQSCRIPT_BIND_VAR(m44)
+
+	// getters
+	EQSCRIPT_BIND_FUNC(getTranslationComponent)
+	EQSCRIPT_BIND_FUNC(getRotationComponent)
+	EQSCRIPT_BIND_FUNC(getTranslationComponentTransposed)
+	EQSCRIPT_BIND_FUNC(getRotationComponentTransposed)
+	EQSCRIPT_BIND_FUNC(setTranslation)
+	EQSCRIPT_BIND_FUNC(setTranslationTransposed)
+
+	// operations
+	EQSCRIPT_BIND_STATIC_FUNC("transformVec", +[](const Matrix4x4& self, const Vector3D& vec) { return transformPoint(vec, self); })
+	EQSCRIPT_BIND_STATIC_FUNC("transformVecInv", +[](const Matrix4x4& self, const Vector3D& vec) { return transformPoint(vec, self); })
+	EQSCRIPT_BIND_STATIC_FUNC("transposed", +[](const Matrix4x4& self) { return transpose(self); })
+	EQSCRIPT_BIND_STATIC_FUNC("eulersXYZ", +[](const Matrix4x4& self) { return EulerMatrixXYZ(self.getRotationComponent()); })
+	EQSCRIPT_BIND_STATIC_FUNC("eulersZXY", +[](const Matrix4x4& self) { return EulerMatrixZXY(self.getRotationComponent()); })
+
+	// common matrix generators
+	EQSCRIPT_BIND_STATIC_FUNC("identity", +[]() {return identity4; })
+	EQSCRIPT_BIND_STATIC_FUNC("rotationX", rotateX4<float>)
+	EQSCRIPT_BIND_STATIC_FUNC("rotationY", rotateY4<float>)
+	EQSCRIPT_BIND_STATIC_FUNC("rotationZ", rotateZ4<float>)
+	EQSCRIPT_BIND_STATIC_FUNC("translate", +[](const Vector3D& val) { return translate(val); })
+	EQSCRIPT_BIND_STATIC_FUNC("rotationXYZ", +[](const Vector3D& val) { return rotateXYZ4(val.x, val.y, val.z); })
+	EQSCRIPT_BIND_STATIC_FUNC("rotationZXY", +[](const Vector3D& val) { return rotateZXY4(val.x, val.y, val.z); })
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_TYPE_BEGIN(Transform3D)
