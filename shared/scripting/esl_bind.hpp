@@ -1075,11 +1075,11 @@ struct StandardOperatorBinder
 		const T& lhs = *runtime::GetValue<T&, false>(L, 1);
 		if constexpr (OpType == OP_unm)
 		{
-			runtime::New<T>(L,-lhs);
+			runtime::New<T>(L, -lhs);
 		}
 		else if constexpr (OpType == OP_not)
 		{
-			lua_pushboolean(!lhs);
+			runtime::New<T>(L, !lhs);
 		}
 		else
 		{
