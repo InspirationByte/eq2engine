@@ -264,6 +264,10 @@ NOTE on weak pointers:
 		, pushType \
 	)
 
+// Makes members public for the binder
+#define EQSCRIPT_PUBLIC_BINDER(Class) \
+	friend struct esl::bindings::ClassBinder<Class>
+
 #define _ESL_CLASS_MEMBER(Name) 		(&BindClass::Name)
 #define _ESL_CLASS_OVERLOAD(R, ...) 	static_cast<R(BindClass::*) __VA_ARGS__>
 #define _ESL_CFUNC_OVERLOAD(R, ...) 	static_cast<R(*)__VA_ARGS__>
