@@ -1221,7 +1221,14 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 {
 	if (!m_hostCursorActive)
+	{
+#ifdef IMGUI_ENABLED
+		// de-press buttons
+		if(!pressed)
+			ImGui_ImplEq_InputMousePress(Button, pressed);
+#endif
 		return false;
+	}
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMousePress(Button, pressed);
@@ -1307,7 +1314,14 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 	}
 
 	if (!m_hostCursorActive)
+	{
+#ifdef IMGUI_ENABLED
+		// de-press buttons
+		if(!pressed)
+			ImGui_ImplEq_InputKeyPress(key, pressed);
+#endif
 		return false;
+	}
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputKeyPress(key, pressed);
