@@ -116,8 +116,7 @@ int VectorOperatorsFunc(lua_State* L)
 	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, add) \
 	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, sub) \
 	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, mul) \
-	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, div) \
-	EQSCRIPT_BIND_OP_TOSTRING(VecToStringImpl)
+	EQSCRIPT_BIND_OP_CUSTOM(VectorOperatorsFunc, div)
 	
 
 //
@@ -151,6 +150,7 @@ EQSCRIPT_TYPE_BEGIN( Vector2D )
 	EQSCRIPT_BIND_CONSTRUCTOR(const IVector2D&)
 
 	BIND_VECTOR_OPERATORS()
+	EQSCRIPT_BIND_OP_TOSTRING(VecToStringImpl)
 
 	EQSCRIPT_BIND_VAR(x)
 	EQSCRIPT_BIND_VAR(y)
@@ -181,6 +181,7 @@ EQSCRIPT_TYPE_BEGIN( Vector3D )
 	EQSCRIPT_BIND_CONSTRUCTOR(const Vector3D&)
 
 	BIND_VECTOR_OPERATORS()
+	EQSCRIPT_BIND_OP_TOSTRING(VecToStringImpl)
 
 	EQSCRIPT_BIND_FUNC(xy)
 	EQSCRIPT_BIND_FUNC(yz)
@@ -221,6 +222,7 @@ EQSCRIPT_TYPE_BEGIN( Vector4D )
 	EQSCRIPT_BIND_CONSTRUCTOR(float, const Vector3D&)
 
 	BIND_VECTOR_OPERATORS()
+	EQSCRIPT_BIND_OP_TOSTRING(VecToStringImpl)
 
 	EQSCRIPT_BIND_FUNC(xy)
 	EQSCRIPT_BIND_FUNC(xz)
@@ -673,6 +675,17 @@ static esl::Any<2> L_LineSegIntersectsCircle2D(const esl::ScriptState& state, co
 	return {};
 }
 
+static esl::Any<2> L_AngleVectors(const esl::ScriptState& state, const Vector3D& v)
+{
+	Vector3D forward, right, up;
+	AngleVectors(v, &right, &up);
+
+	state.PushValue(forward);
+	state.PushValue(right);
+	state.PushValue(up);
+	return {};
+};
+
 bool eslSysMathInit(const esl::ScriptState& state)
 {
 	LUA_SET_GLOBAL_CONST(state, QuatRot_zyx);
@@ -728,7 +741,9 @@ bool eslSysMathInit(const esl::ScriptState& state)
 	state.SetGlobal("AngleDiff", EQSCRIPT_CFUNC(AngleDiff));
 	state.SetGlobal("AnglesDiff", EQSCRIPT_CFUNC(AnglesDiff));
 
+	state.SetGlobal("AngleVectors", EQSCRIPT_CFUNC(L_AngleVectors));
 	state.SetGlobal("VectorAngles", EQSCRIPT_CFUNC(VectorAngles));
+
 	state.SetGlobal("LineIntersectsLine2D", EQSCRIPT_CFUNC(L_LineIntersectsLine2D));
 	state.SetGlobal("LineSegIntersectsLineSeg2D", EQSCRIPT_CFUNC(L_LineSegIntersectsLineSeg2D));
 	state.SetGlobal("LineSegIntersectsCircle2D", EQSCRIPT_CFUNC(L_LineSegIntersectsCircle2D));
