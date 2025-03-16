@@ -71,6 +71,24 @@ public:
 		IPairsIterator& operator++();
 	};
 
+	template<typename K>
+	struct ArrayOpProxy
+	{
+		const K& key;
+		LuaTable& self;
+
+		template<typename V>
+		ArrayOpProxy& operator=(const V& value);
+
+		template<typename V>
+		operator V& () const;
+
+		template<typename V>
+		V& As() const;
+
+		LuaTable CreateTable() const;
+	};
+
 	LuaTable() = default;
 	LuaTable(lua_State* L) : LuaTableRef(L) {}
 	LuaTable(lua_State* L, int idx) : LuaTableRef(L, idx) {}
@@ -92,14 +110,20 @@ public:
 	bool			HasKey(const K& key) const;
 
 	template<typename V, typename K>
-	void			Set(const K & key, const V & value);
+	void			Set(const K& key, const V& value);
 
 	template<typename K>
 	void			Remove(K const& key);
 
-	int				Length() const;
+	template<typename K>
+	ArrayOpProxy<K>	operator[](const K& key) { return ArrayOpProxy<K>{key, * this}; }
+
+	template<typename K>
+	ArrayOpProxy<K>	operator[](const K& key) const { return ArrayOpProxy<K>{key, * this}; }
 
 	IPairsIterator	IPairs() const { return IPairsIterator(*this); }
+
+	int				Length() const;
 };
 
 template<typename V, typename K>
@@ -163,6 +187,36 @@ void LuaTable::Remove(K const& key)
 	runtime::PushValue(m_state, key);
 	lua_pushnil(m_state);
 	lua_settable(m_state, -3);
+}
+
+template<typename K>
+template<typename V>
+LuaTable::ArrayOpProxy<K>& LuaTable::ArrayOpProxy<K>::operator=(const V& value)
+{
+	self.Set(key, value);
+	return *this;
+}
+
+template<typename K>
+template<typename V>
+LuaTable::ArrayOpProxy<K>::operator V& () const
+{
+	return *self.Get<V>(key);
+}
+
+template<typename K>
+template<typename V>
+V& LuaTable::ArrayOpProxy<K>::As() const
+{
+	return *self.Get<V>(key);
+}
+
+template<typename K>
+LuaTable LuaTable::ArrayOpProxy<K>::CreateTable() const
+{
+	LuaTable table = esl::ScriptState(self).CreateTable(); 
+	self.Set(key, table); 
+	return table;
 }
 
 }

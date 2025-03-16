@@ -6,9 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "scripting/esl.h"
-#include "scripting/esl_luaref.h"
-#include "scripting/esl_bind.h"
 
 class CPseudoRandomGenerator;
 class CUniformRandomStream;

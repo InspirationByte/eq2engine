@@ -735,7 +735,7 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		tableRes.value.Set("valueNum", 1337);
 		tableRes.value.Set("stringValue", "This is a string set from C++");
 		tableRes.value.Set(temp, "Spline as a key");
-		tableRes.value.Set("testSpline", temp);
+		tableRes.value["testSpline"] = temp;
 
 		const int val = *tableRes.value.Get<int>("valueNum");
 		EqStringRef str = *tableRes.value.Get<EqStringRef>("stringValue");
@@ -776,7 +776,7 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		auto tableRes = esl::runtime::GetGlobal<esl::LuaTable>(stateTest, "TestTable");
 		ASSERT(tableRes && tableRes.value.IsValid());
 
-		Spline* spline = *tableRes.value.Get<Spline*>("testSpline");
+		Spline* spline = tableRes.value["testSpline"];
 		EXPECT_EQ(spline->name, EqStringRef("Some name"));
 
 		delete spline;
