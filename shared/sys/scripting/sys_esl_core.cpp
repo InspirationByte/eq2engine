@@ -640,8 +640,10 @@ bool eslSysConsoleInit(const esl::ScriptState& state)
 {
 	LUA_SET_GLOBAL_CONST(state, CV_UNREGISTERED);
 	LUA_SET_GLOBAL_CONST(state, CV_CHEAT);
+	LUA_SET_GLOBAL_CONST(state, CV_PROTECTED);
 	LUA_SET_GLOBAL_CONST(state, CV_INVISIBLE);
 	LUA_SET_GLOBAL_CONST(state, CV_ARCHIVE);
+	LUA_SET_GLOBAL_CONST(state, CV_CLIENTCONTROLS);
 
 	state.RegisterClass<ConCommandBase>();
 	state.RegisterClass<ConVar>();
