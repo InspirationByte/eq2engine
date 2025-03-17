@@ -138,7 +138,6 @@ enum EMemberType : int
 {
 	MEMB_NULL = 0,
 
-	MEMB_CONST,
 	MEMB_DTOR,
 	MEMB_CTOR,
 	MEMB_FUNC,

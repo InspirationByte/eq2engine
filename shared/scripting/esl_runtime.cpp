@@ -332,7 +332,7 @@ static int UserTypeCompareBoxedPointers(lua_State* L)
 	return 1;
 }
 
-static int UserTypeIndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(void* thisPtr, const Member*)> onVariableIndexed)
+static int UserTypeIndexImplBasic(lua_State* L, void* thisPtr, const EqFunction<int(void* thisPtr, const Member*)>& onUserDataIndex)
 {
 	// lookup in class metatable first
 	{
@@ -347,7 +347,7 @@ static int UserTypeIndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(vo
 		{
 			const Member* memberVar = static_cast<const Member*>(lua_touserdata(L, -1));
 			lua_pop(L, 1);
-			return onVariableIndexed(thisPtr, memberVar);
+			return onUserDataIndex(thisPtr, memberVar);
 		}
 		lua_pop(L, 1);
 	}
@@ -382,7 +382,7 @@ static int UserTypeIndexImplBasic(lua_State* L, void* thisPtr, EqFunction<int(vo
 			// apply offset for base class
 			thisPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(thisPtr) + baseInfo.offset);
 
-			return onVariableIndexed(thisPtr, memberVar);
+			return onUserDataIndex(thisPtr, memberVar);
 		}
 		lua_pop(L, 2);
 
@@ -398,8 +398,6 @@ static int UserTypeIndexImpl(lua_State* L)
 	// 1: fields
 	// 2: call className
 	// 3: thisGetter
-	// 4: numClasses
-	// 5: ...N classNameHash[numClasses]
 
 	ESL_VERBOSE_LOG("__index %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
 	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
@@ -408,7 +406,7 @@ static int UserTypeIndexImpl(lua_State* L)
 	bool isConstRef = false;
 	void* thisPtr = thisGetter(L, isConstRef);
 
-	auto onVariableIndexed = [&](void* thisPtr, const esl::Member* mem) {
+	auto onUserDataIndex = [&](void* thisPtr, const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
 		if (!thisPtr)
 		{
@@ -422,7 +420,7 @@ static int UserTypeIndexImpl(lua_State* L)
 		return (bindObj.*(mem->getFunc))(L);
 	};
 
-	const int ret = UserTypeIndexImplBasic(L, thisPtr, onVariableIndexed);
+	const int ret = UserTypeIndexImplBasic(L, thisPtr, onUserDataIndex);
 	if (ret > 0)
 		return ret;
 
@@ -442,8 +440,6 @@ static int UserTypeNewIndexImpl(lua_State* L)
 	// 1: fields
 	// 2: call className
 	// 3: thisGetter
-	// 4: numClasses
-	// 5: ...N classNameHash[numClasses]
 
 	ESL_VERBOSE_LOG("__newindex %s.%s", lua_tostring(L, lua_upvalueindex(2)), luaL_checkstring(L, 2));
 	const char* className = luaL_checkstring(L, lua_upvalueindex(2));
@@ -453,7 +449,7 @@ static int UserTypeNewIndexImpl(lua_State* L)
 	bool isConstRef = false;
 	void* thisPtr = thisGetter(L, isConstRef);
 
-	auto onVariableIndexed = [&](void* thisPtr, const esl::Member* mem) {
+	auto onUserDataIndex = [&](void* thisPtr, const esl::Member* mem) {
 		ASSERT(mem->type == esl::MEMB_VAR);
 		if (!thisPtr)
 		{
@@ -474,7 +470,7 @@ static int UserTypeNewIndexImpl(lua_State* L)
 		return (bindObj.*(mem->func))(L);
 	};
 
-	const int ret = UserTypeIndexImplBasic(L, thisPtr, onVariableIndexed);
+	const int ret = UserTypeIndexImplBasic(L, thisPtr, onUserDataIndex);
 	if (ret > 0)
 		return ret;
 
@@ -577,6 +573,25 @@ static int UserTypePairsImpl(lua_State* L)
 
 //----------------------------------------------------------------
 
+static void SetIndexFunction(lua_State* L, const esl::TypeInfo& typeInfo, int fields, int mt, const char* name, lua_CFunction func)
+{
+	// mt[__index] = function (...)
+	lua_pushstring(L, name);
+
+	// upvalues:
+	// 1: fields
+	// 2: className
+	// 3: thisGetter (optional)
+	lua_pushvalue(L, fields);
+	lua_pushstring(L, typeInfo.className);
+	if (typeInfo.thisGetter)
+		lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.thisGetter));
+
+	// mt[name] = func
+	lua_pushcclosure(L, func, typeInfo.thisGetter ? 3 : 2);
+	lua_rawset(L, mt);
+}
+
 void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 {
 	{
@@ -594,33 +609,16 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	lua_newtable(L);
 	const int fields = lua_gettop(L); // fields
 
-	luaL_newmetatable(L, typeInfo.className);
-	const int mt = lua_gettop(L); // mt
-
 	// store method table in globals so that scripts can add functions written in Lua.
 	lua_pushvalue(L, fields);
 	lua_setglobal(L, typeInfo.className); // _G[className] = fields
 
+	luaL_newmetatable(L, typeInfo.className);
+	const int mt = lua_gettop(L); // mt
+
 	// __index for property features
-	auto setIndexFunction = [&](const char* name, lua_CFunction func) {
-		// mt[__index] = function (...)
-		lua_pushstring(L, name);
-
-		// upvalues:
-		// 1: fields
-		// 2: className
-		// 3: thisGetter
-		lua_pushvalue(L, fields);
-		lua_pushstring(L, typeInfo.className);
-		lua_pushlightuserdata(L, reinterpret_cast<void*>(typeInfo.thisGetter));
-
-		// mt[name] = func
-		lua_pushcclosure(L, func, 3);
-		lua_rawset(L, mt);
-	};
-
-	setIndexFunction("__index", runtime::UserTypeIndexImpl);
-	setIndexFunction("__newindex", runtime::UserTypeNewIndexImpl);
+	SetIndexFunction(L, typeInfo, fields, mt, "__index", UserTypeIndexImpl);
+	SetIndexFunction(L, typeInfo, fields, mt, "__newindex", UserTypeNewIndexImpl);
 
 	// __pairs to view variables and function names
 	{
@@ -633,7 +631,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		lua_pushstring(L, typeInfo.className);
 	
 		// mt[__index] = function (...)
-		lua_pushcclosure(L, runtime::UserTypePairsImpl, 2);
+		lua_pushcclosure(L, UserTypePairsImpl, 2);
 		lua_rawset(L, mt);
 	}
 	

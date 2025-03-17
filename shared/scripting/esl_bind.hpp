@@ -1026,10 +1026,10 @@ static bindings::LuaCFunction<UpVals...> BindCFunction(Func f, UpVals... upVals)
 // Variable binder. Generates appropriate getters/setters
 
 template<typename T, auto MemberVar>
-struct VariableBinder;
+struct MemberVariableBinder;
 
 template<typename T, typename V, V T::* MemberVar>
-struct VariableBinder<T, MemberVar> : public esl::ScriptBind
+struct MemberVariableBinder<T, MemberVar> : public esl::ScriptBind
 {
 	int GetterFunc(lua_State* L)
 	{
@@ -1052,15 +1052,15 @@ struct VariableBinder<T, MemberVar> : public esl::ScriptBind
 };
 
 template<typename T, auto V>
-static auto BindVariableGetter()
+static auto BindMemberVariableGetter()
 {
-	return static_cast<typename esl::ScriptBind::BindFunc>(&VariableBinder<T, V>::GetterFunc);
+	return static_cast<typename esl::ScriptBind::BindFunc>(&MemberVariableBinder<T, V>::GetterFunc);
 }
 
 template<typename T, auto V>
-static auto BindVariableSetter()
+static auto BindMemberVariableSetter()
 {
-	return static_cast<typename esl::ScriptBind::BindFunc>(&VariableBinder<T, V>::SetterFunc);
+	return static_cast<typename esl::ScriptBind::BindFunc>(&MemberVariableBinder<T, V>::SetterFunc);
 }
 
 //---------------------------------------------------------------
@@ -1217,8 +1217,8 @@ Member ClassBinder<T>::MakeVariable(const char* name)
 	m.type = MEMB_VAR;
 	m.name = name;
 	m.signature = GetVariableTypeName<T, V>();
-	m.func = binder::BindVariableSetter<T, V>();
-	m.getFunc = binder::BindVariableGetter<T, V>();
+	m.func = binder::BindMemberVariableSetter<T, V>();
+	m.getFunc = binder::BindMemberVariableGetter<T, V>();
 	return m;
 }
 
@@ -1231,7 +1231,7 @@ Member ClassBinder<T>::MakeVariableExSet(const char* name)
 	m.name = name;
 	m.signature = GetVariableTypeName<T, V>();
 	m.func = binder::BindMemberFunction<F, binder::FuncSignatureDefault>();
-	m.getFunc = binder::BindVariableGetter<T, V>();
+	m.getFunc = binder::BindMemberVariableGetter<T, V>();
 	return m;
 }
 
