@@ -38,7 +38,7 @@ Panel::Panel()
 	m_position = IVector2D(0);
 	m_size = IVector2D(32,32);
 
-	m_color = ColorRGBA(0.7,0.7,0.7,0.9f);
+	m_color = ColorRGBA(0.1,0.1,0.1,0.9f);
 	m_selColor = ColorRGBA(0.25f);
 }
 
