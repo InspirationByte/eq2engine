@@ -81,7 +81,7 @@ public:
 		ArrayOpProxy& operator=(const V& value);
 
 		template<typename V>
-		operator V& () const;
+		operator V () const;
 
 		template<typename V>
 		V& As() const;
@@ -119,7 +119,7 @@ public:
 	ArrayOpProxy<K>	operator[](const K& key) { return ArrayOpProxy<K>{key, * this}; }
 
 	template<typename K>
-	ArrayOpProxy<K>	operator[](const K& key) const { return ArrayOpProxy<K>{key, * this}; }
+	const ArrayOpProxy<K>	operator[](const K& key) const { return ArrayOpProxy<K>{key, * this}; }
 
 	IPairsIterator	IPairs() const { return IPairsIterator(*this); }
 
@@ -199,7 +199,7 @@ LuaTable::ArrayOpProxy<K>& LuaTable::ArrayOpProxy<K>::operator=(const V& value)
 
 template<typename K>
 template<typename V>
-LuaTable::ArrayOpProxy<K>::operator V& () const
+LuaTable::ArrayOpProxy<K>::operator V () const
 {
 	return *self.Get<V>(key);
 }
