@@ -108,6 +108,7 @@ template <typename T>
 using StripTraitsT = typename StripTraits<T>::type;
 
 //------------------------
+// CRefPtr<T> -> T
 
 template <typename T>
 struct StripRefPtr { using type = T; };
@@ -117,6 +118,18 @@ struct StripRefPtr<CRefPtr<T>> { using type = T; };
 
 template <typename T>
 using StripRefPtrT = typename StripRefPtr<T>::type;
+
+//------------------------
+// CWeakPtr<T> -> T
+
+template <typename T>
+struct StripWeakPtr { using type = T; };
+
+template <typename T>
+struct StripWeakPtr<CWeakPtr<T>> { using type = T; };
+
+template <typename T>
+using StripWeakPtrT = typename StripWeakPtr<T>::type;
 
 //------------------------
 
@@ -132,7 +145,7 @@ using StripObjectT = typename StripObject<T>::type;
 //------------------------
 
 template <typename T>
-struct LuaBaseTypeAlias : LuaTypeAlias<StripRefPtrT<BaseType<StripTraitsT<StripObjectT<T>>>>, std::is_enum_v<T>> {};
+struct LuaBaseTypeAlias : LuaTypeAlias<StripWeakPtrT<StripRefPtrT<BaseType<StripTraitsT<StripObjectT<T>>>>>, std::is_enum_v<T>> {};
 
 enum EMemberType : int
 {

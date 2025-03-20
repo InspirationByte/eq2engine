@@ -103,11 +103,11 @@ public:
 	bool			IsSet() const		{ return m_weakRefPtr; }
 	operator const	bool() const		{ return Ptr(); }
 	operator		bool()				{ return Ptr(); }
-	operator const	PTR_TYPE() const	{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	operator		PTR_TYPE ()			{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	PTR_TYPE		Ptr() const			{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	TYPE&			Ref() const			{ return m_weakRefPtr ? *static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	PTR_TYPE		operator->() const	{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
+	operator const	PTR_TYPE() const	{ return GetHandle() ? static_cast<PTR_TYPE>(GetHandle()->ptr) : nullptr; }
+	operator		PTR_TYPE ()			{ return GetHandle() ? static_cast<PTR_TYPE>(GetHandle()->ptr) : nullptr; }
+	PTR_TYPE		Ptr() const			{ return GetHandle() ? static_cast<PTR_TYPE>(GetHandle()->ptr) : nullptr; }
+	TYPE&			Ref() const			{ return *Ptr(); }
+	PTR_TYPE		operator->() const	{ return GetHandle() ? static_cast<PTR_TYPE>(GetHandle()->ptr) : nullptr; }
 
 	void			operator=(std::nullptr_t);
 	void			operator=(CWeakPtr<TYPE>&& other);
@@ -118,8 +118,10 @@ public:
 	friend bool		operator==(const CWeakPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() == b; }
 
 private:
+	auto*		GetHandle() const { return (typename TYPE::WeakHandle*)(m_weakRefPtr); }
+
 	using Handle = WeakPtr::WeakRefHandle<TYPE>;
-	Handle*			m_weakRefPtr{ nullptr };
+	mutable Handle*			m_weakRefPtr{ nullptr };
 };
 
 //---------------------------------------------------------
@@ -134,7 +136,7 @@ inline CWeakPtr<TYPE>::CWeakPtr( PTR_TYPE pObject )
 {
 	Handle* handle = nullptr;
 	if (pObject)
-		m_weakRefPtr = handle = pObject->GetWeakHandle();
+		m_weakRefPtr = handle = (Handle*)pObject->GetWeakHandle();
 	
 	if(handle)
 		handle->Ref_Grab();
@@ -169,7 +171,7 @@ inline void CWeakPtr<TYPE>::Assign(PTR_TYPE obj)
 		Release();
 		return;
 	}
-	Handle* handle = obj->GetWeakHandle();
+	Handle* handle = (Handle*)obj->GetWeakHandle();
 	Handle* oldHandle = (Handle*)Atomic::Exchange(m_weakRefPtr, (Handle*)handle);
 
 	if(handle)

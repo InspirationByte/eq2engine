@@ -363,12 +363,11 @@ static void PushValue(lua_State* L, const T& value)
 		else
 			lua_pushnil(L);
 	}
-	else if constexpr (binder::IsRefPtr<T>::value)
+	else if constexpr (binder::IsRefPtr<T>::value || binder::IsWeakPtr<T>::value)
 	{
-		using UT = BaseType<StripRefPtrT<BaseType<T>>>;
+		using UT = BaseType<StripWeakPtrT<StripRefPtrT<BaseType<T>>>>;
 
-		// really does not matter since deleter will still Ref_Drop() 
-		// object but we'll keep it anyway
+		// can't be used for RefPtr but it's ok for weak pointer
 		constexpr int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
 		if (value)
 			PushGet<UT>::Push(L, value.Ref(), (std::is_const_v<UT> ? UD_FLAG_CONST : 0) | retTraitFlag);
@@ -382,7 +381,7 @@ static void PushValue(lua_State* L, const T& value)
 	}
 	else
 	{
-		using UT = BaseType<BaseType<T>>;
+		using UT = BaseType<StripWeakPtrT<T>>;
 
 		constexpr int retTraitFlag = HasToLuaReturnTrait<WT>::value ? UD_FLAG_OWNED : 0;
 		if constexpr (std::is_pointer_v<T>)
@@ -396,6 +395,62 @@ static void PushValue(lua_State* L, const T& value)
 			PushGet<UT>::Push(L, value, (std::is_const_v<T> ? UD_FLAG_CONST : 0) | retTraitFlag);
 	}
 }
+
+template<typename RT, typename OBJPTR>
+struct ObjPtrGetter
+{
+	using Result = ResultWithValue<OBJPTR>;
+
+	template<bool SilentTypeCheck, bool AllowUpcasting>
+	static Result Get(lua_State* L, int index, int argType, bool toCpp)
+	{
+		if (argType != LUA_TUSERDATA)
+		{
+			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, lua_typename(L, argType));
+			if constexpr (!SilentTypeCheck)
+			{
+				if (argType != LUA_TNIL)
+					luaL_argerror(L, index, err);
+			}
+
+			return Result{ {}, false, std::move(err), nullptr };
+		}
+
+		// retrieve userdata name which is class name
+		const char* className = nullptr;
+		{
+			const int type = luaL_getmetafield(L, index, "__name");
+			className = lua_tostring(L, -1);
+			lua_pop(L, 1);
+		}
+
+		bool isValidUdType = CString::Compare(className, LuaBaseTypeAlias<RT>::value) == 0;
+		runtime::BaseClassInfo baseInfo;
+		if constexpr (AllowUpcasting)
+		{
+			// perform type compatibility check
+			if (!isValidUdType)
+			{
+				baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<RT>::value);
+				isValidUdType = baseInfo.name.IsValid();
+			}
+		}
+
+		if (isValidUdType)
+		{
+			OBJPTR objPtr(PushGet<RT>::Get(L, index, toCpp, baseInfo));
+			return Result{ {}, true, {}, std::move(objPtr) };
+		}
+
+		// we have incompatible types
+		EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, className);
+		if constexpr (!SilentTypeCheck)
+			luaL_argerror(L, index, err);
+
+		return Result{ {}, false, std::move(err), nullptr };
+	}
+};
+
 
 // Lua type getters
 template<typename T, bool SilentTypeCheck, bool AllowUpcasting>
@@ -561,60 +616,26 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	}
 	else if constexpr (binder::IsRefPtr<T>::value)
 	{
-		using RT = StripRefPtrT<BaseType<T>>;
-		using REFPTR = CRefPtr<RT>;
-		using Result = ResultWithValue<REFPTR>;
-
 		// simple return without conversion
 		static_assert(!HasToCppParamTrait<T>::value, "can't use ToCpp trait on CRefPtr");
 
-		if (argType != LUA_TUSERDATA)
-		{
-			EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, lua_typename(L, argType));
-			if constexpr (!SilentTypeCheck)
-			{
-				if (argType != LUA_TNIL)
-					luaL_argerror(L, index, err);
-			}
+		using RT = StripRefPtrT<BaseType<T>>;
+		using REFPTR = CRefPtr<RT>;
 
-			return Result{ {}, false, std::move(err), nullptr };
-		}
+		return ObjPtrGetter<RT, REFPTR>::template Get<SilentTypeCheck, AllowUpcasting>(L, index, argType, false);
+	}
+	else if constexpr (binder::IsWeakPtr<T>::value)
+	{
+		using RT = StripWeakPtrT<BaseType<T>>;
+		using WEAKPTR = CWeakPtr<RT>;
 
-		// retrieve userdata name which is class name
-		const char* className = nullptr;
-		{
-			const int type = luaL_getmetafield(L, index, "__name");
-			className = lua_tostring(L, -1);
-			lua_pop(L, 1);
-		}
-
-		bool isValidUdType = CString::Compare(className, LuaBaseTypeAlias<RT>::value) == 0;
-		runtime::BaseClassInfo baseInfo;
-		if constexpr (AllowUpcasting)
-		{
-			// perform type compatibility check
-			if(!isValidUdType)
-			{
-				baseInfo = bindings::BaseClassStorage::GetUpcastingBaseClassInfo(className, LuaBaseTypeAlias<RT>::value);
-				isValidUdType = baseInfo.name.IsValid();
-			}
-		}
-
-		if (isValidUdType)
-		{
-			REFPTR objPtr(PushGet<RT>::Get(L, index, false, baseInfo));
-			return Result{ {}, true, {}, std::move(objPtr) };
-		}
-
-		// we have incompatible types
-		EqString err = EqString::Format("%s expected, got %s", LuaBaseTypeAlias<RT>::value, className);
-		if constexpr (!SilentTypeCheck)
-			luaL_argerror(L, index, err);
-
-		return Result{ {}, false, std::move(err), nullptr };
+		constexpr bool toCpp = HasToCppParamTrait<T>::value;
+		return ObjPtrGetter<RT, WEAKPTR>::template Get<SilentTypeCheck, AllowUpcasting>(L, index, argType, toCpp);
 	}
 	else
 	{
+		// TODO: make ObjPtrGetter compatible with code below as the code is mostly the same except EmitArgError and is_reference
+
 		using UT = std::remove_const_t<StripTraitsT<StripObjectT<T>>>;
 		using Result = ResultWithValue<UT>;
 
@@ -661,7 +682,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 
 		if (isValidUdType)
 		{
-			const bool toCpp = HasToCppParamTrait<T>::value;
+			constexpr bool toCpp = HasToCppParamTrait<T>::value;
 			BaseType<UT>* objPtr = static_cast<BaseType<UT>*>(PushGet<BaseType<UT>>::Get(L, index, toCpp, baseInfo));
 
 			if constexpr (std::is_reference_v<UT>)
