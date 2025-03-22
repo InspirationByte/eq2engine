@@ -937,7 +937,7 @@ const void DebugDrawVolume(const ArrayCRef<Plane>& volume, const MColor& color)
 
 static void DrawVolumes(ArrayRef<DDVolume> volumes, float frameTime, IGPURenderPassRecorder* rendPassRecorder)
 {
-	if (volumes.numElem())
+	if (!volumes.numElem())
 		return;
 
 	for (int i = 0; i < volumes.numElem(); i++)
