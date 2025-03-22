@@ -51,17 +51,5 @@ void ComputeTriangleTBN( const TVec3D<T> &v0, const TVec3D<T> &v1, const TVec3D<
 template <typename T>
 float ComputeTriangleArea( const TVec3D<T> &v0, const TVec3D<T> &v1, const TVec3D<T> &v2 )
 {
-	// FIXME: this is slow (4 sqrt's), but whatever
-
-	TVec3D<T> e0 = v0-v1;
-	TVec3D<T> e1 = v1-v2;
-	TVec3D<T> e2 = v2-v0;
-
-	float l0 = length(v0);
-	float l1 = length(v1);
-	float l2 = length(v2);
-
-	float p = (l0+l1+l2) * 0.5f;
-
-	return sqrt( p * (p-l0) * (p-l1) * (p-l2) );
+	return 0.25f * length(cross(v1 - v0, v2 - v0));
 }
