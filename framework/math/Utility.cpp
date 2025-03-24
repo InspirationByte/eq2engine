@@ -342,6 +342,131 @@ float DistancePointPoly2D(const Vector2D& point, ArrayCRef<Vector2D> edgeVerts, 
 	return d * s;
 }
 
+float DistanceLineLine(const Vector3D& lB1, const Vector3D& lE1, const Vector3D& lB2, const Vector3D& lE2)
+{
+	const Vector3D dir1 = lE1 - lB1;
+	const Vector3D dir2 = lE2 - lB2;
+
+	const float detLm = dir1.x * dir2.y - dir1.y * dir2.x;
+	const float detMn = dir1.y * dir2.z - dir1.z * dir2.y;
+	const float detNl = dir1.z * dir2.x - dir1.x * dir2.z;
+
+	const float f = sqr(detLm) + sqr(detMn) + sqr(detNl);
+	if (abs(f) <= 0.0001f)
+	{
+		// lines are parallel
+		const Vector3D c = cross(lB2 - lB1, normalize(dir1));
+		return length(c);
+	}
+
+	// lines are not parallel
+	const float det = (lB1.x - lB2.x) * detMn +
+		(lB1.y - lB2.y) * detNl +
+		(lB1.z - lB2.z) * detLm;
+
+	return sqrtf(sqr(det) / f);
+}
+
+float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vector3D& S0, const Vector3D& S1, float* Lt, Vector3D* Ln, float* St, Vector3D* Sn)
+{
+	// dist3D_Segment_to_Segment based on code by Dan Sunday
+	// Copyright 2001, softSurfer
+	const Vector3D u = L1 - L0;
+	const Vector3D v = S1 - S0;
+	const Vector3D w = L0 - S0;
+
+	const float a = dot(u, u);
+	const float b = dot(u, v);
+	const float c = dot(v, v);
+	const float d = dot(u, w);
+	const float e = dot(v, w);
+
+	const float D = a * c - b * b;
+	float sc = 0.0f;
+	float sN = 0.0f;
+	float sD = D;
+	float tc = 0.0f;
+	float tN = 0.0f;
+	float tD = D;
+
+	// compute the line parameters of the two closest points
+	if (D < F_EPS) // the lines are almost parallel
+	{
+		sN = 0.0;
+		tN = e;
+		tD = c;
+		sD = c;
+	}
+	else                  // get the closest points on the infinite lines
+	{
+		sN = (b * e - c * d);
+		tN = (a * e - b * d);
+		if (sN < 0)       // sc < 0 => the s=0 edge is visible
+		{
+			sN = 0.0;
+			tN = e;
+			tD = c;
+		}
+		else if (sN > sD)  // sc > 1 => the s=1 edge is visible
+		{
+			sN = sD;
+			tN = e + b;
+			tD = c;
+		}
+	}
+
+	if (tN < 0)           // tc < 0 => the t=0 edge is visible
+	{
+		tN = 0.0;
+		// recompute sc for this edge
+		if (-d < 0)
+		{
+			sN = 0.0;
+		}
+		else if (-d > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = -d;
+			sD = a;
+		}
+	}
+	else if (tN > tD)      // tc > 1 => the t=1 edge is visible
+	{
+		tN = tD;
+
+		// recompute sc for this edge
+		if ((-d + b) < 0)
+		{
+			sN = 0;
+		}
+		else if ((-d + b) > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = (-d + b);
+			sD = a;
+		}
+	}
+	// finally do the division to get sc and tc
+	sc = sN / sD;
+	tc = tN / tD;
+
+	const Vector3D ln = L0 + u * sc;
+	const Vector3D sn = S0 + v * tc;
+
+	if (Ln) *Ln = ln;
+	if (Sn) *Sn = sn;
+	if (Lt) *Lt = sc;
+	if (St) *St = tc;
+
+	return distance(ln, sn);
+}
+
 static float ConvexOrient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
 {
 	return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);

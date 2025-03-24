@@ -49,6 +49,9 @@ bool LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const 
 bool LineSegIntersectsCircle2D(const Vector2D& lB, const Vector2D& lE, const Vector2D& center, float radius, FixedArray<Vector2D, 2>& isectPoints);
 float DistancePointPoly2D(const Vector2D& point, ArrayCRef<Vector2D> edgeVerts, Vector2D& normal);
 
+float DistanceLineLine(const Vector3D& lB1, const Vector3D& lE1, const Vector3D& lB2, const Vector3D& lE2);
+float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vector3D& S0, const Vector3D& S1, float* Lt = nullptr, Vector3D* Ln = nullptr, float* St = nullptr, Vector3D* Sn = nullptr);
+
 //---------------------------------------------------------------------------------
 
 void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& out);
