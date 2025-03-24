@@ -202,6 +202,7 @@ public:
 
 	// searches for substring, returns value
 	int			Find(EqTStrRef otherStr, bool caseSensitive = false, int start = 0) const;
+	int			Find(CH chr, bool bCaseSensitive = false, int nStart = 0) const { return Find(EqTStrRef(&chr, 1), bCaseSensitive, nStart); }
 
 	// converters
 	Str			LowerCase() const;

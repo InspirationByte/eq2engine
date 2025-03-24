@@ -51,6 +51,7 @@ public:
 	
 	// searches for substring, returns position
 	int			Find(StrRef strSub, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(strSub, bCaseSensitive, nStart); }
+	int			Find(CH chr, bool bCaseSensitive = false, int nStart = 0) const { return Ref().Find(EqTStrRef<CH>(&chr, 1), bCaseSensitive, nStart); }
 
 	// modifying
 	void		Clear();
