@@ -221,7 +221,7 @@ bool Volume::IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, con
 		const float dist = lengthSqr(start - isectPos);
 
 		// check sphere because we have epsilon
-		if (dist < bestDist && IsSphereInside(planes, isectPos + dir * 0.1f, eps))
+		if (dist < bestDist && IsSphereInside(planes, isectPos + dir * eps, eps))
 		{
 			intersectionPos = isectPos;
 			bestDist = dist;
