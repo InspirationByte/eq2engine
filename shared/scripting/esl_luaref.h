@@ -74,14 +74,17 @@ public:
 	template<typename K>
 	struct ArrayOpProxy
 	{
-		const K& key;
 		LuaTable& self;
+		const K& key;
 
 		template<typename V>
 		ArrayOpProxy& operator=(const V& value);
 
 		template<typename V>
 		operator V () const;
+
+		template<typename V>
+		V& SafeGet(const V& default) const;
 
 		template<typename V>
 		V& As() const;
@@ -116,10 +119,10 @@ public:
 	void			Remove(K const& key);
 
 	template<typename K>
-	ArrayOpProxy<K>	operator[](const K& key) { return ArrayOpProxy<K>{key, * this}; }
+	ArrayOpProxy<K>	operator[](const K& key) { return ArrayOpProxy<K>{*this, key}; }
 
 	template<typename K>
-	const ArrayOpProxy<K>	operator[](const K& key) const { return ArrayOpProxy<K>{key, * this}; }
+	const ArrayOpProxy<K>	operator[](const K& key) const { return ArrayOpProxy<K>{*const_cast<LuaTable*>(this), key}; }
 
 	IPairsIterator	IPairs() const { return IPairsIterator(*this); }
 
@@ -209,6 +212,13 @@ template<typename V>
 V& LuaTable::ArrayOpProxy<K>::As() const
 {
 	return *self.Get<V>(key);
+}
+
+template<typename K>
+template<typename V>
+V& LuaTable::ArrayOpProxy<K>::SafeGet(const V& default) const
+{
+	return self.SafeGet<V>(key, default);
 }
 
 template<typename K>
