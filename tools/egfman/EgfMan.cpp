@@ -1479,8 +1479,6 @@ bool CEGFViewApp::OnInit()
 	InitCore("");
 #endif
 
-	setlocale(LC_ALL, "C");
-
 	// first, load matsystem module
 	EqString loadErr;
 	g_matsysmodule = g_fileSystem->OpenModule("eqMatSystem", &loadErr);

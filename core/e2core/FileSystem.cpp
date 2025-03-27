@@ -871,7 +871,7 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 		return;
 	}
 
-	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
+	DevMsg(DEVMSG_FS, "Adding search path '%s' at '%s'\n", pathId, pszDir);
 
 	const bool isReadPriorityPath = CString::SubString(pathId, "$MOD$") || CString::SubString(pathId, "$LOCALIZE$");
 	const bool isWriteablePath = CString::SubString(pathId, "$WRITE$");
@@ -896,7 +896,7 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 	{
 		if(m_directories[i]->id == EqStringRef(pathId))
 		{
-			DevMsg(DEVMSG_FS, "Removing search patch '%s'\n", pathId);
+			DevMsg(DEVMSG_FS, "Removing search path '%s'\n", pathId);
 			delete m_directories[i];
 			m_directories.removeIndex(i);
 			break;

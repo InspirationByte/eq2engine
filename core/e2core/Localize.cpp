@@ -245,7 +245,7 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 		}
 		else if (byteordermark == 0xfeff)
 		{
-			MsgError("%s: Only UTF-8 language files supported", textFilePath.ToCString());
+			MsgError("%s: Only UTF-8 language files supported\n", textFilePath.ToCString());
 			return;
 		}
 	}
@@ -259,7 +259,7 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 		{
 			if (currentTokens.numElem() >= currentTokens.numAllocated())
 			{
-				MsgError("%s:%d: token %s has extra text after it", textFilePath.ToCString(), line, currentTokens[0].ToCString());
+				MsgError("%s:%d: token %s has extra text after it\n", textFilePath.ToCString(), line, currentTokens[0].ToCString());
 				break;
 			}
 			const char* text = va_arg(args, char*);
@@ -279,9 +279,9 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 					break;
 				}
 
-				LocalizeConvertSymbols((char*)currentTokens[1].GetData(), true);
+				LocalizeConvertSymbols(currentTokens[1].GetData(), true);
 
-				const int hash = StringId24(currentTokens[0].ToCString(), true);
+				const int hash = StringId24(currentTokens[0], true);
 				m_tokens.insert(hash, CLocToken(langFileIdx, currentTokens[0], currentTokens[1]));
 			}
 
