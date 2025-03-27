@@ -758,6 +758,8 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 		for(int i = 0; i < polygons.numElem(); i++)
 		{
 			DDPoly& node = polygons[i];
+			if (!node.fill)
+				continue;
 			node.lifetime -= frameTime;
 
 			if (i > 0 && (i % POLYS_DRAW_SUBDIV) == 0)
@@ -773,9 +775,7 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 			meshBuilder.Color4(node.color);
 
 			for(int j = 0; j < node.verts.numElem()-2; ++j)
-			{
 				meshBuilder.Triangle3(node.verts[0], node.verts[j+1], node.verts[j+2]);
-			}
 		}
 
 	if (meshBuilder.End(drawCmd))
@@ -784,9 +784,10 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < polygons.numElem(); i++)
 		{
-			const DDPoly& node = polygons[i];
+			DDPoly& node = polygons[i];
 			if (!node.outline)
 				continue;
+			node.lifetime -= frameTime;
 
 			if (i > 0 && (i % LINES_DRAW_SUBDIV) == 0)
 			{
@@ -801,9 +802,7 @@ static void DrawPolygons(ArrayRef<DDPoly> polygons, float frameTime, IGPURenderP
 			meshBuilder.Color4(node.color);
 
 			for (int j = 0; j < node.verts.numElem(); ++j)
-			{
 				meshBuilder.Line3fv(node.verts[j], node.verts[(j+1) % node.verts.numElem()]);
-			}
 		}
 	if (meshBuilder.End(drawCmd))
 		g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);

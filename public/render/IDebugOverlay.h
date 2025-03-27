@@ -233,10 +233,12 @@ struct DDPoly : DDNodeBase
 	DDPoly& Point(const Vector3D& v) { verts.append(v); return *this; }
 	DDPoly& Points(const ArrayCRef<Vector3D> _verts) { verts.append(_verts.ptr(), _verts.numElem()); return *this; }
 	DDPoly& Color(const MColor& v) { color = v.pack(); return *this; }
+	DDPoly& Fill(bool v = true) { fill = v; return *this; }
 	DDPoly& Outline(bool v = true) { outline = v; return *this; }
 
 	FixedArray<Vector3D, 20> verts;
 	uint			color{ color_white.pack() };
+	bool			fill{ true };
 	bool			outline{ false };
 };
 
