@@ -84,7 +84,7 @@ public:
 		operator V () const;
 
 		template<typename V>
-		V& SafeGet(const V& default) const;
+		V& SafeGet(const V& defaultValue) const;
 
 		template<typename V>
 		V& As() const;
@@ -216,9 +216,9 @@ V& LuaTable::ArrayOpProxy<K>::As() const
 
 template<typename K>
 template<typename V>
-V& LuaTable::ArrayOpProxy<K>::SafeGet(const V& default) const
+V& LuaTable::ArrayOpProxy<K>::SafeGet(const V& defaultValue) const
 {
-	return self.SafeGet<V>(key, default);
+	return self.SafeGet<V>(key, defaultValue);
 }
 
 template<typename K>
