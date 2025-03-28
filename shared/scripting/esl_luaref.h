@@ -224,7 +224,7 @@ V& LuaTable::ArrayOpProxy<K>::SafeGet(const V& default) const
 template<typename K>
 LuaTable LuaTable::ArrayOpProxy<K>::CreateTable() const
 {
-	LuaTable table = esl::ScriptState(self).CreateTable(); 
+	LuaTable table = esl::ScriptState(self.GetState()).CreateTable(); 
 	self.Set(key, table); 
 	return table;
 }
