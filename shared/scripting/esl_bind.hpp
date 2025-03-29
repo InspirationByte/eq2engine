@@ -413,7 +413,7 @@ struct ObjPtrGetter
 					luaL_argerror(L, index, err);
 			}
 
-			return Result{ {}, false, std::move(err), nullptr };
+			return Result::Failure(std::move(err));
 		}
 
 		// retrieve userdata name which is class name
@@ -447,7 +447,7 @@ struct ObjPtrGetter
 		if constexpr (!SilentTypeCheck)
 			luaL_argerror(L, index, err);
 
-		return Result{ {}, false, std::move(err), nullptr };
+		return Result::Failure(std::move(err));
 	}
 };
 
@@ -485,7 +485,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<bool>;
 
 		if (!CheckType(L, index, LUA_TBOOLEAN))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType))};
+			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		return Result{ {}, true, {}, lua_toboolean(L, index) != 0 };
     }
@@ -506,7 +506,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (!CheckType(L, index, LUA_TNUMBER))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)) };
+			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		return Result{ {}, true, {}, static_cast<T>(lua_tointeger(L, index)) };
 	}
@@ -517,7 +517,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (!CheckType(L, index, LUA_TNUMBER))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)) };
+			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		return Result{ {}, true, {}, static_cast<T>(lua_tonumber(L, index)) };
     }
@@ -528,7 +528,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<T>;
 
 		if (!CheckType(L, index, LUA_TLIGHTUSERDATA))
-			return Result{ {}, false, EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)), nullptr };
+			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)), nullptr);
 
 		void* udPtr = lua_touserdata(L, index);
 		return Result{ {}, true, {}, udPtr };
@@ -543,7 +543,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (argType != LUA_TNIL && !CheckType(L, index, LUA_TFUNCTION))
-			return Result{ {}, false, {}, BaseType<T>(L) };
+			return Result::Failure();
 
 		return Result{ {}, true, {}, BaseType<T>(L, index) };
 	}
@@ -554,7 +554,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<BaseType<T>>;
 
 		if (argType != LUA_TNIL && !CheckType(L, index, LUA_TTABLE))
-			return Result{ {}, false, {}, BaseType<T>(L) };
+			return Result::Failure();
 
 		return Result{ {}, true, {}, BaseType<T>(L, index) };
 
@@ -583,7 +583,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				using BaseStringType = BaseType<T>;
 				using Result = ResultWithValue<BaseStringType>;
 
-				return Result{ {}, false, std::move(err), BaseStringType() };
+				return Result::Failure(std::move(err));
 			}
 			else
 			{
@@ -639,7 +639,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using UT = std::remove_const_t<StripTraitsT<StripObjectT<T>>>;
 		using Result = ResultWithValue<UT>;
 
-		auto EmitArgError = [L, index, argType](const EqString& err) {
+		auto EmitArgError = [L, index, argType](EqString&& err) {
 			if constexpr (!SilentTypeCheck)
 			{
 				if (argType == LUA_TNIL)
@@ -650,11 +650,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 				else
 					luaL_argerror(L, index, err);
 			}
-
-			if constexpr (std::is_reference_v<T>)
-				return Result{ {}, false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
-			else
-				return Result{ {}, false, std::move(err), nullptr };
+			return Result::Failure(std::move(err));
 		};
 
 		if (argType != LUA_TUSERDATA)
@@ -702,10 +698,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		if constexpr (!SilentTypeCheck)
 			luaL_argerror(L, index, err);
 
-		if constexpr (std::is_reference_v<T>)
-			return Result{ {}, false, std::move(err), reinterpret_cast<T>(*(BaseType<T>*)nullptr) };
-		else
-			return Result{ {}, false, std::move(err), nullptr };
+		return Result::Failure(std::move(err));
 	}
 }
 

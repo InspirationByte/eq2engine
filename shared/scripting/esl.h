@@ -250,6 +250,16 @@ struct ResultWithValue
 	bool					success{ false };
 	EqString				errorMessage;
 	V						value;
+
+	static ResultWithValue<V> Failure(EqString&& errorMsg = {})
+	{
+		if constexpr (std::is_reference_v<V>)
+			return ResultWithValue<V>{ {}, false, std::move(errorMsg), reinterpret_cast<V>(*(BaseType<V>*)nullptr) };
+		else if constexpr (std::is_pointer_v<V>)
+			return ResultWithValue<V>{ {}, false, std::move(errorMsg), nullptr };
+		else
+			return ResultWithValue<V>{ {}, false, std::move(errorMsg), {} };
+	}
 };
 
 template<>
