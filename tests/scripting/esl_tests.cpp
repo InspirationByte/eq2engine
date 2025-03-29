@@ -724,12 +724,13 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		//Msg("Table has values %s, %d\n", str.ToCString(), val);
 	}
 
+	Spline* temp = PPNew Spline();
+
 	// TEST: set a value in table
 	{
 		auto tableRes = state.GetGlobal<esl::LuaTable>("TestTable");
 		ASSERT(tableRes && tableRes.value.IsValid());
 
-		Spline* temp = PPNew Spline();
 		temp->name = "Some name";
 
 		tableRes.value.Set("valueNum", 1337);
@@ -775,12 +776,19 @@ TEST(EQSCRIPT_TESTS, TestTables)
 	{
 		auto tableRes = esl::runtime::GetGlobal<esl::LuaTable>(stateTest, "TestTable");
 		ASSERT(tableRes && tableRes.value.IsValid());
+		
+		const Spline& splineRef = tableRes.value["testSpline"];
+		EXPECT_EQ(splineRef.name, EqStringRef("Some name"));
 
 		Spline* spline = tableRes.value["testSpline"];
 		EXPECT_EQ(spline->name, EqStringRef("Some name"));
 
-		delete spline;
+		// Check that object was not copied (testing ArrayOpProxy deduction)
+		EXPECT_EQ(&splineRef, spline);
+		EXPECT_EQ(spline, temp);
 	}
+
+	delete temp;
 }
 
 static bool ValueTest(const Spline* test)

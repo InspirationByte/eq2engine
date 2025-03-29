@@ -81,13 +81,22 @@ public:
 		ArrayOpProxy& operator=(const V& value);
 
 		template<typename V>
-		operator V () const;
+		operator V& () const;
 
 		template<typename V>
-		V& SafeGet(const V& defaultValue) const;
+		operator const V& () const;
 
 		template<typename V>
-		V& As() const;
+		operator V* () const;
+
+		template<typename V>
+		operator const V* () const;
+
+		template<typename V>
+		V SafeGet(const V& defaultValue) const;
+
+		template<typename V>
+		V As() const;
 
 		LuaTable CreateTable() const;
 	};
@@ -133,7 +142,7 @@ template<typename V, typename K>
 ResultWithValue<V> LuaTable::Get(const K& key) const
 {
 	if (!IsValid())
-		return ResultWithValue<V>{{}, false, {}};
+		return ResultWithValue<V>::Failure();
 
 	runtime::StackGuard g(m_state);
 	Push();
@@ -202,21 +211,42 @@ LuaTable::ArrayOpProxy<K>& LuaTable::ArrayOpProxy<K>::operator=(const V& value)
 
 template<typename K>
 template<typename V>
-LuaTable::ArrayOpProxy<K>::operator V () const
+LuaTable::ArrayOpProxy<K>::operator V& () const
+{
+	return *self.Get<V&>(key);
+}
+
+template<typename K>
+template<typename V>
+LuaTable::ArrayOpProxy<K>::operator const V& () const
+{
+	return *self.Get<const V&>(key);
+}
+
+template<typename K>
+template<typename V>
+LuaTable::ArrayOpProxy<K>::operator V* () const
+{
+	return *self.Get<V*>(key);
+}
+
+template<typename K>
+template<typename V>
+LuaTable::ArrayOpProxy<K>::operator const V* () const
+{
+	return *self.Get<const V*>(key);
+}
+
+template<typename K>
+template<typename V>
+V LuaTable::ArrayOpProxy<K>::As() const
 {
 	return *self.Get<V>(key);
 }
 
 template<typename K>
 template<typename V>
-V& LuaTable::ArrayOpProxy<K>::As() const
-{
-	return *self.Get<V>(key);
-}
-
-template<typename K>
-template<typename V>
-V& LuaTable::ArrayOpProxy<K>::SafeGet(const V& defaultValue) const
+V LuaTable::ArrayOpProxy<K>::SafeGet(const V& defaultValue) const
 {
 	return self.SafeGet<V>(key, defaultValue);
 }
