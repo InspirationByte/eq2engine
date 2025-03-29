@@ -1,5 +1,7 @@
 #pragma once
 
+#include "esl.h"
+
 namespace esl::runtime
 {
 struct BaseClassInfo;
