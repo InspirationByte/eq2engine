@@ -630,7 +630,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 		lua_pushvalue(L, fields);
 		lua_pushstring(L, typeInfo.className);
 	
-		// mt[__index] = function (...)
+		// mt[__pairs] = function (...)
 		lua_pushcclosure(L, UserTypePairsImpl, 2);
 		lua_rawset(L, mt);
 	}
@@ -661,7 +661,7 @@ void RegisterType(lua_State* L, esl::TypeInfo typeInfo)
 	// push especial eq operator that compares userdata
 	if (typeInfo.pushType != esl::BY_REF)
 	{
-		// fields[__eq] = function ()
+		// mt[__eq] = function ()
 		lua_pushstring(L, "__eq");
 		lua_pushcclosure(L, &esl::runtime::UserTypeCompareBoxedPointers, 0);
 		lua_rawset(L, mt);
