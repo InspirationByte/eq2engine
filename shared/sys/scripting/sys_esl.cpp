@@ -390,6 +390,24 @@ lua_State* CLuaStateSingleton::GetInstancePtr()
 
 };
 
+#define MAIN_SCRIPT_FILE "scripts/lua/engine.lua"
+
+static bool eslSysInitMainScript(lua_State* L)
+{
+	esl::runtime::StackGuard g(L);
+	esl::ScriptState state(L);
+	IFilePtr mainScriptFile = g_fileSystem->Open(MAIN_SCRIPT_FILE);
+	if (!mainScriptFile)
+	{
+		esl::runtime::ResetErrorValue(L);
+		lua_pushfstring(L, "Main script file '%s' not found", MAIN_SCRIPT_FILE);
+		esl::runtime::SetLuaErrorFromTopOfStack(L);
+		return false;
+	}
+
+	return state.RunFileBuffer(mainScriptFile, mainScriptFile->GetName());
+}
+
 bool eslSysInit(const esl::ScriptState& state)
 {
 	ESL_SYS_INIT(eslSysCoreInit);
@@ -408,6 +426,8 @@ bool eslSysInit(const esl::ScriptState& state)
 	ESL_SYS_INIT(eslSysEquiInit);
 	ESL_SYS_INIT(eslSysMoviePlayerInit);
 	ESL_SYS_INIT(eslSysAnimatingInit);
+
+	ESL_SYS_INIT(eslSysInitMainScript);
 
 	return true;
 }
