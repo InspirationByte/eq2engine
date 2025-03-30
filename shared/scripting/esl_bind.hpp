@@ -401,6 +401,8 @@ struct ObjPtrGetter
 {
 	using Result = ResultWithValue<OBJPTR>;
 
+	static_assert(std::is_trivial<RT>::value == false, "ObjPtrGetter cannot be used on trivial types");
+
 	template<bool SilentTypeCheck, bool AllowUpcasting>
 	static Result Get(lua_State* L, int index, int argType, bool toCpp)
 	{
@@ -635,9 +637,10 @@ static decltype(auto) GetValue(lua_State* L, int index)
 	else
 	{
 		// TODO: make ObjPtrGetter compatible with code below as the code is mostly the same except EmitArgError and is_reference
-
 		using UT = std::remove_const_t<StripTraitsT<StripObjectT<T>>>;
 		using Result = ResultWithValue<UT>;
+
+		static_assert(std::is_integral_v<BaseType<T>> == false, "GetValue<Class> cannot be used on integral types");
 
 		auto EmitArgError = [L, index, argType](EqString&& err) {
 			if constexpr (!SilentTypeCheck)

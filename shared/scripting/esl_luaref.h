@@ -80,17 +80,14 @@ public:
 		template<typename V>
 		ArrayOpProxy& operator=(const V& value);
 
-		template<typename V>
-		operator V& () const;
+		template<typename V, meta::EnableAny<std::is_integral<V>, IsLuaRef<V>> = meta::Enabler>
+		operator V() const { return *self.Get<V>(key); }
 
-		template<typename V>
-		operator const V& () const;
+		template<typename V, meta::Enable<meta::Negate<std::is_integral<V>>, meta::Negate<IsLuaRef<V>>> = meta::Enabler>
+		operator V& () const { return *self.Get<V&>(key); }
 
-		template<typename V>
-		operator V* () const;
-
-		template<typename V>
-		operator const V* () const;
+		template<typename V, meta::Enable<meta::Negate<std::is_integral<V>>, meta::Negate<IsLuaRef<V>>> = meta::Enabler>
+		operator V* () const { return *self.Get<V*>(key); }
 
 		template<typename V>
 		V SafeGet(const V& defaultValue) const;
@@ -207,34 +204,6 @@ LuaTable::ArrayOpProxy<K>& LuaTable::ArrayOpProxy<K>::operator=(const V& value)
 {
 	self.Set(key, value);
 	return *this;
-}
-
-template<typename K>
-template<typename V>
-LuaTable::ArrayOpProxy<K>::operator V& () const
-{
-	return *self.Get<V&>(key);
-}
-
-template<typename K>
-template<typename V>
-LuaTable::ArrayOpProxy<K>::operator const V& () const
-{
-	return *self.Get<const V&>(key);
-}
-
-template<typename K>
-template<typename V>
-LuaTable::ArrayOpProxy<K>::operator V* () const
-{
-	return *self.Get<V*>(key);
-}
-
-template<typename K>
-template<typename V>
-LuaTable::ArrayOpProxy<K>::operator const V* () const
-{
-	return *self.Get<const V*>(key);
 }
 
 template<typename K>
