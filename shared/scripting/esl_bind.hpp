@@ -530,7 +530,7 @@ static decltype(auto) GetValue(lua_State* L, int index)
 		using Result = ResultWithValue<T>;
 
 		if (!CheckType(L, index, LUA_TLIGHTUSERDATA))
-			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)), nullptr);
+			return Result::Failure(EqString::Format("expected %s, got %s", LuaBaseTypeAlias<T>::value, lua_typename(L, argType)));
 
 		void* udPtr = lua_touserdata(L, index);
 		return Result{ {}, true, {}, udPtr };
