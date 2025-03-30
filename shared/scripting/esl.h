@@ -17,10 +17,11 @@ class Object;
 
 template<int TYPE>
 class LuaRef;
-
+class LuaRawRef;
 using LuaFunctionRef = LuaRef<LUA_TFUNCTION>;
 using LuaTableRef = LuaRef<LUA_TTABLE>;
 using LuaUserRef = LuaRef<LUA_TUSERDATA>;
+class LuaTable;
 
 /// Any - special function return value that allows to send multiple return values to Lua (of any type) and also recieve multiple return values when using runtime::FunctionCall
 /// 
@@ -46,12 +47,6 @@ struct Any {
 };
 
 using StaticFunc = lua_CFunction;
-
-template <typename T>
-struct IsAny : std::false_type {};
-
-template <int NUM_VALUES>
-struct IsAny<Any<NUM_VALUES>> : std::true_type {};
 
 template <typename T>
 struct IsConstMemberFunc : std::false_type {};
@@ -141,6 +136,52 @@ struct StripObject<Object<T>> { using type = T; };
 
 template <typename T>
 using StripObjectT = typename StripObject<T>::type;
+
+//------------------------
+
+template <typename T> struct IsAny : std::false_type {};
+template <int NUM_VALUES> struct IsAny<Any<NUM_VALUES>> : std::true_type {};
+
+template<typename T> struct IsLuaRef : std::false_type {};
+
+template<> struct IsLuaRef<LuaRawRef> : std::true_type {};
+template<> struct IsLuaRef<const LuaRawRef> : std::true_type {};
+
+template<int TYPE> struct IsLuaRef<LuaRef<TYPE>> : std::true_type {};
+template<int TYPE> struct IsLuaRef<const LuaRef<TYPE>> : std::true_type {};
+
+template<> struct IsLuaRef<LuaTable> : std::true_type {};
+template<> struct IsLuaRef<const LuaTable> : std::true_type {};
+
+//------------------------
+
+// Biggest thanks to Sol2 for these traits
+namespace meta
+{
+template <typename T>
+using Negate = std::bool_constant<!T::value>;
+
+template <typename... Args>
+struct All : std::bool_constant<true> {};
+
+template <typename T, typename... Args>
+struct All<T, Args...> : std::conditional_t<T::value, All<Args...>, std::bool_constant<false>> {};
+
+template <typename... Args>
+struct Any : std::bool_constant<false> {};
+
+template <typename T, typename... Args>
+struct Any<T, Args...> : std::conditional_t<T::value, std::bool_constant<true>, Any<Args...>> {};
+
+enum class EnableT { _ };
+constexpr const auto Enabler = EnableT::_;
+
+template <typename... Args>
+using Enable = std::enable_if_t<All<Args...>::value, EnableT>;
+
+template <typename... Args>
+using EnableAny = std::enable_if_t<Any<Args...>::value, EnableT>;
+}
 
 //------------------------
 
