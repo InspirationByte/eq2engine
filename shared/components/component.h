@@ -7,10 +7,27 @@
 
 #pragma once
 
+enum EComponentFlags
+{
+	COMPONENT_VIRTUAL = (1 << 0)
+};
+
+template <typename HOST>
+struct SimpleComponentBase
+{
+	static constexpr int FLAGS = 0;
+};
+
+#define DECLARE_SIMPLE_COMPONENT(name) \
+	static constexpr const char Name[] = name; \
+	static constexpr int NameHash{ StringIdConst24(name) };
+
 template <typename HOST>
 class ComponentBase
 {
 public:
+	static constexpr int FLAGS = COMPONENT_VIRTUAL;
+
 	virtual ~ComponentBase() = default;
 	ComponentBase() = default;
 	ComponentBase(HOST* host) : m_host(host) {}
@@ -22,8 +39,9 @@ public:
 	virtual void		OnRemoved() {}
 
 	HOST*				GetHost() const { return m_host; }
+
 protected:
-	HOST*	m_host{ nullptr };
+	HOST*				m_host{ nullptr };
 };
 
 #define DECLARE_COMPONENT(name) \
@@ -107,7 +125,9 @@ void ComponentContainer<TComponentBase, THostType>::AddComponent(int hash, TComp
 		// add component back to slot
 		STORAGE::components[*existingIt] = component;
 	}
-	component->OnAdded();
+
+	if constexpr(TComponentBase::FLAGS & EComponentFlags::COMPONENT_VIRTUAL)
+		component->OnAdded();
 }
 
 template<typename TComponentBase, typename THostType>
@@ -121,7 +141,10 @@ void ComponentContainer<TComponentBase, THostType>::RemoveComponent(int hash)
 	if (component)
 	{
 		STORAGE::components[*it] = nullptr;
-		component->OnRemoved();
+
+		if constexpr (TComponentBase::FLAGS & EComponentFlags::COMPONENT_VIRTUAL)
+			component->OnRemoved();
+
 		delete component;
 	}
 }
@@ -147,7 +170,10 @@ void ComponentContainer<TComponentBase, THostType>::RemoveAllComponents()
 	{
 		if (!component)
 			continue;
-		component->OnRemoved();
+
+		if constexpr (TComponentBase::FLAGS & EComponentFlags::COMPONENT_VIRTUAL)
+			component->OnRemoved();
+
 		delete component;
 	}
 	STORAGE::components.clear(true);
