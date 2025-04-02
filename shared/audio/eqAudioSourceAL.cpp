@@ -716,7 +716,7 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 {
 	static ubyte pcmBuffer[EQSND_STREAM_BUFFER_SIZE];
 
-	if (m_streams.numElem() == 0)
+	if (m_streams.isEmpty())
 		return false;
 
 	SourceStream& mainStream = m_streams.front();

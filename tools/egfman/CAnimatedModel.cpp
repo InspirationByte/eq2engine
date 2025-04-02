@@ -258,10 +258,10 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 
 	const StudioPhysData& physData = m_pModel->GetPhysData();
 
-	if(physData.objects.numElem() == 0)
+	if(physData.objects.isEmpty())
 		return;
 
-	if(physData.shapes.numElem() == 0)
+	if(physData.shapes.isEmpty())
 		return;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());

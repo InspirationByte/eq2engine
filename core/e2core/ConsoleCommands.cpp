@@ -607,7 +607,7 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 	Array<EqString> cmdArgs(PP_SL);
 	SplitCommandForValidArguments(commandStr, cmdArgs);
 
-	if (cmdArgs.numElem() == 0)
+	if (cmdArgs.isEmpty())
 		return;
 
 	const ConCommandBase* pBase = FindBase(cmdArgs.front());
@@ -646,7 +646,7 @@ void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 	{
 		const ConVar* pConVar = static_cast<const ConVar*>(pBase);
 
-		if (cmdArgs.numElem() == 0)
+		if (cmdArgs.isEmpty())
 		{
 			MsgInfo("%s is '%s' (default value is '%s')\n", pConVar->GetName(), pConVar->GetString(), pConVar->GetDefaultValue());
 			return;

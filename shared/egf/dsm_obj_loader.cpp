@@ -472,7 +472,7 @@ bool LoadOBJ(DSModel& model, IVirtualStreamPtr pFile)
 		tok.goToNextLine();
 	}
 
-	if(normals.numElem() == 0)
+	if(normals.isEmpty())
 	{
 		MsgWarning("WARNING: No normals found in %s. Did you forget to export it?\n", pFile->GetName());
 	}

@@ -484,7 +484,7 @@ bool CEGFGenerator::ParseModels(const KVSection* pSection)
 		}
 	}
 
-	if(m_modelrefs.numElem() == 0)
+	if(m_modelrefs.isEmpty())
 	{
 		MsgError("Error! Model must have at least one reference!\n");
 		MsgWarning("usage: model <part name> <*.esm|*.fbx|*.obj| path>\n");
@@ -651,7 +651,7 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 		}
 	}
 
-	if(m_bodygroups.numElem() == 0)
+	if(m_bodygroups.isEmpty())
 	{
 		MsgError("Model must have at least one body group\n");
 	}
@@ -762,7 +762,7 @@ static void BoneMergeRemapDSM(DSModel& model, ArrayCRef<DSBone> newBones)
 //************************************
 void CEGFGenerator::MergeBones()
 {
-	if(m_bones.numElem() == 0)
+	if(m_bones.isEmpty())
 		return;
 
 	MsgWarning("\nMerging bones\n");
@@ -869,7 +869,7 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 		}
 	}
 
-	if(m_matpathes.numElem() == 0 && m_notextures == false)
+	if(m_matpathes.isEmpty() && m_notextures == false)
 	{
 		MsgError("Error! Model must have at least one materialpath!\n");
 		return false;

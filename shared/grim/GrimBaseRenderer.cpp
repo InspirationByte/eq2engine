@@ -1186,7 +1186,7 @@ void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
 
 bool GRIMBaseRenderer::IsSync() const
 {
-	return m_pendingDeletion.numElem() == 0 && m_pendingArchetypes.numElem() == 0 && m_dbgInvalidated == false;
+	return m_pendingDeletion.isEmpty() && m_pendingArchetypes.isEmpty() && m_dbgInvalidated == false;
 }
 
 void GRIMBaseRenderer::DbgValidate() const

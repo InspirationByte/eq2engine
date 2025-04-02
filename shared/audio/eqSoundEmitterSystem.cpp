@@ -212,7 +212,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 		return CHAN_INVALID;
 #endif
 
-	if(script->samples.numElem() == 0 && (ep->flags & EMITSOUND_FLAG_FORCE_CACHED))
+	if(script->samples.isEmpty() && (ep->flags & EMITSOUND_FLAG_FORCE_CACHED))
 	{
 		if(snd_scriptsound_showWarnings.GetBool())
 			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag on %s!\n", ep->name.ToCString());

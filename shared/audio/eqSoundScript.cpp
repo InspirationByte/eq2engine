@@ -224,7 +224,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection& sc
 			scriptDesc.soundFileNames.append(KV_GetValueString(waveKey));
 	}
 
-	if (scriptDesc.soundFileNames.numElem() == 0)
+	if (scriptDesc.soundFileNames.isEmpty())
 	{
 		MsgWarning("No wave defined for script '%s'!\n", scriptDesc.name.ToCString());
 		return;

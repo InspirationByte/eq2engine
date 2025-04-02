@@ -575,7 +575,7 @@ void KVSection::AddUniqueValue(bool bValue)
 // sets value
 void KVSection::SetValue(const char* value, int idxAt)
 {
-	if(values.numElem() == 0)
+	if(values.isEmpty())
 		CreateValue();
 
 	if(!values.inRange(idxAt))
@@ -586,7 +586,7 @@ void KVSection::SetValue(const char* value, int idxAt)
 
 void KVSection::SetValue(int nValue, int idxAt)
 {
-	if(values.numElem() == 0)
+	if(values.isEmpty())
 		CreateValue();
 
 	if(!values.inRange(idxAt))
@@ -597,7 +597,7 @@ void KVSection::SetValue(int nValue, int idxAt)
 
 void KVSection::SetValue(float fValue, int idxAt)
 {
-	if(values.numElem() == 0)
+	if(values.isEmpty())
 		CreateValue();
 
 	if(!values.inRange(idxAt))
@@ -608,7 +608,7 @@ void KVSection::SetValue(float fValue, int idxAt)
 
 void KVSection::SetValue(bool bValue, int idxAt)
 {
-	if(values.numElem() == 0)
+	if(values.isEmpty())
 		CreateValue();
 
 	if(!values.inRange(idxAt))
@@ -640,7 +640,7 @@ void KVSection::SetValue(const Vector4D& value, int idxAt)
 
 void KVSection::SetValue(const KVPairValue& value, int idxAt)
 {
-	if(values.numElem() == 0)
+	if(values.isEmpty())
 		CreateValue();
 
 	if(!values.inRange(idxAt))
@@ -849,7 +849,7 @@ KVSection* KVSection::FindSection(const char* pszName, int nFlags) const
 
 	for(KVSection* section : keys)
 	{
-		if((nFlags & KV_FLAG_SECTION) && section->keys.numElem() == 0)
+		if((nFlags & KV_FLAG_SECTION) && section->keys.isEmpty())
 			continue;
 
 		if((nFlags & KV_FLAG_NOVALUE) && section->values.numElem() > 0)
@@ -951,7 +951,7 @@ bool KVSection::IsArray() const
 
 bool KVSection::IsDefinition() const
 {
-	return values.numElem() == 0;
+	return values.isEmpty();
 }
 
 // counters and accessors
@@ -1049,7 +1049,7 @@ bool KVKeyIterator::IsValidItem()
 		return false;
 
 	const KVSection* current = section->keys[index];
-	if ((searchFlags & KV_FLAG_SECTION) && current->keys.numElem() == 0)
+	if ((searchFlags & KV_FLAG_SECTION) && current->keys.isEmpty())
 		return false;
 
 	if ((searchFlags & KV_FLAG_NOVALUE) && current->values.numElem() > 0)

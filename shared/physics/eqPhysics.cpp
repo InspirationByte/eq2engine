@@ -229,7 +229,7 @@ struct CEqManifoldResult : public btManifoldResult
 		}
 #endif // ENABLE_CONTACT_GROUPING
 
-		if (m_collisions.numElem() >= m_collisions.numAllocated())
+		if (m_collisions.isFull())
 			return;
 		
 		eqCollisionInfo& data = m_collisions.append();

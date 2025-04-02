@@ -138,7 +138,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			FONT_LOADSTYLE(fontStyleInfo.boldItalicFont, boldItalicFileName);
 		}
 
-		if( familyEntry.sizeTable.numElem() == 0 )
+		if( familyEntry.sizeTable.isEmpty())
 		{
 			if(styleErrorCounter == 0)
 				MsgWarning("Warning: Font family '%s' has empty size/style table\n", familyEntry.name.ToCString());

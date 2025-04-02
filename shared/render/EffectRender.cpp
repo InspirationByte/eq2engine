@@ -44,7 +44,7 @@ void CEffectRenderer::AddEffect(IEffect* pEffect)
 
 	ASSERT_MSG(pEffect != nullptr, "RegisterEffectForRender - inserting NULL effect");
 
-	if(m_effectList.numElem() >= m_effectList.numAllocated())
+	if(m_effectList.isFull())
 	{
 		DevMsg(DEVMSG_CORE, "Effect list overflow!\n");
 		delete pEffect;

@@ -105,6 +105,9 @@ public:
 	// returns number of elements in list
 	int				numElem() const { return m_nNumElem; }
 
+	// returns true if empty
+	bool			isEmpty() const { return numElem() == 0; }
+
 	// returns a pointer to the list
 	T*				ptr() { return m_pListPtr; }
 	const T*		ptr() const { return m_pListPtr; }
@@ -216,6 +219,9 @@ public:
 
 	// returns number of elements in list
 	int				numElem() const { return m_nNumElem; }
+
+	// returns true if empty
+	bool			isEmpty() const { return numElem() == 0; }
 
 	// returns a pointer to the list
 	const T*		ptr() const { return m_pListPtr; }

@@ -219,7 +219,7 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 	eqPhysGridCell& cell = *it;
 	ReleaseGridCellObjs(cell);
 	
-	ASSERT_MSG(cell.gridObjects.numElem() == 0, "Cell deallocated, but in use (%d)\n", cell.gridObjects.numElem());
+	ASSERT_MSG(cell.gridObjects.isEmpty(), "Cell deallocated, but in use (%d)\n", cell.gridObjects.numElem());
 
 	m_gridMap.remove(it);
 }

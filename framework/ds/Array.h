@@ -252,6 +252,12 @@ public:
 	// returns number of elements allocated for
 	int				numAllocated() const;
 
+	// returns true if empty
+	bool			isEmpty() const { return numElem() == 0; }
+
+	// returns true if element count matches allocated count. Use on fixed arrays
+	bool			isFull() const { return numElem() == numAllocated(); }
+
 	// sets new granularity
 	void			setGranularity(int newgranularity);
 

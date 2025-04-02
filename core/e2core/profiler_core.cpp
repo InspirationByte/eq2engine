@@ -214,7 +214,7 @@ IEXPORTS void ProfReleaseCurrentThreadMarkers()
 	if (!tlsCV_events)
 		return;
 
-	ASSERT_MSG(tlsCV_events->pushedEvents.numElem() == 0, "Still in performance measure");
+	ASSERT_MSG(tlsCV_events->pushedEvents.isEmpty(), "Still in performance measure");
 	delete tlsCV_events;
 	tlsCV_events = nullptr;
 #else

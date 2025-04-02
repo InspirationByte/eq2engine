@@ -260,7 +260,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	InitShaderVariants(shaderInfo, -1, shaderSection);
 
 	// Add default vertex layout (For compute of VBOless)
-	if (shaderInfo.vertexLayouts.numElem() == 0)
+	if (shaderInfo.vertexLayouts.isEmpty())
 	{
 		ShaderInfo::VertLayout& defaultVertexLayout = shaderInfo.vertexLayouts.append();
 		defaultVertexLayout.name = "Default";
@@ -760,7 +760,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 
 					for (const ShaderInfo::SkipCombo& skip : shaderInfo.skipCombos)
 					{
-						if (skip.defines.numElem() == 0)
+						if (skip.defines.isEmpty())
 							continue;
 
 						int foundCount = 0;

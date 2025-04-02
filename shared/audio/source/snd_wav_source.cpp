@@ -149,7 +149,7 @@ void CSoundSource_Wave::ParseSample(CRIFF_Parser &chunk)
 
 		if (loop.Type == 0)
 		{
-			if (m_loopRegions.numElem() >= m_loopRegions.numAllocated())
+			if (m_loopRegions.isFull())
 				break;
 
 			// only single loop region supported

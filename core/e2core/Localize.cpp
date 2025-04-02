@@ -257,7 +257,7 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 		{
 		case 't':   // text token
 		{
-			if (currentTokens.numElem() >= currentTokens.numAllocated())
+			if (currentTokens.isFull())
 			{
 				MsgError("%s:%d: token %s has extra text after it\n", textFilePath.ToCString(), line, currentTokens[0].ToCString());
 				break;

@@ -474,7 +474,7 @@ bool LoadFBX(Array<DSModelContainer>& modelContainerList, const char* filename)
 			container.shapeData->reference = mesh.name;
 			container.transform = transform;
 
-			if (container.shapeData->shapes.numElem() == 0)
+			if (container.shapeData->shapes.isEmpty())
 				container.shapeData = nullptr;
 		}
 	}
@@ -820,7 +820,7 @@ void CollectFBXAnimations(Array<DSAnimData>& animations, ofbx::IScene* scene, co
 
 		for (ObjectData& objData : objectDatas)
 		{
-			if (objData.bones.numElem() == 0)
+			if (objData.bones.isEmpty())
 				continue;
 
 			const ofbx::Object& skeletonObj = *objData.weightData[0].sourceBone->getParent();
