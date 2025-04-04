@@ -120,7 +120,7 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 		N *= 2;
 
 	const int TILE_SIZE = 256;
-	
+
 	struct ParamsData
 	{
 		uint stride = 0;
@@ -133,8 +133,9 @@ void ComputeSortShader::RunSortPipeline(IGPUComputePipeline* sortPipeline, IGPUC
 		uint _indirectZ = 1;
 		uint _padding = 0;
 	};
+	static thread_local Array<ParamsData>	paramsDataList{ PP_SL };
 
-	Array<ParamsData> paramsDataList(PP_SL);
+	paramsDataList.clear();
 	paramsDataList.reserve(N);
 
 	for (uint mergeGroupSize = 2; mergeGroupSize <= N; mergeGroupSize <<= 1)
