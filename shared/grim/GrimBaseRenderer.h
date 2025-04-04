@@ -53,6 +53,13 @@ struct GRIMRenderState
 	IGPUBufferPtr			culledInstanceInfosBuffer;
 	IGPUBufferPtr			drawInstanceBoundsBuffer;
 	IGPUBufferPtr			filterParamsBuffer;
+
+	struct ListItm
+	{
+		uint16 id{ USHRT_MAX };
+		uint16 next{ USHRT_MAX };
+	};
+	Array<ListItm>			drawInfoLinkList{ PP_SL };
 };
 
 class GRIMBaseRenderer : public IShaderMeshInstanceProvider
@@ -82,7 +89,7 @@ public:
 
 	void					PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects = -1);
 	void					PostPrepareDraw(GRIMRenderState& renderState);
-	void					Draw(const GRIMRenderState& renderState, const RenderPassContext& renderCtx);
+	void					Draw(GRIMRenderState& renderState, const RenderPassContext& renderCtx);
 
 protected:
 
@@ -140,14 +147,14 @@ protected:
 
 		Array<IGPUBufferPtr>	extraVertexBuffers{ PP_SL };
 		uint					extraLayoutBits{ 0 };
-		GRIMArchetype			slot{GRIM_INVALID_ARCHETYPE};
+		GRIMArchetype			slot{ GRIM_INVALID_ARCHETYPE };
 		Type					type{};
 		bool					isUpdate{ false };
 	};
 	Array<PendingDesc>			m_pendingArchetypes{ PP_SL };
 	Array<GRIMArchetype>		m_pendingDeletion{ PP_SL };
 
-	GRIMBaseInstanceAllocator&	m_instAllocator;
+	GRIMBaseInstanceAllocator& m_instAllocator;
 	SlottedArray<DrawInfo>		m_drawInfos{ PP_SL };
 	Pool<GPUIndexedBatch>		m_drawBatchs{ GRIMResource::BUFFER, "GPUIndexedBatch", PP_SL };
 	Pool<GPULodInfo>			m_drawLodInfos{ GRIMResource::BUFFER, "GPULodInfo", PP_SL };
@@ -174,6 +181,7 @@ protected:
 	IGPUBindGroupPtr			m_updateBindGroup0;
 
 	GRIMDrawSettings			m_drawSettings;
+
 	uint						m_drawFrame{ 0 };
 	bool						m_dbgInvalidated{ false };
 };

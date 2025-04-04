@@ -162,6 +162,10 @@ protected:
 	Set<int>				m_updated{ PP_SL };
 	BitArray				m_syncInstances{ PP_SL };
 
+	Array<int>				m_instSyncArchetypes{ PP_SL };
+	Array<int>				m_instSyncRoots{ PP_SL };
+	Array<int>				m_instSyncGroupMask{ PP_SL };
+
 	GRIMBaseComponentPool*	m_componentPools[GRIM_INSTANCE_MAX_COMPONENTS]{ nullptr };
 	uint					m_buffersUpdated{ 0 };
 

@@ -1259,18 +1259,12 @@ void GRIMBaseRenderer::DbgValidate() const
 #endif // !_RETAIL
 }
 
-void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)
+void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)
 {
 	if (renderState.drawInvocationsBuffer == nullptr || renderState.instanceIdsBuffer == nullptr)
 		return;
 
 	PROF_EVENT_F();
-
-	struct ListItm
-	{
-		uint16 id{ USHRT_MAX };
-		uint16 next{ USHRT_MAX };
-	};
 
 	// last chance to wait for draw
 	while (renderState.drawInvocationsReadbackFuture.IsValid() && !renderState.drawInvocationsReadbackFuture.Wait(0))
@@ -1279,9 +1273,9 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		Threading::YieldCurrentThread();
 	}
 
-	Array<ListItm> drawInfoLinkList(PP_SL);
-	drawInfoLinkList.reserve(m_drawInfos.numSlots());
-	drawInfoLinkList.append(ListItm{}); // store end element in this array
+	renderState.drawInfoLinkList.clear();
+	renderState.drawInfoLinkList.reserve(m_drawInfos.numSlots());
+	renderState.drawInfoLinkList.append(GRIMRenderState::ListItm{}); // store end element in this array
 
 	const bool validationOn = false;// TODO g_renderAPI->IsValidationEnabled();
 
@@ -1348,14 +1342,14 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 		if (it.atEnd())
 			it = drawInfosByMaterial.insert(materialId, 0); // insert list end
 
-		*it = drawInfoLinkList.append(ListItm{ (uint16)i, (uint16)*it }); // link to last element
+		*it = renderState.drawInfoLinkList.append(GRIMRenderState::ListItm{ (uint16)i, (uint16)*it }); // link to last element
 	}
 
 	renderPassCtx.recorder->DbgPushGroup("GRIMDraw");
 	int numDrawCalls = 0;
 	for (auto it = drawInfosByMaterial.begin(); !it.atEnd(); ++it)
 	{
-		ListItm litem = drawInfoLinkList[*it];
+		GRIMRenderState::ListItm litem = renderState.drawInfoLinkList[*it];
 
 		const DrawInfo& setupDrawInfo = m_drawInfos[litem.id];
 		const ArchetypeInfo& setupArchetypeInfo = setupDrawInfo.archetypeInfo.Ref();
@@ -1365,7 +1359,7 @@ void GRIMBaseRenderer::Draw(const GRIMRenderState& renderState, const RenderPass
 
 		// TODO: if archetypeInfo is matching, use MultiDrawIndirect
 
-		for(; litem.id != USHRT_MAX; litem = drawInfoLinkList[litem.next])
+		for(; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
 		{
 			const DrawInfo& drawInfo = m_drawInfos[litem.id];
 			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();

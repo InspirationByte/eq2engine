@@ -132,6 +132,7 @@ protected:
 	bool					SyncImpl(IGPUCommandRecorder* cmdRecorder, const void* dataPtr, int stride, GRIMLock& lock);
 
 	Set<int>				m_updated{ PP_SL };
+	Array<int>				m_syncElementIds{ PP_SL };
 	GRIMResource			m_gpuData;
 	IGPUComputePipelinePtr	m_updatePipeline;
 	EqString				m_name;

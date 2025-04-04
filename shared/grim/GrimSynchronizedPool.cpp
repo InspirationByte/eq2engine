@@ -268,11 +268,9 @@ bool GRIMBaseSyncrhronizedPool::SyncImpl(IGPUCommandRecorder* cmdRecorder, const
 	lock.LockRead();
 	if (m_updated.size())
 	{
-		Array<int> elementIds(PP_SL);
-
 		IGPUBufferPtr idxsBuffer;
 		IGPUBufferPtr dataBuffer;
-		PrepareBuffers(cmdRecorder, m_updated, elementIds, reinterpret_cast<const ubyte*>(dataPtr), stride, stride, idxsBuffer, dataBuffer);
+		PrepareBuffers(cmdRecorder, m_updated, m_syncElementIds, reinterpret_cast<const ubyte*>(dataPtr), stride, stride, idxsBuffer, dataBuffer);
 		RunUpdatePipeline(cmdRecorder, m_updatePipeline, idxsBuffer, m_updated.size(), dataBuffer, m_gpuData);
 	}
 	lock.UnlockRead();

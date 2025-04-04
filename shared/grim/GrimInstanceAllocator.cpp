@@ -377,7 +377,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 			// update single instances idxs
 			{
-				Array<int> elementIds(PP_SL);
+				Array<int>& elementIds = m_instSyncArchetypes;
 				elementIds.reserve(allocInstBufferElems + 1);
 				elementIds.append(allocInstBufferElems);
 				for (int i = 0; i < allocInstBufferElems; ++i)
@@ -385,18 +385,17 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 
 				m_singleInstIndexBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(int), allocInstBufferElems + 1), BUFFERUSAGE_VERTEX | GPU_INSTANCE_BUFFER_USAGE_FLAGS, "InstIds");
 				cmdRecorder->WriteBuffer(m_singleInstIndexBuffer, elementIds.ptr(), sizeof(elementIds[0]) * elementIds.numElem(), 0);
+
+				elementIds.clear();
 			}
 			buffersUpdatedThisFrame = true;
 		}
 
 		if (m_updated.size())
 		{
-			Array<int> instUpdateArchetypes(PP_SL);
-			Array<int> instUpdateRoots(PP_SL);
-			Array<int> instUpdateGroupMask(PP_SL);
-			instUpdateArchetypes.reserve(m_updated.size() + 1);
-			instUpdateRoots.reserve(m_updated.size() + 1);
-			instUpdateGroupMask.reserve(m_updated.size() + 1);
+			m_instSyncArchetypes.reserve(m_updated.size() + 1);
+			m_instSyncRoots.reserve(m_updated.size() + 1);
+			m_instSyncGroupMask.reserve(m_updated.size() + 1);
 
 			for (auto it = m_updated.begin(); !it.atEnd(); ++it)
 			{
@@ -404,13 +403,13 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 				const int updateFlags = m_instances[instanceIdx].updateFlags;
 
 				if(updateFlags & Instance::UPD_ARCHETYPE)
-					instUpdateArchetypes.append(instanceIdx);
+					m_instSyncArchetypes.append(instanceIdx);
 
 				if (updateFlags & Instance::UPD_ROOT)
-					instUpdateRoots.append(instanceIdx);
+					m_instSyncRoots.append(instanceIdx);
 
 				if (updateFlags & Instance::UPD_GROUPMASK)
-					instUpdateGroupMask.append(instanceIdx);
+					m_instSyncGroupMask.append(instanceIdx);
 
 				m_instances[instanceIdx].updateFlags = 0;
 				m_syncInstances.setTrue(instanceIdx);
@@ -422,10 +421,10 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			const ubyte* groupMaskSrcAddr = srcAddr + offsetOf(Instance, groupMask);
 
 			auto UpdateInstanceItems = [cmdRecorder](IGPUComputePipeline* pipeline, IGPUBuffer* targetBuffer, Array<int>& itemIds, const ubyte* items, int itemSize) {
-				const int idxsCount = itemIds.numElem();
-				if (!idxsCount)
+				if (itemIds.isEmpty())
 					return;
 
+				const int idxsCount = itemIds.numElem();
 				itemIds.insert(idxsCount, 0);
 				IGPUBufferPtr idxsBuffer = g_renderAPI->CreateBuffer(BufferInfo(sizeof(itemIds[0]), itemIds.numElem()), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstUpdIdxs");
 				cmdRecorder->WriteBuffer(idxsBuffer, itemIds.ptr(), sizeof(itemIds[0]) * itemIds.numElem(), 0);
@@ -436,16 +435,18 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 				IGPUBufferPtr dataBuffer;
 				GRIMBaseSyncrhronizedPool::PrepareDataBuffer(cmdRecorder, itemIds, items, sizeof(Instance), itemSize, dataBuffer);
 				GRIMBaseSyncrhronizedPool::RunUpdatePipeline(cmdRecorder, pipeline, idxsBuffer, idxsCount, dataBuffer, targetBufferResource);
+
+				itemIds.clear();
 			};
 
 			// update roots
-			UpdateInstanceItems(m_updateRootPipeline, m_rootBuffer, instUpdateRoots, rootSrcAddr, sizeof(InstRoot));
+			UpdateInstanceItems(m_updateRootPipeline, m_rootBuffer, m_instSyncRoots, rootSrcAddr, sizeof(InstRoot));
 
 			// update archetypes data
-			UpdateInstanceItems(m_updateIntPipeline, m_archetypesBuffer, instUpdateArchetypes, archetypesSrcAddr, sizeof(GRIMArchetype));
+			UpdateInstanceItems(m_updateIntPipeline, m_archetypesBuffer, m_instSyncArchetypes, archetypesSrcAddr, sizeof(GRIMArchetype));
 
 			// update groupMask
-			UpdateInstanceItems(m_updateIntPipeline, m_groupMaskBuffer, instUpdateGroupMask, groupMaskSrcAddr, sizeof(int));
+			UpdateInstanceItems(m_updateIntPipeline, m_groupMaskBuffer, m_instSyncGroupMask, groupMaskSrcAddr, sizeof(int));
 		}
 		m_updated.clear();
 	}
