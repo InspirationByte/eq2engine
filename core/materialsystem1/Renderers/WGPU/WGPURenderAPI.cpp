@@ -1403,7 +1403,8 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 {
 	PROF_EVENT_F();
 	g_renderWorker.WaitForExecute(__func__, [this, cmdBuffers]() {
-		Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
+		static Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
+		rhiSubmitBuffers.clear();
 		rhiSubmitBuffers.reserve(cmdBuffers.numElem());
 
 		for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
@@ -1433,7 +1434,8 @@ void CWGPURenderAPI::SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuf
 
 Future<bool> CWGPURenderAPI::SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const
 {
-	Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
+	static thread_local Array<WGPUCommandBuffer> rhiSubmitBuffers(PP_SL);
+	rhiSubmitBuffers.clear();
 	rhiSubmitBuffers.reserve(cmdBuffers.numElem());
 	for (IGPUCommandBuffer* cmdBuffer : cmdBuffers)
 	{
