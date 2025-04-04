@@ -13,6 +13,13 @@
 #include "utils/KeyValues.h"
 #include "InputCommandBinder.h"
 
+#include "render/IDebugOverlay.h"
+#ifdef ENABLE_DEBUG_DRAWING
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
+#include "font/IFontCache.h"
+#endif
+
 #include <SDL_keyboard.h>
 
 
@@ -97,7 +104,7 @@ static void InputExecInputCommand(void* userData, short value)
 		MsgWarning("dispatch %s\n", conCmd->GetName());
 
 	{
-		Array<EqStringRef> argsRefs(PP_SL);
+		FixedArray<EqStringRef, 32> argsRefs;
 		argsRefs.reserve(args.numElem());
 		for (EqStringRef str : args)
 			argsRefs.append(str);
