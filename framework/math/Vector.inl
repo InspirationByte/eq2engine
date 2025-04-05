@@ -618,7 +618,7 @@ inline bool vecIsFinite(const TVec2D<T>& vec)
 template <typename T>
 inline bool vecIsFinite(const TVec3D<T>& vec)
 {
-	return fisFinite(vec.x) && fisFinite(vec.y) && ffisFiniteisNan(vec.z);
+	return fisFinite(vec.x) && fisFinite(vec.y) && fisFinite(vec.z);
 }
 
 template <typename T>
