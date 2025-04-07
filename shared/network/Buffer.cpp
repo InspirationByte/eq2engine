@@ -43,7 +43,7 @@ int Buffer::GetMessageLength() const
 
 void Buffer::WriteString(const char* pszStr)
 {
-	uint16 len = strlen(pszStr) + 1;
+	uint16 len = CString::Length(pszStr) + 1;
 	WriteInt16(len);
 	WriteData((ubyte*)pszStr, len);
 }
@@ -58,7 +58,7 @@ void Buffer::WriteString(const EqString& str)
 
 void Buffer::WriteWString(const wchar_t* pszStr)
 {
-	uint16 len = wcslen(pszStr) + 1;
+	uint16 len = CString::Length(pszStr) + 1;
 	WriteInt16(len);
 	WriteData((ubyte*)pszStr, len*sizeof(wchar_t));
 }

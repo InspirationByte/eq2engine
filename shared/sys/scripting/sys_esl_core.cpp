@@ -725,7 +725,7 @@ static EqStringRef L_fnmPathCombine()
 		const char* str = luaL_tolstring(L, i, &len);
 		if (!len)
 			continue;
-		paths.append(EqStringRef(str, len));
+		paths.append(EqStringRef(str, static_cast<int>(len)));
 	}
 
 	lua_pop(L, n);

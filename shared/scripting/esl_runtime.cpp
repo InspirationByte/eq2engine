@@ -39,7 +39,7 @@ const char* GetLastError(lua_State* L)
 	{
 		size_t len = 0;
 		char const* str = lua_tolstring(L, -1, &len);
-		errorStr = EqString(str, len);
+		errorStr = EqString(str, static_cast<int>(len));
 	}
 	lua_pop(L, 1);
 	return errorStr;

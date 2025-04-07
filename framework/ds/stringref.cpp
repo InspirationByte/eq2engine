@@ -383,7 +383,7 @@ char* DuplicateNew(const char* s)
 	if (!s)
 		return nullptr;
 
-	const int len = strlen(s) + 1;
+	const int len = static_cast<int>(strlen(s) + 1);
 	char* t = PPNew char[len];
 	strncpy(t, s, len);
 	return t;
@@ -394,7 +394,7 @@ wchar_t* DuplicateNew(const wchar_t* s)
 	if (!s)
 		return nullptr;
 
-	const int len = wcslen(s) + 1;
+	const int len = static_cast<int>(wcslen(s) + 1);
 	wchar_t* t = PPNew wchar_t[len];
 	wcsncpy(t, s, len);
 	return t;

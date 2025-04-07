@@ -116,7 +116,7 @@ CFont::CFont()
 float CFont::GetStringWidth( const char* str, const FontStyleParam& params, int charCount, int breakOnChar) const
 {
     if (charCount < 0)
-		charCount = strlen(str);
+		charCount = CString::Length(str);
 
 	return _GetStringWidth(str, params, charCount, breakOnChar);
 }
@@ -124,7 +124,7 @@ float CFont::GetStringWidth( const char* str, const FontStyleParam& params, int 
 float CFont::GetStringWidth( const wchar_t* str, const FontStyleParam& params, int charCount, int breakOnChar) const
 {
     if (charCount < 0)
-		charCount = wcslen(str);
+		charCount = CString::Length(str);
 
 	return _GetStringWidth(str, params, charCount, breakOnChar);
 }

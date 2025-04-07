@@ -403,7 +403,7 @@ int CEqRDPSocket::Send( const char* data, int size, const sockaddr_in* to, short
 	// generate message subheader
 	udp_cdp_submsg_t subhdr;
 	subhdr.data_type = CDP_DATA_PACKETDATA;
-	subhdr.size = size+sizeof(udp_cdp_submsg_t);
+	subhdr.size = size + sizeof(udp_cdp_submsg_t);
 
 	// write subheader
 	buffer->Write( &subhdr, sizeof(udp_cdp_submsg_t));
