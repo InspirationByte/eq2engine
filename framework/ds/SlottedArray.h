@@ -19,6 +19,7 @@ public:
 	int			numElem() const;
 	int			numSlots() const;
 
+	int			add(T&& item);
 	int			add(const T& item);
 	void		remove(const int idx);
 
@@ -99,6 +100,26 @@ template<typename T>
 inline const T* SlottedArray<T>::ptr() const
 {
 	return m_items.ptr();
+}
+
+template<typename T>
+inline int SlottedArray<T>::add(T&& item)
+{
+	int idx = -1;
+	if (m_freeList.numElem())
+	{
+		idx = m_freeList.popBack();
+		m_items[idx] = std::move(item);
+	}
+	else
+	{
+		idx = m_items.append(std::move(item));
+		if (m_setItems.numBits() < m_items.numAllocated() + 1)
+			m_setItems.resize(m_items.numAllocated() + 1);
+	}
+
+	m_setItems.set(idx, true);
+	return idx;
 }
 
 template<typename T>
