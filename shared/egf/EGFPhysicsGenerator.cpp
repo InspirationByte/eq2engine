@@ -260,14 +260,13 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<DSVertex>& vertices, Array
 	MsgInfo("Detected %d groups out of %d triangles\n", indexGroups.numElem(), triangles.numElem());
 }
 
-void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups )
+void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, ArrayRef<DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups )
 {
 	// setup pose bones
 	Array<RagdollJoint> ragJoints(PP_SL);
 	ragJoints.setNum(m_srcModel->bones.numElem());
 	SetupRagdollJoints(ragJoints);
 
-	const KVSection* bonesSect = m_physicsParams->FindSection("Bones", KV_FLAG_SECTION);
 	const KVSection* isDynamicProp = m_physicsParams->FindSection("IsDynamic");
 
 	if(KV_GetValueBool(isDynamicProp))
@@ -283,7 +282,7 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, Arr
 
 	Msg("Assigning bones to groups...\n");
 
-	Array<int> bone_group_indices(PP_SL);
+	Array<int> boneGroupIndices(PP_SL);
 
 	for(int i = 0; i < indexGroups.numElem(); i++)
 	{
@@ -300,7 +299,7 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, Arr
 		else
 			Msg("Mesh %d doesn't use bones, it will be static\n", i+1);
 
-		bone_group_indices.append(bone_index);
+		boneGroupIndices.append(bone_index);
 
 		for(int j = 1; j < list.numElem(); j++)
 		{
@@ -325,7 +324,7 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, Arr
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
 		const DSBone& bone = m_srcModel->bones[i];
-		Array<int> bone_geom_indices(PP_SL);
+		Array<int> boneGeomIndices(PP_SL);
 
 		BoundingBox localBox;
 
@@ -334,14 +333,14 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, Arr
 		{
 			const IdxIsland& list = indexGroups[j];
 
-			if (bone_group_indices[j] != i)
+			if (boneGroupIndices[j] != i)
 				continue;
 
 			for(int k = 0; k < list.numElem(); k++)
 			{
-				bone_geom_indices.append(list[k][0]);
-				bone_geom_indices.append(list[k][1]);
-				bone_geom_indices.append(list[k][2]);
+				boneGeomIndices.append(list[k][0]);
+				boneGeomIndices.append(list[k][1]);
+				boneGeomIndices.append(list[k][2]);
 
 				localBox.AddVertex(vertices[list[k][0]].position);
 				localBox.AddVertex(vertices[list[k][1]].position);
@@ -352,42 +351,39 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, Arr
 		m_bbox.Merge(localBox);
 
 		// we should have at least more than 3 triangles for convex shapes
-		if( bone_geom_indices.numElem() <= 9 )
+		if( boneGeomIndices.numElem() <= 9 )
 			continue;
 
 		// compute object center
-		const Vector3D object_center = localBox.GetCenter();
+		const Vector3D objCenter = localBox.GetCenter();
 				
 		// transform objects to origin
 		Array<int> processed_index(PP_SL);
-		for(int j = 0; j < bone_geom_indices.numElem(); j++)
+		for(int j = 0; j < boneGeomIndices.numElem(); j++)
 		{
-			if(arrayFindIndex(processed_index, bone_geom_indices[j]) == -1)
+			if(arrayFindIndex(processed_index, boneGeomIndices[j]) == -1)
 			{
-				vertices[bone_geom_indices[j]].position -= object_center;
-				processed_index.append(bone_geom_indices[j]);
+				vertices[boneGeomIndices[j]].position -= objCenter;
+				processed_index.append(boneGeomIndices[j]);
 			}
 		}
 				
 		// generate physics shape
-		const int shapeID = AddShape(vertices, bone_geom_indices);
+		const int shapeID = AddShape(vertices, boneGeomIndices);
 
 		// build object data
 		physobject_t object;
-
 		memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
-
-		const KVSection* thisBoneSec = bonesSect->FindSection(bone.name, KV_FLAG_SECTION);
-
 		object.bodyPartId = 0;
 		object.numShapes = 1;
 		object.shapeIndex[0] = shapeID;
-		object.offset = object_center;
+		object.offset = objCenter;
 		object.massCenter = vec3_zero;
 		object.mass = PHYS_DEFAULT_MASS;
 
 		strcpy(object.surfaceprops, KV_GetValueString( pDefaultSurfaceProps, 0, "default" ));
 
+		const KVSection* thisBoneSec = bonesSect->FindSection(bone.name, KV_FLAG_SECTION);
 		if( thisBoneSec )
 		{
 			object.mass = KV_GetValueFloat( thisBoneSec->FindSection("Mass"), 0, PHYS_DEFAULT_MASS );
@@ -432,12 +428,11 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, Arr
 		}
 		else
 		{
-			int phys_parent = MakeBoneValidParent(i);
-
-			if(phys_parent == -1)
+			const int physParentId = MakeBoneValidParent(i);
+			if(physParentId == -1)
 				joint.objB = joint.objA;
 			else
-				joint.objB = phys_parent;
+				joint.objB = physParentId;
 		}
 
 		if(thisBoneSec)
@@ -462,13 +457,13 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(ArrayRef<DSVertex> vertices, Arr
 					if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limit" ))
 					{
 						// read limits
-						float lo_limit = KV_GetValueFloat(pKey, j+1);
-						float hi_limit = KV_GetValueFloat(pKey, j+2);
+						const float lo_limit = KV_GetValueFloat(pKey, j+1);
+						const float hi_limit = KV_GetValueFloat(pKey, j+2);
 
 						joint.minLimit[axis_idx] = DEG2RAD(lo_limit);
 						joint.maxLimit[axis_idx] = DEG2RAD(hi_limit);
 					}
-					else if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limitoffset" ))
+					else if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limitOffset" ))
 					{
 						float offs = KV_GetValueFloat(pKey, j+1);
 
@@ -647,9 +642,14 @@ bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* 
 
 		Msg("Processed %d verts and %d indices\n", vertices.numElem(), indices.numElem());
 
+		const KVSection* bonesSect = m_physicsParams->FindSection("bones");
+
+		if (!bonesSect && m_srcModel->bones.numElem() > 1)
+			MsgError("No physics.bones section found, compiling as regular physics model\n");
+
 		// generate ragdoll
-		if( m_srcModel->bones.numElem() > 1 )
-			CreateRagdollObjects(vertices, indices, indexGroups);
+		if(bonesSect && m_srcModel->bones.numElem() > 1)
+			CreateRagdollObjects(bonesSect, vertices, indices, indexGroups);
 		else if(bCompound)
 			CreateCompoundObject(vertices, indices, indexGroups);
 		else

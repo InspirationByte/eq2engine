@@ -45,7 +45,7 @@ protected:
 
 	void		SubdivideModelParts( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups);
 
-	void		CreateRagdollObjects(ArrayRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups );
+	void		CreateRagdollObjects(const KVSection* bonesSect, ArrayRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups );
 	void		CreateCompoundObject(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups);
 	void		CreateMultipleObjects(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, ArrayCRef<IdxIsland> indexGroups);
 	void		CreateSingleObject(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices );
