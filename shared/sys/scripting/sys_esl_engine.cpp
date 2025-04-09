@@ -334,26 +334,26 @@ struct LuaInputBinding
 	const char*			name{ nullptr };
 
 
-	static Map<int, LuaInputBinding> s_inputBindings;
+	static Map<int, LuaInputBinding> s_bindings;
 	static void ClearAll()
 	{
-		s_inputBindings.clear(true);
+		s_bindings.clear(true);
 	}
 
-	static void CommandHandler(void* userData, short value)
+	static void CommandHandler(void* userData, const Vector3D& value)
 	{
 		const int nameHash = reinterpret_cast<int>(userData);
-		auto it = s_inputBindings.find(nameHash);
+		auto it = s_bindings.find(nameHash);
 		ASSERT_MSG(!it.atEnd(), "LuaInputBinding CommandHandler ref is invalid");
 
 		const LuaInputBinding& ref = it.value();
 
 		using CommandFunc = esl::runtime::FunctionCall<void, short>;
-		auto callResult = CommandFunc::Invoke(ref.funcRef, value);
+		auto callResult = CommandFunc::Invoke(ref.funcRef, value.x > 0 ? 32768 : 0);
 		LUA_CHECK_CALL(callResult, ref.name);
 	}
 };
-Map<int, LuaInputBinding> LuaInputBinding::s_inputBindings{ PP_SL };
+Map<int, LuaInputBinding> LuaInputBinding::s_bindings{ PP_SL };
 
 static bool L_Input_AddBinding(char const* name, char const* keyStr, esl::LuaFunctionRef cmdFunc)
 {
@@ -366,7 +366,7 @@ static bool L_Input_AddBinding(char const* name, char const* keyStr, esl::LuaFun
 	if (!binding)
 		return false;
 
-	LuaInputBinding& ref = *LuaInputBinding::s_inputBindings.insert(nameHash);
+	LuaInputBinding& ref = *LuaInputBinding::s_bindings.insert(nameHash);
 	ref.name = CString::DuplicateNew(name);
 	ref.funcRef = cmdFunc;
 	ref.inputCmd = binding;
@@ -376,63 +376,61 @@ static bool L_Input_AddBinding(char const* name, char const* keyStr, esl::LuaFun
 static void L_Input_RemoveBinding(const char* name)
 {
 	const int nameHash = StringId24(name);
-	LuaInputBinding::s_inputBindings.remove(nameHash);
+	LuaInputBinding::s_bindings.remove(nameHash);
 }
 
 //---------------------------------------------------
 
-struct LuaInputAxisAction
+struct LuaInputVectorAction
 {
-	~LuaInputAxisAction()
+	~LuaInputVectorAction()
 	{
-		g_inputCommandBinder->RemoveAxisAction(name);
+		g_inputCommandBinder->RemoveVectorAction(name);
 		SAFE_DELETE_ARRAY(name);
 	}
 
 	esl::LuaFunctionRef funcRef;
 	const char*			name{ nullptr };
 
-	static Map<int, LuaInputAxisAction> s_axisActions;
+	static Map<int, LuaInputVectorAction> s_actions;
 	static void ClearAll()
 	{
-		s_axisActions.clear(true);
+		s_actions.clear(true);
 	}
 
-	static void CommandHandler(void* userData, short value)
+	static void CommandHandler(void* userData, const Vector3D& value)
 	{
 		const int nameHash = reinterpret_cast<int>(userData);
-		auto it = s_axisActions.find(nameHash);
+		auto it = s_actions.find(nameHash);
 		ASSERT_MSG(!it.atEnd(), "LuaInputAxisAction CommandHandler ref is invalid");
 
-		const LuaInputAxisAction& ref = it.value();
+		const LuaInputVectorAction& ref = it.value();
 
-		const float axisValue = static_cast<float>(value) / static_cast<float>(SHRT_MAX);
-
-		using AxisFunc = esl::runtime::FunctionCall<void, float>;
-		auto callResult = AxisFunc::Invoke(ref.funcRef, axisValue);
+		using AxisFunc = esl::runtime::FunctionCall<void, Vector3D>;
+		auto callResult = AxisFunc::Invoke(ref.funcRef, value);
 		LUA_CHECK_CALL(callResult, ref.name);
 	}
 };
-Map<int, LuaInputAxisAction> LuaInputAxisAction::s_axisActions{ PP_SL };
+Map<int, LuaInputVectorAction> LuaInputVectorAction::s_actions{ PP_SL };
 
-static int L_Input_CreateAxisAction(char const* name, esl::LuaFunctionRef cmdFunc)
+static int L_Input_CreateVectorAction(char const* name, esl::LuaFunctionRef cmdFunc, int axisCount)
 {
 	// register con. command function reference
 	ASSERT_MSG(cmdFunc.IsValid() == true, "Not valid function for Lua AxisAction %s", name);
 
 	const int nameHash = StringId24(name);
-	g_inputCommandBinder->CreateAxisAction( name, LuaInputAxisAction::CommandHandler, reinterpret_cast<void*>(nameHash));
+	g_inputCommandBinder->CreateVectorAction( name, LuaInputVectorAction::CommandHandler, axisCount, reinterpret_cast<void*>(nameHash));
 
-	LuaInputAxisAction& ref = *LuaInputAxisAction::s_axisActions.insert(nameHash);
+	LuaInputVectorAction& ref = *LuaInputVectorAction::s_actions.insert(nameHash);
 	ref.name = CString::DuplicateNew(name);
 	ref.funcRef = cmdFunc;
 
 	return nameHash;
 }
 
-static void L_Input_RemoveAxisAction(int id)
+static void L_Input_RemoveVectorAction(int id)
 {
-	LuaInputAxisAction::s_axisActions.remove(id);
+	LuaInputVectorAction::s_actions.remove(id);
 }
 
 //---------------------------------------------------
@@ -491,7 +489,7 @@ static void L_Input_BindAction(const esl::ScriptState& state, const char* keysSt
 	while (existingBinding = g_inputCommandBinder->FindBinding(keysStr, actionCategoryName))
 		g_inputCommandBinder->DeleteBinding(existingBinding);
 
-	g_inputCommandBinder->BindKey(keysStr, actionName, args);
+	g_inputCommandBinder->AddBinding(keysStr, actionName, args);
 }
 
 static int L_Input_GetLastInputDeviceUsed()
@@ -573,8 +571,8 @@ bool eslSysInputInit(const esl::ScriptState& state)
 	inputTable.Set("AddBinding", EQSCRIPT_CFUNC(L_Input_AddBinding));
 	inputTable.Set("RemoveBinding", EQSCRIPT_CFUNC(L_Input_RemoveBinding));
 
-	inputTable.Set("CreateAxisAction", EQSCRIPT_CFUNC(L_Input_CreateAxisAction));
-	inputTable.Set("RemoveAxisAction", EQSCRIPT_CFUNC(L_Input_RemoveAxisAction));
+	inputTable.Set("CreateVectorAction", EQSCRIPT_CFUNC(L_Input_CreateVectorAction));
+	inputTable.Set("RemoveVectorAction", EQSCRIPT_CFUNC(L_Input_RemoveVectorAction));
 
 	inputTable.Set("GetControllers", EQSCRIPT_CFUNC(L_Input_GetControllers));
 
@@ -594,7 +592,7 @@ bool eslSysInputInit(const esl::ScriptState& state)
 void eslSysInputTerm()
 {
 	LuaInputBinding::ClearAll();
-	LuaInputAxisAction::ClearAll();
+	LuaInputVectorAction::ClearAll();
 
 #ifdef IMGUI_ENABLED
 	for (auto it = s_luaImguiHandlerNames.begin(); !it.atEnd(); ++it)

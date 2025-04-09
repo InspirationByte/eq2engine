@@ -1015,9 +1015,13 @@ void CGameHost::MouseMove_Event(int x, int y, int dx, int dy)
 	if( equi::Manager->ProcessMouseEvents(x, y, 0, equi::UI_EVENT_MOUSE_MOVE) )
 		return;
 
-	Vector2D delta(-dx, -dy);
+	Vector3D delta(dx, dy, 0);
 	delta.y *= (m_invert.GetBool() ? 1.0f : -1.0f);
-	delta *= 0.05f * m_sensitivity.GetFloat();
+	delta *= m_sensitivity.GetFloat();
+
+	g_inputCommandBinder->OnVectorEvent(MOU_MOVE, delta);
+
+	delta *= -0.05f;
 
 	if(eqAppStateMng::GetCurrentState())
 		eqAppStateMng::GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
@@ -1028,13 +1032,21 @@ void CGameHost::MouseWheel_Event(int x, int y, int hscroll, int vscroll)
 	if (g_consoleInput->MouseWheel(hscroll, vscroll))
 		return;
 
+	g_inputCommandBinder->OnVectorEvent(MOU_MOVE, Vector3D(hscroll, vscroll, 0));
+
 	if(eqAppStateMng::GetCurrentState())
 		eqAppStateMng::GetCurrentState()->HandleMouseWheel(x, y, vscroll);
 }
 
 void CGameHost::JoyAxis_Event( short axis, short value )
 {
-	g_inputCommandBinder->OnJoyAxisEvent( axis, value );
+	constexpr float invAxisInputScale = 1.0f / SHRT_MAX;
+
+	// TODO: accumulate x and y value and process in input queue instead
+	Vector3D axisValue(0);
+	axisValue[0] = static_cast<float>(value)* invAxisInputScale;
+
+	g_inputCommandBinder->OnVectorEvent( JOYSTICK_START_AXES + axis, axisValue);
 
 	if(eqAppStateMng::GetCurrentState())
 		eqAppStateMng::GetCurrentState()->HandleJoyAxis( axis, value );
@@ -1042,7 +1054,7 @@ void CGameHost::JoyAxis_Event( short axis, short value )
 
 void CGameHost::JoyButton_Event( short button, bool down)
 {
-	g_inputCommandBinder->OnKeyEvent( JOYSTICK_START_KEYS + button, down );
+	g_inputCommandBinder->OnPressEvent( JOYSTICK_START_KEYS + button, down );
 
 	if(eqAppStateMng::GetCurrentState())
 		eqAppStateMng::GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
@@ -1055,7 +1067,7 @@ void CGameHost::TouchMotion_Event( float x, float y, int finger )
 
 void CGameHost::Touch_Event( float x, float y, int finger, bool down )
 {
-	g_inputCommandBinder->OnTouchEvent( Vector2D(x,y), finger, down );
+	g_inputCommandBinder->OnTouchEvent( finger, Vector2D(x, y), down );
 }
 
 void CGameHost::ProcessKeyChar(const char* utfChar)
