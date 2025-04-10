@@ -81,7 +81,7 @@ struct DSAnimData
 
 //------------------------------------------------------------------------------------
 
-int		SortAndBalanceBones(int nCount, int nMaxCount, int* bones, float* weights);
+int		SortAndBalanceBones(int count, int maxCount, int* bones, float* weights, const float minWeight = 0.05f);
 
 bool	LoadSharedModel(DSModel& model, const char* filename);
 bool	SaveSharedModel(const DSModel& model, const char* filename);

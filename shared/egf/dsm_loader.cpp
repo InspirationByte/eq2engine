@@ -18,15 +18,15 @@ namespace SharedModel
 {
 
 // sorts bones
-int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
+int SortAndBalanceBones( int count, int maxCount, int* bones, float* weights, const float minWeight)
 {
-	if (!nCount)
+	if (!count)
 		return 0;
 
 	// collapse duplicate bone weights
-	for (int i = 0; i < nCount-1; i++)
+	for (int i = 0; i < count-1; i++)
 	{
-		for (int j = i + 1; j < nCount; j++)
+		for (int j = i + 1; j < count; j++)
 		{
 			if (bones[i] == bones[j])
 			{
@@ -37,54 +37,51 @@ int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
 	}
 
 	// sort in order
-	int bShouldSort;
+	bool needSort;
 	do 
 	{
-		bShouldSort = false;
-		for (int i = 0; i < nCount-1; i++)
+		needSort = false;
+		for (int i = 0; i < count-1; i++)
 		{
 			if (weights[i+1] > weights[i])
 			{
 				QuickSwap(bones[i + 1], bones[i]);
 				QuickSwap(weights[i + 1], weights[i]);
 
-				bShouldSort = true;
+				needSort = true;
 			}
 		}
-	}while (bShouldSort);
+	} while (needSort);
 
 	// throw away all weights less than 1/20th
-	while (nCount > 1 && weights[nCount-1] < 0.05f)
-		nCount--;
+	while (count > 1 && weights[count-1] < minWeight)
+		count--;
 
 	// clip to the top iMaxCount bones
-	if (nCount > nMaxCount)
-		nCount = nMaxCount;
+	if (count > maxCount)
+		count = maxCount;
 
 	float t = 0.0f;
-
-	for (int i = 0; i < nCount; i++)
+	for (int i = 0; i < count; i++)
 		t += weights[i];
 
 	if (t <= 0.0f)
 	{
 		// missing weights?, go ahead and evenly share?
 		// FIXME: shouldn't this error out?
-		t = 1.0f / nCount;
-
-		for (int i = 0; i < nCount; i++)
+		t = 1.0f / count;
+		for (int i = 0; i < count; i++)
 			weights[i] = t;
 	}
 	else
 	{
 		// scale to sum to 1.0
 		t = 1.0f / t;
-
-		for (int i = 0; i < nCount; i++)
+		for (int i = 0; i < count; i++)
 			weights[i] *= t;
 	}
 
-	return nCount;
+	return count;
 }
 
 bool LoadSharedModel(DSModel& model, const char* filename)
@@ -94,7 +91,7 @@ bool LoadSharedModel(DSModel& model, const char* filename)
 	if (ext == "esm")
 		return LoadESM(model, filename);
 
-	if(ext == "obj")
+	if (ext == "obj")
 		return LoadOBJ(model, filename);
 
 	if (ext == "fbx")
@@ -115,8 +112,8 @@ bool SaveSharedModel(const DSModel& model, const char* filename)
 
 DSModel::~DSModel()
 {
-	for (int i = 0; i < meshes.numElem(); i++)
-		delete meshes[i];
+	for (DSMesh* mesh : meshes)
+		delete mesh;
 
 	bones.clear(true);
 	meshes.clear(true);
@@ -124,10 +121,10 @@ DSModel::~DSModel()
 
 DSMesh* DSModel::FindMeshByName(const char* pszGroupname)
 {
-	for(int i = 0; i < meshes.numElem(); i++)
+	for(DSMesh* mesh : meshes)
 	{
-		if(!meshes[i]->texture.CompareCaseIns(pszGroupname))
-			return meshes[i];
+		if(!mesh->texture.CompareCaseIns(pszGroupname))
+			return mesh;
 	}
 
 	return nullptr;
