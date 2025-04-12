@@ -20,7 +20,7 @@ struct SimpleComponentBase
 
 #define DECLARE_SIMPLE_COMPONENT(name) \
 	static constexpr const char Name[] = name; \
-	static constexpr int NameHash{ StringIdConst24(name) };
+	static constexpr int NameHash{ StringIdConst24(name) }
 
 template <typename HOST>
 class ComponentBase
