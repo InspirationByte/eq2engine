@@ -348,8 +348,8 @@ struct LuaInputBinding
 
 		const LuaInputBinding& ref = it.value();
 
-		using CommandFunc = esl::runtime::FunctionCall<void, short>;
-		auto callResult = CommandFunc::Invoke(ref.funcRef, value.x > 0 ? 32768 : 0);
+		using CommandFunc = esl::runtime::FunctionCall<void, float>;
+		auto callResult = CommandFunc::Invoke(ref.funcRef, value.x);
 		LUA_CHECK_CALL(callResult, ref.name);
 	}
 };
