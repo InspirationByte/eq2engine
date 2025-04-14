@@ -271,7 +271,7 @@ public:
 	void			reserve(int requiredSize);
 
 	// sets the number of elements in list and resize to exactly this number if necessary
-	void			setNum(int newnum, bool resize = true);
+	void			setNum(int newnum, bool shrinkResize = true);
 
 	// returns a pointer to the list
 	T*				ptr();

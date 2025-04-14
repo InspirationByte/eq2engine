@@ -936,10 +936,11 @@ const MatSysShaderFactory* CMaterialSystem::GetShaderFactory(const char* szShade
 void CMaterialSystem::QueueLoading(const IMaterialPtr& pMaterial)
 {
 	CMaterial* material = (CMaterial*)pMaterial.Ptr();
-	if(Atomic::CompareExchange(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)
-	{
+	if (!material)
 		return;
-	}
+
+	if(Atomic::CompareExchange(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)
+		return;
 
 	if( m_config.threadedloader )
 	{

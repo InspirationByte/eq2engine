@@ -1300,7 +1300,6 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 		if(m_dbgHiddenArchetypes[drawInfo.ownerArchetype])
 			continue;
 #endif
-
 		const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
 
 		IMaterial* material = drawInfo.material;
@@ -1310,6 +1309,8 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 
 		if (!material)
 			continue;
+
+		g_matSystem->QueueLoading(drawInfo.material);
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
 		const char* onlyMaterialName = grim_dbgOnlyMaterial.GetString();

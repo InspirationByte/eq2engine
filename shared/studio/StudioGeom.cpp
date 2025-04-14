@@ -609,10 +609,7 @@ void CEqStudioGeom::LoadMaterials()
 		for (int i = 0; i < numMaterials; i++)
 		{
 			if (m_materials[i])
-			{
-				g_matSystem->QueueLoading(m_materials[i]);
 				continue;
-			}
 
 			m_materials[i] = g_studioCache->GetErrorMaterial();
 			hasErrors = true;
@@ -653,6 +650,13 @@ void CEqStudioGeom::LoadMaterials()
 		for (int i = 0; i < studio->numMaterialSearchPaths; i++)
 			MsgError("   '%s'\n", studio->pMaterialSearchPath(i)->searchPath);
 	}
+}
+
+
+void CEqStudioGeom::QueueMaterialsLoading() const
+{
+	for(const IMaterialPtr& material : m_materials)
+		g_matSystem->QueueLoading(material);
 }
 
 const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int materialGroupIdx) const

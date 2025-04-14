@@ -65,6 +65,7 @@ public:
 	const IMaterialPtr&		GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 	ArrayCRef<IMaterialPtr>	GetMaterials(int materialGroupIdx = 0) const;
 	int						GetMaterialGroupsCount() const { return m_materialGroupsCount; }
+	void					QueueMaterialsLoading() const;
 
 	// instancing
 	void					SetInstancer(CBaseEqGeomInstancer* instancer);
