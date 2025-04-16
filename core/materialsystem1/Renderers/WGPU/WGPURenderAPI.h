@@ -39,7 +39,8 @@ public:
 //-------------------------------------------------------------
 // Renderer information
 	void						PrintAPIInfo() const;
-	bool						IsDeviceActive() const;
+	bool						IsDeviceActive() const { return !m_deviceLost; }
+	bool						IsDeviceValidationActive() const { return m_isValidationActive; }
 
 	// shader API class type for shader developers.
 	EShaderAPIType				GetShaderAPIClass()		{ return SHADERAPI_WEBGPU; }
@@ -120,4 +121,5 @@ protected:
 	WGPUDevice					m_rhiDevice{ nullptr };
 	WGPUQueue					m_rhiQueue{ nullptr };
 	bool						m_deviceLost{ false };
+	bool						m_isValidationActive{ false };
 };

@@ -187,7 +187,8 @@ public:
 	//void			Shutdown() {}
 
 	void			PrintAPIInfo() const {}
-	bool			IsDeviceActive() const {return true;}
+	bool			IsDeviceActive() const { return true; }
+	bool			IsDeviceValidationActive() const { return true; }
 	EShaderAPIType	GetShaderAPIClass() {return SHADERAPI_EMPTY;}
 	const char*		GetRendererName() const {return "Empty";}
 

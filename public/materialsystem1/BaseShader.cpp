@@ -434,7 +434,7 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 	RenderPipelineDesc renderPipelineDesc;
 	FillRenderPipelineDesc(inputParams, renderPipelineDesc);
 
-	if (onInit)
+	if (onInit || renderAPI->IsDeviceValidationActive())
 	{
 		IGPURenderPipelinePtr renderPipeline = renderAPI->CreateRenderPipeline(renderPipelineDesc, newPipelineInfo.layout);
 		if (!renderPipeline)
@@ -454,7 +454,6 @@ const CBaseShader::PipelineInfo& CBaseShader::EnsureRenderPipeline(IShaderAPI* r
 	}
 	else
 	{
-
 		PipelineCreatorJob* pipelineJob = PPNew PipelineCreatorJob(renderAPI, renderPipelineDesc, newPipelineInfo);
 		pipelineJob->InitJob();
 		pipelineJob->DeleteOnFinish();

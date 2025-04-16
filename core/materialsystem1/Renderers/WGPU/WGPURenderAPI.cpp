@@ -364,11 +364,6 @@ void CWGPURenderAPI::PrintAPIInfo() const
 	}
 }
 
-bool CWGPURenderAPI::IsDeviceActive() const
-{
-	return !m_deviceLost;
-}
-
 IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
 {
 	IVertexFormat* pVF = PPNew CWGPUVertexFormat(name, formatDesc);

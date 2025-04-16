@@ -87,6 +87,7 @@ public:
 //-------------------------------------------------------------
 
 	virtual bool				IsDeviceActive() const = 0;
+	virtual bool				IsDeviceValidationActive() const = 0;
 
 	virtual int					GetDrawCallsCount() const = 0;
 	virtual int					GetDrawIndexedPrimitiveCallsCount() const = 0;
