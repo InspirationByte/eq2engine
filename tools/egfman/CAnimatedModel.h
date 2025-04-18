@@ -10,7 +10,7 @@
 
 struct AnimSequence;
 struct AnimPoseController;
-struct PhysRagdollData;
+class CPhysRagdollData;
 class CEqStudioGeom;
 class IPhysicsObject;
 class IGPURenderPassRecorder;
@@ -60,7 +60,7 @@ public:
 
 	CEqStudioGeom*				m_pModel;
 	IPhysicsObject*				m_physObj;
-	PhysRagdollData*			m_pRagdoll;
+	CPhysRagdollData*			m_pRagdoll;
 	bool						m_bPhysicsEnable;
 
 	Array<AnimSequence*>		m_sequencesList{ PP_SL };

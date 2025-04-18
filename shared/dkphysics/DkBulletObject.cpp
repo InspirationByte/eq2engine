@@ -26,7 +26,7 @@ static int island_params_translate[3] =
 	ISLAND_SLEEPING
 };
 
-static phys_freeze_state_e  back_to_freeze_state[6] =
+static EPhysicsActivationState  back_to_freeze_state[6] =
 {
 	PS_INVALID,
 
@@ -126,13 +126,13 @@ int	CPhysicsObject::GetFlags()
 	return m_nFlags;
 }
 
-void CPhysicsObject::SetActivationState(phys_freeze_state_e nState)
+void CPhysicsObject::SetActivationState(EPhysicsActivationState nState)
 {
 	//m_pPhyObjectPointer->setActivationState(island_params_translate[nState]);
 	m_pPhyObjectPointer->forceActivationState(island_params_translate[nState]);
 }
 
-phys_freeze_state_e CPhysicsObject::GetActivationState()
+EPhysicsActivationState CPhysicsObject::GetActivationState()
 {
 	return back_to_freeze_state[m_pPhyObjectPointer->getActivationState()];
 }

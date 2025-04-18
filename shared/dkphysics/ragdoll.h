@@ -7,52 +7,65 @@
 
 #pragma once
 
-#define MAX_RAGDOLL_PARTS 32
-
 class CEqStudioGeom;
 class IPhysicsObject;
 class IPhysicsJoint;
+enum EPhysicsActivationState : int;
 
-struct PhysRagdollData
+class CPhysRagdollData
 {
-	void Init();
+public:
+	~CPhysRagdollData();
+	CPhysRagdollData(CEqStudioGeom* pModel);
 
 	// get bones transformation for rendering (NOTE: before this operation, reset input bone transform to identity)
-	void			GetVisualBonesTransforms(Matrix4x4 *bones) const;
+	void				GetVisualBonesTransforms(Matrix4x4 *bones) const;
 
-	void			GetBoundingBox(Vector3D& mins, Vector3D& maxs) const;
-	Vector3D		GetPosition() const;
+	void				GetBoundingBox(BoundingBox& bbox) const;
+	Vector3D			GetPosition() const;
 
 	// sets bone tranformations (useful for animated death, etc)
 	// you can setup from here a global transform by multipling all matrices on model transform
-	void			SetBoneTransform(Matrix4x4 *bones, const Matrix4x4& translation);
+	void				SetBoneTransform(Matrix4x4 *bones, const Matrix4x4& translation);
 
 	// wakes ragdoll
-	void			Wake();
+	void				Wake();
+	void				Freeze();
 
+	void				SetContents(int contents);
+	void				SetCollisionMask(int mask);
+
+	void				SetCollisionResponseEnabled(bool enable);
+	void				SetActivationState(EPhysicsActivationState state);
+
+	void				RefreshRagdollVisuals();
+	void				Translate(const Vector3D &move);
+	void				ResetVelocities();
+
+	const Matrix4x4&	GetJointTransformA(int idx) const;
+	int					GetGeomIdx(int jointIdx) const { return m_jointToGeomIds[jointIdx]; }
+	int					GetJointIdx(int geomIdx) const { return m_geomToJointIds[geomIdx]; }
+
+protected:
 	// finds far parent bone in ragdoll
-	int				ComputeAndGetFarParentOf(int bone);
+	int					ComputeAndGetFarParentOf(int bone);
 
-	void			RefreshRagdollVisuals();
-	void			Translate(const Vector3D &move);
+	static constexpr int MAX_RAGDOLL_PARTS = 32;
+	static constexpr int MAX_RAGDOLL_JOINT_IDS = 128;
 
-// members
+	IPhysicsObject*		m_partObjs[MAX_RAGDOLL_PARTS]{ nullptr };
+	IPhysicsJoint*		m_physJoints[MAX_RAGDOLL_PARTS]{ nullptr };
 
-	IPhysicsObject*	m_partObjs[MAX_RAGDOLL_PARTS];
-	IPhysicsJoint*	m_physJoints[MAX_RAGDOLL_PARTS];
+	int					m_bodyPartIds[MAX_RAGDOLL_PARTS];
+	int					m_jointToGeomIds[MAX_RAGDOLL_PARTS];
+	int					m_geomToJointIds[MAX_RAGDOLL_JOINT_IDS];
 
-	int				m_bodyPartIds[MAX_RAGDOLL_PARTS];
-	int				m_jointToGeomIds[MAX_RAGDOLL_PARTS];
-	int				m_geomToJointIds[128];
+	int					m_farParents[MAX_RAGDOLL_JOINT_IDS];
+	Matrix4x4			m_geomTransforms[MAX_RAGDOLL_JOINT_IDS];
 
-	int				m_farParents[128];
-	Matrix4x4		m_geomTransforms[128];
+	int					m_numBones{ 0 };
+	int					m_numParts{ 0 };
 
-	int				m_numBones;
-	int				m_numParts;
-
-	CEqStudioGeom*	m_studio;
+	CEqStudioGeom*		m_studio{ nullptr };
 };
 
-PhysRagdollData*	CreateRagdoll(CEqStudioGeom* pModel);
-void		DestroyRagdoll(PhysRagdollData* ragdoll);

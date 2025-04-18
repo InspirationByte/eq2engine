@@ -47,8 +47,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 
 	// do cleanup
 	DestroyAnimating();
-	DestroyRagdoll( m_pRagdoll );
-	m_pRagdoll = nullptr;
+	SAFE_DELETE(m_pRagdoll);
 
 	m_pModel =  pModel;
 
@@ -57,6 +56,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 
 	// initialize that shit to use it in future
 	InitAnimating(m_pModel);
+	m_pModel->QueueMaterialsLoading();
 
 	// populate sequences list
 	m_sequencesList.clear();
@@ -71,20 +71,10 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	const StudioPhysData& physData = m_pModel->GetPhysData();
 	if(physData.usageType == PHYSMODEL_USAGE_RAGDOLL)
 	{
-		m_pRagdoll = CreateRagdoll( m_pModel );
-
-		if(m_pRagdoll)
-		{
-			for(int i = 0; i < m_pRagdoll->m_numParts; i++)
-			{
-				if(m_pRagdoll->m_partObjs[i])
-				{
-					m_pRagdoll->m_partObjs[i]->SetContents( COLLISION_GROUP_RAGDOLLBONES );
-					m_pRagdoll->m_partObjs[i]->SetActivationState( PS_FROZEN );
-					m_pRagdoll->m_partObjs[i]->SetCollisionResponseEnabled( false );
-				}
-			}
-		}
+		m_pRagdoll = PPNew CPhysRagdollData(m_pModel);
+		m_pRagdoll->SetContents(COLLISION_GROUP_RAGDOLLBONES);
+		m_pRagdoll->SetActivationState(PS_FROZEN);
+		m_pRagdoll->SetCollisionResponseEnabled(false);
 	}
 	else
 	{
@@ -107,19 +97,10 @@ void CAnimatedModel::TogglePhysicsState()
 		{
 			if(m_pRagdoll)
 			{
-				for(int i = 0; i < m_pRagdoll->m_numParts; i++)
-				{
-					if(m_pRagdoll->m_partObjs[i])
-					{
-						m_pRagdoll->m_partObjs[i]->SetContents( COLLISION_GROUP_RAGDOLLBONES );
-						m_pRagdoll->m_partObjs[i]->SetActivationState( PS_FROZEN );
-						m_pRagdoll->m_partObjs[i]->SetCollisionResponseEnabled( false );
-						m_pRagdoll->m_partObjs[i]->SetVelocity(vec3_zero);
-						m_pRagdoll->m_partObjs[i]->SetAngularVelocity(Vector3D(1,1,1), 0.0);
-						m_pRagdoll->m_partObjs[i]->SetFriction(4.0);
-
-					}
-				}
+				m_pRagdoll->SetCollisionResponseEnabled(false);
+				m_pRagdoll->SetContents(COLLISION_GROUP_RAGDOLLBONES);
+				m_pRagdoll->SetActivationState(PS_FROZEN);
+				m_pRagdoll->ResetVelocities();
 				m_pRagdoll->GetVisualBonesTransforms( m_boneTransforms );
 			}
 			else if(m_physObj)
@@ -143,20 +124,11 @@ void CAnimatedModel::ResetPhysics()
 		UpdateIK(0.0f, identity4);
 
 		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4 );
-
-		for(int i = 0; i< m_pRagdoll->m_numParts; i++)
-		{
-			if(m_pRagdoll->m_partObjs[i])
-			{
-				m_pRagdoll->m_partObjs[i]->SetContents( COLLISION_GROUP_DEBRIS );
-				m_pRagdoll->m_partObjs[i]->SetCollisionMask( COLLIDE_DEBRIS );
-
-				m_pRagdoll->m_partObjs[i]->SetActivationState(PS_ACTIVE);
-				m_pRagdoll->m_partObjs[i]->SetVelocity( vec3_zero );
-				m_pRagdoll->m_partObjs[i]->SetAngularVelocity( vec3_zero, 0.0f );
-				m_pRagdoll->m_partObjs[i]->SetCollisionResponseEnabled( true );
-			}
-		}
+		m_pRagdoll->SetContents(COLLISION_GROUP_DEBRIS);
+		m_pRagdoll->SetCollisionMask(COLLIDE_DEBRIS);
+		m_pRagdoll->SetActivationState(PS_ACTIVE);
+		m_pRagdoll->ResetVelocities();
+		m_pRagdoll->SetCollisionResponseEnabled(true);
 
 		m_pRagdoll->Wake();
 	}
@@ -271,15 +243,18 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 
 	MatSysDefaultRenderPass defaultRenderPass;
 	defaultRenderPass.blendMode = SHADER_BLEND_TRANSLUCENT;
-	defaultRenderPass.drawColor = MColor(1.0f, 0.0f, 1.0f, 1.0f);
+	defaultRenderPass.drawColor = MColor(1.0f, 0.0f, 1.0f, 0.5f);
 	defaultRenderPass.depthTest = true;
-	RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
+
+
 
 	Matrix4x4 worldPosMatrix;
 	g_matSystem->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
 
 	for (int i = 0; i < physData.objects.numElem(); ++i)
 	{
+		defaultRenderPass.drawColor.setHSV(float(i) / float(physData.objects.numElem()), 1.0f, 1.0f);
+
 		const StudioPhyObjData& physObj = physData.objects[i];
 		for(int j = 0; j < physObj.desc.numShapes; j++)
 		{
@@ -291,10 +266,10 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 
 			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{
-				const int visualMatrixIdx = m_pRagdoll->m_jointToGeomIds[i];
-				const Matrix4x4 boneFrame = m_pRagdoll->m_physJoints[i]->GetFrameTransformA();
+				const int visualMatrixIdx = m_pRagdoll->GetGeomIdx(i);
+				const Matrix4x4 boneFrame = m_pRagdoll->GetJointTransformA(i);
 
-				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_boneTransforms[visualMatrixIdx]));
+				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame * m_boneTransforms[visualMatrixIdx]));
 			}
 
 			meshBuilder.Begin(PRIM_TRIANGLES);
@@ -306,7 +281,10 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 				meshBuilder.AdvanceVertex();
 			}
 			if (meshBuilder.End(drawCmd))
+			{
+				RenderPassContext defaultPassContext(rendPassRecorder, &defaultRenderPass);
 				g_matSystem->SetupDrawCommand(drawCmd, defaultPassContext);
+			}
 		}
 	}
 }

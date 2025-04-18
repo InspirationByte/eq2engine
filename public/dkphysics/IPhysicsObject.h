@@ -8,14 +8,14 @@
 #pragma once
 
 // flags
-enum PhysObjectFlags_e
+enum EPhysObjectFlags : int
 {
 	PO_NO_EVENTS		= (1 << 0), // don't generate events for specified object
 	PO_BLOCKEVENTS		= (1 << 1), // block events for object (dynamic flag)
 	PO_NO_EVENT_BLOCK	= (1 << 2),	// disables distant locking of object
 };
 
-enum phys_freeze_state_e
+enum EPhysicsActivationState : int
 {
 	PS_INVALID = -1,
 	PS_FROZEN = 0,		// object is not moveable
@@ -69,8 +69,8 @@ public:
 	virtual void					SetUserData(void* ptr) = 0;						// Sets user data pointer
 	virtual void*					GetUserData() = 0;								// Returns user data
 
-	virtual void					SetActivationState(phys_freeze_state_e nState) = 0;	// freeze states
-	virtual phys_freeze_state_e		GetActivationState() = 0;							// freeze states
+	virtual void					SetActivationState(EPhysicsActivationState nState) = 0;	// freeze states
+	virtual EPhysicsActivationState		GetActivationState() = 0;							// freeze states
 
 	virtual void					SetAngularFactor(const Vector3D &factor) = 0;			// Sets angular factor (may help with up-right vector)
 	virtual Vector3D				GetAngularFactor() = 0;							// Sets angular factor (may help with up-right vector)

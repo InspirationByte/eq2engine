@@ -40,15 +40,15 @@
 using namespace Threading;
 using namespace EqBulletUtils;
 
-DECLARE_CVAR(ph_gravity,"800","World gravity",CV_CHEAT);
-DECLARE_CVAR(ph_iterations,"10","Physics iterations",CV_CHEAT);
-DECLARE_CVAR(ph_framerate_approx, "200", "Physics framerate approximately",CV_ARCHIVE);
-DECLARE_CVAR(ph_contact_min_dist, "-0.005f", "Minimum distance/intersection for contact", CV_CHEAT);
-DECLARE_CVAR(ph_erp1, "0.25f", nullptr, 0);
-DECLARE_CVAR(ph_debug_serializeworld, "0", nullptr, 0);
-DECLARE_CVAR(ph_drawdebug, "0", "performs wireframe rendering of convex objects", CV_CHEAT);
-DECLARE_CVAR(ph_worldextramargin, "0.25", "World geometry thickness (change needs unload/reload of level)", CV_ARCHIVE);
-DECLARE_CVAR(ph_shapemarginscale, "1.0f", "Shape geometry thickness", CV_ARCHIVE);
+DECLARE_CVAR(ph_gravity, "9.81", "World gravity", CV_CHEAT);
+DECLARE_CVAR(ph_iterations, "10", "Physics iterations", CV_CHEAT);
+DECLARE_CVAR(ph_framerateApprox, "200", "Physics framerate approximately", CV_ARCHIVE);
+DECLARE_CVAR(ph_contactMinDist, "-0.005f", "Minimum distance/intersection for contact", CV_CHEAT);
+DECLARE_CVAR(ph_erp1, "0.015f", nullptr, 0);
+DECLARE_CVAR(ph_debugSerialize, "0", nullptr, 0);
+DECLARE_CVAR(ph_debugDraw, "0", "performs wireframe rendering of convex objects", CV_CHEAT);
+DECLARE_CVAR(ph_worldExtraMargin, "0.025", "World geometry thickness (change needs unload/reload of level)", CV_ARCHIVE);
+
 DECLARE_CVAR(ph_ccdMotionThresholdScale, "0.15f", nullptr, 0);
 DECLARE_CVAR(ph_CcdSweptSphereRadiusScale, "0.5f", nullptr, 0);
 
@@ -407,7 +407,7 @@ bool EQContactAddedCallback(btManifoldPoint& cp,const btCollisionObjectWrapper* 
 
 	if(pObjA && pObjB)
 	{
-		if (cp.getDistance() < ph_contact_min_dist.GetFloat())
+		if (cp.getDistance() < ph_contactMinDist.GetFloat())
 		{
 			// add contact to the physics object, to iterate in game dll
 			pObjA->AddContactEventFromManifoldPoint(&cp, pObjB);
@@ -753,7 +753,7 @@ void DkPhysics::UpdateEvents()
 }
 
 #define PHY_STEPS ph_iterations.GetInt()
-#define DKFIXED_TIMESTEP (1.0f/ph_framerate_approx.GetFloat())
+#define DKFIXED_TIMESTEP (1.0f/ph_framerateApprox.GetFloat())
 
 // Update funciton
 void DkPhysics::Simulate(float dt, int substeps)
@@ -763,9 +763,9 @@ void DkPhysics::Simulate(float dt, int substeps)
 	{
 		//m_Mutex.Lock();
 
-		if(ph_debug_serializeworld.GetBool())
+		if(ph_debugSerialize.GetBool())
 		{
-			ph_debug_serializeworld.SetBool(false);
+			ph_debugSerialize.SetBool(false);
 
 			int maxSerializeBufferSize = 1024*1024*25;
 			
@@ -828,7 +828,7 @@ void DkPhysics::DrawDebug()
 {
 	m_Mutex.Lock();
 		
-	if(ph_drawdebug.GetBool())
+	if(ph_debugDraw.GetBool())
 	{
 		for(int i = 0; i < m_pPhysicsObjectList.numElem(); i++)
 		{
@@ -1112,7 +1112,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	//Msg("World geom margin: %g\n", shape->getMargin());
 
-	shape->setMargin(EQ2BULLET(ph_worldextramargin.GetFloat()));
+	shape->setMargin(EQ2BULLET(ph_worldExtraMargin.GetFloat()));
 
 	btTransform startTransform;
 	startTransform.setIdentity();
@@ -1348,8 +1348,8 @@ IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject
 	btVector3 vTemp(0,0,0);
 	pShape->getBoundingSphere(vTemp, fSize);
 
-	pPhysicsObject->m_pPhyObjectPointer->setDeactivationTime(0.1f);
-	pPhysicsObject->m_pPhyObjectPointer->setSleepingThresholds(10.0f, 10.0f);
+	pPhysicsObject->m_pPhyObjectPointer->setDeactivationTime(0.25f);
+	pPhysicsObject->m_pPhyObjectPointer->setSleepingThresholds(0.001f, 0.001f);
 	//pPhysicsObject->m_pPhyObjectPointer->setCcdMotionThreshold( fSize * ph_ccdMotionThresholdScale.GetFloat() );
 	//pPhysicsObject->m_pPhyObjectPointer->setCcdSweptSphereRadius( fSize * ph_CcdSweptSphereRadiusScale.GetFloat() );
 
@@ -1450,10 +1450,10 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 	btVector3 vTemp(0,0,0);
 	pShape->getBoundingSphere(vTemp, fSize);
 
-	pPhysicsObject->m_pPhyObjectPointer->setDeactivationTime(0.1f);
-	pPhysicsObject->m_pPhyObjectPointer->setSleepingThresholds(10.0f, 10.0f);
-	pPhysicsObject->m_pPhyObjectPointer->setCcdMotionThreshold( fSize * ph_ccdMotionThresholdScale.GetFloat() );
-	pPhysicsObject->m_pPhyObjectPointer->setCcdSweptSphereRadius( fSize * ph_CcdSweptSphereRadiusScale.GetFloat() );
+	pPhysicsObject->m_pPhyObjectPointer->setDeactivationTime(0.2f);
+	pPhysicsObject->m_pPhyObjectPointer->setSleepingThresholds(0.001f, 0.001f);
+	//pPhysicsObject->m_pPhyObjectPointer->setCcdMotionThreshold( fSize * ph_ccdMotionThresholdScale.GetFloat() );
+	//pPhysicsObject->m_pPhyObjectPointer->setCcdSweptSphereRadius( fSize * ph_CcdSweptSphereRadiusScale.GetFloat() );
 
 	pPhysicsObject->m_pPhyObjectPointer->setCollisionFlags(pPhysicsObject->m_pPhyObjectPointer->getCollisionFlags()  | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
 

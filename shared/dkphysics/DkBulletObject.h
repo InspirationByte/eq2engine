@@ -70,8 +70,8 @@ public:
 	void					SetUserData(void* ptr);						// Sets user data pointer
 	void*					GetUserData();								// Returns user data
 
-	void					SetActivationState(phys_freeze_state_e nState);	// freeze states
-	phys_freeze_state_e		GetActivationState();							// freeze states
+	void					SetActivationState(EPhysicsActivationState nState);	// freeze states
+	EPhysicsActivationState		GetActivationState();							// freeze states
 
 	void					SetAngularFactor(const Vector3D &factor);			// Sets angular factor (may help with up-right vector)
 	Vector3D				GetAngularFactor();							// Sets angular factor (may help with up-right vector)
