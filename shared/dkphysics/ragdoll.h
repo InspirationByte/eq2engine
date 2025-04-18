@@ -21,7 +21,7 @@ public:
 	// get bones transformation for rendering (NOTE: before this operation, reset input bone transform to identity)
 	void				GetVisualBonesTransforms(Matrix4x4 *bones) const;
 
-	void				GetBoundingBox(BoundingBox& bbox) const;
+	BoundingBox			GetBoundingBox() const;
 	Vector3D			GetPosition() const;
 
 	// sets bone tranformations (useful for animated death, etc)

@@ -14,7 +14,7 @@
 #include "physics/PhysicsCollisionGroup.h"
 #include "dkphysics/IDkPhysics.h"
 
-static constexpr float RAGDOLL_LINEAR_LIMIT = 0.25;
+static constexpr float RAGDOLL_LINEAR_LIMIT = 0.0025;
 static constexpr int COLLIDE_RAGDOLL		= (COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS | COLLISION_GROUP_PROJECTILES);
 
 CPhysRagdollData::~CPhysRagdollData()
@@ -162,9 +162,9 @@ int CPhysRagdollData::ComputeAndGetFarParentOf(int bone)
 	return -1;
 }
 
-void CPhysRagdollData::GetBoundingBox(BoundingBox& bbox) const
+BoundingBox CPhysRagdollData::GetBoundingBox() const
 {
-	bbox.Reset();
+	BoundingBox bbox;
 	for(int i = 0; i < m_numParts; i++)
 	{
 		if (!m_partObjs[i])
@@ -177,12 +177,12 @@ void CPhysRagdollData::GetBoundingBox(BoundingBox& bbox) const
 		bbox.AddVertex(partAABBMins);
 		bbox.AddVertex(partAABBMaxs);
 	}
+	return bbox;
 }
 
 Vector3D CPhysRagdollData::GetPosition() const
 {
-	BoundingBox bbox;
-	GetBoundingBox(bbox);
+	BoundingBox bbox = GetBoundingBox();
 
 	return bbox.GetCenter();
 }

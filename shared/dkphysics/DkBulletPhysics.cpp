@@ -41,13 +41,13 @@ using namespace Threading;
 using namespace EqBulletUtils;
 
 DECLARE_CVAR(ph_gravity, "9.81", "World gravity", CV_CHEAT);
-DECLARE_CVAR(ph_iterations, "10", "Physics iterations", CV_CHEAT);
-DECLARE_CVAR(ph_framerateApprox, "200", "Physics framerate approximately", CV_ARCHIVE);
+DECLARE_CVAR(ph_iterations, "4", "Physics iterations", CV_CHEAT);
+DECLARE_CVAR(ph_framerateApprox, "120", "Physics framerate approximately", CV_ARCHIVE);
 DECLARE_CVAR(ph_contactMinDist, "-0.005f", "Minimum distance/intersection for contact", CV_CHEAT);
-DECLARE_CVAR(ph_erp1, "0.015f", nullptr, 0);
+DECLARE_CVAR(ph_erp1, "0.005f", nullptr, 0);
 DECLARE_CVAR(ph_debugSerialize, "0", nullptr, 0);
 DECLARE_CVAR(ph_debugDraw, "0", "performs wireframe rendering of convex objects", CV_CHEAT);
-DECLARE_CVAR(ph_worldExtraMargin, "0.025", "World geometry thickness (change needs unload/reload of level)", CV_ARCHIVE);
+DECLARE_CVAR(ph_worldExtraMargin, "0.005", "World geometry thickness (change needs unload/reload of level)", CV_ARCHIVE);
 
 DECLARE_CVAR(ph_ccdMotionThresholdScale, "0.15f", nullptr, 0);
 DECLARE_CVAR(ph_CcdSweptSphereRadiusScale, "0.5f", nullptr, 0);
@@ -1199,22 +1199,21 @@ IPhysicsJoint* DkPhysics::CreateJoint(IPhysicsObject* pObjectA,IPhysicsObject* p
 	ConvertMatrix4ToBullet(transA, transformA);
 	ConvertMatrix4ToBullet(transB, transformB);
 
-	//pNewJoint->m_pJointPointer
-
 	pNewJoint->m_pJointPointer = new btGeneric6DofConstraint(*pObjA->m_pPhyObjectPointer, *pObjB->m_pPhyObjectPointer, transA, transB, true);
-
 	pNewJoint->m_pJointPointer->setDbgDrawSize(5);
 
-	pNewJoint->m_pJointPointer->getTranslationalLimitMotor()->m_restitution = 0.0f;
-	pNewJoint->m_pJointPointer->getTranslationalLimitMotor()->m_limitSoftness = 2.5f;
+	btTranslationalLimitMotor& translationLimitMotor = *pNewJoint->m_pJointPointer->getTranslationalLimitMotor();
+	translationLimitMotor.m_restitution = 0.5f;
+	translationLimitMotor.m_limitSoftness = 0.15f;
 
 	for(int i = 0; i < 3; i++)
 	{
-		pNewJoint->m_pJointPointer->getRotationalLimitMotor(i)->m_bounce = 0.0f;
-		pNewJoint->m_pJointPointer->getRotationalLimitMotor(i)->m_limitSoftness = 12.5f;
-		pNewJoint->m_pJointPointer->getRotationalLimitMotor(i)->m_damping = 0.6f;
-		pNewJoint->m_pJointPointer->getRotationalLimitMotor(i)->m_stopERP = 0.0f;
-		pNewJoint->m_pJointPointer->getRotationalLimitMotor(i)->m_stopCFM = 0.0f;
+		btRotationalLimitMotor& rotLimitMotor = *pNewJoint->m_pJointPointer->getRotationalLimitMotor(i);
+		rotLimitMotor.m_bounce = 0.0f;
+		rotLimitMotor.m_limitSoftness = 0.5f;
+		rotLimitMotor.m_damping = 0.6f;
+		rotLimitMotor.m_stopERP = 0.0f;
+		rotLimitMotor.m_stopCFM = 0.0f;
 	}
 
 	m_dynamicsWorld->addConstraint(pNewJoint->m_pJointPointer, bDisableCollisionBetweenBodies);
