@@ -183,9 +183,11 @@ static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void con
 
 bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 {
+	const bool isDeviceValidationEnabled = (g_cmdLine->FindArgument("-rhivalidation") != -1);
+
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
-	options.compatibilityMode = true;	// NOTE: this is replaced with enum in later versions
+	options.compatibilityMode = isDeviceValidationEnabled == false;	// NOTE: this is replaced with enum in later versions
 	
 	EqStringRef backendName = wgpu_backend.GetString();
 
@@ -278,7 +280,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		enabledToggles.append("allow_unsafe_apis");
 		disabledToggles.append("lazy_clear_resource_on_first_use");	// this switch requires us to clear buffers and render targets
 		enabledToggles.append("use_user_defined_labels_in_backend");
-		if(g_cmdLine->FindArgument("-rhivalidation") != -1)
+		if(isDeviceValidationEnabled)
 		{
 			enabledToggles.append("enable_immediate_error_handling");
 			enabledToggles.append("disable_symbol_renaming");
