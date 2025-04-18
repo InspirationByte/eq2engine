@@ -123,7 +123,8 @@ void CAnimatedModel::ResetPhysics()
 		RecalcBoneTransforms();
 		UpdateIK(0.0f, identity4);
 
-		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4 );
+		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4);
+		m_pRagdoll->Translate(Vector3D(0, m_pRagdoll->GetBoundingBox().maxPoint.y, 0));
 		m_pRagdoll->SetContents(COLLISION_GROUP_DEBRIS);
 		m_pRagdoll->SetCollisionMask(COLLIDE_DEBRIS);
 		m_pRagdoll->SetActivationState(PS_ACTIVE);

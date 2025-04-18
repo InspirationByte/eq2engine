@@ -1034,12 +1034,12 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 	{
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 		{
-			Vector3D ray_start, ray_dir;
-			Vector3D last_ray_start, last_ray_dir;
+			Vector3D rayStart, rayDir;
+			Vector3D lastRayStart, lastRayDir;
 
 			// set object
-			ScreenToDirection(Vector2D(w-event.GetX(),event.GetY()), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, ray_start, ray_dir);
-			ScreenToDirection(Vector2D(w-g_vLastMousePosition.x,g_vLastMousePosition.y), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, last_ray_start, last_ray_dir);
+			ScreenToDirection(Vector2D(w-event.GetX(),event.GetY()), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, rayStart, rayDir);
+			ScreenToDirection(Vector2D(w-g_vLastMousePosition.x,g_vLastMousePosition.y), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, lastRayStart, lastRayDir);
 	
 			// we found ray, find object
 
@@ -1047,9 +1047,9 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			if(g_pDragable == nullptr)
 			{
 				internaltrace_t tr;
-				physics->InternalTraceLine(ray_start, ray_start+ray_dir, COLLISION_GROUP_ALL, &tr);
+				physics->InternalTraceLine(rayStart, rayStart+rayDir * 1000.0f, COLLISION_GROUP_ALL, &tr);
 
-				//debugoverlay->Line3D(ray_start, tr.traceEnd, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 10);
+				//DbgLine().Start(rayStart).End(tr.traceEnd).ColorStart(ColorRGBA(1, 0, 0, 1)).ColorEnd(ColorRGBA(0, 1, 0, 1)).Time(0.1f);
 
 				if(tr.hitObj)
 				{
@@ -1068,7 +1068,7 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 
 				Vector3D intersection;
 
-				pl.GetIntersectionWithRay(ray_start, normalize(ray_dir), intersection);
+				pl.GetIntersectionWithRay(rayStart, normalize(rayDir), intersection);
 
 				g_vDragTarget = intersection;
 			}
