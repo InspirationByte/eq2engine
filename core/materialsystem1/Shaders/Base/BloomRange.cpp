@@ -25,23 +25,23 @@ BEGIN_SHADER_CLASS(BloomRange)
 		m_bloomSource = GetMaterialVar("BloomSource", "");
 	}
 
-	void FillBindGroupLayout_Constant(BindGroupLayoutDesc& bindGroupLayout) const
-	{
-		Builder<BindGroupLayoutDesc>(bindGroupLayout)
-			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
-			.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
-			.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
-			.End();
-	}
+	//void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const override
+	//{
+	//	Builder<BindGroupLayoutDesc>(bindGroupLayout)
+	//		.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
+	//		.Sampler("BaseTextureSampler", 1, SHADERKIND_FRAGMENT, SAMPLERBIND_FILTERING)
+	//		.Texture("BaseTexture", 2, SHADERKIND_FRAGMENT, TEXSAMPLE_FLOAT, TEXDIMENSION_2D)
+	//		.End();
+	//}
 
-	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const
+	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override
 	{
 		FixedArray<Vector4D, 4> bufferData;
 		bufferData.append(m_rangeProps.Get());
 		cmdRecorder->WriteBuffer(m_proxyBuffer, bufferData.ptr(), bufferData.numElem() * sizeof(bufferData[0]), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{

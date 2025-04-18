@@ -27,7 +27,7 @@ BEGIN_SHADER_CLASS(
 		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture, TEXFLAG_CUBEMAP);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 	}

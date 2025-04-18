@@ -36,9 +36,9 @@ BEGIN_SHADER_CLASS(Skybox)
 		return true;
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
+	const ITexturePtr& GetBaseTexture(int stage) const override {return m_baseTexture.Get();}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		return GetEmptyBindGroup(renderAPI, bindGroupId, setupParams.pipelineInfo);
 	}

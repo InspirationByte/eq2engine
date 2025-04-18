@@ -33,7 +33,7 @@ BEGIN_SHADER_CLASS(
 		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
-	void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const
+	void BuildPipelineShaderQuery(Array<EqString>& shaderQuery) const override
 	{
 		bool fogEnable = true;
 		if (GetMaterialValue("NoFog", false) == false)
@@ -46,7 +46,7 @@ BEGIN_SHADER_CLASS(
 			shaderQuery.append("ALPHATEST");
 	}
 
-	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const
+	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override
 	{
 		Vector4D bufferData[2];
 		Vector4D textureTransform = GetTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar);
@@ -57,7 +57,7 @@ BEGIN_SHADER_CLASS(
 		cmdRecorder->WriteBuffer(m_materialParamsBuffer, &bufferData, sizeof(bufferData), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{

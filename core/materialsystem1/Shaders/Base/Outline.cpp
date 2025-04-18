@@ -36,7 +36,7 @@ BEGIN_SHADER_CLASS(Outline)
 		SHADER_PARAM_TEXTURE_FIND(SourceDepth, m_sourceTex);
 	}
 
-	/*void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const
+	/*void FillBindGroupLayout_Constant(const MeshInstanceFormatRef& meshInstFormat, BindGroupLayoutDesc& bindGroupLayout) const override
 	{
 		Builder<BindGroupLayoutDesc>(bindGroupLayout)
 			.Buffer("materialParams", 0, SHADERKIND_VERTEX | SHADERKIND_FRAGMENT, BUFFERBIND_UNIFORM)
@@ -45,7 +45,7 @@ BEGIN_SHADER_CLASS(Outline)
 			.End();
 	}*/
 
-	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const
+	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override
 	{
 		OutlineParams materialParams;
 		materialParams.outlineColor = m_outlineColor.Get();
@@ -54,7 +54,7 @@ BEGIN_SHADER_CLASS(Outline)
 		cmdRecorder->WriteBuffer(m_proxyBuffer, &materialParams, sizeof(materialParams), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{

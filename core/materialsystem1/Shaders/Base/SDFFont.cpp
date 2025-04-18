@@ -155,7 +155,7 @@ BEGIN_SHADER_CLASS(
 		return true;
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{

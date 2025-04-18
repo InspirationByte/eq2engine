@@ -34,7 +34,7 @@ BEGIN_SHADER_CLASS(
 	{
 	}
 
-	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const
+	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override
 	{
 		Vector4D bufferData[1];
 		bufferData[0].x = m_lineWidth.Get();
@@ -43,7 +43,7 @@ BEGIN_SHADER_CLASS(
 		cmdRecorder->WriteBuffer(m_materialParamsBuffer, &bufferData, sizeof(bufferData), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{

@@ -153,7 +153,7 @@ BEGIN_SHADER_CLASS(
 	// this function returns material group.
 	// Default material has transient all transient resources 
 	// as it's used for immediate drawing
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{

@@ -25,14 +25,14 @@ BEGIN_SHADER_CLASS(EdgeAA)
 		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 	}
 
-	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const
+	void UpdateProxy(IGPUCommandRecorder* cmdRecorder) const override
 	{
 		FixedArray<Vector4D, 4> bufferData;
 		bufferData.append(m_edgeAASettings.Get());
 		cmdRecorder->WriteBuffer(m_settingsBuffer, bufferData.ptr(), bufferData.numElem() * sizeof(bufferData[0]), 0);
 	}
 
-	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const
+	IGPUBindGroupPtr GetBindGroup(IShaderAPI* renderAPI, EBindGroupId bindGroupId, const BindGroupSetupParams& setupParams) const override
 	{
 		if (bindGroupId == BINDGROUP_CONSTANT)
 		{
