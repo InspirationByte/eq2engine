@@ -21,7 +21,7 @@
 
 using namespace Threading;
 
-DECLARE_CVAR(grim_softwareMode, "0", nullptr, CV_UNREGISTERED);
+DECLARE_CVAR(grim_dbgSoftwareMode, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgOnlyMaterial, "", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgLogArchetypes, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(grim_dbgValidate, "0", nullptr, CV_CHEAT);
@@ -1143,7 +1143,7 @@ void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderS
 
 bool GRIMBaseRenderer::IsSoftwareMode() const
 {
-	return m_drawSettings.forceSoftware || grim_softwareMode.GetBool();
+	return m_drawSettings.forceSoftware || grim_dbgSoftwareMode.GetBool();
 }
 
 void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
@@ -1439,9 +1439,9 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 	ImGui::Checkbox("Show Instance Ids", &renderer.m_drawSettings.dbgDrawIndices);
 	ImGui::SameLine();
 
-	bool softwareMode = grim_softwareMode.GetBool();
+	bool softwareMode = grim_dbgSoftwareMode.GetBool();
 	if(ImGui::Checkbox("Software mode override", &softwareMode))
-		grim_softwareMode.SetBool(softwareMode);
+		grim_dbgSoftwareMode.SetBool(softwareMode);
 	ImGui::SameLine();
 	if(ImGui::Button("Invalidate all data"))
 	{
