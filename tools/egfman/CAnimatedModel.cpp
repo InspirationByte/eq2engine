@@ -72,9 +72,11 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	if(physData.usageType == PHYSMODEL_USAGE_RAGDOLL)
 	{
 		m_pRagdoll = PPNew CPhysRagdollData(m_pModel);
-		m_pRagdoll->SetContents(COLLISION_GROUP_RAGDOLLBONES);
-		m_pRagdoll->SetActivationState(PS_FROZEN);
-		m_pRagdoll->SetCollisionResponseEnabled(false);
+		m_pRagdoll->ForEachBodyPart([](IPhysicsObject* obj) {
+			obj->SetContents(COLLISION_GROUP_RAGDOLLBONES);
+			obj->SetActivationState(PS_FROZEN);
+			obj->SetCollisionResponseEnabled(false);
+		});
 	}
 	else
 	{
@@ -97,9 +99,11 @@ void CAnimatedModel::TogglePhysicsState()
 		{
 			if(m_pRagdoll)
 			{
-				m_pRagdoll->SetCollisionResponseEnabled(false);
-				m_pRagdoll->SetContents(COLLISION_GROUP_RAGDOLLBONES);
-				m_pRagdoll->SetActivationState(PS_FROZEN);
+				m_pRagdoll->ForEachBodyPart([](IPhysicsObject* obj) {
+					obj->SetCollisionResponseEnabled(false);
+					obj->SetContents(COLLISION_GROUP_RAGDOLLBONES);
+					obj->SetActivationState(PS_FROZEN);
+				});
 				m_pRagdoll->ResetVelocities();
 				m_pRagdoll->GetVisualBonesTransforms( m_boneTransforms );
 			}
@@ -123,15 +127,19 @@ void CAnimatedModel::ResetPhysics()
 		RecalcBoneTransforms();
 		UpdateIK(0.0f, identity4);
 
+		m_pRagdoll->Freeze();
+		m_pRagdoll->ResetVelocities();
 		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4);
 		const BoundingBox bbox = m_pRagdoll->GetBoundingBox();
 
 		m_pRagdoll->Translate(Vector3D(0, -bbox.minPoint.y, 0));
-		m_pRagdoll->SetContents(COLLISION_GROUP_DEBRIS);
-		m_pRagdoll->SetCollisionMask(COLLIDE_DEBRIS);
-		m_pRagdoll->SetActivationState(PS_ACTIVE);
-		m_pRagdoll->ResetVelocities();
-		m_pRagdoll->SetCollisionResponseEnabled(true);
+
+		m_pRagdoll->ForEachBodyPart([](IPhysicsObject* obj) {
+			obj->SetCollisionResponseEnabled(true);
+			obj->SetContents(COLLISION_GROUP_DEBRIS);
+			obj->SetCollisionMask(COLLIDE_DEBRIS);
+			obj->SetActivationState(PS_ACTIVE);
+		});
 
 		m_pRagdoll->Wake();
 	}

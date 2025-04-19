@@ -14,8 +14,7 @@
 #include "physics/PhysicsCollisionGroup.h"
 #include "dkphysics/IDkPhysics.h"
 
-static constexpr float RAGDOLL_LINEAR_LIMIT = 0.0025;
-static constexpr int COLLIDE_RAGDOLL = (COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS | COLLISION_GROUP_PROJECTILES);
+static constexpr float RAGDOLL_DEFAULT_LINEAR_LIMIT = 0.0025;
 
 CPhysRagdollData::~CPhysRagdollData()
 {
@@ -79,10 +78,6 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 	{
 		IPhysicsObject* physObj = physics->CreateObject(&physModel, i);
 		const int bodyPartId = physModel.objects[i].desc.bodyPartId;
-
-		physObj->SetSleepTheresholds(0.25f, 0.25f);
-		physObj->SetDamping(0.01f, 0.05f);
-		physObj->SetFriction(4.0);
 		physObj->SetUserData(reinterpret_cast<void*>(bodyPartId));
 		m_partObjs[i] = physObj;
 	}
@@ -117,8 +112,8 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 		IPhysicsJoint* physJoint = physics->CreateJoint(partA, partB, localTrsA, localTrsB, true);
 		physJoint->SetAngularLowerLimit(physModel.joints[i].minLimit);
 		physJoint->SetAngularUpperLimit(physModel.joints[i].maxLimit);
-		physJoint->SetLinearLowerLimit(Vector3D(-RAGDOLL_LINEAR_LIMIT));
-		physJoint->SetLinearUpperLimit(Vector3D(RAGDOLL_LINEAR_LIMIT));
+		physJoint->SetLinearLowerLimit(Vector3D(-RAGDOLL_DEFAULT_LINEAR_LIMIT));
+		physJoint->SetLinearUpperLimit(Vector3D(RAGDOLL_DEFAULT_LINEAR_LIMIT));
 
 		m_physJoints[i] = physJoint;
 	}
@@ -205,35 +200,25 @@ void CPhysRagdollData::SetBoneTransform(Matrix4x4* bones, const Matrix4x4& trans
 
 void CPhysRagdollData::Translate(const Vector3D& move)
 {
-	for (int i = 0; i < m_partObjs.numElem(); i++)
-	{
-		if (m_partObjs[i])
-			m_partObjs[i]->SetPosition(m_partObjs[i]->GetPosition() + move);
-	}
-
+	ForEachBodyPart([&](IPhysicsObject* obj) {
+		obj->SetPosition(obj->GetPosition() + move);
+	});
 	RefreshRagdollVisuals();
 }
 
 void CPhysRagdollData::RefreshRagdollVisuals()
 {
-	// refresh joint transform
-	for (int i = 0; i < m_physJoints.numElem(); i++)
-	{
-		if (!m_physJoints[i])
-			continue;
-		m_physJoints[i]->UpdateTransform();
-	}
+	ForEachJoint([](IPhysicsJoint* joint) {
+		joint->UpdateTransform();
+	});
 }
 
 // wakes ragdoll
 void CPhysRagdollData::Wake()
 {
-	// set part transform
-	for (int i = 0; i < m_partObjs.numElem(); i++)
-	{
-		if (m_partObjs[i])
-			m_partObjs[i]->WakeUp();
-	}
+	ForEachBodyPart([](IPhysicsObject* obj) {
+		obj->WakeUp();
+	});
 
 	RefreshRagdollVisuals();
 }
@@ -245,54 +230,15 @@ void CPhysRagdollData::Freeze()
 		if (m_partObjs[i])
 			m_partObjs[i]->SetActivationState(PS_FROZEN);
 	}
-}
 
-void CPhysRagdollData::SetActivationState(EPhysicsActivationState state)
-{
-	for (int i = 0; i < m_partObjs.numElem(); i++)
-	{
-		if (m_partObjs[i])
-			m_partObjs[i]->SetActivationState(state);
-	}
-}
-
-void CPhysRagdollData::SetContents(int contents)
-{
-	for (int i = 0; i < m_partObjs.numElem(); i++)
-	{
-		if (m_partObjs[i])
-			m_partObjs[i]->SetContents(contents);
-	}
-}
-
-void CPhysRagdollData::SetCollisionMask(int mask)
-{
-	for (int i = 0; i < m_partObjs.numElem(); i++)
-	{
-		if (m_partObjs[i])
-			m_partObjs[i]->SetCollisionMask(mask);
-	}
-}
-
-void CPhysRagdollData::SetCollisionResponseEnabled(bool enable)
-{
-	for (int i = 0; i < m_partObjs.numElem(); i++)
-	{
-		if (m_partObjs[i])
-			m_partObjs[i]->SetCollisionResponseEnabled(enable);
-	}
 }
 
 void CPhysRagdollData::ResetVelocities()
 {
-	for (int i = 0; i < m_partObjs.numElem(); i++)
-	{
-		if (m_partObjs[i])
-		{
-			m_partObjs[i]->SetVelocity(vec3_zero);
-			m_partObjs[i]->SetAngularVelocity(vec3_unit, 0.0);
-		}
-	}
+	ForEachBodyPart([](IPhysicsObject* obj) {
+		obj->SetVelocity(vec3_zero);
+		obj->SetAngularVelocity(vec3_unit, 0.0);
+	});
 }
 
 const Matrix4x4& CPhysRagdollData::GetJointTransformA(int idx) const

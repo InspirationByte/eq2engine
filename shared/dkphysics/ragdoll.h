@@ -33,11 +33,11 @@ public:
 	void				Wake();
 	void				Freeze();
 
-	void				SetContents(int contents);
-	void				SetCollisionMask(int mask);
+	template<typename F>
+	void				ForEachBodyPart(F func);
 
-	void				SetCollisionResponseEnabled(bool enable);
-	void				SetActivationState(EPhysicsActivationState state);
+	template<typename F>
+	void				ForEachJoint(F func);
 
 	void				RefreshRagdollVisuals();
 	void				Translate(const Vector3D &move);
@@ -63,3 +63,22 @@ protected:
 	Map<int16, int16>	m_farParents{ PP_SL };
 };
 
+template<typename F>
+void CPhysRagdollData::ForEachBodyPart(F func)
+{
+	for (int i = 0; i < m_partObjs.numElem(); i++)
+	{
+		if (m_partObjs[i])
+			func(m_partObjs[i]);
+	}
+}
+
+template<typename F>
+void CPhysRagdollData::ForEachJoint(F func)
+{
+	for (int i = 0; i < m_physJoints.numElem(); i++)
+	{
+		if (m_physJoints[i])
+			func(m_physJoints[i]);
+	}
+}
