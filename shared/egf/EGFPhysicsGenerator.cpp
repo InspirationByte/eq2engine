@@ -265,6 +265,8 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 	ragJoints.setNum(m_srcModel->bones.numElem());
 	SetupRagdollJoints(ragJoints);
 
+	float defaultMass = PHYS_DEFAULT_MASS;
+	m_physicsParams->Get("Mass").GetValues(defaultMass);
 	const KVSection* isDynamicProp = m_physicsParams->FindSection("IsDynamic");
 
 	if(KV_GetValueBool(isDynamicProp))
@@ -281,48 +283,45 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 	Msg("Assigning bones to groups...\n");
 
 	Array<int> boneGroupIndices(PP_SL);
-
 	for(int i = 0; i < indexGroups.numElem(); i++)
 	{
 		const IdxIsland& list = indexGroups[i];
-		const int firsttri_indx0 = list[0][0];
+		const int firstTriIdx = list.front()[0];
 
-		int bone_index = -1;
-		
-		if(vertices[firsttri_indx0].weights.numElem() > 0)
-			bone_index = vertices[firsttri_indx0].weights[0].bone;
+		int boneIdx = -1;
+		if(vertices[firstTriIdx].weights.numElem() > 0)
+			boneIdx = vertices[firstTriIdx].weights[0].bone;
+		boneGroupIndices.append(boneIdx);
 
-		if(bone_index != -1)
-			Msg("Mesh %d uses bone %s\n", i+1, m_srcModel->bones[bone_index].name.ToCString());
+		if(boneIdx != -1)
+			Msg("Mesh %d uses bone %s\n", i+1, m_srcModel->bones[boneIdx].name.ToCString());
 		else
 			Msg("Mesh %d doesn't use bones, it will be static\n", i+1);
 
-		boneGroupIndices.append(bone_index);
-
 		for(int j = 1; j < list.numElem(); j++)
 		{
-			const int idx0 = list[j][0];
-			const int idx1 = list[j][1];
-			const int idx2 = list[j][2];
-
-			if( vertices[idx0].weights[0].bone != bone_index ||
-				vertices[idx1].weights[0].bone != bone_index ||
-				vertices[idx2].weights[0].bone != bone_index)
+			const ITriangle tri = list[j];
+			for (int k = 0; k < 3; ++k)
 			{
-				MsgError("Invalid bone id. Mesh part must use single bone index.\n");
-				MsgError("Please separate model parts for bones.\n");
-				return;
-			}
-						
+				if (vertices[tri[k]].weights.front().bone != boneIdx)
+				{
+					MsgError("Invalid bone id. Mesh part must use single bone index.\n");
+					MsgError("Please separate model parts for bones.\n");
+					break;
+				}
+			}						
 		}
 	}
 
-	const KVSection* pDefaultSurfaceProps = m_physicsParams->FindSection("SurfaceProps");
+	Array<int> boneGeomIndices(PP_SL);
+	EqStringRef defaultSurfaceProps;
+	m_physicsParams->Get("SurfaceProps").GetValues(defaultSurfaceProps);
 
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
+		boneGeomIndices.clear();
+
 		const DSBone& bone = m_srcModel->bones[i];
-		Array<int> boneGeomIndices(PP_SL);
 
 		BoundingBox localBox;
 
@@ -334,15 +333,13 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 			if (boneGroupIndices[j] != i)
 				continue;
 
-			for(int k = 0; k < list.numElem(); k++)
+			for(const ITriangle& tri : list)
 			{
-				boneGeomIndices.append(list[k][0]);
-				boneGeomIndices.append(list[k][1]);
-				boneGeomIndices.append(list[k][2]);
-
-				localBox.AddVertex(vertices[list[k][0]].position);
-				localBox.AddVertex(vertices[list[k][1]].position);
-				localBox.AddVertex(vertices[list[k][2]].position);				
+				for (int k = 0; k < 3; ++k)
+				{
+					boneGeomIndices.append(tri[k]);
+					localBox.AddVertex(vertices[tri[k]].position);
+				}			
 			}
 		}
 
@@ -357,12 +354,12 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 				
 		// transform objects to origin
 		Array<int> processed_index(PP_SL);
-		for(int j = 0; j < boneGeomIndices.numElem(); j++)
+		for(int idx : boneGeomIndices)
 		{
-			if(arrayFindIndex(processed_index, boneGeomIndices[j]) == -1)
+			if(arrayFindIndex(processed_index, idx) == -1)
 			{
-				vertices[boneGeomIndices[j]].position -= objCenter;
-				processed_index.append(boneGeomIndices[j]);
+				vertices[idx].position -= objCenter;
+				processed_index.append(idx);
 			}
 		}
 				
@@ -377,21 +374,18 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 		object.shapeIndex[0] = shapeID;
 		object.offset = objCenter;
 		object.massCenter = vec3_zero;
-		object.mass = PHYS_DEFAULT_MASS;
+		object.mass = defaultMass;
 
-		strcpy(object.surfaceprops, KV_GetValueString( pDefaultSurfaceProps, 0, "default" ));
+		EqStringRef surfaceProps = defaultSurfaceProps;
 
 		const KVSection* thisBoneSec = bonesSect->FindSection(bone.name, KV_FLAG_SECTION);
 		if( thisBoneSec )
 		{
-			object.mass = KV_GetValueFloat( thisBoneSec->FindSection("Mass"), 0, PHYS_DEFAULT_MASS );
-			object.bodyPartId = KV_GetValueInt(thisBoneSec->FindSection("bodypart"), 0, 0);
-
-			const KVSection* surfPropsPair = thisBoneSec->FindSection("SurfaceProps");
-
-			if(surfPropsPair)
-				strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair));
+			thisBoneSec->Get("Mass").GetValues(object.mass);
+			thisBoneSec->Get("BodyPart").GetValues(object.bodyPartId);
 		}
+
+		strcpy(object.surfaceprops, surfaceProps);
 
 		// build joint information
 		physjoint_t joint;
@@ -414,12 +408,9 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 		// set bone position
 		Vector3D bone_position = ragJoints[i].absTrans.rows[3].xyz();
 		joint.position = bone_position;
-
 		joint.objA = m_objects.numElem() - 1;
 
-		int parent = bone.parentIdx;
-
-		if(parent == -1)
+		if(bone.parentIdx == -1)
 		{
 			// join to itself
 			joint.objB = joint.objA;
@@ -438,15 +429,15 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 			// get axis and check limits
 			for(const KVSection* pKey : thisBoneSec->Keys())
 			{
-				int axis_idx = -1;
+				int axisIdx = -1;
 				if( !pKey->name.CompareCaseIns("x_axis") )
-					axis_idx = 0;
+					axisIdx = 0;
 				else if( !pKey->name.CompareCaseIns("y_axis") )
-					axis_idx = 1;
+					axisIdx = 1;
 				else if( !pKey->name.CompareCaseIns("z_axis") )
-					axis_idx = 2;
+					axisIdx = 2;
 
-				if (axis_idx == -1)
+				if (axisIdx == -1)
 					continue;
 
 				// check the value for arguments
@@ -455,18 +446,18 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 					if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limit" ))
 					{
 						// read limits
-						const float lo_limit = KV_GetValueFloat(pKey, j+1);
-						const float hi_limit = KV_GetValueFloat(pKey, j+2);
+						const float highLimit = KV_GetValueFloat(pKey, j+1);
+						const float lowLimit = KV_GetValueFloat(pKey, j+2);
 
-						joint.minLimit[axis_idx] = DEG2RAD(lo_limit);
-						joint.maxLimit[axis_idx] = DEG2RAD(hi_limit);
+						joint.minLimit[axisIdx] = DEG2RAD(highLimit);
+						joint.maxLimit[axisIdx] = DEG2RAD(lowLimit);
 					}
 					else if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limitOffset" ))
 					{
-						float offs = KV_GetValueFloat(pKey, j+1);
+						const float offs = KV_GetValueFloat(pKey, j+1);
 
-						joint.minLimit[axis_idx] += DEG2RAD(offs);
-						joint.maxLimit[axis_idx] += DEG2RAD(offs);
+						joint.minLimit[axisIdx] += DEG2RAD(offs);
+						joint.maxLimit[axisIdx] += DEG2RAD(offs);
 					}
 				}
 			}
