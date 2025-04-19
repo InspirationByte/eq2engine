@@ -15,7 +15,7 @@
 #include "dkphysics/IDkPhysics.h"
 
 static constexpr float RAGDOLL_LINEAR_LIMIT = 0.0025;
-static constexpr int COLLIDE_RAGDOLL		= (COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS | COLLISION_GROUP_PROJECTILES);
+static constexpr int COLLIDE_RAGDOLL = (COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS | COLLISION_GROUP_PROJECTILES);
 
 CPhysRagdollData::~CPhysRagdollData()
 {
@@ -41,9 +41,6 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 	memset(m_geomToJointIds, -1, sizeof(m_geomToJointIds));
 	memset(m_farParents, -1, sizeof(m_farParents));
 
-	for (int i = 0; i < elementsOf(m_geomTransforms); i++)
-		m_geomTransforms[i] = identity4;
-
 	const StudioPhysData& physModel = pModel->GetPhysData();
 	if (physModel.usageType != PHYSMODEL_USAGE_RAGDOLL)
 	{
@@ -52,21 +49,20 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 	}
 
 	const studioHdr_t& studio = pModel->GetStudioHdr();
-	ArrayCRef<StudioJoint> studioJoints = pModel->GetJoints();
+	m_studioJoints = pModel->GetJoints();
 
 	const int numPhysJoints = physModel.joints.numElem();
 	const int numParts = physModel.objects.numElem();
 
 	m_numBones = numPhysJoints;
 	m_numParts = numParts;
-	m_studio = pModel;
 
 	// build joint remap table
 	for (int i = 0; i < numPhysJoints; i++)
 	{
 		for (int j = 0; j < studio.numBones; j++)
 		{
-			if (!CString::CompareCaseIns(studioJoints[j].bone->name, physModel.joints[i].name))
+			if (!CString::CompareCaseIns(m_studioJoints[j].bone->name, physModel.joints[i].name))
 			{
 				// assign index
 				m_jointToGeomIds[i] = j;
@@ -78,16 +74,7 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 
 	// build far parental table
 	for (int i = 0; i < studio.numBones; i++)
-	{
 		m_farParents[i] = ComputeAndGetFarParentOf(i);
-
-		Matrix4x4 transform = identity4;
-		const int farParentId = m_farParents[i];
-		if (farParentId != -1)
-			transform = studioJoints[i].absTrans * !studioJoints[farParentId].absTrans;
-
-		m_geomTransforms[i] = transform;
-	}
 
 	// create objects of ragdoll
 	for (int i = 0; i < numParts; i++)
@@ -103,16 +90,16 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 		physObj->SetFriction(4.0);
 		physObj->SetActivationState(PS_ACTIVE);
 
-		m_bodyPartIds[i] = physModel.objects[i].desc.bodyPartId;
+		const int bodyPartId = physModel.objects[i].desc.bodyPartId;
 
-		physObj->SetUserData(reinterpret_cast<void*>(m_bodyPartIds[i]));
+		physObj->SetUserData(reinterpret_cast<void*>(bodyPartId));
 	}
 
 	// create joints
 	for (int i = 0; i < numPhysJoints; i++)
 	{
 		// get a bone transformation
-		const Matrix4x4& boneAbsTrs = studioJoints[m_jointToGeomIds[i]].absTrans;
+		const Matrix4x4& boneAbsTrs = m_studioJoints[m_jointToGeomIds[i]].absTrans;
 
 		const int objPartIdxA = physModel.joints[i].objA;
 		const int objPartIdxB = physModel.joints[i].objB;
@@ -144,10 +131,10 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 // finds far parent bone in ragdoll
 int CPhysRagdollData::ComputeAndGetFarParentOf(int bone)
 {
-	const int parentBone = m_studio->GetJoints()[bone].parent;
-	if(parentBone != -1)
+	const int parentBone = m_studioJoints[bone].parent;
+	if (parentBone != -1)
 	{
-		if(m_geomToJointIds[parentBone] == -1)
+		if (m_geomToJointIds[parentBone] == -1)
 		{
 			// continue hierarchy
 			return ComputeAndGetFarParentOf(parentBone);
@@ -165,7 +152,7 @@ int CPhysRagdollData::ComputeAndGetFarParentOf(int bone)
 BoundingBox CPhysRagdollData::GetBoundingBox() const
 {
 	BoundingBox bbox;
-	for(int i = 0; i < m_numParts; i++)
+	for (int i = 0; i < m_numParts; i++)
 	{
 		if (!m_partObjs[i])
 			continue;
@@ -182,54 +169,50 @@ BoundingBox CPhysRagdollData::GetBoundingBox() const
 
 Vector3D CPhysRagdollData::GetPosition() const
 {
-	BoundingBox bbox = GetBoundingBox();
-
-	return bbox.GetCenter();
+	return GetBoundingBox().GetCenter();
 }
 
-void CPhysRagdollData::GetVisualBonesTransforms(Matrix4x4 *bones) const
+void CPhysRagdollData::GetVisualBonesTransforms(Matrix4x4* bones) const
 {
 	Matrix4x4 offsetTranslate = identity4;
 	offsetTranslate.setTranslation(-GetPosition());
 
-	const studioHdr_t& studio = m_studio->GetStudioHdr();
-
-	for(int i = 0; i < studio.numBones; i++)
+	for (int i = 0; i < m_studioJoints.numElem(); i++)
 	{
 		const int jointIdx = m_geomToJointIds[i];
-		if(jointIdx != -1)
+		if (jointIdx != -1)
 		{
-			Matrix4x4 bone_global = m_physJoints[jointIdx]->GetGlobalTransformA();
-			bones[i] = bone_global*offsetTranslate;
+			Matrix4x4 boneGlobalTrs = m_physJoints[jointIdx]->GetGlobalTransformA();
+			bones[i] = boneGlobalTrs * offsetTranslate;
 		}
 		else
 		{
 			const int parentIdx = m_farParents[i];
-			if(parentIdx != -1)
-				bones[i] = m_geomTransforms[i] * bones[parentIdx];
+			if (parentIdx != -1)
+				bones[i] = (m_studioJoints[i].absTrans * m_studioJoints[parentIdx].invAbsTrans) * bones[parentIdx];
 		}
 	}
 }
 
 // sets bone tranformations (useful for animated death, etc)
 // you can setup from here a global transform
-void CPhysRagdollData::SetBoneTransform(Matrix4x4 *bones, const Matrix4x4& translation)
+void CPhysRagdollData::SetBoneTransform(Matrix4x4* bones, const Matrix4x4& translation)
 {
 	// set part transform
-	for(int i = 0; i < m_numParts; i++)
+	for (int i = 0; i < m_numParts; i++)
 	{
-		if(m_partObjs[i])
-			m_partObjs[i]->SetTransformFromMatrix( (!m_physJoints[i]->GetFrameTransformA() * bones[m_jointToGeomIds[i]]) * translation);
+		if (m_partObjs[i])
+			m_partObjs[i]->SetTransformFromMatrix((!m_physJoints[i]->GetFrameTransformA() * bones[m_jointToGeomIds[i]]) * translation);
 	}
 
 	RefreshRagdollVisuals();
 }
 
-void CPhysRagdollData::Translate(const Vector3D &move)
+void CPhysRagdollData::Translate(const Vector3D& move)
 {
-	for(int i = 0; i < m_numParts; i++)
+	for (int i = 0; i < m_numParts; i++)
 	{
-		if(m_partObjs[i])
+		if (m_partObjs[i])
 			m_partObjs[i]->SetPosition(m_partObjs[i]->GetPosition() + move);
 	}
 
@@ -239,7 +222,7 @@ void CPhysRagdollData::Translate(const Vector3D &move)
 void CPhysRagdollData::RefreshRagdollVisuals()
 {
 	// refresh joint transform
-	for(int i = 0; i < m_numBones; i++)
+	for (int i = 0; i < m_numBones; i++)
 	{
 		if (!m_physJoints[i])
 			continue;
@@ -251,9 +234,9 @@ void CPhysRagdollData::RefreshRagdollVisuals()
 void CPhysRagdollData::Wake()
 {
 	// set part transform
-	for(int i = 0; i < m_numParts; i++)
+	for (int i = 0; i < m_numParts; i++)
 	{
-		if(m_partObjs[i])
+		if (m_partObjs[i])
 			m_partObjs[i]->WakeUp();
 	}
 

@@ -10,6 +10,7 @@
 class CEqStudioGeom;
 class IPhysicsObject;
 class IPhysicsJoint;
+struct StudioJoint;
 enum EPhysicsActivationState : int;
 
 class CPhysRagdollData
@@ -53,15 +54,14 @@ protected:
 	static constexpr int MAX_RAGDOLL_PARTS = 32;
 	static constexpr int MAX_RAGDOLL_JOINT_IDS = 128;
 
+	ArrayCRef<StudioJoint>	m_studioJoints{ nullptr };
 	IPhysicsObject*		m_partObjs[MAX_RAGDOLL_PARTS]{ nullptr };
 	IPhysicsJoint*		m_physJoints[MAX_RAGDOLL_PARTS]{ nullptr };
 
-	int					m_bodyPartIds[MAX_RAGDOLL_PARTS];
 	int					m_jointToGeomIds[MAX_RAGDOLL_PARTS];
 	int					m_geomToJointIds[MAX_RAGDOLL_JOINT_IDS];
 
 	int					m_farParents[MAX_RAGDOLL_JOINT_IDS];
-	Matrix4x4			m_geomTransforms[MAX_RAGDOLL_JOINT_IDS];
 
 	int					m_numBones{ 0 };
 	int					m_numParts{ 0 };
