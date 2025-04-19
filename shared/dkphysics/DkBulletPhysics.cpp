@@ -915,7 +915,6 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, Array <btTri
 			//create a hull approximation
 			btShapeHull hull(&tmpConvexShape);
 			
-
 			btScalar margin = (info->convexMargin == -2.0f) ? tmpConvexShape.getMargin() : info->convexMargin;
 			hull.buildHull( EQ2BULLET(margin) );
 
@@ -1280,8 +1279,6 @@ IPhysicsObject* DkPhysics::CreateObject( const StudioPhysData* data, int nObject
 		pShape = (btCollisionShape*)objData.shapeCacheRefs[0];
 	}
 
-	pShape->setMargin(EQ2BULLET(0.05f));
-
 	btVector3 offset, massCenter;
 	ConvertPositionToBullet(offset, objData.desc.offset);
 	ConvertPositionToBullet(massCenter, objData.desc.massCenter);
@@ -1388,8 +1385,6 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 		// not a compound object, skipping
 		pShape = (btCollisionShape*)m_collisionShapes[shapeIdxs[0]];
 	}
-
-	pShape->setMargin(EQ2BULLET(0.05f));
 
 	// make object offset
 	btTransform object_start_transform;

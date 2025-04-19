@@ -41,7 +41,7 @@ protected:
 	int			FindJointIdx(const char* name);
 	int			MakeBoneValidParent(int boneId);
 
-	int			AddShape(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, EPhysShapeType shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
+	int			AddShape(ArrayCRef<SharedModel::DSVertex> vertices, ArrayCRef<int> indices, float margin = 0.0f, EPhysShapeType shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
 
 	void		SubdivideModelParts( Array<SharedModel::DSVertex>& vertices, Array<int>& indices, Array<IdxIsland>& indexGroups);
 

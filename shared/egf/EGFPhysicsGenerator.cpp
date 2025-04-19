@@ -82,7 +82,7 @@ void CEGFPhysicsGenerator::SetupRagdollJoints(Array<RagdollJoint>& boneArray)
 }
 
 // adds shape to datas
-int CEGFPhysicsGenerator::AddShape(ArrayCRef<DSVertex> vertices, ArrayCRef<int> indices, EPhysShapeType shapeType, bool assumedAsConvex)
+int CEGFPhysicsGenerator::AddShape(ArrayCRef<DSVertex> vertices, ArrayCRef<int> indices, float margin, EPhysShapeType shapeType, bool assumedAsConvex)
 {
 	physgeominfo_t geomInfo;
 	geomInfo.type = shapeType;
@@ -131,29 +131,27 @@ int CEGFPhysicsGenerator::AddShape(ArrayCRef<DSVertex> vertices, ArrayCRef<int> 
 			// second is to generate convex mesh
 			btConvexTriangleMeshShape tmpConvexShape(&trimesh);
 
-			// we have to generate shape without margin
-			tmpConvexShape.setMargin(0.055f);
-
 			// make shape hull
-			btShapeHull shape_hull(&tmpConvexShape);
+			btShapeHull shapeHull(&tmpConvexShape);
+			tmpConvexShape.setMargin(margin);
 
 			// cook hull
-			shape_hull.buildHull( 0.0 /*this even not work*/ );
+			shapeHull.buildHull( 0.0 /*this even not work*/, 0 );
 
 			// finally, add indices and vertices:
 			const int startIndex = m_vertices.numElem();
-			for(int i = 0; i < shape_hull.numVertices(); i++)
+			for(int i = 0; i < shapeHull.numVertices(); i++)
 			{
-				const btVector3& vertex = shape_hull.getVertexPointer()[i];
+				const btVector3& vertex = shapeHull.getVertexPointer()[i];
 				m_vertices.append(Vector3D(vertex[0], vertex[1], vertex[2]));
 			}
 
-			for(int i = 0; i < shape_hull.numIndices(); i++)
-				m_indices.append(shape_hull.getIndexPointer()[i] + startIndex);
+			for(int i = 0; i < shapeHull.numIndices(); i++)
+				m_indices.append(shapeHull.getIndexPointer()[i] + startIndex);
 
-			geomInfo.numIndices = shape_hull.numIndices();
+			geomInfo.numIndices = shapeHull.numIndices();
 
-			Msg("Adding generated convex shape, %d verts %d indices\n", shape_hull.numVertices(), shape_hull.numIndices());
+			Msg("Adding generated convex shape, %d verts %d indices\n", shapeHull.numVertices(), shapeHull.numIndices());
 		}
 	}
 	else
@@ -540,6 +538,9 @@ void CEGFPhysicsGenerator::CreateMultipleObjects(ArrayCRef<DSVertex> vertices, A
 	float objectMass = PHYS_DEFAULT_MASS;
 	m_physicsParams->Get("Mass").GetValues(objectMass);
 
+	float margin = 0.0f;
+	m_physicsParams->Get("Margin").GetValues(margin);
+
 	int islandIdx = 0;
 	for (const IdxIsland& tris : indexGroups)
 	{
@@ -555,7 +556,7 @@ void CEGFPhysicsGenerator::CreateMultipleObjects(ArrayCRef<DSVertex> vertices, A
 
 		physobject_t& object = obj.object;
 		memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
-		object.shapeIndex[0] = AddShape(vertices, ArrayCRef(&tris[0].x, tris.numElem() * 3), shapeType, isAssumedAsConvex);
+		object.shapeIndex[0] = AddShape(vertices, ArrayCRef(&tris[0].x, tris.numElem() * 3), margin, shapeType, isAssumedAsConvex);
 		object.numShapes = 1;
 		object.bodyPartId = islandIdx;
 		object.offset = vec3_zero;
@@ -582,6 +583,9 @@ void CEGFPhysicsGenerator::CreateSingleObject(ArrayCRef<DSVertex> vertices, Arra
 	m_physicsParams->Get("static").GetValues(isStatic);
 	m_physicsParams->Get("concave").GetValues(isConcave);
 
+	float margin = 0.0f;
+	m_physicsParams->Get("Margin").GetValues(margin);
+
 	EPhysShapeType shapeType = isConcave ? PHYSSHAPE_TYPE_MOVABLECONCAVE : PHYSSHAPE_TYPE_CONVEX;
 	if (isStatic && isConcave)
 		shapeType = PHYSSHAPE_TYPE_CONCAVE;
@@ -595,7 +599,7 @@ void CEGFPhysicsGenerator::CreateSingleObject(ArrayCRef<DSVertex> vertices, Arra
 
 	physobject_t& object = obj.object;
 	memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
-	object.shapeIndex[0] = AddShape(vertices, indices, shapeType, isAssumedAsConvex);
+	object.shapeIndex[0] = AddShape(vertices, indices, margin, shapeType, isAssumedAsConvex);
 	object.numShapes = 1;
 	object.offset = vec3_zero;
 	object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
