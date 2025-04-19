@@ -267,8 +267,8 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 
 	float defaultMass = PHYS_DEFAULT_MASS;
 	m_physicsParams->Get("Mass").GetValues(defaultMass);
-	const KVSection* isDynamicProp = m_physicsParams->FindSection("IsDynamic");
 
+	const KVSection* isDynamicProp = m_physicsParams->FindSection("IsDynamic");
 	if(KV_GetValueBool(isDynamicProp))
 	{
 		m_props.usageType = PHYSMODEL_USAGE_DYNAMIC;
@@ -319,20 +319,18 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
-		boneGeomIndices.clear();
-
 		const DSBone& bone = m_srcModel->bones[i];
+		boneGeomIndices.clear();
 
 		BoundingBox localBox;
 
 		// add indices of attached groups and also build bounding box
 		for(int j = 0; j < indexGroups.numElem(); j++)
 		{
-			const IdxIsland& list = indexGroups[j];
-
 			if (boneGroupIndices[j] != i)
 				continue;
 
+			const IdxIsland& list = indexGroups[j];
 			for(const ITriangle& tri : list)
 			{
 				for (int k = 0; k < 3; ++k)

@@ -279,7 +279,7 @@ bool DkPhysics::Init(int nSceneSize)
 		}
 
 		pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, 1.0f);
-		pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 1.0f);
+		pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 0.0f);
 		pMaterial->density = KV_GetValueFloat(pSec->FindSection("density"), 0, 100.0f);
 		pMaterial->surfaceword = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
 
