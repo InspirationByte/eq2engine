@@ -123,7 +123,6 @@ bool CEqCollisionObject::Initialize(const StudioPhyObjData& physObject)
 
 	m_collObject = new btCollisionObject();
 	m_collObject->setCollisionShape(m_shape);
-
 	m_collObject->setUserPointer(this);
 
 	return true;
@@ -299,6 +298,11 @@ const Quaternion& CEqCollisionObject::GetOrientation() const
 	return m_orientation;
 }
 
+const Transform3D CEqCollisionObject::GetTransform() const
+{
+	return Transform3D(m_position, m_orientation); 
+}
+
 //--------------------
 
 void CEqCollisionObject::SetPosition(const FVector3D& position)
@@ -314,6 +318,14 @@ void CEqCollisionObject::SetOrientation(const Quaternion& orient)
 	m_orientation = orient;
 	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 
+	UpdateBoundingBoxTransform();
+}
+
+void CEqCollisionObject::SetTransform(const Transform3D& trs)
+{
+	m_position = trs.t;
+	m_orientation = trs.r;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
 	UpdateBoundingBoxTransform();
 }
 

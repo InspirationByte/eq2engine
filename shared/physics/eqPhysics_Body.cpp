@@ -488,6 +488,15 @@ void CEqRigidBody::SetOrientation(const Quaternion& orient)
 	UpdateBoundingBoxTransform();
 }
 
+void CEqRigidBody::SetTransform(const Transform3D& trs)
+{
+	m_position = m_prevPosition = trs.t;
+	m_orientation = m_prevOrientation = trs.r;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
+
+	UpdateBoundingBoxTransform();
+}
+
 const FVector3D& CEqRigidBody::GetPrevPosition() const
 {
 	return m_prevPosition;

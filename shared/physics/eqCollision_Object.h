@@ -86,11 +86,13 @@ public:
 	void						SetUserData(void* ptr);												///< sets user data (usually it's a pointer to game object)
 	void*						GetUserData() const;												///< returns user data
 
-	virtual const FVector3D&	GetPosition() const;												///< returns body position
-	virtual const Quaternion&	GetOrientation() const;												///< returns body Quaternion orientation
+	const FVector3D&			GetPosition() const;												///< returns body position
+	const Quaternion&			GetOrientation() const;												///< returns body Quaternion orientation
+	const Transform3D			GetTransform() const;
 
 	virtual void				SetPosition(const FVector3D& position);								///< sets new position
 	virtual void				SetOrientation(const Quaternion& orient);							///< sets new orientation and updates inertia tensor
+	virtual void				SetTransform(const Transform3D& trs);
 
 	virtual bool				IsDynamic() const {return false;}									///< is dynamic?
 

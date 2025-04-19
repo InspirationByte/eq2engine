@@ -9,9 +9,7 @@
 #include "ragdoll.h"
 #include "studio/StudioGeom.h"
 
-#include "render/IDebugOverlay.h"
 #include "animating/BoneSetup.h"
-#include "physics/PhysicsCollisionGroup.h"
 #include "dkphysics/IDkPhysics.h"
 
 static constexpr float RAGDOLL_DEFAULT_LINEAR_LIMIT = 0.0025;

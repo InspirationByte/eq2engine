@@ -100,6 +100,7 @@ public:
 
 	void				SetPosition(const FVector3D& position);										///< sets new position
 	void				SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
+	void				SetTransform(const Transform3D& trs);
 
 	const FVector3D&	GetPrevPosition() const;													///< returns last frame body position
 	const Quaternion&	GetPrevOrientation() const;													///< returns last frame body Quaternion orientation
