@@ -68,7 +68,7 @@ void CPhysicsObject::SetCollisionMask(uint group)
 }
 
 // Returns collides with group flags
-uint CPhysicsObject::GetCollisionMask()
+uint CPhysicsObject::GetCollisionMask() const
 {
 	return m_nCollidesWith;
 }
@@ -80,7 +80,7 @@ void CPhysicsObject::SetContents(uint group)
 }
 
 // Returns collision group
-uint CPhysicsObject::GetContents()
+uint CPhysicsObject::GetContents() const
 {
 	return m_nCollisionGroup;
 }
@@ -92,7 +92,7 @@ void CPhysicsObject::SetEntityObjectPtr(void* ptr)
 }
 
 // Returns entity associated with this physics object
-void* CPhysicsObject::GetEntityObjectPtr()
+void* CPhysicsObject::GetEntityObjectPtr() const
 {
 	return m_pParentObject;
 }
@@ -104,7 +104,7 @@ void CPhysicsObject::SetUserData(void* ptr)
 }
 
 // Returns user data
-void* CPhysicsObject::GetUserData()
+void* CPhysicsObject::GetUserData() const
 {
 	return m_pUserData;
 }
@@ -121,7 +121,7 @@ void CPhysicsObject::RemoveFlags(int nFlags)
 	m_nFlags &= ~nFlags;
 }
 
-int	CPhysicsObject::GetFlags()
+int	CPhysicsObject::GetFlags() const
 {
 	return m_nFlags;
 }
@@ -132,7 +132,7 @@ void CPhysicsObject::SetActivationState(EPhysicsActivationState nState)
 	m_pPhyObjectPointer->forceActivationState(island_params_translate[nState]);
 }
 
-EPhysicsActivationState CPhysicsObject::GetActivationState()
+EPhysicsActivationState CPhysicsObject::GetActivationState() const
 {
 	return back_to_freeze_state[m_pPhyObjectPointer->getActivationState()];
 }
@@ -153,7 +153,7 @@ void CPhysicsObject::SetAngularFactor(const Vector3D &factor)
 	m_pPhyObjectPointer->setAngularFactor(vec);
 }
 
-Vector3D CPhysicsObject::GetAngularFactor()
+Vector3D CPhysicsObject::GetAngularFactor() const
 {
 	Vector3D out;
 	ConvertBulletToDKVectors(out, m_pPhyObjectPointer->getAngularFactor());
@@ -168,7 +168,7 @@ void CPhysicsObject::SetLinearFactor(const Vector3D &factor)
 	m_pPhyObjectPointer->setLinearFactor(vec);
 }
 
-Vector3D CPhysicsObject::GetLinearFactor()
+Vector3D CPhysicsObject::GetLinearFactor() const
 {
 	Vector3D out;
 	ConvertBulletToDKVectors(out, m_pPhyObjectPointer->getLinearFactor());
@@ -182,7 +182,7 @@ void CPhysicsObject::SetRestitution(float rest)
 }
 
 // gets linear factor
-float CPhysicsObject::GetRestitution()
+float CPhysicsObject::GetRestitution() const
 {
 	return m_pPhyObjectPointer->getRestitution();
 }
@@ -194,7 +194,7 @@ void CPhysicsObject::SetDamping(float linear, float angular)
 }
 
 // Sets linear factor
-float CPhysicsObject::GetDampingLinear()
+float CPhysicsObject::GetDampingLinear() const
 {
 	return m_pPhyObjectPointer->getLinearDamping();
 }
@@ -206,20 +206,25 @@ void CPhysicsObject::SetFriction(float fric)
 }
 
 // Sets linear factor
-float CPhysicsObject::GetFriction()
+float CPhysicsObject::GetFriction() const
 {
 	return m_pPhyObjectPointer->getFriction();
 }
 
 // Sets linear factor
-float CPhysicsObject::GetDampingAngular()
+float CPhysicsObject::GetDampingAngular() const
 {
 	return m_pPhyObjectPointer->getAngularDamping();
 }
 
-float CPhysicsObject::GetInvMass()
+float CPhysicsObject::GetInvMass() const
 {
 	return m_pPhyObjectPointer->getInvMass();
+}
+
+float CPhysicsObject::GetMass() const
+{
+	return m_pPhyObjectPointer->getMass();
 }
 
 void CPhysicsObject::SetMass(float fMass)
@@ -230,9 +235,9 @@ void CPhysicsObject::SetMass(float fMass)
 	m_pPhyObjectPointer->setMassProps(fMass * METERS_PER_UNIT_INV, localInertia);
 }
 
-const char* CPhysicsObject::GetName()
+const char* CPhysicsObject::GetName() const
 {
-	return m_name.GetData();
+	return m_name;
 }
 
 void CPhysicsObject::SetCollisionResponseEnabled(bool bEnabled)
@@ -254,13 +259,13 @@ void CPhysicsObject::SetCollisionResponseEnabled(bool bEnabled)
 }
 
 // returns object static state
-bool CPhysicsObject::IsStatic()
+bool CPhysicsObject::IsStatic() const
 {
 	return m_pPhyObjectPointer->isStaticObject();
 }
 
 // returns object dynamic state
-bool CPhysicsObject::IsDynamic()
+bool CPhysicsObject::IsDynamic() const
 {
 	return !m_pPhyObjectPointer->isStaticObject();
 }
@@ -379,7 +384,7 @@ void CPhysicsObject::SetAngularVelocity(const Vector3D &vAxis, float velocity)
 	m_pPhyObjectPointer->setAngularVelocity(vel);
 }
 
-void CPhysicsObject::GetBoundingBox(Vector3D &mins, Vector3D &maxs)
+void CPhysicsObject::GetBoundingBox(Vector3D &mins, Vector3D &maxs) const
 {
 	btVector3 bmins, bmaxs;
 
@@ -389,14 +394,14 @@ void CPhysicsObject::GetBoundingBox(Vector3D &mins, Vector3D &maxs)
 	ConvertPositionToEq(maxs, bmaxs);
 }
 
-Matrix4x4 CPhysicsObject::GetTransformMatrix()
+Matrix4x4 CPhysicsObject::GetTransformMatrix() const
 {
 	Matrix4x4 mat;
 	ConvertMatrix4ToEq(mat, m_pPhyObjectPointer->getWorldTransform());
 	return transpose(mat);
 }
 
-Matrix4x4 CPhysicsObject::GetOrientationMatrix()
+Matrix4x4 CPhysicsObject::GetOrientationMatrix() const
 {
 	return identity4;
 }
@@ -409,7 +414,7 @@ void CPhysicsObject::SetTransformFromMatrix(const Matrix4x4 &matrix)
 	m_pPhyObjectPointer->setWorldTransform(trans);
 }
 
-Vector3D CPhysicsObject::GetAngles()
+Vector3D CPhysicsObject::GetAngles() const
 {
 	Matrix4x4 eq_matrix;
 	m_pPhyObjectPointer->getWorldTransform().getOpenGLMatrix(eq_matrix.rows[0]);
@@ -419,28 +424,28 @@ Vector3D CPhysicsObject::GetAngles()
 	return RAD2DEG(vec);
 }
 
-Vector3D CPhysicsObject::GetPosition()
+Vector3D CPhysicsObject::GetPosition() const
 {
 	Vector3D out;
 	ConvertPositionToEq(out, m_pPhyObjectPointer->getWorldTransform().getOrigin() );
 	return out;
 }
 
-Vector3D CPhysicsObject::GetVelocity()
+Vector3D CPhysicsObject::GetVelocity() const
 {
 	Vector3D out;
 	ConvertPositionToEq(out, m_pPhyObjectPointer->getLinearVelocity());
 	return out;
 }
 
-Vector3D CPhysicsObject::GetAngularVelocity()
+Vector3D CPhysicsObject::GetAngularVelocity() const
 {
 	Vector3D out;
 	ConvertBulletToDKVectors(out, m_pPhyObjectPointer->getAngularVelocity());
 	return out;
 }
 
-Vector3D CPhysicsObject::GetVelocityAtPoint(const Vector3D &point)
+Vector3D CPhysicsObject::GetVelocityAtPoint(const Vector3D &point) const
 {
 	btVector3 pt;
 	ConvertPositionToBullet(pt, point);
@@ -451,7 +456,7 @@ Vector3D CPhysicsObject::GetVelocityAtPoint(const Vector3D &point)
 	return out;
 }
 
-phySurfaceMaterial_t* CPhysicsObject::GetMaterial()
+phySurfaceMaterial_t* CPhysicsObject::GetMaterial() const
 {
 	return m_pPhysMaterial;
 }
@@ -494,7 +499,7 @@ void CPhysicsObject::ClearContactEvents()
 	m_numEvents = 0;
 }
 
-int CPhysicsObject::GetContactEventCount()
+int CPhysicsObject::GetContactEventCount() const
 {
 	return m_numEvents;
 }
@@ -505,7 +510,7 @@ physicsContactEvent_t* CPhysicsObject::GetContactEvent(int idx)
 }
 
 // returns child shapes count
-int CPhysicsObject::GetChildShapeCount()
+int CPhysicsObject::GetChildShapeCount() const
 {
 	if(m_pPhyObjectPointer->getCollisionShape()->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 	{
@@ -544,7 +549,7 @@ void CPhysicsObject::RemoveIgnoredObject(IPhysicsObject* pObject)
 	m_IgnoreCollisionList.remove(pObject);
 }
 
-bool CPhysicsObject::ShouldCollideWith(IPhysicsObject* pObject)
+bool CPhysicsObject::ShouldCollideWith(IPhysicsObject* pObject) const
 {
 	if(arrayFindIndex(m_IgnoreCollisionList, pObject ) != -1)
 		return false;

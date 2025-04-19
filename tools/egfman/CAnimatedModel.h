@@ -40,6 +40,7 @@ public:
 	void						SetModel(CEqStudioGeom* pModel);
 
 	void						TogglePhysicsState();
+	bool						IsPhysicsEnabled() const { return m_bPhysicsEnable; }
 	void						ResetPhysics();
 
 	int							GetCurrentAnimationFrame() const;

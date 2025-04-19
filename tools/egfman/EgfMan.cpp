@@ -936,10 +936,10 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 }
 
 Vector2D		g_vLastMousePosition(0);
-IPhysicsObject* g_pDragable = nullptr;
-Vector3D		g_vDragLocalPos(0);
-Vector3D		g_vOriginalObjectPosition(0);
-Vector3D		g_vDragTarget(0);
+IPhysicsObject* g_dragObj = nullptr;
+Vector3D		g_dragObjLocalPoint(0);
+Vector3D		g_dragStartPoint(0);
+Vector3D		g_dragTargetPoint(0);
 
 void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 {
@@ -1041,40 +1041,32 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			ScreenToDirection(Vector2D(w-event.GetX(),event.GetY()), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, rayStart, rayDir);
 			ScreenToDirection(Vector2D(w-g_vLastMousePosition.x,g_vLastMousePosition.y), Vector2D(w,h), g_pCameraParams.GetOrigin(), g_mProjMat, g_mViewMat, false, lastRayStart, lastRayDir);
 	
-			// we found ray, find object
-
-			
-			if(g_pDragable == nullptr)
+			if(g_model.IsPhysicsEnabled() && g_dragObj == nullptr)
 			{
 				internaltrace_t tr;
 				physics->InternalTraceLine(rayStart, rayStart+rayDir * 1000.0f, COLLISION_GROUP_ALL, &tr);
-
-				//DbgLine().Start(rayStart).End(tr.traceEnd).ColorStart(ColorRGBA(1, 0, 0, 1)).ColorEnd(ColorRGBA(0, 1, 0, 1)).Time(0.1f);
-
 				if(tr.hitObj)
 				{
-					g_pDragable = tr.hitObj;
-					g_vDragLocalPos = tr.traceEnd - g_pDragable->GetPosition();
-					g_vOriginalObjectPosition = g_pDragable->GetPosition();
+					g_dragObj = tr.hitObj;
+					g_dragTargetPoint = g_dragStartPoint = tr.traceEnd;
+					g_dragObjLocalPoint = transformPointTransposed(tr.traceEnd, !g_dragObj->GetTransformMatrix());
 				}
 			}
 
-			if(g_pDragable)
+			if(g_dragObj)
 			{
-				Vector3D forward = g_mViewMat.rows[2].xyz();
+				const Vector3D forward = normalize(g_dragStartPoint - g_pCameraParams.GetOrigin());
 
 				// setup edit plane
-				Plane pl(forward.x,forward.y,forward.z, -dot(forward, g_vOriginalObjectPosition));
+				const Plane pl(forward.x,forward.y,forward.z, -dot(forward, g_dragStartPoint));
 
 				Vector3D intersection;
-
-				pl.GetIntersectionWithRay(rayStart, normalize(rayDir), intersection);
-
-				g_vDragTarget = intersection;
+				if (pl.GetIntersectionWithRay(rayStart, normalize(rayDir), intersection))
+					g_dragTargetPoint = intersection;
 			}
 		}
 		else if(!event.ButtonIsDown(wxMOUSE_BTN_LEFT))
-			g_pDragable = nullptr;
+			g_dragObj = nullptr;
 	}
 
 	if(!bAnyMoveButton)
@@ -1220,20 +1212,15 @@ void CEGFViewFrame::ReDraw()
 		debugoverlay->SetMatrices(g_mProjMat, g_mViewMat);
 
 		// Update things
-
-		if(g_pDragable)
+		if (g_model.IsPhysicsEnabled() && g_dragObj)
 		{
-			Vector3D point = g_pDragable->GetTransformMatrix().getRotationComponent()*g_vDragLocalPos;
+			const Vector3D worldDragPoint = transformPointTransposed(g_dragObjLocalPoint, g_dragObj->GetTransformMatrix());
+			const Vector3D dragForce = (g_dragTargetPoint - worldDragPoint) * g_dragObj->GetMass() * 0.025f;
 
-			Vector3D force = (g_vDragTarget - (point+g_pDragable->GetPosition()))*g_pDragable->GetInvMass()*8000.0f;
+			DbgSphere().Position(worldDragPoint).Fill(true).Radius(0.05f);
+			DbgLine().Start(worldDragPoint).End(g_dragTargetPoint);
 
-			Vector3D torque = cross(point,force);
-
-			g_pDragable->ApplyImpulse(force, point);
-			//g_pDragable->AddForce(force);
-			//g_pDragable->AddLocalTorqueImpulse(torque);
-
-				//(g_vDragTarget - point)*g_pDragable->GetInvMass()*1000.0f, g_vDragLocalPos
+			g_dragObj->ApplyImpulse(dragForce, worldDragPoint - g_dragObj->GetPosition());
 		}
 
 		physics->Simulate( g_frametime, 1 );

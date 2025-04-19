@@ -59,60 +59,61 @@ public:
 	//-----------------------------
 
 	void					SetCollisionMask(uint mask);				// Sets collides with group flags
-	uint					GetCollisionMask();							// Returns collides with group flags
+	uint					GetCollisionMask() const;							// Returns collides with group flags
 
 	void					SetContents(uint contents);					// Sets collision group
-	uint					GetContents();								// Returns collision group
+	uint					GetContents() const;								// Returns collision group
 
 	void					SetEntityObjectPtr(void* ptr);				// Sets entity pointer
-	void*					GetEntityObjectPtr();						// Returns entity associated with this physics object
+	void*					GetEntityObjectPtr() const;						// Returns entity associated with this physics object
 
 	void					SetUserData(void* ptr);						// Sets user data pointer
-	void*					GetUserData();								// Returns user data
+	void*					GetUserData() const;								// Returns user data
 
 	void					SetActivationState(EPhysicsActivationState nState);	// freeze states
-	EPhysicsActivationState		GetActivationState();							// freeze states
+	EPhysicsActivationState		GetActivationState() const;							// freeze states
 
 	void					SetAngularFactor(const Vector3D &factor);			// Sets angular factor (may help with up-right vector)
-	Vector3D				GetAngularFactor();							// Sets angular factor (may help with up-right vector)
+	Vector3D				GetAngularFactor() const;							// Sets angular factor (may help with up-right vector)
 
 	void					SetLinearFactor(const Vector3D &factor);			// Sets linear factor
-	Vector3D				GetLinearFactor();							// Gets linear factor
+	Vector3D				GetLinearFactor() const;							// Gets linear factor
 
 	void					SetRestitution(float rest);					// Sets restitution
-	float					GetRestitution();							// Gets restitution
+	float					GetRestitution() const;							// Gets restitution
 
 	void					SetDamping(float linear, float angular);	// Sets damping
-	float					GetDampingLinear();							// Gets linear damping
-	float					GetDampingAngular();						// Gets angular damping
+	float					GetDampingLinear() const;							// Gets linear damping
+	float					GetDampingAngular() const;						// Gets angular damping
 
 	void					SetFriction(float fric);					// Sets friction
-	float					GetFriction();								// Gets friction
+	float					GetFriction() const;								// Gets friction
 
 	void					SetSleepTheresholds(float lin, float ang);	// Sleep thereshold
 
 	void					AddFlags(int nFlags);						// add object flags
 	void					RemoveFlags(int nFlags);					// remove object flags
-	int						GetFlags();
+	int						GetFlags() const;
 
-	float					GetInvMass();								// returns 1.0 / object mass
+	float					GetInvMass() const;								// returns 1.0 / object mass
+	float					GetMass() const;
 	void					SetMass(float fMass);						// sets object mass
 
 	void					SetCollisionResponseEnabled(bool bEnabled);	// enable/disable response of collisions (enabled by default)
 
-	const char*				GetName();									// Get object name
-	phySurfaceMaterial_t*	GetMaterial();								// object material parameters
+	const char*				GetName() const;									// Get object name
+	phySurfaceMaterial_t*	GetMaterial() const;								// object material parameters
 
 	// internal use, adds contact event
 	void					AddContactEventFromManifoldPoint(btManifoldPoint* pt, CPhysicsObject* hitB);
 
 	// Contacts
 	void					ClearContactEvents();
-	int						GetContactEventCount();
+	int						GetContactEventCount() const;
 	physicsContactEvent_t*	GetContactEvent(int idx);
 
-	bool					IsStatic();									// returns object static state
-	bool					IsDynamic();								// returns object dynamic state
+	bool					IsStatic() const;									// returns object static state
+	bool					IsDynamic() const;								// returns object dynamic state
 
 	//-----------------------------
 	// Object physics actions
@@ -135,27 +136,27 @@ public:
 	void					SetAngularVelocity(const Vector3D &vAxis,float velocity);
 
 
-	void					GetBoundingBox(Vector3D &mins, Vector3D &maxs);
+	void					GetBoundingBox(Vector3D &mins, Vector3D &maxs) const;
 
 	// Get transformation matrix for renderer purposes
-	Matrix4x4				GetTransformMatrix();
+	Matrix4x4				GetTransformMatrix() const;
 
 	// Get transformation matrix for renderer purposes
-	Matrix4x4				GetOrientationMatrix();
+	Matrix4x4				GetOrientationMatrix() const;
 
 	// set transformation of object
 	void					SetTransformFromMatrix(const Matrix4x4 &matrix);
 
 	// Get position, angles and other stuff
-	Vector3D				GetPosition();
-	Vector3D				GetAngles();
-	Vector3D				GetVelocity();
-	Vector3D				GetAngularVelocity();
+	Vector3D				GetPosition() const;
+	Vector3D				GetAngles() const;
+	Vector3D				GetVelocity() const;
+	Vector3D				GetAngularVelocity() const;
 
-	Vector3D				GetVelocityAtPoint(const Vector3D &point);
+	Vector3D				GetVelocityAtPoint(const Vector3D &point) const;
 
 	// returns child shapes count
-	int						GetChildShapeCount();
+	int						GetChildShapeCount() const;
 
 	// setup child transform
 	void					SetChildShapeTransform(int shapeNum, const Vector3D &localOrigin, const Vector3D &localAngles);
@@ -168,7 +169,7 @@ public:
 	void					AddObjectToIgnore(IPhysicsObject* pObject);
 	void					RemoveIgnoredObject(IPhysicsObject* pObject);
 
-	bool					ShouldCollideWith(IPhysicsObject* pObject);
+	bool					ShouldCollideWith(IPhysicsObject* pObject) const;
 
 private:
 
