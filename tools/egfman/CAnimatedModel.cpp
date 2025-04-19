@@ -124,7 +124,9 @@ void CAnimatedModel::ResetPhysics()
 		UpdateIK(0.0f, identity4);
 
 		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4);
-		m_pRagdoll->Translate(Vector3D(0, m_pRagdoll->GetBoundingBox().maxPoint.y, 0));
+		const BoundingBox bbox = m_pRagdoll->GetBoundingBox();
+
+		m_pRagdoll->Translate(Vector3D(0, -bbox.minPoint.y, 0));
 		m_pRagdoll->SetContents(COLLISION_GROUP_DEBRIS);
 		m_pRagdoll->SetCollisionMask(COLLIDE_DEBRIS);
 		m_pRagdoll->SetActivationState(PS_ACTIVE);
@@ -135,9 +137,10 @@ void CAnimatedModel::ResetPhysics()
 	}
 	else if(m_physObj)
 	{
-		m_physObj->SetPosition(Vector3D(0,m_pModel->GetBoundingBox().maxPoint.y,0));
+		const BoundingBox bbox = m_pModel->GetBoundingBox();
+
+		m_physObj->SetPosition(Vector3D(0, -bbox.minPoint.y,0));
 		m_physObj->SetAngles(vec3_zero);
-		//m_physObj->SetFriction();
 		m_physObj->SetActivationState(PS_ACTIVE);
 		m_physObj->SetCollisionResponseEnabled( true );
 		m_physObj->SetContents(COLLISION_GROUP_OBJECTS);
