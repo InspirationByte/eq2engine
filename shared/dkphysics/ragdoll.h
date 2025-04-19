@@ -44,28 +44,22 @@ public:
 	void				ResetVelocities();
 
 	const Matrix4x4&	GetJointTransformA(int idx) const;
-	int					GetGeomIdx(int jointIdx) const { return m_jointToGeomIds[jointIdx]; }
-	int					GetJointIdx(int geomIdx) const { return m_geomToJointIds[geomIdx]; }
+	int					GetBoneIdx(int jointIdx) const;
+	int					GetJointIdx(int boneIdx) const;
 
 protected:
 	// finds far parent bone in ragdoll
-	int					ComputeAndGetFarParentOf(int bone);
+	int					CalcFarParent(int bone);
 
 	static constexpr int MAX_RAGDOLL_PARTS = 32;
-	static constexpr int MAX_RAGDOLL_JOINT_IDS = 128;
 
-	ArrayCRef<StudioJoint>	m_studioJoints{ nullptr };
-	IPhysicsObject*		m_partObjs[MAX_RAGDOLL_PARTS]{ nullptr };
-	IPhysicsJoint*		m_physJoints[MAX_RAGDOLL_PARTS]{ nullptr };
+	ArrayCRef<StudioJoint>	m_studioBones{ nullptr };
+	Array<IPhysicsObject*>	m_partObjs{ PP_SL };
+	Array<IPhysicsJoint*>	m_physJoints{ PP_SL };
 
-	int					m_jointToGeomIds[MAX_RAGDOLL_PARTS];
-	int					m_geomToJointIds[MAX_RAGDOLL_JOINT_IDS];
+	Map<int16, int16>	m_jointToBoneIds{ PP_SL };
+	Map<int16, int16>	m_boneToJointIds{ PP_SL };
 
-	int					m_farParents[MAX_RAGDOLL_JOINT_IDS];
-
-	int					m_numBones{ 0 };
-	int					m_numParts{ 0 };
-
-	CEqStudioGeom*		m_studio{ nullptr };
+	Map<int16, int16>	m_farParents{ PP_SL };
 };
 

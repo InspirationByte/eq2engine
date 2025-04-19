@@ -270,7 +270,7 @@ void CAnimatedModel::RenderPhysModel(IGPURenderPassRecorder* rendPassRecorder)
 
 			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{
-				const int visualMatrixIdx = m_pRagdoll->GetGeomIdx(i);
+				const int visualMatrixIdx = m_pRagdoll->GetBoneIdx(i);
 				const Matrix4x4 boneFrame = m_pRagdoll->GetJointTransformA(i);
 
 				g_matSystem->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame * m_boneTransforms[visualMatrixIdx]));
