@@ -46,28 +46,28 @@ IPhysicsObject* DkPhysicsJoint::GetPhysicsObjectB()
 Matrix4x4 DkPhysicsJoint::GetGlobalTransformA()
 {
 	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getCalculatedTransformA());
+	ConvertMatrix4ToEq(out, m_pJointPointer->getCalculatedTransformA());
 	return out;
 }
 
 Matrix4x4 DkPhysicsJoint::GetGlobalTransformB()
 {
 	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getCalculatedTransformB());
+	ConvertMatrix4ToEq(out, m_pJointPointer->getCalculatedTransformB());
 	return out;
 }
 
 Matrix4x4 DkPhysicsJoint::GetFrameTransformA()
 {
 	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getFrameOffsetA());
+	ConvertMatrix4ToEq(out, m_pJointPointer->getFrameOffsetA());
 	return out;
 }
 
 Matrix4x4 DkPhysicsJoint::GetFrameTransformB()
 {
 	Matrix4x4 out;
-	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getFrameOffsetB());
+	ConvertMatrix4ToEq(out, m_pJointPointer->getFrameOffsetB());
 	return out;
 }
 
