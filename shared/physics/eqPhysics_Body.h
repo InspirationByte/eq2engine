@@ -153,8 +153,8 @@ protected:
 	void				UpdateInertiaTensor();		///< updates inertia tensor
 	void				AccumulateForces(float time);	///< accumulates forces
 
-	FixedArray<eqContactPair, 32>			m_contactPairs; // contact pair list in single frame
-	FixedArray<IEqPhysicsConstraint*, 8>	m_constraints;
+	FixedArray<eqContactPair, 32>	m_contactPairs; // contact pair list in single frame
+	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
 
 	Matrix3x3			m_invInertiaTensor{ identity3 };
 
