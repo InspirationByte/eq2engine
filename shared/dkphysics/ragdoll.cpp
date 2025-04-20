@@ -91,23 +91,18 @@ CPhysRagdollData::CPhysRagdollData(CEqStudioGeom* pModel)
 		// get a bone transformation
 		const Matrix4x4& boneAbsTrs = m_studioBones[boneIdx].absTrans;
 
-		IPhysicsObject* partA = m_partObjs[physModel.joints[i].objA];
-		IPhysicsObject* partB = m_partObjs[physModel.joints[i].objB];
-
-		ASSERT(partA);
-		ASSERT(partB);
-
-		const Vector3D linkPosA = boneAbsTrs.rows[3].xyz() - partA->GetPosition();
-		const Vector3D linkPosB = boneAbsTrs.rows[3].xyz() - partB->GetPosition();
+		const int objIdxA = physModel.joints[i].objA;
+		const int objIdxB = physModel.joints[i].objB;
+		const Vector3D linkPosA = boneAbsTrs.rows[3].xyz() - physModel.objects[objIdxA].desc.offset;
+		const Vector3D linkPosB = boneAbsTrs.rows[3].xyz() - physModel.objects[objIdxB].desc.offset;
 
 		Matrix4x4 localTrsA = boneAbsTrs;
 		Matrix4x4 localTrsB = boneAbsTrs;
-
 		localTrsA.setTranslation(linkPosA);
 		localTrsB.setTranslation(linkPosB);
 
 		// create constraints
-		IPhysicsJoint* physJoint = physics->CreateJoint(partA, partB, localTrsA, localTrsB, true);
+		IPhysicsJoint* physJoint = physics->CreateJoint(m_partObjs[objIdxA], m_partObjs[objIdxB], localTrsA, localTrsB, true);
 		physJoint->SetAngularLowerLimit(physModel.joints[i].minLimit);
 		physJoint->SetAngularUpperLimit(physModel.joints[i].maxLimit);
 		physJoint->SetLinearLowerLimit(Vector3D(-RAGDOLL_DEFAULT_LINEAR_LIMIT));
