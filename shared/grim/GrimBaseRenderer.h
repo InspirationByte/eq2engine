@@ -24,6 +24,7 @@ struct GRIMDrawSettings
 	int				groupMaskInclude{ (int)COM_UINT_MAX };
 	int				groupMaskExclude{ 0 };
 	int				overrideLodIdx{ -1 };
+	bool			waitForMaterials{ false };
 	bool			forceSoftware{ false };
 	bool			skipOcclusionCulling{ false };
 
@@ -82,7 +83,8 @@ public:
 
 	void					SyncArchetypes(IGPUCommandRecorder* cmdRecorder);
 
-	GRIMDrawSettings		GetDrawSettings() const { return m_drawSettings; }
+	GRIMDrawSettings&		GetDrawSettings() { return m_drawSettings; }
+	const GRIMDrawSettings&	GetDrawSettings() const { return m_drawSettings; }
 	void					SetDrawSettings(const GRIMDrawSettings& settings) { m_drawSettings = settings; }
 
 	bool					IsSoftwareMode() const;
@@ -154,7 +156,7 @@ protected:
 	Array<PendingDesc>			m_pendingArchetypes{ PP_SL };
 	Array<GRIMArchetype>		m_pendingDeletion{ PP_SL };
 
-	GRIMBaseInstanceAllocator& m_instAllocator;
+	GRIMBaseInstanceAllocator&	m_instAllocator;
 	SlottedArray<DrawInfo>		m_drawInfos{ PP_SL };
 	Pool<GPUIndexedBatch>		m_drawBatchs{ GRIMResource::BUFFER, "GPUIndexedBatch", PP_SL };
 	Pool<GPULodInfo>			m_drawLodInfos{ GRIMResource::BUFFER, "GPULodInfo", PP_SL };

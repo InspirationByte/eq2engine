@@ -1310,7 +1310,11 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 		if (!material)
 			continue;
 
-		g_matSystem->QueueLoading(drawInfo.material);
+		if(m_drawSettings.waitForMaterials)
+		{
+			g_matSystem->QueueLoading(drawInfo.material);
+			material->WaitForLoading();
+		}
 
 #ifdef GRIM_INSTANCES_DEBUG_ENABLED
 		const char* onlyMaterialName = grim_dbgOnlyMaterial.GetString();
