@@ -56,8 +56,8 @@ public:
 	void				Update(float dt);
 
 protected:
-	void				AddedToWorld( CEqPhysics* physics );
-	void				RemovedFromWorld( CEqPhysics* physics );
+	void				AddedToWorld( CEqPhysicsWorld* physics );
+	void				RemovedFromWorld( CEqPhysicsWorld* physics );
 
 	CEqPointConstraint		m_midPointConstraint;
 	CEqMaxDistConstraint	m_sidePointConstraints[2];

@@ -248,16 +248,16 @@ struct CEqManifoldResult : public btManifoldResult
 
 //------------------------------------------------------------------------------------------------------------
 
-CEqPhysics::CEqPhysics()
+CEqPhysicsWorld::CEqPhysicsWorld()
 {
 }
 
-CEqPhysics::~CEqPhysics()
+CEqPhysicsWorld::~CEqPhysicsWorld()
 {
 
 }
 
-void CEqPhysics::InitWorld()
+void CEqPhysicsWorld::InitWorld()
 {
 	btAlignedAllocSetCustom(eqBtAlloc, eqBtFree);
 
@@ -279,7 +279,7 @@ void CEqPhysics::InitWorld()
 	//m_dispatchInfo->m_useConvexConservativeDistanceUtil = false;
 }
 
-void CEqPhysics::InitGrid()
+void CEqPhysicsWorld::InitGrid()
 {
 	m_grid = PPNew CEqCollisionBroadphaseGrid(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
 
@@ -294,7 +294,7 @@ void CEqPhysics::InitGrid()
 		SetupBodyOnCell(m_ghostObjects[i]);
 }
 
-void CEqPhysics::DestroyWorld()
+void CEqPhysicsWorld::DestroyWorld()
 {
 	for(int i = 0; i < m_dynObjects.numElem(); i++)
 		delete m_dynObjects[i];
@@ -329,12 +329,12 @@ void CEqPhysics::DestroyWorld()
 	SAFE_DELETE(m_dispatchInfo);
 }
 
-void CEqPhysics::DestroyGrid()
+void CEqPhysicsWorld::DestroyGrid()
 {
 	SAFE_DELETE(m_grid);
 }
 
-void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
+void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
 {
 	const int foundIdx = arrayFindIndexF(m_physSurfaceParams, [name](const eqPhysSurfParam* other) { return !other->name.CompareCaseIns(name); });
 	if (foundIdx != -1)
@@ -355,7 +355,7 @@ void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSect
 	surfParam->word = *KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C");
 }
 
-const int CEqPhysics::FindSurfaceParamID(const char* name) const
+const int CEqPhysicsWorld::FindSurfaceParamID(const char* name) const
 {
 	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
 	{
@@ -365,7 +365,7 @@ const int CEqPhysics::FindSurfaceParamID(const char* name) const
 	return -1;
 }
 
-const eqPhysSurfParam* CEqPhysics::FindSurfaceParam(const char* name) const
+const eqPhysSurfParam* CEqPhysicsWorld::FindSurfaceParam(const char* name) const
 {
 	const int surfParamId = FindSurfaceParamID(name);
 	if (surfParamId == -1)
@@ -374,7 +374,7 @@ const eqPhysSurfParam* CEqPhysics::FindSurfaceParam(const char* name) const
 	return m_physSurfaceParams[surfParamId];
 }
 
-const eqPhysSurfParam* CEqPhysics::GetSurfaceParamByID(int id) const
+const eqPhysSurfParam* CEqPhysicsWorld::GetSurfaceParamByID(int id) const
 {
 	if (id == -1)
 		return nullptr;
@@ -388,7 +388,7 @@ const eqPhysSurfParam* CEqPhysics::GetSurfaceParamByID(int id) const
 #define CHECK_ALREADY_IN_LIST(list, obj)
 #endif
 
-void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
+void CEqPhysicsWorld::AddToMoveableList( CEqRigidBody* body )
 {
 	if(!body)
 		return;	
@@ -407,7 +407,7 @@ void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 		body->m_callbacks->OnStartMove();
 }
 
-void CEqPhysics::RemoveFromMoveableList(CEqRigidBody* body)
+void CEqPhysicsWorld::RemoveFromMoveableList(CEqRigidBody* body)
 {
 	if (!(body->m_flags & BODY_MOVEABLE))
 		return;
@@ -419,7 +419,7 @@ void CEqPhysics::RemoveFromMoveableList(CEqRigidBody* body)
 		body->m_callbacks->OnStopMove();
 }
 
-void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
+void CEqPhysicsWorld::AddToWorld( CEqRigidBody* body, bool moveable )
 {
 	if(!body)
 		return;
@@ -438,7 +438,7 @@ void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 		SetupBodyOnCell( body );
 }
 
-bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
+bool CEqPhysicsWorld::RemoveFromWorld( CEqRigidBody* body )
 {
 	if(!body)
 		return false;
@@ -458,7 +458,7 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 	return result;
 }
 
-void CEqPhysics::DestroyBody( CEqRigidBody* body )
+void CEqPhysicsWorld::DestroyBody( CEqRigidBody* body )
 {
 	if(!body)
 		return;
@@ -467,7 +467,7 @@ void CEqPhysics::DestroyBody( CEqRigidBody* body )
 		delete body;
 }
 
-void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
+void CEqPhysicsWorld::AddGhostObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
@@ -493,7 +493,7 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 	}
 }
 
-void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
+void CEqPhysicsWorld::DestroyGhostObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
@@ -524,7 +524,7 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 	delete object;
 }
 
-void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
+void CEqPhysicsWorld::AddStaticObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
@@ -537,7 +537,7 @@ void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
 		m_grid->AddStaticObjectToGrid( object );
 }
 
-void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
+void CEqPhysicsWorld::RemoveStaticObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
@@ -549,7 +549,7 @@ void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
 		m_grid->RemoveStaticObjectFromGrid(object);
 }
 
-void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
+void CEqPhysicsWorld::DestroyStaticObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
@@ -565,7 +565,7 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 	delete object;
 }
 
-bool CEqPhysics::IsValidStaticObject( CEqCollisionObject* obj ) const
+bool CEqPhysicsWorld::IsValidStaticObject( CEqCollisionObject* obj ) const
 {
     if(obj->IsDynamic())
         return false;
@@ -573,7 +573,7 @@ bool CEqPhysics::IsValidStaticObject( CEqCollisionObject* obj ) const
     return arrayFindIndex(m_staticObjects, obj ) != -1;
 }
 
-bool CEqPhysics::IsValidBody( CEqCollisionObject* body ) const
+bool CEqPhysicsWorld::IsValidBody( CEqCollisionObject* body ) const
 {
     if(!body->IsDynamic())
         return false;
@@ -581,7 +581,7 @@ bool CEqPhysics::IsValidBody( CEqCollisionObject* body ) const
 	return arrayFindIndex(m_dynObjects, static_cast<CEqRigidBody*>(body)) != -1;
 }
 
-void CEqPhysics::AddConstraint( IEqPhysicsConstraint* constraint )
+void CEqPhysicsWorld::AddConstraint( IEqPhysicsConstraint* constraint )
 {
 	if(!constraint)
 		return;
@@ -590,7 +590,7 @@ void CEqPhysics::AddConstraint( IEqPhysicsConstraint* constraint )
 	m_constraints.append( constraint );
 }
 
-void CEqPhysics::RemoveConstraint( IEqPhysicsConstraint* constraint )
+void CEqPhysicsWorld::RemoveConstraint( IEqPhysicsConstraint* constraint )
 {
 	if(!constraint)
 		return;
@@ -599,7 +599,7 @@ void CEqPhysics::RemoveConstraint( IEqPhysicsConstraint* constraint )
 	m_constraints.fastRemove( constraint );
 }
 
-void CEqPhysics::AddController( IEqPhysController* controller )
+void CEqPhysicsWorld::AddController( IEqPhysController* controller )
 {
 	if(!controller)
 		return;
@@ -610,7 +610,7 @@ void CEqPhysics::AddController( IEqPhysController* controller )
 	controller->AddedToWorld( this );
 }
 
-void CEqPhysics::RemoveController( IEqPhysController* controller )
+void CEqPhysicsWorld::RemoveController( IEqPhysController* controller )
 {
 	if(!controller)
 		return;
@@ -622,7 +622,7 @@ void CEqPhysics::RemoveController( IEqPhysController* controller )
 	controller->RemovedFromWorld( this );
 }
 
-void CEqPhysics::DestroyController( IEqPhysController* controller )
+void CEqPhysicsWorld::DestroyController( IEqPhysController* controller )
 {
 	if(!controller)
 		return;
@@ -638,7 +638,7 @@ void CEqPhysics::DestroyController( IEqPhysController* controller )
 
 //-----------------------------------------------------------------------------------------------
 
-void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
+void CEqPhysicsWorld::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
 	// apply filters
 	if(!bodyA->CheckCanCollideWith(bodyB))
@@ -768,7 +768,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	}
 }
 
-void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt)
+void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt)
 {
 	if(staticObj == nullptr || bodyB == nullptr)
 		return;
@@ -937,7 +937,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	}
 }
 
-void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
+void CEqPhysicsWorld::SetupBodyOnCell( CEqCollisionObject* body )
 {
 	// check body is in the world
 	if(!m_grid)
@@ -962,7 +962,7 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 	}
 }
 
-void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
+void CEqPhysicsWorld::IntegrateSingle(CEqRigidBody* body)
 {
 	eqPhysGridCell* oldCell = body->GetCell();
 
@@ -992,7 +992,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	}
 }
 
-void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
+void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 {
 	// don't refresh frozen object, other will wake up us (or user)
 	if (body->IsFrozen())
@@ -1048,7 +1048,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	}
 }
 
-void CEqPhysics::ProcessContactPair(eqContactPair& pair)
+void CEqPhysicsWorld::ProcessContactPair(eqContactPair& pair)
 {
 	CEqRigidBody* bodyB = static_cast<CEqRigidBody*>(pair.bodyB);
 	const int bodyAFlags = pair.bodyA->m_flags;
@@ -1206,7 +1206,7 @@ void CEqPhysics::ProcessContactPair(eqContactPair& pair)
 //
 //----------------------------------------------------------------------------------------------------
 
-void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc)
+void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc)
 {
 	// don't let the physics simulate something is not init
 	if(!m_grid)
@@ -1318,7 +1318,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 //
 //----------------------------------------------------------------------------------------------------
 template <typename F>
-void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const Vector2D& endCell,
+void CEqPhysicsWorld::InternalTestLineCollisionCells(const Vector2D& startCell, const Vector2D& endCell,
 	const FVector3D& start,
 	const FVector3D& end,
 	const BoundingBox& rayBox,
@@ -1365,7 +1365,7 @@ void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const
 //-----------------------------------------------------------------------------------------------------------------------------
 
 template <typename F>
-bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
+bool CEqPhysicsWorld::TestLineCollisionOnCell(int y, int x,
 	const FVector3D& start, const FVector3D& end,
 	const BoundingBox& rayBox,
 	eqCollisionInfo& coll,
@@ -1483,7 +1483,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 //		- Casts line in the physics world
 //
 //----------------------------------------------------------------------------------------------------
-bool CEqPhysics::TestLineCollision(	const FVector3D& start, const FVector3D& end,
+bool CEqPhysicsWorld::TestLineCollision(	const FVector3D& start, const FVector3D& end,
 									eqCollisionInfo& coll,
 									int rayMask, const eqPhysCollisionFilter* filterParams)
 {
@@ -1510,7 +1510,7 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start, const FVector3D& end
 									coll,
 									rayMask,
 									filterParams,
-									&CEqPhysics::TestLineSingleObject, nullptr);
+									&CEqPhysicsWorld::TestLineSingleObject, nullptr);
 
 	if (coll.fract > 1.0f)
 		coll.fract = 1.0f;
@@ -1524,7 +1524,7 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start, const FVector3D& end
 //		- Casts convex shape in the physics world
 //
 //----------------------------------------------------------------------------------------------------
-bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
+bool CEqPhysicsWorld::TestConvexSweepCollision(const btCollisionShape* shape,
 											const Quaternion& rotation,
 											const FVector3D& start, const FVector3D& end,
 											eqCollisionInfo& coll,
@@ -1571,7 +1571,7 @@ bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
 									coll,
 									rayMask,
 									filterParams,
-									&CEqPhysics::TestConvexSweepSingleObject, &params);
+									&CEqPhysicsWorld::TestConvexSweepSingleObject, &params);
 
 	if (coll.fract > 1.0f)
 		coll.fract = 1.0f;
@@ -1624,7 +1624,7 @@ public:
 	int m_surfMaterialId{ -1 };
 };
 
-bool CEqPhysics::CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object)
+bool CEqPhysicsWorld::CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object)
 {
 	if (!filterParams)
 		return true;
@@ -1660,7 +1660,7 @@ bool CEqPhysics::CheckAllowContactTest(const eqPhysCollisionFilter* filterParams
 }
 
 
-bool CEqPhysics::TestLineSingleObject(
+bool CEqPhysicsWorld::TestLineSingleObject(
 	CEqCollisionObject* object,
 	const FVector3D& start,
 	const FVector3D& end,
@@ -1817,7 +1817,7 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 
-bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
+bool CEqPhysicsWorld::TestConvexSweepSingleObject(CEqCollisionObject* object,
 												const FVector3D& start,
 												const FVector3D& end,
 												const BoundingBox& raybox,
@@ -1907,7 +1907,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 
 //--------------------------------------------------------------------------------------------------------------
 
-void CEqPhysics::DebugDrawBodies(int mode)
+void CEqPhysicsWorld::DebugDrawBodies(int mode)
 {
 #ifdef ENABLE_DEBUG_DRAWING
 	if (mode >= 1 && mode != 4 && mode != 5)

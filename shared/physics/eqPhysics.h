@@ -51,7 +51,7 @@ typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 
 //--------------------------------------------------------------------------------------------------------------
 
-class CEqPhysics
+class CEqPhysicsWorld
 {
 	struct sweptTestParams_t
 	{
@@ -60,8 +60,8 @@ class CEqPhysics
 	};
 
 public:
-	CEqPhysics();
-	~CEqPhysics();
+	CEqPhysicsWorld();
+	~CEqPhysicsWorld();
 
 	void							InitWorld();										///< initializes world
 	void							InitGrid();											///< initializes broadphase grid

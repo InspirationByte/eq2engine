@@ -59,7 +59,7 @@ inline Quaternion AngularVelocityToSpin( const Quaternion& orientation, const Ve
 ///
 class CEqRigidBody : public CEqCollisionObject
 {
-	friend class CEqPhysics;
+	friend class CEqPhysicsWorld;
 public:
 
 	/// Computes friction velocity to apply

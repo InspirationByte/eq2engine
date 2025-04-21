@@ -8,7 +8,7 @@
 #pragma once
 
 class CEqCollisionObject;
-class CEqPhysics;
+class CEqPhysicsWorld;
 
 struct eqPhysGridCell
 {
@@ -23,7 +23,7 @@ struct eqPhysGridCell
 class CEqCollisionBroadphaseGrid
 {
 public:
-	CEqCollisionBroadphaseGrid(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs);
+	CEqCollisionBroadphaseGrid(CEqPhysicsWorld* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs);
 	~CEqCollisionBroadphaseGrid();
 
 	eqPhysGridCell*		GetPreallocatedCellAtPos(const Vector3D& origin);
@@ -52,7 +52,7 @@ protected:
 	void				FreeCellAt( int x, int y );
 
 	Map<int, eqPhysGridCell> m_gridMap{ PP_SL };
-	CEqPhysics*			m_physics{ nullptr };
+	CEqPhysicsWorld*			m_physics{ nullptr };
 
 	int					m_gridSize;
 	float				m_invGridSize;

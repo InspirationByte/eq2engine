@@ -12,7 +12,7 @@ class btCollisionShape;
 class btCollisionObject;
 struct btTriangleInfoMap;
 class CEqBulletIndexedMesh;
-class CEqPhysics;
+class CEqPhysicsWorld;
 class CEqCollisionObject;
 class IEqPhysCallback;
 struct StudioPhysData;
@@ -52,7 +52,7 @@ enum ECollisionObjectFlags
 
 class CEqCollisionObject
 {
-	friend class CEqPhysics;
+	friend class CEqPhysicsWorld;
 	friend class IEqPhysCallback;
 
 public:

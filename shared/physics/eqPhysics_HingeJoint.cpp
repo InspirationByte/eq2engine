@@ -17,7 +17,7 @@ enum EHingeFlags
 	HINGE_FLAG_ENABLED		= (1 << 17),		// state flag only
 };
 
-void CEqHingeJoint::AddedToWorld( CEqPhysics* physics )
+void CEqHingeJoint::AddedToWorld( CEqPhysicsWorld* physics )
 {
 	physics->AddConstraint(&m_midPointConstraint);
 	physics->AddConstraint(&m_maxDistanceConstraint);
@@ -25,7 +25,7 @@ void CEqHingeJoint::AddedToWorld( CEqPhysics* physics )
 	physics->AddConstraint(&m_sidePointConstraints[1]);
 }
 
-void CEqHingeJoint::RemovedFromWorld( CEqPhysics* physics )
+void CEqHingeJoint::RemovedFromWorld( CEqPhysicsWorld* physics )
 {
 	physics->RemoveConstraint(&m_midPointConstraint);
 	physics->RemoveConstraint(&m_maxDistanceConstraint);

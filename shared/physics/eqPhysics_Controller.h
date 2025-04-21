@@ -7,11 +7,11 @@
 
 #pragma once
 
-class CEqPhysics;
+class CEqPhysicsWorld;
 
 class IEqPhysController
 {
-	friend class CEqPhysics;
+	friend class CEqPhysicsWorld;
 public:
 					IEqPhysController() : m_enabled(false) {}
 	virtual			~IEqPhysController() {}
@@ -22,8 +22,8 @@ public:
 	bool			IsEnabled()	const		{ return m_enabled; }
 
 protected:
-	virtual void	AddedToWorld( CEqPhysics* physics ) = 0;
-	virtual void	RemovedFromWorld( CEqPhysics* physics ) = 0;
+	virtual void	AddedToWorld( CEqPhysicsWorld* physics ) = 0;
+	virtual void	RemovedFromWorld( CEqPhysicsWorld* physics ) = 0;
 
 	bool			m_enabled;
 };

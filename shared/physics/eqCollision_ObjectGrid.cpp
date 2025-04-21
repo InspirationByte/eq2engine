@@ -30,7 +30,7 @@ static void ReleaseGridCellObjs(eqPhysGridCell& cell)
 	}
 }
 
-CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs)
+CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid(CEqPhysicsWorld* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs)
 {
 	m_physics = physics;
 	m_gridSize = gridsize;
