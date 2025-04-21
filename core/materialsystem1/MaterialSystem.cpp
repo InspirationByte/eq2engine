@@ -998,10 +998,12 @@ MatVarProxyUnk CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarNam
 }
 
 // waits for material loader thread is finished
-void CMaterialSystem::WaitAllMaterialsLoaded()
+bool CMaterialSystem::WaitAllMaterialsLoaded(int timeout)
 {
 	if (m_config.threadedloader && s_threadedMaterialLoader.IsRunning())
-		s_threadedMaterialLoader.WaitForThread();
+		return s_threadedMaterialLoader.WaitForThread(timeout);
+
+	return true;
 }
 
 // transform operations

@@ -100,7 +100,7 @@ public:
 	MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash);
 								
 	void						PreloadNewMaterials();
-	void						WaitAllMaterialsLoaded();
+	bool						WaitAllMaterialsLoaded(int timeout = -1);
 								
 	void						QueueLoading(const IMaterialPtr& pMaterial);
 	int							GetLoadingQueue() const;
