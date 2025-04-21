@@ -599,7 +599,7 @@ void CEqPhysics::RemoveConstraint( IEqPhysicsConstraint* constraint )
 	m_constraints.fastRemove( constraint );
 }
 
-void CEqPhysics::AddController( IEqPhysicsController* controller )
+void CEqPhysics::AddController( IEqPhysController* controller )
 {
 	if(!controller)
 		return;
@@ -610,7 +610,7 @@ void CEqPhysics::AddController( IEqPhysicsController* controller )
 	controller->AddedToWorld( this );
 }
 
-void CEqPhysics::RemoveController( IEqPhysicsController* controller )
+void CEqPhysics::RemoveController( IEqPhysController* controller )
 {
 	if(!controller)
 		return;
@@ -622,7 +622,7 @@ void CEqPhysics::RemoveController( IEqPhysicsController* controller )
 	controller->RemovedFromWorld( this );
 }
 
-void CEqPhysics::DestroyController( IEqPhysicsController* controller )
+void CEqPhysics::DestroyController( IEqPhysController* controller )
 {
 	if(!controller)
 		return;
@@ -1229,7 +1229,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		PROF_EVENT("Controllers Update");
 		// update the controllers
-		for (IEqPhysicsController* contr : m_controllers)
+		for (IEqPhysController* contr : m_controllers)
 		{
 			if (!contr->IsEnabled())
 				continue;

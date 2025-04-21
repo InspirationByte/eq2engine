@@ -44,7 +44,7 @@ class CEqCollisionObject;
 class CEqRigidBody;
 class CEqCollisionBroadphaseGrid;
 class IEqPhysicsConstraint;
-class IEqPhysicsController;
+class IEqPhysController;
 
 
 typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
@@ -96,9 +96,9 @@ public:
 	void							AddConstraint( IEqPhysicsConstraint* constraint );		///< adds constraint to the world
 	void							RemoveConstraint( IEqPhysicsConstraint* constraint );	///< removes constraint from the world
 
-	void							AddController( IEqPhysicsController* controller );		///< adds controller to the world
-	void							RemoveController( IEqPhysicsController* controller );	///< removes controller from the world
-	void							DestroyController( IEqPhysicsController* controlelr );	///< destroys controller
+	void							AddController( IEqPhysController* controller );		///< adds controller to the world
+	void							RemoveController( IEqPhysController* controller );	///< removes controller from the world
+	void							DestroyController( IEqPhysController* controlelr );	///< destroys controller
 
 	//< Performs a line test in the world
 	bool							TestLineCollision(	const FVector3D& start,
@@ -217,7 +217,7 @@ protected:
 	Array<CEqCollisionObject*>		m_ghostObjects{ PP_SL };
 
 	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
-	Array<IEqPhysicsController*>	m_controllers{ PP_SL };
+	Array<IEqPhysController*>	m_controllers{ PP_SL };
 
 	btDispatcherInfo*				m_dispatchInfo{ nullptr };
 	btCollisionWorld*				m_collisionWorld{ nullptr };

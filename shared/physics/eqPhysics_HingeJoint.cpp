@@ -17,18 +17,7 @@ enum EHingeFlags
 	HINGE_FLAG_ENABLED		= (1 << 17),		// state flag only
 };
 
-CEqPhysicsHingeJoint::CEqPhysicsHingeJoint() :
-	m_body0(nullptr), m_body1(nullptr), m_extraTorque(0.0f), m_damping(0.0f), m_flags(0)
-{
-
-}
-
-CEqPhysicsHingeJoint::~CEqPhysicsHingeJoint()
-{
-
-}
-
-void CEqPhysicsHingeJoint::AddedToWorld( CEqPhysics* physics )
+void CEqHingeJoint::AddedToWorld( CEqPhysics* physics )
 {
 	physics->AddConstraint(&m_midPointConstraint);
 	physics->AddConstraint(&m_maxDistanceConstraint);
@@ -36,7 +25,7 @@ void CEqPhysicsHingeJoint::AddedToWorld( CEqPhysics* physics )
 	physics->AddConstraint(&m_sidePointConstraints[1]);
 }
 
-void CEqPhysicsHingeJoint::RemovedFromWorld( CEqPhysics* physics )
+void CEqHingeJoint::RemovedFromWorld( CEqPhysics* physics )
 {
 	physics->RemoveConstraint(&m_midPointConstraint);
 	physics->RemoveConstraint(&m_maxDistanceConstraint);
@@ -44,9 +33,25 @@ void CEqPhysicsHingeJoint::RemovedFromWorld( CEqPhysics* physics )
 	physics->RemoveConstraint(&m_sidePointConstraints[1]);
 }
 
-void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1, 
-								const Vector3D & hingeAxis, 
-								const FVector3D & hingePosRel0,
+void CEqHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
+	const Vector3D& hingeAxis,
+	const Vector3D& hingePosRel0,
+	const float hingeHalfWidth,
+	const float hingeFwdAngle,
+	const float hingeBckAngle,
+	const float sidewaysSlack,
+	const float damping,
+	int flags)
+{
+	const Vector3D hingePosRel1 = rotateVector(body0->GetPosition() + rotateVector(hingePosRel0, body0->GetOrientation()) - body1->GetPosition(), !body1->GetOrientation());
+
+	Init(body0, body1, hingeAxis, hingePosRel0, hingePosRel1, hingeHalfWidth, hingeFwdAngle, hingeBckAngle, sidewaysSlack, damping, flags);
+}
+
+void CEqHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1, 
+								const Vector3D& hingeAxis, 
+								const Vector3D& hingePosRel0,
+								const Vector3D& hingePosRel1,
 								const float hingeHalfWidth,
 								const float hingeFwdAngle,
 								const float hingeBckAngle,
@@ -61,14 +66,12 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 	m_damping = damping;
 	m_flags = flags;
 
-	FVector3D hingePosRel1 = rotateVector(body0->GetPosition() + rotateVector(hingePosRel0, m_body0->GetOrientation()) - body1->GetPosition(), !m_body1->GetOrientation());
-
 	// generate the two positions relative to each body
-	FVector3D relPos0a = hingePosRel0 + hingeHalfWidth * m_hingeAxis;
-	FVector3D relPos0b = hingePosRel0 - hingeHalfWidth * m_hingeAxis;
+	const Vector3D relPos0a = hingePosRel0 + hingeHalfWidth * m_hingeAxis;
+	const Vector3D relPos0b = hingePosRel0 - hingeHalfWidth * m_hingeAxis;
 
-	FVector3D relPos1a = hingePosRel1 + hingeHalfWidth * m_hingeAxis;
-	FVector3D relPos1b = hingePosRel1 - hingeHalfWidth * m_hingeAxis;
+	const Vector3D relPos1a = hingePosRel1 + hingeHalfWidth * m_hingeAxis;
+	const Vector3D relPos1b = hingePosRel1 - hingeHalfWidth * m_hingeAxis;
 
 	float timescale = 1.0f / 20.0f;
 	float allowedDistanceMid = 0.01f;
@@ -76,7 +79,6 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 
 	m_sidePointConstraints[0].Init(body0, relPos0a, body1, relPos1a, allowedDistanceSide, flags);
 	m_sidePointConstraints[1].Init(body0, relPos0b, body1, relPos1b, allowedDistanceSide, flags);
-
 	m_midPointConstraint.Init(body0, hingePosRel0, body1, hingePosRel1, allowedDistanceMid, timescale, flags);
 
 	if (hingeFwdAngle <= MAX_HINGE_ANGLE_LIMIT)
@@ -114,8 +116,8 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 		float allowedDistance = len * 2.0f * sinf(hingeHalfAngle * 0.5f);
 
 		FVector3D hingePos = body1->GetPosition() + rotateVector(hingePosRel0, m_body0->GetOrientation());
-		FVector3D relPos0c = rotateVector(hingePos + hingeRelAnchorPos0 - body0->GetPosition(), !m_body0->GetOrientation());
-		FVector3D relPos1c = rotateVector(hingePos + hingeRelAnchorPos1 - body1->GetPosition(), !m_body1->GetOrientation());
+		Vector3D relPos0c = rotateVector(hingePos + hingeRelAnchorPos0 - body0->GetPosition(), !m_body0->GetOrientation());
+		Vector3D relPos1c = rotateVector(hingePos + hingeRelAnchorPos1 - body1->GetPosition(), !m_body1->GetOrientation());
 
 		m_maxDistanceConstraint.Init(	body0, relPos0c, 
 										body1, relPos1c,
@@ -129,7 +131,7 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 		m_damping = clamp(m_damping, 0.0f, 1.0f);
 }
 
-void CEqPhysicsHingeJoint::SetEnabled(bool enable)
+void CEqHingeJoint::SetEnabled(bool enable)
 {
 	if(enable)
 	{
@@ -159,7 +161,7 @@ void CEqPhysicsHingeJoint::SetEnabled(bool enable)
 	m_enabled = enable;
 }
 
-void CEqPhysicsHingeJoint::Break()
+void CEqHingeJoint::Break()
 {
 	if(IsBroken())
 		return;
@@ -170,7 +172,7 @@ void CEqPhysicsHingeJoint::Break()
 	m_flags |= HINGE_FLAG_BROKEN;
 }
 
-void CEqPhysicsHingeJoint::Restore()
+void CEqHingeJoint::Restore()
 {
 	if(!IsBroken())
 		return;
@@ -181,12 +183,12 @@ void CEqPhysicsHingeJoint::Restore()
 	m_flags &= ~HINGE_FLAG_BROKEN;
 }
 
- bool CEqPhysicsHingeJoint::IsBroken() const
+ bool CEqHingeJoint::IsBroken() const
  {
 	return (m_flags & HINGE_FLAG_BROKEN);
  }
 
-void CEqPhysicsHingeJoint::Update(float dt)
+void CEqHingeJoint::Update(float dt)
 {
 	ASSERT(m_body0 != nullptr);
 	ASSERT(m_body1 != nullptr);
@@ -207,10 +209,8 @@ void CEqPhysicsHingeJoint::Update(float dt)
 		const float newAngRot1 = avAngRot + (angRot1 - avAngRot) * frac;
 		const float newAngRot2 = avAngRot + (angRot2 - avAngRot) * frac;
 
-		const Vector3D newAngVel1 = 
-			m_body0->GetAngularVelocity() + (newAngRot1 - angRot1) * hingeAxis;
-		const Vector3D newAngVel2 = 
-			m_body1->GetAngularVelocity() + (newAngRot2 - angRot2) * hingeAxis;
+		const Vector3D newAngVel1 = m_body0->GetAngularVelocity() + (newAngRot1 - angRot1) * hingeAxis;
+		const Vector3D newAngVel2 = m_body1->GetAngularVelocity() + (newAngRot2 - angRot2) * hingeAxis;
 
 		if(!(m_flags & CONSTRAINT_FLAG_BODYA_NOIMPULSE))
 			m_body0->SetAngularVelocity(newAngVel1);

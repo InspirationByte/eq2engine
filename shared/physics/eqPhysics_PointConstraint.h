@@ -10,11 +10,11 @@
 
 class CEqRigidBody;
 
-class CEqPhysicsPointConstraint : public IEqPhysicsConstraint
+class CEqPointConstraint : public IEqPhysicsConstraint
 {
 public:
-	CEqPhysicsPointConstraint();
-	~CEqPhysicsPointConstraint();
+	CEqPointConstraint();
+	~CEqPointConstraint();
 
 	// @allowedDistance indicated how much the points are allowed to deviate.
 	// @timescale indicates the timescale over which deviation is eliminated

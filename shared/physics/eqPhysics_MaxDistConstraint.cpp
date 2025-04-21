@@ -9,11 +9,11 @@
 #include "eqPhysics_MaxDistConstraint.h"
 #include "eqPhysics_Body.h"
 
-CEqPhysicsMaxDistConstraint::CEqPhysicsMaxDistConstraint() : m_body0(nullptr), m_body1(nullptr)
+CEqMaxDistConstraint::CEqMaxDistConstraint() : m_body0(nullptr), m_body1(nullptr)
 {
 }
 
-CEqPhysicsMaxDistConstraint::~CEqPhysicsMaxDistConstraint()
+CEqMaxDistConstraint::~CEqMaxDistConstraint()
 {
 	if (m_body0)
 		m_body0->RemoveConstraint(this);
@@ -24,7 +24,7 @@ CEqPhysicsMaxDistConstraint::~CEqPhysicsMaxDistConstraint()
 	Destroy();
 }
 
-void CEqPhysicsMaxDistConstraint::Init(CEqRigidBody* body0, const FVector3D& body0Pos,
+void CEqMaxDistConstraint::Init(CEqRigidBody* body0, const FVector3D& body0Pos,
 										CEqRigidBody* body1, const FVector3D& body1Pos,
 										float maxDistance, int flags)
 {
@@ -42,7 +42,7 @@ void CEqPhysicsMaxDistConstraint::Init(CEqRigidBody* body0, const FVector3D& bod
 		m_body1->AddConstraint(this);
 }
 
-void CEqPhysicsMaxDistConstraint::PreApply(float dt)
+void CEqMaxDistConstraint::PreApply(float dt)
 {
 	m_satisfied = false;
 
@@ -57,7 +57,7 @@ void CEqPhysicsMaxDistConstraint::PreApply(float dt)
 	m_currentRelPos0 = worldPos0 - worldPos1;
 }
 
-bool CEqPhysicsMaxDistConstraint::Apply(float dt)
+bool CEqMaxDistConstraint::Apply(float dt)
 {
 	const float MaxVelocityMagnitude = 20.0f;
 	const float minVelForProcessing = 0.01f;
@@ -133,7 +133,7 @@ bool CEqPhysicsMaxDistConstraint::Apply(float dt)
 	return true;
 }
 
-void CEqPhysicsMaxDistConstraint::Destroy()
+void CEqMaxDistConstraint::Destroy()
 {
 	m_body0 = m_body1 = nullptr;
 	SetEnabled(false);

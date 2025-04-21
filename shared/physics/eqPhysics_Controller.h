@@ -9,12 +9,12 @@
 
 class CEqPhysics;
 
-class IEqPhysicsController
+class IEqPhysController
 {
 	friend class CEqPhysics;
 public:
-					IEqPhysicsController() : m_enabled(false) {}
-	virtual			~IEqPhysicsController() {}
+					IEqPhysController() : m_enabled(false) {}
+	virtual			~IEqPhysController() {}
 
 	virtual void	Update(float dt) = 0;
 

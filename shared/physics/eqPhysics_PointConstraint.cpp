@@ -9,11 +9,11 @@
 #include "eqPhysics_PointConstraint.h"
 #include "eqPhysics_Body.h"
 
-CEqPhysicsPointConstraint::CEqPhysicsPointConstraint() : m_body0(nullptr), m_body1(nullptr)
+CEqPointConstraint::CEqPointConstraint() : m_body0(nullptr), m_body1(nullptr)
 {
 }
 
-CEqPhysicsPointConstraint::~CEqPhysicsPointConstraint()
+CEqPointConstraint::~CEqPointConstraint()
 {
 	if (m_body0)
 		m_body0->RemoveConstraint(this);
@@ -24,7 +24,7 @@ CEqPhysicsPointConstraint::~CEqPhysicsPointConstraint()
 	Destroy();
 }
 
-void CEqPhysicsPointConstraint::Init(CEqRigidBody* body0, const FVector3D& body0Pos,
+void CEqPointConstraint::Init(CEqRigidBody* body0, const FVector3D& body0Pos,
 									CEqRigidBody* body1, const FVector3D& body1Pos,
 									float allowedDistance,
 									float timescale, int flags)
@@ -44,7 +44,7 @@ void CEqPhysicsPointConstraint::Init(CEqRigidBody* body0, const FVector3D& body0
 		m_body1->AddConstraint(this);
 }
 
-void CEqPhysicsPointConstraint::PreApply(float dt)
+void CEqPointConstraint::PreApply(float dt)
 {
 	m_satisfied = false;
 
@@ -69,7 +69,7 @@ void CEqPhysicsPointConstraint::PreApply(float dt)
 	}
 }
 
-bool CEqPhysicsPointConstraint::Apply(float dt)
+bool CEqPointConstraint::Apply(float dt)
 {
 	const float MaxVelocityMagnitude = 200.0f;
 	const float minVelForProcessing = 0.01f;
@@ -131,7 +131,7 @@ bool CEqPhysicsPointConstraint::Apply(float dt)
 	return true;
 }
 
-void CEqPhysicsPointConstraint::Destroy()
+void CEqPointConstraint::Destroy()
 {
 	m_body0 = m_body1 = nullptr;
 	SetEnabled(false);
