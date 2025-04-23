@@ -71,34 +71,29 @@ public:
 
 	void							AddSurfaceParamFromKV(const char* name, const KVSection* kvSection);
 	const int						FindSurfaceParamID(const char* name) const;
-	const eqPhysSurfParam*		FindSurfaceParam(const char* name) const;
-	const eqPhysSurfParam*		GetSurfaceParamByID(int id) const;
+	const eqPhysSurfParam*			FindSurfaceParam(const char* name) const;
+	const eqPhysSurfParam*			GetSurfaceParamByID(int id) const;
 
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
 	void							RemoveFromMoveableList( CEqRigidBody* body );
 
-	void							AddToWorld( CEqRigidBody* body, bool moveable = true );	///< adds to processing
-	bool							RemoveFromWorld( CEqRigidBody* body );				///< removes body from world, not deleting
-	void							DestroyBody( CEqRigidBody* body );					///< destroys body
-
-	void							SetupBodyOnCell( CEqCollisionObject* body );		///< only rigid body and ghost objects
+	void							AddBody( CEqRigidBody* body, bool moveable = true );	///< adds to processing
+	bool							RemoveBody( CEqRigidBody* body );				///< removes body from world, not deleting
 
 	void							AddGhostObject( CEqCollisionObject* object );		///< adds ghost object
-	void							DestroyGhostObject( CEqCollisionObject* object );	///< removes ghost object
+	bool							RemoveGhostObject( CEqCollisionObject* object );	///< removes ghost object
 
 	void							AddStaticObject( CEqCollisionObject* object );		///< adds collision object as static body
-	void							RemoveStaticObject( CEqCollisionObject* object );	///< removes static object
-	void							DestroyStaticObject( CEqCollisionObject* object );	///< destroys static object
+	bool							RemoveStaticObject( CEqCollisionObject* object );	///< removes static object
 
     bool                            IsValidStaticObject( CEqCollisionObject* obj ) const;
 	bool                            IsValidBody( CEqCollisionObject* body ) const;
 
 	void							AddConstraint( IEqPhysicsConstraint* constraint );		///< adds constraint to the world
-	void							RemoveConstraint( IEqPhysicsConstraint* constraint );	///< removes constraint from the world
+	bool							RemoveConstraint( IEqPhysicsConstraint* constraint );	///< removes constraint from the world
 
 	void							AddController( IEqPhysController* controller );		///< adds controller to the world
-	void							RemoveController( IEqPhysController* controller );	///< removes controller from the world
-	void							DestroyController( IEqPhysController* controlelr );	///< destroys controller
+	bool							RemoveController( IEqPhysController* controller );	///< removes controller from the world
 
 	//< Performs a line test in the world
 	bool							TestLineCollision(	const FVector3D& start,
@@ -145,9 +140,16 @@ public:
 	///< Simulates physics
 	void							SimulateStep( float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc);	///< simulates physics
 
-	//------------------------------------------------------
 
-	//------------------------------------------------------
+	// checks collision (made especially for rays, but could be used in other situations)
+	bool							CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object);
+
+	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
+
+protected:
+
+
+	void							SetupBodyOnCell(CEqCollisionObject* body);		///< only rigid body and ghost objects
 
 	///< Integrates single body without collision detection
 	void							IntegrateSingle(CEqRigidBody* body);
@@ -158,17 +160,8 @@ public:
 	///< processes contact pairs
 	void							ProcessContactPair(eqContactPair& pair);
 
-	// checks collision (made especially for rays, but could be used in other situations)
-	bool							CheckAllowContactTest(const eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object);
-
-	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
-
 	void							DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
 	void							DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt);
-
-	//static void						CellCollisionDetectionJob(void* data, int iter);
-
-protected:
 
 	typedef bool (fnSingleObjectLineCollisionCheck)(CEqCollisionObject* object,
 		const FVector3D& start,

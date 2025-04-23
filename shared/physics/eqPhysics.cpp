@@ -419,7 +419,7 @@ void CEqPhysicsWorld::RemoveFromMoveableList(CEqRigidBody* body)
 		body->m_callbacks->OnStopMove();
 }
 
-void CEqPhysicsWorld::AddToWorld( CEqRigidBody* body, bool moveable )
+void CEqPhysicsWorld::AddBody( CEqRigidBody* body, bool moveable )
 {
 	if(!body)
 		return;
@@ -438,7 +438,7 @@ void CEqPhysicsWorld::AddToWorld( CEqRigidBody* body, bool moveable )
 		SetupBodyOnCell( body );
 }
 
-bool CEqPhysicsWorld::RemoveFromWorld( CEqRigidBody* body )
+bool CEqPhysicsWorld::RemoveBody( CEqRigidBody* body )
 {
 	if(!body)
 		return false;
@@ -456,15 +456,6 @@ bool CEqPhysicsWorld::RemoveFromWorld( CEqRigidBody* body )
 		RemoveFromMoveableList(body);
 
 	return result;
-}
-
-void CEqPhysicsWorld::DestroyBody( CEqRigidBody* body )
-{
-	if(!body)
-		return;
-
-	if(RemoveFromWorld(body))
-		delete body;
 }
 
 void CEqPhysicsWorld::AddGhostObject( CEqCollisionObject* object )
@@ -493,10 +484,10 @@ void CEqPhysicsWorld::AddGhostObject( CEqCollisionObject* object )
 	}
 }
 
-void CEqPhysicsWorld::DestroyGhostObject( CEqCollisionObject* object )
+bool CEqPhysicsWorld::RemoveGhostObject( CEqCollisionObject* object )
 {
 	if(!object)
-		return;
+		return false;
 
 	//CScopedMutex m(s_eqPhysMutex);
 
@@ -519,9 +510,9 @@ void CEqPhysicsWorld::DestroyGhostObject( CEqCollisionObject* object )
 	}
 
 	if(!m_ghostObjects.fastRemove(object))
-		return;
+		return false;
 
-	delete object;
+	return true;
 }
 
 void CEqPhysicsWorld::AddStaticObject( CEqCollisionObject* object )
@@ -537,32 +528,18 @@ void CEqPhysicsWorld::AddStaticObject( CEqCollisionObject* object )
 		m_grid->AddStaticObjectToGrid( object );
 }
 
-void CEqPhysicsWorld::RemoveStaticObject( CEqCollisionObject* object )
+bool CEqPhysicsWorld::RemoveStaticObject( CEqCollisionObject* object )
 {
 	if(!object)
-		return;
+		return false;
 
 	if (!m_staticObjects.fastRemove(object))
-		return;
-
-	if (m_grid)
-		m_grid->RemoveStaticObjectFromGrid(object);
-}
-
-void CEqPhysicsWorld::DestroyStaticObject( CEqCollisionObject* object )
-{
-	if(!object)
-		return;
-
-	//CScopedMutex m(s_eqPhysMutex);
-
-	if (!m_staticObjects.fastRemove(object))
-		return;
+		return false;
 
 	if (m_grid)
 		m_grid->RemoveStaticObjectFromGrid(object);
 
-	delete object;
+	return true;
 }
 
 bool CEqPhysicsWorld::IsValidStaticObject( CEqCollisionObject* obj ) const
@@ -590,13 +567,13 @@ void CEqPhysicsWorld::AddConstraint( IEqPhysicsConstraint* constraint )
 	m_constraints.append( constraint );
 }
 
-void CEqPhysicsWorld::RemoveConstraint( IEqPhysicsConstraint* constraint )
+bool CEqPhysicsWorld::RemoveConstraint( IEqPhysicsConstraint* constraint )
 {
 	if(!constraint)
-		return;
+		return false;
 
 	//CScopedMutex m(s_eqPhysMutex);
-	m_constraints.fastRemove( constraint );
+	return m_constraints.fastRemove( constraint );
 }
 
 void CEqPhysicsWorld::AddController( IEqPhysController* controller )
@@ -610,30 +587,17 @@ void CEqPhysicsWorld::AddController( IEqPhysController* controller )
 	controller->AddedToWorld( this );
 }
 
-void CEqPhysicsWorld::RemoveController( IEqPhysController* controller )
+bool CEqPhysicsWorld::RemoveController( IEqPhysController* controller )
 {
 	if(!controller)
-		return;
+		return false;
 
 	//CScopedMutex m(s_eqPhysMutex);
 	if(!m_controllers.fastRemove( controller ))
-		return;
+		return false;
 
 	controller->RemovedFromWorld( this );
-}
-
-void CEqPhysicsWorld::DestroyController( IEqPhysController* controller )
-{
-	if(!controller)
-		return;
-
-	//CScopedMutex m(s_eqPhysMutex);
-
-	if(!m_controllers.fastRemove(controller))
-		return;
-
-	controller->RemovedFromWorld( this );
-	delete controller;
+	return true;
 }
 
 //-----------------------------------------------------------------------------------------------
