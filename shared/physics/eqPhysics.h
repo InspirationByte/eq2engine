@@ -200,7 +200,7 @@ protected:
 
 protected:
 
-	Array<eqPhysSurfParam*>			m_physSurfaceParams{ PP_SL };
+	Array<eqPhysSurfParam>			m_physSurfaceParams{ PP_SL };
 
 	Array<CEqRigidBody*>			m_moveable{ PP_SL };
 
@@ -210,7 +210,7 @@ protected:
 	Array<CEqCollisionObject*>		m_ghostObjects{ PP_SL };
 
 	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
-	Array<IEqPhysController*>	m_controllers{ PP_SL };
+	Array<IEqPhysController*>		m_controllers{ PP_SL };
 
 	btDispatcherInfo*				m_dispatchInfo{ nullptr };
 	btCollisionWorld*				m_collisionWorld{ nullptr };

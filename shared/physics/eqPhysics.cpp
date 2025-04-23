@@ -296,31 +296,15 @@ void CEqPhysicsWorld::InitGrid()
 
 void CEqPhysicsWorld::DestroyWorld()
 {
-	for(int i = 0; i < m_dynObjects.numElem(); i++)
-		delete m_dynObjects[i];
-
-	m_dynObjects.clear(true);
-	m_moveable.clear(true);
-
-	for(int i = 0; i < m_staticObjects.numElem(); i++)
-		delete m_staticObjects[i];
-	m_staticObjects.clear(true);
-
-	for(int i = 0; i < m_ghostObjects.numElem(); i++)
-		delete m_ghostObjects[i];
-
-	m_ghostObjects.clear(true);
-
-	// update the controllers
 	for (int i = 0; i < m_controllers.numElem(); i++)
 		m_controllers[i]->SetEnabled(false);
 
+	m_dynObjects.clear(true);
+	m_moveable.clear(true);
+	m_staticObjects.clear(true);
+	m_ghostObjects.clear(true);
 	m_controllers.clear(true);
 	m_constraints.clear(true);
-
-	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
-		delete m_physSurfaceParams[i];
-
 	m_physSurfaceParams.clear(true);
 
 	SAFE_DELETE(m_collisionWorld);
@@ -336,30 +320,31 @@ void CEqPhysicsWorld::DestroyGrid()
 
 void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
 {
-	const int foundIdx = arrayFindIndexF(m_physSurfaceParams, [name](const eqPhysSurfParam* other) { return !other->name.CompareCaseIns(name); });
+	const int foundIdx = arrayFindIndexF(m_physSurfaceParams, [name](const eqPhysSurfParam& other) { return !other.name.CompareCaseIns(name); });
 	if (foundIdx != -1)
 	{
 		ASSERT_FAIL("AddSurfaceParam - %s already added\n", name);
 		return;
 	}
 
-	eqPhysSurfParam* surfParam = PPNew eqPhysSurfParam;
-	surfParam->id = m_physSurfaceParams.append(surfParam);
-	surfParam->name = name;
-	kvSection->Get("collideMask").GetValues(surfParam->collideMask);
-	kvSection->Get("contents").GetValues(surfParam->contents);
-	kvSection->Get("friction").GetValues(surfParam->friction);
-	kvSection->Get("restitution").GetValues(surfParam->restitution);
-	kvSection->Get("tirefriction").GetValues(surfParam->tirefriction);
-	kvSection->Get("tirefriction_traction").GetValues(surfParam->tirefriction_traction);
-	surfParam->word = *KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C");
+	const int id = m_physSurfaceParams.numElem();
+	eqPhysSurfParam& surfParam = m_physSurfaceParams.append();
+	surfParam.id = id;
+	surfParam.name = name;
+	kvSection->Get("collideMask").GetValues(surfParam.collideMask);
+	kvSection->Get("contents").GetValues(surfParam.contents);
+	kvSection->Get("friction").GetValues(surfParam.friction);
+	kvSection->Get("restitution").GetValues(surfParam.restitution);
+	kvSection->Get("tirefriction").GetValues(surfParam.tirefriction);
+	kvSection->Get("tirefriction_traction").GetValues(surfParam.tirefriction_traction);
+	surfParam.word = *KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C");
 }
 
 const int CEqPhysicsWorld::FindSurfaceParamID(const char* name) const
 {
 	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
 	{
-		if (!m_physSurfaceParams[i]->name.CompareCaseIns(name))
+		if (!m_physSurfaceParams[i].name.CompareCaseIns(name))
 			return i;
 	}
 	return -1;
@@ -371,7 +356,7 @@ const eqPhysSurfParam* CEqPhysicsWorld::FindSurfaceParam(const char* name) const
 	if (surfParamId == -1)
 		return nullptr;
 
-	return m_physSurfaceParams[surfParamId];
+	return &m_physSurfaceParams[surfParamId];
 }
 
 const eqPhysSurfParam* CEqPhysicsWorld::GetSurfaceParamByID(int id) const
@@ -379,7 +364,7 @@ const eqPhysSurfParam* CEqPhysicsWorld::GetSurfaceParamByID(int id) const
 	if (id == -1)
 		return nullptr;
 
-	return m_physSurfaceParams[id];
+	return &m_physSurfaceParams[id];
 }
 
 #ifdef DEBUG
