@@ -22,6 +22,7 @@ public:
 		const V&		value() const { return *item->value; }
 
 		bool			atEnd() const { return !item || !item->next; };
+		operator		bool()	const { return !atEnd(); };
 
 		const V&		operator*() const { return *item->value; }
 		V&				operator*() { return *item->value; }
