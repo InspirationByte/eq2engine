@@ -19,8 +19,9 @@ public:
 
 	float	RandomFloat(float fLow, float fHigh);
 	int		RandomInt(int nLow, int nHigh);
+	int		RandomUInt(uint nLow, uint nHigh);
 private:
-	int		GenerateRandomNumber();
+	uint	GenerateRandomNumber();
 
 	int		m_seed{ 0 };
 	bool	m_autoRegenerate{ true };

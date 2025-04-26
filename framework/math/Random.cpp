@@ -54,9 +54,9 @@ void CPseudoRandomGenerator::Regenerate()
 	++m_seed;
 }
 
-int CPseudoRandomGenerator::GenerateRandomNumber()
+uint CPseudoRandomGenerator::GenerateRandomNumber()
 {
-	const int n = (m_seed * m_seed * 0x19660d + 0x3c6ef35fU) >> 8 & 0xffff;
+	const uint n = (m_seed * m_seed * 0x19660d + 0x3c6ef35fU) >> 8 & 0xffff;
 	if (m_autoRegenerate) Regenerate();
 	return n;
 }
@@ -73,6 +73,14 @@ int CPseudoRandomGenerator::RandomInt(int nLow, int nHigh)
 	const int n = GenerateRandomNumber();
 
 	const int x = nHigh - nLow + 1;
+	return nLow + (n % x);
+}
+
+int CPseudoRandomGenerator::RandomUInt(uint nLow, uint nHigh)
+{
+	const uint n = GenerateRandomNumber();
+
+	const uint x = nHigh - nLow + 1;
 	return nLow + (n % x);
 }
 
