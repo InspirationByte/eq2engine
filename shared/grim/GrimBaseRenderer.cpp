@@ -1523,6 +1523,26 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 		if(instCount == 0 && !showAllArchetypes)
 			continue;
 
+		// material loading flags
+		bool allMaterialsLoaded = true;
+		{
+			const GRIMBaseRenderer::GPULodList& lodList = renderer.m_drawLodsList[archetypeId];
+
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
+			{
+				const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
+				int nBatch = 0;
+				for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+				{
+					const GRIMBaseRenderer::GPUIndexedBatch& batch = renderer.m_drawBatchs[batchIdx];
+					const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[batch.cmdIdx];
+					
+					if (drawInfo.material->GetState() != MATERIAL_LOAD_OK)
+						allMaterialsLoaded = false;
+				}
+			}
+		}
+
 		const bool archetypeVisibleOnScreen = renderer.m_dbgLastVisibleArchetypes[archetypeId];
 		if(!archetypeVisibleOnScreen && showOnScreen)
 			continue;
@@ -1533,14 +1553,20 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 			if(str.Find(archetypeFilter) == -1)
 				continue;
 		}
+
+		if (!allMaterialsLoaded )
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(0, 0.9f, 0.5f));
 		
-		if(!archetypeVisibleOnScreen)
+		if(!archetypeVisibleOnScreen || !allMaterialsLoaded)
 			ImGui::PushStyleColor(ImGuiCol_PlotHistogram, (ImVec4)ImColor::HSV(0, 0.9f, 0.9f));
 
 		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
 		ImGui::SameLine();
 
-		if(!archetypeVisibleOnScreen)
+		if(!archetypeVisibleOnScreen || !allMaterialsLoaded)
+			ImGui::PopStyleColor();
+
+		if(!allMaterialsLoaded)
 			ImGui::PopStyleColor();
 
 		if(!detailsOpen && ImGui::IsItemHovered())
@@ -1575,6 +1601,13 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 			"PRIM_TRIANGLE_STRIP",
 		};
 
+		static const char* s_materialState[] = {
+			"LOAD_ERROR", // == -1
+			"LOAD_NEED_LOAD",
+			"LOAD_OK",
+			"LOAD_INQUEUE",
+		};
+
 		ImGui::Text("Archetype llid=%d", s_highlightArchetype);
 		const GRIMBaseRenderer::GPULodList& lodList = renderer.m_drawLodsList[s_highlightArchetype];
 		{
@@ -1594,7 +1627,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 							ImGui::TextDisabled("Indices Start: %d Count: %d", batch.firstIndex, batch.indexCount);
 							ImGui::TextDisabled("Indirect Draw Idx %d", batch.cmdIdx);
 							ImGui::TextDisabled("Prim Topology %s", s_primTopologyNames[drawInfo.primTopology]);
-							ImGui::TextDisabled("Material %s", drawInfo.material->GetName());
+							ImGui::TextDisabled("Material %s [%s]", drawInfo.material->GetName(), s_materialState[drawInfo.material->GetState() + 1]);
 							ImGui::TreePop();
 						}
 						++nBatch;
@@ -1637,7 +1670,7 @@ void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
 				ImGui::Text("Max batches per lod: %d", maxBatchesPerLod);
 				ImGui::Text("Materials used:");
 				for (auto it = materials.begin(); !it.atEnd(); ++it)
-					ImGui::Text(" - %s", it.key()->GetName());
+					ImGui::Text(" - %s [%s]", it.key()->GetName(), s_materialState[it.key()->GetState() + 1]);
 			}
 			else
 			{
