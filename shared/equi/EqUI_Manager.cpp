@@ -131,8 +131,8 @@ void CUIManager::AddPanel(Panel* panel)
 {
 	{
 		const int idx = arrayFindIndexF(m_panels, [panel](const Panel* addedPanel) {
-			return CString::CompareCaseIns(addedPanel->GetName(), panel->GetName());
-			});
+			return CString::CompareCaseIns(addedPanel->GetName(), panel->GetName()) == 0;
+		});
 		if (idx != -1)
 		{
 			ASSERT_FAIL("Panel with name %s is already added to UI manager", panel->GetName());
