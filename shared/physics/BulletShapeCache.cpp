@@ -14,15 +14,15 @@
 #include "BulletShapeCache.h"
 #include "BulletConvert.h"
 
-using namespace EqBulletUtils;
-using namespace Threading;
-static CEqMutex s_shapeCacheMutex;
+static Threading::CEqMutex s_shapeCacheMutex;
 
 DECLARE_CVAR(ph_studioShapeMargin, "0.05", "Studio model shape marginal", CV_CHEAT);
 
 // makes and caches shape. IsConvex defines that it was convex or not (also for internal use)
 static btCollisionShape* ShapeCache_GenerateBulletShape(ArrayCRef<Vector3D> vertices, ArrayCRef<int> indices, EPhysShapeType type)
 {
+	using namespace EqBulletUtils;
+
 	const float margin = ph_studioShapeMargin.GetFloat();
 
 	switch(type)
@@ -91,6 +91,7 @@ bool CBulletStudioShapeCache::IsInitialized() const
 // checks the shape is initialized for the cache
 bool CBulletStudioShapeCache::IsShapeCachePresent( StudioPhyShapeData& shapeInfo )
 {
+	using namespace Threading;
 	CScopedMutex m(s_shapeCacheMutex);
 	if (arrayFindIndex(m_collisionShapes, reinterpret_cast<btCollisionShape*>(shapeInfo.cacheRef)) != -1)
 		return true;
@@ -101,6 +102,8 @@ bool CBulletStudioShapeCache::IsShapeCachePresent( StudioPhyShapeData& shapeInfo
 // initializes whole studio shape model with all objects
 void CBulletStudioShapeCache::InitStudioCache(StudioPhysData& studioData)
 {
+	using namespace Threading;
+
 	for (StudioPhyShapeData& shapeData : studioData.shapes)
 	{
 		const physgeominfo_t& shapeInfo = shapeData.desc;
@@ -126,6 +129,8 @@ void CBulletStudioShapeCache::InitStudioCache(StudioPhysData& studioData)
 
 void CBulletStudioShapeCache::DestroyStudioCache(StudioPhysData& studioData)
 {
+	using namespace Threading;
+
 	for(StudioPhyShapeData& shapeData : studioData.shapes)
 	{
 		const int shapeIdx = arrayFindIndex(m_collisionShapes, reinterpret_cast<btCollisionShape*>(shapeData.cacheRef));
@@ -152,6 +157,8 @@ void CBulletStudioShapeCache::DestroyStudioCache(StudioPhysData& studioData)
 // does all shape cleanup
 void CBulletStudioShapeCache::Cleanup_Invalidate()
 {
+	using namespace Threading;
+
 	CScopedMutex m(s_shapeCacheMutex);
 	for(btCollisionShape* shape : m_collisionShapes)
 	{

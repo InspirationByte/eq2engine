@@ -15,7 +15,7 @@
 #include "render/IDebugOverlay.h"
 
 #include "physics/BulletConvert.h"
-using namespace EqBulletUtils;
+
 
 //-----------------------------------------------------------------------------------------
 
@@ -80,6 +80,8 @@ void CEqRigidBody::SetConstraintsUnsatisfied()
 
 void CEqRigidBody::ComputeInertia(float scale)
 {
+	using namespace EqBulletUtils;
+
 	ASSERT_MSG(m_shape != NULL, "CEqRigidBody(CEqCollisionObject) - did you forgot to call Initialize()?");
 
 	btVector3 inertia;

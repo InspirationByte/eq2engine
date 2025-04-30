@@ -17,8 +17,6 @@
 #include "ShaderInfo.h"
 #include "ShaderIncluder.h"
 
-using namespace Threading;
-
 /*
 
 Targets
@@ -629,6 +627,8 @@ struct ShaderIncludeCRCProcessor
 
 void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 {
+	using namespace Threading;
+
 	const EqString targetFileName = fnmPathCombine(m_targetProps.targetFolder, EqString::Format("%s.shd", shaderInfo.name.ToCString()));
 	EqString shaderSourceName;
 

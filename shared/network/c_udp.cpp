@@ -15,8 +15,6 @@
 
 #include "c_udp.h"
 
-using namespace Threading;
-
 DECLARE_CVAR(net_fakelag, "0", "Simulate lagging packets\n", CV_CHEAT);
 
 namespace Networking
@@ -769,7 +767,7 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 
 bool CEqRDPSocket::HasAnyMessageWithId( short message_id, const sockaddr_in& addr  )
 {
-	CScopedMutex m(m_Mutex);
+	Threading::CScopedMutex m(m_Mutex);
 
 	for(int i = 0; i < m_receivedIds.numElem(); i++)
 	{

@@ -9,8 +9,6 @@
 #include "eqBulletIndexedMesh.h"
 #include "BulletConvert.h"
 
-using namespace EqBulletUtils;
-
 void CEqBulletIndexedMesh::MeshSubPart::getLockedVertexIndexBase(unsigned char** vertexbase, int& numverts, PHY_ScalarType& type, int& stride, unsigned char** indexbase, int& indexstride, int& numfaces, PHY_ScalarType& indicestype, int subpart)
 {
 	type = PHY_FLOAT;

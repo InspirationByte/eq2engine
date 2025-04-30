@@ -18,8 +18,6 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-using namespace EqBulletUtils;
-
 DECLARE_CVAR(ph_margin, "0.0001", nullptr, CV_CHEAT | CV_UNREGISTERED);
 
 static constexpr const float EQPHYSICS_AABB_EXPAND = 0.15f;
@@ -68,6 +66,8 @@ void CEqCollisionObject::ClearContacts()
 
 void CEqCollisionObject::InitAABB()
 {
+	using namespace EqBulletUtils;
+
 	if(!m_shape)
 		return;
 
@@ -181,6 +181,8 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 
 bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs)
 {
+	using namespace EqBulletUtils;
+
 	ASSERT(!m_shape);
 
 	btVector3 vecHalfExtents;

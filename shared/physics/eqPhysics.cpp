@@ -37,9 +37,7 @@
 
 #define ENABLE_CONTACT_GROUPING
 
-using namespace EqBulletUtils;
-using namespace Threading;
-static CEqReadWriteLock s_eqPhysDynamicRWLock;
+static Threading::CEqReadWriteLock s_eqPhysDynamicRWLock;
 
 static constexpr const int PHYSGRID_WORLD_SIZE			= 24;	// compromised betwen memory usage and performance
 static constexpr const float PHYSICS_WORLD_MAX_UNITS	= 65535.0f;
@@ -175,6 +173,8 @@ struct CEqManifoldResult : public btManifoldResult
 
 	void addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap)
 	{
+		using namespace EqBulletUtils;
+
 		if (m_singleSided)
 			AdjustSingleSidedContact(cp, colObj1Wrap, cp.m_partId1, cp.m_index1);
 		else
@@ -432,7 +432,7 @@ bool CEqPhysicsWorld::RemoveBody( CEqRigidBody* body )
 
 	if (cell)
 	{
-		CScopedWriteLocker m(s_eqPhysDynamicRWLock);
+		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
 		cell->dynamicObjList.unlinkNode(body);
 	}
 
@@ -488,7 +488,7 @@ bool CEqPhysicsWorld::RemoveGhostObject( CEqCollisionObject* object )
 
 			if (cell)
 			{
-				CScopedWriteLocker m(s_eqPhysDynamicRWLock);
+				Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
 				cell->dynamicObjList.unlinkNode(object);
 			}
 		}
@@ -589,6 +589,8 @@ bool CEqPhysicsWorld::RemoveController( IEqPhysController* controller )
 
 void CEqPhysicsWorld::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
+	using namespace EqBulletUtils;
+
 	// apply filters
 	if(!bodyA->CheckCanCollideWith(bodyB))
 		return;
@@ -719,6 +721,8 @@ void CEqPhysicsWorld::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bo
 
 void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt)
 {
+	using namespace EqBulletUtils;
+
 	if(staticObj == nullptr || bodyB == nullptr)
 		return;
 
@@ -888,6 +892,8 @@ void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj,
 
 void CEqPhysicsWorld::SetupBodyOnCell( CEqCollisionObject* body )
 {
+	using namespace Threading;
+
 	// check body is in the world
 	if(!m_grid)
 		return;
@@ -913,6 +919,8 @@ void CEqPhysicsWorld::SetupBodyOnCell( CEqCollisionObject* body )
 
 void CEqPhysicsWorld::IntegrateSingle(CEqRigidBody* body)
 {
+	using namespace Threading;
+
 	eqPhysGridCell* oldCell = body->GetCell();
 
 	// move object
@@ -1393,7 +1401,7 @@ bool CEqPhysicsWorld::TestLineCollisionOnCell(int y, int x,
 
 	if(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS)
 	{
-		CScopedReadLocker m(s_eqPhysDynamicRWLock);
+		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
 
 		CEqCollisionObject* object = cell->dynamicObjList.getFirst();
 		for (; object; object = object->next)
@@ -1480,6 +1488,8 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(const btCollisionShape* shape,
 											int rayMask, 
 											const eqPhysCollisionFilter* filterParams)
 {
+	using namespace EqBulletUtils;
+
 	if (!m_grid) {
 		return false;
 	}
@@ -1620,6 +1630,8 @@ bool CEqPhysicsWorld::TestLineSingleObject(
 	const eqPhysCollisionFilter* filterParams,
 	void* args)
 {
+	using namespace EqBulletUtils;
+
 	if(!object)
 		return false;
 
@@ -1776,6 +1788,8 @@ bool CEqPhysicsWorld::TestConvexSweepSingleObject(CEqCollisionObject* object,
 												const eqPhysCollisionFilter* filterParams,
 												void* args)
 {
+	using namespace EqBulletUtils;
+
 	const bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
 
 	if (!forceRaycast && (object->m_flags & COLLOBJ_NO_RAYCAST))
