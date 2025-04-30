@@ -13,36 +13,6 @@ class IMaterial;
 class ITexture;
 
 using IMaterialPtr = CRefPtr<IMaterial>;
-
-namespace eqFontsInternal
-{
-struct eqFontStyleInfo_t
-{
-	eqFontStyleInfo_t() : 
-		regularFont(nullptr), boldFont(nullptr), italicFont(nullptr), boldItalicFont(nullptr)
-	{
-	}
-
-	~eqFontStyleInfo_t();
-
-	int						size;	// size in pixels
-
-	IEqFont*				regularFont;
-
-	IEqFont*				boldFont;
-	IEqFont*				italicFont;
-	IEqFont*				boldItalicFont;
-};
-}
-
-struct eqFontFamily_t
-{
-	EqString										name;		// TODO: use string hashes
-	Array<eqFontsInternal::eqFontStyleInfo_t>		sizeTable{ PP_SL };
-
-	IEqFont* FindBestSize(int bestSize, int styleFlags = TEXT_STYLE_REGULAR) const;
-};
-
 //-------------------------------------------------------------------------------------
 
 class CEqFontCache : public IEqFontCache
@@ -52,30 +22,50 @@ public:
 	CEqFontCache();
 	~CEqFontCache();
 
-	bool					IsInitialized() const {return true;}
+	bool			IsInitialized() const { return true; }
 
-	bool					Init();
-	void					Shutdown();
+	bool			Init();
+	void			Shutdown();
 
-	bool					LoadFontDescriptionFile(const char* filename);
-
-	void					ReloadFonts();
+	bool			LoadFontDescriptionFile(const char* filename);
+	void			ReloadFonts();
 
 	// finds font
-	IEqFont*				GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const;
-	eqFontFamily_t*			GetFamily(const char* name) const;
+	IEqFont*		GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const;
 
 protected:
 
-	Map<int, eqFontFamily_t>	m_fonts{ PP_SL };
-	eqFontFamily_t*				m_defaultFont{ nullptr };
+	struct Style
+	{
+		~Style();
 
-	IMaterialPtr				m_sdfMaterial;
+		IEqFont*	regularFont{ nullptr };
+		IEqFont*	boldFont{ nullptr };
+		IEqFont*	italicFont{ nullptr };
+		IEqFont*	boldItalicFont{ nullptr };
+		int			size{ 0 };	// size in pixels
+	};
 
-	MatVec4Proxy				m_fontBaseColor;
-	MatVec4Proxy				m_fontParams;
+	struct FontFamily
+	{
+		EqString		name;
+		Array<Style>	sizeTable{ PP_SL };
 
-	MatVec4Proxy				m_shadowColor;
-	MatVec4Proxy				m_shadowParams;
-	MatVec2Proxy				m_shadowOffset;
+		IEqFont* FindBestSize(int bestSize, int styleFlags = TEXT_STYLE_REGULAR) const;
+	};
+
+
+	FontFamily*				GetFamily(const char* name) const;
+
+	Map<int, FontFamily>	m_fonts{ PP_SL };
+	FontFamily*				m_defaultFont{ nullptr };
+
+	IMaterialPtr		m_sdfMaterial;
+
+	MatVec4Proxy		m_fontBaseColor;
+	MatVec4Proxy		m_fontParams;
+
+	MatVec4Proxy		m_shadowColor;
+	MatVec4Proxy		m_shadowParams;
+	MatVec2Proxy		m_shadowOffset;
 };

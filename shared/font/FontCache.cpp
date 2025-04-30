@@ -7,6 +7,7 @@
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
+#include "core/IFileSystem.h"
 #include "utils/KeyValues.h"
 
 #include "FontCache.h"
@@ -14,27 +15,12 @@
 
 #include "materialsystem1/IMaterialSystem.h"
 
-#define FONTBUFFER_MAX (16384)
-
-using namespace eqFontsInternal;
+static constexpr const char* FONT_DEFAULT_LIST_FILENAME = "resources/fonts.res";
 
 static CEqFontCache s_fontCache;
 IEqFontCache* g_fontCache = &s_fontCache;
 
-#define FONT_DEFAULT_LIST_FILENAME "resources/fonts.res"
-
-#define FONT_LOADSTYLE(v, name)		\
-	if(name)						\
-	{								\
-		CFont* lfont = PPNew CFont();	\
-		if( lfont->LoadFont( name ) )\
-			v = lfont;				\
-		else						\
-			delete lfont;			\
-	}
-
-
-eqFontStyleInfo_t::~eqFontStyleInfo_t()
+CEqFontCache::Style::~Style()
 {
 	SAFE_DELETE(regularFont);
 	SAFE_DELETE(boldFont);
@@ -58,13 +44,13 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 {
 	// load font resource list in mods directory
 	KeyValues kvs;
-	if(!kvs.LoadFromFile(filename, -1))
+	if(!kvs.LoadFromFile(filename, SP_MOD | SP_DATA))
 	{
 		MsgError("ERROR: Cannot open font description file \"%s\"!\n", filename);
 		return false;
 	}
 
-	KVSection* sec = kvs.GetRootSection();
+	const KVSection* sec = kvs.GetRootSection();
 
 	// enum font names
 	for(const KVSection* fontSec : sec->Keys())
@@ -91,7 +77,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			continue;
 		}
 
-		eqFontFamily_t& familyEntry = m_fonts[nameHash];
+		FontFamily& familyEntry = m_fonts[nameHash];
 		familyEntry.name = fontSec->name;
 
 		int styleErrorCounter = 0;
@@ -129,13 +115,25 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			}
 
 			// now alloc
-			eqFontStyleInfo_t& fontStyleInfo = familyEntry.sizeTable.append();
+			Style& fontStyleInfo = familyEntry.sizeTable.append();
 			fontStyleInfo.size = entrySize;
 			fontStyleInfo.regularFont = regFont;
+
+#define FONT_LOADSTYLE(v, name)		\
+			if(name)						\
+			{								\
+				CFont* font = PPNew CFont();	\
+				if( font->LoadFont( name ) )\
+					v = font;				\
+				else						\
+					delete font;			\
+			}
 			
 			FONT_LOADSTYLE(fontStyleInfo.boldFont, boldFileName);
 			FONT_LOADSTYLE(fontStyleInfo.italicFont, italicFileName);
 			FONT_LOADSTYLE(fontStyleInfo.boldItalicFont, boldItalicFileName);
+
+#undef FONT_LOADSTYLE
 		}
 
 		if( familyEntry.sizeTable.isEmpty())
@@ -150,8 +148,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		else
 		{
 			// sort the fonts by size
-			arraySort(familyEntry.sizeTable, [](const eqFontStyleInfo_t & a, const eqFontStyleInfo_t & b)
-			{
+			arraySort(familyEntry.sizeTable, [](const Style & a, const Style & b) {
 				return a.size - b.size;
 			});
 		}
@@ -198,17 +195,15 @@ void CEqFontCache::Shutdown()
 
 void CEqFontCache::ReloadFonts()
 {
-	ASSERT_FAIL("Please implement CEqFontCache::ReloadFonts() !!!");
+	ASSERT_FAIL("Not implemented");
 }
 
-IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags ) const
+IEqFont* CEqFontCache::FontFamily::FindBestSize( int bestSize, int styleFlags ) const
 {
-	const eqFontStyleInfo_t* bestSizeStyleInfo = nullptr;
+	const Style* bestSizeStyleInfo = nullptr;
 
-	for(int i = 0; i < sizeTable.numElem(); i++)
+	for(const Style& styleInfo : sizeTable)
 	{
-		const eqFontStyleInfo_t& styleInfo = sizeTable[i];
-
 		if(bestSizeStyleInfo == nullptr)
 			bestSizeStyleInfo = &styleInfo;
 
@@ -244,7 +239,7 @@ IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags ) const
 // finds font
 IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, bool defaultIfNotFound) const
 {
-	const eqFontFamily_t* family = GetFamily(name);
+	const FontFamily* family = GetFamily(name);
 
 	if(!family)
 	{
@@ -257,7 +252,7 @@ IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, b
 	return family->FindBestSize(bestSize, styleFlags);
 }
 
-eqFontFamily_t* CEqFontCache::GetFamily(const char* name) const
+CEqFontCache::FontFamily* CEqFontCache::GetFamily(const char* name) const
 {
 	const int nameHash = StringId24(name);
 	auto it = m_fonts.find(nameHash);

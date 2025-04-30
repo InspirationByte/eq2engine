@@ -8,8 +8,6 @@
 #pragma once
 #include "IFont.h"
 
-struct eqFontFamily_t;
-
 //-------------------------------------------------------------------------------------
 // equilibrium font cache interface
 //-------------------------------------------------------------------------------------
@@ -17,7 +15,7 @@ struct eqFontFamily_t;
 class IEqFontCache : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E2_FontCache_002")
+	CORE_INTERFACE("E2_FontCache_003")
 
 	virtual					~IEqFontCache() {}
 
@@ -29,7 +27,6 @@ public:
 
 	// finds font
 	virtual IEqFont*		GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const = 0;
-	virtual eqFontFamily_t*	GetFamily(const char* name) const = 0;
 };
 
 extern IEqFontCache* g_fontCache;
