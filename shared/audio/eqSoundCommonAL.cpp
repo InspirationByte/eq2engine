@@ -7,9 +7,9 @@
 
 #include "eqSoundCommonAL.h"
 
-DECLARE_CVAR(al_report_errors, "0", nullptr, 0);
-DECLARE_CVAR(al_break_on_error, "0", nullptr, 0);
-DECLARE_CVAR(al_bypass_errors, "0", nullptr, 0);
+DECLARE_CVAR(snd_al_reportErrors, "0", nullptr, 0);
+DECLARE_CVAR(snd_al_breakOnError, "0", nullptr, 0);
+DECLARE_CVAR(snd_al_bypassErrors, "0", nullptr, 0);
 
 static ALExtFuncs alExt;
 ALExtFuncs& GetAlExt()
@@ -47,15 +47,15 @@ bool ALCheckError(const char* op, ...)
 		EqString errorMsg = EqString::FormatV(op, argptr);
 		va_end(argptr);
 
-		if (al_break_on_error.GetBool())
+		if (snd_al_breakOnError.GetBool())
 		{
 			_DEBUG_BREAK;
 		}
 
-		if (al_report_errors.GetBool())
+		if (snd_al_reportErrors.GetBool())
 			MsgError("*OpenAL* error occured while '%s' (%s)\n", errorMsg.ToCString(), errString.ToCString());
 
-		return al_bypass_errors.GetBool();
+		return snd_al_bypassErrors.GetBool();
 	}
 
 	return true;

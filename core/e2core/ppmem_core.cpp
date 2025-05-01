@@ -82,8 +82,7 @@ DECLARE_CMD(ppmem_stats, "Memory info", CV_UNREGISTERED)
 
 	PPMemInfo(fullStats);
 }
-DECLARE_CVAR(ppmem_break_on_alloc, "-1", "Helps to catch allocation id at stack trace", CV_UNREGISTERED);
-DECLARE_CVAR(ppmem_stats_rate, "0", "Shows allocation rate statistics for each source line", CV_UNREGISTERED);
+DECLARE_CVAR(ppmem_breakOnAlloc, "-1", "Helps to catch allocation id at stack trace", CV_UNREGISTERED);
 #endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
@@ -115,8 +114,7 @@ void PPMemInit()
 {
 #ifndef PPMEM_DISABLED
 	ConCommandBase::Register(&ppmem_stats);
-	ConCommandBase::Register(&ppmem_break_on_alloc);
-	ConCommandBase::Register(&ppmem_stats_rate);
+	ConCommandBase::Register(&ppmem_breakOnAlloc);
 #endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
@@ -132,8 +130,7 @@ void PPMemShutdown()
 {
 #ifndef PPMEM_DISABLED
     ConCommandBase::Unregister(&ppmem_stats);
-    ConCommandBase::Unregister(&ppmem_break_on_alloc);
-	ConCommandBase::Unregister(&ppmem_stats_rate);
+    ConCommandBase::Unregister(&ppmem_breakOnAlloc);
 #endif
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 	ConCommandBase::Unregister(&cmd_crtdebug_break_alloc);
@@ -296,8 +293,8 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		cnt.lastTimeStamp = st.timer.GetTimeMS();
 	}
 
-	if( ppmem_break_on_alloc.GetInt() != -1)
-		ASSERT_MSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), "PPDAlloc: Break on allocation id=%d", alloc->id);
+	if( ppmem_breakOnAlloc.GetInt() != -1)
+		ASSERT_MSG(alloc->id == (uint)ppmem_breakOnAlloc.GetInt(), "PPDAlloc: Break on allocation id=%d", alloc->id);
 
 	return actualPtr;
 #endif // PPMEM_DISABLED

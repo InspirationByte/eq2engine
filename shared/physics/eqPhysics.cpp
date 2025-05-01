@@ -45,7 +45,7 @@ static constexpr const float PHYSGRID_BOX_TOLERANCE		= 0.1f;
 
 DECLARE_CVAR_F(ph_margin);
 
-DECLARE_CVAR(ph_showcontacts, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(ph_showContacts, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
 DECLARE_CVAR(ph_carVsCarErp, "0.15", "Car versus car erp", CV_CHEAT);
 
@@ -709,7 +709,7 @@ void CEqPhysicsWorld::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bo
 		newPair.frictionB = bodyB->GetFriction();
 
 #ifdef ENABLE_DEBUG_DRAWING
-		if(ph_showcontacts.GetBool())
+		if(ph_showContacts.GetBool())
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
@@ -880,7 +880,7 @@ void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj,
 		newPair.restitutionB = bodyB->GetRestitution();
 		newPair.frictionB = bodyB->GetFriction();
 #ifdef ENABLE_DEBUG_DRAWING
-		if(ph_showcontacts.GetBool())
+		if(ph_showContacts.GetBool())
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);

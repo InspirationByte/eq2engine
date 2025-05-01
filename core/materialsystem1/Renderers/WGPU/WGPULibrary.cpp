@@ -24,8 +24,8 @@
 #include "WGPURenderAPI.h"
 #include "WGPUSwapChain.h"
 
-DECLARE_CVAR(wgpu_report_errors, "0", nullptr, 0);
-DECLARE_CVAR(wgpu_break_on_error, "0", nullptr, 0);
+DECLARE_CVAR(wgpu_reportErrors, "0", nullptr, 0);
+DECLARE_CVAR(wgpu_breakOnError, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_backend, "", "Specifies which WebGPU backend is going to be used", CV_ARCHIVE);
 
 static const char* s_wgpuErrorTypesStr[] = {
@@ -48,12 +48,12 @@ static const char* s_wgpuDeviceLostReasonStr[] = {
 
 static void OnWGPUDeviceError(WGPUDevice const* device, WGPUErrorType type, struct WGPUStringView message, void* userdata1, void* userdata2)
 {
-	if (wgpu_break_on_error.GetBool())
+	if (wgpu_breakOnError.GetBool())
 	{
 		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message.data);
 	}
 
-	if (wgpu_report_errors.GetBool())
+	if (wgpu_reportErrors.GetBool())
 		MsgError("[WGPU]: %s - %s\n", s_wgpuErrorTypesStr[type], message.data);
 }
 
@@ -284,8 +284,8 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		{
 			enabledToggles.append("enable_immediate_error_handling");
 			enabledToggles.append("disable_symbol_renaming");
-			wgpu_report_errors.SetBool(true);
-			wgpu_break_on_error.SetBool(true);
+			wgpu_reportErrors.SetBool(true);
+			wgpu_breakOnError.SetBool(true);
 
 			CWGPURenderAPI::Instance.m_isValidationActive = true;
 		}

@@ -29,8 +29,8 @@ DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
 #endif
 
 // TODO: really a font parameters!!!
-DECLARE_CVAR(r_font_sdf_start, "0.94", nullptr, CV_CHEAT);
-DECLARE_CVAR(r_font_sdf_range, "0.06", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_font_sdfStart, "0.94", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_font_sdfRange, "0.06", nullptr, CV_CHEAT);
 
 static bool IsVisibleChar( int ch )
 {
@@ -593,8 +593,8 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const FontStyleParam
 		if (m_flags.sdf)
 		{
 			// shadow width
-			const float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.shadowWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-			shadowSdfRange.Set(Vector4D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f, 0.0f));
+			const float sdfEndClamped = clamp(r_font_sdfRange.GetFloat() + params.shadowWeight, 0.0f, 1.0f - r_font_sdfStart.GetFloat());
+			shadowSdfRange.Set(Vector4D(r_font_sdfStart.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f, 0.0f));
 		}
 		else
 			shadowSdfRange.Set(Vector4D(0.0f, 1.0f, 0.0f, 1.0f));
@@ -604,8 +604,8 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const FontStyleParam
 
 	if (m_flags.sdf)
 	{
-		const float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-		sdfRange.Set(Vector4D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped, 1.0f, 0.0f));
+		const float sdfEndClamped = clamp(r_font_sdfRange.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdfStart.GetFloat());
+		sdfRange.Set(Vector4D(r_font_sdfStart.GetFloat() - params.textWeight, sdfEndClamped, 1.0f, 0.0f));
 	}
 	else
 		sdfRange.Set(Vector4D(0.0f, 1.0f, 1.0f, 1.0f));

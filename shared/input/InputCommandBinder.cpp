@@ -29,9 +29,9 @@ static constexpr const char INPUT_CMD_DEACTIVATE_PREFIX		= '-';
 CStaticAutoPtr<CInputCommandBinder> g_inputCommandBinder;
 
 DECLARE_CVAR(in_keys_debug, "0", "Debug CInputCommandBinder", 0);
-DECLARE_CVAR(in_touchzones_debug, "0", "Debug touch zones on screen and messages", CV_CHEAT);
+DECLARE_CVAR(in_touchZones_debug, "0", "Debug touch zones on screen and messages", CV_CHEAT);
 
-DECLARE_CMD(in_touchzones_reload, "Reload touch zones", 0)
+DECLARE_CMD(in_touchZones_reload, "Reload touch zones", 0)
 {
 	g_inputCommandBinder->InitTouchZones();
 }
@@ -829,7 +829,7 @@ void CInputCommandBinder::OnTouchEvent(int finger, const Vector2D& position, boo
 {
 	m_lastInputDev = INPUTDEV_TOUCHPAD;
 
-	if(in_touchzones_debug.GetInt() == 2)
+	if(in_touchZones_debug.GetInt() == 2)
 		MsgWarning("-- Touch [%g %g] (%d)\n", position.x, position.y, down);
 
 	for(InputTouchZone& tz : m_touchZones)
@@ -845,7 +845,7 @@ void CInputCommandBinder::OnTouchEvent(int finger, const Vector2D& position, boo
 		}
 		else if( rect.Contains(position) )
 		{
-			if (in_touchzones_debug.GetInt() == 2)
+			if (in_touchZones_debug.GetInt() == 2)
 				Msg("found zone %s\n", tz.name.ToCString());
 
 			tz.finger = finger;
@@ -857,7 +857,7 @@ void CInputCommandBinder::OnTouchEvent(int finger, const Vector2D& position, boo
 void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRecorder* rendPassRecorder)
 {
 #ifdef ENABLE_DEBUG_DRAWING
-	if(!in_touchzones_debug.GetBool())
+	if(!in_touchZones_debug.GetBool())
 		return;
 
 	g_matSystem->Setup2D(screenSize.x,screenSize.y);

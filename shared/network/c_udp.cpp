@@ -15,7 +15,7 @@
 
 #include "c_udp.h"
 
-DECLARE_CVAR(net_fakelag, "0", "Simulate lagging packets\n", CV_CHEAT);
+DECLARE_CVAR(net_fakeLag, "0", "Simulate lagging packets\n", CV_CHEAT);
 
 namespace Networking
 {
@@ -427,7 +427,7 @@ int CEqRDPSocket::Send( const char* data, int size, const sockaddr_in* to, short
 	else
 	{
 		// FAKE LAG
-		if(net_fakelag.GetInt() && RandomInt(0, net_fakelag.GetInt()) == 0)
+		if(net_fakeLag.GetInt() && RandomInt(0, net_fakeLag.GetInt()) == 0)
 		{
 			FreeMessage( buffer );
 			msgId = CUDP_MESSAGE_ID_IMMEDIATE;
@@ -505,7 +505,7 @@ void CEqRDPSocket::UpdateRecieve( int dtMs, CDPRecvPipe_fn recvFunc, void* recvO
 		}
 
 		// FAKE LAG - do not accept recieved message
-		if(net_fakelag.GetInt() && RandomInt(0, net_fakelag.GetInt()) == 0)
+		if(net_fakeLag.GetInt() && RandomInt(0, net_fakeLag.GetInt()) == 0)
 			continue;
 
 		// don't receive zero packets
@@ -695,7 +695,7 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 			bool bSend = true;
 
 			// FAKE LAG
-			if(net_fakelag.GetInt() && RandomInt(0, net_fakelag.GetInt()) == 0)
+			if(net_fakeLag.GetInt() && RandomInt(0, net_fakeLag.GetInt()) == 0)
 				bSend = false;
 
 			
