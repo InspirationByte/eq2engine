@@ -189,12 +189,29 @@ static DDPoly* S_DbgPoly() { return PPNew DDPoly(PP_SL); }
 // Emitsound params
 //
 
+static void S_EmitParams_SetInputValue(EmitParams& ep, const char* name, float value)
+{
+	const int nameHash = StringId24(name);
+	const int valIdx = arrayFindIndexF(ep.inputs, [nameHash](const EmitParams::InputValue& in) {
+		return in.nameHash == nameHash;
+	});
+	
+	if (valIdx == -1)
+	{
+		ep.inputs.appendEmplace(nameHash, value);
+		return;
+	}
+	ep.inputs[valIdx].value = value;
+}
+
 EQSCRIPT_TYPE_BEGIN(EmitParams)
 	EQSCRIPT_BIND_CONSTRUCTOR(const char*)
 	EQSCRIPT_BIND_CONSTRUCTOR(const char*, int)
 	EQSCRIPT_BIND_CONSTRUCTOR(const char*, float, float)
 	EQSCRIPT_BIND_CONSTRUCTOR(const char*, const Vector3D&)
 	EQSCRIPT_BIND_CONSTRUCTOR(const char*, const Vector3D&, float, float)
+
+	EQSCRIPT_BIND_STATIC_FUNC("SetInputValue", S_EmitParams_SetInputValue)
 
 	EQSCRIPT_BIND_VAR(sampleId)
 	EQSCRIPT_BIND_VAR(flags)

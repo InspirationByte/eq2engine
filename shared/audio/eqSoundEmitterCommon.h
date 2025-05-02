@@ -73,8 +73,8 @@ struct EmitParams
 		InputValue(int nameHash, float value)
 			: nameHash(nameHash), value(value) {}
 
-		int nameHash{ 0 };
-		float value{ 0.0f };
+		int		nameHash{ 0 };
+		float	value{ 0.0f };
 	};
 
 	EqString			name;
