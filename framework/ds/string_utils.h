@@ -81,17 +81,6 @@ static constexpr int StringId24_Cexpr(const char(&str)[N])
 template <auto V> static constexpr auto force_consteval = V;
 #define StringIdConst24(x) force_consteval<StringId24_Cexpr(x)>
 
-struct StringId24ConstHelper
-{
-	StringId24ConstHelper(int id) : id(id) {}
-	template<std::size_t N> constexpr StringId24ConstHelper(const char(&str)[N])
-		: id(StringId24_Cexpr_Helper<N - 1, N>(str, N - 1))
-	{}
-
-	operator int() const { return id; }
-	uint id;
-};
-
 // generates string hash 24 bit
 int			StringId24(EqStringRef str, bool caseIns = false);
 
