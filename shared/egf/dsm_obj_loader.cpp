@@ -77,7 +77,7 @@ static bool LoadMTL(const char* filename, Array<ObjMtlMaterial> &material_list)
 {
 	Tokenizer tok;
 	{
-		IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
+		IFileStreamPtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
 		if (!pFile)
 		{
 			MsgError("Failed to open '%s'\n", filename);
@@ -132,7 +132,7 @@ static const char* GetMTLTexture(const char* pszMaterial, Array<ObjMtlMaterial> 
 
 bool LoadOBJ(DSModel& model, const char* filename, int searchPatch)
 {
-	IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ, searchPatch);
+	IFileStreamPtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ, searchPatch);
 	if (!pFile)
 	{
 		MsgError("Failed to open '%s'\n", filename);
@@ -144,7 +144,7 @@ bool LoadOBJ(DSModel& model, const char* filename, int searchPatch)
 
 bool SaveOBJ(const DSModel& model, const char* filename, int searchPatch)
 {
-	IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_WRITE, searchPatch);
+	IFileStreamPtr pFile = g_fileSystem->Open(filename, FS_OPEN_WRITE, searchPatch);
 	if (!pFile)
 	{
 		MsgError("Failed to open '%s' for write\n", filename);
@@ -154,7 +154,7 @@ bool SaveOBJ(const DSModel& model, const char* filename, int searchPatch)
 	return SaveOBJ(model, pFile);
 }
 
-bool LoadOBJ(DSModel& model, IVirtualStreamPtr pFile)
+bool LoadOBJ(DSModel& model, IFileStreamPtr pFile)
 {
 	Array<ObjMtlMaterial> material_list(PP_SL);
 
@@ -494,7 +494,7 @@ struct ObjCompareHash
 	}
 };
 
-bool SaveOBJ(const DSModel& model, IVirtualStreamPtr pFile)
+bool SaveOBJ(const DSModel& model, IFileStreamPtr pFile)
 {
 	const EqString mtlFileName = fnmPathStripExt(pFile->GetName()) + ".mtl";
 
@@ -502,7 +502,7 @@ bool SaveOBJ(const DSModel& model, IVirtualStreamPtr pFile)
 	pFile->Print("mtllib %s\r\n", mtlFileName.ToCString());
 	pFile->Print("o %s\n", model.name.Length() ? model.name.ToCString() : fnmPathStripExt(fnmPathStripPath(pFile->GetName())).ToCString());
 
-	IFilePtr mtlFile = g_fileSystem->Open(mtlFileName, FS_OPEN_WRITE);
+	IFileStreamPtr mtlFile = g_fileSystem->Open(mtlFileName, FS_OPEN_WRITE);
 
 	Array<int> objIndexRemapV(PP_SL);
 	Array<int> objIndexRemapVT(PP_SL);

@@ -56,9 +56,9 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	}
 
 	m_riffMem.Ref_Grab();
-	m_stream = IVirtualStreamPtr(&m_riffMem);
+	m_stream = IFileStreamPtr(&m_riffMem);
 
-	m_riffMem.Open(pChunkData, VS_OPEN_READ, nChunkSize);
+	m_riffMem.Open(pChunkData, FS_OPEN_READ, nChunkSize);
 
 	RIFFhdr_t header;
 	m_stream->ReadObj(header);
@@ -121,7 +121,7 @@ int CRIFF_Parser::SetPos(int pos)
 	if (!m_stream)
 		return 0;
 
-	return m_stream->Seek(pos, VS_SEEK_SET);
+	return m_stream->Seek(pos, FS_SEEK_SET);
 }
 
 int CRIFF_Parser::SkipChunkData(int size)
@@ -131,7 +131,7 @@ int CRIFF_Parser::SkipChunkData(int size)
 
 	m_chunkRemaining -= size;
 
-	return m_stream->Seek(size, VS_SEEK_CUR);
+	return m_stream->Seek(size, FS_SEEK_CUR);
 }
 
 uint CRIFF_Parser::GetName()

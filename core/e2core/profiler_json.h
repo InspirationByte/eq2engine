@@ -7,8 +7,8 @@
 
 #pragma once
 
-class IVirtualStream;
-using IFile = IVirtualStream;
+class IFileStream;
+using IFileStream = IFileStream;
 
 enum ETraceEvtType
 {
@@ -49,7 +49,7 @@ private:
 	EqString			m_batchPrefix;
 	Array<CVTraceEvent>	m_tmpBuffer{ PP_SL };
 	Set<uintptr_t>		m_threadMaskData{ PP_SL };
-	IVirtualStreamPtr	m_outFile{ nullptr };
+	IFileStreamPtr	m_outFile{ nullptr };
 	uint64				m_eventId{ 0 };
 	int					m_captureInProgress{ 0 };
 };

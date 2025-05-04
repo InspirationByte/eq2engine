@@ -18,7 +18,7 @@ enum EPackageType
 class CBasePackageReader;
 using CBasePackageReaderPtr = CRefPtr<CBasePackageReader>;
 
-class IPackFileStream : public IFile
+class IPackFileStream : public IFileStream
 {
 public:
 	virtual CBasePackageReader* GetHostPackage() const = 0;

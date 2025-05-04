@@ -7,8 +7,8 @@
 
 #pragma once
 
-class IVirtualStream;
-using IVirtualStreamPtr = CRefPtr<IVirtualStream>;
+class IFileStream;
+using IFileStreamPtr = CRefPtr<IFileStream>;
 
 namespace SharedModel
 {
@@ -18,7 +18,7 @@ struct DSModel;
 bool LoadOBJ(DSModel& model, const char* filename, int searchPatch = -1);
 bool SaveOBJ(const DSModel& model, const char* filename, int searchPatch = -1);
 
-bool LoadOBJ(DSModel& model, IVirtualStreamPtr pFile);
-bool SaveOBJ(const DSModel& model, IVirtualStreamPtr pFile);
+bool LoadOBJ(DSModel& model, IFileStreamPtr pFile);
+bool SaveOBJ(const DSModel& model, IFileStreamPtr pFile);
 
 } // namespace

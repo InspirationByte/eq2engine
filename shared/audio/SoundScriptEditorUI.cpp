@@ -1728,7 +1728,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					SerializeScriptParamsToKeyValues(*selectedScript, *soundSec);
 					SerializeNodesToKeyValues(*soundSec);
 
-					CMemoryStream stream(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
+					CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
 					KV_WriteToStream(&stream, &clipboardSec, 0, true);
 
 					const char nullChar = '\0';

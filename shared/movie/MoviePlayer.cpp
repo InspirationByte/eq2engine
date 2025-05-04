@@ -59,7 +59,7 @@ struct MoviePlayerData
 {
 #ifndef MOVIELIB_DISABLE
 	AVPacket			packet;
-	IFilePtr			file;
+	IFileStreamPtr			file;
 	AVFormatContext*	formatCtx{ nullptr };
 
 	// Video
@@ -147,7 +147,7 @@ static int CreateCodec(AVCodecContext** _cc, AVStream* stream, AVBufferRef* hwDe
 
 static int movAVIORead(void* opaque, uint8_t* buf, int buf_size)
 {
-	IVirtualStream* stream = reinterpret_cast<IVirtualStream*>(opaque);
+	IFileStream* stream = reinterpret_cast<IFileStream*>(opaque);
 
 	const int readBytes = stream->Read(buf, buf_size, 1);
 	return readBytes > 0 ? readBytes : AVERROR_EOF;
@@ -155,21 +155,21 @@ static int movAVIORead(void* opaque, uint8_t* buf, int buf_size)
 
 static int64_t movAVIOSeek(void* opaque, int64_t offset, int whence)
 {
-	IVirtualStream* stream = reinterpret_cast<IVirtualStream*>(opaque);
+	IFileStream* stream = reinterpret_cast<IFileStream*>(opaque);
 	if (whence & AVSEEK_SIZE)
 		return stream->GetSize();
 
-	EVirtStreamSeek nw{};
+	EFileStreamSeek nw{};
 	switch (whence & 0x7)
 	{
 	case SEEK_CUR:
-		nw = VS_SEEK_CUR;
+		nw = FS_SEEK_CUR;
 		break;
 	case SEEK_SET:
-		nw = VS_SEEK_SET;
+		nw = FS_SEEK_SET;
 		break;
 	case SEEK_END:
-		nw = VS_SEEK_END;
+		nw = FS_SEEK_END;
 		break;
 	}
 

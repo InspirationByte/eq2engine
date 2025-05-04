@@ -183,22 +183,22 @@ VSSize CDPKFileStream::Write(const void *src, VSSize count, VSSize size)
 }
 
 // seeks pointer to position
-VSSize CDPKFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
+VSSize CDPKFileStream::Seek(int64 nOffset, EFileStreamSeek seekType)
 {
 	int newOfs = m_curPos;
 	switch (seekType)
 	{
-		case VS_SEEK_SET:
+		case FS_SEEK_SET:
 		{
 			newOfs = static_cast<int>(nOffset);
 			break;
 		}
-		case VS_SEEK_CUR:
+		case FS_SEEK_CUR:
 		{
 			newOfs += static_cast<int>(nOffset);
 			break;
 		}
-		case VS_SEEK_END:
+		case FS_SEEK_END:
 		{
 			newOfs = m_info.size + static_cast<int>(nOffset);
 			break;
@@ -368,7 +368,7 @@ bool CDPKFileReader::OpenEmbeddedPackage(CBasePackageReader* target, const char*
 	return false;
 }
 
-IFilePtr CDPKFileReader::Open(const char* filename, int modeFlags)
+IFileStreamPtr CDPKFileReader::Open(const char* filename, int modeFlags)
 {
 	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
@@ -394,10 +394,10 @@ IFilePtr CDPKFileReader::Open(const char* filename, int modeFlags)
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 
-	return IFilePtr(newStream);
+	return IFileStreamPtr(newStream);
 }
 
-IFilePtr CDPKFileReader::Open(int fileIndex, int modeFlags)
+IFileStreamPtr CDPKFileReader::Open(int fileIndex, int modeFlags)
 {
 	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
@@ -420,5 +420,5 @@ IFilePtr CDPKFileReader::Open(int fileIndex, int modeFlags)
 	CRefPtr<CDPKFileStream> newStream = CRefPtr_new(CDPKFileStream, EqString::Format("dpkFile%d", fileIndex), fileInfo, std::move(osFile));
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
-	return IFilePtr(newStream);
+	return IFileStreamPtr(newStream);
 }

@@ -121,7 +121,7 @@ void cdp_queued_message_t::WriteReset()
 
 void cdp_queued_message_t::ReadReset()
 {
-	bytestream->Seek(0, VS_SEEK_SET);
+	bytestream->Seek(0, FS_SEEK_SET);
 }
 
 void FreeMessage(cdp_queued_message_t* pMessage)
@@ -139,7 +139,7 @@ cdp_queued_message_t* AllocMessage()
 
 	if(!pMessage->bytestream)
 	{
-		pMessage->bytestream = PPNew CMemoryStream(nullptr, VS_OPEN_WRITE, UDP_CDP_MIN_MESSAGESIZE, PP_SL);
+		pMessage->bytestream = PPNew CMemoryStream(nullptr, FS_OPEN_WRITE, UDP_CDP_MIN_MESSAGESIZE, PP_SL);
 	}
 
 	return pMessage;

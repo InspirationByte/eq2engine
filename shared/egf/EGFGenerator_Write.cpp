@@ -21,8 +21,8 @@ using namespace SharedModel;
 // EGF file buffer
 #define FILEBUFFER_EQGF (16 * 1024 * 1024)
 
-#define WRITE_RESERVE(type)				stream->Seek(sizeof(type), VS_SEEK_CUR)
-#define WRITE_RESERVE_NUM(type, num)	stream->Seek(sizeof(type)*num, VS_SEEK_CUR)
+#define WRITE_RESERVE(type)				stream->Seek(sizeof(type), FS_SEEK_CUR)
+#define WRITE_RESERVE_NUM(type, num)	stream->Seek(sizeof(type)*num, FS_SEEK_CUR)
 
 #define WRITE_OFS						stream->Tell()		// write offset over header
 #define WRITE_RELATIVE_OFS(obj)			(stream->Tell() - ((ubyte*)obj - (ubyte*)header))	// write offset over object
@@ -132,7 +132,7 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 
 
 // writes group
-void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup)
+void CEGFGenerator::WriteGroup(studioHdr_t* header, IFileStream* stream, DSMesh* srcGroup, DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup)
 {
 	int vertexStreamsAvailableBits = STUDIO_VERTFLAG_POS_UV | STUDIO_VERTFLAG_TBN;
 
@@ -365,7 +365,7 @@ void CEGFGenerator::WriteGroup(studioHdr_t* header, IVirtualStream* stream, DSMe
 //************************************
 // Writes models
 //************************************
-void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteModels(studioHdr_t* header, IFileStream* stream)
 {
 	/*
 	Structure:
@@ -449,7 +449,7 @@ void CEGFGenerator::WriteModels(studioHdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes LODs
 //************************************
-void CEGFGenerator::WriteLods(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteLods(studioHdr_t* header, IFileStream* stream)
 {
 	int writeModelsCount = 0;
 	Array<GenLODList*> writeLodLists{ PP_SL };
@@ -496,7 +496,7 @@ void CEGFGenerator::WriteLods(studioHdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes body groups
 //************************************
-void CEGFGenerator::WriteBodyGroups(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteBodyGroups(studioHdr_t* header, IFileStream* stream)
 {
 	header->bodyGroupsOffset = WRITE_OFS;
 	header->numBodyGroups = m_bodygroups.numElem();
@@ -513,7 +513,7 @@ void CEGFGenerator::WriteBodyGroups(studioHdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes attachments
 //************************************
-void CEGFGenerator::WriteAttachments(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteAttachments(studioHdr_t* header, IFileStream* stream)
 {
 	header->transformsOffset = WRITE_OFS;
 	header->numTransforms = m_transforms.numElem();
@@ -526,7 +526,7 @@ void CEGFGenerator::WriteAttachments(studioHdr_t* header, IVirtualStream* stream
 //************************************
 // Writes IK chainns
 //************************************
-void CEGFGenerator::WriteIkChains(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteIkChains(studioHdr_t* header, IFileStream* stream)
 {
 	header->ikChainsOffset = WRITE_OFS;
 	header->numIKChains = m_ikchains.numElem();
@@ -564,7 +564,7 @@ void CEGFGenerator::WriteIkChains(studioHdr_t* header, IVirtualStream* stream)
 //************************************
 // Writes material descs
 //************************************
-void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IFileStream* stream)
 {
 	header->materialsOffset = WRITE_OFS;
 	header->numMaterials = m_usedMaterials.numElem();
@@ -609,7 +609,7 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stre
 //************************************
 // Writes material change-dirs
 //************************************
-void CEGFGenerator::WriteMaterialPaths(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteMaterialPaths(studioHdr_t* header, IFileStream* stream)
 {
 	header->materialSearchPathsOffset = WRITE_OFS;
 	header->numMaterialSearchPaths = m_matpathes.numElem();
@@ -622,7 +622,7 @@ void CEGFGenerator::WriteMaterialPaths(studioHdr_t* header, IVirtualStream* stre
 //************************************
 // Writes Motion package paths
 //************************************
-void CEGFGenerator::WriteMotionPackageList(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteMotionPackageList(studioHdr_t* header, IFileStream* stream)
 {
 	header->packagesOffset = WRITE_OFS;
 	header->numMotionPackages = m_motionpacks.numElem();
@@ -635,7 +635,7 @@ void CEGFGenerator::WriteMotionPackageList(studioHdr_t* header, IVirtualStream* 
 //************************************
 // Writes bones
 //************************************
-void CEGFGenerator::WriteBones(studioHdr_t* header, IVirtualStream* stream)
+void CEGFGenerator::WriteBones(studioHdr_t* header, IFileStream* stream)
 {
 	header->bonesOffset = WRITE_OFS;
 	header->numBones = m_bones.numElem();
@@ -683,7 +683,7 @@ void CEGFGenerator::Validate(studioHdr_t* header, const char* stage)
 //************************************
 bool CEGFGenerator::GenerateEGF()
 {
-	CMemoryStream egfStream(nullptr, VS_OPEN_WRITE, FILEBUFFER_EQGF, PP_SL);
+	CMemoryStream egfStream(nullptr, FS_OPEN_WRITE, FILEBUFFER_EQGF, PP_SL);
 
 	// Make header
 	studioHdr_t* header = (studioHdr_t*)egfStream.GetBasePointer();
@@ -748,7 +748,7 @@ bool CEGFGenerator::GenerateEGF()
 	// set the size of file (size with header), for validation purposes
 	header->length = egfStream.GetSize();
 
-	egfStream.Seek(0, VS_SEEK_SET);
+	egfStream.Seek(0, FS_SEEK_SET);
 	egfStream.Write(header, 1, sizeof(studioHdr_t));
 
 	int totalTris = 0;
@@ -787,7 +787,7 @@ bool CEGFGenerator::GenerateEGF()
 	g_fileSystem->MakeDir(fnmPathExtractPath(m_outputFilename), SP_MOD);
 
 	// open output model file
-	IFilePtr file = g_fileSystem->Open(m_outputFilename, FS_OPEN_WRITE, -1);
+	IFileStreamPtr file = g_fileSystem->Open(m_outputFilename, FS_OPEN_WRITE, -1);
 	if(file)
 	{
 		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.ToCString());

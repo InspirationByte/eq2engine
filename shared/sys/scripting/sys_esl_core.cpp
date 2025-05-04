@@ -245,7 +245,7 @@ static const KVSection* S_DkCore_GetConfig(const char* section_name)
 
 static EqString S_IPackFileReader_GetFileData(IPackFileReader& pak, const char* fileName)
 {
-	IFilePtr file = pak.Open(fileName, VS_OPEN_READ);
+	IFileStreamPtr file = pak.Open(fileName, FS_OPEN_READ);
 	if (!file)
 		return EqString::EmptyStr;
 

@@ -57,24 +57,24 @@ VSSize CZipFileStream::Write(const void *src, VSSize count, VSSize size)
 }
 
 // seeks pointer to position
-VSSize CZipFileStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
+VSSize CZipFileStream::Seek(int64 nOffset, EFileStreamSeek seekType)
 {
 	int newOfs = 0;
 	static char dummy[32*1024];
 
 	switch (seekType)
 	{
-		case VS_SEEK_SET:
+		case FS_SEEK_SET:
 		{
 			newOfs = nOffset;
 			break;
 		}
-		case VS_SEEK_CUR:
+		case FS_SEEK_CUR:
 		{
 			newOfs = Tell() + nOffset;
 			break;
 		}
-		case VS_SEEK_END:
+		case FS_SEEK_END:
 		{
 			newOfs = GetSize() + nOffset;
 			break;
@@ -182,7 +182,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	return true;
 }
 
-IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
+IFileStreamPtr CZipFileReader::Open(const char* filename, int modeFlags)
 {
 	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
@@ -203,10 +203,10 @@ IFilePtr CZipFileReader::Open(const char* filename, int modeFlags)
 
 	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, filename, reinterpret_cast<uintptr_t>(zipFileHandle), this);
 
-	return IFilePtr(newStream);
+	return IFileStreamPtr(newStream);
 }
 
-IFilePtr CZipFileReader::Open(int fileIndex, int modeFlags)
+IFileStreamPtr CZipFileReader::Open(int fileIndex, int modeFlags)
 {
 	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
@@ -225,7 +225,7 @@ IFilePtr CZipFileReader::Open(int fileIndex, int modeFlags)
 	}
 
 	CRefPtr<CZipFileStream> newStream = CRefPtr_new(CZipFileStream, EqString::Format("zipFile%d", fileIndex), reinterpret_cast<uintptr_t>(zipFileHandle), this);
-	return IFilePtr(newStream);
+	return IFileStreamPtr(newStream);
 }
 
 bool CZipFileReader::FileExist(const char* filename) const

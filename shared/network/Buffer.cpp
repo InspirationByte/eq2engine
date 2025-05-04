@@ -15,7 +15,7 @@ namespace Networking
 Buffer::Buffer() 
 	: m_data(m_intData)
 {
-	m_data.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 128);
+	m_data.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, 128);
 }
 
 Buffer::Buffer(CMemoryStream& stream, int startOfs /*= -1*/)
@@ -23,15 +23,15 @@ Buffer::Buffer(CMemoryStream& stream, int startOfs /*= -1*/)
 {
 	m_startOfs = startOfs == -1 ? m_data.Tell() : startOfs;
 	if (startOfs != -1)
-		m_data.Seek(startOfs, VS_SEEK_SET);
+		m_data.Seek(startOfs, FS_SEEK_SET);
 }
 
 void Buffer::ResetPos()
 {
-	m_data.Seek(m_startOfs, VS_SEEK_SET);
+	m_data.Seek(m_startOfs, FS_SEEK_SET);
 }
 
-void Buffer::WriteToStream(IVirtualStream* stream)
+void Buffer::WriteToStream(IFileStream* stream)
 {
 	stream->Write(m_data.GetBasePointer(), GetMessageLength(), 1);
 }
@@ -65,7 +65,7 @@ void Buffer::WriteWString(const wchar_t* pszStr)
 
 void Buffer::WriteKeyValues(KVSection* kbase)
 {
-	CMemoryStream stream(nullptr, VS_OPEN_WRITE, 8192, PP_SL);
+	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
 	KV_WriteToStreamBinary(&stream, kbase);
 
 	char zerochar = '\0';

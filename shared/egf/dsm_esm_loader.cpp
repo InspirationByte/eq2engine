@@ -272,7 +272,7 @@ bool LoadESM(DSModel& model, const char* filename)
 {
 	Tokenizer tok;
 	{
-		IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
+		IFileStreamPtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
 		if (!pFile)
 		{
 			MsgError("Failed to open ESM '%s'\n", filename);
@@ -307,7 +307,7 @@ bool LoadESXShapes( DSShapeData& data, const char* filename )
 {
 	Tokenizer tok;
 	{
-		IFilePtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
+		IFileStreamPtr pFile = g_fileSystem->Open(filename, FS_OPEN_READ);
 		if (!pFile)
 		{
 			MsgError("Failed to open ESX '%s'\n", filename);

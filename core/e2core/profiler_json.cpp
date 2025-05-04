@@ -20,7 +20,7 @@ static constexpr const int bufferThreshold = 1000;
 class EqCVTracerDumperJob : public IParallelJob
 {
 public:
-	EqCVTracerDumperJob(EqCVTracerJSON& tracer, IVirtualStreamPtr outFile) 
+	EqCVTracerDumperJob(EqCVTracerJSON& tracer, IFileStreamPtr outFile) 
 		: IParallelJob("CVTracerDumperJob")
 		, m_tracer(tracer)
 		, m_outFile(outFile)
@@ -29,7 +29,7 @@ public:
 
 	Array<CVTraceEvent> m_writeBuffer{ PP_SL };
 	EqCVTracerJSON&		m_tracer;
-	IVirtualStreamPtr	m_outFile;
+	IFileStreamPtr	m_outFile;
 	bool				m_initialStart{ false };
 };
 
@@ -65,7 +65,7 @@ bool EqCVTracerJSON::Start(const char* fileName)
 
 	CScopedMutex m(s_jsonTracerMutex);
 
-    IFilePtr file = g_fileSystem->Open(fileName, FS_OPEN_WRITE, SP_ROOT);
+    IFileStreamPtr file = g_fileSystem->Open(fileName, FS_OPEN_WRITE, SP_ROOT);
 
 	if(!file)
 		return false;

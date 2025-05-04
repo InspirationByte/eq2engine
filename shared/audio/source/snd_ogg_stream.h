@@ -8,7 +8,7 @@
 #pragma once
 #include "snd_ogg_cache.h"
 
-class IVirtualStream;
+class IFileStream;
 
 class CSoundSource_OggStream : public CSoundSource_OggCache
 {
@@ -26,7 +26,7 @@ protected:
 
 	int				ReadData(void* out, int offset, int count) const;
 
-	IVirtualStreamPtr	m_oggFile;
+	IFileStreamPtr	m_oggFile;
 	OggVorbis_File		m_oggStream;
 
 	int					m_dataSize;     // in bytes

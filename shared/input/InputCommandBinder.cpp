@@ -411,7 +411,7 @@ void CInputCommandBinder::InitTouchZones()
 }
 
 // saves binding using file handle
-void CInputCommandBinder::WriteBindings(IVirtualStream* stream)
+void CInputCommandBinder::WriteBindings(IFileStream* stream)
 {
 	if(!stream)
 		return;

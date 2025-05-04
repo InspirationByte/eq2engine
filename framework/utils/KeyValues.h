@@ -9,7 +9,7 @@
 #pragma once
 #include "KeyValuesDesc.h"
 
-class IVirtualStream;
+class IFileStream;
 struct KVSection;
 struct KVPairValue;
 
@@ -408,7 +408,7 @@ public:
 
 	// loads from file
 	bool				LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
-	bool				LoadFromStream(IVirtualStream* stream);
+	bool				LoadFromStream(IFileStream* stream);
 
 	bool				SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
@@ -447,19 +447,19 @@ enum EKVTokenState
 using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
 
 bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc);
-KVSection*		KV_LoadFromStream(IVirtualStream* stream, KVSection* pParseTo = nullptr);
+KVSection*		KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo = nullptr);
 KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 
 KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = nullptr, KVSection* pParseTo = nullptr, int nStartLine = 0);
-KVSection*		KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo = nullptr);
+KVSection*		KV_ReadBinaryBase(IFileStream* stream, KVSection* pParseTo = nullptr);
 KVSection*		KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo = nullptr);
 
 void			KV_PrintSection(const KVSection* base);
 
-void			KV_WriteToStream(IVirtualStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
-void			KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
+void			KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
+void			KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
 
-void			KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base);
+void			KV_WriteToStreamBinary(IFileStream* outStream, const KVSection* base);
 
 //-----------------------------------------------------------------------------------------------------
 // KeyValues value helpers

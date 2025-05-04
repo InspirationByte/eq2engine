@@ -140,7 +140,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	KVSection shaderInfoKvs;
 	{
-		IFilePtr file = shaderPackFile->Open("ShaderInfo", VS_OPEN_READ);
+		IFileStreamPtr file = shaderPackFile->Open("ShaderInfo", FS_OPEN_READ);
 		if (!KV_LoadFromStream(file, &shaderInfoKvs))
 		{
 			Msg("No ShaderInfo in file %s\n", filename);
@@ -848,14 +848,14 @@ WGPUShaderModule CWGPURenderAPI::GetOrLoadShaderModule(const ShaderInfoWGPUImpl&
 
 	CMemoryStream shaderData(PP_SL);
 	{
-		IFilePtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex, VS_OPEN_READ);
+		IFileStreamPtr shaderFile = shaderInfo.shaderPackFile->Open(mod.fileIndex, FS_OPEN_READ);
 		if (!shaderFile)
 		{
 			ASSERT_FAIL("Unable to open file in shader package!");
 			return nullptr;
 		}
 
-		shaderData.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, shaderFile->GetSize());
+		shaderData.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, shaderFile->GetSize());
 		shaderData.AppendStream(shaderFile);
 	}
 

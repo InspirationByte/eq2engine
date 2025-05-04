@@ -127,7 +127,7 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 class ScreenshotSaveJob : public IParallelJob
 {
 public:
-	ScreenshotSaveJob(CImagePtr image, IFilePtr filePtr)
+	ScreenshotSaveJob(CImagePtr image, IFileStreamPtr filePtr)
 		: IParallelJob("ScreenshotSaveJob")
 		, m_image(image)
 		, m_filePtr(filePtr)
@@ -137,7 +137,7 @@ private:
 	void Execute() override;
 
 	CImagePtr	m_image;
-	IFilePtr	m_filePtr;
+	IFileStreamPtr	m_filePtr;
 };
 
 void ScreenshotSaveJob::Execute()
@@ -159,7 +159,7 @@ static void Sys_SaveScreenshot()
 	if (!g_matSystem->CaptureScreenshot(img.Ref()))
 		return;
 
-	IFilePtr saveJpegFile = g_fileSystem->Open(requestScreenshotName, FS_OPEN_WRITE, SP_ROOT);
+	IFileStreamPtr saveJpegFile = g_fileSystem->Open(requestScreenshotName, FS_OPEN_WRITE, SP_ROOT);
 	requestScreenshotName.Empty();
 	if (!saveJpegFile)
 	{

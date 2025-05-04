@@ -25,14 +25,14 @@ public:
 	// reads data from virtual stream
 	VSSize				Read(void *dest, VSSize count, VSSize size);
 	VSSize				Write(const void *src, VSSize count, VSSize size);
-	VSSize				Seek(int64 nOffset, EVirtStreamSeek seekType);
+	VSSize				Seek(int64 nOffset, EFileStreamSeek seekType);
 
 	VSSize				Tell() const;
 	VSSize				GetSize();
 	bool				Flush();
 
 	// returns stream type
-	EStreamType			GetType() const { return VS_TYPE_FILE_PACKAGE; }
+	EFileStreamType			GetType() const { return FS_TYPE_FILE_PACKAGE; }
 
 	// returns CRC32 checksum of stream
 	uint32				GetCRC32();
@@ -71,8 +71,8 @@ public:
 	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);
 	bool					OpenEmbeddedPackage(CBasePackageReader* target, const char* filename);
 
-	IFilePtr				Open(const char* filename, int modeFlags);
-	IFilePtr				Open(int fileIndex, int modeFlags);
+	IFileStreamPtr				Open(const char* filename, int modeFlags);
+	IFileStreamPtr				Open(int fileIndex, int modeFlags);
 	bool					FileExist(const char* filename) const;
 	int						FindFileIndex(const char* filename) const;
 

@@ -8,7 +8,7 @@
 #pragma once
 #include "textureformats.h"
 
-class IVirtualStream;
+class IFileStream;
 
 // Image loading flags
 enum EImageLoadingFlags
@@ -73,14 +73,14 @@ public:
 		m_pExtraData = (unsigned char*)data;
 	}
 
-	bool			LoadDDS(IVirtualStreamPtr fileHandle, uint flags = 0);
-	bool			SaveDDS(IVirtualStreamPtr fileHandle) const;
+	bool			LoadDDS(IFileStreamPtr fileHandle, uint flags = 0);
+	bool			SaveDDS(IFileStreamPtr fileHandle) const;
 
-	bool			Load(IVirtualStreamPtr fileHandle);
-	bool			SaveJPEG(IVirtualStreamPtr fileHandle, const int quality) const;
+	bool			Load(IFileStreamPtr fileHandle);
+	bool			SaveJPEG(IFileStreamPtr fileHandle, const int quality) const;
 
-	bool			LoadTGA(IVirtualStreamPtr fileHandle);
-	bool			SaveTGA(IVirtualStreamPtr fileHandle) const;
+	bool			LoadTGA(IFileStreamPtr fileHandle);
+	bool			SaveTGA(IFileStreamPtr fileHandle) const;
 
 	bool			Load(const char* fileName, uint flags = 0, int searchFlags = -1);
 	bool			SaveImage(const char* fileName, int searchFlags = -1) const;

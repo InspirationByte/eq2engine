@@ -282,7 +282,7 @@ bool CTextureCooker::CreateArrayImageFile(const Array<EqString>& textureNames, c
 	EqString outFileName = fnmPathCombine(m_targetProps.sourceMaterialPath, outputFileName);
 	outFileName = fnmPathApplyExt(outFileName, "dds");
 
-	IFilePtr file = g_fileSystem->Open(outFileName, FS_OPEN_WRITE, SP_ROOT);
+	IFileStreamPtr file = g_fileSystem->Open(outFileName, FS_OPEN_WRITE, SP_ROOT);
 	if (!textureImg->SaveDDS(file))
 	{
 		MsgError("Error while saving '%s'\n", outFileName.ToCString());
@@ -633,7 +633,7 @@ void CTextureCooker::Execute()
 	}
 
 	// save CRC list file
-	IFilePtr pStream = g_fileSystem->Open(crcFileName, "wt", SP_ROOT);
+	IFileStreamPtr pStream = g_fileSystem->Open(crcFileName, FS_OPEN_WRITE, SP_ROOT);
 
 	if (pStream)
 	{

@@ -49,7 +49,7 @@ private:
 	bool			ChunkSet();
 
 	CMemoryStream		m_riffMem{ PP_SL };
-	IVirtualStreamPtr	m_stream{ nullptr };
+	IFileStreamPtr	m_stream{ nullptr };
 
 	RIFFchunk_t			m_curChunk;
 	int					m_chunkRemaining{ 0 };

@@ -21,7 +21,7 @@ public:
 
 	void				ResetPos();
 
-	void				WriteToStream(IVirtualStream* stream);
+	void				WriteToStream(IFileStream* stream);
 
 	int					GetMessageLength() const;
 

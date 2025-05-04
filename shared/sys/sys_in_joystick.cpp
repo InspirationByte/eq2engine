@@ -55,7 +55,7 @@ DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 		return;
 	}
 	
-	IFilePtr dbFile = g_fileSystem->Open(CONTROLLER_DB_FILENAME, FS_OPEN_APPEND, SP_DATA);
+	IFileStreamPtr dbFile = g_fileSystem->Open(CONTROLLER_DB_FILENAME, FS_OPEN_APPEND, SP_DATA);
 	if(!dbFile)
 		return;
 

@@ -69,7 +69,7 @@ void Tokenizer::setString(const char* string)
 	reset();
 }
 
-bool Tokenizer::setFile(IVirtualStreamPtr file)
+bool Tokenizer::setFile(IFileStreamPtr file)
 {
 	delete[] str;
 	str = nullptr;

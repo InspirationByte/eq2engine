@@ -6,13 +6,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "IVirtualStream.h"
+#include "IFileStream.h"
 
 //--------------------------
 // CMemoryStream - File stream
 //--------------------------
 
-class CMemoryStream : public IVirtualStream
+class CMemoryStream : public IFileStream
 {
 public:
 	~CMemoryStream();
@@ -28,7 +28,7 @@ public:
 
 	VSSize			Read(void *dest, VSSize count, VSSize size);
 	VSSize			Write(const void *src, VSSize count, VSSize size);
-	VSSize			Seek(int64 nOffset, EVirtStreamSeek seekType);
+	VSSize			Seek(int64 nOffset, EFileStreamSeek seekType);
 
 	VSSize			Tell() const;
 	VSSize			GetSize();
@@ -36,14 +36,14 @@ public:
 	bool			Flush();
 	uint32			GetCRC32();
 
-	EStreamType		GetType() const { return VS_TYPE_MEMORY; }
+	EFileStreamType		GetType() const { return FS_TYPE_MEMORY; }
 	const char*		GetName() const { return m_sl.GetFileName(); }
 
 	// reads other stream into this one
-	bool			AppendStream(IVirtualStream* pStream, VSSize maxSize = 0);
+	bool			AppendStream(IFileStream* pStream, VSSize maxSize = 0);
 
 	// writes constents of this stream into the other stream
-	void			WriteToStream(IVirtualStream* pStream, VSSize maxSize = 0);
+	void			WriteToStream(IFileStream* pStream, VSSize maxSize = 0);
 
 	// resizes buffer to specified size (finalize buffer for reading)
 	void			ShrinkBuffer(VSSize size);

@@ -649,13 +649,13 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			else
 				shaderSourceName = fnmPathCombine(m_targetProps.sourceShaderPath, shaderInfo.sourceFilename);
 
-			IFilePtr file = g_fileSystem->Open(shaderSourceName, FS_OPEN_READ, SP_ROOT);
+			IFileStreamPtr file = g_fileSystem->Open(shaderSourceName, FS_OPEN_READ, SP_ROOT);
 			if (!file)
 			{
 				MsgError("Unable to open source file for %s\n", shaderInfo.name.ToCString());
 				return;
 			}
-			shaderSourceString.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, file->GetSize());
+			shaderSourceString.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, file->GetSize());
 			shaderSourceString.AppendStream(file);
 
 			// generate CRC from shader source file and append to the shader desc CRC
@@ -664,7 +664,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		else if (shaderInfo.sourceText.Length())
 		{
 			const int _zero = 0;
-			shaderSourceString.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, shaderInfo.sourceText.Length() + 1);
+			shaderSourceString.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, shaderInfo.sourceText.Length() + 1);
 			shaderSourceString.Write(shaderInfo.sourceText.GetData(), shaderInfo.sourceText.Length(), 1);
 			// CRC is already computed for source
 		}
@@ -988,7 +988,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			const uint32* shaderData = result.data.begin();
 			const uint32 size = result.data.end() - shaderData;
 
-			CMemoryStream readOnlyStream((ubyte*)shaderData, VS_OPEN_READ, size * sizeof(uint32), PP_SL);
+			CMemoryStream readOnlyStream((ubyte*)shaderData, FS_OPEN_READ, size * sizeof(uint32), PP_SL);
 			shaderPackFile.Add(&readOnlyStream, shaderFileName);
 
 			referenceRemap[i] = shaderFileCount++;
@@ -1023,7 +1023,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		// put added files
 		for (const ShaderInfo::AddFile& addFile : shaderInfo.addedFiles)
 		{
-			IFilePtr filePtr = g_fileSystem->Open(addFile.fileName, FS_OPEN_READ, SP_ROOT);
+			IFileStreamPtr filePtr = g_fileSystem->Open(addFile.fileName, FS_OPEN_READ, SP_ROOT);
 			shaderPackFile.Add(filePtr, addFile.values.back());
 
 			KVSection* fileSec = fileListSec->CreateSection(addFile.values[0]);
@@ -1031,7 +1031,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 				fileSec->AddValue(addFile.values[i]);
 		}
 
-		CMemoryStream shaderInfoData(nullptr, VS_OPEN_WRITE, 8192, PP_SL);
+		CMemoryStream shaderInfoData(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
 		KV_WriteToStreamBinary(&shaderInfoData, &shaderInfoKvs);
 		shaderPackFile.Add(&shaderInfoData, "ShaderInfo");
 
@@ -1150,7 +1150,7 @@ void CShaderCooker::Execute()
 	}
 
 	// save CRC list file
-	IFilePtr pStream = g_fileSystem->Open(crcFileName, "wt", SP_ROOT);
+	IFileStreamPtr pStream = g_fileSystem->Open(crcFileName, FS_OPEN_WRITE, SP_ROOT);
 	if (pStream)
 		KV_WriteToStream(pStream, &m_batchConfig.newCRCSec, 0, true);
 }

@@ -74,7 +74,7 @@
 #include "ds/range_for.h"
 #include "ds/fluent.h"
 #include "ds/function.h"
-#include "ds/IVirtualStream.h"
+#include "ds/IFileStream.h"
 #include "ds/MemoryStream.h"
 
 #include "ds/Array.h"

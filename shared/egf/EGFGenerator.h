@@ -23,7 +23,7 @@ namespace SharedModel
 	using DSShapeDataPtr = CRefPtr<DSShapeData>;
 };
 
-class IVirtualStream;
+class IFileStream;
 
 //
 // EGF model generator (EDITOR-friendly)
@@ -90,17 +90,17 @@ protected:
 	int						UsedMaterialIndex(const char* pszName);
 
 	// writing to stream	
-	void					WriteGroup(studioHdr_t* header, IVirtualStream* stream, SharedModel::DSMesh* srcGroup, SharedModel::DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup);
+	void					WriteGroup(studioHdr_t* header, IFileStream* stream, SharedModel::DSMesh* srcGroup, SharedModel::DSShapeKey* modShapeKey, float simplifyThreshold, studioMeshDesc_t* dstGroup);
 
-	void					WriteModels(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteLods(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteBodyGroups(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteAttachments(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteIkChains(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteMaterialDescs(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteMaterialPaths(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteMotionPackageList(studioHdr_t* header, IVirtualStream* stream);
-	void					WriteBones(studioHdr_t* header, IVirtualStream* stream);
+	void					WriteModels(studioHdr_t* header, IFileStream* stream);
+	void					WriteLods(studioHdr_t* header, IFileStream* stream);
+	void					WriteBodyGroups(studioHdr_t* header, IFileStream* stream);
+	void					WriteAttachments(studioHdr_t* header, IFileStream* stream);
+	void					WriteIkChains(studioHdr_t* header, IFileStream* stream);
+	void					WriteMaterialDescs(studioHdr_t* header, IFileStream* stream);
+	void					WriteMaterialPaths(studioHdr_t* header, IFileStream* stream);
+	void					WriteMotionPackageList(studioHdr_t* header, IFileStream* stream);
+	void					WriteBones(studioHdr_t* header, IFileStream* stream);
 
 	void					Validate(studioHdr_t* header, const char* stage);
 

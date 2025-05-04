@@ -330,14 +330,14 @@ bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != nullptr;
 }
 
-bool KeyValues::LoadFromStream(IVirtualStream* stream)
+bool KeyValues::LoadFromStream(IFileStream* stream)
 {
 	return KV_LoadFromStream(stream, &m_root) != nullptr;
 }
 
 bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 {
-	IFilePtr pStream = g_fileSystem->Open(pszFileName, "wt", nSearchFlags);
+	IFileStreamPtr pStream = g_fileSystem->Open(pszFileName, FS_OPEN_WRITE, nSearchFlags);
 
 	if(pStream)
 	{
@@ -1675,22 +1675,22 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 //
 // Loads file and parses it as KeyValues into the 'pParseTo'
 //
-KVSection* KV_LoadFromStream(IVirtualStream* stream, KVSection* pParseTo)
+KVSection* KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo)
 {
 	if (!stream)
 		return nullptr;
 
 	CMemoryStream memBuffer(PPSourceLine::Make(stream->GetName(), 0));
-	if (stream->GetType() == VS_TYPE_MEMORY)
+	if (stream->GetType() == FS_TYPE_MEMORY)
 	{
 		CMemoryStream* memOpenStream = static_cast<CMemoryStream*>(stream);
-		memBuffer.Open(memOpenStream->GetBasePointer(), VS_OPEN_READ, memOpenStream->GetSize());
+		memBuffer.Open(memOpenStream->GetBasePointer(), FS_OPEN_READ, memOpenStream->GetSize());
 	}
 	else
 	{
-		memBuffer.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, stream->GetSize());
+		memBuffer.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, stream->GetSize());
 		memBuffer.AppendStream(stream);
-		memBuffer.Seek(0, VS_SEEK_SET);
+		memBuffer.Seek(0, FS_SEEK_SET);
 	}
 
 	int fileSize = memBuffer.GetSize();
@@ -1742,15 +1742,15 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 {
 	CMemoryStream buffer(PPSourceLine::Make(pszFileName, 0));
 	{
-		IFilePtr file = g_fileSystem->Open(pszFileName, FS_OPEN_READ, nSearchFlags);
+		IFileStreamPtr file = g_fileSystem->Open(pszFileName, FS_OPEN_READ, nSearchFlags);
 		if (!file)
 		{
 			DevMsg(1, "Can't open key-values file '%s'\n", pszFileName);
 			return nullptr;
 		}
-		buffer.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, file->GetSize());
+		buffer.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, file->GetSize());
 		buffer.AppendStream(file);
-		buffer.Seek(0, VS_SEEK_SET);
+		buffer.Seek(0, FS_SEEK_SET);
 	}
 
 	KVSection* pBase = KV_LoadFromStream(&buffer, pParseTo);
@@ -1798,11 +1798,11 @@ struct kvbinbase_s
 
 KVSection* KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo)
 {
-	CMemoryStream memstr((ubyte*)pszBuffer, VS_OPEN_READ, bufferSize, PP_SL);
+	CMemoryStream memstr((ubyte*)pszBuffer, FS_OPEN_READ, bufferSize, PP_SL);
 	return KV_ReadBinaryBase(&memstr, pParseTo);
 }
 
-void KV_ReadBinaryValue(IVirtualStream* stream, KVSection* addTo)
+void KV_ReadBinaryValue(IFileStream* stream, KVSection* addTo)
 {
 	kvbinvalue_t binValue;
 	stream->Read(&binValue, 1, sizeof(binValue));
@@ -1839,7 +1839,7 @@ void KV_ReadBinaryValue(IVirtualStream* stream, KVSection* addTo)
 }
 
 // reads binary keybase
-KVSection* KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo)
+KVSection* KV_ReadBinaryBase(IFileStream* stream, KVSection* pParseTo)
 {
 	kvbinbase_s binBase;
 	stream->Read(&binBase, 1, sizeof(binBase));
@@ -1879,10 +1879,10 @@ KVSection* KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo)
 	return pParseTo;
 }
 
-void KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base);
+void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection* base);
 
 // writes KV value to the binary stream
-void KV_WriteValueBinary(IVirtualStream* outStream, const KVPairValue& value)
+void KV_WriteValueBinary(IFileStream* outStream, const KVPairValue& value)
 {
 	kvbinvalue_t binValue;
 	binValue.type = value.type;
@@ -1912,7 +1912,7 @@ void KV_WriteValueBinary(IVirtualStream* outStream, const KVPairValue& value)
 }
 
 // writes keybase to the binary stream
-void KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base)
+void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection* base)
 {
 	kvbinbase_s binBase;
 	memset(&binBase, 0, sizeof(binBase));
@@ -2004,7 +2004,7 @@ bool UTIL_StringNeedsQuotes( const char* pszString )
 //
 // If string does need quotes it will be written with them
 //
-static void KV_WriteSelectQuotedString(IVirtualStream* out, const char* pszString)
+static void KV_WriteSelectQuotedString(IFileStream* out, const char* pszString)
 {
 	if( UTIL_StringNeedsQuotes( pszString ) )
 		out->Print("\"%s\"", pszString);
@@ -2077,12 +2077,12 @@ static void KV_PreProcessStringValue( char* out, const char* pszStr )
 
 //-----------------------------------------------------------------------------------------------------
 
-void KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int nTabs, bool pretty);
+void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nTabs, bool pretty);
 
 //
 // Writes the pair value
 //
-void KV_WritePairValue(IVirtualStream* out, const KVPairValue& val, int depth)
+void KV_WritePairValue(IFileStream* out, const KVPairValue& val, int depth)
 {
 	// write typed data
 	if(val.type == KVPAIR_STRING)
@@ -2125,7 +2125,7 @@ void KV_WritePairValue(IVirtualStream* out, const KVPairValue& val, int depth)
 //
 // Writes the pairbase recursively to the virtual stream
 //
-void KV_WriteToStream(IVirtualStream* outStream, const KVSection* section, int nTabs, bool pretty)
+void KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTabs, bool pretty)
 {
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
@@ -2195,7 +2195,7 @@ void KV_WriteToStream(IVirtualStream* outStream, const KVSection* section, int n
 //
 // Writes the pairbase values
 //
-void KV_WriteValueV3( IVirtualStream* outStream, const KVSection* key, int nTabs)
+void KV_WriteValueV3( IFileStream* outStream, const KVSection* key, int nTabs)
 {
 	int numValues = key->values.numElem();
 	bool isValueArray = numValues > 1;
@@ -2224,7 +2224,7 @@ void KV_WriteValueV3( IVirtualStream* outStream, const KVSection* key, int nTabs
 //
 // Writes the pairbase recursively to the virtual stream
 //
-void KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int nTabs, bool pretty)
+void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nTabs, bool pretty)
 {
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
@@ -2288,7 +2288,7 @@ void KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int
 //
 void KV_PrintSection(const KVSection* base)
 {
-	CMemoryStream stream(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
+	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
 	KV_WriteToStream(&stream, base, 0, true);
 
 	char nullChar = '\0';

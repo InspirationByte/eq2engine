@@ -75,7 +75,7 @@ void CEqImGuiHost::Initialize()
 	ImGui_ImplMatSystem_Init();
 
 	static const char* fontFileName = "resources/imgui/Inter-Regular.ttf";
-	IFilePtr fontFile = g_fileSystem->Open(fontFileName, FS_OPEN_READ, SP_DATA);
+	IFileStreamPtr fontFile = g_fileSystem->Open(fontFileName, FS_OPEN_READ, SP_DATA);
 
 	if (fontFile)
 	{

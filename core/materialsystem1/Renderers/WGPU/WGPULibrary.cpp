@@ -152,7 +152,7 @@ static const char* GetWGPUAdapterTypeStr(WGPUAdapterType adapterType)
 static size_t wgpuLoadCacheDataFunction(void const* key, size_t keySize, void* value, size_t valueSize, void* userdata)
 {
 	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
-	static thread_local IFilePtr file;
+	static thread_local IFileStreamPtr file;
 	
 	if (!value)
 	{
@@ -177,7 +177,7 @@ static void wgpuStoreCacheDataFunction(void const* key, size_t keySize, void con
 	const uint32 keyChecksum = CRC32_BlockChecksum(key, keySize);
 
 	g_fileSystem->MakeDir("PSOCache", SP_ROOT);
-	IFilePtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_WRITE, SP_ROOT);
+	IFileStreamPtr file = g_fileSystem->Open(EqString::Format("PSOCache/%u.psoc", keyChecksum), FS_OPEN_WRITE, SP_ROOT);
 	file->Write(value, 1, valueSize);
 }
 

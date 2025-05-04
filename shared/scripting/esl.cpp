@@ -28,7 +28,7 @@ void ScriptState::GCCollect() const
 	lua_gc(m_state, LUA_GCCOLLECT);
 }
 
-int ScriptState::LoadFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode) const
+int ScriptState::LoadFileBuffer(IFileStream* virtStream, const char* name, const char* mode) const
 {
 	if (!virtStream)
 	{
@@ -36,9 +36,9 @@ int ScriptState::LoadFileBuffer(IVirtualStream* virtStream, const char* name, co
 		return LUA_ERRMEM;
 	}
 
-	CMemoryStream memStream(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 0, PPSourceLine::Make(name, 0));
+	CMemoryStream memStream(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, 0, PPSourceLine::Make(name, 0));
 	CMemoryStream* useStream = &memStream;
-	if (virtStream->GetType() == VS_TYPE_MEMORY)
+	if (virtStream->GetType() == FS_TYPE_MEMORY)
 		useStream = static_cast<CMemoryStream*>(virtStream);
 	else
 		memStream.AppendStream(virtStream);
@@ -57,7 +57,7 @@ int ScriptState::LoadFileBuffer(IVirtualStream* virtStream, const char* name, co
 	return luaL_loadbufferx(m_state, luaSrc, fileSize, useStream->GetName(), mode);
 }
 
-bool ScriptState::RunFileBuffer(IVirtualStream* virtStream, const char* name, const char* mode) const
+bool ScriptState::RunFileBuffer(IFileStream* virtStream, const char* name, const char* mode) const
 {
 	const int loadStatus = LoadFileBuffer(virtStream, name, mode);
 	if (loadStatus != LUA_OK)

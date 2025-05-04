@@ -68,7 +68,7 @@ CFile::CFile(const char* fileName, COSFile&& file)
 {
 }
 
-VSSize CFile::Seek(int64 pos, EVirtStreamSeek seekType )
+VSSize CFile::Seek(int64 pos, EFileStreamSeek seekType )
 {
 	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType));
 }
@@ -102,10 +102,10 @@ bool CFile::Flush()
 VSSize CFile::GetSize()
 {
 	const VSSize currentPos = Tell();
-	Seek(0, VS_SEEK_END);
+	Seek(0, FS_SEEK_END);
 
 	const VSSize size = Tell();
-	Seek(currentPos, VS_SEEK_SET);
+	Seek(currentPos, FS_SEEK_SET);
 
 	return size;
 }
@@ -117,7 +117,7 @@ uint32 CFile::GetCRC32()
 
 	ubyte* fileData = (ubyte*)PPAlloc(fileSize + 16);
 	Read(fileData, 1, fileSize);
-	Seek(pos, VS_SEEK_SET);
+	Seek(pos, FS_SEEK_SET);
 
 	const uint32 crc = CRC32_BlockChecksum(fileData, fileSize);
 	PPFree(fileData);
@@ -133,12 +133,12 @@ public:
 	EPackageType		GetType() const { return PACKAGE_READER_FLAT; }
 
 	bool				InitPackage(const char* filename, const char* mountPath /*= nullptr*/);
-	IFilePtr			Open(const char* filename, int modeFlags);
+	IFileStreamPtr		Open(const char* filename, int modeFlags);
 	bool				FileExist(const char* filename) const;
 
 	// stubs
 	bool				OpenEmbeddedPackage(CBasePackageReader* target, const char* filename) { return false; }
-	IFilePtr			Open(int fileIndex, int modeFlags) { return nullptr; }
+	IFileStreamPtr		Open(int fileIndex, int modeFlags) { return nullptr; }
 	int					FindFileIndex(const char* filename) const { return -1; }
 };
 
@@ -148,9 +148,9 @@ bool CFlatFileReader::InitPackage(const char* filename, const char* mountPath /*
 	return true;
 }
 
-IFilePtr CFlatFileReader::Open(const char* filename, int modeFlags)
+IFileStreamPtr CFlatFileReader::Open(const char* filename, int modeFlags)
 {
-	if (modeFlags != VS_OPEN_READ)
+	if (modeFlags != FS_OPEN_READ)
 		return nullptr;
 
 	EqString filePath = fnmPathCombine(m_packagePath, filename);
@@ -169,8 +169,8 @@ bool CFlatFileReader::FileExist(const char* filename) const
 
 struct DKMODULE
 {
-	char	name[256];
-	HMODULE module;
+	EqString	name;
+	HMODULE		module;
 };
 
 struct DKFINDDATA
@@ -261,11 +261,9 @@ CFileSystem::~CFileSystem()
 	g_eqCore->UnregisterInterface<CFileSystem>();
 }
 
-bool CFileSystem::Init(bool bEditorMode)
+bool CFileSystem::Init(bool editorMode)
 {
 	Msg("\n-------- Filesystem Init --------\n");
-
-	m_editorMode = bEditorMode;
 
 	const KVSection* fsConfig = g_eqCore->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
 	if (!fsConfig)
@@ -296,7 +294,7 @@ bool CFileSystem::Init(bool bEditorMode)
 	fsConfig->Get("EngineDataDir").GetValues(m_dataDir);
 	MsgInfo("* Engine data directory: %s\n", m_dataDir.GetData());
 
-	if(!m_editorMode)
+	if(!editorMode)
 	{
 		EqStringRef gamePath = g_eqCore->GetApplicationName();
 		fsConfig->Get("DefaultGameDir").GetValues(gamePath);
@@ -383,45 +381,36 @@ EqString CFileSystem::FindFilePath(const char* filename, int searchFlags /*= -1*
 	return existingFilePath;
 }
 
-IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFlags/* = -1*/ )
+IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int searchFlags/* = -1*/ )
 {
 	ASSERT_MSG(filename, "Open - Must specify 'filename'");
-	ASSERT_MSG(mode, "Open - Must specify 'mode'");
+	ASSERT_MSG(openFlags, "Open - Must specify 'mode'");
 
-	if (!filename || !mode)
+	if (!filename || !openFlags)
 		return nullptr;
 
-	int modeFlags = 0;
-	while (*mode)
-	{
-		switch (CType::LowerChar(*mode))
-		{
-		case 'r':
-			modeFlags |= COSFile::READ;
-			break;
-		case 'w':
-			modeFlags |= COSFile::WRITE;
-			break;
-		case 'a':
-		case '+':
-			modeFlags |= COSFile::WRITE | COSFile::APPEND;
-			break;
-		}
-		++mode;
-	}
+	int osModeFlags = 0;
+	if(openFlags & FS_OPEN_READ)
+		osModeFlags |= COSFile::READ;
 
-	const bool isWrite = modeFlags & (COSFile::APPEND | COSFile::WRITE);
+	if (openFlags & FS_OPEN_WRITE)
+		osModeFlags |= COSFile::WRITE;
 
-	IFilePtr fileHandle;
+	if (openFlags & FS_OPEN_APPEND)
+		osModeFlags |= COSFile::APPEND;
+
+	const bool isWrite = osModeFlags & (COSFile::APPEND | COSFile::WRITE);
+
+	IFileStreamPtr fileHandle;
 	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
 		if (isWrite && !writePath)
 			return false;
 
 		COSFile osFile;
-		if (osFile.Open(filePath, modeFlags))
+		if (osFile.Open(filePath, osModeFlags))
 		{
-			fileHandle = IFilePtr(CRefPtr_new(CFile, filename, std::move(osFile)));
+			fileHandle = IFileStreamPtr(CRefPtr_new(CFile, filename, std::move(osFile)));
 			return true;
 		}
 
@@ -443,7 +432,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 				continue;
 
 			// package readers do not support base path, get rid of it
-			fileHandle = fsPacakage->Open(pkgFileName, modeFlags);
+			fileHandle = fsPacakage->Open(pkgFileName, osModeFlags);
 			if (fileHandle)
 				return true;
 		}
@@ -457,7 +446,7 @@ IFilePtr CFileSystem::Open(const char* filename, const char* mode, int searchFla
 
 ubyte* CFileSystem::GetFileBuffer(const char* filename, VSSize* filesize/* = 0*/, int searchFlags/* = -1*/)
 {
-	IFilePtr pFile = Open(filename, "rb", searchFlags);
+	IFileStreamPtr pFile = Open(filename, FS_OPEN_READ, searchFlags);
 
     if (!pFile)
         return nullptr;
@@ -481,7 +470,7 @@ ubyte* CFileSystem::GetFileBuffer(const char* filename, VSSize* filesize/* = 0*/
 
 VSSize CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
 {
-    IFilePtr file = Open(filename, FS_OPEN_READ, searchFlags);
+    IFileStreamPtr file = Open(filename, FS_OPEN_READ, searchFlags);
     if (!file)
         return 0;
 
@@ -490,7 +479,7 @@ VSSize CFileSystem::GetFileSize(const char* filename, int searchFlags/* = -1*/)
 
 uint32 CFileSystem::GetFileCRC32(const char* filename, int searchFlags)
 {
-    IFilePtr file = Open(filename, FS_OPEN_READ, searchFlags);
+    IFileStreamPtr file = Open(filename, FS_OPEN_READ, searchFlags);
     if (!file)
         return 0;
 
@@ -504,8 +493,8 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 	if( FileExist(filename, search) && (overWrite || FileExist(dest_file, search) == false))
 	{
-		IFilePtr fpWrite = Open(dest_file, FS_OPEN_WRITE, search);
-		IFilePtr fpRead = Open(filename, FS_OPEN_READ, search);
+		IFileStreamPtr fpWrite = Open(dest_file, FS_OPEN_WRITE, search);
+		IFileStreamPtr fpRead = Open(filename, FS_OPEN_READ, search);
 
 		if (!fpRead || !fpWrite)
 			return false;
@@ -1088,7 +1077,7 @@ DKMODULE* CFileSystem::OpenModule(const char* mod_name, EqString* outError)
 	MsgInfo("Loaded module '%s'\n", moduleFileName.ToCString());
 
 	DKMODULE* pModule = PPNew DKMODULE;
-	strcpy( pModule->name, moduleFileName );
+	pModule->name = moduleFileName;
 	pModule->module = (HMODULE)mod;
 
 	return pModule;

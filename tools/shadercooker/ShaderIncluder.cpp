@@ -33,7 +33,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 	{
 		if (!CString::Compare(requested_source, "ShaderCooker"))
 		{
-			result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
+			result->includeContent.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, 8192);
 
 			if(m_shaderInfo.sourceType == SHADERSOURCE_GLSL)
 				result->includeContent.Print(s_boilerPlateStrGLSL);
@@ -81,7 +81,7 @@ shaderc_include_result* EqShaderIncluder::GetInclude(
 
 bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fileName, IncludeResult* result)
 {
-	IFilePtr openFile = nullptr;
+	IFileStreamPtr openFile = nullptr;
 
 	EqString fullPath;
 	for (const EqString& incPath : m_includePaths)
@@ -100,7 +100,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 
 	if (!openFile)
 	{
-		result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 8192);
+		result->includeContent.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, 8192);
 		result->includeContent.Print("Could not open %s", fileName);
 		result->resultData.content = (const char*)result->includeContent.GetBasePointer();
 		result->resultData.content_length = result->includeContent.GetSize();
@@ -109,7 +109,7 @@ bool EqShaderIncluder::TryOpenIncludeFile(const char* reqSource, const char* fil
 	}
 
 	result->includeName = fullPath;
-	result->includeContent.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, openFile->GetSize());
+	result->includeContent.Open(nullptr, FS_OPEN_READ | FS_OPEN_WRITE, openFile->GetSize());
 	result->includeContent.AppendStream(openFile);
 	return true;
 }

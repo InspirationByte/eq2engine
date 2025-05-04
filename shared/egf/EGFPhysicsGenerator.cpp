@@ -678,7 +678,7 @@ bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* 
 ubyte* pData = nullptr;
 ubyte* pStart = nullptr;
 
-void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint dataSize)
+void WriteLumpToStream(IFileStream* stream, int lump_type, ubyte* data, uint dataSize)
 {
 	lumpfilelump_t lump;
 	lump.type = lump_type;
@@ -690,7 +690,7 @@ void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint 
 
 void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 {
-	CMemoryStream lumpsStream(nullptr, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE, PP_SL);
+	CMemoryStream lumpsStream(nullptr, FS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE, PP_SL);
 
 	WriteLumpToStream(&lumpsStream, PHYSFILE_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
 	WriteLumpToStream(&lumpsStream, PHYSFILE_SHAPEINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
@@ -698,7 +698,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	// write names lump before objects lump
 	// PHYSLUMP_OBJECTNAMES
 	{
-		CMemoryStream objNamesLump(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
+		CMemoryStream objNamesLump(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
 
 		for(int i = 0; i < m_objects.numElem(); i++)
 			objNamesLump.Write(m_objects[i].name, 1, strlen(m_objects[i].name)+1);
@@ -712,7 +712,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 
 	// PHYSLUMP_OBJECTS
 	{
-		CMemoryStream objDataLump(nullptr, VS_OPEN_WRITE, 2048, PP_SL);
+		CMemoryStream objDataLump(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
 
 		for(int i = 0; i < m_objects.numElem(); i++)
 			objDataLump.Write(&m_objects[i].object, 1, sizeof(m_objects[i].object));
@@ -733,7 +733,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	Msg("  Object count: %d\n", m_objects.numElem());
 	Msg("  Joints count: %d\n", m_joints.numElem());
 	
-	IFilePtr outputFile = g_fileSystem->Open(filename, FS_OPEN_WRITE);
+	IFileStreamPtr outputFile = g_fileSystem->Open(filename, FS_OPEN_WRITE);
 	if(!outputFile)
 	{
 		MsgError("Failed to create file '%s' for writing!\n", filename);

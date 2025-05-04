@@ -16,7 +16,7 @@
 #define VSTREAM_GRANULARITY 1024 * 4	// 4kb
 
 // prints string to stream
-void IVirtualStream::PrintF(const char* pFmt, ...)
+void IFileStream::PrintF(const char* pFmt, ...)
 {
 	EqString str;
 	va_list	argptr;
@@ -51,7 +51,7 @@ CMemoryStream::~CMemoryStream()
 // reads data from virtual stream
 VSSize CMemoryStream::Read(void *dest, VSSize count, VSSize size)
 {
-	ASSERT(m_openFlags & VS_OPEN_READ);
+	ASSERT(m_openFlags & FS_OPEN_READ);
 
 	const VSSize numBytesToRead = size * count;
 	if (numBytesToRead <= 0)
@@ -71,7 +71,7 @@ VSSize CMemoryStream::Read(void *dest, VSSize count, VSSize size)
 // writes data to virtual stream
 VSSize CMemoryStream::Write(const void *src, VSSize count, VSSize size)
 {
-	ASSERT(m_openFlags & VS_OPEN_WRITE);
+	ASSERT(m_openFlags & FS_OPEN_WRITE);
 
 	const VSSize numBytesToWrite = size * count;
 	if (numBytesToWrite <= 0)
@@ -102,19 +102,19 @@ VSSize CMemoryStream::Write(const void *src, VSSize count, VSSize size)
 }
 
 // seeks pointer to position
-VSSize CMemoryStream::Seek(int64 nOffset, EVirtStreamSeek seekType)
+VSSize CMemoryStream::Seek(int64 nOffset, EFileStreamSeek seekType)
 {
 	ASSERT(m_openFlags != 0);
 
 	switch(seekType)
 	{
-		case VS_SEEK_SET:
+		case FS_SEEK_SET:
 			m_currentPtr = m_start + nOffset;
 			break;
-		case VS_SEEK_CUR:
+		case FS_SEEK_CUR:
 			m_currentPtr = m_currentPtr + nOffset;
 			break;
-		case VS_SEEK_END:
+		case FS_SEEK_END:
 			m_currentPtr = m_start + m_writeTop + nOffset;
 			break;
 	}
@@ -146,7 +146,7 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, VSSize nDataSize)
 
 	m_ownBuffer = (data == nullptr);
 	m_openFlags = nOpenFlags;
-	m_writeTop = ((nOpenFlags & VS_OPEN_READ) && data) ? nDataSize : 0;
+	m_writeTop = ((nOpenFlags & FS_OPEN_READ) && data) ? nDataSize : 0;
 
 	if (m_ownBuffer)
 	{
@@ -217,15 +217,15 @@ void CMemoryStream::ShrinkBuffer(VSSize size)
 }
 
 // writes constents of this stream into the other stream
-void CMemoryStream::WriteToStream(IVirtualStream* pStream, VSSize maxSize)
+void CMemoryStream::WriteToStream(IFileStream* pStream, VSSize maxSize)
 {
 	pStream->Write(m_start, 1, min(maxSize > 0 ? maxSize : INT_MAX, m_writeTop));
 }
 
 // reads other stream into this one
-bool CMemoryStream::AppendStream(IVirtualStream* pStream, VSSize maxSize)
+bool CMemoryStream::AppendStream(IFileStream* pStream, VSSize maxSize)
 {
-	ASSERT(m_openFlags & VS_OPEN_WRITE);
+	ASSERT(m_openFlags & FS_OPEN_WRITE);
 
 	const VSSize resetPos = pStream->Tell();
 	const VSSize readSize = min(maxSize > 0 ? maxSize : INT_MAX, pStream->GetSize() - resetPos);
@@ -235,7 +235,7 @@ bool CMemoryStream::AppendStream(IVirtualStream* pStream, VSSize maxSize)
 
 	// read to me
 	pStream->Read(m_currentPtr, readSize, 1);
-	pStream->Seek(resetPos, VS_SEEK_SET);
+	pStream->Seek(resetPos, FS_SEEK_SET);
 	m_currentPtr += readSize;
 
 	// let user seek this stream after

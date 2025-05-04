@@ -119,7 +119,7 @@ static int LuaLoadFile(lua_State* L)
 	const char* mode = luaL_optstring(L, 2, NULL);
 	const int envIdx = (!lua_isnone(L, 3) ? 3 : 0);
 
-	const int loadStatus = esl::ScriptState(L).LoadFileBuffer(g_fileSystem->Open(fname), fname);
+	const int loadStatus = esl::ScriptState(L).LoadFileBuffer(g_fileSystem->Open(fname, FS_OPEN_READ), fname);
 	return LuaLoadAux(L, loadStatus, envIdx);
 }
 
@@ -396,7 +396,7 @@ static bool eslSysInitMainScript(lua_State* L)
 {
 	esl::runtime::StackGuard g(L);
 	esl::ScriptState state(L);
-	IFilePtr mainScriptFile = g_fileSystem->Open(MAIN_SCRIPT_FILE);
+	IFileStreamPtr mainScriptFile = g_fileSystem->Open(MAIN_SCRIPT_FILE, FS_OPEN_READ);
 	if (!mainScriptFile)
 	{
 		esl::runtime::ResetErrorValue(L);

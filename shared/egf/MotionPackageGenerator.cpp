@@ -560,7 +560,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* animName)
 
 	Tokenizer tok;
 	{
-		IFilePtr pFile = g_fileSystem->Open(finalFileName, FS_OPEN_READ);
+		IFileStreamPtr pFile = g_fileSystem->Open(finalFileName, FS_OPEN_READ);
 		if (!pFile)
 		{
 			MsgError("Failed to open '%s'\n", finalFileName.ToCString());
@@ -1145,7 +1145,7 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 }
 
 
-void CopyLumpToFile(IVirtualStream* data, int lump_type, ubyte* toCopy, int toCopySize)
+void CopyLumpToFile(IFileStream* data, int lump_type, ubyte* toCopy, int toCopySize)
 {
 	lumpfilelump_t lump;
 	lump.size = toCopySize;
@@ -1156,7 +1156,7 @@ void CopyLumpToFile(IVirtualStream* data, int lump_type, ubyte* toCopy, int toCo
 
 void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFilename)
 {
-	CMemoryStream lumpDataStream(nullptr, VS_OPEN_WRITE, MIN_MOTIONPACKAGE_SIZE, PP_SL);
+	CMemoryStream lumpDataStream(nullptr, FS_OPEN_WRITE, MIN_MOTIONPACKAGE_SIZE, PP_SL);
 
 	lumpfilehdr_t header;
 	header.ident = ANIMFILE_IDENT;
@@ -1208,7 +1208,7 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 	CopyLumpToFile(&lumpDataStream, ANIMFILE_POSECONTROLLERS, (ubyte*)m_posecontrollers.ptr(), m_posecontrollers.numElem() * sizeof(posecontroller_t));
 	header.numLumps += 3;
 
-	IFilePtr file = g_fileSystem->Open(packageOutputFilename, FS_OPEN_WRITE, SP_MOD);
+	IFileStreamPtr file = g_fileSystem->Open(packageOutputFilename, FS_OPEN_WRITE, SP_MOD);
 	if(!file)
 	{
 		MsgError("Can't create file for writing!\n");

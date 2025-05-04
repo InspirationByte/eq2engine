@@ -109,7 +109,7 @@ static bool UpdatePackage(const char* targetName)
 
 			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not repackageable atm");
 
-			IFilePtr file = g_fileSystem->Open(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), FS_OPEN_WRITE, SP_ROOT);
+			IFileStreamPtr file = g_fileSystem->Open(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), FS_OPEN_WRITE, SP_ROOT);
 			if (!file)
 				continue;
 
@@ -228,7 +228,7 @@ static bool DevUnpackPackage(const char* targetName)
 
 			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not unpackable atm");
 
-			IFilePtr file = g_fileSystem->Open(EqString::Format("unpack/%u.epk_blob", finfo.filenameHash), FS_OPEN_WRITE, SP_ROOT);
+			IFileStreamPtr file = g_fileSystem->Open(EqString::Format("unpack/%u.epk_blob", finfo.filenameHash), FS_OPEN_WRITE, SP_ROOT);
 			if (!file)
 				continue;
 
@@ -517,7 +517,7 @@ static void CookPackageTarget(const char* targetName)
 				KVSection sectionFile;
 				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, &sectionFile))
 				{
-					fileMemoryStream.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 16 * 1024);
+					fileMemoryStream.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, 16 * 1024);
 					KV_WriteToStreamBinary(&fileMemoryStream, &sectionFile);
 
 					MsgInfo("Converted key-values file to binary: %s\n", fileInfo.fileName.ToCString());
@@ -525,7 +525,7 @@ static void CookPackageTarget(const char* targetName)
 				}
 			}
 
-			IVirtualStreamPtr stream(&fileMemoryStream);
+			IFileStreamPtr stream(&fileMemoryStream);
 			if (loadRawFile)
 			{
 				stream = g_fileSystem->Open(fileInfo.fileName, FS_OPEN_READ, SP_ROOT);
@@ -542,7 +542,7 @@ static void CookPackageTarget(const char* targetName)
 						targetFileFlags &= ~(DPKFILE_FLAG_COMPRESSED | DPKFILE_FLAG_ENCRYPTED);
 						ASSERT(DPK_IsBlockFile(targetFileFlags) == false);
 					}
-					stream->Seek(0, VS_SEEK_SET);
+					stream->Seek(0, FS_SEEK_SET);
 				}
 			}
 

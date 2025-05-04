@@ -86,7 +86,7 @@ int CDPKFileWriter::End(bool storeFileList)
 
 	if (storeFileList)
 	{
-		CMemoryStream lstFile(nullptr, VS_OPEN_WRITE, 8192 * 1024, PP_SL);
+		CMemoryStream lstFile(nullptr, FS_OPEN_WRITE, 8192 * 1024, PP_SL);
 		for (FileInfo& info : m_files)
 			lstFile.Print("%s\n", info.fileName.ToCString());
 
@@ -115,19 +115,19 @@ int CDPKFileWriter::End(bool storeFileList)
 	return numFiles;
 }
 
-uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, int packageFlags)
+uint CDPKFileWriter::WriteDataToPackFile(IFileStream* fileData, dpkfileinfo_t& pakInfo, int packageFlags)
 {
 	// prepare stream to be read
 	CMemoryStream readStream(PP_SL);
-	if (fileData->GetType() == VS_TYPE_MEMORY)
+	if (fileData->GetType() == FS_TYPE_MEMORY)
 	{
 		// make a reader from the memory stream to not cause assert
-		// when memory stream is open as VS_OPEN_WRITE only
+		// when memory stream is open as FS_OPEN_WRITE only
 		CMemoryStream* readFromFileData = static_cast<CMemoryStream*>(fileData);
-		readStream.Open(readFromFileData->GetBasePointer(), VS_OPEN_READ, readFromFileData->GetSize());
+		readStream.Open(readFromFileData->GetBasePointer(), FS_OPEN_READ, readFromFileData->GetSize());
 		fileData = &readStream;
 	}
-	fileData->Seek(0, VS_SEEK_SET);
+	fileData->Seek(0, FS_SEEK_SET);
 
 	// set the size and offset in the file bigfile
 	pakInfo.offset = m_output.Tell();
@@ -257,7 +257,7 @@ uint CDPKFileWriter::WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t
 	return packedSize;
 }
 
-uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int packageFlags)
+uint CDPKFileWriter::Add(IFileStream* fileData, const char* fileName, int packageFlags)
 {
 	const EqStringRef fileNameString = fileName;
 
@@ -282,19 +282,19 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int pac
 		const EqString nonPackedPath = fnmPathCombine(m_packFileName, fileName);
 
 		g_fileSystem->MakeDir(fnmPathStripName(nonPackedPath), m_packFilePath);
-		IFilePtr writeFile = g_fileSystem->Open(nonPackedPath, FS_OPEN_WRITE, m_packFilePath);
+		IFileStreamPtr writeFile = g_fileSystem->Open(nonPackedPath, FS_OPEN_WRITE, m_packFilePath);
 
 		// prepare stream to be read
 		CMemoryStream readStream(PP_SL);
-		if (fileData->GetType() == VS_TYPE_MEMORY)
+		if (fileData->GetType() == FS_TYPE_MEMORY)
 		{
 			// make a reader from the memory stream to not cause assert
-			// when memory stream is open as VS_OPEN_WRITE only
+			// when memory stream is open as FS_OPEN_WRITE only
 			CMemoryStream* readFromFileData = static_cast<CMemoryStream*>(fileData);
-			readStream.Open(readFromFileData->GetBasePointer(), VS_OPEN_READ, readFromFileData->GetSize());
+			readStream.Open(readFromFileData->GetBasePointer(), FS_OPEN_READ, readFromFileData->GetSize());
 			fileData = &readStream;
 		}
-		fileData->Seek(0, VS_SEEK_SET);
+		fileData->Seek(0, FS_SEEK_SET);
 
 		readStream.WriteToStream(writeFile);
 		return writeFile->GetSize();
@@ -304,7 +304,7 @@ uint CDPKFileWriter::Add(IVirtualStream* fileData, const char* fileName, int pac
 }
 
 #if 0
-IVirtualStream* CDPKFileWriter::Create(const char* fileName, bool skipCompression = false)
+IFileStream* CDPKFileWriter::Create(const char* fileName, bool skipCompression = false)
 {
 	EqStringRef fileNameString = fileName;
 	const int filenameHash = DPK_FilenameHash(fileNameString, DPK_VERSION);
@@ -318,9 +318,9 @@ IVirtualStream* CDPKFileWriter::Create(const char* fileName, bool skipCompressio
 }
 
 
-void CDPKFileWriter::Close(IVirtualStream* virtStream)
+void CDPKFileWriter::Close(IFileStream* virtStream)
 {
-	if (virtStream->GetType() != VS_TYPE_MEMORY)
+	if (virtStream->GetType() != FS_TYPE_MEMORY)
 		return;
 
 	WriteDataToPackFile(virtStream, );

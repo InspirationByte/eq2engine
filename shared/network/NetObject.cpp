@@ -36,10 +36,10 @@ void PackNetworkVariables(void* objectPtr, const NetPropertyMap* map, Networking
 	}
 
 	const int lastPos = stream.Tell();
-	stream.Seek(startPos, VS_SEEK_SET);
+	stream.Seek(startPos, FS_SEEK_SET);
 	stream.Write(&numWrittenProps, 1, sizeof(numWrittenProps));
 
-	stream.Seek(lastPos, VS_SEEK_SET);
+	stream.Seek(lastPos, FS_SEEK_SET);
 #endif
 }
 

@@ -13,7 +13,7 @@
 bool CSoundSource_OggCache::Load()
 {
 	// Open for binary reading
-	IFilePtr pFile = g_fileSystem->Open(GetFilename(), FS_OPEN_READ);
+	IFileStreamPtr pFile = g_fileSystem->Open(GetFilename(), FS_OPEN_READ);
 	if(!pFile)
 		return false;
 

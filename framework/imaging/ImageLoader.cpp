@@ -35,19 +35,19 @@
 
 static stbi_io_callbacks STBImageCallbacks = {
 	[](void* user,char* data,int size)->int {
-		return reinterpret_cast<IFile*>(user)->Read(data, size, 1);
+		return reinterpret_cast<IFileStream*>(user)->Read(data, size, 1);
 	},
 	[](void* user,int n) {
-		reinterpret_cast<IFile*>(user)->Seek(n, VS_SEEK_CUR); 
+		reinterpret_cast<IFileStream*>(user)->Seek(n, FS_SEEK_CUR); 
 	},
 	[](void* user)->int {
-		return reinterpret_cast<IFile*>(user)->Tell() >= reinterpret_cast<IFile*>(user)->GetSize(); 
+		return reinterpret_cast<IFileStream*>(user)->Tell() >= reinterpret_cast<IFileStream*>(user)->GetSize(); 
 	}
 };
 
 static void STBWriteFunc(void* context, void* data, int size)
 {
-	reinterpret_cast<IFile*>(context)->Write(data, 1, size);
+	reinterpret_cast<IFileStream*>(context)->Write(data, 1, size);
 };
 
 #pragma pack (push, 1)
@@ -567,7 +567,7 @@ EImageType CImage::GetImageType() const
 	return IMAGE_TYPE_INVALID;
 }
 
-bool CImage::LoadDDS(IFilePtr fileHandle, uint flags)
+bool CImage::LoadDDS(IFileStreamPtr fileHandle, uint flags)
 {
 	if (!fileHandle)
 		return false;
@@ -695,7 +695,7 @@ bool CImage::LoadDDS(IFilePtr fileHandle, uint flags)
 
 				if ((flags & DONT_LOAD_MIPMAPS) && header.dwMipMapCount > 1)
 				{
-					fileHandle->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, VS_SEEK_CUR);
+					fileHandle->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, FS_SEEK_CUR);
 				}
 			}
 		}
@@ -711,7 +711,7 @@ bool CImage::LoadDDS(IFilePtr fileHandle, uint flags)
 	return true;
 }
 
-bool CImage::Load(IFilePtr fileHandle)
+bool CImage::Load(IFileStreamPtr fileHandle)
 {
 	int numComponents;
 	stbi_uc* imgData = stbi_load_from_callbacks(&STBImageCallbacks, fileHandle.Ptr(), &m_nWidth, &m_nHeight, &numComponents, 0);
@@ -746,7 +746,7 @@ bool CImage::Load(IFilePtr fileHandle)
 	return true;
 }
 
-bool CImage::LoadTGA(IFilePtr fileHandle)
+bool CImage::LoadTGA(IFileStreamPtr fileHandle)
 {
 #ifdef NO_TGA
 	return false;
@@ -928,7 +928,7 @@ bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 
 	SetName(fileName);
 
-	IFilePtr file;
+	IFileStreamPtr file;
 	if (!(file = g_fileSystem->Open(fileName, FS_OPEN_READ, searchFlags)))
 		return false;
 
@@ -942,7 +942,7 @@ bool CImage::Load(const char* fileName, uint flags, int searchFlags)
 	return true;
 }
 
-bool CImage::SaveDDS(IVirtualStreamPtr fileHandle) const
+bool CImage::SaveDDS(IFileStreamPtr fileHandle) const
 {
 	if (!fileHandle)
 		return false;
@@ -1112,7 +1112,7 @@ bool CImage::SaveDDS(IVirtualStreamPtr fileHandle) const
 	return true;
 }
 
-bool CImage::SaveJPEG(IVirtualStreamPtr fileHandle, const int quality) const
+bool CImage::SaveJPEG(IFileStreamPtr fileHandle, const int quality) const
 {
 	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8)
 		return false;
@@ -1123,7 +1123,7 @@ bool CImage::SaveJPEG(IVirtualStreamPtr fileHandle, const int quality) const
 	return true;
 }
 
-bool CImage::SaveTGA(IVirtualStreamPtr fileHandle) const
+bool CImage::SaveTGA(IFileStreamPtr fileHandle) const
 {
 #ifdef NO_TGA
 	return false;
@@ -1211,7 +1211,7 @@ bool CImage::SaveImage(const char* fileName, int searchFlags) const
 	if (!extension.Length())
 		return false;
 
-	IFilePtr file;
+	IFileStreamPtr file;
 	if (!(file = g_fileSystem->Open(fileName, FS_OPEN_WRITE, searchFlags)))
 		return false;
 

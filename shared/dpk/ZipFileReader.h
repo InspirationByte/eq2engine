@@ -20,12 +20,12 @@ public:
 
 	VSSize				Read(void *dest, VSSize count, VSSize size);
 	VSSize				Write(const void *src, VSSize count, VSSize size);
-	VSSize				Seek(int64 nOffset, EVirtStreamSeek seekType);
+	VSSize				Seek(int64 nOffset, EFileStreamSeek seekType);
 	VSSize				Tell() const;
 	VSSize				GetSize() { return static_cast<VSSize>(m_uncompressedSize); }
 	bool				Flush() { return false; }
 
-	EStreamType	GetType() const { return VS_TYPE_FILE_PACKAGE; }
+	EFileStreamType	GetType() const { return FS_TYPE_FILE_PACKAGE; }
 	uint32				GetCRC32() { return m_crc; }
 
 	const char*			GetName() const { return m_name; }
@@ -51,8 +51,8 @@ public:
 
 	bool				InitPackage(const char* filename, const char* mountPath = nullptr);
 
-	IFilePtr			Open(const char* filename, int modeFlags);
-	IFilePtr			Open(int fileIndex, int modeFlags);
+	IFileStreamPtr			Open(const char* filename, int modeFlags);
+	IFileStreamPtr			Open(int fileIndex, int modeFlags);
 	bool				FileExist(const char* filename) const;
 	int					FindFileIndex(const char* filename) const;
 

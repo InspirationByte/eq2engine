@@ -79,7 +79,7 @@ public:
 	// serializes data
 	template <class STORE_VERTEX_TYPE = VERTEX_TYPE>
 	void Save(
-		IVirtualStream* stream, 
+		IFileStream* stream, 
 		VertexConvertFunc<STORE_VERTEX_TYPE, VERTEX_TYPE> convertVertexFunc = DefaultConvertVertexFunc) const
 	{
 		// write header
@@ -106,7 +106,7 @@ public:
 
 	// loads all data
 	template <class STORE_VERTEX_TYPE = VERTEX_TYPE>
-	void Load(IVirtualStream* stream,
+	void Load(IFileStream* stream,
 		VertexConvertFunc<VERTEX_TYPE, STORE_VERTEX_TYPE> convertVertexFunc = DefaultConvertVertexFunc)
 	{
 		// read header

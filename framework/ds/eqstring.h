@@ -19,8 +19,8 @@ public:
 
 	static const EqTStr EmptyStr;
 
-	static VSSize	ReadString(IVirtualStream* stream, int length, EqTStr& output);
-	static VSSize	ReadString(IVirtualStream* stream, EqTStr& output);
+	static VSSize	ReadString(IFileStream* stream, int length, EqTStr& output);
+	static VSSize	ReadString(IFileStream* stream, EqTStr& output);
 	static EqTStr 	FormatF(const CH* pszFormat, ...);
 	static EqTStr 	FormatV(const CH* pszFormat, va_list argptr);
 	template <typename... Args>
@@ -114,13 +114,13 @@ protected:
 };
 
 template<typename CH>
-static VSSize VSRead(IVirtualStream* stream, EqTStr<CH>& str)
+static VSSize VSRead(IFileStream* stream, EqTStr<CH>& str)
 {
 	return EqTStr<CH>::ReadString(stream, str);
 }
 
 template<typename CH>
-static VSSize VSWrite(IVirtualStream* stream, const EqTStr<CH>& str)
+static VSSize VSWrite(IFileStream* stream, const EqTStr<CH>& str)
 {
 	const uint length = str.Length();
 	stream->Write(&length, 1, sizeof(uint));

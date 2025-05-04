@@ -16,7 +16,7 @@
 
 #include "core/platform/OSFile.h"
 
-class IVirtualStream;
+class IFileStream;
 
 class CDPKFileWriter
 {
@@ -27,12 +27,12 @@ public:
 	bool					Begin(const char* fileName, ESearchPath searchPath = SP_ROOT);
 
 	// adds data to the pack file
-	uint					Add(IVirtualStream* fileData, const char* fileName, int packageFlags = 0xff);
+	uint					Add(IFileStream* fileData, const char* fileName, int packageFlags = 0xff);
 
 #if 0
 	// creates new package file and returns stream for writing
-	IVirtualStream*			Create(const char* fileName, bool skipCompression = false);
-	void					Close(IVirtualStream* virtStream);
+	IFileStream*			Create(const char* fileName, bool skipCompression = false);
+	void					Close(IFileStream* virtStream);
 #endif
 	void					Flush();
 	int						End(bool storeFileList = false);
@@ -40,7 +40,7 @@ public:
 	int						GetFileCount() const { return m_files.size(); }
 
 protected:
-	uint					WriteDataToPackFile(IVirtualStream* fileData, dpkfileinfo_t& pakInfo, int packageFlags = 0xff);
+	uint					WriteDataToPackFile(IFileStream* fileData, dpkfileinfo_t& pakInfo, int packageFlags = 0xff);
 
 	struct FileInfo
 	{

@@ -16,14 +16,14 @@ struct SearchPathInfo;
 // File stream
 //------------------------------------------------------------------------------
 
-class CFile : public IFile
+class CFile : public IFileStream
 {
 	friend class CFileSystem;
 
 public:
 	CFile(const char* fileName, COSFile&& file);
 
-	VSSize				Seek(int64 pos, EVirtStreamSeek seekType );
+	VSSize				Seek(int64 pos, EFileStreamSeek seekType );
 	VSSize				Tell() const;
 	VSSize				Read(void *dest, VSSize count, VSSize size);
 	VSSize				Write(const void *src, VSSize count, VSSize size);
@@ -33,7 +33,7 @@ public:
 	uint32				GetCRC32();
 	VSSize				GetSize();
 
-	EStreamType	GetType() const { return VS_TYPE_FILE; }
+	EFileStreamType	GetType() const { return FS_TYPE_FILE; }
 
 	const char*			GetName() const { return m_name; }
 protected:
@@ -55,7 +55,7 @@ public:
 								~CFileSystem();
 
     //Initialization of filesystem
-    bool						Init( bool bEditorMode );
+    bool						Init( bool editorMode );
 	void						Shutdown();
 
 	//------------------------------------------------------------
@@ -87,7 +87,7 @@ public:
 	// File operations
 	//------------------------------------------------------------
 
-    IFilePtr					Open(const char* filename, const char* mode, int searchFlags = -1 );
+    IFileStreamPtr				Open(const char* filename, int openFlags, int searchFlags = -1 );
 
 	EqString					FindFilePath(const char* filename, int searchFlags = -1) const;
 	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search);
@@ -163,7 +163,6 @@ protected:
 	Array<DKFINDDATA*>			m_findDatas{ PP_SL };
 	Array<DKMODULE*>			m_modules{ PP_SL };
 
-    bool						m_editorMode{ false };
 	bool						m_isInit{ false };
 };
 

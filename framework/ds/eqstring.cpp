@@ -482,7 +482,7 @@ int EqTStr<CH>::ReplaceSubstr(StrRef find, StrRef replaceTo, bool caseSensivite 
 }
 
 template<typename CH>
-VSSize EqTStr<CH>::ReadString(IVirtualStream* stream, int length, EqTStr& output)
+VSSize EqTStr<CH>::ReadString(IFileStream* stream, int length, EqTStr& output)
 {
 	output.Resize(length, false);
 	stream->Read(output.m_pszString, sizeof(CH), length);
@@ -492,7 +492,7 @@ VSSize EqTStr<CH>::ReadString(IVirtualStream* stream, int length, EqTStr& output
 }
 
 template<typename CH>
-VSSize EqTStr<CH>::ReadString(IVirtualStream* stream, EqTStr<CH>& output)
+VSSize EqTStr<CH>::ReadString(IFileStream* stream, EqTStr<CH>& output)
 {
 	int length = 0;
 	stream->Read(&length, 1, sizeof(length));

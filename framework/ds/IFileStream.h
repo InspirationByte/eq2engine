@@ -11,40 +11,41 @@
 
 using VSSize = int64;
 
-class IVirtualStream;
+class IFileStream;
+using IFileStreamPtr = CRefPtr<IFileStream>;
 
-enum EStreamType : int
+enum EFileStreamType : int
 {
-	VS_TYPE_MEMORY = 0,
-	VS_TYPE_FILE,
-	VS_TYPE_FILE_PACKAGE,
+	FS_TYPE_MEMORY = 0,
+	FS_TYPE_FILE,
+	FS_TYPE_FILE_PACKAGE,
 };
 
-enum EVirtStreamSeek : int
+enum EFileStreamSeek : int
 {
-	VS_SEEK_SET = 0,	// set current position
-	VS_SEEK_CUR,		// seek from last position
-	VS_SEEK_END,		// seek to the end
+	FS_SEEK_SET = 0,	// set current position
+	FS_SEEK_CUR,		// seek from last position
+	FS_SEEK_END,		// seek to the end
 };
 
-enum EVirtStreamOpenFlags : int
+enum EFileOpenFlags : int
 {
-	VS_OPEN_READ	= (1 << 0),
-	VS_OPEN_WRITE	= (1 << 1),
-	VS_OPEN_APPEND	= (1 << 2),
+	FS_OPEN_READ	= (1 << 0),
+	FS_OPEN_WRITE	= (1 << 1),
+	FS_OPEN_APPEND	= (1 << 2),
 };
 
 template<typename T>
-static VSSize VSRead(IVirtualStream* stream, T& obj);
+static VSSize VSRead(IFileStream* stream, T& obj);
 
 template<typename T>
-static VSSize VSWrite(IVirtualStream* stream, const T& obj);
+static VSSize VSWrite(IFileStream* stream, const T& obj);
 
 //--------------------------
-// IVirtualStream - data stream interface
+// IFileStream - data stream interface
 //--------------------------
 
-class IVirtualStream : public RefCountedObject<IVirtualStream>
+class IFileStream : public RefCountedObject<IFileStream>
 {
 public:
 	// reads data from virtual stream
@@ -69,7 +70,7 @@ public:
 	VSSize				WriteArray(const TArray& arr) { return WriteArray(arr.ptr(), arr.numElem()); }
 
 	// seeks pointer to position
-	virtual VSSize		Seek(int64 offset, EVirtStreamSeek seekType) = 0;
+	virtual VSSize		Seek(int64 offset, EFileStreamSeek seekType) = 0;
 
 	// fprintf analog
 	void				PrintF(const char* fmt, ...);
@@ -87,7 +88,7 @@ public:
 	virtual bool		Flush() = 0;
 
 	// returns stream type
-	virtual EStreamType	GetType() const = 0;
+	virtual EFileStreamType	GetType() const = 0;
 
 	// returns CRC32 checksum of stream
 	virtual uint32		GetCRC32() = 0;
@@ -96,31 +97,29 @@ public:
 	virtual const char*	GetName() const = 0;
 };
 
-using IVirtualStreamPtr = CRefPtr<IVirtualStream>;
-
 // provide default implementation
 
 template<typename T>
-static VSSize VSRead(IVirtualStream* stream, T& obj)
+static VSSize VSRead(IFileStream* stream, T& obj)
 {
 	return stream->Read(&obj, 1, sizeof(T));
 }
 
 template<typename T>
-static VSSize VSWrite(IVirtualStream* stream, const T& obj)
+static VSSize VSWrite(IFileStream* stream, const T& obj)
 {
 	return stream->Write(&obj, 1, sizeof(T));
 }
 
 
 template<typename T, VSSize N>
-static VSSize VSWrite(IVirtualStream* stream, T(&obj)[N])
+static VSSize VSWrite(IFileStream* stream, T(&obj)[N])
 {
 	return stream->Write(&obj, N, sizeof(T));
 }
 
 template <typename... Args>
-inline void IVirtualStream::Print(const char* pszFormat, Args&&... args)
+inline void IFileStream::Print(const char* pszFormat, Args&&... args)
 {
 	return PrintF(pszFormat, ToCString(std::forward<Args>(args))...);
 }

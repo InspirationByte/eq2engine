@@ -8,7 +8,7 @@
 #pragma once
 #include "input/in_keys_ident.h"
 
-class IVirtualStream;
+class IFileStream;
 class ConCommand;
 class ConCommandBase;
 class IGPURenderPassRecorder;
@@ -77,7 +77,7 @@ public:
 	EInputDeviceType		GetLastInputDeviceUsed() const { return m_lastInputDev; }
 
 	// saves binding using file handle
-	void					WriteBindings(IVirtualStream* stream);
+	void					WriteBindings(IFileStream* stream);
 
 	// binds a command with arguments to known key
 	bool					AddBinding(const char* key, const char* command, const char* args);

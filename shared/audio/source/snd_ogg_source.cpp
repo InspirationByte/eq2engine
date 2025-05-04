@@ -14,14 +14,14 @@ namespace eqVorbisFile
 {
 	size_t fread(void *ptr, size_t size, size_t nmemb, void *datasource)
 	{
-		IFile* pFile = (IFile*)datasource;
+		IFileStream* pFile = (IFileStream*)datasource;
 
 		return pFile->Read(ptr, nmemb, size);
 	}
 
 	int	fseek(void *datasource, ogg_int64_t offset, int whence)
 	{
-		IFile* pFile = (IFile*)datasource;
+		IFileStream* pFile = (IFileStream*)datasource;
 
 		// let's do some undocumented features of ogg
 
@@ -32,7 +32,7 @@ namespace eqVorbisFile
 			case SEEK_SET:
 			case SEEK_CUR:
 			case SEEK_END:
-				returnVal = pFile->Seek(offset, (EVirtStreamSeek)whence);
+				returnVal = pFile->Seek(offset, (EFileStreamSeek)whence);
 				break;
 			default: //Bad value
 				return -1;
@@ -46,7 +46,7 @@ namespace eqVorbisFile
 
 	long ftell(void *datasource)
 	{
-		IFile* pFile = (IFile*)datasource;
+		IFileStream* pFile = (IFileStream*)datasource;
 
 		return pFile->Tell();
 	}
