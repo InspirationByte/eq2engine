@@ -327,9 +327,9 @@ struct ScriptClass
 	// NOTE: don't access these directly, use typeinfo
 	static const char		className[];
 
-	static TypeInfoGetter		baseClassTypeInfoGetter;
-	static const char*			baseClassName;
-	static uint					classId;
+	static TypeInfoGetter	baseClassTypeInfoGetter;
+	static const char*		baseClassName;
+	static uint				classId;
 };
 
 template<typename T>

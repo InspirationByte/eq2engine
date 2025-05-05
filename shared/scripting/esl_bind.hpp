@@ -1314,8 +1314,12 @@ constexpr intptr_t ComputeBaseClassOffset()
 template<typename T>
 void BaseClassStorage::Add()
 {
-	if (!ScriptClass<T>::baseClassName)
+	if (!ScriptClass<T>::baseClassName || *ScriptClass<T>::baseClassName == 0)
 		return;
+
+	ASSERT_MSG(ScriptClass<T>::classId != 0, "Name ID for %s = %u while it should be %u", ScriptClass<T>::className, ScriptClass<T>::classId, StringId24(ScriptClass<T>::className));
+
+	Msg("esl init %s (%u) : %s\n", ScriptClass<T>::className, ScriptClass<T>::classId, ScriptClass<T>::baseClassName);
 
 	Info& info = *GetBaseClassNames().insert(ScriptClass<T>::classId);
 	info.name = ScriptClass<T>::baseClassName;

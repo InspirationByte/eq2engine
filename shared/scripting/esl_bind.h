@@ -231,7 +231,7 @@ NOTE on weak pointers:
 	namespace esl { \
 	template<> struct BaseScriptClass<Class> : ScriptClass<ParentClass> {}; \
 	template<> inline const char ScriptClass<Class>::className[] = name; \
-	template<> inline uint ScriptClass<Class>::classId = StringIdConst24(name); \
+	template<> inline uint ScriptClass<Class>::classId = StringId24_Cexpr_B(name); \
 	template<> inline const char* ScriptClass<Class>::baseClassName = BaseScriptClass<Class>::className; \
 	template<> inline const char* LuaTypeAlias<Class, false>::value = ScriptClass<Class>::className; \
 	template<> struct PushType<Class> { static constexpr EPushType value = push; }; \

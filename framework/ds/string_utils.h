@@ -52,34 +52,30 @@ decltype(auto) ToCString(const T& value)
 // String hash
 //------------------------------------------------------
 
-static constexpr const int StringId24Bits = 24;
-static constexpr const int StringId24Mask = ((1 << StringId24Bits) - 1);
+static constexpr int StringId24Bits = 24;
+static constexpr int StringId24Mask = ((1 << StringId24Bits) - 1);
 
-template<int idx, std::size_t N>
-static constexpr int StringId24_Cexpr_Helper(const char(&str)[N], int hash)
+constexpr int StringId24_Cexpr(const char* const str, int length)
 {
-	if constexpr (idx == 0)
-	{
-		return hash;
-	}
-	else
+	int hash = length;
+	for (int i = 0; i < length; ++i)
 	{
 		const int v1 = hash >> 19;
 		const int v0 = hash << 5;
-		const int chr = str[N - idx - 1];
+		const int chr = str[i];
 		hash = ((v0 | v1) + chr) & StringId24Mask;
-		return StringId24_Cexpr_Helper<idx - 1, N>(str, hash);
 	}
+	return hash;
 }
 
-template<std::size_t N>
-static constexpr int StringId24_Cexpr(const char(&str)[N])
+template<int N>
+constexpr int StringId24_Cexpr_B(const char(&str)[N])
 {
-	return StringId24_Cexpr_Helper<N - 1, N>(str, N - 1);
+	return StringId24_Cexpr(str, N-1);
 }
 
-template <auto V> static constexpr auto force_consteval = V;
-#define StringIdConst24(x) force_consteval<StringId24_Cexpr(x)>
+template <auto V> constexpr auto force_consteval = V;
+#define StringIdConst24(x) force_consteval<StringId24_Cexpr_B(x)>
 
 // generates string hash 24 bit
 int			StringId24(EqStringRef str, bool caseIns = false);
