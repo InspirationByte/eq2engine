@@ -85,13 +85,13 @@ void CRC32_FinishChecksum( uint32 &crcvalue );
 uint32 CRC32_BlockChecksum( const void *data, size_t length );
 
 template<size_t idx>
-constexpr uint32 _CRC32_String(const char* str)
+constexpr uint32 _CRC32_String(const char* const str)
 {
     return (_CRC32_String<idx - 1>(str) >> 8) ^ crc32_detail::crctable[(_CRC32_String<idx - 1>(str) ^ str[idx]) & 0xff];
 }
 
 template<>
-constexpr uint32 _CRC32_String<size_t(-1)>(const char* str) { return 0xFFFFFFFF; } // CRC32_XOR_VALUE - terminator
+constexpr uint32 _CRC32_String<size_t(-1)>(const char* const str) { return 0xFFFFFFFF; } // CRC32_XOR_VALUE - terminator
 
 // This doesn't take into account the nul char
 #define CRC32_StringConst(x) (_CRC32_String<sizeof(x) - 2>(x) ^ 0xFFFFFFFF)

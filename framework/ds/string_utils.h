@@ -55,33 +55,41 @@ decltype(auto) ToCString(const T& value)
 static constexpr int StringId24Bits = 24;
 static constexpr int StringId24Mask = ((1 << StringId24Bits) - 1);
 
-constexpr int StringId24_Cexpr(const char* const str, int length)
+constexpr int ASCIILower_Cexpr(int c)
+{
+	constexpr int d = 'a' - 'A';
+	return c + (c >= 'A' && c <= 'Z' ? d : 0);
+}
+
+constexpr int StringId24_Cexpr(const char* const str, int length, bool caseIns = false)
 {
 	int hash = length;
 	for (int i = 0; i < length; ++i)
 	{
 		const int v1 = hash >> 19;
 		const int v0 = hash << 5;
-		const int chr = str[i];
+		const int chr = caseIns ? ASCIILower_Cexpr(str[i]) : str[i];
 		hash = ((v0 | v1) + chr) & StringId24Mask;
 	}
 	return hash;
 }
 
 template<int N>
-constexpr int StringId24_Cexpr_B(const char(&str)[N])
+constexpr int StringId24_Cexpr_B(const char(&str)[N], bool caseIns = false)
 {
 	return StringId24_Cexpr(str, N-1);
 }
 
 template <auto V> constexpr auto force_consteval = V;
-#define StringIdConst24(x) force_consteval<StringId24_Cexpr_B(x)>
 
 // generates string hash 24 bit
 int			StringId24(EqStringRef str, bool caseIns = false);
 
 // generates string hash 32 bit
 uint 		StringId(EqStringRef str, bool caseIns = false);
+
+#define StringIdConst24(x)	force_consteval<StringId24_Cexpr_B(x)>
+#define StringIdConst(x)	force_consteval<CRC32_StringConst(x)>
 
 //------------------------------------------------------
 // String split helper

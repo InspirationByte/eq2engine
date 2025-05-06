@@ -8,22 +8,7 @@
 int StringId24(EqStringRef str, bool caseIns )
 {
 	ASSERT(str);
-	int len = str.Length();
-	const char* ptr = str.GetData();
-
-	int hash = len;
-	for (; len > 0; --len)
-	{
-		const int v1 = hash >> 19;
-		const int v0 = hash << 5;
-
-		const int chr = caseIns ? CType::LowerChar(*ptr) : *ptr;
-
-		hash = ((v0 | v1) + chr) & StringId24Mask;
-		++ptr;
-	}
-
-	return hash;
+	return StringId24_Cexpr(str.ToCString(), str.Length(), caseIns);
 }
 
 // hashes string. Returns value in 32 bits range
