@@ -316,7 +316,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 		int refSpvIndex = -1;
 		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
 		{
-			ASSERT_FAIL("Shader %s 'ref' does not have 5 values (old shader version?)");
+			ASSERT_FAIL("Shader %s 'ref' does not have 5 values (old shader version?)", shaderInfoKvs.GetName());
 			break;
 		}
 
