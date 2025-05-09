@@ -24,7 +24,7 @@ void ConCommand::DispatchFunc(ArrayCRef<EqStringRef> args) const
 {
 	if(GetFlags() & CV_CHEAT)
 	{
-		const ConVar *cheats = (ConVar*)g_consoleCommands->FindCvar("__cheats"); //find cheats cvar
+		const ConVar *cheats = g_consoleCommands->FindCvar("__cheats"); //find cheats cvar
 		if(cheats && !cheats->GetBool())
 		{
 			Msg("Cannot access to %s console command during cheats is off\n",GetName());

@@ -33,9 +33,9 @@ enum EEqAssertType {
 
 #if defined(_RETAIL) || defined(_PROFILE)
 
-#define	ASSERT_MSG(x, msgFmt, ...)	do{}while(0)
-#define	ASSERT(x)					do{}while(0)
-#define ASSERT_FAIL(msgFmt, ...)	do{}while(0)
+#define	ASSERT_MSG(x, msgFmt, ...)	_SEMICOLON_REQ({})
+#define	ASSERT(x)					_SEMICOLON_REQ({})
+#define ASSERT_FAIL(msgFmt, ...)	_SEMICOLON_REQ({})
 
 #else
 
@@ -43,8 +43,7 @@ enum EEqAssertType {
 
 IEXPORTS int _InternalAssertMsg(PPSourceLine sl, bool isSkipped, const char* expression, const char* statement, ...);
 
-#define _ASSERT_BODY(expression, msgFmt, ...) \
-	{ \
+#define _ASSERT_BODY(expression, msgFmt, ...) { \
 		static bool _ignoreAssert = false; \
 		const int _assertResult = _InternalAssertMsg(_ASSERT_PP_SL, _ignoreAssert, expression, msgFmt, ##__VA_ARGS__ ); \
 		if (_assertResult == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
