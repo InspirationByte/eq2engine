@@ -87,6 +87,7 @@ public:
 //-------------------------------------------------------------
 
 	virtual bool				IsDeviceActive() const = 0;
+	virtual bool				IsDeviceValidationActive() const = 0;
 
 	virtual int					GetDrawCallsCount() const = 0;
 	virtual int					GetDrawIndexedPrimitiveCallsCount() const = 0;
@@ -112,9 +113,6 @@ public:
 
 //-------------------------------------------------------------
 // Pipeline management
-
-	// loads shader modules (caches in RHI/Driver)
-	virtual void						LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const = 0;
 
 	virtual IGPUPipelineLayoutPtr		CreatePipelineLayout(const PipelineLayoutDesc& layoutDesc) const = 0;
 	virtual IGPURenderPipelinePtr		CreateRenderPipeline(const RenderPipelineDesc& pipelineDesc, const IGPUPipelineLayout* pipelineLayout = nullptr) const = 0;
@@ -145,8 +143,17 @@ public:
 	virtual Future<bool>				SubmitCommandBufferAwaitable(const IGPUCommandBuffer* cmdBuffer) const = 0;
 
 //-------------------------------------------------------------
-// Texture resource managenent
+// Shader resource managenent
+
+	virtual int					LoadShaderPackage(const char* filename) = 0;
+	virtual void				FreeShaderPackage(int id) = 0;
+	virtual void				ClearShaderPackages() = 0;
+
+	// loads shader modules (caches in RHI/Driver)
+	virtual void				LoadShaderModules(const char* shaderName, ArrayCRef<EqString> defines, const char* entryPointName) const = 0;
+
 //-------------------------------------------------------------
+// Texture resource managenent
 
 	// texture LOD uploading frequency
 	virtual void				SetProgressiveTextureFrequency(int frames) = 0;

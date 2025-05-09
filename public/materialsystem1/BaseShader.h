@@ -39,7 +39,7 @@ struct MatSysCamera;
 	DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
 #define SHADER_INIT_PARAMS()	void ShaderInitParams(IShaderAPI* renderAPI)
-#define SHADER_INIT_TEXTURES()	void InitTextures(IShaderAPI* renderAPI)
+#define SHADER_INIT_TEXTURES()	void InitTextures(IShaderAPI* renderAPI) override
 
 #define SHADER_PARAM_TEXTURE(param, variable, ...)			variable = LoadTextureByVar(#param, true, ##__VA_ARGS__ )
 #define SHADER_PARAM_TEXTURE_NOERROR(param, variable, ...)	variable = LoadTextureByVar(#param, false, ##__VA_ARGS__ )
@@ -134,8 +134,8 @@ public:
 	virtual void				UpdateProxy(IGPUCommandRecorder* cmdRecorder) const {}
 
 	// returns base texture from shader
-	virtual const ITexturePtr&	GetBaseTexture(int stage) const	{ return ITexturePtr::Null(); };
-	virtual const ITexturePtr&	GetBumpTexture(int stage) const	{ return ITexturePtr::Null(); };
+	virtual const ITexturePtr&	GetBaseTexture(int stage) const override { return ITexturePtr::Null(); };
+	virtual const ITexturePtr&	GetBumpTexture(int stage) const override { return ITexturePtr::Null(); };
 
 	virtual bool				SetupRenderPass(IShaderAPI* renderAPI, const PipelineInputParams& pipelineParams, ArrayCRef<RenderBufferInfo> uniformBuffers, const RenderPassContext& passContext, IMaterial* originalMaterial);
 

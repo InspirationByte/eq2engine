@@ -25,11 +25,16 @@ on:
       - '**.yml'
       - '**/premake*.lua'
       - 'premake*.lua'
+
 env:
-  MAKEFILE_PATH: ./build/DriverSyndicate.solution
-  BUILD_CONFIGURATION: release
-  BUILD_CONFIGURATION_U: Release
+  PROJECT_NAME: auto_tests
+  BUILD_CONFIGURATION: Release
   BUILD_PLATFORM: x64
+  
+  EXE_SUFFIX:
+  BUILD_CONFIGURATION_LOWER: retail
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,30 +55,13 @@ jobs:
       run: sudo add-apt-repository universe && sudo apt-get update && sudo apt-get install -y build-essential libsdl2-dev libopenal-dev libxxf86vm-dev
    
     - name: Install dependencies 2
-      run: ./linux_dev_prepare.sh
+      run: ./utils/linux_dev_prepare.sh
 
     - name: Generate Makefile
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: ./premake5 --file=game/DriverSyndicate/premake5.lua gmake2
+      run: ./utils/premake5 --file=premake5-tests.lua gmake2
       
     - name: make
-      working-directory: ${{env.MAKEFILE_PATH}}
-      run: make config=${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}} -j10
-      
-    - name: Create appimage
-      run: .github/make_appimage.sh $PWD/game/DriverSyndicate/DrvSyn.AppDir DrvSyn_${{env.BUILD_CONFIGURATION_U}}
-      
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v4.6.0
-      with:
-        name: DrvSyn_linux_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
-        path: |
-          *.AppImage
-
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/*.so
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/DrvSyn_${{env.BUILD_CONFIGURATION_U}}
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/fcompress
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/animca
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/egfca
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/atlasgen
-#          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/texcooker
+      working-directory: ./build/${{env.PROJECT_NAME}}.solution
+      run: make config=${{env.BUILD_CONFIGURATION_LOWER}}_${{env.BUILD_PLATFORM}} -j10
+            

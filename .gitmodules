@@ -1,7 +1,3 @@
-[submodule "game/DriverSyndicate"]
-	path = game/DriverSyndicate
-	url = git@github.com:InspirationByte/DriverSyndicate.git
-
 [submodule "src_dependency/nvrhi/NVRHI"]
 	path = src_dependency/nvrhi/NVRHI
 	url = git@github.com:InspirationByte/NVRHI.git

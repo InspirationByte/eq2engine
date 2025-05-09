@@ -9,11 +9,15 @@ property "e2_ws_settings"
 	unsignedchar  'On'
 	
 	objdir "build/obj"
-	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
+	targetdir "%{_MAIN_SCRIPT_DIR}/build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 	libdirs {
 		 "build/thirdpartylib/",
 		 "build/lib/"
  	}
+	
+	if _ACTION ~= "vscode" then
+		location "%{ prj_location(prj, wks) }"
+	end
 	
 	filter "kind:StaticLib"
 		targetdir "build/lib/%{cfg.platform}/%{cfg.buildcfg}"
@@ -119,6 +123,9 @@ property "e2_ws_configurations"
 		
 property "windows_msvc"
 	filter "system:Windows"
+		-- use specific windows SDK
+		systemversion(WINSDK_VER)
+		
 		linkoptions {
 			"/NOEXP"
 		}
@@ -133,6 +140,7 @@ property "windows_msvc"
 		enablewarnings { 
 			"26433"
 		}
+		
 	filter {"system:Windows", "configurations:Retail or configurations:Profile" }
 		buildoptions { "/GR-" }
 
@@ -161,14 +169,25 @@ property "gcc_clang"
 		}
 
 property "unitybuild"
-	unitybuild "on"
-	maxfilesinunity "30"
+	if not BUILD_SINGLE_FILE then
+		unitybuild "on"
+		maxfilesinunity "30"
+	end
 	
 property "sharedlib"
 	kind "SharedLib"
 	
 property "staticlib"
 	kind "StaticLib"
+	
+property "app"
+	filter "platforms:*64"
+		debugdir "%{wks.location}../../build/Bin64"
+		debugenvs "PATH=%{wks.location}../../build/Bin64"
+
+	filter "platforms:*86"
+		debugdir "%{wks.location}../../build/Bin32"
+		debugenvs "PATH=%{wks.location}../../build/Bin64"
 	
 property "tools"
 	filter "configurations:Retail or configurations:Profile"
@@ -183,16 +202,18 @@ property "thirdpartylib"
 		["Retail"] = "Retail",
 	}]] -- fookin std annotate_string & annotate_vector
 	targetdir "build/thirdpartylib/%{cfg.platform}/%{cfg.buildcfg}"
-		
-function prj_name(prj, wks, def)
-	if _ACTION == "gmake2" and def == nil then
-		def = wks.name..".solution"
+
+function prj_location(prj, wks, def)
+	if _ACTION == "gmake2" and wks ~= nil and def == nil then
+		def = _MAIN_SCRIPT_DIR.."/build/"..wks.name..".solution"
+	else
+		def = _MAIN_SCRIPT_DIR .. "/build/"
 	end
 	if prj ~= nil then
 		if prj.group ~= nil and string.len(prj.group) > 0 then
-			return prj.group .. '/' .. prj.name
+			return "build/" .. prj.group .. '/' .. prj.name
 		end
-		return prj.name
+		return "build/" .. prj.name
 	end
 	return def
 end

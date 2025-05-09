@@ -1,0 +1,148 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright (C) Inspiration Byte
+// 2009-2020
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Provides base console interface
+//////////////////////////////////////////////////////////////////////////////////
+
+#pragma once
+
+class IEqFont;
+class ConCommandBase;
+class IGPURenderPassRecorder;
+
+struct ConAutoCompletion_t
+{
+	EqString cmd_name;
+	Array<EqString> args{ PP_SL };
+};
+
+typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
+
+class CEqConsoleInput
+{
+public:
+	friend class CFont;
+
+	static void		SpewFunc(ESpewType type,const char* pMsg);
+
+	static void		SpewClear();
+	static void		SpewInit();
+	static void		SpewUninstall();
+
+
+					CEqConsoleInput();
+
+	void			Initialize(EQWNDHANDLE window);
+	void			Shutdown();
+
+	// useful for scripts
+	void			SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
+
+	void			BeginFrame();
+	void			EndFrame(int width, int height, float frameTime);
+
+	void			SetLastLine();
+	void			AddToLinePos(int num);
+
+	void			SetHostCursorActive(bool value)	{ m_hostCursorActive = value; }
+
+	void			SetVisible(bool value);
+	bool			IsVisible() const			{ return m_visible; }
+
+	void			SetLogVisible(bool value);
+	bool			IsLogVisible() const		{ return m_logVisible; }
+
+	// events
+	bool			KeyPress(int key, bool pressed);
+	bool			KeyChar(const char* utfChar);
+	bool			MouseEvent(const Vector2D &pos, int Button,bool pressed);
+	bool			MouseWheel(int hscroll, int vscroll);
+
+	void			MousePos(const Vector2D &pos);
+
+	void			AddAutoCompletion(ConAutoCompletion_t* item);
+
+protected:
+
+	void			DrawSelf(int width, int height, float frameTime, IGPURenderPassRecorder* rendPassRecorder);
+	void			DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection, IGPURenderPassRecorder* rendPassRecorder);
+
+	void			DrawFastFind(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
+	void			DrawAutoCompletion(float x, float y, float w, IGPURenderPassRecorder* rendPassRecorder);
+
+	void			DelText(int start, int len);
+	void			InsText(const char* text,int pos);
+	void			SetText(const char* text, bool quiet = false);
+
+	void			UpdateCommandAutocompletionList(const EqString& queryStr);
+	void			UpdateVariantsList( const EqString& queryStr );
+	void			OnTextUpdate();
+
+	void			ResetLogScroll();
+
+	bool			IsShiftPressed() const { return m_shiftModifier; }
+	bool			IsCtrlPressed() const { return m_ctrlModifier; }
+
+	// returns current statement start and current input text
+	int				GetCurrentInputText(EqString& str);
+
+	bool			AutoCompleteSelectVariant();
+	void			AutoCompleteSuggestion();
+
+	void			ExecuteCurrentInput();
+
+private:
+
+	IEqFont*						m_font;
+	float							m_fontScale;
+
+	Vector2D						m_mousePosition;
+	bool							m_visible;
+
+	bool							m_logVisible;
+	bool							m_showConsole;
+
+	bool							m_cursorVisible;
+	bool							m_hostCursorActive;
+	float							m_cursorTime;
+	int								m_maxLines;
+
+	bool							m_shiftModifier;
+	bool							m_ctrlModifier;
+
+	int								m_width;
+	int								m_height;
+
+	bool							m_enabled;
+
+	int								m_cursorPos;
+	int								m_startCursorPos;
+
+	int								m_logScrollPosition;
+
+	float							m_logScrollAccumTime;
+	float							m_logScrollTime;
+	int								m_logScrollDir;
+
+	// Input history
+	Array<EqString>					m_commandHistory{ PP_SL };
+	int								m_histIndex;
+
+	Array<const ConCommandBase*>	m_foundCmdList{ PP_SL };
+	int								m_cmdSelection;
+
+	const ConCommandBase*			m_fastfind_cmdbase;
+	Array<EqString>					m_variantList{ PP_SL };
+	int								m_variantSelection;
+
+	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
+
+	// Current input text
+	EqString						m_inputText;
+
+	// custom autocompletion
+	Array<ConAutoCompletion_t*>		m_customAutocompletion{ PP_SL };
+};
+
+extern CStaticAutoPtr<CEqConsoleInput> g_consoleInput;

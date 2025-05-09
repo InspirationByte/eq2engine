@@ -59,24 +59,32 @@
 		runtime "Release"
 		optimize "on"
 ]]
+
 usage "openal-soft"
 	includedirs {
 		"include",
 		"include/AL"
 	}
-
+	
 	filter "system:Windows"
 		links "OpenAL32"
+
+	filter { "system:Windows", "platforms:x64" }
+		libdirs {
+			"./libs/Win64"
+		}
+		postbuildcommands { 
+			"{COPYFILE} %[%{!_WORKING_DIR}/src_dependency/openal-soft/bin/Win64/soft_oal.dll] %[%{!cfg.targetdir}/OpenAL32.dll]"
+		}
+		
+	filter { "system:Windows", "platforms:x86" }
+		libdirs {
+			"./libs/Win32"
+		}
+		postbuildcommands { 
+			"{COPYFILE} %[%{!_WORKING_DIR}/src_dependency/openal-soft/bin/Win32/soft_oal.dll] %[%{!cfg.targetdir}/OpenAL32.dll]"
+		}
 		
 	filter "system:Linux"
 		links "openal"
 
-	filter "platforms:x64"
-		libdirs {
-			"./libs/Win64"
-		}
-		
-	filter "platforms:x86"
-		libdirs {
-			"./libs/Win32"
-		}

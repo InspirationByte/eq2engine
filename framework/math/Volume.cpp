@@ -1,0 +1,237 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright (C) Inspiration Byte
+// 2009-2020
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Box/Frustum volume
+//////////////////////////////////////////////////////////////////////////////////
+
+#include "core/core_common.h"
+#include "Volume.h"
+
+void Volume::LoadAsFrustum(const Matrix4x4 &mvp)
+{
+	m_planes[VOLUME_PLANE_LEFT  ] = Plane(mvp[12] - mvp[0], mvp[13] - mvp[1], mvp[14] - mvp[2],  mvp[15] - mvp[3]);
+	m_planes[VOLUME_PLANE_RIGHT ] = Plane(mvp[12] + mvp[0], mvp[13] + mvp[1], mvp[14] + mvp[2],  mvp[15] + mvp[3]);
+
+	m_planes[VOLUME_PLANE_TOP   ] = Plane(mvp[12] - mvp[4], mvp[13] - mvp[5], mvp[14] - mvp[6],  mvp[15] - mvp[7]);
+	m_planes[VOLUME_PLANE_BOTTOM] = Plane(mvp[12] + mvp[4], mvp[13] + mvp[5], mvp[14] + mvp[6],  mvp[15] + mvp[7]);
+
+	m_planes[VOLUME_PLANE_FAR   ] = Plane(mvp[12] - mvp[8], mvp[13] - mvp[9], mvp[14] - mvp[10], mvp[15] - mvp[11]);
+	m_planes[VOLUME_PLANE_NEAR  ] = Plane(mvp[12] + mvp[8], mvp[13] + mvp[9], mvp[14] + mvp[10], mvp[15] + mvp[11]);
+}
+
+void Volume::LoadAsFrustum(const Matrix4x4 &mvp, bool _PRECISION)
+{
+	m_planes[VOLUME_PLANE_LEFT] = Plane(mvp[12] - mvp[0], mvp[13] - mvp[1], mvp[14] - mvp[2], mvp[15] - mvp[3], _PRECISION);
+	m_planes[VOLUME_PLANE_RIGHT] = Plane(mvp[12] + mvp[0], mvp[13] + mvp[1], mvp[14] + mvp[2], mvp[15] + mvp[3], _PRECISION);
+
+	m_planes[VOLUME_PLANE_TOP] = Plane(mvp[12] - mvp[4], mvp[13] - mvp[5], mvp[14] - mvp[6], mvp[15] - mvp[7], _PRECISION);
+	m_planes[VOLUME_PLANE_BOTTOM] = Plane(mvp[12] + mvp[4], mvp[13] + mvp[5], mvp[14] + mvp[6], mvp[15] + mvp[7], _PRECISION);
+
+	m_planes[VOLUME_PLANE_FAR] = Plane(mvp[12] - mvp[8], mvp[13] - mvp[9], mvp[14] - mvp[10], mvp[15] - mvp[11], _PRECISION);
+	m_planes[VOLUME_PLANE_NEAR] = Plane(mvp[12] + mvp[8], mvp[13] + mvp[9], mvp[14] + mvp[10], mvp[15] + mvp[11], _PRECISION);
+}
+
+void Volume::LoadBoundingBox(const Vector3D &mins, const Vector3D &maxs)
+{
+	m_planes[VOLUME_PLANE_LEFT  ] = Plane(1.0f, 0.0f, 0.0f,  -mins.x);
+	m_planes[VOLUME_PLANE_RIGHT ] = Plane(-1.0f, 0.0f, 0.0f,  maxs.x);
+
+	m_planes[VOLUME_PLANE_TOP   ] = Plane(0.0f, -1.0f, 0.0f, maxs.y);
+	m_planes[VOLUME_PLANE_BOTTOM] = Plane(0.0f, 1.0f, 0.0f, -mins.y);
+
+	m_planes[VOLUME_PLANE_FAR   ] = Plane(0.0f, 0.0f, -1.0f, maxs.z);
+	m_planes[VOLUME_PLANE_NEAR  ] = Plane(0.0f, 0.0f, 1.0f, -mins.z);
+}
+
+void Volume::LoadBoundingBox(const Vector3D &mins, const Vector3D &maxs, bool _PRECISION)
+{
+	m_planes[VOLUME_PLANE_LEFT] = Plane(1.0f, 0.0f, 0.0f, -mins.x, _PRECISION);
+	m_planes[VOLUME_PLANE_RIGHT] = Plane(-1.0f, 0.0f, 0.0f, maxs.x, _PRECISION);
+
+	m_planes[VOLUME_PLANE_TOP] = Plane(0.0f, -1.0f, 0.0f, maxs.y, _PRECISION);
+	m_planes[VOLUME_PLANE_BOTTOM] = Plane(0.0f, 1.0f, 0.0f, -mins.y, _PRECISION);
+
+	m_planes[VOLUME_PLANE_FAR] = Plane(0.0f, 0.0f, -1.0f, maxs.z, _PRECISION);
+	m_planes[VOLUME_PLANE_NEAR] = Plane(0.0f, 0.0f, 1.0f, -mins.z, _PRECISION);
+}
+
+// returns back bounding box if not frustum.
+void Volume::GetBBOXBack(Vector3D &mins, Vector3D &maxs) const
+{
+	mins = Vector3D(-m_planes[VOLUME_PLANE_LEFT].offset, -m_planes[VOLUME_PLANE_BOTTOM].offset, -m_planes[VOLUME_PLANE_NEAR].offset);
+	maxs = Vector3D(m_planes[VOLUME_PLANE_RIGHT].offset, m_planes[VOLUME_PLANE_TOP].offset, m_planes[VOLUME_PLANE_FAR].offset);
+}
+
+void Volume::SetupPlane(const Plane &pl, int n)
+{
+	m_planes[n] = pl;
+}
+
+bool Volume::IsPointInside(const Vector3D &pos) const
+{
+	return IsPointInside(GetPlanes(), pos);
+}
+
+bool Volume::IsSphereInside(const Vector3D &pos, const float radius) const
+{
+    return IsSphereInside(GetPlanes(), pos, radius);
+}
+
+bool Volume::IsTriangleInside(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2) const
+{
+	return IsTriangleInside(GetPlanes(), v0, v1, v2);
+}
+
+bool Volume::IsBoxInside(const BoundingBox& box, const float eps) const
+{
+	return IsBoxInside(GetPlanes(), box.minPoint, box.maxPoint, eps);
+}
+
+bool Volume::IsBoxInside(const Vector3D &mins, const Vector3D &maxs, const float eps) const
+{
+	return IsBoxInside(GetPlanes(), mins.x, maxs.x,mins.y, maxs.y, mins.z, maxs.z);
+}
+
+bool Volume::IsBoxInside(const float minX, const float maxX, const float minY, const float maxY, const float minZ, const float maxZ, const float eps) const
+{
+	return IsBoxInside(GetPlanes(), minX, maxX, minY, maxY, minZ, maxZ);
+
+}
+
+bool Volume::IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D& intersectionPos, float eps, int* planeId) const
+{
+	return IsIntersectsRay(GetPlanes(), start, dir, intersectionPos, eps, planeId);
+}
+
+Vector3D Volume::GetFarLeftUp() const
+{
+	Vector3D p;
+	m_planes[VOLUME_PLANE_FAR].GetIntersectionWithPlanes(
+		m_planes[VOLUME_PLANE_TOP],
+		m_planes[VOLUME_PLANE_LEFT], p);
+
+	return p;
+}
+
+Vector3D Volume::GetFarLeftDown() const
+{
+	Vector3D p;
+	m_planes[VOLUME_PLANE_FAR].GetIntersectionWithPlanes(
+		m_planes[VOLUME_PLANE_BOTTOM],
+		m_planes[VOLUME_PLANE_LEFT], p);
+
+	return p;
+}
+
+Vector3D Volume::GetFarRightUp() const
+{
+	Vector3D p;
+	m_planes[VOLUME_PLANE_FAR].GetIntersectionWithPlanes(
+		m_planes[VOLUME_PLANE_TOP],
+		m_planes[VOLUME_PLANE_RIGHT], p);
+
+	return p;
+}
+
+Vector3D Volume::GetFarRightDown() const
+{
+	Vector3D p;
+	m_planes[VOLUME_PLANE_FAR].GetIntersectionWithPlanes(
+		m_planes[VOLUME_PLANE_BOTTOM],
+		m_planes[VOLUME_PLANE_RIGHT], p);
+
+	return p;
+}
+
+bool Volume::IsPointInside(ArrayCRef<Plane> planes, const Vector3D& pos)
+{
+	for (int i = 0; i < planes.numElem(); i++)
+	{
+		if (planes[i].Distance(pos) <= 0)
+			return false;
+	}
+	return true;
+}
+
+bool Volume::IsSphereInside(ArrayCRef<Plane> planes, const Vector3D& pos, const float radius)
+{
+	for (int i = 0; i < planes.numElem(); i++)
+	{
+		if (planes[i].Distance(pos) <= -radius)
+			return false;
+	}
+	return true;
+}
+
+bool Volume::IsTriangleInside(ArrayCRef<Plane> planes, const Vector3D& v0, const Vector3D& v1, const Vector3D& v2)
+{
+	for (int i = 0; i < planes.numElem(); i++)
+	{
+		if (planes[i].Distance(v0) > 0) continue;
+		if (planes[i].Distance(v1) > 0) continue;
+		if (planes[i].Distance(v2) > 0) continue;
+		return false;
+	}
+
+	return true;
+}
+
+
+bool Volume::IsBoxInside(ArrayCRef<Plane> planes, const float minX, const float maxX, const float minY, const float maxY, const float minZ, const float maxZ, const float eps)
+{
+	for (int i = 0; i < planes.numElem(); i++)
+	{
+		if (planes[i].Distance(Vector3D(minX, minY, minZ)) > -eps) continue;
+		if (planes[i].Distance(Vector3D(minX, minY, maxZ)) > -eps) continue;
+		if (planes[i].Distance(Vector3D(minX, maxY, minZ)) > -eps) continue;
+		if (planes[i].Distance(Vector3D(minX, maxY, maxZ)) > -eps) continue;
+		if (planes[i].Distance(Vector3D(maxX, minY, minZ)) > -eps) continue;
+		if (planes[i].Distance(Vector3D(maxX, minY, maxZ)) > -eps) continue;
+		if (planes[i].Distance(Vector3D(maxX, maxY, minZ)) > -eps) continue;
+		if (planes[i].Distance(Vector3D(maxX, maxY, maxZ)) > -eps) continue;
+
+		return false;
+	}
+	return true;
+}
+
+bool Volume::IsBoxInside(ArrayCRef<Plane> planes, const Vector3D& mins, const Vector3D& maxs, const float eps)
+{
+	return IsBoxInside(planes, mins.x, maxs.x, mins.y, maxs.y, mins.z, maxs.z);
+}
+
+bool Volume::IsBoxInside(ArrayCRef<Plane> planes, const BoundingBox& box, const float eps)
+{
+	return IsBoxInside(planes, box.minPoint, box.maxPoint, eps);
+}
+
+bool Volume::IsIntersectsRay(ArrayCRef<Plane> planes, const Vector3D& start, const Vector3D& dir, Vector3D& intersectionPos, float eps, int* _planeId)
+{
+	Vector3D isectPos;
+	float bestDist = F_INFINITY;
+	int planeId = -1;
+
+	for (int i = 0; i < planes.numElem(); i++)
+	{
+		if (!planes[i].GetIntersectionWithRay(start, dir, isectPos))
+			continue;
+
+		const Vector3D v = start - isectPos;
+		const float dist = lengthSqr(start - isectPos);
+
+		// check sphere because we have epsilon
+		if (dist < bestDist && IsSphereInside(planes, isectPos + dir * eps, eps))
+		{
+			intersectionPos = isectPos;
+			bestDist = dist;
+			planeId = i;
+		}
+	}
+
+	if (_planeId)
+		*_planeId = planeId;
+
+	return bestDist < F_INFINITY * 0.999f;
+}
+

@@ -1,2 +1,2 @@
-premake5 --file=premake5-engine.lua vs2022
+utils\premake5 vs2022
 pause

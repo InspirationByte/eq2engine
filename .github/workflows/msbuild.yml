@@ -27,14 +27,10 @@ on:
       - 'premake*.lua'
 
 env:
-  # Path to the solution file relative to the root of the project.
-  SOLUTION_FILE_PATH: build/DriverSyndicate.sln
-
-  # Configuration type to build.
-  # You can convert this to a build matrix if you need coverage of multiple configuration types.
-  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+  PROJECT_NAME: auto_tests
   BUILD_CONFIGURATION: Release
   BUILD_PLATFORM: x64
+  WINSDK_VER: "10.0.19041.0"
 
 permissions:
   contents: read
@@ -48,19 +44,24 @@ jobs:
       with:
         token: ${{ secrets.ACTIONSPAT }}
         submodules: recursive
-        
+
     - name: PowerShell Module Cache
       uses: potatoqualitee/psmodulecache@v6.2.1
       with:
         modules-to-cache: 7Zip4PowerShell
-        
+
+    - name: Setup Windows 10 SDK Action
+      uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
+      with:
+        sdk-version: 19041 # TODO: env
+
     - name: Run PS commands
       shell: pwsh
-      run: .\windows_dev_prepare.ps1
-            
+      run: .\utils\windows_dev_prepare.ps1
+
     - name: Generate Solution
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: ./premake5 --file=game/DriverSyndicate/premake5.lua vs2022
+      run: .\utils\premake5 --file=premake5-tests.lua vs2022
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
@@ -69,13 +70,5 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{env.BUILD_PLATFORM}} ${{env.SOLUTION_FILE_PATH}}
-      
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v4.6.0
-      with:
-        name: DrvSyn_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
-        path: |
-          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/*.pdb
-          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/*.exe
-          build/bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/*.dll
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{env.BUILD_PLATFORM}} build\${{env.PROJECT_NAME}}.sln
+

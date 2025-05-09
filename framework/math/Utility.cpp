@@ -1,0 +1,626 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright (C) Inspiration Byte
+// 2009-2020
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Math additional utilites
+//////////////////////////////////////////////////////////////////////////////////
+
+#include "core/core_common.h"
+#include "Utility.h"
+
+int HashVector2D(const Vector2D& v, float tolerance)
+{
+	const IVector2D fixed = v / tolerance;
+	return (fixed.x * 12391) + (fixed.y * 14561);
+}
+
+int HashVector3D(const Vector3D& v, float tolerance)
+{
+	const IVector3D fixed = v / tolerance;
+	return (fixed.x * 12391) + (fixed.y * 14561) + (fixed.z * 18397);
+}
+
+float SnapFloat(float gridSpacing, float val)
+{
+	return round(val / gridSpacing) * gridSpacing;
+}
+
+Vector3D SnapVector(float gridSpacing, const Vector3D& vector)
+{
+	return Vector3D(
+		SnapFloat(gridSpacing, vector.x),
+		SnapFloat(gridSpacing, vector.y),
+		SnapFloat(gridSpacing, vector.z));
+}
+
+bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& worldToScreen, const Vector2D& screenDims)
+{
+	const Vector4D outMat = worldToScreen * Vector4D(point, 1.0f);
+
+	const bool behind = (outMat.w < 0);
+	const float zDiv = outMat.w == 0.0f ? 1.0f : (1.0f / outMat.w);
+
+	screen.x = (screenDims.x + screenDims.x * outMat.x * zDiv) * 0.5f;
+	screen.y = (screenDims.y - screenDims.y * outMat.y * zDiv) * 0.5f;
+	screen.z = outMat.z * outMat.w * 2.0f;
+
+	return behind;
+}
+
+bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4& worldToScreen, const Vector2D& screenDims)
+{
+	Vector3D tmpScreen;
+	const bool behind = PointToScreen(point, tmpScreen, worldToScreen, screenDims);
+	screen = tmpScreen.xy();
+	return behind;
+}
+
+void ScreenToDirection( const Vector2D& pointOnScreen, const Vector2D& screenSize,
+						const Vector3D& cameraPosition, const Matrix4x4& proj, const Matrix4x4& view, bool isOrthogonal,
+						Vector3D& start, Vector3D& dir)
+{
+	Volume frustum;
+	frustum.LoadAsFrustum(proj * (view * translate(cameraPosition)));
+
+	const Vector3D farLeftUp = frustum.GetFarLeftUp();
+	const Vector3D leftToRightVec = frustum.GetFarRightUp() - farLeftUp;
+	const Vector3D upToDownVec = frustum.GetFarLeftDown() - farLeftUp;
+
+	const float dx = pointOnScreen.x / screenSize.x;
+	const float dy = pointOnScreen.y / screenSize.y;
+
+	if (isOrthogonal)
+		start = cameraPosition + (leftToRightVec * (dx - 0.5f)) + (upToDownVec * (dy - 0.5f));
+	else
+		start = cameraPosition;
+
+	dir = farLeftUp + leftToRightVec * dx + upToDownVec * dy;
+}
+
+void ScreenFrustum(const AARectangle& rect, const Vector2D& screenSize,
+	const Matrix4x4& proj, const Matrix4x4& view, 
+	Volume& newFrustum)
+{
+	Volume frustum;
+	frustum.LoadAsFrustum(proj * (view));
+
+	const Vector3D farLeftUp = frustum.GetFarLeftUp();
+
+	const Vector3D leftToRightVec = frustum.GetFarRightUp() - farLeftUp;
+	const Vector3D upToDownVec = frustum.GetFarLeftDown() - farLeftUp;
+
+	// WTF
+	const float dl = 1.0f - rect.rightBottom.x / screenSize.x;
+	const float dr = 1.0f - rect.leftTop.x / screenSize.x;
+	const float dt = rect.leftTop.y / screenSize.y;
+	const float db = rect.rightBottom.y / screenSize.y;
+
+	const Vector3D nl = normalize(lerp(frustum.GetPlane(VOLUME_PLANE_LEFT).normal, -frustum.GetPlane(VOLUME_PLANE_RIGHT).normal, dl));
+	const Vector3D nr = normalize(lerp(-frustum.GetPlane(VOLUME_PLANE_LEFT).normal, frustum.GetPlane(VOLUME_PLANE_RIGHT).normal, dr));
+	const Vector3D nt = normalize(lerp(frustum.GetPlane(VOLUME_PLANE_TOP).normal, -frustum.GetPlane(VOLUME_PLANE_BOTTOM).normal, dt));
+	const Vector3D nb = normalize(lerp(-frustum.GetPlane(VOLUME_PLANE_TOP).normal, frustum.GetPlane(VOLUME_PLANE_BOTTOM).normal, db));
+
+	newFrustum = frustum;
+	newFrustum.SetupPlane(Plane(nl, -dot(nl, farLeftUp + leftToRightVec * dl)), VOLUME_PLANE_LEFT);
+	newFrustum.SetupPlane(Plane(nr, -dot(nr, farLeftUp + leftToRightVec * dr)), VOLUME_PLANE_RIGHT);
+	newFrustum.SetupPlane(Plane(nt, -dot(nt, farLeftUp + upToDownVec * dt)), VOLUME_PLANE_TOP);
+	newFrustum.SetupPlane(Plane(nb, -dot(nb, farLeftUp + upToDownVec * db)), VOLUME_PLANE_BOTTOM);
+}
+
+Vector2D UVFromPointOnTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,
+	const Vector2D& uv1, const Vector2D& uv2, const Vector2D& uv3,
+	const Vector3D& point)
+{
+	// edges
+	const Vector3D v0 = p3 - p1;
+	const Vector3D v1 = p2 - p1;
+	const Vector3D v2 = point - p1;
+
+	// edge lengths
+	const float dot00 = dot(v0, v0);
+	const float dot01 = dot(v0, v1);
+	const float dot02 = dot(v0, v2);
+	const float dot11 = dot(v1, v1);
+	const float dot12 = dot(v1, v2);
+
+	// make barycentric coordinates
+	const float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+
+	const float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	const float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+	const Vector2D t2 = uv2 - uv1;
+	const Vector2D t1 = uv3 - uv1;
+
+	return uv1 + t1 * u + t2 * v;
+}
+
+Vector3D PointFromUVOnTriangle(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3,
+	const Vector3D& t1, const Vector3D& t2, const Vector3D& t3,
+	const Vector2D& p)
+{
+	const float i = 1.0f / ((t2.x - t1.x) * (t3.y - t1.y) - (t2.y - t1.y) * (t3.x - t1.x));
+	const float s = i * ((t3.y - t1.y) * (p.x - t1.x) - (t3.x - t1.x) * (p.y - t1.y));
+	const float t = i * (-(t2.y - t1.y) * (p.x - t1.x) + (t2.x - t1.x) * (p.y - t1.y));
+
+	return Vector3D(v1 + s * (v2 - v1) + t * (v3 - v1));
+}
+
+bool IsPointInCone(const Vector3D& pt, const Vector3D& origin, const Vector3D& axis, float cosAngle, float coneLength)
+{
+	const Vector3D delta = pt - origin;
+
+	const float dist = length(delta);
+	const float fdot = dot(normalize(delta), axis);
+
+	if (fdot < cosAngle)
+		return false;
+
+	if (dist * fdot > coneLength)
+		return false;
+
+	return true;
+}
+
+// checks rat for triangle intersection
+bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vector3D& pt3, const Vector3D& linept, const Vector3D& vect, float& fraction, bool doTwoSided)
+{
+	// get triangle edges
+	const Vector3D edge1 = pt2 - pt1;
+	const Vector3D edge2 = pt3 - pt1;
+
+	// find normal
+	const Vector3D pvec = cross(vect, edge2);
+	const Vector3D tvec = linept - pt1;
+	const Vector3D qvec = cross(tvec, edge1);
+
+	const float det = dot(edge1, pvec);
+	if (!doTwoSided)
+	{
+		// Use culling
+		if (det < F_EPS)
+			return false;
+
+		Vector2D uvCoord;
+		uvCoord.x = dot(tvec, pvec);
+
+		if (uvCoord.x < 0.0f || uvCoord.x > det)
+			return false;
+
+		uvCoord.y = dot(vect, qvec);
+
+		if (uvCoord.y < 0.0f || uvCoord.y + uvCoord.x > det)
+			return false;
+
+		const float invDet = 1.0f / det;
+
+		fraction = dot(edge2, qvec) * invDet;
+	}
+	else
+	{
+		// No culling
+		if (det > -F_EPS && det < F_EPS)
+			return false;
+
+		const float invDet = 1.0f / det;
+
+		Vector2D uvCoord;
+		uvCoord.x = dot(tvec, pvec) * invDet;
+
+		if (uvCoord.x < 0.0f || uvCoord.x > 1.0f)
+			return false;
+
+		Vector3D qvec = cross(tvec, edge1);
+		uvCoord.y = dot(vect, qvec) * invDet;
+
+		if (uvCoord.y < 0.0f || uvCoord.y + uvCoord.x > 1.0f)
+			return false;
+
+		fraction = dot(edge2, qvec) * invDet;
+	}
+
+	return true;
+}
+
+bool LineIntersectsLine2D(const Vector2D& v1, const Vector2D& v2, const Vector2D& lB, const Vector2D& lE, Vector2D& isectPoint)
+{
+	const float a = v2.x - v1.x;
+	const float b = v2.y - v1.y;
+	const float A = lE.x - lB.x;
+	const float B = lE.y - lB.y;
+
+	const float d = A * b - B * a;
+	if (d < F_EPS && d > -F_EPS)
+		return false;
+
+	const float s = ((lB.y - v1.y) * a - (lB.x - v1.x) * b) / d;
+	isectPoint.x = lB.x + s * A;
+	isectPoint.y = lB.y + s * B;
+	return true;
+}
+
+bool LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint)
+{
+	constexpr float accuracy = 100.0f * F_EPS;
+
+	const float a = lAE.x - lAB.x;
+	const float b = lAE.y - lAB.y;
+	const float A = lBE.x - lBB.x;
+	const float B = lBE.y - lBB.y;
+
+	const float d = A * b - B * a;
+	if (d < F_EPS && d > -F_EPS)
+		return false;
+
+	const float s = ((lBB.y - lAB.y) * a - (lBB.x - lAB.x) * b) / d;
+
+	// check that the point of intersection belongs to [lb2,le2]
+	const float maxDiff = max(abs(A), abs(B));
+	if (s * maxDiff < -accuracy || (s - 1.0f) * maxDiff > accuracy) 
+		return false;
+
+	isectPoint.x = lBB.x + s * A;
+	isectPoint.y = lBB.y + s * B;
+
+	// check that the point of intersection belongs to [lb1,le1]
+	if (   isectPoint.x < min(lAB.x, lAE.x) - accuracy
+		|| isectPoint.x > max(lAB.x, lAE.x) + accuracy
+		|| isectPoint.y < min(lAB.y, lAE.y) - accuracy
+		|| isectPoint.y > max(lAB.y, lAE.y) + accuracy)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool LineSegIntersectsCircle2D(const Vector2D& lB, const Vector2D& lE, const Vector2D& center, float radius, FixedArray<Vector2D, 2>& isectPoints)
+{
+	const Vector2D lineVec = lE - lB;
+	const Vector2D f = lB - center;
+
+	const float a = dot(lineVec, lineVec);
+	const float b = 2.0f * dot(f, lineVec);
+	const float c = dot(f, f) - radius * radius;
+
+	float d = b * b - 4.0f * a * c;
+	if (d < 0)
+		return false;
+
+	d = sqrtf(d);
+	const float t1 = (-b - d) / (2.0f * a);
+	const float t2 = (-b + d) / (2.0f * a);
+
+	bool result = false;
+	if (t1 >= 0.0f && t1 <= 1.0f)
+	{
+		result = true;
+		isectPoints.append(lB + lineVec * t1);
+	}
+
+	if (t2 >= 0.0f && t2 <= 1.0f)
+	{
+		result = true;
+		isectPoints.append(lB + lineVec * t2);
+	}
+
+	return result;
+}
+
+float DistancePointPoly2D(const Vector2D& point, ArrayCRef<Vector2D> edgeVerts, Vector2D& normal)
+{
+	const Vector2D dv = point - edgeVerts[0];
+	float d = lengthSqr(dv);
+
+	normal.x = dv.x;
+	normal.y = dv.y;
+
+	float s = 1.0;
+	for (int i = 0, j = edgeVerts.numElem() - 1; i < edgeVerts.numElem(); j = i, i++)
+	{
+		const Vector2D e = edgeVerts[j] - edgeVerts[i];
+		const Vector2D w = point - edgeVerts[i];
+		const Vector2D b = w - e * clamp(dot(w, e) / dot(e, e), 0.0f, 1.0f);
+
+		const float db = lengthSqr(b);
+		if (db < d)
+		{
+			d = db;
+
+			normal.x = b.x;
+			normal.y = b.y;
+		}
+
+		const IVector3D c(point.y >= edgeVerts[i].y, point.y < edgeVerts[j].y, e.x * w.y > e.y * w.x);
+		if (c.x && c.y && c.z || (!c.x && !c.y && !c.z))
+			s *= -1;
+	}
+	d = sqrtf(d);
+
+	normal *= 1.0f / d;
+	normal *= s;
+	return d * s;
+}
+
+float DistanceLineLine(const Vector3D& lB1, const Vector3D& lE1, const Vector3D& lB2, const Vector3D& lE2)
+{
+	const Vector3D dir1 = lE1 - lB1;
+	const Vector3D dir2 = lE2 - lB2;
+
+	const float detLm = dir1.x * dir2.y - dir1.y * dir2.x;
+	const float detMn = dir1.y * dir2.z - dir1.z * dir2.y;
+	const float detNl = dir1.z * dir2.x - dir1.x * dir2.z;
+
+	const float f = sqr(detLm) + sqr(detMn) + sqr(detNl);
+	if (abs(f) <= 0.0001f)
+	{
+		// lines are parallel
+		const Vector3D c = cross(lB2 - lB1, normalize(dir1));
+		return length(c);
+	}
+
+	// lines are not parallel
+	const float det = (lB1.x - lB2.x) * detMn +
+		(lB1.y - lB2.y) * detNl +
+		(lB1.z - lB2.z) * detLm;
+
+	return sqrtf(sqr(det) / f);
+}
+
+float DistanceLineSegLineSeg(const Vector3D& L0, const Vector3D& L1, const Vector3D& S0, const Vector3D& S1, float* Lt, Vector3D* Ln, float* St, Vector3D* Sn)
+{
+	// dist3D_Segment_to_Segment based on code by Dan Sunday
+	// Copyright 2001, softSurfer
+	const Vector3D u = L1 - L0;
+	const Vector3D v = S1 - S0;
+	const Vector3D w = L0 - S0;
+
+	const float a = dot(u, u);
+	const float b = dot(u, v);
+	const float c = dot(v, v);
+	const float d = dot(u, w);
+	const float e = dot(v, w);
+
+	const float D = a * c - b * b;
+	float sc = 0.0f;
+	float sN = 0.0f;
+	float sD = D;
+	float tc = 0.0f;
+	float tN = 0.0f;
+	float tD = D;
+
+	// compute the line parameters of the two closest points
+	if (D < F_EPS) // the lines are almost parallel
+	{
+		sN = 0.0;
+		tN = e;
+		tD = c;
+		sD = c;
+	}
+	else                  // get the closest points on the infinite lines
+	{
+		sN = (b * e - c * d);
+		tN = (a * e - b * d);
+		if (sN < 0)       // sc < 0 => the s=0 edge is visible
+		{
+			sN = 0.0;
+			tN = e;
+			tD = c;
+		}
+		else if (sN > sD)  // sc > 1 => the s=1 edge is visible
+		{
+			sN = sD;
+			tN = e + b;
+			tD = c;
+		}
+	}
+
+	if (tN < 0)           // tc < 0 => the t=0 edge is visible
+	{
+		tN = 0.0;
+		// recompute sc for this edge
+		if (-d < 0)
+		{
+			sN = 0.0;
+		}
+		else if (-d > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = -d;
+			sD = a;
+		}
+	}
+	else if (tN > tD)      // tc > 1 => the t=1 edge is visible
+	{
+		tN = tD;
+
+		// recompute sc for this edge
+		if ((-d + b) < 0)
+		{
+			sN = 0;
+		}
+		else if ((-d + b) > a)
+		{
+			sN = sD;
+		}
+		else
+		{
+			sN = (-d + b);
+			sD = a;
+		}
+	}
+	// finally do the division to get sc and tc
+	sc = sN / sD;
+	tc = tN / tD;
+
+	const Vector3D ln = L0 + u * sc;
+	const Vector3D sn = S0 + v * tc;
+
+	if (Ln) *Ln = ln;
+	if (Sn) *Sn = sn;
+	if (Lt) *Lt = sc;
+	if (St) *St = tc;
+
+	return distance(ln, sn);
+}
+
+static float ConvexOrient2D(const Vector2D& o, const Vector2D& a, const Vector2D& b)
+{
+	return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+}
+
+void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
+{
+	const int n = points.numElem();
+	if (n <= 3)
+		return;
+	int k = 0;
+
+	hull.assureSize(2 * n);
+
+	// sort points lexicographically
+	arraySort(points, [](const Vector2D& a, const Vector2D& b) {
+		int cmp = sortCompare(a.x, b.x);
+		return cmp == 0 ? sortCompare(a.y, b.y) : cmp;
+	});
+
+	// lower hull
+	for (int i = 0; i < n; ++i)
+	{
+		while (k >= 2 && ConvexOrient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
+			--k;
+		hull[k++] = points[i];
+	}
+	// upper hull
+	for (int i = n - 2, t = k + 1; i >= 0; --i)
+	{
+		while (k >= t && ConvexOrient2D(hull[k - 2], hull[k - 1], points[i]) <= F_EPS)
+			--k;
+		hull[k++] = points[i];
+	}
+	hull.setNum(k - 1);
+}
+
+float RectangleAlongAxisSeparation(const Vector2D& pos, const Vector2D& axis, float extent,
+	const Vector2D& otherDir, const Vector2D& otherPerpDir, const Vector2D& otherExtents)
+{
+	float result = fabs(dot(pos, axis)) - extent;
+	result -= fabs(dot(otherDir, axis) * otherExtents[0]);
+	result -= fabs(dot(otherPerpDir, axis) * otherExtents[1]);
+	return result;
+}
+
+float RectangleRectangleSeparation(
+	const Vector2D& position0, const Vector2D& direction0, const Vector2D& perp0, const Vector2D& extents0,
+	const Vector2D& position1, const Vector2D& direction1, const Vector2D& perp1, const Vector2D& extents1)
+{
+	const Vector2D localPosition = position0 - position1;
+	float result = RectangleAlongAxisSeparation(localPosition, direction0, extents0[0], direction1, perp1, extents1);
+
+	float v = RectangleAlongAxisSeparation(localPosition, perp0, extents0[1], direction1, perp1, extents1);
+	result = (result <= v) ? v : result;
+
+	v = RectangleAlongAxisSeparation(localPosition, direction1, extents1[0], direction0, perp0, extents0);
+	result = (result <= v) ? v : result;
+
+	v = RectangleAlongAxisSeparation(localPosition, perp1, extents1[1], direction0, perp0, extents0);
+	result = (result <= v) ? v : result;
+
+	return result;
+}
+
+// converts angles in [-180, 180] in Radians
+float ConstrainAnglePI(float x)
+{
+	// NOTE: we add full circle to ensure that values close to -2PI work alright
+	return fmodf(x + M_PI_F + M_PI_2_F, M_PI_2_F) - M_PI_F;
+}
+
+// normalizes angles in [-180, 180]
+float ConstrainAngle180(float x)
+{
+	// NOTE: we add full circle to ensure that values close to -360 work alright
+	return fmodf(x + 180.0f + 360.0f, 360.0f) - 180.0f;
+}
+
+// normalizes angles vector in [-180, 180]
+Vector3D NormalizeAngles180(const Vector3D& angles)
+{
+	Vector3D ang;
+
+	ang.x = ConstrainAngle180(angles.x);
+	ang.y = ConstrainAngle180(angles.y);
+	ang.z = ConstrainAngle180(angles.z);
+
+	return ang;
+}
+
+
+// computes angle difference (degrees)
+float AngleDiff(float a, float b)
+{
+	return ConstrainAngle180(b - a);
+}
+
+// computes angle difference (Radians)
+float AngleDiffRad(float a, float b)
+{
+	return ConstrainAnglePI(b - a);
+}
+
+float VecAngleDiffCos(const Vector2D& v1, const Vector2D& v2)
+{
+	const float len2 = (v1.x * v1.x + v1.y * v1.y) * (v2.x * v2.x + v2.y * v2.y);
+	if (len2 < F_EPS)
+		return 1.0f;
+
+	return clamp((v1.x * v2.x + v1.y * v2.y) / sqrtf(len2), -1.0f, 1.0f);
+}
+
+float VecAngleDiff(const Vector2D& v1, const Vector2D& v2)
+{
+	return AngleDiffRad(atan2f(v1.x, v1.y), atan2f(v2.x, v2.y));
+}
+
+// computes angles difference (degrees)
+Vector3D AnglesDiff(const Vector3D& a, const Vector3D& b)
+{
+	Vector3D angDiff;
+
+	angDiff.x = AngleDiff(a.x, b.x);
+	angDiff.y = AngleDiff(a.y, b.y);
+	angDiff.z = AngleDiff(a.z, b.z);
+
+	return angDiff;
+}
+
+/*
+The number of bits of precision per color channel are log_2(c_precision),
+in this case 7 bits per color, or 21 bits total.
+
+A c_precision of 128 fits within 7 base-10 digits.
+
+NOTE: an IEEE 754 float can only express 7 digits exactly for all digits.
+*/
+const float c_precision = 128.0;
+const float c_precisionp1 = c_precision + 1.0;
+
+float PackNormal(const Vector3D& normal)
+{
+	const Vector3D n = clamp(normal, 0.0f, 1.0f);
+	return floor(n.x * c_precision + 0.5)
+		+ floor(n.y * c_precision + 0.5) * c_precisionp1
+		+ floor(n.z * c_precision + 0.5) * c_precisionp1 * c_precisionp1;
+}
+
+Vector3D UnpackNormal(float value)
+{
+	Vector3D normal;
+	normal.x = fmodf(value, c_precisionp1) / c_precision;
+	normal.y = fmodf(floor(value / c_precisionp1), c_precisionp1) / c_precision;
+	normal.z = floor(value / (c_precisionp1 * c_precisionp1)) / c_precision;
+	return normal;
+}

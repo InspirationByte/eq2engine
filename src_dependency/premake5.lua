@@ -1,32 +1,36 @@
-include(DependencyPath.zlib.."/premake5.lua")
+group "Dependencies"
+
+include "zlib"
 
 -- android dependencies are separate
-if not IS_ANDROID then
-include(DependencyPath.openal.."/premake5.lua")
-include(DependencyPath.libsdl.."/premake5.lua")
-include("shaderc/premake5.lua")
-include("wxWidgets/premake5.lua")
+if IS_ANDROID then
+	include "android"
+else
+	include(DependencyPath.openal)
+	include(DependencyPath.libsdl)
+	include "shaderc"
+	include "wxWidgets"
 end
 
 if ENABLE_TESTS then
-include("gtest/premake5.lua")
+	include "gtest"
 end
 
-include("stb/premake5.lua")
-include("lz4/premake5.lua")
-include("cv_sdk/premake5.lua")
-include("LivePP/premake5.lua")
+include "stb"
+include "lz4"
+include "cv_sdk"
+include "LivePP"
 
-include("imgui/premake5.lua")
-include("imgui_lua/premake5.lua")
+include "imgui"
+include "imgui_lua"
 
-include("nvrhi/premake5.lua")
-include("wgpu-dawn/premake5.lua")
-include("minivorbis/premake5.lua")
-include("ffmpeg/premake5.lua")
-include("lua54/premake5.lua")
+include "wgpu-dawn"
+include "nvrhi"
+include "minivorbis"
+include "ffmpeg"
+include "lua54"
 
-include("meshoptimizer/premake5.lua")
-include("recast/premake5.lua")
-include("bullet2/premake5.lua")
-include("OpenFBX/premake5.lua")
+include "meshoptimizer"
+include "recast"
+include "bullet2"
+include "OpenFBX"

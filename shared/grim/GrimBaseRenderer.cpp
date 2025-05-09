@@ -1,0 +1,1684 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright (C) Inspiration Byte
+// 2009-2024
+//////////////////////////////////////////////////////////////////////////////////
+// Description: GRIM - GPU-driven Rendering and Instance Manager
+//////////////////////////////////////////////////////////////////////////////////
+
+#include <imgui.h>
+#include "core/core_common.h"
+#include "core/ConVar.h"
+#include "core/IFileSystem.h"
+
+#include "ds/SlottedArray.h"
+
+#include "studio/StudioGeom.h"
+#include "studio/StudioCache.h"
+#include "render/IDebugOverlay.h"
+#include "GrimBaseRenderer.h"
+#include "GrimInstanceAllocator.h"
+#include "materialsystem1/IMaterialSystem.h"
+
+using namespace Threading;
+
+DECLARE_CVAR(grim_dbgSoftwareMode, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbgOnlyMaterial, "", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbgLogArchetypes, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(grim_dbgValidate, "0", nullptr, CV_CHEAT);
+
+static constexpr char SHADERNAME_SORT_INSTANCES[] = "InstanceArchetypeSort";
+static constexpr char SHADERNAME_CALC_INSTANCE_BOUNDS[] = "InstanceCalcBounds";
+static constexpr char SHADERNAME_PREPARE_INDIRECT_INSTANCES[] = "InstancePrepareDrawIndirect";
+static constexpr char SHADERNAME_PREPARE_INSTALCE_POOLS[] = "InstancePreparePools";
+static constexpr char SHADERNAME_CULL_INSTANCES[] = "InstancesCull";
+static constexpr char SHADERNAME_FILTER_INSTANCES[] = "InstanceFilter";
+static constexpr char SHADER_PIPELINE_SORT_INSTANCES[] = "InstanceInfos";
+
+DEFINE_SHADER_NOFACTORY(InstanceArchetypeSort)
+DEFINE_SHADER_NOFACTORY(InstanceCalcBounds)
+DEFINE_SHADER_NOFACTORY(InstancePrepareDrawIndirect)
+DEFINE_SHADER_NOFACTORY(InstancePreparePools)
+DEFINE_SHADER_NOFACTORY(InstancesCull)
+DEFINE_SHADER_NOFACTORY(InstanceFilter)
+
+static CEqMutex s_grimRendererMutex;
+
+GRIMBaseRenderer::GRIMBaseRenderer(GRIMBaseInstanceAllocator& allocator)
+	: m_instAllocator(allocator)
+{
+}
+
+void GRIMBaseRenderer::Init()
+{
+	PROF_EVENT("GRIM Init");
+
+	m_sortShader = CRefPtr_new(ComputeSortShader);
+	m_sortShader->AddSortPipeline(SHADER_PIPELINE_SORT_INSTANCES, SHADERNAME_SORT_INSTANCES);
+	
+	m_instCalcBoundsPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_CALC_INSTANCE_BOUNDS)
+		.End()
+	);
+
+	m_instPrepareDrawIndirectPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_PREPARE_INDIRECT_INSTANCES)
+		.End()
+	);
+
+	m_cullInstancesPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_CULL_INSTANCES)
+		.End()
+	, m_cullInstancesPipelineLayout);
+
+	m_filterInstancesPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_FILTER_INSTANCES)
+		.ShaderLayoutId(StringIdConst24("Filter"))
+		.End()
+	);
+
+	m_filterCalcWorkGroupsPipeline = g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_FILTER_INSTANCES)
+		.ShaderLayoutId(StringIdConst24("CalcWorkGroups"))
+		.End()
+	);
+
+	m_drawBatchs.SetPipeline(g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
+		.ShaderLayoutId(StringId24(m_drawBatchs.GetName()))
+		.End()
+	));
+	m_drawLodInfos.SetPipeline(g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
+		.ShaderLayoutId(StringId24(m_drawLodInfos.GetName()))
+		.End()
+	));
+	m_drawLodsList.SetPipeline(g_renderAPI->CreateComputePipeline(
+		Builder<ComputePipelineDesc>()
+		.ShaderName(SHADERNAME_PREPARE_INSTALCE_POOLS)
+		.ShaderLayoutId(StringId24(m_drawLodsList.GetName()))
+		.End()
+	));
+}
+
+void GRIMBaseRenderer::Shutdown()
+{
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	m_dbgHiddenArchetypes.clear();
+#endif
+	m_pendingArchetypes.clear(true);
+	m_pendingDeletion.clear(true);
+	m_drawInfos.clear(true);
+
+	m_drawBatchs.Clear(true);
+	m_drawLodInfos.Clear(true);
+	m_drawLodsList.Clear(true);
+
+	m_drawBatchs.SetPipeline(nullptr);
+	m_drawLodInfos.SetPipeline(nullptr);
+	m_drawLodsList.SetPipeline(nullptr);
+
+	m_sortShader = nullptr;
+	m_instCalcBoundsPipeline = nullptr;
+	m_filterInstancesPipeline = nullptr;
+	m_filterCalcWorkGroupsPipeline = nullptr;
+	m_instPrepareDrawIndirectPipeline = nullptr;
+	m_updateBindGroup0 = nullptr;
+	
+	m_cullInstancesPipeline = nullptr;
+	m_cullInstancesPipelineLayout = nullptr;
+	m_cullBindGroup0 = nullptr;
+}
+
+GRIMArchetype GRIMBaseRenderer::CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
+{
+	ASSERT(bodyGroupFlags != 0);
+	ASSERT(vertFormat);
+
+	CScopedMutex m(s_grimRendererMutex);
+
+	PendingDesc& pending = m_pendingArchetypes.append();
+	pending.egfDesc.geom = geom;
+	pending.egfDesc.vertFormat = vertFormat;
+	pending.egfDesc.bodyGroupFlags = bodyGroupFlags;
+	pending.egfDesc.materialGroupIdx = materialGroupIdx;
+	pending.extraVertexBuffers.append(extraVertexBuffers.ptr(), extraVertexBuffers.numElem());
+	pending.extraLayoutBits = extraLayoutBits;	
+	pending.type = PendingDesc::TYPE_STUDIO;
+	pending.slot = m_drawLodsList.Add(GPULodList{});
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	if(m_drawLodsList.NumSlots() + 1 > m_dbgHiddenArchetypes.numBits())
+		m_dbgHiddenArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+	m_dbgHiddenArchetypes.setFalse(pending.slot);
+#endif
+
+	return pending.slot;
+}
+
+GRIMArchetype GRIMBaseRenderer::CreateDrawArchetype(const GRIMArchetypeDesc& desc)
+{
+	bool hasVertBuffers = false;
+	for (IGPUBufferPtr vertBuffer : desc.vertexBuffers)
+		hasVertBuffers = hasVertBuffers || vertBuffer;
+	ASSERT_MSG(hasVertBuffers, "Cannot create archetype when no vertex buffers specified");
+	if (!hasVertBuffers)
+		return GRIM_INVALID_ARCHETYPE;
+
+	ASSERT_MSG(desc.lods.numElem() <= GRIM_MAX_INSTANCE_LODS, "Too many lods (%d), max is %d", desc.lods.numElem(), GRIM_MAX_INSTANCE_LODS);
+
+	CScopedMutex m(s_grimRendererMutex);
+
+	PendingDesc& pending = m_pendingArchetypes.append();
+	pending.desc = desc;
+	pending.type = PendingDesc::TYPE_GRIM;
+	pending.slot = m_drawLodsList.Add(GPULodList{});
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	if(m_drawLodsList.NumSlots() + 1 > m_dbgHiddenArchetypes.numBits())
+		m_dbgHiddenArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+	m_dbgHiddenArchetypes.setFalse(pending.slot);
+#endif
+
+	return pending.slot;
+}
+
+void GRIMBaseRenderer::UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetypeDesc& desc)
+{
+	bool hasVertBuffers = false;
+	for (IGPUBufferPtr vertBuffer : desc.vertexBuffers)
+		hasVertBuffers = hasVertBuffers || vertBuffer;
+	ASSERT_MSG(hasVertBuffers, "Cannot create archetype when no vertex buffers specified");
+	if (!hasVertBuffers)
+		return;
+
+	ASSERT_MSG(desc.lods.numElem() <= GRIM_MAX_INSTANCE_LODS, "Too many lods (%d), max is %d", desc.lods.numElem(), GRIM_MAX_INSTANCE_LODS);
+
+	CScopedMutex m(s_grimRendererMutex);
+
+	PendingDesc& pending = m_pendingArchetypes.append();
+	pending.desc = desc;
+	pending.type = PendingDesc::TYPE_GRIM;
+	pending.slot = id;
+	pending.isUpdate = true;
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	if (m_drawLodsList.NumSlots() + 1 > m_dbgHiddenArchetypes.numBits())
+		m_dbgHiddenArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+	m_dbgHiddenArchetypes.setFalse(pending.slot);
+#endif
+}
+
+void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
+{
+	EGF_LOADING_CRITICAL_SECTION(geom);
+
+	bool isSlotTaken = false;
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		isSlotTaken = m_drawLodsList(slot);
+	}
+
+	if (isSlotTaken)
+	{
+		// first we need to drop data of this archetype
+		DestroyArchetypeData(slot);
+	}
+
+	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
+	IGPUBufferPtr indexBuffer = geom->GetIndexBuffer();
+
+	MeshInstanceFormatRef instFormat = vertFormat;
+	instFormat.usedLayoutBits = 0;
+	int instanceStreamId = -1;
+
+	uint usedEGFVertexStreams = 0;
+	bool skinningSupport = false;
+	for (int i = 0; i < instFormat.layout.numElem(); ++i)
+	{
+		const VertexLayoutDesc& layoutDesc = instFormat.layout[i];
+
+		if (layoutDesc.userId & EGFHwVertex::EGF_FLAG)
+		{
+			const EGFHwVertex::VertexStreamId vertStreamId = static_cast<EGFHwVertex::VertexStreamId>(layoutDesc.userId & EGFHwVertex::EGF_MASK);
+			IGPUBufferPtr vertBuffer = geom->GetVertexBuffer(vertStreamId);
+			if(vertBuffer && (usedEGFVertexStreams & (1 << vertStreamId)) == 0)
+			{
+				usedEGFVertexStreams |= (1 << vertStreamId);
+				vertexBuffers.append(vertBuffer);
+
+				instFormat.usedLayoutBits |= (1 << i);
+				if (vertStreamId == EGFHwVertex::VERT_BONEWEIGHT)
+					skinningSupport = true;
+			}
+		}
+
+		if (instanceStreamId == -1 && layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
+		{
+			ASSERT_MSG((instFormat.usedLayoutBits & (1 << i)) == 0, "Instance layout id is not valid");
+			instFormat.usedLayoutBits |= (1 << i);
+
+			instanceStreamId = vertexBuffers.numElem();
+			vertexBuffers.append(nullptr);
+		}
+	}
+
+	ASSERT_MSG(instanceStreamId != -1, "Vertex format %s is not configured for instanced rendering", vertFormat->GetName());
+	vertexBuffers.append(extraVertexBuffers.ptr(), extraVertexBuffers.numElem());
+	instFormat.usedLayoutBits |= extraLayoutBits;
+
+	// TODO: multiple material groups require new archetype
+	// also body groups are really are different archetypes for EGF
+	ArrayCRef<IMaterialPtr> materials = geom->GetMaterials(materialGroupIdx);
+	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom->GetHwGeomRefs();
+	const studioHdr_t& studio = geom->GetStudioHdr();
+
+	ArchetypeInfo::PTR_T archetypeInfo = CRefPtr_new(ArchetypeInfo);
+	archetypeInfo->name = EqString::Format("%s_b%d_m%d", geom->GetName(), bodyGroupFlags, materialGroupIdx);
+	archetypeInfo->indexFormat = (EIndexFormat)geom->GetIndexFormat();
+	archetypeInfo->meshInstFormat = instFormat;
+	archetypeInfo->vertexBuffers.append(vertexBuffers);
+	archetypeInfo->instanceStreamId = instanceStreamId;
+	archetypeInfo->indexBuffer = indexBuffer;
+	archetypeInfo->skinningSupport = skinningSupport;
+
+	if (grim_dbgLogArchetypes.GetBool())
+		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
+
+	int prevLod = -1;
+	for (int i = 0; i < studio.numLodParams; i++)
+	{
+		const studioLodParams_t* lodParam = studio.pLodParams(i);
+		GPULodInfo drawLodInfo;
+		drawLodInfo.distance = lodParam->distance;
+
+		bool hasBodyGroups = false;
+		int prevBatch = -1;
+		for (int j = 0; j < studio.numBodyGroups; ++j)
+		{
+			if (!(bodyGroupFlags & (1 << j)))
+				continue;
+
+			const int bodyGroupLodIndex = studio.pBodyGroups(j)->lodModelIndex;
+			const studioLodModel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
+	
+			int bodyGroupLOD = i;
+			uint8 modelDescId = EGF_INVALID_IDX;
+			do
+			{
+				modelDescId = lodModel->modelsIndexes[bodyGroupLOD--];
+			} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
+	
+			if (modelDescId == EGF_INVALID_IDX)
+				continue;
+	
+			const studioMeshGroupDesc_t* modDesc = studio.pMeshGroupDesc(modelDescId);
+			for (int k = 0; k < modDesc->numMeshes; ++k)
+			{
+				const CEqStudioGeom::HWGeomRef::MeshRef& meshRef = geomRefs[modelDescId].meshRefs[k];
+				const IMaterialPtr material = materials[meshRef.materialIdx];
+				if (material->GetFlags() & MATERIAL_FLAG_INVISIBLE)
+					continue;
+	
+				GPUIndexedBatch drawBatch;
+				drawBatch.firstIndex = meshRef.firstIndex;
+				drawBatch.indexCount = meshRef.indexCount;
+
+				const int newBatch = m_drawBatchs.Add(drawBatch);
+				if (prevBatch != -1)
+				{
+					m_drawBatchs[prevBatch].next = newBatch;
+					m_drawBatchs.SetUpdated(prevBatch);
+				}
+				else
+					drawLodInfo.firstBatch = newBatch;
+				prevBatch = newBatch;
+
+				DrawInfo drawInfo;
+				drawInfo.archetypeInfo = archetypeInfo;
+				drawInfo.primTopology = (EPrimTopology)meshRef.primType;
+				drawInfo.ownerArchetype = slot;
+				drawInfo.material = material;
+				drawInfo.batchIdx = newBatch;
+				drawInfo.lodNumber = i;
+
+				m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
+				hasBodyGroups = true;
+			}
+		}
+
+		if (!hasBodyGroups)
+			continue;
+
+		const int newLod = m_drawLodInfos.Add(drawLodInfo);
+		if(prevLod != -1)
+		{
+			m_drawLodInfos[prevLod].next = newLod;
+			m_drawLodInfos.SetUpdated(prevLod);
+		}
+		else
+		{
+			CScopedMutex m(s_grimRendererMutex);
+			m_drawLodsList[slot].firstLodInfo = newLod;
+			m_drawLodsList.SetUpdated(slot);
+		}
+		prevLod = newLod;
+	}
+}
+
+void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const GRIMArchetypeDesc& desc)
+{
+	bool isSlotTaken = false;
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		isSlotTaken = m_drawLodsList(slot);
+	}
+
+	if (isSlotTaken)
+	{
+		// first we need to drop data of this archetype
+		DestroyArchetypeData(slot);
+	}
+
+	FixedArray<IGPUBufferPtr, MAX_VERTEXSTREAM> vertexBuffers;
+
+	MeshInstanceFormatRef instFormat = desc.meshInstanceFormat;
+	instFormat.usedLayoutBits = 0;
+	int instanceStreamId = -1;
+
+	int vbId = 0;
+	for (int i = 0; i < instFormat.layout.numElem(); ++i)
+	{
+		const VertexLayoutDesc& layoutDesc = instFormat.layout[i];
+		instFormat.usedLayoutBits |= (1 << i);
+
+		if (instanceStreamId == -1 && layoutDesc.stepMode == VERTEX_STEPMODE_INSTANCE)
+		{
+			instanceStreamId = vertexBuffers.numElem();
+			vertexBuffers.append(nullptr);
+		}
+		else
+			vertexBuffers.append(desc.vertexBuffers[vbId++]);
+	}
+	ASSERT_MSG(instanceStreamId != -1, "Vertex format %s is not configured for instanced rendering", instFormat.name);
+	instFormat.usedLayoutBits |= (1 << instanceStreamId);
+
+	ArchetypeInfo::PTR_T archetypeInfo = CRefPtr_new(ArchetypeInfo);
+	archetypeInfo->name = desc.name;
+	archetypeInfo->indexFormat = desc.indexFormat;
+	archetypeInfo->meshInstFormat = instFormat;
+	archetypeInfo->vertexBuffers.append(vertexBuffers);
+	archetypeInfo->instanceStreamId = instanceStreamId;
+	archetypeInfo->indexBuffer = desc.indexBuffer;
+
+	if (grim_dbgLogArchetypes.GetBool())
+		MsgInfo("GRIM: creating archetype %d (%s)\n", slot, archetypeInfo->name.ToCString());
+
+	int prevLod = -1;
+	int numLods = 0;
+	for (const GRIMArchetypeDesc::LodInfo& lodInfo : desc.lods)
+	{
+		GPULodInfo drawLodInfo;
+		drawLodInfo.distance = lodInfo.distance;
+
+		bool hasBodyGroups = false;
+		int prevBatch = -1;
+		for (int i = lodInfo.firstBatch; i < lodInfo.firstBatch + lodInfo.batchCount; ++i)
+		{
+			const GRIMArchetypeDesc::Batch& batch = desc.batches[i];
+			//if (batch.material->GetFlags() & MATERIAL_FLAG_INVISIBLE)
+			//	continue;
+
+			GPUIndexedBatch drawBatch;
+			drawBatch.firstIndex = batch.firstIndex;
+			drawBatch.indexCount = batch.indexCount;
+
+			const int newBatch = m_drawBatchs.Add(drawBatch);
+			if (prevBatch != -1)
+			{
+				m_drawBatchs[prevBatch].next = newBatch;
+				m_drawBatchs.SetUpdated(prevBatch);
+			}
+			else
+				drawLodInfo.firstBatch = newBatch;
+			prevBatch = newBatch;
+
+			DrawInfo drawInfo;
+			drawInfo.archetypeInfo = archetypeInfo;
+			drawInfo.primTopology = batch.primTopology;
+			drawInfo.ownerArchetype = slot;
+			drawInfo.material = batch.material;
+			drawInfo.batchIdx = newBatch;
+			drawInfo.lodNumber = numLods;
+
+			m_drawBatchs[newBatch].cmdIdx = m_drawInfos.add(drawInfo);
+			hasBodyGroups = true;
+		}
+
+		if (!hasBodyGroups)
+			continue;
+
+		const int newLod = m_drawLodInfos.Add(drawLodInfo);
+		if (prevLod != -1)
+		{
+			m_drawLodInfos[prevLod].next = newLod;
+			m_drawLodInfos.SetUpdated(prevLod);
+		}
+		else
+		{
+			CScopedMutex m(s_grimRendererMutex);
+			m_drawLodsList[slot].firstLodInfo = newLod;
+			m_drawLodsList.SetUpdated(slot);
+		}
+		prevLod = newLod;
+
+		++numLods;
+	}
+}
+
+void GRIMBaseRenderer::DestroyDrawArchetype(GRIMArchetype archetype)
+{
+	if(archetype == GRIM_INVALID_ARCHETYPE)
+		return;
+
+	CScopedMutex m(s_grimRendererMutex);
+	if (!m_drawLodsList(archetype))
+		return;
+
+	m_pendingDeletion.append(archetype);
+}
+
+EqStringRef GRIMBaseRenderer::DbgGetArchetypeName(GRIMArchetype archetypeId) const
+{
+	if(!m_drawLodsList(archetypeId))
+		return nullptr;
+
+	const int firstLodInfo = m_drawLodsList[archetypeId].firstLodInfo;
+	if(firstLodInfo == -1)
+		return nullptr;
+
+	const int firstBatch = m_drawLodInfos[firstLodInfo].firstBatch;
+	if(firstBatch == -1)
+	{
+		ASSERT_FAIL("No batchs for archetype %d\n", archetypeId);
+		return nullptr;
+	}
+
+	const int cmdIdx = m_drawBatchs[firstBatch].cmdIdx;
+	if(cmdIdx == -1)
+	{
+		ASSERT_FAIL("No cmd for lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, archetypeId);
+		return nullptr;
+	}
+
+	if(!m_drawInfos[cmdIdx].archetypeInfo)
+	{
+		ASSERT_FAIL("Missing archetypeInfo lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, archetypeId);
+		return nullptr;
+	}
+
+	return m_drawInfos[cmdIdx].archetypeInfo->name;
+}
+
+void GRIMBaseRenderer::DbgInvalidateAllData()
+{
+	CScopedMutex m(s_grimRendererMutex);
+	for(int i = 0; i < m_drawBatchs.NumSlots(); ++i)
+	{
+		if(m_drawBatchs(i))
+			m_drawBatchs.SetUpdated(i);
+	}
+
+	for(int i = 0; i < m_drawLodInfos.NumSlots(); ++i)
+	{
+		if (m_drawLodInfos(i))
+			m_drawLodInfos.SetUpdated(i);
+	}
+
+	for(int i = 0; i < m_drawLodsList.NumSlots(); ++i)
+	{
+		if(m_drawLodsList(i))
+			m_drawLodsList.SetUpdated(i);
+	}
+	m_dbgInvalidated = true;
+}
+
+void GRIMBaseRenderer::DestroyArchetypeData(GRIMArchetype slot)
+{
+	struct ItemInfo {
+		enum EWhat
+		{
+			DRAWINFO,
+			BATCH,
+			LODINFO
+		};
+		int index : 24;
+		int what : 8;
+	};
+	Array<ItemInfo> delItems(PP_SL);
+	delItems.reserve(64);
+
+	const GPULodList lodList = m_drawLodsList[slot];
+	for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
+	{
+		const GPULodInfo lodInfo = m_drawLodInfos[lodIdx];
+		for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = m_drawBatchs[batchIdx].next)
+		{
+			delItems.appendEmplace(m_drawBatchs[batchIdx].cmdIdx, ItemInfo::DRAWINFO);
+			delItems.appendEmplace(batchIdx, ItemInfo::BATCH);
+		}
+		delItems.appendEmplace(lodIdx, ItemInfo::LODINFO);
+	}
+
+	if (grim_dbgLogArchetypes.GetBool())
+		MsgInfo("GRIM: freed archetype %d (%s)\n", slot, DbgGetArchetypeName(slot).ToCString());
+
+	for (ItemInfo& item : delItems)
+	{
+		switch (item.what)
+		{
+		case ItemInfo::DRAWINFO:
+			m_drawInfos.remove(item.index);
+			break;
+		case ItemInfo::BATCH:
+			m_drawBatchs.Remove(item.index);
+			break;
+		case ItemInfo::LODINFO:
+			m_drawLodInfos.Remove(item.index);
+			break;;
+		}
+	}
+
+	// reset to defaults
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		m_drawLodsList.Update(slot, GPULodList{});
+	}
+}
+
+void GRIMBaseRenderer::DestroyPendingArchetypes()
+{
+	if (!m_pendingDeletion.numElem())
+		return;
+
+	Array<GRIMArchetype> pendingDeletion(PP_SL);
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		pendingDeletion.swap(m_pendingDeletion);
+	}
+
+	for (GRIMArchetype slot : pendingDeletion)
+	{
+		DestroyArchetypeData(slot);
+
+		{
+			CScopedMutex m(s_grimRendererMutex);
+			m_drawLodsList.Remove(slot);
+		}
+	}
+}
+
+void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
+{
+	++m_drawFrame;
+
+	if(IsSync())
+		return;
+
+	Array<PendingDesc> pending(PP_SL);
+	if(m_pendingArchetypes.numElem())
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		m_pendingArchetypes.swap(pending);
+	}
+
+	// before we send anything to GPU, we need to commit new archetypes
+	// destroy pending first so we can place new ones at their slots
+	DestroyPendingArchetypes();
+	for (PendingDesc& pending : pending)
+	{
+		if(!pending.isUpdate)
+		{
+			ASSERT_MSG(m_drawLodsList(pending.slot), "Archetype slot %d is not reserved", pending.slot);
+		}
+
+		if (pending.type == PendingDesc::TYPE_GRIM)
+			InitDrawArchetype(pending.slot, pending.desc);
+		else if (pending.type == PendingDesc::TYPE_STUDIO)
+			InitDrawArchetype(pending.slot, pending.egfDesc.geom, pending.egfDesc.vertFormat, pending.egfDesc.bodyGroupFlags, pending.egfDesc.materialGroupIdx, pending.extraVertexBuffers, pending.extraLayoutBits);
+	}
+
+	// we have to sync desc buffers first
+	bool buffersUpdated = false;
+	{
+		CScopedMutex m(s_grimRendererMutex);
+		if (m_drawLodsList.Sync(cmdRecorder, GRIMLock::EmptyLock))
+			buffersUpdated = true;
+	}
+
+	if (m_drawLodInfos.Sync(cmdRecorder, GRIMLock::EmptyLock))
+		buffersUpdated = true;
+
+	if (m_drawBatchs.Sync(cmdRecorder, GRIMLock::EmptyLock))
+		buffersUpdated = true;
+	
+	if (!buffersUpdated)
+		return;
+	m_dbgInvalidated = false;
+
+	m_updateBindGroup0 = g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, m_drawBatchs.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(1, m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(2, m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
+		.End()
+	);
+
+	m_cullBindGroup0 = g_renderAPI->CreateBindGroup(m_cullInstancesPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, m_drawLodInfos.GetGPUData().Get<IGPUBuffer>())
+		.Buffer(1, m_drawLodsList.GetGPUData().Get<IGPUBuffer>())
+		.End()
+	);
+}
+
+//--------------------------------------------------------------------
+
+IVector2D GRIMBaseRenderer::VisCalcWorkSize(int length) const
+{
+	constexpr int GPUVIS_GROUP_SIZE = 256;
+	constexpr int GPUVIS_MAX_DIM_GROUPS = 1024;
+	constexpr int GPUVIS_MAX_DIM_THREADS = (GPUVIS_GROUP_SIZE * GPUVIS_MAX_DIM_GROUPS);
+
+	IVector2D result;
+	if (length <= GPUVIS_MAX_DIM_THREADS)
+	{
+		result.x = (length - 1) / GPUVIS_GROUP_SIZE + 1;
+		result.y = 1;
+	}
+	else
+	{
+		result.x = GPUVIS_MAX_DIM_GROUPS;
+		result.y = (length - 1) / GPUVIS_MAX_DIM_THREADS + 1;
+	}
+
+	return result;
+}
+
+void GRIMBaseRenderer::FilterInstances_Compute(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
+	struct Params {
+		int maxInstanceIds;
+		int groupMaskInclude;
+		int groupMaskExclude;
+		int overrideLodIdx;
+	};
+
+	Params params;
+	params.maxInstanceIds = m_instAllocator.GetInstanceSlotsCount();
+	params.groupMaskInclude = intermediate.renderState.groupMaskInclude ? (m_drawSettings.groupMaskInclude & intermediate.renderState.groupMaskInclude) : m_drawSettings.groupMaskInclude;
+	params.groupMaskExclude = m_drawSettings.groupMaskExclude | intermediate.renderState.groupMaskExclude;
+	params.overrideLodIdx = m_drawSettings.overrideLodIdx;
+
+	GRIMRenderState& rendState = intermediate.renderState;
+
+	// Params			params;
+	// int				instanceInfosCount;	// atomic
+	// ivec2			indirectWorkGroups;
+	// GPUInstanceInfo	instanceInfos[];
+
+	const int countBufferSize = sizeof(IVector4D) * 2;
+	const int bufferSize = max(countBufferSize, caps.minStorageBufferOffsetAlignment)		// atomic
+						+ sizeof(GPUInstanceInfo) * intermediate.maxNumberOfObjects;
+
+	const BufferInfo filterParamsBufferInfo(1, sizeof(params));
+	if (!rendState.filterParamsBuffer)
+		rendState.filterParamsBuffer = g_renderAPI->CreateBuffer(filterParamsBufferInfo, BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "FilterParams");
+	intermediate.cmdRecorder->WriteBuffer(rendState.filterParamsBuffer, &params, sizeof(params), 0);
+
+	// D3D11 HACK
+	if (!rendState.filteredInstancesCountBuffer)
+		rendState.filteredInstancesCountBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, countBufferSize), BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_SRC | BUFFERUSAGE_COPY_DST, "InstanceInfosFilteredCount");
+	intermediate.cmdRecorder->ClearBuffer(rendState.filteredInstancesCountBuffer, 0, countBufferSize);
+
+	if (!rendState.filteredInstancesBuffer || rendState.filteredInstancesBuffer->GetSize() < bufferSize)
+		rendState.filteredInstancesBuffer = g_renderAPI->CreateBuffer(BufferInfo(1, bufferSize), BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfosFiltered");
+	intermediate.cmdRecorder->ClearBuffer(rendState.filteredInstancesBuffer, 0, bufferSize);
+
+	GPUBufferView filteredInstanceInfosBuffer{ rendState.filteredInstancesBuffer, max((int)countBufferSize, caps.minStorageBufferOffsetAlignment), (int)sizeof(GPUInstanceInfo) * intermediate.maxNumberOfObjects };
+	GPUBufferView filteredInstanceCountBuffer{ rendState.filteredInstancesCountBuffer, 0, countBufferSize };
+
+	{
+		IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("FilterInstances");
+
+		// filter instances by group mask
+		computeRecorder->SetPipeline(m_filterInstancesPipeline);
+		computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
+			Builder<BindGroupDesc>()
+			.GroupIndex(0)
+			.Buffer(0, m_instAllocator.GetInstanceArchetypesBuffer())
+			.Buffer(1, m_instAllocator.GetInstanceGroupMaskBuffer())
+			.Buffer(2, rendState.filterParamsBuffer, 0, sizeof(params))
+			.End()
+		));
+		computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterInstancesPipeline,
+			Builder<BindGroupDesc>()
+			.GroupIndex(1)
+			.Buffer(0, filteredInstanceInfosBuffer)
+			.Buffer(1, filteredInstanceCountBuffer)
+			.End()
+		));
+
+		const IVector2D workGroups = VisCalcWorkSize(params.maxInstanceIds);
+		computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
+
+#if 0
+		// TODO calc workgroups for culling pipeline
+		computeRecorder->SetPipeline(m_filterCalcWorkGroupsPipeline);
+		computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_filterCalcWorkGroupsPipeline,
+			Builder<BindGroupDesc>()
+			.GroupIndex(1)
+			.Buffer(1, filteredInstanceCountBuffer)
+			.End()
+		));
+		computeRecorder->DispatchWorkgroups(1);
+#endif
+		computeRecorder->Complete();
+	}
+
+	// D3D11 HACK
+	intermediate.cmdRecorder->CopyBufferToBuffer(rendState.filteredInstancesCountBuffer, 0, rendState.filteredInstancesBuffer, 0, countBufferSize);
+	filteredInstanceCountBuffer = GPUBufferView{ rendState.filteredInstancesBuffer, 0, countBufferSize };
+
+	intermediate.filteredInstanceInfosBuffer = filteredInstanceInfosBuffer;
+	intermediate.filteredInstanceCountBuffer = filteredInstanceCountBuffer;
+}
+
+void GRIMBaseRenderer::FilterInstances_Software(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	const int groupMaskInclude = intermediate.renderState.groupMaskInclude ? (m_drawSettings.groupMaskInclude & intermediate.renderState.groupMaskInclude) : m_drawSettings.groupMaskInclude;
+	const int groupMaskExclude = m_drawSettings.groupMaskExclude | intermediate.renderState.groupMaskExclude;
+	const int overrideLodIdx = m_drawSettings.overrideLodIdx;
+	Array<GPUInstanceInfo>& instanceInfos = intermediate.instanceInfos;
+
+	instanceInfos.reserve(intermediate.maxNumberOfObjects);
+	for (int i = 0; i < m_instAllocator.GetInstanceSlotsCount(); ++i)
+	{
+		const GRIMArchetype archetypeId = m_instAllocator.GetInstanceArchetypeId(i);
+		if (archetypeId == GRIM_INVALID_ARCHETYPE)
+			continue;
+
+		// skip non-initialized instances
+		if (!m_instAllocator.GetInstanceIsSync(i))
+			continue;
+
+		const int instGroupMask = m_instAllocator.GetInstanceGroupMask(i);
+		if (instGroupMask && ((instGroupMask & groupMaskInclude) == 0 || (instGroupMask & groupMaskExclude) != 0))
+			continue;
+
+		GPUInstanceInfo& instInfo = instanceInfos.append();
+		instInfo.instanceId = i;
+		instInfo.packedArchetypeId = archetypeId | (overrideLodIdx << GPUInstanceInfo::ARCHETYPE_BITS);
+	}
+}
+
+void GRIMBaseRenderer::SortInstances_Compute(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	GRIMRenderState& rendState = intermediate.renderState;
+
+	// Visibility culling stage should supply with at least the number of instances
+	const int maxInstancesCount = m_instAllocator.GetInstanceCount();
+	m_sortShader->InitKeys(intermediate.cmdRecorder, rendState.sortedInstanceIdsBuffer, maxInstancesCount);
+	m_sortShader->SortKeys(StringIdConst24(SHADER_PIPELINE_SORT_INSTANCES), intermediate.cmdRecorder, rendState.sortedInstanceIdsBuffer, maxInstancesCount, rendState.culledInstanceInfosBuffer);
+}
+
+void GRIMBaseRenderer::UpdateInstanceBounds_Compute(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	GRIMRenderState& rendState = intermediate.renderState;
+
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("CalcInstanceBounds");
+	computeRecorder->SetPipeline(m_instCalcBoundsPipeline);
+	computeRecorder->SetBindGroup(0, g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(0)
+		.Buffer(0, rendState.culledInstanceInfosBuffer)
+		.Buffer(1, rendState.sortedInstanceIdsBuffer)
+		.End())
+	);
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instCalcBoundsPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(1)
+		.Buffer(0, rendState.drawInstanceBoundsBuffer)
+		.Buffer(1, rendState.instanceIdsBuffer)
+		.End())
+	);
+
+	// TODO: DispatchWorkgroupsIndirect (use as result from VisibilityCullInstances)
+	IVector2D workGroups = VisCalcWorkSize(intermediate.maxNumberOfObjects);
+	computeRecorder->DispatchWorkgroups(workGroups.x, workGroups.y);
+	computeRecorder->Complete();
+}
+
+void GRIMBaseRenderer::UpdateIndirectInstances_Compute(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	GRIMRenderState& rendState = intermediate.renderState;
+
+	IGPUComputePassRecorderPtr computeRecorder = intermediate.cmdRecorder->BeginComputePass("UpdateIndirectInstances");
+	computeRecorder->SetPipeline(m_instPrepareDrawIndirectPipeline);
+	computeRecorder->SetBindGroup(0, m_updateBindGroup0);
+	computeRecorder->SetBindGroup(1, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(1)
+		.Buffer(0, rendState.drawInstanceBoundsBuffer)
+		.End())
+	);
+	computeRecorder->SetBindGroup(2, g_renderAPI->CreateBindGroup(m_instPrepareDrawIndirectPipeline,
+		Builder<BindGroupDesc>()
+		.GroupIndex(2)
+		.Buffer(0, rendState.drawInvocationsBuffer)
+		.End())
+	);
+
+	constexpr int GROUP_SIZE = 32;
+	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
+	computeRecorder->DispatchWorkgroups(numBounds / GROUP_SIZE + 1);
+	computeRecorder->Complete();
+
+	// copy draw invocations to readback buffer
+	intermediate.cmdRecorder->CopyBufferToBuffer(rendState.drawInvocationsBuffer, 0, rendState.drawInvocationsReadbackBuffer, 0, rendState.drawInvocationsBuffer->GetSize());
+}
+
+//--------------------------------------------------------------------
+
+void GRIMBaseRenderer::SortInstances_Software(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	ArrayRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
+
+	// COMPUTE SHADER REFERENCE: SortInstanceArchetypes
+	// Input / Output:
+	//		instanceInfos		: buffer<GPUInstanceInfo[]>
+
+	// sort instances by archetype
+	// as we need them to be linear for each draw call
+	arraySort(instanceInfos, [](const GPUInstanceInfo& a, const GPUInstanceInfo& b) {
+		return a.packedArchetypeId - b.packedArchetypeId;
+	});
+}
+
+void GRIMBaseRenderer::UpdateInstanceBounds_Software(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	ArrayCRef<GPUInstanceInfo> instanceInfos = intermediate.instanceInfos;
+	IGPUCommandRecorder* cmdRecorder = intermediate.cmdRecorder;
+	IGPUBufferPtr instanceIdsBuffer = intermediate.renderState.instanceIdsBuffer;
+	Array<GPUInstanceBound>& drawInstanceBounds = intermediate.drawInstanceBounds;
+
+	const int instanceCount = instanceInfos.numElem();
+
+	// COMPUTE SHADER REFERENCE: VisibilityCullInstances
+	// Input:
+	//		instanceInfos			: buffer<GPUInstanceInfo>
+	// Output:
+	//		instanceIds				: buffer<int[]>
+	//		drawInstanceBounds		: buffer<GPUInstanceBound[]>
+
+	Array<int> instanceIds(PP_SL);
+	instanceIds.setNum(instanceCount);
+
+	drawInstanceBounds.setNum(m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS);
+	if (instanceCount > 0)
+	{
+		const int lastArchetypeId = instanceInfos[instanceCount - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+		const int lastArchLodIndex = (instanceInfos[instanceCount - 1].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+		ASSERT(lastArchLodIndex < GRIM_MAX_INSTANCE_LODS);
+		const int lastBoundIdx = lastArchetypeId * GRIM_MAX_INSTANCE_LODS + lastArchLodIndex;
+
+		drawInstanceBounds[lastBoundIdx].last = instanceCount;
+	}
+
+	for (int i = 0; i < instanceCount; ++i)
+	{
+		instanceIds[i] = instanceInfos[i].instanceId;
+
+		if (i == 0 || instanceInfos[i].packedArchetypeId > instanceInfos[i - 1].packedArchetypeId)
+		{
+			const int archetypeId = instanceInfos[i].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+			const int archLodIndex = (instanceInfos[i].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+			ASSERT(archLodIndex < GRIM_MAX_INSTANCE_LODS);
+			const int boundIdx = archetypeId * GRIM_MAX_INSTANCE_LODS + archLodIndex;
+
+			drawInstanceBounds[boundIdx].first = i;
+			drawInstanceBounds[boundIdx].archIdx = archetypeId;
+			drawInstanceBounds[boundIdx].lodIndex = archLodIndex;
+			if (i > 0)
+			{
+				const int lastArchetypeId = instanceInfos[i - 1].packedArchetypeId & GPUInstanceInfo::ARCHETYPE_MASK;
+				const int lastArchLodIndex = (instanceInfos[i - 1].packedArchetypeId >> GPUInstanceInfo::ARCHETYPE_BITS) & GPUInstanceInfo::LOD_MASK;
+				const int lastBoundIdx = lastArchetypeId * GRIM_MAX_INSTANCE_LODS + lastArchLodIndex;
+
+				drawInstanceBounds[lastBoundIdx].last = i;
+			}
+		}
+	}
+	cmdRecorder->WriteBuffer(instanceIdsBuffer, instanceIds.ptr(), sizeof(instanceIds[0]) * instanceIds.numElem(), 0);
+}
+
+void GRIMBaseRenderer::UpdateIndirectInstances_Software(IntermediateState& intermediate)
+{
+	PROF_EVENT_F();
+
+	ArrayCRef<GPUInstanceBound> drawInstanceBounds = intermediate.drawInstanceBounds;
+	IGPUCommandRecorder* cmdRecorder = intermediate.cmdRecorder;
+	IGPUBufferPtr drawInvocationsBuffer = intermediate.renderState.drawInvocationsBuffer;
+
+	// COMPUTE SHADER REFERENCE: PrepareDrawIndirectInstances
+	// Input:
+	//		instanceInfos		: buffer<GPUInstanceInfo[]>
+	//		drawInstanceBounds	: buffer<GPUInstanceBound[]>
+	// Output:
+	//		indirectDraws		: buffer<GPUDrawIndexedIndirectCmd[]>
+	//
+	// Notes:
+	//		instanceInfos must be sorted by archetype id prior to executing
+
+	for (const GPUInstanceBound& bound : drawInstanceBounds)
+	{
+		if (bound.archIdx == -1)
+			continue;
+
+		const GPULodList& lodList = m_drawLodsList[bound.archIdx];
+
+		// fill lod list
+		int numLods = 0;
+		int lodInfos[GRIM_MAX_INSTANCE_LODS];
+		for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = m_drawLodInfos[lodIdx].next)
+			lodInfos[numLods++] = lodIdx;
+
+		// walk over batches
+		const int lodIdx = min(numLods - 1, bound.lodIndex);
+
+		const GPULodInfo& lodInfo = m_drawLodInfos[lodInfos[lodIdx]];
+		for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = m_drawBatchs[batchIdx].next)
+		{
+			const GPUIndexedBatch& drawBatch = m_drawBatchs[batchIdx];
+
+			GPUDrawIndexedIndirectCmd drawCmd;
+			drawCmd.firstIndex = drawBatch.firstIndex;
+			drawCmd.indexCount = drawBatch.indexCount;
+			drawCmd.firstInstance = bound.first;
+			drawCmd.instanceCount = bound.last - bound.first;
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+			m_dbgStatsDrawnInstances += drawCmd.instanceCount;
+#endif
+
+			ASSERT(m_drawInfos(drawBatch.cmdIdx));
+
+			cmdRecorder->WriteBuffer(drawInvocationsBuffer, &drawCmd, sizeof(drawCmd), sizeof(GPUDrawIndexedIndirectCmd) * drawBatch.cmdIdx);
+		}
+	}
+}
+
+static float memBytesToKB(size_t byteCnt)
+{
+	return byteCnt / 1024.0f;
+}
+
+void GRIMBaseRenderer::PrepareDraw(IGPUCommandRecorder* cmdRecorder, GRIMRenderState& renderState, int maxNumberOfObjects)
+{
+	PROF_EVENT_F();
+
+	DbgValidate();
+
+	renderState.drawFrame = m_drawFrame;
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	m_dbgStatsDrawnInstances = 0;
+#endif
+
+	if (maxNumberOfObjects < 0)
+		maxNumberOfObjects = m_instAllocator.GetInstanceCount();
+
+	if (maxNumberOfObjects == 0)
+		return;
+
+	const BufferInfo drawInvocationsBufferInfo(sizeof(GPUDrawIndexedIndirectCmd), m_drawInfos.numSlots());
+	if(!renderState.drawInvocationsBuffer || renderState.drawInvocationsBuffer->GetSize() < drawInvocationsBufferInfo.GetBufferSize())
+	{
+		renderState.drawInvocationsBuffer = g_renderAPI->CreateBuffer(drawInvocationsBufferInfo, BUFFERUSAGE_INDIRECT | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST | BUFFERUSAGE_COPY_SRC, "DrawInvocations");
+		renderState.drawInvocationsReadbackBuffer = g_renderAPI->CreateBuffer(drawInvocationsBufferInfo, BUFFERUSAGE_COPY_DST | BUFFERUSAGE_READ, "DrawInvocationsReadback");
+	}
+
+	const BufferInfo instanceIdsBufferInfo(sizeof(int), maxNumberOfObjects);
+	if (!renderState.instanceIdsBuffer || instanceIdsBufferInfo.GetBufferSize() > renderState.instanceIdsBuffer->GetSize())
+	{
+		renderState.instanceIdsBuffer = g_renderAPI->CreateBuffer(instanceIdsBufferInfo, BUFFERUSAGE_VERTEX | BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceIds");
+	}
+
+	renderState.activeDrawInvocations.resize(m_drawInfos.numSlots() + 1);
+	renderState.visibleArchetypes.resize(m_drawLodsList.NumSlots() + 1);
+
+	// everything is drawn by default
+	renderState.visibleArchetypes.reset(true);
+	renderState.activeDrawInvocations.reset(true);
+
+	IntermediateState intermediate{ renderState };
+	intermediate.cmdRecorder.Assign(cmdRecorder);	// FIXME: create new and return cmd buffer only?
+	intermediate.maxNumberOfObjects = maxNumberOfObjects;
+
+	cmdRecorder->ClearBuffer(intermediate.renderState.drawInvocationsBuffer, 0, intermediate.renderState.drawInvocationsBuffer->GetSize());
+
+	if (IsSoftwareMode())
+	{
+		FilterInstances_Software(intermediate);
+		VisibilityCullInstances_Software(intermediate);
+		SortInstances_Software(intermediate);
+		UpdateInstanceBounds_Software(intermediate);
+		UpdateIndirectInstances_Software(intermediate);
+		return;
+	}
+
+	cmdRecorder->DbgPushGroup("GRIMPrepareDraw");
+
+	const int numBounds = m_drawLodsList.NumSlots() * GRIM_MAX_INSTANCE_LODS;
+
+	const BufferInfo sortedInstanceIdsBufferInfo(sizeof(int), intermediate.maxNumberOfObjects + 1);
+	if(!renderState.sortedInstanceIdsBuffer || renderState.sortedInstanceIdsBuffer->GetSize() < sortedInstanceIdsBufferInfo.GetBufferSize())
+		renderState.sortedInstanceIdsBuffer = g_renderAPI->CreateBuffer(sortedInstanceIdsBufferInfo, BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "SortedKeys");
+
+	const BufferInfo culledInstanceInfosBufferInfo(sizeof(GPUInstanceInfo), intermediate.maxNumberOfObjects);
+	if (!renderState.culledInstanceInfosBuffer || renderState.culledInstanceInfosBuffer->GetSize() < culledInstanceInfosBufferInfo.GetBufferSize())
+		renderState.culledInstanceInfosBuffer = g_renderAPI->CreateBuffer(culledInstanceInfosBufferInfo, BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceInfos");
+	
+	const BufferInfo drawInstanceBoundsBufferInfo(sizeof(GPUInstanceBound), numBounds + 1);
+	if (!renderState.drawInstanceBoundsBuffer || renderState.drawInstanceBoundsBuffer->GetSize() < drawInstanceBoundsBufferInfo.GetBufferSize())
+		renderState.drawInstanceBoundsBuffer = g_renderAPI->CreateBuffer(drawInstanceBoundsBufferInfo, BUFFERUSAGE_STORAGE | BUFFERUSAGE_COPY_DST, "InstanceBounds");
+
+	cmdRecorder->ClearBuffer(renderState.drawInstanceBoundsBuffer, 0, renderState.drawInstanceBoundsBuffer->GetSize());
+	cmdRecorder->WriteBuffer(renderState.drawInstanceBoundsBuffer, &numBounds, sizeof(int), 0);
+
+	cmdRecorder->DbgPushGroup("FilterInstances");
+	FilterInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPushGroup("CullInstances");
+	VisibilityCullInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPushGroup("SortInstances");
+	SortInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPushGroup("CalcBounds");
+	UpdateInstanceBounds_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPushGroup("UpdateIndirect");
+	UpdateIndirectInstances_Compute(intermediate);
+	cmdRecorder->DbgPopGroup();
+
+	cmdRecorder->DbgPopGroup();
+}
+
+bool GRIMBaseRenderer::IsSoftwareMode() const
+{
+	return m_drawSettings.forceSoftware || grim_dbgSoftwareMode.GetBool();
+}
+
+void GRIMBaseRenderer::PostPrepareDraw(GRIMRenderState& renderState)
+{
+	IGPUBufferPtr& drawInvocationsReadbackBuffer = renderState.drawInvocationsReadbackBuffer;
+	if (IsSoftwareMode() || renderState.drawFrame != m_drawFrame || !drawInvocationsReadbackBuffer)
+	{
+		renderState.drawInvocationsReadbackFuture = nullptr;
+		return;
+	}
+
+	BitArray& activeDrawInvocations = renderState.activeDrawInvocations;
+
+	// read draw invocations
+	renderState.drawInvocationsReadbackFuture = drawInvocationsReadbackBuffer->Lock(0, drawInvocationsReadbackBuffer->GetSize(), 0);
+	renderState.drawInvocationsReadbackFuture.AddCallback([this, &activeDrawInvocations, drawInvocationsReadbackBuffer](const FutureResult<BufferMapData>& result) {
+		if (result.IsError())
+		{
+			ASSERT_FAIL("Readback failure: %s", result.GetErrorMessage());
+			return;
+		}
+
+		ASSERT(result->data);
+		const int numIndirectCmds = result->size / sizeof(GPUDrawIndexedIndirectCmd);
+
+		GPUDrawIndexedIndirectCmd* drawIndexedCmd = reinterpret_cast<GPUDrawIndexedIndirectCmd*>(result->data);
+		int drawnInstances = 0;
+		for (int i = 0; i < numIndirectCmds; ++i)
+		{
+			activeDrawInvocations.set(i, drawIndexedCmd[i].instanceCount > 0);
+			drawnInstances += drawIndexedCmd[i].instanceCount;
+		}
+		drawInvocationsReadbackBuffer->Unlock();
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+		m_dbgStatsDrawnInstances += drawnInstances;
+#endif
+	});
+}
+
+bool GRIMBaseRenderer::IsSync() const
+{
+	return m_pendingDeletion.isEmpty() && m_pendingArchetypes.isEmpty() && m_dbgInvalidated == false;
+}
+
+void GRIMBaseRenderer::DbgValidate() const
+{
+#if !defined(_RETAIL) && !defined(_PROFILE)
+	if(!grim_dbgValidate.GetBool())
+		return;
+
+	// Check archetypes
+	// this ensures that archetypes are correctly set up
+	for(int i = 0; i < m_drawLodsList.NumSlots(); ++i)
+	{
+		if(!m_drawLodsList(i))
+			continue;
+		
+		const int firstLodInfo = m_drawLodsList[i].firstLodInfo;
+		if(firstLodInfo == -1)
+			continue;
+
+		const int firstBatch = m_drawLodInfos[firstLodInfo].firstBatch;
+		if(firstBatch == -1)
+		{
+			ASSERT_FAIL("No batchs for archetype %d\n", i);
+			continue;
+		}
+
+		const int cmdIdx = m_drawBatchs[firstBatch].cmdIdx;
+		if(cmdIdx == -1)
+		{
+			ASSERT_FAIL("No cmd for lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
+			continue;
+		}
+
+		if(!m_drawInfos[cmdIdx].archetypeInfo)
+		{
+			ASSERT_FAIL("Missing archetypeInfo lod %d batch %d of archetype %d\n", firstLodInfo, firstBatch, i);
+			continue;
+		}
+	}
+
+	// Check instances
+	// this insures that instances are in sync with archetypes
+	for (int i = 0; i < m_instAllocator.GetInstanceSlotsCount(); ++i)
+	{
+		const GRIMArchetype archetypeId = m_instAllocator.GetInstanceArchetypeId(i);
+		if (archetypeId == GRIM_INVALID_ARCHETYPE)
+			continue;
+
+		// skip non-initialized instances
+		if (!m_instAllocator.GetInstanceIsSync(i))
+			continue;
+
+		// check below indicates that instance hasn't been freed but archetype was destroyed
+		if(!m_drawLodsList(archetypeId))
+		{
+			ASSERT_FAIL("Invalid instance %d - Archetype %d is was destroyed", i, archetypeId);
+			continue;
+		}
+		
+		// anything that fails below is indication that archetypes hasn't been synchronized.
+		if(arrayFindIndex(m_pendingDeletion, archetypeId) != -1)
+		{
+			ASSERT_FAIL("Invalid instance %d - Archetype %d is pending deletion (IsSync = %d)", i, archetypeId, IsSync());
+		}
+		else if(arrayFindIndexF(m_pendingArchetypes, [&](const PendingDesc& pending){ return pending.slot == archetypeId; }) != -1)
+		{
+			ASSERT_FAIL("Invalid instance %d - Archetype %d hasn't been created yet (IsSync = %d)", i, archetypeId, IsSync());
+		}
+	}
+#endif // !_RETAIL
+}
+
+void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContext& renderPassCtx)
+{
+	if (renderState.drawInvocationsBuffer == nullptr || renderState.instanceIdsBuffer == nullptr)
+		return;
+
+	PROF_EVENT_F();
+
+	// last chance to wait for draw
+	while (renderState.drawInvocationsReadbackFuture.IsValid() && !renderState.drawInvocationsReadbackFuture.Wait(0))
+	{
+		g_renderAPI->Flush();
+		Threading::YieldCurrentThread();
+	}
+
+	renderState.drawInfoLinkList.clear();
+	renderState.drawInfoLinkList.reserve(m_drawInfos.numSlots());
+	renderState.drawInfoLinkList.append(GRIMRenderState::ListItm{}); // store end element in this array
+
+	const bool validationOn = false;// TODO g_renderAPI->IsValidationEnabled();
+
+	Map<uint64, int> drawInfosByMaterial(PP_SL);
+	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
+	{
+		if (!m_drawInfos(i))
+			continue;
+
+		if (!renderState.activeDrawInvocations[i])
+			continue;
+
+		const DrawInfo& drawInfo = m_drawInfos[i];
+		if (!renderState.visibleArchetypes[drawInfo.ownerArchetype])
+			continue;
+
+		// do not draw anything if no instances referencing this archetype
+		if (m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype) == 0)
+			continue;
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+		if(m_dbgHiddenArchetypes[drawInfo.ownerArchetype])
+			continue;
+#endif
+		const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
+
+		IMaterial* material = drawInfo.material;
+		IMaterial* originalMaterial = material;
+		if (renderPassCtx.beforeMaterialSetup)
+			material = renderPassCtx.beforeMaterialSetup(material);
+
+		if (!material)
+			continue;
+
+		if(m_drawSettings.waitForMaterials)
+		{
+			g_matSystem->QueueLoading(drawInfo.material);
+			material->WaitForLoading();
+		}
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+		const char* onlyMaterialName = grim_dbgOnlyMaterial.GetString();
+		if (*onlyMaterialName)
+		{
+			if (CString::CompareCaseIns(originalMaterial->GetName(), onlyMaterialName))
+				continue;
+		}
+#endif
+
+		uint64 materialId = 0;
+		materialId *= 31;
+		if (renderState.drawCallMaterialGroupByFlags == 0 || (renderState.drawCallMaterialGroupByFlags & originalMaterial->GetFlags()))
+		{
+			materialId *= 31;
+			materialId += reinterpret_cast<uint64>(originalMaterial);
+		}
+		else
+		{
+			materialId *= 31;
+			materialId += reinterpret_cast<uint64>(material);
+		}
+		materialId += archetypeInfo.meshInstFormat.formatId;
+		materialId *= 31;
+		materialId += archetypeInfo.meshInstFormat.usedLayoutBits;
+		materialId *= 31;
+		materialId += drawInfo.primTopology;
+
+		auto it = drawInfosByMaterial.find(materialId);
+		if (it.atEnd())
+			it = drawInfosByMaterial.insert(materialId, 0); // insert list end
+
+		*it = renderState.drawInfoLinkList.append(GRIMRenderState::ListItm{ (uint16)i, (uint16)*it }); // link to last element
+	}
+
+	renderPassCtx.recorder->DbgPushGroup("GRIMDraw");
+	int numDrawCalls = 0;
+	for (auto it = drawInfosByMaterial.begin(); !it.atEnd(); ++it)
+	{
+		GRIMRenderState::ListItm litem = renderState.drawInfoLinkList[*it];
+
+		const DrawInfo& setupDrawInfo = m_drawInfos[litem.id];
+		const ArchetypeInfo& setupArchetypeInfo = setupDrawInfo.archetypeInfo.Ref();
+
+		if (!g_matSystem->SetupMaterialPipeline(setupDrawInfo.material, nullptr, setupDrawInfo.primTopology, setupArchetypeInfo.meshInstFormat, renderPassCtx, this))
+			continue;
+
+		// TODO: if archetypeInfo is matching, use MultiDrawIndirect
+
+		for(; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
+		{
+			const DrawInfo& drawInfo = m_drawInfos[litem.id];
+			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+			if(validationOn)
+				renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
+#endif
+			for (int vsi = 0; vsi < archetypeInfo.vertexBuffers.numElem(); ++vsi)
+				renderPassCtx.recorder->SetVertexBuffer(vsi, (archetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : archetypeInfo.vertexBuffers[vsi]);
+			renderPassCtx.recorder->SetIndexBuffer(archetypeInfo.indexBuffer, archetypeInfo.indexFormat);
+
+			renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd)* m_drawBatchs[drawInfo.batchIdx].cmdIdx);
+			++numDrawCalls;
+		}
+	}
+	renderPassCtx.recorder->DbgPopGroup();
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+	m_dbgLastVisibleArchetypes = renderState.visibleArchetypes;
+	m_dbgStatsDrawCalls = numDrawCalls;
+	m_dbgStatsDrawInfos = drawInfosByMaterial.size();
+#endif
+}
+
+
+static GRIMArchetype s_highlightArchetype = -1;
+
+GRIMArchetype GRIMInstanceDebug::GetHighlightArchetype()
+{
+	return s_highlightArchetype;
+}
+
+EqString GRIMInstanceDebug::GetInstanceDebugText(GRIMBaseRenderer& renderer, int instanceId)
+{
+	const GRIMBaseInstanceAllocator::Instance& inst = renderer.m_instAllocator.m_instances[instanceId];
+	return EqString::Format(
+		"Inst %d\n"
+		"Arch %d\n"
+		"GrpMask %d\n" 
+		"CompIds %d %d %d %d %d %d %d %d\n",
+		instanceId, 
+		inst.archetype,
+		inst.groupMask,
+		inst.root.components[0], inst.root.components[1], inst.root.components[2], inst.root.components[3],
+		inst.root.components[4], inst.root.components[5], inst.root.components[6], inst.root.components[7]
+	);
+}
+
+void GRIMInstanceDebug::DrawUI(GRIMBaseRenderer& renderer)
+{
+#if defined(IMGUI_ENABLED) && defined(GRIM_INSTANCES_DEBUG_ENABLED)
+	CScopedMutex m(s_grimRendererMutex);
+
+	GRIMBaseInstanceAllocator& instances = renderer.m_instAllocator;
+	BitArray& hiddenArchetypes = renderer.m_dbgHiddenArchetypes;
+	Array<EqStringRef> archetypeNames(PP_SL);
+	Array<GRIMArchetype> sortedArchetypes(PP_SL);
+
+	sortedArchetypes.reserve(renderer.m_drawLodsList.NumElem());
+	archetypeNames.setNum(renderer.m_drawLodsList.NumSlots());
+	for(int i = 0; i < renderer.m_drawLodsList.NumSlots(); ++i)
+	{
+		if(renderer.m_drawLodsList(i))
+			sortedArchetypes.append(i);
+		archetypeNames[i] = renderer.DbgGetArchetypeName(i);
+	}
+
+	int usedArchetypes = 0;
+	int maxInst = 0;
+	for (auto it = instances.m_archetypeRefCount.begin(); !it.atEnd(); ++it)
+	{
+		usedArchetypes += it.value() > 0;
+		maxInst = max(maxInst, *it);
+	}
+
+	ImGui::Checkbox("Show Instance Ids", &renderer.m_drawSettings.dbgDrawIndices);
+	ImGui::SameLine();
+
+	bool softwareMode = grim_dbgSoftwareMode.GetBool();
+	if(ImGui::Checkbox("Software mode override", &softwareMode))
+		grim_dbgSoftwareMode.SetBool(softwareMode);
+	ImGui::SameLine();
+	if(ImGui::Button("Invalidate all data"))
+	{
+		instances.DbgInvalidateAllData();
+		renderer.DbgInvalidateAllData();
+	}
+
+	if(ImGui::CollapsingHeader("Statistics"))
+	{
+		ImGui::TextDisabled("Archetypes: %d (in use %d)", renderer.m_drawLodsList.NumElem(), usedArchetypes);
+		ImGui::TextDisabled("Instances: %d (%d slots)", instances.m_instances.numElem() - instances.m_freeIndices.numElem() - 1, instances.m_instances.numElem());
+		ImGui::TextDisabled("Buffer ref updates: %u", instances.m_buffersUpdated);
+
+		ImGui::TextDisabled("Draw materials: %d", renderer.m_dbgStatsDrawInfos);
+		ImGui::TextDisabled("Draw calls: %d", renderer.m_dbgStatsDrawCalls);
+		ImGui::TextDisabled("Drawn instances (Lods x Archetypes): %d", renderer.m_dbgStatsDrawnInstances);		
+
+		ImGui::TextDisabled(" %d draw infos: %.2f KB", renderer.m_drawInfos.numElem(), memBytesToKB(renderer.m_drawInfos.numSlots() * sizeof(renderer.m_drawInfos[0])));
+		ImGui::TextDisabled(" %d batchs: %.2f KB", renderer.m_drawBatchs.NumElem(), memBytesToKB(renderer.m_drawBatchs.NumSlots() * sizeof(renderer.m_drawBatchs[0])));
+		ImGui::TextDisabled(" %d lod infos: %.2f KB", renderer.m_drawLodInfos.NumElem(), memBytesToKB(renderer.m_drawLodInfos.NumSlots() * sizeof(renderer.m_drawLodInfos[0])));
+		ImGui::TextDisabled(" %d lod lists: %.2f KB", renderer.m_drawLodsList.NumElem(), memBytesToKB(renderer.m_drawLodsList.NumSlots() * sizeof(renderer.m_drawLodsList[0])));
+	}
+
+	if (ImGui::CollapsingHeader("Components"))
+	{
+		for (int i = 0; i < GRIM_INSTANCE_MAX_COMPONENTS; ++i)
+		{
+			GRIMBaseComponentPool* compPool = instances.m_componentPools[i];
+			if (!compPool)
+				continue;
+
+			EqString str = EqString::Format("%d/%d", compPool->NumElem(), compPool->GetPoolSize());
+			ImGui::ProgressBar((float)compPool->NumElem() / (float)compPool->GetPoolSize(), ImVec2(0.f, 0.f), str);
+			ImGui::SameLine();
+			ImGui::TextDisabled(" %s: %.2f KB (GPU %.2f KB)", compPool->GetName().ToCString(), memBytesToKB(compPool->GetItemSize() * compPool->NumSlots()), memBytesToKB(compPool->GetItemSize() * compPool->GetPoolSize()));
+		}
+	}
+
+	static char archetypeFilter[128] = {0};
+	ImGui::SetNextItemWidth(170);
+	ImGui::InputText("Filter", archetypeFilter, sizeof(archetypeFilter));
+	ImGui::SameLine();
+
+	if(ImGui::Button("Hide all"))
+		hiddenArchetypes.reset(true);
+	ImGui::SameLine();
+	if(ImGui::Button("Show all"))
+		hiddenArchetypes.reset(false);
+
+	static bool sortByCount = true;
+	ImGui::Checkbox("Sort by count", &sortByCount);
+	ImGui::SameLine();
+	if(sortByCount)
+	{
+		arraySort(sortedArchetypes, [&](const int archA, const int archB) {
+			return instances.m_archetypeRefCount[archB] - instances.m_archetypeRefCount[archA];
+		});
+	}
+
+	static bool showAllArchetypes = false;
+	ImGui::Checkbox("Show all archetypes", &showAllArchetypes);
+	ImGui::SameLine();
+
+	static bool showOnScreen = false;
+	ImGui::Checkbox("Show on screen", &showOnScreen);
+
+	static bool detailsOpen = false;
+	if(!detailsOpen)
+		s_highlightArchetype = -1;
+
+	EqString instName;
+	for (const GRIMArchetype archetypeId : sortedArchetypes)
+	{
+		const int instCount = instances.m_archetypeRefCount[archetypeId];
+		if(instCount == 0 && !showAllArchetypes)
+			continue;
+
+		// material loading flags
+		bool allMaterialsLoaded = true;
+		{
+			const GRIMBaseRenderer::GPULodList& lodList = renderer.m_drawLodsList[archetypeId];
+
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
+			{
+				const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
+				int nBatch = 0;
+				for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+				{
+					const GRIMBaseRenderer::GPUIndexedBatch& batch = renderer.m_drawBatchs[batchIdx];
+					const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[batch.cmdIdx];
+					
+					if (drawInfo.material->GetState() != MATERIAL_LOAD_OK)
+						allMaterialsLoaded = false;
+				}
+			}
+		}
+
+		const bool archetypeVisibleOnScreen = renderer.m_dbgLastVisibleArchetypes[archetypeId];
+		if(!archetypeVisibleOnScreen && showOnScreen)
+			continue;
+		
+		EqString str = EqString::Format("[%d] %d %s", instCount, archetypeId, archetypeId != -1 ? archetypeNames[archetypeId] : "<invalid>");
+		if(*archetypeFilter != 0)
+		{
+			if(str.Find(archetypeFilter) == -1)
+				continue;
+		}
+
+		if (!allMaterialsLoaded )
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(0, 0.9f, 0.5f));
+		
+		if(!archetypeVisibleOnScreen || !allMaterialsLoaded)
+			ImGui::PushStyleColor(ImGuiCol_PlotHistogram, (ImVec4)ImColor::HSV(0, 0.9f, 0.9f));
+
+		ImGui::ProgressBar(instCount / (float)maxInst, ImVec2(0.f, 0.f), str);
+		ImGui::SameLine();
+
+		if(!archetypeVisibleOnScreen || !allMaterialsLoaded)
+			ImGui::PopStyleColor();
+
+		if(!allMaterialsLoaded)
+			ImGui::PopStyleColor();
+
+		if(!detailsOpen && ImGui::IsItemHovered())
+			s_highlightArchetype = archetypeId;
+		
+		bool visible = !hiddenArchetypes[archetypeId];
+		if(ImGui::Checkbox(EqString::Format("##ar_vis_%d", archetypeId), &visible))
+		{
+			hiddenArchetypes.set(archetypeId, !visible);
+		}
+		ImGui::SameLine();
+		
+		ImGui::PushID(archetypeId);
+		if(ImGui::Button("Details"))
+		{
+			detailsOpen = true;
+			s_highlightArchetype = archetypeId;
+			// TODO: show batch count, materials, buffers etc
+		}
+		ImGui::PopID();
+	}
+
+	if(detailsOpen && ImGui::Begin("GRIM Archetype details", &detailsOpen))
+	{
+		Set<IMaterial*> materials(PP_SL);
+
+		static const char* s_primTopologyNames[] = {
+			"PRIM_POINTS",
+			"PRIM_LINES",
+			"PRIM_LINE_STRIP",
+			"PRIM_TRIANGLES",
+			"PRIM_TRIANGLE_STRIP",
+		};
+
+		static const char* s_materialState[] = {
+			"LOAD_ERROR", // == -1
+			"LOAD_NEED_LOAD",
+			"LOAD_OK",
+			"LOAD_INQUEUE",
+		};
+
+		ImGui::Text("Archetype llid=%d", s_highlightArchetype);
+		const GRIMBaseRenderer::GPULodList& lodList = renderer.m_drawLodsList[s_highlightArchetype];
+		{
+			int nLod = 0;
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
+			{
+				const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
+				if (ImGui::TreeNode(&lodInfo, "Lod %d (llid=%d)", nLod, lodIdx))
+				{
+					int nBatch = 0;
+					for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+					{
+						const GRIMBaseRenderer::GPUIndexedBatch& batch = renderer.m_drawBatchs[batchIdx];
+						if (ImGui::TreeNode(&batch, "Batch %d (llid=%d)", nBatch, batchIdx))
+						{
+							const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[batch.cmdIdx];
+							ImGui::TextDisabled("Indices Start: %d Count: %d", batch.firstIndex, batch.indexCount);
+							ImGui::TextDisabled("Indirect Draw Idx %d", batch.cmdIdx);
+							ImGui::TextDisabled("Prim Topology %s", s_primTopologyNames[drawInfo.primTopology]);
+							ImGui::TextDisabled("Material %s [%s]", drawInfo.material->GetName(), s_materialState[drawInfo.material->GetState() + 1]);
+							ImGui::TreePop();
+						}
+						++nBatch;
+					}
+					ImGui::TreePop();
+				}
+				++nLod;
+			}
+		}
+		
+		if (ImGui::CollapsingHeader("Information"))
+		{
+			GRIMBaseRenderer::ArchetypeInfo::PTR_T archetypeInfo;
+			int maxBatchesPerLod = 0;
+			int totalLods = 0;
+			for (int lodIdx = lodList.firstLodInfo; lodIdx != -1; lodIdx = renderer.m_drawLodInfos[lodIdx].next)
+			{
+				int numBatches = 0;
+				const GRIMBaseRenderer::GPULodInfo& lodInfo = renderer.m_drawLodInfos[lodIdx];
+				for (int batchIdx = lodInfo.firstBatch; batchIdx != -1; batchIdx = renderer.m_drawBatchs[batchIdx].next)
+				{
+					const GRIMBaseRenderer::DrawInfo& drawInfo = renderer.m_drawInfos[renderer.m_drawBatchs[batchIdx].cmdIdx];
+
+					materials.insert(drawInfo.material);
+					++numBatches;
+					if (!archetypeInfo)
+						archetypeInfo = drawInfo.archetypeInfo;
+				}
+				maxBatchesPerLod = max(maxBatchesPerLod, numBatches);
+				++totalLods;
+			}
+
+			if (archetypeInfo)
+			{
+				ImGui::Text("Archetype %d '%s'", s_highlightArchetype, archetypeInfo->name.ToCString());
+				ImGui::Text("Vertex buffers: %d", archetypeInfo->vertexBuffers.numElem());
+				ImGui::Text("FVF: %s (%d)", archetypeInfo->meshInstFormat.name, archetypeInfo->meshInstFormat.formatId);
+				ImGui::Text("Skinning supported: %d", archetypeInfo->skinningSupport);
+				ImGui::Text("LOD count: %d", totalLods);
+				ImGui::Text("Max batches per lod: %d", maxBatchesPerLod);
+				ImGui::Text("Materials used:");
+				for (auto it = materials.begin(); !it.atEnd(); ++it)
+					ImGui::Text(" - %s [%s]", it.key()->GetName(), s_materialState[it.key()->GetState() + 1]);
+			}
+			else
+			{
+				ImGui::Text("Invalid archetype %d", s_highlightArchetype);
+			}
+		}
+
+		ImGui::End();
+	}
+#endif // IMGUI_ENABLED
+}

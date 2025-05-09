@@ -13,6 +13,7 @@
 #include "scripting/esl.h"
 #include "scripting/esl_luaref.h"
 #include "scripting/esl_bind.h"
+#include "scripting/esl_event.h"
 
 class LuaStateTest
 {
@@ -65,6 +66,18 @@ struct Spline
 	{
 		nonVirtualCalled = true;
 		return valueB;
+	}
+
+	void SetFlags(int16 newFlags)
+	{
+		Msg("Setter SetFlags\n");
+		flags = newFlags;
+	}
+
+	int16 GetFlags() const
+	{
+		Msg("Getter GetFlags\n");
+		return flags;
 	}
 
 	EqString		name;
@@ -180,7 +193,8 @@ EQSCRIPT_TYPE_BEGIN(Spline)
 	EQSCRIPT_BIND_VAR(numLanes)
 	EQSCRIPT_BIND_VAR(laneDirs)
 	EQSCRIPT_BIND_VAR(laneDisabled)
-	EQSCRIPT_BIND_VAR(flags)
+
+	EQSCRIPT_BIND_VAR_EX_GET_SET(flags, GetFlags, SetFlags)
 EQSCRIPT_TYPE_END
 
 EQSCRIPT_BIND_TYPE_WITH_PARENT(TerrainSpline, Spline, "TerrainSpline")
@@ -265,7 +279,7 @@ static void PrintTypeInfo()
 		"operator",
 	};
 
-	esl::TypeInfo typeInfo = ScriptClass<T>::GetTypeInfo();
+	esl::TypeInfo typeInfo = esl::ScriptClass<T>::GetTypeInfo();
 
 	Msg("type %s%s%s\n", typeInfo.className, typeInfo.baseClassName ? " : " : "", typeInfo.baseClassName ? typeInfo.baseClassName : "");
 	for (const esl::Member& mem : typeInfo.members)
@@ -409,6 +423,10 @@ TEST(EQSCRIPT_TESTS, TestVariables)
 	// TEST: property newindex (setter) and index (getter)
 	LUA_GTEST_CHUNK("spl.vehicleZoneNameHash = checkValueNumber");
 	LUA_GTEST_CHUNK("EXPECT_EQ(spl.vehicleZoneNameHash, checkValueNumber)");
+
+	// TEST: custom property getter and setter
+	LUA_GTEST_CHUNK("spl.flags = 12345");
+	LUA_GTEST_CHUNK("EXPECT_EQ(spl.flags, 12345)");
 }
 
 TEST(EQSCRIPT_TESTS, TestAddingToMetatable)
@@ -706,18 +724,19 @@ TEST(EQSCRIPT_TESTS, TestTables)
 		//Msg("Table has values %s, %d\n", str.ToCString(), val);
 	}
 
+	Spline* temp = PPNew Spline();
+
 	// TEST: set a value in table
 	{
 		auto tableRes = state.GetGlobal<esl::LuaTable>("TestTable");
 		ASSERT(tableRes && tableRes.value.IsValid());
 
-		Spline* temp = PPNew Spline();
 		temp->name = "Some name";
 
 		tableRes.value.Set("valueNum", 1337);
 		tableRes.value.Set("stringValue", "This is a string set from C++");
 		tableRes.value.Set(temp, "Spline as a key");
-		tableRes.value.Set("testSpline", temp);
+		tableRes.value["testSpline"] = temp;
 
 		const int val = *tableRes.value.Get<int>("valueNum");
 		EqStringRef str = *tableRes.value.Get<EqStringRef>("stringValue");
@@ -757,12 +776,19 @@ TEST(EQSCRIPT_TESTS, TestTables)
 	{
 		auto tableRes = esl::runtime::GetGlobal<esl::LuaTable>(stateTest, "TestTable");
 		ASSERT(tableRes && tableRes.value.IsValid());
+		
+		const Spline& splineRef = tableRes.value["testSpline"];
+		EXPECT_EQ(splineRef.name, EqStringRef("Some name"));
 
-		Spline* spline = *tableRes.value.Get<Spline*>("testSpline");
+		Spline* spline = tableRes.value["testSpline"];
 		EXPECT_EQ(spline->name, EqStringRef("Some name"));
 
-		delete spline;
+		// Check that object was not copied (testing ArrayOpProxy deduction)
+		EXPECT_EQ(&splineRef, spline);
+		EXPECT_EQ(spline, temp);
 	}
+
+	delete temp;
 }
 
 static bool ValueTest(const Spline* test)

@@ -19,13 +19,6 @@ enum ESearchPath : int
     SP_MOD	= (1 << 2),
 };
 
-#define FS_OPEN_READ	"r"
-#define FS_OPEN_WRITE	"w"
-#define FS_OPEN_APPEND	"a"
-
-using IFile = IVirtualStream;
-using IFilePtr = IVirtualStreamPtr;
-
 struct DKMODULE; // module structure
 struct DKFINDDATA;
 
@@ -37,7 +30,7 @@ class IFileSystem : public IEqCoreModule
 {
 	friend class CFileSystemFind;
 public:
-	CORE_INTERFACE("E2_Filesystem_009")
+	CORE_INTERFACE("E2_Filesystem_010")
 
     // Initialization of filesystem
     virtual bool			Init(bool bEditorMode) = 0;
@@ -75,7 +68,7 @@ public:
 	// File operations
 	//------------------------------------------------------------
 	
-	virtual IFilePtr		Open( const char* filename, const char* mode = FS_OPEN_READ, int searchFlags = -1) = 0;
+	virtual IFileStreamPtr	Open( const char* filename, int openFlags, int searchFlags = -1) = 0;
 	
 	// other operations
 	virtual EqString		FindFilePath(const char* filename, int searchFlags = -1) const = 0;
@@ -154,7 +147,7 @@ public:
 protected:
 	int			m_searchPaths{ SP_ROOT };
 	int			m_startDirIndex{ -1 };
-	char*		m_wildcard{ nullptr };
+	EqString	m_wildcard{ nullptr };
 	char*		m_curPath{ nullptr };
 	DKFINDDATA*	m_fd{ nullptr };
 };
@@ -163,7 +156,7 @@ protected:
 
 inline void CFileSystemFind::Init(const char* wildcard, int searchPaths, int dirIndex)
 {
-	m_wildcard = (char*)wildcard;
+	m_wildcard = wildcard;
 	m_searchPaths = searchPaths;
 	m_startDirIndex = dirIndex;
 }

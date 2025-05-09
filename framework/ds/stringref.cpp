@@ -1,0 +1,599 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright Š Inspiration Byte
+// 2009-2020
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Special String tools to do lesser memory errors
+//////////////////////////////////////////////////////////////////////////////////
+
+#include <ctype.h>
+
+#include "core/core_common.h"
+#include "stringref.h"
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#else
+#include <locale.h>
+#include <wctype.h>
+
+static locale_t xgetlocale()
+{
+	// HACK: Assume the user's system language is the same to the game's language
+	static locale_t loc = newlocale(LC_CTYPE_MASK, getenv("LANG"), LC_CTYPE);
+	return loc;
+}
+
+#define _vsnwprintf			vswprintf
+#define _snprintf			snprintf
+#define stricmp(a, b)		strcasecmp(a, b)
+
+#endif
+
+//------------------------------------------
+
+static char* xstrupr(char* str)
+{
+	ASSERT(str);
+	char* it = str;
+
+	while (*it != 0) { *it = toupper(*it); ++it; }
+
+	return str;
+}
+
+static char* xstrlwr(char* str)
+{
+	ASSERT(str);
+	char* it = str;
+
+	while (*it != 0) { *it = tolower(*it); ++it; }
+
+	return str;
+}
+
+static wchar_t* xwcslwr(wchar_t* str)
+{
+	ASSERT(str);
+
+	wchar_t* it = str;
+
+#ifdef _WIN32
+	while (*it != 0) { *it = *CharLowerW(&(*it)); ++it; }
+#else
+	while (*it != 0) { *it = towlower_l(*it, xgetlocale()); ++it; }
+#endif // _WIN32
+
+	return str;
+}
+
+static wchar_t* xwcsupr(wchar_t* str)
+{
+	ASSERT(str);
+
+	wchar_t* it = str;
+
+#ifdef _WIN32
+	while (*it != 0) { *it = *CharUpperW(&(*it)); ++it; }
+#else
+	while (*it != 0) { *it = towupper_l(*it, xgetlocale()); ++it; }
+#endif // _WIN32
+
+	return str;
+}
+
+static char* xstrstr(  const char* s1, const char* search )
+{
+	ASSERT( s1 );
+	ASSERT( search );
+
+	return strstr( (char* )s1, search );
+}
+
+// Finds a string in another string with a case insensitive test
+static char const* xstristr( char const* pStr, char const* pSearch )
+{
+	ASSERT(pStr);
+	ASSERT(pSearch);
+
+	if (!pStr || !pSearch)
+		return 0;
+
+	char const* pLetter = pStr;
+
+	// Check the entire string
+	while (*pLetter != 0)
+	{
+		// Skip over non-matches
+		if (tolower(*pLetter) == tolower(*pSearch))
+		{
+			// Check for match
+			char const* pMatch = pLetter + 1;
+			char const* pTest = pSearch + 1;
+			while (*pTest != 0)
+			{
+				// We've run off the end; don't bother.
+				if (*pMatch == 0)
+					return 0;
+
+				if (tolower(*pMatch) != tolower(*pTest))
+					break;
+
+				++pMatch;
+				++pTest;
+			}
+
+			// Found a match!
+			if (*pTest == 0)
+				return pLetter;
+		}
+
+		++pLetter;
+	}
+
+	return 0;
+}
+
+static char* xstristr( char* pStr, char const* pSearch )
+{
+	return (char*)xstristr( (char const*)pStr, pSearch );
+}
+
+//------------------------------------------------------
+// wide string
+//------------------------------------------------------
+
+// compares two strings
+static int xwcscmp( const wchar_t *s1, const wchar_t *s2)
+{
+	ASSERT( s1 );
+	ASSERT( s2 );
+
+	while (1)
+	{
+		if (*s1 != *s2)
+			return -1;              // strings not equal
+		if (!*s1)
+			return 0;               // strings are equal
+		s1++;
+		s2++;
+	}
+
+	return -1;
+}
+
+// compares two strings case-insensetive
+static int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
+{
+	ASSERT( s1 );
+	ASSERT( s2 );
+
+	while (1)
+	{
+		if (towlower(*s1) != towlower(*s2))
+			return -1;              // strings not equal
+
+		if (!*s1)
+			return 0;               // strings are equal
+		s1++;
+		s2++;
+	}
+
+	return -1;
+}
+
+// finds substring in string case insensetive
+static wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
+{
+	ASSERT(pStr);
+	ASSERT(pSearch);
+
+	if (!pStr || !pSearch)
+		return 0;
+
+	wchar_t const* pLetter = pStr;
+
+	// Check the entire string
+	while (*pLetter != 0)
+	{
+		// Skip over non-matches
+		if (tolower(*pLetter) == tolower(*pSearch))
+		{
+			// Check for match
+			wchar_t const* pMatch = pLetter + 1;
+			wchar_t const* pTest = pSearch + 1;
+			while (*pTest != 0)
+			{
+				// We've run off the end; don't bother.
+				if (*pMatch == 0)
+					return 0;
+
+				if (towlower(*pMatch) != towlower(*pTest))
+					break;
+
+				++pMatch;
+				++pTest;
+			}
+
+			// Found a match!
+			if (*pTest == 0)
+				return pLetter;
+		}
+
+		++pLetter;
+	}
+
+	return 0;
+}
+
+// finds substring in string case insensetive
+static wchar_t* xwcsistr(wchar_t* pStr, wchar_t const* pSearch)
+{
+	ASSERT(pStr);
+	ASSERT(pSearch);
+
+	return (wchar_t*)xwcsistr((wchar_t const*)pStr, pSearch);
+}
+
+namespace CType
+{
+template<> bool IsAlphabetic(char chr) { return isalpha(static_cast<uint8>(chr)); }
+template<> bool IsAlphaNumeric(char chr) { return isalnum(static_cast<uint8>(chr)); }
+template<> bool IsDigit(char chr) { return isdigit(static_cast<uint8>(chr)); }
+template<> bool IsSpace(char chr) { return isspace(static_cast<uint8>(chr)); }
+
+template<> bool IsAlphabetic(wchar_t chr) { return iswalpha(chr); }
+template<> bool IsAlphaNumeric(wchar_t chr) { return iswalnum(chr); }
+template<> bool IsDigit(wchar_t chr) { return iswdigit(chr); }
+template<> bool IsSpace(wchar_t chr) { return iswspace(chr); }
+
+template<> char LowerChar(char chr) { return tolower(chr); }
+template<> char UpperChar(char chr) { return toupper(chr); }
+
+template<> wchar_t LowerChar(wchar_t chr)
+{
+#ifdef _WIN32
+	return *CharLowerW(&chr);
+#else
+	return towlower_l(chr, xgetlocale());
+#endif // _WIN32
+}
+
+template<> wchar_t UpperChar(wchar_t chr)
+{
+#ifdef _WIN32
+	return *CharUpperW(&chr);
+#else
+	return towupper_l(chr, xgetlocale());
+#endif // _WIN32
+}
+}
+
+namespace CString
+{
+template<> int Length<char>(const char* str)
+{
+	if (!str) return 0;
+	return static_cast<int>(strlen(str));
+}
+
+template<> int Length<wchar_t>(const wchar_t* str)
+{
+	if (!str) return 0;
+	return static_cast<int>(wcslen(str));
+}
+
+template<> char* SubString(char* str, const char* search)
+{
+	if (!str || !search) return nullptr;
+	return strstr(str, search);
+}
+
+template<> char* SubStringCaseIns(char* str, const char* search)
+{
+	if (!str || !search) return nullptr;
+	return xstristr(str, search);
+}
+
+template<> wchar_t* SubString(wchar_t* str, const wchar_t* search)
+{
+	if (!str || !search) return nullptr;
+	return wcsstr(str, search);
+}
+
+template<> wchar_t* SubStringCaseIns(wchar_t* str, const wchar_t* search)
+{
+	if (!str || !search) return nullptr;
+	return xwcsistr(str, search);
+}
+
+template<> char* LowerCase(char* str)
+{
+	return xstrlwr(str);
+}
+
+template<> wchar_t* LowerCase(wchar_t* str)
+{
+	return xwcslwr(str);
+}
+
+template<> char* UpperCase(char* str)
+{
+	return xstrupr(str);
+}
+
+template<> wchar_t* UpperCase(wchar_t* str)
+{
+	return xwcsupr(str);
+}
+
+template<> int Compare(const char* strA, const char* strB)
+{
+	return strcmp(strA, strB);
+}
+
+template<> int Compare(const wchar_t* strA, const wchar_t* strB)
+{
+	return wcscmp(strA, strB);
+}
+
+template<> int CompareCaseIns(const char* strA, const char* strB)
+{
+	return stricmp(strA, strB);
+}
+
+template<> int CompareCaseIns(const wchar_t* strA, const wchar_t* strB)
+{
+	return xwcsicmp(strA, strB);
+}
+
+template<> int PrintFV(char* buffer, int bufferCnt, const char* fmt, va_list argList)
+{
+	return vsnprintf(buffer, bufferCnt, fmt, argList);
+}
+
+template<> int PrintFV(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, va_list argList)
+{
+	return _vsnwprintf(buffer, bufferCnt, fmt, argList);
+}
+
+template<> int PrintF(char* buffer, int bufferCnt, const char* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
+	va_end(argptr);
+	return result;
+}
+
+template<> int PrintF(wchar_t* buffer, int bufferCnt, const wchar_t* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	int result = PrintFV(buffer, bufferCnt, fmt, argptr);
+	va_end(argptr);
+	return result;
+}
+
+//------------------------------------------
+// Duplicates string
+//------------------------------------------
+char* DuplicateNew(const char* s)
+{
+	if (!s)
+		return nullptr;
+
+	const int len = static_cast<int>(strlen(s) + 1);
+	char* t = PPNew char[len];
+	strncpy(t, s, len);
+	return t;
+}
+
+wchar_t* DuplicateNew(const wchar_t* s)
+{
+	if (!s)
+		return nullptr;
+
+	const int len = static_cast<int>(wcslen(s) + 1);
+	wchar_t* t = PPNew wchar_t[len];
+	wcsncpy(t, s, len);
+	return t;
+}
+
+}
+
+//------------------------------------------------
+
+template<typename CH>
+int EqTStrRef<CH>::Compare(EqTStrRef otherStr) const
+{
+	if (!IsValid() || !otherStr.IsValid())
+		return -1;
+
+	return CString::Compare(m_pszString, otherStr.ToCString());
+}
+
+template<typename CH>
+int EqTStrRef<CH>::CompareCaseIns(EqTStrRef otherStr) const
+{
+	if (!IsValid() || !otherStr.IsValid())
+		return -1;
+
+	return CString::CompareCaseIns(m_pszString, otherStr.ToCString());
+}
+
+template<typename CH>
+int EqTStrRef<CH>::GetMathingChars(EqTStrRef otherStr) const
+{
+	if (!IsValid() || !otherStr.IsValid())
+		return 0;
+
+	const CH* s1 = m_pszString;
+	const CH* s2 = otherStr;
+
+	int matching = 0;
+	while (*s1++ == *s2++) { matching++; }
+
+	return matching;
+}
+
+template<typename CH>
+int EqTStrRef<CH>::GetMathingCharsCaseIns(EqTStrRef otherStr) const
+{
+	if (!IsValid() || !otherStr.IsValid())
+		return 0;
+
+	const CH* s1 = m_pszString;
+	const CH* s2 = otherStr;
+
+	int matching = 0;
+	while (CType::LowerChar(*s1++) == CType::LowerChar(*s2++)) { matching++; }
+
+	return matching;
+}
+
+template<typename CH>
+int EqTStrRef<CH>::Find(EqTStrRef subStr, bool bCaseSensetive, int nStart) const
+{
+	if (!IsValid() || !subStr.IsValid() || nStart < 0)
+		return -1;
+
+	const CH* strStart = const_cast<CH*>(m_pszString) + min(nStart, Length());
+	const CH* subStrPtr = bCaseSensetive ? CString::SubString(strStart, subStr.ToCString()) : CString::SubStringCaseIns(strStart, subStr.ToCString());
+	if (!subStrPtr)
+		return -1;
+
+	return (subStrPtr - m_pszString);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::LowerCase() const
+{
+	EqTStr<CH> str(*this);
+	CH* data = str.GetData();
+	for (int i = 0; i < str.Length(); ++i)
+		data[i] = CType::LowerChar(data[i]);
+
+	return str;
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::UpperCase() const
+{
+	EqTStr<CH> str(*this);
+	CH* data = str.GetData();
+	for (int i = 0; i < str.Length(); ++i)
+		data[i] = CType::UpperChar(data[i]);
+
+	return str;
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::Left(int nCount) const
+{
+	return Mid(0, nCount);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::Right(int nCount) const
+{
+	if (nCount >= Length())
+		return (*this);
+
+	return Mid(Length() - nCount, nCount);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::Mid(int nStart, int nCount) const
+{
+	if (!IsValid())
+		return EqTStr<CH>::EmptyStr;
+
+	ASSERT(nStart >= 0);
+	ASSERT(nStart + nCount <= Length());
+	if (nStart < 0 || nStart + nCount > Length())
+		return EqTStr<CH>::EmptyStr;
+
+	return EqTStr<CH>(&m_pszString[nStart], nCount);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::EatWhiteSpaces() const
+{
+	if (!IsValid())
+		return EqTStr<CH>::EmptyStr;
+
+	EqTStr<CH> out;
+	const CH* cc = m_pszString;
+	while (cc)
+	{
+		if (!CType::IsSpace(*cc))
+			out.Append(*cc++);
+	}
+
+	return out;
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::TrimSpaces(bool left, bool right) const
+{
+	if (!IsValid())
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* begin = m_pszString;
+
+	// trim whitespace from left
+	while (*begin && CType::IsSpace(*begin))
+		begin++;
+
+	if (*begin == 0)
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* end = begin + CString::Length(begin) - 1;
+
+	// trim whitespace from right
+	while (end > begin && CType::IsSpace(*end))
+		end--;
+
+	return Mid(begin - m_pszString, end - begin + 1);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::TrimChar(const CH* ch, bool left, bool right) const
+{
+	if (!IsValid())
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* begin = m_pszString;
+
+	auto ischr = [](const CH* ch, CH c) -> bool {
+		while (*ch) { if (*ch++ == c) return true; }
+		return false;
+		};
+
+	// trim whitespace from left
+	while (*begin && ischr(ch, *begin))
+		++begin;
+
+	if (*begin == 0)
+		return EqTStr<CH>::EmptyStr;
+
+	const CH* end = begin + CString::Length(begin) - 1;
+
+	// trim whitespace from right
+	while (end > begin && ischr(ch, *end))
+		--end;
+
+	return Mid(begin - m_pszString, end - begin + 1);
+}
+
+template<typename CH>
+EqTStr<CH> EqTStrRef<CH>::TrimChar(CH ch, bool left, bool right) const
+{
+	CH cch[2] = { ch, 0 };
+	return TrimChar(cch, left, right);
+}
+
+// define implementations below
+template class EqTStrRef<char>;
+template class EqTStrRef<wchar_t>;

@@ -69,7 +69,7 @@ struct MaterialsInitSettings
 class IMaterialSystem : public IEqCoreModule
 {
 public:
-	CORE_INTERFACE("E2_MaterialSystem_028")
+	CORE_INTERFACE("E2_MaterialSystem_029")
 
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
@@ -93,7 +93,7 @@ public:
 	virtual void					RegisterProxy(PROXY_FACTORY_CB dispfunc, const char* pszName) = 0;
 	virtual IMaterialProxy*			CreateProxyByName(const char* pszName) = 0;
 
-	virtual void					RegisterShader(const ShaderFactory& factory) = 0;
+	virtual void					RegisterShader(const MatSysShaderFactory& factory) = 0;
 	virtual void					RegisterShaderOverride(const char* shaderName, OVERRIDE_SHADER_CB func) = 0;
 
 	virtual void					AddDestroyLostCallbacks(DEVICE_LOST_RESTORE_CB destroy, DEVICE_LOST_RESTORE_CB restore) = 0;
@@ -131,15 +131,16 @@ public:
 	virtual IMaterialPtr			GetMaterial(const char* szMaterialName, int instanceFormatId = 0) = 0;
 	virtual bool					IsMaterialExist(const char* szMaterialName) const = 0;
 
-	virtual const ShaderFactory*	GetShaderFactory(const char* szShaderName, int instanceFormatId) = 0;
+	virtual const MatSysShaderFactory*	GetShaderFactory(const char* szShaderName, int instanceFormatId) = 0;
 	virtual MatSysShaderPipelineCache&	GetRenderPipelineCache(int shaderNameHash) = 0;
 
 	virtual void					QueueLoading(const IMaterialPtr& pMaterial) = 0;
 	virtual void					PreloadNewMaterials() = 0;
-	virtual void					WaitAllMaterialsLoaded() = 0;
+	virtual bool					WaitAllMaterialsLoaded(int timeout = -1) = 0;
 	virtual int						GetLoadingQueue() const = 0;
 
 	virtual void					ReloadAllMaterials() = 0;
+	virtual void					ReloadShader(const char* name) = 0;
 	virtual void					ReleaseUnusedMaterials() = 0;
 	virtual void					FreeMaterial(IMaterial* pMaterial) = 0;
 
