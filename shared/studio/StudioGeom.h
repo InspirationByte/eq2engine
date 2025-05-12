@@ -67,10 +67,6 @@ public:
 	int						GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 	void					QueueMaterialsLoading() const;
 
-	// instancing
-	void					SetInstancer(CBaseEqGeomInstancer* instancer);
-	CBaseEqGeomInstancer*	GetInstancer() const;
-
 	// selects a lod. returns index
 	int						SelectLod(float distance) const;
 	int						FindManualLod(float value) const;
@@ -118,7 +114,6 @@ private:
 	StudioJoint*			m_joints{ nullptr };
 	ArrayRef<HWGeomRef>		m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
 
-	CBaseEqGeomInstancer*	m_instancer{ nullptr };
 	studioHdr_t*			m_studio{ nullptr };
 	StudioPhysData			m_physModel;
 
