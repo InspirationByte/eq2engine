@@ -41,7 +41,6 @@ void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFH
 	m_instanceSize = sizeOfInstance;
 	m_vertFormat = instVertexFormat;
 	m_vertexStreamMapping = instVertStreamMapping;
-	m_ownsVertexFormat = false;
 
 	m_bodyGroupBounds[0] = 255;
 	m_bodyGroupBounds[1] = 0;
@@ -53,13 +52,8 @@ void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, ArrayCRef<EGFH
 
 void CBaseEqGeomInstancer::Cleanup()
 {
-	if(m_vertFormat && m_ownsVertexFormat)
-		g_renderAPI->DestroyVertexFormat(m_vertFormat);
-
 	m_data.clear(true);
 	m_vertFormat = nullptr;
-
-	m_ownsVertexFormat = false;
 }
 
 bool CBaseEqGeomInstancer::HasInstances() const

@@ -106,7 +106,7 @@ public:
 	virtual IGPUBufferPtr				CreateBuffer(const BufferInfo& bufferInfo, int bufferUsageFlags, const char* name = nullptr) const = 0;
 
 	// DEPRECATED
-	virtual IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout) = 0;
+	virtual IVertexFormatPtr			CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> vertexLayout) = 0;
 	virtual void						DestroyVertexFormat(IVertexFormat* pFormat) = 0;
 	virtual IVertexFormat*				FindVertexFormat(const char* name) const = 0;
 	virtual IVertexFormat*				FindVertexFormatById(int nameHash) const = 0;

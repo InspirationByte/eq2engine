@@ -19,8 +19,10 @@
 #include "imaging/PixWriter.h"
 #include "utils/Tokenizer.h"
 #include "utils/KeyValues.h"
-#include "ShaderAPI_Base.h"
-#include "CTexture.h"
+
+#include "ShaderAPI.h"
+#include "Texture.h"
+#include "VertexFormat.h"
 
 using namespace Threading;
 
@@ -63,13 +65,24 @@ void ShaderAPI_Base::Shutdown()
 	m_TextureList.clear(true);
 
 	for(int i = 0; i < m_VFList.numElem();i++)
-	{
-		DestroyVertexFormat(m_VFList[i]);
-		i--;
-	}
+		m_VFList[i--]->Ref_Drop();
+
 	m_VFList.clear(true);
 
 	ClearShaderPackages();
+}
+
+IVertexFormatPtr ShaderAPI_Base::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
+{
+	IVertexFormatPtr pVF = IVertexFormatPtr(CRefPtr_new(CVertexFormat, name, formatDesc));
+	m_VFList.append(pVF);
+	return pVF;
+}
+
+// Destroy vertex format
+void ShaderAPI_Base::DestroyVertexFormat(IVertexFormat* pFormat)
+{
+	m_VFList.fastRemove(pFormat);
 }
 
 void ShaderAPI_Base::SubmitCommandBuffer(const IGPUCommandBuffer* cmdBuffer) const

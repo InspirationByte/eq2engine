@@ -433,8 +433,6 @@ void CMaterialSystem::Shutdown()
 	m_pendingCmdBuffers.clear(true);
 	m_dynamicMeshes.clear(true);
 	m_freeDynamicMeshes.clear(true);
-
-	g_renderAPI->DestroyVertexFormat(m_dynamicMeshVertexFormat);
 	m_dynamicMeshVertexFormat = nullptr;
 
 	for (int i = 0; i < elementsOf(m_errorTexture); ++i)

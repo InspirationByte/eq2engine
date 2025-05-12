@@ -6,14 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <webgpu/webgpu.h>
+#include "WGPUBackend.h"
 #include "renderers/ShaderAPI_defs.h"
-
-#ifdef WGPU_BREAKING_CHANGE_STRING_VIEW_LABELS
-#define _WSTR(x) {(x), WGPU_STRLEN}
-#else
-#define _WSTR(x) (x)
-#endif
 
 // ETextureFormat
 static WGPUTextureFormat g_wgpuTexFormats[] = {

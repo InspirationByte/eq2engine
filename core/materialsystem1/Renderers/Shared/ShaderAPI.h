@@ -17,6 +17,9 @@ class ConCommandBase;
 class ShaderAPI_Base : public IShaderAPI
 {
 public:
+
+	static ShaderAPI_Base&	Instance;
+
 	ShaderAPI_Base();
 
 	// Init + Shurdown
@@ -54,6 +57,12 @@ public:
 
 	// completes for async operation (must be called in worker thread)
 	virtual void			EndAsyncOperation() {}							// obsolete for D3D
+
+//-------------------------------------------------------------
+// DEPRECATED
+
+	virtual IVertexFormatPtr	CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
+	virtual void				DestroyVertexFormat(IVertexFormat* pFormat);
 
 //-------------------------------------------------------------
 // Textures
@@ -100,7 +109,7 @@ protected:
 //-------------------------------------------------------------
 
 	ShaderAPIParams			m_params;
-	ShaderAPICapabilities			m_caps;
+	ShaderAPICapabilities	m_caps;
 
 	Map<int, ITexture*>		m_TextureList{ PP_SL };
 	Array<IVertexFormat*>	m_VFList{ PP_SL };

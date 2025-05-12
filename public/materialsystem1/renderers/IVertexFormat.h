@@ -10,7 +10,7 @@
 
 struct VertexLayoutDesc;
 
-class IVertexFormat
+class IVertexFormat : public RefCountedObject<IVertexFormat>
 {
 public:
 	virtual	~IVertexFormat() = default;
@@ -21,3 +21,5 @@ public:
 	virtual int				GetVertexSize(int stream) const = 0;
 	virtual ArrayCRef<VertexLayoutDesc>	GetFormatDesc() const = 0;
 };
+
+using IVertexFormatPtr = CRefPtr<IVertexFormat>;

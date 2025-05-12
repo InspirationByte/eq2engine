@@ -46,6 +46,8 @@ public:
 	const SamplerStateParams&	GetSamplerState() const { return m_samplerState; }
 
 protected:
+	void				Ref_DeleteObject();
+
 	void				SetFlags(int flags) { m_flags = flags; }
 	void				SetDimensions(int width, int height, int arraySize = 1) { m_width = width; m_height = height; m_arraySize = arraySize; }
 	void				SetMipCount(int count) { m_mipCount = count; }

@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "WGPURenderDefs.h"
+#include "WGPUBackend.h"
 #include "renderers/IGPUBuffer.h"
 
 struct BufferInfo;

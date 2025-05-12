@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <webgpu/webgpu.h>
-#include "CTexture.h"
+#include "WGPUBackend.h"
+#include "Texture.h"
 
 class CWGPUTexture : public CTexture
 {
@@ -27,7 +27,6 @@ public:
 	int				GetWGPUTextureViewCount() const { return m_rhiViews.numElem(); }
 
 protected:
-	void			Ref_DeleteObject();
 
 	WGPUTexture				m_rhiTexture{ nullptr };
 	Array<WGPUTextureView>	m_rhiViews{ PP_SL };

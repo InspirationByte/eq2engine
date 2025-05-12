@@ -69,8 +69,6 @@ protected:
 	uint8						m_bodyGroupBounds[2]{ 0 };
 	uint8						m_lodBounds[2]{ 0 };
 	uint8						m_matGroupBounds[2]{ 0 };
-
-	bool						m_ownsVertexFormat{ false };
 };
 
 

@@ -254,7 +254,6 @@ bool CParticleRenderer::InitBuffers()
 
 bool CParticleRenderer::ShutdownBuffers()
 {
-	g_renderAPI->DestroyVertexFormat(m_vertexFormat);
 	m_vertexFormat = nullptr;
 	return true;
 }

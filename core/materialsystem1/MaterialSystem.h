@@ -203,7 +203,7 @@ private:
 
 	Array<CDynamicMesh>			m_dynamicMeshes{ PP_SL };
 	Array<int>					m_freeDynamicMeshes{ PP_SL };
-	IVertexFormat*				m_dynamicMeshVertexFormat{ nullptr };
+	IVertexFormatPtr			m_dynamicMeshVertexFormat{ nullptr };
 
 	//-------------------------------------------------------------------------
 	IVector2D					m_backbufferSize{ 800, 600 };

@@ -17,6 +17,8 @@
 ShaderAPIEmpty s_renderApi;
 IShaderAPI* g_renderAPI = &s_renderApi;
 
+ShaderAPI_Base& ShaderAPI_Base::Instance = s_renderApi;
+
 class CEmptySwapChain : public ISwapChain
 {
 public:

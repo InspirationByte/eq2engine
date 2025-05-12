@@ -9,7 +9,6 @@
 #pragma once
 #include "SpriteBuilder.h"
 
-class IVertexFormat;
 class CViewParams;
 class Volume;
 class IGPURenderPassRecorder;
@@ -20,6 +19,9 @@ struct RenderPassContext;
 
 class IGPUBuffer;
 using IGPUBufferPtr = CRefPtr<IGPUBuffer>;
+
+class IVertexFormat;
+using IVertexFormatPtr = CRefPtr<IVertexFormat>;
 
 class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
@@ -112,7 +114,7 @@ protected:
 	bool				ShutdownBuffers();
 
 	Array<CParticleBatch*>	m_batchs{ PP_SL };
-	IVertexFormat*		m_vertexFormat{ nullptr };
+	IVertexFormatPtr	m_vertexFormat{ nullptr };
 	bool				m_initialized{ false };
 };
 

@@ -265,7 +265,6 @@ void CStudioCache::ReleaseCache()
 	m_motionCachedList.clear(true);
 	m_motionFreeCacheSlots.clear(true);
 
-	g_renderAPI->DestroyVertexFormat(m_egfFormat);
 	m_egfFormat = nullptr;
 	m_errorMaterial = nullptr;
 }

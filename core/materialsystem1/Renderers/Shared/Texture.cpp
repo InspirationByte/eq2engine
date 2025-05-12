@@ -7,11 +7,11 @@
 
 #include "core/core_common.h"
 #include "renderers/ShaderAPI_defs.h"
-#include "renderers/IShaderAPI.h"
+#include "ShaderAPI.h"
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 
-#include "CTexture.h"
+#include "Texture.h"
 
 void CTexture::SetName(const char* pszNewName)
 {
@@ -19,6 +19,14 @@ void CTexture::SetName(const char* pszNewName)
 	m_name = pszNewName;
 	fnmPathFixSeparators(m_name);
 	m_nameHash = StringId24(m_name.ToCString(), true);
+}
+
+void CTexture::Ref_DeleteObject()
+{
+	if (!(m_flags & TEXFLAG_TRANSIENT))
+		ShaderAPI_Base::Instance.FreeTexture(this);
+
+	RefCountedObject::Ref_DeleteObject();
 }
 
 // initializes procedural (lockable) texture
