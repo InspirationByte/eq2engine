@@ -18,8 +18,6 @@ public:
 	void					DbgPushGroup(const char* groupLabel) const;
 	void					DbgAddMarker(const char* label) const;
 
-	void					AddBundle(IGPURenderBundleRecorder* bundle);
-
 	void					SetPipeline(IGPURenderPipeline* pipeline);
 	IGPURenderPipelinePtr	GetPipeline() const { return m_pipeline; }
 

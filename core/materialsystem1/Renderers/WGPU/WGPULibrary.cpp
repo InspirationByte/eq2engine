@@ -23,6 +23,7 @@
 #include "WGPULibrary.h"
 #include "WGPURenderAPI.h"
 #include "WGPUSwapChain.h"
+#include "WGPUCommandRecorder.h"
 
 DECLARE_CVAR(wgpu_reportErrors, "0", nullptr, 0);
 DECLARE_CVAR(wgpu_breakOnError, "0", nullptr, 0);
@@ -484,7 +485,7 @@ bool CWGPURenderLib::CaptureScreenshot(CImage &img)
 	const BufferInfo bufInfo(bytesPerPixel, currentTexture->GetWidth() * currentTexture->GetHeight());
 	IGPUBufferPtr tempBuffer = g_renderAPI->CreateBuffer(bufInfo, BUFFERUSAGE_READ | BUFFERUSAGE_COPY_DST, "ScreenshotImgBuffer");
 	IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("ScreenshotCmd");
-	cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
+	static_cast<CWGPUCommandRecorder*>(cmdRecorder.Ptr())->CopyTextureToBuffer(TextureCopyInfo{ currentTexture }, tempBuffer, TextureExtent{ currentTexture->GetWidth(), currentTexture->GetHeight(), 1 });
 	Future<bool> cmdFuture = g_renderAPI->SubmitCommandBufferAwaitable(cmdRecorder->End());
 	
 	// wait until image is copied to the buffer

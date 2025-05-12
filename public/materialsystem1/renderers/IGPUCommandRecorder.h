@@ -135,9 +135,6 @@ class IGPURenderPassRecorder : public IGPURenderCommandsRecorder
 public:
 	EType							GetType() const { return PASS_RECORDER; }
 
-	// adds render bundle
-	virtual void					AddBundle(IGPURenderBundleRecorder* bundle) = 0;
-
 	// completes pass recording. After this recorder can be disposed
 	virtual void					Complete() = 0;
 
@@ -194,7 +191,6 @@ public:
 	virtual void						ClearBuffer(IGPUBuffer* buffer, int64 offset, int64 size) const = 0;
 
 	virtual void						CopyTextureToTexture(const TextureCopyInfo& source, const TextureCopyInfo& destination, const TextureExtent& copySize) const = 0;
-	virtual void						CopyTextureToBuffer(const TextureCopyInfo& source, const IGPUBuffer* destination, const TextureExtent& copySize) const = 0;
 
 	virtual void*						GetUserData() const = 0;
 	virtual IGPUCommandBufferPtr		End() = 0;
