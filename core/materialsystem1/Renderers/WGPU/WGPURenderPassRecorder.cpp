@@ -32,11 +32,6 @@ void CWGPURenderPassRecorder::DbgAddMarker(const char* label) const
 	wgpuRenderPassEncoderInsertDebugMarker(m_rhiRenderPassEncoder, _WSTR(label));
 }
 
-void CWGPURenderPassRecorder::AddBundle(IGPURenderBundleRecorder* bundle)
-{
-	ASSERT_FAIL("NOT IMPLEMENTED");
-}
-
 void CWGPURenderPassRecorder::SetPipeline(IGPURenderPipeline* pipeline)
 {
 	m_pipeline.Assign(pipeline);

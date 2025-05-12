@@ -271,7 +271,7 @@ bool CWGPUTexture::Lock(LockInOutData& data)
 
 		{
 			IGPUCommandRecorderPtr cmdRecorder = g_renderAPI->CreateCommandRecorder("TexLockReadCmd");
-			cmdRecorder->CopyTextureToBuffer(TextureCopyInfo{ this }, &tmpBuffer, data.lockSize);
+			static_cast<CWGPUCommandRecorder*>(cmdRecorder.Ptr())->CopyTextureToBuffer(TextureCopyInfo{ this }, &tmpBuffer, data.lockSize);
 			g_renderAPI->SubmitCommandBuffer(cmdRecorder->End());
 		}
 
