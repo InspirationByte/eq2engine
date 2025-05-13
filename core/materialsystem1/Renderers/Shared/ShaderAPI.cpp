@@ -220,39 +220,33 @@ ITexturePtr ShaderAPI_Base::CreateTexture(const CImagePtr image, const SamplerSt
 }
 
 // creates procedural (lockable) texture
-ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
-													ETextureFormat format,
-													int width, int height,
-													int arraySize,
-													const SamplerStateParams& sampler,
-													int flags,
-													int dataSize, const ubyte* data)
+ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const TextureDesc& texDesc, const ubyte* data, int dataSize)
 {
 	CImagePtr genTex = CRefPtr_new(CImage);
-	genTex->SetName(pszName);
+	genTex->SetName(texDesc.name);
 
-	const int depth = (flags & TEXFLAG_CUBEMAP) ? 0 : 1;
+	const int depth = (texDesc.flags & TEXFLAG_CUBEMAP) ? 0 : 1;
 
 	// make texture
-	ubyte* newData = genTex->Create(format, width, height, depth, 1, arraySize);
+	ubyte* newData = genTex->Create(texDesc.format, texDesc.size.width, texDesc.size.height, depth, texDesc.mipmapCount, texDesc.size.arraySize);
 	if(newData)
 	{
-		const int texDataSize = width * height * arraySize * GetBytesPerPixel(format);
-		memset(newData, 0, texDataSize);
-
+		const int texDataSize = texDesc.size.width * texDesc.size.height * texDesc.size.arraySize * GetBytesPerPixel(texDesc.format);
 		if(data && dataSize)
 		{
 			ASSERT(dataSize <= texDataSize);
 			memcpy(newData, data, dataSize);
 		}
+		else
+			memset(newData, 0, texDataSize);
 	}
 	else
 	{
-		MsgError("ERROR -  Cannot create procedural texture '%s', probably bad format\n", pszName);
+		MsgError("ERROR -  Cannot create procedural texture '%s', probably bad format\n", texDesc.name);
 		return nullptr;	// don't generate error
 	}
 
-	return CreateTexture(genTex, sampler, flags);
+	return CreateTexture(genTex, texDesc.sampler, texDesc.flags);
 }
 
 // returns vertex format

@@ -72,14 +72,7 @@ public:
 	ITexturePtr				CreateTexture(const CImagePtr image, const SamplerStateParams& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
-	ITexturePtr				CreateProceduralTexture(const char* pszName,
-													ETextureFormat nFormat,
-													int width, int height,
-													int arraySize = 1,
-													const SamplerStateParams& sampler = {},
-													int flags = 0,
-													int dataSize = 0, const ubyte* data = nullptr
-													);
+	ITexturePtr				CreateProceduralTexture(const TextureDesc& texDesc, const ubyte* data = nullptr, int dataSize = 0);
 
 	// Finds texture by name
 	ITexturePtr				FindTexture(const char* pszName);

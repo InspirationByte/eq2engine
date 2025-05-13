@@ -64,13 +64,13 @@ public:
 
 	// initializes shader api.
 	// Don't use this, this already called by materials->Init()
-	virtual void				Init( const ShaderAPIParams &params ) = 0;
+	virtual void						Init( const ShaderAPIParams &params ) = 0;
 
 	// shutdowns shader api. Don't use this, this already called by materials->Shutdown()
-	virtual void				Shutdown() = 0;
+	virtual void						Shutdown() = 0;
 
 	// returns the parameters
-	virtual const ShaderAPIParams&	GetParams() const = 0;
+	virtual const ShaderAPIParams&		GetParams() const = 0;
 
 //-------------------------------------------------------------
 // Renderer capabilities and information
@@ -78,27 +78,27 @@ public:
 
 	virtual const ShaderAPICapabilities&	GetCaps() const = 0;
 
-	virtual EShaderAPIType		GetShaderAPIClass() const = 0;
-	virtual const char*			GetRendererName() const = 0;
-	virtual void				PrintAPIInfo() const = 0;
+	virtual EShaderAPIType				GetShaderAPIClass() const = 0;
+	virtual const char*					GetRendererName() const = 0;
+	virtual void						PrintAPIInfo() const = 0;
 
 //-------------------------------------------------------------
 // Device statistics
 //-------------------------------------------------------------
 
-	virtual bool				IsDeviceActive() const = 0;
-	virtual bool				IsDeviceValidationActive() const = 0;
+	virtual bool						IsDeviceActive() const = 0;
+	virtual bool						IsDeviceValidationActive() const = 0;
 
-	virtual int					GetDrawCallsCount() const = 0;
-	virtual int					GetDrawIndexedPrimitiveCallsCount() const = 0;
-	virtual int					GetTrianglesCount() const = 0;
-	virtual void				ResetCounters() = 0;
+	virtual int							GetDrawCallsCount() const = 0;
+	virtual int							GetDrawIndexedPrimitiveCallsCount() const = 0;
+	virtual int							GetTrianglesCount() const = 0;
+	virtual void						ResetCounters() = 0;
 
 //-------------------------------------------------------------
 // MT Synchronization
 //-------------------------------------------------------------
 
-	virtual void				Flush() = 0;
+	virtual void						Flush() = 0;
 
 //-------------------------------------------------------------
 // Buffer management
@@ -178,14 +178,7 @@ public:
 //-------------------------------------------------------------
 
 	// creates lockable texture
-	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
-														ETextureFormat nFormat,
-														int width, int height,
-														int arraySize = 1,
-														const SamplerStateParams& sampler = {},
-														int flags = 0,
-														int dataSize = 0, const ubyte* data = nullptr
-														) = 0;
+	virtual ITexturePtr			CreateProceduralTexture(const TextureDesc& texDesc, const ubyte* data = nullptr, int dataSize = 0) = 0;
 };
 
 
