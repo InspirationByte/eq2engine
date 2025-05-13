@@ -1,4 +1,5 @@
 #pragma once
+#include "WGPUBackend.h"
 #include "renderers/IGPUCommandRecorder.h"
 
 class CWGPUCommandRecorder : public IGPUCommandRecorder

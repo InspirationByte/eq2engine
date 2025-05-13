@@ -13,14 +13,15 @@
 #include "imaging/ImageLoader.h"
 #include "utils/KeyValues.h"
 
+#include "../RenderWorker.h"
+
 #include "WGPURenderAPI.h"
 #include "WGPURenderDefs.h"
 #include "WGPUStates.h"
 #include "WGPUCommandRecorder.h"
 #include "WGPURenderPassRecorder.h"
-
-#include "../RenderWorker.h"
 #include "WGPUComputePassRecorder.h"
+#include "VertexFormat.h"
 
 constexpr EqStringRef s_shaderKindVertexName = "Vertex";
 constexpr EqStringRef s_shaderKindFragmentName = "Fragment";
@@ -30,6 +31,7 @@ constexpr EqStringRef s_DefaultVertexLayoutName = "Default";
 DECLARE_CVAR(wgpu_preload_shaders, "0", "Preload all shaders during startup. This affects engine startup time but allows name display.", CV_ARCHIVE);
 
 CWGPURenderAPI CWGPURenderAPI::Instance;
+ShaderAPI_Base& ShaderAPI_Base::Instance = CWGPURenderAPI::Instance;
 IShaderAPI* g_renderAPI = &CWGPURenderAPI::Instance;
 
 static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, int entryPointStrHash)
@@ -39,6 +41,8 @@ static uint PackShaderModuleId(int queryStrHash, int vertexLayoutIdx, int kind, 
 	hash += entryPointStrHash;
 	return hash;
 }
+
+//------------------------------------------
 
 ShaderInfoWGPUImpl::~ShaderInfoWGPUImpl()
 {
@@ -362,20 +366,6 @@ void CWGPURenderAPI::PrintAPIInfo() const
 		CWGPUTexture* pTexture = static_cast<CWGPUTexture*>(*it);
 		MsgInfo("     %s (%d) - %dx%d\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(), pTexture->GetHeight());
 	}
-}
-
-IVertexFormat* CWGPURenderAPI::CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
-{
-	IVertexFormat* pVF = PPNew CWGPUVertexFormat(name, formatDesc);
-	m_VFList.append(pVF);
-	return pVF;
-}
-
-// Destroy vertex format
-void CWGPURenderAPI::DestroyVertexFormat(IVertexFormat* pFormat)
-{
-	if (m_VFList.fastRemove(pFormat))
-		delete pFormat;
 }
 
 //-------------------------------------------------------------

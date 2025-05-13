@@ -5,8 +5,6 @@
 // Description: WebGPU renderer
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <webgpu/webgpu.h>
-
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
 #include "core/ICommandLine.h"
@@ -215,7 +213,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUAdapterInfo rhiAdapterInfo = {};
 		wgpuAdapterGetInfo(m_rhiAdapter, &rhiAdapterInfo);
 
-		Msg("* WGPU Adapter: %s on %s (%s)\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), EqString(rhiAdapterInfo.device.data, rhiAdapterInfo.device.length).ToCString(), GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType));
+		Msg("* WGPU Adapter: %s on %.*s (%s)\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), rhiAdapterInfo.device.length, rhiAdapterInfo.device.data, GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType));
 	}
 
 	{

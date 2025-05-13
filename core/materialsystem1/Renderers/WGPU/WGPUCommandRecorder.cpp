@@ -1,4 +1,3 @@
-#include <webgpu/webgpu.h>
 #include "core/core_common.h"
 
 #include "WGPUBuffer.h"
@@ -8,7 +7,6 @@
 #include "WGPUComputePassRecorder.h"
 #include "WGPURenderDefs.h"
 #include "WGPUTexture.h"
-
 
 CWGPUCommandRecorder::~CWGPUCommandRecorder()
 {

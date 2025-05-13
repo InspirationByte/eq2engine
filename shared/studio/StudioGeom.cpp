@@ -15,7 +15,6 @@
 #include "studiofile/StudioLoader.h"
 #include "StudioGeom.h"
 #include "StudioCache.h"
-#include "StudioGeomInstancer.h"
 
 #include "physics/IStudioShapeCache.h"
 #include "render/Decals.h"
@@ -180,8 +179,6 @@ void CEqStudioGeom::DestroyModel()
 	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_name.ToCString());
 
 	Atomic::Exchange(m_readyState, MODEL_LOAD_ERROR);
-
-	SAFE_DELETE(m_instancer);
 
 	for (int i = 0; i < EGFHwVertex::VERT_COUNT; ++i)
 		m_vertexBuffers[i] = nullptr;
@@ -960,20 +957,6 @@ ArrayCRef<int> CEqStudioGeom::GetMotionDataIdxs() const
 ArrayCRef<StudioJoint> CEqStudioGeom::GetJoints() const
 {
 	return ArrayCRef(m_joints, m_studio->numBones);
-}
-
-// instancing
-void CEqStudioGeom::SetInstancer(CBaseEqGeomInstancer* instancer)
-{
-	m_instancer = instancer;
-
-	if (m_instancer)
-		m_instancer->ValidateAssert();
-}
-
-CBaseEqGeomInstancer* CEqStudioGeom::GetInstancer() const
-{
-	return m_instancer;
 }
 
 static void MakeDecalTexCoord(Array<EGFHwVertex>& verts, Array<int>& indices, const DecalMakeInfo& info)

@@ -6,9 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <webgpu/webgpu.h>
 #include "renderers/ISwapChain.h"
 #include "renderers/ShaderAPI_defs.h"
+
+#include "WGPUBackend.h"
 #include "WGPUTexture.h"
 
 class CWGPURenderLib;

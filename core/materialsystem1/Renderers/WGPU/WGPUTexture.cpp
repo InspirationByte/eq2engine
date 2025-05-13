@@ -33,14 +33,6 @@ void CWGPUTexture::Release()
 	m_rhiTexture = nullptr;
 }
 
-void CWGPUTexture::Ref_DeleteObject()
-{
-	if (!(m_flags & TEXFLAG_TRANSIENT))
-		CWGPURenderAPI::Instance.FreeTexture(this);
-
-	RefCountedObject::Ref_DeleteObject();
-}
-
 bool CWGPUTexture::Init(const CRefPtr<CImage> image, const SamplerStateParams& sampler, int flags)
 {
 	HOOK_TO_CVAR(r_loadmiplevel);

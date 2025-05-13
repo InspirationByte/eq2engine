@@ -6,9 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <webgpu/webgpu.h>
 #include "../IRenderLibrary.h"
 #include "../RenderWorker.h"
+#include "WGPUBackend.h"
 
 class CWGPUSwapChain;
 

@@ -6,8 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "ShaderAPI_Base.h"
+#include "ShaderAPI.h"
 #include "EmptyTexture.h"
+#include "VertexFormat.h"
 #include "imaging/ImageLoader.h"
 
 using namespace Threading;
@@ -17,38 +18,6 @@ extern CEqMutex	g_sapi_ShaderMutex;
 extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
-
-class CEmptyVertexFormat : public IVertexFormat
-{
-public:
-	CEmptyVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> desc)
-	{
-		m_name = name;
-		m_nameHash = StringId24(name);
-
-		m_vertexDesc.setNum(desc.numElem());
-		for(int i = 0; i < desc.numElem(); i++)
-			m_vertexDesc[i] = desc[i];
-	}
-
-	const char* GetName() const {return m_name.ToCString();}
-	int			GetNameHash() const { return m_nameHash; }
-
-	int	GetVertexSize(int stream) const
-	{
-		return m_vertexDesc[stream].stride;
-	}
-
-	ArrayCRef<VertexLayoutDesc> GetFormatDesc() const
-	{
-		return m_vertexDesc;
-	}
-
-protected:
-	EqString				m_name;
-	int						m_nameHash;
-	Array<VertexLayoutDesc>	m_vertexDesc{ PP_SL };
-};
 
 class CEmptyBindGroup : public IGPUBindGroup {};
 class CEmptyIPipelineLayout : public IGPUPipelineLayout {};
@@ -254,19 +223,6 @@ public:
 	{
 		CRefPtr<CEmptyBuffer> buffer = CRefPtr_new(CEmptyBuffer, bufferInfo.elementSize * bufferInfo.elementCapacity, bufferUsageFlags);
 		return IGPUBufferPtr(buffer); 
-	}
-
-	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc)
-	{
-		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc);
-		m_VFList.append(pVF);
-		return pVF;
-	}
-
-	void						DestroyVertexFormat(IVertexFormat* pFormat)
-	{
-		if (m_VFList.fastRemove(pFormat))
-			delete pFormat;
 	}
 
 //-------------------------------------------------------------

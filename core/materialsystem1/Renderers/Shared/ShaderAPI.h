@@ -17,6 +17,9 @@ class ConCommandBase;
 class ShaderAPI_Base : public IShaderAPI
 {
 public:
+
+	static ShaderAPI_Base&	Instance;
+
 	ShaderAPI_Base();
 
 	// Init + Shurdown
@@ -56,6 +59,12 @@ public:
 	virtual void			EndAsyncOperation() {}							// obsolete for D3D
 
 //-------------------------------------------------------------
+// DEPRECATED
+
+	virtual IVertexFormatPtr	CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
+	virtual void				DestroyVertexFormat(IVertexFormat* pFormat);
+
+//-------------------------------------------------------------
 // Textures
 //-------------------------------------------------------------
 
@@ -63,14 +72,7 @@ public:
 	ITexturePtr				CreateTexture(const CImagePtr image, const SamplerStateParams& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
-	ITexturePtr				CreateProceduralTexture(const char* pszName,
-													ETextureFormat nFormat,
-													int width, int height,
-													int arraySize = 1,
-													const SamplerStateParams& sampler = {},
-													int flags = 0,
-													int dataSize = 0, const ubyte* data = nullptr
-													);
+	ITexturePtr				CreateProceduralTexture(const TextureDesc& texDesc, const ubyte* data = nullptr, int dataSize = 0);
 
 	// Finds texture by name
 	ITexturePtr				FindTexture(const char* pszName);
@@ -100,7 +102,7 @@ protected:
 //-------------------------------------------------------------
 
 	ShaderAPIParams			m_params;
-	ShaderAPICapabilities			m_caps;
+	ShaderAPICapabilities	m_caps;
 
 	Map<int, ITexture*>		m_TextureList{ PP_SL };
 	Array<IVertexFormat*>	m_VFList{ PP_SL };

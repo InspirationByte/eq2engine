@@ -1,4 +1,3 @@
-#include <webgpu/webgpu.h>
 #include "core/core_common.h"
 
 #include "WGPUStates.h"

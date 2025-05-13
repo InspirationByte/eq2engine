@@ -1,4 +1,5 @@
 #pragma once
+#include "WGPUBackend.h"
 #include "renderers/IShaderAPI.h"
 
 class CWGPUComputePassRecorder : public IGPUComputePassRecorder

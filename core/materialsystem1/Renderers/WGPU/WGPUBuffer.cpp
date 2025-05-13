@@ -10,7 +10,6 @@
 #include "WGPUBuffer.h"
 #include "WGPURenderAPI.h"
 
-
 CWGPUBuffer::~CWGPUBuffer()
 {
 	wgpuBufferRelease(m_rhiBuffer);

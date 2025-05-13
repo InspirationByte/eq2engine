@@ -7,11 +7,11 @@
 
 #pragma once
 #include "materialsystem1/IMaterial.h"
+#include "materialsystem1/renderers/IVertexFormat.h"
 #include "egf/model.h"
 
 class CEqJobManager;
 class CEqStudioGeom;
-class IVertexFormat;
 
 static constexpr const int STUDIOCACHE_INVALID_IDX = -1;
 
@@ -58,7 +58,7 @@ private:
 	Array<StudioMotionData>		m_motionCachedList{ PP_SL };
 	Array<int>					m_motionFreeCacheSlots{ PP_SL };
 
-	mutable IVertexFormat*		m_egfFormat{ nullptr };
+	mutable IVertexFormatPtr	m_egfFormat{ nullptr };
 	mutable IMaterialPtr		m_errorMaterial;
 };
 

@@ -6,12 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <webgpu/webgpu.h>
-
-#include "ShaderAPI_Base.h"
+#include "ShaderAPI.h"
+#include "WGPUBackend.h"
 #include "WGPUTexture.h"
 #include "WGPUBuffer.h"
-#include "WGPUVertexFormat.h"
 #include "WGPUShader.h"
 
 using namespace Threading;
@@ -98,10 +96,6 @@ public:
 
 	void						SubmitCommandBuffers(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const;
 	Future<bool>				SubmitCommandBuffersAwaitable(ArrayCRef<IGPUCommandBufferPtr> cmdBuffers) const;
-
-// DEPRECATED
-	IVertexFormat*				CreateVertexFormat(const char* name, ArrayCRef<VertexLayoutDesc> formatDesc);
-	void						DestroyVertexFormat(IVertexFormat* pFormat);
 
 //-------------------------------------------------------------
 // Private access

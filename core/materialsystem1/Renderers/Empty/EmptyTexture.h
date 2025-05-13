@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "CTexture.h"
+#include "Texture.h"
 
 class CEmptyTexture : public CTexture
 {

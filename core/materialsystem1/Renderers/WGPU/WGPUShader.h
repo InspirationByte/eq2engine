@@ -1,4 +1,5 @@
 #pragma once
+#include "WGPUBackend.h"
 
 class IPackFileReader;
 using IPackFileReaderPtr = CRefPtr<IPackFileReader>;
