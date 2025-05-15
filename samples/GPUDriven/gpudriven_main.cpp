@@ -35,7 +35,7 @@ DECLARE_CVAR(obj_rotate, "1", nullptr, 0);
 DECLARE_CVAR(obj_draw, "1", nullptr, 0);
 
 static CStaticAutoPtr<CState_GpuDrivenDemo> g_State_Demo;
-static IVertexFormat* s_gameObjectVF = nullptr;
+static IVertexFormatPtr s_gameObjectVF = nullptr;
 
 static CViewParams s_currentView;
 
@@ -67,30 +67,30 @@ CState_GpuDrivenDemo::CState_GpuDrivenDemo()
 // @from - used to transfer data
 void CState_GpuDrivenDemo::OnEnter(CAppStateBase* from)
 {
-	g_inputCommandBinder->AddBinding("W", "forward", [](void* _this, short value) {
+	g_inputCommandBinder->AddBinding("W", "forward", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
-		bitsSet(this_->m_cameraButtons, CAM_FORWARD, value > 0);
+		bitsSet(this_->m_cameraButtons, CAM_FORWARD, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("S", "backward", [](void* _this, short value) {
+	g_inputCommandBinder->AddBinding("S", "backward", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
-		bitsSet(this_->m_cameraButtons, CAM_BACKWARD, value > 0);
+		bitsSet(this_->m_cameraButtons, CAM_BACKWARD, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("A", "strafeleft", [](void* _this, short value) {
+	g_inputCommandBinder->AddBinding("A", "strafeleft", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
-		bitsSet(this_->m_cameraButtons, CAM_SIDE_LEFT, value > 0);
+		bitsSet(this_->m_cameraButtons, CAM_SIDE_LEFT, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("D", "straferight", [](void* _this, short value) {
+	g_inputCommandBinder->AddBinding("D", "straferight", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
-		bitsSet(this_->m_cameraButtons, CAM_SIDE_RIGHT, value > 0);
+		bitsSet(this_->m_cameraButtons, CAM_SIDE_RIGHT, value.x > 0);
 	}, this);
 
-	g_inputCommandBinder->AddBinding("R", "reset", [](void* _this, short value) {
+	g_inputCommandBinder->AddBinding("R", "reset", [](void* _this, const Vector3D& value) {
 		CState_GpuDrivenDemo* this_ = reinterpret_cast<CState_GpuDrivenDemo*>(_this);
 
-		if (value <= 0)
+		if (value.x <= 0)
 			this_->InitGame();
 	}, this);
 
@@ -154,8 +154,6 @@ void CState_GpuDrivenDemo::OnLeave(CAppStateBase* to)
 
 	s_modelIdToArchetypeId.clear(true);
 	s_storedRenderState = {};
-
-	g_renderAPI->DestroyVertexFormat(s_gameObjectVF);
 	s_gameObjectVF = nullptr;
 
 	g_inputCommandBinder->UnbindCommandByName("forward");
@@ -180,12 +178,15 @@ void CState_GpuDrivenDemo::InitGame()
 	{
 		const int rndModelIdx = (i % (modelCount - 1)) + 1;
 
-		auto it = s_modelIdToArchetypeId.find(g_studioCache->GetModel(rndModelIdx)->GetCacheId());
+		CEqStudioGeom* geom = g_studioCache->GetModel(rndModelIdx);
+		auto it = s_modelIdToArchetypeId.find(geom->GetCacheId());
 		if (it.atEnd())
 		{
 			ASSERT_FAIL("Can't get archetype for model idx = %d", rndModelIdx);
 			continue;
 		}
+
+		geom->QueueMaterialsLoading();
 
 		Object& obj = s_objects.append();
 		obj.instId = DemoGRIMRenderer::GetAllocator().AddInstance<InstTransform>(*it);
@@ -376,14 +377,14 @@ void CState_GpuDrivenDemo::RenderGame()
 
 void CState_GpuDrivenDemo::HandleKeyPress(int key, bool down)
 {
-	g_inputCommandBinder->OnKeyEvent(key, down);
+	g_inputCommandBinder->OnPressEvent(key, down);
 }
 
 void CState_GpuDrivenDemo::HandleMouseClick(int x, int y, int buttons, bool down)
 {
 	if (g_consoleInput->IsVisible())
 		return;
-	g_inputCommandBinder->OnMouseEvent(buttons, down);
+	g_inputCommandBinder->OnPressEvent(buttons, down);
 }
 
 void CState_GpuDrivenDemo::HandleMouseMove(int x, int y, float deltaX, float deltaY)
@@ -396,12 +397,10 @@ void CState_GpuDrivenDemo::HandleMouseMove(int x, int y, float deltaX, float del
 
 void CState_GpuDrivenDemo::HandleMouseWheel(int x, int y, int scroll)
 {
-	g_inputCommandBinder->OnMouseWheel(scroll);
 }
 
 void CState_GpuDrivenDemo::HandleJoyAxis(short axis, short value)
 {
-	g_inputCommandBinder->OnJoyAxisEvent(axis, value);
 }
 
 void CState_GpuDrivenDemo::GetMouseCursorProperties(bool& visible, bool& centered) 
