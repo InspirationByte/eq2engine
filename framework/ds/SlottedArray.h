@@ -10,6 +10,8 @@ public:
 	const T&	operator[](const int idx) const;
 	bool		operator()(const int idx) const;
 
+	bool		isValidIdx(const int idx) const;
+
 	T*			ptr();
 	const T*	ptr() const;
 
@@ -57,7 +59,13 @@ template<typename T>
 inline bool SlottedArray<T>::operator()(const int idx) const
 {
 	ASSERT_MSG(m_items.inRange(idx), "invalid index %d (numElem=%d)", idx, m_items.numElem());
-	return m_setItems[idx];
+	return isValidIdx(idx);
+}
+
+template<typename T>
+bool SlottedArray<T>::isValidIdx(const int idx) const
+{
+	return m_items.inRange(idx) && m_setItems[idx];
 }
 
 template<typename T>
