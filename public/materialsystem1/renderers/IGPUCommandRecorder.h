@@ -106,6 +106,9 @@ public:
 	virtual void					DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
 	virtual void					DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset) = 0;
 
+	virtual void					MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset) = 0;
+	virtual void					MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset) = 0;
+
 	virtual void*					GetUserData() const = 0;
 
 };

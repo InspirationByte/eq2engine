@@ -676,7 +676,7 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlo
 	// editor parameters are separate prefixed ones
 	// this allows to have values of parameters that are represented in the game while alter rendering in editor.
 	if (g_matSystem->GetConfiguration().editormode)
-		mv = m_material->FindMaterialVar(EqString::Format("editor.%s", paramName));
+		mv = m_material->FindMaterialVar(_Es("editor.") + paramName);
 
 	if (!mv.IsValid())
 		mv = m_material->FindMaterialVar(paramName);

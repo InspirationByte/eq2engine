@@ -65,7 +65,7 @@ static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reas
 	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
 }
 
-static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, struct WGPUStringView message, void* userdata)
+static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2)
 {
 	if (status != WGPURequestAdapterStatus_Success)
 	{
@@ -75,7 +75,7 @@ static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapt
 	else
 	{
 		// use first adapter provided
-		WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata);
+		WGPUAdapter* result = static_cast<WGPUAdapter*>(userdata1);
 		if (*result == nullptr)
 			*result = adapter;
 	}
@@ -99,7 +99,7 @@ bool CWGPURenderLib::InitCaps()
 	// with various toggles enabled or disabled: https://dawn.googlesource.com/dawn/+/refs/heads/main/src/dawn/native/Toggles.cpp
 
 	WGPUInstanceDescriptor rhiInstanceDesc{};
-	WGPUInstanceFeatures& rhiInstanceCapabilities = rhiInstanceDesc.features;
+	WGPUInstanceCapabilities& rhiInstanceCapabilities = rhiInstanceDesc.capabilities;
 	rhiInstanceCapabilities.timedWaitAnyEnable = true;
 
 	m_instance = wgpuCreateInstance(&rhiInstanceDesc);
@@ -186,7 +186,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 	WGPURequestAdapterOptions options{};
 	options.powerPreference = WGPUPowerPreference_HighPerformance;
-	options.compatibilityMode = isDeviceValidationEnabled == false;	// NOTE: this is replaced with enum in later versions
+	options.featureLevel = isDeviceValidationEnabled == false ? WGPUFeatureLevel_Compatibility : WGPUFeatureLevel_Core;	// NOTE: this is replaced with enum in later versions
 	
 	EqStringRef backendName = wgpu_backend.GetString();
 
@@ -201,7 +201,13 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	else if (!backendName.CompareCaseIns("OpenGLES"))
 		options.backendType = WGPUBackendType_OpenGLES;
 
-	wgpuInstanceRequestAdapter(m_instance, &options, &OnWGPUAdapterRequestEnded, &m_rhiAdapter);
+	{
+		WGPURequestAdapterCallbackInfo rhiCbInfo{};
+		rhiCbInfo.callback = &OnWGPUAdapterRequestEnded;
+		rhiCbInfo.userdata1 = &m_rhiAdapter;
+		rhiCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+		wgpuInstanceRequestAdapter(m_instance, &options, rhiCbInfo);
+	}
 
 	if (!m_rhiAdapter)
 	{
@@ -217,35 +223,34 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 	}
 
 	{
-		WGPUSupportedLimits supLimits = {};
+		WGPULimits supLimits = {};
 		wgpuAdapterGetLimits(m_rhiAdapter, &supLimits);
 
-		WGPULimits requiredLimits = supLimits.limits;
+		WGPULimits requiredLimits = supLimits;
 
 		// fill ShaderAPI capabilities
 		ShaderAPICapabilities& caps = CWGPURenderAPI::Instance.m_caps;
-		caps.isInstancingSupported = true;
-		caps.isHardwareOcclusionQuerySupported = true;
-		caps.minUniformBufferOffsetAlignment = supLimits.limits.minUniformBufferOffsetAlignment;
-		caps.minStorageBufferOffsetAlignment = supLimits.limits.minStorageBufferOffsetAlignment;
-		caps.maxDynamicUniformBuffersPerPipelineLayout = supLimits.limits.maxDynamicUniformBuffersPerPipelineLayout;
-		caps.maxDynamicStorageBuffersPerPipelineLayout = supLimits.limits.maxDynamicStorageBuffersPerPipelineLayout;
-		caps.maxVertexStreams = supLimits.limits.maxVertexBuffers;
-		caps.maxVertexAttributes = supLimits.limits.maxVertexAttributes;
-		caps.maxTextureSize = supLimits.limits.maxTextureDimension2D;
-		caps.maxTextureArrayLayers = supLimits.limits.maxTextureArrayLayers;
-		caps.maxTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
-		caps.maxVertexTextureUnits = supLimits.limits.maxSampledTexturesPerShaderStage;
-		caps.maxBindGroups = supLimits.limits.maxBindGroups;
-		caps.maxBindingsPerBindGroup = supLimits.limits.maxBindingsPerBindGroup;
+		caps.minUniformBufferOffsetAlignment = supLimits.minUniformBufferOffsetAlignment;
+		caps.minStorageBufferOffsetAlignment = supLimits.minStorageBufferOffsetAlignment;
+		caps.maxDynamicUniformBuffersPerPipelineLayout = supLimits.maxDynamicUniformBuffersPerPipelineLayout;
+		caps.maxDynamicStorageBuffersPerPipelineLayout = supLimits.maxDynamicStorageBuffersPerPipelineLayout;
+		caps.maxVertexStreams = supLimits.maxVertexBuffers;
+		caps.maxVertexAttributes = supLimits.maxVertexAttributes;
+		caps.maxTextureSize = supLimits.maxTextureDimension2D;
+		caps.maxTextureArrayLayers = supLimits.maxTextureArrayLayers;
+		caps.maxTextureUnits = supLimits.maxSampledTexturesPerShaderStage;
+		caps.maxVertexTextureUnits = supLimits.maxSampledTexturesPerShaderStage;
+		caps.maxBindGroups = supLimits.maxBindGroups;
+		caps.maxBindingsPerBindGroup = supLimits.maxBindingsPerBindGroup;
 		caps.maxTextureAnisotropicLevel = 16;
-		caps.maxRenderTargets = supLimits.limits.maxColorAttachments;
+		caps.maxRenderTargets = supLimits.maxColorAttachments;
 
-		caps.maxComputeInvocationsPerWorkgroup = supLimits.limits.maxComputeInvocationsPerWorkgroup;
-		caps.maxComputeWorkgroupSizeX = supLimits.limits.maxComputeWorkgroupSizeX;
-		caps.maxComputeWorkgroupSizeY = supLimits.limits.maxComputeWorkgroupSizeY;
-		caps.maxComputeWorkgroupSizeZ = supLimits.limits.maxComputeWorkgroupSizeZ;
-		caps.maxComputeWorkgroupsPerDimension = supLimits.limits.maxComputeWorkgroupsPerDimension;
+		caps.maxComputeInvocationsPerWorkgroup = supLimits.maxComputeInvocationsPerWorkgroup;
+		caps.maxComputeWorkgroupSizeX = supLimits.maxComputeWorkgroupSizeX;
+		caps.maxComputeWorkgroupSizeY = supLimits.maxComputeWorkgroupSizeY;
+		caps.maxComputeWorkgroupSizeZ = supLimits.maxComputeWorkgroupSizeZ;
+		caps.maxComputeWorkgroupsPerDimension = supLimits.maxComputeWorkgroupsPerDimension;
+		caps.multiDrawIndirectSupport = wgpuAdapterHasFeature(m_rhiAdapter, WGPUFeatureName_MultiDrawIndirect);
 
 		caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED
 									| SHADER_CAPS_PIXEL_SUPPORTED
@@ -313,9 +318,15 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		FixedArray<WGPUFeatureName, 32> requiredFeatures;
 		requiredFeatures.append(WGPUFeatureName_TextureCompressionBC);
+
+		if(wgpuAdapterHasFeature(m_rhiAdapter, WGPUFeatureName_MultiDrawIndirect))
+			requiredFeatures.append(WGPUFeatureName_MultiDrawIndirect);
+
 		//requiredFeatures.append(WGPUFeatureName_BGRA8UnormStorage);
 		//requiredFeatures.append(WGPUFeatureName_SurfaceCapabilities);
 		requiredFeatures.append(WGPUFeatureName_Norm16TextureFormats);
+		//requiredFeatures.append(WGPUFeatureName_FlexibleTextureViews);
+		
 		// TODO: android
 		//requiredFeatures.append(WGPUFeatureName_TextureCompressionETC2),
 		//requiredFeatures.append(WGPUFeatureName_TextureCompressionASTC),
@@ -323,14 +334,11 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 
 		rhiDeviceDesc.requiredFeatures = requiredFeatures.ptr();
 		rhiDeviceDesc.requiredFeatureCount = requiredFeatures.numElem();
-		rhiDeviceDesc.uncapturedErrorCallbackInfo2.callback = OnWGPUDeviceError;
+		rhiDeviceDesc.uncapturedErrorCallbackInfo.callback = OnWGPUDeviceError;
 
 		// setup required limits
-		WGPURequiredLimits reqLimits{};
-		reqLimits.limits = requiredLimits;
-
-		rhiDeviceDesc.requiredLimits = &reqLimits;
-		WGPUDeviceLostCallbackInfo2& rhiLostCbInfo = rhiDeviceDesc.deviceLostCallbackInfo2;
+		rhiDeviceDesc.requiredLimits = &requiredLimits;
+		WGPUDeviceLostCallbackInfo& rhiLostCbInfo = rhiDeviceDesc.deviceLostCallbackInfo;
 		rhiLostCbInfo.callback = OnWGPUDeviceLost;
 		rhiLostCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
 

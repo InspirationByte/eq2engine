@@ -1267,17 +1267,19 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 	PROF_EVENT_F();
 
 	// last chance to wait for draw
-	while (renderState.drawInvocationsReadbackFuture.IsValid() && !renderState.drawInvocationsReadbackFuture.Wait(0))
+	while (renderState.drawInvocationsReadbackFuture && !renderState.drawInvocationsReadbackFuture.Wait(0))
 	{
 		g_renderAPI->Flush();
 		Threading::YieldCurrentThread();
 	}
 
+	const ShaderAPICapabilities& caps = g_renderAPI->GetCaps();
+
 	renderState.drawInfoLinkList.clear();
 	renderState.drawInfoLinkList.reserve(m_drawInfos.numSlots());
 	renderState.drawInfoLinkList.append(GRIMRenderState::ListItm{}); // store end element in this array
 
-	const bool validationOn = false;// TODO g_renderAPI->IsValidationEnabled();
+	const bool validationOn = g_renderAPI->IsDeviceValidationActive();
 
 	Map<uint64, int> drawInfosByMaterial(PP_SL);
 	for (int i = 0; i < m_drawInfos.numSlots(); ++i)
@@ -1300,8 +1302,6 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 		if(m_dbgHiddenArchetypes[drawInfo.ownerArchetype])
 			continue;
 #endif
-		const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
-
 		IMaterial* material = drawInfo.material;
 		IMaterial* originalMaterial = material;
 		if (renderPassCtx.beforeMaterialSetup)
@@ -1326,20 +1326,24 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 #endif
 
 		uint64 materialId = 0;
-		materialId *= 31;
 		if (renderState.drawCallMaterialGroupByFlags == 0 || (renderState.drawCallMaterialGroupByFlags & originalMaterial->GetFlags()))
-		{
-			materialId *= 31;
 			materialId += reinterpret_cast<uint64>(originalMaterial);
+		else
+			materialId += reinterpret_cast<uint64>(material);
+		materialId *= 31;
+#if 0
+		if (caps.multiDrawIndirectSupport)
+		{
+			materialId += drawInfo.ownerArchetype;
 		}
 		else
+#endif
 		{
+			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
+			materialId += archetypeInfo.meshInstFormat.formatId;
 			materialId *= 31;
-			materialId += reinterpret_cast<uint64>(material);
+			materialId += archetypeInfo.meshInstFormat.usedLayoutBits;
 		}
-		materialId += archetypeInfo.meshInstFormat.formatId;
-		materialId *= 31;
-		materialId += archetypeInfo.meshInstFormat.usedLayoutBits;
 		materialId *= 31;
 		materialId += drawInfo.primTopology;
 
@@ -1361,23 +1365,47 @@ void GRIMBaseRenderer::Draw(GRIMRenderState& renderState, const RenderPassContex
 
 		if (!g_matSystem->SetupMaterialPipeline(setupDrawInfo.material, nullptr, setupDrawInfo.primTopology, setupArchetypeInfo.meshInstFormat, renderPassCtx, this))
 			continue;
-
-		// TODO: if archetypeInfo is matching, use MultiDrawIndirect
-
-		for(; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
+#if 0
+		if (caps.multiDrawIndirectSupport)
 		{
-			const DrawInfo& drawInfo = m_drawInfos[litem.id];
-			const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
-#ifdef GRIM_INSTANCES_DEBUG_ENABLED
-			if(validationOn)
-				renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
-#endif
-			for (int vsi = 0; vsi < archetypeInfo.vertexBuffers.numElem(); ++vsi)
-				renderPassCtx.recorder->SetVertexBuffer(vsi, (archetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : archetypeInfo.vertexBuffers[vsi]);
-			renderPassCtx.recorder->SetIndexBuffer(archetypeInfo.indexBuffer, archetypeInfo.indexFormat);
+			for (int vsi = 0; vsi < setupArchetypeInfo.vertexBuffers.numElem(); ++vsi)
+				renderPassCtx.recorder->SetVertexBuffer(vsi, (setupArchetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : setupArchetypeInfo.vertexBuffers[vsi]);
+			renderPassCtx.recorder->SetIndexBuffer(setupArchetypeInfo.indexBuffer, setupArchetypeInfo.indexFormat);
 
-			renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd)* m_drawBatchs[drawInfo.batchIdx].cmdIdx);
-			++numDrawCalls;
+			for (; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
+			{
+				ASSERT_MSG(drawInfo.archetypeInfo == setupDrawInfo.archetypeInfo, "Mismatching archetype for draw infos");
+
+				const DrawInfo& drawInfo = m_drawInfos[litem.id];
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+				if (validationOn)
+					renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
+#endif
+
+				renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * m_drawBatchs[drawInfo.batchIdx].cmdIdx);
+				++numDrawCalls;
+			}
+		}
+		else
+#endif
+		{
+			for (; litem.id != USHRT_MAX; litem = renderState.drawInfoLinkList[litem.next])
+			{
+				const DrawInfo& drawInfo = m_drawInfos[litem.id];
+				const ArchetypeInfo& archetypeInfo = drawInfo.archetypeInfo.Ref();
+
+				for (int vsi = 0; vsi < archetypeInfo.vertexBuffers.numElem(); ++vsi)
+					renderPassCtx.recorder->SetVertexBuffer(vsi, (archetypeInfo.instanceStreamId == vsi) ? renderState.instanceIdsBuffer : archetypeInfo.vertexBuffers[vsi]);
+				renderPassCtx.recorder->SetIndexBuffer(archetypeInfo.indexBuffer, archetypeInfo.indexFormat);
+
+#ifdef GRIM_INSTANCES_DEBUG_ENABLED
+				if (validationOn)
+					renderPassCtx.recorder->DbgAddMarker(EqString::Format("draw arch %d (mtl %s) (lod %d) (cnt %d)", drawInfo.ownerArchetype, drawInfo.material->GetName(), drawInfo.lodNumber, m_instAllocator.GetInstanceCount(drawInfo.ownerArchetype)));
+#endif
+
+				renderPassCtx.recorder->DrawIndexedIndirect(renderState.drawInvocationsBuffer, sizeof(GPUDrawIndexedIndirectCmd) * m_drawBatchs[drawInfo.batchIdx].cmdIdx);
+				++numDrawCalls;
+			}
 		}
 	}
 	renderPassCtx.recorder->DbgPopGroup();

@@ -107,14 +107,28 @@ void CWGPURenderPassRecorder::DrawIndexed(int indexCount, int firstIndex, int in
 
 void CWGPURenderPassRecorder::DrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
 {
-	CWGPUBuffer* indexBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
-	wgpuRenderPassEncoderDrawIndexedIndirect(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), indirectOffset);
+	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
+	wgpuRenderPassEncoderDrawIndexedIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset);
 }
 
 void CWGPURenderPassRecorder::DrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset)
 {
-	CWGPUBuffer* indexBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
-	wgpuRenderPassEncoderDrawIndirect(m_rhiRenderPassEncoder, indexBufferImpl->GetWGPUBuffer(), indirectOffset);
+	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
+	wgpuRenderPassEncoderDrawIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset);
+}
+
+void CWGPURenderPassRecorder::MultiDrawIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
+{
+	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
+	CWGPUBuffer* drawCountBufferImpl = static_cast<CWGPUBuffer*>(drawCountBuffer);
+	wgpuRenderPassEncoderMultiDrawIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset, maxDrawCount, drawCountBufferImpl->GetWGPUBuffer(), drawCountBufferOffset);
+}
+
+void CWGPURenderPassRecorder::MultiDrawIndexedIndirect(IGPUBuffer* indirectBuffer, int indirectOffset, int maxDrawCount, IGPUBuffer* drawCountBuffer, int drawCountBufferOffset)
+{
+	CWGPUBuffer* indirectBufferImpl = static_cast<CWGPUBuffer*>(indirectBuffer);
+	CWGPUBuffer* drawCountBufferImpl = static_cast<CWGPUBuffer*>(drawCountBuffer);
+	wgpuRenderPassEncoderMultiDrawIndexedIndirect(m_rhiRenderPassEncoder, indirectBufferImpl->GetWGPUBuffer(), indirectOffset, maxDrawCount, drawCountBufferImpl->GetWGPUBuffer(), drawCountBufferOffset);
 }
 
 // TODO:
