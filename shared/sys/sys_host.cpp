@@ -639,10 +639,6 @@ void InputCommands_SDL(SDL_Event* event)
 
 static DDGraphBucket s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
 
-CGameHost::CGameHost()
-{
-}
-
 void CGameHost::ShutdownSystems()
 {
 	Msg("---------  ShutdownSystems ---------\n");
@@ -844,7 +840,7 @@ bool CGameHost::Frame()
 		else
 			s_fpsGraph.color = ColorRGB(1, 0, 0);
 
-		s_fpsGraph.maxValue = sys_maxfps.GetFloat();
+		s_fpsGraph.maxValue = sys_maxfps.GetFloat() <= 0 ? 1000 : sys_maxfps.GetFloat();
 
 		debugoverlay->Graph_AddValue(&s_fpsGraph, gamefps);
 	}
