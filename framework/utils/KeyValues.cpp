@@ -365,10 +365,6 @@ KVSection* KeyValues::operator[](const char* pszName)
 // KEY (PAIR) BASE
 //----------------------------------------------------------------------------------------------
 
-KVSection::KVSection()
-{
-}
-
 KVSection::~KVSection()
 {
 	Cleanup();

@@ -202,6 +202,7 @@ KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs);
 //
 struct KVPairValue
 {
+	KVPairValue() = default;
 	~KVPairValue();
 
 	KVSection*	section{ nullptr };
@@ -216,20 +217,20 @@ struct KVPairValue
 	};
 
 	// sets string value
-	void				SetStringValue(const char* pszValue, int len = -1);
-	void				SetFromString(const char* pszValue);
-	void				SetFrom(const KVPairValue& from);
+	void		SetStringValue(const char* pszValue, int len = -1);
+	void		SetFromString(const char* pszValue);
+	void		SetFrom(const KVPairValue& from);
 
 	// get/set
-	const char*			GetString() const;
-	int					GetInt() const;
-	float				GetFloat() const;
-	bool				GetBool() const;
+	const char*	GetString() const;
+	int			GetInt() const;
+	float		GetFloat() const;
+	bool		GetBool() const;
 
-	void				SetString(const char* value);
-	void				SetInt(int nValue);
-	void				SetFloat(float fValue);
-	void				SetBool(bool bValue);
+	void		SetString(const char* value);
+	void		SetInt(int nValue);
+	void		SetFloat(float fValue);
+	void		SetBool(bool bValue);
 };
 
 //
@@ -237,7 +238,7 @@ struct KVPairValue
 //
 struct KVSection
 {
-	KVSection();
+	KVSection() = default;
 	~KVSection();
 
 	void				Cleanup();
@@ -400,24 +401,23 @@ public:
 	KeyValues() = default;
 	~KeyValues() = default;
 
-	void			Reset();
+	void					Reset();
 
 	KVKeyIterator::Init		Keys(const char* nameFilter = nullptr, int searchFlags = 0) const;
 	const KVSection&		Get(const char* pszName, int nFlags = 0) const;
 	KVSection*				FindSection(const char* pszName, int nFlags = 0) const;
 
 	// loads from file
-	bool				LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
-	bool				LoadFromStream(IFileStream* stream);
+	bool					LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
+	bool					LoadFromStream(IFileStream* stream);
 
-	bool				SaveToFile(const char* pszFileName, int nSearchFlags = -1);
+	bool					SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
-	KVSection*			GetRootSection();
-
-	KVSection*			operator[](const char* pszName);
+	KVSection*				GetRootSection();
+	KVSection*				operator[](const char* pszName);
 
 private:
-	KVSection	m_root;
+	KVSection				m_root;
 };
 
 //---------------------------------------------------------------------------------------------------------
@@ -445,8 +445,8 @@ enum EKVTokenState
 };
 
 using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
-
 bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc);
+
 KVSection*		KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo = nullptr);
 KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 
