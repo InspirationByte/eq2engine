@@ -141,10 +141,10 @@ protected:
 
 		GRIMArchetypeDesc desc;
 		struct GRIMStudioDesc {
-			const CEqStudioGeom* geom;
-			IVertexFormat* vertFormat;
-			uint bodyGroupFlags;
-			int materialGroupIdx;
+			const CEqStudioGeom*	geom;
+			IVertexFormat*			vertFormat;
+			uint					bodyGroupFlags;
+			int						materialGroupIdx;
 		} egfDesc;
 
 		Array<IGPUBufferPtr>	extraVertexBuffers{ PP_SL };

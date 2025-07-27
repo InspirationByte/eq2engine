@@ -665,8 +665,8 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 {
 	MsgInfo("* Default materialGroup:\n\t");
-	for (int i = 0; i < m_materials.numElem(); i++)
-		MsgInfo("%s ", m_materials[i].materialname);
+	for (GenMaterialDesc& gm : m_materials)
+		MsgInfo("%s ", gm.materialname);
 	MsgInfo("\n");
 
 	for (KVKeyIterator it(pSection, "materialGroup"); !it.atEnd(); ++it)
@@ -691,15 +691,13 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 
 		MsgInfo("Added materialGroup: ");
 
-		for (int j = 0; j < keyBase->values.numElem(); j++)
+		for (EqStringRef strValues : keyBase->Values<EqStringRef>())
 		{
 			// create new material
-			GenMaterialDesc desc;
-			strcpy(desc.materialname, KV_GetValueString(keyBase, j));
+			GenMaterialDesc& desc = group->materials.append();
+			strcpy(desc.materialname, strValues);
 
-			MsgInfo("%s ", desc.materialname);
-
-			group->materials.append(desc);
+			MsgInfo("   %s", desc.materialname);
 		}
 
 		MsgInfo("\n");
@@ -935,7 +933,7 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 	GenBone* cparent = effector_chain;
 	do
 	{
-		GenIKLink& link = ikCh.link_list.append();
+		GenIKLink& link = ikCh.links.append();
 
 		link.damping = 1.0f;
 		link.bone = cparent;
@@ -964,11 +962,11 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 			fDamp = KV_GetValueFloat(sec, 1);
 
 			// search for link and apply parameter if found
-			for(int j = 0; j < ikCh.link_list.numElem(); j++)
+			for(int j = 0; j < ikCh.links.numElem(); j++)
 			{
-				if(!ikCh.link_list[j].bone->refBone->name.CompareCaseIns(link_name))
+				if(!ikCh.links[j].bone->refBone->name.CompareCaseIns(link_name))
 				{
-					ikCh.link_list[j].damping = fDamp;
+					ikCh.links[j].damping = fDamp;
 					break;
 				}
 			}
@@ -992,12 +990,12 @@ void CEGFGenerator::ParseIKChain(const KVSection* pSection)
 			bool bFound = false;
 
 			// search for link and apply parameter if found
-			for(int j = 0; j < ikCh.link_list.numElem(); j++)
+			for(int j = 0; j < ikCh.links.numElem(); j++)
 			{
-				if(!ikCh.link_list[j].bone->refBone->name.CompareCaseIns(link_name))
+				if(!ikCh.links[j].bone->refBone->name.CompareCaseIns(link_name))
 				{
-					ikCh.link_list[j].mins = mins;
-					ikCh.link_list[j].maxs = maxs;
+					ikCh.links[j].mins = mins;
+					ikCh.links[j].maxs = maxs;
 
 					bFound = true;
 

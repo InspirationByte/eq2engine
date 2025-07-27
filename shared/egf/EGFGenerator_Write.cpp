@@ -537,7 +537,7 @@ void CEGFGenerator::WriteIkChains(studioHdr_t* header, IFileStream* stream)
 		const GenIKChain& srcChain = m_ikchains[i];
 		studioIkChain_t* chain = header->pIkChain(i);
 
-		chain->numLinks = srcChain.link_list.numElem();
+		chain->numLinks = srcChain.links.numElem();
 
 		strcpy(chain->name, srcChain.name);
 
@@ -549,7 +549,7 @@ void CEGFGenerator::WriteIkChains(studioHdr_t* header, IFileStream* stream)
 		{
 			const int link_id = (chain->numLinks - 1) - j;
 
-			const GenIKLink& link = srcChain.link_list[link_id];
+			const GenIKLink& link = srcChain.links[link_id];
 
 			Msg("IK chain bone id: %d\n", link.bone->refBone->boneIdx);
 

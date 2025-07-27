@@ -195,14 +195,12 @@ void CEqStudioGeom::DestroyModel()
 	m_physModel = {};
 
 	if (m_studio)
-	{
-		for (int i = 0; i < m_hwGeomRefs.numElem(); i++)
-			PPDeleteArrayRef(m_hwGeomRefs[i].meshRefs);
-
 		Studio_FreeModel(m_studio);
-	}
 
+	for (HWGeomRef& geomRef : m_hwGeomRefs)
+		PPDeleteArrayRef(geomRef.meshRefs);
 	PPDeleteArrayRef(m_hwGeomRefs);
+
 	SAFE_DELETE_ARRAY(m_joints);
 }
 
@@ -310,13 +308,13 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 		loadModelJob->DeleteOnFinish();
 		loadModelJob->InitJob();
 
-		CEqJobManager* jobMng = g_studioCache->GetJobMng();
+		CEqJobManager& jobMng = *g_studioCache->GetJobMng();
 
 		const int numPackages = m_studio->numMotionPackages
 			+ g_fileSystem->FileExist(fnmPathApplyExt(m_name, s_egfMotionPackageExt), SP_MOD);
 
 		FunctionJob* loadGeomJob = PPNew FunctionJob("LoadEGFHWGeom", [this](void*, int) {
-			DevMsg(DEVMSG_CORE, "Loading HW geom for %s, state: %d\n", GetName());
+			DevMsg(DEVMSG_CORE, "Loading HW geom for %s, state: %d\n", GetName(), m_readyState);
 
 			if (!LoadGenerateVertexBuffer())
 			{
@@ -345,7 +343,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 			FunctionJob* loadMotionsJob = PPNew FunctionJob("LoadStudioMotion", [this](void*, int) {
 				if (m_readyState == MODEL_LOAD_ERROR)
 					return;
-				DevMsg(DEVMSG_CORE, "Loading motions for %s, state: %d\n", GetName());
+				DevMsg(DEVMSG_CORE, "Loading motions for %s, state: %d\n", GetName(), m_readyState);
 
 				LoadMotionPackages();
 			});
@@ -354,12 +352,12 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 			loadMotionsJob->AddWait(loadModelJob);
 			finishJob->AddWait(loadMotionsJob);
 
-			jobMng->StartJob(loadMotionsJob);
+			jobMng.StartJob(loadMotionsJob);
 		}
 
-		jobMng->StartJob(loadModelJob);
-		jobMng->StartJob(loadGeomJob);
-		jobMng->StartJob(finishJob);
+		jobMng.StartJob(loadModelJob);
+		jobMng.StartJob(loadGeomJob);
+		jobMng.StartJob(finishJob);
 
 		return true;
 	}

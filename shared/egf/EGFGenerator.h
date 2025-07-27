@@ -153,7 +153,7 @@ struct CEGFGenerator::GenIKLink
 struct CEGFGenerator::GenIKChain
 {
 	char		name[44]{ 0 };
-	Array<GenIKLink> link_list{ PP_SL };
+	Array<GenIKLink> links{ PP_SL };
 };
 
 struct CEGFGenerator::GenModel
