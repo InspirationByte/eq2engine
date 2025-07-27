@@ -52,7 +52,7 @@ protected:
 	struct GenIKLink;
 	struct GenBone;
 	struct GenMaterialDesc;
-	struct GenMaterialGroup;
+	struct GenSkin;
 
 	// helper functions
 	GenBone*				FindBoneByName(const char* pszName) const;
@@ -75,7 +75,7 @@ protected:
 	void					ParseLodData(const KVSection* pSection, int lodIdx);
 	void					ParseLods(const KVSection* pSection);
 	bool					ParseBodyGroups(const KVSection* pSection);
-	bool					ParseMaterialGroups(const KVSection* pSection);
+	bool					ParseSkins(const KVSection* pSection);
 	bool					ParseMaterialPaths(const KVSection* pSection);
 	bool					ParseMotionPackagePaths(const KVSection* pSection);
 	void					ParseIKChain(const KVSection* pSection);
@@ -119,7 +119,7 @@ protected:
 
 	// only participates in write
 	Array<GenMaterialDesc*>		m_usedMaterials{ PP_SL };	// materials that used by models referenced by body groups
-	Array<GenMaterialGroup*>	m_matGroups{ PP_SL };		// material groups
+	Array<GenSkin*>	m_skins{ PP_SL };		// material groups
 
 	// settings
 	Vector3D					m_modelScale{ 1.0f };
@@ -181,7 +181,7 @@ struct CEGFGenerator::GenMaterialDesc
 	int			used{ 0 };
 };
 
-struct CEGFGenerator::GenMaterialGroup
+struct CEGFGenerator::GenSkin
 {
 	Array<GenMaterialDesc> materials{ PP_SL };
 };

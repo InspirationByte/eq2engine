@@ -581,10 +581,10 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IFileStream* stream)
 	
 
 	// write material groups
-	for (int i = 0; i < m_matGroups.numElem(); i++)
+	for (int i = 0; i < m_skins.numElem(); i++)
 	{
-		GenMaterialGroup* grp = m_matGroups[i];
-		int materialGroupStart = header->numMaterials;
+		GenSkin* grp = m_skins[i];
+		int skinStart = header->numMaterials;
 
 		for (int j = 0; j < grp->materials.numElem(); j++)
 		{
@@ -598,7 +598,7 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IFileStream* stream)
 
 			header->numMaterials++;
 
-			studioMaterialDesc_t* matDesc = header->pMaterial(materialGroupStart + j);
+			studioMaterialDesc_t* matDesc = header->pMaterial(skinStart + j);
 			strcpy(matDesc->materialname, fnmPathStripExt(mat.materialname));
 
 			WRITE_RESERVE(studioMaterialDesc_t);

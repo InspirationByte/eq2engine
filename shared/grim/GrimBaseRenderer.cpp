@@ -136,7 +136,7 @@ void GRIMBaseRenderer::Shutdown()
 	m_cullBindGroup0 = nullptr;
 }
 
-GRIMArchetype GRIMBaseRenderer::CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
+GRIMArchetype GRIMBaseRenderer::CreateStudioDrawArchetype(const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int skinIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
 {
 	ASSERT(bodyGroupFlags != 0);
 	ASSERT(vertFormat);
@@ -147,7 +147,7 @@ GRIMArchetype GRIMBaseRenderer::CreateStudioDrawArchetype(const CEqStudioGeom* g
 	pending.egfDesc.geom = geom;
 	pending.egfDesc.vertFormat = vertFormat;
 	pending.egfDesc.bodyGroupFlags = bodyGroupFlags;
-	pending.egfDesc.materialGroupIdx = materialGroupIdx;
+	pending.egfDesc.skinIdx = skinIdx;
 	pending.extraVertexBuffers.append(extraVertexBuffers.ptr(), extraVertexBuffers.numElem());
 	pending.extraLayoutBits = extraLayoutBits;	
 	pending.type = PendingDesc::TYPE_STUDIO;
@@ -215,7 +215,7 @@ void GRIMBaseRenderer::UpdateDrawArchetype(GRIMArchetype id, const GRIMArchetype
 #endif
 }
 
-void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int materialGroupIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
+void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom* geom, IVertexFormat* vertFormat, uint bodyGroupFlags, int skinIdx, ArrayCRef<IGPUBufferPtr> extraVertexBuffers, uint extraLayoutBits)
 {
 	EGF_LOADING_CRITICAL_SECTION(geom);
 
@@ -275,12 +275,12 @@ void GRIMBaseRenderer::InitDrawArchetype(GRIMArchetype slot, const CEqStudioGeom
 
 	// TODO: multiple material groups require new archetype
 	// also body groups are really are different archetypes for EGF
-	ArrayCRef<IMaterialPtr> materials = geom->GetMaterials(materialGroupIdx);
+	ArrayCRef<IMaterialPtr> materials = geom->GetMaterials(skinIdx);
 	ArrayCRef<CEqStudioGeom::HWGeomRef> geomRefs = geom->GetHwGeomRefs();
 	const studioHdr_t& studio = geom->GetStudioHdr();
 
 	ArchetypeInfo::PTR_T archetypeInfo = CRefPtr_new(ArchetypeInfo);
-	archetypeInfo->name = EqString::Format("%s_b%d_m%d", geom->GetName(), bodyGroupFlags, materialGroupIdx);
+	archetypeInfo->name = EqString::Format("%s_b%d_m%d", geom->GetName(), bodyGroupFlags, skinIdx);
 	archetypeInfo->indexFormat = (EIndexFormat)geom->GetIndexFormat();
 	archetypeInfo->meshInstFormat = instFormat;
 	archetypeInfo->vertexBuffers.append(vertexBuffers);
@@ -651,7 +651,7 @@ void GRIMBaseRenderer::SyncArchetypes(IGPUCommandRecorder* cmdRecorder)
 		if (pending.type == PendingDesc::TYPE_GRIM)
 			InitDrawArchetype(pending.slot, pending.desc);
 		else if (pending.type == PendingDesc::TYPE_STUDIO)
-			InitDrawArchetype(pending.slot, pending.egfDesc.geom, pending.egfDesc.vertFormat, pending.egfDesc.bodyGroupFlags, pending.egfDesc.materialGroupIdx, pending.extraVertexBuffers, pending.extraLayoutBits);
+			InitDrawArchetype(pending.slot, pending.egfDesc.geom, pending.egfDesc.vertFormat, pending.egfDesc.bodyGroupFlags, pending.egfDesc.skinIdx, pending.extraVertexBuffers, pending.extraLayoutBits);
 	}
 
 	// we have to sync desc buffers first

@@ -662,7 +662,7 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection* pSection)
 //************************************
 // Load material groups
 //************************************
-bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
+bool CEGFGenerator::ParseSkins(const KVSection* pSection)
 {
 	MsgInfo("* Default materialGroup:\n\t");
 	for (GenMaterialDesc& gm : m_materials)
@@ -686,8 +686,8 @@ bool CEGFGenerator::ParseMaterialGroups(const KVSection* pSection)
 			return false;
 		}
 
-		GenMaterialGroup* group = PPNew GenMaterialGroup();
-		m_matGroups.append(group);
+		GenSkin* group = PPNew GenSkin();
+		m_skins.append(group);
 
 		MsgInfo("Added materialGroup: ");
 
@@ -1116,9 +1116,9 @@ bool CEGFGenerator::GeneratePOD()
 
 void CEGFGenerator::Cleanup()
 {
-	for (int i = 0; i < m_matGroups.numElem(); ++i)
-		delete m_matGroups[i];
-	m_matGroups.clear();
+	for (int i = 0; i < m_skins.numElem(); ++i)
+		delete m_skins[i];
+	m_skins.clear();
 
 	for (int i = 0; i < m_modelrefs.numElem(); i++)
 		FreeModel(m_modelrefs[i]);
@@ -1251,7 +1251,7 @@ bool CEGFGenerator::InitFromKeyValues(const KVSection* mainsection)
 	if( !ParseBodyGroups( mainsection ) )
 		return false;
 
-	if (!ParseMaterialGroups(mainsection))
+	if (!ParseSkins(mainsection))
 		return false;
 
 	// merge bones first

@@ -187,7 +187,7 @@ void CEqStudioGeom::DestroyModel()
 	m_motionData.clear();
 	m_materials.clear(true);
 	m_materialCount = 0;
-	m_materialGroupsCount = 0;
+	m_skinCount = 0;
 	m_boundingBox.Reset();
 
 	g_studioShapeCache->DestroyStudioCache(m_physModel);
@@ -637,7 +637,7 @@ void CEqStudioGeom::LoadMaterials()
 	const int numUsedMaterials = maxMaterialIdx + 1;
 
 	m_materialCount = numUsedMaterials;
-	m_materialGroupsCount = numUsedMaterials ? m_materials.numElem() / numUsedMaterials : 0;
+	m_skinCount = numUsedMaterials ? m_materials.numElem() / numUsedMaterials : 0;
 
 	if (hasErrors)
 	{
@@ -654,19 +654,19 @@ void CEqStudioGeom::QueueMaterialsLoading() const
 		g_matSystem->QueueLoading(material);
 }
 
-const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int materialGroupIdx) const
+const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int skinIdx) const
 {
 	if (materialIdx == -1)
 		return g_matSystem->GetDefaultMaterial();
 
-	materialGroupIdx = clamp(materialGroupIdx, 0, m_materialGroupsCount - 1);
-	return m_materials[m_materialCount * materialGroupIdx + materialIdx];
+	skinIdx = clamp(skinIdx, 0, m_skinCount - 1);
+	return m_materials[m_materialCount * skinIdx + materialIdx];
 }
 
-ArrayCRef<IMaterialPtr>	CEqStudioGeom::GetMaterials(int materialGroupIdx) const
+ArrayCRef<IMaterialPtr>	CEqStudioGeom::GetMaterials(int skinIdx) const
 {
-	materialGroupIdx = clamp(materialGroupIdx, 0, m_materialGroupsCount - 1);
-	return ArrayCRef(&m_materials[m_materialCount * materialGroupIdx], m_materialCount);
+	skinIdx = clamp(skinIdx, 0, m_skinCount - 1);
+	return ArrayCRef(&m_materials[m_materialCount * skinIdx], m_materialCount);
 }
 
 void CEqStudioGeom::LoadSetupBones()
@@ -879,7 +879,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 		{
 			const int materialIndex = modDesc->pMesh(j)->materialIndex;
 
-			IMaterial* material = GetMaterial(materialIndex, drawProperties.materialGroup);
+			IMaterial* material = GetMaterial(materialIndex, drawProperties.skinIdx);
 			const int materialFlags = material->GetFlags();
 
 			const int materialFlagsMask = materialFlags & drawProperties.materialFlags;
