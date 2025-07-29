@@ -63,7 +63,9 @@ public:
 	
 	const IMaterialPtr&		GetMaterial(int materialIdx, int skinIdx = 0) const;
 	ArrayCRef<IMaterialPtr>	GetMaterials(int skinIdx = 0) const;
-	int						GetSkinCount() const { return m_skinCount; }
+
+	int						GetSkinCount() const;
+	int						GetSkinIdx(const char* name) const;
 
 	void					QueueMaterialsLoading() const;
 
@@ -86,7 +88,8 @@ private:
 
 	bool					LoadModel(const char* pszPath, bool useJob = true);
 	void					DestroyModel();
-	
+
+	bool					LoadSkinDescFile();
 	bool					LoadFromFile();
 	void					LoadMaterials();
 	void					LoadPhysicsData(); // loads physics object data
@@ -94,15 +97,18 @@ private:
 	void					LoadMotionPackages();
 	void					LoadSetupBones();
 
+	void					LoadMaterials(ArrayCRef<EqStringRef> materialNames, ArrayCRef<EqStringRef> materialSearchPaths);
+
 	//-----------------------------------------------
 
-	using MaterialList = FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>;
 	using MotionDataList = FixedArray<int, MAX_MOTIONPACKAGES>;
 
 	Future<bool>			m_loadingFuture;
 
-	// array of material index for each group
-	MaterialList			m_materials;
+	Array<IMaterialPtr>		m_materials{ PP_SL };	
+	Map<int, int>			m_skinNameIds{ PP_SL };		// map of names to skin IDs
+	int						m_materialCount{ 0 };
+
 	MotionDataList			m_motionData;
 
 	Array<EqString>			m_additionalMotionPackages{ PP_SL };
@@ -120,9 +126,6 @@ private:
 	IGPUBufferPtr			m_vertexBuffers[EGFHwVertex::VERT_COUNT];
 	IGPUBufferPtr			m_indexBuffer;
 	int						m_indexFmt{ -1 };
-
-	int						m_materialCount{ 0 };
-	int						m_skinCount{ 0 };
 
 	volatile int			m_readyState{ 0 };
 };

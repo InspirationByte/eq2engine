@@ -110,7 +110,7 @@ protected:
 	Array<GenLODList>			m_modelLodLists{ PP_SL };	// all LOD reference models including main LOD
 	Array<studioLodParams_t>	m_lodparams{ PP_SL };		// lod parameters
 	Array<motionPackageDesc_t>	m_motionpacks{ PP_SL };		// motion packages
-	Array<materialPathDesc_t>	m_matpathes{ PP_SL };		// material paths
+	Array<materialPathDesc_t>	m_matPaths{ PP_SL };		// material paths
 	Array<GenIKChain>			m_ikchains{ PP_SL };		// ik chain list
 	Array<GenBone>				m_bones{ PP_SL };			// bone list
 	Array<studioTransform_t>	m_transforms{ PP_SL };		// attachment list

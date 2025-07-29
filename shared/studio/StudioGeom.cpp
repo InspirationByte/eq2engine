@@ -9,7 +9,7 @@
 #include "core/ConVar.h"
 #include "core/IFileSystem.h"
 #include "core/platform/eqjobmanager.h"
-
+#include "utils/KeyValues.h"
 #include "math/Utility.h"
 
 #include "studiofile/StudioLoader.h"
@@ -186,8 +186,8 @@ void CEqStudioGeom::DestroyModel()
 
 	m_motionData.clear();
 	m_materials.clear(true);
+	m_skinNameIds.clear(true);
 	m_materialCount = 0;
-	m_skinCount = 0;
 	m_boundingBox.Reset();
 
 	g_studioShapeCache->DestroyStudioCache(m_physModel);
@@ -382,7 +382,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 
 bool CEqStudioGeom::LoadFromFile()
 {
-	studioHdr_t* pHdr = Studio_LoadModel(m_name.ToCString());
+	studioHdr_t* pHdr = Studio_LoadModel(m_name);
 
 	if (!pHdr)
 		return false; // get out, nothing to load
@@ -563,30 +563,25 @@ void CEqStudioGeom::LoadMotionPackages()
 	m_additionalMotionPackages.clear(true);
 }
 
-// loads materials for studio
-void CEqStudioGeom::LoadMaterials()
+void CEqStudioGeom::LoadMaterials(ArrayCRef<EqStringRef> materialNames, ArrayCRef<EqStringRef> materialSearchPaths)
 {
-	studioHdr_t* studio = m_studio;
+	const int startMaterials = m_materials.numElem();
 
 	bool hasErrors = false;
 	{
-		// init materials
-		const int numMaterials = studio->numMaterials;
-		m_materials.setNum(numMaterials);
+		m_materials.setNum(startMaterials + materialNames.numElem());
 
 		EqString extendPath;
 
 		// try load materials properly
 		// this is a source engine - like material loading using material paths
-		for (int i = 0; i < numMaterials; i++)
+		int idx = 0;
+		for (const EqStringRef materialName : materialNames)
 		{
-			const EqStringRef materialName(studio->pMaterial(i)->materialname);
-			for (int j = 0; j < studio->numMaterialSearchPaths; j++)
+			for (const EqStringRef searchPath : materialSearchPaths)
 			{
-				if (m_materials[i])
+				if (m_materials[startMaterials + idx])
 					break;
-
-				const EqStringRef searchPath(studio->pMaterialSearchPath(j)->searchPath);
 
 				extendPath = fnmPathCombine(searchPath, materialName);
 				if (!g_matSystem->IsMaterialExist(extendPath))
@@ -596,57 +591,69 @@ void CEqStudioGeom::LoadMaterials()
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
 					MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", material->GetName(), material->GetShaderName(), m_name.ToCString());
 
-				m_materials[i] = material;
+				m_materials[startMaterials + idx] = material;
 			}
+			++idx;
 		}
 
 		// false-initialization of non-loaded materials
-		for (int i = 0; i < numMaterials; i++)
+		idx = 0;
+		for (const EqStringRef materialName : materialNames)
 		{
-			if (m_materials[i])
+			if (m_materials[startMaterials + idx])
+			{
+				++idx;
 				continue;
+			}
 
-			m_materials[i] = g_studioCache->GetErrorMaterial();
+			m_materials[startMaterials + idx] = g_studioCache->GetErrorMaterial();
 			hasErrors = true;
 
-			const char* materialName = studio->pMaterial(i)->materialname;
-			if (*materialName)
-				MsgError("Couldn't load model material '%s' for '%s'\n", materialName, m_name.ToCString());
+			if (materialName[0])
+				MsgError("Couldn't load model material '%s' for '%s'\n", materialName.ToCString(), m_name.ToCString());
 			else
 				MsgError("Model %s has empty material name\n", m_name.ToCString());
-
+			++idx;
 		}
 	}
-
-	int maxMaterialIdx = -1;
-
-	for (int i = 0; i < studio->numMeshGroups; i++)
-	{
-		studioMeshGroupDesc_t* pMeshGroupDesc = studio->pMeshGroupDesc(i);
-
-		for (int j = 0; j < pMeshGroupDesc->numMeshes; j++)
-		{
-			// add vertices, add indices
-			studioMeshDesc_t* pMesh = pMeshGroupDesc->pMesh(j);
-
-			if (pMesh->materialIndex > maxMaterialIdx)
-				maxMaterialIdx = pMesh->materialIndex;
-		}
-	}
-	
-	const int numUsedMaterials = maxMaterialIdx + 1;
-
-	m_materialCount = numUsedMaterials;
-	m_skinCount = numUsedMaterials ? m_materials.numElem() / numUsedMaterials : 0;
 
 	if (hasErrors)
 	{
 		MsgError("  In following search paths:");
-		for (int i = 0; i < studio->numMaterialSearchPaths; i++)
-			MsgError("   '%s'\n", studio->pMaterialSearchPath(i)->searchPath);
+		for (const EqStringRef& searchPath : materialSearchPaths)
+			MsgError("   '%s'\n", searchPath.ToCString());
 	}
 }
 
+// loads materials for studio
+void CEqStudioGeom::LoadMaterials()
+{
+	const studioHdr_t& studio = *m_studio;
+
+	Array<EqStringRef> materialNames(PP_SL);
+	materialNames.reserve(studio.numMaterials);
+
+	for (int i = 0; i < studio.numMaterials; i++)
+		materialNames.append(studio.pMaterial(i)->materialname);
+
+	Array<EqStringRef> searchPaths(PP_SL);
+	searchPaths.reserve(studio.numMaterialSearchPaths);
+	for (int i = 0; i < studio.numMaterialSearchPaths; i++)
+		searchPaths.append(studio.pMaterialSearchPath(i)->searchPath);
+
+	LoadMaterials(materialNames, searchPaths);
+
+	int maxMaterialIdx = -1;
+	for (int i = 0; i < studio.numMeshGroups; i++)
+	{
+		const studioMeshGroupDesc_t* pMeshGroupDesc = studio.pMeshGroupDesc(i);
+		for (int j = 0; j < pMeshGroupDesc->numMeshes; j++)
+			maxMaterialIdx = max(pMeshGroupDesc->pMesh(j)->materialIndex, maxMaterialIdx);
+	}
+	m_materialCount = maxMaterialIdx + 1;
+
+	LoadSkinDescFile();
+}
 
 void CEqStudioGeom::QueueMaterialsLoading() const
 {
@@ -659,14 +666,83 @@ const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int skinIdx) con
 	if (materialIdx == -1)
 		return g_matSystem->GetDefaultMaterial();
 
-	skinIdx = clamp(skinIdx, 0, m_skinCount - 1);
+	ASSERT_MSG(skinIdx >= 0, "Invalid skin idx %d for %s", skinIdx, GetName());
+	ASSERT_MSG(skinIdx < GetSkinCount(), "Invalid skin idx %d for %s", skinIdx, GetName());
+
 	return m_materials[m_materialCount * skinIdx + materialIdx];
 }
 
 ArrayCRef<IMaterialPtr>	CEqStudioGeom::GetMaterials(int skinIdx) const
 {
-	skinIdx = clamp(skinIdx, 0, m_skinCount - 1);
+	ASSERT(skinIdx >= 0);
+	ASSERT(skinIdx < GetSkinCount());
+
 	return ArrayCRef(&m_materials[m_materialCount * skinIdx], m_materialCount);
+}
+
+int CEqStudioGeom::GetSkinCount() const
+{
+	return m_materials.numElem() / m_materialCount;
+}
+
+int	CEqStudioGeom::GetSkinIdx(const char* name) const
+{
+	const int nameHash = StringId24(name, true);
+	auto it = m_skinNameIds.find(nameHash);
+	return it.atEnd() ? -1 : it.value();
+}
+
+bool CEqStudioGeom::LoadSkinDescFile()
+{
+	KVSection kvs;
+	if (!KV_LoadFromFile(fnmPathApplyExt(m_name, s_egfSkinExt), SP_MOD, &kvs))
+		return false;
+
+	const int firstMaterial = m_materials.numElem();
+
+	for (const KVSection* skinSec : kvs.Keys(nullptr, KV_FLAG_SECTION))
+	{
+		FixedArray<EqStringRef, MAX_STUDIOMATERIALS> materialSearchPaths;
+		FixedArray<EqStringRef, MAX_STUDIOMATERIALS> materialNames;
+		materialNames.reserve(m_materialCount);
+
+		for (const KVSection* searchPathSec : skinSec->Keys("materialPath"))
+		{
+			EqStringRef searchPath;
+			if (!searchPathSec->GetValues(searchPath))
+				continue;
+			materialSearchPaths.append(searchPath);
+		}
+
+		for (KVKeyIterator it(skinSec, "materialGroup"); !it.atEnd(); ++it)
+		{
+			const KVSection* keyBase = *it;
+			if (!keyBase->values.numElem())
+			{
+				MsgError("materialGroup: must have material names as values!\n");
+				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
+				return false;
+			}
+
+			if (keyBase->values.numElem() != m_materialCount)
+			{
+				MsgError("materialGroup: must have same material count specified (%d)!\n", m_materials.numElem());
+				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
+				return false;
+			}
+
+			for (EqStringRef strValues : keyBase->Values<EqStringRef>())
+				materialNames.append(strValues);
+		}
+
+		const int nameHash = StringId24(skinSec->GetName(), true);
+		m_skinNameIds.insert(nameHash, GetSkinCount());
+
+		// add skin materials
+		LoadMaterials(materialNames, materialSearchPaths);
+	}
+
+	return true;
 }
 
 void CEqStudioGeom::LoadSetupBones()

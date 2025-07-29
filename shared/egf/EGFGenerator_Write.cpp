@@ -612,11 +612,11 @@ void CEGFGenerator::WriteMaterialDescs(studioHdr_t* header, IFileStream* stream)
 void CEGFGenerator::WriteMaterialPaths(studioHdr_t* header, IFileStream* stream)
 {
 	header->materialSearchPathsOffset = WRITE_OFS;
-	header->numMaterialSearchPaths = m_matpathes.numElem();
-	WRITE_RESERVE_NUM(materialPathDesc_t, m_matpathes.numElem());
+	header->numMaterialSearchPaths = m_matPaths.numElem();
+	WRITE_RESERVE_NUM(materialPathDesc_t, m_matPaths.numElem());
 
-	for(int i = 0; i < m_matpathes.numElem(); i++)
-		*header->pMaterialSearchPath(i) = m_matpathes[i];
+	for(int i = 0; i < m_matPaths.numElem(); i++)
+		*header->pMaterialSearchPath(i) = m_matPaths[i];
 }
 
 //************************************

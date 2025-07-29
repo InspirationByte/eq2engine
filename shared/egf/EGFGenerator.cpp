@@ -845,9 +845,9 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 
 	for(const KVSection* keyBase : pSection->Keys())
 	{
-		if(!keyBase->name.CompareCaseIns("materialpath"))
+		if(!keyBase->name.CompareCaseIns("materialPath"))
 		{
-			materialPathDesc_t& desc = m_matpathes.append();
+			materialPathDesc_t& desc = m_matPaths.append();
 
 			const EqString path = KV_GetValueString(keyBase);
 			const int sp_len = path.Length()-1;
@@ -860,21 +860,21 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection* pSection)
 			Msg("   '%s'\n", desc.searchPath);			
 		}
 
-		if(	!keyBase->name.CompareCaseIns("notextures") ||
-			!keyBase->name.CompareCaseIns("nomaterials"))
+		if(	!keyBase->name.CompareCaseIns("noTextures") ||
+			!keyBase->name.CompareCaseIns("noMaterials"))
 		{
 			m_notextures = KV_GetValueBool(keyBase);
 		}
 	}
 
-	if(m_matpathes.isEmpty() && m_notextures == false)
+	if(m_matPaths.isEmpty() && m_notextures == false)
 	{
 		MsgError("Error! Model must have at least one materialpath!\n");
 		return false;
 	}
 
-	if(m_matpathes.numElem() > 0)
-		Msg(" %d material paths total\n", m_matpathes.numElem());
+	if(m_matPaths.numElem() > 0)
+		Msg(" %d material paths total\n", m_matPaths.numElem());
 
 	return true;
 }
@@ -1127,7 +1127,7 @@ void CEGFGenerator::Cleanup()
 	m_modelLodLists.clear(true);
 	m_lodparams.clear(true);
 	m_motionpacks.clear(true);
-	m_matpathes.clear(true);
+	m_matPaths.clear(true);
 	m_ikchains.clear(true);
 	m_bones.clear(true);
 	m_transforms.clear(true);
