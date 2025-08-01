@@ -34,8 +34,7 @@ bool CTextureAtlas::Load( const char* pszFileName )
 	if (!kvs.LoadFromFile(pszFileName, SP_MOD))
 		return false;
 
-	KVSection* pAtlasSec = kvs.GetRootSection()->FindSection("atlasgroup");
-
+	const KVSection* pAtlasSec = kvs.FindSection("atlasgroup");
 	if(!pAtlasSec)
 	{
 		MsgError("Invalid atlas file '%s'\n", pszFileName);

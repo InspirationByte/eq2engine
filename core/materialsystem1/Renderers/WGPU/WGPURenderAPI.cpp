@@ -188,17 +188,17 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			shaderInfo.defines.append(def);
 	}
 
-	for (const KVSection* key : shaderInfoKvs.Get("VertexLayouts").Keys())
+	for (const KVSection& key : shaderInfoKvs.Get("VertexLayouts").Keys())
 	{
 		ShaderInfoWGPUImpl::VertLayout& layout = shaderInfo.vertexLayouts.append();
-		layout.name = key->GetName();
+		layout.name = key.GetName();
 		if (layout.name != s_DefaultVertexLayoutName)
 			layout.nameHash = StringId24(layout.name);
 		
-		if (!CString::CompareCaseIns(KV_GetValueString(key, 0), "aliasOf"))
+		if (!CString::CompareCaseIns(KV_GetValueString(&key, 0), "aliasOf"))
 		{
 			layout.aliasOf = arrayFindIndexF(shaderInfo.vertexLayouts, [&](const ShaderInfoWGPUImpl::VertLayout& layout) {
-				return layout.name == EqStringRef(KV_GetValueString(key, 1));
+				return layout.name == EqStringRef(KV_GetValueString(&key, 1));
 			});
 		}
 	}
@@ -225,14 +225,14 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	int filesFound = 0;
 	const KVSection* fileListSec = shaderInfoKvs["FileList"];
-	for (const KVSection* itemSec : fileListSec->Keys("wgsl"))
+	for (const KVSection& itemSec : fileListSec->Keys("wgsl"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
 
 		// query string is not available in wgsl due to defines absense
-		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName) < 3)
+		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName) < 3)
 		{
 			ASSERT_FAIL("Shader %s 'wgsl' does not have 3 values");
 			break;
@@ -267,13 +267,13 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 			GetOrLoadShaderModule(shaderInfo, moduleIndex);
 	}
 
-	for (const KVSection* itemSec : fileListSec->Keys("spv"))
+	for (const KVSection& itemSec : fileListSec->Keys("spv"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
 		EqStringRef queryStr;
-		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
+		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr) < 4)
 		{
 			ASSERT_FAIL("Shader %s 'spv' does not have 4 values");
 			break;
@@ -311,14 +311,14 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 
 	// we need to validate references so collect refs in second pass
 	int refIdx = 0;
-	for (const KVSection* itemSec : fileListSec->Keys("ref"))
+	for (const KVSection& itemSec : fileListSec->Keys("ref"))
 	{
 		int vertLayoutIdx = -1;
 		EqStringRef kindStr;
 		EqStringRef entryPointName;
 		EqStringRef queryStr;
 		int refSpvIndex = -1;
-		if (itemSec->GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
+		if (itemSec.GetValues(vertLayoutIdx, kindStr, entryPointName, queryStr, refSpvIndex) < 5)
 		{
 			ASSERT_FAIL("Shader %s 'ref' does not have 5 values (old shader version?)", shaderInfoKvs.GetName());
 			break;

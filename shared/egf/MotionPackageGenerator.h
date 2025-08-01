@@ -36,7 +36,7 @@ private:
 	int	GetPoseControllerIndex(const char* name);
 
 	// Loads all animations from FBX
-	void LoadFBXAnimations(const KVSection* section);
+	void LoadFBXAnimations(const KVSection& section);
 
 	// Loads animation from file
 	int LoadAnimationFromESA(const char* filename);
@@ -45,19 +45,19 @@ private:
 	int DuplicateAnimationByIndex(int animIndex, const char* newName);
 
 	// Loads animation from key-values parameters and applies.
-	void LoadAnimation(const KVSection* section);
+	void LoadAnimation(const KVSection& section);
 
 	// Parses animation list from script
-	bool ParseAnimations(const KVSection* section);
+	bool ParseAnimations(const KVSection& section);
 
 	// Parses pose parameters from script
-	void ParsePoseparameters(const KVSection* section);
+	void ParsePoseparameters(const KVSection& section);
 
 	// Loads sequence parameters
-	void LoadSequence(const KVSection* section, const char* seq_name);
+	void LoadSequence(const KVSection& section, const char* seq_name);
 
 	// Parses sequence list
-	void ParseSequences(const KVSection* section);
+	void ParseSequences(const KVSection& section);
 
 	// Converts animations to writible format
 	void ConvertAnimationsToWrite();

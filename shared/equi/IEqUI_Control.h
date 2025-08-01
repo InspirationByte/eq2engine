@@ -89,9 +89,9 @@ public:
 	template<typename T>
 	T*							As() { return equi::DynamicCast<T>(this); }
 
-	virtual void				InitFromKeyValues(const KVSection* sec, bool keepElements = false);
+	virtual void				InitFromKeyValues(const KVSection& sec, bool keepElements = false);
 
-	virtual void				Parse(const KVSection* sec);
+	virtual void				Parse(const KVSection& sec);
 
 	// name and type
 	const char*					GetName() const						{return m_name.ToCString();}
@@ -241,8 +241,8 @@ protected:
 	// rendering
 	virtual void				RenderChilds(int depth, RenderContextAbstract& context);
 
-	void						InitFonts(const KVSection* sec);
-	void						InitChildItems(const KVSection* sec, bool keepElements = false);
+	void						InitFonts(const KVSection& sec);
+	void						InitChildItems(const KVSection& sec, bool keepElements = false);
 
 	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) = 0;

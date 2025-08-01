@@ -317,12 +317,12 @@ bool CFileSystem::Init(bool editorMode)
 		}
 	}
 
-	for(const KVSection* pkgSec : fsConfig->Keys("AddPackage"))
+	for(const KVSection& pkgSec : fsConfig->Keys("AddPackage"))
 	{
 		EqStringRef packageName;
 		EqStringRef pathType = "SP_MOD";
 		EqStringRef mountPath;
-		if (pkgSec->GetValues(packageName, pathType, mountPath) < 1)
+		if (pkgSec.GetValues(packageName, pathType, mountPath) < 1)
 			continue;
 
 		const ESearchPath type = GetSearchPathByName(pathType);

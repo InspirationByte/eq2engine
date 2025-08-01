@@ -263,11 +263,11 @@ static KVSection s_variables;
 
 static void ProcessVariableString(EqString& string)
 {
-	for (const KVSection* key : s_variables.Keys())
+	for (const KVSection& key : s_variables.Keys())
 	{
 		int found = 0;
 		do {
-			found = string.ReplaceSubstr(EqString::Format("%%%s%%", key->name), KV_GetValueString(key), true, found);
+			found = string.ReplaceSubstr(EqString::Format("%%%s%%", key.GetName()), KV_GetValueString(&key), true, found);
 		} while (found != -1);
 	}
 }

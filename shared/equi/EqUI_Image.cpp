@@ -28,31 +28,31 @@ Image::~Image()
 {
 }
 
-void Image::Parse(const KVSection* sec )
+void Image::Parse(const KVSection& sec )
 {
 	BaseClass::Parse(sec);
 
-	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
+	m_color = KV_GetVector4D(sec.FindSection("color"), 0, m_color);
 
-	const bool flipX = KV_GetValueBool(sec->FindSection("flipX"), 0, (m_imageFlags & FLIP_X) > 0);
-	const bool flipY = KV_GetValueBool(sec->FindSection("flipY"), 0, (m_imageFlags & FLIP_Y) > 0);
+	const bool flipX = KV_GetValueBool(sec.FindSection("flipX"), 0, (m_imageFlags & FLIP_X) > 0);
+	const bool flipY = KV_GetValueBool(sec.FindSection("flipY"), 0, (m_imageFlags & FLIP_Y) > 0);
 
 	m_imageFlags = (flipX ? FLIP_X : 0) | (flipY ? FLIP_Y : 0);
 	m_uvRegion = AARectangle(0.0f, 0.0f, 1.0f, 1.0f);
 
-	const KVSection* pathBase = sec->FindSection("path");
+	const KVSection* pathBase = sec.FindSection("path");
 	if (pathBase)
 	{
 		EqStringRef materialName = "ui/default";
 		pathBase->GetValues(materialName);
 		SetMaterial(materialName);
 
-		sec->Get("uvLeftTop").GetValues(m_uvRegion.leftTop);
-		sec->Get("uvRightBottom").GetValues(m_uvRegion.rightBottom);
+		sec.Get("uvLeftTop").GetValues(m_uvRegion.leftTop);
+		sec.Get("uvRightBottom").GetValues(m_uvRegion.rightBottom);
 		return;
 	}
 
-	pathBase = sec->FindSection("atlas");
+	pathBase = sec.FindSection("atlas");
 	if (pathBase)
 	{
 		EqStringRef materialName, imageName;

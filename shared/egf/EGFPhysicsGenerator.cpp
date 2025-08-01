@@ -36,7 +36,10 @@ struct PhyNamedObject
 
 //---------------------------------------------------------------------------------------------------
 
-CEGFPhysicsGenerator::CEGFPhysicsGenerator() : m_srcModel(nullptr), m_physicsParams(nullptr), m_forceGroupSubdivision(false)
+CEGFPhysicsGenerator::CEGFPhysicsGenerator()
+	: m_srcModel(nullptr)
+	, m_physicsParams(nullptr)
+	, m_forceGroupSubdivision(false)
 {
 	m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
 }
@@ -425,34 +428,34 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 		if(thisBoneSec)
 		{
 			// get axis and check limits
-			for(const KVSection* pKey : thisBoneSec->Keys())
+			for(const KVSection& pKey : thisBoneSec->Keys())
 			{
 				int axisIdx = -1;
-				if( !pKey->name.CompareCaseIns("x_axis") )
+				if( !pKey.name.CompareCaseIns("x_axis") )
 					axisIdx = 0;
-				else if( !pKey->name.CompareCaseIns("y_axis") )
+				else if( !pKey.name.CompareCaseIns("y_axis") )
 					axisIdx = 1;
-				else if( !pKey->name.CompareCaseIns("z_axis") )
+				else if( !pKey.name.CompareCaseIns("z_axis") )
 					axisIdx = 2;
 
 				if (axisIdx == -1)
 					continue;
 
 				// check the value for arguments
-				for(int j = 0; j < pKey->values.numElem(); j++)
+				for(int j = 0; j < pKey.values.numElem(); j++)
 				{
-					if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limit" ))
+					if( !CString::CompareCaseIns(KV_GetValueString(&pKey, j), "limit" ))
 					{
 						// read limits
-						const float highLimit = KV_GetValueFloat(pKey, j+1);
-						const float lowLimit = KV_GetValueFloat(pKey, j+2);
+						const float highLimit = KV_GetValueFloat(&pKey, j+1);
+						const float lowLimit = KV_GetValueFloat(&pKey, j+2);
 
 						joint.minLimit[axisIdx] = DEG2RAD(highLimit);
 						joint.maxLimit[axisIdx] = DEG2RAD(lowLimit);
 					}
-					else if( !CString::CompareCaseIns(KV_GetValueString(pKey, j), "limitOffset" ))
+					else if( !CString::CompareCaseIns(KV_GetValueString(&pKey, j), "limitOffset" ))
 					{
-						const float offs = KV_GetValueFloat(pKey, j+1);
+						const float offs = KV_GetValueFloat(&pKey, j+1);
 
 						joint.minLimit[axisIdx] += DEG2RAD(offs);
 						joint.maxLimit[axisIdx] += DEG2RAD(offs);
@@ -599,10 +602,10 @@ void CEGFPhysicsGenerator::CreateSingleObject(ArrayCRef<DSVertex> vertices, Arra
 	object.surfaceprops[sizeof(object.surfaceprops) - 1] = 0;
 }
 
-bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection* physInfo, bool forceGroupSubdivision)
+bool CEGFPhysicsGenerator::GenerateGeometry(DSModel* srcModel, const KVSection& physInfo, bool forceGroupSubdivision)
 {
 	m_srcModel = srcModel;
-	m_physicsParams = physInfo;
+	m_physicsParams = &physInfo;
 	m_forceGroupSubdivision = forceGroupSubdivision;
 
 	if(!m_srcModel || !m_physicsParams)

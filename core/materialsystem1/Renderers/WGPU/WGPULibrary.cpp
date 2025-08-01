@@ -219,7 +219,7 @@ bool CWGPURenderLib::InitAPI(const ShaderAPIParams& params)
 		WGPUAdapterInfo rhiAdapterInfo = {};
 		wgpuAdapterGetInfo(m_rhiAdapter, &rhiAdapterInfo);
 
-		Msg("* WGPU Adapter: %s on %.*s (%s)\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), rhiAdapterInfo.device.length, rhiAdapterInfo.device.data, GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType));
+		Msg("* WGPU Adapter: %s on %.*s (%s)\n", GetWGPUBackendTypeStr(rhiAdapterInfo.backendType), static_cast<int>(rhiAdapterInfo.device.length), rhiAdapterInfo.device.data, GetWGPUAdapterTypeStr(rhiAdapterInfo.adapterType));
 	}
 
 	{

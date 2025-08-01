@@ -36,7 +36,7 @@ public:
 	virtual ~CEGFGenerator();
 
 	bool		InitFromKeyValues(const char* filename);
-	bool		InitFromKeyValues(const KVSection* kvs);
+	bool		InitFromKeyValues(const KVSection& kvs);
 	void		Cleanup();
 
 	void		SetRefsPath(const char* path);
@@ -68,20 +68,20 @@ protected:
 	void					FreeModel(GenModel& mod );
 	bool					PostProcessDSM(GenModel& mod );
 
-	void					LoadModelsFromFBX(const KVSection* pKeyBase);
-	int						ParseAndLoadModels(const KVSection* pKeyBase);
+	void					LoadModelsFromFBX(const KVSection& section);
+	int						ParseAndLoadModels(const KVSection& section);
 
-	bool					ParseModels(const KVSection* pSection);
-	void					ParseLodData(const KVSection* pSection, int lodIdx);
-	void					ParseLods(const KVSection* pSection);
-	bool					ParseBodyGroups(const KVSection* pSection);
-	bool					ParseSkins(const KVSection* pSection);
-	bool					ParseMaterialPaths(const KVSection* pSection);
-	bool					ParseMotionPackagePaths(const KVSection* pSection);
-	void					ParseIKChain(const KVSection* pSection);
-	void					ParseIKChains(const KVSection* pSection);
-	void					ParseAttachments(const KVSection* pSection);
-	void					ParsePhysModels(const KVSection* pSection);
+	bool					ParseModels(const KVSection& section);
+	void					ParseLodData(const KVSection& section, int lodIdx);
+	void					ParseLods(const KVSection& section);
+	bool					ParseBodyGroups(const KVSection& section);
+	bool					ParseSkins(const KVSection& section);
+	bool					ParseMaterialPaths(const KVSection& section);
+	bool					ParseMotionPackagePaths(const KVSection& section);
+	void					ParseIKChain(const KVSection& section);
+	void					ParseIKChains(const KVSection& section);
+	void					ParseAttachments(const KVSection& section);
+	void					ParsePhysModels(const KVSection& section);
 
 	// preprocessing
 	void					MergeBones();

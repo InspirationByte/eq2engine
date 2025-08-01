@@ -713,7 +713,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 		return false;
 	}
 
-	const KVSection* fontSec = kvs.GetRootSection()->FindSection("Font", KV_FLAG_SECTION);
+	const KVSection* fontSec = kvs.FindSection("Font", KV_FLAG_SECTION);
 	if(fontSec)
 	{
 		const int charWide = KV_GetValueInt(fontSec->FindSection("charWidth"), 0, 8);
@@ -770,7 +770,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 		return true;
 	}
 
-	fontSec = kvs.GetRootSection()->FindSection("eqFont");
+	fontSec = kvs.FindSection("eqFont");
 	if (fontSec)
 	{
 		m_flags.sdf = KV_GetValueBool(fontSec->FindSection("isSDF"));
@@ -798,16 +798,13 @@ bool CFont::LoadFont( const char* filenamePrefix )
 		m_baseline = KV_GetValueFloat(fontSec->FindSection("baseline")) * m_scale.y;
 		m_lineHeight = KV_GetValueFloat(fontSec->FindSection("lineheight")) * m_scale.y;
 
-		for (const KVSection* charSec : fontSec->Keys())
+		for (const KVSection& charSec : fontSec->Keys())
 		{
-			if (charSec->ValueCount() < 7)
-				continue;
-
 			// x y w h ox oy advanceX
 			// 0 1 2 3 4  5  6
 
 			FontChar fontChar;
-			const int valueCount = charSec->GetValues(
+			const int valueCount = charSec.GetValues(
 				fontChar.x0,
 				fontChar.y0,
 				fontChar.x1,
@@ -830,7 +827,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			fontChar.ofsY *= m_scale.y;
 			fontChar.advX *= m_scale.x;
 
-			const int charIdx = atoi(charSec->GetName());
+			const int charIdx = atoi(charSec.GetName());
 			m_charMap.insert(charIdx, fontChar);
 		}
 

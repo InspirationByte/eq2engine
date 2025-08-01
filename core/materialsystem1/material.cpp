@@ -159,9 +159,9 @@ void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 		return;
 
 	// try any kind of proxy
-	for(const KVSection* proxyItemSec : proxySec->Keys())
+	for(const KVSection& proxyItemSec : proxySec->Keys())
 	{
-		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName(proxyItemSec->name );
+		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName(proxyItemSec.name);
 
 		if(pProxy)
 		{
@@ -171,7 +171,7 @@ void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 		}
 		else
 		{
-			MsgWarning("Unknown proxy '%s' for material %s!\n", proxyItemSec->GetName(), m_szMaterialName.GetData());
+			MsgWarning("Unknown proxy '%s' for material %s!\n", proxyItemSec.GetName(), m_szMaterialName.GetData());
 		}
 	}
 }
@@ -183,13 +183,13 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 {
 	int numMaterialVars = 0;
 
-	for (const KVSection* materialVarSec : kvs->Keys())
+	for (const KVSection& materialVarSec : kvs->Keys())
 	{
-		if (materialVarSec->IsSection())
+		if (materialVarSec.IsSection())
 			continue;
 
 		// ignore some preserved vars
-		if (!CString::CompareCaseIns(materialVarSec->GetName(), "Shader"))
+		if (!CString::CompareCaseIns(materialVarSec.GetName(), "Shader"))
 			continue;
 
 		++numMaterialVars;
@@ -198,16 +198,16 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 	m_vars.variables.reserve(numMaterialVars);
 
 	// init material vars
-	for(const KVSection* materialVarSec : kvs->Keys())
+	for(const KVSection& materialVarSec : kvs->Keys())
 	{
-		if(materialVarSec->IsSection() )
+		if(materialVarSec.IsSection() )
 			continue;
 
 		// ignore some preserved vars
-		if( !CString::CompareCaseIns(materialVarSec->GetName(), "Shader") )
+		if( !CString::CompareCaseIns(materialVarSec.GetName(), "Shader") )
 			continue;
 
-		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec->GetName()) : EqString(materialVarSec->GetName()));
+		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec.GetName()) : EqString(materialVarSec.GetName()));
 
 		// initialize material var by this
 		const int nameHash = StringId24(matVarName, true);
@@ -219,12 +219,12 @@ void CMaterial::InitMaterialVars(const KVSection* kvs, const char* prefix)
 			{
 				const int varId = m_vars.variables.numElem();
 				MatVarData& newVar = m_vars.variables.append();
-				MatVarHelper::Init(newVar, KV_GetValueString(materialVarSec));
+				MatVarHelper::Init(newVar, KV_GetValueString(&materialVarSec));
 				m_vars.variableMap.insert(nameHash, varId);
 			}
 			else
 			{
-				MatVarHelper::SetString(m_vars.variables[*it], KV_GetValueString(materialVarSec));
+				MatVarHelper::SetString(m_vars.variables[*it], KV_GetValueString(&materialVarSec));
 			}
 		}
 	}

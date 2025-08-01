@@ -700,42 +700,41 @@ bool CEqStudioGeom::LoadSkinDescFile()
 
 	const int firstMaterial = m_materials.numElem();
 
-	for (const KVSection* skinSec : kvs.Keys(nullptr, KV_FLAG_SECTION))
+	for (const KVSection& skinSec : kvs.Keys(nullptr, KV_FLAG_SECTION))
 	{
 		FixedArray<EqStringRef, MAX_STUDIOMATERIALS> materialSearchPaths;
 		FixedArray<EqStringRef, MAX_STUDIOMATERIALS> materialNames;
 		materialNames.reserve(m_materialCount);
 
-		for (const KVSection* searchPathSec : skinSec->Keys("materialPath"))
+		for (const KVSection& searchPathSec : skinSec.Keys("materialPath"))
 		{
 			EqStringRef searchPath;
-			if (!searchPathSec->GetValues(searchPath))
+			if (!searchPathSec.GetValues(searchPath))
 				continue;
 			materialSearchPaths.append(searchPath);
 		}
 
-		for (KVKeyIterator it(skinSec, "materialGroup"); !it.atEnd(); ++it)
+		for (const KVSection& keyBase : skinSec.Keys("materialGroup"))
 		{
-			const KVSection* keyBase = *it;
-			if (!keyBase->values.numElem())
+			if (!keyBase.values.numElem())
 			{
 				MsgError("materialGroup: must have material names as values!\n");
 				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
 				return false;
 			}
 
-			if (keyBase->values.numElem() != m_materialCount)
+			if (keyBase.values.numElem() != m_materialCount)
 			{
 				MsgError("materialGroup: must have same material count specified (%d)!\n", m_materials.numElem());
 				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
 				return false;
 			}
 
-			for (EqStringRef strValues : keyBase->Values<EqStringRef>())
+			for (EqStringRef strValues : keyBase.Values<EqStringRef>())
 				materialNames.append(strValues);
 		}
 
-		const int nameHash = StringId24(skinSec->GetName(), true);
+		const int nameHash = StringId24(skinSec.GetName(), true);
 		m_skinNameIds.insert(nameHash, GetSkinCount());
 
 		// add skin materials

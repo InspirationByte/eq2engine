@@ -53,13 +53,13 @@ private:
 	void				SearchFolderForShaders(const char* wildcard);
 	bool				HasMatchingCRC(uint32 crc);
 
-	bool				ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection, bool isExt = false);
-	bool				ParseShaderExtensionInfo(const char* shaderDefFileName, const KVSection* shaderSection);
-	bool				ParsePackage(const char* shaderDefFileName, const KVSection* shaderSection);
+	bool				ParseShaderInfo(const char* shaderDefFileName, const KVSection& shaderSection, bool isExt = false);
+	bool				ParseShaderExtensionInfo(const char* shaderDefFileName, const KVSection& shaderSection);
+	bool				ParsePackage(const char* shaderDefFileName, const KVSection& shaderSection);
 
 	void				ParseFileList(ShaderInfo& shaderInfo, const KVSection* fileListSec);
 
-	void				InitShaderVariants(ShaderInfo& shaderInfo, int baseVariant, const KVSection* section);
+	void				InitShaderVariants(ShaderInfo& shaderInfo, int baseVariant, const KVSection& section);
 	void				ProcessShader(ShaderInfo& shaderInfo);
 
 	struct BatchConfig
@@ -93,9 +93,9 @@ void CShaderCooker::ParseFileList(ShaderInfo& shaderInfo, const KVSection* fileL
 		return;
 
 	EqString pathToFile;
-	for (const KVSection* itemSec : fileListSec->Keys())
+	for (const KVSection& itemSec : fileListSec->Keys())
 	{
-		const EqStringRef fileName = itemSec->GetName();
+		const EqStringRef fileName = itemSec.GetName();
 
 		pathToFile = fnmPathCombine(m_targetProps.sourceShaderPath, fileName);
 		if (!g_fileSystem->FileExist(pathToFile))
@@ -107,7 +107,7 @@ void CShaderCooker::ParseFileList(ShaderInfo& shaderInfo, const KVSection* fileL
 		ShaderInfo::AddFile& addFile = shaderInfo.addedFiles.append();
 		addFile.fileName = pathToFile;
 
-		for (auto valueIt : itemSec->Values<EqStringRef>())
+		for (auto valueIt : itemSec.Values<EqStringRef>())
 			addFile.values.append(valueIt);
 	}
 }
@@ -118,14 +118,14 @@ static void ParseVertexLayouts(ShaderInfo& shaderInfo, const KVSection* vertLayo
 		return;
 
 	// add vertex layouts
-	for (const KVSection* layoutKey : vertLayoutsSec->Keys())
+	for (const KVSection& layoutKey : vertLayoutsSec->Keys())
 	{
 		ShaderInfo::VertLayout& vertLayout = shaderInfo.vertexLayouts.append();
-		vertLayout.name = layoutKey->GetName();
+		vertLayout.name = layoutKey.GetName();
 
-		if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "aliasOf"))
+		if (!CString::CompareCaseIns(KV_GetValueString(&layoutKey, 0), "aliasOf"))
 		{
-			EqStringRef aliasOfStr = KV_GetValueString(layoutKey, 1);
+			EqStringRef aliasOfStr = KV_GetValueString(&layoutKey, 1);
 			const int aliasLayout = arrayFindIndexF(shaderInfo.vertexLayouts, [aliasOfStr](const ShaderInfo::VertLayout& layout) {
 				return layout.name == aliasOfStr;
 				});
@@ -134,17 +134,17 @@ static void ParseVertexLayouts(ShaderInfo& shaderInfo, const KVSection* vertLayo
 
 			vertLayout.aliasOf = aliasLayout;
 		}
-		else if (!CString::CompareCaseIns(KV_GetValueString(layoutKey, 0), "excludeDefines"))
+		else if (!CString::CompareCaseIns(KV_GetValueString(&layoutKey, 0), "excludeDefines"))
 		{
-			for (KVValueIterator<EqString> it(layoutKey, 1); !it.atEnd(); ++it)
+			for (KVValueIterator<EqString> it(&layoutKey, 1); !it.atEnd(); ++it)
 				vertLayout.excludeDefines.append(*it);
 		}
 	}
 }
 
-bool CShaderCooker::ParsePackage(const char* shaderDefFileName, const KVSection* shaderSection)
+bool CShaderCooker::ParsePackage(const char* shaderDefFileName, const KVSection& shaderSection)
 {
-	const KVSection* fileListSec = (*shaderSection)["FileList"];
+	const KVSection* fileListSec = shaderSection["FileList"];
 	if (!fileListSec)
 	{
 		MsgWarning("%s missing 'FileList' section\n", shaderDefFileName);
@@ -153,24 +153,24 @@ bool CShaderCooker::ParsePackage(const char* shaderDefFileName, const KVSection*
 
 	ShaderInfo& shaderInfo = m_shaderList.append();
 	shaderInfo.crc32 = g_fileSystem->GetFileCRC32(shaderDefFileName, SP_ROOT);
-	shaderInfo.name = KV_GetValueString(shaderSection);
+	shaderInfo.name = KV_GetValueString(&shaderSection);
 	shaderInfo.type = ShaderInfo::SHADER_PACKAGE;
 
 	// process file list
 	ParseFileList(shaderInfo, fileListSec);
 
-	ParseVertexLayouts(shaderInfo, (*shaderSection)["VertexLayouts"]);
+	ParseVertexLayouts(shaderInfo, shaderSection["VertexLayouts"]);
 
 	return true;
 }
 
-bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSection* shaderSection, bool isExt)
+bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSection& shaderSection, bool isExt)
 {
 	EqStringRef sourceText;
-	shaderSection->Get("SourceText").GetValues(sourceText);
+	shaderSection.Get("SourceText").GetValues(sourceText);
 
 	EqStringRef sourceFileName;
-	shaderSection->Get("SourceFile").GetValues(sourceFileName);
+	shaderSection.Get("SourceFile").GetValues(sourceFileName);
 
 	if (!sourceFileName.Length() && !sourceText.Length())
 	{
@@ -184,7 +184,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 		return false;
 	}
 
-	const KVSection* kinds = shaderSection->FindSection("SourceKind");
+	const KVSection* kinds = shaderSection.FindSection("SourceKind");
 	if (!kinds)
 	{
 		MsgWarning("%s missing 'SourceKind' section\n", shaderDefFileName);
@@ -193,9 +193,9 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 
 	{
 		int shaderKindsFound = 0;
-		for (const KVSection* key : kinds->Keys())
+		for (const KVSection& key : kinds->Keys())
 		{
-			EqStringRef kindStr(key->name);
+			EqStringRef kindStr(key.name);
 
 			if (!kindStr.CompareCaseIns("Vertex"))
 				shaderKindsFound |= SHADERKIND_VERTEX;
@@ -214,14 +214,14 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 
 	ShaderInfo& shaderInfo = m_shaderList.append();
 	shaderInfo.crc32 = g_fileSystem->GetFileCRC32(shaderDefFileName, SP_ROOT);
-	shaderInfo.name = KV_GetValueString(shaderSection);
+	shaderInfo.name = KV_GetValueString(&shaderSection);
 	shaderInfo.sourceFilename = sourceFileName;
 	shaderInfo.sourceText = sourceText;
 	shaderInfo.type = isExt ? ShaderInfo::SHADER_EXT : ShaderInfo::SHADER_BASE;
 
-	for (const KVSection* kindSec : kinds->Keys())
+	for (const KVSection& kindSec : kinds->Keys())
 	{
-		EqStringRef kindName(kindSec->GetName());
+		EqStringRef kindName(kindSec.GetName());
 		int kind = 0;
 		if (!kindName.CompareCaseIns("Vertex"))
 			kind = SHADERKIND_VERTEX;
@@ -231,7 +231,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 			kind = SHADERKIND_COMPUTE;
 
 		// add main entry point as default
-		if (!kindSec->KeyCount())
+		if (!kindSec.KeyCount())
 		{
 			ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints.append();
 			entryPoint.name = "main";
@@ -239,15 +239,15 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 			continue;
 		}
 
-		for (const KVSection* entryPointSec : kindSec->Keys("EntryPoint"))
+		for (const KVSection& entryPointSec : kindSec.Keys("EntryPoint"))
 		{
 			ShaderInfo::EntryPoint& entryPoint = shaderInfo.entryPoints.append();
-			entryPoint.name = KV_GetValueString(entryPointSec);
+			entryPoint.name = KV_GetValueString(&entryPointSec);
 			entryPoint.kind = kind;
 		}
 	}
 
-	EqStringRef shaderType = KV_GetValueString(shaderSection->FindSection("SourceType"), 0, nullptr);
+	EqStringRef shaderType = KV_GetValueString(shaderSection.FindSection("SourceType"), 0, nullptr);
 	if (!shaderType.CompareCaseIns("hlsl"))
 		shaderInfo.sourceType = SHADERSOURCE_HLSL;
 	else if (!shaderType.CompareCaseIns("glsl"))
@@ -290,17 +290,17 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 	shaderInfo.totalVariationCount = nonAliasVertLayouts * (1 << numSwitchableDefines);
 
 	// process file list if exists
-	ParseFileList(shaderInfo, (*shaderSection)["FileList"]);
+	ParseFileList(shaderInfo, shaderSection["FileList"]);
 
 	return true;
 }
 
-bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, const KVSection* shaderSection)
+bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, const KVSection& shaderSection)
 {
 	EqStringRef sourceFileName;
 	EqStringRef sourceShaderName;
 	EqStringRef newShaderName;
-	if (shaderSection->GetValues(sourceFileName, sourceShaderName, newShaderName) < 2)
+	if (shaderSection.GetValues(sourceFileName, sourceShaderName, newShaderName) < 2)
 	{
 		MsgError("shaderExt params are sourceFilename, sourceShaderName, newShaderName (optional)");
 		return false;
@@ -322,22 +322,22 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	}
 
 	KVSection* shaderRoot = nullptr;
-	for (KVSection* shdKey : baseShaderRoot.Keys("shader"))
+	for (KVSection& shdKey : baseShaderRoot.Keys("shader"))
 	{
 		EqStringRef baseShaderName;
-		if (!shdKey->GetValues(baseShaderName))
+		if (!shdKey.GetValues(baseShaderName))
 			continue;
 		
 		if (baseShaderName == sourceShaderName)
 		{
-			shaderRoot = shdKey;
+			shaderRoot = &shdKey;
 			break;
 		}
 	}
 
 	if (!shaderRoot)
 	{
-		MsgWarning("%s: can't find shader '%s' in %s\n", shaderDefFileName, KV_GetValueString(shaderSection, 1), extShaderDefFileName.ToCString());
+		MsgWarning("%s: can't find shader '%s' in %s\n", shaderDefFileName, KV_GetValueString(&shaderSection, 1), extShaderDefFileName.ToCString());
 		return false;
 	}
 
@@ -345,17 +345,17 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 		shaderRoot->SetValue(newShaderName.ToCString(), 0);
 
 	// merge sections softly
-	for (const KVSection* section : shaderSection->Keys())
+	for (const KVSection& section : shaderSection.Keys())
 	{
-		KVSection* baseSec = shaderRoot->FindSection(section->GetName());
+		KVSection* baseSec = shaderRoot->FindSection(section.GetName());
 		if (baseSec)
 		{
 			baseSec->Cleanup();
-			section->CopyTo(baseSec);
+			section.CopyTo(*baseSec);
 		}
 	}
 
-	return ParseShaderInfo(extShaderDefFileName, shaderRoot, true);
+	return ParseShaderInfo(extShaderDefFileName, *shaderRoot, true);
 }
 
 void CShaderCooker::SearchFolderForShaders(const char* wildcard)
@@ -387,19 +387,19 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 				continue;
 
 			int shadersFound = 0;
-			for (const KVSection* shdKey : rootSec.Keys("shader"))
+			for (const KVSection& shdKey : rootSec.Keys("shader"))
 			{
 				if(ParseShaderInfo(fullShaderPath, shdKey))
 					++shadersFound;
 			}
 
-			for (const KVSection* shdExtKey : rootSec.Keys("shaderExt"))
+			for (const KVSection& shdExtKey : rootSec.Keys("shaderExt"))
 			{
 				if(ParseShaderExtensionInfo(fullShaderPath, shdExtKey))
 					++shadersFound;
 			}
 
-			for (const KVSection* packageKey : rootSec.Keys("package"))
+			for (const KVSection& packageKey : rootSec.Keys("package"))
 			{
 				if (ParsePackage(fullShaderPath, packageKey))
 					++shadersFound;
@@ -416,9 +416,9 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 
 bool CShaderCooker::HasMatchingCRC(uint32 crc)
 {
-	for (KVSection* crcEntry : m_batchConfig.crcSec.Keys())
+	for (KVSection& crcEntry : m_batchConfig.crcSec.Keys())
 	{
-		uint32 checkCRC = strtoul(crcEntry->GetName(), nullptr, 10);
+		uint32 checkCRC = strtoul(crcEntry.GetName(), nullptr, 10);
 		if (checkCRC == crc)
 			return true;
 	}
@@ -426,13 +426,13 @@ bool CShaderCooker::HasMatchingCRC(uint32 crc)
 	return false;
 }
 
-void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantIdx, const KVSection* section)
+void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantIdx, const KVSection& section)
 {
 	bool hasVariantsThisLevel = false;
-	for (const KVSection* nestedSec : section->Keys())
+	for (const KVSection& nestedSec : section.Keys())
 	{
-		if (!CString::CompareCaseIns(nestedSec->GetName(), "define")
-		 || !CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
+		if (!CString::CompareCaseIns(nestedSec.GetName(), "define")
+		 || !CString::CompareCaseIns(nestedSec.GetName(), "VertexLayouts"))
 		{
 			hasVariantsThisLevel = true;
 			break;
@@ -446,8 +446,8 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 			ShaderInfo::Variant& variant = shaderInfo.variants.append();
 			variant.baseVariant = baseVariantIdx;
 
-			const char* secValue = KV_GetValueString(section, 0, nullptr);
-			variant.name = EqString::Format("%s%s%s", section->GetName(), secValue ? "_" : "", secValue);
+			const char* secValue = KV_GetValueString(&section, 0, nullptr);
+			variant.name = EqString::Format("%s%s%s", section.GetName(), secValue ? "_" : "", secValue);
 
 			return variant;
 		}
@@ -458,27 +458,25 @@ void CShaderCooker::InitShaderVariants(ShaderInfo& shaderInfo, int baseVariantId
 	ShaderInfo::Variant& variant = getVariant(thisVariantIndex);
 
 	// collect all defines and vertex layouts
-	for (const KVSection* nestedSec : section->Keys())
+	for (const KVSection& nestedSec : section.Keys())
 	{
-		if (!CString::CompareCaseIns(nestedSec->GetName(), "define"))
+		if (!CString::CompareCaseIns(nestedSec.GetName(), "define"))
 		{
 			// TODO: define types
-			variant.defines.append(KV_GetValueString(nestedSec));
+			variant.defines.append(KV_GetValueString(&nestedSec));
 		}
-		else if (!CString::CompareCaseIns(nestedSec->GetName(), "VertexLayouts"))
+		else if (!CString::CompareCaseIns(nestedSec.GetName(), "VertexLayouts"))
 		{
-			ParseVertexLayouts(shaderInfo, nestedSec);
+			ParseVertexLayouts(shaderInfo, &nestedSec);
 		}
-		else if(!CString::CompareCaseIns(nestedSec->GetName(), "SkipCombo"))
+		else if(!CString::CompareCaseIns(nestedSec.GetName(), "SkipCombo"))
 		{
 			// TODO: expression parser?
 			ShaderInfo::SkipCombo& skipCombo = shaderInfo.skipCombos.append();
-			for (KVValueIterator<EqString> it(nestedSec); !it.atEnd(); ++it)
-			{
-				skipCombo.defines.append(*it);
-			}
+			for (const EqStringRef& def : nestedSec.Values<EqStringRef>())
+				skipCombo.defines.append(def);
 		}
-		else if (!CString::CompareCaseIns(nestedSec->GetName(), "UniformLayout"))
+		else if (!CString::CompareCaseIns(nestedSec.GetName(), "UniformLayout"))
 		{
 			// atm skip
 		}
@@ -927,26 +925,26 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		KVSection shaderInfoKvs;
 		shaderInfoKvs.SetName(shaderInfo.name);
 		{
-			KVSection* definesSec = shaderInfoKvs.CreateSection("Defines");
+			KVSection& definesSec = shaderInfoKvs.CreateSection("Defines");
 			for (EqString& defineStr : switchDefines)
-				definesSec->AddValue(defineStr);
+				definesSec.AddValue(defineStr);
 		}
 
 		// store vertex layout info
 		{
-			KVSection* vertexLayoutsSec = shaderInfoKvs.CreateSection("VertexLayouts");
+			KVSection& vertexLayoutsSec = shaderInfoKvs.CreateSection("VertexLayouts");
 			for (ShaderInfo::VertLayout& vertLayout : shaderInfo.vertexLayouts)
 			{
-				KVSection* layoutSec = vertexLayoutsSec->CreateSection(vertLayout.name);
+				KVSection& layoutSec = vertexLayoutsSec.CreateSection(vertLayout.name);
 				if (vertLayout.aliasOf != -1)
 				{
-					layoutSec->AddValue("aliasOf");
-					layoutSec->AddValue(shaderInfo.vertexLayouts[vertLayout.aliasOf].name);
+					layoutSec.AddValue("aliasOf");
+					layoutSec.AddValue(shaderInfo.vertexLayouts[vertLayout.aliasOf].name);
 				}
 			}
 		}
 
-		KVSection* fileListSec = shaderInfoKvs.CreateSection("FileList");
+		KVSection& fileListSec = shaderInfoKvs.CreateSection("FileList");
 
 		int shaderFileCount = 0;
 		Array<int> referenceRemap(PP_SL);
@@ -962,27 +960,27 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 				continue;
 
 			EqString shaderFileName = EqString::Format("%s-%s", layout.name.ToCString(), result.queryStr.ToCString());
-			KVSection* spvSec = fileListSec->CreateSection("spv");
-			spvSec->AddValue(result.vertLayoutIdx);
+			KVSection& spvSec = fileListSec.CreateSection("spv");
+			spvSec.AddValue(result.vertLayoutIdx);
 			
 			if (result.kindFlag == SHADERKIND_VERTEX)
 			{
-				spvSec->AddValue("Vertex");
+				spvSec.AddValue("Vertex");
 				shaderFileName.Append(".vert");
 			}
 			else if (result.kindFlag == SHADERKIND_FRAGMENT)
 			{
-				spvSec->AddValue("Fragment");
+				spvSec.AddValue("Fragment");
 				shaderFileName.Append(".frag");
 			}
 			else if (result.kindFlag == SHADERKIND_COMPUTE)
 			{
-				spvSec->AddValue("Compute");
+				spvSec.AddValue("Compute");
 				shaderFileName.Append(".comp");
 			}
 
-			spvSec->AddValue(shaderInfo.entryPoints[result.entryPointId].name);
-			spvSec->AddValue(result.queryStr);
+			spvSec.AddValue(shaderInfo.entryPoints[result.entryPointId].name);
+			spvSec.AddValue(result.queryStr);
 
 			// Write shader bytecode file
 			const uint32* shaderData = result.data.begin();
@@ -1005,19 +1003,19 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			ASSERT(shaderInfo.results[result.refResult].kindFlag == result.kindFlag);
 
 			// Reference shader bytecode file
-			KVSection* refSec = fileListSec->CreateSection("ref");
-			refSec->AddValue(result.vertLayoutIdx);
+			KVSection& refSec = fileListSec.CreateSection("ref");
+			refSec.AddValue(result.vertLayoutIdx);
 
 			if (result.kindFlag == SHADERKIND_VERTEX)
-				refSec->AddValue("Vertex");
+				refSec.AddValue("Vertex");
 			else if (result.kindFlag == SHADERKIND_FRAGMENT)
-				refSec->AddValue("Fragment");
+				refSec.AddValue("Fragment");
 			else if (result.kindFlag == SHADERKIND_COMPUTE)
-				refSec->AddValue("Compute");
+				refSec.AddValue("Compute");
 
-			refSec->AddValue(shaderInfo.entryPoints[result.entryPointId].name);
-			refSec->AddValue(result.queryStr);
-			refSec->AddValue(referenceRemap[result.refResult]);
+			refSec.AddValue(shaderInfo.entryPoints[result.entryPointId].name);
+			refSec.AddValue(result.queryStr);
+			refSec.AddValue(referenceRemap[result.refResult]);
 		}
 
 		// put added files
@@ -1026,9 +1024,9 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 			IFileStreamPtr filePtr = g_fileSystem->Open(addFile.fileName, FS_OPEN_READ, SP_ROOT);
 			shaderPackFile.Add(filePtr, addFile.values.back());
 
-			KVSection* fileSec = fileListSec->CreateSection(addFile.values[0]);
+			KVSection& fileSec = fileListSec.CreateSection(addFile.values[0]);
 			for(int i = 1; i < addFile.values.numElem(); ++i)
-				fileSec->AddValue(addFile.values[i]);
+				fileSec.AddValue(addFile.values[i]);
 		}
 
 		CMemoryStream shaderInfoData(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
@@ -1084,9 +1082,9 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 				sourceImageExt = "tga";
 			}
 
-			for (const KVSection* includePathKey : currentTarget->Keys("includePath"))
+			for (const KVSection& includePathKey : currentTarget->Keys("includePath"))
 			{
-				EqString includePath = KV_GetValueString(includePathKey);
+				EqString includePath = KV_GetValueString(&includePathKey);
 				includePath.ReplaceSubstr(s_engineDirTag, g_fileSystem->GetCurrentDataDirectory());
 				includePath.ReplaceSubstr(s_gameDirTag, g_fileSystem->GetCurrentGameDirectory());
 

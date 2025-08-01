@@ -50,17 +50,17 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		return false;
 	}
 
-	const KVSection* sec = kvs.GetRootSection();
+	const KVSection& rootSec = kvs.GetRootSection();
 
 	// enum font names
-	for(const KVSection* fontSec : sec->Keys())
+	for(const KVSection& fontSec : rootSec.Keys())
 	{
-		if( !fontSec->IsSection() )
+		if( !fontSec.IsSection() )
 		{
-			if(!fontSec->name.Compare("#include"))
+			if(!fontSec.name.Compare("#include"))
 			{
-				const char* incFileName = KV_GetValueString(fontSec,0, nullptr);
-
+				EqStringRef incFileName;
+				fontSec.GetValues(incFileName);
 				if(incFileName)
 					LoadFontDescriptionFile( incFileName );
 				else
@@ -70,22 +70,22 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			continue;
 		}
 
-		const int nameHash = StringId24(fontSec->GetName());
+		const int nameHash = StringId24(fontSec.GetName());
 		if (m_fonts.contains(nameHash))
 		{
-			MsgWarning("Font %s already loaded, skipping\n", fontSec->GetName());
+			MsgWarning("Font %s already loaded, skipping\n", fontSec.GetName());
 			continue;
 		}
 
 		FontFamily& familyEntry = m_fonts[nameHash];
-		familyEntry.name = fontSec->name;
+		familyEntry.name = fontSec.name;
 
 		int styleErrorCounter = 0;
 
 		// enum font sizes
-		for(const KVSection* styleTable : fontSec->Keys())
+		for(const KVSection& styleTable : fontSec.Keys())
 		{
-			const int entrySize = atoi(styleTable->GetName());
+			const int entrySize = atoi(styleTable.GetName());
 
 			// find a styles, reg, bld, itl, or bolditalic
 			EqStringRef regularFileName;
@@ -93,14 +93,14 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			EqStringRef italicFileName;
 			EqStringRef boldItalicFileName;
 
-			if (!styleTable->Get("reg").GetValues(regularFileName))
+			if (!styleTable.Get("reg").GetValues(regularFileName))
 			{
 				MsgError("Font desc '%s' (size %d) missing reg (regular) font entry\n", familyEntry.name.ToCString(), entrySize);
 				continue;
 			}
-			styleTable->Get("bld").GetValues(boldFileName);
-			styleTable->Get("itl").GetValues(italicFileName);
-			styleTable->Get("b+i").GetValues(boldItalicFileName);
+			styleTable.Get("bld").GetValues(boldFileName);
+			styleTable.Get("itl").GetValues(italicFileName);
+			styleTable.Get("b+i").GetValues(boldItalicFileName);
 			
 			// first we loading a regular font
 			CFont* regFont = PPNew CFont();

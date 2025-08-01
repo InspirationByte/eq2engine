@@ -62,14 +62,14 @@ struct KVKeyIterator
 	struct Init;
 
 	KVKeyIterator() = default;
-	KVKeyIterator(const KVSection* section);
-	KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags = 0, int index = 0);
+	KVKeyIterator(const KVSection& section);
+	KVKeyIterator(const KVSection& section, const char* nameFilter, int searchFlags = 0, int index = 0);
 
 	operator	int() const;
 	operator	const char* () const;
 
-	operator	KVSection*() const;
-	KVSection*	operator*() const;
+	operator	KVSection&() const;
+	KVSection&	operator*() const;
 	void		operator++();
 
 	bool		operator==(KVKeyIterator& it) const { return it.index == index; }
@@ -202,8 +202,10 @@ KVValues<Args...> KV_TryGetValues(const KVSection* key, Args&... outArgs);
 //
 struct KVPairValue
 {
-	KVPairValue() = default;
 	~KVPairValue();
+	KVPairValue() = default;
+
+	KVPairValue(const KVPairValue& other) = delete;
 
 	KVSection*	section{ nullptr };
 	char*		value{ nullptr };
@@ -215,6 +217,8 @@ struct KVPairValue
 		bool	bValue;
 		float	fValue;
 	};
+
+	// TODO: Clone
 
 	// sets string value
 	void		SetStringValue(const char* pszValue, int len = -1);
@@ -238,8 +242,10 @@ struct KVPairValue
 //
 struct KVSection
 {
-	KVSection() = default;
 	~KVSection();
+
+	KVSection() = default;
+	KVSection(const KVSection& other) = delete;
 
 	void				Cleanup();
 	void				ClearValues();
@@ -256,7 +262,7 @@ struct KVSection
 	inline typename KVValueIterator<T>::Init	Values() const { return { KVValueIterator<T>(this) }; }
 
 	// Array keys iterator
-	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(this, nameFilter, searchFlags) }; }
+	inline KVKeyIterator::Init	Keys(const char* nameFilter = nullptr, int searchFlags = 0) const { return { KVKeyIterator(*this, nameFilter, searchFlags) }; }
 
 	// Key values getter
 	template<typename ...Args>
@@ -285,7 +291,7 @@ struct KVSection
 	KVSection*			FindSection(const char* pszName, int nFlags = 0) const;
 
 	// adds new section
-	KVSection*			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
+	KVSection&			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
 
 	// adds existing section. You should set it's name manually. It should not be allocated by other section
 	void				AddSection(KVSection* keyBase);
@@ -320,14 +326,14 @@ struct KVSection
 	// The self-key functions
 	//----------------------------------------------
 
-	void				SetValueFrom( KVSection* pOther );
+	void				SetValueFrom(KVSection& pOther);
 
 	KVPairValue&		CreateValue();
 	KVSection*			CreateSectionValue();
 
-	KVSection*			Clone() const;
-	void				CopyTo(KVSection* dest) const;
-	void				CopyValuesTo(KVSection* dest) const;
+	KVSection&			Clone() const;
+	void				CopyTo(KVSection& dest) const;
+	void				CopyValuesTo(KVSection& dest) const;
 
 	// adds value to key
 	void				AddValue(const char* value);
@@ -401,6 +407,8 @@ public:
 	KeyValues() = default;
 	~KeyValues() = default;
 
+	KeyValues(const KeyValues& other) = delete;
+
 	void					Reset();
 
 	KVKeyIterator::Init		Keys(const char* nameFilter = nullptr, int searchFlags = 0) const;
@@ -413,7 +421,7 @@ public:
 
 	bool					SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
-	KVSection*				GetRootSection();
+	KVSection&				GetRootSection();
 	KVSection*				operator[](const char* pszName);
 
 private:

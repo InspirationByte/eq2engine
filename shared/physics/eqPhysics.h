@@ -69,7 +69,7 @@ public:
 	void							DestroyWorld();										///< destroys world
 	void							DestroyGrid();										///< destroys broadphase grid
 
-	void							AddSurfaceParamFromKV(const char* name, const KVSection* kvSection);
+	void							AddSurfaceParamFromKV(const char* name, const KVSection& kvSection);
 	const int						FindSurfaceParamID(const char* name) const;
 	const eqPhysSurfParam*			FindSurfaceParam(const char* name) const;
 	const eqPhysSurfParam*			GetSurfaceParamByID(int id) const;

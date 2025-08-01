@@ -318,7 +318,7 @@ void CEqPhysicsWorld::DestroyGrid()
 	SAFE_DELETE(m_grid);
 }
 
-void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
+void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection& kvSection)
 {
 	const int foundIdx = arrayFindIndexF(m_physSurfaceParams, [name](const eqPhysSurfParam& other) { return !other.name.CompareCaseIns(name); });
 	if (foundIdx != -1)
@@ -331,13 +331,13 @@ void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection* k
 	eqPhysSurfParam& surfParam = m_physSurfaceParams.append();
 	surfParam.id = id;
 	surfParam.name = name;
-	kvSection->Get("collideMask").GetValues(surfParam.collideMask);
-	kvSection->Get("contents").GetValues(surfParam.contents);
-	kvSection->Get("friction").GetValues(surfParam.friction);
-	kvSection->Get("restitution").GetValues(surfParam.restitution);
-	kvSection->Get("tirefriction").GetValues(surfParam.tirefriction);
-	kvSection->Get("tirefriction_traction").GetValues(surfParam.tirefriction_traction);
-	surfParam.word = *KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C");
+	kvSection.Get("collideMask").GetValues(surfParam.collideMask);
+	kvSection.Get("contents").GetValues(surfParam.contents);
+	kvSection.Get("friction").GetValues(surfParam.friction);
+	kvSection.Get("restitution").GetValues(surfParam.restitution);
+	kvSection.Get("tirefriction").GetValues(surfParam.tirefriction);
+	kvSection.Get("tirefriction_traction").GetValues(surfParam.tirefriction_traction);
+	surfParam.word = *KV_GetValueString(kvSection.FindSection("surfaceword"), 0, "C");
 }
 
 const int CEqPhysicsWorld::FindSurfaceParamID(const char* name) const

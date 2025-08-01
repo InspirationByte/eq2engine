@@ -191,7 +191,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	m_szApplicationName = initParams.appName;
 
 	m_coreConfiguration = PPNew KeyValues();
-	KVSection* coreConfigRoot = m_coreConfiguration->GetRootSection();
+	KVSection& coreConfigRoot = m_coreConfiguration->GetRootSection();
 
 	EqString appConfigName = initParams.appConfigName ? initParams.appConfigName : "E2.CONFIG";
 
@@ -207,24 +207,24 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	if (!eqConfigFound)
 	{
 		// try create default settings
-		KVSection& appDebug = *coreConfigRoot->CreateSection("ApplicationDebug");
+		KVSection& appDebug = coreConfigRoot.CreateSection("ApplicationDebug");
 		appDebug
 			.SetKey("ForceLogApplications", initParams.appName);
 
-		KVSection& fsSection = *coreConfigRoot->CreateSection("FileSystem");
+		KVSection& fsSection = coreConfigRoot.CreateSection("FileSystem");
 
 		fsSection
 			.SetKey("EngineDataDir", "E2Base")
 			.SetKey("DefaultGameDir", "GameData");
 
-		KVSection& regionalConfig = *coreConfigRoot->CreateSection("RegionalSettings");
+		KVSection& regionalConfig = coreConfigRoot.CreateSection("RegionalSettings");
 		regionalConfig
 			.SetKey("DefaultLanguage", "English");
 	}
 
 	bool logEnabled = false;
 
-	const KVSection* appDebugSec = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
+	const KVSection* appDebugSec = coreConfigRoot.FindSection("ApplicationDebug", KV_FLAG_SECTION);
 	if (appDebugSec)
 	{
 		if (appDebugSec->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))

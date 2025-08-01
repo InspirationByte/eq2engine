@@ -165,11 +165,11 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	}
 
 	const KVSection* compressionSec = nullptr;
-	for (const KVSection* sec : batchSec->Keys("compression"))
+	for (const KVSection& sec : batchSec->Keys("compression"))
 	{
-		if (!m_targetProps.targetCompression.CompareCaseIns(KV_GetValueString(sec, 0, "INVALID")))
+		if (!m_targetProps.targetCompression.CompareCaseIns(KV_GetValueString(&sec, 0, "INVALID")))
 		{
-			compressionSec = sec;
+			compressionSec = &sec;
 			break;
 		}
 	}
@@ -184,10 +184,10 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 	m_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindSection("arguments"), 0, "");
 
 	// load usages
-	for (const KVSection* usageKey : compressionSec->Keys("usage"))
+	for (const KVSection& usageKey : compressionSec->Keys("usage"))
 	{
 		EqStringRef usageName;
-		if (!usageKey->GetValues(usageName))
+		if (!usageKey.GetValues(usageName))
 		{
 			MsgWarning("Usage name not specified (in it's value)\n");
 			continue;
@@ -195,8 +195,8 @@ void CTextureCooker::LoadBatchConfig(const KVSection* batchSec)
 
 		UsageProperties usage;
 		usage.usageName = usageName;
-		usage.applicationName = KV_GetValueString(usageKey->FindSection("application"), 0, m_batchConfig.applicationName);
-		usage.applicationArguments = KV_GetValueString(usageKey->FindSection("arguments"), 0, "");
+		usage.applicationName = KV_GetValueString(usageKey.FindSection("application"), 0, m_batchConfig.applicationName);
+		usage.applicationArguments = KV_GetValueString(usageKey.FindSection("arguments"), 0, "");
 
 		if (!usageName.CompareCaseIns("default"))
 			m_batchConfig.defaultUsage = usage;
@@ -296,10 +296,10 @@ bool CTextureCooker::CreateArrayImageFile(const Array<EqString>& textureNames, c
 void CTextureCooker::LoadMaterialImages(const KVSection& kvMaterial)
 {
 	int textures = 0;
-	for (KVSection* key : kvMaterial.Keys())
+	for (KVSection& key : kvMaterial.Keys())
 	{
 		EqStringRef texturePath, usageVal;
-		if (key->GetValues(texturePath, usageVal) < 2)
+		if (key.GetValues(texturePath, usageVal) < 2)
 			continue;
 
 		EqString imageUsage = usageVal;
@@ -326,7 +326,7 @@ void CTextureCooker::LoadMaterialImages(const KVSection& kvMaterial)
 				textures++;
 
 			// change wildcard to the generated array image
-			key->SetValue(newTextureName, 0);
+			key.SetValue(newTextureName, 0);
 		}
 		else
 		{
@@ -392,9 +392,9 @@ void CTextureCooker::SearchFolderForMaterialsAndGetTextures(const char* wildcard
 
 bool CTextureCooker::HasMatchingCRC(uint32 crc)
 {
-	for (const KVSection* crcSec : m_batchConfig.crcSec.Keys())
+	for (const KVSection& crcSec : m_batchConfig.crcSec.Keys())
 	{
-		uint32 checkCRC = strtoul(crcSec->GetName(), nullptr, 10);
+		uint32 checkCRC = strtoul(crcSec.GetName(), nullptr, 10);
 
 		if (checkCRC == crc)
 			return true;
@@ -412,13 +412,13 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 
 	EqString localMaterialFileName = materialFileName + m_targetProps.sourceMaterialPath.Length();
 	localMaterialFileName = localMaterialFileName.TrimChar(CORRECT_PATH_SEPARATOR).TrimChar(INCORRECT_PATH_SEPARATOR);
-	if (kvs.GetRootSection()->KeyCount() == 0)
+	if (kvs.GetRootSection().KeyCount() == 0)
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
 		return;
 	}
 
-	const KVSection* kvMaterial = kvs.GetRootSection()->keys[0];
+	const KVSection* kvMaterial = kvs.GetRootSection().keys[0];
 	if (!kvMaterial->IsSection())
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());

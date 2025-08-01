@@ -878,26 +878,23 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 					if(script.LoadFromFile(fname.GetData()))
 					{
 						// load all script data
-						KVSection* mainsection = script.GetRootSection();
-						if(mainsection)
+						const KVSection& mainsection = script.GetRootSection();
+						const KVSection* pPair = mainsection.FindSection("modelfilename");
+
+						if(pPair)
 						{
-							KVSection* pPair = mainsection->FindSection("modelfilename");
+							model_path = KV_GetValueString(pPair);
+							EqString cmdLine = EqString::Format("egfca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData());
 
-							if(pPair)
+							Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
+							if (system(cmdLine.ToCString()) != 0)
 							{
-								model_path = KV_GetValueString(pPair);
-								EqString cmdLine = EqString::Format("egfca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData());
-
-								Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
-								if (system(cmdLine.ToCString()) != 0)
-								{
-									wxMessageBox(wxString::Format("Failed to run command %s", cmdLine.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
-								}
+								wxMessageBox(wxString::Format("Failed to run command %s", cmdLine.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 							}
-							else
-							{
-								wxMessageBox("ERROR! 'modelfilename' is not specified in the script!", "Error", wxOK | wxICON_EXCLAMATION, this);
-							}
+						}
+						else
+						{
+							wxMessageBox("ERROR! 'modelfilename' is not specified in the script!", "Error", wxOK | wxICON_EXCLAMATION, this);
 						}
 					}
 

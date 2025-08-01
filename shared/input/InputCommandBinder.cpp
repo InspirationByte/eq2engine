@@ -373,20 +373,20 @@ void CInputCommandBinder::InitTouchZones()
 	if(!kvs.LoadFromFile("resources/in_touchzones.res"))
 		return;
 
-	KVSection* zones = kvs.GetRootSection()->FindSection("zones");
+	const KVSection* zones = kvs.FindSection("zones");
 	if (!zones)
 	{
 		MsgError("touchzones file is invalid\n");
 		return;
 	}
 
-	for(const KVSection* zoneDef : zones->Keys())
+	for(const KVSection& zoneDef : zones->Keys())
 	{
 		InputTouchZone newZone;
-		newZone.name = zoneDef->GetName();
-		zoneDef->Get("bind").GetValues(newZone.commandString, newZone.argumentString);
-		zoneDef->Get("position").GetValues(newZone.position);
-		zoneDef->Get("size").GetValues(newZone.size);
+		newZone.name = zoneDef.GetName();
+		zoneDef.Get("bind").GetValues(newZone.commandString, newZone.argumentString);
+		zoneDef.Get("position").GetValues(newZone.position);
+		zoneDef.Get("size").GetValues(newZone.size);
 
 		// resolve commands
 

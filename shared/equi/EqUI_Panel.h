@@ -24,8 +24,8 @@ public:
 
 	Panel();
 
-	virtual void			InitFromKeyValues(const KVSection* sec, bool keepElements = false) override;
-	virtual void			Parse(const KVSection* sec) override;
+	virtual void			InitFromKeyValues(const KVSection& sec, bool keepElements = false) override;
+	virtual void			Parse(const KVSection& sec) override;
 
 	virtual void			Hide();
 
@@ -64,7 +64,7 @@ public:
 	Container() : IUIControl() {}
 	~Container() {}
 
-	void			Parse(const KVSection* sec) override;
+	void			Parse(const KVSection& sec) override;
 	void			DrawSelf(const IAARectangle& rect, IGPURenderPassRecorder* rendPassRecorder) override {}
 };
 

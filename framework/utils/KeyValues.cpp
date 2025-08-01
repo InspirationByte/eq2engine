@@ -121,8 +121,10 @@ constexpr int KV_MAX_SECTION_DEPTH = 10;
 
 KVPairValue::~KVPairValue()
 {
+	if (section)
+		delete section;
+
 	PPFree(value);
-	delete section;
 }
 
 void KVPairValue::SetFrom(const KVPairValue& from)
@@ -351,9 +353,9 @@ bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 	return true;
 }
 
-KVSection* KeyValues::GetRootSection()
+KVSection& KeyValues::GetRootSection()
 {
-	return &m_root; 
+	return m_root; 
 }
 
 KVSection* KeyValues::operator[](const char* pszName)
@@ -374,9 +376,8 @@ void KVSection::Cleanup()
 {
 	ClearValues();
 
-	for(int i = 0; i < keys.numElem(); i++)
-		delete keys[i];
-
+	for(KVSection* key : keys)
+		delete key;
 	keys.clear();
 }
 
@@ -420,35 +421,32 @@ KVSection* KVSection::CreateSectionValue()
 	return val.section;
 }
 
-KVSection* KVSection::Clone() const
+KVSection& KVSection::Clone() const
 {
 	KVSection* newKey = PPNew KVSection();
+	CopyTo(*newKey);
 
-	CopyTo(newKey);
-
-	return newKey;
+	return *newKey;
 }
 
-void KVSection::CopyTo(KVSection* dest) const
+void KVSection::CopyTo(KVSection& dest) const
 {
 	CopyValuesTo(dest);
-
-	for(int i = 0; i < keys.numElem(); i++)
-		dest->AddKey(keys[i]->GetName(), keys[i]->Clone());
+	for(KVSection* key : keys)
+		dest.AddKey(key->GetName(), &key->Clone());
 }
 
-void KVSection::CopyValuesTo(KVSection* dest) const
+void KVSection::CopyValuesTo(KVSection& dest) const
 {
-	dest->ClearValues();
-
+	dest.ClearValues();
 	for(KVPairValue& val : values)
-		dest->AddValue(val);
+		dest.AddValue(val);
 }
 
-void KVSection::SetValueFrom(KVSection* pOther)
+void KVSection::SetValueFrom(KVSection& pOther)
 {
 	this->Cleanup();
-	pOther->CopyTo(this);
+	pOther.CopyTo(*this);
 }
 
 // adds value to key
@@ -752,65 +750,63 @@ KVSection& KVSection::SetKey(const char* name, KVSection* pair)
 		return AddKey(name, pair);
 
 	pPair->Cleanup();
-
-	pair->CopyTo(pPair);
+	pair->CopyTo(*pPair);
 
 	return *this;
 }
 
 KVSection& KVSection::AddKey(const char* name, const char* value)
 {
-	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_STRING);
-
-	pPair->AddValue(value);
+	KVSection& pPair = CreateSection(name, nullptr, KVPAIR_STRING);
+	pPair.AddValue(value);
 
 	return *this;
 }
 
 KVSection& KVSection::AddKey(const char* name, int nValue)
 {
-	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_INT);
-	pPair->AddValue(nValue);
+	KVSection& pPair = CreateSection(name, nullptr, KVPAIR_INT);
+	pPair.AddValue(nValue);
 
 	return *this;
 };
 
 KVSection& KVSection::AddKey(const char* name, float fValue)
 {
-	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
-	pPair->AddValue(fValue);
+	KVSection& pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
+	pPair.AddValue(fValue);
 
 	return *this;
 }
 
 KVSection& KVSection::AddKey(const char* name, bool bValue)
 {
-	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_BOOL);
-	pPair->AddValue(bValue);
+	KVSection& pPair = CreateSection(name, nullptr, KVPAIR_BOOL);
+	pPair.AddValue(bValue);
 
 	return *this;
 }
 
 KVSection& KVSection::AddKey(const char* name, const Vector2D& vecValue)
 {
-	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
-	pPair->AddValue(vecValue);
+	KVSection& pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
+	pPair.AddValue(vecValue);
 
 	return *this;
 }
 
 KVSection& KVSection::AddKey(const char* name, const Vector3D& vecValue)
 {
-	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
-	pPair->AddValue(vecValue);
+	KVSection& pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
+	pPair.AddValue(vecValue);
 
 	return *this;
 }
 
 KVSection& KVSection::AddKey(const char* name, const Vector4D& vecValue)
 {
-	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
-	pPair->AddValue(vecValue);
+	KVSection& pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
+	pPair.AddValue(vecValue);
 
 	return *this;
 }
@@ -820,7 +816,7 @@ KVSection& KVSection::AddKey(const char* name, KVSection* pair)
 	if(!pair)
 		return *this;
 
-	KVSection* newPair = CreateSection(name, nullptr, KVPAIR_STRING);
+	KVSection& newPair = CreateSection(name, nullptr, KVPAIR_STRING);
 	pair->CopyTo(newPair);
 
 	return *this;
@@ -863,20 +859,17 @@ KVSection* KVSection::FindSection(const char* pszName, int nFlags) const
 }
 
 // adds new keybase
-KVSection* KVSection::CreateSection( const char* pszName, const char* pszValue, EKVPairType pairType)
+KVSection& KVSection::CreateSection( const char* pszName, const char* pszValue, EKVPairType pairType)
 {
-	KVSection* pKeyBase = PPNew KVSection;
-	pKeyBase->SetName(pszName);
-	pKeyBase->type = pairType;
-
-	keys.append( pKeyBase );
+	KVSection* newSection = PPNew KVSection;
+	newSection->SetName(pszName);
+	newSection->type = pairType;
+	keys.append( newSection );
 
 	if(pszValue != nullptr)
-	{
-		pKeyBase->AddValue(pszValue);
-	}
+		newSection->AddValue(pszValue);
 
-	return pKeyBase;
+	return *newSection;
 }
 
 
@@ -925,12 +918,12 @@ void KVSection::MergeFrom(const KVSection& base, bool recursive)
 {
 	for(const KVSection* src : base.keys)
 	{
-		KVSection* dst = CreateSection(src->name);
+		KVSection& dst = CreateSection(src->name);
 		src->CopyValuesTo(dst);
 
 		// go to next in hierarchy
 		if(recursive)
-			dst->MergeFrom(*src, recursive);
+			dst.MergeFrom(*src, recursive);
 	}
 }
 
@@ -984,14 +977,14 @@ int	KVSection::GetType() const
 //---------------------------------------------------------------------------------------------------------
 // Iterators
 
-KVKeyIterator::KVKeyIterator(const KVSection* section)
-	: section(section)
+KVKeyIterator::KVKeyIterator(const KVSection& section)
+	: section(&section)
 {
 	// no need to rewind
 }
 
-KVKeyIterator::KVKeyIterator(const KVSection* section, const char* nameFilter, int searchFlags, int index)
-	: section(section)
+KVKeyIterator::KVKeyIterator(const KVSection& section, const char* nameFilter, int searchFlags, int index)
+	: section(&section)
 	, nameHashFilter(nameFilter ? StringId24(nameFilter, true) : 0)
 	, searchFlags(searchFlags)
 	, index(index)
@@ -1009,14 +1002,14 @@ KVKeyIterator::operator	const char* () const
 	return section->keys[index]->GetName();
 }
 
-KVKeyIterator::operator KVSection* () const
+KVKeyIterator::operator KVSection& () const
 {
-	return section->keys[index];
+	return *section->keys[index];
 }
 
-KVSection* KVKeyIterator::operator*() const
+KVSection& KVKeyIterator::operator*() const
 {
-	return section->keys[index];
+	return *section->keys[index];
 }
 
 void KVKeyIterator::operator++()
@@ -1425,7 +1418,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 
 				if (!currentSection)
 				{
-					currentSection = sectionStack.back()->CreateSection(text);
+					currentSection = &sectionStack.back()->CreateSection(text);
 					currentSection->line = line;
 				}
 				else
@@ -1634,7 +1627,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 
 				if (!currentSection)
 				{
-					currentSection = sectionStack.back()->CreateSection(text);
+					currentSection = &sectionStack.back()->CreateSection(text);
 					currentSection->line = line;
 				}
 				else

@@ -107,7 +107,7 @@ void IUIControl::SetLabelText(const wchar_t* pszLabel)
 	AnsiUnicodeConverter(m_label, m_labelText);
 }
 
-void IUIControl::InitFonts(const KVSection* sec)
+void IUIControl::InitFonts(const KVSection& sec)
 {
 	auto ParseFontDef = [this](FontProps& fontProps, const KVSection* fontSec, const KVSection* textParamsSec) {
 		if (fontSec)
@@ -158,22 +158,22 @@ void IUIControl::InitFonts(const KVSection* sec)
 	};
 
 	// parse fonts if any
-	const KVSection* fontsSec = sec->FindSection("fonts");
+	const KVSection* fontsSec = sec.FindSection("fonts");
 	if (fontsSec)
 	{
-		for (const KVSection* fontSec : fontsSec->Keys())
+		for (const KVSection& fontSec : fontsSec->Keys())
 		{
 			FontProps fontProps;
-			ParseFontDef(fontProps, fontSec, fontSec);
+			ParseFontDef(fontProps, &fontSec, &fontSec);
 
-			const uint fontId = StringId(fontSec->GetName(), true);
+			const uint fontId = StringId(fontSec.GetName(), true);
 			m_fontCollection.insert(fontId, fontProps);
 		}
 	}
 
-	ParseFontDef(m_font, sec->FindSection("font"), sec);
+	ParseFontDef(m_font, sec.FindSection("font"), &sec);
 
-	const KVSection* textAlignSec = sec->FindSection("textAlign");
+	const KVSection* textAlignSec = sec.FindSection("textAlign");
 	if (textAlignSec)
 	{
 		m_font.textAlignment = 0;
@@ -197,7 +197,7 @@ void IUIControl::InitFonts(const KVSection* sec)
 	}
 }
 
-void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
+void IUIControl::InitFromKeyValues(const KVSection& sec, bool keepElements)
 {
 	if (!keepElements)
 		ClearChilds(true);
@@ -206,34 +206,34 @@ void IUIControl::InitFromKeyValues(const KVSection* sec, bool keepElements)
 	InitChildItems(sec, keepElements);
 }
 
-void IUIControl::Parse(const KVSection* sec)
+void IUIControl::Parse(const KVSection& sec)
 {
 	EqStringRef elementName;
-	if (!CString::CompareCaseIns(sec->GetName(), "child"))
-		sec->GetValuesAt(1, elementName);
+	if (!CString::CompareCaseIns(sec.GetName(), "child"))
+		sec.GetValuesAt(1, elementName);
 	else
-		sec->GetValuesAt(0, elementName);
+		sec.GetValuesAt(0, elementName);
 
 	if (elementName)
 		SetName(elementName);
 
 	EqStringRef label;
-	if (sec->Get("label").GetValues(label))
+	if (sec.Get("label").GetValues(label))
 		SetLabel(label);
 
 	m_clipChilds = m_parent ? m_parent->m_clipChilds : m_clipChilds;
 	m_clipTransform = m_parent ? m_parent->m_clipTransform : m_clipTransform;
 
-	sec->Get("position").GetValues(m_position);
-	sec->Get("size").GetValues(m_size);
-	sec->Get("visible").GetValues(m_visible);
-	sec->Get("selfvisible").GetValues(m_selfVisible);
-	sec->Get("clipChilds").GetValues(m_clipChilds);
-	sec->Get("clipTransform").GetValues(m_clipTransform);
+	sec.Get("position").GetValues(m_position);
+	sec.Get("size").GetValues(m_size);
+	sec.Get("visible").GetValues(m_visible);
+	sec.Get("selfvisible").GetValues(m_selfVisible);
+	sec.Get("clipChilds").GetValues(m_clipChilds);
+	sec.Get("clipTransform").GetValues(m_clipTransform);
 
 	m_sizeReal = m_size;
 
-	const KVSection* commandSec = sec->FindSection("command");
+	const KVSection* commandSec = sec.FindSection("command");
 	if (commandSec)
 	{
 		// NOTE: command event always have UID == 0
@@ -248,7 +248,7 @@ void IUIControl::Parse(const KVSection* sec)
 
 	//------------------------------------------------------------------------------
 
-	const KVSection* anchorsSec = sec->FindSection("anchors");
+	const KVSection* anchorsSec = sec.FindSection("anchors");
 	if (anchorsSec)
 	{
 		m_anchors = 0;
@@ -268,7 +268,7 @@ void IUIControl::Parse(const KVSection* sec)
 	}
 
 	//------------------------------------------------------------------------------
-	const KVSection* alignSec = sec->FindSection("align");
+	const KVSection* alignSec = sec.FindSection("align");
 	if (alignSec)
 	{
 		m_alignment = 0;
@@ -292,7 +292,7 @@ void IUIControl::Parse(const KVSection* sec)
 	}
 
 	//------------------------------------------------------------------------------
-	const KVSection* transformSec = sec->FindSection("transform");
+	const KVSection* transformSec = sec.FindSection("transform");
 	if (transformSec)
 	{
 		const float rotateVal = KV_GetValueFloat(transformSec->FindSection("rotate"), 0.0f);
@@ -308,7 +308,7 @@ void IUIControl::Parse(const KVSection* sec)
 
 	//------------------------------------------------------------------------------
 
-	const KVSection* scalingSec = sec->FindSection("scaling");
+	const KVSection* scalingSec = sec.FindSection("scaling");
 	if (scalingSec)
 	{
 		m_scaling = UI_SCALING_NONE;
@@ -333,14 +333,14 @@ void IUIControl::Parse(const KVSection* sec)
 
 }
 
-void IUIControl::InitChildItems(const KVSection* sec, bool keepElements)
+void IUIControl::InitChildItems(const KVSection& sec, bool keepElements)
 {
 	// walk for childs
-	for (const KVSection* childSec : sec->Keys("child"))
+	for (const KVSection& childSec : sec.Keys("child"))
 	{
 		EqStringRef childClass;
 		EqStringRef childName;
-		if (childSec->GetValues(childClass, childName) < 1)
+		if (childSec.GetValues(childClass, childName) < 1)
 		{
 			MsgError("eqUI error: Can't create child without class name");
 			continue;
@@ -356,8 +356,8 @@ void IUIControl::InitChildItems(const KVSection* sec, bool keepElements)
 				continue;
 			}
 
-			InitFonts(&section);
-			InitChildItems(&section, true);
+			InitFonts(section);
+			InitChildItems(section, true);
 			continue;
 		}
 
