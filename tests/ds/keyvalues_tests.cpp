@@ -63,31 +63,31 @@ TEST(KEYVALUES_TESTS, DescParser)
 		.SetKey("castShadow", false)
 		.SetKey("staticShadowmap", true);
 
-	KVSection& embeddedSec = *section.CreateSection("embedded");
+	KVSection& embeddedSec = section.CreateSection("embedded");
 	{
 		KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
 		flagsSec.AddValue("flag1");
 		flagsSec.AddValue("flag3");
 	}
 
-	KVSection& bodyGroupsSec = *section.CreateSection("bodyGroups");
+	KVSection& bodyGroupsSec = section.CreateSection("bodyGroups");
 	bodyGroupsSec.AddValue("body1");
 	bodyGroupsSec.AddValue("hat");
 	bodyGroupsSec.AddValue("case");
 
-	KVSection& arrayOfEmbeddedSec = *section.CreateSection("arrayOfEmbedded");
+	KVSection& arrayOfEmbeddedSec = section.CreateSection("arrayOfEmbedded");
 	{
-		KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed1");
+		KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed1");
 		{
-			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 			flagsSec.AddValue("flag1");
 			flagsSec.AddValue("flag4");
 		}
 	}
 	{
-		KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed2");
+		KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed2");
 		{
-			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 			flagsSec.AddValue("flag2");
 		}
 	}
@@ -116,31 +116,31 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 			.SetKey("castShadow", false)
 			.SetKey("staticShadowmap", true);
 
-		KVSection& embeddedSec = *section.CreateSection("embedded");
+		KVSection& embeddedSec = section.CreateSection("embedded");
 		{
-			KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+			KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 			flagsSec.AddValue("flag1");
 			flagsSec.AddValue("flag3");
 		}
 
-		KVSection& bodyGroupsSec = *section.CreateSection("bodyGroups");
+		KVSection& bodyGroupsSec = section.CreateSection("bodyGroups");
 		bodyGroupsSec.AddValue("body1");
 		bodyGroupsSec.AddValue("hat");
 		bodyGroupsSec.AddValue("case");
 
-		KVSection& arrayOfEmbeddedSec = *section.CreateSection("arrayOfEmbedded");
+		KVSection& arrayOfEmbeddedSec = section.CreateSection("arrayOfEmbedded");
 		{
-			KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed1");
+			KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed1");
 			{
-				KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+				KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 				flagsSec.AddValue("flag1");
 				flagsSec.AddValue("flag4");
 			}
 		}
 		{
-			KVSection& embeddedSec = *arrayOfEmbeddedSec.CreateSection("embed2");
+			KVSection& embeddedSec = arrayOfEmbeddedSec.CreateSection("embed2");
 			{
-				KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+				KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 				flagsSec.AddValue("flag2");
 			}
 		}

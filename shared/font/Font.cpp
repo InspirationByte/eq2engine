@@ -816,7 +816,10 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 			if(valueCount != 7)
 			{
-				ASSERT_FAIL("Invalid font file %s", filenamePrefix);
+				if(valueCount > 2)
+				{
+					ASSERT_FAIL("Invalid font file %s", filenamePrefix);
+				}
 				continue;
 			}
 
