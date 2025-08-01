@@ -167,6 +167,8 @@ public:
 	void						ForEachChild(const EqFunction<bool(IUIControl* child)>& childFunc);
 
 	IUIControl*					GetParent() const						{ return m_parent; }
+	List<IUIControl*>::Iterator	GetFirstChild() const					{ return m_childs.first(); }
+	List<IUIControl*>::Iterator	GetLastChild() const					{ return m_childs.last(); }
 
 	virtual IEqFont*			GetFont() const;
 
