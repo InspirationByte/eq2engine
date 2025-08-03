@@ -857,8 +857,6 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			{
 				EqString model_path;
 
-				KeyValues script;
-
 				EqString fname;
 				AnsiUnicodeConverter(fname, EqWStringRef(paths[i].wchar_str()));
 				const EqString ext = fnmPathExtractExt(fname);
@@ -875,12 +873,11 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 				}
 				else
 				{
-					if(script.LoadFromFile(fname.GetData()))
+					KVSection scriptSec;
+					if(KV_LoadFromFile(fname, -1, &scriptSec))
 					{
 						// load all script data
-						const KVSection& mainsection = script.GetRootSection();
-						const KVSection* pPair = mainsection.FindSection("modelfilename");
-
+						const KVSection* pPair = scriptSec.FindSection("modelfilename");
 						if(pPair)
 						{
 							model_path = KV_GetValueString(pPair);

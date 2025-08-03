@@ -413,11 +413,11 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	g_fileSystem->MakeDir(fnmPathStripName(matFileName), SP_ROOT);
 
 	// save atlas info
-	KeyValues kvs;
-	KVSection& atlasGroupKey = kvs.GetRootSection().CreateSection("atlasgroup", outputMaterialName);
+	KVSection kvs;
+	KVSection& atlasGroupKey = kvs.CreateSection("atlasgroup", outputMaterialName);
 
-	KeyValues materialKvs;
-	KVSection& pShaderEntry = materialKvs.GetRootSection().CreateSection(shaderName);
+	KVSection materialKvs;
+	KVSection& pShaderEntry = materialKvs.CreateSection(shaderName);
 	pShaderEntry.MergeFrom(shaderBase, true);
 
 	// process setting up
@@ -460,8 +460,8 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	// save image as DDS, or TGA ???
 	if(destImage.SaveImage(imageFileName, SP_ROOT))
 	{
-		kvs.SaveToFile(atlasFileName);
-		materialKvs.SaveToFile(matFileName);
+		KV_WriteToStream(g_fileSystem->Open(atlasFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
+		KV_WriteToStream(g_fileSystem->Open(matFileName, FS_OPEN_WRITE, SP_ROOT), materialKvs);
 	}
 	else
 	{
@@ -474,17 +474,14 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 
 void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 {
-	Array<ImageDesc> imageList(PP_SL);
-
-	KeyValues kvs;
-	if( !kvs.LoadFromFile(atlasSrcFileName) )
+	KVSection kvs;
+	if( !KV_LoadFromFile(atlasSrcFileName, -1, &kvs) )
 	{
 		MsgError("Can't open '%s'\n", atlasSrcFileName);
 		return;
 	}
 
-	const KVSection& root = kvs.GetRootSection();
-	const char* materialFileName = KV_GetValueString(root.FindSection("material"), 0, nullptr);
+	const char* materialFileName = KV_GetValueString(kvs.FindSection("material"), 0, nullptr);
 	if(!materialFileName)
 	{
 		MsgError("Atlas file %s missing 'material'\n", atlasSrcFileName);
@@ -493,8 +490,10 @@ void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 
 	const EqString atlasDir = fnmPathStripName(atlasSrcFileName);
 
+	Array<ImageDesc> imageList(PP_SL);
+
 	// try loading images
-	for(const KVSection& imgDescSec : root.Keys("image"))
+	for(const KVSection& imgDescSec : kvs.Keys("image"))
 	{
 		const int idx = imageList.numElem();
 		if (!ParseImageDesc(atlasDir, imageList.append(), imgDescSec))
@@ -502,5 +501,5 @@ void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 	}
 
 	// pack atlas
-	CreateAtlasImage(imageList, materialsPath, materialFileName, kvs.GetRootSection());
+	CreateAtlasImage(imageList, materialsPath, materialFileName, kvs);
 }

@@ -706,8 +706,8 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 	const EqString finalFileName = _Es(FONT_DEFAULT_PATH) + m_name + _Es(".fnt");
 
-	KeyValues kvs;
-	if( !kvs.LoadFromFile( finalFileName ) )
+	KVSection kvs;
+	if( !KV_LoadFromFile(finalFileName, -1, &kvs) )
 	{
 		MsgError("ERROR: Can't open font file '%s' (%s)\n", finalFileName.ToCString(), filenamePrefix);
 		return false;

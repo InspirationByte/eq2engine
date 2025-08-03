@@ -7,7 +7,7 @@
 
 #pragma once
 
-class KeyValues;
+struct KVSection;
 class ICommandLine;
 
 using CoreExceptionCallback = void(*)();
@@ -45,7 +45,7 @@ public:
 	virtual void					RemoveExceptionCallback(CoreExceptionCallback callback) = 0;
 
 	// now configuration is global for all applications
-	virtual KeyValues*					GetConfig() const = 0;
+	virtual const KVSection&			GetConfig() const = 0;
 	virtual const CoreDebugSettings&	GetDebugSettings() const = 0;
 
 // Interface management for engine

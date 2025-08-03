@@ -250,7 +250,7 @@ struct KVSection
 	KVSection() = default;
 	KVSection(const KVSection& other) = delete;
 
-	void				Cleanup();
+	void				Clear();
 	void				ClearValues();
 
 	// sets section name
@@ -401,36 +401,6 @@ struct KVSection
 	Array<KVPairValue>	values{ PP_SL };
 	EKVPairType			type{ KVPAIR_STRING };
 	bool				unicode{ false };
-};
-
-// special wrapper class
-// for better compatiblity of new class
-// TODO: static
-class KeyValues
-{
-public:
-	KeyValues() = default;
-	~KeyValues() = default;
-
-	KeyValues(const KeyValues& other) = delete;
-
-	void					Reset();
-
-	KVKeyIterator::Init		Keys(const char* nameFilter = nullptr, int searchFlags = 0) const;
-	const KVSection&		Get(const char* pszName, int nFlags = 0) const;
-	KVSection*				FindSection(const char* pszName, int nFlags = 0) const;
-
-	// loads from file
-	bool					LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
-	bool					LoadFromStream(IFileStream* stream);
-
-	bool					SaveToFile(const char* pszFileName, int nSearchFlags = -1);
-
-	KVSection&				GetRootSection();
-	KVSection*				operator[](const char* pszName);
-
-private:
-	KVSection				m_root;
 };
 
 //---------------------------------------------------------------------------------------------------------

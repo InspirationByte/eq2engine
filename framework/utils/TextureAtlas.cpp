@@ -30,8 +30,8 @@ void CTextureAtlas::Cleanup()
 
 bool CTextureAtlas::Load( const char* pszFileName )
 {
-	KeyValues kvs;
-	if (!kvs.LoadFromFile(pszFileName, SP_MOD))
+	KVSection kvs;
+	if (!KV_LoadFromFile(pszFileName, SP_MOD, &kvs))
 		return false;
 
 	const KVSection* pAtlasSec = kvs.FindSection("atlasgroup");

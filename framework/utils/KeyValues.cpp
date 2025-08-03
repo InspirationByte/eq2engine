@@ -303,76 +303,16 @@ const KVPairValue& KVSection::operator[](int index) const
 	return values[index];
 }
 
-//-----------------------------------------------------------------------------------------
-
-void KeyValues::Reset()
-{
-	m_root.Cleanup();
-}
-
-KVKeyIterator::Init KeyValues::Keys(const char* nameFilter , int searchFlags) const
-{
-	return m_root.Keys(nameFilter, searchFlags);
-}
-
-const KVSection& KeyValues::Get(const char* pszName, int nFlags) const
-{
-	return m_root.Get(pszName, nFlags);
-}
-
-// searches for keybase
-KVSection* KeyValues::FindSection(const char* pszName, int nFlags) const
-{
-	return m_root.FindSection(pszName, nFlags);
-}
-
-// loads from file
-bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
-{
-	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != nullptr;
-}
-
-bool KeyValues::LoadFromStream(IFileStream* stream)
-{
-	return KV_LoadFromStream(stream, &m_root) != nullptr;
-}
-
-bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
-{
-	IFileStreamPtr pStream = g_fileSystem->Open(pszFileName, FS_OPEN_WRITE, nSearchFlags);
-
-	if(pStream)
-	{
-		KV_WriteToStream(pStream, m_root, 0, true);
-	}
-	else
-	{
-		MsgError("Cannot save keyvalues to file '%s'!\n", pszFileName);
-		return false;
-	}
-	return true;
-}
-
-KVSection& KeyValues::GetRootSection()
-{
-	return m_root; 
-}
-
-KVSection* KeyValues::operator[](const char* pszName)
-{
-	return FindSection(pszName);
-}
-
 //----------------------------------------------------------------------------------------------
 // KEY (PAIR) BASE
 //----------------------------------------------------------------------------------------------
 
 KVSection::~KVSection()
 {
-	Cleanup();
+	Clear();
 }
 
-void KVSection::Cleanup()
+void KVSection::Clear()
 {
 	ClearValues();
 
@@ -445,7 +385,7 @@ void KVSection::CopyValuesTo(KVSection& dest) const
 
 void KVSection::SetValueFrom(KVSection& pOther)
 {
-	this->Cleanup();
+	this->Clear();
 	pOther.CopyTo(*this);
 }
 
@@ -749,7 +689,7 @@ KVSection& KVSection::SetKey(const char* name, KVSection* pair)
 	if(!pPair)
 		return AddKey(name, pair);
 
-	pPair->Cleanup();
+	pPair->Clear();
 	pair->CopyTo(*pPair);
 
 	return *this;
@@ -2112,6 +2052,8 @@ static void KV_WritePairValue(IFileStream* out, const KVPairValue& val, int dept
 //
 void KV_WriteToStream(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty)
 {
+	ASSERT(outStream != nullptr);
+
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
 

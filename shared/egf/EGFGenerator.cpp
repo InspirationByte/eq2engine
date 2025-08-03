@@ -1145,9 +1145,8 @@ void CEGFGenerator::SetOutputFilename(const char* filename)
 
 bool CEGFGenerator::InitFromKeyValues(const char* filename)
 {
-	KeyValues scriptFile;
-
-	if(scriptFile.LoadFromFile(filename))
+	KVSection scriptFile;
+	if(KV_LoadFromFile(filename, -1, &scriptFile))
 	{
 		SetRefsPath(fnmPathStripName(filename));
 
@@ -1155,7 +1154,7 @@ bool CEGFGenerator::InitFromKeyValues(const char* filename)
 		MsgWarning("\nCompiling script \"%s\"\n", filename);
 
 		// load all script data
-		return InitFromKeyValues(scriptFile.GetRootSection());
+		return InitFromKeyValues(scriptFile);
 	}
 
 	MsgError("Can't open %s\n", filename);

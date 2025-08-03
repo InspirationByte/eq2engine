@@ -350,7 +350,7 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 		KVSection* baseSec = shaderRoot->FindSection(section.GetName());
 		if (baseSec)
 		{
-			baseSec->Cleanup();
+			baseSec->Clear();
 			section.CopyTo(*baseSec);
 		}
 	}
@@ -1040,9 +1040,8 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 {
 	// load all properties
-	KeyValues kvs;
-
-	if (!kvs.LoadFromFile(confFileName, SP_ROOT))
+	KVSection kvs;
+	if (!KV_LoadFromFile(confFileName, SP_ROOT, &kvs))
 	{
 		MsgError("Failed to load '%s' file!\n", confFileName);
 		return false;

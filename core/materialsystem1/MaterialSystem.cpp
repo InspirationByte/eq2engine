@@ -207,7 +207,7 @@ bool CMaterialSystem::Init(const MaterialsInitSettings& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
 
-	const KVSection* matSystemSettings = g_eqCore->GetConfig()->FindSection("MaterialSystem");
+	const KVSection* matSystemSettings = g_eqCore->GetConfig().FindSection("MaterialSystem");
 
 	ASSERT(m_shaderAPI == nullptr);
 

@@ -1081,24 +1081,21 @@ void CMotionPackageGenerator::MakeDefaultPoseAnimation()
 //************************************
 bool CMotionPackageGenerator::CompileScript(const char* filename)
 {
-	KeyValues kvs;
-
-	if (!kvs.LoadFromFile(filename))
+	KVSection kvs;
+	if (!KV_LoadFromFile(filename, -1, &kvs))
 	{
 		MsgError("Cannot open %s!\n", filename);
 		return false;
 	}
 
-	const KVSection& rootSec = kvs.GetRootSection();
-
-	const KVSection* outPackageKey = rootSec.FindSection("Package");
+	const KVSection* outPackageKey = kvs.FindSection("Package");
 	if(!outPackageKey)
 	{
 		MsgError("No 'Package' key specified - must be output package file name\n");
 		return false;
 	}
 
-	const KVSection* egfModelKey = rootSec.FindSection("Model");
+	const KVSection* egfModelKey = kvs.FindSection("Model");
 	if (!egfModelKey)
 	{
 		MsgError("No 'Model' key specified - must be EGF file name\n");
@@ -1117,7 +1114,7 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 
 	m_animPath = fnmPathStripName(filename);
 
-	const KVSection* animSourceKey = rootSec.FindSection("FBXSource");
+	const KVSection* animSourceKey = kvs.FindSection("FBXSource");
 	if (animSourceKey)
 		LoadFBXAnimations(*animSourceKey);
 	
@@ -1125,13 +1122,13 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 	MakeDefaultPoseAnimation();
 
 	// parse all animations in this script.
-	ParseAnimations(rootSec);
+	ParseAnimations(kvs);
 
 	// parse all pose parameters
-	ParsePoseparameters(rootSec);
+	ParsePoseparameters(kvs);
 
 	// parse sequences
-	ParseSequences(rootSec);
+	ParseSequences(kvs);
 
 	// write made package
 	WriteAnimationPackage(mopFilename);

@@ -235,8 +235,8 @@ static void WMsgBoxAbort(const esl::ScriptState& state)
 
 static const KVSection* S_DkCore_GetConfig(const char* section_name)
 {
-	const KeyValues* kvs = g_eqCore->GetConfig();
-	return static_cast<const KVSection*>(kvs ? kvs->FindSection(section_name) : nullptr);
+	const KVSection& kvs = g_eqCore->GetConfig();
+	return kvs.FindSection(section_name);
 }
 
 //---------------------------------------------------------------------------------------

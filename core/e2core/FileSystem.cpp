@@ -265,7 +265,7 @@ bool CFileSystem::Init(bool editorMode)
 {
 	Msg("\n-------- Filesystem Init --------\n");
 
-	const KVSection* fsConfig = g_eqCore->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
+	const KVSection* fsConfig = g_eqCore->GetConfig().FindSection("FileSystem", KV_FLAG_SECTION);
 	if (!fsConfig)
 	{
 		Msg("E2.CONFIG missing FileSystemDirectories section!\n");

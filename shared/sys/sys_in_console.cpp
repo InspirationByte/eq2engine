@@ -293,7 +293,7 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 #endif
 
 	// TODO: ImGui networked console port (for Android)
-	KVSection* consoleSettings = g_eqCore->GetConfig()->FindSection("Console");
+	KVSection* consoleSettings = g_eqCore->GetConfig().FindSection("Console");
 
 	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindSection("Font") : nullptr, 0, "console");
 

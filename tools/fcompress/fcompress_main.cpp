@@ -387,8 +387,8 @@ static bool CheckExtensionList(Array<EqString>& extList, const char* ext)
 static void CookPackageTarget(const char* targetName)
 {
 	// load all properties
-	KeyValues kvs;
-	if (!kvs.LoadFromFile("PackageCooker.CONFIG", SP_ROOT))
+	KVSection kvs;
+	if (!KV_LoadFromFile("PackageCooker.CONFIG", SP_ROOT, &kvs))
 	{
 		MsgError("Failed to load 'PackageCooker.CONFIG' file!\n");
 		return;

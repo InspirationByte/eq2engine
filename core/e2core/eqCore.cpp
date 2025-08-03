@@ -99,11 +99,6 @@ ConCommand* c_log_flush;
 void PPMemInit();
 void PPMemShutdown();
 
-CDkCore::CDkCore()
-{
-	m_coreConfiguration = nullptr;
-}
-
 //-----------------------------------------------------------------------------
 // Returns the directory where this .exe is running from
 //-----------------------------------------------------------------------------
@@ -190,41 +185,38 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 
 	m_szApplicationName = initParams.appName;
 
-	m_coreConfiguration = PPNew KeyValues();
-	KVSection& coreConfigRoot = m_coreConfiguration->GetRootSection();
-
 	EqString appConfigName = initParams.appConfigName ? initParams.appConfigName : "E2.CONFIG";
 
 	// try different locations of E2.CONFIG
-	bool eqConfigFound = m_coreConfiguration->LoadFromFile(appConfigName, SP_ROOT);
+	bool eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, &m_coreConfiguration);
 	if (!eqConfigFound)
 	{
 		appConfigName = "../" + appConfigName;
-		eqConfigFound = m_coreConfiguration->LoadFromFile(appConfigName, SP_ROOT);
+		eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, &m_coreConfiguration);
 		g_fileSystem->SetBasePath(".."); // little hack
 	}
 
 	if (!eqConfigFound)
 	{
 		// try create default settings
-		KVSection& appDebug = coreConfigRoot.CreateSection("ApplicationDebug");
+		KVSection& appDebug = m_coreConfiguration.CreateSection("ApplicationDebug");
 		appDebug
 			.SetKey("ForceLogApplications", initParams.appName);
 
-		KVSection& fsSection = coreConfigRoot.CreateSection("FileSystem");
+		KVSection& fsSection = m_coreConfiguration.CreateSection("FileSystem");
 
 		fsSection
 			.SetKey("EngineDataDir", "E2Base")
 			.SetKey("DefaultGameDir", "GameData");
 
-		KVSection& regionalConfig = coreConfigRoot.CreateSection("RegionalSettings");
+		KVSection& regionalConfig = m_coreConfiguration.CreateSection("RegionalSettings");
 		regionalConfig
 			.SetKey("DefaultLanguage", "English");
 	}
 
 	bool logEnabled = false;
 
-	const KVSection* appDebugSec = coreConfigRoot.FindSection("ApplicationDebug", KV_FLAG_SECTION);
+	const KVSection* appDebugSec = m_coreConfiguration.FindSection("ApplicationDebug", KV_FLAG_SECTION);
 	if (appDebugSec)
 	{
 		if (appDebugSec->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
@@ -351,7 +343,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	return true;
 }
 
-KeyValues* CDkCore::GetConfig() const
+const KVSection& CDkCore::GetConfig() const
 {
 	return m_coreConfiguration;
 }
@@ -365,7 +357,7 @@ void CDkCore::Shutdown()
 
 	g_fileSystem->Shutdown();
 
-	SAFE_DELETE(m_coreConfiguration);
+	m_coreConfiguration.Clear();
 	m_interfaces.clear(true);
 
 	SAFE_DELETE(c_log_enable);

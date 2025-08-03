@@ -263,7 +263,7 @@ void CEqAudioSystemAL::InitEffects()
 	//
 	// Load effect presets from file
 	//
-	const KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
+	const KVSection* soundSettings = g_eqCore->GetConfig().FindSection("Sound");
 
 	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindSection("EFXScript"), 0, nullptr) : nullptr;
 	if (effectFilePath == nullptr)
@@ -272,14 +272,14 @@ void CEqAudioSystemAL::InitEffects()
 		return;
 	}
 
-	KeyValues kv;
-	if (!kv.LoadFromFile(effectFilePath))
+	KVSection kvs;
+	if (!KV_LoadFromFile(effectFilePath, -1, &kvs))
 	{
 		MsgError("InitEFX: Can't init EFX from '%s'\n", effectFilePath);
 		return;
 	}
 
-	for (const KVSection& effectSec : kv.Keys())
+	for (const KVSection& effectSec : kvs.Keys())
 	{
 		const int nameHash = StringId24(effectSec.GetName(), true);
 

@@ -406,19 +406,19 @@ bool CTextureCooker::HasMatchingCRC(uint32 crc)
 void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 {
 	// try to load source material file
-	KeyValues kvs;
-	if (!kvs.LoadFromFile(materialFileName, SP_ROOT))
+	KVSection kvs;
+	if (!KV_LoadFromFile(materialFileName, SP_ROOT, &kvs))
 		return;
 
 	EqString localMaterialFileName = materialFileName + m_targetProps.sourceMaterialPath.Length();
 	localMaterialFileName = localMaterialFileName.TrimChar(CORRECT_PATH_SEPARATOR).TrimChar(INCORRECT_PATH_SEPARATOR);
-	if (kvs.GetRootSection().KeyCount() == 0)
+	if (kvs.KeyCount() == 0)
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
 		return;
 	}
 
-	const KVSection* kvMaterial = *kvs.GetRootSection().Begin();
+	const KVSection* kvMaterial = *kvs.Begin();
 	if (!kvMaterial->IsSection())
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
@@ -438,7 +438,7 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	g_fileSystem->MakeDir(fnmPathStripName(targetMaterialFileName), SP_ROOT);
 
 	// save material file
-	kvs.SaveToFile(targetMaterialFileName, SP_ROOT);
+	KV_WriteToStream(g_fileSystem->Open(targetMaterialFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
 
 	// also copy atlas file
 	if (g_fileSystem->FileExist(sourceAtlasFileName, SP_ROOT))
@@ -509,9 +509,8 @@ void CTextureCooker::ProcessTexture(TexInfo& textureInfo)
 bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 {
 	// load all properties
-	KeyValues kvs;
-
-	if (!kvs.LoadFromFile(confFileName, SP_ROOT))
+	KVSection kvs;
+	if (!KV_LoadFromFile(confFileName, SP_ROOT, &kvs))
 	{
 		MsgError("Failed to load '%s' file!\n", confFileName);
 		return false;

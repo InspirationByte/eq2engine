@@ -7,6 +7,7 @@
 
 #pragma once
 #include "core/IDkCore.h"
+#include "utils/KeyValues.h"
 
 class IEqCoreModule;
 
@@ -22,15 +23,13 @@ struct coreInterface_t
 class CDkCore : public IDkCore
 {
 public:
-	CDkCore();
-
 	bool					Init(const CoreAppInitParameters& initParams);
 	void					Shutdown();	// Shutdowns core
 
 	char*					GetApplicationName()  const;
 
 	// now configuration is global for all applications
-	KeyValues*				GetConfig()  const;
+	const KVSection&			GetConfig()  const;
 	const CoreDebugSettings&	GetDebugSettings() const { return m_debugSettings; }
 
 	bool					IsInitialized()  const;
@@ -53,7 +52,7 @@ private:
 	Array<CoreExceptionCallback>	m_exceptionCb{ PP_SL };
 
 	CoreDebugSettings				m_debugSettings;
-	KeyValues*						m_coreConfiguration;
+	KVSection						m_coreConfiguration;
 
 	EqString						m_szApplicationName;
 	EqString						m_szCurrentSessionUserName;

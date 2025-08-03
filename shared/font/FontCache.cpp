@@ -43,17 +43,15 @@ CEqFontCache::~CEqFontCache()
 bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 {
 	// load font resource list in mods directory
-	KeyValues kvs;
-	if(!kvs.LoadFromFile(filename, SP_MOD | SP_DATA))
+	KVSection kvs;
+	if(!KV_LoadFromFile(filename, SP_MOD | SP_DATA, &kvs))
 	{
 		MsgError("ERROR: Cannot open font description file \"%s\"!\n", filename);
 		return false;
 	}
 
-	const KVSection& rootSec = kvs.GetRootSection();
-
 	// enum font names
-	for(const KVSection& fontSec : rootSec.Keys())
+	for(const KVSection& fontSec : kvs.Keys())
 	{
 		if( !fontSec.IsSection() )
 		{
