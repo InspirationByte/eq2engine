@@ -247,7 +247,7 @@ bool DkPhysics::Init(int nSceneSize)
 	m_nSceneSize = nSceneSize;
 
 	KVSection surfParamsKvs;
-	if(!KV_LoadFromFile("scripts/SurfaceParams.def", -1, &surfParamsKvs))
+	if(!KV_LoadFromFile("scripts/SurfaceParams.def", -1, surfParamsKvs))
 	{
 		MsgError("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found\n");
 		CrashMsg("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found, Exiting.\n");

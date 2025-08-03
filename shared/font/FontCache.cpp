@@ -44,7 +44,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 {
 	// load font resource list in mods directory
 	KVSection kvs;
-	if(!KV_LoadFromFile(filename, SP_MOD | SP_DATA, &kvs))
+	if(!KV_LoadFromFile(filename, -1, kvs))
 	{
 		MsgError("ERROR: Cannot open font description file \"%s\"!\n", filename);
 		return false;

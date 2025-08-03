@@ -388,7 +388,7 @@ static void CookPackageTarget(const char* targetName)
 {
 	// load all properties
 	KVSection kvs;
-	if (!KV_LoadFromFile("PackageCooker.CONFIG", SP_ROOT, &kvs))
+	if (!KV_LoadFromFile("PackageCooker.CONFIG", SP_ROOT, kvs))
 	{
 		MsgError("Failed to load 'PackageCooker.CONFIG' file!\n");
 		return;
@@ -515,7 +515,7 @@ static void CookPackageTarget(const char* targetName)
 			{
 				// TODO: convert key-values file and store it (maybe uncompressed)
 				KVSection sectionFile;
-				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, &sectionFile))
+				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, sectionFile))
 				{
 					fileMemoryStream.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, 16 * 1024);
 					KV_WriteToStreamBinary(&fileMemoryStream, sectionFile);

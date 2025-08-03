@@ -315,7 +315,7 @@ bool CShaderCooker::ParseShaderExtensionInfo(const char* shaderDefFileName, cons
 	}
 
 	KVSection baseShaderRoot;
-	if (!KV_LoadFromFile(extShaderDefFileName, SP_ROOT, &baseShaderRoot))
+	if (!KV_LoadFromFile(extShaderDefFileName, SP_ROOT, baseShaderRoot))
 	{
 		MsgWarning("%s: unknown shader file '%s', check include paths\n", shaderDefFileName, sourceFileName.ToCString());
 		return false;
@@ -383,7 +383,7 @@ void CShaderCooker::SearchFolderForShaders(const char* wildcard)
 			fullShaderPath = fnmPathCombine(searchFolder, fileName);
 
 			KVSection rootSec;
-			if (!KV_LoadFromFile(fullShaderPath, SP_ROOT, &rootSec))
+			if (!KV_LoadFromFile(fullShaderPath, SP_ROOT, rootSec))
 				continue;
 
 			int shadersFound = 0;
@@ -1041,7 +1041,7 @@ bool CShaderCooker::Init(const char* confFileName, const char* targetName)
 {
 	// load all properties
 	KVSection kvs;
-	if (!KV_LoadFromFile(confFileName, SP_ROOT, &kvs))
+	if (!KV_LoadFromFile(confFileName, SP_ROOT, kvs))
 	{
 		MsgError("Failed to load '%s' file!\n", confFileName);
 		return false;
@@ -1137,7 +1137,7 @@ void CShaderCooker::Execute()
 	EqString crcFileName(EqString::Format("%s/shaders_crc.txt", m_targetProps.targetFolder.ToCString()));
 
 	// load CRC list, check for existing shader files, and skip if necessary
-	KV_LoadFromFile(crcFileName, SP_ROOT, &m_batchConfig.crcSec);
+	KV_LoadFromFile(crcFileName, SP_ROOT, m_batchConfig.crcSec);
 
 	// process shader files
 	

@@ -79,7 +79,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		if (!m_atlas)
 		{
 			KVSection atlRoot;
-			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &atlRoot))
+			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, atlRoot))
 			{
 				const KVSection* atlasSec = atlRoot["AtlasGroup"];
 				if (atlasSec)
@@ -95,7 +95,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		}
 
 		// load material file
-		if( KV_LoadFromFile(materialKVSFilename, materialSearchPath, &root))
+		if( KV_LoadFromFile(materialKVSFilename, materialSearchPath, root))
 		{
 			success = true;
 		}

@@ -370,7 +370,7 @@ void CInputCommandBinder::InitTouchZones()
 	m_touchZones.clear(true);
 
 	KVSection kvs;
-	if(!KV_LoadFromFile("resources/in_touchzones.res", -1, &kvs))
+	if(!KV_LoadFromFile("resources/in_touchzones.res", -1, kvs))
 		return;
 
 	const KVSection* zones = kvs.FindSection("zones");

@@ -252,7 +252,7 @@ void CLocalize::ParseLanguageFile(int langFileIdx, bool reload)
 
 	FixedArray<EqString, 2> currentTokens;
 
-	KV_Tokenizer(fileStart, fileSize, textFilePath, [&](int line, const char* dataPtr, const char* sig, va_list args) {
+	KV_Tokenizer(fileStart, fileSize, textFilePath, 1, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
 		{
 		case 't':   // text token

@@ -1146,7 +1146,7 @@ void CEGFGenerator::SetOutputFilename(const char* filename)
 bool CEGFGenerator::InitFromKeyValues(const char* filename)
 {
 	KVSection scriptFile;
-	if(KV_LoadFromFile(filename, -1, &scriptFile))
+	if(KV_LoadFromFile(filename, -1, scriptFile))
 	{
 		SetRefsPath(fnmPathStripName(filename));
 

@@ -82,7 +82,8 @@ void Buffer::ReadKeyValues(KVSection& kbase)
 	char* data = PPNew char[len];
 	ReadData(data, len);
 
-	KV_ParseBinary(data, len, &kbase);
+	CMemoryStream memstr((ubyte*)data, FS_OPEN_READ, len, PP_SL);
+	KV_ParseBinary(&memstr, kbase);
 
 	delete [] data;
 }

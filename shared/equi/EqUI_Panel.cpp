@@ -68,7 +68,7 @@ void Panel::Parse(const KVSection& sec )
 	if(m_windowControls)
 	{
 		KVSection winRes;
-		KV_LoadFromFile("resources/WindowControls.res", -1, &winRes);
+		KV_LoadFromFile("resources/WindowControls.res", -1, winRes);
 
 		// make child controls
 		for(const KVSection& childSec : winRes.Keys("child", KV_FLAG_SECTION))
@@ -216,7 +216,7 @@ void Container::Parse(const KVSection& sec)
 	if (sec.Get("file").GetValues(fileName))
 	{
 		KVSection kvExtFile;
-		KV_LoadFromFile("resources/" + fileName, SP_MOD | SP_DATA, &kvExtFile);
+		KV_LoadFromFile("resources/" + fileName, SP_MOD | SP_DATA, kvExtFile);
 
 		InitChildItems(kvExtFile);
 	}

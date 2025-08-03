@@ -874,7 +874,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 				else
 				{
 					KVSection scriptSec;
-					if(KV_LoadFromFile(fname, -1, &scriptSec))
+					if(KV_LoadFromFile(fname, -1, scriptSec))
 					{
 						// load all script data
 						const KVSection* pPair = scriptSec.FindSection("modelfilename");

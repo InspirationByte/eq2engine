@@ -141,7 +141,7 @@ void KVPairValue::SetFrom(const KVPairValue& from)
 		bValue = from.bValue;
 
 	//else if(type == KVPAIR_SECTION)
-	#pragma todo("clone the section")
+	// TODO: support section values for V3
 }
 
 // sets string value
@@ -1007,16 +1007,15 @@ KVKeyIterator KVKeyIterator::Init::end() const
 // KEYVALUES API Functions
 //---------------------------------------------------------------------------------------------------------
 
-KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine = 0);
-KVSection* KV_ParseSectionV3(const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine = 0);
+static bool KV_ParseTextV2(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
+static bool KV_ParseTextV3(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
 
-KVSection* KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine)
+bool KV_ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int nStartLine)
 {
 	if (bufferSize < 0)
 		bufferSize = strlen(pszBuffer);
 	
 	int version = 2;
-	KVSection* result = nullptr;
 	if(pszBuffer[0] == '$')
 	{
 		pszBuffer++;
@@ -1027,20 +1026,19 @@ KVSection* KV_ParseSection(const char* pszBuffer, int bufferSize, const char* ps
 		}
 
 		if(!strncmp("schema_kv3", lineStart, pszBuffer - lineStart))
-		{
 			version = 3;
-		}
 	}
 
+	bool result = false;
 	if(version == 3)
-		result = KV_ParseSectionV3(pszBuffer, bufferSize, pszFileName, pParseTo, nStartLine);
+		result = KV_ParseTextV3(pszBuffer, bufferSize, outSection, pszFileName, nStartLine);
 	else
-		result = KV_ParseSectionV2(pszBuffer, bufferSize, pszFileName, pParseTo, nStartLine);
+		result = KV_ParseTextV2(pszBuffer, bufferSize, outSection, pszFileName, nStartLine);
 
 	return result;
 }
 
-bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc)
+bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc)
 {
 	enum EParserMode
 	{
@@ -1055,7 +1053,7 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 	};
 
 	EParserMode mode = MODE_DEFAULT;
-	int curLine = 1;
+	int curLine = startLine + 1;
 	int lastModeStartLine = 0;
 
 	char* firstLetter = nullptr;
@@ -1246,19 +1244,12 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 //
 // Parses the KeyValues section string buffer to the 'pParseTo'
 //
-KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine)
+static bool KV_ParseTextV2(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine)
 {
 	FixedArray<KVSection*, KV_MAX_SECTION_DEPTH> sectionStack;
 
 	// add root section to the stack
-	{
-		KVSection* rootSection = pParseTo;
-
-		if (!rootSection)
-			rootSection = PPNew KVSection;
-
-		sectionStack.append(rootSection);
-	}
+	sectionStack.append(&outSection);
 
 	KVSection* currentSection = nullptr;
 
@@ -1274,7 +1265,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 	const char* multiLineStringStart = nullptr;
 	int multiLineSectionDepth = 0;
 
-	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, [&](int line, const char* dataPtr, const char* sig, va_list args) {
+	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, startLine, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
 		{
 			case 'c':
@@ -1379,25 +1370,18 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 	});
 
 	ASSERT(sectionStack.numElem() == 1);
-	return sectionStack.front();
+	return true;
 }
 
 //
 // Parses the V3 format of KeyValues into pParseTo
 //
-KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char* pszFileName, KVSection* pParseTo, int nStartLine )
+static bool KV_ParseTextV3(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine)
 {
 	FixedArray<KVSection*, KV_MAX_SECTION_DEPTH> sectionStack;
 
 	// add root section to the stack
-	{
-		KVSection* rootSection = pParseTo;
-
-		if (!rootSection)
-			rootSection = PPNew KVSection;
-
-		sectionStack.append(rootSection);
-	}
+	sectionStack.append(&outSection);
 
 	KVSection* currentSection = nullptr;
 
@@ -1418,7 +1402,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 	const char* multiLineStringStart = nullptr;
 	int multiLineSectionDepth = 0;
 
-	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, [&](int line, const char* dataPtr, const char* sig, va_list args) {
+	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, startLine, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
 		{
 			case 'c':
@@ -1604,10 +1588,10 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 //
 // Loads file and parses it as KeyValues into the 'pParseTo'
 //
-KVSection* KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo)
+bool KV_LoadFromStream(IFileStream* stream, KVSection& outSection)
 {
 	if (!stream)
-		return nullptr;
+		return false;
 
 	CMemoryStream memBuffer(PPSourceLine::Make(stream->GetName(), 0));
 	if (stream->GetType() == FS_TYPE_MEMORY)
@@ -1623,51 +1607,45 @@ KVSection* KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo)
 	}
 
 	int fileSize = memBuffer.GetSize();
-	const char* _buffer = (const char*)memBuffer.GetBasePointer();
-	ushort byteordermark = *((ushort*)_buffer);
+	const char* _bufferStart = (const char*)memBuffer.GetBasePointer();
+	ushort byteordermark = *((ushort*)_bufferStart);
 
-	bool isUTF8 = false;
 	bool isBinary = false;
-
 	if (byteordermark == 0xbbef)
 	{
 		// skip this three byte bom
-		_buffer += 3;
+		_bufferStart += 3;
 		fileSize -= 3;
-		isUTF8 = true;
+		outSection.unicode = true;
 	}
 	else if (byteordermark == 0xfeff)
 	{
 		ASSERT(!"Only UTF-8 keyvalues supported!!!");
-		return nullptr;
+		return false;
 	}
 	else
 	{
-		uint ident = *((uint*)_buffer);
+		uint ident = *((uint*)_bufferStart);
 
 		// it's assuming UTF8 when using binary format
 		if (ident == KV_IDENT_BINARY)
 		{
 			isBinary = true;
-			isUTF8 = true;
+			outSection.unicode = true;
 		}
 	}
 
 	// load as stream
-	KVSection* pBase = nullptr;
-
+	bool result = false;
 	if (isBinary)
-		pBase = KV_ParseBinary(_buffer, fileSize, pParseTo);
+		result = KV_ParseBinary(&memBuffer, outSection);
 	else
-		pBase = KV_ParseSection(_buffer, fileSize, stream->GetName(), pParseTo, 0);
+		result = KV_ParseText(_bufferStart, fileSize, outSection, stream->GetName(), 0);
 
-	if(pBase)
-		pBase->unicode = isUTF8;
-
-	return pBase;
+	return result;
 }
 
-KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection* pParseTo )
+bool KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection& outSection )
 {
 	CMemoryStream buffer(PPSourceLine::Make(pszFileName, 0));
 	{
@@ -1675,18 +1653,18 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 		if (!file)
 		{
 			DevMsg(1, "Can't open key-values file '%s'\n", pszFileName);
-			return nullptr;
+			return false;
 		}
 		buffer.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, file->GetSize());
 		buffer.AppendStream(file);
 		buffer.Seek(0, FS_SEEK_SET);
 	}
 
-	KVSection* pBase = KV_LoadFromStream(&buffer, pParseTo);
-	if (pBase)
-		pBase->SetName(fnmPathStripPath(pszFileName));
+	const bool result = KV_LoadFromStream(&buffer, outSection);
+	if (result)
+		outSection.SetName(fnmPathStripPath(pszFileName));
 
-	return pBase;
+	return result;
 }
 
 
@@ -1725,13 +1703,7 @@ struct kvbin_hdr
 	// - nested key bases
 };
 
-KVSection* KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo)
-{
-	CMemoryStream memstr((ubyte*)pszBuffer, FS_OPEN_READ, bufferSize, PP_SL);
-	return KV_ParseBinary(&memstr, pParseTo);
-}
-
-void KV_ReadBinaryValue(IFileStream* stream, KVSection* addTo)
+static void KV_ReadBinaryValue(IFileStream* stream, KVSection& addTo)
 {
 	kvbin_value_t binValue;
 	stream->Read(&binValue, 1, sizeof(binValue));
@@ -1744,31 +1716,32 @@ void KV_ReadBinaryValue(IFileStream* stream, KVSection* addTo)
 		stream->Read(strVal, 1, binValue.nValue);
 		strVal[binValue.nValue] = '\0';
 
-		addTo->AddValue(strVal);
+		addTo.AddValue(strVal);
 	}
 	else if(binValue.type == KVPAIR_INT)
 	{
-		addTo->AddValue(binValue.nValue);
+		addTo.AddValue(binValue.nValue);
 	}
 	else if(binValue.type == KVPAIR_FLOAT)
 	{
-		addTo->AddValue(binValue.fValue);
+		addTo.AddValue(binValue.fValue);
 	}
 	else if(binValue.type == KVPAIR_BOOL)
 	{
-		addTo->AddValue(binValue.bValue);
+		addTo.AddValue(binValue.bValue);
 	}
 	else if(binValue.type == KVPAIR_SECTION)
 	{
-		KVSection* parsed = KV_ParseBinary(stream, nullptr);
-
-		if(parsed)
-			addTo->AddValue(parsed);
+		KVSection* parsed = PPNew KVSection();
+		if (parsed && KV_ParseBinary(stream, *parsed))
+			addTo.AddValue(parsed);
+		else
+			delete parsed;
 	}
 }
 
 // reads binary keybase
-KVSection* KV_ParseBinary(IFileStream* stream, KVSection* pParseTo)
+bool KV_ParseBinary(IFileStream* stream, KVSection& outSection)
 {
 	kvbin_hdr binBase;
 	stream->Read(&binBase, 1, sizeof(binBase));
@@ -1776,36 +1749,34 @@ KVSection* KV_ParseBinary(IFileStream* stream, KVSection* pParseTo)
 	if(binBase.ident != KV_IDENT_BINARY)
 	{
 		MsgError("KV_ReadBinaryBase - invalid header\n");
-		return nullptr;
+		return false;
 	}
-
-	if(!pParseTo)
-		pParseTo = PPNew KVSection();
 
 	// read name after keybase header
 	char* nameTemp = (char*)stackalloc(binBase.nameLen+1);
 	stream->Read(nameTemp, 1, binBase.nameLen);
 	nameTemp[binBase.nameLen] = '\0';
 
-	pParseTo->SetName(nameTemp);
-	pParseTo->type = (EKVPairType)binBase.type;
+	outSection.SetName(nameTemp);
+	outSection.type = (EKVPairType)binBase.type;
 
-	pParseTo->unicode = true; // always as unicode UTF8
+	outSection.unicode = true; // binary is always as unicode UTF8
 	
 	// read values if we have any
 	for(int i = 0; i < binBase.valueCount; i++)
-	{
-		KV_ReadBinaryValue(stream, pParseTo);
-	}
+		KV_ReadBinaryValue(stream, outSection);
 
 	// read nested keybases as well
 	for(int i = 0; i < binBase.keyCount; i++)
 	{
-		KVSection* parsed = KV_ParseBinary(stream, nullptr);
-		pParseTo->AddSection(parsed);
+		KVSection* parsed = PPNew KVSection();
+		if (parsed && KV_ParseBinary(stream, *parsed))
+			outSection.AddSection(parsed);
+		else
+			delete parsed;
 	}
 
-	return pParseTo;
+	return true;
 }
 
 void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base);

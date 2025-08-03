@@ -428,20 +428,20 @@ enum EKVTokenState
 };
 
 using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
-bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc);
+bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc);
 
-KVSection*		KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo = nullptr);
-KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
+bool			KV_LoadFromStream(IFileStream* stream, KVSection& outSection);
+bool			KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection& outSection);
 
-KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = nullptr, KVSection* pParseTo = nullptr, int nStartLine = 0);
-KVSection*		KV_ParseBinary(IFileStream* stream, KVSection* pParseTo = nullptr);
-KVSection*		KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo = nullptr);
+bool			KV_ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName = nullptr, int startLine = 1);
+bool			KV_ParseBinary(IFileStream* stream, KVSection& outSection);
 
 void			KV_WriteToStream(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
 void			KV_WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
 void			KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base);
 
 void			KV_PrintSection(const KVSection& base);
+
 
 //-----------------------------------------------------------------------------------------------------
 // KeyValues value helpers
@@ -707,8 +707,8 @@ struct DescFieldEmbeddedArray : public KVDescFieldInfo
 			Array<ITEM>& arrayRef = *reinterpret_cast<T*>(outPtr);
 
 			arrayRef.reserve(arrayRef.numElem() + sec.KeyCount());
-			for (const KVSection* embSec : sec.Keys())
-				KV_ParseDesc(arrayRef.append(), *embSec);
+			for (const KVSection& embSec : sec.Keys())
+				KV_ParseDesc(arrayRef.append(), embSec);
 		}
 		return true;
 	}

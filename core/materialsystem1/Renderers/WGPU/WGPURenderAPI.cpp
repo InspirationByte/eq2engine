@@ -145,7 +145,7 @@ int CWGPURenderAPI::LoadShaderPackage(const char* filename)
 	KVSection shaderInfoKvs;
 	{
 		IFileStreamPtr file = shaderPackFile->Open("ShaderInfo", FS_OPEN_READ);
-		if (!KV_LoadFromStream(file, &shaderInfoKvs))
+		if (!KV_LoadFromStream(file, shaderInfoKvs))
 		{
 			Msg("No ShaderInfo in file %s\n", filename);
 			return 0;

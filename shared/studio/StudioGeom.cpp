@@ -695,7 +695,7 @@ int	CEqStudioGeom::GetSkinIdx(const char* name) const
 bool CEqStudioGeom::LoadSkinDescFile()
 {
 	KVSection kvs;
-	if (!KV_LoadFromFile(fnmPathApplyExt(m_name, s_egfSkinExt), SP_MOD, &kvs))
+	if (!KV_LoadFromFile(fnmPathApplyExt(m_name, s_egfSkinExt), SP_MOD, kvs))
 		return false;
 
 	const int firstMaterial = m_materials.numElem();

@@ -273,7 +273,7 @@ void CEqAudioSystemAL::InitEffects()
 	}
 
 	KVSection kvs;
-	if (!KV_LoadFromFile(effectFilePath, -1, &kvs))
+	if (!KV_LoadFromFile(effectFilePath, -1, kvs))
 	{
 		MsgError("InitEFX: Can't init EFX from '%s'\n", effectFilePath);
 		return;

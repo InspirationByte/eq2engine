@@ -407,7 +407,7 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 {
 	// try to load source material file
 	KVSection kvs;
-	if (!KV_LoadFromFile(materialFileName, SP_ROOT, &kvs))
+	if (!KV_LoadFromFile(materialFileName, SP_ROOT, kvs))
 		return;
 
 	EqString localMaterialFileName = materialFileName + m_targetProps.sourceMaterialPath.Length();
@@ -510,7 +510,7 @@ bool CTextureCooker::Init(const char* confFileName, const char* targetName)
 {
 	// load all properties
 	KVSection kvs;
-	if (!KV_LoadFromFile(confFileName, SP_ROOT, &kvs))
+	if (!KV_LoadFromFile(confFileName, SP_ROOT, kvs))
 	{
 		MsgError("Failed to load '%s' file!\n", confFileName);
 		return false;
@@ -621,7 +621,7 @@ void CTextureCooker::Execute()
 	EqString crcFileName(EqString::Format("%s/cook_%s_crc.txt", m_targetProps.sourceMaterialPath.ToCString(), m_targetProps.targetCompression.ToCString()));
 
 	// load CRC list, check for existing DDS files, and skip if necessary
-	KV_LoadFromFile(crcFileName, SP_ROOT, &m_batchConfig.crcSec);
+	KV_LoadFromFile(crcFileName, SP_ROOT, m_batchConfig.crcSec);
 
 	// do conversion
 	for (int i = 0; i < m_textureList.numElem(); i++)

@@ -657,7 +657,7 @@ void CSoundEmitterSystem::LoadScriptBank(const char* scriptFileName)
 	const uint nameHash = StringId(scriptFileName, true);
 
 	KVSection kvs;
-	if(!KV_LoadFromFile(scriptFileName, -1, &kvs))
+	if(!KV_LoadFromFile(scriptFileName, -1, kvs))
 	{
 		MsgError("*** Error! Failed to open sound script bank file '%s'!\n", scriptFileName);
 		return;

@@ -475,7 +475,7 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 void ProcessAtlasFile(const char* atlasSrcFileName, const char* materialsPath)
 {
 	KVSection kvs;
-	if( !KV_LoadFromFile(atlasSrcFileName, -1, &kvs) )
+	if( !KV_LoadFromFile(atlasSrcFileName, -1, kvs) )
 	{
 		MsgError("Can't open '%s'\n", atlasSrcFileName);
 		return;

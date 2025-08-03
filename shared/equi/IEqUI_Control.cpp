@@ -350,7 +350,7 @@ void IUIControl::InitChildItems(const KVSection& sec, bool keepElements)
 		if (!childClass.CompareCaseIns("file"))
 		{
 			KVSection section;
-			if (!KV_LoadFromFile(childName, SP_MOD, &section))
+			if (!KV_LoadFromFile(childName, SP_MOD, section))
 			{
 				MsgWarning("EqUI warning: file %s requested by element %s not found\n", childName.ToCString(), m_name.ToCString());
 				continue;

@@ -188,11 +188,11 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	EqString appConfigName = initParams.appConfigName ? initParams.appConfigName : "E2.CONFIG";
 
 	// try different locations of E2.CONFIG
-	bool eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, &m_coreConfiguration);
+	bool eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, m_coreConfiguration);
 	if (!eqConfigFound)
 	{
 		appConfigName = "../" + appConfigName;
-		eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, &m_coreConfiguration);
+		eqConfigFound = KV_LoadFromFile(appConfigName, SP_ROOT, m_coreConfiguration);
 		g_fileSystem->SetBasePath(".."); // little hack
 	}
 

@@ -65,7 +65,7 @@ TEST(KEYVALUES_TESTS, DescParser)
 
 	KVSection& embeddedSec = section.CreateSection("embedded");
 	{
-		KVSection& flagsSec = *embeddedSec.CreateSection("embeddedFlags");
+		KVSection& flagsSec = embeddedSec.CreateSection("embeddedFlags");
 		flagsSec.AddValue("flag1");
 		flagsSec.AddValue("flag3");
 	}
@@ -145,14 +145,14 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 			}
 		}
 
-		KV_WriteToStream(&memStreamText, &section);
-		KV_WriteToStreamBinary(&memStreamBin, &section);
+		KV_WriteToStream(&memStreamText, section);
+		KV_WriteToStreamBinary(&memStreamBin, section);
 	}
 
 	// TEST: Deserialize text stream
 	{
 		KVSection deserSection;
-		KV_LoadFromStream(&memStreamText, &deserSection);
+		KV_LoadFromStream(&memStreamText, deserSection);
 
 		GeomInstanceDef testDesc;
 		KV_ParseDesc(testDesc, deserSection);
@@ -171,7 +171,7 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 	// TEST: Deserialize binary stream
 	{
 		KVSection deserSection;
-		KV_LoadFromStream(&memStreamBin, &deserSection);
+		KV_LoadFromStream(&memStreamBin, deserSection);
 
 		GeomInstanceDef testDesc;
 		KV_ParseDesc(testDesc, deserSection);

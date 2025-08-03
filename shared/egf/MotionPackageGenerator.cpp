@@ -1082,7 +1082,7 @@ void CMotionPackageGenerator::MakeDefaultPoseAnimation()
 bool CMotionPackageGenerator::CompileScript(const char* filename)
 {
 	KVSection kvs;
-	if (!KV_LoadFromFile(filename, -1, &kvs))
+	if (!KV_LoadFromFile(filename, -1, kvs))
 	{
 		MsgError("Cannot open %s!\n", filename);
 		return false;

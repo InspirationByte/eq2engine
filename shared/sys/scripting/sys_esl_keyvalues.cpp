@@ -103,7 +103,7 @@ public:
 
 	bool LoadFile(const char* pszFileName, int nSearchFlags)
 	{
-		return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != nullptr;
+		return KV_LoadFromFile(pszFileName, nSearchFlags, m_root);
 	}
 
 	bool SaveFile(const char* pszFileName, int nSearchFlags)
