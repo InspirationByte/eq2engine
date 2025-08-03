@@ -50,10 +50,10 @@ struct KVDescFlagInfo
 
 //-----------------------
 
-#define DECLARE_KEYVALUES_FLAGS_DESC(enumDescName) \
-	struct enumDescName { \
-		static ArrayCRef<KVDescFlagInfo> GetFlags(); \
-	};
+template<typename EnumType>
+struct KVFlagsEnumDesc {
+	static ArrayCRef<KVDescFlagInfo> GetFlags();
+};
 
 // See KeyValues.h for next defines:
 // 

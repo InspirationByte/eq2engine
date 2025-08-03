@@ -766,13 +766,13 @@ struct DescFieldFlags : public KVDescFieldInfo
 #define KV_DESC_ARRAY_EMBEDDED(name) \
 	kvdetail::DescFieldEmbeddedArray<decltype(DescType::name)>{offsetOf(DescType, name), #name},
 
-#define KV_DESC_FLAGS(name, flagsType) \
-	kvdetail::DescFieldFlags<decltype(DescType::name), flagsType>{offsetOf(DescType, name), #name},
+#define KV_DESC_FLAGS(name, enumType) \
+	kvdetail::DescFieldFlags<decltype(DescType::name), KVFlagsEnumDesc<enumType>>{offsetOf(DescType, name), #name},
 
 //------------------
 
-#define BEGIN_KEYVALUES_FLAGS_DESC(enumDescName) \
-	ArrayCRef<KVDescFlagInfo> enumDescName::GetFlags() { \
+#define BEGIN_KEYVALUES_FLAGS_DESC(enumType) \
+	ArrayCRef<KVDescFlagInfo> KVFlagsEnumDesc<enumType>::GetFlags() { \
 		static KVDescFlagInfo descFlags[] = {
 
 #define END_KEYVALUES_FLAGS_DESC \

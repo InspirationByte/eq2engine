@@ -14,9 +14,7 @@ enum ETestFlags : int
 	TEST_FLAG4 = (1 << 3),
 };
 
-DECLARE_KEYVALUES_FLAGS_DESC(ETestFlagsDesc)
-
-BEGIN_KEYVALUES_FLAGS_DESC(ETestFlagsDesc)
+BEGIN_KEYVALUES_FLAGS_DESC(ETestFlags)
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG1, "flag1")
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG2, "flag2")
 	KV_FLAG_DESC(ETestFlags::TEST_FLAG3, "flag3")
@@ -26,12 +24,11 @@ END_KEYVALUES_FLAGS_DESC
 struct EmbeddedDef
 {
 	DEFINE_KEYVALUES_DESC();
-
 	int embeddedFlags{ TEST_FLAGS_NONE };
 };
 
 BEGIN_KEYVALUES_DESC(EmbeddedDef)
-	KV_DESC_FLAGS(embeddedFlags, ETestFlagsDesc)
+	KV_DESC_FLAGS(embeddedFlags, ETestFlags)
 END_KEYVALUES_DESC
 
 struct GeomInstanceDef
