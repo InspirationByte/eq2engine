@@ -1779,7 +1779,7 @@ bool KV_ParseBinary(IFileStream* stream, KVSection& outSection)
 	return true;
 }
 
-void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base);
+void KV_WriteBinary(IFileStream* outStream, const KVSection& base);
 
 // writes KV value to the binary stream
 void KV_WriteValueBinary(IFileStream* outStream, const KVPairValue& value)
@@ -1807,12 +1807,12 @@ void KV_WriteValueBinary(IFileStream* outStream, const KVPairValue& value)
 	else if(binValue.type == KVPAIR_SECTION)
 	{
 		// store section after the binary
-		KV_WriteToStreamBinary(outStream, *value.section);
+		KV_WriteBinary(outStream, *value.section);
 	}
 }
 
 // writes keybase to the binary stream
-void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base)
+void KV_WriteBinary(IFileStream* outStream, const KVSection& base)
 {
 	kvbin_hdr binBase;
 	memset(&binBase, 0, sizeof(binBase));
@@ -1835,7 +1835,7 @@ void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base)
 	
 	// then write each subkey of this key recursively... pretty simple, huh?
 	for(int i = 0; i < binBase.keyCount; i++)
-		KV_WriteToStreamBinary(outStream, *base.keys[i]);
+		KV_WriteBinary(outStream, *base.keys[i]);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -2021,7 +2021,7 @@ static void KV_WritePairValue(IFileStream* out, const KVPairValue& val, int dept
 //
 // Writes the pairbase recursively to the virtual stream
 //
-void KV_WriteToStream(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty)
+void KV_WriteText(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty)
 {
 	ASSERT(outStream != nullptr);
 
@@ -2075,7 +2075,7 @@ void KV_WriteToStream(IFileStream* outStream, const KVSection& section, int nTab
 			}
 			outStream->Print("%c\n", KV_SECTION_BEGIN);
 
-			KV_WriteToStream(outStream, *key, nTabs + 1, pretty);
+			KV_WriteText(outStream, *key, nTabs + 1, pretty);
 
 			if(pretty)
 				outStream->Write(tabs, 1, nTabs);
@@ -2185,7 +2185,7 @@ void KV_WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nT
 void KV_PrintSection(const KVSection& base)
 {
 	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
-	KV_WriteToStream(&stream, base, 0, true);
+	KV_WriteText(&stream, base, 0, true);
 
 	char nullChar = '\0';
 	stream.Write(&nullChar, 1, 1);

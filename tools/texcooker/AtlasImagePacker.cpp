@@ -460,8 +460,8 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	// save image as DDS, or TGA ???
 	if(destImage.SaveImage(imageFileName, SP_ROOT))
 	{
-		KV_WriteToStream(g_fileSystem->Open(atlasFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
-		KV_WriteToStream(g_fileSystem->Open(matFileName, FS_OPEN_WRITE, SP_ROOT), materialKvs);
+		KV_WriteText(g_fileSystem->Open(atlasFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
+		KV_WriteText(g_fileSystem->Open(matFileName, FS_OPEN_WRITE, SP_ROOT), materialKvs);
 	}
 	else
 	{

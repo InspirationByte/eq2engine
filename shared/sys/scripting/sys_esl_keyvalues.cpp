@@ -112,7 +112,7 @@ public:
 
 		if (pStream)
 		{
-			KV_WriteToStream(pStream, m_root, 0, true);
+			KV_WriteText(pStream, m_root, 0, true);
 		}
 		else
 		{

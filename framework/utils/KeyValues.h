@@ -436,9 +436,8 @@ bool			KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection& ou
 bool			KV_ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName = nullptr, int startLine = 1);
 bool			KV_ParseBinary(IFileStream* stream, KVSection& outSection);
 
-void			KV_WriteToStream(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
-void			KV_WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
-void			KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base);
+void			KV_WriteText(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
+void			KV_WriteBinary(IFileStream* outStream, const KVSection& base);
 
 void			KV_PrintSection(const KVSection& base);
 

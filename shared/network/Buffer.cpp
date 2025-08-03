@@ -66,7 +66,7 @@ void Buffer::WriteWString(const wchar_t* pszStr)
 void Buffer::WriteKeyValues(const KVSection& kbase)
 {
 	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
-	KV_WriteToStreamBinary(&stream, kbase);
+	KV_WriteBinary(&stream, kbase);
 
 	char zerochar = '\0';
 	stream.Write(&zerochar, 1, 1);

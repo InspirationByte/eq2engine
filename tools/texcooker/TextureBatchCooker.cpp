@@ -438,7 +438,7 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	g_fileSystem->MakeDir(fnmPathStripName(targetMaterialFileName), SP_ROOT);
 
 	// save material file
-	KV_WriteToStream(g_fileSystem->Open(targetMaterialFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
+	KV_WriteText(g_fileSystem->Open(targetMaterialFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
 
 	// also copy atlas file
 	if (g_fileSystem->FileExist(sourceAtlasFileName, SP_ROOT))
@@ -636,7 +636,7 @@ void CTextureCooker::Execute()
 
 	if (pStream)
 	{
-		KV_WriteToStream(pStream, m_batchConfig.newCRCSec, 0, true);
+		KV_WriteText(pStream, m_batchConfig.newCRCSec, 0, true);
 	}
 }
 
