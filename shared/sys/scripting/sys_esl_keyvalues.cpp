@@ -112,7 +112,7 @@ public:
 
 		if (pStream)
 		{
-			KV_WriteText(pStream, m_root, 0, true);
+			KeyValues::WriteText(pStream, m_root, 0, true);
 		}
 		else
 		{
@@ -134,6 +134,17 @@ EQSCRIPT_TYPE_BEGIN(LuaKeyValues)
 	EQSCRIPT_BIND_FUNC(GetRoot)
 	EQSCRIPT_BIND_FUNC(Reset)
 EQSCRIPT_TYPE_END
+
+static void KV_PrintSection(const KVSection& base)
+{
+	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
+	KeyValues::WriteText(&stream, base, 0, true);
+
+	char nullChar = '\0';
+	stream.Write(&nullChar, 1, 1);
+
+	Msg("%s\n", stream.GetBasePointer());
+}
 
 bool eslSysKeyValuesInit(const esl::ScriptState& state)
 {

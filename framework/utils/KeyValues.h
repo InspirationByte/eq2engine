@@ -407,44 +407,65 @@ struct KVSection
 // KEYVALUES API Functions
 //---------------------------------------------------------------------------------------------------------
 
-/*
-	KV parse token function callback
-		signature might be:
-			c  <string>	- default mode character parsed
-			s+ <int>	- section depth increase
-			s- <int>	- section depth decrease
-			b			- break
-			t  <string>	- text token
-			u			- unquoted text token character
-*/
-
-enum EKVTokenState
+class KeyValues
 {
-	KV_PARSE_ERROR = -1,
-	KV_PARSE_RESUME = 0,
-	KV_PARSE_SKIP,
+public:
+	enum EKVTokenState
+	{
+		KV_PARSE_ERROR = -1,
+		KV_PARSE_RESUME = 0,
+		KV_PARSE_SKIP,
 
-	KV_PARSE_BREAK_TOKEN,	// for unquoted strings
+		KV_PARSE_BREAK_TOKEN,	// for unquoted strings
+	};
+
+	using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
+
+	//	KV parse token function
+	//	callback signature might be:
+	//		c  <string>	- default mode character parsed
+	//		s+ <int>	- section depth increase
+	//		s- <int>	- section depth decrease
+	//		b			- break
+	//		t  <string>	- text token
+	//		u			- unquoted text token character
+	//
+	static bool	Tokenizer(const char* buffer, int bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc);
+
+	static bool	Parse(IFileStream* stream, KVSection& outSection);
+	static bool	ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName = nullptr, int startLine = 1);
+	static bool	ParseBinary(IFileStream* stream, KVSection& outSection);
+
+	template<typename T>
+	static bool ParseDesc(T& descData, const KVSection& section);
+
+	static void	WriteText(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
+	static void	WriteBinary(IFileStream* outStream, const KVSection& base);
+
+protected:
+	static bool ParseTextV2(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
+	static bool ParseTextV3(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName, int startLine);
+	static void ReadBinaryValue(IFileStream* stream, KVSection& addTo);
+
+	static EKVPairType ResolvePairType(const char* name);
+	static int	ReadProcessString(const char* pszStr, char* dest, int maxLength = COM_INT_MAX);
+	static int	CountSpecialSymbols(const char* pszStr);
+	static void PreProcessStringValue(char* out, const char* pszStr);
+
+	static void WriteSelectQuotedString(IFileStream* out, const char* pszString);
+	static void WriteValue(IFileStream* out, const KVPairValue& val, int depth);
+	static void WriteValueV3(IFileStream* outStream, const KVSection& key, int nTabs);
+	static void WriteValueBinary(IFileStream* outStream, const KVPairValue& value);
+	static void WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty);
 };
 
-using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
-bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, int startLine, const KVTokenFunc tokenFunc);
-
-bool			KV_LoadFromStream(IFileStream* stream, KVSection& outSection);
-bool			KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection& outSection);
-
-bool			KV_ParseText(const char* pszBuffer, int bufferSize, KVSection& outSection, const char* pszFileName = nullptr, int startLine = 1);
-bool			KV_ParseBinary(IFileStream* stream, KVSection& outSection);
-
-void			KV_WriteText(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
-void			KV_WriteBinary(IFileStream* outStream, const KVSection& base);
-
-void			KV_PrintSection(const KVSection& base);
-
 
 //-----------------------------------------------------------------------------------------------------
-// KeyValues value helpers
+// KeyValues helpers
 //-----------------------------------------------------------------------------------------------------
+
+// DEPRECATED
+bool			KV_LoadFromFile(const char* pszFileName, int nSearchFlags, KVSection& outSection);
 
 // DEPRECATED for direct use. Use KVSection::GetValues / KVSection::GetValuesAt
 const char*		KV_GetValueString(const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
@@ -654,7 +675,7 @@ struct DescFieldEmbedded : public KVDescFieldInfo
 	DescFieldEmbedded(int offset, const char* name) : KVDescFieldInfo(offset, name, &Parse) {}
 	static bool Parse(const KVSection& section, const char* name, void* outPtr)
 	{
-		return KV_ParseDesc<T>(*reinterpret_cast<T*>(outPtr), section.Get(name));
+		return KeyValues::ParseDesc<T>(*reinterpret_cast<T*>(outPtr), section.Get(name));
 	}
 };
 
@@ -698,7 +719,7 @@ struct DescFieldEmbeddedArray : public KVDescFieldInfo
 		{
 			T& arrayRef = *reinterpret_cast<T*>(outPtr);
 			for (int i = 0; i < min(static_cast<int>(CArrayLenGetter<T>::len), sec.KeyCount()); ++i)
-				KV_ParseDesc(arrayRef[i], *sec.KeyAt(i));
+				KeyValues::ParseDesc(arrayRef[i], *sec.KeyAt(i));
 		}
 		else
 		{
@@ -707,7 +728,7 @@ struct DescFieldEmbeddedArray : public KVDescFieldInfo
 
 			arrayRef.reserve(arrayRef.numElem() + sec.KeyCount());
 			for (const KVSection& embSec : sec.Keys())
-				KV_ParseDesc(arrayRef.append(), embSec);
+				KeyValues::ParseDesc(arrayRef.append(), embSec);
 		}
 		return true;
 	}
@@ -739,6 +760,16 @@ struct DescFieldFlags : public KVDescFieldInfo
 	}
 };
 } // namespace kvdetail
+
+template<typename T>
+inline bool KeyValues::ParseDesc(T& descData, const KVSection& section)
+{
+	using Desc = typename T::Desc;
+	for (const KVDescFieldInfo& info : Desc::GetFields())
+		info.parseFunc(section, info.name, reinterpret_cast<ubyte*>(&descData) + info.offset);
+	return true;
+}
+
 
 #define BEGIN_KEYVALUES_DESC_TYPE(classname, descName) \
 	const char* descName::GetTypeName() { return #classname; } \

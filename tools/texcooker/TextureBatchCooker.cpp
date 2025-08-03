@@ -438,7 +438,7 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	g_fileSystem->MakeDir(fnmPathStripName(targetMaterialFileName), SP_ROOT);
 
 	// save material file
-	KV_WriteText(g_fileSystem->Open(targetMaterialFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
+	KeyValues::WriteText(g_fileSystem->Open(targetMaterialFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
 
 	// also copy atlas file
 	if (g_fileSystem->FileExist(sourceAtlasFileName, SP_ROOT))
@@ -633,11 +633,8 @@ void CTextureCooker::Execute()
 
 	// save CRC list file
 	IFileStreamPtr pStream = g_fileSystem->Open(crcFileName, FS_OPEN_WRITE, SP_ROOT);
-
 	if (pStream)
-	{
-		KV_WriteText(pStream, m_batchConfig.newCRCSec, 0, true);
-	}
+		KeyValues::WriteText(pStream, m_batchConfig.newCRCSec);
 }
 
 void CookTarget(const char* pszTargetName)

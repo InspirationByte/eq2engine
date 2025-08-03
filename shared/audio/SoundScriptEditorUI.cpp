@@ -1729,7 +1729,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					SerializeNodesToKeyValues(soundSec);
 
 					CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
-					KV_WriteText(&stream, clipboardSec, 0, true);
+					KeyValues::WriteText(&stream, clipboardSec, 0, true);
 
 					const char nullChar = '\0';
 					stream.Write(&nullChar, 1, 1);

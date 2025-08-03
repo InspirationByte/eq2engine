@@ -518,7 +518,7 @@ static void CookPackageTarget(const char* targetName)
 				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, sectionFile))
 				{
 					fileMemoryStream.Open(nullptr, FS_OPEN_WRITE | FS_OPEN_READ, 16 * 1024);
-					KV_WriteBinary(&fileMemoryStream, sectionFile);
+					KeyValues::WriteBinary(&fileMemoryStream, sectionFile);
 
 					MsgInfo("Converted key-values file to binary: %s\n", fileInfo.fileName.ToCString());
 					loadRawFile = false;

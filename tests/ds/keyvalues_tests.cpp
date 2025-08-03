@@ -90,7 +90,7 @@ TEST(KEYVALUES_TESTS, DescParser)
 	}
 
 	GeomInstanceDef testDesc;
-	KV_ParseDesc(testDesc, section);
+	KeyValues::ParseDesc(testDesc, section);
 
 	EXPECT_EQ(testDesc.castShadow, false);
 	EXPECT_EQ(testDesc.staticShadowmap, true);
@@ -142,17 +142,17 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 			}
 		}
 
-		KV_WriteText(&memStreamText, section);
-		KV_WriteBinary(&memStreamBin, section);
+		KeyValues::WriteText(&memStreamText, section);
+		KeyValues::WriteBinary(&memStreamBin, section);
 	}
 
 	// TEST: Deserialize text stream
 	{
 		KVSection deserSection;
-		KV_LoadFromStream(&memStreamText, deserSection);
+		KeyValues::Parse(&memStreamText, deserSection);
 
 		GeomInstanceDef testDesc;
-		KV_ParseDesc(testDesc, deserSection);
+		KeyValues::ParseDesc(testDesc, deserSection);
 
 		EXPECT_EQ(testDesc.castShadow, false);
 		EXPECT_EQ(testDesc.staticShadowmap, true);
@@ -168,10 +168,10 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 	// TEST: Deserialize binary stream
 	{
 		KVSection deserSection;
-		KV_LoadFromStream(&memStreamBin, deserSection);
+		KeyValues::Parse(&memStreamBin, deserSection);
 
 		GeomInstanceDef testDesc;
-		KV_ParseDesc(testDesc, deserSection);
+		KeyValues::ParseDesc(testDesc, deserSection);
 
 		EXPECT_EQ(testDesc.castShadow, false);
 		EXPECT_EQ(testDesc.staticShadowmap, true);

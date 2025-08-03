@@ -66,11 +66,3 @@ struct KVFlagsEnumDesc {
 
 // TODO: Map support as Dictionary type
 
-template<typename T>
-inline bool KV_ParseDesc(T& descData, const KVSection& section)
-{
-	using Desc = typename T::Desc;
-	for (const KVDescFieldInfo& info : Desc::GetFields())
-		info.parseFunc(section, info.name, reinterpret_cast<ubyte*>(&descData) + info.offset);
-	return true;
-}

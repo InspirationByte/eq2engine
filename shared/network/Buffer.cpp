@@ -66,7 +66,7 @@ void Buffer::WriteWString(const wchar_t* pszStr)
 void Buffer::WriteKeyValues(const KVSection& kbase)
 {
 	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
-	KV_WriteBinary(&stream, kbase);
+	KeyValues::WriteBinary(&stream, kbase);
 
 	char zerochar = '\0';
 	stream.Write(&zerochar, 1, 1);
@@ -83,7 +83,7 @@ void Buffer::ReadKeyValues(KVSection& kbase)
 	ReadData(data, len);
 
 	CMemoryStream memstr((ubyte*)data, FS_OPEN_READ, len, PP_SL);
-	KV_ParseBinary(&memstr, kbase);
+	KeyValues::ParseBinary(&memstr, kbase);
 
 	delete [] data;
 }
