@@ -421,15 +421,15 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	pShaderEntry.MergeFrom(shaderBase, true);
 
 	// process setting up
-	for (KVSection* key : pShaderEntry.keys)
+	for (KVSection& key : pShaderEntry.Keys())
 	{
 		EqString value;
-		key->GetValues(value);
+		key.GetValues(value);
 		if (!value.Length())
 			continue;
 
 		if (value.ReplaceSubstr(s_outputTag, outputMaterialName) != -1)
-			key->SetValue(value, 0);
+			key.SetValue(value, 0);
 	}
 
 	Vector2D sizeTexels(1.0f / wide, 1.0f / tall);

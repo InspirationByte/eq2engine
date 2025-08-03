@@ -256,7 +256,7 @@ bool DkPhysics::Init(int nSceneSize)
 
 	for(const KVSection& sec : surfParamsKvs.Keys())
 	{
-		if (!sec.name.Compare("#include"))
+		if (!CString::Compare(sec.GetName(), "#include"))
 		{
 			continue;
 		}
@@ -264,7 +264,7 @@ bool DkPhysics::Init(int nSceneSize)
 		phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
 		DefaultMaterialParams(pMaterial);
 
-		pMaterial->name = sec.name;
+		pMaterial->name = sec.GetName();
 
 		KVSection* pBaseNamePair = sec.FindSection("base");
 		if(pBaseNamePair)

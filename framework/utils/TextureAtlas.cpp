@@ -48,30 +48,27 @@ bool CTextureAtlas::Load( const char* pszFileName )
 void CTextureAtlas::InitAtlas( const KVSection* kvs )
 {
 	m_material = KV_GetValueString(kvs, 0, "");
-	m_entries.reserve(kvs->keys.numElem());
+	m_entries.reserve(kvs->KeyCount());
 
 	int maxNamesLen = 1;
-	for (const KVSection* entrySec : kvs->keys)
-		maxNamesLen += strlen(entrySec->GetName()) + 1;
+	for (const KVSection& entrySec : kvs->Keys())
+		maxNamesLen += strlen(entrySec.GetName()) + 1;
 
 	m_names = PPNew char[maxNamesLen];
 	m_names[0] = 0;
 	char* namesPtr = m_names;
-	for(const KVSection* entrySec : kvs->keys)
+	for(const KVSection& entrySec : kvs->Keys())
 	{
-		const int nameHash = StringId24(entrySec->GetName(), true);
+		const int nameHash = StringId24(entrySec.GetName(), true);
 		m_entryMap.insert(nameHash, m_entries.numElem());
 
-		AARectangle rect {
-			KV_GetValueFloat(entrySec, 0),
-			KV_GetValueFloat(entrySec, 1),
-			KV_GetValueFloat(entrySec, 2),
-			KV_GetValueFloat(entrySec, 3) 
-		};
-		m_entries.append({ rect, namesPtr });
+		float x1, y1, x2, y2;
+		entrySec.GetValues(x1, y1, x2, y2);
+
+		m_entries.append({ AARectangle(x1,y1,x2,y2), namesPtr});
 
 		// copy the name
-		strcpy(namesPtr, entrySec->GetName());
+		strcpy(namesPtr, entrySec.GetName());
 		const int nameLen = strlen(namesPtr);
 		namesPtr[nameLen] = 0;
 		namesPtr += nameLen + 1;

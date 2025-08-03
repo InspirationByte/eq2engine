@@ -57,7 +57,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 	{
 		if( !fontSec.IsSection() )
 		{
-			if(!fontSec.name.Compare("#include"))
+			if(!CString::Compare(fontSec.GetName(), "#include"))
 			{
 				EqStringRef incFileName;
 				fontSec.GetValues(incFileName);
@@ -78,7 +78,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		}
 
 		FontFamily& familyEntry = m_fonts[nameHash];
-		familyEntry.name = fontSec.name;
+		familyEntry.name = fontSec.GetName();
 
 		int styleErrorCounter = 0;
 

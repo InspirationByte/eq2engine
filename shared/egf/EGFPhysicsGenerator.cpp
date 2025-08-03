@@ -431,18 +431,18 @@ void CEGFPhysicsGenerator::CreateRagdollObjects(const KVSection* bonesSect, Arra
 			for(const KVSection& pKey : thisBoneSec->Keys())
 			{
 				int axisIdx = -1;
-				if( !pKey.name.CompareCaseIns("x_axis") )
+				if( !CString::CompareCaseIns(pKey.GetName(), "x_axis"))
 					axisIdx = 0;
-				else if( !pKey.name.CompareCaseIns("y_axis") )
+				else if( !CString::CompareCaseIns(pKey.GetName(), "y_axis") )
 					axisIdx = 1;
-				else if( !pKey.name.CompareCaseIns("z_axis") )
+				else if( !CString::CompareCaseIns(pKey.GetName(), "z_axis") )
 					axisIdx = 2;
 
 				if (axisIdx == -1)
 					continue;
 
 				// check the value for arguments
-				for(int j = 0; j < pKey.values.numElem(); j++)
+				for(int j = 0; j < pKey.ValueCount(); j++)
 				{
 					if( !CString::CompareCaseIns(KV_GetValueString(&pKey, j), "limit" ))
 					{
@@ -537,7 +537,7 @@ void CEGFPhysicsGenerator::CreateMultipleObjects(ArrayCRef<DSVertex> vertices, A
 	for (const IdxIsland& tris : indexGroups)
 	{
 		EqString objName;
-		if (m_physicsParams->values.numElem() > 0)
+		if (m_physicsParams->ValueCount() > 0)
 			objName = EqString::Format("%s_part%d", KV_GetValueString(m_physicsParams), islandIdx);
 		else
 			objName = EqString::Format("obj_%d", m_objects.numElem());

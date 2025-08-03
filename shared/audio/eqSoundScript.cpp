@@ -298,12 +298,12 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection& sc
 		if (valKey.IsSection())
 			continue;
 
-		if (!valKey.name.CompareCaseIns("input"))
+		if (!CString::CompareCaseIns(valKey.GetName(), "input"))
 		{
 			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
 			if (nodeName == nullptr || !nodeName[0])
 			{
-				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey.name.ToCString());
+				MsgError("sound script '%s' input %s: name is required\n", scriptDesc.name.ToCString(), valKey.GetName());
 				continue;
 			}
 
@@ -325,7 +325,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection& sc
 
 			scriptDesc.inputNodeMap.insert(StringId24(nodeName), nodeIdx);
 		}
-		else if (!valKey.name.CompareCaseIns("mixer"))
+		else if (!CString::CompareCaseIns(valKey.GetName(), "mixer"))
 		{
 			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
 
@@ -340,7 +340,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection& sc
 			const int funcType = GetSoundFuncTypeByString(funcTypeName);
 			if (funcType == -1)
 			{
-				MsgError("sound script '%s' mixer: %s unknown func type %s\n", scriptDesc.name.ToCString(), valKey.name.ToCString(), funcTypeName);
+				MsgError("sound script '%s' mixer: %s unknown func type %s\n", scriptDesc.name.ToCString(), valKey.GetName(), funcTypeName);
 				continue;
 			}
 
@@ -415,7 +415,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection& sc
 					const char* inputValName = KV_GetValueString(&valKey, 2, nullptr);
 					if (!inputValName)
 					{
-						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), valKey.name.ToCString());
+						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), valKey.GetName());
 						continue;
 					}
 
@@ -487,10 +487,10 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection& sc
 			} // switch funcType
 		} // input, mixer
 
-		if (!valKey.name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_VOLUME]))
+		if (!CString::CompareCaseIns(valKey.GetName(), s_soundParamNames[SOUND_PARAM_SAMPLE_VOLUME]))
 			makeSampleParameter(valKey, SOUND_PARAM_SAMPLE_VOLUME);
 
-		if (!valKey.name.CompareCaseIns(s_soundParamNames[SOUND_PARAM_SAMPLE_PITCH]))
+		if (!CString::CompareCaseIns(valKey.GetName(), s_soundParamNames[SOUND_PARAM_SAMPLE_PITCH]))
 			makeSampleParameter(valKey, SOUND_PARAM_SAMPLE_PITCH);
 
 	} // for kv keys

@@ -242,6 +242,9 @@ struct KVPairValue
 //
 struct KVSection
 {
+	friend struct KVKeyIterator;
+	friend class KeyValues;
+
 	~KVSection();
 
 	KVSection() = default;
@@ -368,6 +371,7 @@ struct KVSection
 	const KVSection*	operator[](const char* pszName) const;
 	const KVPairValue&	operator[](int index) const;
 
+	Array<KVSection*>::Iterator		Begin() const { return keys.begin(); }
 
 	//----------------------------------------------
 
@@ -388,7 +392,7 @@ struct KVSection
 	void				SetType(int newType);
 	int					GetType() const;
 
-	// TODO: private
+// TODO: private:
 	EqString			name;
 	int					nameHash{ 0 };
 	int					line{ 0 };				// the line that the key is on
@@ -401,6 +405,7 @@ struct KVSection
 
 // special wrapper class
 // for better compatiblity of new class
+// TODO: static
 class KeyValues
 {
 public:
@@ -459,15 +464,14 @@ KVSection*		KV_LoadFromStream(IFileStream* stream, KVSection* pParseTo = nullptr
 KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 
 KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = nullptr, KVSection* pParseTo = nullptr, int nStartLine = 0);
-KVSection*		KV_ReadBinaryBase(IFileStream* stream, KVSection* pParseTo = nullptr);
+KVSection*		KV_ParseBinary(IFileStream* stream, KVSection* pParseTo = nullptr);
 KVSection*		KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo = nullptr);
 
-void			KV_PrintSection(const KVSection* base);
+void			KV_WriteToStream(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
+void			KV_WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nTabs = 0, bool pretty = true);
+void			KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base);
 
-void			KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
-void			KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
-
-void			KV_WriteToStreamBinary(IFileStream* outStream, const KVSection* base);
+void			KV_PrintSection(const KVSection& base);
 
 //-----------------------------------------------------------------------------------------------------
 // KeyValues value helpers

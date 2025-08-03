@@ -267,7 +267,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection& section)
 
 	for (const KVSection& modelSec : section.Keys())
 	{
-		const char* modelName = modelSec.name;
+		const char* modelName = modelSec.GetName();
 		const char* refName = KV_GetValueString(&modelSec);
 
 		const int foundIdx = arrayFindIndexF(fbxModels, [refName](const DSModelContainer& cont) {
@@ -286,7 +286,7 @@ void CEGFGenerator::LoadModelsFromFBX(const KVSection& section)
 		mod.transform = cont.transform;
 
 		// DRVSYN: vertex order for damaged model
-		if (modelSec.values.numElem() > 1 && !CString::CompareCaseIns(KV_GetValueString(&modelSec, 1), "shapeBy"))
+		if (modelSec.ValueCount() > 1 && !CString::CompareCaseIns(KV_GetValueString(&modelSec, 1), "shapeBy"))
 		{
 			const char* shapeKeyName = KV_GetValueString(&modelSec, 2, nullptr);
 
@@ -463,21 +463,21 @@ bool CEGFGenerator::ParseModels(const KVSection& section)
 
 	for(const KVSection& keyBase : section.Keys())
 	{
-		if(!keyBase.name.CompareCaseIns("global_scale"))
+		if(!CString::CompareCaseIns(keyBase.GetName(), "global_scale"))
 		{
 			// try apply global scale
 			m_modelScale = KV_GetVector3D(&keyBase, 0, Vector3D(1.0f));
 		}
-		if(!keyBase.name.CompareCaseIns("global_offset"))
+		if(!CString::CompareCaseIns(keyBase.GetName(), "global_offset"))
 		{
 			// try apply global offset
 			m_modelOffset = KV_GetVector3D(&keyBase, 0, vec3_zero);
 		}
-		else if (!keyBase.name.CompareCaseIns("FBXSource"))
+		else if (!CString::CompareCaseIns(keyBase.GetName(), "FBXSource"))
 		{
 			LoadModelsFromFBX(keyBase);
 		}
-		else if(!keyBase.name.CompareCaseIns("model"))
+		else if(!CString::CompareCaseIns(keyBase.GetName(), "model"))
 		{
 			// parse and load model
 			ParseAndLoadModels( keyBase );
@@ -617,7 +617,7 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection& section)
 {
 	for(const KVSection& keyBase : section.Keys("bodygroup"))
 	{
-		if(keyBase.values.numElem() < 2 && !keyBase.IsSection())
+		if(keyBase.ValueCount() < 2 && !keyBase.IsSection())
 		{
 			MsgError("Invalid body group string format\n");
 			MsgWarning("usage: bodygroup \"(name)\" \"(reference)\"\n");
@@ -626,7 +626,7 @@ bool CEGFGenerator::ParseBodyGroups(const KVSection& section)
 		}
 
 		const char* bodyGroupName = KV_GetValueString(&keyBase, 0);
-		if(keyBase.values.numElem() > 1)
+		if(keyBase.ValueCount() > 1)
 		{
 			const char* refName = KV_GetValueString(&keyBase, 1);
 			const int lodIndex = FindModelLodIdGroupByName(refName);
@@ -671,14 +671,14 @@ bool CEGFGenerator::ParseSkins(const KVSection& section)
 
 	for (const KVSection& keyBase : section.Keys("materialGroup"))
 	{
-		if (!keyBase.values.numElem())
+		if (!keyBase.ValueCount())
 		{
 			MsgError("materialGroup: must have material names as values!\n");
 			MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
 			return false;
 		}
 
-		if (keyBase.values.numElem() != m_materials.numElem())
+		if (keyBase.ValueCount() != m_materials.numElem())
 		{
 			MsgError("materialGroup: must have same material count specified (%d)!\n", m_materials.numElem());
 			MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
@@ -844,7 +844,7 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection& section)
 
 	for(const KVSection& keyBase : section.Keys())
 	{
-		if(!keyBase.name.CompareCaseIns("materialPath"))
+		if(!CString::CompareCaseIns(keyBase.GetName(), "materialPath"))
 		{
 			materialPathDesc_t& desc = m_matPaths.append();
 
@@ -859,8 +859,8 @@ bool CEGFGenerator::ParseMaterialPaths(const KVSection& section)
 			Msg("   '%s'\n", desc.searchPath);			
 		}
 
-		if(	!keyBase.name.CompareCaseIns("noTextures") ||
-			!keyBase.name.CompareCaseIns("noMaterials"))
+		if(	!CString::CompareCaseIns(keyBase.GetName(), "noTextures") ||
+			!CString::CompareCaseIns(keyBase.GetName(), "noMaterials"))
 		{
 			m_notextures = KV_GetValueBool(&keyBase);
 		}
@@ -906,7 +906,7 @@ bool CEGFGenerator::ParseMotionPackagePaths(const KVSection& section)
 //************************************
 void CEGFGenerator::ParseIKChain(const KVSection& section)
 {
-	if(section.values.numElem() < 2)
+	if(section.ValueCount() < 2)
 	{
 		MsgError("Too few arguments for 'ikchain'\n");
 		MsgWarning("usage: ikchain (bone name) (effector bone name)\n");
@@ -945,9 +945,9 @@ void CEGFGenerator::ParseIKChain(const KVSection& section)
 
 	for(const KVSection& sec : section.Keys())
 	{
-		if(!sec.name.CompareCaseIns("damping"))
+		if(!CString::CompareCaseIns(sec.GetName(), "damping"))
 		{
-			if(sec.values.numElem() < 2)
+			if(sec.ValueCount() < 2)
 			{
 				MsgError("Too few arguments for ik parameter 'damping'\n");
 				MsgWarning("usage: damping (bone name) (damping)\n");
@@ -970,9 +970,9 @@ void CEGFGenerator::ParseIKChain(const KVSection& section)
 				}
 			}
 		}
-		else if(!sec.name.CompareCaseIns("link_limits"))
+		else if(!CString::CompareCaseIns(sec.GetName(), "link_limits"))
 		{
-			if(sec.values.numElem() < 7)
+			if(sec.ValueCount() < 7)
 			{
 				MsgError("Too few arguments for ik parameter 'link_limits'\n");
 				MsgWarning("usage: link_limits (bone name) (MinX MinY MinZ) (MaxX MaxY MaxZ)\n");
@@ -1047,7 +1047,7 @@ void CEGFGenerator::ParseAttachments(const KVSection& section)
 
 	for(const KVSection& attachSec : section.Keys("attachment"))
 	{
-		if(attachSec.values.numElem() < 8)
+		if(attachSec.ValueCount() < 8)
 		{
 			MsgError("Invalid attachment definition\n");
 			MsgWarning("usage: attachment (name) (boneName or \"none\") (position x y z) (rotation x y z)\n");

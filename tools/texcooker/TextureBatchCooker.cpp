@@ -418,14 +418,14 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 		return;
 	}
 
-	const KVSection* kvMaterial = kvs.GetRootSection().keys[0];
+	const KVSection* kvMaterial = *kvs.GetRootSection().Begin();
 	if (!kvMaterial->IsSection())
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
 		return;
 	}
 
-	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString());
+	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString()); 
 
 	LoadMaterialImages(*kvMaterial);
 
@@ -637,7 +637,7 @@ void CTextureCooker::Execute()
 
 	if (pStream)
 	{
-		KV_WriteToStream(pStream, &m_batchConfig.newCRCSec, 0, true);
+		KV_WriteToStream(pStream, m_batchConfig.newCRCSec, 0, true);
 	}
 }
 

@@ -19,7 +19,7 @@ class CAddProxy : public CBaseMaterialProxy
 public:
 	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(section.values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'add' proxy in '%s' error: invalid argument count\n Usage: add v1 v2 out [options]\n", material->GetName());
 			return;
@@ -31,7 +31,7 @@ public:
 
 		useFrameTime = false;
 
-		for(int i = 3; i < section.values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
 			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
@@ -66,7 +66,7 @@ class CSubProxy : public CBaseMaterialProxy
 public:
 	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(section.values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'sub' proxy in '%s' error: invalid argument count\n Usage: sub v1 v2 out [options]\n", material->GetName());
 			return;
@@ -78,7 +78,7 @@ public:
 
 		useFrameTime = false;
 
-		for(int i = 3; i < section.values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
 			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
@@ -113,7 +113,7 @@ class CMulProxy : public CBaseMaterialProxy
 public:
 	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(section.values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'mul' proxy in '%s' error: invalid argument count\n Usage: mul v1 v2 out [options]\n", material->GetName());
 			return;
@@ -125,7 +125,7 @@ public:
 
 		useFrameTime = false;
 
-		for(int i = 3; i < section.values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
 			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
@@ -161,7 +161,7 @@ class CDivProxy : public CBaseMaterialProxy
 public:
 	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(section.values.numElem() < 3)
+		if(section.ValueCount() < 3)
 		{
 			MsgError("'div' proxy in '%s' error: invalid argument count\n Usage: div v1 v2 out [options]\n", material->GetName());
 			return;
@@ -173,7 +173,7 @@ public:
 
 		useFrameTime = false;
 
-		for(int i = 3; i < section.values.numElem(); i++)
+		for(int i = 3; i < section.ValueCount(); i++)
 		{
 			if(!CString::CompareCaseIns(KV_GetValueString(&section, i), "useftime"))
 				useFrameTime = true;
@@ -208,7 +208,7 @@ class CSinProxy : public CBaseMaterialProxy
 public:
 	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(section.values.numElem() < 2)
+		if(section.ValueCount() < 2)
 		{
 			MsgError("'sin' proxy in '%s' error: invalid argument count\n Usage: sin v1 out [options]\n", material->GetName());
 			return;
@@ -239,7 +239,7 @@ class CAbsProxy : public CBaseMaterialProxy
 public:
 	void InitProxy(IMaterial* material, const KVSection& section) override
 	{
-		if(section.values.numElem() < 2)
+		if(section.ValueCount() < 2)
 		{
 			MsgError("'abs' proxy in '%s' error: invalid argument count\n Usage: abs v1 out [options]\n", material->GetName());
 			return;

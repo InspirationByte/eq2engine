@@ -281,10 +281,10 @@ void CEqAudioSystemAL::InitEffects()
 
 	for (const KVSection& effectSec : kv.Keys())
 	{
-		const int nameHash = StringId24(effectSec.name, true);
+		const int nameHash = StringId24(effectSec.GetName(), true);
 
 		EffectInfo effect;
-		strcpy(effect.name, effectSec.name);
+		strcpy(effect.name, effectSec.GetName());
 
 		const KVSection* typeNameKey = effectSec.FindSection("type");
 		if (typeNameKey)

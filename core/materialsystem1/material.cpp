@@ -116,7 +116,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 		return;
 	}
 
-	const KVSection* shaderRoot = root.keys.numElem() ? root.keys[0] : nullptr;
+	const KVSection* shaderRoot = *root.Begin();
 	if(!shaderRoot)
 	{
 		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.ToCString());
@@ -125,7 +125,7 @@ void CMaterial::Init(IShaderAPI* renderAPI)
 	}
 
 	// section name is used as shader name
-	m_szShaderName = shaderRoot->name;
+	m_szShaderName = shaderRoot->GetName();
 
 	// begin initialization
 	InitVars( shaderRoot, renderAPI->GetRendererName() );
@@ -141,7 +141,7 @@ void CMaterial::Init(IShaderAPI* renderAPI, const KVSection* shaderRoot)
 	if (shaderRoot)
 	{
 		// section name is used as shader name
-		m_szShaderName = shaderRoot->name;
+		m_szShaderName = shaderRoot->GetName();
 
 		// begin initialization
 		InitVars(shaderRoot, renderAPI->GetRendererName());
@@ -161,7 +161,7 @@ void CMaterial::InitMaterialProxy(const KVSection* proxySec)
 	// try any kind of proxy
 	for(const KVSection& proxyItemSec : proxySec->Keys())
 	{
-		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName(proxyItemSec.name);
+		IMaterialProxy* pProxy = g_matSystem->CreateProxyByName(proxyItemSec.GetName());
 
 		if(pProxy)
 		{

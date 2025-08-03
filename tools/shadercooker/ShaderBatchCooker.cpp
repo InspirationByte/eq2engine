@@ -195,7 +195,7 @@ bool CShaderCooker::ParseShaderInfo(const char* shaderDefFileName, const KVSecti
 		int shaderKindsFound = 0;
 		for (const KVSection& key : kinds->Keys())
 		{
-			EqStringRef kindStr(key.name);
+			EqStringRef kindStr(key.GetName());
 
 			if (!kindStr.CompareCaseIns("Vertex"))
 				shaderKindsFound |= SHADERKIND_VERTEX;
@@ -1030,7 +1030,7 @@ void CShaderCooker::ProcessShader(ShaderInfo& shaderInfo)
 		}
 
 		CMemoryStream shaderInfoData(nullptr, FS_OPEN_WRITE, 8192, PP_SL);
-		KV_WriteToStreamBinary(&shaderInfoData, &shaderInfoKvs);
+		KV_WriteToStreamBinary(&shaderInfoData, shaderInfoKvs);
 		shaderPackFile.Add(&shaderInfoData, "ShaderInfo");
 
 		shaderPackFile.End();
@@ -1150,7 +1150,7 @@ void CShaderCooker::Execute()
 	// save CRC list file
 	IFileStreamPtr pStream = g_fileSystem->Open(crcFileName, FS_OPEN_WRITE, SP_ROOT);
 	if (pStream)
-		KV_WriteToStream(pStream, &m_batchConfig.newCRCSec, 0, true);
+		KV_WriteToStream(pStream, m_batchConfig.newCRCSec, 0, true);
 }
 
 void CookTarget(CEqJobManager& jobMng, const char* pszTargetName, const char* shaderNameFilter)

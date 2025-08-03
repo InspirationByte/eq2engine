@@ -780,7 +780,7 @@ void CMotionPackageGenerator::ParsePoseparameters(const KVSection& section)
 	Msg("Processing pose parameters\n");
 	for (const KVSection& poseParamKey : section.Keys("poseParameter"))
 	{
-		if(poseParamKey.values.numElem() < 3)
+		if(poseParamKey.ValueCount() < 3)
 		{
 			MsgError("Incorrect usage. Example: poseparameter <poseparam name> <min range> <max range>");
 			continue;
@@ -954,7 +954,7 @@ void CMotionPackageGenerator::LoadSequence(const KVSection& section, const char*
 		int kvSecCount = 0;
 		for(const KVSection& sec : eventList->Keys())
 		{
-			const float eventTime = (float)atof(sec.name);
+			const float eventTime = (float)atof(sec.GetName());
 			const KVSection* pEventCommand = sec.FindSection("command");
 			const KVSection* pEventOptions = sec.FindSection("options");
 

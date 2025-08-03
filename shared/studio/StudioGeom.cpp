@@ -716,14 +716,14 @@ bool CEqStudioGeom::LoadSkinDescFile()
 
 		for (const KVSection& keyBase : skinSec.Keys("materialGroup"))
 		{
-			if (!keyBase.values.numElem())
+			if (!keyBase.ValueCount())
 			{
 				MsgError("materialGroup: must have material names as values!\n");
 				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
 				return false;
 			}
 
-			if (keyBase.values.numElem() != m_materialCount)
+			if (keyBase.ValueCount() != m_materialCount)
 			{
 				MsgError("materialGroup: must have same material count specified (%d)!\n", m_materials.numElem());
 				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");

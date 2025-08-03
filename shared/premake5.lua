@@ -84,6 +84,7 @@ project "equiLib"
 	uses { 
 		"public", "shared",
 		"fontLib",
+		"imgui"
 	}
     files {
 		"equi/**",

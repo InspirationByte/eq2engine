@@ -343,7 +343,7 @@ bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 
 	if(pStream)
 	{
-		KV_WriteToStream(pStream, &m_root, 0, true);
+		KV_WriteToStream(pStream, m_root, 0, true);
 	}
 	else
 	{
@@ -1753,7 +1753,7 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 //-----------------------------------------------------------------------------------------------------
 // BINARY
 
-struct kvbinvalue_s
+struct kvbin_value_s
 {
 	int type;	// EKVPairType
 
@@ -1767,9 +1767,9 @@ struct kvbinvalue_s
 	// string is written next after the value struct
 };
 
-ALIGNED_TYPE(kvbinvalue_s,4) kvbinvalue_t;
+ALIGNED_TYPE(kvbin_value_s,4) kvbin_value_t;
 
-struct kvbinbase_s
+struct kvbin_hdr
 {
 	int		ident;	// it must be identified by KV_IDENT_BINARY
 
@@ -1788,12 +1788,12 @@ struct kvbinbase_s
 KVSection* KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo)
 {
 	CMemoryStream memstr((ubyte*)pszBuffer, FS_OPEN_READ, bufferSize, PP_SL);
-	return KV_ReadBinaryBase(&memstr, pParseTo);
+	return KV_ParseBinary(&memstr, pParseTo);
 }
 
 void KV_ReadBinaryValue(IFileStream* stream, KVSection* addTo)
 {
-	kvbinvalue_t binValue;
+	kvbin_value_t binValue;
 	stream->Read(&binValue, 1, sizeof(binValue));
 
 	if(binValue.type == KVPAIR_STRING)
@@ -1820,7 +1820,7 @@ void KV_ReadBinaryValue(IFileStream* stream, KVSection* addTo)
 	}
 	else if(binValue.type == KVPAIR_SECTION)
 	{
-		KVSection* parsed = KV_ReadBinaryBase(stream, nullptr);
+		KVSection* parsed = KV_ParseBinary(stream, nullptr);
 
 		if(parsed)
 			addTo->AddValue(parsed);
@@ -1828,9 +1828,9 @@ void KV_ReadBinaryValue(IFileStream* stream, KVSection* addTo)
 }
 
 // reads binary keybase
-KVSection* KV_ReadBinaryBase(IFileStream* stream, KVSection* pParseTo)
+KVSection* KV_ParseBinary(IFileStream* stream, KVSection* pParseTo)
 {
-	kvbinbase_s binBase;
+	kvbin_hdr binBase;
 	stream->Read(&binBase, 1, sizeof(binBase));
 
 	if(binBase.ident != KV_IDENT_BINARY)
@@ -1861,19 +1861,19 @@ KVSection* KV_ReadBinaryBase(IFileStream* stream, KVSection* pParseTo)
 	// read nested keybases as well
 	for(int i = 0; i < binBase.keyCount; i++)
 	{
-		KVSection* parsed = KV_ReadBinaryBase(stream, nullptr);
+		KVSection* parsed = KV_ParseBinary(stream, nullptr);
 		pParseTo->AddSection(parsed);
 	}
 
 	return pParseTo;
 }
 
-void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection* base);
+void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base);
 
 // writes KV value to the binary stream
 void KV_WriteValueBinary(IFileStream* outStream, const KVPairValue& value)
 {
-	kvbinvalue_t binValue;
+	kvbin_value_t binValue;
 	binValue.type = value.type;
 
 	if(binValue.type == KVPAIR_STRING)
@@ -1896,39 +1896,35 @@ void KV_WriteValueBinary(IFileStream* outStream, const KVPairValue& value)
 	else if(binValue.type == KVPAIR_SECTION)
 	{
 		// store section after the binary
-		KV_WriteToStreamBinary(outStream, value.section);
+		KV_WriteToStreamBinary(outStream, *value.section);
 	}
 }
 
 // writes keybase to the binary stream
-void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection* base)
+void KV_WriteToStreamBinary(IFileStream* outStream, const KVSection& base)
 {
-	kvbinbase_s binBase;
+	kvbin_hdr binBase;
 	memset(&binBase, 0, sizeof(binBase));
 
 	binBase.ident = KV_IDENT_BINARY;
-	binBase.keyCount = base->keys.numElem();
-	binBase.valueCount = base->values.numElem();
-	binBase.type = base->type;
-	binBase.nameLen = strlen(base->name);
+	binBase.keyCount = base.keys.numElem();
+	binBase.valueCount = base.values.numElem();
+	binBase.type = base.type;
+	binBase.nameLen = strlen(base.name);
 
 	// write header to the stream
 	outStream->Write(&binBase, 1, sizeof(binBase));
 
 	// write base name
-	outStream->Write(base->name, 1, binBase.nameLen);
+	outStream->Write(base.name, 1, binBase.nameLen);
 
 	// write each value of key base
 	for(int i = 0; i < binBase.valueCount; i++)
-	{
-		KV_WriteValueBinary(outStream, base->values[i]);
-	}
-
+		KV_WriteValueBinary(outStream, base.values[i]);
+	
 	// then write each subkey of this key recursively... pretty simple, huh?
 	for(int i = 0; i < binBase.keyCount; i++)
-	{
-		KV_WriteToStreamBinary(outStream, base->keys[i]);
-	}
+		KV_WriteToStreamBinary(outStream, *base.keys[i]);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -2066,12 +2062,12 @@ static void KV_PreProcessStringValue( char* out, const char* pszStr )
 
 //-----------------------------------------------------------------------------------------------------
 
-void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nTabs, bool pretty);
+void KV_WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty);
 
 //
 // Writes the pair value
 //
-void KV_WritePairValue(IFileStream* out, const KVPairValue& val, int depth)
+static void KV_WritePairValue(IFileStream* out, const KVPairValue& val, int depth)
 {
 	// write typed data
 	if(val.type == KVPAIR_STRING)
@@ -2106,7 +2102,7 @@ void KV_WritePairValue(IFileStream* out, const KVPairValue& val, int depth)
 	else if(val.type == KVPAIR_SECTION)
 	{
 		out->Print("%c", KV_SECTION_BEGIN);
-		KV_WriteToStreamV3(out, val.section, depth+1, false);
+		KV_WriteToStreamV3(out, *val.section, depth+1, false);
 		out->Print("%c", KV_SECTION_END);
 	}
 }
@@ -2114,7 +2110,7 @@ void KV_WritePairValue(IFileStream* out, const KVPairValue& val, int depth)
 //
 // Writes the pairbase recursively to the virtual stream
 //
-void KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTabs, bool pretty)
+void KV_WriteToStream(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty)
 {
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
@@ -2127,10 +2123,8 @@ void KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTab
 			tabs[nTab++] = '\t';
 	}
 
-	for(int i = 0; i < section->keys.numElem(); i++)
+	for(KVSection* key : section.keys)
 	{
-		KVSection* pKey = section->keys[i];
-
 		// add tabs
 		if(pretty)
 			outStream->Write(tabs, 1, nTabs);
@@ -2141,14 +2135,14 @@ void KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTab
 		// write key/value
 		//
 		{
-			KV_WriteSelectQuotedString(outStream, pKey->name);
+			KV_WriteSelectQuotedString(outStream, key->name);
 
-			if(pKey->type != KVPAIR_SECTION)
+			if(key->type != KVPAIR_SECTION)
 			{
-				for(int j = 0; j < pKey->values.numElem(); j++)
+				for(int j = 0; j < key->values.numElem(); j++)
 				{
 					outStream->Print(" ");
-					KV_WritePairValue(outStream, pKey->values[j], nTabs);
+					KV_WritePairValue(outStream, key->values[j], nTabs);
 				}
 				hasWroteValue = true;
 			}
@@ -2159,7 +2153,7 @@ void KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTab
 		//
 		// write subsection
 		//
-		if( pKey->keys.numElem() )
+		if( key->keys.numElem() )
 		{
 			if(pretty)
 			{
@@ -2168,7 +2162,7 @@ void KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTab
 			}
 			outStream->Print("%c\n", KV_SECTION_BEGIN);
 
-			KV_WriteToStream(outStream, pKey, nTabs + 1, pretty);
+			KV_WriteToStream(outStream, *key, nTabs + 1, pretty);
 
 			if(pretty)
 				outStream->Write(tabs, 1, nTabs);
@@ -2184,13 +2178,13 @@ void KV_WriteToStream(IFileStream* outStream, const KVSection* section, int nTab
 //
 // Writes the pairbase values
 //
-void KV_WriteValueV3( IFileStream* outStream, const KVSection* key, int nTabs)
+static void KV_WriteValueV3( IFileStream* outStream, const KVSection& key, int nTabs)
 {
-	int numValues = key->values.numElem();
+	int numValues = key.values.numElem();
 	bool isValueArray = numValues > 1;
 
-	if(key->type != KVPAIR_STRING && key->type != KVPAIR_SECTION)
-		outStream->Print(" %s%c ", s_szkKVValueTypes[key->type], KV_TYPE_VALUESYMBOL);
+	if(key.type != KVPAIR_STRING && key.type != KVPAIR_SECTION)
+		outStream->Print(" %s%c ", s_szkKVValueTypes[key.type], KV_TYPE_VALUESYMBOL);
 	else
 		outStream->Print(" ");
 
@@ -2199,7 +2193,7 @@ void KV_WriteValueV3( IFileStream* outStream, const KVSection* key, int nTabs)
 
 	for(int j = 0; j < numValues; j++)
 	{
-		KV_WritePairValue(outStream, key->values[j], nTabs);
+		KV_WritePairValue(outStream, key.values[j], nTabs);
 
 		// while array sepearator is not required, always add it
 		if(j < numValues-1)
@@ -2213,7 +2207,7 @@ void KV_WriteValueV3( IFileStream* outStream, const KVSection* key, int nTabs)
 //
 // Writes the pairbase recursively to the virtual stream
 //
-void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nTabs, bool pretty)
+void KV_WriteToStreamV3(IFileStream* outStream, const KVSection& section, int nTabs, bool pretty)
 {
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
@@ -2226,12 +2220,10 @@ void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nT
 			tabs[nTab++] = '\t';
 	}
 
-	int numKeys = section->keys.numElem();
-
-	for(int i = 0; i < numKeys; i++)
+	const int numKeys = section.keys.numElem();
+	int idx = 0;
+	for(KVSection* key : section.keys)
 	{
-		KVSection* pKey = section->keys[i];
-
 		// add tabs
 		if(pretty)
 			outStream->Write(tabs, 1, nTabs);
@@ -2240,14 +2232,14 @@ void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nT
 		// write key/value
 		//
 		{
-			KV_WriteSelectQuotedString(outStream, pKey->name);
-			KV_WriteValueV3(outStream, pKey, nTabs);
+			KV_WriteSelectQuotedString(outStream, key->name);
+			KV_WriteValueV3(outStream, *key, nTabs);
 		}
 
 		//
 		// write subsection
 		//
-		if( pKey->IsSection() )
+		if( key->IsSection() )
 		{
 			if(pretty)
 			{
@@ -2257,7 +2249,7 @@ void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nT
 
 			outStream->Print("%c\n", KV_SECTION_BEGIN);
 
-			KV_WriteToStreamV3(outStream, pKey, nTabs + 1, pretty);
+			KV_WriteToStreamV3(outStream, *key, nTabs + 1, pretty);
 
 			if(pretty)
 				outStream->Write(tabs, 1, nTabs);
@@ -2267,15 +2259,17 @@ void KV_WriteToStreamV3(IFileStream* outStream, const KVSection* section, int nT
 
 		if(pretty)
 			outStream->Print("\n");
-		else if(i < numKeys-1)
+		else if(idx < numKeys-1)
 			outStream->Print(" ");
+
+		++idx;
 	}
 }
 
 //
 // Prints the pairbase to console
 //
-void KV_PrintSection(const KVSection* base)
+void KV_PrintSection(const KVSection& base)
 {
 	CMemoryStream stream(nullptr, FS_OPEN_WRITE, 2048, PP_SL);
 	KV_WriteToStream(&stream, base, 0, true);
