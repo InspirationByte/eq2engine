@@ -52,7 +52,7 @@ IPhysics* physics = &s_physics;
 
 CBulletStudioShapeCache	s_shapeCache;
 
-DKMODULE*			g_matsysmodule = nullptr;
+OSModule*			g_matsysmodule = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
 
@@ -1462,7 +1462,7 @@ bool CEGFViewApp::OnInit()
 
 	// first, load matsystem module
 	EqString loadErr;
-	g_matsysmodule = g_fileSystem->OpenModule("eqMatSystem", &loadErr);
+	g_matsysmodule = g_eqCore->OpenModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{
@@ -1490,7 +1490,7 @@ int CEGFViewApp::OnExit()
 	g_fontCache->Shutdown();
 	g_matSystem->Shutdown();
 
-	g_fileSystem->CloseModule(g_matsysmodule);
+	g_eqCore->CloseModule(g_matsysmodule);
 	
 	// shutdown core
 	g_eqCore->Shutdown();

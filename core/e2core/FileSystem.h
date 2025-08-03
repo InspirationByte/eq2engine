@@ -10,7 +10,7 @@
 #include "core/platform/OSFile.h"
 
 class CBasePackageReader;
-struct SearchPathInfo;
+struct FSSearchPathInfo;
 
 //------------------------------------------------------------------------------
 // File stream
@@ -119,36 +119,23 @@ public:
 	//------------------------------------------------------------
 
 	// opens directory for search props
-	const char*					FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPaths = -1, int dirIndex = -1);
-	const char*					FindNext(DKFINDDATA* findData) const;
-	void						FindClose(DKFINDDATA* findData);
-	bool						FindIsDirectory(DKFINDDATA* findData) const;
-	int							FindGetDirIndex(DKFINDDATA* findData) const;
-
-	//------------------------------------------------------------
-	// Dynamic library stuff
-	//------------------------------------------------------------
-
-	// loads module
-	DKMODULE*					OpenModule(const char* mod_name, EqString* outError = nullptr);
-
-	// frees module
-	void						CloseModule( DKMODULE* pModule );
-
-	// returns procedure address of the loaded module
-	void*						GetProcedureAddress(DKMODULE* pModule, const char* pszProc);
+	const char*					FindFirst(const char* wildcard, FSFindData** findData, int searchPaths = -1, int dirIndex = -1);
+	const char*					FindNext(FSFindData* findData) const;
+	void						FindClose(FSFindData* findData);
+	bool						FindIsDirectory(FSFindData* findData) const;
+	int							FindGetDirIndex(FSFindData* findData) const;
 
 	//-------------------------
-	bool						IsInitialized() const		{return m_isInit;}
+	bool						IsInitialized() const { return m_isInit; }
 
 protected:
 
-	bool						InitNextPath(DKFINDDATA* findData) const;
+	bool						InitNextPath(FSFindData* findData) const;
 
 	EqString					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
 	EqString					GetSearchPath(ESearchPath search, int directoryId = -1) const;
 
-	void						MapFiles(SearchPathInfo& pathInfo);
+	void						MapFiles(FSSearchPathInfo& pathInfo);
 
 	using SPWalkFunc = EqFunction<bool(const EqString& filePath, ESearchPath searchPath, int spFlags, bool writePath)>;
 	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
@@ -157,11 +144,10 @@ protected:
     EqString					m_dataDir;			// Used to load engine data
 	EqString					m_accessKey;
 
-	Array<SearchPathInfo*>		m_directories{ PP_SL };		// mod data, for fall back
+	Array<FSSearchPathInfo*>		m_directories{ PP_SL };		// mod data, for fall back
     Array<IPackFileReaderPtr>	m_fsPackages{ PP_SL };		// package serving as FS layers
 
-	Array<DKFINDDATA*>			m_findDatas{ PP_SL };
-	Array<DKMODULE*>			m_modules{ PP_SL };
+	Array<FSFindData*>			m_findDatas{ PP_SL };
 
 	bool						m_isInit{ false };
 };

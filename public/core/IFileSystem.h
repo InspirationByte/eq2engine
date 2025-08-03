@@ -19,8 +19,7 @@ enum ESearchPath : int
     SP_MOD	= (1 << 2),
 };
 
-struct DKMODULE; // module structure
-struct DKFINDDATA;
+struct FSFindData;
 
 //------------------------------------------------------------------------------
 // Filesystem interface
@@ -97,30 +96,17 @@ public:
 	// opens package for further reading. Does not add package as FS layer.
 	virtual IPackFileReaderPtr OpenPackage(const char* packageName, int searchFlags = -1) = 0;
 
-	//------------------------------------------------------------
-	// Dynamic library stuff
-	//------------------------------------------------------------
-
-	// loads module
-	virtual DKMODULE*		OpenModule(const char* mod_name, EqString* outError = nullptr) = 0;
-
-	// frees module
-	virtual void			CloseModule( DKMODULE* pModule ) = 0;
-
-	// returns procedure address of the loaded module
-	virtual void*			GetProcedureAddress(DKMODULE* pModule, const char* pszProc) = 0;
-
 protected:
 	//------------------------------------------------------------
 	// Locator
 	//------------------------------------------------------------
 
 	// opens directory for search props
-	virtual const char* FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPaths = -1, int dirIndex = -1) = 0;
-	virtual const char* FindNext(DKFINDDATA* findData) const = 0;
-	virtual void		FindClose(DKFINDDATA* findData) = 0;
-	virtual bool		FindIsDirectory(DKFINDDATA* findData) const = 0;
-	virtual int			FindGetDirIndex(DKFINDDATA* findData) const = 0;
+	virtual const char* FindFirst(const char* wildcard, FSFindData** findData, int searchPaths = -1, int dirIndex = -1) = 0;
+	virtual const char* FindNext(FSFindData* findData) const = 0;
+	virtual void		FindClose(FSFindData* findData) = 0;
+	virtual bool		FindIsDirectory(FSFindData* findData) const = 0;
+	virtual int			FindGetDirIndex(FSFindData* findData) const = 0;
 };
 
 INTERFACE_SINGLETON( IFileSystem, CFileSystem, g_fileSystem )
@@ -149,7 +135,7 @@ protected:
 	int			m_startDirIndex{ -1 };
 	EqString	m_wildcard{ nullptr };
 	char*		m_curPath{ nullptr };
-	DKFINDDATA*	m_fd{ nullptr };
+	FSFindData*	m_fd{ nullptr };
 };
 
 //-----------------------------------------------------------------------------------------

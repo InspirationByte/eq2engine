@@ -15,7 +15,7 @@ class IEqCoreModule;
 struct coreInterface_t
 {
 	const char*			name;		// module name
-	struct DKMODULE*	module;		// module which loads this interface
+	struct OSModule*	module;		// module which loads this interface
 	IEqCoreModule*		ptr;		// the interface pointer itself
 };
 
@@ -23,31 +23,42 @@ struct coreInterface_t
 class CDkCore : public IDkCore
 {
 public:
-	bool					Init(const CoreAppInitParameters& initParams);
-	void					Shutdown();	// Shutdowns core
+	bool						Init(const CoreAppInitParameters& initParams);
+	void						Shutdown();	// Shutdowns core
 
-	char*					GetApplicationName()  const;
+	char*						GetApplicationName()  const;
 
 	// now configuration is global for all applications
 	const KVSection&			GetConfig()  const;
 	const CoreDebugSettings&	GetDebugSettings() const { return m_debugSettings; }
 
-	bool					IsInitialized()  const;
+	bool						IsInitialized()  const;
 
-	void					AddExceptionCallback(CoreExceptionCallback callback);
-	void					RemoveExceptionCallback(CoreExceptionCallback callback);
+	void						AddExceptionCallback(CoreExceptionCallback callback);
+	void						RemoveExceptionCallback(CoreExceptionCallback callback);
 
 	const Array<CoreExceptionCallback>&	GetExceptionHandlers() const { return m_exceptionCb; }
+
+	// loads module
+	OSModule*					OpenModule(const char* mod_name, EqString* outError = nullptr);
+
+	// frees module
+	void						CloseModule(OSModule* pModule);
+
+	// returns procedure address of the loaded module
+	void*						GetProcedureAddress(OSModule* pModule, const char* pszProc) const;
+
 // Interface management for engine
 
-	void					OnModuleLoaded(const char* pszName);
-	void					OnModuleUnloaded(const char* pszName);
+	void						OnModuleLoaded(const char* pszName);
+	void						OnModuleUnloaded(const char* pszName);
 
-	void					RegisterInterface(const char* pszName, IEqCoreModule* iface);			// registers interface for faster access
-	IEqCoreModule*			GetInterface(const char* pszName) const;								// returns registered interface
-	void					UnregisterInterface(const char* pszName);								// unregisters interface
+	void						RegisterInterface(const char* pszName, IEqCoreModule* iface);			// registers interface for faster access
+	IEqCoreModule*				GetInterface(const char* pszName) const;								// returns registered interface
+	void						UnregisterInterface(const char* pszName);								// unregisters interface
 
 private:
+	Array<OSModule*>				m_modules{ PP_SL };
 	Array<coreInterface_t>			m_interfaces{ PP_SL };
 	Array<CoreExceptionCallback>	m_exceptionCb{ PP_SL };
 

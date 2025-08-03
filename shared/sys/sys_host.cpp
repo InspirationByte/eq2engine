@@ -199,7 +199,7 @@ static EQCURSOR s_defaultCursor[20];
 CStaticAutoPtr<CGameHost> g_pHost;
 CStaticAutoPtr<CRenderFullScreenEdgeAA> g_fullScreenEdgeAA;
 
-static DKMODULE*	g_matsysmodule = nullptr;
+static OSModule*	g_matsysmodule = nullptr;
 IMaterialSystem*	g_matSystem = nullptr;
 IShaderAPI*			g_renderAPI = nullptr;
 
@@ -217,7 +217,7 @@ bool CGameHost::LoadModules()
 {
 	// first, load matsystem module
 	EqString loadErr;
-	g_matsysmodule = g_fileSystem->OpenModule("eqMatSystem", &loadErr);
+	g_matsysmodule = g_eqCore->OpenModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{
@@ -657,7 +657,7 @@ void CGameHost::ShutdownSystems()
 	g_inputCommandBinder->Shutdown();
 	g_consoleInput->Shutdown();
 	g_matSystem->Shutdown();
-	g_fileSystem->CloseModule( g_matsysmodule );
+	g_eqCore->CloseModule( g_matsysmodule );
 
 	g_parallelJobs->Shutdown();
 
