@@ -145,8 +145,8 @@ TEST(KEYVALUES_TESTS, SerializeDeserialize)
 			}
 		}
 
-		KV_WriteToStream(&memStreamText, section);
-		KV_WriteToStreamBinary(&memStreamBin, section);
+		KV_WriteText(&memStreamText, section);
+		KV_WriteBinary(&memStreamBin, section);
 	}
 
 	// TEST: Deserialize text stream
