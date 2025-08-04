@@ -803,7 +803,7 @@ inline bool KeyValues::ParseDesc(T& descData, const KVSection& section)
 //------------------
 
 #define BEGIN_KEYVALUES_FLAGS_DESC(enumType) \
-	ArrayCRef<KVDescFlagInfo> KVFlagsEnumDesc<enumType>::GetFlags() { \
+	template<> ArrayCRef<KVDescFlagInfo> KVFlagsEnumDesc<enumType>::GetFlags() { \
 		static KVDescFlagInfo descFlags[] = {
 
 #define END_KEYVALUES_FLAGS_DESC \
