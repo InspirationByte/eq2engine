@@ -65,7 +65,7 @@ public:
 
 	const IMaterialPtr&	GetMaterial() const	{ return m_material; }
 
-	const AtlasEntry*	GetEntry(int idx) const;
+	const AtlasEntry&	GetEntry(int idx) const;
 	const AtlasEntry*	FindEntry(const char* pszName) const;
 	int					FindEntryIndex(const char* pszName) const;
 

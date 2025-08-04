@@ -75,9 +75,9 @@ void CTextureAtlas::InitAtlas( const KVSection* kvs )
 	}
 }
 
-const AtlasEntry* CTextureAtlas::GetEntry(int idx) const
+const AtlasEntry& CTextureAtlas::GetEntry(int idx) const
 {
-	return &m_entries[idx];
+	return m_entries[idx];
 }
 
 const AtlasEntry* CTextureAtlas::FindEntry(const char* pszName) const
