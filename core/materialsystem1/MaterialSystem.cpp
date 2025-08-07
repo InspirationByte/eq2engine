@@ -1117,6 +1117,9 @@ bool CMaterialSystem::BeginFrame(ISwapChain* swapChain)
 	if(!m_shaderAPI)
 		return false;
 
+	if (m_frameBegun)
+		return false;
+
 	const bool prevDeviceState = m_shaderAPI->IsDeviceActive();
 	if(!prevDeviceState)
 	{
