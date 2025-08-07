@@ -35,6 +35,7 @@ public:
 	const AtlasEntry&		GetEntry(int idx) const;
 	const AtlasEntry*		FindEntry(const char* pszName) const;
 	int						FindEntryIndex(const char* pszName) const;
+	int						GetEntryIdx(const AtlasEntry& entry) const;
 
 	const char*				GetMaterialName() const	{ return m_material.ToCString(); }
 protected:

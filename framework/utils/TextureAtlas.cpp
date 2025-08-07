@@ -97,3 +97,9 @@ int CTextureAtlas::FindEntryIndex(const char* pszName) const
 
 	return *it;
 }
+
+int CTextureAtlas::GetEntryIdx(const AtlasEntry& entry) const
+{
+	const int idx = &entry - m_entries.ptr();
+	return m_entries.inRange(idx) ? idx : -1;
+}
