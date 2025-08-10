@@ -886,7 +886,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize, IGPURenderPassRe
 		AARectangle rect((tz->position - tz->size * 0.5f) * screenSize, (tz->position + tz->size * 0.5f) * screenSize);
 
 		rects.append(rect);
-		const Vertex2D touchQuad[] = { MAKETEXQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, 0) };
+		const Vertex2D touchQuad[] = { MAKE_QUAD_UVS(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, 0) };
 
 		const float touchColor = tz->finger >= 0 ? 0.25f : 0.85f;
 

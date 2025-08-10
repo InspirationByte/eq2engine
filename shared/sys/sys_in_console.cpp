@@ -398,10 +398,10 @@ void CEqConsoleInput::SetText(const char* text, bool quiet /*= false*/)
 
 void DrawAlphaFilledRectangle(const AARectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2, IGPURenderPassRecorder* rendPassRecorder)
 {
-	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
-	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
-	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
+	const Vector2D r0[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -1) };
+	const Vector2D r1[] = { MAKE_QUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r2[] = { MAKE_QUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -1) };
+	const Vector2D r3[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -1) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh());
@@ -490,7 +490,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 		if (selection == itemIdx)
 		{
-			Vertex2D selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
+			Vertex2D selrect[] = { MAKE_QUAD_UVS((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
 
 			MatSysDefaultRenderPass defaultRender;
 			defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -623,7 +623,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 			const float textYPos = (y + i * m_font->GetLineHeight(helpTextParams)) + 4;
 			if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2, rect.rightBottom.x-rect.leftTop.x,12) || m_cmdSelection == i)
 			{
-				Vertex2D selrect[] = { MAKETEXQUAD(x, textYPos, x+maxStringLen*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
+				Vertex2D selrect[] = { MAKE_QUAD_UVS(x, textYPos, x+maxStringLen*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
 				MatSysDefaultRenderPass defaultRender;
 				defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -672,7 +672,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 			const float lookupStrStart = m_font->GetStringWidth(cmdBase->GetName(), variantsTextParams, ofs);
 			const float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(cmdBase->GetName()+ofs, variantsTextParams, len);
 
-			Vertex2D rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
+			Vertex2D rectVerts[] = { MAKE_QUAD_UVS(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
 			MatSysDefaultRenderPass defaultRender;
 			defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
@@ -1106,7 +1106,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 		{
 			float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText, inputTextStyle, m_startCursorPos);
 
-			Vertex2D rect[] = { MAKETEXQUAD(inputTextPos.x + selStartPosition,
+			Vertex2D rect[] = { MAKE_QUAD_UVS(inputTextPos.x + selStartPosition,
 												inputTextPos.y - 10,
 												inputTextPos.x + cursorPosition,
 												inputTextPos.y + 4, 0) };
@@ -1118,7 +1118,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 		// render cursor
 		if (m_cursorVisible)
 		{
-			Vertex2D rect[] = { MAKETEXQUAD(inputTextPos.x + cursorPosition,
+			Vertex2D rect[] = { MAKE_QUAD_UVS(inputTextPos.x + cursorPosition,
 												inputTextPos.y - 10,
 												inputTextPos.x + cursorPosition + 1,
 												inputTextPos.y + 4, 0) };

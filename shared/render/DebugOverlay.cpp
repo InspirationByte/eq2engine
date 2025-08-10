@@ -49,10 +49,10 @@ static void GUIDrawWindow(const AARectangle &rect, const MColor& color1, IGPURen
 {
 	MColor color2(0.2f,0.2f,0.2f,0.8f);
 
-	const Vector2D r0[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
-	const Vector2D r1[] = { MAKEQUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	const Vector2D r2[] = { MAKEQUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
-	const Vector2D r3[] = { MAKEQUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
+	const Vector2D r0[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.leftTop.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r1[] = { MAKE_QUAD(rect.rightBottom.x, rect.leftTop.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r2[] = { MAKE_QUAD(rect.leftTop.x, rect.rightBottom.y,rect.rightBottom.x, rect.rightBottom.y, -0.5f) };
+	const Vector2D r3[] = { MAKE_QUAD(rect.leftTop.x, rect.leftTop.y,rect.rightBottom.x, rect.leftTop.y, -0.5f) };
 
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
@@ -1408,7 +1408,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			h *= fac;
 		}
 
-		Vertex2D rect[] = { MAKETEXQUAD(0, 0, w, h, 0) };
+		Vertex2D rect[] = { MAKE_QUAD_UVS(0, 0, w, h, 0) };
 
 		const int flags = m_dbgTexture->GetFlags();
 		const bool isCubemap = (flags & TEXFLAG_CUBEMAP);
