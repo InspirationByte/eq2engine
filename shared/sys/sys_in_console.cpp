@@ -490,11 +490,11 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 		if (selection == itemIdx)
 		{
-			Vertex2D selrect[] = { MAKE_QUAD_UVS((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
+			const Vertex2D selrect[] = { MAKE_QUAD_UVS((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
 
 			MatSysDefaultRenderPass defaultRender;
 			defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
-			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), RenderPassContext(rendPassRecorder, &defaultRender));
+			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, selrect, RenderPassContext(rendPassRecorder, &defaultRender));
 		}
 
 		m_font->SetupRenderText(item, rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle, rendPassRecorder);
@@ -623,12 +623,12 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 			const float textYPos = (y + i * m_font->GetLineHeight(helpTextParams)) + 4;
 			if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2, rect.rightBottom.x-rect.leftTop.x,12) || m_cmdSelection == i)
 			{
-				Vertex2D selrect[] = { MAKE_QUAD_UVS(x, textYPos, x+maxStringLen*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
+				const Vertex2D selrect[] = { MAKE_QUAD_UVS(x, textYPos, x+maxStringLen*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
 				MatSysDefaultRenderPass defaultRender;
 				defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 				defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.8f);
-				g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(selrect), RenderPassContext(rendPassRecorder, &defaultRender));
+				g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, selrect, RenderPassContext(rendPassRecorder, &defaultRender));
 
 				m_cmdSelection = i;
 
@@ -672,12 +672,12 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w, IGPURenderPassReco
 			const float lookupStrStart = m_font->GetStringWidth(cmdBase->GetName(), variantsTextParams, ofs);
 			const float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(cmdBase->GetName()+ofs, variantsTextParams, len);
 
-			Vertex2D rectVerts[] = { MAKE_QUAD_UVS(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
+			const Vertex2D rectVerts[] = { MAKE_QUAD_UVS(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
 			MatSysDefaultRenderPass defaultRender;
 			defaultRender.blendMode = SHADER_BLEND_TRANSLUCENT;
 			defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
-			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rectVerts), RenderPassContext(rendPassRecorder, &defaultRender));
+			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, rectVerts, RenderPassContext(rendPassRecorder, &defaultRender));
 		} // for i
 	}
 #endif // EXTENDED_DEVELOPER_CONSOLE
@@ -917,7 +917,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 
 void CEqConsoleInput::ExecuteCurrentInput()
 {
-	MsgInfo("> %s\n",m_inputText.GetData());
+	MsgInfo("> %s\n", m_inputText.GetData());
 
 	g_consoleCommands->ResetCounter();
 	g_consoleCommands->SetCommandBuffer(m_inputText);
@@ -1104,27 +1104,27 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime, IGPURender
 		// render selection
 		if (m_startCursorPos != m_cursorPos)
 		{
-			float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText, inputTextStyle, m_startCursorPos);
+			const float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText, inputTextStyle, m_startCursorPos);
 
-			Vertex2D rect[] = { MAKE_QUAD_UVS(inputTextPos.x + selStartPosition,
+			const Vertex2D rect[] = { MAKE_QUAD_UVS(inputTextPos.x + selStartPosition,
 												inputTextPos.y - 10,
 												inputTextPos.x + cursorPosition,
 												inputTextPos.y + 4, 0) };
 
 			defaultRender.drawColor = MColor(1.0f, 1.0f, 1.0f, 0.3f);
-			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
+			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, rect, defaultPassContext);
 		}
 
 		// render cursor
 		if (m_cursorVisible)
 		{
-			Vertex2D rect[] = { MAKE_QUAD_UVS(inputTextPos.x + cursorPosition,
+			const Vertex2D rect[] = { MAKE_QUAD_UVS(inputTextPos.x + cursorPosition,
 												inputTextPos.y - 10,
 												inputTextPos.x + cursorPosition + 1,
 												inputTextPos.y + 4, 0) };
 
 			defaultRender.drawColor = color_white;
-			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, ArrayCRef(rect), defaultPassContext);
+			g_matSystem->SetupDrawDefaultUP(PRIM_TRIANGLE_STRIP, rect, defaultPassContext);
 		}
 	}
 

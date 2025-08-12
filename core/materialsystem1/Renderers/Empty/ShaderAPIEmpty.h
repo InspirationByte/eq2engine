@@ -45,7 +45,7 @@ class CEmptyRenderPassRecorder : public IGPURenderPassRecorder
 {
 public:
 	IVector2D					GetRenderTargetDimensions() const { return IVector2D(800, 600); }
-	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return ArrayCRef(m_targets, MAX_RENDERTARGETS); }
+	ArrayCRef<ETextureFormat>	GetRenderTargetFormats() const { return m_targets; }
 	ETextureFormat			GetDepthTargetFormat() const {return m_depthFormat;}
 
 	bool					IsDepthReadOnly() const { return true; }

@@ -6,6 +6,7 @@
 template<typename T, typename STORAGE_TYPE>
 class ArrayBase;
 
+// check if it's ds Array type. NOT THE SAME AS is_array
 template< typename T >
 struct IsArray : std::false_type {};
 
@@ -55,8 +56,17 @@ public:
 
 	template<typename ARRAY_TYPE>
 	ArrayRef(ARRAY_TYPE& otherArray)
-		: m_pListPtr(otherArray.ptr()), m_nNumElem(otherArray.numElem())
 	{
+		if constexpr (std::is_array<ARRAY_TYPE>::value)
+		{
+			m_pListPtr = otherArray;
+			m_nNumElem = _countof(otherArray);
+		}
+		else
+		{
+			m_pListPtr = otherArray.ptr();
+			m_nNumElem = otherArray.numElem();
+		}
 	}
 
 	template<int N>
@@ -166,10 +176,18 @@ public:
 
 	template<typename ARRAY_TYPE>
 	ArrayCRef(const ARRAY_TYPE& otherArray)
-		: m_pListPtr(otherArray.ptr())
-		, m_nNumElem(otherArray.numElem())
 	{
-		static_assert(IsArray<ARRAY_TYPE>::value, "Not Array or ArrayCRef");
+		if constexpr (std::is_array<ARRAY_TYPE>::value)
+		{
+			m_pListPtr = otherArray;
+			m_nNumElem = _countof(otherArray);
+		}
+		else
+		{
+			static_assert(IsArray<ARRAY_TYPE>::value, "Not Array or ArrayCRef");
+			m_pListPtr = otherArray.ptr();
+			m_nNumElem = otherArray.numElem();
+		}
 	}
 
 	template<int N>

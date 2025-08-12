@@ -236,12 +236,22 @@ void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const VERT*
 	SetupDrawDefaultUP(primTopology, vertFVF, vertPtr, numVerts, passContext);
 }
 
+template<typename T>
+using MatSysRemoveQualifiers = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
+
 template<typename ARRAY_TYPE>
 void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const ARRAY_TYPE& verts, const RenderPassContext& passContext)
 {
-	using VERT = typename ARRAY_TYPE::ITEM;
-	const int vertFVF = VertexFVFResolver<VERT>::value;
-	SetupDrawDefaultUP(primTopology, vertFVF, verts.ptr(), verts.numElem(), passContext);
+	if constexpr (IsArray<ARRAY_TYPE>::value)
+	{
+		const int vertFVF = VertexFVFResolver<typename ARRAY_TYPE::ITEM>::value;
+		SetupDrawDefaultUP(primTopology, vertFVF, verts.ptr(), verts.numElem(), passContext);
+	}
+	else
+	{
+		const int vertFVF = VertexFVFResolver<MatSysRemoveQualifiers<decltype(verts[0])>>::value;
+		SetupDrawDefaultUP(primTopology, vertFVF, verts, _countof(verts), passContext);
+	}
 }
 
 extern IMaterialSystem* g_matSystem;
