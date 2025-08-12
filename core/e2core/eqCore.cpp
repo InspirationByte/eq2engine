@@ -325,7 +325,7 @@ bool CDkCore::Init(const CoreAppInitParameters& initParams)
 	g_consoleCommands->ResetCounter();
 
 	// Show core message
-	MsgAccept("Equilibrium 2 - %s %s\n", __DATE__, __TIME__);
+	MsgAccept("E2Core - %s %s\n", __DATE__, __TIME__);
 
 	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
 	cpuCaps->Init();

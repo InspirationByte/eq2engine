@@ -52,7 +52,7 @@ void CTextureAtlas::InitAtlas( const KVSection* kvs )
 
 	int maxNamesLen = 1;
 	for (const KVSection& entrySec : kvs->Keys())
-		maxNamesLen += strlen(entrySec.GetName()) + 1;
+		maxNamesLen += CString::Length(entrySec.GetName()) + 1;
 
 	m_names = PPNew char[maxNamesLen];
 	m_names[0] = 0;
@@ -69,7 +69,7 @@ void CTextureAtlas::InitAtlas( const KVSection* kvs )
 
 		// copy the name
 		strcpy(namesPtr, entrySec.GetName());
-		const int nameLen = strlen(namesPtr);
+		const int nameLen = CString::Length(namesPtr);
 		namesPtr[nameLen] = 0;
 		namesPtr += nameLen + 1;
 	}

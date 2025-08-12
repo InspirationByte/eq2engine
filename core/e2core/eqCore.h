@@ -10,6 +10,7 @@
 #include "utils/KeyValues.h"
 
 class IEqCoreModule;
+using CoreExceptionCbList = ArrayCRef<CoreExceptionCallback>;
 
 // interface pointer keeper
 struct coreInterface_t
@@ -37,7 +38,7 @@ public:
 	void						AddExceptionCallback(CoreExceptionCallback callback);
 	void						RemoveExceptionCallback(CoreExceptionCallback callback);
 
-	const Array<CoreExceptionCallback>&	GetExceptionHandlers() const { return m_exceptionCb; }
+	CoreExceptionCbList			GetExceptionHandlers() const { return m_exceptionCb; }
 
 	// loads module
 	OSModule*					OpenModule(const char* mod_name, EqString* outError = nullptr);
