@@ -42,6 +42,9 @@ bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vec
 								const Vector3D& linept, const Vector3D& vect, 
 								float& fraction, bool doTwoSided = false);
 
+// perform plane against triangle intersection returning two points
+bool PlaneTriangleIntersection(const Plane& plane, const Vector3D verts[3], FixedArray<Vector3D, 2>& isectPoints);
+
 //---------------------------------------------------------------------------------
 
 bool LineIntersectsLine2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint);
@@ -70,8 +73,7 @@ float RectangleRectangleSeparation(
 
 // Compute normal of triangle
 template <typename T>
-void ComputeTriangleNormal(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, 
-											TVec3D<T>& normal);
+void ComputeTriangleNormal(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, TVec3D<T>& normal);
 
 // Compute a TBN space for triangle
 template <typename T, typename T2>
@@ -128,16 +130,15 @@ inline float FT_SquareWave( float x )
 }
 
 // torsional spring function with zero offset
-// inline because MSVC doesn't let me do forward declaration
 template<typename T>
-inline void SpringFunction(T& value, T& velocity, float spring_const, float spring_damp, float fDt)
+inline void SpringFunction(T& value, T& velocity, float constant, float damping, float fDt)
 {
 	value += velocity * fDt;
 
-	const float damping = max(0.0f, 1.0f - (spring_damp * fDt));
-	velocity *= damping;
+	const float dampingFactor = max(0.0f, 1.0f - (damping * fDt));
+	velocity *= dampingFactor;
 
 	// torsional spring
-	const float springForceMagnitude = spring_const * fDt;
+	const float springForceMagnitude = constant * fDt;
 	velocity -= value * clamp(springForceMagnitude, 0.0f, 2.0f);
 }
