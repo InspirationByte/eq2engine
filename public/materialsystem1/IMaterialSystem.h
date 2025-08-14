@@ -250,7 +250,7 @@ void IMaterialSystem::SetupDrawDefaultUP(EPrimTopology primTopology, const ARRAY
 	else
 	{
 		const int vertFVF = VertexFVFResolver<MatSysRemoveQualifiers<decltype(verts[0])>>::value;
-		SetupDrawDefaultUP(primTopology, vertFVF, verts, _countof(verts), passContext);
+		SetupDrawDefaultUP(primTopology, vertFVF, verts, elementsOf(verts), passContext);
 	}
 }
 

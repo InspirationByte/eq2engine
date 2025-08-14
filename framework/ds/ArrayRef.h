@@ -60,7 +60,7 @@ public:
 		if constexpr (std::is_array<ARRAY_TYPE>::value)
 		{
 			m_pListPtr = otherArray;
-			m_nNumElem = _countof(otherArray);
+			m_nNumElem = elementsOf(otherArray);
 		}
 		else
 		{
@@ -180,7 +180,7 @@ public:
 		if constexpr (std::is_array<ARRAY_TYPE>::value)
 		{
 			m_pListPtr = otherArray;
-			m_nNumElem = _countof(otherArray);
+			m_nNumElem = elementsOf(otherArray);
 		}
 		else
 		{
