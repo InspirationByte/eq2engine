@@ -4,10 +4,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Geometry viewer - new with physics support
 //
-// TODO:	- Standard EGF viewing
+// TODO:	- (DONE) Standard EGF viewing
 //			- Physics model listing with properties
 //			- Physics model testing
-//			- Full animation support, may be with ik (BaseAnimating.cpp, for game make entity with BaseAnimatingEntity.cpp)
+//			- (DONE) Full animation support, may be with ik (BaseAnimating.cpp, for game make entity with BaseAnimatingEntity.cpp)
 //			- physics model properties saving
 //			- sequence properties saving (speed, smoothing, etc.)
 //
@@ -86,8 +86,6 @@ class CEGFViewApp: public wxApp
 {
     virtual bool OnInit();
 	virtual int	 OnExit();
-
-	// TODO: more things
 };
 
 //

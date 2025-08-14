@@ -43,7 +43,6 @@ struct EvtHandler
 	int				uid{ 0 };
 };
 
-// TODO: rewrite to make it more compact
 using TransformStack = FixedArray<Matrix4x4, MAX_CONTROL_DEPTH>;
 
 struct RenderContextAbstract

@@ -6,11 +6,6 @@
 //				Uses engine to load, draw fonts
 //////////////////////////////////////////////////////////////////////////////////
 
-/*
-TODO:
-		- Text rendering shaders and effects
-*/
-
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "utils/KeyValues.h"
@@ -28,7 +23,6 @@ TODO:
 DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
 #endif
 
-// TODO: really a font parameters!!!
 DECLARE_CVAR(r_font_sdfStart, "0.94", nullptr, CV_CHEAT);
 DECLARE_CVAR(r_font_sdfRange, "0.06", nullptr, CV_CHEAT);
 
@@ -584,7 +578,6 @@ void CFont::SetupDrawTextMeshBuffer(RenderDrawCmd& drawCmd, const FontStyleParam
 	baseColor.Set(color_white);
 
 	// draw shadow
-	// TODO: shadow color should be separate from text vertices color!!!
 	if ((params.styleFlag & TEXT_STYLE_SHADOW) && params.shadowAlpha > 0.0f)
 	{
 		shadowColor.Set(ColorRGBA(params.shadowColor, params.shadowAlpha));

@@ -80,8 +80,6 @@ void CUIManager::Init()
 	m_rootPanel->Show();
 
 	m_defaultFont = g_fontCache->GetFont("default", 22);
-
-	// TODO: EqUIScheme.res
 }
 
 void CUIManager::Shutdown()

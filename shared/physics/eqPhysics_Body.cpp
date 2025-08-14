@@ -303,7 +303,6 @@ void CEqRigidBody::AccumulateForces(float time)
 	}
 
 	// gravity to momentum
-	// TODO: gravity vector variable
 	linearVelocity += Vector3D(0, -m_gravity, 0) * time;
 
 	// apply force to momentum

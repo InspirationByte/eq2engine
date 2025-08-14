@@ -877,11 +877,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties, const MeshInstanceData
 
 	if (isSkinned)
 	{
-		// TODO: remove - use instance storage instead
 		drawCmd.AddUniformBufferView(RenderBoneTransformID, drawProperties.boneTransforms);
-
-		// HACK: This is a temporary hack until we get proper identification
-		// or maybe hardware skinning using Compute shaders
 		meshInstFormat.formatId = StringId24(EqString(meshInstFormat.name) + "Skinned");
 	}
 

@@ -81,7 +81,3 @@ runtime::BaseClassInfo BaseClassStorage::GetUpcastingBaseClassInfo(const char* c
 
 }
 }
-
-
-
-// TODO: event registrator

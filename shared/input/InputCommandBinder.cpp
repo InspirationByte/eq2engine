@@ -279,14 +279,13 @@ void UTIL_GetBindingKeyString(EqString& outStr, const InputBinding* binding, boo
 	for (int i = 0; i < validModifiers; i++)
 	{
 		if(humanReadable)
-			outStr.Append(s_keyMapList[binding->modifierIds[i]].hrname); // TODO: apply localizer
-		else
+			outStr.Append(s_keyMapList[binding->modifierIds[i]].hrname);
 			outStr.Append(s_keyMapList[binding->modifierIds[i]].name);
 		outStr.Append(INPUT_CMD_ACTIVATE_PREFIX);
 	}
 
 	if (humanReadable)
-		outStr.Append(s_keyMapList[binding->keyIdx].hrname); // TODO: apply localizer
+		outStr.Append(s_keyMapList[binding->keyIdx].hrname);
 	else
 		outStr.Append(s_keyMapList[binding->keyIdx].name);
 }

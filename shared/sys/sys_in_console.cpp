@@ -74,6 +74,7 @@ DECLARE_CMD_FN_RENAME(con_toggle_p, "+con_toggle", CONCOMMAND_FN(con_toggle), nu
 DECLARE_CMD_RENAME(con_toggle_m, "-con_toggle", nullptr, CV_INVISIBLE) {}
 DECLARE_CVAR(con_suggest, "1", nullptr, CV_ARCHIVE);
 DECLARE_CVAR(con_minicon, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(con_minicon_time, "5.0", nullptr, CV_ARCHIVE);
 
 // shows console
 DECLARE_CMD(con_show, "Show console", 0)
@@ -111,7 +112,6 @@ DECLARE_CMD(clear, nullptr,0)
 }
 
 static int CON_SUGGESTIONS_MAX	= 40;
-static float CON_MINICON_TIME	= 5.0f;
 
 CStaticAutoPtr<CEqConsoleInput> g_consoleInput;
 
@@ -211,7 +211,7 @@ void CEqConsoleInput::SpewFunc(ESpewType type, const char* pMsg)
 
 			// output to debugoverlay if enabled
 			if(con_minicon.GetBool() && debugoverlay != nullptr)
-				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text);
+				debugoverlay->TextFadeOut(0, s_spewColors[type], con_minicon_time.GetFloat(), currentSpewLine->text);
 
 			{
 				s_spewMessages.append(currentSpewLine);

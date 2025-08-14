@@ -1,5 +1,7 @@
 #pragma once
 
+// Extension: Events
+
 #include "esl_luaref.h"
 #include "esl_bind.h"
 
@@ -26,17 +28,17 @@ public:
 	using HandlePtr = CRefPtr<Handle>;
 	using FunctionSet = Map<int, LuaFunctionRef>;
 
-	HandlePtr	AddHandler(const LuaFunctionRef& func);
-	void		RemoveHandler(const HandlePtr& handle);
-	int			GetHandlerCount() const { return m_eventHandlers.size(); }
-	void		Clear();
+	HandlePtr				AddHandler(const LuaFunctionRef& func);
+	void					RemoveHandler(const HandlePtr& handle);
+	int						GetHandlerCount() const { return m_eventHandlers.size(); }
+	void					Clear();
 
 	FunctionSet::Iterator	GetFirstHandler() { return m_eventHandlers.begin(); }
 protected:
-	void			RemoveHandlerInternal(uint handle);
+	void					RemoveHandlerInternal(uint handle);
 
-	FunctionSet		m_eventHandlers{ PP_SL };
-	uint			m_handleIdCnt{ 0 };
+	FunctionSet				m_eventHandlers{ PP_SL };
+	uint					m_handleIdCnt{ 0 };
 };
 
 template<typename ... Args>

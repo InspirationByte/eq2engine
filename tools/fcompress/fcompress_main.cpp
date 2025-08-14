@@ -272,7 +272,6 @@ static void ProcessVariableString(EqString& string)
 	}
 }
 
-// TODO: separate source file
 class CFileListBuilder
 {
 public:
@@ -513,7 +512,7 @@ static void CookPackageTarget(const char* targetName)
 
 			if (CheckExtensionList(keyValueFileExt, fileExt))
 			{
-				// TODO: convert key-values file and store it (maybe uncompressed)
+				// convert key-values file and store it (maybe uncompressed)
 				KVSection sectionFile;
 				if (KV_LoadFromFile(fileInfo.fileName, SP_ROOT, sectionFile))
 				{
