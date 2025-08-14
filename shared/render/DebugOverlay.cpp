@@ -1233,8 +1233,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	// now rendering 2D stuff
 	g_matSystem->Setup2D(winWide, winTall);
 
-	const Vector2D drawFadedTextBoxPosition = Vector2D(15,45);
-	const Vector2D drawTextBoxPosition = Vector2D(15,45);
+	const Vector2D drawFadedTextBoxPosition = Vector2D(15, 80);
+	const Vector2D drawTextBoxPosition = Vector2D(15, 45);
 
 	FontStyleParam textStl;
 	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
@@ -1264,8 +1264,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 			textStl.textColor = curColor;
 
-			const Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (n * m_debugFont->GetLineHeight(textStl)));
-			m_debugFont->SetupRenderText(current.text, textPos, textStl, rendPassRecorder);
+			const Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (n * m_debugFont2->GetLineHeight(textStl)));
+			m_debugFont2->SetupRenderText(current.text, textPos, textStl, rendPassRecorder);
 
 			++n;
 		}
