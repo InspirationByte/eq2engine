@@ -124,34 +124,34 @@ struct VertexFVFResolver<Vertex3D>
 };
 
 #define MAKE_RECT(x0, y0, x1, y1, lw) \
-	{ x0, y0 },			\
-	{ x0 + lw, y0 + lw },	\
-	{ x1, y0 },			\
-	{ x1 - lw, y0 + lw },	\
-	{ x1, y1 },			\
-	{ x1 - lw, y1 - lw },	\
-	{ x0, y1 },			\
-	{ x0 + lw, y1 - lw },	\
-	{ x0, y0 },			\
-	{ x0 + lw, y0 + lw }
+	{ Vector2D{x0, y0} },			\
+	{ Vector2D{x0 + lw, y0 + lw} },	\
+	{ Vector2D{x1, y0} },			\
+	{ Vector2D{x1 - lw, y0 + lw} },	\
+	{ Vector2D{x1, y1} },			\
+	{ Vector2D{x1 - lw, y1 - lw} },	\
+	{ Vector2D{x0, y1} },			\
+	{ Vector2D{x0 + lw, y1 - lw} },	\
+	{ Vector2D{x0, y0} },			\
+	{ Vector2D{x0 + lw, y0 + lw} }
 
 #define MAKE_QUAD(x0, y0, x1, y1, o) \
-	{ x0 + o, y0 + o },	\
-	{ x0 + o, y1 - o },	\
-	{ x1 - o, y0 + o },	\
-	{ x1 - o, y1 - o }
+	{ Vector2D{x0 + o, y0 + o} },	\
+	{ Vector2D{x0 + o, y1 - o} },	\
+	{ Vector2D{x1 - o, y0 + o} },	\
+	{ Vector2D{x1 - o, y1 - o} }
 
 #define MAKE_QUAD_UVS(x0, y0, x1, y1, o) \
-	{{x0 + o, y0 + o}, {0.0f, 0.0f}},	\
-	{{x0 + o, y1 - o}, {0.0f, 1.0f}},	\
-	{{x1 - o, y0 + o}, {1.0f, 0.0f}},	\
-	{{x1 - o, y1 - o}, {1.0f, 1.0f}}
+	{ Vector2D{x0 + o, y0 + o}, Vector2D{0.0f, 0.0f}},	\
+	{ Vector2D{x0 + o, y1 - o}, Vector2D{0.0f, 1.0f}},	\
+	{ Vector2D{x1 - o, y0 + o}, Vector2D{1.0f, 0.0f}},	\
+	{ Vector2D{x1 - o, y1 - o}, Vector2D{1.0f, 1.0f}}
 
 #define MAKE_QUAD_UVS_COLOR(x0, y0, x1, y1, o, colorLT, colorLB, colorRT, colorRB) \
-	{ {x0 + o, y0 + o}, {0.0f, 0.0f}, colorLT },	\
-	{ {x0 + o, y1 - o}, {0.0f, 1.0f}, colorLB },	\
-	{ {x1 - o, y0 + o}, {1.0f, 0.0f}, colorRT },	\
-	{ {x1 - o, y1 - o}, {1.0f, 1.0f}, colorRB }
+	{ Vector2D{x0 + o, y0 + o}, Vector2D{0.0f, 0.0f}, colorLT },	\
+	{ Vector2D{x0 + o, y1 - o}, Vector2D{0.0f, 1.0f}, colorLB },	\
+	{ Vector2D{x1 - o, y0 + o}, Vector2D{1.0f, 0.0f}, colorRT },	\
+	{ Vector2D{x1 - o, y1 - o}, Vector2D{1.0f, 1.0f}, colorRB }
 
 struct RenderBufferInfo
 {
