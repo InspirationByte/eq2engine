@@ -305,8 +305,8 @@ struct TVec4D
 	operator T* () const { return (T*)&x; }
 	explicit operator const T* () const { return (T*)&x; }
 
-	// TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
-	// TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
+	TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
+	TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
 
 	const TVec3D<T>& xyz() const { return *(TVec3D<T>*)&x; }
 	const TVec3D<T>& yzw() const { return *(TVec3D<T>*)&y; }
