@@ -460,12 +460,21 @@ static bool CreateAtlasImage(const Array<ImageDesc>& images_list,
 	// save image as DDS, or TGA ???
 	if(destImage.SaveImage(imageFileName, SP_ROOT))
 	{
-		KeyValues::WriteText(g_fileSystem->Open(atlasFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
-		KeyValues::WriteText(g_fileSystem->Open(matFileName, FS_OPEN_WRITE, SP_ROOT), materialKvs);
+		IFileStreamPtr atlasFile = g_fileSystem->Open(atlasFileName, FS_OPEN_WRITE, SP_ROOT);
+		if (atlasFile)
+			KeyValues::WriteText(atlasFile, kvs);
+		else
+			MsgError("Cannot save atlas file '%s'\n", atlasFileName.ToCString());
+
+		IFileStreamPtr matFile = g_fileSystem->Open(matFileName, FS_OPEN_WRITE, SP_ROOT);
+		if(matFile)
+			KeyValues::WriteText(matFile, materialKvs);
+		else
+			MsgError("Cannot save atlas material file '%s'\n", matFileName.ToCString());
 	}
 	else
 	{
-		MsgError("Error while saving '%s' atlas texture...\n", outputMaterialName);
+		MsgError("Cannot save atlas texture '%s'\n", imageFileName.ToCString());
 		return false;
 	}
 

@@ -438,7 +438,11 @@ void CTextureCooker::ProcessMaterial(const EqString& materialFileName)
 	g_fileSystem->MakeDir(fnmPathStripName(targetMaterialFileName), SP_ROOT);
 
 	// save material file
-	KeyValues::WriteText(g_fileSystem->Open(targetMaterialFileName, FS_OPEN_WRITE, SP_ROOT), kvs);
+	IFileStreamPtr matFile = g_fileSystem->Open(targetMaterialFileName, FS_OPEN_WRITE, SP_ROOT);
+	if (matFile)
+		KeyValues::WriteText(matFile, kvs);
+	else
+		MsgError("Cannot save material file '%s'\n", targetMaterialFileName.ToCString());
 
 	// also copy atlas file
 	if (g_fileSystem->FileExist(sourceAtlasFileName, SP_ROOT))
