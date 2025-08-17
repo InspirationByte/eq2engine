@@ -131,6 +131,10 @@ bool CEqCollisionObject::Initialize(const StudioPhyObjData& physObject)
 bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEdges )
 {
 	ASSERT(!m_shape);
+	ASSERT(mesh);
+
+	if (!mesh)
+		return false;
 
 	m_mesh = mesh;
 
