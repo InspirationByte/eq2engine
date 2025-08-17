@@ -137,14 +137,14 @@ protected:
 
 	void						MapFiles(FSSearchPathInfo& pathInfo);
 
-	using SPWalkFunc = EqFunction<bool(const EqString& filePath, ESearchPath searchPath, int spFlags, bool writePath)>;
+	using SPWalkFunc = EqFunction<bool(const EqString& filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags)>;
 	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
 
 	EqString					m_basePath;			// base prepended path
     EqString					m_dataDir;			// Used to load engine data
 	EqString					m_accessKey;
 
-	Array<FSSearchPathInfo*>		m_directories{ PP_SL };		// mod data, for fall back
+	Array<FSSearchPathInfo>		m_directories{ PP_SL };		// mod data, for fall back
     Array<IPackFileReaderPtr>	m_fsPackages{ PP_SL };		// package serving as FS layers
 
 	Array<FSFindData*>			m_findDatas{ PP_SL };

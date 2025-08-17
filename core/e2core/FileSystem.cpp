@@ -28,7 +28,6 @@
 
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
-#include "core/ILocalize.h"
 #include "core/platform/OSFindData.h"
 #include "utils/CRC32.h"
 
@@ -180,7 +179,7 @@ struct FSSearchPathInfo
 #endif
 	EqString	id;
 	EqString	path;
-	bool		mainWritePath;
+	bool		writePath{ false };
 };
 
 //--------------------------------------------------
@@ -328,10 +327,6 @@ void CFileSystem::Shutdown()
 	m_isInit = false;
 	m_fsPackages.clear(true);
 	m_findDatas.clear(true);
-
-	for(int i = 0; i < m_directories.numElem(); i++)
-		delete m_directories[i];
-
 	m_directories.clear(true);
 }
 
@@ -348,7 +343,7 @@ EqString CFileSystem::FindFilePath(const char* filename, int searchFlags /*= -1*
 {
 	EqString existingFilePath;
 
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (access(filePath, F_OK) != -1)
 		{
@@ -385,10 +380,12 @@ IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int search
 	const bool isWrite = osModeFlags & (COSFile::APPEND | COSFile::WRITE);
 
 	IFileStreamPtr fileHandle;
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
-		if (isWrite && !writePath)
+		if (isWrite && !spInfo.writePath)
 			return false;
+
+		//if(spInfo.onlyPackaged)
 
 		COSFile osFile;
 		if (osFile.Open(filePath, osModeFlags))
@@ -509,7 +506,7 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 {
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (access(filePath, F_OK) != -1)
 			return true;
@@ -551,7 +548,7 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 			if(directoryId == -1) // default write path
 				searchPath = fnmPathCombine(m_basePath, GetCurrentGameDirectory());
 			else
-				searchPath = fnmPathCombine(m_basePath, m_directories[directoryId]->path);
+				searchPath = fnmPathCombine(m_basePath, m_directories[directoryId].path);
 			break;
 		case SP_ROOT:
 			searchPath = m_basePath;
@@ -631,12 +628,12 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	// First we checking mod directory
 	if (flags & SP_MOD)
 	{
-		for (const FSSearchPathInfo* spInfo : m_directories)
+		for (const FSSearchPathInfo& spInfo : m_directories)
 		{
-			filePath = fnmPathCombine(m_basePath, spInfo->path, fileName);
+			filePath = fnmPathCombine(m_basePath, spInfo.path, fileName);
 #ifndef _WIN32
 			const int nameHash = FSStringId(filePath);
-			const auto it = spInfo->pathToFileMapping.find(nameHash);
+			const auto it = spInfo.pathToFileMapping.find(nameHash);
 			if (!it.atEnd())
 			{
 				// apply correct filepath
@@ -644,7 +641,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			}
 #endif
 
-			if (func(filePath, SP_MOD, flags, spInfo->mainWritePath))
+			if (func(filePath, SP_MOD, spInfo, flags))
 				return true;
 		}
 	}
@@ -652,8 +649,9 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	//Then we checking data directory
 	if (flags & SP_DATA)
 	{
+		FSSearchPathInfo dataSpInfo;
 		filePath = fnmPathCombine(m_basePath, m_dataDir, fileName);
-		if (func(filePath, SP_DATA, flags, false))
+		if (func(filePath, SP_DATA, dataSpInfo, flags))
 			return true;
 	}
 
@@ -661,6 +659,9 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	// not adding basepath to this
 	if (flags & SP_ROOT)
 	{
+		FSSearchPathInfo rootSpInfo;
+		rootSpInfo.writePath = true;
+
 		if(isAbsolutePath)
 		{
 			filePath = fileName;
@@ -670,7 +671,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			filePath = fnmPathCombine(m_basePath, fileName);
 		
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
-		if (func(filePath, SP_ROOT, flags, true))
+		if (func(filePath, SP_ROOT, rootSpInfo, flags))
 			return true;
 	}
 
@@ -735,7 +736,7 @@ IPackFileReaderPtr CFileSystem::OpenPackage(const char* packageName, int searchF
 {
 	CRefPtr<CBasePackageReader> reader = CBasePackageReader::CreateReaderByExtension(packageName);
 
-	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, const FSSearchPathInfo& spInfo, int spFlags) -> bool
 	{
 		if (reader->InitPackage(filePath, nullptr))
 			return true;
@@ -834,8 +835,8 @@ void CFileSystem::MapFiles(FSSearchPathInfo& pathInfo)
 // sets fallback directory for mod
 void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
-	const int idx = arrayFindIndexF(m_directories, [=](const FSSearchPathInfo* spInfo) {
-		return spInfo->id == pathId;
+	const int idx = arrayFindIndexF(m_directories, [=](const FSSearchPathInfo& spInfo) {
+		return spInfo.id == pathId;
 	});
 	if (idx != -1)
 	{
@@ -848,30 +849,29 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 	const bool isReadPriorityPath = CString::SubString(pathId, "$MOD$") || CString::SubString(pathId, "$LOCALIZE$");
 	const bool isWriteablePath = CString::SubString(pathId, "$WRITE$");
 
-	FSSearchPathInfo* pathInfo = PPNew FSSearchPathInfo;
-	pathInfo->id = pathId;
-	pathInfo->path = pszDir;
-	pathInfo->mainWritePath = !isReadPriorityPath || isWriteablePath;
+	FSSearchPathInfo pathInfo;
+	pathInfo.id = pathId;
+	pathInfo.path = pszDir;
+	pathInfo.writePath = !isReadPriorityPath || isWriteablePath;
 
 	if(isReadPriorityPath)
 		m_directories.insert(pathInfo, 0);
 	else
 		m_directories.append(pathInfo);
 
-	if(!pathInfo->mainWritePath)
-		MapFiles(*pathInfo);
+	if(!pathInfo.writePath)
+		MapFiles(pathInfo);
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)
 {
 	for(int i = 0; i < m_directories.numElem(); i++)
 	{
-		if(m_directories[i]->id == EqStringRef(pathId))
+		if(m_directories[i].id == EqStringRef(pathId))
 		{
 			DevMsg(DEVMSG_FS, "Removing search path '%s'\n", pathId);
-			delete m_directories[i];
 			m_directories.removeIndex(i);
-			break;
+			return;
 		}
 	}
 }
@@ -879,11 +879,11 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 // Returns current game path
 const char* CFileSystem::GetCurrentGameDirectory() const
 {
-	// return first directory with 'mainWritePath' attribute set
-	for (const FSSearchPathInfo* spInfo : m_directories)
+	// return first directory with 'writePath' attribute set
+	for (const FSSearchPathInfo& spInfo : m_directories)
 	{
-		if (spInfo->mainWritePath)
-			return spInfo->path;
+		if (spInfo.writePath)
+			return spInfo.path;
 	}
 
     return m_dataDir.GetData();
