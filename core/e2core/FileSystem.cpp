@@ -385,8 +385,6 @@ IFileStreamPtr CFileSystem::Open(const char* filename, int openFlags, int search
 		if (isWrite && !spInfo.writePath)
 			return false;
 
-		//if(spInfo.onlyPackaged)
-
 		COSFile osFile;
 		if (osFile.Open(filePath, osModeFlags))
 		{
