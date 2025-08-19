@@ -15,11 +15,12 @@ class IEffect
 public:
 	virtual ~IEffect() = default;
 
-	void			SetSortOrigin(const Vector3D &origin);
-	const Vector3D& GetOrigin() const { return m_origin; }
-
 	// Draws effect. required for overriding
 	virtual bool	DrawEffect(float dTime) = 0;
+	virtual void	Release() { delete this; }
+
+	void			SetSortOrigin(const Vector3D &origin);
+	const Vector3D& GetOrigin() const { return m_origin; }
 
 	float			GetLifetimePercent() const	{ return m_lifeTime * m_lifeTimeRcp; }
 	float			GetDistanceToCamera() const	{ return m_distToView; }

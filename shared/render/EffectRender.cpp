@@ -49,7 +49,7 @@ void CEffectRenderer::AddEffect(IEffect* pEffect)
 	if(m_effectList.isFull())
 	{
 		DevMsg(DEVMSG_CORE, "Effect list overflow!\n");
-		delete pEffect;
+		pEffect->Release();
 		return;
 	}
 
@@ -78,7 +78,7 @@ void CEffectRenderer::DrawEffects(float dt)
 
 		if(!m_effectList[i]->DrawEffect(dt))
 		{
-			delete m_effectList[i];
+			m_effectList[i]->Release();
 			m_effectList.fastRemoveIndex(i--);
 		}
 	}
@@ -88,8 +88,8 @@ void CEffectRenderer::RemoveAllEffects()
 {
 	CScopedMutex m(s_effectRenderMutex);
 
-	for(IEffect* eff : m_effectList)
-		delete eff;
+	for (IEffect* eff : m_effectList)
+		eff->Release();
 	m_effectList.clear();
 }
 
