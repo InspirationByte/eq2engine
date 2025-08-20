@@ -876,11 +876,3 @@ static const MColor color_green		= MColor(0xFF00F900, true);
 static const MColor color_cyan		= MColor(0xFF00FFFF, true);
 static const MColor color_brown		= MColor(0xFFA52A2A, true);
 static const MColor color_gray		= MColor(0xFF808080, true);
-
-#ifndef V3IsNaN
-#define V3IsNaN( v )		(fisNan(v.x) || fisNan(v.y) || fisNan(v.z))
-#endif
-
-#ifndef V4IsNaN
-#define V4IsNaN( v )		(fisNan(v.x) || fisNan(v.y) || fisNan(v.z) || fisNan(v.w))
-#endif

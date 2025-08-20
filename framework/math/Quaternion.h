@@ -53,7 +53,7 @@ struct Quaternion
 	void normalize();
 	void fastNormalize();
 
-	bool isNan() const;
+	bool isValid() const;
 };
 
 Quaternion operator + (const Quaternion &u, const Quaternion &v);
