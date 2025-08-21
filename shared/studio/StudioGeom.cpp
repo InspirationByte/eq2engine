@@ -682,7 +682,7 @@ ArrayCRef<IMaterialPtr>	CEqStudioGeom::GetMaterials(int skinIdx) const
 
 int CEqStudioGeom::GetSkinCount() const
 {
-	return m_materials.numElem() / m_materialCount;
+	return m_materialCount ? m_materials.numElem() / m_materialCount : 0;
 }
 
 int	CEqStudioGeom::GetSkinIdx(const char* name) const
