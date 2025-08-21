@@ -22,7 +22,7 @@ enum EBodyFlags
 	BODY_FORCE_FREEZE			= (1 << 17),
 
 	// when object is frozen, it will preserve the forces
-	BODY_FORCE_PRESERVEFORCES	= (1 << 18),
+	BODY_FREEZE_PRESERVE_FORCES	= (1 << 18),
 
 	// disables angular damping of body
 	BODY_DISABLE_DAMPING		= (1 << 19),
@@ -127,7 +127,7 @@ public:
 
 	bool				TryWake( bool velocityCheck = true );										///< tries to wake the body up
 	void				Wake();																		///< unfreezes the body even if it was forced to freeze
-	void				Freeze();																	///< force freezes body and external powers will not wake it up
+	void				Freeze( bool allowForcePreservation = false );										///< force freezes body and external powers will not wake it up
 	bool				IsFrozen() const;															///< indicates that body has been frozen (forced or timed out)
 
 	void				SetMinFrameTime( float time, bool ignoreMotion = true );					///< sets minimal frame time for collision detections

@@ -40,6 +40,7 @@ enum ECollisionObjectFlags
 	COLLOBJ_ISGHOST					= (1 << 4),
 
 	// game flag that marks static objects as moveable (by scripts etc)
+	// this will also create broadphase grid cells if transform has changed
 	COLLOBJ_MIGHT_MOVE				= (1 << 5),
 
 	//---------------
@@ -96,8 +97,8 @@ public:
 
 	virtual bool				IsDynamic() const {return false;}									///< is dynamic?
 
-	eqPhysGridCell*				GetCell() const					{ return m_cell; }					///< returns collision grid cell
-	void						SetCell(eqPhysGridCell* cell)	{ m_cell = cell; }					///< sets collision grid cell
+	const IVector2D&			GetCell() const					{ return m_cell; }					///< returns collision grid cell
+	void						SetCell(const IVector2D& cell)	{ m_cell = cell; }					///< sets collision grid cell
 
 	float						GetFriction() const;
 	float						GetRestitution() const;
@@ -160,7 +161,7 @@ protected:
 	btCollisionObject*		m_collObject{ nullptr };
 	CEqBulletIndexedMesh*	m_mesh{ nullptr };
 	btTriangleInfoMap*		m_trimap{ nullptr };
-	eqPhysGridCell*			m_cell{ nullptr };
+	IVector2D				m_cell{ -1 };
 
 	btCollisionShape*		m_shape{ nullptr };
 	btCollisionShape**		m_shapeList{ nullptr };

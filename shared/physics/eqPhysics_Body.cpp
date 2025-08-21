@@ -137,13 +137,13 @@ bool CEqRigidBody::TryWake( bool velocityCheck )
 
 void CEqRigidBody::Wake()
 {
-	m_flags &= ~(BODY_FROZEN | BODY_FORCE_FREEZE);
+	m_flags &= ~(BODY_FROZEN | BODY_FORCE_FREEZE | BODY_FREEZE_PRESERVE_FORCES);
 	m_freezeTime = BODY_FREEZE_TIME;
 }
 
-void CEqRigidBody::Freeze()
+void CEqRigidBody::Freeze(bool allowForcePreservation)
 {
-	m_flags |= (BODY_FROZEN | BODY_FORCE_FREEZE);
+	m_flags |= (BODY_FROZEN | BODY_FORCE_FREEZE | (allowForcePreservation ? BODY_FREEZE_PRESERVE_FORCES : 0));
 }
 
 bool CEqRigidBody::IsFrozen() const
@@ -187,7 +187,7 @@ void CEqRigidBody::Integrate(float delta)
 {
 	if( IsFrozen() )
 	{
-		if(!(m_flags & BODY_FORCE_PRESERVEFORCES))
+		if(!(m_flags & BODY_FREEZE_PRESERVE_FORCES))
 		{
 			// zero some forces
 			m_totalTorque = vec3_zero;

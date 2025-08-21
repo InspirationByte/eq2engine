@@ -28,7 +28,7 @@
 
 #include "eqPhysics.h"
 #include "eqCollision_Callback.h"
-#include "eqCollision_ObjectGrid.h"
+#include "eqCollision_Grid.h"
 #include "eqPhysics_Body.h"
 #include "eqPhysics_Contstraint.h"
 #include "eqPhysics_Controller.h"
@@ -41,7 +41,7 @@ static Threading::CEqReadWriteLock s_eqPhysDynamicRWLock;
 
 static constexpr const int PHYSGRID_WORLD_SIZE			= 24;	// compromised betwen memory usage and performance
 static constexpr const float PHYSICS_WORLD_MAX_UNITS	= 65535.0f;
-static constexpr const float PHYSGRID_BOX_TOLERANCE		= 0.1f;
+static constexpr const float PHYSICS_GRID_COLLISION_TOLERANCE	= 0.5f;
 
 DECLARE_CVAR_F(ph_margin);
 
@@ -279,19 +279,19 @@ void CEqPhysicsWorld::InitWorld()
 	//m_dispatchInfo->m_useConvexConservativeDistanceUtil = false;
 }
 
-void CEqPhysicsWorld::InitGrid()
+void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
 {
-	m_grid = PPNew CEqCollisionBroadphaseGrid(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
+	m_grid = PPNew CEqCollisionBroadphaseGrid(PHYSGRID_WORLD_SIZE, worldBBox);
 
 	// add all objects to the grid
-	for(int i = 0; i < m_dynObjects.numElem(); i++)
-		SetupBodyOnCell(m_dynObjects[i]);
+	for(CEqRigidBody* body : m_dynObjects)
+		SetupBodyOnCell(body);
 
-	for(int i = 0; i < m_staticObjects.numElem(); i++)
-		m_grid->AddStaticObjectToGrid(m_staticObjects[i]);
+	for(CEqCollisionObject* collObj : m_staticObjects)
+		m_grid->AddStaticObjectToGrid(collObj);
 
-	for(int i = 0; i < m_ghostObjects.numElem(); i++)
-		SetupBodyOnCell(m_ghostObjects[i]);
+	for(CEqCollisionObject* collObj : m_ghostObjects)
+		SetupBodyOnCell(collObj);
 }
 
 void CEqPhysicsWorld::DestroyWorld()
@@ -381,8 +381,6 @@ void CEqPhysicsWorld::AddToMoveableList( CEqRigidBody* body )
 	if (body->m_flags & BODY_MOVEABLE)
 		return;
 
-	//CScopedMutex m(s_eqPhysMutex);
-
 	body->m_flags |= BODY_MOVEABLE;
 
 	CHECK_ALREADY_IN_LIST(m_moveable, body);
@@ -409,8 +407,6 @@ void CEqPhysicsWorld::AddBody( CEqRigidBody* body, bool moveable )
 	if(!body)
 		return;
 
-	//CScopedMutex m(s_eqPhysMutex);
-
 	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
 
 	body->m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
@@ -428,8 +424,7 @@ bool CEqPhysicsWorld::RemoveBody( CEqRigidBody* body )
 	if(!body)
 		return false;
 
-	eqPhysGridCell* cell = body->GetCell();
-
+	eqPhysGridCell* cell = m_grid->GetCellAt(body->GetCell());
 	if (cell)
 	{
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
@@ -448,8 +443,6 @@ void CEqPhysicsWorld::AddGhostObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	//CScopedMutex m(s_eqPhysMutex);
-
 	// add extra flags to objects
 	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
 
@@ -457,13 +450,10 @@ void CEqPhysicsWorld::AddGhostObject( CEqCollisionObject* object )
 		object->m_flags |= COLLOBJ_COLLISIONLIST;
 
 	m_ghostObjects.append(object);
-
 	if(m_grid)
 	{
 		if(object->GetMesh() != nullptr)
-		{
 			m_grid->AddStaticObjectToGrid( object );
-		}
 		else
 			SetupBodyOnCell( object );
 	}
@@ -474,8 +464,6 @@ bool CEqPhysicsWorld::RemoveGhostObject( CEqCollisionObject* object )
 	if(!object)
 		return false;
 
-	//CScopedMutex m(s_eqPhysMutex);
-
 	if(m_grid)
 	{
 		if(object->GetMesh() != nullptr)
@@ -484,8 +472,7 @@ bool CEqPhysicsWorld::RemoveGhostObject( CEqCollisionObject* object )
 		}
 		else
 		{
-			eqPhysGridCell* cell = object->GetCell();
-
+			eqPhysGridCell* cell = m_grid->GetCellAt(object->GetCell());
 			if (cell)
 			{
 				Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
@@ -505,10 +492,7 @@ void CEqPhysicsWorld::AddStaticObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	//CScopedMutex m(s_eqPhysMutex);
-
 	m_staticObjects.append(object);
-
 	if(m_grid)
 		m_grid->AddStaticObjectToGrid( object );
 }
@@ -548,7 +532,6 @@ void CEqPhysicsWorld::AddConstraint( IEqPhysicsConstraint* constraint )
 	if(!constraint)
 		return;
 
-	//CScopedMutex m(s_eqPhysMutex);
 	m_constraints.append( constraint );
 }
 
@@ -557,7 +540,6 @@ bool CEqPhysicsWorld::RemoveConstraint( IEqPhysicsConstraint* constraint )
 	if(!constraint)
 		return false;
 
-	//CScopedMutex m(s_eqPhysMutex);
 	return m_constraints.fastRemove( constraint );
 }
 
@@ -566,7 +548,6 @@ void CEqPhysicsWorld::AddController( IEqPhysController* controller )
 	if(!controller)
 		return;
 
-	//CScopedMutex m(s_eqPhysMutex);
 	m_controllers.append( controller );
 
 	controller->AddedToWorld( this );
@@ -577,7 +558,6 @@ bool CEqPhysicsWorld::RemoveController( IEqPhysController* controller )
 	if(!controller)
 		return false;
 
-	//CScopedMutex m(s_eqPhysMutex);
 	if(!m_controllers.fastRemove( controller ))
 		return false;
 
@@ -598,8 +578,6 @@ void CEqPhysicsWorld::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bo
 	// test radius between bodies
 	const float lenA = lengthSqr(bodyA->m_aabb.GetSize());
 	const float lenB = lengthSqr(bodyB->m_aabb.GetSize());
-
-#pragma todo("SolveBodyCollisions - add speed vector for more 'swept' broadphase detection")
 
 	const FVector3D centerOffset = (bodyA->GetPosition()-bodyB->GetPosition());
 
@@ -898,22 +876,19 @@ void CEqPhysicsWorld::SetupBodyOnCell( CEqCollisionObject* body )
 	if(!m_grid)
 		return;
 
-	eqPhysGridCell* oldCell = body->GetCell();
-
-	// get new cell
-	eqPhysGridCell* newCell = m_grid->GetPreallocatedCellAtPos( body->GetPosition() );
-
-	// move object in grid
-	if (newCell != oldCell)
+	IVector2D newCellPos;
+	if (m_grid->GetPointAt(body->GetPosition(), newCellPos))
 	{
-		CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		if (oldCell)
-			oldCell->dynamicObjList.unlinkNode(body);
-
-		if (newCell)
-			newCell->dynamicObjList.insertNodeLast(body);
-
-		body->SetCell(newCell);
+		if (body->GetCell() != newCellPos)
+		{
+			eqPhysGridCell* oldCell = m_grid->GetCellAt(body->GetCell());
+			eqPhysGridCell* newCell = m_grid->GetAllocCellAt(newCellPos);
+			if (oldCell)
+				oldCell->dynamicObjList.unlinkNode(body);
+			if (newCell)
+				newCell->dynamicObjList.insertNodeLast(body);
+			body->SetCell(newCellPos);
+		}
 	}
 }
 
@@ -921,30 +896,22 @@ void CEqPhysicsWorld::IntegrateSingle(CEqRigidBody* body)
 {
 	using namespace Threading;
 
-	eqPhysGridCell* oldCell = body->GetCell();
-
 	// move object
 	body->Integrate( m_fDt );
 
-	const bool bodyFrozen = body->IsFrozen();
-	const bool forceSetCell = !oldCell && bodyFrozen;
-
-	if(!bodyFrozen && body->IsCanIntegrate(true) || forceSetCell)
+	IVector2D newCellPos;
+	if (m_grid->GetPointAt(body->GetPosition(), newCellPos))
 	{
-		// get new cell
-		eqPhysGridCell* newCell = m_grid->GetCellAtPos( body->GetPosition() );
-
-		// move object in grid if it's a really new cell
-		if (newCell != oldCell)
+		if (body->GetCell() != newCellPos)
 		{
-			CScopedWriteLocker m(s_eqPhysDynamicRWLock);
+			eqPhysGridCell* oldCell = m_grid->GetCellAt(body->GetCell());
 			if (oldCell)
 				oldCell->dynamicObjList.unlinkNode(body);
 
+			eqPhysGridCell* newCell = (body->m_flags & COLLOBJ_MIGHT_MOVE) ? m_grid->GetAllocCellAt(newCellPos) : m_grid->GetCellAt(newCellPos);
 			if (newCell)
 				newCell->dynamicObjList.insertNodeLast(body);
-
-			body->SetCell(newCell);
+			body->SetCell(newCellPos);
 		}
 	}
 }
@@ -959,25 +926,23 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 	if (!body->IsCanIntegrate())
 		return;
 
-	const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
-
 	body->UpdateBoundingBoxTransform();
 	const BoundingBox aabb = body->m_aabb_transformed;
 	
 	// get the grid box range for searching collision objects
-	IAARectangle gridRange;
-	m_grid->FindBoxRange(aabb, gridRange, PHYSGRID_BOX_TOLERANCE);
+	const IAARectangle gridRange = m_grid->FindBoxRange(aabb, PHYSICS_GRID_COLLISION_TOLERANCE);
 
 	const IVector2D rangeSize = gridRange.GetSize();
 	ASSERT_MSG(rangeSize.x < 100 && rangeSize.y < 100, "Dynamic object might be too large in physics world");
 
 	// in this range do all collision checks
 	// might be slow
+	const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
 	for(int y = gridRange.leftTop.y; y <= gridRange.rightBottom.y; y++)
 	{
 		for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
 		{
-			const eqPhysGridCell* ncell = m_grid->GetCellAt( x, y );
+			const eqPhysGridCell* ncell = m_grid->GetCellAt(IVector2D(x, y));
 			if(!ncell)
 				continue;
 						
@@ -1334,15 +1299,14 @@ bool CEqPhysicsWorld::TestLineCollisionOnCell(int y, int x,
 	if (!m_grid)
 		return false;
 
-	eqPhysGridCell* cell = m_grid->GetCellAt(x,y);
-
+	eqPhysGridCell* cell = m_grid->GetCellAt(IVector2D(x, y));
 	if (!cell)
 		return true;
 
 	float closest = coll.fract;
 
 	Vector2D cellMin, cellMax;
-	m_grid->GetCellBoundsXZ(x, y, cellMin, cellMax);
+	m_grid->GetCellBoundsXZ(IVector2D(x, y), cellMin, cellMax);
 
 	// try to stop propagating ray across grid
 	{
@@ -1450,7 +1414,6 @@ bool CEqPhysicsWorld::TestLineCollision(	const FVector3D& start, const FVector3D
 
 	Vector2D startCell, endCell;
 
-	//CScopedMutex m(s_eqPhysMutex);
 	m_grid->GetPointAt(start, startCell);
 	m_grid->GetPointAt(end, endCell);
 
@@ -1493,7 +1456,6 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(const btCollisionShape* shape,
 	if (!m_grid) {
 		return false;
 	}
-	//CScopedMutex m(s_eqPhysMutex);
 
 	coll.position = end;
 	coll.fract = 32768.0f;

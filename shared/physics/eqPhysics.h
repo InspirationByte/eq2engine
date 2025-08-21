@@ -64,7 +64,7 @@ public:
 	~CEqPhysicsWorld();
 
 	void							InitWorld();										///< initializes world
-	void							InitGrid();											///< initializes broadphase grid
+	void							InitGrid(const BoundingBox& worldBBox);				///< initializes broadphase grid
 
 	void							DestroyWorld();										///< destroys world
 	void							DestroyGrid();										///< destroys broadphase grid

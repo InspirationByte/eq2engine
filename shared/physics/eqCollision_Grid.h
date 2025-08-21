@@ -23,13 +23,14 @@ struct eqPhysGridCell
 class CEqCollisionBroadphaseGrid
 {
 public:
-	CEqCollisionBroadphaseGrid(CEqPhysicsWorld* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs);
+	CEqCollisionBroadphaseGrid(int cellSize, const BoundingBox& worldBox);
 	~CEqCollisionBroadphaseGrid();
 
-	eqPhysGridCell*		GetPreallocatedCellAtPos(const Vector3D& origin);
+	eqPhysGridCell*		GetAllocCellAtPos(const Vector3D& origin);
+	eqPhysGridCell*		GetAllocCellAt(const IVector2D& xzCell);
 
 	eqPhysGridCell*		GetCellAtPos(const Vector3D& origin) const;
-	eqPhysGridCell*		GetCellAt(int x, int y) const;
+	eqPhysGridCell*		GetCellAt(const IVector2D& xzCell) const;
 
 	bool				GetPointAt(const Vector3D& origin, IVector2D& xzCell) const;
 	bool				GetPointAt(const Vector3D& origin, Vector2D& xzCell) const;
@@ -37,10 +38,10 @@ public:
 	void				AddStaticObjectToGrid( CEqCollisionObject* collisionObject );
 	void				RemoveStaticObjectFromGrid( CEqCollisionObject* collisionObject );
 
-	void				GetCellBoundsXZ(int x, int y, Vector2D& mins, Vector2D& maxs) const;
-	bool				GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const;
+	void				GetCellBoundsXZ(const IVector2D& xzCell, Vector2D& mins, Vector2D& maxs) const;
+	bool				GetCellBounds(const IVector2D& xzCell, Vector3D& mins, Vector3D& maxs) const;
 
-	void				FindBoxRange(const BoundingBox& bbox, IAARectangle& gridRange, float extTolerance) const;
+	IAARectangle		FindBoxRange(const BoundingBox& bbox, float extTolerance) const;
 
 	void				DebugRender();
 
@@ -48,14 +49,14 @@ public:
 
 protected:
 
-	eqPhysGridCell*		GetAllocCellAt(int x, int y);
-	void				FreeCellAt( int x, int y );
+	void				FreeCellAt(const IVector2D& xzCell);
 
-	Map<int, eqPhysGridCell> m_gridMap{ PP_SL };
-	CEqPhysicsWorld*			m_physics{ nullptr };
+	MemoryPool<eqPhysGridCell>	m_gridPool{ PP_SL };
+	Array<eqPhysGridCell*>		m_gridMap{ PP_SL };		// TODO: LUT
 
-	int					m_gridSize;
-	float				m_invGridSize;
+	BoundingBox			m_worldBox;
+	float				m_cellSize;
+	float				m_invCellSize;
 
 	int					m_gridWide;
 	int					m_gridTall;
