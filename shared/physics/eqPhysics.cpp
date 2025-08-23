@@ -256,6 +256,8 @@ struct CEqBroadphaseCallback : btBroadphaseAabbCallback
 
 	bool process(const btBroadphaseProxy* proxy) override
 	{
+		if (!proxy)
+			return false;
 		m_func(reinterpret_cast<CEqCollisionObject*>(proxy->m_clientObject));
 		return true;
 	}
@@ -283,6 +285,8 @@ struct CEqBroadphaseRayCallback : btBroadphaseRayCallback
 
 	bool process(const btBroadphaseProxy* proxy) override
 	{
+		if (!proxy)
+			return false;
 		m_func(reinterpret_cast<CEqCollisionObject*>(proxy->m_clientObject));
 		return true;
 	}
@@ -1210,11 +1214,6 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 	if(preIntegrFunc)
 		preIntegrFunc(m_fDt, iteration);
-
-	{
-		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->calculateOverlappingPairs(m_collDispatcher);
-	}
 
 	{
 		PROF_EVENT("Moving Bodies CollDet");
