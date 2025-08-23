@@ -28,7 +28,6 @@
 
 #include "eqPhysics.h"
 #include "eqCollision_Callback.h"
-#include "eqCollision_Grid.h"
 #include "eqPhysics_Body.h"
 #include "eqPhysics_Contstraint.h"
 #include "eqPhysics_Controller.h"
@@ -246,6 +245,49 @@ struct CEqManifoldResult : public btManifoldResult
 	bool							m_singleSided;
 };
 
+template<typename F>
+struct CEqBroadphaseCallback : btBroadphaseAabbCallback
+{
+	F m_func;
+	CEqBroadphaseCallback(F func)
+		: m_func(func)
+	{
+	}
+
+	bool process(const btBroadphaseProxy* proxy) override
+	{
+		m_func(reinterpret_cast<CEqCollisionObject*>(proxy->m_clientObject));
+		return true;
+	}
+};
+
+template<typename F>
+struct CEqBroadphaseRayCallback : btBroadphaseRayCallback
+{
+	F m_func;
+	CEqBroadphaseRayCallback(const Vector3D& rayVec, F func)
+		: m_func(func)
+	{
+		const Vector3D rayDir = normalize(rayVec);
+
+		///what about division by zero? --> just set rayDirection[i] to INF/BT_LARGE_FLOAT
+		m_rayDirectionInverse[0] = rayDir[0] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[0];
+		m_rayDirectionInverse[1] = rayDir[1] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[1];
+		m_rayDirectionInverse[2] = rayDir[2] == btScalar(0.0) ? btScalar(BT_LARGE_FLOAT) : btScalar(1.0) / rayDir[2];
+		m_signs[0] = m_rayDirectionInverse[0] < 0.0;
+		m_signs[1] = m_rayDirectionInverse[1] < 0.0;
+		m_signs[2] = m_rayDirectionInverse[2] < 0.0;
+
+		m_lambda_max = dot(rayDir, rayVec);
+	}
+
+	bool process(const btBroadphaseProxy* proxy) override
+	{
+		m_func(reinterpret_cast<CEqCollisionObject*>(proxy->m_clientObject));
+		return true;
+	}
+};
+
 //------------------------------------------------------------------------------------------------------------
 
 CEqPhysicsWorld::CEqPhysicsWorld()
@@ -281,17 +323,34 @@ void CEqPhysicsWorld::InitWorld()
 
 void CEqPhysicsWorld::InitGrid(const BoundingBox& worldBBox)
 {
-	m_grid = PPNew CEqCollisionBroadphaseGrid(PHYSGRID_WORLD_SIZE, worldBBox);
+	using namespace EqBulletUtils;
+	btVector3 boxMin, boxMax;
+	ConvertDKToBulletVectors(boxMin, worldBBox.minPoint);
+	ConvertDKToBulletVectors(boxMax, worldBBox.maxPoint);
+	m_broadphase = new btDbvtBroadphase();
 
-	// add all objects to the grid
 	for(CEqRigidBody* body : m_dynObjects)
-		SetupBodyOnCell(body);
-
-	for(CEqCollisionObject* collObj : m_staticObjects)
-		m_grid->AddStaticObjectToGrid(collObj);
+		SetupCollisionObjectBroadphase(body);
 
 	for(CEqCollisionObject* collObj : m_ghostObjects)
-		SetupBodyOnCell(collObj);
+		SetupCollisionObjectBroadphase(collObj);
+
+	for (CEqCollisionObject* collObj : m_staticObjects)
+		SetupCollisionObjectBroadphase(collObj);
+}
+
+void CEqPhysicsWorld::DestroyGrid()
+{
+	for (CEqRigidBody* body : m_dynObjects)
+		body->m_broadphaseProxy = nullptr;
+
+	for (CEqCollisionObject* collObj : m_ghostObjects)
+		collObj->m_broadphaseProxy = nullptr;
+
+	for (CEqCollisionObject* collObj : m_staticObjects)
+		collObj->m_broadphaseProxy = nullptr;
+
+	SAFE_DELETE(m_broadphase);
 }
 
 void CEqPhysicsWorld::DestroyWorld()
@@ -311,11 +370,6 @@ void CEqPhysicsWorld::DestroyWorld()
 	SAFE_DELETE(m_collDispatcher);
 	SAFE_DELETE(m_collConfig);
 	SAFE_DELETE(m_dispatchInfo);
-}
-
-void CEqPhysicsWorld::DestroyGrid()
-{
-	SAFE_DELETE(m_grid);
 }
 
 void CEqPhysicsWorld::AddSurfaceParamFromKV(const char* name, const KVSection& kvSection)
@@ -416,7 +470,7 @@ void CEqPhysicsWorld::AddBody( CEqRigidBody* body, bool moveable )
 	if(moveable)
 		AddToMoveableList( body );
 	else
-		SetupBodyOnCell( body );
+		SetupCollisionObjectBroadphase( body );
 }
 
 bool CEqPhysicsWorld::RemoveBody( CEqRigidBody* body )
@@ -424,12 +478,12 @@ bool CEqPhysicsWorld::RemoveBody( CEqRigidBody* body )
 	if(!body)
 		return false;
 
-	eqPhysGridCell* cell = m_grid->GetCellAt(body->GetCell());
-	if (cell)
+	if (body->m_broadphaseProxy)
 	{
 		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-		cell->dynamicObjList.unlinkNode(body);
+		m_broadphase->destroyProxy(body->m_broadphaseProxy, m_collDispatcher);
 	}
+	body->m_broadphaseProxy = nullptr;
 
 	const bool result = m_dynObjects.fastRemove(body);
 	if (result)
@@ -450,13 +504,7 @@ void CEqPhysicsWorld::AddGhostObject( CEqCollisionObject* object )
 		object->m_flags |= COLLOBJ_COLLISIONLIST;
 
 	m_ghostObjects.append(object);
-	if(m_grid)
-	{
-		if(object->GetMesh() != nullptr)
-			m_grid->AddStaticObjectToGrid( object );
-		else
-			SetupBodyOnCell( object );
-	}
+	SetupCollisionObjectBroadphase(object);
 }
 
 bool CEqPhysicsWorld::RemoveGhostObject( CEqCollisionObject* object )
@@ -464,22 +512,12 @@ bool CEqPhysicsWorld::RemoveGhostObject( CEqCollisionObject* object )
 	if(!object)
 		return false;
 
-	if(m_grid)
+	if (object->m_broadphaseProxy)
 	{
-		if(object->GetMesh() != nullptr)
-		{
-			m_grid->RemoveStaticObjectFromGrid(object);
-		}
-		else
-		{
-			eqPhysGridCell* cell = m_grid->GetCellAt(object->GetCell());
-			if (cell)
-			{
-				Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
-				cell->dynamicObjList.unlinkNode(object);
-			}
-		}
+		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
+		m_broadphase->destroyProxy(object->m_broadphaseProxy, m_collDispatcher);
 	}
+	object->m_broadphaseProxy = nullptr;
 
 	if(!m_ghostObjects.fastRemove(object))
 		return false;
@@ -493,8 +531,7 @@ void CEqPhysicsWorld::AddStaticObject( CEqCollisionObject* object )
 		return;
 
 	m_staticObjects.append(object);
-	if(m_grid)
-		m_grid->AddStaticObjectToGrid( object );
+	SetupCollisionObjectBroadphase( object );
 }
 
 bool CEqPhysicsWorld::RemoveStaticObject( CEqCollisionObject* object )
@@ -505,8 +542,12 @@ bool CEqPhysicsWorld::RemoveStaticObject( CEqCollisionObject* object )
 	if (!m_staticObjects.fastRemove(object))
 		return false;
 
-	if (m_grid)
-		m_grid->RemoveStaticObjectFromGrid(object);
+	if (object->m_broadphaseProxy)
+	{
+		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
+		m_broadphase->destroyProxy(object->m_broadphaseProxy, m_collDispatcher);
+	}
+	object->m_broadphaseProxy = nullptr;
 
 	return true;
 }
@@ -868,28 +909,36 @@ void CEqPhysicsWorld::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj,
 	}
 }
 
-void CEqPhysicsWorld::SetupBodyOnCell( CEqCollisionObject* body )
+void CEqPhysicsWorld::SetupCollisionObjectBroadphase( CEqCollisionObject* collObj )
 {
-	using namespace Threading;
-
-	// check body is in the world
-	if(!m_grid)
+	if (!(collObj->m_flags & COLLOBJ_BROADPHASE_DIRTY))
 		return;
 
-	IVector2D newCellPos;
-	if (m_grid->GetPointAt(body->GetPosition(), newCellPos))
+	using namespace Threading;
+	using namespace EqBulletUtils;
+
+	btVector3 boxMin, boxMax;
+	ConvertDKToBulletVectors(boxMin, collObj->m_aabb_transformed.minPoint);
+	ConvertDKToBulletVectors(boxMax, collObj->m_aabb_transformed.maxPoint);
+
+	// check body is in the world
+	if (collObj->m_broadphaseProxy)
 	{
-		if (body->GetCell() != newCellPos)
-		{
-			eqPhysGridCell* oldCell = m_grid->GetCellAt(body->GetCell());
-			eqPhysGridCell* newCell = m_grid->GetAllocCellAt(newCellPos);
-			if (oldCell)
-				oldCell->dynamicObjList.unlinkNode(body);
-			if (newCell)
-				newCell->dynamicObjList.insertNodeLast(body);
-			body->SetCell(newCellPos);
-		}
+		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
+		collObj->m_broadphaseProxy->m_collisionFilterGroup = collObj->GetContents();
+		collObj->m_broadphaseProxy->m_collisionFilterMask = collObj->GetCollideMask();
+		m_broadphase->setAabb(collObj->m_broadphaseProxy, boxMin, boxMax, m_collDispatcher);
 	}
+	else
+	{
+		if (!m_broadphase)
+			return;
+
+		Threading::CScopedWriteLocker m(s_eqPhysDynamicRWLock);
+		collObj->m_broadphaseProxy = m_broadphase->createProxy(boxMin, boxMax, 0, collObj, collObj->GetContents(), collObj->GetCollideMask(), m_collDispatcher);
+	}
+
+	collObj->m_flags &= ~COLLOBJ_BROADPHASE_DIRTY;
 }
 
 void CEqPhysicsWorld::IntegrateSingle(CEqRigidBody* body)
@@ -898,26 +947,13 @@ void CEqPhysicsWorld::IntegrateSingle(CEqRigidBody* body)
 
 	// move object
 	body->Integrate( m_fDt );
-
-	IVector2D newCellPos;
-	if (m_grid->GetPointAt(body->GetPosition(), newCellPos))
-	{
-		if (body->GetCell() != newCellPos)
-		{
-			eqPhysGridCell* oldCell = m_grid->GetCellAt(body->GetCell());
-			if (oldCell)
-				oldCell->dynamicObjList.unlinkNode(body);
-
-			eqPhysGridCell* newCell = (body->m_flags & COLLOBJ_MIGHT_MOVE) ? m_grid->GetAllocCellAt(newCellPos) : m_grid->GetCellAt(newCellPos);
-			if (newCell)
-				newCell->dynamicObjList.insertNodeLast(body);
-			body->SetCell(newCellPos);
-		}
-	}
+	SetupCollisionObjectBroadphase(body);
 }
 
 void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 {
+	using namespace EqBulletUtils;
+
 	// don't refresh frozen object, other will wake up us (or user)
 	if (body->IsFrozen())
 		return;
@@ -929,44 +965,28 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 	body->UpdateBoundingBoxTransform();
 	const BoundingBox aabb = body->m_aabb_transformed;
 	
-	// get the grid box range for searching collision objects
-	const IAARectangle gridRange = m_grid->FindBoxRange(aabb, PHYSICS_GRID_COLLISION_TOLERANCE);
+	btVector3 boxMin, boxMax;
+	ConvertDKToBulletVectors(boxMin, aabb.minPoint);
+	ConvertDKToBulletVectors(boxMax, aabb.maxPoint);
 
-	const IVector2D rangeSize = gridRange.GetSize();
-	ASSERT_MSG(rangeSize.x < 100 && rangeSize.y < 100, "Dynamic object might be too large in physics world");
-
-	// in this range do all collision checks
-	// might be slow
-	const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
-	for(int y = gridRange.leftTop.y; y <= gridRange.rightBottom.y; y++)
-	{
-		for(int x = gridRange.leftTop.x; x <= gridRange.rightBottom.x; x++)
+	CEqBroadphaseCallback broadphaseCb([this, body](CEqCollisionObject* collObj) {
+		const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
+		if (collObj->IsDynamic())
 		{
-			const eqPhysGridCell* ncell = m_grid->GetCellAt(IVector2D(x, y));
-			if(!ncell)
-				continue;
-						
-			// iterate over static objects in cell
-			for (CEqCollisionObject* obj : ncell->gridObjects)
-				DetectStaticVsBodyCollision(obj, body, body->GetLastFrameTime());
-
-			// if object is only affected by other dynamic objects, don't waste my cycles!
 			if (disabledCollisionChecks)
-				continue;
+				return;
 
-			// iterate over dynamic objects in cell
-			CEqCollisionObject* dynObj = ncell->dynamicObjList.getFirst();
-			for (; dynObj; dynObj = dynObj->next)
-			{
-				if (dynObj == body)
-					continue;
-
-				if (dynObj->IsDynamic())
-					DetectBodyCollisions(body, static_cast<CEqRigidBody*>(dynObj), body->GetLastFrameTime());
-				else // purpose for triggers
-					DetectStaticVsBodyCollision(dynObj, body, body->GetLastFrameTime());
-			}
+			DetectBodyCollisions(body, static_cast<CEqRigidBody*>(collObj), body->GetLastFrameTime());
 		}
+		else // purpose for triggers
+		{
+			DetectStaticVsBodyCollision(collObj, body, body->GetLastFrameTime());
+		}
+	});
+
+	{
+		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
+		m_broadphase->aabbTest(boxMin, boxMax, broadphaseCb);
 	}
 }
 
@@ -1130,11 +1150,9 @@ void CEqPhysicsWorld::ProcessContactPair(eqContactPair& pair)
 
 void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc)
 {
-	// don't let the physics simulate something is not init
-	if(!m_grid)
+	if(!m_broadphase)
 		return;
 
-	// save delta
 	m_fDt = deltaTime;
 
 	{
@@ -1191,6 +1209,11 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 		preIntegrFunc(m_fDt, iteration);
 
 	{
+		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
+		m_broadphase->calculateOverlappingPairs(m_collDispatcher);
+	}
+
+	{
 		PROF_EVENT("Moving Bodies CollDet");
 		// calculate collisions
 		for (CEqRigidBody* body : movingMoveables)
@@ -1236,206 +1259,70 @@ void CEqPhysicsWorld::SimulateStep(float deltaTime, int iteration, FNSIMULATECAL
 
 //----------------------------------------------------------------------------------------------------
 //
-// VOXEL TRACING FOR RAYS
+//	TestLineCollision
+//		- Casts line in the physics world
 //
 //----------------------------------------------------------------------------------------------------
-template <typename F>
-void CEqPhysicsWorld::InternalTestLineCollisionCells(const Vector2D& startCell, const Vector2D& endCell,
-	const FVector3D& start,
-	const FVector3D& end,
-	const BoundingBox& rayBox,
-	eqCollisionInfo& coll,
-	int rayMask,
-	const eqPhysCollisionFilter* filterParams,
-	F func,
-	void* args)
-{
-	const IVector2D startCellInt(floor(startCell.x), floor(startCell.y));
-	const IVector2D endCellInt(floor(endCell.x), floor(endCell.y));
-
-	Set<CEqCollisionObject*> skipObjects(PP_SL);
-	if (startCellInt == endCellInt)
-	{
-		TestLineCollisionOnCell(startCellInt.y, startCellInt.x, start, end, rayBox, coll, skipObjects, rayMask, filterParams, func, args);
-		return;
-	}
-
-	const float difX = endCell.x - startCell.x;
-	const float difY = endCell.y - startCell.y;
-	const float dist = fabs(difX) + fabs(difY);
-	const float oneByDist = 1.0f / dist;
-
-	const float dx = difX * oneByDist;
-	const float dy = difY * oneByDist;
-
-	static constexpr const int s_maxClosestTestTries = 2;
-	int closestTries = 0;
-	for (int i = 0; i <= ceil(dist) && closestTries < s_maxClosestTestTries; ++i)
-	{
-		const int x = static_cast<int>(floor(startCell.x + dx * float(i)));
-		const int y = static_cast<int>(floor(startCell.y + dy * float(i)));
-
-		// if can't traverse further - stop.
-		if (!TestLineCollisionOnCell(y, x, start, end, rayBox, coll, skipObjects, rayMask, filterParams, func, args))
-			++closestTries;
-
-		if (endCellInt.x == x && endCellInt.y == y)
-			break;
-	}
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------
-
-template <typename F>
-bool CEqPhysicsWorld::TestLineCollisionOnCell(int y, int x,
+bool CEqPhysicsWorld::TestLineCollision(
 	const FVector3D& start, const FVector3D& end,
-	const BoundingBox& rayBox,
 	eqCollisionInfo& coll,
-	Set<CEqCollisionObject*>& skipObjects,
-	int rayMask, const eqPhysCollisionFilter* filterParams,
-	F func,
-	void* args)
+	int rayMask, const eqPhysCollisionFilter* filterParams)
 {
-	if (!m_grid)
+	using namespace EqBulletUtils;
+
+	if (!m_broadphase)
 		return false;
-
-	eqPhysGridCell* cell = m_grid->GetCellAt(IVector2D(x, y));
-	if (!cell)
-		return true;
-
-	float closest = coll.fract;
-
-	Vector2D cellMin, cellMax;
-	m_grid->GetCellBoundsXZ(IVector2D(x, y), cellMin, cellMax);
-
-	// try to stop propagating ray across grid
-	{
-		const Vector2D rayStart = start.xz();
-		const Vector2D rayDir = Vector2D(end.xz() - start.xz());
-
-		const AARectangle cellRect(cellMin, cellMax);
-
-		float tnear, tfar;
-		if (cellRect.IntersectsRay(rayStart, rayDir, tnear, tfar) && tnear > closest)
-			return false;
-	}
 
 	int objectTypeTesting = EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 	if (filterParams)
 		objectTypeTesting = filterParams->flags & (EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS);
 
-	// TODO: special flag that ignores bound check
-	const bool staticInBoundTest = true; // (rayBox.minPoint.y <= cell->cellBoundUsed); TEMPORARY ALLOWED because Chicago bridges. 
+	static thread_local Set<CEqCollisionObject*> skipObjects(PP_SL);
+	skipObjects.clear();
 
-#ifdef ENABLE_DEBUG_DRAWING
-	if(staticInBoundTest && m_debugRaycast)
-	{
-		const float cellBound = cell->cellBoundUsed;
-		debugoverlay->Box3D(Vector3D(cellMin.x, -cellBound, cellMin.y), Vector3D(cellMax.x, cellBound, cellMax.y), ColorRGBA(1, 0, 0, 0.25f));
-	}
-#endif
-
-	bool hit = false;
-	bool hitClosest = false;
-	
-	// static objects are not checked if line is not in Y bound
-	if(staticInBoundTest && (objectTypeTesting & EQPHYS_FILTER_FLAG_STATICOBJECTS))
-	{
-		for (CEqCollisionObject* object : cell->gridObjects)
-		{
-			if (skipObjects.contains(object))
-				continue;
-
-			eqCollisionInfo tempColl;
-			if (!(this->*func)(object, start, end, rayBox, tempColl, closest, rayMask, filterParams, args))
-				continue;
-
-			hit = true;
-
-			if (tempColl.fract < closest)
-			{
-				skipObjects.insert(object);
-
-				closest = tempColl.fract;
-				coll = tempColl;
-				hitClosest = true;
-			}
-		}
-	}
-
-	if(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS)
-	{
-		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-
-		CEqCollisionObject* object = cell->dynamicObjList.getFirst();
-		for (; object; object = object->next)
-		{
-			if (skipObjects.contains(object))
-				continue;
-
-			eqCollisionInfo tempColl;
-			if (!(this->*func)(object, start, end, rayBox, tempColl, closest, rayMask, filterParams, args))
-				continue;
-
-			hit = true;
-
-			if (tempColl.fract < closest)
-			{
-				skipObjects.insert(object);
-
-				closest = tempColl.fract;
-				coll = tempColl;
-				hitClosest = true;
-			}
-		}
-	}
-
-	if (hit)
-		return !hitClosest; // continue
-
-	return true;
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------
-
-//----------------------------------------------------------------------------------------------------
-//
-//	TestLineCollision
-//		- Casts line in the physics world
-//
-//----------------------------------------------------------------------------------------------------
-bool CEqPhysicsWorld::TestLineCollision(	const FVector3D& start, const FVector3D& end,
-									eqCollisionInfo& coll,
-									int rayMask, const eqPhysCollisionFilter* filterParams)
-{
-	if (!m_grid) {
-		return false;
-	}
-
-	Vector2D startCell, endCell;
-
-	m_grid->GetPointAt(start, startCell);
-	m_grid->GetPointAt(end, endCell);
-
-	coll.position = end;
-	coll.fract = 10.0f;
+	coll.fract = COM_FLT_MAX;
+	float closest = coll.fract;
 
 	BoundingBox rayBox;
 	rayBox.AddVertex(start);
 	rayBox.AddVertex(end);
 
-	InternalTestLineCollisionCells(	startCell, endCell,
-									start, end,
-									rayBox,
-									coll,
-									rayMask,
-									filterParams,
-									&CEqPhysicsWorld::TestLineSingleObject, nullptr);
+	bool processed = false;
+	CEqBroadphaseRayCallback broadphaseCb(Vector3D(end - start), [&](CEqCollisionObject* collObj) {
+		processed = true;
+		const bool isDynamic = collObj->IsDynamic();
+		if (!isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_STATICOBJECTS))
+			return;
 
-	if (coll.fract > 1.0f)
-		coll.fract = 1.0f;
+		if (isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS))
+			return;
 
-	return (coll.fract < 1.0f);
+		if (skipObjects.contains(collObj))
+			return;
+		skipObjects.insert(collObj);
+
+		eqCollisionInfo tempColl;
+		if (TestLineSingleObject(collObj, start, end, rayBox, tempColl, closest, rayMask, filterParams, nullptr))
+		{
+			if (tempColl.fract < closest)
+			{
+				closest = tempColl.fract;
+				coll = tempColl;
+			}
+		}
+	});
+
+	{
+		btVector3 rayStart, rayEnd;
+		ConvertDKToBulletVectors(rayStart, start);
+		ConvertDKToBulletVectors(rayEnd, end);
+
+		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
+		m_broadphase->rayTest(rayStart, rayEnd, broadphaseCb);
+	}
+
+	coll.fract = min(coll.fract, 1.0f);
+	return coll.fract < 1.0f;
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -1444,25 +1331,32 @@ bool CEqPhysicsWorld::TestLineCollision(	const FVector3D& start, const FVector3D
 //		- Casts convex shape in the physics world
 //
 //----------------------------------------------------------------------------------------------------
-bool CEqPhysicsWorld::TestConvexSweepCollision(const btCollisionShape* shape,
-											const Quaternion& rotation,
-											const FVector3D& start, const FVector3D& end,
-											eqCollisionInfo& coll,
-											int rayMask, 
-											const eqPhysCollisionFilter* filterParams)
+bool CEqPhysicsWorld::TestConvexSweepCollision(
+	const btCollisionShape* shape,
+	const Quaternion& rotation,
+	const FVector3D& start, const FVector3D& end,
+	eqCollisionInfo& coll,
+	int rayMask, 
+	const eqPhysCollisionFilter* filterParams)
 {
 	using namespace EqBulletUtils;
 
-	if (!m_grid) {
+	if (!m_broadphase)
 		return false;
-	}
 
-	coll.position = end;
-	coll.fract = 32768.0f;
+	int objectTypeTesting = EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
+	if (filterParams)
+		objectTypeTesting = filterParams->flags & (EQPHYS_FILTER_FLAG_STATICOBJECTS | EQPHYS_FILTER_FLAG_DYNAMICOBJECTS);
 
-	sweptTestParams_t params;
+	static thread_local Set<CEqCollisionObject*> skipObjects(PP_SL);
+	skipObjects.clear();
+
+	SweptTestParams params;
 	params.rotation = rotation;
 	params.shape = shape;
+
+	coll.fract = COM_FLT_MAX;
+	float closest = coll.fract;
 
 	btTransform startTrans;
 	ConvertMatrix4ToBullet(startTrans, rotation);
@@ -1474,30 +1368,47 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(const btCollisionShape* shape,
 	ConvertBulletToDKVectors(shapeBox.minPoint, shapeMins);
 	ConvertBulletToDKVectors(shapeBox.maxPoint, shapeMaxs);
 
-	BoundingBox rayBox;
-	rayBox.AddVertex(start);
-	rayBox.AddVertex(end);
-
 	const Vector3D sBoxSize = shapeBox.GetSize();
-	rayBox.AddVertex(rayBox.minPoint - sBoxSize);
-	rayBox.AddVertex(rayBox.maxPoint + sBoxSize);
+	BoundingBox rayBox;
+	rayBox.AddVertex(start - sBoxSize);
+	rayBox.AddVertex(end + sBoxSize);
 
-	Vector2D startCell, endCell;
-	m_grid->GetPointAt(start, startCell);
-	m_grid->GetPointAt(end , endCell);
+	bool processed = false;
+	CEqBroadphaseRayCallback broadphaseCb(Vector3D(end - start), [&](CEqCollisionObject* collObj) {
+		processed = true;
+		const bool isDynamic = collObj->IsDynamic();
+		if (!isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_STATICOBJECTS))
+			return;
 
-	InternalTestLineCollisionCells(	startCell, endCell,
-									start, end,
-									rayBox,
-									coll,
-									rayMask,
-									filterParams,
-									&CEqPhysicsWorld::TestConvexSweepSingleObject, &params);
+		if (isDynamic && !(objectTypeTesting & EQPHYS_FILTER_FLAG_DYNAMICOBJECTS))
+			return;
 
-	if (coll.fract > 1.0f)
-		coll.fract = 1.0f;
+		if (skipObjects.contains(collObj))
+			return;
+		skipObjects.insert(collObj);
 
-	return (coll.fract < 1.0f);
+		eqCollisionInfo tempColl;
+		if (TestConvexSweepSingleObject(collObj, start, end, rayBox, tempColl, closest, rayMask, filterParams, &params))
+		{
+			if (tempColl.fract < closest)
+			{
+				closest = tempColl.fract;
+				coll = tempColl;
+			}
+		}
+	});
+
+	{
+		btVector3 rayStart, rayEnd;
+		ConvertDKToBulletVectors(rayStart, start);
+		ConvertDKToBulletVectors(rayEnd, end);
+
+		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
+		m_broadphase->rayTest(rayStart, rayEnd, broadphaseCb);
+	}
+
+	coll.fract = min(coll.fract, 1.0f);
+	return coll.fract < 1.0f;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1611,27 +1522,8 @@ bool CEqPhysicsWorld::TestLineSingleObject(
 	if (!CheckAllowContactTest(filterParams, object))
 		return false;
 
-	if(!object->m_aabb_transformed.Intersects(rayBox))
+	if(!rayBox.Intersects(object->m_aabb_transformed))
 		return false;
-
-#if 0
-	{
-		const Vector3D rayVec = Vector3D(end - start);
-		const float oneByRayDist = 1.0f / length(rayVec);
-		const Vector3D rayDir = rayVec * oneByRayDist;
-	
-		float hitNear, hitFar;
-		if (!object->m_aabb_transformed.IntersectsRay(start, rayDir, hitNear, hitFar))
-			return false;
-	
-		hitNear *= oneByRayDist;
-		hitFar *= oneByRayDist;
-	
-		if (hitNear > 1.0f || hitNear > closestHit) {
-			return false;
-		}
-	}
-#endif
 
 	const Quaternion& objQuat = object->m_orientation;
 	const Vector3D& position = object->m_position;
@@ -1766,10 +1658,10 @@ bool CEqPhysicsWorld::TestConvexSweepSingleObject(CEqCollisionObject* object,
 	if (!CheckAllowContactTest(filterParams, object))
 		return false;
 
-	if(!object->m_aabb_transformed.Intersects(raybox))
+	if(!raybox.Intersects(object->m_aabb_transformed))
 		return false;
 
-	const sweptTestParams_t& params = *(sweptTestParams_t*)args;
+	const SweptTestParams& params = *reinterpret_cast<SweptTestParams*>(args);
 
 	const Quaternion objQuat = object->m_orientation;
 	const Vector3D position = object->m_position;
@@ -1848,8 +1740,8 @@ void CEqPhysicsWorld::DebugDrawBodies(int mode)
 				body->m_aabb.minPoint, body->m_aabb.maxPoint, body->GetPosition(), body->GetOrientation(), bodyCol);
 		}
 
-		if (mode >= 2)
-			m_grid->DebugRender();
+		//if (mode >= 2)
+		//	m_grid->DebugRender();
 
 		if (mode >= 3)
 		{
@@ -1862,7 +1754,7 @@ void CEqPhysicsWorld::DebugDrawBodies(int mode)
 	}
 	else if (mode == 5)	// only grid
 	{
-		m_grid->DebugRender();
+		//m_grid->DebugRender();
 	}
 	else
 	{

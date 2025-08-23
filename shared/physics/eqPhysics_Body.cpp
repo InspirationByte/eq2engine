@@ -248,13 +248,11 @@ void CEqRigidBody::Integrate(float delta)
 				"Position: [%.2f %.2f %.2f]\n"
 				"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
 				"Ang. vel: [%.2f %.2f %.2f]\n"
-				"mass: %g\n"
-				"cell: %d",
+				"mass: %g\n",
 				(float)m_position.x,(float)m_position.y,(float)m_position.z,
 				(float)m_linearVelocity.x,(float)m_linearVelocity.y,(float)m_linearVelocity.z, (float)length(m_linearVelocity),
 				(float)m_angularVelocity.x,(float)m_angularVelocity.y,(float)m_angularVelocity.z,
-				(float)m_mass,
-				m_cell != nullptr);
+				(float)m_mass);
 	}
 #endif // ENABLE_DEBUG_DRAWING
 }
@@ -473,28 +471,21 @@ void CEqRigidBody::ApplyLinearForce(const Vector3D& force)
 
 void CEqRigidBody::SetPosition(const FVector3D& position)
 {
-	// explicitly reset previous position
-	m_position = m_prevPosition = position;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
-
-	UpdateBoundingBoxTransform();
+	m_prevPosition = position;
+	CEqCollisionObject::SetPosition(position);
 }
 
 void CEqRigidBody::SetOrientation(const Quaternion& orient)
 {
-	m_orientation = m_prevOrientation = orient;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
-
-	UpdateBoundingBoxTransform();
+	m_prevOrientation = orient; 
+	CEqCollisionObject::SetOrientation(orient);
 }
 
 void CEqRigidBody::SetTransform(const Transform3D& trs)
 {
-	m_position = m_prevPosition = trs.t;
-	m_orientation = m_prevOrientation = trs.r;
-	m_flags |= COLLOBJ_TRANSFORM_DIRTY | COLLOBJ_BOUNDBOX_DIRTY;
-
-	UpdateBoundingBoxTransform();
+	m_prevPosition = trs.t;
+	m_prevOrientation = trs.r;
+	CEqCollisionObject::SetTransform(trs);
 }
 
 const FVector3D& CEqRigidBody::GetPrevPosition() const
