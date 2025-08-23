@@ -13,6 +13,11 @@ project "bullet2"
 		"**.c",
 		"**.cpp"
 	}
+	
+	defines
+	{
+		"BT_THREADSAFE=1"
+	}
 
 	filter "configurations:Debug"
 		runtime "Debug"
