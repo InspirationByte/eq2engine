@@ -970,6 +970,9 @@ void CEqPhysicsWorld::DetectCollisionsSingle(CEqRigidBody* body)
 	ConvertDKToBulletVectors(boxMax, aabb.maxPoint);
 
 	CEqBroadphaseCallback broadphaseCb([this, body](CEqCollisionObject* collObj) {
+		if (collObj == body)
+			return;
+
 		const bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
 		if (collObj->IsDynamic())
 		{
@@ -1404,7 +1407,7 @@ bool CEqPhysicsWorld::TestConvexSweepCollision(
 		ConvertDKToBulletVectors(rayEnd, end);
 
 		Threading::CScopedReadLocker m(s_eqPhysDynamicRWLock);
-		m_broadphase->rayTest(rayStart, rayEnd, broadphaseCb);
+		m_broadphase->rayTest(rayStart, rayEnd, broadphaseCb, shapeMins, shapeMaxs);
 	}
 
 	coll.fract = min(coll.fract, 1.0f);
