@@ -151,11 +151,6 @@ btDbvtBroadphase::btDbvtBroadphase(btOverlappingPairCache* paircache)
 	{
 		m_stageRoots[i] = 0;
 	}
-#if BT_THREADSAFE
-	m_rayTestStacks.resize(BT_MAX_THREAD_COUNT);
-#else
-	m_rayTestStacks.resize(1);
-#endif
 #if DBVT_BP_PROFILE
 	clear(m_profiling);
 #endif
@@ -240,25 +235,7 @@ struct BroadphaseRayTester : btDbvt::ICollide
 void btDbvtBroadphase::rayTest(const btVector3& rayFrom, const btVector3& rayTo, btBroadphaseRayCallback& rayCallback, const btVector3& aabbMin, const btVector3& aabbMax)
 {
 	BroadphaseRayTester callback(rayCallback);
-	btAlignedObjectArray<const btDbvtNode*>* stack = &m_rayTestStacks[0];
-#if BT_THREADSAFE
-	// for this function to be threadsafe, each thread must have a separate copy
-	// of this stack.  This could be thread-local static to avoid dynamic allocations,
-	// instead of just a local.
-	int threadIndex = btGetCurrentThreadIndex();
-	btAlignedObjectArray<const btDbvtNode*> localStack;
-	//todo(erwincoumans, "why do we get tsan issue here?")
-	if (0)//threadIndex < m_rayTestStacks.size())
-	//if (threadIndex < m_rayTestStacks.size())
-	{
-		// use per-thread preallocated stack if possible to avoid dynamic allocations
-		stack = &m_rayTestStacks[threadIndex];
-	}
-	else
-	{
-		stack = &localStack;
-	}
-#endif
+	static thread_local btAlignedObjectArray<const btDbvtNode*> stack;
 
 	m_sets[0].rayTestInternal(m_sets[0].m_root,
 							  rayFrom,
@@ -268,7 +245,7 @@ void btDbvtBroadphase::rayTest(const btVector3& rayFrom, const btVector3& rayTo,
 							  rayCallback.m_lambda_max,
 							  aabbMin,
 							  aabbMax,
-							  *stack,
+							  stack,
 							  callback);
 
 	m_sets[1].rayTestInternal(m_sets[1].m_root,
@@ -279,7 +256,7 @@ void btDbvtBroadphase::rayTest(const btVector3& rayFrom, const btVector3& rayTo,
 							  rayCallback.m_lambda_max,
 							  aabbMin,
 							  aabbMax,
-							  *stack,
+							  stack,
 							  callback);
 }
 
