@@ -317,8 +317,16 @@ void UTIL_GetBindingKeyStringLocalized(EqWString& outStr, const InputBinding* bi
 
 //---------------------------------------------------------
 
-CInputCommandBinder::CInputCommandBinder()
+
+InputBinding* CInputCommandBinder::AllocBinding()
 {
+	return new(m_bindingMemPool.allocate()) InputBinding();
+}
+
+void CInputCommandBinder::FreeBinding(InputBinding* binding)
+{
+	binding->~InputBinding();
+	m_bindingMemPool.deallocate(binding);
 }
 
 void CInputCommandBinder::Init()
@@ -355,7 +363,7 @@ void CInputCommandBinder::Shutdown()
 #endif // PLAT_SDL
 
 	for (InputBinding* binding : m_bindings)
-		delete binding;
+		FreeBinding(binding);
 
 	m_bindings.clear(true);
 	m_axisActs.clear(true);
@@ -471,7 +479,7 @@ InputBinding* CInputCommandBinder::CreateCommandBinding( const char* pszKeyStr, 
 		return nullptr;
 
 	// create new binding
-	InputBinding* newBind = PPNew InputBinding;
+	InputBinding* newBind = AllocBinding();
 	newBind->modifierIds[0] = bindingKeyIndices[0];
 	newBind->modifierIds[1] = bindingKeyIndices[1];
 	newBind->keyIdx = bindingKeyIndices[2];
@@ -508,7 +516,7 @@ InputBinding* CInputCommandBinder::AddBinding(const char* pszKeyStr, const char*
 		return nullptr;
 
 	// create new binding
-	InputBinding* newBind = PPNew InputBinding;
+	InputBinding* newBind = AllocBinding();
 	newBind->modifierIds[0] = bindingKeyIndices[0];
 	newBind->modifierIds[1] = bindingKeyIndices[1];
 	newBind->keyIdx = bindingKeyIndices[2];
@@ -637,7 +645,7 @@ void CInputCommandBinder::DeleteBinding( InputBinding* binding )
 		return;
 
 	if(m_bindings.fastRemove(binding))
-		delete binding;
+		FreeBinding(binding);
 }
 
 // removes single binding on specified keychar
@@ -659,7 +667,7 @@ void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 			binding->keyIdx == bindingKeyIndices[2])
 		{
 			m_bindings.fastRemoveIndex(i--);
-			delete binding;
+			FreeBinding(binding);
 
 			results++;
 		}
@@ -676,6 +684,20 @@ void CInputCommandBinder::UnbindCommandByName(const char* name, const char* argS
 		DeleteBinding(binding);
 }
 
+void CInputCommandBinder::UnregisterCommand(ConCommandBase* cmdBase)
+{
+	InputBinding* binding = nullptr;
+	while (binding = FindBindingByCommand(cmdBase, nullptr, binding))
+	{
+		if (binding->func == InputExecInputCommand)
+		{
+			binding->func = nullptr;
+			binding->activateCmd = nullptr;
+			binding->deactivateCmd = nullptr;
+		}
+	}
+}
+
 // clears and removes all key bindings
 void CInputCommandBinder::UnbindAll()
 {
@@ -684,7 +706,7 @@ void CInputCommandBinder::UnbindAll()
 		InputBinding* binding = m_bindings[i];
 		if (binding->custom)
 			continue;
-		delete binding;
+		FreeBinding(binding);
 		m_bindings.fastRemoveIndex(i--);
 	}
 
@@ -700,7 +722,7 @@ void CInputCommandBinder::UnbindAll_Joystick()
 		if(keyNum >= JOYSTICK_START_KEYS && keyNum < MOU_B1)
 		{
 			m_bindings.fastRemoveIndex(i--);
-			delete binding;
+			FreeBinding(binding);
 		}
 	}
 }

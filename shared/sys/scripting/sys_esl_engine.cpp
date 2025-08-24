@@ -493,6 +493,11 @@ static void L_Input_UnbindCommand(const esl::ScriptState& state, const char* com
 	g_inputCommandBinder->UnbindCommandByName(commandName);
 }
 
+static void L_Input_UnregisterCommand(const esl::ScriptState& state, ConCommandBase* cmdBase)
+{
+	g_inputCommandBinder->UnregisterCommand(cmdBase);
+}
+
 static void L_Input_BindAction(const esl::ScriptState& state, const char* keysStr, const char* actionName, const char* args)
 {
 	const EqStringRef inputActionName = actionName;
@@ -595,6 +600,7 @@ bool eslSysInputInit(const esl::ScriptState& state)
 
 	inputTable.Set("GetCommandBindings", EQSCRIPT_CFUNC(L_Input_GetCommandBindings));
 	inputTable.Set("UnbindCommand", EQSCRIPT_CFUNC(L_Input_UnbindCommand));
+	inputTable.Set("UnregisterCommand", EQSCRIPT_CFUNC(L_Input_UnregisterCommand));
 	inputTable.Set("BindAction", EQSCRIPT_CFUNC(L_Input_BindAction));
 	inputTable.Set("GetLastInputDeviceUsed", EQSCRIPT_CFUNC(L_Input_GetLastInputDeviceUsed));
 
