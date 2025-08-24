@@ -192,7 +192,7 @@ public:
 	const CH*	GetData() const { return m_pszString; }
 	const CH*	ToCString() const { return GetData(); }
 
-	int			Length() const { return (m_nLength == -1) ? m_nLength = CString::Length(m_pszString) : m_nLength; }
+	int			Length() const;
 
 	// comparison operations
 	int			Compare(EqTStrRef otherStr) const;
