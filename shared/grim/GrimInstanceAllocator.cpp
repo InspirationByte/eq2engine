@@ -165,6 +165,7 @@ GPUBufferView GRIMBaseInstanceAllocator::GetSingleInstanceIndexBuffer() const
 
 int	GRIMBaseInstanceAllocator::GetInstanceCount(GRIMArchetype archetypeId) const
 {
+	CScopedReadLocker m(m_rwLock);
 	auto it = m_archetypeRefCount.find(archetypeId);
 	if (it.atEnd())
 		return 0;
@@ -194,14 +195,6 @@ int GRIMBaseInstanceAllocator::GetInstanceComponentIdx(int instanceIdx, int comp
 GRIMInstanceRef	GRIMBaseInstanceAllocator::AllocInstance(GRIMArchetype archetypeId)
 {
 	const GRIMInstanceRef instanceRef = m_freeIndices.numElem() ? m_freeIndices.popBack() : m_instances.append({});
-
-	if (archetypeId != GRIM_INVALID_ARCHETYPE)
-	{
-		auto it = m_archetypeRefCount.find(archetypeId);
-		if (it.atEnd())
-			it = m_archetypeRefCount.insert(archetypeId, 0);
-		++(*it);
-	}
 
 	if (m_instances.numElem() + 1 > m_syncInstances.numBits())
 		m_syncInstances.resize(m_instances.numElem() + 1);
@@ -240,26 +233,12 @@ void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMAr
 		const GRIMArchetype oldArchetype = inst.archetype;
 		if (oldArchetype != newArchetype)
 		{
+			inst.switchFromArchetype = oldArchetype;
 			inst.archetype = newArchetype;
 			inst.updateFlags |= Instance::UPD_ARCHETYPE;
 
 			m_updated.insert(instanceRef);
 			m_syncInstances.setFalse(instanceRef);
-
-			if (oldArchetype != GRIM_INVALID_ARCHETYPE)
-			{
-				auto oldIt = m_archetypeRefCount.find(oldArchetype);
-				if (!oldIt.atEnd())
-					--(*oldIt);
-			}
-
-			if (newArchetype != GRIM_INVALID_ARCHETYPE)
-			{
-				auto newIt = m_archetypeRefCount.find(newArchetype);
-				if (newIt.atEnd())
-					newIt = m_archetypeRefCount.insert(newArchetype, 0);
-				++(*newIt);
-			}
 		}
 	}
 }
@@ -294,19 +273,7 @@ void GRIMBaseInstanceAllocator::FreeInstance(GRIMInstanceRef instanceRef)
 
 	Instance& inst = m_instances[instanceRef];
 	InstRoot& root = inst.root;
-	{
-		m_freeIndices.append(instanceRef);
-
-		if (inst.archetype != GRIM_INVALID_ARCHETYPE)
-		{
-			auto it = m_archetypeRefCount.find(inst.archetype);
-			if (!it.atEnd())
-			{
-				--(*it);
-				ASSERT_MSG(*it >= 0, "Archetype counter is invalid (%d)", *it);
-			}
-		}
-	}
+	m_freeIndices.append(instanceRef);
 
 	inst.archetype = GRIM_INVALID_ARCHETYPE;
 	inst.updateFlags |= Instance::UPD_ARCHETYPE;
@@ -400,10 +367,30 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 			for (auto it = m_updated.begin(); !it.atEnd(); ++it)
 			{
 				const int instanceIdx = it.key();
-				const int updateFlags = m_instances[instanceIdx].updateFlags;
+				Instance& inst = m_instances[instanceIdx];
 
+				const int updateFlags = inst.updateFlags;
 				if(updateFlags & Instance::UPD_ARCHETYPE)
+				{
 					m_instSyncArchetypes.append(instanceIdx);
+
+					// deref old and ref new archetype
+					if (inst.switchFromArchetype != GRIM_INVALID_ARCHETYPE)
+					{
+						auto oldIt = m_archetypeRefCount.find(inst.switchFromArchetype);
+						if (!oldIt.atEnd())
+							--(*oldIt);
+						inst.switchFromArchetype = GRIM_INVALID_ARCHETYPE;
+					}
+
+					if (inst.archetype != GRIM_INVALID_ARCHETYPE)
+					{
+						auto newIt = m_archetypeRefCount.find(inst.archetype);
+						if (newIt.atEnd())
+							newIt = m_archetypeRefCount.insert(inst.archetype, 0);
+						++(*newIt);
+					}
+				}
 
 				if (updateFlags & Instance::UPD_ROOT)
 					m_instSyncRoots.append(instanceIdx);
@@ -411,7 +398,7 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 				if (updateFlags & Instance::UPD_GROUPMASK)
 					m_instSyncGroupMask.append(instanceIdx);
 
-				m_instances[instanceIdx].updateFlags = 0;
+				inst.updateFlags = 0;
 				m_syncInstances.setTrue(instanceIdx);
 			}
 

@@ -141,11 +141,12 @@ protected:
 
 		InstRoot		root;
 		GRIMArchetype	archetype{ GRIM_INVALID_ARCHETYPE };
+		GRIMArchetype	switchFromArchetype{ GRIM_INVALID_ARCHETYPE };
 		uint			groupMask{ COM_UINT_MAX };
 		int				updateFlags{ UPD_ALL };
 	};
 
-	Threading::CEqReadWriteLock		m_rwLock;
+	mutable Threading::CEqReadWriteLock		m_rwLock;
 	IGPUBufferPtr			m_rootBuffer;
 	IGPUBufferPtr			m_archetypesBuffer;
 	IGPUBufferPtr			m_groupMaskBuffer;
