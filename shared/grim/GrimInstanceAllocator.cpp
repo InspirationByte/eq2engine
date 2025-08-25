@@ -233,7 +233,6 @@ void GRIMBaseInstanceAllocator::SetArchetype(GRIMInstanceRef instanceRef, GRIMAr
 		const GRIMArchetype oldArchetype = inst.archetype;
 		if (oldArchetype != newArchetype)
 		{
-			inst.switchFromArchetype = oldArchetype;
 			inst.archetype = newArchetype;
 			inst.updateFlags |= Instance::UPD_ARCHETYPE;
 
@@ -375,21 +374,13 @@ void GRIMBaseInstanceAllocator::SyncInstances(IGPUCommandRecorder* cmdRecorder)
 					m_instSyncArchetypes.append(instanceIdx);
 
 					// deref old and ref new archetype
-					if (inst.switchFromArchetype != GRIM_INVALID_ARCHETYPE)
-					{
-						auto oldIt = m_archetypeRefCount.find(inst.switchFromArchetype);
-						if (!oldIt.atEnd())
-							--(*oldIt);
-						inst.switchFromArchetype = GRIM_INVALID_ARCHETYPE;
-					}
+					if (inst.lastSyncArchetype != GRIM_INVALID_ARCHETYPE)
+						--m_archetypeRefCount[inst.lastSyncArchetype];
 
 					if (inst.archetype != GRIM_INVALID_ARCHETYPE)
-					{
-						auto newIt = m_archetypeRefCount.find(inst.archetype);
-						if (newIt.atEnd())
-							newIt = m_archetypeRefCount.insert(inst.archetype, 0);
-						++(*newIt);
-					}
+						++m_archetypeRefCount[inst.archetype];
+
+					inst.lastSyncArchetype = inst.archetype;
 				}
 
 				if (updateFlags & Instance::UPD_ROOT)
