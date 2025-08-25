@@ -189,8 +189,11 @@ static DDPoly* S_DbgPoly() { return PPNew DDPoly(PP_SL); }
 // Emitsound params
 //
 
-static void S_EmitParams_SetInputValue(EmitParams& ep, const char* name, float value)
+static void S_EmitParams_SetInputValue(const esl::ScriptState& state, EmitParams& ep, const char* name, float value)
 {
+	if (!name)
+		state.ThrowError("name is null");
+
 	const int nameHash = StringId24(name);
 	const int valIdx = arrayFindIndexF(ep.inputs, [nameHash](const EmitParams::InputValue& in) {
 		return in.nameHash == nameHash;
@@ -372,10 +375,16 @@ struct LuaInputBinding
 };
 Map<int, LuaInputBinding> LuaInputBinding::s_bindings{ PP_SL };
 
-static bool L_Input_AddBinding(char const* name, char const* keyStr, esl::LuaFunctionRef cmdFunc)
+static bool L_Input_AddBinding(const esl::ScriptState& state, char const* name, char const* keyStr, esl::LuaFunctionRef cmdFunc)
 {
-	// register con. command function reference
-	ASSERT_MSG(cmdFunc.IsValid() == true, "Not valid function for Lua InputBinding %s", name);
+	if (!name)
+		state.ThrowError("name is null");
+
+	if (!keyStr)
+		state.ThrowError("keyStr is null");
+
+	if(!cmdFunc)
+		state.ThrowError("cmdFunc is null or not valid");
 
 	const int nameHash = StringId24(name);
 	InputBinding* binding = g_inputCommandBinder->AddBinding(keyStr, name, LuaInputBinding::CommandHandler, reinterpret_cast<void*>(nameHash));
@@ -390,8 +399,11 @@ static bool L_Input_AddBinding(char const* name, char const* keyStr, esl::LuaFun
 	return true;
 }
 
-static void L_Input_RemoveBinding(const char* name)
+static void L_Input_RemoveBinding(const esl::ScriptState& state, const char* name)
 {
+	if (!name)
+		state.ThrowError("name is null");
+
 	const int nameHash = StringId24(name);
 	LuaInputBinding::s_bindings.remove(nameHash);
 }
@@ -465,6 +477,9 @@ static esl::LuaTable L_Input_GetControllers(const esl::ScriptState& state)
 
 static esl::LuaTable L_Input_GetCommandBindings(const esl::ScriptState& state, const char* commandName)
 {
+	if (!commandName)
+		state.ThrowError("commandName is null");
+
 	esl::LuaTable bindingsTable = state.CreateTable();
 
 	InputBinding* binding = nullptr;
@@ -490,16 +505,31 @@ static esl::LuaTable L_Input_GetCommandBindings(const esl::ScriptState& state, c
 
 static void L_Input_UnbindCommand(const esl::ScriptState& state, const char* commandName)
 {
+	if (!commandName)
+		state.ThrowError("commandName is null");
+
 	g_inputCommandBinder->UnbindCommandByName(commandName);
 }
 
 static void L_Input_UnregisterCommand(const esl::ScriptState& state, ConCommandBase* cmdBase)
 {
+	if (!cmdBase)
+		state.ThrowError("cmdBase is null");
+
 	g_inputCommandBinder->UnregisterCommand(cmdBase);
 }
 
 static void L_Input_BindAction(const esl::ScriptState& state, const char* keysStr, const char* actionName, const char* args)
 {
+	if (!keysStr)
+		state.ThrowError("keysStr is null");
+
+	if (!actionName)
+		state.ThrowError("actionName is null");
+
+	if (!args)
+		state.ThrowError("args is null");
+
 	const EqStringRef inputActionName = actionName;
 
 	EqString actionCategoryName;
@@ -523,9 +553,12 @@ static int L_Input_GetLastInputDeviceUsed()
 
 static Map<int, EqString> s_luaImguiHandlerNames(PP_SL);
 
-static void EqImGui_AddHandler(const char* name, const esl::LuaFunctionRef& func)
+static void EqImGui_AddHandler(const esl::ScriptState& state, const char* name, const esl::LuaFunctionRef& func)
 {
 #ifdef IMGUI_ENABLED
+	if (!name)
+		state.ThrowError("name is null");
+
 	s_luaImguiHandlerNames.insert(StringId24(name), name);
 	g_imGuiHost->AddDebugHandler(name, [name = EqString(name), funcRef = func](bool& _) {
 		using ImGuiFunc = esl::runtime::FunctionCall<void>;
@@ -535,17 +568,23 @@ static void EqImGui_AddHandler(const char* name, const esl::LuaFunctionRef& func
 #endif
 }
 
-static void EqImGui_RemoveHandler(const char* name)
+static void EqImGui_RemoveHandler(const esl::ScriptState& state, const char* name)
 {
 #ifdef IMGUI_ENABLED
+	if (!name)
+		state.ThrowError("name is null");
+
 	g_imGuiHost->RemoveDebugHandler(name);
 	s_luaImguiHandlerNames.remove(StringId24(name));
 #endif
 }
 
-static void EqImGui_AddDebugMenu(const char* path, const esl::LuaFunctionRef& func)
+static void EqImGui_AddDebugMenu(const esl::ScriptState& state, const char* path, const esl::LuaFunctionRef& func)
 {
 #ifdef IMGUI_ENABLED
+	if (!path)
+		state.ThrowError("path is null");
+
 	s_luaImguiHandlerNames.insert(StringId24(path), path);
 	g_imGuiHost->AddDebugMenu(path, [name = EqString(path), funcRef = func](bool& visible) {
 		using ImGuiFunc = esl::runtime::FunctionCall<bool, bool>;
@@ -556,16 +595,22 @@ static void EqImGui_AddDebugMenu(const char* path, const esl::LuaFunctionRef& fu
 #endif
 }
 
-static void EqImGui_ShowDebugMenu(const char* path, bool enable)
+static void EqImGui_ShowDebugMenu(const esl::ScriptState& state, const char* path, bool enable)
 {
 #ifdef IMGUI_ENABLED
+	if (!path)
+		state.ThrowError("path is null");
+
 	g_imGuiHost->ShowDebugMenu(path, enable);
 #endif
 }
 
-static void EqImGui_ToggleDebugMenu(const char* path)
+static void EqImGui_ToggleDebugMenu(const esl::ScriptState& state, const char* path)
 {
 #ifdef IMGUI_ENABLED
+	if (!path)
+		state.ThrowError("path is null");
+
 	g_imGuiHost->ToggleDebugMenu(path);
 #endif
 }
