@@ -249,6 +249,7 @@ Vector4D& Quaternion::asVector4D() const
 
 Quaternion operator ! (const Quaternion &q)
 {
+	// conjugate
 	return Quaternion(q.w, -q.x, -q.y, -q.z);
 }
 
