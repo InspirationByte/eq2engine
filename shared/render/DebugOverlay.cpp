@@ -592,7 +592,7 @@ static void DrawCylinder(CMeshBuilder& meshBuilder, DDCylinder& cylinder, float 
 
 static void DrawCylinderArray(ArrayRef<DDCylinder> cylArray, float frametime, const Volume& frustum, IGPURenderPassRecorder* rendPassRecorder)
 {
-	if (cylArray.numElem())
+	if (!cylArray.numElem())
 		return;
 
 	CMeshBuilder meshBuilder(g_matSystem->GetDynamicMesh(DRAW_MAX_VERTS));
