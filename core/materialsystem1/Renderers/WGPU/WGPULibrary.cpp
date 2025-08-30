@@ -49,7 +49,7 @@ static void OnWGPUDeviceError(WGPUDevice const* device, WGPUErrorType type, stru
 {
 	if (wgpu_breakOnError.GetBool())
 	{
-		ASSERT_FAIL("WGPU device %s error:\n\n%s", s_wgpuErrorTypesStr[type], message.data);
+		ASSERT_FAIL("WGPU device %s error:\n\n%.*s", s_wgpuErrorTypesStr[type], static_cast<int>(message.length), message.data);
 	}
 
 	if (wgpu_reportErrors.GetBool())
@@ -61,8 +61,8 @@ static void OnWGPUDeviceLost(WGPUDevice const* device, WGPUDeviceLostReason reas
 	if(reason == WGPUDeviceLostReason_Destroyed)
 		return;
 
-	ASSERT_FAIL("WGPU device lost reason %s (%d)\n\n%s", s_wgpuDeviceLostReasonStr[reason], reason, message.data);
-	MsgError("[WGPU] device lost reason %s, %s\n", s_wgpuDeviceLostReasonStr[reason], message.data);
+	ASSERT_FAIL("WGPU device lost reason %s (%d)\n\n%.*s", s_wgpuDeviceLostReasonStr[reason], reason, static_cast<int>(message.length), message.data);
+	MsgError("[WGPU] device lost reason %s, %.*s\n", s_wgpuDeviceLostReasonStr[reason], static_cast<int>(message.length), message.data);
 }
 
 static void OnWGPUAdapterRequestEnded(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2)
